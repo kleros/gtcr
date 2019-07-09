@@ -1,3 +1,4 @@
+import 'antd/dist/antd.css'
 import './theme.css'
 import { BrowserRouter, Route, Switch } from 'react-router-dom'
 import { Col, Layout, Menu, Row, Spin, message } from 'antd'

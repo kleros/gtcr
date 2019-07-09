@@ -1,21 +1,7 @@
-import { Button, Card, Form, Icon, Input, Tooltip } from 'antd'
-import { nextStep, previousStep } from '../../redux/factory-wizard'
-import { useDispatch, useSelector } from 'react-redux'
+import { Card, Form, Icon, Input, Tooltip } from 'antd'
 import React from 'react'
-import styled from 'styled-components/macro'
-
-const ButtonGroup = Button.Group
-
-const StyledStepper = styled.div`
-  display: flex;
-  align-items: flex-end;
-  flex-direction: column;
-`
 
 const TCRParamsForm = () => {
-  const { currStep, numSteps } = useSelector(state => state.factoryWizard)
-  const dispatch = useDispatch()
-
   return (
     <Card title="Choose the item columns and identifiers">
       <Form>
@@ -58,26 +44,6 @@ const TCRParamsForm = () => {
         >
           <Input addonBefore="ETH" placeholder="0.05 ETH" />
         </Form.Item>
-        <StyledStepper>
-          <ButtonGroup>
-            <Button
-              disabled={currStep === 1}
-              onClick={() => dispatch(previousStep())}
-              type="primary"
-            >
-              <Icon type="left" />
-              Previous
-            </Button>
-            <Button
-              disabled={currStep === numSteps}
-              onClick={() => dispatch(nextStep())}
-              type="primary"
-            >
-              Next
-              <Icon type="right" />
-            </Button>
-          </ButtonGroup>
-        </StyledStepper>
       </Form>
     </Card>
   )
