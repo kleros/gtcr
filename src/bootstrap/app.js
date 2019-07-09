@@ -15,8 +15,8 @@ const StyledSpin = styled(Spin)`
   transform: translate(-50%, -50%);
 `
 
-const Home = loadable(
-  () => import(/* webpackPrefetch: true */ '../containers/home'),
+const Factory = loadable(
+  () => import(/* webpackPrefetch: true */ '../containers/factory/index'),
   {
     fallback: <StyledSpin />
   }
@@ -58,7 +58,7 @@ const StyledMenu = styled(Menu)`
 `
 const StyledLayoutContent = styled(Layout.Content)`
   background: white;
-  padding: 62px 9.375vw 62px;
+  padding: 42px 9.375vw 42px;
 `
 
 const StyledLink = styled.a`
@@ -97,7 +97,7 @@ export default () => (
           </Layout.Header>
           <StyledLayoutContent>
             <Switch>
-              <Route component={Home} exact path="/" />
+              <Route component={Factory} exact path="/" />
             </Switch>
           </StyledLayoutContent>
         </Layout>
