@@ -2,22 +2,30 @@
   "name": "gtcr",
   "description": "A UI for the Kleros powered Generalized Token Curated List",
   "version": "0.1.0",
-  "private": true,
+  "license": "MIT",
   "dependencies": {
+    "@loadable/component": "^5.10.1",
     "antd": "^3.20.1",
+    "prop-types": "^15.7.2",
     "react": "^16.8.6",
     "react-dom": "^16.8.6",
-    "react-scripts": "3.0.1"
+    "react-helmet": "^5.2.1",
+    "react-router-dom": "^5.0.1",
+    "react-scripts": "3.0.1",
+    "styled-components": "^4.3.2"
   },
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
+    "build:theme": "lessc --js ./src/bootstrap/theme.less ./src/bootstrap/theme.css",
     "test": "react-scripts test",
     "prettify": "kathari prettify",
-    "lint": "kathari lint:js",
+    "lint": "kathari lint:js --no-root && kathari lint:styled --no-root",
+    "lint:fix": "kathari lint:js --no-root --fix && kathari lint:styled --no-root --fix",
     "precommit": "kathari precommit",
     "commitmsg": "kathari commitmsg",
-    "cz": "kathari cz"
+    "cz": "kathari cz",
+    "release": "standard-version"
   },
   "commitlint": {
     "extends": [
@@ -47,6 +55,8 @@
   },
   "devDependencies": {
     "@kleros/kathari": "^0.23.0",
-    "husky": "^3.0.0"
+    "husky": "^3.0.0",
+    "less": "^3.9.0",
+    "standard-version": "^6.0.1"
   }
 }
