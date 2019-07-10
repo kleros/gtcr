@@ -23,7 +23,7 @@ const ItemParams = ({
           {({ push, remove }) => (
             <>
               {columns && columns.length > 0 && columns.map((_, index) => (
-                <Row gutter={16} key={index} type='flex' justify='start'>
+                <Row gutter={{ xs: 8, sm: 16, md: 24 }} key={index} type='flex' justify='space-between'>
                   <Col span={8}>
                     <CustomInput
                       name={`columns[${index}].label`}
@@ -44,7 +44,7 @@ const ItemParams = ({
                       {...rest}
                     />
                   </Col>
-                  <Col span={6}>
+                  <Col span={8}>
                     <Field name={`columns[${index}].type`}>
                       {({ field }) => (
                         <FormItem>
