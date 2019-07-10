@@ -1,19 +1,21 @@
-import { Card, Icon, Tooltip } from 'antd'
-import { withFormik } from 'formik'
+import { Card, Icon, Tooltip, Form, Switch } from 'antd'
+import { withFormik, Field } from 'formik'
 import React from 'react'
 import * as yup from 'yup'
 
 import CustomInput from './custom-input'
+const FormItem = Form.Item
 
 const TCRParams = ({
   handleSubmit,
   formId,
   errors,
+  setFieldValue,
   ...rest
 }) => {
   return (
     <Card title="Choose the item columns and identifiers">
-      <form id={formId} onSubmit={handleSubmit}>
+      <Form layout="vertical" id={formId} onSubmit={handleSubmit}>
         <CustomInput name="title" placeholder="Token² Curated List" label={<span>Title</span>} error={errors.title} {...rest} hasFeedback/>
         <CustomInput
           name="description"
@@ -60,7 +62,14 @@ const TCRParams = ({
           }
           {...rest}
         />
-      </form>
+        <Field name="requireEvidenceRequest">
+          {({ field }) => (
+            <FormItem label="Require evidence on request">
+              <Switch onChange={(value) => setFieldValue('requireEvidenceRequest', value)} checked={field.value}/>
+            </FormItem>
+          )}
+        </Field>
+      </Form>
     </Card>
   )
 }
@@ -75,8 +84,11 @@ const validationSchema = yup.object().shape({
 export default withFormik({
   validationSchema,
   mapPropsToValues: () => ({
+    title: '',
+    description: '',
     requestDeposit: 0.1,
-    challengeDeposit: 0.05
+    challengeDeposit: 0.05,
+    requireEvidenceRequest: true
   }),
   handleSubmit: (_, { props: { postSubmit }}) => {
     postSubmit()

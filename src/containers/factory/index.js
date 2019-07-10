@@ -35,7 +35,7 @@ const CurrentStep = ({ currStep, postSubmit }) => <>
 
 
 export default () => {
-  const [currStep, setStep] = useState(2)
+  const [currStep, setStep] = useState(1)
   return <Content>
     <Steps current={currStep - 1}>
       <Step title="TCR Parameters" />
