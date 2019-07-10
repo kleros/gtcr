@@ -27,12 +27,14 @@
     "release": "standard-version"
   },
   "standard": {
+    "parser": "babel-eslint",
     "ignore": [
-      "/node_modules/",
-      "/build/",
-      "/public/"
+      "/node_modules/**",
+      "/build/**",
+      "/public/**",
+      "/src/bootstrap/service-worker.js"
     ],
-    "globals": [ "fetch", "import" ]
+    "globals": ["fetch"]
   },
   "commitlint": {
     "extends": [
