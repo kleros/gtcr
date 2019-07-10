@@ -1,3 +1,4 @@
+import 'antd/dist/antd.css'
 import './theme.css'
 import { BrowserRouter, Route, Switch } from 'react-router-dom'
 import { Col, Layout, Menu, Row, Spin, message } from 'antd'
@@ -70,25 +71,25 @@ export default () => (
     <Helmet>
       <title>Kleros · GTCR</title>
       <link
-        href="https://fonts.googleapis.com/css?family=Roboto:400,400i,500,500i,700,700i"
-        rel="stylesheet"
+        href='https://fonts.googleapis.com/css?family=Roboto:400,400i,500,500i,700,700i'
+        rel='stylesheet'
       />
     </Helmet>
     <BrowserRouter>
       <Layout>
-        <StyledLayoutSider breakpoint="md" collapsedWidth="0">
-          <Menu theme="dark">{MenuItems}</Menu>
+        <StyledLayoutSider breakpoint='md' collapsedWidth='0'>
+          <Menu theme='dark'>{MenuItems}</Menu>
         </StyledLayoutSider>
         <Layout>
           <Layout.Header>
             <Row>
               <StyledCol md={4} sm={16} xs={0}>
-                <StyledLink href="https://kleros.io">
+                <StyledLink href='https://kleros.io'>
                   <Logo />
                 </StyledLink>
               </StyledCol>
               <Col md={16} sm={16} xs={0}>
-                <StyledMenu mode="horizontal" theme="dark">
+                <StyledMenu mode='horizontal' theme='dark'>
                   {MenuItems}
                 </StyledMenu>
               </Col>
@@ -97,7 +98,7 @@ export default () => (
           </Layout.Header>
           <StyledLayoutContent>
             <Switch>
-              <Route component={Factory} exact path="/" />
+              <Route component={Factory} exact path='/' />
             </Switch>
           </StyledLayoutContent>
         </Layout>

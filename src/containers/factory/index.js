@@ -1,41 +1,60 @@
-import { Layout, Steps } from 'antd'
-import { useSelector } from 'react-redux'
-import Deploy from './deploy'
-import ItemParams from './item-params'
-import React from 'react'
+import { Layout, Steps, Button, Icon } from 'antd'
+import React, { useState } from 'react'
 import styled from 'styled-components/macro'
 import TCRParams from './tcr-params'
+import ItemParams from './item-params'
+import Deploy from './deploy'
 
 const { Content } = Layout
 const { Step } = Steps
 
+const ButtonGroup = Button.Group
+const StyledStepper = styled.div`
+  display: flex;
+  align-items: flex-end;
+  flex-direction: column;
+`
 const StyledContainer = styled.div`
   margin: 32px 0;
 `
-
-export default () => {
-  const { currStep } = useSelector(state => state.factoryWizard)
-  const currentStep = currStep => {
+const formIds = ['tcrParamsForm', 'itemParamsForm', 'deployTCRForm']
+const CurrentStep = ({ currStep, postSubmit }) => <>
+  {(() => {
     switch (currStep) {
       case 1:
-        return <TCRParams />
+        return <TCRParams formId={formIds[currStep]} postSubmit={postSubmit} />
       case 2:
-        return <ItemParams />
+        return <ItemParams formId={formIds[currStep]} postSubmit={postSubmit} />
       case 3:
-        return <Deploy />
+        return <Deploy formId={formIds[currStep]} postSubmit={postSubmit} />
       default:
-        break
+        throw new Error('Unknown step')
     }
-  }
+  })()}
+</>
 
-  return (
-    <Content>
-      <Steps current={currStep - 1}>
-        <Step title="TCR Parameters" />
-        <Step title="Item Parameters" />
-        <Step title="Deploy" />
-      </Steps>
-      <StyledContainer>{currentStep(currStep)}</StyledContainer>
-    </Content>
-  )
+export default () => {
+  const [currStep, setStep] = useState(1)
+  return <Content>
+    <Steps current={currStep - 1}>
+      <Step title='TCR Parameters' />
+      <Step title='Item Parameters' />
+      <Step title='Deploy' />
+    </Steps>
+    <StyledContainer>
+      <CurrentStep currStep={currStep} postSubmit={() => setStep(currStep + 1)} />
+    </StyledContainer>
+    <StyledStepper>
+      <ButtonGroup>
+        <Button onClick={() => setStep(currStep - 1)} type='primary' disabled={currStep === 1}>
+          <Icon type='left' />
+          Previous
+        </Button>
+        <Button form={formIds[currStep]} htmlType='submit' type='primary' disabled={currStep === 3} >
+          Next
+          <Icon type='right' />
+        </Button>
+      </ButtonGroup>
+    </StyledStepper>
+  </Content>
 }

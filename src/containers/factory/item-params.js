@@ -1,116 +1,97 @@
-import { Button, Card, Col, Form, Icon, Input, Row, Select } from 'antd'
-import { nextStep, previousStep } from '../../redux/factory-wizard'
-import { useDispatch, useSelector } from 'react-redux'
-import React, { useState } from 'react'
-import styled from 'styled-components/macro'
+import { Card, Button, Row, Col, Icon, Select, Form } from 'antd'
+import { withFormik, FieldArray, Field } from 'formik'
+import React from 'react'
+import * as yup from 'yup'
 
-const ButtonGroup = Button.Group
+import CustomInput from './custom-input'
+const FormItem = Form.Item
 const { Option } = Select
 
-const StyledStepper = styled.div`
-  display: flex;
-  align-items: flex-end;
-  flex-direction: column;
-`
-
-const ItemField = ({ k, keys, remove }) => {
-  const [type, setType] = useState()
-  return (
-    <Row gutter={16}>
-      <Col span={7}>
-        <Input placeholder="Token Ticker" type="text" />
-      </Col>
-      <Col span={10}>
-        <Input
-          placeholder="This should be the capitalized token ticker..."
-          type="text"
-        />
-      </Col>
-      <Col span={5}>
-        <Select onChange={e => setType(e)} value={type}>
-          <Option value="address">address</Option>
-          <Option value="string">string</Option>
-        </Select>
-      </Col>
-      <Col>
-        {keys.length > 1 ? (
-          <Icon
-            className="dynamic-delete-button"
-            onClick={() => remove(k)}
-            type="minus-circle-o"
-          />
-        ) : null}
-      </Col>
-    </Row>
-  )
-}
-
-const TCRParamsForm = ({
-  form,
-  form: { getFieldDecorator, getFieldValue }
+const ItemParams = ({
+  handleSubmit,
+  setFieldValue,
+  formId,
+  values: { columns },
+  errors,
+  touched,
+  ...rest
 }) => {
-  const [id, setId] = useState(0)
-  const { currStep, numSteps } = useSelector(state => state.factoryWizard)
-  const dispatch = useDispatch()
-
-  const remove = k => {
-    const keys = form.getFieldValue('keys')
-    if (keys.length === 1) return
-
-    form.setFieldsValue({
-      keys: keys.filter(key => key !== k)
-    })
-  }
-
-  const add = () => {
-    const keys = form.getFieldValue('keys')
-    const nextKeys = keys.concat(id)
-    setId(id + 1)
-    form.setFieldsValue({
-      keys: nextKeys
-    })
-  }
-
-  getFieldDecorator('keys', { initialValue: [] })
-  const keys = getFieldValue('keys')
-  const formItems = keys.map(k => (
-    <Form.Item key={k} required={false}>
-      <ItemField k={k} keys={keys} remove={remove} />
-    </Form.Item>
-  ))
-
   return (
-    <Card title="Select the TCR parameters">
-      <Form>
-        {formItems}
-        <Form.Item>
-          <Button onClick={add} style={{ width: '60%' }} type="dashed">
-            <Icon type="plus" /> Add field
-          </Button>
-        </Form.Item>
-        <StyledStepper>
-          <ButtonGroup>
-            <Button
-              disabled={currStep === 1}
-              onClick={() => dispatch(previousStep())}
-              type="primary"
-            >
-              <Icon type="left" />
-              Previous
-            </Button>
-            <Button
-              disabled={currStep === numSteps}
-              onClick={() => dispatch(nextStep())}
-              type="primary"
-            >
-              Next
-              <Icon type="right" />
-            </Button>
-          </ButtonGroup>
-        </StyledStepper>
-      </Form>
+    <Card title='Choose the item columns'>
+      <form id={formId} onSubmit={handleSubmit}>
+        <FieldArray name='columns'>
+          {({ push, remove }) => (
+            <>
+              {columns && columns.length > 0 && columns.map((_, index) => (
+                <Row gutter={16} key={index} type='flex' justify='start'>
+                  <Col span={8}>
+                    <CustomInput
+                      name={`columns[${index}].label`}
+                      placeholder='Name'
+                      hasFeedback
+                      touched={touched.columns && touched.columns[index] && touched.columns[index].label}
+                      error={errors.columns && errors.columns[index] && errors.columns[index].label}
+                      {...rest}
+                    />
+                  </Col>
+                  <Col span={7}>
+                    <CustomInput
+                      name={`columns[${index}].description`}
+                      placeholder='Description'
+                      hasFeedback
+                      touched={touched.columns && touched.columns[index] && touched.columns[index].description}
+                      error={errors.columns && errors.columns[index] && errors.columns[index].description}
+                      {...rest}
+                    />
+                  </Col>
+                  <Col span={6}>
+                    <Field name={`columns[${index}].type`}>
+                      {({ field }) => (
+                        <FormItem>
+                          <Select {...field} value={columns[index].type} onChange={value => setFieldValue(`columns[${index}].type`, value)}>
+                            <Option value='address'>address</Option>
+                            <Option value='number'>number</Option>
+                            <Option value='boolean'>boolean</Option>
+                          </Select>
+                        </FormItem>
+                      )}
+                    </Field>
+                  </Col>
+                  {columns.length > 1 && (
+                    <Col span={1}>
+                      <Icon className='dynamic-delete-button' type='minus-circle-o' onClick={() => remove(index)} />
+                    </Col>
+                  )}
+                </Row>
+              ))}
+              <Button onClick={() => push({ label: '', description: '', type: 'address' })}>Add Field</Button>
+            </>
+          )}
+        </FieldArray>
+      </form>
     </Card>
   )
 }
 
-export default Form.create({ name: 'tcrParamsForm' })(TCRParamsForm)
+const validationSchema = yup.object().shape({
+  columns: yup.array().of(yup.object().shape({
+    label: yup.string().required('The column label is required.'),
+    description: yup.string().required('The column description is required.')
+  }))
+})
+
+export default withFormik({
+  validationSchema,
+  mapPropsToValues: () => ({
+    columns: [
+      {
+        label: '',
+        description: '',
+        type: 'address'
+      }
+    ]
+  }),
+  handleSubmit: (_, { props: { postSubmit } }) => {
+    postSubmit()
+  }
+})(ItemParams)
