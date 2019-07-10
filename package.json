@@ -13,6 +13,7 @@
     "react-helmet": "^5.2.1",
     "react-router-dom": "^5.0.1",
     "react-scripts": "3.0.1",
+    "standard": "^12.0.1",
     "styled-components": "^4.3.2",
     "yup": "^0.27.0"
   },
@@ -21,13 +22,21 @@
     "build": "react-scripts build",
     "build:theme": "lessc --js ./src/bootstrap/theme.less ./src/bootstrap/theme.css",
     "test": "react-scripts test",
-    "prettify": "kathari prettify",
-    "lint": "kathari lint:js --no-root && kathari lint:styled --no-root",
-    "lint:fix": "kathari lint:js --no-root --fix && kathari lint:styled --no-root --fix",
-    "precommit": "kathari precommit",
-    "commitmsg": "kathari commitmsg",
-    "cz": "kathari cz",
+    "lint": "standard",
+    "lint:fix": "standard --fix",
     "release": "standard-version"
+  },
+  "standard": {
+    "parser": "babel-eslint",
+    "ignore": [
+      "/node_modules/**",
+      "/build/**",
+      "/public/**",
+      "/src/bootstrap/service-worker.js"
+    ],
+    "globals": [
+      "fetch"
+    ]
   },
   "commitlint": {
     "extends": [
@@ -36,8 +45,8 @@
   },
   "husky": {
     "hooks": {
-      "pre-commit": "kathari precommit",
-      "commit-msg": "kathari commitmsg"
+      "pre-commit": "yarn lint",
+      "commit-msg": "commitlint -E HUSKY_GIT_PARAMS"
     }
   },
   "eslintConfig": {
@@ -56,7 +65,8 @@
     ]
   },
   "devDependencies": {
-    "@kleros/kathari": "^0.23.0",
+    "@commitlint/cli": "^8.0.0",
+    "@commitlint/config-conventional": "^8.0.0",
     "husky": "^3.0.0",
     "less": "^3.9.0",
     "standard-version": "^6.0.1"

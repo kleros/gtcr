@@ -13,7 +13,7 @@ export default ({ label, name, placeholder, error, touched, addonAfter, hasFeedb
         help={error && touched ? error : ''}
         hasFeedback={hasFeedback}
       >
-        <Input addonAfter={addonAfter} {...field} placeholder={placeholder}/>
+        <Input addonAfter={addonAfter} {...field} placeholder={placeholder} />
       </FormItem>
     )}
   </Field>

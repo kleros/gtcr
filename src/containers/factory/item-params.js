@@ -17,17 +17,17 @@ const ItemParams = ({
   ...rest
 }) => {
   return (
-    <Card title="Choose the item columns">
+    <Card title='Choose the item columns'>
       <form id={formId} onSubmit={handleSubmit}>
-        <FieldArray name="columns">
+        <FieldArray name='columns'>
           {({ push, remove }) => (
             <>
               {columns && columns.length > 0 && columns.map((_, index) => (
-                <Row gutter={16} key={index} type="flex" justify="start">
+                <Row gutter={16} key={index} type='flex' justify='start'>
                   <Col span={8}>
                     <CustomInput
                       name={`columns[${index}].label`}
-                      placeholder="Name"
+                      placeholder='Name'
                       hasFeedback
                       touched={touched.columns && touched.columns[index] && touched.columns[index].label}
                       error={errors.columns && errors.columns[index] && errors.columns[index].label}
@@ -37,7 +37,7 @@ const ItemParams = ({
                   <Col span={7}>
                     <CustomInput
                       name={`columns[${index}].description`}
-                      placeholder="Description"
+                      placeholder='Description'
                       hasFeedback
                       touched={touched.columns && touched.columns[index] && touched.columns[index].description}
                       error={errors.columns && errors.columns[index] && errors.columns[index].description}
@@ -48,10 +48,10 @@ const ItemParams = ({
                     <Field name={`columns[${index}].type`}>
                       {({ field }) => (
                         <FormItem>
-                          <Select {...field} value={columns[index].type} onChange={value => setFieldValue(`columns[${index}].type`,value)}>
-                            <Option value="address">address</Option>
-                            <Option value="number">number</Option>
-                            <Option value="boolean">boolean</Option>
+                          <Select {...field} value={columns[index].type} onChange={value => setFieldValue(`columns[${index}].type`, value)}>
+                            <Option value='address'>address</Option>
+                            <Option value='number'>number</Option>
+                            <Option value='boolean'>boolean</Option>
                           </Select>
                         </FormItem>
                       )}
@@ -59,7 +59,7 @@ const ItemParams = ({
                   </Col>
                   {columns.length > 1 && (
                     <Col span={1}>
-                      <Icon className="dynamic-delete-button" type="minus-circle-o" onClick={() => remove(index)}/>
+                      <Icon className='dynamic-delete-button' type='minus-circle-o' onClick={() => remove(index)} />
                     </Col>
                   )}
                 </Row>
@@ -91,7 +91,7 @@ export default withFormik({
       }
     ]
   }),
-  handleSubmit: (_, { props: { postSubmit }}) => {
+  handleSubmit: (_, { props: { postSubmit } }) => {
     postSubmit()
   }
 })(ItemParams)
