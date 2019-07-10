@@ -3,8 +3,8 @@ import React from 'react'
 
 const Deploy = () => {
   return (
-    <Card title="Deploy the TCR">
-      <Button type="primary">Deploy!</Button>
+    <Card title='Deploy the TCR'>
+      <Button type='primary'>Deploy!</Button>
     </Card>
   )
 }

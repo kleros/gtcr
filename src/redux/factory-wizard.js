@@ -24,8 +24,8 @@ export default createReducer(
         action.payload > state.numSteps
           ? state.numSteps
           : action.payload < 1
-          ? 1
-          : action.payload
+            ? 1
+            : action.payload
     }
   }
 )
