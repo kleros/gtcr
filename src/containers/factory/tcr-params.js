@@ -1,37 +1,25 @@
-import { Card, Form, Icon, Input, Tooltip } from 'antd'
-import { withFormik, Field } from 'formik'
+import { Card, Icon, Tooltip } from 'antd'
+import { withFormik } from 'formik'
 import React from 'react'
 import * as yup from 'yup'
 
-const FormItem = Form.Item
+import CustomInput from './custom-input'
 
-const CustomInput = ({ label, name, placeholder, errors, touched, addonAfter }) => (
-  <Field name={name} placeholder={placeholder}>
-    {({ field }) => (
-      <FormItem
-        label={label}
-        validateStatus={errors[name] && touched[name] ? 'error' : undefined}
-        help={errors[name] && touched[name] ? errors[name] : ''}
-        hasFeedback
-      >
-        <Input addonAfter={addonAfter} {...field} />
-      </FormItem>
-    )}
-  </Field>
-)
-
-const TCRParamsForm = ({
+const TCRParams = ({
   handleSubmit,
   formId,
+  errors,
   ...rest
 }) => {
   return (
     <Card title="Choose the item columns and identifiers">
       <form id={formId} onSubmit={handleSubmit}>
-        <CustomInput name="title" placeholder="Token² Curated List" label={<span>Title</span>} {...rest} />
+        <CustomInput name="title" placeholder="Token² Curated List" label={<span>Title</span>} error={errors.title} {...rest} hasFeedback/>
         <CustomInput
           name="description"
           placeholder="A token curated list of tokens powered by Kleros..."
+          hasFeedback
+          error={errors.description}
           label={
             <span>
               Description&nbsp;
@@ -46,6 +34,7 @@ const TCRParamsForm = ({
           name="requestDeposit"
           placeholder="0.1 ETH"
           addonAfter="ETH"
+          error={errors.requestDeposit}
           label={
             <span>
               Registration Deposit&nbsp;
@@ -60,6 +49,7 @@ const TCRParamsForm = ({
           name="challengeDeposit"
           placeholder="0.05 ETH"
           addonAfter="ETH"
+          error={errors.challengeDeposit}
           label={
             <span>
               Challenger Deposit&nbsp;
@@ -91,4 +81,4 @@ export default withFormik({
   handleSubmit: (_, { props: { postSubmit }}) => {
     postSubmit()
   }
-})(TCRParamsForm)
+})(TCRParams)

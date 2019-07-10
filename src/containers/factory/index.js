@@ -2,6 +2,8 @@ import { Layout, Steps, Button, Icon } from 'antd'
 import React, { useState } from 'react'
 import styled from 'styled-components/macro'
 import TCRParams from './tcr-params'
+import ItemParams from './item-params'
+import Deploy from './deploy'
 
 const { Content } = Layout
 const { Step } = Steps
@@ -22,9 +24,9 @@ const CurrentStep = ({ currStep, postSubmit }) => <>
       case 1:
         return <TCRParams formId={formIds[currStep]} postSubmit={postSubmit}/>
       case 2:
-        return <TCRParams formId={formIds[currStep]} postSubmit={postSubmit}/>
+        return <ItemParams formId={formIds[currStep]} postSubmit={postSubmit}/>
       case 3:
-        return <TCRParams formId={formIds[currStep]} postSubmit={postSubmit}/>
+        return <Deploy formId={formIds[currStep]} postSubmit={postSubmit}/>
       default:
         throw new Error('Unknown step')
     }
@@ -33,7 +35,7 @@ const CurrentStep = ({ currStep, postSubmit }) => <>
 
 
 export default () => {
-  const [currStep, setStep] = useState(1)
+  const [currStep, setStep] = useState(2)
   return <Content>
     <Steps current={currStep - 1}>
       <Step title="TCR Parameters" />
