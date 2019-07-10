@@ -1,14 +1,26 @@
 import { Card, Form, Icon, Input, Tooltip } from 'antd'
+import { withFormik } from 'formik'
 import React from 'react'
 
-const TCRParamsForm = () => {
+const FormItem = Form.Item
+
+const TCRParamsForm = ({
+  values: { title, description, requestDeposit, challengeDeposit },
+  touched,
+  errors,
+  handleChange,
+  handleBlur,
+  handleSubmit,
+  formId,
+  postSubmit
+}) => {
   return (
     <Card title="Choose the item columns and identifiers">
-      <Form>
-        <Form.Item label={<span>Name</span>}>
-          <Input placeholder="Token² Curated List" />
-        </Form.Item>
-        <Form.Item
+      <form id={formId} onSubmit={handleSubmit}>
+        <FormItem label={<span>Title</span>}>
+          <Input name="title" placeholder="Token² Curated List" onChange={handleChange} value={title} />
+        </FormItem>
+        <FormItem
           label={
             <span>
               Description&nbsp;
@@ -18,9 +30,14 @@ const TCRParamsForm = () => {
             </span>
           }
         >
-          <Input placeholder="A token curated list of tokens powered by Kleros..." />
-        </Form.Item>
-        <Form.Item
+          <Input
+            name="description"
+            placeholder="A token curated list of tokens powered by Kleros..."
+            onChange={handleChange}
+            value={description}
+          />
+        </FormItem>
+        <FormItem
           label={
             <span>
               Registration Deposit&nbsp;
@@ -30,9 +47,9 @@ const TCRParamsForm = () => {
             </span>
           }
         >
-          <Input addonBefore="ETH" placeholder="0.1 ETH" />
-        </Form.Item>
-        <Form.Item
+          <Input name="requestDeposit" addonBefore="ETH" placeholder="0.1 ETH" onChange={handleChange} value={requestDeposit}/>
+        </FormItem>
+        <FormItem
           label={
             <span>
               Challenger Deposit&nbsp;
@@ -42,11 +59,20 @@ const TCRParamsForm = () => {
             </span>
           }
         >
-          <Input addonBefore="ETH" placeholder="0.05 ETH" />
-        </Form.Item>
-      </Form>
+          <Input name="challengeDeposit" addonBefore="ETH" placeholder="0.05 ETH" onChange={handleChange} value={challengeDeposit}/>
+        </FormItem>
+      </form>
     </Card>
   )
 }
 
-export default Form.create({ name: 'tcrParamsForm' })(TCRParamsForm)
+export default withFormik({
+  mapPropsToValues: () => ({
+    requestDeposit: 0.1,
+    challengeDeposit: 0.05
+  }),
+  handleSubmit: async (values, {props: { postSubmit }, setErrors}) => {
+    console.info(values)
+    postSubmit()
+  }
+})(TCRParamsForm)

@@ -1,8 +1,6 @@
 import { Layout, Steps, Button, Icon } from 'antd'
 import React, { useState } from 'react'
-import Deploy from './deploy'
 import styled from 'styled-components/macro'
-import ItemParams from './item-params'
 import TCRParams from './tcr-params'
 
 const { Content } = Layout
@@ -17,23 +15,21 @@ const StyledStepper = styled.div`
 const StyledContainer = styled.div`
   margin: 32px 0;
 `
-
-
-const CurrentStep = ({currStep}) =>
-  <>
-    {(() => {
-      switch (currStep) {
-        case 1:
-          return <TCRParams />
-        case 2:
-          return <ItemParams />
-        case 3:
-          return <Deploy />
-        default:
-          throw new Error('Unknown step')
-      }
-    })()}
-  </>
+const formIds = ['tcrParamsForm', 'itemParamsForm', 'deployTCRForm']
+const CurrentStep = ({ currStep, postSubmit }) => <>
+  {(() => {
+    switch (currStep) {
+      case 1:
+        return <TCRParams formId={formIds[currStep]} postSubmit={postSubmit}/>
+      case 2:
+        return <TCRParams formId={formIds[currStep]} postSubmit={postSubmit}/>
+      case 3:
+        return <TCRParams formId={formIds[currStep]} postSubmit={postSubmit}/>
+      default:
+        throw new Error('Unknown step')
+    }
+  })()}
+</>
 
 
 export default () => {
@@ -45,7 +41,7 @@ export default () => {
       <Step title="Deploy" />
     </Steps>
     <StyledContainer>
-      <CurrentStep currStep={currStep}/>
+      <CurrentStep currStep={currStep} postSubmit={() => setStep(currStep + 1)}/>
     </StyledContainer>
     <StyledStepper>
       <ButtonGroup>
@@ -53,7 +49,7 @@ export default () => {
           <Icon type="left" />
           Previous
         </Button>
-        <Button onClick={() => setStep(currStep + 1)} type="primary" disabled={currStep === 3}>
+        <Button form={formIds[currStep]} htmlType="submit" type="primary" disabled={currStep === 3} >
           Next
           <Icon type="right" />
         </Button>
