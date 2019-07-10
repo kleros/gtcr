@@ -1,31 +1,37 @@
 import { Card, Form, Icon, Input, Tooltip } from 'antd'
-import { withFormik } from 'formik'
+import { withFormik, Field } from 'formik'
 import React from 'react'
 import * as yup from 'yup'
 
 const FormItem = Form.Item
 
+const CustomInput = ({ label, name, placeholder, errors, touched, addonAfter }) => (
+  <Field name={name} placeholder={placeholder}>
+    {({ field }) => (
+      <FormItem
+        label={label}
+        validateStatus={errors[name] && touched[name] ? 'error' : undefined}
+        help={errors[name] && touched[name] ? errors[name] : ''}
+        hasFeedback
+      >
+        <Input addonAfter={addonAfter} {...field} />
+      </FormItem>
+    )}
+  </Field>
+)
+
 const TCRParamsForm = ({
-  values: { title, description, requestDeposit, challengeDeposit },
-  touched,
-  errors,
-  handleChange,
-  handleBlur,
   handleSubmit,
-  formId
+  formId,
+  ...rest
 }) => {
   return (
     <Card title="Choose the item columns and identifiers">
       <form id={formId} onSubmit={handleSubmit}>
-        <FormItem
-          label={<span>Title</span>}
-          validateStatus={errors.title && touched.title ? 'error' : undefined}
-          help={errors.title && touched.title ? errors.title : ''}
-          hasFeedback
-        >
-          <Input name="title" placeholder="Token² Curated List" onChange={handleChange} value={title} onBlur={handleBlur}/>
-        </FormItem>
-        <FormItem
+        <CustomInput name="title" placeholder="Token² Curated List" label={<span>Title</span>} {...rest} />
+        <CustomInput
+          name="description"
+          placeholder="A token curated list of tokens powered by Kleros..."
           label={
             <span>
               Description&nbsp;
@@ -34,19 +40,12 @@ const TCRParamsForm = ({
               </Tooltip>
             </span>
           }
-          validateStatus={errors.description && touched.description ? 'error' : undefined}
-          help={errors.description && touched.description ? errors.description : ''}
-          hasFeedback
-        >
-          <Input
-            name="description"
-            placeholder="A token curated list of tokens powered by Kleros..."
-            onChange={handleChange}
-            value={description}
-            onBlur={handleBlur}
-          />
-        </FormItem>
-        <FormItem
+          {...rest}
+        />
+        <CustomInput
+          name="requestDeposit"
+          placeholder="0.1 ETH"
+          addonAfter="ETH"
           label={
             <span>
               Registration Deposit&nbsp;
@@ -55,20 +54,12 @@ const TCRParamsForm = ({
               </Tooltip>
             </span>
           }
-          validateStatus={errors.requestDeposit && touched.requestDeposit ? 'error' : undefined}
-          help={errors.requestDeposit && touched.requestDeposit ? errors.requestDeposit : ''}
-          hasFeedback
-        >
-          <Input
-            name="requestDeposit"
-            addonBefore="ETH"
-            placeholder="0.1 ETH"
-            onChange={handleChange}
-            value={requestDeposit}
-            onBlur={handleBlur}
-          />
-        </FormItem>
-        <FormItem
+          {...rest}
+        />
+        <CustomInput
+          name="challengeDeposit"
+          placeholder="0.05 ETH"
+          addonAfter="ETH"
           label={
             <span>
               Challenger Deposit&nbsp;
@@ -77,19 +68,8 @@ const TCRParamsForm = ({
               </Tooltip>
             </span>
           }
-          validateStatus={errors.challengeDeposit && touched.challengeDeposit ? 'error' : undefined}
-          help={touched.challengeDeposit && errors.challengeDeposit ? errors.challengeDeposit : ''}
-          hasFeedback
-        >
-          <Input
-            name="challengeDeposit"
-            addonBefore="ETH"
-            placeholder="0.05 ETH"
-            onChange={handleChange}
-            value={challengeDeposit}
-            onBlur={handleBlur}
-          />
-        </FormItem>
+          {...rest}
+        />
       </form>
     </Card>
   )
@@ -108,7 +88,7 @@ export default withFormik({
     requestDeposit: 0.1,
     challengeDeposit: 0.05
   }),
-  handleSubmit: async ({ props: { postSubmit }}) => {
+  handleSubmit: (_, { props: { postSubmit }}) => {
     postSubmit()
   }
 })(TCRParamsForm)
