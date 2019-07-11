@@ -82,20 +82,20 @@ const validationSchema = yup.object().shape({
 
 export default withFormik({
   validationSchema,
-  enableReinitialize: true,
-  mapPropsToValues: ({ tcrState }) => {
-    return ({
-      columns: [
-        {
-          label: '',
-          description: '',
-          type: 'address'
-        }
-      ],
-      ...tcrState
+  mapPropsToValues: ({ tcrState }) => ({
+    columns: [
+      {
+        label: '',
+        description: '',
+        type: 'address'
+      }
+    ],
+    ...tcrState
+  }),
+  handleSubmit: ({ columns }, { props: { postSubmit, tcrState } }) => {
+    postSubmit({
+      ...tcrState,
+      columns
     })
-  },
-  handleSubmit: (values, { props: { postSubmit } }) => {
-    postSubmit(values)
   }
 })(ItemParams)

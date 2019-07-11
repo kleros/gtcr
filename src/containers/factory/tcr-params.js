@@ -102,7 +102,6 @@ const validationSchema = yup.object().shape({
 
 export default withFormik({
   validationSchema,
-  enableReinitialize: true,
   mapPropsToValues: ({ tcrState }) => ({
     title: '',
     description: '',
