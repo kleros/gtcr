@@ -1,10 +1,11 @@
 import { Form, Input } from 'antd'
 import { Field } from 'formik'
 import React from 'react'
+import PropTypes from 'prop-types'
 
 const FormItem = Form.Item
 
-export default ({ label, name, placeholder, error, touched, addonAfter, hasFeedback }) => (
+const CustomInput = ({ label, name, placeholder, error, touched, addonAfter, hasFeedback }) => (
   <Field name={name}>
     {({ field }) => (
       <FormItem
@@ -18,3 +19,24 @@ export default ({ label, name, placeholder, error, touched, addonAfter, hasFeedb
     )}
   </Field>
 )
+
+CustomInput.propTypes = {
+  name: PropTypes.string.isRequired,
+  label: PropTypes.oneOfType([PropTypes.string, PropTypes.node]),
+  placeholder: PropTypes.string,
+  error: PropTypes.string,
+  touched: PropTypes.bool,
+  addonAfter: PropTypes.node,
+  hasFeedback: PropTypes.bool
+}
+
+CustomInput.defaultProps = {
+  label: null,
+  placeholder: '',
+  error: null,
+  touched: null,
+  addonAfter: null,
+  hasFeedback: null
+}
+
+export default CustomInput

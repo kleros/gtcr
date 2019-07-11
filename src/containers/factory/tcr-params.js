@@ -1,5 +1,6 @@
 import { Card, Icon, Tooltip, Form, Switch } from 'antd'
 import { withFormik, Field } from 'formik'
+import PropTypes from 'prop-types'
 import React from 'react'
 import * as yup from 'yup'
 
@@ -11,17 +12,27 @@ const TCRParams = ({
   formId,
   errors,
   setFieldValue,
+  touched,
   ...rest
 }) => {
   return (
     <Card title='Choose the item columns and identifiers'>
       <Form layout='vertical' id={formId} onSubmit={handleSubmit}>
-        <CustomInput name='title' placeholder='Token² Curated List' label={<span>Title</span>} error={errors.title} {...rest} hasFeedback />
+        <CustomInput
+          name='title'
+          placeholder='Token² Curated List'
+          label={<span>Title</span>}
+          error={errors.title}
+          touched={touched.title}
+          hasFeedback
+          {...rest}
+        />
         <CustomInput
           name='description'
           placeholder='A token curated list of tokens powered by Kleros...'
           hasFeedback
           error={errors.description}
+          touched={touched.description}
           label={
             <span>
               Description&nbsp;
@@ -37,6 +48,7 @@ const TCRParams = ({
           placeholder='0.1 ETH'
           addonAfter='ETH'
           error={errors.requestDeposit}
+          touched={touched.requestDeposit}
           label={
             <span>
               Registration Deposit&nbsp;
@@ -52,6 +64,7 @@ const TCRParams = ({
           placeholder='0.05 ETH'
           addonAfter='ETH'
           error={errors.challengeDeposit}
+          touched={touched.challengeDeposit}
           label={
             <span>
               Challenger Deposit&nbsp;
@@ -74,6 +87,12 @@ const TCRParams = ({
   )
 }
 
+TCRParams.propTypes = {
+  handleSubmit: PropTypes.func.isRequired,
+  formId: PropTypes.string.isRequired,
+  errors: PropTypes.shape({}).isRequired
+}
+
 const validationSchema = yup.object().shape({
   title: yup.string().max(60, 'Title must be less than 60 characters long.'),
   description: yup.string().max(255, 'Description must be less than 255 characters long.'),
@@ -83,14 +102,15 @@ const validationSchema = yup.object().shape({
 
 export default withFormik({
   validationSchema,
-  mapPropsToValues: () => ({
+  mapPropsToValues: ({ tcrState }) => ({
     title: '',
     description: '',
     requestDeposit: 0.1,
     challengeDeposit: 0.05,
-    requireEvidenceRequest: true
+    requireEvidenceRequest: true,
+    ...tcrState
   }),
-  handleSubmit: (_, { props: { postSubmit } }) => {
-    postSubmit()
+  handleSubmit: (values, { props: { postSubmit } }) => {
+    postSubmit(values)
   }
 })(TCRParams)
