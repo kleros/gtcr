@@ -54,7 +54,7 @@ export default () => {
       <Step title='Deploy' />
     </Steps>
     <StyledContainer>
-      <CurrentStep currStep={currStep} postSubmit={postSubmit} tcrState={tcrState} />
+      <CurrentStep currStep={currStep} postSubmit={postSubmit} tcrState={tcrState} setTcrState={setTcrState} setStep={setStep} />
     </StyledContainer>
     <StyledStepper>
       <ButtonGroup>
