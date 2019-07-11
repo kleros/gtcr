@@ -18,15 +18,15 @@ const StyledContainer = styled.div`
   margin: 32px 0;
 `
 const formIds = ['tcrParamsForm', 'itemParamsForm', 'deployTCRForm']
-const CurrentStep = ({ currStep, postSubmit }) => <>
+const CurrentStep = ({ currStep, ...rest }) => <>
   {(() => {
     switch (currStep) {
       case 1:
-        return <TCRParams formId={formIds[currStep]} postSubmit={postSubmit} />
+        return <TCRParams formId={formIds[currStep]} {...rest} />
       case 2:
-        return <ItemParams formId={formIds[currStep]} postSubmit={postSubmit} />
+        return <ItemParams formId={formIds[currStep]} {...rest} />
       case 3:
-        return <Deploy formId={formIds[currStep]} postSubmit={postSubmit} />
+        return <Deploy formId={formIds[currStep]} {...rest} />
       default:
         throw new Error('Unknown step')
     }
@@ -35,6 +35,18 @@ const CurrentStep = ({ currStep, postSubmit }) => <>
 
 export default () => {
   const [currStep, setStep] = useState(1)
+  const [tcrState, setTcrState] = useState({})
+
+  const postSubmit = values => {
+    setStep(currStep + 1)
+    setTcrState(prevState => {
+      return ({
+        ...prevState,
+        ...values
+      })
+    })
+  }
+
   return <Content>
     <Steps current={currStep - 1}>
       <Step title='TCR Parameters' />
@@ -42,7 +54,7 @@ export default () => {
       <Step title='Deploy' />
     </Steps>
     <StyledContainer>
-      <CurrentStep currStep={currStep} postSubmit={() => setStep(currStep + 1)} />
+      <CurrentStep currStep={currStep} postSubmit={postSubmit} tcrState={tcrState} />
     </StyledContainer>
     <StyledStepper>
       <ButtonGroup>

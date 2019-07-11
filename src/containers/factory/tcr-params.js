@@ -83,14 +83,16 @@ const validationSchema = yup.object().shape({
 
 export default withFormik({
   validationSchema,
-  mapPropsToValues: () => ({
+  enableReinitialize: true,
+  mapPropsToValues: ({ tcrState }) => ({
     title: '',
     description: '',
     requestDeposit: 0.1,
     challengeDeposit: 0.05,
-    requireEvidenceRequest: true
+    requireEvidenceRequest: true,
+    ...tcrState
   }),
-  handleSubmit: (_, { props: { postSubmit } }) => {
-    postSubmit()
+  handleSubmit: (values, { props: { postSubmit } }) => {
+    postSubmit(values)
   }
 })(TCRParams)
