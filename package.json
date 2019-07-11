@@ -1,7 +1,7 @@
 {
   "name": "gtcr",
   "description": "A UI for the Kleros powered Generalized Token Curated List",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "license": "MIT",
   "dependencies": {
     "@loadable/component": "^5.10.1",
