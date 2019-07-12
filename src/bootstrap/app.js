@@ -4,7 +4,7 @@ import { BrowserRouter, Route, Switch } from 'react-router-dom'
 import { Col, Layout, Menu, Row, Spin, message } from 'antd'
 import { Helmet } from 'react-helmet'
 import { ReactComponent as Logo } from '../assets/images/logo.svg'
-import React from 'react'
+import React, { useState } from 'react'
 import loadable from '@loadable/component'
 import { register } from './service-worker'
 import styled from 'styled-components/macro'
@@ -66,46 +66,65 @@ const StyledLink = styled.a`
   display: flex;
 `
 
-export default () => (
-  <>
-    <Helmet>
-      <title>Kleros · GTCR</title>
-      <link
-        href='https://fonts.googleapis.com/css?family=Roboto:400,400i,500,500i,700,700i'
-        rel='stylesheet'
-      />
-    </Helmet>
-    <BrowserRouter>
-      <Layout>
-        <StyledLayoutSider breakpoint='md' collapsedWidth='0'>
-          <Menu theme='dark'>{MenuItems}</Menu>
-        </StyledLayoutSider>
+const StyledClickaway = styled.div`
+  background-color: black;
+  position: fixed;
+  width: 100%;
+  height: 100%;
+  opacity: ${props => props.isMenuClosed ? 0 : 0.4};
+  transition: opacity 0.3s;
+  pointer-events: ${props => props.isMenuClosed ? 'none' : 'auto'};
+`
+
+export default () => {
+  const [isMenuClosed, setIsMenuClosed] = useState(true)
+  return (
+    <>
+      <Helmet>
+        <title>Kleros · GTCR</title>
+        <link
+          href='https://fonts.googleapis.com/css?family=Roboto:400,400i,500,500i,700,700i'
+          rel='stylesheet'
+        />
+      </Helmet>
+      <BrowserRouter>
         <Layout>
-          <Layout.Header>
-            <Row>
-              <StyledCol md={4} sm={16} xs={0}>
-                <StyledLink href='https://kleros.io'>
-                  <Logo />
-                </StyledLink>
-              </StyledCol>
-              <Col md={16} sm={16} xs={0}>
-                <StyledMenu mode='horizontal' theme='dark'>
-                  {MenuItems}
-                </StyledMenu>
-              </Col>
-              <StyledCol md={4} sm={16} xs={0} />
-            </Row>
-          </Layout.Header>
-          <StyledLayoutContent>
-            <Switch>
-              <Route component={Factory} exact path='/' />
-            </Switch>
-          </StyledLayoutContent>
+          <StyledLayoutSider
+            breakpoint='md'
+            collapsedWidth={0}
+            collapsed={isMenuClosed}
+            onClick={() => setIsMenuClosed(prevState => !prevState)}
+          >
+            <Menu theme='dark'>{MenuItems}</Menu>
+          </StyledLayoutSider>
+          <Layout>
+            <Layout.Header>
+              <Row>
+                <StyledCol md={4} sm={16} xs={0}>
+                  <StyledLink href='https://kleros.io'>
+                    <Logo />
+                  </StyledLink>
+                </StyledCol>
+                <Col md={16} sm={16} xs={0}>
+                  <StyledMenu mode='horizontal' theme='dark'>
+                    {MenuItems}
+                  </StyledMenu>
+                </Col>
+                <StyledCol md={4} sm={16} xs={0} />
+              </Row>
+            </Layout.Header>
+            <StyledLayoutContent>
+              <Switch>
+                <Route component={Factory} exact path='/' />
+              </Switch>
+            </StyledLayoutContent>
+            <StyledClickaway isMenuClosed={isMenuClosed} onClick={isMenuClosed ? null : () => setIsMenuClosed(true)} />
+          </Layout>
         </Layout>
-      </Layout>
-    </BrowserRouter>
-  </>
-)
+      </BrowserRouter>
+    </>
+  )
+}
 
 register({
   onUpdate: () =>
