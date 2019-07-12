@@ -1,4 +1,4 @@
-import { Card, Button, Row, Col, Icon, Select, Form } from 'antd'
+import { Card, Button, Row, Col, Icon, Select, Form, Switch } from 'antd'
 import { withFormik, FieldArray, Field } from 'formik'
 import React from 'react'
 import * as yup from 'yup'
@@ -18,33 +18,40 @@ const ItemParams = ({
 }) => {
   return (
     <Card title='Choose the item columns'>
+      <Row gutter={{ xs: 4, sm: 8, md: 12 }} type='flex' justify='space-between'>
+        <Col span={5}>Name</Col>
+        <Col span={10}>Description</Col>
+        <Col span={5}>Type</Col>
+        <Col span={3}>ID</Col>
+        {columns.length > 1 && <Col span={1} />}
+      </Row>
       <form id={formId} onSubmit={handleSubmit}>
         <FieldArray name='columns'>
           {({ push, remove }) => (
             <>
               {columns && columns.length > 0 && columns.map((_, index) => (
-                <Row gutter={{ xs: 8, sm: 16, md: 24 }} key={index} type='flex' justify='space-between'>
-                  <Col span={8}>
+                <Row gutter={{ xs: 4, sm: 8, md: 12 }} key={index} type='flex' justify='space-between'>
+                  <Col span={5}>
                     <CustomInput
                       name={`columns[${index}].label`}
-                      placeholder='Name'
+                      placeholder='Token Name'
                       hasFeedback
                       touched={touched.columns && touched.columns[index] && touched.columns[index].label}
                       error={errors.columns && errors.columns[index] && errors.columns[index].label}
                       {...rest}
                     />
                   </Col>
-                  <Col span={7}>
+                  <Col span={10}>
                     <CustomInput
                       name={`columns[${index}].description`}
-                      placeholder='Description'
+                      placeholder='The commonly used token name.'
                       hasFeedback
                       touched={touched.columns && touched.columns[index] && touched.columns[index].description}
                       error={errors.columns && errors.columns[index] && errors.columns[index].description}
                       {...rest}
                     />
                   </Col>
-                  <Col span={8}>
+                  <Col span={5}>
                     <Field name={`columns[${index}].type`}>
                       {({ field }) => (
                         <FormItem>
@@ -57,9 +64,20 @@ const ItemParams = ({
                       )}
                     </Field>
                   </Col>
+                  <Col span={3}>
+                    <Field name={`columns[${index}].isIdentifier`}>
+                      {({ field }) => (
+                        <FormItem>
+                          <Switch onChange={(value) => setFieldValue(`columns[${index}].isIdentifier`, value)} checked={field.value} size='small' />
+                        </FormItem>
+                      )}
+                    </Field>
+                  </Col>
                   {columns.length > 1 && (
                     <Col span={1}>
-                      <Icon className='dynamic-delete-button' type='minus-circle-o' onClick={() => remove(index)} />
+                      <FormItem>
+                        <Icon className='dynamic-delete-button' type='minus-circle-o' onClick={() => remove(index)} />
+                      </FormItem>
                     </Col>
                   )}
                 </Row>
@@ -87,7 +105,8 @@ export default withFormik({
       {
         label: '',
         description: '',
-        type: 'address'
+        type: 'address',
+        isIdentifier: false
       }
     ],
     ...tcrState
