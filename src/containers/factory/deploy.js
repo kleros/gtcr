@@ -1,17 +1,25 @@
 import { Card, Button } from 'antd'
+import PropTypes from 'prop-types'
 import React from 'react'
 
-const Deploy = ({ setStep, setTcrState }) => {
+const Deploy = ({ resetStepper, resetTcrState }) => {
   const onClick = () => {
-    setStep(1)
-    setTcrState({})
+    resetStepper()
+    resetTcrState()
   }
 
   return (
-    <Card title='Deploy the TCR'>
-      <Button type='primary' onClick={onClick}>Deploy!</Button>
+    <Card title="Deploy the TCR">
+      <Button type="primary" onClick={onClick}>
+        Deploy!
+      </Button>
     </Card>
   )
+}
+
+Deploy.propTypes = {
+  resetStepper: PropTypes.func.isRequired,
+  resetTcrState: PropTypes.func.isRequired
 }
 
 export default Deploy

@@ -5,7 +5,15 @@ import PropTypes from 'prop-types'
 
 const FormItem = Form.Item
 
-const CustomInput = ({ label, name, placeholder, error, touched, addonAfter, hasFeedback }) => (
+const CustomInput = ({
+  label,
+  name,
+  placeholder,
+  error,
+  touched,
+  addonAfter,
+  hasFeedback
+}) => (
   <Field name={name}>
     {({ field }) => (
       <FormItem

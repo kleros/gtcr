@@ -3,6 +3,14 @@
   "description": "A UI for the Kleros powered Generalized Token Curated List",
   "version": "0.2.0",
   "license": "MIT",
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "build:theme": "lessc --js ./src/bootstrap/theme.less ./src/bootstrap/theme.css",
+    "test": "react-scripts test",
+    "release": "standard-version",
+    "lint": "eslint './src/**/*.js'"
+  },
   "dependencies": {
     "@loadable/component": "^5.10.1",
     "antd": "^3.20.1",
@@ -13,18 +21,30 @@
     "react-helmet": "^5.2.1",
     "react-router-dom": "^5.0.1",
     "react-scripts": "3.0.1",
-    "standard": "^12.0.1",
     "styled-components": "^4.3.2",
     "yup": "^0.27.0"
   },
-  "scripts": {
-    "start": "react-scripts start",
-    "build": "react-scripts build",
-    "build:theme": "lessc --js ./src/bootstrap/theme.less ./src/bootstrap/theme.css",
-    "test": "react-scripts test",
-    "lint": "standard",
-    "lint:fix": "standard --fix",
-    "release": "standard-version"
+  "devDependencies": {
+    "@commitlint/cli": "^8.0.0",
+    "@commitlint/config-conventional": "^8.0.0",
+    "babel-eslint": "^10.0.2",
+    "eslint-config-prettier": "^6.0.0",
+    "eslint-config-react-app": "^4.0.1",
+    "eslint-config-standard": "^13.0.1",
+    "eslint-config-standard-jsx": "^7.0.0",
+    "eslint-plugin-import": "^2.18.0",
+    "eslint-plugin-jsx-a11y": "^6.2.3",
+    "eslint-plugin-node": "^9.1.0",
+    "eslint-plugin-prettier": "^3.1.0",
+    "eslint-plugin-promise": "^4.2.1",
+    "eslint-plugin-react": "^7.14.2",
+    "eslint-plugin-react-hooks": "^1.6.1",
+    "eslint-plugin-standard": "^4.0.0",
+    "eslint-plugin-unicorn": "^9.1.1",
+    "husky": "^3.0.0",
+    "less": "^3.9.0",
+    "prettier": "^1.18.2",
+    "standard-version": "^6.0.1"
   },
   "standard": {
     "parser": "babel-eslint",
@@ -49,9 +69,6 @@
       "commit-msg": "commitlint -E HUSKY_GIT_PARAMS"
     }
   },
-  "eslintConfig": {
-    "extends": "react-app"
-  },
   "browserslist": {
     "production": [
       ">0.2%",
@@ -63,12 +80,5 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
-  },
-  "devDependencies": {
-    "@commitlint/cli": "^8.0.0",
-    "@commitlint/config-conventional": "^8.0.0",
-    "husky": "^3.0.0",
-    "less": "^3.9.0",
-    "standard-version": "^6.0.1"
   }
 }

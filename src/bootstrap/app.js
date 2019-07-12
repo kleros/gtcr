@@ -71,9 +71,9 @@ const StyledClickaway = styled.div`
   position: fixed;
   width: 100%;
   height: 100%;
-  opacity: ${props => props.isMenuClosed ? 0 : 0.4};
+  opacity: ${properties => (properties.isMenuClosed ? 0 : 0.4)};
   transition: opacity 0.3s;
-  pointer-events: ${props => props.isMenuClosed ? 'none' : 'auto'};
+  pointer-events: ${properties => (properties.isMenuClosed ? 'none' : 'auto')};
 `
 
 export default () => {
@@ -83,30 +83,30 @@ export default () => {
       <Helmet>
         <title>Kleros · GTCR</title>
         <link
-          href='https://fonts.googleapis.com/css?family=Roboto:400,400i,500,500i,700,700i'
-          rel='stylesheet'
+          href="https://fonts.googleapis.com/css?family=Roboto:400,400i,500,500i,700,700i"
+          rel="stylesheet"
         />
       </Helmet>
       <BrowserRouter>
         <Layout>
           <StyledLayoutSider
-            breakpoint='md'
+            breakpoint="md"
             collapsedWidth={0}
             collapsed={isMenuClosed}
-            onClick={() => setIsMenuClosed(prevState => !prevState)}
+            onClick={() => setIsMenuClosed(previousState => !previousState)}
           >
-            <Menu theme='dark'>{MenuItems}</Menu>
+            <Menu theme="dark">{MenuItems}</Menu>
           </StyledLayoutSider>
           <Layout>
             <Layout.Header>
               <Row>
                 <StyledCol md={4} sm={16} xs={0}>
-                  <StyledLink href='https://kleros.io'>
+                  <StyledLink href="https://kleros.io">
                     <Logo />
                   </StyledLink>
                 </StyledCol>
                 <Col md={16} sm={16} xs={0}>
-                  <StyledMenu mode='horizontal' theme='dark'>
+                  <StyledMenu mode="horizontal" theme="dark">
                     {MenuItems}
                   </StyledMenu>
                 </Col>
@@ -115,10 +115,13 @@ export default () => {
             </Layout.Header>
             <StyledLayoutContent>
               <Switch>
-                <Route component={Factory} exact path='/' />
+                <Route component={Factory} exact path="/" />
               </Switch>
             </StyledLayoutContent>
-            <StyledClickaway isMenuClosed={isMenuClosed} onClick={isMenuClosed ? null : () => setIsMenuClosed(true)} />
+            <StyledClickaway
+              isMenuClosed={isMenuClosed}
+              onClick={isMenuClosed ? null : () => setIsMenuClosed(true)}
+            />
           </Layout>
         </Layout>
       </BrowserRouter>
