@@ -1,12 +1,20 @@
-import { Card, Button, Row, Col, Icon, Select, Form, Switch } from 'antd'
+import {
+  Card,
+  Button,
+  Row,
+  Col,
+  Icon,
+  Select,
+  Form,
+  Switch,
+  Divider
+} from 'antd'
 import { withFormik, FieldArray, Field } from 'formik'
 import React, { useEffect } from 'react'
 import PropTypes from 'prop-types'
 import * as yup from 'yup'
 import CustomInput from './custom-input'
-
-const FormItem = Form.Item
-const { Option } = Select
+import ItemPreview from './item-preview'
 
 const ItemParams = ({
   handleSubmit,
@@ -91,7 +99,7 @@ const ItemParams = ({
                     <Col span={6}>
                       <Field name={`columns[${index}].type`}>
                         {({ field }) => (
-                          <FormItem>
+                          <Form.Item>
                             <Select
                               {...field}
                               value={columns[index].type}
@@ -99,18 +107,24 @@ const ItemParams = ({
                                 setFieldValue(`columns[${index}].type`, value)
                               }
                             >
-                              <Option value="address">address</Option>
-                              <Option value="number">number</Option>
-                              <Option value="boolean">boolean</Option>
+                              <Select.Option value="address">
+                                address
+                              </Select.Option>
+                              <Select.Option value="number">
+                                number
+                              </Select.Option>
+                              <Select.Option value="boolean">
+                                boolean
+                              </Select.Option>
                             </Select>
-                          </FormItem>
+                          </Form.Item>
                         )}
                       </Field>
                     </Col>
                     <Col span={2}>
                       <Field name={`columns[${index}].isIdentifier`}>
                         {({ field }) => (
-                          <FormItem>
+                          <Form.Item>
                             <Switch
                               onChange={value =>
                                 setFieldValue(
@@ -121,19 +135,19 @@ const ItemParams = ({
                               checked={field.value}
                               size="small"
                             />
-                          </FormItem>
+                          </Form.Item>
                         )}
                       </Field>
                     </Col>
                     {columns.length > 1 && (
                       <Col span={1}>
-                        <FormItem>
+                        <Form.Item>
                           <Icon
                             className="dynamic-delete-button"
                             type="minus-circle-o"
                             onClick={() => remove(index)}
                           />
-                        </FormItem>
+                        </Form.Item>
                       </Col>
                     )}
                   </Row>
@@ -148,6 +162,8 @@ const ItemParams = ({
             </>
           )}
         </FieldArray>
+        <Divider />
+        <ItemPreview columns={columns} />
       </form>
     </Card>
   )

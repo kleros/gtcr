@@ -41,10 +41,11 @@ CurrentStep.propTypes = {
   currStep: PropTypes.number.isRequired
 }
 
-const useStepper = stepCount => {
-  const [currStep, setStep] = useState(1)
+const useStepper = initialStep => {
+  const [currStep, setStep] = useState(initialStep)
+  const STEP_COUNT = 3
   const nextStep = () =>
-    setStep(currStep => (currStep === stepCount ? currStep : currStep + 1))
+    setStep(currStep => (currStep === STEP_COUNT ? currStep : currStep + 1))
   const previousStep = () =>
     setStep(currStep => (currStep === 1 ? currStep : currStep - 1))
   const resetStepper = () => setStep(1)
@@ -67,52 +68,69 @@ const useCachedFactory = version => {
         type: 'address',
         isIdentifier: false
       }
-    ]
+    ],
+    currStep: 1
   }
   let cache = window.localStorage.getItem(key)
   if (cache) cache = JSON.parse(cache)
   else cache = JSON.parse(JSON.stringify(initialState)) // Deep copy.
 
   const [tcrState, setTcrState] = useState(cache)
+  const { currStep, nextStep, previousStep, resetStepper } = useStepper(
+    cache.currStep
+  )
   const resetTcrState = () =>
     setTcrState(JSON.parse(JSON.stringify(initialState)))
 
-  useEffect(() => window.localStorage.setItem(key, JSON.stringify(tcrState)))
-  return { tcrState, setTcrState, resetTcrState }
+  useEffect(() =>
+    window.localStorage.setItem(
+      key,
+      JSON.stringify({
+        ...tcrState,
+        currStep
+      })
+    )
+  )
+  return {
+    tcrState,
+    setTcrState,
+    resetTcrState,
+    currStep,
+    nextStep,
+    previousStep,
+    resetStepper
+  }
 }
 
 export default () => {
-  const stepper = useStepper(3)
+  const cachedFactory = useCachedFactory(version)
+  const { currStep, nextStep, previousStep } = cachedFactory
 
   return (
     <Content>
-      <Steps current={stepper.currStep - 1}>
+      <Steps current={currStep - 1}>
         <Step title="TCR Parameters" />
         <Step title="Item Parameters" />
         <Step title="Deploy" />
       </Steps>
       <StyledContainer>
-        <CurrentStep
-          postSubmit={() => stepper.nextStep()}
-          {...stepper}
-          {...useCachedFactory(version)}
-        />
+        <CurrentStep postSubmit={() => nextStep()} {...cachedFactory} />
       </StyledContainer>
       <StyledStepper>
         <ButtonGroup>
           <Button
-            onClick={() => stepper.previousStep()}
+            onClick={() => previousStep()}
             type="primary"
-            disabled={stepper.currStep === 1}
+            disabled={currStep === 1}
           >
             <Icon type="left" />
             Previous
           </Button>
           <Button
-            form={formIds[stepper.currStep]}
+            form={formIds[currStep]}
             htmlType="submit"
             type="primary"
-            disabled={stepper.currStep === 3}
+            disabled={currStep === 3}
           >
             Next
             <Icon type="right" />
