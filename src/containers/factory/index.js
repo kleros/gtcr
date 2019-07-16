@@ -76,9 +76,7 @@ const useCachedFactory = version => {
   else cache = JSON.parse(JSON.stringify(initialState)) // Deep copy.
 
   const [tcrState, setTcrState] = useState(cache)
-  const { currStep, nextStep, previousStep, resetStepper } = useStepper(
-    cache.currStep
-  )
+  const { currStep, nextStep, previousStep } = useStepper(cache.currStep)
   const resetTcrState = () =>
     setTcrState(JSON.parse(JSON.stringify(initialState)))
 
@@ -97,8 +95,7 @@ const useCachedFactory = version => {
     resetTcrState,
     currStep,
     nextStep,
-    previousStep,
-    resetStepper
+    previousStep
   }
 }
 

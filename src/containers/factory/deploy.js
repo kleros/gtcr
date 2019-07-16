@@ -1,16 +1,20 @@
 import { Card, Button } from 'antd'
 import PropTypes from 'prop-types'
-import React from 'react'
+import React, { useContext } from 'react'
+import { WalletContext } from '../../bootstrap/wallet-context'
 
-const Deploy = ({ resetStepper, resetTcrState }) => {
-  const onClick = () => {
-    resetStepper()
-    resetTcrState()
+const Deploy = ({ resetTcrState }) => {
+  const { setPendingCallback } = useContext(WalletContext)
+  const onDeploy = () => {
+    setPendingCallback(() => {
+      console.info('deploy contracts')
+      resetTcrState()
+    })
   }
 
   return (
     <Card title="Deploy the TCR">
-      <Button type="primary" onClick={onClick}>
+      <Button type="primary" onClick={onDeploy}>
         Deploy!
       </Button>
     </Card>
@@ -18,7 +22,6 @@ const Deploy = ({ resetStepper, resetTcrState }) => {
 }
 
 Deploy.propTypes = {
-  resetStepper: PropTypes.func.isRequired,
   resetTcrState: PropTypes.func.isRequired
 }
 

@@ -14,6 +14,7 @@
   "dependencies": {
     "@loadable/component": "^5.10.1",
     "antd": "^3.20.1",
+    "ethers": "^4.0.33",
     "formik": "^1.5.7",
     "prop-types": "^15.7.2",
     "react": "^16.8.6",
@@ -22,6 +23,7 @@
     "react-router-dom": "^5.0.1",
     "react-scripts": "3.0.1",
     "styled-components": "^4.3.2",
+    "web3-react": "^5.0.4",
     "yup": "^0.27.0"
   },
   "devDependencies": {
