@@ -24,25 +24,23 @@ const Deploy = ({ resetTcrState, setTxState, tcrState }) => {
   const [txSubmitted, setTxSubmitted] = useState()
 
   const onDeploy = () => {
-    pushWeb3Action({
-      action: async ({ library, account }) => {
-        // TODO: Remove FastJsonRpcSigner when ethers v5 is out.
-        // See https://github.com/ethers-io/ethers.js/issues/511
-        const signer = new FastJsonRpcSigner(library.getSigner(account))
-        const factory = ethers.ContractFactory.fromSolidity(GTCR, signer)
-        const tx = await factory.deploy([0, 32], [32, 32])
-        setTxState({ txHash: tx.deployTransaction.hash, status: 'pending' })
-        setTxSubmitted(tx.deployTransaction.hash)
-        return {
-          tx,
-          actionMessage: 'Deploying TCR',
-          onTxMined: ({ contractAddress }) =>
-            setTxState({
-              txHash: tx.deployTransaction.hash,
-              status: 'mined',
-              contractAddress
-            })
-        }
+    pushWeb3Action(async ({ library, account }) => {
+      // TODO: Remove FastJsonRpcSigner when ethers v5 is out.
+      // See https://github.com/ethers-io/ethers.js/issues/511
+      const signer = new FastJsonRpcSigner(library.getSigner(account))
+      const factory = ethers.ContractFactory.fromSolidity(GTCR, signer)
+      const tx = await factory.deploy([0, 32], [32, 32])
+      setTxState({ txHash: tx.deployTransaction.hash, status: 'pending' })
+      setTxSubmitted(tx.deployTransaction.hash)
+      return {
+        tx,
+        actionMessage: 'Deploying TCR',
+        onTxMined: ({ contractAddress }) =>
+          setTxState({
+            txHash: tx.deployTransaction.hash,
+            status: 'mined',
+            contractAddress
+          })
       }
     })
   }

@@ -9,12 +9,34 @@ const actionTypes = {
   AUTHORIZATION: 'AUTHORIZATION'
 }
 
+/* eslint-disable valid-jsdoc */
+/**
+ * This is hook is wraps web3-react connectors, to request
+ * authorization from the wallet when necessary and manage
+ * notifications on the screen.
+ *
+ * To request connect to the wallet, simply call
+ * the `requestWeb3Auth()` method returned by the hook.
+ * Alternatively, use the `pushWeb3Action(callback)` method
+ * to add callback to the manager and it will request
+ * connection if it is not yet available.
+ *
+ * `pushWeb3Action(action)` accepts an async function that will be
+ * executed once the wallet is connected.
+ * The hook passes the web3-react web3Context object as a parameter
+ * And expects a return object with the following properties:
+ * {
+ *   tx - The resolved promise returned from ethersjs action.
+ *   actionMessage - Optional message for the transaction notification.
+ *   onTxMined - Optional callback to be executed once the transaction is mined.
+ * }
+ */
 const useNotificationWeb3 = () => {
   const web3Context = useWeb3Context()
   const [web3Actions, setWeb3Actions] = useState([])
-  const pushWeb3Action = payload =>
+  const pushWeb3Action = action =>
     setWeb3Actions(prevState =>
-      prevState.concat({ payload, type: actionTypes.TRANSACTION })
+      prevState.concat({ action, type: actionTypes.TRANSACTION })
     )
   const requestWeb3Auth = () =>
     setWeb3Actions(prevState =>
@@ -87,11 +109,9 @@ const useNotificationWeb3 = () => {
             key: notificationID
           })
           try {
-            const {
-              tx,
-              actionMessage,
-              onTxMined
-            } = await web3Action.payload.action(web3Context)
+            const { tx, actionMessage, onTxMined } = await web3Action.action(
+              web3Context
+            )
             notification.info({
               message: actionMessage || 'Transaction submitted.',
               duration: 0,
