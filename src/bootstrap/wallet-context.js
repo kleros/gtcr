@@ -9,16 +9,74 @@ const actionTypes = {
   AUTHORIZATION: 'AUTHORIZATION'
 }
 
+const processWeb3Action = async (web3Action, web3Context) => {
+  const notificationID = uuid()
+  notification.info({
+    message: 'Requesting Signature',
+    duration: 0,
+    key: notificationID
+  })
+  try {
+    const { tx, actionMessage, onTxMined } = await web3Action.action(
+      web3Context
+    )
+    notification.info({
+      message: actionMessage || 'Transaction submitted.',
+      duration: 0,
+      key: notificationID,
+      description: (
+        <a
+          target="_blank"
+          rel="noopener noreferrer"
+          href={`https://${web3Context.networkId === 42 &&
+            'kovan.'}etherscan.io/tx/${tx.deployTransaction.hash}`}
+        >
+          View on etherscan
+        </a>
+      )
+    })
+
+    const {
+      transactionHash,
+      contractAddress
+    } = await web3Context.library.waitForTransaction(tx.deployTransaction.hash)
+
+    notification.success({
+      message: 'Transaction mined!',
+      description: (
+        <a
+          target="_blank"
+          rel="noopener noreferrer"
+          href={`https://${web3Context.networkId === 42 &&
+            'kovan.'}etherscan.io/tx/${transactionHash}`}
+        >
+          View on etherscan
+        </a>
+      ),
+      duration: 0,
+      key: notificationID
+    })
+    onTxMined({ contractAddress })
+  } catch (err) {
+    notification.error({
+      message: 'Error submitting transaction',
+      description: `${err.message}`,
+      duration: 0,
+      key: notificationID
+    })
+  }
+}
+
 /* eslint-disable valid-jsdoc */
 /**
- * This is hook is wraps web3-react connectors, to request
- * authorization from the wallet when necessary and manage
+ * This hook wraps web3-react connectors to request
+ * authorization from the wallet when necessary and to manage
  * notifications on the screen.
  *
  * To request connect to the wallet, simply call
  * the `requestWeb3Auth()` method returned by the hook.
  * Alternatively, use the `pushWeb3Action(callback)` method
- * to add callback to the manager and it will request
+ * to send a transaction to the blockchain and it will request
  * connection if it is not yet available.
  *
  * `pushWeb3Action(action)` accepts an async function that will be
@@ -55,6 +113,7 @@ const useNotificationWeb3 = () => {
   ) // Make a copy.
   const NOTIFICATION_KEY = 'WALLET_AUTHORIZATION'
 
+  // We watch the web3 context props to handle the flow of authorization.
   useEffect(() => {
     const asyncEffect = async () => {
       if (web3Actions.length === 0) return
@@ -100,65 +159,10 @@ const useNotificationWeb3 = () => {
         }
 
         while (web3Actions.length > 0) {
+          // Process each web3 action.
           const web3Action = web3Actions.pop()
-          if (web3Action.type === actionTypes.AUTHORIZATION) return
-          const notificationID = uuid()
-          notification.info({
-            message: 'Requesting Signature',
-            duration: 0,
-            key: notificationID
-          })
-          try {
-            const { tx, actionMessage, onTxMined } = await web3Action.action(
-              web3Context
-            )
-            notification.info({
-              message: actionMessage || 'Transaction submitted.',
-              duration: 0,
-              key: notificationID,
-              description: (
-                <a
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  href={`https://${web3Context.networkId === 42 &&
-                    'kovan.'}etherscan.io/tx/${tx.deployTransaction.hash}`}
-                >
-                  View on etherscan
-                </a>
-              )
-            })
-
-            const {
-              transactionHash,
-              contractAddress
-            } = await web3Context.library.waitForTransaction(
-              tx.deployTransaction.hash
-            )
-
-            notification.success({
-              message: 'Transaction mined!',
-              description: (
-                <a
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  href={`https://${web3Context.networkId === 42 &&
-                    'kovan.'}etherscan.io/tx/${transactionHash}`}
-                >
-                  View on etherscan
-                </a>
-              ),
-              duration: 0,
-              key: notificationID
-            })
-            onTxMined({ contractAddress })
-          } catch (err) {
-            notification.error({
-              message: 'Error submitting transaction',
-              description: `${err.message}`,
-              duration: 0,
-              key: notificationID
-            })
-          }
+          if (web3Action.type === actionTypes.AUTHORIZATION) return // If the user just requested connection, stop here.
+          await processWeb3Action(web3Action, web3Context)
         }
       }
     }
