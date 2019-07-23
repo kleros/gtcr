@@ -159,7 +159,7 @@ const WalletModal = () => {
 
 const TopBar = () => {
   const web3Context = useWeb3Context()
-  const { setPendingCallback } = useContext(WalletContext)
+  const { requestWeb3Auth } = useContext(WalletContext)
   return (
     <Row>
       <StyledCol md={4} sm={16} xs={0}>
@@ -176,11 +176,7 @@ const TopBar = () => {
         <Button
           ghost
           shape="round"
-          onClick={
-            !web3Context.active
-              ? () => setPendingCallback({ action: null })
-              : null
-          }
+          onClick={!web3Context.active ? () => requestWeb3Auth() : null}
         >
           {web3Context.active
             ? truncateETHAddress(web3Context.account)

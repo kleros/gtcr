@@ -1,32 +1,41 @@
 import React, { createContext, useState, useEffect } from 'react'
 import { notification } from 'antd'
 import { useWeb3Context } from 'web3-react'
-import useFunctionAsState from '../utils/fn-as-state-hook'
 import PropTypes from 'prop-types'
 import uuid from 'uuid/v4'
 
+const actionTypes = {
+  TRANSACTION: 'TRANSACTION',
+  AUTHORIZATION: 'AUTHORIZATION'
+}
+
 const useNotificationWeb3 = () => {
   const web3Context = useWeb3Context()
-  const [pendingCallback, setPendingCallback] = useFunctionAsState(null)
+  const [web3Actions, setWeb3Actions] = useState([])
+  const pushWeb3Action = payload =>
+    setWeb3Actions(prevState =>
+      prevState.concat({ payload, type: actionTypes.TRANSACTION })
+    )
+  const requestWeb3Auth = () =>
+    setWeb3Actions(prevState =>
+      prevState.concat({ type: actionTypes.AUTHORIZATION })
+    )
+  const setUserSelectedWallet = method =>
+    setConnectionState(prev => ({ ...prev, method }))
+
   const initialState = {
     modalOpen: false,
     method: null,
-    requestSentToProvider: false
+    notifiedAuthAccquired: false
   }
   const [connectionState, setConnectionState] = useState(
     JSON.parse(JSON.stringify(initialState))
   ) // Make a copy.
   const NOTIFICATION_KEY = 'WALLET_AUTHORIZATION'
-  const cancelRequest = () => {
-    setPendingCallback(null)
-    setConnectionState(JSON.parse(JSON.stringify(initialState)))
-  }
-  const setUserSelectedWallet = method =>
-    setConnectionState(prev => ({ ...prev, method }))
 
   useEffect(() => {
     const asyncEffect = async () => {
-      if (!pendingCallback) return
+      if (web3Actions.length === 0) return
       if (
         !web3Context.active &&
         !connectionState.modalOpen &&
@@ -55,92 +64,91 @@ const useNotificationWeb3 = () => {
           duration: 15,
           key: NOTIFICATION_KEY
         })
-        setPendingCallback(null)
+        setWeb3Actions([])
         setConnectionState(JSON.parse(JSON.stringify(initialState)))
         web3Context.error = null
       } else if (web3Context.active) {
-        if (connectionState.requestSentToProvider)
+        if (!connectionState.notifiedAuthAccquired) {
           notification.success({
             message: 'Authorization accquired',
             duration: 5,
             key: NOTIFICATION_KEY
           })
+          setConnectionState(prev => ({ ...prev, notifiedAuthAccquired: true }))
+        }
 
-        const notificationID = uuid()
-        try {
-          if (!pendingCallback.action) return
+        while (web3Actions.length > 0) {
+          const web3Action = web3Actions.pop()
+          if (web3Action.type === actionTypes.AUTHORIZATION) return
+          const notificationID = uuid()
           notification.info({
             message: 'Requesting Signature',
             duration: 0,
             key: notificationID
           })
-          const request = await pendingCallback.action(web3Context)
-          if (!request) return
-          const { tx, actionDescription, onTxMined } = request
-          notification.info({
-            message: actionDescription,
-            duration: 0,
-            key: notificationID,
-            description: (
-              <a
-                target="_blank"
-                rel="noopener noreferrer"
-                href={`https://${web3Context.networkId === 42 &&
-                  'kovan.'}etherscan.io/tx/${tx.deployTransaction.hash}`}
-              >
-                View on etherscan
-              </a>
-            )
-          })
+          try {
+            const {
+              tx,
+              actionMessage,
+              onTxMined
+            } = await web3Action.payload.action(web3Context)
+            notification.info({
+              message: actionMessage || 'Transaction submitted.',
+              duration: 0,
+              key: notificationID,
+              description: (
+                <a
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  href={`https://${web3Context.networkId === 42 &&
+                    'kovan.'}etherscan.io/tx/${tx.deployTransaction.hash}`}
+                >
+                  View on etherscan
+                </a>
+              )
+            })
 
-          const {
-            transactionHash,
-            contractAddress
-          } = await web3Context.library.waitForTransaction(
-            tx.deployTransaction.hash
-          )
-          notification.success({
-            message: 'Transaction mined!',
-            description: (
-              <a
-                target="_blank"
-                rel="noopener noreferrer"
-                href={`https://${web3Context.networkId === 42 &&
-                  'kovan.'}etherscan.io/tx/${transactionHash}`}
-              >
-                View on etherscan
-              </a>
-            ),
-            duration: 0,
-            key: notificationID
-          })
-          onTxMined({ contractAddress })
-        } catch (err) {
-          notification.error({
-            message: `Error submitting transaction`,
-            description: `${err.message}`,
-            duration: 0,
-            key: notificationID
-          })
-        } finally {
-          setPendingCallback(null)
-          setConnectionState(JSON.parse(JSON.stringify(initialState)))
+            const {
+              transactionHash,
+              contractAddress
+            } = await web3Context.library.waitForTransaction(
+              tx.deployTransaction.hash
+            )
+
+            notification.success({
+              message: 'Transaction mined!',
+              description: (
+                <a
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  href={`https://${web3Context.networkId === 42 &&
+                    'kovan.'}etherscan.io/tx/${transactionHash}`}
+                >
+                  View on etherscan
+                </a>
+              ),
+              duration: 0,
+              key: notificationID
+            })
+            onTxMined({ contractAddress })
+          } catch (err) {
+            notification.error({
+              message: 'Error submitting transaction',
+              description: `${err.message}`,
+              duration: 0,
+              key: notificationID
+            })
+          }
         }
       }
     }
     asyncEffect()
-  }, [
-    pendingCallback,
-    web3Context,
-    setPendingCallback,
-    connectionState,
-    initialState
-  ])
+  }, [web3Context, connectionState, initialState, web3Actions])
 
   return {
     requestModalOpen: connectionState.modalOpen,
-    cancelRequest,
-    setPendingCallback,
+    pushWeb3Action,
+    requestWeb3Auth,
     setUserSelectedWallet
   }
 }

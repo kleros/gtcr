@@ -20,13 +20,13 @@ const StyledAlert = styled(Alert)`
 `
 
 const Deploy = ({ resetTcrState, setTxState, tcrState }) => {
-  const { setPendingCallback } = useContext(WalletContext)
+  const { pushWeb3Action } = useContext(WalletContext)
   const [txSubmitted, setTxSubmitted] = useState()
 
   const onDeploy = () => {
-    setPendingCallback({
+    pushWeb3Action({
       action: async ({ library, account }) => {
-        // TODO: replace this when v5 of ethers is out.
+        // TODO: Remove FastJsonRpcSigner when ethers v5 is out.
         // See https://github.com/ethers-io/ethers.js/issues/511
         const signer = new FastJsonRpcSigner(library.getSigner(account))
         const factory = ethers.ContractFactory.fromSolidity(GTCR, signer)
@@ -35,7 +35,7 @@ const Deploy = ({ resetTcrState, setTxState, tcrState }) => {
         setTxSubmitted(tx.deployTransaction.hash)
         return {
           tx,
-          actionDescription: 'Deploying GTCR',
+          actionMessage: 'Deploying TCR',
           onTxMined: ({ contractAddress }) =>
             setTxState({
               txHash: tx.deployTransaction.hash,
