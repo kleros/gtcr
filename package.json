@@ -1,17 +1,22 @@
 {
   "name": "gtcr",
   "description": "A UI for the Kleros powered Generalized Token Curated List",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "license": "MIT",
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
     "build:theme": "lessc --js ./src/bootstrap/theme.less ./src/bootstrap/theme.css",
+    "build:contracts": "truffle compile",
     "test": "react-scripts test",
     "release": "standard-version",
     "lint": "eslint './src/**/*.js'"
   },
   "dependencies": {
+    "@fortawesome/fontawesome-svg-core": "^1.2.19",
+    "@fortawesome/free-brands-svg-icons": "^5.9.0",
+    "@fortawesome/free-solid-svg-icons": "^5.9.0",
+    "@fortawesome/react-fontawesome": "^0.1.4",
     "@loadable/component": "^5.10.1",
     "antd": "^3.20.1",
     "ethers": "^4.0.33",
@@ -23,6 +28,7 @@
     "react-router-dom": "^5.0.1",
     "react-scripts": "3.0.1",
     "styled-components": "^4.3.2",
+    "uuid": "^3.3.2",
     "web3-react": "^5.0.4",
     "yup": "^0.27.0"
   },
@@ -45,7 +51,8 @@
     "husky": "^3.0.0",
     "less": "^3.9.0",
     "prettier": "^1.18.2",
-    "standard-version": "^6.0.1"
+    "standard-version": "^6.0.1",
+    "truffle": "^5.0.28"
   },
   "standard": {
     "parser": "babel-eslint",

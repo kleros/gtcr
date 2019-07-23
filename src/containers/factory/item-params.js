@@ -1,14 +1,4 @@
-import {
-  Card,
-  Button,
-  Row,
-  Col,
-  Icon,
-  Select,
-  Form,
-  Switch,
-  Divider
-} from 'antd'
+import { Card, Button, Row, Col, Icon, Select, Form, Divider } from 'antd'
 import { withFormik, FieldArray, Field } from 'formik'
 import React, { useEffect } from 'react'
 import PropTypes from 'prop-types'
@@ -44,7 +34,6 @@ const ItemParams = ({
         <Col span={5}>Name</Col>
         <Col span={10}>Description</Col>
         <Col span={6}>Type</Col>
-        <Col span={2}>ID</Col>
         {columns.length > 1 && <Col span={1} />}
       </Row>
       <form id={formId} onSubmit={handleSubmit}>
@@ -121,24 +110,6 @@ const ItemParams = ({
                         )}
                       </Field>
                     </Col>
-                    <Col span={2}>
-                      <Field name={`columns[${index}].isIdentifier`}>
-                        {({ field }) => (
-                          <Form.Item>
-                            <Switch
-                              onChange={value =>
-                                setFieldValue(
-                                  `columns[${index}].isIdentifier`,
-                                  value
-                                )
-                              }
-                              checked={field.value}
-                              size="small"
-                            />
-                          </Form.Item>
-                        )}
-                      </Field>
-                    </Col>
                     {columns.length > 1 && (
                       <Col span={1}>
                         <Form.Item>
@@ -199,7 +170,6 @@ ItemParams.propTypes = {
     columns: PropTypes.arrayOf(
       PropTypes.shape({
         description: PropTypes.string.isRequired,
-        isIdentifier: PropTypes.bool,
         label: PropTypes.string.isRequired,
         type: PropTypes.string.isRequired
       })

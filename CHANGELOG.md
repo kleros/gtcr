@@ -2,6 +2,32 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.4.0](https://github.com/kleros/gtcr/compare/v0.2.0...v0.4.0) (2019-07-22)
+
+
+### Bug Fixes
+
+* app manifest ([ecf9fc1](https://github.com/kleros/gtcr/commit/ecf9fc1))
+* dependency compatibility ([649b69d](https://github.com/kleros/gtcr/commit/649b69d))
+* invalid fields message display on submit ([b9721a6](https://github.com/kleros/gtcr/commit/b9721a6))
+
+
+### Features
+
+* add clickaway side menu ([40bfd23](https://github.com/kleros/gtcr/commit/40bfd23))
+* add item column labels and id ([9925843](https://github.com/kleros/gtcr/commit/9925843))
+* add mock contract and enable deploying to kovan ([750afa9](https://github.com/kleros/gtcr/commit/750afa9))
+* add proptypes checking ([ac637d0](https://github.com/kleros/gtcr/commit/ac637d0))
+* add web3 connector ([79aca94](https://github.com/kleros/gtcr/commit/79aca94))
+* cache steps and add item preview ([ad24ba8](https://github.com/kleros/gtcr/commit/ad24ba8))
+* cache wizard state and enforce code styling ([59d8935](https://github.com/kleros/gtcr/commit/59d8935))
+* footer and minor UI corrections ([5676289](https://github.com/kleros/gtcr/commit/5676289))
+* remove redux files ([c87adae](https://github.com/kleros/gtcr/commit/c87adae))
+* reset form on deploy click ([492b62d](https://github.com/kleros/gtcr/commit/492b62d))
+* save wizard state ([22f683c](https://github.com/kleros/gtcr/commit/22f683c))
+
+
+
 ## [0.3.0](https://github.com/kleros/gtcr/compare/v0.2.0...v0.3.0) (2019-07-15)
 
 

@@ -16,7 +16,6 @@ const TCRParams = ({
   ...rest
 }) => {
   const { values, setTcrState } = rest
-
   useEffect(() => {
     setTcrState(previousState => ({
       ...previousState,
@@ -138,7 +137,11 @@ const validationSchema = yup.object().shape({
 
 export default withFormik({
   validationSchema,
-  mapPropsToValues: ({ tcrState }) => tcrState,
+  mapPropsToValues: ({ tcrState }) => {
+    const values = { ...tcrState }
+    delete values.transactions
+    return values
+  },
   handleSubmit: (_, { props: { postSubmit } }) => {
     postSubmit()
   }

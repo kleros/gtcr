@@ -10,10 +10,13 @@ const ItemPreview = ({ columns }) => (
           key={index}
           label={
             <span>
-              {column.label}&nbsp;
-              <Tooltip title={column.description}>
-                <Icon type="question-circle-o" />
-              </Tooltip>
+              {column.label}
+              {column.description && (
+                <Tooltip title={column.description}>
+                  &nbsp;
+                  <Icon type="question-circle-o" />
+                </Tooltip>
+              )}
             </span>
           }
         >

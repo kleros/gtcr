@@ -12207,10 +12207,10 @@ textarea.ant-input-number {
   background: #1e075f;
 }
 .ant-layout-footer {
-  padding: 24px 50px;
+  padding: 6px 25px;
   color: rgba(0, 0, 0, 0.65);
   font-size: 14px;
-  background: #f0f2f5;
+  background: #4D00B4;
 }
 .ant-layout-content {
   flex: auto;
@@ -13640,7 +13640,7 @@ textarea.ant-mentions {
   position: fixed;
   top: 16px;
   left: 0;
-  z-index: 1010;
+  z-index: 2001;
   width: 100%;
   pointer-events: none;
 }
@@ -13926,7 +13926,7 @@ textarea.ant-mentions {
   list-style: none;
   font-feature-settings: 'tnum';
   position: fixed;
-  z-index: 1010;
+  z-index: 2000;
   width: 384px;
   max-width: calc(100vw - 32px);
   margin-right: 24px;

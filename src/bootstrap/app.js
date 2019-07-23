@@ -1,6 +1,6 @@
 import 'antd/dist/antd.css'
 import './theme.css'
-import { BrowserRouter, Route, Switch } from 'react-router-dom'
+import { BrowserRouter, Route, Switch, Link } from 'react-router-dom'
 import {
   Col,
   Layout,
@@ -22,6 +22,13 @@ import styled from 'styled-components/macro'
 import Web3Provider, { Connectors, useWeb3Context } from 'web3-react'
 import { WalletContext, WalletProvider } from './wallet-context'
 import { truncateETHAddress } from '../utils/string'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import {
+  faTelegram,
+  faGithub,
+  faTwitter
+} from '@fortawesome/free-brands-svg-icons'
+import { faBullhorn } from '@fortawesome/free-solid-svg-icons'
 
 const StyledSpin = styled(Spin)`
   left: 50%;
@@ -36,7 +43,6 @@ const Factory = loadable(
     fallback: <StyledSpin />
   }
 )
-
 const MenuItems = []
 
 const StyledLayoutSider = styled(Layout.Sider)`
@@ -90,8 +96,39 @@ const StyledClickaway = styled.div`
   pointer-events: ${properties => (properties.isMenuClosed ? 'none' : 'auto')};
 `
 
+const StyledLayout = styled(Layout)`
+  min-height: 100vh;
+`
+
+const SocialLink = styled.a`
+  margin: 10px;
+  color: white;
+  :visited {
+    color: white;
+  }
+`
+
+const FirstSocialLink = styled(SocialLink)`
+  margin-left: 0;
+`
+
+const LastSocialLink = styled(SocialLink)`
+  margin-right: 0;
+`
+
+const KlerosLink = styled.a`
+  color: white;
+  :visited {
+    color: white;
+  }
+`
+
+const StyledRouterLink = styled(Link)`
+  color: #fff;
+`
+
 const { NetworkOnlyConnector, InjectedConnector } = Connectors
-const Injected = new InjectedConnector({ supportedNetworks: [42] })
+const Injected = new InjectedConnector({ supportedNetworks: [42, 1] })
 const Infura = new NetworkOnlyConnector({
   providerURL: `https://kovan.infura.io/v3/${process.env.REACT_APP_INFURA_KEY}`
 })
@@ -112,7 +149,6 @@ const WalletModal = () => {
         </Button>
       ]}
     >
-      <p>Select a wallet</p>
       <Button onClick={() => setUserSelectedWallet('Injected')}>
         <Icon component={MetamaskLogo} />
         Metamask
@@ -141,7 +177,9 @@ const TopBar = () => {
           ghost
           shape="round"
           onClick={
-            !web3Context.active ? () => setPendingCallback(() => {}) : null
+            !web3Context.active
+              ? () => setPendingCallback({ action: null })
+              : null
           }
         >
           {web3Context.active
@@ -152,6 +190,33 @@ const TopBar = () => {
     </Row>
   )
 }
+
+const Footer = () => (
+  <Row justify="space-between" type="flex">
+    <StyledCol>
+      <KlerosLink href="https://kleros.io">
+        Find out more about kleros
+      </KlerosLink>
+    </StyledCol>
+    <StyledCol>
+      <StyledRouterLink to="/">Kleros · GTCR</StyledRouterLink>
+    </StyledCol>
+    <StyledCol>
+      <FirstSocialLink href="https://t.me/kleros">
+        <FontAwesomeIcon size="lg" icon={faTelegram} />
+      </FirstSocialLink>
+      <SocialLink href="https://github.com/kleros">
+        <FontAwesomeIcon size="lg" icon={faGithub} />
+      </SocialLink>
+      <SocialLink href="https://blog.kleros.io">
+        <FontAwesomeIcon size="lg" icon={faBullhorn} />
+      </SocialLink>
+      <LastSocialLink href="https://twitter.com/kleros_io">
+        <FontAwesomeIcon size="lg" icon={faTwitter} />
+      </LastSocialLink>
+    </StyledCol>
+  </Row>
+)
 
 export default () => {
   const [isMenuClosed, setIsMenuClosed] = useState(true)
@@ -167,7 +232,7 @@ export default () => {
       <BrowserRouter>
         <Web3Provider connectors={connectors} libraryName="ethers.js">
           <WalletProvider>
-            <Layout>
+            <StyledLayout>
               <StyledLayoutSider
                 breakpoint="md"
                 collapsedWidth={0}
@@ -189,8 +254,11 @@ export default () => {
                   isMenuClosed={isMenuClosed}
                   onClick={isMenuClosed ? null : () => setIsMenuClosed(true)}
                 />
+                <Layout.Footer>
+                  <Footer />
+                </Layout.Footer>
               </Layout>
-            </Layout>
+            </StyledLayout>
             <WalletModal />
           </WalletProvider>
         </Web3Provider>
