@@ -17,6 +17,7 @@
     "@fortawesome/free-brands-svg-icons": "^5.9.0",
     "@fortawesome/free-solid-svg-icons": "^5.9.0",
     "@fortawesome/react-fontawesome": "^0.1.4",
+    "@kleros/archon": "^0.10.1",
     "@loadable/component": "^5.10.1",
     "antd": "^3.20.1",
     "ethers": "^4.0.33",

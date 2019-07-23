@@ -82,10 +82,6 @@ const StyledLayoutContent = styled(Layout.Content)`
   padding: 42px 9.375vw 42px;
 `
 
-const StyledLink = styled.a`
-  display: flex;
-`
-
 const StyledClickaway = styled.div`
   background-color: black;
   position: fixed;
@@ -125,6 +121,7 @@ const KlerosLink = styled.a`
 
 const StyledRouterLink = styled(Link)`
   color: #fff;
+  display: flex;
 `
 
 const { NetworkOnlyConnector, InjectedConnector } = Connectors
@@ -163,9 +160,9 @@ const TopBar = () => {
   return (
     <Row>
       <StyledCol md={4} sm={16} xs={0}>
-        <StyledLink href="https://kleros.io">
+        <StyledRouterLink to="/">
           <Logo />
-        </StyledLink>
+        </StyledRouterLink>
       </StyledCol>
       <Col md={16} sm={16} xs={0}>
         <StyledMenu mode="horizontal" theme="dark">

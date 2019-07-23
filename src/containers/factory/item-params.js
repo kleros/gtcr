@@ -5,6 +5,7 @@ import PropTypes from 'prop-types'
 import * as yup from 'yup'
 import CustomInput from './custom-input'
 import ItemPreview from './item-preview'
+import itemTypes from '../../utils/item-types'
 
 const ItemParams = ({
   handleSubmit,
@@ -96,15 +97,11 @@ const ItemParams = ({
                                 setFieldValue(`columns[${index}].type`, value)
                               }
                             >
-                              <Select.Option value="address">
-                                address
-                              </Select.Option>
-                              <Select.Option value="number">
-                                number
-                              </Select.Option>
-                              <Select.Option value="boolean">
-                                boolean
-                              </Select.Option>
+                              {Object.keys(itemTypes).map((itemType, i) => (
+                                <Select.Option value={itemType} key={i}>
+                                  {itemType}
+                                </Select.Option>
+                              ))}
                             </Select>
                           </Form.Item>
                         )}
