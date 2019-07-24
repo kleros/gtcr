@@ -100,9 +100,6 @@ const useNotificationWeb3 = () => {
     setWeb3Actions(prevState =>
       prevState.concat({ type: actionTypes.AUTHORIZATION })
     )
-  const setUserSelectedWallet = method =>
-    setConnectionState(prev => ({ ...prev, method }))
-
   const initialState = {
     modalOpen: false,
     method: null,
@@ -112,6 +109,14 @@ const useNotificationWeb3 = () => {
     JSON.parse(JSON.stringify(initialState))
   ) // Make a copy.
   const NOTIFICATION_KEY = 'WALLET_AUTHORIZATION'
+
+  const setUserSelectedWallet = method =>
+    setConnectionState(prev => ({ ...prev, method }))
+
+  const cancelRequest = () => {
+    setWeb3Actions([])
+    setConnectionState(prevState => ({ ...prevState, modalOpen: false }))
+  }
 
   // We watch the web3 context props to handle the flow of authorization.
   useEffect(() => {
@@ -171,6 +176,7 @@ const useNotificationWeb3 = () => {
 
   return {
     requestModalOpen: connectionState.modalOpen,
+    cancelRequest,
     pushWeb3Action,
     requestWeb3Auth,
     setUserSelectedWallet
