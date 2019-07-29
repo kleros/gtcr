@@ -118,12 +118,16 @@ const useNotificationWeb3 = () => {
     setConnectionState(prevState => ({ ...prevState, modalOpen: false }))
   }
 
+  useEffect(() => {
+    if (!web3Context.active) web3Context.setFirstValidConnector(['Infura'])
+  }, [web3Context])
+
   // We watch the web3 context props to handle the flow of authorization.
   useEffect(() => {
     const asyncEffect = async () => {
       if (web3Actions.length === 0) return
       if (
-        !web3Context.active &&
+        !web3Context.account &&
         !connectionState.modalOpen &&
         !connectionState.method
       )
@@ -132,9 +136,10 @@ const useNotificationWeb3 = () => {
         setConnectionState(prev => ({ ...prev, modalOpen: false }))
         web3Context.setFirstValidConnector([connectionState.method])
       } else if (
-        !web3Context.active &&
+        !web3Context.account &&
         !web3Context.error &&
-        !connectionState.modalOpen
+        !connectionState.modalOpen &&
+        !connectionState.requestSentToProvider
       ) {
         notification.info({
           message: 'Awaiting authorization',
@@ -153,7 +158,7 @@ const useNotificationWeb3 = () => {
         setWeb3Actions([])
         setConnectionState(JSON.parse(JSON.stringify(initialState)))
         web3Context.error = null
-      } else if (web3Context.active) {
+      } else if (web3Context.account) {
         if (!connectionState.notifiedAuthAccquired) {
           notification.success({
             message: 'Authorization accquired',

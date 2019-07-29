@@ -1,6 +1,6 @@
 import 'antd/dist/antd.css'
 import './theme.css'
-import { BrowserRouter, Route, Switch, Link } from 'react-router-dom'
+import { BrowserRouter, Route, Switch, Link, NavLink } from 'react-router-dom'
 import {
   Col,
   Layout,
@@ -29,6 +29,7 @@ import {
   faTwitter
 } from '@fortawesome/free-brands-svg-icons'
 import { faBullhorn } from '@fortawesome/free-solid-svg-icons'
+import networkNames from '../utils/network-names'
 
 const StyledSpin = styled(Spin)`
   left: 50%;
@@ -43,7 +44,22 @@ const Factory = loadable(
     fallback: <StyledSpin />
   }
 )
-const MenuItems = []
+
+const Items = loadable(
+  () => import(/* webpackPrefetch: true */ '../containers/items/index'),
+  {
+    fallback: <StyledSpin />
+  }
+)
+
+const MenuItems = ({ TCR2_ADDRESS }) => [
+  <Menu.Item key="tcrs">
+    <NavLink to={`/tcr/${TCR2_ADDRESS}`}>TCRs</NavLink>
+  </Menu.Item>,
+  <Menu.Item key="factory">
+    <NavLink to="/factory">Factory</NavLink>
+  </Menu.Item>
+]
 
 const StyledLayoutSider = styled(Layout.Sider)`
   height: 100%;
@@ -126,8 +142,9 @@ const StyledRouterLink = styled(Link)`
 
 const { NetworkOnlyConnector, InjectedConnector } = Connectors
 const Injected = new InjectedConnector({ supportedNetworks: [42, 1] })
+const defaultNetwork = process.env.REACT_APP_DEFAULT_NETWORK || 42
 const Infura = new NetworkOnlyConnector({
-  providerURL: `https://kovan.infura.io/v3/${process.env.REACT_APP_INFURA_KEY}`
+  providerURL: `https://${networkNames[defaultNetwork]}.infura.io/v3/${process.env.REACT_APP_INFURA_PROJECT_ID}`
 })
 const connectors = { Injected, Infura }
 
@@ -156,7 +173,18 @@ const WalletModal = () => {
 
 const TopBar = () => {
   const web3Context = useWeb3Context()
+  const { networkId } = web3Context
   const { requestWeb3Auth } = useContext(WalletContext)
+  let TCR2_ADDRESS = ''
+  if (process.env.REACT_APP_TCR2_ADDRESSES)
+    try {
+      TCR2_ADDRESS = JSON.parse(process.env.REACT_APP_TCR2_ADDRESSES)[
+        networkId || defaultNetwork
+      ]
+    } catch (_) {
+      console.error('Failed to parse env variable REACT_APP_TCR2_ADDRESSES')
+    }
+
   return (
     <Row>
       <StyledCol md={4} sm={16} xs={0}>
@@ -166,16 +194,16 @@ const TopBar = () => {
       </StyledCol>
       <Col md={16} sm={16} xs={0}>
         <StyledMenu mode="horizontal" theme="dark">
-          {MenuItems}
+          {MenuItems({ TCR2_ADDRESS })}
         </StyledMenu>
       </Col>
-      <StyledCol md={4} sm={16} xs={0}>
+      <StyledCol md={4} sm={16} xs={24}>
         <Button
           ghost
           shape="round"
-          onClick={!web3Context.active ? () => requestWeb3Auth() : null}
+          onClick={!web3Context.account ? () => requestWeb3Auth() : null}
         >
-          {web3Context.active
+          {web3Context.active && web3Context.account
             ? truncateETHAddress(web3Context.account)
             : 'Connect'}
         </Button>
@@ -240,7 +268,8 @@ export default () => {
                 </Layout.Header>
                 <StyledLayoutContent>
                   <Switch>
-                    <Route component={Factory} exact path="/" />
+                    <Route component={Items} exact path="/tcr/:address" />
+                    <Route component={Factory} exact path="/factory" />
                   </Switch>
                 </StyledLayoutContent>
                 <StyledClickaway
