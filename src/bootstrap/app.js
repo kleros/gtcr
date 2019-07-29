@@ -1,6 +1,13 @@
 import 'antd/dist/antd.css'
 import './theme.css'
-import { BrowserRouter, Route, Switch, Link, NavLink } from 'react-router-dom'
+import {
+  BrowserRouter,
+  Route,
+  Switch,
+  Link,
+  NavLink,
+  Redirect
+} from 'react-router-dom'
 import {
   Col,
   Layout,
@@ -142,9 +149,10 @@ const StyledRouterLink = styled(Link)`
 
 const { NetworkOnlyConnector, InjectedConnector } = Connectors
 const Injected = new InjectedConnector({ supportedNetworks: [42, 1] })
-const defaultNetwork = process.env.REACT_APP_DEFAULT_NETWORK || 42
+
+const DEFAULT_NETWORK = process.env.REACT_APP_DEFAULT_NETWORK || 42
 const Infura = new NetworkOnlyConnector({
-  providerURL: `https://${networkNames[defaultNetwork]}.infura.io/v3/${process.env.REACT_APP_INFURA_PROJECT_ID}`
+  providerURL: `https://${networkNames[DEFAULT_NETWORK]}.infura.io/v3/${process.env.REACT_APP_INFURA_PROJECT_ID}`
 })
 const connectors = { Injected, Infura }
 
@@ -171,19 +179,24 @@ const WalletModal = () => {
   )
 }
 
-const TopBar = () => {
-  const web3Context = useWeb3Context()
+const useTCR2Address = web3Context => {
   const { networkId } = web3Context
-  const { requestWeb3Auth } = useContext(WalletContext)
   let TCR2_ADDRESS = ''
   if (process.env.REACT_APP_TCR2_ADDRESSES)
     try {
       TCR2_ADDRESS = JSON.parse(process.env.REACT_APP_TCR2_ADDRESSES)[
-        networkId || defaultNetwork
+        networkId || DEFAULT_NETWORK
       ]
     } catch (_) {
       console.error('Failed to parse env variable REACT_APP_TCR2_ADDRESSES')
     }
+  return TCR2_ADDRESS
+}
+
+const TopBar = () => {
+  const web3Context = useWeb3Context()
+  const { requestWeb3Auth } = useContext(WalletContext)
+  const TCR2_ADDRESS = useTCR2Address(web3Context)
 
   return (
     <Row>
@@ -239,6 +252,21 @@ const Footer = () => (
   </Row>
 )
 
+const Content = () => {
+  const web3Context = useWeb3Context()
+  const TCR2_ADDRESS = useTCR2Address(web3Context)
+
+  return (
+    <StyledLayoutContent>
+      <Switch>
+        <Route component={Items} exact path={`/tcr/${TCR2_ADDRESS}`} />
+        <Route component={Factory} exact path="/factory" />
+        <Redirect from="/" to={`/tcr/${TCR2_ADDRESS}`} />
+      </Switch>
+    </StyledLayoutContent>
+  )
+}
+
 export default () => {
   const [isMenuClosed, setIsMenuClosed] = useState(true)
   return (
@@ -266,12 +294,7 @@ export default () => {
                 <Layout.Header>
                   <TopBar />
                 </Layout.Header>
-                <StyledLayoutContent>
-                  <Switch>
-                    <Route component={Items} exact path="/tcr/:address" />
-                    <Route component={Factory} exact path="/factory" />
-                  </Switch>
-                </StyledLayoutContent>
+                <Content />
                 <StyledClickaway
                   isMenuClosed={isMenuClosed}
                   onClick={isMenuClosed ? null : () => setIsMenuClosed(true)}
@@ -291,8 +314,5 @@ export default () => {
 
 register({
   onUpdate: () =>
-    message.warning(
-      'An update is ready to be installed. Please close and reopen all tabs.',
-      0
-    )
+    message.warning('An update is ready. Please close and reopen all tabs.', 0)
 })
