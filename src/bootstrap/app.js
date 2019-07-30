@@ -38,6 +38,7 @@ import {
 import { faBullhorn } from '@fortawesome/free-solid-svg-icons'
 import networkNames from '../utils/network-names'
 import ErrorPage from '../containers/error-page'
+import useMainTCR2 from '../hooks/tcr2'
 
 const StyledSpin = styled(Spin)`
   left: 50%;
@@ -188,38 +189,24 @@ const WalletModal = () => {
   )
 }
 
-const useTCR2Address = web3Context => {
-  const { networkId } = web3Context
-  let TCR2_ADDRESS = ''
-  if (process.env.REACT_APP_TCR2_ADDRESSES)
-    try {
-      TCR2_ADDRESS = JSON.parse(process.env.REACT_APP_TCR2_ADDRESSES)[
-        networkId || DEFAULT_NETWORK
-      ]
-    } catch (_) {
-      console.error('Failed to parse env variable REACT_APP_TCR2_ADDRESSES')
-    }
-  return TCR2_ADDRESS
-}
-
 const TopBar = () => {
   const web3Context = useWeb3Context()
   const { requestWeb3Auth } = useContext(WalletContext)
-  const TCR2_ADDRESS = useTCR2Address(web3Context)
+  const TCR2_ADDRESS = useMainTCR2(web3Context)
 
   return (
     <Row>
-      <StyledCol md={4} sm={16} xs={0}>
+      <StyledCol md={4} sm={20} xs={0}>
         <StyledRouterLink to="/">
           <Logo />
         </StyledRouterLink>
       </StyledCol>
-      <Col md={16} sm={16} xs={0}>
+      <Col md={15} xs={0}>
         <StyledMenu mode="horizontal" theme="dark">
           {MenuItems({ TCR2_ADDRESS })}
         </StyledMenu>
       </Col>
-      <StyledCol md={4} sm={16} xs={24}>
+      <StyledCol md={5} sm={4} xs={24}>
         <Button
           ghost
           shape="round"
@@ -263,7 +250,7 @@ const Footer = () => (
 
 const Content = () => {
   const web3Context = useWeb3Context()
-  const TCR2_ADDRESS = useTCR2Address(web3Context)
+  const TCR2_ADDRESS = useMainTCR2(web3Context)
 
   return (
     <Switch>

@@ -29,6 +29,7 @@
     "react-router-dom": "^5.0.1",
     "react-scripts": "3.0.1",
     "styled-components": "^4.3.2",
+    "use-debounce": "^2.2.0",
     "uuid": "^3.3.2",
     "web3-react": "^5.0.4",
     "yup": "^0.27.0"

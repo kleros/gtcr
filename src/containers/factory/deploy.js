@@ -4,7 +4,7 @@ import React, { useContext, useState } from 'react'
 import { WalletContext } from '../../bootstrap/wallet-context'
 import { ethers } from 'ethers'
 import FastJsonRpcSigner from '../../utils/fast-signer'
-import GTCR from '../../assets/contracts/ItemMock.json'
+import _GTCR from '../../assets/contracts/ItemMock.json'
 import styled from 'styled-components/macro'
 import itemTypes from '../../utils/item-types'
 import ipfsPublish from '../../utils/ipfs-publish'
@@ -74,16 +74,18 @@ const Deploy = ({ resetTcrState, setTxState, tcrState }) => {
       // TODO: Remove FastJsonRpcSigner when ethers v5 is out.
       // See https://github.com/ethers-io/ethers.js/issues/511
       const signer = new FastJsonRpcSigner(library.getSigner(account))
-      const factory = ethers.ContractFactory.fromSolidity(GTCR, signer)
+      const factory = ethers.ContractFactory.fromSolidity(_GTCR, signer)
       const { offsets, lengths } = getItemSchema(tcrState)
       const registrationMetaEvidence = await getTcrMetaEvidence(tcrState)
       const clearingMetaEvidence = await getTcrMetaEvidence(tcrState)
+      const latestBlockNumber = await library.getBlockNumber()
 
       const tx = await factory.deploy(
         offsets,
         lengths,
         registrationMetaEvidence,
-        clearingMetaEvidence
+        clearingMetaEvidence,
+        latestBlockNumber
       )
       setTxState({ txHash: tx.deployTransaction.hash, status: 'pending' })
       setTxSubmitted(tx.deployTransaction.hash)
