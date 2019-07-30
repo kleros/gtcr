@@ -9,6 +9,11 @@ const actionTypes = {
   AUTHORIZATION: 'AUTHORIZATION'
 }
 
+/* eslint-disable valid-jsdoc */
+/**
+ * @param {{type: string, action: function}} web3Action - The action dispatched to the wallet.
+ * @param {object} web3Context - The web3-react context.
+ */
 const processWeb3Action = async (web3Action, web3Context) => {
   const notificationID = uuid()
   notification.info({
@@ -67,7 +72,6 @@ const processWeb3Action = async (web3Action, web3Context) => {
   }
 }
 
-/* eslint-disable valid-jsdoc */
 /**
  * This hook wraps web3-react connectors to request
  * authorization from the wallet when necessary and to manage
@@ -92,6 +96,20 @@ const processWeb3Action = async (web3Action, web3Context) => {
 const useNotificationWeb3 = () => {
   const web3Context = useWeb3Context()
   const [web3Actions, setWeb3Actions] = useState([])
+
+  /**
+   * @param {{action: function}} action A promise that will be executed when and if
+   * the dapp is acquires wallet access. The promise is passed the web3-react `context`
+   * object in the arguments and should return an object with the following shape:
+   * `{ tx, actionMessage, onTxMined }`.
+   * `tx`: required - The object returned when a transaction submitted with `ethersjs` using
+   * the `FastJsonRpcSigner` as the provider resolves.
+   * `actionMessage`: optional - The message that will be displayed as a notification to
+   * the user while the transaction is not resolved.
+   * `onTxMined`: optional - A callback to be executed once the transaction is mined.
+   *
+   * See containers/factory/deploy.js for an example usage.
+   */
   const pushWeb3Action = action =>
     setWeb3Actions(prevState =>
       prevState.concat({ action, type: actionTypes.TRANSACTION })
