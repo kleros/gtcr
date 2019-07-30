@@ -1,12 +1,12 @@
-import { Layout, Steps, Button, Icon, Card, Empty } from 'antd'
+import { Steps, Button, Icon, Card, Empty } from 'antd'
 import React, { useState, useEffect } from 'react'
 import styled from 'styled-components/macro'
 import TCRParams from './tcr-params'
 import ItemParams from './item-params'
 import Deploy from './deploy'
+import StyledLayoutContent from '../layout-content'
 import { version } from '../../../package.json'
 
-const { Content } = Layout
 const { Step } = Steps
 
 const ButtonGroup = Button.Group
@@ -125,7 +125,7 @@ export default () => {
   } = cachedFactory
 
   return (
-    <Content>
+    <StyledLayoutContent>
       <Steps current={currStep - 1}>
         <Step title="TCR Parameters" />
         <Step title="Item Parameters" />
@@ -166,6 +166,6 @@ export default () => {
           )}
         </Card>
       </StyledContainer>
-    </Content>
+    </StyledLayoutContent>
   )
 }

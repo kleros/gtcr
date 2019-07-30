@@ -37,6 +37,7 @@ import {
 } from '@fortawesome/free-brands-svg-icons'
 import { faBullhorn } from '@fortawesome/free-solid-svg-icons'
 import networkNames from '../utils/network-names'
+import NotFound from '../containers/not-found'
 
 const StyledSpin = styled(Spin)`
   left: 50%;
@@ -45,29 +46,10 @@ const StyledSpin = styled(Spin)`
   transform: translate(-50%, -50%);
 `
 
-const Factory = loadable(
-  () => import(/* webpackPrefetch: true */ '../containers/factory/index'),
-  {
-    fallback: <StyledSpin />
-  }
-)
-
-const Items = loadable(
-  () => import(/* webpackPrefetch: true */ '../containers/items/index'),
-  {
-    fallback: <StyledSpin />
-  }
-)
-
-const MenuItems = ({ TCR2_ADDRESS }) => [
-  <Menu.Item key="tcrs">
-    <NavLink to={`/tcr/${TCR2_ADDRESS}`}>TCRs</NavLink>
-  </Menu.Item>,
-  <Menu.Item key="factory">
-    <NavLink to="/factory">Factory</NavLink>
-  </Menu.Item>
-]
-
+const StyledLayoutContent = styled(Layout.Content)`
+  background: white;
+  padding: 42px 9.375vw 42px;
+`
 const StyledLayoutSider = styled(Layout.Sider)`
   height: 100%;
   position: fixed;
@@ -99,10 +81,6 @@ const StyledMenu = styled(Menu)`
   font-weight: bold;
   line-height: 64px !important;
   text-align: center;
-`
-const StyledLayoutContent = styled(Layout.Content)`
-  background: white;
-  padding: 42px 9.375vw 42px;
 `
 
 const StyledClickaway = styled.div`
@@ -146,6 +124,37 @@ const StyledRouterLink = styled(Link)`
   color: #fff;
   display: flex;
 `
+
+const Factory = loadable(
+  () => import(/* webpackPrefetch: true */ '../containers/factory/index'),
+  {
+    fallback: (
+      <StyledLayoutContent>
+        <StyledSpin />
+      </StyledLayoutContent>
+    )
+  }
+)
+
+const Items = loadable(
+  () => import(/* webpackPrefetch: true */ '../containers/items/index'),
+  {
+    fallback: (
+      <StyledLayoutContent>
+        <StyledSpin />
+      </StyledLayoutContent>
+    )
+  }
+)
+
+const MenuItems = ({ TCR2_ADDRESS }) => [
+  <Menu.Item key="tcrs">
+    <NavLink to={`/tcr/${TCR2_ADDRESS}`}>TCRs</NavLink>
+  </Menu.Item>,
+  <Menu.Item key="factory">
+    <NavLink to="/factory">Factory</NavLink>
+  </Menu.Item>
+]
 
 const { NetworkOnlyConnector, InjectedConnector } = Connectors
 const Injected = new InjectedConnector({ supportedNetworks: [42, 1] })
@@ -257,13 +266,12 @@ const Content = () => {
   const TCR2_ADDRESS = useTCR2Address(web3Context)
 
   return (
-    <StyledLayoutContent>
-      <Switch>
-        <Route component={Items} exact path={`/tcr/${TCR2_ADDRESS}`} />
-        <Route component={Factory} exact path="/factory" />
-        <Redirect from="/" to={`/tcr/${TCR2_ADDRESS}`} />
-      </Switch>
-    </StyledLayoutContent>
+    <Switch>
+      <Route path="/tcr/:tcrAddress?" component={Items} />
+      <Route path="/factory" exact component={Factory} />
+      <Redirect from="/" exact to={`/tcr/${TCR2_ADDRESS}`} />
+      <Route path="*" exact component={NotFound} />
+    </Switch>
   )
 }
 

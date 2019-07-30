@@ -1,6 +1,6 @@
 module.exports = {
   // Plugins
-  plugins: ['unicorn'],
+  plugins: ['unicorn', 'react-hooks'],
 
   // Extends
   extends: [
@@ -70,6 +70,9 @@ module.exports = {
     'react/no-unused-prop-types': 2,
     'react/require-default-props': 2,
     'react/default-props-match-prop-types': 2,
+    // hooks
+    'react-hooks/rules-of-hooks': 'error',
+    'react-hooks/exhaustive-deps': 'warn',
 
     // JS Standard
     'standard/computed-property-even-spacing': 0,
