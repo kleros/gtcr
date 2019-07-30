@@ -1,5 +1,6 @@
 import { ReactComponent as Acropolis } from '../../assets/images/acropolis.svg'
 import React from 'react'
+import PropTypes from 'prop-types'
 import styled from 'styled-components/macro'
 
 const StyledDiv = styled.div`
@@ -32,11 +33,13 @@ const StyledMessageLine3 = styled.div`
   font-size: 16px;
   margin-top: 25px;
 `
-const _404 = () => (
+const ErrorPage = ({ code, message }) => (
   <StyledDiv>
     <StyledAcropolis />
     <StyledInfoDiv className="quaternary-background theme-background">
-      <Styled404Div className="primary-color theme-color">404</Styled404Div>
+      <Styled404Div className="primary-color theme-color">
+        {code || '404'}
+      </Styled404Div>
       <StyledMessageLine1 className="ternary-color theme-color">
         Oops,
       </StyledMessageLine1>
@@ -44,10 +47,20 @@ const _404 = () => (
         Something went wrong in Athens!
       </StyledMessageLine2>
       <StyledMessageLine3 className="ternary-color theme-color">
-        The gods could not find the page you are looking for.
+        {message || 'The gods could not find the page you are looking for.'}
       </StyledMessageLine3>
     </StyledInfoDiv>
   </StyledDiv>
 )
 
-export default _404
+ErrorPage.propTypes = {
+  code: PropTypes.string,
+  message: PropTypes.string
+}
+
+ErrorPage.defaultProps = {
+  code: null,
+  message: null
+}
+
+export default ErrorPage

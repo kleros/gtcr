@@ -37,7 +37,7 @@ import {
 } from '@fortawesome/free-brands-svg-icons'
 import { faBullhorn } from '@fortawesome/free-solid-svg-icons'
 import networkNames from '../utils/network-names'
-import NotFound from '../containers/not-found'
+import ErrorPage from '../containers/error-page'
 
 const StyledSpin = styled(Spin)`
   left: 50%;
@@ -270,7 +270,7 @@ const Content = () => {
       <Route path="/tcr/:tcrAddress?" component={Items} />
       <Route path="/factory" exact component={Factory} />
       <Redirect from="/" exact to={`/tcr/${TCR2_ADDRESS}`} />
-      <Route path="*" exact component={NotFound} />
+      <Route path="*" exact component={ErrorPage} />
     </Switch>
   )
 }

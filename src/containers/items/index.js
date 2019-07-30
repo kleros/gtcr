@@ -1,14 +1,20 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import StyledLayoutContent from '../layout-content'
-import NotFound from '../not-found'
+import ErrorPage from '../error-page'
 
 const Items = ({
   match: {
     params: { tcrAddress }
   }
 }) => {
-  if (!tcrAddress) return <NotFound />
+  if (!tcrAddress)
+    return (
+      <ErrorPage
+        code="400"
+        message="A TCR was not found at this address. Are you in the correct network?"
+      />
+    )
 
   return (
     <StyledLayoutContent>
