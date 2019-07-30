@@ -6,13 +6,14 @@
  *  @deployments: []
  */
 
-pragma solidity ^0.5.1;
+pragma solidity ^0.5.10;
 
 contract ItemMock {
 
     bytes[] public items;
     mapping(bytes32 => bool) keys;
     Column[] columns;
+    uint public prevBlockNumber;
 
     struct Column {
         uint offset;
@@ -25,10 +26,13 @@ contract ItemMock {
         uint[] memory _offsets,
         uint[] memory _lengths,
         string memory _registrationMetaEvidence,
-        string memory _clearingMetaEvidence
+        string memory _clearingMetaEvidence,
+        uint _prevBlockNumber // The most recent mined block number. Used for speeding up log scanning.
     ) public {
         for (uint i = 0; i < _offsets.length; i++)
             columns.push(Column(_offsets[i], _lengths[i]));
+
+        prevBlockNumber = _prevBlockNumber;
 
         emit MetaEvidence(0, _registrationMetaEvidence);
         emit MetaEvidence(1, _clearingMetaEvidence);
