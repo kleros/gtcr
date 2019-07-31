@@ -7,7 +7,7 @@ import { useDebounce } from 'use-debounce'
 import StyledLayoutContent from '../layout-content'
 import ErrorPage from '../error-page'
 import styled from 'styled-components/macro'
-import _GTCR from '../../assets/contracts/ItemMock.json'
+import _GTCR from '../../assets/contracts/GTCRMock.json'
 
 const StyledSpin = styled(Spin)`
   left: 50%;
