@@ -1,5 +1,6 @@
 import { Steps, Button, Icon, Card, Empty } from 'antd'
 import React, { useState, useEffect } from 'react'
+import { useDebounce } from 'use-debounce'
 import styled from 'styled-components/macro'
 import TCRParams from './tcr-params'
 import ItemParams from './item-params'
@@ -53,7 +54,7 @@ const useCachedFactory = version => {
         label: '',
         description: '',
         type: 'address',
-        isIdentifier: false
+        isIdentifier: true
       }
     ],
     currStep: 1
@@ -67,6 +68,7 @@ const useCachedFactory = version => {
   else cache = JSON.parse(JSON.stringify(initialState)) // Deep copy.
 
   const [tcrState, setTcrState] = useState(cache)
+  const [debouncedTcrState] = useDebounce(tcrState, 1000)
 
   const STEP_COUNT = 3
   const nextStep = () =>
@@ -100,8 +102,12 @@ const useCachedFactory = version => {
     }))
 
   useEffect(
-    () => window.localStorage.setItem(key, JSON.stringify({ ...tcrState })),
-    [tcrState, key]
+    () =>
+      window.localStorage.setItem(
+        key,
+        JSON.stringify({ ...debouncedTcrState })
+      ),
+    [debouncedTcrState, key]
   )
 
   return {

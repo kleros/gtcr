@@ -1,11 +1,22 @@
-import { Card, Button, Row, Col, Icon, Select, Form, Divider } from 'antd'
+import {
+  Card,
+  Button,
+  Row,
+  Col,
+  Icon,
+  Select,
+  Form,
+  Divider,
+  Switch,
+  Tooltip
+} from 'antd'
 import { withFormik, FieldArray, Field } from 'formik'
 import React, { useEffect } from 'react'
 import PropTypes from 'prop-types'
 import * as yup from 'yup'
 import CustomInput from './custom-input'
 import ItemPreview from './item-preview'
-import itemTypes from '../../utils/item-types'
+import itemTypes, { LONGTEXT } from '../../utils/item-types'
 
 const ItemParams = ({
   handleSubmit,
@@ -25,6 +36,12 @@ const ItemParams = ({
     }))
   }, [columns, setTcrState])
 
+  const onTypeChange = (index, value) => {
+    setFieldValue(`columns[${index}].type`, value)
+    if (value === LONGTEXT)
+      setFieldValue(`columns[${index}].isIdentifier`, false)
+  }
+
   return (
     <Card title="Choose the item columns">
       <Row
@@ -33,8 +50,15 @@ const ItemParams = ({
         justify="space-between"
       >
         <Col span={5}>Name</Col>
-        <Col span={10}>Description</Col>
+        <Col span={8}>Description</Col>
         <Col span={6}>Type</Col>
+        <Col span={2}>
+          ID
+          <Tooltip title="Whether to display this field on the list of items.">
+            &nbsp;
+            <Icon type="question-circle-o" />
+          </Tooltip>
+        </Col>
         {columns.length > 1 && <Col span={1} />}
       </Row>
       <form id={formId} onSubmit={handleSubmit}>
@@ -68,7 +92,7 @@ const ItemParams = ({
                         {...rest}
                       />
                     </Col>
-                    <Col span={10}>
+                    <Col span={8}>
                       <CustomInput
                         name={`columns[${index}].description`}
                         placeholder="The commonly used token name."
@@ -93,9 +117,7 @@ const ItemParams = ({
                             <Select
                               {...field}
                               value={columns[index].type}
-                              onChange={value =>
-                                setFieldValue(`columns[${index}].type`, value)
-                              }
+                              onChange={value => onTypeChange(index, value)}
                             >
                               {Object.keys(itemTypes).map((itemType, i) => (
                                 <Select.Option value={itemType} key={i}>
@@ -107,6 +129,32 @@ const ItemParams = ({
                         )}
                       </Field>
                     </Col>
+                    {(columns
+                      .map(column => column.isIdentifier)
+                      .filter(isIdentifier => !!isIdentifier).length < 3 ||
+                      columns[index].isIdentifier) &&
+                    columns[index].type !== LONGTEXT ? (
+                      <Col span={2}>
+                        <Field name={`columns[${index}].isIdentifier`}>
+                          {({ field }) => (
+                            <Form.Item>
+                              <Switch
+                                onChange={value =>
+                                  setFieldValue(
+                                    `columns[${index}].isIdentifier`,
+                                    value
+                                  )
+                                }
+                                checked={field.value}
+                                size="small"
+                              />
+                            </Form.Item>
+                          )}
+                        </Field>
+                      </Col>
+                    ) : (
+                      <Col span={2} />
+                    )}
                     {columns.length > 1 && (
                       <Col span={1}>
                         <Form.Item>
@@ -168,7 +216,8 @@ ItemParams.propTypes = {
       PropTypes.shape({
         description: PropTypes.string.isRequired,
         label: PropTypes.string.isRequired,
-        type: PropTypes.string.isRequired
+        type: PropTypes.string.isRequired,
+        isIdentifier: PropTypes.bool.isRequired
       })
     ).isRequired
   }).isRequired
