@@ -20,3 +20,9 @@
 - `yarn run lint` - Lint the entire project's .js files.
 - `yarn run cz` - Run commitizen.
 - `yarn run build` - Create a production build.
+
+## Netlify Deployment
+
+When setting up the repo for publishing on netlify:
+1. Fill the env variables in netlify.toml;
+2. Set the REACT_APP_INFURA_PROJECT_ID environment variable via the netlify UI.
