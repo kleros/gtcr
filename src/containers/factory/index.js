@@ -1,5 +1,6 @@
 import { Steps, Button, Icon, Card, Empty } from 'antd'
 import React, { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import { useDebounce } from 'use-debounce'
 import styled from 'styled-components/macro'
 import TCRParams from './tcr-params'
@@ -48,6 +49,7 @@ const useCachedFactory = version => {
     description: '',
     requestDeposit: 0.1,
     challengeDeposit: 0.05,
+    itemName: 'Item',
     requireEvidenceRequest: true,
     columns: [
       {
@@ -165,7 +167,11 @@ export default () => {
         <Card title="Previous Deployments">
           {Object.keys(transactions).length > 0 ? (
             Object.keys(transactions).map((txHash, i) => (
-              <div key={i}>{transactions[txHash].contractAddress}</div>
+              <div key={i}>
+                <Link to={`/tcr/${transactions[txHash].contractAddress}`}>
+                  {transactions[txHash].contractAddress}
+                </Link>
+              </div>
             ))
           ) : (
             <Empty description={false} image={Empty.PRESENTED_IMAGE_SIMPLE} />

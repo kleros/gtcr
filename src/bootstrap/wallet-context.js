@@ -44,9 +44,9 @@ const useNotificationWeb3 = () => {
     setWeb3Actions(prevState =>
       prevState.concat({ action, type: actionTypes.TRANSACTION })
     )
-  const requestWeb3Auth = () =>
+  const requestWeb3Auth = action =>
     setWeb3Actions(prevState =>
-      prevState.concat({ type: actionTypes.AUTHORIZATION })
+      prevState.concat({ type: actionTypes.AUTHORIZATION, action })
     )
   const initialState = {
     modalOpen: false,
@@ -110,7 +110,7 @@ const useNotificationWeb3 = () => {
         if (!connectionState.notifiedAuthAccquired) {
           notification.success({
             message: 'Authorization accquired',
-            duration: 5,
+            duration: 3,
             key: NOTIFICATION_KEY
           })
           setConnectionState(prev => ({ ...prev, notifiedAuthAccquired: true }))
@@ -119,8 +119,15 @@ const useNotificationWeb3 = () => {
         while (web3Actions.length > 0) {
           // Process each web3 action.
           const web3Action = web3Actions.pop()
-          if (web3Action.type === actionTypes.AUTHORIZATION) return // If the user just requested connection, stop here.
-          await processWeb3Action(web3Action, web3Context)
+          if (web3Action.type === actionTypes.TRANSACTION) {
+            await processWeb3Action(web3Action, web3Context)
+            return
+          }
+          if (
+            web3Action.type === actionTypes.AUTHORIZATION &&
+            web3Action.action
+          )
+            web3Action.action()
         }
       }
     }
@@ -151,6 +158,7 @@ async function processWeb3Action(web3Action, web3Context) {
     const { tx, actionMessage, onTxMined } = await web3Action.action(
       web3Context
     )
+    const hash = tx.hash || tx.deployTransaction.hash
     notification.info({
       message: actionMessage || 'Transaction submitted.',
       duration: 0,
@@ -160,17 +168,16 @@ async function processWeb3Action(web3Action, web3Context) {
           target="_blank"
           rel="noopener noreferrer"
           href={`https://${web3Context.networkId === 42 &&
-            'kovan.'}etherscan.io/tx/${tx.deployTransaction.hash}`}
+            'kovan.'}etherscan.io/tx/${hash}`}
         >
           View on etherscan
         </a>
       )
     })
 
-    const {
-      transactionHash,
-      contractAddress
-    } = await web3Context.library.waitForTransaction(tx.deployTransaction.hash)
+    const { contractAddress } = await web3Context.library.waitForTransaction(
+      hash
+    )
 
     notification.success({
       message: 'Transaction mined!',
@@ -179,7 +186,7 @@ async function processWeb3Action(web3Action, web3Context) {
           target="_blank"
           rel="noopener noreferrer"
           href={`https://${web3Context.networkId === 42 &&
-            'kovan.'}etherscan.io/tx/${transactionHash}`}
+            'kovan.'}etherscan.io/tx/${hash}`}
         >
           View on etherscan
         </a>
@@ -187,7 +194,7 @@ async function processWeb3Action(web3Action, web3Context) {
       duration: 0,
       key: notificationID
     })
-    onTxMined({ contractAddress })
+    if (onTxMined) onTxMined({ contractAddress })
   } catch (err) {
     notification.error({
       message: 'Error submitting transaction',

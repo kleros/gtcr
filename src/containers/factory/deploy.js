@@ -1,4 +1,5 @@
 import { Card, Button, Alert, Spin, Icon } from 'antd'
+import { Link } from 'react-router-dom'
 import PropTypes from 'prop-types'
 import React, { useContext, useState } from 'react'
 import { WalletContext } from '../../bootstrap/wallet-context'
@@ -6,7 +7,6 @@ import { ethers } from 'ethers'
 import FastJsonRpcSigner from '../../utils/fast-signer'
 import _GTCR from '../../assets/contracts/GTCRMock.json'
 import styled from 'styled-components/macro'
-import itemTypes from '../../utils/item-types'
 import ipfsPublish from '../../utils/ipfs-publish'
 import Archon from '@kleros/archon'
 
@@ -22,29 +22,9 @@ const StyledAlert = styled(Alert)`
   margin-bottom: 24px;
 `
 
-const getItemSchema = tcrState => {
-  const lengths = tcrState.columns
-    .filter(col => !!itemTypes[col.type])
-    .map(col => itemTypes[col.type])
-  // We use 143 bytes as the max length as that is the length of a multihash-based ipfs path, prepended with /ipfs/. e.g.:
-  // /ipfs/Qmds1Eh4NAFfVuoUX6ZYdcBYQ7rYHQAQmgdBw3Jc9Ckvd8/Bcd77GogNGAV4q9hgVT6fo6kMwrvUDU3uUp69BYuJ8Xb3tdHLanXAZuiHexNdFBX4DMpadjpNftii2P5VqphnSFKZz
-  const IPFS_MULTIHASH_PATH_LENGTH = 143
-  if (tcrState.columns.length > lengths.length)
-    // This means one or more columns are stored offchain.
-    // Storing columns offchain is done by adding an onchain column to the item schema, which
-    // holds a link to a JSON file with the offchain column values.
-    lengths.push(IPFS_MULTIHASH_PATH_LENGTH)
-
-  const offsets = [0]
-  for (let i = 1; i < lengths.length; i++)
-    offsets.push(offsets[i - 1] + lengths[i - 1])
-
-  return { offsets, lengths }
-}
-
 const getTcrMetaEvidence = async tcrState => {
-  const { title, description, columns } = tcrState
-  const tcrMetadata = { title, description, columns }
+  const { title, description, columns, itemName } = tcrState
+  const tcrMetadata = { title, description, columns, itemName }
 
   const enc = new TextEncoder()
   const fileData = enc.encode(JSON.stringify(tcrMetadata))
@@ -75,17 +55,12 @@ const Deploy = ({ resetTcrState, setTxState, tcrState }) => {
       // See https://github.com/ethers-io/ethers.js/issues/511
       const signer = new FastJsonRpcSigner(library.getSigner(account))
       const factory = ethers.ContractFactory.fromSolidity(_GTCR, signer)
-      const { offsets, lengths } = getItemSchema(tcrState)
       const registrationMetaEvidence = await getTcrMetaEvidence(tcrState)
       const clearingMetaEvidence = await getTcrMetaEvidence(tcrState)
-      const latestBlockNumber = await library.getBlockNumber()
 
       const tx = await factory.deploy(
-        offsets,
-        lengths,
         registrationMetaEvidence,
-        clearingMetaEvidence,
-        latestBlockNumber
+        clearingMetaEvidence
       )
       setTxState({ txHash: tx.deployTransaction.hash, status: 'pending' })
       setTxSubmitted(tx.deployTransaction.hash)
@@ -131,7 +106,11 @@ const Deploy = ({ resetTcrState, setTxState, tcrState }) => {
               message={
                 <StyledDiv>
                   TCR Deployed at{' '}
-                  {tcrState.transactions[txSubmitted].contractAddress}
+                  <Link
+                    to={`/tcr/${tcrState.transactions[txSubmitted].contractAddress}`}
+                  >
+                    {tcrState.transactions[txSubmitted].contractAddress}
+                  </Link>
                 </StyledDiv>
               }
             />

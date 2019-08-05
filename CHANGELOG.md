@@ -2,6 +2,32 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.6.0](https://github.com/kleros/gtcr/compare/v0.5.0...v0.6.0) (2019-08-05)
+
+
+### Bug Fixes
+
+* only try executing onTxMined if it was provided ([dfbd7b5](https://github.com/kleros/gtcr/commit/dfbd7b5))
+* remove longtext for now ([01992eb](https://github.com/kleros/gtcr/commit/01992eb))
+* sider link height ([d6d91e4](https://github.com/kleros/gtcr/commit/d6d91e4))
+* use signed numbers ([cd0723d](https://github.com/kleros/gtcr/commit/cd0723d))
+
+
+### Features
+
+* add basic submission modal fields ([eead85e](https://github.com/kleros/gtcr/commit/eead85e))
+* add item name field and require title and description ([a0108c2](https://github.com/kleros/gtcr/commit/a0108c2))
+* add submit item button ([d5de495](https://github.com/kleros/gtcr/commit/d5de495))
+* add upload criteria field ([934d8ad](https://github.com/kleros/gtcr/commit/934d8ad))
+* build submission form from tcr metadata ([5ec7f56](https://github.com/kleros/gtcr/commit/5ec7f56))
+* display identicon ([e7c7731](https://github.com/kleros/gtcr/commit/e7c7731))
+* enable item submission, swap fixed length columns to abi encoding ([ec7cf5f](https://github.com/kleros/gtcr/commit/ec7cf5f))
+* fetch and parse items from tcr ([af53a70](https://github.com/kleros/gtcr/commit/af53a70))
+* get values from submission form ([a979072](https://github.com/kleros/gtcr/commit/a979072))
+* remove prev block number and scan from 0 ([a4f743b](https://github.com/kleros/gtcr/commit/a4f743b))
+
+
+
 ## [0.5.0](https://github.com/kleros/gtcr/compare/v0.2.0...v0.5.0) (2019-07-31)
 
 

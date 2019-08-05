@@ -1,12 +1,16 @@
-import { Typography, Layout, Skeleton, Table } from 'antd'
-import React, { useEffect, useState } from 'react'
+import { Typography, Layout, Skeleton, Table, Button, Icon } from 'antd'
+import React, { useEffect, useState, useContext } from 'react'
 import PropTypes from 'prop-types'
 import { useWeb3Context } from 'web3-react'
 import { ethers } from 'ethers'
 import { useDebounce } from 'use-debounce'
 import ErrorPage from '../error-page'
 import styled from 'styled-components/macro'
-import _GTCR from '../../assets/contracts/GTCRMock.json'
+import { abi } from '../../assets/contracts/GTCRMock.json'
+import SubmissionModal from '../../components/submission-modal'
+import { WalletContext } from '../../bootstrap/wallet-context'
+import web3EthAbi from 'web3-eth-abi'
+import { typeToSolidity } from '../../utils/item-types'
 
 const StyledContent = styled(Layout.Content)`
   margin: 32px 0;
@@ -20,41 +24,49 @@ const StyledLayoutContent = styled(Layout.Content)`
   flex-direction: column;
 `
 
+const StyledButton = styled(Button)`
+  margin-top: 6px;
+`
+
 const Items = ({
   match: {
     params: { tcrAddress }
   }
 }) => {
-  const { abi } = _GTCR
   const { library, active } = useWeb3Context()
+  const { requestWeb3Auth } = useContext(WalletContext)
   const [errored, setErrored] = useState()
   const [metaEvidencePath, setMetaEvidencePath] = useState()
   const [metaEvidence, setMetaEvidence] = useState()
   const [debouncedMetaEvidencePath] = useDebounce(metaEvidencePath, 1000)
   const [tcr, setTcr] = useState()
   const [items, setItems] = useState()
+  const [submissionFormOpen, setSubmissionFormOpen] = useState(false)
 
   // Wire up the TCR.
   useEffect(() => {
     if (!library || !active || !tcrAddress) return
     setTcr(new ethers.Contract(tcrAddress, abi, library))
-  }, [setTcr, library, active, tcrAddress, abi])
+  }, [setTcr, library, active, tcrAddress])
 
   // Fetch meta evidence logs.
   useEffect(() => {
-    ;(async () => {
-      if (!tcr) return
-      try {
-        tcr.on('MetaEvidence', (_, metaEvidencePath) => {
-          setMetaEvidencePath(metaEvidencePath)
-        })
-        const blockNumber = await tcr.prevBlockNumber()
-        library.resetEventsBlock(blockNumber) // Reset provider to fetch logs.
-      } catch (err) {
-        console.error(err)
-        setErrored(true)
-      }
-    })()
+    if (!tcr || !library) return
+
+    const saveMetaEvidencePath = (_, metaEvidencePath) => {
+      setMetaEvidencePath(metaEvidencePath)
+    }
+    try {
+      tcr.on('MetaEvidence', saveMetaEvidencePath)
+      library.resetEventsBlock(0) // Reset provider to fetch logs.
+    } catch (err) {
+      console.error(err)
+      setErrored(true)
+    }
+
+    return () => {
+      tcr.removeListener('MetaEvidence', saveMetaEvidencePath)
+    }
   }, [tcr, library])
 
   // Fetch latest meta evidence file.
@@ -73,17 +85,30 @@ const Items = ({
     })()
   }, [debouncedMetaEvidencePath, setMetaEvidence])
 
+  // Fetch items
   useEffect(() => {
     ;(async () => {
-      if (!tcr) return
+      if (!tcr || !metaEvidence) return
       try {
-        setItems(await tcr.getItems(0))
+        const { columns } = metaEvidence
+        const types = columns.map(column => typeToSolidity[column.type])
+        const items = (await tcr.getItems(0))[0]
+          .filter(encodedItem => encodedItem.length > 2) // Filter out empty slots from the results. Empty slots are returned as the string `0x`.
+          .map((encodedItem, i) => {
+            const decodedItem = web3EthAbi.decodeParameters(types, encodedItem)
+            return columns.reduce(
+              (acc, curr, i) => ({ ...acc, [curr.label]: decodedItem[i] }),
+              { key: i }
+            )
+          })
+
+        setItems(items)
       } catch (err) {
         console.error(err)
         setErrored(true)
       }
     })()
-  }, [tcr])
+  }, [tcr, metaEvidence])
 
   if (!tcrAddress || errored)
     return (
@@ -93,72 +118,63 @@ const Items = ({
       />
     )
 
-  // TODO: swap this for parsed results from TCR.
-  const dataSource = [
-    {
-      key: 1,
-      Name: 'Token² Curated List',
-      Address: '0x25dd2659a1430cdbd678615c7409164ae486c146'
-    },
-    {
-      key: 2,
-      Name: 'ERC20 Badge',
-      Address: '0x78895ec026aeff2db73bc30e623c39e1c69b1386'
-    },
-    {
-      key: 3,
-      Name: 'Ethfinex Badge',
-      Address: '0xd58bdd286e8155b6223e2a62932ae3e0a9a75759'
-    },
-    {
-      key: 4,
-      Name: 'Malware Free Movies',
-      Address: '0x0000000000000000000000000000000000000000'
-    },
-    {
-      key: 5,
-      Name: 'Actual News',
-      Address: '0x0000000000000000000000000000000000000000'
-    },
-    {
-      key: 6,
-      Name: 'SF Earpods Trading',
-      Address: '0x0000000000000000000000000000000000000000'
-    }
-  ]
-
-  const columns = [
-    {
-      title: 'Name',
-      dataIndex: 'Name',
-      key: 'Name'
-    },
-    {
-      title: 'Address',
-      dataIndex: 'Address',
-      key: 'Address'
-    }
-  ]
+  const columns = !metaEvidence
+    ? []
+    : metaEvidence.columns
+        .filter(column => !!column.isIdentifier)
+        .map(column => ({
+          title: column.label,
+          key: column.label,
+          dataIndex: column.label
+        }))
 
   return (
     <StyledLayoutContent>
-      {metaEvidence ? (
-        <>
+      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+        {metaEvidence ? (
           <Typography.Title ellipsis>{metaEvidence.title}</Typography.Title>
-          <Typography.Text ellipsis type="secondary">
-            {metaEvidence.description}
-          </Typography.Text>
-        </>
+        ) : (
+          <Skeleton active paragraph={false} title={{ width: 100 }} />
+        )}
+        {metaEvidence && (
+          <StyledButton
+            type="primary"
+            size="large"
+            onClick={() => requestWeb3Auth(() => setSubmissionFormOpen(true))}
+          >
+            Submit{' '}
+            {metaEvidence && metaEvidence.itemName
+              ? metaEvidence.itemName
+              : 'Item'}
+            <Icon type="plus-circle" />
+          </StyledButton>
+        )}
+      </div>
+      {metaEvidence ? (
+        <Typography.Text ellipsis type="secondary">
+          {metaEvidence.description}
+        </Typography.Text>
       ) : (
-        <Skeleton active paragraph={{ rows: 1 }} />
+        <Skeleton active paragraph={{ rows: 1, width: 150 }} title={false} />
       )}
       <StyledContent>
-        {items ? (
-          <Table dataSource={dataSource} columns={columns} bordered />
+        {items && metaEvidence ? (
+          <Table
+            dataSource={items}
+            columns={columns}
+            bordered
+            pagination={false}
+          />
         ) : (
           <Skeleton active paragraph={{ rows: 8 }} title={false} />
         )}
       </StyledContent>
+      <SubmissionModal
+        visible={submissionFormOpen}
+        onCancel={() => setSubmissionFormOpen(false)}
+        metaEvidence={metaEvidence}
+        tcrAddress={tcrAddress}
+      />
     </StyledLayoutContent>
   )
 }

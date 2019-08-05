@@ -14,9 +14,11 @@ import { withFormik, FieldArray, Field } from 'formik'
 import React, { useEffect } from 'react'
 import PropTypes from 'prop-types'
 import * as yup from 'yup'
-import CustomInput from './custom-input'
+import CustomInput from '../../components/custom-input'
 import ItemPreview from './item-preview'
-import itemTypes, { LONGTEXT } from '../../utils/item-types'
+import itemTypes from '../../utils/item-types'
+
+const { LONGTEXT } = itemTypes
 
 const ItemParams = ({
   handleSubmit,
@@ -36,6 +38,7 @@ const ItemParams = ({
     }))
   }, [columns, setTcrState])
 
+  // Long text fields cannot be identifiers.
   const onTypeChange = (index, value) => {
     setFieldValue(`columns[${index}].type`, value)
     if (value === LONGTEXT)
@@ -119,7 +122,7 @@ const ItemParams = ({
                               value={columns[index].type}
                               onChange={value => onTypeChange(index, value)}
                             >
-                              {Object.keys(itemTypes).map((itemType, i) => (
+                              {Object.values(itemTypes).map((itemType, i) => (
                                 <Select.Option value={itemType} key={i}>
                                   {itemType}
                                 </Select.Option>
@@ -217,7 +220,7 @@ ItemParams.propTypes = {
         description: PropTypes.string.isRequired,
         label: PropTypes.string.isRequired,
         type: PropTypes.string.isRequired,
-        isIdentifier: PropTypes.bool.isRequired
+        isIdentifier: PropTypes.bool
       })
     ).isRequired
   }).isRequired

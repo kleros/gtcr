@@ -3,8 +3,6 @@ import { Field } from 'formik'
 import React from 'react'
 import PropTypes from 'prop-types'
 
-const FormItem = Form.Item
-
 const CustomInput = ({
   label,
   name,
@@ -16,14 +14,14 @@ const CustomInput = ({
 }) => (
   <Field name={name}>
     {({ field }) => (
-      <FormItem
+      <Form.Item
         label={label}
         validateStatus={error && touched ? 'error' : undefined}
         help={error && touched ? error : ''}
         hasFeedback={hasFeedback}
       >
         <Input addonAfter={addonAfter} {...field} placeholder={placeholder} />
-      </FormItem>
+      </Form.Item>
     )}
   </Field>
 )

@@ -28,7 +28,6 @@ import { register } from './service-worker'
 import styled from 'styled-components/macro'
 import Web3Provider, { Connectors, useWeb3Context } from 'web3-react'
 import { WalletContext, WalletProvider } from './wallet-context'
-import { truncateETHAddress } from '../utils/string'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   faTelegram,
@@ -39,6 +38,7 @@ import { faBullhorn } from '@fortawesome/free-solid-svg-icons'
 import networkNames from '../utils/network-names'
 import ErrorPage from '../containers/error-page'
 import useMainTCR2 from '../hooks/tcr2'
+import Identicon from '../components/identicon'
 
 const StyledSpin = styled(Spin)`
   left: 50%;
@@ -51,6 +51,7 @@ const StyledLayoutContent = styled(Layout.Content)`
   background: white;
   padding: 42px 9.375vw 42px;
 `
+
 const StyledLayoutSider = styled(Layout.Sider)`
   height: 100%;
   position: fixed;
@@ -66,6 +67,7 @@ const StyledLayoutSider = styled(Layout.Sider)`
     width: 50px;
   }
 `
+
 const StyledCol = styled(Col)`
   align-items: center;
   display: flex;
@@ -78,6 +80,7 @@ const StyledCol = styled(Col)`
     }
   }
 `
+
 const StyledMenu = styled(Menu)`
   font-weight: bold;
   line-height: 64px !important;
@@ -207,15 +210,13 @@ const TopBar = () => {
         </StyledMenu>
       </Col>
       <StyledCol md={5} sm={4} xs={24}>
-        <Button
-          ghost
-          shape="round"
-          onClick={!web3Context.account ? () => requestWeb3Auth() : null}
-        >
-          {web3Context.active && web3Context.account
-            ? truncateETHAddress(web3Context.account)
-            : 'Connect'}
-        </Button>
+        {web3Context.active && web3Context.account ? (
+          <Identicon />
+        ) : (
+          <Button ghost shape="round" onClick={() => requestWeb3Auth()}>
+            Connect
+          </Button>
+        )}
       </StyledCol>
     </Row>
   )
@@ -264,6 +265,8 @@ const Content = () => {
 
 export default () => {
   const [isMenuClosed, setIsMenuClosed] = useState(true)
+  const web3Context = useWeb3Context()
+  const TCR2_ADDRESS = useMainTCR2(web3Context)
   return (
     <>
       <Helmet>
@@ -283,7 +286,15 @@ export default () => {
                 collapsed={isMenuClosed}
                 onClick={() => setIsMenuClosed(previousState => !previousState)}
               >
-                <Menu theme="dark">{MenuItems}</Menu>
+                <Menu theme="dark">
+                  {[
+                    <Menu.Item key="tcrs" style={{ height: '70px' }}>
+                      <NavLink to={`/tcr/${TCR2_ADDRESS}`}>
+                        <Logo style={{ marginTop: '20px' }} />
+                      </NavLink>
+                    </Menu.Item>
+                  ].concat(MenuItems({ TCR2_ADDRESS }))}
+                </Menu>
               </StyledLayoutSider>
               <Layout>
                 <Layout.Header>

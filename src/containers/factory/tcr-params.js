@@ -3,7 +3,7 @@ import { withFormik, Field } from 'formik'
 import PropTypes from 'prop-types'
 import React, { useEffect } from 'react'
 import * as yup from 'yup'
-import CustomInput from './custom-input'
+import CustomInput from '../../components/custom-input'
 
 const FormItem = Form.Item
 
@@ -52,6 +52,24 @@ const TCRParams = ({
           {...rest}
         />
         <CustomInput
+          name="itemName"
+          placeholder="Token"
+          hasFeedback
+          error={errors.itemName}
+          touched={touched.itemName}
+          label={
+            <span>
+              Item Name&nbsp;
+              <Tooltip
+                title={`What is the item? This will replace the word "item" in the TCR interface. Examples.: Ad (for a TCR of ads), Movie (for a TCR of movies)`}
+              >
+                <Icon type="question-circle-o" />
+              </Tooltip>
+            </span>
+          }
+          {...rest}
+        />
+        <CustomInput
           name="requestDeposit"
           placeholder="0.1 ETH"
           addonAfter="ETH"
@@ -85,11 +103,15 @@ const TCRParams = ({
         />
         <Field name="requireEvidenceRequest">
           {({ field }) => (
-            <FormItem label="Require evidence on request">
+            <FormItem
+              label="Require evidence on request"
+              style={{ marginBottom: '12px', display: 'flex' }}
+            >
               <Switch
                 onChange={value =>
                   setFieldValue('requireEvidenceRequest', value)
                 }
+                style={{ marginLeft: '8px' }}
                 checked={field.value}
               />
             </FormItem>
@@ -119,20 +141,28 @@ TCRParams.propTypes = {
 }
 
 const validationSchema = yup.object().shape({
-  title: yup.string().max(60, 'Title must be less than 60 characters long.'),
+  title: yup
+    .string()
+    .required('A title is required.')
+    .max(30, 'Title must be less than 60 characters long.'),
   description: yup
     .string()
+    .required('A description is required.')
     .max(255, 'Description must be less than 255 characters long.'),
+  itemName: yup
+    .string()
+    .required('An item name is required.')
+    .max(60, 'The item name must be less than 20 characters long.'),
   requestDeposit: yup
     .number()
-    .typeError('Amount should be a number')
-    .required('A value is required')
-    .min(0, 'The amount must not be negative'),
+    .typeError('Amount should be a number.')
+    .required('A value is required.')
+    .min(0, 'The amount must not be negative.'),
   challengeDeposit: yup
     .number()
-    .typeError('Amount should be a number')
-    .required('A value is required')
-    .min(0, 'The amount must not be negative')
+    .typeError('Amount should be a number.')
+    .required('A value is required.')
+    .min(0, 'The amount must not be negative.')
 })
 
 export default withFormik({
