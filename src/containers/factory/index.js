@@ -47,8 +47,9 @@ const useCachedFactory = version => {
   const initialWizardState = {
     title: '',
     description: '',
-    requestDeposit: 0.1,
-    challengeDeposit: 0.05,
+    requesterBaseDeposit: 0.025,
+    challengerBaseDeposit: 0.05,
+    arbitratorAddress: '',
     itemName: 'Item',
     requireEvidenceRequest: true,
     columns: [

@@ -3,6 +3,7 @@ import { notification } from 'antd'
 import { useWeb3Context } from 'web3-react'
 import PropTypes from 'prop-types'
 import uuid from 'uuid/v4'
+import { NETWORK, NETWORK_NAME } from '../utils/network-names'
 
 const actionTypes = {
   TRANSACTION: 'TRANSACTION',
@@ -159,17 +160,17 @@ async function processWeb3Action(web3Action, web3Context) {
       web3Context
     )
     const hash = tx.hash || tx.deployTransaction.hash
+    const etherscanLink = `https://${
+      web3Context.networkId !== NETWORK.MAINNET
+        ? `${NETWORK_NAME[web3Context.networkId]}}.`
+        : ''
+    }etherscan.io/tx/${hash}`
     notification.info({
       message: actionMessage || 'Transaction submitted.',
       duration: 0,
       key: notificationID,
       description: (
-        <a
-          target="_blank"
-          rel="noopener noreferrer"
-          href={`https://${web3Context.networkId === 42 &&
-            'kovan.'}etherscan.io/tx/${hash}`}
-        >
+        <a target="_blank" rel="noopener noreferrer" href={etherscanLink}>
           View on etherscan
         </a>
       )
@@ -182,12 +183,7 @@ async function processWeb3Action(web3Action, web3Context) {
     notification.success({
       message: 'Transaction mined!',
       description: (
-        <a
-          target="_blank"
-          rel="noopener noreferrer"
-          href={`https://${web3Context.networkId === 42 &&
-            'kovan.'}etherscan.io/tx/${hash}`}
-        >
+        <a target="_blank" rel="noopener noreferrer" href={etherscanLink}>
           View on etherscan
         </a>
       ),

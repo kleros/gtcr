@@ -35,7 +35,7 @@ import {
   faTwitter
 } from '@fortawesome/free-brands-svg-icons'
 import { faBullhorn } from '@fortawesome/free-solid-svg-icons'
-import networkNames from '../utils/network-names'
+import { NETWORK_NAME } from '../utils/network-names'
 import ErrorPage from '../containers/error-page'
 import useMainTCR2 from '../hooks/tcr2'
 import Identicon from '../components/identicon'
@@ -151,6 +151,17 @@ const Items = loadable(
   }
 )
 
+const ItemDetails = loadable(
+  () => import(/* webpackPrefetch: true */ '../containers/item-details/index'),
+  {
+    fallback: (
+      <StyledLayoutContent>
+        <StyledSpin />
+      </StyledLayoutContent>
+    )
+  }
+)
+
 const MenuItems = ({ TCR2_ADDRESS }) => [
   <Menu.Item key="tcrs">
     <NavLink to={`/tcr/${TCR2_ADDRESS}`}>TCRs</NavLink>
@@ -165,7 +176,7 @@ const Injected = new InjectedConnector({ supportedNetworks: [42, 1] })
 
 const DEFAULT_NETWORK = process.env.REACT_APP_DEFAULT_NETWORK || 42
 const Infura = new NetworkOnlyConnector({
-  providerURL: `https://${networkNames[DEFAULT_NETWORK]}.infura.io/v3/${process.env.REACT_APP_INFURA_PROJECT_ID}`
+  providerURL: `https://${NETWORK_NAME[DEFAULT_NETWORK]}.infura.io/v3/${process.env.REACT_APP_INFURA_PROJECT_ID}`
 })
 const connectors = { Injected, Infura }
 
@@ -255,7 +266,8 @@ const Content = () => {
 
   return (
     <Switch>
-      <Route path="/tcr/:tcrAddress?" component={Items} />
+      <Route path="/tcr/:tcrAddress?" exact component={Items} />
+      <Route path="/tcr/:tcrAddress/:itemID?" exact component={ItemDetails} />
       <Route path="/factory" exact component={Factory} />
       <Redirect from="/" exact to={`/tcr/${TCR2_ADDRESS}`} />
       <Route path="*" exact component={ErrorPage} />

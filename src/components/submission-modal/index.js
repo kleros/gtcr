@@ -5,7 +5,8 @@ import PropTypes from 'prop-types'
 import SubmissionForm from './form'
 import web3EthAbi from 'web3-eth-abi'
 import FastJsonRpcSigner from '../../utils/fast-signer'
-import { abi } from '../../assets/contracts/GTCRMock.json'
+import { abi as _gtcr } from '../../assets/contracts/GTCRMock.json'
+import { abi as _arbitrator } from '../../assets/contracts/Arbitrator.json'
 import { WalletContext } from '../../bootstrap/wallet-context'
 import { ethers } from 'ethers'
 import { typeToSolidity } from '../../utils/item-types'
@@ -43,10 +44,40 @@ const SubmissionModal = ({ metaEvidence, tcrAddress, ...rest }) => {
       // TODO: Remove FastJsonRpcSigner when ethers v5 is out.
       // See https://github.com/ethers-io/ethers.js/issues/511
       const signer = new FastJsonRpcSigner(library.getSigner(account))
-      const gtcr = new ethers.Contract(tcrAddress, abi, signer)
+      const gtcr = new ethers.Contract(tcrAddress, _gtcr, signer)
 
-      const tx = await gtcr.addItem(encodedParams)
-      rest.onCancel()
+      // Calculate submission deposit.
+      //
+      // Submission Deposit = requester deposit + arbitration cost + fee stake
+      // fee stake = requester deposit * shared stake multiplier / multiplier divisor
+
+      // Get the arbitration cost from the arbitrator.
+      const arbitratorAddress = await gtcr.arbitrator()
+      const arbitratorExtraData = await gtcr.arbitratorExtraData()
+      const arbitrator = new ethers.Contract(
+        arbitratorAddress,
+        _arbitrator,
+        signer
+      )
+
+      const requesterBaseDeposit = await gtcr.requesterBaseDeposit()
+      const sharedStakeMultiplier = await gtcr.sharedStakeMultiplier()
+      const multiplierDivisor = await gtcr.MULTIPLIER_DIVISOR()
+      const arbitrationCost = await arbitrator.arbitrationCost(
+        arbitratorExtraData
+      )
+      const depositInWei = requesterBaseDeposit
+        .add(arbitrationCost)
+        .add(
+          requesterBaseDeposit.mul(sharedStakeMultiplier).div(multiplierDivisor)
+        )
+
+      // Request signature and submit.
+      const tx = await gtcr.requestStatusChange(encodedParams, {
+        value: depositInWei
+      })
+
+      rest.onCancel() // Hide the submission modal.
       return {
         tx,
         actionMessage: `Submitting ${metaEvidence.itemName || 'item'}`

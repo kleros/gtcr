@@ -52,6 +52,22 @@ const TCRParams = ({
           {...rest}
         />
         <CustomInput
+          name="arbitratorAddress"
+          placeholder="0xabcdef123..."
+          hasFeedback
+          error={errors.arbitratorAddress}
+          touched={touched.arbitratorAddress}
+          label={
+            <span>
+              Arbitrator&nbsp;
+              <Tooltip title="The address of the arbitrator to use for this TCR.">
+                <Icon type="question-circle-o" />
+              </Tooltip>
+            </span>
+          }
+          {...rest}
+        />
+        <CustomInput
           name="itemName"
           placeholder="Token"
           hasFeedback
@@ -70,11 +86,11 @@ const TCRParams = ({
           {...rest}
         />
         <CustomInput
-          name="requestDeposit"
+          name="requesterBaseDeposit"
           placeholder="0.1 ETH"
           addonAfter="ETH"
-          error={errors.requestDeposit}
-          touched={touched.requestDeposit}
+          error={errors.requesterBaseDeposit}
+          touched={touched.requesterBaseDeposit}
           label={
             <span>
               Registration Deposit&nbsp;
@@ -86,11 +102,11 @@ const TCRParams = ({
           {...rest}
         />
         <CustomInput
-          name="challengeDeposit"
+          name="challengerBaseDeposit"
           placeholder="0.05 ETH"
           addonAfter="ETH"
-          error={errors.challengeDeposit}
-          touched={touched.challengeDeposit}
+          error={errors.challengerBaseDeposit}
+          touched={touched.challengerBaseDeposit}
           label={
             <span>
               Challenger Deposit&nbsp;
@@ -149,16 +165,20 @@ const validationSchema = yup.object().shape({
     .string()
     .required('A description is required.')
     .max(255, 'Description must be less than 255 characters long.'),
+  arbitratorAddress: yup
+    .string()
+    .required('An arbitrator address is required.')
+    .max(160, 'Ethereum addresses are 42 characters long.'),
   itemName: yup
     .string()
     .required('An item name is required.')
     .max(60, 'The item name must be less than 20 characters long.'),
-  requestDeposit: yup
+  requesterBaseDeposit: yup
     .number()
     .typeError('Amount should be a number.')
     .required('A value is required.')
     .min(0, 'The amount must not be negative.'),
-  challengeDeposit: yup
+  challengerBaseDeposit: yup
     .number()
     .typeError('Amount should be a number.')
     .required('A value is required.')

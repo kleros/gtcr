@@ -59,8 +59,17 @@ const Deploy = ({ resetTcrState, setTxState, tcrState }) => {
       const clearingMetaEvidence = await getTcrMetaEvidence(tcrState)
 
       const tx = await factory.deploy(
+        tcrState.arbitratorAddress,
+        '0x00', // Arbitrator extra data.
         registrationMetaEvidence,
-        clearingMetaEvidence
+        clearingMetaEvidence,
+        account,
+        ethers.utils.parseEther(tcrState.requesterBaseDeposit),
+        ethers.utils.parseEther(tcrState.challengerBaseDeposit),
+        '300', // Challenge period duration (in seconds)
+        '10000', // Shared stake multiplier in basis points.
+        '10000', // Winner stake multiplier in basis points.
+        '20000' // Loser stake multiplier in basis points.
       )
       setTxState({ txHash: tx.deployTransaction.hash, status: 'pending' })
       setTxSubmitted(tx.deployTransaction.hash)
@@ -131,7 +140,10 @@ Deploy.propTypes = {
         status: PropTypes.oneOf(['pending', 'mined', null]),
         contractAddress: PropTypes.string
       })
-    ).isRequired
+    ).isRequired,
+    arbitratorAddress: PropTypes.string.isRequired,
+    requesterBaseDeposit: PropTypes.string.isRequired,
+    challengerBaseDeposit: PropTypes.string.isRequired
   }).isRequired
 }
 

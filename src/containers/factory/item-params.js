@@ -15,7 +15,7 @@ import React, { useEffect } from 'react'
 import PropTypes from 'prop-types'
 import * as yup from 'yup'
 import CustomInput from '../../components/custom-input'
-import ItemPreview from './item-preview'
+import ItemDetailsCard from '../../components/item-details-card'
 import itemTypes from '../../utils/item-types'
 
 const { LONGTEXT } = itemTypes
@@ -182,7 +182,7 @@ const ItemParams = ({
           )}
         </FieldArray>
         <Divider />
-        <ItemPreview columns={columns} />
+        <ItemDetailsCard title="Preview" columns={columns} />
       </form>
     </Card>
   )
@@ -208,11 +208,15 @@ ItemParams.propTypes = {
     columns: PropTypes.arrayOf(PropTypes.objectOf(PropTypes.bool))
   }).isRequired,
   values: PropTypes.shape({
-    challengeDeposit: PropTypes.oneOfType([PropTypes.number, PropTypes.string])
-      .isRequired,
+    challengerBaseDeposit: PropTypes.oneOfType([
+      PropTypes.number,
+      PropTypes.string
+    ]).isRequired,
     description: PropTypes.string.isRequired,
-    requestDeposit: PropTypes.oneOfType([PropTypes.number, PropTypes.string])
-      .isRequired,
+    requesterBaseDeposit: PropTypes.oneOfType([
+      PropTypes.number,
+      PropTypes.string
+    ]).isRequired,
     requireEvidenceRequest: PropTypes.bool.isRequired,
     title: PropTypes.string.isRequired,
     columns: PropTypes.arrayOf(

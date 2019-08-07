@@ -1,4 +1,5 @@
 import { Typography, Layout, Skeleton, Table, Button, Icon } from 'antd'
+import { Link } from 'react-router-dom'
 import React, { useEffect, useState, useContext } from 'react'
 import PropTypes from 'prop-types'
 import { useWeb3Context } from 'web3-react'
@@ -11,6 +12,7 @@ import SubmissionModal from '../../components/submission-modal'
 import { WalletContext } from '../../bootstrap/wallet-context'
 import web3EthAbi from 'web3-eth-abi'
 import { typeToSolidity } from '../../utils/item-types'
+import { ZERO_ADDRESS, ZERO_BYTES32 } from '../../utils/string'
 
 const StyledContent = styled(Layout.Content)`
   margin: 32px 0;
@@ -38,7 +40,7 @@ const Items = ({
   const [errored, setErrored] = useState()
   const [metaEvidencePath, setMetaEvidencePath] = useState()
   const [metaEvidence, setMetaEvidence] = useState()
-  const [debouncedMetaEvidencePath] = useDebounce(metaEvidencePath, 1000)
+  const [debouncedMetaEvidencePath] = useDebounce(metaEvidencePath, 300)
   const [tcr, setTcr] = useState()
   const [items, setItems] = useState()
   const [submissionFormOpen, setSubmissionFormOpen] = useState(false)
@@ -92,12 +94,22 @@ const Items = ({
       try {
         const { columns } = metaEvidence
         const types = columns.map(column => typeToSolidity[column.type])
-        const items = (await tcr.getItems(0))[0]
-          .filter(encodedItem => encodedItem.length > 2) // Filter out empty slots from the results. Empty slots are returned as the string `0x`.
-          .map((encodedItem, i) => {
-            const decodedItem = web3EthAbi.decodeParameters(types, encodedItem)
+        const items = (await tcr.queryItems(
+          ZERO_BYTES32, // Cursor.
+          50, // Count.
+          [false, true, true, true, true, true, true, true], // Filter.
+          false, // Oldest first.
+          ZERO_ADDRESS
+        ))[0]
+          .filter(item => item.ID !== ZERO_BYTES32) // Filter out empty slots from the results.
+          .map((item, i) => {
+            const decodedItem = web3EthAbi.decodeParameters(types, item.data)
             return columns.reduce(
-              (acc, curr, i) => ({ ...acc, [curr.label]: decodedItem[i] }),
+              (acc, curr, i) => ({
+                ...acc,
+                [curr.label]: decodedItem[i],
+                ID: item.ID
+              }),
               { key: i }
             )
           })
@@ -114,7 +126,8 @@ const Items = ({
     return (
       <ErrorPage
         code="400"
-        message="A TCR was not found at this address. Are you in the correct network?"
+        message="The gods are having trouble finding this TCR."
+        tip="Is your wallet set to the correct network?"
       />
     )
 
@@ -125,7 +138,10 @@ const Items = ({
         .map(column => ({
           title: column.label,
           key: column.label,
-          dataIndex: column.label
+          dataIndex: column.label,
+          render: (text, item) => (
+            <Link to={`/tcr/${tcrAddress}/${item.ID}`}>{text}</Link>
+          )
         }))
 
   return (
