@@ -163,7 +163,19 @@ contract GTCRMock is IArbitrable{
 
     /* Events */
 
+    /** @dev To be emmited when meta-evidence is submitted.
+     *  @param _metaEvidenceID Unique identifier of meta-evidence.
+     *  @param _evidence A link to the meta-evidence JSON.
+     */
     event MetaEvidence(uint indexed _metaEvidenceID, string _evidence);
+
+    /** @dev To be raised when evidence are submitted. Should point to the ressource (evidences are not to be stored on chain due to gas considerations).
+     *  @param _arbitrator The arbitrator of the contract.
+     *  @param _evidenceGroupID Unique identifier of the evidence group the evidence belongs to.
+     *  @param _party The address of the party submiting the evidence. Note that 0x0 refers to evidence not submitted by any party.
+     *  @param _evidence A URI to the evidence JSON file whose name should be its keccak256 hash followed by .json.
+     */
+    event Evidence(Arbitrator indexed _arbitrator, uint indexed _evidenceGroupID, address indexed _party, string _evidence);
 
     constructor(
         Arbitrator _arbitrator,
@@ -251,6 +263,42 @@ contract GTCRMock is IArbitrable{
         request.resolved = true;
         withdrawFeesAndRewards(request.parties[uint(Party.Requester)], _item, addr.requests.length - 1, 0); // Automatically withdraw for the requester.
     }
+
+    /** @dev Challenges the latest request of a item. Accepts enough ETH to fund a potential dispute considering the current required amount. Reimburses unused ETH. TRUSTED.
+     *  @param _itemID The ID of the item with the request to challenge.
+     *  @param _evidence A link to an evidence using its URI. Ignored if not provided or if not enough funds were provided to create a dispute.
+     */
+    function challengeRequest(bytes32 _itemID, string calldata _evidence) external payable {
+        Item storage item = items[_itemID];
+        require(
+            item.status == ItemStatus.RegistrationRequested || item.status == ItemStatus.ClearingRequested,
+            "The item must have a pending request."
+        );
+        Request storage request = item.requests[item.requests.length - 1];
+        require(now - request.submissionTime <= challengePeriodDuration, "Challenges must occur during the challenge period.");
+        require(!request.disputed, "The request should not have already been disputed.");
+
+        // Take the deposit and save the challenger's address.
+        request.parties[uint(Party.Challenger)] = msg.sender;
+
+        Round storage round = request.rounds[request.rounds.length - 1];
+        uint arbitrationCost = request.arbitrator.arbitrationCost(request.arbitratorExtraData);
+        uint totalCost = arbitrationCost.addCap((arbitrationCost.mulCap(sharedStakeMultiplier)) / MULTIPLIER_DIVISOR).addCap(challengerBaseDeposit);
+        contribute(round, Party.Challenger, msg.sender, msg.value, totalCost);
+        require(round.paidFees[uint(Party.Challenger)] >= totalCost, "You must fully fund your side.");
+        round.hasPaid[uint(Party.Challenger)] = true;
+
+        // Raise a dispute.
+        request.disputeID = request.arbitrator.createDispute.value(arbitrationCost)(RULING_OPTIONS, request.arbitratorExtraData);
+        arbitratorDisputeIDToItemID[address(request.arbitrator)][request.disputeID] = _itemID;
+        request.disputed = true;
+        request.rounds.length++;
+        round.feeRewards = round.feeRewards.subCap(arbitrationCost);
+
+        if (bytes(_evidence).length > 0)
+            emit Evidence(request.arbitrator, uint(keccak256(abi.encodePacked(_itemID,item.requests.length - 1))), msg.sender, _evidence);
+    }
+
 
     /** @dev Give a ruling for a dispute. Can only be called by the arbitrator. TRUSTED.
      *  Overrides parent function to account for the situation where the winner loses a case due to paying less appeal fees than expected.
@@ -423,7 +471,6 @@ contract GTCRMock is IArbitrable{
             result.disputeStatus = request.arbitrator.disputeStatus(request.disputeID);
             (result.appealStart, result.appealEnd) = request.arbitrator.appealPeriod(request.disputeID);
 
-            Round storage round = request.rounds[request.rounds.length - 1];
             result.feeRewards = round.feeRewards;
             result.hasPaid = round.hasPaid;
             result.paidFees = round.paidFees;
