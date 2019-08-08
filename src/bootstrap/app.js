@@ -39,6 +39,7 @@ import { NETWORK_NAME } from '../utils/network-names'
 import ErrorPage from '../containers/error-page'
 import useMainTCR2 from '../hooks/tcr2'
 import Identicon from '../components/identicon'
+import { TCRProvider } from './tcr-context'
 
 const StyledSpin = styled(Spin)`
   left: 50%;
@@ -261,13 +262,31 @@ const Footer = () => (
 )
 
 const Content = () => {
-  const web3Context = useWeb3Context()
-  const TCR2_ADDRESS = useMainTCR2(web3Context)
-
+  const TCR2_ADDRESS = useMainTCR2()
   return (
     <Switch>
-      <Route path="/tcr/:tcrAddress?" exact component={Items} />
-      <Route path="/tcr/:tcrAddress/:itemID?" exact component={ItemDetails} />
+      <Route path="/tcr/:tcrAddress">
+        {({
+          match: {
+            params: { tcrAddress }
+          }
+        }) => (
+          <TCRProvider tcrAddress={tcrAddress}>
+            <Switch>
+              <Route path="/tcr/:tcrAddress/:itemID">
+                {({
+                  match: {
+                    params: { itemID }
+                  }
+                }) => <ItemDetails tcrAddress={tcrAddress} itemID={itemID} />}
+              </Route>
+              <Route path="/tcr/:tcrAddress">
+                <Items tcrAddress={tcrAddress} />
+              </Route>
+            </Switch>
+          </TCRProvider>
+        )}
+      </Route>
       <Route path="/factory" exact component={Factory} />
       <Redirect from="/" exact to={`/tcr/${TCR2_ADDRESS}`} />
       <Route path="*" exact component={ErrorPage} />

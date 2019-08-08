@@ -2,17 +2,14 @@ import { Typography, Layout, Skeleton, Table, Button, Icon } from 'antd'
 import { Link } from 'react-router-dom'
 import React, { useEffect, useState, useContext } from 'react'
 import PropTypes from 'prop-types'
-import { useWeb3Context } from 'web3-react'
-import { ethers } from 'ethers'
-import { useDebounce } from 'use-debounce'
 import ErrorPage from '../error-page'
 import styled from 'styled-components/macro'
-import { abi } from '../../assets/contracts/GTCRMock.json'
 import SubmissionModal from '../../components/submission-modal'
 import { WalletContext } from '../../bootstrap/wallet-context'
 import web3EthAbi from 'web3-eth-abi'
 import { typeToSolidity } from '../../utils/item-types'
 import { ZERO_ADDRESS, ZERO_BYTES32 } from '../../utils/string'
+import { TCRContext } from '../../bootstrap/tcr-context'
 
 const StyledContent = styled(Layout.Content)`
   margin: 32px 0;
@@ -30,62 +27,12 @@ const StyledButton = styled(Button)`
   margin-top: 6px;
 `
 
-const Items = ({
-  match: {
-    params: { tcrAddress }
-  }
-}) => {
-  const { library, active } = useWeb3Context()
+const Items = ({ tcrAddress }) => {
   const { requestWeb3Auth } = useContext(WalletContext)
-  const [errored, setErrored] = useState()
-  const [metaEvidencePath, setMetaEvidencePath] = useState()
-  const [metaEvidence, setMetaEvidence] = useState()
-  const [debouncedMetaEvidencePath] = useDebounce(metaEvidencePath, 300)
-  const [tcr, setTcr] = useState()
+  const { metaEvidence, tcr, metaEvidenceError } = useContext(TCRContext)
   const [items, setItems] = useState()
   const [submissionFormOpen, setSubmissionFormOpen] = useState(false)
-
-  // Wire up the TCR.
-  useEffect(() => {
-    if (!library || !active || !tcrAddress) return
-    setTcr(new ethers.Contract(tcrAddress, abi, library))
-  }, [setTcr, library, active, tcrAddress])
-
-  // Fetch meta evidence logs.
-  useEffect(() => {
-    if (!tcr || !library) return
-
-    const saveMetaEvidencePath = (_, metaEvidencePath) => {
-      setMetaEvidencePath(metaEvidencePath)
-    }
-    try {
-      tcr.on('MetaEvidence', saveMetaEvidencePath)
-      library.resetEventsBlock(0) // Reset provider to fetch logs.
-    } catch (err) {
-      console.error(err)
-      setErrored(true)
-    }
-
-    return () => {
-      tcr.removeListener('MetaEvidence', saveMetaEvidencePath)
-    }
-  }, [tcr, library])
-
-  // Fetch latest meta evidence file.
-  useEffect(() => {
-    ;(async () => {
-      if (!debouncedMetaEvidencePath) return
-      try {
-        const file = await (await fetch(
-          process.env.REACT_APP_IPFS_GATEWAY + debouncedMetaEvidencePath
-        )).json()
-        setMetaEvidence(file)
-      } catch (err) {
-        console.error(err)
-        setErrored(true)
-      }
-    })()
-  }, [debouncedMetaEvidencePath, setMetaEvidence])
+  const [errored, setErrored] = useState()
 
   // Fetch items
   useEffect(() => {
@@ -122,7 +69,7 @@ const Items = ({
     })()
   }, [tcr, metaEvidence])
 
-  if (!tcrAddress || errored)
+  if (!tcrAddress || metaEvidenceError || errored)
     return (
       <ErrorPage
         code="400"
@@ -196,9 +143,7 @@ const Items = ({
 }
 
 Items.propTypes = {
-  match: PropTypes.shape({
-    params: PropTypes.objectOf(PropTypes.string)
-  }).isRequired
+  tcrAddress: PropTypes.string.isRequired
 }
 
 export default Items
