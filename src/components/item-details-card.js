@@ -1,18 +1,9 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import {
-  Card,
-  Descriptions,
-  Icon,
-  Tooltip,
-  Typography,
-  Switch,
-  Divider
-} from 'antd'
+import { Card, Descriptions, Icon, Tooltip, Typography, Switch } from 'antd'
 import EthAddress from './eth-address'
 import itemTypes from '../utils/item-types'
 import { ZERO_ADDRESS, LOREM_IPSUM } from '../utils/string'
-import ItemStatus from './item-status'
 import itemPropTypes from '../utils/item-prop-types'
 
 const DisplaySelector = ({ type, value }) => {
@@ -31,15 +22,7 @@ const DisplaySelector = ({ type, value }) => {
   }
 }
 
-const ItemDetailsCard = ({
-  title,
-  columns,
-  loading,
-  item,
-  timestamp,
-  challengePeriodDuration,
-  statusCode
-}) => (
+const ItemDetailsCard = ({ title, columns, loading, item }) => (
   <Card title={title} loading={loading}>
     {columns && (
       <Descriptions>
@@ -66,17 +49,6 @@ const ItemDetailsCard = ({
         ))}
       </Descriptions>
     )}
-    <Divider />
-    <Descriptions>
-      <Descriptions.Item label="Status" span={3}>
-        <ItemStatus
-          item={item}
-          challengePeriodDuration={challengePeriodDuration}
-          timestamp={timestamp}
-          statusCode={statusCode}
-        />
-      </Descriptions.Item>
-    </Descriptions>
   </Card>
 )
 
@@ -90,22 +62,14 @@ ItemDetailsCard.propTypes = {
   ),
   title: PropTypes.string,
   item: itemPropTypes,
-  loading: PropTypes.bool,
-  statusCode: PropTypes.number,
-
-  // BN.js instances.
-  timestamp: PropTypes.shape({}),
-  challengePeriodDuration: PropTypes.shape({})
+  loading: PropTypes.bool
 }
 
 ItemDetailsCard.defaultProps = {
   columns: null,
   title: null,
   item: null,
-  loading: null,
-  statusCode: 0,
-  timestamp: null,
-  challengePeriodDuration: null
+  loading: null
 }
 
 export default ItemDetailsCard

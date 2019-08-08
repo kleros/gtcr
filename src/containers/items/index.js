@@ -30,6 +30,11 @@ const StyledButton = styled(Button)`
   margin-top: 6px;
 `
 
+const StyledHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+`
+
 const Items = ({ tcrAddress }) => {
   const { requestWeb3Auth } = useContext(WalletContext)
   const { library } = useWeb3Context()
@@ -120,7 +125,7 @@ const Items = ({ tcrAddress }) => {
 
   return (
     <StyledLayoutContent>
-      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+      <StyledHeader>
         {metaEvidence ? (
           <Typography.Title ellipsis>{metaEvidence.title}</Typography.Title>
         ) : (
@@ -139,7 +144,7 @@ const Items = ({ tcrAddress }) => {
             <Icon type="plus-circle" />
           </StyledButton>
         )}
-      </div>
+      </StyledHeader>
       {metaEvidence ? (
         <Typography.Text ellipsis type="secondary">
           {metaEvidence.description}

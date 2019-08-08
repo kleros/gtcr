@@ -28,7 +28,8 @@ export const STATUS_CODE = {
   CROWDFUNDING: 5,
   CROWDFUNDING_WINNER: 6,
   WAITING_ARBITRATOR: 7,
-  PENDING_EXECUTION: 8
+  PENDING_SUBMISSION: 8,
+  PENDING_REMOVAL: 9
 }
 
 export const STATUS_TEXT = {
@@ -40,7 +41,8 @@ export const STATUS_TEXT = {
   5: 'Crowdfunding',
   6: 'Crowdfunding Winner',
   7: 'Waiting Arbitrator',
-  8: 'Pending Execution'
+  8: 'Pending Submission',
+  9: 'Pending Removal'
 }
 
 export const STATUS_COLOR = {
@@ -52,7 +54,8 @@ export const STATUS_COLOR = {
   [STATUS_CODE.CROWDFUNDING]: 'purple',
   [STATUS_CODE.CROWDFUNDING_WINNER]: '#9d52d6',
   [STATUS_CODE.WAITING_ARBITRATOR]: 'magenta',
-  [STATUS_CODE.PENDING_EXECUTION]: 'cyan'
+  [STATUS_CODE.PENDING_SUBMISSION]: 'cyan',
+  [STATUS_CODE.PENDING_REMOVAL]: 'volcano'
 }
 
 export const itemToStatusCode = (
@@ -73,7 +76,11 @@ export const itemToStatusCode = (
   if (status === CONTRACT_STATUS.REGISTERED) return STATUS_CODE.REGISTERED
   if (!disputed) {
     const challengePeriodEnd = submissionTime.add(challengePeriodDuration)
-    if (timestamp.gt(challengePeriodEnd)) return STATUS_CODE.PENDING_EXECUTION
+    if (timestamp.gt(challengePeriodEnd))
+      if (status === CONTRACT_STATUS.REGISTRATION_REQUESTED)
+        // The challenge period has passed.
+        return STATUS_CODE.PENDING_SUBMISSION
+      else return STATUS_CODE.PENDING_REMOVAL
 
     // Still in challenge period.
     if (status === CONTRACT_STATUS.REGISTRATION_REQUESTED)

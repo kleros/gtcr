@@ -1,9 +1,10 @@
-import { Layout } from 'antd'
+import { Layout, Divider, Card } from 'antd'
 import React, { useState, useEffect, useContext } from 'react'
 import PropTypes from 'prop-types'
 import ErrorPage from '../error-page'
 import styled from 'styled-components/macro'
 import ItemDetailsCard from '../../components/item-details-card'
+import ItemActions from '../../components/item-actions'
 import { useWeb3Context } from 'web3-react'
 import { typeToSolidity } from '../../utils/item-types'
 import web3EthAbi from 'web3-eth-abi'
@@ -55,10 +56,19 @@ const ItemDetails = ({ itemID, tcrAddress }) => {
 
   return (
     <StyledLayoutContent>
+      <Card>
+        <ItemActions
+          item={item}
+          itemName={metaEvidence && metaEvidence.itemName}
+          timestamp={timestamp}
+          challengePeriodDuration={challengePeriodDuration}
+        />
+      </Card>
+      <Divider />
       <ItemDetailsCard
         columns={metaEvidence && metaEvidence.columns}
-        item={item}
         loading={!metaEvidence || !item}
+        item={item}
         timestamp={timestamp}
         challengePeriodDuration={challengePeriodDuration}
       />
