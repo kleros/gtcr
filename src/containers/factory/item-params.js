@@ -17,6 +17,7 @@ import * as yup from 'yup'
 import CustomInput from '../../components/custom-input'
 import ItemDetailsCard from '../../components/item-details-card'
 import itemTypes from '../../utils/item-types'
+import { STATUS_CODE } from '../../utils/item-status'
 
 const { LONGTEXT } = itemTypes
 
@@ -182,7 +183,11 @@ const ItemParams = ({
           )}
         </FieldArray>
         <Divider />
-        <ItemDetailsCard title="Preview" columns={columns} />
+        <ItemDetailsCard
+          title="Preview"
+          columns={columns}
+          statusCode={STATUS_CODE.REGISTERED}
+        />
       </form>
     </Card>
   )

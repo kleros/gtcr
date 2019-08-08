@@ -5,15 +5,10 @@ import ErrorPage from '../error-page'
 import styled from 'styled-components/macro'
 import ItemDetailsCard from '../../components/item-details-card'
 import { useWeb3Context } from 'web3-react'
-import { ethers } from 'ethers'
 import { typeToSolidity } from '../../utils/item-types'
 import web3EthAbi from 'web3-eth-abi'
-import { itemToStatusCode } from '../../utils/item-status'
 import { TCRContext } from '../../bootstrap/tcr-context'
-
-const {
-  utils: { bigNumberify }
-} = ethers
+import { bigNumberify } from 'ethers/utils'
 
 const StyledLayoutContent = styled(Layout.Content)`
   background: white;
@@ -25,9 +20,11 @@ const StyledLayoutContent = styled(Layout.Content)`
 const ItemDetails = ({ itemID, tcrAddress }) => {
   const { library } = useWeb3Context()
   const [errored, setErrored] = useState()
-  const { metaEvidence, tcr, metaEvidenceError } = useContext(TCRContext)
-  const [itemStatus, setItemStatus] = useState()
+  const { metaEvidence, tcr, tcrErrored, challengePeriodDuration } = useContext(
+    TCRContext
+  )
   const [item, setItem] = useState()
+  const [timestamp, setTimestamp] = useState()
 
   // Fetch item.
   useEffect(() => {
@@ -36,14 +33,9 @@ const ItemDetails = ({ itemID, tcrAddress }) => {
       const { columns } = metaEvidence
       const types = columns.map(column => typeToSolidity[column.type])
       try {
-        const item = await tcr.getItem(itemID)
+        const item = { ...(await tcr.getItem(itemID)) } // Spread to convert from array to object.
         item.data = web3EthAbi.decodeParameters(types, item.data)
-        const timestamp = bigNumberify((await library.getBlock()).timestamp)
-        const challengePeriodDuration = await tcr.challengePeriodDuration()
-
-        setItemStatus(
-          itemToStatusCode(item, timestamp, challengePeriodDuration)
-        )
+        setTimestamp(bigNumberify((await library.getBlock()).timestamp))
         setItem(item)
       } catch (err) {
         console.error(err)
@@ -52,7 +44,7 @@ const ItemDetails = ({ itemID, tcrAddress }) => {
     })()
   }, [setItem, metaEvidence, tcr, itemID, library])
 
-  if (!tcrAddress || !itemID || errored || metaEvidenceError)
+  if (!tcrAddress || !itemID || errored || tcrErrored)
     return (
       <ErrorPage
         code="400"
@@ -65,9 +57,10 @@ const ItemDetails = ({ itemID, tcrAddress }) => {
     <StyledLayoutContent>
       <ItemDetailsCard
         columns={metaEvidence && metaEvidence.columns}
-        data={item && item.data}
+        item={item}
         loading={!metaEvidence || !item}
-        statusCode={itemStatus}
+        timestamp={timestamp}
+        challengePeriodDuration={challengePeriodDuration}
       />
     </StyledLayoutContent>
   )

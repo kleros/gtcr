@@ -10,6 +10,9 @@ import web3EthAbi from 'web3-eth-abi'
 import { typeToSolidity } from '../../utils/item-types'
 import { ZERO_ADDRESS, ZERO_BYTES32 } from '../../utils/string'
 import { TCRContext } from '../../bootstrap/tcr-context'
+import ItemStatus from '../../components/item-status'
+import { useWeb3Context } from 'web3-react'
+import { bigNumberify } from 'ethers/utils'
 
 const StyledContent = styled(Layout.Content)`
   margin: 32px 0;
@@ -29,10 +32,14 @@ const StyledButton = styled(Button)`
 
 const Items = ({ tcrAddress }) => {
   const { requestWeb3Auth } = useContext(WalletContext)
-  const { metaEvidence, tcr, metaEvidenceError } = useContext(TCRContext)
+  const { library } = useWeb3Context()
+  const { tcr, metaEvidence, challengePeriodDuration, tcrErrored } = useContext(
+    TCRContext
+  )
   const [items, setItems] = useState()
   const [submissionFormOpen, setSubmissionFormOpen] = useState(false)
   const [errored, setErrored] = useState()
+  const [timestamp, setTimestamp] = useState()
 
   // Fetch items
   useEffect(() => {
@@ -51,25 +58,30 @@ const Items = ({ tcrAddress }) => {
           .filter(item => item.ID !== ZERO_BYTES32) // Filter out empty slots from the results.
           .map((item, i) => {
             const decodedItem = web3EthAbi.decodeParameters(types, item.data)
-            return columns.reduce(
-              (acc, curr, i) => ({
-                ...acc,
-                [curr.label]: decodedItem[i],
-                ID: item.ID
-              }),
-              { key: i }
-            )
+            // Return the item columns along with its TCR status data.
+            return {
+              tcrData: item,
+              ...columns.reduce(
+                (acc, curr, i) => ({
+                  ...acc,
+                  [curr.label]: decodedItem[i],
+                  ID: item.ID
+                }),
+                { key: i }
+              )
+            }
           })
 
+        setTimestamp(bigNumberify((await library.getBlock()).timestamp))
         setItems(items)
       } catch (err) {
         console.error(err)
         setErrored(true)
       }
     })()
-  }, [tcr, metaEvidence])
+  }, [tcr, metaEvidence, library])
 
-  if (!tcrAddress || metaEvidenceError || errored)
+  if (!tcrAddress || tcrErrored || errored)
     return (
       <ErrorPage
         code="400"
@@ -80,16 +92,31 @@ const Items = ({ tcrAddress }) => {
 
   const columns = !metaEvidence
     ? []
-    : metaEvidence.columns
-        .filter(column => !!column.isIdentifier)
-        .map(column => ({
-          title: column.label,
-          key: column.label,
-          dataIndex: column.label,
-          render: (text, item) => (
-            <Link to={`/tcr/${tcrAddress}/${item.ID}`}>{text}</Link>
+    : [
+        {
+          title: 'Item Status',
+          key: 'Item Status',
+          dataIndex: 'Item Status',
+          render: (_, item) => (
+            <ItemStatus
+              item={item.tcrData}
+              challengePeriodDuration={challengePeriodDuration}
+              timestamp={timestamp}
+            />
           )
-        }))
+        }
+      ].concat(
+        metaEvidence.columns
+          .filter(column => !!column.isIdentifier)
+          .map(column => ({
+            title: column.label,
+            key: column.label,
+            dataIndex: column.label,
+            render: (text, item) => (
+              <Link to={`/tcr/${tcrAddress}/${item.ID}`}>{text}</Link>
+            )
+          }))
+      )
 
   return (
     <StyledLayoutContent>

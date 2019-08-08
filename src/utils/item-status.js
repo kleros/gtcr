@@ -1,8 +1,4 @@
-import { ethers } from 'ethers'
-
-const {
-  utils: { bigNumberify }
-} = ethers
+import { bigNumberify } from 'ethers/utils'
 
 export const PARTY = {
   NONE: 0,

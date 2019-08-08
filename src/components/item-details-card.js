@@ -7,13 +7,13 @@ import {
   Tooltip,
   Typography,
   Switch,
-  Divider,
-  Badge
+  Divider
 } from 'antd'
 import EthAddress from './eth-address'
 import itemTypes from '../utils/item-types'
 import { ZERO_ADDRESS, LOREM_IPSUM } from '../utils/string'
-import { STATUS_CODE, STATUS_COLOR, STATUS_TEXT } from '../utils/item-status'
+import ItemStatus from './item-status'
+import itemPropTypes from '../utils/item-prop-types'
 
 const DisplaySelector = ({ type, value }) => {
   switch (type) {
@@ -31,29 +31,14 @@ const DisplaySelector = ({ type, value }) => {
   }
 }
 
-const badgeStatus = statusCode => {
-  switch (statusCode) {
-    case STATUS_CODE.REMOVAL_REQUESTED:
-    case STATUS_CODE.SUBMITTED:
-    case STATUS_CODE.WAITING_ARBITRATOR:
-    case STATUS_CODE.CROWDFUNDING:
-    case STATUS_CODE.CROWDFUNDING_WINNER:
-    case STATUS_CODE.PENDING_EXECUTION:
-      return 'processing'
-    case STATUS_CODE.REJECTED:
-    case STATUS_CODE.REGISTERED:
-      return 'default'
-    default:
-      throw new Error(`Unhandled status code ${statusCode}`)
-  }
-}
-
 const ItemDetailsCard = ({
   title,
   columns,
-  data,
   loading,
-  statusCode = STATUS_CODE.REGISTERED
+  item,
+  timestamp,
+  challengePeriodDuration,
+  statusCode
 }) => (
   <Card title={title} loading={loading}>
     {columns && (
@@ -73,7 +58,10 @@ const ItemDetailsCard = ({
               </span>
             }
           >
-            <DisplaySelector type={column.type} value={data && data[index]} />
+            <DisplaySelector
+              type={column.type}
+              value={item && item.data[index]}
+            />
           </Descriptions.Item>
         ))}
       </Descriptions>
@@ -81,10 +69,11 @@ const ItemDetailsCard = ({
     <Divider />
     <Descriptions>
       <Descriptions.Item label="Status" span={3}>
-        <Badge
-          status={badgeStatus(statusCode)}
-          color={STATUS_COLOR[statusCode]}
-          text={STATUS_TEXT[statusCode]}
+        <ItemStatus
+          item={item}
+          challengePeriodDuration={challengePeriodDuration}
+          timestamp={timestamp}
+          statusCode={statusCode}
         />
       </Descriptions.Item>
     </Descriptions>
@@ -100,24 +89,23 @@ ItemDetailsCard.propTypes = {
     })
   ),
   title: PropTypes.string,
-  data: PropTypes.objectOf(
-    PropTypes.oneOfType([
-      PropTypes.string,
-      PropTypes.bool,
-      PropTypes.number,
-      PropTypes.shape({})
-    ])
-  ),
+  item: itemPropTypes,
   loading: PropTypes.bool,
-  statusCode: PropTypes.number
+  statusCode: PropTypes.number,
+
+  // BN.js instances.
+  timestamp: PropTypes.shape({}),
+  challengePeriodDuration: PropTypes.shape({})
 }
 
 ItemDetailsCard.defaultProps = {
   columns: null,
   title: null,
-  data: null,
+  item: null,
   loading: null,
-  statusCode: 0
+  statusCode: 0,
+  timestamp: null,
+  challengePeriodDuration: null
 }
 
 export default ItemDetailsCard

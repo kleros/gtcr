@@ -12,12 +12,22 @@ const useTcr = tcrAddress => {
   const [debouncedMetaEvidencePath] = useDebounce(metaEvidencePath, 300)
   const [tcr, setTcr] = useState()
   const [errored, setErrored] = useState(false)
+  const [challengePeriodDuration, setChallengePeriodDuration] = useState()
 
   // Wire up the TCR.
   useEffect(() => {
     if (!library || !active || !tcrAddress) return
     setTcr(new ethers.Contract(tcrAddress, abi, library))
   }, [setTcr, library, active, tcrAddress])
+
+  // Get TCR data.
+  useEffect(() => {
+    if (!tcr) return
+    ;(async () => {
+      // Get the challenge period duration.
+      setChallengePeriodDuration(await tcr.challengePeriodDuration())
+    })()
+  }, [setChallengePeriodDuration, tcr])
 
   // Fetch meta evidence logs.
   useEffect(() => {
@@ -54,7 +64,12 @@ const useTcr = tcrAddress => {
     })()
   }, [debouncedMetaEvidencePath, setMetaEvidence])
 
-  return { metaEvidence, tcr, errored }
+  return {
+    tcr,
+    metaEvidence,
+    tcrErrored: errored,
+    challengePeriodDuration
+  }
 }
 
 const TCRContext = createContext()
