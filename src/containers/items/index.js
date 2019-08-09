@@ -9,7 +9,7 @@ import { WalletContext } from '../../bootstrap/wallet-context'
 import web3EthAbi from 'web3-eth-abi'
 import { typeToSolidity } from '../../utils/item-types'
 import { ZERO_ADDRESS, ZERO_BYTES32 } from '../../utils/string'
-import { TCRContext } from '../../bootstrap/tcr-context'
+import { TCRViewContext } from '../../bootstrap/tcr-view-context'
 import ItemStatus from '../../components/item-status'
 import { useWeb3Context } from 'web3-react'
 import { bigNumberify } from 'ethers/utils'
@@ -43,7 +43,7 @@ const Items = ({ tcrAddress }) => {
     metaEvidence,
     challengePeriodDuration,
     tcrErrored
-  } = useContext(TCRContext)
+  } = useContext(TCRViewContext)
   const [items, setItems] = useState()
   const [submissionFormOpen, setSubmissionFormOpen] = useState(false)
   const [errored, setErrored] = useState()

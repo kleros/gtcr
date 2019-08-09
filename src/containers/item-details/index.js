@@ -8,7 +8,7 @@ import ItemActions from './item-actions'
 import { useWeb3Context } from 'web3-react'
 import { typeToSolidity } from '../../utils/item-types'
 import web3EthAbi from 'web3-eth-abi'
-import { TCRContext } from '../../bootstrap/tcr-context'
+import { TCRViewContext } from '../../bootstrap/tcr-view-context'
 import { bigNumberify } from 'ethers/utils'
 
 const StyledLayoutContent = styled(Layout.Content)`
@@ -26,7 +26,7 @@ const ItemDetails = ({ itemID, tcrAddress }) => {
     gtcr,
     tcrErrored,
     challengePeriodDuration
-  } = useContext(TCRContext)
+  } = useContext(TCRViewContext)
   const [item, setItem] = useState()
   const [timestamp, setTimestamp] = useState()
 

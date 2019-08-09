@@ -7,7 +7,7 @@ import { itemToStatusCode, STATUS_CODE } from '../../utils/item-status'
 import itemPropTypes from '../../utils/item-prop-types'
 import ETHAddress from '../../components/eth-address'
 import ItemActionModal from '../../components/item-action-modal'
-import { TCRContext } from '../../bootstrap/tcr-context'
+import { TCRViewContext } from '../../bootstrap/tcr-view-context'
 import { WalletContext } from '../../bootstrap/wallet-context'
 
 const ItemActionButton = ({
@@ -87,7 +87,9 @@ const StyledDescriptions = styled(Descriptions)`
 const ItemActions = ({ item, timestamp }) => {
   const [modalOpen, setModalOpen] = useState()
   const { pushWeb3Action } = useContext(WalletContext)
-  const { gtcr, metaEvidence, challengePeriodDuration } = useContext(TCRContext)
+  const { gtcr, metaEvidence, challengePeriodDuration } = useContext(
+    TCRViewContext
+  )
 
   if (!item || !timestamp || !challengePeriodDuration || !metaEvidence)
     return <Skeleton active title={false} paragraph={{ rows: 2 }} />

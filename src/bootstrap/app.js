@@ -39,7 +39,7 @@ import { NETWORK_NAME } from '../utils/network-names'
 import ErrorPage from '../containers/error-page'
 import useMainTCR2 from '../hooks/tcr2'
 import Identicon from '../components/identicon'
-import { TCRProvider } from './tcr-context'
+import { TCRViewProvider } from './tcr-view-context'
 
 const StyledSpin = styled(Spin)`
   left: 50%;
@@ -271,7 +271,7 @@ const Content = () => {
             params: { tcrAddress }
           }
         }) => (
-          <TCRProvider tcrAddress={tcrAddress}>
+          <TCRViewProvider tcrAddress={tcrAddress}>
             <Switch>
               <Route path="/tcr/:tcrAddress/:itemID">
                 {({
@@ -284,7 +284,7 @@ const Content = () => {
                 <Items tcrAddress={tcrAddress} />
               </Route>
             </Switch>
-          </TCRProvider>
+          </TCRViewProvider>
         )}
       </Route>
       <Route path="/factory" exact component={Factory} />

@@ -5,7 +5,7 @@ import { abi } from '../assets/contracts/GTCRMock.json'
 import { ethers } from 'ethers'
 import PropTypes from 'prop-types'
 
-const useTcr = tcrAddress => {
+const useTcrView = tcrAddress => {
   const { library, active } = useWeb3Context()
   const [metaEvidencePath, setMetaEvidencePath] = useState()
   const [metaEvidence, setMetaEvidence] = useState()
@@ -72,16 +72,16 @@ const useTcr = tcrAddress => {
   }
 }
 
-const TCRContext = createContext()
-const TCRProvider = ({ children, tcrAddress }) => (
-  <TCRContext.Provider value={{ ...useTcr(tcrAddress) }}>
+const TCRViewContext = createContext()
+const TCRViewProvider = ({ children, tcrAddress }) => (
+  <TCRViewContext.Provider value={{ ...useTcrView(tcrAddress) }}>
     {children}
-  </TCRContext.Provider>
+  </TCRViewContext.Provider>
 )
 
-TCRProvider.propTypes = {
+TCRViewProvider.propTypes = {
   children: PropTypes.node.isRequired,
   tcrAddress: PropTypes.string.isRequired
 }
 
-export { TCRContext, TCRProvider }
+export { TCRViewContext, TCRViewProvider }
