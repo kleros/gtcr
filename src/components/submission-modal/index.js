@@ -17,6 +17,7 @@ const StyledSpin = styled(Spin)`
   transform: translate(-50%, -50%);
 `
 
+// TODO: Move submission modal to containers folder.
 const SubmissionModal = ({ metaEvidence, tcrAddress, ...rest }) => {
   const { pushWeb3Action } = useContext(WalletContext)
   if (!metaEvidence)
@@ -47,6 +48,7 @@ const SubmissionModal = ({ metaEvidence, tcrAddress, ...rest }) => {
       // Submission Deposit = requester deposit + arbitration cost + fee stake
       // fee stake = requester deposit * shared stake multiplier / multiplier divisor
 
+      // TODO: Move TCR-wide data to TCRView context for caching.
       // Get the arbitration cost from the arbitrator.
       const arbitratorAddress = await gtcr.arbitrator()
       const arbitratorExtraData = await gtcr.arbitratorExtraData()

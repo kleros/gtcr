@@ -35,6 +35,7 @@ const StyledHeader = styled.div`
   justify-content: space-between;
 `
 
+// TODO: Watch for new submissions and refetch when new items are submitted.
 const Items = ({ tcrAddress }) => {
   const { requestWeb3Auth } = useContext(WalletContext)
   const { library } = useWeb3Context()

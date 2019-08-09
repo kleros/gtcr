@@ -18,6 +18,7 @@ const StyledLayoutContent = styled(Layout.Content)`
   flex-direction: column;
 `
 
+// TODO: Add event listener for events that affect this item. Refetch data when necessary.
 const ItemDetails = ({ itemID, tcrAddress }) => {
   const { library } = useWeb3Context()
   const [errored, setErrored] = useState()

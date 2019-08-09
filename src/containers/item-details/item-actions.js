@@ -12,6 +12,7 @@ import { WalletContext } from '../../bootstrap/wallet-context'
 import { abi } from '../../assets/contracts/GTCRMock.json'
 import { ethers } from 'ethers'
 
+// TODO: Open modal on action click.
 const ItemActionButton = ({ statusCode, itemName, itemID, pushWeb3Action }) => {
   const { gtcr: gtcrView } = useContext(TCRViewContext)
   const executeRequest = async (_, signer) => {
