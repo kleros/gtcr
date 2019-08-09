@@ -10,33 +10,33 @@ const useTcr = tcrAddress => {
   const [metaEvidencePath, setMetaEvidencePath] = useState()
   const [metaEvidence, setMetaEvidence] = useState()
   const [debouncedMetaEvidencePath] = useDebounce(metaEvidencePath, 300)
-  const [tcr, setTcr] = useState()
+  const [gtcr, setGtcr] = useState()
   const [errored, setErrored] = useState(false)
   const [challengePeriodDuration, setChallengePeriodDuration] = useState()
 
   // Wire up the TCR.
   useEffect(() => {
     if (!library || !active || !tcrAddress) return
-    setTcr(new ethers.Contract(tcrAddress, abi, library))
-  }, [setTcr, library, active, tcrAddress])
+    setGtcr(new ethers.Contract(tcrAddress, abi, library))
+  }, [setGtcr, library, active, tcrAddress])
 
   // Get TCR data.
   useEffect(() => {
-    if (!tcr) return
+    if (!gtcr) return
     ;(async () => {
       // Get the challenge period duration.
-      setChallengePeriodDuration(await tcr.challengePeriodDuration())
+      setChallengePeriodDuration(await gtcr.challengePeriodDuration())
     })()
-  }, [setChallengePeriodDuration, tcr])
+  }, [setChallengePeriodDuration, gtcr])
 
   // Fetch meta evidence logs.
   useEffect(() => {
-    if (!tcr || !library) return
+    if (!gtcr || !library) return
     const saveMetaEvidencePath = (_, metaEvidencePath) => {
       setMetaEvidencePath(metaEvidencePath)
     }
     try {
-      tcr.on('MetaEvidence', saveMetaEvidencePath)
+      gtcr.on('MetaEvidence', saveMetaEvidencePath)
       library.resetEventsBlock(0) // Reset provider to fetch logs.
     } catch (err) {
       console.error(err)
@@ -44,9 +44,9 @@ const useTcr = tcrAddress => {
     }
 
     return () => {
-      tcr.removeListener('MetaEvidence', saveMetaEvidencePath)
+      gtcr.removeListener('MetaEvidence', saveMetaEvidencePath)
     }
-  }, [tcr, library])
+  }, [gtcr, library])
 
   // Fetch latest meta evidence file.
   useEffect(() => {
@@ -65,7 +65,7 @@ const useTcr = tcrAddress => {
   }, [debouncedMetaEvidencePath, setMetaEvidence])
 
   return {
-    tcr,
+    gtcr,
     metaEvidence,
     tcrErrored: errored,
     challengePeriodDuration

@@ -4,7 +4,7 @@ import PropTypes from 'prop-types'
 import ErrorPage from '../error-page'
 import styled from 'styled-components/macro'
 import ItemDetailsCard from '../../components/item-details-card'
-import ItemActions from '../../components/item-actions'
+import ItemActions from './item-actions'
 import { useWeb3Context } from 'web3-react'
 import { typeToSolidity } from '../../utils/item-types'
 import web3EthAbi from 'web3-eth-abi'
@@ -21,20 +21,23 @@ const StyledLayoutContent = styled(Layout.Content)`
 const ItemDetails = ({ itemID, tcrAddress }) => {
   const { library } = useWeb3Context()
   const [errored, setErrored] = useState()
-  const { metaEvidence, tcr, tcrErrored, challengePeriodDuration } = useContext(
-    TCRContext
-  )
+  const {
+    metaEvidence,
+    gtcr,
+    tcrErrored,
+    challengePeriodDuration
+  } = useContext(TCRContext)
   const [item, setItem] = useState()
   const [timestamp, setTimestamp] = useState()
 
   // Fetch item.
   useEffect(() => {
     ;(async () => {
-      if (!metaEvidence || !tcr || !itemID || !library) return
+      if (!metaEvidence || !gtcr || !itemID || !library) return
       const { columns } = metaEvidence
       const types = columns.map(column => typeToSolidity[column.type])
       try {
-        const item = { ...(await tcr.getItem(itemID)) } // Spread to convert from array to object.
+        const item = { ...(await gtcr.getItem(itemID)) } // Spread to convert from array to object.
         item.data = web3EthAbi.decodeParameters(types, item.data)
         setTimestamp(bigNumberify((await library.getBlock()).timestamp))
         setItem(item)
@@ -43,7 +46,7 @@ const ItemDetails = ({ itemID, tcrAddress }) => {
         setErrored(true)
       }
     })()
-  }, [setItem, metaEvidence, tcr, itemID, library])
+  }, [setItem, metaEvidence, gtcr, itemID, library])
 
   if (!tcrAddress || !itemID || errored || tcrErrored)
     return (
@@ -57,12 +60,7 @@ const ItemDetails = ({ itemID, tcrAddress }) => {
   return (
     <StyledLayoutContent>
       <Card>
-        <ItemActions
-          item={item}
-          itemName={metaEvidence && metaEvidence.itemName}
-          timestamp={timestamp}
-          challengePeriodDuration={challengePeriodDuration}
-        />
+        <ItemActions item={item} timestamp={timestamp} />
       </Card>
       <Divider />
       <ItemDetailsCard

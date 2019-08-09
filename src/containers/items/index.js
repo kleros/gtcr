@@ -38,9 +38,12 @@ const StyledHeader = styled.div`
 const Items = ({ tcrAddress }) => {
   const { requestWeb3Auth } = useContext(WalletContext)
   const { library } = useWeb3Context()
-  const { tcr, metaEvidence, challengePeriodDuration, tcrErrored } = useContext(
-    TCRContext
-  )
+  const {
+    gtcr,
+    metaEvidence,
+    challengePeriodDuration,
+    tcrErrored
+  } = useContext(TCRContext)
   const [items, setItems] = useState()
   const [submissionFormOpen, setSubmissionFormOpen] = useState(false)
   const [errored, setErrored] = useState()
@@ -49,11 +52,11 @@ const Items = ({ tcrAddress }) => {
   // Fetch items
   useEffect(() => {
     ;(async () => {
-      if (!tcr || !metaEvidence) return
+      if (!gtcr || !metaEvidence) return
       try {
         const { columns } = metaEvidence
         const types = columns.map(column => typeToSolidity[column.type])
-        const items = (await tcr.queryItems(
+        const items = (await gtcr.queryItems(
           ZERO_BYTES32, // Cursor.
           50, // Count.
           [false, true, true, true, true, true, true, true], // Filter.
@@ -65,7 +68,7 @@ const Items = ({ tcrAddress }) => {
             const decodedItem = web3EthAbi.decodeParameters(types, item.data)
             // Return the item columns along with its TCR status data.
             return {
-              tcrData: item,
+              tcrData: { ...item }, // Spread to convert from array to object.
               ...columns.reduce(
                 (acc, curr, i) => ({
                   ...acc,
@@ -84,7 +87,7 @@ const Items = ({ tcrAddress }) => {
         setErrored(true)
       }
     })()
-  }, [tcr, metaEvidence, library])
+  }, [gtcr, metaEvidence, library])
 
   if (!tcrAddress || tcrErrored || errored)
     return (

@@ -1,14 +1,28 @@
-import React from 'react'
+import React, { useState, useContext } from 'react'
 import { Descriptions, Button, Skeleton } from 'antd'
-import ItemStatus from './item-status'
-import { itemToStatusCode, STATUS_CODE } from '../utils/item-status'
+import ItemStatus from '../../components/item-status'
 import styled from 'styled-components/macro'
 import PropTypes from 'prop-types'
-import itemPropTypes from '../utils/item-prop-types'
-import ETHAddress from './eth-address'
+import { itemToStatusCode, STATUS_CODE } from '../../utils/item-status'
+import itemPropTypes from '../../utils/item-prop-types'
+import ETHAddress from '../../components/eth-address'
+import ItemActionModal from '../../components/item-action-modal'
+import { TCRContext } from '../../bootstrap/tcr-context'
+import { WalletContext } from '../../bootstrap/wallet-context'
 
-const ItemActionButton = ({ statusCode, itemName }) => {
-  if (!statusCode || !itemName)
+const ItemActionButton = ({
+  statusCode,
+  itemName,
+  itemID,
+  pushWeb3Action,
+  gtcr
+}) => {
+  const executeRequest = async () => ({
+    tx: await gtcr.executeRequest(itemID),
+    actionMessage: `Executing request.`
+  })
+
+  if (!statusCode || !itemName || !itemID)
     return (
       <Button type="primary" disabled loading>
         Loading...
@@ -36,9 +50,17 @@ const ItemActionButton = ({ statusCode, itemName }) => {
     case STATUS_CODE.CROWDFUNDING_WINNER:
       return <Button type="primary">Fund Appeal</Button>
     case STATUS_CODE.PENDING_SUBMISSION:
-      return <Button type="primary">Execute Submission</Button>
+      return (
+        <Button type="primary" onClick={() => pushWeb3Action(executeRequest)}>
+          Execute Submission
+        </Button>
+      )
     case STATUS_CODE.PENDING_REMOVAL:
-      return <Button type="primary">Execute Removal</Button>
+      return (
+        <Button type="primary" onClick={() => pushWeb3Action(executeRequest)}>
+          Execute Removal
+        </Button>
+      )
     case STATUS_CODE.CHALLENGED:
     case STATUS_CODE.WAITING_ARBITRATOR:
       return (
@@ -62,15 +84,15 @@ const StyledDescriptions = styled(Descriptions)`
   max-width: 500px;
 `
 
-const ItemActions = ({
-  item,
-  itemName,
-  challengePeriodDuration,
-  timestamp
-}) => {
-  if (!item || !timestamp || !challengePeriodDuration)
+const ItemActions = ({ item, timestamp }) => {
+  const [modalOpen, setModalOpen] = useState()
+  const { pushWeb3Action } = useContext(WalletContext)
+  const { gtcr, metaEvidence, challengePeriodDuration } = useContext(TCRContext)
+
+  if (!item || !timestamp || !challengePeriodDuration || !metaEvidence)
     return <Skeleton active title={false} paragraph={{ rows: 2 }} />
 
+  const { itemName } = metaEvidence
   const statusCode = itemToStatusCode(item, timestamp, challengePeriodDuration)
 
   return (
@@ -87,24 +109,36 @@ const ItemActions = ({
           <ETHAddress address={item.requester} />
         </Descriptions.Item>
       </StyledDescriptions>
-      <ItemActionButton statusCode={statusCode} itemName={itemName} />
+      <ItemActionButton
+        statusCode={statusCode}
+        itemName={itemName}
+        itemID={item && item.ID}
+        pushWeb3Action={pushWeb3Action}
+        gtcr={gtcr}
+      />
+      {/* Only render modal if the item status requires it. */}
+      {statusCode !== STATUS_CODE.PENDING_SUBMISSION &&
+        statusCode !== STATUS_CODE.PENDING_REMOVAL && (
+          <ItemActionModal
+            statusCode={statusCode}
+            item={item}
+            isOpen={modalOpen}
+            onClose={() => setModalOpen(false)}
+          />
+        )}
     </StyledRequestInfo>
   )
 }
 
 ItemActions.propTypes = {
   item: itemPropTypes,
-  itemName: PropTypes.string,
 
   // BN.js instances.
-  challengePeriodDuration: PropTypes.shape({}),
   timestamp: PropTypes.shape({})
 }
 
 ItemActions.defaultProps = {
   item: null,
-  itemName: null,
-  challengePeriodDuration: null,
   timestamp: null
 }
 
