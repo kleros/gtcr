@@ -9,18 +9,29 @@ import ETHAddress from '../../components/eth-address'
 import ItemActionModal from '../../components/item-action-modal'
 import { TCRViewContext } from '../../bootstrap/tcr-view-context'
 import { WalletContext } from '../../bootstrap/wallet-context'
+import { abi } from '../../assets/contracts/GTCRMock.json'
+import { ethers } from 'ethers'
 
-const ItemActionButton = ({
-  statusCode,
-  itemName,
-  itemID,
-  pushWeb3Action,
-  gtcr
-}) => {
-  const executeRequest = async () => ({
-    tx: await gtcr.executeRequest(itemID),
-    actionMessage: `Executing request.`
-  })
+const ItemActionButton = ({ statusCode, itemName, itemID, pushWeb3Action }) => {
+  const { gtcr: gtcrView } = useContext(TCRViewContext)
+  const executeRequest = async (_, signer) => {
+    const gtcr = new ethers.Contract(gtcrView.address, abi, signer)
+    return {
+      tx: await gtcr.executeRequest(itemID),
+      actionMessage: `Executing ${
+        statusCode === STATUS_CODE.PENDING_SUBMISSION ? 'submission' : 'removal'
+      }.`
+    }
+  }
+  const challengeRequest = async (_, signer) => {
+    const gtcr = new ethers.Contract(gtcrView.address, abi, signer)
+    return {
+      tx: await gtcr.challengeRequest(itemID),
+      actionMessage: `Challenging ${
+        statusCode.SUBMITTED ? 'submission' : 'removal'
+      }.`
+    }
+  }
 
   if (!statusCode || !itemName || !itemID)
     return (
@@ -36,13 +47,21 @@ const ItemActionButton = ({
       return <Button type="primary">Remove {itemName}</Button>
     case STATUS_CODE.SUBMITTED:
       return (
-        <Button size="large" type="challenge">
+        <Button
+          size="large"
+          type="primary"
+          onClick={() => pushWeb3Action(challengeRequest)}
+        >
           Challenge Submission
         </Button>
       )
     case STATUS_CODE.REMOVAL_REQUESTED:
       return (
-        <Button size="large" type="challenge">
+        <Button
+          size="large"
+          type="primary"
+          onClick={() => pushWeb3Action(challengeRequest)}
+        >
           Challenge Removal
         </Button>
       )

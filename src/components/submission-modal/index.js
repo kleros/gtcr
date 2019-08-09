@@ -4,7 +4,6 @@ import styled from 'styled-components/macro'
 import PropTypes from 'prop-types'
 import SubmissionForm from './form'
 import web3EthAbi from 'web3-eth-abi'
-import FastJsonRpcSigner from '../../utils/fast-signer'
 import { abi as _gtcr } from '../../assets/contracts/GTCRMock.json'
 import { abi as _arbitrator } from '../../assets/contracts/Arbitrator.json'
 import { WalletContext } from '../../bootstrap/wallet-context'
@@ -40,10 +39,7 @@ const SubmissionModal = ({ metaEvidence, tcrAddress, ...rest }) => {
       columns.map(column => typeToSolidity[column.type]),
       columns.map(column => values[column.label])
     )
-    pushWeb3Action(async ({ library, account }) => {
-      // TODO: Remove FastJsonRpcSigner when ethers v5 is out.
-      // See https://github.com/ethers-io/ethers.js/issues/511
-      const signer = new FastJsonRpcSigner(library.getSigner(account))
+    pushWeb3Action(async (_, signer) => {
       const gtcr = new ethers.Contract(tcrAddress, _gtcr, signer)
 
       // Calculate submission deposit.

@@ -4,7 +4,6 @@ import PropTypes from 'prop-types'
 import React, { useContext, useState } from 'react'
 import { WalletContext } from '../../bootstrap/wallet-context'
 import { ethers } from 'ethers'
-import FastJsonRpcSigner from '../../utils/fast-signer'
 import _GTCR from '../../assets/contracts/GTCRMock.json'
 import styled from 'styled-components/macro'
 import ipfsPublish from '../../utils/ipfs-publish'
@@ -50,10 +49,7 @@ const Deploy = ({ resetTcrState, setTxState, tcrState }) => {
   const [txSubmitted, setTxSubmitted] = useState()
 
   const onDeploy = () => {
-    pushWeb3Action(async ({ library, account }) => {
-      // TODO: Remove FastJsonRpcSigner when ethers v5 is out.
-      // See https://github.com/ethers-io/ethers.js/issues/511
-      const signer = new FastJsonRpcSigner(library.getSigner(account))
+    pushWeb3Action(async ({ account }, signer) => {
       const factory = ethers.ContractFactory.fromSolidity(_GTCR, signer)
       const registrationMetaEvidence = await getTcrMetaEvidence(tcrState)
       const clearingMetaEvidence = await getTcrMetaEvidence(tcrState)

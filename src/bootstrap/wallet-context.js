@@ -4,6 +4,7 @@ import { useWeb3Context } from 'web3-react'
 import PropTypes from 'prop-types'
 import uuid from 'uuid/v4'
 import { NETWORK, NETWORK_NAME } from '../utils/network-names'
+import FastJsonRpcSigner from '../utils/fast-signer'
 
 const actionTypes = {
   TRANSACTION: 'TRANSACTION',
@@ -119,9 +120,14 @@ const useNotificationWeb3 = () => {
 
         while (web3Actions.length > 0) {
           // Process each web3 action.
+          // TODO: Remove FastJsonRpcSigner when ethers v5 is out.
+          // See https://github.com/ethers-io/ethers.js/issues/511
+          const signer = new FastJsonRpcSigner(
+            web3Context.library.getSigner(web3Context.account)
+          )
           const web3Action = web3Actions.pop()
           if (web3Action.type === actionTypes.TRANSACTION) {
-            await processWeb3Action(web3Action, web3Context)
+            await processWeb3Action(web3Action, web3Context, signer)
             return
           }
           if (
@@ -147,8 +153,9 @@ const useNotificationWeb3 = () => {
 /**
  * @param {{type: string, action: function}} web3Action - The action dispatched to the wallet.
  * @param {object} web3Context - The web3-react context.
+ * @param {object} signer - The signer to use.
  */
-async function processWeb3Action(web3Action, web3Context) {
+async function processWeb3Action(web3Action, web3Context, signer) {
   const notificationID = uuid()
   notification.info({
     message: 'Requesting Signature',
@@ -157,7 +164,8 @@ async function processWeb3Action(web3Action, web3Context) {
   })
   try {
     const { tx, actionMessage, onTxMined } = await web3Action.action(
-      web3Context
+      web3Context,
+      signer
     )
     const hash = tx.hash || tx.deployTransaction.hash
     const etherscanLink = `https://${
