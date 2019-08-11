@@ -8,6 +8,7 @@ import { abi as _arbitrator } from '../../assets/contracts/Arbitrator.json'
 import { WalletContext } from '../../bootstrap/wallet-context'
 import { ethers } from 'ethers'
 import { gtcrEncode } from '../../utils/encoder'
+import { TCRViewContext } from '../../bootstrap/tcr-view-context'
 
 const StyledSpin = styled(Spin)`
   left: 50%;
@@ -18,6 +19,13 @@ const StyledSpin = styled(Spin)`
 
 const SubmissionModal = ({ metaEvidence, tcrAddress, ...rest }) => {
   const { pushWeb3Action } = useContext(WalletContext)
+  const {
+    arbitrator: arbitratorAddress,
+    arbitratorExtraData,
+    requesterBaseDeposit,
+    sharedStakeMultiplier,
+    MULTIPLIER_DIVISOR
+  } = useContext(TCRViewContext)
   if (!metaEvidence)
     return (
       <Modal
@@ -39,31 +47,26 @@ const SubmissionModal = ({ metaEvidence, tcrAddress, ...rest }) => {
     pushWeb3Action(async (_, signer) => {
       const gtcr = new ethers.Contract(tcrAddress, _gtcr, signer)
 
-      // Calculate submission deposit.
-      //
-      // Submission Deposit = requester deposit + arbitration cost + fee stake
-      // fee stake = requester deposit * shared stake multiplier / multiplier divisor
-
-      // TODO: Move TCR-wide data to TCRView context for caching.
       // Get the arbitration cost from the arbitrator.
-      const arbitratorAddress = await gtcr.arbitrator()
-      const arbitratorExtraData = await gtcr.arbitratorExtraData()
       const arbitrator = new ethers.Contract(
         arbitratorAddress,
         _arbitrator,
         signer
       )
 
-      const requesterBaseDeposit = await gtcr.requesterBaseDeposit()
-      const sharedStakeMultiplier = await gtcr.sharedStakeMultiplier()
-      const multiplierDivisor = await gtcr.MULTIPLIER_DIVISOR()
+      // Calculate submission deposit.
+      //
+      // Submission Deposit = requester deposit + arbitration cost + fee stake
+      // fee stake = requester deposit * shared stake multiplier / multiplier divisor
       const arbitrationCost = await arbitrator.arbitrationCost(
         arbitratorExtraData
       )
       const depositInWei = requesterBaseDeposit
         .add(arbitrationCost)
         .add(
-          requesterBaseDeposit.mul(sharedStakeMultiplier).div(multiplierDivisor)
+          requesterBaseDeposit
+            .mul(sharedStakeMultiplier)
+            .div(MULTIPLIER_DIVISOR)
         )
 
       // Request signature and submit.

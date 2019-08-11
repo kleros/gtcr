@@ -1,33 +1,50 @@
 import React, { createContext, useState, useEffect } from 'react'
 import { useWeb3Context } from 'web3-react'
 import { useDebounce } from 'use-debounce'
-import { abi } from '../assets/contracts/GTCRMock.json'
+import { abi as _gtcr } from '../assets/contracts/GTCRMock.json'
+import { abi as _arbitrableTCRView } from '../assets/contracts/ArbitrableTCRView.json'
 import { ethers } from 'ethers'
 import PropTypes from 'prop-types'
+import useArbitrableTCRView from '../hooks/arbitrable-tcr-view'
 
 const useTcrView = tcrAddress => {
   const { library, active } = useWeb3Context()
+  const ARBITRABLE_TCR_VIEW_ADDRESS = useArbitrableTCRView()
   const [metaEvidencePath, setMetaEvidencePath] = useState()
   const [metaEvidence, setMetaEvidence] = useState()
   const [debouncedMetaEvidencePath] = useDebounce(metaEvidencePath, 300)
   const [gtcr, setGtcr] = useState()
+  const [arbitrableTCRView, setArbitrableTCRView] = useState()
   const [errored, setErrored] = useState(false)
-  const [challengePeriodDuration, setChallengePeriodDuration] = useState()
+  const [arbitrableTCRData, setArbitrableTCRData] = useState()
 
   // Wire up the TCR.
   useEffect(() => {
     if (!library || !active || !tcrAddress) return
-    setGtcr(new ethers.Contract(tcrAddress, abi, library))
-  }, [setGtcr, library, active, tcrAddress])
+    setGtcr(new ethers.Contract(tcrAddress, _gtcr, library))
+    setArbitrableTCRView(
+      new ethers.Contract(
+        ARBITRABLE_TCR_VIEW_ADDRESS,
+        _arbitrableTCRView,
+        library
+      )
+    )
+  }, [
+    setGtcr,
+    setArbitrableTCRView,
+    library,
+    active,
+    tcrAddress,
+    ARBITRABLE_TCR_VIEW_ADDRESS
+  ])
 
   // Get TCR data.
   useEffect(() => {
-    if (!gtcr) return
+    if (!arbitrableTCRView || !tcrAddress) return
     ;(async () => {
-      // Get the challenge period duration.
-      setChallengePeriodDuration(await gtcr.challengePeriodDuration())
+      setArbitrableTCRData(await arbitrableTCRView.fetchData(tcrAddress))
     })()
-  }, [setChallengePeriodDuration, gtcr])
+  }, [setArbitrableTCRData, arbitrableTCRView, tcrAddress])
 
   // Fetch meta evidence logs.
   useEffect(() => {
@@ -68,7 +85,7 @@ const useTcrView = tcrAddress => {
     gtcr,
     metaEvidence,
     tcrErrored: errored,
-    challengePeriodDuration
+    ...arbitrableTCRData
   }
 }
 
