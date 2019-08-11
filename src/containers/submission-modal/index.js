@@ -17,7 +17,6 @@ const StyledSpin = styled(Spin)`
   transform: translate(-50%, -50%);
 `
 
-// TODO: Move submission modal to containers folder.
 const SubmissionModal = ({ metaEvidence, tcrAddress, ...rest }) => {
   const { pushWeb3Action } = useContext(WalletContext)
   if (!metaEvidence)
@@ -36,6 +35,8 @@ const SubmissionModal = ({ metaEvidence, tcrAddress, ...rest }) => {
     )
 
   const postSubmit = (values, columns) => {
+
+    // TODO: Swap for RLP encoding.
     const encodedParams = web3EthAbi.encodeParameters(
       columns.map(column => typeToSolidity[column.type]),
       columns.map(column => values[column.label])

@@ -4,7 +4,7 @@ import React, { useEffect, useState, useContext } from 'react'
 import PropTypes from 'prop-types'
 import ErrorPage from '../error-page'
 import styled from 'styled-components/macro'
-import SubmissionModal from '../../components/submission-modal'
+import SubmissionModal from '../submission-modal'
 import { WalletContext } from '../../bootstrap/wallet-context'
 import web3EthAbi from 'web3-eth-abi'
 import { typeToSolidity } from '../../utils/item-types'
@@ -66,6 +66,7 @@ const Items = ({ tcrAddress }) => {
         ))[0]
           .filter(item => item.ID !== ZERO_BYTES32) // Filter out empty slots from the results.
           .map((item, i) => {
+            // TODO: Decode RLP.
             const decodedItem = web3EthAbi.decodeParameters(types, item.data)
             // Return the item columns along with its TCR status data.
             return {

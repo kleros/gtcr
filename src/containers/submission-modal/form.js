@@ -4,7 +4,7 @@ import { Button, Form, Input, Tooltip, Icon, Switch } from 'antd'
 import styled from 'styled-components/macro'
 import PropTypes from 'prop-types'
 import itemTypes, { typeDefaultValues } from '../../utils/item-types'
-import CustomInput from '../custom-input'
+import CustomInput from '../../components/custom-input'
 
 const InputSelector = ({ type, setFieldValue, ...props }) => {
   const { name, label } = props
