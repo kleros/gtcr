@@ -3,12 +3,11 @@ import { Spin, Modal, Button } from 'antd'
 import styled from 'styled-components/macro'
 import PropTypes from 'prop-types'
 import SubmissionForm from './form'
-import web3EthAbi from 'web3-eth-abi'
 import { abi as _gtcr } from '../../assets/contracts/GTCRMock.json'
 import { abi as _arbitrator } from '../../assets/contracts/Arbitrator.json'
 import { WalletContext } from '../../bootstrap/wallet-context'
 import { ethers } from 'ethers'
-import { typeToSolidity } from '../../utils/item-types'
+import { gtcrEncode } from '../../utils/encoder'
 
 const StyledSpin = styled(Spin)`
   left: 50%;
@@ -35,12 +34,8 @@ const SubmissionModal = ({ metaEvidence, tcrAddress, ...rest }) => {
     )
 
   const postSubmit = (values, columns) => {
+    const encodedParams = gtcrEncode({ columns, values })
 
-    // TODO: Swap for RLP encoding.
-    const encodedParams = web3EthAbi.encodeParameters(
-      columns.map(column => typeToSolidity[column.type]),
-      columns.map(column => values[column.label])
-    )
     pushWeb3Action(async (_, signer) => {
       const gtcr = new ethers.Contract(tcrAddress, _gtcr, signer)
 

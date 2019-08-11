@@ -6,13 +6,12 @@ import ErrorPage from '../error-page'
 import styled from 'styled-components/macro'
 import SubmissionModal from '../submission-modal'
 import { WalletContext } from '../../bootstrap/wallet-context'
-import web3EthAbi from 'web3-eth-abi'
-import { typeToSolidity } from '../../utils/item-types'
 import { ZERO_ADDRESS, ZERO_BYTES32 } from '../../utils/string'
 import { TCRViewContext } from '../../bootstrap/tcr-view-context'
 import ItemStatus from '../../components/item-status'
 import { useWeb3Context } from 'web3-react'
 import { bigNumberify } from 'ethers/utils'
+import { gtcrDecode } from '../../utils/encoder'
 
 const StyledContent = styled(Layout.Content)`
   margin: 32px 0;
@@ -56,7 +55,6 @@ const Items = ({ tcrAddress }) => {
       if (!gtcr || !metaEvidence) return
       try {
         const { columns } = metaEvidence
-        const types = columns.map(column => typeToSolidity[column.type])
         const items = (await gtcr.queryItems(
           ZERO_BYTES32, // Cursor.
           50, // Count.
@@ -66,8 +64,7 @@ const Items = ({ tcrAddress }) => {
         ))[0]
           .filter(item => item.ID !== ZERO_BYTES32) // Filter out empty slots from the results.
           .map((item, i) => {
-            // TODO: Decode RLP.
-            const decodedItem = web3EthAbi.decodeParameters(types, item.data)
+            const decodedItem = gtcrDecode({ values: item.data, columns })
             // Return the item columns along with its TCR status data.
             return {
               tcrData: { ...item }, // Spread to convert from array to object.

@@ -6,10 +6,9 @@ import styled from 'styled-components/macro'
 import ItemDetailsCard from '../../components/item-details-card'
 import ItemActions from './item-actions'
 import { useWeb3Context } from 'web3-react'
-import { typeToSolidity } from '../../utils/item-types'
-import web3EthAbi from 'web3-eth-abi'
 import { TCRViewContext } from '../../bootstrap/tcr-view-context'
 import { bigNumberify } from 'ethers/utils'
+import { gtcrDecode } from '../../utils/encoder'
 
 const StyledLayoutContent = styled(Layout.Content)`
   background: white;
@@ -36,10 +35,10 @@ const ItemDetails = ({ itemID, tcrAddress }) => {
     ;(async () => {
       if (!metaEvidence || !gtcr || !itemID || !library) return
       const { columns } = metaEvidence
-      const types = columns.map(column => typeToSolidity[column.type])
       try {
         const item = { ...(await gtcr.getItem(itemID)) } // Spread to convert from array to object.
-        item.data = web3EthAbi.decodeParameters(types, item.data)
+
+        item.decodedData = gtcrDecode({ columns, values: item.data })
         setTimestamp(bigNumberify((await library.getBlock()).timestamp))
         setItem(item)
       } catch (err) {
@@ -66,7 +65,7 @@ const ItemDetails = ({ itemID, tcrAddress }) => {
       <Divider />
       <ItemDetailsCard
         columns={metaEvidence && metaEvidence.columns}
-        loading={!metaEvidence || !item}
+        loading={!metaEvidence || !item || !item.decodedData}
         item={item}
         timestamp={timestamp}
         challengePeriodDuration={challengePeriodDuration}

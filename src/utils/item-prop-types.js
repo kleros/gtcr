@@ -5,12 +5,8 @@ export default PropTypes.shape({
   disputed: PropTypes.bool.isRequired,
   disputeStatus: PropTypes.number.isRequired,
   hasPaid: PropTypes.arrayOf(PropTypes.bool).isRequired,
-  data: PropTypes.oneOfType([
-    PropTypes.string,
-    PropTypes.bool,
-    PropTypes.number,
-    PropTypes.shape({})
-  ]).isRequired,
+  data: PropTypes.string.isRequired,
+  decodedData: PropTypes.array,
 
   // BN.js instances
   currentRuling: PropTypes.shape({}).isRequired,

@@ -20,6 +20,7 @@
     "@kleros/archon": "^0.10.1",
     "@loadable/component": "^5.10.1",
     "antd": "^3.20.1",
+    "bn.js": "^5.0.0",
     "ethers": "^4.0.33",
     "formik": "^1.5.7",
     "prop-types": "^15.7.2",
@@ -29,10 +30,10 @@
     "react-helmet": "^5.2.1",
     "react-router-dom": "^5.0.1",
     "react-scripts": "3.0.1",
+    "rlp": "^2.2.3",
     "styled-components": "^4.3.2",
     "use-debounce": "^2.2.0",
     "uuid": "^3.3.2",
-    "web3-eth-abi": "^1.2.0",
     "web3-react": "^5.0.4",
     "yup": "^0.27.0"
   },
@@ -93,5 +94,10 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "babelMacros": {
+    "styledComponents": {
+      "pure": true
+    }
   }
 }

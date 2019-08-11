@@ -43,7 +43,7 @@ const ItemDetailsCard = ({ title, columns, loading, item }) => (
           >
             <DisplaySelector
               type={column.type}
-              value={item && item.data[index]}
+              value={item && item.decodedData[index]}
             />
           </Descriptions.Item>
         ))}
