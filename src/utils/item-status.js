@@ -58,6 +58,31 @@ export const STATUS_COLOR = {
   [STATUS_CODE.PENDING_REMOVAL]: 'volcano'
 }
 
+export const getActionLabel = ({ statusCode, itemName = 'item' }) => {
+  switch (statusCode) {
+    case STATUS_CODE.REJECTED:
+      return `Resubmit ${itemName}`
+    case STATUS_CODE.REGISTERED:
+      return `Remove ${itemName}`
+    case STATUS_CODE.SUBMITTED:
+      return 'Challenge submission'
+    case STATUS_CODE.REMOVAL_REQUESTED:
+      return 'Challenge removal'
+    case STATUS_CODE.CROWDFUNDING:
+    case STATUS_CODE.CROWDFUNDING_WINNER:
+      return 'Contribute Fees'
+    case STATUS_CODE.PENDING_SUBMISSION:
+      return 'Execute submission'
+    case STATUS_CODE.PENDING_REMOVAL:
+      return 'Execute removal'
+    case STATUS_CODE.CHALLENGED:
+    case STATUS_CODE.WAITING_ARBITRATOR:
+      return 'Waiting Arbitrator'
+    default:
+      throw new Error(`Unhandled status code ${statusCode}`)
+  }
+}
+
 export const itemToStatusCode = (
   {
     status,

@@ -3,6 +3,7 @@ import { useWeb3Context } from 'web3-react'
 import { useDebounce } from 'use-debounce'
 import { abi as _gtcr } from '../assets/contracts/GTCRMock.json'
 import { abi as _arbitrableTCRView } from '../assets/contracts/ArbitrableTCRView.json'
+import { abi as _arbitrator } from '../assets/contracts/Arbitrator.json'
 import { ethers } from 'ethers'
 import PropTypes from 'prop-types'
 import useArbitrableTCRView from '../hooks/arbitrable-tcr-view'
@@ -17,6 +18,8 @@ const useTcrView = tcrAddress => {
   const [arbitrableTCRView, setArbitrableTCRView] = useState()
   const [errored, setErrored] = useState(false)
   const [arbitrableTCRData, setArbitrableTCRData] = useState()
+  const [arbitrationCost, setArbitrationCost] = useState()
+  const [requestDeposit, setRequestDeposit] = useState()
 
   // Wire up the TCR.
   useEffect(() => {
@@ -45,6 +48,42 @@ const useTcrView = tcrAddress => {
       setArbitrableTCRData(await arbitrableTCRView.fetchData(tcrAddress))
     })()
   }, [setArbitrableTCRData, arbitrableTCRView, tcrAddress])
+
+  // Get the current arbitration cost and calculate total request deposit.
+  useEffect(() => {
+    ;(async () => {
+      if (!arbitrableTCRData) return
+      const {
+        arbitrator: arbitratorAddress,
+        arbitratorExtraData,
+        requesterBaseDeposit,
+        sharedStakeMultiplier,
+        MULTIPLIER_DIVISOR
+      } = arbitrableTCRData
+
+      const arbitrator = new ethers.Contract(
+        arbitratorAddress,
+        _arbitrator,
+        library
+      )
+      const arbitrationCost = await arbitrator.arbitrationCost(
+        arbitratorExtraData
+      )
+
+      // Request deposit = requester deposit + arbitration cost + fee stake
+      // fee stake = requester deposit * shared stake multiplier / multiplier divisor
+      const depositInWei = requesterBaseDeposit
+        .add(arbitrationCost)
+        .add(
+          requesterBaseDeposit
+            .mul(sharedStakeMultiplier)
+            .div(MULTIPLIER_DIVISOR)
+        )
+
+      setArbitrationCost(arbitrationCost)
+      setRequestDeposit(depositInWei)
+    })()
+  }, [arbitrableTCRData, setArbitrationCost, library, arbitrationCost])
 
   // Fetch meta evidence logs.
   useEffect(() => {
@@ -85,6 +124,9 @@ const useTcrView = tcrAddress => {
     gtcr,
     metaEvidence,
     tcrErrored: errored,
+    arbitrationCost,
+    requestDeposit,
+    tcrAddress,
     ...arbitrableTCRData
   }
 }

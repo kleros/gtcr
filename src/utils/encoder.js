@@ -9,6 +9,7 @@ const bufferToHex = buf => {
   return `0x${buf.toString('hex')}`
 }
 
+// TODO: Handle negative numbers.
 export const gtcrEncode = ({ columns, values }) => {
   const itemArr = columns.map(col => {
     switch (typeToSolidity[col.type]) {
