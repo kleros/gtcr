@@ -23,67 +23,90 @@ const useTcrView = tcrAddress => {
 
   // Wire up the TCR.
   useEffect(() => {
-    if (!library || !active || !tcrAddress) return
-    setGtcr(new ethers.Contract(tcrAddress, _gtcr, library))
-    setArbitrableTCRView(
-      new ethers.Contract(
-        ARBITRABLE_TCR_VIEW_ADDRESS,
-        _arbitrableTCRView,
-        library
+    if (!library || !active || !tcrAddress || !ARBITRABLE_TCR_VIEW_ADDRESS)
+      return
+    try {
+      setGtcr(new ethers.Contract(tcrAddress, _gtcr, library))
+      setArbitrableTCRView(
+        new ethers.Contract(
+          ARBITRABLE_TCR_VIEW_ADDRESS,
+          _arbitrableTCRView,
+          library
+        )
       )
-    )
+    } catch (err) {
+      console.error(err)
+      setErrored(true)
+    }
   }, [
     setGtcr,
     setArbitrableTCRView,
     library,
     active,
     tcrAddress,
-    ARBITRABLE_TCR_VIEW_ADDRESS
+    ARBITRABLE_TCR_VIEW_ADDRESS,
+    setErrored
   ])
 
   // Get TCR data.
   useEffect(() => {
     if (!arbitrableTCRView || !tcrAddress) return
     ;(async () => {
-      setArbitrableTCRData(await arbitrableTCRView.fetchData(tcrAddress))
+      try {
+        setArbitrableTCRData(await arbitrableTCRView.fetchData(tcrAddress))
+      } catch (err) {
+        console.error(err)
+        setErrored(true)
+      }
     })()
-  }, [setArbitrableTCRData, arbitrableTCRView, tcrAddress])
+  }, [setArbitrableTCRData, arbitrableTCRView, tcrAddress, setErrored])
 
   // Get the current arbitration cost and calculate total request deposit.
   useEffect(() => {
     ;(async () => {
       if (!arbitrableTCRData) return
-      const {
-        arbitrator: arbitratorAddress,
-        arbitratorExtraData,
-        requesterBaseDeposit,
-        sharedStakeMultiplier,
-        MULTIPLIER_DIVISOR
-      } = arbitrableTCRData
+      try {
+        const {
+          arbitrator: arbitratorAddress,
+          arbitratorExtraData,
+          requesterBaseDeposit,
+          sharedStakeMultiplier,
+          MULTIPLIER_DIVISOR
+        } = arbitrableTCRData
 
-      const arbitrator = new ethers.Contract(
-        arbitratorAddress,
-        _arbitrator,
-        library
-      )
-      const arbitrationCost = await arbitrator.arbitrationCost(
-        arbitratorExtraData
-      )
-
-      // Request deposit = requester deposit + arbitration cost + fee stake
-      // fee stake = requester deposit * shared stake multiplier / multiplier divisor
-      const depositInWei = requesterBaseDeposit
-        .add(arbitrationCost)
-        .add(
-          requesterBaseDeposit
-            .mul(sharedStakeMultiplier)
-            .div(MULTIPLIER_DIVISOR)
+        const arbitrator = new ethers.Contract(
+          arbitratorAddress,
+          _arbitrator,
+          library
+        )
+        const arbitrationCost = await arbitrator.arbitrationCost(
+          arbitratorExtraData
         )
 
-      setArbitrationCost(arbitrationCost)
-      setRequestDeposit(depositInWei)
+        // Request deposit = requester deposit + arbitration cost + fee stake
+        // fee stake = requester deposit * shared stake multiplier / multiplier divisor
+        const depositInWei = requesterBaseDeposit
+          .add(arbitrationCost)
+          .add(
+            requesterBaseDeposit
+              .mul(sharedStakeMultiplier)
+              .div(MULTIPLIER_DIVISOR)
+          )
+
+        setArbitrationCost(arbitrationCost)
+        setRequestDeposit(depositInWei)
+      } catch (err) {
+        console.error(err)
+        setErrored(true)
+      }
     })()
-  }, [arbitrableTCRData, setArbitrationCost, library, arbitrationCost])
+  }, [
+    arbitrableTCRData,
+    setArbitrationCost,
+    library,
+    arbitrationCost,
+    setErrored
+  ])
 
   // Fetch meta evidence logs.
   useEffect(() => {
