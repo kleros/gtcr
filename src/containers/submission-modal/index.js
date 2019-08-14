@@ -35,10 +35,9 @@ const SubmissionModal = ({ metaEvidence, tcrAddress, ...rest }) => {
     )
 
   const postSubmit = (values, columns) => {
-    const encodedParams = gtcrEncode({ columns, values })
-
     pushWeb3Action(async (_, signer) => {
       const gtcr = new ethers.Contract(tcrAddress, _gtcr, signer)
+      const encodedParams = gtcrEncode({ columns, values })
 
       // Request signature and submit.
       const tx = await gtcr.requestStatusChange(encodedParams, {
