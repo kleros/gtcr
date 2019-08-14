@@ -8,6 +8,7 @@ import _GTCR from '../../assets/contracts/GTCRMock.json'
 import styled from 'styled-components/macro'
 import ipfsPublish from '../../utils/ipfs-publish'
 import Archon from '@kleros/archon'
+import { parseEther } from 'ethers/utils'
 
 const StyledButton = styled(Button)`
   margin-right: 7px;
@@ -60,8 +61,8 @@ const Deploy = ({ resetTcrState, setTxState, tcrState }) => {
         registrationMetaEvidence,
         clearingMetaEvidence,
         account,
-        ethers.utils.parseEther(tcrState.requesterBaseDeposit),
-        ethers.utils.parseEther(tcrState.challengerBaseDeposit),
+        parseEther(tcrState.requesterBaseDeposit.toString()),
+        parseEther(tcrState.challengerBaseDeposit.toString()),
         '300', // Challenge period duration (in seconds)
         '10000', // Shared stake multiplier in basis points.
         '10000', // Winner stake multiplier in basis points.
