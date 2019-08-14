@@ -12,6 +12,8 @@ import ItemStatus from '../../components/item-status'
 import { useWeb3Context } from 'web3-react'
 import { bigNumberify } from 'ethers/utils'
 import { gtcrDecode } from '../../utils/encoder'
+import itemTypes from '../../utils/item-types'
+import ETHAddress from '../../components/eth-address'
 
 const StyledContent = styled(Layout.Content)`
   margin: 32px 0;
@@ -115,13 +117,18 @@ const Items = ({ tcrAddress }) => {
       ].concat(
         metaEvidence.columns
           .filter(column => !!column.isIdentifier)
-          .map(column => ({
+          .map((column, i) => ({
             title: column.label,
             key: column.label,
             dataIndex: column.label,
-            render: (text, item) => (
-              <Link to={`/tcr/${tcrAddress}/${item.ID}`}>{text}</Link>
-            )
+            render: (text, item) =>
+              i === 0 ? (
+                <Link to={`/tcr/${tcrAddress}/${item.ID}`}>{text}</Link>
+              ) : column.type === itemTypes.ADDRESS ? (
+                <ETHAddress address={text} />
+              ) : (
+                text
+              )
           }))
       )
 
