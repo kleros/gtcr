@@ -20,6 +20,7 @@ const useTcrView = tcrAddress => {
   const [arbitrableTCRData, setArbitrableTCRData] = useState()
   const [arbitrationCost, setArbitrationCost] = useState()
   const [requestDeposit, setRequestDeposit] = useState()
+  const [challengeDeposit, setChallengeDeposit] = useState()
 
   // Wire up the TCR.
   useEffect(() => {
@@ -61,7 +62,7 @@ const useTcrView = tcrAddress => {
     })()
   }, [setArbitrableTCRData, arbitrableTCRView, tcrAddress, setErrored])
 
-  // Get the current arbitration cost and calculate total request deposit.
+  // Get the current arbitration cost to calculate request and challenge deposits.
   useEffect(() => {
     ;(async () => {
       if (!arbitrableTCRData) return
@@ -70,6 +71,7 @@ const useTcrView = tcrAddress => {
           arbitrator: arbitratorAddress,
           arbitratorExtraData,
           requesterBaseDeposit,
+          challengerBaseDeposit,
           sharedStakeMultiplier,
           MULTIPLIER_DIVISOR
         } = arbitrableTCRData
@@ -83,9 +85,19 @@ const useTcrView = tcrAddress => {
           arbitratorExtraData
         )
 
-        // Request deposit = requester deposit + arbitration cost + fee stake
+        // Request deposit = requester base deposit + arbitration cost + fee stake
         // fee stake = requester deposit * shared stake multiplier / multiplier divisor
-        const depositInWei = requesterBaseDeposit
+        const requestDeposit = requesterBaseDeposit
+          .add(arbitrationCost)
+          .add(
+            requesterBaseDeposit
+              .mul(sharedStakeMultiplier)
+              .div(MULTIPLIER_DIVISOR)
+          )
+
+        // Challenge deposit = challenger base deposit + arbitration cost + fee stake
+        // fee stake = requester deposit * shared stake multiplier / multiplier divisor
+        const challengeDeposit = challengerBaseDeposit
           .add(arbitrationCost)
           .add(
             requesterBaseDeposit
@@ -94,7 +106,8 @@ const useTcrView = tcrAddress => {
           )
 
         setArbitrationCost(arbitrationCost)
-        setRequestDeposit(depositInWei)
+        setRequestDeposit(requestDeposit)
+        setChallengeDeposit(challengeDeposit)
       } catch (err) {
         console.error(err)
         setErrored(true)
@@ -105,7 +118,8 @@ const useTcrView = tcrAddress => {
     setArbitrationCost,
     library,
     arbitrationCost,
-    setErrored
+    setErrored,
+    setChallengeDeposit
   ])
 
   // Fetch meta evidence logs.
@@ -149,6 +163,7 @@ const useTcrView = tcrAddress => {
     tcrErrored: errored,
     arbitrationCost,
     requestDeposit,
+    challengeDeposit,
     tcrAddress,
     ...arbitrableTCRData
   }

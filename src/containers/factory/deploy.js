@@ -63,7 +63,7 @@ const Deploy = ({ resetTcrState, setTxState, tcrState }) => {
         account,
         parseEther(tcrState.requesterBaseDeposit.toString()),
         parseEther(tcrState.challengerBaseDeposit.toString()),
-        '300', // Challenge period duration (in seconds)
+        (60 * 60 * 24).toString(), // Challenge period duration (in seconds)
         '10000', // Shared stake multiplier in basis points.
         '10000', // Winner stake multiplier in basis points.
         '20000' // Loser stake multiplier in basis points.

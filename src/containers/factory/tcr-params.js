@@ -53,7 +53,7 @@ const TCRParams = ({
         />
         <CustomInput
           name="arbitratorAddress"
-          placeholder="0xabcdef123..."
+          placeholder="0x7331deadbeef..."
           hasFeedback
           error={errors.arbitratorAddress}
           touched={touched.arbitratorAddress}
