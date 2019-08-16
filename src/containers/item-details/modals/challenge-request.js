@@ -1,6 +1,6 @@
 import React, { useContext } from 'react'
 import PropTypes from 'prop-types'
-import { Modal, Descriptions, Typography } from 'antd'
+import { Modal, Descriptions, Typography, Button } from 'antd'
 import { ethers } from 'ethers'
 import { abi as _gtcr } from '../../../assets/contracts/GTCRMock.json'
 import { STATUS_CODE } from '../../../utils/item-status'
@@ -21,12 +21,19 @@ const ChallengeRequestModal = ({
   const { challengeDeposit, tcrAddress } = useContext(TCRViewContext)
   const { pushWeb3Action } = useContext(WalletContext)
 
-  const challengeRequest = () => {
+  const challengeRequest = async ({ title, description, fileURI }) => {
     pushWeb3Action(async (_, signer) => {
       const gtcr = new ethers.Contract(tcrAddress, _gtcr, signer)
 
+      // TODO: Upload evidence JSON file.
+      const evidenceJSONURI = {
+        title,
+        description,
+        fileURI
+      }
+
       // Request signature and submit.
-      const tx = await gtcr.challengeRequest(item.ID, {
+      const tx = await gtcr.challengeRequest(item.ID, evidenceJSONURI, {
         value: challengeDeposit
       })
 
@@ -40,8 +47,25 @@ const ChallengeRequestModal = ({
     })
   }
 
+  const EVIDENCE_FORM_ID = 'challengeEvidenceForm'
+
   return (
-    <Modal {...rest} onOk={challengeRequest}>
+    <Modal
+      footer={[
+        <Button key="back" onClick={rest.onCancel}>
+          Return
+        </Button>,
+        <Button
+          key="challengeSubmit"
+          type="primary"
+          form={EVIDENCE_FORM_ID}
+          htmlType="submit"
+        >
+          Challenge
+        </Button>
+      ]}
+      {...rest}
+    >
       <Typography.Title level={4}>
         See the&nbsp;
         <a
@@ -58,15 +82,9 @@ const ChallengeRequestModal = ({
         {statusCode === STATUS_CODE.SUBMITTED
           ? 'submission '
           : 'removal request '}
-        should be denied.
+        should be denied:
       </Typography.Paragraph>
-      <EvidenceForm
-        evidenceName={`${itemName || 'item'} ${
-          statusCode === STATUS_CODE.SUBMITTED
-            ? 'submission '
-            : 'removal request '
-        } challenge`}
-      />
+      <EvidenceForm onSubmit={challengeRequest} formID={EVIDENCE_FORM_ID} />
       <Typography.Paragraph>
         To challenge a{' '}
         {statusCode === STATUS_CODE.SUBMITTED

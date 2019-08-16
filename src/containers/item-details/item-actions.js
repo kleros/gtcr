@@ -47,6 +47,7 @@ const ItemActions = ({ item, timestamp }) => {
     }
   }
 
+  // TODO: Only open modal if user has a wallet connected.
   const onClick = () => {
     switch (statusCode) {
       case STATUS_CODE.REJECTED:

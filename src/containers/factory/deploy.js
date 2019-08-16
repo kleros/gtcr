@@ -139,8 +139,8 @@ Deploy.propTypes = {
       })
     ).isRequired,
     arbitratorAddress: PropTypes.string.isRequired,
-    requesterBaseDeposit: PropTypes.string.isRequired,
-    challengerBaseDeposit: PropTypes.string.isRequired
+    requesterBaseDeposit: PropTypes.number.isRequired,
+    challengerBaseDeposit: PropTypes.number.isRequired
   }).isRequired
 }
 
