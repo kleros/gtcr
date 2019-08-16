@@ -5,7 +5,11 @@
  * @param {string} ipfsUrl - The ipfs gateway to use
  * @returns {object} ipfs response. Should include the hash and path of the stored item.
  */
-const ipfsPublish = async (fileName, data, ipfsUrl) => {
+const ipfsPublish = async (
+  fileName,
+  data,
+  ipfsUrl = process.env.REACT_APP_IPFS_GATEWAY
+) => {
   const buffer = await Buffer.from(data)
 
   return new Promise((resolve, reject) => {

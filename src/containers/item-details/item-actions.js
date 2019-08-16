@@ -93,7 +93,8 @@ const ItemActions = ({ item, timestamp }) => {
       />
       {/* Only render modal if the item status requires it. */}
       {statusCode !== STATUS_CODE.PENDING_SUBMISSION &&
-        statusCode !== STATUS_CODE.PENDING_REMOVAL && (
+        statusCode !== STATUS_CODE.PENDING_REMOVAL &&
+        statusCode !== STATUS_CODE.CHALLENGED && (
           <ItemActionModal
             statusCode={statusCode}
             itemName={itemName}

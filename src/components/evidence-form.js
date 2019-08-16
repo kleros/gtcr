@@ -4,6 +4,10 @@ import styled from 'styled-components/macro'
 import { withFormik, Field } from 'formik'
 import * as yup from 'yup'
 import PropTypes from 'prop-types'
+import readFile from '../utils/read-file'
+import ipfsPublish from '../utils/ipfs-publish'
+import { sanitize } from '../utils/string'
+import { PARTY } from '../utils/item-status'
 
 const StyledCheckbox = styled(Checkbox)`
   margin-bottom: 1em;
@@ -20,18 +24,27 @@ const EvidenceForm = ({
   const [includeAttachment, setIncludeAttachment] = useState()
 
   const fileUploadStatusChange = ({ file: { status } }) => {
-    // TODO: Update UI
     if (status === 'done') message.success(`Evidence uploaded successfully.`)
     else if (status === 'error') message.error(`Evidence upload failed.`)
   }
-  const beforeUpload = async () => {
-    console.info('before upload')
-    // TODO: Remove meta data that could identify submitter.
-  }
-  const action = async () => {
-    console.info('upload')
-    // TODO: Upload attatchment to IPFS.
-    setFieldValue('fileURI', '/ipfs/QWa')
+
+  const customRequest = async ({ file, onSuccess, onError }) => {
+    try {
+      const fileTypeExtension = file.name.split('.')[1]
+      const data = await readFile(file.preview)
+      const ipfsFileObj = await ipfsPublish(sanitize(file.name), data)
+      const fileURI = `/ipfs/${ipfsFileObj[1].hash}${ipfsFileObj[0].path}`
+
+      setFieldValue('evidenceAttachment', {
+        fileURI,
+        fileTypeExtension,
+        evidenceSide: PARTY.CHALLENGER
+      })
+      onSuccess('ok', `${process.env.REACT_APP_IPFS_GATEWAY}${fileURI}`)
+    } catch (err) {
+      console.error(err)
+      onError(err)
+    }
   }
 
   return (
@@ -70,8 +83,7 @@ const EvidenceForm = ({
         <Upload.Dragger
           name="evidence"
           onChange={fileUploadStatusChange}
-          beforeUpload={beforeUpload}
-          action={action}
+          customRequest={customRequest}
           multiple={false}
         >
           <p className="ant-upload-drag-icon">

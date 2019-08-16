@@ -9,6 +9,8 @@ import ETHAmount from '../../../components/eth-amount'
 import { WalletContext } from '../../../bootstrap/wallet-context'
 import itemPropTypes from '../../../utils/item-prop-types'
 import EvidenceForm from '../../../components/evidence-form.js'
+import Archon from '@kleros/archon'
+import ipfsPublish from '../../../utils/ipfs-publish.js'
 
 const ChallengeRequestModal = ({
   item,
@@ -21,19 +23,39 @@ const ChallengeRequestModal = ({
   const { challengeDeposit, tcrAddress } = useContext(TCRViewContext)
   const { pushWeb3Action } = useContext(WalletContext)
 
-  const challengeRequest = async ({ title, description, fileURI }) => {
+  const challengeRequest = async ({
+    title,
+    description,
+    evidenceAttachment
+  }) => {
     pushWeb3Action(async (_, signer) => {
       const gtcr = new ethers.Contract(tcrAddress, _gtcr, signer)
 
       // TODO: Upload evidence JSON file.
-      const evidenceJSONURI = {
+      const evidenceJSON = {
         title,
         description,
-        fileURI
+        ...evidenceAttachment
       }
 
+      const enc = new TextEncoder()
+      const fileData = enc.encode(JSON.stringify(evidenceJSON))
+      /* eslint-disable prettier/prettier */
+      const fileMultihash = Archon.utils.multihashFile(
+        evidenceJSON,
+        0x1B
+      )
+      /* eslint-enable prettier/prettier */
+      const ipfsEvidenceObject = await ipfsPublish(
+        fileMultihash,
+        fileData,
+        process.env.REACT_APP_IPFS_GATEWAY
+      )
+      const ipfsEvidencePath = `/ipfs/${ipfsEvidenceObject[1].hash +
+        ipfsEvidenceObject[0].path}`
+
       // Request signature and submit.
-      const tx = await gtcr.challengeRequest(item.ID, evidenceJSONURI, {
+      const tx = await gtcr.challengeRequest(item.ID, ipfsEvidencePath, {
         value: challengeDeposit
       })
 

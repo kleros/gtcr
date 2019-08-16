@@ -12,7 +12,7 @@ const ItemActionModal = ({
   fileURI,
   item
 }) => {
-  // Common button properties
+  // Common button properties.
   const rest = {
     visible: isOpen,
     title: getActionLabel({ statusCode, itemName }),
