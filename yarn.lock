@@ -15051,6 +15051,18 @@ solidity-bytes-utils@^0.0.5:
   dependencies:
     truffle-hdwallet-provider "0.0.3"
 
+solidity-bytes-utils@^0.0.8:
+  version "0.0.8"
+  resolved "https://registry.yarnpkg.com/solidity-bytes-utils/-/solidity-bytes-utils-0.0.8.tgz#245f21a004610023a9241f8c09b3ca408373f4b8"
+  integrity sha512-TQi6HFM2PDLLckVXQCzcQGZN8VrQsLA2aRIHNqZkbN/K7pmOSgit/7CnuatiLpM7i8Yy7Vibt5oFBA+sMWEZBA==
+  dependencies:
+    truffle-hdwallet-provider "0.0.3"
+
+solidity-rlp@^2.0.0:
+  version "2.0.0"
+  resolved "https://registry.yarnpkg.com/solidity-rlp/-/solidity-rlp-2.0.0.tgz#56cb582ed7fbfabbe2190827574d37cc9ae9845a"
+  integrity sha512-rUwmzbevytB0jk2zT03h7/JHYOKPDXgzrUyvvb/hI5OcnWjjjvqK/+hcDwBffl6dMalfvSZo7/KWn3lOLeb09g==
+
 source-list-map@^2.0.0:
   version "2.0.1"
   resolved "https://registry.yarnpkg.com/source-list-map/-/source-list-map-2.0.1.tgz#3993bd873bfc48479cca9ea3a547835c7c154b34"

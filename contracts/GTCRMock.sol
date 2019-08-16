@@ -6,69 +6,14 @@
  *  @deployments: []
  */
 
-pragma solidity ^0.5.10;
+pragma solidity ^0.5.11;
 pragma experimental ABIEncoderV2;
 
 import { IArbitrable, Arbitrator } from "@kleros/erc-792/contracts/Arbitrator.sol";
+import { IEvidence } from "@kleros/erc-792/contracts/erc-1497/IEvidence.sol";
+import "./libraries/CappedMath.sol";
 
-/**
- * @title CappedMath
- * @dev Math operations with caps for under and overflow.
- */
-library CappedMath {
-    uint constant private UINT_MAX = 2**256 - 1;
-
-    /**
-     * @dev Adds two unsigned integers, returns 2^256 - 1 on overflow.
-     */
-    function addCap(uint _a, uint _b) internal pure returns (uint) {
-        uint c = _a + _b;
-        return c >= _a ? c : UINT_MAX;
-    }
-
-    /**
-     * @dev Subtracts two integers, returns 0 on underflow.
-     */
-    function subCap(uint _a, uint _b) internal pure returns (uint) {
-        if (_b > _a)
-            return 0;
-        else
-            return _a - _b;
-    }
-
-    /**
-     * @dev Multiplies two unsigned integers, returns 2^256 - 1 on overflow.
-     */
-    function mulCap(uint _a, uint _b) internal pure returns (uint) {
-        // Gas optimization: this is cheaper than requiring '_a' not being zero, but the
-        // benefit is lost if '_b' is also tested.
-        // See: https://github.com/OpenZeppelin/openzeppelin-solidity/pull/522
-        if (_a == 0)
-            return 0;
-
-        uint c = _a * _b;
-        return c / _a == _b ? c : UINT_MAX;
-    }
-}
-
-
-/**
- *  @title Permission Interface
- *  This is a permission interface for arbitrary values. The values can be cast to the required types.
- */
-interface PermissionInterface{
-    /* External */
-
-    /**
-     *  @dev Return true if the value is allowed.
-     *  @param _value The value we want to check.
-     *  @return allowed True if the value is allowed, false otherwise.
-     */
-    function isPermitted(bytes32 _value) external view returns (bool allowed);
-}
-
-
-contract GTCRMock is IArbitrable{
+contract GTCRMock is IArbitrable, IEvidence{
     using CappedMath for uint; // Operations bounded between 0 and 2**256 - 1.
 
     /* Enums */
@@ -142,6 +87,7 @@ contract GTCRMock is IArbitrable{
 
     // Settings
     address public governor; // The address that can make governance changes to the parameters of the TCR.
+    address public relatedTCR; // The address of the TCR of TCRs related to this one.
     Arbitrator public arbitrator; // The arbitrator that will be used to resolve disputes on the next requests.
     bytes public arbitratorExtraData; // The arbitrator extra data used for the next requests.
     uint public requesterBaseDeposit; // The base deposit to make a request.
@@ -160,22 +106,6 @@ contract GTCRMock is IArbitrable{
     bytes32[] public itemIDs; // List of IDs of submitted items.
     mapping(bytes32 => Item) public items; // Maps the item ID to the item.
     mapping(address => mapping(uint => bytes32)) public arbitratorDisputeIDToItemID; // Maps a dispute ID to the ID of the item with the disputed request. On the form arbitratorDisputeIDToItemID[arbitrator][disputeID].
-
-    /* Events */
-
-    /** @dev To be emmited when meta-evidence is submitted.
-     *  @param _metaEvidenceID Unique identifier of meta-evidence.
-     *  @param _evidence A link to the meta-evidence JSON.
-     */
-    event MetaEvidence(uint indexed _metaEvidenceID, string _evidence);
-
-    /** @dev To be raised when evidence are submitted. Should point to the ressource (evidences are not to be stored on chain due to gas considerations).
-     *  @param _arbitrator The arbitrator of the contract.
-     *  @param _evidenceGroupID Unique identifier of the evidence group the evidence belongs to.
-     *  @param _party The address of the party submiting the evidence. Note that 0x0 refers to evidence not submitted by any party.
-     *  @param _evidence A URI to the evidence JSON file whose name should be its keccak256 hash followed by .json.
-     */
-    event Evidence(Arbitrator indexed _arbitrator, uint indexed _evidenceGroupID, address indexed _party, string _evidence);
 
     constructor(
         Arbitrator _arbitrator,
