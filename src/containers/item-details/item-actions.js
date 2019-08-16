@@ -26,7 +26,7 @@ const StyledDescriptions = styled(Descriptions)`
 
 const ItemActions = ({ item, timestamp }) => {
   const [modalOpen, setModalOpen] = useState()
-  const { pushWeb3Action } = useContext(WalletContext)
+  const { pushWeb3Action, requestWeb3Auth } = useContext(WalletContext)
   const { gtcr: gtcrView, metaEvidence, challengePeriodDuration } = useContext(
     TCRViewContext
   )
@@ -56,7 +56,7 @@ const ItemActions = ({ item, timestamp }) => {
       case STATUS_CODE.REMOVAL_REQUESTED:
       case STATUS_CODE.CROWDFUNDING:
       case STATUS_CODE.CROWDFUNDING_WINNER: {
-        setModalOpen(true)
+        requestWeb3Auth(() => setModalOpen(true))
         break
       }
       case STATUS_CODE.PENDING_SUBMISSION:
