@@ -104,7 +104,7 @@
         "id": 133,
         "nodeType": "ImportDirective",
         "scope": 262,
-        "sourceUnit": 2776,
+        "sourceUnit": 2904,
         "src": "61:53:1",
         "symbolAliases": [],
         "unitAlias": ""
@@ -115,7 +115,7 @@
         "id": 134,
         "nodeType": "ImportDirective",
         "scope": 262,
-        "sourceUnit": 3368,
+        "sourceUnit": 3496,
         "src": "115:46:1",
         "symbolAliases": [],
         "unitAlias": ""
@@ -140,10 +140,10 @@
               "id": 135,
               "name": "RLPReader",
               "nodeType": "UserDefinedTypeName",
-              "referencedDeclaration": 3367,
+              "referencedDeclaration": 3495,
               "src": "197:9:1",
               "typeDescriptions": {
-                "typeIdentifier": "t_contract$_RLPReader_$3367",
+                "typeIdentifier": "t_contract$_RLPReader_$3495",
                 "typeString": "library RLPReader"
               }
             },
@@ -154,10 +154,10 @@
               "id": 136,
               "name": "RLPReader.RLPItem",
               "nodeType": "UserDefinedTypeName",
-              "referencedDeclaration": 2797,
+              "referencedDeclaration": 2925,
               "src": "211:17:1",
               "typeDescriptions": {
-                "typeIdentifier": "t_struct$_RLPItem_$2797_storage_ptr",
+                "typeIdentifier": "t_struct$_RLPItem_$2925_storage_ptr",
                 "typeString": "struct RLPReader.RLPItem"
               }
             }
@@ -169,10 +169,10 @@
               "id": 138,
               "name": "RLPReader",
               "nodeType": "UserDefinedTypeName",
-              "referencedDeclaration": 3367,
+              "referencedDeclaration": 3495,
               "src": "240:9:1",
               "typeDescriptions": {
-                "typeIdentifier": "t_contract$_RLPReader_$3367",
+                "typeIdentifier": "t_contract$_RLPReader_$3495",
                 "typeString": "library RLPReader"
               }
             },
@@ -196,10 +196,10 @@
               "id": 141,
               "name": "BytesLib",
               "nodeType": "UserDefinedTypeName",
-              "referencedDeclaration": 2775,
+              "referencedDeclaration": 2903,
               "src": "271:8:1",
               "typeDescriptions": {
-                "typeIdentifier": "t_contract$_BytesLib_$2775",
+                "typeIdentifier": "t_contract$_BytesLib_$2903",
                 "typeString": "library BytesLib"
               }
             },
@@ -403,7 +403,7 @@
                       "stateVariable": false,
                       "storageLocation": "memory",
                       "typeDescriptions": {
-                        "typeIdentifier": "t_array$_t_struct$_RLPItem_$2797_memory_$dyn_memory_ptr",
+                        "typeIdentifier": "t_array$_t_struct$_RLPItem_$2925_memory_$dyn_memory_ptr",
                         "typeString": "struct RLPReader.RLPItem[]"
                       },
                       "typeName": {
@@ -412,10 +412,10 @@
                           "id": 170,
                           "name": "RLPReader.RLPItem",
                           "nodeType": "UserDefinedTypeName",
-                          "referencedDeclaration": 2797,
+                          "referencedDeclaration": 2925,
                           "src": "985:17:1",
                           "typeDescriptions": {
-                            "typeIdentifier": "t_struct$_RLPItem_$2797_storage_ptr",
+                            "typeIdentifier": "t_struct$_RLPItem_$2925_storage_ptr",
                             "typeString": "struct RLPReader.RLPItem"
                           }
                         },
@@ -424,7 +424,7 @@
                         "nodeType": "ArrayTypeName",
                         "src": "985:19:1",
                         "typeDescriptions": {
-                          "typeIdentifier": "t_array$_t_struct$_RLPItem_$2797_storage_$dyn_storage_ptr",
+                          "typeIdentifier": "t_array$_t_struct$_RLPItem_$2925_storage_$dyn_storage_ptr",
                           "typeString": "struct RLPReader.RLPItem[]"
                         }
                       },
@@ -463,10 +463,10 @@
                           "lValueRequested": false,
                           "memberName": "toRlpItem",
                           "nodeType": "MemberAccess",
-                          "referencedDeclaration": 2815,
+                          "referencedDeclaration": 2943,
                           "src": "1024:26:1",
                           "typeDescriptions": {
-                            "typeIdentifier": "t_function_internal_pure$_t_bytes_memory_ptr_$returns$_t_struct$_RLPItem_$2797_memory_ptr_$bound_to$_t_bytes_memory_ptr_$",
+                            "typeIdentifier": "t_function_internal_pure$_t_bytes_memory_ptr_$returns$_t_struct$_RLPItem_$2925_memory_ptr_$bound_to$_t_bytes_memory_ptr_$",
                             "typeString": "function (bytes memory) pure returns (struct RLPReader.RLPItem memory)"
                           }
                         },
@@ -480,7 +480,7 @@
                         "nodeType": "FunctionCall",
                         "src": "1024:28:1",
                         "typeDescriptions": {
-                          "typeIdentifier": "t_struct$_RLPItem_$2797_memory_ptr",
+                          "typeIdentifier": "t_struct$_RLPItem_$2925_memory_ptr",
                           "typeString": "struct RLPReader.RLPItem memory"
                         }
                       },
@@ -491,10 +491,10 @@
                       "lValueRequested": false,
                       "memberName": "toList",
                       "nodeType": "MemberAccess",
-                      "referencedDeclaration": 2917,
+                      "referencedDeclaration": 3045,
                       "src": "1024:35:1",
                       "typeDescriptions": {
-                        "typeIdentifier": "t_function_internal_pure$_t_struct$_RLPItem_$2797_memory_ptr_$returns$_t_array$_t_struct$_RLPItem_$2797_memory_$dyn_memory_ptr_$bound_to$_t_struct$_RLPItem_$2797_memory_ptr_$",
+                        "typeIdentifier": "t_function_internal_pure$_t_struct$_RLPItem_$2925_memory_ptr_$returns$_t_array$_t_struct$_RLPItem_$2925_memory_$dyn_memory_ptr_$bound_to$_t_struct$_RLPItem_$2925_memory_ptr_$",
                         "typeString": "function (struct RLPReader.RLPItem memory) pure returns (struct RLPReader.RLPItem memory[] memory)"
                       }
                     },
@@ -508,7 +508,7 @@
                     "nodeType": "FunctionCall",
                     "src": "1024:37:1",
                     "typeDescriptions": {
-                      "typeIdentifier": "t_array$_t_struct$_RLPItem_$2797_memory_$dyn_memory_ptr",
+                      "typeIdentifier": "t_array$_t_struct$_RLPItem_$2925_memory_$dyn_memory_ptr",
                       "typeString": "struct RLPReader.RLPItem memory[] memory"
                     }
                   },
@@ -689,7 +689,7 @@
                             "stateVariable": false,
                             "storageLocation": "memory",
                             "typeDescriptions": {
-                              "typeIdentifier": "t_array$_t_struct$_RLPItem_$2797_memory_$dyn_memory_ptr",
+                              "typeIdentifier": "t_array$_t_struct$_RLPItem_$2925_memory_$dyn_memory_ptr",
                               "typeString": "struct RLPReader.RLPItem[]"
                             },
                             "typeName": {
@@ -698,10 +698,10 @@
                                 "id": 205,
                                 "name": "RLPReader.RLPItem",
                                 "nodeType": "UserDefinedTypeName",
-                                "referencedDeclaration": 2797,
+                                "referencedDeclaration": 2925,
                                 "src": "1242:17:1",
                                 "typeDescriptions": {
-                                  "typeIdentifier": "t_struct$_RLPItem_$2797_storage_ptr",
+                                  "typeIdentifier": "t_struct$_RLPItem_$2925_storage_ptr",
                                   "typeString": "struct RLPReader.RLPItem"
                                 }
                               },
@@ -710,7 +710,7 @@
                               "nodeType": "ArrayTypeName",
                               "src": "1242:19:1",
                               "typeDescriptions": {
-                                "typeIdentifier": "t_array$_t_struct$_RLPItem_$2797_storage_$dyn_storage_ptr",
+                                "typeIdentifier": "t_array$_t_struct$_RLPItem_$2925_storage_$dyn_storage_ptr",
                                 "typeString": "struct RLPReader.RLPItem[]"
                               }
                             },
@@ -776,10 +776,10 @@
                                 "lValueRequested": false,
                                 "memberName": "toRlpItem",
                                 "nodeType": "MemberAccess",
-                                "referencedDeclaration": 2815,
+                                "referencedDeclaration": 2943,
                                 "src": "1276:18:1",
                                 "typeDescriptions": {
-                                  "typeIdentifier": "t_function_internal_pure$_t_bytes_memory_ptr_$returns$_t_struct$_RLPItem_$2797_memory_ptr_$bound_to$_t_bytes_memory_ptr_$",
+                                  "typeIdentifier": "t_function_internal_pure$_t_bytes_memory_ptr_$returns$_t_struct$_RLPItem_$2925_memory_ptr_$bound_to$_t_bytes_memory_ptr_$",
                                   "typeString": "function (bytes memory) pure returns (struct RLPReader.RLPItem memory)"
                                 }
                               },
@@ -793,7 +793,7 @@
                               "nodeType": "FunctionCall",
                               "src": "1276:20:1",
                               "typeDescriptions": {
-                                "typeIdentifier": "t_struct$_RLPItem_$2797_memory_ptr",
+                                "typeIdentifier": "t_struct$_RLPItem_$2925_memory_ptr",
                                 "typeString": "struct RLPReader.RLPItem memory"
                               }
                             },
@@ -804,10 +804,10 @@
                             "lValueRequested": false,
                             "memberName": "toList",
                             "nodeType": "MemberAccess",
-                            "referencedDeclaration": 2917,
+                            "referencedDeclaration": 3045,
                             "src": "1276:27:1",
                             "typeDescriptions": {
-                              "typeIdentifier": "t_function_internal_pure$_t_struct$_RLPItem_$2797_memory_ptr_$returns$_t_array$_t_struct$_RLPItem_$2797_memory_$dyn_memory_ptr_$bound_to$_t_struct$_RLPItem_$2797_memory_ptr_$",
+                              "typeIdentifier": "t_function_internal_pure$_t_struct$_RLPItem_$2925_memory_ptr_$returns$_t_array$_t_struct$_RLPItem_$2925_memory_$dyn_memory_ptr_$bound_to$_t_struct$_RLPItem_$2925_memory_ptr_$",
                               "typeString": "function (struct RLPReader.RLPItem memory) pure returns (struct RLPReader.RLPItem memory[] memory)"
                             }
                           },
@@ -821,7 +821,7 @@
                           "nodeType": "FunctionCall",
                           "src": "1276:29:1",
                           "typeDescriptions": {
-                            "typeIdentifier": "t_array$_t_struct$_RLPItem_$2797_memory_$dyn_memory_ptr",
+                            "typeIdentifier": "t_array$_t_struct$_RLPItem_$2925_memory_$dyn_memory_ptr",
                             "typeString": "struct RLPReader.RLPItem memory[] memory"
                           }
                         },
@@ -854,7 +854,7 @@
                                           "referencedDeclaration": 172,
                                           "src": "1439:9:1",
                                           "typeDescriptions": {
-                                            "typeIdentifier": "t_array$_t_struct$_RLPItem_$2797_memory_$dyn_memory_ptr",
+                                            "typeIdentifier": "t_array$_t_struct$_RLPItem_$2925_memory_$dyn_memory_ptr",
                                             "typeString": "struct RLPReader.RLPItem memory[] memory"
                                           }
                                         },
@@ -879,7 +879,7 @@
                                         "nodeType": "IndexAccess",
                                         "src": "1439:12:1",
                                         "typeDescriptions": {
-                                          "typeIdentifier": "t_struct$_RLPItem_$2797_memory",
+                                          "typeIdentifier": "t_struct$_RLPItem_$2925_memory",
                                           "typeString": "struct RLPReader.RLPItem memory"
                                         }
                                       },
@@ -890,10 +890,10 @@
                                       "lValueRequested": false,
                                       "memberName": "toBytes",
                                       "nodeType": "MemberAccess",
-                                      "referencedDeclaration": 3164,
+                                      "referencedDeclaration": 3292,
                                       "src": "1439:20:1",
                                       "typeDescriptions": {
-                                        "typeIdentifier": "t_function_internal_pure$_t_struct$_RLPItem_$2797_memory_ptr_$returns$_t_bytes_memory_ptr_$bound_to$_t_struct$_RLPItem_$2797_memory_ptr_$",
+                                        "typeIdentifier": "t_function_internal_pure$_t_struct$_RLPItem_$2925_memory_ptr_$returns$_t_bytes_memory_ptr_$bound_to$_t_struct$_RLPItem_$2925_memory_ptr_$",
                                         "typeString": "function (struct RLPReader.RLPItem memory) pure returns (bytes memory)"
                                       }
                                     },
@@ -935,7 +935,7 @@
                                           "referencedDeclaration": 207,
                                           "src": "1415:4:1",
                                           "typeDescriptions": {
-                                            "typeIdentifier": "t_array$_t_struct$_RLPItem_$2797_memory_$dyn_memory_ptr",
+                                            "typeIdentifier": "t_array$_t_struct$_RLPItem_$2925_memory_$dyn_memory_ptr",
                                             "typeString": "struct RLPReader.RLPItem memory[] memory"
                                           }
                                         },
@@ -960,7 +960,7 @@
                                         "nodeType": "IndexAccess",
                                         "src": "1415:7:1",
                                         "typeDescriptions": {
-                                          "typeIdentifier": "t_struct$_RLPItem_$2797_memory",
+                                          "typeIdentifier": "t_struct$_RLPItem_$2925_memory",
                                           "typeString": "struct RLPReader.RLPItem memory"
                                         }
                                       },
@@ -971,10 +971,10 @@
                                       "lValueRequested": false,
                                       "memberName": "toBytes",
                                       "nodeType": "MemberAccess",
-                                      "referencedDeclaration": 3164,
+                                      "referencedDeclaration": 3292,
                                       "src": "1415:15:1",
                                       "typeDescriptions": {
-                                        "typeIdentifier": "t_function_internal_pure$_t_struct$_RLPItem_$2797_memory_ptr_$returns$_t_bytes_memory_ptr_$bound_to$_t_struct$_RLPItem_$2797_memory_ptr_$",
+                                        "typeIdentifier": "t_function_internal_pure$_t_struct$_RLPItem_$2925_memory_ptr_$returns$_t_bytes_memory_ptr_$bound_to$_t_struct$_RLPItem_$2925_memory_ptr_$",
                                         "typeString": "function (struct RLPReader.RLPItem memory) pure returns (bytes memory)"
                                       }
                                     },
@@ -999,7 +999,7 @@
                                   "lValueRequested": false,
                                   "memberName": "equal",
                                   "nodeType": "MemberAccess",
-                                  "referencedDeclaration": 2757,
+                                  "referencedDeclaration": 2885,
                                   "src": "1415:23:1",
                                   "typeDescriptions": {
                                     "typeIdentifier": "t_function_internal_pure$_t_bytes_memory_ptr_$_t_bytes_memory_ptr_$returns$_t_bool_$bound_to$_t_bytes_memory_ptr_$",
@@ -1210,7 +1210,7 @@
                               "referencedDeclaration": 172,
                               "src": "1340:9:1",
                               "typeDescriptions": {
-                                "typeIdentifier": "t_array$_t_struct$_RLPItem_$2797_memory_$dyn_memory_ptr",
+                                "typeIdentifier": "t_array$_t_struct$_RLPItem_$2925_memory_$dyn_memory_ptr",
                                 "typeString": "struct RLPReader.RLPItem memory[] memory"
                               }
                             },
@@ -1660,7 +1660,7 @@
         "id": 133,
         "nodeType": "ImportDirective",
         "scope": 262,
-        "sourceUnit": 2776,
+        "sourceUnit": 2904,
         "src": "61:53:1",
         "symbolAliases": [],
         "unitAlias": ""
@@ -1671,7 +1671,7 @@
         "id": 134,
         "nodeType": "ImportDirective",
         "scope": 262,
-        "sourceUnit": 3368,
+        "sourceUnit": 3496,
         "src": "115:46:1",
         "symbolAliases": [],
         "unitAlias": ""
@@ -1696,10 +1696,10 @@
               "id": 135,
               "name": "RLPReader",
               "nodeType": "UserDefinedTypeName",
-              "referencedDeclaration": 3367,
+              "referencedDeclaration": 3495,
               "src": "197:9:1",
               "typeDescriptions": {
-                "typeIdentifier": "t_contract$_RLPReader_$3367",
+                "typeIdentifier": "t_contract$_RLPReader_$3495",
                 "typeString": "library RLPReader"
               }
             },
@@ -1710,10 +1710,10 @@
               "id": 136,
               "name": "RLPReader.RLPItem",
               "nodeType": "UserDefinedTypeName",
-              "referencedDeclaration": 2797,
+              "referencedDeclaration": 2925,
               "src": "211:17:1",
               "typeDescriptions": {
-                "typeIdentifier": "t_struct$_RLPItem_$2797_storage_ptr",
+                "typeIdentifier": "t_struct$_RLPItem_$2925_storage_ptr",
                 "typeString": "struct RLPReader.RLPItem"
               }
             }
@@ -1725,10 +1725,10 @@
               "id": 138,
               "name": "RLPReader",
               "nodeType": "UserDefinedTypeName",
-              "referencedDeclaration": 3367,
+              "referencedDeclaration": 3495,
               "src": "240:9:1",
               "typeDescriptions": {
-                "typeIdentifier": "t_contract$_RLPReader_$3367",
+                "typeIdentifier": "t_contract$_RLPReader_$3495",
                 "typeString": "library RLPReader"
               }
             },
@@ -1752,10 +1752,10 @@
               "id": 141,
               "name": "BytesLib",
               "nodeType": "UserDefinedTypeName",
-              "referencedDeclaration": 2775,
+              "referencedDeclaration": 2903,
               "src": "271:8:1",
               "typeDescriptions": {
-                "typeIdentifier": "t_contract$_BytesLib_$2775",
+                "typeIdentifier": "t_contract$_BytesLib_$2903",
                 "typeString": "library BytesLib"
               }
             },
@@ -1959,7 +1959,7 @@
                       "stateVariable": false,
                       "storageLocation": "memory",
                       "typeDescriptions": {
-                        "typeIdentifier": "t_array$_t_struct$_RLPItem_$2797_memory_$dyn_memory_ptr",
+                        "typeIdentifier": "t_array$_t_struct$_RLPItem_$2925_memory_$dyn_memory_ptr",
                         "typeString": "struct RLPReader.RLPItem[]"
                       },
                       "typeName": {
@@ -1968,10 +1968,10 @@
                           "id": 170,
                           "name": "RLPReader.RLPItem",
                           "nodeType": "UserDefinedTypeName",
-                          "referencedDeclaration": 2797,
+                          "referencedDeclaration": 2925,
                           "src": "985:17:1",
                           "typeDescriptions": {
-                            "typeIdentifier": "t_struct$_RLPItem_$2797_storage_ptr",
+                            "typeIdentifier": "t_struct$_RLPItem_$2925_storage_ptr",
                             "typeString": "struct RLPReader.RLPItem"
                           }
                         },
@@ -1980,7 +1980,7 @@
                         "nodeType": "ArrayTypeName",
                         "src": "985:19:1",
                         "typeDescriptions": {
-                          "typeIdentifier": "t_array$_t_struct$_RLPItem_$2797_storage_$dyn_storage_ptr",
+                          "typeIdentifier": "t_array$_t_struct$_RLPItem_$2925_storage_$dyn_storage_ptr",
                           "typeString": "struct RLPReader.RLPItem[]"
                         }
                       },
@@ -2019,10 +2019,10 @@
                           "lValueRequested": false,
                           "memberName": "toRlpItem",
                           "nodeType": "MemberAccess",
-                          "referencedDeclaration": 2815,
+                          "referencedDeclaration": 2943,
                           "src": "1024:26:1",
                           "typeDescriptions": {
-                            "typeIdentifier": "t_function_internal_pure$_t_bytes_memory_ptr_$returns$_t_struct$_RLPItem_$2797_memory_ptr_$bound_to$_t_bytes_memory_ptr_$",
+                            "typeIdentifier": "t_function_internal_pure$_t_bytes_memory_ptr_$returns$_t_struct$_RLPItem_$2925_memory_ptr_$bound_to$_t_bytes_memory_ptr_$",
                             "typeString": "function (bytes memory) pure returns (struct RLPReader.RLPItem memory)"
                           }
                         },
@@ -2036,7 +2036,7 @@
                         "nodeType": "FunctionCall",
                         "src": "1024:28:1",
                         "typeDescriptions": {
-                          "typeIdentifier": "t_struct$_RLPItem_$2797_memory_ptr",
+                          "typeIdentifier": "t_struct$_RLPItem_$2925_memory_ptr",
                           "typeString": "struct RLPReader.RLPItem memory"
                         }
                       },
@@ -2047,10 +2047,10 @@
                       "lValueRequested": false,
                       "memberName": "toList",
                       "nodeType": "MemberAccess",
-                      "referencedDeclaration": 2917,
+                      "referencedDeclaration": 3045,
                       "src": "1024:35:1",
                       "typeDescriptions": {
-                        "typeIdentifier": "t_function_internal_pure$_t_struct$_RLPItem_$2797_memory_ptr_$returns$_t_array$_t_struct$_RLPItem_$2797_memory_$dyn_memory_ptr_$bound_to$_t_struct$_RLPItem_$2797_memory_ptr_$",
+                        "typeIdentifier": "t_function_internal_pure$_t_struct$_RLPItem_$2925_memory_ptr_$returns$_t_array$_t_struct$_RLPItem_$2925_memory_$dyn_memory_ptr_$bound_to$_t_struct$_RLPItem_$2925_memory_ptr_$",
                         "typeString": "function (struct RLPReader.RLPItem memory) pure returns (struct RLPReader.RLPItem memory[] memory)"
                       }
                     },
@@ -2064,7 +2064,7 @@
                     "nodeType": "FunctionCall",
                     "src": "1024:37:1",
                     "typeDescriptions": {
-                      "typeIdentifier": "t_array$_t_struct$_RLPItem_$2797_memory_$dyn_memory_ptr",
+                      "typeIdentifier": "t_array$_t_struct$_RLPItem_$2925_memory_$dyn_memory_ptr",
                       "typeString": "struct RLPReader.RLPItem memory[] memory"
                     }
                   },
@@ -2245,7 +2245,7 @@
                             "stateVariable": false,
                             "storageLocation": "memory",
                             "typeDescriptions": {
-                              "typeIdentifier": "t_array$_t_struct$_RLPItem_$2797_memory_$dyn_memory_ptr",
+                              "typeIdentifier": "t_array$_t_struct$_RLPItem_$2925_memory_$dyn_memory_ptr",
                               "typeString": "struct RLPReader.RLPItem[]"
                             },
                             "typeName": {
@@ -2254,10 +2254,10 @@
                                 "id": 205,
                                 "name": "RLPReader.RLPItem",
                                 "nodeType": "UserDefinedTypeName",
-                                "referencedDeclaration": 2797,
+                                "referencedDeclaration": 2925,
                                 "src": "1242:17:1",
                                 "typeDescriptions": {
-                                  "typeIdentifier": "t_struct$_RLPItem_$2797_storage_ptr",
+                                  "typeIdentifier": "t_struct$_RLPItem_$2925_storage_ptr",
                                   "typeString": "struct RLPReader.RLPItem"
                                 }
                               },
@@ -2266,7 +2266,7 @@
                               "nodeType": "ArrayTypeName",
                               "src": "1242:19:1",
                               "typeDescriptions": {
-                                "typeIdentifier": "t_array$_t_struct$_RLPItem_$2797_storage_$dyn_storage_ptr",
+                                "typeIdentifier": "t_array$_t_struct$_RLPItem_$2925_storage_$dyn_storage_ptr",
                                 "typeString": "struct RLPReader.RLPItem[]"
                               }
                             },
@@ -2332,10 +2332,10 @@
                                 "lValueRequested": false,
                                 "memberName": "toRlpItem",
                                 "nodeType": "MemberAccess",
-                                "referencedDeclaration": 2815,
+                                "referencedDeclaration": 2943,
                                 "src": "1276:18:1",
                                 "typeDescriptions": {
-                                  "typeIdentifier": "t_function_internal_pure$_t_bytes_memory_ptr_$returns$_t_struct$_RLPItem_$2797_memory_ptr_$bound_to$_t_bytes_memory_ptr_$",
+                                  "typeIdentifier": "t_function_internal_pure$_t_bytes_memory_ptr_$returns$_t_struct$_RLPItem_$2925_memory_ptr_$bound_to$_t_bytes_memory_ptr_$",
                                   "typeString": "function (bytes memory) pure returns (struct RLPReader.RLPItem memory)"
                                 }
                               },
@@ -2349,7 +2349,7 @@
                               "nodeType": "FunctionCall",
                               "src": "1276:20:1",
                               "typeDescriptions": {
-                                "typeIdentifier": "t_struct$_RLPItem_$2797_memory_ptr",
+                                "typeIdentifier": "t_struct$_RLPItem_$2925_memory_ptr",
                                 "typeString": "struct RLPReader.RLPItem memory"
                               }
                             },
@@ -2360,10 +2360,10 @@
                             "lValueRequested": false,
                             "memberName": "toList",
                             "nodeType": "MemberAccess",
-                            "referencedDeclaration": 2917,
+                            "referencedDeclaration": 3045,
                             "src": "1276:27:1",
                             "typeDescriptions": {
-                              "typeIdentifier": "t_function_internal_pure$_t_struct$_RLPItem_$2797_memory_ptr_$returns$_t_array$_t_struct$_RLPItem_$2797_memory_$dyn_memory_ptr_$bound_to$_t_struct$_RLPItem_$2797_memory_ptr_$",
+                              "typeIdentifier": "t_function_internal_pure$_t_struct$_RLPItem_$2925_memory_ptr_$returns$_t_array$_t_struct$_RLPItem_$2925_memory_$dyn_memory_ptr_$bound_to$_t_struct$_RLPItem_$2925_memory_ptr_$",
                               "typeString": "function (struct RLPReader.RLPItem memory) pure returns (struct RLPReader.RLPItem memory[] memory)"
                             }
                           },
@@ -2377,7 +2377,7 @@
                           "nodeType": "FunctionCall",
                           "src": "1276:29:1",
                           "typeDescriptions": {
-                            "typeIdentifier": "t_array$_t_struct$_RLPItem_$2797_memory_$dyn_memory_ptr",
+                            "typeIdentifier": "t_array$_t_struct$_RLPItem_$2925_memory_$dyn_memory_ptr",
                             "typeString": "struct RLPReader.RLPItem memory[] memory"
                           }
                         },
@@ -2410,7 +2410,7 @@
                                           "referencedDeclaration": 172,
                                           "src": "1439:9:1",
                                           "typeDescriptions": {
-                                            "typeIdentifier": "t_array$_t_struct$_RLPItem_$2797_memory_$dyn_memory_ptr",
+                                            "typeIdentifier": "t_array$_t_struct$_RLPItem_$2925_memory_$dyn_memory_ptr",
                                             "typeString": "struct RLPReader.RLPItem memory[] memory"
                                           }
                                         },
@@ -2435,7 +2435,7 @@
                                         "nodeType": "IndexAccess",
                                         "src": "1439:12:1",
                                         "typeDescriptions": {
-                                          "typeIdentifier": "t_struct$_RLPItem_$2797_memory",
+                                          "typeIdentifier": "t_struct$_RLPItem_$2925_memory",
                                           "typeString": "struct RLPReader.RLPItem memory"
                                         }
                                       },
@@ -2446,10 +2446,10 @@
                                       "lValueRequested": false,
                                       "memberName": "toBytes",
                                       "nodeType": "MemberAccess",
-                                      "referencedDeclaration": 3164,
+                                      "referencedDeclaration": 3292,
                                       "src": "1439:20:1",
                                       "typeDescriptions": {
-                                        "typeIdentifier": "t_function_internal_pure$_t_struct$_RLPItem_$2797_memory_ptr_$returns$_t_bytes_memory_ptr_$bound_to$_t_struct$_RLPItem_$2797_memory_ptr_$",
+                                        "typeIdentifier": "t_function_internal_pure$_t_struct$_RLPItem_$2925_memory_ptr_$returns$_t_bytes_memory_ptr_$bound_to$_t_struct$_RLPItem_$2925_memory_ptr_$",
                                         "typeString": "function (struct RLPReader.RLPItem memory) pure returns (bytes memory)"
                                       }
                                     },
@@ -2491,7 +2491,7 @@
                                           "referencedDeclaration": 207,
                                           "src": "1415:4:1",
                                           "typeDescriptions": {
-                                            "typeIdentifier": "t_array$_t_struct$_RLPItem_$2797_memory_$dyn_memory_ptr",
+                                            "typeIdentifier": "t_array$_t_struct$_RLPItem_$2925_memory_$dyn_memory_ptr",
                                             "typeString": "struct RLPReader.RLPItem memory[] memory"
                                           }
                                         },
@@ -2516,7 +2516,7 @@
                                         "nodeType": "IndexAccess",
                                         "src": "1415:7:1",
                                         "typeDescriptions": {
-                                          "typeIdentifier": "t_struct$_RLPItem_$2797_memory",
+                                          "typeIdentifier": "t_struct$_RLPItem_$2925_memory",
                                           "typeString": "struct RLPReader.RLPItem memory"
                                         }
                                       },
@@ -2527,10 +2527,10 @@
                                       "lValueRequested": false,
                                       "memberName": "toBytes",
                                       "nodeType": "MemberAccess",
-                                      "referencedDeclaration": 3164,
+                                      "referencedDeclaration": 3292,
                                       "src": "1415:15:1",
                                       "typeDescriptions": {
-                                        "typeIdentifier": "t_function_internal_pure$_t_struct$_RLPItem_$2797_memory_ptr_$returns$_t_bytes_memory_ptr_$bound_to$_t_struct$_RLPItem_$2797_memory_ptr_$",
+                                        "typeIdentifier": "t_function_internal_pure$_t_struct$_RLPItem_$2925_memory_ptr_$returns$_t_bytes_memory_ptr_$bound_to$_t_struct$_RLPItem_$2925_memory_ptr_$",
                                         "typeString": "function (struct RLPReader.RLPItem memory) pure returns (bytes memory)"
                                       }
                                     },
@@ -2555,7 +2555,7 @@
                                   "lValueRequested": false,
                                   "memberName": "equal",
                                   "nodeType": "MemberAccess",
-                                  "referencedDeclaration": 2757,
+                                  "referencedDeclaration": 2885,
                                   "src": "1415:23:1",
                                   "typeDescriptions": {
                                     "typeIdentifier": "t_function_internal_pure$_t_bytes_memory_ptr_$_t_bytes_memory_ptr_$returns$_t_bool_$bound_to$_t_bytes_memory_ptr_$",
@@ -2766,7 +2766,7 @@
                               "referencedDeclaration": 172,
                               "src": "1340:9:1",
                               "typeDescriptions": {
-                                "typeIdentifier": "t_array$_t_struct$_RLPItem_$2797_memory_$dyn_memory_ptr",
+                                "typeIdentifier": "t_array$_t_struct$_RLPItem_$2925_memory_$dyn_memory_ptr",
                                 "typeString": "struct RLPReader.RLPItem memory[] memory"
                               }
                             },
@@ -3186,7 +3186,7 @@
   },
   "networks": {},
   "schemaVersion": "3.0.11",
-  "updatedAt": "2019-08-16T21:13:59.761Z",
+  "updatedAt": "2019-08-16T21:31:24.062Z",
   "devdoc": {
     "methods": {}
   },
