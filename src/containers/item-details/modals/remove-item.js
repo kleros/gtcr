@@ -45,8 +45,8 @@ const RemoveItemModal = ({ item, itemName = 'item', fileURI, ...rest }) => {
         .
       </Typography.Title>
       <Typography.Paragraph>
-        To submit a removal request, a deposit is required. This value will be
-        reimbursed after the challenge period if no one challenges the request.
+        To remove an item, a deposit is required. This value will be reimbursed
+        after the challenge period if no one challenges the request.
       </Typography.Paragraph>
       <Divider />
       <Descriptions
