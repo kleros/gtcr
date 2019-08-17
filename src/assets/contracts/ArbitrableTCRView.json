@@ -123,7 +123,7 @@
         "id": 3,
         "nodeType": "ImportDirective",
         "scope": 130,
-        "sourceUnit": 2240,
+        "sourceUnit": 2278,
         "src": "60:41:0",
         "symbolAliases": [],
         "unitAlias": ""
@@ -461,7 +461,7 @@
                       "stateVariable": false,
                       "storageLocation": "default",
                       "typeDescriptions": {
-                        "typeIdentifier": "t_contract$_IArbitrableTCR_$2239",
+                        "typeIdentifier": "t_contract$_IArbitrableTCR_$2277",
                         "typeString": "contract IArbitrableTCR"
                       },
                       "typeName": {
@@ -469,10 +469,10 @@
                         "id": 33,
                         "name": "IArbitrableTCR",
                         "nodeType": "UserDefinedTypeName",
-                        "referencedDeclaration": 2239,
+                        "referencedDeclaration": 2277,
                         "src": "694:14:0",
                         "typeDescriptions": {
-                          "typeIdentifier": "t_contract$_IArbitrableTCR_$2239",
+                          "typeIdentifier": "t_contract$_IArbitrableTCR_$2277",
                           "typeString": "contract IArbitrableTCR"
                         }
                       },
@@ -509,10 +509,10 @@
                       "name": "IArbitrableTCR",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [],
-                      "referencedDeclaration": 2239,
+                      "referencedDeclaration": 2277,
                       "src": "715:14:0",
                       "typeDescriptions": {
-                        "typeIdentifier": "t_type$_t_contract$_IArbitrableTCR_$2239_$",
+                        "typeIdentifier": "t_type$_t_contract$_IArbitrableTCR_$2277_$",
                         "typeString": "type(contract IArbitrableTCR)"
                       }
                     },
@@ -526,7 +526,7 @@
                     "nodeType": "FunctionCall",
                     "src": "715:24:0",
                     "typeDescriptions": {
-                      "typeIdentifier": "t_contract$_IArbitrableTCR_$2239",
+                      "typeIdentifier": "t_contract$_IArbitrableTCR_$2277",
                       "typeString": "contract IArbitrableTCR"
                     }
                   },
@@ -586,7 +586,7 @@
                           "referencedDeclaration": 34,
                           "src": "767:3:0",
                           "typeDescriptions": {
-                            "typeIdentifier": "t_contract$_IArbitrableTCR_$2239",
+                            "typeIdentifier": "t_contract$_IArbitrableTCR_$2277",
                             "typeString": "contract IArbitrableTCR"
                           }
                         },
@@ -597,7 +597,7 @@
                         "lValueRequested": false,
                         "memberName": "governor",
                         "nodeType": "MemberAccess",
-                        "referencedDeclaration": 2188,
+                        "referencedDeclaration": 2226,
                         "src": "767:12:0",
                         "typeDescriptions": {
                           "typeIdentifier": "t_function_external_view$__$returns$_t_address_$",
@@ -681,7 +681,7 @@
                           "referencedDeclaration": 34,
                           "src": "811:3:0",
                           "typeDescriptions": {
-                            "typeIdentifier": "t_contract$_IArbitrableTCR_$2239",
+                            "typeIdentifier": "t_contract$_IArbitrableTCR_$2277",
                             "typeString": "contract IArbitrableTCR"
                           }
                         },
@@ -692,7 +692,7 @@
                         "lValueRequested": false,
                         "memberName": "arbitrator",
                         "nodeType": "MemberAccess",
-                        "referencedDeclaration": 2193,
+                        "referencedDeclaration": 2231,
                         "src": "811:14:0",
                         "typeDescriptions": {
                           "typeIdentifier": "t_function_external_view$__$returns$_t_address_$",
@@ -776,7 +776,7 @@
                           "referencedDeclaration": 34,
                           "src": "866:3:0",
                           "typeDescriptions": {
-                            "typeIdentifier": "t_contract$_IArbitrableTCR_$2239",
+                            "typeIdentifier": "t_contract$_IArbitrableTCR_$2277",
                             "typeString": "contract IArbitrableTCR"
                           }
                         },
@@ -787,7 +787,7 @@
                         "lValueRequested": false,
                         "memberName": "arbitratorExtraData",
                         "nodeType": "MemberAccess",
-                        "referencedDeclaration": 2198,
+                        "referencedDeclaration": 2236,
                         "src": "866:23:0",
                         "typeDescriptions": {
                           "typeIdentifier": "t_function_external_view$__$returns$_t_bytes_memory_ptr_$",
@@ -871,7 +871,7 @@
                           "referencedDeclaration": 34,
                           "src": "931:3:0",
                           "typeDescriptions": {
-                            "typeIdentifier": "t_contract$_IArbitrableTCR_$2239",
+                            "typeIdentifier": "t_contract$_IArbitrableTCR_$2277",
                             "typeString": "contract IArbitrableTCR"
                           }
                         },
@@ -882,7 +882,7 @@
                         "lValueRequested": false,
                         "memberName": "requesterBaseDeposit",
                         "nodeType": "MemberAccess",
-                        "referencedDeclaration": 2203,
+                        "referencedDeclaration": 2241,
                         "src": "931:24:0",
                         "typeDescriptions": {
                           "typeIdentifier": "t_function_external_view$__$returns$_t_uint256_$",
@@ -966,7 +966,7 @@
                           "referencedDeclaration": 34,
                           "src": "998:3:0",
                           "typeDescriptions": {
-                            "typeIdentifier": "t_contract$_IArbitrableTCR_$2239",
+                            "typeIdentifier": "t_contract$_IArbitrableTCR_$2277",
                             "typeString": "contract IArbitrableTCR"
                           }
                         },
@@ -977,7 +977,7 @@
                         "lValueRequested": false,
                         "memberName": "challengerBaseDeposit",
                         "nodeType": "MemberAccess",
-                        "referencedDeclaration": 2208,
+                        "referencedDeclaration": 2246,
                         "src": "998:25:0",
                         "typeDescriptions": {
                           "typeIdentifier": "t_function_external_view$__$returns$_t_uint256_$",
@@ -1061,7 +1061,7 @@
                           "referencedDeclaration": 34,
                           "src": "1068:3:0",
                           "typeDescriptions": {
-                            "typeIdentifier": "t_contract$_IArbitrableTCR_$2239",
+                            "typeIdentifier": "t_contract$_IArbitrableTCR_$2277",
                             "typeString": "contract IArbitrableTCR"
                           }
                         },
@@ -1072,7 +1072,7 @@
                         "lValueRequested": false,
                         "memberName": "challengePeriodDuration",
                         "nodeType": "MemberAccess",
-                        "referencedDeclaration": 2213,
+                        "referencedDeclaration": 2251,
                         "src": "1068:27:0",
                         "typeDescriptions": {
                           "typeIdentifier": "t_function_external_view$__$returns$_t_uint256_$",
@@ -1156,7 +1156,7 @@
                           "referencedDeclaration": 34,
                           "src": "1136:3:0",
                           "typeDescriptions": {
-                            "typeIdentifier": "t_contract$_IArbitrableTCR_$2239",
+                            "typeIdentifier": "t_contract$_IArbitrableTCR_$2277",
                             "typeString": "contract IArbitrableTCR"
                           }
                         },
@@ -1167,7 +1167,7 @@
                         "lValueRequested": false,
                         "memberName": "metaEvidenceUpdates",
                         "nodeType": "MemberAccess",
-                        "referencedDeclaration": 2218,
+                        "referencedDeclaration": 2256,
                         "src": "1136:23:0",
                         "typeDescriptions": {
                           "typeIdentifier": "t_function_external_view$__$returns$_t_uint256_$",
@@ -1251,7 +1251,7 @@
                           "referencedDeclaration": 34,
                           "src": "1202:3:0",
                           "typeDescriptions": {
-                            "typeIdentifier": "t_contract$_IArbitrableTCR_$2239",
+                            "typeIdentifier": "t_contract$_IArbitrableTCR_$2277",
                             "typeString": "contract IArbitrableTCR"
                           }
                         },
@@ -1262,7 +1262,7 @@
                         "lValueRequested": false,
                         "memberName": "winnerStakeMultiplier",
                         "nodeType": "MemberAccess",
-                        "referencedDeclaration": 2223,
+                        "referencedDeclaration": 2261,
                         "src": "1202:25:0",
                         "typeDescriptions": {
                           "typeIdentifier": "t_function_external_view$__$returns$_t_uint256_$",
@@ -1346,7 +1346,7 @@
                           "referencedDeclaration": 34,
                           "src": "1269:3:0",
                           "typeDescriptions": {
-                            "typeIdentifier": "t_contract$_IArbitrableTCR_$2239",
+                            "typeIdentifier": "t_contract$_IArbitrableTCR_$2277",
                             "typeString": "contract IArbitrableTCR"
                           }
                         },
@@ -1357,7 +1357,7 @@
                         "lValueRequested": false,
                         "memberName": "loserStakeMultiplier",
                         "nodeType": "MemberAccess",
-                        "referencedDeclaration": 2228,
+                        "referencedDeclaration": 2266,
                         "src": "1269:24:0",
                         "typeDescriptions": {
                           "typeIdentifier": "t_function_external_view$__$returns$_t_uint256_$",
@@ -1441,7 +1441,7 @@
                           "referencedDeclaration": 34,
                           "src": "1336:3:0",
                           "typeDescriptions": {
-                            "typeIdentifier": "t_contract$_IArbitrableTCR_$2239",
+                            "typeIdentifier": "t_contract$_IArbitrableTCR_$2277",
                             "typeString": "contract IArbitrableTCR"
                           }
                         },
@@ -1452,7 +1452,7 @@
                         "lValueRequested": false,
                         "memberName": "sharedStakeMultiplier",
                         "nodeType": "MemberAccess",
-                        "referencedDeclaration": 2233,
+                        "referencedDeclaration": 2271,
                         "src": "1336:25:0",
                         "typeDescriptions": {
                           "typeIdentifier": "t_function_external_view$__$returns$_t_uint256_$",
@@ -1536,7 +1536,7 @@
                           "referencedDeclaration": 34,
                           "src": "1401:3:0",
                           "typeDescriptions": {
-                            "typeIdentifier": "t_contract$_IArbitrableTCR_$2239",
+                            "typeIdentifier": "t_contract$_IArbitrableTCR_$2277",
                             "typeString": "contract IArbitrableTCR"
                           }
                         },
@@ -1547,7 +1547,7 @@
                         "lValueRequested": false,
                         "memberName": "MULTIPLIER_DIVISOR",
                         "nodeType": "MemberAccess",
-                        "referencedDeclaration": 2238,
+                        "referencedDeclaration": 2276,
                         "src": "1401:22:0",
                         "typeDescriptions": {
                           "typeIdentifier": "t_function_external_view$__$returns$_t_uint256_$",
@@ -1705,7 +1705,7 @@
         "id": 3,
         "nodeType": "ImportDirective",
         "scope": 130,
-        "sourceUnit": 2240,
+        "sourceUnit": 2278,
         "src": "60:41:0",
         "symbolAliases": [],
         "unitAlias": ""
@@ -2043,7 +2043,7 @@
                       "stateVariable": false,
                       "storageLocation": "default",
                       "typeDescriptions": {
-                        "typeIdentifier": "t_contract$_IArbitrableTCR_$2239",
+                        "typeIdentifier": "t_contract$_IArbitrableTCR_$2277",
                         "typeString": "contract IArbitrableTCR"
                       },
                       "typeName": {
@@ -2051,10 +2051,10 @@
                         "id": 33,
                         "name": "IArbitrableTCR",
                         "nodeType": "UserDefinedTypeName",
-                        "referencedDeclaration": 2239,
+                        "referencedDeclaration": 2277,
                         "src": "694:14:0",
                         "typeDescriptions": {
-                          "typeIdentifier": "t_contract$_IArbitrableTCR_$2239",
+                          "typeIdentifier": "t_contract$_IArbitrableTCR_$2277",
                           "typeString": "contract IArbitrableTCR"
                         }
                       },
@@ -2091,10 +2091,10 @@
                       "name": "IArbitrableTCR",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [],
-                      "referencedDeclaration": 2239,
+                      "referencedDeclaration": 2277,
                       "src": "715:14:0",
                       "typeDescriptions": {
-                        "typeIdentifier": "t_type$_t_contract$_IArbitrableTCR_$2239_$",
+                        "typeIdentifier": "t_type$_t_contract$_IArbitrableTCR_$2277_$",
                         "typeString": "type(contract IArbitrableTCR)"
                       }
                     },
@@ -2108,7 +2108,7 @@
                     "nodeType": "FunctionCall",
                     "src": "715:24:0",
                     "typeDescriptions": {
-                      "typeIdentifier": "t_contract$_IArbitrableTCR_$2239",
+                      "typeIdentifier": "t_contract$_IArbitrableTCR_$2277",
                       "typeString": "contract IArbitrableTCR"
                     }
                   },
@@ -2168,7 +2168,7 @@
                           "referencedDeclaration": 34,
                           "src": "767:3:0",
                           "typeDescriptions": {
-                            "typeIdentifier": "t_contract$_IArbitrableTCR_$2239",
+                            "typeIdentifier": "t_contract$_IArbitrableTCR_$2277",
                             "typeString": "contract IArbitrableTCR"
                           }
                         },
@@ -2179,7 +2179,7 @@
                         "lValueRequested": false,
                         "memberName": "governor",
                         "nodeType": "MemberAccess",
-                        "referencedDeclaration": 2188,
+                        "referencedDeclaration": 2226,
                         "src": "767:12:0",
                         "typeDescriptions": {
                           "typeIdentifier": "t_function_external_view$__$returns$_t_address_$",
@@ -2263,7 +2263,7 @@
                           "referencedDeclaration": 34,
                           "src": "811:3:0",
                           "typeDescriptions": {
-                            "typeIdentifier": "t_contract$_IArbitrableTCR_$2239",
+                            "typeIdentifier": "t_contract$_IArbitrableTCR_$2277",
                             "typeString": "contract IArbitrableTCR"
                           }
                         },
@@ -2274,7 +2274,7 @@
                         "lValueRequested": false,
                         "memberName": "arbitrator",
                         "nodeType": "MemberAccess",
-                        "referencedDeclaration": 2193,
+                        "referencedDeclaration": 2231,
                         "src": "811:14:0",
                         "typeDescriptions": {
                           "typeIdentifier": "t_function_external_view$__$returns$_t_address_$",
@@ -2358,7 +2358,7 @@
                           "referencedDeclaration": 34,
                           "src": "866:3:0",
                           "typeDescriptions": {
-                            "typeIdentifier": "t_contract$_IArbitrableTCR_$2239",
+                            "typeIdentifier": "t_contract$_IArbitrableTCR_$2277",
                             "typeString": "contract IArbitrableTCR"
                           }
                         },
@@ -2369,7 +2369,7 @@
                         "lValueRequested": false,
                         "memberName": "arbitratorExtraData",
                         "nodeType": "MemberAccess",
-                        "referencedDeclaration": 2198,
+                        "referencedDeclaration": 2236,
                         "src": "866:23:0",
                         "typeDescriptions": {
                           "typeIdentifier": "t_function_external_view$__$returns$_t_bytes_memory_ptr_$",
@@ -2453,7 +2453,7 @@
                           "referencedDeclaration": 34,
                           "src": "931:3:0",
                           "typeDescriptions": {
-                            "typeIdentifier": "t_contract$_IArbitrableTCR_$2239",
+                            "typeIdentifier": "t_contract$_IArbitrableTCR_$2277",
                             "typeString": "contract IArbitrableTCR"
                           }
                         },
@@ -2464,7 +2464,7 @@
                         "lValueRequested": false,
                         "memberName": "requesterBaseDeposit",
                         "nodeType": "MemberAccess",
-                        "referencedDeclaration": 2203,
+                        "referencedDeclaration": 2241,
                         "src": "931:24:0",
                         "typeDescriptions": {
                           "typeIdentifier": "t_function_external_view$__$returns$_t_uint256_$",
@@ -2548,7 +2548,7 @@
                           "referencedDeclaration": 34,
                           "src": "998:3:0",
                           "typeDescriptions": {
-                            "typeIdentifier": "t_contract$_IArbitrableTCR_$2239",
+                            "typeIdentifier": "t_contract$_IArbitrableTCR_$2277",
                             "typeString": "contract IArbitrableTCR"
                           }
                         },
@@ -2559,7 +2559,7 @@
                         "lValueRequested": false,
                         "memberName": "challengerBaseDeposit",
                         "nodeType": "MemberAccess",
-                        "referencedDeclaration": 2208,
+                        "referencedDeclaration": 2246,
                         "src": "998:25:0",
                         "typeDescriptions": {
                           "typeIdentifier": "t_function_external_view$__$returns$_t_uint256_$",
@@ -2643,7 +2643,7 @@
                           "referencedDeclaration": 34,
                           "src": "1068:3:0",
                           "typeDescriptions": {
-                            "typeIdentifier": "t_contract$_IArbitrableTCR_$2239",
+                            "typeIdentifier": "t_contract$_IArbitrableTCR_$2277",
                             "typeString": "contract IArbitrableTCR"
                           }
                         },
@@ -2654,7 +2654,7 @@
                         "lValueRequested": false,
                         "memberName": "challengePeriodDuration",
                         "nodeType": "MemberAccess",
-                        "referencedDeclaration": 2213,
+                        "referencedDeclaration": 2251,
                         "src": "1068:27:0",
                         "typeDescriptions": {
                           "typeIdentifier": "t_function_external_view$__$returns$_t_uint256_$",
@@ -2738,7 +2738,7 @@
                           "referencedDeclaration": 34,
                           "src": "1136:3:0",
                           "typeDescriptions": {
-                            "typeIdentifier": "t_contract$_IArbitrableTCR_$2239",
+                            "typeIdentifier": "t_contract$_IArbitrableTCR_$2277",
                             "typeString": "contract IArbitrableTCR"
                           }
                         },
@@ -2749,7 +2749,7 @@
                         "lValueRequested": false,
                         "memberName": "metaEvidenceUpdates",
                         "nodeType": "MemberAccess",
-                        "referencedDeclaration": 2218,
+                        "referencedDeclaration": 2256,
                         "src": "1136:23:0",
                         "typeDescriptions": {
                           "typeIdentifier": "t_function_external_view$__$returns$_t_uint256_$",
@@ -2833,7 +2833,7 @@
                           "referencedDeclaration": 34,
                           "src": "1202:3:0",
                           "typeDescriptions": {
-                            "typeIdentifier": "t_contract$_IArbitrableTCR_$2239",
+                            "typeIdentifier": "t_contract$_IArbitrableTCR_$2277",
                             "typeString": "contract IArbitrableTCR"
                           }
                         },
@@ -2844,7 +2844,7 @@
                         "lValueRequested": false,
                         "memberName": "winnerStakeMultiplier",
                         "nodeType": "MemberAccess",
-                        "referencedDeclaration": 2223,
+                        "referencedDeclaration": 2261,
                         "src": "1202:25:0",
                         "typeDescriptions": {
                           "typeIdentifier": "t_function_external_view$__$returns$_t_uint256_$",
@@ -2928,7 +2928,7 @@
                           "referencedDeclaration": 34,
                           "src": "1269:3:0",
                           "typeDescriptions": {
-                            "typeIdentifier": "t_contract$_IArbitrableTCR_$2239",
+                            "typeIdentifier": "t_contract$_IArbitrableTCR_$2277",
                             "typeString": "contract IArbitrableTCR"
                           }
                         },
@@ -2939,7 +2939,7 @@
                         "lValueRequested": false,
                         "memberName": "loserStakeMultiplier",
                         "nodeType": "MemberAccess",
-                        "referencedDeclaration": 2228,
+                        "referencedDeclaration": 2266,
                         "src": "1269:24:0",
                         "typeDescriptions": {
                           "typeIdentifier": "t_function_external_view$__$returns$_t_uint256_$",
@@ -3023,7 +3023,7 @@
                           "referencedDeclaration": 34,
                           "src": "1336:3:0",
                           "typeDescriptions": {
-                            "typeIdentifier": "t_contract$_IArbitrableTCR_$2239",
+                            "typeIdentifier": "t_contract$_IArbitrableTCR_$2277",
                             "typeString": "contract IArbitrableTCR"
                           }
                         },
@@ -3034,7 +3034,7 @@
                         "lValueRequested": false,
                         "memberName": "sharedStakeMultiplier",
                         "nodeType": "MemberAccess",
-                        "referencedDeclaration": 2233,
+                        "referencedDeclaration": 2271,
                         "src": "1336:25:0",
                         "typeDescriptions": {
                           "typeIdentifier": "t_function_external_view$__$returns$_t_uint256_$",
@@ -3118,7 +3118,7 @@
                           "referencedDeclaration": 34,
                           "src": "1401:3:0",
                           "typeDescriptions": {
-                            "typeIdentifier": "t_contract$_IArbitrableTCR_$2239",
+                            "typeIdentifier": "t_contract$_IArbitrableTCR_$2277",
                             "typeString": "contract IArbitrableTCR"
                           }
                         },
@@ -3129,7 +3129,7 @@
                         "lValueRequested": false,
                         "memberName": "MULTIPLIER_DIVISOR",
                         "nodeType": "MemberAccess",
-                        "referencedDeclaration": 2238,
+                        "referencedDeclaration": 2276,
                         "src": "1401:22:0",
                         "typeDescriptions": {
                           "typeIdentifier": "t_function_external_view$__$returns$_t_uint256_$",
@@ -3257,7 +3257,7 @@
   },
   "networks": {},
   "schemaVersion": "3.0.11",
-  "updatedAt": "2019-08-16T21:10:50.374Z",
+  "updatedAt": "2019-08-17T20:02:26.089Z",
   "devdoc": {
     "details": "A utility contract batch view requests.",
     "methods": {}

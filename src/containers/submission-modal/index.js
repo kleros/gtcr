@@ -40,7 +40,7 @@ const SubmissionModal = ({ metaEvidence, tcrAddress, ...rest }) => {
       const encodedParams = gtcrEncode({ columns, values })
 
       // Request signature and submit.
-      const tx = await gtcr.requestStatusChange(encodedParams, {
+      const tx = await gtcr.addItem(encodedParams, {
         value: requestDeposit
       })
 

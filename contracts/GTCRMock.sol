@@ -140,41 +140,16 @@ contract GTCRMock is IArbitrable, IEvidence{
         loserStakeMultiplier = _loserStakeMultiplier;
     }
 
-    function requestStatusChange(bytes calldata _item)
-        external
-        payable
-    {
+    function addItem(bytes calldata _item) external payable {
         bytes32 itemID = keccak256(_item);
+        require(items[itemID].status == ItemStatus.Absent, "Item must be absent to be added.");
+        requestStatusChange(_item);
+    }
 
-        Item storage item = items[itemID];
-        if (item.requests.length == 0) { // Initial item registration.
-            itemIDs.push(itemID);
-            item.data = _item;
-        }
-
-        // Update item status.
-        if (item.status == ItemStatus.Absent)
-            item.status = ItemStatus.RegistrationRequested;
-        else if (item.status == ItemStatus.Registered)
-            item.status = ItemStatus.ClearingRequested;
-        else
-            revert("Item already has a pending request.");
-
-        // Setup request.
-        Request storage request = item.requests[item.requests.length++];
-        request.parties[uint(Party.Requester)] = msg.sender;
-        request.submissionTime = now;
-        request.arbitrator = arbitrator;
-        request.arbitratorExtraData = arbitratorExtraData;
-        Round storage round = request.rounds[request.rounds.length++];
-
-
-        // Amount required to fully fund each side: requesterBaseDeposit + arbitration cost + (arbitration cost * multiplier).
-        uint arbitrationCost = request.arbitrator.arbitrationCost(request.arbitratorExtraData);
-        uint totalCost = arbitrationCost.addCap((arbitrationCost.mulCap(sharedStakeMultiplier)) / MULTIPLIER_DIVISOR).addCap(requesterBaseDeposit);
-        contribute(round, Party.Requester, msg.sender, msg.value, totalCost);
-        require(round.paidFees[uint(Party.Requester)] >= totalCost, "You must fully fund your side.");
-        round.hasPaid[uint(Party.Requester)] = true;
+    function removeItem(bytes calldata _item) external payable {
+        bytes32 itemID = keccak256(_item);
+        require(items[itemID].status == ItemStatus.Registered, "Item must be registered to be removed.");
+        requestStatusChange(_item);
     }
 
     /** @dev Executes a request if the challenge period passed and no one challenged the request.
@@ -323,6 +298,40 @@ contract GTCRMock is IArbitrable, IEvidence{
 
 
     /* Internal */
+
+    function requestStatusChange(bytes memory _item) internal {
+        bytes32 itemID = keccak256(_item);
+
+        Item storage item = items[itemID];
+        if (item.requests.length == 0) { // Initial item registration.
+            itemIDs.push(itemID);
+            item.data = _item;
+        }
+
+        // Update item status.
+        if (item.status == ItemStatus.Absent)
+            item.status = ItemStatus.RegistrationRequested;
+        else if (item.status == ItemStatus.Registered)
+            item.status = ItemStatus.ClearingRequested;
+        else
+            revert("Item already has a pending request.");
+
+        // Setup request.
+        Request storage request = item.requests[item.requests.length++];
+        request.parties[uint(Party.Requester)] = msg.sender;
+        request.submissionTime = now;
+        request.arbitrator = arbitrator;
+        request.arbitratorExtraData = arbitratorExtraData;
+        Round storage round = request.rounds[request.rounds.length++];
+
+
+        // Amount required to fully fund each side: requesterBaseDeposit + arbitration cost + (arbitration cost * multiplier).
+        uint arbitrationCost = request.arbitrator.arbitrationCost(request.arbitratorExtraData);
+        uint totalCost = arbitrationCost.addCap((arbitrationCost.mulCap(sharedStakeMultiplier)) / MULTIPLIER_DIVISOR).addCap(requesterBaseDeposit);
+        contribute(round, Party.Requester, msg.sender, msg.value, totalCost);
+        require(round.paidFees[uint(Party.Requester)] >= totalCost, "You must fully fund your side.");
+        round.hasPaid[uint(Party.Requester)] = true;
+    }
 
     /** @dev Returns the contribution value and remainder from available ETH and required amount.
      *  @param _available The amount of ETH available for the contribution.

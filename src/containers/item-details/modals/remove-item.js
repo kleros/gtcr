@@ -18,7 +18,7 @@ const RemoveItemModal = ({ item, itemName = 'item', fileURI, ...rest }) => {
       const gtcr = new ethers.Contract(tcrAddress, _gtcr, signer)
 
       // Request signature and submit.
-      const tx = await gtcr.requestStatusChange(item.data, {
+      const tx = await gtcr.removeItem(item.data, {
         value: requestDeposit
       })
 
