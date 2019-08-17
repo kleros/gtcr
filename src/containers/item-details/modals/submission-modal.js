@@ -1,5 +1,14 @@
 import React, { useContext } from 'react'
-import { Spin, Modal, Button, Form, Tooltip, Icon } from 'antd'
+import {
+  Spin,
+  Modal,
+  Button,
+  Form,
+  Tooltip,
+  Icon,
+  Typography,
+  Descriptions
+} from 'antd'
 import styled from 'styled-components/macro'
 import PropTypes from 'prop-types'
 import { abi as _gtcr } from '../../../assets/contracts/GTCRMock.json'
@@ -10,6 +19,7 @@ import { TCRViewContext } from '../../../bootstrap/tcr-view-context'
 import InputSelector from '../../../components/input-selector.js'
 import { withFormik } from 'formik'
 import { typeDefaultValues } from '../../../utils/item-types.js'
+import ETHAmount from '../../../components/eth-amount.js'
 
 const StyledSpin = styled(Spin)`
   left: 50%;
@@ -18,20 +28,12 @@ const StyledSpin = styled(Spin)`
   transform: translate(-50%, -50%);
 `
 
-const StyledModalFooter = styled.div`
-  display: flex;
-  justify-content: flex-end;
-`
+const SUBMISSION_FORM_ID = 'submitItemForm'
 
 // TODO: Check if TCR requires evidence when submitting and if so, require it.
 // TODO: Add information on deposit costs.
-const _SubmissionForm = ({
-  columns,
-  handleSubmit,
-  onCancel,
-  setFieldValue
-}) => (
-  <Form onSubmit={handleSubmit}>
+const _SubmissionForm = ({ columns, handleSubmit, setFieldValue }) => (
+  <Form onSubmit={handleSubmit} id={SUBMISSION_FORM_ID}>
     {columns &&
       columns.length > 0 &&
       columns.map((column, index) => (
@@ -50,19 +52,6 @@ const _SubmissionForm = ({
           setFieldValue={setFieldValue}
         />
       ))}
-    <StyledModalFooter>
-      <Button key="back" onClick={onCancel}>
-        Cancel
-      </Button>
-      <Button
-        key="submit"
-        type="primary"
-        htmlType="submit"
-        style={{ marginLeft: '8px' }}
-      >
-        Submit
-      </Button>
-    </StyledModalFooter>
   </Form>
 )
 
@@ -73,7 +62,6 @@ _SubmissionForm.propTypes = {
       description: PropTypes.string.isRequired
     })
   ).isRequired,
-  onCancel: PropTypes.func.isRequired,
   setFieldValue: PropTypes.func.isRequired,
   handleSubmit: PropTypes.func.isRequired
 }
@@ -100,6 +88,7 @@ const SubmissionModal = props => {
   const { requestDeposit, tcrAddress, metaEvidence } = useContext(
     TCRViewContext
   )
+
   if (!metaEvidence)
     return (
       <Modal
@@ -115,6 +104,8 @@ const SubmissionModal = props => {
       </Modal>
     )
 
+  const { fileURI, itemName, columns } = metaEvidence
+
   const postSubmit = (values, columns) => {
     pushWeb3Action(async (_, signer) => {
       const gtcr = new ethers.Contract(tcrAddress, _gtcr, signer)
@@ -128,24 +119,62 @@ const SubmissionModal = props => {
       onCancel() // Hide the submission modal.
       return {
         tx,
-        actionMessage: `Submitting ${metaEvidence.itemName || 'item'}`
+        actionMessage: `Submitting ${itemName || 'item'}`
       }
     })
   }
 
   return (
     <Modal
-      title={`Submit ${metaEvidence.itemName || 'Item'}`}
-      footer={null}
-      {...onCancel}
+      title={`Submit ${itemName || 'Item'}`}
+      footer={[
+        <Button key="back" onClick={onCancel}>
+          Return
+        </Button>,
+        <Button
+          key="challengeSubmit"
+          type="primary"
+          form={SUBMISSION_FORM_ID}
+          htmlType="submit"
+        >
+          Submit
+        </Button>
+      ]}
       {...props}
     >
+      <Typography.Title level={4}>
+        See the&nbsp;
+        <a
+          href={`${process.env.REACT_APP_IPFS_GATEWAY}${fileURI || ''}`}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Listing Criteria
+        </a>
+        .
+      </Typography.Title>
       <SubmissionForm
-        columns={metaEvidence.columns}
+        columns={columns}
         postSubmit={postSubmit}
-        onCancel={onCancel}
         initialValues={initialValues}
       />
+      <Typography.Paragraph>
+        A deposit is required to submit. This value reimbursed at the end of the
+        challenge period or, if there is a dispute, be awarded to the party that
+        wins.
+      </Typography.Paragraph>
+      <Descriptions
+        bordered
+        column={{ xxl: 4, xl: 3, lg: 3, md: 3, sm: 2, xs: 1 }}
+      >
+        <Descriptions.Item label="Total Deposit Required">
+          <ETHAmount
+            decimals={3}
+            amount={requestDeposit.toString()}
+            displayUnit
+          />
+        </Descriptions.Item>
+      </Descriptions>
     </Modal>
   )
 }

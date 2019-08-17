@@ -12,7 +12,7 @@ const StyledSkeleton = styled(Skeleton)`
     margin: -3px 0;
   }
 `
-const ETHAmount = ({ amount, decimals }) =>
+const ETHAmount = ({ amount, decimals, displayUnit }) =>
   amount === null ? (
     <StyledSkeleton active paragraph={false} title={SkeletonTitleProps} />
   ) : (
@@ -22,7 +22,7 @@ const ETHAmount = ({ amount, decimals }) =>
           ? amount.toLocaleString('fullwide', { useGrouping: false })
           : String(amount)
       )
-    ).toFixed(decimals)
+    ).toFixed(decimals) + (displayUnit ? ' ETH' : '')
   )
 
 ETHAmount.propTypes = {
@@ -31,12 +31,14 @@ ETHAmount.propTypes = {
     PropTypes.number.isRequired,
     PropTypes.object.isRequired
   ]),
-  decimals: PropTypes.number
+  decimals: PropTypes.number,
+  displayUnit: PropTypes.bool
 }
 
 ETHAmount.defaultProps = {
   amount: null,
-  decimals: 0
+  decimals: 0,
+  displayUnit: null
 }
 
 export default ETHAmount

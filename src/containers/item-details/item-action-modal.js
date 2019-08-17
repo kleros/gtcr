@@ -2,7 +2,7 @@ import React from 'react'
 import { Modal } from 'antd'
 import { STATUS_CODE, getActionLabel } from '../../utils/item-status'
 import RemoveItemModal from './modals/remove-item.js'
-import ChallengeItemModal from './modals/challenge-request.js'
+import ChallengeRequestModal from './modals/challenge-request.js'
 import SubmissionModal from './modals/submission-modal'
 
 const ItemActionModal = ({
@@ -36,7 +36,7 @@ const ItemActionModal = ({
     case STATUS_CODE.REMOVAL_REQUESTED:
     case STATUS_CODE.SUBMITTED:
       return (
-        <ChallengeItemModal
+        <ChallengeRequestModal
           item={item}
           itemName={itemName}
           fileURI={fileURI}
