@@ -113,6 +113,10 @@ contract GTCRMock is IArbitrable, IEvidence{
     mapping(bytes32 => Item) public items; // Maps the item ID to the item.
     mapping(address => mapping(uint => bytes32)) public arbitratorDisputeIDToItemID; // Maps a dispute ID to the ID of the item with the disputed request. On the form arbitratorDisputeIDToItemID[arbitrator][disputeID].
 
+    /* Modifiers */
+
+    modifier onlyGovernor {require(msg.sender == governor, "The caller must be the governor."); _;}
+
     constructor(
         Arbitrator _arbitrator,
         bytes memory _arbitratorExtraData,
@@ -296,6 +300,12 @@ contract GTCRMock is IArbitrable, IEvidence{
         _beneficiary.send(reward); // It is the user responsibility to accept ETH.
     }
 
+    /** @dev Change the duration of the challenge period.
+     *  @param _challengePeriodDuration The new duration of the challenge period.
+     */
+    function changeTimeToChallenge(uint _challengePeriodDuration) external onlyGovernor {
+        challengePeriodDuration = _challengePeriodDuration;
+    }
 
     /* Internal */
 

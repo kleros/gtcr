@@ -133,6 +133,7 @@ const TCRParams = ({
             </FormItem>
           )}
         </Field>
+        {/* Let the user mark if this is a TCR of TCRs. */}
       </Form>
     </Card>
   )

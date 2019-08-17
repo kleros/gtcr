@@ -30,6 +30,7 @@ const RemoveItemModal = ({ item, itemName = 'item', fileURI, ...rest }) => {
     })
   }
 
+  // TODO: Check if TCR requires evidence upon placing a removal request and if so, require it.
   return (
     <Modal {...rest} onOk={requestStatusChange}>
       <Typography.Title level={4}>

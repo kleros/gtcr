@@ -3,6 +3,7 @@ import { Modal } from 'antd'
 import { STATUS_CODE, getActionLabel } from '../../utils/item-status'
 import RemoveItemModal from './modals/remove-item.js'
 import ChallengeItemModal from './modals/challenge-request.js'
+import SubmissionModal from './modals/submission-modal'
 
 const ItemActionModal = ({
   statusCode,
@@ -31,7 +32,7 @@ const ItemActionModal = ({
       )
     }
     case STATUS_CODE.REJECTED:
-      return <Modal {...rest}>Resubmit</Modal>
+      return <SubmissionModal initialValues={item.decodedData} {...rest} />
     case STATUS_CODE.REMOVAL_REQUESTED:
     case STATUS_CODE.SUBMITTED:
       return (

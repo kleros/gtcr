@@ -4,7 +4,6 @@ import React, { useEffect, useState, useContext } from 'react'
 import PropTypes from 'prop-types'
 import ErrorPage from '../error-page'
 import styled from 'styled-components/macro'
-import SubmissionModal from '../submission-modal'
 import { WalletContext } from '../../bootstrap/wallet-context'
 import { ZERO_ADDRESS, ZERO_BYTES32 } from '../../utils/string'
 import { TCRViewContext } from '../../bootstrap/tcr-view-context'
@@ -14,6 +13,7 @@ import { bigNumberify } from 'ethers/utils'
 import { gtcrDecode } from '../../utils/encoder'
 import itemTypes from '../../utils/item-types'
 import ETHAddress from '../../components/eth-address'
+import SubmissionModal from '../item-details/modals/submission-modal'
 
 const StyledContent = styled(Layout.Content)`
   margin: 32px 0;
