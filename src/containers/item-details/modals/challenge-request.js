@@ -30,8 +30,6 @@ const ChallengeRequestModal = ({
   }) => {
     pushWeb3Action(async (_, signer) => {
       const gtcr = new ethers.Contract(tcrAddress, _gtcr, signer)
-
-      // TODO: Upload evidence JSON file.
       const evidenceJSON = {
         title,
         description,

@@ -11,7 +11,7 @@ const InputSelector = ({ type, setFieldValue, ...props }) => {
     case itemTypes.TEXT:
     case itemTypes.ADDRESS:
     case itemTypes.NUMBER:
-      return <CustomInput {...props} />
+      return <CustomInput type={type} {...props} />
     case itemTypes.BOOLEAN:
       return (
         <Field name={name}>

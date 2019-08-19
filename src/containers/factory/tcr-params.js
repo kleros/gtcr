@@ -4,6 +4,7 @@ import PropTypes from 'prop-types'
 import React, { useEffect } from 'react'
 import * as yup from 'yup'
 import CustomInput from '../../components/custom-input'
+import itemTypes from '../../utils/item-types'
 
 const FormItem = Form.Item
 
@@ -91,6 +92,7 @@ const TCRParams = ({
           addonAfter="ETH"
           error={errors.requesterBaseDeposit}
           touched={touched.requesterBaseDeposit}
+          type={itemTypes.NUMBER}
           label={
             <span>
               Registration Deposit&nbsp;
@@ -107,6 +109,7 @@ const TCRParams = ({
           addonAfter="ETH"
           error={errors.challengerBaseDeposit}
           touched={touched.challengerBaseDeposit}
+          type={itemTypes.NUMBER}
           label={
             <span>
               Challenger Deposit&nbsp;

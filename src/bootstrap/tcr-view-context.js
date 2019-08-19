@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect } from 'react'
+import React, { createContext, useState, useEffect, useMemo } from 'react'
 import { useWeb3Context } from 'web3-react'
 import { useDebounce } from 'use-debounce'
 import { abi as _gtcr } from '../assets/contracts/GTCRMock.json'
@@ -14,8 +14,6 @@ const useTcrView = tcrAddress => {
   const [metaEvidencePath, setMetaEvidencePath] = useState()
   const [metaEvidence, setMetaEvidence] = useState()
   const [debouncedMetaEvidencePath] = useDebounce(metaEvidencePath, 300)
-  const [gtcr, setGtcr] = useState()
-  const [arbitrableTCRView, setArbitrableTCRView] = useState()
   const [errored, setErrored] = useState(false)
   const [arbitrableTCRData, setArbitrableTCRData] = useState()
   const [arbitrationCost, setArbitrationCost] = useState()
@@ -23,31 +21,29 @@ const useTcrView = tcrAddress => {
   const [challengeDeposit, setChallengeDeposit] = useState()
 
   // Wire up the TCR.
-  useEffect(() => {
-    if (!library || !active || !tcrAddress || !ARBITRABLE_TCR_VIEW_ADDRESS)
-      return
+  const arbitrableTCRView = useMemo(() => {
+    if (!library || !active || !ARBITRABLE_TCR_VIEW_ADDRESS) return
     try {
-      setGtcr(new ethers.Contract(tcrAddress, _gtcr, library))
-      setArbitrableTCRView(
-        new ethers.Contract(
-          ARBITRABLE_TCR_VIEW_ADDRESS,
-          _arbitrableTCRView,
-          library
-        )
+      return new ethers.Contract(
+        ARBITRABLE_TCR_VIEW_ADDRESS,
+        _arbitrableTCRView,
+        library
       )
     } catch (err) {
       console.error(err)
       setErrored(true)
     }
-  }, [
-    setGtcr,
-    setArbitrableTCRView,
-    library,
-    active,
-    tcrAddress,
-    ARBITRABLE_TCR_VIEW_ADDRESS,
-    setErrored
-  ])
+  }, [ARBITRABLE_TCR_VIEW_ADDRESS, active, library])
+
+  const gtcr = useMemo(() => {
+    if (!library || !active || !tcrAddress) return
+    try {
+      return new ethers.Contract(tcrAddress, _gtcr, library)
+    } catch (err) {
+      console.error(err)
+      setErrored(true)
+    }
+  }, [active, library, tcrAddress])
 
   // Get TCR data.
   useEffect(() => {
@@ -125,11 +121,10 @@ const useTcrView = tcrAddress => {
   // Fetch meta evidence logs.
   useEffect(() => {
     if (!gtcr || !library) return
-    const saveMetaEvidencePath = (_, metaEvidencePath) => {
-      setMetaEvidencePath(metaEvidencePath)
-    }
     try {
-      gtcr.on('MetaEvidence', saveMetaEvidencePath)
+      gtcr.on(gtcr.filters.MetaEvidence(), (_, metaEvidencePath) => {
+        setMetaEvidencePath(metaEvidencePath)
+      })
       library.resetEventsBlock(0) // Reset provider to fetch logs.
     } catch (err) {
       console.error(err)
@@ -137,7 +132,7 @@ const useTcrView = tcrAddress => {
     }
 
     return () => {
-      gtcr.removeListener('MetaEvidence', saveMetaEvidencePath)
+      gtcr.removeAllListeners(gtcr.filters.MetaEvidence())
     }
   }, [gtcr, library])
 

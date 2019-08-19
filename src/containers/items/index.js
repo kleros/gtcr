@@ -176,8 +176,6 @@ const Items = ({ tcrAddress }) => {
       <SubmissionModal
         visible={submissionFormOpen}
         onCancel={() => setSubmissionFormOpen(false)}
-        metaEvidence={metaEvidence}
-        tcrAddress={tcrAddress}
       />
     </StyledLayoutContent>
   )
