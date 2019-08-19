@@ -20,6 +20,8 @@ const StyledSkeleton = styled(Skeleton)`
   }
 `
 
+// For clarity, here "badge" refers to the ant design component,
+// and not badges related to connection between TCRs.
 const badgeStatus = statusCode => {
   switch (statusCode) {
     case STATUS_CODE.REMOVAL_REQUESTED:
@@ -40,7 +42,8 @@ const badgeStatus = statusCode => {
   }
 }
 
-const ItemStatus = ({
+// A wrapper around antdesign's badge component.
+const ItemStatusBadge = ({
   item,
   timestamp,
   challengePeriodDuration,
@@ -71,18 +74,18 @@ const ItemStatus = ({
   )
 }
 
-ItemStatus.propTypes = {
+ItemStatusBadge.propTypes = {
   statusCode: PropTypes.number,
   item: itemPropTypes,
   timestamp: BNPropType,
   challengePeriodDuration: BNPropType
 }
 
-ItemStatus.defaultProps = {
+ItemStatusBadge.defaultProps = {
   item: null,
   statusCode: null,
   timestamp: null,
   challengePeriodDuration: null
 }
 
-export default ItemStatus
+export default ItemStatusBadge

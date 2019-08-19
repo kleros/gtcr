@@ -4,12 +4,11 @@ import PropTypes from 'prop-types'
 import ErrorPage from '../error-page'
 import styled from 'styled-components/macro'
 import ItemDetailsCard from '../../components/item-details-card'
-import ItemActions from './item-actions'
+import ItemStatus from './item-status'
 import { useWeb3Context } from 'web3-react'
 import { TCRViewContext } from '../../bootstrap/tcr-view-context'
 import { bigNumberify } from 'ethers/utils'
 import { gtcrDecode } from '../../utils/encoder'
-import { DisputeProvider } from './dispute-context'
 
 const StyledLayoutContent = styled(Layout.Content)`
   background: white;
@@ -40,6 +39,7 @@ const ItemDetails = ({ itemID, tcrAddress }) => {
         const item = { ...(await gtcr.getItem(itemID)) } // Spread to convert from array to object.
 
         item.decodedData = gtcrDecode({ columns, values: item.data })
+        item.currentRuling = item.currentRuling.toNumber()
         setTimestamp(bigNumberify((await library.getBlock()).timestamp))
         setItem(item)
       } catch (err) {
@@ -60,23 +60,17 @@ const ItemDetails = ({ itemID, tcrAddress }) => {
 
   return (
     <StyledLayoutContent>
-      <DisputeProvider
-        arbitratorAddress={item && item.arbitrator}
-        disputeID={item && item.disputeID}
-        arbitratorExtraData={item && item.arbitratorExtraData}
-      >
-        <Card>
-          <ItemActions item={item} timestamp={timestamp} />
-        </Card>
-        <Divider />
-        <ItemDetailsCard
-          columns={metaEvidence && metaEvidence.columns}
-          loading={!metaEvidence || !item || !item.decodedData}
-          item={item}
-          timestamp={timestamp}
-          challengePeriodDuration={challengePeriodDuration}
-        />
-      </DisputeProvider>
+      <Card>
+        <ItemStatus item={item} timestamp={timestamp} />
+      </Card>
+      <Divider />
+      <ItemDetailsCard
+        columns={metaEvidence && metaEvidence.columns}
+        loading={!metaEvidence || !item || !item.decodedData}
+        item={item}
+        timestamp={timestamp}
+        challengePeriodDuration={challengePeriodDuration}
+      />
     </StyledLayoutContent>
   )
 }

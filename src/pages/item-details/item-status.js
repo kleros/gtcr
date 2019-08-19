@@ -1,8 +1,13 @@
 import React, { useState, useContext } from 'react'
 import { Descriptions, Skeleton } from 'antd'
-import ItemStatus from '../../components/item-status'
+import ItemStatusBadge from '../../components/item-status-badge'
 import styled from 'styled-components/macro'
-import { itemToStatusCode, STATUS_CODE } from '../../utils/item-status'
+import {
+  itemToStatusCode,
+  STATUS_CODE,
+  DISPUTE_STATUS,
+  PARTY
+} from '../../utils/item-status'
 import itemPropTypes from '../../prop-types/item'
 import ETHAddress from '../../components/eth-address'
 import ItemActionModal from './item-action-modal'
@@ -15,16 +20,67 @@ import BNPropType from '../../prop-types/bn'
 
 const StyledRequestInfo = styled.div`
   display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: flex-start;
   justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
+
+  @media (max-width: 575px) {
+    flex-direction: column;
+  }
 `
 
 const StyledDescriptions = styled(Descriptions)`
-  max-width: 500px;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  flex-direction: column;
+  margin-right: 16px;
+  max-width: 991px;
+`
+const SkeletonTitleProps = { width: 60 }
+const StyledSkeleton = styled(Skeleton)`
+  display: inline;
+
+  .ant-skeleton-title {
+    margin: -3px 0;
+  }
 `
 
-const ItemActions = ({ item, timestamp }) => {
+const DisputeStatus = ({ disputeStatus }) => {
+  if (!disputeStatus)
+    return (
+      <StyledSkeleton active paragraph={false} title={SkeletonTitleProps} />
+    )
+
+  switch (disputeStatus) {
+    case DISPUTE_STATUS.SOLVED:
+      return 'Resolved.'
+    case DISPUTE_STATUS.APPEALABLE:
+      return 'Appealable'
+    default:
+      throw new Error(`Unhandled dispute status ${disputeStatus}`)
+  }
+}
+
+const Ruling = ({ currentRuling }) => {
+  if (!currentRuling)
+    return (
+      <StyledSkeleton active paragraph={false} title={SkeletonTitleProps} />
+    )
+
+  switch (currentRuling) {
+    case PARTY.NONE:
+      return 'The arbitrator refused to rule.'
+    case PARTY.REQUESTER:
+      return 'The arbitrator ruled in favor of the requester.'
+    case PARTY.CHALLENGER:
+      return 'The arbitrator ruled in favor of the challenger.'
+    default:
+      throw new Error(`Unhandled ruling ${currentRuling}`)
+  }
+}
+
+const ItemStatus = ({ item, timestamp }) => {
   const [modalOpen, setModalOpen] = useState()
   const { pushWeb3Action, requestWeb3Auth } = useContext(WalletContext)
   const { gtcr: gtcrView, metaEvidence, challengePeriodDuration } = useContext(
@@ -35,6 +91,7 @@ const ItemActions = ({ item, timestamp }) => {
     return <Skeleton active title={false} paragraph={{ rows: 2 }} />
 
   const { itemName } = metaEvidence
+  const { disputeStatus, currentRuling } = item
   const statusCode = itemToStatusCode(item, timestamp, challengePeriodDuration)
 
   const executeRequest = async (_, signer) => {
@@ -72,9 +129,11 @@ const ItemActions = ({ item, timestamp }) => {
 
   return (
     <StyledRequestInfo>
-      <StyledDescriptions>
-        <Descriptions.Item label="Status" span={2}>
-          <ItemStatus
+      <StyledDescriptions
+        column={{ xxl: 3, xl: 3, lg: 2, md: 2, sm: 1, xs: 1 }}
+      >
+        <Descriptions.Item label="Status">
+          <ItemStatusBadge
             item={item}
             challengePeriodDuration={challengePeriodDuration}
             timestamp={timestamp}
@@ -83,6 +142,16 @@ const ItemActions = ({ item, timestamp }) => {
         <Descriptions.Item label="Requester">
           <ETHAddress address={item.requester} />
         </Descriptions.Item>
+        {disputeStatus !== DISPUTE_STATUS.WAITING && (
+          <Descriptions.Item label="Dispute Status">
+            <DisputeStatus disputeStatus={disputeStatus} />
+          </Descriptions.Item>
+        )}
+        {disputeStatus !== DISPUTE_STATUS.WAITING && (
+          <Descriptions.Item label="Ruling">
+            <Ruling currentRuling={currentRuling} />
+          </Descriptions.Item>
+        )}
       </StyledDescriptions>
       <ItemActionButton
         statusCode={statusCode}
@@ -107,14 +176,14 @@ const ItemActions = ({ item, timestamp }) => {
   )
 }
 
-ItemActions.propTypes = {
+ItemStatus.propTypes = {
   item: itemPropTypes,
   timestamp: BNPropType
 }
 
-ItemActions.defaultProps = {
+ItemStatus.defaultProps = {
   item: null,
   timestamp: null
 }
 
-export default ItemActions
+export default ItemStatus

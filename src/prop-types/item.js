@@ -8,7 +8,7 @@ export default PropTypes.shape({
   hasPaid: PropTypes.arrayOf(PropTypes.bool).isRequired,
   data: PropTypes.string.isRequired,
   decodedData: PropTypes.array,
-  currentRuling: BNPropType.isRequired,
+  currentRuling: PropTypes.number.isRequired,
   appealStart: BNPropType.isRequired,
   appealEnd: BNPropType.isRequired,
   submissionTime: BNPropType.isRequired,

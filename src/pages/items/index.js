@@ -7,7 +7,7 @@ import styled from 'styled-components/macro'
 import { WalletContext } from '../../bootstrap/wallet-context'
 import { ZERO_ADDRESS, ZERO_BYTES32 } from '../../utils/string'
 import { TCRViewContext } from '../../bootstrap/tcr-view-context'
-import ItemStatus from '../../components/item-status'
+import ItemStatus from '../../components/item-status-badge'
 import { useWeb3Context } from 'web3-react'
 import { bigNumberify } from 'ethers/utils'
 import { gtcrDecode } from '../../utils/encoder'
@@ -77,7 +77,8 @@ const Items = ({ tcrAddress }) => {
                   ID: item.ID
                 }),
                 { key: i }
-              )
+              ),
+              currentRuling: item.currentRuling.toNumber()
             }
           })
 

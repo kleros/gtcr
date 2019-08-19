@@ -16,14 +16,12 @@ import itemPropTypes from '../../../prop-types/item'
 import { TCRViewContext } from '../../../bootstrap/tcr-view-context'
 import { formatEther, bigNumberify } from 'ethers/utils'
 import ETHAmount from '../../../components/eth-amount'
-import { DisputeContext } from '../dispute-context'
 import { WalletContext } from '../../../bootstrap/wallet-context'
 import { abi as _gtcr } from '../../../assets/contracts/GTCRMock.json'
 import { ethers } from 'ethers'
 
 // TODO: If a party is already fully funded, only offer to crowdfund the other.
 const CrowdfundModal = ({ statusCode, item, ...rest }) => {
-  const { appealCost } = useContext(DisputeContext)
   const { pushWeb3Action } = useContext(WalletContext)
   const {
     sharedStakeMultiplier,
@@ -62,7 +60,7 @@ const CrowdfundModal = ({ statusCode, item, ...rest }) => {
       !loserStakeMultiplier ||
       !MULTIPLIER_DIVISOR ||
       !currentRuling ||
-      !appealCost
+      !item
     )
       return {}
 
@@ -85,6 +83,7 @@ const CrowdfundModal = ({ statusCode, item, ...rest }) => {
 
     // Calculate full cost to fund the side.
     // Full appeal cost = appeal cost + appeal cost * fee stake multiplier.
+    const { appealCost } = item
     const requiredForSide = appealCost.add(
       appealCost.mul(feeStakeMultiplier).div(MULTIPLIER_DIVISOR)
     )
@@ -115,14 +114,13 @@ const CrowdfundModal = ({ statusCode, item, ...rest }) => {
 
     return { requiredForSide, amountStillRequired, potentialReward }
   }, [
-    MULTIPLIER_DIVISOR,
-    appealCost,
-    currentRuling,
-    item.paidFees,
-    loserStakeMultiplier,
-    sharedStakeMultiplier,
     side,
-    winnerStakeMultiplier
+    sharedStakeMultiplier,
+    winnerStakeMultiplier,
+    loserStakeMultiplier,
+    MULTIPLIER_DIVISOR,
+    currentRuling,
+    item
   ])
 
   if (

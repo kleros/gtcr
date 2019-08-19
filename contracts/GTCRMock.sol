@@ -71,6 +71,7 @@ contract GTCRMock is IArbitrable, IEvidence{
         bool disputed;
         bool resolved;
         uint disputeID;
+        uint appealCost;
         uint appealStart;
         uint appealEnd;
         address requester;
@@ -450,7 +451,7 @@ contract GTCRMock is IArbitrable, IEvidence{
         return itemIDs.length;
     }
 
-    function getItem(bytes32 _itemID) external view returns (QueryResult memory result) {
+    function getItem(bytes32 _itemID) public view returns (QueryResult memory result) {
         Item storage item = items[_itemID];
         Request storage request = item.requests[item.requests.length - 1];
         Round storage round = request.rounds[request.rounds.length - 1];
@@ -466,6 +467,7 @@ contract GTCRMock is IArbitrable, IEvidence{
             challenger: request.parties[uint(Party.Challenger)],
             appealStart: 0,
             appealEnd: 0,
+            appealCost: 0,
             arbitrator: address(request.arbitrator),
             arbitratorExtraData: request.arbitratorExtraData,
             submissionTime: request.submissionTime,
@@ -479,7 +481,9 @@ contract GTCRMock is IArbitrable, IEvidence{
             result.currentRuling = request.arbitrator.currentRuling(request.disputeID);
             result.disputeStatus = request.arbitrator.disputeStatus(request.disputeID);
             (result.appealStart, result.appealEnd) = request.arbitrator.appealPeriod(request.disputeID);
+            result.appealCost = request.arbitrator.appealCost(request.disputeID, request.arbitratorExtraData);
 
+            Round storage round = request.rounds[request.rounds.length - 1];
             result.feeRewards = round.feeRewards;
             result.hasPaid = round.hasPaid;
             result.paidFees = round.paidFees;
@@ -575,36 +579,7 @@ contract GTCRMock is IArbitrable, IEvidence{
                 /* solium-enable operator-whitespace */
             ) {
                 if (index < _count) {
-                    QueryResult memory result = QueryResult({
-                        ID: itemIDs[_oldestFirst ? i : itemIDs.length - i],
-                        data: item.data,
-                        status: item.status,
-                        disputed: request.disputed,
-                        resolved: request.resolved,
-                        disputeID: request.disputeID,
-                        requester: request.parties[uint(Party.Requester)],
-                        challenger: request.parties[uint(Party.Challenger)],
-                        appealStart: 0,
-                        appealEnd: 0,
-                        arbitrator: address(request.arbitrator),
-                        arbitratorExtraData: request.arbitratorExtraData,
-                        submissionTime: request.submissionTime,
-                        hasPaid: [false,false,false],
-                        paidFees: [uint(0), uint(0), uint(0)],
-                        currentRuling: 0,
-                        feeRewards: 0,
-                        disputeStatus: Arbitrator.DisputeStatus.Waiting
-                    });
-                    if (request.disputed && request.arbitrator.disputeStatus(request.disputeID) == Arbitrator.DisputeStatus.Appealable) {
-                        result.currentRuling = request.arbitrator.currentRuling(request.disputeID);
-                        result.disputeStatus = request.arbitrator.disputeStatus(request.disputeID);
-                        (result.appealStart, result.appealEnd) = request.arbitrator.appealPeriod(request.disputeID);
-
-                        Round storage round = request.rounds[request.rounds.length - 1];
-                        result.feeRewards = round.feeRewards;
-                        result.hasPaid = round.hasPaid;
-                        result.paidFees = round.paidFees;
-                    }
+                    QueryResult memory result = getItem(itemID);
                     results[index] = result;
                     index++;
                 } else {
