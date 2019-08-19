@@ -21,6 +21,7 @@ import { WalletContext } from '../../../bootstrap/wallet-context'
 import { abi as _gtcr } from '../../../assets/contracts/GTCRMock.json'
 import { ethers } from 'ethers'
 
+// TODO: If a party is already fully funded, only offer to crowdfund the other.
 const CrowdfundModal = ({ statusCode, item, ...rest }) => {
   const { appealCost } = useContext(DisputeContext)
   const { pushWeb3Action } = useContext(WalletContext)

@@ -17,7 +17,8 @@ const ItemActionButton = ({ statusCode, itemName, itemID, onClick }) => {
       onClick={onClick}
       disabled={
         statusCode === STATUS_CODE.WAITING_ARBITRATOR ||
-        statusCode === STATUS_CODE.CHALLENGED
+        statusCode === STATUS_CODE.CHALLENGED ||
+        statusCode === STATUS_CODE.WAITING_ENFORCEMENT
       }
     >
       {getActionLabel({ statusCode, itemName })}

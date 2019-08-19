@@ -30,6 +30,7 @@ const badgeStatus = statusCode => {
     case STATUS_CODE.PENDING_SUBMISSION:
     case STATUS_CODE.PENDING_REMOVAL:
     case STATUS_CODE.CHALLENGED:
+    case STATUS_CODE.WAITING_ENFORCEMENT:
       return 'processing'
     case STATUS_CODE.REJECTED:
     case STATUS_CODE.REGISTERED:

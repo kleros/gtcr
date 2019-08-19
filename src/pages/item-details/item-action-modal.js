@@ -49,6 +49,9 @@ const ItemActionModal = ({
       return <CrowdfundModal statusCode={statusCode} item={item} {...rest} />
     case STATUS_CODE.CROWDFUNDING_WINNER:
       return <Modal {...rest}>Crowdfund winner</Modal>
+    case STATUS_CODE.WAITING_ARBITRATOR:
+    case STATUS_CODE.WAITING_ENFORCEMENT:
+      return null
     default:
       throw new Error(`Unhandled status code ${statusCode}`)
   }

@@ -29,20 +29,22 @@ export const STATUS_CODE = {
   CROWDFUNDING_WINNER: 6,
   WAITING_ARBITRATOR: 7,
   PENDING_SUBMISSION: 8,
-  PENDING_REMOVAL: 9
+  PENDING_REMOVAL: 9,
+  WAITING_ENFORCEMENT: 10
 }
 
 export const STATUS_TEXT = {
-  0: 'Rejected',
-  1: 'Registered',
-  2: 'Submitted',
-  3: 'Removal Requested',
-  4: 'Challenged',
-  5: 'Crowdfunding',
-  6: 'Crowdfunding Winner',
-  7: 'Waiting Arbitrator',
-  8: 'Pending Submission',
-  9: 'Pending Removal'
+  [STATUS_CODE.REJECTED]: 'Rejected',
+  [STATUS_CODE.REGISTERED]: 'Registered',
+  [STATUS_CODE.SUBMITTED]: 'Submitted',
+  [STATUS_CODE.REMOVAL_REQUESTED]: 'Removal Requested',
+  [STATUS_CODE.CHALLENGED]: 'Challenged',
+  [STATUS_CODE.CROWDFUNDING]: 'Crowdfunding',
+  [STATUS_CODE.CROWDFUNDING_WINNER]: 'Crowdfunding Winner',
+  [STATUS_CODE.WAITING_ARBITRATOR]: 'Waiting Arbitrator',
+  [STATUS_CODE.PENDING_SUBMISSION]: 'Pending Submission',
+  [STATUS_CODE.PENDING_REMOVAL]: 'Pending Removal',
+  [STATUS_CODE.WAITING_ENFORCEMENT]: 'Waiting enforcement'
 }
 
 export const STATUS_COLOR = {
@@ -55,7 +57,8 @@ export const STATUS_COLOR = {
   [STATUS_CODE.CROWDFUNDING_WINNER]: '#9d52d6',
   [STATUS_CODE.WAITING_ARBITRATOR]: 'magenta',
   [STATUS_CODE.PENDING_SUBMISSION]: 'cyan',
-  [STATUS_CODE.PENDING_REMOVAL]: 'volcano'
+  [STATUS_CODE.PENDING_REMOVAL]: 'volcano',
+  [STATUS_CODE.WAITING_ENFORCEMENT]: 'gold'
 }
 
 export const getActionLabel = ({ statusCode, itemName = 'item' }) => {
@@ -78,6 +81,8 @@ export const getActionLabel = ({ statusCode, itemName = 'item' }) => {
     case STATUS_CODE.CHALLENGED:
     case STATUS_CODE.WAITING_ARBITRATOR:
       return 'Waiting Arbitrator'
+    case STATUS_CODE.WAITING_ENFORCEMENT:
+      return 'Waiting Enforcement'
     default:
       throw new Error(`Unhandled status code ${statusCode}`)
   }
@@ -139,6 +144,6 @@ export const itemToStatusCode = (
     const loser =
       currentRuling === PARTY.REQUESTER ? PARTY.CHALLENGER : PARTY.REQUESTER
     if (hasPaid[loser]) return STATUS_CODE.CROWDFUNDING_WINNER
-    else return STATUS_CODE.WAITING_ARBITRATOR
+    else return STATUS_CODE.WAITING_ENFORCEMENT
   }
 }
