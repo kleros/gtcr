@@ -214,6 +214,60 @@ contract GTCRMock is IArbitrable, IEvidence{
             emit Evidence(request.arbitrator, uint(keccak256(abi.encodePacked(_itemID,item.requests.length - 1))), msg.sender, _evidence);
     }
 
+    /** @dev Takes up to the total amount required to fund a side of an appeal. Reimburses the rest. Creates an appeal if both sides are fully funded. TRUSTED.
+     *  @param _itemID The ID of the item with the appeal to fund.
+     *  @param _side The recipient of the contribution.
+     */
+    function fundAppeal(bytes32 _itemID, Party _side) external payable {
+        // Recipient must be either the requester or challenger.
+        require(_side == Party.Requester || _side == Party.Challenger); // solium-disable-line error-reason
+        Item storage item = items[_itemID];
+        require(
+            item.status == ItemStatus.RegistrationRequested || item.status == ItemStatus.ClearingRequested,
+            "The item must have a pending request."
+        );
+        Request storage request = item.requests[item.requests.length - 1];
+        require(request.disputed, "A dispute must have been raised to fund an appeal.");
+        (uint appealPeriodStart, uint appealPeriodEnd) = request.arbitrator.appealPeriod(request.disputeID);
+        require(
+            now >= appealPeriodStart && now < appealPeriodEnd,
+            "Contributions must be made within the appeal period."
+        );
+
+        // Amount required to fully fund each side: arbitration cost + (arbitration cost * multiplier)
+        Round storage round = request.rounds[request.rounds.length - 1];
+        Party winner = Party(request.arbitrator.currentRuling(request.disputeID));
+        Party loser;
+        if (winner == Party.Requester)
+            loser = Party.Challenger;
+        else if (winner == Party.Challenger)
+            loser = Party.Requester;
+        require(
+            !(_side==loser) || (now-appealPeriodStart < (appealPeriodEnd-appealPeriodStart)/2),
+            "The loser must contribute during the first half of the appeal period."
+        );
+
+        uint multiplier;
+        if (_side == winner)
+            multiplier = winnerStakeMultiplier;
+        else if (_side == loser)
+            multiplier = loserStakeMultiplier;
+        else
+            multiplier = sharedStakeMultiplier;
+        uint appealCost = request.arbitrator.appealCost(request.disputeID, request.arbitratorExtraData);
+        uint totalCost = appealCost.addCap((appealCost.mulCap(multiplier)) / MULTIPLIER_DIVISOR);
+        contribute(round, _side, msg.sender, msg.value, totalCost);
+        if (round.paidFees[uint(_side)] >= totalCost)
+            round.hasPaid[uint(_side)] = true;
+
+        // Raise appeal if both sides are fully funded.
+        if (round.hasPaid[uint(Party.Challenger)] && round.hasPaid[uint(Party.Requester)]) {
+            request.arbitrator.appeal.value(appealCost)(request.disputeID, request.arbitratorExtraData);
+            request.rounds.length++;
+            round.feeRewards = round.feeRewards.subCap(appealCost);
+        }
+    }
+
 
     /** @dev Give a ruling for a dispute. Can only be called by the arbitrator. TRUSTED.
      *  Overrides parent function to account for the situation where the winner loses a case due to paying less appeal fees than expected.

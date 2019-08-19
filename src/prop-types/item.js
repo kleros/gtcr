@@ -1,4 +1,5 @@
 import PropTypes from 'prop-types'
+import BNPropType from './bn'
 
 export default PropTypes.shape({
   status: PropTypes.number.isRequired,
@@ -7,10 +8,9 @@ export default PropTypes.shape({
   hasPaid: PropTypes.arrayOf(PropTypes.bool).isRequired,
   data: PropTypes.string.isRequired,
   decodedData: PropTypes.array,
-
-  // BN.js instances
-  currentRuling: PropTypes.shape({}).isRequired,
-  appealStart: PropTypes.shape({}).isRequired,
-  appealEnd: PropTypes.shape({}).isRequired,
-  submissionTime: PropTypes.shape({}).isRequired
+  currentRuling: BNPropType.isRequired,
+  appealStart: BNPropType.isRequired,
+  appealEnd: BNPropType.isRequired,
+  submissionTime: BNPropType.isRequired,
+  paidFees: PropTypes.arrayOf(BNPropType).isRequired
 })

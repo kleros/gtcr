@@ -4,6 +4,7 @@ import { STATUS_CODE, getActionLabel } from '../../utils/item-status'
 import RemoveItemModal from './modals/remove-item.js'
 import ChallengeRequestModal from './modals/challenge-request.js'
 import SubmissionModal from './modals/submission-modal'
+import CrowdfundModal from './modals/crowdfund'
 
 const ItemActionModal = ({
   statusCode,
@@ -45,7 +46,7 @@ const ItemActionModal = ({
         />
       )
     case STATUS_CODE.CROWDFUNDING:
-      return <Modal {...rest}>Select who to crowdfund</Modal>
+      return <CrowdfundModal statusCode={statusCode} item={item} {...rest} />
     case STATUS_CODE.CROWDFUNDING_WINNER:
       return <Modal {...rest}>Crowdfund winner</Modal>
     default:

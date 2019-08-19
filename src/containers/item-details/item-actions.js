@@ -2,9 +2,8 @@ import React, { useState, useContext } from 'react'
 import { Descriptions, Skeleton } from 'antd'
 import ItemStatus from '../../components/item-status'
 import styled from 'styled-components/macro'
-import PropTypes from 'prop-types'
 import { itemToStatusCode, STATUS_CODE } from '../../utils/item-status'
-import itemPropTypes from '../../utils/item-prop-types'
+import itemPropTypes from '../../prop-types/item'
 import ETHAddress from '../../components/eth-address'
 import ItemActionModal from './item-action-modal'
 import ItemActionButton from '../../components/item-action-button'
@@ -12,6 +11,7 @@ import { TCRViewContext } from '../../bootstrap/tcr-view-context'
 import { WalletContext } from '../../bootstrap/wallet-context'
 import { abi } from '../../assets/contracts/GTCRMock.json'
 import { ethers } from 'ethers'
+import BNPropType from '../../prop-types/bn'
 
 const StyledRequestInfo = styled.div`
   display: flex;
@@ -109,9 +109,7 @@ const ItemActions = ({ item, timestamp }) => {
 
 ItemActions.propTypes = {
   item: itemPropTypes,
-
-  // BN.js instances.
-  timestamp: PropTypes.shape({})
+  timestamp: BNPropType
 }
 
 ItemActions.defaultProps = {

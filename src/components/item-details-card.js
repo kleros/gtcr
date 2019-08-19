@@ -4,7 +4,7 @@ import { Card, Descriptions, Icon, Tooltip, Typography, Switch } from 'antd'
 import EthAddress from './eth-address'
 import itemTypes from '../utils/item-types'
 import { ZERO_ADDRESS, LOREM_IPSUM } from '../utils/string'
-import itemPropTypes from '../utils/item-prop-types'
+import itemPropTypes from '../prop-types/item'
 
 const DisplaySelector = ({ type, value }) => {
   switch (type) {

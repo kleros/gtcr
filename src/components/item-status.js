@@ -8,7 +8,8 @@ import {
 import { Badge, Skeleton } from 'antd'
 import styled from 'styled-components/macro'
 import PropTypes from 'prop-types'
-import itemPropTypes from '../utils/item-prop-types'
+import itemPropTypes from '../prop-types/item'
+import BNPropType from '../prop-types/bn'
 
 const SkeletonTitleProps = { width: 90 }
 const StyledSkeleton = styled(Skeleton)`
@@ -72,10 +73,8 @@ const ItemStatus = ({
 ItemStatus.propTypes = {
   statusCode: PropTypes.number,
   item: itemPropTypes,
-
-  // BN.js instances
-  timestamp: PropTypes.shape({}),
-  challengePeriodDuration: PropTypes.shape({})
+  timestamp: BNPropType,
+  challengePeriodDuration: BNPropType
 }
 
 ItemStatus.defaultProps = {

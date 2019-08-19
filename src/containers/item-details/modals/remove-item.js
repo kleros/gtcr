@@ -6,7 +6,7 @@ import { abi as _gtcr } from '../../../assets/contracts/GTCRMock.json'
 import { TCRViewContext } from '../../../bootstrap/tcr-view-context'
 import ETHAmount from '../../../components/eth-amount'
 import { WalletContext } from '../../../bootstrap/wallet-context'
-import itemPropTypes from '../../../utils/item-prop-types'
+import itemPropTypes from '../../../prop-types/item'
 
 const RemoveItemModal = ({ item, itemName = 'item', fileURI, ...rest }) => {
   // Get contract data.
