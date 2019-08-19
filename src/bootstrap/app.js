@@ -36,7 +36,7 @@ import {
 } from '@fortawesome/free-brands-svg-icons'
 import { faBullhorn } from '@fortawesome/free-solid-svg-icons'
 import { NETWORK_NAME } from '../utils/network-names'
-import ErrorPage from '../containers/error-page'
+import ErrorPage from '../pages/error-page'
 import useMainTCR2 from '../hooks/tcr2'
 import Identicon from '../components/identicon'
 import { TCRViewProvider } from './tcr-view-context'
@@ -131,7 +131,7 @@ const StyledRouterLink = styled(Link)`
 `
 
 const Factory = loadable(
-  () => import(/* webpackPrefetch: true */ '../containers/factory/index'),
+  () => import(/* webpackPrefetch: true */ '../pages/factory/index'),
   {
     fallback: (
       <StyledLayoutContent>
@@ -142,7 +142,7 @@ const Factory = loadable(
 )
 
 const Items = loadable(
-  () => import(/* webpackPrefetch: true */ '../containers/items/index'),
+  () => import(/* webpackPrefetch: true */ '../pages/items/index'),
   {
     fallback: (
       <StyledLayoutContent>
@@ -153,7 +153,7 @@ const Items = loadable(
 )
 
 const ItemDetails = loadable(
-  () => import(/* webpackPrefetch: true */ '../containers/item-details/index'),
+  () => import(/* webpackPrefetch: true */ '../pages/item-details/index'),
   {
     fallback: (
       <StyledLayoutContent>
