@@ -1,10 +1,10 @@
-import { Layout, Divider, Card } from 'antd'
+import { Layout, Divider } from 'antd'
 import React, { useState, useEffect, useContext } from 'react'
 import PropTypes from 'prop-types'
 import ErrorPage from '../error-page'
 import styled from 'styled-components/macro'
 import ItemDetailsCard from '../../components/item-details-card'
-import ItemStatus from './item-status'
+import ItemStatusCard from './item-status-card'
 import { useWeb3Context } from 'web3-react'
 import { TCRViewContext } from '../../bootstrap/tcr-view-context'
 import { bigNumberify } from 'ethers/utils'
@@ -60,9 +60,7 @@ const ItemDetails = ({ itemID, tcrAddress }) => {
 
   return (
     <StyledLayoutContent>
-      <Card>
-        <ItemStatus item={item} timestamp={timestamp} />
-      </Card>
+      <ItemStatusCard item={item} timestamp={timestamp} />
       <Divider />
       <ItemDetailsCard
         columns={metaEvidence && metaEvidence.columns}

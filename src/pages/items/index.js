@@ -69,7 +69,10 @@ const Items = ({ tcrAddress }) => {
             const decodedItem = gtcrDecode({ values: item.data, columns })
             // Return the item columns along with its TCR status data.
             return {
-              tcrData: { ...item }, // Spread to convert from array to object.
+              tcrData: {
+                ...item, // Spread to convert from array to object.
+                currentRuling: item.currentRuling.toNumber()
+              },
               ...columns.reduce(
                 (acc, curr, i) => ({
                   ...acc,
@@ -77,8 +80,7 @@ const Items = ({ tcrAddress }) => {
                   ID: item.ID
                 }),
                 { key: i }
-              ),
-              currentRuling: item.currentRuling.toNumber()
+              )
             }
           })
 

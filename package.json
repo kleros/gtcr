@@ -23,6 +23,7 @@
     "bn.js": "^5.0.0",
     "ethers": "^4.0.33",
     "formik": "^1.5.7",
+    "humanize-duration": "^3.20.1",
     "prop-types": "^15.7.2",
     "react": "^16.8.6",
     "react-blockies": "^1.4.1",

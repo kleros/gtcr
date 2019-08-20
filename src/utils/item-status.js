@@ -12,7 +12,7 @@ export const DISPUTE_STATUS = {
   SOLVED: 2
 }
 
-const CONTRACT_STATUS = {
+export const CONTRACT_STATUS = {
   ABSENT: 0,
   REGISTERED: 1,
   REGISTRATION_REQUESTED: 2,
