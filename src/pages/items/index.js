@@ -105,12 +105,12 @@ const Items = ({ tcrAddress }) => {
 
   // Watch for submissions and status change events to refetch items.
   useEffect(() => {
-    if (!gtcr) return
+    if (!gtcr || !metaEvidence) return
     gtcr.on(gtcr.filters.ItemStatusChange(), fetchItems)
     return () => {
       gtcr.removeAllListeners(gtcr.filters.ItemStatusChange())
     }
-  }, [fetchItems, gtcr])
+  }, [fetchItems, gtcr, metaEvidence])
 
   if (!tcrAddress || tcrErrored || errored)
     return (
