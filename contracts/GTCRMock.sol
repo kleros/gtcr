@@ -118,6 +118,16 @@ contract GTCRMock is IArbitrable, IEvidence{
 
     modifier onlyGovernor {require(msg.sender == governor, "The caller must be the governor."); _;}
 
+    /* Events */
+
+    /**
+     *  @dev Emitted when a party makes a request, dispute or appeals are raised, or when a request is resolved.
+     *  @param itemID The ID of the affected item.
+     *  @param requestIndex The index of the latest request.
+     *  @param roundIndex The index of the latest round.
+     */
+    event ItemStatusChange(bytes32 indexed itemID, uint requestIndex, uint roundIndex);
+
     constructor(
         Arbitrator _arbitrator,
         bytes memory _arbitratorExtraData,
@@ -158,26 +168,28 @@ contract GTCRMock is IArbitrable, IEvidence{
     }
 
     /** @dev Executes a request if the challenge period passed and no one challenged the request.
-     *  @param _item The item with the request to execute.
+     *  @param _itemID The item with the request to execute.
      */
-    function executeRequest(bytes32 _item) external {
-        Item storage addr = items[_item];
-        Request storage request = addr.requests[addr.requests.length - 1];
+    function executeRequest(bytes32 _itemID) external {
+        Item storage item = items[_itemID];
+        Request storage request = item.requests[item.requests.length - 1];
         require(
             now - request.submissionTime > challengePeriodDuration,
             "Time to challenge the request must have passed."
         );
         require(!request.disputed, "The request should not be disputed.");
 
-        if (addr.status == ItemStatus.RegistrationRequested)
-            addr.status = ItemStatus.Registered;
-        else if (addr.status == ItemStatus.ClearingRequested)
-            addr.status = ItemStatus.Absent;
+        if (item.status == ItemStatus.RegistrationRequested)
+            item.status = ItemStatus.Registered;
+        else if (item.status == ItemStatus.ClearingRequested)
+            item.status = ItemStatus.Absent;
         else
             revert("There must be a request.");
 
         request.resolved = true;
-        withdrawFeesAndRewards(request.parties[uint(Party.Requester)], _item, addr.requests.length - 1, 0); // Automatically withdraw for the requester.
+        withdrawFeesAndRewards(request.parties[uint(Party.Requester)], _itemID, item.requests.length - 1, 0); // Automatically withdraw for the requester.
+
+        emit ItemStatusChange(_itemID, item.requests.length - 1, request.rounds.length - 1);
     }
 
     /** @dev Challenges the latest request of a item. Accepts enough ETH to fund a potential dispute considering the current required amount. Reimburses unused ETH. TRUSTED.
@@ -210,6 +222,8 @@ contract GTCRMock is IArbitrable, IEvidence{
         request.disputed = true;
         request.rounds.length++;
         round.feeRewards = round.feeRewards.subCap(arbitrationCost);
+
+        emit ItemStatusChange(_itemID, item.requests.length - 1, request.rounds.length - 1);
 
         if (bytes(_evidence).length > 0)
             emit Evidence(request.arbitrator, uint(keccak256(abi.encodePacked(_itemID,item.requests.length - 1))), msg.sender, _evidence);
@@ -266,6 +280,8 @@ contract GTCRMock is IArbitrable, IEvidence{
             request.arbitrator.appeal.value(appealCost)(request.disputeID, request.arbitratorExtraData);
             request.rounds.length++;
             round.feeRewards = round.feeRewards.subCap(appealCost);
+
+            emit ItemStatusChange(_itemID, item.requests.length - 1, request.rounds.length - 1);
         }
     }
 
@@ -305,6 +321,8 @@ contract GTCRMock is IArbitrable, IEvidence{
             else if (item.status == ItemStatus.ClearingRequested)
                 item.status = ItemStatus.Registered;
         }
+
+        emit ItemStatusChange(itemID, item.requests.length - 1, request.rounds.length - 1);
 
         request.resolved = true;
         request.ruling = Party(winner);
@@ -396,6 +414,8 @@ contract GTCRMock is IArbitrable, IEvidence{
         contribute(round, Party.Requester, msg.sender, msg.value, totalCost);
         require(round.paidFees[uint(Party.Requester)] >= totalCost, "You must fully fund your side.");
         round.hasPaid[uint(Party.Requester)] = true;
+
+        emit ItemStatusChange(itemID, item.requests.length - 1, request.rounds.length - 1);
     }
 
     /** @dev Returns the contribution value and remainder from available ETH and required amount.

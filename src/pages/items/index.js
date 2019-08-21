@@ -1,6 +1,6 @@
 import { Typography, Layout, Skeleton, Table, Button, Icon } from 'antd'
 import { Link } from 'react-router-dom'
-import React, { useEffect, useState, useContext } from 'react'
+import React, { useEffect, useState, useContext, useCallback } from 'react'
 import PropTypes from 'prop-types'
 import ErrorPage from '../error-page'
 import styled from 'styled-components/macro'
@@ -51,47 +51,66 @@ const Items = ({ tcrAddress }) => {
   const [errored, setErrored] = useState()
   const [timestamp, setTimestamp] = useState()
 
-  // Fetch items
-  useEffect(() => {
-    ;(async () => {
-      if (!gtcr || !metaEvidence) return
-      try {
-        const { columns } = metaEvidence
-        const items = (await gtcr.queryItems(
-          ZERO_BYTES32, // Cursor.
-          50, // Count.
-          [false, true, true, true, true, true, true, true], // Filter.
-          false, // Oldest first.
-          ZERO_ADDRESS
-        ))[0]
-          .filter(item => item.ID !== ZERO_BYTES32) // Filter out empty slots from the results.
-          .map((item, i) => {
-            const decodedItem = gtcrDecode({ values: item.data, columns })
-            // Return the item columns along with its TCR status data.
-            return {
-              tcrData: {
-                ...item, // Spread to convert from array to object.
-                currentRuling: item.currentRuling.toNumber()
-              },
-              ...columns.reduce(
-                (acc, curr, i) => ({
-                  ...acc,
-                  [curr.label]: decodedItem[i],
-                  ID: item.ID
-                }),
-                { key: i }
-              )
-            }
-          })
+  // Warning: This function should only be called when all its dependencies
+  // are set.
+  const fetchItems = useCallback(async () => {
+    try {
+      const { columns } = metaEvidence
+      const items = (await gtcr.queryItems(
+        ZERO_BYTES32, // Cursor.
+        50, // Count.
+        [false, true, true, true, true, true, true, true], // Filter.
+        false, // Oldest first.
+        ZERO_ADDRESS
+      ))[0]
+        .filter(item => item.ID !== ZERO_BYTES32) // Filter out empty slots from the results.
+        .map((item, i) => {
+          const decodedItem = gtcrDecode({ values: item.data, columns })
+          // Return the item columns along with its TCR status data.
+          return {
+            tcrData: {
+              ...item, // Spread to convert from array to object.
+              currentRuling: item.currentRuling.toNumber()
+            },
+            ...columns.reduce(
+              (acc, curr, i) => ({
+                ...acc,
+                [curr.label]: decodedItem[i],
+                ID: item.ID
+              }),
+              { key: i }
+            )
+          }
+        })
+      setItems(items)
+    } catch (err) {
+      console.error(err)
+      setErrored(true)
+    }
+  }, [gtcr, metaEvidence])
 
+  // Fetch items and timestamp.
+  useEffect(() => {
+    if (!gtcr || !metaEvidence || !library) return
+    fetchItems()
+    ;(async () => {
+      try {
         setTimestamp(bigNumberify((await library.getBlock()).timestamp))
-        setItems(items)
       } catch (err) {
         console.error(err)
         setErrored(true)
       }
     })()
-  }, [gtcr, metaEvidence, library])
+  }, [gtcr, metaEvidence, library, fetchItems])
+
+  // Watch for submissions and status change events to refetch items.
+  useEffect(() => {
+    if (!gtcr) return
+    gtcr.on(gtcr.filters.ItemStatusChange(), fetchItems)
+    return () => {
+      gtcr.removeAllListeners(gtcr.filters.ItemStatusChange())
+    }
+  }, [fetchItems, gtcr])
 
   if (!tcrAddress || tcrErrored || errored)
     return (
