@@ -1,9 +1,8 @@
 import React from 'react'
-import { Modal } from 'antd'
 import { STATUS_CODE, getActionLabel } from '../../utils/item-status'
-import RemoveItemModal from './modals/remove-item.js'
-import ChallengeRequestModal from './modals/challenge-request.js'
-import SubmissionModal from './modals/submission-modal'
+import RemoveModal from './modals/remove'
+import ChallengeModal from './modals/challenge'
+import SubmissionModal from './modals/submit'
 import CrowdfundModal from './modals/crowdfund'
 
 const ItemActionModal = ({
@@ -24,7 +23,7 @@ const ItemActionModal = ({
   switch (statusCode) {
     case STATUS_CODE.REGISTERED: {
       return (
-        <RemoveItemModal
+        <RemoveModal
           item={item}
           itemName={itemName}
           fileURI={fileURI}
@@ -37,7 +36,7 @@ const ItemActionModal = ({
     case STATUS_CODE.REMOVAL_REQUESTED:
     case STATUS_CODE.SUBMITTED:
       return (
-        <ChallengeRequestModal
+        <ChallengeModal
           item={item}
           itemName={itemName}
           fileURI={fileURI}
@@ -46,9 +45,8 @@ const ItemActionModal = ({
         />
       )
     case STATUS_CODE.CROWDFUNDING:
-      return <CrowdfundModal statusCode={statusCode} item={item} {...rest} />
     case STATUS_CODE.CROWDFUNDING_WINNER:
-      return <Modal {...rest}>Crowdfund winner</Modal>
+      return <CrowdfundModal statusCode={statusCode} item={item} {...rest} />
     case STATUS_CODE.WAITING_ARBITRATOR:
     case STATUS_CODE.WAITING_ENFORCEMENT:
       return null

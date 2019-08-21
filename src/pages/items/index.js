@@ -13,7 +13,7 @@ import { bigNumberify } from 'ethers/utils'
 import { gtcrDecode } from '../../utils/encoder'
 import itemTypes from '../../utils/item-types'
 import ETHAddress from '../../components/eth-address'
-import SubmissionModal from '../item-details/modals/submission-modal'
+import SubmissionModal from '../item-details/modals/submit'
 
 const StyledContent = styled(Layout.Content)`
   margin: 32px 0;

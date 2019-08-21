@@ -12,13 +12,7 @@ import EvidenceForm from '../../../components/evidence-form.js'
 import Archon from '@kleros/archon'
 import ipfsPublish from '../../../utils/ipfs-publish.js'
 
-const ChallengeRequestModal = ({
-  item,
-  itemName,
-  statusCode,
-  fileURI,
-  ...rest
-}) => {
+const ChallengeModal = ({ item, itemName, statusCode, fileURI, ...rest }) => {
   // Get contract data.
   const { challengeDeposit, tcrAddress } = useContext(TCRViewContext)
   const { pushWeb3Action } = useContext(WalletContext)
@@ -125,18 +119,18 @@ const ChallengeRequestModal = ({
   )
 }
 
-ChallengeRequestModal.propTypes = {
+ChallengeModal.propTypes = {
   item: itemPropTypes,
   itemName: PropTypes.string,
   fileURI: PropTypes.string,
   statusCode: PropTypes.oneOf(Object.values(STATUS_CODE))
 }
 
-ChallengeRequestModal.defaultProps = {
+ChallengeModal.defaultProps = {
   item: null,
   itemName: 'item',
   fileURI: '',
   statusCode: STATUS_CODE.REJECTED
 }
 
-export default ChallengeRequestModal
+export default ChallengeModal

@@ -82,7 +82,7 @@ const SubmissionForm = withFormik({
   }
 })(_SubmissionForm)
 
-const SubmissionModal = props => {
+const SubmitModal = props => {
   const { onCancel, initialValues } = props
   const { pushWeb3Action } = useContext(WalletContext)
   const { requestDeposit, tcrAddress, metaEvidence } = useContext(
@@ -179,13 +179,13 @@ const SubmissionModal = props => {
   )
 }
 
-SubmissionModal.propTypes = {
+SubmitModal.propTypes = {
   onCancel: PropTypes.func.isRequired,
   initialValues: PropTypes.arrayOf(PropTypes.any)
 }
 
-SubmissionModal.defaultProps = {
+SubmitModal.defaultProps = {
   initialValues: null
 }
 
-export default SubmissionModal
+export default SubmitModal

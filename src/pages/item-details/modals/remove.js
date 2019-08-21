@@ -8,7 +8,7 @@ import ETHAmount from '../../../components/eth-amount'
 import { WalletContext } from '../../../bootstrap/wallet-context'
 import itemPropTypes from '../../../prop-types/item'
 
-const RemoveItemModal = ({ item, itemName = 'item', fileURI, ...rest }) => {
+const RemoveModal = ({ item, itemName = 'item', fileURI, ...rest }) => {
   // Get contract data.
   const { requestDeposit, tcrAddress } = useContext(TCRViewContext)
   const { pushWeb3Action } = useContext(WalletContext)
@@ -61,16 +61,16 @@ const RemoveItemModal = ({ item, itemName = 'item', fileURI, ...rest }) => {
   )
 }
 
-RemoveItemModal.propTypes = {
+RemoveModal.propTypes = {
   item: itemPropTypes,
   itemName: PropTypes.string,
   fileURI: PropTypes.string
 }
 
-RemoveItemModal.defaultProps = {
+RemoveModal.defaultProps = {
   item: null,
   itemName: 'item',
   fileURI: ''
 }
 
-export default RemoveItemModal
+export default RemoveModal
