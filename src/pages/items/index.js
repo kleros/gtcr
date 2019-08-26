@@ -36,7 +36,6 @@ const StyledHeader = styled.div`
   justify-content: space-between;
 `
 
-// TODO: Watch for new submissions and refetch when new items are submitted.
 const Items = ({ tcrAddress }) => {
   const { requestWeb3Auth } = useContext(WalletContext)
   const { library } = useWeb3Context()
@@ -44,7 +43,8 @@ const Items = ({ tcrAddress }) => {
     gtcr,
     metaEvidence,
     challengePeriodDuration,
-    tcrErrored
+    tcrErrored,
+    gtcrView
   } = useContext(TCRViewContext)
   const [items, setItems] = useState()
   const [submissionFormOpen, setSubmissionFormOpen] = useState(false)
@@ -56,7 +56,8 @@ const Items = ({ tcrAddress }) => {
   const fetchItems = useCallback(async () => {
     try {
       const { columns } = metaEvidence
-      const items = (await gtcr.queryItems(
+      const items = (await gtcrView.queryItems(
+        tcrAddress,
         ZERO_BYTES32, // Cursor.
         50, // Count.
         [false, true, true, true, true, true, true, true], // Filter.
@@ -69,8 +70,7 @@ const Items = ({ tcrAddress }) => {
           // Return the item columns along with its TCR status data.
           return {
             tcrData: {
-              ...item, // Spread to convert from array to object.
-              currentRuling: item.currentRuling.toNumber()
+              ...item // Spread to convert from array to object.
             },
             ...columns.reduce(
               (acc, curr, i) => ({
@@ -87,11 +87,11 @@ const Items = ({ tcrAddress }) => {
       console.error(err)
       setErrored(true)
     }
-  }, [gtcr, metaEvidence])
+  }, [gtcrView, metaEvidence, tcrAddress])
 
   // Fetch items and timestamp.
   useEffect(() => {
-    if (!gtcr || !metaEvidence || !library) return
+    if (!gtcrView || !gtcr || !metaEvidence || !library) return
     fetchItems()
     ;(async () => {
       try {
@@ -101,7 +101,7 @@ const Items = ({ tcrAddress }) => {
         setErrored(true)
       }
     })()
-  }, [gtcr, metaEvidence, library, fetchItems])
+  }, [gtcr, metaEvidence, library, fetchItems, gtcrView])
 
   // Watch for submissions and status change events to refetch items.
   useEffect(() => {

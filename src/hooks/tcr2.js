@@ -5,13 +5,15 @@ const useMainTCR2 = () => {
 
   const web3Context = useWeb3Context()
   let tcr2Data = ''
-  if (process.env.REACT_APP_TCR2_ADDRESSES)
+  if (process.env.REACT_APP_DEFAULT_TCR_ADDRESSES)
     try {
-      tcr2Data = JSON.parse(process.env.REACT_APP_TCR2_ADDRESSES)[
+      tcr2Data = JSON.parse(process.env.REACT_APP_DEFAULT_TCR_ADDRESSES)[
         web3Context.networkId || DEFAULT_NETWORK
       ]
     } catch (_) {
-      console.error('Failed to parse env variable REACT_APP_TCR2_ADDRESSES')
+      console.error(
+        'Failed to parse env variable REACT_APP_DEFAULT_TCR_ADDRESSES'
+      )
     }
   return tcr2Data
 }

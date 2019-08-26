@@ -4,13 +4,14 @@
   "version": "0.6.0",
   "license": "MIT",
   "scripts": {
-    "start": "react-scripts start",
-    "build": "react-scripts build",
+    "start": "run-p build:contracts && react-scripts start",
+    "build": "build:contracts && react-scripts build",
     "build:theme": "lessc --js ./src/bootstrap/theme.less ./src/bootstrap/theme.css",
-    "build:contracts": "truffle compile",
+    "build:contracts": "cd node_modules/@kleros/tcr/ && yarn && node_modules/truffle/build/cli.bundled.js compile",
     "test": "react-scripts test",
     "release": "standard-version",
-    "lint": "eslint './src/**/*.js'"
+    "lint": "eslint './src/**/*.js'",
+    "postinstall": "cd node_modules/@kleros/tcr/ && yarn"
   },
   "dependencies": {
     "@fortawesome/fontawesome-svg-core": "^1.2.19",
@@ -18,6 +19,7 @@
     "@fortawesome/free-solid-svg-icons": "^5.9.0",
     "@fortawesome/react-fontawesome": "^0.1.4",
     "@kleros/archon": "^0.10.1",
+    "@kleros/tcr": "^0.1.7",
     "@loadable/component": "^5.10.1",
     "antd": "^3.20.1",
     "bn.js": "^5.0.0",
@@ -57,11 +59,11 @@
     "eslint-plugin-unicorn": "^9.1.1",
     "husky": "^3.0.0",
     "less": "^3.9.0",
+    "npm-run-all": "^4.1.5",
     "prettier": "^1.18.2",
     "solidity-bytes-utils": "^0.0.8",
     "solidity-rlp": "^2.0.0",
-    "standard-version": "^6.0.1",
-    "truffle": "^5.0.28"
+    "standard-version": "^6.0.1"
   },
   "standard": {
     "parser": "babel-eslint",

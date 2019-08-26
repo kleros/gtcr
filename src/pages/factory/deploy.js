@@ -4,11 +4,12 @@ import PropTypes from 'prop-types'
 import React, { useContext, useState } from 'react'
 import { WalletContext } from '../../bootstrap/wallet-context'
 import { ethers } from 'ethers'
-import _GTCR from '../../assets/contracts/GTCRMock.json'
+import _GTCR from '@kleros/tcr/build/contracts/GeneralizedTCR.json'
 import styled from 'styled-components/macro'
 import ipfsPublish from '../../utils/ipfs-publish'
 import Archon from '@kleros/archon'
 import { parseEther } from 'ethers/utils'
+import { ZERO_ADDRESS } from '../../utils/string'
 
 const StyledButton = styled(Button)`
   margin-right: 7px;
@@ -58,6 +59,7 @@ const Deploy = ({ resetTcrState, setTxState, tcrState }) => {
       const tx = await factory.deploy(
         tcrState.arbitratorAddress,
         '0x00', // Arbitrator extra data.
+        ZERO_ADDRESS,
         registrationMetaEvidence,
         clearingMetaEvidence,
         account,
@@ -66,7 +68,8 @@ const Deploy = ({ resetTcrState, setTxState, tcrState }) => {
         (60 * 60 * 24).toString(), // Challenge period duration (in seconds)
         '10000', // Shared stake multiplier in basis points.
         '10000', // Winner stake multiplier in basis points.
-        '20000' // Loser stake multiplier in basis points.
+        '20000', // Loser stake multiplier in basis points.
+        { gasLimit: 6000000 }
       )
       setTxState({ txHash: tx.deployTransaction.hash, status: 'pending' })
       setTxSubmitted(tx.deployTransaction.hash)

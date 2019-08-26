@@ -17,7 +17,7 @@ import { TCRViewContext } from '../../../bootstrap/tcr-view-context'
 import { formatEther, bigNumberify } from 'ethers/utils'
 import ETHAmount from '../../../components/eth-amount'
 import { WalletContext } from '../../../bootstrap/wallet-context'
-import { abi as _gtcr } from '../../../assets/contracts/GTCRMock.json'
+import { abi as _gtcr } from '@kleros/tcr/build/contracts/GeneralizedTCR.json'
 import { ethers } from 'ethers'
 
 const CrowdfundModal = ({ statusCode, item, ...rest }) => {

@@ -11,7 +11,7 @@ import {
 } from 'antd'
 import styled from 'styled-components/macro'
 import PropTypes from 'prop-types'
-import { abi as _gtcr } from '../../../assets/contracts/GTCRMock.json'
+import { abi as _gtcr } from '@kleros/tcr/build/contracts/GeneralizedTCR.json'
 import { WalletContext } from '../../../bootstrap/wallet-context'
 import { ethers } from 'ethers'
 import { gtcrEncode } from '../../../utils/encoder'
@@ -31,7 +31,6 @@ const StyledSpin = styled(Spin)`
 const SUBMISSION_FORM_ID = 'submitItemForm'
 
 // TODO: Check if TCR requires evidence when submitting and if so, require it.
-// TODO: Add information on deposit costs.
 const _SubmissionForm = ({ columns, handleSubmit, setFieldValue }) => (
   <Form onSubmit={handleSubmit} id={SUBMISSION_FORM_ID}>
     {columns &&

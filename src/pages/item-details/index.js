@@ -15,7 +15,7 @@ import { useWeb3Context } from 'web3-react'
 import { TCRViewContext } from '../../bootstrap/tcr-view-context'
 import { bigNumberify } from 'ethers/utils'
 import { gtcrDecode } from '../../utils/encoder'
-import { abi as _arbitrator } from '../../assets/contracts/Arbitrator.json'
+import { abi as _arbitrator } from '@kleros/tcr/build/contracts/Arbitrator.json'
 import { ethers } from 'ethers'
 
 const StyledLayoutContent = styled(Layout.Content)`
@@ -32,7 +32,8 @@ const ItemDetails = ({ itemID, tcrAddress }) => {
     metaEvidence,
     gtcr,
     tcrErrored,
-    challengePeriodDuration
+    challengePeriodDuration,
+    gtcrView
   } = useContext(TCRViewContext)
   const [item, setItem] = useState()
   const [timestamp, setTimestamp] = useState()
@@ -46,22 +47,23 @@ const ItemDetails = ({ itemID, tcrAddress }) => {
   const fetchItem = useCallback(async () => {
     const { columns } = metaEvidence
     try {
-      const result = { ...(await gtcr.getItem(itemID)) } // Spread to convert from array to object.
+      const result = {
+        ...(await gtcrView.getItem(tcrAddress, itemID))
+      } // Spread to convert from array to object.
       result.decodedData = gtcrDecode({ columns, values: result.data })
-      result.currentRuling = result.currentRuling.toNumber()
       setItem(result)
     } catch (err) {
       console.error(err)
       setErrored(true)
     }
-  }, [gtcr, itemID, metaEvidence])
+  }, [gtcrView, itemID, metaEvidence, tcrAddress])
 
   // Fetch item and timestamp.
   // This runs when the user loads the details view for the of an item
   // or when he navigates from the details view of an item to
   // the details view of another item (i.e. when itemID changes).
   useEffect(() => {
-    if (!metaEvidence || !gtcr || !itemID || !library) return
+    if (!metaEvidence || !gtcrView || !itemID || !library || !tcrAddress) return
     fetchItem()
     try {
       ;(async () => {
@@ -71,9 +73,9 @@ const ItemDetails = ({ itemID, tcrAddress }) => {
       console.error(err)
       setErrored(true)
     }
-  }, [fetchItem, gtcr, itemID, library, metaEvidence])
+  }, [gtcrView, fetchItem, itemID, library, metaEvidence, tcrAddress])
 
-  // Set and teardown event listeners when item and/or arbitrator change.
+  // Setup and teardown event listeners when item and/or arbitrator change.
   // This also runs when the user loads the details view for the of an item
   // or when he navigates from the details view of an item to
   // the details view of another item (i.e. when itemID changes).

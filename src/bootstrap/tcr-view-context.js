@@ -1,16 +1,16 @@
 import React, { createContext, useState, useEffect, useMemo } from 'react'
 import { useWeb3Context } from 'web3-react'
 import { useDebounce } from 'use-debounce'
-import { abi as _gtcr } from '../assets/contracts/GTCRMock.json'
-import { abi as _arbitrableTCRView } from '../assets/contracts/ArbitrableTCRView.json'
-import { abi as _arbitrator } from '../assets/contracts/Arbitrator.json'
+import { abi as _gtcr } from '@kleros/tcr/build/contracts/GeneralizedTCR.json'
+import { abi as _GTCRView } from '@kleros/tcr/build/contracts/GeneralizedTCRView.json'
+import { abi as _arbitrator } from '@kleros/tcr/build/contracts/Arbitrator.json'
 import { ethers } from 'ethers'
 import PropTypes from 'prop-types'
-import useArbitrableTCRView from '../hooks/arbitrable-tcr-view'
+import useGtcrView from '../hooks/gtcr-view'
 
 const useTcrView = tcrAddress => {
   const { library, active } = useWeb3Context()
-  const ARBITRABLE_TCR_VIEW_ADDRESS = useArbitrableTCRView()
+  const ARBITRABLE_TCR_VIEW_ADDRESS = useGtcrView()
   const [metaEvidencePath, setMetaEvidencePath] = useState()
   const [metaEvidence, setMetaEvidence] = useState()
   const [debouncedMetaEvidencePath] = useDebounce(metaEvidencePath, 300)
@@ -21,12 +21,12 @@ const useTcrView = tcrAddress => {
   const [challengeDeposit, setChallengeDeposit] = useState()
 
   // Wire up the TCR.
-  const arbitrableTCRView = useMemo(() => {
+  const gtcrView = useMemo(() => {
     if (!library || !active || !ARBITRABLE_TCR_VIEW_ADDRESS) return
     try {
       return new ethers.Contract(
         ARBITRABLE_TCR_VIEW_ADDRESS,
-        _arbitrableTCRView,
+        _GTCRView,
         library
       )
     } catch (err) {
@@ -47,16 +47,16 @@ const useTcrView = tcrAddress => {
 
   // Get TCR data.
   useEffect(() => {
-    if (!arbitrableTCRView || !tcrAddress) return
+    if (!gtcrView || !tcrAddress) return
     ;(async () => {
       try {
-        setArbitrableTCRData(await arbitrableTCRView.fetchData(tcrAddress))
+        setArbitrableTCRData(await gtcrView.fetchArbitrable(tcrAddress))
       } catch (err) {
         console.error(err)
         setErrored(true)
       }
     })()
-  }, [setArbitrableTCRData, arbitrableTCRView, tcrAddress, setErrored])
+  }, [setArbitrableTCRData, gtcrView, tcrAddress, setErrored])
 
   // Get the current arbitration cost to calculate request and challenge deposits.
   useEffect(() => {
@@ -160,6 +160,7 @@ const useTcrView = tcrAddress => {
     requestDeposit,
     challengeDeposit,
     tcrAddress,
+    gtcrView,
     ...arbitrableTCRData
   }
 }
