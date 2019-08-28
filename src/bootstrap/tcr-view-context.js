@@ -8,6 +8,11 @@ import { ethers } from 'ethers'
 import PropTypes from 'prop-types'
 import useGtcrView from '../hooks/gtcr-view'
 
+// TODO: Ensure we don't set state for unmounted components using
+// flags and AbortController.
+//
+// Reference:
+// https://itnext.io/how-to-create-react-custom-hooks-for-data-fetching-with-useeffect-74c5dc47000a
 const useTcrView = tcrAddress => {
   const { library, active } = useWeb3Context()
   const ARBITRABLE_TCR_VIEW_ADDRESS = useGtcrView()
@@ -61,7 +66,9 @@ const useTcrView = tcrAddress => {
   // Get the current arbitration cost to calculate request and challenge deposits.
   useEffect(() => {
     ;(async () => {
-      if (!arbitrableTCRData) return
+      // We also check that arbitrationCost != null to prevent the effect
+      // from running more than once.
+      if (!arbitrableTCRData || arbitrationCost != null) return
       try {
         const {
           arbitrator: arbitratorAddress,

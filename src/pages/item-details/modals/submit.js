@@ -88,7 +88,7 @@ const SubmitModal = props => {
     TCRViewContext
   )
 
-  if (!metaEvidence)
+  if (!metaEvidence || !requestDeposit)
     return (
       <Modal
         title="Submit Item"

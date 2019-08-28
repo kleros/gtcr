@@ -1,6 +1,7 @@
 import React, { useContext } from 'react'
 import PropTypes from 'prop-types'
-import { Modal, Descriptions, Typography, Button } from 'antd'
+import { Modal, Descriptions, Typography, Button, Spin } from 'antd'
+import styled from 'styled-components/macro'
 import { ethers } from 'ethers'
 import { abi as _gtcr } from '@kleros/tcr/build/contracts/GeneralizedTCR.json'
 import { STATUS_CODE } from '../../../utils/item-status'
@@ -11,6 +12,13 @@ import itemPropTypes from '../../../prop-types/item'
 import EvidenceForm from '../../../components/evidence-form.js'
 import Archon from '@kleros/archon'
 import ipfsPublish from '../../../utils/ipfs-publish.js'
+
+const StyledSpin = styled(Spin)`
+  left: 50%;
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+`
 
 const ChallengeModal = ({ item, itemName, statusCode, fileURI, ...rest }) => {
   // Get contract data.
@@ -62,6 +70,13 @@ const ChallengeModal = ({ item, itemName, statusCode, fileURI, ...rest }) => {
   }
 
   const EVIDENCE_FORM_ID = 'challengeEvidenceForm'
+
+  if (!challengeDeposit)
+    return (
+      <Modal title="Submit Item" {...rest}>
+        <StyledSpin />
+      </Modal>
+    )
 
   return (
     <Modal

@@ -8,7 +8,8 @@ import {
   Slider,
   InputNumber,
   Typography,
-  Divider
+  Divider,
+  Spin
 } from 'antd'
 import PropTypes from 'prop-types'
 import { STATUS_CODE, PARTY } from '../../../utils/item-status'
@@ -16,9 +17,17 @@ import itemPropTypes from '../../../prop-types/item'
 import { TCRViewContext } from '../../../bootstrap/tcr-view-context'
 import { formatEther, bigNumberify } from 'ethers/utils'
 import ETHAmount from '../../../components/eth-amount'
+import styled from 'styled-components/macro'
 import { WalletContext } from '../../../bootstrap/wallet-context'
 import { abi as _gtcr } from '@kleros/tcr/build/contracts/GeneralizedTCR.json'
 import { ethers } from 'ethers'
+
+const StyledSpin = styled(Spin)`
+  left: 50%;
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+`
 
 const CrowdfundModal = ({ statusCode, item, ...rest }) => {
   const { pushWeb3Action } = useContext(WalletContext)
@@ -121,6 +130,13 @@ const CrowdfundModal = ({ statusCode, item, ...rest }) => {
     currentRuling,
     item
   ])
+
+  if (!sharedStakeMultiplier)
+    return (
+      <Modal title="Submit Item" {...rest}>
+        <StyledSpin />
+      </Modal>
+    )
 
   if (
     (currentRuling === PARTY.NONE || statusCode === STATUS_CODE.CROWDFUNDING) &&

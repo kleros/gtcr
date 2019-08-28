@@ -69,12 +69,13 @@ const useNotificationWeb3 = () => {
   }
 
   useEffect(() => {
-    if (!web3Context.active) web3Context.setFirstValidConnector(['Infura'])
+    if (web3Context.active) return
+    web3Context.setFirstValidConnector(['Infura'])
   }, [web3Context])
 
   // We watch the web3 context props to handle the flow of authorization.
   useEffect(() => {
-    const asyncEffect = async () => {
+    ;(async () => {
       if (web3Actions.length === 0) return
       if (
         !web3Context.account &&
@@ -137,8 +138,7 @@ const useNotificationWeb3 = () => {
             web3Action.action()
         }
       }
-    }
-    asyncEffect()
+    })()
   }, [web3Context, connectionState, initialState, web3Actions])
 
   return {
@@ -195,7 +195,7 @@ async function processWeb3Action(web3Action, web3Context, signer) {
           View on etherscan
         </a>
       ),
-      duration: 0,
+      duration: 5,
       key: notificationID
     })
     if (onTxMined) onTxMined({ contractAddress })

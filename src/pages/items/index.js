@@ -1,7 +1,23 @@
-import { Typography, Layout, Skeleton, Table, Button, Icon } from 'antd'
+import {
+  Typography,
+  Layout,
+  Skeleton,
+  Table,
+  Button,
+  Icon,
+  Spin,
+  Pagination
+} from 'antd'
 import { Link } from 'react-router-dom'
-import React, { useEffect, useState, useContext, useCallback } from 'react'
+import React, {
+  useEffect,
+  useState,
+  useContext,
+  useCallback,
+  useMemo
+} from 'react'
 import PropTypes from 'prop-types'
+import qs from 'qs'
 import ErrorPage from '../error-page'
 import styled from 'styled-components/macro'
 import { WalletContext } from '../../bootstrap/wallet-context'
@@ -36,7 +52,26 @@ const StyledHeader = styled.div`
   justify-content: space-between;
 `
 
-const Items = ({ tcrAddress }) => {
+const StyledPagination = styled(Pagination)`
+  justify-content: flex-end;
+  display: flex;
+  flex-wrap: wrap;
+  margin-top: 2em;
+`
+
+const pagingItem = (_, type, originalElement) => {
+  if (type === 'prev') return <span>Previous</span>
+  if (type === 'next') return <span>Next</span>
+  return originalElement
+}
+
+// TODO: Ensure we don't set state for unmounted components using
+// flags and AbortController.
+//
+// Reference:
+// https://itnext.io/how-to-create-react-custom-hooks-for-data-fetching-with-useeffect-74c5dc47000a
+const ITEMS_PER_PAGE = 40
+const Items = ({ tcrAddress, search, history }) => {
   const { requestWeb3Auth } = useContext(WalletContext)
   const { library } = useWeb3Context()
   const {
@@ -46,53 +81,108 @@ const Items = ({ tcrAddress }) => {
     tcrErrored,
     gtcrView
   } = useContext(TCRViewContext)
-  const [items, setItems] = useState()
-  const [submissionFormOpen, setSubmissionFormOpen] = useState(false)
+  const [encodedItems, setEncodedItems] = useState()
+  const [submissionFormOpen, setSubmissionFormOpen] = useState()
   const [errored, setErrored] = useState()
   const [timestamp, setTimestamp] = useState()
+  const [isFetching, setIsFetching] = useState(true)
+  const [itemCount, setItemCount] = useState()
+  const {
+    filter = [false, true, true, true, true, true, true, true],
+    oldestFirst = false,
+    page
+  } = qs.parse(search.replace(/\?/g, ''))
 
-  // Warning: This function should only be called when all its dependencies
-  // are set.
+  // Warning: This function should only be called when all
+  // its dependencies are set.
   const fetchItems = useCallback(async () => {
     try {
-      const { columns } = metaEvidence
-      const items = (await gtcrView.queryItems(
-        tcrAddress,
-        ZERO_BYTES32, // Cursor.
-        50, // Count.
-        [false, true, true, true, true, true, true, true], // Filter.
-        false, // Oldest first.
-        ZERO_ADDRESS
-      ))[0]
-        .filter(item => item.ID !== ZERO_BYTES32) // Filter out empty slots from the results.
-        .map((item, i) => {
-          const decodedItem = gtcrDecode({ values: item.data, columns })
-          // Return the item columns along with its TCR status data.
-          return {
-            tcrData: {
-              ...item // Spread to convert from array to object.
-            },
-            ...columns.reduce(
-              (acc, curr, i) => ({
-                ...acc,
-                [curr.label]: decodedItem[i],
-                ID: item.ID
-              }),
-              { key: i }
-            )
-          }
-        })
-      setItems(items)
+      const itemCount = (await gtcr.itemCount()).toNumber()
+      const itemsPerRequest = 10000
+      const requests = Math.ceil(itemCount / itemsPerRequest)
+      let request = 1
+      let target = [bigNumberify(0), itemCount > 0, false]
+      while (request <= requests && !target[2]) {
+        target = await gtcrView.findIndexForPage(
+          tcrAddress,
+          [Number(page), ITEMS_PER_PAGE, itemsPerRequest, target[0].toNumber()],
+          [...filter, oldestFirst],
+          ZERO_ADDRESS
+        )
+        request++
+      }
+      const cursorIndex = target[0].toNumber()
+
+      // Edge case: Query items sets the cursor to the last item if
+      // we are sorting by the newest items and the cursor index is 0.
+      // This is the case where the last page has only one item.
+      let encodedItems = []
+      if (cursorIndex === 0 && !oldestFirst && page !== '1')
+        encodedItems = await gtcrView.queryItems(
+          tcrAddress,
+          0,
+          1,
+          filter,
+          true,
+          ZERO_ADDRESS
+        )
+      else
+        encodedItems = await gtcrView.queryItems(
+          tcrAddress,
+          cursorIndex, // Cursor.
+          ITEMS_PER_PAGE, // Count.
+          filter,
+          oldestFirst,
+          ZERO_ADDRESS
+        )
+
+      encodedItems = encodedItems[0].filter(item => item.ID !== ZERO_BYTES32) // Filter out empty slots from the results.
+      setEncodedItems(encodedItems)
     } catch (err) {
       console.error(err)
       setErrored(true)
+    } finally {
+      setIsFetching(false)
     }
-  }, [gtcrView, metaEvidence, tcrAddress])
+  }, [filter, gtcr, gtcrView, oldestFirst, page, tcrAddress])
 
-  // Fetch items and timestamp.
+  // Set to first page if none is provided.
   useEffect(() => {
-    if (!gtcrView || !gtcr || !metaEvidence || !library) return
-    fetchItems()
+    if (page || !history) return
+    history.push({ search: '?page=1' })
+  }, [history, page])
+
+  // Fetch number of pages for the current filter
+  // TODO: This effect can run more times than necessary. Update
+  // logic so that it only runs when the filters, page, party
+  // address or sorting option changes.
+  useEffect(() => {
+    if (!gtcrView) return
+    ;(async () => {
+      const itemCount = (await gtcr.itemCount()).toNumber()
+      const itemsPerRequest = 10000
+      const requests = Math.ceil(itemCount / itemsPerRequest)
+      let request = 1
+      let target = [bigNumberify(0), itemCount > 0, bigNumberify(0)]
+      let count = 0
+      while (request <= requests && target[1]) {
+        target = await gtcrView.countWithFilter(
+          tcrAddress,
+          target[2].toNumber(),
+          itemsPerRequest,
+          filter,
+          ZERO_ADDRESS
+        )
+        count += target[0].toNumber()
+        request++
+      }
+      setItemCount(count)
+    })()
+  }, [filter, gtcr, gtcrView, tcrAddress])
+
+  // Fetch timestamp.
+  useEffect(() => {
+    if (!library || timestamp) return
     ;(async () => {
       try {
         setTimestamp(bigNumberify((await library.getBlock()).timestamp))
@@ -101,16 +191,48 @@ const Items = ({ tcrAddress }) => {
         setErrored(true)
       }
     })()
-  }, [gtcr, metaEvidence, library, fetchItems, gtcrView])
+  }, [library, timestamp])
+
+  // Fetch items.
+  // TODO: This effect can run more times than necessary. Update
+  // logic so that it only runs when the filters, page, party
+  // address or sorting option changes.
+  useEffect(() => {
+    if (!gtcr || !gtcrView || !tcrAddress || !page || !isFetching) return
+    fetchItems()
+  }, [gtcrView, tcrAddress, page, isFetching, fetchItems, gtcr])
+
+  // Decode items once meta evidence and items were fetched.
+  const items = useMemo(() => {
+    if (!encodedItems || !metaEvidence) return
+    const { columns } = metaEvidence
+    return encodedItems.map((item, i) => {
+      const decodedItem = gtcrDecode({ values: item.data, columns })
+      // Return the item columns along with its TCR status data.
+      return {
+        tcrData: {
+          ...item // Spread to convert from array to object.
+        },
+        ...columns.reduce(
+          (acc, curr, i) => ({
+            ...acc,
+            [curr.label]: decodedItem[i],
+            ID: item.ID
+          }),
+          { key: i }
+        )
+      }
+    })
+  }, [encodedItems, metaEvidence])
 
   // Watch for submissions and status change events to refetch items.
   useEffect(() => {
     if (!gtcr || !metaEvidence) return
-    gtcr.on(gtcr.filters.ItemStatusChange(), fetchItems)
+    gtcr.on(gtcr.filters.ItemStatusChange(), () => setIsFetching(true))
     return () => {
       gtcr.removeAllListeners(gtcr.filters.ItemStatusChange())
     }
-  }, [fetchItems, gtcr, metaEvidence])
+  }, [gtcr, metaEvidence])
 
   if (!tcrAddress || tcrErrored || errored)
     return (
@@ -185,12 +307,28 @@ const Items = ({ tcrAddress }) => {
       )}
       <StyledContent>
         {items && metaEvidence ? (
-          <Table
-            dataSource={items}
-            columns={columns}
-            bordered
-            pagination={false}
-          />
+          <Spin spinning={isFetching || !itemCount}>
+            <>
+              <Table
+                dataSource={items}
+                columns={columns}
+                bordered
+                pagination={false}
+              />
+              <StyledPagination
+                total={itemCount || 0}
+                current={Number(page)}
+                itemRender={pagingItem}
+                pageSize={ITEMS_PER_PAGE}
+                onChange={newPage => {
+                  history.push({
+                    search: search.replace(/page=\d+/g, `page=${newPage}`)
+                  })
+                  setIsFetching(true)
+                }}
+              />
+            </>
+          </Spin>
         ) : (
           <Skeleton active paragraph={{ rows: 8 }} title={false} />
         )}
@@ -204,7 +342,11 @@ const Items = ({ tcrAddress }) => {
 }
 
 Items.propTypes = {
-  tcrAddress: PropTypes.string.isRequired
+  tcrAddress: PropTypes.string.isRequired,
+  search: PropTypes.string.isRequired,
+  history: PropTypes.shape({
+    push: PropTypes.func.isRequired
+  }).isRequired
 }
 
 export default Items

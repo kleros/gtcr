@@ -269,7 +269,9 @@ const Content = () => {
         {({
           match: {
             params: { tcrAddress }
-          }
+          },
+          location: { search },
+          history
         }) => (
           <TCRViewProvider tcrAddress={tcrAddress}>
             <Switch>
@@ -281,7 +283,11 @@ const Content = () => {
                 }) => <ItemDetails tcrAddress={tcrAddress} itemID={itemID} />}
               </Route>
               <Route path="/tcr/:tcrAddress">
-                <Items tcrAddress={tcrAddress} />
+                <Items
+                  tcrAddress={tcrAddress}
+                  search={search}
+                  history={history}
+                />
               </Route>
             </Switch>
           </TCRViewProvider>

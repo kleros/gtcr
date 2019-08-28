@@ -25,6 +25,11 @@ const StyledLayoutContent = styled(Layout.Content)`
   flex-direction: column;
 `
 
+// TODO: Ensure we don't set state for unmounted components using
+// flags and AbortController.
+//
+// Reference:
+// https://itnext.io/how-to-create-react-custom-hooks-for-data-fetching-with-useeffect-74c5dc47000a
 const ItemDetails = ({ itemID, tcrAddress }) => {
   const { library } = useWeb3Context()
   const [errored, setErrored] = useState()

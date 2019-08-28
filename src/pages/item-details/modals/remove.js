@@ -1,12 +1,20 @@
 import React, { useContext } from 'react'
 import PropTypes from 'prop-types'
-import { Modal, Descriptions, Typography, Divider } from 'antd'
+import { Modal, Descriptions, Typography, Divider, Spin } from 'antd'
 import { ethers } from 'ethers'
 import { abi as _gtcr } from '@kleros/tcr/build/contracts/GeneralizedTCR.json'
 import { TCRViewContext } from '../../../bootstrap/tcr-view-context'
 import ETHAmount from '../../../components/eth-amount'
 import { WalletContext } from '../../../bootstrap/wallet-context'
 import itemPropTypes from '../../../prop-types/item'
+import styled from 'styled-components/macro'
+
+const StyledSpin = styled(Spin)`
+  left: 50%;
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+`
 
 const RemoveModal = ({ item, itemName = 'item', fileURI, ...rest }) => {
   // Get contract data.
@@ -29,6 +37,13 @@ const RemoveModal = ({ item, itemName = 'item', fileURI, ...rest }) => {
       }
     })
   }
+
+  if (!requestDeposit)
+    return (
+      <Modal title="Submit Item" {...rest}>
+        <StyledSpin />
+      </Modal>
+    )
 
   // TODO: Check if TCR requires evidence upon placing a removal request and if so, require it.
   return (
