@@ -9,9 +9,9 @@
   REACT_APP_DEFAULT_NETWORK="42"
   REACT_APP_DEFAULT_TCR_ADDRESSES='{"42":"0x36E039421523C002F60335dBBfbC7C6426eD1786"}'
   REACT_APP_GTCRVIEW_ADDRESSES='{"42":"0xf151dea9fdf6362f35025543a9ed93cefa01ecd7"}'
-  REACT_APP_METAMASK_SITE_URL=https://metamask.io
-  REACT_APP_TRUST_SITE_URL=https://trustwallet.com/
-  REACT_APP_WALLETCONNECT_BRIDGE_URL=https://bridge.walletconnect.org
+  REACT_APP_METAMASK_SITE_URL='https://metamask.io'
+  REACT_APP_TRUST_SITE_URL='https://trustwallet.com/'
+  REACT_APP_WALLETCONNECT_BRIDGE_URL='https://bridge.walletconnect.org'
 
 [[redirects]]
   from = "/*"
