@@ -3,6 +3,7 @@ import { notification } from 'antd'
 import { useWeb3Context } from 'web3-react'
 import PropTypes from 'prop-types'
 import uuid from 'uuid/v4'
+import WalletConnectQRCodeModal from '@walletconnect/qrcode-modal'
 import { NETWORK, NETWORK_NAME } from '../utils/network-names'
 import FastJsonRpcSigner from '../utils/fast-signer'
 
@@ -26,6 +27,7 @@ const actionTypes = {
 const useNotificationWeb3 = () => {
   const web3Context = useWeb3Context()
   const [web3Actions, setWeb3Actions] = useState([])
+  const [infuraSetup, setInfuraSetup] = useState() // Whether infura was set as the provider.
 
   /**
    * Send a transaction to the blockchain. This handles notifications and
@@ -69,9 +71,16 @@ const useNotificationWeb3 = () => {
   }
 
   useEffect(() => {
-    if (web3Context.active) return
-    web3Context.setFirstValidConnector(['Infura'])
-  }, [web3Context])
+    if (web3Context.active || infuraSetup) return
+    if (process.env.REACT_APP_INFURA_PROJECT_ID)
+      web3Context.setFirstValidConnector(['Infura'])
+    else
+      console.warn(
+        'No infura key provided. Dapp will only work with a connected wallet.'
+      )
+
+    setInfuraSetup(true)
+  }, [infuraSetup, web3Context])
 
   // We watch the web3 context props to handle the flow of authorization.
   useEffect(() => {
@@ -85,20 +94,30 @@ const useNotificationWeb3 = () => {
         setConnectionState(prev => ({ ...prev, modalOpen: true }))
       else if (connectionState.modalOpen && connectionState.method) {
         setConnectionState(prev => ({ ...prev, modalOpen: false }))
-        web3Context.setFirstValidConnector([connectionState.method])
+        web3Context.setConnector(connectionState.method)
       } else if (
         !web3Context.account &&
-        !web3Context.error &&
         !connectionState.modalOpen &&
-        !connectionState.requestSentToProvider
+        !connectionState.requestSentToProvider &&
+        (!web3Context.error ||
+          (connectionState.method && connectionState.method === 'Fortmatic'))
       ) {
         notification.info({
           message: 'Awaiting authorization',
           duration: 0,
-          key: NOTIFICATION_KEY
+          key: NOTIFICATION_KEY,
+          onClose: () => {
+            setWeb3Actions([])
+            setConnectionState(JSON.parse(JSON.stringify(initialState)))
+          }
         })
         setConnectionState(prev => ({ ...prev, requestSentToProvider: true }))
-      } else if (web3Context.error && connectionState.method) {
+      } else if (
+        web3Context.error &&
+        connectionState.method &&
+        connectionState.method === 'Injected'
+      ) {
+        console.error(web3Context.error)
         notification.error({
           message: 'Authorization failed',
           description:
@@ -133,13 +152,28 @@ const useNotificationWeb3 = () => {
           }
           if (
             web3Action.type === actionTypes.AUTHORIZATION &&
-            web3Action.action
+            web3Action.action &&
+            typeof web3Action.action === 'function'
           )
             web3Action.action()
         }
       }
     })()
   }, [web3Context, connectionState, initialState, web3Actions])
+
+  if (web3Context.active && web3Context.connectorName === 'WalletConnect')
+    if (!web3Context.account) {
+      WalletConnectQRCodeModal.open(
+        web3Context.connector.walletConnector.uri,
+        () => {}
+      )
+    } else {
+      try {
+        WalletConnectQRCodeModal.close()
+      } catch (err) {
+        console.error(err)
+      }
+    }
 
   return {
     requestModalOpen: connectionState.modalOpen,
@@ -202,7 +236,7 @@ async function processWeb3Action(web3Action, web3Context, signer) {
   } catch (err) {
     notification.error({
       message: 'Error submitting transaction',
-      description: `${err.message}`,
+      description: `${err.message || ''}`,
       duration: 0,
       key: notificationID
     })

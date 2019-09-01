@@ -59,6 +59,11 @@ const StyledPagination = styled(Pagination)`
   margin-top: 2em;
 `
 
+const StyledSpan = styled.span`
+  text-decoration: underline;
+  cursor: pointer;
+`
+
 const pagingItem = (_, type, originalElement) => {
   if (type === 'prev') return <span>Previous</span>
   if (type === 'next') return <span>Next</span>
@@ -73,7 +78,7 @@ const pagingItem = (_, type, originalElement) => {
 const ITEMS_PER_PAGE = 40
 const Items = ({ tcrAddress, search, history }) => {
   const { requestWeb3Auth } = useContext(WalletContext)
-  const { library } = useWeb3Context()
+  const { library, active } = useWeb3Context()
   const {
     gtcr,
     metaEvidence,
@@ -234,6 +239,25 @@ const Items = ({ tcrAddress, search, history }) => {
     }
   }, [gtcr, metaEvidence])
 
+  if (!active && !process.env.REACT_APP_INFURA_PROJECT_ID)
+    return (
+      <ErrorPage
+        code="Web3 Required"
+        message="A provider is required to view blockchain data."
+        tip={
+          <div>
+            Please{' '}
+            <StyledSpan
+              className="primary-color theme-color"
+              onClick={requestWeb3Auth}
+            >
+              connect a wallet.
+            </StyledSpan>
+          </div>
+        }
+      />
+    )
+
   if (!tcrAddress || tcrErrored || errored)
     return (
       <ErrorPage
@@ -307,7 +331,7 @@ const Items = ({ tcrAddress, search, history }) => {
       )}
       <StyledContent>
         {items && metaEvidence ? (
-          <Spin spinning={isFetching || !itemCount}>
+          <Spin spinning={isFetching}>
             <>
               <Table
                 dataSource={items}

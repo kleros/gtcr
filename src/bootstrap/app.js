@@ -19,9 +19,16 @@ import {
   Modal,
   Icon
 } from 'antd'
+import WalletConnectApi from '@walletconnect/web3-subprovider'
+import FortmaticApi from 'fortmatic'
+import PortisApi from '@portis/web3'
 import { Helmet } from 'react-helmet'
 import { ReactComponent as Logo } from '../assets/images/logo.svg'
 import { ReactComponent as MetamaskLogo } from '../assets/images/metamask.svg'
+import { ReactComponent as FortmaticLogo } from '../assets/images/fortmatic.svg'
+import { ReactComponent as PortisLogo } from '../assets/images/portis.svg'
+import { ReactComponent as WalletConnectLogo } from '../assets/images/walletconnect.svg'
+import { ReactComponent as TrustLogo } from '../assets/images/trust.svg'
 import React, { useState, useContext } from 'react'
 import loadable from '@loadable/component'
 import { register } from './service-worker'
@@ -40,6 +47,7 @@ import ErrorPage from '../pages/error-page'
 import useMainTCR2 from '../hooks/tcr2'
 import Identicon from '../components/identicon'
 import { TCRViewProvider } from './tcr-view-context'
+import useNetworkEnvVariable from '../hooks/network-env'
 
 const StyledSpin = styled(Spin)`
   left: 50%;
@@ -130,6 +138,11 @@ const StyledRouterLink = styled(Link)`
   display: flex;
 `
 
+const StyledWalletButton = styled(Button)`
+  margin-right: 10px;
+  margin-bottom: 10px;
+`
+
 const Factory = loadable(
   () => import(/* webpackPrefetch: true */ '../pages/factory/index'),
   {
@@ -172,14 +185,66 @@ const MenuItems = ({ TCR2_ADDRESS }) => [
   </Menu.Item>
 ]
 
-const { NetworkOnlyConnector, InjectedConnector } = Connectors
-const Injected = new InjectedConnector({ supportedNetworks: [42, 1] })
+const {
+  NetworkOnlyConnector,
+  InjectedConnector,
+  LedgerConnector,
+  FortmaticConnector,
+  PortisConnector,
+  WalletConnectConnector
+} = Connectors
 
-const DEFAULT_NETWORK = process.env.REACT_APP_DEFAULT_NETWORK || 42
-const Infura = new NetworkOnlyConnector({
-  providerURL: `https://${NETWORK_NAME[DEFAULT_NETWORK]}.infura.io/v3/${process.env.REACT_APP_INFURA_PROJECT_ID}`
-})
-const connectors = { Injected, Infura }
+const supportedNetworks = [42, 1]
+const Injected = new InjectedConnector({ supportedNetworks })
+const connectors = { Injected }
+const defaultNetwork = Number(process.env.REACT_APP_DEFAULT_NETWORK) || 42
+if (process.env.REACT_APP_INFURA_PROJECT_ID) {
+  const supportedNetworkURLs = {
+    1: `https://mainnet.infura.io/v3/${process.env.REACT_APP_INFURA_PROJECT_ID}`,
+    42: `https://kovan.infura.io/v3/${process.env.REACT_APP_INFURA_PROJECT_ID}`
+  }
+
+  const Infura = new NetworkOnlyConnector({
+    providerURL: supportedNetworkURLs[defaultNetwork]
+  })
+  connectors.Infura = Infura
+
+  const Ledger = new LedgerConnector({
+    supportedNetworkURLs,
+    defaultNetwork
+  })
+  connectors.Ledger = Ledger
+
+  if (process.env.REACT_APP_WALLETCONNECT_BRIDGE_URL) {
+    const WalletConnect = new WalletConnectConnector({
+      api: WalletConnectApi,
+      bridge: process.env.REACT_APP_WALLETCONNECT_BRIDGE_URL,
+      supportedNetworkURLs,
+      defaultNetwork
+    })
+    connectors.WalletConnect = WalletConnect
+  }
+}
+
+const fortmaticApiKey = useNetworkEnvVariable('REACT_APP_FORMATIC_API_KEYS')
+if (fortmaticApiKey) {
+  const Fortmatic = new FortmaticConnector({
+    api: FortmaticApi,
+    apiKey: fortmaticApiKey,
+    logoutOnDeactivation: false,
+    testNetwork: defaultNetwork === 1 ? null : NETWORK_NAME[defaultNetwork]
+  })
+  connectors.Fortmatic = Fortmatic
+}
+
+if (process.env.REACT_APP_PORTIS_DAPP_ID) {
+  const Portis = new PortisConnector({
+    api: PortisApi,
+    dAppId: process.env.REACT_APP_PORTIS_DAPP_ID,
+    network: NETWORK_NAME[defaultNetwork]
+  })
+  connectors.Portis = Portis
+}
 
 const WalletModal = () => {
   const { cancelRequest, setUserSelectedWallet, requestModalOpen } = useContext(
@@ -196,10 +261,58 @@ const WalletModal = () => {
         </Button>
       ]}
     >
-      <Button onClick={() => setUserSelectedWallet('Injected')}>
+      <StyledWalletButton
+        onClick={() => {
+          if (window.ethereum && window.ethereum.isMetaMask)
+            setUserSelectedWallet('Injected')
+          else {
+            const tab = window.open(
+              process.env.REACT_APP_METAMASK_SITE_URL,
+              '_blank'
+            )
+            tab.focus()
+          }
+        }}
+      >
         <Icon component={MetamaskLogo} />
         Metamask
-      </Button>
+      </StyledWalletButton>
+      <StyledWalletButton
+        onClick={() => {
+          if (window.ethereum && window.ethereum.isTrust)
+            setUserSelectedWallet('Injected')
+          else {
+            const tab = window.open(
+              process.env.REACT_APP_TRUST_SITE_URL,
+              '_blank'
+            )
+            tab.focus()
+          }
+        }}
+      >
+        <Icon component={TrustLogo} />
+        Trust Wallet
+      </StyledWalletButton>
+      {process.env.REACT_APP_FORMATIC_API_KEYS && (
+        <StyledWalletButton onClick={() => setUserSelectedWallet('Fortmatic')}>
+          <Icon component={FortmaticLogo} />
+          Fortmatic
+        </StyledWalletButton>
+      )}
+      {process.env.REACT_APP_PORTIS_DAPP_ID && (
+        <StyledWalletButton onClick={() => setUserSelectedWallet('Portis')}>
+          <Icon component={PortisLogo} />
+          Portis
+        </StyledWalletButton>
+      )}
+      {process.env.REACT_APP_WALLETCONNECT_BRIDGE_URL && (
+        <StyledWalletButton
+          onClick={() => setUserSelectedWallet('WalletConnect')}
+        >
+          <Icon component={WalletConnectLogo} />
+          WalletConnect
+        </StyledWalletButton>
+      )}
     </Modal>
   )
 }

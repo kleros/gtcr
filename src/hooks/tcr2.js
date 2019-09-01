@@ -1,5 +1,6 @@
 import { useWeb3Context } from 'web3-react'
 
+// TODO: Replace users with useNetworkEnvVariable.
 const useMainTCR2 = () => {
   const DEFAULT_NETWORK = process.env.REACT_APP_DEFAULT_NETWORK || 42
 

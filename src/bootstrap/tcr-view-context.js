@@ -6,7 +6,7 @@ import { abi as _GTCRView } from '@kleros/tcr/build/contracts/GeneralizedTCRView
 import { abi as _arbitrator } from '@kleros/tcr/build/contracts/Arbitrator.json'
 import { ethers } from 'ethers'
 import PropTypes from 'prop-types'
-import useGtcrView from '../hooks/gtcr-view'
+import useNetworkEnvVariable from '../hooks/network-env'
 
 // TODO: Ensure we don't set state for unmounted components using
 // flags and AbortController.
@@ -14,8 +14,7 @@ import useGtcrView from '../hooks/gtcr-view'
 // Reference:
 // https://itnext.io/how-to-create-react-custom-hooks-for-data-fetching-with-useeffect-74c5dc47000a
 const useTcrView = tcrAddress => {
-  const { library, active } = useWeb3Context()
-  const ARBITRABLE_TCR_VIEW_ADDRESS = useGtcrView()
+  const { library, active, networkId } = useWeb3Context()
   const [metaEvidencePath, setMetaEvidencePath] = useState()
   const [metaEvidence, setMetaEvidence] = useState()
   const [debouncedMetaEvidencePath] = useDebounce(metaEvidencePath, 300)
@@ -24,6 +23,10 @@ const useTcrView = tcrAddress => {
   const [arbitrationCost, setArbitrationCost] = useState()
   const [requestDeposit, setRequestDeposit] = useState()
   const [challengeDeposit, setChallengeDeposit] = useState()
+  const ARBITRABLE_TCR_VIEW_ADDRESS = useNetworkEnvVariable(
+    'REACT_APP_GTCRVIEW_ADDRESSES',
+    networkId
+  )
 
   // Wire up the TCR.
   const gtcrView = useMemo(() => {

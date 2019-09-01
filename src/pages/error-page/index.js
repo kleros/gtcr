@@ -33,7 +33,7 @@ const StyledMessageLine3 = styled.div`
   font-size: 16px;
   margin-top: 25px;
 `
-const ErrorPage = ({ code, message, tip }) => (
+const ErrorPage = ({ code, title, message, tip }) => (
   <StyledDiv>
     <StyledAcropolis />
     <StyledInfoDiv className="quaternary-background theme-background">
@@ -41,7 +41,7 @@ const ErrorPage = ({ code, message, tip }) => (
         {code || '404'}
       </Styled404Div>
       <StyledMessageLine1 className="ternary-color theme-color">
-        Oops,
+        {title}
       </StyledMessageLine1>
       <StyledMessageLine2 className="ternary-color theme-color">
         {message || 'The gods could not find the page you are looking for!'}
@@ -55,12 +55,14 @@ const ErrorPage = ({ code, message, tip }) => (
 
 ErrorPage.propTypes = {
   code: PropTypes.string,
+  title: PropTypes.string,
   message: PropTypes.string,
-  tip: PropTypes.string
+  tip: PropTypes.oneOfType([PropTypes.string, PropTypes.object])
 }
 
 ErrorPage.defaultProps = {
   code: null,
+  title: null,
   message: null,
   tip: null
 }
