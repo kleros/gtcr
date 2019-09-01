@@ -5,7 +5,7 @@
   "license": "MIT",
   "scripts": {
     "start": "run-p build:contracts && react-scripts start",
-    "build": "yarn build:contracts && react-scripts build",
+    "build": "yarn build:contracts && react-scripts --max_old_space_size=4096 build",
     "build:theme": "lessc --js ./src/bootstrap/theme.less ./src/bootstrap/theme.css",
     "build:contracts": "cd node_modules/@kleros/tcr/ && yarn && node_modules/truffle/build/cli.bundled.js compile",
     "test": "react-scripts test",
