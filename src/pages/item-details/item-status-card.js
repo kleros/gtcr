@@ -37,7 +37,7 @@ const StyledSkeleton = styled(Skeleton)`
 `
 
 const DisputeStatus = ({ disputeStatus }) => {
-  if (!disputeStatus)
+  if (disputeStatus == null)
     return (
       <StyledSkeleton active paragraph={false} title={SkeletonTitleProps} />
     )
@@ -53,7 +53,7 @@ const DisputeStatus = ({ disputeStatus }) => {
 }
 
 const Ruling = ({ currentRuling }) => {
-  if (!currentRuling)
+  if (currentRuling == null)
     return (
       <StyledSkeleton active paragraph={false} title={SkeletonTitleProps} />
     )

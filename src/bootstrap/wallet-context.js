@@ -1,5 +1,5 @@
 import React, { createContext, useState, useEffect } from 'react'
-import { notification } from 'antd'
+import { notification, Icon } from 'antd'
 import { useWeb3Context } from 'web3-react'
 import PropTypes from 'prop-types'
 import uuid from 'uuid/v4'
@@ -106,6 +106,7 @@ const useNotificationWeb3 = () => {
           message: 'Awaiting authorization',
           duration: 0,
           key: NOTIFICATION_KEY,
+          icon: <Icon type="loading" style={{ color: '#108ee9' }} />,
           onClose: () => {
             setWeb3Actions([])
             setConnectionState(JSON.parse(JSON.stringify(initialState)))
@@ -211,6 +212,7 @@ async function processWeb3Action(web3Action, web3Context, signer) {
       message: actionMessage || 'Transaction submitted.',
       duration: 0,
       key: notificationID,
+      icon: <Icon type="loading" style={{ color: '#108ee9' }} />,
       description: (
         <a target="_blank" rel="noopener noreferrer" href={etherscanLink}>
           View on etherscan

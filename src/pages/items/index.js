@@ -6,18 +6,15 @@ import {
   Button,
   Icon,
   Spin,
-  Pagination
+  Pagination,
+  Tag,
+  Divider,
+  Select
 } from 'antd'
 import { Link } from 'react-router-dom'
-import React, {
-  useEffect,
-  useState,
-  useContext,
-  useCallback,
-  useMemo
-} from 'react'
-import PropTypes from 'prop-types'
 import qs from 'qs'
+import React, { useEffect, useState, useContext, useMemo } from 'react'
+import PropTypes from 'prop-types'
 import ErrorPage from '../error-page'
 import styled from 'styled-components/macro'
 import { WalletContext } from '../../bootstrap/wallet-context'
@@ -30,9 +27,15 @@ import { gtcrDecode } from '../../utils/encoder'
 import itemTypes from '../../utils/item-types'
 import ETHAddress from '../../components/eth-address'
 import SubmissionModal from '../item-details/modals/submit'
+import {
+  searchStrToFilterObj,
+  filterLabel,
+  FILTER_KEYS,
+  updateFilter,
+  queryOptionsToFilterArray
+} from '../../utils/filters'
 
 const StyledContent = styled(Layout.Content)`
-  margin: 32px 0;
   word-break: break-word;
 `
 
@@ -50,6 +53,26 @@ const StyledButton = styled(Button)`
 const StyledHeader = styled.div`
   display: flex;
   justify-content: space-between;
+`
+
+const StyledFilters = styled.div`
+  display: flex;
+  justify-content: space-between;
+  @media (max-width: 479px) {
+    flex-direction: column;
+  }
+`
+
+const StyledSelect = styled(Select)`
+  height: 32px;
+`
+
+const StyledDivider = styled(Divider)`
+  margin-bottom: 10px;
+`
+
+const StyledTag = styled(Tag.CheckableTag)`
+  margin-bottom: 12px;
 `
 
 const StyledPagination = styled(Pagination)`
@@ -86,83 +109,34 @@ const Items = ({ tcrAddress, search, history }) => {
     tcrErrored,
     gtcrView
   } = useContext(TCRViewContext)
-  const [encodedItems, setEncodedItems] = useState()
   const [submissionFormOpen, setSubmissionFormOpen] = useState()
   const [errored, setErrored] = useState()
   const [timestamp, setTimestamp] = useState()
-  const [isFetching, setIsFetching] = useState(true)
-  const [itemCount, setItemCount] = useState()
-  const {
-    filter = [false, true, true, true, true, true, true, true],
-    oldestFirst = false,
-    page
-  } = qs.parse(search.replace(/\?/g, ''))
+  const [fetchItems, setFetchItems] = useState({
+    fetchStarted: true,
+    isFetching: false,
+    data: null
+  })
+  const [fetchItemCount, setFetchItemCount] = useState({
+    fetchStarted: true,
+    isFetching: false,
+    data: null
+  })
 
-  // Warning: This function should only be called when all
-  // its dependencies are set.
-  const fetchItems = useCallback(async () => {
-    try {
-      const itemCount = (await gtcr.itemCount()).toNumber()
-      const itemsPerRequest = 10000
-      const requests = Math.ceil(itemCount / itemsPerRequest)
-      let request = 1
-      let target = [bigNumberify(0), itemCount > 0, false]
-      while (request <= requests && !target[2]) {
-        target = await gtcrView.findIndexForPage(
-          tcrAddress,
-          [Number(page), ITEMS_PER_PAGE, itemsPerRequest, target[0].toNumber()],
-          [...filter, oldestFirst],
-          ZERO_ADDRESS
-        )
-        request++
-      }
-      const cursorIndex = target[0].toNumber()
-
-      // Edge case: Query items sets the cursor to the last item if
-      // we are sorting by the newest items and the cursor index is 0.
-      // This is the case where the last page has only one item.
-      let encodedItems = []
-      if (cursorIndex === 0 && !oldestFirst && page !== '1')
-        encodedItems = await gtcrView.queryItems(
-          tcrAddress,
-          0,
-          1,
-          filter,
-          true,
-          ZERO_ADDRESS
-        )
-      else
-        encodedItems = await gtcrView.queryItems(
-          tcrAddress,
-          cursorIndex, // Cursor.
-          ITEMS_PER_PAGE, // Count.
-          filter,
-          oldestFirst,
-          ZERO_ADDRESS
-        )
-
-      encodedItems = encodedItems[0].filter(item => item.ID !== ZERO_BYTES32) // Filter out empty slots from the results.
-      setEncodedItems(encodedItems)
-    } catch (err) {
-      console.error(err)
-      setErrored(true)
-    } finally {
-      setIsFetching(false)
-    }
-  }, [filter, gtcr, gtcrView, oldestFirst, page, tcrAddress])
-
-  // Set to first page if none is provided.
+  // Set page to 1 in the URI if none is set.
   useEffect(() => {
-    if (page || !history) return
+    if (qs.parse(search.replace(/\?/g, '')).page) return
     history.push({ search: '?page=1' })
-  }, [history, page])
+  }, [history, search])
 
   // Fetch number of pages for the current filter
-  // TODO: This effect can run more times than necessary. Update
-  // logic so that it only runs when the filters, page, party
-  // address or sorting option changes.
   useEffect(() => {
-    if (!gtcrView) return
+    if (!gtcrView || fetchItemCount.isFetching || !fetchItemCount.fetchStarted)
+      return
+
+    const queryOptions = searchStrToFilterObj(search)
+    const filter = queryOptionsToFilterArray(queryOptions)
+    setFetchItemCount({ isFetching: true })
     ;(async () => {
       const itemCount = (await gtcr.itemCount()).toNumber()
       const itemsPerRequest = 10000
@@ -181,9 +155,16 @@ const Items = ({ tcrAddress, search, history }) => {
         count += target[0].toNumber()
         request++
       }
-      setItemCount(count)
+      setFetchItemCount({ fetchStarted: false, isFetching: false, data: count })
     })()
-  }, [filter, gtcr, gtcrView, tcrAddress])
+  }, [
+    fetchItemCount.isFetching,
+    fetchItemCount.fetchStarted,
+    gtcr,
+    gtcrView,
+    tcrAddress,
+    search
+  ])
 
   // Fetch timestamp.
   useEffect(() => {
@@ -199,17 +180,90 @@ const Items = ({ tcrAddress, search, history }) => {
   }, [library, timestamp])
 
   // Fetch items.
-  // TODO: This effect can run more times than necessary. Update
-  // logic so that it only runs when the filters, page, party
-  // address or sorting option changes.
   useEffect(() => {
-    if (!gtcr || !gtcrView || !tcrAddress || !page || !isFetching) return
-    fetchItems()
-  }, [gtcrView, tcrAddress, page, isFetching, fetchItems, gtcr])
+    if (
+      !gtcr ||
+      !gtcrView ||
+      !tcrAddress ||
+      fetchItems.isFetching ||
+      !fetchItems.fetchStarted
+    )
+      return
+
+    setFetchItems({ isFetching: true })
+    const queryOptions = searchStrToFilterObj(search)
+    const filter = queryOptionsToFilterArray(queryOptions)
+    const { page, oldestFirst } = queryOptions
+    let encodedItems
+    ;(async () => {
+      try {
+        // The data must be fetched in batches to avoid timeouts.
+        // We calculate the number of requests required according
+        // to the number of items in the TCR.
+        const itemCount = (await gtcr.itemCount()).toNumber()
+        const itemsPerRequest = 10000
+        const requests = Math.ceil(itemCount / itemsPerRequest)
+        let request = 1 // Number calls required to fetch all the data required.
+        let target = [bigNumberify(0), itemCount > 0, false]
+        while (request <= requests && !target[2]) {
+          target = await gtcrView.findIndexForPage(
+            tcrAddress,
+            [
+              Number(page),
+              ITEMS_PER_PAGE,
+              itemsPerRequest,
+              target[0].toNumber()
+            ],
+            [...filter, oldestFirst],
+            ZERO_ADDRESS
+          )
+          request++
+        }
+        const cursorIndex = target[0].toNumber()
+
+        // Edge case: Query items sets the cursor to the last item if
+        // we are sorting by the newest items and the cursor index is 0.
+        // This means we must take special care if the last page has a
+        // single item.
+        if (cursorIndex === 0 && !oldestFirst && page !== '1')
+          encodedItems = await gtcrView.queryItems(
+            tcrAddress,
+            0,
+            1,
+            filter,
+            true,
+            ZERO_ADDRESS
+          )
+        else
+          encodedItems = await gtcrView.queryItems(
+            tcrAddress,
+            cursorIndex,
+            ITEMS_PER_PAGE,
+            filter,
+            oldestFirst,
+            ZERO_ADDRESS
+          )
+
+        // Filter out empty slots from the results.
+        encodedItems = encodedItems[0].filter(item => item.ID !== ZERO_BYTES32)
+      } catch (err) {
+        console.error(err)
+        setErrored(true)
+        setFetchItems({ isFetching: false, fetchStarted: false })
+      } finally {
+        setFetchItems({
+          isFetching: false,
+          fetchStarted: false,
+          data: encodedItems
+        })
+      }
+    })()
+  }, [gtcrView, tcrAddress, fetchItems, gtcr, search])
 
   // Decode items once meta evidence and items were fetched.
   const items = useMemo(() => {
-    if (!encodedItems || !metaEvidence) return
+    if (!fetchItems.data || !metaEvidence) return
+    const { data: encodedItems } = fetchItems
     const { columns } = metaEvidence
     return encodedItems.map((item, i) => {
       const decodedItem = gtcrDecode({ values: item.data, columns })
@@ -228,12 +282,14 @@ const Items = ({ tcrAddress, search, history }) => {
         )
       }
     })
-  }, [encodedItems, metaEvidence])
+  }, [fetchItems, metaEvidence])
 
   // Watch for submissions and status change events to refetch items.
   useEffect(() => {
     if (!gtcr || !metaEvidence) return
-    gtcr.on(gtcr.filters.ItemStatusChange(), () => setIsFetching(true))
+    gtcr.on(gtcr.filters.ItemStatusChange(), () =>
+      setFetchItems({ fetchStarted: true })
+    )
     return () => {
       gtcr.removeAllListeners(gtcr.filters.ItemStatusChange())
     }
@@ -300,6 +356,9 @@ const Items = ({ tcrAddress, search, history }) => {
           }))
       )
 
+  const queryOptions = searchStrToFilterObj(search)
+  const { oldestFirst } = queryOptions
+
   return (
     <StyledLayoutContent>
       <StyledHeader>
@@ -329,33 +388,84 @@ const Items = ({ tcrAddress, search, history }) => {
       ) : (
         <Skeleton active paragraph={{ rows: 1, width: 150 }} title={false} />
       )}
+      <StyledDivider />
       <StyledContent>
-        {items && metaEvidence ? (
-          <Spin spinning={isFetching}>
-            <>
-              <Table
-                dataSource={items}
-                columns={columns}
-                bordered
-                pagination={false}
-              />
-              <StyledPagination
-                total={itemCount || 0}
-                current={Number(page)}
-                itemRender={pagingItem}
-                pageSize={ITEMS_PER_PAGE}
-                onChange={newPage => {
-                  history.push({
-                    search: search.replace(/page=\d+/g, `page=${newPage}`)
-                  })
-                  setIsFetching(true)
-                }}
-              />
-            </>
-          </Spin>
-        ) : (
-          <Skeleton active paragraph={{ rows: 8 }} title={false} />
-        )}
+        <Spin
+          spinning={
+            fetchItems.isFetching || fetchItemCount.isFetching || !metaEvidence
+          }
+        >
+          <>
+            <Table
+              title={() => (
+                <StyledFilters>
+                  <div>
+                    {Object.keys(queryOptions)
+                      .filter(
+                        key =>
+                          key !== FILTER_KEYS.PAGE &&
+                          key !== FILTER_KEYS.OLDEST_FIRST
+                      )
+                      .map(key => (
+                        <StyledTag
+                          key={key}
+                          checked={queryOptions[key]}
+                          onChange={checked => {
+                            const newQueryStr = updateFilter({
+                              prevQuery: search,
+                              filter: key,
+                              checked
+                            })
+                            history.push({
+                              search: newQueryStr
+                            })
+                            setFetchItems({ fetchStarted: true })
+                            setFetchItemCount({ fetchStarted: true })
+                          }}
+                        >
+                          {filterLabel[key]}
+                        </StyledTag>
+                      ))}
+                  </div>
+                  <StyledSelect
+                    defaultValue={oldestFirst ? 'oldestFirst' : 'newestFirst'}
+                    style={{ width: 120 }}
+                    onChange={val => {
+                      const newQueryStr = updateFilter({
+                        prevQuery: search,
+                        filter: 'oldestFirst',
+                        checked: val === 'oldestFirst'
+                      })
+                      history.push({
+                        search: newQueryStr
+                      })
+                      setFetchItems({ fetchStarted: true })
+                    }}
+                  >
+                    <Select.Option value="newestFirst">Newest</Select.Option>
+                    <Select.Option value="oldestFirst">Oldest</Select.Option>
+                  </StyledSelect>
+                </StyledFilters>
+              )}
+              dataSource={items}
+              columns={columns}
+              pagination={false}
+            />
+            <StyledPagination
+              total={fetchItemCount.data || 0}
+              current={Number(queryOptions.page)}
+              itemRender={pagingItem}
+              pageSize={ITEMS_PER_PAGE}
+              onChange={newPage => {
+                history.push({
+                  search: search.replace(/page=\d+/g, `page=${newPage}`)
+                })
+                setFetchItems({ fetchStarted: true })
+                setFetchItemCount({ fetchStarted: true })
+              }}
+            />
+          </>
+        </Spin>
       </StyledContent>
       <SubmissionModal
         visible={submissionFormOpen}

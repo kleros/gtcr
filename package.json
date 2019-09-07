@@ -10,8 +10,7 @@
     "build:contracts": "cd node_modules/@kleros/tcr/ && yarn && node_modules/truffle/build/cli.bundled.js compile",
     "test": "react-scripts test",
     "release": "standard-version",
-    "lint": "eslint './src/**/*.js'",
-    "postinstall": "cd node_modules/@kleros/tcr/ && yarn"
+    "lint": "eslint './src/**/*.js'"
   },
   "dependencies": {
     "@fortawesome/fontawesome-svg-core": "^1.2.19",
