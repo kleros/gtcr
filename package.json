@@ -4,7 +4,7 @@
   "version": "0.6.0",
   "license": "MIT",
   "scripts": {
-    "start": "run-p build:contracts && react-scripts start",
+    "start": "yarn build:contracts && react-scripts start",
     "build": "yarn build:contracts && react-scripts --max_old_space_size=4096 build",
     "build:theme": "lessc --js ./src/bootstrap/theme.less ./src/bootstrap/theme.css",
     "build:contracts": "cd node_modules/@kleros/tcr/ && yarn && node_modules/truffle/build/cli.bundled.js compile",
@@ -63,7 +63,6 @@
     "eslint-plugin-unicorn": "^9.1.1",
     "husky": "^3.0.0",
     "less": "^3.9.0",
-    "npm-run-all": "^4.1.5",
     "prettier": "^1.18.2",
     "solidity-bytes-utils": "^0.0.8",
     "solidity-rlp": "^2.0.0",

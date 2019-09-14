@@ -12,10 +12,10 @@
 ## Get Started
 
 1.  Clone this repo;
-2.  Duplicate `.env.example` and rename it to `.env`. Fill the env variables.
+2.  Duplicate `.env.example` and rename it to `.env`. Fill the environment variables.
 3.  Run `yarn` to install dependencies and then `yarn start` to start the dev server.
 
-> Note: The first time you run `yarn start` or when you run `yarn build`, the build script will install truffle (and its dependencies) to compile the contracts used by the frontend. This can take up 15 minutes (go grab a coffee e ☕️).
+> Warning: The first time you run `yarn start` or when you run `yarn build`, the build script will install truffle (and its dependencies) to compile the contracts from the `@kleros/tcr` used by the frontend and factory. This could take some 10 minutes (go grab a coffee ☕️).
 
 ## Other Scripts
 
@@ -28,4 +28,9 @@
 
 When setting up the repo for publishing on netlify:
 1. Fill the env variables in netlify.toml;
-2. Set the REACT_APP_INFURA_PROJECT_ID environment variable via the netlify UI.
+2. Set the following environment variables on the site's build config in netlify's dashboard:
+```
+REACT_APP_INFURA_PROJECT_ID
+REACT_APP_FORMATIC_API_KEYS
+REACT_APP_PORTIS_DAPP_ID
+```
