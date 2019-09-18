@@ -1442,10 +1442,10 @@
     openzeppelin-solidity "^1.12.0"
     solidity-bytes-utils "^0.0.5"
 
-"@kleros/tcr@^0.1.11":
-  version "0.1.11"
-  resolved "https://registry.yarnpkg.com/@kleros/tcr/-/tcr-0.1.11.tgz#9a66394feef59be91a1e3b3cdfdd25658a2afe28"
-  integrity sha512-qXCA7XKoBx5W+fB1l2XRt3VNFxFx/eFHOgZExDJcDpc/uQ3xndX1/zlZvji5IwgTSw+quWQVMrraAzPr5iCcMA==
+"@kleros/tcr@^0.1.17":
+  version "0.1.17"
+  resolved "https://registry.yarnpkg.com/@kleros/tcr/-/tcr-0.1.17.tgz#7ab4f5f277cba446c75702f730e8702dda1f17f4"
+  integrity sha512-iodMrMAeS0TjMVVdIn2Xsh0Cc2Rz0+WGbmEpN0kIfhkqOaVaKWyxOFZ2QqzShMAj7wwkAxw5PC+WvMBhAawAcA==
   dependencies:
     "@kleros/erc-792" "^1.0.0"
     "@openzeppelin/contracts" "^2.3.0"
@@ -9790,6 +9790,11 @@ js-levenshtein@^1.1.3:
   version "1.1.6"
   resolved "https://registry.yarnpkg.com/js-levenshtein/-/js-levenshtein-1.1.6.tgz#c6cee58eb3550372df8deb85fad5ce66ce01d59d"
   integrity sha512-X2BB11YZtrRqY4EnQcLX5Rh373zbK4alC1FW7D7MBhL2gtcC17cTnr6DmfHZeS0s2rTHjUTMMHfG7gO8SSdw+g==
+
+js-ordinal@^1.0.1:
+  version "1.0.1"
+  resolved "https://registry.yarnpkg.com/js-ordinal/-/js-ordinal-1.0.1.tgz#904cf400b8bfdfbf46eae14420abbb4a40bbe688"
+  integrity sha512-MrFc4FaMiL7zazEyOq7313QsrTMSpoj6CBBByU76zGKNC0vioG8jbAO0T5favyJrlDAmdLDK4LpaRRgaxbuPXQ==
 
 js-sha3@0.5.7, js-sha3@^0.5.7:
   version "0.5.7"

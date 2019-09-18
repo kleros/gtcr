@@ -98,6 +98,7 @@ const pagingItem = (_, type, originalElement) => {
 //
 // Reference:
 // https://itnext.io/how-to-create-react-custom-hooks-for-data-fetching-with-useeffect-74c5dc47000a
+// TODO: Send http requests in parallel.
 const ITEMS_PER_PAGE = 40
 const Items = ({ tcrAddress, search, history }) => {
   const { requestWeb3Auth } = useContext(WalletContext)
@@ -133,29 +134,37 @@ const Items = ({ tcrAddress, search, history }) => {
   useEffect(() => {
     if (!gtcrView || fetchItemCount.isFetching || !fetchItemCount.fetchStarted)
       return
-
     const queryOptions = searchStrToFilterObj(search)
     const filter = queryOptionsToFilterArray(queryOptions)
     setFetchItemCount({ isFetching: true })
     ;(async () => {
-      const itemCount = (await gtcr.itemCount()).toNumber()
-      const itemsPerRequest = 10000
-      const requests = Math.ceil(itemCount / itemsPerRequest)
-      let request = 1
-      let target = [bigNumberify(0), itemCount > 0, bigNumberify(0)]
-      let count = 0
-      while (request <= requests && target[1]) {
-        target = await gtcrView.countWithFilter(
-          tcrAddress,
-          target[2].toNumber(),
-          itemsPerRequest,
-          filter,
-          ZERO_ADDRESS
-        )
-        count += target[0].toNumber()
-        request++
+      try {
+        const itemCount = (await gtcr.itemCount()).toNumber()
+        const itemsPerRequest = 10000
+        const requests = Math.ceil(itemCount / itemsPerRequest)
+        let request = 1
+        let target = [bigNumberify(0), itemCount > 0, bigNumberify(0)]
+        let count = 0
+        while (request <= requests && target[1]) {
+          target = await gtcrView.countWithFilter(
+            tcrAddress,
+            target[2].toNumber(),
+            itemsPerRequest,
+            filter,
+            ZERO_ADDRESS
+          )
+          count += target[0].toNumber()
+          request++
+        }
+        setFetchItemCount({
+          fetchStarted: false,
+          isFetching: false,
+          data: count
+        })
+      } catch (err) {
+        console.error('Error fetching number of pages', err)
+        setErrored(true)
       }
-      setFetchItemCount({ fetchStarted: false, isFetching: false, data: count })
     })()
   }, [
     fetchItemCount.isFetching,
@@ -173,7 +182,7 @@ const Items = ({ tcrAddress, search, history }) => {
       try {
         setTimestamp(bigNumberify((await library.getBlock()).timestamp))
       } catch (err) {
-        console.error(err)
+        console.error('Error fetching timestamp', err)
         setErrored(true)
       }
     })()
@@ -247,7 +256,7 @@ const Items = ({ tcrAddress, search, history }) => {
         // Filter out empty slots from the results.
         encodedItems = encodedItems[0].filter(item => item.ID !== ZERO_BYTES32)
       } catch (err) {
-        console.error(err)
+        console.error('Error fetching items', err)
         setErrored(true)
         setFetchItems({ isFetching: false, fetchStarted: false })
       } finally {

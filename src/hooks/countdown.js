@@ -12,7 +12,9 @@ const useHumanizedCountdown = (duration, callback) => {
       return
     }
     const id = setInterval(() => {
-      setRemainingTime(remainingTime => remainingTime + 1000)
+      setRemainingTime(remainingTime =>
+        remainingTime > 0 ? remainingTime - 1000 : 0
+      )
       if (callback && !callbackCalled && remainingTime > 0) {
         callback()
         setCallbackCalled(true)

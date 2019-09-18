@@ -7,7 +7,8 @@ import {
   STATUS_CODE,
   DISPUTE_STATUS,
   PARTY,
-  CONTRACT_STATUS
+  CONTRACT_STATUS,
+  hasPendingRequest
 } from '../../utils/item-status'
 import itemPropTypes from '../../prop-types/item'
 import ETHAddress from '../../components/eth-address'
@@ -107,14 +108,13 @@ const ItemStatusCard = ({ item, timestamp }) => {
   }, [challengePeriodDuration, item])
   const challengeCountdown = useHumanizedCountdown(challengeRemainingTime)
 
-  if (!item || !timestamp || !challengePeriodDuration || !metaEvidence)
+  if (!item || !timestamp || !challengePeriodDuration)
     return (
       <Card>
         <Skeleton active title={false} paragraph={{ rows: 2 }} />
       </Card>
     )
 
-  const { itemName } = metaEvidence
   const { disputeStatus, currentRuling, disputed } = item
   const statusCode = itemToStatusCode(item, timestamp, challengePeriodDuration)
 
@@ -163,24 +163,29 @@ const ItemStatusCard = ({ item, timestamp }) => {
         extra={
           <ItemActionButton
             statusCode={statusCode}
-            itemName={itemName}
+            itemName={metaEvidence && metaEvidence.itemName}
             itemID={item && item.ID}
             pushWeb3Action={pushWeb3Action}
             onClick={onClick}
           />
         }
+        bodyStyle={!hasPendingRequest(item.status) && { display: 'none' }}
       >
         <StyledDescriptions
           column={{ xxl: 3, xl: 3, lg: 2, md: 2, sm: 1, xs: 1 }}
         >
-          <Descriptions.Item label="Request Type">
-            {item.status === CONTRACT_STATUS.REGISTRATION_REQUESTED
-              ? `Submission`
-              : `Removal request`}
-          </Descriptions.Item>
-          <Descriptions.Item label="Requester">
-            <ETHAddress address={item.requester} />
-          </Descriptions.Item>
+          {hasPendingRequest(item.status) && (
+            <>
+              <Descriptions.Item label="Request Type">
+                {item.status === CONTRACT_STATUS.REGISTRATION_REQUESTED
+                  ? `Submission`
+                  : `Removal request`}
+              </Descriptions.Item>
+              <Descriptions.Item label="Requester">
+                <ETHAddress address={item.requester} />
+              </Descriptions.Item>
+            </>
+          )}
           {disputeStatus === DISPUTE_STATUS.APPEALABLE &&
             statusCode !== STATUS_CODE.WAITING_ENFORCEMENT && (
               <Descriptions.Item label="Dispute Status">
@@ -236,7 +241,7 @@ const ItemStatusCard = ({ item, timestamp }) => {
         statusCode !== STATUS_CODE.CHALLENGED && (
           <ItemActionModal
             statusCode={statusCode}
-            itemName={itemName}
+            itemName={metaEvidence ? metaEvidence.itemName : 'item'}
             item={item}
             isOpen={modalOpen}
             onClose={() => setModalOpen(false)}

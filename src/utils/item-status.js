@@ -61,6 +61,44 @@ export const STATUS_COLOR = {
   [STATUS_CODE.WAITING_ENFORCEMENT]: 'gold'
 }
 
+export const REQUEST_TYPE_LABEL = {
+  [CONTRACT_STATUS.REGISTRATION_REQUESTED]: 'Submission',
+  [CONTRACT_STATUS.REMOVAL_REQUESTED]: 'Removal'
+}
+
+export const hasPendingRequest = contractStatus =>
+  contractStatus === CONTRACT_STATUS.REGISTRATION_REQUESTED ||
+  contractStatus === CONTRACT_STATUS.REMOVAL_REQUESTED
+
+export const getResultStatus = ({ ruling, requestType }) => {
+  let status
+  if (requestType === CONTRACT_STATUS.REGISTRATION_REQUESTED)
+    switch (ruling) {
+      case PARTY.NONE:
+      case PARTY.CHALLENGER:
+        status = CONTRACT_STATUS.ABSENT
+        break
+      case PARTY.REQUESTER:
+        status = CONTRACT_STATUS.REGISTERED
+        break
+      default:
+        throw new Error('Unhandled ruling')
+    }
+  else
+    switch (ruling) {
+      case PARTY.NONE:
+      case PARTY.CHALLENGER:
+        status = CONTRACT_STATUS.REGISTERED
+        break
+      case PARTY.REQUESTER:
+        status = CONTRACT_STATUS.ABSENT
+        break
+      default:
+        throw new Error('Unhandled ruling')
+    }
+  return status
+}
+
 export const getActionLabel = ({ statusCode, itemName = 'item' }) => {
   switch (statusCode) {
     case STATUS_CODE.REJECTED:

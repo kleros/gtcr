@@ -17,6 +17,7 @@ import { bigNumberify } from 'ethers/utils'
 import { gtcrDecode } from '../../utils/encoder'
 import { abi as _arbitrator } from '@kleros/tcr/build/contracts/Arbitrator.json'
 import { ethers } from 'ethers'
+import RequestTimelines from './request-timelines'
 
 const StyledLayoutContent = styled(Layout.Content)`
   background: white;
@@ -30,6 +31,7 @@ const StyledLayoutContent = styled(Layout.Content)`
 //
 // Reference:
 // https://itnext.io/how-to-create-react-custom-hooks-for-data-fetching-with-useeffect-74c5dc47000a
+// TODO: Ensure http requests are being sent in parallel.
 const ItemDetails = ({ itemID, tcrAddress }) => {
   const { library } = useWeb3Context()
   const [errored, setErrored] = useState()
@@ -40,35 +42,49 @@ const ItemDetails = ({ itemID, tcrAddress }) => {
     challengePeriodDuration,
     gtcrView
   } = useContext(TCRViewContext)
+  const [decodedItem, setDecodedItem] = useState()
   const [item, setItem] = useState()
   const [timestamp, setTimestamp] = useState()
   const arbitrator = useMemo(() => {
-    if (!item || !library) return
-    return new ethers.Contract(item.arbitrator, _arbitrator, library)
-  }, [item, library])
+    if (!decodedItem || !library) return
+    return new ethers.Contract(decodedItem.arbitrator, _arbitrator, library)
+  }, [decodedItem, library])
 
   // Warning: This function should only be called when all its dependencies
   // are set.
   const fetchItem = useCallback(async () => {
-    const { columns } = metaEvidence
     try {
       const result = {
         ...(await gtcrView.getItem(tcrAddress, itemID))
       } // Spread to convert from array to object.
-      result.decodedData = gtcrDecode({ columns, values: result.data })
       setItem(result)
     } catch (err) {
       console.error(err)
       setErrored(true)
     }
-  }, [gtcrView, itemID, metaEvidence, tcrAddress])
+  }, [gtcrView, itemID, tcrAddress])
+
+  // Decode item bytes once we have it and the meta evidence.
+  useEffect(() => {
+    if (!item || !metaEvidence) return
+    const { columns } = metaEvidence
+    try {
+      setDecodedItem({
+        ...item,
+        decodedData: gtcrDecode({ columns, values: item.data })
+      })
+    } catch (err) {
+      console.error(err)
+      setErrored(true)
+    }
+  }, [item, metaEvidence])
 
   // Fetch item and timestamp.
   // This runs when the user loads the details view for the of an item
   // or when he navigates from the details view of an item to
   // the details view of another item (i.e. when itemID changes).
   useEffect(() => {
-    if (!metaEvidence || !gtcrView || !itemID || !library || !tcrAddress) return
+    if (!gtcrView || !itemID || !library || !tcrAddress) return
     fetchItem()
     try {
       ;(async () => {
@@ -78,7 +94,7 @@ const ItemDetails = ({ itemID, tcrAddress }) => {
       console.error(err)
       setErrored(true)
     }
-  }, [gtcrView, fetchItem, itemID, library, metaEvidence, tcrAddress])
+  }, [gtcrView, fetchItem, itemID, library, tcrAddress])
 
   // Setup and teardown event listeners when item and/or arbitrator change.
   // This also runs when the user loads the details view for the of an item
@@ -124,15 +140,16 @@ const ItemDetails = ({ itemID, tcrAddress }) => {
 
   return (
     <StyledLayoutContent>
-      <ItemStatusCard item={item} timestamp={timestamp} />
+      <ItemStatusCard item={decodedItem || item} timestamp={timestamp} />
       <Divider />
       <ItemDetailsCard
         columns={metaEvidence && metaEvidence.columns}
-        loading={!metaEvidence || !item || !item.decodedData}
-        item={item}
+        loading={!metaEvidence || !decodedItem || !decodedItem.decodedData}
+        item={decodedItem}
         timestamp={timestamp}
         challengePeriodDuration={challengePeriodDuration}
       />
+      <RequestTimelines item={item} />
     </StyledLayoutContent>
   )
 }

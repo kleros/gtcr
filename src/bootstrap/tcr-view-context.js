@@ -13,6 +13,8 @@ import useNetworkEnvVariable from '../hooks/network-env'
 //
 // Reference:
 // https://itnext.io/how-to-create-react-custom-hooks-for-data-fetching-with-useeffect-74c5dc47000a
+// TODO: Ensure http requests are being sent in parallel.
+// TODO: Use archon to fetch meta evidence and handle invalid meta evidence files.
 const useTcrView = tcrAddress => {
   const { library, active, networkId } = useWeb3Context()
   const [metaEvidencePath, setMetaEvidencePath] = useState()
@@ -38,7 +40,7 @@ const useTcrView = tcrAddress => {
         library
       )
     } catch (err) {
-      console.error(err)
+      console.error('Error instantiating gtcr view contract', err)
       setErrored(true)
     }
   }, [ARBITRABLE_TCR_VIEW_ADDRESS, active, library])
@@ -48,7 +50,7 @@ const useTcrView = tcrAddress => {
     try {
       return new ethers.Contract(tcrAddress, _gtcr, library)
     } catch (err) {
-      console.error(err)
+      console.error('Error instantiating gtcr contract', err)
       setErrored(true)
     }
   }, [active, library, tcrAddress])
@@ -60,7 +62,7 @@ const useTcrView = tcrAddress => {
       try {
         setArbitrableTCRData(await gtcrView.fetchArbitrable(tcrAddress))
       } catch (err) {
-        console.error(err)
+        console.error('Error fetching arbitrable TCR data:', err)
         setErrored(true)
       }
     })()
@@ -87,6 +89,7 @@ const useTcrView = tcrAddress => {
           _arbitrator,
           library
         )
+
         const arbitrationCost = await arbitrator.arbitrationCost(
           arbitratorExtraData
         )
@@ -115,7 +118,7 @@ const useTcrView = tcrAddress => {
         setRequestDeposit(requestDeposit)
         setChallengeDeposit(challengeDeposit)
       } catch (err) {
-        console.error(err)
+        console.error('Error computing arbitration cost:', err)
         setErrored(true)
       }
     })()
@@ -137,7 +140,7 @@ const useTcrView = tcrAddress => {
       })
       library.resetEventsBlock(0) // Reset provider to fetch logs.
     } catch (err) {
-      console.error(err)
+      console.error('Error fetching meta evidence', err)
       setErrored(true)
     }
 
@@ -156,7 +159,7 @@ const useTcrView = tcrAddress => {
         )).json()
         setMetaEvidence(file)
       } catch (err) {
-        console.error(err)
+        console.error('Error fetching meta evidence files', err)
         setErrored(true)
       }
     })()

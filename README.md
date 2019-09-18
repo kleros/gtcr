@@ -15,8 +15,6 @@
 2.  Duplicate `.env.example` and rename it to `.env`. Fill the environment variables.
 3.  Run `yarn` to install dependencies and then `yarn start` to start the dev server.
 
-> Warning: The first time you run `yarn start` or when you run `yarn build`, the build script will install truffle (and its dependencies) to compile the contracts from the `@kleros/tcr` used by the frontend and factory. This could take some 10 minutes (go grab a coffee ☕️).
-
 ## Other Scripts
 
 - `yarn run prettify` - Apply prettier to the entire project.

@@ -33,7 +33,7 @@ const ChallengeModal = ({ item, itemName, statusCode, fileURI, ...rest }) => {
     pushWeb3Action(async (_, signer) => {
       const gtcr = new ethers.Contract(tcrAddress, _gtcr, signer)
       const evidenceJSON = {
-        title,
+        title: title || 'Challenge evidence',
         description,
         ...evidenceAttachment
       }

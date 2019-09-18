@@ -48,7 +48,7 @@ const useCachedFactory = version => {
     title: '',
     description: '',
     requesterBaseDeposit: 0.025,
-    challengerBaseDeposit: 0.05,
+    challengerBaseDeposit: 0.015,
     arbitratorAddress: '',
     itemName: 'Item',
     requireEvidenceRequest: true,
