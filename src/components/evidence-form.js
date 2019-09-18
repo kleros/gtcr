@@ -58,7 +58,7 @@ const EvidenceForm = ({
               help={errors[name] ? errors[name] : ''}
               hasFeedback
             >
-              <Input {...field} />
+              <Input {...field} placeholder="Title" />
             </Form.Item>
           )}
         </Field>
@@ -70,7 +70,7 @@ const EvidenceForm = ({
             help={errors[name] ? errors[name] : ''}
             hasFeedback
           >
-            <Input.TextArea rows={4} {...field} />
+            <Input.TextArea rows={4} {...field} placeholder="Description" />
           </Form.Item>
         )}
       </Field>
