@@ -19,7 +19,7 @@ const EvidenceModal = ({ item, ...rest }) => {
       try {
         const gtcr = new ethers.Contract(tcrAddress, _gtcr, signer)
         const evidenceJSON = {
-          title: title || 'Challenge evidence',
+          title: title,
           description,
           ...evidenceAttachment
         }
@@ -32,11 +32,7 @@ const EvidenceModal = ({ item, ...rest }) => {
           0x1B
         )
         /* eslint-enable prettier/prettier */
-        const ipfsEvidenceObject = await ipfsPublish(
-          fileMultihash,
-          fileData,
-          process.env.REACT_APP_IPFS_GATEWAY
-        )
+        const ipfsEvidenceObject = await ipfsPublish(fileMultihash, fileData)
         const ipfsEvidencePath = `/ipfs/${ipfsEvidenceObject[1].hash +
           ipfsEvidenceObject[0].path}`
 

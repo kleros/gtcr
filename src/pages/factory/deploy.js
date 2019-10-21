@@ -35,11 +35,7 @@ const getTcrMetaEvidence = async tcrState => {
     0x1B
   )
   /* eslint-enable prettier/prettier */
-  const ipfsMetaEvidenceObject = await ipfsPublish(
-    fileMultihash,
-    fileData,
-    process.env.REACT_APP_IPFS_GATEWAY
-  )
+  const ipfsMetaEvidenceObject = await ipfsPublish(fileMultihash, fileData)
   const ipfsMetaEvidencePath = `/ipfs/${ipfsMetaEvidenceObject[1].hash +
     ipfsMetaEvidenceObject[0].path}`
 

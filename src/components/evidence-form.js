@@ -7,12 +7,12 @@ import PropTypes from 'prop-types'
 import readFile from '../utils/read-file'
 import ipfsPublish from '../utils/ipfs-publish'
 import { sanitize } from '../utils/string'
-import { PARTY } from '../utils/item-status'
 
 const StyledCheckbox = styled(Checkbox)`
   margin-bottom: 1em;
 `
 
+// TODO: Evidence attatchment is not working.
 const EvidenceForm = ({
   formID,
   detailed, // Should the evidence form let the user input an evidence title?
@@ -37,8 +37,7 @@ const EvidenceForm = ({
 
       setFieldValue('evidenceAttachment', {
         fileURI,
-        fileTypeExtension,
-        evidenceSide: PARTY.CHALLENGER
+        fileTypeExtension
       })
       onSuccess('ok', `${process.env.REACT_APP_IPFS_GATEWAY}${fileURI}`)
     } catch (err) {

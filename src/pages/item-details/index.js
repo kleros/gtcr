@@ -35,13 +35,9 @@ const StyledLayoutContent = styled(Layout.Content)`
 const ItemDetails = ({ itemID, tcrAddress }) => {
   const { library } = useWeb3Context()
   const [errored, setErrored] = useState()
-  const {
-    metaEvidence,
-    gtcr,
-    tcrErrored,
-    challengePeriodDuration,
-    gtcrView
-  } = useContext(TCRViewContext)
+  const { metaEvidence, gtcr, tcrErrored, gtcrView } = useContext(
+    TCRViewContext
+  )
   const [decodedItem, setDecodedItem] = useState()
   const [item, setItem] = useState()
   const [timestamp, setTimestamp] = useState()
@@ -106,12 +102,14 @@ const ItemDetails = ({ itemID, tcrAddress }) => {
     // We must remove the listeners of the previous item (if any)
     // to prevent it triggering unwanted reloads.
     gtcr.removeAllListeners(gtcr.filters.ItemStatusChange())
+    gtcr.removeAllListeners(gtcr.filters.Dispute())
     arbitrator.removeAllListeners(arbitrator.filters.AppealPossible())
     arbitrator.removeAllListeners(arbitrator.filters.AppealDecision())
 
     // Refetch item if the item status changes, or if the arbitrator
     // gives a ruling.
     gtcr.on(gtcr.filters.ItemStatusChange(itemID), fetchItem)
+    gtcr.on(gtcr.filters.Dispute(arbitrator.address), fetchItem)
     arbitrator.on(
       arbitrator.filters.AppealPossible(item.disputeID, gtcr.address),
       fetchItem
@@ -124,6 +122,7 @@ const ItemDetails = ({ itemID, tcrAddress }) => {
     // Teardown listeners when the component unmounts.
     return () => {
       gtcr.removeAllListeners(gtcr.filters.ItemStatusChange())
+      gtcr.removeAllListeners(gtcr.filters.Dispute())
       arbitrator.removeAllListeners(arbitrator.filters.AppealPossible())
       arbitrator.removeAllListeners(arbitrator.filters.AppealDecision())
     }
@@ -143,11 +142,10 @@ const ItemDetails = ({ itemID, tcrAddress }) => {
       <ItemStatusCard item={decodedItem || item} timestamp={timestamp} />
       <Divider />
       <ItemDetailsCard
+        title={metaEvidence && metaEvidence.title}
         columns={metaEvidence && metaEvidence.columns}
         loading={!metaEvidence || !decodedItem || !decodedItem.decodedData}
         item={decodedItem}
-        timestamp={timestamp}
-        challengePeriodDuration={challengePeriodDuration}
       />
       <RequestTimelines item={item} />
     </StyledLayoutContent>

@@ -50,6 +50,9 @@ const Timeline = ({ request, requestID, item }) => {
     )
   }, [itemID, requestID])
 
+  // TODO: Listen for events and update timeline, if this is request is
+  // not resolved/executed.
+
   // Fetch logs
   useEffect(() => {
     if (

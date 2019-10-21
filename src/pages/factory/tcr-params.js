@@ -9,6 +9,8 @@ import itemTypes from '../../utils/item-types'
 const FormItem = Form.Item
 
 // TODO: Change `title` parameter to `tcrTitle` to avoid overwriting meta evidence.
+// TODO: Let users upload their primary document.
+// TODO: Create and include an evidence display.
 const TCRParams = ({
   handleSubmit,
   formId,

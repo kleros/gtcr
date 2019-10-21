@@ -46,11 +46,7 @@ const ChallengeModal = ({ item, itemName, statusCode, fileURI, ...rest }) => {
         0x1B
       )
       /* eslint-enable prettier/prettier */
-      const ipfsEvidenceObject = await ipfsPublish(
-        fileMultihash,
-        fileData,
-        process.env.REACT_APP_IPFS_GATEWAY
-      )
+      const ipfsEvidenceObject = await ipfsPublish(fileMultihash, fileData)
       const ipfsEvidencePath = `/ipfs/${ipfsEvidenceObject[1].hash +
         ipfsEvidenceObject[0].path}`
 
