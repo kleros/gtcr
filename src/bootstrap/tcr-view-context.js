@@ -14,7 +14,6 @@ import useNetworkEnvVariable from '../hooks/network-env'
 // Reference:
 // https://itnext.io/how-to-create-react-custom-hooks-for-data-fetching-with-useeffect-74c5dc47000a
 // TODO: Ensure http requests are being sent in parallel.
-// TODO: Use archon to fetch meta evidence and handle invalid meta evidence files.
 const useTcrView = tcrAddress => {
   const { library, active, networkId } = useWeb3Context()
   const [metaEvidencePath, setMetaEvidencePath] = useState()

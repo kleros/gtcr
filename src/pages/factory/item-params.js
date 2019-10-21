@@ -217,13 +217,13 @@ ItemParams.propTypes = {
       PropTypes.number,
       PropTypes.string
     ]).isRequired,
-    description: PropTypes.string.isRequired,
+    tcrDescription: PropTypes.string.isRequired,
     requesterBaseDeposit: PropTypes.oneOfType([
       PropTypes.number,
       PropTypes.string
     ]).isRequired,
     requireEvidenceRequest: PropTypes.bool.isRequired,
-    title: PropTypes.string.isRequired,
+    tcrTitle: PropTypes.string.isRequired,
     columns: PropTypes.arrayOf(
       PropTypes.shape({
         description: PropTypes.string.isRequired,

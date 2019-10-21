@@ -45,8 +45,8 @@ const CurrentStep = props => (
 const useCachedFactory = version => {
   const key = `tcrState@${version}`
   const initialWizardState = {
-    title: '',
-    description: '',
+    tcrTitle: '',
+    tcrDescription: '',
     requesterBaseDeposit: 0.025,
     challengerBaseDeposit: 0.015,
     arbitratorAddress: '',

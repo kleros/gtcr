@@ -9,7 +9,7 @@ import styled from 'styled-components/macro'
 import ipfsPublish from '../../utils/ipfs-publish'
 import Archon from '@kleros/archon'
 import { parseEther } from 'ethers/utils'
-import { ZERO_ADDRESS } from '../../utils/string'
+import { ZERO_ADDRESS, isVowel } from '../../utils/string'
 
 const StyledButton = styled(Button)`
   margin-right: 7px;
@@ -24,22 +24,102 @@ const StyledAlert = styled(Alert)`
 `
 
 const getTcrMetaEvidence = async tcrState => {
-  const { title, description, columns, itemName } = tcrState
-  const tcrMetadata = { title, description, columns, itemName }
+  const { tcrTitle, tcrDescription, columns, itemName } = tcrState
+  const tcrMetadata = { tcrTitle, tcrDescription, columns, itemName }
+
+  // Using a placeholder evidence display URI and primary document.
+  // TODO: Set the evidence display URI.
+  // TODO: Allow user to set the primary document.
+  const metaEvidence = {
+    category: 'Curated Lists',
+    question: `Does the ${(itemName && itemName.toLowerCase()) ||
+      'item'} comply with the required criteria?`,
+    fileURI:
+      '/ipfs/QmRNK2cpW2i4Q9BBp58ALuhHnXuKEPkSBLU5q4mdtBG9i4/dutchx-badge.pdf',
+    evidenceDisplayInterfaceURL:
+      'https://ipfs.kleros.io/ipfs/QmaP1GLa7tnoRXGzyyJste2zk7VcZaVUG637sL7EZ8pqq4/index.html',
+    evidenceDisplayInterfaceHash:
+      'Bcd8UMiP7N3KV5PWgi7jtwqGZriGsuwWcA174Whz6HHUGGoekWWf4kWWJ8zifKcuifRpk3woaYKgqdDzwx6NZ87asZ',
+    ...tcrMetadata
+  }
+
+  const registrationMetaEvidence = {
+    title: `Add ${
+      itemName
+        ? isVowel(itemName[0])
+          ? `an ${itemName.toLowerCase()}`
+          : `a ${itemName.toLowerCase()}`
+        : 'an item'
+    } to ${tcrTitle}`,
+    description: `Someone requested to add ${
+      itemName
+        ? isVowel(itemName[0])
+          ? `an ${itemName.toLowerCase()}`
+          : `a ${itemName.toLowerCase()}`
+        : 'an item'
+    } to ${tcrTitle}`,
+    rulingOptions: {
+      titles: ['Yes, Add It', "No, Don't Add It"],
+      descriptions: [
+        `Select this if you think the ${(itemName && itemName.toLowerCase()) ||
+          'item'} complies with the required criteria and should be added.`,
+        `Select this if you think the ${(itemName && itemName.toLowerCase()) ||
+          'item'} does not comply with the required criteria and should not be added.`
+      ]
+    },
+    ...metaEvidence
+  }
+  const clearingMetaEvidence = {
+    title: `Remove ${
+      itemName
+        ? isVowel(itemName[0])
+          ? `an ${itemName.toLowerCase()}`
+          : `a ${itemName.toLowerCase()}`
+        : 'an item'
+    } from ${tcrTitle}`,
+    description: `Someone requested to remove ${
+      itemName
+        ? isVowel(itemName[0])
+          ? `an ${itemName.toLowerCase()}`
+          : `a ${itemName.toLowerCase()}`
+        : 'an item'
+    } from ${tcrTitle}`,
+    rulingOptions: {
+      titles: ['Yes, Remove It', "No, Don't Remove It"],
+      descriptions: [
+        `Select this if you think the ${(itemName && itemName.toLowerCase()) ||
+          'item'} does not comply with the required criteria and should be removed.`,
+        `Select this if you think the ${(itemName && itemName.toLowerCase()) ||
+          'item'} complies with the required criteria and should not be removed.`
+      ]
+    },
+    ...metaEvidence
+  }
 
   const enc = new TextEncoder()
-  const fileData = enc.encode(JSON.stringify(tcrMetadata))
-  /* eslint-disable prettier/prettier */
-  const fileMultihash = Archon.utils.multihashFile(
-    tcrMetadata,
-    0x1B
-  )
-  /* eslint-enable prettier/prettier */
-  const ipfsMetaEvidenceObject = await ipfsPublish(fileMultihash, fileData)
-  const ipfsMetaEvidencePath = `/ipfs/${ipfsMetaEvidenceObject[1].hash +
-    ipfsMetaEvidenceObject[0].path}`
+  const metaEvidenceFiles = [
+    registrationMetaEvidence,
+    clearingMetaEvidence
+  ].map(metaEvidence => enc.encode(JSON.stringify(metaEvidence)))
 
-  return ipfsMetaEvidencePath
+  /* eslint-disable prettier/prettier */
+  const files = metaEvidenceFiles.map(file => ({
+    data: file,
+    multihash: Archon.utils.multihashFile(file, 0x1B)
+  }))
+  /* eslint-enable prettier/prettier */
+
+  const ipfsMetaEvidenceObjects = (await Promise.all(
+    files.map(file => ipfsPublish(file.multihash, file.data))
+  )).map(
+    ipfsMetaEvidenceObject =>
+      `/ipfs/${ipfsMetaEvidenceObject[1].hash + ipfsMetaEvidenceObject[0].path}`
+  )
+
+  return {
+    registrationMetaEvidencePath: ipfsMetaEvidenceObjects[0],
+    clearingMetaEvidencePath: ipfsMetaEvidenceObjects[1]
+  }
 }
 
 const Deploy = ({ resetTcrState, setTxState, tcrState }) => {
@@ -49,15 +129,17 @@ const Deploy = ({ resetTcrState, setTxState, tcrState }) => {
   const onDeploy = () => {
     pushWeb3Action(async ({ account }, signer) => {
       const factory = ethers.ContractFactory.fromSolidity(_GTCR, signer)
-      const registrationMetaEvidence = await getTcrMetaEvidence(tcrState)
-      const clearingMetaEvidence = await getTcrMetaEvidence(tcrState)
+      const {
+        registrationMetaEvidencePath,
+        clearingMetaEvidencePath
+      } = await getTcrMetaEvidence(tcrState)
 
       const tx = await factory.deploy(
         tcrState.arbitratorAddress,
         '0x00', // Arbitrator extra data.
         ZERO_ADDRESS,
-        registrationMetaEvidence,
-        clearingMetaEvidence,
+        registrationMetaEvidencePath,
+        clearingMetaEvidencePath,
         account,
         parseEther(tcrState.requesterBaseDeposit.toString()),
         parseEther(tcrState.challengerBaseDeposit.toString()),

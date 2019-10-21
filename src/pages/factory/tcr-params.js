@@ -31,20 +31,20 @@ const TCRParams = ({
     <Card title="Choose the item columns and identifiers">
       <Form layout="vertical" id={formId} onSubmit={handleSubmit}>
         <CustomInput
-          name="title"
+          name="tcrTitle"
           placeholder="Token² Curated List"
           label={<span>Title</span>}
-          error={errors.title}
-          touched={touched.title}
+          error={errors.tcrTitle}
+          touched={touched.tcrTitle}
           hasFeedback
           {...rest}
         />
         <CustomInput
-          name="description"
+          name="tcrDescription"
           placeholder="A token curated list of tokens powered by Kleros..."
           hasFeedback
-          error={errors.description}
-          touched={touched.description}
+          error={errors.tcrDescription}
+          touched={touched.tcrDescription}
           label={
             <span>
               Description&nbsp;
@@ -164,11 +164,11 @@ TCRParams.propTypes = {
 }
 
 const validationSchema = yup.object().shape({
-  title: yup
+  tcrTitle: yup
     .string()
     .required('A title is required.')
     .max(30, 'Title must be less than 60 characters long.'),
-  description: yup
+  tcrDescription: yup
     .string()
     .required('A description is required.')
     .max(255, 'Description must be less than 255 characters long.'),

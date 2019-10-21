@@ -372,7 +372,7 @@ const Items = ({ tcrAddress, search, history }) => {
     <StyledLayoutContent>
       <StyledHeader>
         {metaEvidence ? (
-          <Typography.Title ellipsis>{metaEvidence.title}</Typography.Title>
+          <Typography.Title ellipsis>{metaEvidence.tcrTitle}</Typography.Title>
         ) : (
           <Skeleton active paragraph={false} title={{ width: 100 }} />
         )}
@@ -392,7 +392,7 @@ const Items = ({ tcrAddress, search, history }) => {
       </StyledHeader>
       {metaEvidence ? (
         <Typography.Text ellipsis type="secondary">
-          {metaEvidence.description}
+          {metaEvidence.tcrDescription}
         </Typography.Text>
       ) : (
         <Skeleton active paragraph={{ rows: 1, width: 150 }} title={false} />
