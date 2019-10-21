@@ -4,7 +4,6 @@ import styled from 'styled-components/macro'
 import { withFormik, Field } from 'formik'
 import * as yup from 'yup'
 import PropTypes from 'prop-types'
-import readFile from '../utils/read-file'
 import ipfsPublish from '../utils/ipfs-publish'
 import { sanitize } from '../utils/string'
 
@@ -31,7 +30,7 @@ const EvidenceForm = ({
   const customRequest = async ({ file, onSuccess, onError }) => {
     try {
       const fileTypeExtension = file.name.split('.')[1]
-      const data = await readFile(file.preview)
+      const data = await new Response(new Blob([file])).arrayBuffer()
       const ipfsFileObj = await ipfsPublish(sanitize(file.name), data)
       const fileURI = `/ipfs/${ipfsFileObj[1].hash}${ipfsFileObj[0].path}`
 
