@@ -247,6 +247,7 @@ const ItemStatusCard = ({ item, timestamp }) => {
             statusCode={statusCode}
             itemName={metaEvidence ? metaEvidence.itemName : 'item'}
             item={item}
+            fileURI={metaEvidence && metaEvidence.fileURI}
             isOpen={modalOpen}
             onClose={() => setModalOpen(false)}
           />
