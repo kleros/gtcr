@@ -159,6 +159,7 @@ const ItemStatusCard = ({ item, timestamp }) => {
             item={item}
             challengePeriodDuration={challengePeriodDuration}
             timestamp={timestamp}
+            dark
           />
         }
         extra={

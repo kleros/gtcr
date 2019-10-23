@@ -47,7 +47,8 @@ const ItemStatusBadge = ({
   item,
   timestamp,
   challengePeriodDuration,
-  statusCode
+  statusCode,
+  dark
 }) => {
   if (statusCode)
     return (
@@ -55,6 +56,7 @@ const ItemStatusBadge = ({
         status={badgeStatus(statusCode)}
         color={STATUS_COLOR[statusCode]}
         text={STATUS_TEXT[statusCode]}
+        style={{ color: dark ? 'white' : '' }}
       />
     )
 
@@ -70,6 +72,7 @@ const ItemStatusBadge = ({
       status={badgeStatus(statusCode)}
       color={STATUS_COLOR[statusCode]}
       text={STATUS_TEXT[statusCode]}
+      style={{ color: dark ? 'white' : '' }}
     />
   )
 }
@@ -78,14 +81,16 @@ ItemStatusBadge.propTypes = {
   statusCode: PropTypes.number,
   item: itemPropTypes,
   timestamp: BNPropType,
-  challengePeriodDuration: BNPropType
+  challengePeriodDuration: BNPropType,
+  dark: PropTypes.bool
 }
 
 ItemStatusBadge.defaultProps = {
   item: null,
   statusCode: null,
   timestamp: null,
-  challengePeriodDuration: null
+  challengePeriodDuration: null,
+  dark: null
 }
 
 export default ItemStatusBadge

@@ -138,7 +138,8 @@ const ItemDetails = ({ itemID, tcrAddress }) => {
 
   return (
     <StyledLayoutContent>
-      <ItemStatusCard item={decodedItem || item} timestamp={timestamp} />
+      <ItemStatusCard item={decodedItem || item} timestamp={timestamp} dark />
+      <br />
       <ItemDetailsCard
         title={metaEvidence && metaEvidence.title}
         columns={metaEvidence && metaEvidence.columns}
