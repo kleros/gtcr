@@ -8,7 +8,6 @@ import {
   Spin,
   Pagination,
   Tag,
-  Divider,
   Select
 } from 'antd'
 import { Link } from 'react-router-dom'
@@ -39,11 +38,18 @@ const StyledContent = styled(Layout.Content)`
   word-break: break-word;
 `
 
-const StyledLayoutContent = styled(Layout.Content)`
-  background: white;
-  padding: 42px 9.375vw 42px;
+const StyledLayoutContent = styled.div`
+  padding: 0 9.375vw 42px;
   display: flex;
   flex-direction: column;
+`
+
+const StyledBanner = styled.div`
+  padding: 24px 9.375vw;
+  background: linear-gradient(270deg, #f2e3ff 22.92%, #ffffff 76.25%);
+  box-shadow: 0px 3px 24px #bc9cff;
+  color: #4d00b4;
+  margin-bottom: 24px;
 `
 
 const StyledButton = styled(Button)`
@@ -65,10 +71,6 @@ const StyledFilters = styled.div`
 
 const StyledSelect = styled(Select)`
   height: 32px;
-`
-
-const StyledDivider = styled(Divider)`
-  margin-bottom: 10px;
 `
 
 const StyledTag = styled(Tag.CheckableTag)`
@@ -369,118 +371,125 @@ const Items = ({ tcrAddress, search, history }) => {
   const { oldestFirst } = queryOptions
 
   return (
-    <StyledLayoutContent>
-      <StyledHeader>
+    <>
+      <StyledBanner>
+        <StyledHeader>
+          {metaEvidence ? (
+            <Typography.Title ellipsis style={{ marginBottom: '0' }}>
+              {metaEvidence.tcrTitle}
+            </Typography.Title>
+          ) : (
+            <Skeleton active paragraph={false} title={{ width: 100 }} />
+          )}
+          {metaEvidence && (
+            <StyledButton
+              type="primary"
+              size="large"
+              onClick={() => requestWeb3Auth(() => setSubmissionFormOpen(true))}
+            >
+              Submit{' '}
+              {metaEvidence && metaEvidence.itemName
+                ? metaEvidence.itemName
+                : 'Item'}
+              <Icon type="plus-circle" />
+            </StyledButton>
+          )}
+        </StyledHeader>
         {metaEvidence ? (
-          <Typography.Title ellipsis>{metaEvidence.tcrTitle}</Typography.Title>
+          <Typography.Text ellipsis type="secondary">
+            {metaEvidence.tcrDescription}
+          </Typography.Text>
         ) : (
-          <Skeleton active paragraph={false} title={{ width: 100 }} />
+          <Skeleton active paragraph={{ rows: 1, width: 150 }} title={false} />
         )}
-        {metaEvidence && (
-          <StyledButton
-            type="primary"
-            size="large"
-            onClick={() => requestWeb3Auth(() => setSubmissionFormOpen(true))}
+      </StyledBanner>
+      <StyledLayoutContent>
+        <StyledContent>
+          <Spin
+            spinning={
+              fetchItems.isFetching ||
+              fetchItemCount.isFetching ||
+              !metaEvidence
+            }
           >
-            Submit{' '}
-            {metaEvidence && metaEvidence.itemName
-              ? metaEvidence.itemName
-              : 'Item'}
-            <Icon type="plus-circle" />
-          </StyledButton>
-        )}
-      </StyledHeader>
-      {metaEvidence ? (
-        <Typography.Text ellipsis type="secondary">
-          {metaEvidence.tcrDescription}
-        </Typography.Text>
-      ) : (
-        <Skeleton active paragraph={{ rows: 1, width: 150 }} title={false} />
-      )}
-      <StyledDivider />
-      <StyledContent>
-        <Spin
-          spinning={
-            fetchItems.isFetching || fetchItemCount.isFetching || !metaEvidence
-          }
-        >
-          <>
-            <Table
-              title={() => (
-                <StyledFilters>
-                  <div>
-                    {Object.keys(queryOptions)
-                      .filter(
-                        key =>
-                          key !== FILTER_KEYS.PAGE &&
-                          key !== FILTER_KEYS.OLDEST_FIRST
-                      )
-                      .map(key => (
-                        <StyledTag
-                          key={key}
-                          checked={queryOptions[key]}
-                          onChange={checked => {
-                            const newQueryStr = updateFilter({
-                              prevQuery: search,
-                              filter: key,
-                              checked
-                            })
-                            history.push({
-                              search: newQueryStr
-                            })
-                            setFetchItems({ fetchStarted: true })
-                            setFetchItemCount({ fetchStarted: true })
-                          }}
-                        >
-                          {filterLabel[key]}
-                        </StyledTag>
-                      ))}
-                  </div>
-                  <StyledSelect
-                    defaultValue={oldestFirst ? 'oldestFirst' : 'newestFirst'}
-                    style={{ width: 120 }}
-                    onChange={val => {
-                      const newQueryStr = updateFilter({
-                        prevQuery: search,
-                        filter: 'oldestFirst',
-                        checked: val === 'oldestFirst'
-                      })
-                      history.push({
-                        search: newQueryStr
-                      })
-                      setFetchItems({ fetchStarted: true })
-                    }}
-                  >
-                    <Select.Option value="newestFirst">Newest</Select.Option>
-                    <Select.Option value="oldestFirst">Oldest</Select.Option>
-                  </StyledSelect>
-                </StyledFilters>
-              )}
-              dataSource={items}
-              columns={columns}
-              pagination={false}
-            />
-            <StyledPagination
-              total={fetchItemCount.data || 0}
-              current={Number(queryOptions.page)}
-              itemRender={pagingItem}
-              pageSize={ITEMS_PER_PAGE}
-              onChange={newPage => {
-                history.push({
-                  search: search.replace(/page=\d+/g, `page=${newPage}`)
-                })
-                setFetchItems({ fetchStarted: true })
-                setFetchItemCount({ fetchStarted: true })
-              }}
-            />
-          </>
-        </Spin>
-      </StyledContent>
-      <SubmissionModal
-        visible={submissionFormOpen}
-        onCancel={() => setSubmissionFormOpen(false)}
-      />
-    </StyledLayoutContent>
+            <>
+              <Table
+                title={() => (
+                  <StyledFilters>
+                    <div>
+                      {Object.keys(queryOptions)
+                        .filter(
+                          key =>
+                            key !== FILTER_KEYS.PAGE &&
+                            key !== FILTER_KEYS.OLDEST_FIRST
+                        )
+                        .map(key => (
+                          <StyledTag
+                            key={key}
+                            checked={queryOptions[key]}
+                            onChange={checked => {
+                              const newQueryStr = updateFilter({
+                                prevQuery: search,
+                                filter: key,
+                                checked
+                              })
+                              history.push({
+                                search: newQueryStr
+                              })
+                              setFetchItems({ fetchStarted: true })
+                              setFetchItemCount({ fetchStarted: true })
+                            }}
+                          >
+                            {filterLabel[key]}
+                          </StyledTag>
+                        ))}
+                    </div>
+                    <StyledSelect
+                      defaultValue={oldestFirst ? 'oldestFirst' : 'newestFirst'}
+                      style={{ width: 120 }}
+                      onChange={val => {
+                        const newQueryStr = updateFilter({
+                          prevQuery: search,
+                          filter: 'oldestFirst',
+                          checked: val === 'oldestFirst'
+                        })
+                        history.push({
+                          search: newQueryStr
+                        })
+                        setFetchItems({ fetchStarted: true })
+                      }}
+                    >
+                      <Select.Option value="newestFirst">Newest</Select.Option>
+                      <Select.Option value="oldestFirst">Oldest</Select.Option>
+                    </StyledSelect>
+                  </StyledFilters>
+                )}
+                dataSource={items}
+                columns={columns}
+                pagination={false}
+              />
+              <StyledPagination
+                total={fetchItemCount.data || 0}
+                current={Number(queryOptions.page)}
+                itemRender={pagingItem}
+                pageSize={ITEMS_PER_PAGE}
+                onChange={newPage => {
+                  history.push({
+                    search: search.replace(/page=\d+/g, `page=${newPage}`)
+                  })
+                  setFetchItems({ fetchStarted: true })
+                  setFetchItemCount({ fetchStarted: true })
+                }}
+              />
+            </>
+          </Spin>
+        </StyledContent>
+        <SubmissionModal
+          visible={submissionFormOpen}
+          onCancel={() => setSubmissionFormOpen(false)}
+        />
+      </StyledLayoutContent>
+    </>
   )
 }
 

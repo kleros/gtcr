@@ -2,9 +2,10 @@
 
 // -------- Colors -----------
 @blue-6 : #009aff;
-@primary-color : @blue-6;
+@kleros-purple: #4004a3;
+@primary-color : @kleros-purple;
 @secondary-color : #1e075f;
-@ternary-color : #4004a3;
+@ternary-color : #4d00b4;
 @quaternary-color: #ead6fe;
 @info-color : @blue-6;
 @success-color : @green-6;
@@ -12,8 +13,8 @@
 @error-color : @red-6;
 @highlight-color : @red-6;
 @warning-color : @gold-6;
-@normal-color : #d9d9d9;
-@other-color : #4a4a4a;
+@normal-color : @ternary-color;
+@other-color : @quaternary-color;
 
 // Color used by default to control hover and active backgrounds and for
 // alert info backgrounds.
@@ -40,14 +41,14 @@
 // ---
 
 // Background color for `<body>`
-@body-background : #fff;
+@body-background : #f2e3fe;
 // Base background color for most components
 @component-background : #fff;
 @font-family : 'Roboto', sans-serif;
 @code-family : "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
-@heading-color : fade(#000, 85%);
-@text-color : fade(#000, 65%);
-@text-color-secondary : fade(#000, 45%);
+@heading-color : fade(@ternary-color, 85%);
+@text-color : fade(@ternary-color, 65%);
+@text-color-secondary : fade(@ternary-color, 45%);
 @heading-color-dark : fade(#fff, 100%);
 @text-color-dark : fade(#fff, 85%);
 @text-color-secondary-dark: fade(#fff, 65%);
@@ -101,7 +102,7 @@
 @ease-in-out-quint : cubic-bezier(0.86, 0, 0.07, 1);
 
 // Border color
-@border-color-base : hsv(0, 0, 85%); // base border outline a component
+@border-color-base : #d09cff; // base border outline a component
 @border-color-split : hsv(0, 0, 91%); // split border inside a component
 @border-width-base : 1px; // width of the border for a component
 @border-style-base : solid; // style of a components border
@@ -120,7 +121,7 @@
 @disabled-color-dark : fade(#fff, 35%);
 
 // Shadow
-@shadow-color : rgba(0, 0, 0, .15);
+@shadow-color : #bc9cff;
 @box-shadow-base : @shadow-1-down;
 @shadow-1-up : 0 -2px 8px @shadow-color;
 @shadow-1-down : 0 2px 8px @shadow-color;
@@ -216,13 +217,12 @@
 @grid-gutter-width : 0;
 
 // Layout
-@layout-body-background : #f0f2f5;
+@layout-body-background : #f2e3fe;
 @layout-header-background : @secondary-color;
-@layout-footer-background : #4D00B4;
-@layout-footer-color : #fff;
+@layout-footer-background : @ternary-color;
 @layout-header-height : 64px;
 @layout-header-padding : 0 50px;
-@layout-footer-padding : 6px 25px;
+@layout-footer-padding : 24px 50px;
 @layout-sider-background : @layout-header-background;
 @layout-trigger-height : 48px;
 @layout-trigger-background : #002140;
@@ -272,7 +272,7 @@
 @input-padding-vertical-base : 4px;
 @input-padding-vertical-sm : 1px;
 @input-padding-vertical-lg : 6px;
-@input-placeholder-color : hsv(0, 0, 75%);
+@input-placeholder-color : fade(@text-color, 35%);
 @input-color : @text-color;
 @input-border-color : @border-color-base;
 @input-bg : #fff;
@@ -316,8 +316,17 @@
 
 // Modal
 // --
-@modal-header-bg: @component-background;
+@modal-header-bg: @heading-color;
 @modal-mask-bg: rgba(0, 0, 0, 0.65);
+.ant-modal-title {
+  color: @heading-color-dark;
+}
+.ant-modal-content {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+.ant-modal-close {
+  color: @heading-color-dark;
+}
 
 // Progress
 // --
@@ -396,14 +405,16 @@
 
 // Card
 // ---
-@card-head-color: @heading-color;
-@card-head-background: transparent;
+@card-head-color: white;
+@card-head-background: linear-gradient(111.6deg,#4d00b4 46.25%,#6500b4 96.25%);
 @card-head-padding: 16px;
 @card-inner-head-padding: 12px;
 @card-padding-base: 24px;
 @card-padding-wider: 32px;
 @card-actions-background: @background-color-light;
-@card-shadow: 0 2px 8px rgba(0, 0, 0, 0.09);
+@card-shadow: 0px 6px 36px #bc9cff;
+@card-radius: 12px;
+@card-skeleton-bg: #bc9cff;
 
 // Tabs
 // ---
@@ -499,9 +510,12 @@
 @collapse-content-padding: @padding-md;
 @collapse-content-bg: @component-background;
 
+//CollapsePanel
+@collapse-panel-border-radius: 12px;
+
 // Skeleton
-// ---
-@skeleton-color: #f2f2f2;
+// ---Skelet
+@skeleton-color: #d9c7ff;
 
 // Transfer
 // ---

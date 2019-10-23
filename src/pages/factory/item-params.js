@@ -47,7 +47,7 @@ const ItemParams = ({
   }
 
   return (
-    <Card title="Choose the item columns">
+    <Card title="Choose the item columns" hoverable>
       <Row
         gutter={{ xs: 4, sm: 8, md: 12 }}
         type="flex"

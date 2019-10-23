@@ -1,4 +1,4 @@
-import { Layout, Divider } from 'antd'
+import { Layout } from 'antd'
 import React, {
   useState,
   useEffect,
@@ -20,7 +20,6 @@ import { ethers } from 'ethers'
 import RequestTimelines from './request-timelines'
 
 const StyledLayoutContent = styled(Layout.Content)`
-  background: white;
   padding: 42px 9.375vw 42px;
   display: flex;
   flex-direction: column;
@@ -139,8 +138,8 @@ const ItemDetails = ({ itemID, tcrAddress }) => {
 
   return (
     <StyledLayoutContent>
-      <ItemStatusCard item={decodedItem || item} timestamp={timestamp} />
-      <Divider />
+      <ItemStatusCard item={decodedItem || item} timestamp={timestamp} dark />
+      <br />
       <ItemDetailsCard
         title={metaEvidence && metaEvidence.title}
         columns={metaEvidence && metaEvidence.columns}

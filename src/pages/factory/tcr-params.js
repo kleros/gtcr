@@ -28,7 +28,7 @@ const TCRParams = ({
   }, [values, setTcrState])
 
   return (
-    <Card title="Choose the item columns and identifiers">
+    <Card title="Choose the item columns and identifiers" hoverable>
       <Form layout="vertical" id={formId} onSubmit={handleSubmit}>
         <CustomInput
           name="tcrTitle"
