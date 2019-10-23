@@ -165,7 +165,7 @@ export default () => {
         </ButtonGroup>
       </StyledStepper>
       <StyledContainer>
-        <Card title="Previous Deployments">
+        <Card title="Previous Deployments" hoverable>
           {Object.keys(transactions).length > 0 ? (
             Object.keys(transactions).map((txHash, i) => (
               <div key={i}>

@@ -23,7 +23,7 @@ const DisplaySelector = ({ type, value }) => {
 }
 
 const ItemDetailsCard = ({ title, columns, loading, item }) => (
-  <Card title={title} loading={loading}>
+  <Card title={title} loading={loading} hoverable>
     {columns && (
       <Descriptions>
         {columns.map((column, index) => (

@@ -40,7 +40,6 @@ const StyledContent = styled(Layout.Content)`
 `
 
 const StyledLayoutContent = styled(Layout.Content)`
-  background: white;
   padding: 42px 9.375vw 42px;
   display: flex;
   flex-direction: column;

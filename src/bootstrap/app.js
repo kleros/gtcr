@@ -57,7 +57,6 @@ const StyledSpin = styled(Spin)`
 `
 
 const StyledLayoutContent = styled(Layout.Content)`
-  background: white;
   padding: 42px 9.375vw 42px;
 `
 
@@ -141,6 +140,13 @@ const StyledRouterLink = styled(Link)`
 const StyledWalletButton = styled(Button)`
   margin-right: 10px;
   margin-bottom: 10px;
+`
+
+const StyledConnectButton = styled(Button)`
+  :focus {
+    color: white;
+    border-color: white;
+  }
 `
 
 const Factory = loadable(
@@ -338,9 +344,13 @@ const TopBar = () => {
         {web3Context.active && web3Context.account ? (
           <Identicon />
         ) : (
-          <Button ghost shape="round" onClick={() => requestWeb3Auth()}>
+          <StyledConnectButton
+            ghost
+            shape="round"
+            onClick={() => requestWeb3Auth()}
+          >
             Connect
-          </Button>
+          </StyledConnectButton>
         )}
       </StyledCol>
     </Row>

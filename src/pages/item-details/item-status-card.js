@@ -110,7 +110,7 @@ const ItemStatusCard = ({ item, timestamp }) => {
 
   if (!item || !timestamp || !challengePeriodDuration)
     return (
-      <Card>
+      <Card hoverable>
         <Skeleton active title={false} paragraph={{ rows: 2 }} />
       </Card>
     )
@@ -153,6 +153,7 @@ const ItemStatusCard = ({ item, timestamp }) => {
   return (
     <>
       <Card
+        hoverable
         title={
           <ItemStatusBadge
             item={item}
