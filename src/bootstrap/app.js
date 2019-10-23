@@ -93,6 +93,7 @@ const StyledMenu = styled(Menu)`
   font-weight: bold;
   line-height: 64px !important;
   text-align: center;
+  background-color: transparent;
 `
 
 const StyledClickaway = styled.div`

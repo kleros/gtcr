@@ -1,4 +1,4 @@
-import { Layout, Divider } from 'antd'
+import { Layout } from 'antd'
 import React, {
   useState,
   useEffect,
@@ -139,7 +139,6 @@ const ItemDetails = ({ itemID, tcrAddress }) => {
   return (
     <StyledLayoutContent>
       <ItemStatusCard item={decodedItem || item} timestamp={timestamp} />
-      <Divider />
       <ItemDetailsCard
         title={metaEvidence && metaEvidence.title}
         columns={metaEvidence && metaEvidence.columns}

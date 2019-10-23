@@ -4532,14 +4532,14 @@ a.ant-btn-sm {
   background-color: #fafafa;
   border: 1px solid #d09cff;
   border-bottom: 0;
-  border-radius: 4px;
+  border-radius: 12px;
 }
 .ant-collapse > .ant-collapse-item {
   border-bottom: 1px solid #d09cff;
 }
 .ant-collapse > .ant-collapse-item:last-child,
 .ant-collapse > .ant-collapse-item:last-child > .ant-collapse-header {
-  border-radius: 0 0 4px 4px;
+  border-radius: 0 0 12px 12px;
 }
 .ant-collapse > .ant-collapse-item > .ant-collapse-header {
   position: relative;
@@ -4615,7 +4615,7 @@ a.ant-btn-sm {
   display: none;
 }
 .ant-collapse-item:last-child > .ant-collapse-content {
-  border-radius: 0 0 4px 4px;
+  border-radius: 0 0 12px 12px;
 }
 .ant-collapse-borderless {
   background-color: #fff;
