@@ -150,6 +150,10 @@ const StyledConnectButton = styled(Button)`
   }
 `
 
+const StyledFooter = styled(Layout.Footer)`
+  margin-top: auto;
+`
+
 const Factory = loadable(
   () => import(/* webpackPrefetch: true */ '../pages/factory/index'),
   {
@@ -466,9 +470,9 @@ export default () => {
                   isMenuClosed={isMenuClosed}
                   onClick={isMenuClosed ? null : () => setIsMenuClosed(true)}
                 />
-                <Layout.Footer>
+                <StyledFooter>
                   <Footer />
-                </Layout.Footer>
+                </StyledFooter>
               </Layout>
             </StyledLayout>
             <WalletModal />
