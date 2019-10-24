@@ -2,13 +2,14 @@ import {
   Typography,
   Layout,
   Skeleton,
-  Table,
   Button,
   Icon,
   Spin,
   Pagination,
   Tag,
-  Select
+  Select,
+  Card,
+  Tooltip
 } from 'antd'
 import { Link } from 'react-router-dom'
 import qs from 'qs'
@@ -23,8 +24,6 @@ import ItemStatus from '../../components/item-status-badge'
 import { useWeb3Context } from 'web3-react'
 import { bigNumberify } from 'ethers/utils'
 import { gtcrDecode } from '../../utils/encoder'
-import itemTypes from '../../utils/item-types'
-import ETHAddress from '../../components/eth-address'
 import SubmissionModal from '../item-details/modals/submit'
 import {
   searchStrToFilterObj,
@@ -33,6 +32,7 @@ import {
   updateFilter,
   queryOptionsToFilterArray
 } from '../../utils/filters'
+import DisplaySelector from '../../components/display-selector'
 
 const StyledContent = styled(Layout.Content)`
   word-break: break-word;
@@ -87,6 +87,18 @@ const StyledPagination = styled(Pagination)`
 const StyledSpan = styled.span`
   text-decoration: underline;
   cursor: pointer;
+`
+
+const StyledGrid = styled.div`
+  display: grid;
+  margin: 24px 0;
+  grid-gap: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(225px, 1fr));
+`
+
+const StyledItemCol = styled.div`
+  margin-bottom: 8px;
+  text-align: center;
 `
 
 const pagingItem = (_, type, originalElement) => {
@@ -283,11 +295,10 @@ const Items = ({ tcrAddress, search, history }) => {
         tcrData: {
           ...item // Spread to convert from array to object.
         },
-        ...columns.reduce(
-          (acc, curr, i) => ({
-            ...acc,
-            [curr.label]: decodedItem[i],
-            ID: item.ID
+        columns: columns.map(
+          (col, i) => ({
+            value: decodedItem[i],
+            ...col
           }),
           { key: i }
         )
@@ -333,39 +344,6 @@ const Items = ({ tcrAddress, search, history }) => {
         tip="Is your wallet set to the correct network?"
       />
     )
-
-  const columns = !metaEvidence
-    ? []
-    : [
-        {
-          title: 'Item Status',
-          key: 'Item Status',
-          dataIndex: 'Item Status',
-          render: (_, item) => (
-            <ItemStatus
-              item={item.tcrData}
-              challengePeriodDuration={challengePeriodDuration}
-              timestamp={timestamp}
-            />
-          )
-        }
-      ].concat(
-        metaEvidence.columns
-          .filter(column => !!column.isIdentifier)
-          .map((column, i) => ({
-            title: column.label,
-            key: column.label,
-            dataIndex: column.label,
-            render: (text, item) =>
-              i === 0 ? (
-                <Link to={`/tcr/${tcrAddress}/${item.ID}`}>{text}</Link>
-              ) : column.type === itemTypes.ADDRESS ? (
-                <ETHAddress address={text} />
-              ) : (
-                text
-              )
-          }))
-      )
 
   const queryOptions = searchStrToFilterObj(search)
   const { oldestFirst } = queryOptions
@@ -413,61 +391,92 @@ const Items = ({ tcrAddress, search, history }) => {
             }
           >
             <>
-              <Table
-                title={() => (
-                  <StyledFilters>
-                    <div>
-                      {Object.keys(queryOptions)
-                        .filter(
-                          key =>
-                            key !== FILTER_KEYS.PAGE &&
-                            key !== FILTER_KEYS.OLDEST_FIRST
-                        )
-                        .map(key => (
-                          <StyledTag
-                            key={key}
-                            checked={queryOptions[key]}
-                            onChange={checked => {
-                              const newQueryStr = updateFilter({
-                                prevQuery: search,
-                                filter: key,
-                                checked
-                              })
-                              history.push({
-                                search: newQueryStr
-                              })
-                              setFetchItems({ fetchStarted: true })
-                              setFetchItemCount({ fetchStarted: true })
-                            }}
-                          >
-                            {filterLabel[key]}
-                          </StyledTag>
-                        ))}
-                    </div>
-                    <StyledSelect
-                      defaultValue={oldestFirst ? 'oldestFirst' : 'newestFirst'}
-                      style={{ width: 120 }}
-                      onChange={val => {
-                        const newQueryStr = updateFilter({
-                          prevQuery: search,
-                          filter: 'oldestFirst',
-                          checked: val === 'oldestFirst'
-                        })
-                        history.push({
-                          search: newQueryStr
-                        })
-                        setFetchItems({ fetchStarted: true })
-                      }}
+              <StyledFilters>
+                <div>
+                  {Object.keys(queryOptions)
+                    .filter(
+                      key =>
+                        key !== FILTER_KEYS.PAGE &&
+                        key !== FILTER_KEYS.OLDEST_FIRST
+                    )
+                    .map(key => (
+                      <StyledTag
+                        key={key}
+                        checked={queryOptions[key]}
+                        onChange={checked => {
+                          const newQueryStr = updateFilter({
+                            prevQuery: search,
+                            filter: key,
+                            checked
+                          })
+                          history.push({
+                            search: newQueryStr
+                          })
+                          setFetchItems({ fetchStarted: true })
+                          setFetchItemCount({ fetchStarted: true })
+                        }}
+                      >
+                        {filterLabel[key]}
+                      </StyledTag>
+                    ))}
+                </div>
+                <StyledSelect
+                  defaultValue={oldestFirst ? 'oldestFirst' : 'newestFirst'}
+                  style={{ width: 120 }}
+                  onChange={val => {
+                    const newQueryStr = updateFilter({
+                      prevQuery: search,
+                      filter: 'oldestFirst',
+                      checked: val === 'oldestFirst'
+                    })
+                    history.push({
+                      search: newQueryStr
+                    })
+                    setFetchItems({ fetchStarted: true })
+                  }}
+                >
+                  <Select.Option value="newestFirst">Newest</Select.Option>
+                  <Select.Option value="oldestFirst">Oldest</Select.Option>
+                </StyledSelect>
+              </StyledFilters>
+              <StyledGrid>
+                {items &&
+                  items.map((item, i) => (
+                    <Card
+                      key={i}
+                      extra={
+                        <Link to={`/tcr/${tcrAddress}/${item.tcrData.ID}`}>
+                          <Icon type="arrow-right" style={{ color: 'white' }} />
+                        </Link>
+                      }
+                      title={
+                        <ItemStatus
+                          item={item.tcrData}
+                          challengePeriodDuration={challengePeriodDuration}
+                          timestamp={timestamp}
+                          dark
+                        />
+                      }
                     >
-                      <Select.Option value="newestFirst">Newest</Select.Option>
-                      <Select.Option value="oldestFirst">Oldest</Select.Option>
-                    </StyledSelect>
-                  </StyledFilters>
-                )}
-                dataSource={items}
-                columns={columns}
-                pagination={false}
-              />
+                      {item.columns.map((column, j) => (
+                        <StyledItemCol key={j}>
+                          <DisplaySelector
+                            type={column.type}
+                            value={column.value}
+                          />
+                          <span>
+                            {column.description && (
+                              <Tooltip title={column.description}>
+                                &nbsp;
+                                <Icon type="question-circle-o" />
+                              </Tooltip>
+                            )}
+                          </span>
+                        </StyledItemCol>
+                      ))}
+                    </Card>
+                  ))}
+              </StyledGrid>
               <StyledPagination
                 total={fetchItemCount.data || 0}
                 current={Number(queryOptions.page)}
