@@ -378,6 +378,30 @@
 @tag-default-color: @text-color;
 @tag-font-size: @font-size-sm;
 
+// Divider
+// --
+.ant-divider-horizontal.ant-divider-with-text-left::before {
+  border-top: 1px solid @border-color-base;
+}
+.ant-divider-horizontal.ant-divider-with-text-left::after {
+  border-top: 1px solid @border-color-base;
+}
+.ant-divider {
+  background: @border-color-base;
+}
+
+// Steps
+// --
+.ant-steps-item-process > .ant-steps-item-container > .ant-steps-item-content > .ant-steps-item-title::after {
+  background-color: @border-color-base;
+}
+.ant-steps-item-wait .ant-steps-item-icon {
+  border-color: @border-color-base;
+}
+.ant-steps-item-wait .ant-steps-item-icon > .ant-steps-icon {
+  color: @border-color-base;
+}
+
 // TimePicker
 // ---
 @time-picker-panel-column-width: 56px;
@@ -415,6 +439,9 @@
 @card-shadow: 0px 6px 36px #bc9cff;
 @card-radius: 12px;
 @card-skeleton-bg: #bc9cff;
+.ant-card {
+  box-shadow: 0px 6px 36px #bc9cff;
+}
 
 // Tabs
 // ---
@@ -509,12 +536,18 @@
 @collapse-header-bg: @background-color-light;
 @collapse-content-padding: @padding-md;
 @collapse-content-bg: @component-background;
+.ant-collapse {
+  box-shadow: 0px 6px 36px #bc9cff;
+}
 
 //CollapsePanel
 @collapse-panel-border-radius: 12px;
+.ant-collapse-borderless > .ant-collapse-item {
+  border-bottom: 0px;
+}
 
 // Skeleton
-// ---Skelet
+// ---
 @skeleton-color: #d9c7ff;
 
 // Transfer

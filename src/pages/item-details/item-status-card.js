@@ -110,7 +110,7 @@ const ItemStatusCard = ({ item, timestamp }) => {
 
   if (!item || !timestamp || !challengePeriodDuration)
     return (
-      <Card hoverable>
+      <Card>
         <Skeleton active title={false} paragraph={{ rows: 2 }} />
       </Card>
     )
@@ -153,7 +153,6 @@ const ItemStatusCard = ({ item, timestamp }) => {
   return (
     <>
       <Card
-        hoverable
         title={
           <ItemStatusBadge
             item={item}
@@ -169,6 +168,7 @@ const ItemStatusCard = ({ item, timestamp }) => {
             itemID={item && item.ID}
             pushWeb3Action={pushWeb3Action}
             onClick={onClick}
+            type="secondary"
           />
         }
         bodyStyle={

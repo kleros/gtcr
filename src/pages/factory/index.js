@@ -1,4 +1,4 @@
-import { Steps, Button, Icon, Card, Empty } from 'antd'
+import { Steps, Button, Icon, Card, Empty, Typography } from 'antd'
 import React, { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useDebounce } from 'use-debounce'
@@ -21,6 +21,14 @@ const StyledContainer = styled.div`
   margin: 32px 0;
   word-break: break-word;
 `
+
+const StyledBanner = styled.div`
+  padding: 24px 9.375vw;
+  background: linear-gradient(270deg, #f2e3ff 22.92%, #ffffff 76.25%);
+  box-shadow: 0px 3px 24px #bc9cff;
+  color: #4d00b4;
+`
+
 const formIds = ['tcrParamsForm', 'itemParamsForm', 'deployTCRForm']
 const CurrentStep = props => (
   <>
@@ -134,51 +142,58 @@ export default () => {
   } = cachedFactory
 
   return (
-    <StyledLayoutContent>
-      <Steps current={currStep - 1}>
-        <Step title="TCR Parameters" />
-        <Step title="Item Parameters" />
-        <Step title="Deploy" />
-      </Steps>
-      <StyledContainer>
-        <CurrentStep postSubmit={() => nextStep()} {...cachedFactory} />
-      </StyledContainer>
-      <StyledStepper>
-        <ButtonGroup>
-          <Button
-            onClick={() => previousStep()}
-            type="primary"
-            disabled={currStep === 1}
-          >
-            <Icon type="left" />
-            Previous
-          </Button>
-          <Button
-            form={formIds[currStep]}
-            htmlType="submit"
-            type="primary"
-            disabled={currStep === 3}
-          >
-            Next
-            <Icon type="right" />
-          </Button>
-        </ButtonGroup>
-      </StyledStepper>
-      <StyledContainer>
-        <Card title="Previous Deployments" hoverable>
-          {Object.keys(transactions).length > 0 ? (
-            Object.keys(transactions).map((txHash, i) => (
-              <div key={i}>
-                <Link to={`/tcr/${transactions[txHash].contractAddress}`}>
-                  {transactions[txHash].contractAddress}
-                </Link>
-              </div>
-            ))
-          ) : (
-            <Empty description={false} image={Empty.PRESENTED_IMAGE_SIMPLE} />
-          )}
-        </Card>
-      </StyledContainer>
-    </StyledLayoutContent>
+    <>
+      <StyledBanner>
+        <Typography.Title ellipsis style={{ marginBottom: '0' }}>
+          TCR Factory
+        </Typography.Title>
+      </StyledBanner>
+      <StyledLayoutContent>
+        <Steps current={currStep - 1}>
+          <Step title="TCR Parameters" />
+          <Step title="Item Parameters" />
+          <Step title="Deploy" />
+        </Steps>
+        <StyledContainer>
+          <CurrentStep postSubmit={() => nextStep()} {...cachedFactory} />
+        </StyledContainer>
+        <StyledStepper>
+          <ButtonGroup>
+            <Button
+              onClick={() => previousStep()}
+              type="primary"
+              disabled={currStep === 1}
+            >
+              <Icon type="left" />
+              Previous
+            </Button>
+            <Button
+              form={formIds[currStep]}
+              htmlType="submit"
+              type="primary"
+              disabled={currStep === 3}
+            >
+              Next
+              <Icon type="right" />
+            </Button>
+          </ButtonGroup>
+        </StyledStepper>
+        <StyledContainer>
+          <Card title="Previous Deployments">
+            {Object.keys(transactions).length > 0 ? (
+              Object.keys(transactions).map((txHash, i) => (
+                <div key={i}>
+                  <Link to={`/tcr/${transactions[txHash].contractAddress}`}>
+                    {transactions[txHash].contractAddress}
+                  </Link>
+                </div>
+              ))
+            ) : (
+              <Empty description={false} image={Empty.PRESENTED_IMAGE_SIMPLE} />
+            )}
+          </Card>
+        </StyledContainer>
+      </StyledLayoutContent>
+    </>
   )
 }

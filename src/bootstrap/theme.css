@@ -21295,6 +21295,33 @@ div.ant-typography-edit-content {
 .ant-modal-close {
   color: #ffffff;
 }
+.ant-divider-horizontal.ant-divider-with-text-left::before {
+  border-top: 1px solid #d09cff;
+}
+.ant-divider-horizontal.ant-divider-with-text-left::after {
+  border-top: 1px solid #d09cff;
+}
+.ant-divider {
+  background: #d09cff;
+}
+.ant-steps-item-process > .ant-steps-item-container > .ant-steps-item-content > .ant-steps-item-title::after {
+  background-color: #d09cff;
+}
+.ant-steps-item-wait .ant-steps-item-icon {
+  border-color: #d09cff;
+}
+.ant-steps-item-wait .ant-steps-item-icon > .ant-steps-icon {
+  color: #d09cff;
+}
+.ant-card {
+  box-shadow: 0px 6px 36px #bc9cff;
+}
+.ant-collapse {
+  box-shadow: 0px 6px 36px #bc9cff;
+}
+.ant-collapse-borderless > .ant-collapse-item {
+  border-bottom: 0px;
+}
 .ant-badge-count {
   background: #4004a3;
   box-shadow: 0 0 0 1px #1e075f;

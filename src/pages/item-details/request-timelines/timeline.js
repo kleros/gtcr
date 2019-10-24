@@ -25,6 +25,11 @@ const StyledCard = styled(Card)`
 const StyledEvidenceTitle = styled.div`
   white-space: pre-line;
   font-weight: 400;
+  color: #4d00b4;
+`
+
+const StyledIcon = styled(Icon)`
+  color: #fff;
 `
 
 const Timeline = ({ request, requestID, item }) => {
@@ -184,7 +189,7 @@ const Timeline = ({ request, requestID, item }) => {
           if (!evidenceFile)
             return (
               <AntdTimeline.Item dot={<Icon type="file-text" />} key={i}>
-                <StyledCard loading={!evidenceFile} hoverable />
+                <StyledCard loading={!evidenceFile} />
               </AntdTimeline.Item>
             )
           const { submittedAt, submittedBy } = evidenceFile
@@ -205,15 +210,16 @@ const Timeline = ({ request, requestID, item }) => {
               color="grey"
             >
               <StyledCard
-                hoverable
                 title={title}
                 extra={
                   fileURI && (
                     <a
                       href={`${process.env.REACT_APP_IPFS_GATEWAY}/${fileURI}`}
                       alt="evidence-file"
+                      target="_blank"
+                      rel="noopener noreferrer"
                     >
-                      <Icon type="file-text" />
+                      <StyledIcon type="file-text" />
                     </a>
                   )
                 }

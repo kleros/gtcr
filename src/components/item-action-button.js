@@ -3,17 +3,17 @@ import PropTypes from 'prop-types'
 import { STATUS_CODE, getActionLabel } from '../utils/item-status'
 import { Button } from 'antd'
 
-const ItemActionButton = ({ statusCode, itemName, itemID, onClick }) => {
+const ItemActionButton = ({ statusCode, itemName, itemID, onClick, type }) => {
   if ((!statusCode && statusCode !== 0) || !itemName || !itemID)
     return (
-      <Button type="primary" disabled loading>
+      <Button type={type || 'primary'} disabled loading>
         Loading...
       </Button>
     )
 
   return (
     <Button
-      type="primary"
+      type={type || 'primary'}
       onClick={onClick}
       disabled={
         statusCode === STATUS_CODE.WAITING_ARBITRATOR ||
@@ -30,14 +30,16 @@ ItemActionButton.propTypes = {
   statusCode: PropTypes.number,
   itemName: PropTypes.string,
   itemID: PropTypes.string,
-  onClick: PropTypes.func
+  onClick: PropTypes.func,
+  type: PropTypes.string
 }
 
 ItemActionButton.defaultProps = {
   statusCode: null,
   itemName: null,
   itemID: null,
-  onClick: null
+  onClick: null,
+  type: null
 }
 
 export default ItemActionButton

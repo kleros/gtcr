@@ -9,6 +9,7 @@ import EvidenceForm from '../../../components/evidence-form.js'
 import Archon from '@kleros/archon'
 import ipfsPublish from '../../../utils/ipfs-publish.js'
 
+// TODO: Fix styling on modal header or "X" button.
 const EvidenceModal = ({ item, ...rest }) => {
   // Get contract data.
   const { tcrAddress } = useContext(TCRViewContext)

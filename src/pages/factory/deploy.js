@@ -165,7 +165,7 @@ const Deploy = ({ resetTcrState, setTxState, tcrState }) => {
   }
 
   return (
-    <Card title="Deploy the TCR" hoverable>
+    <Card title="Deploy the TCR">
       {!txSubmitted && (
         <StyledButton type="primary" onClick={onDeploy}>
           Deploy!

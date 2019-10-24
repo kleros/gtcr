@@ -47,7 +47,7 @@ const ItemParams = ({
   }
 
   return (
-    <Card title="Choose the item columns" hoverable>
+    <Card title="Choose the item columns">
       <Row
         gutter={{ xs: 4, sm: 8, md: 12 }}
         type="flex"
@@ -176,6 +176,7 @@ const ItemParams = ({
                 onClick={() =>
                   push({ label: '', description: '', type: 'address' })
                 }
+                type="primary"
               >
                 Add Field
               </Button>

@@ -1,4 +1,4 @@
-import { Layout } from 'antd'
+import { Layout, Typography } from 'antd'
 import React, {
   useState,
   useEffect,
@@ -23,6 +23,13 @@ const StyledLayoutContent = styled(Layout.Content)`
   padding: 42px 9.375vw 42px;
   display: flex;
   flex-direction: column;
+`
+
+const StyledBanner = styled.div`
+  padding: 24px 9.375vw;
+  background: linear-gradient(270deg, #f2e3ff 22.92%, #ffffff 76.25%);
+  box-shadow: 0px 3px 24px #bc9cff;
+  color: #4d00b4;
 `
 
 // TODO: Ensure we don't set state for unmounted components using
@@ -137,17 +144,24 @@ const ItemDetails = ({ itemID, tcrAddress }) => {
     )
 
   return (
-    <StyledLayoutContent>
-      <ItemStatusCard item={decodedItem || item} timestamp={timestamp} dark />
-      <br />
-      <ItemDetailsCard
-        title={metaEvidence && metaEvidence.title}
-        columns={metaEvidence && metaEvidence.columns}
-        loading={!metaEvidence || !decodedItem || !decodedItem.decodedData}
-        item={decodedItem}
-      />
-      <RequestTimelines item={item} />
-    </StyledLayoutContent>
+    <>
+      <StyledBanner>
+        <Typography.Title ellipsis style={{ marginBottom: '0' }}>
+          {metaEvidence && metaEvidence.itemName} Details
+        </Typography.Title>
+      </StyledBanner>
+      <StyledLayoutContent>
+        <ItemStatusCard item={decodedItem || item} timestamp={timestamp} dark />
+        <br />
+        <ItemDetailsCard
+          title={metaEvidence && metaEvidence.title}
+          columns={metaEvidence && metaEvidence.columns}
+          loading={!metaEvidence || !decodedItem || !decodedItem.decodedData}
+          item={decodedItem}
+        />
+        <RequestTimelines item={item} />
+      </StyledLayoutContent>
+    </>
   )
 }
 

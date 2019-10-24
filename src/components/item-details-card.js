@@ -1,10 +1,28 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import { Card, Descriptions, Icon, Tooltip, Typography, Switch } from 'antd'
+import {
+  Card,
+  Descriptions,
+  Icon,
+  Tooltip,
+  Typography,
+  Switch,
+  Skeleton
+} from 'antd'
+import styled from 'styled-components/macro'
 import EthAddress from './eth-address'
 import itemTypes from '../utils/item-types'
 import { ZERO_ADDRESS, LOREM_IPSUM } from '../utils/string'
 import itemPropTypes from '../prop-types/item'
+
+const SkeletonTitleProps = { width: '150px' }
+const StyledSkeleton = styled(Skeleton)`
+  display: inline;
+
+  .ant-skeleton-title {
+    margin: -3px 0;
+  }
+`
 
 const DisplaySelector = ({ type, value }) => {
   switch (type) {
@@ -12,7 +30,13 @@ const DisplaySelector = ({ type, value }) => {
       return <EthAddress address={value || ZERO_ADDRESS} />
     case itemTypes.TEXT:
     case itemTypes.NUMBER:
-      return <Typography.Text>{value || 'XYZ'}</Typography.Text>
+      return (
+        <Typography.Text>
+          {value || (
+            <StyledSkeleton paragraph={false} title={SkeletonTitleProps} />
+          )}
+        </Typography.Text>
+      )
     case itemTypes.BOOLEAN:
       return <Switch disabled checked={value} />
     case itemTypes.LONGTEXT:
@@ -23,7 +47,7 @@ const DisplaySelector = ({ type, value }) => {
 }
 
 const ItemDetailsCard = ({ title, columns, loading, item }) => (
-  <Card title={title} loading={loading} hoverable>
+  <Card title={title} loading={loading}>
     {columns && (
       <Descriptions>
         {columns.map((column, index) => (
