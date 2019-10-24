@@ -8,8 +8,7 @@ import {
   Pagination,
   Tag,
   Select,
-  Card,
-  Tooltip
+  Card
 } from 'antd'
 import { Link } from 'react-router-dom'
 import qs from 'qs'
@@ -458,22 +457,16 @@ const Items = ({ tcrAddress, search, history }) => {
                         />
                       }
                     >
-                      {item.columns.map((column, j) => (
-                        <StyledItemCol key={j}>
-                          <DisplaySelector
-                            type={column.type}
-                            value={column.value}
-                          />
-                          <span>
-                            {column.description && (
-                              <Tooltip title={column.description}>
-                                &nbsp;
-                                <Icon type="question-circle-o" />
-                              </Tooltip>
-                            )}
-                          </span>
-                        </StyledItemCol>
-                      ))}
+                      {item.columns
+                        .filter(col => col.isIdentifier)
+                        .map((column, j) => (
+                          <StyledItemCol key={j}>
+                            <DisplaySelector
+                              type={column.type}
+                              value={column.value}
+                            />
+                          </StyledItemCol>
+                        ))}
                     </Card>
                   ))}
               </StyledGrid>

@@ -14,6 +14,7 @@ const StyledFields = styled.div`
 const StyledField = styled.div`
   margin-bottom: 16px;
   margin-right: 16px;
+  word-break: break-word;
 `
 
 const ItemDetailsCard = ({ title, columns, loading, item }) => (
