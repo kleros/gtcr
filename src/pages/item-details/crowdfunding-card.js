@@ -85,15 +85,24 @@ const CrowdfundingCard = ({ item }) => {
     return null
 
   const { hasPaid, paidFees, currentRuling } = item
+
+  if (
+    !challengerFees.requiredForSide ||
+    !challengerFees.potentialReward ||
+    !requesterFees.requiredForSide ||
+    !requesterFees.potentialReward
+  )
+    return null
+
   const requesterPercentage =
     paidFees[PARTY.REQUESTER]
       .mul(MULTIPLIER_DIVISOR)
-      .div(requesterFees.appealCost)
+      .div(requesterFees.requiredForSide)
       .toNumber() / 100
   const challengerPercentage =
     paidFees[PARTY.CHALLENGER]
       .mul(MULTIPLIER_DIVISOR)
-      .div(challengerFees.appealCost)
+      .div(challengerFees.requiredForSide)
       .toNumber() / 100
 
   return (
