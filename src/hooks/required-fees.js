@@ -18,7 +18,8 @@ const useRequiredFees = ({
       !loserStakeMultiplier ||
       !MULTIPLIER_DIVISOR ||
       typeof currentRuling === 'undefined' ||
-      !item
+      !item ||
+      item.resolved
     )
       return {}
 
