@@ -1,11 +1,5 @@
 import { Layout, Typography } from 'antd'
-import React, {
-  useState,
-  useEffect,
-  useContext,
-  useCallback,
-  useMemo
-} from 'react'
+import React, { useState, useEffect, useContext, useCallback } from 'react'
 import PropTypes from 'prop-types'
 import ErrorPage from '../error-page'
 import styled from 'styled-components/macro'
@@ -16,8 +10,6 @@ import { useWeb3Context } from 'web3-react'
 import { TCRViewContext } from '../../bootstrap/tcr-view-context'
 import { bigNumberify } from 'ethers/utils'
 import { gtcrDecode } from '../../utils/encoder'
-import { abi as _arbitrator } from '@kleros/tcr/build/contracts/Arbitrator.json'
-import { ethers } from 'ethers'
 import RequestTimelines from './request-timelines'
 import { WalletContext } from '../../bootstrap/wallet-context'
 
@@ -49,10 +41,6 @@ const ItemDetails = ({ itemID, tcrAddress }) => {
   const [requests, setRequests] = useState()
   const [timestamp, setTimestamp] = useState()
   const [metaEvidence, setMetaEvidence] = useState()
-  const arbitrator = useMemo(() => {
-    if (!decodedItem || !library) return
-    return new ethers.Contract(decodedItem.arbitrator, _arbitrator, library)
-  }, [decodedItem, library])
   const { gtcr, tcrErrored, gtcrView, metaEvidencePaths } = useContext(
     TCRViewContext
   )
@@ -138,44 +126,7 @@ const ItemDetails = ({ itemID, tcrAddress }) => {
     }
   }, [archon, gtcr, item, metaEvidencePaths, requests])
 
-  // Setup and teardown event listeners when item and/or arbitrator change.
-  // This also runs when the user loads the details view for the of an item
-  // or when he navigates from the details view of an item to
-  // the details view of another item (i.e. when itemID changes).
-  useEffect(() => {
-    if (!item || !arbitrator || !gtcr) return
-
-    // We must remove the listeners of the previous item (if any)
-    // to prevent it triggering unwanted reloads.
-    gtcr.removeAllListeners(gtcr.filters.ItemStatusChange())
-    gtcr.removeAllListeners(gtcr.filters.Dispute())
-    gtcr.removeAllListeners(gtcr.filters.AppealContribution())
-    arbitrator.removeAllListeners(arbitrator.filters.AppealPossible())
-    arbitrator.removeAllListeners(arbitrator.filters.AppealDecision())
-
-    // Refetch item if the item status changes, or if the arbitrator
-    // gives a ruling.
-    gtcr.on(gtcr.filters.ItemStatusChange(itemID), fetchItem)
-    gtcr.on(gtcr.filters.Dispute(arbitrator.address), fetchItem)
-    gtcr.on(gtcr.filters.AppealContribution(itemID), fetchItem)
-    arbitrator.on(
-      arbitrator.filters.AppealPossible(item.disputeID, gtcr.address),
-      fetchItem
-    )
-    arbitrator.on(
-      arbitrator.filters.AppealDecision(item.disputeID, gtcr.address),
-      fetchItem
-    )
-
-    // Teardown listeners when the component unmounts.
-    return () => {
-      gtcr.removeAllListeners(gtcr.filters.ItemStatusChange())
-      gtcr.removeAllListeners(gtcr.filters.Dispute())
-      gtcr.removeAllListeners(gtcr.filters.AppealContribution())
-      arbitrator.removeAllListeners(arbitrator.filters.AppealPossible())
-      arbitrator.removeAllListeners(arbitrator.filters.AppealDecision())
-    }
-  }, [arbitrator, fetchItem, gtcr, item, itemID])
+  // TODO: Setup and teardown event listeners.
 
   if (!tcrAddress || !itemID || errored || tcrErrored)
     return (
