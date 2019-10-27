@@ -20,6 +20,7 @@ import { abi } from '@kleros/tcr/build/contracts/GeneralizedTCR.json'
 import { ethers } from 'ethers'
 import BNPropType from '../../prop-types/bn'
 import useHumanizedCountdown from '../../hooks/countdown'
+import useAppealTime from '../../hooks/appeal-time'
 
 const StyledDescriptions = styled(Descriptions)`
   flex-wrap: wrap;
@@ -79,15 +80,7 @@ const ItemStatusCard = ({ item, timestamp }) => {
   )
 
   // Get remaining appeal time, if any and build countdown.
-  const { appealRemainingTime, appealRemainingTimeLoser } = useMemo(() => {
-    if (!item || item.disputeStatus !== DISPUTE_STATUS.APPEALABLE) return {}
-    const { appealEnd } = item
-    const appealRemainingTime = appealEnd.toNumber() * 1000 - Date.now()
-    return {
-      appealRemainingTime,
-      appealRemainingTimeLoser: appealRemainingTime / 2
-    }
-  }, [item])
+  const { appealRemainingTime, appealRemainingTimeLoser } = useAppealTime(item)
   const appealCountdown = useHumanizedCountdown(appealRemainingTime)
   const appealLoserCountdown = useHumanizedCountdown(appealRemainingTimeLoser)
 

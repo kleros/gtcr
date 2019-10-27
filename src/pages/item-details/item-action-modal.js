@@ -46,7 +46,14 @@ const ItemActionModal = ({
       )
     case STATUS_CODE.CROWDFUNDING:
     case STATUS_CODE.CROWDFUNDING_WINNER:
-      return <CrowdfundModal statusCode={statusCode} item={item} {...rest} />
+      return (
+        <CrowdfundModal
+          statusCode={statusCode}
+          item={item}
+          fileURI={fileURI}
+          {...rest}
+        />
+      )
     case STATUS_CODE.WAITING_ARBITRATOR:
     case STATUS_CODE.WAITING_ENFORCEMENT:
       return null

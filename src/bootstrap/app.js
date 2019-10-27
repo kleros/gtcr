@@ -36,18 +36,13 @@ import styled from 'styled-components/macro'
 import Web3Provider, { Connectors, useWeb3Context } from 'web3-react'
 import { WalletContext, WalletProvider } from './wallet-context'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import {
-  faTelegram,
-  faGithub,
-  faTwitter
-} from '@fortawesome/free-brands-svg-icons'
-import { faBullhorn } from '@fortawesome/free-solid-svg-icons'
 import { NETWORK_NAME } from '../utils/network-names'
 import ErrorPage from '../pages/error-page'
 import useMainTCR2 from '../hooks/tcr2'
 import Identicon from '../components/identicon'
 import { TCRViewProvider } from './tcr-view-context'
 import useNetworkEnvVariable from '../hooks/network-env'
+import './fontawesome'
 
 const StyledSpin = styled(Spin)`
   left: 50%;
@@ -374,16 +369,16 @@ const Footer = () => (
     </StyledCol>
     <StyledCol>
       <FirstSocialLink href="https://t.me/kleros">
-        <FontAwesomeIcon size="lg" icon={faTelegram} />
+        <FontAwesomeIcon size="lg" icon={['fab', 'telegram']} />
       </FirstSocialLink>
       <SocialLink href="https://github.com/kleros">
-        <FontAwesomeIcon size="lg" icon={faGithub} />
+        <FontAwesomeIcon size="lg" icon={['fab', 'github']} />
       </SocialLink>
       <SocialLink href="https://blog.kleros.io">
-        <FontAwesomeIcon size="lg" icon={faBullhorn} />
+        <FontAwesomeIcon size="lg" icon="bullhorn" />
       </SocialLink>
       <LastSocialLink href="https://twitter.com/kleros_io">
-        <FontAwesomeIcon size="lg" icon={faTwitter} />
+        <FontAwesomeIcon size="lg" icon={['fab', 'twitter']} />
       </LastSocialLink>
     </StyledCol>
   </Row>

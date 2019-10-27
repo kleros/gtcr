@@ -11,6 +11,7 @@ import ErrorPage from '../error-page'
 import styled from 'styled-components/macro'
 import ItemDetailsCard from '../../components/item-details-card'
 import ItemStatusCard from './item-status-card'
+import CrowdfundingCard from './crowdfunding-card'
 import { useWeb3Context } from 'web3-react'
 import { TCRViewContext } from '../../bootstrap/tcr-view-context'
 import { bigNumberify } from 'ethers/utils'
@@ -18,6 +19,7 @@ import { gtcrDecode } from '../../utils/encoder'
 import { abi as _arbitrator } from '@kleros/tcr/build/contracts/Arbitrator.json'
 import { ethers } from 'ethers'
 import RequestTimelines from './request-timelines'
+import { WalletContext } from '../../bootstrap/wallet-context'
 
 const StyledLayoutContent = styled(Layout.Content)`
   padding: 42px 9.375vw 42px;
@@ -41,16 +43,19 @@ const StyledBanner = styled.div`
 const ItemDetails = ({ itemID, tcrAddress }) => {
   const { library } = useWeb3Context()
   const [errored, setErrored] = useState()
-  const { metaEvidence, gtcr, tcrErrored, gtcrView } = useContext(
-    TCRViewContext
-  )
+  const { archon } = useContext(WalletContext)
   const [decodedItem, setDecodedItem] = useState()
   const [item, setItem] = useState()
+  const [requests, setRequests] = useState()
   const [timestamp, setTimestamp] = useState()
+  const [metaEvidence, setMetaEvidence] = useState()
   const arbitrator = useMemo(() => {
     if (!decodedItem || !library) return
     return new ethers.Contract(decodedItem.arbitrator, _arbitrator, library)
   }, [decodedItem, library])
+  const { gtcr, tcrErrored, gtcrView, metaEvidencePaths } = useContext(
+    TCRViewContext
+  )
 
   // Warning: This function should only be called when all its dependencies
   // are set.
@@ -66,9 +71,21 @@ const ItemDetails = ({ itemID, tcrAddress }) => {
     }
   }, [gtcrView, itemID, tcrAddress])
 
+  // Get requests data
+  useEffect(() => {
+    ;(async () => {
+      try {
+        if (!gtcrView || !tcrAddress || !itemID) return
+        setRequests(await gtcrView.getItemRequests(tcrAddress, itemID))
+      } catch (err) {
+        console.error('Error fetching item requests', err)
+      }
+    })()
+  }, [gtcrView, itemID, tcrAddress])
+
   // Decode item bytes once we have it and the meta evidence.
   useEffect(() => {
-    if (!item || !metaEvidence) return
+    if (!item || !metaEvidence || !metaEvidence.columns) return
     const { columns } = metaEvidence
     try {
       setDecodedItem({
@@ -98,6 +115,29 @@ const ItemDetails = ({ itemID, tcrAddress }) => {
     }
   }, [gtcrView, fetchItem, itemID, library, tcrAddress])
 
+  // If the item has a pending request, fetch the meta evidence file for
+  // that request.
+  useEffect(() => {
+    if (!item || !requests || !gtcr || !archon) return
+    const latestRequest = requests[requests.length - 1]
+    if (metaEvidencePaths.length - 1 < latestRequest.metaEvidenceID.toNumber())
+      return
+
+    const metaEvidencePath =
+      metaEvidencePaths[latestRequest.metaEvidenceID.toNumber()]
+    try {
+      ;(async () => {
+        const evidenceJSON = await (await fetch(
+          `${process.env.REACT_APP_IPFS_GATEWAY}${metaEvidencePath}`
+        )).json()
+        setMetaEvidence(evidenceJSON)
+      })()
+    } catch (err) {
+      console.error(err)
+      setErrored(true)
+    }
+  }, [archon, gtcr, item, metaEvidencePaths, requests])
+
   // Setup and teardown event listeners when item and/or arbitrator change.
   // This also runs when the user loads the details view for the of an item
   // or when he navigates from the details view of an item to
@@ -109,6 +149,7 @@ const ItemDetails = ({ itemID, tcrAddress }) => {
     // to prevent it triggering unwanted reloads.
     gtcr.removeAllListeners(gtcr.filters.ItemStatusChange())
     gtcr.removeAllListeners(gtcr.filters.Dispute())
+    gtcr.removeAllListeners(gtcr.filters.AppealContribution())
     arbitrator.removeAllListeners(arbitrator.filters.AppealPossible())
     arbitrator.removeAllListeners(arbitrator.filters.AppealDecision())
 
@@ -116,6 +157,7 @@ const ItemDetails = ({ itemID, tcrAddress }) => {
     // gives a ruling.
     gtcr.on(gtcr.filters.ItemStatusChange(itemID), fetchItem)
     gtcr.on(gtcr.filters.Dispute(arbitrator.address), fetchItem)
+    gtcr.on(gtcr.filters.AppealContribution(itemID), fetchItem)
     arbitrator.on(
       arbitrator.filters.AppealPossible(item.disputeID, gtcr.address),
       fetchItem
@@ -129,6 +171,7 @@ const ItemDetails = ({ itemID, tcrAddress }) => {
     return () => {
       gtcr.removeAllListeners(gtcr.filters.ItemStatusChange())
       gtcr.removeAllListeners(gtcr.filters.Dispute())
+      gtcr.removeAllListeners(gtcr.filters.AppealContribution())
       arbitrator.removeAllListeners(arbitrator.filters.AppealPossible())
       arbitrator.removeAllListeners(arbitrator.filters.AppealDecision())
     }
@@ -153,13 +196,21 @@ const ItemDetails = ({ itemID, tcrAddress }) => {
       <StyledLayoutContent>
         <ItemStatusCard item={decodedItem || item} timestamp={timestamp} dark />
         <br />
+        {/* Crowdfunding card is only rendered if the item has an appealable dispute. */}
+        <CrowdfundingCard item={decodedItem || item} timestamp={timestamp} />
+        <br />
         <ItemDetailsCard
-          title={metaEvidence && metaEvidence.title}
+          title={`${(metaEvidence && metaEvidence.itemName) || 'Item'} Details`}
           columns={metaEvidence && metaEvidence.columns}
           loading={!metaEvidence || !decodedItem || !decodedItem.decodedData}
           item={decodedItem}
         />
-        <RequestTimelines item={item} />
+
+        {/* Spread the `requests` parameter to convert elements from array to an object */}
+        <RequestTimelines
+          item={item}
+          requests={requests && requests.map(r => ({ ...r }))}
+        />
       </StyledLayoutContent>
     </>
   )

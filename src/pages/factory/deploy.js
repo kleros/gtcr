@@ -25,7 +25,7 @@ const StyledAlert = styled(Alert)`
 
 const getTcrMetaEvidence = async tcrState => {
   const { tcrTitle, tcrDescription, columns, itemName } = tcrState
-  const tcrMetadata = { tcrTitle, tcrDescription, columns, itemName }
+  const tcrMetaEvidence = { tcrTitle, tcrDescription, columns, itemName }
 
   // Using a placeholder evidence display URI and primary document.
   // TODO: Set the evidence display URI.
@@ -40,7 +40,7 @@ const getTcrMetaEvidence = async tcrState => {
       'https://ipfs.kleros.io/ipfs/QmaP1GLa7tnoRXGzyyJste2zk7VcZaVUG637sL7EZ8pqq4/index.html',
     evidenceDisplayInterfaceHash:
       'Bcd8UMiP7N3KV5PWgi7jtwqGZriGsuwWcA174Whz6HHUGGoekWWf4kWWJ8zifKcuifRpk3woaYKgqdDzwx6NZ87asZ',
-    ...tcrMetadata
+    ...tcrMetaEvidence
   }
 
   const registrationMetaEvidence = {

@@ -19,6 +19,7 @@ const useTcrView = tcrAddress => {
   const [metaEvidencePath, setMetaEvidencePath] = useState()
   const [metaEvidence, setMetaEvidence] = useState()
   const [debouncedMetaEvidencePath] = useDebounce(metaEvidencePath, 300)
+  const [metaEvidencePaths, setMetaEvidencePaths] = useState([])
   const [errored, setErrored] = useState(false)
   const [arbitrableTCRData, setArbitrableTCRData] = useState()
   const [arbitrationCost, setArbitrationCost] = useState()
@@ -136,6 +137,7 @@ const useTcrView = tcrAddress => {
     try {
       gtcr.on(gtcr.filters.MetaEvidence(), (_, metaEvidencePath) => {
         setMetaEvidencePath(metaEvidencePath)
+        setMetaEvidencePaths(paths => [...paths, metaEvidencePath])
       })
       library.resetEventsBlock(0) // Reset provider to fetch logs.
     } catch (err) {
@@ -173,6 +175,7 @@ const useTcrView = tcrAddress => {
     challengeDeposit,
     tcrAddress,
     gtcrView,
+    metaEvidencePaths,
     ...arbitrableTCRData
   }
 }

@@ -5,7 +5,7 @@
 @kleros-purple: #4004a3;
 @primary-color : @kleros-purple;
 @secondary-color : #1e075f;
-@ternary-color : #4d00b4;
+@ternary-color : rgb(77, 0, 180);
 @quaternary-color: #ead6fe;
 @info-color : @quaternary-color;
 @success-color : @green-6;
@@ -47,7 +47,7 @@
 @font-family : 'Roboto', sans-serif;
 @code-family : "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
 @heading-color : fade(@ternary-color, 85%);
-@text-color : fade(@ternary-color, 65%);
+@text-color : @ternary-color;
 @text-color-secondary : fade(@ternary-color, 45%);
 @heading-color-dark : fade(#fff, 100%);
 @text-color-dark : fade(#fff, 85%);
@@ -103,7 +103,7 @@
 
 // Border color
 @border-color-base : #d09cff; // base border outline a component
-@border-color-split : hsv(0, 0, 91%); // split border inside a component
+@border-color-split : fade(@border-color-base, 50%); // split border inside a component
 @border-width-base : 1px; // width of the border for a component
 @border-style-base : solid; // style of a components border
 
@@ -112,8 +112,8 @@
 @outline-width : 2px;
 @outline-color : @primary-color;
 
-@background-color-light : hsv(0, 0, 98%); // background of header and selected item
-@background-color-base : hsv(0, 0, 96%); // Default grey background color
+@background-color-light : fade(@border-color-base, 14%); // background of header and selected item
+@background-color-base : fade(@border-color-base, 16%); // Default grey background color
 
 // Disabled states
 @disabled-color : fade(#000, 25%);
@@ -274,6 +274,7 @@
 @input-padding-vertical-lg : 6px;
 @input-placeholder-color : fade(@text-color, 35%);
 @input-color : @text-color;
+@input-weight : 500;
 @input-border-color : @border-color-base;
 @input-bg : #fff;
 @input-addon-bg : @background-color-light;
@@ -323,9 +324,20 @@
 }
 .ant-modal-content {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border-top-left-radius: 12px;
+  border-top-right-radius: 12px;
+}
+.ant-modal-header {
+  border-top-left-radius: 12px;
+  border-top-right-radius: 12px;
+  height: 55px;
+  text-align: center;
 }
 .ant-modal-close {
   color: @heading-color-dark;
+}
+.ant-modal-title {
+  font-size: 18px;
 }
 
 // Progress
@@ -367,8 +379,8 @@
 @table-header-sort-bg: @background-color-base;
 @table-body-sort-bg: rgba(0, 0, 0, 0.01);
 @table-row-hover-bg: @primary-1;
-@table-selected-row-bg: #fafafa;
-@table-expanded-row-bg: #fbfbfb;
+@table-selected-row-bg: fade(@border-color-base, 98%);
+@table-expanded-row-bg: fade(@border-color-base, 96%);
 @table-padding-vertical: 16px;
 @table-padding-horizontal: 16px;
 
@@ -381,13 +393,28 @@
 // Divider
 // --
 .ant-divider-horizontal.ant-divider-with-text-left::before {
-  border-top: 1px solid @border-color-base;
+  border-top: 1px solid @border-color-split;
 }
 .ant-divider-horizontal.ant-divider-with-text-left::after {
-  border-top: 1px solid @border-color-base;
+  border-top: 1px solid @border-color-split;
 }
 .ant-divider {
-  background: @border-color-base;
+  background: @border-color-split;
+}
+.ant-descriptions-bordered .ant-descriptions-item-label, .ant-descriptions-bordered .ant-descriptions-item-content {
+  border-right: 1px solid @border-color-split;
+}
+
+// Descriptions
+// --
+.ant-descriptions-bordered .ant-descriptions-view{
+  border: 1px solid @border-color-base;
+}
+.ant-descriptions-bordered .ant-descriptions-item-label {
+  background: @background-color-base;
+}
+.ant-descriptions-bordered .ant-descriptions-item-label, .ant-descriptions-bordered .ant-descriptions-item-content{
+  border-right: 1px solid @border-color-split
 }
 
 // Steps

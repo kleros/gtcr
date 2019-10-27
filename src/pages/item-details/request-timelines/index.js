@@ -1,8 +1,8 @@
-import React, { useEffect, useContext, useState } from 'react'
-import { Divider, Collapse, Skeleton, Row, Col, Button } from 'antd'
+import React, { useContext, useState } from 'react'
+import PropTypes from 'prop-types'
+import { Divider, Collapse, Row, Col, Button, Card } from 'antd'
 import jsOrdinal from 'js-ordinal'
 import styled from 'styled-components/macro'
-import { TCRViewContext } from '../../../bootstrap/tcr-view-context'
 import Timeline from './timeline'
 import itemPropTypes from '../../../prop-types/item'
 import {
@@ -11,30 +11,23 @@ import {
 } from '../../../utils/item-status'
 import EvidenceModal from '../modals/evidence'
 import { WalletContext } from '../../../bootstrap/wallet-context'
+import BNPropType from '../../../prop-types/bn'
 
 const StyledButton = styled(Button)`
   margin: 16px 0;
 `
 
-const RequestTimelines = ({ item }) => {
-  const { gtcrView, tcrAddress } = useContext(TCRViewContext)
+const RequestTimelines = ({ item, requests }) => {
   const { requestWeb3Auth } = useContext(WalletContext)
-  const [requests, setRequests] = useState()
   const [evidenceModalOpen, setEvidenceModalOpen] = useState()
-  const itemID = item && item.ID
 
-  useEffect(() => {
-    ;(async () => {
-      try {
-        if (!gtcrView || !tcrAddress || !itemID) return
-        setRequests(await gtcrView.getItemRequests(tcrAddress, itemID))
-      } catch (err) {
-        console.error('Error fetching item requests', err)
-      }
-    })()
-  }, [gtcrView, itemID, tcrAddress])
-
-  if (!item) return <Skeleton active />
+  if (!item)
+    return (
+      <>
+        <br />
+        <Card loading />
+      </>
+    )
 
   return (
     <>
@@ -84,11 +77,21 @@ const RequestTimelines = ({ item }) => {
 }
 
 RequestTimelines.propTypes = {
-  item: itemPropTypes
+  item: itemPropTypes,
+  requests: PropTypes.arrayOf(
+    PropTypes.shape({
+      arbitrator: PropTypes.string.isRequired,
+      requestType: PropTypes.number.isRequired,
+      disputed: PropTypes.bool.isRequired,
+      resolved: PropTypes.bool.isRequired,
+      metaEvidenceID: BNPropType.isRequired
+    })
+  )
 }
 
 RequestTimelines.defaultProps = {
-  item: null
+  item: null,
+  requests: null
 }
 
 export default RequestTimelines

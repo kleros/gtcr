@@ -2,7 +2,6 @@ import React, { useMemo, useEffect, useContext, useState } from 'react'
 import { Timeline as AntdTimeline, Icon, Card, Skeleton } from 'antd'
 import { useWeb3Context } from 'web3-react'
 import { ethers } from 'ethers'
-import Archon from '@kleros/archon'
 import styled from 'styled-components/macro'
 import { solidityKeccak256, bigNumberify } from 'ethers/utils'
 import PropTypes from 'prop-types'
@@ -17,6 +16,8 @@ import {
   STATUS_COLOR,
   getResultStatus
 } from '../../../utils/item-status'
+import { WalletContext } from '../../../bootstrap/wallet-context'
+import BNPropType from '../../../prop-types/bn'
 
 const StyledCard = styled(Card)`
   cursor: default;
@@ -33,20 +34,17 @@ const StyledIcon = styled(Icon)`
 `
 
 const Timeline = ({ request, requestID, item }) => {
-  const { library, connector, active } = useWeb3Context()
+  const { library, active } = useWeb3Context()
   const { gtcr, metaEvidence } = useContext(TCRViewContext)
+  const { archon } = useContext(WalletContext)
   const [logs, setLogs] = useState([])
   const [appealableRulings, setAppealableRulings] = useState({})
   const [evidenceFiles, setEvidenceFiles] = useState({})
   const arbitrator = useMemo(() => {
     if (!request || !library || !active) return
-    return new ethers.Contract(request.arbitrator, _arbitrator, library)
+    const { arbitrator } = request
+    return new ethers.Contract(arbitrator, _arbitrator, library)
   }, [library, request, active])
-  const archon = useMemo(() => {
-    if (!library || !connector || !connector.providerURL) return
-    const { providerURL } = connector
-    return new Archon(providerURL, process.env.REACT_APP_IPFS_GATEWAY)
-  }, [connector, library])
   const itemID = item && item.ID
   const evidenceGroupID = useMemo(() => {
     if (!itemID || requestID == null) return
@@ -60,14 +58,7 @@ const Timeline = ({ request, requestID, item }) => {
 
   // Fetch logs
   useEffect(() => {
-    if (
-      !request ||
-      !arbitrator ||
-      !gtcr ||
-      !archon ||
-      !itemID ||
-      !evidenceGroupID
-    )
+    if (!request || !gtcr || !archon || !itemID || !evidenceGroupID || !library)
       return
 
     const { disputeID, disputed } = request
@@ -78,12 +69,12 @@ const Timeline = ({ request, requestID, item }) => {
         // Fetch logs in parallel.
         let logs = (await Promise.all([
           library.getLogs({
-            ...gtcr.filters.Evidence(request.arbitrator, evidenceGroupID),
+            ...gtcr.filters.Evidence(arbitrator.address, evidenceGroupID),
             fromBlock: 0
           }),
           disputed
             ? library.getLogs({
-                ...gtcr.filters.Ruling(request.arbitrator, disputeID),
+                ...gtcr.filters.Ruling(arbitrator.address, disputeID),
                 fromBlock: 0
               })
             : null,
@@ -123,7 +114,7 @@ const Timeline = ({ request, requestID, item }) => {
 
         // Fetch evidence files.
         archon.arbitrable
-          .getEvidence(gtcrAddr, request.arbitrator, evidenceGroupID)
+          .getEvidence(gtcrAddr, arbitrator.address, evidenceGroupID)
           .then(data =>
             data
               .filter(evidenceFile => evidenceFile.evidenceJSONValid)
@@ -170,7 +161,7 @@ const Timeline = ({ request, requestID, item }) => {
 
   // Display loading indicator
   if (!item || !request) return <Skeleton active />
-  const { requestType } = request
+  const { requestType, resolved, disputed } = request
 
   // Build nodes from request events.
   const itemName = metaEvidence ? metaEvidence.itemName : 'Item'
@@ -301,7 +292,7 @@ const Timeline = ({ request, requestID, item }) => {
       })
   )
 
-  if (request.resolved && !request.disputed)
+  if (resolved && !disputed)
     items = items.concat(
       <AntdTimeline.Item
         key={items.length}
@@ -324,7 +315,7 @@ const Timeline = ({ request, requestID, item }) => {
       pending={
         item.status !== STATUS_CODE.REJECTED &&
         item.status !== STATUS_CODE.REGISTERED &&
-        !request.resolved
+        !resolved
       }
     >
       {items}
@@ -337,7 +328,8 @@ Timeline.propTypes = {
     arbitrator: PropTypes.string.isRequired,
     requestType: PropTypes.number.isRequired,
     disputed: PropTypes.bool.isRequired,
-    resolved: PropTypes.bool.isRequired
+    resolved: PropTypes.bool.isRequired,
+    metaEvidenceID: BNPropType.isRequired
   }).isRequired,
   requestID: PropTypes.number.isRequired,
   item: itemPropTypes

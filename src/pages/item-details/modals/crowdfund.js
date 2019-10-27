@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext, useMemo } from 'react'
+import React, { useState, useEffect, useContext } from 'react'
 import {
   Modal,
   Descriptions,
@@ -21,6 +21,7 @@ import styled from 'styled-components/macro'
 import { WalletContext } from '../../../bootstrap/wallet-context'
 import { abi as _gtcr } from '@kleros/tcr/build/contracts/GeneralizedTCR.json'
 import { ethers } from 'ethers'
+import useRequiredFees from '../../../hooks/required-fees'
 
 const StyledSpin = styled(Spin)`
   left: 50%;
@@ -29,7 +30,7 @@ const StyledSpin = styled(Spin)`
   transform: translate(-50%, -50%);
 `
 
-const CrowdfundModal = ({ statusCode, item, ...rest }) => {
+const CrowdfundModal = ({ statusCode, item, fileURI, ...rest }) => {
   const { pushWeb3Action } = useContext(WalletContext)
   const {
     sharedStakeMultiplier,
@@ -41,7 +42,7 @@ const CrowdfundModal = ({ statusCode, item, ...rest }) => {
 
   const [side, setSide] = useState(PARTY.NONE)
   const [contributionShare, setContributionShare] = useState(1)
-  const { currentRuling } = item
+  const { currentRuling, hasPaid } = item
 
   useEffect(() => {
     // Automatically set crowdfunding to the winner, if the arbitrator
@@ -55,81 +56,32 @@ const CrowdfundModal = ({ statusCode, item, ...rest }) => {
     setSide(currentRuling)
   }, [currentRuling, side, statusCode])
 
-  // Calculate total of fees still required and potential rewards.
+  useEffect(() => {
+    // If one of the parties is fully funded but not the other, automatically set
+    // the side to the pending side.
+    if (
+      side !== PARTY.NONE ||
+      (hasPaid[PARTY.REQUESTER] && hasPaid[PARTY.CHALLENGER]) ||
+      (!hasPaid[PARTY.REQUESTER] && !hasPaid[PARTY.CHALLENGER])
+    )
+      return
+
+    setSide(!hasPaid[PARTY.REQUESTER] ? PARTY.REQUESTER : PARTY.CHALLENGER)
+  }, [hasPaid, side])
+
   const {
     requiredForSide,
     amountStillRequired,
     potentialReward
-  } = useMemo(() => {
-    if (
-      side === PARTY.NONE ||
-      !sharedStakeMultiplier ||
-      !winnerStakeMultiplier ||
-      !loserStakeMultiplier ||
-      !MULTIPLIER_DIVISOR ||
-      !currentRuling ||
-      !item
-    )
-      return {}
-
-    const isFundingWinner =
-      currentRuling !== PARTY.NONE
-        ? null // Ignore if arbitrator did not give a decisive ruling.
-        : currentRuling === PARTY.REQUESTER
-        ? side === PARTY.REQUESTER
-        : side === PARTY.CHALLENGER
-
-    // Calculate the fee stake multiplier.
-    // The fee stake is the reward shared among parties that crowdfunded
-    // the appeal of the party that wins the dispute.
-    const feeStakeMultiplier =
-      currentRuling === PARTY.NONE
-        ? sharedStakeMultiplier
-        : isFundingWinner
-        ? winnerStakeMultiplier
-        : loserStakeMultiplier
-
-    // Calculate full cost to fund the side.
-    // Full appeal cost = appeal cost + appeal cost * fee stake multiplier.
-    const { appealCost } = item
-    const requiredForSide = appealCost.add(
-      appealCost.mul(feeStakeMultiplier).div(MULTIPLIER_DIVISOR)
-    )
-
-    // Calculate amount still required to fully fund the side.
-    const amountStillRequired = requiredForSide.sub(item.paidFees[side])
-
-    // Calculate the max reward the user can earn by contributing fees.
-    // Potential reward = appeal cost * opponent fee stake multiplier * share available for contribution.
-    const opponentFeeStakeMultiplier =
-      currentRuling === PARTY.NONE
-        ? sharedStakeMultiplier
-        : isFundingWinner
-        ? loserStakeMultiplier
-        : winnerStakeMultiplier
-
-    // This is the total potential reward if the user contributed 100% of the fees.
-    const totalReward = appealCost
-      .mul(opponentFeeStakeMultiplier)
-      .div(MULTIPLIER_DIVISOR)
-
-    // Available reward = opponent fee stake * % contributions pending.
-    const potentialReward = amountStillRequired
-      .mul(MULTIPLIER_DIVISOR)
-      .div(requiredForSide)
-      .mul(totalReward)
-      .div(MULTIPLIER_DIVISOR)
-
-    return { requiredForSide, amountStillRequired, potentialReward }
-  }, [
+  } = useRequiredFees({
     side,
     sharedStakeMultiplier,
     winnerStakeMultiplier,
     loserStakeMultiplier,
-    MULTIPLIER_DIVISOR,
     currentRuling,
-    item
-  ])
+    item,
+    MULTIPLIER_DIVISOR
+  })
 
   if (!sharedStakeMultiplier)
     return (
@@ -153,7 +105,7 @@ const CrowdfundModal = ({ statusCode, item, ...rest }) => {
             type="primary"
             onClick={() => setSide(PARTY.REQUESTER)}
           >
-            Requester
+            Submitter
           </Button>,
           <Button
             key="challenger"
@@ -188,7 +140,7 @@ const CrowdfundModal = ({ statusCode, item, ...rest }) => {
       return {
         tx,
         actionMessage: `Contributing fees to ${
-          side === PARTY.REQUESTER ? 'Requester' : 'Challenger'
+          side === PARTY.REQUESTER ? 'Submitter' : 'Challenger'
         }`
       }
     })
@@ -207,6 +159,17 @@ const CrowdfundModal = ({ statusCode, item, ...rest }) => {
         setContributionShare(1)
       }}
     >
+      <Typography.Title level={4}>
+        See the&nbsp;
+        <a
+          href={`${process.env.REACT_APP_IPFS_GATEWAY}${fileURI || ''}`}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Listing Criteria
+        </a>
+        .
+      </Typography.Title>
       <Typography.Paragraph level={4}>
         Contribute ETH for a chance to win up to{' '}
         <ETHAmount decimals={4} amount={potentialReward} displayUnit />. You
@@ -265,7 +228,12 @@ CrowdfundModal.propTypes = {
     STATUS_CODE.CROWDFUNDING,
     STATUS_CODE.CROWDFUNDING_WINNER
   ]).isRequired,
-  item: itemPropTypes.isRequired
+  item: itemPropTypes.isRequired,
+  fileURI: PropTypes.string
+}
+
+CrowdfundModal.defaultProps = {
+  fileURI: ''
 }
 
 export default CrowdfundModal

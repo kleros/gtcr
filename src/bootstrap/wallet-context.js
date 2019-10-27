@@ -1,4 +1,5 @@
-import React, { createContext, useState, useEffect } from 'react'
+import React, { createContext, useState, useEffect, useMemo } from 'react'
+import Archon from '@kleros/archon'
 import { notification, Icon } from 'antd'
 import { useWeb3Context } from 'web3-react'
 import PropTypes from 'prop-types'
@@ -28,6 +29,17 @@ const useNotificationWeb3 = () => {
   const web3Context = useWeb3Context()
   const [web3Actions, setWeb3Actions] = useState([])
   const [infuraSetup, setInfuraSetup] = useState() // Whether infura was set as the provider.
+  const archon = useMemo(() => {
+    if (
+      !web3Context.library ||
+      !web3Context.connector ||
+      !web3Context.connector.providerURL
+    )
+      return
+    const { providerURL } = web3Context.connector
+
+    return new Archon(providerURL, process.env.REACT_APP_IPFS_GATEWAY)
+  }, [web3Context.connector, web3Context.library])
 
   /**
    * Send a transaction to the blockchain. This handles notifications and
@@ -181,7 +193,8 @@ const useNotificationWeb3 = () => {
     cancelRequest,
     pushWeb3Action,
     requestWeb3Auth,
-    setUserSelectedWallet
+    setUserSelectedWallet,
+    archon
   }
 }
 

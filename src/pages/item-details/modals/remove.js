@@ -69,7 +69,11 @@ const RemoveModal = ({ item, itemName = 'item', fileURI, ...rest }) => {
         column={{ xxl: 4, xl: 3, lg: 3, md: 3, sm: 2, xs: 1 }}
       >
         <Descriptions.Item label="Total Deposit Required">
-          <ETHAmount decimals={3} amount={requestDeposit.toString()} />
+          <ETHAmount
+            decimals={3}
+            amount={requestDeposit.toString()}
+            displayUnit
+          />
         </Descriptions.Item>
       </Descriptions>
     </Modal>
