@@ -12,7 +12,7 @@ import {
 } from 'antd'
 import { Link } from 'react-router-dom'
 import qs from 'qs'
-import React, { useEffect, useState, useContext, useMemo } from 'react'
+import React, { useEffect, useState, useContext, useMemo, useRef } from 'react'
 import PropTypes from 'prop-types'
 import ErrorPage from '../error-page'
 import styled from 'styled-components/macro'
@@ -136,6 +136,8 @@ const Items = ({ tcrAddress, search, history }) => {
     isFetching: false,
     data: null
   })
+  const refAttr = useRef()
+  const [eventListenerSet, setEventListenerSet] = useState()
 
   // Set page to 1 in the URI if none is set.
   useEffect(() => {
@@ -307,14 +309,24 @@ const Items = ({ tcrAddress, search, history }) => {
 
   // Watch for submissions and status change events to refetch items.
   useEffect(() => {
-    if (!gtcr || !metaEvidence) return
+    if (!gtcr || eventListenerSet) return
+    setEventListenerSet(true)
     gtcr.on(gtcr.filters.ItemStatusChange(), () =>
       setFetchItems({ fetchStarted: true })
     )
-    return () => {
-      gtcr.removeAllListeners(gtcr.filters.ItemStatusChange())
-    }
-  }, [gtcr, metaEvidence])
+    refAttr.current = gtcr
+  }, [eventListenerSet, gtcr])
+
+  // Teardown listeners.
+  useEffect(
+    () => () => {
+      if (!refAttr || !refAttr.current || !eventListenerSet) return
+      refAttr.current.removeAllListeners(
+        refAttr.current.filters.ItemStatusChange()
+      )
+    },
+    [eventListenerSet]
+  )
 
   if (!active && !process.env.REACT_APP_INFURA_PROJECT_ID)
     return (

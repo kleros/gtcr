@@ -124,7 +124,7 @@ const CrowdfundingCard = ({ item }) => {
           </StyledTitle>
           <Progress
             percent={hasPaid[PARTY.REQUESTER] ? 100 : requesterPercentage}
-            status={!hasPaid[PARTY.REQUESTER] && 'active'}
+            status={!hasPaid[PARTY.REQUESTER] ? 'active' : 'normal'}
             showInfo={false}
           />
           <br />
@@ -142,7 +142,7 @@ const CrowdfundingCard = ({ item }) => {
           </StyledTitle>
           <Progress
             percent={hasPaid[PARTY.CHALLENGER] ? 100 : challengerPercentage}
-            status={!hasPaid[PARTY.CHALLENGER] && 'active'}
+            status={!hasPaid[PARTY.CHALLENGER] ? 'active' : 'normal'}
             showInfo={false}
           />
           <br />

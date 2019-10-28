@@ -64,7 +64,7 @@ const Ruling = ({ currentRuling }) => {
     case PARTY.NONE:
       return 'The arbitrator refused to rule.'
     case PARTY.REQUESTER:
-      return 'The arbitrator ruled in favor of the requester.'
+      return 'The arbitrator ruled in favor of the submitter.'
     case PARTY.CHALLENGER:
       return 'The arbitrator ruled in favor of the challenger.'
     default:

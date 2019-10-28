@@ -183,10 +183,10 @@ const ItemDetails = loadable(
 )
 
 const MenuItems = ({ TCR2_ADDRESS }) => [
-  <Menu.Item key="tcrs">
+  <Menu.Item key="tcrs-item">
     <NavLink to={`/tcr/${TCR2_ADDRESS}`}>TCRs</NavLink>
   </Menu.Item>,
-  <Menu.Item key="factory">
+  <Menu.Item key="factory-item">
     <NavLink to="/factory">Factory</NavLink>
   </Menu.Item>
 ]
