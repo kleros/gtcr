@@ -47,6 +47,8 @@ const useRequiredFees = ({
       appealCost.mul(feeStakeMultiplier).div(MULTIPLIER_DIVISOR)
     )
 
+    if (requiredForSide.isZero()) return {} // No fees required.
+
     // Calculate amount still required to fully fund the side.
     const amountStillRequired = requiredForSide.sub(item.paidFees[side])
 
