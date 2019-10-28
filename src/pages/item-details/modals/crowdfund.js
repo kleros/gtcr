@@ -150,7 +150,7 @@ const CrowdfundModal = ({ statusCode, item, fileURI, ...rest }) => {
     <Modal
       {...rest}
       title={`Contribute Fees to ${
-        side === PARTY.REQUESTER ? 'Requester' : 'Challenger'
+        side === PARTY.REQUESTER ? 'Submitter' : 'Challenger'
       }`}
       onOk={crowdfundSide}
       afterClose={() => {

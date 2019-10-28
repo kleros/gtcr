@@ -124,7 +124,7 @@ const CrowdfundingCard = ({ item }) => {
           </StyledTitle>
           <Progress
             percent={hasPaid[PARTY.REQUESTER] ? 100 : requesterPercentage}
-            status={!hasPaid[PARTY.REQUESTER] ? 'active' : 'normal'}
+            status={hasPaid[PARTY.REQUESTER] ? 'success' : 'active'}
             showInfo={false}
           />
           <br />
@@ -142,7 +142,7 @@ const CrowdfundingCard = ({ item }) => {
           </StyledTitle>
           <Progress
             percent={hasPaid[PARTY.CHALLENGER] ? 100 : challengerPercentage}
-            status={!hasPaid[PARTY.CHALLENGER] ? 'active' : 'normal'}
+            status={hasPaid[PARTY.CHALLENGER] ? 'success' : 'active'}
             showInfo={false}
           />
           <br />
@@ -158,7 +158,7 @@ const CrowdfundingCard = ({ item }) => {
           <StyledIcon icon="info-circle" size="2x" />
           <StyledParagraph>
             {currentRuling === PARTY.NONE
-              ? 'The arbitrator did give a decisive ruling. If a party fully funds his side of an appeal, the other must also fund in order to not lose the dispute.'
+              ? 'The arbitrator did not give a decisive ruling. If a party fully funds his side of an appeal, the other must also fund in order to not lose the dispute.'
               : `If the ${
                   currentRuling === PARTY.REQUESTER ? 'challenger' : 'submitter'
                 } fully funds his side of the appeal, the ${
