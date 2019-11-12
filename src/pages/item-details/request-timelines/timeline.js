@@ -327,7 +327,7 @@ const Timeline = ({ request, requestID, item }) => {
 
 Timeline.propTypes = {
   request: PropTypes.shape({
-    disputeID: PropTypes.number.isRequired,
+    disputeID: BNPropType.isRequired,
     arbitrator: PropTypes.string.isRequired,
     requestType: PropTypes.number.isRequired,
     disputed: PropTypes.bool.isRequired,
