@@ -1,5 +1,6 @@
 import { Steps, Button, Icon, Card, Empty, Typography } from 'antd'
 import React, { useState, useEffect } from 'react'
+import PropTypes from 'prop-types'
 import { Link } from 'react-router-dom'
 import { useDebounce } from 'use-debounce'
 import styled from 'styled-components/macro'
@@ -50,13 +51,19 @@ const CurrentStep = props => (
   </>
 )
 
+CurrentStep.propTypes = {
+  tcrState: PropTypes.shape({ currStep: PropTypes.number }).isRequired
+}
+
 const useCachedFactory = version => {
   const key = `tcrState@${version}`
   const initialWizardState = {
     tcrTitle: '',
     tcrDescription: '',
-    requesterBaseDeposit: 0.025,
-    challengerBaseDeposit: 0.015,
+    submissionBaseDeposit: 0.02,
+    removalBaseDeposit: 0.03,
+    submissionChallengeBaseDeposit: 0.015,
+    removalChallengeBaseDeposit: 0.025,
     arbitratorAddress: '',
     itemName: 'Item',
     requireEvidenceRequest: true,

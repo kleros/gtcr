@@ -130,9 +130,11 @@ const ItemDetails = ({ itemID, tcrAddress }) => {
       metaEvidencePaths[latestRequest.metaEvidenceID.toNumber()]
     try {
       ;(async () => {
-        const evidenceJSON = await (await fetch(
-          `${process.env.REACT_APP_IPFS_GATEWAY}${metaEvidencePath}`
-        )).json()
+        const evidenceJSON = await (
+          await fetch(
+            `${process.env.REACT_APP_IPFS_GATEWAY}${metaEvidencePath}`
+          )
+        ).json()
         setMetaEvidence(evidenceJSON)
       })()
     } catch (err) {

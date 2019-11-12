@@ -23,8 +23,10 @@ const useTcrView = tcrAddress => {
   const [errored, setErrored] = useState(false)
   const [arbitrableTCRData, setArbitrableTCRData] = useState()
   const [arbitrationCost, setArbitrationCost] = useState()
-  const [requestDeposit, setRequestDeposit] = useState()
-  const [challengeDeposit, setChallengeDeposit] = useState()
+  const [submissionDeposit, setSubmissionDeposit] = useState()
+  const [submissionChallengeDeposit, setSubmissionChallengeDeposit] = useState()
+  const [removalDeposit, setRemovalDeposit] = useState()
+  const [removalChallengeDeposit, setRemovalChallengeDeposit] = useState()
   const ARBITRABLE_TCR_VIEW_ADDRESS = useNetworkEnvVariable(
     'REACT_APP_GTCRVIEW_ADDRESSES',
     networkId
@@ -78,8 +80,10 @@ const useTcrView = tcrAddress => {
         const {
           arbitrator: arbitratorAddress,
           arbitratorExtraData,
-          requesterBaseDeposit,
-          challengerBaseDeposit,
+          submissionBaseDeposit,
+          removalBaseDeposit,
+          submissionChallengeBaseDeposit,
+          removalChallengeBaseDeposit,
           sharedStakeMultiplier,
           MULTIPLIER_DIVISOR
         } = arbitrableTCRData
@@ -94,29 +98,51 @@ const useTcrView = tcrAddress => {
           arbitratorExtraData
         )
 
-        // Request deposit = requester base deposit + arbitration cost + fee stake
-        // fee stake = requester deposit * shared stake multiplier / multiplier divisor
-        const requestDeposit = requesterBaseDeposit
+        // Submission deposit = submitter base deposit + arbitration cost + fee stake
+        // fee stake = submitter deposit * shared stake multiplier / multiplier divisor
+        const submissionDeposit = submissionBaseDeposit
           .add(arbitrationCost)
           .add(
-            requesterBaseDeposit
+            submissionBaseDeposit
               .mul(sharedStakeMultiplier)
               .div(MULTIPLIER_DIVISOR)
           )
 
-        // Challenge deposit = challenger base deposit + arbitration cost + fee stake
-        // fee stake = requester deposit * shared stake multiplier / multiplier divisor
-        const challengeDeposit = challengerBaseDeposit
+        // Removal deposit = removal base deposit + arbitration cost + fee stake
+        // fee stake = removal deposit * shared stake multiplier / multiplier divisor
+        const removalDeposit = removalBaseDeposit
           .add(arbitrationCost)
           .add(
-            requesterBaseDeposit
+            removalBaseDeposit
+              .mul(sharedStakeMultiplier)
+              .div(MULTIPLIER_DIVISOR)
+          )
+
+        // Challenge deposit = submission challenge base deposit + arbitration cost + fee stake
+        // fee stake = submission challenge deposit * shared stake multiplier / multiplier divisor
+        const submissionChallengeDeposit = submissionChallengeBaseDeposit
+          .add(arbitrationCost)
+          .add(
+            submissionBaseDeposit
+              .mul(sharedStakeMultiplier)
+              .div(MULTIPLIER_DIVISOR)
+          )
+
+        // Challenge deposit = removal challenge base deposit + arbitration cost + fee stake
+        // fee stake = removal challenge deposit * shared stake multiplier / multiplier divisor
+        const removalChallengeDeposit = removalChallengeBaseDeposit
+          .add(arbitrationCost)
+          .add(
+            removalBaseDeposit
               .mul(sharedStakeMultiplier)
               .div(MULTIPLIER_DIVISOR)
           )
 
         setArbitrationCost(arbitrationCost)
-        setRequestDeposit(requestDeposit)
-        setChallengeDeposit(challengeDeposit)
+        setSubmissionDeposit(submissionDeposit)
+        setSubmissionChallengeDeposit(submissionChallengeDeposit)
+        setRemovalDeposit(removalDeposit)
+        setRemovalChallengeDeposit(removalChallengeDeposit)
       } catch (err) {
         console.error('Error computing arbitration cost:', err)
         setErrored(true)
@@ -127,8 +153,7 @@ const useTcrView = tcrAddress => {
     setArbitrationCost,
     library,
     arbitrationCost,
-    setErrored,
-    setChallengeDeposit
+    setErrored
   ])
 
   // Fetch meta evidence logs.
@@ -155,9 +180,11 @@ const useTcrView = tcrAddress => {
     ;(async () => {
       if (!debouncedMetaEvidencePath) return
       try {
-        const file = await (await fetch(
-          process.env.REACT_APP_IPFS_GATEWAY + debouncedMetaEvidencePath
-        )).json()
+        const file = await (
+          await fetch(
+            process.env.REACT_APP_IPFS_GATEWAY + debouncedMetaEvidencePath
+          )
+        ).json()
         setMetaEvidence(file)
       } catch (err) {
         console.error('Error fetching meta evidence files', err)
@@ -171,8 +198,10 @@ const useTcrView = tcrAddress => {
     metaEvidence,
     tcrErrored: errored,
     arbitrationCost,
-    requestDeposit,
-    challengeDeposit,
+    submissionDeposit,
+    submissionChallengeDeposit,
+    removalDeposit,
+    removalChallengeDeposit,
     tcrAddress,
     gtcrView,
     metaEvidencePaths,

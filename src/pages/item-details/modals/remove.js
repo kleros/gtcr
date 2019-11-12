@@ -18,7 +18,7 @@ const StyledSpin = styled(Spin)`
 
 const RemoveModal = ({ item, itemName = 'item', fileURI, ...rest }) => {
   // Get contract data.
-  const { requestDeposit, tcrAddress } = useContext(TCRViewContext)
+  const { removalDeposit, tcrAddress } = useContext(TCRViewContext)
   const { pushWeb3Action } = useContext(WalletContext)
 
   const requestStatusChange = () => {
@@ -27,7 +27,7 @@ const RemoveModal = ({ item, itemName = 'item', fileURI, ...rest }) => {
 
       // Request signature and submit.
       const tx = await gtcr.removeItem(item.data, {
-        value: requestDeposit
+        value: removalDeposit
       })
 
       rest.onCancel() // Hide the submission modal.
@@ -38,7 +38,7 @@ const RemoveModal = ({ item, itemName = 'item', fileURI, ...rest }) => {
     })
   }
 
-  if (!requestDeposit)
+  if (!removalDeposit)
     return (
       <Modal title="Submit Item" {...rest}>
         <StyledSpin />
@@ -71,7 +71,7 @@ const RemoveModal = ({ item, itemName = 'item', fileURI, ...rest }) => {
         <Descriptions.Item label="Total Deposit Required">
           <ETHAmount
             decimals={3}
-            amount={requestDeposit.toString()}
+            amount={removalDeposit.toString()}
             displayUnit
           />
         </Descriptions.Item>

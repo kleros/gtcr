@@ -67,30 +67,32 @@ const Timeline = ({ request, requestID, item }) => {
     try {
       ;(async () => {
         // Fetch logs in parallel.
-        let logs = (await Promise.all([
-          library.getLogs({
-            ...gtcr.filters.Evidence(arbitrator.address, evidenceGroupID),
-            fromBlock: 0
-          }),
-          disputed
-            ? library.getLogs({
-                ...gtcr.filters.Ruling(arbitrator.address, disputeID),
-                fromBlock: 0
-              })
-            : null,
-          disputed
-            ? library.getLogs({
-                ...arbitrator.filters.AppealPossible(disputeID, gtcrAddr),
-                fromBlock: 0
-              })
-            : null,
-          disputed
-            ? library.getLogs({
-                ...arbitrator.filters.AppealDecision(disputeID, gtcrAddr),
-                fromBlock: 0
-              })
-            : null
-        ])).filter(logs => !!logs)
+        let logs = (
+          await Promise.all([
+            library.getLogs({
+              ...gtcr.filters.Evidence(arbitrator.address, evidenceGroupID),
+              fromBlock: 0
+            }),
+            disputed
+              ? library.getLogs({
+                  ...gtcr.filters.Ruling(arbitrator.address, disputeID),
+                  fromBlock: 0
+                })
+              : null,
+            disputed
+              ? library.getLogs({
+                  ...arbitrator.filters.AppealPossible(disputeID, gtcrAddr),
+                  fromBlock: 0
+                })
+              : null,
+            disputed
+              ? library.getLogs({
+                  ...arbitrator.filters.AppealDecision(disputeID, gtcrAddr),
+                  fromBlock: 0
+                })
+              : null
+          ])
+        ).filter(logs => !!logs)
 
         // Parse and sort event logs.
         logs = logs
@@ -325,6 +327,7 @@ const Timeline = ({ request, requestID, item }) => {
 
 Timeline.propTypes = {
   request: PropTypes.shape({
+    disputeID: PropTypes.number.isRequired,
     arbitrator: PropTypes.string.isRequired,
     requestType: PropTypes.number.isRequired,
     disputed: PropTypes.bool.isRequired,

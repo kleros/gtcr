@@ -88,16 +88,16 @@ const TCRParams = ({
           {...rest}
         />
         <CustomInput
-          name="requesterBaseDeposit"
+          name="submissionBaseDeposit"
           placeholder="0.1 ETH"
           addonAfter="ETH"
-          error={errors.requesterBaseDeposit}
-          touched={touched.requesterBaseDeposit}
+          error={errors.submissionBaseDeposit}
+          touched={touched.submissionBaseDeposit}
           type={itemTypes.NUMBER}
           label={
             <span>
-              Registration Deposit&nbsp;
-              <Tooltip title="This will be the deposit required to submit or remove an item.">
+              Submission Deposit&nbsp;
+              <Tooltip title="This will be the deposit required to submit an item.">
                 <Icon type="question-circle-o" />
               </Tooltip>
             </span>
@@ -105,16 +105,50 @@ const TCRParams = ({
           {...rest}
         />
         <CustomInput
-          name="challengerBaseDeposit"
-          placeholder="0.05 ETH"
+          name="removalBaseDeposit"
+          placeholder="0.1 ETH"
           addonAfter="ETH"
-          error={errors.challengerBaseDeposit}
-          touched={touched.challengerBaseDeposit}
+          error={errors.removalBaseDeposit}
+          touched={touched.removalBaseDeposit}
           type={itemTypes.NUMBER}
           label={
             <span>
-              Challenger Deposit&nbsp;
-              <Tooltip title="This is the deposit required to challenge a submission or removal request.">
+              Removal Deposit&nbsp;
+              <Tooltip title="This will be the deposit required to remove an item.">
+                <Icon type="question-circle-o" />
+              </Tooltip>
+            </span>
+          }
+          {...rest}
+        />
+        <CustomInput
+          name="submissionChallengeBaseDeposit"
+          placeholder="0.05 ETH"
+          addonAfter="ETH"
+          error={errors.submissionChallengeBaseDeposit}
+          touched={touched.submissionChallengeBaseDeposit}
+          type={itemTypes.NUMBER}
+          label={
+            <span>
+              Submission Challenge Deposit&nbsp;
+              <Tooltip title="This is the deposit required to challenge a submission.">
+                <Icon type="question-circle-o" />
+              </Tooltip>
+            </span>
+          }
+          {...rest}
+        />
+        <CustomInput
+          name="removalChallengeBaseDeposit"
+          placeholder="0.05 ETH"
+          addonAfter="ETH"
+          error={errors.removalChallengeBaseDeposit}
+          touched={touched.removalChallengeBaseDeposit}
+          type={itemTypes.NUMBER}
+          label={
+            <span>
+              Removal Challenge Deposit&nbsp;
+              <Tooltip title="This is the deposit required to challenge a removal request.">
                 <Icon type="question-circle-o" />
               </Tooltip>
             </span>
@@ -178,12 +212,22 @@ const validationSchema = yup.object().shape({
     .string()
     .required('An item name is required.')
     .max(60, 'The item name must be less than 20 characters long.'),
-  requesterBaseDeposit: yup
+  submissionBaseDeposit: yup
     .number()
     .typeError('Amount should be a number.')
     .required('A value is required.')
     .min(0, 'The amount must not be negative.'),
-  challengerBaseDeposit: yup
+  removalBaseDeposit: yup
+    .number()
+    .typeError('Amount should be a number.')
+    .required('A value is required.')
+    .min(0, 'The amount must not be negative.'),
+  submissionChallengeBaseDeposit: yup
+    .number()
+    .typeError('Amount should be a number.')
+    .required('A value is required.')
+    .min(0, 'The amount must not be negative.'),
+  removalChallengeBaseDeposit: yup
     .number()
     .typeError('Amount should be a number.')
     .required('A value is required.')

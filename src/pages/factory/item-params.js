@@ -214,12 +214,20 @@ ItemParams.propTypes = {
     columns: PropTypes.arrayOf(PropTypes.objectOf(PropTypes.bool))
   }).isRequired,
   values: PropTypes.shape({
-    challengerBaseDeposit: PropTypes.oneOfType([
+    submissionChallengeBaseDeposit: PropTypes.oneOfType([
+      PropTypes.number,
+      PropTypes.string
+    ]).isRequired,
+    removalChallengeBaseDeposit: PropTypes.oneOfType([
       PropTypes.number,
       PropTypes.string
     ]).isRequired,
     tcrDescription: PropTypes.string.isRequired,
-    requesterBaseDeposit: PropTypes.oneOfType([
+    submissionBaseDeposit: PropTypes.oneOfType([
+      PropTypes.number,
+      PropTypes.string
+    ]).isRequired,
+    removalBaseDeposit: PropTypes.oneOfType([
       PropTypes.number,
       PropTypes.string
     ]).isRequired,

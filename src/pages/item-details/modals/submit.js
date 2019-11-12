@@ -84,11 +84,11 @@ const SubmissionForm = withFormik({
 const SubmissionModal = props => {
   const { onCancel, initialValues } = props
   const { pushWeb3Action } = useContext(WalletContext)
-  const { requestDeposit, tcrAddress, metaEvidence } = useContext(
+  const { submissionDeposit, tcrAddress, metaEvidence } = useContext(
     TCRViewContext
   )
 
-  if (!metaEvidence || !requestDeposit)
+  if (!metaEvidence || !submissionDeposit)
     return (
       <Modal
         title="Submit Item"
@@ -112,7 +112,7 @@ const SubmissionModal = props => {
 
       // Request signature and submit.
       const tx = await gtcr.addItem(encodedParams, {
-        value: requestDeposit
+        value: submissionDeposit
       })
 
       onCancel() // Hide the submission modal.
@@ -169,7 +169,7 @@ const SubmissionModal = props => {
         <Descriptions.Item label="Total Deposit Required">
           <ETHAmount
             decimals={3}
-            amount={requestDeposit.toString()}
+            amount={submissionDeposit.toString()}
             displayUnit
           />
         </Descriptions.Item>

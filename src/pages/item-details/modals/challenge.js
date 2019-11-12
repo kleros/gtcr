@@ -22,8 +22,16 @@ const StyledSpin = styled(Spin)`
 
 const ChallengeModal = ({ item, itemName, statusCode, fileURI, ...rest }) => {
   // Get contract data.
-  const { challengeDeposit, tcrAddress } = useContext(TCRViewContext)
+  const {
+    submissionChallengeDeposit,
+    removalChallengeDeposit,
+    tcrAddress
+  } = useContext(TCRViewContext)
   const { pushWeb3Action } = useContext(WalletContext)
+  const challengeDeposit =
+    item.status === STATUS_CODE.SUBMITTED
+      ? submissionChallengeDeposit
+      : removalChallengeDeposit
 
   const challengeRequest = async ({
     title,

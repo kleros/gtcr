@@ -109,9 +109,9 @@ const getTcrMetaEvidence = async tcrState => {
   }))
   /* eslint-enable prettier/prettier */
 
-  const ipfsMetaEvidenceObjects = (await Promise.all(
-    files.map(file => ipfsPublish(file.multihash, file.data))
-  )).map(
+  const ipfsMetaEvidenceObjects = (
+    await Promise.all(files.map(file => ipfsPublish(file.multihash, file.data)))
+  ).map(
     ipfsMetaEvidenceObject =>
       `/ipfs/${ipfsMetaEvidenceObject[1].hash + ipfsMetaEvidenceObject[0].path}`
   )
@@ -141,8 +141,10 @@ const Deploy = ({ resetTcrState, setTxState, tcrState }) => {
         registrationMetaEvidencePath,
         clearingMetaEvidencePath,
         account,
-        parseEther(tcrState.requesterBaseDeposit.toString()),
-        parseEther(tcrState.challengerBaseDeposit.toString()),
+        parseEther(tcrState.submissionBaseDeposit.toString()),
+        parseEther(tcrState.removalBaseDeposit.toString()),
+        parseEther(tcrState.submissionChallengeBaseDeposit.toString()),
+        parseEther(tcrState.removalChallengeBaseDeposit.toString()),
         (60 * 60 * 24).toString(), // Challenge period duration (in seconds)
         '10000', // Shared stake multiplier in basis points.
         '10000', // Winner stake multiplier in basis points.
@@ -182,7 +184,7 @@ const Deploy = ({ resetTcrState, setTxState, tcrState }) => {
                     <Icon type="loading" style={{ fontSize: 24 }} spin />
                   }
                 />
-                {`  Transaction pending...`}
+                Transaction pending...
               </>
             }
           />
@@ -220,8 +222,10 @@ Deploy.propTypes = {
       })
     ).isRequired,
     arbitratorAddress: PropTypes.string.isRequired,
-    requesterBaseDeposit: PropTypes.number.isRequired,
-    challengerBaseDeposit: PropTypes.number.isRequired
+    submissionBaseDeposit: PropTypes.number.isRequired,
+    removalBaseDeposit: PropTypes.number.isRequired,
+    submissionChallengeBaseDeposit: PropTypes.number.isRequired,
+    removalChallengeBaseDeposit: PropTypes.number.isRequired
   }).isRequired
 }
 
