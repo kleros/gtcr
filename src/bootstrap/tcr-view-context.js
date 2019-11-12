@@ -99,43 +99,35 @@ const useTcrView = tcrAddress => {
         )
 
         // Submission deposit = submitter base deposit + arbitration cost + fee stake
-        // fee stake = submitter deposit * shared stake multiplier / multiplier divisor
+        // fee stake = arbitration cost * shared stake multiplier / multiplier divisor
         const submissionDeposit = submissionBaseDeposit
           .add(arbitrationCost)
           .add(
-            submissionBaseDeposit
-              .mul(sharedStakeMultiplier)
-              .div(MULTIPLIER_DIVISOR)
+            arbitrationCost.mul(sharedStakeMultiplier).div(MULTIPLIER_DIVISOR)
           )
 
         // Removal deposit = removal base deposit + arbitration cost + fee stake
-        // fee stake = removal deposit * shared stake multiplier / multiplier divisor
+        // fee stake = arbitration cost * shared stake multiplier / multiplier divisor
         const removalDeposit = removalBaseDeposit
           .add(arbitrationCost)
           .add(
-            removalBaseDeposit
-              .mul(sharedStakeMultiplier)
-              .div(MULTIPLIER_DIVISOR)
+            arbitrationCost.mul(sharedStakeMultiplier).div(MULTIPLIER_DIVISOR)
           )
 
         // Challenge deposit = submission challenge base deposit + arbitration cost + fee stake
-        // fee stake = submission challenge deposit * shared stake multiplier / multiplier divisor
+        // fee stake = arbitration cost * shared stake multiplier / multiplier divisor
         const submissionChallengeDeposit = submissionChallengeBaseDeposit
           .add(arbitrationCost)
           .add(
-            submissionBaseDeposit
-              .mul(sharedStakeMultiplier)
-              .div(MULTIPLIER_DIVISOR)
+            arbitrationCost.mul(sharedStakeMultiplier).div(MULTIPLIER_DIVISOR)
           )
 
         // Challenge deposit = removal challenge base deposit + arbitration cost + fee stake
-        // fee stake = removal challenge deposit * shared stake multiplier / multiplier divisor
+        // fee stake = arbitration cost * shared stake multiplier / multiplier divisor
         const removalChallengeDeposit = removalChallengeBaseDeposit
           .add(arbitrationCost)
           .add(
-            removalBaseDeposit
-              .mul(sharedStakeMultiplier)
-              .div(MULTIPLIER_DIVISOR)
+            arbitrationCost.mul(sharedStakeMultiplier).div(MULTIPLIER_DIVISOR)
           )
 
         setArbitrationCost(arbitrationCost)
