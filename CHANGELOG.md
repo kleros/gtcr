@@ -2,6 +2,87 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.7.0](https://github.com/kleros/gtcr/compare/v0.5.0...v0.7.0) (2019-11-12)
+
+
+### Bug Fixes
+
+* build script and readme ([8b17ba0](https://github.com/kleros/gtcr/commit/8b17ba0))
+* build script running out of memory ([aae9cd1](https://github.com/kleros/gtcr/commit/aae9cd1))
+* card design ([1592a77](https://github.com/kleros/gtcr/commit/1592a77))
+* crowdfunding progressbar percentage ([8125219](https://github.com/kleros/gtcr/commit/8125219))
+* disputeID should be BN prop-type ([f717348](https://github.com/kleros/gtcr/commit/f717348))
+* don't return anything if there are no required fees ([43a2e0b](https://github.com/kleros/gtcr/commit/43a2e0b))
+* event listener in item list and details ([bd9127e](https://github.com/kleros/gtcr/commit/bd9127e))
+* event missing listeners ([875764e](https://github.com/kleros/gtcr/commit/875764e))
+* evidence files and close [#1](https://github.com/kleros/gtcr/issues/1) ([38d4f08](https://github.com/kleros/gtcr/commit/38d4f08))
+* footer not sticking to bottom ([3f82a9d](https://github.com/kleros/gtcr/commit/3f82a9d))
+* handle errors in tcr view ([3e4ea6b](https://github.com/kleros/gtcr/commit/3e4ea6b))
+* handle waiting enforcement state ([fa14315](https://github.com/kleros/gtcr/commit/fa14315))
+* ignore required fees for resolved items ([ad83eee](https://github.com/kleros/gtcr/commit/ad83eee))
+* item status card header color ([95e2d6b](https://github.com/kleros/gtcr/commit/95e2d6b))
+* meta evidence fields and closes [#10](https://github.com/kleros/gtcr/issues/10) ([b734bbe](https://github.com/kleros/gtcr/commit/b734bbe))
+* missing primary document URI in challenge modal ([c379b7d](https://github.com/kleros/gtcr/commit/c379b7d))
+* production build failing ([d422148](https://github.com/kleros/gtcr/commit/d422148))
+* remove BN from window and update comments ([f3ac20e](https://github.com/kleros/gtcr/commit/f3ac20e))
+* remove event listeners to avoid infinite rerender cycle ([816c2d4](https://github.com/kleros/gtcr/commit/816c2d4))
+* remove item message ([f2c6953](https://github.com/kleros/gtcr/commit/f2c6953))
+* setup listeners only after metaevidence is ready ([30b703b](https://github.com/kleros/gtcr/commit/30b703b))
+* signed integer number encoding ([efce4ff](https://github.com/kleros/gtcr/commit/efce4ff))
+* styling and word issues ([4349a97](https://github.com/kleros/gtcr/commit/4349a97))
+* tcr deposit parsing ([5046918](https://github.com/kleros/gtcr/commit/5046918))
+* word wrap and card display fields ([3dbd692](https://github.com/kleros/gtcr/commit/3dbd692))
+
+
+### Features
+
+* add action button ([d0a0cb4](https://github.com/kleros/gtcr/commit/d0a0cb4))
+* add challenge and appeal periods countdowns ([3314750](https://github.com/kleros/gtcr/commit/3314750))
+* add challenge request scaffolding ([c66ce11](https://github.com/kleros/gtcr/commit/c66ce11))
+* add crowdfunding card ([1ac95d7](https://github.com/kleros/gtcr/commit/1ac95d7)), closes [#6](https://github.com/kleros/gtcr/issues/6) [#16](https://github.com/kleros/gtcr/issues/16) [#16](https://github.com/kleros/gtcr/issues/16)
+* add deposit and listing criteria to submission modal ([978fbd6](https://github.com/kleros/gtcr/commit/978fbd6))
+* add modals and initial tx scaffolding ([cb10a32](https://github.com/kleros/gtcr/commit/cb10a32))
+* add relatedTCRR and organize mock contracts ([b310d48](https://github.com/kleros/gtcr/commit/b310d48))
+* add resubmit flow ([fcc3ec6](https://github.com/kleros/gtcr/commit/fcc3ec6))
+* add sorting and filter controls ([7f31620](https://github.com/kleros/gtcr/commit/7f31620))
+* add support for challenges in the mock contracts ([4fde232](https://github.com/kleros/gtcr/commit/4fde232))
+* add support for other wallets ([28bba46](https://github.com/kleros/gtcr/commit/28bba46))
+* allow different deposits for different request/challenge types ([4972ec5](https://github.com/kleros/gtcr/commit/4972ec5))
+* allow submitting evidence ([fd2406a](https://github.com/kleros/gtcr/commit/fd2406a))
+* batch tcr information request ([c90a604](https://github.com/kleros/gtcr/commit/c90a604))
+* cache tcr and meta evidence ([e14cb79](https://github.com/kleros/gtcr/commit/e14cb79))
+* display current ruling and dispute status in item details view ([e6448ed](https://github.com/kleros/gtcr/commit/e6448ed))
+* display item status in item list ([39f0cbb](https://github.com/kleros/gtcr/commit/39f0cbb))
+* display requests timeline ([4d169b8](https://github.com/kleros/gtcr/commit/4d169b8))
+* enable adding items and fetch items from TCR ([377a6b2](https://github.com/kleros/gtcr/commit/377a6b2))
+* enable crowdfunding appeals ([8b43f73](https://github.com/kleros/gtcr/commit/8b43f73))
+* enable executing pending requests ([cc756b1](https://github.com/kleros/gtcr/commit/cc756b1))
+* enable removal requests ([e71c401](https://github.com/kleros/gtcr/commit/e71c401))
+* evidence form and validation ([42353b6](https://github.com/kleros/gtcr/commit/42353b6))
+* handle uri paging, filtering and sorting ([73a4072](https://github.com/kleros/gtcr/commit/73a4072))
+* initial details view and status handling ([aa9def8](https://github.com/kleros/gtcr/commit/aa9def8))
+* listen for events and refetch items to improve UX ([1df1201](https://github.com/kleros/gtcr/commit/1df1201))
+* move findItem example to GTCRMock ([718e226](https://github.com/kleros/gtcr/commit/718e226))
+* move submission modal to containers ([15520b7](https://github.com/kleros/gtcr/commit/15520b7))
+* rename containers to pages ([047abbe](https://github.com/kleros/gtcr/commit/047abbe))
+* rename tcr view context to avoid confusion ([b307ec4](https://github.com/kleros/gtcr/commit/b307ec4))
+* request wallet connection and update latest tcr2 ([f910d3e](https://github.com/kleros/gtcr/commit/f910d3e))
+* swap mock contract for gtcr package ([af7183c](https://github.com/kleros/gtcr/commit/af7183c))
+* truncate ETH address in items view ([aa6fe61](https://github.com/kleros/gtcr/commit/aa6fe61))
+* update theme colors ([e511d11](https://github.com/kleros/gtcr/commit/e511d11))
+* update to latest color scheme ([67ef25a](https://github.com/kleros/gtcr/commit/67ef25a))
+* update to latest contract ([98e4e0f](https://github.com/kleros/gtcr/commit/98e4e0f))
+* update to latest contract version ([4eb282c](https://github.com/kleros/gtcr/commit/4eb282c))
+* update to latest view contract ([fde6290](https://github.com/kleros/gtcr/commit/fde6290))
+* upload evidence and challenge item ([ceac88e](https://github.com/kleros/gtcr/commit/ceac88e))
+* use a grid of cards to display tcr items ([c8a7252](https://github.com/kleros/gtcr/commit/c8a7252))
+* use addItem and removeItem proxy functions to avoid accidents ([a75568f](https://github.com/kleros/gtcr/commit/a75568f))
+* use header banner ([cd39e25](https://github.com/kleros/gtcr/commit/cd39e25))
+* use number input and cleanup code" ([c0044ab](https://github.com/kleros/gtcr/commit/c0044ab))
+* use rlp encoding to store item data ([9668a95](https://github.com/kleros/gtcr/commit/9668a95))
+
+
+
 ## [0.6.0](https://github.com/kleros/gtcr/compare/v0.5.0...v0.6.0) (2019-08-05)
 
 
