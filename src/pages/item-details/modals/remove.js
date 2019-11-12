@@ -24,6 +24,7 @@ const RemoveModal = ({ item, itemName = 'item', fileURI, ...rest }) => {
   const requestStatusChange = () => {
     pushWeb3Action(async (_, signer) => {
       const gtcr = new ethers.Contract(tcrAddress, _gtcr, signer)
+      console.info('removalDeposit', removalDeposit.toString())
 
       // Request signature and submit.
       const tx = await gtcr.removeItem(item.data, {
@@ -33,14 +34,15 @@ const RemoveModal = ({ item, itemName = 'item', fileURI, ...rest }) => {
       rest.onCancel() // Hide the submission modal.
       return {
         tx,
-        actionMessage: `Requesting ${itemName || 'item'} removal`
+        actionMessage: `Requesting ${(itemName && itemName.toLowerCase()) ||
+          'item'} removal`
       }
     })
   }
 
   if (!removalDeposit)
     return (
-      <Modal title="Submit Item" {...rest}>
+      <Modal title="Remove Item" {...rest}>
         <StyledSpin />
       </Modal>
     )

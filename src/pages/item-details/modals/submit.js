@@ -118,14 +118,15 @@ const SubmissionModal = props => {
       onCancel() // Hide the submission modal.
       return {
         tx,
-        actionMessage: `Submitting ${itemName || 'item'}`
+        actionMessage: `Submitting ${(itemName && itemName.toLowerCase()) ||
+          'item'}`
       }
     })
   }
 
   return (
     <Modal
-      title={`Submit ${itemName || 'Item'}`}
+      title={`Submit ${(itemName && itemName.toLowerCase()) || 'Item'}`}
       footer={[
         <Button key="back" onClick={onCancel}>
           Return

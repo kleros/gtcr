@@ -66,7 +66,8 @@ const ChallengeModal = ({ item, itemName, statusCode, fileURI, ...rest }) => {
       rest.onCancel() // Hide the submission modal.
       return {
         tx,
-        actionMessage: `Challenging ${itemName || 'item'} ${
+        actionMessage: `Challenging ${(itemName && itemName.toLowerCase()) ||
+          'item'} ${
           statusCode === STATUS_CODE.SUBMITTED ? 'submission' : 'removal'
         }`
       }
