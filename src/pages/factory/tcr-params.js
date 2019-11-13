@@ -140,6 +140,24 @@ const TCRParams = ({
           }
           {...rest}
         />
+        <CustomInput
+          name="challengePeriodDuration"
+          placeholder="5"
+          addonAfter="Hours"
+          error={errors.challengePeriodDuration}
+          touched={touched.challengePeriodDuration}
+          type={itemTypes.NUMBER}
+          step={1}
+          label={
+            <span>
+              Challenge Period Duration&nbsp;
+              <Tooltip title="The length of the challenge period in hours.">
+                <Icon type="question-circle-o" />
+              </Tooltip>
+            </span>
+          }
+          {...rest}
+        />
         <Form.Item
           label="Advanced options"
           style={{ marginBottom: '12px', display: 'flex' }}
@@ -242,6 +260,11 @@ const validationSchema = yup.object().shape({
     .required('A value is required.')
     .min(0, 'The amount must not be negative.'),
   removalChallengeBaseDeposit: yup
+    .number()
+    .typeError('Amount should be a number.')
+    .required('A value is required.')
+    .min(0, 'The amount must not be negative.'),
+  challengePeriodDuration: yup
     .number()
     .typeError('Amount should be a number.')
     .required('A value is required.')

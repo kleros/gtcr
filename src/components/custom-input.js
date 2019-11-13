@@ -1,4 +1,4 @@
-import { Form, Input, InputNumber } from 'antd'
+import { Form, Input } from 'antd'
 import { Field } from 'formik'
 import React from 'react'
 import PropTypes from 'prop-types'
@@ -12,7 +12,8 @@ const CustomInput = ({
   touched,
   addonAfter,
   hasFeedback,
-  type
+  type,
+  step
 }) => (
   <Field name={name}>
     {({ field }) => (
@@ -23,10 +24,10 @@ const CustomInput = ({
         hasFeedback={hasFeedback}
       >
         {type === itemTypes.NUMBER ? (
-          <InputNumber
+          <Input
             addonAfter={addonAfter}
             placeholder={placeholder}
-            step={0.0001}
+            step={step || 0.0001}
             {...field}
           />
         ) : (
@@ -45,7 +46,8 @@ CustomInput.propTypes = {
   touched: PropTypes.bool,
   addonAfter: PropTypes.node,
   hasFeedback: PropTypes.bool,
-  type: PropTypes.oneOf(Object.values(itemTypes))
+  type: PropTypes.oneOf(Object.values(itemTypes)),
+  step: PropTypes.number
 }
 
 CustomInput.defaultProps = {
@@ -55,7 +57,8 @@ CustomInput.defaultProps = {
   touched: null,
   addonAfter: null,
   hasFeedback: null,
-  type: null
+  type: null,
+  step: null
 }
 
 export default CustomInput

@@ -72,6 +72,7 @@ const useCachedFactory = version => {
     submissionChallengeBaseDeposit: 0.015,
     removalChallengeBaseDeposit: 0.025,
     arbitratorAddress: defaultArbitrator || '',
+    challengePeriodDuration: 3,
     itemName: 'Item',
     requireEvidenceRequest: true,
     columns: [

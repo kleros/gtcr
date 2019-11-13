@@ -143,7 +143,7 @@ const Deploy = ({ resetTcrState, setTxState, tcrState }) => {
         parseEther(tcrState.removalBaseDeposit.toString()),
         parseEther(tcrState.submissionChallengeBaseDeposit.toString()),
         parseEther(tcrState.removalChallengeBaseDeposit.toString()),
-        (60 * 60 * 24).toString(), // Challenge period duration (in seconds)
+        Number(tcrState.challengePeriodDuration) * 60 * 60,
         '10000', // Shared stake multiplier in basis points.
         '10000', // Winner stake multiplier in basis points.
         '20000', // Loser stake multiplier in basis points.
@@ -223,7 +223,8 @@ Deploy.propTypes = {
     submissionBaseDeposit: PropTypes.number.isRequired,
     removalBaseDeposit: PropTypes.number.isRequired,
     submissionChallengeBaseDeposit: PropTypes.number.isRequired,
-    removalChallengeBaseDeposit: PropTypes.number.isRequired
+    removalChallengeBaseDeposit: PropTypes.number.isRequired,
+    challengePeriodDuration: PropTypes.number.isRequired
   }).isRequired
 }
 

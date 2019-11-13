@@ -231,6 +231,10 @@ ItemParams.propTypes = {
       PropTypes.number,
       PropTypes.string
     ]).isRequired,
+    challengePeriodDuration: PropTypes.oneOfType([
+      PropTypes.number,
+      PropTypes.string
+    ]).isRequired,
     requireEvidenceRequest: PropTypes.bool.isRequired,
     tcrTitle: PropTypes.string.isRequired,
     columns: PropTypes.arrayOf(
