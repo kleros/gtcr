@@ -27,8 +27,6 @@ const getTcrMetaEvidence = async tcrState => {
   const { tcrTitle, tcrDescription, columns, itemName } = tcrState
   const tcrMetaEvidence = { tcrTitle, tcrDescription, columns, itemName }
 
-  // Using a placeholder evidence display URI and primary document.
-  // TODO: Set the evidence display URI.
   // TODO: Allow user to set the primary document.
   const metaEvidence = {
     category: 'Curated Lists',
@@ -37,9 +35,9 @@ const getTcrMetaEvidence = async tcrState => {
     fileURI:
       '/ipfs/QmRNK2cpW2i4Q9BBp58ALuhHnXuKEPkSBLU5q4mdtBG9i4/dutchx-badge.pdf',
     evidenceDisplayInterfaceURL:
-      'https://ipfs.kleros.io/ipfs/QmaP1GLa7tnoRXGzyyJste2zk7VcZaVUG637sL7EZ8pqq4/index.html',
+      'https://ipfs.kleros.io/ipfs/QmXd9WaJURRSnF9Hwp1Bxn7j4gjp26X4CCL31d51UH83eZ/index.html',
     evidenceDisplayInterfaceHash:
-      'Bcd8UMiP7N3KV5PWgi7jtwqGZriGsuwWcA174Whz6HHUGGoekWWf4kWWJ8zifKcuifRpk3woaYKgqdDzwx6NZ87asZ',
+      'Bce2RntYPKaxU3qbN6CrmDbfYMPQmQy44zGhcwQSKZSg6A6n6KBVgtRbdrep4jWzNGPT71NTkShYoKatQwMdLhVFsh',
     ...tcrMetaEvidence
   }
 
