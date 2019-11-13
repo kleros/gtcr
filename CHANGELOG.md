@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.7.1](https://github.com/kleros/gtcr/compare/v0.7.0...v0.7.1) (2019-11-13)
+
+
+### Bug Fixes
+
+* close [#19](https://github.com/kleros/gtcr/issues/19) ([734f453](https://github.com/kleros/gtcr/commit/734f453))
+* incorrect deposit math for requests and challenges ([36b488c](https://github.com/kleros/gtcr/commit/36b488c))
+* incosistent casing in tx messages ([0d7954d](https://github.com/kleros/gtcr/commit/0d7954d))
+* set kleros as the default arbitrator and close [#20](https://github.com/kleros/gtcr/issues/20) ([62d23aa](https://github.com/kleros/gtcr/commit/62d23aa))
+* update evidenceDisplayURI, hash and close [#11](https://github.com/kleros/gtcr/issues/11) ([5fab41b](https://github.com/kleros/gtcr/commit/5fab41b))
+
+
+
 ## [0.7.0](https://github.com/kleros/gtcr/compare/v0.5.0...v0.7.0) (2019-11-12)
 
 
