@@ -1,7 +1,7 @@
 import { Card, Icon, Tooltip, Form, Switch } from 'antd'
 import { withFormik, Field } from 'formik'
 import PropTypes from 'prop-types'
-import React, { useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import * as yup from 'yup'
 import CustomInput from '../../components/custom-input'
 import itemTypes from '../../utils/item-types'
@@ -18,6 +18,7 @@ const TCRParams = ({
   ...rest
 }) => {
   const { values, setTcrState } = rest
+  const [advancedOptions, setAdvancedOptions] = useState()
   useEffect(() => {
     setTcrState(previousState => ({
       ...previousState,
@@ -47,22 +48,6 @@ const TCRParams = ({
             <span>
               Description&nbsp;
               <Tooltip title="A short sentence describing the what are the the TCR items and its listing criteria.">
-                <Icon type="question-circle-o" />
-              </Tooltip>
-            </span>
-          }
-          {...rest}
-        />
-        <CustomInput
-          name="arbitratorAddress"
-          placeholder="0x7331deadbeef..."
-          hasFeedback
-          error={errors.arbitratorAddress}
-          touched={touched.arbitratorAddress}
-          label={
-            <span>
-              Arbitrator&nbsp;
-              <Tooltip title="The address of the arbitrator to use for this TCR.">
                 <Icon type="question-circle-o" />
               </Tooltip>
             </span>
@@ -155,23 +140,52 @@ const TCRParams = ({
           }
           {...rest}
         />
-        <Field name="requireEvidenceRequest">
-          {({ field }) => (
-            <FormItem
-              label="Require evidence on request"
-              style={{ marginBottom: '12px', display: 'flex' }}
-            >
-              <Switch
-                onChange={value =>
-                  setFieldValue('requireEvidenceRequest', value)
-                }
-                style={{ marginLeft: '8px' }}
-                checked={field.value}
-              />
-            </FormItem>
-          )}
-        </Field>
-        {/* Let the user mark if this is a TCR of TCRs. */}
+        <Form.Item
+          label="Advanced options"
+          style={{ marginBottom: '12px', display: 'flex' }}
+        >
+          <Switch
+            onChange={() => setAdvancedOptions(toggle => !toggle)}
+            style={{ marginLeft: '8px' }}
+          />
+        </Form.Item>
+        {advancedOptions && (
+          <>
+            <CustomInput
+              name="arbitratorAddress"
+              placeholder="0x7331deadbeef..."
+              hasFeedback
+              error={errors.arbitratorAddress}
+              touched={touched.arbitratorAddress}
+              label={
+                <span>
+                  Arbitrator&nbsp;
+                  <Tooltip title="The address of the arbitrator to use for this TCR.">
+                    <Icon type="question-circle-o" />
+                  </Tooltip>
+                </span>
+              }
+              {...rest}
+            />
+            <Field name="requireEvidenceRequest">
+              {({ field }) => (
+                <FormItem
+                  label="Require evidence on request"
+                  style={{ marginBottom: '12px', display: 'flex' }}
+                >
+                  <Switch
+                    onChange={value =>
+                      setFieldValue('requireEvidenceRequest', value)
+                    }
+                    style={{ marginLeft: '8px' }}
+                    checked={field.value}
+                  />
+                </FormItem>
+              )}
+            </Field>
+          </>
+        )}
+        {/* TODO: Let the user mark if this is a TCR of TCRs. */}
       </Form>
     </Card>
   )

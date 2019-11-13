@@ -9,6 +9,8 @@ import ItemParams from './item-params'
 import Deploy from './deploy'
 import StyledLayoutContent from '../layout-content'
 import { version } from '../../../package.json'
+import { useWeb3Context } from 'web3-react'
+import useNetworkEnvVariable from '../../hooks/network-env'
 
 const { Step } = Steps
 
@@ -56,6 +58,11 @@ CurrentStep.propTypes = {
 }
 
 const useCachedFactory = version => {
+  const { networkId } = useWeb3Context()
+  const defaultArbitrator = useNetworkEnvVariable(
+    'REACT_APP_DEFAULT_ARBITRATOR',
+    networkId
+  )
   const key = `tcrState@${version}`
   const initialWizardState = {
     tcrTitle: '',
@@ -64,7 +71,7 @@ const useCachedFactory = version => {
     removalBaseDeposit: 0.03,
     submissionChallengeBaseDeposit: 0.015,
     removalChallengeBaseDeposit: 0.025,
-    arbitratorAddress: '',
+    arbitratorAddress: defaultArbitrator || '',
     itemName: 'Item',
     requireEvidenceRequest: true,
     columns: [
