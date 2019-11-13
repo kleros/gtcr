@@ -214,6 +214,8 @@ ItemParams.propTypes = {
     columns: PropTypes.arrayOf(PropTypes.objectOf(PropTypes.bool))
   }).isRequired,
   values: PropTypes.shape({
+    tcrTitle: PropTypes.string.isRequired,
+    tcrDescription: PropTypes.string.isRequired,
     submissionChallengeBaseDeposit: PropTypes.oneOfType([
       PropTypes.number,
       PropTypes.string
@@ -222,7 +224,6 @@ ItemParams.propTypes = {
       PropTypes.number,
       PropTypes.string
     ]).isRequired,
-    tcrDescription: PropTypes.string.isRequired,
     submissionBaseDeposit: PropTypes.oneOfType([
       PropTypes.number,
       PropTypes.string
@@ -236,7 +237,6 @@ ItemParams.propTypes = {
       PropTypes.string
     ]).isRequired,
     requireEvidenceRequest: PropTypes.bool.isRequired,
-    tcrTitle: PropTypes.string.isRequired,
     columns: PropTypes.arrayOf(
       PropTypes.shape({
         description: PropTypes.string.isRequired,

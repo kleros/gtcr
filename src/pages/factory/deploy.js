@@ -24,16 +24,20 @@ const StyledAlert = styled(Alert)`
 `
 
 const getTcrMetaEvidence = async tcrState => {
-  const { tcrTitle, tcrDescription, columns, itemName } = tcrState
+  const {
+    tcrTitle,
+    tcrDescription,
+    columns,
+    itemName,
+    tcrPrimaryDocument
+  } = tcrState
   const tcrMetaEvidence = { tcrTitle, tcrDescription, columns, itemName }
 
-  // TODO: Allow user to set the primary document.
   const metaEvidence = {
     category: 'Curated Lists',
     question: `Does the ${(itemName && itemName.toLowerCase()) ||
       'item'} comply with the required criteria?`,
-    fileURI:
-      '/ipfs/QmRNK2cpW2i4Q9BBp58ALuhHnXuKEPkSBLU5q4mdtBG9i4/dutchx-badge.pdf',
+    fileURI: tcrPrimaryDocument,
     evidenceDisplayInterfaceURL:
       'https://ipfs.kleros.io/ipfs/QmXd9WaJURRSnF9Hwp1Bxn7j4gjp26X4CCL31d51UH83eZ/index.html',
     evidenceDisplayInterfaceHash:
@@ -220,11 +224,26 @@ Deploy.propTypes = {
       })
     ).isRequired,
     arbitratorAddress: PropTypes.string.isRequired,
-    submissionBaseDeposit: PropTypes.number.isRequired,
-    removalBaseDeposit: PropTypes.number.isRequired,
-    submissionChallengeBaseDeposit: PropTypes.number.isRequired,
-    removalChallengeBaseDeposit: PropTypes.number.isRequired,
-    challengePeriodDuration: PropTypes.number.isRequired
+    submissionChallengeBaseDeposit: PropTypes.oneOfType([
+      PropTypes.number,
+      PropTypes.string
+    ]).isRequired,
+    removalChallengeBaseDeposit: PropTypes.oneOfType([
+      PropTypes.number,
+      PropTypes.string
+    ]).isRequired,
+    submissionBaseDeposit: PropTypes.oneOfType([
+      PropTypes.number,
+      PropTypes.string
+    ]).isRequired,
+    removalBaseDeposit: PropTypes.oneOfType([
+      PropTypes.number,
+      PropTypes.string
+    ]).isRequired,
+    challengePeriodDuration: PropTypes.oneOfType([
+      PropTypes.number,
+      PropTypes.string
+    ]).isRequired
   }).isRequired
 }
 

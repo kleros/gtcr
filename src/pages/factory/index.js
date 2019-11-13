@@ -75,6 +75,7 @@ const useCachedFactory = version => {
     challengePeriodDuration: 3,
     itemName: 'Item',
     requireEvidenceRequest: true,
+    tcrPrimaryDocument: '',
     columns: [
       {
         label: '',

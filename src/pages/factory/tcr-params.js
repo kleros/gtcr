@@ -1,10 +1,12 @@
-import { Card, Icon, Tooltip, Form, Switch } from 'antd'
+import { Card, Icon, Tooltip, Form, Switch, Upload, message } from 'antd'
 import { withFormik, Field } from 'formik'
 import PropTypes from 'prop-types'
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useCallback } from 'react'
 import * as yup from 'yup'
 import CustomInput from '../../components/custom-input'
 import itemTypes from '../../utils/item-types'
+import ipfsPublish from '../../utils/ipfs-publish'
+import { sanitize } from '../../utils/string'
 
 const FormItem = Form.Item
 
@@ -25,6 +27,28 @@ const TCRParams = ({
       ...values
     }))
   }, [values, setTcrState])
+
+  const fileUploadStatusChange = useCallback(({ file: { status } }) => {
+    if (status === 'done') message.success(`Evidence uploaded successfully.`)
+    else if (status === 'error') message.error(`Evidence upload failed.`)
+  }, [])
+
+  const customRequest = useCallback(
+    async ({ file, onSuccess, onError }) => {
+      try {
+        const data = await new Response(new Blob([file])).arrayBuffer()
+        const ipfsFileObj = await ipfsPublish(sanitize(file.name), data)
+        const fileURI = `/ipfs/${ipfsFileObj[1].hash}${ipfsFileObj[0].path}`
+
+        setFieldValue('tcrPrimaryDocument', fileURI)
+        onSuccess('ok', `${process.env.REACT_APP_IPFS_GATEWAY}${fileURI}`)
+      } catch (err) {
+        console.error(err)
+        onError(err)
+      }
+    },
+    [setFieldValue]
+  )
 
   return (
     <Card title="Choose the item columns and identifiers">
@@ -167,6 +191,26 @@ const TCRParams = ({
             style={{ marginLeft: '8px' }}
           />
         </Form.Item>
+        <div style={{ marginBottom: '26px' }}>
+          <div className="ant-col ant-form-item-label">
+            <label>
+              <span>Primary Document&nbsp;</span>
+            </label>
+          </div>
+          <Upload.Dragger
+            name="primary-document"
+            onChange={fileUploadStatusChange}
+            customRequest={customRequest}
+            multiple={false}
+          >
+            <p className="ant-upload-drag-icon">
+              <Icon type="inbox" />
+            </p>
+            <p className="ant-upload-hint">
+              Click or drag a the primary document to this area.
+            </p>
+          </Upload.Dragger>
+        </div>
         {advancedOptions && (
           <>
             <CustomInput
@@ -268,7 +312,8 @@ const validationSchema = yup.object().shape({
     .number()
     .typeError('Amount should be a number.')
     .required('A value is required.')
-    .min(0, 'The amount must not be negative.')
+    .min(0, 'The amount must not be negative.'),
+  tcrPrimaryDocument: yup.string().required('A primary document is required.')
 })
 
 export default withFormik({
