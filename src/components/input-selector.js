@@ -9,6 +9,7 @@ const InputSelector = ({ type, setFieldValue, ...props }) => {
   const { name, label } = props
   switch (type) {
     case itemTypes.TEXT:
+    case itemTypes.GTCR_ADDRESS:
     case itemTypes.ADDRESS:
     case itemTypes.NUMBER:
       return <CustomInput type={type} {...props} />

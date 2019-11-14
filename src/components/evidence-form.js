@@ -11,7 +11,6 @@ const StyledCheckbox = styled(Checkbox)`
   margin-bottom: 1em;
 `
 
-// TODO: Evidence attatchment is not working.
 const EvidenceForm = ({
   formID,
   detailed, // Should the evidence form let the user input an evidence title?

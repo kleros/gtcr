@@ -7,7 +7,8 @@ import {
   faClock,
   faBalanceScale,
   faCoins,
-  faInfoCircle
+  faInfoCircle,
+  faExternalLinkAlt
 } from '@fortawesome/free-solid-svg-icons'
 
 library.add(
@@ -18,5 +19,6 @@ library.add(
   faCoins,
   faBullhorn,
   faInfoCircle,
-  fab
+  fab,
+  faExternalLinkAlt
 )

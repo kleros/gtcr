@@ -2,6 +2,7 @@ import React from 'react'
 import { Typography, Switch, Skeleton } from 'antd'
 import styled from 'styled-components/macro'
 import EthAddress from './eth-address'
+import GTCRAddress from './gtcr-address'
 import itemTypes from '../utils/item-types'
 import { ZERO_ADDRESS, LOREM_IPSUM } from '../utils/string'
 
@@ -16,6 +17,8 @@ const StyledSkeleton = styled(Skeleton)`
 
 const DisplaySelector = ({ type, value }) => {
   switch (type) {
+    case itemTypes.GTCR_ADDRESS:
+      return <GTCRAddress address={value || ZERO_ADDRESS} />
     case itemTypes.ADDRESS:
       return <EthAddress address={value || ZERO_ADDRESS} />
     case itemTypes.TEXT:
