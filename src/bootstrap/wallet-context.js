@@ -4,6 +4,7 @@ import { notification, Icon } from 'antd'
 import { useWeb3Context } from 'web3-react'
 import PropTypes from 'prop-types'
 import uuid from 'uuid/v4'
+import { bigNumberify } from 'ethers/utils'
 import WalletConnectQRCodeModal from '@walletconnect/qrcode-modal'
 import { NETWORK, NETWORK_NAME } from '../utils/network-names'
 import FastJsonRpcSigner from '../utils/fast-signer'
@@ -29,6 +30,7 @@ const useNotificationWeb3 = () => {
   const web3Context = useWeb3Context()
   const [web3Actions, setWeb3Actions] = useState([])
   const [infuraSetup, setInfuraSetup] = useState() // Whether infura was set as the provider.
+  const [timestamp, setTimestamp] = useState()
   const archon = useMemo(() => {
     if (
       !web3Context.library ||
@@ -93,6 +95,20 @@ const useNotificationWeb3 = () => {
 
     setInfuraSetup(true)
   }, [infuraSetup, web3Context])
+
+  // Fetch timestamp.
+  useEffect(() => {
+    if (!web3Context.active || !web3Context.library || timestamp) return
+    ;(async () => {
+      try {
+        setTimestamp(
+          bigNumberify((await web3Context.library.getBlock()).timestamp)
+        )
+      } catch (err) {
+        console.error('Error fetching timestamp', err)
+      }
+    })()
+  }, [timestamp, web3Context.library, web3Context.active])
 
   // We watch the web3 context props to handle the flow of authorization.
   useEffect(() => {
@@ -194,7 +210,8 @@ const useNotificationWeb3 = () => {
     pushWeb3Action,
     requestWeb3Auth,
     setUserSelectedWallet,
-    archon
+    archon,
+    timestamp
   }
 }
 

@@ -29,6 +29,8 @@
     "fortmatic": "^0.8.2",
     "humanize-duration": "^3.20.1",
     "js-ordinal": "^1.0.1",
+    "localforage": "^1.7.3",
+    "match-sorter": "^4.0.2",
     "prop-types": "^15.7.2",
     "qs": "^6.8.0",
     "react": "^16.8.6",

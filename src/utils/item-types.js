@@ -35,3 +35,5 @@ export const typeDefaultValues = {
   [NUMBER]: 0,
   [GTCR_ADDRESS]: ''
 }
+
+export const onchainTextFields = [ADDRESS, GTCR_ADDRESS, TEXT]

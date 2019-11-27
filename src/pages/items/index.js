@@ -24,6 +24,7 @@ import { useWeb3Context } from 'web3-react'
 import { bigNumberify } from 'ethers/utils'
 import { gtcrDecode } from '../../utils/encoder'
 import SubmissionModal from '../item-details/modals/submit'
+import SearchBar from '../../components/search-bar'
 import {
   searchStrToFilterObj,
   filterLabel,
@@ -48,7 +49,6 @@ const StyledBanner = styled.div`
   background: linear-gradient(270deg, #f2e3ff 22.92%, #ffffff 76.25%);
   box-shadow: 0px 3px 24px #bc9cff;
   color: #4d00b4;
-  margin-bottom: 24px;
 `
 
 const StyledButton = styled(Button)`
@@ -111,21 +111,20 @@ const pagingItem = (_, type, originalElement) => {
 //
 // Reference:
 // https://itnext.io/how-to-create-react-custom-hooks-for-data-fetching-with-useeffect-74c5dc47000a
-// TODO: Send http requests in parallel.
 const ITEMS_PER_PAGE = 40
 const Items = ({ tcrAddress, search, history }) => {
-  const { requestWeb3Auth } = useContext(WalletContext)
-  const { library, active } = useWeb3Context()
+  const { requestWeb3Auth, timestamp } = useContext(WalletContext)
+  const { active } = useWeb3Context()
   const {
     gtcr,
     metaEvidence,
     challengePeriodDuration,
     tcrErrored,
-    gtcrView
+    gtcrView,
+    decodedSubmissionLogs
   } = useContext(TCRViewContext)
   const [submissionFormOpen, setSubmissionFormOpen] = useState()
   const [errored, setErrored] = useState()
-  const [timestamp, setTimestamp] = useState()
   const [fetchItems, setFetchItems] = useState({
     fetchStarted: true,
     isFetching: false,
@@ -189,19 +188,6 @@ const Items = ({ tcrAddress, search, history }) => {
     tcrAddress,
     search
   ])
-
-  // Fetch timestamp.
-  useEffect(() => {
-    if (!library || timestamp) return
-    ;(async () => {
-      try {
-        setTimestamp(bigNumberify((await library.getBlock()).timestamp))
-      } catch (err) {
-        console.error('Error fetching timestamp', err)
-        setErrored(true)
-      }
-    })()
-  }, [library, timestamp])
 
   // Fetch items.
   useEffect(() => {
@@ -347,11 +333,20 @@ const Items = ({ tcrAddress, search, history }) => {
       />
     )
 
-  if (!tcrAddress || tcrErrored || errored)
+  if (!tcrAddress)
     return (
       <ErrorPage
-        code="400"
+        code="404"
         message="The gods are having trouble finding this TCR."
+        tip="Is your wallet set to the correct network?"
+      />
+    )
+
+  if (tcrErrored || errored)
+    return (
+      <ErrorPage
+        code="500"
+        message="The decoding data from the TCR."
         tip="Is your wallet set to the correct network?"
       />
     )
@@ -392,6 +387,7 @@ const Items = ({ tcrAddress, search, history }) => {
           <Skeleton active paragraph={{ rows: 1, width: 150 }} title={false} />
         )}
       </StyledBanner>
+      <SearchBar dataSource={decodedSubmissionLogs} />
       <StyledLayoutContent>
         <StyledContent>
           <Spin

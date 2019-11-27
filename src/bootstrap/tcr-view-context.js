@@ -7,13 +7,14 @@ import { abi as _arbitrator } from '@kleros/tcr/build/contracts/Arbitrator.json'
 import { ethers } from 'ethers'
 import PropTypes from 'prop-types'
 import useNetworkEnvVariable from '../hooks/network-env'
+import { gtcrDecode } from '../utils/encoder'
+import localforage from 'localforage'
 
 // TODO: Ensure we don't set state for unmounted components using
 // flags and AbortController.
 //
 // Reference:
 // https://itnext.io/how-to-create-react-custom-hooks-for-data-fetching-with-useeffect-74c5dc47000a
-// TODO: Ensure http requests are being sent in parallel.
 const useTcrView = tcrAddress => {
   const { library, active, networkId } = useWeb3Context()
   const [metaEvidencePath, setMetaEvidencePath] = useState()
@@ -27,6 +28,7 @@ const useTcrView = tcrAddress => {
   const [submissionChallengeDeposit, setSubmissionChallengeDeposit] = useState()
   const [removalDeposit, setRemovalDeposit] = useState()
   const [removalChallengeDeposit, setRemovalChallengeDeposit] = useState()
+  const [submissionLogs, setSubmissionLogs] = useState([])
   const ARBITRABLE_TCR_VIEW_ADDRESS = useNetworkEnvVariable(
     'REACT_APP_GTCRVIEW_ADDRESSES',
     networkId
@@ -56,6 +58,24 @@ const useTcrView = tcrAddress => {
       setErrored(true)
     }
   }, [active, library, tcrAddress])
+
+  const META_EVIDENCE_CACHE_KEY = useMemo(() => {
+    if (!tcrAddress || typeof networkId === 'undefined') return null
+    return `metaEvidence-${tcrAddress}@networkID-${networkId}`
+  }, [networkId, tcrAddress])
+
+  // Use cached meta evidence, if any is available.
+  // It will be overwritten by the latest once it has been fetched.
+  useEffect(() => {
+    if (!META_EVIDENCE_CACHE_KEY) return
+    localforage
+      .getItem(META_EVIDENCE_CACHE_KEY)
+      .then(file => setMetaEvidence(file))
+      .catch(err => {
+        console.error('Error fetching meta evidence file from cache')
+        console.error(err)
+      })
+  }, [META_EVIDENCE_CACHE_KEY])
 
   // Get TCR data.
   useEffect(() => {
@@ -148,13 +168,19 @@ const useTcrView = tcrAddress => {
     setErrored
   ])
 
-  // Fetch meta evidence logs.
+  // Fetch meta evidence and item submission logs.
   useEffect(() => {
     if (!gtcr || !library) return
     try {
       gtcr.on(gtcr.filters.MetaEvidence(), (_, metaEvidencePath) => {
         setMetaEvidencePath(metaEvidencePath)
         setMetaEvidencePaths(paths => [...paths, metaEvidencePath])
+      })
+      gtcr.on(gtcr.filters.ItemSubmitted(), (itemID, submitter, data) => {
+        setSubmissionLogs(submissionLogs => [
+          ...submissionLogs,
+          { itemID, submitter, data }
+        ])
       })
       library.resetEventsBlock(0) // Reset provider to fetch logs.
     } catch (err) {
@@ -178,12 +204,43 @@ const useTcrView = tcrAddress => {
           )
         ).json()
         setMetaEvidence(file)
+        localforage.setItem(META_EVIDENCE_CACHE_KEY, file)
       } catch (err) {
         console.error('Error fetching meta evidence files', err)
         setErrored(true)
       }
     })()
-  }, [debouncedMetaEvidencePath, setMetaEvidence])
+  }, [
+    META_EVIDENCE_CACHE_KEY,
+    debouncedMetaEvidencePath,
+    networkId,
+    setMetaEvidence,
+    tcrAddress
+  ])
+
+  const decodedSubmissionLogs = useMemo(() => {
+    if (!metaEvidence || submissionLogs.length === 0) return []
+    const { columns } = metaEvidence
+    return submissionLogs
+      .map(submissionLog => ({
+        ...submissionLog,
+        decodedData: gtcrDecode({ columns, values: submissionLog.data }),
+        columns
+      }))
+      .map(submissionLog => ({
+        ...submissionLog,
+        columns: submissionLog.columns.map((col, i) => ({
+          ...col,
+          value: submissionLog.decodedData[i]
+        }))
+      }))
+      .map(submissionLog => ({
+        ...submissionLog,
+        keys: submissionLog.columns
+          .filter(col => col.isIdentifier)
+          .map(col => col.value)
+      }))
+  }, [metaEvidence, submissionLogs])
 
   return {
     gtcr,
@@ -197,6 +254,7 @@ const useTcrView = tcrAddress => {
     tcrAddress,
     gtcrView,
     metaEvidencePaths,
+    decodedSubmissionLogs,
     ...arbitrableTCRData
   }
 }

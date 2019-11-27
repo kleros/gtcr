@@ -13,7 +13,6 @@ import styled from 'styled-components/macro'
 import { useWeb3Context } from 'web3-react'
 import { abi as _arbitrator } from '@kleros/tcr/build/contracts/Arbitrator.json'
 import { ethers } from 'ethers'
-import { bigNumberify } from 'ethers/utils'
 import ItemDetailsCard from '../../components/item-details-card'
 import ItemStatusCard from './item-status-card'
 import CrowdfundingCard from './crowdfunding-card'
@@ -21,9 +20,10 @@ import { TCRViewContext } from '../../bootstrap/tcr-view-context'
 import { gtcrDecode } from '../../utils/encoder'
 import RequestTimelines from './request-timelines'
 import { WalletContext } from '../../bootstrap/wallet-context'
+import SearchBar from '../../components/search-bar'
 
 const StyledLayoutContent = styled(Layout.Content)`
-  padding: 42px 9.375vw 42px;
+  padding: 0 9.375vw 42px;
   display: flex;
   flex-direction: column;
 `
@@ -44,11 +44,10 @@ const StyledBanner = styled.div`
 const ItemDetails = ({ itemID, tcrAddress }) => {
   const { library } = useWeb3Context()
   const [errored, setErrored] = useState()
-  const { archon } = useContext(WalletContext)
+  const { archon, timestamp } = useContext(WalletContext)
   const [decodedItem, setDecodedItem] = useState()
   const [item, setItem] = useState()
   const [requests, setRequests] = useState()
-  const [timestamp, setTimestamp] = useState()
   const [metaEvidence, setMetaEvidence] = useState()
   const arbitrator = useMemo(() => {
     if (!decodedItem || !library) return
@@ -56,9 +55,13 @@ const ItemDetails = ({ itemID, tcrAddress }) => {
   }, [decodedItem, library])
   const refAttr = useRef()
   const [eventListenerSet, setEventListenerSet] = useState()
-  const { gtcr, tcrErrored, gtcrView, metaEvidencePaths } = useContext(
-    TCRViewContext
-  )
+  const {
+    gtcr,
+    tcrErrored,
+    gtcrView,
+    metaEvidencePaths,
+    decodedSubmissionLogs
+  } = useContext(TCRViewContext)
 
   // Warning: This function should only be called when all its dependencies
   // are set.
@@ -101,21 +104,13 @@ const ItemDetails = ({ itemID, tcrAddress }) => {
     }
   }, [item, metaEvidence])
 
-  // Fetch item and timestamp.
+  // Fetch item.
   // This runs when the user loads the details view for the of an item
   // or when he navigates from the details view of an item to
   // the details view of another item (i.e. when itemID changes).
   useEffect(() => {
     if (!gtcrView || !itemID || !library || !tcrAddress) return
     fetchItem()
-    try {
-      ;(async () => {
-        setTimestamp(bigNumberify((await library.getBlock()).timestamp))
-      })()
-    } catch (err) {
-      console.error(err)
-      setErrored(true)
-    }
   }, [gtcrView, fetchItem, itemID, library, tcrAddress])
 
   // If the item has a pending request, fetch the meta evidence file for
@@ -203,6 +198,7 @@ const ItemDetails = ({ itemID, tcrAddress }) => {
           {metaEvidence && metaEvidence.itemName} Details
         </Typography.Title>
       </StyledBanner>
+      <SearchBar dataSource={decodedSubmissionLogs} />
       <StyledLayoutContent>
         <ItemStatusCard item={decodedItem || item} timestamp={timestamp} dark />
         <br />
