@@ -21,7 +21,7 @@ const useTcrView = tcrAddress => {
   const [metaEvidence, setMetaEvidence] = useState()
   const [debouncedMetaEvidencePath] = useDebounce(metaEvidencePath, 300)
   const [metaEvidencePaths, setMetaEvidencePaths] = useState([])
-  const [errored, setErrored] = useState(false)
+  const [error, setError] = useState(false)
   const [arbitrableTCRData, setArbitrableTCRData] = useState()
   const [arbitrationCost, setArbitrationCost] = useState()
   const [submissionDeposit, setSubmissionDeposit] = useState()
@@ -45,7 +45,7 @@ const useTcrView = tcrAddress => {
       )
     } catch (err) {
       console.error('Error instantiating gtcr view contract', err)
-      setErrored(true)
+      setError(true)
     }
   }, [ARBITRABLE_TCR_VIEW_ADDRESS, active, library])
 
@@ -55,7 +55,7 @@ const useTcrView = tcrAddress => {
       return new ethers.Contract(tcrAddress, _gtcr, library)
     } catch (err) {
       console.error('Error instantiating gtcr contract', err)
-      setErrored(true)
+      setError(true)
     }
   }, [active, library, tcrAddress])
 
@@ -85,10 +85,10 @@ const useTcrView = tcrAddress => {
         setArbitrableTCRData(await gtcrView.fetchArbitrable(tcrAddress))
       } catch (err) {
         console.error('Error fetching arbitrable TCR data:', err)
-        setErrored(true)
+        setError(true)
       }
     })()
-  }, [setArbitrableTCRData, gtcrView, tcrAddress, setErrored])
+  }, [setArbitrableTCRData, gtcrView, tcrAddress, setError])
 
   // Get the current arbitration cost to calculate request and challenge deposits.
   useEffect(() => {
@@ -157,7 +157,7 @@ const useTcrView = tcrAddress => {
         setRemovalChallengeDeposit(removalChallengeDeposit)
       } catch (err) {
         console.error('Error computing arbitration cost:', err)
-        setErrored(true)
+        setError(true)
       }
     })()
   }, [
@@ -165,7 +165,7 @@ const useTcrView = tcrAddress => {
     setArbitrationCost,
     library,
     arbitrationCost,
-    setErrored
+    setError
   ])
 
   // Fetch meta evidence and item submission logs.
@@ -185,7 +185,7 @@ const useTcrView = tcrAddress => {
       library.resetEventsBlock(0) // Reset provider to fetch logs.
     } catch (err) {
       console.error('Error fetching meta evidence', err)
-      setErrored(true)
+      setError(true)
     }
 
     return () => {
@@ -207,7 +207,7 @@ const useTcrView = tcrAddress => {
         localforage.setItem(META_EVIDENCE_CACHE_KEY, file)
       } catch (err) {
         console.error('Error fetching meta evidence files', err)
-        setErrored(true)
+        setError(true)
       }
     })()
   }, [
@@ -221,31 +221,36 @@ const useTcrView = tcrAddress => {
   const decodedSubmissionLogs = useMemo(() => {
     if (!metaEvidence || submissionLogs.length === 0) return []
     const { columns } = metaEvidence
-    return submissionLogs
-      .map(submissionLog => ({
-        ...submissionLog,
-        decodedData: gtcrDecode({ columns, values: submissionLog.data }),
-        columns
-      }))
-      .map(submissionLog => ({
-        ...submissionLog,
-        columns: submissionLog.columns.map((col, i) => ({
-          ...col,
-          value: submissionLog.decodedData[i]
+    try {
+      return submissionLogs
+        .map(submissionLog => ({
+          ...submissionLog,
+          decodedData: gtcrDecode({ columns, values: submissionLog.data }),
+          columns
         }))
-      }))
-      .map(submissionLog => ({
-        ...submissionLog,
-        keys: submissionLog.columns
-          .filter(col => col.isIdentifier)
-          .map(col => col.value)
-      }))
+        .map(submissionLog => ({
+          ...submissionLog,
+          columns: submissionLog.columns.map((col, i) => ({
+            ...col,
+            value: submissionLog.decodedData[i]
+          }))
+        }))
+        .map(submissionLog => ({
+          ...submissionLog,
+          keys: submissionLog.columns
+            .filter(col => col.isIdentifier)
+            .map(col => col.value)
+        }))
+    } catch (err) {
+      console.error('Error decoding submission logs', err)
+      setError('Error decoding submission logs')
+    }
   }, [metaEvidence, submissionLogs])
 
   return {
     gtcr,
     metaEvidence,
-    tcrErrored: errored,
+    tcrErrored: error,
     arbitrationCost,
     submissionDeposit,
     submissionChallengeDeposit,

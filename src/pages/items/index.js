@@ -112,7 +112,7 @@ const pagingItem = (_, type, originalElement) => {
 // Reference:
 // https://itnext.io/how-to-create-react-custom-hooks-for-data-fetching-with-useeffect-74c5dc47000a
 const ITEMS_PER_PAGE = 40
-const Items = ({ tcrAddress, search, history }) => {
+const Items = ({ search, history }) => {
   const { requestWeb3Auth, timestamp } = useContext(WalletContext)
   const { active } = useWeb3Context()
   const {
@@ -121,10 +121,11 @@ const Items = ({ tcrAddress, search, history }) => {
     challengePeriodDuration,
     tcrErrored,
     gtcrView,
-    decodedSubmissionLogs
+    decodedSubmissionLogs,
+    tcrAddress
   } = useContext(TCRViewContext)
   const [submissionFormOpen, setSubmissionFormOpen] = useState()
-  const [errored, setErrored] = useState()
+  const [error, setError] = useState()
   const [fetchItems, setFetchItems] = useState({
     fetchStarted: true,
     isFetching: false,
@@ -177,7 +178,7 @@ const Items = ({ tcrAddress, search, history }) => {
         })
       } catch (err) {
         console.error('Error fetching number of pages', err)
-        setErrored(true)
+        setError('Error fetching number of pages')
       }
     })()
   }, [
@@ -258,7 +259,7 @@ const Items = ({ tcrAddress, search, history }) => {
         encodedItems = encodedItems[0].filter(item => item.ID !== ZERO_BYTES32)
       } catch (err) {
         console.error('Error fetching items', err)
-        setErrored(true)
+        setError('Error fetching items')
         setFetchItems({ isFetching: false, fetchStarted: false })
       } finally {
         setFetchItems({
@@ -275,22 +276,28 @@ const Items = ({ tcrAddress, search, history }) => {
     if (!fetchItems.data || !metaEvidence) return
     const { data: encodedItems } = fetchItems
     const { columns } = metaEvidence
-    return encodedItems.map((item, i) => {
-      const decodedItem = gtcrDecode({ values: item.data, columns })
-      // Return the item columns along with its TCR status data.
-      return {
-        tcrData: {
-          ...item // Spread to convert from array to object.
-        },
-        columns: columns.map(
-          (col, i) => ({
-            value: decodedItem[i],
-            ...col
-          }),
-          { key: i }
-        )
-      }
-    })
+
+    try {
+      return encodedItems.map((item, i) => {
+        const decodedItem = gtcrDecode({ values: item.data, columns })
+        // Return the item columns along with its TCR status data.
+        return {
+          tcrData: {
+            ...item // Spread to convert from array to object.
+          },
+          columns: columns.map(
+            (col, i) => ({
+              value: decodedItem[i],
+              ...col
+            }),
+            { key: i }
+          )
+        }
+      })
+    } catch (err) {
+      console.error('Error decoding submission logs', err)
+      setError('Error decoding submission logs')
+    }
   }, [fetchItems, metaEvidence])
 
   // Watch for submissions and status change events to refetch items.
@@ -342,11 +349,11 @@ const Items = ({ tcrAddress, search, history }) => {
       />
     )
 
-  if (tcrErrored || errored)
+  if (tcrErrored || error)
     return (
       <ErrorPage
-        code="500"
-        message="The decoding data from the TCR."
+        code="400"
+        message="Decoding data from the TCR."
         tip="Is your wallet set to the correct network?"
       />
     )
@@ -504,7 +511,6 @@ const Items = ({ tcrAddress, search, history }) => {
 }
 
 Items.propTypes = {
-  tcrAddress: PropTypes.string.isRequired,
   search: PropTypes.string.isRequired,
   history: PropTypes.shape({
     push: PropTypes.func.isRequired

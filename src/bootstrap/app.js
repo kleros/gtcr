@@ -406,11 +406,7 @@ const Content = () => {
                 }) => <ItemDetails tcrAddress={tcrAddress} itemID={itemID} />}
               </Route>
               <Route path="/tcr/:tcrAddress">
-                <Items
-                  tcrAddress={tcrAddress}
-                  search={search}
-                  history={history}
-                />
+                <Items search={search} history={history} />
               </Route>
             </Switch>
           </TCRViewProvider>

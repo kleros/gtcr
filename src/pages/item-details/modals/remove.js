@@ -24,7 +24,6 @@ const RemoveModal = ({ item, itemName = 'item', fileURI, ...rest }) => {
   const requestStatusChange = () => {
     pushWeb3Action(async (_, signer) => {
       const gtcr = new ethers.Contract(tcrAddress, _gtcr, signer)
-      console.info('removalDeposit', removalDeposit.toString())
 
       // Request signature and submit.
       const tx = await gtcr.removeItem(item.data, {
