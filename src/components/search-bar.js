@@ -83,7 +83,7 @@ const OptionItem = ({ item: { itemID, columns = [] } }) => {
         {columns
           .filter(col => col.isIdentifier)
           .map((column, j) => (
-            <StyledItemField>
+            <StyledItemField key={j}>
               <DisplaySelector
                 type={column.type}
                 value={column.value}
