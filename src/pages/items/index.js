@@ -11,7 +11,6 @@ import {
   Card
 } from 'antd'
 import { Link } from 'react-router-dom'
-import qs from 'qs'
 import React, { useEffect, useState, useContext, useMemo, useRef } from 'react'
 import PropTypes from 'prop-types'
 import ErrorPage from '../error-page'
@@ -138,12 +137,6 @@ const Items = ({ search, history }) => {
   })
   const refAttr = useRef()
   const [eventListenerSet, setEventListenerSet] = useState()
-
-  // Set page to 1 in the URI if none is set.
-  useEffect(() => {
-    if (qs.parse(search.replace(/\?/g, '')).page) return
-    history.push({ search: '?page=1' })
-  }, [history, search])
 
   // Fetch number of pages for the current filter
   useEffect(() => {
