@@ -265,7 +265,8 @@ const Items = ({ search, history }) => {
         setFetchItems({
           isFetching: false,
           fetchStarted: false,
-          data: encodedItems
+          data: encodedItems,
+          tcrAddress
         })
       }
     })()
@@ -273,7 +274,14 @@ const Items = ({ search, history }) => {
 
   // Decode items once meta evidence and items were fetched.
   const items = useMemo(() => {
-    if (!fetchItems.data || !metaEvidence) return
+    if (
+      !fetchItems.data ||
+      !metaEvidence ||
+      metaEvidence.tcrAddress !== tcrAddress ||
+      fetchItems.tcrAddress !== tcrAddress
+    )
+      return
+
     const { data: encodedItems } = fetchItems
     const { columns } = metaEvidence
 
@@ -298,7 +306,7 @@ const Items = ({ search, history }) => {
       console.error('Error decoding submission logs', err)
       setError('Error decoding submission logs')
     }
-  }, [fetchItems, metaEvidence])
+  }, [fetchItems, metaEvidence, tcrAddress])
 
   // Watch for submissions and status change events to refetch items.
   useEffect(() => {

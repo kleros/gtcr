@@ -41,14 +41,13 @@ const StyledBanner = styled.div`
 // Reference:
 // https://itnext.io/how-to-create-react-custom-hooks-for-data-fetching-with-useeffect-74c5dc47000a
 // TODO: Ensure http requests are being sent in parallel.
-const ItemDetails = ({ itemID, tcrAddress }) => {
+const ItemDetails = ({ itemID }) => {
   const { library } = useWeb3Context()
   const [errored, setErrored] = useState()
-  const { archon, timestamp } = useContext(WalletContext)
+  const { timestamp } = useContext(WalletContext)
   const [decodedItem, setDecodedItem] = useState()
   const [item, setItem] = useState()
   const [requests, setRequests] = useState()
-  const [metaEvidence, setMetaEvidence] = useState()
   const arbitrator = useMemo(() => {
     if (!decodedItem || !library) return
     return new ethers.Contract(decodedItem.arbitrator, _arbitrator, library)
@@ -59,8 +58,9 @@ const ItemDetails = ({ itemID, tcrAddress }) => {
     gtcr,
     tcrErrored,
     gtcrView,
-    metaEvidencePaths,
-    decodedSubmissionLogs
+    metaEvidence,
+    decodedSubmissionLogs,
+    tcrAddress
   } = useContext(TCRViewContext)
 
   // Warning: This function should only be called when all its dependencies
@@ -91,7 +91,14 @@ const ItemDetails = ({ itemID, tcrAddress }) => {
 
   // Decode item bytes once we have it and the meta evidence.
   useEffect(() => {
-    if (!item || !metaEvidence || !metaEvidence.columns) return
+    if (
+      !item ||
+      !metaEvidence ||
+      !metaEvidence.columns ||
+      metaEvidence.tcrAddress !== tcrAddress
+    )
+      return
+
     const { columns } = metaEvidence
     try {
       setDecodedItem({
@@ -102,7 +109,7 @@ const ItemDetails = ({ itemID, tcrAddress }) => {
       console.error(err)
       setErrored(true)
     }
-  }, [item, metaEvidence])
+  }, [item, metaEvidence, tcrAddress])
 
   // Fetch item.
   // This runs when the user loads the details view for the of an item
@@ -112,31 +119,6 @@ const ItemDetails = ({ itemID, tcrAddress }) => {
     if (!gtcrView || !itemID || !library || !tcrAddress) return
     fetchItem()
   }, [gtcrView, fetchItem, itemID, library, tcrAddress])
-
-  // If the item has a pending request, fetch the meta evidence file for
-  // that request.
-  useEffect(() => {
-    if (!item || !requests || !gtcr || !archon) return
-    const latestRequest = requests[requests.length - 1]
-    if (metaEvidencePaths.length - 1 < latestRequest.metaEvidenceID.toNumber())
-      return
-
-    const metaEvidencePath =
-      metaEvidencePaths[latestRequest.metaEvidenceID.toNumber()]
-    try {
-      ;(async () => {
-        const evidenceJSON = await (
-          await fetch(
-            `${process.env.REACT_APP_IPFS_GATEWAY}${metaEvidencePath}`
-          )
-        ).json()
-        setMetaEvidence(evidenceJSON)
-      })()
-    } catch (err) {
-      console.error(err)
-      setErrored(true)
-    }
-  }, [archon, gtcr, item, metaEvidencePaths, requests])
 
   // Watch for events to and refetch.
   useEffect(() => {
@@ -223,7 +205,6 @@ const ItemDetails = ({ itemID, tcrAddress }) => {
 }
 
 ItemDetails.propTypes = {
-  tcrAddress: PropTypes.string.isRequired,
   itemID: PropTypes.string.isRequired
 }
 
