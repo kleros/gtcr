@@ -118,7 +118,7 @@ const Items = ({ search, history }) => {
     gtcr,
     metaEvidence,
     challengePeriodDuration,
-    tcrErrored,
+    tcrError,
     gtcrView,
     decodedSubmissionLogs,
     tcrAddress
@@ -350,11 +350,11 @@ const Items = ({ search, history }) => {
       />
     )
 
-  if (tcrErrored || error)
+  if (tcrError || error)
     return (
       <ErrorPage
         code="400"
-        message="Decoding data from the TCR."
+        message={tcrError || error || 'Decoding this item.'}
         tip="Is your wallet set to the correct network?"
       />
     )

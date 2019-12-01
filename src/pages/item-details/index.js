@@ -43,7 +43,7 @@ const StyledBanner = styled.div`
 // TODO: Ensure http requests are being sent in parallel.
 const ItemDetails = ({ itemID }) => {
   const { library } = useWeb3Context()
-  const [errored, setErrored] = useState()
+  const [error, setError] = useState()
   const { timestamp } = useContext(WalletContext)
   const [decodedItem, setDecodedItem] = useState()
   const [item, setItem] = useState()
@@ -56,7 +56,7 @@ const ItemDetails = ({ itemID }) => {
   const [eventListenerSet, setEventListenerSet] = useState()
   const {
     gtcr,
-    tcrErrored,
+    tcrError,
     gtcrView,
     metaEvidence,
     decodedSubmissionLogs,
@@ -73,7 +73,7 @@ const ItemDetails = ({ itemID }) => {
       setItem(result)
     } catch (err) {
       console.error(err)
-      setErrored(true)
+      setError('Error fetching item')
     }
   }, [gtcrView, itemID, tcrAddress])
 
@@ -107,7 +107,7 @@ const ItemDetails = ({ itemID }) => {
       })
     } catch (err) {
       console.error(err)
-      setErrored(true)
+      setError('Error decoding item')
     }
   }, [item, metaEvidence, tcrAddress])
 
@@ -164,11 +164,11 @@ const ItemDetails = ({ itemID }) => {
     [eventListenerSet]
   )
 
-  if (!tcrAddress || !itemID || errored || tcrErrored)
+  if (!tcrAddress || !itemID || error || tcrError)
     return (
       <ErrorPage
         code="400"
-        message="This item could not be found."
+        message={error || tcrError || 'This item could not be found.'}
         tip="Is your wallet set to the correct network?"
       />
     )

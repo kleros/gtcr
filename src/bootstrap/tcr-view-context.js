@@ -171,6 +171,7 @@ const useTcrView = tcrAddress => {
   // Fetch meta evidence and item submission logs.
   useEffect(() => {
     if (!gtcr || !library || gtcr.address !== tcrAddress) return
+    setSubmissionLogs([]) // Clear submission logs from other TCRs.
 
     try {
       gtcr.on(gtcr.filters.MetaEvidence(), (_, metaEvidencePath) => {
@@ -260,7 +261,7 @@ const useTcrView = tcrAddress => {
   return {
     gtcr,
     metaEvidence,
-    tcrErrored: error,
+    tcrError: error,
     arbitrationCost,
     submissionDeposit,
     submissionChallengeDeposit,
