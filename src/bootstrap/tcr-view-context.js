@@ -70,7 +70,7 @@ const useTcrView = tcrAddress => {
     if (!META_EVIDENCE_CACHE_KEY) return
     localforage
       .getItem(META_EVIDENCE_CACHE_KEY)
-      .then(file => setMetaEvidence({ ...file }))
+      .then(file => setMetaEvidence(file))
       .catch(err => {
         console.error('Error fetching meta evidence file from cache')
         console.error(err)
