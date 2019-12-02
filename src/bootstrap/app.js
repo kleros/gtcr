@@ -126,6 +126,11 @@ const FooterWrapper = styled.div`
   margin-top: auto;
 `
 
+const StyledSpan = styled.span`
+  text-decoration: underline;
+  cursor: pointer;
+`
+
 const Factory = loadable(
   () => import(/* webpackPrefetch: true */ '../pages/factory/index'),
   {
@@ -335,10 +340,33 @@ const TopBar = () => {
   )
 }
 
+const NoWeb3Detected = () => {
+  const { requestWeb3Auth } = useContext(WalletContext)
+  return (
+    <ErrorPage
+      code="Web3 Required"
+      message="A provider is required to view blockchain data."
+      tip={
+        <div>
+          Please{' '}
+          <StyledSpan
+            className="primary-color theme-color"
+            onClick={requestWeb3Auth}
+          >
+            connect a wallet.
+          </StyledSpan>
+        </div>
+      }
+    />
+  )
+}
+
 const Content = () => {
   const TCR2_ADDRESS = useMainTCR2()
+  const { active } = useWeb3Context()
   return (
     <Switch>
+      {!active && <Route path="*" exact component={NoWeb3Detected} />}
       <Route path="/tcr/:tcrAddress">
         {({
           match: {

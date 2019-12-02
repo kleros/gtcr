@@ -19,7 +19,6 @@ import { WalletContext } from '../../bootstrap/wallet-context'
 import { ZERO_ADDRESS, ZERO_BYTES32 } from '../../utils/string'
 import { TCRViewContext } from '../../bootstrap/tcr-view-context'
 import ItemStatus from '../../components/item-status-badge'
-import { useWeb3Context } from 'web3-react'
 import { bigNumberify } from 'ethers/utils'
 import { gtcrDecode } from '../../utils/encoder'
 import SubmissionModal from '../item-details/modals/submit'
@@ -82,11 +81,6 @@ const StyledPagination = styled(Pagination)`
   margin-top: 2em;
 `
 
-const StyledSpan = styled.span`
-  text-decoration: underline;
-  cursor: pointer;
-`
-
 const StyledGrid = styled.div`
   display: grid;
   margin: 24px 0;
@@ -113,7 +107,6 @@ const pagingItem = (_, type, originalElement) => {
 const ITEMS_PER_PAGE = 40
 const Items = ({ search, history }) => {
   const { requestWeb3Auth, timestamp } = useContext(WalletContext)
-  const { active } = useWeb3Context()
   const {
     gtcr,
     metaEvidence,
@@ -320,25 +313,6 @@ const Items = ({ search, history }) => {
     },
     [eventListenerSet]
   )
-
-  if (!active && !process.env.REACT_APP_INFURA_PROJECT_ID)
-    return (
-      <ErrorPage
-        code="Web3 Required"
-        message="A provider is required to view blockchain data."
-        tip={
-          <div>
-            Please{' '}
-            <StyledSpan
-              className="primary-color theme-color"
-              onClick={requestWeb3Auth}
-            >
-              connect a wallet.
-            </StyledSpan>
-          </div>
-        }
-      />
-    )
 
   if (!tcrAddress)
     return (
