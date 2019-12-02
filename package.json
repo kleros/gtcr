@@ -17,6 +17,7 @@
     "@fortawesome/free-solid-svg-icons": "^5.11.2",
     "@fortawesome/react-fontawesome": "^0.1.7",
     "@kleros/archon": "^0.10.1",
+    "@kleros/react-components": "^1.0.0",
     "@kleros/tcr": "^0.1.21",
     "@loadable/component": "^5.10.1",
     "@portis/web3": "^2.0.0-beta.40",

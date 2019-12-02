@@ -296,8 +296,8 @@ const Items = ({ search, history }) => {
         }
       })
     } catch (err) {
-      console.error('Error decoding submission logs', err)
-      setError('Error decoding submission logs')
+      console.error('Error decoding items', err)
+      setError('Error decoding items')
     }
   }, [fetchItems, metaEvidence, tcrAddress])
 

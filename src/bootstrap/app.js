@@ -1,3 +1,12 @@
+import React, { useState, useContext } from 'react'
+import WalletConnectApi from '@walletconnect/web3-subprovider'
+import FortmaticApi from 'fortmatic'
+import PortisApi from '@portis/web3'
+import { Helmet } from 'react-helmet'
+import { Footer } from '@kleros/react-components'
+import loadable from '@loadable/component'
+import styled from 'styled-components/macro'
+import Web3Provider, { Connectors, useWeb3Context } from 'web3-react'
 import 'antd/dist/antd.css'
 import './theme.css'
 import {
@@ -19,29 +28,20 @@ import {
   Modal,
   Icon
 } from 'antd'
-import WalletConnectApi from '@walletconnect/web3-subprovider'
-import FortmaticApi from 'fortmatic'
-import PortisApi from '@portis/web3'
-import { Helmet } from 'react-helmet'
-import { ReactComponent as Logo } from '../assets/images/logo.svg'
-import { ReactComponent as MetamaskLogo } from '../assets/images/metamask.svg'
-import { ReactComponent as FortmaticLogo } from '../assets/images/fortmatic.svg'
-import { ReactComponent as PortisLogo } from '../assets/images/portis.svg'
-import { ReactComponent as WalletConnectLogo } from '../assets/images/walletconnect.svg'
 import { ReactComponent as TrustLogo } from '../assets/images/trust.svg'
-import React, { useState, useContext } from 'react'
-import loadable from '@loadable/component'
 import { register } from './service-worker'
-import styled from 'styled-components/macro'
-import Web3Provider, { Connectors, useWeb3Context } from 'web3-react'
 import { WalletContext, WalletProvider } from './wallet-context'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { NETWORK_NAME } from '../utils/network-names'
 import ErrorPage from '../pages/error-page'
 import useMainTCR2 from '../hooks/tcr2'
 import Identicon from '../components/identicon'
 import { TCRViewProvider } from './tcr-view-context'
 import useNetworkEnvVariable from '../hooks/network-env'
+import { ReactComponent as Logo } from '../assets/images/logo.svg'
+import { ReactComponent as MetamaskLogo } from '../assets/images/metamask.svg'
+import { ReactComponent as FortmaticLogo } from '../assets/images/fortmatic.svg'
+import { ReactComponent as PortisLogo } from '../assets/images/portis.svg'
+import { ReactComponent as WalletConnectLogo } from '../assets/images/walletconnect.svg'
 import './fontawesome'
 
 const StyledSpin = styled(Spin)`
@@ -103,29 +103,6 @@ const StyledClickaway = styled.div`
 
 const StyledLayout = styled(Layout)`
   min-height: 100vh;
-`
-
-const SocialLink = styled.a`
-  margin: 10px;
-  color: white;
-  :visited {
-    color: white;
-  }
-`
-
-const FirstSocialLink = styled(SocialLink)`
-  margin-left: 0;
-`
-
-const LastSocialLink = styled(SocialLink)`
-  margin-right: 0;
-`
-
-const KlerosLink = styled.a`
-  color: white;
-  :visited {
-    color: white;
-  }
 `
 
 const StyledRouterLink = styled(Link)`
@@ -269,9 +246,10 @@ const WalletModal = () => {
     >
       <StyledWalletButton
         onClick={() => {
-          if (window.ethereum && window.ethereum.isMetaMask)
+          if (window.ethereum && window.ethereum.isMetaMask) {
+            window.ethereum.autoRefreshOnNetworkChange = true
             setUserSelectedWallet('Injected')
-          else {
+          } else {
             const tab = window.open(
               process.env.REACT_APP_METAMASK_SITE_URL,
               '_blank'
@@ -357,33 +335,6 @@ const TopBar = () => {
   )
 }
 
-const Footer = () => (
-  <Row justify="space-between" type="flex">
-    <StyledCol>
-      <KlerosLink href="https://kleros.io">
-        Find out more about kleros
-      </KlerosLink>
-    </StyledCol>
-    <StyledCol>
-      <StyledRouterLink to="/">Kleros · GTCR</StyledRouterLink>
-    </StyledCol>
-    <StyledCol>
-      <FirstSocialLink href="https://t.me/kleros">
-        <FontAwesomeIcon size="lg" icon={['fab', 'telegram']} />
-      </FirstSocialLink>
-      <SocialLink href="https://github.com/kleros">
-        <FontAwesomeIcon size="lg" icon={['fab', 'github']} />
-      </SocialLink>
-      <SocialLink href="https://blog.kleros.io">
-        <FontAwesomeIcon size="lg" icon="bullhorn" />
-      </SocialLink>
-      <LastSocialLink href="https://twitter.com/kleros_io">
-        <FontAwesomeIcon size="lg" icon={['fab', 'twitter']} />
-      </LastSocialLink>
-    </StyledCol>
-  </Row>
-)
-
 const Content = () => {
   const TCR2_ADDRESS = useMainTCR2()
   return (
@@ -426,7 +377,7 @@ export default () => {
   return (
     <>
       <Helmet>
-        <title>Kleros · GTCR</title>
+        <title>Kleros · Generalized Token Curated List</title>
         <link
           href="https://fonts.googleapis.com/css?family=Roboto:400,400i,500,500i,700,700i"
           rel="stylesheet"
@@ -462,7 +413,7 @@ export default () => {
                   onClick={isMenuClosed ? null : () => setIsMenuClosed(true)}
                 />
                 <StyledFooter>
-                  <Footer />
+                  <Footer appName="Kleros · GTCR" />
                 </StyledFooter>
               </Layout>
             </StyledLayout>

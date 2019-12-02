@@ -1563,6 +1563,11 @@
     openzeppelin-solidity "^1.12.0"
     solidity-bytes-utils "^0.0.5"
 
+"@kleros/react-components@^1.0.0":
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/@kleros/react-components/-/react-components-1.0.0.tgz#9c82dc078a7d478a5cd3b3054a5e7cd1e05ac21d"
+  integrity sha512-KqWMmOkd7ZwAhzP2zAJGgAeUqxTRW4fH4D3q6skxZOEKB9dfUKpsth3uNXJH/vkYUpWyoib3Zk1GijRC1Sp5VQ==
+
 "@kleros/tcr@^0.1.21":
   version "0.1.22"
   resolved "https://registry.yarnpkg.com/@kleros/tcr/-/tcr-0.1.22.tgz#b4882a5f49da772b924b1616af385de3c60c8cd0"
