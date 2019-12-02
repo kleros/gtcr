@@ -50,26 +50,42 @@ const StyledItemField = styled.div`
 
 const MAX_ITEM_COUNT = 5
 
-const OptionItem = ({ item: { itemID, columns = [] } }) => {
-  const { gtcrView, challengePeriodDuration, tcrAddress } = useContext(
-    TCRViewContext
-  )
+const OptionItem = ({ item: { itemID, columns = [], tcrAddress } }) => {
+  const {
+    gtcrView,
+    challengePeriodDuration,
+    tcrAddress: itemTCRAddr
+  } = useContext(TCRViewContext)
   const { timestamp } = useContext(WalletContext)
   const [itemInfo, setItemInfo] = useState()
 
   useEffect(() => {
-    if (!itemID || !gtcrView || !tcrAddress) return
+    if (
+      !itemID ||
+      !gtcrView ||
+      !tcrAddress ||
+      itemInfo ||
+      tcrAddress !== itemTCRAddr
+    )
+      return
     ;(async () => {
       try {
         setItemInfo(await gtcrView.getItem(tcrAddress, itemID))
       } catch (err) {
-        console.error(`Error fetching item info for ${itemID}`, err)
+        setItemInfo({ errored: true })
+        console.error(`Error fetching item status for ${itemID}`, err)
       }
     })()
-  }, [gtcrView, itemID, tcrAddress])
+  }, [gtcrView, itemID, itemInfo, itemTCRAddr, tcrAddress])
 
   const statusCode = useMemo(() => {
-    if (!itemInfo || !timestamp || !challengePeriodDuration) return
+    if (
+      !itemInfo ||
+      (itemInfo && itemInfo.erroed) ||
+      !timestamp ||
+      !challengePeriodDuration
+    )
+      return
 
     return itemToStatusCode(itemInfo, timestamp, challengePeriodDuration)
   }, [challengePeriodDuration, itemInfo, timestamp])
@@ -107,13 +123,15 @@ OptionItem.propTypes = {
         type: PropTypes.oneOf(Object.values(itemTypes)),
         value: PropTypes.string.isRequired
       })
-    )
+    ),
+    tcrAddress: PropTypes.string.isRequired
   }).isRequired
 }
 
-const SearchBar = ({ dataSource = [] }) => {
+const SearchBar = () => {
   const [value, setValue] = useState()
   const [data, setData] = useState([])
+  const { decodedSubmissionLogs: dataSource } = useContext(TCRViewContext)
   const [debouncedCallback] = useDebouncedCallback(input => {
     if (!input || input.length === 0 || dataSource.length === 0) setData([])
 
@@ -128,7 +146,8 @@ const SearchBar = ({ dataSource = [] }) => {
             .map(result => ({
               itemID: result.itemID,
               columns: result.columns,
-              text: result.itemID
+              text: result.itemID,
+              tcrAddress: result.tcrAddress
             }))
             .splice(0, MAX_ITEM_COUNT) // Limit the number of items to be displayed.
         : []
@@ -184,24 +203,6 @@ const SearchBar = ({ dataSource = [] }) => {
       {options}
     </StyledSelect>
   )
-}
-
-SearchBar.propTypes = {
-  dataSource: PropTypes.arrayOf(
-    PropTypes.shape({
-      itemID: PropTypes.string.isRequired,
-      keys: PropTypes.arrayOf(PropTypes.string).isRequired,
-      columns: PropTypes.arrayOf(
-        PropTypes.shape({
-          value: PropTypes.oneOfType([PropTypes.string, PropTypes.number])
-        })
-      ).isRequired
-    })
-  )
-}
-
-SearchBar.defaultProps = {
-  dataSource: []
 }
 
 export default SearchBar

@@ -54,14 +54,9 @@ const ItemDetails = ({ itemID }) => {
   }, [decodedItem, library])
   const refAttr = useRef()
   const [eventListenerSet, setEventListenerSet] = useState()
-  const {
-    gtcr,
-    tcrError,
-    gtcrView,
-    metaEvidence,
-    decodedSubmissionLogs,
-    tcrAddress
-  } = useContext(TCRViewContext)
+  const { gtcr, tcrError, gtcrView, metaEvidence, tcrAddress } = useContext(
+    TCRViewContext
+  )
 
   // Warning: This function should only be called when all its dependencies
   // are set.
@@ -180,7 +175,7 @@ const ItemDetails = ({ itemID }) => {
           {metaEvidence && metaEvidence.itemName} Details
         </Typography.Title>
       </StyledBanner>
-      <SearchBar dataSource={decodedSubmissionLogs} />
+      <SearchBar />
       <StyledLayoutContent>
         <ItemStatusCard item={decodedItem || item} timestamp={timestamp} dark />
         <br />

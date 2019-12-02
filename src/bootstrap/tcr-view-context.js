@@ -28,7 +28,7 @@ const useTcrView = tcrAddress => {
   const [submissionChallengeDeposit, setSubmissionChallengeDeposit] = useState()
   const [removalDeposit, setRemovalDeposit] = useState()
   const [removalChallengeDeposit, setRemovalChallengeDeposit] = useState()
-  const [submissionLogs, setSubmissionLogs] = useState([])
+  const [submissionLogs, setSubmissionLogs] = useState({})
   const ARBITRABLE_TCR_VIEW_ADDRESS = useNetworkEnvVariable(
     'REACT_APP_GTCRVIEW_ADDRESSES',
     networkId
@@ -70,7 +70,7 @@ const useTcrView = tcrAddress => {
     if (!META_EVIDENCE_CACHE_KEY) return
     localforage
       .getItem(META_EVIDENCE_CACHE_KEY)
-      .then(file => setMetaEvidence({ ...file, tcrAddress }))
+      .then(file => setMetaEvidence({ ...file }))
       .catch(err => {
         console.error('Error fetching meta evidence file from cache')
         console.error(err)
@@ -171,19 +171,29 @@ const useTcrView = tcrAddress => {
   // Fetch meta evidence and item submission logs.
   useEffect(() => {
     if (!gtcr || !library || gtcr.address !== tcrAddress) return
-    setSubmissionLogs([]) // Clear submission logs from other TCRs.
 
     try {
-      gtcr.on(gtcr.filters.MetaEvidence(), (_, metaEvidencePath) => {
-        setMetaEvidencePath(metaEvidencePath)
-        setMetaEvidencePaths(paths => [...paths, metaEvidencePath])
-      })
-      gtcr.on(gtcr.filters.ItemSubmitted(), (itemID, submitter, data) => {
-        setSubmissionLogs(submissionLogs => [
-          ...submissionLogs,
-          { itemID, submitter, data, tcrAddress }
+      gtcr.on(gtcr.filters.MetaEvidence(), (_, metaEvidencePath, log) => {
+        setMetaEvidencePath({ metaEvidencePath, tcrAddress: log.address })
+        setMetaEvidencePaths(paths => [
+          ...paths,
+          { metaEvidencePath, tcrAddress: log.address }
         ])
       })
+      if (!submissionLogs[tcrAddress])
+        gtcr.on(gtcr.filters.ItemSubmitted(), (itemID, submitter, data) => {
+          setSubmissionLogs(prevLogs => {
+            prevLogs[gtcr.address] = prevLogs[gtcr.address] || {}
+            prevLogs[gtcr.address][itemID] = {
+              itemID,
+              submitter,
+              data,
+              tcrAddress
+            }
+            return prevLogs
+          })
+        })
+
       library.resetEventsBlock(0) // Reset provider to fetch logs.
     } catch (err) {
       console.error('Error fetching meta evidence', err)
@@ -193,21 +203,24 @@ const useTcrView = tcrAddress => {
     return () => {
       gtcr.removeAllListeners(gtcr.filters.MetaEvidence())
     }
-  }, [gtcr, library, tcrAddress])
+  }, [gtcr, library, submissionLogs, tcrAddress])
 
   // Fetch latest meta evidence file.
   useEffect(() => {
     ;(async () => {
-      if (!debouncedMetaEvidencePath || (gtcr && gtcr.address !== tcrAddress))
+      if (
+        !debouncedMetaEvidencePath ||
+        debouncedMetaEvidencePath.tcrAddress !== tcrAddress
+      )
         return
+
+      const { metaEvidencePath } = debouncedMetaEvidencePath
       try {
         const file = await (
-          await fetch(
-            process.env.REACT_APP_IPFS_GATEWAY + debouncedMetaEvidencePath
-          )
+          await fetch(process.env.REACT_APP_IPFS_GATEWAY + metaEvidencePath)
         ).json()
         setMetaEvidence({ ...file, tcrAddress })
-        localforage.setItem(META_EVIDENCE_CACHE_KEY, file)
+        localforage.setItem(META_EVIDENCE_CACHE_KEY, { ...file, tcrAddress })
       } catch (err) {
         console.error('Error fetching meta evidence files', err)
         setError(true)
@@ -225,19 +238,21 @@ const useTcrView = tcrAddress => {
   const decodedSubmissionLogs = useMemo(() => {
     if (
       !metaEvidence ||
-      submissionLogs.length === 0 ||
       metaEvidence.tcrAddress !== tcrAddress ||
-      submissionLogs[0].tcrAddress !== tcrAddress
+      !submissionLogs[tcrAddress] ||
+      Object.keys(submissionLogs[tcrAddress]).length === 0 ||
+      Object.values(submissionLogs[tcrAddress])[0].tcrAddress !== tcrAddress
     )
       return []
 
     const { columns } = metaEvidence
     try {
-      return submissionLogs
+      return Object.values(submissionLogs[tcrAddress])
         .map(submissionLog => ({
           ...submissionLog,
           decodedData: gtcrDecode({ columns, values: submissionLog.data }),
-          columns
+          columns,
+          tcrAddress
         }))
         .map(submissionLog => ({
           ...submissionLog,

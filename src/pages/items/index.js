@@ -120,7 +120,6 @@ const Items = ({ search, history }) => {
     challengePeriodDuration,
     tcrError,
     gtcrView,
-    decodedSubmissionLogs,
     tcrAddress
   } = useContext(TCRViewContext)
   const [submissionFormOpen, setSubmissionFormOpen] = useState()
@@ -395,7 +394,7 @@ const Items = ({ search, history }) => {
           <Skeleton active paragraph={{ rows: 1, width: 150 }} title={false} />
         )}
       </StyledBanner>
-      <SearchBar dataSource={decodedSubmissionLogs} />
+      <SearchBar />
       <StyledLayoutContent>
         <StyledContent>
           <Spin
