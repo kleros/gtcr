@@ -122,7 +122,7 @@ const StyledConnectButton = styled(Button)`
   }
 `
 
-const StyledFooter = styled(Layout.Footer)`
+const FooterWrapper = styled.div`
   margin-top: auto;
 `
 
@@ -412,9 +412,9 @@ export default () => {
                   isMenuClosed={isMenuClosed}
                   onClick={isMenuClosed ? null : () => setIsMenuClosed(true)}
                 />
-                <StyledFooter>
+                <FooterWrapper>
                   <Footer appName="Kleros · GTCR" />
-                </StyledFooter>
+                </FooterWrapper>
               </Layout>
             </StyledLayout>
             <WalletModal />

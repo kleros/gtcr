@@ -1564,9 +1564,9 @@
     solidity-bytes-utils "^0.0.5"
 
 "@kleros/react-components@^1.0.0":
-  version "1.0.0"
-  resolved "https://registry.yarnpkg.com/@kleros/react-components/-/react-components-1.0.0.tgz#9c82dc078a7d478a5cd3b3054a5e7cd1e05ac21d"
-  integrity sha512-KqWMmOkd7ZwAhzP2zAJGgAeUqxTRW4fH4D3q6skxZOEKB9dfUKpsth3uNXJH/vkYUpWyoib3Zk1GijRC1Sp5VQ==
+  version "1.0.1"
+  resolved "https://registry.yarnpkg.com/@kleros/react-components/-/react-components-1.0.1.tgz#759385f7479d26387528afaac4bae6992566c63d"
+  integrity sha512-xT7tTav9ROwfXecBpCcZ2S9nez2Owrgz0Kg7mVyoO48zRtj5Ocyg1jSymWniBUCuux7ukUuDpYEwHfQBIEnhWw==
 
 "@kleros/tcr@^0.1.21":
   version "0.1.22"
