@@ -1,7 +1,7 @@
 import PropTypes from 'prop-types'
 import React from 'react'
 import { useWeb3Context } from 'web3-react'
-import { NETWORK, NETWORK_NAME } from '../utils/network-names'
+import { NETWORK, NETWORK_NAME } from '../utils/network-utils'
 
 const ETHAddress = ({ address }) => {
   const { networkId } = useWeb3Context()

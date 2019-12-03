@@ -36,7 +36,8 @@ const useTcrView = tcrAddress => {
 
   // Wire up the TCR.
   const gtcrView = useMemo(() => {
-    if (!library || !active || !ARBITRABLE_TCR_VIEW_ADDRESS) return
+    if (!library || !active || !ARBITRABLE_TCR_VIEW_ADDRESS || !networkId)
+      return
     try {
       return new ethers.Contract(
         ARBITRABLE_TCR_VIEW_ADDRESS,
@@ -47,17 +48,17 @@ const useTcrView = tcrAddress => {
       console.error('Error instantiating gtcr view contract', err)
       setError(true)
     }
-  }, [ARBITRABLE_TCR_VIEW_ADDRESS, active, library])
+  }, [ARBITRABLE_TCR_VIEW_ADDRESS, active, library, networkId])
 
   const gtcr = useMemo(() => {
-    if (!library || !active || !tcrAddress) return
+    if (!library || !active || !tcrAddress || !networkId) return
     try {
       return new ethers.Contract(tcrAddress, _gtcr, library)
     } catch (err) {
       console.error('Error instantiating gtcr contract', err)
       setError(true)
     }
-  }, [active, library, tcrAddress])
+  }, [active, library, networkId, tcrAddress])
 
   const META_EVIDENCE_CACHE_KEY = useMemo(() => {
     if (!tcrAddress || typeof networkId === 'undefined') return null

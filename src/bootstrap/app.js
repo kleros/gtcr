@@ -26,12 +26,13 @@ import {
   message,
   Button,
   Modal,
-  Icon
+  Icon,
+  Badge
 } from 'antd'
 import { ReactComponent as TrustLogo } from '../assets/images/trust.svg'
 import { register } from './service-worker'
 import { WalletContext, WalletProvider } from './wallet-context'
-import { NETWORK_NAME } from '../utils/network-names'
+import { NETWORK_NAME, NETWORK_COLOR } from '../utils/network-utils'
 import ErrorPage from '../pages/error-page'
 import useMainTCR2 from '../hooks/tcr2'
 import Identicon from '../components/identicon'
@@ -43,6 +44,7 @@ import { ReactComponent as FortmaticLogo } from '../assets/images/fortmatic.svg'
 import { ReactComponent as PortisLogo } from '../assets/images/portis.svg'
 import { ReactComponent as WalletConnectLogo } from '../assets/images/walletconnect.svg'
 import './fontawesome'
+import { capitalizeFirstLetter } from '../utils/string'
 
 const StyledSpin = styled(Spin)`
   left: 50%;
@@ -70,18 +72,44 @@ const StyledLayoutSider = styled(Layout.Sider)`
     width: 50px;
   }
 `
-
 const StyledCol = styled(Col)`
   align-items: center;
   display: flex;
-  height: 64px;
-  justify-content: space-evenly;
+  justify-content: center;
+  height: 67px;
+`
 
-  @media (max-width: 575px) {
+const StyledCenter = styled(StyledCol)`
+  @media (max-width: 768px) {
     &.ant-col-xs-0 {
       display: none;
     }
   }
+`
+
+const StyledColStart = styled(StyledCol)`
+  justify-content: flex-start;
+
+  @media (max-width: 576px) {
+    &.ant-col-xs-0 {
+      display: none;
+    }
+  }
+`
+
+const StyledColEnd = styled(StyledCol)`
+  justify-content: flex-end;
+
+  @media (max-width: 576px) {
+    &.ant-col-xs-24 {
+      justify-content: center;
+    }
+  }
+`
+
+const StyledNetworkStatus = styled.span`
+  margin-right: 24px;
+  color: white;
 `
 
 const StyledMenu = styled(Menu)`
@@ -103,6 +131,10 @@ const StyledClickaway = styled.div`
 
 const StyledLayout = styled(Layout)`
   min-height: 100vh;
+`
+
+const StyledHeader = styled(Layout.Header)`
+  padding: 0;
 `
 
 const StyledRouterLink = styled(Link)`
@@ -129,6 +161,10 @@ const FooterWrapper = styled.div`
 const StyledSpan = styled.span`
   text-decoration: underline;
   cursor: pointer;
+`
+
+const StyledTopBarRow = styled(Row)`
+  padding: 0 9.375vw;
 `
 
 const Factory = loadable(
@@ -182,9 +218,7 @@ const {
   WalletConnectConnector
 } = Connectors
 
-const supportedNetworks = [42, 1]
-const Injected = new InjectedConnector({ supportedNetworks })
-const connectors = { Injected }
+const connectors = {}
 const defaultNetwork = Number(process.env.REACT_APP_DEFAULT_NETWORK) || 42
 if (process.env.REACT_APP_INFURA_PROJECT_ID) {
   const supportedNetworkURLs = {
@@ -192,47 +226,42 @@ if (process.env.REACT_APP_INFURA_PROJECT_ID) {
     42: `https://kovan.infura.io/v3/${process.env.REACT_APP_INFURA_PROJECT_ID}`
   }
 
-  const Infura = new NetworkOnlyConnector({
+  connectors.Infura = new NetworkOnlyConnector({
     providerURL: supportedNetworkURLs[defaultNetwork]
   })
-  connectors.Infura = Infura
 
-  const Ledger = new LedgerConnector({
+  connectors.Ledger = new LedgerConnector({
     supportedNetworkURLs,
     defaultNetwork
   })
-  connectors.Ledger = Ledger
 
-  if (process.env.REACT_APP_WALLETCONNECT_BRIDGE_URL) {
-    const WalletConnect = new WalletConnectConnector({
+  if (process.env.REACT_APP_WALLETCONNECT_BRIDGE_URL)
+    connectors.WalletConnect = new WalletConnectConnector({
       api: WalletConnectApi,
       bridge: process.env.REACT_APP_WALLETCONNECT_BRIDGE_URL,
       supportedNetworkURLs,
       defaultNetwork
     })
-    connectors.WalletConnect = WalletConnect
-  }
 }
 
 const fortmaticApiKey = useNetworkEnvVariable('REACT_APP_FORMATIC_API_KEYS')
-if (fortmaticApiKey) {
-  const Fortmatic = new FortmaticConnector({
+if (fortmaticApiKey)
+  connectors.Fortmatic = new FortmaticConnector({
     api: FortmaticApi,
     apiKey: fortmaticApiKey,
     logoutOnDeactivation: false,
     testNetwork: defaultNetwork === 1 ? null : NETWORK_NAME[defaultNetwork]
   })
-  connectors.Fortmatic = Fortmatic
-}
 
-if (process.env.REACT_APP_PORTIS_DAPP_ID) {
-  const Portis = new PortisConnector({
+if (process.env.REACT_APP_PORTIS_DAPP_ID)
+  connectors.Portis = new PortisConnector({
     api: PortisApi,
     dAppId: process.env.REACT_APP_PORTIS_DAPP_ID,
     network: NETWORK_NAME[defaultNetwork]
   })
-  connectors.Portis = Portis
-}
+
+if (window.ethereum)
+  connectors.Injected = new InjectedConnector({ supportedNetworks: [42, 1] })
 
 const WalletModal = () => {
   const { cancelRequest, setUserSelectedWallet, requestModalOpen } = useContext(
@@ -282,19 +311,19 @@ const WalletModal = () => {
         <Icon component={TrustLogo} />
         Trust Wallet
       </StyledWalletButton>
-      {process.env.REACT_APP_FORMATIC_API_KEYS && (
+      {connectors.Fortmatic && (
         <StyledWalletButton onClick={() => setUserSelectedWallet('Fortmatic')}>
           <Icon component={FortmaticLogo} />
           Fortmatic
         </StyledWalletButton>
       )}
-      {process.env.REACT_APP_PORTIS_DAPP_ID && (
+      {connectors.Portis && (
         <StyledWalletButton onClick={() => setUserSelectedWallet('Portis')}>
           <Icon component={PortisLogo} />
           Portis
         </StyledWalletButton>
       )}
-      {process.env.REACT_APP_WALLETCONNECT_BRIDGE_URL && (
+      {connectors.WalletConnect && (
         <StyledWalletButton
           onClick={() => setUserSelectedWallet('WalletConnect')}
         >
@@ -312,18 +341,24 @@ const TopBar = () => {
   const TCR2_ADDRESS = useMainTCR2(web3Context)
 
   return (
-    <Row>
-      <StyledCol md={4} sm={20} xs={0}>
-        <StyledRouterLink to="/">
+    <StyledTopBarRow type="flex" justify="space-between">
+      <StyledColStart md={6} sm={12} xs={0}>
+        <StyledRouterLink to={`/tcr/${TCR2_ADDRESS}`}>
           <Logo />
         </StyledRouterLink>
-      </StyledCol>
-      <Col md={15} xs={0}>
+      </StyledColStart>
+      <StyledCenter md={8} sm={0} xs={0}>
         <StyledMenu mode="horizontal" theme="dark">
           {MenuItems({ TCR2_ADDRESS })}
         </StyledMenu>
-      </Col>
-      <StyledCol md={5} sm={4} xs={24}>
+      </StyledCenter>
+      <StyledColEnd md={7} sm={12} xs={24}>
+        {web3Context.active && web3Context.networkId && (
+          <StyledNetworkStatus>
+            <Badge color={NETWORK_COLOR[web3Context.networkId]} />
+            {capitalizeFirstLetter(NETWORK_NAME[web3Context.networkId])}
+          </StyledNetworkStatus>
+        )}
         {web3Context.active && web3Context.account ? (
           <Identicon />
         ) : (
@@ -335,8 +370,8 @@ const TopBar = () => {
             Connect
           </StyledConnectButton>
         )}
-      </StyledCol>
-    </Row>
+      </StyledColEnd>
+    </StyledTopBarRow>
   )
 }
 
@@ -363,10 +398,11 @@ const NoWeb3Detected = () => {
 
 const Content = () => {
   const TCR2_ADDRESS = useMainTCR2()
-  const { active } = useWeb3Context()
+
+  if (Object.entries(connectors).length === 0) return <NoWeb3Detected />
+
   return (
     <Switch>
-      {!active && <Route path="*" exact component={NoWeb3Detected} />}
       <Route path="/tcr/:tcrAddress">
         {({
           match: {
@@ -424,17 +460,15 @@ export default () => {
                 <Menu theme="dark">
                   {[
                     <Menu.Item key="tcrs" style={{ height: '70px' }}>
-                      <NavLink to={`/tcr/${TCR2_ADDRESS}`}>
-                        <Logo style={{ marginTop: '20px' }} />
-                      </NavLink>
+                      <NavLink to={`/tcr/${TCR2_ADDRESS}`}>K L E R O S</NavLink>
                     </Menu.Item>
                   ].concat(MenuItems({ TCR2_ADDRESS }))}
                 </Menu>
               </StyledLayoutSider>
               <Layout>
-                <Layout.Header>
+                <StyledHeader>
                   <TopBar />
-                </Layout.Header>
+                </StyledHeader>
                 <Content />
                 <StyledClickaway
                   isMenuClosed={isMenuClosed}

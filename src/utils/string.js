@@ -18,3 +18,6 @@ Voluptates magnam error sequi occaecati facere. Et quos et debitis sit autem lab
 Blanditiis dolor laudantium quo totam. Voluptate rerum qui qui dolor. Debitis occaecati sed distinctio molestias voluptatem nisi eveniet.`
 
 export const isVowel = x => /[aeiouAEIOU]/.test(x)
+
+export const capitalizeFirstLetter = str =>
+  str.charAt(0).toUpperCase() + str.slice(1)

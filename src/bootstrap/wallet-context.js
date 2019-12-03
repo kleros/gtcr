@@ -6,7 +6,7 @@ import PropTypes from 'prop-types'
 import uuid from 'uuid/v4'
 import { bigNumberify } from 'ethers/utils'
 import WalletConnectQRCodeModal from '@walletconnect/qrcode-modal'
-import { NETWORK, NETWORK_NAME } from '../utils/network-names'
+import { NETWORK, NETWORK_NAME } from '../utils/network-utils'
 import FastJsonRpcSigner from '../utils/fast-signer'
 
 const actionTypes = {
@@ -211,7 +211,8 @@ const useNotificationWeb3 = () => {
     requestWeb3Auth,
     setUserSelectedWallet,
     archon,
-    timestamp
+    timestamp,
+    networkId: web3Context.networkId
   }
 }
 
