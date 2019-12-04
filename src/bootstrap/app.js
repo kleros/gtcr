@@ -280,10 +280,9 @@ const WalletModal = () => {
     >
       <StyledWalletButton
         onClick={() => {
-          if (window.ethereum && window.ethereum.isMetaMask) {
-            window.ethereum.autoRefreshOnNetworkChange = true
+          if (window.ethereum && window.ethereum.isMetaMask)
             setUserSelectedWallet('Injected')
-          } else {
+          else {
             const tab = window.open(
               process.env.REACT_APP_METAMASK_SITE_URL,
               '_blank'

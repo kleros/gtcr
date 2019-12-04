@@ -1,6 +1,11 @@
-import React, { createContext, useState, useEffect, useMemo } from 'react'
+import React, {
+  createContext,
+  useState,
+  useEffect,
+  useMemo,
+  useContext
+} from 'react'
 import { useWeb3Context } from 'web3-react'
-import { useDebounce } from 'use-debounce'
 import { abi as _gtcr } from '@kleros/tcr/build/contracts/GeneralizedTCR.json'
 import { abi as _GTCRView } from '@kleros/tcr/build/contracts/GeneralizedTCRView.json'
 import { abi as _arbitrator } from '@kleros/tcr/build/contracts/Arbitrator.json'
@@ -9,6 +14,7 @@ import PropTypes from 'prop-types'
 import useNetworkEnvVariable from '../hooks/network-env'
 import { gtcrDecode } from '../utils/encoder'
 import localforage from 'localforage'
+import { WalletContext } from './wallet-context'
 
 // TODO: Ensure we don't set state for unmounted components using
 // flags and AbortController.
@@ -16,11 +22,9 @@ import localforage from 'localforage'
 // Reference:
 // https://itnext.io/how-to-create-react-custom-hooks-for-data-fetching-with-useeffect-74c5dc47000a
 const useTcrView = tcrAddress => {
+  const { latestBlock } = useContext(WalletContext)
   const { library, active, networkId } = useWeb3Context()
-  const [metaEvidencePath, setMetaEvidencePath] = useState()
   const [metaEvidence, setMetaEvidence] = useState()
-  const [debouncedMetaEvidencePath] = useDebounce(metaEvidencePath, 300)
-  const [metaEvidencePaths, setMetaEvidencePaths] = useState([])
   const [error, setError] = useState(false)
   const [arbitrableTCRData, setArbitrableTCRData] = useState()
   const [arbitrationCost, setArbitrationCost] = useState()
@@ -28,7 +32,7 @@ const useTcrView = tcrAddress => {
   const [submissionChallengeDeposit, setSubmissionChallengeDeposit] = useState()
   const [removalDeposit, setRemovalDeposit] = useState()
   const [removalChallengeDeposit, setRemovalChallengeDeposit] = useState()
-  const [submissionLogs, setSubmissionLogs] = useState({})
+  const [itemSubmissionLogs, setItemSubmissionLogs] = useState({})
   const ARBITRABLE_TCR_VIEW_ADDRESS = useNetworkEnvVariable(
     'REACT_APP_GTCRVIEW_ADDRESSES',
     networkId
@@ -46,7 +50,7 @@ const useTcrView = tcrAddress => {
       )
     } catch (err) {
       console.error('Error instantiating gtcr view contract', err)
-      setError(true)
+      setError('Error instantiating view contract')
     }
   }, [ARBITRABLE_TCR_VIEW_ADDRESS, active, library, networkId])
 
@@ -56,7 +60,7 @@ const useTcrView = tcrAddress => {
       return new ethers.Contract(tcrAddress, _gtcr, library)
     } catch (err) {
       console.error('Error instantiating gtcr contract', err)
-      setError(true)
+      setError('Error setting up this TCR')
     }
   }, [active, library, networkId, tcrAddress])
 
@@ -73,10 +77,9 @@ const useTcrView = tcrAddress => {
       .getItem(META_EVIDENCE_CACHE_KEY)
       .then(file => setMetaEvidence(file))
       .catch(err => {
-        console.error('Error fetching meta evidence file from cache')
-        console.error(err)
+        console.error('Error fetching meta evidence file from cache', err)
       })
-  }, [META_EVIDENCE_CACHE_KEY, tcrAddress])
+  }, [META_EVIDENCE_CACHE_KEY])
 
   // Get TCR data.
   useEffect(() => {
@@ -86,10 +89,10 @@ const useTcrView = tcrAddress => {
         setArbitrableTCRData(await gtcrView.fetchArbitrable(tcrAddress))
       } catch (err) {
         console.error('Error fetching arbitrable TCR data:', err)
-        setError(true)
+        setError('Error fetching arbitrable TCR data')
       }
     })()
-  }, [setArbitrableTCRData, gtcrView, tcrAddress, setError])
+  }, [gtcrView, tcrAddress])
 
   // Get the current arbitration cost to calculate request and challenge deposits.
   useEffect(() => {
@@ -158,121 +161,98 @@ const useTcrView = tcrAddress => {
         setRemovalChallengeDeposit(removalChallengeDeposit)
       } catch (err) {
         console.error('Error computing arbitration cost:', err)
-        setError(true)
+        setError('Error computing arbitration cost')
       }
     })()
-  }, [
-    arbitrableTCRData,
-    setArbitrationCost,
-    library,
-    arbitrationCost,
-    setError
-  ])
+  }, [arbitrableTCRData, arbitrationCost, library])
 
-  // Fetch meta evidence and item submission logs.
+  // Fetch meta evidence.
   useEffect(() => {
-    if (!gtcr || !library || gtcr.address !== tcrAddress) return
-
-    try {
-      gtcr.on(gtcr.filters.MetaEvidence(), (_, metaEvidencePath, log) => {
-        setMetaEvidencePath({ metaEvidencePath, tcrAddress: log.address })
-        setMetaEvidencePaths(paths => [
-          ...paths,
-          { metaEvidencePath, tcrAddress: log.address }
-        ])
-      })
-      if (!submissionLogs[tcrAddress])
-        gtcr.on(gtcr.filters.ItemSubmitted(), (itemID, submitter, data) => {
-          setSubmissionLogs(prevLogs => {
-            prevLogs[gtcr.address] = prevLogs[gtcr.address] || {}
-            prevLogs[gtcr.address][itemID] = {
-              itemID,
-              submitter,
-              data,
-              tcrAddress
-            }
-            return prevLogs
+    if (
+      !gtcr ||
+      !library ||
+      gtcr.address !== tcrAddress ||
+      (metaEvidence && metaEvidence.tcrAddress === tcrAddress)
+    )
+      return
+    ;(async () => {
+      try {
+        // Take the latest meta evidence.
+        const { _evidence: metaEvidencePath } = (
+          await library.getLogs({
+            ...gtcr.filters.MetaEvidence(),
+            fromBlock: 0
           })
-        })
+        ).map(log => gtcr.interface.parseLog(log))[0].values
+        const file = await (
+          await fetch(process.env.REACT_APP_IPFS_GATEWAY + metaEvidencePath)
+        ).json()
 
-      library.resetEventsBlock(0) // Reset provider to fetch logs.
-    } catch (err) {
-      console.error('Error fetching meta evidence', err)
-      setError(true)
-    }
+        setMetaEvidence({ ...file, tcrAddress })
+        localforage.setItem(META_EVIDENCE_CACHE_KEY, { ...file, tcrAddress })
+      } catch (err) {
+        console.error('Error fetching meta evidence', err)
+        setError('Error fetching meta evidence')
+      }
+    })()
 
     return () => {
       gtcr.removeAllListeners(gtcr.filters.MetaEvidence())
     }
-  }, [gtcr, library, submissionLogs, tcrAddress])
+  }, [META_EVIDENCE_CACHE_KEY, gtcr, library, metaEvidence, tcrAddress])
 
-  // Fetch latest meta evidence file.
+  // Fetch and decode item submission logs.
   useEffect(() => {
-    ;(async () => {
-      if (
-        !debouncedMetaEvidencePath ||
-        debouncedMetaEvidencePath.tcrAddress !== tcrAddress
-      )
-        return
-
-      const { metaEvidencePath } = debouncedMetaEvidencePath
-      try {
-        const file = await (
-          await fetch(process.env.REACT_APP_IPFS_GATEWAY + metaEvidencePath)
-        ).json()
-        setMetaEvidence({ ...file, tcrAddress })
-        localforage.setItem(META_EVIDENCE_CACHE_KEY, { ...file, tcrAddress })
-      } catch (err) {
-        console.error('Error fetching meta evidence files', err)
-        setError(true)
-      }
-    })()
-  }, [
-    META_EVIDENCE_CACHE_KEY,
-    debouncedMetaEvidencePath,
-    gtcr,
-    networkId,
-    setMetaEvidence,
-    tcrAddress
-  ])
-
-  const decodedSubmissionLogs = useMemo(() => {
     if (
+      !gtcr ||
+      !library ||
+      gtcr.address !== tcrAddress ||
       !metaEvidence ||
-      metaEvidence.tcrAddress !== tcrAddress ||
-      !submissionLogs[tcrAddress] ||
-      Object.keys(submissionLogs[tcrAddress]).length === 0 ||
-      Object.values(submissionLogs[tcrAddress])[0].tcrAddress !== tcrAddress
+      metaEvidence.tcrAddress !== tcrAddress
     )
-      return []
+      return
 
     const { columns } = metaEvidence
-    try {
-      return Object.values(submissionLogs[tcrAddress])
-        .map(submissionLog => ({
-          ...submissionLog,
-          decodedData: gtcrDecode({ columns, values: submissionLog.data }),
-          columns,
-          tcrAddress
-        }))
-        .map(submissionLog => ({
-          ...submissionLog,
-          columns: submissionLog.columns.map((col, i) => ({
-            ...col,
-            value: submissionLog.decodedData[i]
-          }))
-        }))
-        .map(submissionLog => ({
-          ...submissionLog,
-          keys: submissionLog.columns
-            .filter(col => col.isIdentifier)
-            .map(col => col.value)
-        }))
-    } catch (err) {
-      console.error('Error decoding submission logs', err)
-      setError('Error decoding submission logs')
-    }
-  }, [metaEvidence, submissionLogs, tcrAddress])
+    ;(async () => {
+      try {
+        setItemSubmissionLogs(
+          (
+            await library.getLogs({
+              ...gtcr.filters.ItemSubmitted(),
+              fromBlock: 0
+            })
+          )
+            .map(log => ({
+              data: gtcr.interface.parseLog(log).values._data,
+              itemID: gtcr.interface.parseLog(log).values._itemID,
+              submitter: gtcr.interface.parseLog(log).values._submitter
+            }))
+            .map(submissionLog => ({
+              ...submissionLog,
+              decodedData: gtcrDecode({ columns, values: submissionLog.data }),
+              columns,
+              tcrAddress
+            }))
+            .map(submissionLog => ({
+              ...submissionLog,
+              columns: submissionLog.columns.map((col, i) => ({
+                ...col,
+                value: submissionLog.decodedData[i]
+              }))
+            }))
+            .map(submissionLog => ({
+              ...submissionLog,
+              keys: submissionLog.columns
+                .filter(col => col.isIdentifier)
+                .map(col => col.value)
+            }))
+        )
+      } catch (err) {
+        console.error('Error fetching submission logs', err)
+        setError('Error fetching submission logs')
+      }
+    })()
+  }, [gtcr, library, metaEvidence, tcrAddress])
 
   return {
     gtcr,
@@ -285,8 +265,8 @@ const useTcrView = tcrAddress => {
     removalChallengeDeposit,
     tcrAddress,
     gtcrView,
-    metaEvidencePaths,
-    decodedSubmissionLogs,
+    itemSubmissionLogs,
+    latestBlock,
     ...arbitrableTCRData
   }
 }

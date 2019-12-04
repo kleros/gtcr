@@ -216,6 +216,8 @@ ItemParams.propTypes = {
   values: PropTypes.shape({
     tcrTitle: PropTypes.string.isRequired,
     tcrDescription: PropTypes.string.isRequired,
+    arbitratorAddress: PropTypes.string.isRequired,
+    governorAddress: PropTypes.string.isRequired,
     submissionChallengeBaseDeposit: PropTypes.oneOfType([
       PropTypes.number,
       PropTypes.string

@@ -129,7 +129,7 @@ const Deploy = ({ resetTcrState, setTxState, tcrState }) => {
   const [txSubmitted, setTxSubmitted] = useState()
 
   const onDeploy = () => {
-    pushWeb3Action(async ({ account }, signer) => {
+    pushWeb3Action(async (_, signer) => {
       const factory = ethers.ContractFactory.fromSolidity(_GTCR, signer)
       const {
         registrationMetaEvidencePath,
@@ -142,7 +142,7 @@ const Deploy = ({ resetTcrState, setTxState, tcrState }) => {
         ZERO_ADDRESS,
         registrationMetaEvidencePath,
         clearingMetaEvidencePath,
-        account,
+        tcrState.governorAddress,
         parseEther(tcrState.submissionBaseDeposit.toString()),
         parseEther(tcrState.removalBaseDeposit.toString()),
         parseEther(tcrState.submissionChallengeBaseDeposit.toString()),
@@ -224,6 +224,7 @@ Deploy.propTypes = {
       })
     ).isRequired,
     arbitratorAddress: PropTypes.string.isRequired,
+    governorAddress: PropTypes.string.isRequired,
     submissionChallengeBaseDeposit: PropTypes.oneOfType([
       PropTypes.number,
       PropTypes.string

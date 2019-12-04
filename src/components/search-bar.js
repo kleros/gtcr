@@ -131,7 +131,7 @@ OptionItem.propTypes = {
 const SearchBar = () => {
   const [value, setValue] = useState()
   const [data, setData] = useState([])
-  const { decodedSubmissionLogs: dataSource } = useContext(TCRViewContext)
+  const { itemSubmissionLogs: dataSource } = useContext(TCRViewContext)
   const [debouncedCallback] = useDebouncedCallback(input => {
     if (!input || input.length === 0 || dataSource.length === 0) setData([])
 

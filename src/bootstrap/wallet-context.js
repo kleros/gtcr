@@ -31,6 +31,7 @@ const useNotificationWeb3 = () => {
   const [web3Actions, setWeb3Actions] = useState([])
   const [infuraSetup, setInfuraSetup] = useState() // Whether infura was set as the provider.
   const [timestamp, setTimestamp] = useState()
+  const [latestBlock, setLatestBlock] = useState()
   const archon = useMemo(() => {
     if (
       !web3Context.library ||
@@ -101,9 +102,9 @@ const useNotificationWeb3 = () => {
     if (!web3Context.active || !web3Context.library || timestamp) return
     ;(async () => {
       try {
-        setTimestamp(
-          bigNumberify((await web3Context.library.getBlock()).timestamp)
-        )
+        const block = await web3Context.library.getBlock()
+        setTimestamp(bigNumberify(block.timestamp))
+        setLatestBlock(block.number)
       } catch (err) {
         console.error('Error fetching timestamp', err)
       }
@@ -212,7 +213,8 @@ const useNotificationWeb3 = () => {
     setUserSelectedWallet,
     archon,
     timestamp,
-    networkId: web3Context.networkId
+    networkId: web3Context.networkId,
+    latestBlock
   }
 }
 

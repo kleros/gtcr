@@ -229,10 +229,26 @@ const TCRParams = ({
               }
               {...rest}
             />
+            <CustomInput
+              name="governorAddress"
+              placeholder="0x7331deadbeef..."
+              hasFeedback
+              error={errors.governorAddress}
+              touched={touched.governorAddress}
+              label={
+                <span>
+                  Governor&nbsp;
+                  <Tooltip title="The address of the governor to use for this TCR.">
+                    <Icon type="question-circle-o" />
+                  </Tooltip>
+                </span>
+              }
+              {...rest}
+            />
             <Field name="requireEvidenceRequest">
               {({ field }) => (
                 <FormItem
-                  label="Require evidence on request"
+                  label="Require evidence for removing items"
                   style={{ marginBottom: '12px', display: 'flex' }}
                 >
                   <Switch
@@ -283,6 +299,10 @@ const validationSchema = yup.object().shape({
   arbitratorAddress: yup
     .string()
     .required('An arbitrator address is required.')
+    .max(160, 'Ethereum addresses are 42 characters long.'),
+  governorAddress: yup
+    .string()
+    .required('A governor address is required.')
     .max(160, 'Ethereum addresses are 42 characters long.'),
   itemName: yup
     .string()

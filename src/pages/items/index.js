@@ -31,6 +31,7 @@ import {
   queryOptionsToFilterArray
 } from '../../utils/filters'
 import DisplaySelector from '../../components/display-selector'
+import { useWeb3Context } from 'web3-react'
 
 const StyledContent = styled(Layout.Content)`
   word-break: break-word;
@@ -107,15 +108,18 @@ const pagingItem = (_, type, originalElement) => {
 const ITEMS_PER_PAGE = 40
 const Items = ({ search, history }) => {
   const { requestWeb3Auth, timestamp } = useContext(WalletContext)
+  const { library } = useWeb3Context()
   const {
     gtcr,
     metaEvidence,
     challengePeriodDuration,
     tcrError,
     gtcrView,
-    tcrAddress
+    tcrAddress,
+    latestBlock
   } = useContext(TCRViewContext)
   const [submissionFormOpen, setSubmissionFormOpen] = useState()
+  const [oldActiveItems, setOldActiveItems] = useState([])
   const [error, setError] = useState()
   const [fetchItems, setFetchItems] = useState({
     fetchStarted: true,
@@ -129,12 +133,12 @@ const Items = ({ search, history }) => {
   })
   const refAttr = useRef()
   const [eventListenerSet, setEventListenerSet] = useState()
+  const queryOptions = searchStrToFilterObj(search)
 
   // Fetch number of pages for the current filter
   useEffect(() => {
     if (!gtcrView || fetchItemCount.isFetching || !fetchItemCount.fetchStarted)
       return
-    const queryOptions = searchStrToFilterObj(search)
     const filter = queryOptionsToFilterArray(queryOptions)
     setFetchItemCount({ isFetching: true })
     ;(async () => {
@@ -172,7 +176,8 @@ const Items = ({ search, history }) => {
     gtcr,
     gtcrView,
     tcrAddress,
-    search
+    search,
+    queryOptions
   ])
 
   // Fetch items.
@@ -187,7 +192,6 @@ const Items = ({ search, history }) => {
       return
 
     setFetchItems({ isFetching: true })
-    const queryOptions = searchStrToFilterObj(search)
     const filter = queryOptionsToFilterArray(queryOptions)
     const { page, oldestFirst } = queryOptions
     let encodedItems
@@ -255,7 +259,75 @@ const Items = ({ search, history }) => {
         })
       }
     })()
-  }, [gtcrView, tcrAddress, fetchItems, gtcr, search])
+  }, [gtcrView, tcrAddress, fetchItems, gtcr, search, queryOptions])
+
+  // Since items are sorted by time of submission (either newest or oldest first)
+  // we have to also watch for new requests related to items already on the list.
+  // Otherwise a request to (for example) remove a very old item could pass its
+  // challenge period without being scrutinized by other users.
+  // To do this, we watch for `RequestSubmitted` events. If there are such requests and:
+  // - We are sorting by newest first;
+  // - We are on the first page;
+  // unshift those items to the list.
+  useEffect(() => {
+    const { oldestFirst } = searchStrToFilterObj(search)
+    if (
+      !gtcr ||
+      !gtcrView ||
+      !latestBlock ||
+      oldestFirst ||
+      !fetchItems.data ||
+      fetchItems.tcrAddress !== tcrAddress ||
+      !challengePeriodDuration ||
+      !library
+    )
+      return
+    ;(async () => {
+      // Fetch request events within one challenge period duration.
+      const BLOCK_TIME = 15 // Assuming a blocktime of 15 seconds.
+      const filter = {
+        ...gtcr.filters.RequestSubmitted(),
+        fromBlock:
+          latestBlock -
+          (challengePeriodDuration.div(bigNumberify(BLOCK_TIME)).toNumber() +
+            100) // Add 100 block margin.
+      }
+
+      const requestSubmissionLogs = (await library.getLogs(filter))
+        .map(log => ({
+          ...gtcr.interface.parseLog(log),
+          blockNumber: log.blockNumber
+        }))
+        .sort((a, b) => b.blockNumber - a.blockNumber)
+        .filter(
+          log =>
+            !fetchItems.data.map(item => item.ID).includes(log.values._itemID)
+        ) // Remove items already fetched.
+
+      if (requestSubmissionLogs.length === 0) return
+
+      // Fetch item details.
+      setOldActiveItems(
+        await Promise.all(
+          requestSubmissionLogs.map(log =>
+            gtcrView.getItem(tcrAddress, log.values._itemID)
+          )
+        ).filter(item => !item.resolved)
+      )
+    })()
+  }, [
+    challengePeriodDuration,
+    fetchItems.data,
+    fetchItems.tcrAddress,
+    gtcr,
+    gtcrView,
+    latestBlock,
+    library,
+    search,
+    tcrAddress
+  ])
+
+  const { oldestFirst, page } = queryOptions
 
   // Decode items once meta evidence and items were fetched.
   const items = useMemo(() => {
@@ -270,8 +342,15 @@ const Items = ({ search, history }) => {
     const { data: encodedItems } = fetchItems
     const { columns } = metaEvidence
 
+    // If on page 1, display also old items with new pending
+    // requests, if any.
+    const displayedItems =
+      page && Number(page) > 1
+        ? encodedItems
+        : [...oldActiveItems, ...encodedItems]
+
     try {
-      return encodedItems.map((item, i) => {
+      return displayedItems.map((item, i) => {
         const decodedItem = gtcrDecode({ values: item.data, columns })
         // Return the item columns along with its TCR status data.
         return {
@@ -291,7 +370,7 @@ const Items = ({ search, history }) => {
       console.error('Error decoding items', err)
       setError('Error decoding items')
     }
-  }, [fetchItems, metaEvidence, tcrAddress])
+  }, [fetchItems, metaEvidence, oldActiveItems, page, tcrAddress])
 
   // Watch for submissions and status change events to refetch items.
   useEffect(() => {
@@ -331,9 +410,6 @@ const Items = ({ search, history }) => {
         tip="Is your wallet set to the correct network?"
       />
     )
-
-  const queryOptions = searchStrToFilterObj(search)
-  const { oldestFirst } = queryOptions
 
   return (
     <>
@@ -466,7 +542,9 @@ const Items = ({ search, history }) => {
                 pageSize={ITEMS_PER_PAGE}
                 onChange={newPage => {
                   history.push({
-                    search: search.replace(/page=\d+/g, `page=${newPage}`)
+                    search: /page=\d+/g.test(search)
+                      ? search.replace(/page=\d+/g, `page=${newPage}`)
+                      : `${search}page=${newPage}`
                   })
                   setFetchItems({ fetchStarted: true })
                   setFetchItemCount({ fetchStarted: true })

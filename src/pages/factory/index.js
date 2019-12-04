@@ -63,6 +63,10 @@ const useCachedFactory = version => {
     'REACT_APP_DEFAULT_ARBITRATOR',
     networkId
   )
+  const defaultGovernor = useNetworkEnvVariable(
+    'REACT_APP_DEFAULT_GOVERNOR',
+    networkId
+  )
   const key = `tcrState@${version}`
   const initialWizardState = {
     tcrTitle: '',
@@ -72,6 +76,7 @@ const useCachedFactory = version => {
     submissionChallengeBaseDeposit: 0.015,
     removalChallengeBaseDeposit: 0.025,
     arbitratorAddress: defaultArbitrator || '',
+    governorAddress: defaultGovernor || '',
     challengePeriodDuration: 3,
     itemName: 'Item',
     requireEvidenceRequest: true,
