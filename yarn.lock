@@ -1574,9 +1574,9 @@
   integrity sha512-xT7tTav9ROwfXecBpCcZ2S9nez2Owrgz0Kg7mVyoO48zRtj5Ocyg1jSymWniBUCuux7ukUuDpYEwHfQBIEnhWw==
 
 "@kleros/tcr@^0.1.21":
-  version "0.1.26"
-  resolved "https://registry.yarnpkg.com/@kleros/tcr/-/tcr-0.1.26.tgz#8ae7e858370b1fe089b0cff60cd5a58e25b5652f"
-  integrity sha512-RiDakFfq95Yk6PX76fnorDcdr42xaFB4VjgnjdYFtDW8t1hPet0wyEhjRfpLluAldr2iPKNnzTATqNJVGW8p9Q==
+  version "0.1.28"
+  resolved "https://registry.yarnpkg.com/@kleros/tcr/-/tcr-0.1.28.tgz#4bd076742b287af0bf370f622ef80f0d39a5fd89"
+  integrity sha512-ItxRF1nHbvh7LXBhzTqA67fYRVSsBYGrrw3O4psEqZ2Et1FZ+DSo9tUjPIDvlyXqZUm2ikR6lkgS/o+QrXqnUg==
   dependencies:
     "@kleros/erc-792" "^3.0.0"
     "@kleros/ethereum-libraries" "^1.0.0"
@@ -5373,9 +5373,9 @@ default-gateway@^4.2.0:
     ip-regex "^2.1.0"
 
 defer-to-connect@^1.0.1:
-  version "1.1.0"
-  resolved "https://registry.yarnpkg.com/defer-to-connect/-/defer-to-connect-1.1.0.tgz#b41bd7efa8508cef13f8456975f7a278c72833fd"
-  integrity sha512-WE2sZoctWm/v4smfCAdjYbrfS55JiMRdlY9ZubFhsYbteCK9+BvAx4YV7nPjYM6ZnX5BcoVKwfmyx9sIFTgQMQ==
+  version "1.1.1"
+  resolved "https://registry.yarnpkg.com/defer-to-connect/-/defer-to-connect-1.1.1.tgz#88ae694b93f67b81815a2c8c769aef6574ac8f2f"
+  integrity sha512-J7thop4u3mRTkYRQ+Vpfwy2G5Ehoy82I14+14W4YMDLKdWloI9gSzRbV30s/NckQGVJtPkWNcW4oMAUigTdqiQ==
 
 deferred-leveldown@~1.2.1:
   version "1.2.2"
@@ -12618,9 +12618,9 @@ pseudomap@^1.0.1:
   integrity sha1-8FKijacOYYkX7wqKw0wa5aaChrM=
 
 psl@^1.1.24:
-  version "1.5.0"
-  resolved "https://registry.yarnpkg.com/psl/-/psl-1.5.0.tgz#47fd1292def7fdb1e138cd78afa8814cebcf7b13"
-  integrity sha512-4vqUjKi2huMu1OJiLhi3jN6jeeKvMZdI1tYgi/njW5zV52jNLgSAZSdN16m9bJFe61/cT8ulmw4qFitV9QRsEA==
+  version "1.6.0"
+  resolved "https://registry.yarnpkg.com/psl/-/psl-1.6.0.tgz#60557582ee23b6c43719d9890fb4170ecd91e110"
+  integrity sha512-SYKKmVel98NCOYXpkwUqZqh0ahZeeKfmisiLIcEZdsb+WbLv02g/dI5BUmZnIyOe7RzZtLax81nnb2HbvC2tzA==
 
 psl@^1.1.28:
   version "1.4.0"
