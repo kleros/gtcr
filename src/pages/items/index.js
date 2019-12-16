@@ -308,9 +308,11 @@ const Items = ({ search, history }) => {
 
       // Fetch item details.
       setOldActiveItems(
-        await Promise.all(
-          requestSubmissionLogs.map(log =>
-            gtcrView.getItem(tcrAddress, log.values._itemID)
+        (
+          await Promise.all(
+            requestSubmissionLogs.map(log =>
+              gtcrView.getItem(tcrAddress, log.values._itemID)
+            )
           )
         ).filter(item => !item.resolved)
       )

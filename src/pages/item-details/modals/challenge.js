@@ -38,7 +38,7 @@ const ChallengeModal = ({ item, itemName, statusCode, fileURI, ...rest }) => {
     description,
     evidenceAttachment
   }) => {
-    pushWeb3Action(async (_, signer) => {
+    pushWeb3Action(async ({ account, networkId }, signer) => {
       const gtcr = new ethers.Contract(tcrAddress, _gtcr, signer)
       const evidenceJSON = {
         title: title || 'Challenge evidence',
@@ -69,7 +69,24 @@ const ChallengeModal = ({ item, itemName, statusCode, fileURI, ...rest }) => {
         actionMessage: `Challenging ${(itemName && itemName.toLowerCase()) ||
           'item'} ${
           statusCode === STATUS_CODE.SUBMITTED ? 'submission' : 'removal'
-        }`
+        }`,
+        onTxMined: () => {
+          // Subscribe for notifications
+          if (!process.env.REACT_APP_NOTIFICATIONS_API_URL) return
+          fetch(
+            `${process.env.REACT_APP_NOTIFICATIONS_API_URL}/api/subscribe`,
+            {
+              method: 'post',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                subscriberAddr: ethers.utils.getAddress(account),
+                tcrAddr: ethers.utils.getAddress(tcrAddress),
+                itemID: item.ID,
+                networkID: networkId
+              })
+            }
+          )
+        }
       }
     })
   }

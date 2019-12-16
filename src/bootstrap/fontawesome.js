@@ -9,7 +9,10 @@ import {
   faCoins,
   faInfoCircle,
   faExternalLinkAlt,
-  faSearch
+  faSearch,
+  faBell,
+  faFileAlt,
+  faCheck
 } from '@fortawesome/free-solid-svg-icons'
 
 library.add(
@@ -22,5 +25,8 @@ library.add(
   faInfoCircle,
   fab,
   faExternalLinkAlt,
-  faSearch
+  faSearch,
+  faBell,
+  faFileAlt,
+  faCheck
 )

@@ -122,7 +122,7 @@ const CrowdfundModal = ({ statusCode, item, fileURI, ...rest }) => {
     )
 
   const crowdfundSide = () => {
-    pushWeb3Action(async (_, signer) => {
+    pushWeb3Action(async ({ account, networkId }, signer) => {
       const gtcr = new ethers.Contract(tcrAddress, _gtcr, signer)
       const contribution = amountStillRequired
         .mul(
@@ -141,7 +141,24 @@ const CrowdfundModal = ({ statusCode, item, fileURI, ...rest }) => {
         tx,
         actionMessage: `Contributing fees to ${
           side === PARTY.REQUESTER ? 'Submitter' : 'Challenger'
-        }`
+        }`,
+        onTxMined: () => {
+          // Subscribe for notifications
+          if (!process.env.REACT_APP_NOTIFICATIONS_API_URL) return
+          fetch(
+            `${process.env.REACT_APP_NOTIFICATIONS_API_URL}/api/subscribe`,
+            {
+              method: 'post',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                subscriberAddr: ethers.utils.getAddress(account),
+                tcrAddr: ethers.utils.getAddress(tcrAddress),
+                itemID: item.ID,
+                networkID: networkId
+              })
+            }
+          )
+        }
       }
     })
   }

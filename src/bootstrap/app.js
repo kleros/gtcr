@@ -36,6 +36,7 @@ import { NETWORK_NAME, NETWORK_COLOR } from '../utils/network-utils'
 import ErrorPage from '../pages/error-page'
 import useMainTCR2 from '../hooks/tcr2'
 import Identicon from '../components/identicon'
+import Notifications from '../components/notifications'
 import { TCRViewProvider } from './tcr-view-context'
 import useNetworkEnvVariable from '../hooks/network-env'
 import { ReactComponent as Logo } from '../assets/images/logo.svg'
@@ -108,8 +109,8 @@ const StyledColEnd = styled(StyledCol)`
 `
 
 const StyledNetworkStatus = styled.span`
-  margin-right: 24px;
   color: white;
+  margin-right: 24px;
 `
 
 const StyledMenu = styled(Menu)`
@@ -167,6 +168,10 @@ const StyledTopBarRow = styled(Row)`
   padding: 0 9.375vw;
 `
 
+const StyledMenuItem = styled(Menu.Item)`
+  background-color: transparent !important;
+`
+
 const Factory = loadable(
   () => import(/* webpackPrefetch: true */ '../pages/factory/index'),
   {
@@ -201,12 +206,12 @@ const ItemDetails = loadable(
 )
 
 const MenuItems = ({ TCR2_ADDRESS }) => [
-  <Menu.Item key="tcrs-item">
+  <StyledMenuItem key="tcrs-item">
     <NavLink to={`/tcr/${TCR2_ADDRESS}`}>TCRs</NavLink>
-  </Menu.Item>,
-  <Menu.Item key="factory-item">
+  </StyledMenuItem>,
+  <StyledMenuItem key="factory-item">
     <NavLink to="/factory">Create a TCR</NavLink>
-  </Menu.Item>
+  </StyledMenuItem>
 ]
 
 const {
@@ -357,6 +362,9 @@ const TopBar = () => {
             <Badge color={NETWORK_COLOR[web3Context.networkId]} />
             {capitalizeFirstLetter(NETWORK_NAME[web3Context.networkId])}
           </StyledNetworkStatus>
+        )}
+        {process.env.REACT_APP_NOTIFICATIONS_API_URL && web3Context.account && (
+          <Notifications />
         )}
         {web3Context.active && web3Context.account ? (
           <Identicon />

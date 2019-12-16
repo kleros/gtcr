@@ -16,7 +16,7 @@ const EvidenceModal = ({ item, ...rest }) => {
   const { pushWeb3Action } = useContext(WalletContext)
 
   const submitEvidence = async ({ title, description, evidenceAttachment }) => {
-    pushWeb3Action(async (_, signer) => {
+    pushWeb3Action(async ({ account, networkId }, signer) => {
       try {
         const gtcr = new ethers.Contract(tcrAddress, _gtcr, signer)
         const evidenceJSON = {
@@ -43,7 +43,24 @@ const EvidenceModal = ({ item, ...rest }) => {
         rest.onCancel() // Hide the submission modal.
         return {
           tx,
-          actionMessage: 'Submitting evidence'
+          actionMessage: 'Submitting evidence',
+          onTxMined: () => {
+            // Subscribe for notifications
+            if (!process.env.REACT_APP_NOTIFICATIONS_API_URL) return
+            fetch(
+              `${process.env.REACT_APP_NOTIFICATIONS_API_URL}/api/subscribe`,
+              {
+                method: 'post',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  subscriberAddr: ethers.utils.getAddress(account),
+                  tcrAddr: tcrAddress,
+                  itemID: item.ID,
+                  networkID: networkId
+                })
+              }
+            )
+          }
         }
       } catch (err) {
         console.error('Error submitting evidence:', err)
