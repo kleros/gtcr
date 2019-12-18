@@ -225,12 +225,8 @@ const {
 
 const connectors = {}
 const defaultNetwork = Number(process.env.REACT_APP_DEFAULT_NETWORK) || 42
-if (process.env.REACT_APP_INFURA_PROJECT_ID) {
-  const supportedNetworkURLs = {
-    1: `https://mainnet.infura.io/v3/${process.env.REACT_APP_INFURA_PROJECT_ID}`,
-    42: `https://kovan.infura.io/v3/${process.env.REACT_APP_INFURA_PROJECT_ID}`
-  }
-
+if (process.env.REACT_APP_RPC_URLS) {
+  const supportedNetworkURLs = JSON.parse(process.env.REACT_APP_RPC_URLS)
   connectors.Infura = new NetworkOnlyConnector({
     providerURL: supportedNetworkURLs[defaultNetwork]
   })

@@ -87,7 +87,7 @@ const useNotificationWeb3 = () => {
 
   useEffect(() => {
     if (web3Context.active || infuraSetup) return
-    if (process.env.REACT_APP_INFURA_PROJECT_ID)
+    if (process.env.REACT_APP_RPC_URLS)
       web3Context.setFirstValidConnector(['Infura'])
     else
       console.warn(
