@@ -481,11 +481,11 @@ export default () => {
                   isMenuClosed={isMenuClosed}
                   onClick={isMenuClosed ? null : () => setIsMenuClosed(true)}
                 />
-                <FooterWrapper>
-                  <Footer appName="Kleros · GTCR" />
-                </FooterWrapper>
               </Layout>
             </StyledLayout>
+            <FooterWrapper>
+              <Footer appName="Kleros · GTCR" />
+            </FooterWrapper>
             <WalletModal />
           </WalletProvider>
         </Web3Provider>
