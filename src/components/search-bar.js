@@ -34,6 +34,8 @@ const StyledStatus = styled.div`
 const StyledFieldsContainer = styled.div`
   display: flex;
   flex-direction: column;
+  overflow-x: auto;
+  margin-right: 6px;
 `
 
 const StyledLink = styled(Link)`
