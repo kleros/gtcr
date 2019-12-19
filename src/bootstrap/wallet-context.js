@@ -33,16 +33,12 @@ const useNotificationWeb3 = () => {
   const [timestamp, setTimestamp] = useState()
   const [latestBlock, setLatestBlock] = useState()
   const archon = useMemo(() => {
-    if (
-      !web3Context.library ||
-      !web3Context.connector ||
-      !web3Context.connector.providerURL
+    if (!web3Context.library || !web3Context.active) return
+    return new Archon(
+      web3Context.library.provider,
+      process.env.REACT_APP_IPFS_GATEWAY
     )
-      return
-    const { providerURL } = web3Context.connector
-
-    return new Archon(providerURL, process.env.REACT_APP_IPFS_GATEWAY)
-  }, [web3Context.connector, web3Context.library])
+  }, [web3Context.library, web3Context.active])
 
   /**
    * Send a transaction to the blockchain. This handles notifications and
