@@ -2,6 +2,45 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.8.0](https://github.com/kleros/gtcr/compare/v0.7.0...v0.8.0) (2019-12-21)
+
+
+### Bug Fixes
+
+* add gtcr address field type and close [#13](https://github.com/kleros/gtcr/issues/13) ([e056fed](https://github.com/kleros/gtcr/commit/e056fed))
+* allow setting the challenge period duration and display units ([4c1fba2](https://github.com/kleros/gtcr/commit/4c1fba2))
+* be rpc node agnostic ([94404b6](https://github.com/kleros/gtcr/commit/94404b6))
+* blank meta evidence loaded from cache ([15bf7ac](https://github.com/kleros/gtcr/commit/15bf7ac))
+* cannot navigate back from items view ([3ed124a](https://github.com/kleros/gtcr/commit/3ed124a))
+* close [#17](https://github.com/kleros/gtcr/issues/17) and allow setting the governor on the factory ([db1c5a1](https://github.com/kleros/gtcr/commit/db1c5a1))
+* close [#19](https://github.com/kleros/gtcr/issues/19) ([734f453](https://github.com/kleros/gtcr/commit/734f453))
+* decoding error on tcr navigation ([39835e6](https://github.com/kleros/gtcr/commit/39835e6))
+* display missing provider message on all routes ([58cd440](https://github.com/kleros/gtcr/commit/58cd440))
+* error messages and submission log decoding error ([fc3856a](https://github.com/kleros/gtcr/commit/fc3856a))
+* formatic popup and footer ([4ca1e43](https://github.com/kleros/gtcr/commit/4ca1e43))
+* handle overflow in search results ([762839a](https://github.com/kleros/gtcr/commit/762839a))
+* incorrect deposit math for requests and challenges ([36b488c](https://github.com/kleros/gtcr/commit/36b488c))
+* incosistent casing in tx messages ([0d7954d](https://github.com/kleros/gtcr/commit/0d7954d))
+* let user upload primary document on factory and close [#7](https://github.com/kleros/gtcr/issues/7) ([d64bf86](https://github.com/kleros/gtcr/commit/d64bf86))
+* missing evidence after connecting a wallet ([c68a646](https://github.com/kleros/gtcr/commit/c68a646))
+* missing key in search results ([2d6b157](https://github.com/kleros/gtcr/commit/2d6b157))
+* outdated meta evidence when switching tcrs ([75d23e9](https://github.com/kleros/gtcr/commit/75d23e9))
+* prevent crash on decoding errors ([3f14db2](https://github.com/kleros/gtcr/commit/3f14db2))
+* set kleros as the default arbitrator and close [#20](https://github.com/kleros/gtcr/issues/20) ([62d23aa](https://github.com/kleros/gtcr/commit/62d23aa))
+* update evidenceDisplayURI, hash and close [#11](https://github.com/kleros/gtcr/issues/11) ([5fab41b](https://github.com/kleros/gtcr/commit/5fab41b))
+* use shared footer from @kleros/react-components ([0a55325](https://github.com/kleros/gtcr/commit/0a55325))
+
+
+### Features
+
+* add search bar and close [#14](https://github.com/kleros/gtcr/issues/14) ([ee5c9fe](https://github.com/kleros/gtcr/commit/ee5c9fe))
+* display current network and fix missing logo ([6ed2bcb](https://github.com/kleros/gtcr/commit/6ed2bcb))
+* footer from shared components ([b59737b](https://github.com/kleros/gtcr/commit/b59737b))
+* implement in-app notifications ([d8b3cb1](https://github.com/kleros/gtcr/commit/d8b3cb1))
+* save tcr information in metadata field of meta evidence file ([374c034](https://github.com/kleros/gtcr/commit/374c034))
+
+
+
 ### [0.7.1](https://github.com/kleros/gtcr/compare/v0.7.0...v0.7.1) (2019-11-13)
 
 
