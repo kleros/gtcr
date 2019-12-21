@@ -39,9 +39,9 @@ const getTcrMetaEvidence = async tcrState => {
       'item'} comply with the required criteria?`,
     fileURI: tcrPrimaryDocument,
     evidenceDisplayInterfaceURL:
-      'https://ipfs.kleros.io/ipfs/QmXd9WaJURRSnF9Hwp1Bxn7j4gjp26X4CCL31d51UH83eZ/index.html',
+      process.env.REACT_APP_DEFAULT_EVIDENCE_DISPLAY_URL,
     evidenceDisplayInterfaceHash:
-      'Bce2RntYPKaxU3qbN6CrmDbfYMPQmQy44zGhcwQSKZSg6A6n6KBVgtRbdrep4jWzNGPT71NTkShYoKatQwMdLhVFsh',
+      process.env.REACT_APP_DEFAULT_EVIDENCE_DISPLAY_HASH,
     metadata
   }
 
