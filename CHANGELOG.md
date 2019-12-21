@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.9.0](https://github.com/kleros/gtcr/compare/v0.8.0...v0.9.0) (2019-12-21)
+
+
+### Bug Fixes
+
+* notification information icon color ([abd71ab](https://github.com/kleros/gtcr/commit/abd71ab))
+
+
+### Features
+
+* notify network changes and close [#21](https://github.com/kleros/gtcr/issues/21) ([5db64fe](https://github.com/kleros/gtcr/commit/5db64fe))
+
+
+
 ## [0.8.0](https://github.com/kleros/gtcr/compare/v0.7.0...v0.8.0) (2019-12-21)
 
 
