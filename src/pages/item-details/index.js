@@ -21,6 +21,7 @@ import { gtcrDecode } from '../../utils/encoder'
 import RequestTimelines from './request-timelines'
 import { WalletContext } from '../../bootstrap/wallet-context'
 import SearchBar from '../../components/search-bar'
+import { capitalizeFirstLetter } from '../../utils/string'
 
 const StyledLayoutContent = styled(Layout.Content)`
   padding: 0 9.375vw 42px;
@@ -49,9 +50,9 @@ const ItemDetails = ({ itemID }) => {
   const [item, setItem] = useState()
   const [requests, setRequests] = useState()
   const arbitrator = useMemo(() => {
-    if (!decodedItem || !library) return
-    return new ethers.Contract(decodedItem.arbitrator, _arbitrator, library)
-  }, [decodedItem, library])
+    if (!item || !library) return
+    return new ethers.Contract(item.arbitrator, _arbitrator, library)
+  }, [item, library])
   const refAttr = useRef()
   const [eventListenerSet, setEventListenerSet] = useState()
   const { gtcr, tcrError, gtcrView, metaEvidence, tcrAddress } = useContext(
@@ -86,15 +87,9 @@ const ItemDetails = ({ itemID }) => {
 
   // Decode item bytes once we have it and the meta evidence.
   useEffect(() => {
-    if (
-      !item ||
-      !metaEvidence ||
-      !metaEvidence.columns ||
-      metaEvidence.tcrAddress !== tcrAddress
-    )
-      return
+    if (!item || !metaEvidence || metaEvidence.tcrAddress !== tcrAddress) return
 
-    const { columns } = metaEvidence
+    const { columns } = metaEvidence.metadata
     try {
       setDecodedItem({
         ...item,
@@ -168,11 +163,12 @@ const ItemDetails = ({ itemID }) => {
       />
     )
 
+  const metadata = metaEvidence && metaEvidence.metadata
   return (
     <>
       <StyledBanner>
         <Typography.Title ellipsis style={{ marginBottom: '0' }}>
-          {metaEvidence && metaEvidence.itemName} Details
+          {metadata && capitalizeFirstLetter(metadata.itemName)} Details
         </Typography.Title>
       </StyledBanner>
       <SearchBar />
@@ -183,9 +179,10 @@ const ItemDetails = ({ itemID }) => {
         <CrowdfundingCard item={decodedItem || item} timestamp={timestamp} />
         <br />
         <ItemDetailsCard
-          title={`${(metaEvidence && metaEvidence.itemName) || 'Item'} Details`}
-          columns={metaEvidence && metaEvidence.columns}
-          loading={!metaEvidence || !decodedItem || !decodedItem.decodedData}
+          title={`${(metadata && capitalizeFirstLetter(metadata.itemName)) ||
+            'Item'} Details`}
+          columns={metadata && metadata.columns}
+          loading={!metadata || !decodedItem || !decodedItem.decodedData}
           item={decodedItem}
         />
 

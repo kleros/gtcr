@@ -342,7 +342,7 @@ const Items = ({ search, history }) => {
       return
 
     const { data: encodedItems } = fetchItems
-    const { columns } = metaEvidence
+    const { columns } = metaEvidence.metadata
 
     // If on page 1, display also old items with new pending
     // requests, if any.
@@ -413,34 +413,34 @@ const Items = ({ search, history }) => {
       />
     )
 
+  const metadata = metaEvidence && metaEvidence.metadata
+
   return (
     <>
       <StyledBanner>
         <StyledHeader>
-          {metaEvidence ? (
+          {metadata ? (
             <Typography.Title ellipsis style={{ marginBottom: '0' }}>
-              {metaEvidence.tcrTitle}
+              {metadata.tcrTitle}
             </Typography.Title>
           ) : (
             <Skeleton active paragraph={false} title={{ width: 100 }} />
           )}
-          {metaEvidence && (
+          {metadata && (
             <StyledButton
               type="primary"
               size="large"
               onClick={() => requestWeb3Auth(() => setSubmissionFormOpen(true))}
             >
               Submit{' '}
-              {metaEvidence && metaEvidence.itemName
-                ? metaEvidence.itemName
-                : 'Item'}
+              {metadata && metadata.itemName ? metadata.itemName : 'Item'}
               <Icon type="plus-circle" />
             </StyledButton>
           )}
         </StyledHeader>
-        {metaEvidence ? (
+        {metadata ? (
           <Typography.Text ellipsis type="secondary">
-            {metaEvidence.tcrDescription}
+            {metadata.tcrDescription}
           </Typography.Text>
         ) : (
           <Skeleton active paragraph={{ rows: 1, width: 150 }} title={false} />
@@ -451,9 +451,7 @@ const Items = ({ search, history }) => {
         <StyledContent>
           <Spin
             spinning={
-              fetchItems.isFetching ||
-              fetchItemCount.isFetching ||
-              !metaEvidence
+              fetchItems.isFetching || fetchItemCount.isFetching || !metadata
             }
           >
             <>

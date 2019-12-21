@@ -18,6 +18,7 @@ import {
 } from '../../../utils/item-status'
 import { WalletContext } from '../../../bootstrap/wallet-context'
 import BNPropType from '../../../prop-types/bn'
+import { capitalizeFirstLetter } from '../../../utils/string'
 
 const StyledCard = styled(Card)`
   cursor: default;
@@ -165,8 +166,9 @@ const Timeline = ({ request, requestID, item }) => {
   if (!item || !request) return <Skeleton active />
   const { requestType, resolved, disputed } = request
 
+  const metadata = metaEvidence && metaEvidence.metadata
   // Build nodes from request events.
-  const itemName = metaEvidence ? metaEvidence.itemName : 'Item'
+  const itemName = metadata ? capitalizeFirstLetter(metadata.itemName) : 'Item'
   let items = [
     <AntdTimeline.Item key="first-node">
       {requestType === CONTRACT_STATUS.REGISTRATION_REQUESTED
@@ -304,7 +306,7 @@ const Timeline = ({ request, requestID, item }) => {
             : STATUS_COLOR[STATUS_CODE.REJECTED]
         }
       >
-        {`${(metaEvidence && metaEvidence.itemName) || 'Item'} ${
+        {`${itemName || 'Item'} ${
           requestType === CONTRACT_STATUS.REGISTRATION_REQUESTED
             ? 'accepted'
             : 'removed'

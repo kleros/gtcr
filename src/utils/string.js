@@ -20,4 +20,4 @@ Blanditiis dolor laudantium quo totam. Voluptate rerum qui qui dolor. Debitis oc
 export const isVowel = x => /[aeiouAEIOU]/.test(x)
 
 export const capitalizeFirstLetter = str =>
-  str.charAt(0).toUpperCase() + str.slice(1)
+  str && str.length > 0 ? str.charAt(0).toUpperCase() + str.slice(1) : str

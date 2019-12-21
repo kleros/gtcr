@@ -208,11 +208,12 @@ const useTcrView = tcrAddress => {
       !library ||
       gtcr.address !== tcrAddress ||
       !metaEvidence ||
+      !metaEvidence.metadata ||
       metaEvidence.tcrAddress !== tcrAddress
     )
       return
 
-    const { columns } = metaEvidence
+    const { columns } = metaEvidence.metadata
     ;(async () => {
       try {
         setItemSubmissionLogs(

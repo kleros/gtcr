@@ -103,7 +103,7 @@ const SubmissionModal = props => {
       </Modal>
     )
 
-  const { fileURI, itemName, columns } = metaEvidence
+  const { fileURI, itemName, columns } = metaEvidence.metadata
 
   const postSubmit = (values, columns) => {
     pushWeb3Action(async ({ account, networkId }, signer) => {

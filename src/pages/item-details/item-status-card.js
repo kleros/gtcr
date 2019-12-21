@@ -143,6 +143,8 @@ const ItemStatusCard = ({ item, timestamp }) => {
     }
   }
 
+  const metadata = metaEvidence && metaEvidence.metadata
+
   return (
     <>
       <Card
@@ -157,7 +159,7 @@ const ItemStatusCard = ({ item, timestamp }) => {
         extra={
           <ItemActionButton
             statusCode={statusCode}
-            itemName={metaEvidence && metaEvidence.itemName}
+            itemName={metadata && metadata.itemName}
             itemID={item && item.ID}
             pushWeb3Action={pushWeb3Action}
             onClick={onClick}
@@ -240,9 +242,9 @@ const ItemStatusCard = ({ item, timestamp }) => {
         statusCode !== STATUS_CODE.CHALLENGED && (
           <ItemActionModal
             statusCode={statusCode}
-            itemName={metaEvidence ? metaEvidence.itemName : 'item'}
+            itemName={metadata ? metadata.itemName : 'item'}
             item={item}
-            fileURI={metaEvidence && metaEvidence.fileURI}
+            fileURI={metadata && metadata.fileURI}
             isOpen={modalOpen}
             onClose={() => setModalOpen(false)}
           />

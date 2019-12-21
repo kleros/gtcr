@@ -31,7 +31,7 @@ const getTcrMetaEvidence = async tcrState => {
     itemName,
     tcrPrimaryDocument
   } = tcrState
-  const tcrMetaEvidence = { tcrTitle, tcrDescription, columns, itemName }
+  const metadata = { tcrTitle, tcrDescription, columns, itemName }
 
   const metaEvidence = {
     category: 'Curated Lists',
@@ -42,7 +42,7 @@ const getTcrMetaEvidence = async tcrState => {
       'https://ipfs.kleros.io/ipfs/QmXd9WaJURRSnF9Hwp1Bxn7j4gjp26X4CCL31d51UH83eZ/index.html',
     evidenceDisplayInterfaceHash:
       'Bce2RntYPKaxU3qbN6CrmDbfYMPQmQy44zGhcwQSKZSg6A6n6KBVgtRbdrep4jWzNGPT71NTkShYoKatQwMdLhVFsh',
-    ...tcrMetaEvidence
+    metadata
   }
 
   const registrationMetaEvidence = {
