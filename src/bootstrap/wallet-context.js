@@ -31,6 +31,7 @@ const useNotificationWeb3 = () => {
   const [web3Actions, setWeb3Actions] = useState([])
   const [infuraSetup, setInfuraSetup] = useState() // Whether infura was set as the provider.
   const [timestamp, setTimestamp] = useState()
+  const [network, setNetwork] = useState()
   const [latestBlock, setLatestBlock] = useState()
   const archon = useMemo(() => {
     if (!web3Context.library || !web3Context.active) return
@@ -81,17 +82,34 @@ const useNotificationWeb3 = () => {
     setConnectionState(prevState => ({ ...prevState, modalOpen: false }))
   }
 
+  // Connect
   useEffect(() => {
     if (web3Context.active || infuraSetup) return
     if (process.env.REACT_APP_RPC_URLS)
       web3Context.setFirstValidConnector(['Infura'])
     else
       console.warn(
-        'No infura key provided. Dapp will only work with a connected wallet.'
+        'No JSON-RPC URL provided for this network. Dapp will only work with a connected wallet.'
       )
 
     setInfuraSetup(true)
   }, [infuraSetup, web3Context])
+
+  // Notify of network changes
+  useEffect(() => {
+    if (!web3Context.networkId) return
+    if (!network) {
+      setNetwork(web3Context.networkId)
+      return
+    }
+
+    if (network && network !== web3Context.networkId) {
+      setNetwork(web3Context.networkId)
+      notification.info({
+        message: 'Network Changed'
+      })
+    }
+  }, [web3Context.networkId, network])
 
   // Fetch timestamp.
   useEffect(() => {
