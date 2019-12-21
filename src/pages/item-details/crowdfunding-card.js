@@ -2,11 +2,17 @@ import React, { useContext } from 'react'
 import { Card, Typography, Progress } from 'antd'
 import styled from 'styled-components/macro'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { DISPUTE_STATUS, PARTY } from '../../utils/item-status'
+import {
+  DISPUTE_STATUS,
+  PARTY,
+  itemToStatusCode,
+  STATUS_CODE
+} from '../../utils/item-status'
 import { TCRViewContext } from '../../bootstrap/tcr-view-context'
 import useRequiredFees from '../../hooks/required-fees'
 import { formatEther } from 'ethers/utils'
 import itemPropType from '../../prop-types/item'
+import BNPropType from '../../prop-types/bn'
 
 const StyledCard = styled(Card)`
   background: linear-gradient(111.6deg, #4d00b4 46.25%, #6500b4 96.25%);
@@ -49,7 +55,7 @@ const StyledIcon = styled(FontAwesomeIcon)`
   margin: 12px;
 `
 
-const CrowdfundingCard = ({ item }) => {
+const CrowdfundingCard = ({ item, timestamp }) => {
   const {
     challengePeriodDuration,
     sharedStakeMultiplier,
@@ -93,6 +99,10 @@ const CrowdfundingCard = ({ item }) => {
     !requesterFees.potentialReward
   )
     return null
+
+  const statusCode = itemToStatusCode(item, timestamp, challengePeriodDuration)
+
+  if (statusCode === STATUS_CODE.WAITING_ENFORCEMENT) return null
 
   const requesterPercentage =
     paidFees[PARTY.REQUESTER]
@@ -172,11 +182,13 @@ const CrowdfundingCard = ({ item }) => {
 }
 
 CrowdfundingCard.propTypes = {
-  item: itemPropType
+  item: itemPropType,
+  timestamp: BNPropType
 }
 
 CrowdfundingCard.defaultProps = {
-  item: null
+  item: null,
+  timestamp: null
 }
 
 export default CrowdfundingCard
