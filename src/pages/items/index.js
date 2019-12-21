@@ -16,7 +16,11 @@ import PropTypes from 'prop-types'
 import ErrorPage from '../error-page'
 import styled from 'styled-components/macro'
 import { WalletContext } from '../../bootstrap/wallet-context'
-import { ZERO_ADDRESS, ZERO_BYTES32 } from '../../utils/string'
+import {
+  ZERO_ADDRESS,
+  ZERO_BYTES32,
+  capitalizeFirstLetter
+} from '../../utils/string'
 import { TCRViewContext } from '../../bootstrap/tcr-view-context'
 import ItemStatus from '../../components/item-status-badge'
 import { bigNumberify } from 'ethers/utils'
@@ -440,7 +444,7 @@ const Items = ({ search, history }) => {
         </StyledHeader>
         {metadata ? (
           <Typography.Text ellipsis type="secondary">
-            {metadata.tcrDescription}
+            {capitalizeFirstLetter(metadata.tcrDescription)}
           </Typography.Text>
         ) : (
           <Skeleton active paragraph={{ rows: 1, width: 150 }} title={false} />
