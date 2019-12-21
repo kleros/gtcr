@@ -17,8 +17,7 @@
 
 ## Other Scripts
 
-- `yarn run prettify` - Apply prettier to the entire project.
-- `yarn run lint` - Lint the entire project's .js files.
+- `yarn format` - Lint, fix and prettify all the project.
 - `yarn run cz` - Run commitizen.
 - `yarn run build` - Create a production build.
 

@@ -9,7 +9,10 @@
     "build:theme": "lessc --js ./src/bootstrap/theme.less ./src/bootstrap/theme.css",
     "test": "react-scripts test",
     "release": "standard-version",
-    "lint": "eslint './src/**/*.js'"
+    "lint": "eslint './src/**/*.js'",
+    "lint:eslint:fix": "eslint './src/**/*.js' --fix",
+    "lint:prettier:fix": "prettier --write ''./src/**/*.js''",
+    "format": "yarn run lint:eslint:fix && yarn run lint:prettier:fix"
   },
   "dependencies": {
     "@fortawesome/fontawesome-svg-core": "^1.2.25",
