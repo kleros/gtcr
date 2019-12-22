@@ -193,7 +193,7 @@ const TCRParams = ({
         </Form.Item>
         <div style={{ marginBottom: '26px' }}>
           <div className="ant-col ant-form-item-label">
-            <label>
+            <label htmlFor="primary-document">
               <span>Primary Document&nbsp;</span>
             </label>
           </div>

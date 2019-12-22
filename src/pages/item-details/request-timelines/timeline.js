@@ -1,5 +1,5 @@
 import React, { useMemo, useEffect, useContext, useState } from 'react'
-import { Timeline as AntdTimeline, Icon, Card, Skeleton } from 'antd'
+import { Timeline as AntdTimeline, Icon, Card, Skeleton, Result } from 'antd'
 import { useWeb3Context } from 'web3-react'
 import { ethers } from 'ethers'
 import styled from 'styled-components/macro'
@@ -39,6 +39,7 @@ const Timeline = ({ request, requestID, item }) => {
   const { gtcr, metaEvidence } = useContext(TCRViewContext)
   const { archon } = useContext(WalletContext)
   const [logs, setLogs] = useState([])
+  const [error, setError] = useState()
   const [appealableRulings, setAppealableRulings] = useState({})
   const [evidenceFiles, setEvidenceFiles] = useState({})
   const arbitrator = useMemo(() => {
@@ -65,38 +66,38 @@ const Timeline = ({ request, requestID, item }) => {
     const { disputeID, disputed } = request
     const { address: gtcrAddr } = gtcr
 
-    try {
-      ;(async () => {
-        // Fetch logs in parallel.
-        let logs = (
-          await Promise.all([
-            library.getLogs({
-              ...gtcr.filters.Evidence(arbitrator.address, evidenceGroupID),
-              fromBlock: 0
-            }),
-            disputed
-              ? library.getLogs({
-                  ...gtcr.filters.Ruling(arbitrator.address, disputeID),
-                  fromBlock: 0
-                })
-              : null,
-            disputed
-              ? library.getLogs({
-                  ...arbitrator.filters.AppealPossible(disputeID, gtcrAddr),
-                  fromBlock: 0
-                })
-              : null,
-            disputed
-              ? library.getLogs({
-                  ...arbitrator.filters.AppealDecision(disputeID, gtcrAddr),
-                  fromBlock: 0
-                })
-              : null
-          ])
-        ).filter(logs => !!logs)
+    ;(async () => {
+      // Fetch logs in parallel.
+      const logs = (
+        await Promise.all([
+          library.getLogs({
+            ...gtcr.filters.Evidence(arbitrator.address, evidenceGroupID),
+            fromBlock: 0
+          }),
+          disputed
+            ? library.getLogs({
+                ...gtcr.filters.Ruling(arbitrator.address, disputeID),
+                fromBlock: 0
+              })
+            : null,
+          disputed
+            ? library.getLogs({
+                ...arbitrator.filters.AppealPossible(disputeID, gtcrAddr),
+                fromBlock: 0
+              })
+            : null,
+          disputed
+            ? library.getLogs({
+                ...arbitrator.filters.AppealDecision(disputeID, gtcrAddr),
+                fromBlock: 0
+              })
+            : null
+        ])
+      ).filter(logs => !!logs)
 
-        // Parse and sort event logs.
-        logs = logs
+      // Parse and sort event logs.
+      setLogs(
+        logs
           .map((e, i) => {
             if (i <= 1)
               return e.map(log => ({
@@ -112,45 +113,49 @@ const Timeline = ({ request, requestID, item }) => {
               }))
           })
           .reduce((acc, curr) => acc.concat(curr), [])
+      )
 
-        setLogs(logs)
+      // Fetch evidence files.
+      archon.arbitrable
+        .getEvidence(gtcrAddr, arbitrator.address, evidenceGroupID)
+        .then(data =>
+          data
+            .filter(evidenceFile => evidenceFile.evidenceJSONValid)
+            .filter(
+              evidenceFile =>
+                !evidenceFile.fileURI ||
+                (evidenceFile.fileURI && evidenceFile.fileValid)
+            )
+            .map(evidenceFile =>
+              setEvidenceFiles(evidenceFiles => ({
+                ...evidenceFiles,
+                [evidenceFile.transactionHash]: evidenceFile
+              }))
+            )
+        )
+        .catch(err => {
+          console.error('Error evidence files', err)
+          setError('Error evidence files')
+        })
 
-        // Fetch evidence files.
-        archon.arbitrable
-          .getEvidence(gtcrAddr, arbitrator.address, evidenceGroupID)
-          .then(data =>
-            data
-              .filter(evidenceFile => evidenceFile.evidenceJSONValid)
-              .filter(
-                evidenceFile =>
-                  !evidenceFile.fileURI ||
-                  (evidenceFile.fileURI && evidenceFile.fileValid)
-              )
-              .map(evidenceFile =>
-                setEvidenceFiles(evidenceFiles => ({
-                  ...evidenceFiles,
-                  [evidenceFile.transactionHash]: evidenceFile
-                }))
-              )
-          )
-
-        // Fetch appealable rulings.
-        logs
-          .filter(log => log.name === 'AppealPossible')
-          .forEach(log => {
-            arbitrator
-              .currentRuling(disputeID, { blockTag: log.blockNumber })
-              .then(currentRuling => {
-                setAppealableRulings(appealableRulings => ({
-                  ...appealableRulings,
-                  [log.transactionHash]: currentRuling.toNumber()
-                }))
-              })
-          })
-      })()
-    } catch (err) {
-      console.error('Error fetching request data', err)
-    }
+      // Fetch appealable rulings.
+      logs
+        .filter(log => log.name === 'AppealPossible')
+        .forEach(log => {
+          arbitrator
+            .currentRuling(disputeID, { blockTag: log.blockNumber })
+            .then(currentRuling =>
+              setAppealableRulings(appealableRulings => ({
+                ...appealableRulings,
+                [log.transactionHash]: currentRuling.toNumber()
+              }))
+            )
+            .catch(err => {
+              console.error('Error current ruling for appealable events', err)
+              setError('Error current ruling for appealable events')
+            })
+        })
+    })()
   }, [
     arbitrator,
     archon,
@@ -161,6 +166,9 @@ const Timeline = ({ request, requestID, item }) => {
     request,
     requestID
   ])
+
+  if (error)
+    return <Result status="warning" title="Error fetching timeline data." />
 
   // Display loading indicator
   if (!item || !request) return <Skeleton active />

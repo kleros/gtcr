@@ -1578,11 +1578,6 @@
     multihashes "^0.4.14"
     web3 "1.0.0-beta.36"
 
-"@kleros/erc-792@^1.0.0":
-  version "1.2.0"
-  resolved "https://registry.yarnpkg.com/@kleros/erc-792/-/erc-792-1.2.0.tgz#3967adf08b2c2f9a50286ada3bc84c3c3b9fd62d"
-  integrity sha512-fDgJC10zBeTXPkX+fFxmZFle5Mv3OrZQ2yIkLMJ/E85MFHPtMh/qVdN6pNn4qfUV2LbUb1TnQlQzo3sDXfJBAg==
-
 "@kleros/erc-792@^3.0.0":
   version "3.0.0"
   resolved "https://registry.yarnpkg.com/@kleros/erc-792/-/erc-792-3.0.0.tgz#19fb497808c668dfde5d23279fa1db0d1bf774e4"

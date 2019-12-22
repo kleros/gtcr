@@ -88,7 +88,9 @@ const Notifications = () => {
           n.notificationID
         }`,
         { method: 'put' }
-      ).then(() => fetchNotifications())
+      )
+        .then(() => fetchNotifications())
+        .catch(err => console.error('Failed to fetch notifications', err))
       setVisible(false)
     },
     [account, networkId, fetchNotifications]
