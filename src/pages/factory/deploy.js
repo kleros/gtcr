@@ -38,8 +38,8 @@ const getTcrMetaEvidence = async tcrState => {
     question: `Does the ${(itemName && itemName.toLowerCase()) ||
       'item'} comply with the required criteria?`,
     fileURI: tcrPrimaryDocument,
-    evidenceDisplayInterfaceURL:
-      process.env.REACT_APP_DEFAULT_EVIDENCE_DISPLAY_URL,
+    evidenceDisplayInterfaceURI:
+      process.env.REACT_APP_DEFAULT_EVIDENCE_DISPLAY_URI,
     evidenceDisplayInterfaceHash:
       process.env.REACT_APP_DEFAULT_EVIDENCE_DISPLAY_HASH,
     metadata
