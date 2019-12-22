@@ -40,8 +40,14 @@ const getTcrMetaEvidence = async tcrState => {
     fileURI: tcrPrimaryDocument,
     evidenceDisplayInterfaceURI:
       process.env.REACT_APP_DEFAULT_EVIDENCE_DISPLAY_URI,
-    evidenceDisplayInterfaceHash:
-      process.env.REACT_APP_DEFAULT_EVIDENCE_DISPLAY_HASH,
+    evidenceDisplayInterfaceHash: Archon.utils.multihashFile(
+      await (
+        await fetch(
+          `${process.env.REACT_APP_IPFS_GATEWAY}${process.env.REACT_APP_DEFAULT_EVIDENCE_DISPLAY_URI}`
+        )
+      ).text(),
+      0x1B // eslint-disable-line
+    ),
     metadata
   }
 
