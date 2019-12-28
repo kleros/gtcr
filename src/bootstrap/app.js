@@ -17,21 +17,9 @@ import {
   NavLink,
   Redirect
 } from 'react-router-dom'
-import {
-  Col,
-  Layout,
-  Menu,
-  Row,
-  Spin,
-  message,
-  Button,
-  Modal,
-  Icon,
-  Badge
-} from 'antd'
-import { ReactComponent as TrustLogo } from '../assets/images/trust.svg'
+import { Col, Layout, Menu, Row, Spin, message, Button, Badge } from 'antd'
 import { register } from './service-worker'
-import { WalletContext, WalletProvider } from './wallet-context'
+import { WalletProvider, WalletContext } from './wallet-context'
 import { NETWORK_NAME, NETWORK_COLOR } from '../utils/network-utils'
 import ErrorPage from '../pages/error-page'
 import useMainTCR2 from '../hooks/tcr2'
@@ -40,12 +28,9 @@ import Notifications from '../components/notifications'
 import { TCRViewProvider } from './tcr-view-context'
 import useNetworkEnvVariable from '../hooks/network-env'
 import { ReactComponent as Logo } from '../assets/images/logo.svg'
-import { ReactComponent as MetamaskLogo } from '../assets/images/metamask.svg'
-import { ReactComponent as FortmaticLogo } from '../assets/images/fortmatic.svg'
-import { ReactComponent as PortisLogo } from '../assets/images/portis.svg'
-import { ReactComponent as WalletConnectLogo } from '../assets/images/walletconnect.svg'
-import './fontawesome'
 import { capitalizeFirstLetter } from '../utils/string'
+import WalletModal from './wallet-modal'
+import './fontawesome'
 
 const StyledSpin = styled(Spin)`
   left: 50%;
@@ -141,11 +126,6 @@ const StyledHeader = styled(Layout.Header)`
 const StyledRouterLink = styled(Link)`
   color: #fff;
   display: flex;
-`
-
-const StyledWalletButton = styled(Button)`
-  margin-right: 10px;
-  margin-bottom: 10px;
 `
 
 const StyledConnectButton = styled(Button)`
@@ -263,77 +243,6 @@ if (process.env.REACT_APP_PORTIS_DAPP_ID)
 
 if (window.ethereum)
   connectors.Injected = new InjectedConnector({ supportedNetworks: [42, 1] })
-
-const WalletModal = () => {
-  const { cancelRequest, setUserSelectedWallet, requestModalOpen } = useContext(
-    WalletContext
-  )
-  return (
-    <Modal
-      title="Connect a Wallet"
-      visible={requestModalOpen}
-      onCancel={cancelRequest}
-      footer={[
-        <Button key="back" onClick={cancelRequest}>
-          Return
-        </Button>
-      ]}
-    >
-      <StyledWalletButton
-        onClick={() => {
-          if (window.ethereum && window.ethereum.isMetaMask)
-            setUserSelectedWallet('Injected')
-          else {
-            const tab = window.open(
-              process.env.REACT_APP_METAMASK_SITE_URL,
-              '_blank'
-            )
-            tab.focus()
-          }
-        }}
-      >
-        <Icon component={MetamaskLogo} />
-        Metamask
-      </StyledWalletButton>
-      <StyledWalletButton
-        onClick={() => {
-          if (window.ethereum && window.ethereum.isTrust)
-            setUserSelectedWallet('Injected')
-          else {
-            const tab = window.open(
-              process.env.REACT_APP_TRUST_SITE_URL,
-              '_blank'
-            )
-            tab.focus()
-          }
-        }}
-      >
-        <Icon component={TrustLogo} />
-        Trust Wallet
-      </StyledWalletButton>
-      {connectors.Fortmatic && (
-        <StyledWalletButton onClick={() => setUserSelectedWallet('Fortmatic')}>
-          <Icon component={FortmaticLogo} />
-          Fortmatic
-        </StyledWalletButton>
-      )}
-      {connectors.Portis && (
-        <StyledWalletButton onClick={() => setUserSelectedWallet('Portis')}>
-          <Icon component={PortisLogo} />
-          Portis
-        </StyledWalletButton>
-      )}
-      {connectors.WalletConnect && (
-        <StyledWalletButton
-          onClick={() => setUserSelectedWallet('WalletConnect')}
-        >
-          <Icon component={WalletConnectLogo} />
-          WalletConnect
-        </StyledWalletButton>
-      )}
-    </Modal>
-  )
-}
 
 const TopBar = () => {
   const web3Context = useWeb3Context()
@@ -482,7 +391,7 @@ export default () => {
             <FooterWrapper>
               <Footer appName="Kleros · GTCR" />
             </FooterWrapper>
-            <WalletModal />
+            <WalletModal connectors={connectors} />
           </WalletProvider>
         </Web3Provider>
       </BrowserRouter>

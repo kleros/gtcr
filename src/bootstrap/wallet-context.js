@@ -6,6 +6,7 @@ import PropTypes from 'prop-types'
 import uuid from 'uuid/v4'
 import { bigNumberify } from 'ethers/utils'
 import WalletConnectQRCodeModal from '@walletconnect/qrcode-modal'
+import localforage from 'localforage'
 import { NETWORK, NETWORK_NAME } from '../utils/network-utils'
 import FastJsonRpcSigner from '../utils/fast-signer'
 
@@ -73,6 +74,7 @@ const useNotificationWeb3 = () => {
     JSON.parse(JSON.stringify(initialState))
   ) // Make a copy.
   const NOTIFICATION_KEY = 'WALLET_AUTHORIZATION'
+  const LAST_CONNECTION_TIME = 'LAST_CONNECTION_TIME'
 
   const setUserSelectedWallet = method =>
     setConnectionState(prev => ({ ...prev, method }))
@@ -82,7 +84,20 @@ const useNotificationWeb3 = () => {
     setConnectionState(prevState => ({ ...prevState, modalOpen: false }))
   }
 
-  // Connect
+  // Auto-connect wallet if available.
+  useEffect(() => {
+    ;(async () => {
+      if (!window.ethereum || web3Context.account) return
+      const ONE_DAY = 24 * 60 * 60 * 1000
+      const lastConnectionTime = await localforage.getItem(LAST_CONNECTION_TIME)
+      if (!lastConnectionTime || Date.now() - lastConnectionTime > ONE_DAY)
+        return
+
+      web3Context.setConnector('Injected')
+    })()
+  }, [web3Context])
+
+  // Connect a provider.
   useEffect(() => {
     if (web3Context.active || infuraSetup) return
     if (process.env.REACT_APP_RPC_URLS)
@@ -95,7 +110,7 @@ const useNotificationWeb3 = () => {
     setInfuraSetup(true)
   }, [infuraSetup, web3Context])
 
-  // Notify of network changes
+  // Notify of network changes.
   useEffect(() => {
     if (!web3Context.networkId) return
     if (!network) {
@@ -180,6 +195,8 @@ const useNotificationWeb3 = () => {
             key: NOTIFICATION_KEY
           })
           setConnectionState(prev => ({ ...prev, notifiedAuthAccquired: true }))
+          if (connectionState.method === 'Injected')
+            localforage.setItem(LAST_CONNECTION_TIME, Date.now())
         }
 
         while (web3Actions.length > 0) {

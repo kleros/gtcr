@@ -46,13 +46,14 @@ const Notifications = () => {
   const handleVisibleChange = useCallback(v => setVisible(v), [])
   const fetchNotifications = useCallback(() => {
     ;(async () => {
-      setNotifications(
-        await (
-          await fetch(
-            `${process.env.REACT_APP_NOTIFICATIONS_API_URL}/api/notifications/${account}/${networkId}`
-          )
-        ).json()
-      )
+      const result = await (
+        await fetch(
+          `${process.env.REACT_APP_NOTIFICATIONS_API_URL}/api/notifications/${account}/${networkId}`
+        )
+      ).json()
+
+      result.notifications = result.notifications.reverse()
+      setNotifications(result)
     })()
   }, [account, networkId])
   const dismissNotification = useCallback(

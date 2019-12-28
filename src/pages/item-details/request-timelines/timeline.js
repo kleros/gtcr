@@ -42,11 +42,8 @@ const Timeline = ({ request, requestID, item }) => {
   const [error, setError] = useState()
   const [appealableRulings, setAppealableRulings] = useState({})
   const [evidenceFiles, setEvidenceFiles] = useState({})
-  const arbitrator = useMemo(() => {
-    if (!request || !library || !active) return
-    const { arbitrator } = request
-    return new ethers.Contract(arbitrator, _arbitrator, library)
-  }, [library, request, active])
+  const [arbitrator, setArbitrator] = useState()
+  const [fetchingLogs, setFetchingLogs] = useState()
   const itemID = item && item.ID
   const evidenceGroupID = useMemo(() => {
     if (!itemID || requestID == null) return
@@ -55,20 +52,44 @@ const Timeline = ({ request, requestID, item }) => {
     )
   }, [itemID, requestID])
 
+  // Setup arbitrator instance.
+  useEffect(() => {
+    if (
+      !request ||
+      !library ||
+      !active ||
+      (arbitrator && arbitrator.address === request.arbitrator)
+    )
+      return
+
+    setArbitrator(new ethers.Contract(request.arbitrator, _arbitrator, library))
+  }, [active, arbitrator, library, request])
+
   // TODO: Listen for events and update timeline, if this is request is
   // not resolved/executed.
 
-  // Fetch logs
+  // Fetch logs.
   useEffect(() => {
-    if (!request || !gtcr || !archon || !itemID || !evidenceGroupID || !library)
+    if (
+      !request ||
+      !gtcr ||
+      !archon ||
+      !itemID ||
+      !evidenceGroupID ||
+      !library ||
+      !arbitrator ||
+      fetchingLogs
+    )
       return
+
+    setFetchingLogs(true)
 
     const { disputeID, disputed } = request
     const { address: gtcrAddr } = gtcr
 
     ;(async () => {
       // Fetch logs in parallel.
-      const logs = (
+      const logsArr = (
         await Promise.all([
           library.getLogs({
             ...gtcr.filters.Evidence(arbitrator.address, evidenceGroupID),
@@ -93,27 +114,28 @@ const Timeline = ({ request, requestID, item }) => {
               })
             : null
         ])
-      ).filter(logs => !!logs)
-
-      // Parse and sort event logs.
-      setLogs(
-        logs
-          .map((e, i) => {
-            if (i <= 1)
-              return e.map(log => ({
-                ...gtcr.interface.parseLog(log),
-                blockNumber: log.blockNumber,
-                transactionHash: log.transactionHash
-              }))
-            else
-              return e.map(log => ({
-                ...arbitrator.interface.parseLog(log),
-                blockNumber: log.blockNumber,
-                transactionHash: log.transactionHash
-              }))
-          })
-          .reduce((acc, curr) => acc.concat(curr), [])
       )
+        .filter(logs => !!logs)
+        .map((e, i) => {
+          // Parse and sort event logs.
+          if (i <= 1)
+            // Arbitrable Logs.
+            return e.map(log => ({
+              ...gtcr.interface.parseLog(log),
+              blockNumber: log.blockNumber,
+              transactionHash: log.transactionHash
+            }))
+          // Arbitrator Logs.
+          else
+            return e.map(log => ({
+              ...arbitrator.interface.parseLog(log),
+              blockNumber: log.blockNumber,
+              transactionHash: log.transactionHash
+            }))
+        })
+        .reduce((acc, curr) => acc.concat(curr), [])
+
+      setLogs(logsArr)
 
       // Fetch evidence files.
       archon.arbitrable
@@ -134,14 +156,18 @@ const Timeline = ({ request, requestID, item }) => {
             )
         )
         .catch(err => {
-          console.error('Error evidence files', err)
-          setError('Error evidence files')
+          console.error('Error fetching evidence files', err)
+          setError('Error fetching evidence files')
         })
 
       // Fetch appealable rulings.
-      logs
-        .filter(log => log.name === 'AppealPossible')
-        .forEach(log => {
+      logsArr
+        .filter(
+          log =>
+            log.name === 'AppealPossible' &&
+            disputeID.toNumber() === log.values._disputeID.toNumber()
+        )
+        .forEach(log =>
           arbitrator
             .currentRuling(disputeID, { blockTag: log.blockNumber })
             .then(currentRuling =>
@@ -151,24 +177,25 @@ const Timeline = ({ request, requestID, item }) => {
               }))
             )
             .catch(err => {
-              console.error('Error current ruling for appealable events', err)
-              setError('Error current ruling for appealable events')
+              console.error(
+                'Error fetching current ruling for appealable events',
+                err
+              )
             })
-        })
+        )
     })()
   }, [
     arbitrator,
     archon,
     evidenceGroupID,
+    fetchingLogs,
     gtcr,
     itemID,
     library,
-    request,
-    requestID
+    request
   ])
 
-  if (error)
-    return <Result status="warning" title="Error fetching timeline data." />
+  if (error) return <Result status="warning" title={error} />
 
   // Display loading indicator
   if (!item || !request) return <Skeleton active />

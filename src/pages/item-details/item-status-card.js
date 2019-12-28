@@ -16,8 +16,6 @@ import ItemActionModal from './item-action-modal'
 import ItemActionButton from '../../components/item-action-button'
 import { TCRViewContext } from '../../bootstrap/tcr-view-context'
 import { WalletContext } from '../../bootstrap/wallet-context'
-import { abi } from '@kleros/tcr/build/contracts/GeneralizedTCR.json'
-import { ethers } from 'ethers'
 import BNPropType from '../../prop-types/bn'
 import useHumanizedCountdown from '../../hooks/countdown'
 import useAppealTime from '../../hooks/appeal-time'
@@ -75,7 +73,7 @@ const Ruling = ({ currentRuling }) => {
 const ItemStatusCard = ({ item, timestamp }) => {
   const [modalOpen, setModalOpen] = useState()
   const { pushWeb3Action, requestWeb3Auth } = useContext(WalletContext)
-  const { gtcr: gtcrView, metaEvidence, challengePeriodDuration } = useContext(
+  const { gtcr, metaEvidence, challengePeriodDuration } = useContext(
     TCRViewContext
   )
 
@@ -111,15 +109,12 @@ const ItemStatusCard = ({ item, timestamp }) => {
   const { disputeStatus, currentRuling, disputed } = item
   const statusCode = itemToStatusCode(item, timestamp, challengePeriodDuration)
 
-  const executeRequest = async (_, signer) => {
-    const gtcr = new ethers.Contract(gtcrView.address, abi, signer)
-    return {
-      tx: await gtcr.executeRequest(item.ID),
-      actionMessage: `Executing ${
-        statusCode === STATUS_CODE.PENDING_SUBMISSION ? 'submission' : 'removal'
-      }`
-    }
-  }
+  const executeRequest = async () => ({
+    tx: await gtcr.executeRequest(item.ID),
+    actionMessage: `Executing ${
+      statusCode === STATUS_CODE.PENDING_SUBMISSION ? 'submission' : 'removal'
+    }`
+  })
 
   const onClick = () => {
     switch (statusCode) {
