@@ -253,7 +253,7 @@ const TopBar = () => {
     <StyledTopBarRow type="flex" justify="space-between">
       <StyledColStart md={6} sm={12} xs={0}>
         <StyledRouterLink to={`/tcr/${TCR2_ADDRESS}`}>
-          <Logo />
+          <Logo style={{ maxHeight: '50px', maxWidth: '100px' }} />
         </StyledRouterLink>
       </StyledColStart>
       <StyledCenter md={8} sm={0} xs={0}>
