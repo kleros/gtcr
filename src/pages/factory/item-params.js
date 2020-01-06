@@ -238,7 +238,7 @@ ItemParams.propTypes = {
       PropTypes.number,
       PropTypes.string
     ]).isRequired,
-    requireEvidenceRequest: PropTypes.bool.isRequired,
+    requireRemovalEvidence: PropTypes.bool.isRequired,
     columns: PropTypes.arrayOf(
       PropTypes.shape({
         description: PropTypes.string.isRequired,

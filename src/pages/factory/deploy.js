@@ -29,9 +29,27 @@ const getTcrMetaEvidence = async tcrState => {
     tcrDescription,
     columns,
     itemName,
-    tcrPrimaryDocument
+    tcrPrimaryDocument,
+    tcrLogo,
+    relColumns,
+    relItemName,
+    relTcrPrimaryDocument
   } = tcrState
-  const metadata = { tcrTitle, tcrDescription, columns, itemName }
+  const metadata = {
+    tcrTitle,
+    tcrDescription,
+    columns,
+    itemName,
+    logoURI: tcrLogo
+  }
+
+  const relTcrTitle = `${tcrTitle} related TCRs`
+  const relMetadata = {
+    tcrTitle: relTcrTitle,
+    tcrDescription: `A TCR of TCRs related to ${tcrTitle}`,
+    columns: relColumns,
+    itemName: relItemName
+  }
 
   const metaEvidence = {
     category: 'Curated Lists',
@@ -49,6 +67,13 @@ const getTcrMetaEvidence = async tcrState => {
       0x1B // eslint-disable-line
     ),
     metadata
+  }
+
+  const relMetaEvidence = {
+    ...metaEvidence,
+    question: `Does the ${relItemName} comply with the required criteria?`,
+    fileURI: relTcrPrimaryDocument,
+    metadata: relMetadata
   }
 
   const registrationMetaEvidence = {
@@ -104,14 +129,43 @@ const getTcrMetaEvidence = async tcrState => {
     ...metaEvidence
   }
 
+  const relRegistrationMetaEvidence = {
+    title: `Add a ${relItemName} to ${relTcrTitle}`,
+    description: `Someone requested to add a ${relItemName} to ${relTcrTitle}.`,
+    rulingOptions: {
+      titles: ['Yes, Add It', "No, Don't Add It"],
+      descriptions: [
+        `Select this if you think the ${relItemName} complies with the required criteria and should be added.`,
+        `Select this if you think the ${relItemName} does not comply with the required criteria and should not be added.`
+      ]
+    },
+    ...relMetaEvidence
+  }
+  const relClearingMetaEvidence = {
+    title: `Remove a ${relItemName} from ${relTcrTitle}`,
+    description: `Someone requested to remove a ${relItemName} from ${relTcrTitle}.`,
+    rulingOptions: {
+      titles: ['Yes, Remove It', "No, Don't Remove It"],
+      descriptions: [
+        `Select this if you think the ${relItemName} does not comply with the required criteria and should be removed.`,
+        `Select this if you think the ${relItemName} complies with the required criteria and should not be removed.`
+      ]
+    },
+    ...relMetaEvidence
+  }
+
   const enc = new TextEncoder()
   const metaEvidenceFiles = [
     registrationMetaEvidence,
     clearingMetaEvidence
   ].map(metaEvidence => enc.encode(JSON.stringify(metaEvidence)))
+  const relMetaEvidenceFiles = [
+    relRegistrationMetaEvidence,
+    relClearingMetaEvidence
+  ].map(relMetaEvidence => enc.encode(JSON.stringify(relMetaEvidence)))
 
   /* eslint-disable prettier/prettier */
-  const files = metaEvidenceFiles.map(file => ({
+  const files = [...metaEvidenceFiles, ...relMetaEvidenceFiles].map(file => ({
     data: file,
     multihash: Archon.utils.multihashFile(file, 0x1B)
   }))
@@ -126,7 +180,9 @@ const getTcrMetaEvidence = async tcrState => {
 
   return {
     registrationMetaEvidencePath: ipfsMetaEvidenceObjects[0],
-    clearingMetaEvidencePath: ipfsMetaEvidenceObjects[1]
+    clearingMetaEvidencePath: ipfsMetaEvidenceObjects[1],
+    relRegistrationMetaEvidencePath: ipfsMetaEvidenceObjects[2],
+    relClearingMetaEvidencePath: ipfsMetaEvidenceObjects[3]
   }
 }
 
@@ -139,37 +195,73 @@ const Deploy = ({ resetTcrState, setTxState, tcrState }) => {
       const factory = ethers.ContractFactory.fromSolidity(_GTCR, signer)
       const {
         registrationMetaEvidencePath,
-        clearingMetaEvidencePath
+        clearingMetaEvidencePath,
+        relRegistrationMetaEvidencePath,
+        relClearingMetaEvidencePath
       } = await getTcrMetaEvidence(tcrState)
 
-      const tx = await factory.deploy(
-        tcrState.arbitratorAddress,
+      const relTCRtx = await factory.deploy(
+        tcrState.relArbitratorAddress,
         '0x00', // Arbitrator extra data.
         ZERO_ADDRESS,
-        registrationMetaEvidencePath,
-        clearingMetaEvidencePath,
-        tcrState.governorAddress,
-        parseEther(tcrState.submissionBaseDeposit.toString()),
-        parseEther(tcrState.removalBaseDeposit.toString()),
-        parseEther(tcrState.submissionChallengeBaseDeposit.toString()),
-        parseEther(tcrState.removalChallengeBaseDeposit.toString()),
-        Number(tcrState.challengePeriodDuration) * 60 * 60,
+        relRegistrationMetaEvidencePath,
+        relClearingMetaEvidencePath,
+        tcrState.relGovernorAddress,
+        parseEther(tcrState.relSubmissionBaseDeposit.toString()),
+        parseEther(tcrState.relRemovalBaseDeposit.toString()),
+        parseEther(tcrState.relSubmissionChallengeBaseDeposit.toString()),
+        parseEther(tcrState.relRemovalChallengeBaseDeposit.toString()),
+        Number(tcrState.relChallengePeriodDuration) * 60 * 60,
         '10000', // Shared stake multiplier in basis points.
         '10000', // Winner stake multiplier in basis points.
         '20000', // Loser stake multiplier in basis points.
         { gasLimit: 6000000 }
       )
-      setTxState({ txHash: tx.deployTransaction.hash, status: 'pending' })
-      setTxSubmitted(tx.deployTransaction.hash)
+      setTxState({ txHash: relTCRtx.deployTransaction.hash, status: 'pending' })
+      setTxSubmitted(relTCRtx.deployTransaction.hash)
       return {
-        tx,
-        actionMessage: 'Deploying TCR',
-        onTxMined: ({ contractAddress }) =>
+        tx: relTCRtx,
+        actionMessage: 'Deploying Related TCR',
+        onTxMined: async ({ contractAddress }) => {
           setTxState({
-            txHash: tx.deployTransaction.hash,
+            txHash: relTCRtx.deployTransaction.hash,
             status: 'mined',
             contractAddress
           })
+
+          pushWeb3Action(async () => {
+            const tx = await factory.deploy(
+              tcrState.arbitratorAddress,
+              '0x00', // Arbitrator extra data.
+              contractAddress,
+              registrationMetaEvidencePath,
+              clearingMetaEvidencePath,
+              tcrState.governorAddress,
+              parseEther(tcrState.submissionBaseDeposit.toString()),
+              parseEther(tcrState.removalBaseDeposit.toString()),
+              parseEther(tcrState.submissionChallengeBaseDeposit.toString()),
+              parseEther(tcrState.removalChallengeBaseDeposit.toString()),
+              Number(tcrState.challengePeriodDuration) * 60 * 60,
+              '10000', // Shared stake multiplier in basis points.
+              '10000', // Winner stake multiplier in basis points.
+              '20000', // Loser stake multiplier in basis points.
+              { gasLimit: 6000000 }
+            )
+            setTxState({ txHash: tx.deployTransaction.hash, status: 'pending' })
+            setTxSubmitted(tx.deployTransaction.hash)
+            return {
+              tx,
+              actionMessage: 'Deploying TCR',
+              onTxMined: async ({ contractAddress }) => {
+                setTxState({
+                  txHash: tx.deployTransaction.hash,
+                  status: 'mined',
+                  contractAddress
+                })
+              }
+            }
+          })
+        }
       }
     })
   }
@@ -191,7 +283,7 @@ const Deploy = ({ resetTcrState, setTxState, tcrState }) => {
                   indicator={
                     <Icon type="loading" style={{ fontSize: 24 }} spin />
                   }
-                />
+                />{' '}
                 Transaction pending...
               </>
             }
@@ -248,6 +340,28 @@ Deploy.propTypes = {
       PropTypes.string
     ]).isRequired,
     challengePeriodDuration: PropTypes.oneOfType([
+      PropTypes.number,
+      PropTypes.string
+    ]).isRequired,
+    relArbitratorAddress: PropTypes.string.isRequired,
+    relGovernorAddress: PropTypes.string.isRequired,
+    relSubmissionChallengeBaseDeposit: PropTypes.oneOfType([
+      PropTypes.number,
+      PropTypes.string
+    ]).isRequired,
+    relRemovalChallengeBaseDeposit: PropTypes.oneOfType([
+      PropTypes.number,
+      PropTypes.string
+    ]).isRequired,
+    relSubmissionBaseDeposit: PropTypes.oneOfType([
+      PropTypes.number,
+      PropTypes.string
+    ]).isRequired,
+    relRemovalBaseDeposit: PropTypes.oneOfType([
+      PropTypes.number,
+      PropTypes.string
+    ]).isRequired,
+    relChallengePeriodDuration: PropTypes.oneOfType([
       PropTypes.number,
       PropTypes.string
     ]).isRequired

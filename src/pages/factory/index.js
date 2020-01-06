@@ -11,6 +11,8 @@ import StyledLayoutContent from '../layout-content'
 import { version } from '../../../package.json'
 import { useWeb3Context } from 'web3-react'
 import useNetworkEnvVariable from '../../hooks/network-env'
+import { solidityTypes } from '../../utils/item-types'
+import RelTCRParams from './rel-tcr-params'
 
 const { Step } = Steps
 
@@ -32,7 +34,12 @@ const StyledBanner = styled.div`
   color: #4d00b4;
 `
 
-const formIds = ['tcrParamsForm', 'itemParamsForm', 'deployTCRForm']
+const formIds = [
+  'tcrParamsForm',
+  'itemParamsForm',
+  'relTCRParamsForm',
+  'deployTCRForm'
+]
 const CurrentStep = props => (
   <>
     {(() => {
@@ -45,6 +52,8 @@ const CurrentStep = props => (
         case 2:
           return <ItemParams formId={formIds[currStep]} {...props} />
         case 3:
+          return <RelTCRParams formId={formIds[currStep]} {...props} />
+        case 4:
           return <Deploy formId={formIds[currStep]} {...props} />
         default:
           throw new Error('Unknown step')
@@ -79,13 +88,39 @@ const useCachedFactory = version => {
     governorAddress: defaultGovernor || '',
     challengePeriodDuration: 3,
     itemName: 'Item',
-    requireEvidenceRequest: true,
+    requireRemovalEvidence: true,
     tcrPrimaryDocument: '',
+    tcrLogo: '',
+    relSubmissionBaseDeposit: 0.02,
+    relRemovalBaseDeposit: 0.03,
+    relSubmissionChallengeBaseDeposit: 0.015,
+    relRemovalChallengeBaseDeposit: 0.025,
+    relArbitratorAddress: defaultArbitrator || '',
+    relGovernorAddress: defaultGovernor || '',
+    relChallengePeriodDuration: 3,
+    relItemName: 'TCR',
+    relRequireRemovalEvidence: true,
+    relTcrPrimaryDocument: '',
     columns: [
       {
         label: '',
         description: '',
-        type: 'address',
+        type: solidityTypes.ADDRESS,
+        isIdentifier: true
+      }
+    ],
+    relColumns: [
+      {
+        label: 'Address',
+        description: 'The related TCR address',
+        type: solidityTypes.ADDRESS,
+        isIdentifier: true
+      },
+      {
+        label: 'Match File URI',
+        description:
+          'The URI to the JSON file for matching columns for each TCR.',
+        type: solidityTypes.STRING,
         isIdentifier: true
       }
     ],
@@ -102,7 +137,7 @@ const useCachedFactory = version => {
   const [tcrState, setTcrState] = useState(cache)
   const [debouncedTcrState] = useDebounce(tcrState, 1000)
 
-  const STEP_COUNT = 3
+  const STEP_COUNT = 4
   const nextStep = () =>
     setTcrState(prevState => ({
       ...prevState,
@@ -159,7 +194,8 @@ export default () => {
   const {
     tcrState: { currStep, transactions },
     nextStep,
-    previousStep
+    previousStep,
+    STEP_COUNT
   } = cachedFactory
 
   return (
@@ -173,6 +209,7 @@ export default () => {
         <Steps current={currStep - 1}>
           <Step title="TCR Parameters" />
           <Step title="Item Parameters" />
+          <Step title="Related TCR Parameters" />
           <Step title="Deploy" />
         </Steps>
         <StyledContainer>
@@ -192,7 +229,7 @@ export default () => {
               form={formIds[currStep]}
               htmlType="submit"
               type="primary"
-              disabled={currStep === 3}
+              disabled={currStep === STEP_COUNT}
             >
               Next
               <Icon type="right" />

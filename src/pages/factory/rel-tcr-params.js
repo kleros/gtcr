@@ -1,7 +1,7 @@
-import React, { useEffect, useState, useCallback } from 'react'
 import { Card, Icon, Tooltip, Form, Switch, Upload, message } from 'antd'
 import { withFormik, Field } from 'formik'
 import PropTypes from 'prop-types'
+import React, { useEffect, useState, useCallback } from 'react'
 import * as yup from 'yup'
 import CustomInput from '../../components/custom-input'
 import itemTypes from '../../utils/item-types'
@@ -10,7 +10,7 @@ import { sanitize } from '../../utils/string'
 
 const FormItem = Form.Item
 
-const TCRParams = ({
+const RelTCRParams = ({
   handleSubmit,
   formId,
   errors,
@@ -28,18 +28,20 @@ const TCRParams = ({
   }, [values, setTcrState])
 
   const fileUploadStatusChange = useCallback(({ file: { status } }) => {
-    if (status === 'done') message.success(`File uploaded successfully.`)
-    else if (status === 'error') message.error(`File upload failed.`)
+    if (status === 'done')
+      message.success(`Primary document uploaded successfully.`)
+    else if (status === 'error')
+      message.error(`Primary document upload failed.`)
   }, [])
 
   const customRequest = useCallback(
-    fieldName => async ({ file, onSuccess, onError }) => {
+    async ({ file, onSuccess, onError }) => {
       try {
         const data = await new Response(new Blob([file])).arrayBuffer()
         const ipfsFileObj = await ipfsPublish(sanitize(file.name), data)
         const fileURI = `/ipfs/${ipfsFileObj[1].hash}${ipfsFileObj[0].path}`
 
-        setFieldValue(fieldName, fileURI)
+        setFieldValue('relTcrPrimaryDocument', fileURI)
         onSuccess('ok', `${process.env.REACT_APP_IPFS_GATEWAY}${fileURI}`)
       } catch (err) {
         console.error(err)
@@ -50,57 +52,14 @@ const TCRParams = ({
   )
 
   return (
-    <Card title="Choose the item columns and identifiers">
+    <Card title="Choose the parameters of the Related TCR">
       <Form layout="vertical" id={formId} onSubmit={handleSubmit}>
         <CustomInput
-          name="tcrTitle"
-          placeholder="Token² Curated List"
-          label={<span>Title</span>}
-          error={errors.tcrTitle}
-          touched={touched.tcrTitle}
-          hasFeedback
-          {...rest}
-        />
-        <CustomInput
-          name="tcrDescription"
-          placeholder="A token curated list of tokens powered by Kleros..."
-          hasFeedback
-          error={errors.tcrDescription}
-          touched={touched.tcrDescription}
-          label={
-            <span>
-              Description&nbsp;
-              <Tooltip title="A short sentence describing the what are the the TCR items and its listing criteria.">
-                <Icon type="question-circle-o" />
-              </Tooltip>
-            </span>
-          }
-          {...rest}
-        />
-        <CustomInput
-          name="itemName"
-          placeholder="Token"
-          hasFeedback
-          error={errors.itemName}
-          touched={touched.itemName}
-          label={
-            <span>
-              Item Name&nbsp;
-              <Tooltip
-                title={`What is the item? This will replace the word "item" in the TCR interface. Examples.: Ad (for a TCR of ads), Movie (for a TCR of movies)`}
-              >
-                <Icon type="question-circle-o" />
-              </Tooltip>
-            </span>
-          }
-          {...rest}
-        />
-        <CustomInput
-          name="submissionBaseDeposit"
+          name="relSubmissionBaseDeposit"
           placeholder="0.1 ETH"
           addonAfter="ETH"
-          error={errors.submissionBaseDeposit}
-          touched={touched.submissionBaseDeposit}
+          error={errors.relSubmissionBaseDeposit}
+          touched={touched.relSubmissionBaseDeposit}
           type={itemTypes.NUMBER}
           label={
             <span>
@@ -113,11 +72,11 @@ const TCRParams = ({
           {...rest}
         />
         <CustomInput
-          name="removalBaseDeposit"
+          name="relRemovalBaseDeposit"
           placeholder="0.1 ETH"
           addonAfter="ETH"
-          error={errors.removalBaseDeposit}
-          touched={touched.removalBaseDeposit}
+          error={errors.relRemovalBaseDeposit}
+          touched={touched.relRemovalBaseDeposit}
           type={itemTypes.NUMBER}
           label={
             <span>
@@ -130,11 +89,11 @@ const TCRParams = ({
           {...rest}
         />
         <CustomInput
-          name="submissionChallengeBaseDeposit"
+          name="relSubmissionChallengeBaseDeposit"
           placeholder="0.05 ETH"
           addonAfter="ETH"
-          error={errors.submissionChallengeBaseDeposit}
-          touched={touched.submissionChallengeBaseDeposit}
+          error={errors.relSubmissionChallengeBaseDeposit}
+          touched={touched.relSubmissionChallengeBaseDeposit}
           type={itemTypes.NUMBER}
           label={
             <span>
@@ -147,11 +106,11 @@ const TCRParams = ({
           {...rest}
         />
         <CustomInput
-          name="removalChallengeBaseDeposit"
+          name="relRemovalChallengeBaseDeposit"
           placeholder="0.05 ETH"
           addonAfter="ETH"
-          error={errors.removalChallengeBaseDeposit}
-          touched={touched.removalChallengeBaseDeposit}
+          error={errors.relRemovalChallengeBaseDeposit}
+          touched={touched.relRemovalChallengeBaseDeposit}
           type={itemTypes.NUMBER}
           label={
             <span>
@@ -164,11 +123,11 @@ const TCRParams = ({
           {...rest}
         />
         <CustomInput
-          name="challengePeriodDuration"
+          name="relChallengePeriodDuration"
           placeholder="5"
           addonAfter="Hours"
-          error={errors.challengePeriodDuration}
-          touched={touched.challengePeriodDuration}
+          error={errors.relChallengePeriodDuration}
+          touched={touched.relChallengePeriodDuration}
           type={itemTypes.NUMBER}
           step={1}
           label={
@@ -183,40 +142,14 @@ const TCRParams = ({
         />
         <div style={{ marginBottom: '26px' }}>
           <div className="ant-col ant-form-item-label">
-            <label htmlFor="primary-document">
+            <label htmlFor="rel-primary-document">
               <span>Primary Document&nbsp;</span>
-              <Tooltip title="This should be a pdf file with the registry acceptance criteria.">
-                <Icon type="question-circle-o" />
-              </Tooltip>
             </label>
           </div>
           <Upload.Dragger
-            name="primary-document"
+            name="rel-primary-document"
             onChange={fileUploadStatusChange}
-            customRequest={customRequest('tcrPrimaryDocument')}
-            multiple={false}
-          >
-            <p className="ant-upload-drag-icon">
-              <Icon type="inbox" />
-            </p>
-            <p className="ant-upload-hint">
-              Click or drag a the primary document to this area.
-            </p>
-          </Upload.Dragger>
-        </div>
-        <div style={{ marginBottom: '26px' }}>
-          <div className="ant-col ant-form-item-label">
-            <label htmlFor="tcr-logo">
-              <span>TCR Logo&nbsp;</span>
-              <Tooltip title="The TCR logo. Should be a 1:1 aspect ratio image with transparent background.">
-                <Icon type="question-circle-o" />
-              </Tooltip>
-            </label>
-          </div>
-          <Upload.Dragger
-            name="tcr-logo"
-            onChange={fileUploadStatusChange}
-            customRequest={customRequest('tcrLogo')}
+            customRequest={customRequest}
             multiple={false}
           >
             <p className="ant-upload-drag-icon">
@@ -239,11 +172,11 @@ const TCRParams = ({
         {advancedOptions && (
           <>
             <CustomInput
-              name="arbitratorAddress"
+              name="relArbitratorAddress"
               placeholder="0x7331deadbeef..."
               hasFeedback
-              error={errors.arbitratorAddress}
-              touched={touched.arbitratorAddress}
+              error={errors.relArbitratorAddress}
+              touched={touched.relArbitratorAddress}
               label={
                 <span>
                   Arbitrator&nbsp;
@@ -255,11 +188,11 @@ const TCRParams = ({
               {...rest}
             />
             <CustomInput
-              name="governorAddress"
+              name="relGovernorAddress"
               placeholder="0x7331deadbeef..."
               hasFeedback
-              error={errors.governorAddress}
-              touched={touched.governorAddress}
+              error={errors.relGovernorAddress}
+              touched={touched.relGovernorAddress}
               label={
                 <span>
                   Governor&nbsp;
@@ -270,7 +203,7 @@ const TCRParams = ({
               }
               {...rest}
             />
-            <Field name="requireRemovalEvidence">
+            <Field name="relRequireRemovalEvidence">
               {({ field }) => (
                 <FormItem
                   label="Require evidence for removing items"
@@ -278,7 +211,7 @@ const TCRParams = ({
                 >
                   <Switch
                     onChange={value =>
-                      setFieldValue('requireRemovalEvidence', value)
+                      setFieldValue('relRequireRemovalEvidence', value)
                     }
                     style={{ marginLeft: '8px' }}
                     checked={field.value}
@@ -293,7 +226,7 @@ const TCRParams = ({
   )
 }
 
-TCRParams.propTypes = {
+RelTCRParams.propTypes = {
   handleSubmit: PropTypes.func.isRequired,
   setFieldValue: PropTypes.func.isRequired,
   formId: PropTypes.string.isRequired,
@@ -312,53 +245,42 @@ TCRParams.propTypes = {
 }
 
 const validationSchema = yup.object().shape({
-  tcrTitle: yup
-    .string()
-    .required('A title is required.')
-    .max(30, 'Title must be less than 60 characters long.'),
-  tcrDescription: yup
-    .string()
-    .required('A description is required.')
-    .max(255, 'Description must be less than 255 characters long.'),
-  arbitratorAddress: yup
+  relArbitratorAddress: yup
     .string()
     .required('An arbitrator address is required.')
     .max(160, 'Ethereum addresses are 42 characters long.'),
-  governorAddress: yup
+  relGovernorAddress: yup
     .string()
     .required('A governor address is required.')
     .max(160, 'Ethereum addresses are 42 characters long.'),
-  itemName: yup
+  relSubmissionBaseDeposit: yup
+    .number()
+    .typeError('Amount should be a number.')
+    .required('A value is required.')
+    .min(0, 'The amount must not be negative.'),
+  relRemovalBaseDeposit: yup
+    .number()
+    .typeError('Amount should be a number.')
+    .required('A value is required.')
+    .min(0, 'The amount must not be negative.'),
+  relSubmissionChallengeBaseDeposit: yup
+    .number()
+    .typeError('Amount should be a number.')
+    .required('A value is required.')
+    .min(0, 'The amount must not be negative.'),
+  relRemovalChallengeBaseDeposit: yup
+    .number()
+    .typeError('Amount should be a number.')
+    .required('A value is required.')
+    .min(0, 'The amount must not be negative.'),
+  relChallengePeriodDuration: yup
+    .number()
+    .typeError('Amount should be a number.')
+    .required('A value is required.')
+    .min(0, 'The amount must not be negative.'),
+  relTcrPrimaryDocument: yup
     .string()
-    .required('An item name is required.')
-    .max(60, 'The item name must be less than 20 characters long.'),
-  submissionBaseDeposit: yup
-    .number()
-    .typeError('Amount should be a number.')
-    .required('A value is required.')
-    .min(0, 'The amount must not be negative.'),
-  removalBaseDeposit: yup
-    .number()
-    .typeError('Amount should be a number.')
-    .required('A value is required.')
-    .min(0, 'The amount must not be negative.'),
-  submissionChallengeBaseDeposit: yup
-    .number()
-    .typeError('Amount should be a number.')
-    .required('A value is required.')
-    .min(0, 'The amount must not be negative.'),
-  removalChallengeBaseDeposit: yup
-    .number()
-    .typeError('Amount should be a number.')
-    .required('A value is required.')
-    .min(0, 'The amount must not be negative.'),
-  challengePeriodDuration: yup
-    .number()
-    .typeError('Amount should be a number.')
-    .required('A value is required.')
-    .min(0, 'The amount must not be negative.'),
-  tcrPrimaryDocument: yup.string().required('A primary document is required.'),
-  tcrLogo: yup.string().required('A logo is required.')
+    .required('A primary document is required.')
 })
 
 export default withFormik({
@@ -371,4 +293,4 @@ export default withFormik({
   handleSubmit: (_, { props: { postSubmit } }) => {
     postSubmit()
   }
-})(TCRParams)
+})(RelTCRParams)
