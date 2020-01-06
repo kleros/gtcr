@@ -28,7 +28,7 @@ const StyledField = styled.div`
 const ItemDetailsCard = ({ title, columns, loading, item }) => {
   const { account, networkId } = useWeb3Context()
   const { pushWeb3Action } = useContext(WalletContext)
-  const { gtcrView, tcrAddress } = useContext(TCRViewContext)
+  const tcrViewContext = useContext(TCRViewContext)
   const [availableRewards, setAvailableRewards] = useState()
   const [rewardRef, setRewardRef] = useState()
   const BATCH_WITHDRAW_ADDRESS = useNetworkEnvVariable(
@@ -39,16 +39,22 @@ const ItemDetailsCard = ({ title, columns, loading, item }) => {
   // Fetch available rewards from fee contributions.
   useEffect(() => {
     ;(async () => {
-      if (!gtcrView || !account || !item) return
+      if (!tcrViewContext || !tcrViewContext.gtcrView || !account || !item)
+        return
+
       setAvailableRewards(
-        await gtcrView.availableRewards(tcrAddress, item.ID, account)
+        await tcrViewContext.gtcrView.availableRewards(
+          tcrViewContext.tcrAddress,
+          item.ID,
+          account
+        )
       )
     })()
-  }, [account, gtcrView, item, tcrAddress])
+  }, [account, item, tcrViewContext])
 
   const batchWithdrawClick = useCallback(() => {
     rewardRef.rewardMe()
-    if (!BATCH_WITHDRAW_ADDRESS || !item) return
+    if (!!tcrViewContext || !BATCH_WITHDRAW_ADDRESS || !item) return
     pushWeb3Action(async (_, signer) => {
       const batchWithdraw = new ethers.Contract(
         BATCH_WITHDRAW_ADDRESS,
@@ -56,7 +62,7 @@ const ItemDetailsCard = ({ title, columns, loading, item }) => {
         signer
       )
       const tx = await batchWithdraw.batchRequestWithdraw(
-        tcrAddress,
+        tcrViewContext.tcrAddress,
         account,
         item.ID,
         0,
@@ -69,18 +75,21 @@ const ItemDetailsCard = ({ title, columns, loading, item }) => {
         actionMessage: 'Withdrawing Rewards',
         onTxMined: async () =>
           setAvailableRewards(
-            await gtcrView.availableRewards(tcrAddress, item.ID, account)
+            await tcrViewContext.gtcrView.availableRewards(
+              tcrViewContext.tcrAddress,
+              item.ID,
+              account
+            )
           )
       }
     })
   }, [
     BATCH_WITHDRAW_ADDRESS,
     account,
-    gtcrView,
     item,
     pushWeb3Action,
     rewardRef,
-    tcrAddress
+    tcrViewContext
   ])
 
   return (
