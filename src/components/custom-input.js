@@ -13,7 +13,8 @@ const CustomInput = ({
   addonAfter,
   hasFeedback,
   type,
-  step
+  step,
+  disabled
 }) => (
   <Field name={name}>
     {({ field }) => (
@@ -28,10 +29,16 @@ const CustomInput = ({
             addonAfter={addonAfter}
             placeholder={placeholder}
             step={step || 0.0001}
+            disabled={disabled}
             {...field}
           />
         ) : (
-          <Input addonAfter={addonAfter} {...field} placeholder={placeholder} />
+          <Input
+            addonAfter={addonAfter}
+            {...field}
+            placeholder={placeholder}
+            disabled={disabled}
+          />
         )}
       </Form.Item>
     )}
@@ -47,7 +54,8 @@ CustomInput.propTypes = {
   addonAfter: PropTypes.node,
   hasFeedback: PropTypes.bool,
   type: PropTypes.oneOf(Object.values(itemTypes)),
-  step: PropTypes.number
+  step: PropTypes.number,
+  disabled: PropTypes.bool
 }
 
 CustomInput.defaultProps = {
@@ -58,7 +66,8 @@ CustomInput.defaultProps = {
   addonAfter: null,
   hasFeedback: null,
   type: null,
-  step: null
+  step: null,
+  disabled: null
 }
 
 export default CustomInput

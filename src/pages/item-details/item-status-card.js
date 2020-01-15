@@ -1,7 +1,9 @@
 import React, { useState, useContext, useMemo } from 'react'
 import { Descriptions, Skeleton, Card } from 'antd'
+import { abi as _gtcr } from '@kleros/tcr/build/contracts/GeneralizedTCR.json'
 import ItemStatusBadge from '../../components/item-status-badge'
 import styled from 'styled-components/macro'
+import { ethers } from 'ethers'
 import {
   itemToStatusCode,
   STATUS_CODE,
@@ -73,9 +75,13 @@ const Ruling = ({ currentRuling }) => {
 const ItemStatusCard = ({ item, timestamp }) => {
   const [modalOpen, setModalOpen] = useState()
   const { pushWeb3Action, requestWeb3Auth } = useContext(WalletContext)
-  const { gtcr, metaEvidence, challengePeriodDuration } = useContext(
-    TCRViewContext
-  )
+  const {
+    metaEvidence,
+    challengePeriodDuration,
+    tcrAddress,
+    submissionDeposit,
+    gtcrView
+  } = useContext(TCRViewContext)
 
   // Get remaining appeal time, if any and build countdown.
   const { appealRemainingTime, appealRemainingTimeLoser } = useAppealTime(item)
@@ -109,12 +115,15 @@ const ItemStatusCard = ({ item, timestamp }) => {
   const { disputeStatus, currentRuling, disputed } = item
   const statusCode = itemToStatusCode(item, timestamp, challengePeriodDuration)
 
-  const executeRequest = async () => ({
-    tx: await gtcr.executeRequest(item.ID),
-    actionMessage: `Executing ${
-      statusCode === STATUS_CODE.PENDING_SUBMISSION ? 'submission' : 'removal'
-    }`
-  })
+  const executeRequest = async (_, signer) => {
+    const gtcr = new ethers.Contract(tcrAddress, _gtcr, signer)
+    return {
+      tx: await gtcr.executeRequest(item.ID),
+      actionMessage: `Executing ${
+        statusCode === STATUS_CODE.PENDING_SUBMISSION ? 'submission' : 'removal'
+      }`
+    }
+  }
 
   const onClick = () => {
     switch (statusCode) {
@@ -242,6 +251,10 @@ const ItemStatusCard = ({ item, timestamp }) => {
             fileURI={metadata && metadata.fileURI}
             isOpen={modalOpen}
             onClose={() => setModalOpen(false)}
+            submissionDeposit={submissionDeposit}
+            tcrAddress={tcrAddress}
+            metaEvidence={metaEvidence}
+            gtcrView={gtcrView}
           />
         )}
     </>

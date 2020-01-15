@@ -15,23 +15,28 @@ import { abi as _gtcr } from '@kleros/tcr/build/contracts/GeneralizedTCR.json'
 import { WalletContext } from '../../../bootstrap/wallet-context'
 import { ethers } from 'ethers'
 import { gtcrEncode } from '../../../utils/encoder'
-import { TCRViewContext } from '../../../bootstrap/tcr-view-context'
 import InputSelector from '../../../components/input-selector.js'
 import { withFormik } from 'formik'
 import { typeDefaultValues } from '../../../utils/item-types.js'
 import ETHAmount from '../../../components/eth-amount.js'
+import BNPropType from '../../../prop-types/bn'
 
 const StyledSpin = styled(Spin)`
-  left: 50%;
-  position: absolute;
-  top: 50%;
-  transform: translate(-50%, -50%);
+  height: 60px;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  display: flex;
 `
 
 const SUBMISSION_FORM_ID = 'submitItemForm'
 
-// TODO: Check if TCR requires evidence when submitting and if so, require it.
-const _SubmissionForm = ({ columns, handleSubmit, setFieldValue }) => (
+const _SubmissionForm = ({
+  columns,
+  handleSubmit,
+  setFieldValue,
+  disabledFields
+}) => (
   <Form onSubmit={handleSubmit} id={SUBMISSION_FORM_ID}>
     {columns &&
       columns.length > 0 &&
@@ -49,6 +54,7 @@ const _SubmissionForm = ({ columns, handleSubmit, setFieldValue }) => (
             </span>
           }
           setFieldValue={setFieldValue}
+          disabled={disabledFields && disabledFields[index]}
         />
       ))}
   </Form>
@@ -62,7 +68,12 @@ _SubmissionForm.propTypes = {
     })
   ).isRequired,
   setFieldValue: PropTypes.func.isRequired,
-  handleSubmit: PropTypes.func.isRequired
+  handleSubmit: PropTypes.func.isRequired,
+  disabledFields: PropTypes.arrayOf(PropTypes.bool)
+}
+
+_SubmissionForm.defaultProps = {
+  disabledFields: null
 }
 
 const SubmissionForm = withFormik({
@@ -81,12 +92,16 @@ const SubmissionForm = withFormik({
   }
 })(_SubmissionForm)
 
-const SubmissionModal = props => {
-  const { onCancel, initialValues } = props
+const SubmitModal = props => {
+  const {
+    onCancel,
+    initialValues,
+    submissionDeposit,
+    tcrAddress,
+    metaEvidence,
+    disabledFields
+  } = props
   const { pushWeb3Action } = useContext(WalletContext)
-  const { submissionDeposit, tcrAddress, metaEvidence } = useContext(
-    TCRViewContext
-  )
 
   if (!metaEvidence || !submissionDeposit)
     return (
@@ -103,7 +118,10 @@ const SubmissionModal = props => {
       </Modal>
     )
 
-  const { fileURI, itemName, columns } = metaEvidence.metadata
+  const {
+    fileURI,
+    metadata: { itemName, columns }
+  } = metaEvidence
 
   const postSubmit = (values, columns) => {
     pushWeb3Action(async ({ account, networkId }, signer) => {
@@ -178,6 +196,7 @@ const SubmissionModal = props => {
         columns={columns}
         postSubmit={postSubmit}
         initialValues={initialValues}
+        disabledFields={disabledFields}
       />
       <Typography.Paragraph>
         A deposit is required to submit. This value reimbursed at the end of the
@@ -200,13 +219,24 @@ const SubmissionModal = props => {
   )
 }
 
-SubmissionModal.propTypes = {
+SubmitModal.propTypes = {
   onCancel: PropTypes.func.isRequired,
-  initialValues: PropTypes.arrayOf(PropTypes.any)
+  initialValues: PropTypes.arrayOf(PropTypes.any),
+  submissionDeposit: BNPropType.isRequired,
+  tcrAddress: PropTypes.string.isRequired,
+  metaEvidence: PropTypes.shape({
+    metadata: PropTypes.shape({
+      itemName: PropTypes.string,
+      columns: PropTypes.arrayOf(PropTypes.any)
+    }).isRequired,
+    fileURI: PropTypes.string
+  }).isRequired,
+  disabledFields: PropTypes.arrayOf(PropTypes.bool)
 }
 
-SubmissionModal.defaultProps = {
-  initialValues: null
+SubmitModal.defaultProps = {
+  initialValues: null,
+  disabledFields: null
 }
 
-export default SubmissionModal
+export default SubmitModal

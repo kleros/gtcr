@@ -33,6 +33,7 @@ const useTcrView = tcrAddress => {
   const [removalDeposit, setRemovalDeposit] = useState()
   const [removalChallengeDeposit, setRemovalChallengeDeposit] = useState()
   const [itemSubmissionLogs, setItemSubmissionLogs] = useState({})
+  const [connectedTCRAddr, setConnectedTCRAddr] = useState()
   const ARBITRABLE_TCR_VIEW_ADDRESS = useNetworkEnvVariable(
     'REACT_APP_GTCRVIEW_ADDRESSES',
     networkId
@@ -178,12 +179,15 @@ const useTcrView = tcrAddress => {
     ;(async () => {
       try {
         // Take the latest meta evidence.
-        const { _evidence: metaEvidencePath } = (
+        const logs = (
           await library.getLogs({
             ...gtcr.filters.MetaEvidence(),
             fromBlock: 0
           })
-        ).map(log => gtcr.interface.parseLog(log))[0].values
+        ).map(log => gtcr.interface.parseLog(log))
+        if (logs.length === 0) return
+
+        const { _evidence: metaEvidencePath } = logs[0].values
         const file = await (
           await fetch(process.env.REACT_APP_IPFS_GATEWAY + metaEvidencePath)
         ).json()
@@ -200,6 +204,22 @@ const useTcrView = tcrAddress => {
       gtcr.removeAllListeners(gtcr.filters.MetaEvidence())
     }
   }, [META_EVIDENCE_CACHE_KEY, gtcr, library, metaEvidence, tcrAddress])
+
+  // Fetch the Related TCR address
+  useEffect(() => {
+    if (!gtcr || !library || gtcr.address !== tcrAddress) return
+    ;(async () => {
+      const logs = (
+        await library.getLogs({
+          ...gtcr.filters.ConnectedTCRSet(),
+          fromBlock: 0
+        })
+      ).map(log => gtcr.interface.parseLog(log))
+      if (logs.length === 0) return
+
+      setConnectedTCRAddr(logs[logs.length - 1].values._connectedTCR)
+    })()
+  }, [gtcr, library, connectedTCRAddr, tcrAddress])
 
   // Fetch and decode item submission logs.
   useEffect(() => {
@@ -268,6 +288,7 @@ const useTcrView = tcrAddress => {
     gtcrView,
     itemSubmissionLogs,
     latestBlock,
+    connectedTCRAddr,
     ...arbitrableTCRData
   }
 }

@@ -10,12 +10,14 @@ import itemPropTypes from '../../../prop-types/item'
 import styled from 'styled-components/macro'
 
 const StyledSpin = styled(Spin)`
-  left: 50%;
-  position: absolute;
-  top: 50%;
-  transform: translate(-50%, -50%);
+  height: 60px;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  display: flex;
 `
 
+// TODO: Check if TCR requires evidence when removing and if so, require it.
 const RemoveModal = ({ item, itemName = 'item', fileURI, ...rest }) => {
   // Get contract data.
   const { removalDeposit, tcrAddress } = useContext(TCRViewContext)

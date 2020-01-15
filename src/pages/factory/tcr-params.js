@@ -223,7 +223,7 @@ const TCRParams = ({
               <Icon type="inbox" />
             </p>
             <p className="ant-upload-hint">
-              Click or drag a the primary document to this area.
+              Click or drag a the TCR logo to this area.
             </p>
           </Upload.Dragger>
         </div>

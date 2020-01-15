@@ -2,7 +2,8 @@ import React from 'react'
 import { STATUS_CODE, getActionLabel } from '../../utils/item-status'
 import RemoveModal from './modals/remove'
 import ChallengeModal from './modals/challenge'
-import SubmissionModal from './modals/submit'
+import SubmitModal from './modals/submit'
+import SubmitConnectModal from './modals/submit-connect'
 import CrowdfundModal from './modals/crowdfund'
 
 const ItemActionModal = ({
@@ -11,7 +12,12 @@ const ItemActionModal = ({
   itemName,
   onClose,
   fileURI,
-  item
+  item,
+  isConnectedTCR,
+  submissionDeposit,
+  tcrAddress,
+  metaEvidence,
+  gtcrView
 }) => {
   // Common button properties.
   const rest = {
@@ -32,7 +38,22 @@ const ItemActionModal = ({
       )
     }
     case STATUS_CODE.REJECTED:
-      return <SubmissionModal initialValues={item.decodedData} {...rest} />
+      return isConnectedTCR ? (
+        <SubmitConnectModal
+          initialValues={item.decodedData}
+          tcrAddress={tcrAddress}
+          gtcrView={gtcrView}
+          {...rest}
+        />
+      ) : (
+        <SubmitModal
+          initialValues={item.decodedData}
+          submissionDeposit={submissionDeposit}
+          tcrAddress={tcrAddress}
+          metaEvidence={metaEvidence}
+          {...rest}
+        />
+      )
     case STATUS_CODE.REMOVAL_REQUESTED:
     case STATUS_CODE.SUBMITTED:
       return (

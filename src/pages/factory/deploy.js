@@ -43,12 +43,13 @@ const getTcrMetaEvidence = async tcrState => {
     logoURI: tcrLogo
   }
 
-  const relTcrTitle = `${tcrTitle} related TCRs`
+  const relTcrTitle = `${tcrTitle} enabled badges`
   const relMetadata = {
     tcrTitle: relTcrTitle,
     tcrDescription: `A TCR of TCRs related to ${tcrTitle}`,
     columns: relColumns,
-    itemName: relItemName
+    itemName: relItemName,
+    isConnectedTCR: true
   }
 
   const metaEvidence = {

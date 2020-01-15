@@ -269,7 +269,7 @@ async function processWeb3Action(web3Action, web3Context, signer) {
     const hash = tx.hash || tx.deployTransaction.hash
     const etherscanLink = `https://${
       web3Context.networkId !== NETWORK.MAINNET
-        ? `${NETWORK_NAME[web3Context.networkId]}}.`
+        ? `${NETWORK_NAME[web3Context.networkId]}.`
         : ''
     }etherscan.io/tx/${hash}`
     notification.info({

@@ -14,10 +14,11 @@ import Archon from '@kleros/archon'
 import ipfsPublish from '../../../utils/ipfs-publish.js'
 
 const StyledSpin = styled(Spin)`
-  left: 50%;
-  position: absolute;
-  top: 50%;
-  transform: translate(-50%, -50%);
+  height: 60px;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  display: flex;
 `
 
 const ChallengeModal = ({ item, itemName, statusCode, fileURI, ...rest }) => {

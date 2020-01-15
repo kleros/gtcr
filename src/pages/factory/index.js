@@ -11,7 +11,7 @@ import StyledLayoutContent from '../layout-content'
 import { version } from '../../../package.json'
 import { useWeb3Context } from 'web3-react'
 import useNetworkEnvVariable from '../../hooks/network-env'
-import { solidityTypes } from '../../utils/item-types'
+import itemTypes from '../../utils/item-types'
 import RelTCRParams from './rel-tcr-params'
 
 const { Step } = Steps
@@ -105,7 +105,7 @@ const useCachedFactory = version => {
       {
         label: '',
         description: '',
-        type: solidityTypes.ADDRESS,
+        type: itemTypes.ADDRESS,
         isIdentifier: true
       }
     ],
@@ -113,14 +113,14 @@ const useCachedFactory = version => {
       {
         label: 'Address',
         description: 'The related TCR address',
-        type: solidityTypes.ADDRESS,
+        type: itemTypes.GTCR_ADDRESS,
         isIdentifier: true
       },
       {
         label: 'Match File URI',
         description:
           'The URI to the JSON file for matching columns for each TCR.',
-        type: solidityTypes.STRING,
+        type: itemTypes.TEXT,
         isIdentifier: true
       }
     ],

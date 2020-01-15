@@ -21,7 +21,8 @@ import { gtcrDecode } from '../../utils/encoder'
 import RequestTimelines from './request-timelines'
 import { WalletContext } from '../../bootstrap/wallet-context'
 import SearchBar from '../../components/search-bar'
-import { capitalizeFirstLetter } from '../../utils/string'
+import { capitalizeFirstLetter, ZERO_ADDRESS } from '../../utils/string'
+import Badges from './badges'
 
 const StyledLayoutContent = styled(Layout.Content)`
   padding: 0 9.375vw 42px;
@@ -55,9 +56,14 @@ const ItemDetails = ({ itemID }) => {
   }, [item, library])
   const refAttr = useRef()
   const [eventListenerSet, setEventListenerSet] = useState()
-  const { gtcr, tcrError, gtcrView, metaEvidence, tcrAddress } = useContext(
-    TCRViewContext
-  )
+  const {
+    gtcr,
+    tcrError,
+    gtcrView,
+    metaEvidence,
+    tcrAddress,
+    connectedTCRAddr
+  } = useContext(TCRViewContext)
 
   // Warning: This function should only be called when all its dependencies
   // are set.
@@ -191,6 +197,15 @@ const ItemDetails = ({ itemID }) => {
           item={item}
           requests={requests && requests.map(r => ({ ...r }))}
         />
+        {connectedTCRAddr !== ZERO_ADDRESS &&
+          metaEvidence &&
+          !metaEvidence.metadata.isConnectedTCR && (
+            <Badges
+              connectedTCRAddr={connectedTCRAddr}
+              item={decodedItem}
+              tcrAddress={tcrAddress}
+            />
+          )}
       </StyledLayoutContent>
     </>
   )

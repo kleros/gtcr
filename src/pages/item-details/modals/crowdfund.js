@@ -24,10 +24,11 @@ import { ethers } from 'ethers'
 import useRequiredFees from '../../../hooks/required-fees'
 
 const StyledSpin = styled(Spin)`
-  left: 50%;
-  position: absolute;
-  top: 50%;
-  transform: translate(-50%, -50%);
+  height: 60px;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  display: flex;
 `
 
 const CrowdfundModal = ({ statusCode, item, fileURI, ...rest }) => {

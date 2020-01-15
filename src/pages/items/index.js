@@ -22,10 +22,11 @@ import {
   capitalizeFirstLetter
 } from '../../utils/string'
 import { TCRViewContext } from '../../bootstrap/tcr-view-context'
-import ItemStatus from '../../components/item-status-badge'
+import ItemStatusBadge from '../../components/item-status-badge'
 import { bigNumberify } from 'ethers/utils'
 import { gtcrDecode } from '../../utils/encoder'
-import SubmissionModal from '../item-details/modals/submit'
+import SubmitModal from '../item-details/modals/submit'
+import SubmitConnectModal from '../item-details/modals/submit-connect'
 import SearchBar from '../../components/search-bar'
 import {
   searchStrToFilterObj,
@@ -120,7 +121,9 @@ const Items = ({ search, history }) => {
     tcrError,
     gtcrView,
     tcrAddress,
-    latestBlock
+    latestBlock,
+    connectedTCRAddr,
+    submissionDeposit
   } = useContext(TCRViewContext)
   const [submissionFormOpen, setSubmissionFormOpen] = useState()
   const [oldActiveItems, setOldActiveItems] = useState([])
@@ -443,11 +446,32 @@ const Items = ({ search, history }) => {
           )}
         </StyledHeader>
         {metadata ? (
-          <Typography.Text ellipsis type="secondary">
+          <Typography.Text
+            ellipsis
+            type="secondary"
+            style={{ maxWidth: '100%' }}
+          >
             {capitalizeFirstLetter(metadata.tcrDescription)}
           </Typography.Text>
         ) : (
           <Skeleton active paragraph={{ rows: 1, width: 150 }} title={false} />
+        )}
+        {connectedTCRAddr && connectedTCRAddr !== ZERO_ADDRESS && (
+          <>
+            <br />
+            <Typography.Text
+              ellipsis
+              type="secondary"
+              style={{ maxWidth: '100%', textDecoration: 'underline' }}
+            >
+              <Link
+                to={`/tcr/${connectedTCRAddr}`}
+                style={{ color: '#4d00b473' }}
+              >
+                View connected TCRs
+              </Link>
+            </Typography.Text>
+          </>
         )}
       </StyledBanner>
       <SearchBar />
@@ -518,7 +542,7 @@ const Items = ({ search, history }) => {
                         </Link>
                       }
                       title={
-                        <ItemStatus
+                        <ItemStatusBadge
                           item={item.tcrData}
                           challengePeriodDuration={challengePeriodDuration}
                           timestamp={timestamp}
@@ -557,10 +581,26 @@ const Items = ({ search, history }) => {
             </>
           </Spin>
         </StyledContent>
-        <SubmissionModal
-          visible={submissionFormOpen}
-          onCancel={() => setSubmissionFormOpen(false)}
-        />
+        {metaEvidence && (
+          <>
+            {metaEvidence.metadata.isConnectedTCR ? (
+              <SubmitConnectModal
+                visible={submissionFormOpen}
+                onCancel={() => setSubmissionFormOpen(false)}
+                tcrAddress={tcrAddress}
+                gtcrView={gtcrView}
+              />
+            ) : (
+              <SubmitModal
+                visible={submissionFormOpen}
+                onCancel={() => setSubmissionFormOpen(false)}
+                submissionDeposit={submissionDeposit}
+                tcrAddress={tcrAddress}
+                metaEvidence={metaEvidence}
+              />
+            )}
+          </>
+        )}
       </StyledLayoutContent>
     </>
   )

@@ -1,7 +1,8 @@
-import { solidityTypes, typeToSolidity } from './item-types'
-import * as BN from 'bn.js'
+import BN from 'bn.js'
 import * as RLP from 'rlp'
-import { toUtf8String } from 'ethers/utils'
+import { toUtf8String, getAddress } from 'ethers/utils'
+import { solidityTypes, typeToSolidity } from './item-types'
+import { ZERO_ADDRESS } from './string'
 
 const bufferToHex = buf => {
   buf = buf.toString('hex')
@@ -16,7 +17,7 @@ export const gtcrEncode = ({ columns, values }) => {
   const itemArr = columns.map(col => {
     switch (typeToSolidity[col.type]) {
       case solidityTypes.STRING:
-        return values[col.label]
+        return values[col.label] || ''
       case solidityTypes.INT256: {
         if (new BN(values[col.label]).gt(MAX_SIGNED_INTEGER))
           throw new Error('Number exceeds maximum supported signed integer.')
@@ -24,10 +25,15 @@ export const gtcrEncode = ({ columns, values }) => {
           throw new Error(
             'Number smaller than minimum supported signed integer.'
           )
-        return new BN(values[col.label]).toTwos(256) // Two's complement
+        return new BN(values[col.label] || '0').toTwos(256) // Two's complement
       }
       case solidityTypes.ADDRESS:
-        return new BN(values[col.label].slice(2), 16)
+        return new BN(
+          values[col.label]
+            ? values[col.label].slice(2)
+            : ZERO_ADDRESS.slice(2),
+          16
+        )
       case solidityTypes.BOOL:
         return new BN(values[col.label] ? 1 : 0)
       default:
@@ -49,7 +55,7 @@ export const gtcrDecode = ({ columns, values }) => {
       case solidityTypes.INT256:
         return new BN(item[i], 16).fromTwos(256).toString(10) // Two's complement
       case solidityTypes.ADDRESS:
-        return `0x${item[i].toString('hex')}`
+        return getAddress(`0x${item[i].toString('hex')}`)
       case solidityTypes.BOOL:
         return Boolean(new BN(item[i].toString('hex'), 16).toNumber())
       default:
