@@ -312,13 +312,15 @@ const Badges = ({ connectedTCRAddr, item, tcrAddress }) => {
             for (let i = 0; i < Math.ceil(itemCount / itemsPerRequest); i++) {
               const cursor =
                 i > 0 && i < itemCount - 1 ? i * itemsPerRequest + 1 : 0
-              result = await gtcrView.findItem(
-                badgeAddr,
-                encodedMatch,
-                cursor,
-                itemsPerRequest > itemCount ? 0 : itemsPerRequest,
-                false
-              )
+              result = (
+                await gtcrView.findItem(
+                  badgeAddr,
+                  encodedMatch,
+                  cursor,
+                  itemsPerRequest > itemCount ? 0 : itemsPerRequest,
+                  false
+                )
+              ).filter(res => res.ID !== ZERO_BYTES32)
               if (result.length > 0) {
                 foundBadges.push({
                   tcrAddress: badgeAddr,
