@@ -1,11 +1,12 @@
 import React, { useEffect, useState, useCallback } from 'react'
-import { List, Popover, Form, Input, Button, Alert } from 'antd'
+import { List, Popover, Form, Input, Button, Alert, Icon, Tooltip } from 'antd'
 import { withFormik, Field } from 'formik'
 import { useWeb3Context } from 'web3-react'
 import ReactBlockies from 'react-blockies'
 import PropTypes from 'prop-types'
 import styled from 'styled-components/macro'
 import * as yup from 'yup'
+import localforage from 'localforage'
 import ETHAddress from './eth-address'
 import ETHAmount from './eth-amount'
 import { randomBytes, bigNumberify } from 'ethers/utils'
@@ -40,6 +41,14 @@ const EmailForm = ({
     <Field name="nickname">
       {({ field, form: { errors, touched } }) => (
         <Form.Item
+          label={
+            <span>
+              Nickname&nbsp;
+              <Tooltip title="Choose something different than your name. This will be sent on the email and act as a shared secret.">
+                <Icon type="question-circle-o" />
+              </Tooltip>
+            </span>
+          }
           help={errors.nickname && touched.nickname ? errors.nickname : ''}
           validateStatus={
             errors.nickname && touched.nickname ? 'error' : undefined
@@ -71,7 +80,10 @@ const validationSchema = yup.object().shape({
     .string()
     .email('Invalid email.')
     .required('A valid email is required.'),
-  nickname: yup.string().required('A nickname is required.')
+  nickname: yup
+    .string()
+    .min(2, 'At least 2 characters required')
+    .max(50, 'Use at most 50 characters')
 })
 
 const EnhancedEmailForm = withFormik({
@@ -83,7 +95,7 @@ const EnhancedEmailForm = withFormik({
 })(EmailForm)
 
 const EMAIL_FORM_ID = 'emailForm'
-
+const CACHED_SETTINGS = 'CACHED_SETTINGS'
 const Identicon = ({ className, large }) => {
   const { account, library, networkId } = useWeb3Context()
   const [balance, setBalance] = useState()
@@ -95,16 +107,12 @@ const Identicon = ({ className, large }) => {
     })()
   }, [library, account])
 
-  // Fetch current email settings if an endpoint was provided.
+  // Fetch current email settings from local storage, if available.
   useEffect(() => {
     if (!process.env.REACT_APP_NOTIFICATIONS_API_URL || !account) return
     ;(async () => {
-      const settings = await (
-        await fetch(
-          `${process.env.REACT_APP_NOTIFICATIONS_API_URL}/api/email-settings/${account}`
-        )
-      ).json()
-      setFetchedEmailSettings(settings)
+      const cachedSettings = await localforage.getItem(CACHED_SETTINGS)
+      setFetchedEmailSettings(cachedSettings)
     })()
   }, [account])
 
@@ -161,8 +169,10 @@ const Identicon = ({ className, large }) => {
                   }
                 )
               ).json()
-              if (response.status === 'success') setEmailStatus('success')
-              else {
+              if (response.status === 'success') {
+                localforage.setItem(CACHED_SETTINGS, { nickname, email })
+                setEmailStatus('success')
+              } else {
                 setEmailStatus('error')
                 console.error(response)
               }
