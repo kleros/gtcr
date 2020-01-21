@@ -35,9 +35,9 @@ const CustomInput = ({
         ) : (
           <Input
             addonAfter={addonAfter}
-            {...field}
             placeholder={placeholder}
             disabled={disabled}
+            {...field}
           />
         )}
       </Form.Item>

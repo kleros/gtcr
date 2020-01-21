@@ -222,7 +222,7 @@ const SubmitModal = props => {
 SubmitModal.propTypes = {
   onCancel: PropTypes.func.isRequired,
   initialValues: PropTypes.arrayOf(PropTypes.any),
-  submissionDeposit: BNPropType.isRequired,
+  submissionDeposit: BNPropType,
   tcrAddress: PropTypes.string.isRequired,
   metaEvidence: PropTypes.shape({
     metadata: PropTypes.shape({
@@ -236,7 +236,8 @@ SubmitModal.propTypes = {
 
 SubmitModal.defaultProps = {
   initialValues: null,
-  disabledFields: null
+  disabledFields: null,
+  submissionDeposit: null
 }
 
 export default SubmitModal

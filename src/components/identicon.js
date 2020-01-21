@@ -1,11 +1,14 @@
-import { List, Popover } from 'antd'
+import React, { useEffect, useState, useCallback } from 'react'
+import { List, Popover, Form, Input, Button, Alert } from 'antd'
+import { withFormik, Field } from 'formik'
+import { useWeb3Context } from 'web3-react'
+import ReactBlockies from 'react-blockies'
+import PropTypes from 'prop-types'
+import styled from 'styled-components/macro'
+import * as yup from 'yup'
 import ETHAddress from './eth-address'
 import ETHAmount from './eth-amount'
-import PropTypes from 'prop-types'
-import React, { useEffect, useState } from 'react'
-import ReactBlockies from 'react-blockies'
-import styled from 'styled-components/macro'
-import { useWeb3Context } from 'web3-react'
+import { randomBytes, bigNumberify } from 'ethers/utils'
 
 const StyledDiv = styled.div`
   height: 32px;
@@ -15,14 +18,167 @@ const StyledDiv = styled.div`
 const StyledReactBlockies = styled(ReactBlockies)`
   border-radius: ${({ large }) => (large ? '4' : '16')}px;
 `
+
+const EmailForm = ({
+  formID,
+
+  // Formik bag
+  handleSubmit
+}) => (
+  <Form id={formID} onSubmit={handleSubmit} layout="vertical">
+    <Field name="email">
+      {({ field, form: { errors, touched } }) => (
+        <Form.Item
+          help={errors.email && touched.email ? errors.email : ''}
+          validateStatus={errors.email && touched.email ? 'error' : undefined}
+          hasFeedback
+        >
+          <Input placeholder="alice@pm.me" {...field} />
+        </Form.Item>
+      )}
+    </Field>
+    <Field name="nickname">
+      {({ field, form: { errors, touched } }) => (
+        <Form.Item
+          help={errors.nickname && touched.nickname ? errors.nickname : ''}
+          validateStatus={
+            errors.nickname && touched.nickname ? 'error' : undefined
+          }
+          hasFeedback
+        >
+          <Input placeholder="Alice" {...field} />
+        </Form.Item>
+      )}
+    </Field>
+  </Form>
+)
+
+EmailForm.propTypes = {
+  formID: PropTypes.string.isRequired,
+  handleSubmit: PropTypes.func.isRequired,
+  initialValues: PropTypes.shape({
+    nickname: PropTypes.string,
+    email: PropTypes.string
+  })
+}
+
+EmailForm.defaultProps = {
+  initialValues: null
+}
+
+const validationSchema = yup.object().shape({
+  email: yup
+    .string()
+    .email('Invalid email.')
+    .required('A valid email is required.'),
+  nickname: yup.string().required('A nickname is required.')
+})
+
+const EnhancedEmailForm = withFormik({
+  validationSchema,
+  handleSubmit: (values, { props: { onSubmit } }) => {
+    onSubmit(values)
+  },
+  mapPropsToValues: ({ initialValues }) => initialValues
+})(EmailForm)
+
+const EMAIL_FORM_ID = 'emailForm'
+
 const Identicon = ({ className, large }) => {
-  const { account, library } = useWeb3Context()
+  const { account, library, networkId } = useWeb3Context()
   const [balance, setBalance] = useState()
+  const [emailStatus, setEmailStatus] = useState()
+  const [fetchedEmailSettings, setFetchedEmailSettings] = useState()
   useEffect(() => {
     ;(async () => {
       setBalance(await library.getBalance(account))
     })()
   }, [library, account])
+
+  // Fetch current email settings if an endpoint was provided.
+  useEffect(() => {
+    if (!process.env.REACT_APP_NOTIFICATIONS_API_URL || !account) return
+    ;(async () => {
+      const settings = await (
+        await fetch(
+          `${process.env.REACT_APP_NOTIFICATIONS_API_URL}/api/email-settings/${account}`
+        )
+      ).json()
+      setFetchedEmailSettings(settings)
+    })()
+  }, [account])
+
+  const submitEmail = useCallback(
+    ({ email, nickname }) => {
+      setEmailStatus('loading')
+      const data = {
+        types: {
+          EIP712Domain: [
+            { name: 'name', type: 'string' },
+            { name: 'version', type: 'string' },
+            { name: 'chainId', type: 'uint256' },
+            { name: 'salt', type: 'bytes32' }
+          ],
+          Settings: [
+            { name: 'email', type: 'string' },
+            { name: 'nickname', type: 'string' }
+          ]
+        },
+        primaryType: 'Settings',
+        message: { email, nickname },
+        domain: {
+          name: process.env.REACT_APP_NOTIFICATIONS_API_URL,
+          chainId: networkId,
+          version: 1,
+          salt: `0x${bigNumberify(randomBytes(32)).toString(16)}`
+        }
+      }
+      try {
+        library.provider.sendAsync(
+          {
+            method: 'eth_signTypedData_v4',
+            params: [account, JSON.stringify(data)],
+            from: account
+          },
+          async (err, { result: signature }) => {
+            if (err) {
+              console.error(err)
+              setEmailStatus('error')
+              return
+            }
+
+            try {
+              const response = await (
+                await fetch(
+                  `${process.env.REACT_APP_NOTIFICATIONS_API_URL}/api/email-settings`,
+                  {
+                    method: 'post',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      signature,
+                      data
+                    })
+                  }
+                )
+              ).json()
+              if (response.status === 'success') setEmailStatus('success')
+              else {
+                setEmailStatus('error')
+                console.error(response)
+              }
+            } catch (err_) {
+              setEmailStatus('error')
+              console.error(err_)
+            }
+          }
+        )
+      } catch (err) {
+        setEmailStatus('error')
+        console.error(err)
+      }
+    },
+    [account, library.provider, networkId]
+  )
 
   const content = (
     <StyledDiv className={className}>
@@ -53,6 +209,44 @@ const Identicon = ({ className, large }) => {
               <List.Item.Meta
                 description={<ETHAmount amount={balance} decimals={4} />}
                 title="ETH"
+              />
+            </List.Item>
+          )}
+          {process.env.REACT_APP_NOTIFICATIONS_API_URL && (
+            <List.Item>
+              <List.Item.Meta
+                description={
+                  <>
+                    <EnhancedEmailForm
+                      onSubmit={submitEmail}
+                      formID={EMAIL_FORM_ID}
+                      initialValues={fetchedEmailSettings}
+                    />
+                    {emailStatus && emailStatus !== 'loading' && (
+                      <Alert
+                        closable
+                        type={emailStatus}
+                        message={
+                          emailStatus === 'error'
+                            ? 'Failed to save settings.'
+                            : 'Settings saved.'
+                        }
+                        style={{ marginBottom: '15px' }}
+                      />
+                    )}
+                    <Button
+                      key="submitEmail"
+                      type="primary"
+                      form={EMAIL_FORM_ID}
+                      htmlType="submit"
+                      loading={emailStatus === 'loading'}
+                      disabled={emailStatus === 'loading'}
+                    >
+                      {emailStatus === 'loading' ? '' : 'Set'}
+                    </Button>
+                  </>
+                }
+                title="Email Notifications"
               />
             </List.Item>
           )}

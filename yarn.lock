@@ -14781,7 +14781,7 @@ solidity-bytes-utils@^0.0.8:
   dependencies:
     truffle-hdwallet-provider "0.0.3"
 
-solidity-rlp@^2.0.0, solidity-rlp@^2.0.1:
+solidity-rlp@^2.0.1:
   version "2.0.1"
   resolved "https://registry.yarnpkg.com/solidity-rlp/-/solidity-rlp-2.0.1.tgz#7cd846c3903a0ade5e0932133b1661108cdcab1d"
   integrity sha512-zBCnThsO5x3JI4ZPUUnrx0MK2zGxhaxfwiZ3Wwm8lJ+v12WTJjUW9k+lVT5H06AhgHNbxDahEg8CIQvEl1vPLQ==
