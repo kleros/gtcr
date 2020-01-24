@@ -211,7 +211,7 @@ const ItemStatusCard = ({ item, timestamp }) => {
           */}
           {/* Display challenge period countdown, if applicable. */}
           {!disputed && challengeRemainingTime > 0 && (
-            <Descriptions.Item label="Challenge period ends in">
+            <Descriptions.Item label="Challenge period ends">
               {challengeCountdown}
             </Descriptions.Item>
           )}

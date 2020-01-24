@@ -9,7 +9,7 @@ import { TCRViewContext } from '../../../bootstrap/tcr-view-context'
 import ETHAmount from '../../../components/eth-amount'
 import { WalletContext } from '../../../bootstrap/wallet-context'
 import itemPropTypes from '../../../prop-types/item'
-import EvidenceForm from '../../../components/evidence-form.js'
+import EvidenceForm from '../../../components/evidence-form'
 import Archon from '@kleros/archon'
 import ipfsPublish from '../../../utils/ipfs-publish.js'
 
