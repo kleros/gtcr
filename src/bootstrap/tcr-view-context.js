@@ -34,26 +34,21 @@ const useTcrView = tcrAddress => {
   const [removalChallengeDeposit, setRemovalChallengeDeposit] = useState()
   const [itemSubmissionLogs, setItemSubmissionLogs] = useState({})
   const [connectedTCRAddr, setConnectedTCRAddr] = useState()
-  const ARBITRABLE_TCR_VIEW_ADDRESS = useNetworkEnvVariable(
+  const arbitrableTCRViewAddr = useNetworkEnvVariable(
     'REACT_APP_GTCRVIEW_ADDRESSES',
     networkId
   )
 
   // Wire up the TCR.
   const gtcrView = useMemo(() => {
-    if (!library || !active || !ARBITRABLE_TCR_VIEW_ADDRESS || !networkId)
-      return
+    if (!library || !active || !arbitrableTCRViewAddr || !networkId) return
     try {
-      return new ethers.Contract(
-        ARBITRABLE_TCR_VIEW_ADDRESS,
-        _GTCRView,
-        library
-      )
+      return new ethers.Contract(arbitrableTCRViewAddr, _GTCRView, library)
     } catch (err) {
       console.error('Error instantiating gtcr view contract', err)
       setError('Error instantiating view contract')
     }
-  }, [ARBITRABLE_TCR_VIEW_ADDRESS, active, library, networkId])
+  }, [arbitrableTCRViewAddr, active, library, networkId])
 
   const gtcr = useMemo(() => {
     if (!library || !active || !tcrAddress || !networkId) return

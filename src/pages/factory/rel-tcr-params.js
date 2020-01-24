@@ -219,6 +219,54 @@ const RelTCRParams = ({
                 </FormItem>
               )}
             </Field>
+            <CustomInput
+              name="relSharedStakeMultiplier"
+              placeholder="1000"
+              error={errors.relSharedStakeMultiplier}
+              touched={touched.relSharedStakeMultiplier}
+              type={itemTypes.NUMBER}
+              label={
+                <span>
+                  Shared stake multiplier&nbsp;
+                  <Tooltip title="This is the multiplier for the stake parties must pay to raise an appeal when there isn't a winner or looser (e.g. when its the first round or the arbitrator refused to rule).">
+                    <Icon type="question-circle-o" />
+                  </Tooltip>
+                </span>
+              }
+              {...rest}
+            />
+            <CustomInput
+              name="relWinnerStakeMultiplier"
+              placeholder="1000"
+              error={errors.relWinnerStakeMultiplier}
+              touched={touched.relWinnerStakeMultiplier}
+              type={itemTypes.NUMBER}
+              label={
+                <span>
+                  Shared stake multiplier&nbsp;
+                  <Tooltip title="This is the multiplier for the stake the winner of a round must pay to raise an appeal.">
+                    <Icon type="question-circle-o" />
+                  </Tooltip>
+                </span>
+              }
+              {...rest}
+            />
+            <CustomInput
+              name="relLooserStakeMultiplier"
+              placeholder="2000"
+              error={errors.relLooserStakeMultiplier}
+              touched={touched.relLooserStakeMultiplier}
+              type={itemTypes.NUMBER}
+              label={
+                <span>
+                  Shared stake multiplier&nbsp;
+                  <Tooltip title="This is the multiplier for the stake the looser of a round must pay to raise an appeal.">
+                    <Icon type="question-circle-o" />
+                  </Tooltip>
+                </span>
+              }
+              {...rest}
+            />
           </>
         )}
       </Form>
@@ -280,7 +328,19 @@ const validationSchema = yup.object().shape({
     .min(0, 'The amount must not be negative.'),
   relTcrPrimaryDocument: yup
     .string()
-    .required('A primary document is required.')
+    .required('A primary document is required.'),
+  relSharedStakeMultiplier: yup
+    .number()
+    .min(0, 'The stake multiplier cannot be negative.')
+    .required('A value is required'),
+  relWinnerStakeMultiplier: yup
+    .number()
+    .min(0, 'The stake multiplier cannot be negative.')
+    .required('A value is required'),
+  relLooserStakeMultiplier: yup
+    .number()
+    .min(0, 'The stake multiplier cannot be negative.')
+    .required('A value is required')
 })
 
 export default withFormik({

@@ -91,6 +91,9 @@ const useCachedFactory = version => {
     requireRemovalEvidence: true,
     tcrPrimaryDocument: '',
     tcrLogo: '',
+    sharedStakeMultiplier: 1000,
+    winnerStakeMultiplier: 1000,
+    looserStakeMultiplier: 2000,
     relSubmissionBaseDeposit: 0.02,
     relRemovalBaseDeposit: 0.03,
     relSubmissionChallengeBaseDeposit: 0.015,
@@ -101,6 +104,9 @@ const useCachedFactory = version => {
     relItemName: 'TCR',
     relRequireRemovalEvidence: true,
     relTcrPrimaryDocument: '',
+    relSharedStakeMultiplier: 1000,
+    relWinnerStakeMultiplier: 1000,
+    relLooserStakeMultiplier: 2000,
     columns: [
       {
         label: '',

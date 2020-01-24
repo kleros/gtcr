@@ -228,7 +228,6 @@ const SubmitConnectModal = props => {
         columns,
         values
       })
-      console.info(columns, values)
 
       // Request signature and submit.
       const tx = await gtcr.addItem(encodedParams, {

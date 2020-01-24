@@ -4,12 +4,14 @@ import PropTypes from 'prop-types'
 import React, { useContext, useState } from 'react'
 import { WalletContext } from '../../bootstrap/wallet-context'
 import { ethers } from 'ethers'
-import _GTCR from '@kleros/tcr/build/contracts/GeneralizedTCR.json'
+import { abi as _GTCRFactory } from '@kleros/tcr/build/contracts/GTCRFactory.json'
 import styled from 'styled-components/macro'
 import ipfsPublish from '../../utils/ipfs-publish'
 import Archon from '@kleros/archon'
 import { parseEther } from 'ethers/utils'
 import { ZERO_ADDRESS, isVowel } from '../../utils/string'
+import { useWeb3Context } from 'web3-react'
+import useNetworkEnvVariable from '../../hooks/network-env'
 
 const StyledButton = styled(Button)`
   margin-right: 7px;
@@ -188,12 +190,16 @@ const getTcrMetaEvidence = async tcrState => {
 }
 
 const Deploy = ({ resetTcrState, setTxState, tcrState }) => {
+  const { networkId } = useWeb3Context()
   const { pushWeb3Action } = useContext(WalletContext)
+  const factoryAddress = useNetworkEnvVariable(
+    'REACT_APP_FACTORY_ADDRESSES',
+    networkId
+  )
   const [txSubmitted, setTxSubmitted] = useState()
 
   const onDeploy = () => {
     pushWeb3Action(async (_, signer) => {
-      const factory = ethers.ContractFactory.fromSolidity(_GTCR, signer)
       const {
         registrationMetaEvidencePath,
         clearingMetaEvidencePath,
@@ -201,6 +207,7 @@ const Deploy = ({ resetTcrState, setTxState, tcrState }) => {
         relClearingMetaEvidencePath
       } = await getTcrMetaEvidence(tcrState)
 
+      const factory = new ethers.Contract(factoryAddress, _GTCRFactory, signer)
       const relTCRtx = await factory.deploy(
         tcrState.relArbitratorAddress,
         '0x00', // Arbitrator extra data.
@@ -213,19 +220,22 @@ const Deploy = ({ resetTcrState, setTxState, tcrState }) => {
         parseEther(tcrState.relSubmissionChallengeBaseDeposit.toString()),
         parseEther(tcrState.relRemovalChallengeBaseDeposit.toString()),
         Number(tcrState.relChallengePeriodDuration) * 60 * 60,
-        '10000', // Shared stake multiplier in basis points.
-        '10000', // Winner stake multiplier in basis points.
-        '20000', // Loser stake multiplier in basis points.
+        [
+          tcrState.relSharedStakeMultiplier,
+          tcrState.relWinnerStakeMultiplier,
+          tcrState.relLooserStakeMultiplier
+        ], // Shared, winner and looser stake multipliers in basis points.
         { gasLimit: 6000000 }
       )
-      setTxState({ txHash: relTCRtx.deployTransaction.hash, status: 'pending' })
-      setTxSubmitted(relTCRtx.deployTransaction.hash)
+      setTxState({ txHash: relTCRtx.hash, status: 'pending' })
+      setTxSubmitted(relTCRtx.hash)
       return {
         tx: relTCRtx,
         actionMessage: 'Deploying Related TCR',
+        deployTCR: true,
         onTxMined: async ({ contractAddress }) => {
           setTxState({
-            txHash: relTCRtx.deployTransaction.hash,
+            txHash: relTCRtx.hash,
             status: 'mined',
             contractAddress
           })
@@ -243,19 +253,22 @@ const Deploy = ({ resetTcrState, setTxState, tcrState }) => {
               parseEther(tcrState.submissionChallengeBaseDeposit.toString()),
               parseEther(tcrState.removalChallengeBaseDeposit.toString()),
               Number(tcrState.challengePeriodDuration) * 60 * 60,
-              '10000', // Shared stake multiplier in basis points.
-              '10000', // Winner stake multiplier in basis points.
-              '20000', // Loser stake multiplier in basis points.
+              [
+                tcrState.sharedStakeMultiplier,
+                tcrState.winnerStakeMultiplier,
+                tcrState.looserStakeMultiplier
+              ], // Shared, winner and looser stake multipliers in basis points.
               { gasLimit: 6000000 }
             )
-            setTxState({ txHash: tx.deployTransaction.hash, status: 'pending' })
-            setTxSubmitted(tx.deployTransaction.hash)
+            setTxState({ txHash: tx.hash, status: 'pending' })
+            setTxSubmitted(tx.hash)
             return {
               tx,
               actionMessage: 'Deploying TCR',
+              deployTCR: true,
               onTxMined: async ({ contractAddress }) => {
                 setTxState({
-                  txHash: tx.deployTransaction.hash,
+                  txHash: tx.hash,
                   status: 'mined',
                   contractAddress
                 })
@@ -344,6 +357,18 @@ Deploy.propTypes = {
       PropTypes.number,
       PropTypes.string
     ]).isRequired,
+    sharedStakeMultiplier: PropTypes.oneOfType([
+      PropTypes.number,
+      PropTypes.string
+    ]).isRequired,
+    winnerStakeMultiplier: PropTypes.oneOfType([
+      PropTypes.number,
+      PropTypes.string
+    ]).isRequired,
+    looserStakeMultiplier: PropTypes.oneOfType([
+      PropTypes.number,
+      PropTypes.string
+    ]).isRequired,
     relArbitratorAddress: PropTypes.string.isRequired,
     relGovernorAddress: PropTypes.string.isRequired,
     relSubmissionChallengeBaseDeposit: PropTypes.oneOfType([
@@ -363,6 +388,18 @@ Deploy.propTypes = {
       PropTypes.string
     ]).isRequired,
     relChallengePeriodDuration: PropTypes.oneOfType([
+      PropTypes.number,
+      PropTypes.string
+    ]).isRequired,
+    relSharedStakeMultiplier: PropTypes.oneOfType([
+      PropTypes.number,
+      PropTypes.string
+    ]).isRequired,
+    relWinnerStakeMultiplier: PropTypes.oneOfType([
+      PropTypes.number,
+      PropTypes.string
+    ]).isRequired,
+    relLooserStakeMultiplier: PropTypes.oneOfType([
       PropTypes.number,
       PropTypes.string
     ]).isRequired

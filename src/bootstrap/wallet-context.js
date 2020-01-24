@@ -7,6 +7,8 @@ import uuid from 'uuid/v4'
 import { bigNumberify } from 'ethers/utils'
 import WalletConnectQRCodeModal from '@walletconnect/qrcode-modal'
 import localforage from 'localforage'
+import { ethers } from 'ethers'
+import { abi as _GTCRFactory } from '@kleros/tcr/build/contracts/GTCRFactory.json'
 import { NETWORK, NETWORK_NAME } from '../utils/network-utils'
 import FastJsonRpcSigner from '../utils/fast-signer'
 
@@ -14,6 +16,8 @@ const actionTypes = {
   TRANSACTION: 'TRANSACTION',
   AUTHORIZATION: 'AUTHORIZATION'
 }
+
+const factoryInterface = new ethers.utils.Interface(_GTCRFactory)
 
 /* eslint-disable valid-jsdoc */
 /**
@@ -262,11 +266,11 @@ async function processWeb3Action(web3Action, web3Context, signer) {
     key: notificationID
   })
   try {
-    const { tx, actionMessage, onTxMined } = await web3Action.action(
+    const { tx, actionMessage, onTxMined, deployTCR } = await web3Action.action(
       web3Context,
       signer
     )
-    const hash = tx.hash || tx.deployTransaction.hash
+    const hash = tx.hash
     const etherscanLink = `https://${
       web3Context.networkId !== NETWORK.MAINNET
         ? `${NETWORK_NAME[web3Context.networkId]}.`
@@ -284,9 +288,7 @@ async function processWeb3Action(web3Action, web3Context, signer) {
       )
     })
 
-    const { contractAddress } = await web3Context.library.waitForTransaction(
-      hash
-    )
+    const txMined = await web3Context.library.waitForTransaction(hash)
 
     notification.success({
       message: 'Transaction mined!',
@@ -298,7 +300,14 @@ async function processWeb3Action(web3Action, web3Context, signer) {
       duration: 5,
       key: notificationID
     })
-    if (onTxMined) onTxMined({ contractAddress })
+
+    if (onTxMined)
+      if (deployTCR)
+        onTxMined({
+          contractAddress: factoryInterface.parseLog(txMined.logs[3]).values
+            ._address
+        })
+      else onTxMined()
   } catch (err) {
     notification.error({
       message: 'Error submitting transaction',
