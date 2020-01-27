@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useCallback } from 'react'
 import { Input, Checkbox, Upload, Icon, message, Form } from 'antd'
 import styled from 'styled-components/macro'
 import { withFormik, Field } from 'formik'
@@ -11,20 +11,45 @@ const StyledCheckbox = styled(Checkbox)`
   margin-bottom: 1em;
 `
 
+const StyledUpload = styled(Upload)`
+  & > .ant-upload.ant-upload-select-picture-card {
+    width: 100%;
+  }
+`
+
+const UploadButton = ({ loading }) => (
+  <div>
+    <Icon type={loading ? 'loading' : 'plus'} />
+    <div className="ant-upload-text">Upload</div>
+  </div>
+)
+
+UploadButton.propTypes = {
+  loading: PropTypes.bool
+}
+
+UploadButton.defaultProps = {
+  loading: null
+}
+
 const EvidenceForm = ({
   formID,
   detailed, // Should the evidence form let the user input an evidence title?
 
   // Formik bag
   handleSubmit,
-  setFieldValue
+  setFieldValue,
+  values
 }) => {
   const [includeAttachment, setIncludeAttachment] = useState()
+  const [uploading, setUploading] = useState()
+  const fileUploadStatusChange = useCallback(({ file: { status } }) => {
+    if (status === 'done') message.success(`File uploaded successfully.`)
+    else if (status === 'error') message.error(`File upload failed.`)
+    else if (status === 'uploading') setUploading(true)
 
-  const fileUploadStatusChange = ({ file: { status } }) => {
-    if (status === 'done') message.success(`Evidence uploaded successfully.`)
-    else if (status === 'error') message.error(`Evidence upload failed.`)
-  }
+    if (status === 'error' || status === 'done') setUploading(false)
+  }, [])
 
   const customRequest = async ({ file, onSuccess, onError }) => {
     try {
@@ -35,7 +60,8 @@ const EvidenceForm = ({
 
       setFieldValue('evidenceAttachment', {
         fileURI,
-        fileTypeExtension
+        fileTypeExtension,
+        type: file.type
       })
       onSuccess('ok', `${process.env.REACT_APP_IPFS_GATEWAY}${fileURI}`)
     } catch (err) {
@@ -43,6 +69,12 @@ const EvidenceForm = ({
       onError(err)
     }
   }
+
+  const beforeFileUpload = useCallback(file => {
+    const isLt10M = file.size / 1024 / 1024 < 15
+    if (!isLt10M) message.error('File must smaller than 15MB.')
+    return isLt10M
+  }, [])
 
   return (
     <Form id={formID} onSubmit={handleSubmit}>
@@ -77,19 +109,38 @@ const EvidenceForm = ({
         Include attachment
       </StyledCheckbox>
       {includeAttachment && (
-        <Upload.Dragger
+        <StyledUpload
           name="evidence"
-          onChange={fileUploadStatusChange}
+          listType="picture-card"
+          className="avatar-uploader"
+          showUploadList={false}
           customRequest={customRequest}
-          multiple={false}
+          beforeUpload={beforeFileUpload}
+          onChange={fileUploadStatusChange}
         >
-          <p className="ant-upload-drag-icon">
-            <Icon type="inbox" />
-          </p>
-          <p className="ant-upload-hint">
-            Click or drag a file to this area to upload
-          </p>
-        </Upload.Dragger>
+          {values.evidenceAttachment ? (
+            <a
+              target="_blank"
+              rel="noopener noreferrer"
+              href={`${process.env.REACT_APP_IPFS_GATEWAY}${values.evidenceAttachment.fileURI}`}
+            >
+              {values.evidenceAttachment.type.includes('image') ? (
+                <img
+                  src={`${process.env.REACT_APP_IPFS_GATEWAY}${values.evidenceAttachment.fileURI}`}
+                  style={{
+                    height: '70px',
+                    objectFit: 'contain'
+                  }}
+                  alt="avatar"
+                />
+              ) : (
+                <Icon type="file-pdf" style={{ fontSize: '30px' }} />
+              )}
+            </a>
+          ) : (
+            <UploadButton loading={uploading} />
+          )}
+        </StyledUpload>
       )}
     </Form>
   )
@@ -99,11 +150,23 @@ EvidenceForm.propTypes = {
   formID: PropTypes.string.isRequired,
   detailed: PropTypes.bool,
   handleSubmit: PropTypes.func.isRequired,
-  setFieldValue: PropTypes.func.isRequired
+  setFieldValue: PropTypes.func.isRequired,
+  values: PropTypes.shape({
+    formID: PropTypes.string,
+    detailed: PropTypes.bool,
+    title: PropTypes.string,
+    description: PropTypes.string,
+    evidenceAttachment: PropTypes.shape({
+      fileURI: PropTypes.string,
+      fileTypesExtension: PropTypes.string,
+      type: PropTypes.string
+    })
+  })
 }
 
 EvidenceForm.defaultProps = {
-  detailed: false
+  detailed: false,
+  values: null
 }
 
 const validationSchema = ({ detailed }) =>

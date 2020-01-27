@@ -1,14 +1,34 @@
+import React, { useEffect, useState, useCallback } from 'react'
 import { Card, Icon, Tooltip, Form, Switch, Upload, message } from 'antd'
 import { withFormik, Field } from 'formik'
 import PropTypes from 'prop-types'
-import React, { useEffect, useState, useCallback } from 'react'
 import * as yup from 'yup'
+import styled from 'styled-components/macro'
 import CustomInput from '../../components/custom-input'
 import itemTypes from '../../utils/item-types'
 import ipfsPublish from '../../utils/ipfs-publish'
 import { sanitize } from '../../utils/string'
 
-const FormItem = Form.Item
+const StyledUpload = styled(Upload)`
+  & > .ant-upload.ant-upload-select-picture-card {
+    width: 100%;
+  }
+`
+
+const UploadButton = ({ loading }) => (
+  <div>
+    <Icon type={loading ? 'loading' : 'plus'} />
+    <div className="ant-upload-text">Upload</div>
+  </div>
+)
+
+UploadButton.propTypes = {
+  loading: PropTypes.bool
+}
+
+UploadButton.defaultProps = {
+  loading: null
+}
 
 const RelTCRParams = ({
   handleSubmit,
@@ -19,6 +39,7 @@ const RelTCRParams = ({
   ...rest
 }) => {
   const { values, setTcrState } = rest
+  const [uploading, setUploading] = useState()
   const [advancedOptions, setAdvancedOptions] = useState()
   useEffect(() => {
     setTcrState(previousState => ({
@@ -28,20 +49,21 @@ const RelTCRParams = ({
   }, [values, setTcrState])
 
   const fileUploadStatusChange = useCallback(({ file: { status } }) => {
-    if (status === 'done')
-      message.success(`Primary document uploaded successfully.`)
-    else if (status === 'error')
-      message.error(`Primary document upload failed.`)
+    if (status === 'done') message.success(`File uploaded successfully.`)
+    else if (status === 'error') message.error(`File upload failed.`)
+    else if (status === 'uploading') setUploading(true)
+
+    if (status === 'error' || status === 'done') setUploading(false)
   }, [])
 
   const customRequest = useCallback(
-    async ({ file, onSuccess, onError }) => {
+    fieldName => async ({ file, onSuccess, onError }) => {
       try {
         const data = await new Response(new Blob([file])).arrayBuffer()
         const ipfsFileObj = await ipfsPublish(sanitize(file.name), data)
         const fileURI = `/ipfs/${ipfsFileObj[1].hash}${ipfsFileObj[0].path}`
 
-        setFieldValue('relTcrPrimaryDocument', fileURI)
+        setFieldValue(fieldName, fileURI)
         onSuccess('ok', `${process.env.REACT_APP_IPFS_GATEWAY}${fileURI}`)
       } catch (err) {
         console.error(err)
@@ -50,6 +72,16 @@ const RelTCRParams = ({
     },
     [setFieldValue]
   )
+
+  const beforeFileUpload = useCallback(file => {
+    const isPDF = file.type === 'application/pdf'
+    if (!isPDF) message.error('Please upload file as PDF.')
+
+    const isLt10M = file.size / 1024 / 1024 < 10
+    if (!isLt10M) message.error('File must smaller than 10MB.')
+
+    return isPDF && isLt10M
+  }, [])
 
   return (
     <Card title="Choose the parameters of the Related TCR">
@@ -146,19 +178,27 @@ const RelTCRParams = ({
               <span>Primary Document&nbsp;</span>
             </label>
           </div>
-          <Upload.Dragger
+          <StyledUpload
             name="rel-primary-document"
+            listType="picture-card"
+            className="avatar-uploader"
+            showUploadList={false}
+            customRequest={customRequest('relTcrPrimaryDocument')}
+            beforeUpload={beforeFileUpload}
             onChange={fileUploadStatusChange}
-            customRequest={customRequest}
-            multiple={false}
           >
-            <p className="ant-upload-drag-icon">
-              <Icon type="inbox" />
-            </p>
-            <p className="ant-upload-hint">
-              Click or drag a the primary document to this area.
-            </p>
-          </Upload.Dragger>
+            {values.relTcrPrimaryDocument ? (
+              <a
+                target="_blank"
+                rel="noopener noreferrer"
+                href={`${process.env.REACT_APP_IPFS_GATEWAY}${values.relTcrPrimaryDocument}`}
+              >
+                <Icon type="file-pdf" style={{ fontSize: '30px' }} />
+              </a>
+            ) : (
+              <UploadButton loading={uploading.relTcrPrimaryDocument} />
+            )}
+          </StyledUpload>
         </div>
         <Form.Item
           label="Advanced options"
@@ -205,7 +245,7 @@ const RelTCRParams = ({
             />
             <Field name="relRequireRemovalEvidence">
               {({ field }) => (
-                <FormItem
+                <Form.Item
                   label="Require evidence for removing items"
                   style={{ marginBottom: '12px', display: 'flex' }}
                 >
@@ -216,7 +256,7 @@ const RelTCRParams = ({
                     style={{ marginLeft: '8px' }}
                     checked={field.value}
                   />
-                </FormItem>
+                </Form.Item>
               )}
             </Field>
             <CustomInput

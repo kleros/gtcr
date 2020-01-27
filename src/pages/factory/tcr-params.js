@@ -3,12 +3,32 @@ import { Card, Icon, Tooltip, Form, Switch, Upload, message } from 'antd'
 import { withFormik, Field } from 'formik'
 import PropTypes from 'prop-types'
 import * as yup from 'yup'
+import styled from 'styled-components/macro'
 import CustomInput from '../../components/custom-input'
 import itemTypes from '../../utils/item-types'
 import ipfsPublish from '../../utils/ipfs-publish'
 import { sanitize } from '../../utils/string'
 
-const FormItem = Form.Item
+const StyledUpload = styled(Upload)`
+  & > .ant-upload.ant-upload-select-picture-card {
+    width: 100%;
+  }
+`
+
+const UploadButton = ({ loading }) => (
+  <div>
+    <Icon type={loading ? 'loading' : 'plus'} />
+    <div className="ant-upload-text">Upload</div>
+  </div>
+)
+
+UploadButton.propTypes = {
+  loading: PropTypes.bool
+}
+
+UploadButton.defaultProps = {
+  loading: null
+}
 
 const TCRParams = ({
   handleSubmit,
@@ -19,6 +39,7 @@ const TCRParams = ({
   ...rest
 }) => {
   const { values, setTcrState } = rest
+  const [uploading, setUploading] = useState({})
   const [advancedOptions, setAdvancedOptions] = useState()
   useEffect(() => {
     setTcrState(previousState => ({
@@ -27,9 +48,42 @@ const TCRParams = ({
     }))
   }, [values, setTcrState])
 
-  const fileUploadStatusChange = useCallback(({ file: { status } }) => {
-    if (status === 'done') message.success(`File uploaded successfully.`)
-    else if (status === 'error') message.error(`File upload failed.`)
+  const fileUploadStatusChange = useCallback(
+    ({ file: { status }, file }) => {
+      if (status === 'done') message.success(`File uploaded successfully.`)
+      else if (status === 'error') message.error(`File upload failed.`)
+      else if (status === 'uploading')
+        if (file.type === 'image/png' || file.type === 'image/svg+xml')
+          setUploading({ ...uploading, tcrLogo: true })
+        else setUploading({ ...uploading, tcrPrimaryDocument: true })
+
+      if (status === 'error' || status === 'done')
+        if (file.type === 'image/png' || file.type === 'image/svg+xml')
+          setUploading({ ...uploading, tcrLogo: false })
+        else setUploading({ ...uploading, tcrPrimaryDocument: false })
+    },
+    [uploading]
+  )
+
+  const beforeImageUpload = useCallback(file => {
+    const isPNGorSVG =
+      file.type === 'image/png' || file.type === 'image/svg+xml'
+    if (!isPNGorSVG) message.error('Please use either PNG or SVG.')
+
+    const isLt2M = file.size / 1024 / 1024 < 2
+    if (!isLt2M) message.error('Image must smaller than 2MB.')
+
+    return isPNGorSVG && isLt2M
+  }, [])
+
+  const beforeFileUpload = useCallback(file => {
+    const isPDF = file.type === 'application/pdf'
+    if (!isPDF) message.error('Please upload file as PDF.')
+
+    const isLt10M = file.size / 1024 / 1024 < 10
+    if (!isLt10M) message.error('File must smaller than 10MB.')
+
+    return isPDF && isLt10M
   }, [])
 
   const customRequest = useCallback(
@@ -190,42 +244,56 @@ const TCRParams = ({
               </Tooltip>
             </label>
           </div>
-          <Upload.Dragger
+          <StyledUpload
             name="primary-document"
-            onChange={fileUploadStatusChange}
+            listType="picture-card"
+            className="avatar-uploader"
+            showUploadList={false}
             customRequest={customRequest('tcrPrimaryDocument')}
-            multiple={false}
+            beforeUpload={beforeFileUpload}
+            onChange={fileUploadStatusChange}
           >
-            <p className="ant-upload-drag-icon">
-              <Icon type="inbox" />
-            </p>
-            <p className="ant-upload-hint">
-              Click or drag a the primary document to this area.
-            </p>
-          </Upload.Dragger>
+            {values.tcrPrimaryDocument ? (
+              <a
+                target="_blank"
+                rel="noopener noreferrer"
+                href={`${process.env.REACT_APP_IPFS_GATEWAY}${values.tcrPrimaryDocument}`}
+              >
+                <Icon type="file-pdf" style={{ fontSize: '30px' }} />
+              </a>
+            ) : (
+              <UploadButton loading={uploading.tcrPrimaryDocument} />
+            )}
+          </StyledUpload>
         </div>
         <div style={{ marginBottom: '26px' }}>
           <div className="ant-col ant-form-item-label">
             <label htmlFor="tcr-logo">
               <span>TCR Logo&nbsp;</span>
-              <Tooltip title="The TCR logo. Should be a 1:1 aspect ratio image with transparent background.">
+              <Tooltip title="The TCR logo. Should be a 1:1 aspect ratio image with transparent background in SVG or PNG.">
                 <Icon type="question-circle-o" />
               </Tooltip>
             </label>
           </div>
-          <Upload.Dragger
-            name="tcr-logo"
-            onChange={fileUploadStatusChange}
+          <StyledUpload
+            name="primary-document"
+            listType="picture-card"
+            className="avatar-uploader"
+            showUploadList={false}
             customRequest={customRequest('tcrLogo')}
-            multiple={false}
+            beforeUpload={beforeImageUpload}
+            onChange={fileUploadStatusChange}
           >
-            <p className="ant-upload-drag-icon">
-              <Icon type="inbox" />
-            </p>
-            <p className="ant-upload-hint">
-              Click or drag a the TCR logo to this area.
-            </p>
-          </Upload.Dragger>
+            {values.tcrLogo ? (
+              <img
+                src={`${process.env.REACT_APP_IPFS_GATEWAY}${values.tcrLogo}`}
+                style={{ height: '70px', objectFit: 'contain' }}
+                alt="avatar"
+              />
+            ) : (
+              <UploadButton loading={uploading.tcrLogo} />
+            )}
+          </StyledUpload>
         </div>
         <Form.Item
           label="Advanced options"
@@ -272,7 +340,7 @@ const TCRParams = ({
             />
             <Field name="requireRemovalEvidence">
               {({ field }) => (
-                <FormItem
+                <Form.Item
                   label="Require evidence for removing items"
                   style={{ marginBottom: '12px', display: 'flex' }}
                 >
@@ -283,7 +351,7 @@ const TCRParams = ({
                     style={{ marginLeft: '8px' }}
                     checked={field.value}
                   />
-                </FormItem>
+                </Form.Item>
               )}
             </Field>
             <CustomInput

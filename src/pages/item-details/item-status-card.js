@@ -248,7 +248,7 @@ const ItemStatusCard = ({ item, timestamp }) => {
             statusCode={statusCode}
             itemName={metadata ? metadata.itemName : 'item'}
             item={item}
-            fileURI={metadata && metadata.fileURI}
+            fileURI={metaEvidence && metaEvidence.fileURI}
             isOpen={modalOpen}
             onClose={() => setModalOpen(false)}
             submissionDeposit={submissionDeposit}

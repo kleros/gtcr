@@ -130,7 +130,7 @@ const Badges = ({ connectedTCRAddr, item, tcrAddress }) => {
     const filter = [false, true, false, true, false, false, false, false]
     const oldestFirst = false
     let encodedItems
-    const itemsPerRequest = 1000
+    const itemsPerRequest = 100
     ;(async () => {
       try {
         encodedItems = await gtcrView.queryItems(
@@ -307,7 +307,7 @@ const Badges = ({ connectedTCRAddr, item, tcrAddress }) => {
                 )
             })
 
-            const itemsPerRequest = 1000
+            const itemsPerRequest = 100
             let result
             for (let i = 0; i < Math.ceil(itemCount / itemsPerRequest); i++) {
               const cursor =

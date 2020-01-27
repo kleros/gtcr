@@ -265,7 +265,7 @@ const Timeline = ({ request, requestID, item }) => {
           )
         } else if (log.name === 'AppealPossible') {
           const appealableRuling = appealableRulings[log.transactionHash]
-          if (!appealableRuling)
+          if (typeof appealableRuling === 'undefined')
             return (
               <AntdTimeline.Item dot={<Icon type="file-text" />} key={i}>
                 <Skeleton active paragraph={false} title={{ width: '200px' }} />
