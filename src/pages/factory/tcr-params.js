@@ -323,6 +323,22 @@ const TCRParams = ({
               {...rest}
             />
             <CustomInput
+              name="arbitratorExtraData"
+              placeholder="0x7331deadbeef..."
+              hasFeedback
+              error={errors.arbitratorExtraData}
+              touched={touched.arbitratorExtraData}
+              label={
+                <span>
+                  Arbitrator&nbsp;
+                  <Tooltip title="The extra data for the arbitrator. See ERC 792 for more information.">
+                    <Icon type="question-circle-o" />
+                  </Tooltip>
+                </span>
+              }
+              {...rest}
+            />
+            <CustomInput
               name="governorAddress"
               placeholder="0x7331deadbeef..."
               hasFeedback
@@ -440,6 +456,9 @@ const validationSchema = yup.object().shape({
     .string()
     .required('An arbitrator address is required.')
     .max(160, 'Ethereum addresses are 42 characters long.'),
+  arbitratorExtraData: yup
+    .string()
+    .required('The arbitrator extra data is required.'),
   governorAddress: yup
     .string()
     .required('A governor address is required.')

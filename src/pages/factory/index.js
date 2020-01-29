@@ -76,6 +76,10 @@ const useCachedFactory = version => {
     'REACT_APP_DEFAULT_GOVERNOR',
     networkId
   )
+  const arbitratorExtraData = useNetworkEnvVariable(
+    'REACT_APP_DEFAULT_ARBITRATOR_EXTRA_DATA',
+    networkId
+  )
   const key = `tcrState@${version}`
   const initialWizardState = {
     tcrTitle: '',
@@ -91,6 +95,7 @@ const useCachedFactory = version => {
     requireRemovalEvidence: true,
     tcrPrimaryDocument: '',
     tcrLogo: '',
+    arbitratorExtraData: arbitratorExtraData,
     sharedStakeMultiplier: 1000,
     winnerStakeMultiplier: 1000,
     looserStakeMultiplier: 2000,
@@ -99,6 +104,7 @@ const useCachedFactory = version => {
     relSubmissionChallengeBaseDeposit: 0.015,
     relRemovalChallengeBaseDeposit: 0.025,
     relArbitratorAddress: defaultArbitrator || '',
+    relArbitratorExtraData: arbitratorExtraData,
     relGovernorAddress: defaultGovernor || '',
     relChallengePeriodDuration: 3,
     relItemName: 'TCR',

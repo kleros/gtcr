@@ -200,6 +200,7 @@ const Deploy = ({ resetTcrState, setTxState, tcrState }) => {
     'REACT_APP_FACTORY_ADDRESSES',
     networkId
   )
+
   const [txSubmitted, setTxSubmitted] = useState()
 
   const onDeploy = () => {
@@ -214,7 +215,7 @@ const Deploy = ({ resetTcrState, setTxState, tcrState }) => {
       const factory = new ethers.Contract(factoryAddress, _GTCRFactory, signer)
       const relTCRtx = await factory.deploy(
         tcrState.relArbitratorAddress,
-        '0x00', // Arbitrator extra data.
+        tcrState.relArbitratorExtraData, // Arbitrator extra data.
         ZERO_ADDRESS,
         relRegistrationMetaEvidencePath,
         relClearingMetaEvidencePath,
@@ -247,7 +248,7 @@ const Deploy = ({ resetTcrState, setTxState, tcrState }) => {
           pushWeb3Action(async () => {
             const tx = await factory.deploy(
               tcrState.arbitratorAddress,
-              '0x00', // Arbitrator extra data.
+              tcrState.arbitratorExtraData, // Arbitrator extra data.
               contractAddress,
               registrationMetaEvidencePath,
               clearingMetaEvidencePath,
@@ -340,6 +341,7 @@ Deploy.propTypes = {
       })
     ).isRequired,
     arbitratorAddress: PropTypes.string.isRequired,
+    arbitratorExtraData: PropTypes.string.isRequired,
     governorAddress: PropTypes.string.isRequired,
     submissionChallengeBaseDeposit: PropTypes.oneOfType([
       PropTypes.number,
@@ -374,6 +376,7 @@ Deploy.propTypes = {
       PropTypes.string
     ]).isRequired,
     relArbitratorAddress: PropTypes.string.isRequired,
+    relArbitratorExtraData: PropTypes.string.isRequired,
     relGovernorAddress: PropTypes.string.isRequired,
     relSubmissionChallengeBaseDeposit: PropTypes.oneOfType([
       PropTypes.number,

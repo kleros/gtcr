@@ -228,6 +228,22 @@ const RelTCRParams = ({
               {...rest}
             />
             <CustomInput
+              name="relArbitratorExtraData"
+              placeholder="0x7331deadbeef..."
+              hasFeedback
+              error={errors.relArbitratorExtraData}
+              touched={touched.relArbitratorExtraData}
+              label={
+                <span>
+                  Arbitrator&nbsp;
+                  <Tooltip title="The extra data for the arbitrator. See ERC 792 for more information.">
+                    <Icon type="question-circle-o" />
+                  </Tooltip>
+                </span>
+              }
+              {...rest}
+            />
+            <CustomInput
               name="relGovernorAddress"
               placeholder="0x7331deadbeef..."
               hasFeedback
@@ -337,6 +353,9 @@ const validationSchema = yup.object().shape({
     .string()
     .required('An arbitrator address is required.')
     .max(160, 'Ethereum addresses are 42 characters long.'),
+  relArbitratorExtraData: yup
+    .string()
+    .required('The arbitrator extra data is required.'),
   relGovernorAddress: yup
     .string()
     .required('A governor address is required.')
