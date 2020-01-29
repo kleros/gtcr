@@ -196,7 +196,7 @@ const RelTCRParams = ({
                 <Icon type="file-pdf" style={{ fontSize: '30px' }} />
               </a>
             ) : (
-              <UploadButton loading={uploading.relTcrPrimaryDocument} />
+              <UploadButton loading={uploading} />
             )}
           </StyledUpload>
         </div>

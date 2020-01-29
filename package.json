@@ -7,7 +7,6 @@
     "start": "react-scripts start",
     "build": "react-scripts --max_old_space_size=4096 build",
     "build:theme": "lessc --js ./src/bootstrap/theme.less ./src/bootstrap/theme.css",
-    "test": "react-scripts test",
     "release": "standard-version",
     "lint": "eslint './src/**/*.js'",
     "lint:eslint:fix": "eslint './src/**/*.js' --fix",
