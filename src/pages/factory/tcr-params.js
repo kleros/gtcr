@@ -159,7 +159,7 @@ const TCRParams = ({
           label={
             <span>
               Submission Deposit&nbsp;
-              <Tooltip title="This will be the deposit required to submit an item.">
+              <Tooltip title="This will be the deposit required to submit an item. It is also the amount awarded to successful challengers.">
                 <Icon type="question-circle-o" />
               </Tooltip>
             </span>
@@ -176,7 +176,7 @@ const TCRParams = ({
           label={
             <span>
               Removal Deposit&nbsp;
-              <Tooltip title="This will be the deposit required to remove an item.">
+              <Tooltip title="This will be the deposit required to remove an item. It is also the amount awarded to successful challengers.">
                 <Icon type="question-circle-o" />
               </Tooltip>
             </span>
@@ -227,7 +227,7 @@ const TCRParams = ({
           step={1}
           label={
             <span>
-              Challenge Period Duration&nbsp;
+              Challenge Period Duration (hours) &nbsp;
               <Tooltip title="The length of the challenge period in hours.">
                 <Icon type="question-circle-o" />
               </Tooltip>

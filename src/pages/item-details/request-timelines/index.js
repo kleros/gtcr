@@ -17,6 +17,10 @@ const StyledButton = styled(Button)`
   margin: 16px 0;
 `
 
+const StyledCard = styled(Card)`
+  margin-top: 40px;
+`
+
 const RequestTimelines = ({ item, requests }) => {
   const { requestWeb3Auth } = useContext(WalletContext)
   const [evidenceModalOpen, setEvidenceModalOpen] = useState()
@@ -24,8 +28,7 @@ const RequestTimelines = ({ item, requests }) => {
   if (!item)
     return (
       <>
-        <br />
-        <Card loading />
+        <StyledCard loading />
       </>
     )
 

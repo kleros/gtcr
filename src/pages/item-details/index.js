@@ -180,10 +180,9 @@ const ItemDetails = ({ itemID }) => {
       <SearchBar />
       <StyledLayoutContent>
         <ItemStatusCard item={decodedItem || item} timestamp={timestamp} dark />
-        <br />
+        <div style={{ marginBottom: '40px' }} />
         {/* Crowdfunding card is only rendered if the item has an appealable dispute. */}
         <CrowdfundingCard item={decodedItem || item} timestamp={timestamp} />
-        <br />
         <ItemDetailsCard
           title={`${(metadata && capitalizeFirstLetter(metadata.itemName)) ||
             'Item'} Details`}

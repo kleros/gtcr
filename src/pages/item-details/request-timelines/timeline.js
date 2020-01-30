@@ -244,7 +244,7 @@ const Timeline = ({ request, requestID, item }) => {
                 extra={
                   fileURI && (
                     <a
-                      href={`${process.env.REACT_APP_IPFS_GATEWAY}/${fileURI}`}
+                      href={`${process.env.REACT_APP_IPFS_GATEWAY}${fileURI}`}
                       alt="evidence-file"
                       target="_blank"
                       rel="noopener noreferrer"

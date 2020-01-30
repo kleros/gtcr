@@ -17,6 +17,7 @@ import BNPropType from '../../prop-types/bn'
 const StyledCard = styled(Card)`
   background: linear-gradient(111.6deg, #4d00b4 46.25%, #6500b4 96.25%);
   color: white;
+  margin-bottom: 40px;
 `
 
 const StyledContent = styled.div`

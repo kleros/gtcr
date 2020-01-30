@@ -194,7 +194,7 @@ const useNotificationWeb3 = () => {
       } else if (web3Context.account) {
         if (!connectionState.notifiedAuthAccquired) {
           notification.success({
-            message: 'Authorization accquired',
+            message: 'Authorization acquired',
             duration: 3,
             key: NOTIFICATION_KEY
           })
