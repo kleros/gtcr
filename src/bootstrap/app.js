@@ -1,7 +1,6 @@
 import React, { useState, useContext } from 'react'
 import WalletConnectApi from '@walletconnect/web3-subprovider'
 import FortmaticApi from 'fortmatic'
-import PortisApi from '@portis/web3'
 import { Helmet } from 'react-helmet'
 import { Footer } from '@kleros/react-components'
 import loadable from '@loadable/component'
@@ -199,7 +198,6 @@ const {
   InjectedConnector,
   LedgerConnector,
   FortmaticConnector,
-  PortisConnector,
   WalletConnectConnector
 } = Connectors
 
@@ -232,13 +230,6 @@ if (fortmaticApiKey)
     apiKey: fortmaticApiKey,
     logoutOnDeactivation: false,
     testNetwork: defaultNetwork === 1 ? null : NETWORK_NAME[defaultNetwork]
-  })
-
-if (process.env.REACT_APP_PORTIS_DAPP_ID)
-  connectors.Portis = new PortisConnector({
-    api: PortisApi,
-    dAppId: process.env.REACT_APP_PORTIS_DAPP_ID,
-    network: NETWORK_NAME[defaultNetwork]
   })
 
 if (window.ethereum)

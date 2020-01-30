@@ -6,7 +6,6 @@ import { ReactComponent as TrustLogo } from '../assets/images/trust.svg'
 import { WalletContext } from './wallet-context'
 import { ReactComponent as MetamaskLogo } from '../assets/images/metamask.svg'
 import { ReactComponent as FortmaticLogo } from '../assets/images/fortmatic.svg'
-import { ReactComponent as PortisLogo } from '../assets/images/portis.svg'
 import { ReactComponent as WalletConnectLogo } from '../assets/images/walletconnect.svg'
 
 const StyledWalletButton = styled(Button)`
@@ -65,12 +64,6 @@ const WalletModal = ({ connectors }) => {
         <StyledWalletButton onClick={() => setUserSelectedWallet('Fortmatic')}>
           <Icon component={FortmaticLogo} />
           Fortmatic
-        </StyledWalletButton>
-      )}
-      {connectors.Portis && ( // eslint-disable-line
-        <StyledWalletButton onClick={() => setUserSelectedWallet('Portis')}>
-          <Icon component={PortisLogo} />
-          Portis
         </StyledWalletButton>
       )}
       {connectors.WalletConnect && ( // eslint-disable-line

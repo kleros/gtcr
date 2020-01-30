@@ -29,6 +29,5 @@ When setting up the repo for publishing on netlify:
 ```
 REACT_APP_RPC_URLS
 REACT_APP_FORMATIC_API_KEYS
-REACT_APP_PORTIS_DAPP_ID
 REACT_APP_NOTIFICATIONS_API_URL
 ```

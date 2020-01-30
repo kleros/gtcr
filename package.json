@@ -22,7 +22,6 @@
     "@kleros/react-components": "^1.0.0",
     "@kleros/tcr": "^1.4.0",
     "@loadable/component": "^5.10.1",
-    "@portis/web3": "^2.0.0-beta.40",
     "@walletconnect/qrcode-modal": "^1.0.0-beta.35",
     "@walletconnect/web3-subprovider": "^1.0.0-beta.35",
     "antd": "^3.20.1",
