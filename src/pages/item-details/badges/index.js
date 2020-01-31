@@ -66,7 +66,7 @@ const DashedCardBody = styled.div`
 `
 
 const Badges = ({ connectedTCRAddr, item, tcrAddress }) => {
-  const { timestamp } = useContext(WalletContext)
+  const { timestamp, requestWeb3Auth } = useContext(WalletContext)
   const { library, active, networkId } = useWeb3Context()
   const [error, setError] = useState(false)
   const [addBadgeVisible, setAddBadgeVisible] = useState()
@@ -413,7 +413,7 @@ const Badges = ({ connectedTCRAddr, item, tcrAddress }) => {
             <Button
               type="secondary"
               size="large"
-              onClick={() => setAddBadgeVisible(true)}
+              onClick={() => requestWeb3Auth(() => setAddBadgeVisible(true))}
             >
               Add Badge
             </Button>
