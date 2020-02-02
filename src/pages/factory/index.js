@@ -132,8 +132,7 @@ const useCachedFactory = version => {
         label: 'Match File URI',
         description:
           'The URI to the JSON file for matching columns for each TCR.',
-        type: itemTypes.TEXT,
-        isIdentifier: true
+        type: itemTypes.TEXT
       }
     ],
     currStep: 1
