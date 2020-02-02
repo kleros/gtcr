@@ -1,5 +1,5 @@
 import React from 'react'
-import { Typography, Switch, Skeleton } from 'antd'
+import { Typography, Switch, Skeleton, Avatar } from 'antd'
 import styled from 'styled-components/macro'
 import EthAddress from './eth-address'
 import GTCRAddress from './gtcr-address'
@@ -34,6 +34,16 @@ const DisplaySelector = ({ type, value }) => {
       return <Switch disabled checked={value} />
     case itemTypes.LONGTEXT:
       return <Typography.Paragraph>{value || LOREM_IPSUM}</Typography.Paragraph>
+    case itemTypes.IMAGE:
+      return value ? (
+        <img
+          src={`${process.env.REACT_APP_IPFS_GATEWAY}${value}`}
+          style={{ height: '70px', objectFit: 'contain' }}
+          alt="item"
+        />
+      ) : (
+        <Avatar shape="square" size="large" icon="file-image" />
+      )
     default:
       throw new Error(`Unhandled type ${type}.`)
   }

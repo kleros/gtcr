@@ -35,7 +35,8 @@ const _SubmissionForm = ({
   columns,
   handleSubmit,
   setFieldValue,
-  disabledFields
+  disabledFields,
+  values
 }) => (
   <Form onSubmit={handleSubmit} id={SUBMISSION_FORM_ID}>
     {columns &&
@@ -43,8 +44,9 @@ const _SubmissionForm = ({
       columns.map((column, index) => (
         <InputSelector
           type={column.type}
-          name={column.label}
+          name={`${column.label}`}
           key={index}
+          values={values}
           label={
             <span>
               {column.label}&nbsp;
@@ -69,11 +71,13 @@ _SubmissionForm.propTypes = {
   ).isRequired,
   setFieldValue: PropTypes.func.isRequired,
   handleSubmit: PropTypes.func.isRequired,
-  disabledFields: PropTypes.arrayOf(PropTypes.bool)
+  disabledFields: PropTypes.arrayOf(PropTypes.bool),
+  values: PropTypes.shape({})
 }
 
 _SubmissionForm.defaultProps = {
-  disabledFields: null
+  disabledFields: null,
+  values: {}
 }
 
 const SubmissionForm = withFormik({

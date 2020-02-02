@@ -13,7 +13,7 @@ import { useDebouncedCallback } from 'use-debounce'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import matchSorter from 'match-sorter'
 import DisplaySelector from './display-selector'
-import itemTypes, { onchainTextFields } from '../utils/item-types'
+import itemTypes, { searchableFields } from '../utils/item-types'
 import { TCRViewContext } from '../bootstrap/tcr-view-context'
 import { WalletContext } from '../bootstrap/wallet-context'
 import { itemToStatusCode, STATUS_COLOR } from '../utils/item-status'
@@ -166,7 +166,7 @@ const SearchBar = () => {
     // If none are available use the first address field.
     // If none are available use the itemID.
     const itemLabels = d.columns
-      .filter(col => onchainTextFields.includes(col.type))
+      .filter(col => searchableFields.includes(col.type))
       .sort((a, b) => {
         if (a.type === itemTypes.TEXT && b.type !== itemTypes.TEXT) return -1
         if (b.type === itemTypes.TEXT && a.type !== itemTypes.TEXT) return 1

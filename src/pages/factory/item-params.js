@@ -19,7 +19,7 @@ import ItemDetailsCard from '../../components/item-details-card'
 import itemTypes from '../../utils/item-types'
 import { STATUS_CODE } from '../../utils/item-status'
 
-const { LONGTEXT } = itemTypes
+const { LONGTEXT, IMAGE } = itemTypes
 
 const ItemParams = ({
   handleSubmit,
@@ -39,10 +39,13 @@ const ItemParams = ({
     }))
   }, [columns, setTcrState])
 
-  // Long text fields cannot be identifiers.
   const onTypeChange = (index, value) => {
     setFieldValue(`columns[${index}].type`, value)
     if (value === LONGTEXT)
+      // Long text fields cannot be identifiers.
+      setFieldValue(`columns[${index}].isIdentifier`, false)
+    if (value === IMAGE)
+      // Image fields cannot be identifiers.
       setFieldValue(`columns[${index}].isIdentifier`, false)
   }
 
@@ -137,7 +140,8 @@ const ItemParams = ({
                       .map(column => column.isIdentifier)
                       .filter(isIdentifier => !!isIdentifier).length < 3 ||
                       columns[index].isIdentifier) &&
-                    columns[index].type !== LONGTEXT ? (
+                    columns[index].type !== LONGTEXT &&
+                    columns[index].type !== IMAGE ? ( // Image and long text cannot be identifiers.
                       <Col span={2}>
                         <Field name={`columns[${index}].isIdentifier`}>
                           {({ field }) => (
