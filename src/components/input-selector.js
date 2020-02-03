@@ -29,14 +29,7 @@ UploadButton.defaultProps = {
   loading: null
 }
 
-const InputSelector = ({
-  type,
-  setFieldValue,
-  maxImgSizeMb,
-  name,
-  label,
-  ...props
-}) => {
+const InputSelector = ({ type, setFieldValue, maxImgSizeMb, ...props }) => {
   const [uploading, setUploading] = useState()
   const customRequest = useCallback(
     fieldName => async ({ file, onSuccess, onError }) => {
@@ -78,7 +71,7 @@ const InputSelector = ({
     [maxImgSizeMb]
   )
 
-  const { values } = props
+  const { values, label, name } = props
 
   switch (type) {
     case itemTypes.TEXT:
