@@ -235,7 +235,7 @@ const RelTCRParams = ({
               touched={touched.relArbitratorExtraData}
               label={
                 <span>
-                  Arbitrator&nbsp;
+                  Arbitrator Extra Data&nbsp;
                   <Tooltip title="The extra data for the arbitrator. See ERC 792 for more information.">
                     <Icon type="question-circle-o" />
                   </Tooltip>
