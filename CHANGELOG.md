@@ -2,6 +2,41 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.9.1](https://github.com/kleros/gtcr/compare/v0.9.0...v0.9.1) (2020-02-03)
+
+
+### Features
+
+* add arbitrator extra data to advanced options ([ef03cfc](https://github.com/kleros/gtcr/commit/ef03cfcbcc487dbc1a258fd9a0ffce598e81ccec))
+* add gtcr logo ([1b84c78](https://github.com/kleros/gtcr/commit/1b84c7842bc488cfb2db2497bf79d3bd18612142))
+* add related tcr configuration step to factory and logo selection ([88096b9](https://github.com/kleros/gtcr/commit/88096b903fcc4f811b2fcc1006119f3989a84cea)), closes [#22](https://github.com/kleros/gtcr/issues/22)
+* add support for image columns and close [#28](https://github.com/kleros/gtcr/issues/28) ([1d3ffa1](https://github.com/kleros/gtcr/commit/1d3ffa1b7b228f4b27e6d06951b7592a4828ac56))
+* allow setting email notification settings ([55883b0](https://github.com/kleros/gtcr/commit/55883b03c897e519f5f5942b1086eac0f1890630))
+* allow submitting and enabling badges. Closes [#23](https://github.com/kleros/gtcr/issues/23), [#24](https://github.com/kleros/gtcr/issues/24) ([f985ff4](https://github.com/kleros/gtcr/commit/f985ff4aa55e2b13b399e226507976d118884517))
+* allow users to withdraw fee contribution rewards ([26bde20](https://github.com/kleros/gtcr/commit/26bde205efea9edde1cee7371866de19d97d1197)), closes [#12](https://github.com/kleros/gtcr/issues/12)
+* closes [#29](https://github.com/kleros/gtcr/issues/29), closes [#27](https://github.com/kleros/gtcr/issues/27), closes [#26](https://github.com/kleros/gtcr/issues/26) ([179e655](https://github.com/kleros/gtcr/commit/179e655cceaae260f9f4fd94e88d01f2e7d1408f))
+* use factory contract for deployments and close [#25](https://github.com/kleros/gtcr/issues/25) ([8896901](https://github.com/kleros/gtcr/commit/8896901f26ffc7e9b2b3799d9cb01c8c72f7e186))
+* use localstorage for user settings and field add hint ([c83d1c1](https://github.com/kleros/gtcr/commit/c83d1c115abeb75ba4af03f6d16a4ffc591c49f3))
+
+
+### Bug Fixes
+
+* don't display crowdfunding card if item is waiting ruling execution ([4233d78](https://github.com/kleros/gtcr/commit/4233d7881c51f3bede2a773a6486aa52abfb2ea8))
+* don't require a tcr context for this for details card ([e93b879](https://github.com/kleros/gtcr/commit/e93b8794c6c14833e681c7159829b31c934d3f01))
+* filter out empty items ([08cfd21](https://github.com/kleros/gtcr/commit/08cfd217bb0111740db2ad2f24fb12d51d9b07d2))
+* incorrect property access and remove unused script ([24b3a35](https://github.com/kleros/gtcr/commit/24b3a3567807ccac9d412d965ae1d5f6d8288e5d))
+* interface hashing ([fb28bb8](https://github.com/kleros/gtcr/commit/fb28bb85105ee1dc5a0474dd6fff8a1408347542))
+* missing capital letter on description ([9c7b693](https://github.com/kleros/gtcr/commit/9c7b69307a72ac4f36ab71ccf7d94865496990ac))
+* missing error handlers and lint issues ([d67239e](https://github.com/kleros/gtcr/commit/d67239efaef0963e8b31c6b4f7bfe1b8d75eee00))
+* remove portis to avoid trackers and errors in brave ([dc31fbc](https://github.com/kleros/gtcr/commit/dc31fbc3d4fb46b9cf20c8c4ad0fa30219de09c9))
+* request wallet connection before displaying form to user ([bae975a](https://github.com/kleros/gtcr/commit/bae975a80cbfdfdb6840ce323adb6dde02dbb1a7))
+* the match file URI is not an identifier field ([7dbfa85](https://github.com/kleros/gtcr/commit/7dbfa8589121e27c7e8a95bea47424c12ebce9b3))
+* typo and obsolete docs ([3f63978](https://github.com/kleros/gtcr/commit/3f63978f36f28181a6281101f1d0bf1a6e4a084a))
+* typo in evidence display field name ([b0be379](https://github.com/kleros/gtcr/commit/b0be37980ed4acf32419914006715763a0c228bc))
+* typo in field label ([c3a0723](https://github.com/kleros/gtcr/commit/c3a0723ebc8ae1f0e8593fa655de039be1b0daca))
+* typos, labels and firefox styling issues ([b239552](https://github.com/kleros/gtcr/commit/b23955204011f0545a4e9642d2243e4ebaab7232))
+* update evidence display and use env variable ([448dc4c](https://github.com/kleros/gtcr/commit/448dc4ccc3bf2750d4907c842c7230d7a9a9e777))
+
 ## [0.9.0](https://github.com/kleros/gtcr/compare/v0.8.0...v0.9.0) (2019-12-21)
 
 
