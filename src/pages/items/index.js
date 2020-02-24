@@ -37,6 +37,7 @@ import {
 } from '../../utils/filters'
 import DisplaySelector from '../../components/display-selector'
 import { useWeb3Context } from 'web3-react'
+import itemTypes from '../../utils/item-types'
 
 const StyledContent = styled(Layout.Content)`
   word-break: break-word;
@@ -551,7 +552,10 @@ const Items = ({ search, history }) => {
                       }
                     >
                       {item.columns
-                        .filter(col => col.isIdentifier)
+                        .filter(
+                          col =>
+                            col.isIdentifier || col.type === itemTypes.IMAGE
+                        )
                         .map((column, j) => (
                           <StyledItemCol key={j}>
                             <DisplaySelector
