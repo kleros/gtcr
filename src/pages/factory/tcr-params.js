@@ -66,14 +66,16 @@ const TCRParams = ({
   )
 
   const beforeImageUpload = useCallback(file => {
-    const isPNGorSVG =
-      file.type === 'image/png' || file.type === 'image/svg+xml'
-    if (!isPNGorSVG) message.error('Please use either PNG or SVG.')
+    const isPNGorJPEGorSVG =
+      file.type === 'image/png' ||
+      file.type === 'image/svg+xml' ||
+      file.type === 'image/jpeg'
+    if (!isPNGorJPEGorSVG) message.error('Please use PNG, JPEG or SVG.')
 
     const isLt2M = file.size / 1024 / 1024 < 2
     if (!isLt2M) message.error('Image must smaller than 2MB.')
 
-    return isPNGorSVG && isLt2M
+    return isPNGorJPEGorSVG && isLt2M
   }, [])
 
   const beforeFileUpload = useCallback(file => {
