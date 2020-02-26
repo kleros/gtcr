@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.9.2](https://github.com/kleros/gtcr/compare/v0.9.1...v0.9.2) (2020-02-26)
+
+
+### Features
+
+* also display images on items view ([a952c66](https://github.com/kleros/gtcr/commit/a952c66e382934ea6893cf0d49f67cd1aea5d06e))
+* make TCR Browser the default TCR ([1b781f2](https://github.com/kleros/gtcr/commit/1b781f242b1cda65f62d1f39a7335b65db276630))
+
+
+### Bug Fixes
+
+* allow jpeg as well ([1109899](https://github.com/kleros/gtcr/commit/11098992c38f8a3c6e9166bc43d5aa9b11a8ee4d))
+* fetch items on switching tcrs. Closes [#36](https://github.com/kleros/gtcr/issues/36) ([b08a7ff](https://github.com/kleros/gtcr/commit/b08a7ff118616fbb88244b8b38b8c3d16479d5e0))
+
 ### [0.9.1](https://github.com/kleros/gtcr/compare/v0.9.0...v0.9.1) (2020-02-03)
 
 
