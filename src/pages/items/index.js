@@ -130,12 +130,12 @@ const Items = ({ search, history }) => {
   const [oldActiveItems, setOldActiveItems] = useState([])
   const [error, setError] = useState()
   const [fetchItems, setFetchItems] = useState({
-    fetchStarted: true,
+    fetchStarted: false,
     isFetching: false,
     data: null
   })
   const [fetchItemCount, setFetchItemCount] = useState({
-    fetchStarted: true,
+    fetchStarted: false,
     isFetching: false,
     data: null
   })
@@ -188,15 +188,16 @@ const Items = ({ search, history }) => {
     queryOptions
   ])
 
+  // Trigger fetch when gtcr instance is set.
+  useEffect(() => {
+    if (!gtcr) return
+    setFetchItems({ fetchStarted: true })
+    setFetchItemCount({ fetchStarted: true })
+  }, [gtcr])
+
   // Fetch items.
   useEffect(() => {
-    if (
-      !gtcr ||
-      !gtcrView ||
-      !tcrAddress ||
-      fetchItems.isFetching ||
-      !fetchItems.fetchStarted
-    )
+    if (!gtcr || !gtcrView || fetchItems.isFetching || !fetchItems.fetchStarted)
       return
 
     setFetchItems({ isFetching: true })
@@ -215,7 +216,7 @@ const Items = ({ search, history }) => {
         let target = [bigNumberify(0), itemCount > 0, false]
         while (request <= requests && !target[2]) {
           target = await gtcrView.findIndexForPage(
-            tcrAddress,
+            gtcr.address,
             [
               Number(page),
               ITEMS_PER_PAGE,
@@ -235,7 +236,7 @@ const Items = ({ search, history }) => {
         // single item.
         if (cursorIndex === 0 && !oldestFirst && page !== '1')
           encodedItems = await gtcrView.queryItems(
-            tcrAddress,
+            gtcr.address,
             0,
             1,
             filter,
@@ -244,7 +245,7 @@ const Items = ({ search, history }) => {
           )
         else
           encodedItems = await gtcrView.queryItems(
-            tcrAddress,
+            gtcr.address,
             cursorIndex,
             ITEMS_PER_PAGE,
             filter,
@@ -263,11 +264,11 @@ const Items = ({ search, history }) => {
           isFetching: false,
           fetchStarted: false,
           data: encodedItems,
-          tcrAddress
+          tcrAddress: gtcr.address
         })
       }
     })()
-  }, [gtcrView, tcrAddress, fetchItems, gtcr, search, queryOptions])
+  }, [gtcrView, fetchItems, gtcr, search, queryOptions, tcrAddress])
 
   // Since items are sorted by time of submission (either newest or oldest first)
   // we have to also watch for new requests related to items already on the list.

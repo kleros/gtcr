@@ -32,7 +32,7 @@ const useTcrView = tcrAddress => {
   const [submissionChallengeDeposit, setSubmissionChallengeDeposit] = useState()
   const [removalDeposit, setRemovalDeposit] = useState()
   const [removalChallengeDeposit, setRemovalChallengeDeposit] = useState()
-  const [itemSubmissionLogs, setItemSubmissionLogs] = useState({})
+  const [itemSubmissionLogs, setItemSubmissionLogs] = useState()
   const [connectedTCRAddr, setConnectedTCRAddr] = useState()
   const arbitrableTCRViewAddr = useNetworkEnvVariable(
     'REACT_APP_GTCRVIEW_ADDRESSES',
@@ -61,9 +61,9 @@ const useTcrView = tcrAddress => {
   }, [active, library, networkId, tcrAddress])
 
   const META_EVIDENCE_CACHE_KEY = useMemo(() => {
-    if (!tcrAddress || typeof networkId === 'undefined') return null
-    return `metaEvidence-${tcrAddress}@networkID-${networkId}`
-  }, [networkId, tcrAddress])
+    if (!gtcr || typeof networkId === 'undefined') return null
+    return `metaEvidence-${gtcr.address}@networkID-${networkId}`
+  }, [networkId, gtcr])
 
   // Use cached meta evidence, if any is available.
   // It will be overwritten by the latest once it has been fetched.
