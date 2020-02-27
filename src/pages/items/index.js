@@ -114,7 +114,7 @@ const pagingItem = (_, type, originalElement) => {
 const ITEMS_PER_PAGE = 40
 const Items = ({ search, history }) => {
   const { requestWeb3Auth, timestamp } = useContext(WalletContext)
-  const { library } = useWeb3Context()
+  const { library, active, account } = useWeb3Context()
   const {
     gtcr,
     metaEvidence,
@@ -163,7 +163,7 @@ const Items = ({ search, history }) => {
             target[2].toNumber(),
             itemsPerRequest,
             filter,
-            ZERO_ADDRESS
+            active && account ? account : ZERO_ADDRESS
           )
           count += target[0].toNumber()
           request++
@@ -185,7 +185,9 @@ const Items = ({ search, history }) => {
     gtcrView,
     tcrAddress,
     search,
-    queryOptions
+    queryOptions,
+    active,
+    account
   ])
 
   // Trigger fetch when gtcr instance is set.
@@ -211,8 +213,10 @@ const Items = ({ search, history }) => {
         // to the number of items in the TCR.
         const itemCount = (await gtcr.itemCount()).toNumber()
         const itemsPerRequest = 10000
+
+        // Number calls required to fetch all the data required.
         const requests = Math.ceil(itemCount / itemsPerRequest)
-        let request = 1 // Number calls required to fetch all the data required.
+        let request = 1
         let target = [bigNumberify(0), itemCount > 0, false]
         while (request <= requests && !target[2]) {
           target = await gtcrView.findIndexForPage(
@@ -224,7 +228,7 @@ const Items = ({ search, history }) => {
               target[0].toNumber()
             ],
             [...filter, oldestFirst],
-            ZERO_ADDRESS
+            active && account ? account : ZERO_ADDRESS
           )
           request++
         }
@@ -241,7 +245,7 @@ const Items = ({ search, history }) => {
             1,
             filter,
             true,
-            ZERO_ADDRESS
+            active && account ? account : ZERO_ADDRESS
           )
         else
           encodedItems = await gtcrView.queryItems(
@@ -250,7 +254,7 @@ const Items = ({ search, history }) => {
             ITEMS_PER_PAGE,
             filter,
             oldestFirst,
-            ZERO_ADDRESS
+            active && account ? account : ZERO_ADDRESS
           )
 
         // Filter out empty slots from the results.
@@ -268,7 +272,16 @@ const Items = ({ search, history }) => {
         })
       }
     })()
-  }, [gtcrView, fetchItems, gtcr, search, queryOptions, tcrAddress])
+  }, [
+    gtcrView,
+    fetchItems,
+    gtcr,
+    search,
+    queryOptions,
+    tcrAddress,
+    active,
+    account
+  ])
 
   // Since items are sorted by time of submission (either newest or oldest first)
   // we have to also watch for new requests related to items already on the list.
