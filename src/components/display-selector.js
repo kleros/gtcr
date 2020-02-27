@@ -15,6 +15,13 @@ const StyledSkeleton = styled(Skeleton)`
   }
 `
 
+const StyledImage = styled.img`
+  object-fit: contain;
+  height: 100px;
+  width: 100px;
+  padding: 5px;
+`
+
 const DisplaySelector = ({ type, value }) => {
   switch (type) {
     case itemTypes.GTCR_ADDRESS:
@@ -36,9 +43,8 @@ const DisplaySelector = ({ type, value }) => {
       return <Typography.Paragraph>{value || LOREM_IPSUM}</Typography.Paragraph>
     case itemTypes.IMAGE:
       return value ? (
-        <img
+        <StyledImage
           src={`${process.env.REACT_APP_IPFS_GATEWAY}${value}`}
-          style={{ height: '70px', objectFit: 'contain' }}
           alt="item"
         />
       ) : (
