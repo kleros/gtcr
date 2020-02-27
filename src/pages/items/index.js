@@ -536,36 +536,32 @@ const Items = ({ search, history }) => {
               <StyledGrid>
                 {items &&
                   items.map((item, i) => (
-                    <Card
-                      key={i}
-                      extra={
-                        <Link to={`/tcr/${tcrAddress}/${item.tcrData.ID}`}>
-                          <Icon type="arrow-right" style={{ color: 'white' }} />
-                        </Link>
-                      }
-                      title={
-                        <ItemStatusBadge
-                          item={item.tcrData}
-                          challengePeriodDuration={challengePeriodDuration}
-                          timestamp={timestamp}
-                          dark
-                        />
-                      }
-                    >
-                      {item.columns
-                        .filter(
-                          col =>
-                            col.isIdentifier || col.type === itemTypes.IMAGE
-                        )
-                        .map((column, j) => (
-                          <StyledItemCol key={j}>
-                            <DisplaySelector
-                              type={column.type}
-                              value={column.value}
-                            />
-                          </StyledItemCol>
-                        ))}
-                    </Card>
+                    <Link to={`/tcr/${tcrAddress}/${item.tcrData.ID}`} key={i}>
+                      <Card
+                        title={
+                          <ItemStatusBadge
+                            item={item.tcrData}
+                            challengePeriodDuration={challengePeriodDuration}
+                            timestamp={timestamp}
+                            dark
+                          />
+                        }
+                      >
+                        {item.columns
+                          .filter(
+                            col =>
+                              col.isIdentifier || col.type === itemTypes.IMAGE
+                          )
+                          .map((column, j) => (
+                            <StyledItemCol key={j}>
+                              <DisplaySelector
+                                type={column.type}
+                                value={column.value}
+                              />
+                            </StyledItemCol>
+                          ))}
+                      </Card>
+                    </Link>
                   ))}
               </StyledGrid>
               <StyledPagination
