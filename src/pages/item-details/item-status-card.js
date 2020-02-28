@@ -1,5 +1,6 @@
 import React, { useState, useContext, useMemo } from 'react'
 import { Descriptions, Skeleton, Card } from 'antd'
+import PropTypes from 'prop-types'
 import { abi as _gtcr } from '@kleros/tcr/build/contracts/GeneralizedTCR.json'
 import ItemStatusBadge from '../../components/item-status-badge'
 import styled from 'styled-components/macro'
@@ -72,7 +73,7 @@ const Ruling = ({ currentRuling }) => {
   }
 }
 
-const ItemStatusCard = ({ item, timestamp }) => {
+const ItemStatusCard = ({ item, timestamp, request }) => {
   const [modalOpen, setModalOpen] = useState()
   const { pushWeb3Action, requestWeb3Auth } = useContext(WalletContext)
   const {
@@ -105,7 +106,7 @@ const ItemStatusCard = ({ item, timestamp }) => {
   }, [challengePeriodDuration, item])
   const challengeCountdown = useHumanizedCountdown(challengeRemainingTime)
 
-  if (!item || !timestamp || !challengePeriodDuration)
+  if (!item || !timestamp || !challengePeriodDuration || !request)
     return (
       <Card>
         <Skeleton active title={false} paragraph={{ rows: 2 }} />
@@ -191,6 +192,16 @@ const ItemStatusCard = ({ item, timestamp }) => {
               <ETHAddress address={item.requester} />
             </Descriptions.Item>
           )}
+          {hasPendingRequest(item.status) && disputed && (
+            <>
+              <Descriptions.Item label="Dispute ID">
+                {request.disputeID.toString()}
+              </Descriptions.Item>
+              <Descriptions.Item label="Arbitrator">
+                <ETHAddress address={request.arbitrator} />
+              </Descriptions.Item>
+            </>
+          )}
           {disputeStatus === DISPUTE_STATUS.APPEALABLE &&
             statusCode !== STATUS_CODE.WAITING_ENFORCEMENT && (
               <Descriptions.Item label="Dispute Status">
@@ -263,12 +274,17 @@ const ItemStatusCard = ({ item, timestamp }) => {
 
 ItemStatusCard.propTypes = {
   item: itemPropTypes,
-  timestamp: BNPropType
+  timestamp: BNPropType,
+  request: PropTypes.shape({
+    disputeID: BNPropType.isRequired,
+    arbitrator: PropTypes.string.isRequired
+  })
 }
 
 ItemStatusCard.defaultProps = {
   item: null,
-  timestamp: null
+  timestamp: null,
+  request: null
 }
 
 export default ItemStatusCard

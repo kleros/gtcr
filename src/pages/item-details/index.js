@@ -179,7 +179,12 @@ const ItemDetails = ({ itemID }) => {
       </StyledBanner>
       <SearchBar />
       <StyledLayoutContent>
-        <ItemStatusCard item={decodedItem || item} timestamp={timestamp} dark />
+        <ItemStatusCard
+          item={decodedItem || item}
+          timestamp={timestamp}
+          request={requests && { ...requests[0] }}
+          dark
+        />
         <div style={{ marginBottom: '40px' }} />
         {/* Crowdfunding card is only rendered if the item has an appealable dispute. */}
         <CrowdfundingCard item={decodedItem || item} timestamp={timestamp} />
