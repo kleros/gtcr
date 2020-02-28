@@ -1,5 +1,12 @@
 import React, { useMemo, useEffect, useContext, useState } from 'react'
-import { Timeline as AntdTimeline, Icon, Card, Skeleton, Result } from 'antd'
+import {
+  Timeline as AntdTimeline,
+  Icon,
+  Card,
+  Skeleton,
+  Result,
+  Typography
+} from 'antd'
 import { useWeb3Context } from 'web3-react'
 import { ethers } from 'ethers'
 import styled from 'styled-components/macro'
@@ -33,6 +40,21 @@ const StyledEvidenceTitle = styled.div`
 const StyledIcon = styled(Icon)`
   color: #fff;
 `
+
+const EventTimestamp = ({ blockNumber }) => {
+  const [eventTime, setEventTime] = useState()
+  const { library, active } = useWeb3Context()
+  useEffect(() => {
+    ;(async () => {
+      if (!library || !active) return
+      setEventTime((await library.getBlock(blockNumber)).timestamp)
+    })()
+  }, [active, blockNumber, library])
+
+  return eventTime
+    ? ` - ${new Date(new Date(eventTime * 1000)).toGMTString()}`
+    : null
+}
 
 const Timeline = ({ request, requestID, item }) => {
   const { library, active } = useWeb3Context()
@@ -84,7 +106,7 @@ const Timeline = ({ request, requestID, item }) => {
 
     setFetchingLogs(true)
 
-    const { disputeID, disputed } = request
+    const { disputeID, disputed, requestType, requester } = request
     const { address: gtcrAddr } = gtcr
 
     ;(async () => {
@@ -93,6 +115,10 @@ const Timeline = ({ request, requestID, item }) => {
         await Promise.all([
           library.getLogs({
             ...gtcr.filters.Evidence(arbitrator.address, evidenceGroupID),
+            fromBlock: 0
+          }),
+          library.getLogs({
+            ...gtcr.filters.RequestSubmitted(itemID, requester, requestType),
             fromBlock: 0
           }),
           disputed
@@ -118,7 +144,7 @@ const Timeline = ({ request, requestID, item }) => {
         .filter(logs => !!logs)
         .map((e, i) => {
           // Parse and sort event logs.
-          if (i <= 1)
+          if (i <= 2)
             // Arbitrable Logs.
             return e.map(log => ({
               ...gtcr.interface.parseLog(log),
@@ -204,76 +230,84 @@ const Timeline = ({ request, requestID, item }) => {
   const metadata = metaEvidence && metaEvidence.metadata
   // Build nodes from request events.
   const itemName = metadata ? capitalizeFirstLetter(metadata.itemName) : 'Item'
-  let items = [
-    <AntdTimeline.Item key="first-node">
-      {requestType === CONTRACT_STATUS.REGISTRATION_REQUESTED
-        ? `${itemName} submitted`
-        : 'Removal requested'}
-    </AntdTimeline.Item>
-  ].concat(
-    logs
-      .sort((a, b) => a.blockNumber - b.blockNumber)
-      .map((log, i) => {
-        if (log.name === 'Evidence') {
-          const evidenceFile = evidenceFiles[log.transactionHash]
-          if (!evidenceFile)
-            return (
-              <AntdTimeline.Item dot={<Icon type="file-text" />} key={i}>
-                <StyledCard loading={!evidenceFile} />
-              </AntdTimeline.Item>
-            )
-          const { submittedAt, submittedBy } = evidenceFile
-          const { title, description, fileURI } = evidenceFile.evidenceJSON
-          /* eslint-disable unicorn/new-for-builtins */
-          const submissionTime = (
+  let items = logs
+    .sort((a, b) => a.blockNumber - b.blockNumber)
+    .sort(a => (a.name === 'RequestSubmitted' ? -1 : 0))
+    .map((log, i) => {
+      if (log.name === 'RequestSubmitted')
+        return (
+          <AntdTimeline.Item key={i}>
             <span>
-              Submitted {new Date(Date(submittedAt * 1000)).toGMTString()} by{' '}
-              <ETHAddress address={submittedBy} />
+              <Typography.Text>
+                {requestType === CONTRACT_STATUS.REGISTRATION_REQUESTED
+                  ? `${itemName} submitted`
+                  : 'Removal requested'}
+              </Typography.Text>
+              <Typography.Text type="secondary">
+                <EventTimestamp blockNumber={log.blockNumber} />
+              </Typography.Text>
             </span>
-          )
-
-          /* eslint-enable unicorn/new-for-builtins */
+          </AntdTimeline.Item>
+        )
+      else if (log.name === 'Evidence') {
+        const evidenceFile = evidenceFiles[log.transactionHash]
+        if (!evidenceFile)
           return (
-            <AntdTimeline.Item
-              dot={<Icon type="file-text" />}
-              key={i}
-              color="grey"
-            >
-              <StyledCard
-                title={title}
-                extra={
-                  fileURI && (
-                    <a
-                      href={`${process.env.REACT_APP_IPFS_GATEWAY}${fileURI}`}
-                      alt="evidence-file"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      <StyledIcon type="file-text" />
-                    </a>
-                  )
-                }
-              >
-                <Card.Meta
-                  title={
-                    <StyledEvidenceTitle>{description}</StyledEvidenceTitle>
-                  }
-                  description={submissionTime}
-                />
-              </StyledCard>
+            <AntdTimeline.Item dot={<Icon type="file-text" />} key={i}>
+              <StyledCard loading={!evidenceFile} />
             </AntdTimeline.Item>
           )
-        } else if (log.name === 'AppealPossible') {
-          const appealableRuling = appealableRulings[log.transactionHash]
-          if (typeof appealableRuling === 'undefined')
-            return (
-              <AntdTimeline.Item dot={<Icon type="file-text" />} key={i}>
-                <Skeleton active paragraph={false} title={{ width: '200px' }} />
-              </AntdTimeline.Item>
-            )
+        const { submittedAt, submittedBy } = evidenceFile
+        const { title, description, fileURI } = evidenceFile.evidenceJSON
+        /* eslint-disable unicorn/new-for-builtins */
+        const submissionTime = (
+          <span>
+            Submitted {new Date(Date(submittedAt * 1000)).toGMTString()} by{' '}
+            <ETHAddress address={submittedBy} />
+          </span>
+        )
 
+        /* eslint-enable unicorn/new-for-builtins */
+        return (
+          <AntdTimeline.Item
+            dot={<Icon type="file-text" />}
+            key={i}
+            color="grey"
+          >
+            <StyledCard
+              title={title}
+              extra={
+                fileURI && (
+                  <a
+                    href={`${process.env.REACT_APP_IPFS_GATEWAY}${fileURI}`}
+                    alt="evidence-file"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <StyledIcon type="file-text" />
+                  </a>
+                )
+              }
+            >
+              <Card.Meta
+                title={<StyledEvidenceTitle>{description}</StyledEvidenceTitle>}
+                description={submissionTime}
+              />
+            </StyledCard>
+          </AntdTimeline.Item>
+        )
+      } else if (log.name === 'AppealPossible') {
+        const appealableRuling = appealableRulings[log.transactionHash]
+        if (typeof appealableRuling === 'undefined')
           return (
-            <AntdTimeline.Item key={i}>
+            <AntdTimeline.Item dot={<Icon type="file-text" />} key={i}>
+              <Skeleton active paragraph={false} title={{ width: '200px' }} />
+            </AntdTimeline.Item>
+          )
+
+        return (
+          <AntdTimeline.Item key={i}>
+            <span>
               {appealableRuling === PARTY.NONE
                 ? 'The arbitrator refused to rule'
                 : appealableRuling === PARTY.REQUESTER
@@ -285,51 +319,64 @@ const Timeline = ({ request, requestID, item }) => {
                 : appealableRuling === PARTY.CHALLENGER
                 ? 'The arbitrator ruled in favor of the challenger'
                 : 'The arbitrator gave an unknown ruling'}
-            </AntdTimeline.Item>
-          )
-        } else if (log.name === 'AppealDecision')
-          return <AntdTimeline.Item key={i}>Ruling appealed</AntdTimeline.Item>
-        else if (log.name === 'Ruling') {
-          let resultMessage
-          const finalRuling = log.values._ruling.toNumber()
-          switch (finalRuling) {
-            case PARTY.NONE: {
-              resultMessage =
-                requestType === CONTRACT_STATUS.REGISTRATION_REQUESTED
-                  ? 'Submission rejected'
-                  : 'Removal refused'
-              break
-            }
-            case PARTY.REQUESTER: {
-              resultMessage =
-                requestType === CONTRACT_STATUS.REGISTRATION_REQUESTED
-                  ? 'Submission accepted'
-                  : `${itemName || 'item'} removed.`
-              break
-            }
-            case PARTY.CHALLENGER: {
-              resultMessage =
-                requestType === CONTRACT_STATUS.REGISTRATION_REQUESTED
-                  ? 'Submission rejected'
-                  : `Removal refused.`
-              break
-            }
-            default:
-              throw new Error('Unhandled ruling')
+              <Typography.Text type="secondary">
+                <EventTimestamp blockNumber={log.blockNumber} />
+              </Typography.Text>
+            </span>
+          </AntdTimeline.Item>
+        )
+      } else if (log.name === 'AppealDecision')
+        return (
+          <AntdTimeline.Item key={i}>
+            Ruling appealed{' '}
+            <Typography.Text type="secondary">
+              <EventTimestamp blockNumber={log.blockNumber} />
+            </Typography.Text>
+          </AntdTimeline.Item>
+        )
+      else if (log.name === 'Ruling') {
+        let resultMessage
+        const finalRuling = log.values._ruling.toNumber()
+        switch (finalRuling) {
+          case PARTY.NONE: {
+            resultMessage =
+              requestType === CONTRACT_STATUS.REGISTRATION_REQUESTED
+                ? 'Submission rejected'
+                : 'Removal refused'
+            break
           }
-          const finalStatus = getResultStatus({
-            ruling: finalRuling,
-            requestType
-          })
+          case PARTY.REQUESTER: {
+            resultMessage =
+              requestType === CONTRACT_STATUS.REGISTRATION_REQUESTED
+                ? 'Submission accepted'
+                : `${itemName || 'item'} removed.`
+            break
+          }
+          case PARTY.CHALLENGER: {
+            resultMessage =
+              requestType === CONTRACT_STATUS.REGISTRATION_REQUESTED
+                ? 'Submission rejected'
+                : `Removal refused.`
+            break
+          }
+          default:
+            throw new Error('Unhandled ruling')
+        }
+        const finalStatus = getResultStatus({
+          ruling: finalRuling,
+          requestType
+        })
 
-          return (
-            <AntdTimeline.Item key={i} color={STATUS_COLOR[finalStatus]}>
-              {resultMessage}
-            </AntdTimeline.Item>
-          )
-        } else throw new Error('Unhandled event')
-      })
-  )
+        return (
+          <AntdTimeline.Item key={i} color={STATUS_COLOR[finalStatus]}>
+            {resultMessage}
+            <Typography.Text type="secondary">
+              <EventTimestamp blockNumber={log.blockNumber} />
+            </Typography.Text>
+          </AntdTimeline.Item>
+        )
+      } else throw new Error('Unhandled event')
+    })
 
   if (resolved && !disputed)
     items = items.concat(
@@ -367,6 +414,7 @@ Timeline.propTypes = {
     disputeID: BNPropType.isRequired,
     arbitrator: PropTypes.string.isRequired,
     requestType: PropTypes.number.isRequired,
+    requester: PropTypes.string.isRequired,
     disputed: PropTypes.bool.isRequired,
     resolved: PropTypes.bool.isRequired,
     metaEvidenceID: BNPropType.isRequired
