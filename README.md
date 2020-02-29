@@ -15,6 +15,16 @@
 2.  Duplicate `.env.example` and rename it to `.env`. Fill the environment variables.
 3.  Run `yarn` to install dependencies and then `yarn start` to start the dev server.
 
+## Supporting New Field Types
+
+The Generalized TCR clients can learn how to parse and decode data stored onchain by reading what are the field types of each column from the `metadata` object stored on the meta evidence file.
+
+### Important
+
+To support a new field type, it is required to update the evidence display interface as well. Otherwise it might not know how to parse it and crash on arbitrator clients, preventing them from properly judging a case.
+
+The evidence display interface code of the Generalized TCR can be found at [https://github.com/kleros/gtcr-injected-uis](https://github.com/kleros/gtcr-injected-uis).
+
 ## Other Scripts
 
 - `yarn format` - Lint, fix and prettify all the project.
