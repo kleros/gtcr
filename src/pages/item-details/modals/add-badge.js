@@ -48,7 +48,8 @@ const AddBadgeModal = ({
   connectedTCRAddr,
   onSelectBadge,
   onEnableNewBadge,
-  isFetchingBadges
+  isFetchingBadges,
+  foundBadges
 }) => {
   const [selectedBadge, setSelectedBadge] = useState()
   const handleSubmit = useCallback(() => {
@@ -77,6 +78,11 @@ const AddBadgeModal = ({
       </Modal>
     )
 
+  const filteredAvailableBadges = availableBadges.filter(
+    ({ tcrAddress: availableBadgeAddr }) =>
+      !foundBadges.map(b => b.tcrAddress).includes(availableBadgeAddr)
+  )
+
   return (
     <Modal
       title="Add Badge"
@@ -100,7 +106,7 @@ const AddBadgeModal = ({
         onChange={e => setSelectedBadge(e.target.value)}
         value={selectedBadge}
       >
-        {availableBadges.map(
+        {filteredAvailableBadges.map(
           ({ fileURI, metadata: { tcrTitle, logoURI } }, i) => (
             <StyledRadio value={i} key={i}>
               <StyledListItem
@@ -133,7 +139,7 @@ const AddBadgeModal = ({
             </StyledRadio>
           )
         )}
-        {availableBadges.length === 0 && (
+        {filteredAvailableBadges.length === 0 && (
           <div>No badges available for this TCR</div>
         )}
       </StyledRadioGroup>
@@ -146,7 +152,7 @@ const AddBadgeModal = ({
           Enable a new badge
         </Button>
       </div>
-      {availableBadges.length > 0 && (
+      {filteredAvailableBadges.length > 0 && (
         <>
           <Typography.Paragraph>
             A deposit is required to submit. This value reimbursed at the end of
@@ -181,6 +187,7 @@ const AddBadgeModal = ({
 AddBadgeModal.propTypes = {
   onCancel: PropTypes.func.isRequired,
   availableBadges: PropTypes.arrayOf(PropTypes.any),
+  foundBadges: PropTypes.arrayOf(PropTypes.any),
   visible: PropTypes.bool,
   tcrAddress: PropTypes.string,
   connectedTCRAddr: PropTypes.string,
@@ -191,6 +198,7 @@ AddBadgeModal.propTypes = {
 
 AddBadgeModal.defaultProps = {
   availableBadges: null,
+  foundBadges: [],
   visible: null,
   tcrAddress: null,
   connectedTCRAddr: null,

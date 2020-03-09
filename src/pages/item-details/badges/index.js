@@ -426,6 +426,7 @@ const Badges = ({ connectedTCRAddr, item, tcrAddress }) => {
         availableBadges={availableBadges}
         connectedTCRAddr={connectedTCRAddr}
         tcrAddress={tcrAddress}
+        foundBadges={foundBadges}
         onSelectBadge={onSelectBadge}
         onEnableNewBadge={() => setSubmitConnectVisible(true)}
         isFetchingBadges={isFetchingBadges}
