@@ -28,6 +28,9 @@ import { gtcrDecode } from '../../utils/encoder'
 import SubmitModal from '../item-details/modals/submit'
 import SubmitConnectModal from '../item-details/modals/submit-connect'
 import SearchBar from '../../components/search-bar'
+import { useWeb3Context } from 'web3-react'
+import ItemCardContent from '../../components/item-card-content'
+import TCRCard from '../../components/tcr-card-content'
 import {
   searchStrToFilterObj,
   filterLabel,
@@ -35,9 +38,6 @@ import {
   updateFilter,
   queryOptionsToFilterArray
 } from '../../utils/filters'
-import DisplaySelector from '../../components/display-selector'
-import { useWeb3Context } from 'web3-react'
-import itemTypes from '../../utils/item-types'
 
 const StyledContent = styled(Layout.Content)`
   word-break: break-word;
@@ -93,11 +93,6 @@ const StyledGrid = styled.div`
   margin: 24px 0;
   grid-gap: 20px;
   grid-template-columns: repeat(auto-fill, minmax(225px, 1fr));
-`
-
-const StyledItemCol = styled.div`
-  margin-bottom: 8px;
-  text-align: center;
 `
 
 const pagingItem = (_, type, originalElement) => {
@@ -268,7 +263,7 @@ const Items = ({ search, history }) => {
           isFetching: false,
           fetchStarted: false,
           data: encodedItems,
-          tcrAddress: gtcr.address
+          address: gtcr.address
         })
       }
     })()
@@ -299,7 +294,7 @@ const Items = ({ search, history }) => {
       !latestBlock ||
       oldestFirst ||
       !fetchItems.data ||
-      fetchItems.tcrAddress !== tcrAddress ||
+      fetchItems.address !== tcrAddress ||
       !challengePeriodDuration ||
       !library
     )
@@ -341,8 +336,8 @@ const Items = ({ search, history }) => {
     })()
   }, [
     challengePeriodDuration,
+    fetchItems.address,
     fetchItems.data,
-    fetchItems.tcrAddress,
     gtcr,
     gtcrView,
     latestBlock,
@@ -358,8 +353,8 @@ const Items = ({ search, history }) => {
     if (
       !fetchItems.data ||
       !metaEvidence ||
-      metaEvidence.tcrAddress !== tcrAddress ||
-      fetchItems.tcrAddress !== tcrAddress
+      metaEvidence.address !== tcrAddress ||
+      fetchItems.address !== tcrAddress
     )
       return
 
@@ -560,19 +555,11 @@ const Items = ({ search, history }) => {
                           />
                         }
                       >
-                        {item.columns
-                          .filter(
-                            col =>
-                              col.isIdentifier || col.type === itemTypes.IMAGE
-                          )
-                          .map((column, j) => (
-                            <StyledItemCol key={j}>
-                              <DisplaySelector
-                                type={column.type}
-                                value={column.value}
-                              />
-                            </StyledItemCol>
-                          ))}
+                        {metaEvidence.metadata.isTCRofTCRs ? (
+                          <TCRCard tcrAddress={item.columns[0].value} />
+                        ) : (
+                          <ItemCardContent item={item} />
+                        )}
                       </Card>
                     </Link>
                   ))}

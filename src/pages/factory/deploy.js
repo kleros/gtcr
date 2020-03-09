@@ -37,7 +37,8 @@ const getTcrMetaEvidence = async tcrState => {
     relColumns,
     relItemName,
     relTcrPrimaryDocument,
-    relRequireRemovalEvidence
+    relRequireRemovalEvidence,
+    isTCRofTCRs
   } = tcrState
   const metadata = {
     tcrTitle,
@@ -45,7 +46,8 @@ const getTcrMetaEvidence = async tcrState => {
     columns,
     itemName,
     logoURI: tcrLogo,
-    requireRemovalEvidence
+    requireRemovalEvidence,
+    isTCRofTCRs
   }
 
   const relTcrTitle = `${tcrTitle} enabled badges`
@@ -55,7 +57,8 @@ const getTcrMetaEvidence = async tcrState => {
     columns: relColumns,
     itemName: relItemName,
     isConnectedTCR: true,
-    requireRemovalEvidence: relRequireRemovalEvidence
+    requireRemovalEvidence: relRequireRemovalEvidence,
+    isTCRofTCRs: true
   }
 
   const metaEvidence = {

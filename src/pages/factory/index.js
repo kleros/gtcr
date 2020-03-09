@@ -99,6 +99,7 @@ const useCachedFactory = version => {
     sharedStakeMultiplier: 1000,
     winnerStakeMultiplier: 1000,
     looserStakeMultiplier: 2000,
+    isTCRofTCRs: false,
     relSubmissionBaseDeposit: 0.02,
     relRemovalBaseDeposit: 0.03,
     relSubmissionChallengeBaseDeposit: 0.015,

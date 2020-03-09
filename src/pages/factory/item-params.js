@@ -11,7 +11,7 @@ import {
   Tooltip
 } from 'antd'
 import { withFormik, FieldArray, Field } from 'formik'
-import React, { useEffect } from 'react'
+import React, { useEffect, useCallback } from 'react'
 import PropTypes from 'prop-types'
 import * as yup from 'yup'
 import CustomInput from '../../components/custom-input'
@@ -25,19 +25,33 @@ const ItemParams = ({
   handleSubmit,
   setFieldValue,
   formId,
-  values: { columns },
+  values: { columns, isTCRofTCRs },
   errors,
   touched,
   ...rest
 }) => {
   const { setTcrState } = rest
+  const toggleTCRofTCRs = useCallback(() => {
+    if (!isTCRofTCRs) {
+      setFieldValue(`columns`, [
+        {
+          label: 'Address',
+          description: 'The TCR address.',
+          type: 'GTCR address',
+          isIdentifier: true
+        }
+      ])
+      setFieldValue(`isTCRofTCRs`, true)
+    } else setFieldValue(`isTCRofTCRs`, false)
+  }, [isTCRofTCRs, setFieldValue])
 
   useEffect(() => {
     setTcrState(previousState => ({
       ...previousState,
+      isTCRofTCRs,
       columns
     }))
-  }, [columns, setTcrState])
+  }, [columns, isTCRofTCRs, setTcrState])
 
   const onTypeChange = (index, value) => {
     setFieldValue(`columns[${index}].type`, value)
@@ -51,149 +65,169 @@ const ItemParams = ({
 
   return (
     <Card title="Choose the item columns">
-      <Row
-        gutter={{ xs: 4, sm: 8, md: 12 }}
-        type="flex"
-        justify="space-between"
-      >
-        <Col span={5}>Name</Col>
-        <Col span={8}>Description</Col>
-        <Col span={6}>Type</Col>
-        <Col span={2}>
-          ID
-          <Tooltip title="Whether to display this field on the list of items.">
+      <Row>
+        <Col span={24}>
+          Is this a TCR of TCRs?
+          <Tooltip title="A TCR of TCRs has only one column: the TCR address. Information such as its title, description and logo will be pulled from the TCR.">
             &nbsp;
             <Icon type="question-circle-o" />
           </Tooltip>
+          {'  '}
+          <Switch checked={isTCRofTCRs} onChange={toggleTCRofTCRs} />
         </Col>
-        {columns.length > 1 && <Col span={1} />}
       </Row>
+      <Divider />
+      {!isTCRofTCRs && (
+        <Row
+          gutter={{ xs: 4, sm: 8, md: 12 }}
+          type="flex"
+          justify="space-between"
+        >
+          <Col span={5}>Name</Col>
+          <Col span={8}>Description</Col>
+          <Col span={6}>Type</Col>
+          <Col span={2}>
+            ID
+            <Tooltip title="Whether to display this field on the list of items.">
+              &nbsp;
+              <Icon type="question-circle-o" />
+            </Tooltip>
+          </Col>
+          {columns.length > 1 && <Col span={1} />}
+        </Row>
+      )}
       <form id={formId} onSubmit={handleSubmit}>
-        <FieldArray name="columns">
-          {({ push, remove }) => (
-            <>
-              {columns &&
-                columns.length > 0 &&
-                columns.map((_, index) => (
-                  <Row
-                    gutter={{ xs: 4, sm: 8, md: 12 }}
-                    key={index}
-                    type="flex"
-                    justify="space-between"
-                  >
-                    <Col span={5}>
-                      <CustomInput
-                        name={`columns[${index}].label`}
-                        placeholder="Token Name"
-                        hasFeedback
-                        touched={
-                          touched.columns &&
-                          touched.columns[index] &&
-                          touched.columns[index].label
-                        }
-                        error={
-                          errors.columns &&
-                          errors.columns[index] &&
-                          errors.columns[index].label
-                        }
-                        {...rest}
-                      />
-                    </Col>
-                    <Col span={8}>
-                      <CustomInput
-                        name={`columns[${index}].description`}
-                        placeholder="The commonly used token name."
-                        hasFeedback
-                        touched={
-                          touched.columns &&
-                          touched.columns[index] &&
-                          touched.columns[index].description
-                        }
-                        error={
-                          errors.columns &&
-                          errors.columns[index] &&
-                          errors.columns[index].description
-                        }
-                        {...rest}
-                      />
-                    </Col>
-                    <Col span={6}>
-                      <Field name={`columns[${index}].type`}>
-                        {({ field }) => (
-                          <Form.Item>
-                            <Select
-                              {...field}
-                              value={columns[index].type}
-                              onChange={value => onTypeChange(index, value)}
-                            >
-                              {Object.values(itemTypes).map((itemType, i) => (
-                                <Select.Option value={itemType} key={i}>
-                                  {itemType}
-                                </Select.Option>
-                              ))}
-                            </Select>
-                          </Form.Item>
+        {!isTCRofTCRs && (
+          <>
+            <FieldArray name="columns">
+              {({ push, remove }) => (
+                <>
+                  {columns &&
+                    columns.length > 0 &&
+                    columns.map((_, index) => (
+                      <Row
+                        gutter={{ xs: 4, sm: 8, md: 12 }}
+                        key={index}
+                        type="flex"
+                        justify="space-between"
+                      >
+                        <Col span={5}>
+                          <CustomInput
+                            name={`columns[${index}].label`}
+                            placeholder="Token Name"
+                            hasFeedback
+                            touched={
+                              touched.columns &&
+                              touched.columns[index] &&
+                              touched.columns[index].label
+                            }
+                            error={
+                              errors.columns &&
+                              errors.columns[index] &&
+                              errors.columns[index].label
+                            }
+                            {...rest}
+                          />
+                        </Col>
+                        <Col span={8}>
+                          <CustomInput
+                            name={`columns[${index}].description`}
+                            placeholder="The commonly used token name."
+                            hasFeedback
+                            touched={
+                              touched.columns &&
+                              touched.columns[index] &&
+                              touched.columns[index].description
+                            }
+                            error={
+                              errors.columns &&
+                              errors.columns[index] &&
+                              errors.columns[index].description
+                            }
+                            {...rest}
+                          />
+                        </Col>
+                        <Col span={6}>
+                          <Field name={`columns[${index}].type`}>
+                            {({ field }) => (
+                              <Form.Item>
+                                <Select
+                                  {...field}
+                                  value={columns[index].type}
+                                  onChange={value => onTypeChange(index, value)}
+                                >
+                                  {Object.values(itemTypes).map(
+                                    (itemType, i) => (
+                                      <Select.Option value={itemType} key={i}>
+                                        {itemType}
+                                      </Select.Option>
+                                    )
+                                  )}
+                                </Select>
+                              </Form.Item>
+                            )}
+                          </Field>
+                        </Col>
+                        {(columns
+                          .map(column => column.isIdentifier)
+                          .filter(isIdentifier => !!isIdentifier).length < 3 ||
+                          columns[index].isIdentifier) &&
+                        columns[index].type !== LONGTEXT &&
+                        columns[index].type !== IMAGE ? ( // Image and long text cannot be identifiers.
+                          <Col span={2}>
+                            <Field name={`columns[${index}].isIdentifier`}>
+                              {({ field }) => (
+                                <Form.Item>
+                                  <Switch
+                                    onChange={value =>
+                                      setFieldValue(
+                                        `columns[${index}].isIdentifier`,
+                                        value
+                                      )
+                                    }
+                                    checked={field.value}
+                                    size="small"
+                                  />
+                                </Form.Item>
+                              )}
+                            </Field>
+                          </Col>
+                        ) : (
+                          <Col span={2} />
                         )}
-                      </Field>
-                    </Col>
-                    {(columns
-                      .map(column => column.isIdentifier)
-                      .filter(isIdentifier => !!isIdentifier).length < 3 ||
-                      columns[index].isIdentifier) &&
-                    columns[index].type !== LONGTEXT &&
-                    columns[index].type !== IMAGE ? ( // Image and long text cannot be identifiers.
-                      <Col span={2}>
-                        <Field name={`columns[${index}].isIdentifier`}>
-                          {({ field }) => (
+                        {columns.length > 1 && (
+                          <Col span={1}>
                             <Form.Item>
-                              <Switch
-                                onChange={value =>
-                                  setFieldValue(
-                                    `columns[${index}].isIdentifier`,
-                                    value
-                                  )
-                                }
-                                checked={field.value}
-                                size="small"
+                              <Icon
+                                className="dynamic-delete-button"
+                                type="minus-circle-o"
+                                onClick={() => remove(index)}
                               />
                             </Form.Item>
-                          )}
-                        </Field>
-                      </Col>
-                    ) : (
-                      <Col span={2} />
-                    )}
-                    {columns.length > 1 && (
-                      <Col span={1}>
-                        <Form.Item>
-                          <Icon
-                            className="dynamic-delete-button"
-                            type="minus-circle-o"
-                            onClick={() => remove(index)}
-                          />
-                        </Form.Item>
-                      </Col>
-                    )}
-                  </Row>
-                ))}
-              <Button
-                onClick={() =>
-                  push({ label: '', description: '', type: 'address' })
-                }
-                type="primary"
-              >
-                Add Field
-              </Button>
-            </>
-          )}
-        </FieldArray>
-        <Divider />
-        <ItemDetailsCard
-          title="Preview"
-          columns={columns}
-          statusCode={STATUS_CODE.REGISTERED}
-        />
+                          </Col>
+                        )}
+                      </Row>
+                    ))}
+                  <Button
+                    onClick={() =>
+                      push({ label: '', description: '', type: 'address' })
+                    }
+                    type="primary"
+                  >
+                    Add Field
+                  </Button>
+                </>
+              )}
+            </FieldArray>
+            <Divider />
+          </>
+        )}
       </form>
+      <ItemDetailsCard
+        title="Preview"
+        columns={columns}
+        statusCode={STATUS_CODE.REGISTERED}
+      />
     </Card>
   )
 }
@@ -250,7 +284,8 @@ ItemParams.propTypes = {
         type: PropTypes.string.isRequired,
         isIdentifier: PropTypes.bool
       })
-    ).isRequired
+    ).isRequired,
+    isTCRofTCRs: PropTypes.bool
   }).isRequired
 }
 

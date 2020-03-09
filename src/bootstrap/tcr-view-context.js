@@ -168,7 +168,7 @@ const useTcrView = tcrAddress => {
       !gtcr ||
       !library ||
       gtcr.address !== tcrAddress ||
-      (metaEvidence && metaEvidence.tcrAddress === tcrAddress)
+      (metaEvidence && metaEvidence.address === tcrAddress)
     )
       return
     ;(async () => {
@@ -182,13 +182,18 @@ const useTcrView = tcrAddress => {
         ).map(log => gtcr.interface.parseLog(log))
         if (logs.length === 0) return
 
-        const { _evidence: metaEvidencePath } = logs[0].values
+        // Take the penultimate item. This is the most recent meta evidence
+        // for registration requests.
+        const { _evidence: metaEvidencePath } = logs[logs.length - 2].values
         const file = await (
           await fetch(process.env.REACT_APP_IPFS_GATEWAY + metaEvidencePath)
         ).json()
 
-        setMetaEvidence({ ...file, tcrAddress })
-        localforage.setItem(META_EVIDENCE_CACHE_KEY, { ...file, tcrAddress })
+        setMetaEvidence({ ...file, address: tcrAddress })
+        localforage.setItem(META_EVIDENCE_CACHE_KEY, {
+          ...file,
+          address: tcrAddress
+        })
       } catch (err) {
         console.error('Error fetching meta evidence', err)
         setError('Error fetching meta evidence')
@@ -224,7 +229,7 @@ const useTcrView = tcrAddress => {
       gtcr.address !== tcrAddress ||
       !metaEvidence ||
       !metaEvidence.metadata ||
-      metaEvidence.tcrAddress !== tcrAddress
+      metaEvidence.address !== tcrAddress
     )
       return
 
@@ -247,7 +252,8 @@ const useTcrView = tcrAddress => {
               ...submissionLog,
               decodedData: gtcrDecode({ columns, values: submissionLog.data }),
               columns,
-              tcrAddress
+              tcrAddress,
+              address: tcrAddress
             }))
             .map(submissionLog => ({
               ...submissionLog,
