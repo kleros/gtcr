@@ -58,7 +58,7 @@ const SubmitConnectModal = props => {
   const [error, setError] = useState()
   const [tcrAddr, setTCRAddr] = useState() // This is the main TCR. TODO: Fetch this information from somewhere. The user should not have to type this.
   const [debouncedTCRAddr] = useDebounce(tcrAddr, 300)
-  const [tcrMetadata, setTCRMetadata] = useState()
+  const [tcrMetaEvidence, setTCRMetaEvidence] = useState()
 
   const [badgeTCRAddr, setBadgeTCRAddr] = useState() // This is the TCR the user wants enable as a badge.
   const [debouncedBadgeTCRAddr] = useDebounce(badgeTCRAddr, 300)
@@ -92,10 +92,11 @@ const SubmitConnectModal = props => {
         if (logs.length === 0) return
 
         const { _evidence: metaEvidencePath } = logs[0].values
-        const file = await (
-          await fetch(process.env.REACT_APP_IPFS_GATEWAY + metaEvidencePath)
-        ).json()
-        setTCRMetadata(file.metadata)
+        setTCRMetaEvidence(
+          await (
+            await fetch(process.env.REACT_APP_IPFS_GATEWAY + metaEvidencePath)
+          ).json()
+        )
       } catch (err) {
         console.error('Error fetching tcr metadata', err)
         setError('Error fetching tcr metadata')
@@ -182,7 +183,7 @@ const SubmitConnectModal = props => {
   const NONE = 'None'
   const handleChange = useCallback(
     (i, j) => {
-      if (!badgeTCRMetadata || !tcrMetadata) return
+      if (!badgeTCRMetadata || !tcrMetaEvidence) return
       let newState
       if (!match)
         newState = {
@@ -205,7 +206,7 @@ const SubmitConnectModal = props => {
       debouncedTCRAddr,
       match,
       relTCRAddress,
-      tcrMetadata
+      tcrMetaEvidence
     ]
   )
 
@@ -291,7 +292,7 @@ const SubmitConnectModal = props => {
       </Modal>
     )
 
-  const { fileURI } = relTCRMetaEvidence.metadata
+  const { fileURI } = relTCRMetaEvidence
   if (error)
     return (
       <Modal
@@ -391,13 +392,13 @@ const SubmitConnectModal = props => {
               </span>
             </Col>
             <Col span={12}>
-              {tcrMetadata ? (
+              {tcrMetaEvidence.metadata ? (
                 <Select
                   defaultValue={NONE}
                   style={{ width: '100%' }}
                   onChange={(_, { key }) => handleChange(i, key)}
                 >
-                  {[{ label: NONE }, ...tcrMetadata.columns].map(
+                  {[{ label: NONE }, ...tcrMetaEvidence.metadata.columns].map(
                     (column, j) => (
                       <Select.Option value={column.label} key={j}>
                         {column.label}
