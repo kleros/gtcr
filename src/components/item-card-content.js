@@ -24,7 +24,7 @@ ItemCardContent.propTypes = {
       PropTypes.shape({
         isIdentifier: PropTypes.bool,
         type: PropTypes.oneOf(Object.values(itemTypes)),
-        value: PropTypes.oneOf([
+        value: PropTypes.oneOfType([
           PropTypes.bool,
           PropTypes.string,
           PropTypes.number,
