@@ -174,7 +174,7 @@ const SubmitConnectModal = props => {
         setRelTCRSubmissionDeposit(submissionDeposit)
       } catch (err) {
         console.error(err)
-        setError(err)
+        setError(err.message)
       }
     })()
   }, [gtcrView, library, relTCRAddress])

@@ -93,7 +93,7 @@ const ItemDetails = ({ itemID }) => {
 
   // Decode item bytes once we have it and the meta evidence.
   useEffect(() => {
-    if (!item || !metaEvidence || metaEvidence.tcrAddress !== tcrAddress) return
+    if (!item || !metaEvidence || metaEvidence.address !== tcrAddress) return
 
     const { columns } = metaEvidence.metadata
     try {

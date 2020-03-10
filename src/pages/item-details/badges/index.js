@@ -224,7 +224,7 @@ const Badges = ({ connectedTCRAddr, item, tcrAddress }) => {
   // With the badge tcr addresses and the match file,
   // search for the current item.
   useEffect(() => {
-    if (!enabledBadges || !gtcrView) return
+    if (!enabledBadges || !gtcrView || !item) return
     ;(async () => {
       const foundBadges = []
       const connectedBadges = []
@@ -335,11 +335,11 @@ const Badges = ({ connectedTCRAddr, item, tcrAddress }) => {
         )
       } catch (err) {
         console.error(err)
-        setError(err)
+        setError(err.message)
       } finally {
         setIsFetchingBadges(false)
-        setFoundBadges(foundBadges)
-        setConnectedBadges(connectedBadges)
+        setFoundBadges(foundBadges || [])
+        setConnectedBadges(connectedBadges || [])
       }
     })()
   }, [enabledBadges, gtcr, gtcrView, item, library])
@@ -347,7 +347,7 @@ const Badges = ({ connectedTCRAddr, item, tcrAddress }) => {
   // The available badges are the connected badges for which
   // there are no pending requests for this item.
   const availableBadges = useMemo(() => {
-    if (!enabledBadges || !connectedBadges) return
+    if (!enabledBadges || !connectedBadges) return []
     return connectedBadges.filter(connectedBadge =>
       enabledBadges.filter(
         enabledBadge =>

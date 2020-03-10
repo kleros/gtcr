@@ -3,7 +3,7 @@ import PropTypes from 'prop-types'
 import styled from 'styled-components/macro'
 import { useWeb3Context } from 'web3-react'
 import { ethers } from 'ethers'
-import { Result, Spin } from 'antd'
+import { Result, Skeleton } from 'antd'
 import { abi as _gtcr } from '@kleros/tcr/build/contracts/GeneralizedTCR.json'
 import useMetadata from '../hooks/meta-data'
 import itemTypes from '../utils/item-types'
@@ -41,7 +41,7 @@ const TCRCard = ({ tcrAddress }) => {
       />
     )
 
-  if (!metadata) return <Spin />
+  if (!metadata) return <Skeleton active />
 
   return (
     <>

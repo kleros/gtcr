@@ -546,6 +546,7 @@ const Items = ({ search, history }) => {
                   items.map((item, i) => (
                     <Link to={`/tcr/${tcrAddress}/${item.tcrData.ID}`} key={i}>
                       <Card
+                        style={{ height: '100%' }}
                         title={
                           <ItemStatusBadge
                             item={item.tcrData}
