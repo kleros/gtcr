@@ -47,7 +47,8 @@ const EvidenceModal = ({ item, ...rest }) => {
             // Subscribe for notifications
             if (!process.env.REACT_APP_NOTIFICATIONS_API_URL) return
             fetch(
-              `${process.env.REACT_APP_NOTIFICATIONS_API_URL}/api/subscribe`,
+              `${process.env.REACT_APP_NOTIFICATIONS_API_URL +
+                networkId}/api/subscribe`,
               {
                 method: 'post',
                 headers: { 'Content-Type': 'application/json' },

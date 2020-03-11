@@ -247,7 +247,8 @@ const SubmitConnectModal = props => {
             [encodedParams]
           )
           fetch(
-            `${process.env.REACT_APP_NOTIFICATIONS_API_URL}/api/subscribe`,
+            `${process.env.REACT_APP_NOTIFICATIONS_API_URL +
+              networkId}/api/subscribe`,
             {
               method: 'post',
               headers: { 'Content-Type': 'application/json' },

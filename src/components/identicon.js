@@ -135,7 +135,7 @@ const Identicon = ({ className, large }) => {
         primaryType: 'Settings',
         message: { email, nickname },
         domain: {
-          name: process.env.REACT_APP_NOTIFICATIONS_API_URL,
+          name: process.env.REACT_APP_NOTIFICATIONS_API_URL + networkId,
           chainId: networkId,
           version: 1,
           salt: `0x${bigNumberify(randomBytes(32)).toString(16)}`
@@ -158,7 +158,8 @@ const Identicon = ({ className, large }) => {
             try {
               const response = await (
                 await fetch(
-                  `${process.env.REACT_APP_NOTIFICATIONS_API_URL}/api/email-settings`,
+                  `${process.env.REACT_APP_NOTIFICATIONS_API_URL +
+                    networkId}/api/email-settings`,
                   {
                     method: 'post',
                     headers: { 'Content-Type': 'application/json' },
@@ -222,7 +223,7 @@ const Identicon = ({ className, large }) => {
               />
             </List.Item>
           )}
-          {process.env.REACT_APP_NOTIFICATIONS_API_URL && (
+          {process.env.REACT_APP_NOTIFICATIONS_API_URL && networkId && (
             <List.Item>
               <List.Item.Meta
                 description={
