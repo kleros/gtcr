@@ -48,8 +48,7 @@ const Notifications = () => {
     ;(async () => {
       const result = await (
         await fetch(
-          `${process.env.REACT_APP_NOTIFICATIONS_API_URL +
-            networkId}/api/notifications/${account}/${networkId}`
+          `${process.env.REACT_APP_NOTIFICATIONS_API_URL}/${networkId}/api/notifications/${account}`
         )
       ).json()
 
@@ -60,10 +59,11 @@ const Notifications = () => {
   const dismissNotification = useCallback(
     n =>
       fetch(
-        `${process.env.REACT_APP_NOTIFICATIONS_API_URL +
-          networkId}/api/notification/${ethers.utils.getAddress(
-          account
-        )}/${networkId}/${n.notificationID}`,
+        `${
+          process.env.REACT_APP_NOTIFICATIONS_API_URL
+        }/${networkId}/api/notification/${ethers.utils.getAddress(account)}/${
+          n.notificationID
+        }`,
         { method: 'delete' }
       ).then(() => fetchNotifications()),
     [account, networkId, fetchNotifications]
@@ -72,10 +72,9 @@ const Notifications = () => {
     if (!networkId || !account) return
     ;(async () => {
       await fetch(
-        `${process.env.REACT_APP_NOTIFICATIONS_API_URL +
-          networkId}/api/notifications/${ethers.utils.getAddress(
-          account
-        )}/${networkId}`,
+        `${
+          process.env.REACT_APP_NOTIFICATIONS_API_URL
+        }/${networkId}/api/notifications/${ethers.utils.getAddress(account)}`,
         { method: 'delete' }
       )
       fetchNotifications()
@@ -84,10 +83,11 @@ const Notifications = () => {
   const notificationClick = useCallback(
     n => {
       fetch(
-        `${process.env.REACT_APP_NOTIFICATIONS_API_URL +
-          networkId}/api/notification/${ethers.utils.getAddress(
-          account
-        )}/${networkId}/${n.notificationID}`,
+        `${
+          process.env.REACT_APP_NOTIFICATIONS_API_URL
+        }/${networkId}/api/notification/${ethers.utils.getAddress(account)}/${
+          n.notificationID
+        }`,
         { method: 'put' }
       )
         .then(() => fetchNotifications())

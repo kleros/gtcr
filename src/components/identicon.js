@@ -109,12 +109,13 @@ const Identicon = ({ className, large }) => {
 
   // Fetch current email settings from local storage, if available.
   useEffect(() => {
-    if (!process.env.REACT_APP_NOTIFICATIONS_API_URL || !account) return
+    if (!process.env.REACT_APP_NOTIFICATIONS_API_URL || !account || !networkId)
+      return
     ;(async () => {
       const cachedSettings = await localforage.getItem(CACHED_SETTINGS)
       setFetchedEmailSettings(cachedSettings)
     })()
-  }, [account])
+  }, [account, networkId])
 
   const submitEmail = useCallback(
     ({ email, nickname }) => {
@@ -135,7 +136,7 @@ const Identicon = ({ className, large }) => {
         primaryType: 'Settings',
         message: { email, nickname },
         domain: {
-          name: process.env.REACT_APP_NOTIFICATIONS_API_URL + networkId,
+          name: `${process.env.REACT_APP_NOTIFICATIONS_API_URL}`,
           chainId: networkId,
           version: 1,
           salt: `0x${bigNumberify(randomBytes(32)).toString(16)}`
@@ -158,8 +159,7 @@ const Identicon = ({ className, large }) => {
             try {
               const response = await (
                 await fetch(
-                  `${process.env.REACT_APP_NOTIFICATIONS_API_URL +
-                    networkId}/api/email-settings`,
+                  `${process.env.REACT_APP_NOTIFICATIONS_API_URL}/${networkId}/api/email-settings`,
                   {
                     method: 'post',
                     headers: { 'Content-Type': 'application/json' },

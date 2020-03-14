@@ -144,14 +144,13 @@ const SubmitModal = props => {
           'item'}`,
         onTxMined: () => {
           // Subscribe for notifications
-          if (!process.env.REACT_APP_NOTIFICATIONS_API_URL) return
+          if (!process.env.REACT_APP_NOTIFICATIONS_API_URL || networkId) return
           const itemID = ethers.utils.solidityKeccak256(
             ['bytes'],
             [encodedParams]
           )
           fetch(
-            `${process.env.REACT_APP_NOTIFICATIONS_API_URL +
-              networkId}/api/subscribe`,
+            `${process.env.REACT_APP_NOTIFICATIONS_API_URL}/${networkId}/api/subscribe`,
             {
               method: 'post',
               headers: { 'Content-Type': 'application/json' },

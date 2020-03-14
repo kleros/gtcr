@@ -63,10 +63,10 @@ const RemoveModal = ({ item, itemName = 'item', fileURI, ...rest }) => {
             'item'} removal`,
           onTxMined: () => {
             // Subscribe for notifications
-            if (!process.env.REACT_APP_NOTIFICATIONS_API_URL) return
+            if (!process.env.REACT_APP_NOTIFICATIONS_API_URL || !networkId)
+              return
             fetch(
-              `${process.env.REACT_APP_NOTIFICATIONS_API_URL +
-                networkId}/api/subscribe`,
+              `${process.env.REACT_APP_NOTIFICATIONS_API_URL}/${networkId}/api/subscribe`,
               {
                 method: 'post',
                 headers: { 'Content-Type': 'application/json' },

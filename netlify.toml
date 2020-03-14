@@ -16,7 +16,7 @@
   REACT_APP_BATCH_WITHDRAW_ADDRESSES='{"42":"0xA32942798112e561d4d3ffc62c552bb0E9651b66"}'
   REACT_APP_FACTORY_ADDRESSES='{"42":"0x595897a3bd71f34534a9b8bf3e0bb1e31a1d3b16"}'
   REACT_APP_METAMASK_SITE_URL='https://metamask.io'
-  REACT_APP_TRUST_SITE_URL='https://trustwallet.com/'
+  REACT_APP_TRUST_SITE_URL='https://trustwallet.com'
   REACT_APP_WALLETCONNECT_BRIDGE_URL='https://bridge.walletconnect.org'
 
 [[redirects]]
