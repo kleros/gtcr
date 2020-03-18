@@ -106,7 +106,7 @@ const Timeline = ({ request, requestID, item }) => {
 
     setFetchingLogs(true)
 
-    const { disputeID, disputed, requester } = request
+    const { disputeID, disputed } = request
     const { address: gtcrAddr } = gtcr
 
     ;(async () => {
@@ -118,11 +118,7 @@ const Timeline = ({ request, requestID, item }) => {
             fromBlock: 0
           }),
           library.getLogs({
-            ...gtcr.filters.RequestSubmitted(
-              itemID,
-              requester,
-              evidenceGroupID
-            ),
+            ...gtcr.filters.RequestSubmitted(itemID, requestID),
             fromBlock: 0
           }),
           disputed
@@ -222,7 +218,8 @@ const Timeline = ({ request, requestID, item }) => {
     gtcr,
     itemID,
     library,
-    request
+    request,
+    requestID
   ])
 
   if (error) return <Result status="warning" title={error} />
