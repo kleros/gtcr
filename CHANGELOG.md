@@ -2,6 +2,35 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.9.3](https://github.com/kleros/gtcr/compare/v0.9.2...v0.9.3) (2020-04-06)
+
+
+### Features
+
+* display arbitrator and dispute ID, if any ([3120e2e](https://github.com/kleros/gtcr/commit/3120e2ee8277149429b5a82b5b5e811209563b53))
+* display timestamps for every request event, closes [#35](https://github.com/kleros/gtcr/issues/35) ([a5b3b95](https://github.com/kleros/gtcr/commit/a5b3b95cd8f2cd761890eab0f13cdbcaae6bab5f))
+* for TCRs of TCRs, display information from the TCR. Closes [#30](https://github.com/kleros/gtcr/issues/30) ([4588b5f](https://github.com/kleros/gtcr/commit/4588b5f25f8f2f4a35459d1770e3e9320a79763f))
+* update to latest contract version ([1267ff5](https://github.com/kleros/gtcr/commit/1267ff5bf9343630941f8e6575122595e3338c96))
+* upgrade to latest contract version ([1b60ffe](https://github.com/kleros/gtcr/commit/1b60ffea910f9f1165ff3a2bc7257632e692ad74))
+* use latest evidence display ([5d6b30c](https://github.com/kleros/gtcr/commit/5d6b30c5a763b1f5e0760265b67a354d13b0829a))
+
+
+### Bug Fixes
+
+* display correct listing criteria for listing badges and close [#38](https://github.com/kleros/gtcr/issues/38) ([4daa036](https://github.com/kleros/gtcr/commit/4daa0369c302d00d5616c5d8e7dbccf46f70c116))
+* error handling and card styling ([b992f8c](https://github.com/kleros/gtcr/commit/b992f8c8cf9717d367b4179fc1bb6918ee351114))
+* evidence subscription api call ([7ebef22](https://github.com/kleros/gtcr/commit/7ebef2257afc26620544e503338bef8772af1f1c))
+* filter submission events by evidence group ID ([b59fdad](https://github.com/kleros/gtcr/commit/b59fdadac3d0c2a26bc15c074040fd35da84b428))
+* handle network-based notifications ([a814116](https://github.com/kleros/gtcr/commit/a814116cf6355876de145dbfc46d8ccb1a93c138))
+* hide badges already added from options. Closes [#37](https://github.com/kleros/gtcr/issues/37) ([75350d8](https://github.com/kleros/gtcr/commit/75350d816e5208bfe9cb543e7d4c523638fc8ae2))
+* image selector aspect ratio ([30d8db3](https://github.com/kleros/gtcr/commit/30d8db38beb2a76f38fd971278f95ae5aefbc8c4))
+* incorrect proptype check ([b9628f3](https://github.com/kleros/gtcr/commit/b9628f34e10ca02684789fc46cc318b233a09cf6))
+* make whole card clickable ([f3fd3ca](https://github.com/kleros/gtcr/commit/f3fd3ca7ebf0d9f25d001094da12f9391135dcba))
+* my challenges and my submissions filters ([2dbbe46](https://github.com/kleros/gtcr/commit/2dbbe46ebb81f1eff5a52e0a8979236655807a38))
+* notification service api ([1514562](https://github.com/kleros/gtcr/commit/15145622534340061a5e8ad8e30dd930bd2cf4bf))
+* sort items by oldest first ([1de8e20](https://github.com/kleros/gtcr/commit/1de8e2012437af23d2b54ed3534de53d93f00066))
+* use latest tcr contract version ([437a2d8](https://github.com/kleros/gtcr/commit/437a2d86589860ab9da41b6064f912c8477814e4))
+
 ### [0.9.2](https://github.com/kleros/gtcr/compare/v0.9.1...v0.9.2) (2020-02-26)
 
 
