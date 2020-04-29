@@ -1,23 +1,84 @@
-import React from 'react'
+import React, { useEffect, useState, useCallback } from 'react'
+import { Alert } from 'antd'
+import localforage from 'localforage'
+import TextLoop from 'react-text-loop'
+import sizeMe from 'react-sizeme'
 import styled from 'styled-components/macro'
+import PropTypes from 'prop-types'
 
-const StyledWarning = styled.div`
-  background: yellow;
-  padding: 10px 10%;
+const BETA_WARNING_DISMISSED = 'BETA_WARNING_DISMISSED'
+
+const BannerContainer = styled.div`
+  background-color: #fffbe6;
+  padding: 0 8%;
+  z-index: 1000;
 `
 
-const WarningBanner = () => (
-  <StyledWarning>
-    Warning: This is beta software. There is a{' '}
-    <a
-      href="https://github.com/kleros/tcr/issues/20"
-      target="_blank"
-      rel="noopener noreferrer"
-    >
-      live bug bounty on the contracts
-    </a>{' '}
-    used by Curate.
-  </StyledWarning>
+const BannerText = (
+  <TextLoop mask>
+    <div>
+      Warning: This is beta software. There is{' '}
+      <a
+        href="https://github.com/kleros/tcr/issues/20"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        a bug bounty on Curate.
+      </a>{' '}
+      Participate for a chance to win up to 25 ETH.
+    </div>
+  </TextLoop>
 )
 
-export default WarningBanner
+const LoopBannerText = (
+  <TextLoop mask>
+    <div>Warning: This is beta software.</div>
+    <div>
+      Participate on the{' '}
+      <a
+        href="https://github.com/kleros/tcr/issues/20"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        Curate bug bounty
+      </a>{' '}
+    </div>
+  </TextLoop>
+)
+
+const WarningBanner = ({ size: { width } }) => {
+  const [dismissed, setDismissed] = useState()
+  useEffect(() => {
+    ;(async () => {
+      const wasDismissed =
+        (await localforage.getItem(BETA_WARNING_DISMISSED)) || false
+      setDismissed(wasDismissed)
+    })()
+  }, [])
+  const onClose = useCallback(
+    () => localforage.setItem(BETA_WARNING_DISMISSED, true),
+    []
+  )
+
+  if (dismissed !== false) return <div />
+
+  return (
+    <BannerContainer>
+      <Alert
+        message={width < 910 ? LoopBannerText : BannerText}
+        banner
+        closable
+        onClose={onClose}
+        closeText="Don't show again"
+      />
+    </BannerContainer>
+  )
+}
+
+WarningBanner.propTypes = {
+  size: PropTypes.shape({
+    width: PropTypes.number
+  }).isRequired
+}
+
+export default sizeMe({ monitorWidth: true })(WarningBanner)
