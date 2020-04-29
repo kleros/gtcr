@@ -13,6 +13,7 @@ import { useWeb3Context } from 'web3-react'
 import useNetworkEnvVariable from '../../hooks/network-env'
 import itemTypes from '../../utils/item-types'
 import RelTCRParams from './rel-tcr-params'
+import WarningBanner from '../../components/beta-warning'
 
 const { Step } = Steps
 
@@ -212,6 +213,7 @@ export default () => {
 
   return (
     <>
+      <WarningBanner />
       <StyledBanner>
         <Typography.Title ellipsis style={{ marginBottom: '0' }}>
           TCR Factory

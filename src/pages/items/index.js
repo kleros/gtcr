@@ -38,6 +38,7 @@ import {
   updateFilter,
   queryOptionsToFilterArray
 } from '../../utils/filters'
+import WarningBanner from '../../components/beta-warning'
 
 const StyledContent = styled(Layout.Content)`
   word-break: break-word;
@@ -434,6 +435,7 @@ const Items = ({ search, history }) => {
 
   return (
     <>
+      <WarningBanner />
       <StyledBanner>
         <StyledHeader>
           {metadata ? (

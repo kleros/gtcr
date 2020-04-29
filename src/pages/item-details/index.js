@@ -23,6 +23,7 @@ import { WalletContext } from '../../bootstrap/wallet-context'
 import SearchBar from '../../components/search-bar'
 import { capitalizeFirstLetter, ZERO_ADDRESS } from '../../utils/string'
 import Badges from './badges'
+import WarningBanner from '../../components/beta-warning'
 
 const StyledLayoutContent = styled(Layout.Content)`
   padding: 0 9.375vw 42px;
@@ -172,6 +173,7 @@ const ItemDetails = ({ itemID }) => {
   const metadata = metaEvidence && metaEvidence.metadata
   return (
     <>
+      <WarningBanner />
       <StyledBanner>
         <Typography.Title ellipsis style={{ marginBottom: '0' }}>
           {metadata && capitalizeFirstLetter(metadata.itemName)} Details
