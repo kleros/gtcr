@@ -3,7 +3,7 @@ import styled from 'styled-components/macro'
 
 const StyledWarning = styled.div`
   background: yellow;
-  padding: 0 10%;
+  padding: 10px 10%;
 `
 
 const WarningBanner = () => (
