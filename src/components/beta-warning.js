@@ -10,8 +10,11 @@ const BETA_WARNING_DISMISSED = 'BETA_WARNING_DISMISSED'
 
 const BannerContainer = styled.div`
   background-color: #fffbe6;
-  padding: 0 8%;
   z-index: 1000;
+
+  @media (min-width: 500px) {
+    padding: 0 8%;
+  }
 `
 
 const BannerText = (
@@ -31,16 +34,17 @@ const BannerText = (
 )
 
 const LoopBannerText = (
-  <TextLoop mask>
+  <TextLoop mask interval={5000}>
     <div>Warning: This is beta software.</div>
+    <div>Win up to 25 ETH by...</div>
     <div>
-      Participate on the{' '}
+      ...participating on the{' '}
       <a
         href="https://github.com/kleros/tcr/issues/20"
         target="_blank"
         rel="noopener noreferrer"
       >
-        Curate bug bounty
+        bug bounty.
       </a>{' '}
     </div>
   </TextLoop>
