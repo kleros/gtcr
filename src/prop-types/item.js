@@ -1,7 +1,7 @@
 import PropTypes from 'prop-types'
 import BNPropType from './bn'
 
-export default PropTypes.shape({
+const ItemPropTypes = PropTypes.shape({
   ID: PropTypes.string.isRequired,
   status: PropTypes.number.isRequired,
   disputed: PropTypes.bool.isRequired,
@@ -15,3 +15,5 @@ export default PropTypes.shape({
   submissionTime: BNPropType.isRequired,
   paidFees: PropTypes.arrayOf(BNPropType).isRequired
 })
+
+export default ItemPropTypes

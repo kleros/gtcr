@@ -7,14 +7,13 @@ import {
   Spin,
   Pagination,
   Tag,
-  Select,
-  Card
+  Select
 } from 'antd'
 import { Link } from 'react-router-dom'
 import React, { useEffect, useState, useContext, useMemo, useRef } from 'react'
 import PropTypes from 'prop-types'
-import ErrorPage from '../error-page'
 import styled from 'styled-components/macro'
+import ErrorPage from '../error-page'
 import { WalletContext } from '../../bootstrap/wallet-context'
 import {
   ZERO_ADDRESS,
@@ -22,15 +21,12 @@ import {
   capitalizeFirstLetter
 } from '../../utils/string'
 import { TCRViewContext } from '../../bootstrap/tcr-view-context'
-import ItemStatusBadge from '../../components/item-status-badge'
 import { bigNumberify } from 'ethers/utils'
 import { gtcrDecode } from '../../utils/encoder'
 import SubmitModal from '../item-details/modals/submit'
 import SubmitConnectModal from '../item-details/modals/submit-connect'
 import SearchBar from '../../components/search-bar'
 import { useWeb3Context } from 'web3-react'
-import ItemCardContent from '../../components/item-card-content'
-import TCRCard from '../../components/tcr-card-content'
 import {
   searchStrToFilterObj,
   filterLabel,
@@ -39,6 +35,7 @@ import {
   queryOptionsToFilterArray
 } from '../../utils/filters'
 import WarningBanner from '../../components/beta-warning'
+import ItemCard from './item-card'
 
 const StyledContent = styled(Layout.Content)`
   word-break: break-word;
@@ -546,25 +543,14 @@ const Items = ({ search, history }) => {
               <StyledGrid>
                 {items &&
                   items.map((item, i) => (
-                    <Link to={`/tcr/${tcrAddress}/${item.tcrData.ID}`} key={i}>
-                      <Card
-                        style={{ height: '100%' }}
-                        title={
-                          <ItemStatusBadge
-                            item={item.tcrData}
-                            challengePeriodDuration={challengePeriodDuration}
-                            timestamp={timestamp}
-                            dark
-                          />
-                        }
-                      >
-                        {metaEvidence.metadata.isTCRofTCRs ? (
-                          <TCRCard tcrAddress={item.columns[0].value} />
-                        ) : (
-                          <ItemCardContent item={item} />
-                        )}
-                      </Card>
-                    </Link>
+                    <ItemCard
+                      item={item}
+                      key={i}
+                      metaEvidence={metaEvidence}
+                      tcrAddress={tcrAddress}
+                      challengePeriodDuration={challengePeriodDuration}
+                      timestamp={timestamp}
+                    />
                   ))}
               </StyledGrid>
               <StyledPagination
