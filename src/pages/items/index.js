@@ -10,7 +10,14 @@ import {
   Select
 } from 'antd'
 import { Link } from 'react-router-dom'
-import React, { useEffect, useState, useContext, useMemo, useRef } from 'react'
+import React, {
+  useEffect,
+  useState,
+  useContext,
+  useMemo,
+  useRef,
+  useCallback
+} from 'react'
 import PropTypes from 'prop-types'
 import styled from 'styled-components/macro'
 import ErrorPage from '../error-page'
@@ -122,6 +129,7 @@ const Items = ({ search, history }) => {
   const [submissionFormOpen, setSubmissionFormOpen] = useState()
   const [oldActiveItems, setOldActiveItems] = useState([])
   const [error, setError] = useState()
+  const [revealed, setRevealed] = useState()
   const [fetchItems, setFetchItems] = useState({
     fetchStarted: false,
     isFetching: false,
@@ -135,6 +143,9 @@ const Items = ({ search, history }) => {
   const refAttr = useRef()
   const [eventListenerSet, setEventListenerSet] = useState()
   const queryOptions = searchStrToFilterObj(search)
+  const revealAll = useCallback(() => {
+    setRevealed(true)
+  }, [])
 
   // Fetch number of pages for the current filter
   useEffect(() => {
@@ -550,6 +561,8 @@ const Items = ({ search, history }) => {
                       tcrAddress={tcrAddress}
                       challengePeriodDuration={challengePeriodDuration}
                       timestamp={timestamp}
+                      onRevealAll={revealAll}
+                      revealed={revealed}
                     />
                   ))}
               </StyledGrid>

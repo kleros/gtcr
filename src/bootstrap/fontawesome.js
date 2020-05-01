@@ -12,7 +12,8 @@ import {
   faSearch,
   faBell,
   faFileAlt,
-  faCheck
+  faCheck,
+  faExclamationTriangle
 } from '@fortawesome/free-solid-svg-icons'
 
 library.add(
@@ -28,5 +29,6 @@ library.add(
   faSearch,
   faBell,
   faFileAlt,
-  faCheck
+  faCheck,
+  faExclamationTriangle
 )
