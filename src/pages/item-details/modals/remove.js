@@ -52,7 +52,7 @@ const RemoveModal = ({ item, itemName = 'item', fileURI, ...rest }) => {
         }
 
         // Request signature and send removal request.
-        const tx = await gtcr.removeItem(item.data, ipfsEvidencePath, {
+        const tx = await gtcr.removeItem(item.ID, ipfsEvidencePath, {
           value: removalDeposit
         })
 
