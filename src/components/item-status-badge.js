@@ -62,14 +62,16 @@ const ItemStatusBadge = ({
 
   if (
     typeof statusCode !== 'number' &&
-    (!item || !timestamp || !challengePeriodDuration)
+    !item &&
+    !timestamp &&
+    !challengePeriodDuration
   )
     return (
       <StyledSkeleton active paragraph={false} title={SkeletonTitleProps} />
     )
 
-  statusCode =
-    statusCode || itemToStatusCode(item, timestamp, challengePeriodDuration)
+  if (typeof statusCode !== 'number')
+    statusCode = itemToStatusCode(item, timestamp, challengePeriodDuration)
 
   return (
     <Badge
