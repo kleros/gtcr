@@ -83,7 +83,6 @@ const RemoveModal = ({ item, itemName = 'item', fileURI, ...rest }) => {
       }),
     [
       item.ID,
-      item.data,
       itemName,
       metadata,
       pushWeb3Action,
