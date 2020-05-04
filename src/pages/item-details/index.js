@@ -1,4 +1,4 @@
-import { Layout, Typography } from 'antd'
+import { Layout, Breadcrumb } from 'antd'
 import React, {
   useState,
   useEffect,
@@ -170,14 +170,21 @@ const ItemDetails = ({ itemID }) => {
       />
     )
 
-  const metadata = metaEvidence && metaEvidence.metadata
+  const { metadata } = metaEvidence || {}
+  const { tcrTitle, itemName, columns } = metadata || {}
+
   return (
     <>
       <WarningBanner />
       <StyledBanner>
-        <Typography.Title ellipsis style={{ marginBottom: '0' }}>
-          {metadata && capitalizeFirstLetter(metadata.itemName)} Details
-        </Typography.Title>
+        <Breadcrumb separator=">">
+          <Breadcrumb.Item href={`/tcr/${tcrAddress}`}>
+            {tcrTitle}
+          </Breadcrumb.Item>
+          <Breadcrumb.Item>
+            {itemName && capitalizeFirstLetter(itemName)} Details
+          </Breadcrumb.Item>
+        </Breadcrumb>
       </StyledBanner>
       <SearchBar />
       <StyledLayoutContent>
@@ -191,9 +198,10 @@ const ItemDetails = ({ itemID }) => {
         {/* Crowdfunding card is only rendered if the item has an appealable dispute. */}
         <CrowdfundingCard item={decodedItem || item} timestamp={timestamp} />
         <ItemDetailsCard
-          title={`${(metadata && capitalizeFirstLetter(metadata.itemName)) ||
-            'Item'} Details`}
-          columns={metadata && metadata.columns}
+          title={`${
+            itemName ? capitalizeFirstLetter(itemName) : 'Item'
+          } Details`}
+          columns={columns}
           loading={!metadata || !decodedItem || !decodedItem.decodedData}
           item={decodedItem}
         />
