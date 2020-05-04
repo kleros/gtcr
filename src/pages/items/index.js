@@ -7,7 +7,8 @@ import {
   Spin,
   Pagination,
   Tag,
-  Select
+  Select,
+  Switch
 } from 'antd'
 import { Link } from 'react-router-dom'
 import React, {
@@ -100,6 +101,10 @@ const StyledGrid = styled.div`
   grid-template-columns: repeat(auto-fill, minmax(225px, 1fr));
 `
 
+const StyledSwitch = styled(Switch)`
+  margin-right: 8px;
+`
+
 const pagingItem = (_, type, originalElement) => {
   if (type === 'prev') return <span>Previous</span>
   if (type === 'next') return <span>Next</span>
@@ -129,7 +134,6 @@ const Items = ({ search, history }) => {
   const [submissionFormOpen, setSubmissionFormOpen] = useState()
   const [oldActiveItems, setOldActiveItems] = useState([])
   const [error, setError] = useState()
-  const [revealed, setRevealed] = useState()
   const [fetchItems, setFetchItems] = useState({
     fetchStarted: false,
     isFetching: false,
@@ -143,8 +147,9 @@ const Items = ({ search, history }) => {
   const refAttr = useRef()
   const [eventListenerSet, setEventListenerSet] = useState()
   const queryOptions = searchStrToFilterObj(search)
-  const revealAll = useCallback(() => {
-    setRevealed(true)
+  const [nsfwFilterOn, setNSFWFilter] = useState(true)
+  const toggleNSFWFilter = useCallback(checked => {
+    setNSFWFilter(checked)
   }, [])
 
   // Fetch number of pages for the current filter
@@ -505,6 +510,12 @@ const Items = ({ search, history }) => {
             <>
               <StyledFilters>
                 <div>
+                  <StyledSwitch
+                    checkedChildren="NSFW Filter: On"
+                    unCheckedChildren="NSFW Filter: Off"
+                    checked={nsfwFilterOn}
+                    onChange={toggleNSFWFilter}
+                  />
                   {Object.keys(queryOptions)
                     .filter(
                       key =>
@@ -561,8 +572,7 @@ const Items = ({ search, history }) => {
                       tcrAddress={tcrAddress}
                       challengePeriodDuration={challengePeriodDuration}
                       timestamp={timestamp}
-                      onRevealAll={revealAll}
-                      revealed={revealed}
+                      forceReveal={!nsfwFilterOn}
                     />
                   ))}
               </StyledGrid>

@@ -96,10 +96,10 @@ const ItemCard = ({
   item,
   challengePeriodDuration,
   timestamp,
-  onRevealAll,
+  forceReveal,
   ...rest
 }) => {
-  const [revealed, setRevealed] = useState(rest.revealed)
+  const [revealed, setRevealed] = useState()
   const onReveal = useCallback(() => {
     setRevealed(true)
   }, [])
@@ -113,24 +113,22 @@ const ItemCard = ({
   )
 
   if (
+    statusCode !== STATUS_CODE.REJECTED &&
     statusCode !== STATUS_CODE.CHALLENGED &&
     statusCode !== STATUS_CODE.CROWDFUNDING &&
-    statusCode !== STATUS_CODE
+    statusCode !== STATUS_CODE.CROWDFUNDING_WINNER
   )
     return <CardItemInfo item={item} statusCode={statusCode} {...rest} />
 
   return (
     <FlipCard>
-      <FlipCardInner revealed={rest.revealed || revealed}>
+      <FlipCardInner revealed={forceReveal || revealed}>
         <FlipCardFront>
           <CardNSFWWarn>
             <FontAwesomeIcon icon="exclamation-triangle" size="2x" />
             <p>Warning: potentially offensive content</p>
             <Button type="primary" onClick={onReveal}>
-              I understand
-            </Button>
-            <Button type="link" onClick={onRevealAll} ghost>
-              Reveal All
+              Reveal
             </Button>
           </CardNSFWWarn>
         </FlipCardFront>
@@ -145,8 +143,7 @@ const ItemCard = ({
 ItemCard.propTypes = {
   tcrAddress: PropTypes.string.isRequired,
   challengePeriodDuration: BNPropType.isRequired,
-  onRevealAll: PropTypes.func,
-  revealed: PropTypes.bool,
+  forceReveal: PropTypes.bool,
   timestamp: BNPropType.isRequired,
   metaEvidence: PropTypes.shape({
     metadata: PropTypes.shape({
@@ -166,8 +163,7 @@ ItemCard.propTypes = {
 }
 
 ItemCard.defaultProps = {
-  onRevealAll: null,
-  revealed: null
+  forceReveal: null
 }
 
 export default ItemCard
