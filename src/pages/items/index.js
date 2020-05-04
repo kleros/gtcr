@@ -21,6 +21,7 @@ import React, {
 } from 'react'
 import PropTypes from 'prop-types'
 import styled from 'styled-components/macro'
+import localforage from 'localforage'
 import ErrorPage from '../error-page'
 import { WalletContext } from '../../bootstrap/wallet-context'
 import {
@@ -44,6 +45,8 @@ import {
 } from '../../utils/filters'
 import WarningBanner from '../../components/beta-warning'
 import ItemCard from './item-card'
+
+const NSFW_FILTER_KEY = 'NSFW_FILTER_KEY'
 
 const StyledContent = styled(Layout.Content)`
   word-break: break-word;
@@ -150,6 +153,15 @@ const Items = ({ search, history }) => {
   const [nsfwFilterOn, setNSFWFilter] = useState(true)
   const toggleNSFWFilter = useCallback(checked => {
     setNSFWFilter(checked)
+    localforage.setItem(NSFW_FILTER_KEY, checked)
+  }, [])
+
+  // Fetch NSFW user setting from localforage.
+  useEffect(() => {
+    ;(async () => {
+      const savedSetting = await localforage.getItem(NSFW_FILTER_KEY)
+      if (typeof savedSetting === 'boolean') setNSFWFilter(savedSetting)
+    })()
   }, [])
 
   // Fetch number of pages for the current filter
