@@ -156,7 +156,7 @@ const Items = ({ search, history }) => {
     localforage.setItem(NSFW_FILTER_KEY, checked)
   }, [])
 
-  // Fetch NSFW user setting from localforage.
+  // Load NSFW user setting from localforage.
   useEffect(() => {
     ;(async () => {
       const savedSetting = await localforage.getItem(NSFW_FILTER_KEY)
@@ -576,17 +576,24 @@ const Items = ({ search, history }) => {
               </StyledFilters>
               <StyledGrid>
                 {items &&
-                  items.map((item, i) => (
-                    <ItemCard
-                      item={item}
-                      key={i}
-                      metaEvidence={metaEvidence}
-                      tcrAddress={tcrAddress}
-                      challengePeriodDuration={challengePeriodDuration}
-                      timestamp={timestamp}
-                      forceReveal={!nsfwFilterOn}
-                    />
-                  ))}
+                  items
+                    .sort(({ tcrData: tcrDataA }, { tcrData: tcrDataB }) => {
+                      // Display items with pending requests first.
+                      if (!tcrDataA.resolved && tcrDataB.resolved) return -1
+                      if (tcrDataA.resolved && !tcrDataB.resolved) return 1
+                      return 0
+                    })
+                    .map((item, i) => (
+                      <ItemCard
+                        item={item}
+                        key={i}
+                        metaEvidence={metaEvidence}
+                        tcrAddress={tcrAddress}
+                        challengePeriodDuration={challengePeriodDuration}
+                        timestamp={timestamp}
+                        forceReveal={!nsfwFilterOn}
+                      />
+                    ))}
               </StyledGrid>
               <StyledPagination
                 total={fetchItemCount.data || 0}
