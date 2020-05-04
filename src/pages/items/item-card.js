@@ -60,15 +60,21 @@ const CardNSFWWarn = styled(Card)`
   }
 `
 
+const StyledCardInfo = styled(Card)`
+  & > .ant-card-head {
+    display: flex;
+  }
+`
+
 const CardItemInfo = ({ item, statusCode, tcrAddress, metaEvidence }) => (
   <Link to={`/tcr/${tcrAddress}/${item.tcrData.ID}`}>
-    <Card title={<ItemStatusBadge statusCode={statusCode} dark />}>
+    <StyledCardInfo title={<ItemStatusBadge statusCode={statusCode} dark />}>
       {metaEvidence.metadata.isTCRofTCRs ? (
         <TCRCard tcrAddress={item.columns[0].value} />
       ) : (
         <ItemCardContent item={item} />
       )}
-    </Card>
+    </StyledCardInfo>
   </Link>
 )
 
