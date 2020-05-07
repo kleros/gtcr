@@ -226,6 +226,8 @@ const Timeline = ({ request, requestID, item }) => {
 
   // Display loading indicator
   if (!item || !request) return <Skeleton active />
+
+  // TODO: Fetch request type from RequestSubmitted logs.
   const { requestType, resolved, disputed } = request
 
   const metadata = metaEvidence && metaEvidence.metadata

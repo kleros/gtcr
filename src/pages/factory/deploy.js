@@ -239,7 +239,7 @@ const Deploy = ({ resetTcrState, setTxState, tcrState }) => {
       setTxSubmitted(relTCRtx.hash)
       return {
         tx: relTCRtx,
-        actionMessage: 'Deploying Related TCR',
+        actionMessage: 'Deploying Badges TCR',
         deployTCR: true,
         onTxMined: async ({ contractAddress }) => {
           setTxState({

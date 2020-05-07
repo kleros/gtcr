@@ -18,6 +18,7 @@
   REACT_APP_METAMASK_SITE_URL='https://metamask.io'
   REACT_APP_TRUST_SITE_URL='https://trustwallet.com'
   REACT_APP_WALLETCONNECT_BRIDGE_URL='https://bridge.walletconnect.org'
+  REACT_APP_ETH_GAS_STATION=https://ethgasstation.info/api/ethgasAPI.json
 
 [[redirects]]
   from = "/*"

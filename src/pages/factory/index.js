@@ -1,5 +1,5 @@
-import { Steps, Button, Icon, Card, Empty, Typography } from 'antd'
-import React, { useState, useEffect } from 'react'
+import { Steps, Button, Icon, Card, Empty, Typography, Alert } from 'antd'
+import React, { useState, useEffect, useMemo } from 'react'
 import PropTypes from 'prop-types'
 import { Link } from 'react-router-dom'
 import { useDebounce } from 'use-debounce'
@@ -14,6 +14,7 @@ import useNetworkEnvVariable from '../../hooks/network-env'
 import itemTypes from '../../utils/item-types'
 import RelTCRParams from './rel-tcr-params'
 import WarningBanner from '../../components/beta-warning'
+import { formatEther, parseUnits } from 'ethers/utils'
 
 const { Step } = Steps
 
@@ -33,6 +34,10 @@ const StyledBanner = styled.div`
   background: linear-gradient(270deg, #f2e3ff 22.92%, #ffffff 76.25%);
   box-shadow: 0px 3px 24px #bc9cff;
   color: #4d00b4;
+`
+
+const StyledAlert = styled(Alert)`
+  margin-bottom: 42px;
 `
 
 const formIds = [
@@ -126,7 +131,7 @@ const useCachedFactory = version => {
     relColumns: [
       {
         label: 'Address',
-        description: 'The related TCR address',
+        description: 'The Badges TCR address',
         type: itemTypes.GTCR_ADDRESS,
         isIdentifier: true
       },
@@ -203,6 +208,7 @@ const useCachedFactory = version => {
 }
 
 export default () => {
+  const [costETH, setCostETH] = useState()
   const cachedFactory = useCachedFactory(version)
   const {
     tcrState: { currStep, transactions },
@@ -210,6 +216,31 @@ export default () => {
     previousStep,
     STEP_COUNT
   } = cachedFactory
+
+  useEffect(() => {
+    ;(async () => {
+      const approximateDeployGas = 3800000
+      const { average } = await (
+        await fetch(process.env.REACT_APP_ETH_GAS_STATION)
+      ).json() // Response is in Gwei * 10.
+      const deployCostGwei = (average / 10) * approximateDeployGas * 2 // Multiply by 2 since we deploy 2 contracts.
+      setCostETH(
+        Number(
+          formatEther(parseUnits(deployCostGwei.toString(), 'gwei'))
+        ).toFixed(2)
+      )
+    })()
+  }, [])
+
+  const deployCostMessage = useMemo(() => {
+    const message =
+      'Creating a TCR requires deploying 2 contracts, one for the TCR itself and one for the Badges TCR.'
+    if (!process.env.REACT_APP_ETH_GAS_STATION)
+      return `${message} Depending on network usage, this can be costly. We recommend that you familiarize yourself with all the parameters to avoid mistakes.`
+
+    if (costETH)
+      return `${message} The cost of deploying both contracts at the moment is approximately ${costETH} ETH. We recommend that you familiarize yourself with all the parameters to avoid mistakes.`
+  }, [costETH])
 
   return (
     <>
@@ -220,10 +251,18 @@ export default () => {
         </Typography.Title>
       </StyledBanner>
       <StyledLayoutContent>
+        {deployCostMessage && (
+          <StyledAlert
+            message="Creation Cost"
+            description={deployCostMessage}
+            type="info"
+            showIcon
+          />
+        )}
         <Steps current={currStep - 1}>
           <Step title="TCR Parameters" />
           <Step title="Item Parameters" />
-          <Step title="Related TCR Parameters" />
+          <Step title="Badges TCR Parameters" />
           <Step title="Deploy" />
         </Steps>
         <StyledContainer>

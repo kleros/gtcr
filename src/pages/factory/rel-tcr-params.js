@@ -84,7 +84,7 @@ const RelTCRParams = ({
   }, [])
 
   return (
-    <Card title="Choose the parameters of the Related TCR">
+    <Card title="Choose the parameters of the Badges TCR">
       <Form layout="vertical" id={formId} onSubmit={handleSubmit}>
         <CustomInput
           name="relSubmissionBaseDeposit"

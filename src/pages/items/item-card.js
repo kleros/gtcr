@@ -61,6 +61,8 @@ const CardNSFWWarn = styled(Card)`
 `
 
 const StyledCardInfo = styled(Card)`
+  height: 100%;
+
   & > .ant-card-head {
     display: flex;
   }
