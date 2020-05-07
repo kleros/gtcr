@@ -201,7 +201,7 @@ const TCRParams = ({
           type={itemTypes.NUMBER}
           label={
             <span>
-              Submission Challenge Deposit&nbsp;
+              Challenge Submission Deposit&nbsp;
               <Tooltip title="This is the deposit required to challenge a submission.">
                 <Icon type="question-circle-o" />
               </Tooltip>
@@ -218,7 +218,7 @@ const TCRParams = ({
           type={itemTypes.NUMBER}
           label={
             <span>
-              Removal Challenge Deposit&nbsp;
+              Challenge Removal Deposit&nbsp;
               <Tooltip title="This is the deposit required to challenge a removal request.">
                 <Icon type="question-circle-o" />
               </Tooltip>

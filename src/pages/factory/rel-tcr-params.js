@@ -129,7 +129,7 @@ const RelTCRParams = ({
           type={itemTypes.NUMBER}
           label={
             <span>
-              Submission Challenge Deposit&nbsp;
+              Challenge Submission Deposit&nbsp;
               <Tooltip title="This is the deposit required to challenge a submission. It will be either reimbursed to the challenger or awarded to the submitter depending on who wins the dispute.">
                 <Icon type="question-circle-o" />
               </Tooltip>
@@ -146,7 +146,7 @@ const RelTCRParams = ({
           type={itemTypes.NUMBER}
           label={
             <span>
-              Removal Challenge Deposit&nbsp;
+              Challenge Removal Deposit&nbsp;
               <Tooltip title="This is the deposit required to challenge a removal request. It will be either reimbursed to the challenger or awarded to the party that removed the item depending on who wins the dispute.">
                 <Icon type="question-circle-o" />
               </Tooltip>
