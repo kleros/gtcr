@@ -74,15 +74,18 @@ CurrentStep.propTypes = {
 
 const useCachedFactory = version => {
   const { networkId } = useWeb3Context()
-  const defaultArbitrator = useNetworkEnvVariable(
-    'REACT_APP_DEFAULT_ARBITRATOR',
-    networkId
-  )
-  const defaultGovernor = useNetworkEnvVariable(
-    'REACT_APP_DEFAULT_GOVERNOR',
-    networkId
-  )
-  const arbitratorExtraData = useNetworkEnvVariable(
+  const {
+    address: defaultArbitrator,
+    label: defaultArbLabel
+  } = useNetworkEnvVariable('REACT_APP_DEFAULT_ARBITRATOR', networkId)
+  const {
+    address: defaultGovernor,
+    label: defaultGovernorLabel
+  } = useNetworkEnvVariable('REACT_APP_DEFAULT_GOVERNOR', networkId)
+  const {
+    data: defaultArbitratorExtraData,
+    label: defaultArbDataLabel
+  } = useNetworkEnvVariable(
     'REACT_APP_DEFAULT_ARBITRATOR_EXTRA_DATA',
     networkId
   )
@@ -101,7 +104,7 @@ const useCachedFactory = version => {
     requireRemovalEvidence: true,
     tcrPrimaryDocument: '',
     tcrLogo: '',
-    arbitratorExtraData: arbitratorExtraData,
+    arbitratorExtraData: defaultArbitratorExtraData,
     sharedStakeMultiplier: 1000,
     winnerStakeMultiplier: 1000,
     looserStakeMultiplier: 2000,
@@ -111,7 +114,7 @@ const useCachedFactory = version => {
     relSubmissionChallengeBaseDeposit: 0.015,
     relRemovalChallengeBaseDeposit: 0.025,
     relArbitratorAddress: defaultArbitrator || '',
-    relArbitratorExtraData: arbitratorExtraData,
+    relArbitratorExtraData: defaultArbitratorExtraData,
     relGovernorAddress: defaultGovernor || '',
     relChallengePeriodDuration: 3,
     relItemName: 'TCR',
@@ -203,7 +206,10 @@ const useCachedFactory = version => {
     previousStep,
     resetStepper,
     STEP_COUNT,
-    setTxState
+    setTxState,
+    defaultArbLabel,
+    defaultArbDataLabel,
+    defaultGovernorLabel
   }
 }
 
@@ -214,7 +220,10 @@ export default () => {
     tcrState: { currStep, transactions },
     nextStep,
     previousStep,
-    STEP_COUNT
+    STEP_COUNT,
+    defaultArbLabel,
+    defaultArbDataLabel,
+    defaultGovernorLabel
   } = cachedFactory
 
   useEffect(() => {
@@ -260,9 +269,19 @@ export default () => {
           />
         )}
         <Steps current={currStep - 1}>
-          <Step title="TCR Parameters" />
+          <Step
+            title="TCR Parameters"
+            defaultArbLabel={defaultArbLabel}
+            defaultArbDataLabel={defaultArbDataLabel}
+            defaultGovernorLabel={defaultGovernorLabel}
+          />
           <Step title="Item Parameters" />
-          <Step title="Badges TCR Parameters" />
+          <Step
+            title="Badges TCR Parameters"
+            defaultArbLabel={defaultArbLabel}
+            defaultArbDataLabel={defaultArbDataLabel}
+            defaultGovernorLabel={defaultGovernorLabel}
+          />
           <Step title="Deploy" />
         </Steps>
         <StyledContainer>

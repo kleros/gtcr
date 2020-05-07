@@ -36,6 +36,9 @@ const TCRParams = ({
   errors,
   setFieldValue,
   touched,
+  defaultArbLabel,
+  defaultArbDataLabel,
+  defaultGovernorLabel,
   ...rest
 }) => {
   const { values, setTcrState } = rest
@@ -324,7 +327,9 @@ const TCRParams = ({
               label={
                 <span>
                   Arbitrator&nbsp;
-                  <Tooltip title="The address of the arbitrator to use for this TCR.">
+                  <Tooltip
+                    title={`The address of the arbitrator to use for this TCR. By default it is set to ${defaultArbLabel}.`}
+                  >
                     <Icon type="question-circle-o" />
                   </Tooltip>
                 </span>
@@ -340,7 +345,9 @@ const TCRParams = ({
               label={
                 <span>
                   Arbitrator Extra Data&nbsp;
-                  <Tooltip title="The extra data for the arbitrator. See ERC 792 for more information.">
+                  <Tooltip
+                    title={`The extra data for the arbitrator. See ERC 792 for more information. Default: ${defaultArbDataLabel}`}
+                  >
                     <Icon type="question-circle-o" />
                   </Tooltip>
                 </span>
@@ -356,7 +363,9 @@ const TCRParams = ({
               label={
                 <span>
                   Governor&nbsp;
-                  <Tooltip title="The address of the governor to use for this TCR.">
+                  <Tooltip
+                    title={`The address of the governor to use for this TCR. It can update parameters such as the challenge period duration, deposits, primary document and the TCR governor. By default it is set to ${defaultGovernorLabel}`}
+                  >
                     <Icon type="question-circle-o" />
                   </Tooltip>
                 </span>
@@ -449,7 +458,10 @@ TCRParams.propTypes = {
       PropTypes.bool,
       PropTypes.arrayOf(PropTypes.objectOf(PropTypes.bool))
     ])
-  ).isRequired
+  ).isRequired,
+  defaultArbLabel: PropTypes.string.isRequired,
+  defaultArbDataLabel: PropTypes.string.isRequired,
+  defaultGovernorLabel: PropTypes.string.isRequired
 }
 
 const validationSchema = yup.object().shape({

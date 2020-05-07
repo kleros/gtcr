@@ -19,7 +19,7 @@ import {
 import { Col, Layout, Menu, Row, Spin, message, Button, Badge } from 'antd'
 import { register } from './service-worker'
 import { WalletProvider, WalletContext } from './wallet-context'
-import { NETWORK_NAME, NETWORK_COLOR } from '../utils/network-utils'
+import { NETWORK_NAME, NETWORK_COLOR, NETWORK } from '../utils/network-utils'
 import ErrorPage from '../pages/error-page'
 import useMainTCR2 from '../hooks/tcr2'
 import Identicon from '../components/identicon'
@@ -202,7 +202,7 @@ const {
 } = Connectors
 
 const connectors = {}
-const defaultNetwork = Number(process.env.REACT_APP_DEFAULT_NETWORK) || 42
+const defaultNetwork = Number(process.env.REACT_APP_DEFAULT_NETWORK) || 1
 if (process.env.REACT_APP_RPC_URLS) {
   const supportedNetworkURLs = JSON.parse(process.env.REACT_APP_RPC_URLS)
   connectors.Infura = new NetworkOnlyConnector({
@@ -233,7 +233,9 @@ if (fortmaticApiKey)
   })
 
 if (window.ethereum)
-  connectors.Injected = new InjectedConnector({ supportedNetworks: [42, 1] })
+  connectors.Injected = new InjectedConnector({
+    supportedNetworks: [NETWORK.MAINNET, NETWORK.KOVAN]
+  })
 
 const TopBar = () => {
   const web3Context = useWeb3Context()

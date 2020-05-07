@@ -1,5 +1,8 @@
+import { NETWORK } from '../utils/network-utils'
+
 const useNetworkEnvVariable = (envVariableKey, networkId) => {
-  const defaultNetwork = process.env.REACT_APP_DEFAULT_NETWORK || 42
+  const defaultNetwork =
+    process.env.REACT_APP_DEFAULT_NETWORK || NETWORK.MAINNET
   let data = ''
   try {
     data = process.env[envVariableKey]
