@@ -183,7 +183,20 @@ const RelTCRParams = ({
           <div className="ant-col ant-form-item-label">
             <label htmlFor="rel-primary-document">
               <span>Primary Document&nbsp;</span>
+              <Tooltip title="The TCR primary document defines the acceptance criteria that jurors and prosecutors will use to evaluate submissions. For a Badge TCR, the primary document should define what TCRs are considered interesting to the viewers of your TCR. Use the PDF file format.">
+                <Icon type="question-circle-o" />
+              </Tooltip>
             </label>
+            <br />
+            Click{' '}
+            <a
+              target="_blank"
+              rel="noopener noreferrer"
+              href="https://ipfs.kleros.io/ipfs/QmbqgkZoGu7jJ8nTqee4NypEhK7YVBEJJmPJbJxz8Bx8nY/t2cr-primary-doc.pdf"
+            >
+              here
+            </a>{' '}
+            to view an example of a primary document.
           </div>
           <StyledUpload
             name="rel-primary-document"

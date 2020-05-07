@@ -255,10 +255,20 @@ const TCRParams = ({
           <div className="ant-col ant-form-item-label">
             <label htmlFor="primary-document">
               <span>Primary Document&nbsp;</span>
-              <Tooltip title="This should be a pdf file with the registry acceptance criteria.">
+              <Tooltip title="The TCR primary document defines the acceptance criteria that jurors and prosecutors will use to evaluate submissions. Use the PDF file format.">
                 <Icon type="question-circle-o" />
               </Tooltip>
             </label>
+            <br />
+            Click{' '}
+            <a
+              target="_blank"
+              rel="noopener noreferrer"
+              href="https://ipfs.kleros.io/ipfs/QmbqgkZoGu7jJ8nTqee4NypEhK7YVBEJJmPJbJxz8Bx8nY/t2cr-primary-doc.pdf"
+            >
+              here
+            </a>{' '}
+            to view an example of a primary document.
           </div>
           <StyledUpload
             name="primary-document"
@@ -286,7 +296,7 @@ const TCRParams = ({
           <div className="ant-col ant-form-item-label">
             <label htmlFor="tcr-logo">
               <span>TCR Logo&nbsp;</span>
-              <Tooltip title="The TCR logo. Should be a 1:1 aspect ratio image with transparent background in SVG or PNG.">
+              <Tooltip title="The TCR logo. Should be a 1:1 aspect ratio image with transparent background in SVG or PNG. This logo will be displayed, for example, when your TCR is submitted to a TCR of TCRs or when it is added as badge of another TCR.">
                 <Icon type="question-circle-o" />
               </Tooltip>
             </label>
