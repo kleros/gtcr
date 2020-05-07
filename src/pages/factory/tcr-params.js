@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react'
-import { Card, Icon, Tooltip, Form, Switch, Upload, message } from 'antd'
+import { Card, Icon, Tooltip, Form, Switch, Upload, message, Alert } from 'antd'
 import { withFormik, Field } from 'formik'
 import PropTypes from 'prop-types'
 import * as yup from 'yup'
@@ -13,6 +13,10 @@ const StyledUpload = styled(Upload)`
   & > .ant-upload.ant-upload-select-picture-card {
     width: 100%;
   }
+`
+
+const StyledAlert = styled(Alert)`
+  margin-bottom: 32px;
 `
 
 const UploadButton = ({ loading }) => (
@@ -372,6 +376,64 @@ const TCRParams = ({
               }
               {...rest}
             />
+            <StyledAlert
+              message="To appeal, in addition to appeal fees, parties must also pay the fee stake. The fee stake is the reward given to the appeal fee contributors that funded the side that ultimately wins the dispute. The amount is calculated proportionally to the appeal cost using the multipliers below, given in basis points. For example, a multiplier of 1000 will result in the total fee stake being 10% of the appeal cost."
+              type="info"
+              showIcon
+            />
+            <StyledAlert
+              message="The total cost to fully fund one side of an appeal is: Total Appeal Cost = Appeal Cost + Appeal Cost * Stake Multiplier / 10000"
+              type="info"
+              showIcon
+            />
+            <CustomInput
+              name="sharedStakeMultiplier"
+              placeholder="1000"
+              error={errors.sharedStakeMultiplier}
+              touched={touched.sharedStakeMultiplier}
+              type={itemTypes.NUMBER}
+              label={
+                <span>
+                  Shared stake multiplier&nbsp;
+                  <Tooltip title="This is the multiplier for the stake both parties must pay to fully fund their side of an appeal when there isn't a winner or looser (e.g. when the arbitrator refused to rule). Given in basis points.">
+                    <Icon type="question-circle-o" />
+                  </Tooltip>
+                </span>
+              }
+              {...rest}
+            />
+            <CustomInput
+              name="winnerStakeMultiplier"
+              placeholder="1000"
+              error={errors.winnerStakeMultiplier}
+              touched={touched.winnerStakeMultiplier}
+              type={itemTypes.NUMBER}
+              label={
+                <span>
+                  Winner stake multiplier&nbsp;
+                  <Tooltip title="This is the multiplier for the fee stake the winner of a round must pay to fully fund his side of an appeal. Given in basis points.">
+                    <Icon type="question-circle-o" />
+                  </Tooltip>
+                </span>
+              }
+              {...rest}
+            />
+            <CustomInput
+              name="looserStakeMultiplier"
+              placeholder="2000"
+              error={errors.looserStakeMultiplier}
+              touched={touched.looserStakeMultiplier}
+              type={itemTypes.NUMBER}
+              label={
+                <span>
+                  Loser stake multiplier&nbsp;
+                  <Tooltip title="This is the multiplier for the fee stake the loser of a round must pay to fully fund his side of an appeal. Given in basis points.">
+                    <Icon type="question-circle-o" />
+                  </Tooltip>
+                </span>
+              }
+              {...rest}
+            />
             <Field name="requireRemovalEvidence">
               {({ field }) => (
                 <Form.Item
@@ -388,54 +450,6 @@ const TCRParams = ({
                 </Form.Item>
               )}
             </Field>
-            <CustomInput
-              name="sharedStakeMultiplier"
-              placeholder="1000"
-              error={errors.sharedStakeMultiplier}
-              touched={touched.sharedStakeMultiplier}
-              type={itemTypes.NUMBER}
-              label={
-                <span>
-                  Shared stake multiplier&nbsp;
-                  <Tooltip title="This is the multiplier for the stake parties must pay to raise an appeal when there isn't a winner or looser (e.g. when its the first round or the arbitrator refused to rule).">
-                    <Icon type="question-circle-o" />
-                  </Tooltip>
-                </span>
-              }
-              {...rest}
-            />
-            <CustomInput
-              name="winnerStakeMultiplier"
-              placeholder="1000"
-              error={errors.winnerStakeMultiplier}
-              touched={touched.winnerStakeMultiplier}
-              type={itemTypes.NUMBER}
-              label={
-                <span>
-                  Shared stake multiplier&nbsp;
-                  <Tooltip title="This is the multiplier for the stake the winner of a round must pay to raise an appeal.">
-                    <Icon type="question-circle-o" />
-                  </Tooltip>
-                </span>
-              }
-              {...rest}
-            />
-            <CustomInput
-              name="looserStakeMultiplier"
-              placeholder="2000"
-              error={errors.looserStakeMultiplier}
-              touched={touched.looserStakeMultiplier}
-              type={itemTypes.NUMBER}
-              label={
-                <span>
-                  Shared stake multiplier&nbsp;
-                  <Tooltip title="This is the multiplier for the stake the looser of a round must pay to raise an appeal.">
-                    <Icon type="question-circle-o" />
-                  </Tooltip>
-                </span>
-              }
-              {...rest}
-            />
           </>
         )}
       </Form>
