@@ -111,7 +111,14 @@ const TCRParams = ({
         <CustomInput
           name="tcrTitle"
           placeholder="Token² Curated List"
-          label={<span>Title</span>}
+          label={
+            <span>
+              Title&nbsp;
+              <Tooltip title="We suggest keeping the TCR title as short as possible for improved readability in mobile devices. In addition, some services such as twitter bots and push notifications can limit the number of characters per message, so using as few as possible on the title leaves room for more descriptive messages.">
+                <Icon type="question-circle-o" />
+              </Tooltip>
+            </span>
+          }
           error={errors.tcrTitle}
           touched={touched.tcrTitle}
           hasFeedback
@@ -143,7 +150,7 @@ const TCRParams = ({
             <span>
               Item Name&nbsp;
               <Tooltip
-                title={`What is the item? This will replace the word "item" in the TCR interface. Examples.: Ad (for a TCR of ads), Movie (for a TCR of movies)`}
+                title={`What is the item? This a noun will replace the word "item" in the TCR interface and notifications. For example, if we set this to the "Meme" on the TCR interface you will see buttons such as "Submit Meme" and "Challenge Meme". Similarly, notification messages will look something like "Someone submitted a Meme to Meme TCR. Review it for a chance to win up to X ETH!".`}
               >
                 <Icon type="question-circle-o" />
               </Tooltip>
