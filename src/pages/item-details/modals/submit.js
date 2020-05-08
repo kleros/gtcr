@@ -1,4 +1,4 @@
-import React, { useContext } from 'react'
+import React, { useContext, useCallback } from 'react'
 import {
   Spin,
   Modal,
@@ -7,7 +7,8 @@ import {
   Tooltip,
   Icon,
   Typography,
-  Descriptions
+  Descriptions,
+  Alert
 } from 'antd'
 import styled from 'styled-components/macro'
 import PropTypes from 'prop-types'
@@ -17,9 +18,10 @@ import { ethers } from 'ethers'
 import { gtcrEncode } from '../../../utils/encoder'
 import InputSelector from '../../../components/input-selector.js'
 import { withFormik } from 'formik'
-import { typeDefaultValues } from '../../../utils/item-types.js'
+import itemTypes, { typeDefaultValues } from '../../../utils/item-types.js'
 import ETHAmount from '../../../components/eth-amount.js'
 import BNPropType from '../../../prop-types/bn'
+import useFactory from '../../../hooks/factory'
 
 const StyledSpin = styled(Spin)`
   height: 60px;
@@ -29,6 +31,10 @@ const StyledSpin = styled(Spin)`
   display: flex;
 `
 
+const StyledAlert = styled(Alert)`
+  margin-bottom: 12px;
+`
+
 const SUBMISSION_FORM_ID = 'submitItemForm'
 
 const _SubmissionForm = ({
@@ -36,7 +42,9 @@ const _SubmissionForm = ({
   handleSubmit,
   setFieldValue,
   disabledFields,
-  values
+  values,
+  errors,
+  touched
 }) => (
   <Form onSubmit={handleSubmit} id={SUBMISSION_FORM_ID}>
     {columns &&
@@ -47,6 +55,7 @@ const _SubmissionForm = ({
           name={`${column.label}`}
           key={index}
           values={values}
+          error={errors[column.label]}
           label={
             <span>
               {column.label}&nbsp;
@@ -57,6 +66,7 @@ const _SubmissionForm = ({
           }
           setFieldValue={setFieldValue}
           disabled={disabledFields && disabledFields[index]}
+          touched={touched[column.label]}
         />
       ))}
   </Form>
@@ -72,7 +82,9 @@ _SubmissionForm.propTypes = {
   setFieldValue: PropTypes.func.isRequired,
   handleSubmit: PropTypes.func.isRequired,
   disabledFields: PropTypes.arrayOf(PropTypes.bool),
-  values: PropTypes.shape({})
+  values: PropTypes.shape({}),
+  errors: PropTypes.shape({}).isRequired,
+  touched: PropTypes.shape({}).isRequired
 }
 
 _SubmissionForm.defaultProps = {
@@ -93,6 +105,27 @@ const SubmissionForm = withFormik({
     ),
   handleSubmit: (values, { props: { postSubmit, columns } }) => {
     postSubmit(values, columns)
+  },
+  validate: async (values, { columns, deployedWithFactory }) => {
+    const errors = (
+      await Promise.all(
+        columns
+          .filter(({ type }) => type === itemTypes.GTCR_ADDRESS)
+          .map(async ({ label }) => ({
+            wasDeployedWithFactory: await deployedWithFactory(values[label]),
+            label: label
+          }))
+      )
+    )
+      .filter(res => !res.wasDeployedWithFactory)
+      .reduce(
+        (acc, curr) => ({
+          ...acc,
+          [curr.label]: `This doesn't look like a GTCR address. Are you in the correct network?`
+        }),
+        {}
+      )
+    if (Object.keys(errors).length > 0) throw errors
   }
 })(_SubmissionForm)
 
@@ -106,6 +139,54 @@ const SubmitModal = props => {
     disabledFields
   } = props
   const { pushWeb3Action } = useContext(WalletContext)
+  const { deployedWithFactory } = useFactory()
+
+  const { fileURI, metadata } = metaEvidence || {}
+  const { itemName, columns } = metadata || {}
+
+  const postSubmit = useCallback(
+    (values, columns) => {
+      pushWeb3Action(async ({ account, networkId }, signer) => {
+        const gtcr = new ethers.Contract(tcrAddress, _gtcr, signer)
+        const encodedParams = gtcrEncode({ columns, values })
+
+        // Request signature and submit.
+        const tx = await gtcr.addItem(encodedParams, {
+          value: submissionDeposit
+        })
+
+        onCancel() // Hide the submission modal.
+        return {
+          tx,
+          actionMessage: `Submitting ${(itemName && itemName.toLowerCase()) ||
+            'item'}`,
+          onTxMined: () => {
+            // Subscribe for notifications
+            if (!process.env.REACT_APP_NOTIFICATIONS_API_URL || networkId)
+              return
+            const itemID = ethers.utils.solidityKeccak256(
+              ['bytes'],
+              [encodedParams]
+            )
+            fetch(
+              `${process.env.REACT_APP_NOTIFICATIONS_API_URL}/${networkId}/api/subscribe`,
+              {
+                method: 'post',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  subscriberAddr: ethers.utils.getAddress(account),
+                  tcrAddr: ethers.utils.getAddress(tcrAddress),
+                  itemID,
+                  networkID: networkId
+                })
+              }
+            )
+          }
+        }
+      })
+    },
+    [itemName, onCancel, pushWeb3Action, submissionDeposit, tcrAddress]
+  )
 
   if (!metaEvidence || !submissionDeposit)
     return (
@@ -121,51 +202,6 @@ const SubmitModal = props => {
         <StyledSpin />
       </Modal>
     )
-
-  const {
-    fileURI,
-    metadata: { itemName, columns }
-  } = metaEvidence
-
-  const postSubmit = (values, columns) => {
-    pushWeb3Action(async ({ account, networkId }, signer) => {
-      const gtcr = new ethers.Contract(tcrAddress, _gtcr, signer)
-      const encodedParams = gtcrEncode({ columns, values })
-
-      // Request signature and submit.
-      const tx = await gtcr.addItem(encodedParams, {
-        value: submissionDeposit
-      })
-
-      onCancel() // Hide the submission modal.
-      return {
-        tx,
-        actionMessage: `Submitting ${(itemName && itemName.toLowerCase()) ||
-          'item'}`,
-        onTxMined: () => {
-          // Subscribe for notifications
-          if (!process.env.REACT_APP_NOTIFICATIONS_API_URL || networkId) return
-          const itemID = ethers.utils.solidityKeccak256(
-            ['bytes'],
-            [encodedParams]
-          )
-          fetch(
-            `${process.env.REACT_APP_NOTIFICATIONS_API_URL}/${networkId}/api/subscribe`,
-            {
-              method: 'post',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                subscriberAddr: ethers.utils.getAddress(account),
-                tcrAddr: ethers.utils.getAddress(tcrAddress),
-                itemID,
-                networkID: networkId
-              })
-            }
-          )
-        }
-      }
-    })
-  }
 
   return (
     <Modal
@@ -196,11 +232,17 @@ const SubmitModal = props => {
         </a>
         .
       </Typography.Title>
+      <StyledAlert
+        message="Submissions cannot be edited. Always double check your submissions and the listing criteria before proceeding."
+        type="info"
+        showIcon
+      />
       <SubmissionForm
         columns={columns}
         postSubmit={postSubmit}
         initialValues={initialValues}
         disabledFields={disabledFields}
+        deployedWithFactory={deployedWithFactory}
       />
       <Typography.Paragraph>
         A deposit is required to submit. This value reimbursed at the end of the
@@ -231,7 +273,8 @@ SubmitModal.propTypes = {
   metaEvidence: PropTypes.shape({
     metadata: PropTypes.shape({
       itemName: PropTypes.string,
-      columns: PropTypes.arrayOf(PropTypes.any)
+      columns: PropTypes.arrayOf(PropTypes.any),
+      isTCRofTCRs: PropTypes.bool
     }).isRequired,
     fileURI: PropTypes.string
   }).isRequired,

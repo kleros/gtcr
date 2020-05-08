@@ -80,7 +80,7 @@ const InputSelector = ({ type, setFieldValue, maxImgSizeMb, ...props }) => {
     case itemTypes.GTCR_ADDRESS:
     case itemTypes.ADDRESS:
     case itemTypes.NUMBER:
-      return <CustomInput type={type} {...props} name={name} />
+      return <CustomInput type={type} name={name} hasFeedback {...props} />
     case itemTypes.BOOLEAN:
       return (
         <Field name={name}>

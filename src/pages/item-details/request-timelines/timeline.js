@@ -47,7 +47,8 @@ const EventTimestamp = ({ blockNumber }) => {
   useEffect(() => {
     ;(async () => {
       if (!library || !active) return
-      setEventTime((await library.getBlock(blockNumber)).timestamp)
+      const block = await library.getBlock(blockNumber)
+      if (block) setEventTime(block.timestamp)
     })()
   }, [active, blockNumber, library])
 
