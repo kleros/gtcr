@@ -84,13 +84,30 @@ const ItemDetails = ({ itemID }) => {
   useEffect(() => {
     ;(async () => {
       try {
-        if (!gtcrView || !tcrAddress || !itemID) return
-        setRequests(await gtcrView.getItemRequests(tcrAddress, itemID))
+        if (!gtcr || !gtcrView || !tcrAddress || !itemID) return
+        const [requestStructs, rawRequestLogs] = await Promise.all([
+          gtcrView.getItemRequests(tcrAddress, itemID),
+          library.getLogs({
+            ...gtcr.filters.RequestSubmitted(itemID),
+            fromBlock: 0
+          })
+        ])
+
+        const requestLogs = rawRequestLogs
+          .map(log => gtcr.interface.parseLog(log))
+          .map(log => log.values)
+
+        setRequests(
+          requestStructs.map((request, i) => ({
+            ...request,
+            requestType: requestLogs[i]._requestType
+          }))
+        )
       } catch (err) {
         console.error('Error fetching item requests', err)
       }
     })()
-  }, [gtcrView, itemID, tcrAddress])
+  }, [gtcr, gtcrView, itemID, library, tcrAddress])
 
   // Decode item bytes once we have it and the meta evidence.
   useEffect(() => {

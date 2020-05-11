@@ -1706,10 +1706,10 @@
   resolved "https://registry.yarnpkg.com/@kleros/react-components/-/react-components-1.0.1.tgz#759385f7479d26387528afaac4bae6992566c63d"
   integrity sha512-xT7tTav9ROwfXecBpCcZ2S9nez2Owrgz0Kg7mVyoO48zRtj5Ocyg1jSymWniBUCuux7ukUuDpYEwHfQBIEnhWw==
 
-"@kleros/tcr@^1.5.0":
-  version "1.8.0"
-  resolved "https://registry.yarnpkg.com/@kleros/tcr/-/tcr-1.8.0.tgz#11e0082f880ac980871c49741c67aa03b25a5ec4"
-  integrity sha512-rKEDLbCWtgj0rOqGtUpFmKu/wm6bwh9TrORBYPjsegpFSwtqzWQ7o3jeqphDxF+UgjIVkf8A/s9vRT2jZILxRA==
+"@kleros/tcr@^1.8.1-alpha.0":
+  version "1.8.1-alpha.0"
+  resolved "https://registry.yarnpkg.com/@kleros/tcr/-/tcr-1.8.1-alpha.0.tgz#e70e602682b0950dc1370fc86c820c8ce7a86dd5"
+  integrity sha512-VstFChuP6bQjqqX6cKJmSXk2XC0giTb94MGW9oTE07E5eL0bzL+c3zELMRUpAcL4jieCVmM6CadzRDziaWD2TQ==
   dependencies:
     "@kleros/erc-792" "^3.0.0"
     "@kleros/ethereum-libraries" "^1.0.0"
