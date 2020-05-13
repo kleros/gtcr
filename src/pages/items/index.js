@@ -41,7 +41,8 @@ import {
   filterLabel,
   FILTER_KEYS,
   updateFilter,
-  queryOptionsToFilterArray
+  queryOptionsToFilterArray,
+  applyOldActiveItemsFilter
 } from '../../utils/filters'
 import WarningBanner from '../../components/beta-warning'
 import ItemCard from './item-card'
@@ -328,7 +329,7 @@ const Items = ({ search, history }) => {
     ;(async () => {
       // Fetch request events within one challenge period duration.
       const BLOCK_TIME = 15 // Assuming a blocktime of 15 seconds.
-      const filter = {
+      const logsFilter = {
         ...gtcr.filters.RequestSubmitted(),
         fromBlock:
           latestBlock -
@@ -336,7 +337,7 @@ const Items = ({ search, history }) => {
             100) // Add 100 block margin.
       }
 
-      const requestSubmissionLogs = (await library.getLogs(filter))
+      const requestSubmissionLogs = (await library.getLogs(logsFilter))
         .map(log => ({
           ...gtcr.interface.parseLog(log),
           blockNumber: log.blockNumber
@@ -347,8 +348,6 @@ const Items = ({ search, history }) => {
             !fetchItems.data.map(item => item.ID).includes(log.values._itemID)
         ) // Remove items already fetched.
 
-      if (requestSubmissionLogs.length === 0) return
-
       // Fetch item details.
       setOldActiveItems({
         data: (
@@ -357,7 +356,9 @@ const Items = ({ search, history }) => {
               gtcrView.getItem(tcrAddress, log.values._itemID)
             )
           )
-        ).filter(item => !item.resolved),
+        )
+          .filter(item => !item.resolved)
+          .filter(item => applyOldActiveItemsFilter(queryOptions, item)),
         address: gtcr.address
       })
     })()
@@ -369,6 +370,7 @@ const Items = ({ search, history }) => {
     gtcrView,
     latestBlock,
     library,
+    queryOptions,
     search,
     tcrAddress
   ])

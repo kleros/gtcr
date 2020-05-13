@@ -1,4 +1,5 @@
 import qs from 'qs'
+import { CONTRACT_STATUS } from './item-status'
 
 export const FILTER_KEYS = {
   ABSENT: 'absent',
@@ -122,4 +123,29 @@ export const updateFilter = ({ prevQuery: search, filter, checked }) => {
   else delete queryObj[filter] // Removing filter.
 
   return qs.stringify(queryObj, { addPrefix: true })
+}
+
+export const applyOldActiveItemsFilter = (
+  { submitted, removalRequested, challengedSubmissions, challengedRemovals },
+  { status, disputed }
+) => {
+  switch (status) {
+    case CONTRACT_STATUS.ABSENT:
+    case CONTRACT_STATUS.REGISTERED:
+      return false
+    case CONTRACT_STATUS.REGISTRATION_REQUESTED: {
+      if (disputed) {
+        if (challengedSubmissions) return true
+      } else if (submitted) return true
+      return false
+    }
+    case CONTRACT_STATUS.REMOVAL_REQUESTED: {
+      if (disputed) {
+        if (challengedRemovals) return true
+      } else if (removalRequested) return true
+      return false
+    }
+    default:
+      throw new Error('Unsupported item status')
+  }
 }
