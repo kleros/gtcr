@@ -232,7 +232,7 @@ const CrowdfundModal = ({ statusCode, item, fileURI, ...rest }) => {
         <Descriptions.Item label="Amount Paid:">
           <ETHAmount
             decimals={4}
-            amount={item && item.paidFees[side]}
+            amount={item && item.amountPaid[side]}
             displayUnit
           />
         </Descriptions.Item>

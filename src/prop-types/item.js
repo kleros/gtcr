@@ -13,7 +13,7 @@ const ItemPropTypes = PropTypes.shape({
   appealStart: BNPropType.isRequired,
   appealEnd: BNPropType.isRequired,
   submissionTime: BNPropType.isRequired,
-  paidFees: PropTypes.arrayOf(BNPropType).isRequired
+  amountPaid: PropTypes.arrayOf(BNPropType).isRequired
 })
 
 export default ItemPropTypes

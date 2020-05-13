@@ -50,7 +50,7 @@ const useRequiredFees = ({
     if (requiredForSide.isZero()) return {} // No fees required.
 
     // Calculate amount still required to fully fund the side.
-    const amountStillRequired = requiredForSide.sub(item.paidFees[side])
+    const amountStillRequired = requiredForSide.sub(item.amountPaid[side])
 
     // Calculate the max reward the user can earn by contributing fees.
     // Potential reward = appeal cost * opponent fee stake multiplier * share available for contribution.
