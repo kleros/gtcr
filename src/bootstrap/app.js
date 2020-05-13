@@ -186,7 +186,7 @@ const ItemDetails = loadable(
 
 const MenuItems = ({ TCR2_ADDRESS }) => [
   <StyledMenuItem key="tcrs-item">
-    <NavLink to={`/tcr/${TCR2_ADDRESS}`}>TCRs</NavLink>
+    <NavLink to={`/tcr/${TCR2_ADDRESS}`}>Browse</NavLink>
   </StyledMenuItem>,
   <StyledMenuItem key="factory-item">
     <NavLink to="/factory">Create a TCR</NavLink>
