@@ -135,7 +135,7 @@ const Items = ({ search, history }) => {
     submissionDeposit
   } = useContext(TCRViewContext)
   const [submissionFormOpen, setSubmissionFormOpen] = useState()
-  const [oldActiveItems, setOldActiveItems] = useState([])
+  const [oldActiveItems, setOldActiveItems] = useState({ data: [] })
   const [error, setError] = useState()
   const [fetchItems, setFetchItems] = useState({
     fetchStarted: false,
@@ -350,15 +350,16 @@ const Items = ({ search, history }) => {
       if (requestSubmissionLogs.length === 0) return
 
       // Fetch item details.
-      setOldActiveItems(
-        (
+      setOldActiveItems({
+        data: (
           await Promise.all(
             requestSubmissionLogs.map(log =>
               gtcrView.getItem(tcrAddress, log.values._itemID)
             )
           )
-        ).filter(item => !item.resolved)
-      )
+        ).filter(item => !item.resolved),
+        address: gtcr.address
+      })
     })()
   }, [
     challengePeriodDuration,
@@ -380,7 +381,8 @@ const Items = ({ search, history }) => {
       !fetchItems.data ||
       !metaEvidence ||
       metaEvidence.address !== tcrAddress ||
-      fetchItems.address !== tcrAddress
+      fetchItems.address !== tcrAddress ||
+      (oldActiveItems.address && oldActiveItems.address !== tcrAddress)
     )
       return
 
@@ -392,7 +394,7 @@ const Items = ({ search, history }) => {
     const displayedItems =
       page && Number(page) > 1
         ? encodedItems
-        : [...oldActiveItems, ...encodedItems]
+        : [...oldActiveItems.data, ...encodedItems]
 
     try {
       return displayedItems.map((item, i) => {
