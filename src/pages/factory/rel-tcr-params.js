@@ -103,7 +103,7 @@ const RelTCRParams = ({
           label={
             <span>
               Submission Deposit&nbsp;
-              <Tooltip title="This will be the deposit required to submit an item. It is also the amount awarded to successful challengers.">
+              <Tooltip title="This will be the deposit required to submit connect a badge and also the amount awarded to successful challengers. If the value is too low, people will not look for flaws in the submissions and bad ones could make it through. If it is too high, the TCR will be secure, but people will be afraid to connect badges so there will be few available badges.">
                 <Icon type="question-circle-o" />
               </Tooltip>
             </span>
@@ -120,7 +120,7 @@ const RelTCRParams = ({
           label={
             <span>
               Removal Deposit&nbsp;
-              <Tooltip title="This will be the deposit required to remove an item. It is also the amount awarded to successful challengers.">
+              <Tooltip title=" This will be the deposit required to disconnect a badge and also the amount awarded to successful challengers. If the value is too low, people will not look for flaws in removal requests and compliant badges could be disconnected. If it is too high, people will be afraid to remove non compliant badges, so a badge that should not be registerd would stay longer than it should.">
                 <Icon type="question-circle-o" />
               </Tooltip>
             </span>

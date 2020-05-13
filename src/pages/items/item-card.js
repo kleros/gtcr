@@ -17,6 +17,8 @@ const FlipCardInner = styled.div`
   transform-style: preserve-3d;
   display: flex;
   flex-flow: row nowrap;
+  height: 100%;
+
   ${({ revealed }) =>
     revealed &&
     css`

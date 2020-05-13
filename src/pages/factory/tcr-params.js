@@ -157,7 +157,7 @@ const TCRParams = ({
             <span>
               Item Name&nbsp;
               <Tooltip
-                title={`What is the item? This a noun will replace the word "item" in the TCR interface and notifications. For example, if we set this to the "Meme" on the TCR interface you will see buttons such as "Submit Meme" and "Challenge Meme". Similarly, notification messages will look something like "Someone submitted a Meme to Meme TCR. Review it for a chance to win up to X ETH!".`}
+                title={`What is the item? This is a noun that will replace the word "item" in the TCR interface and notifications. For example, if we set this to the word "Meme", on the TCR interface you will see buttons such as "Submit Meme" and "Challenge Meme". Similarly, notification messages will look something like "Someone submitted a Meme to Meme TCR. Review it for a chance to win up to 0.2 ETH!".`}
               >
                 <Icon type="question-circle-o" />
               </Tooltip>
@@ -175,7 +175,7 @@ const TCRParams = ({
           label={
             <span>
               Submission Deposit&nbsp;
-              <Tooltip title="This will be the deposit required to submit an item. It is also the amount awarded to successful challengers.">
+              <Tooltip title="This will be the deposit required to submit connect a TCR and also the amount awarded to successful challengers. If the value is too low, people will not look for flaws in the submissions and bad ones could make it through. If it is too high, the TCR will be secure, but people will be afraid to submit items so it will be empty.">
                 <Icon type="question-circle-o" />
               </Tooltip>
             </span>
@@ -192,7 +192,7 @@ const TCRParams = ({
           label={
             <span>
               Removal Deposit&nbsp;
-              <Tooltip title="This will be the deposit required to remove an item. It is also the amount awarded to successful challengers.">
+              <Tooltip title="This will be the deposit required to remove an item and also the amount awarded to successful challengers. If the value is too low, people will not look for flaws in removal requests and compliant items could be removed from the TCR. If it is too high, people will be afraid to remove items so a non compliant submission could stay longer than it should.">
                 <Icon type="question-circle-o" />
               </Tooltip>
             </span>
