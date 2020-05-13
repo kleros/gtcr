@@ -371,6 +371,7 @@ const SubmitConnectModal = props => {
         <Input
           placeholder="0xbeafb047beef..."
           onChange={e => setBadgeTCRAddr(e.target.value)}
+          disabled={!tcrMetaEvidence}
         />
       </Form.Item>
       <Typography.Paragraph>
