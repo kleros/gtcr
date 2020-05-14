@@ -114,15 +114,23 @@ const ItemDetails = ({ itemID }) => {
     if (!item || !metaEvidence || metaEvidence.address !== tcrAddress) return
 
     const { columns } = metaEvidence.metadata
+    const errors = []
+    let decodedData
     try {
-      setDecodedItem({
-        ...item,
-        decodedData: gtcrDecode({ columns, values: item.data })
-      })
+      decodedData = gtcrDecode({ columns, values: item.data })
     } catch (err) {
-      console.error(err)
-      setError('Error decoding item')
+      errors.push(`Error decoding ${item.ID} of TCR at ${tcrAddress}`)
+      console.warn(
+        `Error decoding ${item.ID} of TCR at ${tcrAddress} in details view`,
+        err
+      )
     }
+
+    setDecodedItem({
+      ...item,
+      decodedData,
+      errors
+    })
   }, [item, metaEvidence, tcrAddress])
 
   // Fetch item.
@@ -219,7 +227,11 @@ const ItemDetails = ({ itemID }) => {
             itemName ? capitalizeFirstLetter(itemName) : 'Item'
           } Details`}
           columns={columns}
-          loading={!metadata || !decodedItem || !decodedItem.decodedData}
+          loading={
+            !metadata ||
+            !decodedItem ||
+            (!decodedItem.decodedData && decodedItem.errors.length === 0)
+          }
           item={decodedItem}
         />
 

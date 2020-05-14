@@ -52,7 +52,9 @@ const useTcrView = tcrAddress => {
 
   const gtcr = useMemo(() => {
     if (!library || !active || !tcrAddress || !networkId) return
+
     try {
+      ethers.utils.getAddress(tcrAddress) // Test if address is valid
       return new ethers.Contract(tcrAddress, _gtcr, library)
     } catch (err) {
       console.error('Error instantiating gtcr contract', err)
@@ -248,18 +250,37 @@ const useTcrView = tcrAddress => {
               itemID: gtcr.interface.parseLog(log).values._itemID,
               submitter: gtcr.interface.parseLog(log).values._submitter
             }))
-            .map(submissionLog => ({
-              ...submissionLog,
-              decodedData: gtcrDecode({ columns, values: submissionLog.data }),
-              columns,
-              tcrAddress,
-              address: tcrAddress
-            }))
+            .map(submissionLog => {
+              let decodedData
+              const errors = []
+              try {
+                decodedData = gtcrDecode({
+                  columns,
+                  values: submissionLog.data
+                })
+              } catch (err) {
+                console.warn(
+                  `Error decoding ${submissionLog._itemID} of TCR at ${tcrAddress} in details view`,
+                  err
+                )
+                errors.push(
+                  `Error decoding ${submissionLog._itemID} of TCR at ${tcrAddress}`
+                )
+              }
+              return {
+                ...submissionLog,
+                decodedData,
+                columns,
+                tcrAddress,
+                address: tcrAddress,
+                errors
+              }
+            })
             .map(submissionLog => ({
               ...submissionLog,
               columns: submissionLog.columns.map((col, i) => ({
                 ...col,
-                value: submissionLog.decodedData[i]
+                value: submissionLog.decodedData && submissionLog.decodedData[i]
               }))
             }))
             .map(submissionLog => ({

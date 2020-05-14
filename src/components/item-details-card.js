@@ -1,6 +1,6 @@
 import React, { useState, useContext, useEffect, useCallback } from 'react'
 import PropTypes from 'prop-types'
-import { Card, Icon, Tooltip, Button } from 'antd'
+import { Card, Icon, Tooltip, Button, Result } from 'antd'
 import DisplaySelector from './display-selector'
 import styled from 'styled-components/macro'
 import { useWeb3Context } from 'web3-react'
@@ -116,24 +116,34 @@ const ItemDetailsCard = ({ title, columns, loading, item }) => {
     >
       {columns && (
         <StyledFields>
-          {columns.map((column, index) => (
-            <StyledField key={index}>
-              <span>
-                {column.label}
-                {column.description && (
-                  <Tooltip title={column.description}>
-                    &nbsp;
-                    <Icon type="question-circle-o" />
-                  </Tooltip>
-                )}
-              </span>
-              :{' '}
-              <DisplaySelector
-                type={column.type}
-                value={item && item.decodedData[index]}
-              />
-            </StyledField>
-          ))}
+          {!loading && item.errors.length > 0 ? (
+            <Result
+              status="warning"
+              subTitle={item.errors.map((e, i) => (
+                <p key={i}>{e}</p>
+              ))}
+              style={{ width: '100%' }}
+            />
+          ) : (
+            columns.map((column, index) => (
+              <StyledField key={index}>
+                <span>
+                  {column.label}
+                  {column.description && (
+                    <Tooltip title={column.description}>
+                      &nbsp;
+                      <Icon type="question-circle-o" />
+                    </Tooltip>
+                  )}
+                </span>
+                :{' '}
+                <DisplaySelector
+                  type={column.type}
+                  value={item && item.decodedData[index]}
+                />
+              </StyledField>
+            ))
+          )}
         </StyledFields>
       )}
     </Card>

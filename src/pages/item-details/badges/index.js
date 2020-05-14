@@ -127,6 +127,15 @@ const Badges = ({ connectedTCRAddr, item, tcrAddress }) => {
 
     setFetchItems({ isFetching: true })
     setIsFetchingBadges(true)
+    // Filter fields
+    //  - Include absent items in result;
+    //  - Include registered items in result;
+    //  - Include items with registration requests that are not disputed in result;
+    //  - Include items with clearing requests that are not disputed in result;
+    //  - Include disputed items with registration requests in result;
+    //  - Include disputed items with clearing requests in result;
+    //  - Include items with a request by _party;
+    //  - Include items challenged by _party.
     const filter = [false, true, false, true, false, false, false, false]
     const oldestFirst = false
     let encodedItems
@@ -198,9 +207,20 @@ const Badges = ({ connectedTCRAddr, item, tcrAddress }) => {
 
     const { data: encodedItems } = fetchItems
     const { columns } = tcrMetadata
-    try {
+
       return encodedItems.map((item, i) => {
-        const decodedItem = gtcrDecode({ values: item.data, columns })
+      let decodedItem
+      const errors = []
+      try {
+        decodedItem = gtcrDecode({ values: item.data, columns })
+        // eslint-disable-next-line no-unused-vars
+      } catch (err) {
+        console.warn(
+          `Error decoding item ${item.ID} of TCR at ${tcrAddress} in badges view`
+        )
+        errors.push(`Error decoding item ${item.ID} of TCR at ${tcrAddress}`)
+      }
+
         // Return the item columns along with its TCR status data.
         return {
           tcrData: {
@@ -208,18 +228,15 @@ const Badges = ({ connectedTCRAddr, item, tcrAddress }) => {
           },
           columns: columns.map(
             (col, i) => ({
-              value: decodedItem[i],
+            value: decodedItem && decodedItem[i],
               ...col
             }),
             { key: i }
-          )
+        ),
+        errors
         }
       })
-    } catch (err) {
-      console.error('Error decoding items', err)
-      setError('Error decoding items')
-    }
-  }, [fetchItems, tcrMetadata])
+  }, [fetchItems, tcrAddress, tcrMetadata])
 
   // With the badge tcr addresses and the match file,
   // search for the current item.

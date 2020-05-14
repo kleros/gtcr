@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import PropTypes from 'prop-types'
-import { Card, Button } from 'antd'
+import { Card, Button, Result } from 'antd'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import ItemStatusBadge from '../../components/item-status-badge'
 import TCRCard from '../../components/tcr-card-content'
@@ -59,28 +59,47 @@ const CardNSFWWarn = styled(Card)`
     display: flex;
     flex-direction: column;
     justify-content: space-around;
+    flex: 1;
   }
 `
 
 const StyledCardInfo = styled(Card)`
   height: 100%;
+  display: flex;
+  flex-direction: column;
 
   & > .ant-card-head {
     display: flex;
   }
+
+  & > .ant-card-body {
+    align-items: center;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    justify-content: center;
+  }
 `
 
-const CardItemInfo = ({ item, statusCode, tcrAddress, metaEvidence }) => (
-  <Link to={`/tcr/${tcrAddress}/${item.tcrData.ID}`}>
-    <StyledCardInfo title={<ItemStatusBadge statusCode={statusCode} dark />}>
-      {metaEvidence.metadata.isTCRofTCRs ? (
-        <TCRCard tcrAddress={item.columns[0].value} />
-      ) : (
-        <ItemCardContent item={item} />
-      )}
-    </StyledCardInfo>
-  </Link>
-)
+const CardItemInfo = ({ item, statusCode, tcrAddress, metaEvidence }) => {
+  let content
+  if (item.errors.length > 0)
+    content = <Result status="warning" subTitle="Error loading item" />
+  else
+    content = metaEvidence.metadata.isTCRofTCRs ? (
+      <TCRCard tcrAddress={item.columns[0].value} />
+    ) : (
+      <ItemCardContent item={item} />
+    )
+
+  return (
+    <Link to={`/tcr/${tcrAddress}/${item.tcrData.ID}`}>
+      <StyledCardInfo title={<ItemStatusBadge statusCode={statusCode} dark />}>
+        {content}
+      </StyledCardInfo>
+    </Link>
+  )
+}
 
 CardItemInfo.propTypes = {
   tcrAddress: PropTypes.string.isRequired,
@@ -96,9 +115,10 @@ CardItemInfo.propTypes = {
     }),
     columns: PropTypes.arrayOf(
       PropTypes.shape({
-        value: PropTypes.string.isRequired
+        value: PropTypes.string
       })
-    )
+    ),
+    errors: PropTypes.arrayOf(PropTypes.string)
   }).isRequired
 }
 
@@ -166,9 +186,10 @@ ItemCard.propTypes = {
     }),
     columns: PropTypes.arrayOf(
       PropTypes.shape({
-        value: PropTypes.string.isRequired
+        value: PropTypes.string
       })
-    )
+    ),
+    errors: PropTypes.arrayOf(PropTypes.string)
   }).isRequired
 }
 

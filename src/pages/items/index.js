@@ -323,7 +323,8 @@ const Items = ({ search, history }) => {
       !fetchItems.data ||
       fetchItems.address !== tcrAddress ||
       !challengePeriodDuration ||
-      !library
+      !library ||
+      (oldActiveItems && oldActiveItems.address === tcrAddress)
     )
       return
     ;(async () => {
@@ -370,6 +371,7 @@ const Items = ({ search, history }) => {
     gtcrView,
     latestBlock,
     library,
+    oldActiveItems,
     queryOptions,
     search,
     tcrAddress
@@ -398,27 +400,34 @@ const Items = ({ search, history }) => {
         ? encodedItems
         : [...oldActiveItems.data, ...encodedItems]
 
-    try {
-      return displayedItems.map((item, i) => {
-        const decodedItem = gtcrDecode({ values: item.data, columns })
-        // Return the item columns along with its TCR status data.
-        return {
-          tcrData: {
-            ...item // Spread to convert from array to object.
-          },
-          columns: columns.map(
-            (col, i) => ({
-              value: decodedItem[i],
-              ...col
-            }),
-            { key: i }
-          )
-        }
-      })
-    } catch (err) {
-      console.error('Error decoding items', err)
-      setError('Error decoding items')
-    }
+    return displayedItems.map((item, i) => {
+      let decodedItem
+      const errors = []
+      try {
+        decodedItem = gtcrDecode({ values: item.data, columns })
+        // eslint-disable-next-line no-unused-vars
+      } catch (err) {
+        console.warn(
+          `Error decoding item ${item.ID} of TCR at ${tcrAddress} in items view`
+        )
+        errors.push(`Error decoding item ${item.ID} of TCR at ${tcrAddress}`)
+      }
+
+      // Return the item columns along with its TCR status data.
+      return {
+        tcrData: {
+          ...item // Spread to convert from array to object.
+        },
+        columns: columns.map(
+          (col, i) => ({
+            value: decodedItem && decodedItem[i],
+            ...col
+          }),
+          { key: i }
+        ),
+        errors
+      }
+    })
   }, [fetchItems, metaEvidence, oldActiveItems, page, tcrAddress])
 
   // Watch for submissions and status change events to refetch items.
@@ -583,6 +592,7 @@ const Items = ({ search, history }) => {
                   items
                     .sort(({ tcrData: tcrDataA }, { tcrData: tcrDataB }) => {
                       // Display items with pending requests first.
+                      if (!tcrDataA || !tcrDataB) return 0 // Handle errored TCRs.
                       if (!tcrDataA.resolved && tcrDataB.resolved) return -1
                       if (tcrDataA.resolved && !tcrDataB.resolved) return 1
                       return 0
