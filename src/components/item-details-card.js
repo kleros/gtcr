@@ -116,7 +116,7 @@ const ItemDetailsCard = ({ title, columns, loading, item }) => {
     >
       {columns && (
         <StyledFields>
-          {!loading && item.errors.length > 0 ? (
+          {!loading && item && item.errors.length > 0 ? (
             <Result
               status="warning"
               subTitle={item.errors.map((e, i) => (

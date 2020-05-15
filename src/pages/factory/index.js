@@ -220,10 +220,7 @@ export default () => {
     tcrState: { currStep, transactions },
     nextStep,
     previousStep,
-    STEP_COUNT,
-    defaultArbLabel,
-    defaultArbDataLabel,
-    defaultGovernorLabel
+    STEP_COUNT
   } = cachedFactory
 
   useEffect(() => {
@@ -269,19 +266,9 @@ export default () => {
           />
         )}
         <Steps current={currStep - 1}>
-          <Step
-            title="TCR Parameters"
-            defaultArbLabel={defaultArbLabel}
-            defaultArbDataLabel={defaultArbDataLabel}
-            defaultGovernorLabel={defaultGovernorLabel}
-          />
+          <Step title="TCR Parameters" />
           <Step title="Item Parameters" />
-          <Step
-            title="Badges TCR Parameters"
-            defaultArbLabel={defaultArbLabel}
-            defaultArbDataLabel={defaultArbDataLabel}
-            defaultGovernorLabel={defaultGovernorLabel}
-          />
+          <Step title="Badges TCR Parameters" />
           <Step title="Deploy" />
         </Steps>
         <StyledContainer>
