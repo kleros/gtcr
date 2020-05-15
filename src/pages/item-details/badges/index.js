@@ -7,7 +7,6 @@ import React, {
 } from 'react'
 import { Card, Typography, Divider, Button, Result, Icon } from 'antd'
 import styled from 'styled-components/macro'
-import { Link } from 'react-router-dom'
 import { useWeb3Context } from 'web3-react'
 import { ethers } from 'ethers'
 import PropTypes from 'prop-types'
@@ -208,7 +207,7 @@ const Badges = ({ connectedTCRAddr, item, tcrAddress }) => {
     const { data: encodedItems } = fetchItems
     const { columns } = tcrMetadata
 
-      return encodedItems.map((item, i) => {
+    return encodedItems.map((item, i) => {
       let decodedItem
       const errors = []
       try {
@@ -221,21 +220,21 @@ const Badges = ({ connectedTCRAddr, item, tcrAddress }) => {
         errors.push(`Error decoding item ${item.ID} of TCR at ${tcrAddress}`)
       }
 
-        // Return the item columns along with its TCR status data.
-        return {
-          tcrData: {
-            ...item // Spread to convert from array to object.
-          },
-          columns: columns.map(
-            (col, i) => ({
+      // Return the item columns along with its TCR status data.
+      return {
+        tcrData: {
+          ...item // Spread to convert from array to object.
+        },
+        columns: columns.map(
+          (col, i) => ({
             value: decodedItem && decodedItem[i],
-              ...col
-            }),
-            { key: i }
+            ...col
+          }),
+          { key: i }
         ),
         errors
-        }
-      })
+      }
+    })
   }, [fetchItems, tcrAddress, tcrMetadata])
 
   // With the badge tcr addresses and the match file,
@@ -325,17 +324,20 @@ const Badges = ({ connectedTCRAddr, item, tcrAddress }) => {
             })
 
             const itemsPerRequest = 100
-            let result
             for (let i = 0; i < Math.ceil(itemCount / itemsPerRequest); i++) {
               const cursor =
                 i > 0 && i < itemCount - 1 ? i * itemsPerRequest + 1 : 0
-              result = (
+              const ignoreColumns = matchColumns.map(
+                col => typeof col !== 'number'
+              )
+              const result = (
                 await gtcrView.findItem(
                   badgeAddr,
                   encodedMatch,
                   cursor,
                   itemsPerRequest > itemCount ? 0 : itemsPerRequest,
-                  false
+                  [true, false, false, false], // Whether to skip items in the [absent, registered, submitted, removalRequested] states.
+                  ignoreColumns
                 )
               ).filter(res => res.ID !== ZERO_BYTES32)
               if (result.length > 0) {
@@ -359,7 +361,7 @@ const Badges = ({ connectedTCRAddr, item, tcrAddress }) => {
         setConnectedBadges(connectedBadges || [])
       }
     })()
-  }, [enabledBadges, gtcr, gtcrView, item, library])
+  }, [enabledBadges, gtcr, gtcrView, item, library, tcrMetadata])
 
   // The available badges are the connected badges for which
   // there are no pending requests for this item.
@@ -413,7 +415,11 @@ const Badges = ({ connectedTCRAddr, item, tcrAddress }) => {
                 />
               }
             >
-              <Link to={`/tcr/${tcrAddress}/${item.ID}`}>
+              <a
+                href={`/tcr/${tcrAddress}/${item.ID}`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
                 <StyledCol>
                   <StyledLogo
                     src={`${process.env.REACT_APP_IPFS_GATEWAY}${logoURI}`}
@@ -421,7 +427,7 @@ const Badges = ({ connectedTCRAddr, item, tcrAddress }) => {
                   <Typography.Title level={4}>{tcrTitle}</Typography.Title>
                   <StyledParagraph>{tcrDescription}</StyledParagraph>
                 </StyledCol>
-              </Link>
+              </a>
             </Card>
           )
         )}
