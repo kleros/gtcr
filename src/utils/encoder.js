@@ -44,6 +44,8 @@ export const gtcrEncode = ({ columns, values }) => {
   return bufferToHex(RLP.encode(itemArr))
 }
 
+const padAddr = rawAddr => `${'0'.repeat(40 - rawAddr.length)}${rawAddr}`
+
 // TODO: Add over/underflow checks for numbers greater or smaller than
 // MAX_SIGNED_INTEGER and MIN_SINED_INTEGER and mark the item in the UI.
 export const gtcrDecode = ({ columns, values }) => {
@@ -54,8 +56,11 @@ export const gtcrDecode = ({ columns, values }) => {
         return toUtf8String(item[i])
       case solidityTypes.INT256:
         return new BN(item[i], 16).fromTwos(256).toString(10) // Two's complement
-      case solidityTypes.ADDRESS:
-        return getAddress(`0x${item[i].toString('hex')}`)
+      case solidityTypes.ADDRESS: {
+        // If addresses are small, we must left pad them with zeroes
+        const rawAddr = item[i].toString('hex')
+        return getAddress(`0x${padAddr(rawAddr)}`)
+      }
       case solidityTypes.BOOL:
         return Boolean(new BN(item[i].toString('hex'), 16).toNumber())
       default:
