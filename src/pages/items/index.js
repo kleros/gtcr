@@ -518,7 +518,7 @@ const Items = ({ search, history }) => {
                 to={`/tcr/${connectedTCRAddr}`}
                 style={{ color: '#4d00b473' }}
               >
-                View connected TCRs
+                View Badges TCR
               </Link>
             </Typography.Text>
           </>

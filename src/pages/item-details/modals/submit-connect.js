@@ -19,7 +19,8 @@ import {
   Icon,
   Select,
   Skeleton,
-  Result
+  Result,
+  Alert
 } from 'antd'
 import styled from 'styled-components/macro'
 import PropTypes from 'prop-types'
@@ -42,7 +43,10 @@ const StyledSpin = styled(Spin)`
   display: flex;
 `
 
-const SkeletonTitleProps = { width: '90px' }
+const StyledAlert = styled(Alert)`
+  margin-bottom: 24px;
+`
+
 const StyledSkeleton = styled(Skeleton)`
   display: inline;
 
@@ -51,12 +55,17 @@ const StyledSkeleton = styled(Skeleton)`
   }
 `
 
+const SkeletonTitleProps = { width: '90px' }
+
 const SubmitConnectModal = props => {
   const { onCancel, initialValues, tcrAddress: relTCRAddress, gtcrView } = props
   const { pushWeb3Action } = useContext(WalletContext)
   const { library, active, networkId } = useWeb3Context()
   const [error, setError] = useState()
-  const [tcrAddr, setTCRAddr] = useState() // This is the main TCR. TODO: Fetch this information from somewhere. The user should not have to type this.
+
+  // This is the main TCR.
+  // TODO: Find a way to fetch this information from somewhere without centralization. The user should not have to type this.
+  const [tcrAddr, setTCRAddr] = useState()
   const [debouncedTCRAddr] = useDebounce(tcrAddr, 300)
   const [tcrMetaEvidence, setTCRMetaEvidence] = useState()
 
@@ -218,6 +227,13 @@ const SubmitConnectModal = props => {
     const ipfsFileObj = await ipfsPublish(multihash, file)
     const fileURI = `/ipfs/${ipfsFileObj[1].hash}${ipfsFileObj[0].path}`
     const { columns, itemName } = relTCRMetaEvidence.metadata
+
+    // To learn if an item is present on another TCR (i.e to learn
+    // if it has that badge), we must match the columns of the two TCRs.
+    // This information is stored in the match file, in the columns field.
+    // It is an array of numbers, where each number indexes a column of items
+    // the badge TCR, to the columns of the current TCR.
+    // If a column is not used for matching, it just has the string 'null'.
     const values = {
       Address: badgeTCRAddr,
       'Match File URI': fileURI
@@ -374,9 +390,16 @@ const SubmitConnectModal = props => {
           disabled={!tcrMetaEvidence}
         />
       </Form.Item>
+      <StyledAlert
+        message="Understand Badges"
+        description="An item has a badge if it is also present on the badge TCR. As an example, a token submission 'PNK' on a TCR of Tokens can display the ERC20 Badge if the same submission is also present on the ERC20 Badge TCR. To check if an item is present on two TCRs we must match common fields. In the example we would choose field 'Address'. The comparison is strict, in other words, if multiple fields are matched, ALL values must match perfectly."
+        type="info"
+        showIcon
+      />
       <Typography.Paragraph>
-        Select at least one column of the parent TCR to use to when searching
-        for the item in the badge TCR.
+        Match at least one ID column of the parent TCR to use to when searching
+        for the item in the badge TCR. The more fields matched, the stricter the
+        search.
       </Typography.Paragraph>
       {badgeTCRMetadata &&
         badgeTCRMetadata.columns.map((column, i) => (
