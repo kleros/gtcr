@@ -229,7 +229,8 @@ const Timeline = ({ request, requestID, item }) => {
     log => log.name === 'RequestSubmitted'
   )
   const requestType =
-    requestSumbittedLogs.length > 0 && requestSumbittedLogs[0].requestType
+    requestSumbittedLogs.length > 0 &&
+    requestSumbittedLogs[0].values._requestType
 
   // Display loading indicator
   if (!item || !request || typeof requestType !== 'number')
