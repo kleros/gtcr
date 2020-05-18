@@ -8,7 +8,8 @@ export const NOTIFICATION_TYPES = {
   EVIDENCE_SUBMITTED: 'EVIDENCE_SUBMITTED',
   APPEALED: 'APPEALED',
   APPEALABLE_RULING: 'APPEALABLE_RULING',
-  FINAL_RULING: 'FINAL_RULING'
+  FINAL_RULING: 'FINAL_RULING',
+  HAS_PAID_FEES: 'HAS_PAID_FEES'
 }
 
 export const typeToMessage = {
@@ -21,7 +22,8 @@ export const typeToMessage = {
   [NOTIFICATION_TYPES.EVIDENCE_SUBMITTED]: 'Evidence submitted.',
   [NOTIFICATION_TYPES.APPEALED]: 'Ruling appealed',
   [NOTIFICATION_TYPES.APPEALABLE_RULING]: 'The Arbitrator gave a ruling',
-  [NOTIFICATION_TYPES.FINAL_RULING]: 'Ruling enforced.'
+  [NOTIFICATION_TYPES.FINAL_RULING]: 'Ruling enforced.',
+  [NOTIFICATION_TYPES.HAS_PAID_FEES]: 'Side fully funded'
 }
 
 export const getNotificationColorFor = notificationType => {
@@ -38,6 +40,7 @@ export const getNotificationColorFor = notificationType => {
     case NOTIFICATION_TYPES.REMOVAL_CHALLENGED:
       return '#fa8d39' // Antd Orange.
     case NOTIFICATION_TYPES.APPEALABLE_RULING:
+    case NOTIFICATION_TYPES.HAS_PAID_FEES:
       return '#722ed1' // Antd Purple.
     case NOTIFICATION_TYPES.FINAL_RULING:
       return '#f95638' // Antd Volcano.
@@ -63,6 +66,8 @@ export const getNotificationIconFor = notificationType => {
     case NOTIFICATION_TYPES.APPEALABLE_RULING:
     case NOTIFICATION_TYPES.FINAL_RULING:
       return 'gavel'
+    case NOTIFICATION_TYPES.HAS_PAID_FEES:
+      return 'exclamation-triangle'
     default:
       throw new Error('Unhandled notification type')
   }
