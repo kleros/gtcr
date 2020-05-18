@@ -228,10 +228,16 @@ const Timeline = ({ request, requestID, item }) => {
   // Display loading indicator
   if (!item || !request) return <Skeleton active />
 
-  // TODO: Fetch request type from RequestSubmitted logs.
-  const { requestType, resolved, disputed } = request
+  const requestSumbittedLogs = logs.filter(
+    log => log.name === 'RequestSubmitted'
+  )
+  const requestType =
+    requestSumbittedLogs.length > 0 &&
+    requestSumbittedLogs[0].values._requestType
+  const { resolved, disputed } = request
 
-  const metadata = metaEvidence && metaEvidence.metadata
+  const { metadata } = metaEvidence || {}
+
   // Build nodes from request events.
   const itemName = metadata ? capitalizeFirstLetter(metadata.itemName) : 'Item'
   let items = logs
