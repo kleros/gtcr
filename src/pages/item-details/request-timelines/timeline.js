@@ -225,15 +225,16 @@ const Timeline = ({ request, requestID, item }) => {
 
   if (error) return <Result status="warning" title={error} />
 
-  // Display loading indicator
-  if (!item || !request) return <Skeleton active />
-
   const requestSumbittedLogs = logs.filter(
     log => log.name === 'RequestSubmitted'
   )
   const requestType =
-    requestSumbittedLogs.length > 0 &&
-    requestSumbittedLogs[0].values._requestType
+    requestSumbittedLogs.length > 0 && requestSumbittedLogs[0].requestType
+
+  // Display loading indicator
+  if (!item || !request || typeof requestType !== 'number')
+    return <Skeleton active />
+
   const { resolved, disputed } = request
 
   const { metadata } = metaEvidence || {}
@@ -243,8 +244,8 @@ const Timeline = ({ request, requestID, item }) => {
   let items = logs
     .sort((a, b) => a.blockNumber - b.blockNumber)
     .sort(a => (a.name === 'RequestSubmitted' ? -1 : 0))
-    .map((log, i) => {
-      if (log.name === 'RequestSubmitted')
+    .map(({ name, values, blockNumber, transactionHash }, i) => {
+      if (name === 'RequestSubmitted')
         return (
           <AntdTimeline.Item key={i}>
             <span>
@@ -254,13 +255,13 @@ const Timeline = ({ request, requestID, item }) => {
                   : 'Removal requested'}
               </Typography.Text>
               <Typography.Text type="secondary">
-                <EventTimestamp blockNumber={log.blockNumber} />
+                <EventTimestamp blockNumber={blockNumber} />
               </Typography.Text>
             </span>
           </AntdTimeline.Item>
         )
-      else if (log.name === 'Evidence') {
-        const evidenceFile = evidenceFiles[log.transactionHash]
+      else if (name === 'Evidence') {
+        const evidenceFile = evidenceFiles[transactionHash]
         if (!evidenceFile)
           return (
             <AntdTimeline.Item dot={<Icon type="file-text" />} key={i}>
@@ -306,8 +307,8 @@ const Timeline = ({ request, requestID, item }) => {
             </StyledCard>
           </AntdTimeline.Item>
         )
-      } else if (log.name === 'AppealPossible') {
-        const appealableRuling = appealableRulings[log.transactionHash]
+      } else if (name === 'AppealPossible') {
+        const appealableRuling = appealableRulings[transactionHash]
         if (typeof appealableRuling === 'undefined')
           return (
             <AntdTimeline.Item dot={<Icon type="file-text" />} key={i}>
@@ -330,23 +331,23 @@ const Timeline = ({ request, requestID, item }) => {
                 ? 'The arbitrator ruled in favor of the challenger'
                 : 'The arbitrator gave an unknown ruling'}
               <Typography.Text type="secondary">
-                <EventTimestamp blockNumber={log.blockNumber} />
+                <EventTimestamp blockNumber={blockNumber} />
               </Typography.Text>
             </span>
           </AntdTimeline.Item>
         )
-      } else if (log.name === 'AppealDecision')
+      } else if (name === 'AppealDecision')
         return (
           <AntdTimeline.Item key={i}>
             Ruling appealed{' '}
             <Typography.Text type="secondary">
-              <EventTimestamp blockNumber={log.blockNumber} />
+              <EventTimestamp blockNumber={blockNumber} />
             </Typography.Text>
           </AntdTimeline.Item>
         )
-      else if (log.name === 'Ruling') {
+      else if (name === 'Ruling') {
         let resultMessage
-        const finalRuling = log.values._ruling.toNumber()
+        const finalRuling = values._ruling.toNumber()
         switch (finalRuling) {
           case PARTY.NONE: {
             resultMessage =
@@ -374,14 +375,14 @@ const Timeline = ({ request, requestID, item }) => {
         }
         const finalStatus = getResultStatus({
           ruling: finalRuling,
-          requestType
+          requestType: requestType
         })
 
         return (
           <AntdTimeline.Item key={i} color={STATUS_COLOR[finalStatus]}>
             {resultMessage}
             <Typography.Text type="secondary">
-              <EventTimestamp blockNumber={log.blockNumber} />
+              <EventTimestamp blockNumber={blockNumber} />
             </Typography.Text>
           </AntdTimeline.Item>
         )
