@@ -197,11 +197,14 @@ const ItemStatusCard = ({ item, timestamp, request }) => {
               <Descriptions.Item label="Dispute ID">
                 {request.disputeID.toString()}
               </Descriptions.Item>
-              <Descriptions.Item label="Arbitrator">
-                <ETHAddress address={request.arbitrator} />
+              <Descriptions.Item label="Challenger">
+                <ETHAddress address={item.challenger} />
               </Descriptions.Item>
             </>
           )}
+          <Descriptions.Item label="Arbitrator">
+            <ETHAddress address={request.arbitrator} />
+          </Descriptions.Item>
           {disputeStatus === DISPUTE_STATUS.APPEALABLE &&
             statusCode !== STATUS_CODE.WAITING_ENFORCEMENT && (
               <Descriptions.Item label="Dispute Status">
