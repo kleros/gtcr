@@ -286,12 +286,12 @@ const RelTCRParams = ({
               {...rest}
             />
             <StyledAlert
-              message="To appeal, in addition to appeal fees, parties must also pay the fee stake. The fee stake is the reward given to the appeal fee contributors that funded the side that ultimately wins the dispute. The amount is calculated proportionally to the appeal cost using the multipliers below, given in basis points. For example, a multiplier of 1000 will result in the total fee stake being 10% of the appeal cost."
+              message="To appeal, in addition to paying enough fees to cover the payment to the jurors in case the appeal is lost, parties must also pay an additional stake. The stake of the side that ultimately loses the dispute is used as the reward given to the appeal fee contributors that funded the side that ultimately wins the dispute. This amount is calculated proportionally to the total juror fees required for appeal using the multipliers below, given in basis points. For example, a multiplier of 1000 will result in the stake being 10% of the total juror fees."
               type="info"
               showIcon
             />
             <StyledAlert
-              message="The total cost to fully fund one side of an appeal is: Total Appeal Cost = Appeal Cost + Appeal Cost * Stake Multiplier / 10000"
+              message="The total cost to fully fund one side of an appeal is: Total Appeal Cost=Total Juror Fees+Total Juror Fees*Stake Multiplier/10000"
               type="info"
               showIcon
             />
