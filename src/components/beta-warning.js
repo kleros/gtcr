@@ -2,9 +2,8 @@ import React, { useEffect, useState, useCallback } from 'react'
 import { Alert } from 'antd'
 import localforage from 'localforage'
 import TextLoop from 'react-text-loop'
-import sizeMe from 'react-sizeme'
 import styled from 'styled-components/macro'
-import PropTypes from 'prop-types'
+import useWindowDimensions from '../hooks/window-dimensions'
 
 const BETA_WARNING_DISMISSED = 'BETA_WARNING_DISMISSED'
 
@@ -50,8 +49,10 @@ const LoopBannerText = (
   </TextLoop>
 )
 
-const WarningBanner = ({ size: { width } }) => {
+const WarningBanner = () => {
   const [dismissed, setDismissed] = useState()
+  const { width } = useWindowDimensions()
+
   useEffect(() => {
     ;(async () => {
       const wasDismissed =
@@ -79,10 +80,4 @@ const WarningBanner = ({ size: { width } }) => {
   )
 }
 
-WarningBanner.propTypes = {
-  size: PropTypes.shape({
-    width: PropTypes.number
-  }).isRequired
-}
-
-export default sizeMe({ monitorWidth: true })(WarningBanner)
+export default WarningBanner

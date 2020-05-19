@@ -444,7 +444,7 @@ const Items = ({ search, history }) => {
     <>
       <WarningBanner />
       <Banner
-        metadata={metadata}
+        metaEvidence={metaEvidence}
         requestWeb3Auth={requestWeb3Auth}
         setSubmissionFormOpen={setSubmissionFormOpen}
         connectedTCRAddr={connectedTCRAddr}
