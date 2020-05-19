@@ -1,16 +1,4 @@
-import {
-  Typography,
-  Layout,
-  Skeleton,
-  Button,
-  Icon,
-  Spin,
-  Pagination,
-  Tag,
-  Select,
-  Switch
-} from 'antd'
-import { Link } from 'react-router-dom'
+import { Layout, Spin, Pagination, Tag, Select, Switch } from 'antd'
 import React, {
   useEffect,
   useState,
@@ -24,11 +12,7 @@ import styled from 'styled-components/macro'
 import localforage from 'localforage'
 import ErrorPage from '../error-page'
 import { WalletContext } from '../../bootstrap/wallet-context'
-import {
-  ZERO_ADDRESS,
-  ZERO_BYTES32,
-  capitalizeFirstLetter
-} from '../../utils/string'
+import { ZERO_ADDRESS, ZERO_BYTES32 } from '../../utils/string'
 import { TCRViewContext } from '../../bootstrap/tcr-view-context'
 import { bigNumberify } from 'ethers/utils'
 import { gtcrDecode } from '../../utils/encoder'
@@ -46,6 +30,7 @@ import {
 } from '../../utils/filters'
 import WarningBanner from '../../components/beta-warning'
 import ItemCard from './item-card'
+import Banner from './banner'
 
 const NSFW_FILTER_KEY = 'NSFW_FILTER_KEY'
 
@@ -57,22 +42,6 @@ const StyledLayoutContent = styled.div`
   padding: 0 9.375vw 42px;
   display: flex;
   flex-direction: column;
-`
-
-const StyledBanner = styled.div`
-  padding: 24px 9.375vw;
-  background: linear-gradient(270deg, #f2e3ff 22.92%, #ffffff 76.25%);
-  box-shadow: 0px 3px 24px #bc9cff;
-  color: #4d00b4;
-`
-
-const StyledButton = styled(Button)`
-  margin-top: 6px;
-`
-
-const StyledHeader = styled.div`
-  display: flex;
-  justify-content: space-between;
 `
 
 const StyledFilters = styled.div`
@@ -469,61 +438,17 @@ const Items = ({ search, history }) => {
       />
     )
 
-  const metadata = metaEvidence && metaEvidence.metadata
+  const { metadata } = metaEvidence || {}
 
   return (
     <>
       <WarningBanner />
-      <StyledBanner>
-        <StyledHeader>
-          {metadata ? (
-            <Typography.Title ellipsis style={{ marginBottom: '0' }}>
-              {metadata.tcrTitle}
-            </Typography.Title>
-          ) : (
-            <Skeleton active paragraph={false} title={{ width: 100 }} />
-          )}
-          {metadata && (
-            <StyledButton
-              type="primary"
-              size="large"
-              onClick={() => requestWeb3Auth(() => setSubmissionFormOpen(true))}
-            >
-              Submit{' '}
-              {metadata && metadata.itemName ? metadata.itemName : 'Item'}
-              <Icon type="plus-circle" />
-            </StyledButton>
-          )}
-        </StyledHeader>
-        {metadata ? (
-          <Typography.Text
-            ellipsis
-            type="secondary"
-            style={{ maxWidth: '100%' }}
-          >
-            {capitalizeFirstLetter(metadata.tcrDescription)}
-          </Typography.Text>
-        ) : (
-          <Skeleton active paragraph={{ rows: 1, width: 150 }} title={false} />
-        )}
-        {connectedTCRAddr && connectedTCRAddr !== ZERO_ADDRESS && (
-          <>
-            <br />
-            <Typography.Text
-              ellipsis
-              type="secondary"
-              style={{ maxWidth: '100%', textDecoration: 'underline' }}
-            >
-              <Link
-                to={`/tcr/${connectedTCRAddr}`}
-                style={{ color: '#4d00b473' }}
-              >
-                View Badges TCR
-              </Link>
-            </Typography.Text>
-          </>
-        )}
-      </StyledBanner>
+      <Banner
+        metadata={metadata}
+        requestWeb3Auth={requestWeb3Auth}
+        setSubmissionFormOpen={setSubmissionFormOpen}
+        connectedTCRAddr={connectedTCRAddr}
+      />
       <SearchBar />
       <StyledLayoutContent>
         <StyledContent>
