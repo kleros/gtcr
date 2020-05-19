@@ -12,6 +12,7 @@ import ErrorPage from '../error-page'
 import styled from 'styled-components/macro'
 import { useWeb3Context } from 'web3-react'
 import { abi as _arbitrator } from '@kleros/tcr/build/contracts/IArbitrator.json'
+import { abi as _gtcr } from '@kleros/tcr/build/contracts/GeneralizedTCR.json'
 import { ethers } from 'ethers'
 import ItemDetailsCard from '../../components/item-details-card'
 import ItemStatusCard from './item-status-card'
@@ -47,6 +48,7 @@ const StyledBanner = styled.div`
 const ItemDetails = ({ itemID }) => {
   const { library } = useWeb3Context()
   const [error, setError] = useState()
+  const [itemMetaEvidence, setItemMetaEvidence] = useState()
   const { timestamp } = useContext(WalletContext)
   const [decodedItem, setDecodedItem] = useState()
   const [item, setItem] = useState()
@@ -186,6 +188,36 @@ const ItemDetails = ({ itemID }) => {
     [eventListenerSet]
   )
 
+  const { metadata } = metaEvidence || {}
+
+  // If this is a TCR in a TCR of TCRs, we fetch its metadata as well
+  // to build a better item details card.
+  useEffect(() => {
+    ;(async () => {
+      const { isTCRofTCRs } = metadata || {}
+      if (!isTCRofTCRs) return
+      if (!decodedItem) return
+      const itemAddress = decodedItem.decodedData[0] // There is only one column, the TCR address.
+      const itemTCR = new ethers.Contract(itemAddress, _gtcr, library)
+
+      // Take the latest meta evidence.
+      const logs = (
+        await library.getLogs({
+          ...itemTCR.filters.MetaEvidence(),
+          fromBlock: 0
+        })
+      ).map(log => itemTCR.interface.parseLog(log))
+      if (logs.length === 0) return
+
+      const { _evidence: metaEvidencePath } = logs[logs.length - 1].values
+      const file = await (
+        await fetch(process.env.REACT_APP_IPFS_GATEWAY + metaEvidencePath)
+      ).json()
+
+      setItemMetaEvidence(file)
+    })()
+  }, [decodedItem, library, metadata])
+
   if (!tcrAddress || !itemID || error || tcrError)
     return (
       <ErrorPage
@@ -195,7 +227,6 @@ const ItemDetails = ({ itemID }) => {
       />
     )
 
-  const { metadata } = metaEvidence || {}
   const { tcrTitle, itemName, columns } = metadata || {}
 
   return (
@@ -220,20 +251,21 @@ const ItemDetails = ({ itemID }) => {
           dark
         />
         <div style={{ marginBottom: '40px' }} />
-        {/* Crowdfunding card is only rendered if the item has an appealable dispute. */}
-        <CrowdfundingCard item={decodedItem || item} timestamp={timestamp} />
         <ItemDetailsCard
+          columns={columns}
+          item={decodedItem}
           title={`${
             itemName ? capitalizeFirstLetter(itemName) : 'Item'
           } Details`}
-          columns={columns}
           loading={
             !metadata ||
             !decodedItem ||
             (!decodedItem.decodedData && decodedItem.errors.length === 0)
           }
-          item={decodedItem}
+          itemMetaEvidence={itemMetaEvidence}
         />
+        {/* Crowdfunding card is only rendered if the item has an appealable dispute. */}
+        <CrowdfundingCard item={decodedItem || item} timestamp={timestamp} />
 
         {/* Spread the `requests` parameter to convert elements from array to an object */}
         <RequestTimelines

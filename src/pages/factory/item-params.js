@@ -31,6 +31,10 @@ const ItemParams = ({
   ...rest
 }) => {
   const { setTcrState } = rest
+  const { tcrState } = rest || {}
+  const { tcrLogo, tcrPrimaryDocument, tcrDescription, tcrTitle } =
+    tcrState || {}
+
   const toggleTCRofTCRs = useCallback(() => {
     if (!isTCRofTCRs) {
       setFieldValue(`columns`, [
@@ -227,6 +231,16 @@ const ItemParams = ({
         title="Preview"
         columns={columns}
         statusCode={STATUS_CODE.REGISTERED}
+        itemMetaEvidence={
+          isTCRofTCRs && {
+            fileURI: tcrPrimaryDocument,
+            metadata: {
+              tcrTitle,
+              tcrDescription,
+              logoURI: tcrLogo
+            }
+          }
+        }
       />
     </Card>
   )

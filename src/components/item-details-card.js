@@ -12,6 +12,7 @@ import { TCRViewContext } from '../bootstrap/tcr-view-context'
 import itemPropTypes from '../prop-types/item'
 import { WalletContext } from '../bootstrap/wallet-context'
 import useNetworkEnvVariable from '../hooks/network-env'
+import TCRMetadataDisplay from './tcr-metadata-display'
 
 const StyledFields = styled.div`
   display: flex;
@@ -26,7 +27,13 @@ const StyledField = styled.div`
   word-break: break-word;
 `
 
-const ItemDetailsCard = ({ title, columns, loading, item }) => {
+const ItemDetailsCard = ({
+  title,
+  columns,
+  loading,
+  item,
+  itemMetaEvidence
+}) => {
   const { account, networkId } = useWeb3Context()
   const { pushWeb3Action } = useContext(WalletContext)
   const tcrViewContext = useContext(TCRViewContext)
@@ -93,6 +100,20 @@ const ItemDetailsCard = ({ title, columns, loading, item }) => {
     tcrViewContext
   ])
 
+  const { metadata: itemMetaData, fileURI } = itemMetaEvidence || {}
+  const { tcrTitle, tcrDescription, logoURI } = itemMetaData || {}
+
+  if (!loading && item && item.errors.length > 0)
+    return (
+      <Result
+        status="warning"
+        subTitle={item.errors.map((e, i) => (
+          <p key={i}>{e}</p>
+        ))}
+        style={{ width: '100%' }}
+      />
+    )
+
   return (
     <Card
       title={title}
@@ -116,34 +137,33 @@ const ItemDetailsCard = ({ title, columns, loading, item }) => {
     >
       {columns && (
         <StyledFields>
-          {!loading && item && item.errors.length > 0 ? (
-            <Result
-              status="warning"
-              subTitle={item.errors.map((e, i) => (
-                <p key={i}>{e}</p>
-              ))}
-              style={{ width: '100%' }}
+          {itemMetaData && (
+            <TCRMetadataDisplay
+              logoURI={logoURI}
+              tcrTitle={tcrTitle}
+              fileURI={fileURI}
+              tcrDescription={tcrDescription}
             />
-          ) : (
-            columns.map((column, index) => (
-              <StyledField key={index}>
-                <span>
-                  {column.label}
-                  {column.description && (
-                    <Tooltip title={column.description}>
-                      &nbsp;
-                      <Icon type="question-circle-o" />
-                    </Tooltip>
-                  )}
-                </span>
-                :{' '}
-                <DisplaySelector
-                  type={column.type}
-                  value={item && item.decodedData[index]}
-                />
-              </StyledField>
-            ))
           )}
+          {columns.map((column, index) => (
+            <StyledField key={index}>
+              <span>
+                {column.label}
+                {column.description && (
+                  <Tooltip title={column.description}>
+                    &nbsp;
+                    <Icon type="question-circle-o" />
+                  </Tooltip>
+                )}
+              </span>
+              :{' '}
+              <DisplaySelector
+                type={column.type}
+                value={item && item.decodedData[index]}
+                linkImage
+              />
+            </StyledField>
+          ))}
         </StyledFields>
       )}
     </Card>
@@ -160,14 +180,26 @@ ItemDetailsCard.propTypes = {
   ),
   title: PropTypes.string,
   item: itemPropTypes,
-  loading: PropTypes.bool
+  loading: PropTypes.bool,
+  itemMetaEvidence: PropTypes.oneOfType([
+    PropTypes.bool,
+    PropTypes.shape({
+      metadata: PropTypes.shape({
+        tcrTitle: PropTypes.string.isRequired,
+        tcrDescription: PropTypes.string.isRequired,
+        logoURI: PropTypes.string.isRequired
+      }).isRequired,
+      fileURI: PropTypes.string.isRequired
+    })
+  ])
 }
 
 ItemDetailsCard.defaultProps = {
   columns: null,
   title: null,
   item: null,
-  loading: null
+  loading: null,
+  itemMetaEvidence: null
 }
 
 export default ItemDetailsCard

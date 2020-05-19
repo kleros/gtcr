@@ -13,7 +13,7 @@ const StyledImage = styled.img`
   padding: 5px;
 `
 
-const DisplaySelector = ({ type, value }) => {
+const DisplaySelector = ({ type, value, linkImage }) => {
   switch (type) {
     case itemTypes.GTCR_ADDRESS:
       return <GTCRAddress address={value || ZERO_ADDRESS} />
@@ -28,16 +28,23 @@ const DisplaySelector = ({ type, value }) => {
       return <Typography.Paragraph>{value || LOREM_IPSUM}</Typography.Paragraph>
     case itemTypes.IMAGE:
       return value ? (
-        <a
-          href={`${process.env.REACT_APP_IPFS_GATEWAY}${value}`}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
+        linkImage ? (
+          <a
+            href={`${process.env.REACT_APP_IPFS_GATEWAY}${value}`}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <StyledImage
+              src={`${process.env.REACT_APP_IPFS_GATEWAY}${value}`}
+              alt="item"
+            />
+          </a>
+        ) : (
           <StyledImage
             src={`${process.env.REACT_APP_IPFS_GATEWAY}${value}`}
             alt="item"
           />
-        </a>
+        )
       ) : (
         <Avatar shape="square" size="large" icon="file-image" />
       )
