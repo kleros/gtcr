@@ -10,15 +10,19 @@ const StyledIcon = styled(FontAwesomeIcon)`
   margin-bottom: 2px;
 `
 
+const StyledButton = styled(Button)`
+  pointer-events: auto;
+`
+
 const GTCRAddress = ({ address }) => (
-  <Button
+  <StyledButton
     href={`/tcr/${utils.getAddress(address)}`}
     target="_blank"
     rel="noopener noreferrer"
   >
     Visit TCR
     <StyledIcon icon="external-link-alt" />
-  </Button>
+  </StyledButton>
 )
 
 GTCRAddress.propTypes = {
