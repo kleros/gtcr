@@ -67,6 +67,9 @@ const StyledCardInfo = styled(Card)`
   height: 100%;
   display: flex;
   flex-direction: column;
+  position: relative;
+  pointer-events: none;
+  z-index: 1;
 
   & > .ant-card-head {
     display: flex;
@@ -81,6 +84,18 @@ const StyledCardInfo = styled(Card)`
   }
 `
 
+const CardLink = styled(Link)`
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  right: 0;
+`
+
+const CardBlock = styled.div`
+  position: relative;
+`
+
 const CardItemInfo = ({ item, statusCode, tcrAddress, metaEvidence }) => {
   let content
   if (item.errors.length > 0)
@@ -93,11 +108,12 @@ const CardItemInfo = ({ item, statusCode, tcrAddress, metaEvidence }) => {
     )
 
   return (
-    <Link to={`/tcr/${tcrAddress}/${item.tcrData.ID}`}>
+    <CardBlock>
+      <CardLink to={`/tcr/${tcrAddress}/${item.tcrData.ID}`} />
       <StyledCardInfo title={<ItemStatusBadge statusCode={statusCode} dark />}>
         {content}
       </StyledCardInfo>
-    </Link>
+    </CardBlock>
   )
 }
 
