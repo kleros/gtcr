@@ -2,6 +2,58 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.9.5](https://github.com/kleros/gtcr/compare/v0.9.4...v0.9.5) (2020-05-20)
+
+
+### Features
+
+* add a NSFW switch ([9cf0d0e](https://github.com/kleros/gtcr/commit/9cf0d0e060b35ad791e8b06702dc0ad35552b6e9))
+* add note on deployment costs, close [#33](https://github.com/kleros/gtcr/issues/33), close [#39](https://github.com/kleros/gtcr/issues/39) ([0086245](https://github.com/kleros/gtcr/commit/0086245a9e1a3aa73d1e2af1e24b11831ba3fe20))
+* display arbitrator and challenger, if available ([cb79939](https://github.com/kleros/gtcr/commit/cb79939767f30e1ec91efa3461df41d010980683))
+* display challenged and crowdfunding cards facing down ([82c0c3d](https://github.com/kleros/gtcr/commit/82c0c3d0295a5dcfaf9599bd2dc0d8651a69e74e))
+* display items with pending requests first ([2306396](https://github.com/kleros/gtcr/commit/2306396cf56d07ac068728321a47f617360405ca))
+* display link in details view ([514a569](https://github.com/kleros/gtcr/commit/514a569429ef825843e0aaa70a235ebc7f7ee960))
+* display TCR information in details view and close [#63](https://github.com/kleros/gtcr/issues/63) ([bce7871](https://github.com/kleros/gtcr/commit/bce7871b05c42d69f500bc29ae6e05aa771d5375))
+* fix viewport measurements, display tcr logo and close [#62](https://github.com/kleros/gtcr/issues/62) ([befdcd2](https://github.com/kleros/gtcr/commit/befdcd2e0e0eeddcee7e497f29abf5bec94bda3a))
+* handle HasPaidFees event notification ([ab978eb](https://github.com/kleros/gtcr/commit/ab978eb74fffcc62038ec686dcc667576b9ee0e4))
+* improve factory field descriptions and close [#46](https://github.com/kleros/gtcr/issues/46) ([f850b7f](https://github.com/kleros/gtcr/commit/f850b7f335e409e0e625882eda0fa2b3ca353339))
+* improve fee stake multipliers explanation and close [#47](https://github.com/kleros/gtcr/issues/47) ([5100130](https://github.com/kleros/gtcr/commit/51001303f5c2ce117546485d1b7dd490e298bca4))
+* improve item name description and close [#44](https://github.com/kleros/gtcr/issues/44) ([f959d1f](https://github.com/kleros/gtcr/commit/f959d1f29c8b8d6fc16883c8e671ecf89a67a6ae))
+* improve primary document field description and close [#45](https://github.com/kleros/gtcr/issues/45) ([89c2720](https://github.com/kleros/gtcr/commit/89c272078dba44b962f35a8137948649d9fcf5be))
+* improve stake multipliers description and close [#52](https://github.com/kleros/gtcr/issues/52) ([9ae169e](https://github.com/kleros/gtcr/commit/9ae169efb8c76de2bba5daafac9fa945279366a4))
+* prevent submitting non GTCRs to TCRs of TCRs and close [#43](https://github.com/kleros/gtcr/issues/43) ([881a76f](https://github.com/kleros/gtcr/commit/881a76fdf42539f2af5125b64724dde0af92ffad))
+* remember nsfw user setting ([f276cb2](https://github.com/kleros/gtcr/commit/f276cb26626a663952d17c09f4986088f9987f34))
+* update mainnet governor to latest contract ([48a6617](https://github.com/kleros/gtcr/commit/48a66175d08c105127b9232aa554715ca7dff2c2))
+* use button for 'navigate to tcr' link ([9e843a7](https://github.com/kleros/gtcr/commit/9e843a7e5e9067513bb82dbc31a952c3b5e95406))
+
+
+### Bug Fixes
+
+* default tcr and extra data ([374608d](https://github.com/kleros/gtcr/commit/374608d7dda685224ddad617d3c4500e2e262878))
+* disable badge address field if parent is not set ([3445184](https://github.com/kleros/gtcr/commit/3445184921d0d8731bbfa0417e01e9051711355e))
+* don't show old active items if the filter hides it ([2c7ccb3](https://github.com/kleros/gtcr/commit/2c7ccb3c9f547eee5bfbbf692a7834fc7de291f8))
+* error when navigating from tcr with items to empty tcr ([5277c9b](https://github.com/kleros/gtcr/commit/5277c9bdc0f3775a209e41fa4f514cc4b6d404fd))
+* fetch request type from logs ([4b3cf71](https://github.com/kleros/gtcr/commit/4b3cf71b6384e5c90c56e516bbd9c1b3bbc325d5))
+* fetch request type from logs and close [#49](https://github.com/kleros/gtcr/issues/49) ([b7f80b1](https://github.com/kleros/gtcr/commit/b7f80b1bafadca4399c2d42d87b00cd92f2d37fd))
+* handle improperly encoded submissions ([8debf4c](https://github.com/kleros/gtcr/commit/8debf4c6d0505d7a22cba94930a936e5921bab05))
+* improve challenge deposit labels and close [#42](https://github.com/kleros/gtcr/issues/42) ([884c1b5](https://github.com/kleros/gtcr/commit/884c1b5d9b8992447b5b3acaf5f05c19d846fbba))
+* improve deposit descriptions and card styling ([4ccb6e2](https://github.com/kleros/gtcr/commit/4ccb6e2a3ccdc43cafd70fe13d6199452a507233))
+* improve UI explanations and close [#56](https://github.com/kleros/gtcr/issues/56) ([bff6336](https://github.com/kleros/gtcr/commit/bff633657dafcb03c1e47cb973f458ccc8c2ccf5))
+* incorrect badge status handling ([c3c45ba](https://github.com/kleros/gtcr/commit/c3c45baa60f35517ef05c8254470c2094ffef44c))
+* listing criteria link ([cd62574](https://github.com/kleros/gtcr/commit/cd62574233692120c47824b525407b307952f3de))
+* outdated contract api call ([2bb1d9b](https://github.com/kleros/gtcr/commit/2bb1d9bcc230b92f01fdbd967a920f4a076226b5))
+* outdated contract api call ([d55a710](https://github.com/kleros/gtcr/commit/d55a71094dc0395b7cdd3cbb277552845ecf5cd5))
+* request timeline loading forever ([11aad0d](https://github.com/kleros/gtcr/commit/11aad0d506fe78f5d5cd301df9fae721127d4159))
+* return badges filtering by state and column matched ([ef71d7a](https://github.com/kleros/gtcr/commit/ef71d7a0a13d4b2de64aa6ae8912b744138a71ec))
+* styling issue on item cards header ([3e0bbe3](https://github.com/kleros/gtcr/commit/3e0bbe3872a70cf7e5f2dee4b31c711ef754d79b))
+* timeline loading indicator handling ([0ffb76c](https://github.com/kleros/gtcr/commit/0ffb76cf8a0193d9118b5ec3c2573b71db7f78c5))
+* use kovan as the default network ([671bcbf](https://github.com/kleros/gtcr/commit/671bcbfde3a91a529015ce010ee13fb371cf3375))
+* use latest governor contract as the default governor ([2a67601](https://github.com/kleros/gtcr/commit/2a67601a8e15a25b31e6dbc7250b7e18ead27345))
+* use latest tcr view contract ([9da112a](https://github.com/kleros/gtcr/commit/9da112aca280c9f98611aff195a2b2a5c7a2f00e))
+* view tcr button not working ([4422d93](https://github.com/kleros/gtcr/commit/4422d93dee2dd3049bd48b8d5ae1486a6613de74))
+* **encoder:** handle small ethereum addresses ([2cebd7e](https://github.com/kleros/gtcr/commit/2cebd7e034c7737e130ef05e6d22219949bd5e63))
+* **factory:** crash on opening ([e2a2e71](https://github.com/kleros/gtcr/commit/e2a2e71f725239043c42e93eb0dc8eb900afa4ff))
+
 ### [0.9.4](https://github.com/kleros/gtcr/compare/v0.9.2...v0.9.4) (2020-04-30)
 
 
