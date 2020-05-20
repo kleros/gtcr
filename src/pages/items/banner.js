@@ -33,6 +33,7 @@ const StyledImage = styled.img`
   object-fit: contain;
   height: 50px;
   width: 50px;
+  padding: 0 0 5px 5px;
 `
 
 const TCRTitle = styled.div`
@@ -67,7 +68,7 @@ const Banner = ({
   setSubmissionFormOpen,
   connectedTCRAddr
 }) => {
-  const { metadata } = metaEvidence || {}
+  const { metadata, fileURI } = metaEvidence || {}
   const { itemName, tcrTitle, tcrDescription, logoURI } = metadata || {}
   const { width } = useWindowDimensions()
 
@@ -131,9 +132,14 @@ const Banner = ({
           type="secondary"
           style={{ maxWidth: '100%', textDecoration: 'underline' }}
         >
-          <Link to={`/tcr/${connectedTCRAddr}`} style={{ color: '#4d00b473' }}>
+          <a
+            href={`${process.env.REACT_APP_IPFS_GATEWAY}${fileURI || ''}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ textDecoration: 'underline', color: '#4d00b473' }}
+          >
             View Listing Policies
-          </Link>
+          </a>
         </Typography.Text>
       </ActionCol>
     </StyledBanner>

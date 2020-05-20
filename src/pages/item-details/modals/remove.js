@@ -22,11 +22,11 @@ const StyledSpin = styled(Spin)`
 
 const RemoveModal = ({ item, itemName = 'item', fileURI, ...rest }) => {
   const { pushWeb3Action } = useContext(WalletContext)
-  const {
-    removalDeposit,
-    tcrAddress,
-    metaEvidence: { metadata }
-  } = useContext(TCRViewContext)
+  const { removalDeposit, tcrAddress, metaEvidence } = useContext(
+    TCRViewContext
+  )
+
+  const { metadata } = metaEvidence || {}
 
   const removeItem = useCallback(
     ({ title, description, evidenceAttachment }) =>
