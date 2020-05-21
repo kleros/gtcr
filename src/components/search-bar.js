@@ -19,7 +19,7 @@ import { WalletContext } from '../bootstrap/wallet-context'
 import { itemToStatusCode, STATUS_COLOR } from '../utils/item-status'
 
 const StyledSelect = styled(Select)`
-  margin: 24px 9.375vw;
+  width: 100%;
 `
 
 const StyledOptionItem = styled.div`

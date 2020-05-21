@@ -87,6 +87,10 @@ const StyledSwitch = styled(Switch)`
   }
 `
 
+const StyledMargin = styled.div`
+  padding: 24px 9.375vw;
+`
+
 const pagingItem = (_, type, originalElement) => {
   if (type === 'prev') return <span>Previous</span>
   if (type === 'next') return <span>Next</span>
@@ -455,7 +459,9 @@ const Items = ({ search, history }) => {
         setSubmissionFormOpen={setSubmissionFormOpen}
         connectedTCRAddr={connectedTCRAddr}
       />
-      <SearchBar />
+      <StyledMargin>
+        <SearchBar />
+      </StyledMargin>
       <StyledLayoutContent>
         <StyledContent>
           <Spin

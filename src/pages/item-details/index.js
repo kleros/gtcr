@@ -8,12 +8,13 @@ import React, {
   useMemo
 } from 'react'
 import PropTypes from 'prop-types'
-import ErrorPage from '../error-page'
 import styled from 'styled-components/macro'
 import { useWeb3Context } from 'web3-react'
+import { Link } from 'react-router-dom'
+import ErrorPage from '../error-page'
+import { ethers } from 'ethers'
 import { abi as _arbitrator } from '@kleros/tcr/build/contracts/IArbitrator.json'
 import { abi as _gtcr } from '@kleros/tcr/build/contracts/GeneralizedTCR.json'
-import { ethers } from 'ethers'
 import ItemDetailsCard from '../../components/item-details-card'
 import ItemStatusCard from './item-status-card'
 import CrowdfundingCard from './crowdfunding-card'
@@ -37,6 +38,23 @@ const StyledBanner = styled.div`
   background: linear-gradient(270deg, #f2e3ff 22.92%, #ffffff 76.25%);
   box-shadow: 0px 3px 24px #bc9cff;
   color: #4d00b4;
+`
+
+const StyledMargin = styled.div`
+  padding: 24px 9.375vw;
+  display: flex;
+`
+
+const StyledLink = styled(Link)`
+  text-decoration: underline;
+  color: rgba(77, 0, 180, 0.45);
+`
+
+const StyledBackLink = styled.div`
+  min-width: 53px;
+  margin-right: 12px;
+  display: flex;
+  align-items: center;
 `
 
 // TODO: Ensure we don't set state for unmounted components using
@@ -235,15 +253,20 @@ const ItemDetails = ({ itemID }) => {
       <WarningBanner />
       <StyledBanner>
         <Breadcrumb separator=">">
-          <Breadcrumb.Item href={`/tcr/${tcrAddress}`}>
-            {tcrTitle}
+          <Breadcrumb.Item>
+            <StyledLink to={`/tcr/${tcrAddress}`}>{tcrTitle}</StyledLink>
           </Breadcrumb.Item>
           <Breadcrumb.Item>
             {itemName && capitalizeFirstLetter(itemName)} Details
           </Breadcrumb.Item>
         </Breadcrumb>
       </StyledBanner>
-      <SearchBar />
+      <StyledMargin>
+        <StyledBackLink>
+          <StyledLink to={`/tcr/${tcrAddress}`}>Go Back</StyledLink>
+        </StyledBackLink>
+        <SearchBar />
+      </StyledMargin>
       <StyledLayoutContent>
         <ItemStatusCard
           item={decodedItem || item}
