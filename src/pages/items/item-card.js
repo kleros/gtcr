@@ -80,7 +80,17 @@ const StyledCardInfo = styled(Card)`
     display: flex;
     flex-direction: column;
     flex: 1;
-    justify-content: center;
+    justify-content: flex-start;
+  }
+
+  & > .ant-card-actions > li {
+    margin: 0;
+    height: 46px;
+
+    & > span {
+      width: 100%;
+      height: 100%;
+    }
   }
 `
 
@@ -97,7 +107,20 @@ const CardBlock = styled.div`
   height: 100%;
 `
 
-const CardItemInfo = ({ item, statusCode, tcrAddress, metaEvidence }) => {
+const HideCardButton = styled(Button)`
+  pointer-events: auto;
+  width: 100%;
+  height: 100%;
+`
+
+const CardItemInfo = ({
+  item,
+  statusCode,
+  tcrAddress,
+  metaEvidence,
+  toggleReveal,
+  forceReveal
+}) => {
   let content
   if (item.errors.length > 0)
     content = (
@@ -118,7 +141,17 @@ const CardItemInfo = ({ item, statusCode, tcrAddress, metaEvidence }) => {
   return (
     <CardBlock>
       <CardLink to={`/tcr/${tcrAddress}/${item.tcrData.ID}`} />
-      <StyledCardInfo title={<ItemStatusBadge statusCode={statusCode} dark />}>
+      <StyledCardInfo
+        title={<ItemStatusBadge statusCode={statusCode} dark />}
+        actions={
+          !forceReveal &&
+          toggleReveal && [
+            <HideCardButton type="link" onClick={toggleReveal}>
+              Hide
+            </HideCardButton>
+          ]
+        }
+      >
         {content}
       </StyledCardInfo>
     </CardBlock>
@@ -128,6 +161,8 @@ const CardItemInfo = ({ item, statusCode, tcrAddress, metaEvidence }) => {
 CardItemInfo.propTypes = {
   tcrAddress: PropTypes.string.isRequired,
   statusCode: PropTypes.number.isRequired,
+  toggleReveal: PropTypes.func,
+  forceReveal: PropTypes.bool,
   metaEvidence: PropTypes.shape({
     metadata: PropTypes.shape({
       isTCRofTCRs: PropTypes.bool
@@ -146,6 +181,8 @@ CardItemInfo.propTypes = {
   }).isRequired
 }
 
+CardItemInfo.defaultProps = { toggleReveal: null, forceReveal: null }
+
 const ItemCard = ({
   item,
   challengePeriodDuration,
@@ -154,9 +191,9 @@ const ItemCard = ({
   ...rest
 }) => {
   const [revealed, setRevealed] = useState()
-  const onReveal = useCallback(() => {
-    setRevealed(true)
-  }, [])
+  const toggleReveal = useCallback(() => {
+    setRevealed(!revealed)
+  }, [revealed])
   if (!challengePeriodDuration || !timestamp || !item)
     return <Card style={{ height: '100%' }} loading {...rest} />
 
@@ -181,13 +218,19 @@ const ItemCard = ({
           <CardNSFWWarn>
             <FontAwesomeIcon icon="exclamation-triangle" size="2x" />
             <p>Warning: potentially offensive content</p>
-            <Button type="primary" onClick={onReveal}>
+            <Button type="primary" onClick={toggleReveal}>
               Reveal
             </Button>
           </CardNSFWWarn>
         </FlipCardFront>
         <FlipCardBack>
-          <CardItemInfo item={item} statusCode={statusCode} {...rest} />
+          <CardItemInfo
+            item={item}
+            statusCode={statusCode}
+            {...rest}
+            toggleReveal={toggleReveal}
+            forceReveal={forceReveal}
+          />
         </FlipCardBack>
       </FlipCardInner>
     </FlipCard>
