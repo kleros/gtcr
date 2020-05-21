@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 
-const useMetadata = ({ arbitrable, library }) => {
+const useMetaEvidence = ({ arbitrable, library }) => {
   const [metaEvidence, setMetaEvidence] = useState()
   const [error, setError] = useState()
 
@@ -15,7 +15,8 @@ const useMetadata = ({ arbitrable, library }) => {
             fromBlock: 0
           })
         ).map(log => arbitrable.interface.parseLog(log))
-        if (logs.length === 0) return
+        if (logs.length === 0)
+          throw new Error('No meta evidence available for this address.')
 
         // Take the penultimate item. This is the most recent meta evidence
         // for registration requests.
@@ -27,16 +28,12 @@ const useMetadata = ({ arbitrable, library }) => {
         setMetaEvidence({ ...file, address: arbitrable.address })
       } catch (err) {
         console.error('Error fetching meta evidence', err)
-        setError('Error fetching meta evidence')
+        setError(err)
       }
     })()
-
-    return () => {
-      arbitrable.removeAllListeners(arbitrable.filters.MetaEvidence())
-    }
   }, [arbitrable, library])
 
-  return { metadata: metaEvidence && metaEvidence.metadata, error }
+  return { metaEvidence, error }
 }
 
-export default useMetadata
+export default useMetaEvidence

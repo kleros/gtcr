@@ -120,12 +120,8 @@ const ItemDetails = ({ itemID }) => {
     let decodedData
     try {
       decodedData = gtcrDecode({ columns, values: item.data })
-    } catch (err) {
+    } catch (_) {
       errors.push(`Error decoding ${item.ID} of TCR at ${tcrAddress}`)
-      console.warn(
-        `Error decoding ${item.ID} of TCR at ${tcrAddress} in details view`,
-        err
-      )
     }
 
     setDecodedItem({
@@ -200,21 +196,26 @@ const ItemDetails = ({ itemID }) => {
       const itemAddress = decodedItem.decodedData[0] // There is only one column, the TCR address.
       const itemTCR = new ethers.Contract(itemAddress, _gtcr, library)
 
-      // Take the latest meta evidence.
-      const logs = (
-        await library.getLogs({
-          ...itemTCR.filters.MetaEvidence(),
-          fromBlock: 0
-        })
-      ).map(log => itemTCR.interface.parseLog(log))
-      if (logs.length === 0) return
+      try {
+        // Take the latest meta evidence.
+        const logs = (
+          await library.getLogs({
+            ...itemTCR.filters.MetaEvidence(),
+            fromBlock: 0
+          })
+        ).map(log => itemTCR.interface.parseLog(log))
+        if (logs.length === 0) throw new Error('No meta evidence available.')
 
-      const { _evidence: metaEvidencePath } = logs[logs.length - 1].values
-      const file = await (
-        await fetch(process.env.REACT_APP_IPFS_GATEWAY + metaEvidencePath)
-      ).json()
+        const { _evidence: metaEvidencePath } = logs[logs.length - 1].values
+        const file = await (
+          await fetch(process.env.REACT_APP_IPFS_GATEWAY + metaEvidencePath)
+        ).json()
 
-      setItemMetaEvidence(file)
+        setItemMetaEvidence({ file })
+      } catch (err) {
+        console.error('Error fetching meta evidence', err)
+        setItemMetaEvidence({ error: err })
+      }
     })()
   }, [decodedItem, library, metadata])
 

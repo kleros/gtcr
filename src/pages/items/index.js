@@ -376,9 +376,6 @@ const Items = ({ search, history }) => {
         decodedItem = gtcrDecode({ values: item.data, columns })
         // eslint-disable-next-line no-unused-vars
       } catch (err) {
-        console.warn(
-          `Error decoding item ${item.ID} of TCR at ${tcrAddress} in items view`
-        )
         errors.push(`Error decoding item ${item.ID} of TCR at ${tcrAddress}`)
       }
 

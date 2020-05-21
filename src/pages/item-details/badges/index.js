@@ -214,9 +214,6 @@ const Badges = ({ connectedTCRAddr, item, tcrAddress }) => {
         decodedItem = gtcrDecode({ values: item.data, columns })
         // eslint-disable-next-line no-unused-vars
       } catch (err) {
-        console.warn(
-          `Error decoding item ${item.ID} of TCR at ${tcrAddress} in badges view`
-        )
         errors.push(`Error decoding item ${item.ID} of TCR at ${tcrAddress}`)
       }
 

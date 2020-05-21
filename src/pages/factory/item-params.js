@@ -233,11 +233,13 @@ const ItemParams = ({
         statusCode={STATUS_CODE.REGISTERED}
         itemMetaEvidence={
           isTCRofTCRs && {
-            fileURI: tcrPrimaryDocument,
-            metadata: {
-              tcrTitle,
-              tcrDescription,
-              logoURI: tcrLogo
+            file: {
+              fileURI: tcrPrimaryDocument,
+              metadata: {
+                tcrTitle,
+                tcrDescription,
+                logoURI: tcrLogo
+              }
             }
           }
         }

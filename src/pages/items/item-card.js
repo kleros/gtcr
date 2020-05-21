@@ -94,12 +94,20 @@ const CardLink = styled(Link)`
 
 const CardBlock = styled.div`
   position: relative;
+  height: 100%;
 `
 
 const CardItemInfo = ({ item, statusCode, tcrAddress, metaEvidence }) => {
   let content
   if (item.errors.length > 0)
-    content = <Result status="warning" subTitle="Error loading item" />
+    content = (
+      <Result
+        status="warning"
+        subTitle={item.errors.map(e => (
+          <p>{e}</p>
+        ))}
+      />
+    )
   else
     content = metaEvidence.metadata.isTCRofTCRs ? (
       <TCRCard tcrAddress={item.columns[0].value} />

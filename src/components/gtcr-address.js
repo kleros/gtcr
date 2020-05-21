@@ -4,6 +4,8 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import styled from 'styled-components/macro'
 import { utils } from 'ethers'
 import { Button } from 'antd'
+import { ZERO_ADDRESS } from '../utils/string'
+import ETHAddress from './eth-address'
 
 const StyledIcon = styled(FontAwesomeIcon)`
   margin-left: 6px;
@@ -14,15 +16,21 @@ const StyledButton = styled(Button)`
   pointer-events: auto;
 `
 
+const StyledSpan = styled.span`
+  margin: 0 12px;
+  pointer-events: auto;
+`
+
 const GTCRAddress = ({ address }) => (
-  <StyledButton
-    href={`/tcr/${utils.getAddress(address)}`}
-    target="_blank"
-    rel="noopener noreferrer"
-  >
-    Visit TCR
-    <StyledIcon icon="external-link-alt" />
-  </StyledButton>
+  <>
+    <StyledSpan>
+      <ETHAddress address={address || ZERO_ADDRESS} />
+    </StyledSpan>
+    <StyledButton href={`/tcr/${utils.getAddress(address)}`}>
+      Visit
+      <StyledIcon icon="external-link-alt" />
+    </StyledButton>
+  </>
 )
 
 GTCRAddress.propTypes = {

@@ -1,6 +1,6 @@
 import React, { useState, useContext, useEffect, useCallback } from 'react'
 import PropTypes from 'prop-types'
-import { Card, Icon, Tooltip, Button, Result } from 'antd'
+import { Card, Icon, Tooltip, Button, Result, Alert } from 'antd'
 import DisplaySelector from './display-selector'
 import styled from 'styled-components/macro'
 import { useWeb3Context } from 'web3-react'
@@ -25,6 +25,10 @@ const StyledField = styled.div`
   margin-bottom: 16px;
   margin-right: 16px;
   word-break: break-word;
+`
+
+const StyledAlert = styled(Alert)`
+  margin-bottom: 12px;
 `
 
 const ItemDetailsCard = ({
@@ -100,7 +104,9 @@ const ItemDetailsCard = ({
     tcrViewContext
   ])
 
-  const { metadata: itemMetaData, fileURI } = itemMetaEvidence || {}
+  const { file: itemMetaEvidenceFile, error: itemMetaEvidenceError } =
+    itemMetaEvidence || {}
+  const { metadata: itemMetaData, fileURI } = itemMetaEvidenceFile || {}
   const { tcrTitle, tcrDescription, logoURI } = itemMetaData || {}
 
   if (!loading && item && item.errors.length > 0)
@@ -135,6 +141,14 @@ const ItemDetailsCard = ({
         )
       }
     >
+      {itemMetaEvidenceError && (
+        <StyledAlert
+          message={`Warning: ${itemMetaEvidenceError.message} Cannot display TCR information.`}
+          type="warning"
+          showIcon
+          closable
+        />
+      )}
       {columns && (
         <StyledFields>
           {itemMetaData && (

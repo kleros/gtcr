@@ -121,7 +121,7 @@ const SubmissionForm = withFormik({
       .reduce(
         (acc, curr) => ({
           ...acc,
-          [curr.label]: `This doesn't look like a GTCR address. Are you in the correct network?`
+          [curr.label]: `This address was not deployed with the Generalized TCR Factory.`
         }),
         {}
       )
