@@ -263,6 +263,7 @@ export default () => {
             description={deployCostMessage}
             type="info"
             showIcon
+            closable
           />
         )}
         <Steps current={currStep - 1}>

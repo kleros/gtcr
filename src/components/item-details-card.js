@@ -198,12 +198,15 @@ ItemDetailsCard.propTypes = {
   itemMetaEvidence: PropTypes.oneOfType([
     PropTypes.bool,
     PropTypes.shape({
-      metadata: PropTypes.shape({
-        tcrTitle: PropTypes.string.isRequired,
-        tcrDescription: PropTypes.string.isRequired,
-        logoURI: PropTypes.string.isRequired
+      file: PropTypes.shape({
+        metadata: PropTypes.shape({
+          tcrTitle: PropTypes.string.isRequired,
+          tcrDescription: PropTypes.string.isRequired,
+          logoURI: PropTypes.string.isRequired
+        }).isRequired,
+        fileURI: PropTypes.string.isRequired
       }).isRequired,
-      fileURI: PropTypes.string.isRequired
+      error: PropTypes.string
     })
   ])
 }
