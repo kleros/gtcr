@@ -58,6 +58,11 @@ const StyledSelect = styled(Select)`
 
 const StyledTag = styled(Tag.CheckableTag)`
   margin-bottom: 12px;
+
+  &.ant-tag-checkable-checked {
+    background-color: #6826bf;
+    cursor: pointer;
+  }
 `
 
 const StyledPagination = styled(Pagination)`
@@ -76,6 +81,10 @@ const StyledGrid = styled.div`
 
 const StyledSwitch = styled(Switch)`
   margin-right: 8px;
+
+  &.ant-switch-checked {
+    background-color: #6826bf;
+  }
 `
 
 const pagingItem = (_, type, originalElement) => {

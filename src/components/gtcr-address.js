@@ -17,7 +17,7 @@ const StyledButton = styled(Button)`
 `
 
 const StyledSpan = styled.span`
-  margin: 0 12px;
+  margin: 0 12px 0 0;
   pointer-events: auto;
 `
 
