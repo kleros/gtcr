@@ -275,21 +275,10 @@ const Badges = ({ connectedTCRAddr, item, tcrAddress }) => {
             const matchFile = await matchFileResponse.json()
             const { columns: matchColumns } = matchFile
             const { metadata: badgeMetadata, fileURI } = badgeMetaEvidence
-            // Submission deposit = submitter base deposit + arbitration cost + fee stake
-            // fee stake = arbitration cost * shared stake multiplier / multiplier divisor
-            const {
-              submissionBaseDeposit,
-              arbitrationCost,
-              sharedStakeMultiplier,
-              MULTIPLIER_DIVISOR
-            } = badgeTcrData
-            const submissionDeposit = submissionBaseDeposit
-              .add(arbitrationCost)
-              .add(
-                arbitrationCost
-                  .mul(sharedStakeMultiplier)
-                  .div(MULTIPLIER_DIVISOR)
-              )
+
+            // Submission deposit = submitter base deposit + arbitration cost
+            const { submissionBaseDeposit, arbitrationCost } = badgeTcrData
+            const submissionDeposit = submissionBaseDeposit.add(arbitrationCost)
 
             const { decodedData } = item
 

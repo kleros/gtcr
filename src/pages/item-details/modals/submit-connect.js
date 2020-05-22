@@ -174,17 +174,8 @@ const SubmitConnectModal = props => {
 
         // Submission deposit = submitter base deposit + arbitration cost + fee stake
         // fee stake = arbitration cost * shared stake multiplier / multiplier divisor
-        const {
-          submissionBaseDeposit,
-          arbitrationCost,
-          sharedStakeMultiplier,
-          MULTIPLIER_DIVISOR
-        } = relTCRData
-        const submissionDeposit = submissionBaseDeposit
-          .add(arbitrationCost)
-          .add(
-            arbitrationCost.mul(sharedStakeMultiplier).div(MULTIPLIER_DIVISOR)
-          )
+        const { submissionBaseDeposit, arbitrationCost } = relTCRData
+        const submissionDeposit = submissionBaseDeposit.add(arbitrationCost)
 
         const file = await fileResponse.json()
         setRelTCRMetaEvidence(file)

@@ -105,9 +105,7 @@ const useTcrView = tcrAddress => {
           submissionBaseDeposit,
           removalBaseDeposit,
           submissionChallengeBaseDeposit,
-          removalChallengeBaseDeposit,
-          sharedStakeMultiplier,
-          MULTIPLIER_DIVISOR
+          removalChallengeBaseDeposit
         } = arbitrableTCRData
 
         const arbitrator = new ethers.Contract(
@@ -120,37 +118,21 @@ const useTcrView = tcrAddress => {
           arbitratorExtraData
         )
 
-        // Submission deposit = submitter base deposit + arbitration cost + fee stake
-        // fee stake = arbitration cost * shared stake multiplier / multiplier divisor
-        const submissionDeposit = submissionBaseDeposit
-          .add(arbitrationCost)
-          .add(
-            arbitrationCost.mul(sharedStakeMultiplier).div(MULTIPLIER_DIVISOR)
-          )
+        // Submission deposit = submitter base deposit + arbitration cost
+        const submissionDeposit = submissionBaseDeposit.add(arbitrationCost)
 
-        // Removal deposit = removal base deposit + arbitration cost + fee stake
-        // fee stake = arbitration cost * shared stake multiplier / multiplier divisor
-        const removalDeposit = removalBaseDeposit
-          .add(arbitrationCost)
-          .add(
-            arbitrationCost.mul(sharedStakeMultiplier).div(MULTIPLIER_DIVISOR)
-          )
+        // Removal deposit = removal base deposit + arbitration cost
+        const removalDeposit = removalBaseDeposit.add(arbitrationCost)
 
-        // Challenge deposit = submission challenge base deposit + arbitration cost + fee stake
-        // fee stake = arbitration cost * shared stake multiplier / multiplier divisor
-        const submissionChallengeDeposit = submissionChallengeBaseDeposit
-          .add(arbitrationCost)
-          .add(
-            arbitrationCost.mul(sharedStakeMultiplier).div(MULTIPLIER_DIVISOR)
-          )
+        // Challenge deposit = submission challenge base deposit + arbitration cost
+        const submissionChallengeDeposit = submissionChallengeBaseDeposit.add(
+          arbitrationCost
+        )
 
-        // Challenge deposit = removal challenge base deposit + arbitration cost + fee stake
-        // fee stake = arbitration cost * shared stake multiplier / multiplier divisor
-        const removalChallengeDeposit = removalChallengeBaseDeposit
-          .add(arbitrationCost)
-          .add(
-            arbitrationCost.mul(sharedStakeMultiplier).div(MULTIPLIER_DIVISOR)
-          )
+        // Challenge deposit = removal challenge base deposit + arbitration cost
+        const removalChallengeDeposit = removalChallengeBaseDeposit.add(
+          arbitrationCost
+        )
 
         setArbitrationCost(arbitrationCost)
         setSubmissionDeposit(submissionDeposit)
