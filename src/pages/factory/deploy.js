@@ -264,7 +264,8 @@ const Deploy = ({ setTxState, tcrState, setTcrState }) => {
           setTxState({
             txHash: relTCRtx.hash,
             status: 'mined',
-            contractAddress
+            contractAddress,
+            isConnectedTCR: true
           })
           setCurrentStep(2)
 
@@ -288,7 +289,10 @@ const Deploy = ({ setTxState, tcrState, setTcrState }) => {
               ], // Shared, winner and looser stake multipliers in basis points.
               { gasLimit: 6000000 }
             )
-            setTxState({ txHash: tx.hash, status: 'pending' })
+            setTxState({
+              txHash: tx.hash,
+              status: 'pending'
+            })
             setTxSubmitted(tx.hash)
             return {
               tx,

@@ -181,7 +181,9 @@ const useCachedFactory = version => {
 
   // We check for the finished flag to reset the form
   // if the user finished his previous deployment.
-  if (cache.finished) cache = newInitialState
+  // We only keep the deployment transactions.
+  if (cache.finished)
+    cache = { ...newInitialState, transactions: cache.transactions }
 
   const [tcrState, setTcrState] = useState(cache)
   const [debouncedTcrState] = useDebounce(tcrState, 1000)
@@ -344,7 +346,7 @@ export default () => {
             {Object.keys(transactions).length > 0 ? (
               <StyledGrid>
                 {Object.keys(transactions)
-                  .filter((_, i) => i % 2 !== 0)
+                  .filter(txHash => !transactions[txHash].isConnectedTCR)
                   .map((txHash, i) => (
                     <Card key={i}>
                       <TCRCardContent
