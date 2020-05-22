@@ -110,8 +110,8 @@ const SubmissionForm = withFormik({
       }),
       {}
     ),
-  handleSubmit: (values, { props: { postSubmit, columns } }) => {
-    postSubmit(values, columns)
+  handleSubmit: (values, { props: { postSubmit, columns }, resetForm }) => {
+    postSubmit(values, columns, resetForm)
   },
   validate: async (values, { columns, deployedWithFactory }) => {
     const errors = (
@@ -152,7 +152,7 @@ const SubmitModal = props => {
   const { itemName, columns } = metadata || {}
 
   const postSubmit = useCallback(
-    (values, columns) => {
+    (values, columns, resetForm) => {
       pushWeb3Action(async ({ account, networkId }, signer) => {
         const gtcr = new ethers.Contract(tcrAddress, _gtcr, signer)
         const encodedParams = gtcrEncode({ columns, values })
@@ -163,6 +163,7 @@ const SubmitModal = props => {
         })
 
         onCancel() // Hide the submission modal.
+        resetForm({})
         return {
           tx,
           actionMessage: `Submitting ${(itemName && itemName.toLowerCase()) ||
