@@ -21,6 +21,10 @@ const StyledCard = styled(Card)`
   margin-top: 40px;
 `
 
+const StyledCollapse = styled(Collapse)`
+  background-color: white;
+`
+
 const RequestTimelines = ({ item, requests }) => {
   const { requestWeb3Auth } = useContext(WalletContext)
   const [evidenceModalOpen, setEvidenceModalOpen] = useState()
@@ -52,7 +56,7 @@ const RequestTimelines = ({ item, requests }) => {
         </Row>
       )}
       {requests && (
-        <Collapse bordered={false} defaultActiveKey={['0']}>
+        <StyledCollapse bordered={false} defaultActiveKey={['0']}>
           {requests.map((request, i) => (
             <Collapse.Panel
               header={`${jsOrdinal.toOrdinal(requests.length - i)} request - ${
@@ -68,7 +72,7 @@ const RequestTimelines = ({ item, requests }) => {
               />
             </Collapse.Panel>
           ))}
-        </Collapse>
+        </StyledCollapse>
       )}
       <EvidenceModal
         item={item}
