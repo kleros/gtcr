@@ -21,6 +21,13 @@ const StyledSpin = styled(Spin)`
   display: flex;
 `
 
+const StyledModal = styled(Modal)`
+  & > .ant-modal-content {
+    border-top-left-radius: 14px;
+    border-top-right-radius: 14px;
+  }
+`
+
 const ChallengeModal = ({ item, itemName, statusCode, fileURI, ...rest }) => {
   // Get contract data.
   const {
@@ -96,13 +103,13 @@ const ChallengeModal = ({ item, itemName, statusCode, fileURI, ...rest }) => {
 
   if (!challengeDeposit)
     return (
-      <Modal title="Submit Item" {...rest}>
+      <StyledModal title="Submit Item" {...rest}>
         <StyledSpin />
-      </Modal>
+      </StyledModal>
     )
 
   return (
-    <Modal
+    <StyledModal
       footer={[
         <Button key="back" onClick={rest.onCancel}>
           Return
@@ -153,7 +160,7 @@ const ChallengeModal = ({ item, itemName, statusCode, fileURI, ...rest }) => {
           <ETHAmount decimals={3} amount={challengeDeposit.toString()} />
         </Descriptions.Item>
       </Descriptions>
-    </Modal>
+    </StyledModal>
   )
 }
 

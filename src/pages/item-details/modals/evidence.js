@@ -1,6 +1,7 @@
 import React, { useContext } from 'react'
 import { Modal, Typography, Button } from 'antd'
 import { ethers } from 'ethers'
+import styled from 'styled-components/macro'
 import { abi as _gtcr } from '@kleros/tcr/build/contracts/GeneralizedTCR.json'
 import { TCRViewContext } from '../../../bootstrap/tcr-view-context'
 import { WalletContext } from '../../../bootstrap/wallet-context'
@@ -8,6 +9,13 @@ import itemPropTypes from '../../../prop-types/item'
 import EvidenceForm from '../../../components/evidence-form.js'
 import Archon from '@kleros/archon'
 import ipfsPublish from '../../../utils/ipfs-publish.js'
+
+const StyledModal = styled(Modal)`
+  & > .ant-modal-content {
+    border-top-left-radius: 14px;
+    border-top-right-radius: 14px;
+  }
+`
 
 const EvidenceModal = ({ item, ...rest }) => {
   // Get contract data.
@@ -70,7 +78,7 @@ const EvidenceModal = ({ item, ...rest }) => {
   const EVIDENCE_FORM_ID = 'submitEvidenceForm'
 
   return (
-    <Modal
+    <StyledModal
       footer={[
         <Button key="back" onClick={rest.onCancel}>
           Return
@@ -92,7 +100,7 @@ const EvidenceModal = ({ item, ...rest }) => {
         formID={EVIDENCE_FORM_ID}
         detailed
       />
-    </Modal>
+    </StyledModal>
   )
 }
 

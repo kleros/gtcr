@@ -31,6 +31,13 @@ const StyledSpin = styled(Spin)`
   display: flex;
 `
 
+const StyledModal = styled(Modal)`
+  & > .ant-modal-content {
+    border-top-left-radius: 14px;
+    border-top-right-radius: 14px;
+  }
+`
+
 const StyledAlert = styled(Alert)`
   margin-bottom: 12px;
 `
@@ -190,7 +197,7 @@ const SubmitModal = props => {
 
   if (!metaEvidence || !submissionDeposit)
     return (
-      <Modal
+      <StyledModal
         title="Submit Item"
         footer={[
           <Button key="back" onClick={onCancel}>
@@ -200,11 +207,11 @@ const SubmitModal = props => {
         {...props}
       >
         <StyledSpin />
-      </Modal>
+      </StyledModal>
     )
 
   return (
-    <Modal
+    <StyledModal
       title={`Submit ${(itemName && itemName.toLowerCase()) || 'Item'}`}
       footer={[
         <Button key="back" onClick={onCancel}>
@@ -261,7 +268,7 @@ const SubmitModal = props => {
           />
         </Descriptions.Item>
       </Descriptions>
-    </Modal>
+    </StyledModal>
   )
 }
 

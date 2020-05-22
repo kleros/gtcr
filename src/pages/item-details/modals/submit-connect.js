@@ -55,6 +55,13 @@ const StyledSkeleton = styled(Skeleton)`
   }
 `
 
+const StyledModal = styled(Modal)`
+  & > .ant-modal-content {
+    border-top-left-radius: 14px;
+    border-top-right-radius: 14px;
+  }
+`
+
 const SkeletonTitleProps = { width: '90px' }
 
 const SubmitConnectModal = props => {
@@ -295,7 +302,7 @@ const SubmitConnectModal = props => {
 
   if (!relTCRMetaEvidence || !relTCRSubmissionDeposit)
     return (
-      <Modal
+      <StyledModal
         title="Enable Badge"
         footer={[
           <Button key="back" onClick={onCancel}>
@@ -305,13 +312,13 @@ const SubmitConnectModal = props => {
         {...props}
       >
         <StyledSpin />
-      </Modal>
+      </StyledModal>
     )
 
   const { fileURI } = relTCRMetaEvidence
   if (error)
     return (
-      <Modal
+      <StyledModal
         title="Enable Badge"
         footer={[
           <Button key="back" onClick={onCancel}>
@@ -321,11 +328,11 @@ const SubmitConnectModal = props => {
         {...props}
       >
         <Result status="warning" title={error} />
-      </Modal>
+      </StyledModal>
     )
 
   return (
-    <Modal
+    <StyledModal
       title="Enable Badge"
       footer={[
         <Button key="back" onClick={onCancel}>
@@ -457,7 +464,7 @@ const SubmitConnectModal = props => {
           />
         </Descriptions.Item>
       </Descriptions>
-    </Modal>
+    </StyledModal>
   )
 }
 

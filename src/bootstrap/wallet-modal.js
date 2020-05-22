@@ -13,12 +13,19 @@ const StyledWalletButton = styled(Button)`
   margin-bottom: 10px;
 `
 
+const StyledModal = styled(Modal)`
+  & > .ant-modal-content {
+    border-top-left-radius: 14px;
+    border-top-right-radius: 14px;
+  }
+`
+
 const WalletModal = ({ connectors }) => {
   const { cancelRequest, setUserSelectedWallet, requestModalOpen } = useContext(
     WalletContext
   )
   return (
-    <Modal
+    <StyledModal
       title="Connect a Wallet"
       visible={requestModalOpen}
       onCancel={cancelRequest}
@@ -74,7 +81,7 @@ const WalletModal = ({ connectors }) => {
           WalletConnect
         </StyledWalletButton>
       )}
-    </Modal>
+    </StyledModal>
   )
 }
 

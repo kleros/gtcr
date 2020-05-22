@@ -31,6 +31,13 @@ const StyledSpin = styled(Spin)`
   display: flex;
 `
 
+const StyledModal = styled(Modal)`
+  & > .ant-modal-content {
+    border-top-left-radius: 14px;
+    border-top-right-radius: 14px;
+  }
+`
+
 const CrowdfundModal = ({ statusCode, item, fileURI, ...rest }) => {
   const { pushWeb3Action } = useContext(WalletContext)
   const {
@@ -86,9 +93,9 @@ const CrowdfundModal = ({ statusCode, item, fileURI, ...rest }) => {
 
   if (!sharedStakeMultiplier)
     return (
-      <Modal title="Submit Item" {...rest}>
+      <StyledModal title="Submit Item" {...rest}>
         <StyledSpin />
-      </Modal>
+      </StyledModal>
     )
 
   if (
@@ -98,7 +105,7 @@ const CrowdfundModal = ({ statusCode, item, fileURI, ...rest }) => {
     // Arbitrator refused to rule or the dispute is in the first half
     // of the appeal period. Let the user choose who to fund.
     return (
-      <Modal
+      <StyledModal
         title="Contribute Fees"
         footer={[
           <Button
@@ -119,7 +126,7 @@ const CrowdfundModal = ({ statusCode, item, fileURI, ...rest }) => {
         {...rest}
       >
         Which side do you want to fund?
-      </Modal>
+      </StyledModal>
     )
 
   const crowdfundSide = () => {
@@ -165,7 +172,7 @@ const CrowdfundModal = ({ statusCode, item, fileURI, ...rest }) => {
   }
 
   return (
-    <Modal
+    <StyledModal
       {...rest}
       title={`Contribute Fees to ${
         side === PARTY.REQUESTER ? 'Submitter' : 'Challenger'
@@ -237,7 +244,7 @@ const CrowdfundModal = ({ statusCode, item, fileURI, ...rest }) => {
           />
         </Descriptions.Item>
       </Descriptions>
-    </Modal>
+    </StyledModal>
   )
 }
 

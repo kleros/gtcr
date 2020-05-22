@@ -40,6 +40,13 @@ const StyledListItem = styled(List.Item)`
   margin-left: 16px;
 `
 
+const StyledModal = styled(Modal)`
+  & > .ant-modal-content {
+    border-top-left-radius: 14px;
+    border-top-right-radius: 14px;
+  }
+`
+
 const AddBadgeModal = ({
   onCancel,
   availableBadges,
@@ -64,7 +71,7 @@ const AddBadgeModal = ({
 
   if (!availableBadges || !tcrAddress || !connectedTCRAddr || isFetchingBadges)
     return (
-      <Modal
+      <StyledModal
         title="Add Badge"
         visible={visible}
         footer={[
@@ -75,7 +82,7 @@ const AddBadgeModal = ({
         onCancel={onCancel}
       >
         <StyledSpin />
-      </Modal>
+      </StyledModal>
     )
 
   const filteredAvailableBadges = availableBadges.filter(
@@ -84,7 +91,7 @@ const AddBadgeModal = ({
   )
 
   return (
-    <Modal
+    <StyledModal
       title="Add Badge"
       visible={visible}
       onCancel={onCancel}
@@ -180,7 +187,7 @@ const AddBadgeModal = ({
           </Descriptions>
         </>
       )}
-    </Modal>
+    </StyledModal>
   )
 }
 

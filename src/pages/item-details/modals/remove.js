@@ -20,6 +20,13 @@ const StyledSpin = styled(Spin)`
   display: flex;
 `
 
+const StyledModal = styled(Modal)`
+  & > .ant-modal-content {
+    border-top-left-radius: 14px;
+    border-top-right-radius: 14px;
+  }
+`
+
 const RemoveModal = ({ item, itemName = 'item', fileURI, ...rest }) => {
   const { pushWeb3Action } = useContext(WalletContext)
   const { removalDeposit, tcrAddress, metaEvidence } = useContext(
@@ -94,15 +101,15 @@ const RemoveModal = ({ item, itemName = 'item', fileURI, ...rest }) => {
 
   if (!removalDeposit)
     return (
-      <Modal title="Remove Item" {...rest}>
+      <StyledModal title="Remove Item" {...rest}>
         <StyledSpin />
-      </Modal>
+      </StyledModal>
     )
 
   const EVIDENCE_FORM_ID = 'removeEvidenceForm'
 
   return (
-    <Modal
+    <StyledModal
       footer={[
         <Button key="back" onClick={rest.onCancel}>
           Return
@@ -157,7 +164,7 @@ const RemoveModal = ({ item, itemName = 'item', fileURI, ...rest }) => {
           />
         </Descriptions.Item>
       </Descriptions>
-    </Modal>
+    </StyledModal>
   )
 }
 
