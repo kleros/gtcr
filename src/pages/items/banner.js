@@ -25,7 +25,7 @@ const TCRInfoColumn = styled.div`
 
   @media (max-width: 500px) {
     font-size: 1em;
-    max-width: 170px;
+    max-width: 230px;
   }
 `
 
@@ -44,6 +44,7 @@ const ActionCol = styled.div`
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+  align-items: flex-end;
 `
 
 const TCRLogo = ({ logoURI }) =>
@@ -138,7 +139,7 @@ const Banner = ({
             rel="noopener noreferrer"
             style={{ textDecoration: 'underline', color: '#4d00b473' }}
           >
-            View Listing Policies
+            {width > 450 ? 'View Listing Policies' : 'Policies'}
           </a>
         </Typography.Text>
       </ActionCol>
