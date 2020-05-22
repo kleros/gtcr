@@ -11,6 +11,9 @@
 # production
 /build
 
+# theme build
+/src/bootstrap/theme.css
+
 # misc
 .DS_Store
 .env
