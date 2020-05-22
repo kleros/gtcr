@@ -346,10 +346,9 @@ export default () => {
                 {Object.keys(transactions)
                   .filter((_, i) => i % 2 !== 0)
                   .map((txHash, i) => (
-                    <Card>
+                    <Card key={i}>
                       <TCRCardContent
                         tcrAddress={transactions[txHash].contractAddress}
-                        key={i}
                       />
                     </Card>
                   ))}

@@ -8,7 +8,8 @@ import {
   Form,
   Divider,
   Switch,
-  Tooltip
+  Tooltip,
+  message
 } from 'antd'
 import { withFormik, FieldArray, Field } from 'formik'
 import React, { useEffect, useCallback } from 'react'
@@ -308,7 +309,8 @@ ItemParams.propTypes = {
 export default withFormik({
   validationSchema,
   mapPropsToValues: ({ tcrState }) => tcrState,
-  handleSubmit: (_, { props: { postSubmit } }) => {
-    postSubmit()
+  handleSubmit: ({ columns }, { props: { postSubmit } }) => {
+    if (columns.some(c => c.isIdentifier)) postSubmit()
+    else message.warning('At least one ID field is required.')
   }
 })(ItemParams)
