@@ -8,6 +8,9 @@ import CustomInput from '../../components/custom-input'
 import itemTypes from '../../utils/item-types'
 import ipfsPublish from '../../utils/ipfs-publish'
 import { sanitize } from '../../utils/string'
+import BaseDepositInput from '../../components/base-deposit-input'
+import { useWeb3Context } from 'web3-react'
+import useArbitrationCost from '../../hooks/arbitration-cost'
 
 const StyledUpload = styled(Upload)`
   & > .ant-upload.ant-upload-select-picture-card {
@@ -48,6 +51,13 @@ const TCRParams = ({
   const { values, setTcrState } = rest
   const [uploading, setUploading] = useState({})
   const [advancedOptions, setAdvancedOptions] = useState()
+  const { library } = useWeb3Context()
+  const { arbitrationCost } = useArbitrationCost({
+    address: values.arbitratorAddress,
+    arbitratorExtraData: values.arbitratorExtraData,
+    library
+  })
+
   useEffect(() => {
     setTcrState(previousState => ({
       ...previousState,
@@ -165,13 +175,11 @@ const TCRParams = ({
           }
           {...rest}
         />
-        <CustomInput
+        <BaseDepositInput
           name="submissionBaseDeposit"
-          placeholder="0.1 ETH"
-          addonAfter="ETH"
           error={errors.submissionBaseDeposit}
           touched={touched.submissionBaseDeposit}
-          type={itemTypes.NUMBER}
+          arbitrationCost={arbitrationCost}
           label={
             <span>
               Submission Deposit&nbsp;
@@ -182,13 +190,11 @@ const TCRParams = ({
           }
           {...rest}
         />
-        <CustomInput
+        <BaseDepositInput
           name="removalBaseDeposit"
-          placeholder="0.1 ETH"
-          addonAfter="ETH"
           error={errors.removalBaseDeposit}
           touched={touched.removalBaseDeposit}
-          type={itemTypes.NUMBER}
+          arbitrationCost={arbitrationCost}
           label={
             <span>
               Removal Deposit&nbsp;
@@ -199,13 +205,11 @@ const TCRParams = ({
           }
           {...rest}
         />
-        <CustomInput
+        <BaseDepositInput
           name="submissionChallengeBaseDeposit"
-          placeholder="0.05 ETH"
-          addonAfter="ETH"
           error={errors.submissionChallengeBaseDeposit}
           touched={touched.submissionChallengeBaseDeposit}
-          type={itemTypes.NUMBER}
+          arbitrationCost={arbitrationCost}
           label={
             <span>
               Challenge Submission Deposit&nbsp;
@@ -216,13 +220,11 @@ const TCRParams = ({
           }
           {...rest}
         />
-        <CustomInput
+        <BaseDepositInput
           name="removalChallengeBaseDeposit"
-          placeholder="0.05 ETH"
-          addonAfter="ETH"
           error={errors.removalChallengeBaseDeposit}
           touched={touched.removalChallengeBaseDeposit}
-          type={itemTypes.NUMBER}
+          arbitrationCost={arbitrationCost}
           label={
             <span>
               Challenge Removal Deposit&nbsp;
