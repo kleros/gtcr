@@ -1,28 +1,43 @@
-import { Steps, Button, Icon, Card, Empty, Typography, Alert } from 'antd'
-import React, { useState, useEffect, useMemo } from 'react'
+import {
+  Steps,
+  Button,
+  Icon,
+  Card,
+  Empty,
+  Typography,
+  Alert,
+  Modal
+} from 'antd'
+import React, { useState, useEffect, useMemo, useCallback } from 'react'
 import PropTypes from 'prop-types'
-import { Link } from 'react-router-dom'
 import { useDebounce } from 'use-debounce'
 import styled from 'styled-components/macro'
+import { useWeb3Context } from 'web3-react'
+import { formatEther, parseUnits } from 'ethers/utils'
 import TCRParams from './tcr-params'
 import ItemParams from './item-params'
 import Deploy from './deploy'
 import StyledLayoutContent from '../layout-content'
 import { version } from '../../../package.json'
-import { useWeb3Context } from 'web3-react'
 import useNetworkEnvVariable from '../../hooks/network-env'
 import itemTypes from '../../utils/item-types'
 import RelTCRParams from './rel-tcr-params'
 import WarningBanner from '../../components/beta-warning'
-import { formatEther, parseUnits } from 'ethers/utils'
+import TCRCardContent from '../../components/tcr-card-content'
 
 const { Step } = Steps
+const { confirm } = Modal
 
-const ButtonGroup = Button.Group
+const StyledButtonGroup = styled(Button.Group)`
+  &.ant-btn-group {
+    margin-left: 12px;
+  }
+`
+
 const StyledStepper = styled.div`
   display: flex;
-  align-items: flex-end;
-  flex-direction: column;
+  flex-direction: row;
+  justify-content: flex-end;
 `
 const StyledContainer = styled.div`
   margin: 32px 0;
@@ -38,6 +53,13 @@ const StyledBanner = styled.div`
 
 const StyledAlert = styled(Alert)`
   margin-bottom: 42px;
+`
+
+const StyledGrid = styled.div`
+  display: grid;
+  margin: 24px 0;
+  grid-gap: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(225px, 1fr));
 `
 
 const formIds = [
@@ -152,8 +174,14 @@ const useCachedFactory = version => {
     transactions: {}
   }
   let cache = window.localStorage.getItem(key)
+
+  const newInitialState = JSON.parse(JSON.stringify(initialState)) // Deep copy.
   if (cache) cache = JSON.parse(cache)
-  else cache = JSON.parse(JSON.stringify(initialState)) // Deep copy.
+  else cache = newInitialState
+
+  // We check for the finished flag to reset the form
+  // if the user finished his previous deployment.
+  if (cache.finished) cache = newInitialState
 
   const [tcrState, setTcrState] = useState(cache)
   const [debouncedTcrState] = useDebounce(tcrState, 1000)
@@ -220,8 +248,20 @@ export default () => {
     tcrState: { currStep, transactions },
     nextStep,
     previousStep,
-    STEP_COUNT
+    STEP_COUNT,
+    resetTcrState
   } = cachedFactory
+
+  const showConfirmReset = useCallback(() => {
+    confirm({
+      title: 'Are you sure?',
+      content: 'This will clear all fields and reset the wizard to step 1',
+      okText: 'Yes, start over',
+      onOk: () => {
+        resetTcrState()
+      }
+    })
+  }, [resetTcrState])
 
   useEffect(() => {
     ;(async () => {
@@ -276,7 +316,10 @@ export default () => {
           <CurrentStep postSubmit={() => nextStep()} {...cachedFactory} />
         </StyledContainer>
         <StyledStepper>
-          <ButtonGroup>
+          <Button onClick={showConfirmReset} icon="delete">
+            Reset
+          </Button>
+          <StyledButtonGroup>
             <Button
               onClick={() => previousStep()}
               type="primary"
@@ -294,18 +337,23 @@ export default () => {
               Next
               <Icon type="right" />
             </Button>
-          </ButtonGroup>
+          </StyledButtonGroup>
         </StyledStepper>
         <StyledContainer>
           <Card title="Previous Deployments">
             {Object.keys(transactions).length > 0 ? (
-              Object.keys(transactions).map((txHash, i) => (
-                <div key={i}>
-                  <Link to={`/tcr/${transactions[txHash].contractAddress}`}>
-                    {transactions[txHash].contractAddress}
-                  </Link>
-                </div>
-              ))
+              <StyledGrid>
+                {Object.keys(transactions)
+                  .filter((_, i) => i % 2 !== 0)
+                  .map((txHash, i) => (
+                    <Card>
+                      <TCRCardContent
+                        tcrAddress={transactions[txHash].contractAddress}
+                        key={i}
+                      />
+                    </Card>
+                  ))}
+              </StyledGrid>
             ) : (
               <Empty description={false} image={Empty.PRESENTED_IMAGE_SIMPLE} />
             )}

@@ -23,7 +23,7 @@ const StyledResult = styled(Result)`
   }
 `
 
-const TCRCard = ({ tcrAddress }) => {
+const TCRCardContent = ({ tcrAddress }) => {
   const { library, active, networkId } = useWeb3Context()
   const [error, setError] = useState()
   const gtcr = useMemo(() => {
@@ -83,8 +83,8 @@ const TCRCard = ({ tcrAddress }) => {
   }
 }
 
-TCRCard.propTypes = {
+TCRCardContent.propTypes = {
   tcrAddress: PropTypes.string.isRequired
 }
 
-export default TCRCard
+export default TCRCardContent

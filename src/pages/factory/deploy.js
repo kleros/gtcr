@@ -1,4 +1,4 @@
-import { Card, Button, Alert, Spin, Icon } from 'antd'
+import { Card, Button, Alert, Icon, Steps } from 'antd'
 import { Link } from 'react-router-dom'
 import PropTypes from 'prop-types'
 import React, { useContext, useState } from 'react'
@@ -12,17 +12,34 @@ import { parseEther } from 'ethers/utils'
 import { ZERO_ADDRESS, isVowel } from '../../utils/string'
 import { useWeb3Context } from 'web3-react'
 import useNetworkEnvVariable from '../../hooks/network-env'
-
-const StyledButton = styled(Button)`
-  margin-right: 7px;
-`
+import useWindowDimensions from '../../hooks/window-dimensions'
 
 const StyledDiv = styled.div`
   word-break: break-all;
 `
 
+const StyledSteps = styled(Steps)`
+  margin: 24px 0;
+`
+
 const StyledAlert = styled(Alert)`
   margin-bottom: 24px;
+`
+
+const StyledCard = styled(Card)`
+  & > .ant-card-body {
+    display: flex;
+    flex-direction: column;
+  }
+`
+
+const StyledActions = styled.div`
+  display: flex;
+  justify-content: flex-end;
+`
+
+const StyledButton = styled(Button)`
+  margin-left: 12px;
 `
 
 const getTcrMetaEvidence = async tcrState => {
@@ -196,15 +213,16 @@ const getTcrMetaEvidence = async tcrState => {
   }
 }
 
-const Deploy = ({ resetTcrState, setTxState, tcrState }) => {
+const Deploy = ({ setTxState, tcrState, setTcrState }) => {
   const { networkId } = useWeb3Context()
   const { pushWeb3Action } = useContext(WalletContext)
+  const { width } = useWindowDimensions()
+  const [currentStep, setCurrentStep] = useState(0)
+  const [txSubmitted, setTxSubmitted] = useState()
   const factoryAddress = useNetworkEnvVariable(
     'REACT_APP_FACTORY_ADDRESSES',
     networkId
   )
-
-  const [txSubmitted, setTxSubmitted] = useState()
 
   const onDeploy = () => {
     pushWeb3Action(async (_, signer) => {
@@ -237,6 +255,7 @@ const Deploy = ({ resetTcrState, setTxState, tcrState }) => {
       )
       setTxState({ txHash: relTCRtx.hash, status: 'pending' })
       setTxSubmitted(relTCRtx.hash)
+      setCurrentStep(1)
       return {
         tx: relTCRtx,
         actionMessage: 'Deploying Badges TCR',
@@ -247,6 +266,7 @@ const Deploy = ({ resetTcrState, setTxState, tcrState }) => {
             status: 'mined',
             contractAddress
           })
+          setCurrentStep(2)
 
           pushWeb3Action(async () => {
             const tx = await factory.deploy(
@@ -280,6 +300,11 @@ const Deploy = ({ resetTcrState, setTxState, tcrState }) => {
                   status: 'mined',
                   contractAddress
                 })
+                setTcrState(prevState => ({
+                  ...prevState,
+                  finished: true
+                }))
+                setCurrentStep(3)
               }
             }
           })
@@ -289,53 +314,102 @@ const Deploy = ({ resetTcrState, setTxState, tcrState }) => {
   }
 
   return (
-    <Card title="Deploy the TCR">
-      {!txSubmitted && (
-        <StyledButton type="primary" onClick={onDeploy}>
+    <StyledCard title="Deploy the TCR">
+      {currentStep === 0 && (
+        <StyledAlert
+          showIcon
+          type="info"
+          closable
+          message="On your marks..."
+          description="When you are ready, click deploy. Please do not close the window until the process is finished and sign both transactions."
+        />
+      )}
+      {currentStep > 0 && currentStep < 3 && (
+        <StyledAlert
+          showIcon
+          type="info"
+          closable
+          message="Deploy in progress. Please do not close the window until the process is finished."
+        />
+      )}
+      <StyledSteps
+        current={currentStep}
+        direction={width < 750 ? 'vertical' : 'horizontal'}
+      >
+        <Steps.Step
+          title="Start"
+          description={currentStep > 0 && 'Finished'}
+          icon={<Icon type="fire" />}
+        />
+        <Steps.Step
+          title="Deploying Badges TCR"
+          description={currentStep > 1 && 'Finished'}
+          icon={
+            currentStep < 1 ? (
+              <Icon type="star" />
+            ) : currentStep === 1 ? (
+              <Icon type="loading" />
+            ) : (
+              <Icon type="check" />
+            )
+          }
+        />
+        <Steps.Step
+          title="Deploying TCR"
+          description={currentStep > 2 && 'Finished'}
+          icon={
+            currentStep < 2 ? (
+              <Icon type="star" />
+            ) : currentStep === 2 ? (
+              <Icon type="loading" />
+            ) : (
+              <Icon type="check" />
+            )
+          }
+        />
+        <Steps.Step title="Finished!" icon={<Icon type="flag" />} />
+      </StyledSteps>
+      {currentStep === 3 && (
+        <StyledAlert
+          type="success"
+          showIcon
+          message="Success!"
+          description={
+            <>
+              <StyledDiv>
+                TCR Deployed at{' '}
+                <Link
+                  to={`/tcr/${tcrState.transactions[txSubmitted].contractAddress}`}
+                >
+                  {tcrState.transactions[txSubmitted].contractAddress}
+                </Link>
+                .
+              </StyledDiv>
+              <StyledDiv>
+                You may want to bookmark its address or, if it adheres to the
+                listing criteria, submit it to the TCR Browser.
+              </StyledDiv>
+            </>
+          }
+        />
+      )}
+      <StyledActions>
+        <StyledButton
+          type="primary"
+          onClick={onDeploy}
+          icon={currentStep <= 0 || currentStep === 3 ? 'fire' : 'loading'}
+          disabled={currentStep > 0 && currentStep < 3}
+        >
           Deploy!
         </StyledButton>
-      )}
-      {txSubmitted ? (
-        tcrState.transactions[txSubmitted].status === 'pending' ? (
-          <StyledAlert
-            type="info"
-            message={
-              <>
-                <Spin
-                  indicator={
-                    <Icon type="loading" style={{ fontSize: 24 }} spin />
-                  }
-                />{' '}
-                Transaction pending...
-              </>
-            }
-          />
-        ) : (
-          tcrState.transactions[txSubmitted].contractAddress && (
-            <StyledAlert
-              type="info"
-              message={
-                <StyledDiv>
-                  TCR Deployed at{' '}
-                  <Link
-                    to={`/tcr/${tcrState.transactions[txSubmitted].contractAddress}`}
-                  >
-                    {tcrState.transactions[txSubmitted].contractAddress}
-                  </Link>
-                </StyledDiv>
-              }
-            />
-          )
-        )
-      ) : null}
-      <StyledButton onClick={resetTcrState}>Start over</StyledButton>
-    </Card>
+      </StyledActions>
+    </StyledCard>
   )
 }
 
 Deploy.propTypes = {
-  resetTcrState: PropTypes.func.isRequired,
   setTxState: PropTypes.func.isRequired,
+  setTcrState: PropTypes.func.isRequired,
   tcrState: PropTypes.shape({
     transactions: PropTypes.objectOf(
       PropTypes.shape({
