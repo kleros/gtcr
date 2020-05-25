@@ -28,8 +28,9 @@ const BaseDepositInput = ({
 }) => {
   const baseDeposit = useMemo(() => {
     try {
-      return bigNumberify(parseEther(values[name]))
-    } catch (_) {
+      return bigNumberify(parseEther(values[name].toString()))
+    } catch (err) {
+      console.warn('failed to parse basedeposit value', err)
       // No op. Wait for proper user input.
     }
   }, [name, values])
@@ -81,12 +82,20 @@ BaseDepositInput.propTypes = {
   step: PropTypes.number,
   disabled: PropTypes.bool,
   arbitrationCost: BNPropType,
-  values: PropTypes.shape({
-    submissionBaseDeposit: PropTypes.string.isRequired,
-    removalBaseDeposit: PropTypes.string.isRequired,
-    submissionChallengeBaseDeposit: PropTypes.string.isRequired,
-    removalChallengeBaseDeposit: PropTypes.string.isRequired
-  }).isRequired
+  values: PropTypes.oneOfType([
+    PropTypes.shape({
+      submissionBaseDeposit: PropTypes.number.isRequired,
+      removalBaseDeposit: PropTypes.number.isRequired,
+      submissionChallengeBaseDeposit: PropTypes.number.isRequired,
+      removalChallengeBaseDeposit: PropTypes.number.isRequired
+    }).isRequired,
+    PropTypes.shape({
+      relSubmissionBaseDeposit: PropTypes.number.isRequired,
+      relRemovalBaseDeposit: PropTypes.number.isRequired,
+      relSubmissionChallengeBaseDeposit: PropTypes.number.isRequired,
+      relRemovalChallengeBaseDeposit: PropTypes.number.isRequired
+    }).isRequired
+  ]).isRequired
 }
 
 BaseDepositInput.defaultProps = {

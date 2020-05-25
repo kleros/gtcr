@@ -1686,6 +1686,11 @@
   resolved "https://registry.yarnpkg.com/@kleros/erc-792/-/erc-792-3.1.1.tgz#94807de22fbe19aed031c65b3458b2b8a3328065"
   integrity sha512-ZxGcwYNNLtnB6Pu8oYyvZYYbS5sHAlXh30hOIHrQ6+VUwaZ7NSv7SEAWiYlisSa6jhEbEn+VTHY3sXiSTviWgw==
 
+"@kleros/erc-792@^4.0.1":
+  version "4.0.1"
+  resolved "https://registry.yarnpkg.com/@kleros/erc-792/-/erc-792-4.0.1.tgz#e4c941ecda29e298a68fff88f880c3cdd8273c0c"
+  integrity sha512-nOoifnzSz62jiZ1CtM8NfXD3kb1gdgTWRZ4VoHLREs5HD33vHnmyrO6FgmQQf/aqQJktHXP9cOo3DUFWv1v/Lw==
+
 "@kleros/ethereum-libraries@^1.0.0":
   version "1.1.0"
   resolved "https://registry.yarnpkg.com/@kleros/ethereum-libraries/-/ethereum-libraries-1.1.0.tgz#09ed2c9f7f523aeb2d185c74b0a4093eec1204b1"
@@ -1700,6 +1705,25 @@
     minimetoken "^0.2.0"
     openzeppelin-solidity "^1.12.0"
     solidity-bytes-utils "^0.0.5"
+
+"@kleros/kleros-interaction@^0.9.0":
+  version "0.9.3"
+  resolved "https://registry.yarnpkg.com/@kleros/kleros-interaction/-/kleros-interaction-0.9.3.tgz#c75879a835cc2e8885263ced5a5756d4498f0efa"
+  integrity sha512-DhRCUn/XqRUTgBCeOaTY/RCtDjewdk/NEOXqI7LN0heU+uGP2Q2t2YdQoXtFOp9/wz8iicMNMAwnhPMoXJOKPw==
+  dependencies:
+    "@kleros/kleros" "^0.1.2"
+    "@realitio/realitio-contracts" "^2.0.5"
+    minimetoken "^0.2.0"
+    openzeppelin-solidity "^1.12.0"
+    web3-utils "^1.2.1"
+
+"@kleros/kleros@^0.1.2", "@kleros/kleros@^0.1.5":
+  version "0.1.5"
+  resolved "https://registry.yarnpkg.com/@kleros/kleros/-/kleros-0.1.5.tgz#e2ca9f69317c43603894b473e61bbfbdb761ed01"
+  integrity sha512-aq3tGWzF5no52l67qKKAThsuS26VQTP+EeuKufMRV0aliViQ41MMk2mD2KmL7SZNz7H90SjbNuuzyPEvHgFcZA==
+  dependencies:
+    "@kleros/kleros-interaction" "^0.9.0"
+    minimetoken "^0.2.0"
 
 "@kleros/react-components@^1.0.0":
   version "1.0.1"
@@ -3628,11 +3652,6 @@ base@^0.11.1:
     isobject "^3.0.1"
     mixin-deep "^1.2.0"
     pascalcase "^0.1.1"
-
-batch-processor@1.0.0:
-  version "1.0.0"
-  resolved "https://registry.yarnpkg.com/batch-processor/-/batch-processor-1.0.0.tgz#75c95c32b748e0850d10c2b168f6bdbe9891ace8"
-  integrity sha1-dclcMrdI4IUNEMKxaPa9vpiRrOg=
 
 batch@0.6.1:
   version "0.6.1"
@@ -5920,13 +5939,6 @@ electron-to-chromium@^1.3.247, electron-to-chromium@^1.3.338, electron-to-chromi
   version "1.3.340"
   resolved "https://registry.yarnpkg.com/electron-to-chromium/-/electron-to-chromium-1.3.340.tgz#5d4fe78e984d4211194cf5a52e08069543da146f"
   integrity sha512-hRFBAglhcj5iVYH+o8QU0+XId1WGoc0VGowJB1cuJAt3exHGrivZvWeAO5BRgBZqwZtwxjm8a5MQeGoT/Su3ww==
-
-element-resize-detector@^1.2.1:
-  version "1.2.1"
-  resolved "https://registry.yarnpkg.com/element-resize-detector/-/element-resize-detector-1.2.1.tgz#b0305194447a4863155e58f13323a0aef30851d1"
-  integrity sha512-BdFsPepnQr9fznNPF9nF4vQ457U/ZJXQDSNF1zBe7yaga8v9AdZf3/NElYxFdUh7SitSGt040QygiTo6dtatIw==
-  dependencies:
-    batch-processor "1.0.0"
 
 elliptic@6.3.3:
   version "6.3.3"
@@ -13733,16 +13745,6 @@ react-side-effect@^1.1.0:
   dependencies:
     shallowequal "^1.0.1"
 
-react-sizeme@^2.6.12:
-  version "2.6.12"
-  resolved "https://registry.yarnpkg.com/react-sizeme/-/react-sizeme-2.6.12.tgz#ed207be5476f4a85bf364e92042520499455453e"
-  integrity sha512-tL4sCgfmvapYRZ1FO2VmBmjPVzzqgHA7kI8lSJ6JS6L78jXFNRdOZFpXyK6P1NBZvKPPCZxReNgzZNUajAerZw==
-  dependencies:
-    element-resize-detector "^1.2.1"
-    invariant "^2.2.4"
-    shallowequal "^1.1.0"
-    throttle-debounce "^2.1.0"
-
 react-slick@~0.25.2:
   version "0.25.2"
   resolved "https://registry.yarnpkg.com/react-slick/-/react-slick-0.25.2.tgz#56331b67d47d8bcfe2dceb6acab1c8fd5bd1f6bc"
@@ -15776,11 +15778,6 @@ throat@^4.0.0:
   version "4.1.0"
   resolved "https://registry.yarnpkg.com/throat/-/throat-4.1.0.tgz#89037cbc92c56ab18926e6ba4cbb200e15672a6a"
   integrity sha1-iQN8vJLFarGJJua6TLsgDhVnKmo=
-
-throttle-debounce@^2.1.0:
-  version "2.1.0"
-  resolved "https://registry.yarnpkg.com/throttle-debounce/-/throttle-debounce-2.1.0.tgz#257e648f0a56bd9e54fe0f132c4ab8611df4e1d5"
-  integrity sha512-AOvyNahXQuU7NN+VVvOOX+uW6FPaWdAOdRP5HfwYxAfCzXTFKRMoIMk+n+po318+ktcChx+F1Dd91G3YHeMKyg==
 
 through2@^2.0.0, through2@^2.0.2, through2@^2.0.3:
   version "2.0.5"

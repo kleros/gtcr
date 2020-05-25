@@ -8,6 +8,13 @@ import CustomInput from '../../components/custom-input'
 import itemTypes from '../../utils/item-types'
 import ipfsPublish from '../../utils/ipfs-publish'
 import { sanitize } from '../../utils/string'
+import { useWeb3Context } from 'web3-react'
+import { useDebounce } from 'use-debounce/lib'
+import useNetworkEnvVariable from '../../hooks/network-env'
+import useArbitrationCost from '../../hooks/arbitration-cost'
+import { getAddress } from 'ethers/utils'
+import KlerosParams from './kleros-params'
+import BaseDepositInput from '../../components/base-deposit-input'
 
 const StyledUpload = styled(Upload)`
   & > .ant-upload.ant-upload-select-picture-card {
@@ -48,6 +55,31 @@ const RelTCRParams = ({
   const { values, setTcrState } = rest
   const [uploading, setUploading] = useState()
   const [advancedOptions, setAdvancedOptions] = useState()
+  const { library, networkId } = useWeb3Context()
+  const [debouncedArbitrator] = useDebounce(values.relArbitratorAddress, 1000)
+  const {
+    arbitrator: klerosAddress,
+    policy: policyAddress
+  } = useNetworkEnvVariable('REACT_APP_KLEROS_ADDRESSES', networkId)
+  const { arbitrationCost } = useArbitrationCost({
+    address: values.relArbitratorAddress,
+    arbitratorExtraData: values.relArbitratorExtraData,
+    library
+  })
+  const setRelArbitratorExtraData = useCallback(
+    val => setFieldValue('relArbitratorExtraData', val),
+    [setFieldValue]
+  )
+
+  let isKlerosArbitrator
+  try {
+    isKlerosArbitrator =
+      getAddress(debouncedArbitrator) === getAddress(klerosAddress)
+    // eslint-disable-next-line no-unused-vars
+  } catch (err) {
+    isKlerosArbitrator = false
+  }
+
   useEffect(() => {
     setTcrState(previousState => ({
       ...previousState,
@@ -93,13 +125,11 @@ const RelTCRParams = ({
   return (
     <Card title="Choose the parameters of the Badges TCR">
       <Form layout="vertical" id={formId} onSubmit={handleSubmit}>
-        <CustomInput
+        <BaseDepositInput
           name="relSubmissionBaseDeposit"
-          placeholder="0.1 ETH"
-          addonAfter="ETH"
           error={errors.relSubmissionBaseDeposit}
           touched={touched.relSubmissionBaseDeposit}
-          type={itemTypes.NUMBER}
+          arbitrationCost={arbitrationCost}
           label={
             <span>
               Submission Deposit&nbsp;
@@ -110,13 +140,11 @@ const RelTCRParams = ({
           }
           {...rest}
         />
-        <CustomInput
+        <BaseDepositInput
           name="relRemovalBaseDeposit"
-          placeholder="0.1 ETH"
-          addonAfter="ETH"
           error={errors.relRemovalBaseDeposit}
           touched={touched.relRemovalBaseDeposit}
-          type={itemTypes.NUMBER}
+          arbitrationCost={arbitrationCost}
           label={
             <span>
               Removal Deposit&nbsp;
@@ -127,13 +155,11 @@ const RelTCRParams = ({
           }
           {...rest}
         />
-        <CustomInput
+        <BaseDepositInput
           name="relSubmissionChallengeBaseDeposit"
-          placeholder="0.05 ETH"
-          addonAfter="ETH"
           error={errors.relSubmissionChallengeBaseDeposit}
           touched={touched.relSubmissionChallengeBaseDeposit}
-          type={itemTypes.NUMBER}
+          arbitrationCost={arbitrationCost}
           label={
             <span>
               Challenge Submission Deposit&nbsp;
@@ -144,13 +170,11 @@ const RelTCRParams = ({
           }
           {...rest}
         />
-        <CustomInput
+        <BaseDepositInput
           name="relRemovalChallengeBaseDeposit"
-          placeholder="0.05 ETH"
-          addonAfter="ETH"
           error={errors.relRemovalChallengeBaseDeposit}
           touched={touched.relRemovalChallengeBaseDeposit}
-          type={itemTypes.NUMBER}
+          arbitrationCost={arbitrationCost}
           label={
             <span>
               Challenge Removal Deposit&nbsp;
@@ -249,24 +273,33 @@ const RelTCRParams = ({
               }
               {...rest}
             />
-            <CustomInput
-              name="relArbitratorExtraData"
-              placeholder="0x7331deadbeef..."
-              hasFeedback
-              error={errors.relArbitratorExtraData}
-              touched={touched.relArbitratorExtraData}
-              label={
-                <span>
-                  Arbitrator Extra Data&nbsp;
-                  <Tooltip
-                    title={`The extra data for the arbitrator. See ERC 792 for more information. Default: ${defaultArbDataLabel}`}
-                  >
-                    <Icon type="question-circle-o" />
-                  </Tooltip>
-                </span>
-              }
-              {...rest}
-            />
+            {!isKlerosArbitrator && policyAddress ? (
+              <CustomInput
+                name="relArbitratorExtraData"
+                placeholder="0x7331deadbeef..."
+                hasFeedback
+                error={errors.relArbitratorExtraData}
+                touched={touched.relArbitratorExtraData}
+                label={
+                  <span>
+                    Arbitrator Extra Data&nbsp;
+                    <Tooltip
+                      title={`The extra data for the arbitrator. See ERC 792 for more information. Default: ${defaultArbDataLabel}`}
+                    >
+                      <Icon type="question-circle-o" />
+                    </Tooltip>
+                  </span>
+                }
+                {...rest}
+              />
+            ) : (
+              <KlerosParams
+                arbitratorExtraData={values.arbitratorExtraData}
+                klerosAddress={debouncedArbitrator}
+                policyAddress={policyAddress}
+                setArbitratorExtraData={setRelArbitratorExtraData}
+              />
+            )}
             <CustomInput
               name="relGovernorAddress"
               placeholder="0x7331deadbeef..."

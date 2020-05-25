@@ -11,6 +11,10 @@ import { sanitize } from '../../utils/string'
 import BaseDepositInput from '../../components/base-deposit-input'
 import { useWeb3Context } from 'web3-react'
 import useArbitrationCost from '../../hooks/arbitration-cost'
+import useNetworkEnvVariable from '../../hooks/network-env'
+import { useDebounce } from 'use-debounce/lib'
+import { getAddress } from 'ethers/utils'
+import KlerosParams from './kleros-params'
 
 const StyledUpload = styled(Upload)`
   & > .ant-upload.ant-upload-select-picture-card {
@@ -51,12 +55,30 @@ const TCRParams = ({
   const { values, setTcrState } = rest
   const [uploading, setUploading] = useState({})
   const [advancedOptions, setAdvancedOptions] = useState()
-  const { library } = useWeb3Context()
+  const { library, networkId } = useWeb3Context()
+  const [debouncedArbitrator] = useDebounce(values.arbitratorAddress, 1000)
+  const {
+    arbitrator: klerosAddress,
+    policy: policyAddress
+  } = useNetworkEnvVariable('REACT_APP_KLEROS_ADDRESSES', networkId)
   const { arbitrationCost } = useArbitrationCost({
     address: values.arbitratorAddress,
     arbitratorExtraData: values.arbitratorExtraData,
     library
   })
+  const setArbitratorExtraData = useCallback(
+    val => setFieldValue('arbitratorExtraData', val),
+    [setFieldValue]
+  )
+
+  let isKlerosArbitrator
+  try {
+    isKlerosArbitrator =
+      getAddress(debouncedArbitrator) === getAddress(klerosAddress)
+    // eslint-disable-next-line no-unused-vars
+  } catch (err) {
+    isKlerosArbitrator = false
+  }
 
   useEffect(() => {
     setTcrState(previousState => ({
@@ -352,24 +374,33 @@ const TCRParams = ({
               }
               {...rest}
             />
-            <CustomInput
-              name="arbitratorExtraData"
-              placeholder="0x7331deadbeef..."
-              hasFeedback
-              error={errors.arbitratorExtraData}
-              touched={touched.arbitratorExtraData}
-              label={
-                <span>
-                  Arbitrator Extra Data&nbsp;
-                  <Tooltip
-                    title={`The extra data for the arbitrator. See ERC 792 for more information. Default: ${defaultArbDataLabel}`}
-                  >
-                    <Icon type="question-circle-o" />
-                  </Tooltip>
-                </span>
-              }
-              {...rest}
-            />
+            {!isKlerosArbitrator && policyAddress ? (
+              <CustomInput
+                name="arbitratorExtraData"
+                placeholder="0x7331deadbeef..."
+                hasFeedback
+                error={errors.arbitratorExtraData}
+                touched={touched.arbitratorExtraData}
+                label={
+                  <span>
+                    Arbitrator Extra Data&nbsp;
+                    <Tooltip
+                      title={`The extra data for the arbitrator. See ERC 792 for more information. Default: ${defaultArbDataLabel}`}
+                    >
+                      <Icon type="question-circle-o" />
+                    </Tooltip>
+                  </span>
+                }
+                {...rest}
+              />
+            ) : (
+              <KlerosParams
+                arbitratorExtraData={values.arbitratorExtraData}
+                klerosAddress={debouncedArbitrator}
+                policyAddress={policyAddress}
+                setArbitratorExtraData={setArbitratorExtraData}
+              />
+            )}
             <CustomInput
               name="governorAddress"
               placeholder="0x7331deadbeef..."

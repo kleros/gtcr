@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { ethers } from 'ethers'
 import { useDebounce } from 'use-debounce'
-import { abi as _arbitrator } from '@kleros/tcr/build/contracts/IArbitrator.json'
+import { abi as _arbitrator } from '@kleros/erc-792/build/contracts/IArbitrator.json'
 
 const useArbitrationCost = ({
   address: inputAddress,
