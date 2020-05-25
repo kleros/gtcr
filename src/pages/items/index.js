@@ -207,7 +207,7 @@ const Items = ({ search, history }) => {
       return
 
     setFetchItems({ isFetching: true })
-    const filter = queryOptionsToFilterArray(queryOptions)
+    const filter = queryOptionsToFilterArray(queryOptions, account)
     const { page, oldestFirst } = queryOptions
     let encodedItems
     ;(async () => {

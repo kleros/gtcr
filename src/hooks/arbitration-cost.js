@@ -17,7 +17,6 @@ const useArbitrationCost = ({
     if (!address || !library || !arbitratorExtraData) return
     ;(async () => {
       try {
-        console.info('trying to fetch arbitrationCost')
         const arbitrator = new ethers.Contract(address, _arbitrator, library)
         setArbitrationCost(
           await arbitrator.arbitrationCost(arbitratorExtraData)

@@ -85,7 +85,7 @@ export const searchStrToFilterObj = search => {
   }
 }
 
-export const queryOptionsToFilterArray = queryOptions => {
+export const queryOptionsToFilterArray = (queryOptions, account) => {
   const filterObj = {}
   Object.keys(queryOptions)
     .filter(key => key !== FILTER_KEYS.PAGE && key !== FILTER_KEYS.OLDEST_FIRST)
@@ -111,8 +111,8 @@ export const queryOptionsToFilterArray = queryOptions => {
     removalRequested,
     challengedSubmissions,
     challengedRemovals,
-    mySubmissions,
-    myChallenges
+    account && mySubmissions,
+    account && myChallenges
   ]
 }
 
