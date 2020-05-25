@@ -8,7 +8,7 @@ import React, {
 import { useWeb3Context } from 'web3-react'
 import { abi as _gtcr } from '@kleros/tcr/build/contracts/GeneralizedTCR.json'
 import { abi as _GTCRView } from '@kleros/tcr/build/contracts/GeneralizedTCRView.json'
-import { abi as _arbitrator } from '@kleros/tcr/build/contracts/IArbitrator.json'
+import { abi as _arbitrator } from '@kleros/erc-792/build/contracts/IArbitrator.json'
 import { ethers } from 'ethers'
 import PropTypes from 'prop-types'
 import useNetworkEnvVariable from '../hooks/network-env'
