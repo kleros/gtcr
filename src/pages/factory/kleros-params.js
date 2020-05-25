@@ -10,10 +10,11 @@ import ETHAmount from '../../components/eth-amount'
 
 const StyledExtraDataContainer = styled.div`
   padding-bottom: 8px;
-  margin-bottom: 24px;
+  margin-bottom: 12px;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
 `
 
 const StyledInputContainer = styled.div`
@@ -23,6 +24,7 @@ const StyledInputContainer = styled.div`
 
 const StyledContainer = styled.div`
   display: flex;
+  margin-bottom: 24px;
 `
 
 const KlerosParams = ({
