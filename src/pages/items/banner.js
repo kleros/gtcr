@@ -153,7 +153,7 @@ Banner.propTypes = {
       itemName: PropTypes.string.isRequired,
       tcrTitle: PropTypes.string.isRequired,
       tcrDescription: PropTypes.string.isRequired,
-      logoURI: PropTypes.string.isRequired
+      logoURI: PropTypes.string
     }).isRequired,
     fileURI: PropTypes.string.isRequired
   }),

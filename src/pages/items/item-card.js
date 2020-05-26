@@ -4,7 +4,7 @@ import PropTypes from 'prop-types'
 import { Card, Button, Result } from 'antd'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import ItemStatusBadge from '../../components/item-status-badge'
-import TCRCard from '../../components/tcr-card-content'
+import TCRCardContent from '../../components/tcr-card-content'
 import ItemCardContent from '../../components/item-card-content'
 import BNPropType from '../../prop-types/bn'
 import { itemToStatusCode, STATUS_CODE } from '../../utils/item-status'
@@ -133,7 +133,7 @@ const CardItemInfo = ({
     )
   else
     content = metaEvidence.metadata.isTCRofTCRs ? (
-      <TCRCard tcrAddress={item.columns[0].value} />
+      <TCRCardContent tcrAddress={item.columns[0].value} />
     ) : (
       <ItemCardContent item={item} />
     )

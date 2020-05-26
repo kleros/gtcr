@@ -202,7 +202,7 @@ ItemDetailsCard.propTypes = {
         metadata: PropTypes.shape({
           tcrTitle: PropTypes.string.isRequired,
           tcrDescription: PropTypes.string.isRequired,
-          logoURI: PropTypes.string.isRequired
+          logoURI: PropTypes.string
         }).isRequired,
         fileURI: PropTypes.string.isRequired
       }).isRequired,

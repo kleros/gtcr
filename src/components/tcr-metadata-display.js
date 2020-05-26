@@ -66,8 +66,12 @@ const TCRMetadataDisplay = ({ logoURI, tcrTitle, tcrDescription, fileURI }) => (
 TCRMetadataDisplay.propTypes = {
   tcrTitle: PropTypes.string.isRequired,
   tcrDescription: PropTypes.string.isRequired,
-  logoURI: PropTypes.string.isRequired,
+  logoURI: PropTypes.string,
   fileURI: PropTypes.string.isRequired
+}
+
+TCRMetadataDisplay.defaultProps = {
+  logoURI: null
 }
 
 export default TCRMetadataDisplay
