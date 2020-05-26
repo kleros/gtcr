@@ -27,6 +27,7 @@ import WalletModal from './wallet-modal'
 import './fontawesome'
 import TopBar from './top-bar'
 import NoWeb3Detected from './no-web3'
+import WelcomeModal from './welcome-modal'
 
 const StyledSpin = styled(Spin)`
   left: 50%;
@@ -253,6 +254,7 @@ export default () => {
             <WalletModal connectors={connectors} />
           </WalletProvider>
         </Web3Provider>
+        <WelcomeModal />
       </BrowserRouter>
     </>
   )
