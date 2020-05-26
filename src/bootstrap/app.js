@@ -1,4 +1,4 @@
-import React, { useState, useContext } from 'react'
+import React, { useState } from 'react'
 import WalletConnectApi from '@walletconnect/web3-subprovider'
 import FortmaticApi from 'fortmatic'
 import { Helmet } from 'react-helmet'
@@ -12,24 +12,21 @@ import {
   BrowserRouter,
   Route,
   Switch,
-  Link,
   NavLink,
   Redirect
 } from 'react-router-dom'
-import { Col, Layout, Menu, Row, Spin, message, Button, Badge } from 'antd'
+import { Layout, Menu, Spin, message } from 'antd'
 import { register } from './service-worker'
-import { WalletProvider, WalletContext } from './wallet-context'
-import { NETWORK_NAME, NETWORK_COLOR, NETWORK } from '../utils/network-utils'
+import { WalletProvider } from './wallet-context'
+import { NETWORK_NAME, NETWORK } from '../utils/network-utils'
 import ErrorPage from '../pages/error-page'
 import useMainTCR2 from '../hooks/tcr2'
-import Identicon from '../components/identicon'
-import Notifications from '../components/notifications'
 import { TCRViewProvider } from './tcr-view-context'
 import useNetworkEnvVariable from '../hooks/network-env'
-import { ReactComponent as Logo } from '../assets/images/logo.svg'
-import { capitalizeFirstLetter } from '../utils/string'
 import WalletModal from './wallet-modal'
 import './fontawesome'
+import TopBar from './top-bar'
+import NoWeb3Detected from './no-web3'
 
 const StyledSpin = styled(Spin)`
   left: 50%;
@@ -57,52 +54,6 @@ const StyledLayoutSider = styled(Layout.Sider)`
     width: 50px;
   }
 `
-const StyledCol = styled(Col)`
-  align-items: center;
-  display: flex;
-  justify-content: center;
-  height: 67px;
-`
-
-const StyledCenter = styled(StyledCol)`
-  @media (max-width: 768px) {
-    &.ant-col-xs-0 {
-      display: none;
-    }
-  }
-`
-
-const StyledColStart = styled(StyledCol)`
-  justify-content: flex-start;
-
-  @media (max-width: 576px) {
-    &.ant-col-xs-0 {
-      display: none;
-    }
-  }
-`
-
-const StyledColEnd = styled(StyledCol)`
-  justify-content: flex-end;
-
-  @media (max-width: 576px) {
-    &.ant-col-xs-24 {
-      justify-content: center;
-    }
-  }
-`
-
-const StyledNetworkStatus = styled.span`
-  color: white;
-  margin-right: 24px;
-`
-
-const StyledMenu = styled(Menu)`
-  font-weight: bold;
-  line-height: 64px !important;
-  text-align: center;
-  background-color: transparent;
-`
 
 const StyledClickaway = styled.div`
   background-color: black;
@@ -122,29 +73,8 @@ const StyledHeader = styled(Layout.Header)`
   padding: 0;
 `
 
-const StyledRouterLink = styled(Link)`
-  color: #fff;
-  display: flex;
-`
-
-const StyledConnectButton = styled(Button)`
-  :focus {
-    color: white;
-    border-color: white;
-  }
-`
-
 const FooterWrapper = styled.div`
   margin-top: auto;
-`
-
-const StyledSpan = styled.span`
-  text-decoration: underline;
-  cursor: pointer;
-`
-
-const StyledTopBarRow = styled(Row)`
-  padding: 0 9.375vw;
 `
 
 const StyledMenuItem = styled(Menu.Item)`
@@ -237,70 +167,6 @@ if (window.ethereum)
     supportedNetworks: [NETWORK.MAINNET, NETWORK.KOVAN]
   })
 
-const TopBar = () => {
-  const web3Context = useWeb3Context()
-  const { requestWeb3Auth } = useContext(WalletContext)
-  const TCR2_ADDRESS = useMainTCR2(web3Context)
-
-  return (
-    <StyledTopBarRow type="flex" justify="space-between">
-      <StyledColStart md={6} sm={12} xs={0}>
-        <StyledRouterLink to={`/tcr/${TCR2_ADDRESS}`}>
-          <Logo style={{ maxHeight: '50px', maxWidth: '100px' }} />
-        </StyledRouterLink>
-      </StyledColStart>
-      <StyledCenter md={8} sm={0} xs={0}>
-        <StyledMenu mode="horizontal" theme="dark">
-          {MenuItems({ TCR2_ADDRESS })}
-        </StyledMenu>
-      </StyledCenter>
-      <StyledColEnd md={7} sm={12} xs={24}>
-        {web3Context.active && web3Context.networkId && (
-          <StyledNetworkStatus>
-            <Badge color={NETWORK_COLOR[web3Context.networkId]} />
-            {capitalizeFirstLetter(NETWORK_NAME[web3Context.networkId])}
-          </StyledNetworkStatus>
-        )}
-        {process.env.REACT_APP_NOTIFICATIONS_API_URL &&
-          web3Context.account &&
-          web3Context.networkId && <Notifications />}
-        {web3Context.active && web3Context.account ? (
-          <Identicon />
-        ) : (
-          <StyledConnectButton
-            ghost
-            shape="round"
-            onClick={() => requestWeb3Auth()}
-          >
-            Connect
-          </StyledConnectButton>
-        )}
-      </StyledColEnd>
-    </StyledTopBarRow>
-  )
-}
-
-const NoWeb3Detected = () => {
-  const { requestWeb3Auth } = useContext(WalletContext)
-  return (
-    <ErrorPage
-      code="Web3 Required"
-      message="A provider is required to view blockchain data."
-      tip={
-        <div>
-          Please{' '}
-          <StyledSpan
-            className="primary-color theme-color"
-            onClick={requestWeb3Auth}
-          >
-            connect a wallet.
-          </StyledSpan>
-        </div>
-      }
-    />
-  )
-}
-
 const Content = () => {
   const TCR2_ADDRESS = useMainTCR2()
 
@@ -372,7 +238,7 @@ export default () => {
               </StyledLayoutSider>
               <Layout>
                 <StyledHeader>
-                  <TopBar />
+                  <TopBar menuItems={MenuItems} />
                 </StyledHeader>
                 <Content />
                 <StyledClickaway
