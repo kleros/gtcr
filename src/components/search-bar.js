@@ -12,11 +12,14 @@ import styled from 'styled-components/macro'
 import { useDebouncedCallback } from 'use-debounce'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import matchSorter from 'match-sorter'
+import { abi as _gtcr } from '@kleros/tcr/build/contracts/GeneralizedTCR.json'
 import DisplaySelector from './display-selector'
+import { useWeb3Context } from 'web3-react'
 import itemTypes, { searchableFields } from '../utils/item-types'
 import { TCRViewContext } from '../bootstrap/tcr-view-context'
 import { WalletContext } from '../bootstrap/wallet-context'
 import { itemToStatusCode, STATUS_COLOR } from '../utils/item-status'
+import { ethers } from 'ethers'
 
 const StyledSelect = styled(Select)`
   width: 100%;
@@ -95,7 +98,11 @@ const OptionItem = ({ item: { itemID, columns = [], tcrAddress } }) => {
   return (
     <StyledOptionItem>
       <StyledStatus>
-        <Badge color={statusCode ? STATUS_COLOR[statusCode] : '#ccc'} />
+        <Badge
+          color={
+            typeof statusCode === 'number' ? STATUS_COLOR[statusCode] : '#ccc'
+          }
+        />
       </StyledStatus>
       <StyledFieldsContainer>
         {columns
@@ -133,18 +140,93 @@ OptionItem.propTypes = {
 const SearchBar = () => {
   const [value, setValue] = useState()
   const [data, setData] = useState([])
-  const { itemSubmissionLogs: dataSource } = useContext(TCRViewContext)
-  const [debouncedCallback] = useDebouncedCallback(input => {
-    if (!input || input.length === 0 || dataSource.length === 0) setData([])
+  const [enhancedDataSource, setEnhancedDataSource] = useState([])
+  const {
+    itemSubmissionLogs: dataSource,
+    metaEvidence,
+    tcrAddress
+  } = useContext(TCRViewContext)
+  const { library, active } = useWeb3Context()
 
-    // Iterate every column and search for a match against the user input.
+  // If this is a TCR of TCRs, we should not only
+  // match against the decoded item value but also against
+  // the TCR name (which is a field inside metadatada of the meta evidence).
+  // Otherwise, match only the decoded item value.
+  useEffect(() => {
+    const { metadata, address } = metaEvidence || {}
+    if (!dataSource || !active || !metadata || address !== tcrAddress) return
+    if (dataSource.length > 0 && dataSource[0].tcrAddress !== tcrAddress) return
+
+    const { isTCRofTCRs } = metadata
+    if (!isTCRofTCRs) {
+      // Match against the item decoded value only.
+      setEnhancedDataSource(dataSource)
+      return
+    }
+
+    // Add the TCR name to the matchable fields.
+    ;(async () => {
+      setEnhancedDataSource(
+        await Promise.all(
+          dataSource.map(async item => {
+            const addr = item.decodedData[0]
+            const arbitrable = new ethers.Contract(addr, _gtcr, library)
+            try {
+              // Take the latest meta evidence.
+              const logs = (
+                await library.getLogs({
+                  ...arbitrable.filters.MetaEvidence(),
+                  fromBlock: 0
+                })
+              ).map(log => arbitrable.interface.parseLog(log))
+              if (logs.length === 0)
+                throw new Error('No meta evidence available for this address.')
+
+              // Take the penultimate item. This is the most recent meta evidence
+              // for registration requests.
+              const { _evidence: metaEvidencePath } = logs[
+                logs.length - 2
+              ].values
+              const { metadata } = await (
+                await fetch(
+                  process.env.REACT_APP_IPFS_GATEWAY + metaEvidencePath
+                )
+              ).json()
+              const { tcrTitle } = metadata
+
+              // A bit of a hack here, push TCR data into the item.
+              item.keys.push(tcrTitle)
+              item.decodedData.push(tcrTitle)
+              item.columns.push({
+                description: 'The TCR title.',
+                isIdentifier: true,
+                label: 'Title',
+                type: itemTypes.TEXT,
+                value: tcrTitle
+              })
+              return item
+            } catch (err) {
+              console.error('Error loading TCR searcheable name.', err)
+              return item
+            }
+          })
+        )
+      )
+    })()
+  }, [active, dataSource, library, metaEvidence, tcrAddress])
+
+  const [debouncedCallback] = useDebouncedCallback(input => {
+    if (!input || input.length === 0 || enhancedDataSource.length === 0)
+      setData([])
+
     const keys =
-      dataSource.length > 0
-        ? Object.keys(dataSource[0].keys).map(key => `keys.${key}`)
+      enhancedDataSource.length > 0
+        ? Object.keys(enhancedDataSource[0].keys).map(key => `keys.${key}`)
         : []
+    // Iterate every column and search for a match against the user input.
     const results =
-      dataSource.length > 0
-        ? matchSorter(dataSource, input, { keys })
+      enhancedDataSource.length > 0
+        ? matchSorter(enhancedDataSource, input, { keys })
             .map(result => ({
               itemID: result.itemID,
               columns: result.columns,
