@@ -50,7 +50,7 @@ const LoopBannerText = (
 )
 
 const WarningBanner = () => {
-  const [dismissed, setDismissed] = useState()
+  const [dismissed, setDismissed] = useState(true)
   const { width } = useWindowDimensions()
 
   useEffect(() => {
