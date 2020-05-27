@@ -145,7 +145,7 @@ const Identicon = ({ className, large }) => {
       try {
         library.provider.sendAsync(
           {
-            method: 'eth_signTypedData_v4',
+            method: 'personal_sign',
             params: [account, JSON.stringify(data)],
             from: account
           },
