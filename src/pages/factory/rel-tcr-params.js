@@ -253,6 +253,24 @@ const RelTCRParams = ({
             style={{ marginLeft: '8px' }}
           />
         </Form.Item>
+        <CustomInput
+          name="relGovernorAddress"
+          placeholder="0x7331deadbeef..."
+          hasFeedback
+          error={errors.relGovernorAddress}
+          touched={touched.relGovernorAddress}
+          label={
+            <span>
+              Governor&nbsp;
+              <Tooltip
+                title={`The address of the governor to use for this TCR. It can update parameters such as the challenge period duration, deposits, primary document and the TCR governor. By default it is set to ${defaultGovernorLabel}`}
+              >
+                <Icon type="question-circle-o" />
+              </Tooltip>
+            </span>
+          }
+          {...rest}
+        />
         {advancedOptions && (
           <>
             <CustomInput
@@ -300,24 +318,6 @@ const RelTCRParams = ({
                 setArbitratorExtraData={setRelArbitratorExtraData}
               />
             )}
-            <CustomInput
-              name="relGovernorAddress"
-              placeholder="0x7331deadbeef..."
-              hasFeedback
-              error={errors.relGovernorAddress}
-              touched={touched.relGovernorAddress}
-              label={
-                <span>
-                  Governor&nbsp;
-                  <Tooltip
-                    title={`The address of the governor to use for this TCR. It can update parameters such as the challenge period duration, deposits, primary document and the TCR governor. By default it is set to ${defaultGovernorLabel}`}
-                  >
-                    <Icon type="question-circle-o" />
-                  </Tooltip>
-                </span>
-              }
-              {...rest}
-            />
             <StyledAlert
               message="To appeal, in addition to paying enough fees to cover the payment to the jurors in case the appeal is lost, parties must also pay an additional stake. The stake of the side that ultimately loses the dispute is used as the reward given to the appeal fee contributors that funded the side that ultimately wins the dispute. This amount is calculated proportionally to the total juror fees required for appeal using the multipliers below, given in basis points. For example, a multiplier of 1000 will result in the stake being 10% of the total juror fees."
               type="info"
