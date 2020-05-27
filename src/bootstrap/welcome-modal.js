@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react'
 import localforage from 'localforage'
-import { Modal, Divider, Typography, Button } from 'antd'
+import { Modal, Divider, Typography } from 'antd'
 import styled from 'styled-components/macro'
 import { ReactComponent as Logo } from '../assets/images/logo2.svg'
 import { ReactComponent as List } from '../assets/images/infographic/list.svg'
@@ -86,17 +86,13 @@ const WelcomeModal = () => {
     })()
   }, [])
 
-  const onClose = useCallback(() => {
-    setDismissed(true)
-  }, [])
-
   const dontShowAgain = useCallback(() => {
     setDismissed(true)
     localforage.setItem(WELCOME_MODAL_DISMISSED, true)
   }, [])
 
   return (
-    <StyledModal visible={!dismissed} footer={null} onCancel={onClose}>
+    <StyledModal visible={!dismissed} footer={null} onCancel={dontShowAgain}>
       <Title>Welcome to Kleros Curate</Title>
       <Paragraph>
         Create your own curated lists and let your community moderate the
@@ -148,9 +144,6 @@ const WelcomeModal = () => {
           </Paragraph>
         </Infograph>
       </InfographContainer>
-      <Button type="link" onClick={dontShowAgain}>
-        Don't show again
-      </Button>
     </StyledModal>
   )
 }
