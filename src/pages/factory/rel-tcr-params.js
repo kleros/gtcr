@@ -330,7 +330,7 @@ const RelTCRParams = ({
             />
             <CustomInput
               name="relSharedStakeMultiplier"
-              placeholder="1000"
+              placeholder="10000"
               error={errors.relSharedStakeMultiplier}
               touched={touched.relSharedStakeMultiplier}
               type={itemTypes.NUMBER}
@@ -346,7 +346,7 @@ const RelTCRParams = ({
             />
             <CustomInput
               name="relWinnerStakeMultiplier"
-              placeholder="1000"
+              placeholder="10000"
               error={errors.relWinnerStakeMultiplier}
               touched={touched.relWinnerStakeMultiplier}
               type={itemTypes.NUMBER}
@@ -362,7 +362,7 @@ const RelTCRParams = ({
             />
             <CustomInput
               name="relLooserStakeMultiplier"
-              placeholder="2000"
+              placeholder="20000"
               error={errors.relLooserStakeMultiplier}
               touched={touched.relLooserStakeMultiplier}
               type={itemTypes.NUMBER}

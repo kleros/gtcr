@@ -431,7 +431,7 @@ const TCRParams = ({
             />
             <CustomInput
               name="sharedStakeMultiplier"
-              placeholder="1000"
+              placeholder="10000"
               error={errors.sharedStakeMultiplier}
               touched={touched.sharedStakeMultiplier}
               type={itemTypes.NUMBER}
@@ -447,7 +447,7 @@ const TCRParams = ({
             />
             <CustomInput
               name="winnerStakeMultiplier"
-              placeholder="1000"
+              placeholder="10000"
               error={errors.winnerStakeMultiplier}
               touched={touched.winnerStakeMultiplier}
               type={itemTypes.NUMBER}
@@ -463,7 +463,7 @@ const TCRParams = ({
             />
             <CustomInput
               name="looserStakeMultiplier"
-              placeholder="2000"
+              placeholder="20000"
               error={errors.looserStakeMultiplier}
               touched={touched.looserStakeMultiplier}
               type={itemTypes.NUMBER}
