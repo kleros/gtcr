@@ -10,6 +10,7 @@ import React, {
 import PropTypes from 'prop-types'
 import styled from 'styled-components/macro'
 import localforage from 'localforage'
+import { useWeb3Context } from 'web3-react'
 import ErrorPage from '../error-page'
 import { WalletContext } from '../../bootstrap/wallet-context'
 import { ZERO_ADDRESS, ZERO_BYTES32 } from '../../utils/string'
@@ -19,7 +20,6 @@ import { gtcrDecode } from '../../utils/encoder'
 import SubmitModal from '../item-details/modals/submit'
 import SubmitConnectModal from '../item-details/modals/submit-connect'
 import SearchBar from '../../components/search-bar'
-import { useWeb3Context } from 'web3-react'
 import {
   searchStrToFilterObj,
   filterLabel,
@@ -31,8 +31,11 @@ import {
 import WarningBanner from '../../components/beta-warning'
 import ItemCard from './item-card'
 import Banner from './banner'
+import AppTour from '../../components/tour'
+import itemsTourSteps from './tour-steps'
 
 const NSFW_FILTER_KEY = 'NSFW_FILTER_KEY'
+const ITEMS_TOUR_DISMISSED = 'ITEMS_TOUR_DISMISSED'
 
 const StyledContent = styled(Layout.Content)`
   word-break: break-word;
@@ -470,7 +473,7 @@ const Items = ({ search, history }) => {
             }
           >
             <>
-              <StyledFilters>
+              <StyledFilters id="items-filters">
                 <div>
                   <StyledSwitch
                     checkedChildren="NSFW Filter: On"
@@ -524,7 +527,7 @@ const Items = ({ search, history }) => {
                   <Select.Option value="oldestFirst">Oldest</Select.Option>
                 </StyledSelect>
               </StyledFilters>
-              <StyledGrid>
+              <StyledGrid id="items-grid-view">
                 {items &&
                   items
                     .sort(({ tcrData: tcrDataA }, { tcrData: tcrDataB }) => {
@@ -585,6 +588,7 @@ const Items = ({ search, history }) => {
           </>
         )}
       </StyledLayoutContent>
+      <AppTour dismissedKey={ITEMS_TOUR_DISMISSED} steps={itemsTourSteps} />
     </>
   )
 }

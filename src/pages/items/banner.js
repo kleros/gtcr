@@ -75,7 +75,7 @@ const Banner = ({
 
   return (
     <StyledBanner>
-      <TCRInfoColumn>
+      <TCRInfoColumn id="tcr-info-column">
         {metadata ? (
           <>
             <TCRTitle>
@@ -124,6 +124,7 @@ const Banner = ({
           type="primary"
           size="large"
           onClick={() => requestWeb3Auth(() => setSubmissionFormOpen(true))}
+          id="submit-item-button"
         >
           {width > 450 && `Submit ${itemName || 'Item'}`}
           <Icon type="plus-circle" />
@@ -132,6 +133,7 @@ const Banner = ({
           ellipsis
           type="secondary"
           style={{ maxWidth: '100%', textDecoration: 'underline' }}
+          id="policy-link"
         >
           <a
             href={`${process.env.REACT_APP_IPFS_GATEWAY}${fileURI || ''}`}

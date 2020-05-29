@@ -269,6 +269,7 @@ const SearchBar = () => {
 
   return (
     <StyledSelect
+      id="items-search-bar"
       showSearch
       value={value}
       defaultActiveFirstOption={false}

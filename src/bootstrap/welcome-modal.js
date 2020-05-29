@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react'
 import localforage from 'localforage'
 import { Modal, Divider, Typography } from 'antd'
 import styled from 'styled-components/macro'
+import { WELCOME_MODAL_DISMISSED } from '../utils/shared-keys'
 import { ReactComponent as Logo } from '../assets/images/logo2.svg'
 import { ReactComponent as List } from '../assets/images/infographic/list.svg'
 import { ReactComponent as Kleros } from '../assets/images/infographic/kleros.svg'
@@ -72,8 +73,6 @@ const StyledCurateLogo = styled.div`
     height: 100px;
   }
 `
-
-const WELCOME_MODAL_DISMISSED = 'WELCOME_MODAL_DISMISSED'
 
 const WelcomeModal = () => {
   const [dismissed, setDismissed] = useState(true)
