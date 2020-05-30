@@ -18,7 +18,7 @@ import {
 import { Layout, Menu, Spin, message } from 'antd'
 import { register } from './service-worker'
 import { WalletProvider } from './wallet-context'
-import { WelcomeProvider } from './welcome-context'
+import { TourProvider } from './tour-context'
 import { NETWORK_NAME, NETWORK } from '../utils/network-utils'
 import ErrorPage from '../pages/error-page'
 import useMainTCR2 from '../hooks/tcr2'
@@ -221,7 +221,7 @@ export default () => {
         />
       </Helmet>
       <BrowserRouter>
-        <WelcomeProvider>
+        <TourProvider>
           <Web3Provider connectors={connectors} libraryName="ethers.js">
             <WalletProvider>
               <StyledLayout>
@@ -262,7 +262,7 @@ export default () => {
             </WalletProvider>
           </Web3Provider>
           <WelcomeModal />
-        </WelcomeProvider>
+        </TourProvider>
       </BrowserRouter>
     </>
   )

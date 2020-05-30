@@ -34,6 +34,7 @@ import { ethers } from 'ethers'
 import ipfsPublish from '../../../utils/ipfs-publish'
 import { WalletContext } from '../../../bootstrap/wallet-context'
 import { gtcrEncode } from '../../../utils/encoder'
+import { TourContext } from '../../../bootstrap/tour-context.js'
 
 const StyledSpin = styled(Spin)`
   height: 60px;
@@ -68,6 +69,7 @@ const SubmitConnectModal = props => {
   const { onCancel, initialValues, tcrAddress: relTCRAddress, gtcrView } = props
   const { pushWeb3Action } = useContext(WalletContext)
   const { library, active, networkId } = useWeb3Context()
+  const { setUserSubscribed } = useContext(TourContext)
   const [error, setError] = useState()
 
   // This is the main TCR.
@@ -273,6 +275,10 @@ const SubmitConnectModal = props => {
               })
             }
           )
+            .then(() => setUserSubscribed(true))
+            .catch(err => {
+              console.error('Failed to subscribe for notifications.', err)
+            })
         }
       }
     })
@@ -283,7 +289,8 @@ const SubmitConnectModal = props => {
     pushWeb3Action,
     relTCRAddress,
     relTCRMetaEvidence,
-    relTCRSubmissionDeposit
+    relTCRSubmissionDeposit,
+    setUserSubscribed
   ])
 
   const submitDisabled = useMemo(

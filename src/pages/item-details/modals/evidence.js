@@ -9,6 +9,7 @@ import itemPropTypes from '../../../prop-types/item'
 import EvidenceForm from '../../../components/evidence-form.js'
 import Archon from '@kleros/archon'
 import ipfsPublish from '../../../utils/ipfs-publish.js'
+import { TourContext } from '../../../bootstrap/tour-context'
 
 const StyledModal = styled(Modal)`
   & > .ant-modal-content {
@@ -21,6 +22,7 @@ const EvidenceModal = ({ item, ...rest }) => {
   // Get contract data.
   const { tcrAddress } = useContext(TCRViewContext)
   const { pushWeb3Action } = useContext(WalletContext)
+  const { setUserSubscribed } = useContext(TourContext)
 
   const submitEvidence = async ({ title, description, evidenceAttachment }) => {
     pushWeb3Action(async ({ account, networkId }, signer) => {
@@ -67,6 +69,10 @@ const EvidenceModal = ({ item, ...rest }) => {
                 })
               }
             )
+              .then(() => setUserSubscribed(true))
+              .catch(err => {
+                console.error('Failed to subscribe for notifications.', err)
+              })
           }
         }
       } catch (err) {

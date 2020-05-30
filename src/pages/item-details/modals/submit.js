@@ -22,6 +22,7 @@ import itemTypes, { typeDefaultValues } from '../../../utils/item-types.js'
 import ETHAmount from '../../../components/eth-amount.js'
 import BNPropType from '../../../prop-types/bn'
 import useFactory from '../../../hooks/factory'
+import { TourContext } from '../../../bootstrap/tour-context'
 
 const StyledSpin = styled(Spin)`
   height: 60px;
@@ -147,6 +148,7 @@ const SubmitModal = props => {
   } = props
   const { pushWeb3Action } = useContext(WalletContext)
   const { deployedWithFactory } = useFactory()
+  const { setUserSubscribed } = useContext(TourContext)
 
   const { fileURI, metadata } = metaEvidence || {}
   const { itemName, columns } = metadata || {}
@@ -189,11 +191,22 @@ const SubmitModal = props => {
                 })
               }
             )
+              .then(() => setUserSubscribed(true))
+              .catch(err => {
+                console.error('Failed to subscribe for notifications.', err)
+              })
           }
         }
       })
     },
-    [itemName, onCancel, pushWeb3Action, submissionDeposit, tcrAddress]
+    [
+      itemName,
+      onCancel,
+      pushWeb3Action,
+      setUserSubscribed,
+      submissionDeposit,
+      tcrAddress
+    ]
   )
 
   if (!metaEvidence || !submissionDeposit)

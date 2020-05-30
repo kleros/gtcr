@@ -11,6 +11,7 @@ import EvidenceForm from '../../../components/evidence-form'
 import { WalletContext } from '../../../bootstrap/wallet-context'
 import itemPropTypes from '../../../prop-types/item'
 import ipfsPublish from '../../../utils/ipfs-publish'
+import { TourContext } from '../../../bootstrap/tour-context'
 
 const StyledSpin = styled(Spin)`
   height: 60px;
@@ -29,6 +30,7 @@ const StyledModal = styled(Modal)`
 
 const RemoveModal = ({ item, itemName = 'item', fileURI, ...rest }) => {
   const { pushWeb3Action } = useContext(WalletContext)
+  const { setUserSubscribed } = useContext(TourContext)
   const { removalDeposit, tcrAddress, metaEvidence } = useContext(
     TCRViewContext
   )
@@ -85,16 +87,21 @@ const RemoveModal = ({ item, itemName = 'item', fileURI, ...rest }) => {
                 })
               }
             )
+              .then(() => setUserSubscribed(true))
+              .catch(err => {
+                console.error('Failed to subscribe for notifications.', err)
+              })
           }
         }
       }),
     [
       item.ID,
       itemName,
-      metadata,
+      metadata.requireRemovalEvidence,
       pushWeb3Action,
       removalDeposit,
       rest,
+      setUserSubscribed,
       tcrAddress
     ]
   )

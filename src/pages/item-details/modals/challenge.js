@@ -12,6 +12,7 @@ import itemPropTypes from '../../../prop-types/item'
 import EvidenceForm from '../../../components/evidence-form'
 import Archon from '@kleros/archon'
 import ipfsPublish from '../../../utils/ipfs-publish.js'
+import { TourContext } from '../../../bootstrap/tour-context'
 
 const StyledSpin = styled(Spin)`
   height: 60px;
@@ -36,6 +37,7 @@ const ChallengeModal = ({ item, itemName, statusCode, fileURI, ...rest }) => {
     tcrAddress
   } = useContext(TCRViewContext)
   const { pushWeb3Action } = useContext(WalletContext)
+  const { setUserSubscribed } = useContext(TourContext)
   const challengeDeposit =
     item.status === STATUS_CODE.SUBMITTED
       ? submissionChallengeDeposit
@@ -94,6 +96,10 @@ const ChallengeModal = ({ item, itemName, statusCode, fileURI, ...rest }) => {
               })
             }
           )
+            .then(() => setUserSubscribed(true))
+            .catch(err => {
+              console.error('Failed to subscribe for notifications.', err)
+            })
         }
       }
     })

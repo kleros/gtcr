@@ -163,7 +163,7 @@ const Identicon = ({ className, large }) => {
   )
 
   const content = (
-    <StyledDiv className={className}>
+    <StyledDiv className={className} id="react-blockies-identicon">
       <StyledReactBlockies
         large={large}
         scale={large ? 7 : 4}

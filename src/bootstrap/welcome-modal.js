@@ -5,7 +5,7 @@ import { ReactComponent as Logo } from '../assets/images/logo2.svg'
 import { ReactComponent as List } from '../assets/images/infographic/list.svg'
 import { ReactComponent as Kleros } from '../assets/images/infographic/kleros.svg'
 import { ReactComponent as Scale } from '../assets/images/infographic/scale.svg'
-import { WelcomeContext } from './welcome-context'
+import { TourContext } from './tour-context'
 
 const { Title, Paragraph } = Typography
 
@@ -74,10 +74,14 @@ const StyledCurateLogo = styled.div`
 `
 
 const WelcomeModal = () => {
-  const { dismissed, dontShowAgain } = useContext(WelcomeContext)
+  const { welcomeModalDismissed, dismissWelcomeModal } = useContext(TourContext)
 
   return (
-    <StyledModal visible={!dismissed} footer={null} onCancel={dontShowAgain}>
+    <StyledModal
+      visible={!welcomeModalDismissed}
+      footer={null}
+      onCancel={dismissWelcomeModal}
+    >
       <Title>Welcome to Kleros Curate</Title>
       <Paragraph>
         Create your own curated lists and let your community moderate the

@@ -22,6 +22,7 @@ import { WalletContext } from '../../../bootstrap/wallet-context'
 import { abi as _gtcr } from '@kleros/tcr/build/contracts/GeneralizedTCR.json'
 import { ethers } from 'ethers'
 import useRequiredFees from '../../../hooks/required-fees'
+import { TourContext } from '../../../bootstrap/tour-context'
 
 const StyledSpin = styled(Spin)`
   height: 60px;
@@ -40,6 +41,7 @@ const StyledModal = styled(Modal)`
 
 const CrowdfundModal = ({ statusCode, item, fileURI, ...rest }) => {
   const { pushWeb3Action } = useContext(WalletContext)
+  const { setUserSubscribed } = useContext(TourContext)
   const {
     sharedStakeMultiplier,
     winnerStakeMultiplier,
@@ -166,6 +168,10 @@ const CrowdfundModal = ({ statusCode, item, fileURI, ...rest }) => {
               })
             }
           )
+            .then(() => setUserSubscribed(true))
+            .catch(err => {
+              console.error('Failed to subscribe for notifications.', err)
+            })
         }
       }
     })
