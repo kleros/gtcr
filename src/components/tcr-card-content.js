@@ -84,7 +84,11 @@ const TCRCardContent = ({ tcrAddress }) => {
 }
 
 TCRCardContent.propTypes = {
-  tcrAddress: PropTypes.string.isRequired
+  tcrAddress: PropTypes.string
+}
+
+TCRCardContent.defaultProps = {
+  tcrAddress: null
 }
 
 export default TCRCardContent

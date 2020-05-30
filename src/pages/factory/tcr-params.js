@@ -149,11 +149,11 @@ const TCRParams = ({
       <Form layout="vertical" id={formId} onSubmit={handleSubmit}>
         <CustomInput
           name="tcrTitle"
-          placeholder="Token² Curated List"
+          placeholder="Red Socks"
           label={
             <span>
               Title&nbsp;
-              <Tooltip title="We suggest keeping the list title as short as possible for improved readability in mobile devices. In addition, some services such as twitter bots and push notifications can limit the number of characters per message, so using as few as possible on the title leaves room for more descriptive messages.">
+              <Tooltip title="This will be the title of your list. Try to keep it as short as possible for increased compatibility with mobile devices, Twitter bots and push notifications. For example: Red Socks.">
                 <Icon type="question-circle-o" />
               </Tooltip>
             </span>
@@ -165,14 +165,14 @@ const TCRParams = ({
         />
         <CustomInput
           name="tcrDescription"
-          placeholder="A token curated list of tokens powered by Kleros..."
+          placeholder="A list of red socks"
           hasFeedback
           error={errors.tcrDescription}
           touched={touched.tcrDescription}
           label={
             <span>
               Description&nbsp;
-              <Tooltip title="A short sentence describing the what are the the list items and its listing criteria.">
+              <Tooltip title="Enter a short sentence to describe the type of item that will be displayed in the list and what the listing criteria are. For example: Images red socks from various manufacturers.">
                 <Icon type="question-circle-o" />
               </Tooltip>
             </span>
@@ -189,7 +189,7 @@ const TCRParams = ({
             <span>
               Item Name&nbsp;
               <Tooltip
-                title={`What is the item? This is a noun that will replace the word "item" in the list interface and notifications. For example, if we set this to the word "Meme", on the list interface you will see buttons such as "Submit Meme" and "Challenge Meme". Similarly, notification messages will look something like "Someone submitted a Meme to Meme list. Review it for a chance to win up to 0.2 ETH!".`}
+                title={`Enter a noun that describes the item that will be listed. This will replace the word "item" in the list interface and notifications. For example: if you set this to the word "Socks", on the list interface you will see buttons such as "Submit Socks" and "Challenge Socks".`}
               >
                 <Icon type="question-circle-o" />
               </Tooltip>
@@ -205,7 +205,7 @@ const TCRParams = ({
           label={
             <span>
               Submission Deposit&nbsp;
-              <Tooltip title="This will be the deposit required to submit connect a list and also the amount awarded to successful challengers. If the value is too low, people will not look for flaws in the submissions and bad ones could make it through. If it is too high, the list will be secure, but people will be afraid to submit items so it will be empty.">
+              <Tooltip title="This is the deposit required to submit an item to the list and also the amount awarded to successful challengers. If the value is too low, challengers may not have enough incentive to look for flaws in the submissions and bad ones could make it through. If it is too high, submitters may not have enough incentive to send items which may result in an empty list.">
                 <Icon type="question-circle-o" />
               </Tooltip>
             </span>
@@ -220,7 +220,7 @@ const TCRParams = ({
           label={
             <span>
               Removal Deposit&nbsp;
-              <Tooltip title="This will be the deposit required to remove an item and also the amount awarded to successful challengers. If the value is too low, people will not look for flaws in removal requests and compliant items could be removed from the list. If it is too high, people will be afraid to remove items so a non compliant submission could stay longer than it should.">
+              <Tooltip title="This is the deposit required to remove an item and also the amount awarded to successful challengers. If the value is too low, people will not have enough incentive to look for flaws in removal requests and compliant items could be removed from the list. If it is too high, people will be afraid to remove items so a non compliant submission could stay longer than it should.">
                 <Icon type="question-circle-o" />
               </Tooltip>
             </span>
@@ -320,7 +320,7 @@ const TCRParams = ({
           <div className="ant-col ant-form-item-label">
             <label htmlFor="tcr-logo">
               <span>List Logo&nbsp;</span>
-              <Tooltip title="The list logo. Should be a 1:1 aspect ratio image with transparent background in SVG or PNG. This logo will be displayed, for example, when your list is submitted to a list of lists or when it is added as badge of another list.">
+              <Tooltip title="The logo should be a 1:1 aspect ratio image with transparent background in SVG or PNG.">
                 <Icon type="question-circle-o" />
               </Tooltip>
             </label>
@@ -364,7 +364,7 @@ const TCRParams = ({
             <span>
               Governor&nbsp;
               <Tooltip
-                title={`The address of the governor to use for this list. It can update parameters such as the challenge period duration, deposits, primary document and the list governor. By default it is set to ${defaultGovernorLabel}`}
+                title={`The address of the governor to use for this list. It can update parameters such as the challenge period duration, deposits, primary document and the TCR governor. By default it is set to ${defaultGovernorLabel}`}
               >
                 <Icon type="question-circle-o" />
               </Tooltip>
@@ -384,7 +384,7 @@ const TCRParams = ({
                 <span>
                   Arbitrator&nbsp;
                   <Tooltip
-                    title={`The address of the arbitrator to use for this list. By default it is set to ${defaultArbLabel}.`}
+                    title={`This is the contract address of the arbitrator that will resolve the disputes occurring in this list. By default it is set to ${defaultArbLabel}, but you could use any other arbitrator complying with the ERC 792 standard.`}
                   >
                     <Icon type="question-circle-o" />
                   </Tooltip>
@@ -480,7 +480,16 @@ const TCRParams = ({
             <Field name="requireRemovalEvidence">
               {({ field }) => (
                 <Form.Item
-                  label="Require evidence for removing items"
+                  label={
+                    <span>
+                      Require evidence for removing items&nbsp;
+                      <Tooltip
+                        title={`The first question that arises when someone requests to remove an item is "why do you want to remove it?". Leaving this switched on will prompt the requester to also justify it. Without a justification it becomes risky to challenge the removal request so, in general this should be left turned on.`}
+                      >
+                        <Icon type="question-circle-o" />
+                      </Tooltip>
+                    </span>
+                  }
                   style={{ marginBottom: '12px', display: 'flex' }}
                 >
                   <Switch

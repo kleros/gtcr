@@ -1,13 +1,4 @@
-import {
-  Steps,
-  Button,
-  Icon,
-  Card,
-  Empty,
-  Typography,
-  Alert,
-  Modal
-} from 'antd'
+import { Steps, Button, Icon, Card, Typography, Alert, Modal } from 'antd'
 import React, { useState, useEffect, useMemo, useCallback } from 'react'
 import PropTypes from 'prop-types'
 import { useDebounce } from 'use-debounce'
@@ -340,9 +331,9 @@ export default () => {
             </Button>
           </StyledButtonGroup>
         </StyledStepper>
-        <StyledContainer>
-          <Card title="Previous Deployments">
-            {Object.keys(transactions).length > 0 ? (
+        {Object.keys(transactions).length > 0 && (
+          <StyledContainer>
+            <Card title="Previous Deployments">
               <StyledGrid>
                 {Object.keys(transactions)
                   .filter(txHash => !transactions[txHash].isConnectedTCR)
@@ -354,11 +345,9 @@ export default () => {
                     </Card>
                   ))}
               </StyledGrid>
-            ) : (
-              <Empty description={false} image={Empty.PRESENTED_IMAGE_SIMPLE} />
-            )}
-          </Card>
-        </StyledContainer>
+            </Card>
+          </StyledContainer>
+        )}
       </StyledLayoutContent>
     </>
   )

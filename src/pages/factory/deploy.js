@@ -381,7 +381,7 @@ const Deploy = ({ setTxState, tcrState, setTcrState }) => {
           description={
             <>
               <StyledDiv>
-                List Deployed at{' '}
+                Your list was deployed at the following address:{' '}
                 <Link
                   to={`/tcr/${tcrState.transactions[txSubmitted].contractAddress}`}
                 >
@@ -397,16 +397,17 @@ const Deploy = ({ setTxState, tcrState, setTcrState }) => {
           }
         />
       )}
-      <StyledActions>
-        <StyledButton
-          type="primary"
-          onClick={onDeploy}
-          icon={currentStep <= 0 || currentStep === 3 ? 'fire' : 'loading'}
-          disabled={currentStep > 0 && currentStep < 3}
-        >
-          Deploy!
-        </StyledButton>
-      </StyledActions>
+      {currentStep === 0 && (
+        <StyledActions>
+          <StyledButton
+            type="primary"
+            onClick={onDeploy}
+            icon={currentStep <= 0 || currentStep === 3 ? 'fire' : 'loading'}
+          >
+            Deploy!
+          </StyledButton>
+        </StyledActions>
+      )}
     </StyledCard>
   )
 }
