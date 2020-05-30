@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react'
-import { List, Popover, Form, Input, Button, Alert, Icon, Tooltip } from 'antd'
+import { List, Popover, Form, Input, Button, Alert } from 'antd'
 import { withFormik, Field } from 'formik'
 import { useWeb3Context } from 'web3-react'
 import ReactBlockies from 'react-blockies'
@@ -38,27 +38,6 @@ const EmailForm = ({
         </Form.Item>
       )}
     </Field>
-    <Field name="nickname">
-      {({ field, form: { errors, touched } }) => (
-        <Form.Item
-          label={
-            <span>
-              Nickname&nbsp;
-              <Tooltip title="Choose something different than your name. This will be sent on the email and act as a shared secret.">
-                <Icon type="question-circle-o" />
-              </Tooltip>
-            </span>
-          }
-          help={errors.nickname && touched.nickname ? errors.nickname : ''}
-          validateStatus={
-            errors.nickname && touched.nickname ? 'error' : undefined
-          }
-          hasFeedback
-        >
-          <Input placeholder="Alice" {...field} />
-        </Form.Item>
-      )}
-    </Field>
   </Form>
 )
 
@@ -66,7 +45,6 @@ EmailForm.propTypes = {
   formID: PropTypes.string.isRequired,
   handleSubmit: PropTypes.func.isRequired,
   initialValues: PropTypes.shape({
-    nickname: PropTypes.string,
     email: PropTypes.string
   })
 }
@@ -79,11 +57,7 @@ const validationSchema = yup.object().shape({
   email: yup
     .string()
     .email('Invalid email.')
-    .required('A valid email is required.'),
-  nickname: yup
-    .string()
-    .min(2, 'At least 2 characters required')
-    .max(50, 'Use at most 50 characters')
+    .required('A valid email is required.')
 })
 
 const EnhancedEmailForm = withFormik({
@@ -118,7 +92,7 @@ const Identicon = ({ className, large }) => {
   }, [account, networkId])
 
   const submitEmail = useCallback(
-    ({ email, nickname }) => {
+    ({ email }) => {
       setEmailStatus('loading')
       const data = {
         types: {
@@ -128,13 +102,10 @@ const Identicon = ({ className, large }) => {
             { name: 'chainId', type: 'uint256' },
             { name: 'salt', type: 'bytes32' }
           ],
-          Settings: [
-            { name: 'email', type: 'string' },
-            { name: 'nickname', type: 'string' }
-          ]
+          Settings: [{ name: 'email', type: 'string' }]
         },
         primaryType: 'Settings',
-        message: { email, nickname },
+        message: { email },
         domain: {
           name: `${process.env.REACT_APP_NOTIFICATIONS_API_URL}`,
           chainId: networkId,
@@ -171,7 +142,7 @@ const Identicon = ({ className, large }) => {
                 )
               ).json()
               if (response.status === 'success') {
-                localforage.setItem(CACHED_SETTINGS, { nickname, email })
+                localforage.setItem(CACHED_SETTINGS, { email })
                 setEmailStatus('success')
               } else {
                 setEmailStatus('error')

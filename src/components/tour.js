@@ -33,7 +33,6 @@ const AppTour = ({ steps, dismissedKey }) => {
       onAfterOpen={disableBody}
       onBeforeClose={enableBody}
       inViewThreshold={200}
-      scrollDuration={300}
     />
   )
 }
