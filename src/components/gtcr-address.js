@@ -26,7 +26,11 @@ const GTCRAddress = ({ address }) => (
     <StyledSpan>
       <ETHAddress address={address || ZERO_ADDRESS} />
     </StyledSpan>
-    <StyledButton href={`/tcr/${utils.getAddress(address)}`}>
+    <StyledButton
+      href={`/tcr/${utils.getAddress(address)}`}
+      target="_blank"
+      rel="noopener noreferrer"
+    >
       Visit
       <StyledIcon icon="external-link-alt" />
     </StyledButton>
