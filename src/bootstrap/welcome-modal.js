@@ -1,12 +1,11 @@
-import React, { useEffect, useState, useCallback } from 'react'
-import localforage from 'localforage'
+import React, { useContext } from 'react'
 import { Modal, Divider, Typography } from 'antd'
 import styled from 'styled-components/macro'
-import { WELCOME_MODAL_DISMISSED } from '../utils/shared-keys'
 import { ReactComponent as Logo } from '../assets/images/logo2.svg'
 import { ReactComponent as List } from '../assets/images/infographic/list.svg'
 import { ReactComponent as Kleros } from '../assets/images/infographic/kleros.svg'
 import { ReactComponent as Scale } from '../assets/images/infographic/scale.svg'
+import { WelcomeContext } from './welcome-context'
 
 const { Title, Paragraph } = Typography
 
@@ -75,20 +74,7 @@ const StyledCurateLogo = styled.div`
 `
 
 const WelcomeModal = () => {
-  const [dismissed, setDismissed] = useState(true)
-
-  useEffect(() => {
-    ;(async () => {
-      const wasDismissed =
-        (await localforage.getItem(WELCOME_MODAL_DISMISSED)) || false
-      setDismissed(wasDismissed)
-    })()
-  }, [])
-
-  const dontShowAgain = useCallback(() => {
-    setDismissed(true)
-    localforage.setItem(WELCOME_MODAL_DISMISSED, true)
-  }, [])
+  const { dismissed, dontShowAgain } = useContext(WelcomeContext)
 
   return (
     <StyledModal visible={!dismissed} footer={null} onCancel={dontShowAgain}>

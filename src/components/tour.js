@@ -1,23 +1,16 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useContext } from 'react'
 import Tour from 'reactour'
 import localforage from 'localforage'
 import PropTypes from 'prop-types'
 import { disableBodyScroll, enableBodyScroll } from 'body-scroll-lock'
-import { WELCOME_MODAL_DISMISSED } from '../utils/shared-keys'
+import { WelcomeContext } from '../bootstrap/welcome-context'
 
 const AppTour = ({ steps, dismissedKey }) => {
   const [dismissed, setDismissed] = useState(true)
-  const [welcomeModal, setWelcomeModalDismissed] = useState(false)
+  const { dismissed: welcomeModalDismissed } = useContext(WelcomeContext)
+
   const disableBody = target => disableBodyScroll(target)
   const enableBody = target => enableBodyScroll(target)
-
-  useEffect(() => {
-    ;(async () => {
-      const wasDismissed =
-        (await localforage.getItem(WELCOME_MODAL_DISMISSED)) || false
-      setWelcomeModalDismissed(wasDismissed)
-    })()
-  }, [])
 
   useEffect(() => {
     ;(async () => {
@@ -28,13 +21,13 @@ const AppTour = ({ steps, dismissedKey }) => {
 
   const dontShowAgain = useCallback(() => {
     setDismissed(true)
-    // localforage.setItem(dismissedKey, true)
-  }, [])
+    localforage.setItem(dismissedKey, true)
+  }, [dismissedKey])
 
   return (
     <Tour
       steps={steps}
-      isOpen={welcomeModal && !dismissed}
+      isOpen={welcomeModalDismissed && !dismissed}
       onRequestClose={dontShowAgain}
       accentColor="#4004a3"
       onAfterOpen={disableBody}
