@@ -392,7 +392,7 @@ const Items = ({ search, history }) => {
         decodedItem = gtcrDecode({ values: item.data, columns })
         // eslint-disable-next-line no-unused-vars
       } catch (err) {
-        errors.push(`Error decoding item ${item.ID} of TCR at ${tcrAddress}`)
+        errors.push(`Error decoding item ${item.ID} of list at ${tcrAddress}`)
       }
 
       // Return the item columns along with its TCR status data.
@@ -437,7 +437,7 @@ const Items = ({ search, history }) => {
     return (
       <ErrorPage
         code="404"
-        message="The gods are having trouble finding this TCR."
+        message="The gods are having trouble finding this list."
         tip="Is your wallet set to the correct network?"
       />
     )

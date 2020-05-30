@@ -41,7 +41,7 @@ const ItemParams = ({
       setFieldValue(`columns`, [
         {
           label: 'Address',
-          description: 'The TCR address.',
+          description: 'The list address.',
           type: 'GTCR address',
           isIdentifier: true
         }
@@ -72,8 +72,8 @@ const ItemParams = ({
     <Card title="Choose the item columns">
       <Row>
         <Col span={24}>
-          Is this a TCR of TCRs?
-          <Tooltip title="A TCR of TCRs has only one column: the TCR address. Information such as its title, description and logo will be pulled from the TCR.">
+          Is this a list of lists?
+          <Tooltip title="A list of lists has only one column: the list address. Information such as its title, description and logo will be pulled from the list itself.">
             &nbsp;
             <Icon type="question-circle-o" />
           </Tooltip>

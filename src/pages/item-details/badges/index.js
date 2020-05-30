@@ -108,7 +108,7 @@ const Badges = ({ connectedTCRAddr, item, tcrAddress }) => {
       return new ethers.Contract(connectedTCRAddr, _gtcr, library)
     } catch (err) {
       console.error('Error instantiating gtcr contract', err)
-      setError('Error setting up this TCR')
+      setError('Error setting up this list')
     }
   }, [active, connectedTCRAddr, library, networkId])
 
@@ -182,7 +182,7 @@ const Badges = ({ connectedTCRAddr, item, tcrAddress }) => {
         ).map(log => tcr.interface.parseLog(log))
         if (logs.length === 0) {
           console.warn(
-            'Could not fetch metadata connected TCR',
+            'Could not fetch metadata of connected TCR',
             connectedTCRAddr
           )
           return

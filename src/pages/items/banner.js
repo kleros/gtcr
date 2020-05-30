@@ -113,7 +113,7 @@ const Banner = ({
                 to={`/tcr/${connectedTCRAddr}`}
                 style={{ color: '#4d00b473' }}
               >
-                View Badges TCR
+                View Badges list
               </Link>
             </Typography.Text>
           </>

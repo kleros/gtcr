@@ -70,7 +70,7 @@ const getTcrMetaEvidence = async tcrState => {
   const relTcrTitle = `${tcrTitle} enabled badges`
   const relMetadata = {
     tcrTitle: relTcrTitle,
-    tcrDescription: `A TCR of TCRs related to ${tcrTitle}`,
+    tcrDescription: `A List of lists related to ${tcrTitle}`,
     columns: relColumns,
     itemName: relItemName,
     isConnectedTCR: true,
@@ -258,7 +258,7 @@ const Deploy = ({ setTxState, tcrState, setTcrState }) => {
       setCurrentStep(1)
       return {
         tx: relTCRtx,
-        actionMessage: 'Deploying Badges TCR',
+        actionMessage: 'Deploying Badges List',
         deployTCR: true,
         onTxMined: async ({ contractAddress }) => {
           setTxState({
@@ -296,7 +296,7 @@ const Deploy = ({ setTxState, tcrState, setTcrState }) => {
             setTxSubmitted(tx.hash)
             return {
               tx,
-              actionMessage: 'Deploying TCR',
+              actionMessage: 'Deploying List',
               deployTCR: true,
               onTxMined: async ({ contractAddress }) => {
                 setTxState({
@@ -318,7 +318,7 @@ const Deploy = ({ setTxState, tcrState, setTcrState }) => {
   }
 
   return (
-    <StyledCard title="Deploy the TCR">
+    <StyledCard title="Deploy the list">
       {currentStep === 0 && (
         <StyledAlert
           showIcon
@@ -346,7 +346,7 @@ const Deploy = ({ setTxState, tcrState, setTcrState }) => {
           icon={<Icon type="fire" />}
         />
         <Steps.Step
-          title="Deploying Badges TCR"
+          title="Deploying Badges list"
           description={currentStep > 1 && 'Finished'}
           icon={
             currentStep < 1 ? (
@@ -359,7 +359,7 @@ const Deploy = ({ setTxState, tcrState, setTcrState }) => {
           }
         />
         <Steps.Step
-          title="Deploying TCR"
+          title="Deploying list"
           description={currentStep > 2 && 'Finished'}
           icon={
             currentStep < 2 ? (
@@ -381,7 +381,7 @@ const Deploy = ({ setTxState, tcrState, setTcrState }) => {
           description={
             <>
               <StyledDiv>
-                TCR Deployed at{' '}
+                List Deployed at{' '}
                 <Link
                   to={`/tcr/${tcrState.transactions[txSubmitted].contractAddress}`}
                 >
@@ -391,7 +391,7 @@ const Deploy = ({ setTxState, tcrState, setTcrState }) => {
               </StyledDiv>
               <StyledDiv>
                 You may want to bookmark its address or, if it adheres to the
-                listing criteria, submit it to the TCR Browser.
+                listing criteria, submit it to the List Browser.
               </StyledDiv>
             </>
           }

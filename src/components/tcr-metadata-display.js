@@ -16,7 +16,7 @@ const TCRMetadataDisplay = ({ logoURI, tcrTitle, tcrDescription, fileURI }) => (
     <StyledField>
       <span>
         Logo:
-        <Tooltip title="The TCR logo.">
+        <Tooltip title="The list logo.">
           &nbsp;
           <Icon type="question-circle-o" />
         </Tooltip>
@@ -26,7 +26,7 @@ const TCRMetadataDisplay = ({ logoURI, tcrTitle, tcrDescription, fileURI }) => (
     <StyledField>
       <span>
         Title
-        <Tooltip title="The TCR title.">
+        <Tooltip title="The list title.">
           &nbsp;
           <Icon type="question-circle-o" />
         </Tooltip>
@@ -36,7 +36,7 @@ const TCRMetadataDisplay = ({ logoURI, tcrTitle, tcrDescription, fileURI }) => (
     <StyledField>
       <span>
         Description
-        <Tooltip title="The TCR description.">
+        <Tooltip title="The list description.">
           &nbsp;
           <Icon type="question-circle-o" />
         </Tooltip>
@@ -46,7 +46,7 @@ const TCRMetadataDisplay = ({ logoURI, tcrTitle, tcrDescription, fileURI }) => (
     <StyledField>
       <span>
         Primary document
-        <Tooltip title="The primary document used by this TCR.">
+        <Tooltip title="The primary document used by this list.">
           &nbsp;
           <Icon type="question-circle-o" />
         </Tooltip>

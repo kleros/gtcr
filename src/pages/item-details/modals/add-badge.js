@@ -147,7 +147,7 @@ const AddBadgeModal = ({
           )
         )}
         {filteredAvailableBadges.length === 0 && (
-          <div>No badges available for this TCR</div>
+          <div>No badges available for this list</div>
         )}
       </StyledRadioGroup>
       <div style={{ margin: '12px 0' }}>

@@ -60,7 +60,7 @@ const TCRCardContent = ({ tcrAddress }) => {
     return (
       <StyledResult
         status="warning"
-        subTitle="Missing metadata field on TCR meta evidence."
+        subTitle="Missing metadata field on list meta evidence."
       />
     )
 

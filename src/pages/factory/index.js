@@ -139,7 +139,7 @@ const useCachedFactory = version => {
     relArbitratorExtraData: defaultArbitratorExtraData,
     relGovernorAddress: defaultGovernor || '',
     relChallengePeriodDuration: 3,
-    relItemName: 'TCR',
+    relItemName: 'list',
     relRequireRemovalEvidence: true,
     relTcrPrimaryDocument: '',
     relSharedStakeMultiplier: 10000,
@@ -156,14 +156,14 @@ const useCachedFactory = version => {
     relColumns: [
       {
         label: 'Address',
-        description: 'The Badges TCR address',
+        description: 'The Badges list address',
         type: itemTypes.GTCR_ADDRESS,
         isIdentifier: true
       },
       {
         label: 'Match File URI',
         description:
-          'The URI to the JSON file for matching columns for each TCR.',
+          'The URI to the JSON file for matching columns for each list.',
         type: itemTypes.TEXT
       }
     ],
@@ -281,13 +281,12 @@ export default () => {
   }, [])
 
   const deployCostMessage = useMemo(() => {
-    const message =
-      'Creating a TCR requires deploying 2 contracts, one for the TCR itself and one for the Badges TCR.'
+    const message = 'Creating a list requires two transactions.'
     if (!process.env.REACT_APP_ETH_GAS_STATION)
       return `${message} Depending on network usage, this can be costly. We recommend that you familiarize yourself with all the parameters to avoid mistakes.`
 
     if (costETH)
-      return `${message} The cost of deploying both contracts at the moment is approximately ${costETH} ETH. We recommend that you familiarize yourself with all the parameters to avoid mistakes.`
+      return `${message} The total cost at the moment is approximately ${costETH} ETH. We recommend that you familiarize yourself with all the parameters to avoid mistakes.`
   }, [costETH])
 
   return (
@@ -295,7 +294,7 @@ export default () => {
       <WarningBanner />
       <StyledBanner>
         <Typography.Title ellipsis style={{ marginBottom: '0' }}>
-          TCR Factory
+          List Creator
         </Typography.Title>
       </StyledBanner>
       <StyledLayoutContent>
@@ -309,9 +308,9 @@ export default () => {
           />
         )}
         <Steps current={currStep - 1}>
-          <Step title="TCR Parameters" />
+          <Step title="List Parameters" />
           <Step title="Item Parameters" />
-          <Step title="Badges TCR Parameters" />
+          <Step title="Badges List Parameters" />
           <Step title="Deploy" />
         </Steps>
         <StyledContainer>

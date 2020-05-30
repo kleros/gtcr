@@ -114,8 +114,8 @@ const SubmitConnectModal = props => {
           ).json()
         )
       } catch (err) {
-        console.error('Error fetching tcr metadata', err)
-        setError('Error fetching tcr metadata')
+        console.error('Error fetching TCR metadata', err)
+        setError('Error fetching list metadata')
       }
     })()
   }, [active, debouncedTCRAddr, library, networkId])
@@ -146,8 +146,8 @@ const SubmitConnectModal = props => {
         ).json()
         setBadgeTCRMetadata(file.metadata)
       } catch (err) {
-        console.error('Error fetching tcr metadata', err)
-        setError('Error fetching tcr metadata')
+        console.error('Error fetching TCR metadata', err)
+        setError('Error fetching TCR metadata')
       }
     })()
   }, [active, debouncedBadgeTCRAddr, library, networkId])
@@ -355,8 +355,8 @@ const SubmitConnectModal = props => {
       <Form.Item
         label={
           <span>
-            Parent TCR Address&nbsp;
-            <Tooltip title="Fill with the address of the parent TCR.">
+            Parent list Address&nbsp;
+            <Tooltip title="Fill with the address of the parent list.">
               <Icon type="question-circle-o" />
             </Tooltip>
           </span>
@@ -375,8 +375,8 @@ const SubmitConnectModal = props => {
       <Form.Item
         label={
           <span>
-            Badge TCR Address&nbsp;
-            <Tooltip title="Fill here the address of the badge TCR.">
+            Badge list address&nbsp;
+            <Tooltip title="Fill here the address of the badge list.">
               <Icon type="question-circle-o" />
             </Tooltip>
           </span>
@@ -390,14 +390,14 @@ const SubmitConnectModal = props => {
       </Form.Item>
       <StyledAlert
         message="Understand Badges"
-        description="An item has a badge if it is also present on the badge TCR. As an example, a token submission 'PNK' on a TCR of Tokens can display the ERC20 Badge if the same submission is also present on the ERC20 Badge TCR. To check if an item is present on two TCRs we must match common fields. In the example we would choose field 'Address'. The comparison is strict, in other words, if multiple fields are matched, ALL values must match perfectly."
+        description="An item has a badge if it is also present on the badge list. As an example, a token submission 'PNK' on a list of Tokens can display the ERC20 Badge if the same submission is also present on the ERC20 Badge list. To check if an item is present on two lists we must match common fields. In the example we would choose field 'Address'. The comparison is strict, in other words, if multiple fields are matched, ALL values must match perfectly."
         type="info"
         showIcon
       />
       <Typography.Paragraph>
-        Match at least one ID column of the parent TCR to use to when searching
-        for the item in the badge TCR. The more fields matched, the stricter the
-        search.
+        Match at least one ID column of the parent list to use to when searching
+        for the item in the badge list. The more fields matched, the stricter
+        the search.
       </Typography.Paragraph>
       {badgeTCRMetadata &&
         badgeTCRMetadata.columns.map((column, i) => (

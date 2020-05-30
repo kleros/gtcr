@@ -194,11 +194,11 @@ const SearchBar = () => {
               ).json()
               const { tcrTitle } = metadata
 
-              // A bit of a hack here, push TCR data into the item.
+              // Push TCR metadata into the item so it is also searchable.
               item.keys.push(tcrTitle)
               item.decodedData.push(tcrTitle)
               item.columns.push({
-                description: 'The TCR title.',
+                description: 'The list title.',
                 isIdentifier: true,
                 label: 'Title',
                 type: itemTypes.TEXT,
@@ -206,7 +206,7 @@ const SearchBar = () => {
               })
               return item
             } catch (err) {
-              console.error('Error loading TCR searcheable name.', err)
+              console.error('Error loading list searcheable name.', err)
               return item
             }
           })

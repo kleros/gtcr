@@ -214,7 +214,7 @@ export default () => {
   return (
     <>
       <Helmet>
-        <title>Kleros · Generalized Token Curated List</title>
+        <title>Kleros · Curate</title>
         <link
           href="https://fonts.googleapis.com/css?family=Roboto:400,400i,500,500i,700,700i"
           rel="stylesheet"
@@ -256,7 +256,7 @@ export default () => {
                 </Layout>
               </StyledLayout>
               <FooterWrapper>
-                <Footer appName="Kleros · GTCR" />
+                <Footer appName="Kleros · Curate" />
               </FooterWrapper>
               <WalletModal connectors={connectors} />
             </WalletProvider>

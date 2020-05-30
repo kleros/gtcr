@@ -128,7 +128,7 @@ const SubmissionForm = withFormik({
       .reduce(
         (acc, curr) => ({
           ...acc,
-          [curr.label]: `This address was not deployed with the Generalized TCR Factory.`
+          [curr.label]: `This address was not deployed with List Creator.`
         }),
         {}
       )

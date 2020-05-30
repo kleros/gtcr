@@ -153,7 +153,7 @@ const TCRParams = ({
           label={
             <span>
               Title&nbsp;
-              <Tooltip title="We suggest keeping the TCR title as short as possible for improved readability in mobile devices. In addition, some services such as twitter bots and push notifications can limit the number of characters per message, so using as few as possible on the title leaves room for more descriptive messages.">
+              <Tooltip title="We suggest keeping the list title as short as possible for improved readability in mobile devices. In addition, some services such as twitter bots and push notifications can limit the number of characters per message, so using as few as possible on the title leaves room for more descriptive messages.">
                 <Icon type="question-circle-o" />
               </Tooltip>
             </span>
@@ -172,7 +172,7 @@ const TCRParams = ({
           label={
             <span>
               Description&nbsp;
-              <Tooltip title="A short sentence describing the what are the the TCR items and its listing criteria.">
+              <Tooltip title="A short sentence describing the what are the the list items and its listing criteria.">
                 <Icon type="question-circle-o" />
               </Tooltip>
             </span>
@@ -189,7 +189,7 @@ const TCRParams = ({
             <span>
               Item Name&nbsp;
               <Tooltip
-                title={`What is the item? This is a noun that will replace the word "item" in the TCR interface and notifications. For example, if we set this to the word "Meme", on the TCR interface you will see buttons such as "Submit Meme" and "Challenge Meme". Similarly, notification messages will look something like "Someone submitted a Meme to Meme TCR. Review it for a chance to win up to 0.2 ETH!".`}
+                title={`What is the item? This is a noun that will replace the word "item" in the list interface and notifications. For example, if we set this to the word "Meme", on the list interface you will see buttons such as "Submit Meme" and "Challenge Meme". Similarly, notification messages will look something like "Someone submitted a Meme to Meme list. Review it for a chance to win up to 0.2 ETH!".`}
               >
                 <Icon type="question-circle-o" />
               </Tooltip>
@@ -205,7 +205,7 @@ const TCRParams = ({
           label={
             <span>
               Submission Deposit&nbsp;
-              <Tooltip title="This will be the deposit required to submit connect a TCR and also the amount awarded to successful challengers. If the value is too low, people will not look for flaws in the submissions and bad ones could make it through. If it is too high, the TCR will be secure, but people will be afraid to submit items so it will be empty.">
+              <Tooltip title="This will be the deposit required to submit connect a list and also the amount awarded to successful challengers. If the value is too low, people will not look for flaws in the submissions and bad ones could make it through. If it is too high, the list will be secure, but people will be afraid to submit items so it will be empty.">
                 <Icon type="question-circle-o" />
               </Tooltip>
             </span>
@@ -220,7 +220,7 @@ const TCRParams = ({
           label={
             <span>
               Removal Deposit&nbsp;
-              <Tooltip title="This will be the deposit required to remove an item and also the amount awarded to successful challengers. If the value is too low, people will not look for flaws in removal requests and compliant items could be removed from the TCR. If it is too high, people will be afraid to remove items so a non compliant submission could stay longer than it should.">
+              <Tooltip title="This will be the deposit required to remove an item and also the amount awarded to successful challengers. If the value is too low, people will not look for flaws in removal requests and compliant items could be removed from the list. If it is too high, people will be afraid to remove items so a non compliant submission could stay longer than it should.">
                 <Icon type="question-circle-o" />
               </Tooltip>
             </span>
@@ -279,7 +279,7 @@ const TCRParams = ({
           <div className="ant-col ant-form-item-label">
             <label htmlFor="primary-document">
               <span>Primary Document&nbsp;</span>
-              <Tooltip title="The TCR primary document defines the acceptance criteria that jurors and prosecutors will use to evaluate submissions. Use the PDF file format.">
+              <Tooltip title="The list primary document defines the acceptance criteria that jurors and prosecutors will use to evaluate submissions. Use the PDF file format.">
                 <Icon type="question-circle-o" />
               </Tooltip>
             </label>
@@ -319,8 +319,8 @@ const TCRParams = ({
         <div style={{ marginBottom: '26px' }}>
           <div className="ant-col ant-form-item-label">
             <label htmlFor="tcr-logo">
-              <span>TCR Logo&nbsp;</span>
-              <Tooltip title="The TCR logo. Should be a 1:1 aspect ratio image with transparent background in SVG or PNG. This logo will be displayed, for example, when your TCR is submitted to a TCR of TCRs or when it is added as badge of another TCR.">
+              <span>List Logo&nbsp;</span>
+              <Tooltip title="The list logo. Should be a 1:1 aspect ratio image with transparent background in SVG or PNG. This logo will be displayed, for example, when your list is submitted to a list of lists or when it is added as badge of another list.">
                 <Icon type="question-circle-o" />
               </Tooltip>
             </label>
@@ -364,7 +364,7 @@ const TCRParams = ({
             <span>
               Governor&nbsp;
               <Tooltip
-                title={`The address of the governor to use for this TCR. It can update parameters such as the challenge period duration, deposits, primary document and the TCR governor. By default it is set to ${defaultGovernorLabel}`}
+                title={`The address of the governor to use for this list. It can update parameters such as the challenge period duration, deposits, primary document and the list governor. By default it is set to ${defaultGovernorLabel}`}
               >
                 <Icon type="question-circle-o" />
               </Tooltip>
@@ -384,7 +384,7 @@ const TCRParams = ({
                 <span>
                   Arbitrator&nbsp;
                   <Tooltip
-                    title={`The address of the arbitrator to use for this TCR. By default it is set to ${defaultArbLabel}.`}
+                    title={`The address of the arbitrator to use for this list. By default it is set to ${defaultArbLabel}.`}
                   >
                     <Icon type="question-circle-o" />
                   </Tooltip>

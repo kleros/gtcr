@@ -123,7 +123,7 @@ const RelTCRParams = ({
   }, [])
 
   return (
-    <Card title="Choose the parameters of the Badges TCR">
+    <Card title="Choose the parameters of the Badges list">
       <Form layout="vertical" id={formId} onSubmit={handleSubmit}>
         <BaseDepositInput
           name="relSubmissionBaseDeposit"
@@ -133,7 +133,7 @@ const RelTCRParams = ({
           label={
             <span>
               Submission Deposit&nbsp;
-              <Tooltip title="This will be the deposit required to submit connect a badge and also the amount awarded to successful challengers. If the value is too low, people will not look for flaws in the submissions and bad ones could make it through. If it is too high, the TCR will be secure, but people will be afraid to connect badges so there will be few available badges.">
+              <Tooltip title="This will be the deposit required to submit connect a badge and also the amount awarded to successful challengers. If the value is too low, people will not look for flaws in the submissions and bad ones could make it through. If it is too high, the list will be secure, but people will be afraid to connect badges so there will be few available badges.">
                 <Icon type="question-circle-o" />
               </Tooltip>
             </span>
@@ -207,7 +207,7 @@ const RelTCRParams = ({
           <div className="ant-col ant-form-item-label">
             <label htmlFor="rel-primary-document">
               <span>Primary Document&nbsp;</span>
-              <Tooltip title="The TCR primary document defines the acceptance criteria that jurors and prosecutors will use to evaluate submissions. For a Badge TCR, the primary document should define what TCRs are considered interesting to the viewers of your TCR. Use the PDF file format.">
+              <Tooltip title="The list primary document defines the acceptance criteria that jurors and prosecutors will use to evaluate submissions. For a Badge list, the primary document should define what lists are considered interesting to the viewers of your list. Use the PDF file format.">
                 <Icon type="question-circle-o" />
               </Tooltip>
             </label>
@@ -263,7 +263,7 @@ const RelTCRParams = ({
             <span>
               Governor&nbsp;
               <Tooltip
-                title={`The address of the governor to use for this TCR. It can update parameters such as the challenge period duration, deposits, primary document and the TCR governor. By default it is set to ${defaultGovernorLabel}`}
+                title={`The address of the governor to use for this list. It can update parameters such as the challenge period duration, deposits, primary document and the list governor. By default it is set to ${defaultGovernorLabel}`}
               >
                 <Icon type="question-circle-o" />
               </Tooltip>
@@ -283,7 +283,7 @@ const RelTCRParams = ({
                 <span>
                   Arbitrator&nbsp;
                   <Tooltip
-                    title={`The address of the arbitrator to use for this TCR. By default it is set to ${defaultArbLabel}.`}
+                    title={`The address of the arbitrator to use for this list. By default it is set to ${defaultArbLabel}.`}
                   >
                     <Icon type="question-circle-o" />
                   </Tooltip>
