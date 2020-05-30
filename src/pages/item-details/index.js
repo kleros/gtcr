@@ -26,6 +26,10 @@ import SearchBar from '../../components/search-bar'
 import { capitalizeFirstLetter, ZERO_ADDRESS } from '../../utils/string'
 import Badges from './badges'
 import WarningBanner from '../../components/beta-warning'
+import AppTour from '../../components/tour'
+import itemTourSteps from './tour-steps'
+
+const ITEM_TOUR_DISMISSED = 'ITEM_TOUR_DISMISSED'
 
 const StyledLayoutContent = styled(Layout.Content)`
   padding: 0 9.375vw 42px;
@@ -306,6 +310,7 @@ const ItemDetails = ({ itemID }) => {
             />
           )}
       </StyledLayoutContent>
+      <AppTour dismissedKey={ITEM_TOUR_DISMISSED} steps={itemTourSteps} />
     </>
   )
 }

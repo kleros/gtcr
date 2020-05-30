@@ -379,7 +379,7 @@ const Badges = ({ connectedTCRAddr, item, tcrAddress }) => {
           Badges
         </span>
       </StyledDivider>
-      <StyledGrid>
+      <StyledGrid id="badges">
         {foundBadges.map(
           (
             {

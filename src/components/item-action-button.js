@@ -6,13 +6,14 @@ import { Button } from 'antd'
 const ItemActionButton = ({ statusCode, itemName, itemID, onClick, type }) => {
   if ((!statusCode && statusCode !== 0) || !itemName || !itemID)
     return (
-      <Button type={type || 'primary'} disabled loading>
+      <Button id="item-action-button" type={type || 'primary'} disabled loading>
         Loading...
       </Button>
     )
 
   return (
     <Button
+      id="item-action-button"
       type={type || 'primary'}
       onClick={onClick}
       disabled={

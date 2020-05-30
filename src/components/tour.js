@@ -39,6 +39,8 @@ const AppTour = ({ steps, dismissedKey }) => {
       accentColor="#4004a3"
       onAfterOpen={disableBody}
       onBeforeClose={enableBody}
+      inViewThreshold={200}
+      scrollDuration={300}
     />
   )
 }

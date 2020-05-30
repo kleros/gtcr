@@ -32,12 +32,12 @@ const RequestTimelines = ({ item, requests }) => {
   if (!item)
     return (
       <>
-        <StyledCard loading />
+        <StyledCard loading id="request-timelines" />
       </>
     )
 
   return (
-    <>
+    <div id="request-timelines">
       {!hasPendingRequest(item.status) && (
         <Divider orientation="left">Timeline</Divider>
       )}
@@ -79,7 +79,7 @@ const RequestTimelines = ({ item, requests }) => {
         visible={evidenceModalOpen}
         onCancel={() => setEvidenceModalOpen(false)}
       />
-    </>
+    </div>
   )
 }
 

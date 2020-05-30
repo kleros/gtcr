@@ -108,7 +108,7 @@ const ItemStatusCard = ({ item, timestamp, request }) => {
 
   if (!item || !timestamp || !challengePeriodDuration || !request)
     return (
-      <Card>
+      <Card id="item-status-card">
         <Skeleton active title={false} paragraph={{ rows: 2 }} />
       </Card>
     )
@@ -153,6 +153,7 @@ const ItemStatusCard = ({ item, timestamp, request }) => {
   return (
     <>
       <Card
+        id="item-status-card"
         title={
           <ItemStatusBadge
             item={item}

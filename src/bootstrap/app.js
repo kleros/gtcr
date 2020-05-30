@@ -237,7 +237,8 @@ export default () => {
                   ].concat(MenuItems({ TCR2_ADDRESS }))}
                 </Menu>
               </StyledLayoutSider>
-              <Layout>
+              {/* Overflow x property must be visible for reactour scrolling to work properly. */}
+              <Layout style={{ overflowX: 'visible' }}>
                 <StyledHeader>
                   <TopBar menuItems={MenuItems} />
                 </StyledHeader>

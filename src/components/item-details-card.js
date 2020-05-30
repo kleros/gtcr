@@ -112,6 +112,7 @@ const ItemDetailsCard = ({
   if (!loading && item && item.errors.length > 0)
     return (
       <Result
+        id="item-details-card"
         status="warning"
         subTitle={item.errors.map((e, i) => (
           <p key={i}>{e}</p>
@@ -122,6 +123,7 @@ const ItemDetailsCard = ({
 
   return (
     <Card
+      id="item-details-card"
       title={title}
       loading={loading}
       extra={
