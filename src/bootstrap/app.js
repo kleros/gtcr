@@ -121,7 +121,7 @@ const MenuItems = ({ TCR2_ADDRESS }) => [
     <NavLink to={`/tcr/${TCR2_ADDRESS}`}>Browse</NavLink>
   </StyledMenuItem>,
   <StyledMenuItem key="factory-item">
-    <NavLink to="/factory">Create a TCR</NavLink>
+    <NavLink to="/factory">Create a List</NavLink>
   </StyledMenuItem>
 ]
 

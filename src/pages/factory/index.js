@@ -107,23 +107,23 @@ const useCachedFactory = version => {
     tcrTitle: '',
     tcrDescription: '',
     submissionBaseDeposit: 0.02,
-    removalBaseDeposit: 0.03,
-    submissionChallengeBaseDeposit: 0.015,
-    removalChallengeBaseDeposit: 0.025,
+    removalBaseDeposit: 0.02,
+    submissionChallengeBaseDeposit: 0,
+    removalChallengeBaseDeposit: 0,
     arbitratorAddress: defaultArbitrator || '',
     governorAddress: defaultGovernor || '',
-    challengePeriodDuration: 3,
+    challengePeriodDuration: 84,
     itemName: 'Item',
     requireRemovalEvidence: true,
     tcrPrimaryDocument: '',
     tcrLogo: '',
     arbitratorExtraData: defaultArbitratorExtraData,
-    sharedStakeMultiplier: 10000,
-    winnerStakeMultiplier: 10000,
-    looserStakeMultiplier: 20000,
+    sharedStakeMultiplier: 5000,
+    winnerStakeMultiplier: 5000,
+    looserStakeMultiplier: 10000,
     isTCRofTCRs: false,
-    relSubmissionBaseDeposit: 0.02,
-    relRemovalBaseDeposit: 0.03,
+    relSubmissionBaseDeposit: 0.5,
+    relRemovalBaseDeposit: 0.5,
     relSubmissionChallengeBaseDeposit: 0.015,
     relRemovalChallengeBaseDeposit: 0.025,
     relArbitratorAddress: defaultArbitrator || '',
@@ -133,9 +133,9 @@ const useCachedFactory = version => {
     relItemName: 'list',
     relRequireRemovalEvidence: true,
     relTcrPrimaryDocument: '',
-    relSharedStakeMultiplier: 10000,
-    relWinnerStakeMultiplier: 10000,
-    relLooserStakeMultiplier: 20000,
+    relSharedStakeMultiplier: 5000,
+    relWinnerStakeMultiplier: 5000,
+    relLooserStakeMultiplier: 10000,
     columns: [
       {
         label: '',
@@ -285,7 +285,7 @@ export default () => {
       <WarningBanner />
       <StyledBanner>
         <Typography.Title ellipsis style={{ marginBottom: '0' }}>
-          List Creator
+          Create a List
         </Typography.Title>
       </StyledBanner>
       <StyledLayoutContent>
@@ -300,7 +300,7 @@ export default () => {
         )}
         <Steps current={currStep - 1}>
           <Step title="List Parameters" />
-          <Step title="Item Parameters" />
+          <Step title="Item Columns" />
           <Step title="Badges List Parameters" />
           <Step title="Deploy" />
         </Steps>

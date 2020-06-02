@@ -132,7 +132,7 @@ const RelTCRParams = ({
           arbitrationCost={arbitrationCost}
           label={
             <span>
-              Submission Deposit&nbsp;
+              Submission Base Deposit&nbsp;
               <Tooltip title="This will be the deposit required to submit connect a badge and also the amount awarded to successful challengers. If the value is too low, people will not look for flaws in the submissions and bad ones could make it through. If it is too high, the list will be secure, but people will be afraid to connect badges so there will be few available badges.">
                 <Icon type="question-circle-o" />
               </Tooltip>
@@ -147,7 +147,7 @@ const RelTCRParams = ({
           arbitrationCost={arbitrationCost}
           label={
             <span>
-              Removal Deposit&nbsp;
+              Removal Base Deposit&nbsp;
               <Tooltip title=" This will be the deposit required to disconnect a badge and also the amount awarded to successful challengers. If the value is too low, people will not look for flaws in removal requests and compliant badges could be disconnected. If it is too high, people will be afraid to remove non compliant badges, so a badge that should not be registerd would stay longer than it should.">
                 <Icon type="question-circle-o" />
               </Tooltip>
@@ -162,7 +162,7 @@ const RelTCRParams = ({
           arbitrationCost={arbitrationCost}
           label={
             <span>
-              Challenge Submission Deposit&nbsp;
+              Challenge Submission Base Deposit&nbsp;
               <Tooltip title="This is the deposit required to challenge a submission. It will be either reimbursed to the challenger or awarded to the submitter depending on who wins the dispute.">
                 <Icon type="question-circle-o" />
               </Tooltip>
@@ -177,7 +177,7 @@ const RelTCRParams = ({
           arbitrationCost={arbitrationCost}
           label={
             <span>
-              Challenge Removal Deposit&nbsp;
+              Challenge Removal Base Deposit&nbsp;
               <Tooltip title="This is the deposit required to challenge a removal request. It will be either reimbursed to the challenger or awarded to the party that removed the item depending on who wins the dispute.">
                 <Icon type="question-circle-o" />
               </Tooltip>
@@ -206,8 +206,8 @@ const RelTCRParams = ({
         <div style={{ marginBottom: '26px' }}>
           <div className="ant-col ant-form-item-label">
             <label htmlFor="rel-primary-document">
-              <span>Primary Document&nbsp;</span>
-              <Tooltip title="The list primary document defines the acceptance criteria that jurors and prosecutors will use to evaluate submissions. For a Badge list, the primary document should define what lists are considered interesting to the viewers of your list. Use the PDF file format.">
+              <span>Acceptance Criteria (Primary Document)&nbsp;</span>
+              <Tooltip title="The list primary document defines the acceptance criteria that jurors and challengers will use to evaluate submissions. For a Badge list, the primary document should define what lists are considered interesting to the viewers of your list. Use the PDF file format.">
                 <Icon type="question-circle-o" />
               </Tooltip>
             </label>
@@ -253,26 +253,26 @@ const RelTCRParams = ({
             style={{ marginLeft: '8px' }}
           />
         </Form.Item>
-        <CustomInput
-          name="relGovernorAddress"
-          placeholder="0x7331deadbeef..."
-          hasFeedback
-          error={errors.relGovernorAddress}
-          touched={touched.relGovernorAddress}
-          label={
-            <span>
-              Governor&nbsp;
-              <Tooltip
-                title={`The address of the governor to use for this list. It can update parameters such as the challenge period duration, deposits, primary document and the list governor. By default it is set to ${defaultGovernorLabel}`}
-              >
-                <Icon type="question-circle-o" />
-              </Tooltip>
-            </span>
-          }
-          {...rest}
-        />
         {advancedOptions && (
           <>
+            <CustomInput
+              name="relGovernorAddress"
+              placeholder="0x7331deadbeef..."
+              hasFeedback
+              error={errors.relGovernorAddress}
+              touched={touched.relGovernorAddress}
+              label={
+                <span>
+                  Governor&nbsp;
+                  <Tooltip
+                    title={`The address of the governor to use for this list. It can update parameters such as the challenge period duration, deposits, primary document and the list governor. By default it is set to ${defaultGovernorLabel}`}
+                  >
+                    <Icon type="question-circle-o" />
+                  </Tooltip>
+                </span>
+              }
+              {...rest}
+            />
             <CustomInput
               name="relArbitratorAddress"
               placeholder="0x7331deadbeef..."

@@ -23,6 +23,7 @@ import ETHAmount from '../../../components/eth-amount.js'
 import BNPropType from '../../../prop-types/bn'
 import useFactory from '../../../hooks/factory'
 import { TourContext } from '../../../bootstrap/tour-context'
+import { capitalizeFirstLetter } from '../../../utils/string'
 
 const StyledSpin = styled(Spin)`
   height: 60px;
@@ -226,7 +227,9 @@ const SubmitModal = props => {
 
   return (
     <StyledModal
-      title={`Submit ${(itemName && itemName.toLowerCase()) || 'Item'}`}
+      title={`Submit ${(itemName &&
+        capitalizeFirstLetter(itemName.toLowerCase())) ||
+        'Item'}`}
       footer={[
         <Button key="back" onClick={onCancel}>
           Return

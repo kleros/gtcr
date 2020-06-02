@@ -9,18 +9,24 @@ import {
   Divider,
   Switch,
   Tooltip,
-  message
+  message,
+  Alert
 } from 'antd'
 import { withFormik, FieldArray, Field } from 'formik'
 import React, { useEffect, useCallback } from 'react'
 import PropTypes from 'prop-types'
 import * as yup from 'yup'
+import styled from 'styled-components/macro'
 import CustomInput from '../../components/custom-input'
 import ItemDetailsCard from '../../components/item-details-card'
 import itemTypes from '../../utils/item-types'
 import { STATUS_CODE } from '../../utils/item-status'
 
 const { LONGTEXT, IMAGE } = itemTypes
+
+const StyledAlert = styled(Alert)`
+  margin-bottom: 42px;
+`
 
 const ItemParams = ({
   handleSubmit,
@@ -83,23 +89,31 @@ const ItemParams = ({
       </Row>
       <Divider />
       {!isTCRofTCRs && (
-        <Row
-          gutter={{ xs: 4, sm: 8, md: 12 }}
-          type="flex"
-          justify="space-between"
-        >
-          <Col span={5}>Name</Col>
-          <Col span={8}>Description</Col>
-          <Col span={6}>Type</Col>
-          <Col span={2}>
-            ID
-            <Tooltip title="Whether to display this field on the list of items.">
-              &nbsp;
-              <Icon type="question-circle-o" />
-            </Tooltip>
-          </Col>
-          {columns.length > 1 && <Col span={1} />}
-        </Row>
+        <>
+          <StyledAlert
+            description="The column order defined here will be used to display the items. In other words, if your item has an image or title, you probably want it to be the first columns displayed."
+            type="info"
+            showIcon
+            closable
+          />
+          <Row
+            gutter={{ xs: 4, sm: 8, md: 12 }}
+            type="flex"
+            justify="space-between"
+          >
+            <Col span={5}>Name</Col>
+            <Col span={8}>Description</Col>
+            <Col span={6}>Type</Col>
+            <Col span={2}>
+              Indexed
+              <Tooltip title="Whether to display this field on the list of items.">
+                &nbsp;
+                <Icon type="question-circle-o" />
+              </Tooltip>
+            </Col>
+            {columns.length > 1 && <Col span={1} />}
+          </Row>
+        </>
       )}
       <form id={formId} onSubmit={handleSubmit}>
         {!isTCRofTCRs && (
@@ -119,7 +133,6 @@ const ItemParams = ({
                         <Col span={5}>
                           <CustomInput
                             name={`columns[${index}].label`}
-                            placeholder="Token Name"
                             hasFeedback
                             touched={
                               touched.columns &&
@@ -137,7 +150,6 @@ const ItemParams = ({
                         <Col span={8}>
                           <CustomInput
                             name={`columns[${index}].description`}
-                            placeholder="The commonly used token name."
                             hasFeedback
                             touched={
                               touched.columns &&

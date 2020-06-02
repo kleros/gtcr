@@ -145,7 +145,7 @@ const TCRParams = ({
   )
 
   return (
-    <Card title="Choose the item columns and identifiers">
+    <Card title="Enter the item columns">
       <Form layout="vertical" id={formId} onSubmit={handleSubmit}>
         <CustomInput
           name="tcrTitle"
@@ -172,7 +172,7 @@ const TCRParams = ({
           label={
             <span>
               Description&nbsp;
-              <Tooltip title="Enter a short sentence to describe the type of item that will be displayed in the list and what the listing criteria are. For example: Images red socks from various manufacturers.">
+              <Tooltip title="Enter a short sentence to describe the type of item that will be displayed in the list and what the listing criteria are. For example: Images of red socks from various manufacturers.">
                 <Icon type="question-circle-o" />
               </Tooltip>
             </span>
@@ -204,7 +204,7 @@ const TCRParams = ({
           arbitrationCost={arbitrationCost}
           label={
             <span>
-              Submission Deposit&nbsp;
+              Submission Base Deposit&nbsp;
               <Tooltip title="This is the deposit required to submit an item to the list and also the amount awarded to successful challengers. If the value is too low, challengers may not have enough incentive to look for flaws in the submissions and bad ones could make it through. If it is too high, submitters may not have enough incentive to send items which may result in an empty list.">
                 <Icon type="question-circle-o" />
               </Tooltip>
@@ -219,7 +219,7 @@ const TCRParams = ({
           arbitrationCost={arbitrationCost}
           label={
             <span>
-              Removal Deposit&nbsp;
+              Removal Base Deposit&nbsp;
               <Tooltip title="This is the deposit required to remove an item and also the amount awarded to successful challengers. If the value is too low, people will not have enough incentive to look for flaws in removal requests and compliant items could be removed from the list. If it is too high, people will be afraid to remove items so a non compliant submission could stay longer than it should.">
                 <Icon type="question-circle-o" />
               </Tooltip>
@@ -234,7 +234,7 @@ const TCRParams = ({
           arbitrationCost={arbitrationCost}
           label={
             <span>
-              Challenge Submission Deposit&nbsp;
+              Challenge Submission Base Deposit&nbsp;
               <Tooltip title="This is the deposit required to challenge a submission.">
                 <Icon type="question-circle-o" />
               </Tooltip>
@@ -249,7 +249,7 @@ const TCRParams = ({
           arbitrationCost={arbitrationCost}
           label={
             <span>
-              Challenge Removal Deposit&nbsp;
+              Challenge Removal Base Deposit&nbsp;
               <Tooltip title="This is the deposit required to challenge a removal request.">
                 <Icon type="question-circle-o" />
               </Tooltip>
@@ -278,8 +278,8 @@ const TCRParams = ({
         <div style={{ marginBottom: '26px' }}>
           <div className="ant-col ant-form-item-label">
             <label htmlFor="primary-document">
-              <span>Primary Document&nbsp;</span>
-              <Tooltip title="The list primary document defines the acceptance criteria that jurors and prosecutors will use to evaluate submissions. Use the PDF file format.">
+              <span>Acceptance Criteria (Primary Document)&nbsp;</span>
+              <Tooltip title="The list primary document defines the acceptance criteria that jurors and challengers will use to evaluate submissions. Use the PDF file format.">
                 <Icon type="question-circle-o" />
               </Tooltip>
             </label>
@@ -354,26 +354,26 @@ const TCRParams = ({
             style={{ marginLeft: '8px' }}
           />
         </Form.Item>
-        <CustomInput
-          name="governorAddress"
-          placeholder="0x7331deadbeef..."
-          hasFeedback
-          error={errors.governorAddress}
-          touched={touched.governorAddress}
-          label={
-            <span>
-              Governor&nbsp;
-              <Tooltip
-                title={`The address of the governor to use for this list. It can update parameters such as the challenge period duration, deposits, primary document and the TCR governor. By default it is set to ${defaultGovernorLabel}`}
-              >
-                <Icon type="question-circle-o" />
-              </Tooltip>
-            </span>
-          }
-          {...rest}
-        />
         {advancedOptions && (
           <>
+            <CustomInput
+              name="governorAddress"
+              placeholder="0x7331deadbeef..."
+              hasFeedback
+              error={errors.governorAddress}
+              touched={touched.governorAddress}
+              label={
+                <span>
+                  Governor&nbsp;
+                  <Tooltip
+                    title={`The address of the governor to use for this list. It can update parameters such as the challenge period duration, deposits, primary document and the TCR governor. By default it is set to ${defaultGovernorLabel}`}
+                  >
+                    <Icon type="question-circle-o" />
+                  </Tooltip>
+                </span>
+              }
+              {...rest}
+            />
             <CustomInput
               name="arbitratorAddress"
               placeholder="0x7331deadbeef..."

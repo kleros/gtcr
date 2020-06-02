@@ -30,8 +30,15 @@ const itemsTourSteps = [
         </span>
         <br />
         <br />
-        It defines the criteria an item must comply with to be accepted into the
-        list.
+        <span role="img" aria-label="warning">
+          ⚠️
+        </span>
+        Before making your submission, make sure it complies with the Listing
+        Policies. If you submit a non-compliant list, it will be challenged and
+        you will lose your deposit.
+        <span role="img" aria-label="warning">
+          ⚠️
+        </span>
       </div>
     )
   },
@@ -39,8 +46,7 @@ const itemsTourSteps = [
     selector: `#items-search-bar`,
     content: () => (
       <div>
-        You can search for items that were submitted to this list using the
-        search bar.
+        Use this bar to search for lists submitted by users.
         <span role="img" aria-label="magnifying-glass">
           🔍
         </span>
@@ -51,7 +57,7 @@ const itemsTourSteps = [
     selector: `#items-filters`,
     content: () => (
       <div>
-        Filters allow you to fine-tune the displayed items.{' '}
+        The filtering options will allow you to fine tune your search.{' '}
         <span role="img" aria-label="microscope">
           🔬
         </span>
