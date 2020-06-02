@@ -33,6 +33,30 @@ const UploadButton = ({ loading }) => (
   </div>
 )
 
+const StyledTCRParamContainer = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+
+  @media (max-width: 840px) {
+    flex-direction: column;
+  }
+`
+
+const StyledUploadContainer = styled.div`
+  max-width: 450px;
+
+  @media (min-width: 840px) {
+    margin-right: 24px;
+  }
+`
+
+const StyledTCRInfoContainer = styled.div`
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+`
+
 UploadButton.propTypes = {
   loading: PropTypes.bool
 }
@@ -147,56 +171,133 @@ const TCRParams = ({
   return (
     <Card title="Enter the item columns">
       <Form layout="vertical" id={formId} onSubmit={handleSubmit}>
-        <CustomInput
-          name="tcrTitle"
-          placeholder="Red Socks"
-          label={
-            <span>
-              Title&nbsp;
-              <Tooltip title="This will be the title of your list. Try to keep it as short as possible for increased compatibility with mobile devices, Twitter bots and push notifications. For example: Red Socks.">
-                <Icon type="question-circle-o" />
-              </Tooltip>
-            </span>
-          }
-          error={errors.tcrTitle}
-          touched={touched.tcrTitle}
-          hasFeedback
-          {...rest}
-        />
-        <CustomInput
-          name="tcrDescription"
-          placeholder="A list of red socks"
-          hasFeedback
-          error={errors.tcrDescription}
-          touched={touched.tcrDescription}
-          label={
-            <span>
-              Description&nbsp;
-              <Tooltip title="Enter a short sentence to describe the type of item that will be displayed in the list and what the listing criteria are. For example: Images of red socks from various manufacturers.">
-                <Icon type="question-circle-o" />
-              </Tooltip>
-            </span>
-          }
-          {...rest}
-        />
-        <CustomInput
-          name="itemName"
-          placeholder="Token"
-          hasFeedback
-          error={errors.itemName}
-          touched={touched.itemName}
-          label={
-            <span>
-              Item Name&nbsp;
-              <Tooltip
-                title={`Enter a noun that describes the item that will be listed. This will replace the word "item" in the list interface and notifications. For example: if you set this to the word "Socks", on the list interface you will see buttons such as "Submit Socks" and "Challenge Socks".`}
+        <StyledTCRParamContainer>
+          <StyledUploadContainer>
+            <div>
+              <div className="ant-col ant-form-item-label">
+                <label htmlFor="tcr-logo">
+                  <span>List Logo&nbsp;</span>
+                  <Tooltip title="The logo should be a 1:1 aspect ratio image with transparent background in SVG or PNG.">
+                    <Icon type="question-circle-o" />
+                  </Tooltip>
+                </label>
+              </div>
+              <StyledUpload
+                name="primary-document"
+                listType="picture-card"
+                className="avatar-uploader"
+                showUploadList={false}
+                customRequest={customRequest('tcrLogo')}
+                beforeUpload={beforeImageUpload}
+                onChange={fileUploadStatusChange}
               >
-                <Icon type="question-circle-o" />
-              </Tooltip>
-            </span>
-          }
-          {...rest}
-        />
+                {values.tcrLogo ? (
+                  <img
+                    src={`${process.env.REACT_APP_IPFS_GATEWAY}${values.tcrLogo}`}
+                    style={{ height: '70px', objectFit: 'contain' }}
+                    alt="avatar"
+                  />
+                ) : (
+                  <UploadButton loading={uploading.tcrLogo} />
+                )}
+              </StyledUpload>
+            </div>
+            <div>
+              <div className="ant-col ant-form-item-label">
+                <label htmlFor="primary-document">
+                  <span>Acceptance Criteria (Primary Document)&nbsp;</span>
+                  <Tooltip title="The list primary document defines the acceptance criteria that jurors and challengers will use to evaluate submissions. Use the PDF file format.">
+                    <Icon type="question-circle-o" />
+                  </Tooltip>
+                </label>
+                <br />
+                Click{' '}
+                <a
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  href="https://ipfs.kleros.io/ipfs/QmbqgkZoGu7jJ8nTqee4NypEhK7YVBEJJmPJbJxz8Bx8nY/t2cr-primary-doc.pdf"
+                >
+                  here
+                </a>{' '}
+                to view an example of a primary document.
+              </div>
+              <StyledUpload
+                name="primary-document"
+                listType="picture-card"
+                className="avatar-uploader"
+                showUploadList={false}
+                customRequest={customRequest('tcrPrimaryDocument')}
+                beforeUpload={beforeFileUpload}
+                onChange={fileUploadStatusChange}
+              >
+                {values.tcrPrimaryDocument ? (
+                  <a
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    href={`${process.env.REACT_APP_IPFS_GATEWAY}${values.tcrPrimaryDocument}`}
+                  >
+                    <Icon type="file-pdf" style={{ fontSize: '30px' }} />
+                  </a>
+                ) : (
+                  <UploadButton loading={uploading.tcrPrimaryDocument} />
+                )}
+              </StyledUpload>
+            </div>
+          </StyledUploadContainer>
+          <StyledTCRInfoContainer>
+            <CustomInput
+              name="tcrTitle"
+              placeholder="Red Socks"
+              label={
+                <span>
+                  Title&nbsp;
+                  <Tooltip title="This will be the title of your list. Try to keep it as short as possible for increased compatibility with mobile devices, Twitter bots and push notifications. For example: Red Socks.">
+                    <Icon type="question-circle-o" />
+                  </Tooltip>
+                </span>
+              }
+              error={errors.tcrTitle}
+              touched={touched.tcrTitle}
+              hasFeedback
+              {...rest}
+            />
+            <CustomInput
+              name="tcrDescription"
+              placeholder="A list of red socks"
+              hasFeedback
+              error={errors.tcrDescription}
+              touched={touched.tcrDescription}
+              label={
+                <span>
+                  Description&nbsp;
+                  <Tooltip title="Enter a short sentence to describe the type of item that will be displayed in the list and what the listing criteria are. For example: Images of red socks from various manufacturers.">
+                    <Icon type="question-circle-o" />
+                  </Tooltip>
+                </span>
+              }
+              {...rest}
+            />
+            <CustomInput
+              style={{ marginBottom: 0 }}
+              name="itemName"
+              placeholder="Sock"
+              hasFeedback
+              error={errors.itemName}
+              touched={touched.itemName}
+              label={
+                <span>
+                  Item Name&nbsp;
+                  <Tooltip
+                    title={`Enter a noun that describes the item that will be listed. This will replace the word "item" in the list interface and notifications. For example: if you set this to the word "Socks", on the list interface you will see buttons such as "Submit Socks" and "Challenge Socks".`}
+                  >
+                    <Icon type="question-circle-o" />
+                  </Tooltip>
+                </span>
+              }
+              {...rest}
+            />
+          </StyledTCRInfoContainer>
+        </StyledTCRParamContainer>
         <BaseDepositInput
           name="submissionBaseDeposit"
           error={errors.submissionBaseDeposit}
@@ -275,76 +376,6 @@ const TCRParams = ({
           }
           {...rest}
         />
-        <div style={{ marginBottom: '26px' }}>
-          <div className="ant-col ant-form-item-label">
-            <label htmlFor="primary-document">
-              <span>Acceptance Criteria (Primary Document)&nbsp;</span>
-              <Tooltip title="The list primary document defines the acceptance criteria that jurors and challengers will use to evaluate submissions. Use the PDF file format.">
-                <Icon type="question-circle-o" />
-              </Tooltip>
-            </label>
-            <br />
-            Click{' '}
-            <a
-              target="_blank"
-              rel="noopener noreferrer"
-              href="https://ipfs.kleros.io/ipfs/QmbqgkZoGu7jJ8nTqee4NypEhK7YVBEJJmPJbJxz8Bx8nY/t2cr-primary-doc.pdf"
-            >
-              here
-            </a>{' '}
-            to view an example of a primary document.
-          </div>
-          <StyledUpload
-            name="primary-document"
-            listType="picture-card"
-            className="avatar-uploader"
-            showUploadList={false}
-            customRequest={customRequest('tcrPrimaryDocument')}
-            beforeUpload={beforeFileUpload}
-            onChange={fileUploadStatusChange}
-          >
-            {values.tcrPrimaryDocument ? (
-              <a
-                target="_blank"
-                rel="noopener noreferrer"
-                href={`${process.env.REACT_APP_IPFS_GATEWAY}${values.tcrPrimaryDocument}`}
-              >
-                <Icon type="file-pdf" style={{ fontSize: '30px' }} />
-              </a>
-            ) : (
-              <UploadButton loading={uploading.tcrPrimaryDocument} />
-            )}
-          </StyledUpload>
-        </div>
-        <div style={{ marginBottom: '26px' }}>
-          <div className="ant-col ant-form-item-label">
-            <label htmlFor="tcr-logo">
-              <span>List Logo&nbsp;</span>
-              <Tooltip title="The logo should be a 1:1 aspect ratio image with transparent background in SVG or PNG.">
-                <Icon type="question-circle-o" />
-              </Tooltip>
-            </label>
-          </div>
-          <StyledUpload
-            name="primary-document"
-            listType="picture-card"
-            className="avatar-uploader"
-            showUploadList={false}
-            customRequest={customRequest('tcrLogo')}
-            beforeUpload={beforeImageUpload}
-            onChange={fileUploadStatusChange}
-          >
-            {values.tcrLogo ? (
-              <img
-                src={`${process.env.REACT_APP_IPFS_GATEWAY}${values.tcrLogo}`}
-                style={{ height: '70px', objectFit: 'contain' }}
-                alt="avatar"
-              />
-            ) : (
-              <UploadButton loading={uploading.tcrLogo} />
-            )}
-          </StyledUpload>
-        </div>
         <Form.Item
           label="Advanced options"
           style={{ marginBottom: '12px', display: 'flex' }}

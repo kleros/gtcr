@@ -14,9 +14,10 @@ const CustomInput = ({
   hasFeedback,
   type,
   step,
-  disabled
+  disabled,
+  style
 }) => (
-  <Field name={name}>
+  <Field name={name} style={style}>
     {({ field }) => (
       <Form.Item
         label={label}
@@ -55,7 +56,10 @@ CustomInput.propTypes = {
   hasFeedback: PropTypes.bool,
   type: PropTypes.oneOf(Object.values(itemTypes)),
   step: PropTypes.number,
-  disabled: PropTypes.bool
+  disabled: PropTypes.bool,
+  // eslint-disable-next-line react/require-default-props
+  // eslint-disable-next-line react/forbid-prop-types
+  style: PropTypes.object
 }
 
 CustomInput.defaultProps = {
@@ -67,7 +71,8 @@ CustomInput.defaultProps = {
   hasFeedback: null,
   type: null,
   step: null,
-  disabled: null
+  disabled: null,
+  style: null
 }
 
 export default CustomInput
