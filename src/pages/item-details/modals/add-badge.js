@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react'
+import React, { useState, useCallback, useEffect } from 'react'
 import {
   Spin,
   Modal,
@@ -69,6 +69,23 @@ const AddBadgeModal = ({
     onEnableNewBadge()
   }, [onCancel, onEnableNewBadge])
 
+  const filteredAvailableBadges =
+    availableBadges &&
+    availableBadges.filter(
+      ({ tcrAddress: availableBadgeAddr }) =>
+        !foundBadges.map(b => b.tcrAddress).includes(availableBadgeAddr)
+    )
+
+  // The radio button doesn't trigger onSelectBadge when displayed,
+  // which can cause inconsistency between the what is displayed on the UI
+  // and the component state (i.e. it shows A is selected, but actually B is).
+  // To get around this, once we have a list of available badges loaded,
+  // explicitly select it.
+  useEffect(() => {
+    if (!filteredAvailableBadges || filteredAvailableBadges.length === 0) return
+    setSelectedBadge(0)
+  }, [availableBadges, filteredAvailableBadges, onSelectBadge])
+
   if (!availableBadges || !tcrAddress || !connectedTCRAddr || isFetchingBadges)
     return (
       <StyledModal
@@ -84,11 +101,6 @@ const AddBadgeModal = ({
         <StyledSpin />
       </StyledModal>
     )
-
-  const filteredAvailableBadges = availableBadges.filter(
-    ({ tcrAddress: availableBadgeAddr }) =>
-      !foundBadges.map(b => b.tcrAddress).includes(availableBadgeAddr)
-  )
 
   return (
     <StyledModal
