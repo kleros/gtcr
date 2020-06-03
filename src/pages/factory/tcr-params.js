@@ -61,7 +61,7 @@ const StyledUploadContainer = styled.div`
   max-width: 450px;
 
   @media (min-width: 840px) {
-    margin-right: 24px;
+    margin-right: 12px;
   }
 `
 
@@ -70,6 +70,11 @@ const StyledTCRInfoContainer = styled.div`
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+
+  @media (min-width: 840px) {
+    border-left: 1px solid #f8efff;
+    padding-left: 12px;
+  }
 `
 
 const StyledDepositContainer = styled.div`
