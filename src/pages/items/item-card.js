@@ -119,6 +119,7 @@ const CardItemInfo = ({
   let content
   const { metadata } = metaEvidence || {}
   const { itemName, isTCRofTCRs } = metadata || {}
+
   if (item.errors.length > 0)
     content = (
       <Result
