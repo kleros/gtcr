@@ -358,7 +358,7 @@ const TCRParams = ({
                 <span>
                   Item Name Plural&nbsp;
                   <Tooltip
-                    title={`This is the plural of the item name. In other words, if "Item Name" is "bus", this should be "busses"`}
+                    title={`This is the plural of the item name. In other words, if "Item Name" is "bus", this should be "buses"`}
                   >
                     <Icon type="question-circle-o" />
                   </Tooltip>

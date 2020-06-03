@@ -4,6 +4,7 @@ import PropTypes from 'prop-types'
 import DisplaySelector from './display-selector'
 import itemTypes from '../utils/item-types'
 import { Button } from 'antd'
+import { Link } from 'react-router-dom'
 
 const StyledItemCol = styled.div`
   margin-bottom: 8px;
@@ -23,13 +24,9 @@ const ItemCardContent = ({ item, tcrAddress, itemName }) => (
           <DisplaySelector type={column.type} value={column.value} />
         </StyledItemCol>
       ))}
-    <StyledButton
-      href={`/tcr/${tcrAddress}/${item.tcrData.ID}`}
-      target="_blank"
-      rel="noopener noreferrer"
-    >
-      {itemName || 'Item'} Details
-    </StyledButton>
+    <Link to={`/tcr/${tcrAddress}/${item.tcrData.ID}`}>
+      <StyledButton>{itemName || 'Item'} Details</StyledButton>
+    </Link>
   </>
 )
 
