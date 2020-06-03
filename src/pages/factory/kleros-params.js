@@ -1,12 +1,14 @@
-import React, { useMemo, useState, useEffect } from 'react'
+import React, { useMemo, useState, useEffect, useCallback } from 'react'
 import styled from 'styled-components/macro'
-import { Select, InputNumber } from 'antd'
+import { Select, InputNumber, Slider, Tooltip, Icon } from 'antd'
 import { ethers } from 'ethers'
 import PropTypes from 'prop-types'
 import { useWeb3Context } from 'web3-react'
 import { abi as _PolicyRegistry } from '@kleros/kleros/build/contracts/PolicyRegistry.json'
 import { abi as _IArbitrator } from '@kleros/erc-792/build/contracts/IArbitrator.json'
 import ETHAmount from '../../components/eth-amount'
+import { jurorsAndCourtIDFromExtraData } from '../../utils/string'
+import useWindowDimensions from '../../hooks/window-dimensions'
 
 const StyledExtraDataContainer = styled.div`
   padding-bottom: 8px;
@@ -25,6 +27,7 @@ const StyledInputContainer = styled.div`
 const StyledContainer = styled.div`
   display: flex;
   margin-bottom: 24px;
+  flex: 1;
 `
 
 const KlerosParams = ({
@@ -33,9 +36,10 @@ const KlerosParams = ({
   setArbitratorExtraData,
   arbitratorExtraData
 }) => {
+  const { width } = useWindowDimensions()
   const { library, active } = useWeb3Context()
   const [arbitrationCost, setArbitrationCost] = useState(0)
-  const [numberOfJurors, setNumberOfJurors] = useState(1)
+  const [numberOfJurors, setNumberOfJurors] = useState(3)
   const [courtID, setCourtID] = useState(0)
   const [courts, setCourts] = useState([])
 
@@ -105,16 +109,16 @@ const KlerosParams = ({
         console.warn('Error fetching policies', err)
       }
     })()
-  }, [active, courtID, library, policyRegistry])
+  }, [active, library, policyRegistry])
 
-  // Set arbitrator extra data.
+  // Load arbitrator extra data
   useEffect(() => {
-    setArbitratorExtraData(
-      `0x${courtID.toString(16).padStart(64, '0')}${Math.ceil(numberOfJurors)
-        .toString(16)
-        .padStart(64, '0')}`
+    const { courtID, numberOfJurors } = jurorsAndCourtIDFromExtraData(
+      arbitratorExtraData
     )
-  }, [courtID, numberOfJurors, setArbitratorExtraData])
+    setCourtID(courtID)
+    setNumberOfJurors(numberOfJurors)
+  }, [arbitratorExtraData])
 
   // Display predicted arbitration cost.
   useEffect(() => {
@@ -124,17 +128,49 @@ const KlerosParams = ({
     })()
   }, [active, arbitrator, arbitratorExtraData])
 
+  const onCourtChanged = useCallback(
+    newCourtID => {
+      if (isNaN(newCourtID)) return
+
+      const newArbitratorExtraData = `0x${newCourtID
+        .toString(16)
+        .padStart(64, '0')}${Math.ceil(numberOfJurors)
+        .toString(16)
+        .padStart(64, '0')}`
+
+      setArbitratorExtraData(newArbitratorExtraData)
+      setCourtID(newCourtID)
+    },
+    [numberOfJurors, setArbitratorExtraData]
+  )
+
+  const onNumJurorsChange = useCallback(
+    newNumJurors => {
+      if (isNaN(newNumJurors)) return
+      if (newNumJurors % 2 === 0) newNumJurors = newNumJurors - 1
+
+      const newArbitratorExtraData = `0x${courtID
+        .toString(16)
+        .padStart(64, '0')}${Math.ceil(newNumJurors)
+        .toString(16)
+        .padStart(64, '0')}`
+      setArbitratorExtraData(newArbitratorExtraData)
+      setNumberOfJurors(newNumJurors)
+    },
+    [courtID, setArbitratorExtraData]
+  )
+
   return (
     <StyledExtraDataContainer>
       <StyledContainer>
         <StyledInputContainer>
           <span>Court:</span>
           <Select
-            defaultValue="Select"
             style={{ width: 120 }}
-            onChange={setCourtID}
+            onChange={onCourtChanged}
             loading={courts.length === 0}
             disabled={courts.length === 0}
+            value={courtID}
           >
             {courts.map(({ courtID, name }) => (
               <Select.Option value={courtID} key={courtID}>
@@ -143,9 +179,34 @@ const KlerosParams = ({
             ))}
           </Select>
         </StyledInputContainer>
-        <StyledInputContainer style={{ marginLeft: '24px' }}>
-          <span>Number of Jurors:</span>
-          <InputNumber min={1} defaultValue={1} onChange={setNumberOfJurors} />
+        <StyledInputContainer style={{ flex: 1, margin: '0 12px' }}>
+          <label htmlFor="depositSlider">
+            Number of Jurors&nbsp;
+            <Tooltip title="The deposit is the sum of the challenge reward bounty and the arbitration cost.">
+              <Icon type="question-circle-o" />
+            </Tooltip>
+            :
+          </label>
+          <div style={{ display: 'flex', alignItems: 'center' }}>
+            {width > 480 && (
+              <Slider
+                id="numJurors"
+                min={1}
+                max={33}
+                onChange={onNumJurorsChange}
+                value={numberOfJurors}
+                step={2}
+                style={{ flex: 1 }}
+              />
+            )}
+            <InputNumber
+              value={numberOfJurors}
+              min={1}
+              max={33}
+              defaultValue={3}
+              onChange={onNumJurorsChange}
+            />
+          </div>
         </StyledInputContainer>
       </StyledContainer>
       Arbitration Cost:{' '}

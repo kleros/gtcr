@@ -1,20 +1,34 @@
-import React, { useEffect, useState, useCallback } from 'react'
-import { Card, Icon, Tooltip, Form, Switch, Upload, message, Alert } from 'antd'
+import React, { useEffect, useState, useCallback, useMemo } from 'react'
+import {
+  Card,
+  Icon,
+  Tooltip,
+  Form,
+  Switch,
+  Upload,
+  message,
+  Alert,
+  Slider,
+  InputNumber
+} from 'antd'
 import { withFormik, Field } from 'formik'
 import PropTypes from 'prop-types'
 import * as yup from 'yup'
 import styled from 'styled-components/macro'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { useWeb3Context } from 'web3-react'
+import { useDebounce } from 'use-debounce/lib'
+import { getAddress, bigNumberify, parseEther } from 'ethers/utils'
 import CustomInput from '../../components/custom-input'
 import itemTypes from '../../utils/item-types'
 import ipfsPublish from '../../utils/ipfs-publish'
 import { sanitize } from '../../utils/string'
-import { useWeb3Context } from 'web3-react'
-import { useDebounce } from 'use-debounce/lib'
 import useNetworkEnvVariable from '../../hooks/network-env'
 import useArbitrationCost from '../../hooks/arbitration-cost'
-import { getAddress } from 'ethers/utils'
 import KlerosParams from './kleros-params'
 import BaseDepositInput from '../../components/base-deposit-input'
+import ETHAmount from '../../components/eth-amount'
+import useWindowDimensions from '../../hooks/window-dimensions'
 
 const StyledUpload = styled(Upload)`
   & > .ant-upload.ant-upload-select-picture-card {
@@ -24,6 +38,16 @@ const StyledUpload = styled(Upload)`
 
 const StyledAlert = styled(Alert)`
   margin-bottom: 32px;
+`
+
+const StyledDepositContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 24px;
+`
+
+const StyledSliderContainer = styled.div`
+  display: flex;
 `
 
 const UploadButton = ({ loading }) => (
@@ -53,9 +77,11 @@ const RelTCRParams = ({
   ...rest
 }) => {
   const { values, setTcrState } = rest
+  const { width } = useWindowDimensions()
   const [uploading, setUploading] = useState()
   const [advancedOptions, setAdvancedOptions] = useState()
   const { library, networkId } = useWeb3Context()
+  const [depositVal, setDepositVal] = useState(0.05)
   const [debouncedArbitrator] = useDebounce(values.relArbitratorAddress, 1000)
   const {
     arbitrator: klerosAddress,
@@ -122,87 +148,28 @@ const RelTCRParams = ({
     return isPDF && isLt10M
   }, [])
 
+  const onChangeDepositVal = useCallback(
+    value => {
+      if (isNaN(value)) return
+
+      setDepositVal(value)
+      setFieldValue('relSubmissionBaseDeposit', value)
+      setFieldValue('relRemovalBaseDeposit', value)
+      setFieldValue('relRemovalChallengeBaseDeposit', value)
+    },
+    [setFieldValue]
+  )
+
+  const totalDepositSlider = useMemo(() => {
+    if (!arbitrationCost) return null
+    const d = parseEther(Number(depositVal).toString())
+    const a = arbitrationCost || bigNumberify(0)
+    return bigNumberify(d).add(bigNumberify(a))
+  }, [arbitrationCost, depositVal])
+
   return (
     <Card title="Choose the parameters of the Badges list">
       <Form layout="vertical" id={formId} onSubmit={handleSubmit}>
-        <BaseDepositInput
-          name="relSubmissionBaseDeposit"
-          error={errors.relSubmissionBaseDeposit}
-          touched={touched.relSubmissionBaseDeposit}
-          arbitrationCost={arbitrationCost}
-          label={
-            <span>
-              Submission Base Deposit&nbsp;
-              <Tooltip title="This will be the deposit required to submit connect a badge and also the amount awarded to successful challengers. If the value is too low, people will not look for flaws in the submissions and bad ones could make it through. If it is too high, the list will be secure, but people will be afraid to connect badges so there will be few available badges.">
-                <Icon type="question-circle-o" />
-              </Tooltip>
-            </span>
-          }
-          {...rest}
-        />
-        <BaseDepositInput
-          name="relRemovalBaseDeposit"
-          error={errors.relRemovalBaseDeposit}
-          touched={touched.relRemovalBaseDeposit}
-          arbitrationCost={arbitrationCost}
-          label={
-            <span>
-              Removal Base Deposit&nbsp;
-              <Tooltip title=" This will be the deposit required to disconnect a badge and also the amount awarded to successful challengers. If the value is too low, people will not look for flaws in removal requests and compliant badges could be disconnected. If it is too high, people will be afraid to remove non compliant badges, so a badge that should not be registerd would stay longer than it should.">
-                <Icon type="question-circle-o" />
-              </Tooltip>
-            </span>
-          }
-          {...rest}
-        />
-        <BaseDepositInput
-          name="relSubmissionChallengeBaseDeposit"
-          error={errors.relSubmissionChallengeBaseDeposit}
-          touched={touched.relSubmissionChallengeBaseDeposit}
-          arbitrationCost={arbitrationCost}
-          label={
-            <span>
-              Challenge Submission Base Deposit&nbsp;
-              <Tooltip title="This is the deposit required to challenge a submission. It will be either reimbursed to the challenger or awarded to the submitter depending on who wins the dispute.">
-                <Icon type="question-circle-o" />
-              </Tooltip>
-            </span>
-          }
-          {...rest}
-        />
-        <BaseDepositInput
-          name="relRemovalChallengeBaseDeposit"
-          error={errors.relRemovalChallengeBaseDeposit}
-          touched={touched.relRemovalChallengeBaseDeposit}
-          arbitrationCost={arbitrationCost}
-          label={
-            <span>
-              Challenge Removal Base Deposit&nbsp;
-              <Tooltip title="This is the deposit required to challenge a removal request. It will be either reimbursed to the challenger or awarded to the party that removed the item depending on who wins the dispute.">
-                <Icon type="question-circle-o" />
-              </Tooltip>
-            </span>
-          }
-          {...rest}
-        />
-        <CustomInput
-          name="relChallengePeriodDuration"
-          placeholder="5"
-          addonAfter="Hours"
-          error={errors.relChallengePeriodDuration}
-          touched={touched.relChallengePeriodDuration}
-          type={itemTypes.NUMBER}
-          step={1}
-          label={
-            <span>
-              Challenge Period Duration (hours)&nbsp;
-              <Tooltip title="The length of the challenge period in hours.">
-                <Icon type="question-circle-o" />
-              </Tooltip>
-            </span>
-          }
-          {...rest}
-        />
         <div style={{ marginBottom: '26px' }}>
           <div className="ant-col ant-form-item-label">
             <label htmlFor="rel-primary-document">
@@ -244,6 +211,90 @@ const RelTCRParams = ({
             )}
           </StyledUpload>
         </div>
+        {!advancedOptions && (
+          <StyledDepositContainer>
+            <label htmlFor="depositSlider">
+              Deposit&nbsp;
+              <Tooltip title="The deposit is the sum of the challenge reward bounty and the arbitration cost.">
+                <Icon type="question-circle-o" />
+              </Tooltip>
+              :{' '}
+              <ETHAmount amount={totalDepositSlider} decimals={3} displayUnit />
+            </label>
+            <StyledSliderContainer>
+              <div
+                style={{
+                  flex: 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  marginRight: '24px'
+                }}
+              >
+                {width > 480 && (
+                  <>
+                    <FontAwesomeIcon
+                      icon="coins"
+                      style={{ marginRight: '12px' }}
+                    />{' '}
+                    Cheaper
+                  </>
+                )}
+                <Slider
+                  id="depositSlider"
+                  min={0}
+                  max={15}
+                  onChange={onChangeDepositVal}
+                  value={typeof depositVal === 'number' ? depositVal : 0}
+                  step={0.01}
+                  style={{ flex: 1, margin: '0 24px' }}
+                />
+                {width > 480 && (
+                  <>
+                    <FontAwesomeIcon
+                      icon="shield-alt"
+                      style={{ marginRight: '12px' }}
+                    />{' '}
+                    Safer
+                  </>
+                )}
+              </div>
+              <InputNumber
+                min={0}
+                max={15}
+                step={0.01}
+                value={depositVal}
+                onChange={onChangeDepositVal}
+              />
+            </StyledSliderContainer>
+          </StyledDepositContainer>
+        )}
+        {!isKlerosArbitrator && policyAddress ? (
+          <CustomInput
+            name="relArbitratorExtraData"
+            placeholder="0x7331deadbeef..."
+            hasFeedback
+            error={errors.relArbitratorExtraData}
+            touched={touched.relArbitratorExtraData}
+            label={
+              <span>
+                Arbitrator Extra Data&nbsp;
+                <Tooltip
+                  title={`The extra data for the arbitrator. See ERC 792 for more information. Default: ${defaultArbDataLabel}`}
+                >
+                  <Icon type="question-circle-o" />
+                </Tooltip>
+              </span>
+            }
+            {...rest}
+          />
+        ) : (
+          <KlerosParams
+            arbitratorExtraData={values.relArbitratorExtraData}
+            klerosAddress={debouncedArbitrator}
+            policyAddress={policyAddress}
+            setArbitratorExtraData={setRelArbitratorExtraData}
+          />
+        )}
         <Form.Item
           label="Advanced options"
           style={{ marginBottom: '12px', display: 'flex' }}
@@ -255,6 +306,84 @@ const RelTCRParams = ({
         </Form.Item>
         {advancedOptions && (
           <>
+            <BaseDepositInput
+              name="relSubmissionBaseDeposit"
+              error={errors.relSubmissionBaseDeposit}
+              touched={touched.relSubmissionBaseDeposit}
+              arbitrationCost={arbitrationCost}
+              label={
+                <span>
+                  Submission Challenge Bounty&nbsp;
+                  <Tooltip title="This will be the deposit required to submit connect a badge and also the amount awarded to successful challengers. If the value is too low, people will not look for flaws in the submissions and bad ones could make it through. If it is too high, the list will be secure, but people will be afraid to connect badges so there will be few available badges.">
+                    <Icon type="question-circle-o" />
+                  </Tooltip>
+                </span>
+              }
+              {...rest}
+            />
+            <BaseDepositInput
+              name="relRemovalBaseDeposit"
+              error={errors.relRemovalBaseDeposit}
+              touched={touched.relRemovalBaseDeposit}
+              arbitrationCost={arbitrationCost}
+              label={
+                <span>
+                  Removal Challenge Bounty&nbsp;
+                  <Tooltip title=" This will be the deposit required to disconnect a badge and also the amount awarded to successful challengers. If the value is too low, people will not look for flaws in removal requests and compliant badges could be disconnected. If it is too high, people will be afraid to remove non compliant badges, so a badge that should not be registerd would stay longer than it should.">
+                    <Icon type="question-circle-o" />
+                  </Tooltip>
+                </span>
+              }
+              {...rest}
+            />
+            <BaseDepositInput
+              name="relSubmissionChallengeBaseDeposit"
+              error={errors.relSubmissionChallengeBaseDeposit}
+              touched={touched.relSubmissionChallengeBaseDeposit}
+              arbitrationCost={arbitrationCost}
+              label={
+                <span>
+                  Incorrect Challenge Compensation&nbsp;
+                  <Tooltip title="This is the deposit required to challenge a submission. It will be either reimbursed to the challenger or awarded to the submitter depending on who wins the dispute.">
+                    <Icon type="question-circle-o" />
+                  </Tooltip>
+                </span>
+              }
+              {...rest}
+            />
+            <BaseDepositInput
+              name="relRemovalChallengeBaseDeposit"
+              error={errors.relRemovalChallengeBaseDeposit}
+              touched={touched.relRemovalChallengeBaseDeposit}
+              arbitrationCost={arbitrationCost}
+              label={
+                <span>
+                  Incorrect Removal Challenge Compensation&nbsp;
+                  <Tooltip title="This is the deposit required to challenge a removal request. It will be either reimbursed to the challenger or awarded to the party that removed the item depending on who wins the dispute.">
+                    <Icon type="question-circle-o" />
+                  </Tooltip>
+                </span>
+              }
+              {...rest}
+            />
+            <CustomInput
+              name="relChallengePeriodDuration"
+              placeholder="5"
+              addonAfter="Hours"
+              error={errors.relChallengePeriodDuration}
+              touched={touched.relChallengePeriodDuration}
+              type={itemTypes.NUMBER}
+              step={1}
+              label={
+                <span>
+                  Challenge Period Duration (hours)&nbsp;
+                  <Tooltip title="The length of the challenge period in hours.">
+                    <Icon type="question-circle-o" />
+                  </Tooltip>
+                </span>
+              }
+              {...rest}
+            />
             <CustomInput
               name="relGovernorAddress"
               placeholder="0x7331deadbeef..."
@@ -291,33 +420,6 @@ const RelTCRParams = ({
               }
               {...rest}
             />
-            {!isKlerosArbitrator && policyAddress ? (
-              <CustomInput
-                name="relArbitratorExtraData"
-                placeholder="0x7331deadbeef..."
-                hasFeedback
-                error={errors.relArbitratorExtraData}
-                touched={touched.relArbitratorExtraData}
-                label={
-                  <span>
-                    Arbitrator Extra Data&nbsp;
-                    <Tooltip
-                      title={`The extra data for the arbitrator. See ERC 792 for more information. Default: ${defaultArbDataLabel}`}
-                    >
-                      <Icon type="question-circle-o" />
-                    </Tooltip>
-                  </span>
-                }
-                {...rest}
-              />
-            ) : (
-              <KlerosParams
-                arbitratorExtraData={values.arbitratorExtraData}
-                klerosAddress={debouncedArbitrator}
-                policyAddress={policyAddress}
-                setArbitratorExtraData={setRelArbitratorExtraData}
-              />
-            )}
             <StyledAlert
               message="To appeal, in addition to paying enough fees to cover the payment to the jurors in case the appeal is lost, parties must also pay an additional stake. The stake of the side that ultimately loses the dispute is used as the reward given to the appeal fee contributors that funded the side that ultimately wins the dispute. This amount is calculated proportionally to the total juror fees required for appeal using the multipliers below, given in basis points. For example, a multiplier of 1000 will result in the stake being 10% of the total juror fees."
               type="info"

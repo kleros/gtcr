@@ -1,4 +1,4 @@
-import { keccak256, getAddress } from 'ethers/utils'
+import { keccak256, getAddress, bigNumberify } from 'ethers/utils'
 
 export const truncateETHAddress = ethAddr =>
   `${ethAddr.slice(0, 5)}...${ethAddr.slice(40)}`
@@ -55,4 +55,16 @@ export const isETHAddress = address => {
     } catch {
       return false
     }
+}
+
+export const jurorsAndCourtIDFromExtraData = arbitratorExtraData => {
+  const courtID = bigNumberify(
+    `0x${arbitratorExtraData.slice(2, 66)}`
+  ).toString()
+
+  const numberOfJurors = bigNumberify(
+    `0x${arbitratorExtraData.slice(66, 130)}`
+  ).toString()
+
+  return { courtID, numberOfJurors }
 }

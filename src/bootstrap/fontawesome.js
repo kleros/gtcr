@@ -13,7 +13,8 @@ import {
   faBell,
   faFileAlt,
   faCheck,
-  faExclamationTriangle
+  faExclamationTriangle,
+  faShieldAlt
 } from '@fortawesome/free-solid-svg-icons'
 
 library.add(
@@ -30,5 +31,6 @@ library.add(
   faBell,
   faFileAlt,
   faCheck,
-  faExclamationTriangle
+  faExclamationTriangle,
+  faShieldAlt
 )
