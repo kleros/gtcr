@@ -13,6 +13,9 @@ import { Link } from 'react-router-dom'
 const StyledItemCol = styled.div`
   margin-bottom: 8px;
   text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 `
 
 const StyledResult = styled(Result)`
