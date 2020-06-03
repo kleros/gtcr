@@ -123,7 +123,7 @@ const MenuItems = ({ TCR2_ADDRESS }) => [
   <StyledMenuItem key="factory-item">
     <NavLink to="/factory">Create a List</NavLink>
   </StyledMenuItem>,
-  <StyledMenuItem key="factory-item">
+  <StyledMenuItem key="twitter-link">
     <a
       href="https://twitter.com/KlerosCurate"
       target="_blank"
@@ -132,7 +132,7 @@ const MenuItems = ({ TCR2_ADDRESS }) => [
       Follow Curate <Icon type="twitter" />
     </a>
   </StyledMenuItem>,
-  <StyledMenuItem key="factory-item">
+  <StyledMenuItem key="telegram-link">
     <a href="https://t.me/kleros" target="_blank" rel="noopener noreferrer">
       Get Help <Icon type="info-circle" />
     </a>

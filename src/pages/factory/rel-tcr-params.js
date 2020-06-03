@@ -236,7 +236,7 @@ const RelTCRParams = ({
                       icon="coins"
                       style={{ marginRight: '12px' }}
                     />{' '}
-                    Cheaper
+                    Cheapest
                   </>
                 )}
                 <Slider
@@ -254,7 +254,7 @@ const RelTCRParams = ({
                       icon="shield-alt"
                       style={{ marginRight: '12px' }}
                     />{' '}
-                    Safer
+                    Safest
                   </>
                 )}
               </div>

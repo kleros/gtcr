@@ -374,7 +374,7 @@ const TCRParams = ({
                       icon="coins"
                       style={{ marginRight: '12px' }}
                     />
-                    Cheaper
+                    Cheapest
                   </>
                 )}
                 <Slider
@@ -392,7 +392,7 @@ const TCRParams = ({
                       icon="shield-alt"
                       style={{ marginRight: '12px' }}
                     />{' '}
-                    Safer
+                    Safest
                   </>
                 )}
               </div>
