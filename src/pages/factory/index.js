@@ -274,10 +274,10 @@ export default () => {
   const deployCostMessage = useMemo(() => {
     const message = 'Creating a list requires two transactions.'
     if (!process.env.REACT_APP_ETH_GAS_STATION)
-      return `${message} Depending on network usage, this can be costly. We recommend that you familiarize yourself with all the parameters to avoid mistakes.`
+      return `${message} Depending on network usage, this can be costly. To learn how this works, we recommend you deploy on the Kovan network first.`
 
     if (costETH)
-      return `${message} The total cost at the moment is approximately ${costETH} ETH. We recommend that you familiarize yourself with all the parameters to avoid mistakes.`
+      return `${message} The total cost at the moment is approximately ${costETH} ETH. To learn how this works, we recommend you deploy on the Kovan network first.`
   }, [costETH])
 
   return (
