@@ -2,13 +2,13 @@ import React, { useState, useCallback } from 'react'
 import PropTypes from 'prop-types'
 import { Card, Button, Result } from 'antd'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import ItemStatusBadge from '../../components/item-status-badge'
+// eslint-disable-next-line import/named
+import styled, { css } from 'styled-components/macro'
 import TCRCardContent from '../../components/tcr-card-content'
 import ItemCardContent from '../../components/item-card-content'
 import BNPropType from '../../prop-types/bn'
 import { itemToStatusCode, STATUS_CODE } from '../../utils/item-status'
-// eslint-disable-next-line import/named
-import styled, { css } from 'styled-components/macro'
+import ItemCardTitle from './item-card-title'
 
 const FlipCardInner = styled.div`
   text-align: center;
@@ -71,6 +71,11 @@ const StyledCardInfo = styled(Card)`
 
   & > .ant-card-head {
     display: flex;
+
+    & > .ant-card-head-wrapper {
+      width: 100%;
+      font-size: 14px;
+    }
   }
 
   & > .ant-card-body {
@@ -142,7 +147,7 @@ const CardItemInfo = ({
   return (
     <CardBlock>
       <StyledCardInfo
-        title={<ItemStatusBadge statusCode={statusCode} dark />}
+        title={<ItemCardTitle statusCode={statusCode} tcrData={item.tcrData} />}
         actions={
           !forceReveal &&
           toggleReveal && [

@@ -22,6 +22,7 @@ import { WalletContext } from '../../bootstrap/wallet-context'
 import BNPropType from '../../prop-types/bn'
 import useHumanizedCountdown from '../../hooks/countdown'
 import useAppealTime from '../../hooks/appeal-time'
+import ETHAmount from '../../components/eth-amount'
 
 const StyledDescriptions = styled(Descriptions)`
   flex-wrap: wrap;
@@ -81,7 +82,9 @@ const ItemStatusCard = ({ item, timestamp, request }) => {
     challengePeriodDuration,
     tcrAddress,
     submissionDeposit,
-    gtcrView
+    gtcrView,
+    removalBaseDeposit,
+    submissionBaseDeposit
   } = useContext(TCRViewContext)
 
   // Get remaining appeal time, if any and build countdown.
@@ -115,6 +118,12 @@ const ItemStatusCard = ({ item, timestamp, request }) => {
 
   const { disputeStatus, currentRuling, disputed } = item
   const statusCode = itemToStatusCode(item, timestamp, challengePeriodDuration)
+
+  let bounty
+  if (typeof statusCode === 'number')
+    if (statusCode === STATUS_CODE.SUBMITTED) bounty = submissionBaseDeposit
+    else if (statusCode === STATUS_CODE.REMOVAL_REQUESTED)
+      bounty = removalBaseDeposit
 
   const executeRequest = async (_, signer) => {
     const gtcr = new ethers.Contract(tcrAddress, _gtcr, signer)
@@ -181,6 +190,13 @@ const ItemStatusCard = ({ item, timestamp, request }) => {
         <StyledDescriptions
           column={{ xxl: 3, xl: 3, lg: 2, md: 2, sm: 1, xs: 1 }}
         >
+          {hasPendingRequest(item.status) && !disputed && (
+            <>
+              <Descriptions.Item label="Bounty">
+                <ETHAmount amount={bounty} decimals={3} displayUnit />
+              </Descriptions.Item>
+            </>
+          )}
           {hasPendingRequest(item.status) && (
             <Descriptions.Item label="Request Type">
               {item.status === CONTRACT_STATUS.REGISTRATION_REQUESTED

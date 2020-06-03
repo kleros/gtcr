@@ -18,7 +18,7 @@ export const filterLabel = {
   [FILTER_KEYS.ABSENT]: 'Rejected',
   [FILTER_KEYS.REGISTERED]: 'Registered',
   [FILTER_KEYS.SUBMITTED]: 'Submitted',
-  [FILTER_KEYS.REMOVAL_REQUESTED]: 'Removal Requested',
+  [FILTER_KEYS.REMOVAL_REQUESTED]: 'Removing',
   [FILTER_KEYS.CHALLENGED_SUBMISSIONS]: 'Challenged Submissions',
   [FILTER_KEYS.CHALLENGED_REMOVALS]: 'Challenged Removals',
   [FILTER_KEYS.MY_SUBMISSIONS]: 'My Submissions',

@@ -37,7 +37,7 @@ export const STATUS_TEXT = {
   [STATUS_CODE.REJECTED]: 'Rejected',
   [STATUS_CODE.REGISTERED]: 'Registered',
   [STATUS_CODE.SUBMITTED]: 'Submitted',
-  [STATUS_CODE.REMOVAL_REQUESTED]: 'Removal Requested',
+  [STATUS_CODE.REMOVAL_REQUESTED]: 'Removing',
   [STATUS_CODE.CHALLENGED]: 'Challenged',
   [STATUS_CODE.CROWDFUNDING]: 'Crowdfunding',
   [STATUS_CODE.CROWDFUNDING_WINNER]: 'Crowdfunding Winner',

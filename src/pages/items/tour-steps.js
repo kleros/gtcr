@@ -89,7 +89,7 @@ const itemsTourSteps = metadata => {
           ? capitalizeFirstLetter(itemNamePlural) ||
             `${capitalizeFirstLetter(itemName)}s`
           : 'items'
-      } in the "Submitted" and "Removal Requested" state can be challenged to potentially earn rewards.`
+      } in the "Submitted" and "Removing" state can be challenged to potentially earn rewards.`
     }
   ]
 }
