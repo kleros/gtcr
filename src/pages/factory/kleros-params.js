@@ -196,7 +196,7 @@ const KlerosParams = ({
                 onChange={onNumJurorsChange}
                 value={numberOfJurors}
                 step={2}
-                style={{ flex: 1 }}
+                style={{ flex: 1, marginRight: '24px' }}
               />
             )}
             <InputNumber

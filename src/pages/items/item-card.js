@@ -1,5 +1,4 @@
 import React, { useState, useCallback } from 'react'
-import { Link } from 'react-router-dom'
 import PropTypes from 'prop-types'
 import { Card, Button, Result } from 'antd'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
@@ -68,7 +67,6 @@ const StyledCardInfo = styled(Card)`
   display: flex;
   flex-direction: column;
   position: relative;
-  pointer-events: none;
   z-index: 1;
 
   & > .ant-card-head {
@@ -94,14 +92,6 @@ const StyledCardInfo = styled(Card)`
   }
 `
 
-const CardLink = styled(Link)`
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  right: 0;
-`
-
 const CardBlock = styled.div`
   position: relative;
   height: 100%;
@@ -122,6 +112,8 @@ const CardItemInfo = ({
   forceReveal
 }) => {
   let content
+  const { metadata } = metaEvidence || {}
+  const { itemName, isTCRofTCRs } = metadata || {}
   if (item.errors.length > 0)
     content = (
       <Result
@@ -132,15 +124,23 @@ const CardItemInfo = ({
       />
     )
   else
-    content = metaEvidence.metadata.isTCRofTCRs ? (
-      <TCRCardContent tcrAddress={item.columns[0].value} />
+    content = isTCRofTCRs ? (
+      <TCRCardContent
+        ID={item.tcrData.ID}
+        tcrAddress={item.columns[0].value}
+        itemName={itemName}
+        currentTCRAddress={tcrAddress}
+      />
     ) : (
-      <ItemCardContent item={item} />
+      <ItemCardContent
+        item={item}
+        tcrAddress={tcrAddress}
+        itemName={itemName}
+      />
     )
 
   return (
     <CardBlock>
-      <CardLink to={`/tcr/${tcrAddress}/${item.tcrData.ID}`} />
       <StyledCardInfo
         title={<ItemStatusBadge statusCode={statusCode} dark />}
         actions={
@@ -227,9 +227,9 @@ const ItemCard = ({
           <CardItemInfo
             item={item}
             statusCode={statusCode}
-            {...rest}
             toggleReveal={toggleReveal}
             forceReveal={forceReveal}
+            {...rest}
           />
         </FlipCardBack>
       </FlipCardInner>
