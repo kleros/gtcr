@@ -46,13 +46,13 @@ const RequestTimelines = ({ item, requests }) => {
     <div id="request-timelines">
       {!hasPendingRequest(item.status) && (
         <Divider orientation="left">{`${capitalizeFirstLetter(itemName) ||
-          'Item'} Timeline`}</Divider>
+          'Item'} History`}</Divider>
       )}
       {hasPendingRequest(item.status) && (
         <Row gutter={16}>
           <Col xs={14} sm={17} md={19} lg={20} xl={20} xxl={21}>
             <Divider orientation="left">{`${capitalizeFirstLetter(itemName) ||
-              'Item'} Timeline`}</Divider>
+              'Item'} History`}</Divider>
           </Col>
           <Col xs={5} sm={5} md={5} lg={4} xl={3} xxl={3}>
             <StyledButton

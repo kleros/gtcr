@@ -68,3 +68,5 @@ export const jurorsAndCourtIDFromExtraData = arbitratorExtraData => {
 
   return { courtID, numberOfJurors }
 }
+
+export const getArticleFor = str => (str && isVowel(str[0]) ? 'an' : 'a')

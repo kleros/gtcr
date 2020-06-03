@@ -331,7 +331,7 @@ const TCRParams = ({
             <CustomInput
               style={{ marginBottom: 0 }}
               name="itemName"
-              placeholder="Sock"
+              placeholder="sock"
               hasFeedback
               error={errors.itemName}
               touched={touched.itemName}
@@ -340,6 +340,25 @@ const TCRParams = ({
                   Item Name&nbsp;
                   <Tooltip
                     title={`Enter a noun that describes the item that will be listed. This will replace the word "item" in the list interface and notifications. For example: if you set this to the word "Socks", on the list interface you will see buttons such as "Submit Socks" and "Challenge Socks".`}
+                  >
+                    <Icon type="question-circle-o" />
+                  </Tooltip>
+                </span>
+              }
+              {...rest}
+            />
+            <CustomInput
+              style={{ marginBottom: 0 }}
+              name="itemNamePlural"
+              placeholder="socks"
+              hasFeedback
+              error={errors.itemNamePlural}
+              touched={touched.itemNamePlural}
+              label={
+                <span>
+                  Item Name Plural&nbsp;
+                  <Tooltip
+                    title={`This is the plural of the item name. In other words, if "Item Name" is "bus", this should be "busses"`}
                   >
                     <Icon type="question-circle-o" />
                   </Tooltip>
@@ -692,6 +711,10 @@ const validationSchema = yup.object().shape({
   itemName: yup
     .string()
     .required('An item name is required.')
+    .max(60, 'The item name must be less than 20 characters long.'),
+  itemNamePlural: yup
+    .string()
+    .required('The plural of the item name is required.')
     .max(60, 'The item name must be less than 20 characters long.'),
   submissionBaseDeposit: yup
     .number()

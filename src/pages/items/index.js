@@ -452,6 +452,7 @@ const Items = ({ search, history }) => {
     )
 
   const { metadata } = metaEvidence || {}
+  const { isConnectedTCR } = metadata || {}
 
   return (
     <>
@@ -567,9 +568,9 @@ const Items = ({ search, history }) => {
             </>
           </Spin>
         </StyledContent>
-        {metaEvidence && (
+        {metaEvidence && metadata && (
           <>
-            {metaEvidence.metadata.isConnectedTCR ? (
+            {isConnectedTCR ? (
               <SubmitConnectModal
                 visible={submissionFormOpen}
                 onCancel={() => setSubmissionFormOpen(false)}
@@ -588,7 +589,10 @@ const Items = ({ search, history }) => {
           </>
         )}
       </StyledLayoutContent>
-      <AppTour dismissedKey={ITEMS_TOUR_DISMISSED} steps={itemsTourSteps} />
+      <AppTour
+        dismissedKey={ITEMS_TOUR_DISMISSED}
+        steps={itemsTourSteps(metadata)}
+      />
     </>
   )
 }
