@@ -15,7 +15,7 @@ import {
   NavLink,
   Redirect
 } from 'react-router-dom'
-import { Layout, Menu, Spin, message } from 'antd'
+import { Layout, Menu, Spin, message, Icon } from 'antd'
 import { register } from './service-worker'
 import { WalletProvider } from './wallet-context'
 import { TourProvider } from './tour-context'
@@ -122,6 +122,20 @@ const MenuItems = ({ TCR2_ADDRESS }) => [
   </StyledMenuItem>,
   <StyledMenuItem key="factory-item">
     <NavLink to="/factory">Create a List</NavLink>
+  </StyledMenuItem>,
+  <StyledMenuItem key="factory-item">
+    <a
+      href="https://twitter.com/KlerosCurate"
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      Follow Curate <Icon type="twitter" />
+    </a>
+  </StyledMenuItem>,
+  <StyledMenuItem key="factory-item">
+    <a href="https://t.me/kleros" target="_blank" rel="noopener noreferrer">
+      Get Help <Icon type="info-circle" />
+    </a>
   </StyledMenuItem>
 ]
 
