@@ -133,7 +133,11 @@ const MenuItems = ({ TCR2_ADDRESS }) => [
     </a>
   </StyledMenuItem>,
   <StyledMenuItem key="telegram-link">
-    <a href="https://t.me/kleros" target="_blank" rel="noopener noreferrer">
+    <a
+      href="https://t.me/KlerosIntegration"
+      target="_blank"
+      rel="noopener noreferrer"
+    >
       Get Help <Icon type="info-circle" />
     </a>
   </StyledMenuItem>
