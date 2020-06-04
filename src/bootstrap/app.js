@@ -46,7 +46,7 @@ const StyledLayoutSider = styled(Layout.Sider)`
   position: fixed;
   z-index: 2000;
 
-  @media (min-width: 768px) {
+  @media (min-width: 992px) {
     display: none;
   }
 
@@ -244,7 +244,7 @@ export default () => {
             <WalletProvider>
               <StyledLayout>
                 <StyledLayoutSider
-                  breakpoint="md"
+                  breakpoint="lg"
                   collapsedWidth={0}
                   collapsed={isMenuClosed}
                   onClick={() =>

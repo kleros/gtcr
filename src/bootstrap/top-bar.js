@@ -19,10 +19,14 @@ const StyledCol = styled(Col)`
   display: flex;
   justify-content: center;
   height: 67px;
+
+  @media (max-width: 992px) {
+    width: 100%;
+  }
 `
 
 const StyledCenter = styled(StyledCol)`
-  @media (max-width: 768px) {
+  @media (max-width: 992px) {
     &.ant-col-xs-0 {
       display: none;
     }
@@ -32,7 +36,7 @@ const StyledCenter = styled(StyledCol)`
 const StyledColStart = styled(StyledCol)`
   justify-content: flex-start;
 
-  @media (max-width: 576px) {
+  @media (max-width: 992px) {
     &.ant-col-xs-0 {
       display: none;
     }
@@ -42,7 +46,7 @@ const StyledColStart = styled(StyledCol)`
 const StyledColEnd = styled(StyledCol)`
   justify-content: flex-end;
 
-  @media (max-width: 576px) {
+  @media (max-width: 992px) {
     &.ant-col-xs-24 {
       justify-content: center;
     }
