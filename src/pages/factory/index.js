@@ -1,10 +1,9 @@
-import { Steps, Button, Icon, Card, Typography, Alert, Modal } from 'antd'
-import React, { useState, useEffect, useMemo, useCallback } from 'react'
+import { Steps, Button, Icon, Card, Typography, Modal } from 'antd'
+import React, { useState, useEffect, useCallback } from 'react'
 import PropTypes from 'prop-types'
 import { useDebounce } from 'use-debounce'
 import styled from 'styled-components/macro'
 import { useWeb3Context } from 'web3-react'
-import { formatEther, parseUnits } from 'ethers/utils'
 import TCRParams from './tcr-params'
 import ItemParams from './item-params'
 import Deploy from './deploy'
@@ -40,10 +39,6 @@ const StyledBanner = styled.div`
   background: linear-gradient(270deg, #f2e3ff 22.92%, #ffffff 76.25%);
   box-shadow: 0px 3px 24px #bc9cff;
   color: #4d00b4;
-`
-
-const StyledAlert = styled(Alert)`
-  margin-bottom: 42px;
 `
 
 const StyledGrid = styled.div`
@@ -237,7 +232,6 @@ const useCachedFactory = version => {
 }
 
 export default () => {
-  const [costETH, setCostETH] = useState()
   const cachedFactory = useCachedFactory(version)
   const {
     tcrState: { currStep, transactions },
@@ -258,30 +252,6 @@ export default () => {
     })
   }, [resetTcrState])
 
-  useEffect(() => {
-    ;(async () => {
-      const approximateDeployGas = 3800000
-      const { average } = await (
-        await fetch(process.env.REACT_APP_ETH_GAS_STATION)
-      ).json() // Response is in Gwei * 10.
-      const deployCostGwei = (average / 10) * approximateDeployGas * 2 // Multiply by 2 since we deploy 2 contracts.
-      setCostETH(
-        Number(
-          formatEther(parseUnits(deployCostGwei.toString(), 'gwei'))
-        ).toFixed(2)
-      )
-    })()
-  }, [])
-
-  const deployCostMessage = useMemo(() => {
-    const message = 'Creating a list requires two transactions.'
-    if (!process.env.REACT_APP_ETH_GAS_STATION)
-      return `${message} Depending on network usage, this can be costly. To learn how this works, we recommend you deploy on the Kovan network first.`
-
-    if (costETH)
-      return `${message} The total cost at the moment is approximately ${costETH} ETH. To learn how this works, we recommend you deploy on the Kovan network first.`
-  }, [costETH])
-
   return (
     <>
       <WarningBanner />
@@ -291,15 +261,6 @@ export default () => {
         </Typography.Title>
       </StyledBanner>
       <StyledLayoutContent>
-        {deployCostMessage && (
-          <StyledAlert
-            message="Creation Cost"
-            description={deployCostMessage}
-            type="info"
-            showIcon
-            closable
-          />
-        )}
         <Steps current={currStep - 1}>
           <Step title="List Parameters" />
           <Step title="Item Parameters" />
