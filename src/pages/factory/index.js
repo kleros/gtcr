@@ -301,7 +301,7 @@ export default () => {
           />
         )}
         <Steps current={currStep - 1}>
-          <Step title="List Paramters" />
+          <Step title="List Parameters" />
           <Step title="Item Parameters" />
           <Step title="Badges List Parameters" />
           <Step title="Deploy" />

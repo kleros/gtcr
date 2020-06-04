@@ -79,7 +79,7 @@ const TCRCardContent = ({ tcrAddress, currentTCRAddress, ID }) => {
         </StyledItemCol>
         <StyledItemCol>
           <Link to={`/tcr/${currentTCRAddress}/${ID}`}>
-            <Button>List Details</Button>
+            <Button>Details</Button>
           </Link>
           <Button
             type="primary"

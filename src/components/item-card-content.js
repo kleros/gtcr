@@ -15,7 +15,7 @@ const StyledButton = styled(Button)`
   pointer-events: auto;
 `
 
-const ItemCardContent = ({ item, tcrAddress, itemName }) => (
+const ItemCardContent = ({ item, tcrAddress }) => (
   <>
     {item.columns
       .filter(col => col.isIdentifier || col.type === itemTypes.IMAGE)
@@ -25,7 +25,7 @@ const ItemCardContent = ({ item, tcrAddress, itemName }) => (
         </StyledItemCol>
       ))}
     <Link to={`/tcr/${tcrAddress}/${item.tcrData.ID}`}>
-      <StyledButton>{itemName || 'Item'} Details</StyledButton>
+      <StyledButton>Details</StyledButton>
     </Link>
   </>
 )
@@ -48,8 +48,7 @@ ItemCardContent.propTypes = {
       ID: PropTypes.string.isRequired
     }).isRequired
   }).isRequired,
-  tcrAddress: PropTypes.string.isRequired,
-  itemName: PropTypes.string.isRequired
+  tcrAddress: PropTypes.string.isRequired
 }
 
 export default ItemCardContent
