@@ -130,7 +130,7 @@ const RemoveModal = ({ item, itemName = 'item', fileURI, ...rest }) => {
             metadata && !metadata.requireRemovalEvidence ? removeItem : null
           }
         >
-          Remove
+          Send
         </Button>
       ]}
       {...rest}
