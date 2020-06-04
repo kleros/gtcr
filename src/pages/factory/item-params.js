@@ -75,7 +75,7 @@ const ItemParams = ({
   }
 
   return (
-    <Card title="Choose the item columns">
+    <Card title="Choose the item parameters">
       <Row>
         <Col span={24}>
           Is this a list of lists?

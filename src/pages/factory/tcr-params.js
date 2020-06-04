@@ -220,7 +220,7 @@ const TCRParams = ({
   }, [arbitrationCost, depositVal])
 
   return (
-    <Card title="Enter the item columns">
+    <Card title="Enter the list parameters">
       <Form layout="vertical" id={formId} onSubmit={handleSubmit}>
         <StyledTCRParamContainer>
           <StyledUploadContainer>
