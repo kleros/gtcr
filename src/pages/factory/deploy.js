@@ -74,9 +74,9 @@ const getTcrMetaEvidence = async tcrState => {
   const relMetadata = {
     tcrTitle: relTcrTitle,
     tcrDescription: `A List of lists related to ${tcrTitle}`,
-    columns: relColumns.toLowerCase(),
+    columns: relColumns,
     itemName: relItemName.toLowerCase(),
-    itemNamePlural: relItemNamePlural,
+    itemNamePlural: relItemNamePlural.toLowerCase(),
     isConnectedTCR: true,
     requireRemovalEvidence: relRequireRemovalEvidence,
     isTCRofTCRs: true
