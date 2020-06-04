@@ -21,13 +21,13 @@ const BannerText = (
     <div>
       Warning: This is beta software. There is{' '}
       <a
-        href="https://github.com/kleros/tcr/issues/20"
+        href="https://web.solidified.io/contract/5ed7efb180cc4000110f6371"
         target="_blank"
         rel="noopener noreferrer"
       >
         a bug bounty on Curate.
       </a>{' '}
-      Participate for a chance to win up to 25 ETH.
+      Participate for a chance to win up to 100 ETH.
     </div>
   </TextLoop>
 )
