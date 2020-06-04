@@ -225,7 +225,7 @@ const ItemCard = ({
             <FontAwesomeIcon icon="exclamation-triangle" size="2x" />
             <p>Warning: potentially offensive content</p>
             <Button type="primary" onClick={toggleReveal}>
-              Reveal
+              Show
             </Button>
           </CardNSFWWarn>
         </FlipCardFront>
