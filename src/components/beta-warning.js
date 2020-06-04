@@ -20,11 +20,7 @@ const BannerText = (
   <TextLoop mask>
     <div>
       Warning: This is beta software. There is{' '}
-      <a
-        href="https://web.solidified.io/contract/5ed7efb180cc4000110f6371"
-        target="_blank"
-        rel="noopener noreferrer"
-      >
+      <a href="https://web.solidified.io/contract/5ed7efb180cc4000110f6371">
         a bug bounty on Curate.
       </a>{' '}
       Participate for a chance to win up to 100 ETH.
@@ -38,13 +34,7 @@ const LoopBannerText = (
     <div>Win up to 25 ETH by...</div>
     <div>
       ...participating on the{' '}
-      <a
-        href="https://github.com/kleros/tcr/issues/20"
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        bug bounty.
-      </a>{' '}
+      <a href="https://github.com/kleros/tcr/issues/20">bug bounty.</a>{' '}
     </div>
   </TextLoop>
 )

@@ -133,11 +133,7 @@ const ChallengeModal = ({ item, itemName, statusCode, fileURI, ...rest }) => {
     >
       <Typography.Title level={4}>
         See the&nbsp;
-        <a
-          href={`${process.env.REACT_APP_IPFS_GATEWAY}${fileURI || ''}`}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
+        <a href={`${process.env.REACT_APP_IPFS_GATEWAY}${fileURI || ''}`}>
           Listing Criteria
         </a>
         .

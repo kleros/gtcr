@@ -145,8 +145,6 @@ const AddBadgeModal = ({
                       <a
                         href={`${process.env.REACT_APP_IPFS_GATEWAY}${fileURI ||
                           ''}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
                         style={{ textDecoration: 'underline' }}
                       >
                         Listing Criteria

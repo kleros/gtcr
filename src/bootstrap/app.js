@@ -124,20 +124,12 @@ const MenuItems = ({ TCR2_ADDRESS }) => [
     <NavLink to="/factory">Create a List</NavLink>
   </StyledMenuItem>,
   <StyledMenuItem key="twitter-link">
-    <a
-      href="https://twitter.com/KlerosCurate"
-      target="_blank"
-      rel="noopener noreferrer"
-    >
+    <a href="https://twitter.com/KlerosCurate">
       Follow Curate <Icon type="twitter" />
     </a>
   </StyledMenuItem>,
   <StyledMenuItem key="telegram-link">
-    <a
-      href="https://t.me/KlerosIntegration"
-      target="_blank"
-      rel="noopener noreferrer"
-    >
+    <a href="https://t.me/KlerosIntegration">
       Get Help <Icon type="info-circle" />
     </a>
   </StyledMenuItem>

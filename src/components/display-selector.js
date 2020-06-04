@@ -29,11 +29,7 @@ const DisplaySelector = ({ type, value, linkImage }) => {
     case itemTypes.IMAGE:
       return value ? (
         linkImage ? (
-          <a
-            href={`${process.env.REACT_APP_IPFS_GATEWAY}${value}`}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
+          <a href={`${process.env.REACT_APP_IPFS_GATEWAY}${value}`}>
             <StyledImage
               src={`${process.env.REACT_APP_IPFS_GATEWAY}${value}`}
               alt="item"

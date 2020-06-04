@@ -401,11 +401,7 @@ const Badges = ({ connectedTCRAddr, item, tcrAddress }) => {
                 />
               }
             >
-              <a
-                href={`/tcr/${tcrAddress}/${item.ID}`}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
+              <a href={`/tcr/${tcrAddress}/${item.ID}`}>
                 <StyledCol>
                   <StyledLogo
                     src={`${process.env.REACT_APP_IPFS_GATEWAY}${logoURI}`}

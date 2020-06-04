@@ -81,15 +81,9 @@ const TCRCardContent = ({ tcrAddress, currentTCRAddress, ID }) => {
           <Link to={`/tcr/${currentTCRAddress}/${ID}`}>
             <Button>Details</Button>
           </Link>
-          <Button
-            type="primary"
-            target="_blank"
-            rel="noopener noreferrer"
-            href={`/tcr/${tcrAddress}`}
-            style={{ marginLeft: '12px' }}
-          >
-            Open List
-          </Button>
+          <Link to={`/tcr/${tcrAddress}`} style={{ marginLeft: '12px' }}>
+            <Button type="primary">Open List</Button>
+          </Link>
         </StyledItemCol>
       </>
     )

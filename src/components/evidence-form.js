@@ -120,8 +120,6 @@ const EvidenceForm = ({
         >
           {values.evidenceAttachment ? (
             <a
-              target="_blank"
-              rel="noopener noreferrer"
               href={`${process.env.REACT_APP_IPFS_GATEWAY}${values.evidenceAttachment.fileURI}`}
             >
               {values.evidenceAttachment.type.includes('image') ? (

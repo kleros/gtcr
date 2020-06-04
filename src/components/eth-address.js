@@ -10,8 +10,6 @@ const ETHAddress = ({ address }) => {
       href={`https://${
         networkId !== NETWORK.MAINNET ? `${NETWORK_NAME[networkId]}.` : ''
       }etherscan.io/address/${address}`}
-      rel="noopener noreferrer"
-      target="_blank"
       style={{ textDecoration: 'underline' }}
     >
       {address.slice(0, 6)}...{address.slice(address.length - 4)}

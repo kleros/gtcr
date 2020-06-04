@@ -180,11 +180,7 @@ const RelTCRParams = ({
             </label>
             <br />
             Click{' '}
-            <a
-              target="_blank"
-              rel="noopener noreferrer"
-              href="https://ipfs.kleros.io/ipfs/QmbqgkZoGu7jJ8nTqee4NypEhK7YVBEJJmPJbJxz8Bx8nY/t2cr-primary-doc.pdf"
-            >
+            <a href="https://ipfs.kleros.io/ipfs/QmbqgkZoGu7jJ8nTqee4NypEhK7YVBEJJmPJbJxz8Bx8nY/t2cr-primary-doc.pdf">
               here
             </a>{' '}
             to view an example of a primary document.
@@ -200,8 +196,6 @@ const RelTCRParams = ({
           >
             {values.relTcrPrimaryDocument ? (
               <a
-                target="_blank"
-                rel="noopener noreferrer"
                 href={`${process.env.REACT_APP_IPFS_GATEWAY}${values.relTcrPrimaryDocument}`}
               >
                 <Icon type="file-pdf" style={{ fontSize: '30px' }} />
