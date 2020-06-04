@@ -23,7 +23,7 @@ import ETHAmount from '../../../components/eth-amount.js'
 import BNPropType from '../../../prop-types/bn'
 import useFactory from '../../../hooks/factory'
 import { TourContext } from '../../../bootstrap/tour-context'
-import { capitalizeFirstLetter } from '../../../utils/string'
+import { capitalizeFirstLetter, getArticleFor } from '../../../utils/string'
 
 const StyledSpin = styled(Spin)`
   height: 60px;
@@ -130,7 +130,7 @@ const SubmissionForm = withFormik({
       .reduce(
         (acc, curr) => ({
           ...acc,
-          [curr.label]: `This address was not deployed with List Creator.`
+          [curr.label]: `This address was not deployed with the list creator.`
         }),
         {}
       )
@@ -152,7 +152,7 @@ const SubmitModal = props => {
   const { setUserSubscribed } = useContext(TourContext)
 
   const { fileURI, metadata } = metaEvidence || {}
-  const { itemName, columns } = metadata || {}
+  const { itemName, columns, tcrTitle } = metadata || {}
 
   const postSubmit = useCallback(
     (values, columns, resetForm) => {
@@ -245,18 +245,13 @@ const SubmitModal = props => {
       ]}
       {...props}
     >
-      <Typography.Title level={4}>
-        See the&nbsp;
-        <a href={`${process.env.REACT_APP_IPFS_GATEWAY}${fileURI || ''}`}>
-          Listing Criteria
-        </a>
-        .
-      </Typography.Title>
-      <StyledAlert
-        message="Submissions cannot be edited. Always double check your submissions and the listing criteria before proceeding."
-        type="info"
-        showIcon
-      />
+      <Typography.Paragraph>
+        Submit{' '}
+        {itemName
+          ? `${getArticleFor(itemName)} ${itemName.toLowerCase()}`
+          : 'an item'}{' '}
+        to {tcrTitle || 'this list'} so other users can find it.
+      </Typography.Paragraph>
       <SubmissionForm
         columns={columns}
         postSubmit={postSubmit}
@@ -265,15 +260,33 @@ const SubmitModal = props => {
         deployedWithFactory={deployedWithFactory}
       />
       <Typography.Paragraph>
-        A deposit is required to submit. This value reimbursed at the end of the
-        challenge period or, if there is a dispute, be awarded to the party that
-        wins.
+        Make sure your submission complies with the{' '}
+        <a href={`${process.env.REACT_APP_IPFS_GATEWAY}${fileURI || ''}`}>
+          listing criteria
+        </a>{' '}
+        to avoid losing your deposit.
       </Typography.Paragraph>
+
+      <StyledAlert
+        message="Warning: Submissions cannot be edited. Double check your submission before proceeding to avoid losing your deposit."
+        type="warning"
+        showIcon
+      />
       <Descriptions
         bordered
         column={{ xxl: 4, xl: 3, lg: 3, md: 3, sm: 2, xs: 1 }}
       >
-        <Descriptions.Item label="Total Deposit Required">
+        <Descriptions.Item
+          label={
+            <span>
+              Total Deposit Required
+              <Tooltip title="A deposit is required to submit. This value reimbursed at the end of the challenge period or, if there is a dispute, be awarded to the party that wins.">
+                &nbsp;
+                <Icon type="question-circle-o" />
+              </Tooltip>
+            </span>
+          }
+        >
           <ETHAmount
             decimals={3}
             amount={submissionDeposit.toString()}
