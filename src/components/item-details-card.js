@@ -164,7 +164,7 @@ const ItemDetailsCard = ({
           {columns.map((column, index) => (
             <StyledField key={index}>
               <span>
-                {column.label}
+                <b>{column.label}</b>
                 {column.description && (
                   <Tooltip title={column.description}>
                     &nbsp;
