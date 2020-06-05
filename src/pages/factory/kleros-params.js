@@ -194,13 +194,13 @@ const KlerosParams = ({
                 min={1}
                 max={33}
                 onChange={onNumJurorsChange}
-                value={numberOfJurors}
+                value={Number(numberOfJurors)}
                 step={2}
                 style={{ flex: 1, marginRight: '24px' }}
               />
             )}
             <InputNumber
-              value={numberOfJurors}
+              value={Number(numberOfJurors)}
               min={1}
               max={33}
               defaultValue={3}

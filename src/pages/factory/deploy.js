@@ -8,11 +8,27 @@ import { abi as _GTCRFactory } from '@kleros/tcr/build/contracts/GTCRFactory.jso
 import styled from 'styled-components/macro'
 import ipfsPublish from '../../utils/ipfs-publish'
 import Archon from '@kleros/archon'
-import { parseEther } from 'ethers/utils'
+import { parseEther, getContractAddress, bigNumberify } from 'ethers/utils'
 import { ZERO_ADDRESS, isVowel } from '../../utils/string'
 import { useWeb3Context } from 'web3-react'
 import useNetworkEnvVariable from '../../hooks/network-env'
 import useWindowDimensions from '../../hooks/window-dimensions'
+
+const _txBatcher = [
+  {
+    constant: false,
+    inputs: [
+      { name: 'targets', type: 'address[]' },
+      { name: 'values', type: 'uint256[]' },
+      { name: 'datas', type: 'bytes[]' }
+    ],
+    name: 'batchSend',
+    outputs: [],
+    payable: true,
+    stateMutability: 'payable',
+    type: 'function'
+  }
+]
 
 const StyledDiv = styled.div`
   word-break: break-all;
@@ -42,7 +58,7 @@ const StyledButton = styled(Button)`
   margin-left: 12px;
 `
 
-const getTcrMetaEvidence = async tcrState => {
+const getTcrMetaEvidence = async (tcrState, parentTCRAddress) => {
   const {
     tcrTitle,
     tcrDescription,
@@ -79,7 +95,8 @@ const getTcrMetaEvidence = async tcrState => {
     itemNamePlural: relItemNamePlural.toLowerCase(),
     isConnectedTCR: true,
     requireRemovalEvidence: relRequireRemovalEvidence,
-    isTCRofTCRs: true
+    isTCRofTCRs: true,
+    parentTCRAddress
   }
 
   const metaEvidence = {
@@ -218,7 +235,7 @@ const getTcrMetaEvidence = async tcrState => {
 }
 
 const Deploy = ({ setTxState, tcrState, setTcrState }) => {
-  const { networkId } = useWeb3Context()
+  const { networkId, library } = useWeb3Context()
   const { pushWeb3Action } = useContext(WalletContext)
   const { width } = useWindowDimensions()
   const [currentStep, setCurrentStep] = useState(0)
@@ -227,18 +244,34 @@ const Deploy = ({ setTxState, tcrState, setTcrState }) => {
     'REACT_APP_FACTORY_ADDRESSES',
     networkId
   )
+  const batcherAddress = useNetworkEnvVariable(
+    'REACT_APP_TX_BATCHER_ADDRESSES',
+    networkId
+  )
 
   const onDeploy = () => {
     pushWeb3Action(async (_, signer) => {
+      // We link the related badges TCR to its parent together by the parents address.
+      // the nonce is txCount + 1 because the related badges TCR is deployed first.
+      const txCount = await library.getTransactionCount(factoryAddress)
+      const parentTCRAddress = getContractAddress({
+        from: factoryAddress,
+        nonce: txCount + 1
+      })
+
       const {
         registrationMetaEvidencePath,
         clearingMetaEvidencePath,
         relRegistrationMetaEvidencePath,
         relClearingMetaEvidencePath
-      } = await getTcrMetaEvidence(tcrState)
+      } = await getTcrMetaEvidence(tcrState, parentTCRAddress)
 
+      // To deploy two contracts at once, we use a transaction batcher.
+      // See github.com/kleros/action-callback-bots for an example.
       const factory = new ethers.Contract(factoryAddress, _GTCRFactory, signer)
-      const relTCRtx = await factory.deploy(
+      const txBatcher = new ethers.Contract(batcherAddress, _txBatcher, signer)
+
+      const relTCRArgs = [
         tcrState.relArbitratorAddress,
         tcrState.relArbitratorExtraData, // Arbitrator extra data.
         ZERO_ADDRESS,
@@ -254,68 +287,58 @@ const Deploy = ({ setTxState, tcrState, setTcrState }) => {
           tcrState.relSharedStakeMultiplier,
           tcrState.relWinnerStakeMultiplier,
           tcrState.relLooserStakeMultiplier
-        ], // Shared, winner and looser stake multipliers in basis points.
-        { gasLimit: 6000000 }
-      )
-      setTxState({ txHash: relTCRtx.hash, status: 'pending' })
-      setTxSubmitted(relTCRtx.hash)
-      setCurrentStep(1)
+        ] // Shared, winner and looser stake multipliers in basis points.
+      ]
+      const relData = factory.interface.functions.deploy.encode(relTCRArgs)
+      const relTCRAddress = getContractAddress({
+        from: factoryAddress,
+        nonce: txCount
+      })
+
+      const TCRArgs = [
+        tcrState.arbitratorAddress,
+        tcrState.arbitratorExtraData, // Arbitrator extra data.
+        relTCRAddress,
+        registrationMetaEvidencePath,
+        clearingMetaEvidencePath,
+        tcrState.governorAddress,
+        parseEther(tcrState.submissionBaseDeposit.toString()),
+        parseEther(tcrState.removalBaseDeposit.toString()),
+        parseEther(tcrState.submissionChallengeBaseDeposit.toString()),
+        parseEther(tcrState.removalChallengeBaseDeposit.toString()),
+        Number(tcrState.challengePeriodDuration) * 60 * 60,
+        [
+          tcrState.sharedStakeMultiplier,
+          tcrState.winnerStakeMultiplier,
+          tcrState.looserStakeMultiplier
+        ] // Shared, winner and looser stake multipliers in basis points.
+      ]
+      const tcrData = factory.interface.functions.deploy.encode(TCRArgs)
+
+      const targets = [factory.address, factory.address]
+      const values = [bigNumberify(0), bigNumberify(0)]
+      const datas = [relData, tcrData]
+
+      const deployTx = await txBatcher.batchSend(targets, values, datas, {
+        gasLimit: 8000000
+      })
+      setTxState({ txHash: deployTx.hash, status: 'pending' })
+      setTxSubmitted(deployTx.hash)
       return {
-        tx: relTCRtx,
-        actionMessage: 'Deploying Badges List',
+        tx: deployTx,
+        actionMessage: 'Deploying List',
         deployTCR: true,
         onTxMined: async ({ contractAddress }) => {
           setTxState({
-            txHash: relTCRtx.hash,
+            txHash: deployTx.hash,
             status: 'mined',
-            contractAddress,
-            isConnectedTCR: true
+            contractAddress
           })
+          setTcrState(prevState => ({
+            ...prevState,
+            finished: true
+          }))
           setCurrentStep(2)
-
-          pushWeb3Action(async () => {
-            const tx = await factory.deploy(
-              tcrState.arbitratorAddress,
-              tcrState.arbitratorExtraData, // Arbitrator extra data.
-              contractAddress,
-              registrationMetaEvidencePath,
-              clearingMetaEvidencePath,
-              tcrState.governorAddress,
-              parseEther(tcrState.submissionBaseDeposit.toString()),
-              parseEther(tcrState.removalBaseDeposit.toString()),
-              parseEther(tcrState.submissionChallengeBaseDeposit.toString()),
-              parseEther(tcrState.removalChallengeBaseDeposit.toString()),
-              Number(tcrState.challengePeriodDuration) * 60 * 60,
-              [
-                tcrState.sharedStakeMultiplier,
-                tcrState.winnerStakeMultiplier,
-                tcrState.looserStakeMultiplier
-              ], // Shared, winner and looser stake multipliers in basis points.
-              { gasLimit: 6000000 }
-            )
-            setTxState({
-              txHash: tx.hash,
-              status: 'pending'
-            })
-            setTxSubmitted(tx.hash)
-            return {
-              tx,
-              actionMessage: 'Deploying List',
-              deployTCR: true,
-              onTxMined: async ({ contractAddress }) => {
-                setTxState({
-                  txHash: tx.hash,
-                  status: 'mined',
-                  contractAddress
-                })
-                setTcrState(prevState => ({
-                  ...prevState,
-                  finished: true
-                }))
-                setCurrentStep(3)
-              }
-            }
-          })
         }
       }
     })
@@ -332,7 +355,7 @@ const Deploy = ({ setTxState, tcrState, setTcrState }) => {
           description="When you are ready, click deploy. Please do not close the window until the process is finished and sign both transactions."
         />
       )}
-      {currentStep > 0 && currentStep < 3 && (
+      {currentStep === 1 && (
         <StyledAlert
           showIcon
           type="info"
@@ -350,7 +373,7 @@ const Deploy = ({ setTxState, tcrState, setTcrState }) => {
           icon={<Icon type="fire" />}
         />
         <Steps.Step
-          title="Deploying Badges list"
+          title="Deploying list"
           description={currentStep > 1 && 'Finished'}
           icon={
             currentStep < 1 ? (
@@ -362,22 +385,9 @@ const Deploy = ({ setTxState, tcrState, setTcrState }) => {
             )
           }
         />
-        <Steps.Step
-          title="Deploying list"
-          description={currentStep > 2 && 'Finished'}
-          icon={
-            currentStep < 2 ? (
-              <Icon type="star" />
-            ) : currentStep === 2 ? (
-              <Icon type="loading" />
-            ) : (
-              <Icon type="check" />
-            )
-          }
-        />
         <Steps.Step title="Finished!" icon={<Icon type="flag" />} />
       </StyledSteps>
-      {currentStep === 3 && (
+      {currentStep === 2 && (
         <StyledAlert
           type="success"
           showIcon
@@ -406,7 +416,7 @@ const Deploy = ({ setTxState, tcrState, setTcrState }) => {
           <StyledButton
             type="primary"
             onClick={onDeploy}
-            icon={currentStep <= 0 || currentStep === 3 ? 'fire' : 'loading'}
+            icon={currentStep === 0 || currentStep === 2 ? 'fire' : 'loading'}
           >
             Deploy!
           </StyledButton>

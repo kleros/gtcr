@@ -295,8 +295,10 @@ async function processWeb3Action(web3Action, web3Context, signer) {
 
     if (onTxMined)
       if (deployTCR)
+        // The 8th log is the NewTCR event emitted when creating the TCR.
+        // It has the address of the new TCR.
         onTxMined({
-          contractAddress: factoryInterface.parseLog(txMined.logs[3]).values
+          contractAddress: factoryInterface.parseLog(txMined.logs[7]).values
             ._address
         })
       else onTxMined()
