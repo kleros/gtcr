@@ -48,11 +48,23 @@ const TCRCardContent = ({ tcrAddress, currentTCRAddress, ID }) => {
   if (error || metaEvidenceError) {
     const { message } = error || metaEvidenceError
     return (
-      <StyledResult
-        status="warning"
-        title="Errored submission"
-        subTitle={message}
-      />
+      <>
+        <StyledItemCol>
+          <StyledResult
+            status="warning"
+            title="Errored submission"
+            subTitle={message}
+          />
+        </StyledItemCol>
+        <StyledItemCol>
+          <Link to={`/tcr/${currentTCRAddress}/${ID}`}>
+            <Button>Details</Button>
+          </Link>
+          <Link to={`/tcr/${tcrAddress}`} style={{ marginLeft: '12px' }}>
+            <Button type="primary">Open List</Button>
+          </Link>
+        </StyledItemCol>
+      </>
     )
   }
 
