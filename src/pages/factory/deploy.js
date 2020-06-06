@@ -2,17 +2,19 @@ import { Card, Button, Alert, Icon, Steps } from 'antd'
 import { Link } from 'react-router-dom'
 import PropTypes from 'prop-types'
 import React, { useContext, useState } from 'react'
-import { WalletContext } from '../../bootstrap/wallet-context'
 import { ethers } from 'ethers'
-import { abi as _GTCRFactory } from '@kleros/tcr/build/contracts/GTCRFactory.json'
-import styled from 'styled-components/macro'
-import ipfsPublish from '../../utils/ipfs-publish'
 import Archon from '@kleros/archon'
 import { parseEther, getContractAddress, bigNumberify } from 'ethers/utils'
-import { ZERO_ADDRESS, isVowel } from '../../utils/string'
+import styled from 'styled-components/macro'
 import { useWeb3Context } from 'web3-react'
+import { abi as _GTCRFactory } from '@kleros/tcr/build/contracts/GTCRFactory.json'
+import ipfsPublish from '../../utils/ipfs-publish'
+import { WalletContext } from '../../bootstrap/wallet-context'
+import { ZERO_ADDRESS, isVowel } from '../../utils/string'
 import useNetworkEnvVariable from '../../hooks/network-env'
 import useWindowDimensions from '../../hooks/window-dimensions'
+import SubmitModal from '../item-details/modals/submit'
+import useTcrView from '../../hooks/tcr-view'
 
 const _txBatcher = [
   {
@@ -244,14 +246,21 @@ const Deploy = ({ setTxState, tcrState, setTcrState }) => {
   const { width } = useWindowDimensions()
   const [currentStep, setCurrentStep] = useState(0)
   const [txSubmitted, setTxSubmitted] = useState()
+  const [deployedTCRAddress, setDeployedTCRAddress] = useState()
+  const [submissionFormOpen, setSubmissionFormOpen] = useState()
   const factoryAddress = useNetworkEnvVariable(
     'REACT_APP_FACTORY_ADDRESSES',
+    networkId
+  )
+  const defaultTCRAddress = useNetworkEnvVariable(
+    'REACT_APP_DEFAULT_TCR_ADDRESSES',
     networkId
   )
   const batcherAddress = useNetworkEnvVariable(
     'REACT_APP_TX_BATCHER_ADDRESSES',
     networkId
   )
+  const { submissionDeposit, metaEvidence } = useTcrView(defaultTCRAddress)
 
   const onDeploy = () => {
     pushWeb3Action(async (_, signer) => {
@@ -347,90 +356,123 @@ const Deploy = ({ setTxState, tcrState, setTcrState }) => {
             finished: true
           }))
           setCurrentStep(2)
+          setDeployedTCRAddress(contractAddress)
         }
       }
     })
   }
 
   return (
-    <StyledCard title="Deploy the list">
-      {currentStep === 0 && (
-        <StyledAlert
-          showIcon
-          type="info"
-          closable
-          message="On your marks..."
-          description="When you are ready, click deploy. Please do not close the window until the process is finished and sign both transactions."
-        />
-      )}
-      {currentStep === 1 && (
-        <StyledAlert
-          showIcon
-          type="info"
-          closable
-          message="Deploy in progress. Please do not close the window until the process is finished."
-        />
-      )}
-      <StyledSteps
-        current={currentStep}
-        direction={width < 750 ? 'vertical' : 'horizontal'}
-      >
-        <Steps.Step
-          title="Start"
-          description={currentStep > 0 && 'Finished'}
-          icon={<Icon type="fire" />}
-        />
-        <Steps.Step
-          title="Deploying list"
-          description={currentStep > 1 && 'Finished'}
-          icon={
-            currentStep < 1 ? (
-              <Icon type="star" />
-            ) : currentStep === 1 ? (
-              <Icon type="loading" />
-            ) : (
-              <Icon type="check" />
-            )
-          }
-        />
-        <Steps.Step title="Finished!" icon={<Icon type="flag" />} />
-      </StyledSteps>
-      {currentStep === 2 && (
-        <StyledAlert
-          type="success"
-          showIcon
-          message="Success!"
-          description={
-            <>
-              <StyledDiv>
-                Your list was deployed at the following address:{' '}
-                <Link
-                  to={`/tcr/${tcrState.transactions[txSubmitted].contractAddress}`}
-                >
-                  {tcrState.transactions[txSubmitted].contractAddress}
-                </Link>
-                .
-              </StyledDiv>
-              <StyledDiv>
-                You may want to bookmark its address or, if it adheres to the
-                listing criteria, submit it to the List Browser.
-              </StyledDiv>
-            </>
-          }
-        />
-      )}
-      {currentStep === 0 && (
-        <StyledActions>
-          <StyledButton
-            type="primary"
-            onClick={onDeploy}
-            icon={currentStep === 0 || currentStep === 2 ? 'fire' : 'loading'}
+    <>
+      <StyledCard title="Deploy the list">
+        {currentStep === 0 && (
+          <StyledAlert
+            showIcon
+            type="info"
+            closable
+            message="On your marks..."
+            description="When you are ready, click deploy. Please do not close the window until the process is finished and sign both transactions."
+          />
+        )}
+        {currentStep === 1 && (
+          <StyledAlert
+            showIcon
+            type="info"
+            closable
+            message="Deploy in progress. Please do not close the window until the process is finished."
+          />
+        )}
+        <StyledSteps
+          current={currentStep}
+          direction={width < 750 ? 'vertical' : 'horizontal'}
+        >
+          <Steps.Step
+            title="Start"
+            description={currentStep > 0 && 'Finished'}
+            icon={<Icon type="fire" />}
+          />
+          <Steps.Step
+            title="Deploying list"
+            description={currentStep > 1 && 'Finished'}
+            icon={
+              currentStep < 1 ? (
+                <Icon type="star" />
+              ) : currentStep === 1 ? (
+                <Icon type="loading" />
+              ) : (
+                <Icon type="check" />
+              )
+            }
+          />
+          <Steps.Step title="Finished!" icon={<Icon type="flag" />} />
+        </StyledSteps>
+        {currentStep === 2 && (
+          <StyledAlert
+            type="success"
+            showIcon
+            message="Success!"
+            description={
+              <>
+                <StyledDiv>
+                  Your list was deployed at the following address:{' '}
+                  <Link
+                    to={`/tcr/${tcrState.transactions[txSubmitted].contractAddress}`}
+                  >
+                    {tcrState.transactions[txSubmitted].contractAddress}
+                  </Link>
+                  .
+                </StyledDiv>
+                <StyledDiv>
+                  You may want to bookmark its address or, if it adheres to the
+                  listing criteria,{' '}
+                  <Button
+                    type="link"
+                    onClick={setSubmissionFormOpen}
+                    style={{ padding: 0 }}
+                  >
+                    submit it to{' '}
+                    {(metaEvidence && metaEvidence.metadata.tcrTitle) ||
+                      'Curated Lists'}{' '}
+                    so other users can find it.
+                  </Button>
+                </StyledDiv>
+              </>
+            }
+          />
+        )}
+        {currentStep === 0 && (
+          <span
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'flex-end'
+            }}
           >
-            Deploy!
-          </StyledButton>
-        </StyledActions>
+            <StyledActions>
+              <StyledButton
+                type="primary"
+                onClick={onDeploy}
+                icon={
+                  currentStep === 0 || currentStep === 2 ? 'fire' : 'loading'
+                }
+              >
+                Deploy!
+              </StyledButton>
+            </StyledActions>
+          </span>
+        )}
+      </StyledCard>
+      {metaEvidence && (
+        <SubmitModal
+          initialValues={[deployedTCRAddress]}
+          visible={!!submissionFormOpen}
+          onCancel={() => setSubmissionFormOpen(false)}
+          submissionDeposit={submissionDeposit}
+          tcrAddress={defaultTCRAddress}
+          metaEvidence={metaEvidence}
+        />
       )}
-    </StyledCard>
+    </>
   )
 }
 
