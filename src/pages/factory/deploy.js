@@ -73,7 +73,8 @@ const getTcrMetaEvidence = async (tcrState, parentTCRAddress) => {
     relItemNamePlural,
     relTcrPrimaryDocument,
     relRequireRemovalEvidence,
-    isTCRofTCRs
+    isTCRofTCRs,
+    relTcrDisabled
   } = tcrState
   const metadata = {
     tcrTitle,
@@ -83,7 +84,8 @@ const getTcrMetaEvidence = async (tcrState, parentTCRAddress) => {
     itemNamePlural: itemNamePlural.toLowerCase(),
     logoURI: tcrLogo,
     requireRemovalEvidence,
-    isTCRofTCRs
+    isTCRofTCRs,
+    relTcrDisabled
   }
 
   const relTcrTitle = `${tcrTitle} enabled badges`
@@ -120,7 +122,9 @@ const getTcrMetaEvidence = async (tcrState, parentTCRAddress) => {
   const relMetaEvidence = {
     ...metaEvidence,
     question: `Does the ${relItemName} comply with the required criteria?`,
-    fileURI: relTcrPrimaryDocument,
+    fileURI: relTcrDisabled
+      ? process.env.REACT_APP_REJECT_ALL_POLICY_URI
+      : relTcrPrimaryDocument,
     metadata: relMetadata
   }
 
@@ -278,7 +282,11 @@ const Deploy = ({ setTxState, tcrState, setTcrState }) => {
         relRegistrationMetaEvidencePath,
         relClearingMetaEvidencePath,
         tcrState.relGovernorAddress,
-        parseEther(tcrState.relSubmissionBaseDeposit.toString()),
+        parseEther(
+          tcrState.relTcrDisabled
+            ? '10000000000000' // Use a very large deposit to make submissions impossible.
+            : tcrState.relSubmissionBaseDeposit.toString()
+        ),
         parseEther(tcrState.relRemovalBaseDeposit.toString()),
         parseEther(tcrState.relSubmissionChallengeBaseDeposit.toString()),
         parseEther(tcrState.relRemovalChallengeBaseDeposit.toString()),
@@ -505,7 +513,8 @@ Deploy.propTypes = {
     relLooserStakeMultiplier: PropTypes.oneOfType([
       PropTypes.number,
       PropTypes.string
-    ]).isRequired
+    ]).isRequired,
+    relTcrDisabled: PropTypes.bool
   }).isRequired
 }
 

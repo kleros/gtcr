@@ -9,7 +9,9 @@ import {
   message,
   Alert,
   Slider,
-  InputNumber
+  InputNumber,
+  Button,
+  Divider
 } from 'antd'
 import { withFormik, Field } from 'formik'
 import PropTypes from 'prop-types'
@@ -76,7 +78,7 @@ const RelTCRParams = ({
   defaultGovernorLabel,
   ...rest
 }) => {
-  const { values, setTcrState } = rest
+  const { values, setTcrState, nextStep } = rest
   const { width } = useWindowDimensions()
   const [uploading, setUploading] = useState()
   const [advancedOptions, setAdvancedOptions] = useState()
@@ -160,6 +162,14 @@ const RelTCRParams = ({
     [setFieldValue]
   )
 
+  const onSkipStep = useCallback(() => {
+    setTcrState(prevState => ({
+      ...prevState,
+      relTcrDisabled: true
+    }))
+    nextStep()
+  }, [nextStep, setTcrState])
+
   const totalDepositSlider = useMemo(() => {
     if (!arbitrationCost) return null
     const d = parseEther(Number(depositVal).toString())
@@ -169,7 +179,33 @@ const RelTCRParams = ({
 
   return (
     <Card title="Choose the parameters of the Badges list">
-      <Form layout="vertical" id={formId} onSubmit={handleSubmit}>
+      <Form
+        layout="vertical"
+        id={formId}
+        onSubmit={handleSubmit}
+        style={{ display: 'flex', flexDirection: 'column' }}
+      >
+        <Alert
+          message="This step can be skipped"
+          description={
+            <div>
+              Badges allow the users viewing an item on your list to quickly
+              learn that it is also present in another list. To better
+              understand how this can be useful, consider a list of clothing
+              brands: A user is viewing brand X may be interested in knowing
+              that it is also included in the 'Eco-friendly Brands' list.
+            </div>
+          }
+          type="info"
+          showIcon
+        />
+        <Button
+          onClick={onSkipStep}
+          style={{ margin: '24px 0', alignSelf: 'flex-end' }}
+        >
+          Skip step
+        </Button>
+        <Divider />
         <div style={{ marginBottom: '26px' }}>
           <div className="ant-col ant-form-item-label">
             <label htmlFor="rel-primary-document">
@@ -577,7 +613,11 @@ export default withFormik({
     delete values.transactions
     return values
   },
-  handleSubmit: (_, { props: { postSubmit } }) => {
+  handleSubmit: (_, { props: { postSubmit, setTcrState } }) => {
+    setTcrState(prevState => {
+      delete prevState.relTcrDisabled
+      return prevState
+    })
     postSubmit()
   }
 })(RelTCRParams)
