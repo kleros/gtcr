@@ -235,7 +235,6 @@ const Identicon = ({ className, large }) => {
         </List>
       }
       placement="bottomRight"
-      title="Account"
       trigger="click"
     >
       {content}
