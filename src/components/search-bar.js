@@ -59,10 +59,13 @@ const OptionItem = ({ item: { itemID, columns = [], tcrAddress } }) => {
   const {
     gtcrView,
     challengePeriodDuration,
-    tcrAddress: itemTCRAddr
+    tcrAddress: itemTCRAddr,
+    metaEvidence
   } = useContext(TCRViewContext)
   const { timestamp } = useContext(WalletContext)
   const [itemInfo, setItemInfo] = useState()
+  const { metadata } = metaEvidence || {}
+  const { isTCRofTCRs } = metadata || {}
 
   useEffect(() => {
     if (
@@ -105,17 +108,34 @@ const OptionItem = ({ item: { itemID, columns = [], tcrAddress } }) => {
         />
       </StyledStatus>
       <StyledFieldsContainer>
-        {columns
-          .filter(col => col.isIdentifier)
-          .map((column, j) => (
-            <StyledItemField key={j}>
+        {isTCRofTCRs ? (
+          <>
+            <StyledItemField>
               <DisplaySelector
-                type={column.type}
-                value={column.value}
-                key={j}
+                type={columns[1].type}
+                value={columns[1].value}
               />
             </StyledItemField>
-          ))}
+            <StyledItemField>
+              <DisplaySelector
+                type={columns[0].type}
+                value={columns[0].value}
+              />
+            </StyledItemField>
+          </>
+        ) : (
+          columns
+            .filter(col => col.isIdentifier)
+            .map((column, j) => (
+              <StyledItemField key={j}>
+                <DisplaySelector
+                  type={column.type}
+                  value={column.value}
+                  key={j}
+                />
+              </StyledItemField>
+            ))
+        )}
       </StyledFieldsContainer>
       <StyledLink to={`/tcr/${tcrAddress}/${itemID}`}>
         <Icon type="right-circle" style={{ fontSize: '24px' }} />
@@ -206,7 +226,7 @@ const SearchBar = () => {
               })
               return item
             } catch (err) {
-              console.error('Error loading list searcheable name.', err)
+              console.warn('Could not load list searcheable name.', err)
               return item
             }
           })
