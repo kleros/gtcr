@@ -53,7 +53,8 @@ const TCRCardContent = ({ tcrAddress, currentTCRAddress, ID }) => {
           height: '100%',
           display: 'flex',
           flexDirection: 'column',
-          justifyContent: 'space-between'
+          justifyContent: 'space-between',
+          alignItems: 'center'
         }}
       >
         <StyledItemCol>

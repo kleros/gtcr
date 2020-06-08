@@ -21,7 +21,8 @@ const ItemCardContent = ({ item, tcrAddress }) => (
       height: '100%',
       display: 'flex',
       flexDirection: 'column',
-      justifyContent: 'space-between'
+      justifyContent: 'space-between',
+      alignItems: 'center'
     }}
   >
     <div>
