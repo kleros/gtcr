@@ -121,16 +121,20 @@ const SubmissionForm = withFormik({
         columns
           .filter(({ type }) => type === itemTypes.GTCR_ADDRESS)
           .map(async ({ label }) => ({
-            wasDeployedWithFactory: await deployedWithFactory(values[label]),
+            isEmpty: !values[label],
+            wasDeployedWithFactory:
+              !!values[label] && (await deployedWithFactory(values[label])),
             label: label
           }))
       )
     )
-      .filter(res => !res.wasDeployedWithFactory)
+      .filter(res => !res.wasDeployedWithFactory || res.isEmpty)
       .reduce(
         (acc, curr) => ({
           ...acc,
-          [curr.label]: `This address was not deployed with the list creator.`
+          [curr.label]: curr.isEmpty
+            ? `Enter a list address to proceed.`
+            : `This address was not deployed with the list creator.`
         }),
         {}
       )
