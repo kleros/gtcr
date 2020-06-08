@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.9.7](https://github.com/kleros/gtcr/compare/v0.9.6...v0.9.7) (2020-06-08)
+
+
+### Features
+
+* update default list ([5fc555b](https://github.com/kleros/gtcr/commit/5fc555bd57ef73c117ce876d0f110e1c0801bd02))
+
+
+### Bug Fixes
+
+* case in submit item buttons ([64a0c1c](https://github.com/kleros/gtcr/commit/64a0c1c940f94db72d45606d3dede0df0b3c0a6a))
+* incorrect form constraint ([5f34083](https://github.com/kleros/gtcr/commit/5f34083f22f00012ccc38758df0e4bc0b25c81f2))
+
 ### [0.9.6](https://github.com/kleros/gtcr/compare/v0.9.5...v0.9.6) (2020-06-08)
 
 
