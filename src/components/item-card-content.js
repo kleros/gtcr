@@ -16,18 +16,27 @@ const StyledButton = styled(Button)`
 `
 
 const ItemCardContent = ({ item, tcrAddress }) => (
-  <>
-    {item.columns
-      .filter(col => col.isIdentifier || col.type === itemTypes.IMAGE)
-      .map((column, j) => (
-        <StyledItemCol key={j}>
-          <DisplaySelector type={column.type} value={column.value} />
-        </StyledItemCol>
-      ))}
+  <div
+    style={{
+      height: '100%',
+      display: 'flex',
+      flexDirection: 'column',
+      justifyContent: 'space-between'
+    }}
+  >
+    <div>
+      {item.columns
+        .filter(col => col.isIdentifier || col.type === itemTypes.IMAGE)
+        .map((column, j) => (
+          <StyledItemCol key={j}>
+            <DisplaySelector type={column.type} value={column.value} />
+          </StyledItemCol>
+        ))}
+    </div>
     <Link to={`/tcr/${tcrAddress}/${item.tcrData.ID}`}>
       <StyledButton>Details</StyledButton>
     </Link>
-  </>
+  </div>
 )
 
 ItemCardContent.propTypes = {

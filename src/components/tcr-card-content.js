@@ -48,7 +48,14 @@ const TCRCardContent = ({ tcrAddress, currentTCRAddress, ID }) => {
   if (error || metaEvidenceError) {
     const { message } = error || metaEvidenceError
     return (
-      <>
+      <div
+        style={{
+          height: '100%',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'space-between'
+        }}
+      >
         <StyledItemCol>
           <StyledResult
             status="warning"
@@ -64,7 +71,7 @@ const TCRCardContent = ({ tcrAddress, currentTCRAddress, ID }) => {
             <Button type="primary">Open List</Button>
           </Link>
         </StyledItemCol>
-      </>
+      </div>
     )
   }
 
@@ -82,13 +89,22 @@ const TCRCardContent = ({ tcrAddress, currentTCRAddress, ID }) => {
 
   try {
     return (
-      <>
-        <StyledItemCol>
-          <DisplaySelector type={itemTypes.IMAGE} value={metadata.logoURI} />
-        </StyledItemCol>
-        <StyledItemCol>
-          <DisplaySelector type={itemTypes.TEXT} value={metadata.tcrTitle} />
-        </StyledItemCol>
+      <div
+        style={{
+          height: '100%',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'space-between'
+        }}
+      >
+        <div>
+          <StyledItemCol>
+            <DisplaySelector type={itemTypes.IMAGE} value={metadata.logoURI} />
+          </StyledItemCol>
+          <StyledItemCol>
+            <DisplaySelector type={itemTypes.TEXT} value={metadata.tcrTitle} />
+          </StyledItemCol>
+        </div>
         <StyledItemCol>
           <Link to={`/tcr/${currentTCRAddress}/${ID}`}>
             <Button>Details</Button>
@@ -97,7 +113,7 @@ const TCRCardContent = ({ tcrAddress, currentTCRAddress, ID }) => {
             <Button type="primary">Open List</Button>
           </Link>
         </StyledItemCol>
-      </>
+      </div>
     )
   } catch (err) {
     return <StyledResult status="warning" subTitle={err.message} />
