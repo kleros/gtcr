@@ -162,10 +162,8 @@ const TCRParams = ({
 
   const beforeImageUpload = useCallback(file => {
     const isPNGorJPEGorSVG =
-      file.type === 'image/png' ||
-      file.type === 'image/svg+xml' ||
-      file.type === 'image/jpeg'
-    if (!isPNGorJPEGorSVG) message.error('Please use PNG, JPEG or SVG.')
+      file.type === 'image/png' || file.type === 'image/svg+xml'
+    if (!isPNGorJPEGorSVG) message.error('Please use PNG, or SVG.')
 
     const isLt2M = file.size / 1024 / 1024 < 2
     if (!isLt2M) message.error('Image must smaller than 2MB.')
@@ -227,7 +225,7 @@ const TCRParams = ({
             <div>
               <div className="ant-col ant-form-item-label">
                 <label htmlFor="tcr-logo">
-                  <span>List Logo&nbsp;</span>
+                  <span>List Logo (transparent background): &nbsp;</span>
                   <Tooltip title="The logo should be a 1:1 aspect ratio image with transparent background in SVG or PNG.">
                     <Icon type="question-circle-o" />
                   </Tooltip>

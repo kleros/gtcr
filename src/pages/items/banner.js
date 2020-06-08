@@ -5,6 +5,8 @@ import PropTypes from 'prop-types'
 import styled from 'styled-components/macro'
 import { ZERO_ADDRESS, capitalizeFirstLetter } from '../../utils/string'
 import useWindowDimensions from '../../hooks/window-dimensions'
+import { useWeb3Context } from 'web3-react'
+import useNetworkEnvVariable from '../../hooks/network-env'
 
 const StyledBanner = styled.div`
   padding: 24px 9.375vw;
@@ -67,11 +69,17 @@ const Banner = ({
   metaEvidence,
   requestWeb3Auth,
   setSubmissionFormOpen,
-  connectedTCRAddr
+  connectedTCRAddr,
+  tcrAddress
 }) => {
   const { metadata, fileURI } = metaEvidence || {}
   const { itemName, tcrTitle, tcrDescription, logoURI } = metadata || {}
+  const { networkId } = useWeb3Context()
   const { width } = useWindowDimensions()
+  const defaultTCRAddress = useNetworkEnvVariable(
+    'REACT_APP_DEFAULT_TCR_ADDRESSES',
+    networkId
+  )
 
   return (
     <StyledBanner>
@@ -82,7 +90,9 @@ const Banner = ({
               <Typography.Title ellipsis style={{ marginBottom: '0' }}>
                 {tcrTitle}
               </Typography.Title>
-              <TCRLogo logoURI={logoURI} />
+              {defaultTCRAddress && tcrAddress !== defaultTCRAddress && (
+                <TCRLogo logoURI={logoURI} />
+              )}
             </TCRTitle>
             <Typography.Text
               ellipsis
@@ -159,12 +169,14 @@ Banner.propTypes = {
   }),
   requestWeb3Auth: PropTypes.func.isRequired,
   setSubmissionFormOpen: PropTypes.func.isRequired,
-  connectedTCRAddr: PropTypes.string
+  connectedTCRAddr: PropTypes.string,
+  tcrAddress: PropTypes.string
 }
 
 Banner.defaultProps = {
   metaEvidence: null,
-  connectedTCRAddr: null
+  connectedTCRAddr: null,
+  tcrAddress: null
 }
 
 export default Banner

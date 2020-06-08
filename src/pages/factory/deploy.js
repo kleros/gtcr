@@ -414,7 +414,7 @@ const Deploy = ({ setTxState, tcrState, setTcrState }) => {
             description={
               <>
                 <StyledDiv>
-                  Your list was deployed at the following address:{' '}
+                  Your list was created at the following address:{' '}
                   <Link
                     to={`/tcr/${tcrState.transactions[txSubmitted].contractAddress}`}
                   >

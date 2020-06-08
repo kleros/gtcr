@@ -462,6 +462,7 @@ const Items = ({ search, history }) => {
         requestWeb3Auth={requestWeb3Auth}
         setSubmissionFormOpen={setSubmissionFormOpen}
         connectedTCRAddr={connectedTCRAddr}
+        tcrAddress={tcrAddress}
       />
       <StyledMargin>
         <SearchBar />
