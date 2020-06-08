@@ -469,7 +469,7 @@ const RelTCRParams = ({
               label={
                 <span>
                   Shared stake multiplier&nbsp;
-                  <Tooltip title="This is the multiplier for the stake both parties must pay to fully fund their side of an appeal when there isn't a winner or looser (e.g. when the arbitrator refused to rule). Given in basis points.">
+                  <Tooltip title="This is the multiplier for the stake both parties must pay to fully fund their side of an appeal when there isn't a winner or loser (e.g. when the arbitrator refused to rule). Given in basis points.">
                     <Icon type="question-circle-o" />
                   </Tooltip>
                 </span>
@@ -493,10 +493,10 @@ const RelTCRParams = ({
               {...rest}
             />
             <CustomInput
-              name="relLooserStakeMultiplier"
+              name="relLoserStakeMultiplier"
               placeholder="20000"
-              error={errors.relLooserStakeMultiplier}
-              touched={touched.relLooserStakeMultiplier}
+              error={errors.relLoserStakeMultiplier}
+              touched={touched.relLoserStakeMultiplier}
               type={itemTypes.NUMBER}
               label={
                 <span>
@@ -584,7 +584,7 @@ const validationSchema = yup.object().shape({
     .number()
     .min(0, 'The stake multiplier cannot be negative.')
     .required('A value is required'),
-  relLooserStakeMultiplier: yup
+  relLoserStakeMultiplier: yup
     .number()
     .min(0, 'The stake multiplier cannot be negative.')
     .required('A value is required')

@@ -72,14 +72,15 @@ const Banner = ({
   connectedTCRAddr,
   tcrAddress
 }) => {
-  const { metadata, fileURI } = metaEvidence || {}
-  const { itemName, tcrTitle, tcrDescription, logoURI } = metadata || {}
   const { networkId } = useWeb3Context()
   const { width } = useWindowDimensions()
   const defaultTCRAddress = useNetworkEnvVariable(
     'REACT_APP_DEFAULT_TCR_ADDRESSES',
     networkId
   )
+  const { metadata, fileURI } = metaEvidence || {}
+  const { itemName, tcrTitle, tcrDescription, logoURI, relTcrDisabled } =
+    metadata || {}
 
   return (
     <StyledBanner>
@@ -112,22 +113,24 @@ const Banner = ({
             />
           </>
         )}
-        {connectedTCRAddr && connectedTCRAddr !== ZERO_ADDRESS && (
-          <>
-            <Typography.Text
-              ellipsis
-              type="secondary"
-              style={{ maxWidth: '100%', textDecoration: 'underline' }}
-            >
-              <Link
-                to={`/tcr/${connectedTCRAddr}`}
-                style={{ color: '#4d00b473' }}
+        {connectedTCRAddr &&
+          connectedTCRAddr !== ZERO_ADDRESS &&
+          !relTcrDisabled && (
+            <>
+              <Typography.Text
+                ellipsis
+                type="secondary"
+                style={{ maxWidth: '100%', textDecoration: 'underline' }}
               >
-                View Badges list
-              </Link>
-            </Typography.Text>
-          </>
-        )}
+                <Link
+                  to={`/tcr/${connectedTCRAddr}`}
+                  style={{ color: '#4d00b473' }}
+                >
+                  View Badges list
+                </Link>
+              </Typography.Text>
+            </>
+          )}
       </TCRInfoColumn>
       <ActionCol>
         <StyledButton
@@ -142,7 +145,11 @@ const Banner = ({
         <Typography.Text
           ellipsis
           type="secondary"
-          style={{ maxWidth: '100%', textDecoration: 'underline' }}
+          style={{
+            maxWidth: '100%',
+            textDecoration: 'underline',
+            marginTop: '12px'
+          }}
           id="policy-link"
         >
           <a

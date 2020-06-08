@@ -116,7 +116,7 @@ const useCachedFactory = version => {
     arbitratorExtraData: defaultArbitratorExtraData,
     sharedStakeMultiplier: 5000,
     winnerStakeMultiplier: 5000,
-    looserStakeMultiplier: 10000,
+    loserStakeMultiplier: 10000,
     isTCRofTCRs: false,
     relSubmissionBaseDeposit: 1,
     relRemovalBaseDeposit: 1,
@@ -132,7 +132,7 @@ const useCachedFactory = version => {
     relTcrPrimaryDocument: '',
     relSharedStakeMultiplier: 5000,
     relWinnerStakeMultiplier: 5000,
-    relLooserStakeMultiplier: 10000,
+    relLoserStakeMultiplier: 10000,
     columns: [
       {
         label: '',

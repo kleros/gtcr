@@ -98,7 +98,8 @@ const getTcrMetaEvidence = async (tcrState, parentTCRAddress) => {
     isConnectedTCR: true,
     requireRemovalEvidence: true,
     isTCRofTCRs: true,
-    parentTCRAddress
+    parentTCRAddress,
+    relTcrDisabled: true
   }
 
   const metaEvidence = {
@@ -301,8 +302,8 @@ const Deploy = ({ setTxState, tcrState, setTcrState }) => {
         [
           tcrState.relSharedStakeMultiplier,
           tcrState.relWinnerStakeMultiplier,
-          tcrState.relLooserStakeMultiplier
-        ] // Shared, winner and looser stake multipliers in basis points.
+          tcrState.relLoserStakeMultiplier
+        ] // Shared, winner and loser stake multipliers in basis points.
       ]
       const relData = factory.interface.functions.deploy.encode(relTCRArgs)
       const relTCRAddress = getContractAddress({
@@ -325,8 +326,8 @@ const Deploy = ({ setTxState, tcrState, setTcrState }) => {
         [
           tcrState.sharedStakeMultiplier,
           tcrState.winnerStakeMultiplier,
-          tcrState.looserStakeMultiplier
-        ] // Shared, winner and looser stake multipliers in basis points.
+          tcrState.loserStakeMultiplier
+        ] // Shared, winner and loser stake multipliers in basis points.
       ]
       const tcrData = factory.interface.functions.deploy.encode(TCRArgs)
 
@@ -515,7 +516,7 @@ Deploy.propTypes = {
       PropTypes.number,
       PropTypes.string
     ]).isRequired,
-    looserStakeMultiplier: PropTypes.oneOfType([
+    loserStakeMultiplier: PropTypes.oneOfType([
       PropTypes.number,
       PropTypes.string
     ]).isRequired,
@@ -550,7 +551,7 @@ Deploy.propTypes = {
       PropTypes.number,
       PropTypes.string
     ]).isRequired,
-    relLooserStakeMultiplier: PropTypes.oneOfType([
+    relLoserStakeMultiplier: PropTypes.oneOfType([
       PropTypes.number,
       PropTypes.string
     ]).isRequired,
