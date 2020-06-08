@@ -227,8 +227,7 @@ const SubmitModal = props => {
 
   return (
     <StyledModal
-      title={`Submit ${(itemName &&
-        capitalizeFirstLetter(itemName.toLowerCase())) ||
+      title={`Submit ${(itemName && capitalizeFirstLetter(itemName)) ||
         'Item'}`}
       footer={[
         <Button key="back" onClick={onCancel}>

@@ -126,7 +126,7 @@ const Banner = ({
           onClick={() => requestWeb3Auth(() => setSubmissionFormOpen(true))}
           id="submit-item-button"
         >
-          {width > 450 && `Submit ${itemName || 'Item'}`}
+          {width > 450 && `Submit ${capitalizeFirstLetter(itemName) || 'Item'}`}
           <Icon type="plus-circle" />
         </StyledButton>
         <Typography.Text
