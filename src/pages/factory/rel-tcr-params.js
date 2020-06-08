@@ -13,7 +13,7 @@ import {
   Button,
   Divider
 } from 'antd'
-import { withFormik, Field } from 'formik'
+import { withFormik } from 'formik'
 import PropTypes from 'prop-types'
 import * as yup from 'yup'
 import styled from 'styled-components/macro'
@@ -508,22 +508,6 @@ const RelTCRParams = ({
               }
               {...rest}
             />
-            <Field name="relRequireRemovalEvidence">
-              {({ field }) => (
-                <Form.Item
-                  label="Require evidence for removing items"
-                  style={{ marginBottom: '12px', display: 'flex' }}
-                >
-                  <Switch
-                    onChange={value =>
-                      setFieldValue('relRequireRemovalEvidence', value)
-                    }
-                    style={{ marginLeft: '8px' }}
-                    checked={field.value}
-                  />
-                </Form.Item>
-              )}
-            </Field>
           </>
         )}
       </Form>

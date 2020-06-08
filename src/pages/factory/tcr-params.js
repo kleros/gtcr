@@ -11,7 +11,7 @@ import {
   Slider,
   InputNumber
 } from 'antd'
-import { withFormik, Field } from 'formik'
+import { withFormik } from 'formik'
 import PropTypes from 'prop-types'
 import * as yup from 'yup'
 import styled from 'styled-components/macro'
@@ -627,31 +627,6 @@ const TCRParams = ({
               }
               {...rest}
             />
-            <Field name="requireRemovalEvidence">
-              {({ field }) => (
-                <Form.Item
-                  label={
-                    <span>
-                      Require evidence for removing items&nbsp;
-                      <Tooltip
-                        title={`The first question that arises when someone requests to remove an item is "why do you want to remove it?". Leaving this switched on will prompt the requester to also justify it. Without a justification it becomes risky to challenge the removal request so, in general this should be left turned on.`}
-                      >
-                        <Icon type="question-circle-o" />
-                      </Tooltip>
-                    </span>
-                  }
-                  style={{ marginBottom: '12px', display: 'flex' }}
-                >
-                  <Switch
-                    onChange={value =>
-                      setFieldValue('requireRemovalEvidence', value)
-                    }
-                    style={{ marginLeft: '8px' }}
-                    checked={field.value}
-                  />
-                </Form.Item>
-              )}
-            </Field>
           </>
         )}
       </Form>

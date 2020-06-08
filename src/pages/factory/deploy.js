@@ -69,12 +69,10 @@ const getTcrMetaEvidence = async (tcrState, parentTCRAddress) => {
     itemNamePlural,
     tcrPrimaryDocument,
     tcrLogo,
-    requireRemovalEvidence,
     relColumns,
     relItemName,
     relItemNamePlural,
     relTcrPrimaryDocument,
-    relRequireRemovalEvidence,
     isTCRofTCRs,
     relTcrDisabled
   } = tcrState
@@ -85,7 +83,7 @@ const getTcrMetaEvidence = async (tcrState, parentTCRAddress) => {
     itemName: itemName.toLowerCase(),
     itemNamePlural: itemNamePlural.toLowerCase(),
     logoURI: tcrLogo,
-    requireRemovalEvidence,
+    requireRemovalEvidence: true,
     isTCRofTCRs,
     relTcrDisabled
   }
@@ -98,7 +96,7 @@ const getTcrMetaEvidence = async (tcrState, parentTCRAddress) => {
     itemName: relItemName.toLowerCase(),
     itemNamePlural: relItemNamePlural.toLowerCase(),
     isConnectedTCR: true,
-    requireRemovalEvidence: relRequireRemovalEvidence,
+    requireRemovalEvidence: true,
     isTCRofTCRs: true,
     parentTCRAddress
   }
