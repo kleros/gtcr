@@ -48,7 +48,7 @@ const ItemParams = ({
         {
           label: 'Address',
           description: 'The list address.',
-          type: 'GTCR address',
+          type: itemTypes.GTCR_ADDRESS,
           isIdentifier: true
         }
       ])

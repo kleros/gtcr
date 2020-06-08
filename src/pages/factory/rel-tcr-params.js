@@ -556,14 +556,14 @@ const validationSchema = yup.object().shape({
   relArbitratorAddress: yup
     .string()
     .required('An arbitrator address is required.')
-    .max(160, 'Ethereum addresses are 42 characters long.'),
+    .max(42, 'Ethereum addresses are 42 characters long.'),
   relArbitratorExtraData: yup
     .string()
     .required('The arbitrator extra data is required.'),
   relGovernorAddress: yup
     .string()
     .required('A governor address is required.')
-    .max(160, 'Ethereum addresses are 42 characters long.'),
+    .max(42, 'Ethereum addresses are 42 characters long.'),
   relSubmissionBaseDeposit: yup
     .number()
     .typeError('Amount should be a number.')

@@ -686,7 +686,7 @@ const validationSchema = yup.object().shape({
   tcrTitle: yup
     .string()
     .required('A title is required.')
-    .max(30, 'Title must be less than 60 characters long.'),
+    .max(40, 'Title must be less than 40 characters long.'),
   tcrDescription: yup
     .string()
     .required('A description is required.')
@@ -694,22 +694,22 @@ const validationSchema = yup.object().shape({
   arbitratorAddress: yup
     .string()
     .required('An arbitrator address is required.')
-    .max(160, 'Ethereum addresses are 42 characters long.'),
+    .max(42, 'Ethereum addresses are 42 characters long.'),
   arbitratorExtraData: yup
     .string()
     .required('The arbitrator extra data is required.'),
   governorAddress: yup
     .string()
     .required('A governor address is required.')
-    .max(160, 'Ethereum addresses are 42 characters long.'),
+    .max(42, 'Ethereum addresses are 42 characters long.'),
   itemName: yup
     .string()
     .required('An item name is required.')
-    .max(60, 'The item name must be less than 20 characters long.'),
+    .max(20, 'The item name must be less than 20 characters long.'),
   itemNamePlural: yup
     .string()
     .required('The plural of the item name is required.')
-    .max(60, 'The item name must be less than 20 characters long.'),
+    .max(20, 'The item name must be less than 20 characters long.'),
   submissionBaseDeposit: yup
     .number()
     .typeError('Amount should be a number.')
