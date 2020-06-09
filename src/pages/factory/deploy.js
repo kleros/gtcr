@@ -300,9 +300,9 @@ const Deploy = ({ setTxState, tcrState, setTcrState }) => {
         parseEther(tcrState.relRemovalChallengeBaseDeposit.toString()),
         Number(tcrState.relChallengePeriodDuration) * 60 * 60,
         [
-          tcrState.relSharedStakeMultiplier,
-          tcrState.relWinnerStakeMultiplier,
-          tcrState.relLoserStakeMultiplier
+          Math.ceil(Number(tcrState.relSharedStakeMultiplier)) * 100,
+          Math.ceil(Number(tcrState.relWinnerStakeMultiplier)) * 100,
+          Math.ceil(Number(tcrState.relLoserStakeMultiplier)) * 100
         ] // Shared, winner and loser stake multipliers in basis points.
       ]
       const relData = factory.interface.functions.deploy.encode(relTCRArgs)
@@ -324,9 +324,9 @@ const Deploy = ({ setTxState, tcrState, setTcrState }) => {
         parseEther(tcrState.removalChallengeBaseDeposit.toString()),
         Number(tcrState.challengePeriodDuration) * 60 * 60,
         [
-          tcrState.sharedStakeMultiplier,
-          tcrState.winnerStakeMultiplier,
-          tcrState.loserStakeMultiplier
+          Math.ceil(Number(tcrState.sharedStakeMultiplier)) * 100,
+          Math.ceil(Number(tcrState.winnerStakeMultiplier)) * 100,
+          Math.ceil(Number(tcrState.loserStakeMultiplier)) * 100
         ] // Shared, winner and loser stake multipliers in basis points.
       ]
       const tcrData = factory.interface.functions.deploy.encode(TCRArgs)

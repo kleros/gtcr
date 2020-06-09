@@ -451,25 +451,51 @@ const RelTCRParams = ({
               {...rest}
             />
             <StyledAlert
-              message="To appeal, in addition to paying enough fees to cover the payment to the jurors in case the appeal is lost, parties must also pay an additional stake. The stake of the side that ultimately loses the dispute is used as the reward given to the appeal fee contributors that funded the side that ultimately wins the dispute. This amount is calculated proportionally to the total juror fees required for appeal using the multipliers below, given in basis points. For example, a multiplier of 1000 will result in the stake being 10% of the total juror fees."
-              type="info"
+              message={
+                <div>
+                  To appeal, in addition to paying enough fees to cover the
+                  payment to the jurors in case the appeal is lost, parties must
+                  also pay an additional stake. The stake of the side that
+                  ultimately loses the dispute is used as the reward given to
+                  the appeal fee contributors that funded the side that
+                  ultimately wins the dispute.
+                  <br />
+                  <br />
+                  This amount is calculated proportionally to the total juror
+                  fees required for appeal using the multipliers below, given in
+                  percentage. For example, a multiplier of 10% will result in
+                  the stake being 10% of the total juror fees.
+                  <br />
+                  <br />
+                  If you choose very large stake multipliers, the expected
+                  returns of crowdfunders will improve, but appeal costs may
+                  become so large as to be a barrier. If you choose very small
+                  stake multipliers, total appeal costs are reduced, but
+                  crowdfunders may not be sufficiently incentivized to
+                  participate. Different multipliers can be chosen for the sides
+                  that won and lost the previous appeal round. The more one of
+                  these multipliers is larger than the other, the more the side
+                  with the smaller multiplier is favoured.
+                </div>
+              }
               showIcon
             />
             <StyledAlert
-              message="The total cost to fully fund one side of an appeal is: Total Appeal Cost=Total Juror Fees+Total Juror Fees*Stake Multiplier/10000"
+              message="The total cost to fully fund one side of an appeal is: Total Appeal Cost=Total Juror Fees+Total Juror Fees*Stake Multiplier"
               type="info"
               showIcon
             />
             <CustomInput
               name="relSharedStakeMultiplier"
-              placeholder="10000"
+              placeholder="100"
               error={errors.relSharedStakeMultiplier}
               touched={touched.relSharedStakeMultiplier}
               type={itemTypes.NUMBER}
+              addonAfter="%"
               label={
                 <span>
                   Shared stake multiplier&nbsp;
-                  <Tooltip title="This is the multiplier for the stake both parties must pay to fully fund their side of an appeal when there isn't a winner or loser (e.g. when the arbitrator refused to rule). Given in basis points.">
+                  <Tooltip title="This is the multiplier for the stake both parties must pay to fully fund their side of an appeal when there isn't a winner or loser (e.g. when the arbitrator refused to rule).">
                     <Icon type="question-circle-o" />
                   </Tooltip>
                 </span>
@@ -478,14 +504,15 @@ const RelTCRParams = ({
             />
             <CustomInput
               name="relWinnerStakeMultiplier"
-              placeholder="10000"
+              placeholder="100"
               error={errors.relWinnerStakeMultiplier}
               touched={touched.relWinnerStakeMultiplier}
               type={itemTypes.NUMBER}
+              addonAfter="%"
               label={
                 <span>
                   Winner stake multiplier&nbsp;
-                  <Tooltip title="This is the multiplier for the fee stake the winner of a round must pay to fully fund his side of an appeal. Given in basis points.">
+                  <Tooltip title="This is the multiplier for the fee stake the winner of a round must pay to fully fund his side of an appeal.">
                     <Icon type="question-circle-o" />
                   </Tooltip>
                 </span>
@@ -494,14 +521,15 @@ const RelTCRParams = ({
             />
             <CustomInput
               name="relLoserStakeMultiplier"
-              placeholder="20000"
+              placeholder="200"
               error={errors.relLoserStakeMultiplier}
               touched={touched.relLoserStakeMultiplier}
               type={itemTypes.NUMBER}
+              addonAfter="%"
               label={
                 <span>
                   Loser stake multiplier&nbsp;
-                  <Tooltip title="This is the multiplier for the fee stake the loser of a round must pay to fully fund his side of an appeal. Given in basis points.">
+                  <Tooltip title="This is the multiplier for the fee stake the loser of a round must pay to fully fund his side of an appeal.">
                     <Icon type="question-circle-o" />
                   </Tooltip>
                 </span>
@@ -578,14 +606,17 @@ const validationSchema = yup.object().shape({
     .required('A primary document is required.'),
   relSharedStakeMultiplier: yup
     .number()
+    .typeError('Amount should be a number.')
     .min(0, 'The stake multiplier cannot be negative.')
     .required('A value is required'),
   relWinnerStakeMultiplier: yup
     .number()
+    .typeError('Amount should be a number.')
     .min(0, 'The stake multiplier cannot be negative.')
     .required('A value is required'),
   relLoserStakeMultiplier: yup
     .number()
+    .typeError('Amount should be a number.')
     .min(0, 'The stake multiplier cannot be negative.')
     .required('A value is required')
 })
