@@ -374,7 +374,7 @@ const RelTCRParams = ({
               label={
                 <span>
                   Incorrect Challenge Compensation&nbsp;
-                  <Tooltip title="This is the deposit required to challenge a submission. It will be either reimbursed to the challenger or awarded to the submitter depending on who wins the dispute.">
+                  <Tooltip title="This amount, which is included in the deposits that challengers must make, is given to the submitter in the event that a challenged submission is ultimately ruled to be correct. One typically wants Incorrect Challenge Compensation to be zero, because being on the list should be an adequate incentive for submitters. However, if you anticipate frivolous challenges being a problem, a higher Incorrect Challenge Compensation can help protect against this. If Incorrect Challenge Compensation is too high, users will be disincentivized from challenging and incorrect entries may make it onto the list unchallenged.">
                     <Icon type="question-circle-o" />
                   </Tooltip>
                 </span>
@@ -389,7 +389,7 @@ const RelTCRParams = ({
               label={
                 <span>
                   Incorrect Removal Challenge Compensation&nbsp;
-                  <Tooltip title="This is the deposit required to challenge a removal request. It will be either reimbursed to the challenger or awarded to the party that removed the item depending on who wins the dispute.">
+                  <Tooltip title="This amount, which is included in the deposits that challengers to removal requests must make, is given to the removal requestor in the event that a challenged removal request is ultimately ruled to be correct. If Incorrect Removal Challenge Compensation is too high, users will be disincentivized from challenging removal requests and correct entries may be removed from the list unchallenged. If Incorrect Removal Challenge Compensation is too low, users may not be adequately incentivized to submit removal requests, and incorrect entries may remain on the list longer than they should.">
                     <Icon type="question-circle-o" />
                   </Tooltip>
                 </span>
@@ -407,7 +407,7 @@ const RelTCRParams = ({
               label={
                 <span>
                   Challenge Period Duration (hours)&nbsp;
-                  <Tooltip title="The length of the challenge period in hours.">
+                  <Tooltip title="The length of time (in hours) that a submission can be challenged before it it automatically accepted onto the list and the submitter's deposit is refunded.">
                     <Icon type="question-circle-o" />
                   </Tooltip>
                 </span>

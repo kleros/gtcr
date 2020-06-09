@@ -493,7 +493,7 @@ const TCRParams = ({
               label={
                 <span>
                   Incorrect Challenge Compensation&nbsp;
-                  <Tooltip title="This is the deposit required to challenge a submission.">
+                  <Tooltip title="This amount, which is included in the deposits that challengers must make, is given to the submitter in the event that a challenged submission is ultimately ruled to be correct. One typically wants Incorrect Challenge Compensation to be zero, because being on the list should be an adequate incentive for submitters. However, if you anticipate frivolous challenges being a problem, a higher Incorrect Challenge Compensation can help protect against this. If Incorrect Challenge Compensation is too high, users will be disincentivized from challenging and incorrect entries may make it onto the list unchallenged.">
                     <Icon type="question-circle-o" />
                   </Tooltip>
                 </span>
@@ -508,7 +508,7 @@ const TCRParams = ({
               label={
                 <span>
                   Incorrect Removal Challenge Compensation&nbsp;
-                  <Tooltip title="This is the deposit required to challenge a removal request.">
+                  <Tooltip title="This amount, which is included in the deposits that challengers to removal requests must make, is given to the removal requestor in the event that a challenged removal request is ultimately ruled to be correct. If Incorrect Removal Challenge Compensation is too high, users will be disincentivized from challenging removal requests and correct entries may be removed from the list unchallenged. If Incorrect Removal Challenge Compensation is too low, users may not be adequately incentivized to submit removal requests, and incorrect entries may remain on the list longer than they should.">
                     <Icon type="question-circle-o" />
                   </Tooltip>
                 </span>
@@ -526,7 +526,7 @@ const TCRParams = ({
               label={
                 <span>
                   Challenge Period Duration (hours) &nbsp;
-                  <Tooltip title="The length of the challenge period in hours.">
+                  <Tooltip title="The length of time (in hours) that a submission can be challenged before it it automatically accepted onto the list and the submitter's deposit is refunded.">
                     <Icon type="question-circle-o" />
                   </Tooltip>
                 </span>
@@ -543,7 +543,7 @@ const TCRParams = ({
                 <span>
                   Governor&nbsp;
                   <Tooltip
-                    title={`The address of the governor to use for this list. It can update parameters such as the challenge period duration, deposits, primary document and the TCR governor. By default it is set to ${defaultGovernorLabel}`}
+                    title={`The address of the governor to use for this list. It can update parameters such as the challenge period duration, deposits, primary document, etc. This address can also be used to transfer the role of governor to another address. By default this is set to ${defaultGovernorLabel}`}
                   >
                     <Icon type="question-circle-o" />
                   </Tooltip>
@@ -561,7 +561,7 @@ const TCRParams = ({
                 <span>
                   Arbitrator&nbsp;
                   <Tooltip
-                    title={`This is the contract address of the arbitrator that will resolve the disputes occurring in this list. By default it is set to ${defaultArbLabel}, but you could use any other arbitrator complying with the ERC 792 standard.`}
+                    title={`This is the contract address of the arbitrator that will resolve disputes regarding whether challenged submissions and challenged removal requests belong on this list. By default it is set to ${defaultArbLabel}, but you could use any other arbitrator complying with the ERC 792 standard.`}
                   >
                     <Icon type="question-circle-o" />
                   </Tooltip>
