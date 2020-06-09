@@ -182,7 +182,7 @@ const KlerosParams = ({
         <StyledInputContainer style={{ flex: 1, margin: '0 12px' }}>
           <label htmlFor="depositSlider">
             Number of Jurors&nbsp;
-            <Tooltip title="The deposit is the sum of the challenge reward bounty and the arbitration cost.">
+            <Tooltip title="This determines how many jurors will be drawn in the first round of any eventual disputes involving your list. In general, a standard number is 3. In cases where the decision is straightforward and not much effort is required, one juror might be sufficient. In situations where significant effort is required to review the case, it can be better to require more jurors. However, if you set a higher number of initial jurors, this will result in larger deposits being required by users which may result in a lower amount of submissions.">
               <Icon type="question-circle-o" />
             </Tooltip>
             :

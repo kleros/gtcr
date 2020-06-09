@@ -219,7 +219,7 @@ const RelTCRParams = ({
             <a href="https://ipfs.kleros.io/ipfs/QmbqgkZoGu7jJ8nTqee4NypEhK7YVBEJJmPJbJxz8Bx8nY/t2cr-primary-doc.pdf">
               here
             </a>{' '}
-            to view an example of a primary document.
+            to see an example.
           </div>
           <StyledUpload
             name="rel-primary-document"
@@ -245,7 +245,7 @@ const RelTCRParams = ({
           <StyledDepositContainer>
             <label htmlFor="depositSlider">
               Deposit&nbsp;
-              <Tooltip title="The deposit is the sum of the challenge reward bounty and the arbitration cost.">
+              <Tooltip title="These are the funds users will have to deposit in order to make a submission into the list, which are sufficient to cover both arbitration costs paid to jurors and the rewards that users earn for a successful challenge. If the deposit is too low, incorrect submissions may not be flagged for dispute which could result in incorrect items being accepted in the list. If the deposit is too high, challengers will be likely to catch most malicious submissions, but people will only rarely submit to your list (so you may end up having a list that is difficult to attack but largely empty).">
                 <Icon type="question-circle-o" />
               </Tooltip>
               :{' '}
