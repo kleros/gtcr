@@ -199,9 +199,15 @@ const CrowdfundModal = ({ statusCode, item, fileURI, ...rest }) => {
       </Typography.Title>
       <Typography.Paragraph level={4}>
         Contribute ETH for a chance to win up to{' '}
-        <ETHAmount decimals={4} amount={potentialReward} displayUnit />. You
-        will earn up to this amount if the side you choose wins the next round
-        of the dispute.
+        <ETHAmount
+          decimals={4}
+          amount={potentialReward
+            .mul(bigNumberify(Math.ceil(contributionShare * 10000) || 1))
+            .div(10000)}
+          displayUnit
+        />
+        . You will earn up to this amount if the side you choose wins the next
+        round of the dispute.
       </Typography.Paragraph>
       <Typography.Paragraph>
         How much ETH do you want to contribute?
