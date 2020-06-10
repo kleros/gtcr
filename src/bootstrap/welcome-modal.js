@@ -120,8 +120,8 @@ const WelcomeModal = () => {
           <Kleros style={{ width: '100px', height: '100px', margin: '24px' }} />
           <Title level={4}>Empower Your Community</Title>
           <Paragraph>
-            Integrate Kleros, define guidelines and let your community take care
-            of the curation.
+            Create a list, define guidelines and put curation in the hands of
+            the community.
           </Paragraph>
         </Infograph>
         <Infograph>
