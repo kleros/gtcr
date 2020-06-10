@@ -144,7 +144,8 @@ const {
 } = Connectors
 
 const connectors = {}
-const defaultNetwork = Number(process.env.REACT_APP_DEFAULT_NETWORK) || 1
+const defaultNetwork =
+  Number(process.env.REACT_APP_DEFAULT_NETWORK) || NETWORK.MAINNET
 if (process.env.REACT_APP_RPC_URLS) {
   const supportedNetworkURLs = JSON.parse(process.env.REACT_APP_RPC_URLS)
   connectors.Infura = new NetworkOnlyConnector({
@@ -171,7 +172,8 @@ if (fortmaticApiKey)
     api: FortmaticApi,
     apiKey: fortmaticApiKey,
     logoutOnDeactivation: false,
-    testNetwork: defaultNetwork === 1 ? null : NETWORK_NAME[defaultNetwork]
+    testNetwork:
+      defaultNetwork === NETWORK.MAINNET ? null : NETWORK_NAME[defaultNetwork]
   })
 
 if (window.ethereum)
