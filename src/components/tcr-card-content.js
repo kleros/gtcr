@@ -27,7 +27,12 @@ const StyledResult = styled(Result)`
   }
 `
 
-const TCRCardContent = ({ tcrAddress, currentTCRAddress, ID }) => {
+const TCRCardContent = ({
+  tcrAddress,
+  currentTCRAddress,
+  ID,
+  hideDetailsButton
+}) => {
   const { library, active, networkId } = useWeb3Context()
   const [error, setError] = useState()
   const gtcr = useMemo(() => {
@@ -65,9 +70,11 @@ const TCRCardContent = ({ tcrAddress, currentTCRAddress, ID }) => {
           />
         </StyledItemCol>
         <StyledItemCol>
-          <Link to={`/tcr/${currentTCRAddress}/${ID}`}>
-            <Button>Details</Button>
-          </Link>
+          {!hideDetailsButton && (
+            <Link to={`/tcr/${currentTCRAddress}/${ID}`}>
+              <Button>Details</Button>
+            </Link>
+          )}
           <Link to={`/tcr/${tcrAddress}`} style={{ marginLeft: '12px' }}>
             <Button type="primary">Open List</Button>
           </Link>

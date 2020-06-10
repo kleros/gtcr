@@ -304,6 +304,7 @@ export default () => {
                     <Card key={i}>
                       <TCRCardContent
                         tcrAddress={transactions[txHash].contractAddress}
+                        hideDetailsButton
                       />
                     </Card>
                   ))}
