@@ -12,9 +12,9 @@ const itemTourSteps = metadata => {
     },
     {
       selector: `#item-status-card`,
-      content: `Here you can find information on the current state of the ${(itemName &&
+      content: `Here you can find information about the current status of the ${(itemName &&
         itemName.toLowerCase()) ||
-        'item'}`
+        'item'} and the challenge bounty among others.`
     },
     {
       selector: `#item-action-button`,
