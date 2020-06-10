@@ -5,9 +5,10 @@ const itemTourSteps = metadata => {
 
   return [
     {
-      content: `Lets take a quick tour of the ${(itemName &&
+      content: `The ${(itemName && itemName.toLowerCase()) ||
+        'item'} details view displays some key information about a specific ${(itemName &&
         itemName.toLowerCase()) ||
-        'item'} details view.`
+        'item'}.`
     },
     {
       selector: `#item-status-card`,
