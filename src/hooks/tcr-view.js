@@ -27,6 +27,7 @@ const useTcrView = tcrAddress => {
   const [removalChallengeDeposit, setRemovalChallengeDeposit] = useState()
   const [itemSubmissionLogs, setItemSubmissionLogs] = useState()
   const [connectedTCRAddr, setConnectedTCRAddr] = useState()
+  const [depositFor, setDepositFor] = useState()
   const arbitrableTCRViewAddr = useNetworkEnvVariable(
     'REACT_APP_GTCRVIEW_ADDRESSES',
     networkId
@@ -88,9 +89,7 @@ const useTcrView = tcrAddress => {
   // Get the current arbitration cost to calculate request and challenge deposits.
   useEffect(() => {
     ;(async () => {
-      // We also check that arbitrationCost != null to prevent the effect
-      // from running more than once.
-      if (!arbitrableTCRData || arbitrationCost != null) return
+      if (!arbitrableTCRData || tcrAddress === depositFor) return
       try {
         const {
           arbitrator: arbitratorAddress,
@@ -132,12 +131,13 @@ const useTcrView = tcrAddress => {
         setSubmissionChallengeDeposit(submissionChallengeDeposit)
         setRemovalDeposit(removalDeposit)
         setRemovalChallengeDeposit(removalChallengeDeposit)
+        setDepositFor(arbitrableTCRData.tcrAddress)
       } catch (err) {
         console.error('Error computing arbitration cost:', err)
         setError('Error computing arbitration cost')
       }
     })()
-  }, [arbitrableTCRData, arbitrationCost, library])
+  }, [arbitrableTCRData, arbitrationCost, depositFor, library, tcrAddress])
 
   // Fetch meta evidence.
   useEffect(() => {
