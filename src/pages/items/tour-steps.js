@@ -46,9 +46,8 @@ const itemsTourSteps = metadata => {
             ⚠️
           </span>
           Before making your submission, make sure it complies with the Listing
-          Policies. If you submit a non-compliant{' '}
-          {itemName.toLowerCase() || 'item'}, it will be challenged and you will
-          lose your deposit.
+          Policy. If you submit a non-compliant list, it will be rejected and
+          you will lose your deposit
           <span role="img" aria-label="warning">
             ⚠️
           </span>
