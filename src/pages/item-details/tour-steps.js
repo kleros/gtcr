@@ -20,8 +20,8 @@ const itemTourSteps = metadata => {
       selector: `#item-action-button`,
       content: `Here you will find available actions for the ${(itemName &&
         itemName.toLowerCase()) ||
-        'item'}. ${capitalizeFirstLetter(itemNamePlural) ||
-        'Items'} can be submitted, removed or challenged depending on its state.`
+        'item'}. ${(itemNamePlural && capitalizeFirstLetter(itemNamePlural)) ||
+        'Items'} can be submitted, removed or challenged depending on their status.`
     },
     {
       selector: `#item-details-card`,
