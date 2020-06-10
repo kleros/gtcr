@@ -2,6 +2,36 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.0.0](https://github.com/kleros/gtcr/compare/v0.9.7...v1.0.0) (2020-06-10)
+
+
+### Features
+
+* display reward proportional to contribution and close [#99](https://github.com/kleros/gtcr/issues/99) ([d752a49](https://github.com/kleros/gtcr/commit/d752a4945b13f632fdfdc8807f77580a482514df))
+* set default network to mainnet 🚀 ([c5166e1](https://github.com/kleros/gtcr/commit/c5166e18d069e381f9e7f59393b6e5303ada39dc))
+* use percentage for multipliers, closes [#111](https://github.com/kleros/gtcr/issues/111), closes [#120](https://github.com/kleros/gtcr/issues/120) ([2037bce](https://github.com/kleros/gtcr/commit/2037bce58a0a8f17cd7531027cd8c36729eadc8e))
+
+
+### Bug Fixes
+
+* clarify tooltips, closes [#113](https://github.com/kleros/gtcr/issues/113), closes [#115](https://github.com/kleros/gtcr/issues/115), closes [#116](https://github.com/kleros/gtcr/issues/116) ([99dabba](https://github.com/kleros/gtcr/commit/99dabba06fb5ac397974813e5590c0c35e513f6d))
+* clarify tooltips, closes [#117](https://github.com/kleros/gtcr/issues/117), closes [#118](https://github.com/kleros/gtcr/issues/118), closes [#119](https://github.com/kleros/gtcr/issues/119) ([7b8d2a0](https://github.com/kleros/gtcr/commit/7b8d2a093940c9bde9d489b95475ece964dec6c3))
+* don't link disabled badges list and fix typos ([74b105b](https://github.com/kleros/gtcr/commit/74b105b79e0e1d7449e9cc07cce3319112d15a28))
+* dont display details button on deployed tcrs card ([7c052d0](https://github.com/kleros/gtcr/commit/7c052d0cd44bac0c54df948cf0810947efeadcca))
+* empty field error message and close [#105](https://github.com/kleros/gtcr/issues/105) ([55f5cd4](https://github.com/kleros/gtcr/commit/55f5cd403715ae25e83af6534180b7e177746f17))
+* hide button if there is no error as well ([e1919a5](https://github.com/kleros/gtcr/commit/e1919a5766ed1434533bb872b1488dbf29a6300a))
+* improve item cards button arrangement ([0951b40](https://github.com/kleros/gtcr/commit/0951b40827e456c4d2c63bf556fcaa52175a65b7))
+* improve wording and close [#121](https://github.com/kleros/gtcr/issues/121) ([c5fd974](https://github.com/kleros/gtcr/commit/c5fd9744fc19b45c1425cef0e10f7efdf6f326ee))
+* improve wording and close [#122](https://github.com/kleros/gtcr/issues/122) ([7212a72](https://github.com/kleros/gtcr/commit/7212a7227b4af6e1195cbf49fe7eb6971dfd5094))
+* improve wording and close [#124](https://github.com/kleros/gtcr/issues/124) ([859887b](https://github.com/kleros/gtcr/commit/859887b072e556f6eddad7f71b24be5ce82e14e3))
+* improve wording and close [#125](https://github.com/kleros/gtcr/issues/125) ([f10e305](https://github.com/kleros/gtcr/commit/f10e3050b9b516155f3f8c935d999274038fffda))
+* improve wording and close [#126](https://github.com/kleros/gtcr/issues/126) ([fc57ac8](https://github.com/kleros/gtcr/commit/fc57ac89dce1a61afd462dd58272ef947aaa137a))
+* improve wording and close [#127](https://github.com/kleros/gtcr/issues/127) ([3b93e62](https://github.com/kleros/gtcr/commit/3b93e62411ef8abcf81d346f3db69e006dfad86e))
+* item card content alignment ([83d96e0](https://github.com/kleros/gtcr/commit/83d96e0c7bb1ca1f58f64537cbb8caf651baeefa))
+* loading indicator while deploying ([2e5c313](https://github.com/kleros/gtcr/commit/2e5c313245f4cf72b26f0617708942aa3926f811))
+* make removal evidence mandatory and close [#110](https://github.com/kleros/gtcr/issues/110) ([1083468](https://github.com/kleros/gtcr/commit/10834686b8321f65e87890e73fbd31fffb4af8ca))
+* wording improvements and close [#109](https://github.com/kleros/gtcr/issues/109) ([81cc40c](https://github.com/kleros/gtcr/commit/81cc40c122b7e620072b69406466a73dfe988fb4))
+
 ### [0.9.7](https://github.com/kleros/gtcr/compare/v0.9.6...v0.9.7) (2020-06-08)
 
 
