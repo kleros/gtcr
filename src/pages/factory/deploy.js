@@ -338,6 +338,7 @@ const Deploy = ({ setTxState, tcrState, setTcrState }) => {
       const deployTx = await txBatcher.batchSend(targets, values, datas, {
         gasLimit: 8000000
       })
+      setCurrentStep(1)
       setTxState({ txHash: deployTx.hash, status: 'pending' })
       setTxSubmitted(deployTx.hash)
       return {
