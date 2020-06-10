@@ -84,8 +84,8 @@ const WelcomeModal = () => {
     >
       <Title>Welcome to Kleros Curate</Title>
       <Paragraph>
-        Create your own curated lists and let your community moderate the
-        content.
+        Create your own lists, contribute to other people's lists and put
+        information in the hands of communities.
       </Paragraph>
       <StyledCurateLogo>
         <Logo style={{ width: '100%', height: '100%' }} />
