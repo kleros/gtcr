@@ -141,7 +141,7 @@ const AddBadgeModal = ({
                   title={tcrTitle}
                   description={
                     <>
-                      See the&nbsp;
+                      Read the&nbsp;
                       <a
                         href={`${process.env.REACT_APP_IPFS_GATEWAY}${fileURI ||
                           ''}`}

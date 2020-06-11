@@ -191,7 +191,7 @@ const CrowdfundModal = ({ statusCode, item, fileURI, ...rest }) => {
       }}
     >
       <Typography.Title level={4}>
-        See the&nbsp;
+        Read the&nbsp;
         <a href={`${process.env.REACT_APP_IPFS_GATEWAY}${fileURI || ''}`}>
           Listing Criteria
         </a>

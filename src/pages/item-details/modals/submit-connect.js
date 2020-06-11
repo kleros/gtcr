@@ -320,7 +320,7 @@ const SubmitConnectModal = props => {
         title="Enable Badge"
         footer={[
           <Button key="back" onClick={onCancel}>
-            Return
+            Back
           </Button>
         ]}
         {...props}
@@ -334,7 +334,7 @@ const SubmitConnectModal = props => {
       title="Enable Badge"
       footer={[
         <Button key="back" onClick={onCancel}>
-          Return
+          Back
         </Button>,
         <Button
           key="submit"
@@ -349,7 +349,7 @@ const SubmitConnectModal = props => {
       {...props}
     >
       <Typography.Title level={4}>
-        See the&nbsp;
+        Read the&nbsp;
         <a href={`${process.env.REACT_APP_IPFS_GATEWAY}${fileURI || ''}`}>
           Listing Criteria
         </a>

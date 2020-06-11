@@ -119,7 +119,7 @@ const RemoveModal = ({ item, itemName = 'item', fileURI, ...rest }) => {
     <StyledModal
       footer={[
         <Button key="back" onClick={rest.onCancel}>
-          Return
+          Back
         </Button>,
         <Button
           key="challengeSubmit"
@@ -136,7 +136,7 @@ const RemoveModal = ({ item, itemName = 'item', fileURI, ...rest }) => {
       {...rest}
     >
       <Typography.Title level={4}>
-        See the&nbsp;
+        Read the&nbsp;
         <a href={`${process.env.REACT_APP_IPFS_GATEWAY}${fileURI || ''}`}>
           Listing Criteria
         </a>

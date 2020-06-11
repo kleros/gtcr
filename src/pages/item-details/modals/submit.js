@@ -235,7 +235,7 @@ const SubmitModal = props => {
         'Item'}`}
       footer={[
         <Button key="back" onClick={onCancel}>
-          Return
+          Back
         </Button>,
         <Button
           key="challengeSubmit"

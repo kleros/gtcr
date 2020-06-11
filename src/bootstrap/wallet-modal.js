@@ -31,7 +31,7 @@ const WalletModal = ({ connectors }) => {
       onCancel={cancelRequest}
       footer={[
         <Button key="back" onClick={cancelRequest}>
-          Return
+          Back
         </Button>
       ]}
     >

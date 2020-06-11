@@ -87,7 +87,7 @@ const EvidenceModal = ({ item, ...rest }) => {
     <StyledModal
       footer={[
         <Button key="back" onClick={rest.onCancel}>
-          Return
+          Back
         </Button>,
         <Button
           key="submitEvidence"
