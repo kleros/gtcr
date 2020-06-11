@@ -51,20 +51,37 @@ const padAddr = rawAddr => `${'0'.repeat(40 - rawAddr.length)}${rawAddr}`
 export const gtcrDecode = ({ columns, values }) => {
   const item = RLP.decode(values)
   return columns.map((col, i) => {
-    switch (typeToSolidity[col.type]) {
-      case solidityTypes.STRING:
-        return toUtf8String(item[i])
-      case solidityTypes.INT256:
-        return new BN(item[i], 16).fromTwos(256).toString(10) // Two's complement
-      case solidityTypes.ADDRESS: {
-        // If addresses are small, we must left pad them with zeroes
-        const rawAddr = item[i].toString('hex')
-        return getAddress(`0x${padAddr(rawAddr)}`)
+    try {
+      switch (typeToSolidity[col.type]) {
+        case solidityTypes.STRING: {
+          try {
+            return toUtf8String(item[i])
+          } catch (err) {
+            if (
+              err.message ===
+              'invalid utf8 byte sequence; unexpected continuation byte'
+            )
+              // If the string was a hex value, the decoder fails.
+              // return the raw hex.
+              return `0x${item[i].toString('hex')}`
+            else throw err
+          }
+        }
+        case solidityTypes.INT256:
+          return new BN(item[i], 16).fromTwos(256).toString(10) // Two's complement
+        case solidityTypes.ADDRESS: {
+          // If addresses are small, we must left pad them with zeroes
+          const rawAddr = item[i].toString('hex')
+          return getAddress(`0x${padAddr(rawAddr)}`)
+        }
+        case solidityTypes.BOOL:
+          return Boolean(new BN(item[i].toString('hex'), 16).toNumber())
+        default:
+          throw new Error(`Unhandled item type ${col.type}`)
       }
-      case solidityTypes.BOOL:
-        return Boolean(new BN(item[i].toString('hex'), 16).toNumber())
-      default:
-        throw new Error(`Unhandled item type ${col.type}`)
+    } catch (err) {
+      console.error(`Error decoding ${col.type}`, err)
+      return `Error decoding ${col.type}`
     }
   })
 }

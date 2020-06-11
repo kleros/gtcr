@@ -235,7 +235,7 @@ const useTcrView = tcrAddress => {
                 })
               } catch (err) {
                 console.warn(
-                  `Error decoding ${submissionLog._itemID} of TCR at ${tcrAddress} in details view`,
+                  `Error decoding ${submissionLog._itemID} of TCR at ${tcrAddress}`,
                   err
                 )
                 errors.push(

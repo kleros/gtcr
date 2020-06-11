@@ -124,8 +124,8 @@ const CardItemInfo = ({
     content = (
       <Result
         status="warning"
-        subTitle={item.errors.map(e => (
-          <p>{e}</p>
+        subTitle={item.errors.map((e, i) => (
+          <p key={i}>{e}</p>
         ))}
       />
     )
