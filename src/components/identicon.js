@@ -224,7 +224,7 @@ const Identicon = ({ className, large }) => {
                       loading={emailStatus === 'loading'}
                       disabled={emailStatus === 'loading'}
                     >
-                      {emailStatus === 'loading' ? '' : 'Send'}
+                      {emailStatus === 'loading' ? '' : 'Save'}
                     </Button>
                   </>
                 }
