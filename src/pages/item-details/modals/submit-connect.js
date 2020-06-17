@@ -28,7 +28,6 @@ import { useDebounce } from 'use-debounce'
 import { abi as _gtcr } from '@kleros/tcr/build/contracts/GeneralizedTCR.json'
 import ETHAmount from '../../../components/eth-amount.js'
 import { isETHAddress } from '../../../utils/string'
-import Archon from '@kleros/archon'
 import { useWeb3Context } from 'web3-react'
 import { ethers } from 'ethers'
 import ipfsPublish from '../../../utils/ipfs-publish'
@@ -223,8 +222,7 @@ const SubmitConnectModal = props => {
     if (!relTCRMetaEvidence) return
     const file = new TextEncoder().encode(JSON.stringify(match))
     /* eslint-disable-next-line prettier/prettier */
-    const multihash = Archon.utils.multihashFile(file, 0x1B)
-    const ipfsFileObj = await ipfsPublish(multihash, file)
+    const ipfsFileObj = await ipfsPublish('match-file.json', file)
     const fileURI = `/ipfs/${ipfsFileObj[1].hash}${ipfsFileObj[0].path}`
     const { columns, itemName } = relTCRMetaEvidence.metadata
 

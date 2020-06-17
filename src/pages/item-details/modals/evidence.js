@@ -7,7 +7,6 @@ import { TCRViewContext } from '../../../bootstrap/tcr-view-context'
 import { WalletContext } from '../../../bootstrap/wallet-context'
 import itemPropTypes from '../../../prop-types/item'
 import EvidenceForm from '../../../components/evidence-form.js'
-import Archon from '@kleros/archon'
 import ipfsPublish from '../../../utils/ipfs-publish.js'
 import { TourContext } from '../../../bootstrap/tour-context'
 
@@ -36,13 +35,8 @@ const EvidenceModal = ({ item, ...rest }) => {
 
         const enc = new TextEncoder()
         const fileData = enc.encode(JSON.stringify(evidenceJSON))
-        /* eslint-disable prettier/prettier */
-        const fileMultihash = Archon.utils.multihashFile(
-          evidenceJSON,
-          0x1B
-        )
         /* eslint-enable prettier/prettier */
-        const ipfsEvidenceObject = await ipfsPublish(fileMultihash, fileData)
+        const ipfsEvidenceObject = await ipfsPublish('evidence.json', fileData)
         const ipfsEvidencePath = `/ipfs/${ipfsEvidenceObject[1].hash +
           ipfsEvidenceObject[0].path}`
 

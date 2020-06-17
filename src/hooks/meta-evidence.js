@@ -16,7 +16,9 @@ const useMetaEvidence = ({ arbitrable, library }) => {
           })
         ).map(log => arbitrable.interface.parseLog(log))
         if (logs.length === 0)
-          throw new Error('No meta evidence available for this address.')
+          throw new Error(
+            `No meta evidence available for TCR at. ${arbitrable.address}`
+          )
 
         // Take the penultimate item. This is the most recent meta evidence
         // for registration requests.
