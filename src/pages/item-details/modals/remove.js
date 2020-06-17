@@ -2,7 +2,6 @@ import React, { useContext, useCallback } from 'react'
 import PropTypes from 'prop-types'
 import { Modal, Descriptions, Typography, Divider, Spin, Button } from 'antd'
 import { ethers } from 'ethers'
-import Archon from '@kleros/archon'
 import styled from 'styled-components/macro'
 import { abi as _gtcr } from '@kleros/tcr/build/contracts/GeneralizedTCR.json'
 import { TCRViewContext } from '../../../bootstrap/tcr-view-context'
@@ -51,11 +50,10 @@ const RemoveModal = ({ item, itemName = 'item', fileURI, ...rest }) => {
 
           const enc = new TextEncoder()
           const fileData = enc.encode(JSON.stringify(evidenceJSON))
-
-          // eslint-disable-next-line unicorn/number-literal-case
-          const fileMultihash = Archon.utils.multihashFile(evidenceJSON, 0x1b)
-
-          const ipfsEvidenceObject = await ipfsPublish(fileMultihash, fileData)
+          const ipfsEvidenceObject = await ipfsPublish(
+            'evidence.json',
+            fileData
+          )
           ipfsEvidencePath = `/ipfs/${ipfsEvidenceObject[1].hash +
             ipfsEvidenceObject[0].path}`
         }

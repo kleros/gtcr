@@ -62,6 +62,7 @@ const _SubmissionForm = ({
         <InputSelector
           type={column.type}
           name={`${column.label}`}
+          allowedFileTypes={column.allowedFileTypes}
           key={index}
           values={values}
           error={errors[column.label]}

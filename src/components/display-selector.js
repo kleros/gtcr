@@ -1,6 +1,7 @@
 import React from 'react'
 import { Typography, Avatar, Checkbox } from 'antd'
 import styled from 'styled-components/macro'
+import PropTypes from 'prop-types'
 import EthAddress from './eth-address'
 import GTCRAddress from './gtcr-address'
 import itemTypes from '../utils/item-types'
@@ -13,7 +14,7 @@ const StyledImage = styled.img`
   padding: 5px;
 `
 
-const DisplaySelector = ({ type, value, linkImage }) => {
+const DisplaySelector = ({ type, value, linkImage, allowedFileTypes }) => {
   switch (type) {
     case itemTypes.GTCR_ADDRESS:
       return <GTCRAddress address={value || ZERO_ADDRESS} />
@@ -26,6 +27,22 @@ const DisplaySelector = ({ type, value, linkImage }) => {
       return <Checkbox disabled checked={value} />
     case itemTypes.LONGTEXT:
       return <Typography.Paragraph>{value || LOREM_IPSUM}</Typography.Paragraph>
+    case itemTypes.FILE: {
+      if (!value) return ''
+      if (!allowedFileTypes) return 'No allowed file types specified'
+
+      const allowedFileTypesArr = allowedFileTypes.split(' ')
+      if (allowedFileTypesArr.length === 0)
+        return 'No allowed file types specified'
+
+      const fileExtension = value.slice(value.lastIndexOf('.') + 1)
+      if (!allowedFileTypesArr.includes(fileExtension))
+        return 'Forbidden file type'
+
+      return (
+        <a href={`${process.env.REACT_APP_IPFS_GATEWAY}${value || ''}`}>Link</a>
+      )
+    }
     case itemTypes.IMAGE:
       return value ? (
         linkImage ? (
@@ -45,8 +62,29 @@ const DisplaySelector = ({ type, value, linkImage }) => {
         <Avatar shape="square" size="large" icon="file-image" />
       )
     default:
-      throw new Error(`Unhandled type ${type}.`)
+      return (
+        <Typography.Paragraph>
+          Error: Unhandled Type {type} for data {value}
+        </Typography.Paragraph>
+      )
   }
+}
+
+DisplaySelector.propTypes = {
+  type: PropTypes.oneOf(Object.values(itemTypes)).isRequired,
+  value: PropTypes.oneOfType([
+    PropTypes.string,
+    PropTypes.number,
+    PropTypes.bool,
+    PropTypes.object
+  ]).isRequired,
+  linkImage: PropTypes.bool,
+  allowedFileTypes: PropTypes.string
+}
+
+DisplaySelector.defaultProps = {
+  linkImage: null,
+  allowedFileTypes: null
 }
 
 export default DisplaySelector

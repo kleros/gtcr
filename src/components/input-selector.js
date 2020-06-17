@@ -1,10 +1,11 @@
 import React, { useCallback, useState } from 'react'
 import { Form, Switch, Input, Upload, message, Icon } from 'antd'
 import PropTypes from 'prop-types'
-import itemTypes from '../utils/item-types.js'
-import CustomInput from './custom-input.js'
 import { Field } from 'formik'
 import styled from 'styled-components/macro'
+import { getExtension } from 'mime'
+import itemTypes from '../utils/item-types.js'
+import CustomInput from './custom-input.js'
 import ipfsPublish from '../utils/ipfs-publish.js'
 import { sanitize } from '../utils/string.js'
 
@@ -29,7 +30,13 @@ UploadButton.defaultProps = {
   loading: null
 }
 
-const InputSelector = ({ type, setFieldValue, maxImgSizeMb, ...props }) => {
+const InputSelector = ({
+  type,
+  setFieldValue,
+  maxFileSizeMb,
+  allowedFileTypes,
+  ...props
+}) => {
   const [uploading, setUploading] = useState()
   const customRequest = useCallback(
     fieldName => async ({ file, onSuccess, onError }) => {
@@ -58,19 +65,45 @@ const InputSelector = ({ type, setFieldValue, maxImgSizeMb, ...props }) => {
 
   const beforeImageUpload = useCallback(
     file => {
-      const isPNGorJPEGorSVG =
-        file.type === 'image/png' ||
-        file.type === 'image/svg+xml' ||
-        file.type === 'image/jpeg'
-      if (!isPNGorJPEGorSVG) message.error('Please use PNG, JPEG or SVG.')
+      if (
+        file.type !== 'image/png' &&
+        file.type !== 'image/svg+xml' &&
+        file.type !== 'image/jpeg'
+      ) {
+        message.error('Please use PNG, JPEG or SVG.')
+        return false
+      }
 
-      const isLt2M = file.size / 1024 / 1024 < (maxImgSizeMb || 2)
-      if (!isLt2M)
-        message.error(`Image must smaller than ${maxImgSizeMb || 2}MB.`)
+      if (file.size / 1024 / 1024 > (maxFileSizeMb || 2)) {
+        message.error(`Image must smaller than ${maxFileSizeMb || 2}MB.`)
+        return false
+      }
 
-      return isPNGorJPEGorSVG && isLt2M
+      return true
     },
-    [maxImgSizeMb]
+    [maxFileSizeMb]
+  )
+
+  const beforeFileUpload = useCallback(
+    file => {
+      const allowedFileTypesArr = allowedFileTypes.split(' ')
+      if (!allowedFileTypesArr.includes(getExtension(file.type))) {
+        message.error(
+          allowedFileTypesArr.length > 1
+            ? `Allowed file types are+${allowedFileTypesArr.map(e => ` .${e}`)}`
+            : `The only allowed file type is .${allowedFileTypesArr[0]}`
+        )
+        return false
+      }
+
+      if (file.size / 1024 / 1024 > (maxFileSizeMb || 10)) {
+        message.error(`File must smaller than ${maxFileSizeMb || 10}MB.`)
+        return false
+      }
+
+      return true
+    },
+    [allowedFileTypes, maxFileSizeMb]
   )
 
   const { values, label, name } = props
@@ -106,25 +139,53 @@ const InputSelector = ({ type, setFieldValue, maxImgSizeMb, ...props }) => {
       )
     case itemTypes.IMAGE:
       return (
-        <StyledUpload
-          name={name}
-          listType="picture-card"
-          className="avatar-uploader"
-          showUploadList={false}
-          customRequest={customRequest(name)}
-          beforeUpload={beforeImageUpload}
-          onChange={fileUploadStatusChange}
-        >
-          {values[name] ? (
-            <img
-              src={`${process.env.REACT_APP_IPFS_GATEWAY}${values[name]}`}
-              style={{ height: '70px', objectFit: 'contain' }}
-              alt="preview"
-            />
-          ) : (
-            <UploadButton loading={uploading} />
-          )}
-        </StyledUpload>
+        <>
+          {label}:
+          <StyledUpload
+            name={name}
+            listType="picture-card"
+            className="avatar-uploader"
+            showUploadList={false}
+            customRequest={customRequest(name)}
+            beforeUpload={beforeImageUpload}
+            onChange={fileUploadStatusChange}
+          >
+            {values[name] ? (
+              <a href={`${process.env.REACT_APP_IPFS_GATEWAY}${values[name]}`}>
+                <img
+                  src={`${process.env.REACT_APP_IPFS_GATEWAY}${values[name]}`}
+                  style={{ height: '70px', objectFit: 'contain' }}
+                  alt="preview"
+                />
+              </a>
+            ) : (
+              <UploadButton loading={uploading} />
+            )}
+          </StyledUpload>
+        </>
+      )
+    case itemTypes.FILE:
+      return (
+        <>
+          {label}:
+          <StyledUpload
+            name={name}
+            listType="picture-card"
+            className="avatar-uploader"
+            showUploadList={false}
+            customRequest={customRequest(name)}
+            beforeUpload={beforeFileUpload}
+            onChange={fileUploadStatusChange}
+          >
+            {values[name] ? (
+              <a href={`${process.env.REACT_APP_IPFS_GATEWAY}${values[name]}`}>
+                <Icon type="file" style={{ fontSize: '30px' }} />
+              </a>
+            ) : (
+              <UploadButton loading={uploading} />
+            )}
+          </StyledUpload>
+        </>
       )
     default:
       throw new Error(`Unhandled input type ${type}`)

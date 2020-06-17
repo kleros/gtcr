@@ -114,12 +114,14 @@ const OptionItem = ({ item: { itemID, columns = [], tcrAddress } }) => {
               <DisplaySelector
                 type={columns[1].type}
                 value={columns[1].value}
+                allowedFileTypes={columns[1].allowedFileTypes}
               />
             </StyledItemField>
             <StyledItemField>
               <DisplaySelector
                 type={columns[0].type}
                 value={columns[0].value}
+                allowedFileTypes={columns[0].allowedFileTypes}
               />
             </StyledItemField>
           </>
@@ -131,6 +133,7 @@ const OptionItem = ({ item: { itemID, columns = [], tcrAddress } }) => {
                 <DisplaySelector
                   type={column.type}
                   value={column.value}
+                  allowedFileTypes={column.allowedFileTypes}
                   key={j}
                 />
               </StyledItemField>
