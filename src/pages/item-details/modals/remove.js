@@ -1,6 +1,14 @@
 import React, { useContext, useCallback } from 'react'
 import PropTypes from 'prop-types'
-import { Modal, Descriptions, Typography, Divider, Spin, Button } from 'antd'
+import {
+  Modal,
+  Descriptions,
+  Typography,
+  Divider,
+  Spin,
+  Button,
+  Alert
+} from 'antd'
 import { ethers } from 'ethers'
 import styled from 'styled-components/macro'
 import { abi as _gtcr } from '@kleros/tcr/build/contracts/GeneralizedTCR.json'
@@ -25,6 +33,10 @@ const StyledModal = styled(Modal)`
     border-top-left-radius: 14px;
     border-top-right-radius: 14px;
   }
+`
+
+const StyledAlert = styled(Alert)`
+  margin-bottom: 12px;
 `
 
 const RemoveModal = ({ item, itemName = 'item', fileURI, ...rest }) => {
@@ -148,10 +160,11 @@ const RemoveModal = ({ item, itemName = 'item', fileURI, ...rest }) => {
       {metadata.requireRemovalEvidence && (
         <EvidenceForm onSubmit={removeItem} formID={EVIDENCE_FORM_ID} />
       )}
-      <Typography.Paragraph>
-        To remove an item, a deposit is required. This value will be reimbursed
-        after the challenge period if no one challenges the request.
-      </Typography.Paragraph>
+      <StyledAlert
+        message="Note that this is a deposit, not a fee and it will be reimbursed if your submission is accepted."
+        type="info"
+        showIcon
+      />
       <Divider />
       <Descriptions
         bordered

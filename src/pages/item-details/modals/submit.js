@@ -66,6 +66,9 @@ const _SubmissionForm = ({
           key={index}
           values={values}
           error={errors[column.label]}
+          setFieldValue={setFieldValue}
+          disabled={disabledFields && disabledFields[index]}
+          touched={touched[column.label]}
           label={
             <span>
               {column.label}&nbsp;
@@ -74,9 +77,6 @@ const _SubmissionForm = ({
               </Tooltip>
             </span>
           }
-          setFieldValue={setFieldValue}
-          disabled={disabledFields && disabledFields[index]}
-          touched={touched[column.label]}
         />
       ))}
   </Form>
@@ -268,12 +268,11 @@ const SubmitModal = props => {
         <a href={`${process.env.REACT_APP_IPFS_GATEWAY}${fileURI || ''}`}>
           listing criteria
         </a>{' '}
-        to avoid losing your deposit.
+        to avoid challenges.
       </Typography.Paragraph>
-
       <StyledAlert
-        message="Warning: Submissions cannot be edited. Double check your submission before proceeding to avoid losing your deposit."
-        type="warning"
+        message="Note that this is a deposit, not a fee and it will be reimbursed if your submission is accepted."
+        type="info"
         showIcon
       />
       <Descriptions
