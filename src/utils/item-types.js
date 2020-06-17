@@ -4,6 +4,7 @@ const TEXT = 'text'
 const BOOLEAN = 'boolean'
 const GTCR_ADDRESS = 'GTCR address'
 const IMAGE = 'image'
+const FILE = 'file'
 
 export default {
   ADDRESS,
@@ -11,7 +12,8 @@ export default {
   TEXT,
   BOOLEAN,
   GTCR_ADDRESS,
-  IMAGE
+  IMAGE,
+  FILE
 }
 
 export const solidityTypes = {
@@ -27,7 +29,8 @@ export const typeToSolidity = {
   [TEXT]: solidityTypes.STRING,
   [BOOLEAN]: solidityTypes.BOOL,
   [GTCR_ADDRESS]: solidityTypes.ADDRESS,
-  [IMAGE]: solidityTypes.STRING
+  [IMAGE]: solidityTypes.STRING, // We only store a link to the file onchain.
+  [FILE]: solidityTypes.STRING // We only store a link to the file onchain.
 }
 
 export const typeDefaultValues = {
@@ -36,7 +39,8 @@ export const typeDefaultValues = {
   [BOOLEAN]: false,
   [NUMBER]: 0,
   [GTCR_ADDRESS]: '',
-  [IMAGE]: ''
+  [IMAGE]: '',
+  [FILE]: ''
 }
 
 export const searchableFields = [ADDRESS, GTCR_ADDRESS, TEXT]

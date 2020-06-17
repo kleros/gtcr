@@ -177,6 +177,7 @@ const ItemDetailsCard = ({
                 type={column.type}
                 value={item && item.decodedData[index]}
                 linkImage
+                allowedFileTypes={column.allowedFileTypes}
               />
             </StyledField>
           ))}

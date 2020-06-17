@@ -22,7 +22,7 @@ import ItemDetailsCard from '../../components/item-details-card'
 import itemTypes from '../../utils/item-types'
 import { STATUS_CODE } from '../../utils/item-status'
 
-const { LONGTEXT, IMAGE } = itemTypes
+const { LONGTEXT, IMAGE, FILE } = itemTypes
 
 const StyledAlert = styled(Alert)`
   margin-bottom: 42px;
@@ -97,13 +97,31 @@ const ItemParams = ({
             closable
           />
           <Row
-            gutter={{ xs: 4, sm: 8, md: 12 }}
+            gutter={{ xs: 3, sm: 6, md: 10 }}
             type="flex"
             justify="space-between"
           >
-            <Col span={5}>Name</Col>
-            <Col span={8}>Description</Col>
-            <Col span={6}>Type</Col>
+            <Col span={4}>
+              Name
+              <Tooltip title="This will be the field label displayed to users when submitting an item.">
+                &nbsp;
+                <Icon type="question-circle-o" />
+              </Tooltip>
+            </Col>
+            <Col span={7}>
+              Description
+              <Tooltip title="This will be the text displayed when the user clicks the '?' symbol near the field label.">
+                &nbsp;
+                <Icon type="question-circle-o" />
+              </Tooltip>
+            </Col>
+            <Col span={4}>
+              Type
+              <Tooltip title="This is the column type">
+                &nbsp;
+                <Icon type="question-circle-o" />
+              </Tooltip>
+            </Col>
             <Col span={2}>
               Indexed
               <Tooltip title="Whether to display this field on the list of items.">
@@ -111,6 +129,17 @@ const ItemParams = ({
                 <Icon type="question-circle-o" />
               </Tooltip>
             </Col>
+            {columns.filter(col => col.type === FILE).length > 0 ? (
+              <Col span={4}>
+                Allowed File Types
+                <Tooltip title="A list of space separated allowed file extensions (e.g.: pdf doc  mp3).">
+                  &nbsp;
+                  <Icon type="question-circle-o" />
+                </Tooltip>
+              </Col>
+            ) : (
+              <Col span={4} />
+            )}
             {columns.length > 1 && <Col span={1} />}
           </Row>
         </>
@@ -125,12 +154,12 @@ const ItemParams = ({
                     columns.length > 0 &&
                     columns.map((_, index) => (
                       <Row
-                        gutter={{ xs: 4, sm: 8, md: 12 }}
+                        gutter={{ xs: 3, sm: 6, md: 10 }}
                         key={index}
                         type="flex"
                         justify="space-between"
                       >
-                        <Col span={5}>
+                        <Col span={4}>
                           <CustomInput
                             name={`columns[${index}].label`}
                             hasFeedback
@@ -147,7 +176,7 @@ const ItemParams = ({
                             {...rest}
                           />
                         </Col>
-                        <Col span={8}>
+                        <Col span={7}>
                           <CustomInput
                             name={`columns[${index}].description`}
                             hasFeedback
@@ -164,7 +193,7 @@ const ItemParams = ({
                             {...rest}
                           />
                         </Col>
-                        <Col span={6}>
+                        <Col span={4}>
                           <Field name={`columns[${index}].type`}>
                             {({ field }) => (
                               <Form.Item>
@@ -190,7 +219,8 @@ const ItemParams = ({
                           .filter(isIdentifier => !!isIdentifier).length < 3 ||
                           columns[index].isIdentifier) &&
                         columns[index].type !== LONGTEXT &&
-                        columns[index].type !== IMAGE ? ( // Image and long text cannot be identifiers.
+                        columns[index].type !== IMAGE &&
+                        columns[index].type !== FILE ? ( // Image, file and long text cannot be identifiers.
                           <Col span={2}>
                             <Field name={`columns[${index}].isIdentifier`}>
                               {({ field }) => (
@@ -211,6 +241,27 @@ const ItemParams = ({
                           </Col>
                         ) : (
                           <Col span={2} />
+                        )}
+                        {columns[index].type === FILE ? ( // Image and long text cannot be identifiers.
+                          <Col span={4}>
+                            <CustomInput
+                              name={`columns[${index}].allowedFileTypes`}
+                              hasFeedback
+                              touched={
+                                touched.columns &&
+                                touched.columns[index] &&
+                                touched.columns[index].allowedFileTypes
+                              }
+                              error={
+                                errors.columns &&
+                                errors.columns[index] &&
+                                errors.columns[index].allowedFileTypes
+                              }
+                              {...rest}
+                            />
+                          </Col>
+                        ) : (
+                          <Col span={4} />
                         )}
                         {columns.length > 1 && (
                           <Col span={1}>
@@ -256,6 +307,7 @@ const ItemParams = ({
             }
           }
         }
+        style={{ maxWidth: '250px' }}
       />
     </Card>
   )
@@ -265,7 +317,11 @@ const validationSchema = yup.object().shape({
   columns: yup.array().of(
     yup.object().shape({
       label: yup.string().required('The column label is required.'),
-      description: yup.string().required('The column description is required.')
+      description: yup.string().required('The column description is required.'),
+      allowedFileTypes: yup.string().when('type', {
+        is: FILE,
+        then: yup.string().required('At least one file type is required.')
+      })
     })
   )
 })
@@ -311,6 +367,7 @@ ItemParams.propTypes = {
         description: PropTypes.string.isRequired,
         label: PropTypes.string.isRequired,
         type: PropTypes.string.isRequired,
+        allowedFileTypes: PropTypes.string,
         isIdentifier: PropTypes.bool
       })
     ).isRequired,
