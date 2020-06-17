@@ -259,7 +259,11 @@ const Deploy = ({ setTxState, tcrState, setTcrState }) => {
     'REACT_APP_TX_BATCHER_ADDRESSES',
     networkId
   )
-  const { submissionDeposit, metaEvidence } = useTcrView(defaultTCRAddress)
+  const {
+    submissionDeposit,
+    metaEvidence,
+    challengePeriodDuration
+  } = useTcrView(defaultTCRAddress)
 
   const onDeploy = () => {
     pushWeb3Action(async (_, signer) => {
@@ -470,6 +474,7 @@ const Deploy = ({ setTxState, tcrState, setTcrState }) => {
           submissionDeposit={submissionDeposit}
           tcrAddress={defaultTCRAddress}
           metaEvidence={metaEvidence}
+          challengePeriodDuration={challengePeriodDuration}
         />
       )}
     </>

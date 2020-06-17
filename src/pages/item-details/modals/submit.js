@@ -13,11 +13,12 @@ import {
 import styled from 'styled-components/macro'
 import PropTypes from 'prop-types'
 import { abi as _gtcr } from '@kleros/tcr/build/contracts/GeneralizedTCR.json'
-import { WalletContext } from '../../../bootstrap/wallet-context'
 import { ethers } from 'ethers'
+import { withFormik } from 'formik'
+import humanizeDuration from 'humanize-duration'
+import { WalletContext } from '../../../bootstrap/wallet-context'
 import { gtcrEncode } from '../../../utils/encoder'
 import InputSelector from '../../../components/input-selector.js'
-import { withFormik } from 'formik'
 import itemTypes, { typeDefaultValues } from '../../../utils/item-types.js'
 import ETHAmount from '../../../components/eth-amount.js'
 import BNPropType from '../../../prop-types/bn'
@@ -150,11 +151,12 @@ const SubmitModal = props => {
     submissionDeposit,
     tcrAddress,
     metaEvidence,
-    disabledFields
+    disabledFields,
+    challengePeriodDuration
   } = props
   const { pushWeb3Action } = useContext(WalletContext)
-  const { deployedWithFactory } = useFactory()
   const { setUserSubscribed } = useContext(TourContext)
+  const { deployedWithFactory } = useFactory()
 
   const { fileURI, metadata } = metaEvidence || {}
   const { itemName, columns, tcrTitle } = metadata || {}
@@ -271,7 +273,10 @@ const SubmitModal = props => {
         to avoid challenges.
       </Typography.Paragraph>
       <StyledAlert
-        message="Note that this is a deposit, not a fee and it will be reimbursed if your submission is accepted."
+        message={`Note that this is a deposit, not a fee and it will be reimbursed if your submission is accepted. ${challengePeriodDuration &&
+          `The challenge period lasts ${humanizeDuration(
+            `${challengePeriodDuration.toNumber() * 1000}.`
+          )}`}`}
         type="info"
         showIcon
       />
@@ -314,13 +319,15 @@ SubmitModal.propTypes = {
     }).isRequired,
     fileURI: PropTypes.string
   }).isRequired,
-  disabledFields: PropTypes.arrayOf(PropTypes.bool)
+  disabledFields: PropTypes.arrayOf(PropTypes.bool),
+  challengePeriodDuration: BNPropType
 }
 
 SubmitModal.defaultProps = {
   initialValues: null,
   disabledFields: null,
-  submissionDeposit: null
+  submissionDeposit: null,
+  challengePeriodDuration: null
 }
 
 export default SubmitModal

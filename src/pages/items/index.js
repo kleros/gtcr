@@ -583,6 +583,7 @@ const Items = ({ search, history }) => {
                 visible={submissionFormOpen}
                 onCancel={() => setSubmissionFormOpen(false)}
                 submissionDeposit={submissionDeposit}
+                challengePeriodDuration={challengePeriodDuration}
                 tcrAddress={tcrAddress}
                 metaEvidence={metaEvidence}
               />

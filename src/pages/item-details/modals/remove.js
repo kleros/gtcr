@@ -11,6 +11,7 @@ import {
 } from 'antd'
 import { ethers } from 'ethers'
 import styled from 'styled-components/macro'
+import humanizeDuration from 'humanize-duration'
 import { abi as _gtcr } from '@kleros/tcr/build/contracts/GeneralizedTCR.json'
 import { TCRViewContext } from '../../../bootstrap/tcr-view-context'
 import ETHAmount from '../../../components/eth-amount'
@@ -42,18 +43,22 @@ const StyledAlert = styled(Alert)`
 const RemoveModal = ({ item, itemName = 'item', fileURI, ...rest }) => {
   const { pushWeb3Action } = useContext(WalletContext)
   const { setUserSubscribed } = useContext(TourContext)
-  const { removalDeposit, tcrAddress, metaEvidence } = useContext(
-    TCRViewContext
-  )
+  const {
+    removalDeposit,
+    tcrAddress,
+    metaEvidence,
+    challengePeriodDuration
+  } = useContext(TCRViewContext)
 
   const { metadata } = metaEvidence || {}
+  const { requireRemovalEvidence } = metadata || {}
 
   const removeItem = useCallback(
     ({ title, description, evidenceAttachment }) =>
       pushWeb3Action(async ({ account, networkId }, signer) => {
         const gtcr = new ethers.Contract(tcrAddress, _gtcr, signer)
         let ipfsEvidencePath = ''
-        if (metadata.requireRemovalEvidence) {
+        if (metadata && requireRemovalEvidence) {
           const evidenceJSON = {
             title: title || 'Removal Justification',
             description,
@@ -107,9 +112,10 @@ const RemoveModal = ({ item, itemName = 'item', fileURI, ...rest }) => {
     [
       item.ID,
       itemName,
-      metadata.requireRemovalEvidence,
+      metadata,
       pushWeb3Action,
       removalDeposit,
+      requireRemovalEvidence,
       rest,
       setUserSubscribed,
       tcrAddress
@@ -136,9 +142,7 @@ const RemoveModal = ({ item, itemName = 'item', fileURI, ...rest }) => {
           type="primary"
           form={EVIDENCE_FORM_ID}
           htmlType="submit"
-          onClick={
-            metadata && !metadata.requireRemovalEvidence ? removeItem : null
-          }
+          onClick={metadata && !requireRemovalEvidence ? removeItem : null}
         >
           Send
         </Button>
@@ -152,16 +156,19 @@ const RemoveModal = ({ item, itemName = 'item', fileURI, ...rest }) => {
         </a>
         .
       </Typography.Title>
-      {metadata.requireRemovalEvidence && (
+      {metadata && requireRemovalEvidence && (
         <Typography.Paragraph>
           Explain to jurors why do you think this item should be removed.
         </Typography.Paragraph>
       )}
-      {metadata.requireRemovalEvidence && (
+      {metadata && requireRemovalEvidence && (
         <EvidenceForm onSubmit={removeItem} formID={EVIDENCE_FORM_ID} />
       )}
       <StyledAlert
-        message="Note that this is a deposit, not a fee and it will be reimbursed if your submission is accepted."
+        message={`Note that this is a deposit, not a fee and it will be reimbursed if the removal is accepted. ${challengePeriodDuration &&
+          `The challenge period lasts ${humanizeDuration(
+            `${challengePeriodDuration.toNumber() * 1000}.`
+          )}`}`}
         type="info"
         showIcon
       />

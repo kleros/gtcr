@@ -15,6 +15,7 @@ const ItemActionModal = ({
   item,
   isConnectedTCR,
   submissionDeposit,
+  challengePeriodDuration,
   tcrAddress,
   metaEvidence,
   gtcrView
@@ -51,6 +52,7 @@ const ItemActionModal = ({
           submissionDeposit={submissionDeposit}
           tcrAddress={tcrAddress}
           metaEvidence={metaEvidence}
+          challengePeriodDuration={challengePeriodDuration}
           {...rest}
         />
       )

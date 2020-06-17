@@ -441,6 +441,7 @@ const Badges = ({ connectedTCRAddr, item, tcrAddress }) => {
           visible={submissionFormOpen}
           onCancel={() => setSubmissionFormOpen(false)}
           submissionDeposit={badgeToSubmit.submissionDeposit}
+          challengePeriodDuration={badgeToSubmit.challengePeriodDuration}
           tcrAddress={badgeToSubmit.tcrAddress}
           metaEvidence={badgeToSubmit.metaEvidence}
           initialValues={badgeToSubmit.matchFile.columns.map(col =>

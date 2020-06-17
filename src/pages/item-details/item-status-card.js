@@ -190,7 +190,8 @@ const ItemStatusCard = ({ item, timestamp, request }) => {
         <StyledDescriptions
           column={{ xxl: 3, xl: 3, lg: 2, md: 2, sm: 1, xs: 1 }}
         >
-          {hasPendingRequest(item.status) && !disputed && (
+          {(statusCode === STATUS_CODE.SUBMITTED ||
+            statusCode === STATUS_CODE.REMOVAL_REQUESTED) && (
             <>
               <Descriptions.Item label="Bounty">
                 <ETHAmount amount={bounty} decimals={3} displayUnit />
@@ -285,6 +286,7 @@ const ItemStatusCard = ({ item, timestamp, request }) => {
             submissionDeposit={submissionDeposit}
             tcrAddress={tcrAddress}
             metaEvidence={metaEvidence}
+            challengePeriodDuration={challengePeriodDuration}
             gtcrView={gtcrView}
           />
         )}
