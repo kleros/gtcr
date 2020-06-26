@@ -8,6 +8,7 @@ import { abi as _arbitrator } from '@kleros/erc-792/build/contracts/IArbitrator.
 import useNetworkEnvVariable from './network-env'
 import { gtcrDecode } from '../utils/encoder'
 import useNotificationWeb3 from './notifications-web3'
+import { getAddress } from 'ethers/utils'
 
 // TODO: Ensure we don't set state for unmounted components using
 // flags and AbortController.
@@ -90,6 +91,14 @@ const useTcrView = tcrAddress => {
   useEffect(() => {
     ;(async () => {
       if (!arbitrableTCRData || tcrAddress === depositFor) return
+      try {
+        // Check that both urls are valid.
+        getAddress(tcrAddress)
+        getAddress(depositFor)
+      } catch (_) {
+        // No-op
+        return
+      }
       try {
         const {
           arbitrator: arbitratorAddress,

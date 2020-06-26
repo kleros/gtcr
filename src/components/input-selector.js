@@ -113,6 +113,7 @@ const InputSelector = ({
     case itemTypes.GTCR_ADDRESS:
     case itemTypes.ADDRESS:
     case itemTypes.NUMBER:
+    case itemTypes.LINK:
       return <CustomInput type={type} name={name} hasFeedback {...props} />
     case itemTypes.BOOLEAN:
       return (

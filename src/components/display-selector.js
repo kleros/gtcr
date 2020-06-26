@@ -61,6 +61,12 @@ const DisplaySelector = ({ type, value, linkImage, allowedFileTypes }) => {
       ) : (
         <Avatar shape="square" size="large" icon="file-image" />
       )
+    case itemTypes.LINK:
+      return (
+        <a href={value}>
+          <Typography.Text>{value}</Typography.Text>
+        </a>
+      )
     default:
       return (
         <Typography.Paragraph>
@@ -77,14 +83,15 @@ DisplaySelector.propTypes = {
     PropTypes.number,
     PropTypes.bool,
     PropTypes.object
-  ]).isRequired,
+  ]),
   linkImage: PropTypes.bool,
   allowedFileTypes: PropTypes.string
 }
 
 DisplaySelector.defaultProps = {
   linkImage: null,
-  allowedFileTypes: null
+  allowedFileTypes: null,
+  value: null
 }
 
 export default DisplaySelector
