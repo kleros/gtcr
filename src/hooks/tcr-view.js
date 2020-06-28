@@ -94,7 +94,7 @@ const useTcrView = tcrAddress => {
       try {
         // Check that both urls are valid.
         getAddress(tcrAddress)
-        getAddress(depositFor)
+        if (depositFor) getAddress(depositFor)
       } catch (_) {
         // No-op
         return
