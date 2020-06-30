@@ -148,7 +148,7 @@ const SubmitConnectModal = props => {
         setBadgeTCRMetadata(file.metadata)
       } catch (err) {
         console.error('Error fetching TCR metadata', err)
-        setError('Error fetching TCR metadata')
+        setError('Error fetching list metadata')
       }
     })()
   }, [active, debouncedBadgeTCRAddr, library, networkId])

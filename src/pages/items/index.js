@@ -438,7 +438,7 @@ const Items = ({ search, history }) => {
       <ErrorPage
         code="404"
         message="The gods are having trouble finding this list."
-        tip="Is your wallet set to the correct network?"
+        tip="Make sure your wallet is set to the correct network."
       />
     )
 
@@ -447,7 +447,7 @@ const Items = ({ search, history }) => {
       <ErrorPage
         code="400"
         message={tcrError || error || 'Decoding this item.'}
-        tip="Is your wallet set to the correct network?"
+        tip="Make sure your wallet is set to the correct network."
       />
     )
 

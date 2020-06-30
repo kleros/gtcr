@@ -246,7 +246,7 @@ const ItemDetails = ({ itemID }) => {
       <ErrorPage
         code="400"
         message={error || tcrError || 'This item could not be found.'}
-        tip="Is your wallet set to the correct network?"
+        tip="Make sure your wallet is set to the correct network."
       />
     )
 

@@ -274,7 +274,7 @@ const Timeline = ({ request, requestID, item }) => {
         /* eslint-disable unicorn/new-for-builtins */
         const submissionTime = (
           <span>
-            Submitted {new Date(Date(submittedAt * 1000)).toGMTString()} by{' '}
+            Submitted {new Date(new Date(submittedAt * 1000)).toGMTString()} by{' '}
             <ETHAddress address={submittedBy} />
           </span>
         )
