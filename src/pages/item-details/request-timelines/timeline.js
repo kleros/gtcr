@@ -29,6 +29,18 @@ import { capitalizeFirstLetter } from '../../../utils/string'
 
 const StyledCard = styled(Card)`
   cursor: default;
+
+  @media (max-width: 768px) {
+    & > .ant-card-head > .ant-card-head-wrapper > .ant-card-head-title {
+      max-width: 450px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    & > .ant-card-head > .ant-card-head-wrapper > .ant-card-head-title {
+      max-width: 160px;
+    }
+  }
 `
 
 const StyledEvidenceTitle = styled.div`
