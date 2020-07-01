@@ -379,7 +379,18 @@ export default withFormik({
   validationSchema,
   mapPropsToValues: ({ tcrState }) => tcrState,
   handleSubmit: ({ columns }, { props: { postSubmit } }) => {
-    if (columns.some(c => c.isIdentifier)) postSubmit()
-    else message.warning('At least one ID field is required.')
+    if (!columns.some(c => c.isIdentifier)) {
+      message.warning('At least one ID field is required.')
+      return
+    }
+    const usedLabels = new Set()
+    for (const col of columns) {
+      if (usedLabels.has(col.label)) {
+        message.warning('Column names must be unique.')
+        return
+      }
+      usedLabels.add(col.label)
+    }
+    postSubmit()
   }
 })(ItemParams)
