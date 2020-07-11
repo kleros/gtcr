@@ -12,14 +12,14 @@ import styled from 'styled-components/macro'
 import { useDebouncedCallback } from 'use-debounce'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import matchSorter from 'match-sorter'
+import { ethers } from 'ethers'
+import { useWeb3Context } from 'web3-react'
 import { abi as _gtcr } from '@kleros/tcr/build/contracts/GeneralizedTCR.json'
 import DisplaySelector from './display-selector'
-import { useWeb3Context } from 'web3-react'
 import itemTypes, { searchableFields } from '../utils/item-types'
 import { TCRViewContext } from '../bootstrap/tcr-view-context'
 import { WalletContext } from '../bootstrap/wallet-context'
 import { itemToStatusCode, STATUS_COLOR } from '../utils/item-status'
-import { ethers } from 'ethers'
 
 const StyledSelect = styled(Select)`
   width: 100%;
