@@ -23,20 +23,18 @@ const useRequiredFees = ({
     )
       return {}
 
-    const isFundingWinner =
-      currentRuling !== PARTY.NONE
-        ? null // Ignore if arbitrator did not give a decisive ruling.
-        : currentRuling === PARTY.REQUESTER
-        ? side === PARTY.REQUESTER
-        : side === PARTY.CHALLENGER
-
     // Calculate the fee stake multiplier.
     // The fee stake is the reward shared among parties that crowdfunded
     // the appeal of the party that wins the dispute.
-    const feeStakeMultiplier =
+    const sideIsWinner =
       currentRuling === PARTY.NONE
+        ? null
+        : (currentRuling === PARTY.REQUESTER && side === PARTY.REQUESTER) ||
+          (currentRuling === PARTY.CHALLENGER && side === PARTY.CHALLENGER)
+    const feeStakeMultiplier =
+      sideIsWinner === null
         ? sharedStakeMultiplier
-        : isFundingWinner
+        : sideIsWinner
         ? winnerStakeMultiplier
         : loserStakeMultiplier
 
@@ -55,9 +53,9 @@ const useRequiredFees = ({
     // Calculate the max reward the user can earn by contributing fees.
     // Potential reward = appeal cost * opponent fee stake multiplier * share available for contribution.
     const opponentFeeStakeMultiplier =
-      currentRuling === PARTY.NONE
+      sideIsWinner === null
         ? sharedStakeMultiplier
-        : isFundingWinner
+        : sideIsWinner
         ? loserStakeMultiplier
         : winnerStakeMultiplier
 
