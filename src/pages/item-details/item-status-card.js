@@ -181,11 +181,6 @@ const ItemStatusCard = ({ item, timestamp, request }) => {
             type="secondary"
           />
         }
-        bodyStyle={
-          !hasPendingRequest(item.status)
-            ? { display: 'none' }
-            : { display: '?' }
-        }
       >
         <StyledDescriptions
           column={{ xxl: 3, xl: 3, lg: 2, md: 2, sm: 1, xs: 1 }}
@@ -205,11 +200,9 @@ const ItemStatusCard = ({ item, timestamp, request }) => {
                 : `Removal request`}
             </Descriptions.Item>
           )}
-          {hasPendingRequest(item.status) && (
-            <Descriptions.Item label="Requester">
-              <ETHAddress address={item.requester} />
-            </Descriptions.Item>
-          )}
+          <Descriptions.Item label="Requester">
+            <ETHAddress address={item.requester} />
+          </Descriptions.Item>
           {hasPendingRequest(item.status) && disputed && (
             <>
               <Descriptions.Item label="Dispute ID">
@@ -220,9 +213,11 @@ const ItemStatusCard = ({ item, timestamp, request }) => {
               </Descriptions.Item>
             </>
           )}
-          <Descriptions.Item label="Arbitrator">
-            <ETHAddress address={request.arbitrator} />
-          </Descriptions.Item>
+          {hasPendingRequest(item.status) && disputed && (
+            <Descriptions.Item label="Arbitrator">
+              <ETHAddress address={request.arbitrator} />
+            </Descriptions.Item>
+          )}
           {disputeStatus === DISPUTE_STATUS.APPEALABLE &&
             statusCode !== STATUS_CODE.WAITING_ENFORCEMENT && (
               <Descriptions.Item label="Dispute Status">
