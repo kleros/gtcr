@@ -258,7 +258,7 @@ const Items = ({ search, history }) => {
           encodedItems = await gtcrView.queryItems(
             gtcr.address,
             cursorIndex,
-            ITEMS_PER_PAGE,
+            500,
             filter,
             oldestFirst,
             active && account ? account : ZERO_ADDRESS
