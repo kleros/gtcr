@@ -143,6 +143,10 @@ const useTcrView = tcrAddress => {
         setDepositFor(arbitrableTCRData.tcrAddress)
       } catch (err) {
         console.error('Error computing arbitration cost:', err)
+        if (err.message === 'header not found' && arbitrationCost)
+          // No-op, arbitration cost was already set when metamask throwed.
+          return
+
         setError('Error computing arbitration cost')
       }
     })()
