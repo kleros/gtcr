@@ -93,7 +93,7 @@ const CrowdfundModal = ({ statusCode, item, fileURI, ...rest }) => {
     MULTIPLIER_DIVISOR
   })
 
-  if (!sharedStakeMultiplier)
+  if (!sharedStakeMultiplier || !potentialReward)
     return (
       <StyledModal title="Submit Item" {...rest}>
         <StyledSpin />
