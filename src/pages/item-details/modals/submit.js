@@ -169,8 +169,7 @@ const SubmitModal = props => {
 
         // Request signature and submit.
         const tx = await gtcr.addItem(encodedParams, {
-          value: submissionDeposit,
-          gasLimit: 23156806
+          value: submissionDeposit
         })
 
         onCancel() // Hide the submission modal.
