@@ -12,7 +12,6 @@ const useRequiredFees = ({
 }) =>
   useMemo(() => {
     if (
-      side === PARTY.NONE ||
       !sharedStakeMultiplier ||
       !winnerStakeMultiplier ||
       !loserStakeMultiplier ||

@@ -94,6 +94,8 @@ const CrowdfundingCard = ({ item, timestamp }) => {
   const { hasPaid, amountPaid, currentRuling } = item
 
   if (
+    !requesterFees ||
+    !challengerFees ||
     !challengerFees.requiredForSide ||
     !challengerFees.potentialReward ||
     !requesterFees.requiredForSide ||

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from 'react'
+import React, { useState, useContext, useMemo } from 'react'
 import {
   Modal,
   Descriptions,
@@ -50,34 +50,31 @@ const CrowdfundModal = ({ statusCode, item, fileURI, ...rest }) => {
     tcrAddress
   } = useContext(TCRViewContext)
 
-  const [side, setSide] = useState(PARTY.NONE)
   const [contributionShare, setContributionShare] = useState(1)
   const { currentRuling, hasPaid } = item
+  const [userSelectedSide, setUserSelectedSide] = useState()
 
-  useEffect(() => {
-    // Automatically set crowdfunding to the winner, if the arbitrator
-    // gave a decisive ruling and we are in the second half of the appeal period.
+  const autoSelectedSide = useMemo(() => {
     if (
-      side !== PARTY.NONE ||
-      statusCode === STATUS_CODE.CROWDFUNDING ||
-      currentRuling === PARTY.NONE
-    )
-      return
-    setSide(currentRuling)
-  }, [currentRuling, side, statusCode])
-
-  useEffect(() => {
-    // If one of the parties is fully funded but not the other, automatically set
-    // the side to the pending side.
-    if (
-      side !== PARTY.NONE ||
+      currentRuling === PARTY.NONE ||
       (hasPaid[PARTY.REQUESTER] && hasPaid[PARTY.CHALLENGER]) ||
       (!hasPaid[PARTY.REQUESTER] && !hasPaid[PARTY.CHALLENGER])
     )
-      return
+      return PARTY.NONE
 
-    setSide(!hasPaid[PARTY.REQUESTER] ? PARTY.REQUESTER : PARTY.CHALLENGER)
-  }, [hasPaid, side])
+    // Automatically set crowdfunding to the winner, if the arbitrator
+    // gave a decisive ruling and we are in the second half of the appeal period.
+    if (statusCode === STATUS_CODE.CROWDFUNDING_WINNER) return currentRuling
+
+    // If one of the parties is fully funded but not the other, automatically set
+    // the side to the pending side.
+    return !hasPaid[PARTY.REQUESTER] ? PARTY.REQUESTER : PARTY.CHALLENGER
+  }, [currentRuling, hasPaid, statusCode])
+
+  const side = useMemo(() => userSelectedSide || autoSelectedSide, [
+    autoSelectedSide,
+    userSelectedSide
+  ])
 
   const {
     requiredForSide,
@@ -95,7 +92,7 @@ const CrowdfundModal = ({ statusCode, item, fileURI, ...rest }) => {
 
   if (!sharedStakeMultiplier || !potentialReward)
     return (
-      <StyledModal title="Submit Item" {...rest}>
+      <StyledModal title="Crowdfund Item" {...rest}>
         <StyledSpin />
       </StyledModal>
     )
@@ -113,14 +110,14 @@ const CrowdfundModal = ({ statusCode, item, fileURI, ...rest }) => {
           <Button
             key="submitter"
             type="primary"
-            onClick={() => setSide(PARTY.REQUESTER)}
+            onClick={() => setUserSelectedSide(PARTY.REQUESTER)}
           >
             Submitter
           </Button>,
           <Button
             key="challenger"
             type="primary"
-            onClick={() => setSide(PARTY.CHALLENGER)}
+            onClick={() => setUserSelectedSide(PARTY.CHALLENGER)}
           >
             Challenger
           </Button>
@@ -186,7 +183,7 @@ const CrowdfundModal = ({ statusCode, item, fileURI, ...rest }) => {
       onOk={crowdfundSide}
       afterClose={() => {
         // Reset side after closing.
-        setSide(PARTY.NONE)
+        setUserSelectedSide(PARTY.NONE)
         setContributionShare(1)
       }}
     >
