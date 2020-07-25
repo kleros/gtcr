@@ -163,13 +163,34 @@ const SubmitModal = props => {
 
   const postSubmit = useCallback(
     (values, columns, resetForm) => {
-      pushWeb3Action(async ({ account, networkId }, signer) => {
+      pushWeb3Action(async ({ account, networkId, library }, signer) => {
         const gtcr = new ethers.Contract(tcrAddress, _gtcr, signer)
         const encodedParams = gtcrEncode({ columns, values })
 
+        // Compute gas cost. We do this because metamask (apparently)
+        // has a ceiling gas limit which, if exceeded throws an error.
+        const gtcrInterface = new ethers.utils.Interface(_gtcr)
+        const data = gtcrInterface.functions.addItem.encode([encodedParams])
+        const txObj = {
+          to: gtcr.address,
+          value: submissionDeposit,
+          data
+        }
+        let gasLimit
+        try {
+          console.info((await library.estimateGas(txObj)).toNumber())
+          // eslint-disable-next-line no-unused-vars
+        } catch (err) {
+          console.warn(
+            'Gas estimation failed. Falling back to manual gas limit.'
+          )
+          gasLimit = 673909
+        }
+
         // Request signature and submit.
         const tx = await gtcr.addItem(encodedParams, {
-          value: submissionDeposit
+          value: submissionDeposit,
+          gasLimit
         })
 
         onCancel() // Hide the submission modal.
