@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react'
+import React, { useState, useEffect, useMemo, useCallback } from 'react'
 import Archon from '@kleros/archon'
 import { notification, Icon } from 'antd'
 import { useWeb3Context } from 'web3-react'
@@ -16,7 +16,8 @@ const actionTypes = {
   AUTHORIZATION: 'AUTHORIZATION'
 }
 
-const factoryInterface = new ethers.utils.Interface(_GTCRFactory)
+const NOTIFICATION_KEY = 'WALLET_AUTHORIZATION'
+const LAST_CONNECTION_TIME = 'LAST_CONNECTION_TIME'
 
 /* eslint-disable valid-jsdoc */
 /**
@@ -37,6 +38,18 @@ const useNotificationWeb3 = () => {
   const [timestamp, setTimestamp] = useState()
   const [network, setNetwork] = useState()
   const [latestBlock, setLatestBlock] = useState()
+  const initialState = {
+    modalOpen: false,
+    method: null,
+    notifiedAuthAccquired: false
+  }
+  const [connectionState, setConnectionState] = useState(
+    JSON.parse(JSON.stringify(initialState))
+  ) // Make a copy.
+  const factoryInterface = useMemo(
+    () => new ethers.utils.Interface(_GTCRFactory),
+    []
+  )
   const archon = useMemo(() => {
     if (!web3Context.library || !web3Context.active) return
     return new Archon(
@@ -60,32 +73,25 @@ const useNotificationWeb3 = () => {
    *
    * See containers/factory/deploy.js for an example usage.
    */
-  const pushWeb3Action = action =>
+  const pushWeb3Action = useCallback(action => {
     setWeb3Actions(prevState =>
       prevState.concat({ action, type: actionTypes.TRANSACTION })
     )
-  const requestWeb3Auth = action =>
+  }, [])
+  const requestWeb3Auth = useCallback(action => {
     setWeb3Actions(prevState =>
       prevState.concat({ type: actionTypes.AUTHORIZATION, action })
     )
-  const initialState = {
-    modalOpen: false,
-    method: null,
-    notifiedAuthAccquired: false
-  }
-  const [connectionState, setConnectionState] = useState(
-    JSON.parse(JSON.stringify(initialState))
-  ) // Make a copy.
-  const NOTIFICATION_KEY = 'WALLET_AUTHORIZATION'
-  const LAST_CONNECTION_TIME = 'LAST_CONNECTION_TIME'
+  }, [])
 
-  const setUserSelectedWallet = method =>
+  const setUserSelectedWallet = useCallback(method => {
     setConnectionState(prev => ({ ...prev, method }))
+  }, [])
 
-  const cancelRequest = () => {
+  const cancelRequest = useCallback(() => {
     setWeb3Actions([])
     setConnectionState(prevState => ({ ...prevState, modalOpen: false }))
-  }
+  }, [])
 
   // Auto-connect wallet if available.
   useEffect(() => {
@@ -98,11 +104,12 @@ const useNotificationWeb3 = () => {
 
       web3Context.setConnector('Injected')
     })()
-  }, [web3Context])
+  }, [web3Context, web3Context.account])
 
   // Connect a provider.
   useEffect(() => {
     if (web3Context.active || infuraSetup) return
+
     if (process.env.REACT_APP_RPC_URLS)
       web3Context.setFirstValidConnector(['Infura'])
     else
@@ -113,7 +120,7 @@ const useNotificationWeb3 = () => {
     setInfuraSetup(true)
   }, [infuraSetup, web3Context])
 
-  // Notify of network changes.
+  // // Notify of network changes.
   useEffect(() => {
     if (!web3Context.networkId) return
     if (!network) {
@@ -211,7 +218,12 @@ const useNotificationWeb3 = () => {
           )
           const web3Action = web3Actions.pop()
           if (web3Action.type === actionTypes.TRANSACTION) {
-            await processWeb3Action(web3Action, web3Context, signer)
+            await processWeb3Action(
+              web3Action,
+              web3Context,
+              signer,
+              factoryInterface
+            )
             return
           }
           if (
@@ -223,21 +235,39 @@ const useNotificationWeb3 = () => {
         }
       }
     })()
-  }, [web3Context, connectionState, initialState, web3Actions])
+  }, [
+    web3Context,
+    connectionState,
+    initialState,
+    web3Actions,
+    factoryInterface
+  ])
 
-  if (web3Context.active && web3Context.connectorName === 'WalletConnect')
-    if (!web3Context.account) {
-      WalletConnectQRCodeModal.open(
-        web3Context.connector.walletConnector.uri,
-        () => {}
-      )
-    } else {
-      try {
-        WalletConnectQRCodeModal.close()
-      } catch (err) {
-        console.error(err)
+  // Handle Wallet connect modal state.
+  useEffect(() => {
+    if (
+      web3Context.active &&
+      web3Context.connectorName === 'WalletConnect' &&
+      web3Context.connector
+    )
+      if (!web3Context.account) {
+        WalletConnectQRCodeModal.open(
+          web3Context.connector.walletConnector.uri,
+          () => {}
+        )
+      } else {
+        try {
+          WalletConnectQRCodeModal.close()
+        } catch (err) {
+          console.error(err)
+        }
       }
-    }
+  }, [
+    web3Context.connector,
+    web3Context.account,
+    web3Context.active,
+    web3Context.connectorName
+  ])
 
   return {
     requestModalOpen: connectionState.modalOpen,
@@ -257,7 +287,12 @@ const useNotificationWeb3 = () => {
  * @param {object} web3Context - The web3-react context.
  * @param {object} signer - The signer to use.
  */
-async function processWeb3Action(web3Action, web3Context, signer) {
+async function processWeb3Action(
+  web3Action,
+  web3Context,
+  signer,
+  factoryInterface
+) {
   const notificationID = uuid()
   notification.info({
     message: 'Requesting Signature',
