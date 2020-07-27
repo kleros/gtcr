@@ -16,8 +16,6 @@ import { getAddress } from 'ethers/utils'
 // Reference:
 // https://itnext.io/how-to-create-react-custom-hooks-for-data-fetching-with-useeffect-74c5dc47000a
 const useTcrView = tcrAddress => {
-  const { latestBlock } = useNotificationWeb3()
-  const { library, active, networkId } = useWeb3Context()
   const [metaEvidence, setMetaEvidence] = useState()
   const [error, setError] = useState(false)
   const [arbitrableTCRData, setArbitrableTCRData] = useState()
@@ -29,6 +27,9 @@ const useTcrView = tcrAddress => {
   const [itemSubmissionLogs, setItemSubmissionLogs] = useState()
   const [connectedTCRAddr, setConnectedTCRAddr] = useState()
   const [depositFor, setDepositFor] = useState()
+
+  const { latestBlock } = useNotificationWeb3()
+  const { library, active, networkId } = useWeb3Context()
   const arbitrableTCRViewAddr = useNetworkEnvVariable(
     'REACT_APP_GTCRVIEW_ADDRESSES',
     networkId
@@ -90,7 +91,9 @@ const useTcrView = tcrAddress => {
   // Get the current arbitration cost to calculate request and challenge deposits.
   useEffect(() => {
     ;(async () => {
-      if (!arbitrableTCRData || tcrAddress === depositFor) return
+      if (!arbitrableTCRData || tcrAddress === depositFor || arbitrationCost)
+        return
+
       try {
         // Check that both urls are valid.
         getAddress(tcrAddress)
@@ -99,6 +102,7 @@ const useTcrView = tcrAddress => {
         // No-op
         return
       }
+
       try {
         const {
           arbitrator: arbitratorAddress,
@@ -115,36 +119,38 @@ const useTcrView = tcrAddress => {
           library
         )
 
-        const arbitrationCost = await arbitrator.arbitrationCost(
+        const newArbitrationCost = await arbitrator.arbitrationCost(
           arbitratorExtraData
         )
 
         // Submission deposit = submitter base deposit + arbitration cost
-        const submissionDeposit = submissionBaseDeposit.add(arbitrationCost)
+        const newSubmissionDeposit = submissionBaseDeposit.add(
+          newArbitrationCost
+        )
 
         // Removal deposit = removal base deposit + arbitration cost
-        const removalDeposit = removalBaseDeposit.add(arbitrationCost)
+        const newRemovalDeposit = removalBaseDeposit.add(newArbitrationCost)
 
         // Challenge deposit = submission challenge base deposit + arbitration cost
-        const submissionChallengeDeposit = submissionChallengeBaseDeposit.add(
-          arbitrationCost
+        const newSubmissionChallengeDeposit = submissionChallengeBaseDeposit.add(
+          newArbitrationCost
         )
 
         // Challenge deposit = removal challenge base deposit + arbitration cost
-        const removalChallengeDeposit = removalChallengeBaseDeposit.add(
-          arbitrationCost
+        const newRemovalChallengeDeposit = removalChallengeBaseDeposit.add(
+          newArbitrationCost
         )
 
-        setArbitrationCost(arbitrationCost)
-        setSubmissionDeposit(submissionDeposit)
-        setSubmissionChallengeDeposit(submissionChallengeDeposit)
-        setRemovalDeposit(removalDeposit)
-        setRemovalChallengeDeposit(removalChallengeDeposit)
+        setArbitrationCost(newArbitrationCost)
+        setSubmissionDeposit(newSubmissionDeposit)
+        setSubmissionChallengeDeposit(newSubmissionChallengeDeposit)
+        setRemovalDeposit(newRemovalDeposit)
+        setRemovalChallengeDeposit(newRemovalChallengeDeposit)
         setDepositFor(arbitrableTCRData.tcrAddress)
       } catch (err) {
         console.error('Error computing arbitration cost:', err)
         if (err.message === 'header not found' && arbitrationCost)
-          // No-op, arbitration cost was already set when metamask throwed.
+          // No-op, arbitration cost was already set when metamask threw.
           return
 
         setError('Error computing arbitration cost')
