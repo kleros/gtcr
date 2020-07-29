@@ -26,7 +26,7 @@ const itemTourSteps = metadata => {
     {
       selector: `#item-details-card`,
       content: `This is the ${(itemName && itemName.toLowerCase()) ||
-        'item'} details card. These are important fields to check against the listing criteira of this list.`
+        'item'} details card. These are important fields to check against the listing criteria of this list.`
     },
     {
       selector: `#request-timelines`,
