@@ -19,6 +19,7 @@ import { Layout, Menu, Spin, message, Icon } from 'antd'
 import { register } from './service-worker'
 import { WalletProvider } from './wallet-context'
 import { TourProvider } from './tour-context'
+import { TrackerProvider } from './tracker-context'
 import { NETWORK_NAME, NETWORK } from '../utils/network-utils'
 import ErrorPage from '../pages/error-page'
 import useMainTCR2 from '../hooks/tcr2'
@@ -233,48 +234,52 @@ export default () => {
         />
       </Helmet>
       <BrowserRouter>
-        <TourProvider>
-          <Web3Provider connectors={connectors} libraryName="ethers.js">
-            <WalletProvider>
-              <StyledLayout>
-                <StyledLayoutSider
-                  breakpoint="lg"
-                  collapsedWidth={0}
-                  collapsed={isMenuClosed}
-                  onClick={() =>
-                    setIsMenuClosed(previousState => !previousState)
-                  }
-                >
-                  <Menu theme="dark">
-                    {[
-                      <Menu.Item key="tcrs" style={{ height: '70px' }}>
-                        <NavLink to={`/tcr/${TCR2_ADDRESS}`}>
-                          K L E R O S
-                        </NavLink>
-                      </Menu.Item>
-                    ].concat(MenuItems({ TCR2_ADDRESS }))}
-                  </Menu>
-                </StyledLayoutSider>
-                {/* Overflow x property must be visible for reactour scrolling to work properly. */}
-                <Layout style={{ overflowX: 'visible' }}>
-                  <StyledHeader>
-                    <TopBar menuItems={MenuItems} />
-                  </StyledHeader>
-                  <Content />
-                  <StyledClickaway
-                    isMenuClosed={isMenuClosed}
-                    onClick={isMenuClosed ? null : () => setIsMenuClosed(true)}
-                  />
-                </Layout>
-              </StyledLayout>
-              <FooterWrapper>
-                <Footer appName="Kleros · Curate" />
-              </FooterWrapper>
-              <WalletModal connectors={connectors} />
-            </WalletProvider>
-          </Web3Provider>
-          <WelcomeModal />
-        </TourProvider>
+        <TrackerProvider>
+          <TourProvider>
+            <Web3Provider connectors={connectors} libraryName="ethers.js">
+              <WalletProvider>
+                <StyledLayout>
+                  <StyledLayoutSider
+                    breakpoint="lg"
+                    collapsedWidth={0}
+                    collapsed={isMenuClosed}
+                    onClick={() =>
+                      setIsMenuClosed(previousState => !previousState)
+                    }
+                  >
+                    <Menu theme="dark">
+                      {[
+                        <Menu.Item key="tcrs" style={{ height: '70px' }}>
+                          <NavLink to={`/tcr/${TCR2_ADDRESS}`}>
+                            K L E R O S
+                          </NavLink>
+                        </Menu.Item>
+                      ].concat(MenuItems({ TCR2_ADDRESS }))}
+                    </Menu>
+                  </StyledLayoutSider>
+                  {/* Overflow x property must be visible for reactour scrolling to work properly. */}
+                  <Layout style={{ overflowX: 'visible' }}>
+                    <StyledHeader>
+                      <TopBar menuItems={MenuItems} />
+                    </StyledHeader>
+                    <Content />
+                    <StyledClickaway
+                      isMenuClosed={isMenuClosed}
+                      onClick={
+                        isMenuClosed ? null : () => setIsMenuClosed(true)
+                      }
+                    />
+                  </Layout>
+                </StyledLayout>
+                <FooterWrapper>
+                  <Footer appName="Kleros · Curate" />
+                </FooterWrapper>
+                <WalletModal connectors={connectors} />
+              </WalletProvider>
+            </Web3Provider>
+            <WelcomeModal />
+          </TourProvider>
+        </TrackerProvider>
       </BrowserRouter>
     </>
   )

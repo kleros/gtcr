@@ -129,9 +129,7 @@ const TopBar = ({ menuItems }) => {
               {capitalizeFirstLetter(NETWORK_NAME[web3Context.networkId])}
             </StyledNetworkStatus>
           )}
-          {process.env.REACT_APP_NOTIFICATIONS_API_URL &&
-            web3Context.account &&
-            web3Context.networkId && <Notifications />}
+          <Notifications />
           {web3Context.active && web3Context.account ? (
             <Identicon />
           ) : (

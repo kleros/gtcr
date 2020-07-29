@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react'
+import React, { useState, useCallback, useEffect, useContext } from 'react'
 import { useWeb3Context } from 'web3-react'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import styled from 'styled-components/macro'
@@ -8,8 +8,10 @@ import { ethers } from 'ethers'
 import {
   getNotificationIconFor,
   getNotificationColorFor,
-  typeToMessage
+  typeToMessage,
+  NOTIFICATION_TYPES
 } from '../utils/notifications'
+import { TrackerContext } from '../bootstrap/tracker-context'
 
 const StyledIcon = styled.div`
   width: 48px;
@@ -41,21 +43,35 @@ const StyledListItem = styled(List.Item)`
 
 const Notifications = () => {
   const { account, networkId } = useWeb3Context()
+  const { denyTrackers, allowTrackers, trackersConsentDismissed } = useContext(
+    TrackerContext
+  )
+
   const [visible, setVisible] = useState()
   const [notifications, setNotifications] = useState({ notifications: [] })
+
   const handleVisibleChange = useCallback(v => setVisible(v), [])
+
   const fetchNotifications = useCallback(() => {
     ;(async () => {
-      const result = await (
-        await fetch(
-          `${process.env.REACT_APP_NOTIFICATIONS_API_URL}/${networkId}/api/notifications/${account}`
-        )
-      ).json()
+      let result = { notifications: [] }
+      if (process.env.REACT_APP_NOTIFICATIONS_API_URL && account && networkId)
+        result = await (
+          await fetch(
+            `${process.env.REACT_APP_NOTIFICATIONS_API_URL}/${networkId}/api/notifications/${account}`
+          )
+        ).json()
+
+      if (!trackersConsentDismissed)
+        result.notifications.push({
+          isConsentNotification: true
+        })
 
       result.notifications = result.notifications.reverse()
       setNotifications(result)
     })()
-  }, [account, networkId])
+  }, [account, networkId, trackersConsentDismissed])
+
   const dismissNotification = useCallback(
     n =>
       fetch(
@@ -68,8 +84,10 @@ const Notifications = () => {
       ).then(() => fetchNotifications()),
     [account, networkId, fetchNotifications]
   )
+
   const dismissAll = useCallback(() => {
-    if (!networkId || !account) return
+    if (!networkId || !account || !process.env.REACT_APP_NOTIFICATIONS_API_URL)
+      return
     ;(async () => {
       await fetch(
         `${
@@ -80,6 +98,7 @@ const Notifications = () => {
       fetchNotifications()
     })()
   }, [networkId, account, fetchNotifications])
+
   const notificationClick = useCallback(
     n => {
       fetch(
@@ -97,49 +116,83 @@ const Notifications = () => {
     [account, networkId, fetchNotifications]
   )
 
+  const dismissConsentNotification = useCallback(() => {
+    denyTrackers()
+    setNotifications(s => ({
+      ...s,
+      notifications: s.notifications.filter(n => !n.isConsentNotification)
+    }))
+  }, [denyTrackers])
+
   // Fetch notifications
   useEffect(() => {
-    if (!account || !networkId) return
     fetchNotifications()
-  }, [account, networkId, fetchNotifications])
+  }, [fetchNotifications])
 
   const content = (
     <StyledList>
       {!notifications.notifications.length >= 1 && (
         <Empty description="All done." image={Empty.PRESENTED_IMAGE_SIMPLE} />
       )}
-      {notifications.notifications.map((n, j) => (
-        <StyledListItem
-          actions={[
-            <Icon type="close" onClick={() => dismissNotification(n)} />
-          ]}
-          key={j}
-        >
-          <Link
-            to={`/tcr/${n.tcrAddr}/${n.itemID}`}
-            onClick={() => notificationClick(n)}
-          >
+      {notifications.notifications.map((n, j) =>
+        n.isConsentNotification ? (
+          <StyledListItem key={j}>
             <List.Item.Meta
-              title={
-                <span style={{ color: n.clicked ? '#9b77cc' : '' }}>
-                  {typeToMessage[n.type]}
-                </span>
+              title="Enable trackers"
+              description={
+                <div>
+                  This helps us improve curate.
+                  <Button />
+                </div>
               }
               avatar={
                 <Avatar
                   style={{ backgroundColor: 'transparent' }}
                   icon={
                     <FontAwesomeIcon
-                      icon={getNotificationIconFor(n.type)}
-                      color={getNotificationColorFor(n.type)}
+                      icon="info-circle"
+                      color={getNotificationColorFor(
+                        NOTIFICATION_TYPES.SUBMISSION_ACCEPTED
+                      )}
                     />
                   }
                 />
               }
             />
-          </Link>
-        </StyledListItem>
-      ))}
+          </StyledListItem>
+        ) : (
+          <StyledListItem
+            actions={[
+              <Icon type="close" onClick={() => dismissNotification(n)} />
+            ]}
+            key={j}
+          >
+            <Link
+              to={`/tcr/${n.tcrAddr}/${n.itemID}`}
+              onClick={() => notificationClick(n)}
+            >
+              <List.Item.Meta
+                title={
+                  <span style={{ color: n.clicked ? '#9b77cc' : '' }}>
+                    {typeToMessage[n.type]}
+                  </span>
+                }
+                avatar={
+                  <Avatar
+                    style={{ backgroundColor: 'transparent' }}
+                    icon={
+                      <FontAwesomeIcon
+                        icon={getNotificationIconFor(n.type)}
+                        color={getNotificationColorFor(n.type)}
+                      />
+                    }
+                  />
+                }
+              />
+            </Link>
+          </StyledListItem>
+        )
+      )}
     </StyledList>
   )
 
