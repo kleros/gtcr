@@ -251,7 +251,7 @@ const ItemDetails = ({ itemID }) => {
     )
 
   const { tcrTitle, itemName, columns } = metadata || {}
-  const { isConnectedTCR } = metadata || {}
+  const { isConnectedTCR, relTcrDisabled } = metadata || {}
 
   return (
     <>
@@ -301,13 +301,16 @@ const ItemDetails = ({ itemID }) => {
           item={item}
           requests={requests && requests.map(r => ({ ...r }))}
         />
-        {connectedTCRAddr !== ZERO_ADDRESS && metadata && !isConnectedTCR && (
-          <Badges
-            connectedTCRAddr={connectedTCRAddr}
-            item={decodedItem}
-            tcrAddress={tcrAddress}
-          />
-        )}
+        {connectedTCRAddr !== ZERO_ADDRESS &&
+          metadata &&
+          !isConnectedTCR &&
+          !relTcrDisabled && (
+            <Badges
+              connectedTCRAddr={connectedTCRAddr}
+              item={decodedItem}
+              tcrAddress={tcrAddress}
+            />
+          )}
       </StyledLayoutContent>
       <AppTour
         dismissedKey={ITEM_TOUR_DISMISSED}
