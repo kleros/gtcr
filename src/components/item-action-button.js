@@ -16,15 +16,25 @@ const ItemActionButton = ({ statusCode, itemName, itemID, onClick, type }) => {
       </Button>
     )
 
+  const disabled =
+    statusCode === STATUS_CODE.WAITING_ARBITRATOR ||
+    statusCode === STATUS_CODE.CHALLENGED ||
+    statusCode === STATUS_CODE.WAITING_ENFORCEMENT
+
   return (
     <StyledButton
       id="item-action-button"
       type={type || 'primary'}
       onClick={onClick}
-      disabled={
-        statusCode === STATUS_CODE.WAITING_ARBITRATOR ||
-        statusCode === STATUS_CODE.CHALLENGED ||
-        statusCode === STATUS_CODE.WAITING_ENFORCEMENT
+      disabled={disabled}
+      style={
+        disabled
+          ? {
+              backgroundColor: 'transparent',
+              border: 'none',
+              color: 'white'
+            }
+          : null
       }
     >
       {getActionLabel({ statusCode, itemName })}
