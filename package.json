@@ -1,7 +1,7 @@
 {
   "name": "gtcr",
   "description": "A UI for the Kleros powered Generalized Token Curated List",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "license": "MIT",
   "scripts": {
     "start": "react-scripts start",

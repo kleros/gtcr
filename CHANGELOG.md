@@ -2,6 +2,49 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.1.0](https://github.com/kleros/gtcr/compare/v1.0.0...v1.1.0) (2020-07-30)
+
+
+### Features
+
+* add challenge time hover and close [#136](https://github.com/kleros/gtcr/issues/136) ([272f9e5](https://github.com/kleros/gtcr/commit/272f9e5d0a93ae93addf86ae92856f162eb20693))
+* display challenge period when submitting, removing and close [#142](https://github.com/kleros/gtcr/issues/142) ([52f5327](https://github.com/kleros/gtcr/commit/52f5327006ed02879378216b0ab3ae17fe57c5d1))
+* display item details even if request is resolved ([a93217b](https://github.com/kleros/gtcr/commit/a93217b7df6aba9872c972c267368bbcef289b62))
+* hide badges section if badges are disabled and close [#145](https://github.com/kleros/gtcr/issues/145) ([f5afc08](https://github.com/kleros/gtcr/commit/f5afc08798f12ec110ac8ae294c599cac3334fb5))
+* support link column type and close [#131](https://github.com/kleros/gtcr/issues/131) ([9446f34](https://github.com/kleros/gtcr/commit/9446f346bf19895d90c23aa2efe1eec6b4798a25))
+* swap warning for info alert and close [#143](https://github.com/kleros/gtcr/issues/143) ([b823dab](https://github.com/kleros/gtcr/commit/b823dab8db159f85c35956f91d94b21f6fe3495a))
+* use latest evidence display ([eca3484](https://github.com/kleros/gtcr/commit/eca3484d1ed9061468c441f50aeab1b3d549a6a8))
+
+
+### Bug Fixes
+
+* appeal crowdfunding permaloading ([799e55c](https://github.com/kleros/gtcr/commit/799e55cdf6107c62ae225556e79a8021fbd5adaa))
+* bump gas limit for submissions ([1432f63](https://github.com/kleros/gtcr/commit/1432f631cdf9ebc43f274fe2bfe6ae816412b0ce))
+* contrast in action button and close [#139](https://github.com/kleros/gtcr/issues/139) ([b708d44](https://github.com/kleros/gtcr/commit/b708d44e42d5559966d964156677a0e1a0739310))
+* crash on page if one of the sides is fully funded ([3f6bfad](https://github.com/kleros/gtcr/commit/3f6bfad6a15f09cdeab903f14ced935b872b9dd9))
+* disallow columns with the same name ([d8c8109](https://github.com/kleros/gtcr/commit/d8c8109d6bb8c02b1a98e76eaddfec36531ca4e3))
+* evidence submission time and close [#130](https://github.com/kleros/gtcr/issues/130) ([575c439](https://github.com/kleros/gtcr/commit/575c439e7274d341dd1f66ffb5e27e9d0e97ef3a))
+* hardcoded gas limit causing scary price predictions ([63f342f](https://github.com/kleros/gtcr/commit/63f342fa3c9598bd2c03e6eeb1b2d4cbc5260e29))
+* ignore metamask error if arbitration cost is set ([d09e5a2](https://github.com/kleros/gtcr/commit/d09e5a2b2afc325c4a744ed93147559e8bce942b))
+* improve wording and close [#134](https://github.com/kleros/gtcr/issues/134) ([52b5fd2](https://github.com/kleros/gtcr/commit/52b5fd2325faa72f0f66c6c350373c36a96564a8))
+* incorrect crowdfunding reward display ([235d41d](https://github.com/kleros/gtcr/commit/235d41dee3bff747ce6cb8a231c347417a306604))
+* incorrect loser remaining time display ([9be328c](https://github.com/kleros/gtcr/commit/9be328c2de8fe8c34a59b6ce168c39127f632e8a))
+* infinite return loop in tcr view hook ([9c8c153](https://github.com/kleros/gtcr/commit/9c8c1531d19c0a4e82c5b8d1dd24a8937e9c11b4))
+* infinte run on wallet context ([7b81ff4](https://github.com/kleros/gtcr/commit/7b81ff41ff4a45d8dfedc7f17b6a0edca899dd0e))
+* missing rejected items and close [#152](https://github.com/kleros/gtcr/issues/152) ([38195d2](https://github.com/kleros/gtcr/commit/38195d2af3dba9305730968983b7b9869cafed74))
+* outdated deposits after navigating to another list ([adeba6c](https://github.com/kleros/gtcr/commit/adeba6cf093704c6c83688dd3c14396cec66a3de))
+* permaloading in action modals ([4249015](https://github.com/kleros/gtcr/commit/424901590ca750aa5c8763691ffd6ef2af964246))
+* responsiveness for evidence with large titles ([aac7ec9](https://github.com/kleros/gtcr/commit/aac7ec90c72694bd0e1e648d06c1c8c32e66fac1))
+* show challenged requests by default ([581bb2a](https://github.com/kleros/gtcr/commit/581bb2adb6905bfdf3362a1a37ac6cb8a9d75881))
+* typo in tour and close [#153](https://github.com/kleros/gtcr/issues/153) ([f75dd3a](https://github.com/kleros/gtcr/commit/f75dd3ad7e4cc63a565514cfe12eb2d6e6fd6cc8))
+* update default evidence display uri ([9a468e6](https://github.com/kleros/gtcr/commit/9a468e66dff0fdfa7f4a31e79449f7a349dca63f))
+* update default evidence display uri ([5cf95ad](https://github.com/kleros/gtcr/commit/5cf95adde408c48d579fcad398e3310767c7efe3))
+* update get help link and close [#132](https://github.com/kleros/gtcr/issues/132) ([d952c5e](https://github.com/kleros/gtcr/commit/d952c5e1bfd35abd029dc7d94988f293cba44008))
+* use title case and close [#144](https://github.com/kleros/gtcr/issues/144) ([fb87520](https://github.com/kleros/gtcr/commit/fb87520b730dc73405358afd5a1f6b36992ab9db))
+* welcome video url ([19cc545](https://github.com/kleros/gtcr/commit/19cc545c3f831f5993da294a0ef2c53514880837))
+* work around ethers-utils decoder bug ([3cc2d2d](https://github.com/kleros/gtcr/commit/3cc2d2d7920e8aeddbc025e0c3684b0f30bbb5e2))
+* work around gas estimation error ([d6e9269](https://github.com/kleros/gtcr/commit/d6e9269859b91fe2a70e774e8d9193433e727d14))
+
 ## [1.0.0](https://github.com/kleros/gtcr/compare/v0.9.7...v1.0.0) (2020-06-10)
 
 
