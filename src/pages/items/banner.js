@@ -18,6 +18,7 @@ const StyledBanner = styled.div`
 `
 
 const StyledButton = styled(Button)`
+  text-transform: capitalize;
   margin-top: 6px;
 `
 

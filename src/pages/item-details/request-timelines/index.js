@@ -15,7 +15,12 @@ import BNPropType from '../../../prop-types/bn'
 import { capitalizeFirstLetter } from '../../../utils/string'
 import { TCRViewContext } from '../../../bootstrap/tcr-view-context'
 
+const StyledDivider = styled(Divider)`
+  text-transform: capitalize;
+`
+
 const StyledButton = styled(Button)`
+  text-transform: capitalize;
   margin: 16px 0;
 `
 
@@ -45,14 +50,15 @@ const RequestTimelines = ({ item, requests }) => {
   return (
     <div id="request-timelines">
       {!hasPendingRequest(item.status) && (
-        <Divider orientation="left">{`${capitalizeFirstLetter(itemName) ||
-          'Item'} History`}</Divider>
+        <StyledDivider orientation="left">{`${capitalizeFirstLetter(itemName) ||
+          'Item'} History`}</StyledDivider>
       )}
       {hasPendingRequest(item.status) && (
         <Row gutter={16}>
           <Col xs={14} sm={17} md={19} lg={20} xl={20} xxl={21}>
-            <Divider orientation="left">{`${capitalizeFirstLetter(itemName) ||
-              'Item'} History`}</Divider>
+            <StyledDivider orientation="left">{`${capitalizeFirstLetter(
+              itemName
+            ) || 'Item'} History`}</StyledDivider>
           </Col>
           <Col xs={5} sm={5} md={5} lg={4} xl={3} xxl={3}>
             <StyledButton

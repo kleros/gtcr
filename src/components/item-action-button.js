@@ -1,7 +1,12 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import { STATUS_CODE, getActionLabel } from '../utils/item-status'
 import { Button } from 'antd'
+import styled from 'styled-components/macro'
+import { STATUS_CODE, getActionLabel } from '../utils/item-status'
+
+const StyledButton = styled(Button)`
+  text-transform: capitalize;
+`
 
 const ItemActionButton = ({ statusCode, itemName, itemID, onClick, type }) => {
   if ((!statusCode && statusCode !== 0) || !itemName || !itemID)
@@ -12,7 +17,7 @@ const ItemActionButton = ({ statusCode, itemName, itemID, onClick, type }) => {
     )
 
   return (
-    <Button
+    <StyledButton
       id="item-action-button"
       type={type || 'primary'}
       onClick={onClick}
@@ -23,7 +28,7 @@ const ItemActionButton = ({ statusCode, itemName, itemID, onClick, type }) => {
       }
     >
       {getActionLabel({ statusCode, itemName })}
-    </Button>
+    </StyledButton>
   )
 }
 

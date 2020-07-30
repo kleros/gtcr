@@ -13,6 +13,7 @@ const StyledItemCol = styled.div`
 
 const StyledButton = styled(Button)`
   pointer-events: auto;
+  text-transform: capitalize;
 `
 
 const ItemCardContent = ({ item, tcrAddress }) => (

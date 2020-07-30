@@ -31,6 +31,10 @@ import itemTourSteps from './tour-steps'
 
 const ITEM_TOUR_DISMISSED = 'ITEM_TOUR_DISMISSED'
 
+const StyledBreadcrumbItem = styled(Breadcrumb.Item)`
+  text-transform: capitalize;
+`
+
 const StyledLayoutContent = styled(Layout.Content)`
   padding: 0 9.375vw 42px;
   display: flex;
@@ -258,12 +262,12 @@ const ItemDetails = ({ itemID }) => {
       <WarningBanner />
       <StyledBanner>
         <Breadcrumb separator=">">
-          <Breadcrumb.Item>
+          <StyledBreadcrumbItem>
             <StyledLink to={`/tcr/${tcrAddress}`}>{tcrTitle}</StyledLink>
-          </Breadcrumb.Item>
-          <Breadcrumb.Item>
+          </StyledBreadcrumbItem>
+          <StyledBreadcrumbItem>
             {itemName && capitalizeFirstLetter(itemName)} Details
-          </Breadcrumb.Item>
+          </StyledBreadcrumbItem>
         </Breadcrumb>
       </StyledBanner>
       <StyledMargin>

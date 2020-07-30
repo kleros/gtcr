@@ -35,6 +35,7 @@ const StyledSpin = styled(Spin)`
 `
 
 const StyledModal = styled(Modal)`
+  text-transform: capitalize;
   & > .ant-modal-content {
     border-top-left-radius: 14px;
     border-top-right-radius: 14px;

@@ -27,6 +27,14 @@ import { WalletContext } from '../../../bootstrap/wallet-context'
 import BNPropType from '../../../prop-types/bn'
 import { capitalizeFirstLetter } from '../../../utils/string'
 
+const StyledText = styled(Typography.Text)`
+  text-transform: capitalize;
+`
+
+const StyledItem = styled(AntdTimeline.Item)`
+  text-transform: capitalize;
+`
+
 const StyledCard = styled(Card)`
   cursor: default;
 
@@ -262,11 +270,11 @@ const Timeline = ({ request, requestID, item }) => {
         return (
           <AntdTimeline.Item key={i}>
             <span>
-              <Typography.Text>
+              <StyledText>
                 {requestType === CONTRACT_STATUS.REGISTRATION_REQUESTED
                   ? `${itemName} submitted`
                   : 'Removal requested'}
-              </Typography.Text>
+              </StyledText>
               <Typography.Text type="secondary">
                 <EventTimestamp blockNumber={blockNumber} />
               </Typography.Text>
@@ -402,7 +410,7 @@ const Timeline = ({ request, requestID, item }) => {
 
   if (resolved && !disputed)
     items = items.concat(
-      <AntdTimeline.Item
+      <StyledItem
         key={items.length}
         color={
           requestType === CONTRACT_STATUS.REGISTRATION_REQUESTED
@@ -415,7 +423,7 @@ const Timeline = ({ request, requestID, item }) => {
             ? 'accepted'
             : 'removed'
         }`}
-      </AntdTimeline.Item>
+      </StyledItem>
     )
 
   return (

@@ -8,6 +8,7 @@ import ETHAddress from './eth-address'
 
 const StyledButton = styled(Button)`
   pointer-events: auto;
+  text-transform: capitalize;
 `
 
 const StyledSpan = styled.span`

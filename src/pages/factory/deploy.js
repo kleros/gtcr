@@ -58,6 +58,7 @@ const StyledActions = styled.div`
 
 const StyledButton = styled(Button)`
   margin-left: 12px;
+  text-transform: capitalize;
 `
 
 const getTcrMetaEvidence = async (tcrState, parentTCRAddress) => {
