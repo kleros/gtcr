@@ -1,5 +1,5 @@
 import React, { useContext, useMemo } from 'react'
-import { Tooltip } from 'antd'
+import { Tooltip, Icon } from 'antd'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import PropTypes from 'prop-types'
 import ItemStatusBadge from '../../components/item-status-badge'
@@ -73,6 +73,10 @@ const ItemCardTitle = ({ statusCode, tcrData }) => {
             marginLeft: '12px'
           }}
         >
+          <Tooltip title="This is the challenge period before this item is accepted into the list">
+            &nbsp;
+            <Icon type="question-circle-o" />
+          </Tooltip>
           Ends {challengeCountdown}
         </div>
       )}
