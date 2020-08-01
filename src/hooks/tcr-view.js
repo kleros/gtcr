@@ -80,7 +80,10 @@ const useTcrView = tcrAddress => {
     if (!gtcrView || !tcrAddress) return
     ;(async () => {
       try {
-        setArbitrableTCRData(await gtcrView.fetchArbitrable(tcrAddress))
+        setArbitrableTCRData({
+          ...(await gtcrView.fetchArbitrable(tcrAddress)),
+          tcrAddress
+        })
       } catch (err) {
         console.error('Error fetching arbitrable TCR data:', err)
         setError('Error fetching arbitrable TCR data')
@@ -91,7 +94,11 @@ const useTcrView = tcrAddress => {
   // Get the current arbitration cost to calculate request and challenge deposits.
   useEffect(() => {
     ;(async () => {
-      if (!arbitrableTCRData || tcrAddress === depositFor || arbitrationCost)
+      if (
+        !arbitrableTCRData ||
+        tcrAddress === depositFor ||
+        (arbitrationCost && depositFor && tcrAddress === depositFor)
+      )
         return
 
       try {
