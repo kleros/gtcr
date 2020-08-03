@@ -262,9 +262,9 @@ export default () => {
       </StyledBanner>
       <StyledLayoutContent>
         <Steps current={currStep - 1}>
-          <Step title="List Parameters" />
-          <Step title="Item Parameters" />
-          <Step title="Badges List Parameters" />
+          <Step title="List" />
+          <Step title="Item" />
+          <Step title="Badges List" />
           <Step title="Deploy" />
         </Steps>
         <StyledContainer>

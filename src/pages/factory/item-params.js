@@ -108,7 +108,7 @@ const ItemParams = ({
                 <Icon type="question-circle-o" />
               </Tooltip>
             </Col>
-            <Col span={7}>
+            <Col span={6}>
               Description
               <Tooltip title="This will be the text displayed when the user clicks the '?' symbol near the field label.">
                 &nbsp;
@@ -122,9 +122,9 @@ const ItemParams = ({
                 <Icon type="question-circle-o" />
               </Tooltip>
             </Col>
-            <Col span={2}>
+            <Col span={3}>
               Indexed
-              <Tooltip title="Whether to display this field on the list of items.">
+              <Tooltip title="Indexed fields are searcheable and displayed on the card in the items view (along with image field types). Toggle these for the fields you consider most important.">
                 &nbsp;
                 <Icon type="question-circle-o" />
               </Tooltip>
@@ -176,7 +176,7 @@ const ItemParams = ({
                             {...rest}
                           />
                         </Col>
-                        <Col span={7}>
+                        <Col span={6}>
                           <CustomInput
                             name={`columns[${index}].description`}
                             hasFeedback
@@ -221,7 +221,7 @@ const ItemParams = ({
                         columns[index].type !== LONGTEXT &&
                         columns[index].type !== IMAGE &&
                         columns[index].type !== FILE ? ( // Image, file and long text cannot be identifiers.
-                          <Col span={2}>
+                          <Col span={3}>
                             <Field name={`columns[${index}].isIdentifier`}>
                               {({ field }) => (
                                 <Form.Item>
@@ -240,7 +240,7 @@ const ItemParams = ({
                             </Field>
                           </Col>
                         ) : (
-                          <Col span={2} />
+                          <Col span={3} />
                         )}
                         {columns[index].type === FILE ? ( // Image and long text cannot be identifiers.
                           <Col span={4}>

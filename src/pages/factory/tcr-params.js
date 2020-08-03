@@ -58,10 +58,9 @@ const StyledTCRParamContainer = styled.div`
 `
 
 const StyledUploadContainer = styled.div`
-  max-width: 450px;
-
   @media (min-width: 840px) {
     margin-right: 12px;
+    max-width: 450px;
   }
 `
 
