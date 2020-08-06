@@ -31,10 +31,6 @@ const StyledText = styled(Typography.Text)`
   text-transform: capitalize;
 `
 
-const StyledItem = styled(AntdTimeline.Item)`
-  text-transform: capitalize;
-`
-
 const StyledCard = styled(Card)`
   cursor: default;
 
@@ -142,6 +138,10 @@ const Timeline = ({ request, requestID, item }) => {
             ...gtcr.filters.RequestSubmitted(itemID, requestID),
             fromBlock: 0
           }),
+          library.getLogs({
+            ...gtcr.filters.ItemStatusChange(itemID, requestID),
+            fromBlock: 0
+          }),
           disputed
             ? library.getLogs({
                 ...gtcr.filters.Ruling(arbitrator.address, disputeID),
@@ -165,7 +165,7 @@ const Timeline = ({ request, requestID, item }) => {
         .filter(logs => !!logs)
         .map((e, i) => {
           // Parse and sort event logs.
-          if (i <= 2)
+          if (i <= 3)
             // Arbitrable Logs.
             return e.map(log => ({
               ...gtcr.interface.parseLog(log),
@@ -182,7 +182,16 @@ const Timeline = ({ request, requestID, item }) => {
         })
         .reduce((acc, curr) => acc.concat(curr), [])
 
-      setLogs(logsArr)
+      setLogs(
+        logsArr.filter(
+          // Remove unused item status change event logs
+          e =>
+            !(
+              e.name === 'ItemStatusChange' &&
+              (!e.values._resolved || e.values._disputed)
+            )
+        )
+      )
 
       // Fetch evidence files.
       archon.arbitrable
@@ -256,13 +265,14 @@ const Timeline = ({ request, requestID, item }) => {
   if (!item || !request || typeof requestType !== 'number')
     return <Skeleton active />
 
-  const { resolved, disputed } = request
+  const { resolved } = request
 
   const { metadata } = metaEvidence || {}
 
   // Build nodes from request events.
   const itemName = metadata ? capitalizeFirstLetter(metadata.itemName) : 'Item'
-  let items = logs
+  console.info('logs', logs)
+  const items = logs
     .sort((a, b) => a.blockNumber - b.blockNumber)
     .sort(a => (a.name === 'RequestSubmitted' ? -1 : 0))
     .map(({ name, values, blockNumber, transactionHash }, i) => {
@@ -405,26 +415,21 @@ const Timeline = ({ request, requestID, item }) => {
             </Typography.Text>
           </AntdTimeline.Item>
         )
-      } else throw new Error('Unhandled event')
+      } else if (name === 'ItemStatusChange') {
+        const resultMessage =
+          item.status === STATUS_CODE.REGISTERED
+            ? `${itemName || 'item'} accepted.`
+            : `${itemName || 'item'} removed.`
+        return (
+          <AntdTimeline.Item key={i} color={STATUS_COLOR[item.status]}>
+            {resultMessage}
+            <Typography.Text type="secondary">
+              <EventTimestamp blockNumber={blockNumber} />
+            </Typography.Text>
+          </AntdTimeline.Item>
+        )
+      } else throw new Error(`Unhandled event ${name}`)
     })
-
-  if (resolved && !disputed)
-    items = items.concat(
-      <StyledItem
-        key={items.length}
-        color={
-          requestType === CONTRACT_STATUS.REGISTRATION_REQUESTED
-            ? STATUS_COLOR[STATUS_CODE.REGISTERED]
-            : STATUS_COLOR[STATUS_CODE.REJECTED]
-        }
-      >
-        {`${itemName || 'Item'} ${
-          requestType === CONTRACT_STATUS.REGISTRATION_REQUESTED
-            ? 'accepted'
-            : 'removed'
-        }`}
-      </StyledItem>
-    )
 
   return (
     <AntdTimeline
