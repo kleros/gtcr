@@ -178,7 +178,7 @@ if (fortmaticApiKey)
 
 if (window.ethereum)
   connectors.Injected = new InjectedConnector({
-    supportedNetworks: [NETWORK.MAINNET, NETWORK.KOVAN]
+    supportedNetworks: [NETWORK.MAINNET, NETWORK.KOVAN, NETWORK.RINKEBY]
   })
 
 const Content = () => {

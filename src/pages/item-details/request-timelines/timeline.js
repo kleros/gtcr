@@ -271,7 +271,6 @@ const Timeline = ({ request, requestID, item }) => {
 
   // Build nodes from request events.
   const itemName = metadata ? capitalizeFirstLetter(metadata.itemName) : 'Item'
-  console.info('logs', logs)
   const items = logs
     .sort((a, b) => a.blockNumber - b.blockNumber)
     .sort(a => (a.name === 'RequestSubmitted' ? -1 : 0))

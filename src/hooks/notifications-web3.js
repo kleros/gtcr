@@ -190,7 +190,7 @@ const useNotificationWeb3 = () => {
         notification.error({
           message: 'Authorization failed',
           description:
-            'Please ensure your wallet is set to either Mainnet or Kovan and authorize the request.',
+            'Please ensure your wallet is set to either Mainnet, Kovan or Rinkeby and authorize the request.',
           duration: 15,
           key: NOTIFICATION_KEY
         })

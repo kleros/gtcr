@@ -85,10 +85,8 @@ const RelTCRParams = ({
   const { library, networkId } = useWeb3Context()
   const [depositVal, setDepositVal] = useState(0.05)
   const [debouncedArbitrator] = useDebounce(values.relArbitratorAddress, 1000)
-  const {
-    arbitrator: klerosAddress,
-    policy: policyAddress
-  } = useNetworkEnvVariable('REACT_APP_KLEROS_ADDRESSES', networkId)
+  const { arbitrator: klerosAddress, policy: policyAddress } =
+    useNetworkEnvVariable('REACT_APP_KLEROS_ADDRESSES', networkId) || {}
   const { arbitrationCost } = useArbitrationCost({
     address: values.relArbitratorAddress,
     arbitratorExtraData: values.relArbitratorExtraData,
@@ -298,7 +296,7 @@ const RelTCRParams = ({
             </StyledSliderContainer>
           </StyledDepositContainer>
         )}
-        {!isKlerosArbitrator && policyAddress ? (
+        {isKlerosArbitrator === false ? (
           <CustomInput
             name="relArbitratorExtraData"
             placeholder="0x7331deadbeef..."
