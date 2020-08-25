@@ -179,7 +179,7 @@ const SubmitModal = props => {
         }
         let gasLimit
         try {
-          console.info((await library.estimateGas(txObj)).toNumber())
+          ;(await library.estimateGas(txObj)).toNumber()
           // eslint-disable-next-line no-unused-vars
         } catch (err) {
           console.warn(

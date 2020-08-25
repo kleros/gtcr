@@ -60,11 +60,11 @@ export const isETHAddress = address => {
 export const jurorsAndCourtIDFromExtraData = arbitratorExtraData => {
   const courtID = bigNumberify(
     `0x${arbitratorExtraData.slice(2, 66)}`
-  ).toString()
+  ).toNumber()
 
   const numberOfJurors = bigNumberify(
     `0x${arbitratorExtraData.slice(66, 130)}`
-  ).toString()
+  ).toNumber()
 
   return { courtID, numberOfJurors }
 }

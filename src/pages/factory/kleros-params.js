@@ -40,7 +40,7 @@ const KlerosParams = ({
   const { library, active } = useWeb3Context()
   const [arbitrationCost, setArbitrationCost] = useState(0)
   const [numberOfJurors, setNumberOfJurors] = useState(3)
-  const [courtID, setCourtID] = useState(0)
+  const [courtID, setCourtID] = useState()
   const [courts, setCourts] = useState([])
 
   const policyRegistry = useMemo(() => {
@@ -101,7 +101,13 @@ const KlerosParams = ({
                 ? `${process.env.REACT_APP_IPFS_GATEWAY}${path}`
                 : path
               const { name } = await (await fetch(URL)).json()
-              return { courtID, name }
+              return {
+                courtID: Number(courtID),
+                name,
+                key: courtID,
+                value: courtID,
+                label: name
+              }
             })
           )
         )
@@ -116,8 +122,8 @@ const KlerosParams = ({
     const { courtID, numberOfJurors } = jurorsAndCourtIDFromExtraData(
       arbitratorExtraData
     )
-    setCourtID(courtID)
-    setNumberOfJurors(numberOfJurors)
+    setCourtID(Number(courtID))
+    setNumberOfJurors(Number(numberOfJurors))
   }, [arbitratorExtraData])
 
   // Display predicted arbitration cost.
@@ -129,10 +135,10 @@ const KlerosParams = ({
   }, [active, arbitrator, arbitratorExtraData])
 
   const onCourtChanged = useCallback(
-    newCourtID => {
+    ({ key: newCourtID }) => {
       if (isNaN(newCourtID)) return
 
-      const newArbitratorExtraData = `0x${newCourtID
+      const newArbitratorExtraData = `0x${Number(newCourtID)
         .toString(16)
         .padStart(64, '0')}${Math.ceil(numberOfJurors)
         .toString(16)
@@ -168,13 +174,18 @@ const KlerosParams = ({
           <Select
             style={{ width: 120 }}
             onChange={onCourtChanged}
-            loading={courts.length === 0}
-            disabled={courts.length === 0}
-            value={courtID}
+            loading={courts.length === 0 || typeof courtID !== 'number'}
+            disabled={courts.length === 0 || typeof courtID !== 'number'}
+            labelInValue
+            value={
+              courts && courts.length > 0 && typeof courtID === 'number'
+                ? courts[courtID]
+                : { key: 0, label: 'General Court' }
+            }
           >
-            {courts.map(({ courtID, name }) => (
-              <Select.Option value={courtID} key={courtID}>
-                {name}
+            {courts.map(({ value, label }) => (
+              <Select.Option value={value} key={value}>
+                {label}
               </Select.Option>
             ))}
           </Select>
