@@ -1,9 +1,11 @@
 import { Steps, Button, Icon, Card, Typography, Modal } from 'antd'
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import PropTypes from 'prop-types'
 import { useDebounce } from 'use-debounce'
 import styled from 'styled-components/macro'
 import { useWeb3Context } from 'web3-react'
+import { ethers } from 'ethers'
+import { abi as _GTCRFactory } from '@kleros/tcr/build/contracts/GTCRFactory.json'
 import TCRParams from './tcr-params'
 import ItemParams from './item-params'
 import Deploy from './deploy'
@@ -233,6 +235,8 @@ const useCachedFactory = version => {
 
 export default () => {
   const cachedFactory = useCachedFactory(version)
+  const { networkId, library, active } = useWeb3Context()
+  const [previousDeployments, setPreviousDeployments] = useState([])
   const {
     tcrState: { currStep, transactions },
     nextStep,
@@ -240,6 +244,11 @@ export default () => {
     STEP_COUNT,
     resetTcrState
   } = cachedFactory
+
+  const factoryInterface = useMemo(
+    () => new ethers.utils.Interface(_GTCRFactory),
+    []
+  )
 
   const showConfirmReset = useCallback(() => {
     confirm({
@@ -251,6 +260,29 @@ export default () => {
       }
     })
   }, [resetTcrState])
+
+  // Fetch previously deployed list information
+  useEffect(() => {
+    ;(async () => {
+      if (!transactions || Object.keys(transactions).length === 0) return
+      if (!library || !active || !factoryInterface) return
+
+      const deploymentTxHashes = Object.keys(transactions)
+        .filter(txHash => !transactions[txHash].networkId !== networkId)
+        .filter(txHash => !transactions[txHash].isConnectedTCR)
+
+      const txDatas = await Promise.all(
+        deploymentTxHashes.map(async txHash =>
+          library.waitForTransaction(txHash)
+        )
+      )
+      setPreviousDeployments(
+        txDatas.map(
+          txData => factoryInterface.parseLog(txData.logs[7]).values._address
+        )
+      )
+    })()
+  }, [active, factoryInterface, library, networkId, transactions])
 
   return (
     <>
@@ -294,20 +326,18 @@ export default () => {
             </Button>
           </StyledButtonGroup>
         </StyledStepper>
-        {Object.keys(transactions).length > 0 && (
+        {previousDeployments.length > 0 && (
           <StyledContainer>
             <Card title="Previous Deployments">
               <StyledGrid>
-                {Object.keys(transactions)
-                  .filter(txHash => !transactions[txHash].isConnectedTCR)
-                  .map((txHash, i) => (
-                    <Card key={i}>
-                      <TCRCardContent
-                        tcrAddress={transactions[txHash].contractAddress}
-                        hideDetailsButton
-                      />
-                    </Card>
-                  ))}
+                {previousDeployments.map((contractAddress, i) => (
+                  <Card key={i}>
+                    <TCRCardContent
+                      tcrAddress={contractAddress}
+                      hideDetailsButton
+                    />
+                  </Card>
+                ))}
               </StyledGrid>
             </Card>
           </StyledContainer>

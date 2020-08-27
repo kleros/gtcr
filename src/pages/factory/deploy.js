@@ -344,7 +344,7 @@ const Deploy = ({ setTxState, tcrState, setTcrState }) => {
         gasLimit: 8000000
       })
       setCurrentStep(1)
-      setTxState({ txHash: deployTx.hash, status: 'pending' })
+      setTxState({ txHash: deployTx.hash, status: 'pending', networkId })
       setTxSubmitted(deployTx.hash)
       return {
         tx: deployTx,
@@ -376,7 +376,7 @@ const Deploy = ({ setTxState, tcrState, setTcrState }) => {
             type="info"
             closable
             message="On your marks..."
-            description="When you are ready, click deploy. Please do not close the window until the process is finished and sign both transactions."
+            description="When you are ready, click deploy. You may also want to add it to The Registry so people can find it. If so, don't close the window and wait for the transaction to mine."
           />
         )}
         {currentStep === 1 && (
