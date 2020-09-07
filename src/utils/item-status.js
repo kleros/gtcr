@@ -42,8 +42,8 @@ export const STATUS_TEXT = {
   [STATUS_CODE.CROWDFUNDING]: 'Crowdfunding',
   [STATUS_CODE.CROWDFUNDING_WINNER]: 'Crowdfunding Winner',
   [STATUS_CODE.WAITING_ARBITRATOR]: 'Waiting Arbitrator',
-  [STATUS_CODE.PENDING_SUBMISSION]: 'Pending Submission',
-  [STATUS_CODE.PENDING_REMOVAL]: 'Pending Removal',
+  [STATUS_CODE.PENDING_SUBMISSION]: 'Pending Execution',
+  [STATUS_CODE.PENDING_REMOVAL]: 'Pending Execution',
   [STATUS_CODE.WAITING_ENFORCEMENT]: 'Waiting enforcement'
 }
 
