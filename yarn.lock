@@ -1686,20 +1686,15 @@
     multihashes "^0.4.14"
     web3 "1.0.0-beta.36"
 
-"@kleros/erc-792@^3.0.0":
-  version "3.1.1"
-  resolved "https://registry.yarnpkg.com/@kleros/erc-792/-/erc-792-3.1.1.tgz#94807de22fbe19aed031c65b3458b2b8a3328065"
-  integrity sha512-ZxGcwYNNLtnB6Pu8oYyvZYYbS5sHAlXh30hOIHrQ6+VUwaZ7NSv7SEAWiYlisSa6jhEbEn+VTHY3sXiSTviWgw==
+"@kleros/erc-792@3.0.0":
+  version "3.0.0"
+  resolved "https://registry.yarnpkg.com/@kleros/erc-792/-/erc-792-3.0.0.tgz#19fb497808c668dfde5d23279fa1db0d1bf774e4"
+  integrity sha512-LW/dVr0ODcbbGwTURhrUnzl8ZIiL6U7BA3Bgt56Fp01pEJA4atX+v+TkwXtdNtZmUPXXJd73NL/BjWWuhOsk2A==
 
 "@kleros/erc-792@^4.0.1":
   version "4.0.1"
   resolved "https://registry.yarnpkg.com/@kleros/erc-792/-/erc-792-4.0.1.tgz#e4c941ecda29e298a68fff88f880c3cdd8273c0c"
   integrity sha512-nOoifnzSz62jiZ1CtM8NfXD3kb1gdgTWRZ4VoHLREs5HD33vHnmyrO6FgmQQf/aqQJktHXP9cOo3DUFWv1v/Lw==
-
-"@kleros/ethereum-libraries@^1.0.0":
-  version "1.1.0"
-  resolved "https://registry.yarnpkg.com/@kleros/ethereum-libraries/-/ethereum-libraries-1.1.0.tgz#09ed2c9f7f523aeb2d185c74b0a4093eec1204b1"
-  integrity sha512-tgefywe7llnhr2JG07PcSbupq7a+cRdT+QL5TAXOF1yaN/EXIxYuXT3g4bdQD3TS5NSC7y2/gBs9qJ4Wy3khFw==
 
 "@kleros/kleros-interaction@^0.7.0":
   version "0.7.0"
@@ -1735,13 +1730,12 @@
   resolved "https://registry.yarnpkg.com/@kleros/react-components/-/react-components-1.0.1.tgz#759385f7479d26387528afaac4bae6992566c63d"
   integrity sha512-xT7tTav9ROwfXecBpCcZ2S9nez2Owrgz0Kg7mVyoO48zRtj5Ocyg1jSymWniBUCuux7ukUuDpYEwHfQBIEnhWw==
 
-"@kleros/tcr@1.9.0-alpha.1":
-  version "1.9.0-alpha.1"
-  resolved "https://registry.yarnpkg.com/@kleros/tcr/-/tcr-1.9.0-alpha.1.tgz#d89ccb9defa9c656e4ee8f5d168029774abc99da"
-  integrity sha512-X4cj6G6cQYgE4i/6Mb/mwv+PpWZopqRfybOcZu7HZidiaQYwBXTQtTgc5QYAPdCGcjFYcya2Ev1W5z+1IV18gQ==
+"@kleros/tcr@^2.0.0":
+  version "2.0.0"
+  resolved "https://registry.yarnpkg.com/@kleros/tcr/-/tcr-2.0.0.tgz#f5a706e66abcf369772cee9448f68820c8eb43b9"
+  integrity sha512-caiLEfEF1dzViTd8UjhKx7FNHWOt/8VA+n6V/bHvFCe+4pTxLH8NzQcDTOuitJIolVW7KeXD9pmHE5F8xXbFpg==
   dependencies:
-    "@kleros/erc-792" "^3.0.0"
-    "@kleros/ethereum-libraries" "^1.0.0"
+    "@kleros/erc-792" "3.0.0"
     chai "^4.2.0"
     openzeppelin-test-helpers "^0.4.3"
     solidity-bytes-utils "^0.0.8"

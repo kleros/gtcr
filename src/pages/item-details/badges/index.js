@@ -147,7 +147,8 @@ const Badges = ({ connectedTCRAddr, item, tcrAddress }) => {
           itemsPerRequest,
           filter,
           oldestFirst,
-          ZERO_ADDRESS
+          ZERO_ADDRESS,
+          itemsPerRequest
         )
 
         // Filter out empty slots from the results.

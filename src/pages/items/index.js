@@ -252,7 +252,8 @@ const Items = ({ search, history }) => {
             1,
             filter,
             true,
-            active && account ? account : ZERO_ADDRESS
+            active && account ? account : ZERO_ADDRESS,
+            ITEMS_PER_PAGE
           )
         else
           encodedItems = await gtcrView.queryItems(
@@ -261,7 +262,8 @@ const Items = ({ search, history }) => {
             500,
             filter,
             oldestFirst,
-            active && account ? account : ZERO_ADDRESS
+            active && account ? account : ZERO_ADDRESS,
+            ITEMS_PER_PAGE
           )
 
         // Filter out empty slots from the results.
