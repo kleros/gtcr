@@ -154,6 +154,9 @@ const Items = ({ search, history }) => {
   useEffect(() => {
     if (!gtcrView || fetchItemCount.isFetching || !fetchItemCount.fetchStarted)
       return
+
+    if (gtcr.address !== tcrAddress) return
+
     const filter = queryOptionsToFilterArray(queryOptions)
     setFetchItemCount({ isFetching: true })
     ;(async () => {
