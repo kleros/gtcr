@@ -265,8 +265,6 @@ const Timeline = ({ request, requestID, item }) => {
   if (!item || !request || typeof requestType !== 'number')
     return <Skeleton active />
 
-  const { resolved } = request
-
   const { metadata } = metaEvidence || {}
 
   // Build nodes from request events.
@@ -430,17 +428,7 @@ const Timeline = ({ request, requestID, item }) => {
       } else throw new Error(`Unhandled event ${name}`)
     })
 
-  return (
-    <AntdTimeline
-      pending={
-        item.status !== STATUS_CODE.REJECTED &&
-        item.status !== STATUS_CODE.REGISTERED &&
-        !resolved
-      }
-    >
-      {items}
-    </AntdTimeline>
-  )
+  return <AntdTimeline>{items}</AntdTimeline>
 }
 
 Timeline.propTypes = {
