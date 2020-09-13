@@ -15,7 +15,7 @@ import {
   NavLink,
   Redirect
 } from 'react-router-dom'
-import { Layout, Menu, Spin, message, Icon } from 'antd'
+import { Layout, Menu, Spin, Icon } from 'antd'
 import { register } from './service-worker'
 import { WalletProvider } from './wallet-context'
 import { TourProvider } from './tour-context'
@@ -282,5 +282,5 @@ export default () => {
 
 register({
   onUpdate: () =>
-    message.warning('An update is ready. Please close and reopen all tabs.', 0)
+    console.info('An update is ready. Please close and reopen all tabs.', 0)
 })
