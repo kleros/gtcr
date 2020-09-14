@@ -1,5 +1,5 @@
 import React from 'react'
-import { Typography, Avatar, Checkbox } from 'antd'
+import { Typography, Avatar, Checkbox, Icon } from 'antd'
 import styled from 'styled-components/macro'
 import PropTypes from 'prop-types'
 import EthAddress from './eth-address'
@@ -28,7 +28,13 @@ const DisplaySelector = ({ type, value, linkImage, allowedFileTypes }) => {
     case itemTypes.LONGTEXT:
       return <Typography.Paragraph>{value || LOREM_IPSUM}</Typography.Paragraph>
     case itemTypes.FILE: {
-      if (!value) return ''
+      if (!value)
+        return (
+          <a target="_blank" rel="noopener noreferrer" href="/#">
+            View File <Icon type="paper-clip" />
+          </a>
+        )
+
       if (!allowedFileTypes) return 'No allowed file types specified'
 
       const allowedFileTypesArr = allowedFileTypes.split(' ')
@@ -40,7 +46,13 @@ const DisplaySelector = ({ type, value, linkImage, allowedFileTypes }) => {
         return 'Forbidden file type'
 
       return (
-        <a href={`${process.env.REACT_APP_IPFS_GATEWAY}${value || ''}`}>Link</a>
+        <a
+          href={`${process.env.REACT_APP_IPFS_GATEWAY}${value || ''}`}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          View File <Icon type="paper-clip" />
+        </a>
       )
     }
     case itemTypes.IMAGE:

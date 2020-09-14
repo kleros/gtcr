@@ -28,7 +28,12 @@ const ItemCardContent = ({ item, tcrAddress }) => (
   >
     <div>
       {item.columns
-        .filter(col => col.isIdentifier || col.type === itemTypes.IMAGE)
+        .filter(
+          col =>
+            col.isIdentifier ||
+            col.type === itemTypes.IMAGE ||
+            col.type === itemTypes.FILE
+        )
         .map((column, j) => (
           <StyledItemCol key={j}>
             <DisplaySelector
