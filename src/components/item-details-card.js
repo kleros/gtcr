@@ -70,7 +70,7 @@ const ItemDetailsCard = ({
 
   const batchWithdrawClick = useCallback(() => {
     rewardRef.rewardMe()
-    if (!!tcrViewContext || !BATCH_WITHDRAW_ADDRESS || !item) return
+    if (!tcrViewContext || !BATCH_WITHDRAW_ADDRESS || !item) return
     pushWeb3Action(async (_, signer) => {
       const batchWithdraw = new ethers.Contract(
         BATCH_WITHDRAW_ADDRESS,
