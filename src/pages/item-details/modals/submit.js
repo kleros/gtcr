@@ -44,6 +44,7 @@ const StyledModal = styled(Modal)`
 
 const StyledAlert = styled(Alert)`
   margin-bottom: 12px;
+  text-transform: initial;
 `
 
 const SUBMISSION_FORM_ID = 'submitItemForm'

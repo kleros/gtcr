@@ -38,6 +38,7 @@ const StyledModal = styled(Modal)`
 
 const StyledAlert = styled(Alert)`
   margin-bottom: 12px;
+  text-transform: initial;
 `
 
 const RemoveModal = ({ item, itemName = 'item', fileURI, ...rest }) => {
