@@ -270,7 +270,7 @@ const RelTCRParams = ({
                 <Slider
                   id="depositSlider"
                   min={0}
-                  max={15}
+                  max={30}
                   onChange={onChangeDepositVal}
                   value={typeof depositVal === 'number' ? depositVal : 0}
                   step={0.01}
@@ -288,7 +288,7 @@ const RelTCRParams = ({
               </div>
               <InputNumber
                 min={0}
-                max={15}
+                max={30}
                 step={0.01}
                 value={depositVal}
                 onChange={onChangeDepositVal}
