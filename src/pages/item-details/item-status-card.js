@@ -203,7 +203,7 @@ const ItemStatusCard = ({ item, timestamp, request }) => {
           <Descriptions.Item label="Requester">
             <ETHAddress address={item.requester} />
           </Descriptions.Item>
-          {hasPendingRequest(item.status) && disputed && (
+          {disputed && (
             <>
               <Descriptions.Item label="Dispute ID">
                 {request.disputeID.toString()}
