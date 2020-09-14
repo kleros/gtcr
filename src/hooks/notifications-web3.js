@@ -315,14 +315,22 @@ async function processWeb3Action(
       duration: 0,
       key: notificationID,
       icon: <Icon type="loading" style={{ color: '#108ee9' }} />,
-      description: <a href={etherscanLink}>View on etherscan</a>
+      description: (
+        <a href={etherscanLink} target="_blank" rel="noopener noreferrer">
+          View on etherscan
+        </a>
+      )
     })
 
     const txMined = await web3Context.library.waitForTransaction(hash)
 
     notification.success({
       message: 'Transaction mined!',
-      description: <a href={etherscanLink}>View on etherscan</a>,
+      description: (
+        <a href={etherscanLink} target="_blank" rel="noopener noreferrer">
+          View on etherscan
+        </a>
+      ),
       duration: 5,
       key: notificationID
     })

@@ -156,6 +156,8 @@ const Banner = ({
           <a
             href={`${process.env.REACT_APP_IPFS_GATEWAY}${fileURI || ''}`}
             style={{ textDecoration: 'underline', color: '#4d00b473' }}
+            target="_blank"
+            rel="noopener noreferrer"
           >
             {width > 450 ? 'View Listing Policies' : 'Policies'}
           </a>
