@@ -26,6 +26,7 @@ import {
 import { WalletContext } from '../../../bootstrap/wallet-context'
 import BNPropType from '../../../prop-types/bn'
 import { capitalizeFirstLetter } from '../../../utils/string'
+import { NETWORK, NETWORK_NAME } from '../../../utils/network-utils'
 
 const StyledText = styled(Typography.Text)`
   text-transform: capitalize;
@@ -74,7 +75,7 @@ const EventTimestamp = ({ blockNumber }) => {
 }
 
 const Timeline = ({ request, requestID, item }) => {
-  const { library, active } = useWeb3Context()
+  const { library, active, networkId } = useWeb3Context()
   const { gtcr, metaEvidence } = useContext(TCRViewContext)
   const { archon } = useContext(WalletContext)
   const [logs, setLogs] = useState([])
@@ -283,7 +284,15 @@ const Timeline = ({ request, requestID, item }) => {
                   : 'Removal requested'}
               </StyledText>
               <Typography.Text type="secondary">
-                <EventTimestamp blockNumber={blockNumber} />
+                <a
+                  href={`https://${
+                    networkId !== NETWORK.MAINNET
+                      ? `${NETWORK_NAME[networkId]}.`
+                      : ''
+                  }etherscan.io/tx/${transactionHash}`}
+                >
+                  <EventTimestamp blockNumber={blockNumber} />
+                </a>
               </Typography.Text>
             </span>
           </AntdTimeline.Item>
@@ -301,8 +310,16 @@ const Timeline = ({ request, requestID, item }) => {
         /* eslint-disable unicorn/new-for-builtins */
         const submissionTime = (
           <span>
-            Submitted {new Date(new Date(submittedAt * 1000)).toGMTString()} by{' '}
-            <ETHAddress address={submittedBy} />
+            <a
+              href={`https://${
+                networkId !== NETWORK.MAINNET
+                  ? `${NETWORK_NAME[networkId]}.`
+                  : ''
+              }etherscan.io/tx/${transactionHash}`}
+            >
+              Submitted {new Date(new Date(submittedAt * 1000)).toGMTString()}
+            </a>{' '}
+            by <ETHAddress address={submittedBy} />
           </span>
         )
 
@@ -357,7 +374,15 @@ const Timeline = ({ request, requestID, item }) => {
                 ? 'The arbitrator ruled in favor of the challenger'
                 : 'The arbitrator gave an unknown ruling'}
               <Typography.Text type="secondary">
-                <EventTimestamp blockNumber={blockNumber} />
+                <a
+                  href={`https://${
+                    networkId !== NETWORK.MAINNET
+                      ? `${NETWORK_NAME[networkId]}.`
+                      : ''
+                  }etherscan.io/tx/${transactionHash}`}
+                >
+                  <EventTimestamp blockNumber={blockNumber} />
+                </a>
               </Typography.Text>
             </span>
           </AntdTimeline.Item>
@@ -367,7 +392,15 @@ const Timeline = ({ request, requestID, item }) => {
           <AntdTimeline.Item key={i}>
             Ruling appealed{' '}
             <Typography.Text type="secondary">
-              <EventTimestamp blockNumber={blockNumber} />
+              <a
+                href={`https://${
+                  networkId !== NETWORK.MAINNET
+                    ? `${NETWORK_NAME[networkId]}.`
+                    : ''
+                }etherscan.io/tx/${transactionHash}`}
+              >
+                <EventTimestamp blockNumber={blockNumber} />
+              </a>
             </Typography.Text>
           </AntdTimeline.Item>
         )
@@ -408,7 +441,15 @@ const Timeline = ({ request, requestID, item }) => {
           <AntdTimeline.Item key={i} color={STATUS_COLOR[finalStatus]}>
             {resultMessage}
             <Typography.Text type="secondary">
-              <EventTimestamp blockNumber={blockNumber} />
+              <a
+                href={`https://${
+                  networkId !== NETWORK.MAINNET
+                    ? `${NETWORK_NAME[networkId]}.`
+                    : ''
+                }etherscan.io/tx/${transactionHash}`}
+              >
+                <EventTimestamp blockNumber={blockNumber} />
+              </a>
             </Typography.Text>
           </AntdTimeline.Item>
         )
@@ -421,7 +462,15 @@ const Timeline = ({ request, requestID, item }) => {
           <AntdTimeline.Item key={i} color={STATUS_COLOR[item.status]}>
             {resultMessage}
             <Typography.Text type="secondary">
-              <EventTimestamp blockNumber={blockNumber} />
+              <a
+                href={`https://${
+                  networkId !== NETWORK.MAINNET
+                    ? `${NETWORK_NAME[networkId]}.`
+                    : ''
+                }etherscan.io/tx/${transactionHash}`}
+              >
+                <EventTimestamp blockNumber={blockNumber} />
+              </a>
             </Typography.Text>
           </AntdTimeline.Item>
         )
