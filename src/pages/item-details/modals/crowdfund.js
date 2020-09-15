@@ -195,7 +195,7 @@ const CrowdfundModal = ({ statusCode, item, fileURI, ...rest }) => {
         .
       </Typography.Title>
       <Typography.Paragraph level={4}>
-        Contribute ETH for a chance to win up to{' '}
+        Contribute ETH for a chance to win at most{' '}
         <ETHAmount
           decimals={4}
           amount={potentialReward

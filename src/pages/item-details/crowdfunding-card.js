@@ -144,7 +144,7 @@ const CrowdfundingCard = ({ item, timestamp }) => {
           <StyledParagraph>
             {hasPaid[PARTY.REQUESTER]
               ? `Submitter funded. The challenger must now fully fund his side of the appeal before the deadline in order not to lose the dispute.`
-              : `Contribute arbitration fees to the submitter's appeal for a chance to win up to ${formatEther(
+              : `Contribute arbitration fees to the submitter's appeal for a chance to win at most ${formatEther(
                   requesterFees.potentialReward
                 )} ETH.`}
           </StyledParagraph>
@@ -162,7 +162,7 @@ const CrowdfundingCard = ({ item, timestamp }) => {
           <StyledParagraph>
             {hasPaid[PARTY.CHALLENGER]
               ? 'Challenger fully funded. The submitter must now fully fund his side of the appeal before the deadline in order not to lose the dispute.'
-              : `Contribute arbitration fees to the challenger's appeal for a chance to win up to ${formatEther(
+              : `Contribute arbitration fees to the challenger's appeal for a chance to win at most ${formatEther(
                   challengerFees.potentialReward
                 )} ETH.`}
           </StyledParagraph>
