@@ -258,7 +258,11 @@ const TCRParams = ({
                 </label>
                 <br />
                 Click{' '}
-                <a href="https://ipfs.kleros.io/ipfs/QmbqgkZoGu7jJ8nTqee4NypEhK7YVBEJJmPJbJxz8Bx8nY/t2cr-primary-doc.pdf">
+                <a
+                  href="https://ipfs.kleros.io/ipfs/QmUPsjDcKxNv6z6ktnmxkSb4LpqmQ7DT12yG5B73z9uLEy/curated-lists-primary-document.pdf"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
                   here
                 </a>{' '}
                 to see an example.

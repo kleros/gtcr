@@ -152,7 +152,11 @@ const InputSelector = ({
             onChange={fileUploadStatusChange}
           >
             {values[name] ? (
-              <a href={`${process.env.REACT_APP_IPFS_GATEWAY}${values[name]}`}>
+              <a
+                href={`${process.env.REACT_APP_IPFS_GATEWAY}${values[name]}`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
                 <img
                   src={`${process.env.REACT_APP_IPFS_GATEWAY}${values[name]}`}
                   style={{ height: '70px', objectFit: 'contain' }}
@@ -179,7 +183,11 @@ const InputSelector = ({
             onChange={fileUploadStatusChange}
           >
             {values[name] ? (
-              <a href={`${process.env.REACT_APP_IPFS_GATEWAY}${values[name]}`}>
+              <a
+                href={`${process.env.REACT_APP_IPFS_GATEWAY}${values[name]}`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
                 <Icon type="file" style={{ fontSize: '30px' }} />
               </a>
             ) : (

@@ -290,7 +290,11 @@ const SubmitModal = props => {
       />
       <Typography.Paragraph>
         Make sure your submission complies with the{' '}
-        <a href={`${process.env.REACT_APP_IPFS_GATEWAY}${fileURI || ''}`}>
+        <a
+          href={`${process.env.REACT_APP_IPFS_GATEWAY}${fileURI || ''}`}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
           listing criteria
         </a>{' '}
         to avoid challenges.

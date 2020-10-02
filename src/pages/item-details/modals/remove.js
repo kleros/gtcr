@@ -152,7 +152,11 @@ const RemoveModal = ({ item, itemName = 'item', fileURI, ...rest }) => {
     >
       <Typography.Title level={4}>
         Read the&nbsp;
-        <a href={`${process.env.REACT_APP_IPFS_GATEWAY}${fileURI || ''}`}>
+        <a
+          href={`${process.env.REACT_APP_IPFS_GATEWAY}${fileURI || ''}`}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
           Listing Criteria
         </a>
         .

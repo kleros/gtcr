@@ -337,6 +337,8 @@ const Timeline = ({ request, requestID, item }) => {
                   <a
                     href={`${process.env.REACT_APP_IPFS_GATEWAY}${fileURI}`}
                     alt="evidence-file"
+                    target="_blank"
+                    rel="noopener noreferrer"
                   >
                     <StyledIcon type="file-text" />
                   </a>

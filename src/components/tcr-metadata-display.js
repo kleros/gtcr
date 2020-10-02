@@ -51,7 +51,14 @@ const TCRMetadataDisplay = ({ logoURI, tcrTitle, tcrDescription, fileURI }) => (
           <Icon type="question-circle-o" />
         </Tooltip>
       </span>
-      : <a href={`${process.env.REACT_APP_IPFS_GATEWAY}${fileURI}`}>Link</a>
+      :{' '}
+      <a
+        href={`${process.env.REACT_APP_IPFS_GATEWAY}${fileURI}`}
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        Link
+      </a>
     </StyledField>
   </>
 )

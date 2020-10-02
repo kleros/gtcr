@@ -28,7 +28,6 @@ import {
   queryOptionsToFilterArray,
   applyOldActiveItemsFilter
 } from '../../utils/filters'
-import WarningBanner from '../../components/beta-warning'
 import ItemCard from './item-card'
 import Banner from './banner'
 import AppTour from '../../components/tour'
@@ -461,7 +460,6 @@ const Items = ({ search, history }) => {
 
   return (
     <>
-      <WarningBanner />
       <Banner
         metaEvidence={metaEvidence}
         requestWeb3Auth={requestWeb3Auth}
