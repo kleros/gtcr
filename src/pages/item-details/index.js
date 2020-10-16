@@ -7,6 +7,7 @@ import React, {
   useRef,
   useMemo
 } from 'react'
+import qs from 'qs'
 import PropTypes from 'prop-types'
 import styled from 'styled-components/macro'
 import { useWeb3Context } from 'web3-react'
@@ -25,7 +26,6 @@ import { WalletContext } from '../../bootstrap/wallet-context'
 import SearchBar from '../../components/search-bar'
 import { capitalizeFirstLetter, ZERO_ADDRESS } from '../../utils/string'
 import Badges from './badges'
-import WarningBanner from '../../components/beta-warning'
 import AppTour from '../../components/tour'
 import itemTourSteps from './tour-steps'
 
@@ -71,7 +71,7 @@ const StyledBackLink = styled.div`
 // Reference:
 // https://itnext.io/how-to-create-react-custom-hooks-for-data-fetching-with-useeffect-74c5dc47000a
 // TODO: Ensure http requests are being sent in parallel.
-const ItemDetails = ({ itemID }) => {
+const ItemDetails = ({ itemID, search }) => {
   const { library } = useWeb3Context()
   const [error, setError] = useState()
   const [itemMetaEvidence, setItemMetaEvidence] = useState()
@@ -85,6 +85,7 @@ const ItemDetails = ({ itemID }) => {
   }, [item, library])
   const refAttr = useRef()
   const [eventListenerSet, setEventListenerSet] = useState()
+  const [modalOpen, setModalOpen] = useState()
   const {
     gtcr,
     tcrError,
@@ -211,6 +212,7 @@ const ItemDetails = ({ itemID }) => {
   )
 
   const { metadata } = metaEvidence || {}
+  const { decodedData } = decodedItem || {}
 
   // If this is a TCR in a TCR of TCRs, we fetch its metadata as well
   // to build a better item details card.
@@ -245,6 +247,20 @@ const ItemDetails = ({ itemID }) => {
     })()
   }, [decodedItem, library, metadata])
 
+  const loading =
+    !metadata ||
+    (!decodedData && decodedItem && decodedItem.errors.length === 0)
+
+  // Check if there is some action on the URL and, if so, run it.
+  useEffect(() => {
+    if (loading) return
+
+    const params = qs.parse(search)
+    if (!params['?action']) return
+
+    setModalOpen(true)
+  }, [loading, search])
+
   if (!tcrAddress || !itemID || error || tcrError)
     return (
       <ErrorPage
@@ -259,7 +275,6 @@ const ItemDetails = ({ itemID }) => {
 
   return (
     <>
-      <WarningBanner />
       <StyledBanner>
         <Breadcrumb separator=">">
           <StyledBreadcrumbItem>
@@ -281,6 +296,8 @@ const ItemDetails = ({ itemID }) => {
           item={decodedItem || item}
           timestamp={timestamp}
           request={requests && { ...requests[0] }}
+          modalOpen={modalOpen}
+          setModalOpen={setModalOpen}
           dark
         />
         <div style={{ marginBottom: '40px' }} />
@@ -290,11 +307,7 @@ const ItemDetails = ({ itemID }) => {
           title={`${
             itemName ? capitalizeFirstLetter(itemName) : 'Item'
           } Details`}
-          loading={
-            !metadata ||
-            !decodedItem ||
-            (!decodedItem.decodedData && decodedItem.errors.length === 0)
-          }
+          loading={loading}
           itemMetaEvidence={itemMetaEvidence}
         />
         {/* Crowdfunding card is only rendered if the item has an appealable dispute. */}
@@ -325,7 +338,12 @@ const ItemDetails = ({ itemID }) => {
 }
 
 ItemDetails.propTypes = {
-  itemID: PropTypes.string.isRequired
+  itemID: PropTypes.string.isRequired,
+  search: PropTypes.string
+}
+
+ItemDetails.defaultProps = {
+  search: ''
 }
 
 export default ItemDetails

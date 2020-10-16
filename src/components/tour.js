@@ -52,6 +52,7 @@ AppTour.propTypes = {
         PropTypes.oneOf(['top', 'right', 'bottom', 'left', 'center'])
       ]),
       action: PropTypes.func,
+      // eslint-disable-next-line react/forbid-prop-types
       style: PropTypes.object,
       stepInteraction: PropTypes.bool,
       navDotAriaLabel: PropTypes.string

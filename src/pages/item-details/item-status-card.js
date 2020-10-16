@@ -1,4 +1,4 @@
-import React, { useState, useContext, useMemo } from 'react'
+import React, { useContext, useMemo } from 'react'
 import { Descriptions, Skeleton, Card } from 'antd'
 import PropTypes from 'prop-types'
 import { abi as _gtcr } from '@kleros/tcr/build/contracts/GeneralizedTCR.json'
@@ -74,8 +74,13 @@ const Ruling = ({ currentRuling }) => {
   }
 }
 
-const ItemStatusCard = ({ item, timestamp, request }) => {
-  const [modalOpen, setModalOpen] = useState()
+const ItemStatusCard = ({
+  item,
+  timestamp,
+  request,
+  modalOpen,
+  setModalOpen
+}) => {
   const { pushWeb3Action, requestWeb3Auth } = useContext(WalletContext)
   const {
     metaEvidence,
@@ -295,13 +300,16 @@ ItemStatusCard.propTypes = {
   request: PropTypes.shape({
     disputeID: BNPropType.isRequired,
     arbitrator: PropTypes.string.isRequired
-  })
+  }),
+  modalOpen: PropTypes.bool,
+  setModalOpen: PropTypes.func.isRequired
 }
 
 ItemStatusCard.defaultProps = {
   item: null,
   timestamp: null,
-  request: null
+  request: null,
+  modalOpen: null
 }
 
 export default ItemStatusCard

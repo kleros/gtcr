@@ -203,7 +203,7 @@ const Content = () => {
                   match: {
                     params: { itemID }
                   }
-                }) => <ItemDetails itemID={itemID} />}
+                }) => <ItemDetails search={search} itemID={itemID} />}
               </Route>
               <Route path="/tcr/:tcrAddress">
                 <Items search={search} history={history} />

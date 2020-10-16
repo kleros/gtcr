@@ -8,6 +8,7 @@ const ItemPropTypes = PropTypes.shape({
   disputeStatus: PropTypes.number.isRequired,
   hasPaid: PropTypes.arrayOf(PropTypes.bool).isRequired,
   data: PropTypes.string.isRequired,
+  // eslint-disable-next-line react/forbid-prop-types
   decodedData: PropTypes.array,
   currentRuling: PropTypes.number.isRequired,
   appealStart: BNPropType.isRequired,

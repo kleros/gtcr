@@ -14,7 +14,6 @@ import { version } from '../../../package.json'
 import useNetworkEnvVariable from '../../hooks/network-env'
 import itemTypes from '../../utils/item-types'
 import RelTCRParams from './rel-tcr-params'
-import WarningBanner from '../../components/beta-warning'
 import TCRCardContent from '../../components/tcr-card-content'
 
 const { Step } = Steps
@@ -286,7 +285,6 @@ export default () => {
 
   return (
     <>
-      <WarningBanner />
       <StyledBanner>
         <Typography.Title ellipsis style={{ marginBottom: '0' }}>
           Create a List

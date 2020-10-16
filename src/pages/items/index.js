@@ -11,6 +11,7 @@ import PropTypes from 'prop-types'
 import styled from 'styled-components/macro'
 import localforage from 'localforage'
 import { useWeb3Context } from 'web3-react'
+import qs from 'qs'
 import ErrorPage from '../error-page'
 import { WalletContext } from '../../bootstrap/wallet-context'
 import { ZERO_ADDRESS, ZERO_BYTES32 } from '../../utils/string'
@@ -136,6 +137,7 @@ const Items = ({ search, history }) => {
   const [eventListenerSet, setEventListenerSet] = useState()
   const queryOptions = searchStrToFilterObj(search)
   const [nsfwFilterOn, setNSFWFilter] = useState(true)
+  const [queryItemParams, setQueryItemParams] = useState()
   const toggleNSFWFilter = useCallback(checked => {
     setNSFWFilter(checked)
     localforage.setItem(NSFW_FILTER_KEY, checked)
@@ -437,6 +439,20 @@ const Items = ({ search, history }) => {
     [eventListenerSet]
   )
 
+  // Check if there an action in the URL.
+  useEffect(() => {
+    const params = qs.parse(search)
+    if (!params['?action']) return
+
+    const initialValues = []
+    Object.keys(params)
+      .filter(param => param !== '?action')
+      .forEach(key => initialValues.push(params[key]))
+
+    setQueryItemParams(initialValues)
+    setSubmissionFormOpen(true)
+  }, [requestWeb3Auth, search])
+
   if (!tcrAddress)
     return (
       <ErrorPage
@@ -589,6 +605,7 @@ const Items = ({ search, history }) => {
                 challengePeriodDuration={challengePeriodDuration}
                 tcrAddress={tcrAddress}
                 metaEvidence={metaEvidence}
+                initialValues={queryItemParams}
               />
             )}
           </>
