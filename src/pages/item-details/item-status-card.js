@@ -23,6 +23,7 @@ import BNPropType from '../../prop-types/bn'
 import useHumanizedCountdown from '../../hooks/countdown'
 import useAppealTime from '../../hooks/appeal-time'
 import ETHAmount from '../../components/eth-amount'
+import useNetworkEnvVariable from '../../hooks/network-env'
 
 const StyledDescriptions = styled(Descriptions)`
   flex-wrap: wrap;
@@ -81,7 +82,9 @@ const ItemStatusCard = ({
   modalOpen,
   setModalOpen
 }) => {
-  const { pushWeb3Action, requestWeb3Auth } = useContext(WalletContext)
+  const { pushWeb3Action, requestWeb3Auth, networkId } = useContext(
+    WalletContext
+  )
   const {
     metaEvidence,
     challengePeriodDuration,
@@ -96,6 +99,8 @@ const ItemStatusCard = ({
   const { appealRemainingTime, appealRemainingTimeLoser } = useAppealTime(item)
   const appealCountdown = useHumanizedCountdown(appealRemainingTime)
   const appealLoserCountdown = useHumanizedCountdown(appealRemainingTimeLoser)
+  const { arbitrator: klerosAddress, uiURL } =
+    useNetworkEnvVariable('REACT_APP_KLEROS_ADDRESSES', networkId) || {}
 
   // Get remaining challenge period, if applicable and build countdown.
   const challengeRemainingTime = useMemo(() => {
@@ -162,7 +167,9 @@ const ItemStatusCard = ({
     }
   }
 
-  const metadata = metaEvidence && metaEvidence.metadata
+  const { disputeID, arbitrator } = request || {}
+  const { metadata, fileURI } = metaEvidence || {}
+  const { itemName } = metadata || {}
 
   return (
     <>
@@ -179,7 +186,7 @@ const ItemStatusCard = ({
         extra={
           <ItemActionButton
             statusCode={statusCode}
-            itemName={metadata && metadata.itemName}
+            itemName={itemName}
             itemID={item && item.ID}
             pushWeb3Action={pushWeb3Action}
             onClick={onClick}
@@ -208,10 +215,17 @@ const ItemStatusCard = ({
           <Descriptions.Item label="Requester">
             <ETHAddress address={item.requester} />
           </Descriptions.Item>
-          {disputed && (
+          {console.info(klerosAddress, arbitrator)}
+          {disputed && disputeID.toNumber() !== 0 && (
             <>
               <Descriptions.Item label="Dispute ID">
-                {request.disputeID.toString()}
+                {klerosAddress.toLowerCase() === arbitrator.toLowerCase() ? (
+                  <a href={uiURL.replace(':disputeID', disputeID.toString())}>
+                    {disputeID.toString()}
+                  </a>
+                ) : (
+                  disputeID.toString()
+                )}
               </Descriptions.Item>
               <Descriptions.Item label="Challenger">
                 <ETHAddress address={item.challenger} />
@@ -220,7 +234,7 @@ const ItemStatusCard = ({
           )}
           {hasPendingRequest(item.status) && disputed && (
             <Descriptions.Item label="Arbitrator">
-              <ETHAddress address={request.arbitrator} />
+              <ETHAddress address={arbitrator} />
             </Descriptions.Item>
           )}
           {disputeStatus === DISPUTE_STATUS.APPEALABLE &&
@@ -278,9 +292,9 @@ const ItemStatusCard = ({
         statusCode !== STATUS_CODE.CHALLENGED && (
           <ItemActionModal
             statusCode={statusCode}
-            itemName={metadata ? metadata.itemName : 'item'}
+            itemName={itemName || 'item'}
             item={item}
-            fileURI={metaEvidence && metaEvidence.fileURI}
+            fileURI={fileURI}
             isOpen={modalOpen}
             onClose={() => setModalOpen(false)}
             submissionDeposit={submissionDeposit}
