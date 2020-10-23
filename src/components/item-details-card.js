@@ -14,10 +14,6 @@ import { WalletContext } from '../bootstrap/wallet-context'
 import useNetworkEnvVariable from '../hooks/network-env'
 import TCRMetadataDisplay from './tcr-metadata-display'
 
-const StyledCard = styled(Card)`
-  text-transform: capitalize;
-`
-
 const StyledFields = styled.div`
   display: flex;
   flex-direction: row;
@@ -126,7 +122,7 @@ const ItemDetailsCard = ({
     )
 
   return (
-    <StyledCard
+    <Card
       id="item-details-card"
       title={title}
       loading={loading}
@@ -187,7 +183,7 @@ const ItemDetailsCard = ({
           ))}
         </StyledFields>
       )}
-    </StyledCard>
+    </Card>
   )
 }
 
