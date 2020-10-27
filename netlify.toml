@@ -1,9 +1,10 @@
 [build]
   publish = "build/"
-  command = "npm run build"
+  command = "yarn build"
 
 [build.environment]
   NODE_VERSION='10.16.0'
+  YARN_FLAGS='--pure-lockfile'
   REACT_APP_IPFS_GATEWAY="https://ipfs.kleros.io"
   REACT_APP_DEFAULT_NETWORK="1"
   REACT_APP_DEFAULT_TCR_ADDRESSES='{"42":"0xBdfAe19c0fA35cCbD5541d5D9cA4E4F6F04CaaEb", "1": "0xba0304273a54dfec1fc7f4bccbf4b15519aecf15","4": "0x3b29096b7ab49428923d902cEC3dFEaa49993234"}'
