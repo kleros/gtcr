@@ -5,13 +5,13 @@
   "license": "MIT",
   "scripts": {
     "start": "react-scripts start",
-    "build": "yarn build:theme && react-scripts --max_old_space_size=4096 build",
+    "build": "npm run build:theme && react-scripts --max_old_space_size=4096 build",
     "build:theme": "lessc --js ./src/bootstrap/theme.less ./src/bootstrap/theme.css",
     "release": "standard-version",
     "lint": "eslint './src/**/*.js'",
     "lint:eslint:fix": "eslint './src/**/*.js' --fix",
     "lint:prettier:fix": "prettier --write ''./src/**/*.js''",
-    "format": "yarn run lint:eslint:fix && yarn run lint:prettier:fix"
+    "format": "npm run lint:eslint:fix && npm run lint:prettier:fix"
   },
   "dependencies": {
     "@fortawesome/fontawesome-svg-core": "^1.2.25",
