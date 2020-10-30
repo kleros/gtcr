@@ -129,7 +129,7 @@ const MenuItems = ({ TCR2_ADDRESS }) => [
     </a>
   </StyledMenuItem>,
   <StyledMenuItem key="telegram-link">
-    <a href="https://t.me/joinchat/GGUsLhwZj_-aa0SoQTBltA">
+    <a href="https://t.me/KlerosCurate">
       Get Help <Icon type="info-circle" />
     </a>
   </StyledMenuItem>
