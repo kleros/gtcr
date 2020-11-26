@@ -6,7 +6,7 @@ import { ethers } from 'ethers'
 import { Result, Skeleton, Button } from 'antd'
 import { abi as _gtcr } from '@kleros/tcr/build/contracts/GeneralizedTCR.json'
 import useMetaEvidence from '../hooks/meta-evidence'
-import itemTypes from '../utils/item-types'
+import { ItemTypes } from '@kleros/gtcr-encoder'
 import DisplaySelector from './display-selector'
 import { Link } from 'react-router-dom'
 
@@ -107,10 +107,10 @@ const TCRCardContent = ({
       >
         <div>
           <StyledItemCol>
-            <DisplaySelector type={itemTypes.IMAGE} value={metadata.logoURI} />
+            <DisplaySelector type={ItemTypes.IMAGE} value={metadata.logoURI} />
           </StyledItemCol>
           <StyledItemCol>
-            <DisplaySelector type={itemTypes.TEXT} value={metadata.tcrTitle} />
+            <DisplaySelector type={ItemTypes.TEXT} value={metadata.tcrTitle} />
           </StyledItemCol>
         </div>
         <StyledItemCol>

@@ -19,10 +19,10 @@ import * as yup from 'yup'
 import styled from 'styled-components/macro'
 import CustomInput from '../../components/custom-input'
 import ItemDetailsCard from '../../components/item-details-card'
-import itemTypes from '../../utils/item-types'
+import { ItemTypes } from '@kleros/gtcr-encoder'
 import { STATUS_CODE } from '../../utils/item-status'
 
-const { LONGTEXT, IMAGE, FILE } = itemTypes
+const { LONGTEXT, IMAGE, FILE, GTCR_ADDRESS } = ItemTypes
 
 const StyledAlert = styled(Alert)`
   margin-bottom: 42px;
@@ -48,7 +48,7 @@ const ItemParams = ({
         {
           label: 'Address',
           description: 'The list address.',
-          type: itemTypes.GTCR_ADDRESS,
+          type: GTCR_ADDRESS,
           isIdentifier: true
         }
       ])
@@ -202,7 +202,7 @@ const ItemParams = ({
                                   value={columns[index].type}
                                   onChange={value => onTypeChange(index, value)}
                                 >
-                                  {Object.values(itemTypes).map(
+                                  {Object.values(ItemTypes).map(
                                     (itemType, i) => (
                                       <Select.Option value={itemType} key={i}>
                                         {itemType}

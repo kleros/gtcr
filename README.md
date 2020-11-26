@@ -15,6 +15,8 @@
 2.  Duplicate `.env.example` and rename it to `.env`. Fill the environment variables.
 3.  Run `yarn` to install dependencies and then `yarn build:theme && yarn start` to start the dev server.
 
+> Tested on node version 10.
+
 ## Supporting New Field Types
 
 The Generalized TCR clients can learn how to parse and decode data stored onchain by reading what are the field types of each column from the `metadata` object stored on the meta evidence file.

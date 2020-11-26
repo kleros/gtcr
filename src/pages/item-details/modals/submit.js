@@ -17,9 +17,8 @@ import { ethers } from 'ethers'
 import { withFormik } from 'formik'
 import humanizeDuration from 'humanize-duration'
 import { WalletContext } from '../../../bootstrap/wallet-context'
-import { gtcrEncode } from '../../../utils/encoder'
+import { gtcrEncode, ItemTypes, typeDefaultValues } from '@kleros/gtcr-encoder'
 import InputSelector from '../../../components/input-selector.js'
-import itemTypes, { typeDefaultValues } from '../../../utils/item-types.js'
 import ETHAmount from '../../../components/eth-amount.js'
 import BNPropType from '../../../prop-types/bn'
 import useFactory from '../../../hooks/factory'
@@ -123,7 +122,7 @@ const SubmissionForm = withFormik({
     const errors = (
       await Promise.all(
         columns
-          .filter(({ type }) => type === itemTypes.GTCR_ADDRESS)
+          .filter(({ type }) => type === ItemTypes.GTCR_ADDRESS)
           .map(async ({ label }) => ({
             isEmpty: !values[label],
             wasDeployedWithFactory:

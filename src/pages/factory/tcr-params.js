@@ -20,7 +20,7 @@ import { getAddress, parseEther, bigNumberify } from 'ethers/utils'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { useWeb3Context } from 'web3-react'
 import CustomInput from '../../components/custom-input'
-import itemTypes from '../../utils/item-types'
+import { ItemTypes } from '@kleros/gtcr-encoder'
 import ipfsPublish from '../../utils/ipfs-publish'
 import { sanitize } from '../../utils/string'
 import BaseDepositInput from '../../components/base-deposit-input'
@@ -522,7 +522,7 @@ const TCRParams = ({
               addonAfter="Hours"
               error={errors.challengePeriodDuration}
               touched={touched.challengePeriodDuration}
-              type={itemTypes.NUMBER}
+              type={ItemTypes.NUMBER}
               step={1}
               label={
                 <span>
@@ -611,7 +611,7 @@ const TCRParams = ({
               placeholder="100"
               error={errors.sharedStakeMultiplier}
               touched={touched.sharedStakeMultiplier}
-              type={itemTypes.NUMBER}
+              type={ItemTypes.NUMBER}
               addonAfter="%"
               label={
                 <span>
@@ -628,7 +628,7 @@ const TCRParams = ({
               placeholder="100"
               error={errors.winnerStakeMultiplier}
               touched={touched.winnerStakeMultiplier}
-              type={itemTypes.NUMBER}
+              type={ItemTypes.NUMBER}
               addonAfter="%"
               label={
                 <span>
@@ -645,7 +645,7 @@ const TCRParams = ({
               placeholder="200"
               error={errors.loserStakeMultiplier}
               touched={touched.loserStakeMultiplier}
-              type={itemTypes.NUMBER}
+              type={ItemTypes.NUMBER}
               addonAfter="%"
               label={
                 <span>

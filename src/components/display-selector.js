@@ -4,7 +4,7 @@ import styled from 'styled-components/macro'
 import PropTypes from 'prop-types'
 import EthAddress from './eth-address'
 import GTCRAddress from './gtcr-address'
-import itemTypes from '../utils/item-types'
+import { ItemTypes } from '@kleros/gtcr-encoder'
 import { ZERO_ADDRESS, LOREM_IPSUM } from '../utils/string'
 
 const StyledImage = styled.img`
@@ -16,18 +16,18 @@ const StyledImage = styled.img`
 
 const DisplaySelector = ({ type, value, linkImage, allowedFileTypes }) => {
   switch (type) {
-    case itemTypes.GTCR_ADDRESS:
+    case ItemTypes.GTCR_ADDRESS:
       return <GTCRAddress address={value || ZERO_ADDRESS} />
-    case itemTypes.ADDRESS:
+    case ItemTypes.ADDRESS:
       return <EthAddress address={value || ZERO_ADDRESS} />
-    case itemTypes.TEXT:
-    case itemTypes.NUMBER:
+    case ItemTypes.TEXT:
+    case ItemTypes.NUMBER:
       return <Typography.Text>{value}</Typography.Text>
-    case itemTypes.BOOLEAN:
+    case ItemTypes.BOOLEAN:
       return <Checkbox disabled checked={value} />
-    case itemTypes.LONGTEXT:
+    case ItemTypes.LONGTEXT:
       return <Typography.Paragraph>{value || LOREM_IPSUM}</Typography.Paragraph>
-    case itemTypes.FILE: {
+    case ItemTypes.FILE: {
       if (!value)
         return (
           <a target="_blank" rel="noopener noreferrer" href="/#">
@@ -55,7 +55,7 @@ const DisplaySelector = ({ type, value, linkImage, allowedFileTypes }) => {
         </a>
       )
     }
-    case itemTypes.IMAGE:
+    case ItemTypes.IMAGE:
       return value ? (
         linkImage ? (
           <a
@@ -77,7 +77,7 @@ const DisplaySelector = ({ type, value, linkImage, allowedFileTypes }) => {
       ) : (
         <Avatar shape="square" size="large" icon="file-image" />
       )
-    case itemTypes.LINK:
+    case ItemTypes.LINK:
       return (
         <a href={value}>
           <Typography.Text>{value}</Typography.Text>
@@ -93,7 +93,7 @@ const DisplaySelector = ({ type, value, linkImage, allowedFileTypes }) => {
 }
 
 DisplaySelector.propTypes = {
-  type: PropTypes.oneOf(Object.values(itemTypes)).isRequired,
+  type: PropTypes.oneOf(Object.values(ItemTypes)).isRequired,
   value: PropTypes.oneOfType([
     PropTypes.string,
     PropTypes.number,

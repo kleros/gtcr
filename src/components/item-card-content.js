@@ -2,7 +2,7 @@ import React from 'react'
 import styled from 'styled-components/macro'
 import PropTypes from 'prop-types'
 import DisplaySelector from './display-selector'
-import itemTypes from '../utils/item-types'
+import { ItemTypes } from '@kleros/gtcr-encoder'
 import { Button } from 'antd'
 import { Link } from 'react-router-dom'
 
@@ -31,8 +31,8 @@ const ItemCardContent = ({ item, tcrAddress }) => (
         .filter(
           col =>
             col.isIdentifier ||
-            col.type === itemTypes.IMAGE ||
-            col.type === itemTypes.FILE
+            col.type === ItemTypes.IMAGE ||
+            col.type === ItemTypes.FILE
         )
         .map((column, j) => (
           <StyledItemCol key={j}>
@@ -55,7 +55,7 @@ ItemCardContent.propTypes = {
     columns: PropTypes.arrayOf(
       PropTypes.shape({
         isIdentifier: PropTypes.bool,
-        type: PropTypes.oneOf(Object.values(itemTypes)),
+        type: PropTypes.oneOf(Object.values(ItemTypes)),
         value: PropTypes.oneOfType([
           PropTypes.bool,
           PropTypes.string,

@@ -215,7 +215,6 @@ const ItemStatusCard = ({
           <Descriptions.Item label="Requester">
             <ETHAddress address={item.requester} />
           </Descriptions.Item>
-          {console.info(klerosAddress, arbitrator)}
           {disputed && disputeID.toNumber() !== 0 && (
             <>
               <Descriptions.Item label="Dispute ID">

@@ -22,7 +22,7 @@ import { useWeb3Context } from 'web3-react'
 import { useDebounce } from 'use-debounce/lib'
 import { getAddress, bigNumberify, parseEther } from 'ethers/utils'
 import CustomInput from '../../components/custom-input'
-import itemTypes from '../../utils/item-types'
+import { ItemTypes } from '@kleros/gtcr-encoder'
 import ipfsPublish from '../../utils/ipfs-publish'
 import { sanitize } from '../../utils/string'
 import useNetworkEnvVariable from '../../hooks/network-env'
@@ -406,7 +406,7 @@ const RelTCRParams = ({
               addonAfter="Hours"
               error={errors.relChallengePeriodDuration}
               touched={touched.relChallengePeriodDuration}
-              type={itemTypes.NUMBER}
+              type={ItemTypes.NUMBER}
               step={1}
               label={
                 <span>
@@ -494,7 +494,7 @@ const RelTCRParams = ({
               placeholder="100"
               error={errors.relSharedStakeMultiplier}
               touched={touched.relSharedStakeMultiplier}
-              type={itemTypes.NUMBER}
+              type={ItemTypes.NUMBER}
               addonAfter="%"
               label={
                 <span>
@@ -511,7 +511,7 @@ const RelTCRParams = ({
               placeholder="100"
               error={errors.relWinnerStakeMultiplier}
               touched={touched.relWinnerStakeMultiplier}
-              type={itemTypes.NUMBER}
+              type={ItemTypes.NUMBER}
               addonAfter="%"
               label={
                 <span>
@@ -528,7 +528,7 @@ const RelTCRParams = ({
               placeholder="200"
               error={errors.relLoserStakeMultiplier}
               touched={touched.relLoserStakeMultiplier}
-              type={itemTypes.NUMBER}
+              type={ItemTypes.NUMBER}
               addonAfter="%"
               label={
                 <span>

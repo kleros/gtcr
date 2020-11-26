@@ -2,7 +2,7 @@ import { Form, Input } from 'antd'
 import { Field } from 'formik'
 import React from 'react'
 import PropTypes from 'prop-types'
-import itemTypes from '../utils/item-types'
+import { ItemTypes } from '@kleros/gtcr-encoder'
 
 const CustomInput = ({
   label,
@@ -25,7 +25,7 @@ const CustomInput = ({
         help={error && touched ? error : ''}
         hasFeedback={hasFeedback}
       >
-        {type === itemTypes.NUMBER ? (
+        {type === ItemTypes.NUMBER ? (
           <Input
             addonAfter={addonAfter}
             placeholder={placeholder}
@@ -54,7 +54,7 @@ CustomInput.propTypes = {
   touched: PropTypes.bool,
   addonAfter: PropTypes.node,
   hasFeedback: PropTypes.bool,
-  type: PropTypes.oneOf(Object.values(itemTypes)),
+  type: PropTypes.oneOf(Object.values(ItemTypes)),
   step: PropTypes.number,
   disabled: PropTypes.bool,
   // eslint-disable-next-line react/require-default-props

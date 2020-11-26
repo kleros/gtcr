@@ -3,7 +3,7 @@ import PropTypes from 'prop-types'
 import { Icon, Tooltip } from 'antd'
 import DisplaySelector from './display-selector'
 import styled from 'styled-components/macro'
-import itemTypes from '../utils/item-types'
+import { ItemTypes } from '@kleros/gtcr-encoder'
 
 const StyledField = styled.div`
   margin-bottom: 16px;
@@ -21,7 +21,7 @@ const TCRMetadataDisplay = ({ logoURI, tcrTitle, tcrDescription, fileURI }) => (
           <Icon type="question-circle-o" />
         </Tooltip>
       </span>
-      : <DisplaySelector type={itemTypes.IMAGE} linkImage value={logoURI} />
+      : <DisplaySelector type={ItemTypes.IMAGE} linkImage value={logoURI} />
     </StyledField>
     <StyledField>
       <span>
@@ -31,7 +31,7 @@ const TCRMetadataDisplay = ({ logoURI, tcrTitle, tcrDescription, fileURI }) => (
           <Icon type="question-circle-o" />
         </Tooltip>
       </span>
-      : <DisplaySelector type={itemTypes.TEXT} value={tcrTitle} />
+      : <DisplaySelector type={ItemTypes.TEXT} value={tcrTitle} />
     </StyledField>
     <StyledField>
       <span>
@@ -41,7 +41,7 @@ const TCRMetadataDisplay = ({ logoURI, tcrTitle, tcrDescription, fileURI }) => (
           <Icon type="question-circle-o" />
         </Tooltip>
       </span>
-      : <DisplaySelector type={itemTypes.TEXT} value={tcrDescription} />
+      : <DisplaySelector type={ItemTypes.TEXT} value={tcrDescription} />
     </StyledField>
     <StyledField>
       <span>

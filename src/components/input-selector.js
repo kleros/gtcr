@@ -4,7 +4,7 @@ import PropTypes from 'prop-types'
 import { Field } from 'formik'
 import styled from 'styled-components/macro'
 import { getExtension } from 'mime'
-import itemTypes from '../utils/item-types.js'
+import { ItemTypes } from '@kleros/gtcr-encoder'
 import CustomInput from './custom-input.js'
 import ipfsPublish from '../utils/ipfs-publish.js'
 import { sanitize } from '../utils/string.js'
@@ -109,13 +109,13 @@ const InputSelector = ({
   const { values, label, name } = props
 
   switch (type) {
-    case itemTypes.TEXT:
-    case itemTypes.GTCR_ADDRESS:
-    case itemTypes.ADDRESS:
-    case itemTypes.NUMBER:
-    case itemTypes.LINK:
+    case ItemTypes.TEXT:
+    case ItemTypes.GTCR_ADDRESS:
+    case ItemTypes.ADDRESS:
+    case ItemTypes.NUMBER:
+    case ItemTypes.LINK:
       return <CustomInput type={type} name={name} hasFeedback {...props} />
-    case itemTypes.BOOLEAN:
+    case ItemTypes.BOOLEAN:
       return (
         <Field name={name}>
           {({ field }) => (
@@ -128,7 +128,7 @@ const InputSelector = ({
           )}
         </Field>
       )
-    case itemTypes.LONGTEXT:
+    case ItemTypes.LONGTEXT:
       return (
         <Field name={name}>
           {({ field }) => (
@@ -138,7 +138,7 @@ const InputSelector = ({
           )}
         </Field>
       )
-    case itemTypes.IMAGE:
+    case ItemTypes.IMAGE:
       return (
         <>
           {label}:
@@ -169,7 +169,7 @@ const InputSelector = ({
           </StyledUpload>
         </>
       )
-    case itemTypes.FILE:
+    case ItemTypes.FILE:
       return (
         <>
           {label}:
@@ -202,7 +202,7 @@ const InputSelector = ({
 }
 
 InputSelector.propTypes = {
-  type: PropTypes.oneOf(Object.values(itemTypes))
+  type: PropTypes.oneOf(Object.values(ItemTypes))
 }
 
 export default InputSelector

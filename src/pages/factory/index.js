@@ -12,7 +12,7 @@ import Deploy from './deploy'
 import StyledLayoutContent from '../layout-content'
 import { version } from '../../../package.json'
 import useNetworkEnvVariable from '../../hooks/network-env'
-import itemTypes from '../../utils/item-types'
+import { ItemTypes } from '@kleros/gtcr-encoder'
 import RelTCRParams from './rel-tcr-params'
 import TCRCardContent from '../../components/tcr-card-content'
 
@@ -138,7 +138,7 @@ const useCachedFactory = version => {
       {
         label: '',
         description: '',
-        type: itemTypes.ADDRESS,
+        type: ItemTypes.ADDRESS,
         isIdentifier: true
       }
     ],
@@ -146,14 +146,14 @@ const useCachedFactory = version => {
       {
         label: 'Address',
         description: 'The Badges list address',
-        type: itemTypes.GTCR_ADDRESS,
+        type: ItemTypes.GTCR_ADDRESS,
         isIdentifier: true
       },
       {
         label: 'Match File URI',
         description:
           'The URI to the JSON file for matching columns for each list.',
-        type: itemTypes.TEXT
+        type: ItemTypes.TEXT
       }
     ],
     currStep: 1

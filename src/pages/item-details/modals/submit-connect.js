@@ -32,7 +32,7 @@ import { useWeb3Context } from 'web3-react'
 import { ethers } from 'ethers'
 import ipfsPublish from '../../../utils/ipfs-publish'
 import { WalletContext } from '../../../bootstrap/wallet-context'
-import { gtcrEncode } from '../../../utils/encoder'
+import { gtcrEncode } from '@kleros/gtcr-encoder'
 import { TourContext } from '../../../bootstrap/tour-context.js'
 
 const StyledSpin = styled(Spin)`

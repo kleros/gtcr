@@ -16,7 +16,7 @@ import { ethers } from 'ethers'
 import { useWeb3Context } from 'web3-react'
 import { abi as _gtcr } from '@kleros/tcr/build/contracts/GeneralizedTCR.json'
 import DisplaySelector from './display-selector'
-import itemTypes, { searchableFields } from '../utils/item-types'
+import { ItemTypes, searchableFields } from '@kleros/gtcr-encoder'
 import { TCRViewContext } from '../bootstrap/tcr-view-context'
 import { WalletContext } from '../bootstrap/wallet-context'
 import { itemToStatusCode, STATUS_COLOR } from '../utils/item-status'
@@ -152,7 +152,7 @@ OptionItem.propTypes = {
     itemID: PropTypes.string,
     columns: PropTypes.arrayOf(
       PropTypes.shape({
-        type: PropTypes.oneOf(Object.values(itemTypes)),
+        type: PropTypes.oneOf(Object.values(ItemTypes)),
         value: PropTypes.string.isRequired
       })
     ),
@@ -224,7 +224,7 @@ const SearchBar = () => {
                 description: 'The list title.',
                 isIdentifier: true,
                 label: 'Title',
-                type: itemTypes.TEXT,
+                type: ItemTypes.TEXT,
                 value: tcrTitle
               })
               return item
@@ -273,8 +273,8 @@ const SearchBar = () => {
     const itemLabels = d.columns
       .filter(col => searchableFields.includes(col.type))
       .sort((a, b) => {
-        if (a.type === itemTypes.TEXT && b.type !== itemTypes.TEXT) return -1
-        if (b.type === itemTypes.TEXT && a.type !== itemTypes.TEXT) return 1
+        if (a.type === ItemTypes.TEXT && b.type !== ItemTypes.TEXT) return -1
+        if (b.type === ItemTypes.TEXT && a.type !== ItemTypes.TEXT) return 1
         return 0
       })
       .map(col => col.value)
