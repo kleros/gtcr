@@ -4,6 +4,7 @@ import styled from 'styled-components/macro'
 import PropTypes from 'prop-types'
 import EthAddress from './eth-address'
 import GTCRAddress from './gtcr-address'
+import TwitterUser from './twitter-user'
 import { ItemTypes } from '@kleros/gtcr-encoder'
 import { ZERO_ADDRESS, LOREM_IPSUM } from '../utils/string'
 
@@ -83,6 +84,8 @@ const DisplaySelector = ({ type, value, linkImage, allowedFileTypes }) => {
           <Typography.Text>{value}</Typography.Text>
         </a>
       )
+    case ItemTypes.TWITTER_USER_ID:
+      return <TwitterUser userID={value} />
     default:
       return (
         <Typography.Paragraph>

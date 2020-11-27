@@ -8,6 +8,7 @@ import { ItemTypes } from '@kleros/gtcr-encoder'
 import CustomInput from './custom-input.js'
 import ipfsPublish from '../utils/ipfs-publish.js'
 import { sanitize } from '../utils/string.js'
+import TwitterUserInput from './twitter-input.js'
 
 const StyledUpload = styled(Upload)`
   & > .ant-upload.ant-upload-select-picture-card {
@@ -195,6 +196,14 @@ const InputSelector = ({
             )}
           </StyledUpload>
         </>
+      )
+    case ItemTypes.TWITTER_USER_ID:
+      return (
+        <TwitterUserInput
+          name={name}
+          label={label}
+          setFieldValue={setFieldValue}
+        />
       )
     default:
       throw new Error(`Unhandled input type ${type}`)
