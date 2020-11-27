@@ -1,4 +1,4 @@
-import { Form, Input } from 'antd'
+import { Alert, Form, Input } from 'antd'
 import { Field } from 'formik'
 import React, { useEffect, useState } from 'react'
 import { useDebounce } from 'use-debounce'
@@ -15,6 +15,7 @@ const StyledTwitterInput = styled.div`
 
 const TwitterUserInput = ({ setFieldValue, name, label }) => {
   const [twitterHandle, setTwitterHandle] = useState()
+  const [fetchingUser, setFetchingUser] = useState()
   const [debouncedTwitterHandle] = useDebounce(twitterHandle, 1200)
   const [twitterUser, setTwitterUser] = useState()
 
@@ -30,6 +31,7 @@ const TwitterUserInput = ({ setFieldValue, name, label }) => {
 
     ;(async () => {
       try {
+        setFetchingUser(true)
         const res = await fetch(fullURL, {
           headers: {
             authorization: authToken
@@ -38,6 +40,8 @@ const TwitterUserInput = ({ setFieldValue, name, label }) => {
         setTwitterUser(await res.json())
       } catch (err) {
         setTwitterUser({ error: err })
+      } finally {
+        setFetchingUser(false)
       }
     })()
   }, [debouncedTwitterHandle])
@@ -55,18 +59,28 @@ const TwitterUserInput = ({ setFieldValue, name, label }) => {
       <Field name={name}>
         {({ field }) => (
           <Form.Item label={label} style={{ display: 'flex' }}>
-            <Input
+            <Input.Search
               {...field}
+              placeholder="kleros_io"
               onChange={e => {
                 setTwitterHandle(e.target.value)
               }}
+              loading={fetchingUser}
               value={twitterHandle}
             />
           </Form.Item>
         )}
       </Field>
-      {id && <TwitterUser userID={id} />}
-      Submitting twitter ID: {id}
+      {debouncedTwitterHandle &&
+        twitterUser &&
+        (id ? (
+          <>
+            <TwitterUser userID={id} />
+            Submitting twitter ID: {id}
+          </>
+        ) : (
+          <Alert message="User not found" type="error" />
+        ))}
     </StyledTwitterInput>
   )
 }
@@ -74,7 +88,7 @@ const TwitterUserInput = ({ setFieldValue, name, label }) => {
 TwitterUserInput.propTypes = {
   setFieldValue: PropTypes.func.isRequired,
   name: PropTypes.string.isRequired,
-  label: PropTypes.string.isRequired
+  label: PropTypes.oneOfType([PropTypes.string, PropTypes.node]).isRequired
 }
 
 export default TwitterUserInput

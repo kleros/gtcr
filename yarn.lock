@@ -2033,9 +2033,9 @@
   integrity sha512-nOoifnzSz62jiZ1CtM8NfXD3kb1gdgTWRZ4VoHLREs5HD33vHnmyrO6FgmQQf/aqQJktHXP9cOo3DUFWv1v/Lw==
 
 "@kleros/gtcr-encoder@^1.2.1":
-  version "1.2.1"
-  resolved "https://registry.yarnpkg.com/@kleros/gtcr-encoder/-/gtcr-encoder-1.2.1.tgz#36bb9e8750247ad3e620394005b5e1485f12c4e2"
-  integrity sha512-2ub2X8f8+RgmZcZCJzfqTEd1ZC6T/Nwss8jNWaIsiBzastpYV4sby+BX5va/UQzy67SHYMJCoUnwNbslc10Fbw==
+  version "1.4.0"
+  resolved "https://registry.yarnpkg.com/@kleros/gtcr-encoder/-/gtcr-encoder-1.4.0.tgz#8c2dc9497e271ab7a84da124c43ba449bc6e39bc"
+  integrity sha512-HSLly6CY1f9hBtC9TQV8LcyZ78e9YBhrWlB7VTFyZGr1fvh6ky4/E/xnPt/OLaVNosSZeg5XpTQksOm0LLRFrQ==
   dependencies:
     bn.js "^5.1.2"
     ethers "^5.0.3"
@@ -4194,7 +4194,7 @@ bn.js@4.11.6:
   resolved "https://registry.yarnpkg.com/bn.js/-/bn.js-4.11.6.tgz#53344adb14617a13f6e8dd2ce28905d1c0ba3215"
   integrity sha1-UzRK2xRhehP26N0s4okF0cC6MhU=
 
-bn.js@4.11.8, bn.js@=4.11.8, bn.js@^4.0.0, bn.js@^4.1.0, bn.js@^4.10.0, bn.js@^4.11.0, bn.js@^4.11.1, bn.js@^4.11.6, bn.js@^4.11.8, bn.js@^4.4.0, bn.js@^4.8.0:
+bn.js@4.11.8, bn.js@=4.11.8, bn.js@^4.0.0, bn.js@^4.1.0, bn.js@^4.10.0, bn.js@^4.11.0, bn.js@^4.11.6, bn.js@^4.11.8, bn.js@^4.8.0:
   version "4.11.8"
   resolved "https://registry.yarnpkg.com/bn.js/-/bn.js-4.11.8.tgz#2cde09eb5ee341f484746bb0309b3253b1b1442f"
   integrity sha512-ItfYfPLkWHUjckQCk8xC+LwxgK8NYcXywGigJgSwOP8Y2iyWT4f2vsZnoOXTTbo+o5yXmIUJ4gn5538SO5S3gA==
@@ -4203,6 +4203,11 @@ bn.js@^2.0.3:
   version "2.2.0"
   resolved "https://registry.yarnpkg.com/bn.js/-/bn.js-2.2.0.tgz#12162bc2ae71fc40a5626c33438f3a875cd37625"
   integrity sha1-EhYrwq5x/EClYmwzQ486h1zTdiU=
+
+bn.js@^4.11.1, bn.js@^4.4.0:
+  version "4.11.9"
+  resolved "https://registry.yarnpkg.com/bn.js/-/bn.js-4.11.9.tgz#26d556829458f9d1e81fc48952493d0ba3507828"
+  integrity sha512-E6QoYqCKZfgatHTdHzs1RRKP7ip4vvm+EyRUeE2RF0NblwVvb0p6jSVeNTOFxPn26QXN2o6SMfNxKp6kU8zQaw==
 
 bn.js@^5.0.0, bn.js@^5.1.1:
   version "5.1.1"

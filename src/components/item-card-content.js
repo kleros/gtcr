@@ -32,7 +32,8 @@ const ItemCardContent = ({ item, tcrAddress }) => (
           col =>
             col.isIdentifier ||
             col.type === ItemTypes.IMAGE ||
-            col.type === ItemTypes.FILE
+            col.type === ItemTypes.FILE ||
+            col.type === ItemTypes.TWITTER_USER_ID
         )
         .map((column, j) => (
           <StyledItemCol key={j}>

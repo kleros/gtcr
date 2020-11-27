@@ -66,7 +66,7 @@ const TwitterUser = ({ userID }) => {
         <>
           <a alt="twitter-username" href={`https://twitter.com/${username}`}>
             @{username}
-          </a>
+          </a>{' '}
           - {id}
         </>
       }
