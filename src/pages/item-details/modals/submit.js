@@ -46,6 +46,10 @@ const StyledAlert = styled(Alert)`
   text-transform: initial;
 `
 
+const StyledParagraph = styled(Typography.Paragraph)`
+  text-transform: none;
+`
+
 const SUBMISSION_FORM_ID = 'submitItemForm'
 
 const _SubmissionForm = ({
@@ -273,13 +277,13 @@ const SubmitModal = props => {
       ]}
       {...props}
     >
-      <Typography.Paragraph>
+      <StyledParagraph>
         Submit{' '}
         {itemName
           ? `${getArticleFor(itemName)} ${itemName.toLowerCase()}`
           : 'an item'}{' '}
         to {tcrTitle || 'this list'} so other users can find it.
-      </Typography.Paragraph>
+      </StyledParagraph>
       <SubmissionForm
         columns={columns}
         postSubmit={postSubmit}
