@@ -28,6 +28,7 @@ import { capitalizeFirstLetter, ZERO_ADDRESS } from '../../utils/string'
 import Badges from './badges'
 import AppTour from '../../components/tour'
 import itemTourSteps from './tour-steps'
+import takeLower from '../../utils/lower-limit'
 
 const ITEM_TOUR_DISMISSED = 'ITEM_TOUR_DISMISSED'
 
@@ -78,6 +79,7 @@ const ItemDetails = ({ itemID, search }) => {
   const { timestamp } = useContext(WalletContext)
   const [decodedItem, setDecodedItem] = useState()
   const [item, setItem] = useState()
+  const [metaEvidence, setMetaEvidence] = useState()
   const [requests, setRequests] = useState()
   const arbitrator = useMemo(() => {
     if (!item || !library) return
@@ -90,9 +92,9 @@ const ItemDetails = ({ itemID, search }) => {
     gtcr,
     tcrError,
     gtcrView,
-    metaEvidence,
     tcrAddress,
-    connectedTCRAddr
+    connectedTCRAddr,
+    metadataByTime
   } = useContext(TCRViewContext)
 
   // Warning: This function should only be called when all its dependencies
@@ -138,15 +140,28 @@ const ItemDetails = ({ itemID, search }) => {
     })()
   }, [gtcr, gtcrView, itemID, library, tcrAddress])
 
-  // Decode item bytes once we have it and the meta evidence.
+  // Decode item bytes once we have it and the meta evidence files.
   useEffect(() => {
-    if (!item || !metaEvidence || metaEvidence.address !== tcrAddress) return
+    if (!item || !metadataByTime) return
+    const { byTimestamp } = metadataByTime
+    const file =
+      byTimestamp[takeLower(Object.keys(byTimestamp), item.submissionTime)]
+    if (!file) return
 
-    const { columns } = metaEvidence.metadata
+    setMetaEvidence(file)
+
+    const { address, metadata } = file || {}
+    if (address !== tcrAddress) return
+
+    const { columns } = metadata
+
     const errors = []
     let decodedData
     try {
-      decodedData = gtcrDecode({ columns, values: item.data })
+      decodedData = gtcrDecode({
+        columns,
+        values: item.data
+      })
     } catch (_) {
       errors.push(`Error decoding ${item.ID} of TCR at ${tcrAddress}`)
     }
@@ -156,7 +171,7 @@ const ItemDetails = ({ itemID, search }) => {
       decodedData,
       errors
     })
-  }, [item, metaEvidence, tcrAddress])
+  }, [item, metaEvidence, metadataByTime, tcrAddress])
 
   // Fetch item.
   // This runs when the user loads the details view for the of an item

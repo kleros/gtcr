@@ -9,6 +9,7 @@ import useNetworkEnvVariable from './network-env'
 import { gtcrDecode } from '@kleros/gtcr-encoder'
 import useNotificationWeb3 from './notifications-web3'
 import { getAddress } from 'ethers/utils'
+import takeLower from '../utils/lower-limit'
 
 // TODO: Ensure we don't set state for unmounted components using
 // flags and AbortController.
@@ -27,6 +28,7 @@ const useTcrView = tcrAddress => {
   const [itemSubmissionLogs, setItemSubmissionLogs] = useState()
   const [connectedTCRAddr, setConnectedTCRAddr] = useState()
   const [depositFor, setDepositFor] = useState()
+  const [metadataByTime, setMetadataByTime] = useState()
 
   const { latestBlock } = useNotificationWeb3()
   const { library, active, networkId } = useWeb3Context()
@@ -182,21 +184,52 @@ const useTcrView = tcrAddress => {
             ...gtcr.filters.MetaEvidence(),
             fromBlock: 0
           })
-        ).map(log => gtcr.interface.parseLog(log))
+        ).map(log => ({ ...log, ...gtcr.interface.parseLog(log) }))
         if (logs.length === 0) return
+
+        const metaEvidenceFiles = await Promise.all(
+          logs.map(async log => {
+            try {
+              const { values, blockNumber } = log
+              const { _evidence: metaEvidencePath } = values
+
+              const [response, block] = await Promise.all([
+                fetch(process.env.REACT_APP_IPFS_GATEWAY + metaEvidencePath),
+                library.getBlock(blockNumber)
+              ])
+
+              const file = await response.json()
+
+              return {
+                ...file,
+                address: tcrAddress,
+                timestamp: block.timestamp,
+                blockNumber
+              }
+            } catch (err) {
+              console.warn('Failed to process meta evidence')
+              return { err }
+            }
+          })
+        )
+
+        const metadataTime = {
+          byBlockNumber: {},
+          byTimestamp: {},
+          address: logs[0].address
+        }
+        metaEvidenceFiles.forEach(file => {
+          if (file.error) return
+          metadataTime.byBlockNumber[file.blockNumber] = file
+          metadataTime.byTimestamp[file.timestamp] = file
+        })
+        setMetadataByTime(metadataTime)
 
         // Take the penultimate item. This is the most recent meta evidence
         // for registration requests.
-        const { _evidence: metaEvidencePath } = logs[logs.length - 2].values
-        const file = await (
-          await fetch(process.env.REACT_APP_IPFS_GATEWAY + metaEvidencePath)
-        ).json()
-
+        const file = metaEvidenceFiles[metaEvidenceFiles.length - 2]
         setMetaEvidence({ ...file, address: tcrAddress })
-        localforage.setItem(META_EVIDENCE_CACHE_KEY, {
-          ...file,
-          address: tcrAddress
-        })
+        localforage.setItem(META_EVIDENCE_CACHE_KEY, file)
       } catch (err) {
         console.error('Error fetching meta evidence', err)
         setError('Error fetching meta evidence')
@@ -230,13 +263,10 @@ const useTcrView = tcrAddress => {
       !gtcr ||
       !library ||
       gtcr.address !== tcrAddress ||
-      !metaEvidence ||
-      !metaEvidence.metadata ||
-      metaEvidence.address !== tcrAddress
+      !metadataByTime ||
+      metadataByTime.address !== tcrAddress
     )
       return
-
-    const { columns } = metaEvidence.metadata
     ;(async () => {
       try {
         setItemSubmissionLogs(
@@ -247,6 +277,7 @@ const useTcrView = tcrAddress => {
             })
           )
             .map(log => ({
+              ...log,
               data: gtcr.interface.parseLog(log).values._data,
               itemID: gtcr.interface.parseLog(log).values._itemID,
               submitter: gtcr.interface.parseLog(log).values._submitter
@@ -254,6 +285,14 @@ const useTcrView = tcrAddress => {
             .map(submissionLog => {
               let decodedData
               const errors = []
+              const file =
+                metadataByTime.byBlockNumber[
+                  takeLower(
+                    Object.keys(metadataByTime.byBlockNumber),
+                    submissionLog.blockNumber
+                  )
+                ]
+              const { columns } = file.metadata
               try {
                 decodedData = gtcrDecode({
                   columns,
@@ -296,7 +335,7 @@ const useTcrView = tcrAddress => {
         setError('Error fetching submission logs')
       }
     })()
-  }, [gtcr, library, metaEvidence, tcrAddress])
+  }, [gtcr, library, metaEvidence, metadataByTime, tcrAddress])
 
   return {
     gtcr,
@@ -312,6 +351,7 @@ const useTcrView = tcrAddress => {
     itemSubmissionLogs,
     latestBlock,
     connectedTCRAddr,
+    metadataByTime,
     ...arbitrableTCRData
   }
 }

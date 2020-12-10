@@ -33,6 +33,7 @@ import ItemCard from './item-card'
 import Banner from './banner'
 import AppTour from '../../components/tour'
 import itemsTourSteps from './tour-steps'
+import takeLower from '../../utils/lower-limit'
 
 const NSFW_FILTER_KEY = 'NSFW_FILTER_KEY'
 const ITEMS_TOUR_DISMISSED = 'ITEMS_TOUR_DISMISSED'
@@ -118,7 +119,8 @@ const Items = ({ search, history }) => {
     tcrAddress,
     latestBlock,
     connectedTCRAddr,
-    submissionDeposit
+    submissionDeposit,
+    metadataByTime
   } = useContext(TCRViewContext)
   const [submissionFormOpen, setSubmissionFormOpen] = useState()
   const [oldActiveItems, setOldActiveItems] = useState({ data: [] })
@@ -377,12 +379,12 @@ const Items = ({ search, history }) => {
       !metaEvidence ||
       metaEvidence.address !== tcrAddress ||
       fetchItems.address !== tcrAddress ||
-      (oldActiveItems.address && oldActiveItems.address !== tcrAddress)
+      (oldActiveItems.address && oldActiveItems.address !== tcrAddress) ||
+      !metadataByTime
     )
       return
 
     const { data: encodedItems } = fetchItems
-    const { columns } = metaEvidence.metadata
 
     // If on page 1, display also old items with new pending
     // requests, if any.
@@ -394,11 +396,15 @@ const Items = ({ search, history }) => {
     return displayedItems.map((item, i) => {
       let decodedItem
       const errors = []
+      const { columns } = metadataByTime.byTimestamp[
+        takeLower(Object.keys(metadataByTime.byTimestamp), item.timestamp)
+      ].metadata
       try {
         decodedItem = gtcrDecode({ values: item.data, columns })
         // eslint-disable-next-line no-unused-vars
       } catch (err) {
         errors.push(`Error decoding item ${item.ID} of list at ${tcrAddress}`)
+        console.warn(`Error decoding item ${item.ID} of list at ${tcrAddress}`)
       }
 
       // Return the item columns along with its TCR status data.
@@ -416,7 +422,15 @@ const Items = ({ search, history }) => {
         errors
       }
     })
-  }, [fetchItems, metaEvidence, oldActiveItems, page, tcrAddress])
+  }, [
+    fetchItems,
+    metaEvidence,
+    metadataByTime,
+    oldActiveItems.address,
+    oldActiveItems.data,
+    page,
+    tcrAddress
+  ])
 
   // Watch for submissions and status change events to refetch items.
   useEffect(() => {

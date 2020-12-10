@@ -22,6 +22,8 @@ import AddBadgeModal from '../modals/add-badge'
 import { CONTRACT_STATUS } from '../../../utils/item-status'
 import SubmitModal from '../modals/submit'
 import SubmitConnectModal from '../modals/submit-connect'
+import useTcrView from '../../../hooks/tcr-view'
+import takeLower from '../../../utils/lower-limit'
 
 const StyledGrid = styled.div`
   display: grid;
@@ -67,11 +69,12 @@ const DashedCardBody = styled.div`
 const Badges = ({ connectedTCRAddr, item, tcrAddress }) => {
   const { timestamp, requestWeb3Auth } = useContext(WalletContext)
   const { library, active, networkId } = useWeb3Context()
+  const { metadataByTime } = useTcrView(tcrAddress)
+
   const [error, setError] = useState(false)
   const [addBadgeVisible, setAddBadgeVisible] = useState()
   const [submissionFormOpen, setSubmissionFormOpen] = useState()
   const [badgeToSubmit, setBadgeToSubmit] = useState()
-  const [tcrMetadata, setTCRMetadata] = useState()
   const [foundBadges, setFoundBadges] = useState([])
   const [connectedBadges, setConnectedBadges] = useState([])
   const [isFetchingBadges, setIsFetchingBadges] = useState()
@@ -168,48 +171,17 @@ const Badges = ({ connectedTCRAddr, item, tcrAddress }) => {
     })()
   }, [gtcrView, connectedTCRAddr, fetchItems, gtcr])
 
-  // Fetch metadata of the connect TCR.
-  useEffect(() => {
-    if (!connectedTCRAddr) return
-    if (!library || !active || !networkId) return
-    ;(async () => {
-      try {
-        const tcr = new ethers.Contract(connectedTCRAddr, _gtcr, library)
-        const logs = (
-          await library.getLogs({
-            ...tcr.filters.MetaEvidence(),
-            fromBlock: 0
-          })
-        ).map(log => tcr.interface.parseLog(log))
-        if (logs.length === 0) {
-          console.warn(
-            'Could not fetch metadata of connected TCR',
-            connectedTCRAddr
-          )
-          return
-        }
-
-        const { _evidence: metaEvidencePath } = logs[logs.length - 1].values
-        const file = await (
-          await fetch(process.env.REACT_APP_IPFS_GATEWAY + metaEvidencePath)
-        ).json()
-        setTCRMetadata(file.metadata)
-      } catch (err) {
-        console.error('Error fetching tcr metadata', err)
-        setError('Error fetching tcr metadata')
-      }
-    })()
-  }, [active, connectedTCRAddr, library, networkId])
-
   // Decode items once meta data and items were fetched.
   const enabledBadges = useMemo(() => {
-    if (!fetchItems.data || !tcrMetadata) return
+    if (!fetchItems.data || !metadataByTime) return
 
     const { data: encodedItems } = fetchItems
-    const { columns } = tcrMetadata
 
     return encodedItems.map((item, i) => {
       let decodedItem
+      const { columns } = metadataByTime.byTimestamp[
+        takeLower(Object.keys(metadataByTime.byTimestamp), item.timestamp)
+      ].metadata
       const errors = []
       try {
         decodedItem = gtcrDecode({ values: item.data, columns })
@@ -233,7 +205,7 @@ const Badges = ({ connectedTCRAddr, item, tcrAddress }) => {
         errors
       }
     })
-  }, [fetchItems, tcrAddress, tcrMetadata])
+  }, [fetchItems, metadataByTime, tcrAddress])
 
   // With the badge tcr addresses and the match file,
   // search for the current item.
@@ -348,7 +320,7 @@ const Badges = ({ connectedTCRAddr, item, tcrAddress }) => {
         setConnectedBadges(connectedBadges || [])
       }
     })()
-  }, [enabledBadges, gtcr, gtcrView, item, library, tcrMetadata])
+  }, [enabledBadges, gtcr, gtcrView, item, library])
 
   // The available badges are the connected badges for which
   // there are no pending requests for this item.
