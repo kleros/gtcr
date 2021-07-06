@@ -165,12 +165,14 @@ const Items = ({ search, history }) => {
     ;(async () => {
       try {
         const itemCount = (await gtcr.itemCount()).toNumber()
-        const itemsPerRequest = 10000
+        console.info('1')
+        const itemsPerRequest = 100
         const requests = Math.ceil(itemCount / itemsPerRequest)
         let request = 1
         let target = [bigNumberify(0), itemCount > 0, bigNumberify(0)]
         let count = 0
         while (request <= requests && target[1]) {
+          console.info('request:', request)
           target = await gtcrView.countWithFilter(
             tcrAddress,
             target[2].toNumber(),
@@ -225,7 +227,7 @@ const Items = ({ search, history }) => {
         // We calculate the number of requests required according
         // to the number of items in the TCR.
         const itemCount = (await gtcr.itemCount()).toNumber()
-        const itemsPerRequest = 10000
+        const itemsPerRequest = 100
 
         // Number calls required to fetch all the data required.
         const requests = Math.ceil(itemCount / itemsPerRequest)
@@ -265,7 +267,7 @@ const Items = ({ search, history }) => {
           encodedItems = await gtcrView.queryItems(
             gtcr.address,
             cursorIndex,
-            500,
+            300,
             filter,
             oldestFirst,
             active && account ? account : ZERO_ADDRESS,
