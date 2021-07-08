@@ -82,20 +82,15 @@ CurrentStep.propTypes = {
 }
 
 const useCachedFactory = version => {
-  console.info(version)
   const { networkId } = useWeb3Context()
-  console.info('networkId', networkId)
-  console.info(useNetworkEnvVariable)
   const {
     address: defaultArbitrator,
     label: defaultArbLabel
   } = useNetworkEnvVariable('REACT_APP_DEFAULT_ARBITRATOR', networkId)
-  console.info('arbitrator', defaultArbitrator)
   const {
     address: defaultGovernor,
     label: defaultGovernorLabel
   } = useNetworkEnvVariable('REACT_APP_DEFAULT_GOVERNOR', networkId)
-  console.info('governor', defaultGovernor)
   const {
     data: defaultArbitratorExtraData,
     label: defaultArbDataLabel
@@ -103,7 +98,6 @@ const useCachedFactory = version => {
     'REACT_APP_DEFAULT_ARBITRATOR_EXTRA_DATA',
     networkId
   )
-  console.info('arbitratorExtraData', defaultArbitratorExtraData)
   const key = `tcrState@${version}`
   const initialWizardState = {
     tcrTitle: '',

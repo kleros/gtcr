@@ -32,7 +32,7 @@ ETHAmount.propTypes = {
     PropTypes.object.isRequired
   ]),
   decimals: PropTypes.number,
-  displayUnit: PropTypes.bool
+  displayUnit: PropTypes.string
 }
 
 ETHAmount.defaultProps = {

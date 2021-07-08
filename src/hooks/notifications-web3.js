@@ -10,6 +10,8 @@ import { ethers } from 'ethers'
 import { abi as _GTCRFactory } from '@kleros/tcr/build/contracts/GTCRFactory.json'
 import { NETWORK, NETWORK_NAME } from '../utils/network-utils'
 import FastJsonRpcSigner from '../utils/fast-signer'
+import useMainTCR2 from './tcr2'
+import { useHistory } from 'react-router-dom/cjs/react-router-dom.min'
 
 const actionTypes = {
   TRANSACTION: 'TRANSACTION',
@@ -33,11 +35,13 @@ const LAST_CONNECTION_TIME = 'LAST_CONNECTION_TIME'
  */
 const useNotificationWeb3 = () => {
   const web3Context = useWeb3Context()
+  const history = useHistory()
   const [web3Actions, setWeb3Actions] = useState([])
   const [infuraSetup, setInfuraSetup] = useState() // Whether infura was set as the provider.
   const [timestamp, setTimestamp] = useState()
   const [network, setNetwork] = useState()
   const [latestBlock, setLatestBlock] = useState()
+  const TCR2_ADDRESS = useMainTCR2()
   const initialState = {
     modalOpen: false,
     method: null,
@@ -120,7 +124,7 @@ const useNotificationWeb3 = () => {
     setInfuraSetup(true)
   }, [infuraSetup, web3Context])
 
-  // // Notify of network changes.
+  // Notify of network changes.
   useEffect(() => {
     if (!web3Context.networkId) return
     if (!network) {
@@ -133,8 +137,10 @@ const useNotificationWeb3 = () => {
       notification.info({
         message: 'Network Changed'
       })
+      history.push(`/tcr/${TCR2_ADDRESS}`)
+      window.location.reload()
     }
-  }, [web3Context.networkId, network])
+  }, [web3Context.networkId, network, TCR2_ADDRESS, history])
 
   // Fetch timestamp.
   useEffect(() => {

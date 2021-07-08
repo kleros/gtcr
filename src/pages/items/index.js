@@ -165,14 +165,12 @@ const Items = ({ search, history }) => {
     ;(async () => {
       try {
         const itemCount = (await gtcr.itemCount()).toNumber()
-        console.info('1')
         const itemsPerRequest = 100
         const requests = Math.ceil(itemCount / itemsPerRequest)
         let request = 1
         let target = [bigNumberify(0), itemCount > 0, bigNumberify(0)]
         let count = 0
         while (request <= requests && target[1]) {
-          console.info('request:', request)
           target = await gtcrView.countWithFilter(
             tcrAddress,
             target[2].toNumber(),
