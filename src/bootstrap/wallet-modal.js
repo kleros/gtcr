@@ -4,6 +4,7 @@ import { Button, Modal, Icon } from 'antd'
 import styled from 'styled-components/macro'
 import { ReactComponent as TrustLogo } from '../assets/images/trust.svg'
 import { WalletContext } from './wallet-context'
+import FrameLogo from '../assets/images/frame.png'
 import { ReactComponent as MetamaskLogo } from '../assets/images/metamask.svg'
 import { ReactComponent as FortmaticLogo } from '../assets/images/fortmatic.svg'
 import { ReactComponent as WalletConnectLogo } from '../assets/images/walletconnect.svg'
@@ -18,6 +19,13 @@ const StyledModal = styled(Modal)`
     border-top-left-radius: 14px;
     border-top-right-radius: 14px;
   }
+`
+
+const StyledWalletLogo = styled.img`
+  width: 15px;
+  height: 20px;
+  object-fit: contain;
+  margin: 0 8px 0 0;
 `
 
 const WalletModal = ({ connectors }) => {
@@ -35,6 +43,22 @@ const WalletModal = ({ connectors }) => {
         </Button>
       ]}
     >
+      <StyledWalletButton
+        onClick={() => {
+          if (window.ethereum && window.ethereum.isFrame)
+            setUserSelectedWallet('Injected')
+          else {
+            const tab = window.open(
+              process.env.REACT_APP_FRAME_SITE_URL,
+              '_blank'
+            )
+            tab.focus()
+          }
+        }}
+      >
+        <StyledWalletLogo src={FrameLogo} />
+        Frame
+      </StyledWalletButton>
       <StyledWalletButton
         onClick={() => {
           if (window.ethereum && window.ethereum.isMetaMask)
