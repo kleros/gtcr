@@ -9,6 +9,7 @@ import { itemToStatusCode, STATUS_CODE } from '../../utils/item-status'
 import { WalletContext } from '../../bootstrap/wallet-context'
 import { TCRViewContext } from '../../bootstrap/tcr-view-context'
 import useHumanizedCountdown from '../../hooks/countdown'
+import useNativeCurrency from '../../hooks/native-currency'
 
 const ItemCardTitle = ({ statusCode, tcrData }) => {
   const {
@@ -18,6 +19,7 @@ const ItemCardTitle = ({ statusCode, tcrData }) => {
   } = useContext(TCRViewContext)
   const { timestamp } = useContext(WalletContext)
   const { disputed, submissionTime } = tcrData || {}
+  const nativeCurrency = useNativeCurrency()
 
   // Get remaining challenge period, if applicable and build countdown.
   const challengeRemainingTime = useMemo(() => {
@@ -55,7 +57,11 @@ const ItemCardTitle = ({ statusCode, tcrData }) => {
         {bounty && (
           <div style={{ display: 'flex', flexDirection: 'column' }}>
             <Tooltip title="This is the bounty on this item.">
-              <ETHAmount amount={bounty} decimals={3} displayUnit />
+              <ETHAmount
+                amount={bounty}
+                decimals={3}
+                displayUnit={` ${nativeCurrency}`}
+              />
               <FontAwesomeIcon
                 icon="coins"
                 color="white"

@@ -3,7 +3,8 @@ export const NETWORK = {
   ROPSTEN: 3,
   RINKEBY: 4,
   GOERLI: 5,
-  KOVAN: 42
+  KOVAN: 42,
+  XDAI: 100
 }
 
 export const NETWORK_NAME = {
@@ -11,7 +12,8 @@ export const NETWORK_NAME = {
   [NETWORK.ROPSTEN]: 'ropsten',
   [NETWORK.RINKEBY]: 'rinkeby',
   [NETWORK.GOERLI]: 'göerli',
-  [NETWORK.KOVAN]: 'kovan'
+  [NETWORK.KOVAN]: 'kovan',
+  [NETWORK.XDAI]: 'xDai'
 }
 
 export const NETWORK_COLOR = {
@@ -19,5 +21,6 @@ export const NETWORK_COLOR = {
   [NETWORK.ROPSTEN]: '#ff4a8d',
   [NETWORK.RINKEBY]: '#f6c343',
   [NETWORK.GOERLI]: '#3099f2',
-  [NETWORK.KOVAN]: '#690496'
+  [NETWORK.KOVAN]: '#690496',
+  [NETWORK.XDAI]: '#48A9A6'
 }

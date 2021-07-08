@@ -10,6 +10,7 @@ import localforage from 'localforage'
 import ETHAddress from './eth-address'
 import ETHAmount from './eth-amount'
 import { randomBytes, bigNumberify } from 'ethers/utils'
+import useNativeCurrency from '../hooks/native-currency'
 
 const StyledDiv = styled.div`
   height: 32px;
@@ -72,6 +73,7 @@ const EMAIL_FORM_ID = 'emailForm'
 const CACHED_SETTINGS = 'CACHED_SETTINGS'
 const Identicon = ({ className, large }) => {
   const { account, library, networkId } = useWeb3Context()
+  const nativeCurrency = useNativeCurrency()
   const [balance, setBalance] = useState()
   const [emailStatus, setEmailStatus] = useState()
   const [fetchedEmailSettings, setFetchedEmailSettings] = useState()
@@ -190,7 +192,7 @@ const Identicon = ({ className, large }) => {
             <List.Item>
               <List.Item.Meta
                 description={<ETHAmount amount={balance} decimals={4} />}
-                title="ETH"
+                title={nativeCurrency}
               />
             </List.Item>
           )}

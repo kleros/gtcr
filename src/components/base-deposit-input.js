@@ -6,6 +6,7 @@ import { bigNumberify, parseEther } from 'ethers/utils'
 import styled from 'styled-components/macro'
 import BNPropType from '../prop-types/bn'
 import ETHAmount from './eth-amount'
+import useNativeCurrency from '../hooks/native-currency'
 
 const BasedDepositContainer = styled.div`
   display: flex;
@@ -34,6 +35,7 @@ const BaseDepositInput = ({
       // No op. Wait for proper user input.
     }
   }, [name, values])
+  const nativeCurrency = useNativeCurrency()
 
   const totalDeposit = useMemo(
     () => baseDeposit && arbitrationCost && baseDeposit.add(arbitrationCost),
@@ -52,7 +54,7 @@ const BaseDepositInput = ({
           >
             <BasedDepositContainer>
               <Input
-                addonAfter="ETH"
+                addonAfter={nativeCurrency}
                 placeholder="0.1"
                 step={0.0001}
                 disabled={disabled}
@@ -63,7 +65,12 @@ const BaseDepositInput = ({
                 <Tooltip title="The total cost is the sum of the base deposit and the arbitration cost.">
                   <Icon type="question-circle-o" />
                 </Tooltip>
-                : <ETHAmount amount={totalDeposit} decimals={3} displayUnit />
+                :{' '}
+                <ETHAmount
+                  amount={totalDeposit}
+                  decimals={3}
+                  displayUnit={` ${nativeCurrency}`}
+                />
               </TotalCostContainer>
             </BasedDepositContainer>
           </Form.Item>

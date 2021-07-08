@@ -22,7 +22,7 @@ const ETHAmount = ({ amount, decimals, displayUnit }) =>
           ? amount.toLocaleString('fullwide', { useGrouping: false })
           : String(amount)
       )
-    ).toFixed(decimals) + (displayUnit ? ' ETH' : '')
+    ).toFixed(decimals) + (displayUnit || '')
   )
 
 ETHAmount.propTypes = {

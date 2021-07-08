@@ -24,6 +24,7 @@ import BNPropType from '../../../prop-types/bn'
 import useFactory from '../../../hooks/factory'
 import { TourContext } from '../../../bootstrap/tour-context'
 import { capitalizeFirstLetter, getArticleFor } from '../../../utils/string'
+import useNativeCurrency from '../../../hooks/native-currency'
 
 const StyledSpin = styled(Spin)`
   height: 60px;
@@ -159,6 +160,7 @@ const SubmitModal = props => {
     disabledFields,
     challengePeriodDuration
   } = props
+  const nativeCurrency = useNativeCurrency()
   const { pushWeb3Action } = useContext(WalletContext)
   const { setUserSubscribed } = useContext(TourContext)
   const { deployedWithFactory } = useFactory()
@@ -328,7 +330,7 @@ const SubmitModal = props => {
           <ETHAmount
             decimals={3}
             amount={submissionDeposit.toString()}
-            displayUnit
+            displayUnit={` ${nativeCurrency}`}
           />
         </Descriptions.Item>
       </Descriptions>

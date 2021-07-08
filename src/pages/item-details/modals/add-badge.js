@@ -11,6 +11,7 @@ import {
 import styled from 'styled-components/macro'
 import PropTypes from 'prop-types'
 import ETHAmount from '../../../components/eth-amount.js'
+import useNativeCurrency from '../../../hooks/native-currency.js'
 
 const StyledSpin = styled(Spin)`
   height: 60px;
@@ -58,6 +59,7 @@ const AddBadgeModal = ({
   isFetchingBadges,
   foundBadges
 }) => {
+  const nativeCurrency = useNativeCurrency()
   const [selectedBadge, setSelectedBadge] = useState()
   const handleSubmit = useCallback(() => {
     onSelectBadge(availableBadges[selectedBadge])
@@ -191,7 +193,7 @@ const AddBadgeModal = ({
                       ].submissionDeposit.toString()
                     : 0
                 }
-                displayUnit
+                displayUnit={` ${nativeCurrency}`}
               />
             </Descriptions.Item>
           </Descriptions>

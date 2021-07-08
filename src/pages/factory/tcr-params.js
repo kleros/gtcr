@@ -29,6 +29,7 @@ import useNetworkEnvVariable from '../../hooks/network-env'
 import KlerosParams from './kleros-params'
 import ETHAmount from '../../components/eth-amount'
 import useWindowDimensions from '../../hooks/window-dimensions'
+import useNativeCurrency from '../../hooks/native-currency'
 
 const StyledUpload = styled(Upload)`
   & > .ant-upload.ant-upload-select-picture-card {
@@ -107,6 +108,7 @@ const TCRParams = ({
 }) => {
   const { values, setTcrState } = rest
   const { width } = useWindowDimensions()
+  const nativeCurrency = useNativeCurrency()
   const [uploading, setUploading] = useState({})
   const [advancedOptions, setAdvancedOptions] = useState()
   const { library, networkId } = useWeb3Context()
@@ -369,7 +371,11 @@ const TCRParams = ({
                 <Icon type="question-circle-o" />
               </Tooltip>
               :{' '}
-              <ETHAmount amount={totalDepositSlider} decimals={3} displayUnit />
+              <ETHAmount
+                amount={totalDepositSlider}
+                decimals={3}
+                displayUnit={` ${nativeCurrency}`}
+              />
             </label>
             <StyledSliderContainer>
               <div

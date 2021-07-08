@@ -34,6 +34,7 @@ import ipfsPublish from '../../../utils/ipfs-publish'
 import { WalletContext } from '../../../bootstrap/wallet-context'
 import { gtcrEncode } from '@kleros/gtcr-encoder'
 import { TourContext } from '../../../bootstrap/tour-context.js'
+import useNativeCurrency from '../../../hooks/native-currency.js'
 
 const StyledSpin = styled(Spin)`
   height: 60px;
@@ -65,6 +66,7 @@ const StyledModal = styled(Modal)`
 const SkeletonTitleProps = { width: '90px' }
 
 const SubmitConnectModal = props => {
+  const nativeCurrency = useNativeCurrency()
   const { onCancel, initialValues, tcrAddress: relTCRAddress, gtcrView } = props
   const { pushWeb3Action } = useContext(WalletContext)
   const { library, active, networkId } = useWeb3Context()
@@ -456,7 +458,7 @@ const SubmitConnectModal = props => {
           <ETHAmount
             decimals={3}
             amount={relTCRSubmissionDeposit.toString()}
-            displayUnit
+            displayUnit={` ${nativeCurrency}`}
           />
         </Descriptions.Item>
       </Descriptions>

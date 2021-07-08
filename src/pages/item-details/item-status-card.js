@@ -24,6 +24,7 @@ import useHumanizedCountdown from '../../hooks/countdown'
 import useAppealTime from '../../hooks/appeal-time'
 import ETHAmount from '../../components/eth-amount'
 import useNetworkEnvVariable from '../../hooks/network-env'
+import useNativeCurrency from '../../hooks/native-currency'
 
 const StyledDescriptions = styled(Descriptions)`
   flex-wrap: wrap;
@@ -118,6 +119,7 @@ const ItemStatusCard = ({
     return deadline - Date.now()
   }, [challengePeriodDuration, item])
   const challengeCountdown = useHumanizedCountdown(challengeRemainingTime)
+  const nativeCurrency = useNativeCurrency()
 
   if (!item || !timestamp || !challengePeriodDuration || !request)
     return (
@@ -201,7 +203,11 @@ const ItemStatusCard = ({
             statusCode === STATUS_CODE.REMOVAL_REQUESTED) && (
             <>
               <Descriptions.Item label="Bounty">
-                <ETHAmount amount={bounty} decimals={3} displayUnit />
+                <ETHAmount
+                  amount={bounty}
+                  decimals={3}
+                  displayUnit={` ${nativeCurrency}`}
+                />
               </Descriptions.Item>
             </>
           )}

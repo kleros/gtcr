@@ -23,6 +23,7 @@ import { abi as _gtcr } from '@kleros/tcr/build/contracts/GeneralizedTCR.json'
 import { ethers } from 'ethers'
 import useRequiredFees from '../../../hooks/required-fees'
 import { TourContext } from '../../../bootstrap/tour-context'
+import useNativeCurrency from '../../../hooks/native-currency'
 
 const StyledSpin = styled(Spin)`
   height: 60px;
@@ -53,6 +54,7 @@ const CrowdfundModal = ({ statusCode, item, fileURI, ...rest }) => {
   const [contributionShare, setContributionShare] = useState(1)
   const { currentRuling, hasPaid } = item
   const [userSelectedSide, setUserSelectedSide] = useState()
+  const nativeCurrency = useNativeCurrency()
 
   const autoSelectedSide = useMemo(() => {
     if (
@@ -205,7 +207,7 @@ const CrowdfundModal = ({ statusCode, item, fileURI, ...rest }) => {
           amount={potentialReward
             .mul(bigNumberify(Math.ceil(contributionShare * 10000) || 1))
             .div(10000)}
-          displayUnit
+          displayUnit={` ${nativeCurrency}`}
         />
         . You will earn up to this amount if the side you choose wins the next
         round of the dispute.
@@ -243,13 +245,17 @@ const CrowdfundModal = ({ statusCode, item, fileURI, ...rest }) => {
       <Divider />
       <Descriptions bordered column={1}>
         <Descriptions.Item label="Total Required:">
-          <ETHAmount decimals={4} amount={requiredForSide} displayUnit />
+          <ETHAmount
+            decimals={4}
+            amount={requiredForSide}
+            displayUnit={` ${nativeCurrency}`}
+          />
         </Descriptions.Item>
         <Descriptions.Item label="Amount Paid:">
           <ETHAmount
             decimals={4}
             amount={item && item.amountPaid[side]}
-            displayUnit
+            displayUnit={` ${nativeCurrency}`}
           />
         </Descriptions.Item>
       </Descriptions>

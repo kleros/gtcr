@@ -221,7 +221,12 @@ const KlerosParams = ({
         </StyledInputContainer>
       </StyledContainer>
       Arbitration Cost:{' '}
-      <ETHAmount displayUnit decimals={4} amount={arbitrationCost} step="1" />
+      <ETHAmount
+        displayUnit="ETH"
+        decimals={4}
+        amount={arbitrationCost}
+        step="1"
+      />
     </StyledExtraDataContainer>
   )
 }

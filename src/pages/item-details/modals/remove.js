@@ -20,6 +20,7 @@ import { WalletContext } from '../../../bootstrap/wallet-context'
 import itemPropTypes from '../../../prop-types/item'
 import ipfsPublish from '../../../utils/ipfs-publish'
 import { TourContext } from '../../../bootstrap/tour-context'
+import useNativeCurrency from '../../../hooks/native-currency'
 
 const StyledSpin = styled(Spin)`
   height: 60px;
@@ -50,6 +51,7 @@ const RemoveModal = ({ item, itemName = 'item', fileURI, ...rest }) => {
     metaEvidence,
     challengePeriodDuration
   } = useContext(TCRViewContext)
+  const nativeCurrency = useNativeCurrency()
 
   const { metadata } = metaEvidence || {}
   const { requireRemovalEvidence } = metadata || {}
@@ -186,7 +188,7 @@ const RemoveModal = ({ item, itemName = 'item', fileURI, ...rest }) => {
           <ETHAmount
             decimals={3}
             amount={removalDeposit.toString()}
-            displayUnit
+            displayUnit={` ${nativeCurrency}`}
           />
         </Descriptions.Item>
       </Descriptions>

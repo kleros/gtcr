@@ -31,6 +31,7 @@ import KlerosParams from './kleros-params'
 import BaseDepositInput from '../../components/base-deposit-input'
 import ETHAmount from '../../components/eth-amount'
 import useWindowDimensions from '../../hooks/window-dimensions'
+import useNativeCurrency from '../../hooks/native-currency'
 
 const StyledUpload = styled(Upload)`
   & > .ant-upload.ant-upload-select-picture-card {
@@ -92,6 +93,7 @@ const RelTCRParams = ({
     arbitratorExtraData: values.relArbitratorExtraData,
     library
   })
+  const nativeCurrency = useNativeCurrency()
   const setRelArbitratorExtraData = useCallback(
     val => setFieldValue('relArbitratorExtraData', val),
     [setFieldValue]
@@ -253,7 +255,11 @@ const RelTCRParams = ({
                 <Icon type="question-circle-o" />
               </Tooltip>
               :{' '}
-              <ETHAmount amount={totalDepositSlider} decimals={3} displayUnit />
+              <ETHAmount
+                amount={totalDepositSlider}
+                decimals={3}
+                displayUnit={` ${nativeCurrency}`}
+              />
             </label>
             <StyledSliderContainer>
               <div

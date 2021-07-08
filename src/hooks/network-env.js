@@ -1,6 +1,12 @@
 import { NETWORK } from '../utils/network-utils'
 
-const useNetworkEnvVariable = (envVariableKey, networkId) => {
+/**
+ * Fetch an environment variable for a given networkId.
+ * @param {string} envVariableKey The environment variable to fetch.
+ * @param {number} networkId The network Id.
+ * @returns {*} The variable content for the networkId.
+ */
+function useNetworkEnvVariable(envVariableKey, networkId) {
   const defaultNetwork =
     process.env.REACT_APP_DEFAULT_NETWORK || NETWORK.MAINNET
   let data = ''
@@ -11,6 +17,11 @@ const useNetworkEnvVariable = (envVariableKey, networkId) => {
   } catch (_) {
     console.error(`Failed to parse env variable ${envVariableKey}`)
   }
+
+  if (data === '')
+    console.warn(
+      `Warning: no value found for ${envVariableKey}, networkId: ${networkId}`
+    )
 
   return data
 }
