@@ -45,22 +45,6 @@ const WalletModal = ({ connectors }) => {
     >
       <StyledWalletButton
         onClick={() => {
-          if (window.ethereum && window.ethereum.isFrame)
-            setUserSelectedWallet('Injected')
-          else {
-            const tab = window.open(
-              process.env.REACT_APP_FRAME_SITE_URL,
-              '_blank'
-            )
-            tab.focus()
-          }
-        }}
-      >
-        <StyledWalletLogo src={FrameLogo} />
-        Frame
-      </StyledWalletButton>
-      <StyledWalletButton
-        onClick={() => {
           if (window.ethereum && window.ethereum.isMetaMask)
             setUserSelectedWallet('Injected')
           else {
@@ -74,6 +58,22 @@ const WalletModal = ({ connectors }) => {
       >
         <Icon component={MetamaskLogo} />
         Metamask
+      </StyledWalletButton>
+      <StyledWalletButton
+        onClick={() => {
+          if (window.ethereum && window.ethereum.isFrame)
+            setUserSelectedWallet('Injected')
+          else {
+            const tab = window.open(
+              process.env.REACT_APP_FRAME_SITE_URL,
+              '_blank'
+            )
+            tab.focus()
+          }
+        }}
+      >
+        <StyledWalletLogo src={FrameLogo} />
+        Frame
       </StyledWalletButton>
       <StyledWalletButton
         onClick={() => {

@@ -21,6 +21,55 @@ const StyledReactBlockies = styled(ReactBlockies)`
   border-radius: ${({ large }) => (large ? '4' : '16')}px;
 `
 
+const xDaiInfo = {
+  name: 'xDAI Chain',
+  chainId: 100,
+  shortName: 'xdai',
+  chain: 'XDAI',
+  network: 'mainnet',
+  networkId: 100,
+  nativeCurrency: { name: 'xDAI', symbol: 'xDAI', decimals: 18 },
+  rpc: [
+    'https://rpc.xdaichain.com',
+    'https://xdai.poanetwork.dev',
+    'wss://rpc.xdaichain.com/wss',
+    'wss://xdai.poanetwork.dev/wss',
+    'http://xdai.poanetwork.dev',
+    'https://dai.poa.network',
+    'ws://xdai.poanetwork.dev:8546'
+  ],
+  faucets: [],
+  explorers: [
+    {
+      name: 'blockscout',
+      url: 'https://blockscout.com/xdai/',
+      standard: 'EIP3091'
+    }
+  ],
+  infoURL: 'https://forum.poa.network/c/xdai-chain'
+}
+
+const supportedNetworkURLs = JSON.parse(process.env.REACT_APP_RPC_URLS)
+const mainnetInfo = {
+  name: 'Ethereum Mainnet',
+  chainId: 1,
+  shortName: 'eth',
+  chain: 'ETH',
+  network: 'mainnet',
+  networkId: 1,
+  nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
+  rpc: [supportedNetworkURLs[1]],
+  faucets: [],
+  explorers: [
+    {
+      name: 'etherscan',
+      url: 'https://etherscan.io',
+      standard: 'EIP3091'
+    }
+  ],
+  infoURL: 'https://ethereum.org'
+}
+
 const EmailForm = ({
   formID,
 
@@ -175,6 +224,26 @@ const Identicon = ({ className, large }) => {
     </StyledDiv>
   )
 
+  const switchChain = useCallback(() => {
+    if (!account) return
+    if (networkId === 100)
+      library.send('wallet_switchEthereumChain', [
+        {
+          chainId: `0x${mainnetInfo.chainId.toString(16)}`
+        }
+      ])
+    else
+      library.send('wallet_addEthereumChain', [
+        {
+          chainId: `0x${xDaiInfo.chainId.toString(16)}`,
+          nativeCurrency: xDaiInfo.nativeCurrency,
+          chainName: xDaiInfo.name,
+          rpcUrls: xDaiInfo.rpc,
+          blockExplorerUrls: xDaiInfo.explorers.url
+        }
+      ])
+  }, [account, library, networkId])
+
   return large ? (
     content
   ) : (
@@ -182,6 +251,15 @@ const Identicon = ({ className, large }) => {
       arrowPointAtCenter
       content={
         <List>
+          <List.Item>
+            <List.Item.Meta
+              description={
+                <Button type="primary" onClick={switchChain}>
+                  Switch to {networkId === 100 ? 'Mainnet' : 'xDai'}
+                </Button>
+              }
+            />
+          </List.Item>
           <List.Item>
             <List.Item.Meta
               description={<ETHAddress address={account} />}
