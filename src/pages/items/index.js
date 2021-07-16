@@ -15,11 +15,12 @@ import { useWeb3Context } from 'web3-react'
 import qs from 'qs'
 import ErrorPage from '../error-page'
 import { WalletContext } from '../../bootstrap/wallet-context'
-import { ZERO_ADDRESS, ZERO_BYTES32 } from '../../utils/string'
+import { ZERO_ADDRESS } from '../../utils/string'
 import { TCRViewContext } from '../../bootstrap/tcr-view-context'
 import { bigNumberify } from 'ethers/utils'
 import { gtcrDecode } from '@kleros/gtcr-encoder'
 import SubmitModal from '../item-details/modals/submit'
+import useNetworkEnvVariable from '../../hooks/network-env'
 import SubmitConnectModal from '../item-details/modals/submit-connect'
 import SearchBar from '../../components/search-bar'
 import {
@@ -35,6 +36,7 @@ import Banner from './banner'
 import AppTour from '../../components/tour'
 import itemsTourSteps from './tour-steps'
 import takeLower from '../../utils/lower-limit'
+import { DISPUTE_STATUS } from '../../utils/item-status'
 
 const NSFW_FILTER_KEY = 'NSFW_FILTER_KEY'
 const ITEMS_TOUR_DISMISSED = 'ITEMS_TOUR_DISMISSED'
@@ -159,7 +161,7 @@ const mainnetInfo = {
 const ITEMS_PER_PAGE = 40
 const Items = ({ search, history }) => {
   const { requestWeb3Auth, timestamp } = useContext(WalletContext)
-  const { library, active, account } = useWeb3Context()
+  const { library, active, account, networkId } = useWeb3Context()
   const [network, setNetwork] = useState()
   const {
     gtcr,
@@ -187,6 +189,10 @@ const Items = ({ search, history }) => {
     data: null
   })
   const refAttr = useRef()
+  const GTCR_SUBGRAPH_URL = useNetworkEnvVariable(
+    'REACT_APP_SUBGRAPH_URL',
+    networkId
+  )
   const [eventListenerSet, setEventListenerSet] = useState()
   const queryOptions = searchStrToFilterObj(search)
   const [nsfwFilterOn, setNSFWFilter] = useState(true)
@@ -290,68 +296,107 @@ const Items = ({ search, history }) => {
 
   // Fetch items.
   useEffect(() => {
-    if (!gtcr || !gtcrView || fetchItems.isFetching || !fetchItems.fetchStarted)
+    if (
+      !gtcr ||
+      !gtcrView ||
+      fetchItems.isFetching ||
+      !fetchItems.fetchStarted ||
+      !GTCR_SUBGRAPH_URL
+    )
       return
 
     setFetchItems({ isFetching: true })
-    const filter = queryOptionsToFilterArray(queryOptions, account)
-    const { page, oldestFirst } = queryOptions
     let encodedItems
     ;(async () => {
       try {
-        // The data must be fetched in batches to avoid timeouts.
-        // We calculate the number of requests required according
-        // to the number of items in the TCR.
-        const itemCount = (await gtcr.itemCount()).toNumber()
-        const itemsPerRequest = 100
+        const { page, oldestFirst } = queryOptions
+        const orderDirection = oldestFirst ? 'asc' : 'desc'
+        const { data } = await (
+          await fetch(GTCR_SUBGRAPH_URL, {
+            method: 'POST',
+            body: JSON.stringify({
+              query: `
+              {
+                registry(id: "${gtcr.address.toLowerCase()}") {
+                  items(
+                    first: 1000, 
+                    orderBy: latestRequestSubmissionTime,
+                    orderDirection: ${orderDirection}
+                  ) {
+                    itemID
+                    status
+                    data
+                    requests (first: 1, orderBy: submissionTime, orderDirection: desc) {
+                      disputed
+                      disputeID
+                      submissionTime
+                      resolved
+                      rounds (first: 1, orderBy: creationTime , orderDirection: desc) {
+                        appealPeriodStart
+                        appealPeriodEnd
+                        ruling
+                        hasPaidRequester
+                        hasPaidChallenger
+                      }
+                    }
+                  }
+                }
+              }
+            `
+            })
+          })
+        ).json()
 
-        // Number calls required to fetch all the data required.
-        const requests = Math.ceil(itemCount / itemsPerRequest)
-        let request = 1
-        let target = [bigNumberify(0), itemCount > 0, false]
-        while (request <= requests && !target[2]) {
-          target = await gtcrView.findIndexForPage(
-            gtcr.address,
-            [
-              Number(page),
-              ITEMS_PER_PAGE,
-              itemsPerRequest,
-              target[0].toNumber()
-            ],
-            [...filter, oldestFirst],
-            active && account ? account : ZERO_ADDRESS
-          )
-          request++
-        }
-        const cursorIndex = target[0].toNumber()
+        const { registry } = data ?? {}
+        let { items } = registry ?? {}
 
-        // Edge case: Query items sets the cursor to the last item if
-        // we are sorting by the newest items and the cursor index is 0.
-        // This means we must take special care if the last page has a
-        // single item.
-        if (cursorIndex === 0 && !oldestFirst && page !== '1')
-          encodedItems = await gtcrView.queryItems(
-            gtcr.address,
-            0,
-            1,
-            filter,
-            true,
-            active && account ? account : ZERO_ADDRESS,
-            ITEMS_PER_PAGE
-          )
-        else
-          encodedItems = await gtcrView.queryItems(
-            gtcr.address,
-            cursorIndex,
-            300,
-            filter,
-            oldestFirst,
-            active && account ? account : ZERO_ADDRESS,
-            ITEMS_PER_PAGE
-          )
+        items = items.map(({ itemID, status: statusName, requests, data }) => {
+          const { disputed, disputeID, submissionTime, rounds, resolved } =
+            requests[0] ?? {}
 
-        // Filter out empty slots from the results.
-        encodedItems = encodedItems[0].filter(item => item.ID !== ZERO_BYTES32)
+          const {
+            appealPeriodStart,
+            appealPeriodEnd,
+            ruling,
+            hasPaidRequester,
+            hasPaidChallenger
+          } = rounds[0] ?? {}
+
+          const currentRuling =
+            ruling === 'None' ? 0 : ruling === 'Accept' ? 1 : 2
+          const disputeStatus = !disputed
+            ? DISPUTE_STATUS.WAITING
+            : resolved
+            ? DISPUTE_STATUS.SOLVED
+            : Number(appealPeriodEnd) > Date.now() / 1000
+            ? DISPUTE_STATUS.APPEALABLE
+            : DISPUTE_STATUS.WAITING
+
+          const statusNameToCode = {
+            Absent: 0,
+            Registered: 1,
+            RegistrationRequested: 2,
+            RemovalRequested: 3
+          }
+
+          return {
+            ID: itemID,
+            itemID,
+            status: statusNameToCode[statusName],
+            disputeStatus,
+            disputed,
+            data,
+            disputeID,
+            submissionTime: bigNumberify(submissionTime),
+            hasPaid: [false, hasPaidRequester, hasPaidChallenger],
+            currentRuling,
+            appealStart: bigNumberify(appealPeriodStart),
+            appealEnd: bigNumberify(appealPeriodEnd)
+          }
+        })
+
+        const skip = ITEMS_PER_PAGE * (Number(page ?? 1) - 1)
+        encodedItems = items.slice(skip, skip + ITEMS_PER_PAGE)
       } catch (err) {
         console.error('Error fetching items', err)
         setError('Error fetching items')
@@ -373,7 +418,8 @@ const Items = ({ search, history }) => {
     queryOptions,
     tcrAddress,
     active,
-    account
+    account,
+    GTCR_SUBGRAPH_URL
   ])
 
   // Since items are sorted by time of submission (either newest or oldest first)
