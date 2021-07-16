@@ -284,6 +284,16 @@ const Identicon = ({ className, large }) => {
                       formID={EMAIL_FORM_ID}
                       initialValues={fetchedEmailSettings}
                     />
+                    <Alert
+                      message={
+                        <div>
+                          Note that it is necessary to subscribe for each chain.
+                        </div>
+                      }
+                      type="info"
+                      showIcon
+                      style={{ marginBottom: '15px', marginTop: '-15px' }}
+                    />
                     {emailStatus && emailStatus !== 'loading' && (
                       <Alert
                         closable
