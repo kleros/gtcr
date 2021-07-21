@@ -5,6 +5,7 @@ import styled from 'styled-components/macro'
 import { ReactComponent as TrustLogo } from '../assets/images/trust.svg'
 import { WalletContext } from './wallet-context'
 import FrameLogo from '../assets/images/frame.png'
+import OperaLogo from '../assets/images/opera.webp'
 import { ReactComponent as MetamaskLogo } from '../assets/images/metamask.svg'
 import { ReactComponent as FortmaticLogo } from '../assets/images/fortmatic.svg'
 import { ReactComponent as WalletConnectLogo } from '../assets/images/walletconnect.svg'
@@ -74,6 +75,22 @@ const WalletModal = ({ connectors }) => {
       >
         <StyledWalletLogo src={FrameLogo} />
         Frame
+      </StyledWalletButton>
+      <StyledWalletButton
+        onClick={() => {
+          if (window.ethereum && window.ethereum)
+            setUserSelectedWallet('Injected')
+          else {
+            const tab = window.open(
+              process.env.REACT_APP_FRAME_SITE_URL,
+              '_blank'
+            )
+            tab.focus()
+          }
+        }}
+      >
+        <StyledWalletLogo src={OperaLogo} />
+        Opera
       </StyledWalletButton>
       <StyledWalletButton
         onClick={() => {
