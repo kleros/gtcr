@@ -281,7 +281,7 @@ const ItemDetails = ({ itemID, search }) => {
       <ErrorPage
         code="400"
         message={error || tcrError || 'This item could not be found.'}
-        tip="Make sure your wallet is set to the correct network."
+        tip="Make sure your wallet is set to the correct network (is this on xDai?)."
       />
     )
 

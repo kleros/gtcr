@@ -598,7 +598,7 @@ const Items = ({ search, history }) => {
       <ErrorPage
         code="404"
         message="The gods are having trouble finding this list."
-        tip="Make sure your wallet is set to the correct network."
+        tip="Make sure your wallet is set to the correct network (is this on xDai?)."
       />
     )
 
