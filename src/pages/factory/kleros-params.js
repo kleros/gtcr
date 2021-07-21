@@ -9,6 +9,7 @@ import { abi as _IArbitrator } from '@kleros/erc-792/build/contracts/IArbitrator
 import ETHAmount from '../../components/eth-amount'
 import { jurorsAndCourtIDFromExtraData } from '../../utils/string'
 import useWindowDimensions from '../../hooks/window-dimensions'
+import useNativeCurrency from '../../hooks/native-currency'
 
 const StyledExtraDataContainer = styled.div`
   padding-bottom: 8px;
@@ -37,6 +38,7 @@ const KlerosParams = ({
   arbitratorExtraData
 }) => {
   const { width } = useWindowDimensions()
+  const nativeCurrency = useNativeCurrency()
   const { library, active } = useWeb3Context()
   const [arbitrationCost, setArbitrationCost] = useState(0)
   const [numberOfJurors, setNumberOfJurors] = useState(3)
@@ -222,7 +224,7 @@ const KlerosParams = ({
       </StyledContainer>
       Arbitration Cost:{' '}
       <ETHAmount
-        displayUnit="ETH"
+        displayUnit={` ${nativeCurrency}`}
         decimals={4}
         amount={arbitrationCost}
         step="1"
