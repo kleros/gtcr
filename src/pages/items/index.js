@@ -641,61 +641,7 @@ const Items = ({ search, history }) => {
             }
           >
             <>
-              <StyledFilters id="items-filters">
-                <div>
-                  <StyledSwitch
-                    checkedChildren="NSFW Filter: On"
-                    unCheckedChildren="NSFW Filter: Off"
-                    checked={nsfwFilterOn}
-                    onChange={toggleNSFWFilter}
-                  />
-                  {Object.keys(queryOptions)
-                    .filter(
-                      key =>
-                        key !== FILTER_KEYS.PAGE &&
-                        key !== FILTER_KEYS.OLDEST_FIRST
-                    )
-                    .map(key => (
-                      <StyledTag
-                        key={key}
-                        checked={queryOptions[key]}
-                        onChange={checked => {
-                          const newQueryStr = updateFilter({
-                            prevQuery: search,
-                            filter: key,
-                            checked
-                          })
-                          history.push({
-                            search: newQueryStr
-                          })
-                          setFetchItems({ fetchStarted: true })
-                          setFetchItemCount({ fetchStarted: true })
-                        }}
-                      >
-                        {filterLabel[key]}
-                      </StyledTag>
-                    ))}
-                </div>
-                <StyledSelect
-                  defaultValue={oldestFirst ? 'oldestFirst' : 'newestFirst'}
-                  style={{ width: 120 }}
-                  onChange={val => {
-                    const newQueryStr = updateFilter({
-                      prevQuery: search,
-                      filter: 'oldestFirst',
-                      checked: val === 'oldestFirst'
-                    })
-                    history.push({
-                      search: newQueryStr
-                    })
-                    setFetchItems({ fetchStarted: true })
-                  }}
-                >
-                  <Select.Option value="newestFirst">Newest</Select.Option>
-                  <Select.Option value="oldestFirst">Oldest</Select.Option>
-                </StyledSelect>
-              </StyledFilters>
-              <StyledGrid id="items-grid-view">
+              <StyledGrid id="items-grid-view"> */}
                 {items &&
                   items
                     .sort(({ tcrData: tcrDataA }, { tcrData: tcrDataB }) => {
