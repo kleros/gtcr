@@ -254,9 +254,19 @@ const Identicon = ({ className, large }) => {
           <List.Item>
             <List.Item.Meta
               description={
-                <Button type="primary" onClick={switchChain}>
-                  Switch to {networkId === 100 ? 'Mainnet' : 'xDai'}
-                </Button>
+                <>
+                  <Button type="primary" onClick={switchChain}>
+                    Switch to {networkId === 100 ? 'Mainnet' : 'xDai'}
+                  </Button>
+                  {networkId === 100 && (
+                    <a
+                      style={{ marginLeft: '8px' }}
+                      href="https://bridge.xdaichain.com/"
+                    >
+                      Get xDAI
+                    </a>
+                  )}
+                </>
               }
             />
           </List.Item>

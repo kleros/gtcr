@@ -1,3 +1,5 @@
+/* eslint-disable no-unused-vars */
+// Rule disabled temporarly as filters will be added back.
 import { Layout, Spin, Pagination, Tag, Select, Switch } from 'antd'
 import { Link } from 'react-router-dom'
 import React, {
@@ -641,7 +643,7 @@ const Items = ({ search, history }) => {
             }
           >
             <>
-              <StyledGrid id="items-grid-view"> */}
+              <StyledGrid id="items-grid-view">
                 {items &&
                   items
                     .sort(({ tcrData: tcrDataA }, { tcrData: tcrDataB }) => {
