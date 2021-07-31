@@ -13,6 +13,7 @@ import useRequiredFees from '../../hooks/required-fees'
 import { formatEther } from 'ethers/utils'
 import itemPropType from '../../prop-types/item'
 import BNPropType from '../../prop-types/bn'
+import useNativeCurrency from '../../hooks/native-currency'
 
 const StyledCard = styled(Card)`
   background: linear-gradient(111.6deg, #4d00b4 46.25%, #6500b4 96.25%);
@@ -64,6 +65,7 @@ const CrowdfundingCard = ({ item, timestamp }) => {
     loserStakeMultiplier,
     MULTIPLIER_DIVISOR
   } = useContext(TCRViewContext)
+  const nativeCurrency = useNativeCurrency()
 
   const requesterFees = useRequiredFees({
     side: PARTY.REQUESTER,
@@ -146,7 +148,7 @@ const CrowdfundingCard = ({ item, timestamp }) => {
               ? `Submitter funded. The challenger must now fully fund his side of the appeal before the deadline in order not to lose the dispute.`
               : `Contribute arbitration fees to the submitter's appeal for a chance to win at most ${formatEther(
                   requesterFees.potentialReward
-                )} ETH.`}
+                )} ${nativeCurrency}.`}
           </StyledParagraph>
         </StyledSection>
         <StyledSection>
@@ -164,7 +166,7 @@ const CrowdfundingCard = ({ item, timestamp }) => {
               ? 'Challenger fully funded. The submitter must now fully fund his side of the appeal before the deadline in order not to lose the dispute.'
               : `Contribute arbitration fees to the challenger's appeal for a chance to win at most ${formatEther(
                   challengerFees.potentialReward
-                )} ETH.`}
+                )} ${nativeCurrency}.`}
           </StyledParagraph>
         </StyledSection>
         <StyledSection>

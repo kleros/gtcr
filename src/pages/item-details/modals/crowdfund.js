@@ -201,7 +201,7 @@ const CrowdfundModal = ({ statusCode, item, fileURI, ...rest }) => {
         .
       </Typography.Title>
       <Typography.Paragraph level={4}>
-        Contribute ETH for a chance to win at most{' '}
+        Contribute {nativeCurrency} for a chance to win at most{' '}
         <ETHAmount
           decimals={4}
           amount={potentialReward
@@ -213,7 +213,7 @@ const CrowdfundModal = ({ statusCode, item, fileURI, ...rest }) => {
         round of the dispute.
       </Typography.Paragraph>
       <Typography.Paragraph>
-        How much ETH do you want to contribute?
+        How much {nativeCurrency} do you want to contribute?
       </Typography.Paragraph>
       <Row>
         <Col span={16}>
@@ -239,7 +239,7 @@ const CrowdfundModal = ({ statusCode, item, fileURI, ...rest }) => {
             }
             onChange={value => setContributionShare(value)}
           />{' '}
-          ETH
+          {nativeCurrency}
         </Col>
       </Row>
       <Divider />
