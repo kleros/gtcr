@@ -321,7 +321,7 @@ const Items = ({ search, history }) => {
               {
                 registry(id: "${gtcr.address.toLowerCase()}") {
                   items(
-                    first: 1000, 
+                    first: 1000,
                     orderBy: latestRequestSubmissionTime,
                     orderDirection: ${orderDirection}
                   ) {
