@@ -34,9 +34,9 @@ export const filterFunctions = {
   [FILTER_KEYS.REMOVAL_REQUESTED]: () => item =>
     item.status !== 'ClearingRequested',
   [FILTER_KEYS.CHALLENGED_SUBMISSIONS]: () => item =>
-    item.status === 'RegistrationRequested' && !item.disputed,
+    item.status !== 'RegistrationRequested' || !item.disputed,
   [FILTER_KEYS.CHALLENGED_REMOVALS]: () => item =>
-    item.status === 'ClearingRequested' && !item.disputed,
+    item.status !== 'ClearingRequested' || !item.disputed,
   [FILTER_KEYS.MY_SUBMISSIONS]: account => item =>
     !item.requests.some(
       request => request.requester?.toLowerCase() === account
