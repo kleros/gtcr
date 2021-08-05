@@ -358,6 +358,7 @@ const Items = ({ search, history }) => {
         Object.keys(queryOptions).map(key => {
           if (key !== 'oldestFirst' && queryOptions[key] === false)
             items = items.filter(filterFunctions[key](account.toLowerCase()))
+          return;
         })
 
         items = items.map(({ itemID, status: statusName, requests, data }) => {
