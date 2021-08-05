@@ -30,9 +30,9 @@ export const filterFunctions = {
   [FILTER_KEYS.ABSENT]: () => item => item.status !== 'Absent',
   [FILTER_KEYS.REGISTERED]: () => item => item.status !== 'Registered',
   [FILTER_KEYS.SUBMITTED]: () => item =>
-    item.status !== 'RegistrationRequested',
+    item.status !== 'RegistrationRequested' || item.disputed,
   [FILTER_KEYS.REMOVAL_REQUESTED]: () => item =>
-    item.status !== 'ClearingRequested',
+    item.status !== 'ClearingRequested' || item.disputed,
   [FILTER_KEYS.CHALLENGED_SUBMISSIONS]: () => item =>
     item.status !== 'RegistrationRequested' || !item.disputed,
   [FILTER_KEYS.CHALLENGED_REMOVALS]: () => item =>
