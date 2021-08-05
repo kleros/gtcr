@@ -389,17 +389,17 @@ const Items = ({ search, history }) => {
             ? DISPUTE_STATUS.APPEALABLE
             : DISPUTE_STATUS.WAITING
 
-          const statusNameToCode = {
+          const graphStatusNameToCode = {
             Absent: 0,
             Registered: 1,
             RegistrationRequested: 2,
-            RemovalRequested: 3
+            ClearingRequested: 3
           }
 
           return {
             ID: itemID,
             itemID,
-            status: statusNameToCode[statusName],
+            status: graphStatusNameToCode[statusName],
             disputeStatus,
             disputed,
             data,
