@@ -1,18 +1,20 @@
-import React, { useContext } from 'react'
+import React, { useCallback, useContext, useMemo, useState } from 'react'
 import styled from 'styled-components/macro'
 import { useWeb3Context } from 'web3-react'
 import { Link } from 'react-router-dom'
-import { Col, Menu, Row, Button, Badge } from 'antd'
+import { Col, Menu, Row, Button, Badge, Switch } from 'antd'
 import PropTypes from 'prop-types'
 import { WalletContext } from './wallet-context'
 import { TourContext } from './tour-context'
-import { NETWORK_NAME, NETWORK_COLOR } from '../utils/network-utils'
+import { NETWORK_NAME, NETWORK_COLOR, NETWORK } from '../utils/network-utils'
 import useMainTCR2 from '../hooks/tcr2'
 import Identicon from '../components/identicon'
 import Notifications from '../components/notifications'
 import { ReactComponent as Logo } from '../assets/images/logo.svg'
-import { capitalizeFirstLetter } from '../utils/string'
+import { capitalizeFirstLetter, SAVED_NETWORK_KEY } from '../utils/string'
 import AppTour from '../components/tour'
+import { useHistory } from 'react-router-dom/cjs/react-router-dom.min'
+import useNetworkEnvVariable from '../hooks/network-env'
 
 const StyledCol = styled(Col)`
   align-items: center;
@@ -75,6 +77,7 @@ const StyledConnectButton = styled(Button)`
     color: white;
     border-color: white;
   }
+  margin-left: 8px;
 `
 
 const StyledTopBarRow = styled(Row)`
@@ -108,6 +111,34 @@ const TopBar = ({ menuItems }) => {
   const { requestWeb3Auth } = useContext(WalletContext)
   const TCR2_ADDRESS = useMainTCR2(web3Context)
   const { userSubscribed } = useContext(TourContext)
+  const history = useHistory()
+  const { networkId, account } = web3Context
+  const [requestedChain, setRequestedChain] = useState()
+  const nextNetworkTCR = useNetworkEnvVariable(
+    'REACT_APP_DEFAULT_TCR_ADDRESSES',
+    networkId === NETWORK.XDAI ? NETWORK.MAINNET : NETWORK.XDAI
+  )
+  const currentChainId = useMemo(() => requestedChain ?? networkId, [
+    networkId,
+    requestedChain
+  ])
+  console.info(networkId, currentChainId)
+
+  const switchChain = useCallback(() => {
+    // Give a little time for the animation to play.
+    let nextNetwork = NETWORK.XDAI
+    if (networkId === NETWORK.XDAI) nextNetwork = NETWORK.MAINNET
+    else nextNetwork = NETWORK.XDAI
+
+    console.info(nextNetwork)
+    setRequestedChain(nextNetwork)
+    localStorage.setItem(SAVED_NETWORK_KEY, nextNetwork)
+    setTimeout(() => {
+      console.info(`aaaa`)
+      history.push(`/tcr/${nextNetworkTCR}`)
+      window.location.reload()
+    }, 500)
+  }, [history, networkId, nextNetworkTCR])
 
   return (
     <>
@@ -123,12 +154,21 @@ const TopBar = ({ menuItems }) => {
           </StyledMenu>
         </StyledCenter>
         <StyledColEnd md={7} sm={12} xs={24}>
-          {web3Context.active && web3Context.networkId && (
-            <StyledNetworkStatus>
-              <Badge color={NETWORK_COLOR[web3Context.networkId]} />
-              {capitalizeFirstLetter(NETWORK_NAME[web3Context.networkId])}
-            </StyledNetworkStatus>
-          )}
+          {web3Context.active &&
+            web3Context.networkId &&
+            (account ? (
+              <StyledNetworkStatus>
+                <Badge color={NETWORK_COLOR[web3Context.networkId]} />
+                {capitalizeFirstLetter(NETWORK_NAME[web3Context.networkId])}
+              </StyledNetworkStatus>
+            ) : (
+              <Switch
+                checkedChildren="xDai"
+                unCheckedChildren="Mainnet"
+                checked={currentChainId === NETWORK.XDAI}
+                onClick={switchChain}
+              />
+            ))}
           {process.env.REACT_APP_NOTIFICATIONS_API_URL &&
             web3Context.account &&
             web3Context.networkId && <Notifications />}

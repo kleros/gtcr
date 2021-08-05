@@ -29,6 +29,7 @@ import './fontawesome'
 import TopBar from './top-bar'
 import NoWeb3Detected from './no-web3'
 import WelcomeModal from './welcome-modal'
+import { SAVED_NETWORK_KEY } from '../utils/string'
 
 const StyledSpin = styled(Spin)`
   left: 50%;
@@ -145,11 +146,17 @@ const {
 
 const connectors = {}
 const defaultNetwork =
-  Number(process.env.REACT_APP_DEFAULT_NETWORK) || NETWORK.MAINNET
+  Number(localStorage.getItem(SAVED_NETWORK_KEY)) ||
+  Number(process.env.REACT_APP_DEFAULT_NETWORK) ||
+  NETWORK.MAINNET
+console.info(`def`, defaultNetwork)
 if (process.env.REACT_APP_RPC_URLS) {
   const supportedNetworkURLs = JSON.parse(process.env.REACT_APP_RPC_URLS)
   connectors.Infura = new NetworkOnlyConnector({
     providerURL: supportedNetworkURLs[defaultNetwork]
+  })
+  connectors.xDai = new NetworkOnlyConnector({
+    providerURL: supportedNetworkURLs[NETWORK.XDAI]
   })
 
   connectors.Ledger = new LedgerConnector({

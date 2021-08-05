@@ -70,3 +70,5 @@ export const jurorsAndCourtIDFromExtraData = arbitratorExtraData => {
 }
 
 export const getArticleFor = str => (str && isVowel(str[0]) ? 'an' : 'a')
+
+export const SAVED_NETWORK_KEY = 'SAVED_NETWORK_KEY'

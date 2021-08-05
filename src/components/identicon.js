@@ -11,6 +11,8 @@ import ETHAddress from './eth-address'
 import ETHAmount from './eth-amount'
 import { randomBytes, bigNumberify } from 'ethers/utils'
 import useNativeCurrency from '../hooks/native-currency'
+import { mainnetInfo, xDaiInfo } from '../utils/chain'
+import { NETWORK } from '../utils/network-utils'
 
 const StyledDiv = styled.div`
   height: 32px;
@@ -20,55 +22,6 @@ const StyledDiv = styled.div`
 const StyledReactBlockies = styled(ReactBlockies)`
   border-radius: ${({ large }) => (large ? '4' : '16')}px;
 `
-
-const xDaiInfo = {
-  name: 'xDAI Chain',
-  chainId: 100,
-  shortName: 'xdai',
-  chain: 'XDAI',
-  network: 'mainnet',
-  networkId: 100,
-  nativeCurrency: { name: 'xDAI', symbol: 'xDAI', decimals: 18 },
-  rpc: [
-    'https://rpc.xdaichain.com',
-    'https://xdai.poanetwork.dev',
-    'wss://rpc.xdaichain.com/wss',
-    'wss://xdai.poanetwork.dev/wss',
-    'http://xdai.poanetwork.dev',
-    'https://dai.poa.network',
-    'ws://xdai.poanetwork.dev:8546'
-  ],
-  faucets: [],
-  explorers: [
-    {
-      name: 'blockscout',
-      url: 'https://blockscout.com/xdai/',
-      standard: 'EIP3091'
-    }
-  ],
-  infoURL: 'https://forum.poa.network/c/xdai-chain'
-}
-
-const supportedNetworkURLs = JSON.parse(process.env.REACT_APP_RPC_URLS)
-const mainnetInfo = {
-  name: 'Ethereum Mainnet',
-  chainId: 1,
-  shortName: 'eth',
-  chain: 'ETH',
-  network: 'mainnet',
-  networkId: 1,
-  nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
-  rpc: [supportedNetworkURLs[1]],
-  faucets: [],
-  explorers: [
-    {
-      name: 'etherscan',
-      url: 'https://etherscan.io',
-      standard: 'EIP3091'
-    }
-  ],
-  infoURL: 'https://ethereum.org'
-}
 
 const EmailForm = ({
   formID,
@@ -256,9 +209,9 @@ const Identicon = ({ className, large }) => {
               description={
                 <>
                   <Button type="primary" onClick={switchChain}>
-                    Switch to {networkId === 100 ? 'Mainnet' : 'xDai'}
+                    Switch to {networkId === NETWORK.XDAI ? 'Mainnet' : 'xDai'}
                   </Button>
-                  {networkId === 100 && (
+                  {networkId === NETWORK.XDAI && (
                     <a
                       style={{ marginLeft: '8px' }}
                       href="https://bridge.xdaichain.com/"

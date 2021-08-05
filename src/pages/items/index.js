@@ -359,7 +359,9 @@ const Items = ({ search, history }) => {
 
         Object.keys(queryOptions).map(key => {
           if (key !== 'oldestFirst' && queryOptions[key] === false)
-            items = account ? items.filter(filterFunctions[key](account.toLowerCase())) : items
+            items = account
+              ? items.filter(filterFunctions[key](account.toLowerCase()))
+              : items
           return true
         })
 
@@ -407,7 +409,11 @@ const Items = ({ search, history }) => {
             currentRuling,
             appealStart: bigNumberify(appealPeriodStart),
             appealEnd: bigNumberify(appealPeriodEnd),
-            amountPaid:[bigNumberify(0), bigNumberify(amountPaidRequester), bigNumberify(amountPaidChallenger)]
+            amountPaid: [
+              bigNumberify(0),
+              bigNumberify(amountPaidRequester),
+              bigNumberify(amountPaidChallenger)
+            ]
           }
         })
 
