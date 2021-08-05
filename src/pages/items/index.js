@@ -342,6 +342,8 @@ const Items = ({ search, history }) => {
                         ruling
                         hasPaidRequester
                         hasPaidChallenger
+                        amountPaidRequester
+                        amountPaidChallenger
                       }
                     }
                   }
@@ -357,7 +359,7 @@ const Items = ({ search, history }) => {
 
         Object.keys(queryOptions).map(key => {
           if (key !== 'oldestFirst' && queryOptions[key] === false)
-            items = items.filter(filterFunctions[key](account.toLowerCase()))
+            items = account ? items.filter(filterFunctions[key](account.toLowerCase())) : items
           return true
         })
 
@@ -370,7 +372,9 @@ const Items = ({ search, history }) => {
             appealPeriodEnd,
             ruling,
             hasPaidRequester,
-            hasPaidChallenger
+            hasPaidChallenger,
+            amountPaidRequester,
+            amountPaidChallenger
           } = rounds[0] ?? {}
 
           const currentRuling =
@@ -402,7 +406,8 @@ const Items = ({ search, history }) => {
             hasPaid: [false, hasPaidRequester, hasPaidChallenger],
             currentRuling,
             appealStart: bigNumberify(appealPeriodStart),
-            appealEnd: bigNumberify(appealPeriodEnd)
+            appealEnd: bigNumberify(appealPeriodEnd),
+            amountPaid:[bigNumberify(0), bigNumberify(amountPaidRequester), bigNumberify(amountPaidChallenger)]
           }
         })
 
