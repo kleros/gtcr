@@ -31,7 +31,8 @@ import {
   FILTER_KEYS,
   updateFilter,
   queryOptionsToFilterArray,
-  applyOldActiveItemsFilter
+  applyOldActiveItemsFilter,
+  filterFunctions
 } from '../../utils/filters'
 import ItemCard from './item-card'
 import Banner from './banner'
@@ -321,7 +322,7 @@ const Items = ({ search, history }) => {
               {
                 registry(id: "${gtcr.address.toLowerCase()}") {
                   items(
-                    first: 1000, 
+                    first: 1000,
                     orderBy: latestRequestSubmissionTime,
                     orderDirection: ${orderDirection}
                   ) {
@@ -333,6 +334,8 @@ const Items = ({ search, history }) => {
                       disputeID
                       submissionTime
                       resolved
+                      requester
+                      challenger
                       rounds (first: 1, orderBy: creationTime , orderDirection: desc) {
                         appealPeriodStart
                         appealPeriodEnd
@@ -351,6 +354,12 @@ const Items = ({ search, history }) => {
 
         const { registry } = data ?? {}
         let { items } = registry ?? {}
+
+        Object.keys(queryOptions).map((key) => {
+          if (key !== "oldestFirst" && queryOptions[key] === false){
+            items = items.filter(filterFunctions[key](account.toLowerCase()));
+          }
+        });
 
         items = items.map(({ itemID, status: statusName, requests, data }) => {
           const { disputed, disputeID, submissionTime, rounds, resolved } =
@@ -643,6 +652,60 @@ const Items = ({ search, history }) => {
             }
           >
             <>
+              <StyledFilters id="items-filters">
+                <div>
+                  <StyledSwitch
+                    checkedChildren="NSFW Filter: On"
+                    unCheckedChildren="NSFW Filter: Off"
+                    checked={nsfwFilterOn}
+                    onChange={toggleNSFWFilter}
+                  />
+                  {Object.keys(queryOptions)
+                    .filter(
+                      key =>
+                        key !== FILTER_KEYS.PAGE &&
+                        key !== FILTER_KEYS.OLDEST_FIRST
+                    )
+                    .map(key => (
+                      <StyledTag
+                        key={key}
+                        checked={queryOptions[key]}
+                        onChange={checked => {
+                          const newQueryStr = updateFilter({
+                            prevQuery: search,
+                            filter: key,
+                            checked
+                          });
+                          history.push({
+                            search: newQueryStr
+                          });
+                          setFetchItems({ fetchStarted: true });
+                          setFetchItemCount({ fetchStarted: true });
+                        }}
+                      >
+                        {filterLabel[key]}
+                      </StyledTag>
+                    ))}
+                </div>
+                <StyledSelect
+                  defaultValue={oldestFirst ? 'oldestFirst' : 'newestFirst'}
+                  style={{ width: 120 }}
+                  onChange={val => {
+                    const newQueryStr = updateFilter({
+                      prevQuery: search,
+                      filter: 'oldestFirst',
+                      checked: val === 'oldestFirst'
+                    })
+                    history.push({
+                      search: newQueryStr
+                    })
+                    setFetchItems({ fetchStarted: true })
+                  }}
+                >
+                  <Select.Option value="newestFirst">Newest</Select.Option>
+                  <Select.Option value="oldestFirst">Oldest</Select.Option>
+                </StyledSelect>
+              </StyledFilters>
               <StyledGrid id="items-grid-view">
                 {items &&
                   items
