@@ -27,30 +27,24 @@ export const filterLabel = {
 }
 
 export const filterFunctions = {
-  [FILTER_KEYS.ABSENT]: () => (item) => item.status !== "Absent",
-  [FILTER_KEYS.REGISTERED]: () => (item) => item.status !== "Registered",
-  [FILTER_KEYS.SUBMITTED]: () => (item) => (
-    item.status !== "RegistrationRequested"
-  ),
-  [FILTER_KEYS.REMOVAL_REQUESTED]: () => (item) => (
-    item.status !== "ClearingRequested"
-  ),
-  [FILTER_KEYS.CHALLENGED_SUBMISSIONS]: () => (item) => (
-    item.status === "RegistrationRequested" && !item.disputed
-  ),
-  [FILTER_KEYS.CHALLENGED_REMOVALS]: () => (item) => (
-    item.status === "ClearingRequested" && !item.disputed
-  ),
-  [FILTER_KEYS.MY_SUBMISSIONS]: (account) => (item) => (
-    !item.requests.some((request) => (
-      request.requester?.toLowerCase() === account)
+  [FILTER_KEYS.ABSENT]: () => item => item.status !== 'Absent',
+  [FILTER_KEYS.REGISTERED]: () => item => item.status !== 'Registered',
+  [FILTER_KEYS.SUBMITTED]: () => item =>
+    item.status !== 'RegistrationRequested',
+  [FILTER_KEYS.REMOVAL_REQUESTED]: () => item =>
+    item.status !== 'ClearingRequested',
+  [FILTER_KEYS.CHALLENGED_SUBMISSIONS]: () => item =>
+    item.status === 'RegistrationRequested' && !item.disputed,
+  [FILTER_KEYS.CHALLENGED_REMOVALS]: () => item =>
+    item.status === 'ClearingRequested' && !item.disputed,
+  [FILTER_KEYS.MY_SUBMISSIONS]: account => item =>
+    !item.requests.some(
+      request => request.requester?.toLowerCase() === account
+    ),
+  [FILTER_KEYS.MY_CHALLENGES]: account => item =>
+    !item.requests.some(
+      request => request.challenger?.toLowerCase() === account
     )
-  ),
-  [FILTER_KEYS.MY_CHALLENGES]: (account) => (item) => (
-    !item.requests.some((request) => (
-      request.challenger?.toLowerCase() === account)
-    )
-  )
 }
 
 export const DEFAULT_FILTERS = {

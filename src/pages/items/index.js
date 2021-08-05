@@ -355,11 +355,10 @@ const Items = ({ search, history }) => {
         const { registry } = data ?? {}
         let { items } = registry ?? {}
 
-        Object.keys(queryOptions).map((key) => {
-          if (key !== "oldestFirst" && queryOptions[key] === false){
-            items = items.filter(filterFunctions[key](account.toLowerCase()));
-          }
-        });
+        Object.keys(queryOptions).map(key => {
+          if (key !== 'oldestFirst' && queryOptions[key] === false)
+            items = items.filter(filterFunctions[key](account.toLowerCase()))
+        })
 
         items = items.map(({ itemID, status: statusName, requests, data }) => {
           const { disputed, disputeID, submissionTime, rounds, resolved } =
@@ -675,12 +674,12 @@ const Items = ({ search, history }) => {
                             prevQuery: search,
                             filter: key,
                             checked
-                          });
+                          })
                           history.push({
                             search: newQueryStr
-                          });
-                          setFetchItems({ fetchStarted: true });
-                          setFetchItemCount({ fetchStarted: true });
+                          })
+                          setFetchItems({ fetchStarted: true })
+                          setFetchItemCount({ fetchStarted: true })
                         }}
                       >
                         {filterLabel[key]}
