@@ -145,11 +145,16 @@ const {
 } = Connectors
 
 const connectors = {}
-const defaultNetwork =
-  Number(localStorage.getItem(SAVED_NETWORK_KEY)) ||
-  Number(process.env.REACT_APP_DEFAULT_NETWORK) ||
-  NETWORK.MAINNET
-console.info(`def`, defaultNetwork)
+const urlSearchParams = new URLSearchParams(window.location.search)
+const params = Object.fromEntries(urlSearchParams.entries())
+const { chainId } = params || {}
+
+let defaultNetwork =
+  chainId ??
+  localStorage.getItem(SAVED_NETWORK_KEY) ??
+  process.env.REACT_APP_DEFAULT_NETWORK
+defaultNetwork = Number(defaultNetwork)
+
 if (process.env.REACT_APP_RPC_URLS) {
   const supportedNetworkURLs = JSON.parse(process.env.REACT_APP_RPC_URLS)
   connectors.Infura = new NetworkOnlyConnector({
