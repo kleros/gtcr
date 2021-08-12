@@ -111,6 +111,7 @@ const ItemDetails = ({ itemID, search }) => {
     }
   }, [gtcrView, itemID, tcrAddress])
 
+  // TODO: Fetch this directly from the subgraph.
   // Get requests data
   useEffect(() => {
     ;(async () => {

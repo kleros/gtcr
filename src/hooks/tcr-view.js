@@ -268,6 +268,7 @@ const useTcrView = tcrAddress => {
     )
       return
     ;(async () => {
+      // TODO: Fetch this directly from the subgraph.
       try {
         setItemSubmissionLogs(
           (

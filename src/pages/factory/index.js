@@ -275,6 +275,7 @@ export default () => {
           library.waitForTransaction(txHash)
         )
       )
+      // TODO: This is problem broken now.
       setPreviousDeployments(
         txDatas.map(
           txData => factoryInterface.parseLog(txData.logs[7]).values._address

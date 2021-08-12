@@ -268,6 +268,7 @@ const Timeline = ({ request, requestID, item }) => {
 
   const { metadata } = metaEvidence || {}
 
+  // TODO: RequestSubmitted might need some refactoring.
   // Build nodes from request events.
   const itemName = metadata ? capitalizeFirstLetter(metadata.itemName) : 'Item'
   const items = logs
