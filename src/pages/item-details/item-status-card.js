@@ -1,7 +1,7 @@
 import React, { useContext, useMemo } from 'react'
 import { Descriptions, Skeleton, Card } from 'antd'
 import PropTypes from 'prop-types'
-import { abi as _gtcr } from '@kleros/tcr/build/contracts/GeneralizedTCR.json'
+import _gtcr from '../../assets/abis/GeneralizedTCR.json'
 import ItemStatusBadge from '../../components/item-status-badge'
 import styled from 'styled-components/macro'
 import { ethers } from 'ethers'

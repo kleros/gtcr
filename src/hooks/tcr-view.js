@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { useWeb3Context } from 'web3-react'
 import { ethers } from 'ethers'
 import localforage from 'localforage'
-import { abi as _gtcr } from '@kleros/tcr/build/contracts/GeneralizedTCR.json'
+import _gtcr from '../assets/abis/GeneralizedTCR.json'
 import { abi as _GTCRView } from '@kleros/tcr/build/contracts/GeneralizedTCRView.json'
 import { abi as _arbitrator } from '@kleros/erc-792/build/contracts/IArbitrator.json'
 import useNetworkEnvVariable from './network-env'
@@ -273,7 +273,7 @@ const useTcrView = tcrAddress => {
         setItemSubmissionLogs(
           (
             await library.getLogs({
-              ...gtcr.filters.ItemSubmitted(),
+              ...gtcr.filters.NewItem(),
               fromBlock: 0
             })
           )

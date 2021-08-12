@@ -12,7 +12,7 @@ import {
 import { ethers } from 'ethers'
 import styled from 'styled-components/macro'
 import humanizeDuration from 'humanize-duration'
-import { abi as _gtcr } from '@kleros/tcr/build/contracts/GeneralizedTCR.json'
+import _gtcr from '../../../assets/abis/GeneralizedTCR.json'
 import { TCRViewContext } from '../../../bootstrap/tcr-view-context'
 import ETHAmount from '../../../components/eth-amount'
 import EvidenceForm from '../../../components/evidence-form'

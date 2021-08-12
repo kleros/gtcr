@@ -7,7 +7,7 @@ import Archon from '@kleros/archon'
 import { parseEther, getContractAddress, bigNumberify } from 'ethers/utils'
 import styled from 'styled-components/macro'
 import { useWeb3Context } from 'web3-react'
-import { abi as _GTCRFactory } from '@kleros/tcr/build/contracts/GTCRFactory.json'
+import _GTCRFactory from '../../assets/abis/GTCRFactory.json'
 import ipfsPublish from '../../utils/ipfs-publish'
 import { WalletContext } from '../../bootstrap/wallet-context'
 import { ZERO_ADDRESS, isVowel } from '../../utils/string'
@@ -269,7 +269,8 @@ const Deploy = ({ setTxState, tcrState, setTcrState }) => {
   const onDeploy = () => {
     pushWeb3Action(async (_, signer) => {
       // We link the related badges TCR to its parent together by the parents address.
-      // the nonce is txCount + 1 because the related badges TCR is deployed first.
+      // To use the transaction batcher and deploy both contracts at once, we must know
+      // the related badges TCR address in advance.
       const txCount = await library.getTransactionCount(factoryAddress)
       const parentTCRAddress = getContractAddress({
         from: factoryAddress,
@@ -295,21 +296,25 @@ const Deploy = ({ setTxState, tcrState, setTcrState }) => {
         relRegistrationMetaEvidencePath,
         relClearingMetaEvidencePath,
         tcrState.relGovernorAddress,
-        parseEther(
-          tcrState.relTcrDisabled
-            ? '10000000000000' // Use a very large deposit to make submissions impossible.
-            : tcrState.relSubmissionBaseDeposit.toString()
-        ),
-        parseEther(tcrState.relRemovalBaseDeposit.toString()),
-        parseEther(tcrState.relSubmissionChallengeBaseDeposit.toString()),
-        parseEther(tcrState.relRemovalChallengeBaseDeposit.toString()),
+        [
+          parseEther(
+            tcrState.relTcrDisabled
+              ? '10000000000000' // Use a very large deposit to make submissions impossible.
+              : tcrState.relSubmissionBaseDeposit.toString()
+          ),
+          parseEther(tcrState.relRemovalBaseDeposit.toString()),
+          parseEther(tcrState.relSubmissionChallengeBaseDeposit.toString()),
+          parseEther(tcrState.relRemovalChallengeBaseDeposit.toString())
+        ],
         Number(tcrState.relChallengePeriodDuration) * 60 * 60,
         [
           Math.ceil(Number(tcrState.relSharedStakeMultiplier)) * 100,
           Math.ceil(Number(tcrState.relWinnerStakeMultiplier)) * 100,
           Math.ceil(Number(tcrState.relLoserStakeMultiplier)) * 100
-        ] // Shared, winner and loser stake multipliers in basis points.
+        ], // Shared, winner and loser stake multipliers in basis points.
+        ZERO_ADDRESS
       ]
+
       const relData = factory.interface.functions.deploy.encode(relTCRArgs)
       const relTCRAddress = getContractAddress({
         from: factoryAddress,
@@ -323,16 +328,19 @@ const Deploy = ({ setTxState, tcrState, setTcrState }) => {
         registrationMetaEvidencePath,
         clearingMetaEvidencePath,
         tcrState.governorAddress,
-        parseEther(tcrState.submissionBaseDeposit.toString()),
-        parseEther(tcrState.removalBaseDeposit.toString()),
-        parseEther(tcrState.submissionChallengeBaseDeposit.toString()),
-        parseEther(tcrState.removalChallengeBaseDeposit.toString()),
+        [
+          parseEther(tcrState.submissionBaseDeposit.toString()),
+          parseEther(tcrState.removalBaseDeposit.toString()),
+          parseEther(tcrState.submissionChallengeBaseDeposit.toString()),
+          parseEther(tcrState.removalChallengeBaseDeposit.toString())
+        ],
         Number(tcrState.challengePeriodDuration) * 60 * 60,
         [
           Math.ceil(Number(tcrState.sharedStakeMultiplier)) * 100,
           Math.ceil(Number(tcrState.winnerStakeMultiplier)) * 100,
           Math.ceil(Number(tcrState.loserStakeMultiplier)) * 100
-        ] // Shared, winner and loser stake multipliers in basis points.
+        ], // Shared, winner and loser stake multipliers in basis points.
+        ZERO_ADDRESS
       ]
       const tcrData = factory.interface.functions.deploy.encode(TCRArgs)
 

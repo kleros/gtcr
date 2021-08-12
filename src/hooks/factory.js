@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { useWeb3Context } from 'web3-react'
-import { abi as _GTCRFactory } from '@kleros/tcr/build/contracts/GTCRFactory.json'
+import _GTCRFactory from '../assets/abis/GTCRFactory.json'
 import useNetworkEnvVariable from './network-env'
 import { ethers } from 'ethers'
 import { getAddress } from 'ethers/utils'
