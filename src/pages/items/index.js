@@ -420,7 +420,6 @@ const Items = ({ search, history }) => {
     )
       return
 
-    // TODO: Update for light curate.
     const { data: encodedItems } = fetchItems
 
     return encodedItems.map((item, i) => {
@@ -505,8 +504,6 @@ const Items = ({ search, history }) => {
 
   const { metadata } = metaEvidence || {}
   const { isConnectedTCR } = metadata || {}
-
-  console.info(items)
 
   return (
     <>
