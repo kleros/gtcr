@@ -240,57 +240,6 @@ const Items = ({ search, history }) => {
     })()
   }, [])
 
-  // Fetch number of pages for the current filter
-  useEffect(() => {
-    if (!gtcrView || fetchItemCount.isFetching || !fetchItemCount.fetchStarted)
-      return
-
-    if (gtcr.address !== tcrAddress) return
-
-    const filter = queryOptionsToFilterArray(queryOptions)
-    setFetchItemCount({ isFetching: true })
-    ;(async () => {
-      try {
-        // TODO: Update this.
-        // const itemCount = (await gtcr.itemCount()).toNumber()
-        // const itemsPerRequest = 100
-        // const requests = Math.ceil(itemCount / itemsPerRequest)
-        // let request = 1
-        // let target = [bigNumberify(0), itemCount > 0, bigNumberify(0)]
-        // let count = 0
-        // while (request <= requests && target[1]) {
-        //   target = await gtcrView.countWithFilter(
-        //     tcrAddress,
-        //     target[2].toNumber(),
-        //     itemsPerRequest,
-        //     filter,
-        //     active && account ? account : ZERO_ADDRESS
-        //   )
-        //   count += target[0].toNumber()
-        //   request++
-        // }
-        // setFetchItemCount({
-        //   fetchStarted: false,
-        //   isFetching: false,
-        //   data: count
-        // })
-      } catch (err) {
-        console.error('Error fetching number of pages', err)
-        setError('Error fetching number of pages')
-      }
-    })()
-  }, [
-    fetchItemCount.isFetching,
-    fetchItemCount.fetchStarted,
-    gtcr,
-    gtcrView,
-    tcrAddress,
-    search,
-    queryOptions,
-    active,
-    account
-  ])
-
   // Trigger fetch when gtcr instance is set.
   useEffect(() => {
     if (!gtcr) return
@@ -310,118 +259,129 @@ const Items = ({ search, history }) => {
       return
 
     setFetchItems({ isFetching: true })
-    let encodedItems
+    let returnItems
     ;(async () => {
       try {
         const { page, oldestFirst } = queryOptions
         const orderDirection = oldestFirst ? 'asc' : 'desc'
-        const { data } = await (
-          await fetch(GTCR_SUBGRAPH_URL, {
-            method: 'POST',
-            body: JSON.stringify({
-              query: `
-              {
-                registry(id: "${gtcr.address.toLowerCase()}") {
-                  items(
-                    first: 1000,
-                    orderBy: latestRequestSubmissionTime,
-                    orderDirection: ${orderDirection}
-                  ) {
-                    itemID
-                    status
-                    data
-                    requests (first: 1, orderBy: submissionTime, orderDirection: desc) {
-                      disputed
-                      disputeID
-                      submissionTime
-                      resolved
-                      requester
-                      challenger
-                      rounds (first: 1, orderBy: creationTime , orderDirection: desc) {
-                        appealPeriodStart
-                        appealPeriodEnd
-                        ruling
-                        hasPaidRequester
-                        hasPaidChallenger
-                        amountPaidRequester
-                        amountPaidChallenger
-                      }
-                    }
+        const query = {
+          query: `
+            {
+              items(
+                first: 1000,
+                orderBy: latestRequestSubmissionTime,
+                orderDirection: ${orderDirection},
+                where: { registry: "${gtcr.address.toLowerCase()}" }
+              ) {
+                itemID
+                status
+                data
+                requests (first: 1, orderBy: submissionTime, orderDirection: desc) {
+                  disputed
+                  disputeID
+                  submissionTime
+                  resolved
+                  requester
+                  challenger
+                  rounds (first: 1, orderBy: creationTime , orderDirection: desc) {
+                    appealPeriodStart
+                    appealPeriodEnd
+                    ruling
+                    hasPaidRequester
+                    hasPaidChallenger
+                    amountPaidRequester
+                    amountPaidChallenger
                   }
                 }
               }
-            `
-            })
+            }
+          `
+        }
+        const { data } = await (
+          await fetch(GTCR_SUBGRAPH_URL, {
+            method: 'POST',
+            body: JSON.stringify(query)
           })
         ).json()
 
-        const { registry } = data ?? {}
-        let { items } = registry ?? {}
+        let { items } = data ?? {}
+        items = (
+          await Promise.allSettled(
+            items.map(async item => {
+              let data
+              try {
+                data = await (
+                  await fetch(
+                    `${process.env.REACT_APP_IPFS_GATEWAY}${item.data}`
+                  )
+                ).json()
+              } catch (err) {
+                console.warn(`Could not fetch item ${item.itemID}`, err)
+              }
+              return {
+                ...item,
+                decodedData: Object.values(data.values)
+              }
+            })
+          )
+        ).map(promise => promise.value)
 
-        items = await Promise.all(
-          items.map(async item => ({
-            ...items,
-            data: await fetch(
-              `${process.env.REACT_APP_IPFS_GATEWAY}${item.data}`
-            )
-          }))
+        items = items.map(
+          ({ itemID, status: statusName, requests, data, decodedData }) => {
+            const { disputed, disputeID, submissionTime, rounds, resolved } =
+              requests[0] ?? {}
+
+            const {
+              appealPeriodStart,
+              appealPeriodEnd,
+              ruling,
+              hasPaidRequester,
+              hasPaidChallenger,
+              amountPaidRequester,
+              amountPaidChallenger
+            } = rounds[0] ?? {}
+
+            const currentRuling =
+              ruling === 'None' ? 0 : ruling === 'Accept' ? 1 : 2
+            const disputeStatus = !disputed
+              ? DISPUTE_STATUS.WAITING
+              : resolved
+              ? DISPUTE_STATUS.SOLVED
+              : Number(appealPeriodEnd) > Date.now() / 1000
+              ? DISPUTE_STATUS.APPEALABLE
+              : DISPUTE_STATUS.WAITING
+
+            const graphStatusNameToCode = {
+              Absent: 0,
+              Registered: 1,
+              RegistrationRequested: 2,
+              ClearingRequested: 3
+            }
+
+            return {
+              ID: itemID,
+              itemID,
+              status: graphStatusNameToCode[statusName],
+              disputeStatus,
+              disputed,
+              data,
+              decodedData,
+              disputeID,
+              submissionTime: bigNumberify(submissionTime),
+              hasPaid: [false, hasPaidRequester, hasPaidChallenger],
+              currentRuling,
+              appealStart: bigNumberify(appealPeriodStart),
+              appealEnd: bigNumberify(appealPeriodEnd),
+              amountPaid: [
+                bigNumberify(0),
+                bigNumberify(amountPaidRequester),
+                bigNumberify(amountPaidChallenger)
+              ]
+            }
+          }
         )
 
-        items = items.map(({ itemID, status: statusName, requests, data }) => {
-          const { disputed, disputeID, submissionTime, rounds, resolved } =
-            requests[0] ?? {}
-
-          const {
-            appealPeriodStart,
-            appealPeriodEnd,
-            ruling,
-            hasPaidRequester,
-            hasPaidChallenger,
-            amountPaidRequester,
-            amountPaidChallenger
-          } = rounds[0] ?? {}
-
-          const currentRuling =
-            ruling === 'None' ? 0 : ruling === 'Accept' ? 1 : 2
-          const disputeStatus = !disputed
-            ? DISPUTE_STATUS.WAITING
-            : resolved
-            ? DISPUTE_STATUS.SOLVED
-            : Number(appealPeriodEnd) > Date.now() / 1000
-            ? DISPUTE_STATUS.APPEALABLE
-            : DISPUTE_STATUS.WAITING
-
-          const graphStatusNameToCode = {
-            Absent: 0,
-            Registered: 1,
-            RegistrationRequested: 2,
-            ClearingRequested: 3
-          }
-
-          return {
-            ID: itemID,
-            itemID,
-            status: graphStatusNameToCode[statusName],
-            disputeStatus,
-            disputed,
-            data,
-            disputeID,
-            submissionTime: bigNumberify(submissionTime),
-            hasPaid: [false, hasPaidRequester, hasPaidChallenger],
-            currentRuling,
-            appealStart: bigNumberify(appealPeriodStart),
-            appealEnd: bigNumberify(appealPeriodEnd),
-            amountPaid: [
-              bigNumberify(0),
-              bigNumberify(amountPaidRequester),
-              bigNumberify(amountPaidChallenger)
-            ]
-          }
-        })
-
-        console.info(items)
-
-        encodedItems = items
+        returnItems = items
       } catch (err) {
         console.error('Error fetching items', err)
         setError('Error fetching items')
@@ -430,7 +390,7 @@ const Items = ({ search, history }) => {
         setFetchItems({
           isFetching: false,
           fetchStarted: false,
-          data: encodedItems,
+          data: returnItems,
           address: gtcr.address
         })
       }
@@ -464,13 +424,13 @@ const Items = ({ search, history }) => {
     const { data: encodedItems } = fetchItems
 
     return encodedItems.map((item, i) => {
-      let decodedItem
+      let decodedData
       const errors = []
       const { columns } = metadataByTime.byTimestamp[
         takeLower(Object.keys(metadataByTime.byTimestamp), item.timestamp)
       ].metadata
       try {
-        decodedItem = item.data
+        decodedData = item.decodedData
         // eslint-disable-next-line no-unused-vars
       } catch (err) {
         errors.push(`Error decoding item ${item.ID} of list at ${tcrAddress}`)
@@ -481,11 +441,12 @@ const Items = ({ search, history }) => {
       // Return the item columns along with its TCR status data.
       return {
         tcrData: {
-          ...item // Spread to convert from array to object.
+          ...item, // Spread to convert from array to object.
+          decodedData
         },
         columns: columns.map(
           (col, i) => ({
-            value: decodedItem && decodedItem[i],
+            value: decodedData && decodedData[i],
             ...col
           }),
           { key: i }
@@ -500,28 +461,6 @@ const Items = ({ search, history }) => {
     oldActiveItems.address,
     tcrAddress
   ])
-
-  // Watch for submissions and status change events to refetch items.
-  // TODO: Update for light curate.
-  // useEffect(() => {
-  //   if (!gtcr || eventListenerSet) return
-  //   setEventListenerSet(true)
-  //   gtcr.on(gtcr.filters.ItemStatusChange(), () =>
-  //     setFetchItems({ fetchStarted: true })
-  //   )
-  //   refAttr.current = gtcr
-  // }, [eventListenerSet, gtcr])
-
-  // Teardown listeners.
-  // useEffect(
-  //   () => () => {
-  //     if (!refAttr || !refAttr.current || !eventListenerSet) return
-  //     refAttr.current.removeAllListeners(
-  //       refAttr.current.filters.ItemStatusChange()
-  //     )
-  //   },
-  //   [eventListenerSet]
-  // )
 
   // Check if there an action in the URL.
   useEffect(() => {
@@ -566,6 +505,8 @@ const Items = ({ search, history }) => {
 
   const { metadata } = metaEvidence || {}
   const { isConnectedTCR } = metadata || {}
+
+  console.info(items)
 
   return (
     <>
