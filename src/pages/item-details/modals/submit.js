@@ -173,10 +173,9 @@ const SubmitModal = props => {
     (values, columns, resetForm) => {
       pushWeb3Action(async ({ account, networkId }, signer) => {
         const gtcr = new ethers.Contract(tcrAddress, _gtcr, signer)
-        const ipfsEvidenceObject = await ipfsPublish('item.json', {
-          columns,
-          values
-        })
+        const enc = new TextEncoder()
+        const fileData = enc.encode(JSON.stringify({ columns, values }))
+        const ipfsEvidenceObject = await ipfsPublish('item.json', fileData)
         const ipfsEvidencePath = `/ipfs/${ipfsEvidenceObject[1].hash +
           ipfsEvidenceObject[0].path}`
 

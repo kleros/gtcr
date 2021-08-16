@@ -251,28 +251,29 @@ const Items = ({ search, history }) => {
     setFetchItemCount({ isFetching: true })
     ;(async () => {
       try {
-        const itemCount = (await gtcr.itemCount()).toNumber()
-        const itemsPerRequest = 100
-        const requests = Math.ceil(itemCount / itemsPerRequest)
-        let request = 1
-        let target = [bigNumberify(0), itemCount > 0, bigNumberify(0)]
-        let count = 0
-        while (request <= requests && target[1]) {
-          target = await gtcrView.countWithFilter(
-            tcrAddress,
-            target[2].toNumber(),
-            itemsPerRequest,
-            filter,
-            active && account ? account : ZERO_ADDRESS
-          )
-          count += target[0].toNumber()
-          request++
-        }
-        setFetchItemCount({
-          fetchStarted: false,
-          isFetching: false,
-          data: count
-        })
+        // TODO: Update this.
+        // const itemCount = (await gtcr.itemCount()).toNumber()
+        // const itemsPerRequest = 100
+        // const requests = Math.ceil(itemCount / itemsPerRequest)
+        // let request = 1
+        // let target = [bigNumberify(0), itemCount > 0, bigNumberify(0)]
+        // let count = 0
+        // while (request <= requests && target[1]) {
+        //   target = await gtcrView.countWithFilter(
+        //     tcrAddress,
+        //     target[2].toNumber(),
+        //     itemsPerRequest,
+        //     filter,
+        //     active && account ? account : ZERO_ADDRESS
+        //   )
+        //   count += target[0].toNumber()
+        //   request++
+        // }
+        // setFetchItemCount({
+        //   fetchStarted: false,
+        //   isFetching: false,
+        //   data: count
+        // })
       } catch (err) {
         console.error('Error fetching number of pages', err)
         setError('Error fetching number of pages')
@@ -357,13 +358,14 @@ const Items = ({ search, history }) => {
         const { registry } = data ?? {}
         let { items } = registry ?? {}
 
-        Object.keys(queryOptions).map(key => {
-          if (key !== 'oldestFirst' && queryOptions[key] === false)
-            items = account
-              ? items.filter(filterFunctions[key](account.toLowerCase()))
-              : items
-          return true
-        })
+        items = await Promise.all(
+          items.map(async item => ({
+            ...items,
+            data: await fetch(
+              `${process.env.REACT_APP_IPFS_GATEWAY}${item.data}`
+            )
+          }))
+        )
 
         items = items.map(({ itemID, status: statusName, requests, data }) => {
           const { disputed, disputeID, submissionTime, rounds, resolved } =
@@ -417,8 +419,9 @@ const Items = ({ search, history }) => {
           }
         })
 
-        const skip = ITEMS_PER_PAGE * (Number(page ?? 1) - 1)
-        encodedItems = items.slice(skip, skip + ITEMS_PER_PAGE)
+        console.info(items)
+
+        encodedItems = items
       } catch (err) {
         console.error('Error fetching items', err)
         setError('Error fetching items')
@@ -444,81 +447,8 @@ const Items = ({ search, history }) => {
     GTCR_SUBGRAPH_URL
   ])
 
-  // Since items are sorted by time of submission (either newest or oldest first)
-  // we have to also watch for new requests related to items already on the list.
-  // Otherwise a request to (for example) remove a very old item could pass its
-  // challenge period without being scrutinized by other users.
-  // To do this, we watch for `RequestSubmitted` events. If there are such requests and:
-  // - We are sorting by newest first;
-  // - We are on the first page;
-  // unshift those items to the list.
-  useEffect(() => {
-    const { oldestFirst } = searchStrToFilterObj(search)
-    if (
-      !gtcr ||
-      !gtcrView ||
-      !latestBlock ||
-      oldestFirst ||
-      !fetchItems.data ||
-      fetchItems.address !== tcrAddress ||
-      !challengePeriodDuration ||
-      !library ||
-      (oldActiveItems && oldActiveItems.address === tcrAddress)
-    )
-      return
-    ;(async () => {
-      // Fetch request events within one challenge period duration.
-      const BLOCK_TIME = 15 // Assuming a blocktime of 15 seconds.
-      const logsFilter = {
-        ...gtcr.filters.RequestSubmitted(),
-        fromBlock:
-          latestBlock -
-          (challengePeriodDuration.div(bigNumberify(BLOCK_TIME)).toNumber() +
-            100) // Add 100 block margin.
-      }
-
-      const requestSubmissionLogs = (await library.getLogs(logsFilter))
-        .map(log => ({
-          ...gtcr.interface.parseLog(log),
-          blockNumber: log.blockNumber
-        }))
-        .sort((a, b) => b.blockNumber - a.blockNumber)
-        .filter(
-          log =>
-            !fetchItems.data.map(item => item.ID).includes(log.values._itemID)
-        ) // Remove items already fetched.
-
-      // Fetch item details.
-      setOldActiveItems({
-        data: (
-          await Promise.all(
-            requestSubmissionLogs.map(log =>
-              gtcrView.getItem(tcrAddress, log.values._itemID)
-            )
-          )
-        )
-          .filter(item => !item.resolved)
-          .filter(item => applyOldActiveItemsFilter(queryOptions, item)),
-        address: gtcr.address
-      })
-    })()
-  }, [
-    challengePeriodDuration,
-    fetchItems.address,
-    fetchItems.data,
-    gtcr,
-    gtcrView,
-    latestBlock,
-    library,
-    oldActiveItems,
-    queryOptions,
-    search,
-    tcrAddress
-  ])
-
   const { oldestFirst, page } = queryOptions
 
-  // Decode items once meta evidence and items were fetched.
   const items = useMemo(() => {
     if (
       !fetchItems.data ||
@@ -530,27 +460,22 @@ const Items = ({ search, history }) => {
     )
       return
 
+    // TODO: Update for light curate.
     const { data: encodedItems } = fetchItems
 
-    // If on page 1, display also old items with new pending
-    // requests, if any.
-    const displayedItems =
-      page && Number(page) > 1
-        ? encodedItems
-        : [...oldActiveItems.data, ...encodedItems]
-
-    return displayedItems.map((item, i) => {
+    return encodedItems.map((item, i) => {
       let decodedItem
       const errors = []
       const { columns } = metadataByTime.byTimestamp[
         takeLower(Object.keys(metadataByTime.byTimestamp), item.timestamp)
       ].metadata
       try {
-        decodedItem = gtcrDecode({ values: item.data, columns })
+        decodedItem = item.data
         // eslint-disable-next-line no-unused-vars
       } catch (err) {
         errors.push(`Error decoding item ${item.ID} of list at ${tcrAddress}`)
         console.warn(`Error decoding item ${item.ID} of list at ${tcrAddress}`)
+        console.warn(err)
       }
 
       // Return the item columns along with its TCR status data.
@@ -573,31 +498,30 @@ const Items = ({ search, history }) => {
     metaEvidence,
     metadataByTime,
     oldActiveItems.address,
-    oldActiveItems.data,
-    page,
     tcrAddress
   ])
 
   // Watch for submissions and status change events to refetch items.
-  useEffect(() => {
-    if (!gtcr || eventListenerSet) return
-    setEventListenerSet(true)
-    gtcr.on(gtcr.filters.ItemStatusChange(), () =>
-      setFetchItems({ fetchStarted: true })
-    )
-    refAttr.current = gtcr
-  }, [eventListenerSet, gtcr])
+  // TODO: Update for light curate.
+  // useEffect(() => {
+  //   if (!gtcr || eventListenerSet) return
+  //   setEventListenerSet(true)
+  //   gtcr.on(gtcr.filters.ItemStatusChange(), () =>
+  //     setFetchItems({ fetchStarted: true })
+  //   )
+  //   refAttr.current = gtcr
+  // }, [eventListenerSet, gtcr])
 
   // Teardown listeners.
-  useEffect(
-    () => () => {
-      if (!refAttr || !refAttr.current || !eventListenerSet) return
-      refAttr.current.removeAllListeners(
-        refAttr.current.filters.ItemStatusChange()
-      )
-    },
-    [eventListenerSet]
-  )
+  // useEffect(
+  //   () => () => {
+  //     if (!refAttr || !refAttr.current || !eventListenerSet) return
+  //     refAttr.current.removeAllListeners(
+  //       refAttr.current.filters.ItemStatusChange()
+  //     )
+  //   },
+  //   [eventListenerSet]
+  // )
 
   // Check if there an action in the URL.
   useEffect(() => {

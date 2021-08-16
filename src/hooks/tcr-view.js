@@ -6,10 +6,8 @@ import _gtcr from '../assets/abis/GeneralizedTCR.json'
 import { abi as _GTCRView } from '@kleros/tcr/build/contracts/GeneralizedTCRView.json'
 import { abi as _arbitrator } from '@kleros/erc-792/build/contracts/IArbitrator.json'
 import useNetworkEnvVariable from './network-env'
-import { gtcrDecode } from '@kleros/gtcr-encoder'
 import useNotificationWeb3 from './notifications-web3'
 import { getAddress } from 'ethers/utils'
-import takeLower from '../utils/lower-limit'
 
 // TODO: Ensure we don't set state for unmounted components using
 // flags and AbortController.
@@ -25,7 +23,6 @@ const useTcrView = tcrAddress => {
   const [submissionChallengeDeposit, setSubmissionChallengeDeposit] = useState()
   const [removalDeposit, setRemovalDeposit] = useState()
   const [removalChallengeDeposit, setRemovalChallengeDeposit] = useState()
-  const [itemSubmissionLogs, setItemSubmissionLogs] = useState()
   const [connectedTCRAddr, setConnectedTCRAddr] = useState()
   const [depositFor, setDepositFor] = useState()
   const [metadataByTime, setMetadataByTime] = useState()
@@ -257,87 +254,6 @@ const useTcrView = tcrAddress => {
     })()
   }, [gtcr, library, connectedTCRAddr, tcrAddress])
 
-  // Fetch and decode item submission logs.
-  useEffect(() => {
-    if (
-      !gtcr ||
-      !library ||
-      gtcr.address !== tcrAddress ||
-      !metadataByTime ||
-      metadataByTime.address !== tcrAddress
-    )
-      return
-    ;(async () => {
-      // TODO: Fetch this directly from the subgraph.
-      try {
-        setItemSubmissionLogs(
-          (
-            await library.getLogs({
-              ...gtcr.filters.NewItem(),
-              fromBlock: 0
-            })
-          )
-            .map(log => ({
-              ...log,
-              data: gtcr.interface.parseLog(log).values._data,
-              itemID: gtcr.interface.parseLog(log).values._itemID,
-              submitter: gtcr.interface.parseLog(log).values._submitter
-            }))
-            .map(submissionLog => {
-              let decodedData
-              const errors = []
-              const file =
-                metadataByTime.byBlockNumber[
-                  takeLower(
-                    Object.keys(metadataByTime.byBlockNumber),
-                    submissionLog.blockNumber
-                  )
-                ]
-              const { columns } = file.metadata
-              try {
-                decodedData = gtcrDecode({
-                  columns,
-                  values: submissionLog.data
-                })
-              } catch (err) {
-                console.warn(
-                  `Error decoding ${submissionLog._itemID} of TCR at ${tcrAddress}`,
-                  err
-                )
-                errors.push(
-                  `Error decoding ${submissionLog._itemID} of TCR at ${tcrAddress}`
-                )
-              }
-              return {
-                ...submissionLog,
-                decodedData,
-                columns,
-                tcrAddress,
-                address: tcrAddress,
-                errors
-              }
-            })
-            .map(submissionLog => ({
-              ...submissionLog,
-              columns: submissionLog.columns.map((col, i) => ({
-                ...col,
-                value: submissionLog.decodedData && submissionLog.decodedData[i]
-              }))
-            }))
-            .map(submissionLog => ({
-              ...submissionLog,
-              keys: submissionLog.columns
-                .filter(col => col.isIdentifier)
-                .map(col => col.value)
-            }))
-        )
-      } catch (err) {
-        console.error('Error fetching submission logs', err)
-        setError('Error fetching submission logs')
-      }
-    })()
-  }, [gtcr, library, metaEvidence, metadataByTime, tcrAddress])
-
   return {
     gtcr,
     metaEvidence,
@@ -349,7 +265,6 @@ const useTcrView = tcrAddress => {
     removalChallengeDeposit,
     tcrAddress,
     gtcrView,
-    itemSubmissionLogs,
     latestBlock,
     connectedTCRAddr,
     metadataByTime,
