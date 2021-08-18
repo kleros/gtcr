@@ -1,5 +1,7 @@
 import deepEqual from 'fast-deep-equal/es6'
 
+const mirroredExtensions = ['.json']
+
 /**
  * Send file to IPFS network.
  * @param {string} fileName - The name that will be used to store the file. This is useful to preserve extension type.
@@ -7,6 +9,9 @@ import deepEqual from 'fast-deep-equal/es6'
  * @returns {object} ipfs response. Should include the hash and path of the stored item.
  */
 export default async function ipfsPublish(fileName, data) {
+  if (!mirroredExtensions.some(ext => fileName.endsWith(ext)))
+    return publishToKlerosNode(fileName, data)
+
   const [klerosResult, theGraphResult] = await Promise.all([
     publishToKlerosNode(fileName, data),
     publishToTheGraphNode(fileName, data)
