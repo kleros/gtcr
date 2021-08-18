@@ -103,7 +103,7 @@ const getTcrMetaEvidence = async (tcrState, parentTCRAddress) => {
     relTcrDisabled: true
   }
 
-  const metaEvidence = {
+  const commonMetaEvidenceProps = {
     category: 'Curated Lists',
     question: `Does the ${(itemName && itemName.toLowerCase()) ||
       'item'} comply with the required criteria?`,
@@ -116,13 +116,13 @@ const getTcrMetaEvidence = async (tcrState, parentTCRAddress) => {
           `${process.env.REACT_APP_IPFS_GATEWAY}${process.env.REACT_APP_DEFAULT_EVIDENCE_DISPLAY_URI}`
         )
       ).text(),
-      0x1B // eslint-disable-line
+      0x1b // eslint-disable-line
     ),
     metadata
   }
 
-  const relMetaEvidence = {
-    ...metaEvidence,
+  const commonRelMetaEvidenceProps = {
+    ...commonMetaEvidenceProps,
     question: `Does the ${relItemName} comply with the required criteria?`,
     fileURI: relTcrDisabled
       ? process.env.REACT_APP_REJECT_ALL_POLICY_URI
@@ -131,112 +131,130 @@ const getTcrMetaEvidence = async (tcrState, parentTCRAddress) => {
   }
 
   const registrationMetaEvidence = {
-    title: `Add ${
-      itemName
-        ? isVowel(itemName[0])
-          ? `an ${itemName.toLowerCase()}`
-          : `a ${itemName.toLowerCase()}`
-        : 'an item'
-    } to ${tcrTitle}`,
-    description: `Someone requested to add ${
-      itemName
-        ? isVowel(itemName[0])
-          ? `an ${itemName.toLowerCase()}`
-          : `a ${itemName.toLowerCase()}`
-        : 'an item'
-    } to ${tcrTitle}`,
-    rulingOptions: {
-      titles: ['Yes, Add It', "No, Don't Add It"],
-      descriptions: [
-        `Select this if you think the ${(itemName && itemName.toLowerCase()) ||
-          'item'} complies with the required criteria and should be added.`,
-        `Select this if you think the ${(itemName && itemName.toLowerCase()) ||
-          'item'} does not comply with the required criteria and should not be added.`
-      ]
-    },
-    ...metaEvidence
+    name: 'reg-meta-evidence.json',
+    data: {
+      title: `Add ${
+        itemName
+          ? isVowel(itemName[0])
+            ? `an ${itemName.toLowerCase()}`
+            : `a ${itemName.toLowerCase()}`
+          : 'an item'
+      } to ${tcrTitle}`,
+      description: `Someone requested to add ${
+        itemName
+          ? isVowel(itemName[0])
+            ? `an ${itemName.toLowerCase()}`
+            : `a ${itemName.toLowerCase()}`
+          : 'an item'
+      } to ${tcrTitle}`,
+      rulingOptions: {
+        titles: ['Yes, Add It', "No, Don't Add It"],
+        descriptions: [
+          `Select this if you think the ${(itemName &&
+            itemName.toLowerCase()) ||
+            'item'} complies with the required criteria and should be added.`,
+          `Select this if you think the ${(itemName &&
+            itemName.toLowerCase()) ||
+            'item'} does not comply with the required criteria and should not be added.`
+        ]
+      },
+      ...commonMetaEvidenceProps
+    }
   }
   const clearingMetaEvidence = {
-    title: `Remove ${
-      itemName
-        ? isVowel(itemName[0])
-          ? `an ${itemName.toLowerCase()}`
-          : `a ${itemName.toLowerCase()}`
-        : 'an item'
-    } from ${tcrTitle}`,
-    description: `Someone requested to remove ${
-      itemName
-        ? isVowel(itemName[0])
-          ? `an ${itemName.toLowerCase()}`
-          : `a ${itemName.toLowerCase()}`
-        : 'an item'
-    } from ${tcrTitle}`,
-    rulingOptions: {
-      titles: ['Yes, Remove It', "No, Don't Remove It"],
-      descriptions: [
-        `Select this if you think the ${(itemName && itemName.toLowerCase()) ||
-          'item'} does not comply with the required criteria and should be removed.`,
-        `Select this if you think the ${(itemName && itemName.toLowerCase()) ||
-          'item'} complies with the required criteria and should not be removed.`
-      ]
-    },
-    ...metaEvidence
+    name: 'clr-meta-evidence.json',
+    data: {
+      title: `Remove ${
+        itemName
+          ? isVowel(itemName[0])
+            ? `an ${itemName.toLowerCase()}`
+            : `a ${itemName.toLowerCase()}`
+          : 'an item'
+      } from ${tcrTitle}`,
+      description: `Someone requested to remove ${
+        itemName
+          ? isVowel(itemName[0])
+            ? `an ${itemName.toLowerCase()}`
+            : `a ${itemName.toLowerCase()}`
+          : 'an item'
+      } from ${tcrTitle}`,
+      rulingOptions: {
+        titles: ['Yes, Remove It', "No, Don't Remove It"],
+        descriptions: [
+          `Select this if you think the ${(itemName &&
+            itemName.toLowerCase()) ||
+            'item'} does not comply with the required criteria and should be removed.`,
+          `Select this if you think the ${(itemName &&
+            itemName.toLowerCase()) ||
+            'item'} complies with the required criteria and should not be removed.`
+        ]
+      },
+      ...commonMetaEvidenceProps
+    }
   }
 
   const relRegistrationMetaEvidence = {
-    title: `Add a ${relItemName} to ${relTcrTitle}`,
-    description: `Someone requested to add a ${relItemName} to ${relTcrTitle}.`,
-    rulingOptions: {
-      titles: ['Yes, Add It', "No, Don't Add It"],
-      descriptions: [
-        `Select this if you think the ${relItemName} complies with the required criteria and should be added.`,
-        `Select this if you think the ${relItemName} does not comply with the required criteria and should not be added.`
-      ]
-    },
-    ...relMetaEvidence
+    name: 'rel-reg-meta-evidence.json',
+    data: {
+      title: `Add a ${relItemName} to ${relTcrTitle}`,
+      description: `Someone requested to add a ${relItemName} to ${relTcrTitle}.`,
+      rulingOptions: {
+        titles: ['Yes, Add It', "No, Don't Add It"],
+        descriptions: [
+          `Select this if you think the ${relItemName} complies with the required criteria and should be added.`,
+          `Select this if you think the ${relItemName} does not comply with the required criteria and should not be added.`
+        ]
+      },
+      ...commonRelMetaEvidenceProps
+    }
   }
   const relClearingMetaEvidence = {
-    title: `Remove a ${relItemName} from ${relTcrTitle}`,
-    description: `Someone requested to remove a ${relItemName} from ${relTcrTitle}.`,
-    rulingOptions: {
-      titles: ['Yes, Remove It', "No, Don't Remove It"],
-      descriptions: [
-        `Select this if you think the ${relItemName} does not comply with the required criteria and should be removed.`,
-        `Select this if you think the ${relItemName} complies with the required criteria and should not be removed.`
-      ]
-    },
-    ...relMetaEvidence
+    name: 'rel-clr-meta-evidence.json',
+    data: {
+      title: `Remove a ${relItemName} from ${relTcrTitle}`,
+      description: `Someone requested to remove a ${relItemName} from ${relTcrTitle}.`,
+      rulingOptions: {
+        titles: ['Yes, Remove It', "No, Don't Remove It"],
+        descriptions: [
+          `Select this if you think the ${relItemName} does not comply with the required criteria and should be removed.`,
+          `Select this if you think the ${relItemName} complies with the required criteria and should not be removed.`
+        ]
+      },
+      ...commonRelMetaEvidenceProps
+    }
   }
 
   const enc = new TextEncoder()
-  const metaEvidenceFiles = [
+
+  const files = [
     registrationMetaEvidence,
-    clearingMetaEvidence
-  ].map(metaEvidence => enc.encode(JSON.stringify(metaEvidence)))
-  const relMetaEvidenceFiles = [
+    clearingMetaEvidence,
     relRegistrationMetaEvidence,
     relClearingMetaEvidence
-  ].map(relMetaEvidence => enc.encode(JSON.stringify(relMetaEvidence)))
-
-  /* eslint-disable prettier/prettier */
-  const files = [...metaEvidenceFiles, ...relMetaEvidenceFiles].map(file => ({
-    data: file,
-    multihash: Archon.utils.multihashFile(file, 0x1B)
+  ].map(({ name, data }) => ({
+    name,
+    data: enc.encode(JSON.stringify(data))
   }))
-  /* eslint-enable prettier/prettier */
 
   const ipfsMetaEvidenceObjects = (
-    await Promise.all(files.map(file => ipfsPublish(file.multihash, file.data)))
+    await Promise.all(files.map(({ name, data }) => ipfsPublish(name, data)))
   ).map(
     ipfsMetaEvidenceObject =>
       `/ipfs/${ipfsMetaEvidenceObject[1].hash + ipfsMetaEvidenceObject[0].path}`
   )
 
+  const [
+    registrationMetaEvidencePath,
+    clearingMetaEvidencePath,
+    relRegistrationMetaEvidencePath,
+    relClearingMetaEvidencePath
+  ] = ipfsMetaEvidenceObjects
+
   return {
-    registrationMetaEvidencePath: ipfsMetaEvidenceObjects[0],
-    clearingMetaEvidencePath: ipfsMetaEvidenceObjects[1],
-    relRegistrationMetaEvidencePath: ipfsMetaEvidenceObjects[2],
-    relClearingMetaEvidencePath: ipfsMetaEvidenceObjects[3]
+    registrationMetaEvidencePath,
+    clearingMetaEvidencePath,
+    relRegistrationMetaEvidencePath,
+    relClearingMetaEvidencePath
   }
 }
 
