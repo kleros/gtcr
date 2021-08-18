@@ -56,6 +56,8 @@ const StyledLayoutContent = styled.div`
 
 const StyledFilters = styled.div`
   display: flex;
+  margin-top: 24px;
+
   justify-content: space-between;
   @media (max-width: 479px) {
     flex-direction: column;
@@ -514,9 +516,9 @@ const Items = ({ search, history }) => {
         connectedTCRAddr={connectedTCRAddr}
         tcrAddress={tcrAddress}
       />
-      <StyledMargin>
+      {/* <StyledMargin>
         <SearchBar />
-      </StyledMargin>
+      </StyledMargin> */}
       <StyledLayoutContent>
         <StyledContent>
           <Spin
@@ -533,7 +535,7 @@ const Items = ({ search, history }) => {
                     checked={nsfwFilterOn}
                     onChange={toggleNSFWFilter}
                   />
-                  {Object.keys(queryOptions)
+                  {/* {Object.keys(queryOptions)
                     .filter(
                       key =>
                         key !== FILTER_KEYS.PAGE &&
@@ -558,7 +560,7 @@ const Items = ({ search, history }) => {
                       >
                         {filterLabel[key]}
                       </StyledTag>
-                    ))}
+                    ))} */}
                 </div>
                 <StyledSelect
                   defaultValue={oldestFirst ? 'oldestFirst' : 'newestFirst'}
@@ -601,7 +603,7 @@ const Items = ({ search, history }) => {
                       />
                     ))}
               </StyledGrid>
-              <StyledPagination
+              {/* <StyledPagination
                 total={fetchItemCount.data || 0}
                 current={Number(queryOptions.page)}
                 itemRender={pagingItem}
@@ -615,7 +617,7 @@ const Items = ({ search, history }) => {
                   setFetchItems({ fetchStarted: true })
                   setFetchItemCount({ fetchStarted: true })
                 }}
-              />
+              /> */}
             </>
           </Spin>
         </StyledContent>
