@@ -14,6 +14,7 @@
     "format": "yarn run lint:eslint:fix && yarn run lint:prettier:fix"
   },
   "dependencies": {
+    "@apollo/client": "^3.4.8",
     "@fortawesome/fontawesome-svg-core": "^1.2.25",
     "@fortawesome/free-brands-svg-icons": "^5.9.0",
     "@fortawesome/free-solid-svg-icons": "^5.11.2",
@@ -33,6 +34,7 @@
     "ethers": "^4.0.33",
     "formik": "^1.5.7",
     "fortmatic": "^0.8.2",
+    "graphql": "^15.5.1",
     "humanize-duration": "^3.20.1",
     "js-ordinal": "^1.0.1",
     "localforage": "^1.7.3",

@@ -29,6 +29,8 @@ import Badges from './badges'
 import AppTour from '../../components/tour'
 import itemTourSteps from './tour-steps'
 import takeLower from '../../utils/lower-limit'
+import { ITEM_DETAILS_QUERY } from '../../graphql/item-details'
+import { useApolloClient } from '@apollo/client'
 
 const ITEM_TOUR_DISMISSED = 'ITEM_TOUR_DISMISSED'
 
@@ -83,6 +85,7 @@ const ItemDetails = ({ itemID, search }) => {
   const [requests, setRequests] = useState()
   const arbitrator = useMemo(() => {
     if (!item || !library) return
+    console.log('loggin ethers things', { item, _arbitrator, library })
     return new ethers.Contract(item.arbitrator, _arbitrator, library)
   }, [item, library])
   const refAttr = useRef()
@@ -96,20 +99,34 @@ const ItemDetails = ({ itemID, search }) => {
     connectedTCRAddr,
     metadataByTime
   } = useContext(TCRViewContext)
+  const apolloClient = useApolloClient()
 
   // Warning: This function should only be called when all its dependencies
   // are set.
+
+  const detailsViewQuery = useCallback(
+    async (tcrAddress, itemID) => {
+      const lowercaseTrcAddress = tcrAddress.toLowerCase() // otherwise it won't find it
+      const result = await apolloClient.query({
+        query: ITEM_DETAILS_QUERY,
+        variables: { tcrAddress: lowercaseTrcAddress, itemID }
+      })
+      const detailsViewArray = result.data.items
+      return detailsViewArray
+    },
+    [apolloClient]
+  )
+
   const fetchItem = useCallback(async () => {
     try {
-      const result = {
-        ...(await gtcrView.getItem(tcrAddress, itemID))
-      } // Spread to convert from array to object.
-      setItem(result)
+      const detailsViewArray = await detailsViewQuery(tcrAddress, itemID)
+      if (detailsViewArray.length === 0) console.log('TODO render 404 page')
+      setItem(detailsViewArray)
     } catch (err) {
       console.error(err)
       setError('Error fetching item')
     }
-  }, [gtcrView, itemID, tcrAddress])
+  }, [detailsViewQuery, itemID, tcrAddress])
 
   // TODO: Fetch this directly from the subgraph.
   // Get requests data
