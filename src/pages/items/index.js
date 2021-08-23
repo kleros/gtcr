@@ -260,6 +260,7 @@ const Items = ({ search, history }) => {
                   resolved
                   requester
                   challenger
+                  resolutionTime
                   rounds (first: 1, orderBy: creationTime , orderDirection: desc) {
                     appealPeriodStart
                     appealPeriodEnd

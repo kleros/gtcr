@@ -16,7 +16,7 @@
     "inputs": [
       {
         "indexed": true,
-        "internalType": "contract GeneralizedTCR",
+        "internalType": "contract LightGeneralizedTCR",
         "name": "_address",
         "type": "address"
       }
@@ -51,7 +51,7 @@
     "name": "instances",
     "outputs": [
       {
-        "internalType": "contract GeneralizedTCR",
+        "internalType": "contract LightGeneralizedTCR",
         "name": "",
         "type": "address"
       }

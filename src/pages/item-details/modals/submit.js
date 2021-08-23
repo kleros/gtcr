@@ -12,7 +12,7 @@ import {
 } from 'antd'
 import styled from 'styled-components/macro'
 import PropTypes from 'prop-types'
-import _gtcr from '../../../assets/abis/GeneralizedTCR.json'
+import _gtcr from '../../../assets/abis/LightGeneralizedTCR.json'
 import { ethers } from 'ethers'
 import { withFormik } from 'formik'
 import humanizeDuration from 'humanize-duration'
