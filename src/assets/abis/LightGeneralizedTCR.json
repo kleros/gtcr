@@ -41,7 +41,7 @@
       },
       {
         "indexed": false,
-        "internalType": "enum GeneralizedTCR.Party",
+        "internalType": "enum LightGeneralizedTCR.Party",
         "name": "_side",
         "type": "uint8"
       }
@@ -365,7 +365,7 @@
     "name": "items",
     "outputs": [
       {
-        "internalType": "enum GeneralizedTCR.Status",
+        "internalType": "enum LightGeneralizedTCR.Status",
         "name": "status",
         "type": "uint8"
       }
@@ -663,7 +663,7 @@
         "type": "bytes32"
       },
       {
-        "internalType": "enum GeneralizedTCR.Party",
+        "internalType": "enum LightGeneralizedTCR.Party",
         "name": "_side",
         "type": "uint8"
       }
@@ -1012,7 +1012,7 @@
     "name": "getItemInfo",
     "outputs": [
       {
-        "internalType": "enum GeneralizedTCR.Status",
+        "internalType": "enum LightGeneralizedTCR.Status",
         "name": "status",
         "type": "uint8"
       },
@@ -1073,7 +1073,7 @@
         "type": "uint256"
       },
       {
-        "internalType": "enum GeneralizedTCR.Party",
+        "internalType": "enum LightGeneralizedTCR.Party",
         "name": "ruling",
         "type": "uint8"
       },

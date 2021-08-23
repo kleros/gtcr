@@ -25,7 +25,7 @@ import {
 import styled from 'styled-components/macro'
 import PropTypes from 'prop-types'
 import { useDebounce } from 'use-debounce'
-import _gtcr from '../../../assets/abis/GeneralizedTCR.json'
+import _gtcr from '../../../assets/abis/LightGeneralizedTCR.json'
 import ETHAmount from '../../../components/eth-amount.js'
 import { isETHAddress } from '../../../utils/string'
 import { useWeb3Context } from 'web3-react'
