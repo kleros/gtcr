@@ -86,7 +86,8 @@ const ItemDetails = ({ itemID, search }) => {
   const arbitrator = useMemo(() => {
     if (!item || !library) return
     console.log('loggin ethers things', { item, _arbitrator, library })
-    return new ethers.Contract(item.arbitrator, _arbitrator, library)
+    const lastArbitrator = item.requests[item.requests.length - 1].arbitrator
+    return new ethers.Contract(lastArbitrator, _arbitrator, library)
   }, [item, library])
   const refAttr = useRef()
   const [eventListenerSet, setEventListenerSet] = useState()
@@ -101,9 +102,6 @@ const ItemDetails = ({ itemID, search }) => {
   } = useContext(TCRViewContext)
   const apolloClient = useApolloClient()
 
-  // Warning: This function should only be called when all its dependencies
-  // are set.
-
   const detailsViewQuery = useCallback(
     async (tcrAddress, itemID) => {
       const lowercaseTrcAddress = tcrAddress.toLowerCase() // otherwise it won't find it
@@ -117,11 +115,13 @@ const ItemDetails = ({ itemID, search }) => {
     [apolloClient]
   )
 
+  // Warning: This function should only be called when all its dependencies
+  // are set.
   const fetchItem = useCallback(async () => {
     try {
       const detailsViewArray = await detailsViewQuery(tcrAddress, itemID)
       if (detailsViewArray.length === 0) console.log('TODO render 404 page')
-      setItem(detailsViewArray)
+      setItem(detailsViewArray[0])
     } catch (err) {
       console.error(err)
       setError('Error fetching item')
@@ -206,7 +206,8 @@ const ItemDetails = ({ itemID, search }) => {
     setEventListenerSet(true)
     gtcr.on(gtcr.filters.ItemStatusChange(itemID), fetchItem)
     gtcr.on(gtcr.filters.Dispute(arbitrator.address), fetchItem)
-    gtcr.on(gtcr.filters.AppealContribution(itemID), fetchItem)
+    // claims gtcr.filters.AppealContribution is not a function. unknown problem.
+    // gtcr.on(gtcr.filters.AppealContribution(itemID), fetchItem)
     gtcr.on(gtcr.filters.Evidence(), fetchItem)
     arbitrator.on(
       arbitrator.filters.AppealPossible(item.disputeID, gtcr.address),
@@ -236,7 +237,7 @@ const ItemDetails = ({ itemID, search }) => {
       } = refAttr
       gtcr.removeAllListeners(gtcr.filters.ItemStatusChange())
       gtcr.removeAllListeners(gtcr.filters.Dispute())
-      gtcr.removeAllListeners(gtcr.filters.AppealContribution())
+      // gtcr.removeAllListeners(gtcr.filters.AppealContribution())
       gtcr.removeAllListeners(gtcr.filters.Evidence())
       arbitrator.removeAllListeners(arbitrator.filters.AppealPossible())
       arbitrator.removeAllListeners(arbitrator.filters.AppealDecision())
@@ -254,6 +255,7 @@ const ItemDetails = ({ itemID, search }) => {
       const { isTCRofTCRs } = metadata || {}
       if (!isTCRofTCRs) return
       if (!decodedItem) return
+      console.log('decoded item', decodedItem)
       const itemAddress = decodedItem.decodedData[0] // There is only one column, the TCR address.
       const itemTCR = new ethers.Contract(itemAddress, _gtcr, library)
 
