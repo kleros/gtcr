@@ -7,7 +7,6 @@ import React, {
   useState,
   useContext,
   useMemo,
-  useRef,
   useCallback
 } from 'react'
 import PropTypes from 'prop-types'
@@ -17,23 +16,12 @@ import { useWeb3Context } from 'web3-react'
 import qs from 'qs'
 import ErrorPage from '../error-page'
 import { WalletContext } from '../../bootstrap/wallet-context'
-import { ZERO_ADDRESS } from '../../utils/string'
 import { TCRViewContext } from '../../bootstrap/tcr-view-context'
 import { bigNumberify } from 'ethers/utils'
-import { gtcrDecode } from '@kleros/gtcr-encoder'
 import SubmitModal from '../item-details/modals/submit'
 import useNetworkEnvVariable from '../../hooks/network-env'
 import SubmitConnectModal from '../item-details/modals/submit-connect'
-import SearchBar from '../../components/search-bar'
-import {
-  searchStrToFilterObj,
-  filterLabel,
-  FILTER_KEYS,
-  updateFilter,
-  queryOptionsToFilterArray,
-  applyOldActiveItemsFilter,
-  filterFunctions
-} from '../../utils/filters'
+import { searchStrToFilterObj, updateFilter } from '../../utils/filters'
 import ItemCard from './item-card'
 import Banner from './banner'
 import AppTour from '../../components/tour'
@@ -98,16 +86,6 @@ const StyledSwitch = styled(Switch)`
     background-color: #6826bf;
   }
 `
-
-const StyledMargin = styled.div`
-  padding: 24px 9.375vw;
-`
-
-const pagingItem = (_, type, originalElement) => {
-  if (type === 'prev') return <span>Previous</span>
-  if (type === 'next') return <span>Next</span>
-  return originalElement
-}
 
 const xDaiInfo = {
   name: 'xDAI Chain',
@@ -175,13 +153,11 @@ const Items = ({ search, history }) => {
     tcrError,
     gtcrView,
     tcrAddress,
-    latestBlock,
     connectedTCRAddr,
     submissionDeposit,
     metadataByTime
   } = useContext(TCRViewContext)
   const [submissionFormOpen, setSubmissionFormOpen] = useState()
-  const [oldActiveItems, setOldActiveItems] = useState({ data: [] })
   const [error, setError] = useState()
   const [fetchItems, setFetchItems] = useState({
     fetchStarted: false,
@@ -193,12 +169,11 @@ const Items = ({ search, history }) => {
     isFetching: false,
     data: null
   })
-  const refAttr = useRef()
   const GTCR_SUBGRAPH_URL = useNetworkEnvVariable(
     'REACT_APP_SUBGRAPH_URL',
     networkId
   )
-  const [eventListenerSet, setEventListenerSet] = useState()
+
   const queryOptions = searchStrToFilterObj(search)
   const [nsfwFilterOn, setNSFWFilter] = useState(true)
   const [queryItemParams, setQueryItemParams] = useState()
@@ -264,7 +239,7 @@ const Items = ({ search, history }) => {
     let returnItems
     ;(async () => {
       try {
-        const { page, oldestFirst } = queryOptions
+        const { oldestFirst } = queryOptions
         const orderDirection = oldestFirst ? 'asc' : 'desc'
         const query = {
           query: `
@@ -409,7 +384,7 @@ const Items = ({ search, history }) => {
     GTCR_SUBGRAPH_URL
   ])
 
-  const { oldestFirst, page } = queryOptions
+  const { oldestFirst } = queryOptions
 
   const items = useMemo(() => {
     if (
@@ -417,7 +392,6 @@ const Items = ({ search, history }) => {
       !metaEvidence ||
       metaEvidence.address !== tcrAddress ||
       fetchItems.address !== tcrAddress ||
-      (oldActiveItems.address && oldActiveItems.address !== tcrAddress) ||
       !metadataByTime
     )
       return
@@ -455,13 +429,7 @@ const Items = ({ search, history }) => {
         errors
       }
     })
-  }, [
-    fetchItems,
-    metaEvidence,
-    metadataByTime,
-    oldActiveItems.address,
-    tcrAddress
-  ])
+  }, [fetchItems, metaEvidence, metadataByTime, tcrAddress])
 
   // Check if there an action in the URL.
   useEffect(() => {
@@ -516,9 +484,6 @@ const Items = ({ search, history }) => {
         connectedTCRAddr={connectedTCRAddr}
         tcrAddress={tcrAddress}
       />
-      {/* <StyledMargin>
-        <SearchBar />
-      </StyledMargin> */}
       <StyledLayoutContent>
         <StyledContent>
           <Spin
@@ -535,32 +500,6 @@ const Items = ({ search, history }) => {
                     checked={nsfwFilterOn}
                     onChange={toggleNSFWFilter}
                   />
-                  {/* {Object.keys(queryOptions)
-                    .filter(
-                      key =>
-                        key !== FILTER_KEYS.PAGE &&
-                        key !== FILTER_KEYS.OLDEST_FIRST
-                    )
-                    .map(key => (
-                      <StyledTag
-                        key={key}
-                        checked={queryOptions[key]}
-                        onChange={checked => {
-                          const newQueryStr = updateFilter({
-                            prevQuery: search,
-                            filter: key,
-                            checked
-                          })
-                          history.push({
-                            search: newQueryStr
-                          })
-                          setFetchItems({ fetchStarted: true })
-                          setFetchItemCount({ fetchStarted: true })
-                        }}
-                      >
-                        {filterLabel[key]}
-                      </StyledTag>
-                    ))} */}
                 </div>
                 <StyledSelect
                   defaultValue={oldestFirst ? 'oldestFirst' : 'newestFirst'}
@@ -603,21 +542,6 @@ const Items = ({ search, history }) => {
                       />
                     ))}
               </StyledGrid>
-              {/* <StyledPagination
-                total={fetchItemCount.data || 0}
-                current={Number(queryOptions.page)}
-                itemRender={pagingItem}
-                pageSize={ITEMS_PER_PAGE}
-                onChange={newPage => {
-                  history.push({
-                    search: /page=\d+/g.test(search)
-                      ? search.replace(/page=\d+/g, `page=${newPage}`)
-                      : `${search}page=${newPage}`
-                  })
-                  setFetchItems({ fetchStarted: true })
-                  setFetchItemCount({ fetchStarted: true })
-                }}
-              /> */}
             </>
           </Spin>
         </StyledContent>
