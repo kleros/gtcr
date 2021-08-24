@@ -28,8 +28,9 @@ import Badges from './badges'
 import AppTour from '../../components/tour'
 import itemTourSteps from './tour-steps'
 import takeLower from '../../utils/lower-limit'
-import useNetworkEnvVariable from '../../hooks/network-env'
 import { SUBGRAPH_STATUS_TO_CODE } from '../../utils/item-status'
+import { ITEM_DETAILS_QUERY } from '../../graphql/item-details'
+import { useQuery } from '@apollo/client'
 
 const ITEM_TOUR_DISMISSED = 'ITEM_TOUR_DISMISSED'
 
@@ -74,7 +75,7 @@ const StyledBackLink = styled.div`
 // https://itnext.io/how-to-create-react-custom-hooks-for-data-fetching-with-useeffect-74c5dc47000a
 // TODO: Ensure http requests are being sent in parallel.
 const ItemDetails = ({ itemID, search }) => {
-  const { library, networkId } = useWeb3Context()
+  const { library } = useWeb3Context()
   const [error, setError] = useState()
   const [itemMetaEvidence, setItemMetaEvidence] = useState()
   const { timestamp } = useContext(WalletContext)
@@ -97,81 +98,42 @@ const ItemDetails = ({ itemID, search }) => {
     connectedTCRAddr,
     metadataByTime
   } = useContext(TCRViewContext)
-  const GTCR_SUBGRAPH_URL = useNetworkEnvVariable(
-    'REACT_APP_SUBGRAPH_URL',
-    networkId
-  )
+
+  // subgraph item entities have id "<itemID>@<listaddress>"
+  const compoundId = `${itemID}@${tcrAddress.toLowerCase()}`
+  const detailsViewQuery = useQuery(ITEM_DETAILS_QUERY, {
+    variables: { id: compoundId }
+  })
 
   // Warning: This function should only be called when all its dependencies
   // are set.
   const fetchItem = useCallback(async () => {
-    try {
-      const subgraphQuery = {
-        query: `
-          {
-            item(id: "${itemID}@${tcrAddress.toLowerCase()}") {
-              data
-              requests(orderBy: submissionTime, orderDirection: desc) {
-                requestType
-                disputed
-                disputeID
-                submissionTime
-                resolved
-                requester
-                arbitrator
-                challenger
-                evidenceGroupID
-                creationTx
-                resolutionTx
-                rounds(orderBy: creationTime, orderDirection: desc) {
-                  appealPeriodStart
-                  appealPeriodEnd
-                  ruling
-                  hasPaidRequester
-                  hasPaidChallenger
-                  amountPaidRequester
-                  amountPaidChallenger
-                }
-              }
-            }
-          }
-        `
-      }
-      const [itemFromContract, itemFromSubgraphResponse] = await Promise.all([
-        gtcrView.getItem(tcrAddress, itemID),
-        fetch(GTCR_SUBGRAPH_URL, {
-          method: 'POST',
-          body: JSON.stringify(subgraphQuery)
-        })
-      ])
-      const parsedResponse = await itemFromSubgraphResponse.json()
-      const {
-        data: {
-          item: { data: itemURI, requests }
+    if (!detailsViewQuery.loading)
+      try {
+        const itemFromContract = await gtcrView.getItem(tcrAddress, itemID)
+        const { data: itemURI, requests } = detailsViewQuery.data.item
+        const itemData = await (
+          await fetch(`${process.env.REACT_APP_IPFS_GATEWAY}${itemURI}`)
+        ).json()
+
+        const result = {
+          ...itemFromContract, // Spread to convert from array to object.
+          data: itemURI,
+          decodedData: Object.values(itemData.values),
+          requestsFromSubgraph: requests
         }
-      } = parsedResponse
-      const itemData = await (
-        await fetch(`${process.env.REACT_APP_IPFS_GATEWAY}${itemURI}`)
-      ).json()
 
-      const result = {
-        ...itemFromContract, // Spread to convert from array to object.
-        data: itemURI,
-        decodedData: Object.values(itemData.values),
-        requestsFromSubgraph: requests
+        setItem(result)
+        setDecodedItem({
+          ...result,
+          errors: []
+        })
+        console.info('item set', result)
+      } catch (err) {
+        console.error(err)
+        setError('Error fetching item')
       }
-
-      setItem(result)
-      setDecodedItem({
-        ...result,
-        errors: []
-      })
-      console.info('item set', result)
-    } catch (err) {
-      console.error(err)
-      setError('Error fetching item')
-    }
-  }, [GTCR_SUBGRAPH_URL, gtcrView, itemID, tcrAddress])
+  }, [gtcrView, itemID, tcrAddress, detailsViewQuery])
 
   // TODO: Fetch this directly from the subgraph.
   // Get requests data
@@ -218,10 +180,9 @@ const ItemDetails = ({ itemID, search }) => {
   // or when he navigates from the details view of an item to
   // the details view of another item (i.e. when itemID changes).
   useEffect(() => {
-    if (!gtcrView || !itemID || !library || !tcrAddress || !GTCR_SUBGRAPH_URL)
-      return
+    if (!gtcrView || !itemID || !library || !tcrAddress) return
     fetchItem()
-  }, [gtcrView, fetchItem, itemID, library, tcrAddress, GTCR_SUBGRAPH_URL])
+  }, [gtcrView, fetchItem, itemID, library, tcrAddress])
 
   // Watch for events to and refetch.
   useEffect(() => {
