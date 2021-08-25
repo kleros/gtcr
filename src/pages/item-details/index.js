@@ -128,12 +128,17 @@ const ItemDetails = ({ itemID, search }) => {
           ...result,
           errors: []
         })
-        console.info('item set', result)
       } catch (err) {
         console.error(err)
         setError('Error fetching item')
       }
-  }, [gtcrView, itemID, tcrAddress, detailsViewQuery])
+  }, [
+    detailsViewQuery.data.item,
+    detailsViewQuery.loading,
+    gtcrView,
+    itemID,
+    tcrAddress
+  ])
 
   // TODO: Fetch this directly from the subgraph.
   // Get requests data

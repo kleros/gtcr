@@ -119,6 +119,12 @@
         "internalType": "bytes32",
         "name": "_itemID",
         "type": "bytes32"
+      },
+      {
+        "indexed": false,
+        "internalType": "bool",
+        "name": "_updatedDirectly",
+        "type": "bool"
       }
     ],
     "name": "ItemStatusChange",
