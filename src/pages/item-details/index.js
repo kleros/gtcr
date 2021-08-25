@@ -28,7 +28,7 @@ import AppTour from '../../components/tour'
 import itemTourSteps from './tour-steps'
 import takeLower from '../../utils/lower-limit'
 import { SUBGRAPH_STATUS_TO_CODE } from '../../utils/item-status'
-import { ITEM_DETAILS_QUERY } from '../../graphql/item-details'
+import { ITEM_DETAILS_QUERY } from '../../graphql'
 import { useQuery } from '@apollo/client'
 
 const ITEM_TOUR_DISMISSED = 'ITEM_TOUR_DISMISSED'
