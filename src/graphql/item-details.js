@@ -1,6 +1,6 @@
 import { gql } from '@apollo/client'
 
-export const ITEM_DETAILS_QUERY = gql`
+const ITEM_DETAILS_QUERY = gql`
   query itemDetailsQuery($id: String!) {
     item(id: $id) {
       data
@@ -29,3 +29,5 @@ export const ITEM_DETAILS_QUERY = gql`
     }
   }
 `
+
+export default ITEM_DETAILS_QUERY

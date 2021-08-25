@@ -28,6 +28,8 @@ import AppTour from '../../components/tour'
 import itemsTourSteps from './tour-steps'
 import takeLower from '../../utils/lower-limit'
 import { DISPUTE_STATUS } from '../../utils/item-status'
+import { useQuery } from '@apollo/client'
+import { ITEMS_QUERY } from '../../graphql'
 
 const NSFW_FILTER_KEY = 'NSFW_FILTER_KEY'
 const ITEMS_TOUR_DISMISSED = 'ITEMS_TOUR_DISMISSED'
@@ -224,6 +226,21 @@ const Items = ({ search, history }) => {
     setFetchItemCount({ fetchStarted: true })
   }, [gtcr])
 
+  const { oldestFirst } = queryOptions
+  const orderDirection = oldestFirst ? 'asc' : 'desc'
+  const {
+    loading: queryLoading,
+    data: queryData,
+    error: queryError
+  } = useQuery(ITEMS_QUERY, {
+    variables: {
+      orderDirection,
+      lowerCaseTCRAddress: tcrAddress.toLowerCase(),
+      first: ITEMS_PER_PAGE,
+      skip: 0
+    }
+  })
+
   // Fetch items.
   useEffect(() => {
     if (
@@ -231,7 +248,10 @@ const Items = ({ search, history }) => {
       !gtcrView ||
       fetchItems.isFetching ||
       !fetchItems.fetchStarted ||
-      !GTCR_SUBGRAPH_URL
+      !GTCR_SUBGRAPH_URL ||
+      queryLoading ||
+      error ||
+      queryError
     )
       return
 
@@ -239,71 +259,12 @@ const Items = ({ search, history }) => {
     let returnItems
     ;(async () => {
       try {
-        const { oldestFirst } = queryOptions
-        const orderDirection = oldestFirst ? 'asc' : 'desc'
-        const query = {
-          query: `
-            {
-              items(
-                first: 1000,
-                orderBy: latestRequestSubmissionTime,
-                orderDirection: ${orderDirection},
-                where: { registry: "${gtcr.address.toLowerCase()}" }
-              ) {
-                itemID
-                status
-                data
-                requests (first: 1, orderBy: submissionTime, orderDirection: desc) {
-                  disputed
-                  disputeID
-                  submissionTime
-                  resolved
-                  requester
-                  challenger
-                  resolutionTime
-                  rounds (first: 1, orderBy: creationTime , orderDirection: desc) {
-                    appealPeriodStart
-                    appealPeriodEnd
-                    ruling
-                    hasPaidRequester
-                    hasPaidChallenger
-                    amountPaidRequester
-                    amountPaidChallenger
-                  }
-                }
-              }
-            }
-          `
-        }
-        const { data } = await (
-          await fetch(GTCR_SUBGRAPH_URL, {
-            method: 'POST',
-            body: JSON.stringify(query)
-          })
-        ).json()
-
+        const data = queryData
         let { items } = data ?? {}
-        items = (
-          await Promise.allSettled(
-            items.map(async item => {
-              let data
-              try {
-                data = await (
-                  await fetch(
-                    `${process.env.REACT_APP_IPFS_GATEWAY}${item.data}`
-                  )
-                ).json()
-              } catch (err) {
-                console.warn(`Could not fetch item ${item.itemID}`, err)
-              }
-              return {
-                ...item,
-                decodedData: Object.values(data.values)
-              }
-            })
-          )
-        ).map(promise => promise.value)
-
+        items = items.map(item => ({
+          ...item,
+          decodedData: item.props.map(({ value }) => value)
+        }))
         items = items.map(
           ({ itemID, status: statusName, requests, data, decodedData }) => {
             const { disputed, disputeID, submissionTime, rounds, resolved } =
@@ -374,18 +335,15 @@ const Items = ({ search, history }) => {
       }
     })()
   }, [
-    gtcrView,
+    GTCR_SUBGRAPH_URL,
+    error,
     fetchItems,
     gtcr,
-    search,
-    queryOptions,
-    tcrAddress,
-    active,
-    account,
-    GTCR_SUBGRAPH_URL
+    gtcrView,
+    queryData,
+    queryError,
+    queryLoading
   ])
-
-  const { oldestFirst } = queryOptions
 
   const items = useMemo(() => {
     if (
