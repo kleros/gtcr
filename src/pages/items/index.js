@@ -34,7 +34,7 @@ import itemsTourSteps from './tour-steps'
 import takeLower from '../../utils/lower-limit'
 import { DISPUTE_STATUS } from '../../utils/item-status'
 import { useQuery } from '@apollo/client'
-import { ITEMS_QUERY, REGISTRY_QUERY } from '../../graphql'
+import { REGISTRY_QUERY } from '../../graphql'
 
 const NSFW_FILTER_KEY = 'NSFW_FILTER_KEY'
 const ITEMS_TOUR_DISMISSED = 'ITEMS_TOUR_DISMISSED'
@@ -194,20 +194,85 @@ const Items = ({ search, history }) => {
     localforage.setItem(NSFW_FILTER_KEY, checked)
   }, [])
 
-  const { oldestFirst, page } = queryOptions
-  const orderDirection = oldestFirst ? 'asc' : 'desc'
   const {
-    loading: itemsLoading,
-    data: itemsData,
-    error: itemsError
-  } = useQuery(ITEMS_QUERY, {
-    variables: {
-      orderDirection,
-      lowerCaseTCRAddress: tcrAddress.toLowerCase(),
-      first: ITEMS_PER_PAGE,
-      skip: (Number(page) - 1) * 40
-    }
-  })
+    oldestFirst,
+    page,
+    absent,
+    registered,
+    submitted,
+    removalRequested,
+    challengedSubmissions,
+    challengedRemovals
+  } = queryOptions
+  const orderDirection = oldestFirst ? 'asc' : 'desc'
+  const itemsWhere = {
+    registry: tcrAddress.toLowerCase()
+  }
+  if (absent) itemsWhere.status = 'Absent'
+  if (registered) itemsWhere.status = 'Registered'
+  if (submitted) itemsWhere.status = 'RegistrationRequested'
+  if (removalRequested) itemsWhere.status = 'ClearingRequested'
+  if (challengedSubmissions || challengedRemovals) itemsWhere.disputed = true
+
+  const [itemsLoading, setItemsLoading] = useState()
+  const [itemsError, setItemsError] = useState()
+  const [itemsData, setItemsData] = useState()
+  useEffect(() => {
+    ;(async () => {
+      const query = {
+        query: `
+          {
+            items(
+              skip: ${(Number(page) - 1) * ITEMS_PER_PAGE}
+              first: ${ITEMS_PER_PAGE}
+              orderDirection: ${orderDirection}
+              orderBy: latestRequestSubmissionTime
+              where: ${itemsWhere}
+            ) {
+              itemID
+              status
+              data
+              props {
+                value
+              }
+              requests(first: 1, orderBy: submissionTime, orderDirection: desc) {
+                disputed
+                disputeID
+                submissionTime
+                resolved
+                requester
+                challenger
+                resolutionTime
+                rounds(first: 1, orderBy: creationTime, orderDirection: desc) {
+                  appealPeriodStart
+                  appealPeriodEnd
+                  ruling
+                  hasPaidRequester
+                  hasPaidChallenger
+                  amountPaidRequester
+                  amountPaidChallenger
+                }
+              }
+            }
+          }
+        `
+      }
+      try {
+        setItemsLoading(true)
+        const { data } = await (
+          await fetch(GTCR_SUBGRAPH_URL, {
+            method: 'POST',
+            body: JSON.stringify(query)
+          })
+        ).json()
+        setItemsData(data)
+      } catch (err) {
+        setItemsError(err)
+      } finally {
+        setItemsLoading(false)
+      }
+    })()
+  }, [GTCR_SUBGRAPH_URL, itemsWhere, orderDirection, page])
 
   const { data: registryData } = useQuery(REGISTRY_QUERY, {
     variables: {

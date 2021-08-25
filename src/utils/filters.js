@@ -63,6 +63,7 @@ export const searchStrToFilterObj = search => {
 
   // Add default value filters and convert the string "true" and "false" to the boolean types.
   const {
+    absent,
     registered,
     submitted,
     removalRequested,
@@ -70,7 +71,6 @@ export const searchStrToFilterObj = search => {
     challengedRemovals,
     mySubmissions,
     myChallenges,
-    absent,
     oldestFirst,
     page
   } = {
