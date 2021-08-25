@@ -194,7 +194,7 @@ const Items = ({ search, history }) => {
     localforage.setItem(NSFW_FILTER_KEY, checked)
   }, [])
 
-  const { oldestFirst } = queryOptions
+  const { oldestFirst, page } = queryOptions
   const orderDirection = oldestFirst ? 'asc' : 'desc'
   const {
     loading: itemsLoading,
@@ -205,15 +205,11 @@ const Items = ({ search, history }) => {
       orderDirection,
       lowerCaseTCRAddress: tcrAddress.toLowerCase(),
       first: ITEMS_PER_PAGE,
-      skip: 0
+      skip: (Number(page) - 1) * 40
     }
   })
 
-  const {
-    data: registryData,
-    loading: registryDataLoading,
-    error: registryError
-  } = useQuery(REGISTRY_QUERY, {
+  const { data: registryData } = useQuery(REGISTRY_QUERY, {
     variables: {
       lowerCaseTCRAddress: tcrAddress.toLowerCase()
     }
