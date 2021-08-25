@@ -30,6 +30,8 @@ import TopBar from './top-bar'
 import NoWeb3Detected from './no-web3'
 import WelcomeModal from './welcome-modal'
 import { SAVED_NETWORK_KEY } from '../utils/string'
+import { ApolloClient, ApolloProvider, InMemoryCache } from '@apollo/client'
+import { HttpLink } from '@apollo/client/link/http'
 
 const StyledSpin = styled(Spin)`
   left: 50%;
@@ -240,6 +242,21 @@ export default () => {
   const [isMenuClosed, setIsMenuClosed] = useState(true)
   const web3Context = useWeb3Context()
   const TCR2_ADDRESS = useMainTCR2(web3Context)
+
+  const GTCR_SUBGRAPH_URL = useNetworkEnvVariable(
+    'REACT_APP_SUBGRAPH_URL',
+    web3Context.networkId
+  )
+
+  const httpLink = new HttpLink({
+    uri: GTCR_SUBGRAPH_URL
+  })
+
+  const client = new ApolloClient({
+    link: httpLink,
+    cache: new InMemoryCache()
+  })
+
   return (
     <>
       <Helmet>
@@ -249,50 +266,54 @@ export default () => {
           rel="stylesheet"
         />
       </Helmet>
-      <BrowserRouter>
-        <TourProvider>
-          <Web3Provider connectors={connectors} libraryName="ethers.js">
-            <WalletProvider>
-              <StyledLayout>
-                <StyledLayoutSider
-                  breakpoint="lg"
-                  collapsedWidth={0}
-                  collapsed={isMenuClosed}
-                  onClick={() =>
-                    setIsMenuClosed(previousState => !previousState)
-                  }
-                >
-                  <Menu theme="dark">
-                    {[
-                      <Menu.Item key="tcrs" style={{ height: '70px' }}>
-                        <NavLink to={`/tcr/${TCR2_ADDRESS}`}>
-                          K L E R O S
-                        </NavLink>
-                      </Menu.Item>
-                    ].concat(MenuItems({ TCR2_ADDRESS }))}
-                  </Menu>
-                </StyledLayoutSider>
-                {/* Overflow x property must be visible for reactour scrolling to work properly. */}
-                <Layout style={{ overflowX: 'visible' }}>
-                  <StyledHeader>
-                    <TopBar menuItems={MenuItems} />
-                  </StyledHeader>
-                  <Content />
-                  <StyledClickaway
-                    isMenuClosed={isMenuClosed}
-                    onClick={isMenuClosed ? null : () => setIsMenuClosed(true)}
-                  />
-                </Layout>
-              </StyledLayout>
-              <FooterWrapper>
-                <Footer appName="Kleros · Curate" />
-              </FooterWrapper>
-              <WalletModal connectors={connectors} />
-            </WalletProvider>
-          </Web3Provider>
-          <WelcomeModal />
-        </TourProvider>
-      </BrowserRouter>
+      <ApolloProvider client={client}>
+        <BrowserRouter>
+          <TourProvider>
+            <Web3Provider connectors={connectors} libraryName="ethers.js">
+              <WalletProvider>
+                <StyledLayout>
+                  <StyledLayoutSider
+                    breakpoint="lg"
+                    collapsedWidth={0}
+                    collapsed={isMenuClosed}
+                    onClick={() =>
+                      setIsMenuClosed(previousState => !previousState)
+                    }
+                  >
+                    <Menu theme="dark">
+                      {[
+                        <Menu.Item key="tcrs" style={{ height: '70px' }}>
+                          <NavLink to={`/tcr/${TCR2_ADDRESS}`}>
+                            K L E R O S
+                          </NavLink>
+                        </Menu.Item>
+                      ].concat(MenuItems({ TCR2_ADDRESS }))}
+                    </Menu>
+                  </StyledLayoutSider>
+                  {/* Overflow x property must be visible for reactour scrolling to work properly. */}
+                  <Layout style={{ overflowX: 'visible' }}>
+                    <StyledHeader>
+                      <TopBar menuItems={MenuItems} />
+                    </StyledHeader>
+                    <Content />
+                    <StyledClickaway
+                      isMenuClosed={isMenuClosed}
+                      onClick={
+                        isMenuClosed ? null : () => setIsMenuClosed(true)
+                      }
+                    />
+                  </Layout>
+                </StyledLayout>
+                <FooterWrapper>
+                  <Footer appName="Kleros · Curate" />
+                </FooterWrapper>
+                <WalletModal connectors={connectors} />
+              </WalletProvider>
+            </Web3Provider>
+            <WelcomeModal />
+          </TourProvider>
+        </BrowserRouter>
+      </ApolloProvider>
     </>
   )
 }
