@@ -22,7 +22,8 @@ import SubmitModal from '../item-details/modals/submit'
 import useNetworkEnvVariable from '../../hooks/network-env'
 import SubmitConnectModal from '../item-details/modals/submit-connect'
 import {
-  queryOptionsToFilterArray,
+  filterLabel,
+  FILTER_KEYS,
   searchStrToFilterObj,
   updateFilter
 } from '../../utils/filters'
@@ -60,6 +61,14 @@ const StyledFilters = styled.div`
 
 const StyledSelect = styled(Select)`
   height: 32px;
+`
+
+const StyledTag = styled(Tag.CheckableTag)`
+  margin-bottom: 12px;
+  cursor: pointer;
+  &.ant-tag-checkable-checked {
+    background-color: #6826bf;
+  }
 `
 
 const StyledPagination = styled(Pagination)`
@@ -468,15 +477,18 @@ const Items = ({ search, history }) => {
       0
     )
 
-    // For now, only OR conditions are allowed so we can just take
-    // the first item that is set to true.
-    const filters = Object.entries(queryOptions).filter(entry => entry[1])
+    // For now, only OR combinations are allowed.
+    // My challenges and my submissions are also not supported,
+    // so we slice them off.
+    const filters = Object.entries(queryOptions).filter(([key, val]) =>
+      Object.entries(FILTER_KEYS)
+        .slice(0, 6)
+        .map(([, value]) => value)
+        .includes(val)
+    )
+
     const filterSelected = filters.length > 0
     const count = filterSelected ? countByFilter[filters[0][0]] : totalCount
-    console.info(`queryOptions`, queryOptions)
-    console.info(`filters`, filters)
-    console.info(`filterSelected`, filterSelected)
-    console.info(`count`, count)
 
     setFetchItemCount({
       fetchStarted: false,
@@ -540,6 +552,34 @@ const Items = ({ search, history }) => {
                     checked={nsfwFilterOn}
                     onChange={toggleNSFWFilter}
                   />
+                  {Object.keys(queryOptions)
+                    .filter(
+                      key =>
+                        key !== FILTER_KEYS.PAGE &&
+                        key !== FILTER_KEYS.OLDEST_FIRST &&
+                        key !== 'mySubmissions' &&
+                        key !== 'myChallenges'
+                    )
+                    .map(key => (
+                      <StyledTag
+                        key={key}
+                        checked={queryOptions[key]}
+                        onChange={checked => {
+                          const newQueryStr = updateFilter({
+                            prevQuery: search,
+                            filter: key,
+                            checked
+                          })
+                          history.push({
+                            search: newQueryStr
+                          })
+                          setFetchItems({ fetchStarted: true })
+                          setFetchItemCount({ fetchStarted: true })
+                        }}
+                      >
+                        {filterLabel[key]}
+                      </StyledTag>
+                    ))}
                 </div>
                 <StyledSelect
                   defaultValue={oldestFirst ? 'oldestFirst' : 'newestFirst'}
@@ -582,7 +622,6 @@ const Items = ({ search, history }) => {
                       />
                     ))}
               </StyledGrid>
-              {console.info(fetchItemCount.data)}
               <StyledPagination
                 total={fetchItemCount.data || 0}
                 current={Number(queryOptions.page)}
