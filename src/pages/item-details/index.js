@@ -22,7 +22,6 @@ import CrowdfundingCard from './crowdfunding-card'
 import { TCRViewContext } from '../../bootstrap/tcr-view-context'
 import RequestTimelines from './request-timelines'
 import { WalletContext } from '../../bootstrap/wallet-context'
-import SearchBar from '../../components/search-bar'
 import { capitalizeFirstLetter, ZERO_ADDRESS } from '../../utils/string'
 import Badges from './badges'
 import AppTour from '../../components/tour'
@@ -305,7 +304,6 @@ const ItemDetails = ({ itemID, search }) => {
         <StyledBackLink>
           <StyledLink to={`/tcr/${tcrAddress}`}>Go Back</StyledLink>
         </StyledBackLink>
-        <SearchBar />
       </StyledMargin>
       <StyledLayoutContent>
         <ItemStatusCard
