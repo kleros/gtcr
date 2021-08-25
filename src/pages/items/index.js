@@ -21,7 +21,11 @@ import { bigNumberify } from 'ethers/utils'
 import SubmitModal from '../item-details/modals/submit'
 import useNetworkEnvVariable from '../../hooks/network-env'
 import SubmitConnectModal from '../item-details/modals/submit-connect'
-import { searchStrToFilterObj, updateFilter } from '../../utils/filters'
+import {
+  queryOptionsToFilterArray,
+  searchStrToFilterObj,
+  updateFilter
+} from '../../utils/filters'
 import ItemCard from './item-card'
 import Banner from './banner'
 import AppTour from '../../components/tour'
@@ -29,7 +33,7 @@ import itemsTourSteps from './tour-steps'
 import takeLower from '../../utils/lower-limit'
 import { DISPUTE_STATUS } from '../../utils/item-status'
 import { useQuery } from '@apollo/client'
-import { ITEMS_QUERY } from '../../graphql'
+import { ITEMS_QUERY, REGISTRY_QUERY } from '../../graphql'
 
 const NSFW_FILTER_KEY = 'NSFW_FILTER_KEY'
 const ITEMS_TOUR_DISMISSED = 'ITEMS_TOUR_DISMISSED'
@@ -58,15 +62,6 @@ const StyledSelect = styled(Select)`
   height: 32px;
 `
 
-const StyledTag = styled(Tag.CheckableTag)`
-  margin-bottom: 12px;
-
-  &.ant-tag-checkable-checked {
-    background-color: #6826bf;
-    cursor: pointer;
-  }
-`
-
 const StyledPagination = styled(Pagination)`
   justify-content: flex-end;
   display: flex;
@@ -88,6 +83,12 @@ const StyledSwitch = styled(Switch)`
     background-color: #6826bf;
   }
 `
+
+const pagingItem = (_, type, originalElement) => {
+  if (type === 'prev') return <span>Previous</span>
+  if (type === 'next') return <span>Next</span>
+  return originalElement
+}
 
 const xDaiInfo = {
   name: 'xDAI Chain',
@@ -184,6 +185,31 @@ const Items = ({ search, history }) => {
     localforage.setItem(NSFW_FILTER_KEY, checked)
   }, [])
 
+  const { oldestFirst } = queryOptions
+  const orderDirection = oldestFirst ? 'asc' : 'desc'
+  const {
+    loading: itemsLoading,
+    data: itemsData,
+    error: itemsError
+  } = useQuery(ITEMS_QUERY, {
+    variables: {
+      orderDirection,
+      lowerCaseTCRAddress: tcrAddress.toLowerCase(),
+      first: ITEMS_PER_PAGE,
+      skip: 0
+    }
+  })
+
+  const {
+    data: registryData,
+    loading: registryDataLoading,
+    error: registryError
+  } = useQuery(REGISTRY_QUERY, {
+    variables: {
+      lowerCaseTCRAddress: tcrAddress.toLowerCase()
+    }
+  })
+
   const switchToSuggested = useCallback(async () => {
     if (!library || !active || !network) return
     if (network.chainId === 100)
@@ -226,22 +252,11 @@ const Items = ({ search, history }) => {
     setFetchItemCount({ fetchStarted: true })
   }, [gtcr])
 
-  const { oldestFirst } = queryOptions
-  const orderDirection = oldestFirst ? 'asc' : 'desc'
-  const {
-    loading: queryLoading,
-    data: queryData,
-    error: queryError
-  } = useQuery(ITEMS_QUERY, {
-    variables: {
-      orderDirection,
-      lowerCaseTCRAddress: tcrAddress.toLowerCase(),
-      first: ITEMS_PER_PAGE,
-      skip: 0
-    }
-  })
-
-  // Fetch items.
+  // Wrangle data.
+  // We have to do this because this code was hacked
+  // to work with a new data source that returns data
+  // with a different structure.
+  // Ideally refactor/delete this at some point.
   useEffect(() => {
     if (
       !gtcr ||
@@ -249,9 +264,9 @@ const Items = ({ search, history }) => {
       fetchItems.isFetching ||
       !fetchItems.fetchStarted ||
       !GTCR_SUBGRAPH_URL ||
-      queryLoading ||
+      itemsLoading ||
       error ||
-      queryError
+      itemsError
     )
       return
 
@@ -259,7 +274,7 @@ const Items = ({ search, history }) => {
     let returnItems
     ;(async () => {
       try {
-        const data = queryData
+        const data = itemsData
         let { items } = data ?? {}
         items = items.map(item => ({
           ...item,
@@ -340,11 +355,13 @@ const Items = ({ search, history }) => {
     fetchItems,
     gtcr,
     gtcrView,
-    queryData,
-    queryError,
-    queryLoading
+    itemsData,
+    itemsError,
+    itemsLoading
   ])
 
+  // More data wrangling/bandaid to deal with legacy code.
+  // Most of this should be refactored or even better, deleted.
   const items = useMemo(() => {
     if (
       !fetchItems.data ||
@@ -390,7 +407,9 @@ const Items = ({ search, history }) => {
     })
   }, [fetchItems, metaEvidence, metadataByTime, tcrAddress])
 
-  // Check if there an action in the URL.
+  // This component supports URL actions.
+  // This means someone can be sent to curate with a bunch of data to submit
+  // an item to a list.
   useEffect(() => {
     const params = qs.parse(search)
     if (!params['?action']) return
@@ -403,6 +422,68 @@ const Items = ({ search, history }) => {
     setQueryItemParams(initialValues)
     setSubmissionFormOpen(true)
   }, [requestWeb3Auth, search])
+
+  // Fetch number of pages for the current filter
+  // Previously this entailed doing a bunch of contract calls, but since
+  // it now uses a subgraph, there are no async calls here anymore.
+  // Maybe refactor or delete this code.
+  useEffect(() => {
+    if (
+      !gtcrView ||
+      fetchItemCount.isFetching ||
+      !fetchItemCount.fetchStarted ||
+      !gtcr ||
+      !registryData
+    )
+      return
+
+    if (gtcr.address !== tcrAddress) return
+    setFetchItemCount({ isFetching: true })
+
+    const { registry } = registryData || {}
+
+    // Convert subgraph counters to filter names.
+    const {
+      numberOfAbsent: absent,
+      numberOfClearingRequested: removalRequested,
+      numberOfRegistered: registered,
+      numberOfRegistrationRequested: submitted,
+      numberOfChallengedClearing: challengedRemovals,
+      numberOfChallengedRegistrations: challengedSubmissions
+    } = registry || {}
+    const convertedCounts = {
+      absent,
+      removalRequested,
+      registered,
+      submitted,
+      challengedRemovals,
+      challengedSubmissions
+    }
+    const countByFilter = Object.entries(convertedCounts).reduce(
+      (prev, entry) => ({ ...prev, [entry[0]]: Number(entry[1]) }),
+      {}
+    )
+    const totalCount = Object.values(countByFilter).reduce(
+      (prev, curr) => prev + curr,
+      0
+    )
+
+    // For now, only OR conditions are allowed so we can just take
+    // the first item that is set to true.
+    const filters = Object.entries(queryOptions).filter(entry => entry[1])
+    const filterSelected = filters.length > 0
+    const count = filterSelected ? countByFilter[filters[0][0]] : totalCount
+    console.info(`queryOptions`, queryOptions)
+    console.info(`filters`, filters)
+    console.info(`filterSelected`, filterSelected)
+    console.info(`count`, count)
+
+    setFetchItemCount({
+      fetchStarted: false,
+      isFetching: false,
+      data: count
+    })
+  }, [fetchItemCount, gtcr, gtcrView, queryOptions, registryData, tcrAddress])
 
   if (!tcrAddress)
     return (
@@ -501,6 +582,22 @@ const Items = ({ search, history }) => {
                       />
                     ))}
               </StyledGrid>
+              {console.info(fetchItemCount.data)}
+              <StyledPagination
+                total={fetchItemCount.data || 0}
+                current={Number(queryOptions.page)}
+                itemRender={pagingItem}
+                pageSize={ITEMS_PER_PAGE}
+                onChange={newPage => {
+                  history.push({
+                    search: /page=\d+/g.test(search)
+                      ? search.replace(/page=\d+/g, `page=${newPage}`)
+                      : `${search}page=${newPage}`
+                  })
+                  setFetchItems({ fetchStarted: true })
+                  setFetchItemCount({ fetchStarted: true })
+                }}
+              />
             </>
           </Spin>
         </StyledContent>
