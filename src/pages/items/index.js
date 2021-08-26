@@ -21,7 +21,12 @@ import { bigNumberify } from 'ethers/utils'
 import SubmitModal from '../item-details/modals/submit'
 import useNetworkEnvVariable from '../../hooks/network-env'
 import SubmitConnectModal from '../item-details/modals/submit-connect'
-import { searchStrToFilterObj, updateFilter } from '../../utils/filters'
+import {
+  filterLabel,
+  FILTER_KEYS,
+  searchStrToFilterObj,
+  updateFilter
+} from '../../utils/filters'
 import ItemCard from './item-card'
 import Banner from './banner'
 import AppTour from '../../components/tour'
@@ -29,7 +34,7 @@ import itemsTourSteps from './tour-steps'
 import takeLower from '../../utils/lower-limit'
 import { DISPUTE_STATUS } from '../../utils/item-status'
 import { useQuery } from '@apollo/client'
-import { ITEMS_QUERY } from '../../graphql'
+import { REGISTRY_QUERY } from '../../graphql'
 
 const NSFW_FILTER_KEY = 'NSFW_FILTER_KEY'
 const ITEMS_TOUR_DISMISSED = 'ITEMS_TOUR_DISMISSED'
@@ -60,10 +65,9 @@ const StyledSelect = styled(Select)`
 
 const StyledTag = styled(Tag.CheckableTag)`
   margin-bottom: 12px;
-
+  cursor: pointer;
   &.ant-tag-checkable-checked {
     background-color: #6826bf;
-    cursor: pointer;
   }
 `
 
@@ -88,6 +92,12 @@ const StyledSwitch = styled(Switch)`
     background-color: #6826bf;
   }
 `
+
+const pagingItem = (_, type, originalElement) => {
+  if (type === 'prev') return <span>Previous</span>
+  if (type === 'next') return <span>Next</span>
+  return originalElement
+}
 
 const xDaiInfo = {
   name: 'xDAI Chain',
@@ -184,6 +194,171 @@ const Items = ({ search, history }) => {
     localforage.setItem(NSFW_FILTER_KEY, checked)
   }, [])
 
+  const {
+    oldestFirst,
+    page,
+    absent,
+    registered,
+    submitted,
+    removalRequested,
+    challengedSubmissions,
+    challengedRemovals
+  } = queryOptions
+  const orderDirection = oldestFirst ? 'asc' : 'desc'
+
+  // God of code forgive me for I have sinned (in many codebases)
+  // GQL queries did not allow me to pass a dynamic where (or I did
+  // not know how to do it) parameter the subgraph so I came up with
+  // this monstruocity. If you know how to improve this, give it a
+  // go. Perhaps add apollo back.
+  const itemsWhere = useMemo(() => {
+    if (absent)
+      return `{ registry: "${tcrAddress.toLowerCase()}", status: Absent }`
+    if (registered)
+      return `{ registry: "${tcrAddress.toLowerCase()}", status: Registered }`
+    if (submitted)
+      return `{ registry: "${tcrAddress.toLowerCase()}", status: RegistrationRequested }`
+    if (removalRequested)
+      return `{ registry: "${tcrAddress.toLowerCase()}", status: ClearingRequested }`
+    if (challengedSubmissions)
+      return `{ registry: "${tcrAddress.toLowerCase()}", status: RegistrationRequested, disputed: true }`
+    if (challengedRemovals)
+      return `{ registry: "${tcrAddress.toLowerCase()}", status: ClearingRequested, disputed: true }`
+
+    return `{ registry: "${tcrAddress.toLowerCase()}" }`
+  }, [
+    absent,
+    challengedRemovals,
+    challengedSubmissions,
+    registered,
+    removalRequested,
+    submitted,
+    tcrAddress
+  ])
+
+  useEffect(() => {
+    ;(async () => {
+      if (!gtcr) return
+      const query = {
+        query: `
+          {
+            items(
+              skip: ${(Number(page) - 1) * ITEMS_PER_PAGE}
+              first: ${ITEMS_PER_PAGE}
+              orderDirection: ${orderDirection}
+              orderBy: latestRequestSubmissionTime
+              where: ${itemsWhere}
+            ) {
+              itemID
+              status
+              data
+              props {
+                value
+              }
+              requests(first: 1, orderBy: submissionTime, orderDirection: desc) {
+                disputed
+                disputeID
+                submissionTime
+                resolved
+                requester
+                challenger
+                resolutionTime
+                rounds(first: 1, orderBy: creationTime, orderDirection: desc) {
+                  appealPeriodStart
+                  appealPeriodEnd
+                  ruling
+                  hasPaidRequester
+                  hasPaidChallenger
+                  amountPaidRequester
+                  amountPaidChallenger
+                }
+              }
+            }
+          }
+        `
+      }
+      setFetchItems({ isFetching: true })
+      const { data, errors } = await (
+        await fetch(GTCR_SUBGRAPH_URL, {
+          method: 'POST',
+          body: JSON.stringify(query)
+        })
+      ).json()
+      if (errors) throw new Error(errors)
+      let { items } = data ?? {}
+      items = items.map(item => ({
+        ...item,
+        decodedData: item.props.map(({ value }) => value)
+      }))
+      items = items.map(
+        ({ itemID, status: statusName, requests, data, decodedData }) => {
+          const { disputed, disputeID, submissionTime, rounds, resolved } =
+            requests[0] ?? {}
+
+          const {
+            appealPeriodStart,
+            appealPeriodEnd,
+            ruling,
+            hasPaidRequester,
+            hasPaidChallenger,
+            amountPaidRequester,
+            amountPaidChallenger
+          } = rounds[0] ?? {}
+
+          const currentRuling =
+            ruling === 'None' ? 0 : ruling === 'Accept' ? 1 : 2
+          const disputeStatus = !disputed
+            ? DISPUTE_STATUS.WAITING
+            : resolved
+            ? DISPUTE_STATUS.SOLVED
+            : Number(appealPeriodEnd) > Date.now() / 1000
+            ? DISPUTE_STATUS.APPEALABLE
+            : DISPUTE_STATUS.WAITING
+
+          const graphStatusNameToCode = {
+            Absent: 0,
+            Registered: 1,
+            RegistrationRequested: 2,
+            ClearingRequested: 3
+          }
+
+          return {
+            ID: itemID,
+            itemID,
+            status: graphStatusNameToCode[statusName],
+            disputeStatus,
+            disputed,
+            data,
+            decodedData,
+            disputeID,
+            submissionTime: bigNumberify(submissionTime),
+            hasPaid: [false, hasPaidRequester, hasPaidChallenger],
+            currentRuling,
+            appealStart: bigNumberify(appealPeriodStart),
+            appealEnd: bigNumberify(appealPeriodEnd),
+            amountPaid: [
+              bigNumberify(0),
+              bigNumberify(amountPaidRequester),
+              bigNumberify(amountPaidChallenger)
+            ]
+          }
+        }
+      )
+      setFetchItems({
+        isFetching: false,
+        fetchStarted: false,
+        data: items,
+        address: gtcr.address
+      })
+    })()
+  }, [GTCR_SUBGRAPH_URL, gtcr, itemsWhere, orderDirection, page])
+
+  const { data: registryData } = useQuery(REGISTRY_QUERY, {
+    variables: {
+      lowerCaseTCRAddress: tcrAddress.toLowerCase()
+    }
+  })
+
   const switchToSuggested = useCallback(async () => {
     if (!library || !active || !network) return
     if (network.chainId === 100)
@@ -226,125 +401,8 @@ const Items = ({ search, history }) => {
     setFetchItemCount({ fetchStarted: true })
   }, [gtcr])
 
-  const { oldestFirst } = queryOptions
-  const orderDirection = oldestFirst ? 'asc' : 'desc'
-  const {
-    loading: queryLoading,
-    data: queryData,
-    error: queryError
-  } = useQuery(ITEMS_QUERY, {
-    variables: {
-      orderDirection,
-      lowerCaseTCRAddress: tcrAddress.toLowerCase(),
-      first: ITEMS_PER_PAGE,
-      skip: 0
-    }
-  })
-
-  // Fetch items.
-  useEffect(() => {
-    if (
-      !gtcr ||
-      !gtcrView ||
-      fetchItems.isFetching ||
-      !fetchItems.fetchStarted ||
-      !GTCR_SUBGRAPH_URL ||
-      queryLoading ||
-      error ||
-      queryError
-    )
-      return
-
-    setFetchItems({ isFetching: true })
-    let returnItems
-    ;(async () => {
-      try {
-        const data = queryData
-        let { items } = data ?? {}
-        items = items.map(item => ({
-          ...item,
-          decodedData: item.props.map(({ value }) => value)
-        }))
-        items = items.map(
-          ({ itemID, status: statusName, requests, data, decodedData }) => {
-            const { disputed, disputeID, submissionTime, rounds, resolved } =
-              requests[0] ?? {}
-
-            const {
-              appealPeriodStart,
-              appealPeriodEnd,
-              ruling,
-              hasPaidRequester,
-              hasPaidChallenger,
-              amountPaidRequester,
-              amountPaidChallenger
-            } = rounds[0] ?? {}
-
-            const currentRuling =
-              ruling === 'None' ? 0 : ruling === 'Accept' ? 1 : 2
-            const disputeStatus = !disputed
-              ? DISPUTE_STATUS.WAITING
-              : resolved
-              ? DISPUTE_STATUS.SOLVED
-              : Number(appealPeriodEnd) > Date.now() / 1000
-              ? DISPUTE_STATUS.APPEALABLE
-              : DISPUTE_STATUS.WAITING
-
-            const graphStatusNameToCode = {
-              Absent: 0,
-              Registered: 1,
-              RegistrationRequested: 2,
-              ClearingRequested: 3
-            }
-
-            return {
-              ID: itemID,
-              itemID,
-              status: graphStatusNameToCode[statusName],
-              disputeStatus,
-              disputed,
-              data,
-              decodedData,
-              disputeID,
-              submissionTime: bigNumberify(submissionTime),
-              hasPaid: [false, hasPaidRequester, hasPaidChallenger],
-              currentRuling,
-              appealStart: bigNumberify(appealPeriodStart),
-              appealEnd: bigNumberify(appealPeriodEnd),
-              amountPaid: [
-                bigNumberify(0),
-                bigNumberify(amountPaidRequester),
-                bigNumberify(amountPaidChallenger)
-              ]
-            }
-          }
-        )
-
-        returnItems = items
-      } catch (err) {
-        console.error('Error fetching items', err)
-        setError('Error fetching items')
-        setFetchItems({ isFetching: false, fetchStarted: false })
-      } finally {
-        setFetchItems({
-          isFetching: false,
-          fetchStarted: false,
-          data: returnItems,
-          address: gtcr.address
-        })
-      }
-    })()
-  }, [
-    GTCR_SUBGRAPH_URL,
-    error,
-    fetchItems,
-    gtcr,
-    gtcrView,
-    queryData,
-    queryError,
-    queryLoading
-  ])
-
+  // More data wrangling/bandaid to deal with legacy code.
+  // Most of this should be refactored or even better, deleted.
   const items = useMemo(() => {
     if (
       !fetchItems.data ||
@@ -390,7 +448,9 @@ const Items = ({ search, history }) => {
     })
   }, [fetchItems, metaEvidence, metadataByTime, tcrAddress])
 
-  // Check if there an action in the URL.
+  // This component supports URL actions.
+  // This means someone can be sent to curate with a bunch of data to submit
+  // an item to a list.
   useEffect(() => {
     const params = qs.parse(search)
     if (!params['?action']) return
@@ -403,6 +463,71 @@ const Items = ({ search, history }) => {
     setQueryItemParams(initialValues)
     setSubmissionFormOpen(true)
   }, [requestWeb3Auth, search])
+
+  // Fetch number of pages for the current filter
+  // Previously this entailed doing a bunch of contract calls, but since
+  // it now uses a subgraph, there are no async calls here anymore.
+  // Maybe refactor or delete this code.
+  useEffect(() => {
+    if (
+      !gtcrView ||
+      fetchItemCount.isFetching ||
+      !fetchItemCount.fetchStarted ||
+      !gtcr ||
+      !registryData
+    )
+      return
+
+    if (gtcr.address !== tcrAddress) return
+    setFetchItemCount({ isFetching: true })
+
+    const { registry } = registryData || {}
+
+    // Convert subgraph counters to filter names.
+    const {
+      numberOfAbsent: absent,
+      numberOfClearingRequested: removalRequested,
+      numberOfRegistered: registered,
+      numberOfRegistrationRequested: submitted,
+      numberOfChallengedClearing: challengedRemovals,
+      numberOfChallengedRegistrations: challengedSubmissions
+    } = registry || {}
+    const convertedCounts = {
+      absent,
+      removalRequested,
+      registered,
+      submitted,
+      challengedRemovals,
+      challengedSubmissions
+    }
+    const countByFilter = Object.entries(convertedCounts).reduce(
+      (prev, entry) => ({ ...prev, [entry[0]]: Number(entry[1]) }),
+      {}
+    )
+    const totalCount = Object.values(countByFilter).reduce(
+      (prev, curr) => prev + curr,
+      0
+    )
+
+    // For now, only OR combinations are allowed.
+    // My challenges and my submissions are also not supported,
+    // so we slice them off.
+    const filters = Object.entries(queryOptions).filter(([key, val]) =>
+      Object.entries(FILTER_KEYS)
+        .slice(0, 6)
+        .map(([, value]) => value)
+        .includes(val)
+    )
+
+    const filterSelected = filters.length > 0
+    const count = filterSelected ? countByFilter[filters[0][0]] : totalCount
+
+    setFetchItemCount({
+      fetchStarted: false,
+      isFetching: false,
+      data: count
+    })
+  }, [fetchItemCount, gtcr, gtcrView, queryOptions, registryData, tcrAddress])
 
   if (!tcrAddress)
     return (
@@ -459,6 +584,34 @@ const Items = ({ search, history }) => {
                     checked={nsfwFilterOn}
                     onChange={toggleNSFWFilter}
                   />
+                  {Object.keys(queryOptions)
+                    .filter(
+                      key =>
+                        key !== FILTER_KEYS.PAGE &&
+                        key !== FILTER_KEYS.OLDEST_FIRST &&
+                        key !== 'mySubmissions' &&
+                        key !== 'myChallenges'
+                    )
+                    .map(key => (
+                      <StyledTag
+                        key={key}
+                        checked={queryOptions[key]}
+                        onChange={checked => {
+                          const newQueryStr = updateFilter({
+                            prevQuery: search,
+                            filter: key,
+                            checked
+                          })
+                          history.push({
+                            search: newQueryStr
+                          })
+                          setFetchItems({ fetchStarted: true })
+                          setFetchItemCount({ fetchStarted: true })
+                        }}
+                      >
+                        {filterLabel[key]}
+                      </StyledTag>
+                    ))}
                 </div>
                 <StyledSelect
                   defaultValue={oldestFirst ? 'oldestFirst' : 'newestFirst'}
@@ -501,6 +654,21 @@ const Items = ({ search, history }) => {
                       />
                     ))}
               </StyledGrid>
+              <StyledPagination
+                total={fetchItemCount.data || 0}
+                current={Number(queryOptions.page)}
+                itemRender={pagingItem}
+                pageSize={ITEMS_PER_PAGE}
+                onChange={newPage => {
+                  history.push({
+                    search: /page=\d+/g.test(search)
+                      ? search.replace(/page=\d+/g, `page=${newPage}`)
+                      : `${search}page=${newPage}`
+                  })
+                  setFetchItems({ fetchStarted: true })
+                  setFetchItemCount({ fetchStarted: true })
+                }}
+              />
             </>
           </Spin>
         </StyledContent>
