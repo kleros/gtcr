@@ -205,20 +205,40 @@ const Items = ({ search, history }) => {
     challengedRemovals
   } = queryOptions
   const orderDirection = oldestFirst ? 'asc' : 'desc'
-  const itemsWhere = {
-    registry: tcrAddress.toLowerCase()
-  }
-  if (absent) itemsWhere.status = 'Absent'
-  if (registered) itemsWhere.status = 'Registered'
-  if (submitted) itemsWhere.status = 'RegistrationRequested'
-  if (removalRequested) itemsWhere.status = 'ClearingRequested'
-  if (challengedSubmissions || challengedRemovals) itemsWhere.disputed = true
 
-  const [itemsLoading, setItemsLoading] = useState()
-  const [itemsError, setItemsError] = useState()
-  const [itemsData, setItemsData] = useState()
+  // God of code forgive me for I have sinned (in many codebases)
+  // GQL queries did not allow me to pass a dynamic where (or I did
+  // not know how to do it) parameter the subgraph so I came up with
+  // this monstruocity. If you know how to improve this, give it a
+  // go. Perhaps add apollo back.
+  const itemsWhere = useMemo(() => {
+    if (absent)
+      return `{ registry: "${tcrAddress.toLowerCase()}", status: Absent }`
+    if (registered)
+      return `{ registry: "${tcrAddress.toLowerCase()}", status: Registered }`
+    if (submitted)
+      return `{ registry: "${tcrAddress.toLowerCase()}", status: RegistrationRequested }`
+    if (removalRequested)
+      return `{ registry: "${tcrAddress.toLowerCase()}", status: ClearingRequested }`
+    if (challengedSubmissions)
+      return `{ registry: "${tcrAddress.toLowerCase()}", status: RegistrationRequested, disputed: true }`
+    if (challengedRemovals)
+      return `{ registry: "${tcrAddress.toLowerCase()}", status: ClearingRequested, disputed: true }`
+
+    return `{ registry: "${tcrAddress.toLowerCase()}" }`
+  }, [
+    absent,
+    challengedRemovals,
+    challengedSubmissions,
+    registered,
+    removalRequested,
+    submitted,
+    tcrAddress
+  ])
+
   useEffect(() => {
     ;(async () => {
+      if (!gtcr) return
       const query = {
         query: `
           {
@@ -257,22 +277,81 @@ const Items = ({ search, history }) => {
           }
         `
       }
-      try {
-        setItemsLoading(true)
-        const { data } = await (
-          await fetch(GTCR_SUBGRAPH_URL, {
-            method: 'POST',
-            body: JSON.stringify(query)
-          })
-        ).json()
-        setItemsData(data)
-      } catch (err) {
-        setItemsError(err)
-      } finally {
-        setItemsLoading(false)
-      }
+      setFetchItems({ isFetching: true })
+      const { data, errors } = await (
+        await fetch(GTCR_SUBGRAPH_URL, {
+          method: 'POST',
+          body: JSON.stringify(query)
+        })
+      ).json()
+      if (errors) throw new Error(errors)
+      let { items } = data ?? {}
+      items = items.map(item => ({
+        ...item,
+        decodedData: item.props.map(({ value }) => value)
+      }))
+      items = items.map(
+        ({ itemID, status: statusName, requests, data, decodedData }) => {
+          const { disputed, disputeID, submissionTime, rounds, resolved } =
+            requests[0] ?? {}
+
+          const {
+            appealPeriodStart,
+            appealPeriodEnd,
+            ruling,
+            hasPaidRequester,
+            hasPaidChallenger,
+            amountPaidRequester,
+            amountPaidChallenger
+          } = rounds[0] ?? {}
+
+          const currentRuling =
+            ruling === 'None' ? 0 : ruling === 'Accept' ? 1 : 2
+          const disputeStatus = !disputed
+            ? DISPUTE_STATUS.WAITING
+            : resolved
+            ? DISPUTE_STATUS.SOLVED
+            : Number(appealPeriodEnd) > Date.now() / 1000
+            ? DISPUTE_STATUS.APPEALABLE
+            : DISPUTE_STATUS.WAITING
+
+          const graphStatusNameToCode = {
+            Absent: 0,
+            Registered: 1,
+            RegistrationRequested: 2,
+            ClearingRequested: 3
+          }
+
+          return {
+            ID: itemID,
+            itemID,
+            status: graphStatusNameToCode[statusName],
+            disputeStatus,
+            disputed,
+            data,
+            decodedData,
+            disputeID,
+            submissionTime: bigNumberify(submissionTime),
+            hasPaid: [false, hasPaidRequester, hasPaidChallenger],
+            currentRuling,
+            appealStart: bigNumberify(appealPeriodStart),
+            appealEnd: bigNumberify(appealPeriodEnd),
+            amountPaid: [
+              bigNumberify(0),
+              bigNumberify(amountPaidRequester),
+              bigNumberify(amountPaidChallenger)
+            ]
+          }
+        }
+      )
+      setFetchItems({
+        isFetching: false,
+        fetchStarted: false,
+        data: items,
+        address: gtcr.address
+      })
     })()
-  }, [GTCR_SUBGRAPH_URL, itemsWhere, orderDirection, page])
+  }, [GTCR_SUBGRAPH_URL, gtcr, itemsWhere, orderDirection, page])
 
   const { data: registryData } = useQuery(REGISTRY_QUERY, {
     variables: {
@@ -321,114 +400,6 @@ const Items = ({ search, history }) => {
     setFetchItems({ fetchStarted: true })
     setFetchItemCount({ fetchStarted: true })
   }, [gtcr])
-
-  // Wrangle data.
-  // We have to do this because this code was hacked
-  // to work with a new data source that returns data
-  // with a different structure.
-  // Ideally refactor/delete this at some point.
-  useEffect(() => {
-    if (
-      !gtcr ||
-      !gtcrView ||
-      fetchItems.isFetching ||
-      !fetchItems.fetchStarted ||
-      !GTCR_SUBGRAPH_URL ||
-      itemsLoading ||
-      error ||
-      itemsError
-    )
-      return
-
-    setFetchItems({ isFetching: true })
-    let returnItems
-    ;(async () => {
-      try {
-        const data = itemsData
-        let { items } = data ?? {}
-        items = items.map(item => ({
-          ...item,
-          decodedData: item.props.map(({ value }) => value)
-        }))
-        items = items.map(
-          ({ itemID, status: statusName, requests, data, decodedData }) => {
-            const { disputed, disputeID, submissionTime, rounds, resolved } =
-              requests[0] ?? {}
-
-            const {
-              appealPeriodStart,
-              appealPeriodEnd,
-              ruling,
-              hasPaidRequester,
-              hasPaidChallenger,
-              amountPaidRequester,
-              amountPaidChallenger
-            } = rounds[0] ?? {}
-
-            const currentRuling =
-              ruling === 'None' ? 0 : ruling === 'Accept' ? 1 : 2
-            const disputeStatus = !disputed
-              ? DISPUTE_STATUS.WAITING
-              : resolved
-              ? DISPUTE_STATUS.SOLVED
-              : Number(appealPeriodEnd) > Date.now() / 1000
-              ? DISPUTE_STATUS.APPEALABLE
-              : DISPUTE_STATUS.WAITING
-
-            const graphStatusNameToCode = {
-              Absent: 0,
-              Registered: 1,
-              RegistrationRequested: 2,
-              ClearingRequested: 3
-            }
-
-            return {
-              ID: itemID,
-              itemID,
-              status: graphStatusNameToCode[statusName],
-              disputeStatus,
-              disputed,
-              data,
-              decodedData,
-              disputeID,
-              submissionTime: bigNumberify(submissionTime),
-              hasPaid: [false, hasPaidRequester, hasPaidChallenger],
-              currentRuling,
-              appealStart: bigNumberify(appealPeriodStart),
-              appealEnd: bigNumberify(appealPeriodEnd),
-              amountPaid: [
-                bigNumberify(0),
-                bigNumberify(amountPaidRequester),
-                bigNumberify(amountPaidChallenger)
-              ]
-            }
-          }
-        )
-
-        returnItems = items
-      } catch (err) {
-        console.error('Error fetching items', err)
-        setError('Error fetching items')
-        setFetchItems({ isFetching: false, fetchStarted: false })
-      } finally {
-        setFetchItems({
-          isFetching: false,
-          fetchStarted: false,
-          data: returnItems,
-          address: gtcr.address
-        })
-      }
-    })()
-  }, [
-    GTCR_SUBGRAPH_URL,
-    error,
-    fetchItems,
-    gtcr,
-    gtcrView,
-    itemsData,
-    itemsError,
-    itemsLoading
-  ])
 
   // More data wrangling/bandaid to deal with legacy code.
   // Most of this should be refactored or even better, deleted.

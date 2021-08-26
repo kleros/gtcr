@@ -137,7 +137,7 @@ export const queryOptionsToFilterArray = (queryOptions, account) => {
 
 export const updateFilter = ({ prevQuery: search, filter, checked }) => {
   const queryObj = qs.parse(search.replace(/\?/g, ''))
-  // Remove previous filter. Combining filters is not yet supported.
+  // Remove previous filter. Combining states is not yet supported.
   delete queryObj[FILTER_KEYS.ABSENT]
   delete queryObj[FILTER_KEYS.REGISTERED]
   delete queryObj[FILTER_KEYS.SUBMITTED]
