@@ -11,15 +11,14 @@ import { Link } from 'react-router-dom'
 import styled from 'styled-components/macro'
 import { useDebouncedCallback } from 'use-debounce'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import matchSorter from 'match-sorter'
-import { ethers } from 'ethers'
-import { useWeb3Context } from 'web3-react'
 import _gtcr from '../assets/abis/LightGeneralizedTCR.json'
 import DisplaySelector from './display-selector'
 import { ItemTypes, searchableFields } from '@kleros/gtcr-encoder'
 import { TCRViewContext } from '../bootstrap/tcr-view-context'
 import { WalletContext } from '../bootstrap/wallet-context'
 import { itemToStatusCode, STATUS_COLOR } from '../utils/item-status'
+import { useLazyQuery } from '@apollo/client'
+import ITEM_SEARCH_QUERY from '../graphql/item-search'
 
 const StyledSelect = styled(Select)`
   width: 100%;
@@ -56,6 +55,10 @@ const StyledItemField = styled.div`
 const MAX_ITEM_COUNT = 5
 
 const OptionItem = ({ item: { itemID, columns = [], tcrAddress } }) => {
+  // note
+  // there are a few ethers queries coming from here. they might have to be changed
+  // to subgraph queries
+  // TODO read and figure it out
   const {
     gtcrView,
     challengePeriodDuration,
@@ -163,130 +166,69 @@ OptionItem.propTypes = {
 const SearchBar = () => {
   const [value, setValue] = useState()
   const [data, setData] = useState([])
-  const [enhancedDataSource, setEnhancedDataSource] = useState([])
-  const {
-    itemSubmissionLogs: dataSource,
-    metaEvidence,
-    tcrAddress
-  } = useContext(TCRViewContext)
-  const { library, active } = useWeb3Context()
+  const { tcrAddress } = useContext(TCRViewContext)
 
-  // If this is a TCR of TCRs, we should not only
-  // match against the decoded item value but also against
-  // the TCR name (which is a field inside metadatada of the meta evidence).
-  // Otherwise, match only the decoded item value.
-  useEffect(() => {
-    const { metadata, address } = metaEvidence || {}
-    if (!dataSource || !active || !metadata || address !== tcrAddress) return
-    if (dataSource.length > 0 && dataSource[0].tcrAddress !== tcrAddress) return
+  // Set the lazyQuery
+  const [makeItemSearchQuery, itemSearchQuery] = useLazyQuery(ITEM_SEARCH_QUERY)
 
-    const { isTCRofTCRs } = metadata
-    if (!isTCRofTCRs) {
-      // Match against the item decoded value only.
-      setEnhancedDataSource(dataSource)
-      return
-    }
+  // we dont need previous datasource
+  // after doing text based query, we filter by tcr, only showing items in current list
+  // cannot use first. before we need to filter by tcr in query.
+  // in the future, add tcr field to itemSearch query in subgraph
 
-    // Add the TCR name to the matchable fields.
-    ;(async () => {
-      setEnhancedDataSource(
-        await Promise.all(
-          dataSource.map(async item => {
-            const addr = item.decodedData[0]
-            const arbitrable = new ethers.Contract(addr, _gtcr, library)
-            try {
-              // Take the latest meta evidence.
-              const logs = (
-                await library.getLogs({
-                  ...arbitrable.filters.MetaEvidence(),
-                  fromBlock: 0
-                })
-              ).map(log => arbitrable.interface.parseLog(log))
-              if (logs.length === 0)
-                throw new Error('No meta evidence available for this address.')
-
-              // Take the penultimate item. This is the most recent meta evidence
-              // for registration requests.
-              const { _evidence: metaEvidencePath } = logs[
-                logs.length - 2
-              ].values
-              const { metadata } = await (
-                await fetch(
-                  process.env.REACT_APP_IPFS_GATEWAY + metaEvidencePath
-                )
-              ).json()
-              const { tcrTitle } = metadata
-
-              // Push TCR metadata into the item so it is also searchable.
-              item.keys.push(tcrTitle)
-              item.decodedData.push(tcrTitle)
-              item.columns.push({
-                description: 'The list title.',
-                isIdentifier: true,
-                label: 'Title',
-                type: ItemTypes.TEXT,
-                value: tcrTitle
-              })
-              return item
-            } catch (err) {
-              console.warn('Could not load list searcheable name.', err)
-              return item
-            }
-          })
-        )
-      )
-    })()
-  }, [active, dataSource, library, metaEvidence, tcrAddress])
-
+  // cannot use trailing because I don't understand it
+  // TODO
   const [debouncedCallback] = useDebouncedCallback(input => {
-    if (!input || input.length === 0 || enhancedDataSource.length === 0)
-      setData([])
+    console.log('update :3', itemSearchQuery)
 
-    const keys =
-      enhancedDataSource.length > 0
-        ? Object.keys(enhancedDataSource[0].keys).map(key => `keys.${key}`)
-        : []
-    // Iterate every column and search for a match against the user input.
-    const results =
-      enhancedDataSource.length > 0
-        ? matchSorter(enhancedDataSource, input, { keys })
-            .map(result => ({
-              itemID: result.itemID,
-              columns: result.columns,
-              text: result.itemID,
-              tcrAddress: result.tcrAddress
-            }))
-            .splice(0, MAX_ITEM_COUNT) // Limit the number of items to be displayed.
-        : []
+    if (!input || input.length === 0) setData([])
 
-    setData(results)
+    makeItemSearchQuery({ variables: { text: input } })
+    if (itemSearchQuery.loading || !itemSearchQuery.data) setData([])
+    else {
+      const results = itemSearchQuery.data.itemSearch
+
+      setData(results)
+    }
   }, 700)
+
   const onSearch = useCallback(value => debouncedCallback(value), [
     debouncedCallback
   ])
 
-  const options = data.map(d => {
-    // Iterate through the item fields and find the first text field
-    // to display on the input box.
-    // If none are available use the first address field.
-    // If none are available use the itemID.
-    const itemLabels = d.columns
-      .filter(col => searchableFields.includes(col.type))
-      .sort((a, b) => {
-        if (a.type === ItemTypes.TEXT && b.type !== ItemTypes.TEXT) return -1
-        if (b.type === ItemTypes.TEXT && a.type !== ItemTypes.TEXT) return 1
-        return 0
-      })
-      .map(col => col.value)
-
-    const label = itemLabels.length > 0 ? itemLabels[0] : d.itemID
-
-    return (
-      <Select.Option key={d.itemID} label={label}>
-        <OptionItem item={d} />
-      </Select.Option>
+  const options = data
+    .filter(
+      // only show items in current tcr.
+      // deprecate this later in favor of querying the tcr directly.
+      d => d.registry.id === tcrAddress
     )
-  })
+    .slice(0, MAX_ITEM_COUNT) // deprecate this later in favor of querying first = MAX_ITEM_COUNT
+    .map(d => {
+      // Iterate through the item fields and find the first text field
+      // to display on the input box.
+      // If none are available use the first address field.
+      // If none are available use the itemID.
+
+      d.columns = d.props // better variable name
+      const itemLabels = d.columns
+        .filter(column => searchableFields.includes(column.type))
+        .sort((a, b) => {
+          if (a.type === ItemTypes.TEXT && b.type !== ItemTypes.TEXT) return -1
+          if (b.type === ItemTypes.TEXT && a.type !== ItemTypes.TEXT) return 1
+          return 0
+        })
+        .map(column => column.value)
+
+      const label = itemLabels.length > 0 ? itemLabels[0] : d.itemID
+
+      d.tcrAddress = d.registry.id // this is to satisfy prop fields for OptionItem
+
+      return (
+        <Select.Option key={d.itemID} label={label}>
+          <OptionItem item={d} />
+        </Select.Option>
+      )
+    })
 
   const onChange = useCallback(itemID => setValue(itemID), [])
 
