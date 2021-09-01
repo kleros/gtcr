@@ -1,10 +1,4 @@
-import React, {
-  useState,
-  useCallback,
-  useEffect,
-  useContext,
-  useMemo
-} from 'react'
+import React, { useState, useEffect, useContext, useMemo } from 'react'
 import PropTypes from 'prop-types'
 import { Select, Badge, Icon } from 'antd'
 import { Link } from 'react-router-dom'
@@ -54,10 +48,16 @@ const StyledItemField = styled.div`
 
 const MAX_ITEM_COUNT = 5
 
-const OptionItem = ({ item: { itemID, columns = [], tcrAddress } }) => {
+const OptionItem = ({
+  item: {
+    itemID,
+    props = [],
+    registry: { id: tcrAddress }
+  }
+}) => {
   // note
-  // there are a few ethers queries coming from here. they might have to be changed
-  // to subgraph queries
+  // there are a few ethers queries coming from here.
+  // they might have to be changed to subgraph queries
   // TODO read and figure it out
   const {
     gtcrView,
@@ -115,21 +115,14 @@ const OptionItem = ({ item: { itemID, columns = [], tcrAddress } }) => {
           <>
             <StyledItemField>
               <DisplaySelector
-                type={columns[1].type}
-                value={columns[1].value}
-                allowedFileTypes={columns[1].allowedFileTypes}
-              />
-            </StyledItemField>
-            <StyledItemField>
-              <DisplaySelector
-                type={columns[0].type}
-                value={columns[0].value}
-                allowedFileTypes={columns[0].allowedFileTypes}
+                type={props[0].type}
+                value={props[0].value}
+                allowedFileTypes={props[0].allowedFileTypes}
               />
             </StyledItemField>
           </>
         ) : (
-          columns
+          props
             .filter(col => col.isIdentifier)
             .map((column, j) => (
               <StyledItemField key={j}>
@@ -153,13 +146,15 @@ const OptionItem = ({ item: { itemID, columns = [], tcrAddress } }) => {
 OptionItem.propTypes = {
   item: PropTypes.shape({
     itemID: PropTypes.string,
-    columns: PropTypes.arrayOf(
+    props: PropTypes.arrayOf(
       PropTypes.shape({
         type: PropTypes.oneOf(Object.values(ItemTypes)),
         value: PropTypes.string.isRequired
       })
     ),
-    tcrAddress: PropTypes.string.isRequired
+    registry: PropTypes.shape({
+      id: PropTypes.string
+    })
   }).isRequired
 }
 
@@ -167,70 +162,52 @@ const SearchBar = () => {
   const [value, setValue] = useState()
   const [data, setData] = useState([])
   const { tcrAddress } = useContext(TCRViewContext)
-
-  // Set the lazyQuery
   const [makeItemSearchQuery, itemSearchQuery] = useLazyQuery(ITEM_SEARCH_QUERY)
 
-  // we dont need previous datasource
-  // after doing text based query, we filter by tcr, only showing items in current list
-  // cannot use first. before we need to filter by tcr in query.
-  // in the future, add tcr field to itemSearch query in subgraph
-
-  // cannot use trailing because I don't understand it
-  // TODO
   const [debouncedCallback] = useDebouncedCallback(input => {
-    console.log('update :3', itemSearchQuery)
-
     if (!input || input.length === 0) setData([])
-
-    makeItemSearchQuery({ variables: { text: input } })
-    if (itemSearchQuery.loading || !itemSearchQuery.data) setData([])
-    else {
-      const results = itemSearchQuery.data.itemSearch
-
-      setData(results)
-    }
+    else
+      makeItemSearchQuery({
+        variables: {
+          text: `${input.trim().replace(' ', ' & ')}:*`
+        }
+      })
   }, 700)
 
-  const onSearch = useCallback(value => debouncedCallback(value), [
-    debouncedCallback
-  ])
+  useEffect(() => {
+    const results = itemSearchQuery.data?.itemSearch || []
+    setData(results)
+  }, [itemSearchQuery])
 
   const options = data
     .filter(
       // only show items in current tcr.
       // deprecate this later in favor of querying the tcr directly.
-      d => d.registry.id === tcrAddress
+      d => d.registry.id === tcrAddress.toLowerCase()
     )
-    .slice(0, MAX_ITEM_COUNT) // deprecate this later in favor of querying first = MAX_ITEM_COUNT
+    // deprecate this later in favor of querying first = MAX_ITEM_COUNT
+    .slice(0, MAX_ITEM_COUNT)
     .map(d => {
-      // Iterate through the item fields and find the first text field
-      // to display on the input box.
-      // If none are available use the first address field.
-      // If none are available use the itemID.
+      const itemLabels = d.props.filter(prop =>
+        searchableFields.includes(prop.type)
+      )
 
-      d.columns = d.props // better variable name
-      const itemLabels = d.columns
-        .filter(column => searchableFields.includes(column.type))
-        .sort((a, b) => {
-          if (a.type === ItemTypes.TEXT && b.type !== ItemTypes.TEXT) return -1
-          if (b.type === ItemTypes.TEXT && a.type !== ItemTypes.TEXT) return 1
-          return 0
-        })
-        .map(column => column.value)
-
-      const label = itemLabels.length > 0 ? itemLabels[0] : d.itemID
-
-      d.tcrAddress = d.registry.id // this is to satisfy prop fields for OptionItem
+      let label
+      if (itemLabels.length > 0)
+        label =
+          itemLabels.find(prop => prop.type === ItemTypes.TEXT)?.value ||
+          itemLabels[0].value
+      else label = d.itemID
 
       return (
         <Select.Option key={d.itemID} label={label}>
-          <OptionItem item={d} />
+          <OptionItem item={d} tcrAddress={d.registry.id} />
         </Select.Option>
       )
     })
 
-  const onChange = useCallback(itemID => setValue(itemID), [])
+  const onSearch = value => debouncedCallback(value)
+  const onChange = itemID => setValue(itemID)
 
   return (
     <StyledSelect
