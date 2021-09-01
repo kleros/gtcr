@@ -27,7 +27,7 @@ const ItemCardContent = ({ item, tcrAddress }) => (
     }}
   >
     <div>
-      {item.columns
+      {item.tcrData.mergedData
         .filter(
           col =>
             col.isIdentifier ||
@@ -53,20 +53,20 @@ const ItemCardContent = ({ item, tcrAddress }) => (
 
 ItemCardContent.propTypes = {
   item: PropTypes.shape({
-    columns: PropTypes.arrayOf(
-      PropTypes.shape({
-        isIdentifier: PropTypes.bool,
-        type: PropTypes.oneOf(Object.values(ItemTypes)),
-        value: PropTypes.oneOfType([
-          PropTypes.bool,
-          PropTypes.string,
-          PropTypes.number,
-          PropTypes.object
-        ])
-      })
-    ),
     tcrData: PropTypes.shape({
-      ID: PropTypes.string.isRequired
+      ID: PropTypes.string.isRequired,
+      mergedData: PropTypes.arrayOf(
+        PropTypes.shape({
+          isIdentifier: PropTypes.bool,
+          type: PropTypes.oneOf(Object.values(ItemTypes)),
+          value: PropTypes.oneOfType([
+            PropTypes.bool,
+            PropTypes.string,
+            PropTypes.number,
+            PropTypes.object
+          ])
+        })
+      )
     }).isRequired
   }).isRequired,
   tcrAddress: PropTypes.string.isRequired
