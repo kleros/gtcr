@@ -35,9 +35,15 @@ import takeLower from '../../utils/lower-limit'
 import { DISPUTE_STATUS } from '../../utils/item-status'
 import { useQuery } from '@apollo/client'
 import { REGISTRY_QUERY } from '../../graphql'
+import SearchBar from '../../components/search-bar'
 
 const NSFW_FILTER_KEY = 'NSFW_FILTER_KEY'
 const ITEMS_TOUR_DISMISSED = 'ITEMS_TOUR_DISMISSED'
+
+const StyledTopPadding = styled.div`
+  padding-top: 24px;
+  display: flex;
+`
 
 const StyledContent = styled(Layout.Content)`
   word-break: break-word;
@@ -576,6 +582,9 @@ const Items = ({ search, history }) => {
             }
           >
             <>
+              <StyledTopPadding>
+                <SearchBar />
+              </StyledTopPadding>
               <StyledFilters id="items-filters">
                 <div>
                   <StyledSwitch
