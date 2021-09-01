@@ -9,6 +9,7 @@ const ITEM_SEARCH_QUERY = gql`
       props {
         type
         value
+        isIdentifier
       }
       registry {
         id
