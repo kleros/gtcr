@@ -169,7 +169,10 @@ const SearchBar = () => {
     else
       makeItemSearchQuery({
         variables: {
-          text: `${input.trim().replace(' ', ' & ')}:*`
+          text: `${tcrAddress.toLowerCase()} & ${input
+            .trim()
+            .replace(' ', ' & ')}:*`,
+          first: MAX_ITEM_COUNT
         }
       })
   }, 700)
@@ -179,32 +182,24 @@ const SearchBar = () => {
     setData(results)
   }, [itemSearchQuery])
 
-  const options = data
-    .filter(
-      // only show items in current tcr.
-      // deprecate this later in favor of querying the tcr directly.
-      d => d.registry.id === tcrAddress.toLowerCase()
+  const options = data.map(d => {
+    const itemLabels = d.props.filter(prop =>
+      searchableFields.includes(prop.type)
     )
-    // deprecate this later in favor of querying first = MAX_ITEM_COUNT
-    .slice(0, MAX_ITEM_COUNT)
-    .map(d => {
-      const itemLabels = d.props.filter(prop =>
-        searchableFields.includes(prop.type)
-      )
 
-      let label
-      if (itemLabels.length > 0)
-        label =
-          itemLabels.find(prop => prop.type === ItemTypes.TEXT)?.value ||
-          itemLabels[0].value
-      else label = d.itemID
+    let label
+    if (itemLabels.length > 0)
+      label =
+        itemLabels.find(prop => prop.type === ItemTypes.TEXT)?.value ||
+        itemLabels[0].value
+    else label = d.itemID
 
-      return (
-        <Select.Option key={d.itemID} label={label}>
-          <OptionItem item={d} tcrAddress={d.registry.id} />
-        </Select.Option>
-      )
-    })
+    return (
+      <Select.Option key={d.itemID} label={label}>
+        <OptionItem item={d} tcrAddress={d.registry.id} />
+      </Select.Option>
+    )
+  })
 
   const onSearch = value => debouncedCallback(value)
   const onChange = itemID => setValue(itemID)
