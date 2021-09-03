@@ -420,7 +420,52 @@ const Items = ({ search, history }) => {
     setFetchItemCount({ fetchStarted: true })
   }, [gtcr])
 
-  const items = fetchItems
+  // More data wrangling/bandaid to deal with legacy code.
+  // Most of this should be refactored or even better, deleted.
+  const items = useMemo(() => {
+    if (
+      !fetchItems.data ||
+      !metaEvidence ||
+      metaEvidence.address !== tcrAddress ||
+      fetchItems.address !== tcrAddress ||
+      !metadataByTime
+    )
+      return
+
+    const { data: encodedItems } = fetchItems
+
+    return encodedItems.map((item, i) => {
+      let decodedData
+      const errors = []
+      const { columns } = metadataByTime.byTimestamp[
+        takeLower(Object.keys(metadataByTime.byTimestamp), item.timestamp)
+      ].metadata
+      try {
+        decodedData = item.decodedData
+        // eslint-disable-next-line no-unused-vars
+      } catch (err) {
+        errors.push(`Error decoding item ${item.ID} of list at ${tcrAddress}`)
+        console.warn(`Error decoding item ${item.ID} of list at ${tcrAddress}`)
+        console.warn(err)
+      }
+
+      // Return the item columns along with its TCR status data.
+      return {
+        tcrData: {
+          ...item, // Spread to convert from array to object.
+          decodedData
+        },
+        columns: columns.map(
+          (col, i) => ({
+            value: decodedData && decodedData[i],
+            ...col
+          }),
+          { key: i }
+        ),
+        errors
+      }
+    })
+  }, [fetchItems, metaEvidence, metadataByTime, tcrAddress])
 
   // This component supports URL actions.
   // This means someone can be sent to curate with a bunch of data to submit

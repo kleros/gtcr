@@ -6,6 +6,7 @@ import { Footer } from '@kleros/react-components'
 import loadable from '@loadable/component'
 import styled from 'styled-components/macro'
 import Web3Provider, { Connectors, useWeb3Context } from 'web3-react'
+import PropTypes from 'prop-types'
 import 'antd/dist/antd.css'
 import './theme.css'
 import {
@@ -137,6 +138,10 @@ const MenuItems = ({ TCR2_ADDRESS }) => [
     </a>
   </StyledMenuItem>
 ]
+
+MenuItems.propTypes = {
+  TCR2_ADDRESS: PropTypes.string.isRequired
+}
 
 const {
   NetworkOnlyConnector,

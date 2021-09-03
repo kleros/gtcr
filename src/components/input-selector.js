@@ -211,7 +211,14 @@ const InputSelector = ({
 }
 
 InputSelector.propTypes = {
-  type: PropTypes.oneOf(Object.values(ItemTypes))
+  type: PropTypes.oneOf(Object.values(ItemTypes)).isRequired,
+  setFieldValue: PropTypes.func.isRequired,
+  maxFileSizeMb: PropTypes.number.isRequired,
+  allowedFileTypes: PropTypes.arrayOf(PropTypes.string).isRequired,
+  // eslint-disable-next-line react/forbid-prop-types
+  values: PropTypes.any.isRequired,
+  label: PropTypes.string.isRequired,
+  name: PropTypes.string.isRequired
 }
 
 export default InputSelector
