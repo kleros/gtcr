@@ -1,10 +1,9 @@
 [build]
   publish = "build/"
-  command = "yarn build"
+  command = "npm run build"
 
 [build.environment]
   NODE_VERSION='10.23.1'
-  YARN_FLAGS='--pure-lockfile'
   REACT_APP_IPFS_GATEWAY="https://ipfs.kleros.io"
   REACT_APP_HOSTED_GRAPH_IPFS_ENDPOINT="https://api.thegraph.com/ipfs"
   REACT_APP_DEFAULT_NETWORK="1"
