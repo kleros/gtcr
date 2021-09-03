@@ -30,6 +30,7 @@ import takeLower from '../../utils/lower-limit'
 import { SUBGRAPH_STATUS_TO_CODE } from '../../utils/item-status'
 import { ITEM_DETAILS_QUERY } from '../../graphql'
 import { useQuery } from '@apollo/client'
+import SearchBar from '../../components/search-bar'
 
 const ITEM_TOUR_DISMISSED = 'ITEM_TOUR_DISMISSED'
 
@@ -304,6 +305,7 @@ const ItemDetails = ({ itemID, search }) => {
         <StyledBackLink>
           <StyledLink to={`/tcr/${tcrAddress}`}>Go Back</StyledLink>
         </StyledBackLink>
+        <SearchBar />
       </StyledMargin>
       <StyledLayoutContent>
         <ItemStatusCard
