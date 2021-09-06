@@ -294,7 +294,12 @@ const Items = ({ search, history }) => {
           body: JSON.stringify(query)
         })
       ).json()
-      if (errors) throw new Error(errors)
+      if (errors) {
+        console.error(errors)
+        setFetchItems({ isFetching: false })
+        setError(errors.message)
+        return
+      }
       let { items } = data ?? {}
       items = items.map(item => ({
         ...item,
