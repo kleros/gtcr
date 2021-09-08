@@ -23,7 +23,6 @@ import { TourProvider } from './tour-context'
 import { NETWORK_NAME, NETWORK } from '../utils/network-utils'
 import ErrorPage from '../pages/error-page'
 import useMainTCR2 from '../hooks/tcr2'
-import { TCRViewProvider } from './tcr-view-context'
 import useNetworkEnvVariable from '../hooks/network-env'
 import WalletModal from './wallet-modal'
 import './fontawesome'
@@ -33,6 +32,8 @@ import WelcomeModal from './welcome-modal'
 import { SAVED_NETWORK_KEY } from '../utils/string'
 import { ApolloClient, ApolloProvider, InMemoryCache } from '@apollo/client'
 import { HttpLink } from '@apollo/client/link/http'
+import ItemsRouter from '../pages/items-router'
+import ItemDetailsRouter from '../pages/item-details-router'
 
 const StyledSpin = styled(Spin)`
   left: 50%;
@@ -89,28 +90,6 @@ const StyledMenuItem = styled(Menu.Item)`
 
 const Factory = loadable(
   () => import(/* webpackPrefetch: true */ '../pages/factory/index'),
-  {
-    fallback: (
-      <StyledLayoutContent>
-        <StyledSpin />
-      </StyledLayoutContent>
-    )
-  }
-)
-
-const Items = loadable(
-  () => import(/* webpackPrefetch: true */ '../pages/items/index'),
-  {
-    fallback: (
-      <StyledLayoutContent>
-        <StyledSpin />
-      </StyledLayoutContent>
-    )
-  }
-)
-
-const ItemDetails = loadable(
-  () => import(/* webpackPrefetch: true */ '../pages/item-details/index'),
   {
     fallback: (
       <StyledLayoutContent>
@@ -220,20 +199,29 @@ const Content = () => {
           location: { search },
           history
         }) => (
-          <TCRViewProvider tcrAddress={tcrAddress}>
-            <Switch>
-              <Route path="/tcr/:tcrAddress/:itemID">
-                {({
-                  match: {
-                    params: { itemID }
-                  }
-                }) => <ItemDetails search={search} itemID={itemID} />}
-              </Route>
-              <Route path="/tcr/:tcrAddress">
-                <Items search={search} history={history} />
-              </Route>
-            </Switch>
-          </TCRViewProvider>
+          <Switch>
+            <Route path="/tcr/:tcrAddress/:itemID">
+              {({
+                match: {
+                  params: { itemID }
+                }
+              }) => (
+                <ItemDetailsRouter
+                  search={search}
+                  itemID={itemID}
+                  tcrAddress={tcrAddress}
+                  history={history}
+                />
+              )}
+            </Route>
+            <Route path="/tcr/:tcrAddress">
+              <ItemsRouter
+                search={search}
+                history={history}
+                tcrAddress={tcrAddress}
+              />
+            </Route>
+          </Switch>
         )}
       </Route>
       <Route path="/factory" exact component={Factory} />

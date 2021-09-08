@@ -7,11 +7,13 @@
   REACT_APP_IPFS_GATEWAY="https://ipfs.kleros.io"
   REACT_APP_HOSTED_GRAPH_IPFS_ENDPOINT="https://api.thegraph.com/ipfs"
   REACT_APP_DEFAULT_NETWORK="1"
-  REACT_APP_DEFAULT_TCR_ADDRESSES='{"42":"0xfB2ec1969A9ec0f4af911190AF27d3f085585830" }'
+  REACT_APP_DEFAULT_TCR_ADDRESSES='{"42":"0xBdfAe19c0fA35cCbD5541d5D9cA4E4F6F04CaaEb","1":"0xba0304273a54dfec1fc7f4bccbf4b15519aecf15","4":"0x3b29096b7ab49428923d902cEC3dFEaa49993234","100":"0x2442D40B0aeCad0298C2724A97F2f1BbDF2C2615"}'
   REACT_APP_DEFAULT_EVIDENCE_DISPLAY_URI='/ipfs/QmYAw1iqWZ834U8mSmZqo2jvphwpzS9NoT54uDtwrpKy8p/index.html'
-  REACT_APP_GTCRVIEW_ADDRESSES='{"42":"0x2dba4b729cb5f73bf85e7012ea99aa477a210dd6" }'
+  REACT_APP_GTCRVIEW_ADDRESSES='{"42":"0xe6da64f5bf3e2e373405b36a7add7182ab49c9d9", "1": "0xe75a12f40da77d285c08a44f499e597bc5085658", "4": "0x31e8d06b5fc3856cc93f4172d335626c680af1a7", "100": "0x27BC296DC0b8a6c3cD39326aE9EC14604e96f7BF"}'
+  REACT_APP_LGTCRVIEW_ADDRESSES='{"42":"0x2dba4b729cb5f73bf85e7012ea99aa477a210dd6"}'
   REACT_APP_BATCH_WITHDRAW_ADDRESSES='{"42":"0xA32942798112e561d4d3ffc62c552bb0E9651b66", "1": "0x38aa214dc986d0bab53e5861071f3d5a56066b4d", "4": "0x84f33254f4f6f55c65f9e1b34d6d13ea851d8540"}'
-  REACT_APP_FACTORY_ADDRESSES='{"42":"0xd6947fd7569ea98829fdb1bcab1201681a3ec3b0"}'
+  REACT_APP_FACTORY_ADDRESSES='{"42":"0x4296b39059b8591d4f22a0fc4ee49508279b8fc6", "1": "0xe9dd523600b74b8ef0af164687079a6c437f9cd5", "4": "0xcc1f0ca49a9d622da624bff6a4cd5b32c5276b11", "100": "0x794Cee5a6e1501b633eC13b8c1e327d9860FE039"}'
+  REACT_APP_LGTCR_FACTORY_ADDRESSES='{"42":"0xd6947fd7569ea98829fdb1bcab1201681a3ec3b0"}'
   REACT_APP_DEFAULT_GOVERNOR='{"1":{"address":"0x3a7edc1eb16cb454e4964ec51642f7d7b35b5292","label":"Kleros Governor"},"4":{"label":"EOA Governor (you probably want to use your own address)","address":"0xdC8C1a8CB38F27C188a43CE0eBBC8e42e393D0d3"},"42":{"address":"0x5A63D4fe53BC754af645bC1C6879698C50563920","label":"Kovan Kleros Governor"},"100":{"label":"This is an EOA governor (you probably want to use your own address)","address":"0xdC8C1a8CB38F27C188a43CE0eBBC8e42e393D0d3"}}'
   REACT_APP_DEFAULT_ARBITRATOR='{"1":{"label":"Kleros","address":"0x988b3A538b618C7A603e1c11Ab82Cd16dbE28069"},"4":{"label":"Centralized Arbitrator (you probably want to use your own)","address":"0x146fd982d5785171218202b9929d3e9048a11218"},"42":{"label":"Kleros","address":"0x60B2AbfDfaD9c0873242f59f2A8c32A3Cc682f80"},"100":{"label":"Kleros","address":"0x9C1dA9A04925bDfDedf0f6421bC7EEa8305F9002"}}'
   REACT_APP_DEFAULT_ARBITRATOR_EXTRA_DATA='{"1":{"label":"This defines to which court and how many jurors to use for the initial dispute.","data":"0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000003"},"4":{"label":"Not used","data":"0x00"},"42":{"label":"This defines to which court and how many jurors to use for the initial dispute.","data":"0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000003"},"100":{"label":"This defines to which court and how many jurors to use for the initial dispute.","data":"0x00000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000003"}}'
@@ -22,7 +24,7 @@
   REACT_APP_INSTRUCTION_VIDEO='https://www.youtube.com/embed/DKPVWzhh8Y8'
   REACT_APP_TX_BATCHER_ADDRESSES='{"1":"0x82458d1c812d7c930bb3229c9e159cbabd9aa8cb","42":"0x741A4dCaD4f72B83bE9103a383911d78362611cf","4":"0x5a64dd89b5a587ec7750a129cd3a7b5cbdfbab5d","100":"0xD7572AD1523F3f116258b8d9dDeBA1d5e76235ac"}'
   REACT_APP_REJECT_ALL_POLICY_URI='/ipfs/QmZ7RVU7re1g8nXDbAFMHV99pyie3dn4cY7Ga2X4h8mDpV/reject-all-policy.pdf'
-  REACT_APP_SUBGRAPH_URL='{"42":"https://api.thegraph.com/subgraphs/name/kleros/light-curate-kovan"}'
+  REACT_APP_SUBGRAPH_URL='{"1":"https://api.thegraph.com/subgraphs/name/kleros/curate","42":"https://api.thegraph.com/subgraphs/name/eccentricexit/light-curate-kovan-ii","4":"https://api.thegraph.com/subgraphs/name/kleros/curate-rinkeby","100":"https://api.thegraph.com/subgraphs/name/mtsalenc/curate-xdai"}'
 
 [[redirects]]
   from = "/*"

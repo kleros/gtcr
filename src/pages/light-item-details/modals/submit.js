@@ -12,12 +12,12 @@ import {
 } from 'antd'
 import styled from 'styled-components/macro'
 import PropTypes from 'prop-types'
-import { abi as _gtcr } from '@kleros/tcr/build/contracts/GeneralizedTCR.json'
+import _gtcr from '../../../assets/abis/LightGeneralizedTCR.json'
 import { ethers } from 'ethers'
 import { withFormik } from 'formik'
 import humanizeDuration from 'humanize-duration'
 import { WalletContext } from '../../../bootstrap/wallet-context'
-import { gtcrEncode, ItemTypes, typeDefaultValues } from '@kleros/gtcr-encoder'
+import { ItemTypes, typeDefaultValues } from '@kleros/gtcr-encoder'
 import InputSelector from '../../../components/input-selector.js'
 import ETHAmount from '../../../components/eth-amount.js'
 import BNPropType from '../../../prop-types/bn'
@@ -25,6 +25,7 @@ import useFactory from '../../../hooks/factory'
 import { TourContext } from '../../../bootstrap/tour-context'
 import { capitalizeFirstLetter, getArticleFor } from '../../../utils/string'
 import useNativeCurrency from '../../../hooks/native-currency'
+import ipfsPublish from '../../../utils/ipfs-publish'
 
 const StyledSpin = styled(Spin)`
   height: 60px;
@@ -170,34 +171,17 @@ const SubmitModal = props => {
 
   const postSubmit = useCallback(
     (values, columns, resetForm) => {
-      pushWeb3Action(async ({ account, networkId, library }, signer) => {
+      pushWeb3Action(async ({ account, networkId }, signer) => {
         const gtcr = new ethers.Contract(tcrAddress, _gtcr, signer)
-        const encodedParams = gtcrEncode({ columns, values })
-
-        // Compute gas cost. We do this because metamask (apparently)
-        // has a ceiling gas limit which, if exceeded throws an error.
-        const gtcrInterface = new ethers.utils.Interface(_gtcr)
-        const data = gtcrInterface.functions.addItem.encode([encodedParams])
-        const txObj = {
-          to: gtcr.address,
-          value: submissionDeposit,
-          data
-        }
-        let gasLimit
-        try {
-          ;(await library.estimateGas(txObj)).toNumber()
-          // eslint-disable-next-line no-unused-vars
-        } catch (err) {
-          console.warn(
-            'Gas estimation failed. Falling back to manual gas limit.'
-          )
-          gasLimit = 673909
-        }
+        const enc = new TextEncoder()
+        const fileData = enc.encode(JSON.stringify({ columns, values }))
+        const ipfsEvidenceObject = await ipfsPublish('item.json', fileData)
+        const ipfsEvidencePath = `/ipfs/${ipfsEvidenceObject[1].hash +
+          ipfsEvidenceObject[0].path}`
 
         // Request signature and submit.
-        const tx = await gtcr.addItem(encodedParams, {
-          value: submissionDeposit,
-          gasLimit
+        const tx = await gtcr.addItem(ipfsEvidencePath, {
+          value: submissionDeposit
         })
 
         onCancel() // Hide the submission modal.
@@ -211,8 +195,8 @@ const SubmitModal = props => {
             if (!process.env.REACT_APP_NOTIFICATIONS_API_URL || networkId)
               return
             const itemID = ethers.utils.solidityKeccak256(
-              ['bytes'],
-              [encodedParams]
+              ['string'],
+              [ipfsEvidencePath]
             )
             fetch(
               `${process.env.REACT_APP_NOTIFICATIONS_API_URL}/${networkId}/api/subscribe`,

@@ -8,7 +8,7 @@ import { getAddress } from 'ethers/utils'
 const useFactory = () => {
   const { networkId, library, active } = useWeb3Context()
   const factoryAddress = useNetworkEnvVariable(
-    'REACT_APP_FACTORY_ADDRESSES',
+    'REACT_APP_LGTCR_FACTORY_ADDRESSES',
     networkId
   )
   const factory = useMemo(() => {

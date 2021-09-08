@@ -15,20 +15,22 @@ import { Link } from 'react-router-dom'
 import ErrorPage from '../error-page'
 import { ethers } from 'ethers'
 import { abi as _arbitrator } from '@kleros/erc-792/build/contracts/IArbitrator.json'
-import { abi as _gtcr } from '@kleros/tcr/build/contracts/GeneralizedTCR.json'
+import _gtcr from '../../assets/abis/LightGeneralizedTCR.json'
 import ItemDetailsCard from '../../components/item-details-card'
 import ItemStatusCard from './item-status-card'
 import CrowdfundingCard from './crowdfunding-card'
-import { TCRViewContext } from '../../bootstrap/tcr-view-context'
-import { gtcrDecode } from '@kleros/gtcr-encoder'
+import { LightTCRViewContext } from '../../bootstrap/light-tcr-view-context'
 import RequestTimelines from './request-timelines'
 import { WalletContext } from '../../bootstrap/wallet-context'
-import SearchBar from '../../components/search-bar'
 import { capitalizeFirstLetter, ZERO_ADDRESS } from '../../utils/string'
 import Badges from './badges'
 import AppTour from '../../components/tour'
 import itemTourSteps from './tour-steps'
 import takeLower from '../../utils/lower-limit'
+import { SUBGRAPH_STATUS_TO_CODE } from '../../utils/item-status'
+import { ITEM_DETAILS_QUERY } from '../../graphql'
+import { useQuery } from '@apollo/client'
+import SearchBar from '../../components/light-search-bar'
 
 const ITEM_TOUR_DISMISSED = 'ITEM_TOUR_DISMISSED'
 
@@ -95,52 +97,73 @@ const ItemDetails = ({ itemID, search }) => {
     tcrAddress,
     connectedTCRAddr,
     metadataByTime
-  } = useContext(TCRViewContext)
+  } = useContext(LightTCRViewContext)
+
+  // subgraph item entities have id "<itemID>@<listaddress>"
+  const compoundId = `${itemID}@${tcrAddress.toLowerCase()}`
+  const detailsViewQuery = useQuery(ITEM_DETAILS_QUERY, {
+    variables: { id: compoundId }
+  })
 
   // Warning: This function should only be called when all its dependencies
   // are set.
   const fetchItem = useCallback(async () => {
-    try {
-      const result = {
-        ...(await gtcrView.getItem(tcrAddress, itemID))
-      } // Spread to convert from array to object.
-      setItem(result)
-    } catch (err) {
-      console.error(err)
-      setError('Error fetching item')
-    }
-  }, [gtcrView, itemID, tcrAddress])
+    if (!detailsViewQuery.loading)
+      try {
+        const itemFromContract = await gtcrView.getItem(tcrAddress, itemID)
+        const { data: itemURI, requests } = detailsViewQuery.data.litem
+        const itemData = await (
+          await fetch(`${process.env.REACT_APP_IPFS_GATEWAY}${itemURI}`)
+        ).json()
 
+        const result = {
+          ...itemFromContract, // Spread to convert from array to object.
+          data: itemURI,
+          decodedData: Object.values(itemData.values),
+          requestsFromSubgraph: requests
+        }
+
+        setItem(result)
+        setDecodedItem({
+          ...result,
+          errors: []
+        })
+      } catch (err) {
+        console.error(err)
+        setError('Error fetching item')
+      }
+  }, [gtcrView, itemID, tcrAddress, detailsViewQuery])
+
+  // TODO: Fetch this directly from the subgraph.
   // Get requests data
   useEffect(() => {
     ;(async () => {
       try {
-        if (!gtcr || !gtcrView || !tcrAddress || !itemID) return
-        const [requestStructs, rawRequestLogs] = await Promise.all([
-          gtcrView.getItemRequests(tcrAddress, itemID),
-          library.getLogs({
-            ...gtcr.filters.RequestSubmitted(itemID),
-            fromBlock: 0
-          })
+        if (!gtcr || !gtcrView || !tcrAddress || !itemID || !item) return
+        const [requestStructs] = await Promise.all([
+          gtcrView.getItemRequests(tcrAddress, itemID)
         ])
 
-        const requestLogs = rawRequestLogs
-          .map(log => gtcr.interface.parseLog(log))
-          .map(log => log.values)
+        const { requestsFromSubgraph: requests } = item
 
         setRequests(
           requestStructs.map((request, i) => ({
             ...request,
-            requestType: requestLogs[i]._requestType
+            requestType: SUBGRAPH_STATUS_TO_CODE[requests[i].requestType],
+            evidenceGroupID: requests[i].evidenceGroupID,
+            creationTx: requests[i].creationTx,
+            resolutionTx: requests[i].resolutionTx,
+            resolutionTime: requests[i].resolutionTime,
+            submissionTime: requests[i].submissionTime
           }))
         )
       } catch (err) {
         console.error('Error fetching item requests', err)
       }
     })()
-  }, [gtcr, gtcrView, itemID, library, tcrAddress])
+  }, [gtcr, gtcrView, item, itemID, library, tcrAddress])
 
-  // Decode item bytes once we have it and the meta evidence files.
+  // Set the meta evidence.
   useEffect(() => {
     if (!item || !metadataByTime) return
     const { byTimestamp } = metadataByTime
@@ -149,28 +172,6 @@ const ItemDetails = ({ itemID, search }) => {
     if (!file) return
 
     setMetaEvidence(file)
-
-    const { address, metadata } = file || {}
-    if (address !== tcrAddress) return
-
-    const { columns } = metadata
-
-    const errors = []
-    let decodedData
-    try {
-      decodedData = gtcrDecode({
-        columns,
-        values: item.data
-      })
-    } catch (_) {
-      errors.push(`Error decoding ${item.ID} of TCR at ${tcrAddress}`)
-    }
-
-    setDecodedItem({
-      ...item,
-      decodedData,
-      errors
-    })
   }, [item, metaEvidence, metadataByTime, tcrAddress])
 
   // Fetch item.
@@ -188,7 +189,7 @@ const ItemDetails = ({ itemID, search }) => {
     setEventListenerSet(true)
     gtcr.on(gtcr.filters.ItemStatusChange(itemID), fetchItem)
     gtcr.on(gtcr.filters.Dispute(arbitrator.address), fetchItem)
-    gtcr.on(gtcr.filters.AppealContribution(itemID), fetchItem)
+    gtcr.on(gtcr.filters.Contribution(itemID), fetchItem)
     gtcr.on(gtcr.filters.Evidence(), fetchItem)
     arbitrator.on(
       arbitrator.filters.AppealPossible(item.disputeID, gtcr.address),
@@ -218,7 +219,7 @@ const ItemDetails = ({ itemID, search }) => {
       } = refAttr
       gtcr.removeAllListeners(gtcr.filters.ItemStatusChange())
       gtcr.removeAllListeners(gtcr.filters.Dispute())
-      gtcr.removeAllListeners(gtcr.filters.AppealContribution())
+      gtcr.removeAllListeners(gtcr.filters.Contribution())
       gtcr.removeAllListeners(gtcr.filters.Evidence())
       arbitrator.removeAllListeners(arbitrator.filters.AppealPossible())
       arbitrator.removeAllListeners(arbitrator.filters.AppealDecision())

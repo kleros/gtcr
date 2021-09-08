@@ -12,8 +12,8 @@ import {
 import { ethers } from 'ethers'
 import styled from 'styled-components/macro'
 import humanizeDuration from 'humanize-duration'
-import { abi as _gtcr } from '@kleros/tcr/build/contracts/GeneralizedTCR.json'
-import { TCRViewContext } from '../../../bootstrap/tcr-view-context'
+import _gtcr from '../../../assets/abis/LightGeneralizedTCR.json'
+import { LightTCRViewContext } from '../../../bootstrap/light-tcr-view-context'
 import ETHAmount from '../../../components/eth-amount'
 import EvidenceForm from '../../../components/evidence-form'
 import { WalletContext } from '../../../bootstrap/wallet-context'
@@ -50,7 +50,7 @@ const RemoveModal = ({ item, itemName = 'item', fileURI, ...rest }) => {
     tcrAddress,
     metaEvidence,
     challengePeriodDuration
-  } = useContext(TCRViewContext)
+  } = useContext(LightTCRViewContext)
   const nativeCurrency = useNativeCurrency()
 
   const { metadata } = metaEvidence || {}

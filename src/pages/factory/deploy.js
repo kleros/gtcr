@@ -13,7 +13,7 @@ import { WalletContext } from '../../bootstrap/wallet-context'
 import { ZERO_ADDRESS, isVowel } from '../../utils/string'
 import useNetworkEnvVariable from '../../hooks/network-env'
 import useWindowDimensions from '../../hooks/window-dimensions'
-import SubmitModal from '../item-details/modals/submit'
+import SubmitModal from '../light-item-details/modals/submit'
 import useTcrView from '../../hooks/tcr-view'
 
 const _txBatcher = [
@@ -267,7 +267,7 @@ const Deploy = ({ setTxState, tcrState, setTcrState }) => {
   const [deployedTCRAddress, setDeployedTCRAddress] = useState()
   const [submissionFormOpen, setSubmissionFormOpen] = useState()
   const factoryAddress = useNetworkEnvVariable(
-    'REACT_APP_FACTORY_ADDRESSES',
+    'REACT_APP_LGTCR_FACTORY_ADDRESSES',
     networkId
   )
   const defaultTCRAddress = useNetworkEnvVariable(

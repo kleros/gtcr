@@ -16,7 +16,7 @@ const StyledButton = styled(Button)`
   text-transform: capitalize;
 `
 
-const ItemCardContent = ({ item, tcrAddress }) => (
+const LightItemCardContent = ({ item, tcrAddress }) => (
   <div
     style={{
       height: '100%',
@@ -27,7 +27,7 @@ const ItemCardContent = ({ item, tcrAddress }) => (
     }}
   >
     <div>
-      {item.columns
+      {item.tcrData.mergedData
         .filter(
           col =>
             col.isIdentifier ||
@@ -51,25 +51,25 @@ const ItemCardContent = ({ item, tcrAddress }) => (
   </div>
 )
 
-ItemCardContent.propTypes = {
+LightItemCardContent.propTypes = {
   item: PropTypes.shape({
-    columns: PropTypes.arrayOf(
-      PropTypes.shape({
-        isIdentifier: PropTypes.bool,
-        type: PropTypes.oneOf(Object.values(ItemTypes)),
-        value: PropTypes.oneOfType([
-          PropTypes.bool,
-          PropTypes.string,
-          PropTypes.number,
-          PropTypes.object
-        ])
-      })
-    ),
     tcrData: PropTypes.shape({
-      ID: PropTypes.string.isRequired
+      ID: PropTypes.string.isRequired,
+      mergedData: PropTypes.arrayOf(
+        PropTypes.shape({
+          isIdentifier: PropTypes.bool,
+          type: PropTypes.oneOf(Object.values(ItemTypes)),
+          value: PropTypes.oneOfType([
+            PropTypes.bool,
+            PropTypes.string,
+            PropTypes.number,
+            PropTypes.object
+          ])
+        })
+      )
     }).isRequired
   }).isRequired,
   tcrAddress: PropTypes.string.isRequired
 }
 
-export default ItemCardContent
+export default LightItemCardContent

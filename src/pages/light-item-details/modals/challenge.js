@@ -3,9 +3,9 @@ import PropTypes from 'prop-types'
 import { Modal, Descriptions, Typography, Button, Spin } from 'antd'
 import styled from 'styled-components/macro'
 import { ethers } from 'ethers'
-import { abi as _gtcr } from '@kleros/tcr/build/contracts/GeneralizedTCR.json'
+import _gtcr from '../../../assets/abis/LightGeneralizedTCR.json'
 import { STATUS_CODE } from '../../../utils/item-status'
-import { TCRViewContext } from '../../../bootstrap/tcr-view-context'
+import { LightTCRViewContext } from '../../../bootstrap/light-tcr-view-context'
 import ETHAmount from '../../../components/eth-amount'
 import { WalletContext } from '../../../bootstrap/wallet-context'
 import itemPropTypes from '../../../prop-types/item'
@@ -34,7 +34,7 @@ const ChallengeModal = ({ item, itemName, statusCode, fileURI, ...rest }) => {
     submissionChallengeDeposit,
     removalChallengeDeposit,
     tcrAddress
-  } = useContext(TCRViewContext)
+  } = useContext(LightTCRViewContext)
   const { pushWeb3Action } = useContext(WalletContext)
   const { setUserSubscribed } = useContext(TourContext)
   const challengeDeposit =

@@ -2,8 +2,8 @@ import React, { useContext } from 'react'
 import { Modal, Typography, Button } from 'antd'
 import { ethers } from 'ethers'
 import styled from 'styled-components/macro'
-import { abi as _gtcr } from '@kleros/tcr/build/contracts/GeneralizedTCR.json'
-import { TCRViewContext } from '../../../bootstrap/tcr-view-context'
+import _gtcr from '../../../assets/abis/LightGeneralizedTCR.json'
+import { LightTCRViewContext } from '../../../bootstrap/light-tcr-view-context'
 import { WalletContext } from '../../../bootstrap/wallet-context'
 import itemPropTypes from '../../../prop-types/item'
 import EvidenceForm from '../../../components/evidence-form.js'
@@ -19,7 +19,7 @@ const StyledModal = styled(Modal)`
 
 const EvidenceModal = ({ item, ...rest }) => {
   // Get contract data.
-  const { tcrAddress } = useContext(TCRViewContext)
+  const { tcrAddress } = useContext(LightTCRViewContext)
   const { pushWeb3Action } = useContext(WalletContext)
   const { setUserSubscribed } = useContext(TourContext)
 

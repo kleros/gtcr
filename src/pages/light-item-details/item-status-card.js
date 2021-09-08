@@ -1,7 +1,7 @@
 import React, { useContext, useMemo } from 'react'
 import { Descriptions, Skeleton, Card } from 'antd'
 import PropTypes from 'prop-types'
-import { abi as _gtcr } from '@kleros/tcr/build/contracts/GeneralizedTCR.json'
+import _gtcr from '../../assets/abis/LightGeneralizedTCR.json'
 import ItemStatusBadge from '../../components/item-status-badge'
 import styled from 'styled-components/macro'
 import { ethers } from 'ethers'
@@ -17,7 +17,7 @@ import itemPropTypes from '../../prop-types/item'
 import ETHAddress from '../../components/eth-address'
 import ItemActionModal from './item-action-modal'
 import ItemActionButton from '../../components/item-action-button'
-import { TCRViewContext } from '../../bootstrap/tcr-view-context'
+import { LightTCRViewContext } from '../../bootstrap/light-tcr-view-context'
 import { WalletContext } from '../../bootstrap/wallet-context'
 import BNPropType from '../../prop-types/bn'
 import useHumanizedCountdown from '../../hooks/countdown'
@@ -94,7 +94,7 @@ const ItemStatusCard = ({
     gtcrView,
     removalBaseDeposit,
     submissionBaseDeposit
-  } = useContext(TCRViewContext)
+  } = useContext(LightTCRViewContext)
 
   // Get remaining appeal time, if any and build countdown.
   const { appealRemainingTime, appealRemainingTimeLoser } = useAppealTime(item)

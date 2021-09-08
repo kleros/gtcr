@@ -10,18 +10,18 @@ import {
 import { useWeb3Context } from 'web3-react'
 import { ethers } from 'ethers'
 import styled from 'styled-components/macro'
-import { solidityKeccak256, bigNumberify } from 'ethers/utils'
+import { bigNumberify } from 'ethers/utils'
 import PropTypes from 'prop-types'
 import { abi as _arbitrator } from '@kleros/erc-792/build/contracts/IArbitrator.json'
-import { TCRViewContext } from '../../../bootstrap/tcr-view-context'
+import { LightTCRViewContext } from '../../../bootstrap/light-tcr-view-context'
 import ETHAddress from '../../../components/eth-address'
 import itemPropTypes from '../../../prop-types/item'
 import {
   CONTRACT_STATUS,
-  STATUS_CODE,
   PARTY,
   STATUS_COLOR,
-  getResultStatus
+  getResultStatus,
+  STATUS_CODE
 } from '../../../utils/item-status'
 import { WalletContext } from '../../../bootstrap/wallet-context'
 import BNPropType from '../../../prop-types/bn'
@@ -76,7 +76,7 @@ const EventTimestamp = ({ blockNumber }) => {
 
 const Timeline = ({ request, requestID, item }) => {
   const { library, active, networkId } = useWeb3Context()
-  const { gtcr, metaEvidence } = useContext(TCRViewContext)
+  const { gtcr, metaEvidence } = useContext(LightTCRViewContext)
   const { archon } = useContext(WalletContext)
   const [logs, setLogs] = useState([])
   const [error, setError] = useState()
@@ -86,11 +86,9 @@ const Timeline = ({ request, requestID, item }) => {
   const [fetchingLogs, setFetchingLogs] = useState()
   const itemID = item && item.ID
   const evidenceGroupID = useMemo(() => {
-    if (!itemID || requestID == null) return
-    return bigNumberify(
-      solidityKeccak256(['bytes32', 'uint'], [itemID, requestID])
-    )
-  }, [itemID, requestID])
+    if (!request) return
+    return bigNumberify(request.evidenceGroupID)
+  }, [request])
 
   // Setup arbitrator instance.
   useEffect(() => {
@@ -135,14 +133,6 @@ const Timeline = ({ request, requestID, item }) => {
             ...gtcr.filters.Evidence(arbitrator.address, evidenceGroupID),
             fromBlock: 0
           }),
-          library.getLogs({
-            ...gtcr.filters.RequestSubmitted(itemID, requestID),
-            fromBlock: 0
-          }),
-          library.getLogs({
-            ...gtcr.filters.ItemStatusChange(itemID, requestID),
-            fromBlock: 0
-          }),
           disputed
             ? library.getLogs({
                 ...gtcr.filters.Ruling(arbitrator.address, disputeID),
@@ -166,7 +156,7 @@ const Timeline = ({ request, requestID, item }) => {
         .filter(logs => !!logs)
         .map((e, i) => {
           // Parse and sort event logs.
-          if (i <= 3)
+          if (i <= 1)
             // Arbitrable Logs.
             return e.map(log => ({
               ...gtcr.interface.parseLog(log),
@@ -183,16 +173,7 @@ const Timeline = ({ request, requestID, item }) => {
         })
         .reduce((acc, curr) => acc.concat(curr), [])
 
-      setLogs(
-        logsArr.filter(
-          // Remove unused item status change event logs
-          e =>
-            !(
-              e.name === 'ItemStatusChange' &&
-              (!e.values._resolved || e.values._disputed)
-            )
-        )
-      )
+      setLogs(logsArr)
 
       // Fetch evidence files.
       archon.arbitrable
@@ -255,12 +236,13 @@ const Timeline = ({ request, requestID, item }) => {
 
   if (error) return <Result status="warning" title={error} />
 
-  const requestSumbittedLogs = logs.filter(
-    log => log.name === 'RequestSubmitted'
-  )
-  const requestType =
-    requestSumbittedLogs.length > 0 &&
-    requestSumbittedLogs[0].values._requestType
+  const {
+    requestType,
+    submissionTime,
+    creationTx,
+    resolutionTx,
+    resolutionTime
+  } = request ?? {}
 
   // Display loading indicator
   if (!item || !request || typeof requestType !== 'number')
@@ -268,40 +250,39 @@ const Timeline = ({ request, requestID, item }) => {
 
   const { metadata } = metaEvidence || {}
 
+  // TODO: RequestSubmitted might need some refactoring.
   // Build nodes from request events.
   const itemName = metadata ? capitalizeFirstLetter(metadata.itemName) : 'Item'
-  const items = logs
+  const requestSubmittedItem = (
+    <AntdTimeline.Item key={0}>
+      <span>
+        <StyledText>
+          {requestType === CONTRACT_STATUS.REGISTRATION_REQUESTED
+            ? `${itemName} submitted`
+            : 'Removal requested'}
+        </StyledText>
+        <Typography.Text type="secondary">
+          <a
+            href={`https://${
+              networkId !== NETWORK.MAINNET ? `${NETWORK_NAME[networkId]}.` : ''
+            }etherscan.io/tx/${creationTx}`}
+          >
+            ` - {new Date(new Date(submissionTime * 1000)).toGMTString()}`
+          </a>
+        </Typography.Text>
+      </span>
+    </AntdTimeline.Item>
+  )
+
+  const sortedLogs = logs
     .sort((a, b) => a.blockNumber - b.blockNumber)
-    .sort(a => (a.name === 'RequestSubmitted' ? -1 : 0))
     .map(({ name, values, blockNumber, transactionHash }, i) => {
-      if (name === 'RequestSubmitted')
-        return (
-          <AntdTimeline.Item key={i}>
-            <span>
-              <StyledText>
-                {requestType === CONTRACT_STATUS.REGISTRATION_REQUESTED
-                  ? `${itemName} submitted`
-                  : 'Removal requested'}
-              </StyledText>
-              <Typography.Text type="secondary">
-                <a
-                  href={`https://${
-                    networkId !== NETWORK.MAINNET
-                      ? `${NETWORK_NAME[networkId]}.`
-                      : ''
-                  }etherscan.io/tx/${transactionHash}`}
-                >
-                  <EventTimestamp blockNumber={blockNumber} />
-                </a>
-              </Typography.Text>
-            </span>
-          </AntdTimeline.Item>
-        )
-      else if (name === 'Evidence') {
+      const index = i + 1 // We add one here because the first item is the request submitted.
+      if (name === 'Evidence') {
         const evidenceFile = evidenceFiles[transactionHash]
         if (!evidenceFile)
           return (
-            <AntdTimeline.Item dot={<Icon type="file-text" />} key={i}>
+            <AntdTimeline.Item dot={<Icon type="file-text" />} key={index}>
               <StyledCard loading={!evidenceFile} />
             </AntdTimeline.Item>
           )
@@ -327,7 +308,7 @@ const Timeline = ({ request, requestID, item }) => {
         return (
           <AntdTimeline.Item
             dot={<Icon type="file-text" />}
-            key={i}
+            key={index}
             color="grey"
           >
             <StyledCard
@@ -356,13 +337,13 @@ const Timeline = ({ request, requestID, item }) => {
         const appealableRuling = appealableRulings[transactionHash]
         if (typeof appealableRuling === 'undefined')
           return (
-            <AntdTimeline.Item dot={<Icon type="file-text" />} key={i}>
+            <AntdTimeline.Item dot={<Icon type="file-text" />} key={index}>
               <Skeleton active paragraph={false} title={{ width: '200px' }} />
             </AntdTimeline.Item>
           )
 
         return (
-          <AntdTimeline.Item key={i}>
+          <AntdTimeline.Item key={index}>
             <span>
               {appealableRuling === PARTY.NONE
                 ? 'The arbitrator refused to rule'
@@ -391,7 +372,7 @@ const Timeline = ({ request, requestID, item }) => {
         )
       } else if (name === 'AppealDecision')
         return (
-          <AntdTimeline.Item key={i}>
+          <AntdTimeline.Item key={index}>
             Ruling appealed{' '}
             <Typography.Text type="secondary">
               <a
@@ -440,28 +421,7 @@ const Timeline = ({ request, requestID, item }) => {
         })
 
         return (
-          <AntdTimeline.Item key={i} color={STATUS_COLOR[finalStatus]}>
-            {resultMessage}
-            <Typography.Text type="secondary">
-              <a
-                href={`https://${
-                  networkId !== NETWORK.MAINNET
-                    ? `${NETWORK_NAME[networkId]}.`
-                    : ''
-                }etherscan.io/tx/${transactionHash}`}
-              >
-                <EventTimestamp blockNumber={blockNumber} />
-              </a>
-            </Typography.Text>
-          </AntdTimeline.Item>
-        )
-      } else if (name === 'ItemStatusChange') {
-        const resultMessage =
-          item.status === STATUS_CODE.REGISTERED
-            ? `${itemName || 'item'} accepted.`
-            : `${itemName || 'item'} removed.`
-        return (
-          <AntdTimeline.Item key={i} color={STATUS_COLOR[item.status]}>
+          <AntdTimeline.Item key={index} color={STATUS_COLOR[finalStatus]}>
             {resultMessage}
             <Typography.Text type="secondary">
               <a
@@ -479,6 +439,29 @@ const Timeline = ({ request, requestID, item }) => {
       } else throw new Error(`Unhandled event ${name}`)
     })
 
+  const items = [requestSubmittedItem, ...sortedLogs]
+
+  if (resolutionTime) {
+    const resultMessage =
+      item.status === STATUS_CODE.REGISTERED
+        ? `${itemName || 'item'} accepted.`
+        : `${itemName || 'item'} removed.`
+    items.push(
+      <AntdTimeline.Item key={items.length} color={STATUS_COLOR[item.status]}>
+        {resultMessage}
+        <Typography.Text type="secondary">
+          <a
+            href={`https://${
+              networkId !== NETWORK.MAINNET ? `${NETWORK_NAME[networkId]}.` : ''
+            }etherscan.io/tx/${resolutionTx}`}
+          >
+            ` - {new Date(new Date(resolutionTime * 1000)).toGMTString()}`
+          </a>
+        </Typography.Text>
+      </AntdTimeline.Item>
+    )
+  }
+
   return <AntdTimeline>{items}</AntdTimeline>
 }
 
@@ -490,7 +473,8 @@ Timeline.propTypes = {
     requester: PropTypes.string.isRequired,
     disputed: PropTypes.bool.isRequired,
     resolved: PropTypes.bool.isRequired,
-    metaEvidenceID: BNPropType.isRequired
+    metaEvidenceID: BNPropType.isRequired,
+    evidenceGroupID: PropTypes.string.isRequired
   }).isRequired,
   requestID: PropTypes.number.isRequired,
   item: itemPropTypes

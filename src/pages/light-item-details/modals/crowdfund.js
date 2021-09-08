@@ -14,12 +14,12 @@ import {
 import PropTypes from 'prop-types'
 import { STATUS_CODE, PARTY } from '../../../utils/item-status'
 import itemPropTypes from '../../../prop-types/item'
-import { TCRViewContext } from '../../../bootstrap/tcr-view-context'
+import { LightTCRViewContext } from '../../../bootstrap/light-tcr-view-context'
 import { formatEther, bigNumberify } from 'ethers/utils'
 import ETHAmount from '../../../components/eth-amount'
 import styled from 'styled-components/macro'
 import { WalletContext } from '../../../bootstrap/wallet-context'
-import { abi as _gtcr } from '@kleros/tcr/build/contracts/GeneralizedTCR.json'
+import _gtcr from '../../../assets/abis/LightGeneralizedTCR.json'
 import { ethers } from 'ethers'
 import useRequiredFees from '../../../hooks/required-fees'
 import { TourContext } from '../../../bootstrap/tour-context'
@@ -49,7 +49,7 @@ const CrowdfundModal = ({ statusCode, item, fileURI, ...rest }) => {
     loserStakeMultiplier,
     MULTIPLIER_DIVISOR,
     tcrAddress
-  } = useContext(TCRViewContext)
+  } = useContext(LightTCRViewContext)
 
   const [contributionShare, setContributionShare] = useState(1)
   const { currentRuling, hasPaid } = item

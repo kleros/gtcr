@@ -1,7 +1,7 @@
 import qs from 'qs'
 import { CONTRACT_STATUS } from './item-status'
 
-export const FILTER_KEYS = {
+export const LIGHT_FILTER_KEYS = {
   ABSENT: 'absent',
   REGISTERED: 'registered',
   SUBMITTED: 'submitted',
@@ -12,7 +12,20 @@ export const FILTER_KEYS = {
   PAGE: 'page'
 }
 
-export const filterLabel = {
+export const FILTER_KEYS = {
+  ABSENT: 'absent',
+  REGISTERED: 'registered',
+  SUBMITTED: 'submitted',
+  REMOVAL_REQUESTED: 'removalRequested',
+  CHALLENGED_SUBMISSIONS: 'challengedSubmissions',
+  CHALLENGED_REMOVALS: 'challengedRemovals',
+  MY_SUBMISSIONS: 'mySubmissions',
+  MY_CHALLENGES: 'myChallenges',
+  OLDEST_FIRST: 'oldestFirst',
+  PAGE: 'page'
+}
+
+export const filterLabelLight = {
   [FILTER_KEYS.ABSENT]: 'Rejected',
   [FILTER_KEYS.REGISTERED]: 'Registered',
   [FILTER_KEYS.SUBMITTED]: 'Submitted',
@@ -22,6 +35,12 @@ export const filterLabel = {
   [FILTER_KEYS.MY_SUBMISSIONS]: 'My Submissions',
   [FILTER_KEYS.MY_CHALLENGES]: 'My Challenges',
   [FILTER_KEYS.OLDEST_FIRST]: 'Oldest First'
+}
+
+export const filterLabel = {
+  ...filterLabelLight,
+  [FILTER_KEYS.MY_SUBMISSIONS]: 'My Submissions',
+  [FILTER_KEYS.MY_CHALLENGES]: 'My Challenges'
 }
 
 export const filterFunctions = {
@@ -47,6 +66,19 @@ export const filterFunctions = {
 
 export const DEFAULT_FILTERS = {
   [FILTER_KEYS.ABSENT]: false,
+  [FILTER_KEYS.REGISTERED]: true,
+  [FILTER_KEYS.SUBMITTED]: true,
+  [FILTER_KEYS.REMOVAL_REQUESTED]: true,
+  [FILTER_KEYS.CHALLENGED_SUBMISSIONS]: true,
+  [FILTER_KEYS.CHALLENGED_REMOVALS]: true,
+  [FILTER_KEYS.MY_SUBMISSIONS]: true,
+  [FILTER_KEYS.MY_CHALLENGES]: true,
+  [FILTER_KEYS.OLDEST_FIRST]: false,
+  [FILTER_KEYS.PAGE]: '1'
+}
+
+export const DEFAULT_FILTERS_LIGHT = {
+  [FILTER_KEYS.ABSENT]: false,
   [FILTER_KEYS.REGISTERED]: false,
   [FILTER_KEYS.SUBMITTED]: false,
   [FILTER_KEYS.REMOVAL_REQUESTED]: false,
@@ -63,6 +95,52 @@ export const searchStrToFilterObj = search => {
 
   // Add default value filters and convert the string "true" and "false" to the boolean types.
   const {
+    registered,
+    submitted,
+    removalRequested,
+    challengedSubmissions,
+    challengedRemovals,
+    mySubmissions,
+    myChallenges,
+    absent,
+    oldestFirst,
+    page
+  } = {
+    ...DEFAULT_FILTERS,
+    ...Object.keys(queryObj)
+      .map(key =>
+        queryObj[key] == null
+          ? { key, value: DEFAULT_FILTERS[key] }
+          : {
+              key,
+              value:
+                key === FILTER_KEYS.PAGE
+                  ? queryObj[FILTER_KEYS.PAGE]
+                  : queryObj[key].toString() === 'true'
+            }
+      )
+      .reduce((acc, curr) => ({ ...acc, [curr.key]: curr.value }), {})
+  }
+
+  return {
+    registered,
+    submitted,
+    removalRequested,
+    challengedSubmissions,
+    challengedRemovals,
+    mySubmissions,
+    myChallenges,
+    absent,
+    oldestFirst,
+    page
+  }
+}
+
+export const searchStrToFilterObjLight = search => {
+  const queryObj = qs.parse(search.replace(/\?/g, ''))
+
+  // Add default value filters and convert the string "true" and "false" to the boolean types.
+  const {
     absent,
     registered,
     submitted,
@@ -74,11 +152,11 @@ export const searchStrToFilterObj = search => {
     oldestFirst,
     page
   } = {
-    ...DEFAULT_FILTERS,
+    ...DEFAULT_FILTERS_LIGHT,
     ...Object.keys(queryObj)
       .map(key =>
         queryObj[key] == null
-          ? { key, value: DEFAULT_FILTERS[key] }
+          ? { key, value: DEFAULT_FILTERS_LIGHT[key] }
           : {
               key,
               value:
@@ -136,6 +214,15 @@ export const queryOptionsToFilterArray = (queryOptions, account) => {
 }
 
 export const updateFilter = ({ prevQuery: search, filter, checked }) => {
+  const queryObj = qs.parse(search.replace(/\?/g, ''))
+  // Adding filter
+  if (queryObj[filter] == null) queryObj[filter] = checked
+  else delete queryObj[filter] // Removing filter.
+
+  return qs.stringify(queryObj, { addPrefix: true })
+}
+
+export const updateLightFilter = ({ prevQuery: search, filter, checked }) => {
   const queryObj = qs.parse(search.replace(/\?/g, ''))
   // Remove previous filter. Combining states is not yet supported.
   delete queryObj[FILTER_KEYS.ABSENT]

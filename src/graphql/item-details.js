@@ -2,7 +2,7 @@ import { gql } from '@apollo/client'
 
 const ITEM_DETAILS_QUERY = gql`
   query itemDetailsQuery($id: String!) {
-    item(id: $id) {
+    litem(id: $id) {
       data
       requests(orderBy: submissionTime, orderDirection: desc) {
         requestType
