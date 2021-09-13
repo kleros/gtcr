@@ -6,6 +6,7 @@ import { Footer } from '@kleros/react-components'
 import loadable from '@loadable/component'
 import styled from 'styled-components/macro'
 import Web3Provider, { Connectors, useWeb3Context } from 'web3-react'
+import PropTypes from 'prop-types'
 import 'antd/dist/antd.css'
 import './theme.css'
 import {
@@ -22,7 +23,6 @@ import { TourProvider } from './tour-context'
 import { NETWORK_NAME, NETWORK } from '../utils/network-utils'
 import ErrorPage from '../pages/error-page'
 import useMainTCR2 from '../hooks/tcr2'
-import { TCRViewProvider } from './tcr-view-context'
 import useNetworkEnvVariable from '../hooks/network-env'
 import WalletModal from './wallet-modal'
 import './fontawesome'
@@ -30,6 +30,10 @@ import TopBar from './top-bar'
 import NoWeb3Detected from './no-web3'
 import WelcomeModal from './welcome-modal'
 import { SAVED_NETWORK_KEY } from '../utils/string'
+import { ApolloClient, ApolloProvider, InMemoryCache } from '@apollo/client'
+import { HttpLink } from '@apollo/client/link/http'
+import ItemsRouter from '../pages/items-router'
+import ItemDetailsRouter from '../pages/item-details-router'
 
 const StyledSpin = styled(Spin)`
   left: 50%;
@@ -95,28 +99,6 @@ const Factory = loadable(
   }
 )
 
-const Items = loadable(
-  () => import(/* webpackPrefetch: true */ '../pages/items/index'),
-  {
-    fallback: (
-      <StyledLayoutContent>
-        <StyledSpin />
-      </StyledLayoutContent>
-    )
-  }
-)
-
-const ItemDetails = loadable(
-  () => import(/* webpackPrefetch: true */ '../pages/item-details/index'),
-  {
-    fallback: (
-      <StyledLayoutContent>
-        <StyledSpin />
-      </StyledLayoutContent>
-    )
-  }
-)
-
 const MenuItems = ({ TCR2_ADDRESS }) => [
   <StyledMenuItem key="tcrs-item">
     <NavLink to={`/tcr/${TCR2_ADDRESS}`}>Browse</NavLink>
@@ -135,6 +117,10 @@ const MenuItems = ({ TCR2_ADDRESS }) => [
     </a>
   </StyledMenuItem>
 ]
+
+MenuItems.propTypes = {
+  TCR2_ADDRESS: PropTypes.string.isRequired
+}
 
 const {
   NetworkOnlyConnector,
@@ -213,20 +199,29 @@ const Content = () => {
           location: { search },
           history
         }) => (
-          <TCRViewProvider tcrAddress={tcrAddress}>
-            <Switch>
-              <Route path="/tcr/:tcrAddress/:itemID">
-                {({
-                  match: {
-                    params: { itemID }
-                  }
-                }) => <ItemDetails search={search} itemID={itemID} />}
-              </Route>
-              <Route path="/tcr/:tcrAddress">
-                <Items search={search} history={history} />
-              </Route>
-            </Switch>
-          </TCRViewProvider>
+          <Switch>
+            <Route path="/tcr/:tcrAddress/:itemID">
+              {({
+                match: {
+                  params: { itemID }
+                }
+              }) => (
+                <ItemDetailsRouter
+                  search={search}
+                  itemID={itemID}
+                  tcrAddress={tcrAddress}
+                  history={history}
+                />
+              )}
+            </Route>
+            <Route path="/tcr/:tcrAddress">
+              <ItemsRouter
+                search={search}
+                history={history}
+                tcrAddress={tcrAddress}
+              />
+            </Route>
+          </Switch>
         )}
       </Route>
       <Route path="/factory" exact component={Factory} />
@@ -240,6 +235,21 @@ export default () => {
   const [isMenuClosed, setIsMenuClosed] = useState(true)
   const web3Context = useWeb3Context()
   const TCR2_ADDRESS = useMainTCR2(web3Context)
+
+  const GTCR_SUBGRAPH_URL = useNetworkEnvVariable(
+    'REACT_APP_SUBGRAPH_URL',
+    web3Context.networkId
+  )
+
+  const httpLink = new HttpLink({
+    uri: GTCR_SUBGRAPH_URL
+  })
+
+  const client = new ApolloClient({
+    link: httpLink,
+    cache: new InMemoryCache()
+  })
+
   return (
     <>
       <Helmet>
@@ -249,50 +259,54 @@ export default () => {
           rel="stylesheet"
         />
       </Helmet>
-      <BrowserRouter>
-        <TourProvider>
-          <Web3Provider connectors={connectors} libraryName="ethers.js">
-            <WalletProvider>
-              <StyledLayout>
-                <StyledLayoutSider
-                  breakpoint="lg"
-                  collapsedWidth={0}
-                  collapsed={isMenuClosed}
-                  onClick={() =>
-                    setIsMenuClosed(previousState => !previousState)
-                  }
-                >
-                  <Menu theme="dark">
-                    {[
-                      <Menu.Item key="tcrs" style={{ height: '70px' }}>
-                        <NavLink to={`/tcr/${TCR2_ADDRESS}`}>
-                          K L E R O S
-                        </NavLink>
-                      </Menu.Item>
-                    ].concat(MenuItems({ TCR2_ADDRESS }))}
-                  </Menu>
-                </StyledLayoutSider>
-                {/* Overflow x property must be visible for reactour scrolling to work properly. */}
-                <Layout style={{ overflowX: 'visible' }}>
-                  <StyledHeader>
-                    <TopBar menuItems={MenuItems} />
-                  </StyledHeader>
-                  <Content />
-                  <StyledClickaway
-                    isMenuClosed={isMenuClosed}
-                    onClick={isMenuClosed ? null : () => setIsMenuClosed(true)}
-                  />
-                </Layout>
-              </StyledLayout>
-              <FooterWrapper>
-                <Footer appName="Kleros · Curate" />
-              </FooterWrapper>
-              <WalletModal connectors={connectors} />
-            </WalletProvider>
-          </Web3Provider>
-          <WelcomeModal />
-        </TourProvider>
-      </BrowserRouter>
+      <ApolloProvider client={client}>
+        <BrowserRouter>
+          <TourProvider>
+            <Web3Provider connectors={connectors} libraryName="ethers.js">
+              <WalletProvider>
+                <StyledLayout>
+                  <StyledLayoutSider
+                    breakpoint="lg"
+                    collapsedWidth={0}
+                    collapsed={isMenuClosed}
+                    onClick={() =>
+                      setIsMenuClosed(previousState => !previousState)
+                    }
+                  >
+                    <Menu theme="dark">
+                      {[
+                        <Menu.Item key="tcrs" style={{ height: '70px' }}>
+                          <NavLink to={`/tcr/${TCR2_ADDRESS}`}>
+                            K L E R O S
+                          </NavLink>
+                        </Menu.Item>
+                      ].concat(MenuItems({ TCR2_ADDRESS }))}
+                    </Menu>
+                  </StyledLayoutSider>
+                  {/* Overflow x property must be visible for reactour scrolling to work properly. */}
+                  <Layout style={{ overflowX: 'visible' }}>
+                    <StyledHeader>
+                      <TopBar menuItems={MenuItems} />
+                    </StyledHeader>
+                    <Content />
+                    <StyledClickaway
+                      isMenuClosed={isMenuClosed}
+                      onClick={
+                        isMenuClosed ? null : () => setIsMenuClosed(true)
+                      }
+                    />
+                  </Layout>
+                </StyledLayout>
+                <FooterWrapper>
+                  <Footer appName="Kleros · Curate" />
+                </FooterWrapper>
+                <WalletModal connectors={connectors} />
+              </WalletProvider>
+            </Web3Provider>
+            <WelcomeModal />
+          </TourProvider>
+        </BrowserRouter>
+      </ApolloProvider>
     </>
   )
 }

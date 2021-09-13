@@ -61,6 +61,13 @@ export const STATUS_COLOR = {
   [STATUS_CODE.WAITING_ENFORCEMENT]: 'gold'
 }
 
+export const SUBGRAPH_STATUS_TO_CODE = {
+  Absent: 0,
+  Registered: 1,
+  RegistrationRequested: 2,
+  ClearingRequested: 3
+}
+
 export const REQUEST_TYPE_LABEL = {
   [CONTRACT_STATUS.REGISTRATION_REQUESTED]: 'Submission',
   [CONTRACT_STATUS.REMOVAL_REQUESTED]: 'Removal'

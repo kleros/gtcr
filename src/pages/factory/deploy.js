@@ -7,13 +7,13 @@ import Archon from '@kleros/archon'
 import { parseEther, getContractAddress, bigNumberify } from 'ethers/utils'
 import styled from 'styled-components/macro'
 import { useWeb3Context } from 'web3-react'
-import { abi as _GTCRFactory } from '@kleros/tcr/build/contracts/GTCRFactory.json'
+import _GTCRFactory from '../../assets/abis/LightGTCRFactory.json'
 import ipfsPublish from '../../utils/ipfs-publish'
 import { WalletContext } from '../../bootstrap/wallet-context'
 import { ZERO_ADDRESS, isVowel } from '../../utils/string'
 import useNetworkEnvVariable from '../../hooks/network-env'
 import useWindowDimensions from '../../hooks/window-dimensions'
-import SubmitModal from '../item-details/modals/submit'
+import SubmitModal from '../light-item-details/modals/submit'
 import useTcrView from '../../hooks/tcr-view'
 
 const _txBatcher = [
@@ -103,7 +103,7 @@ const getTcrMetaEvidence = async (tcrState, parentTCRAddress) => {
     relTcrDisabled: true
   }
 
-  const metaEvidence = {
+  const commonMetaEvidenceProps = {
     category: 'Curated Lists',
     question: `Does the ${(itemName && itemName.toLowerCase()) ||
       'item'} comply with the required criteria?`,
@@ -116,13 +116,13 @@ const getTcrMetaEvidence = async (tcrState, parentTCRAddress) => {
           `${process.env.REACT_APP_IPFS_GATEWAY}${process.env.REACT_APP_DEFAULT_EVIDENCE_DISPLAY_URI}`
         )
       ).text(),
-      0x1B // eslint-disable-line
+      0x1b // eslint-disable-line
     ),
     metadata
   }
 
-  const relMetaEvidence = {
-    ...metaEvidence,
+  const commonRelMetaEvidenceProps = {
+    ...commonMetaEvidenceProps,
     question: `Does the ${relItemName} comply with the required criteria?`,
     fileURI: relTcrDisabled
       ? process.env.REACT_APP_REJECT_ALL_POLICY_URI
@@ -131,112 +131,130 @@ const getTcrMetaEvidence = async (tcrState, parentTCRAddress) => {
   }
 
   const registrationMetaEvidence = {
-    title: `Add ${
-      itemName
-        ? isVowel(itemName[0])
-          ? `an ${itemName.toLowerCase()}`
-          : `a ${itemName.toLowerCase()}`
-        : 'an item'
-    } to ${tcrTitle}`,
-    description: `Someone requested to add ${
-      itemName
-        ? isVowel(itemName[0])
-          ? `an ${itemName.toLowerCase()}`
-          : `a ${itemName.toLowerCase()}`
-        : 'an item'
-    } to ${tcrTitle}`,
-    rulingOptions: {
-      titles: ['Yes, Add It', "No, Don't Add It"],
-      descriptions: [
-        `Select this if you think the ${(itemName && itemName.toLowerCase()) ||
-          'item'} complies with the required criteria and should be added.`,
-        `Select this if you think the ${(itemName && itemName.toLowerCase()) ||
-          'item'} does not comply with the required criteria and should not be added.`
-      ]
-    },
-    ...metaEvidence
+    name: 'reg-meta-evidence.json',
+    data: {
+      title: `Add ${
+        itemName
+          ? isVowel(itemName[0])
+            ? `an ${itemName.toLowerCase()}`
+            : `a ${itemName.toLowerCase()}`
+          : 'an item'
+      } to ${tcrTitle}`,
+      description: `Someone requested to add ${
+        itemName
+          ? isVowel(itemName[0])
+            ? `an ${itemName.toLowerCase()}`
+            : `a ${itemName.toLowerCase()}`
+          : 'an item'
+      } to ${tcrTitle}`,
+      rulingOptions: {
+        titles: ['Yes, Add It', "No, Don't Add It"],
+        descriptions: [
+          `Select this if you think the ${(itemName &&
+            itemName.toLowerCase()) ||
+            'item'} complies with the required criteria and should be added.`,
+          `Select this if you think the ${(itemName &&
+            itemName.toLowerCase()) ||
+            'item'} does not comply with the required criteria and should not be added.`
+        ]
+      },
+      ...commonMetaEvidenceProps
+    }
   }
   const clearingMetaEvidence = {
-    title: `Remove ${
-      itemName
-        ? isVowel(itemName[0])
-          ? `an ${itemName.toLowerCase()}`
-          : `a ${itemName.toLowerCase()}`
-        : 'an item'
-    } from ${tcrTitle}`,
-    description: `Someone requested to remove ${
-      itemName
-        ? isVowel(itemName[0])
-          ? `an ${itemName.toLowerCase()}`
-          : `a ${itemName.toLowerCase()}`
-        : 'an item'
-    } from ${tcrTitle}`,
-    rulingOptions: {
-      titles: ['Yes, Remove It', "No, Don't Remove It"],
-      descriptions: [
-        `Select this if you think the ${(itemName && itemName.toLowerCase()) ||
-          'item'} does not comply with the required criteria and should be removed.`,
-        `Select this if you think the ${(itemName && itemName.toLowerCase()) ||
-          'item'} complies with the required criteria and should not be removed.`
-      ]
-    },
-    ...metaEvidence
+    name: 'clr-meta-evidence.json',
+    data: {
+      title: `Remove ${
+        itemName
+          ? isVowel(itemName[0])
+            ? `an ${itemName.toLowerCase()}`
+            : `a ${itemName.toLowerCase()}`
+          : 'an item'
+      } from ${tcrTitle}`,
+      description: `Someone requested to remove ${
+        itemName
+          ? isVowel(itemName[0])
+            ? `an ${itemName.toLowerCase()}`
+            : `a ${itemName.toLowerCase()}`
+          : 'an item'
+      } from ${tcrTitle}`,
+      rulingOptions: {
+        titles: ['Yes, Remove It', "No, Don't Remove It"],
+        descriptions: [
+          `Select this if you think the ${(itemName &&
+            itemName.toLowerCase()) ||
+            'item'} does not comply with the required criteria and should be removed.`,
+          `Select this if you think the ${(itemName &&
+            itemName.toLowerCase()) ||
+            'item'} complies with the required criteria and should not be removed.`
+        ]
+      },
+      ...commonMetaEvidenceProps
+    }
   }
 
   const relRegistrationMetaEvidence = {
-    title: `Add a ${relItemName} to ${relTcrTitle}`,
-    description: `Someone requested to add a ${relItemName} to ${relTcrTitle}.`,
-    rulingOptions: {
-      titles: ['Yes, Add It', "No, Don't Add It"],
-      descriptions: [
-        `Select this if you think the ${relItemName} complies with the required criteria and should be added.`,
-        `Select this if you think the ${relItemName} does not comply with the required criteria and should not be added.`
-      ]
-    },
-    ...relMetaEvidence
+    name: 'rel-reg-meta-evidence.json',
+    data: {
+      title: `Add a ${relItemName} to ${relTcrTitle}`,
+      description: `Someone requested to add a ${relItemName} to ${relTcrTitle}.`,
+      rulingOptions: {
+        titles: ['Yes, Add It', "No, Don't Add It"],
+        descriptions: [
+          `Select this if you think the ${relItemName} complies with the required criteria and should be added.`,
+          `Select this if you think the ${relItemName} does not comply with the required criteria and should not be added.`
+        ]
+      },
+      ...commonRelMetaEvidenceProps
+    }
   }
   const relClearingMetaEvidence = {
-    title: `Remove a ${relItemName} from ${relTcrTitle}`,
-    description: `Someone requested to remove a ${relItemName} from ${relTcrTitle}.`,
-    rulingOptions: {
-      titles: ['Yes, Remove It', "No, Don't Remove It"],
-      descriptions: [
-        `Select this if you think the ${relItemName} does not comply with the required criteria and should be removed.`,
-        `Select this if you think the ${relItemName} complies with the required criteria and should not be removed.`
-      ]
-    },
-    ...relMetaEvidence
+    name: 'rel-clr-meta-evidence.json',
+    data: {
+      title: `Remove a ${relItemName} from ${relTcrTitle}`,
+      description: `Someone requested to remove a ${relItemName} from ${relTcrTitle}.`,
+      rulingOptions: {
+        titles: ['Yes, Remove It', "No, Don't Remove It"],
+        descriptions: [
+          `Select this if you think the ${relItemName} does not comply with the required criteria and should be removed.`,
+          `Select this if you think the ${relItemName} complies with the required criteria and should not be removed.`
+        ]
+      },
+      ...commonRelMetaEvidenceProps
+    }
   }
 
   const enc = new TextEncoder()
-  const metaEvidenceFiles = [
+
+  const files = [
     registrationMetaEvidence,
-    clearingMetaEvidence
-  ].map(metaEvidence => enc.encode(JSON.stringify(metaEvidence)))
-  const relMetaEvidenceFiles = [
+    clearingMetaEvidence,
     relRegistrationMetaEvidence,
     relClearingMetaEvidence
-  ].map(relMetaEvidence => enc.encode(JSON.stringify(relMetaEvidence)))
-
-  /* eslint-disable prettier/prettier */
-  const files = [...metaEvidenceFiles, ...relMetaEvidenceFiles].map(file => ({
-    data: file,
-    multihash: Archon.utils.multihashFile(file, 0x1B)
+  ].map(({ name, data }) => ({
+    name,
+    data: enc.encode(JSON.stringify(data))
   }))
-  /* eslint-enable prettier/prettier */
 
   const ipfsMetaEvidenceObjects = (
-    await Promise.all(files.map(file => ipfsPublish(file.multihash, file.data)))
+    await Promise.all(files.map(({ name, data }) => ipfsPublish(name, data)))
   ).map(
     ipfsMetaEvidenceObject =>
       `/ipfs/${ipfsMetaEvidenceObject[1].hash + ipfsMetaEvidenceObject[0].path}`
   )
 
+  const [
+    registrationMetaEvidencePath,
+    clearingMetaEvidencePath,
+    relRegistrationMetaEvidencePath,
+    relClearingMetaEvidencePath
+  ] = ipfsMetaEvidenceObjects
+
   return {
-    registrationMetaEvidencePath: ipfsMetaEvidenceObjects[0],
-    clearingMetaEvidencePath: ipfsMetaEvidenceObjects[1],
-    relRegistrationMetaEvidencePath: ipfsMetaEvidenceObjects[2],
-    relClearingMetaEvidencePath: ipfsMetaEvidenceObjects[3]
+    registrationMetaEvidencePath,
+    clearingMetaEvidencePath,
+    relRegistrationMetaEvidencePath,
+    relClearingMetaEvidencePath
   }
 }
 
@@ -249,7 +267,7 @@ const Deploy = ({ setTxState, tcrState, setTcrState }) => {
   const [deployedTCRAddress, setDeployedTCRAddress] = useState()
   const [submissionFormOpen, setSubmissionFormOpen] = useState()
   const factoryAddress = useNetworkEnvVariable(
-    'REACT_APP_FACTORY_ADDRESSES',
+    'REACT_APP_LGTCR_FACTORY_ADDRESSES',
     networkId
   )
   const defaultTCRAddress = useNetworkEnvVariable(
@@ -269,7 +287,8 @@ const Deploy = ({ setTxState, tcrState, setTcrState }) => {
   const onDeploy = () => {
     pushWeb3Action(async (_, signer) => {
       // We link the related badges TCR to its parent together by the parents address.
-      // the nonce is txCount + 1 because the related badges TCR is deployed first.
+      // To use the transaction batcher and deploy both contracts at once, we must know
+      // the related badges TCR address in advance.
       const txCount = await library.getTransactionCount(factoryAddress)
       const parentTCRAddress = getContractAddress({
         from: factoryAddress,
@@ -295,21 +314,25 @@ const Deploy = ({ setTxState, tcrState, setTcrState }) => {
         relRegistrationMetaEvidencePath,
         relClearingMetaEvidencePath,
         tcrState.relGovernorAddress,
-        parseEther(
-          tcrState.relTcrDisabled
-            ? '10000000000000' // Use a very large deposit to make submissions impossible.
-            : tcrState.relSubmissionBaseDeposit.toString()
-        ),
-        parseEther(tcrState.relRemovalBaseDeposit.toString()),
-        parseEther(tcrState.relSubmissionChallengeBaseDeposit.toString()),
-        parseEther(tcrState.relRemovalChallengeBaseDeposit.toString()),
+        [
+          parseEther(
+            tcrState.relTcrDisabled
+              ? '10000000000000' // Use a very large deposit to make submissions impossible.
+              : tcrState.relSubmissionBaseDeposit.toString()
+          ),
+          parseEther(tcrState.relRemovalBaseDeposit.toString()),
+          parseEther(tcrState.relSubmissionChallengeBaseDeposit.toString()),
+          parseEther(tcrState.relRemovalChallengeBaseDeposit.toString())
+        ],
         Number(tcrState.relChallengePeriodDuration) * 60 * 60,
         [
           Math.ceil(Number(tcrState.relSharedStakeMultiplier)) * 100,
           Math.ceil(Number(tcrState.relWinnerStakeMultiplier)) * 100,
           Math.ceil(Number(tcrState.relLoserStakeMultiplier)) * 100
-        ] // Shared, winner and loser stake multipliers in basis points.
+        ], // Shared, winner and loser stake multipliers in basis points.
+        ZERO_ADDRESS
       ]
+
       const relData = factory.interface.functions.deploy.encode(relTCRArgs)
       const relTCRAddress = getContractAddress({
         from: factoryAddress,
@@ -323,16 +346,19 @@ const Deploy = ({ setTxState, tcrState, setTcrState }) => {
         registrationMetaEvidencePath,
         clearingMetaEvidencePath,
         tcrState.governorAddress,
-        parseEther(tcrState.submissionBaseDeposit.toString()),
-        parseEther(tcrState.removalBaseDeposit.toString()),
-        parseEther(tcrState.submissionChallengeBaseDeposit.toString()),
-        parseEther(tcrState.removalChallengeBaseDeposit.toString()),
+        [
+          parseEther(tcrState.submissionBaseDeposit.toString()),
+          parseEther(tcrState.removalBaseDeposit.toString()),
+          parseEther(tcrState.submissionChallengeBaseDeposit.toString()),
+          parseEther(tcrState.removalChallengeBaseDeposit.toString())
+        ],
         Number(tcrState.challengePeriodDuration) * 60 * 60,
         [
           Math.ceil(Number(tcrState.sharedStakeMultiplier)) * 100,
           Math.ceil(Number(tcrState.winnerStakeMultiplier)) * 100,
           Math.ceil(Number(tcrState.loserStakeMultiplier)) * 100
-        ] // Shared, winner and loser stake multipliers in basis points.
+        ], // Shared, winner and loser stake multipliers in basis points.
+        ZERO_ADDRESS
       ]
       const tcrData = factory.interface.functions.deploy.encode(TCRArgs)
 

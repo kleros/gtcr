@@ -1,0 +1,676 @@
+[
+  {
+    "constant": true,
+    "inputs": [
+      { "internalType": "address", "name": "_address", "type": "address" },
+      { "internalType": "bytes32", "name": "_itemID", "type": "bytes32" },
+      { "internalType": "address", "name": "_contributor", "type": "address" }
+    ],
+    "name": "availableRewards",
+    "outputs": [
+      { "internalType": "uint256", "name": "rewards", "type": "uint256" }
+    ],
+    "payable": false,
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "constant": true,
+    "inputs": [
+      { "internalType": "address", "name": "_address", "type": "address" },
+      { "internalType": "uint256", "name": "_cursorIndex", "type": "uint256" },
+      { "internalType": "uint256", "name": "_count", "type": "uint256" },
+      { "internalType": "bool[8]", "name": "_filter", "type": "bool[8]" },
+      { "internalType": "address", "name": "_party", "type": "address" }
+    ],
+    "name": "countWithFilter",
+    "outputs": [
+      { "internalType": "uint256", "name": "count", "type": "uint256" },
+      { "internalType": "bool", "name": "hasMore", "type": "bool" },
+      { "internalType": "uint256", "name": "", "type": "uint256" }
+    ],
+    "payable": false,
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "constant": true,
+    "inputs": [
+      { "internalType": "address", "name": "_address", "type": "address" }
+    ],
+    "name": "fetchArbitrable",
+    "outputs": [
+      {
+        "components": [
+          { "internalType": "address", "name": "governor", "type": "address" },
+          {
+            "internalType": "address",
+            "name": "arbitrator",
+            "type": "address"
+          },
+          {
+            "internalType": "bytes",
+            "name": "arbitratorExtraData",
+            "type": "bytes"
+          },
+          {
+            "internalType": "uint256",
+            "name": "submissionBaseDeposit",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "removalBaseDeposit",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "submissionChallengeBaseDeposit",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "removalChallengeBaseDeposit",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "challengePeriodDuration",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "metaEvidenceUpdates",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "winnerStakeMultiplier",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "loserStakeMultiplier",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "sharedStakeMultiplier",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "MULTIPLIER_DIVISOR",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "arbitrationCost",
+            "type": "uint256"
+          }
+        ],
+        "internalType": "struct GeneralizedTCRView.ArbitrableData",
+        "name": "result",
+        "type": "tuple"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "constant": true,
+    "inputs": [
+      { "internalType": "address", "name": "_address", "type": "address" },
+      {
+        "internalType": "uint256[4]",
+        "name": "_targets",
+        "type": "uint256[4]"
+      },
+      { "internalType": "bool[9]", "name": "_filter", "type": "bool[9]" },
+      { "internalType": "address", "name": "_party", "type": "address" }
+    ],
+    "name": "findIndexForPage",
+    "outputs": [
+      { "internalType": "uint256", "name": "index", "type": "uint256" },
+      { "internalType": "bool", "name": "hasMore", "type": "bool" },
+      { "internalType": "bool", "name": "indexFound", "type": "bool" }
+    ],
+    "payable": false,
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "constant": true,
+    "inputs": [
+      { "internalType": "address", "name": "_address", "type": "address" },
+      { "internalType": "bytes", "name": "_rlpEncodedMatch", "type": "bytes" },
+      { "internalType": "uint256", "name": "_cursor", "type": "uint256" },
+      { "internalType": "uint256", "name": "_count", "type": "uint256" },
+      { "internalType": "bool[4]", "name": "_skipState", "type": "bool[4]" },
+      { "internalType": "bool[]", "name": "_ignoreColumns", "type": "bool[]" }
+    ],
+    "name": "findItem",
+    "outputs": [
+      {
+        "components": [
+          { "internalType": "bytes32", "name": "ID", "type": "bytes32" },
+          { "internalType": "bytes", "name": "data", "type": "bytes" },
+          {
+            "internalType": "enum GeneralizedTCR.Status",
+            "name": "status",
+            "type": "uint8"
+          },
+          { "internalType": "bool", "name": "disputed", "type": "bool" },
+          { "internalType": "bool", "name": "resolved", "type": "bool" },
+          { "internalType": "uint256", "name": "disputeID", "type": "uint256" },
+          {
+            "internalType": "uint256",
+            "name": "appealCost",
+            "type": "uint256"
+          },
+          { "internalType": "bool", "name": "appealed", "type": "bool" },
+          {
+            "internalType": "uint256",
+            "name": "appealStart",
+            "type": "uint256"
+          },
+          { "internalType": "uint256", "name": "appealEnd", "type": "uint256" },
+          {
+            "internalType": "enum GeneralizedTCR.Party",
+            "name": "ruling",
+            "type": "uint8"
+          },
+          { "internalType": "address", "name": "requester", "type": "address" },
+          {
+            "internalType": "address",
+            "name": "challenger",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "arbitrator",
+            "type": "address"
+          },
+          {
+            "internalType": "bytes",
+            "name": "arbitratorExtraData",
+            "type": "bytes"
+          },
+          {
+            "internalType": "enum GeneralizedTCR.Party",
+            "name": "currentRuling",
+            "type": "uint8"
+          },
+          { "internalType": "bool[3]", "name": "hasPaid", "type": "bool[3]" },
+          {
+            "internalType": "uint256",
+            "name": "feeRewards",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "submissionTime",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256[3]",
+            "name": "amountPaid",
+            "type": "uint256[3]"
+          },
+          {
+            "internalType": "enum IArbitrator.DisputeStatus",
+            "name": "disputeStatus",
+            "type": "uint8"
+          },
+          {
+            "internalType": "uint256",
+            "name": "numberOfRequests",
+            "type": "uint256"
+          }
+        ],
+        "internalType": "struct GeneralizedTCRView.QueryResult[]",
+        "name": "results",
+        "type": "tuple[]"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "constant": true,
+    "inputs": [
+      { "internalType": "address", "name": "_address", "type": "address" },
+      { "internalType": "bytes32", "name": "_itemID", "type": "bytes32" }
+    ],
+    "name": "getItem",
+    "outputs": [
+      {
+        "components": [
+          { "internalType": "bytes32", "name": "ID", "type": "bytes32" },
+          { "internalType": "bytes", "name": "data", "type": "bytes" },
+          {
+            "internalType": "enum GeneralizedTCR.Status",
+            "name": "status",
+            "type": "uint8"
+          },
+          { "internalType": "bool", "name": "disputed", "type": "bool" },
+          { "internalType": "bool", "name": "resolved", "type": "bool" },
+          { "internalType": "uint256", "name": "disputeID", "type": "uint256" },
+          {
+            "internalType": "uint256",
+            "name": "appealCost",
+            "type": "uint256"
+          },
+          { "internalType": "bool", "name": "appealed", "type": "bool" },
+          {
+            "internalType": "uint256",
+            "name": "appealStart",
+            "type": "uint256"
+          },
+          { "internalType": "uint256", "name": "appealEnd", "type": "uint256" },
+          {
+            "internalType": "enum GeneralizedTCR.Party",
+            "name": "ruling",
+            "type": "uint8"
+          },
+          { "internalType": "address", "name": "requester", "type": "address" },
+          {
+            "internalType": "address",
+            "name": "challenger",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "arbitrator",
+            "type": "address"
+          },
+          {
+            "internalType": "bytes",
+            "name": "arbitratorExtraData",
+            "type": "bytes"
+          },
+          {
+            "internalType": "enum GeneralizedTCR.Party",
+            "name": "currentRuling",
+            "type": "uint8"
+          },
+          { "internalType": "bool[3]", "name": "hasPaid", "type": "bool[3]" },
+          {
+            "internalType": "uint256",
+            "name": "feeRewards",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "submissionTime",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256[3]",
+            "name": "amountPaid",
+            "type": "uint256[3]"
+          },
+          {
+            "internalType": "enum IArbitrator.DisputeStatus",
+            "name": "disputeStatus",
+            "type": "uint8"
+          },
+          {
+            "internalType": "uint256",
+            "name": "numberOfRequests",
+            "type": "uint256"
+          }
+        ],
+        "internalType": "struct GeneralizedTCRView.QueryResult",
+        "name": "result",
+        "type": "tuple"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "constant": true,
+    "inputs": [
+      { "internalType": "address", "name": "_address", "type": "address" },
+      { "internalType": "bytes32", "name": "_itemID", "type": "bytes32" }
+    ],
+    "name": "getItemData",
+    "outputs": [
+      {
+        "components": [
+          { "internalType": "bytes", "name": "data", "type": "bytes" },
+          {
+            "internalType": "enum GeneralizedTCR.Status",
+            "name": "status",
+            "type": "uint8"
+          },
+          {
+            "internalType": "uint256",
+            "name": "numberOfRequests",
+            "type": "uint256"
+          }
+        ],
+        "internalType": "struct GeneralizedTCRView.ItemData",
+        "name": "item",
+        "type": "tuple"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "constant": true,
+    "inputs": [
+      { "internalType": "address", "name": "_address", "type": "address" },
+      { "internalType": "bytes32", "name": "_itemID", "type": "bytes32" }
+    ],
+    "name": "getItemRequests",
+    "outputs": [
+      {
+        "components": [
+          { "internalType": "bool", "name": "disputed", "type": "bool" },
+          { "internalType": "uint256", "name": "disputeID", "type": "uint256" },
+          {
+            "internalType": "uint256",
+            "name": "submissionTime",
+            "type": "uint256"
+          },
+          { "internalType": "bool", "name": "resolved", "type": "bool" },
+          { "internalType": "address", "name": "requester", "type": "address" },
+          {
+            "internalType": "address",
+            "name": "challenger",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "arbitrator",
+            "type": "address"
+          },
+          {
+            "internalType": "bytes",
+            "name": "arbitratorExtraData",
+            "type": "bytes"
+          },
+          {
+            "internalType": "uint256",
+            "name": "metaEvidenceID",
+            "type": "uint256"
+          }
+        ],
+        "internalType": "struct GeneralizedTCRView.ItemRequest[]",
+        "name": "requests",
+        "type": "tuple[]"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "constant": true,
+    "inputs": [
+      { "internalType": "address", "name": "_address", "type": "address" },
+      { "internalType": "bytes32", "name": "_itemID", "type": "bytes32" }
+    ],
+    "name": "getLatestRequestData",
+    "outputs": [
+      {
+        "components": [
+          {
+            "components": [
+              { "internalType": "bytes", "name": "data", "type": "bytes" },
+              {
+                "internalType": "enum GeneralizedTCR.Status",
+                "name": "status",
+                "type": "uint8"
+              },
+              {
+                "internalType": "uint256",
+                "name": "numberOfRequests",
+                "type": "uint256"
+              }
+            ],
+            "internalType": "struct GeneralizedTCRView.ItemData",
+            "name": "item",
+            "type": "tuple"
+          },
+          { "internalType": "bool", "name": "disputed", "type": "bool" },
+          { "internalType": "uint256", "name": "disputeID", "type": "uint256" },
+          {
+            "internalType": "uint256",
+            "name": "submissionTime",
+            "type": "uint256"
+          },
+          { "internalType": "bool", "name": "resolved", "type": "bool" },
+          {
+            "internalType": "address payable[3]",
+            "name": "parties",
+            "type": "address[3]"
+          },
+          {
+            "internalType": "uint256",
+            "name": "numberOfRounds",
+            "type": "uint256"
+          },
+          {
+            "internalType": "enum GeneralizedTCR.Party",
+            "name": "ruling",
+            "type": "uint8"
+          },
+          {
+            "internalType": "contract IArbitrator",
+            "name": "arbitrator",
+            "type": "address"
+          },
+          {
+            "internalType": "bytes",
+            "name": "arbitratorExtraData",
+            "type": "bytes"
+          }
+        ],
+        "internalType": "struct GeneralizedTCRView.RequestData",
+        "name": "request",
+        "type": "tuple"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "constant": true,
+    "inputs": [
+      { "internalType": "address", "name": "_address", "type": "address" },
+      { "internalType": "bytes32", "name": "_itemID", "type": "bytes32" }
+    ],
+    "name": "getLatestRoundRequestData",
+    "outputs": [
+      {
+        "components": [
+          {
+            "components": [
+              {
+                "components": [
+                  { "internalType": "bytes", "name": "data", "type": "bytes" },
+                  {
+                    "internalType": "enum GeneralizedTCR.Status",
+                    "name": "status",
+                    "type": "uint8"
+                  },
+                  {
+                    "internalType": "uint256",
+                    "name": "numberOfRequests",
+                    "type": "uint256"
+                  }
+                ],
+                "internalType": "struct GeneralizedTCRView.ItemData",
+                "name": "item",
+                "type": "tuple"
+              },
+              { "internalType": "bool", "name": "disputed", "type": "bool" },
+              {
+                "internalType": "uint256",
+                "name": "disputeID",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint256",
+                "name": "submissionTime",
+                "type": "uint256"
+              },
+              { "internalType": "bool", "name": "resolved", "type": "bool" },
+              {
+                "internalType": "address payable[3]",
+                "name": "parties",
+                "type": "address[3]"
+              },
+              {
+                "internalType": "uint256",
+                "name": "numberOfRounds",
+                "type": "uint256"
+              },
+              {
+                "internalType": "enum GeneralizedTCR.Party",
+                "name": "ruling",
+                "type": "uint8"
+              },
+              {
+                "internalType": "contract IArbitrator",
+                "name": "arbitrator",
+                "type": "address"
+              },
+              {
+                "internalType": "bytes",
+                "name": "arbitratorExtraData",
+                "type": "bytes"
+              }
+            ],
+            "internalType": "struct GeneralizedTCRView.RequestData",
+            "name": "request",
+            "type": "tuple"
+          },
+          { "internalType": "bool", "name": "appealed", "type": "bool" },
+          {
+            "internalType": "uint256[3]",
+            "name": "amountPaid",
+            "type": "uint256[3]"
+          },
+          { "internalType": "bool[3]", "name": "hasPaid", "type": "bool[3]" },
+          { "internalType": "uint256", "name": "feeRewards", "type": "uint256" }
+        ],
+        "internalType": "struct GeneralizedTCRView.RoundData",
+        "name": "round",
+        "type": "tuple"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "constant": true,
+    "inputs": [
+      { "internalType": "address", "name": "_address", "type": "address" },
+      { "internalType": "uint256", "name": "_cursorIndex", "type": "uint256" },
+      { "internalType": "uint256", "name": "_count", "type": "uint256" },
+      { "internalType": "bool[8]", "name": "_filter", "type": "bool[8]" },
+      { "internalType": "bool", "name": "_oldestFirst", "type": "bool" },
+      { "internalType": "address", "name": "_party", "type": "address" },
+      { "internalType": "uint256", "name": "_limit", "type": "uint256" }
+    ],
+    "name": "queryItems",
+    "outputs": [
+      {
+        "components": [
+          { "internalType": "bytes32", "name": "ID", "type": "bytes32" },
+          { "internalType": "bytes", "name": "data", "type": "bytes" },
+          {
+            "internalType": "enum GeneralizedTCR.Status",
+            "name": "status",
+            "type": "uint8"
+          },
+          { "internalType": "bool", "name": "disputed", "type": "bool" },
+          { "internalType": "bool", "name": "resolved", "type": "bool" },
+          { "internalType": "uint256", "name": "disputeID", "type": "uint256" },
+          {
+            "internalType": "uint256",
+            "name": "appealCost",
+            "type": "uint256"
+          },
+          { "internalType": "bool", "name": "appealed", "type": "bool" },
+          {
+            "internalType": "uint256",
+            "name": "appealStart",
+            "type": "uint256"
+          },
+          { "internalType": "uint256", "name": "appealEnd", "type": "uint256" },
+          {
+            "internalType": "enum GeneralizedTCR.Party",
+            "name": "ruling",
+            "type": "uint8"
+          },
+          { "internalType": "address", "name": "requester", "type": "address" },
+          {
+            "internalType": "address",
+            "name": "challenger",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "arbitrator",
+            "type": "address"
+          },
+          {
+            "internalType": "bytes",
+            "name": "arbitratorExtraData",
+            "type": "bytes"
+          },
+          {
+            "internalType": "enum GeneralizedTCR.Party",
+            "name": "currentRuling",
+            "type": "uint8"
+          },
+          { "internalType": "bool[3]", "name": "hasPaid", "type": "bool[3]" },
+          {
+            "internalType": "uint256",
+            "name": "feeRewards",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "submissionTime",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256[3]",
+            "name": "amountPaid",
+            "type": "uint256[3]"
+          },
+          {
+            "internalType": "enum IArbitrator.DisputeStatus",
+            "name": "disputeStatus",
+            "type": "uint8"
+          },
+          {
+            "internalType": "uint256",
+            "name": "numberOfRequests",
+            "type": "uint256"
+          }
+        ],
+        "internalType": "struct GeneralizedTCRView.QueryResult[]",
+        "name": "results",
+        "type": "tuple[]"
+      },
+      { "internalType": "bool", "name": "hasMore", "type": "bool" }
+    ],
+    "payable": false,
+    "stateMutability": "view",
+    "type": "function"
+  }
+]

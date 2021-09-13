@@ -84,11 +84,13 @@ const DisplaySelector = ({ type, value, linkImage, allowedFileTypes }) => {
       return (
         <a
           href={
-            protocolRegex.test(value)
-              ? value
-              : value.slice(0, 8) === 'https://'
-              ? value
-              : `https://${value.slice(0, 8)}`
+            value
+              ? protocolRegex.test(value)
+                ? value
+                : value.slice(0, 8) === 'https://'
+                ? value
+                : `https://${value.slice(0, 8)}`
+              : ``
           }
         >
           <Typography.Text>{value}</Typography.Text>

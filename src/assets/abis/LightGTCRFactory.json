@@ -1,0 +1,138 @@
+[
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_GTCR",
+        "type": "address"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "nonpayable",
+    "type": "constructor"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "contract LightGeneralizedTCR",
+        "name": "_address",
+        "type": "address"
+      }
+    ],
+    "name": "NewGTCR",
+    "type": "event"
+  },
+  {
+    "constant": true,
+    "inputs": [],
+    "name": "GTCR",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "constant": true,
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "name": "instances",
+    "outputs": [
+      {
+        "internalType": "contract LightGeneralizedTCR",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "constant": false,
+    "inputs": [
+      {
+        "internalType": "contract IArbitrator",
+        "name": "_arbitrator",
+        "type": "address"
+      },
+      {
+        "internalType": "bytes",
+        "name": "_arbitratorExtraData",
+        "type": "bytes"
+      },
+      {
+        "internalType": "address",
+        "name": "_connectedTCR",
+        "type": "address"
+      },
+      {
+        "internalType": "string",
+        "name": "_registrationMetaEvidence",
+        "type": "string"
+      },
+      {
+        "internalType": "string",
+        "name": "_clearingMetaEvidence",
+        "type": "string"
+      },
+      {
+        "internalType": "address",
+        "name": "_governor",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256[4]",
+        "name": "_baseDeposits",
+        "type": "uint256[4]"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_challengePeriodDuration",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256[3]",
+        "name": "_stakeMultipliers",
+        "type": "uint256[3]"
+      },
+      {
+        "internalType": "address",
+        "name": "_relayContract",
+        "type": "address"
+      }
+    ],
+    "name": "deploy",
+    "outputs": [],
+    "payable": false,
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "constant": true,
+    "inputs": [],
+    "name": "count",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "view",
+    "type": "function"
+  }
+]

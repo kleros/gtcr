@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { useWeb3Context } from 'web3-react'
-import { abi as _GTCRFactory } from '@kleros/tcr/build/contracts/GTCRFactory.json'
+import _GTCRFactory from '../assets/abis/LightGTCRFactory.json'
 import useNetworkEnvVariable from './network-env'
 import { ethers } from 'ethers'
 import { getAddress } from 'ethers/utils'
@@ -8,7 +8,7 @@ import { getAddress } from 'ethers/utils'
 const useFactory = () => {
   const { networkId, library, active } = useWeb3Context()
   const factoryAddress = useNetworkEnvVariable(
-    'REACT_APP_FACTORY_ADDRESSES',
+    'REACT_APP_LGTCR_FACTORY_ADDRESSES',
     networkId
   )
   const factory = useMemo(() => {

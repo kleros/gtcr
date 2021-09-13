@@ -5,7 +5,7 @@ import { useDebounce } from 'use-debounce'
 import styled from 'styled-components/macro'
 import { useWeb3Context } from 'web3-react'
 import { ethers } from 'ethers'
-import { abi as _GTCRFactory } from '@kleros/tcr/build/contracts/GTCRFactory.json'
+import _GTCRFactory from '../../assets/abis/LightGTCRFactory.json'
 import TCRParams from './tcr-params'
 import ItemParams from './item-params'
 import Deploy from './deploy'
@@ -275,6 +275,7 @@ export default () => {
           library.waitForTransaction(txHash)
         )
       )
+      // TODO: This is probably broken now.
       setPreviousDeployments(
         txDatas.map(
           txData => factoryInterface.parseLog(txData.logs[7]).values._address
