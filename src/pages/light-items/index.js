@@ -33,8 +33,8 @@ import AppTour from '../../components/tour'
 import itemsTourSteps from './tour-steps'
 import takeLower from '../../utils/lower-limit'
 import { DISPUTE_STATUS } from '../../utils/item-status'
-import { useQuery } from '@apollo/client'
-import { REGISTRY_QUERY } from '../../graphql'
+import { useLazyQuery, useQuery } from '@apollo/client'
+import { LIGHT_ITEMS_QUERY, REGISTRY_QUERY } from '../../graphql'
 import LightSearchBar from '../../components/light-search-bar'
 
 const NSFW_FILTER_KEY = 'NSFW_FILTER_KEY'
@@ -217,21 +217,33 @@ const Items = ({ search, history }) => {
   // not know how to do it) parameter the subgraph so I came up with
   // this monstruocity. If you know how to improve this, give it a
   // go. Perhaps add apollo back.
+  // re: maybe you can now make work whatever was in your mind?
+  // I could convert these to objects thanks to new query.
   const itemsWhere = useMemo(() => {
-    if (absent)
-      return `{ registry: "${tcrAddress.toLowerCase()}", status: Absent }`
+    if (absent) return { registry: tcrAddress.toLowerCase(), status: 'Absent' }
     if (registered)
-      return `{ registry: "${tcrAddress.toLowerCase()}", status: Registered }`
+      return { registry: tcrAddress.toLowerCase(), status: 'Registered' }
     if (submitted)
-      return `{ registry: "${tcrAddress.toLowerCase()}", status: RegistrationRequested }`
+      return {
+        registry: tcrAddress.toLowerCase(),
+        status: 'RegistrationRequested'
+      }
     if (removalRequested)
-      return `{ registry: "${tcrAddress.toLowerCase()}", status: ClearingRequested }`
+      return { registry: tcrAddress.toLowerCase(), status: 'ClearingRequested' }
     if (challengedSubmissions)
-      return `{ registry: "${tcrAddress.toLowerCase()}", status: RegistrationRequested, disputed: true }`
+      return {
+        registry: tcrAddress.toLowerCase(),
+        status: 'RegistrationRequested',
+        disputed: true
+      }
     if (challengedRemovals)
-      return `{ registry: "${tcrAddress.toLowerCase()}", status: ClearingRequested, disputed: true }`
+      return {
+        registry: tcrAddress.toLowerCase(),
+        status: 'ClearingRequested',
+        disputed: true
+      }
 
-    return `{ registry: "${tcrAddress.toLowerCase()}" }`
+    return { registry: tcrAddress.toLowerCase() }
   }, [
     absent,
     challengedRemovals,
@@ -242,64 +254,29 @@ const Items = ({ search, history }) => {
     tcrAddress
   ])
 
+  const [getItems, itemsQuery] = useLazyQuery(LIGHT_ITEMS_QUERY)
+
   useEffect(() => {
     ;(async () => {
       if (!gtcr) return
-      const query = {
-        query: `
-          {
-            litems(
-              skip: ${(Number(page) - 1) * ITEMS_PER_PAGE}
-              first: ${ITEMS_PER_PAGE}
-              orderDirection: ${orderDirection}
-              orderBy: latestRequestSubmissionTime
-              where: ${itemsWhere}
-            ) {
-              itemID
-              status
-              data
-              props {
-                value
-                type
-                label
-                description
-                isIdentifier
-              }
-              requests(first: 1, orderBy: submissionTime, orderDirection: desc) {
-                disputed
-                disputeID
-                submissionTime
-                resolved
-                requester
-                challenger
-                resolutionTime
-                rounds(first: 1, orderBy: creationTime, orderDirection: desc) {
-                  appealPeriodStart
-                  appealPeriodEnd
-                  ruling
-                  hasPaidRequester
-                  hasPaidChallenger
-                  amountPaidRequester
-                  amountPaidChallenger
-                }
-              }
-            }
-          }
-        `
-      }
-      setFetchItems({ isFetching: true })
-      const { data, errors } = await (
-        await fetch(GTCR_SUBGRAPH_URL, {
-          method: 'POST',
-          body: JSON.stringify(query)
-        })
-      ).json()
-      if (errors) {
-        console.error(errors)
+      // so, we can execute query
+      // i suspect this useEffect is causing a rerender loop, hurting performance
+      getItems({
+        variables: {
+          skip: (Number(page) - 1) * ITEMS_PER_PAGE,
+          first: ITEMS_PER_PAGE,
+          orderDirection: orderDirection,
+          where: itemsWhere
+        }
+      })
+      const { data, error, loading } = itemsQuery
+      if (error) {
+        console.error(error)
         setFetchItems({ isFetching: false })
-        setError(errors.message)
+        setError(error.message)
         return
       }
+      if (loading || !data) return
       let { litems: items } = data ?? {}
       items = items.map(item => ({
         ...item,
@@ -375,7 +352,15 @@ const Items = ({ search, history }) => {
         address: gtcr.address
       })
     })()
-  }, [GTCR_SUBGRAPH_URL, gtcr, itemsWhere, orderDirection, page])
+  }, [
+    GTCR_SUBGRAPH_URL,
+    gtcr,
+    itemsWhere,
+    orderDirection,
+    page,
+    getItems,
+    itemsQuery
+  ])
 
   const { data: registryData } = useQuery(REGISTRY_QUERY, {
     variables: {
