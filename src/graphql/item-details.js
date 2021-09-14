@@ -1,7 +1,7 @@
 import { gql } from '@apollo/client'
 
-const ITEM_DETAILS_QUERY = gql`
-  query itemDetailsQuery($id: String!) {
+const LIGHT_ITEM_DETAILS_QUERY = gql`
+  query lightItemDetailsQuery($id: String!) {
     litem(id: $id) {
       data
       requests(orderBy: submissionTime, orderDirection: desc) {
@@ -30,4 +30,4 @@ const ITEM_DETAILS_QUERY = gql`
   }
 `
 
-export default ITEM_DETAILS_QUERY
+export default LIGHT_ITEM_DETAILS_QUERY

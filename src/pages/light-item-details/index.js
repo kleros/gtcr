@@ -28,7 +28,7 @@ import AppTour from '../../components/tour'
 import itemTourSteps from './tour-steps'
 import takeLower from '../../utils/lower-limit'
 import { SUBGRAPH_STATUS_TO_CODE } from '../../utils/item-status'
-import { ITEM_DETAILS_QUERY } from '../../graphql'
+import { LIGHT_ITEM_DETAILS_QUERY } from '../../graphql'
 import { useQuery } from '@apollo/client'
 import SearchBar from '../../components/light-search-bar'
 
@@ -101,7 +101,7 @@ const ItemDetails = ({ itemID, search }) => {
 
   // subgraph item entities have id "<itemID>@<listaddress>"
   const compoundId = `${itemID}@${tcrAddress.toLowerCase()}`
-  const detailsViewQuery = useQuery(ITEM_DETAILS_QUERY, {
+  const detailsViewQuery = useQuery(LIGHT_ITEM_DETAILS_QUERY, {
     variables: { id: compoundId }
   })
 

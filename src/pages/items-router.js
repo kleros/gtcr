@@ -49,9 +49,7 @@ const ItemsRouter = ({ search, tcrAddress, history }) => {
   useEffect(() => {
     ;(async () => {
       try {
-        if (!active) {
-          return
-        }
+        if (!active) return
         const tcr = new ethers.Contract(tcrAddress, _gtcr, library)
 
         // Call a function only available on GTCR Classic. If
