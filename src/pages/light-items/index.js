@@ -260,7 +260,6 @@ const Items = ({ search, history }) => {
     ;(async () => {
       if (!gtcr) return
       // so, we can execute query
-      // i suspect this useEffect is causing a rerender loop, hurting performance
       getItems({
         variables: {
           skip: (Number(page) - 1) * ITEMS_PER_PAGE,
@@ -352,15 +351,9 @@ const Items = ({ search, history }) => {
         address: gtcr.address
       })
     })()
-  }, [
-    GTCR_SUBGRAPH_URL,
-    gtcr,
-    itemsWhere,
-    orderDirection,
-    page,
-    getItems,
-    itemsQuery
-  ])
+    // removing itemsQuery as dependency removes infinite rerender problem
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [GTCR_SUBGRAPH_URL, gtcr, itemsWhere, orderDirection, page, getItems])
 
   const { data: registryData } = useQuery(REGISTRY_QUERY, {
     variables: {
