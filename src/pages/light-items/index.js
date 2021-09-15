@@ -34,7 +34,7 @@ import itemsTourSteps from './tour-steps'
 import takeLower from '../../utils/lower-limit'
 import { DISPUTE_STATUS } from '../../utils/item-status'
 import { useLazyQuery, useQuery } from '@apollo/client'
-import { LIGHT_ITEMS_QUERY, REGISTRY_QUERY } from '../../graphql'
+import { LIGHT_ITEMS_QUERY, LIGHT_REGISTRY_QUERY } from '../../graphql'
 import LightSearchBar from '../../components/light-search-bar'
 
 const NSFW_FILTER_KEY = 'NSFW_FILTER_KEY'
@@ -355,7 +355,7 @@ const Items = ({ search, history }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [GTCR_SUBGRAPH_URL, gtcr, itemsWhere, orderDirection, page, getItems])
 
-  const { data: registryData } = useQuery(REGISTRY_QUERY, {
+  const { data: registryData } = useQuery(LIGHT_REGISTRY_QUERY, {
     variables: {
       lowerCaseTCRAddress: tcrAddress.toLowerCase()
     }
