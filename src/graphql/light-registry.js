@@ -1,8 +1,8 @@
 import { gql } from '@apollo/client'
 
-const REGISTRY_QUERY = gql`
-  query registryQuery($lowerCaseTCRAddress: String!) {
-    registry(id: $lowerCaseTCRAddress) {
+const LIGHT_REGISTRY_QUERY = gql`
+  query lightRegistryQuery($lowerCaseTCRAddress: String!) {
+    lregistry(id: $lowerCaseTCRAddress) {
       numberOfAbsent
       numberOfRegistered
       numberOfRegistrationRequested
@@ -13,4 +13,4 @@ const REGISTRY_QUERY = gql`
   }
 `
 
-export default REGISTRY_QUERY
+export default LIGHT_REGISTRY_QUERY
