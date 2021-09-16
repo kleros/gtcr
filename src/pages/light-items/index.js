@@ -257,18 +257,22 @@ const Items = ({ search, history }) => {
   const [getItems, itemsQuery] = useLazyQuery(LIGHT_ITEMS_QUERY)
 
   useEffect(() => {
+    if (!gtcr) return
+    getItems({
+      variables: {
+        skip: (Number(page) - 1) * ITEMS_PER_PAGE,
+        first: ITEMS_PER_PAGE,
+        orderDirection: orderDirection,
+        where: itemsWhere
+      }
+    })
+  }, [getItems, gtcr, itemsWhere, orderDirection, page])
+
+  useEffect(() => {
     ;(async () => {
-      if (!gtcr) return
-      // so, we can execute query
-      getItems({
-        variables: {
-          skip: (Number(page) - 1) * ITEMS_PER_PAGE,
-          first: ITEMS_PER_PAGE,
-          orderDirection: orderDirection,
-          where: itemsWhere
-        }
-      })
       const { data, error, loading } = itemsQuery
+      if (!gtcr || !data || error || loading) return
+
       if (error) {
         console.error(error)
         setFetchItems({ isFetching: false })
@@ -351,9 +355,7 @@ const Items = ({ search, history }) => {
         address: gtcr.address
       })
     })()
-    // removing itemsQuery as dependency removes infinite rerender problem
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [GTCR_SUBGRAPH_URL, gtcr, itemsWhere, orderDirection, page, getItems])
+  }, [gtcr, itemsQuery])
 
   const { data: registryData } = useQuery(LIGHT_REGISTRY_QUERY, {
     variables: {
