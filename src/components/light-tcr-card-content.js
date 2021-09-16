@@ -52,35 +52,40 @@ const TCRCardContent = ({
 
   if (error || metaEvidenceError) {
     const { message } = error || metaEvidenceError
-    return (
-      <div
-        style={{
-          height: '100%',
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'space-between',
-          alignItems: 'center'
-        }}
-      >
-        <StyledItemCol>
-          <StyledResult
-            status="warning"
-            title="Errored submission"
-            subTitle={message}
-          />
-        </StyledItemCol>
-        <StyledItemCol>
-          {!hideDetailsButton && (
-            <Link to={`/tcr/${currentTCRAddress}/${ID}`}>
-              <Button>Details</Button>
+    // this type of error is fixed by itself given a few seconds
+    // it occurs because it attempts to look for the following
+    // contract: "Error decoding text"
+    // more info https://github.com/kleros/gtcr/issues/184
+    if (!/UseSTD3ASCIIRules/.test(message))
+      return (
+        <div
+          style={{
+            height: '100%',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between',
+            alignItems: 'center'
+          }}
+        >
+          <StyledItemCol>
+            <StyledResult
+              status="warning"
+              title="Errored submission"
+              subTitle={message}
+            />
+          </StyledItemCol>
+          <StyledItemCol>
+            {!hideDetailsButton && (
+              <Link to={`/tcr/${currentTCRAddress}/${ID}`}>
+                <Button>Details</Button>
+              </Link>
+            )}
+            <Link to={`/tcr/${tcrAddress}`} style={{ marginLeft: '12px' }}>
+              <Button type="primary">Open List</Button>
             </Link>
-          )}
-          <Link to={`/tcr/${tcrAddress}`} style={{ marginLeft: '12px' }}>
-            <Button type="primary">Open List</Button>
-          </Link>
-        </StyledItemCol>
-      </div>
-    )
+          </StyledItemCol>
+        </div>
+      )
   }
 
   const { metadata } = metaEvidence || {}
