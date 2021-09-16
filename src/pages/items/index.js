@@ -40,6 +40,8 @@ import AppTour from '../../components/tour'
 import itemsTourSteps from './tour-steps'
 import takeLower from '../../utils/lower-limit'
 import { DISPUTE_STATUS } from '../../utils/item-status'
+import { useQuery } from '@apollo/client'
+import { CLASSIC_REGISTRY_ITEMS_QUERY } from '../../graphql'
 
 const NSFW_FILTER_KEY = 'NSFW_FILTER_KEY'
 const ITEMS_TOUR_DISMISSED = 'ITEMS_TOUR_DISMISSED'
@@ -297,152 +299,85 @@ const Items = ({ search, history }) => {
     setFetchItemCount({ fetchStarted: true })
   }, [gtcr])
 
-  // Fetch items.
-  useEffect(() => {
-    if (
-      !gtcr ||
-      !gtcrView ||
-      fetchItems.isFetching ||
-      !fetchItems.fetchStarted ||
-      !GTCR_SUBGRAPH_URL
-    )
-      return
+  const registryQuery = useQuery(CLASSIC_REGISTRY_ITEMS_QUERY, {
+    variables: {
+      lowercaseRegistryId: gtcr.address.toLowerCase(),
+      orderDirection: queryOptions.oldestFirst ? 'asc' : 'desc'
+    }
+  })
 
-    setFetchItems({ isFetching: true })
-    let encodedItems
-    ;(async () => {
-      try {
-        const { page, oldestFirst } = queryOptions
-        const orderDirection = oldestFirst ? 'asc' : 'desc'
-        const { data } = await (
-          await fetch(GTCR_SUBGRAPH_URL, {
-            method: 'POST',
-            body: JSON.stringify({
-              query: `
-              {
-                registry(id: "${gtcr.address.toLowerCase()}") {
-                  items(
-                    first: 1000,
-                    orderBy: latestRequestSubmissionTime,
-                    orderDirection: ${orderDirection}
-                  ) {
-                    itemID
-                    status
-                    data
-                    requests (first: 1, orderBy: submissionTime, orderDirection: desc) {
-                      disputed
-                      disputeID
-                      submissionTime
-                      resolved
-                      requester
-                      challenger
-                      rounds (first: 1, orderBy: creationTime , orderDirection: desc) {
-                        appealPeriodStart
-                        appealPeriodEnd
-                        ruling
-                        hasPaidRequester
-                        hasPaidChallenger
-                        amountPaidRequester
-                        amountPaidChallenger
-                      }
-                    }
-                  }
-                }
-              }
-            `
-            })
-          })
-        ).json()
+  // big useEffect for fetching + encoding the data was transformed into
+  // a basic useQuery hook to fetch data, and a memo to encode items
+  // due to rerendering loop problems with useEffects
+  const encodedItems = useMemo(() => {
+    const { data, loading, called } = registryQuery
+    if (!data || loading || !called) return null
+    let items = registryQuery.data.registry.items
 
-        const { registry } = data ?? {}
-        let { items } = registry ?? {}
+    Object.keys(queryOptions).map(key => {
+      if (key !== 'oldestFirst' && queryOptions[key] === false)
+        items = account
+          ? items.filter(filterFunctions[key](account.toLowerCase()))
+          : items
+      return true
+    })
 
-        Object.keys(queryOptions).map(key => {
-          if (key !== 'oldestFirst' && queryOptions[key] === false)
-            items = account
-              ? items.filter(filterFunctions[key](account.toLowerCase()))
-              : items
-          return true
-        })
+    items = items.map(({ itemID, status: statusName, requests, data }) => {
+      const { disputed, disputeID, submissionTime, rounds, resolved } =
+        requests[0] ?? {}
 
-        items = items.map(({ itemID, status: statusName, requests, data }) => {
-          const { disputed, disputeID, submissionTime, rounds, resolved } =
-            requests[0] ?? {}
+      const {
+        appealPeriodStart,
+        appealPeriodEnd,
+        ruling,
+        hasPaidRequester,
+        hasPaidChallenger,
+        amountPaidRequester,
+        amountPaidChallenger
+      } = rounds[0] ?? {}
 
-          const {
-            appealPeriodStart,
-            appealPeriodEnd,
-            ruling,
-            hasPaidRequester,
-            hasPaidChallenger,
-            amountPaidRequester,
-            amountPaidChallenger
-          } = rounds[0] ?? {}
+      const currentRuling = ruling === 'None' ? 0 : ruling === 'Accept' ? 1 : 2
+      const disputeStatus = !disputed
+        ? DISPUTE_STATUS.WAITING
+        : resolved
+        ? DISPUTE_STATUS.SOLVED
+        : Number(appealPeriodEnd) > Date.now() / 1000
+        ? DISPUTE_STATUS.APPEALABLE
+        : DISPUTE_STATUS.WAITING
 
-          const currentRuling =
-            ruling === 'None' ? 0 : ruling === 'Accept' ? 1 : 2
-          const disputeStatus = !disputed
-            ? DISPUTE_STATUS.WAITING
-            : resolved
-            ? DISPUTE_STATUS.SOLVED
-            : Number(appealPeriodEnd) > Date.now() / 1000
-            ? DISPUTE_STATUS.APPEALABLE
-            : DISPUTE_STATUS.WAITING
-
-          const graphStatusNameToCode = {
-            Absent: 0,
-            Registered: 1,
-            RegistrationRequested: 2,
-            ClearingRequested: 3
-          }
-
-          return {
-            ID: itemID,
-            itemID,
-            status: graphStatusNameToCode[statusName],
-            disputeStatus,
-            disputed,
-            data,
-            disputeID,
-            submissionTime: bigNumberify(submissionTime),
-            hasPaid: [false, hasPaidRequester, hasPaidChallenger],
-            currentRuling,
-            appealStart: bigNumberify(appealPeriodStart),
-            appealEnd: bigNumberify(appealPeriodEnd),
-            amountPaid: [
-              bigNumberify(0),
-              bigNumberify(amountPaidRequester),
-              bigNumberify(amountPaidChallenger)
-            ]
-          }
-        })
-
-        const skip = ITEMS_PER_PAGE * (Number(page ?? 1) - 1)
-        encodedItems = items.slice(skip, skip + ITEMS_PER_PAGE)
-      } catch (err) {
-        console.error('Error fetching items', err)
-        setError('Error fetching items')
-        setFetchItems({ isFetching: false, fetchStarted: false })
-      } finally {
-        setFetchItems({
-          isFetching: false,
-          fetchStarted: false,
-          data: encodedItems,
-          address: gtcr.address
-        })
+      const graphStatusNameToCode = {
+        Absent: 0,
+        Registered: 1,
+        RegistrationRequested: 2,
+        ClearingRequested: 3
       }
-    })()
-  }, [
-    gtcrView,
-    fetchItems,
-    gtcr,
-    search,
-    queryOptions,
-    tcrAddress,
-    active,
-    account,
-    GTCR_SUBGRAPH_URL
-  ])
+
+      return {
+        ID: itemID,
+        itemID,
+        status: graphStatusNameToCode[statusName],
+        disputeStatus,
+        disputed,
+        data,
+        disputeID,
+        submissionTime: bigNumberify(submissionTime),
+        hasPaid: [false, hasPaidRequester, hasPaidChallenger],
+        currentRuling,
+        appealStart: bigNumberify(appealPeriodStart),
+        appealEnd: bigNumberify(appealPeriodEnd),
+        amountPaid: [
+          bigNumberify(0),
+          bigNumberify(amountPaidRequester),
+          bigNumberify(amountPaidChallenger)
+        ]
+      }
+    })
+
+    const skip = ITEMS_PER_PAGE * (Number(queryOptions.page ?? 1) - 1)
+    const encodedItems = items.slice(skip, skip + ITEMS_PER_PAGE)
+
+    return encodedItems
+  }, [registryQuery, queryOptions, account])
 
   // Since items are sorted by time of submission (either newest or oldest first)
   // we have to also watch for new requests related to items already on the list.
@@ -521,17 +456,13 @@ const Items = ({ search, history }) => {
   // Decode items once meta evidence and items were fetched.
   const items = useMemo(() => {
     if (
-      !fetchItems.data ||
       !metaEvidence ||
       metaEvidence.address !== tcrAddress ||
-      fetchItems.address !== tcrAddress ||
       (oldActiveItems.address && oldActiveItems.address !== tcrAddress) ||
-      !metadataByTime
+      !metadataByTime ||
+      !encodedItems
     )
       return
-
-    const { data: encodedItems } = fetchItems
-
     // If on page 1, display also old items with new pending
     // requests, if any.
     const displayedItems =
@@ -569,13 +500,13 @@ const Items = ({ search, history }) => {
       }
     })
   }, [
-    fetchItems,
     metaEvidence,
     metadataByTime,
     oldActiveItems.address,
     oldActiveItems.data,
     page,
-    tcrAddress
+    tcrAddress,
+    encodedItems
   ])
 
   // Watch for submissions and status change events to refetch items.
@@ -659,7 +590,7 @@ const Items = ({ search, history }) => {
         <StyledContent>
           <Spin
             spinning={
-              fetchItems.isFetching || fetchItemCount.isFetching || !metadata
+              registryQuery.loading || fetchItemCount.isFetching || !metadata
             }
           >
             <>
