@@ -19,8 +19,6 @@ export const FILTER_KEYS = {
   REMOVAL_REQUESTED: 'removalRequested',
   CHALLENGED_SUBMISSIONS: 'challengedSubmissions',
   CHALLENGED_REMOVALS: 'challengedRemovals',
-  MY_SUBMISSIONS: 'mySubmissions',
-  MY_CHALLENGES: 'myChallenges',
   OLDEST_FIRST: 'oldestFirst',
   PAGE: 'page'
 }
@@ -35,12 +33,6 @@ export const filterLabelLight = {
   [FILTER_KEYS.MY_SUBMISSIONS]: 'My Submissions',
   [FILTER_KEYS.MY_CHALLENGES]: 'My Challenges',
   [FILTER_KEYS.OLDEST_FIRST]: 'Oldest First'
-}
-
-export const filterLabel = {
-  ...filterLabelLight,
-  [FILTER_KEYS.MY_SUBMISSIONS]: 'My Submissions',
-  [FILTER_KEYS.MY_CHALLENGES]: 'My Challenges'
 }
 
 export const filterFunctions = {
@@ -66,13 +58,13 @@ export const filterFunctions = {
 
 export const DEFAULT_FILTERS = {
   [FILTER_KEYS.ABSENT]: false,
-  [FILTER_KEYS.REGISTERED]: true,
-  [FILTER_KEYS.SUBMITTED]: true,
-  [FILTER_KEYS.REMOVAL_REQUESTED]: true,
-  [FILTER_KEYS.CHALLENGED_SUBMISSIONS]: true,
-  [FILTER_KEYS.CHALLENGED_REMOVALS]: true,
-  [FILTER_KEYS.MY_SUBMISSIONS]: true,
-  [FILTER_KEYS.MY_CHALLENGES]: true,
+  [FILTER_KEYS.REGISTERED]: false,
+  [FILTER_KEYS.SUBMITTED]: false,
+  [FILTER_KEYS.REMOVAL_REQUESTED]: false,
+  [FILTER_KEYS.CHALLENGED_SUBMISSIONS]: false,
+  [FILTER_KEYS.CHALLENGED_REMOVALS]: false,
+  [FILTER_KEYS.MY_SUBMISSIONS]: false,
+  [FILTER_KEYS.MY_CHALLENGES]: false,
   [FILTER_KEYS.OLDEST_FIRST]: false,
   [FILTER_KEYS.PAGE]: '1'
 }

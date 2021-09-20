@@ -66,7 +66,7 @@ const ItemsRouter = ({ search, tcrAddress, history }) => {
     })()
   }, [active, library, tcrAddress])
 
-  if (typeof isLightCurate === 'undefined') return null // Loading...
+  if (typeof isLightCurate === 'undefined') return <StyledSpin />
 
   if (isLightCurate)
     return (

@@ -27,7 +27,7 @@ import SubmitConnectModal from '../item-details/modals/submit-connect'
 import SearchBar from '../../components/search-bar'
 import {
   searchStrToFilterObj,
-  filterLabel,
+  filterLabelLight,
   FILTER_KEYS,
   updateFilter,
   queryOptionsToFilterArray,
@@ -40,7 +40,7 @@ import AppTour from '../../components/tour'
 import itemsTourSteps from './tour-steps'
 import takeLower from '../../utils/lower-limit'
 import { DISPUTE_STATUS } from '../../utils/item-status'
-import { useQuery } from '@apollo/client'
+import { useLazyQuery } from '@apollo/client'
 import { CLASSIC_REGISTRY_ITEMS_QUERY } from '../../graphql'
 
 const NSFW_FILTER_KEY = 'NSFW_FILTER_KEY'
@@ -207,6 +207,53 @@ const Items = ({ search, history }) => {
     localforage.setItem(NSFW_FILTER_KEY, checked)
   }, [])
 
+  const {
+    oldestFirst,
+    page,
+    absent,
+    registered,
+    submitted,
+    removalRequested,
+    challengedSubmissions,
+    challengedRemovals
+  } = queryOptions
+  const orderDirection = oldestFirst ? 'asc' : 'desc'
+
+  const itemsWhere = useMemo(() => {
+    if (absent) return { registry: tcrAddress.toLowerCase(), status: 'Absent' }
+    if (registered)
+      return { registry: tcrAddress.toLowerCase(), status: 'Registered' }
+    if (submitted)
+      return {
+        registry: tcrAddress.toLowerCase(),
+        status: 'RegistrationRequested'
+      }
+    if (removalRequested)
+      return { registry: tcrAddress.toLowerCase(), status: 'ClearingRequested' }
+    if (challengedSubmissions)
+      return {
+        registry: tcrAddress.toLowerCase(),
+        status: 'RegistrationRequested',
+        disputed: true
+      }
+    if (challengedRemovals)
+      return {
+        registry: tcrAddress.toLowerCase(),
+        status: 'ClearingRequested',
+        disputed: true
+      }
+
+    return { registry: tcrAddress.toLowerCase() }
+  }, [
+    absent,
+    challengedRemovals,
+    challengedSubmissions,
+    registered,
+    removalRequested,
+    submitted,
+    tcrAddress
+  ])
+
   const switchToSuggested = useCallback(async () => {
     if (!library || !active || !network) return
     if (network.chainId === 100)
@@ -299,20 +346,27 @@ const Items = ({ search, history }) => {
     setFetchItemCount({ fetchStarted: true })
   }, [gtcr])
 
-  const registryQuery = useQuery(CLASSIC_REGISTRY_ITEMS_QUERY, {
-    variables: {
-      lowercaseRegistryId: gtcr.address.toLowerCase(),
-      orderDirection: queryOptions.oldestFirst ? 'asc' : 'desc'
-    }
-  })
+  const [getItems, itemsQuery] = useLazyQuery(CLASSIC_REGISTRY_ITEMS_QUERY)
+
+  useEffect(() => {
+    if (!gtcr) return
+    getItems({
+      variables: {
+        skip: (Number(page) - 1) * ITEMS_PER_PAGE,
+        first: ITEMS_PER_PAGE,
+        orderDirection: orderDirection,
+        where: itemsWhere
+      }
+    })
+  }, [getItems, gtcr, itemsWhere, orderDirection, page])
 
   // big useEffect for fetching + encoding the data was transformed into
   // a basic useQuery hook to fetch data, and a memo to encode items
   // due to rerendering loop problems with useEffects
   const encodedItems = useMemo(() => {
-    const { data, loading, called } = registryQuery
+    const { data, loading, called } = itemsQuery
     if (!data || loading || !called) return null
-    let items = registryQuery.data.registry.items
+    let items = itemsQuery.data.items
 
     Object.keys(queryOptions).map(key => {
       if (key !== 'oldestFirst' && queryOptions[key] === false)
@@ -377,7 +431,7 @@ const Items = ({ search, history }) => {
     const encodedItems = items.slice(skip, skip + ITEMS_PER_PAGE)
 
     return encodedItems
-  }, [registryQuery, queryOptions, account])
+  }, [account, itemsQuery, queryOptions])
 
   // Since items are sorted by time of submission (either newest or oldest first)
   // we have to also watch for new requests related to items already on the list.
@@ -450,8 +504,6 @@ const Items = ({ search, history }) => {
     search,
     tcrAddress
   ])
-
-  const { oldestFirst, page } = queryOptions
 
   // Decode items once meta evidence and items were fetched.
   const items = useMemo(() => {
@@ -590,7 +642,7 @@ const Items = ({ search, history }) => {
         <StyledContent>
           <Spin
             spinning={
-              registryQuery.loading || fetchItemCount.isFetching || !metadata
+              itemsQuery.loading || fetchItemCount.isFetching || !metadata
             }
           >
             <>
@@ -606,7 +658,9 @@ const Items = ({ search, history }) => {
                     .filter(
                       key =>
                         key !== FILTER_KEYS.PAGE &&
-                        key !== FILTER_KEYS.OLDEST_FIRST
+                        key !== FILTER_KEYS.OLDEST_FIRST &&
+                        key !== 'mySubmissions' &&
+                        key !== 'myChallenges'
                     )
                     .map(key => (
                       <StyledTag
@@ -625,7 +679,7 @@ const Items = ({ search, history }) => {
                           setFetchItemCount({ fetchStarted: true })
                         }}
                       >
-                        {filterLabel[key]}
+                        {filterLabelLight[key]}
                       </StyledTag>
                     ))}
                 </div>

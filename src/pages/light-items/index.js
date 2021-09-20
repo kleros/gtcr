@@ -187,10 +187,6 @@ const Items = ({ search, history }) => {
     isFetching: false,
     data: null
   })
-  const GTCR_SUBGRAPH_URL = useNetworkEnvVariable(
-    'REACT_APP_SUBGRAPH_URL',
-    networkId
-  )
 
   const queryOptions = searchStrToFilterObjLight(search)
   const [nsfwFilterOn, setNSFWFilter] = useState(true)
@@ -212,13 +208,6 @@ const Items = ({ search, history }) => {
   } = queryOptions
   const orderDirection = oldestFirst ? 'asc' : 'desc'
 
-  // God of code forgive me for I have sinned (in many codebases)
-  // GQL queries did not allow me to pass a dynamic where (or I did
-  // not know how to do it) parameter the subgraph so I came up with
-  // this monstruocity. If you know how to improve this, give it a
-  // go. Perhaps add apollo back.
-  // re: maybe you can now make work whatever was in your mind?
-  // I could convert these to objects thanks to new query.
   const itemsWhere = useMemo(() => {
     if (absent) return { registry: tcrAddress.toLowerCase(), status: 'Absent' }
     if (registered)
