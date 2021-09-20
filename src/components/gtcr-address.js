@@ -16,16 +16,20 @@ const StyledSpan = styled.span`
   pointer-events: auto;
 `
 
-const GTCRAddress = ({ address }) => (
-  <>
-    <StyledSpan>
-      <ETHAddress address={address || ZERO_ADDRESS} />
-    </StyledSpan>
-    <StyledButton href={`/tcr/${utils.getAddress(address)}`}>
-      Visit
-    </StyledButton>
-  </>
-)
+const GTCRAddress = ({ address }) => {
+  // this avoids crashes when it looks for the address "Error decoding GTCR address"
+  if (!/^0x[a-fA-F0-9]{40}$/.test(address)) return null
+  return (
+    <>
+      <StyledSpan>
+        <ETHAddress address={address || ZERO_ADDRESS} />
+      </StyledSpan>
+      <StyledButton href={`/tcr/${utils.getAddress(address)}`}>
+        Visit
+      </StyledButton>
+    </>
+  )
+}
 
 GTCRAddress.propTypes = {
   address: PropTypes.string.isRequired
