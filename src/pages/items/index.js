@@ -26,10 +26,10 @@ import useNetworkEnvVariable from '../../hooks/network-env'
 import SubmitConnectModal from '../item-details/modals/submit-connect'
 import SearchBar from '../../components/search-bar'
 import {
-  searchStrToFilterObj,
+  searchStrToFilterObjLight,
   filterLabelLight,
   FILTER_KEYS,
-  updateFilter,
+  updateLightFilter,
   queryOptionsToFilterArray,
   applyOldActiveItemsFilter,
   filterFunctions
@@ -199,7 +199,7 @@ const Items = ({ search, history }) => {
     networkId
   )
   const [eventListenerSet, setEventListenerSet] = useState()
-  const queryOptions = searchStrToFilterObj(search)
+  const queryOptions = searchStrToFilterObjLight(search)
   const [nsfwFilterOn, setNSFWFilter] = useState(true)
   const [queryItemParams, setQueryItemParams] = useState()
   const toggleNSFWFilter = useCallback(checked => {
@@ -368,14 +368,6 @@ const Items = ({ search, history }) => {
     if (!data || loading || !called) return null
     let items = itemsQuery.data.items
 
-    Object.keys(queryOptions).map(key => {
-      if (key !== 'oldestFirst' && queryOptions[key] === false)
-        items = account
-          ? items.filter(filterFunctions[key](account.toLowerCase()))
-          : items
-      return true
-    })
-
     items = items.map(({ itemID, status: statusName, requests, data }) => {
       const { disputed, disputeID, submissionTime, rounds, resolved } =
         requests[0] ?? {}
@@ -427,11 +419,8 @@ const Items = ({ search, history }) => {
       }
     })
 
-    const skip = ITEMS_PER_PAGE * (Number(queryOptions.page ?? 1) - 1)
-    const encodedItems = items.slice(skip, skip + ITEMS_PER_PAGE)
-
-    return encodedItems
-  }, [account, itemsQuery, queryOptions])
+    return items
+  }, [itemsQuery])
 
   // Since items are sorted by time of submission (either newest or oldest first)
   // we have to also watch for new requests related to items already on the list.
@@ -442,7 +431,7 @@ const Items = ({ search, history }) => {
   // - We are on the first page;
   // unshift those items to the list.
   useEffect(() => {
-    const { oldestFirst } = searchStrToFilterObj(search)
+    const { oldestFirst } = searchStrToFilterObjLight(search)
     if (
       !gtcr ||
       !gtcrView ||
@@ -667,7 +656,7 @@ const Items = ({ search, history }) => {
                         key={key}
                         checked={queryOptions[key]}
                         onChange={checked => {
-                          const newQueryStr = updateFilter({
+                          const newQueryStr = updateLightFilter({
                             prevQuery: search,
                             filter: key,
                             checked
@@ -687,7 +676,7 @@ const Items = ({ search, history }) => {
                   defaultValue={oldestFirst ? 'oldestFirst' : 'newestFirst'}
                   style={{ width: 120 }}
                   onChange={val => {
-                    const newQueryStr = updateFilter({
+                    const newQueryStr = updateLightFilter({
                       prevQuery: search,
                       filter: 'oldestFirst',
                       checked: val === 'oldestFirst'

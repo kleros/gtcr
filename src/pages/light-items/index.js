@@ -19,7 +19,6 @@ import { WalletContext } from '../../bootstrap/wallet-context'
 import { LightTCRViewContext } from '../../bootstrap/light-tcr-view-context'
 import { bigNumberify } from 'ethers/utils'
 import SubmitModal from '../light-item-details/modals/submit'
-import useNetworkEnvVariable from '../../hooks/network-env'
 import SubmitConnectModal from '../light-item-details/modals/submit-connect'
 import {
   filterLabelLight,
