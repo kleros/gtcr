@@ -145,7 +145,7 @@ const ItemDetailsCard = ({
     >
       {itemMetaEvidenceError && (
         <StyledAlert
-          message={`Warning: Malformed submission, cannot display TCR information. Error: ${itemMetaEvidenceError.message}.`}
+          message={`Warning: Malformed submission, cannot display TCR information. Error: ${itemMetaEvidenceError.message}`}
           type="warning"
           showIcon
           closable

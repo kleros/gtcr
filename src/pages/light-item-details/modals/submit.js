@@ -124,7 +124,10 @@ const SubmissionForm = withFormik({
   handleSubmit: (values, { props: { postSubmit, columns }, resetForm }) => {
     postSubmit(values, columns, resetForm)
   },
-  validate: async (values, { columns, deployedWithFactory }) => {
+  validate: async (
+    values,
+    { columns, deployedWithFactory, deployedWithLightFactory }
+  ) => {
     const errors = (
       await Promise.all(
         columns
@@ -132,7 +135,9 @@ const SubmissionForm = withFormik({
           .map(async ({ label }) => ({
             isEmpty: !values[label],
             wasDeployedWithFactory:
-              !!values[label] && (await deployedWithFactory(values[label])),
+              !!values[label] &&
+              ((await deployedWithFactory(values[label])) ||
+                (await deployedWithLightFactory(values[label]))),
             label: label
           }))
       )
@@ -164,7 +169,7 @@ const SubmitModal = props => {
   const nativeCurrency = useNativeCurrency()
   const { pushWeb3Action } = useContext(WalletContext)
   const { setUserSubscribed } = useContext(TourContext)
-  const { deployedWithFactory } = useFactory()
+  const { deployedWithFactory, deployedWithLightFactory } = useFactory()
 
   const { fileURI, metadata } = metaEvidence || {}
   const { itemName, columns, tcrTitle } = metadata || {}
@@ -276,6 +281,7 @@ const SubmitModal = props => {
         initialValues={initialValues}
         disabledFields={disabledFields}
         deployedWithFactory={deployedWithFactory}
+        deployedWithLightFactory={deployedWithLightFactory}
       />
       <Typography.Paragraph>
         Make sure your submission complies with the{' '}

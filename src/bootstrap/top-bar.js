@@ -124,13 +124,13 @@ const TopBar = ({ menuItems }) => {
   ])
 
   const switchChain = useCallback(() => {
-    // Give a little time for the animation to play.
     let nextNetwork = NETWORK.XDAI
     if (networkId === NETWORK.XDAI) nextNetwork = NETWORK.MAINNET
     else nextNetwork = NETWORK.XDAI
 
     setRequestedChain(nextNetwork)
     localStorage.setItem(SAVED_NETWORK_KEY, nextNetwork)
+    // Give a little time for the animation to play.
     setTimeout(() => {
       history.push(`/tcr/${nextNetworkTCR}`)
       window.location.reload()

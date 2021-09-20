@@ -1,36 +1,74 @@
-import { useMemo } from 'react'
 import { useWeb3Context } from 'web3-react'
-import _GTCRFactory from '../assets/abis/LightGTCRFactory.json'
 import useNetworkEnvVariable from './network-env'
-import { ethers } from 'ethers'
 import { getAddress } from 'ethers/utils'
 
 const useFactory = () => {
-  const { networkId, library, active } = useWeb3Context()
-  const factoryAddress = useNetworkEnvVariable(
-    'REACT_APP_LGTCR_FACTORY_ADDRESSES',
+  const { networkId } = useWeb3Context()
+  const GTCR_SUBGRAPH_URL = useNetworkEnvVariable(
+    'REACT_APP_SUBGRAPH_URL',
     networkId
   )
-  const factory = useMemo(() => {
-    if (!factoryAddress || !active) return
-    return new ethers.Contract(factoryAddress, _GTCRFactory, library)
-  }, [active, factoryAddress, library])
 
-  const deployedWithFactory = async tcrAddress => {
+  const deployedWithLightFactory = async tcrAddress => {
     if (!tcrAddress) return false
     try {
       tcrAddress = getAddress(tcrAddress)
     } catch (_) {
       return false
     }
-    const deployments = await library.getLogs({
-      ...factory.filters.NewGTCR(tcrAddress),
-      fromBlock: 0
-    })
-    if (deployments.length > 0) return true
+    const query = {
+      query: `
+        {
+          lregistry(id: "${tcrAddress.toLowerCase()}") {
+            id
+          }
+        }
+      `
+    }
+    const { data } = await (
+      await fetch(GTCR_SUBGRAPH_URL, {
+        method: 'POST',
+        body: JSON.stringify(query)
+      })
+    ).json()
+
+    if (data.lregistry) return true
+
+    return false
+  }
+
+  const deployedWithFactory = async tcrAddress => {
+    if (!tcrAddress) return false
+
+    try {
+      tcrAddress = getAddress(tcrAddress)
+    } catch (_) {
+      return false
+    }
+
+    const query = {
+      query: `
+        {
+          registry(id: "${tcrAddress.toLowerCase()}") {
+            id
+          }
+        }
+      `
+    }
+    const { data } = await (
+      await fetch(GTCR_SUBGRAPH_URL, {
+        method: 'POST',
+        body: JSON.stringify(query)
+      })
+    ).json()
+
+    if (data.registry) return true
+
+    return false
   }
 
   return {
+    deployedWithLightFactory,
     deployedWithFactory
   }
 }
