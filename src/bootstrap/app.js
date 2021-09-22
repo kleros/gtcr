@@ -231,7 +231,7 @@ const Content = () => {
   )
 }
 
-export default () => {
+const AppWrapper = () => {
   const [isMenuClosed, setIsMenuClosed] = useState(true)
   const web3Context = useWeb3Context()
   const TCR2_ADDRESS = useMainTCR2(web3Context)
@@ -251,6 +251,51 @@ export default () => {
   })
 
   return (
+    <ApolloProvider client={client}>
+      <BrowserRouter>
+        <TourProvider>
+          <WalletProvider>
+            <StyledLayout>
+              <StyledLayoutSider
+                breakpoint="lg"
+                collapsedWidth={0}
+                collapsed={isMenuClosed}
+                onClick={() => setIsMenuClosed(previousState => !previousState)}
+              >
+                <Menu theme="dark">
+                  {[
+                    <Menu.Item key="tcrs" style={{ height: '70px' }}>
+                      <NavLink to={`/tcr/${TCR2_ADDRESS}`}>K L E R O S</NavLink>
+                    </Menu.Item>
+                  ].concat(MenuItems({ TCR2_ADDRESS }))}
+                </Menu>
+              </StyledLayoutSider>
+              {/* Overflow x property must be visible for reactour scrolling to work properly. */}
+              <Layout style={{ overflowX: 'visible' }}>
+                <StyledHeader>
+                  <TopBar menuItems={MenuItems} />
+                </StyledHeader>
+                <Content />
+                <StyledClickaway
+                  isMenuClosed={isMenuClosed}
+                  onClick={isMenuClosed ? null : () => setIsMenuClosed(true)}
+                />
+              </Layout>
+            </StyledLayout>
+            <FooterWrapper>
+              <Footer appName="Kleros · Curate" />
+            </FooterWrapper>
+            <WalletModal connectors={connectors} />
+          </WalletProvider>
+          <WelcomeModal />
+        </TourProvider>
+      </BrowserRouter>
+    </ApolloProvider>
+  )
+}
+
+export default () => {
+  return (
     <>
       <Helmet>
         <title>Kleros · Curate</title>
@@ -259,54 +304,9 @@ export default () => {
           rel="stylesheet"
         />
       </Helmet>
-      <ApolloProvider client={client}>
-        <BrowserRouter>
-          <TourProvider>
-            <Web3Provider connectors={connectors} libraryName="ethers.js">
-              <WalletProvider>
-                <StyledLayout>
-                  <StyledLayoutSider
-                    breakpoint="lg"
-                    collapsedWidth={0}
-                    collapsed={isMenuClosed}
-                    onClick={() =>
-                      setIsMenuClosed(previousState => !previousState)
-                    }
-                  >
-                    <Menu theme="dark">
-                      {[
-                        <Menu.Item key="tcrs" style={{ height: '70px' }}>
-                          <NavLink to={`/tcr/${TCR2_ADDRESS}`}>
-                            K L E R O S
-                          </NavLink>
-                        </Menu.Item>
-                      ].concat(MenuItems({ TCR2_ADDRESS }))}
-                    </Menu>
-                  </StyledLayoutSider>
-                  {/* Overflow x property must be visible for reactour scrolling to work properly. */}
-                  <Layout style={{ overflowX: 'visible' }}>
-                    <StyledHeader>
-                      <TopBar menuItems={MenuItems} />
-                    </StyledHeader>
-                    <Content />
-                    <StyledClickaway
-                      isMenuClosed={isMenuClosed}
-                      onClick={
-                        isMenuClosed ? null : () => setIsMenuClosed(true)
-                      }
-                    />
-                  </Layout>
-                </StyledLayout>
-                <FooterWrapper>
-                  <Footer appName="Kleros · Curate" />
-                </FooterWrapper>
-                <WalletModal connectors={connectors} />
-              </WalletProvider>
-            </Web3Provider>
-            <WelcomeModal />
-          </TourProvider>
-        </BrowserRouter>
-      </ApolloProvider>
+      <Web3Provider connectors={connectors} libraryName="ethers.js">
+        <AppWrapper />
+      </Web3Provider>
     </>
   )
 }
