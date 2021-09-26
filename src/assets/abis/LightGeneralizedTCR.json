@@ -28,6 +28,18 @@
         "type": "bytes32"
       },
       {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "_requestID",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "_roundID",
+        "type": "uint256"
+      },
+      {
         "indexed": true,
         "internalType": "address",
         "name": "_contributor",
@@ -163,6 +175,12 @@
         "internalType": "string",
         "name": "_data",
         "type": "string"
+      },
+      {
+        "indexed": false,
+        "internalType": "bool",
+        "name": "_addedDirectly",
+        "type": "bool"
       }
     ],
     "name": "NewItem",
@@ -212,6 +230,12 @@
         "indexed": false,
         "internalType": "uint256",
         "name": "_round",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "_reward",
         "type": "uint256"
       }
     ],
@@ -413,7 +437,7 @@
   {
     "constant": true,
     "inputs": [],
-    "name": "relayContract",
+    "name": "relayerContract",
     "outputs": [
       {
         "internalType": "address",
@@ -565,7 +589,7 @@
       },
       {
         "internalType": "address",
-        "name": "_relayContract",
+        "name": "_relayerContract",
         "type": "address"
       }
     ],
@@ -774,7 +798,7 @@
         "type": "uint256"
       }
     ],
-    "name": "changeTimeToChallenge",
+    "name": "changeChallengePeriodDuration",
     "outputs": [],
     "payable": false,
     "stateMutability": "nonpayable",
@@ -960,11 +984,11 @@
     "inputs": [
       {
         "internalType": "address",
-        "name": "_relayContract",
+        "name": "_relayerContract",
         "type": "address"
       }
     ],
-    "name": "changeRelayContract",
+    "name": "changeRelayerContract",
     "outputs": [],
     "payable": false,
     "stateMutability": "nonpayable",
