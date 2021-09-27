@@ -36,6 +36,8 @@ const InputSelector = ({
   setFieldValue,
   maxFileSizeMb,
   allowedFileTypes,
+  setFileToUpload,
+  setFileAsUploaded,
   ...props
 }) => {
   const [uploading, setUploading] = useState()
@@ -56,13 +58,17 @@ const InputSelector = ({
     [setFieldValue]
   )
 
-  const fileUploadStatusChange = useCallback(({ file: { status } }) => {
-    if (status === 'done') message.success(`File uploaded successfully.`)
-    else if (status === 'error') message.error(`File upload failed.`)
-    else if (status === 'uploading') setUploading(true)
+  const fileUploadStatusChange = useCallback(
+    ({ file: { status } }) => {
+      if (status === 'done') message.success(`File uploaded successfully.`)
+      else if (status === 'error') message.error(`File upload failed.`)
+      else if (status === 'uploading') setFileToUpload(setUploading)
 
-    if (status === 'error' || status === 'done') setUploading(false)
-  }, [])
+      if (status === 'error' || status === 'done')
+        setFileAsUploaded(setUploading)
+    },
+    [setFileToUpload, setFileAsUploaded]
+  )
 
   const beforeImageUpload = useCallback(
     file => {
@@ -108,7 +114,6 @@ const InputSelector = ({
   )
 
   const { values, label, name } = props
-
   switch (type) {
     case ItemTypes.TEXT:
     case ItemTypes.GTCR_ADDRESS:
@@ -213,6 +218,8 @@ const InputSelector = ({
 InputSelector.propTypes = {
   type: PropTypes.oneOf(Object.values(ItemTypes)).isRequired,
   setFieldValue: PropTypes.func.isRequired,
+  setFileToUpload: PropTypes.func.isRequired,
+  setFileAsUploaded: PropTypes.func.isRequired,
   maxFileSizeMb: PropTypes.number.isRequired,
   allowedFileTypes: PropTypes.arrayOf(PropTypes.string).isRequired,
   // eslint-disable-next-line react/forbid-prop-types
