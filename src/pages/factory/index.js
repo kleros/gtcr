@@ -184,7 +184,8 @@ const useCachedFactory = (version, networkId) => {
         type: ItemTypes.TEXT
       }
     ],
-    currStep: 1
+    currStep: 1,
+    chainId: networkId
   }
   const initialState = {
     ...initialWizardState,
@@ -195,7 +196,7 @@ const useCachedFactory = (version, networkId) => {
   const newInitialState = JSON.parse(JSON.stringify(initialState)) // Deep copy.
   if (cache) {
     const parsed = JSON.parse(cache)
-    if (parsed.arbitratorAddress) cache = parsed
+    if (parsed.arbitratorAddress && parsed.chainId === networkId) cache = parsed
     else cache = newInitialState
   } else cache = newInitialState
 
