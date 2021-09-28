@@ -31,8 +31,7 @@ import {
   FILTER_KEYS,
   updateLightFilter,
   queryOptionsToFilterArray,
-  applyOldActiveItemsFilter,
-  filterFunctions
+  applyOldActiveItemsFilter
 } from '../../utils/filters'
 import ItemCard from './item-card'
 import Banner from './banner'

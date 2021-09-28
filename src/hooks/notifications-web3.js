@@ -82,11 +82,13 @@ const useNotificationWeb3 = () => {
       prevState.concat({ action, type: actionTypes.TRANSACTION })
     )
   }, [])
-  const requestWeb3Auth = useCallback(action => {
-    setWeb3Actions(prevState =>
-      prevState.concat({ type: actionTypes.AUTHORIZATION, action })
-    )
-  }, [])
+  const requestWeb3Auth = useCallback(
+    action =>
+      setWeb3Actions(prevState =>
+        prevState.concat({ type: actionTypes.AUTHORIZATION, action })
+      ),
+    []
+  )
 
   const setUserSelectedWallet = useCallback(method => {
     setConnectionState(prev => ({ ...prev, method }))

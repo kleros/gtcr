@@ -1,5 +1,11 @@
 import { Steps, Button, Icon, Card, Typography, Modal } from 'antd'
-import React, { useState, useEffect, useCallback, useMemo } from 'react'
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+  useContext
+} from 'react'
 import PropTypes from 'prop-types'
 import { useDebounce } from 'use-debounce'
 import styled from 'styled-components/macro'
@@ -11,10 +17,10 @@ import ItemParams from './item-params'
 import Deploy from './deploy'
 import StyledLayoutContent from '../layout-content'
 import { version } from '../../../package.json'
-import useNetworkEnvVariable from '../../hooks/network-env'
 import { ItemTypes } from '@kleros/gtcr-encoder'
 import RelTCRParams from './rel-tcr-params'
 import TCRCardContent from '../../components/tcr-card-content'
+import { WalletContext } from '../../bootstrap/wallet-context'
 
 const { Step } = Steps
 const { confirm } = Modal
@@ -81,24 +87,45 @@ CurrentStep.propTypes = {
   tcrState: PropTypes.shape({ currStep: PropTypes.number }).isRequired
 }
 
-const useCachedFactory = version => {
-  const { networkId } = useWeb3Context()
-  const {
-    address: defaultArbitrator,
-    label: defaultArbLabel
-  } = useNetworkEnvVariable('REACT_APP_DEFAULT_ARBITRATOR', networkId)
+const useChainIdVariable = (envVariableKey, chainId) => {
+  if (!chainId) return null
+
+  let data = ``
+  try {
+    data = process.env[envVariableKey]
+      ? JSON.parse(process.env[envVariableKey])[chainId]
+      : ''
+  } catch (_) {
+    console.error(`Failed to parse env variable ${envVariableKey}`)
+  }
+
+  if (data === '')
+    console.warn(
+      `Warning: no value found for ${envVariableKey}, networkId: ${chainId}`
+    )
+
+  return data
+}
+
+const useCachedFactory = (version, networkId) => {
+  const defaultArbInfo =
+    useChainIdVariable('REACT_APP_DEFAULT_ARBITRATOR', networkId) ?? {}
+  const { address: defaultArbitrator, label: defaultArbLabel } = defaultArbInfo
+  const defaultGovInfo =
+    useChainIdVariable('REACT_APP_DEFAULT_GOVERNOR', networkId) ?? {}
   const {
     address: defaultGovernor,
     label: defaultGovernorLabel
-  } = useNetworkEnvVariable('REACT_APP_DEFAULT_GOVERNOR', networkId)
+  } = defaultGovInfo
+  const defaultArbExtraInfo =
+    useChainIdVariable('REACT_APP_DEFAULT_ARBITRATOR_EXTRA_DATA', networkId) ??
+    {}
   const {
     data: defaultArbitratorExtraData,
     label: defaultArbDataLabel
-  } = useNetworkEnvVariable(
-    'REACT_APP_DEFAULT_ARBITRATOR_EXTRA_DATA',
-    networkId
-  )
-  const key = `tcrState@${version}`
+  } = defaultArbExtraInfo
+
+  const key = `tcrState@${networkId}@${version}`
   const initialWizardState = {
     tcrTitle: '',
     tcrDescription: '',
@@ -165,8 +192,11 @@ const useCachedFactory = version => {
   let cache = window.localStorage.getItem(key)
 
   const newInitialState = JSON.parse(JSON.stringify(initialState)) // Deep copy.
-  if (cache) cache = JSON.parse(cache)
-  else cache = newInitialState
+  if (cache) {
+    const parsed = JSON.parse(cache)
+    if (parsed.arbitratorAddress) cache = parsed
+    else cache = newInitialState
+  } else cache = newInitialState
 
   // We check for the finished flag to reset the form
   // if the user finished his previous deployment.
@@ -176,6 +206,25 @@ const useCachedFactory = version => {
 
   const [tcrState, setTcrState] = useState(cache)
   const [debouncedTcrState] = useDebounce(tcrState, 1000)
+  useEffect(() => {
+    if (
+      !networkId ||
+      !debouncedTcrState ||
+      !debouncedTcrState.arbitratorAddress
+    )
+      return
+    window.localStorage.setItem(key, JSON.stringify({ ...debouncedTcrState }))
+  }, [debouncedTcrState, key, networkId])
+
+  useEffect(() => {
+    if (tcrState && tcrState.arbitratorAddress) return
+    if (!networkId) return
+    if (!cache.arbitratorAddress) return
+
+    setTcrState(cache)
+  }, [cache, networkId, tcrState])
+
+  if (!networkId || !tcrState.arbitratorAddress) return null
 
   const STEP_COUNT = 4
   const nextStep = () =>
@@ -208,15 +257,6 @@ const useCachedFactory = version => {
       }
     }))
 
-  useEffect(
-    () =>
-      window.localStorage.setItem(
-        key,
-        JSON.stringify({ ...debouncedTcrState })
-      ),
-    [debouncedTcrState, key]
-  )
-
   return {
     tcrState,
     setTcrState,
@@ -233,16 +273,14 @@ const useCachedFactory = version => {
 }
 
 export default () => {
-  const cachedFactory = useCachedFactory(version)
-  const { networkId, library, active } = useWeb3Context()
+  const { networkId, library, active, account } = useWeb3Context()
+  const cachedFactory = useCachedFactory(version, networkId)
+  const { requestWeb3Auth } = useContext(WalletContext)
   const [previousDeployments, setPreviousDeployments] = useState([])
-  const {
-    tcrState: { currStep, transactions },
-    nextStep,
-    previousStep,
-    STEP_COUNT,
-    resetTcrState
-  } = cachedFactory
+  const { tcrState, nextStep, previousStep, STEP_COUNT, resetTcrState } =
+    cachedFactory ?? {}
+
+  const { currStep, transactions } = tcrState ?? {}
 
   const factoryInterface = useMemo(
     () => new ethers.utils.Interface(_GTCRFactory),
@@ -263,6 +301,7 @@ export default () => {
   // Fetch previously deployed list information
   useEffect(() => {
     ;(async () => {
+      if (!cachedFactory) return
       if (!transactions || Object.keys(transactions).length === 0) return
       if (!library || !active || !factoryInterface) return
 
@@ -281,7 +320,33 @@ export default () => {
         )
       )
     })()
-  }, [active, factoryInterface, library, networkId, transactions])
+  }, [
+    active,
+    cachedFactory,
+    factoryInterface,
+    library,
+    networkId,
+    transactions
+  ])
+
+  if (!account || !cachedFactory || !cachedFactory.tcrState.arbitratorAddress)
+    return (
+      <>
+        <StyledBanner>
+          <Typography.Title ellipsis style={{ marginBottom: '0' }}>
+            Connect your wallet
+          </Typography.Title>
+        </StyledBanner>
+        <StyledLayoutContent>
+          <Typography.Title level={3} ellipsis>
+            A wallet is required to deploy a new list
+          </Typography.Title>
+          <Button onClick={() => requestWeb3Auth(window.reload())}>
+            Connect Wallet
+          </Button>
+        </StyledLayoutContent>
+      </>
+    )
 
   return (
     <>

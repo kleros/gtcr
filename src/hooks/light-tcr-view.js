@@ -84,8 +84,8 @@ const useLightTcrView = tcrAddress => {
           tcrAddress
         })
       } catch (err) {
-        console.error('Error fetching arbitrable TCR data:', err)
-        setError('Error fetching arbitrable TCR data')
+        console.error('Error fetching arbitrable TCR data (light-curate):', err)
+        setError('Error fetching arbitrable TCR data (light-curate)')
       }
     })()
   }, [gtcrView, tcrAddress])
