@@ -54,7 +54,7 @@ const ItemDetailsRouter = ({ search, tcrAddress, history, itemID }) => {
 
         // Call a function only available on light TCR. If
         // it throws, its not a light curate instance.
-        await tcr.relayContract()
+        await tcr.relayerContract()
         setIsLightCurate(true)
         // eslint-disable-next-line no-unused-vars
       } catch (err) {

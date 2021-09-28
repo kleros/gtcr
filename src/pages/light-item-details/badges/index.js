@@ -66,6 +66,7 @@ const DashedCardBody = styled.div`
   justify-content: center;
 `
 
+// TODO: Update to use light-curate.
 const Badges = ({ connectedTCRAddr, item, tcrAddress }) => {
   const { timestamp, requestWeb3Auth } = useContext(WalletContext)
   const { library, active, networkId } = useWeb3Context()
@@ -157,8 +158,8 @@ const Badges = ({ connectedTCRAddr, item, tcrAddress }) => {
         // Filter out empty slots from the results.
         encodedItems = encodedItems[0].filter(item => item.ID !== ZERO_BYTES32)
       } catch (err) {
-        console.error('Error fetching items', err)
-        setError('Error fetching items')
+        console.error('Error fetching badges', err)
+        setError('Error fetching badges')
         setFetchItems({ isFetching: false, fetchStarted: false })
       } finally {
         setFetchItems({
