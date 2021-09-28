@@ -108,6 +108,7 @@ const useChainIdVariable = (envVariableKey, chainId) => {
 }
 
 const useCachedFactory = (version, networkId) => {
+  const { account } = useWeb3Context()
   const defaultArbInfo =
     useChainIdVariable('REACT_APP_DEFAULT_ARBITRATOR', networkId) ?? {}
   const { address: defaultArbitrator, label: defaultArbLabel } = defaultArbInfo
@@ -134,7 +135,7 @@ const useCachedFactory = (version, networkId) => {
     submissionChallengeBaseDeposit: 0,
     removalChallengeBaseDeposit: 0.05,
     arbitratorAddress: defaultArbitrator || '',
-    governorAddress: defaultGovernor || '',
+    governorAddress: account || defaultGovernor || '',
     challengePeriodDuration: 84,
     itemName: 'item',
     itemNamePlural: 'items',
@@ -152,7 +153,7 @@ const useCachedFactory = (version, networkId) => {
     relRemovalChallengeBaseDeposit: 1,
     relArbitratorAddress: defaultArbitrator || '',
     relArbitratorExtraData: defaultArbitratorExtraData,
-    relGovernorAddress: defaultGovernor || '',
+    relGovernorAddress: account || defaultGovernor || '',
     relChallengePeriodDuration: 84,
     relItemName: 'list',
     relItemNamePlural: 'lists',
@@ -341,9 +342,7 @@ export default () => {
           <Typography.Title level={3} ellipsis>
             A wallet is required to deploy a new list
           </Typography.Title>
-          <Button onClick={() => requestWeb3Auth(window.reload())}>
-            Connect Wallet
-          </Button>
+          <Button onClick={() => requestWeb3Auth()}>Connect Wallet</Button>
         </StyledLayoutContent>
       </>
     )
