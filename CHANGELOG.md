@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [2.0.1](https://github.com/kleros/gtcr/compare/v2.0.0...v2.0.1) (2021-09-28)
+
+
+### Bug Fixes
+
+* cache selection in factory ([f1af91a](https://github.com/kleros/gtcr/commit/f1af91a7d7105829817103c26e7397c31081577a))
+* connect wallet in factory button not working ([89b4592](https://github.com/kleros/gtcr/commit/89b4592e000d46c00bfbf1edfe1cf89f6c82ecc6))
+
 ## [2.0.0](https://github.com/kleros/gtcr/compare/v1.0.0...v2.0.0) (2021-09-28)
 
 
