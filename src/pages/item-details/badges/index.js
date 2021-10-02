@@ -69,7 +69,7 @@ const DashedCardBody = styled.div`
 const Badges = ({ connectedTCRAddr, item, tcrAddress }) => {
   const { timestamp, requestWeb3Auth } = useContext(WalletContext)
   const { library, active, networkId } = useWeb3Context()
-  const { metadataByTime } = useTcrView(tcrAddress)
+  const { metadataByTime } = useTcrView(connectedTCRAddr)
 
   const [error, setError] = useState(false)
   const [addBadgeVisible, setAddBadgeVisible] = useState()
@@ -219,6 +219,7 @@ const Badges = ({ connectedTCRAddr, item, tcrAddress }) => {
           enabledBadges.map(async ({ columns }) => {
             const badgeAddr = columns[0].value
             const matchFileURI = columns[1].value
+            console.info('badge addre', badgeAddr)
             const badgeContract = new ethers.Contract(badgeAddr, _gtcr, library)
 
             // Get the badge contract metadata.
