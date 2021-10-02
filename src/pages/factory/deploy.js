@@ -127,7 +127,15 @@ const getTcrMetaEvidence = async (tcrState, parentTCRAddress) => {
     fileURI: relTcrDisabled
       ? process.env.REACT_APP_REJECT_ALL_POLICY_URI
       : relTcrPrimaryDocument,
-    metadata: relMetadata
+    metadata: relMetadata,
+    _v: '1.0.0',
+    evidenceDisplayInterfaceRequiredParams: [
+      'disputeID',
+      'arbitrableContractAddress',
+      'arbitratorContractAddress',
+      'arbitrableChainID',
+      'arbitrableJsonRpcUrl'
+    ]
   }
 
   const registrationMetaEvidence = {
