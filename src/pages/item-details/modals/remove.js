@@ -84,32 +84,30 @@ const RemoveModal = ({ item, itemName = 'item', fileURI, ...rest }) => {
         })
 
         rest.onCancel() // Hide the modal.
+
+        // Subscribe for notifications
+        if (process.env.REACT_APP_NOTIFICATIONS_API_URL && !!networkId)
+          fetch(
+            `${process.env.REACT_APP_NOTIFICATIONS_API_URL}/${networkId}/api/subscribe`,
+            {
+              method: 'post',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                subscriberAddr: ethers.utils.getAddress(account),
+                tcrAddr: ethers.utils.getAddress(tcrAddress),
+                itemID: item.ID,
+                networkID: networkId
+              })
+            }
+          )
+            .then(() => setUserSubscribed(true))
+            .catch(err => {
+              console.error('Failed to subscribe for notifications.', err)
+            })
         return {
           tx,
           actionMessage: `Requesting ${(itemName && itemName.toLowerCase()) ||
-            'item'} removal`,
-          onTxMined: () => {
-            // Subscribe for notifications
-            if (!process.env.REACT_APP_NOTIFICATIONS_API_URL || !networkId)
-              return
-            fetch(
-              `${process.env.REACT_APP_NOTIFICATIONS_API_URL}/${networkId}/api/subscribe`,
-              {
-                method: 'post',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  subscriberAddr: ethers.utils.getAddress(account),
-                  tcrAddr: ethers.utils.getAddress(tcrAddress),
-                  itemID: item.ID,
-                  networkID: networkId
-                })
-              }
-            )
-              .then(() => setUserSubscribed(true))
-              .catch(err => {
-                console.error('Failed to subscribe for notifications.', err)
-              })
-          }
+            'item'} removal`
         }
       }),
     [

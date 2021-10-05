@@ -44,30 +44,29 @@ const EvidenceModal = ({ item, ...rest }) => {
         const tx = await gtcr.submitEvidence(item.ID, ipfsEvidencePath)
 
         rest.onCancel() // Hide the submission modal.
+
+        // Subscribe for notifications
+        if (process.env.REACT_APP_NOTIFICATIONS_API_URL && !!networkId)
+          fetch(
+            `${process.env.REACT_APP_NOTIFICATIONS_API_URL}/${networkId}/api/subscribe`,
+            {
+              method: 'post',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                subscriberAddr: ethers.utils.getAddress(account),
+                tcrAddr: tcrAddress,
+                itemID: item.ID,
+                networkID: networkId
+              })
+            }
+          )
+            .then(() => setUserSubscribed(true))
+            .catch(err => {
+              console.error('Failed to subscribe for notifications.', err)
+            })
         return {
           tx,
-          actionMessage: 'Submitting evidence',
-          onTxMined: () => {
-            // Subscribe for notifications
-            if (!process.env.REACT_APP_NOTIFICATIONS_API_URL) return
-            fetch(
-              `${process.env.REACT_APP_NOTIFICATIONS_API_URL}/${networkId}/api/subscribe`,
-              {
-                method: 'post',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  subscriberAddr: ethers.utils.getAddress(account),
-                  tcrAddr: tcrAddress,
-                  itemID: item.ID,
-                  networkID: networkId
-                })
-              }
-            )
-              .then(() => setUserSubscribed(true))
-              .catch(err => {
-                console.error('Failed to subscribe for notifications.', err)
-              })
-          }
+          actionMessage: 'Submitting evidence'
         }
       } catch (err) {
         console.error('Error submitting evidence:', err)

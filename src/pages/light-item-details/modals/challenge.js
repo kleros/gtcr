@@ -68,33 +68,32 @@ const ChallengeModal = ({ item, itemName, statusCode, fileURI, ...rest }) => {
       })
 
       rest.onCancel() // Hide the submission modal.
+
+      // Subscribe for notifications
+      if (process.env.REACT_APP_NOTIFICATIONS_API_URL && !!networkId)
+        fetch(
+          `${process.env.REACT_APP_NOTIFICATIONS_API_URL}/${networkId}/api/subscribe`,
+          {
+            method: 'post',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              subscriberAddr: ethers.utils.getAddress(account),
+              tcrAddr: ethers.utils.getAddress(tcrAddress),
+              itemID: item.ID,
+              networkID: networkId
+            })
+          }
+        )
+          .then(() => setUserSubscribed(true))
+          .catch(err => {
+            console.error('Failed to subscribe for notifications.', err)
+          })
       return {
         tx,
         actionMessage: `Challenging ${(itemName && itemName.toLowerCase()) ||
           'item'} ${
           statusCode === STATUS_CODE.SUBMITTED ? 'submission' : 'removal'
-        }`,
-        onTxMined: () => {
-          // Subscribe for notifications
-          if (!process.env.REACT_APP_NOTIFICATIONS_API_URL || !networkId) return
-          fetch(
-            `${process.env.REACT_APP_NOTIFICATIONS_API_URL}/${networkId}/api/subscribe`,
-            {
-              method: 'post',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                subscriberAddr: ethers.utils.getAddress(account),
-                tcrAddr: ethers.utils.getAddress(tcrAddress),
-                itemID: item.ID,
-                networkID: networkId
-              })
-            }
-          )
-            .then(() => setUserSubscribed(true))
-            .catch(err => {
-              console.error('Failed to subscribe for notifications.', err)
-            })
-        }
+        }`
       }
     })
   }
