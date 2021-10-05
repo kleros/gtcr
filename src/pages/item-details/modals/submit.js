@@ -1,4 +1,4 @@
-import React, { useContext, useCallback } from 'react'
+import React, { useContext, useCallback, useState } from 'react'
 import {
   Spin,
   Modal,
@@ -60,7 +60,8 @@ const _SubmissionForm = ({
   disabledFields,
   values,
   errors,
-  touched
+  touched,
+  status
 }) => (
   <Form onSubmit={handleSubmit} id={SUBMISSION_FORM_ID}>
     {columns &&
@@ -76,6 +77,8 @@ const _SubmissionForm = ({
           setFieldValue={setFieldValue}
           disabled={disabledFields && disabledFields[index]}
           touched={touched[column.label]}
+          setFileToUpload={status.setFileToUpload}
+          setFileAsUploaded={status.setFileAsUploaded}
           label={
             <span>
               {column.label}&nbsp;
@@ -101,7 +104,11 @@ _SubmissionForm.propTypes = {
   disabledFields: PropTypes.arrayOf(PropTypes.bool),
   values: PropTypes.shape({}),
   errors: PropTypes.shape({}).isRequired,
-  touched: PropTypes.shape({}).isRequired
+  touched: PropTypes.shape({}).isRequired,
+  status: PropTypes.shape({
+    setFileToUpload: PropTypes.func.isRequired,
+    setFileAsUploaded: PropTypes.func.isRequired
+  }).isRequired
 }
 
 _SubmissionForm.defaultProps = {
@@ -123,6 +130,10 @@ const SubmissionForm = withFormik({
   handleSubmit: (values, { props: { postSubmit, columns }, resetForm }) => {
     postSubmit(values, columns, resetForm)
   },
+  mapPropsToStatus: props => ({
+    setFileToUpload: props.setFileToUpload,
+    setFileAsUploaded: props.setFileAsUploaded
+  }),
   validate: async (
     values,
     { columns, deployedWithFactory, deployedWithLightFactory }
@@ -172,6 +183,18 @@ const SubmitModal = props => {
 
   const { fileURI, metadata } = metaEvidence || {}
   const { itemName, columns, tcrTitle } = metadata || {}
+
+  // To make sure user cannot press Submit while there are files uploading
+  // submit will be blocked until there are no files uploaded
+  const [loadingCounter, setLoadingCounter] = useState(0)
+  const setFileToUpload = setUploading => {
+    setUploading(true)
+    setLoadingCounter(loadingCounter + 1)
+  }
+  const setFileAsUploaded = setUploading => {
+    setUploading(false)
+    setLoadingCounter(loadingCounter - 1)
+  }
 
   const postSubmit = useCallback(
     (values, columns, resetForm) => {
@@ -278,6 +301,7 @@ const SubmitModal = props => {
           type="primary"
           form={SUBMISSION_FORM_ID}
           htmlType="submit"
+          loading={loadingCounter > 0}
         >
           Submit
         </Button>
@@ -298,6 +322,8 @@ const SubmitModal = props => {
         disabledFields={disabledFields}
         deployedWithFactory={deployedWithFactory}
         deployedWithLightFactory={deployedWithLightFactory}
+        setFileToUpload={setFileToUpload}
+        setFileAsUploaded={setFileAsUploaded}
       />
       <Typography.Paragraph>
         Make sure your submission complies with the{' '}
