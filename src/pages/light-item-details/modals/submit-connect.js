@@ -251,35 +251,34 @@ const SubmitConnectModal = props => {
         value: relTCRSubmissionDeposit
       })
       onCancel() // Hide the submission modal.
+
+      if (process.env.REACT_APP_NOTIFICATIONS_API_URL && !!networkId) {
+        const itemID = ethers.utils.solidityKeccak256(
+          ['bytes'],
+          [encodedParams]
+        )
+        fetch(
+          `${process.env.REACT_APP_NOTIFICATIONS_API_URL}/${networkId}/api/subscribe`,
+          {
+            method: 'post',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              subscriberAddr: ethers.utils.getAddress(account),
+              tcrAddr: ethers.utils.getAddress(relTCRAddress),
+              itemID,
+              networkID: networkId
+            })
+          }
+        )
+          .then(() => setUserSubscribed(true))
+          .catch(err => {
+            console.error('Failed to subscribe for notifications.', err)
+          })
+      }
       return {
         tx,
         actionMessage: `Submitting ${(itemName && itemName.toLowerCase()) ||
-          'item'}`,
-        onTxMined: () => {
-          // Subscribe for notifications
-          if (!process.env.REACT_APP_NOTIFICATIONS_API_URL || !networkId) return
-          const itemID = ethers.utils.solidityKeccak256(
-            ['bytes'],
-            [encodedParams]
-          )
-          fetch(
-            `${process.env.REACT_APP_NOTIFICATIONS_API_URL}/${networkId}/api/subscribe`,
-            {
-              method: 'post',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                subscriberAddr: ethers.utils.getAddress(account),
-                tcrAddr: ethers.utils.getAddress(relTCRAddress),
-                itemID,
-                networkID: networkId
-              })
-            }
-          )
-            .then(() => setUserSubscribed(true))
-            .catch(err => {
-              console.error('Failed to subscribe for notifications.', err)
-            })
-        }
+          'item'}`
       }
     })
   }, [
