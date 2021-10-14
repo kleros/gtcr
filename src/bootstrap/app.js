@@ -294,22 +294,20 @@ const AppWrapper = () => {
   )
 }
 
-export default () => {
-  return (
-    <>
-      <Helmet>
-        <title>Kleros · Curate</title>
-        <link
-          href="https://fonts.googleapis.com/css?family=Roboto:400,400i,500,500i,700,700i"
-          rel="stylesheet"
-        />
-      </Helmet>
-      <Web3Provider connectors={connectors} libraryName="ethers.js">
-        <AppWrapper />
-      </Web3Provider>
-    </>
-  )
-}
+export default () => (
+  <>
+    <Helmet>
+      <title>Kleros · Curate</title>
+      <link
+        href="https://fonts.googleapis.com/css?family=Roboto:400,400i,500,500i,700,700i"
+        rel="stylesheet"
+      />
+    </Helmet>
+    <Web3Provider connectors={connectors} libraryName="ethers.js">
+      <AppWrapper />
+    </Web3Provider>
+  </>
+)
 
 register({
   onUpdate: () =>

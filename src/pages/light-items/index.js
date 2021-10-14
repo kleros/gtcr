@@ -161,7 +161,7 @@ const mainnetInfo = {
 const ITEMS_PER_PAGE = 40
 const Items = ({ search, history }) => {
   const { requestWeb3Auth, timestamp } = useContext(WalletContext)
-  const { library, active, account, networkId } = useWeb3Context()
+  const { library, active } = useWeb3Context()
   const [network, setNetwork] = useState()
   const {
     gtcr,

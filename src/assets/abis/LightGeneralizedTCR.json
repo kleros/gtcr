@@ -298,6 +298,67 @@
     "type": "function"
   },
   {
+    "constant": false,
+    "inputs": [
+      {
+        "internalType": "string",
+        "name": "_item",
+        "type": "string"
+      }
+    ],
+    "name": "addItem",
+    "outputs": [],
+    "payable": true,
+    "stateMutability": "payable",
+    "type": "function"
+  },
+  {
+    "constant": false,
+    "inputs": [
+      {
+        "internalType": "string",
+        "name": "_item",
+        "type": "string"
+      }
+    ],
+    "name": "addItemDirectly",
+    "outputs": [],
+    "payable": false,
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "constant": true,
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "name": "arbitrationParamsChanges",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "timestamp",
+        "type": "uint256"
+      },
+      {
+        "internalType": "contract IArbitrator",
+        "name": "arbitrator",
+        "type": "address"
+      },
+      {
+        "internalType": "bytes",
+        "name": "arbitratorExtraData",
+        "type": "bytes"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
     "constant": true,
     "inputs": [],
     "name": "arbitrator",
@@ -369,6 +430,543 @@
     "type": "function"
   },
   {
+    "constant": false,
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "_itemID",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "string",
+        "name": "_evidence",
+        "type": "string"
+      }
+    ],
+    "name": "challengeRequest",
+    "outputs": [],
+    "payable": true,
+    "stateMutability": "payable",
+    "type": "function"
+  },
+  {
+    "constant": false,
+    "inputs": [
+      {
+        "internalType": "contract IArbitrator",
+        "name": "_arbitrator",
+        "type": "address"
+      },
+      {
+        "internalType": "bytes",
+        "name": "_arbitratorExtraData",
+        "type": "bytes"
+      },
+      {
+        "internalType": "string",
+        "name": "_registrationMetaEvidence",
+        "type": "string"
+      },
+      {
+        "internalType": "string",
+        "name": "_clearingMetaEvidence",
+        "type": "string"
+      }
+    ],
+    "name": "changeArbitrationParams",
+    "outputs": [],
+    "payable": false,
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "constant": false,
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_challengePeriodDuration",
+        "type": "uint256"
+      }
+    ],
+    "name": "changeChallengePeriodDuration",
+    "outputs": [],
+    "payable": false,
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "constant": false,
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_connectedTCR",
+        "type": "address"
+      }
+    ],
+    "name": "changeConnectedTCR",
+    "outputs": [],
+    "payable": false,
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "constant": false,
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_governor",
+        "type": "address"
+      }
+    ],
+    "name": "changeGovernor",
+    "outputs": [],
+    "payable": false,
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "constant": false,
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_loserStakeMultiplier",
+        "type": "uint256"
+      }
+    ],
+    "name": "changeLoserStakeMultiplier",
+    "outputs": [],
+    "payable": false,
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "constant": false,
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_relayerContract",
+        "type": "address"
+      }
+    ],
+    "name": "changeRelayerContract",
+    "outputs": [],
+    "payable": false,
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "constant": false,
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_removalBaseDeposit",
+        "type": "uint256"
+      }
+    ],
+    "name": "changeRemovalBaseDeposit",
+    "outputs": [],
+    "payable": false,
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "constant": false,
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_removalChallengeBaseDeposit",
+        "type": "uint256"
+      }
+    ],
+    "name": "changeRemovalChallengeBaseDeposit",
+    "outputs": [],
+    "payable": false,
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "constant": false,
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_sharedStakeMultiplier",
+        "type": "uint256"
+      }
+    ],
+    "name": "changeSharedStakeMultiplier",
+    "outputs": [],
+    "payable": false,
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "constant": false,
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_submissionBaseDeposit",
+        "type": "uint256"
+      }
+    ],
+    "name": "changeSubmissionBaseDeposit",
+    "outputs": [],
+    "payable": false,
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "constant": false,
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_submissionChallengeBaseDeposit",
+        "type": "uint256"
+      }
+    ],
+    "name": "changeSubmissionChallengeBaseDeposit",
+    "outputs": [],
+    "payable": false,
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "constant": false,
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_winnerStakeMultiplier",
+        "type": "uint256"
+      }
+    ],
+    "name": "changeWinnerStakeMultiplier",
+    "outputs": [],
+    "payable": false,
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "constant": false,
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "_itemID",
+        "type": "bytes32"
+      }
+    ],
+    "name": "executeRequest",
+    "outputs": [],
+    "payable": false,
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "constant": false,
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "_itemID",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "enum LightGeneralizedTCR.Party",
+        "name": "_side",
+        "type": "uint8"
+      }
+    ],
+    "name": "fundAppeal",
+    "outputs": [],
+    "payable": true,
+    "stateMutability": "payable",
+    "type": "function"
+  },
+  {
+    "constant": true,
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "_itemID",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_requestID",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_roundID",
+        "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "_contributor",
+        "type": "address"
+      }
+    ],
+    "name": "getContributions",
+    "outputs": [
+      {
+        "internalType": "uint256[3]",
+        "name": "contributions",
+        "type": "uint256[3]"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "constant": true,
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "_itemID",
+        "type": "bytes32"
+      }
+    ],
+    "name": "getItemInfo",
+    "outputs": [
+      {
+        "internalType": "enum LightGeneralizedTCR.Status",
+        "name": "status",
+        "type": "uint8"
+      },
+      {
+        "internalType": "uint256",
+        "name": "numberOfRequests",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "sumDeposit",
+        "type": "uint256"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "constant": true,
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "_itemID",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_requestID",
+        "type": "uint256"
+      }
+    ],
+    "name": "getRequestArbitrationParams",
+    "outputs": [
+      {
+        "internalType": "contract IArbitrator",
+        "name": "arbitrator",
+        "type": "address"
+      },
+      {
+        "internalType": "bytes",
+        "name": "arbitratorExtraData",
+        "type": "bytes"
+      },
+      {
+        "internalType": "uint256",
+        "name": "metaEvidenceID",
+        "type": "uint256"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "constant": true,
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "_itemID",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_requestID",
+        "type": "uint256"
+      }
+    ],
+    "name": "getRequestDisputeData",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "disputed",
+        "type": "bool"
+      },
+      {
+        "internalType": "uint256",
+        "name": "disputeID",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "numberOfRounds",
+        "type": "uint256"
+      },
+      {
+        "internalType": "enum LightGeneralizedTCR.Party",
+        "name": "ruling",
+        "type": "uint8"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "constant": true,
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "_itemID",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_requestID",
+        "type": "uint256"
+      }
+    ],
+    "name": "getRequestInfo",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "disputed",
+        "type": "bool"
+      },
+      {
+        "internalType": "uint256",
+        "name": "disputeID",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "submissionTime",
+        "type": "uint256"
+      },
+      {
+        "internalType": "bool",
+        "name": "resolved",
+        "type": "bool"
+      },
+      {
+        "internalType": "address payable[3]",
+        "name": "parties",
+        "type": "address[3]"
+      },
+      {
+        "internalType": "uint256",
+        "name": "numberOfRounds",
+        "type": "uint256"
+      },
+      {
+        "internalType": "enum LightGeneralizedTCR.Party",
+        "name": "ruling",
+        "type": "uint8"
+      },
+      {
+        "internalType": "contract IArbitrator",
+        "name": "requestArbitrator",
+        "type": "address"
+      },
+      {
+        "internalType": "bytes",
+        "name": "requestArbitratorExtraData",
+        "type": "bytes"
+      },
+      {
+        "internalType": "uint256",
+        "name": "metaEvidenceID",
+        "type": "uint256"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "constant": true,
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "_itemID",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_requestID",
+        "type": "uint256"
+      }
+    ],
+    "name": "getRequestResolvedStatus",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "resolved",
+        "type": "bool"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "constant": true,
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "_itemID",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_requestID",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_roundID",
+        "type": "uint256"
+      }
+    ],
+    "name": "getRoundInfo",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "appealed",
+        "type": "bool"
+      },
+      {
+        "internalType": "uint256[3]",
+        "name": "amountPaid",
+        "type": "uint256[3]"
+      },
+      {
+        "internalType": "bool[3]",
+        "name": "hasPaid",
+        "type": "bool[3]"
+      },
+      {
+        "internalType": "uint256",
+        "name": "feeRewards",
+        "type": "uint256"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
     "constant": true,
     "inputs": [],
     "name": "governor",
@@ -381,6 +979,66 @@
     ],
     "payable": false,
     "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "constant": false,
+    "inputs": [
+      {
+        "internalType": "contract IArbitrator",
+        "name": "_arbitrator",
+        "type": "address"
+      },
+      {
+        "internalType": "bytes",
+        "name": "_arbitratorExtraData",
+        "type": "bytes"
+      },
+      {
+        "internalType": "address",
+        "name": "_connectedTCR",
+        "type": "address"
+      },
+      {
+        "internalType": "string",
+        "name": "_registrationMetaEvidence",
+        "type": "string"
+      },
+      {
+        "internalType": "string",
+        "name": "_clearingMetaEvidence",
+        "type": "string"
+      },
+      {
+        "internalType": "address",
+        "name": "_governor",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256[4]",
+        "name": "_baseDeposits",
+        "type": "uint256[4]"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_challengePeriodDuration",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256[3]",
+        "name": "_stakeMultipliers",
+        "type": "uint256[3]"
+      },
+      {
+        "internalType": "address",
+        "name": "_relayerContract",
+        "type": "address"
+      }
+    ],
+    "name": "initialize",
+    "outputs": [],
+    "payable": false,
+    "stateMutability": "nonpayable",
     "type": "function"
   },
   {
@@ -398,6 +1056,16 @@
         "internalType": "enum LightGeneralizedTCR.Status",
         "name": "status",
         "type": "uint8"
+      },
+      {
+        "internalType": "uint128",
+        "name": "sumDeposit",
+        "type": "uint128"
+      },
+      {
+        "internalType": "uint120",
+        "name": "requestCount",
+        "type": "uint120"
       }
     ],
     "payable": false,
@@ -480,6 +1148,102 @@
     "type": "function"
   },
   {
+    "constant": false,
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "_itemID",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "string",
+        "name": "_evidence",
+        "type": "string"
+      }
+    ],
+    "name": "removeItem",
+    "outputs": [],
+    "payable": true,
+    "stateMutability": "payable",
+    "type": "function"
+  },
+  {
+    "constant": false,
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "_itemID",
+        "type": "bytes32"
+      }
+    ],
+    "name": "removeItemDirectly",
+    "outputs": [],
+    "payable": false,
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "constant": true,
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "name": "requestsDisputeData",
+    "outputs": [
+      {
+        "internalType": "enum LightGeneralizedTCR.DisputeStatus",
+        "name": "status",
+        "type": "uint8"
+      },
+      {
+        "internalType": "enum LightGeneralizedTCR.Party",
+        "name": "ruling",
+        "type": "uint8"
+      },
+      {
+        "internalType": "uint224",
+        "name": "disputeID",
+        "type": "uint224"
+      },
+      {
+        "internalType": "uint16",
+        "name": "roundCount",
+        "type": "uint16"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "constant": false,
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_disputeID",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_ruling",
+        "type": "uint256"
+      }
+    ],
+    "name": "rule",
+    "outputs": [],
+    "payable": false,
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
     "constant": true,
     "inputs": [],
     "name": "sharedStakeMultiplier",
@@ -525,251 +1289,6 @@
     "type": "function"
   },
   {
-    "constant": true,
-    "inputs": [],
-    "name": "winnerStakeMultiplier",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "payable": false,
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "constant": false,
-    "inputs": [
-      {
-        "internalType": "contract IArbitrator",
-        "name": "_arbitrator",
-        "type": "address"
-      },
-      {
-        "internalType": "bytes",
-        "name": "_arbitratorExtraData",
-        "type": "bytes"
-      },
-      {
-        "internalType": "address",
-        "name": "_connectedTCR",
-        "type": "address"
-      },
-      {
-        "internalType": "string",
-        "name": "_registrationMetaEvidence",
-        "type": "string"
-      },
-      {
-        "internalType": "string",
-        "name": "_clearingMetaEvidence",
-        "type": "string"
-      },
-      {
-        "internalType": "address",
-        "name": "_governor",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256[4]",
-        "name": "_baseDeposits",
-        "type": "uint256[4]"
-      },
-      {
-        "internalType": "uint256",
-        "name": "_challengePeriodDuration",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256[3]",
-        "name": "_stakeMultipliers",
-        "type": "uint256[3]"
-      },
-      {
-        "internalType": "address",
-        "name": "_relayerContract",
-        "type": "address"
-      }
-    ],
-    "name": "initialize",
-    "outputs": [],
-    "payable": false,
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "constant": false,
-    "inputs": [
-      {
-        "internalType": "string",
-        "name": "_item",
-        "type": "string"
-      }
-    ],
-    "name": "addItemDirectly",
-    "outputs": [],
-    "payable": false,
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "constant": false,
-    "inputs": [
-      {
-        "internalType": "bytes32",
-        "name": "_itemID",
-        "type": "bytes32"
-      }
-    ],
-    "name": "removeItemDirectly",
-    "outputs": [],
-    "payable": false,
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "constant": false,
-    "inputs": [
-      {
-        "internalType": "string",
-        "name": "_item",
-        "type": "string"
-      }
-    ],
-    "name": "addItem",
-    "outputs": [],
-    "payable": true,
-    "stateMutability": "payable",
-    "type": "function"
-  },
-  {
-    "constant": false,
-    "inputs": [
-      {
-        "internalType": "bytes32",
-        "name": "_itemID",
-        "type": "bytes32"
-      },
-      {
-        "internalType": "string",
-        "name": "_evidence",
-        "type": "string"
-      }
-    ],
-    "name": "removeItem",
-    "outputs": [],
-    "payable": true,
-    "stateMutability": "payable",
-    "type": "function"
-  },
-  {
-    "constant": false,
-    "inputs": [
-      {
-        "internalType": "bytes32",
-        "name": "_itemID",
-        "type": "bytes32"
-      },
-      {
-        "internalType": "string",
-        "name": "_evidence",
-        "type": "string"
-      }
-    ],
-    "name": "challengeRequest",
-    "outputs": [],
-    "payable": true,
-    "stateMutability": "payable",
-    "type": "function"
-  },
-  {
-    "constant": false,
-    "inputs": [
-      {
-        "internalType": "bytes32",
-        "name": "_itemID",
-        "type": "bytes32"
-      },
-      {
-        "internalType": "enum LightGeneralizedTCR.Party",
-        "name": "_side",
-        "type": "uint8"
-      }
-    ],
-    "name": "fundAppeal",
-    "outputs": [],
-    "payable": true,
-    "stateMutability": "payable",
-    "type": "function"
-  },
-  {
-    "constant": false,
-    "inputs": [
-      {
-        "internalType": "address payable",
-        "name": "_beneficiary",
-        "type": "address"
-      },
-      {
-        "internalType": "bytes32",
-        "name": "_itemID",
-        "type": "bytes32"
-      },
-      {
-        "internalType": "uint256",
-        "name": "_request",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "_round",
-        "type": "uint256"
-      }
-    ],
-    "name": "withdrawFeesAndRewards",
-    "outputs": [],
-    "payable": false,
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "constant": false,
-    "inputs": [
-      {
-        "internalType": "bytes32",
-        "name": "_itemID",
-        "type": "bytes32"
-      }
-    ],
-    "name": "executeRequest",
-    "outputs": [],
-    "payable": false,
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "constant": false,
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "_disputeID",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "_ruling",
-        "type": "uint256"
-      }
-    ],
-    "name": "rule",
-    "outputs": [],
-    "payable": false,
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
     "constant": false,
     "inputs": [
       {
@@ -790,265 +1309,13 @@
     "type": "function"
   },
   {
-    "constant": false,
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "_challengePeriodDuration",
-        "type": "uint256"
-      }
-    ],
-    "name": "changeChallengePeriodDuration",
-    "outputs": [],
-    "payable": false,
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "constant": false,
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "_submissionBaseDeposit",
-        "type": "uint256"
-      }
-    ],
-    "name": "changeSubmissionBaseDeposit",
-    "outputs": [],
-    "payable": false,
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "constant": false,
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "_removalBaseDeposit",
-        "type": "uint256"
-      }
-    ],
-    "name": "changeRemovalBaseDeposit",
-    "outputs": [],
-    "payable": false,
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "constant": false,
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "_submissionChallengeBaseDeposit",
-        "type": "uint256"
-      }
-    ],
-    "name": "changeSubmissionChallengeBaseDeposit",
-    "outputs": [],
-    "payable": false,
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "constant": false,
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "_removalChallengeBaseDeposit",
-        "type": "uint256"
-      }
-    ],
-    "name": "changeRemovalChallengeBaseDeposit",
-    "outputs": [],
-    "payable": false,
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "constant": false,
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "_governor",
-        "type": "address"
-      }
-    ],
-    "name": "changeGovernor",
-    "outputs": [],
-    "payable": false,
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "constant": false,
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "_sharedStakeMultiplier",
-        "type": "uint256"
-      }
-    ],
-    "name": "changeSharedStakeMultiplier",
-    "outputs": [],
-    "payable": false,
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "constant": false,
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "_winnerStakeMultiplier",
-        "type": "uint256"
-      }
-    ],
-    "name": "changeWinnerStakeMultiplier",
-    "outputs": [],
-    "payable": false,
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "constant": false,
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "_loserStakeMultiplier",
-        "type": "uint256"
-      }
-    ],
-    "name": "changeLoserStakeMultiplier",
-    "outputs": [],
-    "payable": false,
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "constant": false,
-    "inputs": [
-      {
-        "internalType": "contract IArbitrator",
-        "name": "_arbitrator",
-        "type": "address"
-      },
-      {
-        "internalType": "bytes",
-        "name": "_arbitratorExtraData",
-        "type": "bytes"
-      }
-    ],
-    "name": "changeArbitrator",
-    "outputs": [],
-    "payable": false,
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "constant": false,
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "_connectedTCR",
-        "type": "address"
-      }
-    ],
-    "name": "changeConnectedTCR",
-    "outputs": [],
-    "payable": false,
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "constant": false,
-    "inputs": [
-      {
-        "internalType": "string",
-        "name": "_registrationMetaEvidence",
-        "type": "string"
-      },
-      {
-        "internalType": "string",
-        "name": "_clearingMetaEvidence",
-        "type": "string"
-      }
-    ],
-    "name": "changeMetaEvidence",
-    "outputs": [],
-    "payable": false,
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "constant": false,
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "_relayerContract",
-        "type": "address"
-      }
-    ],
-    "name": "changeRelayerContract",
-    "outputs": [],
-    "payable": false,
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
     "constant": true,
-    "inputs": [
-      {
-        "internalType": "bytes32",
-        "name": "_itemID",
-        "type": "bytes32"
-      },
-      {
-        "internalType": "uint256",
-        "name": "_request",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "_round",
-        "type": "uint256"
-      },
-      {
-        "internalType": "address",
-        "name": "_contributor",
-        "type": "address"
-      }
-    ],
-    "name": "getContributions",
+    "inputs": [],
+    "name": "winnerStakeMultiplier",
     "outputs": [
       {
-        "internalType": "uint256[3]",
-        "name": "contributions",
-        "type": "uint256[3]"
-      }
-    ],
-    "payable": false,
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "constant": true,
-    "inputs": [
-      {
-        "internalType": "bytes32",
-        "name": "_itemID",
-        "type": "bytes32"
-      }
-    ],
-    "name": "getItemInfo",
-    "outputs": [
-      {
-        "internalType": "enum LightGeneralizedTCR.Status",
-        "name": "status",
-        "type": "uint8"
-      },
-      {
         "internalType": "uint256",
-        "name": "numberOfRequests",
+        "name": "",
         "type": "uint256"
       }
     ],
@@ -1057,120 +1324,33 @@
     "type": "function"
   },
   {
-    "constant": true,
+    "constant": false,
     "inputs": [
       {
-        "internalType": "bytes32",
-        "name": "_itemID",
-        "type": "bytes32"
-      },
-      {
-        "internalType": "uint256",
-        "name": "_request",
-        "type": "uint256"
-      }
-    ],
-    "name": "getRequestInfo",
-    "outputs": [
-      {
-        "internalType": "bool",
-        "name": "disputed",
-        "type": "bool"
-      },
-      {
-        "internalType": "uint256",
-        "name": "disputeID",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "submissionTime",
-        "type": "uint256"
-      },
-      {
-        "internalType": "bool",
-        "name": "resolved",
-        "type": "bool"
-      },
-      {
-        "internalType": "address payable[3]",
-        "name": "parties",
-        "type": "address[3]"
-      },
-      {
-        "internalType": "uint256",
-        "name": "numberOfRounds",
-        "type": "uint256"
-      },
-      {
-        "internalType": "enum LightGeneralizedTCR.Party",
-        "name": "ruling",
-        "type": "uint8"
-      },
-      {
-        "internalType": "contract IArbitrator",
-        "name": "requestArbitrator",
+        "internalType": "address payable",
+        "name": "_beneficiary",
         "type": "address"
       },
       {
-        "internalType": "bytes",
-        "name": "requestArbitratorExtraData",
-        "type": "bytes"
-      },
-      {
-        "internalType": "uint256",
-        "name": "metaEvidenceID",
-        "type": "uint256"
-      }
-    ],
-    "payable": false,
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "constant": true,
-    "inputs": [
-      {
         "internalType": "bytes32",
         "name": "_itemID",
         "type": "bytes32"
       },
       {
         "internalType": "uint256",
-        "name": "_request",
+        "name": "_requestID",
         "type": "uint256"
       },
       {
         "internalType": "uint256",
-        "name": "_round",
+        "name": "_roundID",
         "type": "uint256"
       }
     ],
-    "name": "getRoundInfo",
-    "outputs": [
-      {
-        "internalType": "bool",
-        "name": "appealed",
-        "type": "bool"
-      },
-      {
-        "internalType": "uint256[3]",
-        "name": "amountPaid",
-        "type": "uint256[3]"
-      },
-      {
-        "internalType": "bool[3]",
-        "name": "hasPaid",
-        "type": "bool[3]"
-      },
-      {
-        "internalType": "uint256",
-        "name": "feeRewards",
-        "type": "uint256"
-      }
-    ],
+    "name": "withdrawFeesAndRewards",
+    "outputs": [],
     "payable": false,
-    "stateMutability": "view",
+    "stateMutability": "nonpayable",
     "type": "function"
   }
 ]

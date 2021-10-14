@@ -41,19 +41,13 @@
   },
   {
     "constant": true,
-    "inputs": [
+    "inputs": [],
+    "name": "count",
+    "outputs": [
       {
         "internalType": "uint256",
         "name": "",
         "type": "uint256"
-      }
-    ],
-    "name": "instances",
-    "outputs": [
-      {
-        "internalType": "contract LightGeneralizedTCR",
-        "name": "",
-        "type": "address"
       }
     ],
     "payable": false,
@@ -122,13 +116,19 @@
   },
   {
     "constant": true,
-    "inputs": [],
-    "name": "count",
-    "outputs": [
+    "inputs": [
       {
         "internalType": "uint256",
         "name": "",
         "type": "uint256"
+      }
+    ],
+    "name": "instances",
+    "outputs": [
+      {
+        "internalType": "contract LightGeneralizedTCR",
+        "name": "",
+        "type": "address"
       }
     ],
     "payable": false,
