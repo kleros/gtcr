@@ -15,7 +15,6 @@ import _GTCRView from '../../../assets/abis/LightGeneralizedTCRView.json'
 import { WalletContext } from '../../../bootstrap/wallet-context'
 import ItemStatusBadge from '../../../components/item-status-badge'
 import useNetworkEnvVariable from '../../../hooks/network-env'
-import { ZERO_ADDRESS, ZERO_BYTES32 } from '../../../utils/string'
 import itemPropTypes from '../../../prop-types/item'
 import { gtcrDecode } from '@kleros/gtcr-encoder'
 import AddBadgeModal from '../modals/add-badge'
@@ -24,6 +23,8 @@ import SubmitModal from '../modals/submit'
 import SubmitConnectModal from '../modals/submit-connect'
 import useTcrView from '../../../hooks/tcr-view'
 import takeLower from '../../../utils/lower-limit'
+import { useLazyQuery } from '@apollo/client'
+import { LIGHT_ITEMS_QUERY } from '../../../graphql'
 
 const StyledGrid = styled.div`
   display: grid;
@@ -66,7 +67,6 @@ const DashedCardBody = styled.div`
   justify-content: center;
 `
 
-// TODO: Update to use light-curate.
 const Badges = ({ connectedTCRAddr, item, tcrAddress }) => {
   const { timestamp, requestWeb3Auth } = useContext(WalletContext)
   const { library, active, networkId } = useWeb3Context()
@@ -116,61 +116,47 @@ const Badges = ({ connectedTCRAddr, item, tcrAddress }) => {
     }
   }, [active, connectedTCRAddr, library, networkId])
 
+  const [getBadges, badgesQuery] = useLazyQuery(LIGHT_ITEMS_QUERY)
+  const badgesWhere = useMemo(
+    () => ({ registry: connectedTCRAddr.toLowerCase() }),
+    [connectedTCRAddr]
+  )
+
+  useEffect(() => {
+    if (!connectedTCRAddr) return
+    getBadges({
+      variables: {
+        where: badgesWhere
+      }
+    })
+  }, [badgesWhere, connectedTCRAddr, getBadges])
+
   // Fetch enabled badges.
   useEffect(() => {
-    if (
-      !gtcr ||
-      !gtcrView ||
-      !connectedTCRAddr ||
-      connectedTCRAddr === ZERO_ADDRESS ||
-      fetchItems.isFetching ||
-      !fetchItems.fetchStarted
-    )
-      return
+    if (!badgesQuery) return
+    const { data, error, loading, called } = badgesQuery
+    if (!called) return
 
-    setFetchItems({ isFetching: true })
-    setIsFetchingBadges(true)
-    // Filter fields
-    //  - Include absent items in result;
-    //  - Include registered items in result;
-    //  - Include items with registration requests that are not disputed in result;
-    //  - Include items with clearing requests that are not disputed in result;
-    //  - Include disputed items with registration requests in result;
-    //  - Include disputed items with clearing requests in result;
-    //  - Include items with a request by _party;
-    //  - Include items challenged by _party.
-    const filter = [false, true, false, true, false, false, false, false]
-    const oldestFirst = false
-    let encodedItems
-    const itemsPerRequest = 100
-    ;(async () => {
-      try {
-        encodedItems = await gtcrView.queryItems(
-          connectedTCRAddr,
-          0,
-          itemsPerRequest,
-          filter,
-          oldestFirst,
-          ZERO_ADDRESS,
-          itemsPerRequest
-        )
-
-        // Filter out empty slots from the results.
-        encodedItems = encodedItems[0].filter(item => item.ID !== ZERO_BYTES32)
-      } catch (err) {
-        console.error('Error fetching badges', err)
-        setError('Error fetching badges')
-        setFetchItems({ isFetching: false, fetchStarted: false })
-      } finally {
-        setFetchItems({
-          isFetching: false,
-          fetchStarted: false,
-          data: encodedItems,
-          connectedTCRAddr
-        })
-      }
-    })()
-  }, [gtcrView, connectedTCRAddr, fetchItems, gtcr])
+    if (loading) {
+      setFetchItems({ isFetching: true })
+      setIsFetchingBadges(true)
+    } else if (data)
+      setFetchItems({
+        isFetching: false,
+        fetchStarted: false,
+        data: data.litems,
+        connectedTCRAddr
+      })
+    else if (error) {
+      console.error(`Error fetching badges`, error)
+      setFetchItems({
+        isFetching: false,
+        fetchStarted: false,
+        data: [],
+        connectedTCRAddr
+      })
+    } else throw new Error('Error fetching badges (this should be unreachable)')
+  }, [badgesQuery, connectedTCRAddr])
 
   // Decode items once meta data and items were fetched.
   const enabledBadges = useMemo(() => {
