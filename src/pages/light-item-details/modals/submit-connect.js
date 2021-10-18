@@ -32,7 +32,6 @@ import { useWeb3Context } from 'web3-react'
 import { ethers } from 'ethers'
 import ipfsPublish from '../../../utils/ipfs-publish'
 import { WalletContext } from '../../../bootstrap/wallet-context'
-import { gtcrEncode } from '@kleros/gtcr-encoder'
 import { TourContext } from '../../../bootstrap/tour-context.js'
 import useNativeCurrency from '../../../hooks/native-currency.js'
 
@@ -241,21 +240,22 @@ const SubmitConnectModal = props => {
 
     pushWeb3Action(async ({ account, networkId }, signer) => {
       const gtcr = new ethers.Contract(relTCRAddress, _gtcr, signer)
-      const encodedParams = gtcrEncode({
-        columns,
-        values
-      })
+      const enc = new TextEncoder()
+      const fileData = enc.encode(JSON.stringify({ columns, values }))
+      const ipfsEvidenceObject = await ipfsPublish('item.json', fileData)
+      const ipfsEvidencePath = `/ipfs/${ipfsEvidenceObject[1].hash +
+        ipfsEvidenceObject[0].path}`
 
       // Request signature and submit.
-      const tx = await gtcr.addItem(encodedParams, {
+      const tx = await gtcr.addItem(ipfsEvidencePath, {
         value: relTCRSubmissionDeposit
       })
       onCancel() // Hide the submission modal.
 
       if (process.env.REACT_APP_NOTIFICATIONS_API_URL && !!networkId) {
         const itemID = ethers.utils.solidityKeccak256(
-          ['bytes'],
-          [encodedParams]
+          ['string'],
+          [ipfsEvidencePath]
         )
         fetch(
           `${process.env.REACT_APP_NOTIFICATIONS_API_URL}/${networkId}/api/subscribe`,
