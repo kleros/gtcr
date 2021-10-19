@@ -425,14 +425,15 @@ const SubmitConnectModal = props => {
                   defaultValue={NONE}
                   style={{ width: '100%' }}
                   onChange={(_, { key }) => handleChange(i, key)}
+                  disabled={!column.isIdentifier}
                 >
-                  {[{ label: NONE }, ...tcrMetaEvidence.metadata.columns].map(
-                    (column, j) => (
+                  {[{ label: NONE }, ...tcrMetaEvidence.metadata.columns]
+                    .filter((col, z) => col.isIdentifier || z === 0)
+                    .map((column, j) => (
                       <Select.Option value={column.label} key={j}>
                         {column.label}
                       </Select.Option>
-                    )
-                  )}
+                    ))}
                 </Select>
               ) : (
                 <StyledSkeleton
