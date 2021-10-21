@@ -397,7 +397,7 @@ const SubmitConnectModal = props => {
       </Form.Item>
       <StyledAlert
         message="Understand Badges"
-        description="An item has a badge if it is also present on the badge list. As an example, a token submission 'PNK' on a list of Tokens can display the ERC20 Badge if the same submission is also present on the ERC20 Badge list. To check if an item is present on two lists we must match common fields. In the example we would choose field 'Address'. The comparison is strict, in other words, if multiple fields are matched, ALL values must match perfectly."
+        description="An item has a badge if it is also present on the badge list. As an example, a token submission 'PNK' on a list of Tokens can display the ERC20 Badge if the same submission is also present on the ERC20 Badge list. To check if an item is present on two lists we must match common fields. In the example we would choose field 'Address'. The comparison is strict, in other words, if multiple fields are matched, ALL values must match perfectly. In general, you should use the least amount of columns that are enough to uniquely identify a submission on both lists to avoid items not being detected due to (for example, case differences)."
         type="info"
         showIcon
       />
