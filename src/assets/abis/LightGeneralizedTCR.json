@@ -1,11 +1,5 @@
 [
   {
-    "inputs": [],
-    "payable": false,
-    "stateMutability": "nonpayable",
-    "type": "constructor"
-  },
-  {
     "anonymous": false,
     "inputs": [
       {
@@ -338,11 +332,6 @@
     ],
     "name": "arbitrationParamsChanges",
     "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "timestamp",
-        "type": "uint256"
-      },
       {
         "internalType": "contract IArbitrator",
         "name": "arbitrator",
@@ -722,6 +711,32 @@
         "internalType": "bytes32",
         "name": "_itemID",
         "type": "bytes32"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_requestID",
+        "type": "uint256"
+      }
+    ],
+    "name": "getEvidenceGroupID",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "pure",
+    "type": "function"
+  },
+  {
+    "constant": true,
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "_itemID",
+        "type": "bytes32"
       }
     ],
     "name": "getItemInfo",
@@ -740,83 +755,6 @@
         "internalType": "uint256",
         "name": "sumDeposit",
         "type": "uint256"
-      }
-    ],
-    "payable": false,
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "constant": true,
-    "inputs": [
-      {
-        "internalType": "bytes32",
-        "name": "_itemID",
-        "type": "bytes32"
-      },
-      {
-        "internalType": "uint256",
-        "name": "_requestID",
-        "type": "uint256"
-      }
-    ],
-    "name": "getRequestArbitrationParams",
-    "outputs": [
-      {
-        "internalType": "contract IArbitrator",
-        "name": "arbitrator",
-        "type": "address"
-      },
-      {
-        "internalType": "bytes",
-        "name": "arbitratorExtraData",
-        "type": "bytes"
-      },
-      {
-        "internalType": "uint256",
-        "name": "metaEvidenceID",
-        "type": "uint256"
-      }
-    ],
-    "payable": false,
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "constant": true,
-    "inputs": [
-      {
-        "internalType": "bytes32",
-        "name": "_itemID",
-        "type": "bytes32"
-      },
-      {
-        "internalType": "uint256",
-        "name": "_requestID",
-        "type": "uint256"
-      }
-    ],
-    "name": "getRequestDisputeData",
-    "outputs": [
-      {
-        "internalType": "bool",
-        "name": "disputed",
-        "type": "bool"
-      },
-      {
-        "internalType": "uint256",
-        "name": "disputeID",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "numberOfRounds",
-        "type": "uint256"
-      },
-      {
-        "internalType": "enum LightGeneralizedTCR.Party",
-        "name": "ruling",
-        "type": "uint8"
       }
     ],
     "payable": false,
@@ -888,32 +826,6 @@
         "internalType": "uint256",
         "name": "metaEvidenceID",
         "type": "uint256"
-      }
-    ],
-    "payable": false,
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "constant": true,
-    "inputs": [
-      {
-        "internalType": "bytes32",
-        "name": "_itemID",
-        "type": "bytes32"
-      },
-      {
-        "internalType": "uint256",
-        "name": "_requestID",
-        "type": "uint256"
-      }
-    ],
-    "name": "getRequestResolvedStatus",
-    "outputs": [
-      {
-        "internalType": "bool",
-        "name": "resolved",
-        "type": "bool"
       }
     ],
     "payable": false,
@@ -1199,6 +1111,11 @@
     "name": "requestsDisputeData",
     "outputs": [
       {
+        "internalType": "uint256",
+        "name": "disputeID",
+        "type": "uint256"
+      },
+      {
         "internalType": "enum LightGeneralizedTCR.DisputeStatus",
         "name": "status",
         "type": "uint8"
@@ -1209,14 +1126,9 @@
         "type": "uint8"
       },
       {
-        "internalType": "uint224",
-        "name": "disputeID",
-        "type": "uint224"
-      },
-      {
-        "internalType": "uint16",
+        "internalType": "uint240",
         "name": "roundCount",
-        "type": "uint16"
+        "type": "uint240"
       }
     ],
     "payable": false,
