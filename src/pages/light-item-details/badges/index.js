@@ -15,15 +15,16 @@ import _GTCRView from '../../../assets/abis/LightGeneralizedTCRView.json'
 import { WalletContext } from '../../../bootstrap/wallet-context'
 import ItemStatusBadge from '../../../components/item-status-badge'
 import useNetworkEnvVariable from '../../../hooks/network-env'
-import { ZERO_ADDRESS, ZERO_BYTES32 } from '../../../utils/string'
 import itemPropTypes from '../../../prop-types/item'
-import { gtcrDecode } from '@kleros/gtcr-encoder'
 import AddBadgeModal from '../modals/add-badge'
-import { CONTRACT_STATUS } from '../../../utils/item-status'
+import { CONTRACT_STATUS, DISPUTE_STATUS } from '../../../utils/item-status'
 import SubmitModal from '../modals/submit'
 import SubmitConnectModal from '../modals/submit-connect'
 import useTcrView from '../../../hooks/tcr-view'
 import takeLower from '../../../utils/lower-limit'
+import { useLazyQuery } from '@apollo/client'
+import { LIGHT_ITEMS_QUERY } from '../../../graphql'
+import { bigNumberify } from 'ethers/utils'
 
 const StyledGrid = styled.div`
   display: grid;
@@ -66,11 +67,80 @@ const DashedCardBody = styled.div`
   justify-content: center;
 `
 
-// TODO: Update to use light-curate.
+const mapToLegacy = items =>
+  items
+    .map(item => ({
+      ...item,
+      decodedData: item.props.map(({ value }) => value),
+      mergedData: item.props
+    }))
+    .map(
+      ({
+        itemID,
+        status: statusName,
+        requests,
+        data,
+        decodedData,
+        mergedData
+      }) => {
+        const { disputed, disputeID, submissionTime, rounds, resolved } =
+          requests[0] ?? {}
+
+        const {
+          appealPeriodStart,
+          appealPeriodEnd,
+          ruling,
+          hasPaidRequester,
+          hasPaidChallenger,
+          amountPaidRequester,
+          amountPaidChallenger
+        } = rounds[0] ?? {}
+
+        const currentRuling =
+          ruling === 'None' ? 0 : ruling === 'Accept' ? 1 : 2
+        const disputeStatus = !disputed
+          ? DISPUTE_STATUS.WAITING
+          : resolved
+          ? DISPUTE_STATUS.SOLVED
+          : Number(appealPeriodEnd) > Date.now() / 1000
+          ? DISPUTE_STATUS.APPEALABLE
+          : DISPUTE_STATUS.WAITING
+
+        const graphStatusNameToCode = {
+          Absent: 0,
+          Registered: 1,
+          RegistrationRequested: 2,
+          ClearingRequested: 3
+        }
+
+        return {
+          ID: itemID,
+          itemID,
+          status: graphStatusNameToCode[statusName],
+          disputeStatus,
+          disputed,
+          data,
+          decodedData,
+          mergedData,
+          disputeID,
+          submissionTime: bigNumberify(submissionTime),
+          hasPaid: [false, hasPaidRequester, hasPaidChallenger],
+          currentRuling,
+          appealStart: bigNumberify(appealPeriodStart),
+          appealEnd: bigNumberify(appealPeriodEnd),
+          amountPaid: [
+            bigNumberify(0),
+            bigNumberify(amountPaidRequester),
+            bigNumberify(amountPaidChallenger)
+          ]
+        }
+      }
+    )
+
 const Badges = ({ connectedTCRAddr, item, tcrAddress }) => {
   const { timestamp, requestWeb3Auth } = useContext(WalletContext)
   const { library, active, networkId } = useWeb3Context()
-  const { metadataByTime } = useTcrView(tcrAddress)
+  const { metadataByTime } = useTcrView(connectedTCRAddr)
 
   const [error, setError] = useState(false)
   const [addBadgeVisible, setAddBadgeVisible] = useState()
@@ -82,6 +152,10 @@ const Badges = ({ connectedTCRAddr, item, tcrAddress }) => {
   const [submitConnectVisible, setSubmitConnectVisible] = useState()
   const ARBITRABLE_TCR_VIEW_ADDRESS = useNetworkEnvVariable(
     'REACT_APP_GTCRVIEW_ADDRESSES',
+    networkId
+  )
+  const GTCR_SUBGRAPH_URL = useNetworkEnvVariable(
+    'REACT_APP_SUBGRAPH_URL',
     networkId
   )
   const [fetchItems, setFetchItems] = useState({
@@ -106,71 +180,51 @@ const Badges = ({ connectedTCRAddr, item, tcrAddress }) => {
     }
   }, [ARBITRABLE_TCR_VIEW_ADDRESS, active, library, networkId])
 
-  const gtcr = useMemo(() => {
-    if (!library || !active || !connectedTCRAddr || !networkId) return
-    try {
-      return new ethers.Contract(connectedTCRAddr, _gtcr, library)
-    } catch (err) {
-      console.error('Error instantiating gtcr contract', err)
-      setError('Error setting up this list')
-    }
-  }, [active, connectedTCRAddr, library, networkId])
+  const [getBadges, badgesQuery] = useLazyQuery(LIGHT_ITEMS_QUERY)
+  const badgesWhere = useMemo(
+    () => ({ registry: connectedTCRAddr.toLowerCase(), status: 'Registered' }),
+    [connectedTCRAddr]
+  )
+
+  useEffect(() => {
+    if (!connectedTCRAddr) return
+    getBadges({
+      variables: {
+        where: badgesWhere
+      }
+    })
+  }, [badgesWhere, connectedTCRAddr, getBadges])
 
   // Fetch enabled badges.
+  // TODO: Refactor this to use badge terminology and avoid
+  // confusion with the item passed as props (i.e. fetchItems -> fetchBadges)
   useEffect(() => {
-    if (
-      !gtcr ||
-      !gtcrView ||
-      !connectedTCRAddr ||
-      connectedTCRAddr === ZERO_ADDRESS ||
-      fetchItems.isFetching ||
-      !fetchItems.fetchStarted
-    )
-      return
+    if (!badgesQuery) return
+    const { data, error, loading, called } = badgesQuery
+    if (!called) return
 
-    setFetchItems({ isFetching: true })
-    setIsFetchingBadges(true)
-    // Filter fields
-    //  - Include absent items in result;
-    //  - Include registered items in result;
-    //  - Include items with registration requests that are not disputed in result;
-    //  - Include items with clearing requests that are not disputed in result;
-    //  - Include disputed items with registration requests in result;
-    //  - Include disputed items with clearing requests in result;
-    //  - Include items with a request by _party;
-    //  - Include items challenged by _party.
-    const filter = [false, true, false, true, false, false, false, false]
-    const oldestFirst = false
-    let encodedItems
-    const itemsPerRequest = 100
-    ;(async () => {
-      try {
-        encodedItems = await gtcrView.queryItems(
-          connectedTCRAddr,
-          0,
-          itemsPerRequest,
-          filter,
-          oldestFirst,
-          ZERO_ADDRESS,
-          itemsPerRequest
-        )
-
-        // Filter out empty slots from the results.
-        encodedItems = encodedItems[0].filter(item => item.ID !== ZERO_BYTES32)
-      } catch (err) {
-        console.error('Error fetching badges', err)
-        setError('Error fetching badges')
-        setFetchItems({ isFetching: false, fetchStarted: false })
-      } finally {
-        setFetchItems({
-          isFetching: false,
-          fetchStarted: false,
-          data: encodedItems,
-          connectedTCRAddr
-        })
-      }
-    })()
-  }, [gtcrView, connectedTCRAddr, fetchItems, gtcr])
+    if (loading) {
+      setFetchItems({ isFetching: true })
+      setIsFetchingBadges(true)
+    } else if (data) {
+      let { litems: items } = data ?? {}
+      items = mapToLegacy(items)
+      setFetchItems({
+        isFetching: false,
+        fetchStarted: false,
+        data: items,
+        connectedTCRAddr
+      })
+    } else if (error) {
+      console.error(`Error fetching badges`, error)
+      setFetchItems({
+        isFetching: false,
+        fetchStarted: false,
+        data: [],
+        connectedTCRAddr
+      })
+    } else throw new Error('Error fetching badges (this should be unreachable)')
+  }, [badgesQuery, connectedTCRAddr])
 
   // Decode items once meta data and items were fetched.
   const enabledBadges = useMemo(() => {
@@ -179,13 +233,13 @@ const Badges = ({ connectedTCRAddr, item, tcrAddress }) => {
     const { data: encodedItems } = fetchItems
 
     return encodedItems.map((item, i) => {
-      let decodedItem
+      let decodedData
+      const errors = []
       const { columns } = metadataByTime.byTimestamp[
         takeLower(Object.keys(metadataByTime.byTimestamp), item.timestamp)
       ].metadata
-      const errors = []
       try {
-        decodedItem = gtcrDecode({ values: item.data, columns })
+        decodedData = item.decodedData
         // eslint-disable-next-line no-unused-vars
       } catch (err) {
         errors.push(`Error decoding item ${item.ID} of TCR at ${tcrAddress}`)
@@ -194,11 +248,12 @@ const Badges = ({ connectedTCRAddr, item, tcrAddress }) => {
       // Return the item columns along with its TCR status data.
       return {
         tcrData: {
-          ...item // Spread to convert from array to object.
+          ...item, // Spread to convert from array to object.
+          decodedData
         },
         columns: columns.map(
           (col, i) => ({
-            value: decodedItem && decodedItem[i],
+            value: decodedData && decodedData[i],
             ...col
           }),
           { key: i }
@@ -216,95 +271,111 @@ const Badges = ({ connectedTCRAddr, item, tcrAddress }) => {
       const foundBadges = []
       const connectedBadges = []
       try {
-        // await Promise.all(
-        //   enabledBadges.map(async ({ columns }) => {
-        //     const badgeAddr = columns[0].value
-        //     const matchFileURI = columns[1].value
-        //     const badgeContract = new ethers.Contract(badgeAddr, _gtcr, library)
-        //     // Get the badge contract metadata.
-        //     const logs = (
-        //       await library.getLogs({
-        //         ...badgeContract.filters.MetaEvidence(),
-        //         fromBlock: 0
-        //       })
-        //     ).map(log => badgeContract.interface.parseLog(log))
-        //     if (logs.length === 0) {
-        //       console.warn('Could not fetch metadata for contract', badgeAddr)
-        //       return
-        //     }
-        //     const { _evidence: metaEvidencePath } = logs[logs.length - 1].values
-        //     const [
-        //       badgeMetaEvidenceResponse,
-        //       matchFileResponse,
-        //       badgeTcrData
-        //     ] = await Promise.all([
-        //       fetch(process.env.REACT_APP_IPFS_GATEWAY + metaEvidencePath),
-        //       fetch(`${process.env.REACT_APP_IPFS_GATEWAY}${matchFileURI}`),
-        //       gtcrView.fetchArbitrable(badgeAddr)
-        //     ])
-        //     const itemCount = (await badgeContract.itemCount()).toNumber()
-        //     const badgeMetaEvidence = await badgeMetaEvidenceResponse.json()
-        //     const matchFile = await matchFileResponse.json()
-        //     const { columns: matchColumns } = matchFile
-        //     const { metadata: badgeMetadata, fileURI } = badgeMetaEvidence
-        //     // Submission deposit = submitter base deposit + arbitration cost
-        //     const { submissionBaseDeposit, arbitrationCost } = badgeTcrData
-        //     const submissionDeposit = submissionBaseDeposit.add(arbitrationCost)
-        //     const { decodedData } = item
-        //     connectedBadges.push({
-        //       metadata: badgeMetadata,
-        //       submissionDeposit,
-        //       metaEvidence: badgeMetaEvidence,
-        //       tcrAddress: badgeAddr,
-        //       fileURI,
-        //       matchFile,
-        //       decodedData
-        //     })
-        //     // Search for the item on the badge TCR.
-        //     const encodedMatch = gtcrEncode({
-        //       columns: badgeMetadata.columns,
-        //       values: badgeMetadata.columns
-        //         .map(col => col.label)
-        //         .reduce(
-        //           (acc, curr, i) => ({
-        //             ...acc,
-        //             [curr]:
-        //               matchColumns[i] !== null
-        //                 ? decodedData[matchColumns[i]]
-        //                 : undefined
-        //           }),
-        //           {}
-        //         )
-        //     })
-        //     const itemsPerRequest = 100
-        //     for (let i = 0; i < Math.ceil(itemCount / itemsPerRequest); i++) {
-        //       const cursor =
-        //         i > 0 && i < itemCount - 1 ? i * itemsPerRequest + 1 : 0
-        //       const ignoreColumns = matchColumns.map(
-        //         col => typeof col !== 'number'
-        //       )
-        //       const result = (
-        //         await gtcrView.findItem(
-        //           badgeAddr,
-        //           encodedMatch,
-        //           cursor,
-        //           itemsPerRequest > itemCount ? 0 : itemsPerRequest,
-        //           [true, false, false, false], // Whether to skip items in the [absent, registered, submitted, removalRequested] states.
-        //           ignoreColumns
-        //         )
-        //       ).filter(res => res.ID !== ZERO_BYTES32)
-        //       if (result.length > 0) {
-        //         foundBadges.push({
-        //           tcrAddress: badgeAddr,
-        //           item: { ...result[0] }, // Convert array to object.
-        //           metadata: badgeMetadata,
-        //           tcrData: badgeTcrData
-        //         })
-        //         break
-        //       }
-        //     }
-        //   })
-        // )
+        await Promise.all(
+          enabledBadges.map(async ({ columns }) => {
+            const badgeAddr = columns[0].value
+            const matchFileURI = columns[1].value
+            const badgeContract = new ethers.Contract(badgeAddr, _gtcr, library)
+            // Get the badge contract metadata.
+            const logs = (
+              await library.getLogs({
+                ...badgeContract.filters.MetaEvidence(),
+                fromBlock: 0
+              })
+            ).map(log => badgeContract.interface.parseLog(log))
+            if (logs.length === 0) {
+              console.warn('Could not fetch metadata for contract', badgeAddr)
+              return
+            }
+            const { _evidence: metaEvidencePath } = logs[logs.length - 1].values
+            const [
+              badgeMetaEvidenceResponse,
+              matchFileResponse,
+              badgeTcrData
+            ] = await Promise.all([
+              fetch(process.env.REACT_APP_IPFS_GATEWAY + metaEvidencePath),
+              fetch(`${process.env.REACT_APP_IPFS_GATEWAY}${matchFileURI}`),
+              gtcrView.fetchArbitrable(badgeAddr)
+            ])
+            const badgeMetaEvidence = await badgeMetaEvidenceResponse.json()
+            const matchFile = await matchFileResponse.json()
+            const { columns: matchColumns } = matchFile
+            const { metadata: badgeMetadata, fileURI } = badgeMetaEvidence
+            const { submissionBaseDeposit, arbitrationCost } = badgeTcrData
+            const submissionDeposit = submissionBaseDeposit.add(arbitrationCost)
+            const { decodedData } = item
+            connectedBadges.push({
+              metadata: badgeMetadata,
+              submissionDeposit,
+              metaEvidence: badgeMetaEvidence,
+              tcrAddress: badgeAddr,
+              fileURI,
+              matchFile,
+              decodedData
+            })
+
+            // Search for the item on the badge TCR.
+            const keywords = matchColumns.reduce((acc, curr) => {
+              if (typeof curr !== 'number') return acc
+              return `${acc} | ${item.decodedData[curr]}`
+            }, badgeAddr.toLowerCase())
+            const query = {
+              query: `
+                {
+                  litems (where:{
+                    registry: "${badgeAddr.toLowerCase()}"
+                    keywords: "${keywords}"
+                  }) {
+                    itemID
+                    status
+                    data
+                    props {
+                      value
+                      type
+                      label
+                      description
+                      isIdentifier
+                    }
+                    requests(first: 1, orderBy: submissionTime, orderDirection: desc) {
+                      disputed
+                      disputeID
+                      submissionTime
+                      resolved
+                      requester
+                      challenger
+                      resolutionTime
+                      rounds(first: 1, orderBy: creationTime, orderDirection: desc) {
+                        appealPeriodStart
+                        appealPeriodEnd
+                        ruling
+                        hasPaidRequester
+                        hasPaidChallenger
+                        amountPaidRequester
+                        amountPaidChallenger
+                      }
+                    }
+                  }
+                }
+              `
+            }
+            const { data } = await (
+              await fetch(GTCR_SUBGRAPH_URL, {
+                method: 'POST',
+                body: JSON.stringify(query)
+              })
+            ).json()
+
+            const result = mapToLegacy(data.litems)
+
+            if (result.length > 0)
+              foundBadges.push({
+                tcrAddress: badgeAddr,
+                item: { ...result[0] }, // Convert array to object.
+                metadata: badgeMetadata,
+                tcrData: badgeTcrData
+              })
+          })
+        )
       } catch (err) {
         console.error(err)
         setError(err.message)
@@ -314,7 +385,7 @@ const Badges = ({ connectedTCRAddr, item, tcrAddress }) => {
         setConnectedBadges(connectedBadges || [])
       }
     })()
-  }, [enabledBadges, gtcr, gtcrView, item, library])
+  }, [GTCR_SUBGRAPH_URL, enabledBadges, gtcrView, item, library])
 
   // The available badges are the connected badges for which
   // there are no pending requests for this item.

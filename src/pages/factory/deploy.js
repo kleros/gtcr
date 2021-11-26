@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom'
 import PropTypes from 'prop-types'
 import React, { useContext, useState } from 'react'
 import { ethers } from 'ethers'
-import Archon from '@kleros/archon'
 import { parseEther, getContractAddress, bigNumberify } from 'ethers/utils'
 import styled from 'styled-components/macro'
 import { useWeb3Context } from 'web3-react'
@@ -61,7 +60,11 @@ const StyledButton = styled(Button)`
   text-transform: capitalize;
 `
 
-const getTcrMetaEvidence = async (tcrState, parentTCRAddress) => {
+const getTcrMetaEvidence = async (
+  tcrState,
+  parentTCRAddress,
+  evidenceDisplayInterfaceURI
+) => {
   const {
     tcrTitle,
     tcrDescription,
@@ -108,16 +111,7 @@ const getTcrMetaEvidence = async (tcrState, parentTCRAddress) => {
     question: `Does the ${(itemName && itemName.toLowerCase()) ||
       'item'} comply with the required criteria?`,
     fileURI: tcrPrimaryDocument,
-    evidenceDisplayInterfaceURI:
-      process.env.REACT_APP_DEFAULT_EVIDENCE_DISPLAY_URI,
-    evidenceDisplayInterfaceHash: Archon.utils.multihashFile(
-      await (
-        await fetch(
-          `${process.env.REACT_APP_IPFS_GATEWAY}${process.env.REACT_APP_DEFAULT_EVIDENCE_DISPLAY_URI}`
-        )
-      ).text(),
-      0x1b // eslint-disable-line
-    ),
+    evidenceDisplayInterfaceURI,
     metadata
   }
 
@@ -286,6 +280,10 @@ const Deploy = ({ setTxState, tcrState, setTcrState }) => {
     'REACT_APP_TX_BATCHER_ADDRESSES',
     networkId
   )
+  const evidenceDisplayInterfaceURI = useNetworkEnvVariable(
+    'REACT_APP_DEFAULT_EVIDENCE_DISPLAY_URI',
+    networkId
+  )
   const {
     submissionDeposit,
     metaEvidence,
@@ -308,7 +306,11 @@ const Deploy = ({ setTxState, tcrState, setTcrState }) => {
         clearingMetaEvidencePath,
         relRegistrationMetaEvidencePath,
         relClearingMetaEvidencePath
-      } = await getTcrMetaEvidence(tcrState, parentTCRAddress)
+      } = await getTcrMetaEvidence(
+        tcrState,
+        parentTCRAddress,
+        evidenceDisplayInterfaceURI
+      )
 
       // To deploy two contracts at once, we use a transaction batcher.
       // See github.com/kleros/action-callback-bots for an example.

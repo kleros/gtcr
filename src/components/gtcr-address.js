@@ -19,7 +19,7 @@ const StyledSpan = styled.span`
 const GTCRAddress = ({ address }) => {
   // We reload the page because the UI needs to redetect what type of TCR it is.
   const navigateReload = useCallback(() => {
-    window.location(`/tcr/${utils.getAddress(address)}`)
+    window.location.assign(`/tcr/${utils.getAddress(address)}`)
     window.reload()
   }, [address])
 

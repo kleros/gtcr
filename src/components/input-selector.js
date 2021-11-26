@@ -9,6 +9,7 @@ import CustomInput from './custom-input.js'
 import ipfsPublish from '../utils/ipfs-publish.js'
 import { sanitize } from '../utils/string.js'
 import TwitterUserInput from './twitter-input.js'
+import AddressInput from './address-input.js'
 
 const StyledUpload = styled(Upload)`
   & > .ant-upload.ant-upload-select-picture-card {
@@ -116,11 +117,12 @@ const InputSelector = ({
   const { values, label, name } = props
   switch (type) {
     case ItemTypes.TEXT:
-    case ItemTypes.GTCR_ADDRESS:
-    case ItemTypes.ADDRESS:
     case ItemTypes.NUMBER:
     case ItemTypes.LINK:
       return <CustomInput type={type} name={name} hasFeedback {...props} />
+    case ItemTypes.ADDRESS:
+    case ItemTypes.GTCR_ADDRESS:
+      return <AddressInput type={type} name={name} hasFeedback {...props} />
     case ItemTypes.BOOLEAN:
       return (
         <Field name={name}>
