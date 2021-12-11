@@ -113,8 +113,8 @@ const TCRParams = ({
   const [uploading, setUploading] = useState({})
   const [advancedOptions, setAdvancedOptions] = useState()
   const { library, networkId } = useWeb3Context()
-  const [depositVal, setDepositVal] = useState(0.05)
   const history = useHistory()
+  const [depositVal, setDepositVal] = useState(0.05)
   const [debouncedArbitrator] = useDebounce(values.arbitratorAddress, 1000)
   const { arbitrator: klerosAddress, policy: policyAddress } =
     useNetworkEnvVariable('REACT_APP_KLEROS_ADDRESSES', networkId) || {}
@@ -224,7 +224,7 @@ const TCRParams = ({
       extra={
         <p style={{ color: 'white' }}>
           Use Classic{' '}
-          <Switch onClick={() => history.push(`/factory-classic`)} />
+          <Switch defaultChecked onClick={() => history.push(`/factory`)} />
         </p>
       }
     >

@@ -99,6 +99,17 @@ const Factory = loadable(
   }
 )
 
+const ClassicFactory = loadable(
+  () => import(/* webpackPrefetch: true */ '../pages/factory-classic/index'),
+  {
+    fallback: (
+      <StyledLayoutContent>
+        <StyledSpin />
+      </StyledLayoutContent>
+    )
+  }
+)
+
 const MenuItems = ({ TCR2_ADDRESS }) => [
   <StyledMenuItem key="tcrs-item">
     <NavLink to={`/tcr/${TCR2_ADDRESS}`}>Browse</NavLink>
@@ -225,6 +236,7 @@ const Content = () => {
         )}
       </Route>
       <Route path="/factory" exact component={Factory} />
+      <Route path="/factory-classic" exact component={ClassicFactory} />
       <Redirect from="/" exact to={`/tcr/${TCR2_ADDRESS}`} />
       <Route path="*" exact component={ErrorPage} />
     </Switch>
