@@ -9,28 +9,29 @@ import {
   message,
   Alert,
   Slider,
-  InputNumber
+  InputNumber,
+  Button,
+  Divider
 } from 'antd'
 import { withFormik } from 'formik'
 import PropTypes from 'prop-types'
 import * as yup from 'yup'
 import styled from 'styled-components/macro'
-import { useDebounce } from 'use-debounce/lib'
-import { getAddress, parseEther, bigNumberify } from 'ethers/utils'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { useWeb3Context } from 'web3-react'
+import { useDebounce } from 'use-debounce/lib'
+import { getAddress, bigNumberify, parseEther } from 'ethers/utils'
 import CustomInput from '../../components/custom-input'
 import { ItemTypes } from '@kleros/gtcr-encoder'
 import ipfsPublish from '../../utils/ipfs-publish'
 import { sanitize } from '../../utils/string'
-import BaseDepositInput from '../../components/base-deposit-input'
-import useArbitrationCost from '../../hooks/arbitration-cost'
 import useNetworkEnvVariable from '../../hooks/network-env'
+import useArbitrationCost from '../../hooks/arbitration-cost'
 import KlerosParams from './kleros-params'
+import BaseDepositInput from '../../components/base-deposit-input'
 import ETHAmount from '../../components/eth-amount'
 import useWindowDimensions from '../../hooks/window-dimensions'
 import useNativeCurrency from '../../hooks/native-currency'
-import { useHistory } from 'react-router'
 
 const StyledUpload = styled(Upload)`
   & > .ant-upload.ant-upload-select-picture-card {
@@ -40,42 +41,6 @@ const StyledUpload = styled(Upload)`
 
 const StyledAlert = styled(Alert)`
   margin-bottom: 32px;
-`
-
-const UploadButton = ({ loading }) => (
-  <div>
-    <Icon type={loading ? 'loading' : 'plus'} />
-    <div className="ant-upload-text">Upload</div>
-  </div>
-)
-
-const StyledTCRParamContainer = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  margin-bottom: 12px;
-
-  @media (max-width: 840px) {
-    flex-direction: column;
-  }
-`
-
-const StyledUploadContainer = styled.div`
-  @media (min-width: 840px) {
-    margin-right: 12px;
-    max-width: 450px;
-  }
-`
-
-const StyledTCRInfoContainer = styled.div`
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-
-  @media (min-width: 840px) {
-    border-left: 1px solid #f8efff;
-    padding-left: 12px;
-  }
 `
 
 const StyledDepositContainer = styled.div`
@@ -88,6 +53,13 @@ const StyledSliderContainer = styled.div`
   display: flex;
 `
 
+const UploadButton = ({ loading }) => (
+  <div>
+    <Icon type={loading ? 'loading' : 'plus'} />
+    <div className="ant-upload-text">Upload</div>
+  </div>
+)
+
 UploadButton.propTypes = {
   loading: PropTypes.bool
 }
@@ -96,7 +68,7 @@ UploadButton.defaultProps = {
   loading: null
 }
 
-const TCRParams = ({
+const RelTCRParams = ({
   handleSubmit,
   formId,
   errors,
@@ -107,24 +79,23 @@ const TCRParams = ({
   defaultGovernorLabel,
   ...rest
 }) => {
-  const { values, setTcrState } = rest
+  const { values, setTcrState, nextStep } = rest
   const { width } = useWindowDimensions()
-  const nativeCurrency = useNativeCurrency()
-  const [uploading, setUploading] = useState({})
+  const [uploading, setUploading] = useState()
   const [advancedOptions, setAdvancedOptions] = useState()
   const { library, networkId } = useWeb3Context()
   const [depositVal, setDepositVal] = useState(0.05)
-  const history = useHistory()
-  const [debouncedArbitrator] = useDebounce(values.arbitratorAddress, 1000)
+  const [debouncedArbitrator] = useDebounce(values.relArbitratorAddress, 1000)
   const { arbitrator: klerosAddress, policy: policyAddress } =
     useNetworkEnvVariable('REACT_APP_KLEROS_ADDRESSES', networkId) || {}
   const { arbitrationCost } = useArbitrationCost({
-    address: values.arbitratorAddress,
-    arbitratorExtraData: values.arbitratorExtraData,
+    address: values.relArbitratorAddress,
+    arbitratorExtraData: values.relArbitratorExtraData,
     library
   })
-  const setArbitratorExtraData = useCallback(
-    val => setFieldValue('arbitratorExtraData', val),
+  const nativeCurrency = useNativeCurrency()
+  const setRelArbitratorExtraData = useCallback(
+    val => setFieldValue('relArbitratorExtraData', val),
     [setFieldValue]
   )
 
@@ -144,42 +115,12 @@ const TCRParams = ({
     }))
   }, [values, setTcrState])
 
-  const fileUploadStatusChange = useCallback(
-    ({ file: { status }, file }) => {
-      if (status === 'done') message.success(`File uploaded successfully.`)
-      else if (status === 'error') message.error(`File upload failed.`)
-      else if (status === 'uploading')
-        if (file.type === 'image/png' || file.type === 'image/svg+xml')
-          setUploading({ ...uploading, tcrLogo: true })
-        else setUploading({ ...uploading, tcrPrimaryDocument: true })
+  const fileUploadStatusChange = useCallback(({ file: { status } }) => {
+    if (status === 'done') message.success(`File uploaded successfully.`)
+    else if (status === 'error') message.error(`File upload failed.`)
+    else if (status === 'uploading') setUploading(true)
 
-      if (status === 'error' || status === 'done')
-        if (file.type === 'image/png' || file.type === 'image/svg+xml')
-          setUploading({ ...uploading, tcrLogo: false })
-        else setUploading({ ...uploading, tcrPrimaryDocument: false })
-    },
-    [uploading]
-  )
-
-  const beforeImageUpload = useCallback(file => {
-    const isPNGorJPEGorSVG =
-      file.type === 'image/png' || file.type === 'image/svg+xml'
-    if (!isPNGorJPEGorSVG) message.error('Please use PNG, or SVG.')
-
-    const isLt2M = file.size / 1024 / 1024 < 2
-    if (!isLt2M) message.error('Image must smaller than 2MB.')
-
-    return isPNGorJPEGorSVG && isLt2M
-  }, [])
-
-  const beforeFileUpload = useCallback(file => {
-    const isPDF = file.type === 'application/pdf'
-    if (!isPDF) message.error('Please upload file as PDF.')
-
-    const isLt10M = file.size / 1024 / 1024 < 10
-    if (!isLt10M) message.error('File must smaller than 10MB.')
-
-    return isPDF && isLt10M
+    if (status === 'error' || status === 'done') setUploading(false)
   }, [])
 
   const customRequest = useCallback(
@@ -199,17 +140,35 @@ const TCRParams = ({
     [setFieldValue]
   )
 
+  const beforeFileUpload = useCallback(file => {
+    const isPDF = file.type === 'application/pdf'
+    if (!isPDF) message.error('Please upload file as PDF.')
+
+    const isLt10M = file.size / 1024 / 1024 < 10
+    if (!isLt10M) message.error('File must smaller than 10MB.')
+
+    return isPDF && isLt10M
+  }, [])
+
   const onChangeDepositVal = useCallback(
     value => {
       if (isNaN(value)) return
 
       setDepositVal(value)
-      setFieldValue('submissionBaseDeposit', value)
-      setFieldValue('removalBaseDeposit', value)
-      setFieldValue('removalChallengeBaseDeposit', value)
+      setFieldValue('relSubmissionBaseDeposit', value)
+      setFieldValue('relRemovalBaseDeposit', value)
+      setFieldValue('relRemovalChallengeBaseDeposit', value)
     },
     [setFieldValue]
   )
+
+  const onSkipStep = useCallback(() => {
+    setTcrState(prevState => ({
+      ...prevState,
+      relTcrDisabled: true
+    }))
+    nextStep()
+  }, [nextStep, setTcrState])
 
   const totalDepositSlider = useMemo(() => {
     if (!arbitrationCost) return null
@@ -219,160 +178,75 @@ const TCRParams = ({
   }, [arbitrationCost, depositVal])
 
   return (
-    <Card
-      title="Enter the list parameters"
-      extra={
-        <p style={{ color: 'white' }}>
-          Use Classic{' '}
-          <Switch onClick={() => history.push(`/factory-classic`)} />
-        </p>
-      }
-    >
-      <Form layout="vertical" id={formId} onSubmit={handleSubmit}>
-        <StyledTCRParamContainer>
-          <StyledUploadContainer>
+    <Card title="Choose the parameters of the Badges list">
+      <Form
+        layout="vertical"
+        id={formId}
+        onSubmit={handleSubmit}
+        style={{ display: 'flex', flexDirection: 'column' }}
+      >
+        <Alert
+          message="This step can be skipped"
+          description={
             <div>
-              <div className="ant-col ant-form-item-label">
-                <label htmlFor="tcr-logo">
-                  <span>List Logo (transparent background): &nbsp;</span>
-                  <Tooltip title="The logo should be a 1:1 aspect ratio image with transparent background in SVG or PNG.">
-                    <Icon type="question-circle-o" />
-                  </Tooltip>
-                </label>
-              </div>
-              <StyledUpload
-                name="primary-document"
-                listType="picture-card"
-                className="avatar-uploader"
-                showUploadList={false}
-                customRequest={customRequest('tcrLogo')}
-                beforeUpload={beforeImageUpload}
-                onChange={fileUploadStatusChange}
-              >
-                {values.tcrLogo ? (
-                  <img
-                    src={`${process.env.REACT_APP_IPFS_GATEWAY}${values.tcrLogo}`}
-                    style={{ height: '70px', objectFit: 'contain' }}
-                    alt="avatar"
-                  />
-                ) : (
-                  <UploadButton loading={uploading.tcrLogo} />
-                )}
-              </StyledUpload>
+              Badges allow the users viewing an item on your list to quickly
+              learn that it is also present in another list. To better
+              understand how this can be useful, consider a list of clothing
+              brands: A user is viewing brand X may be interested in knowing
+              that it is also included in the 'Eco-friendly Brands' list.
             </div>
-            <div>
-              <div className="ant-col ant-form-item-label">
-                <label htmlFor="primary-document">
-                  <span>Acceptance Criteria (Primary Document)&nbsp;</span>
-                  <Tooltip title="The list primary document defines the acceptance criteria that jurors and challengers will use to evaluate submissions. Use the PDF file format.">
-                    <Icon type="question-circle-o" />
-                  </Tooltip>
-                </label>
-                <br />
-                Click{' '}
-                <a
-                  href="https://ipfs.kleros.io/ipfs/QmUPsjDcKxNv6z6ktnmxkSb4LpqmQ7DT12yG5B73z9uLEy/curated-lists-primary-document.pdf"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  here
-                </a>{' '}
-                to see an example.
-              </div>
-              <StyledUpload
-                name="primary-document"
-                listType="picture-card"
-                className="avatar-uploader"
-                showUploadList={false}
-                customRequest={customRequest('tcrPrimaryDocument')}
-                beforeUpload={beforeFileUpload}
-                onChange={fileUploadStatusChange}
+          }
+          type="info"
+          showIcon
+        />
+        <Button
+          onClick={onSkipStep}
+          style={{ margin: '24px 0', alignSelf: 'flex-end' }}
+        >
+          Skip step
+        </Button>
+        <Divider />
+        <div style={{ marginBottom: '26px' }}>
+          <div className="ant-col ant-form-item-label">
+            <label htmlFor="rel-primary-document">
+              <span>Acceptance Criteria (Primary Document)&nbsp;</span>
+              <Tooltip title="The list primary document defines the acceptance criteria that jurors and challengers will use to evaluate submissions. For a Badge list, the primary document should define what lists are considered interesting to the viewers of your list. Use the PDF file format.">
+                <Icon type="question-circle-o" />
+              </Tooltip>
+            </label>
+            <br />
+            Click{' '}
+            <a
+              href="https://ipfs.kleros.io/ipfs/QmUPsjDcKxNv6z6ktnmxkSb4LpqmQ7DT12yG5B73z9uLEy/curated-lists-primary-document.pdf"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              here
+            </a>{' '}
+            to see an example.
+          </div>
+          <StyledUpload
+            name="rel-primary-document"
+            listType="picture-card"
+            className="avatar-uploader"
+            showUploadList={false}
+            customRequest={customRequest('relTcrPrimaryDocument')}
+            beforeUpload={beforeFileUpload}
+            onChange={fileUploadStatusChange}
+          >
+            {values.relTcrPrimaryDocument ? (
+              <a
+                href={`${process.env.REACT_APP_IPFS_GATEWAY}${values.relTcrPrimaryDocument}`}
+                target="_blank"
+                rel="noopener noreferrer"
               >
-                {values.tcrPrimaryDocument ? (
-                  <a
-                    href={`${process.env.REACT_APP_IPFS_GATEWAY}${values.tcrPrimaryDocument}`}
-                  >
-                    <Icon type="file-pdf" style={{ fontSize: '30px' }} />
-                  </a>
-                ) : (
-                  <UploadButton loading={uploading.tcrPrimaryDocument} />
-                )}
-              </StyledUpload>
-            </div>
-          </StyledUploadContainer>
-          <StyledTCRInfoContainer>
-            <CustomInput
-              name="tcrTitle"
-              placeholder="Red Socks"
-              label={
-                <span>
-                  Title&nbsp;
-                  <Tooltip title="This will be the title of your list. Try to keep it as short as possible for increased compatibility with mobile devices, Twitter bots and push notifications. For example: Red Socks.">
-                    <Icon type="question-circle-o" />
-                  </Tooltip>
-                </span>
-              }
-              error={errors.tcrTitle}
-              touched={touched.tcrTitle}
-              hasFeedback
-              {...rest}
-            />
-            <CustomInput
-              name="tcrDescription"
-              placeholder="A list of red socks"
-              hasFeedback
-              error={errors.tcrDescription}
-              touched={touched.tcrDescription}
-              label={
-                <span>
-                  Description&nbsp;
-                  <Tooltip title="Enter a short sentence to describe the type of item that will be displayed in the list and what the listing criteria are. For example: Images of red socks from various manufacturers.">
-                    <Icon type="question-circle-o" />
-                  </Tooltip>
-                </span>
-              }
-              {...rest}
-            />
-            <CustomInput
-              style={{ marginBottom: 0 }}
-              name="itemName"
-              placeholder="sock"
-              hasFeedback
-              error={errors.itemName}
-              touched={touched.itemName}
-              label={
-                <span>
-                  Item Name&nbsp;
-                  <Tooltip
-                    title={`Enter a noun that describes the item that will be listed. This will replace the word "item" in the list interface and notifications. For example: if you set this to the word "Socks", on the list interface you will see buttons such as "Submit Socks" and "Challenge Socks".`}
-                  >
-                    <Icon type="question-circle-o" />
-                  </Tooltip>
-                </span>
-              }
-              {...rest}
-            />
-            <CustomInput
-              style={{ marginBottom: 0 }}
-              name="itemNamePlural"
-              placeholder="socks"
-              hasFeedback
-              error={errors.itemNamePlural}
-              touched={touched.itemNamePlural}
-              label={
-                <span>
-                  Item Name Plural&nbsp;
-                  <Tooltip
-                    title={`This is the plural of the item name. In other words, if "Item Name" is "bus", this should be "buses"`}
-                  >
-                    <Icon type="question-circle-o" />
-                  </Tooltip>
-                </span>
-              }
-              {...rest}
-            />
-          </StyledTCRInfoContainer>
-        </StyledTCRParamContainer>
+                <Icon type="file-pdf" style={{ fontSize: '30px' }} />
+              </a>
+            ) : (
+              <UploadButton loading={uploading} />
+            )}
+          </StyledUpload>
+        </div>
         {!advancedOptions && (
           <StyledDepositContainer>
             <label htmlFor="depositSlider">
@@ -401,7 +275,7 @@ const TCRParams = ({
                     <FontAwesomeIcon
                       icon="coins"
                       style={{ marginRight: '12px' }}
-                    />
+                    />{' '}
                     Cheapest
                   </>
                 )}
@@ -436,11 +310,11 @@ const TCRParams = ({
         )}
         {isKlerosArbitrator === false ? (
           <CustomInput
-            name="arbitratorExtraData"
+            name="relArbitratorExtraData"
             placeholder="0x7331deadbeef..."
             hasFeedback
-            error={errors.arbitratorExtraData}
-            touched={touched.arbitratorExtraData}
+            error={errors.relArbitratorExtraData}
+            touched={touched.relArbitratorExtraData}
             label={
               <span>
                 Arbitrator Extra Data&nbsp;
@@ -455,10 +329,10 @@ const TCRParams = ({
           />
         ) : (
           <KlerosParams
-            arbitratorExtraData={values.arbitratorExtraData}
+            arbitratorExtraData={values.relArbitratorExtraData}
             klerosAddress={debouncedArbitrator}
             policyAddress={policyAddress}
-            setArbitratorExtraData={setArbitratorExtraData}
+            setArbitratorExtraData={setRelArbitratorExtraData}
           />
         )}
         <Form.Item
@@ -473,14 +347,14 @@ const TCRParams = ({
         {advancedOptions && (
           <>
             <BaseDepositInput
-              name="submissionBaseDeposit"
-              error={errors.submissionBaseDeposit}
-              touched={touched.submissionBaseDeposit}
+              name="relSubmissionBaseDeposit"
+              error={errors.relSubmissionBaseDeposit}
+              touched={touched.relSubmissionBaseDeposit}
               arbitrationCost={arbitrationCost}
               label={
                 <span>
                   Submission Challenge Bounty&nbsp;
-                  <Tooltip title="This is the deposit required to submit an item to the list and also the amount awarded to successful challengers. If the value is too low, challengers may not have enough incentive to look for flaws in the submissions and bad ones could make it through. If it is too high, submitters may not have enough incentive to send items which may result in an empty list.">
+                  <Tooltip title="This will be the deposit required to submit connect a badge and also the amount awarded to successful challengers. If the value is too low, people will not look for flaws in the submissions and bad ones could make it through. If it is too high, the list will be secure, but people will be afraid to connect badges so there will be few available badges.">
                     <Icon type="question-circle-o" />
                   </Tooltip>
                 </span>
@@ -488,14 +362,14 @@ const TCRParams = ({
               {...rest}
             />
             <BaseDepositInput
-              name="removalBaseDeposit"
-              error={errors.removalBaseDeposit}
-              touched={touched.removalBaseDeposit}
+              name="relRemovalBaseDeposit"
+              error={errors.relRemovalBaseDeposit}
+              touched={touched.relRemovalBaseDeposit}
               arbitrationCost={arbitrationCost}
               label={
                 <span>
                   Removal Challenge Bounty&nbsp;
-                  <Tooltip title="This is the deposit required to remove an item and also the amount awarded to successful challengers. If the value is too low, people will not have enough incentive to look for flaws in removal requests and compliant items could be removed from the list. If it is too high, people will be afraid to remove items so a non compliant submission could stay longer than it should.">
+                  <Tooltip title=" This will be the deposit required to disconnect a badge and also the amount awarded to successful challengers. If the value is too low, people will not look for flaws in removal requests and compliant badges could be disconnected. If it is too high, people will be afraid to remove non compliant badges, so a badge that should not be registerd would stay longer than it should.">
                     <Icon type="question-circle-o" />
                   </Tooltip>
                 </span>
@@ -503,9 +377,9 @@ const TCRParams = ({
               {...rest}
             />
             <BaseDepositInput
-              name="submissionChallengeBaseDeposit"
-              error={errors.submissionChallengeBaseDeposit}
-              touched={touched.submissionChallengeBaseDeposit}
+              name="relSubmissionChallengeBaseDeposit"
+              error={errors.relSubmissionChallengeBaseDeposit}
+              touched={touched.relSubmissionChallengeBaseDeposit}
               arbitrationCost={arbitrationCost}
               label={
                 <span>
@@ -518,9 +392,9 @@ const TCRParams = ({
               {...rest}
             />
             <BaseDepositInput
-              name="removalChallengeBaseDeposit"
-              error={errors.removalChallengeBaseDeposit}
-              touched={touched.removalChallengeBaseDeposit}
+              name="relRemovalChallengeBaseDeposit"
+              error={errors.relRemovalChallengeBaseDeposit}
+              touched={touched.relRemovalChallengeBaseDeposit}
               arbitrationCost={arbitrationCost}
               label={
                 <span>
@@ -533,16 +407,16 @@ const TCRParams = ({
               {...rest}
             />
             <CustomInput
-              name="challengePeriodDuration"
-              placeholder="84"
+              name="relChallengePeriodDuration"
+              placeholder="5"
               addonAfter="Hours"
-              error={errors.challengePeriodDuration}
-              touched={touched.challengePeriodDuration}
+              error={errors.relChallengePeriodDuration}
+              touched={touched.relChallengePeriodDuration}
               type={ItemTypes.NUMBER}
               step={1}
               label={
                 <span>
-                  Challenge Period Duration (hours) &nbsp;
+                  Challenge Period Duration (hours)&nbsp;
                   <Tooltip title="The length of time (in hours) that a submission can be challenged before it it automatically accepted onto the list and the submitter's deposit is refunded.">
                     <Icon type="question-circle-o" />
                   </Tooltip>
@@ -551,16 +425,16 @@ const TCRParams = ({
               {...rest}
             />
             <CustomInput
-              name="governorAddress"
+              name="relGovernorAddress"
               placeholder="0x7331deadbeef..."
               hasFeedback
-              error={errors.governorAddress}
-              touched={touched.governorAddress}
+              error={errors.relGovernorAddress}
+              touched={touched.relGovernorAddress}
               label={
                 <span>
                   Governor&nbsp;
                   <Tooltip
-                    title={`The address of the governor to use for this list. It can update parameters such as the challenge period duration, deposits, primary document, etc. This address can also be used to transfer the role of governor to another address. By default this is set to ${defaultGovernorLabel}`}
+                    title={`The address of the governor to use for this list. It can update parameters such as the challenge period duration, deposits, primary document and the list governor. By default it is set to ${defaultGovernorLabel}`}
                   >
                     <Icon type="question-circle-o" />
                   </Tooltip>
@@ -569,16 +443,16 @@ const TCRParams = ({
               {...rest}
             />
             <CustomInput
-              name="arbitratorAddress"
+              name="relArbitratorAddress"
               placeholder="0x7331deadbeef..."
               hasFeedback
-              error={errors.arbitratorAddress}
-              touched={touched.arbitratorAddress}
+              error={errors.relArbitratorAddress}
+              touched={touched.relArbitratorAddress}
               label={
                 <span>
                   Arbitrator&nbsp;
                   <Tooltip
-                    title={`This is the contract address of the arbitrator that will resolve disputes regarding whether challenged submissions and challenged removal requests belong on this list. By default it is set to ${defaultArbLabel}, but you could use any other arbitrator complying with the ERC 792 standard.`}
+                    title={`The address of the arbitrator to use for this list. By default it is set to ${defaultArbLabel}.`}
                   >
                     <Icon type="question-circle-o" />
                   </Tooltip>
@@ -614,7 +488,6 @@ const TCRParams = ({
                   with the smaller multiplier is favoured.
                 </div>
               }
-              type="info"
               showIcon
             />
             <StyledAlert
@@ -623,10 +496,10 @@ const TCRParams = ({
               showIcon
             />
             <CustomInput
-              name="sharedStakeMultiplier"
+              name="relSharedStakeMultiplier"
               placeholder="100"
-              error={errors.sharedStakeMultiplier}
-              touched={touched.sharedStakeMultiplier}
+              error={errors.relSharedStakeMultiplier}
+              touched={touched.relSharedStakeMultiplier}
               type={ItemTypes.NUMBER}
               addonAfter="%"
               label={
@@ -640,10 +513,10 @@ const TCRParams = ({
               {...rest}
             />
             <CustomInput
-              name="winnerStakeMultiplier"
+              name="relWinnerStakeMultiplier"
               placeholder="100"
-              error={errors.winnerStakeMultiplier}
-              touched={touched.winnerStakeMultiplier}
+              error={errors.relWinnerStakeMultiplier}
+              touched={touched.relWinnerStakeMultiplier}
               type={ItemTypes.NUMBER}
               addonAfter="%"
               label={
@@ -657,10 +530,10 @@ const TCRParams = ({
               {...rest}
             />
             <CustomInput
-              name="loserStakeMultiplier"
+              name="relLoserStakeMultiplier"
               placeholder="200"
-              error={errors.loserStakeMultiplier}
-              touched={touched.loserStakeMultiplier}
+              error={errors.relLoserStakeMultiplier}
+              touched={touched.relLoserStakeMultiplier}
               type={ItemTypes.NUMBER}
               addonAfter="%"
               label={
@@ -680,7 +553,7 @@ const TCRParams = ({
   )
 }
 
-TCRParams.propTypes = {
+RelTCRParams.propTypes = {
   handleSubmit: PropTypes.func.isRequired,
   setFieldValue: PropTypes.func.isRequired,
   formId: PropTypes.string.isRequired,
@@ -702,71 +575,56 @@ TCRParams.propTypes = {
 }
 
 const validationSchema = yup.object().shape({
-  tcrTitle: yup
-    .string()
-    .required('A title is required.')
-    .max(40, 'Title must be less than 40 characters long.'),
-  tcrDescription: yup
-    .string()
-    .required('A description is required.')
-    .max(255, 'Description must be less than 255 characters long.'),
-  arbitratorAddress: yup
+  relArbitratorAddress: yup
     .string()
     .required('An arbitrator address is required.')
     .max(42, 'Ethereum addresses are 42 characters long.'),
-  arbitratorExtraData: yup
+  relArbitratorExtraData: yup
     .string()
     .required('The arbitrator extra data is required.'),
-  governorAddress: yup
+  relGovernorAddress: yup
     .string()
     .required('A governor address is required.')
     .max(42, 'Ethereum addresses are 42 characters long.'),
-  itemName: yup
+  relSubmissionBaseDeposit: yup
+    .number()
+    .typeError('Amount should be a number.')
+    .required('A value is required.')
+    .min(0, 'The amount must not be negative.'),
+  relRemovalBaseDeposit: yup
+    .number()
+    .typeError('Amount should be a number.')
+    .required('A value is required.')
+    .min(0, 'The amount must not be negative.'),
+  relSubmissionChallengeBaseDeposit: yup
+    .number()
+    .typeError('Amount should be a number.')
+    .required('A value is required.')
+    .min(0, 'The amount must not be negative.'),
+  relRemovalChallengeBaseDeposit: yup
+    .number()
+    .typeError('Amount should be a number.')
+    .required('A value is required.')
+    .min(0, 'The amount must not be negative.'),
+  relChallengePeriodDuration: yup
+    .number()
+    .typeError('Amount should be a number.')
+    .required('A value is required.')
+    .min(0, 'The amount must not be negative.'),
+  relTcrPrimaryDocument: yup
     .string()
-    .required('An item name is required.')
-    .max(20, 'The item name must be less than 20 characters long.'),
-  itemNamePlural: yup
-    .string()
-    .required('The plural of the item name is required.')
-    .max(20, 'The item name must be less than 20 characters long.'),
-  submissionBaseDeposit: yup
-    .number()
-    .typeError('Amount should be a number.')
-    .required('A value is required.')
-    .min(0, 'The amount must not be negative.'),
-  removalBaseDeposit: yup
-    .number()
-    .typeError('Amount should be a number.')
-    .required('A value is required.')
-    .min(0, 'The amount must not be negative.'),
-  submissionChallengeBaseDeposit: yup
-    .number()
-    .typeError('Amount should be a number.')
-    .required('A value is required.')
-    .min(0, 'The amount must not be negative.'),
-  removalChallengeBaseDeposit: yup
-    .number()
-    .typeError('Amount should be a number.')
-    .required('A value is required.')
-    .min(0, 'The amount must not be negative.'),
-  challengePeriodDuration: yup
-    .number()
-    .typeError('Amount should be a number.')
-    .required('A value is required.')
-    .min(0, 'The amount must not be negative.'),
-  tcrPrimaryDocument: yup.string().required('A primary document is required.'),
-  tcrLogo: yup.string().required('A logo is required.'),
-  sharedStakeMultiplier: yup
+    .required('A primary document is required.'),
+  relSharedStakeMultiplier: yup
     .number()
     .typeError('Amount should be a number.')
     .min(0, 'The stake multiplier cannot be negative.')
     .required('A value is required'),
-  winnerStakeMultiplier: yup
+  relWinnerStakeMultiplier: yup
     .number()
     .typeError('Amount should be a number.')
     .min(0, 'The stake multiplier cannot be negative.')
     .required('A value is required'),
-  loserStakeMultiplier: yup
+  relLoserStakeMultiplier: yup
     .number()
     .typeError('Amount should be a number.')
     .min(0, 'The stake multiplier cannot be negative.')
@@ -780,7 +638,11 @@ export default withFormik({
     delete values.transactions
     return values
   },
-  handleSubmit: (_, { props: { postSubmit } }) => {
+  handleSubmit: (_, { props: { postSubmit, setTcrState } }) => {
+    setTcrState(prevState => {
+      delete prevState.relTcrDisabled
+      return prevState
+    })
     postSubmit()
   }
-})(TCRParams)
+})(RelTCRParams)
