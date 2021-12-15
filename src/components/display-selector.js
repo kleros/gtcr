@@ -82,17 +82,7 @@ const DisplaySelector = ({ type, value, linkImage, allowedFileTypes }) => {
       )
     case ItemTypes.LINK:
       return (
-        <a
-          href={
-            value
-              ? protocolRegex.test(value)
-                ? value
-                : value.slice(0, 8) === 'https://'
-                ? value
-                : `https://${value.slice(0, 8)}`
-              : ``
-          }
-        >
+        <a href={protocolRegex.test(value) ? value : `https://${value}`}>
           <Typography.Text>{value}</Typography.Text>
         </a>
       )
