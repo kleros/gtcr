@@ -26,7 +26,7 @@
   REACT_APP_INSTRUCTION_VIDEO='https://www.youtube.com/embed/DKPVWzhh8Y8'
   REACT_APP_TX_BATCHER_ADDRESSES='{"1":"0x82458d1c812d7c930bb3229c9e159cbabd9aa8cb","42":"0x741A4dCaD4f72B83bE9103a383911d78362611cf","4":"0x5a64dd89b5a587ec7750a129cd3a7b5cbdfbab5d","100":"0xD7572AD1523F3f116258b8d9dDeBA1d5e76235ac"}'
   REACT_APP_REJECT_ALL_POLICY_URI='/ipfs/QmZ7RVU7re1g8nXDbAFMHV99pyie3dn4cY7Ga2X4h8mDpV/reject-all-policy.pdf'
-  REACT_APP_SUBGRAPH_URL='{"1":"https://api.thegraph.com/subgraphs/name/eccentricexit/light-curate-mainnet","4":"https://api.thegraph.com/subgraphs/name/kleros/curate-rinkeby","42":"https://api.thegraph.com/subgraphs/name/eccentricexit/light-curate-kovan-ii","100":"https://api.thegraph.com/subgraphs/name/eccentricexit/curate-xdai-ii"}'
+  REACT_APP_SUBGRAPH_URL='{"1":"https://api.thegraph.com/subgraphs/name/kleros/curate","4":"https://api.thegraph.com/subgraphs/name/kleros/curate-rinkeby","42":"https://api.thegraph.com/subgraphs/name/eccentricexit/light-curate-kovan-ii","100":"https://api.thegraph.com/subgraphs/name/eccentricexit/curate-xdai-ii"}'
 
 [[redirects]]
   from = "/*"
