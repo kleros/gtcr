@@ -103,10 +103,6 @@ const useNotificationWeb3 = () => {
   useEffect(() => {
     ;(async () => {
       if (!window.ethereum || web3Context.account) return
-      const ONE_DAY = 24 * 60 * 60 * 1000
-      const lastConnectionTime = await localforage.getItem(LAST_CONNECTION_TIME)
-      if (!lastConnectionTime || Date.now() - lastConnectionTime > ONE_DAY)
-        return
 
       web3Context.setConnector('Injected')
     })()
@@ -114,6 +110,7 @@ const useNotificationWeb3 = () => {
 
   // Connect a provider.
   useEffect(() => {
+    if (window.ethereum) return
     if (web3Context.active || infuraSetup) return
 
     if (process.env.REACT_APP_RPC_URLS)
