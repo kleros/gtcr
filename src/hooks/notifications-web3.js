@@ -11,7 +11,11 @@ import _GTCRFactory from '../assets/abis/LightGTCRFactory.json'
 import { NETWORK, NETWORK_NAME } from '../utils/network-utils'
 import FastJsonRpcSigner from '../utils/fast-signer'
 import useMainTCR2 from './tcr2'
-import { useHistory } from 'react-router-dom/cjs/react-router-dom.min'
+import {
+  useHistory,
+  useParams
+} from 'react-router-dom/cjs/react-router-dom.min'
+import useNetworkEnvVariable from './network-env'
 
 const actionTypes = {
   TRANSACTION: 'TRANSACTION',
@@ -39,6 +43,15 @@ const useNotificationWeb3 = () => {
   const [web3Actions, setWeb3Actions] = useState([])
   const [infuraSetup, setInfuraSetup] = useState() // Whether infura was set as the provider.
   const [timestamp, setTimestamp] = useState()
+  const { tcrAddress } = useParams()
+  const mainnetTCRAddress = useNetworkEnvVariable(
+    'REACT_APP_DEFAULT_TCR_ADDRESSES',
+    1
+  )
+  const kovanTCRAddress = useNetworkEnvVariable(
+    'REACT_APP_DEFAULT_TCR_ADDRESSES',
+    42
+  )
   const [network, setNetwork] = useState()
   const [latestBlock, setLatestBlock] = useState()
   const TCR2_ADDRESS = useMainTCR2()
@@ -107,6 +120,25 @@ const useNotificationWeb3 = () => {
       web3Context.setConnector('Injected')
     })()
   }, [web3Context, web3Context.account])
+
+  // Hack to get around annoying missing redirect on default list.
+  useEffect(() => {
+    if (
+      web3Context.account &&
+      Number(web3Context.networkId) === 42 &&
+      !!tcrAddress &&
+      !!mainnetTCRAddress &&
+      !!kovanTCRAddress &&
+      tcrAddress === mainnetTCRAddress
+    )
+      window.location.assign(`/tcr/${kovanTCRAddress}`)
+  }, [
+    kovanTCRAddress,
+    mainnetTCRAddress,
+    tcrAddress,
+    web3Context.account,
+    web3Context.networkId
+  ])
 
   // Connect a provider.
   useEffect(() => {
