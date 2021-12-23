@@ -13,6 +13,7 @@ import itemPropTypes from '../prop-types/item'
 import { WalletContext } from '../bootstrap/wallet-context'
 import useNetworkEnvVariable from '../hooks/network-env'
 import TCRMetadataDisplay from './tcr-metadata-display'
+import { addPeriod } from '../utils/string'
 
 const StyledFields = styled.div`
   display: flex;
@@ -166,7 +167,7 @@ const ItemDetailsCard = ({
               <span>
                 <b>{column.label}</b>
                 {column.description && (
-                  <Tooltip title={column.description}>
+                  <Tooltip title={addPeriod(column.description)}>
                     &nbsp;
                     <Icon type="question-circle-o" />
                   </Tooltip>

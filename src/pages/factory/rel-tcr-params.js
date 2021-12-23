@@ -319,7 +319,7 @@ const RelTCRParams = ({
               <span>
                 Arbitrator Extra Data&nbsp;
                 <Tooltip
-                  title={`The extra data for the arbitrator. See ERC 792 for more information. Default: ${defaultArbDataLabel}`}
+                  title={`The extra data for the arbitrator. See ERC 792 for more information. Default: ${defaultArbDataLabel}.`}
                 >
                   <Icon type="question-circle-o" />
                 </Tooltip>
@@ -434,7 +434,7 @@ const RelTCRParams = ({
                 <span>
                   Governor&nbsp;
                   <Tooltip
-                    title={`The address of the governor to use for this list. It can update parameters such as the challenge period duration, deposits, primary document and the list governor. By default it is set to ${defaultGovernorLabel}`}
+                    title={`The address of the governor to use for this list. It can update parameters such as the challenge period duration, deposits, primary document and the list governor. By default it is set to ${defaultGovernorLabel}.`}
                   >
                     <Icon type="question-circle-o" />
                   </Tooltip>

@@ -51,7 +51,7 @@ const itemsTourSteps = metadata => {
             Listing Policy
           </a>
           . If you submit a non-compliant list, it will be rejected and you will
-          lose your deposit
+          lose your deposit.
           <span role="img" aria-label="warning">
             ⚠️
           </span>

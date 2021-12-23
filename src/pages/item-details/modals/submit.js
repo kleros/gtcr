@@ -23,7 +23,11 @@ import ETHAmount from '../../../components/eth-amount.js'
 import BNPropType from '../../../prop-types/bn'
 import useFactory from '../../../hooks/factory'
 import { TourContext } from '../../../bootstrap/tour-context'
-import { capitalizeFirstLetter, getArticleFor } from '../../../utils/string'
+import {
+  addPeriod,
+  capitalizeFirstLetter,
+  getArticleFor
+} from '../../../utils/string'
 import useNativeCurrency from '../../../hooks/native-currency'
 
 const StyledSpin = styled(Spin)`
@@ -82,7 +86,7 @@ const _SubmissionForm = ({
           label={
             <span>
               {column.label}&nbsp;
-              <Tooltip title={column.description}>
+              <Tooltip title={addPeriod(column.description)}>
                 <Icon type="question-circle-o" />
               </Tooltip>
             </span>

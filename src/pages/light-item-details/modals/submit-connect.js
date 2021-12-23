@@ -27,7 +27,7 @@ import PropTypes from 'prop-types'
 import { useDebounce } from 'use-debounce'
 import _gtcr from '../../../assets/abis/LightGeneralizedTCR.json'
 import ETHAmount from '../../../components/eth-amount.js'
-import { isETHAddress } from '../../../utils/string'
+import { addPeriod, isETHAddress } from '../../../utils/string'
 import { useWeb3Context } from 'web3-react'
 import { ethers } from 'ethers'
 import ipfsPublish from '../../../utils/ipfs-publish'
@@ -412,7 +412,7 @@ const SubmitConnectModal = props => {
               <span>
                 {column.label}
                 {column.description && (
-                  <Tooltip title={column.description}>
+                  <Tooltip title={addPeriod(column.description)}>
                     &nbsp;
                     <Icon type="question-circle-o" />
                   </Tooltip>

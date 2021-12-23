@@ -80,7 +80,7 @@ const ItemCardTitle = ({ statusCode, tcrData }) => {
           }}
         >
           Ends {challengeCountdown}
-          <Tooltip title="This is the challenge period before this item is accepted into the list">
+          <Tooltip title="This is the challenge period before this item is accepted into the list.">
             &nbsp;
             <Icon type="question-circle-o" />
           </Tooltip>
