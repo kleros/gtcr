@@ -2,7 +2,8 @@ import React from 'react'
 import { capitalizeFirstLetter, getArticleFor } from '../../utils/string'
 
 const itemsTourSteps = metadata => {
-  const { tcrTitle, itemName, itemNamePlural } = metadata || {}
+  const { tcrTitle, itemName, itemNamePlural, metaEvidence } = metadata || {}
+  const { fileURI } = metaEvidence || {}
   return [
     {
       selector: `#tcr-info-column`,
@@ -45,9 +46,12 @@ const itemsTourSteps = metadata => {
           <span role="img" aria-label="warning">
             ⚠️
           </span>
-          Before making your submission, make sure it complies with the Listing
-          Policy. If you submit a non-compliant list, it will be rejected and
-          you will lose your deposit
+          Before making your submission, make sure it complies with the{' '}
+          <a href={`${process.env.REACT_APP_IPFS_GATEWAY}${fileURI}`}>
+            Listing Policy
+          </a>
+          . If you submit a non-compliant list, it will be rejected and you will
+          lose your deposit
           <span role="img" aria-label="warning">
             ⚠️
           </span>

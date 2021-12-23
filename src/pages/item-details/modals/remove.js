@@ -173,7 +173,7 @@ const RemoveModal = ({ item, itemName = 'item', fileURI, ...rest }) => {
         message={`Note that this is a deposit, not a fee and it will be reimbursed if the removal is accepted. ${challengePeriodDuration &&
           `The challenge period lasts ${humanizeDuration(
             `${challengePeriodDuration.toNumber() * 1000}.`
-          )}`}`}
+          )}`}.`}
         type="info"
         showIcon
       />

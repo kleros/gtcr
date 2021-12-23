@@ -692,7 +692,7 @@ const Items = ({ search, history }) => {
       </StyledLayoutContent>
       <AppTour
         dismissedKey={ITEMS_TOUR_DISMISSED}
-        steps={itemsTourSteps(metadata)}
+        steps={itemsTourSteps({ ...metadata, metaEvidence })}
       />
     </>
   )

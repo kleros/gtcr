@@ -322,7 +322,7 @@ const SubmitModal = props => {
         message={`Note that this is a deposit, not a fee and it will be reimbursed if your submission is accepted. ${challengePeriodDuration &&
           `The challenge period lasts ${humanizeDuration(
             `${challengePeriodDuration.toNumber() * 1000}.`
-          )}`}`}
+          )}`}.`}
         type="info"
         showIcon
       />
