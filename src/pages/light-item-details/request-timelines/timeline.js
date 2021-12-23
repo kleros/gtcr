@@ -267,7 +267,7 @@ const Timeline = ({ request, requestID, item }) => {
               networkId !== NETWORK.MAINNET ? `${NETWORK_NAME[networkId]}.` : ''
             }etherscan.io/tx/${creationTx}`}
           >
-            ` - {new Date(new Date(submissionTime * 1000)).toGMTString()}`
+            - {new Date(new Date(submissionTime * 1000)).toGMTString()}
           </a>
         </Typography.Text>
       </span>
