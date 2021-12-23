@@ -83,6 +83,12 @@ const Banner = ({
   const { itemName, tcrTitle, tcrDescription, logoURI, relTcrDisabled } =
     metadata || {}
 
+  const normalizedDescription = tcrDescription
+    ? tcrDescription[tcrDescription.length - 1] === '.'
+      ? tcrDescription
+      : `${tcrDescription}.`
+    : ''
+
   return (
     <StyledBanner>
       <TCRInfoColumn id="tcr-info-column">
@@ -101,7 +107,7 @@ const Banner = ({
               type="secondary"
               style={{ maxWidth: '100%' }}
             >
-              {capitalizeFirstLetter(tcrDescription)}
+              {capitalizeFirstLetter(normalizedDescription)}
             </Typography.Text>
           </>
         ) : (
