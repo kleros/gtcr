@@ -216,7 +216,7 @@ const ItemParams = ({
                         </Col>
                         {(columns
                           .map(column => column.isIdentifier)
-                          .filter(isIdentifier => !!isIdentifier).length < 3 ||
+                          .filter(isIdentifier => !!isIdentifier).length < 5 ||
                           columns[index].isIdentifier) &&
                         columns[index].type !== LONGTEXT &&
                         columns[index].type !== IMAGE &&
