@@ -99,7 +99,7 @@ const Banner = ({
             <Typography.Text
               ellipsis
               type="secondary"
-              style={{ maxWidth: '100%' }}
+              style={{ maxWidth: '500px' }}
             >
               {capitalizeFirstLetter(tcrDescription)}
             </Typography.Text>
