@@ -149,12 +149,20 @@ const TCRParams = ({
       if (status === 'done') message.success(`File uploaded successfully.`)
       else if (status === 'error') message.error(`File upload failed.`)
       else if (status === 'uploading')
-        if (file.type === 'image/png' || file.type === 'image/svg+xml')
+        if (
+          file.type === 'image/png' ||
+          file.type === 'image/svg+xml' ||
+          file.type === 'image/webp'
+        )
           setUploading({ ...uploading, tcrLogo: true })
         else setUploading({ ...uploading, tcrPrimaryDocument: true })
 
       if (status === 'error' || status === 'done')
-        if (file.type === 'image/png' || file.type === 'image/svg+xml')
+        if (
+          file.type === 'image/png' ||
+          file.type === 'image/svg+xml' ||
+          file.type === 'image/webp'
+        )
           setUploading({ ...uploading, tcrLogo: false })
         else setUploading({ ...uploading, tcrPrimaryDocument: false })
     },
@@ -162,14 +170,16 @@ const TCRParams = ({
   )
 
   const beforeImageUpload = useCallback(file => {
-    const isPNGorJPEGorSVG =
-      file.type === 'image/png' || file.type === 'image/svg+xml'
-    if (!isPNGorJPEGorSVG) message.error('Please use PNG, or SVG.')
+    const isPNGorWebporSVG =
+      file.type === 'image/png' ||
+      file.type === 'image/svg+xml' ||
+      file.type === 'image/webp'
+    if (!isPNGorWebporSVG) message.error('Please use PNG, webp or SVG.')
 
     const isLt2M = file.size / 1024 / 1024 < 2
     if (!isLt2M) message.error('Image must smaller than 2MB.')
 
-    return isPNGorJPEGorSVG && isLt2M
+    return isPNGorWebporSVG && isLt2M
   }, [])
 
   const beforeFileUpload = useCallback(file => {
