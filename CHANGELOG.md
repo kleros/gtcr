@@ -2,6 +2,42 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.1.0](https://github.com/kleros/gtcr/compare/v2.0.1...v2.1.0) (2022-02-01)
+
+
+### Features
+
+* add default list for rinkeby ([19f23bb](https://github.com/kleros/gtcr/commit/19f23bb4c9457d203cc68fd6a51b828f503103de))
+* allow creating classic ([7dca20b](https://github.com/kleros/gtcr/commit/7dca20b9960467c9b0a5ad6190e6a62b7f5d9308))
+* avoid mistakes with address case ([57461b0](https://github.com/kleros/gtcr/commit/57461b0d68a4379286e014d820f3c5aff8c15b8e))
+* increase number of indexed files ([4e43599](https://github.com/kleros/gtcr/commit/4e43599be730c8c9b410081fb6bff582f15b08df))
+* support webp images ([3d54110](https://github.com/kleros/gtcr/commit/3d5411004fd962e942d285356b99bec2925731d6))
+* update latest contracts ([ffa2d87](https://github.com/kleros/gtcr/commit/ffa2d87d0cfa23d6f274a1f1836441a0fc6e11c1))
+* update to latest contract ([9b90da0](https://github.com/kleros/gtcr/commit/9b90da066af9fbdbc59d548ebe488297fc0fe624))
+
+
+### Bug Fixes
+
+* add max description length ([583d8d5](https://github.com/kleros/gtcr/commit/583d8d52ce079b33a2cf3a87e17f0da73d2f9b78))
+* add missing dots ([2eb6129](https://github.com/kleros/gtcr/commit/2eb61292ab2e809210d1dac5a9532bf6570b5626))
+* badge display ([6cdc163](https://github.com/kleros/gtcr/commit/6cdc163b4c7d5d31de76efe292b017166331f0e2))
+* broken link assignment ([d264f0c](https://github.com/kleros/gtcr/commit/d264f0c4cb12e1125f9500c9f3307f2350e05f45))
+* default value for field input as types ([3901267](https://github.com/kleros/gtcr/commit/3901267cea34e7154d61589ab3ff78c17451fcac))
+* don't wait for tx to mine to subscribe ([60a8171](https://github.com/kleros/gtcr/commit/60a8171dbeb19cdb2bdf7c6268b03efb6ebf7183))
+* env variables ([2565a02](https://github.com/kleros/gtcr/commit/2565a028f84f3c7849ad08fcda12e1d990902686))
+* evidence display interface ([5a30697](https://github.com/kleros/gtcr/commit/5a3069792391f87badd96ea4852d9dc54b6c0d73))
+* light curate badge activation ([8c5dbe3](https://github.com/kleros/gtcr/commit/8c5dbe38a5f6aa5dedd41bb02e1829b9944edfdc))
+* light curate enabled badges query ([242c2b2](https://github.com/kleros/gtcr/commit/242c2b2c2347abf7b972990f1a7e35c514556e0f))
+* meta evidence standard and evidence display ([51f69e2](https://github.com/kleros/gtcr/commit/51f69e22bf2ad73f30d59e862065f76fadf47f13))
+* missing dot in list description ([2631aec](https://github.com/kleros/gtcr/commit/2631aecc76860bb1097b1878fae43cbc2eec31ad))
+* missing redirect on connect testnet ([5a54fc0](https://github.com/kleros/gtcr/commit/5a54fc062aed73314bf0ef7bb265968d63fb1f4e))
+* notification crash ([1ac295b](https://github.com/kleros/gtcr/commit/1ac295ba6579e446723393f80bcdf342c94f2ffb))
+* remove extra chars ([737f91d](https://github.com/kleros/gtcr/commit/737f91d64a93645b1c9505e1dcfe86995a884af7))
+* typos and add link to tour ([96aacf4](https://github.com/kleros/gtcr/commit/96aacf4689127ec522c741ccf26f485a1b1bde74))
+* update abi and badge col selection ([d486f2e](https://github.com/kleros/gtcr/commit/d486f2e699791b5db4bcbafd076eb8a9ddaabf25))
+* user can no longer submit classic items while uploading ([8d4b609](https://github.com/kleros/gtcr/commit/8d4b6090f9f26fb612f6d69debfad09d5b3c3c7e))
+* weirdness on links protocol ([d8b8a44](https://github.com/kleros/gtcr/commit/d8b8a445231eef2a3163510bfb431095c9d13fa8))
+
 ### [2.0.1](https://github.com/kleros/gtcr/compare/v2.0.0...v2.0.1) (2021-09-28)
 
 
