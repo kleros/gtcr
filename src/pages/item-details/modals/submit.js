@@ -17,7 +17,7 @@ import { ethers } from 'ethers'
 import { withFormik } from 'formik'
 import humanizeDuration from 'humanize-duration'
 import { WalletContext } from '../../../bootstrap/wallet-context'
-import { gtcrEncode, ItemTypes, typeDefaultValues } from '@kleros/gtcr-encoder'
+import { gtcrEncode, ItemTypes } from '@kleros/gtcr-encoder'
 import InputSelector from '../../../components/input-selector.js'
 import ETHAmount from '../../../components/eth-amount.js'
 import BNPropType from '../../../prop-types/bn'
@@ -28,6 +28,7 @@ import {
   capitalizeFirstLetter,
   getArticleFor
 } from '../../../utils/string'
+import { typeDefaultValues } from '../../../utils/default-values'
 import useNativeCurrency from '../../../hooks/native-currency'
 
 const StyledSpin = styled(Spin)`

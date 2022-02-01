@@ -76,9 +76,10 @@ const InputSelector = ({
       if (
         file.type !== 'image/png' &&
         file.type !== 'image/svg+xml' &&
-        file.type !== 'image/webp'
+        file.type !== 'image/webp' &&
+        file.type !== 'image/jpeg'
       ) {
-        message.error('Please use PNG, webp or SVG.')
+        message.error('Please use PNG, jpeg, webp or SVG.')
         return false
       }
 
