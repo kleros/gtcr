@@ -28,7 +28,7 @@ const DisplaySelector = ({ type, value, linkImage, allowedFileTypes }) => {
       return <Typography.Text>{value}</Typography.Text>
     case ItemTypes.BOOLEAN:
       return <Checkbox disabled checked={value} />
-    case ItemTypes.LONGTEXT:
+    case ItemTypes.LONG_TEXT:
       return <Typography.Paragraph>{value || LOREM_IPSUM}</Typography.Paragraph>
     case ItemTypes.FILE: {
       if (!value)

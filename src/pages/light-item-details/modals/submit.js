@@ -17,7 +17,7 @@ import { ethers } from 'ethers'
 import { withFormik } from 'formik'
 import humanizeDuration from 'humanize-duration'
 import { WalletContext } from '../../../bootstrap/wallet-context'
-import { ItemTypes } from '@kleros/gtcr-encoder'
+import { ItemTypes, typeDefaultValues } from '@kleros/gtcr-encoder'
 import InputSelector from '../../../components/input-selector.js'
 import ETHAmount from '../../../components/eth-amount.js'
 import BNPropType from '../../../prop-types/bn'
@@ -28,7 +28,6 @@ import {
   capitalizeFirstLetter,
   getArticleFor
 } from '../../../utils/string'
-import { typeDefaultValues } from '../../../utils/default-values'
 import useNativeCurrency from '../../../hooks/native-currency'
 import ipfsPublish from '../../../utils/ipfs-publish'
 
@@ -134,7 +133,6 @@ const SubmissionForm = withFormik({
       {}
     ),
   handleSubmit: (values, { props: { postSubmit, columns }, resetForm }) => {
-    console.info(`test`, values)
     postSubmit(values, columns, resetForm)
   },
   mapPropsToStatus: props => ({
@@ -193,7 +191,6 @@ const SubmitModal = props => {
 
   const postSubmit = useCallback(
     (values, columns, resetForm) => {
-      console.info(`values`, values)
       pushWeb3Action(async ({ account, networkId }, signer) => {
         const gtcr = new ethers.Contract(tcrAddress, _gtcr, signer)
         const enc = new TextEncoder()

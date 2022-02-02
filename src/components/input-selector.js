@@ -115,6 +115,8 @@ const InputSelector = ({
     [allowedFileTypes, maxFileSizeMb]
   )
 
+  console.info(ItemTypes)
+
   const { values, label, name } = props
   switch (type) {
     case ItemTypes.TEXT:
@@ -137,7 +139,7 @@ const InputSelector = ({
           )}
         </Field>
       )
-    case ItemTypes.LONGTEXT:
+    case ItemTypes.LONG_TEXT:
       return (
         <Field name={name}>
           {({ field }) => (

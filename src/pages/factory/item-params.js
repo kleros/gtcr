@@ -22,7 +22,7 @@ import ItemDetailsCard from '../../components/item-details-card'
 import { ItemTypes } from '@kleros/gtcr-encoder'
 import { STATUS_CODE } from '../../utils/item-status'
 
-const { LONGTEXT, IMAGE, FILE, GTCR_ADDRESS, TWITTER_USER_ID } = ItemTypes
+const { IMAGE, FILE, GTCR_ADDRESS, TWITTER_USER_ID, LONG_TEXT } = ItemTypes
 
 const StyledAlert = styled(Alert)`
   margin-bottom: 42px;
@@ -66,7 +66,7 @@ const ItemParams = ({
 
   const onTypeChange = (index, value) => {
     setFieldValue(`columns[${index}].type`, value)
-    if (value === LONGTEXT)
+    if (value === LONG_TEXT)
       // Long text fields cannot be identifiers.
       setFieldValue(`columns[${index}].isIdentifier`, false)
     if (value === IMAGE)
@@ -218,7 +218,7 @@ const ItemParams = ({
                           .map(column => column.isIdentifier)
                           .filter(isIdentifier => !!isIdentifier).length < 5 ||
                           columns[index].isIdentifier) &&
-                        columns[index].type !== LONGTEXT &&
+                        columns[index].type !== LONG_TEXT &&
                         columns[index].type !== IMAGE &&
                         columns[index].type !== FILE &&
                         columns[index].type !== TWITTER_USER_ID ? ( // Image, file, twitter user and long text cannot be identifiers.
