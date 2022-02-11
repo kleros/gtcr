@@ -116,10 +116,20 @@ const ItemDetails = ({ itemID, search }) => {
           await fetch(`${process.env.REACT_APP_IPFS_GATEWAY}${itemURI}`)
         ).json()
 
+        const orderDecodedData = (columns, values) => {
+          const labels = columns.map(column => column.label)
+          const ordered = []
+          for (let label of labels) {
+            const value = values[label]
+            ordered.push(value)
+          }
+          return ordered
+        }
+
         const result = {
           ...itemFromContract, // Spread to convert from array to object.
           data: itemURI,
-          decodedData: Object.values(itemData.values),
+          decodedData: orderDecodedData(itemData.columns, itemData.values),
           requestsFromSubgraph: requests
         }
 
@@ -288,7 +298,6 @@ const ItemDetails = ({ itemID, search }) => {
 
   const { tcrTitle, itemName, columns } = metadata || {}
   const { isConnectedTCR, relTcrDisabled } = metadata || {}
-
   return (
     <>
       <StyledBanner>
