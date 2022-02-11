@@ -26,7 +26,7 @@ import {
 import { WalletContext } from '../../../bootstrap/wallet-context'
 import BNPropType from '../../../prop-types/bn'
 import { capitalizeFirstLetter } from '../../../utils/string'
-import { NETWORK, NETWORK_NAME } from '../../../utils/network-utils'
+import { getTxPage } from '../../../utils/network-utils'
 
 const StyledText = styled(Typography.Text)`
   text-transform: capitalize;
@@ -263,9 +263,7 @@ const Timeline = ({ request, requestID, item }) => {
         </StyledText>
         <Typography.Text type="secondary">
           <a
-            href={`https://${
-              networkId !== NETWORK.MAINNET ? `${NETWORK_NAME[networkId]}.` : ''
-            }etherscan.io/tx/${creationTx}`}
+            href={getTxPage({networkId, txHash: creationTx})}
           >
             - {new Date(new Date(submissionTime * 1000)).toGMTString()}
           </a>
@@ -278,6 +276,7 @@ const Timeline = ({ request, requestID, item }) => {
     .sort((a, b) => a.blockNumber - b.blockNumber)
     .map(({ name, values, blockNumber, transactionHash }, i) => {
       const index = i + 1 // We add one here because the first item is the request submitted.
+      const txPage = getTxPage({networkId, txHash: transactionHash})
       if (name === 'Evidence') {
         const evidenceFile = evidenceFiles[transactionHash]
         if (!evidenceFile)
@@ -292,11 +291,7 @@ const Timeline = ({ request, requestID, item }) => {
         const submissionTime = (
           <span>
             <a
-              href={`https://${
-                networkId !== NETWORK.MAINNET
-                  ? `${NETWORK_NAME[networkId]}.`
-                  : ''
-              }etherscan.io/tx/${transactionHash}`}
+              href={txPage}
             >
               Submitted {new Date(new Date(submittedAt * 1000)).toGMTString()}
             </a>{' '}
@@ -358,11 +353,7 @@ const Timeline = ({ request, requestID, item }) => {
                 : 'The arbitrator gave an unknown ruling'}
               <Typography.Text type="secondary">
                 <a
-                  href={`https://${
-                    networkId !== NETWORK.MAINNET
-                      ? `${NETWORK_NAME[networkId]}.`
-                      : ''
-                  }etherscan.io/tx/${transactionHash}`}
+                  href={txPage}
                 >
                   <EventTimestamp blockNumber={blockNumber} />
                 </a>
@@ -376,11 +367,7 @@ const Timeline = ({ request, requestID, item }) => {
             Ruling appealed{' '}
             <Typography.Text type="secondary">
               <a
-                href={`https://${
-                  networkId !== NETWORK.MAINNET
-                    ? `${NETWORK_NAME[networkId]}.`
-                    : ''
-                }etherscan.io/tx/${transactionHash}`}
+                href={txPage}
               >
                 <EventTimestamp blockNumber={blockNumber} />
               </a>
@@ -425,11 +412,7 @@ const Timeline = ({ request, requestID, item }) => {
             {resultMessage}
             <Typography.Text type="secondary">
               <a
-                href={`https://${
-                  networkId !== NETWORK.MAINNET
-                    ? `${NETWORK_NAME[networkId]}.`
-                    : ''
-                }etherscan.io/tx/${transactionHash}`}
+                href={txPage}
               >
                 <EventTimestamp blockNumber={blockNumber} />
               </a>
@@ -451,9 +434,7 @@ const Timeline = ({ request, requestID, item }) => {
         {resultMessage}
         <Typography.Text type="secondary">
           <a
-            href={`https://${
-              networkId !== NETWORK.MAINNET ? `${NETWORK_NAME[networkId]}.` : ''
-            }etherscan.io/tx/${resolutionTx}`}
+            href={getTxPage({networkId, txHash: resolutionTx})}
           >
             ` - {new Date(new Date(resolutionTime * 1000)).toGMTString()}`
           </a>
