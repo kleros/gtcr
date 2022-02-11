@@ -8,7 +8,7 @@ import WalletConnectQRCodeModal from '@walletconnect/qrcode-modal'
 import localforage from 'localforage'
 import { ethers } from 'ethers'
 import _GTCRFactory from '../assets/abis/LightGTCRFactory.json'
-import { NETWORK, NETWORK_NAME } from '../utils/network-utils'
+import { getTxPage } from '../utils/network-utils'
 import FastJsonRpcSigner from '../utils/fast-signer'
 import useMainTCR2 from './tcr2'
 import {
@@ -259,7 +259,8 @@ const useNotificationWeb3 = () => {
               web3Action,
               web3Context,
               signer,
-              factoryInterface
+              factoryInterface,
+              web3Context.networkId
             )
             return
           }
@@ -328,7 +329,8 @@ async function processWeb3Action(
   web3Action,
   web3Context,
   signer,
-  factoryInterface
+  factoryInterface,
+  networkId
 ) {
   const notificationID = uuid()
   notification.info({
@@ -342,19 +344,15 @@ async function processWeb3Action(
       signer
     )
     const hash = tx.hash
-    const etherscanLink = `https://${
-      web3Context.networkId !== NETWORK.MAINNET
-        ? `${NETWORK_NAME[web3Context.networkId]}.`
-        : ''
-    }etherscan.io/tx/${hash}`
+    const txLink = getTxPage({networkId, txHash: hash})
     notification.info({
       message: actionMessage || 'Transaction submitted.',
       duration: 0,
       key: notificationID,
       icon: <Icon type="loading" style={{ color: '#108ee9' }} />,
       description: (
-        <a href={etherscanLink} target="_blank" rel="noopener noreferrer">
-          View on etherscan
+        <a href={txLink} target="_blank" rel="noopener noreferrer">
+          View on block explorer
         </a>
       )
     })
@@ -364,8 +362,8 @@ async function processWeb3Action(
     notification.success({
       message: 'Transaction mined!',
       description: (
-        <a href={etherscanLink} target="_blank" rel="noopener noreferrer">
-          View on etherscan
+        <a href={txLink} target="_blank" rel="noopener noreferrer">
+          View on block explorer
         </a>
       ),
       duration: 5,
