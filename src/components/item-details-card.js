@@ -162,26 +162,34 @@ const ItemDetailsCard = ({
               tcrDescription={tcrDescription}
             />
           )}
-          {columns.map((column, index) => (
-            <StyledField key={index}>
-              <span>
-                <b>{column.label}</b>
-                {column.description && (
-                  <Tooltip title={addPeriod(column.description)}>
-                    &nbsp;
-                    <Icon type="question-circle-o" />
-                  </Tooltip>
-                )}
-              </span>
-              :{' '}
-              <DisplaySelector
-                type={column.type}
-                value={item && item.decodedData[index]}
-                linkImage
-                allowedFileTypes={column.allowedFileTypes}
-              />
-            </StyledField>
-          ))}
+          {columns.map((column, index) => {
+            // Instead of not rendering the field when unfilled,
+            // how about rendering a field "grayed out" to show that it wasn't filled?
+            // TODO (to be dealt with in DisplaySelector)
+            const value = item.decodedData[index]
+            if ([null, undefined, ''].includes(value)) return null
+
+            return (
+              <StyledField key={index}>
+                <span>
+                  <b>{column.label}</b>
+                  {column.description && (
+                    <Tooltip title={addPeriod(column.description)}>
+                      &nbsp;
+                      <Icon type="question-circle-o" />
+                    </Tooltip>
+                  )}
+                </span>
+                :{' '}
+                <DisplaySelector
+                  type={column.type}
+                  value={item && value}
+                  linkImage
+                  allowedFileTypes={column.allowedFileTypes}
+                />
+              </StyledField>
+            )
+          })}
         </StyledFields>
       )}
     </Card>
