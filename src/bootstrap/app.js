@@ -205,7 +205,7 @@ const Content = () => {
 
   useEffect(() => {
     if (![null, undefined].includes(web3Context.networkId) && !location.search)
-      history.push(`?chainId=${web3Context.networkId}`)
+      history.replace(`?chainId=${web3Context.networkId}`)
   }, [web3Context.networkId, location.pathname, location.search, history])
 
   if (Object.entries(connectors).length === 0) return <NoWeb3Detected />
