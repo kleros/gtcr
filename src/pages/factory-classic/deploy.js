@@ -213,12 +213,12 @@ const getTcrMetaEvidence = async (
     relClearingMetaEvidence
   ].map(relMetaEvidence => enc.encode(JSON.stringify(relMetaEvidence)))
 
-  /* eslint-disable prettier/prettier */
+  /* eslint-disable prettier/prettier unicorn */
   const files = [...metaEvidenceFiles, ...relMetaEvidenceFiles].map(file => ({
     data: file,
     multihash: Archon.utils.multihashFile(file, 0x1b)
   }))
-  /* eslint-enable prettier/prettier */
+  /* eslint-enable prettier/prettier unicorn */
 
   const ipfsMetaEvidenceObjects = (
     await Promise.all(files.map(file => ipfsPublish(file.multihash, file.data)))

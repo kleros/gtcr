@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import WalletConnectApi from '@walletconnect/web3-subprovider'
 import FortmaticApi from 'fortmatic'
 import { Helmet } from 'react-helmet'
@@ -14,7 +14,8 @@ import {
   Route,
   Switch,
   NavLink,
-  Redirect
+  Redirect,
+  useLocation
 } from 'react-router-dom'
 import { Layout, Menu, Spin, Icon } from 'antd'
 import { register } from './service-worker'
@@ -34,6 +35,7 @@ import { ApolloClient, ApolloProvider, InMemoryCache } from '@apollo/client'
 import { HttpLink } from '@apollo/client/link/http'
 import ItemsRouter from '../pages/items-router'
 import ItemDetailsRouter from '../pages/item-details-router'
+import { useHistory } from 'react-router-dom/cjs/react-router-dom.min'
 
 const StyledSpin = styled(Spin)`
   left: 50%;
@@ -197,6 +199,14 @@ if (window.ethereum)
 
 const Content = () => {
   const TCR2_ADDRESS = useMainTCR2()
+  const location = useLocation()
+  const history = useHistory()
+  const web3Context = useWeb3Context()
+
+  useEffect(() => {
+    if (![null, undefined].includes(web3Context.networkId) && !location.search)
+      history.push(`?chainId=${web3Context.networkId}`)
+  }, [web3Context.networkId, location.pathname, location.search, history])
 
   if (Object.entries(connectors).length === 0) return <NoWeb3Detected />
 

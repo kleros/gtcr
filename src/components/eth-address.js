@@ -5,12 +5,9 @@ import { getAddressPage } from '../utils/network-utils'
 
 const ETHAddress = ({ address }) => {
   const { networkId } = useWeb3Context()
-  const fullPage = getAddressPage({networkId, address})
+  const fullPage = getAddressPage({ networkId, address })
   return (
-    <a
-      href={fullPage}
-      style={{ textDecoration: 'underline' }}
-    >
+    <a href={fullPage} style={{ textDecoration: 'underline' }}>
       {address.slice(0, 6)}...{address.slice(address.length - 4)}
     </a>
   )

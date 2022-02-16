@@ -52,6 +52,7 @@ module.exports = {
     'unicorn/catch-error-name': [2, { name: 'err' }],
     'unicorn/prevent-abbreviations': 'off',
     'unicorn/no-abusive-eslint-disable': 'off',
+    'unicorn/number-literal-case': 'off',
 
     // import
     'import/no-unresolved': 2,
@@ -78,11 +79,13 @@ module.exports = {
     // React
     'react/prefer-stateless-function': 2,
     'react/destructuring-assignment': [2, 'always'],
-    'react/prop-types': 2,
-    'react/forbid-prop-types': 2,
-    'react/no-unused-prop-types': 2,
-    'react/require-default-props': 2,
-    'react/default-props-match-prop-types': 2,
+    // I don't use prop types, I don't want to deal with them while patching Curate
+    'react/prop-types': 0,
+    'react/forbid-prop-types': 0,
+    'react/no-unused-prop-types': 0,
+    'react/require-default-props': 0,
+    'react/default-props-match-prop-types': 0,
+    
     // hooks
     'react-hooks/rules-of-hooks': 'error',
     'react-hooks/exhaustive-deps': 'warn',

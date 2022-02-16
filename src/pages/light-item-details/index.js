@@ -119,7 +119,7 @@ const ItemDetails = ({ itemID, search }) => {
         const orderDecodedData = (columns, values) => {
           const labels = columns.map(column => column.label)
           const ordered = []
-          for (let label of labels) {
+          for (const label of labels) {
             const value = values[label]
             ordered.push(value)
           }
