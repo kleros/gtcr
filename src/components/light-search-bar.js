@@ -47,17 +47,13 @@ const StyledItemField = styled.div`
 
 const MAX_ITEM_COUNT = 5
 
-const OptionItem = ({
-  item: {
-    itemID,
-    props = [],
-    registry: { id: tcrAddress }
-  }
-}) => {
+const OptionItem = ({ item }) => {
   // note
   // there are a few ethers queries coming from here.
   // they might have to be changed to subgraph queries
   // TODO read and figure it out
+  const { itemID, props, registry } = item
+  const { id: tcrAddress } = registry
   const {
     gtcrView,
     challengePeriodDuration,
@@ -99,7 +95,6 @@ const OptionItem = ({
 
     return itemToStatusCode(itemInfo, timestamp, challengePeriodDuration)
   }, [challengePeriodDuration, itemInfo, timestamp])
-
   return (
     <StyledOptionItem>
       <StyledStatus>

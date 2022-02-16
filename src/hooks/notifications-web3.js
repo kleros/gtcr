@@ -344,7 +344,7 @@ async function processWeb3Action(
       signer
     )
     const hash = tx.hash
-    const txLink = getTxPage({networkId, txHash: hash})
+    const txLink = getTxPage({ networkId, txHash: hash })
     notification.info({
       message: actionMessage || 'Transaction submitted.',
       duration: 0,

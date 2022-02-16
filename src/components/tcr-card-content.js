@@ -136,11 +136,17 @@ const TCRCardContent = ({
 }
 
 TCRCardContent.propTypes = {
-  tcrAddress: PropTypes.string
+  tcrAddress: PropTypes.string,
+  currentTCRAddress: PropTypes.string,
+  ID: PropTypes.string,
+  hideDetailsButton: PropTypes.bool
 }
 
 TCRCardContent.defaultProps = {
-  tcrAddress: null
+  tcrAddress: null,
+  currentTCRAddress: null,
+  ID: null,
+  hideDetailsButton: false
 }
 
 export default TCRCardContent

@@ -5,6 +5,7 @@ import ChallengeModal from './modals/challenge'
 import SubmitModal from './modals/submit'
 import SubmitConnectModal from './modals/submit-connect'
 import CrowdfundModal from './modals/crowdfund'
+import PropTypes from 'prop-types'
 
 const ItemActionModal = ({
   statusCode,
@@ -83,6 +84,21 @@ const ItemActionModal = ({
     default:
       throw new Error(`Unhandled status code ${statusCode}`)
   }
+}
+
+ItemActionModal.propTypes = {
+  statusCode: PropTypes.number.isRequired,
+  isOpen: PropTypes.bool.isRequired,
+  itemName: PropTypes.string.isRequired,
+  onClose: PropTypes.func.isRequired,
+  fileURI: PropTypes.string.isRequired,
+  item: PropTypes.object.isRequired,
+  isConnectedTCR: PropTypes.bool.isRequired,
+  submissionDeposit: PropTypes.number.isRequired,
+  challengePeriodDuration: PropTypes.number.isRequired,
+  tcrAddress: PropTypes.string.isRequired,
+  metaEvidence: PropTypes.string.isRequired,
+  gtcrView: PropTypes.object.isRequired
 }
 
 export default ItemActionModal

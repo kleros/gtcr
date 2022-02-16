@@ -262,9 +262,7 @@ const Timeline = ({ request, requestID, item }) => {
             : 'Removal requested'}
         </StyledText>
         <Typography.Text type="secondary">
-          <a
-            href={getTxPage({networkId, txHash: creationTx})}
-          >
+          <a href={getTxPage({ networkId, txHash: creationTx })}>
             - {new Date(new Date(submissionTime * 1000)).toGMTString()}
           </a>
         </Typography.Text>
@@ -276,7 +274,7 @@ const Timeline = ({ request, requestID, item }) => {
     .sort((a, b) => a.blockNumber - b.blockNumber)
     .map(({ name, values, blockNumber, transactionHash }, i) => {
       const index = i + 1 // We add one here because the first item is the request submitted.
-      const txPage = getTxPage({networkId, txHash: transactionHash})
+      const txPage = getTxPage({ networkId, txHash: transactionHash })
       if (name === 'Evidence') {
         const evidenceFile = evidenceFiles[transactionHash]
         if (!evidenceFile)
@@ -290,9 +288,7 @@ const Timeline = ({ request, requestID, item }) => {
         /* eslint-disable unicorn/new-for-builtins */
         const submissionTime = (
           <span>
-            <a
-              href={txPage}
-            >
+            <a href={txPage}>
               Submitted {new Date(new Date(submittedAt * 1000)).toGMTString()}
             </a>{' '}
             by <ETHAddress address={submittedBy} />
@@ -352,9 +348,7 @@ const Timeline = ({ request, requestID, item }) => {
                 ? 'The arbitrator ruled in favor of the challenger'
                 : 'The arbitrator gave an unknown ruling'}
               <Typography.Text type="secondary">
-                <a
-                  href={txPage}
-                >
+                <a href={txPage}>
                   <EventTimestamp blockNumber={blockNumber} />
                 </a>
               </Typography.Text>
@@ -366,9 +360,7 @@ const Timeline = ({ request, requestID, item }) => {
           <AntdTimeline.Item key={index}>
             Ruling appealed{' '}
             <Typography.Text type="secondary">
-              <a
-                href={txPage}
-              >
+              <a href={txPage}>
                 <EventTimestamp blockNumber={blockNumber} />
               </a>
             </Typography.Text>
@@ -411,9 +403,7 @@ const Timeline = ({ request, requestID, item }) => {
           <AntdTimeline.Item key={index} color={STATUS_COLOR[finalStatus]}>
             {resultMessage}
             <Typography.Text type="secondary">
-              <a
-                href={txPage}
-              >
+              <a href={txPage}>
                 <EventTimestamp blockNumber={blockNumber} />
               </a>
             </Typography.Text>
@@ -433,9 +423,7 @@ const Timeline = ({ request, requestID, item }) => {
       <AntdTimeline.Item key={items.length} color={STATUS_COLOR[item.status]}>
         {resultMessage}
         <Typography.Text type="secondary">
-          <a
-            href={getTxPage({networkId, txHash: resolutionTx})}
-          >
+          <a href={getTxPage({ networkId, txHash: resolutionTx })}>
             ` - {new Date(new Date(resolutionTime * 1000)).toGMTString()}`
           </a>
         </Typography.Text>

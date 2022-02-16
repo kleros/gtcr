@@ -33,6 +33,12 @@ const TCRCardContent = ({
   ID,
   hideDetailsButton
 }) => {
+  console.log({
+    tcrAddress,
+    currentTCRAddress,
+    ID,
+    hideDetailsButton
+  })
   const { library, active, networkId } = useWeb3Context()
   const [error, setError] = useState()
   const gtcr = useMemo(() => {
@@ -136,11 +142,17 @@ const TCRCardContent = ({
 }
 
 TCRCardContent.propTypes = {
-  tcrAddress: PropTypes.string
+  tcrAddress: PropTypes.string,
+  currentTCRAddress: PropTypes.string,
+  ID: PropTypes.string,
+  hideDetailsButton: PropTypes.bool
 }
 
 TCRCardContent.defaultProps = {
-  tcrAddress: null
+  tcrAddress: null,
+  currentTCRAddress: null,
+  ID: null,
+  hideDetailsButton: false
 }
 
 export default TCRCardContent
