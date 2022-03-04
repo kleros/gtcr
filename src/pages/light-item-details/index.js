@@ -129,6 +129,7 @@ const ItemDetails = ({ itemID, search }) => {
         const result = {
           ...itemFromContract, // Spread to convert from array to object.
           data: itemURI,
+          columns: itemData.columns,
           decodedData: orderDecodedData(itemData.columns, itemData.values),
           requestsFromSubgraph: requests
         }
@@ -296,8 +297,11 @@ const ItemDetails = ({ itemID, search }) => {
       />
     )
 
-  const { tcrTitle, itemName, columns } = metadata || {}
+  const { tcrTitle, itemName } = metadata || {}
   const { isConnectedTCR, relTcrDisabled } = metadata || {}
+  // TODO: modify to add greyed out fields, come here and add the current list schema and
+  // pass it through param to ItemDetailsCard.
+  const { columns } = item || {}
   return (
     <>
       <StyledBanner>
