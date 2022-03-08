@@ -15,7 +15,7 @@ const StyledImage = styled.img`
   padding: 5px;
 `
 
-const protocolRegex = new RegExp(/:\/\//g)
+const protocolRegex = /:\/\//
 
 const DisplaySelector = ({ type, value, linkImage, allowedFileTypes }) => {
   switch (type) {
