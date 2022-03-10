@@ -155,6 +155,8 @@ const KlerosParams = ({
   const onNumJurorsChange = useCallback(
     newNumJurors => {
       if (isNaN(newNumJurors)) return
+      newNumJurors = newNumJurors > 0 ? newNumJurors : 1
+      newNumJurors = newNumJurors < 35 ? newNumJurors : 33
       if (newNumJurors % 2 === 0) newNumJurors = newNumJurors - 1
 
       const newArbitratorExtraData = `0x${courtID
