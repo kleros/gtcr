@@ -210,6 +210,13 @@ const Content = () => {
 
   if (Object.entries(connectors).length === 0) return <NoWeb3Detected />
 
+  if (!web3Context.active)
+    return (
+      <StyledLayoutContent>
+        <StyledSpin />
+      </StyledLayoutContent>
+    )
+
   return (
     <Switch>
       <Route path="/tcr/:tcrAddress">
