@@ -4,10 +4,10 @@ import { Card, Button, Result } from 'antd'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 // eslint-disable-next-line import/named
 import styled, { css } from 'styled-components/macro'
-import TCRCardContent from '../../components/tcr-card-content'
-import ItemCardContent from '../../components/item-card-content'
-import BNPropType from '../../prop-types/bn'
-import { itemToStatusCode, STATUS_CODE } from '../../utils/item-status'
+import TCRCardContent from 'components/tcr-card-content'
+import ItemCardContent from 'components/item-card-content'
+import BNPropType from 'prop-types/bn'
+import { itemToStatusCode, STATUS_CODE } from 'utils/item-status'
 import ItemCardTitle from './item-card-title'
 
 const FlipCardInner = styled.div`

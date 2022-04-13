@@ -8,10 +8,10 @@ import { abi as _batchWithdraw } from '@kleros/tcr/build/contracts/BatchWithdraw
 import { bigNumberify } from 'ethers/utils'
 import { ethers } from 'ethers'
 import Reward from 'react-rewards'
-import { TCRViewContext } from '../bootstrap/tcr-view-context'
+import { TCRViewContext } from 'contexts/tcr-view-context'
 import itemPropTypes from '../prop-types/item'
-import { WalletContext } from '../bootstrap/wallet-context'
-import useNetworkEnvVariable from '../hooks/network-env'
+import { WalletContext } from 'contexts/wallet-context'
+import useNetworkEnvVariable from '../utils/network-env'
 import TCRMetadataDisplay from './tcr-metadata-display'
 import { addPeriod } from '../utils/string'
 

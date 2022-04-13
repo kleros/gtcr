@@ -25,15 +25,15 @@ import {
 import styled from 'styled-components/macro'
 import PropTypes from 'prop-types'
 import { useDebounce } from 'use-debounce'
-import _gtcr from '../../../assets/abis/LightGeneralizedTCR.json'
-import ETHAmount from '../../../components/eth-amount.js'
-import { addPeriod, isETHAddress } from '../../../utils/string'
+import _gtcr from 'assets/abis/LightGeneralizedTCR.json'
+import ETHAmount from 'components/eth-amount.js'
+import { addPeriod, isETHAddress } from 'utils/string'
 import { useWeb3Context } from 'web3-react'
 import { ethers } from 'ethers'
-import ipfsPublish from '../../../utils/ipfs-publish'
-import { WalletContext } from '../../../bootstrap/wallet-context'
-import { TourContext } from '../../../bootstrap/tour-context.js'
-import useNativeCurrency from '../../../hooks/native-currency.js'
+import ipfsPublish from 'utils/ipfs-publish'
+import { WalletContext } from 'contexts/wallet-context'
+import { TourContext } from 'contexts/tour-context.js'
+import useNativeCurrency from 'hooks/native-currency.js'
 
 const StyledSpin = styled(Spin)`
   height: 60px;

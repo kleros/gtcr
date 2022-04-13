@@ -2,6 +2,7 @@
 // Rule disabled temporarly as filters will be added back.
 import { Layout, Spin, Pagination, Tag, Select, Switch } from 'antd'
 import { Link } from 'react-router-dom'
+import { useHistory } from 'react-router'
 import React, {
   useEffect,
   useState,
@@ -10,21 +11,19 @@ import React, {
   useRef,
   useCallback
 } from 'react'
-import PropTypes from 'prop-types'
 import styled from 'styled-components/macro'
 import localforage from 'localforage'
 import { useWeb3Context } from 'web3-react'
 import qs from 'qs'
 import ErrorPage from '../error-page'
-import { WalletContext } from '../../bootstrap/wallet-context'
-import { ZERO_ADDRESS } from '../../utils/string'
-import { TCRViewContext } from '../../bootstrap/tcr-view-context'
+import { WalletContext } from 'contexts/wallet-context'
+import { ZERO_ADDRESS } from 'utils/string'
+import { TCRViewContext } from 'contexts/tcr-view-context'
 import { bigNumberify } from 'ethers/utils'
 import { gtcrDecode } from '@kleros/gtcr-encoder'
 import SubmitModal from '../item-details/modals/submit'
-import useNetworkEnvVariable from '../../hooks/network-env'
 import SubmitConnectModal from '../item-details/modals/submit-connect'
-import SearchBar from '../../components/search-bar'
+import SearchBar from 'components/search-bar'
 import {
   searchStrToFilterObjLight,
   filterLabelLight,
@@ -32,15 +31,15 @@ import {
   updateLightFilter,
   queryOptionsToFilterArray,
   applyOldActiveItemsFilter
-} from '../../utils/filters'
+} from 'utils/filters'
 import ItemCard from './item-card'
 import Banner from './banner'
-import AppTour from '../../components/tour'
+import AppTour from 'components/tour'
 import itemsTourSteps from './tour-steps'
-import takeLower from '../../utils/lower-limit'
-import { DISPUTE_STATUS } from '../../utils/item-status'
+import takeLower from 'utils/lower-limit'
+import { DISPUTE_STATUS } from 'utils/item-status'
 import { useLazyQuery } from '@apollo/client'
-import { CLASSIC_REGISTRY_ITEMS_QUERY } from '../../graphql'
+import { CLASSIC_REGISTRY_ITEMS_QUERY } from 'utils/graphql'
 
 const NSFW_FILTER_KEY = 'NSFW_FILTER_KEY'
 const ITEMS_TOUR_DISMISSED = 'ITEMS_TOUR_DISMISSED'
@@ -163,9 +162,11 @@ const mainnetInfo = {
 // Reference:
 // https://itnext.io/how-to-create-react-custom-hooks-for-data-fetching-with-useeffect-74c5dc47000a
 const ITEMS_PER_PAGE = 40
-const Items = ({ search, history }) => {
+const Items = () => {
+  const history = useHistory()
+  const search = window.location.search || ''
   const { requestWeb3Auth, timestamp } = useContext(WalletContext)
-  const { library, active, account, networkId } = useWeb3Context()
+  const { library, active, account } = useWeb3Context()
   const [network, setNetwork] = useState()
   const {
     gtcr,
@@ -193,10 +194,6 @@ const Items = ({ search, history }) => {
     data: null
   })
   const refAttr = useRef()
-  const GTCR_SUBGRAPH_URL = useNetworkEnvVariable(
-    'REACT_APP_SUBGRAPH_URL',
-    networkId
-  )
   const [eventListenerSet, setEventListenerSet] = useState()
   const queryOptions = searchStrToFilterObjLight(search)
   const [nsfwFilterOn, setNSFWFilter] = useState(true)
@@ -759,13 +756,6 @@ const Items = ({ search, history }) => {
       />
     </>
   )
-}
-
-Items.propTypes = {
-  search: PropTypes.string.isRequired,
-  history: PropTypes.shape({
-    push: PropTypes.func.isRequired
-  }).isRequired
 }
 
 export default Items

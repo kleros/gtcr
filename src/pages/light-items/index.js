@@ -2,6 +2,7 @@
 // Rule disabled temporarly as filters will be added back.
 import { Layout, Spin, Pagination, Tag, Select, Switch } from 'antd'
 import { Link } from 'react-router-dom'
+import { useHistory } from 'react-router'
 import React, {
   useEffect,
   useState,
@@ -15,8 +16,8 @@ import localforage from 'localforage'
 import { useWeb3Context } from 'web3-react'
 import qs from 'qs'
 import ErrorPage from '../error-page'
-import { WalletContext } from '../../bootstrap/wallet-context'
-import { LightTCRViewContext } from '../../bootstrap/light-tcr-view-context'
+import { WalletContext } from 'contexts/wallet-context'
+import { LightTCRViewContext } from 'contexts/light-tcr-view-context'
 import { bigNumberify } from 'ethers/utils'
 import SubmitModal from '../light-item-details/modals/submit'
 import SubmitConnectModal from '../light-item-details/modals/submit-connect'
@@ -25,16 +26,16 @@ import {
   LIGHT_FILTER_KEYS,
   searchStrToFilterObjLight,
   updateLightFilter
-} from '../../utils/filters'
+} from 'utils/filters'
 import ItemCard from './item-card'
 import Banner from './banner'
-import AppTour from '../../components/tour'
+import AppTour from 'components/tour'
 import itemsTourSteps from './tour-steps'
-import takeLower from '../../utils/lower-limit'
-import { DISPUTE_STATUS } from '../../utils/item-status'
+import takeLower from 'utils/lower-limit'
+import { DISPUTE_STATUS } from 'utils/item-status'
 import { useLazyQuery, useQuery } from '@apollo/client'
-import { LIGHT_ITEMS_QUERY, LIGHT_REGISTRY_QUERY } from '../../graphql'
-import LightSearchBar from '../../components/light-search-bar'
+import { LIGHT_ITEMS_QUERY, LIGHT_REGISTRY_QUERY } from 'utils/graphql'
+import LightSearchBar from 'components/light-search-bar'
 
 const NSFW_FILTER_KEY = 'NSFW_FILTER_KEY'
 const ITEMS_TOUR_DISMISSED = 'ITEMS_TOUR_DISMISSED'
@@ -159,7 +160,9 @@ const mainnetInfo = {
 // Reference:
 // https://itnext.io/how-to-create-react-custom-hooks-for-data-fetching-with-useeffect-74c5dc47000a
 const ITEMS_PER_PAGE = 40
-const Items = ({ search, history }) => {
+const Items = () => {
+  const history = useHistory()
+  const search = window.location.search
   const { requestWeb3Auth, timestamp } = useContext(WalletContext)
   const { library, active } = useWeb3Context()
   const [network, setNetwork] = useState()

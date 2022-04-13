@@ -7,13 +7,13 @@ import {
   PARTY,
   itemToStatusCode,
   STATUS_CODE
-} from '../../utils/item-status'
-import { TCRViewContext } from '../../bootstrap/tcr-view-context'
-import useRequiredFees from '../../hooks/required-fees'
+} from 'utils/item-status'
+import { TCRViewContext } from 'contexts/tcr-view-context'
+import useRequiredFees from 'hooks/required-fees'
 import { formatEther } from 'ethers/utils'
-import itemPropType from '../../prop-types/item'
-import BNPropType from '../../prop-types/bn'
-import useNativeCurrency from '../../hooks/native-currency'
+import itemPropType from 'prop-types/item'
+import BNPropType from 'prop-types/bn'
+import useNativeCurrency from 'hooks/native-currency'
 
 const StyledCard = styled(Card)`
   background: linear-gradient(111.6deg, #4d00b4 46.25%, #6500b4 96.25%);

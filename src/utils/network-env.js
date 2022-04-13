@@ -1,4 +1,4 @@
-import { NETWORK } from '../utils/network-utils'
+import { NETWORK } from './network-utils'
 
 /**
  * Fetch an environment variable for a given networkId.
@@ -6,7 +6,7 @@ import { NETWORK } from '../utils/network-utils'
  * @param {number} networkId The network Id.
  * @returns {*} The variable content for the networkId.
  */
-function useNetworkEnvVariable(envVariableKey, networkId) {
+function getNetworkEnvVariable(envVariableKey, networkId) {
   const defaultNetwork =
     process.env.REACT_APP_DEFAULT_NETWORK || NETWORK.MAINNET
   let data = ''
@@ -26,4 +26,4 @@ function useNetworkEnvVariable(envVariableKey, networkId) {
   return data
 }
 
-export default useNetworkEnvVariable
+export default getNetworkEnvVariable

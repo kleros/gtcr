@@ -1,6 +1,6 @@
 import React, { createContext } from 'react'
 import PropTypes from 'prop-types'
-import useLightTcrView from '../hooks/light-tcr-view'
+import useLightTcrView from 'hooks/light-tcr-view'
 
 const LightTCRViewContext = createContext()
 const LightTCRViewProvider = ({ children, tcrAddress }) => (

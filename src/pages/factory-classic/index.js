@@ -11,10 +11,10 @@ import ItemParams from './item-params'
 import Deploy from './deploy'
 import StyledLayoutContent from '../layout-content'
 import { version } from '../../../package.json'
-import useNetworkEnvVariable from '../../hooks/network-env'
+import useNetworkEnvVariable from 'utils/network-env'
 import { ItemTypes } from '@kleros/gtcr-encoder'
 import RelTCRParams from './rel-tcr-params'
-import TCRCardContent from '../../components/tcr-card-content'
+import TCRCardContent from 'components/tcr-card-content'
 
 const { Step } = Steps
 const { confirm } = Modal

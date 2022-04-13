@@ -3,12 +3,12 @@ import { Modal, Typography, Button } from 'antd'
 import { ethers } from 'ethers'
 import styled from 'styled-components/macro'
 import { abi as _gtcr } from '@kleros/tcr/build/contracts/GeneralizedTCR.json'
-import { TCRViewContext } from '../../../bootstrap/tcr-view-context'
-import { WalletContext } from '../../../bootstrap/wallet-context'
-import itemPropTypes from '../../../prop-types/item'
-import EvidenceForm from '../../../components/evidence-form.js'
-import ipfsPublish from '../../../utils/ipfs-publish.js'
-import { TourContext } from '../../../bootstrap/tour-context'
+import { TCRViewContext } from 'contexts/tcr-view-context'
+import { WalletContext } from 'contexts/wallet-context'
+import itemPropTypes from 'prop-types/item'
+import EvidenceForm from 'components/evidence-form.js'
+import ipfsPublish from 'utils/ipfs-publish.js'
+import { TourContext } from 'contexts/tour-context'
 
 const StyledModal = styled(Modal)`
   & > .ant-modal-content {

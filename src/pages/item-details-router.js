@@ -1,48 +1,31 @@
 import React, { useEffect, useState } from 'react'
-import { TCRViewProvider } from '../bootstrap/tcr-view-context'
-import { LightTCRViewProvider } from '../bootstrap/light-tcr-view-context'
+import { TCRViewProvider } from 'contexts/tcr-view-context'
+import { LightTCRViewProvider } from 'contexts/light-tcr-view-context'
 import loadable from '@loadable/component'
-import styled from 'styled-components'
-import { Layout, Spin } from 'antd'
-import PropTypes from 'prop-types'
 import { useWeb3Context } from 'web3-react'
 import _gtcr from '../assets/abis/LightGeneralizedTCR.json'
 import { ethers } from 'ethers'
-
-const StyledLayoutContent = styled(Layout.Content)`
-  padding: 42px 9.375vw 42px;
-`
-
-const StyledSpin = styled(Spin)`
-  left: 50%;
-  position: absolute;
-  top: 50%;
-  transform: translate(-50%, -50%);
-`
+import { useHistory, useParams } from 'react-router'
+import Loading from 'components/loading'
 
 const LightItemDetails = loadable(
   () => import(/* webpackPrefetch: true */ './light-item-details/index'),
   {
-    fallback: (
-      <StyledLayoutContent>
-        <StyledSpin />
-      </StyledLayoutContent>
-    )
+    fallback: <Loading />
   }
 )
 
 const ItemDetails = loadable(
   () => import(/* webpackPrefetch: true */ './item-details/index'),
   {
-    fallback: (
-      <StyledLayoutContent>
-        <StyledSpin />
-      </StyledLayoutContent>
-    )
+    fallback: <Loading />
   }
 )
 
-const ItemDetailsRouter = ({ search, tcrAddress, history, itemID }) => {
+const ItemDetailsRouter = () => {
+  const { tcrAddress, itemID } = useParams()
+  const history = useHistory()
+  const search = window.location.search
   const [isLightCurate, setIsLightCurate] = useState()
   const { library, active } = useWeb3Context()
 
@@ -66,7 +49,7 @@ const ItemDetailsRouter = ({ search, tcrAddress, history, itemID }) => {
     })()
   }, [active, library, tcrAddress])
 
-  if (typeof isLightCurate === 'undefined') return <StyledSpin />
+  if (typeof isLightCurate === 'undefined') return <Loading />
 
   if (isLightCurate)
     return (
@@ -80,12 +63,6 @@ const ItemDetailsRouter = ({ search, tcrAddress, history, itemID }) => {
       <ItemDetails search={search} history={history} itemID={itemID} />
     </TCRViewProvider>
   )
-}
-
-ItemDetailsRouter.propTypes = {
-  search: PropTypes.string.isRequired,
-  tcrAddress: PropTypes.string.isRequired,
-  history: PropTypes.shape({}).isRequired
 }
 
 export default ItemDetailsRouter

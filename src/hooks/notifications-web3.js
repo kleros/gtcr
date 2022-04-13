@@ -15,7 +15,7 @@ import {
   useHistory,
   useParams
 } from 'react-router-dom/cjs/react-router-dom.min'
-import useNetworkEnvVariable from './network-env'
+import useNetworkEnvVariable from '../utils/network-env'
 
 const actionTypes = {
   TRANSACTION: 'TRANSACTION',
