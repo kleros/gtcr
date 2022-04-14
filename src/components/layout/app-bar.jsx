@@ -12,7 +12,7 @@ import { ReactComponent as Logo } from 'assets/images/logo.svg'
 import { capitalizeFirstLetter, SAVED_NETWORK_KEY } from 'utils/string'
 import AppTour from 'components/tour'
 import { useHistory } from 'react-router-dom/cjs/react-router-dom.min'
-import useNetworkEnvVariable from 'utils/network-env'
+import getNetworkEnv from 'utils/network-env'
 import AppMenu from 'components/layout/app-menu'
 
 const StyledCol = styled(Col)`
@@ -105,7 +105,7 @@ const AppBar = () => {
   const history = useHistory()
   const { networkId, account } = web3Context
   const [requestedChain, setRequestedChain] = useState()
-  const nextNetworkTCR = useNetworkEnvVariable(
+  const nextNetworkTCR = getNetworkEnv(
     'REACT_APP_DEFAULT_TCR_ADDRESSES',
     networkId === NETWORK.XDAI ? NETWORK.MAINNET : NETWORK.XDAI
   )

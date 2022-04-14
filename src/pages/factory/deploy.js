@@ -10,7 +10,7 @@ import _GTCRFactory from 'assets/abis/LightGTCRFactory.json'
 import ipfsPublish from 'utils/ipfs-publish'
 import { WalletContext } from 'contexts/wallet-context'
 import { ZERO_ADDRESS, isVowel } from 'utils/string'
-import useNetworkEnvVariable from 'utils/network-env'
+import getNetworkEnv from 'utils/network-env'
 import useWindowDimensions from 'hooks/window-dimensions'
 import SubmitModal from '../light-item-details/modals/submit'
 import useTcrView from 'hooks/tcr-view'
@@ -268,19 +268,19 @@ const Deploy = ({ setTxState, tcrState, setTcrState }) => {
   const [txSubmitted, setTxSubmitted] = useState()
   const [deployedTCRAddress, setDeployedTCRAddress] = useState()
   const [submissionFormOpen, setSubmissionFormOpen] = useState()
-  const factoryAddress = useNetworkEnvVariable(
+  const factoryAddress = getNetworkEnv(
     'REACT_APP_LGTCR_FACTORY_ADDRESSES',
     networkId
   )
-  const defaultTCRAddress = useNetworkEnvVariable(
+  const defaultTCRAddress = getNetworkEnv(
     'REACT_APP_DEFAULT_TCR_ADDRESSES',
     networkId
   )
-  const batcherAddress = useNetworkEnvVariable(
+  const batcherAddress = getNetworkEnv(
     'REACT_APP_TX_BATCHER_ADDRESSES',
     networkId
   )
-  const evidenceDisplayInterfaceURI = useNetworkEnvVariable(
+  const evidenceDisplayInterfaceURI = getNetworkEnv(
     'REACT_APP_DEFAULT_EVIDENCE_DISPLAY_URI',
     networkId
   )

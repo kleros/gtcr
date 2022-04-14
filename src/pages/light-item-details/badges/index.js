@@ -14,7 +14,7 @@ import _gtcr from 'assets/abis/LightGeneralizedTCR.json'
 import _GTCRView from 'assets/abis/LightGeneralizedTCRView.json'
 import { WalletContext } from 'contexts/wallet-context'
 import ItemStatusBadge from 'components/item-status-badge'
-import useNetworkEnvVariable from 'utils/network-env'
+import getNetworkEnv from 'utils/network-env'
 import itemPropTypes from 'prop-types/item'
 import AddBadgeModal from '../modals/add-badge'
 import { CONTRACT_STATUS, DISPUTE_STATUS } from 'utils/item-status'
@@ -150,14 +150,11 @@ const Badges = ({ connectedTCRAddr, item, tcrAddress }) => {
   const [connectedBadges, setConnectedBadges] = useState([])
   const [isFetchingBadges, setIsFetchingBadges] = useState()
   const [submitConnectVisible, setSubmitConnectVisible] = useState()
-  const ARBITRABLE_TCR_VIEW_ADDRESS = useNetworkEnvVariable(
+  const ARBITRABLE_TCR_VIEW_ADDRESS = getNetworkEnv(
     'REACT_APP_GTCRVIEW_ADDRESSES',
     networkId
   )
-  const GTCR_SUBGRAPH_URL = useNetworkEnvVariable(
-    'REACT_APP_SUBGRAPH_URL',
-    networkId
-  )
+  const GTCR_SUBGRAPH_URL = getNetworkEnv('REACT_APP_SUBGRAPH_URL', networkId)
   const [fetchItems, setFetchItems] = useState({
     fetchStarted: true,
     isFetching: false,

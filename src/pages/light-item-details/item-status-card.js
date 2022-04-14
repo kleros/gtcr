@@ -23,7 +23,7 @@ import BNPropType from 'prop-types/bn'
 import useHumanizedCountdown from 'hooks/countdown'
 import useAppealTime from 'hooks/appeal-time'
 import ETHAmount from 'components/eth-amount'
-import useNetworkEnvVariable from 'utils/network-env'
+import getNetworkEnv from 'utils/network-env'
 import useNativeCurrency from 'hooks/native-currency'
 
 const StyledDescriptions = styled(Descriptions)`
@@ -101,7 +101,7 @@ const ItemStatusCard = ({
   const appealCountdown = useHumanizedCountdown(appealRemainingTime)
   const appealLoserCountdown = useHumanizedCountdown(appealRemainingTimeLoser)
   const { arbitrator: klerosAddress, uiURL } =
-    useNetworkEnvVariable('REACT_APP_KLEROS_ADDRESSES', networkId) || {}
+    getNetworkEnv('REACT_APP_KLEROS_ADDRESSES', networkId) || {}
 
   // Get remaining challenge period, if applicable and build countdown.
   const challengeRemainingTime = useMemo(() => {

@@ -25,7 +25,7 @@ import CustomInput from 'components/custom-input'
 import { ItemTypes } from '@kleros/gtcr-encoder'
 import ipfsPublish from 'utils/ipfs-publish'
 import { sanitize } from 'utils/string'
-import useNetworkEnvVariable from 'utils/network-env'
+import getNetworkEnv from 'utils/network-env'
 import useArbitrationCost from 'hooks/arbitration-cost'
 import KlerosParams from './kleros-params'
 import BaseDepositInput from 'components/base-deposit-input'
@@ -87,7 +87,7 @@ const RelTCRParams = ({
   const [depositVal, setDepositVal] = useState(0.05)
   const [debouncedArbitrator] = useDebounce(values.relArbitratorAddress, 1000)
   const { arbitrator: klerosAddress, policy: policyAddress } =
-    useNetworkEnvVariable('REACT_APP_KLEROS_ADDRESSES', networkId) || {}
+    getNetworkEnv('REACT_APP_KLEROS_ADDRESSES', networkId) || {}
   const { arbitrationCost } = useArbitrationCost({
     address: values.relArbitratorAddress,
     arbitratorExtraData: values.relArbitratorExtraData,

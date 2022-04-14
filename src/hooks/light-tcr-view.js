@@ -5,7 +5,7 @@ import localforage from 'localforage'
 import _gtcr from '../assets/abis/LightGeneralizedTCR.json'
 import _GTCRView from '../assets/abis/LightGeneralizedTCRView.json'
 import { abi as _arbitrator } from '@kleros/erc-792/build/contracts/IArbitrator.json'
-import useNetworkEnvVariable from '../utils/network-env'
+import getNetworkEnv from '../utils/network-env'
 import useNotificationWeb3 from './notifications-web3'
 import { getAddress } from 'ethers/utils'
 
@@ -29,7 +29,7 @@ const useLightTcrView = tcrAddress => {
 
   const { latestBlock } = useNotificationWeb3()
   const { library, active, networkId } = useWeb3Context()
-  const arbitrableTCRViewAddr = useNetworkEnvVariable(
+  const arbitrableTCRViewAddr = getNetworkEnv(
     'REACT_APP_LGTCRVIEW_ADDRESSES',
     networkId
   )

@@ -15,7 +15,7 @@ import {
   useHistory,
   useParams
 } from 'react-router-dom/cjs/react-router-dom.min'
-import useNetworkEnvVariable from '../utils/network-env'
+import getNetworkEnv from '../utils/network-env'
 
 const actionTypes = {
   TRANSACTION: 'TRANSACTION',
@@ -44,14 +44,8 @@ const useNotificationWeb3 = () => {
   const [infuraSetup, setInfuraSetup] = useState() // Whether infura was set as the provider.
   const [timestamp, setTimestamp] = useState()
   const { tcrAddress } = useParams()
-  const mainnetTCRAddress = useNetworkEnvVariable(
-    'REACT_APP_DEFAULT_TCR_ADDRESSES',
-    1
-  )
-  const kovanTCRAddress = useNetworkEnvVariable(
-    'REACT_APP_DEFAULT_TCR_ADDRESSES',
-    42
-  )
+  const mainnetTCRAddress = getNetworkEnv('REACT_APP_DEFAULT_TCR_ADDRESSES', 1)
+  const kovanTCRAddress = getNetworkEnv('REACT_APP_DEFAULT_TCR_ADDRESSES', 42)
   const [network, setNetwork] = useState()
   const [latestBlock, setLatestBlock] = useState()
   const TCR2_ADDRESS = useMainTCR2()

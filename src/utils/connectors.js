@@ -3,7 +3,7 @@ import WalletConnectApi from '@walletconnect/web3-subprovider'
 import FortmaticApi from 'fortmatic'
 import { NETWORK_NAME, NETWORK } from './network-utils'
 import { SAVED_NETWORK_KEY } from './string'
-import useNetworkEnvVariable from './network-env'
+import getNetworkEnv from './network-env'
 
 const {
   NetworkOnlyConnector,
@@ -43,7 +43,7 @@ if (process.env.REACT_APP_RPC_URLS) {
     })
 }
 
-const fortmaticApiKey = useNetworkEnvVariable('REACT_APP_FORMATIC_API_KEYS')
+const fortmaticApiKey = getNetworkEnv('REACT_APP_FORMATIC_API_KEYS')
 if (fortmaticApiKey)
   connectors.Fortmatic = new FortmaticConnector({
     api: FortmaticApi,

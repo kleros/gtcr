@@ -25,7 +25,7 @@ import ipfsPublish from 'utils/ipfs-publish'
 import { sanitize } from 'utils/string'
 import BaseDepositInput from 'components/base-deposit-input'
 import useArbitrationCost from 'hooks/arbitration-cost'
-import useNetworkEnvVariable from 'utils/network-env'
+import getNetworkEnv from 'utils/network-env'
 import KlerosParams from './kleros-params'
 import ETHAmount from 'components/eth-amount'
 import useWindowDimensions from 'hooks/window-dimensions'
@@ -117,7 +117,7 @@ const TCRParams = ({
   const history = useHistory()
   const [debouncedArbitrator] = useDebounce(values.arbitratorAddress, 1000)
   const { arbitrator: klerosAddress, policy: policyAddress } =
-    useNetworkEnvVariable('REACT_APP_KLEROS_ADDRESSES', networkId) || {}
+    getNetworkEnv('REACT_APP_KLEROS_ADDRESSES', networkId) || {}
   const { arbitrationCost } = useArbitrationCost({
     address: values.arbitratorAddress,
     arbitratorExtraData: values.arbitratorExtraData,

@@ -7,7 +7,7 @@ import {
 import { useWeb3Context } from 'web3-react'
 import { ApolloClient, ApolloProvider, InMemoryCache } from '@apollo/client'
 import { HttpLink } from '@apollo/client/link/http'
-import getNetworkEnvVariable from 'utils/network-env'
+import getNetworkEnv from 'utils/network-env'
 
 import loadable from '@loadable/component'
 import ErrorPage from 'pages/error-page'
@@ -46,7 +46,7 @@ const AppRouter = () => {
       return null
     }
 
-    const GTCR_SUBGRAPH_URL = getNetworkEnvVariable(
+    const GTCR_SUBGRAPH_URL = getNetworkEnv(
       'REACT_APP_SUBGRAPH_URL',
       web3Context.networkId
     )

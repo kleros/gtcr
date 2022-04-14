@@ -14,7 +14,7 @@ import { abi as _gtcr } from '@kleros/tcr/build/contracts/GeneralizedTCR.json'
 import { abi as _GTCRView } from '@kleros/tcr/build/contracts/GeneralizedTCRView.json'
 import { WalletContext } from 'contexts/wallet-context'
 import ItemStatusBadge from 'components/item-status-badge'
-import useNetworkEnvVariable from 'utils/network-env'
+import getNetworkEnv from 'utils/network-env'
 import { ZERO_ADDRESS, ZERO_BYTES32 } from 'utils/string'
 import itemPropTypes from 'prop-types/item'
 import { gtcrDecode, gtcrEncode } from '@kleros/gtcr-encoder'
@@ -79,7 +79,7 @@ const Badges = ({ connectedTCRAddr, item, tcrAddress }) => {
   const [connectedBadges, setConnectedBadges] = useState([])
   const [isFetchingBadges, setIsFetchingBadges] = useState()
   const [submitConnectVisible, setSubmitConnectVisible] = useState()
-  const ARBITRABLE_TCR_VIEW_ADDRESS = useNetworkEnvVariable(
+  const ARBITRABLE_TCR_VIEW_ADDRESS = getNetworkEnv(
     'REACT_APP_GTCRVIEW_ADDRESSES',
     networkId
   )

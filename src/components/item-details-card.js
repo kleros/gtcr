@@ -11,7 +11,7 @@ import Reward from 'react-rewards'
 import { TCRViewContext } from 'contexts/tcr-view-context'
 import itemPropTypes from '../prop-types/item'
 import { WalletContext } from 'contexts/wallet-context'
-import useNetworkEnvVariable from '../utils/network-env'
+import getNetworkEnv from '../utils/network-env'
 import TCRMetadataDisplay from './tcr-metadata-display'
 import { addPeriod } from '../utils/string'
 
@@ -44,7 +44,7 @@ const ItemDetailsCard = ({
   const tcrViewContext = useContext(TCRViewContext)
   const [availableRewards, setAvailableRewards] = useState()
   const [rewardRef, setRewardRef] = useState()
-  const BATCH_WITHDRAW_ADDRESS = useNetworkEnvVariable(
+  const BATCH_WITHDRAW_ADDRESS = getNetworkEnv(
     'REACT_APP_BATCH_WITHDRAW_ADDRESSES',
     networkId
   )
