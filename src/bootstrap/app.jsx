@@ -14,7 +14,7 @@ import WelcomeModal from 'components/modals/welcome-modal'
 import AppBar from 'components/layout/app-bar'
 import AppMenu from 'components/layout/app-menu'
 import AppRouter from './app-router'
-import connectors from 'utils/connectors'
+import connectors from 'config/connectors'
 
 import 'antd/dist/antd.css'
 import './theme.css'

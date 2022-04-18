@@ -75,3 +75,8 @@ export const addPeriod = (input = '') => {
   if (input.length === 0) return ''
   return input[input.length - 1] === '.' ? input : `${input}.`
 }
+
+export const hexlify = number => {
+  if (!number) return '0x00'
+  else return `0x${Number(number).toString(16)}`
+}

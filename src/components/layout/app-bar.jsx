@@ -121,11 +121,7 @@ const AppBar = () => {
 
     setRequestedChain(nextNetwork)
     localStorage.setItem(SAVED_NETWORK_KEY, nextNetwork)
-    // Give a little time for the animation to play.
-    setTimeout(() => {
-      history.push(`/tcr/${nextNetworkTCR}`)
-      window.location.reload()
-    }, 500)
+    history.push(`/tcr/${nextNetwork}/${nextNetworkTCR}`)
   }, [history, networkId, nextNetworkTCR])
 
   return (

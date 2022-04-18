@@ -36,6 +36,9 @@ import { DISPUTE_STATUS } from 'utils/item-status'
 import { useLazyQuery, useQuery } from '@apollo/client'
 import { LIGHT_ITEMS_QUERY, LIGHT_REGISTRY_QUERY } from 'utils/graphql'
 import LightSearchBar from 'components/light-search-bar'
+import useTcrNetwork from 'hooks/use-tcr-network'
+import { NETWORK_STATUS } from 'config/networks'
+import Loading from 'components/loading'
 
 const NSFW_FILTER_KEY = 'NSFW_FILTER_KEY'
 const ITEMS_TOUR_DISMISSED = 'ITEMS_TOUR_DISMISSED'
@@ -163,6 +166,7 @@ const ITEMS_PER_PAGE = 40
 const Items = () => {
   const history = useHistory()
   const search = window.location.search
+  const { networkStatus } = useTcrNetwork()
   const { requestWeb3Auth, timestamp } = useContext(WalletContext)
   const { library, active } = useWeb3Context()
   const [network, setNetwork] = useState()
@@ -551,6 +555,8 @@ const Items = () => {
       />
     )
 
+  if (networkStatus !== NETWORK_STATUS.supported) return <Loading />
+
   const { metadata } = metaEvidence || {}
   const { isConnectedTCR } = metadata || {}
 
@@ -699,13 +705,6 @@ const Items = () => {
       />
     </>
   )
-}
-
-Items.propTypes = {
-  search: PropTypes.string.isRequired,
-  history: PropTypes.shape({
-    push: PropTypes.func.isRequired
-  }).isRequired
 }
 
 export default Items

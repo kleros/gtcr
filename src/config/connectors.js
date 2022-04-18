@@ -1,9 +1,9 @@
 import { Connectors } from 'web3-react'
 import WalletConnectApi from '@walletconnect/web3-subprovider'
 import FortmaticApi from 'fortmatic'
-import { NETWORK_NAME, NETWORK } from './network-utils'
-import { SAVED_NETWORK_KEY } from './string'
-import getNetworkEnv from './network-env'
+import { NETWORK_NAME, NETWORK } from '../utils/network-utils'
+import { SAVED_NETWORK_KEY } from '../utils/string'
+import getNetworkEnv from '../utils/network-env'
 
 const {
   NetworkOnlyConnector,

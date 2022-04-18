@@ -162,8 +162,6 @@ const useNotificationWeb3 = () => {
       notification.info({
         message: 'Network Changed'
       })
-      history.push(`/tcr/${TCR2_ADDRESS}`)
-      window.location.reload()
     }
   }, [web3Context.networkId, network, TCR2_ADDRESS, history])
 

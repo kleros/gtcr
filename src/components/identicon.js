@@ -11,8 +11,8 @@ import ETHAddress from './eth-address'
 import ETHAmount from './eth-amount'
 import { randomBytes, bigNumberify } from 'ethers/utils'
 import useNativeCurrency from '../hooks/native-currency'
-import { mainnetInfo, xDaiInfo } from '../utils/chain'
 import { NETWORK } from '../utils/network-utils'
+import { NETWORKS_INFO } from 'config/networks'
 
 const StyledDiv = styled.div`
   height: 32px;
@@ -179,20 +179,21 @@ const Identicon = ({ className, large }) => {
 
   const switchChain = useCallback(() => {
     if (!account) return
+    const networkInfo = NETWORKS_INFO[networkId]
     if (networkId === 100)
       library.send('wallet_switchEthereumChain', [
         {
-          chainId: `0x${mainnetInfo.chainId.toString(16)}`
+          chainId: `0x${networkInfo.chainId.toString(16)}`
         }
       ])
     else
       library.send('wallet_addEthereumChain', [
         {
-          chainId: `0x${xDaiInfo.chainId.toString(16)}`,
-          nativeCurrency: xDaiInfo.nativeCurrency,
-          chainName: xDaiInfo.name,
-          rpcUrls: xDaiInfo.rpc,
-          blockExplorerUrls: xDaiInfo.explorers.url
+          chainId: `0x${networkInfo.chainId.toString(16)}`,
+          nativeCurrency: networkInfo.nativeCurrency,
+          chainName: networkInfo.name,
+          rpcUrls: networkInfo.rpc,
+          blockExplorerUrls: networkInfo.explorers.url
         }
       ])
   }, [account, library, networkId])
