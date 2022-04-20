@@ -7,6 +7,7 @@ import React, {
   useRef,
   useMemo
 } from 'react'
+import { useParams } from 'react-router'
 import qs from 'qs'
 import PropTypes from 'prop-types'
 import styled from 'styled-components/macro'
@@ -74,6 +75,7 @@ const StyledBackLink = styled.div`
 // TODO: Ensure http requests are being sent in parallel.
 const ItemDetails = ({ itemID, search }) => {
   const { library } = useWeb3Context()
+  const { tcrAddress, chainId } = useParams()
   const [error, setError] = useState()
   const [itemMetaEvidence, setItemMetaEvidence] = useState()
   const { timestamp } = useContext(WalletContext)
@@ -92,7 +94,6 @@ const ItemDetails = ({ itemID, search }) => {
     gtcr,
     tcrError,
     gtcrView,
-    tcrAddress,
     connectedTCRAddr,
     metadataByTime
   } = useContext(TCRViewContext)
@@ -293,7 +294,9 @@ const ItemDetails = ({ itemID, search }) => {
       <StyledBanner>
         <Breadcrumb separator=">">
           <StyledBreadcrumbItem>
-            <StyledLink to={`/tcr/${tcrAddress}`}>{tcrTitle}</StyledLink>
+            <StyledLink to={`/tcr/${chainId}/${tcrAddress}`}>
+              {tcrTitle}
+            </StyledLink>
           </StyledBreadcrumbItem>
           <StyledBreadcrumbItem>
             {itemName && capitalizeFirstLetter(itemName)} Details
@@ -302,7 +305,7 @@ const ItemDetails = ({ itemID, search }) => {
       </StyledBanner>
       <StyledMargin>
         <StyledBackLink>
-          <StyledLink to={`/tcr/${tcrAddress}`}>Go Back</StyledLink>
+          <StyledLink to={`/tcr/${chainId}/${tcrAddress}`}>Go Back</StyledLink>
         </StyledBackLink>
         <SearchBar />
       </StyledMargin>

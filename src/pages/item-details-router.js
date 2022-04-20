@@ -7,6 +7,8 @@ import _gtcr from '../assets/abis/LightGeneralizedTCR.json'
 import { ethers } from 'ethers'
 import { useHistory, useParams } from 'react-router'
 import Loading from 'components/loading'
+import useTcrNetwork from 'hooks/use-tcr-network'
+import { NETWORK_STATUS } from 'config/networks'
 
 const LightItemDetails = loadable(
   () => import(/* webpackPrefetch: true */ './light-item-details/index'),
@@ -24,6 +26,7 @@ const ItemDetails = loadable(
 
 const ItemDetailsRouter = () => {
   const { tcrAddress, itemID } = useParams()
+  const { networkStatus } = useTcrNetwork()
   const history = useHistory()
   const search = window.location.search
   const [isLightCurate, setIsLightCurate] = useState()
@@ -49,7 +52,11 @@ const ItemDetailsRouter = () => {
     })()
   }, [active, library, tcrAddress])
 
-  if (typeof isLightCurate === 'undefined') return <Loading />
+  if (
+    typeof isLightCurate === 'undefined' ||
+    networkStatus !== NETWORK_STATUS.supported
+  )
+    return <Loading />
 
   if (isLightCurate)
     return (

@@ -2,7 +2,7 @@
 // Rule disabled temporarly as filters will be added back.
 import { Layout, Spin, Pagination, Tag, Select, Switch } from 'antd'
 import { Link } from 'react-router-dom'
-import { useHistory } from 'react-router'
+import { useHistory, useParams } from 'react-router'
 import React, {
   useEffect,
   useState,
@@ -162,6 +162,7 @@ const mainnetInfo = {
 const ITEMS_PER_PAGE = 40
 const Items = () => {
   const history = useHistory()
+  const { tcrAddress, chainId } = useParams()
   const search = window.location.search
   const { requestWeb3Auth, timestamp } = useContext(WalletContext)
   const { library, active } = useWeb3Context()
@@ -172,7 +173,6 @@ const Items = () => {
     challengePeriodDuration,
     tcrError,
     gtcrView,
-    tcrAddress,
     connectedTCRAddr,
     submissionDeposit,
     metadataByTime
@@ -645,6 +645,7 @@ const Items = () => {
                         item={item}
                         key={i}
                         metaEvidence={metaEvidence}
+                        chainId={chainId}
                         tcrAddress={tcrAddress}
                         challengePeriodDuration={challengePeriodDuration}
                         timestamp={timestamp}

@@ -111,6 +111,7 @@ const HideCardButton = styled(Button)`
 const CardItemInfo = ({
   item,
   statusCode,
+  chainId,
   tcrAddress,
   metaEvidence,
   toggleReveal,
@@ -133,6 +134,7 @@ const CardItemInfo = ({
     content = isTCRofTCRs ? (
       <TCRCardContent
         ID={item.tcrData.ID}
+        chainId={chainId}
         tcrAddress={item.columns[0].value}
         itemName={itemName}
         currentTCRAddress={tcrAddress}
@@ -140,6 +142,7 @@ const CardItemInfo = ({
     ) : (
       <ItemCardContent
         item={item}
+        chainId={chainId}
         tcrAddress={tcrAddress}
         itemName={itemName}
       />

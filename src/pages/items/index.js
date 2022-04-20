@@ -1,8 +1,7 @@
 /* eslint-disable no-unused-vars */
 // Rule disabled temporarly as filters will be added back.
 import { Layout, Spin, Pagination, Tag, Select, Switch } from 'antd'
-import { Link } from 'react-router-dom'
-import { useHistory } from 'react-router'
+import { useHistory, useParams } from 'react-router'
 import React, {
   useEffect,
   useState,
@@ -116,6 +115,7 @@ const ITEMS_PER_PAGE = 40
 const Items = () => {
   const history = useHistory()
   const search = window.location.search || ''
+  const { tcrAddress, chainId } = useParams()
   const { requestWeb3Auth, timestamp } = useContext(WalletContext)
   const { library, active, account } = useWeb3Context()
   const {
@@ -124,7 +124,6 @@ const Items = () => {
     challengePeriodDuration,
     tcrError,
     gtcrView,
-    tcrAddress,
     latestBlock,
     connectedTCRAddr,
     submissionDeposit,
@@ -615,6 +614,7 @@ const Items = () => {
                         item={item}
                         key={i}
                         metaEvidence={metaEvidence}
+                        chainId={chainId}
                         tcrAddress={tcrAddress}
                         challengePeriodDuration={challengePeriodDuration}
                         timestamp={timestamp}
