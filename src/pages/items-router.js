@@ -7,6 +7,8 @@ import { useWeb3Context } from 'web3-react'
 import { ethers } from 'ethers'
 import { useParams } from 'react-router'
 import Loading from 'components/loading'
+import useTcrNetwork from 'hooks/use-tcr-network'
+import { NETWORK_STATUS } from 'config/networks'
 
 const LightItems = loadable(
   () => import(/* webpackPrefetch: true */ './light-items/index'),
@@ -26,6 +28,7 @@ const ItemsRouter = () => {
   const { tcrAddress } = useParams()
   const [isLightCurate, setIsLightCurate] = useState()
   const { library, active } = useWeb3Context()
+  const { networkStatus } = useTcrNetwork()
 
   useEffect(() => {
     ;(async () => {
@@ -47,7 +50,11 @@ const ItemsRouter = () => {
     })()
   }, [active, library, tcrAddress])
 
-  if (typeof isLightCurate === 'undefined') return <Loading />
+  if (
+    typeof isLightCurate === 'undefined' ||
+    networkStatus !== NETWORK_STATUS.supported
+  )
+    return <Loading />
 
   if (isLightCurate)
     return (

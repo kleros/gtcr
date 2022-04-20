@@ -40,9 +40,6 @@ import takeLower from 'utils/lower-limit'
 import { DISPUTE_STATUS } from 'utils/item-status'
 import { useLazyQuery } from '@apollo/client'
 import { CLASSIC_REGISTRY_ITEMS_QUERY } from 'utils/graphql'
-import useTcrNetwork from 'hooks/use-tcr-network'
-import { NETWORK_STATUS } from 'config/networks'
-import Loading from 'components/loading'
 
 const NSFW_FILTER_KEY = 'NSFW_FILTER_KEY'
 const ITEMS_TOUR_DISMISSED = 'ITEMS_TOUR_DISMISSED'
@@ -121,8 +118,6 @@ const Items = () => {
   const search = window.location.search || ''
   const { requestWeb3Auth, timestamp } = useContext(WalletContext)
   const { library, active, account } = useWeb3Context()
-  const { networkStatus } = useTcrNetwork()
-
   const {
     gtcr,
     metaEvidence,
@@ -525,8 +520,6 @@ const Items = () => {
         message={tcrError || error || 'Decoding this item.'}
       />
     )
-
-  if (networkStatus !== NETWORK_STATUS.supported) return <Loading />
 
   const { metadata } = metaEvidence || {}
   const { isConnectedTCR } = metadata || {}

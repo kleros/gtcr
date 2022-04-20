@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react'
+import React, { useEffect, useMemo } from 'react'
 import {
   Route,
   Switch,
@@ -14,6 +14,8 @@ import ErrorPage from 'pages/error-page'
 import NoWeb3Detected from 'pages/no-web3'
 import Loading from 'components/loading'
 import connectors from 'config/connectors'
+import { DEFAULT_NETWORK } from 'config/networks'
+import { hexlify } from 'utils/string'
 
 const ItemsRouter = loadable(
   () => import(/* webpackPrefetch: true */ 'pages/items-router'),
@@ -37,7 +39,8 @@ const ClassicFactory = loadable(
 
 
 const AppRouter = () => {
-  const { networkId } = useWeb3Context();
+  const { networkId, error } = useWeb3Context();
+  const isUnsupported = useMemo(() => error?.code === 'UNSUPPORTED_NETWORK', [error])
   const tcrAddress = getNetworkEnv('REACT_APP_DEFAULT_TCR_ADDRESSES', networkId);
 
   const client = useMemo(() => {
@@ -63,11 +66,38 @@ const AppRouter = () => {
     })
   }, [networkId])
 
+  useEffect(() => {
+    if (isUnsupported && window.ethereum) {
+      const chainIdTokens = window.location.pathname.match(/\/tcr\/(\d+)\//);
+      const chainId = hexlify(chainIdTokens.length > 1 ? chainIdTokens[1] : DEFAULT_NETWORK);
+
+      window.ethereum.request({
+        method: 'wallet_switchEthereumChain',
+        params: [{ chainId }]
+      });
+    }
+  }, [isUnsupported]);
+
   if (Object.entries(connectors).length === 0)
     return <NoWeb3Detected />
 
-  if (!networkId)
+  if (isUnsupported) {
+    return (
+      <ErrorPage
+        code={' '}
+        title={error.code}
+        message={error.message}
+        tip={
+          <>
+            <p>Switching network to supported one</p>
+            <Loading />
+          </>
+        }
+      />
+    )
+  } else if (!networkId) {
     return <Loading />
+  }
 
   return (
     <ApolloProvider client={client}>
