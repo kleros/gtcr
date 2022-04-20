@@ -12,21 +12,25 @@ const useTcrNetwork = () => {
   const [networkStatus, setNetworkStatus] = useState(NETWORK_STATUS.unknown)
 
   useEffect(() => {
-    window.ethereum.on('chainChanged', chainId => {
-      chainId = Number(chainId)
-      const tcrAddress = getNetworkEnv(
-        'REACT_APP_DEFAULT_TCR_ADDRESSES',
-        chainId
-      )
+    window.ethereum &&
+      window.ethereum.on('chainChanged', chainId => {
+        chainId = Number(chainId)
+        const tcrAddress = getNetworkEnv(
+          'REACT_APP_DEFAULT_TCR_ADDRESSES',
+          chainId
+        )
 
-      if (tcrAddress) history.push(`/tcr/${chainId}/${tcrAddress}`)
-      else setNetworkStatus(NETWORK_STATUS.unsupported)
-    })
+        if (tcrAddress) history.push(`/tcr/${chainId}/${tcrAddress}`)
+        else setNetworkStatus(NETWORK_STATUS.unsupported)
+      })
     // eslint-disable-next-line
   }, [])
 
   useEffect(() => {
     ;(async () => {
+      // metamask is not provided
+      if (!window.ethereum) return setNetworkStatus(NETWORK_STATUS.supported)
+
       // if the wallet is not connected yet
       if (!networkId) return setNetworkStatus(NETWORK_STATUS.unknown)
 

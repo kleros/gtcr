@@ -121,7 +121,10 @@ const AppBar = () => {
 
     setRequestedChain(nextNetwork)
     localStorage.setItem(SAVED_NETWORK_KEY, nextNetwork)
-    history.push(`/tcr/${nextNetwork}/${nextNetworkTCR}`)
+    setTimeout(() => {
+      history.push(`/tcr/${nextNetwork}/${nextNetworkTCR}`)
+      window.location.reload();
+    }, 300)
   }, [history, networkId, nextNetworkTCR])
 
   return (
