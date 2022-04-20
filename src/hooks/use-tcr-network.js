@@ -20,8 +20,12 @@ const useTcrNetwork = () => {
           chainId
         )
 
-        if (tcrAddress) history.push(`/tcr/${chainId}/${tcrAddress}`)
-        else setNetworkStatus(NETWORK_STATUS.unsupported)
+        setNetworkStatus(status => {
+          if (status !== NETWORK_STATUS.swtiching && tcrAddress) {
+            history.push(`/tcr/${chainId}/${tcrAddress}`)
+            return NETWORK_STATUS.supported
+          } else return NETWORK_STATUS.unsupported
+        })
       })
     // eslint-disable-next-line
   }, [])
