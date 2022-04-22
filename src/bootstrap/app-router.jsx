@@ -1,9 +1,10 @@
-import React, { useEffect, useMemo } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import {
   Route,
   Switch,
   Redirect
 } from 'react-router-dom'
+import { useHistory } from 'react-router'
 import { ApolloClient, ApolloProvider, InMemoryCache } from '@apollo/client'
 import { HttpLink } from '@apollo/client/link/http'
 import { useWeb3Context } from 'web3-react'
@@ -16,6 +17,7 @@ import Loading from 'components/loading'
 import connectors from 'config/connectors'
 import { DEFAULT_NETWORK } from 'config/networks'
 import { hexlify } from 'utils/string'
+import { TCR_EXISTENCE_TEST } from 'utils/graphql'
 
 const ItemsRouter = loadable(
   () => import(/* webpackPrefetch: true */ 'pages/items-router'),
@@ -39,8 +41,12 @@ const ClassicFactory = loadable(
 
 
 const AppRouter = () => {
+  const history = useHistory()
   const { networkId, error } = useWeb3Context();
   const isUnsupported = useMemo(() => error?.code === 'UNSUPPORTED_NETWORK', [error])
+  const [pathResolved, setPathResolved] = useState(false);
+  const [invalidTcrAddr, setInvalidTcrAddr] = useState(false);
+
   const tcrAddress = getNetworkEnv('REACT_APP_DEFAULT_TCR_ADDRESSES', networkId);
 
   const client = useMemo(() => {
@@ -67,9 +73,64 @@ const AppRouter = () => {
   }, [networkId])
 
   useEffect(() => {
+    const checkPathValidation = async () => {
+      const pathname = history.location.pathname;
+      const search = history.location.search;
+      const isOldPath = /\/tcr\/0x/.test(pathname);
+
+      if (isOldPath) {
+        const searchParams = new URLSearchParams(search);
+        let chainId = null;
+        const tcrAddress = pathname.match(/tcr\/(0x[0-9a-zA-Z]+)/)[1].toLowerCase();
+
+        if (searchParams.has('chainId')) {
+          chainId = searchParams.get('chainId');
+        } else {
+          const DEFAULT_TCR_ADDRESSES = JSON.parse(process.env.REACT_APP_DEFAULT_TCR_ADDRESSES);
+          const ADDRs = Object.values(DEFAULT_TCR_ADDRESSES).map(addr => addr.toLowerCase());
+          const CHAIN_IDs = Object.keys(DEFAULT_TCR_ADDRESSES);
+          const tcrIndex = ADDRs.findIndex(addr => addr === tcrAddress);
+
+          if (tcrIndex >= 0) {
+            chainId = Number(CHAIN_IDs[tcrIndex]);
+          } else {
+            const SUBGRAPH_URLS = JSON.parse(process.env.REACT_APP_SUBGRAPH_URL);
+            const queryResults = await Promise.all(Object.values(SUBGRAPH_URLS).map(subgraph => {
+              const client = new ApolloClient({
+                link: new HttpLink({ uri: subgraph }),
+                cache: new InMemoryCache()
+              });
+              return client.query({
+                query: TCR_EXISTENCE_TEST,
+                variables: {
+                  tcrAddress,
+                },
+              });
+            }));
+            const validIndex = queryResults.findIndex(r => r.data.lregistry);
+
+            if (validIndex >= 0) {
+              chainId = Object.keys(SUBGRAPH_URLS)[validIndex];
+            }
+          }
+        }
+
+        if (chainId) {
+          const newPathname = pathname.replace('/tcr/', `/tcr/${chainId}/`);
+          history.push({ pathname: newPathname, search });
+        } else {
+          setInvalidTcrAddr(true);
+        }
+      }
+      setPathResolved(true);
+    };
+    checkPathValidation();
+  }, [history, setPathResolved]);
+
+  useEffect(() => {
     if (isUnsupported && window.ethereum) {
       const chainIdTokens = window.location.pathname.match(/\/tcr\/(\d+)\//);
-      const chainId = hexlify(chainIdTokens.length > 1 ? chainIdTokens[1] : DEFAULT_NETWORK);
+      const chainId = hexlify(chainIdTokens?.length > 1 ? chainIdTokens[1] : DEFAULT_NETWORK);
 
       window.ethereum.request({
         method: 'wallet_switchEthereumChain',
@@ -95,8 +156,10 @@ const AppRouter = () => {
         }
       />
     )
-  } else if (!networkId) {
+  } else if (!networkId || !pathResolved) {
     return <Loading />
+  } else if (invalidTcrAddr) {
+    return <ErrorPage />
   }
 
   return (
