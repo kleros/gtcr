@@ -5,6 +5,9 @@ const TCR_EXISTENCE_TEST = gql`
     lregistry(id: $tcrAddress) {
       id
     }
+    registry(id: $tcrAddress) {
+      id
+    }
   }
 `
 

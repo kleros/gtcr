@@ -107,7 +107,9 @@ const AppRouter = () => {
                 },
               });
             }));
-            const validIndex = queryResults.findIndex(r => r.data.lregistry);
+            const validIndex = queryResults.findIndex(
+              ({ data: { lregistry, registry } }) => lregistry !== null || registry !== null
+            );
 
             if (validIndex >= 0) {
               chainId = Object.keys(SUBGRAPH_URLS)[validIndex];
