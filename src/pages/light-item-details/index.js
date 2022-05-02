@@ -7,6 +7,7 @@ import React, {
   useRef,
   useMemo
 } from 'react'
+import { useParams } from 'react-router'
 import qs from 'qs'
 import PropTypes from 'prop-types'
 import styled from 'styled-components/macro'
@@ -15,22 +16,22 @@ import { Link } from 'react-router-dom'
 import ErrorPage from '../error-page'
 import { ethers } from 'ethers'
 import { abi as _arbitrator } from '@kleros/erc-792/build/contracts/IArbitrator.json'
-import _gtcr from '../../assets/abis/LightGeneralizedTCR.json'
-import ItemDetailsCard from '../../components/item-details-card'
+import _gtcr from 'assets/abis/LightGeneralizedTCR.json'
+import ItemDetailsCard from 'components/item-details-card'
 import ItemStatusCard from './item-status-card'
 import CrowdfundingCard from './crowdfunding-card'
-import { LightTCRViewContext } from '../../bootstrap/light-tcr-view-context'
+import { LightTCRViewContext } from 'contexts/light-tcr-view-context'
 import RequestTimelines from './request-timelines'
-import { WalletContext } from '../../bootstrap/wallet-context'
-import { capitalizeFirstLetter, ZERO_ADDRESS } from '../../utils/string'
+import { WalletContext } from 'contexts/wallet-context'
+import { capitalizeFirstLetter, ZERO_ADDRESS } from 'utils/string'
 import Badges from './badges'
-import AppTour from '../../components/tour'
+import AppTour from 'components/tour'
 import itemTourSteps from './tour-steps'
-import takeLower from '../../utils/lower-limit'
-import { SUBGRAPH_STATUS_TO_CODE } from '../../utils/item-status'
-import { LIGHT_ITEM_DETAILS_QUERY } from '../../graphql'
+import takeLower from 'utils/lower-limit'
+import { SUBGRAPH_STATUS_TO_CODE } from 'utils/item-status'
+import { LIGHT_ITEM_DETAILS_QUERY } from 'utils/graphql'
 import { useQuery } from '@apollo/client'
-import SearchBar from '../../components/light-search-bar'
+import SearchBar from 'components/light-search-bar'
 
 const ITEM_TOUR_DISMISSED = 'ITEM_TOUR_DISMISSED'
 
@@ -76,6 +77,7 @@ const StyledBackLink = styled.div`
 // TODO: Ensure http requests are being sent in parallel.
 const ItemDetails = ({ itemID, search }) => {
   const { library } = useWeb3Context()
+  const { tcrAddress, chainId } = useParams()
   const [error, setError] = useState()
   const [itemMetaEvidence, setItemMetaEvidence] = useState()
   const { timestamp } = useContext(WalletContext)
@@ -94,7 +96,6 @@ const ItemDetails = ({ itemID, search }) => {
     gtcr,
     tcrError,
     gtcrView,
-    tcrAddress,
     connectedTCRAddr,
     metadataByTime
   } = useContext(LightTCRViewContext)
@@ -307,7 +308,9 @@ const ItemDetails = ({ itemID, search }) => {
       <StyledBanner>
         <Breadcrumb separator=">">
           <StyledBreadcrumbItem>
-            <StyledLink to={`/tcr/${tcrAddress}`}>{tcrTitle}</StyledLink>
+            <StyledLink to={`/tcr/${chainId}/${tcrAddress}`}>
+              {tcrTitle}
+            </StyledLink>
           </StyledBreadcrumbItem>
           <StyledBreadcrumbItem>
             {itemName && capitalizeFirstLetter(itemName)} Details
@@ -316,7 +319,7 @@ const ItemDetails = ({ itemID, search }) => {
       </StyledBanner>
       <StyledMargin>
         <StyledBackLink>
-          <StyledLink to={`/tcr/${tcrAddress}`}>Go Back</StyledLink>
+          <StyledLink to={`/tcr/${chainId}/${tcrAddress}`}>Go Back</StyledLink>
         </StyledBackLink>
         <SearchBar />
       </StyledMargin>

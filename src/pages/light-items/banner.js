@@ -3,10 +3,10 @@ import { Link } from 'react-router-dom'
 import React from 'react'
 import PropTypes from 'prop-types'
 import styled from 'styled-components/macro'
-import { ZERO_ADDRESS, capitalizeFirstLetter } from '../../utils/string'
-import useWindowDimensions from '../../hooks/window-dimensions'
+import { ZERO_ADDRESS, capitalizeFirstLetter } from 'utils/string'
+import useWindowDimensions from 'hooks/window-dimensions'
 import { useWeb3Context } from 'web3-react'
-import useNetworkEnvVariable from '../../hooks/network-env'
+import getNetworkEnv from 'utils/network-env'
 
 const StyledBanner = styled.div`
   padding: 24px 9.375vw;
@@ -75,7 +75,7 @@ const Banner = ({
 }) => {
   const { networkId } = useWeb3Context()
   const { width } = useWindowDimensions()
-  const defaultTCRAddress = useNetworkEnvVariable(
+  const defaultTCRAddress = getNetworkEnv(
     'REACT_APP_DEFAULT_TCR_ADDRESSES',
     networkId
   )

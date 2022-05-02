@@ -8,6 +8,16 @@ module.exports = {
     'promise'
   ],
 
+  // Settings
+  settings: {
+    'import/resolver': {
+      node: {
+        extensions: ['.js', '.jsx', '.ts', '.tsx'],
+        moduleDirectory: ['node_modules', 'src/'],
+      }
+    }
+  },
+  
   // Extends
   extends: [
     'react-app', // create-react-app config
@@ -85,7 +95,7 @@ module.exports = {
     'react/no-unused-prop-types': 0,
     'react/require-default-props': 0,
     'react/default-props-match-prop-types': 0,
-    
+
     // hooks
     'react-hooks/rules-of-hooks': 'error',
     'react-hooks/exhaustive-deps': 'warn',

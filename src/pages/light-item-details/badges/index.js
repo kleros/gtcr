@@ -10,20 +10,20 @@ import styled from 'styled-components/macro'
 import { useWeb3Context } from 'web3-react'
 import { ethers } from 'ethers'
 import PropTypes from 'prop-types'
-import _gtcr from '../../../assets/abis/LightGeneralizedTCR.json'
-import _GTCRView from '../../../assets/abis/LightGeneralizedTCRView.json'
-import { WalletContext } from '../../../bootstrap/wallet-context'
-import ItemStatusBadge from '../../../components/item-status-badge'
-import useNetworkEnvVariable from '../../../hooks/network-env'
-import itemPropTypes from '../../../prop-types/item'
+import _gtcr from 'assets/abis/LightGeneralizedTCR.json'
+import _GTCRView from 'assets/abis/LightGeneralizedTCRView.json'
+import { WalletContext } from 'contexts/wallet-context'
+import ItemStatusBadge from 'components/item-status-badge'
+import getNetworkEnv from 'utils/network-env'
+import itemPropTypes from 'prop-types/item'
 import AddBadgeModal from '../modals/add-badge'
-import { CONTRACT_STATUS, DISPUTE_STATUS } from '../../../utils/item-status'
+import { CONTRACT_STATUS, DISPUTE_STATUS } from 'utils/item-status'
 import SubmitModal from '../modals/submit'
 import SubmitConnectModal from '../modals/submit-connect'
-import useTcrView from '../../../hooks/tcr-view'
-import takeLower from '../../../utils/lower-limit'
+import useTcrView from 'hooks/tcr-view'
+import takeLower from 'utils/lower-limit'
 import { useLazyQuery } from '@apollo/client'
-import { LIGHT_ITEMS_QUERY } from '../../../graphql'
+import { LIGHT_ITEMS_QUERY } from 'utils/graphql'
 import { bigNumberify } from 'ethers/utils'
 
 const StyledGrid = styled.div`
@@ -150,14 +150,11 @@ const Badges = ({ connectedTCRAddr, item, tcrAddress }) => {
   const [connectedBadges, setConnectedBadges] = useState([])
   const [isFetchingBadges, setIsFetchingBadges] = useState()
   const [submitConnectVisible, setSubmitConnectVisible] = useState()
-  const ARBITRABLE_TCR_VIEW_ADDRESS = useNetworkEnvVariable(
+  const ARBITRABLE_TCR_VIEW_ADDRESS = getNetworkEnv(
     'REACT_APP_GTCRVIEW_ADDRESSES',
     networkId
   )
-  const GTCR_SUBGRAPH_URL = useNetworkEnvVariable(
-    'REACT_APP_SUBGRAPH_URL',
-    networkId
-  )
+  const GTCR_SUBGRAPH_URL = getNetworkEnv('REACT_APP_SUBGRAPH_URL', networkId)
   const [fetchItems, setFetchItems] = useState({
     fetchStarted: true,
     isFetching: false,

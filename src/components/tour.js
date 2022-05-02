@@ -3,7 +3,7 @@ import Tour from 'reactour'
 import localforage from 'localforage'
 import PropTypes from 'prop-types'
 import { disableBodyScroll, enableBodyScroll } from 'body-scroll-lock'
-import { TourContext } from '../bootstrap/tour-context'
+import { TourContext } from '../contexts/tour-context'
 
 const AppTour = ({ steps, dismissedKey }) => {
   const [dismissed, setDismissed] = useState(true)

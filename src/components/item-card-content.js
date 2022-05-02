@@ -16,7 +16,7 @@ const StyledButton = styled(Button)`
   text-transform: capitalize;
 `
 
-const ItemCardContent = ({ item, tcrAddress }) => (
+const ItemCardContent = ({ item, chainId, tcrAddress }) => (
   <div
     style={{
       height: '100%',
@@ -45,7 +45,7 @@ const ItemCardContent = ({ item, tcrAddress }) => (
           </StyledItemCol>
         ))}
     </div>
-    <Link to={`/tcr/${tcrAddress}/${item.tcrData.ID}`}>
+    <Link to={`/tcr/${chainId}/${tcrAddress}/${item.tcrData.ID}`}>
       <StyledButton>Details</StyledButton>
     </Link>
   </div>

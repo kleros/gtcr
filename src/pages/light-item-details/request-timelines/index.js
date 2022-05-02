@@ -4,16 +4,13 @@ import { Divider, Collapse, Row, Col, Button, Card } from 'antd'
 import jsOrdinal from 'js-ordinal'
 import styled from 'styled-components/macro'
 import Timeline from './timeline'
-import itemPropTypes from '../../../prop-types/item'
-import {
-  REQUEST_TYPE_LABEL,
-  hasPendingRequest
-} from '../../../utils/item-status'
+import itemPropTypes from 'prop-types/item'
+import { REQUEST_TYPE_LABEL, hasPendingRequest } from 'utils/item-status'
 import EvidenceModal from '../modals/evidence'
-import { WalletContext } from '../../../bootstrap/wallet-context'
-import BNPropType from '../../../prop-types/bn'
-import { capitalizeFirstLetter } from '../../../utils/string'
-import { LightTCRViewContext } from '../../../bootstrap/light-tcr-view-context'
+import { WalletContext } from 'contexts/wallet-context'
+import BNPropType from 'prop-types/bn'
+import { capitalizeFirstLetter } from 'utils/string'
+import { LightTCRViewContext } from 'contexts/light-tcr-view-context'
 
 const StyledDivider = styled(Divider)`
   text-transform: capitalize;

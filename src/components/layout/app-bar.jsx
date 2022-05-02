@@ -2,28 +2,27 @@ import React, { useCallback, useContext, useMemo, useState } from 'react'
 import styled from 'styled-components/macro'
 import { useWeb3Context } from 'web3-react'
 import { Link } from 'react-router-dom'
-import { Col, Menu, Row, Button, Badge, Switch } from 'antd'
-import PropTypes from 'prop-types'
-import { WalletContext } from './wallet-context'
-import { TourContext } from './tour-context'
-import { NETWORK_NAME, NETWORK_COLOR, NETWORK } from '../utils/network-utils'
-import useMainTCR2 from '../hooks/tcr2'
-import Identicon from '../components/identicon'
-import Notifications from '../components/notifications'
-import { ReactComponent as Logo } from '../assets/images/logo.svg'
-import { capitalizeFirstLetter, SAVED_NETWORK_KEY } from '../utils/string'
-import AppTour from '../components/tour'
+import { Col, Row, Button, Badge, Switch } from 'antd'
+import { WalletContext } from 'contexts/wallet-context'
+import { TourContext } from 'contexts/tour-context'
+import { NETWORK_NAME, NETWORK_COLOR, NETWORK } from 'utils/network-utils'
+import Identicon from 'components/identicon'
+import Notifications from 'components/notifications'
+import { ReactComponent as Logo } from 'assets/images/logo.svg'
+import { capitalizeFirstLetter, SAVED_NETWORK_KEY } from 'utils/string'
+import AppTour from 'components/tour'
 import { useHistory } from 'react-router-dom/cjs/react-router-dom.min'
-import useNetworkEnvVariable from '../hooks/network-env'
+import getNetworkEnv from 'utils/network-env'
+import AppMenu from 'components/layout/app-menu'
 
 const StyledCol = styled(Col)`
-  align-items: center;
-  display: flex;
+  align-items: center !important;
+  display: flex !important;
   justify-content: center;
-  height: 67px;
+  height: 67px !important;
 
   @media (max-width: 992px) {
-    width: 100%;
+    width: 100% !important;
   }
 `
 
@@ -60,13 +59,6 @@ const StyledNetworkStatus = styled.span`
   margin-right: 24px;
 `
 
-const StyledMenu = styled(Menu)`
-  font-weight: bold;
-  line-height: 64px !important;
-  text-align: center;
-  background-color: transparent;
-`
-
 const StyledRouterLink = styled(Link)`
   color: #fff;
   display: flex;
@@ -80,7 +72,7 @@ const StyledConnectButton = styled(Button)`
   margin-left: 8px;
 `
 
-const StyledTopBarRow = styled(Row)`
+const StyledAppBarRow = styled(Row)`
   padding: 0 9.375vw;
 `
 
@@ -106,15 +98,14 @@ const notificationsTourSteps = [
   }
 ]
 
-const TopBar = ({ menuItems }) => {
+const AppBar = () => {
   const web3Context = useWeb3Context()
   const { requestWeb3Auth } = useContext(WalletContext)
-  const TCR2_ADDRESS = useMainTCR2(web3Context)
   const { userSubscribed } = useContext(TourContext)
   const history = useHistory()
   const { networkId, account } = web3Context
   const [requestedChain, setRequestedChain] = useState()
-  const nextNetworkTCR = useNetworkEnvVariable(
+  const nextNetworkTCR = getNetworkEnv(
     'REACT_APP_DEFAULT_TCR_ADDRESSES',
     networkId === NETWORK.XDAI ? NETWORK.MAINNET : NETWORK.XDAI
   )
@@ -130,25 +121,22 @@ const TopBar = ({ menuItems }) => {
 
     setRequestedChain(nextNetwork)
     localStorage.setItem(SAVED_NETWORK_KEY, nextNetwork)
-    // Give a little time for the animation to play.
     setTimeout(() => {
-      history.push(`/tcr/${nextNetworkTCR}`)
-      window.location.reload()
-    }, 500)
+      history.push(`/tcr/${nextNetwork}/${nextNetworkTCR}`)
+      window.location.reload();
+    }, 300)
   }, [history, networkId, nextNetworkTCR])
 
   return (
     <>
-      <StyledTopBarRow type="flex" justify="space-between">
+      <StyledAppBarRow type="flex" justify="space-between">
         <StyledColStart md={6} sm={12} xs={0}>
-          <StyledRouterLink to={`/tcr/${TCR2_ADDRESS}`}>
+          <StyledRouterLink to="/">
             <Logo style={{ maxHeight: '50px', maxWidth: '100px' }} />
           </StyledRouterLink>
         </StyledColStart>
         <StyledCenter md={8} sm={0} xs={0}>
-          <StyledMenu mode="horizontal" theme="dark">
-            {menuItems({ TCR2_ADDRESS })}
-          </StyledMenu>
+          <AppMenu mode="horizontal" />
         </StyledCenter>
         <StyledColEnd md={7} sm={12} xs={24}>
           {web3Context.active &&
@@ -181,7 +169,7 @@ const TopBar = ({ menuItems }) => {
             </StyledConnectButton>
           )}
         </StyledColEnd>
-      </StyledTopBarRow>
+      </StyledAppBarRow>
       {userSubscribed && (
         <AppTour
           dismissedKey={NOTIFICATIONS_TOUR_DISMISSED}
@@ -192,8 +180,5 @@ const TopBar = ({ menuItems }) => {
   )
 }
 
-TopBar.propTypes = {
-  menuItems: PropTypes.func.isRequired
-}
 
-export default TopBar
+export default AppBar

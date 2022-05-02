@@ -1,7 +1,7 @@
 import React, { useCallback } from 'react'
 import PropTypes from 'prop-types'
 import styled from 'styled-components/macro'
-import { utils } from 'ethers'
+// import { utils } from 'ethers'
 import { Button } from 'antd'
 import { ZERO_ADDRESS } from '../utils/string'
 import ETHAddress from './eth-address'
@@ -19,8 +19,9 @@ const StyledSpan = styled.span`
 const GTCRAddress = ({ address }) => {
   // We reload the page because the UI needs to redetect what type of TCR it is.
   const navigateReload = useCallback(() => {
-    window.location.assign(`/tcr/${utils.getAddress(address)}`)
-    window.reload()
+    // window.location.assign(`/tcr/${utils.getAddress(address)}`)
+    // window.reload()
+    // eslint-disable-next-line
   }, [address])
 
   // this avoids crashes when it looks for the address "Error decoding GTCR address"
