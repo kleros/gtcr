@@ -1,11 +1,11 @@
 import React, { useContext } from 'react'
 import { Modal, Divider, Typography } from 'antd'
 import styled from 'styled-components/macro'
-import { ReactComponent as Logo } from '../assets/images/logo2.svg'
-import { ReactComponent as List } from '../assets/images/infographic/list.svg'
-import { ReactComponent as Kleros } from '../assets/images/infographic/kleros.svg'
-import { ReactComponent as Scale } from '../assets/images/infographic/scale.svg'
-import { TourContext } from './tour-context'
+import { ReactComponent as Logo } from 'assets/images/logo2.svg'
+import { ReactComponent as List } from 'assets/images/infographic/list.svg'
+import { ReactComponent as Kleros } from 'assets/images/infographic/kleros.svg'
+import { ReactComponent as Scale } from 'assets/images/infographic/scale.svg'
+import { TourContext } from 'contexts/tour-context'
 
 const { Title, Paragraph } = Typography
 

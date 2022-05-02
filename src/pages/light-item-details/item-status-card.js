@@ -1,8 +1,8 @@
 import React, { useContext, useMemo } from 'react'
 import { Descriptions, Skeleton, Card } from 'antd'
 import PropTypes from 'prop-types'
-import _gtcr from '../../assets/abis/LightGeneralizedTCR.json'
-import ItemStatusBadge from '../../components/item-status-badge'
+import _gtcr from 'assets/abis/LightGeneralizedTCR.json'
+import ItemStatusBadge from 'components/item-status-badge'
 import styled from 'styled-components/macro'
 import { ethers } from 'ethers'
 import {
@@ -12,19 +12,19 @@ import {
   PARTY,
   CONTRACT_STATUS,
   hasPendingRequest
-} from '../../utils/item-status'
-import itemPropTypes from '../../prop-types/item'
-import ETHAddress from '../../components/eth-address'
+} from 'utils/item-status'
+import itemPropTypes from 'prop-types/item'
+import ETHAddress from 'components/eth-address'
 import ItemActionModal from './item-action-modal'
-import ItemActionButton from '../../components/item-action-button'
-import { LightTCRViewContext } from '../../bootstrap/light-tcr-view-context'
-import { WalletContext } from '../../bootstrap/wallet-context'
-import BNPropType from '../../prop-types/bn'
-import useHumanizedCountdown from '../../hooks/countdown'
-import useAppealTime from '../../hooks/appeal-time'
-import ETHAmount from '../../components/eth-amount'
-import useNetworkEnvVariable from '../../hooks/network-env'
-import useNativeCurrency from '../../hooks/native-currency'
+import ItemActionButton from 'components/item-action-button'
+import { LightTCRViewContext } from 'contexts/light-tcr-view-context'
+import { WalletContext } from 'contexts/wallet-context'
+import BNPropType from 'prop-types/bn'
+import useHumanizedCountdown from 'hooks/countdown'
+import useAppealTime from 'hooks/appeal-time'
+import ETHAmount from 'components/eth-amount'
+import getNetworkEnv from 'utils/network-env'
+import useNativeCurrency from 'hooks/native-currency'
 
 const StyledDescriptions = styled(Descriptions)`
   flex-wrap: wrap;
@@ -101,7 +101,7 @@ const ItemStatusCard = ({
   const appealCountdown = useHumanizedCountdown(appealRemainingTime)
   const appealLoserCountdown = useHumanizedCountdown(appealRemainingTimeLoser)
   const { arbitrator: klerosAddress, uiURL } =
-    useNetworkEnvVariable('REACT_APP_KLEROS_ADDRESSES', networkId) || {}
+    getNetworkEnv('REACT_APP_KLEROS_ADDRESSES', networkId) || {}
 
   // Get remaining challenge period, if applicable and build countdown.
   const challengeRemainingTime = useMemo(() => {

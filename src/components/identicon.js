@@ -10,9 +10,9 @@ import localforage from 'localforage'
 import ETHAddress from './eth-address'
 import ETHAmount from './eth-amount'
 import { randomBytes, bigNumberify } from 'ethers/utils'
-import useNativeCurrency from '../hooks/native-currency'
-import { mainnetInfo, xDaiInfo } from '../utils/chain'
-import { NETWORK } from '../utils/network-utils'
+import useNativeCurrency from 'hooks/native-currency'
+import { NETWORKS, NETWORKS_INFO } from 'config/networks'
+import { hexlify } from 'utils/string'
 
 const StyledDiv = styled.div`
   height: 32px;
@@ -177,24 +177,30 @@ const Identicon = ({ className, large }) => {
     </StyledDiv>
   )
 
-  const switchChain = useCallback(() => {
+  const switchChain = useCallback(async () => {
     if (!account) return
-    if (networkId === 100)
-      library.send('wallet_switchEthereumChain', [
+    const targetChainId =
+      networkId === NETWORKS.xDai ? NETWORKS.ethereum : NETWORKS.xDai
+    const networkInfo = NETWORKS_INFO[targetChainId]
+
+    try {
+      await library.send('wallet_switchEthereumChain', [
         {
-          chainId: `0x${mainnetInfo.chainId.toString(16)}`
+          chainId: hexlify(networkInfo.chainId)
         }
       ])
-    else
-      library.send('wallet_addEthereumChain', [
-        {
-          chainId: `0x${xDaiInfo.chainId.toString(16)}`,
-          nativeCurrency: xDaiInfo.nativeCurrency,
-          chainName: xDaiInfo.name,
-          rpcUrls: xDaiInfo.rpc,
-          blockExplorerUrls: xDaiInfo.explorers.url
-        }
-      ])
+    } catch (err) {
+      if (err.code === 4902)
+        library.send('wallet_addEthereumChain', [
+          {
+            chainId: hexlify(networkInfo.chainId),
+            nativeCurrency: networkInfo.nativeCurrency,
+            chainName: networkInfo.name,
+            rpcUrls: networkInfo.rpc,
+            blockExplorerUrls: networkInfo.explorers.url
+          }
+        ])
+    }
   }, [account, library, networkId])
 
   return large ? (
@@ -209,9 +215,9 @@ const Identicon = ({ className, large }) => {
               description={
                 <>
                   <Button type="primary" onClick={switchChain}>
-                    Switch to {networkId === NETWORK.XDAI ? 'Mainnet' : 'xDai'}
+                    Switch to {networkId === NETWORKS.xDai ? 'Mainnet' : 'xDai'}
                   </Button>
-                  {networkId === NETWORK.XDAI && (
+                  {networkId === NETWORKS.xDai && (
                     <a
                       style={{ marginLeft: '8px' }}
                       href="https://bridge.xdaichain.com/"

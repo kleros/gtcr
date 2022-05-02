@@ -12,18 +12,18 @@ import {
   Spin
 } from 'antd'
 import PropTypes from 'prop-types'
-import { STATUS_CODE, PARTY } from '../../../utils/item-status'
-import itemPropTypes from '../../../prop-types/item'
-import { LightTCRViewContext } from '../../../bootstrap/light-tcr-view-context'
+import { STATUS_CODE, PARTY } from 'utils/item-status'
+import itemPropTypes from 'prop-types/item'
+import { LightTCRViewContext } from 'contexts/light-tcr-view-context'
 import { formatEther, bigNumberify } from 'ethers/utils'
-import ETHAmount from '../../../components/eth-amount'
+import ETHAmount from 'components/eth-amount'
 import styled from 'styled-components/macro'
-import { WalletContext } from '../../../bootstrap/wallet-context'
-import _gtcr from '../../../assets/abis/LightGeneralizedTCR.json'
+import { WalletContext } from 'contexts/wallet-context'
+import _gtcr from 'assets/abis/LightGeneralizedTCR.json'
 import { ethers } from 'ethers'
-import useRequiredFees from '../../../hooks/required-fees'
-import { TourContext } from '../../../bootstrap/tour-context'
-import useNativeCurrency from '../../../hooks/native-currency'
+import useRequiredFees from 'hooks/required-fees'
+import { TourContext } from 'contexts/tour-context'
+import useNativeCurrency from 'hooks/native-currency'
 
 const StyledSpin = styled(Spin)`
   height: 60px;

@@ -17,8 +17,8 @@ import { useWeb3Context } from 'web3-react'
 import { abi as _gtcr } from '@kleros/tcr/build/contracts/GeneralizedTCR.json'
 import DisplaySelector from './display-selector'
 import { ItemTypes, searchableFields } from '@kleros/gtcr-encoder'
-import { TCRViewContext } from '../bootstrap/tcr-view-context'
-import { WalletContext } from '../bootstrap/wallet-context'
+import { TCRViewContext } from 'contexts/tcr-view-context'
+import { WalletContext } from 'contexts/wallet-context'
 import { itemToStatusCode, STATUS_COLOR } from '../utils/item-status'
 
 const StyledSelect = styled(Select)`

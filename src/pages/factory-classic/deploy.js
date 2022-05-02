@@ -8,13 +8,13 @@ import { parseEther, getContractAddress, bigNumberify } from 'ethers/utils'
 import styled from 'styled-components/macro'
 import { useWeb3Context } from 'web3-react'
 import { abi as _GTCRFactory } from '@kleros/tcr/build/contracts/GTCRFactory.json'
-import ipfsPublish from '../../utils/ipfs-publish'
-import { WalletContext } from '../../bootstrap/wallet-context'
-import { ZERO_ADDRESS, isVowel } from '../../utils/string'
-import useNetworkEnvVariable from '../../hooks/network-env'
-import useWindowDimensions from '../../hooks/window-dimensions'
+import ipfsPublish from 'utils/ipfs-publish'
+import { WalletContext } from 'contexts/wallet-context'
+import { ZERO_ADDRESS, isVowel } from 'utils/string'
+import getNetworkEnv from 'utils/network-env'
+import useWindowDimensions from 'hooks/window-dimensions'
 import SubmitModal from '../item-details/modals/submit'
-import useTcrView from '../../hooks/tcr-view'
+import useTcrView from 'hooks/tcr-view'
 
 const _txBatcher = [
   {
@@ -243,19 +243,16 @@ const Deploy = ({ setTxState, tcrState, setTcrState }) => {
   const [txSubmitted, setTxSubmitted] = useState()
   const [deployedTCRAddress, setDeployedTCRAddress] = useState()
   const [submissionFormOpen, setSubmissionFormOpen] = useState()
-  const factoryAddress = useNetworkEnvVariable(
-    'REACT_APP_FACTORY_ADDRESSES',
-    networkId
-  )
-  const defaultTCRAddress = useNetworkEnvVariable(
+  const factoryAddress = getNetworkEnv('REACT_APP_FACTORY_ADDRESSES', networkId)
+  const defaultTCRAddress = getNetworkEnv(
     'REACT_APP_DEFAULT_TCR_ADDRESSES',
     networkId
   )
-  const batcherAddress = useNetworkEnvVariable(
+  const batcherAddress = getNetworkEnv(
     'REACT_APP_TX_BATCHER_ADDRESSES',
     networkId
   )
-  const evidenceDisplayInterfaceURI = useNetworkEnvVariable(
+  const evidenceDisplayInterfaceURI = getNetworkEnv(
     'REACT_APP_DEFAULT_EVIDENCE_DISPLAY_URI_CLASSIC',
     networkId
   )

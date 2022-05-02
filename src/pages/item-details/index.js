@@ -7,6 +7,7 @@ import React, {
   useRef,
   useMemo
 } from 'react'
+import { useParams } from 'react-router'
 import qs from 'qs'
 import PropTypes from 'prop-types'
 import styled from 'styled-components/macro'
@@ -16,19 +17,19 @@ import ErrorPage from '../error-page'
 import { ethers } from 'ethers'
 import { abi as _arbitrator } from '@kleros/erc-792/build/contracts/IArbitrator.json'
 import { abi as _gtcr } from '@kleros/tcr/build/contracts/GeneralizedTCR.json'
-import ItemDetailsCard from '../../components/item-details-card'
+import ItemDetailsCard from 'components/item-details-card'
 import ItemStatusCard from './item-status-card'
 import CrowdfundingCard from './crowdfunding-card'
-import { TCRViewContext } from '../../bootstrap/tcr-view-context'
+import { TCRViewContext } from 'contexts/tcr-view-context'
 import { gtcrDecode } from '@kleros/gtcr-encoder'
 import RequestTimelines from './request-timelines'
-import { WalletContext } from '../../bootstrap/wallet-context'
-import SearchBar from '../../components/search-bar'
-import { capitalizeFirstLetter, ZERO_ADDRESS } from '../../utils/string'
+import { WalletContext } from 'contexts/wallet-context'
+import SearchBar from 'components/search-bar'
+import { capitalizeFirstLetter, ZERO_ADDRESS } from 'utils/string'
 import Badges from './badges'
-import AppTour from '../../components/tour'
+import AppTour from 'components/tour'
 import itemTourSteps from './tour-steps'
-import takeLower from '../../utils/lower-limit'
+import takeLower from 'utils/lower-limit'
 
 const ITEM_TOUR_DISMISSED = 'ITEM_TOUR_DISMISSED'
 
@@ -74,6 +75,7 @@ const StyledBackLink = styled.div`
 // TODO: Ensure http requests are being sent in parallel.
 const ItemDetails = ({ itemID, search }) => {
   const { library } = useWeb3Context()
+  const { tcrAddress, chainId } = useParams()
   const [error, setError] = useState()
   const [itemMetaEvidence, setItemMetaEvidence] = useState()
   const { timestamp } = useContext(WalletContext)
@@ -92,7 +94,6 @@ const ItemDetails = ({ itemID, search }) => {
     gtcr,
     tcrError,
     gtcrView,
-    tcrAddress,
     connectedTCRAddr,
     metadataByTime
   } = useContext(TCRViewContext)
@@ -293,7 +294,9 @@ const ItemDetails = ({ itemID, search }) => {
       <StyledBanner>
         <Breadcrumb separator=">">
           <StyledBreadcrumbItem>
-            <StyledLink to={`/tcr/${tcrAddress}`}>{tcrTitle}</StyledLink>
+            <StyledLink to={`/tcr/${chainId}/${tcrAddress}`}>
+              {tcrTitle}
+            </StyledLink>
           </StyledBreadcrumbItem>
           <StyledBreadcrumbItem>
             {itemName && capitalizeFirstLetter(itemName)} Details
@@ -302,7 +305,7 @@ const ItemDetails = ({ itemID, search }) => {
       </StyledBanner>
       <StyledMargin>
         <StyledBackLink>
-          <StyledLink to={`/tcr/${tcrAddress}`}>Go Back</StyledLink>
+          <StyledLink to={`/tcr/${chainId}/${tcrAddress}`}>Go Back</StyledLink>
         </StyledBackLink>
         <SearchBar />
       </StyledMargin>

@@ -16,19 +16,15 @@ import { abi as _gtcr } from '@kleros/tcr/build/contracts/GeneralizedTCR.json'
 import { ethers } from 'ethers'
 import { withFormik } from 'formik'
 import humanizeDuration from 'humanize-duration'
-import { WalletContext } from '../../../bootstrap/wallet-context'
+import { WalletContext } from 'contexts/wallet-context'
 import { gtcrEncode, ItemTypes, typeDefaultValues } from '@kleros/gtcr-encoder'
-import InputSelector from '../../../components/input-selector.js'
-import ETHAmount from '../../../components/eth-amount.js'
-import BNPropType from '../../../prop-types/bn'
-import useFactory from '../../../hooks/factory'
-import { TourContext } from '../../../bootstrap/tour-context'
-import {
-  addPeriod,
-  capitalizeFirstLetter,
-  getArticleFor
-} from '../../../utils/string'
-import useNativeCurrency from '../../../hooks/native-currency'
+import InputSelector from 'components/input-selector.js'
+import ETHAmount from 'components/eth-amount.js'
+import BNPropType from 'prop-types/bn'
+import useFactory from 'hooks/factory'
+import { TourContext } from 'contexts/tour-context'
+import { addPeriod, capitalizeFirstLetter, getArticleFor } from 'utils/string'
+import useNativeCurrency from 'hooks/native-currency'
 
 const StyledSpin = styled(Spin)`
   height: 60px;

@@ -1,5 +1,5 @@
 import React from 'react'
-import { STATUS_CODE, getActionLabel } from '../../utils/item-status'
+import { STATUS_CODE, getActionLabel } from 'utils/item-status'
 import RemoveModal from './modals/remove'
 import ChallengeModal from './modals/challenge'
 import SubmitModal from './modals/submit'

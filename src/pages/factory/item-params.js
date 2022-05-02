@@ -17,10 +17,10 @@ import React, { useEffect, useCallback } from 'react'
 import PropTypes from 'prop-types'
 import * as yup from 'yup'
 import styled from 'styled-components/macro'
-import CustomInput from '../../components/custom-input'
-import ItemDetailsCard from '../../components/item-details-card'
+import CustomInput from 'components/custom-input'
+import ItemDetailsCard from 'components/item-details-card'
 import { ItemTypes } from '@kleros/gtcr-encoder'
-import { STATUS_CODE } from '../../utils/item-status'
+import { STATUS_CODE } from 'utils/item-status'
 
 const { IMAGE, FILE, GTCR_ADDRESS, TWITTER_USER_ID, LONG_TEXT } = ItemTypes
 

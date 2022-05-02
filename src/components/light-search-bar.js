@@ -7,11 +7,11 @@ import { useDebouncedCallback } from 'use-debounce'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import DisplaySelector from './display-selector'
 import { ItemTypes, searchableFields } from '@kleros/gtcr-encoder'
-import { LightTCRViewContext } from '../bootstrap/light-tcr-view-context'
-import { WalletContext } from '../bootstrap/wallet-context'
+import { LightTCRViewContext } from 'contexts/light-tcr-view-context'
+import { WalletContext } from 'contexts/wallet-context'
 import { itemToStatusCode, STATUS_COLOR } from '../utils/item-status'
 import { useLazyQuery } from '@apollo/client'
-import ITEM_SEARCH_QUERY from '../graphql/item-search'
+import ITEM_SEARCH_QUERY from '../utils/graphql/item-search'
 
 const StyledSelect = styled(Select)`
   width: 100%;

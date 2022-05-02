@@ -13,20 +13,20 @@ import styled from 'styled-components/macro'
 import { bigNumberify } from 'ethers/utils'
 import PropTypes from 'prop-types'
 import { abi as _arbitrator } from '@kleros/erc-792/build/contracts/IArbitrator.json'
-import { LightTCRViewContext } from '../../../bootstrap/light-tcr-view-context'
-import ETHAddress from '../../../components/eth-address'
-import itemPropTypes from '../../../prop-types/item'
+import { LightTCRViewContext } from 'contexts/light-tcr-view-context'
+import ETHAddress from 'components/eth-address'
+import itemPropTypes from 'prop-types/item'
 import {
   CONTRACT_STATUS,
   PARTY,
   STATUS_COLOR,
   getResultStatus,
   STATUS_CODE
-} from '../../../utils/item-status'
-import { WalletContext } from '../../../bootstrap/wallet-context'
-import BNPropType from '../../../prop-types/bn'
-import { capitalizeFirstLetter } from '../../../utils/string'
-import { getTxPage } from '../../../utils/network-utils'
+} from 'utils/item-status'
+import { WalletContext } from 'contexts/wallet-context'
+import BNPropType from 'prop-types/bn'
+import { capitalizeFirstLetter } from 'utils/string'
+import { getTxPage } from 'utils/network-utils'
 
 const StyledText = styled(Typography.Text)`
   text-transform: capitalize;

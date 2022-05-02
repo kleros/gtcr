@@ -1,7 +1,7 @@
 import React, { useContext } from 'react'
 import styled from 'styled-components/macro'
-import { WalletContext } from './wallet-context'
-import ErrorPage from '../pages/error-page'
+import { WalletContext } from 'contexts/wallet-context'
+import ErrorPage from './error-page'
 
 const StyledSpan = styled.span`
   text-decoration: underline;

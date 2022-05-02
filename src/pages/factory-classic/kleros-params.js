@@ -6,10 +6,10 @@ import PropTypes from 'prop-types'
 import { useWeb3Context } from 'web3-react'
 import { abi as _PolicyRegistry } from '@kleros/kleros/build/contracts/PolicyRegistry.json'
 import { abi as _IArbitrator } from '@kleros/erc-792/build/contracts/IArbitrator.json'
-import ETHAmount from '../../components/eth-amount'
-import { jurorsAndCourtIDFromExtraData } from '../../utils/string'
-import useWindowDimensions from '../../hooks/window-dimensions'
-import useNativeCurrency from '../../hooks/native-currency'
+import ETHAmount from 'components/eth-amount'
+import { jurorsAndCourtIDFromExtraData } from 'utils/string'
+import useWindowDimensions from 'hooks/window-dimensions'
+import useNativeCurrency from 'hooks/native-currency'
 
 const StyledExtraDataContainer = styled.div`
   padding-bottom: 8px;

@@ -1,7 +1,7 @@
 import { useWeb3Context } from 'web3-react'
 import { NETWORK } from '../utils/network-utils'
 
-// TODO: Replace users with useNetworkEnvVariable.
+// TODO: Replace users with getNetworkEnv.
 const useMainTCR2 = () => {
   const DEFAULT_NETWORK =
     process.env.REACT_APP_DEFAULT_NETWORK || NETWORK.MAINNET

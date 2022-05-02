@@ -19,17 +19,17 @@ import { useDebounce } from 'use-debounce/lib'
 import { getAddress, parseEther, bigNumberify } from 'ethers/utils'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { useWeb3Context } from 'web3-react'
-import CustomInput from '../../components/custom-input'
+import CustomInput from 'components/custom-input'
 import { ItemTypes } from '@kleros/gtcr-encoder'
-import ipfsPublish from '../../utils/ipfs-publish'
-import { sanitize } from '../../utils/string'
-import BaseDepositInput from '../../components/base-deposit-input'
-import useArbitrationCost from '../../hooks/arbitration-cost'
-import useNetworkEnvVariable from '../../hooks/network-env'
+import ipfsPublish from 'utils/ipfs-publish'
+import { sanitize } from 'utils/string'
+import BaseDepositInput from 'components/base-deposit-input'
+import useArbitrationCost from 'hooks/arbitration-cost'
+import getNetworkEnv from 'utils/network-env'
 import KlerosParams from './kleros-params'
-import ETHAmount from '../../components/eth-amount'
-import useWindowDimensions from '../../hooks/window-dimensions'
-import useNativeCurrency from '../../hooks/native-currency'
+import ETHAmount from 'components/eth-amount'
+import useWindowDimensions from 'hooks/window-dimensions'
+import useNativeCurrency from 'hooks/native-currency'
 import { useHistory } from 'react-router'
 
 const StyledUpload = styled(Upload)`
@@ -117,7 +117,7 @@ const TCRParams = ({
   const [depositVal, setDepositVal] = useState(0.05)
   const [debouncedArbitrator] = useDebounce(values.arbitratorAddress, 1000)
   const { arbitrator: klerosAddress, policy: policyAddress } =
-    useNetworkEnvVariable('REACT_APP_KLEROS_ADDRESSES', networkId) || {}
+    getNetworkEnv('REACT_APP_KLEROS_ADDRESSES', networkId) || {}
   const { arbitrationCost } = useArbitrationCost({
     address: values.arbitratorAddress,
     arbitratorExtraData: values.arbitratorExtraData,
