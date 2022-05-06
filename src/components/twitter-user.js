@@ -38,19 +38,19 @@ const TwitterUser = ({ userID }) => {
         )
         setUser(await res.json())
       } catch (err) {
-        setUser({ error: err })
+        setUser({ error: err.toString() })
       }
     })()
   }, [userID])
 
   if (!user) return <StyledSkeleton loading active />
 
-  const { data, error } = user || {}
+  const { data, error } = user
 
-  if (error)
+  if (error || !data)
     return (
       <Alert
-        type="warning"
+        type="error"
         message={`Error fetching user for id ${userID}`}
         description={error}
       />
