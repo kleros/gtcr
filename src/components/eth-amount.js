@@ -27,7 +27,7 @@ const ETHAmount = ({ amount, decimals, displayUnit }) => {
 
   if (Math.floor(value) !== value) {
     const decimalCount = value.toString().split('.')[1].length
-    value = value.toFixed(decimals > decimalCount ? decimalCount : decimals)
+    value = value.toFixed(Math.min(decimalCount, decimals))
   }
 
   return value + (displayUnit || '')
