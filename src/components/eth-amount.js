@@ -1,4 +1,3 @@
-import PropTypes from 'prop-types'
 import React from 'react'
 import { Skeleton } from 'antd'
 import styled from 'styled-components/macro'
@@ -12,33 +11,26 @@ const StyledSkeleton = styled(Skeleton)`
     margin: -3px 0;
   }
 `
-const ETHAmount = ({ amount, decimals, displayUnit }) =>
-  amount === null ? (
-    <StyledSkeleton active paragraph={false} title={SkeletonTitleProps} />
-  ) : (
-    Number(
-      ethers.utils.formatEther(
-        typeof amount === 'number'
-          ? amount.toLocaleString('fullwide', { useGrouping: false })
-          : String(amount)
-      )
-    ).toFixed(decimals) + (displayUnit || '')
+const ETHAmount = ({ amount, decimals, displayUnit }) => {
+  if (amount === null)
+    return (
+      <StyledSkeleton active paragraph={false} title={SkeletonTitleProps} />
+    )
+
+  let value = Number(
+    ethers.utils.formatEther(
+      typeof amount === 'number'
+        ? amount.toLocaleString('fullwide', { useGrouping: false })
+        : String(amount)
+    )
   )
 
-ETHAmount.propTypes = {
-  amount: PropTypes.oneOfType([
-    PropTypes.string.isRequired,
-    PropTypes.number.isRequired,
-    PropTypes.object.isRequired
-  ]),
-  decimals: PropTypes.number,
-  displayUnit: PropTypes.string
-}
+  if (Math.floor(value) !== value) {
+    const decimalCount = value.toString().split('.')[1].length
+    value = value.toFixed(Math.min(decimalCount, decimals))
+  }
 
-ETHAmount.defaultProps = {
-  amount: null,
-  decimals: 0,
-  displayUnit: null
+  return value + (displayUnit || '')
 }
 
 export default ETHAmount
