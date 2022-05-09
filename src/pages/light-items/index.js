@@ -1,7 +1,6 @@
 /* eslint-disable no-unused-vars */
 // Rule disabled temporarly as filters will be added back.
 import { Layout, Spin, Pagination, Tag, Select, Switch } from 'antd'
-import { Link } from 'react-router-dom'
 import { useHistory, useParams } from 'react-router'
 import React, {
   useEffect,
@@ -10,10 +9,8 @@ import React, {
   useMemo,
   useCallback
 } from 'react'
-import PropTypes from 'prop-types'
 import styled from 'styled-components/macro'
 import localforage from 'localforage'
-import { useWeb3Context } from 'web3-react'
 import qs from 'qs'
 import ErrorPage from '../error-page'
 import { WalletContext } from 'contexts/wallet-context'
@@ -105,55 +102,6 @@ const pagingItem = (_, type, originalElement) => {
   return originalElement
 }
 
-const xDaiInfo = {
-  name: 'xDAI Chain',
-  chainId: 100,
-  shortName: 'xdai',
-  chain: 'XDAI',
-  network: 'mainnet',
-  networkId: 100,
-  nativeCurrency: { name: 'xDAI', symbol: 'xDAI', decimals: 18 },
-  rpc: [
-    'https://rpc.xdaichain.com',
-    'https://xdai.poanetwork.dev',
-    'wss://rpc.xdaichain.com/wss',
-    'wss://xdai.poanetwork.dev/wss',
-    'http://xdai.poanetwork.dev',
-    'https://dai.poa.network',
-    'ws://xdai.poanetwork.dev:8546'
-  ],
-  faucets: [],
-  explorers: [
-    {
-      name: 'blockscout',
-      url: 'https://blockscout.com/xdai/',
-      standard: 'EIP3091'
-    }
-  ],
-  infoURL: 'https://forum.poa.network/c/xdai-chain'
-}
-
-const supportedNetworkURLs = JSON.parse(process.env.REACT_APP_RPC_URLS)
-const mainnetInfo = {
-  name: 'Ethereum Mainnet',
-  chainId: 1,
-  shortName: 'eth',
-  chain: 'ETH',
-  network: 'mainnet',
-  networkId: 1,
-  nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
-  rpc: [supportedNetworkURLs[1]],
-  faucets: [],
-  explorers: [
-    {
-      name: 'etherscan',
-      url: 'https://etherscan.io',
-      standard: 'EIP3091'
-    }
-  ],
-  infoURL: 'https://ethereum.org'
-}
-
 // TODO: Ensure we don't set state for unmounted components using
 // flags and AbortController.
 //
@@ -165,8 +113,6 @@ const Items = () => {
   const { tcrAddress, chainId } = useParams()
   const search = window.location.search
   const { requestWeb3Auth, timestamp } = useContext(WalletContext)
-  const { library, active } = useWeb3Context()
-  const [network, setNetwork] = useState()
   const {
     gtcr,
     metaEvidence,
@@ -354,33 +300,6 @@ const Items = () => {
     }
   })
 
-  const switchToSuggested = useCallback(async () => {
-    if (!library || !active || !network) return
-    if (network.chainId === 100)
-      library.send('wallet_switchEthereumChain', [
-        {
-          chainId: `0x${mainnetInfo.chainId.toString(16)}`
-        }
-      ])
-    else
-      library.send('wallet_addEthereumChain', [
-        {
-          chainId: `0x${xDaiInfo.chainId.toString(16)}`,
-          nativeCurrency: xDaiInfo.nativeCurrency,
-          chainName: xDaiInfo.name,
-          rpcUrls: xDaiInfo.rpc,
-          blockExplorerUrls: xDaiInfo.explorers.url
-        }
-      ])
-  }, [active, library, network])
-
-  useEffect(() => {
-    ;(async () => {
-      if (!library || !active) return
-      setNetwork(await library.getNetwork())
-    })()
-  }, [active, library])
-
   // Load NSFW user setting from localforage.
   useEffect(() => {
     ;(async () => {
@@ -533,21 +452,11 @@ const Items = () => {
       />
     )
 
-  const SuggestionsLink = () => (
-    <span>
-      Is your wallet in the correct network? Perhaps this list is on{' '}
-      <Link onClick={switchToSuggested}>
-        {network && network.chainId === 100 ? 'Mainnet' : 'xDai'}
-      </Link>{' '}
-    </span>
-  )
-
   if (tcrError || error)
     return (
       <ErrorPage
         code="400"
         message={tcrError || error || 'Decoding this item.'}
-        tip={<SuggestionsLink />}
       />
     )
 
