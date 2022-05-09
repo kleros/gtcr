@@ -12,18 +12,27 @@ const StyledSkeleton = styled(Skeleton)`
     margin: -3px 0;
   }
 `
-const ETHAmount = ({ amount, decimals, displayUnit }) =>
-  amount === null ? (
-    <StyledSkeleton active paragraph={false} title={SkeletonTitleProps} />
-  ) : (
-    Number(
-      ethers.utils.formatEther(
-        typeof amount === 'number'
-          ? amount.toLocaleString('fullwide', { useGrouping: false })
-          : String(amount)
-      )
-    ).toFixed(decimals) + (displayUnit || '')
+const ETHAmount = ({ amount, decimals, displayUnit }) => {
+  if (amount === null)
+    return (
+      <StyledSkeleton active paragraph={false} title={SkeletonTitleProps} />
+    )
+
+  let value = Number(
+    ethers.utils.formatEther(
+      typeof amount === 'number'
+        ? amount.toLocaleString('fullwide', { useGrouping: false })
+        : String(amount)
+    )
   )
+
+  if (Math.floor(value) !== value) {
+    const decimalCount = value.toString().split('.')[1].length
+    value = value.toFixed(decimals > decimalCount ? decimalCount : decimals)
+  }
+
+  return value + (displayUnit || '')
+}
 
 ETHAmount.propTypes = {
   amount: PropTypes.oneOfType([
