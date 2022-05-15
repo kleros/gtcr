@@ -52,10 +52,7 @@ const ItemDetailsRouter = () => {
     })()
   }, [active, library, tcrAddress])
 
-  if (
-    typeof isLightCurate === 'undefined' ||
-    networkStatus !== NETWORK_STATUS.supported
-  )
+  if (isLightCurate === undefined || networkStatus !== NETWORK_STATUS.supported)
     return <Loading />
 
   if (isLightCurate)
