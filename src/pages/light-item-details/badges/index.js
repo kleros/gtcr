@@ -25,6 +25,7 @@ import takeLower from 'utils/lower-limit'
 import { useLazyQuery } from '@apollo/client'
 import { LIGHT_ITEMS_QUERY } from 'utils/graphql'
 import { bigNumberify } from 'ethers/utils'
+import useGetLogs from 'hooks/get-logs'
 
 const StyledGrid = styled.div`
   display: grid;
@@ -160,6 +161,7 @@ const Badges = ({ connectedTCRAddr, item, tcrAddress }) => {
     isFetching: false,
     data: null
   })
+  const getLogs = useGetLogs(library)
 
   // Wire up the TCR.
   const gtcrView = useMemo(() => {
@@ -275,7 +277,7 @@ const Badges = ({ connectedTCRAddr, item, tcrAddress }) => {
             const badgeContract = new ethers.Contract(badgeAddr, _gtcr, library)
             // Get the badge contract metadata.
             const logs = (
-              await library.getLogs({
+              await getLogs({
                 ...badgeContract.filters.MetaEvidence(),
                 fromBlock: 0
               })

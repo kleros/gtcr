@@ -30,6 +30,7 @@ import Badges from './badges'
 import AppTour from 'components/tour'
 import itemTourSteps from './tour-steps'
 import takeLower from 'utils/lower-limit'
+import useGetLogs from 'hooks/get-logs'
 
 const ITEM_TOUR_DISMISSED = 'ITEM_TOUR_DISMISSED'
 
@@ -97,6 +98,7 @@ const ItemDetails = ({ itemID, search }) => {
     connectedTCRAddr,
     metadataByTime
   } = useContext(TCRViewContext)
+  const getLogs = useGetLogs(library)
 
   // Warning: This function should only be called when all its dependencies
   // are set.
@@ -119,7 +121,7 @@ const ItemDetails = ({ itemID, search }) => {
         if (!gtcr || !gtcrView || !tcrAddress || !itemID) return
         const [requestStructs, rawRequestLogs] = await Promise.all([
           gtcrView.getItemRequests(tcrAddress, itemID),
-          library.getLogs({
+          getLogs({
             ...gtcr.filters.RequestSubmitted(itemID),
             fromBlock: 0
           })
@@ -243,7 +245,7 @@ const ItemDetails = ({ itemID, search }) => {
       try {
         // Take the latest meta evidence.
         const logs = (
-          await library.getLogs({
+          await getLogs({
             ...itemTCR.filters.MetaEvidence(),
             fromBlock: 0
           })

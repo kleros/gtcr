@@ -10,6 +10,7 @@ import { gtcrDecode } from '@kleros/gtcr-encoder'
 import useNotificationWeb3 from './notifications-web3'
 import { getAddress } from 'ethers/utils'
 import takeLower from '../utils/lower-limit'
+import useGetLogs from './get-logs'
 
 // TODO: Ensure we don't set state for unmounted components using
 // flags and AbortController.
@@ -36,7 +37,7 @@ const useTcrView = tcrAddress => {
     'REACT_APP_GTCRVIEW_ADDRESSES',
     networkId
   )
-
+  const getLogs = useGetLogs(library)
   // Wire up the TCR.
   const gtcrView = useMemo(() => {
     if (!library || !active || !arbitrableTCRViewAddr || !networkId) return
@@ -180,7 +181,7 @@ const useTcrView = tcrAddress => {
       try {
         // Take the latest meta evidence.
         const logs = (
-          await library.getLogs({
+          await getLogs({
             ...gtcr.filters.MetaEvidence(),
             fromBlock: 0
           })
@@ -246,7 +247,7 @@ const useTcrView = tcrAddress => {
     if (!gtcr || !library || gtcr.address !== tcrAddress) return
     ;(async () => {
       const logs = (
-        await library.getLogs({
+        await getLogs({
           ...gtcr.filters.ConnectedTCRSet(),
           fromBlock: 0
         })
@@ -271,7 +272,7 @@ const useTcrView = tcrAddress => {
       try {
         setItemSubmissionLogs(
           (
-            await library.getLogs({
+            await getLogs({
               ...gtcr.filters.ItemSubmitted(),
               fromBlock: 0
             })

@@ -20,6 +20,7 @@ import { ItemTypes, searchableFields } from '@kleros/gtcr-encoder'
 import { TCRViewContext } from 'contexts/tcr-view-context'
 import { WalletContext } from 'contexts/wallet-context'
 import { itemToStatusCode, STATUS_COLOR } from '../utils/item-status'
+import useGetLogs from 'hooks/get-logs'
 
 const StyledSelect = styled(Select)`
   width: 100%;
@@ -170,6 +171,7 @@ const SearchBar = () => {
     tcrAddress
   } = useContext(TCRViewContext)
   const { library, active } = useWeb3Context()
+  const getLogs = useGetLogs(library)
 
   // If this is a TCR of TCRs, we should not only
   // match against the decoded item value but also against
@@ -197,7 +199,7 @@ const SearchBar = () => {
             try {
               // Take the latest meta evidence.
               const logs = (
-                await library.getLogs({
+                await getLogs({
                   ...arbitrable.filters.MetaEvidence(),
                   fromBlock: 0
                 })
