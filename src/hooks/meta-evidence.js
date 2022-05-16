@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react'
+import useGetLogs from './get-logs'
 
 const useMetaEvidence = ({ arbitrable, library }) => {
   const [metaEvidence, setMetaEvidence] = useState()
   const [error, setError] = useState()
+  const getLogs = useGetLogs(library)
 
   useEffect(() => {
     if (!arbitrable || !library) return
@@ -10,7 +12,7 @@ const useMetaEvidence = ({ arbitrable, library }) => {
       try {
         // Take the latest meta evidence.
         const logs = (
-          await library.getLogs({
+          await getLogs({
             ...arbitrable.filters.MetaEvidence(),
             fromBlock: 0
           })

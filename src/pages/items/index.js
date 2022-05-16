@@ -39,6 +39,7 @@ import takeLower from 'utils/lower-limit'
 import { DISPUTE_STATUS } from 'utils/item-status'
 import { useLazyQuery } from '@apollo/client'
 import { CLASSIC_REGISTRY_ITEMS_QUERY } from 'utils/graphql'
+import useGetLogs from 'hooks/get-logs'
 
 const NSFW_FILTER_KEY = 'NSFW_FILTER_KEY'
 const ITEMS_TOUR_DISMISSED = 'ITEMS_TOUR_DISMISSED'
@@ -148,6 +149,7 @@ const Items = () => {
   const [nsfwFilterOn, setNSFWFilter] = useState(true)
   const [queryItemParams, setQueryItemParams] = useState()
   const [getItems, itemsQuery] = useLazyQuery(CLASSIC_REGISTRY_ITEMS_QUERY)
+  const getLogs = useGetLogs(library)
 
   const toggleNSFWFilter = useCallback(checked => {
     setNSFWFilter(checked)
@@ -373,7 +375,7 @@ const Items = () => {
             100) // Add 100 block margin.
       }
 
-      const requestSubmissionLogs = (await library.getLogs(logsFilter))
+      const requestSubmissionLogs = (await getLogs(logsFilter))
         .map(log => ({
           ...gtcr.interface.parseLog(log),
           blockNumber: log.blockNumber

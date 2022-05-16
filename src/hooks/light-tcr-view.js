@@ -8,6 +8,7 @@ import { abi as _arbitrator } from '@kleros/erc-792/build/contracts/IArbitrator.
 import getNetworkEnv from '../utils/network-env'
 import useNotificationWeb3 from './notifications-web3'
 import { getAddress } from 'ethers/utils'
+import useGetLogs from './get-logs'
 
 // TODO: Ensure we don't set state for unmounted components using
 // flags and AbortController.
@@ -33,6 +34,7 @@ const useLightTcrView = tcrAddress => {
     'REACT_APP_LGTCRVIEW_ADDRESSES',
     networkId
   )
+  const getLogs = useGetLogs(library)
 
   // Wire up the TCR.
   const gtcrView = useMemo(() => {
@@ -177,7 +179,7 @@ const useLightTcrView = tcrAddress => {
       try {
         // Take the latest meta evidence.
         const logs = (
-          await library.getLogs({
+          await getLogs({
             ...gtcr.filters.MetaEvidence(),
             fromBlock: 0
           })
@@ -243,7 +245,7 @@ const useLightTcrView = tcrAddress => {
     if (!gtcr || !library || gtcr.address !== tcrAddress) return
     ;(async () => {
       const logs = (
-        await library.getLogs({
+        await getLogs({
           ...gtcr.filters.ConnectedTCRSet(),
           fromBlock: 0
         })

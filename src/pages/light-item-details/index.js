@@ -32,6 +32,7 @@ import { SUBGRAPH_STATUS_TO_CODE } from 'utils/item-status'
 import { LIGHT_ITEM_DETAILS_QUERY } from 'utils/graphql'
 import { useQuery } from '@apollo/client'
 import SearchBar from 'components/light-search-bar'
+import useGetLogs from 'hooks/get-logs'
 
 const ITEM_TOUR_DISMISSED = 'ITEM_TOUR_DISMISSED'
 
@@ -99,6 +100,7 @@ const ItemDetails = ({ itemID, search }) => {
     connectedTCRAddr,
     metadataByTime
   } = useContext(LightTCRViewContext)
+  const getLogs = useGetLogs(library)
 
   // subgraph item entities have id "<itemID>@<listaddress>"
   const compoundId = `${itemID}@${tcrAddress.toLowerCase()}`
@@ -255,7 +257,7 @@ const ItemDetails = ({ itemID, search }) => {
       try {
         // Take the latest meta evidence.
         const logs = (
-          await library.getLogs({
+          await getLogs({
             ...itemTCR.filters.MetaEvidence(),
             fromBlock: 0
           })

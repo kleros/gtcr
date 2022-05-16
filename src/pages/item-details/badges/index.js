@@ -24,6 +24,7 @@ import SubmitModal from '../modals/submit'
 import SubmitConnectModal from '../modals/submit-connect'
 import useTcrView from 'hooks/tcr-view'
 import takeLower from 'utils/lower-limit'
+import useGetLogs from 'hooks/get-logs'
 
 const StyledGrid = styled.div`
   display: grid;
@@ -88,6 +89,7 @@ const Badges = ({ connectedTCRAddr, item, tcrAddress }) => {
     isFetching: false,
     data: null
   })
+  const getLogs = useGetLogs(library)
 
   // Wire up the TCR.
   const gtcrView = useMemo(() => {
@@ -223,7 +225,7 @@ const Badges = ({ connectedTCRAddr, item, tcrAddress }) => {
 
             // Get the badge contract metadata.
             const logs = (
-              await library.getLogs({
+              await getLogs({
                 ...badgeContract.filters.MetaEvidence(),
                 fromBlock: 0
               })

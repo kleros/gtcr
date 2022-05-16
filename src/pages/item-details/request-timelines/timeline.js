@@ -27,6 +27,7 @@ import { WalletContext } from 'contexts/wallet-context'
 import BNPropType from 'prop-types/bn'
 import { capitalizeFirstLetter } from 'utils/string'
 import { getTxPage } from 'utils/network-utils'
+import useGetLogs from 'hooks/get-logs'
 
 const StyledText = styled(Typography.Text)`
   text-transform: capitalize;
@@ -91,6 +92,7 @@ const Timeline = ({ request, requestID, item }) => {
       solidityKeccak256(['bytes32', 'uint'], [itemID, requestID])
     )
   }, [itemID, requestID])
+  const getLogs = useGetLogs(library)
 
   // Setup arbitrator instance.
   useEffect(() => {
@@ -131,32 +133,32 @@ const Timeline = ({ request, requestID, item }) => {
       // Fetch logs in parallel.
       const logsArr = (
         await Promise.all([
-          library.getLogs({
+          getLogs({
             ...gtcr.filters.Evidence(arbitrator.address, evidenceGroupID),
             fromBlock: 0
           }),
-          library.getLogs({
+          getLogs({
             ...gtcr.filters.RequestSubmitted(itemID, requestID),
             fromBlock: 0
           }),
-          library.getLogs({
+          getLogs({
             ...gtcr.filters.ItemStatusChange(itemID, requestID),
             fromBlock: 0
           }),
           disputed
-            ? library.getLogs({
+            ? getLogs({
                 ...gtcr.filters.Ruling(arbitrator.address, disputeID),
                 fromBlock: 0
               })
             : null,
           disputed
-            ? library.getLogs({
+            ? getLogs({
                 ...arbitrator.filters.AppealPossible(disputeID, gtcrAddr),
                 fromBlock: 0
               })
             : null,
           disputed
-            ? library.getLogs({
+            ? getLogs({
                 ...arbitrator.filters.AppealDecision(disputeID, gtcrAddr),
                 fromBlock: 0
               })

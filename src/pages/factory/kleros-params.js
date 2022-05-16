@@ -10,6 +10,7 @@ import ETHAmount from 'components/eth-amount'
 import { jurorsAndCourtIDFromExtraData } from 'utils/string'
 import useWindowDimensions from 'hooks/window-dimensions'
 import useNativeCurrency from 'hooks/native-currency'
+import useGetLogs from 'hooks/get-logs'
 
 const StyledExtraDataContainer = styled.div`
   padding-bottom: 8px;
@@ -44,6 +45,7 @@ const KlerosParams = ({
   const [numberOfJurors, setNumberOfJurors] = useState(3)
   const [courtID, setCourtID] = useState()
   const [courts, setCourts] = useState([])
+  const getLogs = useGetLogs(library)
 
   const policyRegistry = useMemo(() => {
     if (!policyAddress || !active) return
@@ -74,7 +76,7 @@ const KlerosParams = ({
       if (!policyRegistry || !active) return
       try {
         const logs = (
-          await library.getLogs({
+          await getLogs({
             ...policyRegistry.filters.PolicyUpdate(),
             fromBlock: 0
           })

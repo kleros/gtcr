@@ -34,6 +34,7 @@ import ipfsPublish from 'utils/ipfs-publish'
 import { WalletContext } from 'contexts/wallet-context'
 import { TourContext } from 'contexts/tour-context.js'
 import useNativeCurrency from 'hooks/native-currency.js'
+import useGetLogs from 'hooks/get-logs'
 
 const StyledSpin = styled(Spin)`
   height: 60px;
@@ -86,6 +87,7 @@ const SubmitConnectModal = props => {
   const [relTCRSubmissionDeposit, setRelTCRSubmissionDeposit] = useState()
 
   const [match, setMatch] = useState()
+  const getLogs = useGetLogs(library)
 
   // Set initial values, if any.
   useEffect(() => {
@@ -102,7 +104,7 @@ const SubmitConnectModal = props => {
       try {
         const tcr = new ethers.Contract(debouncedTCRAddr, _gtcr, library)
         const logs = (
-          await library.getLogs({
+          await getLogs({
             ...tcr.filters.MetaEvidence(),
             fromBlock: 0
           })
@@ -135,7 +137,7 @@ const SubmitConnectModal = props => {
           library
         )
         const logs = (
-          await library.getLogs({
+          await getLogs({
             ...badgeTCR.filters.MetaEvidence(),
             fromBlock: 0
           })
@@ -161,7 +163,7 @@ const SubmitConnectModal = props => {
       try {
         const relTCR = new ethers.Contract(relTCRAddress, _gtcr, library)
         const logs = (
-          await library.getLogs({
+          await getLogs({
             ...relTCR.filters.MetaEvidence(),
             fromBlock: 0
           })
