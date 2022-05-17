@@ -123,7 +123,7 @@ const SubmitConnectModal = props => {
         setError('Error fetching list metadata')
       }
     })()
-  }, [active, debouncedTCRAddr, library, networkId])
+  }, [active, debouncedTCRAddr, library, networkId, getLogs])
 
   // Fetch metadata of the badge TCR.
   useEffect(() => {
@@ -155,7 +155,7 @@ const SubmitConnectModal = props => {
         setError('Error fetching list metadata')
       }
     })()
-  }, [active, debouncedBadgeTCRAddr, library, networkId])
+  }, [active, debouncedBadgeTCRAddr, library, networkId, getLogs])
 
   // Fetch meta evidence and tcr data from connect tcr.
   useEffect(() => {
@@ -190,7 +190,7 @@ const SubmitConnectModal = props => {
         setError(err.message)
       }
     })()
-  }, [gtcrView, library, relTCRAddress])
+  }, [gtcrView, library, relTCRAddress, getLogs])
 
   const NONE = 'None'
   const handleChange = useCallback(

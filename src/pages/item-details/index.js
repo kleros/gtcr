@@ -141,7 +141,7 @@ const ItemDetails = ({ itemID, search }) => {
         console.error('Error fetching item requests', err)
       }
     })()
-  }, [gtcr, gtcrView, itemID, library, tcrAddress])
+  }, [gtcr, gtcrView, itemID, library, tcrAddress, getLogs])
 
   // Decode item bytes once we have it and the meta evidence files.
   useEffect(() => {
@@ -263,7 +263,7 @@ const ItemDetails = ({ itemID, search }) => {
         setItemMetaEvidence({ error: err })
       }
     })()
-  }, [decodedItem, library, metadata])
+  }, [decodedItem, library, metadata, getLogs])
 
   const loading =
     !metadata ||

@@ -322,7 +322,7 @@ const Badges = ({ connectedTCRAddr, item, tcrAddress }) => {
         setConnectedBadges(connectedBadges || [])
       }
     })()
-  }, [enabledBadges, gtcr, gtcrView, item, library])
+  }, [enabledBadges, gtcr, gtcrView, item, library, getLogs])
 
   // The available badges are the connected badges for which
   // there are no pending requests for this item.

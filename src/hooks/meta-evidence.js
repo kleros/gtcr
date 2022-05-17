@@ -35,7 +35,7 @@ const useMetaEvidence = ({ arbitrable, library }) => {
         setError(err)
       }
     })()
-  }, [arbitrable, library])
+  }, [arbitrable, library, getLogs])
 
   return { metaEvidence, error }
 }

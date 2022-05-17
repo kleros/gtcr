@@ -275,7 +275,7 @@ const ItemDetails = ({ itemID, search }) => {
         setItemMetaEvidence({ error: err })
       }
     })()
-  }, [decodedItem, library, metadata])
+  }, [decodedItem, library, metadata, getLogs])
 
   const loading =
     !metadata ||

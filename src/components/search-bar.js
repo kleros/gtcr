@@ -238,7 +238,7 @@ const SearchBar = () => {
         )
       )
     })()
-  }, [active, dataSource, library, metaEvidence, tcrAddress])
+  }, [active, dataSource, library, metaEvidence, tcrAddress, getLogs])
 
   const [debouncedCallback] = useDebouncedCallback(input => {
     if (!input || input.length === 0 || enhancedDataSource.length === 0)

@@ -240,7 +240,14 @@ const useTcrView = tcrAddress => {
     return () => {
       gtcr.removeAllListeners(gtcr.filters.MetaEvidence())
     }
-  }, [META_EVIDENCE_CACHE_KEY, gtcr, library, metaEvidence, tcrAddress])
+  }, [
+    META_EVIDENCE_CACHE_KEY,
+    gtcr,
+    library,
+    metaEvidence,
+    tcrAddress,
+    getLogs
+  ])
 
   // Fetch the Related TCR address
   useEffect(() => {
@@ -256,7 +263,7 @@ const useTcrView = tcrAddress => {
 
       setConnectedTCRAddr(logs[logs.length - 1].values._connectedTCR)
     })()
-  }, [gtcr, library, connectedTCRAddr, tcrAddress])
+  }, [gtcr, library, connectedTCRAddr, tcrAddress, getLogs])
 
   // Fetch and decode item submission logs.
   useEffect(() => {
@@ -336,7 +343,7 @@ const useTcrView = tcrAddress => {
         setError('Error fetching submission logs')
       }
     })()
-  }, [gtcr, library, metaEvidence, metadataByTime, tcrAddress])
+  }, [gtcr, library, metaEvidence, metadataByTime, tcrAddress, getLogs])
 
   return {
     gtcr,

@@ -411,7 +411,8 @@ const Items = () => {
     oldActiveItems,
     queryOptions,
     search,
-    tcrAddress
+    tcrAddress,
+    getLogs
   ])
 
   // Decode items once meta evidence and items were fetched.

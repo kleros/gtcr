@@ -252,7 +252,8 @@ const Timeline = ({ request, requestID, item }) => {
     itemID,
     library,
     request,
-    requestID
+    requestID,
+    getLogs
   ])
 
   if (error) return <Result status="warning" title={error} />

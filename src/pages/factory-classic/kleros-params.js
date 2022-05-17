@@ -119,7 +119,7 @@ const KlerosParams = ({
         console.warn('Error fetching policies', err)
       }
     })()
-  }, [active, library, policyRegistry])
+  }, [active, library, policyRegistry, getLogs])
 
   // Load arbitrator extra data
   useEffect(() => {
