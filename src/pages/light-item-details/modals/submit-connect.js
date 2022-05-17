@@ -100,6 +100,7 @@ const SubmitConnectModal = props => {
     if (!debouncedTCRAddr) return
     if (!isETHAddress(debouncedTCRAddr)) return
     if (!library || !active || !networkId) return
+    if (!getLogs) return
     ;(async () => {
       try {
         const tcr = new ethers.Contract(debouncedTCRAddr, _gtcr, library)
@@ -129,6 +130,7 @@ const SubmitConnectModal = props => {
     if (!debouncedBadgeTCRAddr) return
     if (!isETHAddress(debouncedBadgeTCRAddr)) return
     if (!library || !active || !networkId) return
+    if (!getLogs) return
     ;(async () => {
       try {
         const badgeTCR = new ethers.Contract(
@@ -159,6 +161,7 @@ const SubmitConnectModal = props => {
   // Fetch meta evidence and tcr data from connect tcr.
   useEffect(() => {
     if (!relTCRAddress || !gtcrView) return
+    if (!getLogs) return
     ;(async () => {
       try {
         const relTCR = new ethers.Contract(relTCRAddress, _gtcr, library)

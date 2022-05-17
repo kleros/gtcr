@@ -74,6 +74,7 @@ const KlerosParams = ({
   useEffect(() => {
     ;(async () => {
       if (!policyRegistry || !active) return
+      if (!getLogs) return
       try {
         const logs = (
           await getLogs({

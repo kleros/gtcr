@@ -119,6 +119,7 @@ const ItemDetails = ({ itemID, search }) => {
     ;(async () => {
       try {
         if (!gtcr || !gtcrView || !tcrAddress || !itemID) return
+        if (!getLogs) return
         const [requestStructs, rawRequestLogs] = await Promise.all([
           gtcrView.getItemRequests(tcrAddress, itemID),
           getLogs({
@@ -239,6 +240,7 @@ const ItemDetails = ({ itemID, search }) => {
       const { isTCRofTCRs } = metadata || {}
       if (!isTCRofTCRs) return
       if (!decodedItem) return
+      if (!getLogs) return
       const itemAddress = decodedItem.decodedData[0] // There is only one column, the TCR address.
       const itemTCR = new ethers.Contract(itemAddress, _gtcr, library)
 

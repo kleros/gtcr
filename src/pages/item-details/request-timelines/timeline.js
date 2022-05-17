@@ -130,6 +130,7 @@ const Timeline = ({ request, requestID, item }) => {
     const { address: gtcrAddr } = gtcr
 
     ;(async () => {
+      if (!getLogs) return
       // Fetch logs in parallel.
       const logsArr = (
         await Promise.all([

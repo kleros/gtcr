@@ -251,6 +251,7 @@ const ItemDetails = ({ itemID, search }) => {
       const { isTCRofTCRs } = metadata || {}
       if (!isTCRofTCRs) return
       if (!decodedItem) return
+      if (!getLogs) return
       const itemAddress = decodedItem.decodedData[0] // There is only one column, the TCR address.
       const itemTCR = new ethers.Contract(itemAddress, _gtcr, library)
 

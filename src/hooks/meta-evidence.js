@@ -8,6 +8,7 @@ const useMetaEvidence = ({ arbitrable, library }) => {
 
   useEffect(() => {
     if (!arbitrable || !library) return
+    if (!getLogs) return
     ;(async () => {
       try {
         // Take the latest meta evidence.

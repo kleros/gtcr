@@ -181,6 +181,7 @@ const SearchBar = () => {
     const { metadata, address } = metaEvidence || {}
     if (!dataSource || !active || !metadata || address !== tcrAddress) return
     if (dataSource.length > 0 && dataSource[0].tcrAddress !== tcrAddress) return
+    if (!getLogs) return
 
     const { isTCRofTCRs } = metadata
     if (!isTCRofTCRs) {

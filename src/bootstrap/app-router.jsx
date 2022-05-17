@@ -5,7 +5,6 @@ import { ApolloClient, ApolloProvider, InMemoryCache } from '@apollo/client'
 import { HttpLink } from '@apollo/client/link/http'
 import { useWeb3Context } from 'web3-react'
 import getNetworkEnv from 'utils/network-env'
-
 import loadable from '@loadable/component'
 import ErrorPage from 'pages/error-page'
 import NoWeb3Detected from 'pages/no-web3'
@@ -38,7 +37,7 @@ const ClassicFactory = loadable(
 
 const AppRouter = () => {
   const history = useHistory()
-  const { networkId, error } = useWeb3Context()
+  const { networkId, error, account } = useWeb3Context()
   const isUnsupported = useMemo(() => error?.code === 'UNSUPPORTED_NETWORK', [
     error
   ])
@@ -69,7 +68,8 @@ const AppRouter = () => {
 
   // changes network for users without a provider
   useEffect(() => {
-    if (networkId === undefined) return;
+    if (networkId === undefined) return
+    if (account) return // their provider will prompt to change it
     const pathname = history.location.pathname
     const newPathRegex = /\/tcr\/(\d+)\/0x/
     if (!newPathRegex.test(pathname)) return // let it redirect to new path first
@@ -79,7 +79,7 @@ const AppRouter = () => {
       localStorage.setItem(SAVED_NETWORK_KEY, pathChainId)
       window.location.reload()
     }
-  }, [history.location.pathname, networkId])
+  }, [history.location.pathname, networkId, account])
 
   useEffect(() => {
     const checkPathValidation = async () => {

@@ -213,6 +213,7 @@ const Badges = ({ connectedTCRAddr, item, tcrAddress }) => {
   // search for the current item.
   useEffect(() => {
     if (!enabledBadges || !gtcrView || !item) return
+    if (!getLogs) return
     ;(async () => {
       const foundBadges = []
       const connectedBadges = []

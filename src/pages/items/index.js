@@ -361,7 +361,8 @@ const Items = () => {
       fetchItems.address !== tcrAddress ||
       !challengePeriodDuration ||
       !library ||
-      (oldActiveItems && oldActiveItems.address === tcrAddress)
+      (oldActiveItems && oldActiveItems.address === tcrAddress) ||
+      !getLogs
     )
       return
     ;(async () => {

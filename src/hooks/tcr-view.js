@@ -174,7 +174,8 @@ const useTcrView = tcrAddress => {
       !gtcr ||
       !library ||
       gtcr.address !== tcrAddress ||
-      (metaEvidence && metaEvidence.address === tcrAddress)
+      (metaEvidence && metaEvidence.address === tcrAddress) ||
+      getLogs
     )
       return
     ;(async () => {
