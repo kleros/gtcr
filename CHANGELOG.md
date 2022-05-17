@@ -2,6 +2,57 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0](https://github.com/kleros/gtcr/compare/v2.2.0...v3.0.0) (2022-05-17)
+
+
+### ⚠ BREAKING CHANGES
+
+* mapping old tcr urls to chainId packed ones
+* adding chainId into path for tcr views
+* improving performance and cleaning messy code
+
+### Features
+
+* chainId in every url ([bec2e60](https://github.com/kleros/gtcr/commit/bec2e60492fb9bf4dc041d5c7f7b2fc87b06c683))
+* rich address support ([bde7a92](https://github.com/kleros/gtcr/commit/bde7a92f0ab3641faa50a0e94a99ccfaf6b2394c))
+* rich address support ([ab84f20](https://github.com/kleros/gtcr/commit/ab84f20d1a2226289b5ea4246359ec28de90690e))
+
+
+### Bug Fixes
+
+* adding chainId into path for tcr views ([9b05e2a](https://github.com/kleros/gtcr/commit/9b05e2ad2eed07757fc945033e068ce6652f043a))
+* decoded data is now in order ([776eee1](https://github.com/kleros/gtcr/commit/776eee1fce9a3bfa7613c00fee83f6652f13f90f))
+* eliminating unexpected behaviour of routing for tcr view ([dd50f82](https://github.com/kleros/gtcr/commit/dd50f82cc911e149fcdf4190340a94b61a53307a))
+* eth-amount not to display decimal points if its value is integer ([fffb086](https://github.com/kleros/gtcr/commit/fffb086429af99b903486b536657c64e8cdeb939))
+* factory crash on 0 jurors ([bf8a876](https://github.com/kleros/gtcr/commit/bf8a8760cc438f8a69f7dceddafbd32283786a4e))
+* infura getlogs outage ([decf39d](https://github.com/kleros/gtcr/commit/decf39da3a1ccfbdd8dae415ede8ee165d83b68c))
+* mapping old tcr urls to chainId packed ones ([368a446](https://github.com/kleros/gtcr/commit/368a4467e32bd0f539eb7fd95843a42480c8f2f9))
+* network routes when accessing without provider ([461a526](https://github.com/kleros/gtcr/commit/461a526e2bbee6cd2d109c21160f1c19240eab52))
+* only reload to network for non-provided ([740174c](https://github.com/kleros/gtcr/commit/740174ca5386a4e56359737b182f3e17c0c33c07))
+* path validation to consider registry too ([9ced18a](https://github.com/kleros/gtcr/commit/9ced18a4faee90fb4ee8d250d66f68be4e33cc38))
+* protocolRegex works properly ([1956b3a](https://github.com/kleros/gtcr/commit/1956b3a696a67885397cfbd45415f33ce608491e))
+* remove curate-rinkeby from env ([69a98bb](https://github.com/kleros/gtcr/commit/69a98bb738ebd649ccad682b38099d762d4f794b))
+* remove rich address in form ([81bebb7](https://github.com/kleros/gtcr/commit/81bebb7968a49b3d78b6b09e88e1407a2706d49a))
+* renaming `useNetworkEnvVariable` to `getNetworkEnv` ([fd6a43a](https://github.com/kleros/gtcr/commit/fd6a43a4b61e968a70f7b670350bc3461ff16a84))
+* replace instead of pushing chainId ([dfb064b](https://github.com/kleros/gtcr/commit/dfb064b1f34ffb5e9693f095d1d94afeada193f1))
+* routing issue of non-metamask provider ([b1b33af](https://github.com/kleros/gtcr/commit/b1b33af02a7a6c2c7821c2165dfe89a956766889))
+* schema is shown from item ([da8a13e](https://github.com/kleros/gtcr/commit/da8a13eff7c099005fcbbdd5ca7f00220b2fc020))
+* show unfilled fields again ([0a2f49e](https://github.com/kleros/gtcr/commit/0a2f49ea2c91cbe7670b05c258ee8189b1bced28))
+* stop showing unfilled fields ([f666b30](https://github.com/kleros/gtcr/commit/f666b3083f017fef638cb00c34582f800d2e3d48))
+* switching network bug of avatar ([78f76df](https://github.com/kleros/gtcr/commit/78f76dfd740ae39e677c95181f5991f7c6f8b1b8))
+* switching network flexibly on metamask ([b4b2b75](https://github.com/kleros/gtcr/commit/b4b2b75980be08bece36297790789acfe0746e09))
+* tcr item details to use chainId from path ([6778438](https://github.com/kleros/gtcr/commit/6778438d17aaf27f8c2bca110729493dc1cb5724))
+* tcr-view gets the metaevidence again ([bf1d50f](https://github.com/kleros/gtcr/commit/bf1d50f37c986ca0bee2b16e10162dc4fe017066))
+* top bar switch redirection without metamask ([7d94104](https://github.com/kleros/gtcr/commit/7d9410404832d7a2c373b48fbb12052e25177e3d))
+* twitter api cors proxy ([38a9255](https://github.com/kleros/gtcr/commit/38a9255688385e420ca3e4f126df8c0aa3aa959a))
+* use getLogs as dependency in useEffects ([40fe4ec](https://github.com/kleros/gtcr/commit/40fe4ec48b956a88192c48c1616fffa0ab0682ff))
+* useTcrNetwork to keep redirecting url ([b87a4b8](https://github.com/kleros/gtcr/commit/b87a4b8009fd7a28c7780872696d252571cb9f03))
+* xdai network wrong redirection ([3458c72](https://github.com/kleros/gtcr/commit/3458c7213f2d0d440bf7cd55e56c893d3130bb0c))
+* xdai shows proper explorer links ([7fbd665](https://github.com/kleros/gtcr/commit/7fbd6655492ba18a33553125b4a67123ece14e8f))
+
+
+* improving performance and cleaning messy code ([c8a9e1c](https://github.com/kleros/gtcr/commit/c8a9e1cfff6f5fe8d0e91adf2378bc332d783424)), closes [#215](https://github.com/kleros/gtcr/issues/215)
+
 ## [2.2.0](https://github.com/kleros/gtcr/compare/v2.1.0...v2.2.0) (2022-02-02)
 
 
