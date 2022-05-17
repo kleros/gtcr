@@ -251,6 +251,7 @@ const useLightTcrView = tcrAddress => {
   // Fetch the Related TCR address
   useEffect(() => {
     if (!gtcr || !library || gtcr.address !== tcrAddress) return
+    if (!getLogs) return
     ;(async () => {
       const logs = (
         await getLogs({

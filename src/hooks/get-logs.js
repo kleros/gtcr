@@ -15,7 +15,7 @@ const useGetLogs = library => {
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    []
+    [library, library.network]
   )
   if (!library || !library.network) return null
   return getLogs

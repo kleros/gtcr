@@ -175,7 +175,7 @@ const useTcrView = tcrAddress => {
       !library ||
       gtcr.address !== tcrAddress ||
       (metaEvidence && metaEvidence.address === tcrAddress) ||
-      getLogs
+      !getLogs
     )
       return
     ;(async () => {
@@ -253,6 +253,7 @@ const useTcrView = tcrAddress => {
   // Fetch the Related TCR address
   useEffect(() => {
     if (!gtcr || !library || gtcr.address !== tcrAddress) return
+    if (!getLogs) return
     ;(async () => {
       const logs = (
         await getLogs({
@@ -273,7 +274,8 @@ const useTcrView = tcrAddress => {
       !library ||
       gtcr.address !== tcrAddress ||
       !metadataByTime ||
-      metadataByTime.address !== tcrAddress
+      metadataByTime.address !== tcrAddress ||
+      !getLogs
     )
       return
     ;(async () => {
