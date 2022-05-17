@@ -2340,10 +2340,10 @@
   resolved "https://registry.yarnpkg.com/@kleros/erc-792/-/erc-792-4.0.1.tgz#e4c941ecda29e298a68fff88f880c3cdd8273c0c"
   integrity sha512-nOoifnzSz62jiZ1CtM8NfXD3kb1gdgTWRZ4VoHLREs5HD33vHnmyrO6FgmQQf/aqQJktHXP9cOo3DUFWv1v/Lw==
 
-"@kleros/gtcr-encoder@^1.5.0":
-  version "1.5.0"
-  resolved "https://registry.yarnpkg.com/@kleros/gtcr-encoder/-/gtcr-encoder-1.5.0.tgz#5c3a5fade5787df885e11791e78e555a984802a9"
-  integrity sha512-9Oj9dChjm8Rm9ForxxGYRyQCOmCw3D4cO6aJFZqtI7tFQGN6wHnQ/vc4L4CBJtTReh4FbO141F25wQnsVrxTGQ==
+"@kleros/gtcr-encoder@^1.6.1":
+  version "1.6.1"
+  resolved "https://registry.yarnpkg.com/@kleros/gtcr-encoder/-/gtcr-encoder-1.6.1.tgz#665a652cd004ec0e9e2bfda9d2dec9fda3df236a"
+  integrity sha512-MlkswcT1B6xIgDEOAs0cdfd6UWUBMmFpQxeEKonIXpdG2Rjg1ZmQU82rr4MiWHflycA7nzYPqlQk+q/OGQRQbQ==
   dependencies:
     bn.js "^5.1.2"
     ethers "^5.0.3"

@@ -7,6 +7,9 @@ import TwitterUser from './twitter-user'
 import { ItemTypes } from '@kleros/gtcr-encoder'
 import { ZERO_ADDRESS, LOREM_IPSUM } from '../utils/string'
 import RichAddress from './rich-address'
+import ETHAddress from './eth-address'
+
+const pohRichAddress = 'eip155:1:0xc5e9ddebb09cd64dfacab4011a0d5cedaf7c9bdb'
 
 const StyledImage = styled.img`
   object-fit: contain;
@@ -22,7 +25,9 @@ const DisplaySelector = ({ type, value, linkImage, allowedFileTypes }) => {
     case ItemTypes.GTCR_ADDRESS:
       return <GTCRAddress address={value || ZERO_ADDRESS} />
     case ItemTypes.ADDRESS:
-      return <RichAddress richAddress={value || ZERO_ADDRESS} />
+      return <ETHAddress address={value || ZERO_ADDRESS} />
+    case ItemTypes.RICH_ADDRESS:
+      return <RichAddress crude={value || pohRichAddress} />
     case ItemTypes.TEXT:
     case ItemTypes.NUMBER:
       return <Typography.Text>{value}</Typography.Text>

@@ -74,7 +74,7 @@ module.exports = {
     'react/jsx-filename-extension': [
       1,
       {
-        extensions: ['.js', '.jsx']
+        extensions: ['.js']
       }
     ],
     'react/jsx-indent': 0,

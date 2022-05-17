@@ -1,7 +1,7 @@
 {
   "name": "gtcr",
   "description": "A UI for the Kleros powered Generalized Token Curated List",
-  "version": "2.2.0",
+  "version": "3.0.0",
   "license": "MIT",
   "scripts": {
     "start": "react-scripts start",
@@ -21,7 +21,7 @@
     "@fortawesome/react-fontawesome": "^0.1.7",
     "@kleros/archon": "^0.10.1",
     "@kleros/erc-792": "^4.0.1",
-    "@kleros/gtcr-encoder": "^1.5.0",
+    "@kleros/gtcr-encoder": "^1.6.1",
     "@kleros/kleros": "^0.1.5",
     "@kleros/react-components": "^1.0.0",
     "@kleros/tcr": "^2.0.0",

@@ -15,11 +15,15 @@ const StyledMenuItem = styled(Menu.Item)`
   background-color: transparent !important;
 `
 const AppMenu = ({ mode }) => {
-  const isHorizontal = mode === 'horizontal';
-  const MenuWrapper = isHorizontal ? StyledMenu : Menu;
+  const isHorizontal = mode === 'horizontal'
+  const MenuWrapper = isHorizontal ? StyledMenu : Menu
 
   return (
-    <MenuWrapper mode={mode} theme="dark" defaultSelectedKeys={[isHorizontal ? 'browse' : 'home']}>
+    <MenuWrapper
+      mode={mode}
+      theme="dark"
+      defaultSelectedKeys={[isHorizontal ? 'browse' : 'home']}
+    >
       {isHorizontal ? null : (
         <Menu.Item style={{ height: '70px' }} key="home">
           <NavLink to="/">K L E R O S</NavLink>
@@ -27,7 +31,7 @@ const AppMenu = ({ mode }) => {
       )}
       <StyledMenuItem key="browse">
         <NavLink to="/">Browse</NavLink>
-      </StyledMenuItem >
+      </StyledMenuItem>
       <StyledMenuItem key="factory">
         <NavLink to="/factory">Create a List</NavLink>
       </StyledMenuItem>
@@ -46,7 +50,7 @@ const AppMenu = ({ mode }) => {
 }
 
 AppMenu.propTypes = {
-  mode: PropTypes.string.isRequired,
+  mode: PropTypes.string.isRequired
 }
 
 export default AppMenu

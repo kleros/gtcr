@@ -4,7 +4,6 @@ import { Helmet } from 'react-helmet'
 import { Footer } from '@kleros/react-components'
 import styled from 'styled-components/macro'
 import Web3Provider from 'web3-react'
-
 import { Layout } from 'antd'
 import { register } from './service-worker'
 import { WalletProvider } from 'contexts/wallet-context'
@@ -15,7 +14,6 @@ import AppBar from 'components/layout/app-bar'
 import AppMenu from 'components/layout/app-menu'
 import AppRouter from './app-router'
 import connectors from 'config/connectors'
-
 import 'antd/dist/antd.css'
 import './theme.css'
 import './fontawesome'
@@ -63,45 +61,45 @@ const App = () => {
 
   return (
     <Web3Provider connectors={connectors} libraryName="ethers.js">
-        <BrowserRouter>
-          <TourProvider>
-            <WalletProvider>
-              <Helmet>
-                <title>Kleros · Curate</title>
-                <link
-                  href="https://fonts.googleapis.com/css?family=Roboto:400,400i,500,500i,700,700i"
-                  rel="stylesheet"
+      <BrowserRouter>
+        <TourProvider>
+          <WalletProvider>
+            <Helmet>
+              <title>Kleros · Curate</title>
+              <link
+                href="https://fonts.googleapis.com/css?family=Roboto:400,400i,500,500i,700,700i"
+                rel="stylesheet"
+              />
+            </Helmet>
+            <StyledLayout>
+              <StyledLayoutSider
+                breakpoint="lg"
+                collapsedWidth={0}
+                collapsed={isMenuClosed}
+                onClick={() => setIsMenuClosed(previousState => !previousState)}
+              >
+                <AppMenu mode="vertical" />
+              </StyledLayoutSider>
+              {/* Overflow x property must be visible for reactour scrolling to work properly. */}
+              <Layout style={{ overflowX: 'visible' }}>
+                <StyledHeader>
+                  <AppBar />
+                </StyledHeader>
+                <AppRouter />
+                <StyledClickaway
+                  isMenuClosed={isMenuClosed}
+                  onClick={isMenuClosed ? null : () => setIsMenuClosed(true)}
                 />
-              </Helmet>
-              <StyledLayout>
-                <StyledLayoutSider
-                  breakpoint="lg"
-                  collapsedWidth={0}
-                  collapsed={isMenuClosed}
-                  onClick={() => setIsMenuClosed(previousState => !previousState)}
-                >
-                  <AppMenu mode="vertical" />
-                </StyledLayoutSider>
-                {/* Overflow x property must be visible for reactour scrolling to work properly. */}
-                <Layout style={{ overflowX: 'visible' }}>
-                  <StyledHeader>
-                    <AppBar />
-                  </StyledHeader>
-                  <AppRouter />
-                  <StyledClickaway
-                    isMenuClosed={isMenuClosed}
-                    onClick={isMenuClosed ? null : () => setIsMenuClosed(true)}
-                  />
-                </Layout>
-              </StyledLayout>
-              <FooterWrapper>
-                <Footer appName="Kleros · Curate" />
-              </FooterWrapper>
-              <WalletModal connectors={connectors} />
-              <WelcomeModal />
-            </WalletProvider>
-          </TourProvider>
-        </BrowserRouter>
+              </Layout>
+            </StyledLayout>
+            <FooterWrapper>
+              <Footer appName="Kleros · Curate" />
+            </FooterWrapper>
+            <WalletModal connectors={connectors} />
+            <WelcomeModal />
+          </WalletProvider>
+        </TourProvider>
+      </BrowserRouter>
     </Web3Provider>
   )
 }

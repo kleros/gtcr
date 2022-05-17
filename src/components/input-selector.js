@@ -10,6 +10,7 @@ import ipfsPublish from '../utils/ipfs-publish.js'
 import { sanitize } from '../utils/string.js'
 import TwitterUserInput from './twitter-input.js'
 import AddressInput from './address-input.js'
+import RichAddressInput from './rich-address-input.js'
 
 const StyledUpload = styled(Upload)`
   & > .ant-upload.ant-upload-select-picture-card {
@@ -124,6 +125,16 @@ const InputSelector = ({
     case ItemTypes.ADDRESS:
     case ItemTypes.GTCR_ADDRESS:
       return <AddressInput type={type} name={name} hasFeedback {...props} />
+    case ItemTypes.RICH_ADDRESS:
+      return (
+        <RichAddressInput
+          type={type}
+          name={name}
+          hasFeedback
+          setFieldValue={setFieldValue}
+          {...props}
+        />
+      )
     case ItemTypes.BOOLEAN:
       return (
         <Field name={name}>
