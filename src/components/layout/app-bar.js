@@ -123,7 +123,7 @@ const AppBar = () => {
     localStorage.setItem(SAVED_NETWORK_KEY, nextNetwork)
     setTimeout(() => {
       history.push(`/tcr/${nextNetwork}/${nextNetworkTCR}`)
-      window.location.reload();
+      window.location.reload()
     }, 300)
   }, [history, networkId, nextNetworkTCR])
 
@@ -179,6 +179,5 @@ const AppBar = () => {
     </>
   )
 }
-
 
 export default AppBar
