@@ -1,23 +1,17 @@
 module.exports = {
   // Plugins
-  plugins: [
-    'unicorn',
-    'react-hooks',
-    'prettier',
-    'jsx-a11y',
-    'promise'
-  ],
+  plugins: ['unicorn', 'react-hooks', 'prettier', 'jsx-a11y', 'promise'],
 
   // Settings
   settings: {
     'import/resolver': {
       node: {
         extensions: ['.js', '.jsx', '.ts', '.tsx'],
-        moduleDirectory: ['node_modules', 'src/'],
+        moduleDirectory: ['node_modules', 'src/']
       }
     }
   },
-  
+
   // Extends
   extends: [
     'react-app', // create-react-app config
@@ -49,7 +43,7 @@ module.exports = {
     ],
     'prefer-const': 2,
     'arrow-body-style': [2, 'as-needed'],
-    'curly': [2, 'multi'],
+    curly: [2, 'multi'],
     'padding-line-between-statements': [
       2,
       { blankLine: 'never', prev: 'import', next: 'import' }
@@ -78,9 +72,9 @@ module.exports = {
 
     // React JSX
     'react/jsx-filename-extension': [
-      2,
+      1,
       {
-        extensions: ['.js']
+        extensions: ['.js', '.jsx']
       }
     ],
     'react/jsx-indent': 0,

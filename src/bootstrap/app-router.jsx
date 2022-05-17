@@ -11,9 +11,8 @@ import NoWeb3Detected from 'pages/no-web3'
 import Loading from 'components/loading'
 import connectors from 'config/connectors'
 import { DEFAULT_NETWORK } from 'config/networks'
-import { hexlify } from 'utils/string'
+import { hexlify, SAVED_NETWORK_KEY } from 'utils/string'
 import { TCR_EXISTENCE_TEST } from 'utils/graphql'
-import { SAVED_NETWORK_KEY } from 'utils/string'
 
 const ItemsRouter = loadable(
   () => import(/* webpackPrefetch: true */ 'pages/items-router'),
@@ -47,15 +46,11 @@ const AppRouter = () => {
   const tcrAddress = getNetworkEnv('REACT_APP_DEFAULT_TCR_ADDRESSES', networkId)
 
   const client = useMemo(() => {
-    if (!networkId) {
-      return null
-    }
+    if (!networkId) return null
 
     const GTCR_SUBGRAPH_URL = getNetworkEnv('REACT_APP_SUBGRAPH_URL', networkId)
 
-    if (!GTCR_SUBGRAPH_URL) {
-      return null
-    }
+    if (!GTCR_SUBGRAPH_URL) return null
 
     const httpLink = new HttpLink({
       uri: GTCR_SUBGRAPH_URL
@@ -94,21 +89,19 @@ const AppRouter = () => {
           .match(/tcr\/(0x[0-9a-zA-Z]+)/)[1]
           .toLowerCase()
 
-        if (searchParams.has('chainId')) {
-          chainId = searchParams.get('chainId')
-        } else {
+        if (searchParams.has('chainId')) chainId = searchParams.get('chainId')
+        else {
           const DEFAULT_TCR_ADDRESSES = JSON.parse(
             process.env.REACT_APP_DEFAULT_TCR_ADDRESSES
           )
           const ADDRs = Object.values(DEFAULT_TCR_ADDRESSES).map(addr =>
             addr.toLowerCase()
           )
-          const CHAIN_IDs = Object.keys(DEFAULT_TCR_ADDRESSES)
+          const chainIds = Object.keys(DEFAULT_TCR_ADDRESSES)
           const tcrIndex = ADDRs.findIndex(addr => addr === tcrAddress)
 
-          if (tcrIndex >= 0) {
-            chainId = Number(CHAIN_IDs[tcrIndex])
-          } else {
+          if (tcrIndex >= 0) chainId = Number(chainIds[tcrIndex])
+          else {
             const SUBGRAPH_URLS = JSON.parse(process.env.REACT_APP_SUBGRAPH_URL)
             const queryResults = await Promise.all(
               Object.values(SUBGRAPH_URLS).map(subgraph => {
@@ -129,18 +122,15 @@ const AppRouter = () => {
                 lregistry !== null || registry !== null
             )
 
-            if (validIndex >= 0) {
+            if (validIndex >= 0)
               chainId = Object.keys(SUBGRAPH_URLS)[validIndex]
-            }
           }
         }
 
         if (chainId) {
           const newPathname = pathname.replace('/tcr/', `/tcr/${chainId}/`)
           history.push({ pathname: newPathname, search })
-        } else {
-          setInvalidTcrAddr(true)
-        }
+        } else setInvalidTcrAddr(true)
       }
       setPathResolved(true)
     }
@@ -163,7 +153,7 @@ const AppRouter = () => {
 
   if (Object.entries(connectors).length === 0) return <NoWeb3Detected />
 
-  if (isUnsupported) {
+  if (isUnsupported)
     return (
       <ErrorPage
         code={' '}
@@ -177,11 +167,8 @@ const AppRouter = () => {
         }
       />
     )
-  } else if (!networkId || !pathResolved) {
-    return <Loading />
-  } else if (invalidTcrAddr) {
-    return <ErrorPage />
-  }
+  else if (!networkId || !pathResolved) return <Loading />
+  else if (invalidTcrAddr) return <ErrorPage />
 
   return (
     <ApolloProvider client={client}>
