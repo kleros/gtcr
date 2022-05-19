@@ -1,9 +1,11 @@
-import PropTypes from 'prop-types'
 import React from 'react'
 import { useWeb3Context } from 'web3-react'
 import { getAddressPage } from '../utils/network-utils'
 
-const ETHAddress = ({ address, forceEth }) => {
+const ETHAddress: React.FC<{ address: string; forceEth: boolean }> = ({
+  address,
+  forceEth
+}) => {
   const { networkId } = useWeb3Context()
   const fullPage = forceEth
     ? `https://etherscan.io/address/${address}`
@@ -13,10 +15,6 @@ const ETHAddress = ({ address, forceEth }) => {
       {address.slice(0, 6)}...{address.slice(address.length - 4)}
     </a>
   )
-}
-
-ETHAddress.propTypes = {
-  address: PropTypes.string.isRequired
 }
 
 export default ETHAddress

@@ -10,7 +10,7 @@ import {
 } from 'antd'
 import styled from 'styled-components/macro'
 import PropTypes from 'prop-types'
-import ETHAmount from 'components/eth-amount.js'
+import ETHAmount from 'components/eth-amount'
 import useNativeCurrency from 'hooks/native-currency.js'
 
 const StyledSpin = styled(Spin)`
