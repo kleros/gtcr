@@ -12,6 +12,7 @@ import { WalletContext } from 'contexts/wallet-context'
 import { itemToStatusCode, STATUS_COLOR } from '../utils/item-status'
 import { useLazyQuery } from '@apollo/client'
 import ITEM_SEARCH_QUERY from '../utils/graphql/item-search'
+import { useWeb3Context } from 'web3-react'
 
 const StyledSelect = styled(Select)`
   width: 100%;
@@ -61,6 +62,7 @@ const OptionItem = ({ item }) => {
     metaEvidence
   } = useContext(LightTCRViewContext)
   const { timestamp } = useContext(WalletContext)
+  const web3Context = useWeb3Context()
   const [itemInfo, setItemInfo] = useState()
   const { metadata } = metaEvidence || {}
   const { isTCRofTCRs } = metadata || {}
@@ -130,7 +132,7 @@ const OptionItem = ({ item }) => {
             ))
         )}
       </StyledFieldsContainer>
-      <StyledLink to={`/tcr/${tcrAddress}/${itemID}`}>
+      <StyledLink to={`/tcr/${web3Context.networkId}/${tcrAddress}/${itemID}`}>
         <Icon type="right-circle" style={{ fontSize: '24px' }} />
       </StyledLink>
     </StyledOptionItem>
