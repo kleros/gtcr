@@ -209,11 +209,11 @@ const LightSearchBar = () => {
   const onChange = itemID => setValue(itemID)
 
   const shownOptions = () => {
-    if ((writing || itemSearchQuery.loading) && !empty)
-      return <Select.Option key="Loading">Loading...</Select.Option>
-    if (!writing && options.length === 0 && !empty)
-      return <Select.Option key="NoResult">No results</Select.Option>
     if (empty) return []
+    if (writing || itemSearchQuery.loading)
+      return <Select.Option key="Loading">Loading...</Select.Option>
+    if (!writing && options.length === 0)
+      return <Select.Option key="NoResult">No results</Select.Option>
     else return options
   }
 

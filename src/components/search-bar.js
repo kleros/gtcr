@@ -301,11 +301,10 @@ const SearchBar = () => {
   const onChange = useCallback(itemID => setValue(itemID), [])
 
   const shownOptions = () => {
-    if (writing && !empty)
-      return <Select.Option key="Loading">Loading...</Select.Option>
-    if (!writing && options.length === 0 && !empty)
-      return <Select.Option key="NoResult">No results</Select.Option>
     if (empty) return []
+    if (writing) return <Select.Option key="Loading">Loading...</Select.Option>
+    if (!writing && options.length === 0)
+      return <Select.Option key="NoResult">No results</Select.Option>
     else return options
   }
 
