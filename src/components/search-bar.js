@@ -64,6 +64,7 @@ const OptionItem = ({ item: { itemID, columns = [], tcrAddress } }) => {
     metaEvidence
   } = useContext(TCRViewContext)
   const { timestamp } = useContext(WalletContext)
+  const web3Context = useWeb3Context()
   const [itemInfo, setItemInfo] = useState()
   const { metadata } = metaEvidence || {}
   const { isTCRofTCRs } = metadata || {}
@@ -141,7 +142,7 @@ const OptionItem = ({ item: { itemID, columns = [], tcrAddress } }) => {
             ))
         )}
       </StyledFieldsContainer>
-      <StyledLink to={`/tcr/${tcrAddress}/${itemID}`}>
+      <StyledLink to={`/tcr/${web3Context.networkId}/${tcrAddress}/${itemID}`}>
         <Icon type="right-circle" style={{ fontSize: '24px' }} />
       </StyledLink>
     </StyledOptionItem>
