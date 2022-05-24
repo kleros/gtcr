@@ -165,6 +165,8 @@ OptionItem.propTypes = {
 const SearchBar = () => {
   const [value, setValue] = useState()
   const [data, setData] = useState([])
+  const [empty, setEmpty] = useState(true)
+  const [writing, setWriting] = useState(true)
   const [enhancedDataSource, setEnhancedDataSource] = useState([])
   const {
     itemSubmissionLogs: dataSource,
@@ -264,10 +266,14 @@ const SearchBar = () => {
         : []
 
     setData(results)
+    setWriting(false)
   }, 700)
-  const onSearch = useCallback(value => debouncedCallback(value), [
-    debouncedCallback
-  ])
+  const onSearch = value => {
+    debouncedCallback(value)
+    setWriting(true)
+    if (value === '') setEmpty(true)
+    else setEmpty(false)
+  }
 
   const options = data.map(d => {
     // Iterate through the item fields and find the first text field
@@ -293,6 +299,79 @@ const SearchBar = () => {
   })
 
   const onChange = useCallback(itemID => setValue(itemID), [])
+
+  if (writing && !empty)
+    return (
+      <StyledSelect
+        id="items-search-bar"
+        showSearch
+        value={value}
+        defaultActiveFirstOption={false}
+        showArrow={false}
+        filterOption={false}
+        onSearch={onSearch}
+        onChange={onChange}
+        optionLabelProp="label"
+        notFoundContent={null}
+        placeholder={
+          <>
+            <FontAwesomeIcon icon="search" /> Search...
+          </>
+        }
+      >
+        <Select.Option key="1" label="Loading...">
+          Loading...
+        </Select.Option>
+      </StyledSelect>
+    )
+
+  if (!writing && options.length === 0 && !empty)
+    return (
+      <StyledSelect
+        id="items-search-bar"
+        showSearch
+        value={value}
+        defaultActiveFirstOption={false}
+        showArrow={false}
+        filterOption={false}
+        onSearch={onSearch}
+        onChange={onChange}
+        optionLabelProp="label"
+        notFoundContent={null}
+        placeholder={
+          <>
+            <FontAwesomeIcon icon="search" /> Search...
+          </>
+        }
+      >
+        <Select.Option key="2" label="No results">
+          No results
+        </Select.Option>
+      </StyledSelect>
+    )
+
+  if (!writing && options.length > 0)
+    return (
+      <StyledSelect
+        id="items-search-bar"
+        showSearch
+        value={value}
+        defaultActiveFirstOption={false}
+        showArrow={false}
+        filterOption={false}
+        onSearch={onSearch}
+        onChange={onChange}
+        optionLabelProp="label"
+        notFoundContent={null}
+        placeholder={
+          <>
+            <FontAwesomeIcon icon="search" /> Search...
+          </>
+        }
+      >
+        {options}
+      </StyledSelect>
+    )
 
   return (
     <StyledSelect

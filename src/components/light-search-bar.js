@@ -157,6 +157,8 @@ OptionItem.propTypes = {
 const LightSearchBar = () => {
   const [value, setValue] = useState()
   const [data, setData] = useState([])
+  const [empty, setEmpty] = useState(true)
+  const [writing, setWriting] = useState(true)
   const { tcrAddress } = useContext(LightTCRViewContext)
   const [makeItemSearchQuery, itemSearchQuery] = useLazyQuery(ITEM_SEARCH_QUERY)
 
@@ -171,6 +173,7 @@ const LightSearchBar = () => {
           first: MAX_ITEM_COUNT
         }
       })
+    setWriting(false)
   }, 700)
 
   useEffect(() => {
@@ -197,30 +200,108 @@ const LightSearchBar = () => {
     )
   })
 
-  const onSearch = value => debouncedCallback(value)
+  const onSearch = value => {
+    debouncedCallback(value)
+    setWriting(true)
+    if (value === '') setEmpty(true)
+    else setEmpty(false)
+  }
   const onChange = itemID => setValue(itemID)
 
-  return (
-    <StyledSelect
-      id="items-search-bar"
-      showSearch
-      value={value}
-      defaultActiveFirstOption={false}
-      showArrow={false}
-      filterOption={false}
-      onSearch={onSearch}
-      onChange={onChange}
-      optionLabelProp="label"
-      notFoundContent={null}
-      placeholder={
-        <>
-          <FontAwesomeIcon icon="search" /> Search...
-        </>
-      }
-    >
-      {options}
-    </StyledSelect>
-  )
+  if ((writing || itemSearchQuery.loading) && !empty)
+    return (
+      <StyledSelect
+        id="items-search-bar"
+        showSearch
+        value={value}
+        defaultActiveFirstOption={false}
+        showArrow={false}
+        filterOption={false}
+        onSearch={onSearch}
+        onChange={onChange}
+        optionLabelProp="label"
+        notFoundContent={null}
+        placeholder={
+          <>
+            <FontAwesomeIcon icon="search" /> Search...
+          </>
+        }
+      >
+        <Select.Option key="1" label="Loading...">
+          Loading...
+        </Select.Option>
+      </StyledSelect>
+    )
+
+  if (!writing && options.length === 0 && !empty)
+    return (
+      <StyledSelect
+        id="items-search-bar"
+        showSearch
+        value={value}
+        defaultActiveFirstOption={false}
+        showArrow={false}
+        filterOption={false}
+        onSearch={onSearch}
+        onChange={onChange}
+        optionLabelProp="label"
+        notFoundContent={null}
+        placeholder={
+          <>
+            <FontAwesomeIcon icon="search" /> Search...
+          </>
+        }
+      >
+        <Select.Option key="2" label="No results">
+          No results
+        </Select.Option>
+      </StyledSelect>
+    )
+
+  if (!writing && options.length > 0)
+    return (
+      <StyledSelect
+        id="items-search-bar"
+        showSearch
+        value={value}
+        defaultActiveFirstOption={false}
+        showArrow={false}
+        filterOption={false}
+        onSearch={onSearch}
+        onChange={onChange}
+        optionLabelProp="label"
+        notFoundContent={null}
+        placeholder={
+          <>
+            <FontAwesomeIcon icon="search" /> Search...
+          </>
+        }
+      >
+        {options}
+      </StyledSelect>
+    )
+  else
+    return (
+      <StyledSelect
+        id="items-search-bar"
+        showSearch
+        value={value}
+        defaultActiveFirstOption={false}
+        showArrow={false}
+        filterOption={false}
+        onSearch={onSearch}
+        onChange={onChange}
+        optionLabelProp="label"
+        notFoundContent={null}
+        placeholder={
+          <>
+            <FontAwesomeIcon icon="search" /> Search...
+          </>
+        }
+      >
+        {options}
+      </StyledSelect>
+    )
 }
 
 export default LightSearchBar
