@@ -157,6 +157,8 @@ OptionItem.propTypes = {
 const LightSearchBar = () => {
   const [value, setValue] = useState()
   const [data, setData] = useState([])
+  const [empty, setEmpty] = useState(true)
+  const [writing, setWriting] = useState(true)
   const { tcrAddress } = useContext(LightTCRViewContext)
   const [makeItemSearchQuery, itemSearchQuery] = useLazyQuery(ITEM_SEARCH_QUERY)
 
@@ -171,6 +173,7 @@ const LightSearchBar = () => {
           first: MAX_ITEM_COUNT
         }
       })
+    setWriting(false)
   }, 700)
 
   useEffect(() => {
@@ -197,8 +200,22 @@ const LightSearchBar = () => {
     )
   })
 
-  const onSearch = value => debouncedCallback(value)
+  const onSearch = value => {
+    debouncedCallback(value)
+    setWriting(true)
+    if (value === '') setEmpty(true)
+    else setEmpty(false)
+  }
   const onChange = itemID => setValue(itemID)
+
+  const shownOptions = () => {
+    if (empty) return []
+    if (writing || itemSearchQuery.loading)
+      return <Select.Option key="Loading">Loading...</Select.Option>
+    if (!writing && options.length === 0)
+      return <Select.Option key="NoResult">No results</Select.Option>
+    else return options
+  }
 
   return (
     <StyledSelect
@@ -218,7 +235,7 @@ const LightSearchBar = () => {
         </>
       }
     >
-      {options}
+      {shownOptions()}
     </StyledSelect>
   )
 }

@@ -165,6 +165,8 @@ OptionItem.propTypes = {
 const SearchBar = () => {
   const [value, setValue] = useState()
   const [data, setData] = useState([])
+  const [empty, setEmpty] = useState(true)
+  const [writing, setWriting] = useState(true)
   const [enhancedDataSource, setEnhancedDataSource] = useState([])
   const {
     itemSubmissionLogs: dataSource,
@@ -264,10 +266,14 @@ const SearchBar = () => {
         : []
 
     setData(results)
+    setWriting(false)
   }, 700)
-  const onSearch = useCallback(value => debouncedCallback(value), [
-    debouncedCallback
-  ])
+  const onSearch = value => {
+    debouncedCallback(value)
+    setWriting(true)
+    if (value === '') setEmpty(true)
+    else setEmpty(false)
+  }
 
   const options = data.map(d => {
     // Iterate through the item fields and find the first text field
@@ -294,6 +300,14 @@ const SearchBar = () => {
 
   const onChange = useCallback(itemID => setValue(itemID), [])
 
+  const shownOptions = () => {
+    if (empty) return []
+    if (writing) return <Select.Option key="Loading">Loading...</Select.Option>
+    if (!writing && options.length === 0)
+      return <Select.Option key="NoResult">No results</Select.Option>
+    else return options
+  }
+
   return (
     <StyledSelect
       id="items-search-bar"
@@ -312,7 +326,7 @@ const SearchBar = () => {
         </>
       }
     >
-      {options}
+      {shownOptions()}
     </StyledSelect>
   )
 }
