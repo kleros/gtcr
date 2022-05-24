@@ -300,78 +300,14 @@ const SearchBar = () => {
 
   const onChange = useCallback(itemID => setValue(itemID), [])
 
-  if (writing && !empty)
-    return (
-      <StyledSelect
-        id="items-search-bar"
-        showSearch
-        value={value}
-        defaultActiveFirstOption={false}
-        showArrow={false}
-        filterOption={false}
-        onSearch={onSearch}
-        onChange={onChange}
-        optionLabelProp="label"
-        notFoundContent={null}
-        placeholder={
-          <>
-            <FontAwesomeIcon icon="search" /> Search...
-          </>
-        }
-      >
-        <Select.Option key="1" label="Loading...">
-          Loading...
-        </Select.Option>
-      </StyledSelect>
-    )
-
-  if (!writing && options.length === 0 && !empty)
-    return (
-      <StyledSelect
-        id="items-search-bar"
-        showSearch
-        value={value}
-        defaultActiveFirstOption={false}
-        showArrow={false}
-        filterOption={false}
-        onSearch={onSearch}
-        onChange={onChange}
-        optionLabelProp="label"
-        notFoundContent={null}
-        placeholder={
-          <>
-            <FontAwesomeIcon icon="search" /> Search...
-          </>
-        }
-      >
-        <Select.Option key="2" label="No results">
-          No results
-        </Select.Option>
-      </StyledSelect>
-    )
-
-  if (!writing && options.length > 0)
-    return (
-      <StyledSelect
-        id="items-search-bar"
-        showSearch
-        value={value}
-        defaultActiveFirstOption={false}
-        showArrow={false}
-        filterOption={false}
-        onSearch={onSearch}
-        onChange={onChange}
-        optionLabelProp="label"
-        notFoundContent={null}
-        placeholder={
-          <>
-            <FontAwesomeIcon icon="search" /> Search...
-          </>
-        }
-      >
-        {options}
-      </StyledSelect>
-    )
+  const shownOptions = () => {
+    if (writing && !empty)
+      return <Select.Option key="Loading">Loading...</Select.Option>
+    if (!writing && options.length === 0 && !empty)
+      return <Select.Option key="NoResult">No results</Select.Option>
+    if (empty) return []
+    else return options
+  }
 
   return (
     <StyledSelect
@@ -391,7 +327,7 @@ const SearchBar = () => {
         </>
       }
     >
-      {options}
+      {shownOptions()}
     </StyledSelect>
   )
 }
