@@ -3,4 +3,3 @@ interface Window {
 }
 
 type Empty = null | undefined
-

@@ -23,7 +23,10 @@ const ItemDetails = loadable(
 )
 
 const ItemDetailsRouter = () => {
-  const { tcrAddress, itemID } = useParams<{ tcrAddress: string, itemID: string }>()
+  const { tcrAddress, itemID } = useParams<{
+    tcrAddress: string
+    itemID: string
+  }>()
   const { networkStatus } = useTcrNetwork()
   const search = window.location.search
   const isLightCurate = useCheckLightCurate()

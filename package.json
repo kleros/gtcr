@@ -8,9 +8,9 @@
     "build": "yarn build:theme && react-scripts --max_old_space_size=4096 build",
     "build:theme": "lessc --js ./src/bootstrap/theme.less ./src/bootstrap/theme.css",
     "release": "standard-version",
-    "lint": "eslint \"./src/**/*.js\"",
-    "lint:eslint:fix": "eslint \"./src/**/*.js\" --fix",
-    "lint:prettier:fix": "prettier --write \"./src/**/*.js\"",
+    "lint": "eslint \"./src/**/*.js\" \"./src/**/*.ts\" \"./src/**/*.tsx\"",
+    "lint:eslint:fix": "eslint \"./src/**/*.js\" \"./src/**/*.ts\" \"./src/**/*.tsx\" --fix",
+    "lint:prettier:fix": "prettier --write \"./src/**/*.js\" \"./src/**/*.ts\" \"./src/**/*.tsx\"",
     "format": "yarn run lint:eslint:fix && yarn run lint:prettier:fix"
   },
   "dependencies": {

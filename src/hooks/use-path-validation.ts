@@ -26,7 +26,7 @@ const usePathValidation = () => {
           const DEFAULT_TCR_ADDRESSES = JSON.parse(
             process.env.REACT_APP_DEFAULT_TCR_ADDRESSES as string
           )
-          const ADDRs = Object.values(DEFAULT_TCR_ADDRESSES).map((addr) =>
+          const ADDRs = Object.values(DEFAULT_TCR_ADDRESSES).map(addr =>
             (addr as string).toLowerCase()
           )
           const CHAIN_IDS = Object.keys(DEFAULT_TCR_ADDRESSES)
@@ -34,7 +34,9 @@ const usePathValidation = () => {
 
           if (tcrIndex >= 0) chainId = Number(CHAIN_IDS[tcrIndex])
           else {
-            const SUBGRAPH_URLS = JSON.parse(process.env.REACT_APP_SUBGRAPH_URL as string)
+            const SUBGRAPH_URLS = JSON.parse(
+              process.env.REACT_APP_SUBGRAPH_URL as string
+            )
             const queryResults = await Promise.all(
               Object.values(SUBGRAPH_URLS).map(subgraph => {
                 const client = new ApolloClient({
