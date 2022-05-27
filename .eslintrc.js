@@ -70,16 +70,6 @@ module.exports = {
     'import/no-named-default': 2,
     'import/no-useless-path-segments': 2,
 
-    // React JSX
-    'react/jsx-filename-extension': [
-      1,
-      {
-        extensions: ['.js']
-      }
-    ],
-    'react/jsx-indent': 0,
-    'react/jsx-curly-brace-presence': [2, 'never'],
-
     // React
     'react/prefer-stateless-function': 2,
     'react/destructuring-assignment': [2, 'always'],
