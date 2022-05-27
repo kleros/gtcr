@@ -64,6 +64,8 @@
     "@babel/helper-define-map": "^7.15.4",
     "@commitlint/cli": "^8.0.0",
     "@commitlint/config-conventional": "^8.0.0",
+    "@types/loadable__component": "^5.13.4",
+    "@types/react-router": "^5.1.18",
     "@types/styled-components": "^5.1.25",
     "eslint-config-prettier": "^6.0.0",
     "eslint-config-react-app": "^4.0.1",
