@@ -180,6 +180,7 @@ const KlerosParams = ({
           <span>Court:</span>
           <Select
             style={{ width: 120 }}
+            dropdownStyle={{ minWidth: 250 }}
             onChange={onCourtChanged}
             loading={courts.length === 0 || typeof courtID !== 'number'}
             disabled={courts.length === 0 || typeof courtID !== 'number'}
