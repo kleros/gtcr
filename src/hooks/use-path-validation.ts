@@ -3,11 +3,31 @@ import { useHistory } from 'react-router'
 import { TCR_EXISTENCE_TEST } from 'utils/graphql'
 import { ApolloClient, InMemoryCache } from '@apollo/client'
 import { HttpLink } from '@apollo/client/link/http'
+import { useWeb3Context } from 'web3-react'
+import { SAVED_NETWORK_KEY } from 'utils/string'
+import { DEFAULT_NETWORK } from 'config/networks'
 
 const usePathValidation = () => {
   const history = useHistory()
+  const { networkId, account } = useWeb3Context()
+
   const [pathResolved, setPathResolved] = useState<boolean>(false)
   const [invalidTcrAddr, setInvalidTcrAddr] = useState<boolean>(false)
+
+  useEffect(() => {
+    if (networkId === undefined) return
+    if (account) return // their provider will prompt to change it
+    const pathname = history.location.pathname
+    const newPathRegex = /\/tcr\/(\d+)\/0x/
+    if (!newPathRegex.test(pathname)) return // let it redirect to new path first
+    const matches = pathname.match(newPathRegex)
+    const chainId = matches ? matches[1] : DEFAULT_NETWORK
+    const pathChainId = Number(chainId)
+    if (networkId !== pathChainId) {
+      localStorage.setItem(SAVED_NETWORK_KEY, pathChainId.toString())
+      window.location.reload()
+    }
+  }, [history.location.pathname, networkId, account])
 
   useEffect(() => {
     const checkPathValidation = async () => {
