@@ -24,11 +24,10 @@ const Items = loadable(
 
 const ItemsRouter = () => {
   const { tcrAddress } = useParams<{ tcrAddress: string }>()
-  const [isLightCurate, checkingLightCurate] = useCheckLightCurate()
+  const { isLightCurate, checking } = useCheckLightCurate()
   const { networkStatus } = useTcrNetwork()
 
-  if (checkingLightCurate || networkStatus !== NETWORK_STATUS.supported)
-    return <Loading />
+  if (checking || networkStatus !== NETWORK_STATUS.supported) return <Loading />
 
   if (isLightCurate)
     return (

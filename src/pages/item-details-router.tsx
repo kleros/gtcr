@@ -29,10 +29,9 @@ const ItemDetailsRouter = () => {
   }>()
   const { networkStatus } = useTcrNetwork()
   const search = window.location.search
-  const [isLightCurate, checkingLightCurate] = useCheckLightCurate()
+  const { isLightCurate, checking } = useCheckLightCurate()
 
-  if (checkingLightCurate || networkStatus !== NETWORK_STATUS.supported)
-    return <Loading />
+  if (checking || networkStatus !== NETWORK_STATUS.supported) return <Loading />
 
   if (isLightCurate)
     return (
