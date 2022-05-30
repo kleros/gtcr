@@ -12,7 +12,7 @@ import { DEFAULT_NETWORK } from 'config/networks'
 import { hexlify } from 'utils/string'
 import usePathValidation from 'hooks/use-path-validation'
 import useGraphQLClient from 'hooks/use-graphql-client'
-import { Web3ContextCurate } from 'types/web3-cotext'
+import { Web3ContextCurate } from 'types/web3-context'
 
 const { Connector } = Connectors
 
