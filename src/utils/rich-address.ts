@@ -5,7 +5,7 @@
  * `/tx/`${txHash}`
  */
 
- export type Reference = {
+export type Reference = {
   id: string
   namespaceId: string
   name: string
@@ -58,9 +58,9 @@ export const references: Reference[] = [
 
 // Generate a map for fast and clean access
 
-let namespacesMap: { [namespaceId: string]: Namespace } = {}
+const namespacesMap: { [namespaceId: string]: Namespace } = {}
 
-let referencesMap: {
+const referencesMap: {
   [namespaceId: string]: { [referenceId: string]: Reference }
 } = {}
 
@@ -85,7 +85,7 @@ export type RichAddress = {
 export const parseRichAddress = (crude: string): RichAddress | null => {
   if (!crude) return null
   // if no 2 colons, it's badly formatted
-  if (crude.split(":").length !== 3) return null
+  if (crude.split(':').length !== 3) return null
 
   const [namespaceId, referenceId, address] = crude.split(':')
   // namespace not found

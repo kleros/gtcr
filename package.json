@@ -8,9 +8,9 @@
     "build": "yarn build:theme && react-scripts --max_old_space_size=4096 build",
     "build:theme": "lessc --js ./src/bootstrap/theme.less ./src/bootstrap/theme.css",
     "release": "standard-version",
-    "lint": "eslint \"./src/**/*.js\"",
-    "lint:eslint:fix": "eslint \"./src/**/*.js\" --fix",
-    "lint:prettier:fix": "prettier --write \"./src/**/*.js\"",
+    "lint": "eslint \"./src/**/*.js\" \"./src/**/*.ts\" \"./src/**/*.tsx\"",
+    "lint:eslint:fix": "eslint \"./src/**/*.js\" \"./src/**/*.ts\" \"./src/**/*.tsx\" --fix",
+    "lint:prettier:fix": "prettier --write \"./src/**/*.js\" \"./src/**/*.ts\" \"./src/**/*.tsx\"",
     "format": "yarn run lint:eslint:fix && yarn run lint:prettier:fix"
   },
   "dependencies": {
@@ -64,6 +64,9 @@
     "@babel/helper-define-map": "^7.15.4",
     "@commitlint/cli": "^8.0.0",
     "@commitlint/config-conventional": "^8.0.0",
+    "@types/loadable__component": "^5.13.4",
+    "@types/react-router": "^5.1.18",
+    "@types/react-router-dom": "^5.3.3",
     "@types/styled-components": "^5.1.25",
     "eslint-config-prettier": "^6.0.0",
     "eslint-config-react-app": "^4.0.1",

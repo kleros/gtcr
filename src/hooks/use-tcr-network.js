@@ -22,7 +22,10 @@ const useTcrNetwork = () => {
 
         setNetworkStatus(status => {
           if (status !== NETWORK_STATUS.swtiching && tcrAddress) {
-            history.push(`/tcr/${chainId}/${tcrAddress}`)
+            setTimeout(() => {
+              history.push(`/tcr/${chainId}/${tcrAddress}`)
+              window.location.reload()
+            })
             return NETWORK_STATUS.supported
           } else return NETWORK_STATUS.unsupported
         })
