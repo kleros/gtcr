@@ -4,7 +4,6 @@ import { ethers } from 'ethers'
 import localforage from 'localforage'
 import { abi as _gtcr } from '@kleros/tcr/build/contracts/GeneralizedTCR.json'
 import { abi as _GTCRView } from '@kleros/tcr/build/contracts/GeneralizedTCRView.json'
-import { abi as _arbitrator } from '@kleros/erc-792/build/contracts/IArbitrator.json'
 import getNetworkEnv from '../utils/network-env'
 import { gtcrDecode } from '@kleros/gtcr-encoder'
 import useNotificationWeb3 from './notifications-web3'
@@ -115,23 +114,12 @@ const useTcrView = tcrAddress => {
 
       try {
         const {
-          arbitrator: arbitratorAddress,
-          arbitratorExtraData,
           submissionBaseDeposit,
           removalBaseDeposit,
           submissionChallengeBaseDeposit,
-          removalChallengeBaseDeposit
+          removalChallengeBaseDeposit,
+          arbitrationCost: newArbitrationCost
         } = arbitrableTCRData
-
-        const arbitrator = new ethers.Contract(
-          arbitratorAddress,
-          _arbitrator,
-          library
-        )
-
-        const newArbitrationCost = await arbitrator.arbitrationCost(
-          arbitratorExtraData
-        )
 
         // Submission deposit = submitter base deposit + arbitration cost
         const newSubmissionDeposit = submissionBaseDeposit.add(
