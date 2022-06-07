@@ -8,7 +8,10 @@ import { SAVED_NETWORK_KEY } from 'utils/string'
 import { DEFAULT_NETWORK } from 'config/networks'
 
 const usePathValidation = () => {
-  const history = useHistory()
+  const {
+    push,
+    location: { pathname, search }
+  } = useHistory()
   const { networkId, account } = useWeb3Context()
 
   const [pathResolved, setPathResolved] = useState<boolean>(false)
@@ -17,7 +20,6 @@ const usePathValidation = () => {
   useEffect(() => {
     if (networkId === undefined) return
     if (account) return // their provider will prompt to change it
-    const pathname = history.location.pathname
     const newPathRegex = /\/tcr\/(\d+)\/0x/
     if (!newPathRegex.test(pathname)) return // let it redirect to new path first
     const matches = pathname.match(newPathRegex)
@@ -27,12 +29,10 @@ const usePathValidation = () => {
       localStorage.setItem(SAVED_NETWORK_KEY, pathChainId.toString())
       window.location.reload()
     }
-  }, [history.location.pathname, networkId, account])
+  }, [pathname, networkId, account])
 
   useEffect(() => {
     const checkPathValidation = async () => {
-      const pathname = history.location.pathname
-      const search = history.location.search
       const isOldPath = /\/tcr\/0x/.test(pathname)
 
       if (isOldPath) {
@@ -77,14 +77,16 @@ const usePathValidation = () => {
         }
 
         if (chainId) {
-          const newPathname = pathname.replace('/tcr/', `/tcr/${chainId}/`)
-          history.push({ pathname: newPathname, search })
+          const newPathname = pathname
+            .replace('/tcr/', `/tcr/${chainId}/`)
+            .toLowerCase()
+          push({ pathname: newPathname, search })
         } else setInvalidTcrAddr(true)
       }
       setPathResolved(true)
     }
     checkPathValidation()
-  }, [history, setPathResolved])
+  }, [pathname, search, push, setPathResolved])
 
   return [pathResolved, invalidTcrAddr]
 }
