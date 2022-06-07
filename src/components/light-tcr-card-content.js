@@ -34,12 +34,6 @@ const TCRCardContent = ({
   ID,
   hideDetailsButton
 }) => {
-  console.log({
-    tcrAddress,
-    currentTCRAddress,
-    ID,
-    hideDetailsButton
-  })
   const { library, active, networkId } = useWeb3Context()
   const [error, setError] = useState()
   const gtcr = useMemo(() => {
