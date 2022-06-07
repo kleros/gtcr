@@ -193,7 +193,8 @@ const useTcrView = tcrAddress => {
               return {
                 ...file,
                 address: tcrAddress,
-                timestamp: block.timestamp
+                timestamp: block.timestamp,
+                blockNumber
               }
             } catch (err) {
               console.warn('Failed to process meta evidence')
@@ -203,11 +204,13 @@ const useTcrView = tcrAddress => {
         )
 
         const metadataTime = {
+          byBlockNumber: {},
           byTimestamp: {},
           address: logs[0].address
         }
         metaEvidenceFiles.forEach(file => {
           if (file.error) return
+          metadataTime.byBlockNumber[file.blockNumber] = file
           metadataTime.byTimestamp[file.timestamp] = file
         })
         setMetadataByTime(metadataTime)
