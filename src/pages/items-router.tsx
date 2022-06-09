@@ -1,6 +1,5 @@
 import React from 'react'
 import { TCRViewProvider } from 'contexts/tcr-view-context'
-import { LightTCRViewProvider } from 'contexts/light-tcr-view-context'
 import loadable from '@loadable/component'
 import Loading from 'components/loading'
 import useTcrNetwork from 'hooks/use-tcr-network'
@@ -29,12 +28,7 @@ const ItemsRouter = () => {
 
   if (checking || networkStatus !== NETWORK_STATUS.supported) return <Loading />
 
-  if (isLightCurate)
-    return (
-      <LightTCRViewProvider tcrAddress={tcrAddress}>
-        <LightItems />
-      </LightTCRViewProvider>
-    )
+  if (isLightCurate) return <LightItems />
 
   return (
     <TCRViewProvider tcrAddress={tcrAddress}>

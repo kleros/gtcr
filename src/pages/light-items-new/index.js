@@ -1,6 +1,4 @@
-/* eslint-disable no-unused-vars */
-// Rule disabled temporarly as filters will be added back.
-import { Layout, Spin, Pagination, Tag, Select, Switch } from 'antd'
+import { Layout, Pagination, Tag, Select, Switch } from 'antd'
 import { useHistory } from 'react-router'
 import React, {
   useEffect,
@@ -14,7 +12,6 @@ import localforage from 'localforage'
 import qs from 'qs'
 import ErrorPage from '../error-page'
 import { WalletContext } from 'contexts/wallet-context'
-import { LightTCRViewContext } from 'contexts/light-tcr-view-context'
 import { BigNumber, bigNumberify } from 'ethers/utils'
 import SubmitModal from '../light-item-details/modals/submit'
 import SubmitConnectModal from '../light-item-details/modals/submit-connect'
@@ -117,6 +114,12 @@ const lightCurateQuery = gql`
       numberOfChallengedRegistrations
       numberOfChallengedClearing
     }
+    metaEvidences(where: { tcrAddress: $tcrAddress }) {
+      timestamp
+      id
+      URI
+      tcrAddress
+    }
   }
 `
 
@@ -128,7 +131,6 @@ const Items = () => {
   } = useHistory()
   const { tcrAddress, chainId } = useTcrParams()
   const { requestWeb3Auth, timestamp } = useContext(WalletContext)
-
   const { data: regData, loading: loadingRegData } = useQuery(
     lightCurateQuery,
     {
@@ -137,8 +139,46 @@ const Items = () => {
       }
     }
   )
+  const [getItems, itemsQuery] = useLazyQuery(LIGHT_ITEMS_QUERY)
 
-  const { metaEvidence, metadataByTime } = useContext(LightTCRViewContext)
+  const [metaEvidences, setMetaEvidences] = useState([])
+  const [metaEvidence, setMetaEvidence] = useState({})
+  const loading = useMemo(() => itemsQuery.loading || loadingRegData, [
+    itemsQuery,
+    loadingRegData
+  ])
+
+  useEffect(() => {
+    if (loadingRegData) return
+
+    const handleRegData = async () => {
+      const metaEvidences = await Promise.all(
+        regData.metaEvidences
+          .filter(({ URI }) => URI)
+          .map(async metaEvidence => {
+            if (metaEvidence.URI)
+              try {
+                const res = await fetch(
+                  process.env.REACT_APP_IPFS_GATEWAY + metaEvidence.URI
+                )
+                const data = await res.json()
+                return {
+                  ...metaEvidence,
+                  ...data
+                }
+              } catch (err) {
+                console.error(err)
+              }
+            else return metaEvidence
+          })
+      )
+      setMetaEvidences(metaEvidences)
+      setMetaEvidence(metaEvidences[metaEvidences.length - 2])
+    }
+
+    handleRegData()
+  }, [loadingRegData, regData])
+
   const [submissionFormOpen, setSubmissionFormOpen] = useState()
   const [error, setError] = useState()
   const [fetchItems, setFetchItems] = useState({
@@ -173,30 +213,29 @@ const Items = () => {
   const orderDirection = oldestFirst ? 'asc' : 'desc'
 
   const itemsWhere = useMemo(() => {
-    if (absent) return { registry: tcrAddress.toLowerCase(), status: 'Absent' }
-    if (registered)
-      return { registry: tcrAddress.toLowerCase(), status: 'Registered' }
+    if (absent) return { registry: tcrAddress, status: 'Absent' }
+    if (registered) return { registry: tcrAddress, status: 'Registered' }
     if (submitted)
       return {
-        registry: tcrAddress.toLowerCase(),
+        registry: tcrAddress,
         status: 'RegistrationRequested'
       }
     if (removalRequested)
-      return { registry: tcrAddress.toLowerCase(), status: 'ClearingRequested' }
+      return { registry: tcrAddress, status: 'ClearingRequested' }
     if (challengedSubmissions)
       return {
-        registry: tcrAddress.toLowerCase(),
+        registry: tcrAddress,
         status: 'RegistrationRequested',
         disputed: true
       }
     if (challengedRemovals)
       return {
-        registry: tcrAddress.toLowerCase(),
+        registry: tcrAddress,
         status: 'ClearingRequested',
         disputed: true
       }
 
-    return { registry: tcrAddress.toLowerCase() }
+    return { registry: tcrAddress }
   }, [
     absent,
     challengedRemovals,
@@ -206,8 +245,6 @@ const Items = () => {
     submitted,
     tcrAddress
   ])
-
-  const [getItems, itemsQuery] = useLazyQuery(LIGHT_ITEMS_QUERY)
 
   useEffect(() => {
     getItems({
@@ -317,40 +354,21 @@ const Items = () => {
     })()
   }, [])
 
-  // Trigger fetch when gtcr instance is set.
-  useEffect(() => {
-    setFetchItems({ fetchStarted: true })
-    setFetchItemCount({ fetchStarted: true })
-  }, [])
-
   // More data wrangling/bandaid to deal with legacy code.
   // Most of this should be refactored or even better, deleted.
   const items = useMemo(() => {
-    if (
-      !fetchItems.data ||
-      !metaEvidence ||
-      metaEvidence.address !== tcrAddress ||
-      fetchItems.address !== tcrAddress ||
-      !metadataByTime
-    )
-      return
+    if (!fetchItems.data || metaEvidences.length === 0) return []
 
     const { data: encodedItems } = fetchItems
+    const timestamps = metaEvidences.map(me => me.timestamp)
 
     return encodedItems.map((item, i) => {
-      let decodedData
       const errors = []
-      const { columns } = metadataByTime.byTimestamp[
-        takeLower(Object.keys(metadataByTime.byTimestamp), item.timestamp)
-      ].metadata
-      try {
-        decodedData = item.decodedData
-        // eslint-disable-next-line no-unused-vars
-      } catch (err) {
-        errors.push(`Error decoding item ${item.ID} of list at ${tcrAddress}`)
-        console.warn(`Error decoding item ${item.ID} of list at ${tcrAddress}`)
-        console.warn(err)
-      }
+      const closestTs = takeLower(timestamps, item.timestamp)
+      const {
+        metadata: { columns }
+      } = metaEvidences.find(me => Number(me.timestamp) === closestTs)
+      const decodedData = item.decodedData
 
       // Return the item columns along with its TCR status data.
       return {
@@ -368,7 +386,7 @@ const Items = () => {
         errors
       }
     })
-  }, [fetchItems, metaEvidence, metadataByTime, tcrAddress])
+  }, [fetchItems, metaEvidences])
 
   // This component supports URL actions.
   // This means someone can be sent to curate with a bunch of data to submit
@@ -427,7 +445,7 @@ const Items = () => {
     // For now, only OR combinations are allowed.
     // My challenges and my submissions are also not supported,
     // so we slice them off.
-    const filters = Object.entries(queryOptions).filter(([key, val]) =>
+    const filters = Object.entries(queryOptions).filter(([_, val]) =>
       Object.entries(LIGHT_FILTER_KEYS)
         .slice(0, 6)
         .map(([, value]) => value)
@@ -447,12 +465,12 @@ const Items = () => {
   if (error)
     return <ErrorPage code="400" message={error || 'Decoding this item.'} />
 
-  if (!regData?.lregistry) return <Loading />
-
   const { metadata } = metaEvidence || {}
   const { isConnectedTCR } = metadata || {}
 
-  return (
+  return loading ? (
+    <Loading />
+  ) : (
     <>
       <Banner
         metaEvidence={metaEvidence}
@@ -463,113 +481,105 @@ const Items = () => {
       />
       <StyledLayoutContent>
         <StyledContent>
-          <Spin
-            spinning={
-              fetchItems.isFetching || fetchItemCount.isFetching || !metadata
-            }
-          >
-            <>
-              <StyledTopPadding>
-                <LightSearchBar />
-              </StyledTopPadding>
-              <StyledFilters id="items-filters">
-                <div>
-                  <StyledSwitch
-                    checkedChildren="NSFW Filter: On"
-                    unCheckedChildren="NSFW Filter: Off"
-                    checked={nsfwFilterOn}
-                    onChange={toggleNSFWFilter}
-                  />
-                  {Object.keys(queryOptions)
-                    .filter(
-                      key =>
-                        key !== LIGHT_FILTER_KEYS.PAGE &&
-                        key !== LIGHT_FILTER_KEYS.OLDEST_FIRST &&
-                        key !== 'mySubmissions' &&
-                        key !== 'myChallenges'
-                    )
-                    .map(key => (
-                      <StyledTag
-                        key={key}
-                        checked={queryOptions[key]}
-                        onChange={checked => {
-                          const newQueryStr = updateLightFilter({
-                            prevQuery: search,
-                            filter: key,
-                            checked
-                          })
-                          push({
-                            search: newQueryStr
-                          })
-                          setFetchItems({ fetchStarted: true })
-                          setFetchItemCount({ fetchStarted: true })
-                        }}
-                      >
-                        {filterLabelLight[key]}
-                      </StyledTag>
-                    ))}
-                </div>
-                <StyledSelect
-                  defaultValue={oldestFirst ? 'oldestFirst' : 'newestFirst'}
-                  style={{ width: 120 }}
-                  onChange={val => {
-                    const newQueryStr = updateLightFilter({
-                      prevQuery: search,
-                      filter: 'oldestFirst',
-                      checked: val === 'oldestFirst'
-                    })
-                    push({
-                      search: newQueryStr
-                    })
-                    setFetchItems({ fetchStarted: true })
-                  }}
-                >
-                  <Select.Option value="newestFirst">Newest</Select.Option>
-                  <Select.Option value="oldestFirst">Oldest</Select.Option>
-                </StyledSelect>
-              </StyledFilters>
-              <StyledGrid id="items-grid-view">
-                {items &&
-                  items
-                    .sort(({ tcrData: tcrDataA }, { tcrData: tcrDataB }) => {
-                      // Display items with pending requests first.
-                      if (!tcrDataA || !tcrDataB) return 0 // Handle errored TCRs.
-                      if (!tcrDataA.resolved && tcrDataB.resolved) return -1
-                      if (tcrDataA.resolved && !tcrDataB.resolved) return 1
-                      return 0
-                    })
-                    .map((item, i) => (
-                      <ItemCard
-                        item={item}
-                        key={i}
-                        metaEvidence={metaEvidence}
-                        chainId={chainId}
-                        tcrAddress={tcrAddress}
-                        challengePeriodDuration={
-                          regData?.lregistry?.challengePeriodDuration
-                        }
-                        timestamp={timestamp}
-                        forceReveal={!nsfwFilterOn}
-                      />
-                    ))}
-              </StyledGrid>
-              <StyledPagination
-                total={fetchItemCount.data || 0}
-                current={Number(queryOptions.page)}
-                itemRender={pagingItem}
-                pageSize={ITEMS_PER_PAGE}
-                onChange={newPage => {
-                  push({
-                    search: /page=\d+/g.test(search)
-                      ? search.replace(/page=\d+/g, `page=${newPage}`)
-                      : `${search}page=${newPage}`
-                  })
-                  setFetchItems({ fetchStarted: true })
-                  setFetchItemCount({ fetchStarted: true })
-                }}
+          <StyledTopPadding>
+            <LightSearchBar tcrAddress={tcrAddress} />
+          </StyledTopPadding>
+          <StyledFilters id="items-filters">
+            <div>
+              <StyledSwitch
+                checkedChildren="NSFW Filter: On"
+                unCheckedChildren="NSFW Filter: Off"
+                checked={nsfwFilterOn}
+                onChange={toggleNSFWFilter}
               />
-            </>
-          </Spin>
+              {Object.keys(queryOptions)
+                .filter(
+                  key =>
+                    key !== LIGHT_FILTER_KEYS.PAGE &&
+                    key !== LIGHT_FILTER_KEYS.OLDEST_FIRST &&
+                    key !== 'mySubmissions' &&
+                    key !== 'myChallenges'
+                )
+                .map(key => (
+                  <StyledTag
+                    key={key}
+                    checked={queryOptions[key]}
+                    onChange={checked => {
+                      const newQueryStr = updateLightFilter({
+                        prevQuery: search,
+                        filter: key,
+                        checked
+                      })
+                      push({
+                        search: newQueryStr
+                      })
+                      setFetchItems({ fetchStarted: true })
+                      setFetchItemCount({ fetchStarted: true })
+                    }}
+                  >
+                    {filterLabelLight[key]}
+                  </StyledTag>
+                ))}
+            </div>
+            <StyledSelect
+              defaultValue={oldestFirst ? 'oldestFirst' : 'newestFirst'}
+              style={{ width: 120 }}
+              onChange={val => {
+                const newQueryStr = updateLightFilter({
+                  prevQuery: search,
+                  filter: 'oldestFirst',
+                  checked: val === 'oldestFirst'
+                })
+                push({
+                  search: newQueryStr
+                })
+                setFetchItems({ fetchStarted: true })
+              }}
+            >
+              <Select.Option value="newestFirst">Newest</Select.Option>
+              <Select.Option value="oldestFirst">Oldest</Select.Option>
+            </StyledSelect>
+          </StyledFilters>
+          <StyledGrid id="items-grid-view">
+            {items &&
+              items
+                .sort(({ tcrData: tcrDataA }, { tcrData: tcrDataB }) => {
+                  // Display items with pending requests first.
+                  if (!tcrDataA || !tcrDataB) return 0 // Handle errored TCRs.
+                  if (!tcrDataA.resolved && tcrDataB.resolved) return -1
+                  if (tcrDataA.resolved && !tcrDataB.resolved) return 1
+                  return 0
+                })
+                .map((item, i) => (
+                  <ItemCard
+                    item={item}
+                    key={i}
+                    metaEvidence={metaEvidence}
+                    chainId={chainId}
+                    tcrAddress={tcrAddress}
+                    challengePeriodDuration={
+                      regData?.lregistry?.challengePeriodDuration
+                    }
+                    timestamp={timestamp}
+                    forceReveal={!nsfwFilterOn}
+                  />
+                ))}
+          </StyledGrid>
+          <StyledPagination
+            total={fetchItemCount.data || 0}
+            current={Number(queryOptions.page)}
+            itemRender={pagingItem}
+            pageSize={ITEMS_PER_PAGE}
+            onChange={newPage => {
+              push({
+                search: /page=\d+/g.test(search)
+                  ? search.replace(/page=\d+/g, `page=${newPage}`)
+                  : `${search}page=${newPage}`
+              })
+              setFetchItems({ fetchStarted: true })
+              setFetchItemCount({ fetchStarted: true })
+            }}
+          />
         </StyledContent>
         {metaEvidence && metadata && (
           <>

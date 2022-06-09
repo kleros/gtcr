@@ -154,12 +154,11 @@ OptionItem.propTypes = {
   }).isRequired
 }
 
-const LightSearchBar = () => {
+const LightSearchBar = ({ tcrAddress }) => {
   const [value, setValue] = useState()
   const [data, setData] = useState([])
   const [empty, setEmpty] = useState(true)
   const [writing, setWriting] = useState(true)
-  const { tcrAddress } = useContext(LightTCRViewContext)
   const [makeItemSearchQuery, itemSearchQuery] = useLazyQuery(ITEM_SEARCH_QUERY)
 
   const [debouncedCallback] = useDebouncedCallback(input => {

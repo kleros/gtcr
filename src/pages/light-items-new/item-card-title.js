@@ -7,16 +7,17 @@ import ETHAmount from 'components/eth-amount'
 import ItemPropTypes from 'prop-types/item'
 import { itemToStatusCode, STATUS_CODE } from 'utils/item-status'
 import { WalletContext } from 'contexts/wallet-context'
-import { LightTCRViewContext } from 'contexts/light-tcr-view-context'
 import useHumanizedCountdown from 'hooks/countdown'
 import useNativeCurrency from 'hooks/native-currency'
+import { BigNumber } from 'ethers/utils'
 
-const ItemCardTitle = ({ statusCode, tcrData }) => {
-  const {
-    submissionBaseDeposit,
-    removalBaseDeposit,
-    challengePeriodDuration
-  } = useContext(LightTCRViewContext)
+const ItemCardTitle = ({
+  statusCode,
+  tcrData,
+  submissionBaseDeposit,
+  removalBaseDeposit,
+  challengePeriodDuration
+}) => {
   const { timestamp } = useContext(WalletContext)
   const { disputed, submissionTime } = tcrData || {}
   const nativeCurrency = useNativeCurrency()
@@ -92,7 +93,10 @@ const ItemCardTitle = ({ statusCode, tcrData }) => {
 
 ItemCardTitle.propTypes = {
   statusCode: PropTypes.number,
-  tcrData: ItemPropTypes
+  tcrData: ItemPropTypes,
+  submissionBaseDeposit: PropTypes.objectOf(BigNumber),
+  removalBaseDeposit: PropTypes.objectOf(BigNumber),
+  challengePeriodDuration: PropTypes.objectOf(BigNumber)
 }
 
 ItemCardTitle.defaultProps = {
