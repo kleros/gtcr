@@ -5,9 +5,10 @@ import PropTypes from 'prop-types'
 import GTCRAddress from './gtcr-address'
 import TwitterUser from './twitter-user'
 import { ItemTypes } from '@kleros/gtcr-encoder'
-import { ZERO_ADDRESS, LOREM_IPSUM } from '../utils/string'
+import { ZERO_ADDRESS } from '../utils/string'
 import RichAddress from './rich-address'
 import ETHAddress from './eth-address'
+import LongText from './long-text'
 
 const pohRichAddress = 'eip155:1:0xc5e9ddebb09cd64dfacab4011a0d5cedaf7c9bdb'
 
@@ -34,7 +35,7 @@ const DisplaySelector = ({ type, value, linkImage, allowedFileTypes }) => {
     case ItemTypes.BOOLEAN:
       return <Checkbox disabled checked={value} />
     case ItemTypes.LONG_TEXT:
-      return <Typography.Paragraph>{value || LOREM_IPSUM}</Typography.Paragraph>
+      return <LongText value={value} />
     case ItemTypes.FILE: {
       if (!value)
         return (
