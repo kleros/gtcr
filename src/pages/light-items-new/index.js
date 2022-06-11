@@ -27,11 +27,12 @@ import AppTour from 'components/tour'
 import itemsTourSteps from './tour-steps'
 import takeLower from 'utils/lower-limit'
 import { DISPUTE_STATUS } from 'utils/item-status'
-import { gql, useLazyQuery, useQuery } from '@apollo/client'
+import { useLazyQuery } from '@apollo/client'
 import { LIGHT_ITEMS_QUERY } from 'utils/graphql'
 import LightSearchBar from 'components/light-search-bar'
 import Loading from 'components/loading'
 import useTcrParams from 'hooks/use-tcr-params'
+import { LightTCRViewContext } from 'contexts/light-tcr-view-context'
 
 const NSFW_FILTER_KEY = 'NSFW_FILTER_KEY'
 const ITEMS_TOUR_DISMISSED = 'ITEMS_TOUR_DISMISSED'
@@ -101,28 +102,6 @@ const pagingItem = (_, type, originalElement) => {
   return originalElement
 }
 
-const lightCurateQuery = gql`
-  query FetchAllInfoForLightCurate($tcrAddress: String!) {
-    lregistry(id: $tcrAddress) {
-      connectedTCR
-      submissionDeposit
-      challengePeriodDuration
-      numberOfAbsent
-      numberOfRegistered
-      numberOfRegistrationRequested
-      numberOfClearingRequested
-      numberOfChallengedRegistrations
-      numberOfChallengedClearing
-    }
-    metaEvidences(where: { tcrAddress: $tcrAddress }) {
-      timestamp
-      id
-      URI
-      tcrAddress
-    }
-  }
-`
-
 const ITEMS_PER_PAGE = 40
 const Items = () => {
   const {
@@ -131,54 +110,10 @@ const Items = () => {
   } = useHistory()
   const { tcrAddress, chainId } = useTcrParams()
   const { requestWeb3Auth, timestamp } = useContext(WalletContext)
-  const { data: regData, loading: loadingRegData } = useQuery(
-    lightCurateQuery,
-    {
-      variables: {
-        tcrAddress
-      }
-    }
+  const { metaEvidences, metaEvidence, regData, loading } = useContext(
+    LightTCRViewContext
   )
   const [getItems, itemsQuery] = useLazyQuery(LIGHT_ITEMS_QUERY)
-
-  const [metaEvidences, setMetaEvidences] = useState([])
-  const [metaEvidence, setMetaEvidence] = useState({})
-  const loading = useMemo(() => itemsQuery.loading || loadingRegData, [
-    itemsQuery,
-    loadingRegData
-  ])
-
-  useEffect(() => {
-    if (loadingRegData) return
-
-    const handleRegData = async () => {
-      const metaEvidences = await Promise.all(
-        regData.metaEvidences
-          .filter(({ URI }) => URI)
-          .map(async metaEvidence => {
-            if (metaEvidence.URI)
-              try {
-                const res = await fetch(
-                  process.env.REACT_APP_IPFS_GATEWAY + metaEvidence.URI
-                )
-                const data = await res.json()
-                return {
-                  ...metaEvidence,
-                  ...data
-                }
-              } catch (err) {
-                console.error(err)
-              }
-            else return metaEvidence
-          })
-      )
-      setMetaEvidences(metaEvidences)
-      setMetaEvidence(metaEvidences[metaEvidences.length - 2])
-    }
-
-    handleRegData()
-  }, [loadingRegData, regData])
-
   const [submissionFormOpen, setSubmissionFormOpen] = useState()
   const [error, setError] = useState()
   const [fetchItems, setFetchItems] = useState({
@@ -414,24 +349,14 @@ const Items = () => {
 
     setFetchItemCount({ isFetching: true })
 
-    const { lregistry } = regData || {}
-
     // Convert subgraph counters to filter names.
-    const {
-      numberOfAbsent: absent,
-      numberOfClearingRequested: removalRequested,
-      numberOfRegistered: registered,
-      numberOfRegistrationRequested: submitted,
-      numberOfChallengedClearing: challengedRemovals,
-      numberOfChallengedRegistrations: challengedSubmissions
-    } = lregistry || {}
     const convertedCounts = {
-      absent,
-      removalRequested,
-      registered,
-      submitted,
-      challengedRemovals,
-      challengedSubmissions
+      absent: regData.numberOfAbsent,
+      removalRequested: regData.numberOfClearingRequested,
+      registered: regData.numberOfRegistered,
+      submitted: regData.numberOfRegistrationRequested,
+      challengedRemovals: regData.numberOfChallengedClearing,
+      challengedSubmissions: regData.numberOfChallengedRegistrations
     }
     const countByFilter = Object.entries(convertedCounts).reduce(
       (prev, entry) => ({ ...prev, [entry[0]]: Number(entry[1]) }),
@@ -476,7 +401,7 @@ const Items = () => {
         metaEvidence={metaEvidence}
         requestWeb3Auth={requestWeb3Auth}
         setSubmissionFormOpen={setSubmissionFormOpen}
-        connectedTCRAddr={regData?.lregistry?.connectedTCR}
+        connectedTCRAddr={regData?.connectedTCR}
         tcrAddress={tcrAddress}
       />
       <StyledLayoutContent>
@@ -557,9 +482,7 @@ const Items = () => {
                     metaEvidence={metaEvidence}
                     chainId={chainId}
                     tcrAddress={tcrAddress}
-                    challengePeriodDuration={
-                      regData?.lregistry?.challengePeriodDuration
-                    }
+                    challengePeriodDuration={regData?.challengePeriodDuration}
                     timestamp={timestamp}
                     forceReveal={!nsfwFilterOn}
                   />
@@ -593,9 +516,9 @@ const Items = () => {
               <SubmitModal
                 visible={submissionFormOpen}
                 onCancel={() => setSubmissionFormOpen(false)}
-                submissionDeposit={regData?.lregistry?.submissionDeposit}
+                submissionDeposit={regData?.submissionDeposit}
                 challengePeriodDuration={
-                  new BigNumber(regData?.lregistry?.challengePeriodDuration)
+                  new BigNumber(regData?.challengePeriodDuration)
                 }
                 tcrAddress={tcrAddress}
                 metaEvidence={metaEvidence}

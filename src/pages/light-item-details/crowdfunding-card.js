@@ -59,11 +59,13 @@ const StyledIcon = styled(FontAwesomeIcon)`
 
 const CrowdfundingCard = ({ item, timestamp }) => {
   const {
-    challengePeriodDuration,
-    sharedStakeMultiplier,
-    winnerStakeMultiplier,
-    loserStakeMultiplier,
-    MULTIPLIER_DIVISOR
+    regData: {
+      challengePeriodDuration,
+      sharedStakeMultiplier,
+      winnerStakeMultiplier,
+      loserStakeMultiplier,
+      MULTIPLIER_DIVISOR
+    }
   } = useContext(LightTCRViewContext)
   const nativeCurrency = useNativeCurrency()
 

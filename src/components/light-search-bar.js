@@ -55,36 +55,24 @@ const OptionItem = ({ item }) => {
   // TODO read and figure it out
   const { itemID, props, registry } = item
   const { id: tcrAddress } = registry
-  const {
-    gtcrView,
-    challengePeriodDuration,
-    tcrAddress: itemTCRAddr,
-    metaEvidence
-  } = useContext(LightTCRViewContext)
+  const { challengePeriodDuration, metaEvidence } = useContext(
+    LightTCRViewContext
+  )
   const { timestamp } = useContext(WalletContext)
   const web3Context = useWeb3Context()
   const [itemInfo, setItemInfo] = useState()
-  const { metadata } = metaEvidence || {}
-  const { isTCRofTCRs } = metadata || {}
 
   useEffect(() => {
-    if (
-      !itemID ||
-      !gtcrView ||
-      !tcrAddress ||
-      itemInfo ||
-      tcrAddress !== itemTCRAddr
-    )
-      return
+    if (!itemID || itemInfo) return
     ;(async () => {
       try {
-        setItemInfo(await gtcrView.getItem(tcrAddress, itemID))
+        setItemInfo({})
       } catch (err) {
         setItemInfo({ errored: true })
         console.error(`Error fetching item status for ${itemID}`, err)
       }
     })()
-  }, [gtcrView, itemID, itemInfo, itemTCRAddr, tcrAddress])
+  }, [itemID, itemInfo, tcrAddress])
 
   const statusCode = useMemo(() => {
     if (
@@ -97,6 +85,7 @@ const OptionItem = ({ item }) => {
 
     return itemToStatusCode(itemInfo, timestamp, challengePeriodDuration)
   }, [challengePeriodDuration, itemInfo, timestamp])
+
   return (
     <StyledOptionItem>
       <StyledStatus>
@@ -107,16 +96,14 @@ const OptionItem = ({ item }) => {
         />
       </StyledStatus>
       <StyledFieldsContainer>
-        {isTCRofTCRs ? (
-          <>
-            <StyledItemField>
-              <DisplaySelector
-                type={props[0].type}
-                value={props[0].value}
-                allowedFileTypes={props[0].allowedFileTypes}
-              />
-            </StyledItemField>
-          </>
+        {metaEvidence?.metadata?.isTCRofTCRs ? (
+          <StyledItemField>
+            <DisplaySelector
+              type={props[0].type}
+              value={props[0].value}
+              allowedFileTypes={props[0].allowedFileTypes}
+            />
+          </StyledItemField>
         ) : (
           props
             .filter(col => col.isIdentifier)

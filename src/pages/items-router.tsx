@@ -6,6 +6,7 @@ import useTcrNetwork from 'hooks/use-tcr-network'
 import { NETWORK_STATUS } from 'config/networks'
 import useCheckLightCurate from 'hooks/use-check-light-curate'
 import useTcrParams from 'hooks/use-tcr-params'
+import { LightTCRViewProvider } from 'contexts/light-tcr-view-context'
 
 const LightItems = loadable(
   () => import(/* webpackPrefetch: true */ './light-items-new/index'),
@@ -28,7 +29,12 @@ const ItemsRouter = () => {
 
   if (checking || networkStatus !== NETWORK_STATUS.supported) return <Loading />
 
-  if (isLightCurate) return <LightItems />
+  if (isLightCurate)
+    return (
+      <LightTCRViewProvider tcrAddress={tcrAddress}>
+        <LightItems />
+      </LightTCRViewProvider>
+    )
 
   return (
     <TCRViewProvider tcrAddress={tcrAddress}>
