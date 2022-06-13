@@ -87,13 +87,15 @@ const ItemStatusCard = ({
     WalletContext
   )
   const {
-    metaEvidence,
-    challengePeriodDuration,
-    tcrAddress,
-    submissionDeposit,
     gtcrView,
-    removalBaseDeposit,
-    submissionBaseDeposit
+    metaEvidence,
+    tcrAddress,
+    regData: {
+      submissionDeposit,
+      challengePeriodDuration,
+      removalBaseDeposit,
+      submissionBaseDeposit
+    }
   } = useContext(LightTCRViewContext)
 
   // Get remaining appeal time, if any and build countdown.

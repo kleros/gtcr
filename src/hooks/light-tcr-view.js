@@ -6,6 +6,12 @@ const lightCurateQuery = gql`
     lregistry(id: $tcrAddress) {
       connectedTCR
       submissionDeposit
+      submissionBaseDeposit
+      submissionChallengeDeposit
+      removalDeposit
+      removalBaseDeposit
+      removalChallengeDeposit
+      arbitrationCost
       challengePeriodDuration
       numberOfAbsent
       numberOfRegistered

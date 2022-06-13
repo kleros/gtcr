@@ -46,10 +46,9 @@ const RemoveModal = ({ item, itemName = 'item', fileURI, ...rest }) => {
   const { pushWeb3Action } = useContext(WalletContext)
   const { setUserSubscribed } = useContext(TourContext)
   const {
-    removalDeposit,
     tcrAddress,
     metaEvidence,
-    challengePeriodDuration
+    regData: { removalDeposit, challengePeriodDuration }
   } = useContext(LightTCRViewContext)
   const nativeCurrency = useNativeCurrency()
 

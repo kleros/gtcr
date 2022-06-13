@@ -31,8 +31,7 @@ const StyledModal = styled(Modal)`
 const ChallengeModal = ({ item, itemName, statusCode, fileURI, ...rest }) => {
   // Get contract data.
   const {
-    submissionChallengeDeposit,
-    removalChallengeDeposit,
+    regData: { submissionChallengeDeposit, removalChallengeDeposit },
     tcrAddress
   } = useContext(LightTCRViewContext)
   const { pushWeb3Action } = useContext(WalletContext)

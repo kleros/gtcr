@@ -44,10 +44,12 @@ const CrowdfundModal = ({ statusCode, item, fileURI, ...rest }) => {
   const { pushWeb3Action } = useContext(WalletContext)
   const { setUserSubscribed } = useContext(TourContext)
   const {
-    sharedStakeMultiplier,
-    winnerStakeMultiplier,
-    loserStakeMultiplier,
-    MULTIPLIER_DIVISOR,
+    regData: {
+      sharedStakeMultiplier,
+      winnerStakeMultiplier,
+      loserStakeMultiplier,
+      MULTIPLIER_DIVISOR
+    },
     tcrAddress
   } = useContext(LightTCRViewContext)
 

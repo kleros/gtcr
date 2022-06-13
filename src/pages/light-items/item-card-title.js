@@ -13,9 +13,11 @@ import useNativeCurrency from 'hooks/native-currency'
 
 const ItemCardTitle = ({ statusCode, tcrData }) => {
   const {
-    submissionBaseDeposit,
-    removalBaseDeposit,
-    challengePeriodDuration
+    regData: {
+      submissionBaseDeposit,
+      removalBaseDeposit,
+      challengePeriodDuration
+    }
   } = useContext(LightTCRViewContext)
   const { timestamp } = useContext(WalletContext)
   const { disputed, submissionTime } = tcrData || {}
