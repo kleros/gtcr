@@ -11,8 +11,8 @@ import ETHAddress from './eth-address'
 import ETHAmount from './eth-amount'
 import { randomBytes, bigNumberify } from 'ethers/utils'
 import useNativeCurrency from 'hooks/native-currency'
-import { NETWORKS, NETWORKS_INFO } from 'config/networks'
-import { hexlify } from 'utils/string'
+import { NETWORKS, NETWORKS_INFO } from 'utils/constants/networks'
+import { hexlify } from 'utils/helpers/string'
 
 const StyledDiv = styled.div`
   height: 32px;

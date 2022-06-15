@@ -23,12 +23,12 @@ import CrowdfundingCard from './crowdfunding-card'
 import { LightTCRViewContext } from 'contexts/light-tcr-view-context'
 import RequestTimelines from './request-timelines'
 import { WalletContext } from 'contexts/wallet-context'
-import { capitalizeFirstLetter, ZERO_ADDRESS } from 'utils/string'
+import { capitalizeFirstLetter, ZERO_ADDRESS } from 'utils/helpers/string'
 import Badges from './badges'
 import AppTour from 'components/tour'
 import itemTourSteps from './tour-steps'
-import takeLower from 'utils/lower-limit'
-import { SUBGRAPH_STATUS_TO_CODE } from 'utils/item-status'
+import takeLower from 'utils/helpers/lower-limit'
+import { SUBGRAPH_STATUS_TO_CODE } from 'utils/helpers/item-status'
 import { LIGHT_ITEM_DETAILS_QUERY } from 'utils/graphql'
 import { useQuery } from '@apollo/client'
 import SearchBar from 'components/light-search-bar'
@@ -97,7 +97,7 @@ const ItemDetails = ({ itemID, search }) => {
     gtcr,
     tcrError,
     gtcrView,
-    connectedTCRAddr,
+    regData: { connectedTCR: connectedTCRAddr },
     metadataByTime
   } = useContext(LightTCRViewContext)
   const getLogs = useGetLogs(library)

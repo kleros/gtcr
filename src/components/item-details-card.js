@@ -11,9 +11,9 @@ import Reward from 'react-rewards'
 import { TCRViewContext } from 'contexts/tcr-view-context'
 import itemPropTypes from '../prop-types/item'
 import { WalletContext } from 'contexts/wallet-context'
-import getNetworkEnv from '../utils/network-env'
+import getNetworkEnv from '../utils/helpers/network-env'
 import TCRMetadataDisplay from './tcr-metadata-display'
-import { addPeriod } from '../utils/string'
+import { addPeriod } from '../utils/helpers/string'
 
 const StyledFields = styled.div`
   display: flex;

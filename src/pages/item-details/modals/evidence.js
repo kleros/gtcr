@@ -7,7 +7,7 @@ import { TCRViewContext } from 'contexts/tcr-view-context'
 import { WalletContext } from 'contexts/wallet-context'
 import itemPropTypes from 'prop-types/item'
 import EvidenceForm from 'components/evidence-form.js'
-import ipfsPublish from 'utils/ipfs-publish.js'
+import ipfsPublish from 'utils/helpers/ipfs-publish.js'
 import { TourContext } from 'contexts/tour-context'
 
 const StyledModal = styled(Modal)`

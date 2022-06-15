@@ -1,9 +1,13 @@
 import { useEffect, useState } from 'react'
 import { useHistory, useParams } from 'react-router'
 import { useWeb3Context } from 'web3-react'
-import { NETWORKS_INFO, NETWORK_STATUS, DEFAULT_NETWORK } from 'config/networks'
-import { hexlify } from 'utils/string'
-import getNetworkEnv from 'utils/network-env'
+import {
+  NETWORKS_INFO,
+  NETWORK_STATUS,
+  DEFAULT_NETWORK
+} from 'utils/constants/networks'
+import { hexlify } from 'utils/helpers/string'
+import getNetworkEnv from 'utils/helpers/network-env'
 
 const useTcrNetwork = () => {
   const history = useHistory()

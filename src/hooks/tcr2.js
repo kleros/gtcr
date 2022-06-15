@@ -1,5 +1,5 @@
 import { useWeb3Context } from 'web3-react'
-import { NETWORK } from '../utils/network-utils'
+import { NETWORK } from '../utils/helpers/network-utils'
 
 // TODO: Replace users with getNetworkEnv.
 const useMainTCR2 = () => {

@@ -23,9 +23,13 @@ import ETHAmount from 'components/eth-amount'
 import BNPropType from 'prop-types/bn'
 import useFactory from 'hooks/factory'
 import { TourContext } from 'contexts/tour-context'
-import { addPeriod, capitalizeFirstLetter, getArticleFor } from 'utils/string'
+import {
+  addPeriod,
+  capitalizeFirstLetter,
+  getArticleFor
+} from 'utils/helpers/string'
 import useNativeCurrency from 'hooks/native-currency'
-import ipfsPublish from 'utils/ipfs-publish'
+import ipfsPublish from 'utils/helpers/ipfs-publish'
 
 const StyledSpin = styled(Spin)`
   height: 60px;

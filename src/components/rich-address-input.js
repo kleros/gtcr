@@ -1,7 +1,7 @@
 import { Form, Input, Select } from 'antd'
 import { Field } from 'formik'
 import React from 'react'
-import { references, parseRichAddress } from '../utils/rich-address'
+import { references, parseRichAddress } from '../utils/helpers/rich-address'
 
 const { Option } = Select
 

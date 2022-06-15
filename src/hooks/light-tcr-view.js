@@ -1,9 +1,11 @@
-import { useState, useEffect } from 'react'
-import { gql, useQuery } from '@apollo/client'
+import { useState, useEffect, useMemo } from 'react'
+import { gql, useLazyQuery, useQuery } from '@apollo/client'
+import { LIGHT_ITEMS_QUERY } from 'utils/graphql'
 
 const lightCurateQuery = gql`
   query FetchAllInfoForLightCurate($tcrAddress: String!) {
     lregistry(id: $tcrAddress) {
+      id
       connectedTCR
       submissionDeposit
       submissionBaseDeposit
@@ -25,8 +27,8 @@ const lightCurateQuery = gql`
       MULTIPLIER_DIVISOR
     }
     metaEvidences(where: { tcrAddress: $tcrAddress }) {
-      timestamp
       id
+      timestamp
       URI
       tcrAddress
     }
@@ -37,19 +39,35 @@ const useLightTcrView = tcrAddress => {
   const [metaEvidences, setMetaEvidences] = useState([])
   const [metaEvidence, setMetaEvidence] = useState({})
   const [regData, setRegData] = useState({})
+  const [error, setError] = useState()
+  const [itemsWhere, setItemsWhere] = useState()
+  const [pagination, setPagination] = useState()
 
-  const { data, loading } = useQuery(lightCurateQuery, {
-    variables: {
-      tcrAddress
+  const { data: regQueryResult, loading: loadingRegistry } = useQuery(
+    lightCurateQuery,
+    {
+      variables: {
+        tcrAddress
+      }
     }
-  })
+  )
+
+  const [
+    execLightItemsQuery,
+    { loading: loadingItems, data: itemsRawData }
+  ] = useLazyQuery(LIGHT_ITEMS_QUERY)
+
+  const loading = useMemo(() => loadingItems || loadingRegistry, [
+    loadingItems,
+    loadingRegistry
+  ])
 
   useEffect(() => {
-    if (loading) return
+    if (loadingRegistry) return
 
-    const handleData = async () => {
+    const handleRegistryQuery = async () => {
       const metaEvidences = await Promise.all(
-        data.metaEvidences
+        regQueryResult.metaEvidences
           .filter(({ URI }) => URI)
           .map(async metaEvidence => {
             if (metaEvidence.URI)
@@ -63,6 +81,7 @@ const useLightTcrView = tcrAddress => {
                   ...data
                 }
               } catch (err) {
+                setError(err)
                 console.error(err)
               }
             else return metaEvidence
@@ -72,16 +91,33 @@ const useLightTcrView = tcrAddress => {
       setMetaEvidence(metaEvidences[metaEvidences.length - 2])
     }
 
-    handleData()
-    setRegData(data.lregistry)
-  }, [loading, data])
+    handleRegistryQuery()
+    setRegData(regQueryResult.lregistry)
+  }, [loadingRegistry, regQueryResult])
+
+  useEffect(() => {
+    if (!pagination || !itemsWhere) return
+
+    execLightItemsQuery({
+      variables: {
+        skip: pagination.skip,
+        first: pagination.first,
+        where: itemsWhere
+      }
+    })
+  }, [pagination, itemsWhere, execLightItemsQuery])
+
+  useEffect(() => {}, [loadingItems, itemsRawData])
 
   return {
     loading,
     metaEvidence,
     metaEvidences,
     tcrAddress,
-    regData
+    regData,
+    error,
+    setPagination,
+    setItemsWhere
   }
 }
 

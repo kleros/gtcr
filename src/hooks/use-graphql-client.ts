@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { ApolloClient, InMemoryCache } from '@apollo/client'
 import { HttpLink } from '@apollo/client/link/http'
-import getNetworkEnv from 'utils/network-env'
+import getNetworkEnv from 'utils/helpers/network-env'
 
 const useApolloClientFactory = (networkId: number | Empty) => {
   const client = useMemo(() => {

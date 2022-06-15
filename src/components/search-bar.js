@@ -19,7 +19,7 @@ import DisplaySelector from './display-selector'
 import { ItemTypes, searchableFields } from '@kleros/gtcr-encoder'
 import { TCRViewContext } from 'contexts/tcr-view-context'
 import { WalletContext } from 'contexts/wallet-context'
-import { itemToStatusCode, STATUS_COLOR } from '../utils/item-status'
+import { itemToStatusCode, STATUS_COLOR } from '../utils/helpers/item-status'
 import useGetLogs from 'hooks/get-logs'
 
 const StyledSelect = styled(Select)`

@@ -4,8 +4,8 @@ import { TCR_EXISTENCE_TEST } from 'utils/graphql'
 import { ApolloClient, InMemoryCache } from '@apollo/client'
 import { HttpLink } from '@apollo/client/link/http'
 import { useWeb3Context } from 'web3-react'
-import { SAVED_NETWORK_KEY } from 'utils/string'
-import { DEFAULT_NETWORK } from 'config/networks'
+import { SAVED_NETWORK_KEY } from 'utils/helpers/string'
+import { DEFAULT_NETWORK } from 'utils/constants/networks'
 
 const usePathValidation = () => {
   const {

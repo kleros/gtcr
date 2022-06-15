@@ -2,7 +2,7 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import { Button } from 'antd'
 import styled from 'styled-components/macro'
-import { STATUS_CODE, getActionLabel } from '../utils/item-status'
+import { STATUS_CODE, getActionLabel } from '../utils/helpers/item-status'
 
 const StyledButton = styled(Button)`
   text-transform: capitalize;

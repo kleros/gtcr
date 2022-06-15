@@ -5,14 +5,18 @@ import { Link } from 'react-router-dom'
 import { Col, Row, Button, Badge, Switch } from 'antd'
 import { WalletContext } from 'contexts/wallet-context'
 import { TourContext } from 'contexts/tour-context'
-import { NETWORK_NAME, NETWORK_COLOR, NETWORK } from 'utils/network-utils'
+import {
+  NETWORK_NAME,
+  NETWORK_COLOR,
+  NETWORK
+} from 'utils/helpers/network-utils'
 import Identicon from 'components/identicon'
 import Notifications from 'components/notifications'
 import { ReactComponent as Logo } from 'assets/images/logo.svg'
-import { capitalizeFirstLetter, SAVED_NETWORK_KEY } from 'utils/string'
+import { capitalizeFirstLetter, SAVED_NETWORK_KEY } from 'utils/helpers/string'
 import AppTour from 'components/tour'
 import { useHistory } from 'react-router-dom/cjs/react-router-dom.min'
-import getNetworkEnv from 'utils/network-env'
+import getNetworkEnv from 'utils/helpers/network-env'
 import AppMenu from 'components/layout/app-menu'
 
 const StyledCol = styled(Col)`

@@ -1,5 +1,5 @@
 import React from 'react'
-import { capitalizeFirstLetter, getArticleFor } from 'utils/string'
+import { capitalizeFirstLetter, getArticleFor } from 'utils/helpers/string'
 
 const itemsTourSteps = metadata => {
   const { tcrTitle, itemName, itemNamePlural } = metadata || {}

@@ -18,7 +18,7 @@ import ETHAmount from 'components/eth-amount'
 import EvidenceForm from 'components/evidence-form'
 import { WalletContext } from 'contexts/wallet-context'
 import itemPropTypes from 'prop-types/item'
-import ipfsPublish from 'utils/ipfs-publish'
+import ipfsPublish from 'utils/helpers/ipfs-publish'
 import { TourContext } from 'contexts/tour-context'
 import useNativeCurrency from 'hooks/native-currency'
 

@@ -4,7 +4,7 @@ import { LightTCRViewProvider } from 'contexts/light-tcr-view-context'
 import loadable from '@loadable/component'
 import { useParams } from 'react-router'
 import useTcrNetwork from 'hooks/use-tcr-network'
-import { NETWORK_STATUS } from 'config/networks'
+import { NETWORK_STATUS } from 'utils/constants/networks'
 import useCheckLightCurate from 'hooks/use-check-light-curate'
 import Loading from 'components/loading'
 

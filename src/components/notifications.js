@@ -9,7 +9,7 @@ import {
   getNotificationIconFor,
   getNotificationColorFor,
   typeToMessage
-} from '../utils/notifications'
+} from '../utils/helpers/notifications'
 
 const StyledIcon = styled.div`
   width: 48px;

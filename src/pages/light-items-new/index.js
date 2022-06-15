@@ -20,13 +20,13 @@ import {
   LIGHT_FILTER_KEYS,
   searchStrToFilterObjLight,
   updateLightFilter
-} from 'utils/filters'
+} from 'utils/helpers/filters'
 import ItemCard from './item-card'
 import Banner from './banner'
 import AppTour from 'components/tour'
 import itemsTourSteps from './tour-steps'
-import takeLower from 'utils/lower-limit'
-import { DISPUTE_STATUS } from 'utils/item-status'
+import takeLower from 'utils/helpers/lower-limit'
+import { DISPUTE_STATUS } from 'utils/helpers/item-status'
 import { useLazyQuery } from '@apollo/client'
 import { LIGHT_ITEMS_QUERY } from 'utils/graphql'
 import LightSearchBar from 'components/light-search-bar'

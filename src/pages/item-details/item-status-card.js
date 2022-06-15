@@ -12,7 +12,7 @@ import {
   PARTY,
   CONTRACT_STATUS,
   hasPendingRequest
-} from 'utils/item-status'
+} from 'utils/helpers/item-status'
 import itemPropTypes from 'prop-types/item'
 import ETHAddress from 'components/eth-address'
 import ItemActionModal from './item-action-modal'
@@ -23,7 +23,7 @@ import BNPropType from 'prop-types/bn'
 import useHumanizedCountdown from 'hooks/countdown'
 import useAppealTime from 'hooks/appeal-time'
 import ETHAmount from 'components/eth-amount'
-import getNetworkEnv from 'utils/network-env'
+import getNetworkEnv from 'utils/helpers/network-env'
 import useNativeCurrency from 'hooks/native-currency'
 
 const StyledDescriptions = styled(Descriptions)`

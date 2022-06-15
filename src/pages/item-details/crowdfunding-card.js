@@ -7,7 +7,7 @@ import {
   PARTY,
   itemToStatusCode,
   STATUS_CODE
-} from 'utils/item-status'
+} from 'utils/helpers/item-status'
 import { TCRViewContext } from 'contexts/tcr-view-context'
 import useRequiredFees from 'hooks/required-fees'
 import { formatEther } from 'ethers/utils'

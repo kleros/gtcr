@@ -4,8 +4,8 @@ import styled from 'styled-components/macro'
 import { withFormik, Field } from 'formik'
 import * as yup from 'yup'
 import PropTypes from 'prop-types'
-import ipfsPublish from '../utils/ipfs-publish'
-import { sanitize } from '../utils/string'
+import ipfsPublish from '../utils/helpers/ipfs-publish'
+import { sanitize } from '../utils/helpers/string'
 
 const StyledCheckbox = styled(Checkbox)`
   margin-bottom: 1em;

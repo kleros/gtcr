@@ -1,14 +1,11 @@
-import React, { useMemo, useState } from 'react'
+import React from 'react'
 import PropTypes from 'prop-types'
 import styled from 'styled-components/macro'
-import { useWeb3Context } from 'web3-react'
-import { ethers } from 'ethers'
 import { Result, Skeleton, Button } from 'antd'
-import _gtcr from '../assets/abis/LightGeneralizedTCR.json'
-import useMetaEvidence from '../hooks/meta-evidence'
 import { ItemTypes } from '@kleros/gtcr-encoder'
 import DisplaySelector from './display-selector'
 import { Link } from 'react-router-dom'
+import useLightTcrView from 'hooks/light-tcr-view'
 
 const StyledItemCol = styled.div`
   margin-bottom: 8px;
@@ -34,25 +31,10 @@ const TCRCardContent = ({
   ID,
   hideDetailsButton
 }) => {
-  const { library, active, networkId } = useWeb3Context()
-  const [error, setError] = useState()
-  const gtcr = useMemo(() => {
-    if (!library || !active || !tcrAddress || !networkId) return
-    try {
-      return new ethers.Contract(tcrAddress, _gtcr, library)
-    } catch (err) {
-      console.error('Error instantiating gtcr contract', err)
-      setError(err)
-    }
-  }, [active, library, networkId, tcrAddress])
+  const { metaEvidence, error } = useLightTcrView(tcrAddress)
 
-  const { metaEvidence, error: metaEvidenceError } = useMetaEvidence({
-    arbitrable: gtcr,
-    library
-  })
-
-  if (error || metaEvidenceError) {
-    const { message } = error || metaEvidenceError
+  if (error) {
+    const { message } = error
     // this type of error is fixed by itself given a few seconds
     // it occurs because it attempts to look for the following
     // contract: "Error decoding text"

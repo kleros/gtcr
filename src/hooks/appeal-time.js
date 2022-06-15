@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { DISPUTE_STATUS } from '../utils/item-status'
+import { DISPUTE_STATUS } from '../utils/helpers/item-status'
 import { bigNumberify } from 'ethers/utils'
 
 const useAppealTime = item =>

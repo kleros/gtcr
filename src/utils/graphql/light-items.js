@@ -32,6 +32,11 @@ const LIGHT_ITEMS_QUERY = gql`
         requester
         challenger
         resolutionTime
+        requestType
+        arbitrator
+        evidenceGroupID
+        creationTx
+        resolutionTx
         rounds(first: 1, orderBy: creationTime, orderDirection: desc) {
           appealPeriodStart
           appealPeriodEnd

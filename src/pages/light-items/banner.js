@@ -3,10 +3,10 @@ import { Link } from 'react-router-dom'
 import React from 'react'
 import PropTypes from 'prop-types'
 import styled from 'styled-components/macro'
-import { ZERO_ADDRESS, capitalizeFirstLetter } from 'utils/string'
+import { ZERO_ADDRESS, capitalizeFirstLetter } from 'utils/helpers/string'
 import useWindowDimensions from 'hooks/window-dimensions'
 import { useWeb3Context } from 'web3-react'
-import getNetworkEnv from 'utils/network-env'
+import getNetworkEnv from 'utils/helpers/network-env'
 
 const StyledBanner = styled.div`
   padding: 24px 9.375vw;

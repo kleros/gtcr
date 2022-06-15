@@ -20,7 +20,7 @@ import styled from 'styled-components/macro'
 import CustomInput from 'components/custom-input'
 import ItemDetailsCard from 'components/item-details-card'
 import { ItemTypes } from '@kleros/gtcr-encoder'
-import { STATUS_CODE } from 'utils/item-status'
+import { STATUS_CODE } from 'utils/helpers/item-status'
 
 const { IMAGE, FILE, GTCR_ADDRESS, TWITTER_USER_ID, LONG_TEXT } = ItemTypes
 

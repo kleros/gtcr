@@ -5,7 +5,7 @@ import PropTypes from 'prop-types'
 import GTCRAddress from './gtcr-address'
 import TwitterUser from './twitter-user'
 import { ItemTypes } from '@kleros/gtcr-encoder'
-import { ZERO_ADDRESS, LOREM_IPSUM } from '../utils/string'
+import { ZERO_ADDRESS, LOREM_IPSUM } from '../utils/helpers/string'
 import RichAddress from './rich-address'
 import ETHAddress from './eth-address'
 

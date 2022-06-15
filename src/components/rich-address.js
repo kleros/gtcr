@@ -1,5 +1,5 @@
 import React from 'react'
-import { parseRichAddress } from '../utils/rich-address'
+import { parseRichAddress } from '../utils/helpers/rich-address'
 
 const RichAddress = ({ crude }) => {
   const richAddress = parseRichAddress(crude)

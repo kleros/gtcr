@@ -1,5 +1,5 @@
 import { useWeb3Context } from 'web3-react'
-import getNetworkEnv from '../utils/network-env'
+import getNetworkEnv from '../utils/helpers/network-env'
 import { getAddress } from 'ethers/utils'
 
 const useFactory = () => {

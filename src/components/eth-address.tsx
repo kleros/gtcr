@@ -1,6 +1,6 @@
 import React from 'react'
 import { useWeb3Context } from 'web3-react'
-import { getAddressPage } from '../utils/network-utils'
+import { getAddressPage } from '../utils/helpers/network-utils'
 
 const ETHAddress: React.FC<{ address: string; forceEth: boolean }> = ({
   address,

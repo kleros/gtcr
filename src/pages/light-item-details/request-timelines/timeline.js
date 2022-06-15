@@ -22,11 +22,11 @@ import {
   STATUS_COLOR,
   getResultStatus,
   STATUS_CODE
-} from 'utils/item-status'
+} from 'utils/helpers/item-status'
 import { WalletContext } from 'contexts/wallet-context'
 import BNPropType from 'prop-types/bn'
-import { capitalizeFirstLetter } from 'utils/string'
-import { getTxPage } from 'utils/network-utils'
+import { capitalizeFirstLetter } from 'utils/helpers/string'
+import { getTxPage } from 'utils/helpers/network-utils'
 import useGetLogs from 'hooks/get-logs'
 
 const StyledText = styled(Typography.Text)`

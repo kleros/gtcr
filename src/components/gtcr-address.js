@@ -3,7 +3,7 @@ import PropTypes from 'prop-types'
 import styled from 'styled-components/macro'
 // import { utils } from 'ethers'
 import { Button } from 'antd'
-import { ZERO_ADDRESS } from '../utils/string'
+import { ZERO_ADDRESS } from '../utils/helpers/string'
 import ETHAddress from './eth-address'
 
 const StyledButton = styled(Button)`

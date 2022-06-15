@@ -12,7 +12,7 @@ import {
   Spin
 } from 'antd'
 import PropTypes from 'prop-types'
-import { STATUS_CODE, PARTY } from 'utils/item-status'
+import { STATUS_CODE, PARTY } from 'utils/helpers/item-status'
 import itemPropTypes from 'prop-types/item'
 import { TCRViewContext } from 'contexts/tcr-view-context'
 import { formatEther, bigNumberify } from 'ethers/utils'

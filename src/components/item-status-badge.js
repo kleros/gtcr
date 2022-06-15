@@ -4,7 +4,7 @@ import {
   STATUS_TEXT,
   STATUS_CODE,
   itemToStatusCode
-} from '../utils/item-status'
+} from '../utils/helpers/item-status'
 import { Badge, Skeleton } from 'antd'
 import styled from 'styled-components/macro'
 import PropTypes from 'prop-types'
