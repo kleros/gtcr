@@ -11,7 +11,6 @@ import {
   Alert
 } from 'antd'
 import styled from 'styled-components/macro'
-import PropTypes from 'prop-types'
 import _gtcr from 'assets/abis/LightGeneralizedTCR.json'
 import { ethers } from 'ethers'
 import { withFormik } from 'formik'
@@ -20,7 +19,6 @@ import { WalletContext } from 'contexts/wallet-context'
 import { ItemTypes, typeDefaultValues } from '@kleros/gtcr-encoder'
 import InputSelector from 'components/input-selector.js'
 import ETHAmount from 'components/eth-amount'
-import BNPropType from 'prop-types/bn'
 import useFactory from 'hooks/factory'
 import { TourContext } from 'contexts/tour-context'
 import {
@@ -96,30 +94,6 @@ const _SubmissionForm = ({
       ))}
   </Form>
 )
-
-_SubmissionForm.propTypes = {
-  columns: PropTypes.arrayOf(
-    PropTypes.shape({
-      label: PropTypes.string.isRequired,
-      description: PropTypes.string.isRequired
-    })
-  ).isRequired,
-  setFieldValue: PropTypes.func.isRequired,
-  handleSubmit: PropTypes.func.isRequired,
-  disabledFields: PropTypes.arrayOf(PropTypes.bool),
-  values: PropTypes.shape({}),
-  errors: PropTypes.shape({}).isRequired,
-  touched: PropTypes.shape({}).isRequired,
-  status: PropTypes.shape({
-    setFileToUpload: PropTypes.func.isRequired,
-    setFileAsUploaded: PropTypes.func.isRequired
-  }).isRequired
-}
-
-_SubmissionForm.defaultProps = {
-  disabledFields: null,
-  values: {}
-}
 
 const SubmissionForm = withFormik({
   mapPropsToValues: ({ columns, initialValues }) =>
@@ -325,7 +299,7 @@ const SubmitModal = props => {
       <StyledAlert
         message={`Note that this is a deposit, not a fee and it will be reimbursed if your submission is accepted. ${challengePeriodDuration &&
           `The challenge period lasts ${humanizeDuration(
-            `${challengePeriodDuration.toNumber() * 1000}.`
+            `${Number(challengePeriodDuration) * 1000}.`
           )}`}.`}
         type="info"
         showIcon
@@ -354,30 +328,6 @@ const SubmitModal = props => {
       </Descriptions>
     </StyledModal>
   )
-}
-
-SubmitModal.propTypes = {
-  onCancel: PropTypes.func.isRequired,
-  initialValues: PropTypes.arrayOf(PropTypes.any),
-  submissionDeposit: BNPropType,
-  tcrAddress: PropTypes.string.isRequired,
-  metaEvidence: PropTypes.shape({
-    metadata: PropTypes.shape({
-      itemName: PropTypes.string,
-      columns: PropTypes.arrayOf(PropTypes.any),
-      isTCRofTCRs: PropTypes.bool
-    }).isRequired,
-    fileURI: PropTypes.string
-  }).isRequired,
-  disabledFields: PropTypes.arrayOf(PropTypes.bool),
-  challengePeriodDuration: BNPropType
-}
-
-SubmitModal.defaultProps = {
-  initialValues: null,
-  disabledFields: null,
-  submissionDeposit: null,
-  challengePeriodDuration: null
 }
 
 export default SubmitModal

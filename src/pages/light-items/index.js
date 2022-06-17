@@ -22,7 +22,7 @@ import itemsTourSteps from './tour-steps'
 import LightSearchBar from 'components/light-search-bar'
 import useTcrParams from 'hooks/use-tcr-params'
 import { LightTCRViewContext } from 'contexts/light-tcr-view-context'
-import { ITEMS_PER_PAGE, ORDER_DIR } from 'utils/constants'
+import { FILTER_STAUTS, ITEMS_PER_PAGE, ORDER_DIR } from 'utils/constants'
 
 const NSFW_FILTER_KEY = 'NSFW_FILTER_KEY'
 const ITEMS_TOUR_DISMISSED = 'ITEMS_TOUR_DISMISSED'
@@ -146,39 +146,27 @@ const Items = () => {
   }, [page, setPage])
 
   useEffect(() => {
-    let itemsWhere = {}
-    if (absent) itemsWhere = { registry: tcrAddress, status: 'Absent' }
-    if (registered) itemsWhere = { registry: tcrAddress, status: 'Registered' }
-    if (submitted)
-      itemsWhere = {
-        registry: tcrAddress,
-        status: 'RegistrationRequested'
-      }
-    if (removalRequested)
-      itemsWhere = { registry: tcrAddress, status: 'ClearingRequested' }
-    if (challengedSubmissions)
-      itemsWhere = {
-        registry: tcrAddress,
-        status: 'RegistrationRequested',
-        disputed: true
-      }
-    if (challengedRemovals)
-      itemsWhere = {
-        registry: tcrAddress,
-        status: 'ClearingRequested',
-        disputed: true
-      }
-
-    itemsWhere = { registry: tcrAddress }
-
+    const itemsWhere = { registry: tcrAddress }
+    if (absent) itemsWhere.status = FILTER_STAUTS.absent
+    if (registered) itemsWhere.status = FILTER_STAUTS.registered
+    if (submitted) itemsWhere.status = FILTER_STAUTS.submitted
+    if (removalRequested) itemsWhere.status = FILTER_STAUTS.removalRequested
+    if (challengedSubmissions) {
+      itemsWhere.status = FILTER_STAUTS.challengedSubmissions
+      itemsWhere.disputed = true
+    }
+    if (challengedRemovals) {
+      itemsWhere.status = FILTER_STAUTS.challengedRemovals
+      itemsWhere.disputed = true
+    }
     setItemsWhere(itemsWhere)
   }, [
     absent,
-    challengedRemovals,
-    challengedSubmissions,
     registered,
-    removalRequested,
     submitted,
+    removalRequested,
+    challengedSubmissions,
+    challengedRemovals,
     tcrAddress,
     setItemsWhere
   ])

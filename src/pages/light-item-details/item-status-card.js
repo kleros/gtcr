@@ -223,7 +223,7 @@ const ItemStatusCard = ({
           <Descriptions.Item label="Requester">
             <ETHAddress address={item.requester} />
           </Descriptions.Item>
-          {disputed && disputeID.toNumber() !== 0 && (
+          {disputed && Number(disputeID) !== 0 && (
             <>
               <Descriptions.Item label="Dispute ID">
                 {klerosAddress.toLowerCase() === arbitrator.toLowerCase() ? (

@@ -90,9 +90,8 @@ const useLightTcrView = tcrAddress => {
       const { itemID, status, requests, data, props, numberOfRequests } = item
       const latestRequest =
         requests[Number(numberOfRequests) - 1] || requests[0]
-      const latestRound =
-        latestRequest.rounds[Number(latestRequest.numberOfRounds) - 1] ||
-        latestRequest.rounds[0]
+      const { rounds, numberOfRounds } = latestRequest
+      const latestRound = rounds[Number(numberOfRounds) - 1] || rounds[0]
       const { disputed, disputeID, submissionTime } = latestRequest
       const {
         appealCost,
