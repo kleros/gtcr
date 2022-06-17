@@ -90,7 +90,6 @@ const useLightTcrView = tcrAddress => {
   }, [loadingRegistry, regQueryResult])
 
   useEffect(() => {
-    setMetaEvidence(null)
     execRegQuery({
       variables: {
         tcrAddress
