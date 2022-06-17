@@ -1,6 +1,5 @@
 import React, { useContext, useMemo } from 'react'
 import { Descriptions, Skeleton, Card } from 'antd'
-import PropTypes from 'prop-types'
 import _gtcr from 'assets/abis/LightGeneralizedTCR.json'
 import ItemStatusBadge from 'components/item-status-badge'
 import styled from 'styled-components/macro'
@@ -13,18 +12,17 @@ import {
   CONTRACT_STATUS,
   hasPendingRequest
 } from 'utils/helpers/item-status'
-import itemPropTypes from 'prop-types/item'
 import ETHAddress from 'components/eth-address'
 import ItemActionModal from './item-action-modal'
 import ItemActionButton from 'components/item-action-button'
 import { LightTCRViewContext } from 'contexts/light-tcr-view-context'
 import { WalletContext } from 'contexts/wallet-context'
-import BNPropType from 'prop-types/bn'
 import useHumanizedCountdown from 'hooks/countdown'
 import useAppealTime from 'hooks/appeal-time'
 import ETHAmount from 'components/eth-amount'
 import getNetworkEnv from 'utils/helpers/network-env'
 import useNativeCurrency from 'hooks/native-currency'
+import { bigNumberify } from 'ethers/utils'
 
 const StyledDescriptions = styled(Descriptions)`
   flex-wrap: wrap;
@@ -117,7 +115,9 @@ const ItemStatusCard = ({
 
     const { submissionTime } = item
     const deadline =
-      submissionTime.add(challengePeriodDuration).toNumber() * 1000
+      bigNumberify(submissionTime)
+        .add(challengePeriodDuration)
+        .toNumber() * 1000
     return deadline - Date.now()
   }, [challengePeriodDuration, item])
   const challengeCountdown = useHumanizedCountdown(challengeRemainingTime)
@@ -313,24 +313,6 @@ const ItemStatusCard = ({
         )}
     </>
   )
-}
-
-ItemStatusCard.propTypes = {
-  item: itemPropTypes,
-  timestamp: BNPropType,
-  request: PropTypes.shape({
-    disputeID: BNPropType.isRequired,
-    arbitrator: PropTypes.string.isRequired
-  }),
-  modalOpen: PropTypes.bool,
-  setModalOpen: PropTypes.func.isRequired
-}
-
-ItemStatusCard.defaultProps = {
-  item: null,
-  timestamp: null,
-  request: null,
-  modalOpen: null
 }
 
 export default ItemStatusCard

@@ -1,17 +1,14 @@
 import React, { useContext, useState } from 'react'
-import PropTypes from 'prop-types'
 import { Divider, Collapse, Row, Col, Button, Card } from 'antd'
 import jsOrdinal from 'js-ordinal'
 import styled from 'styled-components/macro'
 import Timeline from './timeline'
-import itemPropTypes from 'prop-types/item'
 import {
   REQUEST_TYPE_LABEL,
   hasPendingRequest
 } from 'utils/helpers/item-status'
 import EvidenceModal from '../modals/evidence'
 import { WalletContext } from 'contexts/wallet-context'
-import BNPropType from 'prop-types/bn'
 import { capitalizeFirstLetter } from 'utils/helpers/string'
 import { LightTCRViewContext } from 'contexts/light-tcr-view-context'
 
@@ -81,7 +78,7 @@ const RequestTimelines = ({ item, requests }) => {
               {/* We spread `requests` to convert it from an array to an object. */}
               <Timeline
                 item={item}
-                request={{ ...request }}
+                request={request}
                 requestID={requests.length - i - 1}
               />
             </Collapse.Panel>
@@ -95,24 +92,6 @@ const RequestTimelines = ({ item, requests }) => {
       />
     </div>
   )
-}
-
-RequestTimelines.propTypes = {
-  item: itemPropTypes,
-  requests: PropTypes.arrayOf(
-    PropTypes.shape({
-      arbitrator: PropTypes.string.isRequired,
-      requestType: PropTypes.number.isRequired,
-      disputed: PropTypes.bool.isRequired,
-      resolved: PropTypes.bool.isRequired,
-      metaEvidenceID: BNPropType.isRequired
-    })
-  )
-}
-
-RequestTimelines.defaultProps = {
-  item: null,
-  requests: null
 }
 
 export default RequestTimelines

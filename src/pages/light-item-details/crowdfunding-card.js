@@ -11,8 +11,6 @@ import {
 import { LightTCRViewContext } from 'contexts/light-tcr-view-context'
 import useRequiredFees from 'hooks/required-fees'
 import { formatEther } from 'ethers/utils'
-import itemPropType from 'prop-types/item'
-import BNPropType from 'prop-types/bn'
 import useNativeCurrency from 'hooks/native-currency'
 
 const StyledCard = styled(Card)`
@@ -186,16 +184,6 @@ const CrowdfundingCard = ({ item, timestamp }) => {
       </StyledContent>
     </StyledCard>
   )
-}
-
-CrowdfundingCard.propTypes = {
-  item: itemPropType,
-  timestamp: BNPropType
-}
-
-CrowdfundingCard.defaultProps = {
-  item: null,
-  timestamp: null
 }
 
 export default CrowdfundingCard

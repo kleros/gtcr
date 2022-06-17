@@ -1,11 +1,12 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import PropTypes from 'prop-types'
 import styled from 'styled-components/macro'
 import { Result, Skeleton, Button } from 'antd'
 import { ItemTypes } from '@kleros/gtcr-encoder'
 import DisplaySelector from './display-selector'
 import { Link } from 'react-router-dom'
-import useLightTcrView from 'hooks/light-tcr-view'
+import { useQuery } from '@apollo/client'
+import { GQL_META_EVIDENCES } from 'utils/graphql'
 
 const StyledItemCol = styled.div`
   margin-bottom: 8px;
@@ -31,7 +32,26 @@ const TCRCardContent = ({
   ID,
   hideDetailsButton
 }) => {
-  const { metaEvidence, error } = useLightTcrView(tcrAddress)
+  const { data, loading, error } = useQuery(GQL_META_EVIDENCES, {
+    variables: { tcrAddress }
+  })
+
+  const [metaEvidence, setEetaEvidence] = useState()
+
+  useEffect(() => {
+    if (!data || loading) return
+
+    const metaEvidence = data.metaEvidences[data.metaEvidences.length - 2]
+    const asyncProc = async () => {
+      const ipfsFile = await fetch(
+        process.env.REACT_APP_IPFS_GATEWAY + metaEvidence.URI
+      )
+      const data = await ipfsFile.json()
+
+      setEetaEvidence({ ...metaEvidence, ...data })
+    }
+    asyncProc()
+  }, [data, loading])
 
   if (error) {
     const { message } = error
@@ -74,9 +94,9 @@ const TCRCardContent = ({
       )
   }
 
-  const { metadata } = metaEvidence || {}
-
   if (!metaEvidence) return <Skeleton active />
+
+  const { metadata } = metaEvidence || {}
 
   if (!metadata)
     return (

@@ -5,7 +5,6 @@ import styled from 'styled-components/macro'
 import _gtcr from 'assets/abis/LightGeneralizedTCR.json'
 import { LightTCRViewContext } from 'contexts/light-tcr-view-context'
 import { WalletContext } from 'contexts/wallet-context'
-import itemPropTypes from 'prop-types/item'
 import EvidenceForm from 'components/evidence-form.js'
 import ipfsPublish from 'utils/helpers/ipfs-publish.js'
 import { TourContext } from 'contexts/tour-context'
@@ -102,14 +101,6 @@ const EvidenceModal = ({ item, ...rest }) => {
       />
     </StyledModal>
   )
-}
-
-EvidenceModal.propTypes = {
-  item: itemPropTypes
-}
-
-EvidenceModal.defaultProps = {
-  item: null
 }
 
 export default EvidenceModal

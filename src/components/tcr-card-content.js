@@ -5,7 +5,7 @@ import { useWeb3Context } from 'web3-react'
 import { ethers } from 'ethers'
 import { Result, Skeleton, Button } from 'antd'
 import { abi as _gtcr } from '@kleros/tcr/build/contracts/GeneralizedTCR.json'
-import useMetaEvidence from '../hooks/meta-evidence'
+import useMetaEvidenceWeb3 from '../hooks/use-meta-evidence-web3'
 import { ItemTypes } from '@kleros/gtcr-encoder'
 import DisplaySelector from './display-selector'
 import { Link } from 'react-router-dom'
@@ -46,7 +46,7 @@ const TCRCardContent = ({
     }
   }, [active, library, networkId, tcrAddress])
 
-  const { metaEvidence, error: metaEvidenceError } = useMetaEvidence({
+  const { metaEvidence, error: metaEvidenceError } = useMetaEvidenceWeb3({
     arbitrable: gtcr,
     library
   })

@@ -1,5 +1,4 @@
 import React, { useState, useContext, useEffect, useCallback } from 'react'
-import PropTypes from 'prop-types'
 import { Card, Icon, Tooltip, Button, Result, Alert } from 'antd'
 import DisplaySelector from './display-selector'
 import styled from 'styled-components/macro'
@@ -9,7 +8,6 @@ import { bigNumberify } from 'ethers/utils'
 import { ethers } from 'ethers'
 import Reward from 'react-rewards'
 import { TCRViewContext } from 'contexts/tcr-view-context'
-import itemPropTypes from '../prop-types/item'
 import { WalletContext } from 'contexts/wallet-context'
 import getNetworkEnv from '../utils/helpers/network-env'
 import TCRMetadataDisplay from './tcr-metadata-display'
@@ -105,9 +103,8 @@ const ItemDetailsCard = ({
     tcrViewContext
   ])
 
-  const { file: itemMetaEvidenceFile, error: itemMetaEvidenceError } =
+  const { metadata: itemMetaData, fileURI, error: itemMetaEvidenceError } =
     itemMetaEvidence || {}
-  const { metadata: itemMetaData, fileURI } = itemMetaEvidenceFile || {}
   const { tcrTitle, tcrDescription, logoURI } = itemMetaData || {}
 
   if (!loading && item && item.errors.length > 0)
@@ -186,41 +183,6 @@ const ItemDetailsCard = ({
       )}
     </Card>
   )
-}
-
-ItemDetailsCard.propTypes = {
-  columns: PropTypes.arrayOf(
-    PropTypes.shape({
-      label: PropTypes.string.isRequired,
-      type: PropTypes.string.isRequired,
-      description: PropTypes.string.isRequired
-    })
-  ),
-  title: PropTypes.string,
-  item: itemPropTypes,
-  loading: PropTypes.bool,
-  itemMetaEvidence: PropTypes.oneOfType([
-    PropTypes.bool,
-    PropTypes.shape({
-      file: PropTypes.shape({
-        metadata: PropTypes.shape({
-          tcrTitle: PropTypes.string.isRequired,
-          tcrDescription: PropTypes.string.isRequired,
-          logoURI: PropTypes.string
-        }).isRequired,
-        fileURI: PropTypes.string.isRequired
-      }).isRequired,
-      error: PropTypes.string
-    })
-  ])
-}
-
-ItemDetailsCard.defaultProps = {
-  columns: null,
-  title: null,
-  item: null,
-  loading: null,
-  itemMetaEvidence: null
 }
 
 export default ItemDetailsCard

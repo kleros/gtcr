@@ -7,9 +7,6 @@ import {
 } from '../utils/helpers/item-status'
 import { Badge, Skeleton } from 'antd'
 import styled from 'styled-components/macro'
-import PropTypes from 'prop-types'
-import itemPropTypes from '../prop-types/item'
-import BNPropType from '../prop-types/bn'
 
 const SkeletonTitleProps = { width: 90 }
 const StyledSkeleton = styled(Skeleton)`
@@ -81,22 +78,6 @@ const ItemStatusBadge = ({
       style={{ color: dark ? 'white' : '' }}
     />
   )
-}
-
-ItemStatusBadge.propTypes = {
-  statusCode: PropTypes.number,
-  item: itemPropTypes,
-  timestamp: BNPropType,
-  challengePeriodDuration: BNPropType,
-  dark: PropTypes.bool
-}
-
-ItemStatusBadge.defaultProps = {
-  item: null,
-  statusCode: null,
-  timestamp: null,
-  challengePeriodDuration: null,
-  dark: null
 }
 
 export default ItemStatusBadge

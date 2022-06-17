@@ -27,7 +27,7 @@ const LightItemCardContent = ({ item, chainId, tcrAddress }) => (
     }}
   >
     <div>
-      {item.tcrData.mergedData
+      {item.mergedData
         .filter(
           col =>
             col.isIdentifier ||
@@ -45,7 +45,7 @@ const LightItemCardContent = ({ item, chainId, tcrAddress }) => (
           </StyledItemCol>
         ))}
     </div>
-    <Link to={`/tcr/${chainId}/${tcrAddress}/${item.tcrData.ID}`}>
+    <Link to={`/tcr/${chainId}/${tcrAddress}/${item.ID}`}>
       <StyledButton>Details</StyledButton>
     </Link>
   </div>
@@ -53,21 +53,19 @@ const LightItemCardContent = ({ item, chainId, tcrAddress }) => (
 
 LightItemCardContent.propTypes = {
   item: PropTypes.shape({
-    tcrData: PropTypes.shape({
-      ID: PropTypes.string.isRequired,
-      mergedData: PropTypes.arrayOf(
-        PropTypes.shape({
-          isIdentifier: PropTypes.bool,
-          type: PropTypes.oneOf(Object.values(ItemTypes)),
-          value: PropTypes.oneOfType([
-            PropTypes.bool,
-            PropTypes.string,
-            PropTypes.number,
-            PropTypes.object
-          ])
-        })
-      )
-    }).isRequired
+    ID: PropTypes.string.isRequired,
+    mergedData: PropTypes.arrayOf(
+      PropTypes.shape({
+        isIdentifier: PropTypes.bool,
+        type: PropTypes.oneOf(Object.values(ItemTypes)),
+        value: PropTypes.oneOfType([
+          PropTypes.bool,
+          PropTypes.string,
+          PropTypes.number,
+          PropTypes.object
+        ])
+      })
+    )
   }).isRequired,
   tcrAddress: PropTypes.string.isRequired
 }

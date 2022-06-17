@@ -11,11 +11,9 @@ import { useWeb3Context } from 'web3-react'
 import { ethers } from 'ethers'
 import styled from 'styled-components/macro'
 import { bigNumberify } from 'ethers/utils'
-import PropTypes from 'prop-types'
 import { abi as _arbitrator } from '@kleros/erc-792/build/contracts/IArbitrator.json'
 import { LightTCRViewContext } from 'contexts/light-tcr-view-context'
 import ETHAddress from 'components/eth-address'
-import itemPropTypes from 'prop-types/item'
 import {
   CONTRACT_STATUS,
   PARTY,
@@ -24,7 +22,6 @@ import {
   STATUS_CODE
 } from 'utils/helpers/item-status'
 import { WalletContext } from 'contexts/wallet-context'
-import BNPropType from 'prop-types/bn'
 import { capitalizeFirstLetter } from 'utils/helpers/string'
 import { getTxPage } from 'utils/helpers/network-utils'
 import useGetLogs from 'hooks/get-logs'
@@ -436,25 +433,6 @@ const Timeline = ({ request, requestID, item }) => {
   }
 
   return <AntdTimeline>{items}</AntdTimeline>
-}
-
-Timeline.propTypes = {
-  request: PropTypes.shape({
-    disputeID: BNPropType.isRequired,
-    arbitrator: PropTypes.string.isRequired,
-    requestType: PropTypes.number.isRequired,
-    requester: PropTypes.string.isRequired,
-    disputed: PropTypes.bool.isRequired,
-    resolved: PropTypes.bool.isRequired,
-    metaEvidenceID: BNPropType.isRequired,
-    evidenceGroupID: PropTypes.string.isRequired
-  }).isRequired,
-  requestID: PropTypes.number.isRequired,
-  item: itemPropTypes
-}
-
-Timeline.defaultProps = {
-  item: null
 }
 
 export default Timeline

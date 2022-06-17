@@ -11,7 +11,7 @@ import { LightTCRViewContext } from 'contexts/light-tcr-view-context'
 import { WalletContext } from 'contexts/wallet-context'
 import { itemToStatusCode, STATUS_COLOR } from '../utils/helpers/item-status'
 import { useLazyQuery } from '@apollo/client'
-import ITEM_SEARCH_QUERY from '../utils/graphql/item-search'
+import { ITEM_SEARCH_QUERY } from 'utils/graphql'
 import { useWeb3Context } from 'web3-react'
 
 const StyledSelect = styled(Select)`

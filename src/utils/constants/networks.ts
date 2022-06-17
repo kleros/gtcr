@@ -15,7 +15,8 @@ export const NETWORK_STATUS = Object.freeze({
   supported: 'supported'
 })
 
-const RPC_URLS = JSON.parse(process.env.REACT_APP_RPC_URLS)
+const { REACT_APP_RPC_URLS } = process.env
+const RPC_URLS = REACT_APP_RPC_URLS && JSON.parse(REACT_APP_RPC_URLS)
 
 export const NETWORKS_INFO = Object.freeze({
   [NETWORKS.ethereum]: {

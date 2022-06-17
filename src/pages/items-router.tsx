@@ -9,7 +9,7 @@ import useTcrParams from 'hooks/use-tcr-params'
 import { LightTCRViewProvider } from 'contexts/light-tcr-view-context'
 
 const LightItems = loadable(
-  () => import(/* webpackPrefetch: true */ './light-items-new/index'),
+  () => import(/* webpackPrefetch: true */ './light-items/index'),
   {
     fallback: <Loading />
   }

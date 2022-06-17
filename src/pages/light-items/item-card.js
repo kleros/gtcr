@@ -133,7 +133,7 @@ const CardItemInfo = ({
   else
     content = isTCRofTCRs ? (
       <TCRCardContent
-        ID={item.tcrData.ID}
+        ID={item.ID}
         chainId={chainId}
         tcrAddress={item.columns[0].value}
         itemName={itemName}
@@ -151,7 +151,7 @@ const CardItemInfo = ({
   return (
     <CardBlock>
       <StyledCardInfo
-        title={<ItemCardTitle statusCode={statusCode} tcrData={item.tcrData} />}
+        title={<ItemCardTitle statusCode={statusCode} tcrData={item} />}
         actions={
           !forceReveal &&
           toggleReveal && [
@@ -206,11 +206,7 @@ const ItemCard = ({
   if (!challengePeriodDuration || !timestamp || !item)
     return <Card style={{ height: '100%' }} loading />
 
-  const statusCode = itemToStatusCode(
-    item.tcrData,
-    timestamp,
-    challengePeriodDuration
-  )
+  const statusCode = itemToStatusCode(item, timestamp, challengePeriodDuration)
 
   if (
     statusCode !== STATUS_CODE.REJECTED &&

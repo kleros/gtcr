@@ -1,22 +1,9 @@
 import { Layout, Breadcrumb } from 'antd'
-import React, {
-  useState,
-  useEffect,
-  useContext,
-  useCallback,
-  useRef,
-  useMemo
-} from 'react'
-import { useParams } from 'react-router'
+import React, { useState, useEffect, useContext } from 'react'
 import qs from 'qs'
-import PropTypes from 'prop-types'
 import styled from 'styled-components/macro'
-import { useWeb3Context } from 'web3-react'
 import { Link } from 'react-router-dom'
 import ErrorPage from '../error-page'
-import { ethers } from 'ethers'
-import { abi as _arbitrator } from '@kleros/erc-792/build/contracts/IArbitrator.json'
-import _gtcr from 'assets/abis/LightGeneralizedTCR.json'
 import ItemDetailsCard from 'components/item-details-card'
 import ItemStatusCard from './item-status-card'
 import CrowdfundingCard from './crowdfunding-card'
@@ -27,12 +14,10 @@ import { capitalizeFirstLetter, ZERO_ADDRESS } from 'utils/helpers/string'
 import Badges from './badges'
 import AppTour from 'components/tour'
 import itemTourSteps from './tour-steps'
-import takeLower from 'utils/helpers/lower-limit'
-import { SUBGRAPH_STATUS_TO_CODE } from 'utils/helpers/item-status'
-import { LIGHT_ITEM_DETAILS_QUERY } from 'utils/graphql'
-import { useQuery } from '@apollo/client'
 import SearchBar from 'components/light-search-bar'
-import useGetLogs from 'hooks/get-logs'
+import useTcrParams from 'hooks/use-tcr-params'
+import useMetaEvidence from 'hooks/use-meta-evidence'
+import { ITEM_STATUS_CODES } from 'utils/constants/subgraph'
 
 const ITEM_TOUR_DISMISSED = 'ITEM_TOUR_DISMISSED'
 
@@ -77,210 +62,70 @@ const StyledBackLink = styled.div`
 // https://itnext.io/how-to-create-react-custom-hooks-for-data-fetching-with-useeffect-74c5dc47000a
 // TODO: Ensure http requests are being sent in parallel.
 const ItemDetails = ({ itemID, search }) => {
-  const { library } = useWeb3Context()
-  const { tcrAddress, chainId } = useParams()
-  const [error, setError] = useState()
-  const [itemMetaEvidence, setItemMetaEvidence] = useState()
+  const { tcrAddress, chainId } = useTcrParams()
   const { timestamp } = useContext(WalletContext)
-  const [decodedItem, setDecodedItem] = useState()
-  const [item, setItem] = useState()
-  const [metaEvidence, setMetaEvidence] = useState()
+  const [error, setError] = useState()
   const [requests, setRequests] = useState()
-  const arbitrator = useMemo(() => {
-    if (!item || !library) return
-    return new ethers.Contract(item.arbitrator, _arbitrator, library)
-  }, [item, library])
-  const refAttr = useRef()
-  const [eventListenerSet, setEventListenerSet] = useState()
   const [modalOpen, setModalOpen] = useState()
+
   const {
-    gtcr,
-    tcrError,
-    gtcrView,
-    regData: { connectedTCR: connectedTCRAddr },
-    metadataByTime
+    regData: { connectedTCR },
+    metaEvidence,
+    items
   } = useContext(LightTCRViewContext)
-  const getLogs = useGetLogs(library)
+  const [item, setItem] = useState()
 
-  // subgraph item entities have id "<itemID>@<listaddress>"
-  const compoundId = `${itemID}@${tcrAddress.toLowerCase()}`
-  const detailsViewQuery = useQuery(LIGHT_ITEM_DETAILS_QUERY, {
-    variables: { id: compoundId }
-  })
+  useEffect(() => {
+    if (!itemID || items.length === 0) return
 
-  // Warning: This function should only be called when all its dependencies
-  // are set.
-  const fetchItem = useCallback(async () => {
-    if (!detailsViewQuery.loading)
+    const item = items.find(it => it.itemID === itemID)
+    const { requests, data: itemURI, latestRequest: request } = item
+
+    setRequests(
+      requests.map(request => ({
+        ...request,
+        requestType: ITEM_STATUS_CODES[request.requestType]
+      }))
+    )
+
+    const asyncProc = async () => {
       try {
-        const itemFromContract = await gtcrView.getItem(tcrAddress, itemID)
-        const { data: itemURI, requests } = detailsViewQuery.data.litem
-        const itemData = await (
-          await fetch(`${process.env.REACT_APP_IPFS_GATEWAY}${itemURI}`)
-        ).json()
+        const ipfsRequest = await fetch(
+          `${process.env.REACT_APP_IPFS_GATEWAY}${itemURI}`
+        )
+        const { columns, values } = await ipfsRequest.json()
 
-        const orderDecodedData = (columns, values) => {
-          const labels = columns.map(column => column.label)
-          const ordered = []
-          for (const label of labels) {
-            const value = values[label]
-            ordered.push(value)
-          }
-          return ordered
-        }
-
-        const result = {
-          ...itemFromContract, // Spread to convert from array to object.
-          data: itemURI,
-          columns: itemData.columns,
-          decodedData: orderDecodedData(itemData.columns, itemData.values),
-          requestsFromSubgraph: requests
-        }
-
-        setItem(result)
-        setDecodedItem({
-          ...result,
-          errors: []
+        setItem({
+          ...item,
+          requestsFromSubgraph: requests,
+          columns,
+          errors: [],
+          decodedData: columns.map(col => values[col.label]),
+          disputed: request.disputed,
+          resolved: request.resolved,
+          disputeID: request.disputeID,
+          requester: request.requester,
+          challenger: request.challenger,
+          arbitrator: request.arbitrator,
+          arbitratorExtraData: request.arbitratorExtraData
         })
       } catch (err) {
+        setError(err)
         console.error(err)
-        setError('Error fetching item')
       }
-  }, [gtcrView, itemID, tcrAddress, detailsViewQuery])
+    }
 
-  // TODO: Fetch this directly from the subgraph.
-  // Get requests data
-  useEffect(() => {
-    ;(async () => {
-      try {
-        if (!gtcr || !gtcrView || !tcrAddress || !itemID || !item) return
-        const [requestStructs] = await Promise.all([
-          gtcrView.getItemRequests(tcrAddress, itemID)
-        ])
-
-        const { requestsFromSubgraph: requests } = item
-
-        setRequests(
-          requestStructs.map((request, i) => ({
-            ...request,
-            requestType: SUBGRAPH_STATUS_TO_CODE[requests[i].requestType],
-            evidenceGroupID: requests[i].evidenceGroupID,
-            creationTx: requests[i].creationTx,
-            resolutionTx: requests[i].resolutionTx,
-            resolutionTime: requests[i].resolutionTime,
-            submissionTime: requests[i].submissionTime
-          }))
-        )
-      } catch (err) {
-        console.error('Error fetching item requests', err)
-      }
-    })()
-  }, [gtcr, gtcrView, item, itemID, library, tcrAddress])
-
-  // Set the meta evidence.
-  useEffect(() => {
-    if (!item || !metadataByTime) return
-    const { byTimestamp } = metadataByTime
-    const file =
-      byTimestamp[takeLower(Object.keys(byTimestamp), item.submissionTime)]
-    if (!file) return
-
-    setMetaEvidence(file)
-  }, [item, metaEvidence, metadataByTime, tcrAddress])
-
-  // Fetch item.
-  // This runs when the user loads the details view for the of an item
-  // or when he navigates from the details view of an item to
-  // the details view of another item (i.e. when itemID changes).
-  useEffect(() => {
-    if (!gtcrView || !itemID || !library || !tcrAddress) return
-    fetchItem()
-  }, [gtcrView, fetchItem, itemID, library, tcrAddress])
-
-  // Watch for events to and refetch.
-  useEffect(() => {
-    if (!gtcr || eventListenerSet || !item || !arbitrator) return
-    setEventListenerSet(true)
-    gtcr.on(gtcr.filters.ItemStatusChange(itemID), fetchItem)
-    gtcr.on(gtcr.filters.Dispute(arbitrator.address), fetchItem)
-    gtcr.on(gtcr.filters.Contribution(itemID), fetchItem)
-    gtcr.on(gtcr.filters.Evidence(), fetchItem)
-    arbitrator.on(
-      arbitrator.filters.AppealPossible(item.disputeID, gtcr.address),
-      fetchItem
-    )
-    arbitrator.on(
-      arbitrator.filters.AppealDecision(item.disputeID, gtcr.address),
-      fetchItem
-    )
-    refAttr.current = { gtcr, arbitrator }
-  }, [
-    arbitrator,
-    eventListenerSet,
-    fetchItem,
-    gtcr,
-    item,
-    itemID,
-    metaEvidence
-  ])
-
-  // Teardown listeners.
-  useEffect(
-    () => () => {
-      if (!refAttr || !refAttr.current || !eventListenerSet) return
-      const {
-        current: { gtcr, arbitrator }
-      } = refAttr
-      gtcr.removeAllListeners(gtcr.filters.ItemStatusChange())
-      gtcr.removeAllListeners(gtcr.filters.Dispute())
-      gtcr.removeAllListeners(gtcr.filters.Contribution())
-      gtcr.removeAllListeners(gtcr.filters.Evidence())
-      arbitrator.removeAllListeners(arbitrator.filters.AppealPossible())
-      arbitrator.removeAllListeners(arbitrator.filters.AppealDecision())
-    },
-    [eventListenerSet]
-  )
+    asyncProc()
+  }, [itemID, items])
 
   const { metadata } = metaEvidence || {}
-  const { decodedData } = decodedItem || {}
+  const { decodedData } = item || {}
 
-  // If this is a TCR in a TCR of TCRs, we fetch its metadata as well
-  // to build a better item details card.
-  useEffect(() => {
-    ;(async () => {
-      const { isTCRofTCRs } = metadata || {}
-      if (!isTCRofTCRs) return
-      if (!decodedItem) return
-      if (!getLogs) return
-      const itemAddress = decodedItem.decodedData[0] // There is only one column, the TCR address.
-      const itemTCR = new ethers.Contract(itemAddress, _gtcr, library)
+  const { metaEvidence: itemMetaEvidence } = useMetaEvidence(
+    item?.decodedData?.[0]
+  )
 
-      try {
-        // Take the latest meta evidence.
-        const logs = (
-          await getLogs({
-            ...itemTCR.filters.MetaEvidence(),
-            fromBlock: 0
-          })
-        ).map(log => itemTCR.interface.parseLog(log))
-        if (logs.length === 0) throw new Error('No meta evidence available.')
-
-        const { _evidence: metaEvidencePath } = logs[logs.length - 1].values
-        const file = await (
-          await fetch(process.env.REACT_APP_IPFS_GATEWAY + metaEvidencePath)
-        ).json()
-
-        setItemMetaEvidence({ file })
-      } catch (err) {
-        console.error('Error fetching meta evidence', err)
-        setItemMetaEvidence({ error: err })
-      }
-    })()
-  }, [decodedItem, library, metadata, getLogs])
-
-  const loading =
-    !metadata ||
-    (!decodedData && decodedItem && decodedItem.errors.length === 0)
+  const loading = !metadata || !decodedData
 
   // Check if there is some action on the URL and, if so, run it.
   useEffect(() => {
@@ -292,11 +137,11 @@ const ItemDetails = ({ itemID, search }) => {
     setModalOpen(true)
   }, [loading, search])
 
-  if (!tcrAddress || !itemID || error || tcrError)
+  if (!tcrAddress || !itemID || error)
     return (
       <ErrorPage
         code="400"
-        message={error || tcrError || 'This item could not be found.'}
+        message={error || 'This item could not be found.'}
         tip="Make sure your wallet is set to the correct network (is this on xDai?)."
       />
     )
@@ -328,9 +173,9 @@ const ItemDetails = ({ itemID, search }) => {
       </StyledMargin>
       <StyledLayoutContent>
         <ItemStatusCard
-          item={decodedItem || item}
+          item={item}
           timestamp={timestamp}
-          request={requests && { ...requests[0] }}
+          request={requests && requests[0]}
           modalOpen={modalOpen}
           setModalOpen={setModalOpen}
           dark
@@ -338,7 +183,7 @@ const ItemDetails = ({ itemID, search }) => {
         <div style={{ marginBottom: '40px' }} />
         <ItemDetailsCard
           columns={columns}
-          item={decodedItem}
+          item={item}
           title={`${
             itemName ? capitalizeFirstLetter(itemName) : 'Item'
           } Details`}
@@ -346,20 +191,17 @@ const ItemDetails = ({ itemID, search }) => {
           itemMetaEvidence={itemMetaEvidence}
         />
         {/* Crowdfunding card is only rendered if the item has an appealable dispute. */}
-        <CrowdfundingCard item={decodedItem || item} timestamp={timestamp} />
+        <CrowdfundingCard item={item} timestamp={timestamp} />
 
         {/* Spread the `requests` parameter to convert elements from array to an object */}
-        <RequestTimelines
-          item={item}
-          requests={requests && requests.map(r => ({ ...r }))}
-        />
-        {connectedTCRAddr !== ZERO_ADDRESS &&
+        <RequestTimelines item={item} requests={requests} />
+        {connectedTCR !== ZERO_ADDRESS &&
           metadata &&
           !isConnectedTCR &&
           !relTcrDisabled && (
             <Badges
-              connectedTCRAddr={connectedTCRAddr}
-              item={decodedItem}
+              connectedTCRAddr={connectedTCR}
+              item={item}
               tcrAddress={tcrAddress}
             />
           )}
@@ -370,15 +212,6 @@ const ItemDetails = ({ itemID, search }) => {
       />
     </>
   )
-}
-
-ItemDetails.propTypes = {
-  itemID: PropTypes.string.isRequired,
-  search: PropTypes.string
-}
-
-ItemDetails.defaultProps = {
-  search: ''
 }
 
 export default ItemDetails

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import useGetLogs from './get-logs'
 
-const useMetaEvidence = ({ arbitrable, library }) => {
+const useMetaEvidenceWeb3 = ({ arbitrable, library }) => {
   const [metaEvidence, setMetaEvidence] = useState()
   const [error, setError] = useState()
   const getLogs = useGetLogs(library)
@@ -41,4 +41,4 @@ const useMetaEvidence = ({ arbitrable, library }) => {
   return { metaEvidence, error }
 }
 
-export default useMetaEvidence
+export default useMetaEvidenceWeb3

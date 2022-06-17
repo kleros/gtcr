@@ -1,5 +1,4 @@
 import React, { useContext, useCallback } from 'react'
-import PropTypes from 'prop-types'
 import {
   Modal,
   Descriptions,
@@ -17,7 +16,6 @@ import { LightTCRViewContext } from 'contexts/light-tcr-view-context'
 import ETHAmount from 'components/eth-amount'
 import EvidenceForm from 'components/evidence-form'
 import { WalletContext } from 'contexts/wallet-context'
-import itemPropTypes from 'prop-types/item'
 import ipfsPublish from 'utils/helpers/ipfs-publish'
 import { TourContext } from 'contexts/tour-context'
 import useNativeCurrency from 'hooks/native-currency'
@@ -171,7 +169,7 @@ const RemoveModal = ({ item, itemName = 'item', fileURI, ...rest }) => {
       <StyledAlert
         message={`Note that this is a deposit, not a fee and it will be reimbursed if the removal is accepted. ${challengePeriodDuration &&
           `The challenge period lasts ${humanizeDuration(
-            `${challengePeriodDuration.toNumber() * 1000}.`
+            `${Number(challengePeriodDuration) * 1000}.`
           )}`}.`}
         type="info"
         showIcon
@@ -191,18 +189,6 @@ const RemoveModal = ({ item, itemName = 'item', fileURI, ...rest }) => {
       </Descriptions>
     </StyledModal>
   )
-}
-
-RemoveModal.propTypes = {
-  item: itemPropTypes,
-  itemName: PropTypes.string,
-  fileURI: PropTypes.string
-}
-
-RemoveModal.defaultProps = {
-  item: null,
-  itemName: 'item',
-  fileURI: ''
 }
 
 export default RemoveModal
