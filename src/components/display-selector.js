@@ -1,13 +1,15 @@
 import React from 'react'
-import { Typography, Avatar, Checkbox, Icon } from 'antd'
+import { Typography, Avatar, Checkbox } from 'antd'
 import styled from 'styled-components/macro'
 import PropTypes from 'prop-types'
 import GTCRAddress from './gtcr-address'
 import TwitterUser from './twitter-user'
 import { ItemTypes } from '@kleros/gtcr-encoder'
-import { ZERO_ADDRESS, LOREM_IPSUM } from '../utils/helpers/string'
+import { ZERO_ADDRESS } from '../utils/helpers/string'
 import RichAddress from './rich-address'
 import ETHAddress from './eth-address'
+import LongText from './long-text'
+import FileDisplay from './file-display'
 
 const pohRichAddress = 'eip155:1:0xc5e9ddebb09cd64dfacab4011a0d5cedaf7c9bdb'
 
@@ -34,34 +36,9 @@ const DisplaySelector = ({ type, value, linkImage, allowedFileTypes }) => {
     case ItemTypes.BOOLEAN:
       return <Checkbox disabled checked={value} />
     case ItemTypes.LONG_TEXT:
-      return <Typography.Paragraph>{value || LOREM_IPSUM}</Typography.Paragraph>
+      return <LongText value={value} />
     case ItemTypes.FILE: {
-      if (!value)
-        return (
-          <a target="_blank" rel="noopener noreferrer" href="/#">
-            View File <Icon type="paper-clip" />
-          </a>
-        )
-
-      if (!allowedFileTypes) return 'No allowed file types specified'
-
-      const allowedFileTypesArr = allowedFileTypes.split(' ')
-      if (allowedFileTypesArr.length === 0)
-        return 'No allowed file types specified'
-
-      const fileExtension = value.slice(value.lastIndexOf('.') + 1)
-      if (!allowedFileTypesArr.includes(fileExtension))
-        return 'Forbidden file type'
-
-      return (
-        <a
-          href={`${process.env.REACT_APP_IPFS_GATEWAY}${value || ''}`}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          View File <Icon type="paper-clip" />
-        </a>
-      )
+      return <FileDisplay value={value} allowedFileTypes={allowedFileTypes} />
     }
     case ItemTypes.IMAGE:
       return value ? (
