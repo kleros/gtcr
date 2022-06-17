@@ -55,7 +55,7 @@ export const NETWORKS_INFO = Object.freeze({
       'https://xdai.poanetwork.dev',
       'wss://rpc.xdaichain.com/wss',
       'wss://xdai.poanetwork.dev/wss',
-      'http://xdai.poanetwork.dev',
+      'https://xdai.poanetwork.dev',
       'https://dai.poa.network',
       'ws://xdai.poanetwork.dev:8546'
     ],
