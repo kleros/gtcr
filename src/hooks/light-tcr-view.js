@@ -1,42 +1,9 @@
 import { useState, useEffect, useMemo } from 'react'
-import { gql, useLazyQuery } from '@apollo/client'
-import { LIGHT_ITEMS_QUERY } from 'utils/graphql'
+import { useLazyQuery } from '@apollo/client'
+import { GQL_LIGHT_TCR, LIGHT_ITEMS_QUERY } from 'utils/graphql'
 import { ITEMS_PER_PAGE, ORDER_DIR } from 'utils/constants'
 import { ITEM_STATUS_CODES, RULING_CODES } from 'utils/constants/subgraph'
 import { bigNumberify } from 'ethers/utils'
-
-const lightCurateQuery = gql`
-  query FetchAllInfoForLightCurate($tcrAddress: String!) {
-    lregistry(id: $tcrAddress) {
-      id
-      connectedTCR
-      submissionDeposit
-      submissionBaseDeposit
-      submissionChallengeDeposit
-      removalDeposit
-      removalBaseDeposit
-      removalChallengeDeposit
-      arbitrationCost
-      challengePeriodDuration
-      numberOfAbsent
-      numberOfRegistered
-      numberOfRegistrationRequested
-      numberOfClearingRequested
-      numberOfChallengedRegistrations
-      numberOfChallengedClearing
-      sharedStakeMultiplier
-      winnerStakeMultiplier
-      loserStakeMultiplier
-      MULTIPLIER_DIVISOR
-    }
-    metaEvidences(where: { tcrAddress: $tcrAddress }) {
-      id
-      timestamp
-      URI
-      tcrAddress
-    }
-  }
-`
 
 const useLightTcrView = tcrAddress => {
   const [metaEvidence, setMetaEvidence] = useState(null)
@@ -52,7 +19,7 @@ const useLightTcrView = tcrAddress => {
   const [
     execRegQuery,
     { data: regQueryResult, loading: loadingRegistry }
-  ] = useLazyQuery(lightCurateQuery)
+  ] = useLazyQuery(GQL_LIGHT_TCR)
 
   const [
     execLightItemsQuery,

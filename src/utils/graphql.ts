@@ -175,3 +175,35 @@ export const TCR_EXISTENCE_TEST = gql`
     }
   }
 `
+export const GQL_LIGHT_TCR = gql`
+  query FetchAllInfoForLightCurate($tcrAddress: String!) {
+    lregistry(id: $tcrAddress) {
+      id
+      connectedTCR
+      submissionDeposit
+      submissionBaseDeposit
+      submissionChallengeDeposit
+      removalDeposit
+      removalBaseDeposit
+      removalChallengeDeposit
+      arbitrationCost
+      challengePeriodDuration
+      numberOfAbsent
+      numberOfRegistered
+      numberOfRegistrationRequested
+      numberOfClearingRequested
+      numberOfChallengedRegistrations
+      numberOfChallengedClearing
+      sharedStakeMultiplier
+      winnerStakeMultiplier
+      loserStakeMultiplier
+      MULTIPLIER_DIVISOR
+    }
+    metaEvidences(where: { tcrAddress: $tcrAddress }) {
+      id
+      timestamp
+      URI
+      tcrAddress
+    }
+  }
+`
