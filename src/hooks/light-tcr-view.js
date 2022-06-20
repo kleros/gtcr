@@ -87,11 +87,10 @@ const useLightTcrView = tcrAddress => {
     if (loading || !metaEvidence) return []
 
     return itemsRawData.litems.map(item => {
-      const { itemID, status, requests, data, props, numberOfRequests } = item
-      const latestRequest =
-        requests[Number(numberOfRequests) - 1] || requests[0]
-      const { rounds, numberOfRounds } = latestRequest
-      const latestRound = rounds[Number(numberOfRounds) - 1] || rounds[0]
+      const { itemID, status, requests, data, props } = item
+      const latestRequest = requests[0] // requests is ordered desc
+      const { rounds } = latestRequest
+      const latestRound = rounds[0] // rounds is ordered desc
       const { disputed, disputeID, submissionTime } = latestRequest
       const {
         appealCost,
