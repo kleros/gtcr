@@ -22,7 +22,7 @@ import itemsTourSteps from './tour-steps'
 import LightSearchBar from 'components/light-search-bar'
 import useTcrParams from 'hooks/use-tcr-params'
 import { LightTCRViewContext } from 'contexts/light-tcr-view-context'
-import { FILTER_STAUTS, ITEMS_PER_PAGE, ORDER_DIR } from 'utils/constants'
+import { FILTER_STATUS, ITEMS_PER_PAGE, ORDER_DIR } from 'utils/constants'
 
 const NSFW_FILTER_KEY = 'NSFW_FILTER_KEY'
 const ITEMS_TOUR_DISMISSED = 'ITEMS_TOUR_DISMISSED'
@@ -147,16 +147,16 @@ const Items = () => {
 
   useEffect(() => {
     const itemsWhere = { registry: tcrAddress }
-    if (absent) itemsWhere.status = FILTER_STAUTS.absent
-    if (registered) itemsWhere.status = FILTER_STAUTS.registered
-    if (submitted) itemsWhere.status = FILTER_STAUTS.submitted
-    if (removalRequested) itemsWhere.status = FILTER_STAUTS.removalRequested
+    if (absent) itemsWhere.status = FILTER_STATUS.absent
+    if (registered) itemsWhere.status = FILTER_STATUS.registered
+    if (submitted) itemsWhere.status = FILTER_STATUS.submitted
+    if (removalRequested) itemsWhere.status = FILTER_STATUS.removalRequested
     if (challengedSubmissions) {
-      itemsWhere.status = FILTER_STAUTS.challengedSubmissions
+      itemsWhere.status = FILTER_STATUS.challengedSubmissions
       itemsWhere.disputed = true
     }
     if (challengedRemovals) {
-      itemsWhere.status = FILTER_STAUTS.challengedRemovals
+      itemsWhere.status = FILTER_STATUS.challengedRemovals
       itemsWhere.disputed = true
     }
     setItemsWhere(itemsWhere)

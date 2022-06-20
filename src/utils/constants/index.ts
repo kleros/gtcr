@@ -5,7 +5,7 @@ export const ORDER_DIR = Object.freeze({
   desc: 'desc'
 })
 
-export const FILTER_STAUTS = Object.freeze({
+export const FILTER_STATUS = Object.freeze({
   absent: 'Absent',
   registered: 'Registered',
   submitted: 'RegistrationRequested',

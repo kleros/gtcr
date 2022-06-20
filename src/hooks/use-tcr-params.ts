@@ -1,16 +1,16 @@
 import { useMemo } from 'react'
 import { useParams } from 'react-router'
 
-type TcrParmas = {
+type TcrParams = {
   tcrAddress: string
   itemID?: string
   chainId: string
 }
 
-const useTcrParams = (): TcrParmas => {
-  const params = useParams<TcrParmas>()
+const useTcrParams = (): TcrParams => {
+  const params = useParams<TcrParams>()
   const validatedParams = useMemo(() => {
-    const newParams: TcrParmas = { ...params }
+    const newParams: TcrParams = { ...params }
     if (!params) return newParams
     if (params.tcrAddress)
       newParams.tcrAddress = params.tcrAddress.toLowerCase()
