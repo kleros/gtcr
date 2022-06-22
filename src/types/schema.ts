@@ -9,6 +9,7 @@ export type MetaEvidence = {
 
 export type Metadata = {
   isTCRofTCRs: boolean
+  isConnectedTCR: boolean
   itemName: string
   itemNamePlural: string
   logoURI: string
@@ -47,6 +48,7 @@ export type LItem = {
   appealStart: BigNumber
   appealEnd: BigNumber
   amountPaid: [string, string, string]
+  resolved: boolean
   errors: Array<Error>
 }
 
@@ -57,6 +59,7 @@ export type LItemProp = MetadataColumn & {
 export type LRequest = {
   rounds: Array<LRound>
   disputed: boolean
+  resolved: boolean
   disputeID: string
   submissionTime: string
 }

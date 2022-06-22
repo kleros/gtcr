@@ -15,7 +15,7 @@ import {
 } from 'types/schema'
 import { toKError } from 'utils/helpers/errors'
 
-type ReturnProps = {
+export type LightTcrContext = {
   loading: boolean
   items: LItem[]
   metaEvidence: MetaEvidence | undefined
@@ -30,15 +30,15 @@ type ReturnProps = {
   setOrderDir: (dir: OrderDir) => void
 }
 
-type ItemsWhere = {
+export type ItemsWhere = {
   registry: string
   status?: string
   disputed?: boolean
 }
 
-const useLightTcrContext = (tcrAddress: string): ReturnProps => {
+const useLightTcrContext = (tcrAddress: string): LightTcrContext => {
   const [metaEvidence, setMetaEvidence] = useState<MetaEvidence>()
-  const [regData, setRegData] = useState<LRegistry>()
+  const [regData, setRegData] = useState<LRegistry>({} as LRegistry)
   const [error, setError] = useState<KError>()
 
   const [itemsWhere, setItemsWhere] = useState<ItemsWhere>({
@@ -98,7 +98,7 @@ const useLightTcrContext = (tcrAddress: string): ReturnProps => {
       variables: {
         skip: (page - 1) * ITEMS_PER_PAGE,
         first: ITEMS_PER_PAGE,
-        orderDirection: orderDir,
+        orderDirection: orderDir === OrderDir.asc ? 'asc' : 'desc',
         where: {
           ...itemsWhere,
           registry: tcrAddress
@@ -134,7 +134,7 @@ const useLightTcrContext = (tcrAddress: string): ReturnProps => {
         const latestRequest = requests[0] // requests is ordered desc
         const { rounds } = latestRequest
         const latestRound = rounds[0] // rounds is ordered desc
-        const { disputed, disputeID, submissionTime } = latestRequest
+        const { disputed, resolved, disputeID, submissionTime } = latestRequest
         const {
           appealCost,
           appealPeriodStart,
@@ -166,6 +166,7 @@ const useLightTcrContext = (tcrAddress: string): ReturnProps => {
           latestRound,
           disputeStatus,
           disputed,
+          resolved,
           disputeID,
           submissionTime: bigNumberify(submissionTime),
           hasPaid: [false, hasPaidRequester, hasPaidChallenger],

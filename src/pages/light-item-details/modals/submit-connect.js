@@ -23,7 +23,6 @@ import {
   Alert
 } from 'antd'
 import styled from 'styled-components/macro'
-import PropTypes from 'prop-types'
 import { useDebounce } from 'use-debounce'
 import _gtcr from 'assets/abis/LightGeneralizedTCR.json'
 import ETHAmount from 'components/eth-amount'
@@ -35,6 +34,7 @@ import { WalletContext } from 'contexts/wallet-context'
 import { TourContext } from 'contexts/tour-context.js'
 import useNativeCurrency from 'hooks/native-currency.js'
 import useGetLogs from 'hooks/get-logs'
+import useGTCRView from 'hooks/use-gtcr-view'
 
 const StyledSpin = styled(Spin)`
   height: 60px;
@@ -67,7 +67,8 @@ const SkeletonTitleProps = { width: '90px' }
 
 const SubmitConnectModal = props => {
   const nativeCurrency = useNativeCurrency()
-  const { onCancel, initialValues, tcrAddress: relTCRAddress, gtcrView } = props
+  const { onCancel, initialValues, tcrAddress: relTCRAddress } = props
+  const gtcrView = useGTCRView(relTCRAddress, true)
   const { pushWeb3Action } = useContext(WalletContext)
   const { library, active, networkId } = useWeb3Context()
   const { setUserSubscribed } = useContext(TourContext)
@@ -469,20 +470,6 @@ const SubmitConnectModal = props => {
       </Descriptions>
     </StyledModal>
   )
-}
-
-SubmitConnectModal.propTypes = {
-  onCancel: PropTypes.func.isRequired,
-  initialValues: PropTypes.arrayOf(PropTypes.any),
-  tcrAddress: PropTypes.string,
-  gtcrView: PropTypes.shape({
-    fetchArbitrable: PropTypes.func
-  }).isRequired
-}
-
-SubmitConnectModal.defaultProps = {
-  initialValues: null,
-  tcrAddress: null
 }
 
 export default SubmitConnectModal

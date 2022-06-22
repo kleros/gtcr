@@ -173,26 +173,4 @@ const Banner = ({
   )
 }
 
-Banner.propTypes = {
-  metaEvidence: PropTypes.shape({
-    metadata: PropTypes.shape({
-      itemName: PropTypes.string.isRequired,
-      tcrTitle: PropTypes.string.isRequired,
-      tcrDescription: PropTypes.string.isRequired,
-      logoURI: PropTypes.string
-    }).isRequired,
-    fileURI: PropTypes.string.isRequired
-  }),
-  requestWeb3Auth: PropTypes.func.isRequired,
-  setSubmissionFormOpen: PropTypes.func.isRequired,
-  connectedTCRAddr: PropTypes.string,
-  tcrAddress: PropTypes.string
-}
-
-Banner.defaultProps = {
-  metaEvidence: null,
-  connectedTCRAddr: null,
-  tcrAddress: null
-}
-
 export default Banner
