@@ -111,7 +111,7 @@ export const LIGHT_ITEMS_QUERY = gql`
         description
         isIdentifier
       }
-      requests(first: 1, orderBy: submissionTime, orderDirection: desc) {
+      requests(orderBy: submissionTime, orderDirection: desc) {
         disputed
         disputeID
         submissionTime
