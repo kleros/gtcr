@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useHistory, useParams } from 'react-router'
+import { useHistory } from 'react-router'
 import { useWeb3Context } from 'web3-react'
 import {
   NETWORKS_INFO,
@@ -8,11 +8,12 @@ import {
 } from 'utils/constants/networks'
 import { hexlify } from 'utils/helpers/string'
 import getNetworkEnv from 'utils/helpers/network-env'
+import useTcrParams from './use-tcr-params'
 
 const useTcrNetwork = () => {
   const history = useHistory()
   const { networkId, active, library } = useWeb3Context()
-  const { chainId } = useParams()
+  const { chainId } = useTcrParams()
   const [networkStatus, setNetworkStatus] = useState(NETWORK_STATUS.unknown)
 
   useEffect(() => {

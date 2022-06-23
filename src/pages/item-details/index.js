@@ -7,7 +7,6 @@ import React, {
   useRef,
   useMemo
 } from 'react'
-import { useParams } from 'react-router'
 import qs from 'qs'
 import PropTypes from 'prop-types'
 import styled from 'styled-components/macro'
@@ -31,6 +30,7 @@ import AppTour from 'components/tour'
 import itemTourSteps from './tour-steps'
 import takeLower from 'utils/helpers/lower-limit'
 import useGetLogs from 'hooks/get-logs'
+import useTcrParams from 'hooks/use-tcr-params'
 
 const ITEM_TOUR_DISMISSED = 'ITEM_TOUR_DISMISSED'
 
@@ -76,7 +76,7 @@ const StyledBackLink = styled.div`
 // TODO: Ensure http requests are being sent in parallel.
 const ItemDetails = ({ itemID, search }) => {
   const { library } = useWeb3Context()
-  const { tcrAddress, chainId } = useParams()
+  const { tcrAddress, chainId } = useTcrParams()
   const [error, setError] = useState()
   const [itemMetaEvidence, setItemMetaEvidence] = useState()
   const { timestamp } = useContext(WalletContext)

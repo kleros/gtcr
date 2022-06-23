@@ -1,7 +1,7 @@
 /* eslint-disable no-unused-vars */
 // Rule disabled temporarly as filters will be added back.
 import { Layout, Spin, Pagination, Tag, Select, Switch } from 'antd'
-import { useHistory, useParams } from 'react-router'
+import { useHistory } from 'react-router'
 import React, {
   useEffect,
   useState,
@@ -40,6 +40,7 @@ import { DISPUTE_STATUS } from 'utils/helpers/item-status'
 import { useLazyQuery } from '@apollo/client'
 import { CLASSIC_REGISTRY_ITEMS_QUERY } from 'utils/graphql'
 import useGetLogs from 'hooks/get-logs'
+import useTcrParams from 'hooks/use-tcr-params'
 
 const NSFW_FILTER_KEY = 'NSFW_FILTER_KEY'
 const ITEMS_TOUR_DISMISSED = 'ITEMS_TOUR_DISMISSED'
@@ -116,7 +117,7 @@ const ITEMS_PER_PAGE = 40
 const Items = () => {
   const history = useHistory()
   const search = window.location.search || ''
-  const { tcrAddress, chainId } = useParams()
+  const { tcrAddress, chainId } = useTcrParams()
   const { requestWeb3Auth, timestamp } = useContext(WalletContext)
   const { library, active, account } = useWeb3Context()
   const {

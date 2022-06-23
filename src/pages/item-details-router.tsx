@@ -2,11 +2,11 @@ import React from 'react'
 import { TCRViewProvider } from 'contexts/tcr-view-context'
 import { LightTCRViewProvider } from 'contexts/light-tcr-view-context'
 import loadable from '@loadable/component'
-import { useParams } from 'react-router'
 import useTcrNetwork from 'hooks/use-tcr-network'
 import { NETWORK_STATUS } from 'utils/constants/networks'
 import useCheckLightCurate from 'hooks/use-check-light-curate'
 import Loading from 'components/loading'
+import useTcrParams from 'hooks/use-tcr-params'
 
 const LightItemDetails = loadable(
   () => import(/* webpackPrefetch: true */ './light-item-details/index'),
@@ -23,10 +23,7 @@ const ItemDetails = loadable(
 )
 
 const ItemDetailsRouter = () => {
-  const { tcrAddress, itemID } = useParams<{
-    tcrAddress: string
-    itemID: string
-  }>()
+  const { tcrAddress, itemID } = useTcrParams()
   const { networkStatus } = useTcrNetwork()
   const search = window.location.search
   const { isLightCurate, checking } = useCheckLightCurate()
