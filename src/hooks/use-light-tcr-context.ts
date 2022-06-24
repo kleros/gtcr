@@ -13,7 +13,7 @@ import {
   MetaEvidence,
   OrderDir
 } from 'types/schema'
-import { toKError } from 'utils/helpers/errors'
+import { toKError } from 'utils/helpers'
 
 export type LightTcrContext = {
   loading: boolean

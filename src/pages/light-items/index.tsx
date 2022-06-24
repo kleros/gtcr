@@ -33,6 +33,7 @@ import { OrderDir } from 'types/schema'
 import { ItemsWhere } from 'hooks/use-light-tcr-context'
 import { CheckableTagProps } from 'antd/lib/tag'
 import { SelectProps } from 'antd/lib/select'
+import { IsEmpty } from 'utils/helpers'
 
 const NSFW_FILTER_KEY = 'NSFW_FILTER_KEY'
 const ITEMS_TOUR_DISMISSED = 'ITEMS_TOUR_DISMISSED'
@@ -145,15 +146,15 @@ const Items = () => {
   } = queryOptions
 
   const itemCount = useMemo(() => {
-    if (!regData || Object.keys(regData).length === 0) return 0
+    if (IsEmpty(regData)) return 0
 
     const countByFilter: { [key: string]: number } = {
-      absent: Number(regData.numberOfAbsent),
-      removalRequested: Number(regData.numberOfClearingRequested),
-      registered: Number(regData.numberOfRegistered),
-      submitted: Number(regData.numberOfRegistrationRequested),
-      challengedRemovals: Number(regData.numberOfChallengedClearing),
-      challengedSubmissions: Number(regData.numberOfChallengedRegistrations)
+      absent: Number(regData?.numberOfAbsent),
+      removalRequested: Number(regData?.numberOfClearingRequested),
+      registered: Number(regData?.numberOfRegistered),
+      submitted: Number(regData?.numberOfRegistrationRequested),
+      challengedRemovals: Number(regData?.numberOfChallengedClearing),
+      challengedSubmissions: Number(regData?.numberOfChallengedRegistrations)
     }
 
     const totalCount = Object.values(countByFilter).reduce(
