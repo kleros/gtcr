@@ -1,6 +1,12 @@
 import { Layout, Pagination, Tag, Select, Switch, Spin } from 'antd'
 import { useHistory } from 'react-router'
-import React, { useEffect, useState, useContext, useCallback } from 'react'
+import React, {
+  useEffect,
+  useState,
+  useContext,
+  useCallback,
+  useMemo
+} from 'react'
 import styled from 'styled-components/macro'
 import localforage from 'localforage'
 import qs from 'qs'
@@ -119,9 +125,6 @@ const Items = () => {
   } = useContext(LightTCRViewContext)
 
   const [submissionFormOpen, setSubmissionFormOpen] = useState<boolean>(false)
-
-  const [fetchItemCount, setFetchItemCount] = useState<number>(0)
-
   const queryOptions = searchStrToFilterObjLight(search)
   const [nsfwFilterOn, setNSFWFilter] = useState(true)
   const [queryItemParams, setQueryItemParams] = useState<string[]>()
@@ -141,13 +144,42 @@ const Items = () => {
     challengedRemovals
   } = queryOptions
 
+  const itemCount = useMemo(() => {
+    if (!regData || Object.keys(regData).length === 0) return 0
+
+    const countByFilter: { [key: string]: number } = {
+      absent: Number(regData.numberOfAbsent),
+      removalRequested: Number(regData.numberOfClearingRequested),
+      registered: Number(regData.numberOfRegistered),
+      submitted: Number(regData.numberOfRegistrationRequested),
+      challengedRemovals: Number(regData.numberOfChallengedClearing),
+      challengedSubmissions: Number(regData.numberOfChallengedRegistrations)
+    }
+
+    const totalCount = Object.values(countByFilter).reduce(
+      (sum, val) => sum + val,
+      0
+    )
+    const filter = Object.keys(queryOptions).find(
+      key =>
+        Object.prototype.hasOwnProperty.call(countByFilter, key) &&
+        queryOptions[key]
+    )
+    const count = filter ? countByFilter[filter] : totalCount
+    const totalPages = Math.ceil(count / ITEMS_PER_PAGE)
+    const currentPage = Number(queryOptions.page)
+
+    if (totalPages && currentPage > totalPages)
+      push({ search: search.replace(/page=\d+/g, `page=${totalPages}`) })
+
+    return count
+  }, [queryOptions, regData, push, search])
+
   useEffect(() => {
     setOrderDir(oldestFirst ? OrderDir.asc : OrderDir.desc)
   }, [oldestFirst, setOrderDir])
 
-  useEffect(() => {
-    setPage(Number(page))
-  }, [page, setPage])
+  useEffect(() => setPage(Number(page)), [page, setPage])
 
   useEffect(() => {
     const itemsWhere = { registry: tcrAddress } as ItemsWhere
@@ -198,46 +230,6 @@ const Items = () => {
     setQueryItemParams(initialValues)
     setSubmissionFormOpen(true)
   }, [requestWeb3Auth, search])
-
-  // Fetch number of pages for the current filter
-  // Previously this entailed doing a bunch of contract calls, but since
-  // it now uses a subgraph, there are no async calls here anymore.
-  // Maybe refactor or delete this code.
-  useEffect(() => {
-    if (!regData) return
-
-    // Convert subgraph counters to filter names.
-    const convertedCounts = {
-      absent: regData.numberOfAbsent,
-      removalRequested: regData.numberOfClearingRequested,
-      registered: regData.numberOfRegistered,
-      submitted: regData.numberOfRegistrationRequested,
-      challengedRemovals: regData.numberOfChallengedClearing,
-      challengedSubmissions: regData.numberOfChallengedRegistrations
-    }
-    const countByFilter = Object.entries(convertedCounts).reduce<{
-      [key: string]: number
-    }>((prev, entry) => ({ ...prev, [entry[0]]: Number(entry[1]) }), {})
-    const totalCount = Object.values(countByFilter).reduce(
-      (prev, curr) => (prev as number) + (curr as number),
-      0
-    )
-
-    // For now, only OR combinations are allowed.
-    // My challenges and my submissions are also not supported,
-    // so we slice them off.
-    const filters = Object.entries(queryOptions).filter(([_, val]) =>
-      Object.entries(LIGHT_FILTER_KEYS)
-        .slice(0, 6)
-        .map(([, value]) => value)
-        .includes(val.toString())
-    )
-
-    const filterSelected = filters.length > 0
-    const count = filterSelected ? countByFilter[filters[0][0]] : totalCount
-
-    setFetchItemCount(count)
-  }, [queryOptions, regData, tcrAddress])
 
   if (error)
     return (
@@ -341,7 +333,7 @@ const Items = () => {
                   ))}
             </StyledGrid>
             <StyledPagination
-              total={fetchItemCount}
+              total={itemCount}
               current={Number(queryOptions.page)}
               itemRender={PaginationItemRenderer}
               pageSize={ITEMS_PER_PAGE}
@@ -349,7 +341,7 @@ const Items = () => {
                 push({
                   search: /page=\d+/g.test(search)
                     ? search.replace(/page=\d+/g, `page=${newPage}`)
-                    : `${search}page=${newPage}`
+                    : `${search}&page=${newPage}`
                 })
               }}
             />
