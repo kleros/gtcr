@@ -259,8 +259,8 @@ const Timeline = ({ request, requestID, item }) => {
       <span>
         <StyledText>
           {requestType === CONTRACT_STATUS.REGISTRATION_REQUESTED
-            ? `${itemName} submitted`
-            : 'Removal requested'}
+            ? `${itemName} Submitted `
+            : 'Removal Requested '}
         </StyledText>
         <Typography.Text type="secondary">
           <a href={getTxPage({ networkId, txHash: creationTx })}>
@@ -290,7 +290,8 @@ const Timeline = ({ request, requestID, item }) => {
         const submissionTime = (
           <span>
             <a href={txPage}>
-              Submitted {new Date(new Date(submittedAt * 1000)).toGMTString()}
+              Submitted&nbsp;
+              {new Date(new Date(submittedAt * 1000)).toGMTString()}
             </a>{' '}
             by <ETHAddress address={submittedBy} />
           </span>
@@ -418,14 +419,14 @@ const Timeline = ({ request, requestID, item }) => {
   if (resolutionTime) {
     const resultMessage =
       item.status === STATUS_CODE.REGISTERED
-        ? `${itemName || 'item'} accepted.`
-        : `${itemName || 'item'} removed.`
+        ? `${itemName || 'item'} Accepted`
+        : `${itemName || 'item'} Removed`
     items.push(
       <AntdTimeline.Item key={items.length} color={STATUS_COLOR[item.status]}>
         {resultMessage}
         <Typography.Text type="secondary">
           <a href={getTxPage({ networkId, txHash: resolutionTx })}>
-            ` - {new Date(new Date(resolutionTime * 1000)).toGMTString()}`
+            {` - ${new Date(new Date(resolutionTime * 1000)).toGMTString()}`}
           </a>
         </Typography.Text>
       </AntdTimeline.Item>

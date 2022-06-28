@@ -13,3 +13,14 @@ export const FILTER_STATUS = Object.freeze({
   challengedSubmissions: 'RegistrationRequested',
   challengedRemovals: 'ClearingRequested'
 })
+
+export const DEFAULT_FILTER_VALUES = Object.freeze({
+  page: 1,
+  oldestFirst: false,
+  absent: false,
+  registered: false,
+  submitted: false,
+  removalRequested: false,
+  challengedSubmissions: false,
+  challengedRemovals: false
+})

@@ -1,7 +1,12 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useLazyQuery } from '@apollo/client'
 import { GQL_LIGHT_TCR, LIGHT_ITEMS_QUERY } from 'utils/graphql'
-import { FILTER_STATUS, ITEMS_PER_PAGE, ORDER_DIR } from 'utils/constants'
+import {
+  DEFAULT_FILTER_VALUES,
+  FILTER_STATUS,
+  ITEMS_PER_PAGE,
+  ORDER_DIR
+} from 'utils/constants'
 import { ITEM_STATUS_CODES, RULING_CODES } from 'utils/constants/subgraph'
 import { bigNumberify } from 'ethers/utils'
 import {
@@ -14,8 +19,8 @@ import {
 } from 'types/schema'
 import { toKError } from 'utils/helpers'
 import { useHistory } from 'react-router'
-import { searchStrToFilterObjLight } from 'utils/helpers/filters'
 import useTcrParams from './use-tcr-params'
+import QueryString from 'qs'
 
 export type LightTcrContext = {
   loading: boolean
@@ -36,22 +41,21 @@ const useLightTcrContext = (): LightTcrContext => {
   const history = useHistory()
   const { tcrAddress, itemID } = useTcrParams()
 
-  const queryParams = useMemo(
-    () => searchStrToFilterObjLight(history.location.search),
-    [history]
-  )
-
   const [metaEvidence, setMetaEvidence] = useState<MetaEvidence>()
   const [regData, setRegData] = useState<LRegistry>({} as LRegistry)
   const [error, setError] = useState<KError>()
 
-  const page = useMemo<number>(() => Number(queryParams.page || 1), [
-    queryParams
-  ])
-  const orderDir = useMemo<string>(
-    () => (queryParams.oldestFirst ? ORDER_DIR.asc : ORDER_DIR.desc),
-    [queryParams]
-  )
+  const queryParams = useMemo(() => {
+    const qs = QueryString.parse(history.location.search.replace(/\?/g, ''))
+    return Object.keys(qs).reduce(
+      (params, key) => ({
+        ...params,
+        [key]: qs[key] && JSON.parse(qs[key] as string)
+      }),
+      DEFAULT_FILTER_VALUES
+    )
+  }, [history.location.search])
+
   const itemsWhere = useMemo<ItemsWhere>(() => {
     const itemsWhere = { registry: tcrAddress } as ItemsWhere
     if (queryParams.absent) itemsWhere.status = FILTER_STATUS.absent
@@ -119,9 +123,11 @@ const useLightTcrContext = (): LightTcrContext => {
 
     execLightItemsQuery({
       variables: {
-        skip: (page - 1) * ITEMS_PER_PAGE,
+        skip: (queryParams.page - 1) * ITEMS_PER_PAGE,
         first: ITEMS_PER_PAGE,
-        orderDirection: orderDir,
+        orderDirection: queryParams.oldestFirst
+          ? ORDER_DIR.asc
+          : ORDER_DIR.desc,
         where: {
           ...itemsWhere,
           registry: tcrAddress,
@@ -130,11 +136,11 @@ const useLightTcrContext = (): LightTcrContext => {
       }
     })
   }, [
-    page,
     itemsWhere,
-    orderDir,
     tcrAddress,
     itemID,
+    queryParams.oldestFirst,
+    queryParams.page,
     execLightItemsQuery,
     execRegQuery
   ])
