@@ -28,9 +28,7 @@ import itemsTourSteps from './tour-steps'
 import LightSearchBar from 'components/light-search-bar'
 import useTcrParams from 'hooks/use-tcr-params'
 import { LightTCRViewContext } from 'contexts/light-tcr-view-context'
-import { FILTER_STATUS, ITEMS_PER_PAGE } from 'utils/constants'
-import { OrderDir } from 'types/schema'
-import { ItemsWhere } from 'hooks/use-light-tcr-context'
+import { ITEMS_PER_PAGE } from 'utils/constants'
 import { CheckableTagProps } from 'antd/lib/tag'
 import { SelectProps } from 'antd/lib/select'
 import { IsEmpty } from 'utils/helpers'
@@ -114,16 +112,9 @@ const Items = () => {
   } = useHistory()
   const { tcrAddress, chainId } = useTcrParams()
   const { requestWeb3Auth, timestamp } = useContext(WalletContext)
-  const {
-    metaEvidence,
-    regData,
-    loading,
-    items,
-    setItemsWhere,
-    setPage,
-    setOrderDir,
-    error
-  } = useContext(LightTCRViewContext)
+  const { metaEvidence, regData, loading, items, error } = useContext(
+    LightTCRViewContext
+  )
 
   const [submissionFormOpen, setSubmissionFormOpen] = useState<boolean>(false)
   const queryOptions = searchStrToFilterObjLight(search)
@@ -133,17 +124,6 @@ const Items = () => {
     setNSFWFilter(checked)
     localforage.setItem(NSFW_FILTER_KEY, checked)
   }, [])
-
-  const {
-    oldestFirst,
-    page,
-    absent,
-    registered,
-    submitted,
-    removalRequested,
-    challengedSubmissions,
-    challengedRemovals
-  } = queryOptions
 
   const itemCount = useMemo(() => {
     if (IsEmpty(regData)) return 0
@@ -175,38 +155,6 @@ const Items = () => {
 
     return count
   }, [queryOptions, regData, push, search])
-
-  useEffect(() => {
-    setOrderDir(oldestFirst ? OrderDir.asc : OrderDir.desc)
-  }, [oldestFirst, setOrderDir])
-
-  useEffect(() => setPage(Number(page)), [page, setPage])
-
-  useEffect(() => {
-    const itemsWhere = { registry: tcrAddress } as ItemsWhere
-    if (absent) itemsWhere.status = FILTER_STATUS.absent
-    if (registered) itemsWhere.status = FILTER_STATUS.registered
-    if (submitted) itemsWhere.status = FILTER_STATUS.submitted
-    if (removalRequested) itemsWhere.status = FILTER_STATUS.removalRequested
-    if (challengedSubmissions) {
-      itemsWhere.status = FILTER_STATUS.challengedSubmissions
-      itemsWhere.disputed = true
-    }
-    if (challengedRemovals) {
-      itemsWhere.status = FILTER_STATUS.challengedRemovals
-      itemsWhere.disputed = true
-    }
-    setItemsWhere(itemsWhere)
-  }, [
-    absent,
-    registered,
-    submitted,
-    removalRequested,
-    challengedSubmissions,
-    challengedRemovals,
-    tcrAddress,
-    setItemsWhere
-  ])
 
   // Load NSFW user setting from localforage.
   useEffect(() => {
@@ -291,7 +239,9 @@ const Items = () => {
                   ))}
               </div>
               <StyledSelect
-                defaultValue={oldestFirst ? 'oldestFirst' : 'newestFirst'}
+                defaultValue={
+                  queryOptions.oldestFirst ? 'oldestFirst' : 'newestFirst'
+                }
                 style={{ width: 120 }}
                 onChange={(val: string) => {
                   const newQueryStr = updateLightFilter({

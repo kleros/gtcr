@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useLazyQuery } from '@apollo/client'
 import { GQL_LIGHT_TCR, LIGHT_ITEMS_QUERY } from 'utils/graphql'
-import { ITEMS_PER_PAGE } from 'utils/constants'
+import { FILTER_STATUS, ITEMS_PER_PAGE, ORDER_DIR } from 'utils/constants'
 import { ITEM_STATUS_CODES, RULING_CODES } from 'utils/constants/subgraph'
 import { bigNumberify } from 'ethers/utils'
 import {
@@ -10,10 +10,11 @@ import {
   LRegistry,
   LRequest,
   MetadataColumn,
-  MetaEvidence,
-  OrderDir
+  MetaEvidence
 } from 'types/schema'
 import { toKError } from 'utils/helpers'
+import { useHistory } from 'react-router'
+import { searchStrToFilterObjLight } from 'utils/helpers/filters'
 
 export type LightTcrContext = {
   loading: boolean
@@ -22,12 +23,6 @@ export type LightTcrContext = {
   tcrAddress: string
   regData: LRegistry | undefined
   error: KError | undefined
-  page: number
-  setPage: (page: number) => void
-  itemsWhere: ItemsWhere
-  setItemsWhere: (wh: ItemsWhere) => void
-  orderDir: OrderDir
-  setOrderDir: (dir: OrderDir) => void
 }
 
 export type ItemsWhere = {
@@ -37,15 +32,40 @@ export type ItemsWhere = {
 }
 
 const useLightTcrContext = (tcrAddress: string): LightTcrContext => {
+  const history = useHistory()
+  const queryParams = useMemo(
+    () => searchStrToFilterObjLight(history.location.search),
+    [history]
+  )
+
   const [metaEvidence, setMetaEvidence] = useState<MetaEvidence>()
   const [regData, setRegData] = useState<LRegistry>({} as LRegistry)
   const [error, setError] = useState<KError>()
 
-  const [itemsWhere, setItemsWhere] = useState<ItemsWhere>({
-    registry: tcrAddress
-  })
-  const [page, setPage] = useState(1)
-  const [orderDir, setOrderDir] = useState(OrderDir.asc)
+  const page = useMemo<number>(() => Number(queryParams.page || 1), [
+    queryParams
+  ])
+  const orderDir = useMemo<string>(
+    () => (queryParams.oldestFirst ? ORDER_DIR.asc : ORDER_DIR.desc),
+    [queryParams]
+  )
+  const itemsWhere = useMemo<ItemsWhere>(() => {
+    const itemsWhere = { registry: tcrAddress } as ItemsWhere
+    if (queryParams.absent) itemsWhere.status = FILTER_STATUS.absent
+    if (queryParams.registered) itemsWhere.status = FILTER_STATUS.registered
+    if (queryParams.submitted) itemsWhere.status = FILTER_STATUS.submitted
+    if (queryParams.removalRequested)
+      itemsWhere.status = FILTER_STATUS.removalRequested
+    if (queryParams.challengedSubmissions) {
+      itemsWhere.status = FILTER_STATUS.challengedSubmissions
+      itemsWhere.disputed = true
+    }
+    if (queryParams.challengedRemovals) {
+      itemsWhere.status = FILTER_STATUS.challengedRemovals
+      itemsWhere.disputed = true
+    }
+    return itemsWhere
+  }, [queryParams, tcrAddress])
 
   const [
     execRegQuery,
@@ -98,7 +118,7 @@ const useLightTcrContext = (tcrAddress: string): LightTcrContext => {
       variables: {
         skip: (page - 1) * ITEMS_PER_PAGE,
         first: ITEMS_PER_PAGE,
-        orderDirection: orderDir === OrderDir.asc ? 'asc' : 'desc',
+        orderDirection: orderDir,
         where: {
           ...itemsWhere,
           registry: tcrAddress
@@ -191,13 +211,7 @@ const useLightTcrContext = (tcrAddress: string): LightTcrContext => {
     metaEvidence,
     tcrAddress,
     regData,
-    error,
-    page,
-    setPage,
-    itemsWhere,
-    setItemsWhere,
-    orderDir,
-    setOrderDir
+    error
   }
 }
 
