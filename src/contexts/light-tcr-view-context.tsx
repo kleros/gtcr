@@ -16,8 +16,8 @@ const LightTCRViewContext = createContext<LightTcrContext>({
   regData: undefined,
   error: undefined
 })
-const LightTCRViewProvider: React.FC<Props> = ({ tcrAddress, children }) => (
-  <LightTCRViewContext.Provider value={useLightTcrContext(tcrAddress)}>
+const LightTCRViewProvider: React.FC<Props> = ({ children }) => (
+  <LightTCRViewContext.Provider value={useLightTcrContext()}>
     {children}
   </LightTCRViewContext.Provider>
 )

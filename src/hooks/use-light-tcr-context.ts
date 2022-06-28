@@ -15,6 +15,7 @@ import {
 import { toKError } from 'utils/helpers'
 import { useHistory } from 'react-router'
 import { searchStrToFilterObjLight } from 'utils/helpers/filters'
+import useTcrParams from './use-tcr-params'
 
 export type LightTcrContext = {
   loading: boolean
@@ -31,8 +32,10 @@ export type ItemsWhere = {
   disputed?: boolean
 }
 
-const useLightTcrContext = (tcrAddress: string): LightTcrContext => {
+const useLightTcrContext = (): LightTcrContext => {
   const history = useHistory()
+  const { tcrAddress, itemID } = useTcrParams()
+
   const queryParams = useMemo(
     () => searchStrToFilterObjLight(history.location.search),
     [history]
@@ -121,7 +124,8 @@ const useLightTcrContext = (tcrAddress: string): LightTcrContext => {
         orderDirection: orderDir,
         where: {
           ...itemsWhere,
-          registry: tcrAddress
+          registry: tcrAddress,
+          itemID
         }
       }
     })
@@ -130,6 +134,7 @@ const useLightTcrContext = (tcrAddress: string): LightTcrContext => {
     itemsWhere,
     orderDir,
     tcrAddress,
+    itemID,
     execLightItemsQuery,
     execRegQuery
   ])
