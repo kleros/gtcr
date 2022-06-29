@@ -41,14 +41,12 @@ const TCRCardContent = ({
   useEffect(() => {
     if (!data || loading) return
 
-    const metaEvidence = data.metaEvidences[data.metaEvidences.length - 2]
+    const me = data.metaEvidences[data.metaEvidences.length - 2]
     const asyncProc = async () => {
-      const ipfsFile = await fetch(
-        process.env.REACT_APP_IPFS_GATEWAY + metaEvidence.URI
-      )
-      const data = await ipfsFile.json()
+      const ipfsFile = await fetch(process.env.REACT_APP_IPFS_GATEWAY + me.URI)
+      const fileContent = await ipfsFile.json()
 
-      setEetaEvidence({ ...metaEvidence, ...data })
+      setEetaEvidence({ ...me, ...fileContent })
     }
     asyncProc()
   }, [data, loading])

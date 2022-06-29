@@ -9,7 +9,7 @@ type TcrParams = {
 
 const useTcrParams = (): TcrParams => {
   const params = useParams<TcrParams>()
-  const validatedParams = useMemo(() => {
+  return useMemo(() => {
     const newParams: TcrParams = { ...params }
     if (!params) return newParams
     if (params.tcrAddress)
@@ -17,8 +17,6 @@ const useTcrParams = (): TcrParams => {
     if (params.itemID) newParams.itemID = params.itemID.toLowerCase()
     return newParams
   }, [params])
-
-  return validatedParams
 }
 
 export default useTcrParams

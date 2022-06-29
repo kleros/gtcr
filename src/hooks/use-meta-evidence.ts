@@ -17,18 +17,18 @@ const useMetaEvidence = (tcrAddress: string) => {
 
     const handleQueryResult = async () => {
       const metaEvidences = data.metaEvidences
-      const metaEvidence = metaEvidences[metaEvidences.length - 2]
+      const me = metaEvidences[metaEvidences.length - 2]
       try {
-        if (metaEvidence.URI) {
-          const ipfsURI = process.env.REACT_APP_IPFS_GATEWAY + metaEvidence.URI
+        if (me.URI) {
+          const ipfsURI = process.env.REACT_APP_IPFS_GATEWAY + me.URI
           const res = await fetch(ipfsURI)
-          const data = await res.json()
+          const ipfsContent = await res.json()
 
           setMetaEvidence({
-            ...metaEvidence,
-            ...data
+            ...me,
+            ...ipfsContent
           })
-        } else setMetaEvidence(metaEvidence)
+        } else setMetaEvidence(me)
       } catch (err) {
         setError(err)
         console.error(err)

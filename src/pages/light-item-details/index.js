@@ -78,34 +78,33 @@ const ItemDetails = ({ itemID, search }) => {
   useEffect(() => {
     if (!itemID || items.length === 0) return
 
-    const item = items.find(it => it.itemID === itemID)
-    const { requests, data: itemURI, latestRequest: request } = item
+    const it = items.find(it => it.itemID === itemID)
 
     setRequests(
-      requests.map(request => ({
-        ...request,
-        requestType: ITEM_STATUS_CODES[request.requestType]
+      it.requests.map(rq => ({
+        ...rq,
+        requestType: ITEM_STATUS_CODES[rq.requestType]
       }))
     )
 
     const asyncProc = async () => {
       try {
         const ipfsRequest = await fetch(
-          `${process.env.REACT_APP_IPFS_GATEWAY}${itemURI}`
+          `${process.env.REACT_APP_IPFS_GATEWAY}${it.data}`
         )
         const { columns, values } = await ipfsRequest.json()
 
         setItem({
-          ...item,
-          requestsFromSubgraph: requests,
+          ...it,
+          requestsFromSubgraph: it.requests,
           columns,
           errors: [],
           decodedData: columns.map(col => values[col.label]),
-          resolved: request.resolved,
-          requester: request.requester,
-          challenger: request.challenger,
-          arbitrator: request.arbitrator,
-          arbitratorExtraData: request.arbitratorExtraData
+          resolved: it.latestRequest.resolved,
+          requester: it.latestRequest.requester,
+          challenger: it.latestRequest.challenger,
+          arbitrator: it.latestRequest.arbitrator,
+          arbitratorExtraData: it.latestRequest.arbitratorExtraData
         })
       } catch (err) {
         setError(err)
@@ -148,7 +147,6 @@ const ItemDetails = ({ itemID, search }) => {
   const { isConnectedTCR, relTcrDisabled } = metadata || {}
   // TODO: modify to add greyed out fields, come here and add the current list schema and
   // pass it through param to ItemDetailsCard.
-  const { columns } = item || {}
   return (
     <>
       <StyledBanner>
@@ -180,7 +178,7 @@ const ItemDetails = ({ itemID, search }) => {
         />
         <div style={{ marginBottom: '40px' }} />
         <ItemDetailsCard
-          columns={columns}
+          columns={item?.columns}
           item={item}
           title={`${
             itemName ? capitalizeFirstLetter(itemName) : 'Item'

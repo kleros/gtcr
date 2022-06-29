@@ -10,7 +10,7 @@ const useGTCR = (
   isLightTcr: boolean
 ): ethers.Contract | null => {
   const { library } = useWeb3Context()
-  const arbitrator = useMemo<ethers.Contract | null>(() => {
+  return useMemo<ethers.Contract | null>(() => {
     if (isETHAddress(address) && library)
       return new ethers.Contract(
         address,
@@ -20,8 +20,6 @@ const useGTCR = (
 
     return null
   }, [address, library, isLightTcr])
-
-  return arbitrator
 }
 
 export default useGTCR

@@ -57,21 +57,20 @@ const useLightTcrContext = (): LightTcrContext => {
   }, [history.location.search])
 
   const itemsWhere = useMemo<ItemsWhere>(() => {
-    const itemsWhere = { registry: tcrAddress } as ItemsWhere
-    if (queryParams.absent) itemsWhere.status = FILTER_STATUS.absent
-    if (queryParams.registered) itemsWhere.status = FILTER_STATUS.registered
-    if (queryParams.submitted) itemsWhere.status = FILTER_STATUS.submitted
-    if (queryParams.removalRequested)
-      itemsWhere.status = FILTER_STATUS.removalRequested
+    const wh = { registry: tcrAddress } as ItemsWhere
+    if (queryParams.absent) wh.status = FILTER_STATUS.absent
+    if (queryParams.registered) wh.status = FILTER_STATUS.registered
+    if (queryParams.submitted) wh.status = FILTER_STATUS.submitted
+    if (queryParams.removalRequested) wh.status = FILTER_STATUS.removalRequested
     if (queryParams.challengedSubmissions) {
-      itemsWhere.status = FILTER_STATUS.challengedSubmissions
-      itemsWhere.disputed = true
+      wh.status = FILTER_STATUS.challengedSubmissions
+      wh.disputed = true
     }
     if (queryParams.challengedRemovals) {
-      itemsWhere.status = FILTER_STATUS.challengedRemovals
-      itemsWhere.disputed = true
+      wh.status = FILTER_STATUS.challengedRemovals
+      wh.disputed = true
     }
-    return itemsWhere
+    return wh
   }, [queryParams, tcrAddress])
 
   const [
@@ -94,15 +93,15 @@ const useLightTcrContext = (): LightTcrContext => {
 
     const handleRegistryQuery = async () => {
       const metaEvidences = regQueryResult.metaEvidences
-      const metaEvidence = metaEvidences[metaEvidences.length - 2]
+      const me = metaEvidences[metaEvidences.length - 2]
       try {
-        const ipfsURI = process.env.REACT_APP_IPFS_GATEWAY + metaEvidence.URI
+        const ipfsURI = process.env.REACT_APP_IPFS_GATEWAY + me.URI
         const res = await fetch(ipfsURI)
-        const data = await res.json()
+        const fileContent = await res.json()
 
         setMetaEvidence({
-          ...metaEvidence,
-          ...data
+          ...me,
+          ...fileContent
         })
       } catch (err) {
         setError(toKError(err))
@@ -150,7 +149,7 @@ const useLightTcrContext = (): LightTcrContext => {
 
     return itemsRawData.litems.map(
       ({
-        itemID,
+        itemID: id,
         status,
         requests,
         data,
@@ -180,8 +179,8 @@ const useLightTcrContext = (): LightTcrContext => {
         const decodedData = props.map(({ value }) => value)
 
         return {
-          ID: itemID,
-          itemID,
+          ID: id,
+          itemID: id,
           data,
           status: ITEM_STATUS_CODES[status],
           decodedData,

@@ -158,10 +158,10 @@ const Items = () => {
 
   // Load NSFW user setting from localforage.
   useEffect(() => {
-    ;(async () => {
-      const savedSetting = await localforage.getItem(NSFW_FILTER_KEY)
-      if (typeof savedSetting === 'boolean') setNSFWFilter(savedSetting)
-    })()
+    localforage
+      .getItem(NSFW_FILTER_KEY)
+      .then(val => setNSFWFilter(typeof val === 'boolean' ? val : true))
+      .catch(err => console.error(err))
   }, [])
 
   // This component supports URL actions.
