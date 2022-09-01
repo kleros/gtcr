@@ -67,7 +67,7 @@ const AppRouter = () => {
 
   if (Object.entries(connectors).length === 0) return <NoWeb3Detected />
 
-  if (isUnsupported && error)
+  if (isUnsupported && error) {
     return (
       <ErrorPage
         code={' '}
@@ -81,7 +81,7 @@ const AppRouter = () => {
         }
       />
     )
-  else if (!networkId || !pathResolved) return <Loading />
+  } else if (!networkId || !pathResolved) return <Loading />
   else if (invalidTcrAddr || !client) return <ErrorPage />
 
   return (
