@@ -635,7 +635,7 @@ const Items = () => {
                   history.push({
                     search: /page=\d+/g.test(search)
                       ? search.replace(/page=\d+/g, `page=${newPage}`)
-                      : `${search}page=${newPage}`
+                      : `${search}&page=${newPage}`
                   })
                   setFetchItems({ fetchStarted: true })
                   setFetchItemCount({ fetchStarted: true })
