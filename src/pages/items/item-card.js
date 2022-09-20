@@ -134,7 +134,6 @@ const CardItemInfo = ({
     content = isTCRofTCRs ? (
       <TCRCardContent
         ID={item.tcrData.ID}
-        chainId={chainId}
         tcrAddress={item.columns[0].value}
         itemName={itemName}
         currentTCRAddress={tcrAddress}

@@ -29,7 +29,6 @@ const StyledResult = styled(Result)`
 
 const TCRCardContent = ({
   tcrAddress,
-  chainId,
   currentTCRAddress,
   ID,
   hideDetailsButton
@@ -77,12 +76,12 @@ const TCRCardContent = ({
           </StyledItemCol>
           <StyledItemCol>
             {!hideDetailsButton && (
-              <Link to={`/tcr/${chainId}/${currentTCRAddress}/${ID}`}>
+              <Link to={`/tcr/${networkId}/${currentTCRAddress}/${ID}`}>
                 <Button>Details</Button>
               </Link>
             )}
             <Link
-              to={`/tcr/${chainId}/${tcrAddress}`}
+              to={`/tcr/${networkId}/${tcrAddress}`}
               style={{ marginLeft: '12px' }}
             >
               <Button type="primary">Open List</Button>
@@ -124,12 +123,12 @@ const TCRCardContent = ({
         </div>
         <StyledItemCol>
           {!hideDetailsButton && (
-            <Link to={`/tcr/${chainId}/${currentTCRAddress}/${ID}`}>
+            <Link to={`/tcr/${networkId}/${currentTCRAddress}/${ID}`}>
               <Button>Details</Button>
             </Link>
           )}
           <Link
-            to={`/tcr/${chainId}/${tcrAddress}`}
+            to={`/tcr/${networkId}/${tcrAddress}`}
             style={{ marginLeft: '12px' }}
           >
             <Button type="primary">Open List</Button>
