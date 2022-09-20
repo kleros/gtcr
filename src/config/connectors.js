@@ -55,7 +55,12 @@ if (fortmaticApiKey)
 
 if (window.ethereum)
   connectors.Injected = new InjectedConnector({
-    supportedNetworks: [NETWORK.MAINNET, NETWORK.KOVAN, NETWORK.XDAI]
+    supportedNetworks: [
+      NETWORK.MAINNET,
+      NETWORK.KOVAN,
+      NETWORK.XDAI,
+      NETWORK.GOERLI
+    ]
   })
 
 export default connectors
