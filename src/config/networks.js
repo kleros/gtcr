@@ -3,7 +3,8 @@ export const NETWORKS = Object.freeze({
   xDai: 100,
   rinkeby: 4,
   kovan: 42,
-  goerli: 5
+  goerli: 5,
+  'arbitrum-rinkeby': 421611
 })
 
 export const DEFAULT_NETWORK = NETWORKS.ethereum
@@ -105,6 +106,27 @@ export const NETWORKS_INFO = Object.freeze({
   [NETWORKS.kovan]: {
     name: 'Kovan',
     color: '#690496'
+  },
+  [NETWORKS['arbitrum-rinkeby']]: {
+    name: 'Arbitrum Rinkeby',
+    color: '#29b6af',
+    supported: true,
+    chainId: 421611,
+    shortName: 'arb-rinkeby',
+    chain: 'ArbitrumRinkeby',
+    network: 'arbitrum-rinkeby',
+    networkId: 421611,
+    nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
+    rpc: [RPC_URLS[NETWORKS['arbitrum-rinkeby']]],
+    faucets: [],
+    explorers: [
+      {
+        name: 'arbiscan',
+        url: 'https://testnet.arbiscan.io',
+        standard: 'EIP3091'
+      }
+    ],
+    infoURL: 'https://bridge.arbitrum.io/'
   }
 })
 

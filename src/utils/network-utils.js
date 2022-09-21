@@ -4,7 +4,8 @@ export const NETWORK = {
   RINKEBY: 4,
   GOERLI: 5,
   KOVAN: 42,
-  XDAI: 100
+  XDAI: 100,
+  'ARBITRUM-RINKEBY': 421611
 }
 
 export const NETWORK_NAME = {

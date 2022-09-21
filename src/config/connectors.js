@@ -59,7 +59,8 @@ if (window.ethereum)
       NETWORK.MAINNET,
       NETWORK.KOVAN,
       NETWORK.XDAI,
-      NETWORK.GOERLI
+      NETWORK.GOERLI,
+      NETWORK['ARBITRUM-RINKEBY']
     ]
   })
 
