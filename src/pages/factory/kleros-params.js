@@ -150,7 +150,7 @@ const KlerosParams = ({
         .padStart(64, '0')}`
 
       setArbitratorExtraData(newArbitratorExtraData)
-      setCourtID(newCourtID)
+      setCourtID(Number(newCourtID))
     },
     [numberOfJurors, setArbitratorExtraData]
   )
@@ -187,7 +187,7 @@ const KlerosParams = ({
             labelInValue
             value={
               courts && courts.length > 0 && typeof courtID === 'number'
-                ? courts[courtID]
+                ? courts.find(court => courtID === court.courtID)
                 : { key: 0, label: 'General Court' }
             }
           >
