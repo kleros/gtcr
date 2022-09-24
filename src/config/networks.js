@@ -63,7 +63,7 @@ export const NETWORKS_INFO = Object.freeze({
     infoURL: 'https://ethereum.org'
   },
   [NETWORKS.xDai]: {
-    name: 'xDAI Chain',
+    name: 'Gnosis Chain',
     color: '#48A9A6',
     supported: true,
     chainId: 100,
@@ -73,9 +73,9 @@ export const NETWORKS_INFO = Object.freeze({
     networkId: 100,
     nativeCurrency: { name: 'xDAI', symbol: 'xDAI', decimals: 18 },
     rpc: [
-      'https://rpc.xdaichain.com',
+      'https://rpc.gnosischain.com/',
       'https://xdai.poanetwork.dev',
-      'wss://rpc.xdaichain.com/wss',
+      'wss://rpc.gnosischain.com/wss',
       'wss://xdai.poanetwork.dev/wss',
       'http://xdai.poanetwork.dev',
       'https://dai.poa.network',
