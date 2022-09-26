@@ -337,7 +337,7 @@ const ItemDetails = ({ itemID, search }) => {
         <CrowdfundingCard
           item={decodedItem || item}
           timestamp={timestamp}
-          request={requests[requests.length - 1]}
+          request={requests ? requests[requests.length - 1] : {}}
         />
 
         {/* Spread the `requests` parameter to convert elements from array to an object */}
