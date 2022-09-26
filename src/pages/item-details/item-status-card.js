@@ -97,9 +97,8 @@ const ItemStatusCard = ({
   } = useContext(TCRViewContext)
 
   // Get remaining appeal time, if any and build countdown.
-  const { appealRemainingTime, appealRemainingTimeLoser } = useAppealTime(item)
+  const { appealRemainingTime } = useAppealTime(item)
   const appealCountdown = useHumanizedCountdown(appealRemainingTime)
-  const appealLoserCountdown = useHumanizedCountdown(appealRemainingTimeLoser)
   const { arbitrator: klerosAddress, uiURL } =
     getNetworkEnv('REACT_APP_KLEROS_ADDRESSES', networkId) || {}
 
@@ -272,21 +271,6 @@ const ItemStatusCard = ({
             statusCode === STATUS_CODE.CROWDFUNDING && (
               <Descriptions.Item label="Remaining Time">
                 {appealCountdown}
-              </Descriptions.Item>
-            )}
-          {/* Decisive ruling winner countdown. */}
-          {currentRuling !== PARTY.NONE &&
-            (statusCode === STATUS_CODE.CROWDFUNDING ||
-              statusCode === STATUS_CODE.CROWDFUNDING_WINNER) && (
-              <Descriptions.Item label="Winner Appeal Time">
-                {appealCountdown}
-              </Descriptions.Item>
-            )}
-          {/* Decisive ruling loser countdown. */}
-          {currentRuling !== PARTY.NONE &&
-            statusCode === STATUS_CODE.CROWDFUNDING && (
-              <Descriptions.Item label="Loser Appeal Time">
-                {appealLoserCountdown}
               </Descriptions.Item>
             )}
         </StyledDescriptions>

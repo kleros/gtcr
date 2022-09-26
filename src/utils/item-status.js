@@ -139,7 +139,6 @@ export const itemToStatusCode = (
     disputed,
     submissionTime,
     disputeStatus,
-    hasPaid,
     currentRuling,
     appealStart,
     appealEnd
@@ -177,18 +176,7 @@ export const itemToStatusCode = (
 
     // Arbitrator gave a decisive ruling (i.e. Ruled in favor of either the requester or challenger).
     if (timestamp.gt(appealEnd)) return STATUS_CODE.WAITING_ARBITRATOR
-    const appealPeriodDuration = appealEnd.sub(appealStart)
-    const appealHalfTime = appealStart.add(
-      appealPeriodDuration.div(bigNumberify(2))
-    )
-    if (timestamp.lt(appealHalfTime)) return STATUS_CODE.CROWDFUNDING // In first half of appeal period
 
-    // If the party that lost the previous round is not fully funded
-    // before the end of the first half, the dispute is over
-    // and awaits enforecement.
-    const loser =
-      currentRuling === PARTY.REQUESTER ? PARTY.CHALLENGER : PARTY.REQUESTER
-    if (hasPaid[loser]) return STATUS_CODE.CROWDFUNDING_WINNER
-    else return STATUS_CODE.WAITING_ENFORCEMENT
+    return STATUS_CODE.CROWDFUNDING
   }
 }

@@ -333,7 +333,12 @@ const ItemDetails = ({ itemID, search }) => {
           itemMetaEvidence={itemMetaEvidence}
         />
         {/* Crowdfunding card is only rendered if the item has an appealable dispute. */}
-        <CrowdfundingCard item={decodedItem || item} timestamp={timestamp} />
+        {/* V2 arbitrator handles appeals internally, so appeal logic is removed. */}
+        <CrowdfundingCard
+          item={decodedItem || item}
+          timestamp={timestamp}
+          request={requests[requests.length - 1]}
+        />
 
         {/* Spread the `requests` parameter to convert elements from array to an object */}
         <RequestTimelines
