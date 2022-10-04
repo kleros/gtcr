@@ -12,7 +12,7 @@ import { WalletContext } from 'contexts/wallet-context'
 import { ZERO_ADDRESS, isVowel } from 'utils/string'
 import getNetworkEnv from 'utils/network-env'
 import useWindowDimensions from 'hooks/window-dimensions'
-import SubmitModal from '../light-item-details/modals/submit'
+import SubmitModal from '../item-details/modals/submit'
 import useTcrView from 'hooks/tcr-view'
 
 const _txBatcher = [
@@ -457,7 +457,7 @@ const Deploy = ({ setTxState, tcrState, setTcrState }) => {
                 <StyledDiv>
                   Your list was created at the following address:{' '}
                   <Link
-                    to={`/tcr/${tcrState.transactions[txSubmitted].contractAddress}`}
+                    to={`/tcr/${networkId}/${tcrState.transactions[txSubmitted].contractAddress}`}
                   >
                     {tcrState.transactions[txSubmitted].contractAddress}
                   </Link>
