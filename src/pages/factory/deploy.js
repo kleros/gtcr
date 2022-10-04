@@ -457,7 +457,7 @@ const Deploy = ({ setTxState, tcrState, setTcrState }) => {
                 <StyledDiv>
                   Your list was created at the following address:{' '}
                   <Link
-                    to={`/tcr/${tcrState.transactions[txSubmitted].contractAddress}`}
+                    to={`/tcr/${networkId}/${tcrState.transactions[txSubmitted].contractAddress}`}
                   >
                     {tcrState.transactions[txSubmitted].contractAddress}
                   </Link>
