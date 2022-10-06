@@ -125,17 +125,27 @@ const useNotificationWeb3 = () => {
 
   // Notify of network changes.
   useEffect(() => {
-    if (!web3Context.networkId) return
-    if (!network) {
-      setNetwork(web3Context.networkId)
-      return
-    }
+    const handleChainChange = () => {
+      if (!web3Context.networkId) return
+      if (!network) {
+        setNetwork(web3Context.networkId)
+        return
+      }
 
-    if (network && network !== web3Context.networkId) {
-      setNetwork(web3Context.networkId)
-      notification.info({
-        message: 'Network Changed'
-      })
+      if (network && network !== web3Context.networkId) {
+        setNetwork(web3Context.networkId)
+        notification.info({
+          message: 'Network Changed'
+        })
+      }
+    }
+    const { ethereum } = window
+    if (ethereum && ethereum.on) {
+      ethereum.on('chainChanged', handleChainChange)
+      return () => {
+        if (ethereum.removeListener)
+          ethereum.removeListener('chainChanged', handleChainChange)
+      }
     }
   }, [web3Context.networkId, network, TCR2_ADDRESS, history])
 
