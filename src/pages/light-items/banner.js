@@ -113,7 +113,6 @@ const Banner = ({
               type="secondary"
               style={{ maxWidth: '100%' }}
             >
-              {console.log(normalizedDescription)}
               {capitalizeFirstLetter(normalizedDescription)}
             </Typography.Text>
           </>
