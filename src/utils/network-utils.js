@@ -12,7 +12,7 @@ export const NETWORK_NAME = {
   [NETWORK.MAINNET]: 'mainnet',
   [NETWORK.ROPSTEN]: 'ropsten',
   [NETWORK.RINKEBY]: 'rinkeby',
-  [NETWORK.GOERLI]: 'göerli',
+  [NETWORK.GOERLI]: 'goerli',
   [NETWORK.KOVAN]: 'kovan',
   [NETWORK.XDAI]: 'xDai'
 }
