@@ -1,4 +1,4 @@
-import { NETWORK } from './network-utils'
+import { NETWORKS } from '../config/networks'
 
 /**
  * Fetch an environment variable for a given networkId.
@@ -8,7 +8,7 @@ import { NETWORK } from './network-utils'
  */
 function getNetworkEnv(envVariableKey, networkId) {
   const defaultNetwork =
-    process.env.REACT_APP_DEFAULT_NETWORK || NETWORK.MAINNET
+    process.env.REACT_APP_DEFAULT_NETWORK || NETWORKS.ethereum
   let data = ''
   try {
     data = process.env[envVariableKey]

@@ -5,7 +5,7 @@ import { Link } from 'react-router-dom'
 import { Col, Row, Button, Badge, Switch } from 'antd'
 import { WalletContext } from 'contexts/wallet-context'
 import { TourContext } from 'contexts/tour-context'
-import { NETWORK_NAME, NETWORK_COLOR, NETWORK } from 'utils/network-utils'
+import { NETWORKS, NETWORKS_INFO } from '../../config/networks'
 import Identicon from 'components/identicon'
 import Notifications from 'components/notifications'
 import { ReactComponent as Logo } from 'assets/images/logo.svg'
@@ -107,7 +107,7 @@ const AppBar = () => {
   const [requestedChain, setRequestedChain] = useState()
   const nextNetworkTCR = getNetworkEnv(
     'REACT_APP_DEFAULT_TCR_ADDRESSES',
-    networkId === NETWORK.XDAI ? NETWORK.MAINNET : NETWORK.XDAI
+    networkId === NETWORKS.xDai ? NETWORKS.ethereum : NETWORKS.xDai
   )
   const currentChainId = useMemo(() => requestedChain ?? networkId, [
     networkId,
@@ -115,9 +115,9 @@ const AppBar = () => {
   ])
 
   const switchChain = useCallback(() => {
-    let nextNetwork = NETWORK.XDAI
-    if (networkId === NETWORK.XDAI) nextNetwork = NETWORK.MAINNET
-    else nextNetwork = NETWORK.XDAI
+    let nextNetwork = NETWORKS.xDai
+    if (networkId === NETWORKS.xDai) nextNetwork = NETWORKS.ethereum
+    else nextNetwork = NETWORKS.xDai
 
     setRequestedChain(nextNetwork)
     localStorage.setItem(SAVED_NETWORK_KEY, nextNetwork)
@@ -143,14 +143,16 @@ const AppBar = () => {
             web3Context.networkId &&
             (account ? (
               <StyledNetworkStatus>
-                <Badge color={NETWORK_COLOR[web3Context.networkId]} />
-                {capitalizeFirstLetter(NETWORK_NAME[web3Context.networkId])}
+                <Badge color={NETWORKS_INFO[web3Context.networkId].color} />
+                {capitalizeFirstLetter(
+                  NETWORKS_INFO[web3Context.networkId].name
+                )}
               </StyledNetworkStatus>
             ) : (
               <Switch
                 checkedChildren="xDai"
                 unCheckedChildren="Mainnet"
-                checked={currentChainId === NETWORK.XDAI}
+                checked={currentChainId === NETWORKS.xDai}
                 onClick={switchChain}
               />
             ))}

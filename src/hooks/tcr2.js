@@ -1,10 +1,10 @@
 import { useWeb3Context } from 'web3-react'
-import { NETWORK } from '../utils/network-utils'
+import { NETWORKS } from '../config/networks'
 
 // TODO: Replace users with getNetworkEnv.
 const useMainTCR2 = () => {
   const DEFAULT_NETWORK =
-    process.env.REACT_APP_DEFAULT_NETWORK || NETWORK.MAINNET
+    process.env.REACT_APP_DEFAULT_NETWORK || NETWORKS.ethereum
 
   const web3Context = useWeb3Context()
   let tcr2Data = ''

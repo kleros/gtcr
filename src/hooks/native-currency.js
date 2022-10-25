@@ -1,5 +1,5 @@
 import { useWeb3Context } from 'web3-react'
-import { NETWORK } from '../utils/network-utils'
+import { NETWORKS } from '../config/networks'
 
 /**
  * Get the ticker for the chain's native currency.
@@ -8,7 +8,7 @@ import { NETWORK } from '../utils/network-utils'
 export default function useNativeCurrency() {
   const { networkId } = useWeb3Context()
   if (!networkId) return 'ETH'
-  if (networkId === NETWORK.XDAI) return 'DAI'
+  if (networkId === NETWORKS.xDai) return 'DAI'
 
   return 'ETH'
 }
