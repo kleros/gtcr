@@ -33,7 +33,6 @@ const ContractExplorerUrl: React.FC<{
     networkId,
     address: contractAddress
   })}#code`
-  console.log({ url })
   return (
     <StyledLink
       href={url}
