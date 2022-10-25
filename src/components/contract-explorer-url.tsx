@@ -1,6 +1,5 @@
 import React from 'react'
 import styled from 'styled-components/macro'
-import PropTypes from 'prop-types'
 import { getAddressPage } from 'utils/network-utils'
 
 const StyledIcon = styled.svg`
@@ -26,11 +25,15 @@ const StyledLink = styled.a`
   align-items: center;
 `
 
-const ConrtractExplorerUrl = ({ networkId, contractAddress }) => {
+const ContractExplorerUrl: React.FC<{
+  networkId: number
+  contractAddress: string
+}> = ({ networkId, contractAddress }) => {
   const url = `${getAddressPage({
     networkId,
     address: contractAddress
   })}#code`
+  console.log({ url })
   return (
     <StyledLink
       href={url}
@@ -67,9 +70,4 @@ const ConrtractExplorerUrl = ({ networkId, contractAddress }) => {
     </StyledLink>
   )
 }
-export default ConrtractExplorerUrl
-
-ConrtractExplorerUrl.propTypes = {
-  networkId: PropTypes.string.isRequired,
-  contractAddress: PropTypes.string.isRequired
-}
+export default ContractExplorerUrl
