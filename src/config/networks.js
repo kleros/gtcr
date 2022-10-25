@@ -69,7 +69,7 @@ export const NETWORKS_INFO = Object.freeze({
     chainId: 100,
     shortName: 'xdai',
     chain: 'XDAI',
-    network: 'mainnet',
+    network: 'xdai',
     networkId: 100,
     nativeCurrency: { name: 'xDAI', symbol: 'xDAI', decimals: 18 },
     rpc: [
@@ -105,7 +105,14 @@ export const NETWORKS_INFO = Object.freeze({
   // },
   [NETWORKS.kovan]: {
     name: 'Kovan',
-    color: '#690496'
+    color: '#690496',
+    explorers: [
+      {
+        name: 'etherscan',
+        url: 'https://kovan.etherscan.io',
+        standard: 'EIP3091'
+      }
+    ]
   },
   [NETWORKS['arbitrum-rinkeby']]: {
     name: 'Arbitrum Rinkeby',

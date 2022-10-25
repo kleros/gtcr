@@ -1,7 +1,7 @@
 import { Connectors } from 'web3-react'
 import WalletConnectApi from '@walletconnect/web3-subprovider'
 import FortmaticApi from 'fortmatic'
-import { NETWORK_NAME, NETWORK } from '../utils/network-utils'
+import { NETWORKS_INFO, NETWORKS } from 'config/networks'
 import { SAVED_NETWORK_KEY } from '../utils/string'
 import getNetworkEnv from '../utils/network-env'
 
@@ -26,7 +26,7 @@ if (process.env.REACT_APP_RPC_URLS) {
     providerURL: supportedNetworkURLs[defaultNetwork]
   })
   connectors.xDai = new NetworkOnlyConnector({
-    providerURL: supportedNetworkURLs[NETWORK.XDAI]
+    providerURL: supportedNetworkURLs[NETWORKS.xDai]
   })
 
   connectors.Ledger = new LedgerConnector({
@@ -50,17 +50,19 @@ if (fortmaticApiKey)
     apiKey: fortmaticApiKey,
     logoutOnDeactivation: false,
     testNetwork:
-      defaultNetwork === NETWORK.MAINNET ? null : NETWORK_NAME[defaultNetwork]
+      defaultNetwork === NETWORKS.ethereum
+        ? null
+        : NETWORKS_INFO[defaultNetwork].name
   })
 
 if (window.ethereum)
   connectors.Injected = new InjectedConnector({
     supportedNetworks: [
-      NETWORK.MAINNET,
-      NETWORK.KOVAN,
-      NETWORK.XDAI,
-      NETWORK.GOERLI,
-      NETWORK['ARBITRUM-RINKEBY']
+      NETWORKS.ethereum,
+      NETWORKS.kovan,
+      NETWORKS.xDai,
+      NETWORKS.goerli,
+      NETWORKS['arbitrum-rinkeby']
     ]
   })
 
