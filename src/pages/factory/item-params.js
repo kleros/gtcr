@@ -19,10 +19,18 @@ import * as yup from 'yup'
 import styled from 'styled-components/macro'
 import CustomInput from 'components/custom-input'
 import ItemDetailsCard from 'components/item-details-card'
-import { ItemTypes } from '@kleros/gtcr-encoder'
+import { ItemTypes as AllItemTypes } from '@kleros/gtcr-encoder'
 import { STATUS_CODE } from 'utils/item-status'
 
-const { IMAGE, FILE, GTCR_ADDRESS, LONG_TEXT } = ItemTypes
+const objectWithoutKey = (object, key) => {
+  // eslint-disable-next-line no-unused-vars
+  const { [key]: nothing, ...otherKeys } = object
+  return otherKeys
+}
+
+const ItemTypes = objectWithoutKey(AllItemTypes, 'TWITTER_USER_ID')
+
+const { IMAGE, FILE, GTCR_ADDRESS, LONG_TEXT } = AllItemTypes
 
 const StyledAlert = styled(Alert)`
   margin-bottom: 42px;
