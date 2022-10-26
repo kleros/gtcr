@@ -19,10 +19,13 @@ import * as yup from 'yup'
 import styled from 'styled-components/macro'
 import CustomInput from 'components/custom-input'
 import ItemDetailsCard from 'components/item-details-card'
-import { ItemTypes } from '@kleros/gtcr-encoder'
+import { ItemTypes as AllItemTypes } from '@kleros/gtcr-encoder'
 import { STATUS_CODE } from 'utils/item-status'
+import objectWithoutKey from 'utils/object-without-key'
 
-const { IMAGE, FILE, GTCR_ADDRESS, TWITTER_USER_ID, LONG_TEXT } = ItemTypes
+const ItemTypes = objectWithoutKey(AllItemTypes, 'TWITTER_USER_ID')
+
+const { IMAGE, FILE, GTCR_ADDRESS, LONG_TEXT } = ItemTypes
 
 const StyledAlert = styled(Alert)`
   margin-bottom: 42px;
@@ -220,8 +223,7 @@ const ItemParams = ({
                           columns[index].isIdentifier) &&
                         columns[index].type !== LONG_TEXT &&
                         columns[index].type !== IMAGE &&
-                        columns[index].type !== FILE &&
-                        columns[index].type !== TWITTER_USER_ID ? ( // Image, file, twitter user and long text cannot be identifiers.
+                        columns[index].type !== FILE ? ( // Image, file and long text cannot be identifiers.
                           <Col span={3}>
                             <Field name={`columns[${index}].isIdentifier`}>
                               {({ field }) => (
