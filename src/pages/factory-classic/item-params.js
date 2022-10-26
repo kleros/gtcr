@@ -21,12 +21,7 @@ import CustomInput from 'components/custom-input'
 import ItemDetailsCard from 'components/item-details-card'
 import { ItemTypes as AllItemTypes } from '@kleros/gtcr-encoder'
 import { STATUS_CODE } from 'utils/item-status'
-
-const objectWithoutKey = (object, key) => {
-  // eslint-disable-next-line no-unused-vars
-  const { [key]: nothing, ...otherKeys } = object
-  return otherKeys
-}
+import objectWithoutKey from 'utils/object-without-key'
 
 const ItemTypes = objectWithoutKey(AllItemTypes, 'TWITTER_USER_ID')
 
