@@ -23,7 +23,6 @@
     "@kleros/erc-792": "^4.0.1",
     "@kleros/gtcr-encoder": "^1.6.1",
     "@kleros/kleros": "^0.1.5",
-    "@kleros/react-components": "^1.0.0",
     "@kleros/tcr": "^2.0.0",
     "@loadable/component": "^5.10.1",
     "@walletconnect/qrcode-modal": "^1.0.0-beta.35",
