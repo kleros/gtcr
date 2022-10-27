@@ -7,7 +7,7 @@ import { ZERO_ADDRESS, capitalizeFirstLetter } from 'utils/string'
 import useWindowDimensions from 'hooks/window-dimensions'
 import { useWeb3Context } from 'web3-react'
 import getNetworkEnv from 'utils/network-env'
-import ConrtractExplorerUrl from 'components/contract-explorer-url'
+import ContractExplorerUrl from 'components/contract-explorer-url'
 
 const StyledBanner = styled.div`
   padding: 24px 9.375vw;
@@ -97,7 +97,7 @@ const Banner = ({
               {defaultTCRAddress && tcrAddress !== defaultTCRAddress && (
                 <TCRLogo logoURI={logoURI} />
               )}
-              <ConrtractExplorerUrl
+              <ContractExplorerUrl
                 networkId={networkId}
                 contractAddress={tcrAddress}
               />
