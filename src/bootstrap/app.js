@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { BrowserRouter } from 'react-router-dom'
 import { Helmet } from 'react-helmet'
-import Footer from '@kleros/react-components/dist/footer'
+import Footer from '../components/footer.tsx'
 import styled from 'styled-components/macro'
 import Web3Provider from 'web3-react'
 import { Layout } from 'antd'
@@ -93,7 +93,7 @@ const App = () => {
               </Layout>
             </StyledLayout>
             <FooterWrapper>
-              <Footer appName="Kleros · Curate" contractExplorerURL="" />
+              <Footer />
             </FooterWrapper>
             <WalletModal connectors={connectors} />
             <WelcomeModal />
