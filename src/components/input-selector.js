@@ -8,7 +8,6 @@ import { ItemTypes } from '@kleros/gtcr-encoder'
 import CustomInput from './custom-input.js'
 import ipfsPublish from '../utils/ipfs-publish.js'
 import { sanitize } from '../utils/string.js'
-import TwitterUserInput from './twitter-input.js'
 import AddressInput from './address-input.js'
 import RichAddressInput from './rich-address-input.js'
 
@@ -215,14 +214,6 @@ const InputSelector = ({
             )}
           </StyledUpload>
         </>
-      )
-    case ItemTypes.TWITTER_USER_ID:
-      return (
-        <TwitterUserInput
-          name={name}
-          label={label}
-          setFieldValue={setFieldValue}
-        />
       )
     default:
       throw new Error(`Unhandled input type ${type}`)

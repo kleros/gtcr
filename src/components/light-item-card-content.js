@@ -32,8 +32,7 @@ const LightItemCardContent = ({ item, chainId, tcrAddress }) => (
           col =>
             col.isIdentifier ||
             col.type === ItemTypes.IMAGE ||
-            col.type === ItemTypes.FILE ||
-            col.type === ItemTypes.TWITTER_USER_ID
+            col.type === ItemTypes.FILE
         )
         .map((column, j) => (
           <StyledItemCol key={j}>

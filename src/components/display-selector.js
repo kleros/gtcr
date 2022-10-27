@@ -3,7 +3,6 @@ import { Typography, Avatar, Checkbox } from 'antd'
 import styled from 'styled-components/macro'
 import PropTypes from 'prop-types'
 import GTCRAddress from './gtcr-address'
-import TwitterUser from './twitter-user'
 import { ItemTypes } from '@kleros/gtcr-encoder'
 import { ZERO_ADDRESS } from '../utils/string'
 import RichAddress from './rich-address'
@@ -68,8 +67,6 @@ const DisplaySelector = ({ type, value, linkImage, allowedFileTypes }) => {
           <Typography.Text>{value}</Typography.Text>
         </a>
       )
-    case ItemTypes.TWITTER_USER_ID:
-      return <TwitterUser userID={value} />
     default:
       return (
         <Typography.Paragraph>
