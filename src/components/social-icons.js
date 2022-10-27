@@ -19,6 +19,7 @@ export default {
       viewBox="0 0 130 24"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
+      style={{ marginLeft: '1rem' }}
     >
       <g clipPath="url(#clip0)">
         <path
