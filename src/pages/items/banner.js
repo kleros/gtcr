@@ -7,6 +7,7 @@ import { ZERO_ADDRESS, capitalizeFirstLetter } from 'utils/string'
 import useWindowDimensions from 'hooks/window-dimensions'
 import { useWeb3Context } from 'web3-react'
 import getNetworkEnv from 'utils/network-env'
+import ContractExplorerUrl from 'components/contract-explorer-url'
 
 const StyledBanner = styled.div`
   padding: 24px 9.375vw;
@@ -41,6 +42,7 @@ const StyledImage = styled.img`
 
 const TCRTitle = styled.div`
   display: flex;
+  align-items: center;
 `
 
 const ActionCol = styled.div`
@@ -95,6 +97,10 @@ const Banner = ({
               {defaultTCRAddress && tcrAddress !== defaultTCRAddress && (
                 <TCRLogo logoURI={logoURI} />
               )}
+              <ContractExplorerUrl
+                networkId={networkId}
+                contractAddress={tcrAddress}
+              />
             </TCRTitle>
             <Typography.Text
               ellipsis
