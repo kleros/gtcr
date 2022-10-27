@@ -274,7 +274,7 @@ const useTcrView = tcrAddress => {
       !library ||
       gtcr.address !== tcrAddress ||
       !metadataByTime ||
-      metadataByTime.address !== tcrAddress ||
+      metadataByTime.address.toLowerCase() !== tcrAddress.toLowerCase() ||
       !getLogs
     )
       return
