@@ -16,39 +16,43 @@ const StyledButton = styled(Button)`
   text-transform: capitalize;
 `
 
-const LightItemCardContent = ({ item, chainId, tcrAddress }) => (
-  <div
-    style={{
-      height: '100%',
-      display: 'flex',
-      flexDirection: 'column',
-      justifyContent: 'space-between',
-      alignItems: 'center'
-    }}
-  >
-    <div>
-      {item.tcrData.mergedData
-        .filter(
-          col =>
-            col.isIdentifier ||
-            col.type === ItemTypes.IMAGE ||
-            col.type === ItemTypes.FILE
-        )
-        .map((column, j) => (
-          <StyledItemCol key={j}>
-            <DisplaySelector
-              type={column.type}
-              value={column.value}
-              allowedFileTypes={column.allowedFileTypes}
-            />
-          </StyledItemCol>
-        ))}
+const LightItemCardContent = ({ item, chainId, tcrAddress }) => {
+  const allowedFileTypes =
+    item.columns.filter(col => col.allowedFileTypes)[0]?.allowedFileTypes || ''
+  return (
+    <div
+      style={{
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'space-between',
+        alignItems: 'center'
+      }}
+    >
+      <div>
+        {item.tcrData.mergedData
+          .filter(
+            col =>
+              col.isIdentifier ||
+              col.type === ItemTypes.IMAGE ||
+              col.type === ItemTypes.FILE
+          )
+          .map((column, j) => (
+            <StyledItemCol key={j}>
+              <DisplaySelector
+                type={column.type}
+                value={column.value}
+                allowedFileTypes={allowedFileTypes}
+              />
+            </StyledItemCol>
+          ))}
+      </div>
+      <Link to={`/tcr/${chainId}/${tcrAddress}/${item.tcrData.ID}`}>
+        <StyledButton>Details</StyledButton>
+      </Link>
     </div>
-    <Link to={`/tcr/${chainId}/${tcrAddress}/${item.tcrData.ID}`}>
-      <StyledButton>Details</StyledButton>
-    </Link>
-  </div>
-)
+  )
+}
 
 LightItemCardContent.propTypes = {
   item: PropTypes.shape({
