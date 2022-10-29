@@ -85,7 +85,7 @@ export const NETWORKS_INFO = Object.freeze({
     explorers: [
       {
         name: 'blockscout',
-        url: 'https://blockscout.com/xdai/',
+        url: 'https://blockscout.com/xdai/mainnet',
         standard: 'EIP3091'
       }
     ],
