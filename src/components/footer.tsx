@@ -48,8 +48,10 @@ const Footer = () => (
       </SocialLink>
     </div>
     <div className="g-kleros_footer__social">
-      {SOCIAL_NAV.map(item => (
-        <SocialLink href={item.href}>{item.icon}</SocialLink>
+      {SOCIAL_NAV.map((item, index) => (
+        <SocialLink key={index} href={item.href}>
+          {item.icon}
+        </SocialLink>
       ))}
     </div>
   </StyledFooter>
