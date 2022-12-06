@@ -41,7 +41,7 @@
     "match-sorter": "^4.0.2",
     "mime": "^2.4.6",
     "prop-types": "^15.7.2",
-    "qs": "^6.8.0",
+    "qs": "^6.10.3",
     "react": "^16.8.6",
     "react-blockies": "^1.4.1",
     "react-dom": "^16.8.6",
