@@ -41,11 +41,25 @@ export const references: Reference[] = [
     explorer: 'etherscan.io'
   },
   {
+    id: '56',
+    namespaceId: 'eip155',
+    name: 'Binance Smart Chain',
+    label: 'BNB',
+    explorer: 'bscscan.com'
+  },
+  {
     id: '100',
     namespaceId: 'eip155',
     name: 'Gnosis Chain',
     label: 'xDAI',
     explorer: 'blockscout.com/xdai/mainnet'
+  },
+  {
+    id: '137',
+    namespaceId: 'eip155',
+    name: 'Polygon',
+    label: 'MATIC',
+    explorer: 'polygonscan.com'
   },
   {
     id: '000000000019d6689c085ae165831e93',
