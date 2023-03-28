@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { BrowserRouter } from 'react-router-dom'
 import { Helmet } from 'react-helmet'
 import Footer from '../components/footer.tsx'
@@ -58,6 +58,23 @@ const FooterWrapper = styled.div`
 
 const App = () => {
   const [isMenuClosed, setIsMenuClosed] = useState(true)
+
+  // this useEffect redirects the URL to a correct one in case Court sent you to an incorrect URL using old ?chainId= syntax
+  useEffect(() => {
+    const url = window.location.href
+    let tcrAddress, itemId, chainId
+
+    if (url.includes('?chainId=')) {
+      tcrAddress = url.split('/')[4]
+      itemId = url.split('/')[5].split('?')[0]
+      chainId = url.split('=')[1]
+      const redirectUrl = url.replace(
+        `/tcr/${tcrAddress}/${itemId}?chainId=${chainId}`,
+        `/tcr/${chainId}/${tcrAddress}/${itemId}`
+      )
+      window.location.replace(redirectUrl)
+    }
+  }, [])
 
   return (
     <Web3Provider connectors={connectors} libraryName="ethers.js">
