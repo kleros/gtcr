@@ -98,14 +98,7 @@ const _SubmissionForm: React.FC<{
 )
 
 const SubmissionForm: React.ComponentType<any> = withFormik({
-  mapPropsToValues: ({
-    columns,
-    initialValues
-  }: {
-    columns: Column[]
-    initialValues: any
-    [ow: string]: any
-  }) =>
+  mapPropsToValues: ({ columns, initialValues }: any) =>
     columns.reduce(
       (acc: any, curr: any, i: number) => ({
         ...acc,
@@ -116,8 +109,8 @@ const SubmissionForm: React.ComponentType<any> = withFormik({
       }),
       {}
     ),
-  handleSubmit: (values, { props: { postSubmit, columns }, resetForm }) => {
-    postSubmit(values, columns, resetForm)
+  handleSubmit: (values, { props, resetForm }) => {
+    props.postSubmit(values, props.columns, resetForm)
   },
   mapPropsToStatus: props => {
     return {
@@ -132,8 +125,8 @@ const SubmissionForm: React.ComponentType<any> = withFormik({
     const errors = (
       await Promise.all(
         columns
-          .filter(({ type }) => type === ItemTypes.GTCR_ADDRESS)
-          .map(async ({ label }) => ({
+          .filter(({ type }: any) => type === ItemTypes.GTCR_ADDRESS)
+          .map(async ({ label }: any) => ({
             isEmpty: !values[label],
             wasDeployedWithFactory:
               !!values[label] &&
@@ -143,9 +136,9 @@ const SubmissionForm: React.ComponentType<any> = withFormik({
           }))
       )
     )
-      .filter(res => !res.wasDeployedWithFactory || res.isEmpty)
+      .filter((res: any) => !res.wasDeployedWithFactory || res.isEmpty)
       .reduce(
-        (acc, curr) => ({
+        (acc: any, curr: any) => ({
           ...acc,
           [curr.label]: curr.isEmpty
             ? `Enter a list address to proceed.`
@@ -153,7 +146,7 @@ const SubmissionForm: React.ComponentType<any> = withFormik({
         }),
         {}
       )
-    if (Object.keys(errors).length > 0) throw errors
+    if (Object.keys(errors as any).length > 0) throw errors
   }
 })(_SubmissionForm as any)
 
