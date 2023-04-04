@@ -1,6 +1,5 @@
 import React, { useCallback, useState } from 'react'
 import { Form, Switch, Input, Upload, message, Icon } from 'antd'
-import PropTypes from 'prop-types'
 import { Field } from 'formik'
 import styled from 'styled-components/macro'
 import { getExtension } from 'mime'
@@ -8,8 +7,8 @@ import { ItemTypes } from '@kleros/gtcr-encoder'
 import CustomInput from './custom-input.js'
 import ipfsPublish from '../utils/ipfs-publish.js'
 import { sanitize } from '../utils/string.js'
-import AddressInput from './address-input.js'
-import RichAddressInput from './rich-address-input.js'
+import AddressInput from './address-input'
+import RichAddressInput from './rich-address-input'
 
 const StyledUpload = styled(Upload)`
   & > .ant-upload.ant-upload-select-picture-card {
@@ -17,58 +16,58 @@ const StyledUpload = styled(Upload)`
   }
 `
 
-const UploadButton = ({ loading }) => (
+const UploadButton: React.FC<{ loading: boolean }> = p => (
   <div>
-    <Icon type={loading ? 'loading' : 'plus'} />
+    <Icon type={p.loading ? 'loading' : 'plus'} />
     <div className="ant-upload-text">Upload</div>
   </div>
 )
 
-UploadButton.propTypes = {
-  loading: PropTypes.bool
+interface InputSelectorProps extends React.HTMLAttributes<HTMLElement> {
+  type: string
+  name: string
+  values: any
+  error: any
+  setFieldValue: (fieldName: string, two: any) => void
+  disabled: boolean
+  touched: boolean
+  maxFileSizeMb?: number
+  label: any
+  allowedFileTypes: string
+  setFileToUpload: (f: (b: boolean) => void) => void
+  setFileAsUploaded: (f: (b: boolean) => void) => void
+  style: any
 }
 
-UploadButton.defaultProps = {
-  loading: null
-}
-
-const InputSelector = ({
-  type,
-  setFieldValue,
-  maxFileSizeMb,
-  allowedFileTypes,
-  setFileToUpload,
-  setFileAsUploaded,
-  ...props
-}) => {
-  const [uploading, setUploading] = useState()
+const InputSelector: React.FC<InputSelectorProps> = p => {
+  const [uploading, setUploading] = useState<boolean>(false)
   const customRequest = useCallback(
-    fieldName => async ({ file, onSuccess, onError }) => {
+    fieldName => async ({ file, onSuccess, onError }: any) => {
       try {
         const data = await new Response(new Blob([file])).arrayBuffer()
-        const ipfsFileObj = await ipfsPublish(sanitize(file.name), data)
+        const ipfsFileObj: any = await ipfsPublish(sanitize(file.name), data)
         const fileURI = `/ipfs/${ipfsFileObj[1].hash}${ipfsFileObj[0].path}`
 
-        setFieldValue(fieldName, fileURI)
+        p.setFieldValue(fieldName, fileURI)
         onSuccess('ok', `${process.env.REACT_APP_IPFS_GATEWAY}${fileURI}`)
       } catch (err) {
         console.error(err)
         onError(err)
       }
     },
-    [setFieldValue]
+    [p]
   )
 
   const fileUploadStatusChange = useCallback(
     ({ file: { status } }) => {
       if (status === 'done') message.success(`File uploaded successfully.`)
       else if (status === 'error') message.error(`File upload failed.`)
-      else if (status === 'uploading') setFileToUpload(setUploading)
+      else if (status === 'uploading') p.setFileToUpload(setUploading)
 
       if (status === 'error' || status === 'done')
-        setFileAsUploaded(setUploading)
+        p.setFileAsUploaded(setUploading)
     },
-    [setFileToUpload, setFileAsUploaded]
+    [p]
   )
 
   const beforeImageUpload = useCallback(
@@ -83,20 +82,20 @@ const InputSelector = ({
         return false
       }
 
-      if (file.size / 1024 / 1024 > (maxFileSizeMb || 2)) {
-        message.error(`Image must smaller than ${maxFileSizeMb || 2}MB.`)
+      if (file.size / 1024 / 1024 > (p.maxFileSizeMb || 2)) {
+        message.error(`Image must smaller than ${p.maxFileSizeMb || 2}MB.`)
         return false
       }
 
       return true
     },
-    [maxFileSizeMb]
+    [p.maxFileSizeMb]
   )
 
   const beforeFileUpload = useCallback(
     file => {
-      const allowedFileTypesArr = allowedFileTypes.split(' ')
-      if (!allowedFileTypesArr.includes(getExtension(file.type))) {
+      const allowedFileTypesArr = p.allowedFileTypes.split(' ')
+      if (!allowedFileTypesArr.includes(getExtension(file.type) as string)) {
         message.error(
           allowedFileTypesArr.length > 1
             ? `Allowed file types are+${allowedFileTypesArr.map(e => ` .${e}`)}`
@@ -105,43 +104,35 @@ const InputSelector = ({
         return false
       }
 
-      if (file.size / 1024 / 1024 > (maxFileSizeMb || 10)) {
-        message.error(`File must smaller than ${maxFileSizeMb || 10}MB.`)
+      if (file.size / 1024 / 1024 > (p.maxFileSizeMb || 10)) {
+        message.error(`File must smaller than ${p.maxFileSizeMb || 10}MB.`)
         return false
       }
 
       return true
     },
-    [allowedFileTypes, maxFileSizeMb]
+    [p.allowedFileTypes, p.maxFileSizeMb]
   )
 
-  const { values, label, name } = props
-  switch (type) {
+  const { values, label, name } = p
+  switch (p.type) {
     case ItemTypes.TEXT:
     case ItemTypes.NUMBER:
     case ItemTypes.LINK:
-      return <CustomInput type={type} name={name} hasFeedback {...props} />
+      return <CustomInput hasFeedback {...p} />
     case ItemTypes.ADDRESS:
     case ItemTypes.GTCR_ADDRESS:
-      return <AddressInput type={type} name={name} hasFeedback {...props} />
+      return <AddressInput placeholder='address' hasFeedback {...p} />
     case ItemTypes.RICH_ADDRESS:
-      return (
-        <RichAddressInput
-          type={type}
-          name={name}
-          hasFeedback
-          setFieldValue={setFieldValue}
-          {...props}
-        />
-      )
+      return <RichAddressInput hasFeedback {...p} />
     case ItemTypes.BOOLEAN:
       return (
         <Field name={name}>
-          {({ field }) => (
+          {({ field }: any) => (
             <Form.Item label={label} style={{ display: 'flex' }}>
               <Switch
                 {...field}
-                onChange={value => setFieldValue(name, value)}
+                onChange={value => p.setFieldValue(name, value)}
               />
             </Form.Item>
           )}
@@ -150,7 +141,7 @@ const InputSelector = ({
     case ItemTypes.LONG_TEXT:
       return (
         <Field name={name}>
-          {({ field }) => (
+          {({ field }: any) => (
             <Form.Item label={label}>
               <Input.TextArea autosize={{ minRows: 2 }} {...field} />
             </Form.Item>
@@ -160,7 +151,7 @@ const InputSelector = ({
     case ItemTypes.IMAGE:
       return (
         <>
-          {label}:
+          {label}:{/* @ts-ignore */}
           <StyledUpload
             name={name}
             listType="picture-card"
@@ -191,7 +182,7 @@ const InputSelector = ({
     case ItemTypes.FILE:
       return (
         <>
-          {label}:
+          {label}:{/* @ts-ignore */}
           <StyledUpload
             name={name}
             listType="picture-card"
@@ -216,21 +207,8 @@ const InputSelector = ({
         </>
       )
     default:
-      throw new Error(`Unhandled input type ${type}`)
+      throw new Error(`Unhandled input type ${p.type}`)
   }
-}
-
-InputSelector.propTypes = {
-  type: PropTypes.oneOf(Object.values(ItemTypes)).isRequired,
-  setFieldValue: PropTypes.func.isRequired,
-  setFileToUpload: PropTypes.func.isRequired,
-  setFileAsUploaded: PropTypes.func.isRequired,
-  maxFileSizeMb: PropTypes.number.isRequired,
-  allowedFileTypes: PropTypes.arrayOf(PropTypes.string).isRequired,
-  // eslint-disable-next-line react/forbid-prop-types
-  values: PropTypes.any.isRequired,
-  label: PropTypes.string.isRequired,
-  name: PropTypes.string.isRequired
 }
 
 export default InputSelector

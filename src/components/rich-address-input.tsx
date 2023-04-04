@@ -1,7 +1,11 @@
 import { Form, Input, Select } from 'antd'
 import { Field } from 'formik'
 import React from 'react'
-import { references, parseRichAddress } from '../utils/rich-address'
+import {
+  references,
+  parseRichAddress,
+  RichAddress
+} from '../utils/rich-address'
 
 const { Option } = Select
 
@@ -16,39 +20,50 @@ const chainOptions = references.map(reference => (
 
 const defaultAddressType = `${references[0].namespaceId}:${references[0].id}`
 
-const RichAddressInput = ({
-  label,
-  name,
-  error,
-  touched,
-  addonAfter,
-  hasFeedback,
-  disabled,
-  style,
-  values,
-  setFieldValue
-}) => {
-  const value = values[name]
-  const changeAddressType = addressType => {
+const RichAddressInput: React.FC<{
+  label: string
+  name: string
+  error: string
+  touched: boolean
+  hasFeedback: boolean
+  disabled: boolean
+  style: any
+  values: any
+  setFieldValue: any
+}> = p => {
+  const value = p.values[p.name]
+  const changeAddressType = (addressType: string) => {
     const richAddress = parseRichAddress(value)
     const address = richAddress ? richAddress.address : ''
     const newRichAddress = `${addressType}:${address}`
-    setFieldValue(name, newRichAddress)
+    p.setFieldValue(p.name, newRichAddress)
   }
 
-  const changeAddress = ({ target }) => {
+  console.log(p)
+
+  const changeAddress = ({ target }: any) => {
     const richAddress = parseRichAddress(value)
     const addressType = richAddress
       ? `${richAddress.reference.namespaceId}:${richAddress.reference.id}`
       : defaultAddressType
     const address = target.value
     const newRichAddress = `${addressType}:${address}`
-    setFieldValue(name, newRichAddress)
+    p.setFieldValue(p.name, newRichAddress)
   }
 
   return (
-    <Field name={name} style={{ style }}>
-      {({ field }) => {
+    <Field
+      validate={(value: any) => {
+        const richAddress = parseRichAddress(value) as RichAddress
+        if (!richAddress.passedTest) {
+          return 'Invalid format'
+        }
+        return null
+      }}
+      name={p.name}
+      style={{ style: p.style }}
+    >
+      {({ field }: any) => {
         const richAddress = parseRichAddress(field.value)
         const addressType = richAddress
           ? `${richAddress.reference.namespaceId}:${richAddress.reference.id}`
@@ -56,11 +71,10 @@ const RichAddressInput = ({
         const address = richAddress ? richAddress.address : ''
         return (
           <Form.Item
-            label={label}
-            validateStatus={error && touched ? 'error' : undefined}
-            help={error && touched ? error : ''}
-            disabled={disabled}
-            hasFeedback={hasFeedback}
+            label={p.label}
+            validateStatus={p.error && p.touched ? 'error' : undefined}
+            help={p.error && p.touched ? p.error : ''}
+            hasFeedback={p.hasFeedback}
           >
             <Select
               defaultValue={defaultAddressType}
@@ -71,9 +85,8 @@ const RichAddressInput = ({
               {chainOptions}
             </Select>
             <Input
-              addonAfter={addonAfter}
               placeholder="Address"
-              disabled={disabled}
+              disabled={p.disabled}
               {...field}
               value={address}
               onChange={changeAddress}

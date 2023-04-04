@@ -15,7 +15,7 @@ export type Reference = {
 
 export type Namespace = {
   id: string
-  addressRegex: RegExp
+  test: (s: string) => boolean
 }
 
 // Hacky definition of rich-addresses. Refactor into two jsons in the future?
@@ -24,11 +24,16 @@ export type Namespace = {
 export const namespaces: Namespace[] = [
   {
     id: 'eip155',
-    addressRegex: /^0x[a-fA-F0-9]{40}$/
+    test: s => /^0x[a-fA-F0-9]{40}$/.test(s)
   },
   {
     id: 'bip122',
-    addressRegex: /(^[13]{1}[a-km-zA-HJ-NP-Z1-9]{26,33}$)|(^bc1[a-z0-9]{39,59}$)/
+    test: s =>
+      /(^[13]{1}[a-km-zA-HJ-NP-Z1-9]{26,33}$)|(^bc1[a-z0-9]{39,59}$)/.test(s)
+  },
+  {
+    id: 'solana',
+    test: (s: string) => /(^[1-9A-HJ-NP-Za-km-z]{32,44}$)/.test(s)
   }
 ]
 
@@ -67,6 +72,13 @@ export const references: Reference[] = [
     name: 'Bitcoin',
     label: 'BTC',
     explorer: 'mempool.space'
+  },
+  {
+    id: '4sGjMW1sUnHzSxGspuhpqLDx6wiyjNtZ',
+    namespaceId: 'solana',
+    name: 'Solana',
+    label: 'SOL',
+    explorer: 'explorer.solana.com'
   }
 ]
 
@@ -94,6 +106,7 @@ export type RichAddress = {
   address: string
   link: string
   reference: Reference
+  passedTest: boolean
 }
 
 export const parseRichAddress = (crude: string): RichAddress | null => {
@@ -110,7 +123,8 @@ export const parseRichAddress = (crude: string): RichAddress | null => {
   if (!reference) return null
   // correct rich address
   const link = `https://${reference.explorer}/address/${address}`
-  return { reference, crude, address, link }
+  const passedTest = namespacesMap[namespaceId].test(address)
+  return { reference, crude, address, link, passedTest }
 }
 
 export default {

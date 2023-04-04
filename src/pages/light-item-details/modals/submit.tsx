@@ -11,21 +11,20 @@ import {
   Alert
 } from 'antd'
 import styled from 'styled-components/macro'
-import PropTypes from 'prop-types'
 import _gtcr from 'assets/abis/LightGeneralizedTCR.json'
 import { ethers } from 'ethers'
 import { withFormik } from 'formik'
 import humanizeDuration from 'humanize-duration'
 import { WalletContext } from 'contexts/wallet-context'
 import { ItemTypes, typeDefaultValues } from '@kleros/gtcr-encoder'
-import InputSelector from 'components/input-selector.js'
+import InputSelector from 'components/input-selector'
 import ETHAmount from 'components/eth-amount'
-import BNPropType from 'prop-types/bn'
 import useFactory from 'hooks/factory'
 import { TourContext } from 'contexts/tour-context'
 import { addPeriod, capitalizeFirstLetter, getArticleFor } from 'utils/string'
 import useNativeCurrency from 'hooks/native-currency'
 import ipfsPublish from 'utils/ipfs-publish'
+import { Column } from 'pages/item-details/modals/submit'
 
 const StyledSpin = styled(Spin)`
   height: 60px;
@@ -54,32 +53,37 @@ const StyledParagraph = styled(Typography.Paragraph)`
 
 const SUBMISSION_FORM_ID = 'submitItemForm'
 
-const _SubmissionForm = ({
-  columns,
-  handleSubmit,
-  setFieldValue,
-  disabledFields,
-  values,
-  errors,
-  touched,
-  status
-}) => (
-  <Form onSubmit={handleSubmit} id={SUBMISSION_FORM_ID}>
-    {columns &&
-      columns.length > 0 &&
-      columns.map((column, index) => (
+const _SubmissionForm: React.FC<{
+  style: any
+  columns: Column[]
+  setFieldValue: (fieldName: string, value: any) => void
+  handleSubmit: () => void
+  disabledFields: boolean[]
+  values: any
+  errors: { [label: string]: any }
+  touched: { [label: string]: boolean }
+  status: {
+    setFileToUpload: (f: (b: boolean) => void) => void
+    setFileAsUploaded: (f: (b: boolean) => void) => void
+  }
+}> = p => (
+  <Form onSubmit={p.handleSubmit} id={SUBMISSION_FORM_ID}>
+    {p.columns &&
+      p.columns.length > 0 &&
+      p.columns.map((column, index) => (
         <InputSelector
+          style={p.style}
           type={column.type}
           name={`${column.label}`}
           allowedFileTypes={column.allowedFileTypes}
           key={index}
-          values={values}
-          error={errors[column.label]}
-          setFieldValue={setFieldValue}
-          disabled={disabledFields && disabledFields[index]}
-          touched={touched[column.label]}
-          setFileToUpload={status.setFileToUpload}
-          setFileAsUploaded={status.setFileAsUploaded}
+          values={p.values}
+          error={p.errors[column.label]}
+          setFieldValue={p.setFieldValue}
+          disabled={p.disabledFields && p.disabledFields[index]}
+          touched={p.touched[column.label]}
+          setFileToUpload={p.status.setFileToUpload}
+          setFileAsUploaded={p.status.setFileAsUploaded}
           label={
             <span>
               {column.label}&nbsp;
@@ -93,48 +97,34 @@ const _SubmissionForm = ({
   </Form>
 )
 
-_SubmissionForm.propTypes = {
-  columns: PropTypes.arrayOf(
-    PropTypes.shape({
-      label: PropTypes.string.isRequired,
-      description: PropTypes.string.isRequired
-    })
-  ).isRequired,
-  setFieldValue: PropTypes.func.isRequired,
-  handleSubmit: PropTypes.func.isRequired,
-  disabledFields: PropTypes.arrayOf(PropTypes.bool),
-  values: PropTypes.shape({}),
-  errors: PropTypes.shape({}).isRequired,
-  touched: PropTypes.shape({}).isRequired,
-  status: PropTypes.shape({
-    setFileToUpload: PropTypes.func.isRequired,
-    setFileAsUploaded: PropTypes.func.isRequired
-  }).isRequired
-}
-
-_SubmissionForm.defaultProps = {
-  disabledFields: null,
-  values: {}
-}
-
-const SubmissionForm = withFormik({
-  mapPropsToValues: ({ columns, initialValues }) =>
+const SubmissionForm: React.ComponentType<any> = withFormik({
+  mapPropsToValues: ({
+    columns,
+    initialValues
+  }: {
+    columns: Column[]
+    initialValues: any
+    [ow: string]: any
+  }) =>
     columns.reduce(
-      (acc, curr, i) => ({
+      (acc: any, curr: any, i: number) => ({
         ...acc,
         [curr.label]: initialValues
           ? initialValues[i]
-          : typeDefaultValues[curr.type]
+          : // @ts-ignore
+            typeDefaultValues[curr.type]
       }),
       {}
     ),
   handleSubmit: (values, { props: { postSubmit, columns }, resetForm }) => {
     postSubmit(values, columns, resetForm)
   },
-  mapPropsToStatus: props => ({
-    setFileToUpload: props.setFileToUpload,
-    setFileAsUploaded: props.setFileAsUploaded
-  }),
+  mapPropsToStatus: props => {
+    return {
+      setFileToUpload: props.setFileToUpload,
+      setFileAsUploaded: props.setFileAsUploaded
+    }
+  },
   validate: async (
     values,
     { columns, deployedWithFactory, deployedWithLightFactory }
@@ -165,9 +155,25 @@ const SubmissionForm = withFormik({
       )
     if (Object.keys(errors).length > 0) throw errors
   }
-})(_SubmissionForm)
+})(_SubmissionForm as any)
 
-const SubmitModal = props => {
+const SubmitModal: React.FC<{
+  onCancel: any
+  tcrAddress: string
+  initialValues: any[]
+  submissionDeposit: any
+  metaEvidence: {
+    metadata: {
+      tcrTitle: string
+      itemName: string
+      columns: any[]
+      isTCRofTCRs: boolean
+    }
+    fileURI: string
+  }
+  disabledFields: boolean[]
+  challengePeriodDuration: any
+}> = props => {
   const {
     onCancel,
     initialValues,
@@ -187,11 +193,11 @@ const SubmitModal = props => {
 
   const postSubmit = useCallback(
     (values, columns, resetForm) => {
-      pushWeb3Action(async ({ account, networkId }, signer) => {
+      pushWeb3Action(async ({ account, networkId }: any, signer: any) => {
         const gtcr = new ethers.Contract(tcrAddress, _gtcr, signer)
         const enc = new TextEncoder()
         const fileData = enc.encode(JSON.stringify({ columns, values }))
-        const ipfsEvidenceObject = await ipfsPublish('item.json', fileData)
+        const ipfsEvidenceObject: any = await ipfsPublish('item.json', fileData)
         const ipfsEvidencePath = `/ipfs/${ipfsEvidenceObject[1].hash +
           ipfsEvidenceObject[0].path}`
 
@@ -246,17 +252,18 @@ const SubmitModal = props => {
   // To make sure user cannot press Submit while there are files uploading
   // submit will be blocked until there are no files uploading.
   const [loadingCounter, setLoadingCounter] = useState(0)
-  const setFileToUpload = setUploading => {
+  const setFileToUpload = (setUploading: (_: boolean) => void) => {
     setUploading(true)
     setLoadingCounter(loadingCounter + 1)
   }
-  const setFileAsUploaded = setUploading => {
+  const setFileAsUploaded = (setUploading: (_: boolean) => void) => {
     setUploading(false)
     setLoadingCounter(loadingCounter - 1)
   }
 
   if (!metaEvidence || !submissionDeposit)
     return (
+      // @ts-ignore
       <StyledModal
         title="Submit Item"
         footer={[
@@ -270,7 +277,10 @@ const SubmitModal = props => {
       </StyledModal>
     )
 
+  console.log(props)
+
   return (
+    // @ts-ignore
     <StyledModal
       title={`Submit ${(itemName && capitalizeFirstLetter(itemName)) ||
         'Item'}`}
@@ -321,7 +331,7 @@ const SubmitModal = props => {
       <StyledAlert
         message={`Note that this is a deposit, not a fee and it will be reimbursed if your submission is accepted. ${challengePeriodDuration &&
           `The challenge period lasts ${humanizeDuration(
-            `${challengePeriodDuration.toNumber() * 1000}.`
+            challengePeriodDuration.toNumber() * 1000
           )}`}.`}
         type="info"
         showIcon
@@ -350,30 +360,6 @@ const SubmitModal = props => {
       </Descriptions>
     </StyledModal>
   )
-}
-
-SubmitModal.propTypes = {
-  onCancel: PropTypes.func.isRequired,
-  initialValues: PropTypes.arrayOf(PropTypes.any),
-  submissionDeposit: BNPropType,
-  tcrAddress: PropTypes.string.isRequired,
-  metaEvidence: PropTypes.shape({
-    metadata: PropTypes.shape({
-      itemName: PropTypes.string,
-      columns: PropTypes.arrayOf(PropTypes.any),
-      isTCRofTCRs: PropTypes.bool
-    }).isRequired,
-    fileURI: PropTypes.string
-  }).isRequired,
-  disabledFields: PropTypes.arrayOf(PropTypes.bool),
-  challengePeriodDuration: BNPropType
-}
-
-SubmitModal.defaultProps = {
-  initialValues: null,
-  disabledFields: null,
-  submissionDeposit: null,
-  challengePeriodDuration: null
 }
 
 export default SubmitModal
