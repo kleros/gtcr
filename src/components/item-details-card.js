@@ -11,9 +11,9 @@ import Reward from 'react-rewards'
 import { TCRViewContext } from 'contexts/tcr-view-context'
 import itemPropTypes from '../prop-types/item'
 import { WalletContext } from 'contexts/wallet-context'
-import getNetworkEnv from '../utils/network-env'
 import TCRMetadataDisplay from './tcr-metadata-display'
 import { addPeriod } from '../utils/string'
+import { batchWithdrawAddresses } from 'config/tcr-addresses'
 
 const StyledFields = styled.div`
   display: flex;
@@ -44,10 +44,7 @@ const ItemDetailsCard = ({
   const tcrViewContext = useContext(TCRViewContext)
   const [availableRewards, setAvailableRewards] = useState()
   const [rewardRef, setRewardRef] = useState()
-  const BATCH_WITHDRAW_ADDRESS = getNetworkEnv(
-    'REACT_APP_BATCH_WITHDRAW_ADDRESSES',
-    networkId
-  )
+  const BATCH_WITHDRAW_ADDRESS = batchWithdrawAddresses[networkId]
 
   // Fetch available rewards from fee contributions.
   useEffect(() => {

@@ -21,6 +21,11 @@ import { ItemTypes } from '@kleros/gtcr-encoder'
 import RelTCRParams from './rel-tcr-params'
 import TCRCardContent from 'components/tcr-card-content'
 import { WalletContext } from 'contexts/wallet-context'
+import {
+  defaultArbitrator as defaultArbitratorAddresses,
+  defaultArbitratorExtraData as defaultArbitratorExtraDataObj,
+  defaultGovernor as defaultGovernorAddresses
+} from 'config/tcr-addresses'
 
 const { Step } = Steps
 const { confirm } = Modal
@@ -87,44 +92,14 @@ CurrentStep.propTypes = {
   tcrState: PropTypes.shape({ currStep: PropTypes.number }).isRequired
 }
 
-const useChainIdVariable = (envVariableKey, chainId) => {
-  if (!chainId) return null
-
-  let data = ``
-  try {
-    data = process.env[envVariableKey]
-      ? JSON.parse(process.env[envVariableKey])[chainId]
-      : ''
-  } catch (_) {
-    console.error(`Failed to parse env variable ${envVariableKey}`)
-  }
-
-  if (data === '')
-    console.warn(
-      `Warning: no value found for ${envVariableKey}, networkId: ${chainId}`
-    )
-
-  return data
-}
-
 const useCachedFactory = (version, networkId) => {
   const { account } = useWeb3Context()
-  const defaultArbInfo =
-    useChainIdVariable('REACT_APP_DEFAULT_ARBITRATOR', networkId) ?? {}
-  const { address: defaultArbitrator, label: defaultArbLabel } = defaultArbInfo
-  const defaultGovInfo =
-    useChainIdVariable('REACT_APP_DEFAULT_GOVERNOR', networkId) ?? {}
-  const {
-    address: defaultGovernor,
-    label: defaultGovernorLabel
-  } = defaultGovInfo
-  const defaultArbExtraInfo =
-    useChainIdVariable('REACT_APP_DEFAULT_ARBITRATOR_EXTRA_DATA', networkId) ??
-    {}
-  const {
-    data: defaultArbitratorExtraData,
-    label: defaultArbDataLabel
-  } = defaultArbExtraInfo
+  const { address: defaultArbitrator, label: defaultArbLabel } =
+    defaultArbitratorAddresses[networkId] || {}
+  const { address: defaultGovernor, label: defaultGovernorLabel } =
+    defaultGovernorAddresses[networkId] || {}
+  const { data: defaultArbitratorExtraData, label: defaultArbDataLabel } =
+    defaultArbitratorExtraDataObj[networkId] || {}
 
   const key = `tcrState@${networkId}@${version}`
   const initialWizardState = {

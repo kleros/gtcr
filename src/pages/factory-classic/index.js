@@ -11,10 +11,14 @@ import ItemParams from './item-params'
 import Deploy from './deploy'
 import StyledLayoutContent from '../layout-content'
 import { version } from '../../../package.json'
-import getNetworkEnv from 'utils/network-env'
 import { ItemTypes } from '@kleros/gtcr-encoder'
 import RelTCRParams from './rel-tcr-params'
 import TCRCardContent from 'components/tcr-card-content'
+import {
+  defaultArbitrator as defaultArbitratorAddresses,
+  defaultArbitratorExtraData as defaultArbitratorExtraDataObj,
+  defaultGovernor as defaultGovernorAddresses
+} from 'config/tcr-addresses'
 
 const { Step } = Steps
 const { confirm } = Modal
@@ -83,18 +87,18 @@ CurrentStep.propTypes = {
 
 const useCachedFactory = version => {
   const { networkId } = useWeb3Context()
-  const { address: defaultArbitrator, label: defaultArbLabel } = getNetworkEnv(
-    'REACT_APP_DEFAULT_ARBITRATOR',
-    networkId
-  )
+  const {
+    address: defaultArbitrator,
+    label: defaultArbLabel
+  } = defaultArbitratorAddresses[networkId]
   const {
     address: defaultGovernor,
     label: defaultGovernorLabel
-  } = getNetworkEnv('REACT_APP_DEFAULT_GOVERNOR', networkId)
+  } = defaultGovernorAddresses[networkId]
   const {
     data: defaultArbitratorExtraData,
     label: defaultArbDataLabel
-  } = getNetworkEnv('REACT_APP_DEFAULT_ARBITRATOR_EXTRA_DATA', networkId)
+  } = defaultArbitratorExtraDataObj[networkId]
 
   const key = `tcrState@${version}`
   const initialWizardState = {

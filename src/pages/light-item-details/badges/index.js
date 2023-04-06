@@ -14,7 +14,6 @@ import _gtcr from 'assets/abis/LightGeneralizedTCR.json'
 import _GTCRView from 'assets/abis/LightGeneralizedTCRView.json'
 import { WalletContext } from 'contexts/wallet-context'
 import ItemStatusBadge from 'components/item-status-badge'
-import getNetworkEnv from 'utils/network-env'
 import itemPropTypes from 'prop-types/item'
 import AddBadgeModal from '../modals/add-badge'
 import { CONTRACT_STATUS, DISPUTE_STATUS } from 'utils/item-status'
@@ -26,6 +25,7 @@ import { useLazyQuery } from '@apollo/client'
 import { LIGHT_ITEMS_QUERY } from 'utils/graphql'
 import { bigNumberify } from 'ethers/utils'
 import useGetLogs from 'hooks/get-logs'
+import { gtcrViewAddresses, subgraphUrl } from 'config/tcr-addresses'
 
 const StyledGrid = styled.div`
   display: grid;
@@ -151,11 +151,8 @@ const Badges = ({ connectedTCRAddr, item, tcrAddress }) => {
   const [connectedBadges, setConnectedBadges] = useState([])
   const [isFetchingBadges, setIsFetchingBadges] = useState()
   const [submitConnectVisible, setSubmitConnectVisible] = useState()
-  const ARBITRABLE_TCR_VIEW_ADDRESS = getNetworkEnv(
-    'REACT_APP_GTCRVIEW_ADDRESSES',
-    networkId
-  )
-  const GTCR_SUBGRAPH_URL = getNetworkEnv('REACT_APP_SUBGRAPH_URL', networkId)
+  const ARBITRABLE_TCR_VIEW_ADDRESS = gtcrViewAddresses[networkId]
+  const GTCR_SUBGRAPH_URL = subgraphUrl[networkId]
   const [fetchItems, setFetchItems] = useState({
     fetchStarted: true,
     isFetching: false,

@@ -1,13 +1,13 @@
 import { useMemo } from 'react'
 import { ApolloClient, InMemoryCache } from '@apollo/client'
 import { HttpLink } from '@apollo/client/link/http'
-import getNetworkEnv from 'utils/network-env'
+import { subgraphUrl, validChains } from 'config/tcr-addresses'
 
 const useApolloClientFactory = (networkId: number | Empty) => {
   const client = useMemo(() => {
     if (!networkId) return null
 
-    const GTCR_SUBGRAPH_URL = getNetworkEnv('REACT_APP_SUBGRAPH_URL', networkId)
+    const GTCR_SUBGRAPH_URL = subgraphUrl[networkId as validChains]
 
     if (!GTCR_SUBGRAPH_URL) return null
 

@@ -6,6 +6,7 @@ import { HttpLink } from '@apollo/client/link/http'
 import { useWeb3Context } from 'web3-react'
 import { SAVED_NETWORK_KEY } from 'utils/string'
 import { DEFAULT_NETWORK } from 'config/networks'
+import { defaultTcrAddresses, subgraphUrl } from 'config/tcr-addresses'
 
 const usePathValidation = () => {
   const history = useHistory()
@@ -40,22 +41,16 @@ const usePathValidation = () => {
         const matches = pathname.match(/tcr\/(0x[0-9a-zA-Z]+)/)
         const tcrAddress = matches ? matches[1].toLowerCase() : null
 
-        const DEFAULT_TCR_ADDRESSES = JSON.parse(
-          process.env.REACT_APP_DEFAULT_TCR_ADDRESSES as string
-        )
-        const ADDRs = Object.values(DEFAULT_TCR_ADDRESSES).map(addr =>
+        const ADDRs = Object.values(defaultTcrAddresses).map(addr =>
           (addr as string).toLowerCase()
         )
-        const CHAIN_IDS = Object.keys(DEFAULT_TCR_ADDRESSES)
+        const CHAIN_IDS = Object.keys(defaultTcrAddresses)
         const tcrIndex = ADDRs.findIndex(addr => addr === tcrAddress)
 
         if (tcrIndex >= 0) chainId = Number(CHAIN_IDS[tcrIndex])
         else {
-          const SUBGRAPH_URLS = JSON.parse(
-            process.env.REACT_APP_SUBGRAPH_URL as string
-          )
           const queryResults = await Promise.all(
-            Object.values(SUBGRAPH_URLS).map(subgraph => {
+            Object.values(subgraphUrl).map(subgraph => {
               const client = new ApolloClient({
                 link: new HttpLink({ uri: subgraph as string }),
                 cache: new InMemoryCache()
@@ -73,7 +68,7 @@ const usePathValidation = () => {
               lregistry !== null || registry !== null
           )
 
-          if (validIndex >= 0) chainId = Object.keys(SUBGRAPH_URLS)[validIndex]
+          if (validIndex >= 0) chainId = Object.keys(subgraphUrl)[validIndex]
         }
 
         if (chainId) {

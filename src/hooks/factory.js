@@ -1,10 +1,10 @@
 import { useWeb3Context } from 'web3-react'
-import getNetworkEnv from '../utils/network-env'
 import { getAddress } from 'ethers/utils'
+import { subgraphUrl } from 'config/tcr-addresses'
 
 const useFactory = () => {
   const { networkId } = useWeb3Context()
-  const GTCR_SUBGRAPH_URL = getNetworkEnv('REACT_APP_SUBGRAPH_URL', networkId)
+  const GTCR_SUBGRAPH_URL = subgraphUrl[networkId]
 
   const deployedWithLightFactory = async tcrAddress => {
     if (!tcrAddress) return false

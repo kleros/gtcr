@@ -6,8 +6,8 @@ import styled from 'styled-components/macro'
 import { ZERO_ADDRESS, capitalizeFirstLetter } from 'utils/string'
 import useWindowDimensions from 'hooks/window-dimensions'
 import { useWeb3Context } from 'web3-react'
-import getNetworkEnv from 'utils/network-env'
 import ContractExplorerUrl from 'components/contract-explorer-url'
+import { defaultTcrAddresses } from 'config/tcr-addresses'
 
 const StyledBanner = styled.div`
   padding: 24px 9.375vw;
@@ -77,10 +77,7 @@ const Banner = ({
 }) => {
   const { networkId } = useWeb3Context()
   const { width } = useWindowDimensions()
-  const defaultTCRAddress = getNetworkEnv(
-    'REACT_APP_DEFAULT_TCR_ADDRESSES',
-    networkId
-  )
+  const defaultTCRAddress = defaultTcrAddresses[networkId]
   const { metadata, fileURI } = metaEvidence || {}
   const { itemName, tcrTitle, tcrDescription, logoURI, relTcrDisabled } =
     metadata || {}
