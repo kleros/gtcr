@@ -10,8 +10,9 @@ import { ethers } from 'ethers'
 import _GTCRFactory from '../assets/abis/LightGTCRFactory.json'
 import { getTxPage } from '../utils/network-utils'
 import FastJsonRpcSigner from '../utils/fast-signer'
-import useMainTCR2 from './tcr2'
 import { useHistory } from 'react-router-dom/cjs/react-router-dom.min'
+import { defaultTcrAddresses } from 'config/tcr-addresses'
+import { NETWORKS } from 'config/networks'
 
 const actionTypes = {
   TRANSACTION: 'TRANSACTION',
@@ -41,7 +42,8 @@ const useNotificationWeb3 = () => {
   const [timestamp, setTimestamp] = useState()
   const [network, setNetwork] = useState()
   const [latestBlock, setLatestBlock] = useState()
-  const TCR2_ADDRESS = useMainTCR2()
+  const TCR2_ADDRESS =
+    defaultTcrAddresses[web3Context?.networkId || NETWORKS.ethereum]
   const initialState = {
     modalOpen: false,
     method: null,
@@ -193,7 +195,7 @@ const useNotificationWeb3 = () => {
         notification.error({
           message: 'Authorization failed',
           description:
-            'Please ensure your wallet is set to either Mainnet, xDai, Kovan or Rinkeby and authorize the request.',
+            'Please ensure your wallet is set to either Mainnet, xDai, or Goerli and authorize the request.',
           duration: 15,
           key: NOTIFICATION_KEY
         })

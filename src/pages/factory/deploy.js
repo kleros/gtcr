@@ -10,10 +10,15 @@ import _GTCRFactory from 'assets/abis/LightGTCRFactory.json'
 import ipfsPublish from 'utils/ipfs-publish'
 import { WalletContext } from 'contexts/wallet-context'
 import { ZERO_ADDRESS, isVowel } from 'utils/string'
-import getNetworkEnv from 'utils/network-env'
 import useWindowDimensions from 'hooks/window-dimensions'
 import SubmitModal from '../item-details/modals/submit'
 import useTcrView from 'hooks/tcr-view'
+import {
+  defaultEvidenceDisplayUri,
+  defaultTcrAddresses,
+  lgtcrFactoryAddresses,
+  txBatcherAddresses
+} from 'config/tcr-addresses'
 
 const _txBatcher = [
   {
@@ -268,22 +273,10 @@ const Deploy = ({ setTxState, tcrState, setTcrState }) => {
   const [txSubmitted, setTxSubmitted] = useState()
   const [deployedTCRAddress, setDeployedTCRAddress] = useState()
   const [submissionFormOpen, setSubmissionFormOpen] = useState()
-  const factoryAddress = getNetworkEnv(
-    'REACT_APP_LGTCR_FACTORY_ADDRESSES',
-    networkId
-  )
-  const defaultTCRAddress = getNetworkEnv(
-    'REACT_APP_DEFAULT_TCR_ADDRESSES',
-    networkId
-  )
-  const batcherAddress = getNetworkEnv(
-    'REACT_APP_TX_BATCHER_ADDRESSES',
-    networkId
-  )
-  const evidenceDisplayInterfaceURI = getNetworkEnv(
-    'REACT_APP_DEFAULT_EVIDENCE_DISPLAY_URI',
-    networkId
-  )
+  const factoryAddress = lgtcrFactoryAddresses[networkId]
+  const defaultTCRAddress = defaultTcrAddresses[networkId]
+  const batcherAddress = txBatcherAddresses[networkId]
+  const evidenceDisplayInterfaceURI = defaultEvidenceDisplayUri[networkId]
   const {
     submissionDeposit,
     metaEvidence,

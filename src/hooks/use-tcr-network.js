@@ -3,7 +3,7 @@ import { useHistory, useParams } from 'react-router'
 import { useWeb3Context } from 'web3-react'
 import { NETWORKS_INFO, NETWORK_STATUS, DEFAULT_NETWORK } from 'config/networks'
 import { hexlify } from 'utils/string'
-import getNetworkEnv from 'utils/network-env'
+import { defaultTcrAddresses } from 'config/tcr-addresses'
 
 const useTcrNetwork = () => {
   const history = useHistory()
@@ -15,10 +15,7 @@ const useTcrNetwork = () => {
     window.ethereum &&
       window.ethereum.on('chainChanged', chainId => {
         chainId = Number(chainId)
-        const tcrAddress = getNetworkEnv(
-          'REACT_APP_DEFAULT_TCR_ADDRESSES',
-          chainId
-        )
+        const tcrAddress = defaultTcrAddresses[chainId]
 
         setNetworkStatus(status => {
           if (status !== NETWORK_STATUS.swtiching && tcrAddress) {

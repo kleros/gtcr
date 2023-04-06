@@ -5,12 +5,12 @@ import localforage from 'localforage'
 import { abi as _gtcr } from '@kleros/tcr/build/contracts/GeneralizedTCR.json'
 import { abi as _GTCRView } from '@kleros/tcr/build/contracts/GeneralizedTCRView.json'
 import { abi as _arbitrator } from '@kleros/erc-792/build/contracts/IArbitrator.json'
-import getNetworkEnv from '../utils/network-env'
 import { gtcrDecode } from '@kleros/gtcr-encoder'
 import useNotificationWeb3 from './notifications-web3'
 import { getAddress } from 'ethers/utils'
 import takeLower from '../utils/lower-limit'
 import useGetLogs from './get-logs'
+import { gtcrViewAddresses } from 'config/tcr-addresses'
 
 // TODO: Ensure we don't set state for unmounted components using
 // flags and AbortController.
@@ -33,10 +33,7 @@ const useTcrView = tcrAddress => {
 
   const { latestBlock } = useNotificationWeb3()
   const { library, active, networkId } = useWeb3Context()
-  const arbitrableTCRViewAddr = getNetworkEnv(
-    'REACT_APP_GTCRVIEW_ADDRESSES',
-    networkId
-  )
+  const arbitrableTCRViewAddr = gtcrViewAddresses[networkId]
   const getLogs = useGetLogs(library)
   // Wire up the TCR.
   const gtcrView = useMemo(() => {

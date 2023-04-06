@@ -2,7 +2,6 @@ import React, { useEffect, useMemo } from 'react'
 import { Route, Switch, Redirect } from 'react-router-dom'
 import { ApolloProvider } from '@apollo/client'
 import { useWeb3Context, Connectors } from 'web3-react'
-import getNetworkEnv from 'utils/network-env'
 import loadable from '@loadable/component'
 import ErrorPage from 'pages/error-page'
 import NoWeb3Detected from 'pages/no-web3'
@@ -13,6 +12,7 @@ import { hexlify } from 'utils/string'
 import usePathValidation from 'hooks/use-path-validation'
 import useGraphQLClient from 'hooks/use-graphql-client'
 import { Web3ContextCurate } from 'types/web3-context'
+import { defaultTcrAddresses, validChains } from 'config/tcr-addresses'
 
 const { Connector } = Connectors
 
@@ -42,10 +42,7 @@ const AppRouter = () => {
     () => error?.code === Connector.errorCodes.UNSUPPORTED_NETWORK,
     [error]
   )
-  const tcrAddress = getNetworkEnv(
-    'REACT_APP_DEFAULT_TCR_ADDRESSES',
-    networkId as number
-  )
+  const tcrAddress = defaultTcrAddresses[networkId as validChains]
   const [pathResolved, invalidTcrAddr] = usePathValidation()
   const client = useGraphQLClient(networkId)
 

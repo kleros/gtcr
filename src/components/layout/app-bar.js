@@ -12,8 +12,8 @@ import { ReactComponent as Logo } from 'assets/images/logo.svg'
 import { capitalizeFirstLetter, SAVED_NETWORK_KEY } from 'utils/string'
 import AppTour from 'components/tour'
 import { useHistory } from 'react-router-dom/cjs/react-router-dom.min'
-import getNetworkEnv from 'utils/network-env'
 import AppMenu from 'components/layout/app-menu'
+import { defaultTcrAddresses } from 'config/tcr-addresses'
 
 const StyledCol = styled(Col)`
   align-items: center !important;
@@ -105,10 +105,10 @@ const AppBar = () => {
   const history = useHistory()
   const { networkId, account } = web3Context
   const [requestedChain, setRequestedChain] = useState()
-  const nextNetworkTCR = getNetworkEnv(
-    'REACT_APP_DEFAULT_TCR_ADDRESSES',
-    networkId === NETWORKS.xDai ? NETWORKS.ethereum : NETWORKS.xDai
-  )
+  const nextNetworkTCR =
+    defaultTcrAddresses[
+      networkId === NETWORKS.xDai ? NETWORKS.ethereum : NETWORKS.xDai
+    ]
   const currentChainId = useMemo(() => requestedChain ?? networkId, [
     networkId,
     requestedChain
