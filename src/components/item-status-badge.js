@@ -5,7 +5,7 @@ import {
   STATUS_CODE,
   itemToStatusCode
 } from '../utils/item-status'
-import { Badge, Skeleton } from 'antd'
+import { Badge, Icon, Skeleton } from 'antd'
 import styled from 'styled-components/macro'
 import PropTypes from 'prop-types'
 import itemPropTypes from '../prop-types/item'
@@ -19,6 +19,36 @@ const StyledSkeleton = styled(Skeleton)`
     margin: -3px 0;
   }
 `
+
+const ItemStatusBadgeWrap = styled.div`
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+`
+
+const ItemStatusIconWrap = styled.div`
+  margin-left: 8px;
+`
+
+const iconTypes = {
+  [STATUS_CODE.REGISTERED]: 'check-circle',
+  [STATUS_CODE.CHALLENGED]: 'fire',
+  [STATUS_CODE.CROWDFUNDING]: 'dollar',
+  [STATUS_CODE.CROWDFUNDING_WINNER]: 'dollar',
+  [STATUS_CODE.PENDING_REMOVAL]: 'hourglass',
+  [STATUS_CODE.PENDING_SUBMISSION]: 'hourglass',
+  [STATUS_CODE.REJECTED]: 'close-circle',
+  [STATUS_CODE.SUBMITTED]: 'hourglass',
+  [STATUS_CODE.WAITING_ARBITRATOR]: 'hourglass',
+  [STATUS_CODE.WAITING_ENFORCEMENT]: 'hourglass',
+  [STATUS_CODE.REMOVAL_REQUESTED]: 'hourglass'
+}
+
+const ItemStatusIcon = ({ statusCode }) => (
+  <ItemStatusIconWrap>
+    <Icon type={iconTypes[statusCode]} />
+  </ItemStatusIconWrap>
+)
 
 // For clarity, here "badge" refers to the ant design component,
 // and not badges related to connection between TCRs.
@@ -52,12 +82,15 @@ const ItemStatusBadge = ({
 }) => {
   if (statusCode)
     return (
-      <Badge
-        status={badgeStatus(statusCode)}
-        color={STATUS_COLOR[statusCode]}
-        text={STATUS_TEXT[statusCode]}
-        style={{ color: dark ? 'white' : '' }}
-      />
+      <ItemStatusBadgeWrap>
+        <Badge
+          status={badgeStatus(statusCode)}
+          color={STATUS_COLOR[statusCode]}
+          text={STATUS_TEXT[statusCode]}
+          style={{ color: dark ? 'white' : '' }}
+        />
+        <ItemStatusIcon statusCode={statusCode} />
+      </ItemStatusBadgeWrap>
     )
 
   if (
@@ -74,12 +107,15 @@ const ItemStatusBadge = ({
     statusCode = itemToStatusCode(item, timestamp, challengePeriodDuration)
 
   return (
-    <Badge
-      status={badgeStatus(statusCode)}
-      color={STATUS_COLOR[statusCode]}
-      text={STATUS_TEXT[statusCode]}
-      style={{ color: dark ? 'white' : '' }}
-    />
+    <ItemStatusBadgeWrap>
+      <Badge
+        status={badgeStatus(statusCode)}
+        color={STATUS_COLOR[statusCode]}
+        text={STATUS_TEXT[statusCode]}
+        style={{ color: dark ? 'white' : '' }}
+      />
+      <ItemStatusIcon statusCode={statusCode} />
+    </ItemStatusBadgeWrap>
   )
 }
 
