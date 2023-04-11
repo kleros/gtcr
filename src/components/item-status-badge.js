@@ -37,7 +37,7 @@ const iconTypes = {
   [STATUS_CODE.CROWDFUNDING_WINNER]: 'dollar',
   [STATUS_CODE.PENDING_REMOVAL]: 'hourglass',
   [STATUS_CODE.PENDING_SUBMISSION]: 'hourglass',
-  [STATUS_CODE.REJECTED]: 'close-circle',
+  [STATUS_CODE.REJECTED]: 'close',
   [STATUS_CODE.SUBMITTED]: 'hourglass',
   [STATUS_CODE.WAITING_ARBITRATOR]: 'hourglass',
   [STATUS_CODE.WAITING_ENFORCEMENT]: 'hourglass',
