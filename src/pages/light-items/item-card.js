@@ -146,7 +146,6 @@ const CardItemInfo = ({
         itemName={itemName}
       />
     )
-
   return (
     <CardBlock>
       <StyledCardInfo

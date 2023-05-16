@@ -223,6 +223,29 @@ const Items = () => {
         decodedData: item.props.map(({ value }) => value),
         mergedData: item.props
       }))
+      // HACK:
+      // the graph could have failed to include the props.
+      // this may be because at indexing time, ipfs file was not available.
+      // in that case, we can still manually fetch the props.
+      const itemAssurancePromises = items.map(async i => {
+        if (i.decodedData.length === 0) {
+          const response = await fetch(
+            process.env.REACT_APP_IPFS_GATEWAY + i.data
+          )
+          const item = await response.json()
+          const mergedData = item.columns.map(column => ({
+            label: column.label,
+            description: column.description,
+            type: column.type,
+            isIdentifier: column.isIdentifier,
+            value: item.values[column.label]
+          }))
+          const decodedData = mergedData.map(d => d.value)
+          const newItem = { ...i, mergedData, decodedData, props: mergedData }
+          return newItem
+        } else return i
+      })
+      items = await Promise.all(itemAssurancePromises)
       items = items.map(
         ({
           itemID,
@@ -326,7 +349,6 @@ const Items = () => {
       !metadataByTime
     )
       return
-
     const { data: encodedItems } = fetchItems
 
     return encodedItems.map((item, i) => {

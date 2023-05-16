@@ -270,8 +270,6 @@ const SubmitModal: React.FC<{
       </StyledModal>
     )
 
-  console.log(props)
-
   return (
     // @ts-ignore
     <StyledModal

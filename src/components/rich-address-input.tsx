@@ -39,8 +39,6 @@ const RichAddressInput: React.FC<{
     p.setFieldValue(p.name, newRichAddress)
   }
 
-  console.log(p)
-
   const changeAddress = ({ target }: any) => {
     const richAddress = parseRichAddress(value)
     const addressType = richAddress
