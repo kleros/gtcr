@@ -33,6 +33,7 @@ import { LIGHT_ITEM_DETAILS_QUERY } from 'utils/graphql'
 import { useQuery } from '@apollo/client'
 import SearchBar from 'components/light-search-bar'
 import useGetLogs from 'hooks/get-logs'
+import { parseIpfs } from 'utils/ipfs-parse'
 
 const ITEM_TOUR_DISMISSED = 'ITEM_TOUR_DISMISSED'
 
@@ -115,9 +116,7 @@ const ItemDetails = ({ itemID, search }) => {
       try {
         const itemFromContract = await gtcrView.getItem(tcrAddress, itemID)
         const { data: itemURI, requests } = detailsViewQuery.data.litem
-        const itemData = await (
-          await fetch(`${process.env.REACT_APP_IPFS_GATEWAY}${itemURI}`)
-        ).json()
+        const itemData = await (await fetch(parseIpfs(itemURI))).json()
 
         const orderDecodedData = (columns, values) => {
           const labels = columns.map(column => column.label)
@@ -266,9 +265,7 @@ const ItemDetails = ({ itemID, search }) => {
         if (logs.length === 0) throw new Error('No meta evidence available.')
 
         const { _evidence: metaEvidencePath } = logs[logs.length - 1].values
-        const file = await (
-          await fetch(process.env.REACT_APP_IPFS_GATEWAY + metaEvidencePath)
-        ).json()
+        const file = await (await fetch(parseIpfs(metaEvidencePath))).json()
 
         setItemMetaEvidence({ file })
       } catch (err) {

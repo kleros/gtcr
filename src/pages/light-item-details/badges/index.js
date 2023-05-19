@@ -26,6 +26,7 @@ import { LIGHT_ITEMS_QUERY } from 'utils/graphql'
 import { bigNumberify } from 'ethers/utils'
 import useGetLogs from 'hooks/get-logs'
 import { gtcrViewAddresses, subgraphUrl } from 'config/tcr-addresses'
+import { parseIpfs } from 'utils/ipfs-parse'
 
 const StyledGrid = styled.div`
   display: grid;
@@ -290,8 +291,8 @@ const Badges = ({ connectedTCRAddr, item, tcrAddress }) => {
               matchFileResponse,
               badgeTcrData
             ] = await Promise.all([
-              fetch(process.env.REACT_APP_IPFS_GATEWAY + metaEvidencePath),
-              fetch(`${process.env.REACT_APP_IPFS_GATEWAY}${matchFileURI}`),
+              fetch(parseIpfs(metaEvidencePath)),
+              fetch(parseIpfs(matchFileURI)),
               gtcrView.fetchArbitrable(badgeAddr)
             ])
             const badgeMetaEvidence = await badgeMetaEvidenceResponse.json()
@@ -438,9 +439,7 @@ const Badges = ({ connectedTCRAddr, item, tcrAddress }) => {
             >
               <a href={`/tcr/${tcrAddress}/${item.ID}`}>
                 <StyledCol>
-                  <StyledLogo
-                    src={`${process.env.REACT_APP_IPFS_GATEWAY}${logoURI}`}
-                  />
+                  <StyledLogo src={parseIpfs(logoURI)} />
                   <Typography.Title level={4}>{tcrTitle}</Typography.Title>
                   <StyledParagraph>{tcrDescription}</StyledParagraph>
                 </StyledCol>

@@ -32,6 +32,7 @@ import ETHAmount from 'components/eth-amount'
 import useWindowDimensions from 'hooks/window-dimensions'
 import useNativeCurrency from 'hooks/native-currency'
 import { klerosAddresses } from 'config/tcr-addresses'
+import { parseIpfs } from 'utils/ipfs-parse'
 
 const StyledUpload = styled(Upload)`
   & > .ant-upload.ant-upload-select-picture-card {
@@ -131,7 +132,7 @@ const RelTCRParams = ({
         const fileURI = `/ipfs/${ipfsFileObj[1].hash}${ipfsFileObj[0].path}`
 
         setFieldValue(fieldName, fileURI)
-        onSuccess('ok', `${process.env.REACT_APP_IPFS_GATEWAY}${fileURI}`)
+        onSuccess('ok', parseIpfs(fileURI))
       } catch (err) {
         console.error(err)
         onError(err)
@@ -236,7 +237,7 @@ const RelTCRParams = ({
           >
             {values.relTcrPrimaryDocument ? (
               <a
-                href={`${process.env.REACT_APP_IPFS_GATEWAY}${values.relTcrPrimaryDocument}`}
+                href={parseIpfs(values.relTcrPrimaryDocument)}
                 target="_blank"
                 rel="noopener noreferrer"
               >

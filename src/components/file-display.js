@@ -1,5 +1,6 @@
 import { Icon } from 'antd'
 import React from 'react'
+import { parseIpfs } from 'utils/ipfs-parse'
 
 const FileDisplay = ({ value, allowedFileTypes }) => {
   if (!value) return <span style={{ color: 'gray' }}>empty</span>
@@ -13,11 +14,7 @@ const FileDisplay = ({ value, allowedFileTypes }) => {
   if (!allowedFileTypesArr.includes(fileExtension)) return 'Forbidden file type'
 
   return (
-    <a
-      href={`${process.env.REACT_APP_IPFS_GATEWAY}${value || ''}`}
-      target="_blank"
-      rel="noopener noreferrer"
-    >
+    <a href={parseIpfs(value || '')} target="_blank" rel="noopener noreferrer">
       View File <Icon type="paper-clip" />
     </a>
   )

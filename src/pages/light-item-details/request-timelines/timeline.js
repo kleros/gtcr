@@ -28,6 +28,7 @@ import BNPropType from 'prop-types/bn'
 import { capitalizeFirstLetter } from 'utils/string'
 import { getTxPage } from 'utils/network-utils'
 import useGetLogs from 'hooks/get-logs'
+import { parseIpfs } from 'utils/ipfs-parse'
 
 const StyledText = styled(Typography.Text)`
   text-transform: capitalize;
@@ -311,7 +312,7 @@ const Timeline = ({ request, requestID, item }) => {
               extra={
                 fileURI && (
                   <a
-                    href={`${process.env.REACT_APP_IPFS_GATEWAY}${fileURI}`}
+                    href={parseIpfs(fileURI)}
                     alt="evidence-file"
                     target="_blank"
                     rel="noopener noreferrer"

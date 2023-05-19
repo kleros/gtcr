@@ -33,6 +33,7 @@ import { DISPUTE_STATUS } from 'utils/item-status'
 import { useLazyQuery, useQuery } from '@apollo/client'
 import { LIGHT_ITEMS_QUERY, LIGHT_REGISTRY_QUERY } from 'utils/graphql'
 import LightSearchBar from 'components/light-search-bar'
+import { parseIpfs } from 'utils/ipfs-parse'
 
 const NSFW_FILTER_KEY = 'NSFW_FILTER_KEY'
 const ITEMS_TOUR_DISMISSED = 'ITEMS_TOUR_DISMISSED'
@@ -229,9 +230,7 @@ const Items = () => {
       // in that case, we can still manually fetch the props.
       const itemAssurancePromises = items.map(async i => {
         if (i.decodedData.length === 0) {
-          const response = await fetch(
-            process.env.REACT_APP_IPFS_GATEWAY + i.data
-          )
+          const response = await fetch(parseIpfs(i.data))
           const item = await response.json()
           const mergedData = item.columns.map(column => ({
             label: column.label,

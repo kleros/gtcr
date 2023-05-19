@@ -12,6 +12,7 @@ import styled from 'styled-components/macro'
 import PropTypes from 'prop-types'
 import ETHAmount from 'components/eth-amount'
 import useNativeCurrency from 'hooks/native-currency.js'
+import { parseIpfs } from 'utils/ipfs-parse'
 
 const StyledSpin = styled(Spin)`
   height: 60px;
@@ -131,13 +132,7 @@ const AddBadgeModal = ({
           ({ fileURI, metadata: { tcrTitle, logoURI } }, i) => (
             <StyledRadio value={i} key={i}>
               <StyledListItem
-                extra={
-                  <img
-                    width={50}
-                    alt="logo"
-                    src={`${process.env.REACT_APP_IPFS_GATEWAY}${logoURI}`}
-                  />
-                }
+                extra={<img width={50} alt="logo" src={parseIpfs(logoURI)} />}
               >
                 <List.Item.Meta
                   title={tcrTitle}
@@ -145,8 +140,7 @@ const AddBadgeModal = ({
                     <>
                       Read the&nbsp;
                       <a
-                        href={`${process.env.REACT_APP_IPFS_GATEWAY}${fileURI ||
-                          ''}`}
+                        href={parseIpfs(fileURI || '')}
                         style={{ textDecoration: 'underline' }}
                       >
                         Listing Criteria

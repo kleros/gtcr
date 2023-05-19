@@ -9,6 +9,7 @@ import ipfsPublish from '../utils/ipfs-publish.js'
 import { sanitize } from '../utils/string.js'
 import AddressInput from './address-input'
 import RichAddressInput from './rich-address-input'
+import { parseIpfs } from 'utils/ipfs-parse'
 
 const StyledUpload = styled(Upload)`
   & > .ant-upload.ant-upload-select-picture-card {
@@ -49,7 +50,7 @@ const InputSelector: React.FC<InputSelectorProps> = p => {
         const fileURI = `/ipfs/${ipfsFileObj[1].hash}${ipfsFileObj[0].path}`
 
         p.setFieldValue(fieldName, fileURI)
-        onSuccess('ok', `${process.env.REACT_APP_IPFS_GATEWAY}${fileURI}`)
+        onSuccess('ok', parseIpfs(fileURI))
       } catch (err) {
         console.error(err)
         onError(err)
@@ -122,7 +123,7 @@ const InputSelector: React.FC<InputSelectorProps> = p => {
       return <CustomInput hasFeedback {...p} />
     case ItemTypes.ADDRESS:
     case ItemTypes.GTCR_ADDRESS:
-      return <AddressInput placeholder='address' hasFeedback {...p} />
+      return <AddressInput placeholder="address" hasFeedback {...p} />
     case ItemTypes.RICH_ADDRESS:
       return <RichAddressInput hasFeedback {...p} />
     case ItemTypes.BOOLEAN:
@@ -163,12 +164,12 @@ const InputSelector: React.FC<InputSelectorProps> = p => {
           >
             {values[name] ? (
               <a
-                href={`${process.env.REACT_APP_IPFS_GATEWAY}${values[name]}`}
+                href={parseIpfs(values[name])}
                 target="_blank"
                 rel="noopener noreferrer"
               >
                 <img
-                  src={`${process.env.REACT_APP_IPFS_GATEWAY}${values[name]}`}
+                  src={parseIpfs(values[name])}
                   style={{ height: '70px', objectFit: 'contain' }}
                   alt="preview"
                 />
@@ -194,7 +195,7 @@ const InputSelector: React.FC<InputSelectorProps> = p => {
           >
             {values[name] ? (
               <a
-                href={`${process.env.REACT_APP_IPFS_GATEWAY}${values[name]}`}
+                href={parseIpfs(values[name])}
                 target="_blank"
                 rel="noopener noreferrer"
               >

@@ -4,6 +4,7 @@ import { Icon, Tooltip } from 'antd'
 import DisplaySelector from './display-selector'
 import styled from 'styled-components/macro'
 import { ItemTypes } from '@kleros/gtcr-encoder'
+import { parseIpfs } from 'utils/ipfs-parse'
 
 const StyledField = styled.div`
   margin-bottom: 16px;
@@ -52,11 +53,7 @@ const TCRMetadataDisplay = ({ logoURI, tcrTitle, tcrDescription, fileURI }) => (
         </Tooltip>
       </span>
       :{' '}
-      <a
-        href={`${process.env.REACT_APP_IPFS_GATEWAY}${fileURI}`}
-        target="_blank"
-        rel="noopener noreferrer"
-      >
+      <a href={parseIpfs(fileURI)} target="_blank" rel="noopener noreferrer">
         Link
       </a>
     </StyledField>

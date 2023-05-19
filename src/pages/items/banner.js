@@ -8,6 +8,7 @@ import useWindowDimensions from 'hooks/window-dimensions'
 import { useWeb3Context } from 'web3-react'
 import ContractExplorerUrl from 'components/contract-explorer-url'
 import { defaultTcrAddresses } from 'config/tcr-addresses'
+import { parseIpfs } from 'utils/ipfs-parse'
 
 const StyledBanner = styled.div`
   padding: 24px 9.375vw;
@@ -53,12 +54,7 @@ const ActionCol = styled.div`
 `
 
 const TCRLogo = ({ logoURI }) =>
-  logoURI && (
-    <StyledImage
-      src={`${process.env.REACT_APP_IPFS_GATEWAY}${logoURI}`}
-      alt="item"
-    />
-  )
+  logoURI && <StyledImage src={parseIpfs(logoURI)} alt="item" />
 
 TCRLogo.propTypes = {
   logoURI: PropTypes.string
@@ -157,7 +153,7 @@ const Banner = ({
           id="policy-link"
         >
           <a
-            href={`${process.env.REACT_APP_IPFS_GATEWAY}${fileURI || ''}`}
+            href={parseIpfs(fileURI || '')}
             style={{ textDecoration: 'underline', color: '#4d00b473' }}
             target="_blank"
             rel="noopener noreferrer"

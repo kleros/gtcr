@@ -21,6 +21,7 @@ import { TCRViewContext } from 'contexts/tcr-view-context'
 import { WalletContext } from 'contexts/wallet-context'
 import { itemToStatusCode, STATUS_COLOR } from '../utils/item-status'
 import useGetLogs from 'hooks/get-logs'
+import { parseIpfs } from 'utils/ipfs-parse'
 
 const StyledSelect = styled(Select)`
   width: 100%;
@@ -217,9 +218,7 @@ const SearchBar = () => {
                 logs.length - 2
               ].values
               const { metadata } = await (
-                await fetch(
-                  process.env.REACT_APP_IPFS_GATEWAY + metaEvidencePath
-                )
+                await fetch(parseIpfs(metaEvidencePath))
               ).json()
               const { tcrTitle } = metadata
 

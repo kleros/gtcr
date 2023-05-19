@@ -12,6 +12,7 @@ import itemPropTypes from 'prop-types/item'
 import EvidenceForm from 'components/evidence-form'
 import ipfsPublish from 'utils/ipfs-publish.js'
 import { TourContext } from 'contexts/tour-context'
+import { parseIpfs } from 'utils/ipfs-parse'
 
 const StyledSpin = styled(Spin)`
   height: 60px;
@@ -128,7 +129,7 @@ const ChallengeModal = ({ item, itemName, statusCode, fileURI, ...rest }) => {
       <Typography.Title level={4}>
         Read the&nbsp;
         <a
-          href={`${process.env.REACT_APP_IPFS_GATEWAY}${fileURI || ''}`}
+          href={parseIpfs(fileURI || '')}
           target="_blank"
           rel="noopener noreferrer"
         >

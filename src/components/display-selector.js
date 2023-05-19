@@ -9,6 +9,7 @@ import RichAddress from './rich-address'
 import ETHAddress from './eth-address'
 import LongText from './long-text'
 import FileDisplay from './file-display'
+import { parseIpfs } from 'utils/ipfs-parse'
 
 const pohRichAddress = 'eip155:1:0xc5e9ddebb09cd64dfacab4011a0d5cedaf7c9bdb'
 
@@ -42,21 +43,11 @@ const DisplaySelector = ({ type, value, linkImage, allowedFileTypes }) => {
     case ItemTypes.IMAGE:
       return value ? (
         linkImage ? (
-          <a
-            href={`${process.env.REACT_APP_IPFS_GATEWAY}${value}`}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <StyledImage
-              src={`${process.env.REACT_APP_IPFS_GATEWAY}${value}`}
-              alt="item"
-            />
+          <a href={parseIpfs(value)} target="_blank" rel="noopener noreferrer">
+            <StyledImage src={parseIpfs(value)} alt="item" />
           </a>
         ) : (
-          <StyledImage
-            src={`${process.env.REACT_APP_IPFS_GATEWAY}${value}`}
-            alt="item"
-          />
+          <StyledImage src={parseIpfs(value)} alt="item" />
         )
       ) : (
         <Avatar shape="square" size="large" icon="file-image" />

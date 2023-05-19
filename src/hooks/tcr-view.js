@@ -11,6 +11,7 @@ import { getAddress } from 'ethers/utils'
 import takeLower from '../utils/lower-limit'
 import useGetLogs from './get-logs'
 import { gtcrViewAddresses } from 'config/tcr-addresses'
+import { parseIpfs } from 'utils/ipfs-parse'
 
 // TODO: Ensure we don't set state for unmounted components using
 // flags and AbortController.
@@ -193,7 +194,7 @@ const useTcrView = tcrAddress => {
               const { _evidence: metaEvidencePath } = values
 
               const [response, block] = await Promise.all([
-                fetch(process.env.REACT_APP_IPFS_GATEWAY + metaEvidencePath),
+                fetch(parseIpfs(metaEvidencePath)),
                 library.getBlock(blockNumber)
               ])
 

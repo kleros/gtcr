@@ -31,6 +31,7 @@ import useWindowDimensions from 'hooks/window-dimensions'
 import useNativeCurrency from 'hooks/native-currency'
 import { useHistory } from 'react-router'
 import { klerosAddresses } from 'config/tcr-addresses'
+import { parseIpfs } from 'utils/ipfs-parse'
 
 const StyledUpload = styled(Upload)`
   & > .ant-upload.ant-upload-select-picture-card {
@@ -203,7 +204,7 @@ const TCRParams = ({
         const fileURI = `/ipfs/${ipfsFileObj[1].hash}${ipfsFileObj[0].path}`
 
         setFieldValue(fieldName, fileURI)
-        onSuccess('ok', `${process.env.REACT_APP_IPFS_GATEWAY}${fileURI}`)
+        onSuccess('ok', parseIpfs(fileURI))
       } catch (err) {
         console.error(err)
         onError(err)
@@ -264,7 +265,7 @@ const TCRParams = ({
               >
                 {values.tcrLogo ? (
                   <img
-                    src={`${process.env.REACT_APP_IPFS_GATEWAY}${values.tcrLogo}`}
+                    src={parseIpfs(values.tcrLogo)}
                     style={{ height: '70px', objectFit: 'contain' }}
                     alt="avatar"
                   />
@@ -302,9 +303,7 @@ const TCRParams = ({
                 onChange={fileUploadStatusChange}
               >
                 {values.tcrPrimaryDocument ? (
-                  <a
-                    href={`${process.env.REACT_APP_IPFS_GATEWAY}${values.tcrPrimaryDocument}`}
-                  >
+                  <a href={parseIpfs(values.tcrPrimaryDocument)}>
                     <Icon type="file-pdf" style={{ fontSize: '30px' }} />
                   </a>
                 ) : (

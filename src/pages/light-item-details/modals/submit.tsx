@@ -25,6 +25,7 @@ import { addPeriod, capitalizeFirstLetter, getArticleFor } from 'utils/string'
 import useNativeCurrency from 'hooks/native-currency'
 import ipfsPublish from 'utils/ipfs-publish'
 import { Column } from 'pages/item-details/modals/submit'
+import { parseIpfs } from 'utils/ipfs-parse'
 
 const StyledSpin = styled(Spin)`
   height: 60px;
@@ -311,7 +312,7 @@ const SubmitModal: React.FC<{
       <Typography.Paragraph>
         Make sure your submission complies with the{' '}
         <a
-          href={`${process.env.REACT_APP_IPFS_GATEWAY}${fileURI || ''}`}
+          href={parseIpfs(fileURI || '')}
           target="_blank"
           rel="noopener noreferrer"
         >

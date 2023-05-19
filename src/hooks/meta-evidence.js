@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import useGetLogs from './get-logs'
+import { parseIpfs } from 'utils/ipfs-parse'
 
 const useMetaEvidence = ({ arbitrable, library }) => {
   const [metaEvidence, setMetaEvidence] = useState()
@@ -26,9 +27,7 @@ const useMetaEvidence = ({ arbitrable, library }) => {
         // Take the penultimate item. This is the most recent meta evidence
         // for registration requests.
         const { _evidence: metaEvidencePath } = logs[logs.length - 2].values
-        const file = await (
-          await fetch(process.env.REACT_APP_IPFS_GATEWAY + metaEvidencePath)
-        ).json()
+        const file = await (await fetch(parseIpfs(metaEvidencePath))).json()
 
         setMetaEvidence({ ...file, address: arbitrable.address })
       } catch (err) {

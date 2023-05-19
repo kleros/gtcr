@@ -6,6 +6,7 @@ import * as yup from 'yup'
 import PropTypes from 'prop-types'
 import ipfsPublish from '../utils/ipfs-publish'
 import { sanitize } from '../utils/string'
+import { parseIpfs } from 'utils/ipfs-parse'
 
 const StyledCheckbox = styled(Checkbox)`
   margin-bottom: 1em;
@@ -63,7 +64,7 @@ const EvidenceForm = ({
         fileTypeExtension,
         type: file.type
       })
-      onSuccess('ok', `${process.env.REACT_APP_IPFS_GATEWAY}${fileURI}`)
+      onSuccess('ok', parseIpfs(fileURI))
     } catch (err) {
       console.error(err)
       onError(err)
@@ -120,13 +121,13 @@ const EvidenceForm = ({
         >
           {values.evidenceAttachment ? (
             <a
-              href={`${process.env.REACT_APP_IPFS_GATEWAY}${values.evidenceAttachment.fileURI}`}
+              href={parseIpfs(values.evidenceAttachment.fileURI)}
               target="_blank"
               rel="noopener noreferrer"
             >
               {values.evidenceAttachment.type.includes('image') ? (
                 <img
-                  src={`${process.env.REACT_APP_IPFS_GATEWAY}${values.evidenceAttachment.fileURI}`}
+                  src={parseIpfs(values.evidenceAttachment.fileURI)}
                   style={{
                     height: '70px',
                     objectFit: 'contain'

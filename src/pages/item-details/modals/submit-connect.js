@@ -36,6 +36,7 @@ import { gtcrEncode } from '@kleros/gtcr-encoder'
 import { TourContext } from 'contexts/tour-context.js'
 import useNativeCurrency from 'hooks/native-currency.js'
 import useGetLogs from 'hooks/get-logs'
+import { parseIpfs } from 'utils/ipfs-parse'
 
 const StyledSpin = styled(Spin)`
   height: 60px;
@@ -115,9 +116,7 @@ const SubmitConnectModal = props => {
 
         const { _evidence: metaEvidencePath } = logs[0].values
         setTCRMetaEvidence(
-          await (
-            await fetch(process.env.REACT_APP_IPFS_GATEWAY + metaEvidencePath)
-          ).json()
+          await (await fetch(parseIpfs(metaEvidencePath))).json()
         )
       } catch (err) {
         console.error('Error fetching TCR metadata', err)
@@ -148,9 +147,7 @@ const SubmitConnectModal = props => {
         if (logs.length === 0) return
 
         const { _evidence: metaEvidencePath } = logs[0].values
-        const file = await (
-          await fetch(process.env.REACT_APP_IPFS_GATEWAY + metaEvidencePath)
-        ).json()
+        const file = await (await fetch(parseIpfs(metaEvidencePath))).json()
         setBadgeTCRMetadata(file.metadata)
       } catch (err) {
         console.error('Error fetching TCR metadata', err)
@@ -176,7 +173,7 @@ const SubmitConnectModal = props => {
 
         const { _evidence: metaEvidencePath } = logs[0].values
         const [fileResponse, relTCRData] = await Promise.all([
-          fetch(process.env.REACT_APP_IPFS_GATEWAY + metaEvidencePath),
+          fetch(parseIpfs(metaEvidencePath)),
           gtcrView.fetchArbitrable(relTCRAddress)
         ])
 
@@ -356,7 +353,7 @@ const SubmitConnectModal = props => {
       <Typography.Title level={4}>
         Read the&nbsp;
         <a
-          href={`${process.env.REACT_APP_IPFS_GATEWAY}${fileURI || ''}`}
+          href={parseIpfs(fileURI || '')}
           target="_blank"
           rel="noopener noreferrer"
         >

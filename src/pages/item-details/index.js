@@ -31,6 +31,7 @@ import AppTour from 'components/tour'
 import itemTourSteps from './tour-steps'
 import takeLower from 'utils/lower-limit'
 import useGetLogs from 'hooks/get-logs'
+import { parseIpfs } from 'utils/ipfs-parse'
 
 const ITEM_TOUR_DISMISSED = 'ITEM_TOUR_DISMISSED'
 
@@ -255,9 +256,7 @@ const ItemDetails = ({ itemID, search }) => {
         if (logs.length === 0) throw new Error('No meta evidence available.')
 
         const { _evidence: metaEvidencePath } = logs[logs.length - 1].values
-        const file = await (
-          await fetch(process.env.REACT_APP_IPFS_GATEWAY + metaEvidencePath)
-        ).json()
+        const file = await (await fetch(parseIpfs(metaEvidencePath))).json()
 
         setItemMetaEvidence({ file })
       } catch (err) {
