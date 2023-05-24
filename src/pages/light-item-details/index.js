@@ -114,6 +114,8 @@ const ItemDetails = ({ itemID, search }) => {
   const fetchItem = useCallback(async () => {
     if (!detailsViewQuery.loading)
       try {
+        // If item was added through `addItemDirectly`, this will crash.
+        // Solution: don't use `addItemDirectly`
         const itemFromContract = await gtcrView.getItem(tcrAddress, itemID)
         const { data: itemURI, requests } = detailsViewQuery.data.litem
         const itemData = await (await fetch(parseIpfs(itemURI))).json()
@@ -350,7 +352,8 @@ const ItemDetails = ({ itemID, search }) => {
           item={item}
           requests={requests && requests.map(r => ({ ...r }))}
         />
-        {connectedTCRAddr !== ZERO_ADDRESS &&
+        {/* Todo: Fix badges later */}
+        {/* {connectedTCRAddr !== ZERO_ADDRESS &&
           metadata &&
           !isConnectedTCR &&
           !relTcrDisabled && (
@@ -359,7 +362,7 @@ const ItemDetails = ({ itemID, search }) => {
               item={decodedItem}
               tcrAddress={tcrAddress}
             />
-          )}
+          )} */}
       </StyledLayoutContent>
       <AppTour
         dismissedKey={ITEM_TOUR_DISMISSED}

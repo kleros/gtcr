@@ -129,7 +129,7 @@ const Banner = ({
                 style={{ maxWidth: '100%', textDecoration: 'underline' }}
               >
                 <Link
-                  to={`/tcr/${connectedTCRAddr}`}
+                  to={`/tcr/${networkId}/${connectedTCRAddr}`}
                   style={{ color: '#4d00b473' }}
                 >
                   View Badges list
