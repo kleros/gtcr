@@ -4,14 +4,47 @@ import { ethers } from 'ethers'
 import localforage from 'localforage'
 import { abi as _gtcr } from '@kleros/tcr/build/contracts/GeneralizedTCR.json'
 import { abi as _GTCRView } from '@kleros/tcr/build/contracts/GeneralizedTCRView.json'
-import { abi as _arbitrator } from '@kleros/erc-792/build/contracts/IArbitrator.json'
-import { gtcrDecode } from '@kleros/gtcr-encoder'
 import useNotificationWeb3 from './notifications-web3'
 import { getAddress } from 'ethers/utils'
-import takeLower from '../utils/lower-limit'
-import useGetLogs from './get-logs'
-import { gtcrViewAddresses } from 'config/tcr-addresses'
+import { gtcrViewAddresses, subgraphUrl } from 'config/tcr-addresses'
 import { parseIpfs } from 'utils/ipfs-parse'
+
+export const fetchMetaEvidence = async (tcr, networkId) => {
+  const query = {
+    query: `{
+    registry(id: "${tcr.toLowerCase()}") {
+      registrationMetaEvidence {
+        URI
+      }
+      connectedTCR
+    }
+    lregistry(id: "${tcr.toLowerCase()}") {
+      registrationMetaEvidence {
+        URI
+      }
+      connectedTCR
+    }
+  }`
+  }
+
+  const response = await fetch(subgraphUrl[networkId], {
+    method: 'POST',
+    body: JSON.stringify(query)
+  })
+
+  const { data } = await response.json()
+  if (data.registry === null && data.lregistry === null) return null
+  else if (data.registry === null)
+    return {
+      metaEvidenceURI: data.lregistry.registrationMetaEvidence.URI,
+      connectedTCR: data.lregistry.connectedTCR
+    }
+  else
+    return {
+      metaEvidenceURI: data.registry.registrationMetaEvidence.URI,
+      connectedTCR: data.registry.connectedTCR
+    }
+}
 
 // TODO: Ensure we don't set state for unmounted components using
 // flags and AbortController.
@@ -27,15 +60,12 @@ const useTcrView = tcrAddress => {
   const [submissionChallengeDeposit, setSubmissionChallengeDeposit] = useState()
   const [removalDeposit, setRemovalDeposit] = useState()
   const [removalChallengeDeposit, setRemovalChallengeDeposit] = useState()
-  const [itemSubmissionLogs, setItemSubmissionLogs] = useState()
   const [connectedTCRAddr, setConnectedTCRAddr] = useState()
   const [depositFor, setDepositFor] = useState()
-  const [metadataByTime, setMetadataByTime] = useState()
 
   const { latestBlock } = useNotificationWeb3()
   const { library, active, networkId } = useWeb3Context()
   const arbitrableTCRViewAddr = gtcrViewAddresses[networkId]
-  const getLogs = useGetLogs(library)
   // Wire up the TCR.
   const gtcrView = useMemo(() => {
     if (!library || !active || !arbitrableTCRViewAddr || !networkId) return
@@ -113,23 +143,12 @@ const useTcrView = tcrAddress => {
 
       try {
         const {
-          arbitrator: arbitratorAddress,
-          arbitratorExtraData,
           submissionBaseDeposit,
           removalBaseDeposit,
           submissionChallengeBaseDeposit,
-          removalChallengeBaseDeposit
+          removalChallengeBaseDeposit,
+          arbitrationCost: newArbitrationCost
         } = arbitrableTCRData
-
-        const arbitrator = new ethers.Contract(
-          arbitratorAddress,
-          _arbitrator,
-          library
-        )
-
-        const newArbitrationCost = await arbitrator.arbitrationCost(
-          arbitratorExtraData
-        )
 
         // Submission deposit = submitter base deposit + arbitration cost
         const newSubmissionDeposit = submissionBaseDeposit.add(
@@ -172,62 +191,19 @@ const useTcrView = tcrAddress => {
       !gtcr ||
       !library ||
       gtcr.address !== tcrAddress ||
-      (metaEvidence && metaEvidence.address === tcrAddress) ||
-      !getLogs
+      (metaEvidence && metaEvidence.address === tcrAddress)
     )
       return
     ;(async () => {
       try {
         // Take the latest meta evidence.
-        const logs = (
-          await getLogs({
-            ...gtcr.filters.MetaEvidence(),
-            fromBlock: 0
-          })
-        ).map(log => ({ ...log, ...gtcr.interface.parseLog(log) }))
-        if (logs.length === 0) return
 
-        const metaEvidenceFiles = await Promise.all(
-          logs.map(async log => {
-            try {
-              const { values, blockNumber } = log
-              const { _evidence: metaEvidencePath } = values
+        const fetchedData = await fetchMetaEvidence(tcrAddress, networkId)
+        setConnectedTCRAddr(fetchedData.connectedTCR)
 
-              const [response, block] = await Promise.all([
-                fetch(parseIpfs(metaEvidencePath)),
-                library.getBlock(blockNumber)
-              ])
+        const response = await fetch(parseIpfs(fetchedData.metaEvidenceURI))
+        const file = await response.json()
 
-              const file = await response.json()
-
-              return {
-                ...file,
-                address: tcrAddress,
-                timestamp: block.timestamp,
-                blockNumber
-              }
-            } catch (err) {
-              console.warn('Failed to process meta evidence')
-              return { err }
-            }
-          })
-        )
-
-        const metadataTime = {
-          byBlockNumber: {},
-          byTimestamp: {},
-          address: logs[0].address
-        }
-        metaEvidenceFiles.forEach(file => {
-          if (file.error) return
-          metadataTime.byBlockNumber[file.blockNumber] = file
-          metadataTime.byTimestamp[file.timestamp] = file
-        })
-        setMetadataByTime(metadataTime)
-
-        // Take the penultimate item. This is the most recent meta evidence
-        // for registration requests.
-        const file = metaEvidenceFiles[metaEvidenceFiles.length - 2]
         setMetaEvidence({ ...file, address: tcrAddress })
         localforage.setItem(META_EVIDENCE_CACHE_KEY, file)
       } catch (err) {
@@ -245,106 +221,8 @@ const useTcrView = tcrAddress => {
     library,
     metaEvidence,
     tcrAddress,
-    getLogs
+    networkId
   ])
-
-  // Fetch the Related TCR address
-  useEffect(() => {
-    if (!gtcr || !library || gtcr.address !== tcrAddress) return
-    if (!getLogs) return
-    ;(async () => {
-      const logs = (
-        await getLogs({
-          ...gtcr.filters.ConnectedTCRSet(),
-          fromBlock: 0
-        })
-      ).map(log => gtcr.interface.parseLog(log))
-      if (logs.length === 0) return
-
-      setConnectedTCRAddr(logs[logs.length - 1].values._connectedTCR)
-    })()
-  }, [gtcr, library, connectedTCRAddr, tcrAddress, getLogs])
-
-  // Fetch and decode item submission logs.
-  useEffect(() => {
-    if (
-      !gtcr ||
-      !library ||
-      gtcr.address !== tcrAddress ||
-      !metadataByTime ||
-      metadataByTime.address.toLowerCase() !== tcrAddress.toLowerCase() ||
-      !getLogs
-    )
-      return
-    ;(async () => {
-      try {
-        setItemSubmissionLogs(
-          (
-            await getLogs({
-              ...gtcr.filters.ItemSubmitted(),
-              fromBlock: 0
-            })
-          )
-            .map(log => ({
-              ...log,
-              data: gtcr.interface.parseLog(log).values._data,
-              itemID: gtcr.interface.parseLog(log).values._itemID,
-              submitter: gtcr.interface.parseLog(log).values._submitter
-            }))
-            .map(submissionLog => {
-              let decodedData
-              const errors = []
-              const file =
-                metadataByTime.byBlockNumber[
-                  takeLower(
-                    Object.keys(metadataByTime.byBlockNumber),
-                    submissionLog.blockNumber
-                  )
-                ]
-              const { columns } = file.metadata
-              try {
-                decodedData = gtcrDecode({
-                  columns,
-                  values: submissionLog.data
-                })
-              } catch (err) {
-                console.warn(
-                  `Error decoding ${submissionLog._itemID} of TCR at ${tcrAddress}`,
-                  err
-                )
-                errors.push(
-                  `Error decoding ${submissionLog._itemID} of TCR at ${tcrAddress}`
-                )
-              }
-              return {
-                ...submissionLog,
-                decodedData,
-                columns,
-                tcrAddress,
-                address: tcrAddress,
-                errors
-              }
-            })
-            .map(submissionLog => ({
-              ...submissionLog,
-              columns: submissionLog.columns.map((col, i) => ({
-                ...col,
-                value: submissionLog.decodedData && submissionLog.decodedData[i]
-              }))
-            }))
-            .map(submissionLog => ({
-              ...submissionLog,
-              keys: submissionLog.columns
-                .filter(col => col.isIdentifier)
-                .map(col => col.value)
-            }))
-        )
-      } catch (err) {
-        console.error('Error fetching submission logs', err)
-        setError('Error fetching submission logs')
-      }
-    })()
-  }, [gtcr, library, metaEvidence, metadataByTime, tcrAddress, getLogs])
 
   return {
     gtcr,
@@ -357,10 +235,8 @@ const useTcrView = tcrAddress => {
     removalChallengeDeposit,
     tcrAddress,
     gtcrView,
-    itemSubmissionLogs,
     latestBlock,
     connectedTCRAddr,
-    metadataByTime,
     ...arbitrableTCRData
   }
 }

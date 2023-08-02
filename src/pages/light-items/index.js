@@ -121,22 +121,10 @@ const Items = () => {
     tcrError,
     gtcrView,
     connectedTCRAddr,
-    submissionDeposit,
-    metadataByTime
+    submissionDeposit
   } = useContext(LightTCRViewContext)
   const [submissionFormOpen, setSubmissionFormOpen] = useState()
   const [error, setError] = useState()
-  const [fetchItems, setFetchItems] = useState({
-    fetchStarted: false,
-    isFetching: false,
-    data: null
-  })
-  const [fetchItemCount, setFetchItemCount] = useState({
-    fetchStarted: false,
-    isFetching: false,
-    data: null
-  })
-
   const queryOptions = searchStrToFilterObjLight(search)
   const [nsfwFilterOn, setNSFWFilter] = useState(true)
   const [queryItemParams, setQueryItemParams] = useState()
@@ -144,6 +132,7 @@ const Items = () => {
     setNSFWFilter(checked)
     localforage.setItem(NSFW_FILTER_KEY, checked)
   }, [])
+  const [decodedItems, setDecodedItems] = useState(undefined)
 
   const {
     oldestFirst,
@@ -194,17 +183,41 @@ const Items = () => {
 
   const [getItems, itemsQuery] = useLazyQuery(LIGHT_ITEMS_QUERY)
 
+  const itemCount = useMemo(() => {
+    if (!itemsQuery.data) return 0
+    const r = itemsQuery.data.lregistry
+    const field = queryOptions.countField
+    if (queryOptions.countField === 'all') {
+      const sum =
+        Number(r.numberOfAbsent) +
+        Number(r.numberOfRegistered) +
+        Number(r.numberOfRegistrationRequested) +
+        Number(r.numberOfClearingRequested) +
+        Number(r.numberOfChallengedRegistrations) +
+        Number(r.numberOfChallengedClearing)
+
+      return sum
+    } else return Number(r[field])
+  }, [queryOptions.countField, itemsQuery.data])
+
+  const refreshItems = useCallback(
+    () =>
+      getItems({
+        variables: {
+          skip: (Number(page) - 1) * ITEMS_PER_PAGE,
+          first: ITEMS_PER_PAGE,
+          orderDirection: orderDirection,
+          where: itemsWhere,
+          registryId: tcrAddress.toLowerCase()
+        }
+      }),
+    [getItems, itemsWhere, orderDirection, page, tcrAddress]
+  )
+
   useEffect(() => {
     if (!gtcr) return
-    getItems({
-      variables: {
-        skip: (Number(page) - 1) * ITEMS_PER_PAGE,
-        first: ITEMS_PER_PAGE,
-        orderDirection: orderDirection,
-        where: itemsWhere
-      }
-    })
-  }, [getItems, gtcr, itemsWhere, orderDirection, page])
+    refreshItems()
+  }, [gtcr, refreshItems])
 
   useEffect(() => {
     ;(async () => {
@@ -213,12 +226,10 @@ const Items = () => {
 
       if (error) {
         console.error(error)
-        setFetchItems({ isFetching: false })
         setError(error.message)
         return
       }
-      if (loading || !data) return
-      let { litems: items } = data ?? {}
+      let { litems: items } = data
       items = items.map(item => ({
         ...item,
         decodedData: item.props.map(({ value }) => value),
@@ -307,20 +318,9 @@ const Items = () => {
           }
         }
       )
-      setFetchItems({
-        isFetching: false,
-        fetchStarted: false,
-        data: items,
-        address: gtcr.address
-      })
+      setDecodedItems(items)
     })()
   }, [gtcr, itemsQuery])
-
-  const { data: registryData } = useQuery(LIGHT_REGISTRY_QUERY, {
-    variables: {
-      lowerCaseTCRAddress: tcrAddress.toLowerCase()
-    }
-  })
 
   // Load NSFW user setting from localforage.
   useEffect(() => {
@@ -330,32 +330,16 @@ const Items = () => {
     })()
   }, [])
 
-  // Trigger fetch when gtcr instance is set.
-  useEffect(() => {
-    if (!gtcr) return
-    setFetchItems({ fetchStarted: true })
-    setFetchItemCount({ fetchStarted: true })
-  }, [gtcr])
-
   // More data wrangling/bandaid to deal with legacy code.
   // Most of this should be refactored or even better, deleted.
   const items = useMemo(() => {
-    if (
-      !fetchItems.data ||
-      !metaEvidence ||
-      metaEvidence.address !== tcrAddress ||
-      fetchItems.address !== tcrAddress ||
-      !metadataByTime
-    )
+    if (!metaEvidence || metaEvidence.address !== tcrAddress || !decodedItems)
       return
-    const { data: encodedItems } = fetchItems
 
-    return encodedItems.map((item, i) => {
+    return decodedItems.map((item, i) => {
       let decodedData
       const errors = []
-      const { columns } = metadataByTime.byTimestamp[
-        takeLower(Object.keys(metadataByTime.byTimestamp), item.timestamp)
-      ].metadata
+      const { columns } = metaEvidence.metadata
       try {
         decodedData = item.decodedData
         // eslint-disable-next-line no-unused-vars
@@ -381,7 +365,7 @@ const Items = () => {
         errors
       }
     })
-  }, [fetchItems, metaEvidence, metadataByTime, tcrAddress])
+  }, [metaEvidence, tcrAddress, decodedItems])
 
   // This component supports URL actions.
   // This means someone can be sent to curate with a bunch of data to submit
@@ -398,71 +382,6 @@ const Items = () => {
     setQueryItemParams(initialValues)
     setSubmissionFormOpen(true)
   }, [requestWeb3Auth, search])
-
-  // Fetch number of pages for the current filter
-  // Previously this entailed doing a bunch of contract calls, but since
-  // it now uses a subgraph, there are no async calls here anymore.
-  // Maybe refactor or delete this code.
-  useEffect(() => {
-    if (
-      !gtcrView ||
-      fetchItemCount.isFetching ||
-      !fetchItemCount.fetchStarted ||
-      !gtcr ||
-      !registryData
-    )
-      return
-
-    if (gtcr.address !== tcrAddress) return
-    setFetchItemCount({ isFetching: true })
-
-    const { lregistry } = registryData || {}
-
-    // Convert subgraph counters to filter names.
-    const {
-      numberOfAbsent: absent,
-      numberOfClearingRequested: removalRequested,
-      numberOfRegistered: registered,
-      numberOfRegistrationRequested: submitted,
-      numberOfChallengedClearing: challengedRemovals,
-      numberOfChallengedRegistrations: challengedSubmissions
-    } = lregistry || {}
-    const convertedCounts = {
-      absent,
-      removalRequested,
-      registered,
-      submitted,
-      challengedRemovals,
-      challengedSubmissions
-    }
-    const countByFilter = Object.entries(convertedCounts).reduce(
-      (prev, entry) => ({ ...prev, [entry[0]]: Number(entry[1]) }),
-      {}
-    )
-    const totalCount = Object.values(countByFilter).reduce(
-      (prev, curr) => prev + curr,
-      0
-    )
-
-    // For now, only OR combinations are allowed.
-    // My challenges and my submissions are also not supported,
-    // so we slice them off.
-    const filters = Object.entries(queryOptions).filter(([key, val]) =>
-      Object.entries(LIGHT_FILTER_KEYS)
-        .slice(0, 6)
-        .map(([, value]) => value)
-        .includes(val)
-    )
-
-    const filterSelected = filters.length > 0
-    const count = filterSelected ? countByFilter[filters[0][0]] : totalCount
-
-    setFetchItemCount({
-      fetchStarted: false,
-      isFetching: false,
-      data: count
-    })
-  }, [fetchItemCount, gtcr, gtcrView, queryOptions, registryData, tcrAddress])
 
   if (!tcrAddress)
     return (
@@ -495,11 +414,7 @@ const Items = () => {
       />
       <StyledLayoutContent>
         <StyledContent>
-          <Spin
-            spinning={
-              fetchItems.isFetching || fetchItemCount.isFetching || !metadata
-            }
-          >
+          <Spin spinning={itemsQuery.loading || !metadata}>
             <>
               <StyledTopPadding>
                 <LightSearchBar />
@@ -533,8 +448,6 @@ const Items = () => {
                           history.push({
                             search: newQueryStr
                           })
-                          setFetchItems({ fetchStarted: true })
-                          setFetchItemCount({ fetchStarted: true })
                         }}
                       >
                         {filterLabelLight[key]}
@@ -553,7 +466,6 @@ const Items = () => {
                     history.push({
                       search: newQueryStr
                     })
-                    setFetchItems({ fetchStarted: true })
                   }}
                 >
                   <Select.Option value="newestFirst">Newest</Select.Option>
@@ -584,7 +496,7 @@ const Items = () => {
                     ))}
               </StyledGrid>
               <StyledPagination
-                total={fetchItemCount.data || 0}
+                total={itemCount || 0}
                 current={Number(queryOptions.page)}
                 itemRender={pagingItem}
                 pageSize={ITEMS_PER_PAGE}
@@ -594,8 +506,6 @@ const Items = () => {
                       ? search.replace(/page=\d+/g, `page=${newPage}`)
                       : `${search}&page=${newPage}`
                   })
-                  setFetchItems({ fetchStarted: true })
-                  setFetchItemCount({ fetchStarted: true })
                 }}
               />
             </>

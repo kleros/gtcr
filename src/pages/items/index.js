@@ -22,7 +22,6 @@ import { bigNumberify } from 'ethers/utils'
 import { gtcrDecode } from '@kleros/gtcr-encoder'
 import SubmitModal from '../item-details/modals/submit'
 import SubmitConnectModal from '../item-details/modals/submit-connect'
-import SearchBar from 'components/search-bar'
 import {
   searchStrToFilterObjLight,
   filterLabelLight,
@@ -49,6 +48,7 @@ const StyledContent = styled(Layout.Content)`
 `
 
 const StyledLayoutContent = styled.div`
+  margin-top: 24px;
   padding: 0 9.375vw 42px;
   display: flex;
   flex-direction: column;
@@ -113,6 +113,7 @@ const pagingItem = (_, type, originalElement) => {
 // Reference:
 // https://itnext.io/how-to-create-react-custom-hooks-for-data-fetching-with-useeffect-74c5dc47000a
 const ITEMS_PER_PAGE = 40
+const MAX_ENTITIES = 1000
 const Items = () => {
   const history = useHistory()
   const search = window.location.search || ''
@@ -125,24 +126,12 @@ const Items = () => {
     challengePeriodDuration,
     tcrError,
     gtcrView,
-    latestBlock,
     connectedTCRAddr,
-    submissionDeposit,
-    metadataByTime
+    submissionDeposit
   } = useContext(TCRViewContext)
   const [submissionFormOpen, setSubmissionFormOpen] = useState()
   const [oldActiveItems, setOldActiveItems] = useState({ data: [] })
   const [error, setError] = useState()
-  const [fetchItems, setFetchItems] = useState({
-    fetchStarted: false,
-    isFetching: false,
-    data: null
-  })
-  const [fetchItemCount, setFetchItemCount] = useState({
-    fetchStarted: false,
-    isFetching: false,
-    data: null
-  })
   const refAttr = useRef()
   const [eventListenerSet, setEventListenerSet] = useState()
   const queryOptions = searchStrToFilterObjLight(search)
@@ -211,74 +200,23 @@ const Items = () => {
     })()
   }, [])
 
-  // Fetch number of pages for the current filter
-  useEffect(() => {
-    if (!gtcrView || fetchItemCount.isFetching || !fetchItemCount.fetchStarted)
-      return
-
-    if (gtcr.address !== tcrAddress) return
-
-    const filter = queryOptionsToFilterArray(queryOptions)
-    setFetchItemCount({ isFetching: true })
-    ;(async () => {
-      try {
-        const itemCount = (await gtcr.itemCount()).toNumber()
-        const itemsPerRequest = 100
-        const requests = Math.ceil(itemCount / itemsPerRequest)
-        let request = 1
-        let target = [bigNumberify(0), itemCount > 0, bigNumberify(0)]
-        let count = 0
-        while (request <= requests && target[1]) {
-          target = await gtcrView.countWithFilter(
-            tcrAddress,
-            target[2].toNumber(),
-            itemsPerRequest,
-            filter,
-            active && account ? account : ZERO_ADDRESS
-          )
-          count += target[0].toNumber()
-          request++
+  const refreshItems = useCallback(
+    () =>
+      getItems({
+        variables: {
+          skip: (Number(page) - 1) * ITEMS_PER_PAGE,
+          first: MAX_ENTITIES,
+          orderDirection: orderDirection,
+          where: itemsWhere
         }
-        setFetchItemCount({
-          fetchStarted: false,
-          isFetching: false,
-          data: count
-        })
-      } catch (err) {
-        console.error('Error fetching number of pages', err)
-        setError('Error fetching number of pages')
-      }
-    })()
-  }, [
-    fetchItemCount.isFetching,
-    fetchItemCount.fetchStarted,
-    gtcr,
-    gtcrView,
-    tcrAddress,
-    search,
-    queryOptions,
-    active,
-    account
-  ])
-
-  // Trigger fetch when gtcr instance is set.
-  useEffect(() => {
-    if (!gtcr) return
-    setFetchItems({ fetchStarted: true })
-    setFetchItemCount({ fetchStarted: true })
-  }, [gtcr])
+      }),
+    [getItems, itemsWhere, orderDirection, page]
+  )
 
   useEffect(() => {
     if (!gtcr) return
-    getItems({
-      variables: {
-        skip: (Number(page) - 1) * ITEMS_PER_PAGE,
-        first: ITEMS_PER_PAGE,
-        orderDirection: orderDirection,
-        where: itemsWhere
-      }
-    })
-  }, [getItems, gtcr, itemsWhere, orderDirection, page])
+    refreshItems()
+  }, [gtcr, refreshItems])
 
   // big useEffect for fetching + encoding the data was transformed into
   // a basic useQuery hook to fetch data, and a memo to encode items
@@ -342,87 +280,12 @@ const Items = () => {
     return items
   }, [itemsQuery])
 
-  // Since items are sorted by time of submission (either newest or oldest first)
-  // we have to also watch for new requests related to items already on the list.
-  // Otherwise a request to (for example) remove a very old item could pass its
-  // challenge period without being scrutinized by other users.
-  // To do this, we watch for `RequestSubmitted` events. If there are such requests and:
-  // - We are sorting by newest first;
-  // - We are on the first page;
-  // unshift those items to the list.
-  useEffect(() => {
-    const { oldestFirst } = searchStrToFilterObjLight(search)
-    if (
-      !gtcr ||
-      !gtcrView ||
-      !latestBlock ||
-      oldestFirst ||
-      !fetchItems.data ||
-      fetchItems.address !== tcrAddress ||
-      !challengePeriodDuration ||
-      !library ||
-      (oldActiveItems && oldActiveItems.address === tcrAddress) ||
-      !getLogs
-    )
-      return
-    ;(async () => {
-      // Fetch request events within one challenge period duration.
-      const BLOCK_TIME = 15 // Assuming a blocktime of 15 seconds.
-      const logsFilter = {
-        ...gtcr.filters.RequestSubmitted(),
-        fromBlock:
-          latestBlock -
-          (challengePeriodDuration.div(bigNumberify(BLOCK_TIME)).toNumber() +
-            100) // Add 100 block margin.
-      }
-
-      const requestSubmissionLogs = (await getLogs(logsFilter))
-        .map(log => ({
-          ...gtcr.interface.parseLog(log),
-          blockNumber: log.blockNumber
-        }))
-        .sort((a, b) => b.blockNumber - a.blockNumber)
-        .filter(
-          log =>
-            !fetchItems.data.map(item => item.ID).includes(log.values._itemID)
-        ) // Remove items already fetched.
-
-      // Fetch item details.
-      setOldActiveItems({
-        data: (
-          await Promise.all(
-            requestSubmissionLogs.map(log =>
-              gtcrView.getItem(tcrAddress, log.values._itemID)
-            )
-          )
-        )
-          .filter(item => !item.resolved)
-          .filter(item => applyOldActiveItemsFilter(queryOptions, item)),
-        address: gtcr.address
-      })
-    })()
-  }, [
-    challengePeriodDuration,
-    fetchItems.address,
-    fetchItems.data,
-    gtcr,
-    gtcrView,
-    latestBlock,
-    library,
-    oldActiveItems,
-    queryOptions,
-    search,
-    tcrAddress,
-    getLogs
-  ])
-
   // Decode items once meta evidence and items were fetched.
   const items = useMemo(() => {
     if (
       !metaEvidence ||
       metaEvidence.address !== tcrAddress ||
       (oldActiveItems.address && oldActiveItems.address !== tcrAddress) ||
-      !metadataByTime ||
       !encodedItems
     )
       return
@@ -436,9 +299,7 @@ const Items = () => {
     return displayedItems.map((item, i) => {
       let decodedItem
       const errors = []
-      const { columns } = metadataByTime.byTimestamp[
-        takeLower(Object.keys(metadataByTime.byTimestamp), item.timestamp)
-      ].metadata
+      const { columns } = metaEvidence.metadata
       try {
         decodedItem = gtcrDecode({ values: item.data, columns })
         // eslint-disable-next-line no-unused-vars
@@ -462,25 +323,15 @@ const Items = () => {
         errors
       }
     })
-  }, [
-    metaEvidence,
-    metadataByTime,
-    oldActiveItems.address,
-    oldActiveItems.data,
-    page,
-    tcrAddress,
-    encodedItems
-  ])
+  }, [metaEvidence, oldActiveItems, page, tcrAddress, encodedItems])
 
   // Watch for submissions and status change events to refetch items.
   useEffect(() => {
     if (!gtcr || eventListenerSet) return
     setEventListenerSet(true)
-    gtcr.on(gtcr.filters.ItemStatusChange(), () =>
-      setFetchItems({ fetchStarted: true })
-    )
+    gtcr.on(gtcr.filters.ItemStatusChange(), () => refreshItems())
     refAttr.current = gtcr
-  }, [eventListenerSet, gtcr])
+  }, [eventListenerSet, gtcr, refreshItems])
 
   // Teardown listeners.
   useEffect(
@@ -527,6 +378,9 @@ const Items = () => {
   const { metadata } = metaEvidence || {}
   const { isConnectedTCR } = metadata || {}
 
+  // todo: the number of elements is currently wrong. it will never go beyond 20 pages.
+  const itemCount = Math.floor(itemsQuery.data?.items?.length) ?? 0
+
   return (
     <>
       <Banner
@@ -536,16 +390,9 @@ const Items = () => {
         connectedTCRAddr={connectedTCRAddr}
         tcrAddress={tcrAddress}
       />
-      <StyledMargin>
-        <SearchBar />
-      </StyledMargin>
       <StyledLayoutContent>
         <StyledContent>
-          <Spin
-            spinning={
-              itemsQuery.loading || fetchItemCount.isFetching || !metadata
-            }
-          >
+          <Spin spinning={itemsQuery.loading || !metadata}>
             <>
               <StyledFilters id="items-filters">
                 <div>
@@ -576,8 +423,6 @@ const Items = () => {
                           history.push({
                             search: newQueryStr
                           })
-                          setFetchItems({ fetchStarted: true })
-                          setFetchItemCount({ fetchStarted: true })
                         }}
                       >
                         {filterLabelLight[key]}
@@ -596,7 +441,6 @@ const Items = () => {
                     history.push({
                       search: newQueryStr
                     })
-                    setFetchItems({ fetchStarted: true })
                   }}
                 >
                   <Select.Option value="newestFirst">Newest</Select.Option>
@@ -627,7 +471,7 @@ const Items = () => {
                     ))}
               </StyledGrid>
               <StyledPagination
-                total={fetchItemCount.data || 0}
+                total={itemCount || 0}
                 current={Number(queryOptions.page)}
                 itemRender={pagingItem}
                 pageSize={ITEMS_PER_PAGE}
@@ -637,8 +481,6 @@ const Items = () => {
                       ? search.replace(/page=\d+/g, `page=${newPage}`)
                       : `${search}&page=${newPage}`
                   })
-                  setFetchItems({ fetchStarted: true })
-                  setFetchItemCount({ fetchStarted: true })
                 }}
               />
             </>

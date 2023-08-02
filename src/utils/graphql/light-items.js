@@ -6,7 +6,16 @@ const LIGHT_ITEMS_QUERY = gql`
     $first: Int
     $orderDirection: OrderDirection
     $where: LItem_filter
+    $registryId: String
   ) {
+    lregistry(id: $registryId) {
+      numberOfAbsent
+      numberOfRegistered
+      numberOfRegistrationRequested
+      numberOfClearingRequested
+      numberOfChallengedRegistrations
+      numberOfChallengedClearing
+    }
     litems(
       skip: $skip
       first: $first
