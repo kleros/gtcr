@@ -129,6 +129,6 @@ export const txBatcherAddresses = {
 
 export const subgraphUrl = {
   '1': 'https://api.thegraph.com/subgraphs/name/kleros/curate',
-  '5': 'https://api.thegraph.com/subgraphs/name/greenlucid/curate-goerli',
+  '5': 'https://api.thegraph.com/subgraphs/name/shotaronowhere/curate-goerli-fix',
   '100': 'https://api.thegraph.com/subgraphs/name/eccentricexit/curate-xdai-ii'
 } as const

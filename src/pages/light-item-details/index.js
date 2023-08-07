@@ -23,8 +23,7 @@ import CrowdfundingCard from './crowdfunding-card'
 import { LightTCRViewContext } from 'contexts/light-tcr-view-context'
 import RequestTimelines from './request-timelines'
 import { WalletContext } from 'contexts/wallet-context'
-import { capitalizeFirstLetter, ZERO_ADDRESS } from 'utils/string'
-import Badges from './badges'
+import { capitalizeFirstLetter } from 'utils/string'
 import AppTour from 'components/tour'
 import itemTourSteps from './tour-steps'
 import takeLower from 'utils/lower-limit'
@@ -98,7 +97,6 @@ const ItemDetails = ({ itemID, search }) => {
     gtcr,
     tcrError,
     gtcrView,
-    connectedTCRAddr,
     metadataByTime
   } = useContext(LightTCRViewContext)
   const getLogs = useGetLogs(library)
@@ -301,7 +299,6 @@ const ItemDetails = ({ itemID, search }) => {
     )
 
   const { tcrTitle, itemName } = metadata || {}
-  const { isConnectedTCR, relTcrDisabled } = metadata || {}
   // TODO: modify to add greyed out fields, come here and add the current list schema and
   // pass it through param to ItemDetailsCard.
   const { columns } = item || {}
