@@ -1,5 +1,6 @@
 export { default as LIGHT_ITEM_DETAILS_QUERY } from './item-details'
 export { default as LIGHT_ITEMS_QUERY } from './light-items'
 export { default as CLASSIC_REGISTRY_ITEMS_QUERY } from './classic-registry-items'
+export { default as CLASSIC_ITEM_DETAILS_QUERY } from './classic-item-details'
 export { default as LIGHT_REGISTRY_QUERY } from './light-registry'
 export { default as TCR_EXISTENCE_TEST } from './tcr-existence-test'

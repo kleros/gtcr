@@ -113,12 +113,10 @@ const SubmissionForm: React.ComponentType<any> = withFormik({
   handleSubmit: (values, { props, resetForm }) => {
     props.postSubmit(values, props.columns, resetForm)
   },
-  mapPropsToStatus: props => {
-    return {
-      setFileToUpload: props.setFileToUpload,
-      setFileAsUploaded: props.setFileAsUploaded
-    }
-  },
+  mapPropsToStatus: props => ({
+    setFileToUpload: props.setFileToUpload,
+    setFileAsUploaded: props.setFileAsUploaded
+  }),
   validate: async (
     values,
     { columns, deployedWithFactory, deployedWithLightFactory }

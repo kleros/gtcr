@@ -16,7 +16,6 @@ import { Link } from 'react-router-dom'
 import ErrorPage from '../error-page'
 import { ethers } from 'ethers'
 import { abi as _arbitrator } from '@kleros/erc-792/build/contracts/IArbitrator.json'
-import { abi as _gtcr } from '@kleros/tcr/build/contracts/GeneralizedTCR.json'
 import ItemDetailsCard from 'components/item-details-card'
 import ItemStatusCard from './item-status-card'
 import CrowdfundingCard from './crowdfunding-card'
@@ -24,14 +23,13 @@ import { TCRViewContext } from 'contexts/tcr-view-context'
 import { gtcrDecode } from '@kleros/gtcr-encoder'
 import RequestTimelines from './request-timelines'
 import { WalletContext } from 'contexts/wallet-context'
-import SearchBar from 'components/search-bar'
 import { capitalizeFirstLetter, ZERO_ADDRESS } from 'utils/string'
 import Badges from './badges'
 import AppTour from 'components/tour'
 import itemTourSteps from './tour-steps'
-import takeLower from 'utils/lower-limit'
 import useGetLogs from 'hooks/get-logs'
 import { parseIpfs } from 'utils/ipfs-parse'
+import { fetchMetaEvidence } from 'hooks/tcr-view'
 
 const ITEM_TOUR_DISMISSED = 'ITEM_TOUR_DISMISSED'
 
@@ -92,13 +90,9 @@ const ItemDetails = ({ itemID, search }) => {
   const refAttr = useRef()
   const [eventListenerSet, setEventListenerSet] = useState()
   const [modalOpen, setModalOpen] = useState()
-  const {
-    gtcr,
-    tcrError,
-    gtcrView,
-    connectedTCRAddr,
-    metadataByTime
-  } = useContext(TCRViewContext)
+  const { gtcr, tcrError, gtcrView, connectedTCRAddr } = useContext(
+    TCRViewContext
+  )
   const getLogs = useGetLogs(library)
 
   // Warning: This function should only be called when all its dependencies
@@ -147,36 +141,35 @@ const ItemDetails = ({ itemID, search }) => {
 
   // Decode item bytes once we have it and the meta evidence files.
   useEffect(() => {
-    if (!item || !metadataByTime) return
-    const { byTimestamp } = metadataByTime
-    const file =
-      byTimestamp[takeLower(Object.keys(byTimestamp), item.submissionTime)]
-    if (!file) return
+    ;(async () => {
+      if (!item) return
 
-    setMetaEvidence(file)
+      const path = await fetchMetaEvidence(tcrAddress, chainId)
+      const file = await (await fetch(parseIpfs(path.metaEvidenceURI))).json()
 
-    const { address, metadata } = file || {}
-    if (address !== tcrAddress) return
+      setMetaEvidence(file)
+      const { metadata } = file || {}
 
-    const { columns } = metadata
+      const { columns } = metadata
 
-    const errors = []
-    let decodedData
-    try {
-      decodedData = gtcrDecode({
-        columns,
-        values: item.data
+      const errors = []
+      let decodedData
+      try {
+        decodedData = gtcrDecode({
+          columns,
+          values: item.data
+        })
+      } catch (_) {
+        errors.push(`Error decoding ${item.ID} of TCR at ${tcrAddress}`)
+      }
+
+      setDecodedItem({
+        ...item,
+        decodedData,
+        errors
       })
-    } catch (_) {
-      errors.push(`Error decoding ${item.ID} of TCR at ${tcrAddress}`)
-    }
-
-    setDecodedItem({
-      ...item,
-      decodedData,
-      errors
-    })
-  }, [item, metaEvidence, metadataByTime, tcrAddress])
+    })()
+  }, [item, metaEvidence, tcrAddress, chainId])
 
   // Fetch item.
   // This runs when the user loads the details view for the of an item
@@ -241,22 +234,12 @@ const ItemDetails = ({ itemID, search }) => {
       const { isTCRofTCRs } = metadata || {}
       if (!isTCRofTCRs) return
       if (!decodedItem) return
-      if (!getLogs) return
       const itemAddress = decodedItem.decodedData[0] // There is only one column, the TCR address.
-      const itemTCR = new ethers.Contract(itemAddress, _gtcr, library)
 
       try {
         // Take the latest meta evidence.
-        const logs = (
-          await getLogs({
-            ...itemTCR.filters.MetaEvidence(),
-            fromBlock: 0
-          })
-        ).map(log => itemTCR.interface.parseLog(log))
-        if (logs.length === 0) throw new Error('No meta evidence available.')
-
-        const { _evidence: metaEvidencePath } = logs[logs.length - 1].values
-        const file = await (await fetch(parseIpfs(metaEvidencePath))).json()
+        const path = await fetchMetaEvidence(itemAddress, chainId)
+        const file = await (await fetch(parseIpfs(path.metaEvidenceURI))).json()
 
         setItemMetaEvidence({ file })
       } catch (err) {
@@ -264,7 +247,7 @@ const ItemDetails = ({ itemID, search }) => {
         setItemMetaEvidence({ error: err })
       }
     })()
-  }, [decodedItem, library, metadata, getLogs])
+  }, [decodedItem, library, metadata, chainId])
 
   const loading =
     !metadata ||
@@ -310,7 +293,6 @@ const ItemDetails = ({ itemID, search }) => {
         <StyledBackLink>
           <StyledLink to={`/tcr/${chainId}/${tcrAddress}`}>Go Back</StyledLink>
         </StyledBackLink>
-        <SearchBar />
       </StyledMargin>
       <StyledLayoutContent>
         <ItemStatusCard

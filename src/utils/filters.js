@@ -114,6 +114,15 @@ export const searchStrToFilterObjLight = search => {
       .reduce((acc, curr) => ({ ...acc, [curr.key]: curr.value }), {})
   }
 
+  // Must assume there's no multiselect possible.
+  let countField = 'all'
+  if (registered) countField = 'numberOfRegistered'
+  else if (absent) countField = 'numberOfAbsent'
+  else if (submitted) countField = 'numberOfRegistrationRequested'
+  else if (removalRequested) countField = 'numberOfClearingRequested'
+  else if (challengedSubmissions) countField = 'numberOfChallengedRegistrations'
+  else if (challengedRemovals) countField = 'numberOfChallengedClearing'
+
   return {
     registered,
     submitted,
@@ -124,7 +133,8 @@ export const searchStrToFilterObjLight = search => {
     myChallenges,
     absent,
     oldestFirst,
-    page
+    page,
+    countField
   }
 }
 

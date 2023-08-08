@@ -4,12 +4,34 @@ import { ethers } from 'ethers'
 import localforage from 'localforage'
 import _gtcr from '../assets/abis/LightGeneralizedTCR.json'
 import _GTCRView from '../assets/abis/LightGeneralizedTCRView.json'
-import { abi as _arbitrator } from '@kleros/erc-792/build/contracts/IArbitrator.json'
 import useNotificationWeb3 from './notifications-web3'
 import { getAddress } from 'ethers/utils'
-import useGetLogs from './get-logs'
-import { lightGtcrViewAddresses } from 'config/tcr-addresses'
+import { lightGtcrViewAddresses, subgraphUrl } from 'config/tcr-addresses'
 import { parseIpfs } from 'utils/ipfs-parse'
+
+export const fetchMetaEvidence = async (tcr, networkId) => {
+  const query = {
+    query: `{
+    lregistry(id: "${tcr.toLowerCase()}") {
+      registrationMetaEvidence {
+        URI
+      }
+      connectedTCR
+    }
+  }`
+  }
+
+  const response = await fetch(subgraphUrl[networkId], {
+    method: 'POST',
+    body: JSON.stringify(query)
+  })
+
+  const { data } = await response.json()
+  return {
+    metaEvidenceURI: data.lregistry.registrationMetaEvidence.URI,
+    connectedTCR: data.lregistry.connectedTCR
+  }
+}
 
 // TODO: Ensure we don't set state for unmounted components using
 // flags and AbortController.
@@ -27,12 +49,10 @@ const useLightTcrView = tcrAddress => {
   const [removalChallengeDeposit, setRemovalChallengeDeposit] = useState()
   const [connectedTCRAddr, setConnectedTCRAddr] = useState()
   const [depositFor, setDepositFor] = useState()
-  const [metadataByTime, setMetadataByTime] = useState()
 
   const { latestBlock } = useNotificationWeb3()
   const { library, active, networkId } = useWeb3Context()
   const arbitrableTCRViewAddr = lightGtcrViewAddresses[networkId]
-  const getLogs = useGetLogs(library)
 
   // Wire up the TCR.
   const gtcrView = useMemo(() => {
@@ -111,23 +131,12 @@ const useLightTcrView = tcrAddress => {
 
       try {
         const {
-          arbitrator: arbitratorAddress,
-          arbitratorExtraData,
           submissionBaseDeposit,
           removalBaseDeposit,
           submissionChallengeBaseDeposit,
-          removalChallengeBaseDeposit
+          removalChallengeBaseDeposit,
+          arbitrationCost: newArbitrationCost
         } = arbitrableTCRData
-
-        const arbitrator = new ethers.Contract(
-          arbitratorAddress,
-          _arbitrator,
-          library
-        )
-
-        const newArbitrationCost = await arbitrator.arbitrationCost(
-          arbitratorExtraData
-        )
 
         // Submission deposit = submitter base deposit + arbitration cost
         const newSubmissionDeposit = submissionBaseDeposit.add(
@@ -170,62 +179,19 @@ const useLightTcrView = tcrAddress => {
       !gtcr ||
       !library ||
       gtcr.address !== tcrAddress ||
-      (metaEvidence && metaEvidence.address === tcrAddress) ||
-      !getLogs
+      (metaEvidence && metaEvidence.address === tcrAddress)
     )
       return
     ;(async () => {
       try {
         // Take the latest meta evidence.
-        const logs = (
-          await getLogs({
-            ...gtcr.filters.MetaEvidence(),
-            fromBlock: 0
-          })
-        ).map(log => ({ ...log, ...gtcr.interface.parseLog(log) }))
-        if (logs.length === 0) return
+        const fetchedData = await fetchMetaEvidence(tcrAddress, networkId)
+        setConnectedTCRAddr(fetchedData.connectedTCR)
 
-        const metaEvidenceFiles = await Promise.all(
-          logs.map(async log => {
-            try {
-              const { values, blockNumber } = log
-              const { _evidence: metaEvidencePath } = values
+        const response = await fetch(parseIpfs(fetchedData.metaEvidenceURI))
 
-              const [response, block] = await Promise.all([
-                fetch(parseIpfs(metaEvidencePath)),
-                library.getBlock(blockNumber)
-              ])
+        const file = await response.json()
 
-              const file = await response.json()
-
-              return {
-                ...file,
-                address: tcrAddress,
-                timestamp: block.timestamp,
-                blockNumber
-              }
-            } catch (err) {
-              console.warn('Failed to process meta evidence')
-              return { err }
-            }
-          })
-        )
-
-        const metadataTime = {
-          byBlockNumber: {},
-          byTimestamp: {},
-          address: logs[0].address
-        }
-        metaEvidenceFiles.forEach(file => {
-          if (file.error) return
-          metadataTime.byBlockNumber[file.blockNumber] = file
-          metadataTime.byTimestamp[file.timestamp] = file
-        })
-        setMetadataByTime(metadataTime)
-
-        // Take the penultimate item. This is the most recent meta evidence
-        // for registration requests.
-        const file = metaEvidenceFiles[metaEvidenceFiles.length - 2]
         setMetaEvidence({ ...file, address: tcrAddress })
         localforage.setItem(META_EVIDENCE_CACHE_KEY, file)
       } catch (err) {
@@ -243,25 +209,8 @@ const useLightTcrView = tcrAddress => {
     library,
     metaEvidence,
     tcrAddress,
-    getLogs
+    networkId
   ])
-
-  // Fetch the Related TCR address
-  useEffect(() => {
-    if (!gtcr || !library || gtcr.address !== tcrAddress) return
-    if (!getLogs) return
-    ;(async () => {
-      const logs = (
-        await getLogs({
-          ...gtcr.filters.ConnectedTCRSet(),
-          fromBlock: 0
-        })
-      ).map(log => gtcr.interface.parseLog(log))
-      if (logs.length === 0) return
-
-      setConnectedTCRAddr(logs[logs.length - 1].values._connectedTCR)
-    })()
-  }, [gtcr, library, connectedTCRAddr, tcrAddress, getLogs])
 
   return {
     gtcr,
@@ -276,7 +225,6 @@ const useLightTcrView = tcrAddress => {
     gtcrView,
     latestBlock,
     connectedTCRAddr,
-    metadataByTime,
     ...arbitrableTCRData
   }
 }
