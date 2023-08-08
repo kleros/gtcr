@@ -12,17 +12,18 @@ import { parseIpfs } from 'utils/ipfs-parse'
 export const fetchMetaEvidence = async (tcr, networkId) => {
   const query = {
     query: `{
-    lregistry(id: "${tcr.toLowerCase()}") {
-      registrationMetaEvidence {
-        URI
+      lregistry(id: "${tcr.toLowerCase()}") {
+        registrationMetaEvidence {
+          URI
+        }
+        connectedTCR
       }
-      connectedTCR
-    }
-  }`
+    }`
   }
 
   const response = await fetch(subgraphUrl[networkId], {
     method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(query)
   })
 

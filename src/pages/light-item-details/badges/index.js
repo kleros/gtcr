@@ -359,6 +359,7 @@ const Badges = ({ connectedTCRAddr, item, tcrAddress }) => {
             const { data } = await (
               await fetch(GTCR_SUBGRAPH_URL, {
                 method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(query)
               })
             ).json()

@@ -1,10 +1,8 @@
 export const NETWORKS = Object.freeze({
   ethereum: 1,
   xDai: 100,
-  rinkeby: 4,
-  kovan: 42,
-  goerli: 5,
-  'arbitrum-rinkeby': 421611
+  sepolia: 11155111,
+  goerli: 5
 })
 
 export const DEFAULT_NETWORK = NETWORKS.ethereum
@@ -57,6 +55,31 @@ export const NETWORKS_INFO = Object.freeze({
       {
         name: 'etherscan',
         url: 'https://goerli.etherscan.io',
+        standard: 'EIP3091'
+      }
+    ],
+    infoURL: 'https://ethereum.org'
+  },
+  [NETWORKS.sepolia]: {
+    name: 'Ethereum Sepolia',
+    color: '#29b6af',
+    supported: true,
+    chainId: 5,
+    shortName: 'sepoliaeth',
+    chain: 'SepoliaETH',
+    network: 'sepolia',
+    networkId: 5,
+    nativeCurrency: {
+      name: 'SepoliaEther',
+      symbol: 'SepoliaEther',
+      decimals: 18
+    },
+    rpc: [RPC_URLS[NETWORKS.sepolia]],
+    faucets: [],
+    explorers: [
+      {
+        name: 'etherscan',
+        url: 'https://sepolia.etherscan.io',
         standard: 'EIP3091'
       }
     ],

@@ -25,6 +25,7 @@ const useFactory = () => {
     const { data } = await (
       await fetch(GTCR_SUBGRAPH_URL, {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(query)
       })
     ).json()
@@ -55,6 +56,7 @@ const useFactory = () => {
     const { data } = await (
       await fetch(GTCR_SUBGRAPH_URL, {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(query)
       })
     ).json()
