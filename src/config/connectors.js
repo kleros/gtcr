@@ -59,10 +59,9 @@ if (window.ethereum)
   connectors.Injected = new InjectedConnector({
     supportedNetworks: [
       NETWORKS.ethereum,
-      NETWORKS.kovan,
       NETWORKS.xDai,
       NETWORKS.goerli,
-      NETWORKS['arbitrum-rinkeby']
+      NETWORKS.sepolia
     ]
   })
 
