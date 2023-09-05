@@ -171,7 +171,7 @@ const ItemDetails = ({ itemID, search }) => {
   // Set the meta evidence.
   useEffect(() => {
     ;(async () => {
-      if (!item) return
+      if (!item || metaEvidence) return
       const path = await fetchMetaEvidence(tcrAddress, chainId)
       const file = await (await fetch(parseIpfs(path.metaEvidenceURI))).json()
 

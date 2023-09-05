@@ -142,7 +142,7 @@ const ItemDetails = ({ itemID, search }) => {
   // Decode item bytes once we have it and the meta evidence files.
   useEffect(() => {
     ;(async () => {
-      if (!item) return
+      if (!item || decodedItem) return
 
       const path = await fetchMetaEvidence(tcrAddress, chainId)
       const file = await (await fetch(parseIpfs(path.metaEvidenceURI))).json()
@@ -169,7 +169,7 @@ const ItemDetails = ({ itemID, search }) => {
         errors
       })
     })()
-  }, [item, metaEvidence, tcrAddress, chainId])
+  }, [item, metaEvidence, tcrAddress, chainId, decodedItem])
 
   // Fetch item.
   // This runs when the user loads the details view for the of an item
