@@ -79,6 +79,41 @@ export const references: Reference[] = [
     name: 'Solana',
     label: 'SOL',
     explorer: 'explorer.solana.com'
+  },
+  {
+    id: '84531',
+    namespaceId: 'eip155',
+    name: 'Base Mainnet',
+    label: 'Base',
+    explorer: 'basescan.org'
+  },
+  {
+    id: '42161',
+    namespaceId: 'eip155',
+    name: 'Arbitrum One',
+    label: 'ARB',
+    explorer: 'arbiscan.io'
+  },
+  {
+    id: '1284',
+    namespaceId: 'eip155',
+    name: 'Moonbeam',
+    label: 'GLMR',
+    explorer: 'moonscan.io'
+  },
+  {
+    id: '59144',
+    namespaceId: 'eip155',
+    name: 'Linea',
+    label: 'Linea',
+    explorer: 'lineascan.build'
+  },
+  {
+    id: '10',
+    namespaceId: 'eip155',
+    name: 'Optimism',
+    label: 'OP',
+    explorer: 'optimistic.etherscan.io'
   }
 ]
 
