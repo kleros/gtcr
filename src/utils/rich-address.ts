@@ -37,6 +37,7 @@ export const namespaces: Namespace[] = [
   }
 ]
 
+// https://github.com/ethereum-lists/chains
 export const references: Reference[] = [
   {
     id: '1',
@@ -81,7 +82,7 @@ export const references: Reference[] = [
     explorer: 'explorer.solana.com'
   },
   {
-    id: '84531',
+    id: '8453',
     namespaceId: 'eip155',
     name: 'Base Mainnet',
     label: 'Base',
