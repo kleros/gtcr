@@ -16,7 +16,6 @@ import { useWeb3Context } from 'web3-react'
 import qs from 'qs'
 import ErrorPage from '../error-page'
 import { WalletContext } from 'contexts/wallet-context'
-import { ZERO_ADDRESS } from 'utils/string'
 import { TCRViewContext } from 'contexts/tcr-view-context'
 import { bigNumberify } from 'ethers/utils'
 import { gtcrDecode } from '@kleros/gtcr-encoder'
@@ -26,15 +25,12 @@ import {
   searchStrToFilterObjLight,
   filterLabelLight,
   FILTER_KEYS,
-  updateLightFilter,
-  queryOptionsToFilterArray,
-  applyOldActiveItemsFilter
+  updateLightFilter
 } from 'utils/filters'
 import ItemCard from './item-card'
 import Banner from './banner'
 import AppTour from 'components/tour'
 import itemsTourSteps from './tour-steps'
-import takeLower from 'utils/lower-limit'
 import { DISPUTE_STATUS } from 'utils/item-status'
 import { useLazyQuery } from '@apollo/client'
 import { CLASSIC_REGISTRY_ITEMS_QUERY } from 'utils/graphql'
@@ -227,7 +223,7 @@ const Items = () => {
     let items = itemsQuery.data.items
 
     items = items.map(({ itemID, status: statusName, requests, data }) => {
-      const { disputed, disputeID, submissionTime, rounds, resolved } =
+      const { disputed, disputeID, submissionTime, rounds, resolved, deposit } =
         requests[0] ?? {}
 
       const {
@@ -264,6 +260,7 @@ const Items = () => {
         disputed,
         data,
         disputeID,
+        deposit,
         submissionTime: bigNumberify(submissionTime),
         hasPaid: [false, hasPaidRequester, hasPaidChallenger],
         currentRuling,
