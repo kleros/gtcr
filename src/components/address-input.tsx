@@ -19,9 +19,8 @@ const AddressInput: React.FC<{
     validate={(value: string) => {
       // namespaces[0] is eip155
       const valid = namespaces[0].test(value)
-      if (!valid) {
-        return 'Invalid format'
-      }
+      if (!valid) return 'Invalid format'
+
       return null
     }}
   >

@@ -53,9 +53,8 @@ const RichAddressInput: React.FC<{
     <Field
       validate={(value: any) => {
         const richAddress = parseRichAddress(value) as RichAddress
-        if (!richAddress.passedTest) {
-          return 'Invalid format'
-        }
+        if (!richAddress.passedTest) return 'Invalid format'
+
         return null
       }}
       name={p.name}
