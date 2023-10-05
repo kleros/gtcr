@@ -26,6 +26,7 @@ const CLASSIC_REGISTRY_ITEMS_QUERY = gql`
         resolved
         requester
         challenger
+        deposit
         rounds(first: 1, orderBy: creationTime, orderDirection: desc) {
           appealPeriodStart
           appealPeriodEnd

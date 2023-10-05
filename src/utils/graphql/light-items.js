@@ -41,6 +41,7 @@ const LIGHT_ITEMS_QUERY = gql`
         requester
         challenger
         resolutionTime
+        deposit
         rounds(first: 1, orderBy: creationTime, orderDirection: desc) {
           appealPeriodStart
           appealPeriodEnd

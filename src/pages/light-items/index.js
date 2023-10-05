@@ -265,8 +265,14 @@ const Items = () => {
           decodedData,
           mergedData
         }) => {
-          const { disputed, disputeID, submissionTime, rounds, resolved } =
-            requests[0] ?? {}
+          const {
+            disputed,
+            disputeID,
+            submissionTime,
+            rounds,
+            resolved,
+            deposit
+          } = requests[0] ?? {}
 
           const {
             appealPeriodStart,
@@ -305,6 +311,7 @@ const Items = () => {
             decodedData,
             mergedData,
             disputeID,
+            deposit,
             submissionTime: bigNumberify(submissionTime),
             hasPaid: [false, hasPaidRequester, hasPaidChallenger],
             currentRuling,
