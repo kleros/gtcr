@@ -115,6 +115,70 @@ export const references: Reference[] = [
     name: 'Optimism',
     label: 'OP',
     explorer: 'optimistic.etherscan.io'
+  },
+  {
+    id: '250',
+    namespaceId: 'eip155',
+    name: 'Fantom Opera',
+    label: 'FTM',
+    explorer: 'ftmscan.com'
+  },
+  {
+    id: '1285',
+    namespaceId: 'eip155',
+    name: 'Moonriver',
+    label: 'MOVR',
+    explorer: 'moonriver.moonscan.io'
+  },
+  {
+    id: '43114',
+    namespaceId: 'eip155',
+    name: 'Avalanche C-Chain',
+    label: 'AVAX',
+    explorer: 'snowtrace.io'
+  }
+  ,
+  {
+    id: '25',
+    namespaceId: 'eip155',
+    name: 'Cronos Mainnet',
+    label: 'CRO',
+    explorer: 'cronoscan.com'
+  },
+  {
+    id: '199',
+    namespaceId: 'eip155',
+    name: 'BitTorrent Chain Mainnet',
+    label: 'BTT',
+    explorer: 'bttcscan.com'
+  },
+  {
+    id: '1101',
+    namespaceId: 'eip155',
+    name: 'Polygon zkEVM',
+    label: 'ETH',
+    explorer: 'zkevm.polygonscan.com'
+  },
+  {
+    id: '1111',
+    namespaceId: 'eip155',
+    name: 'WEMIX3.0 Mainnet',
+    label: 'WEMIX',
+    explorer: 'wemixscan.com'
+  },
+  {
+    id: '534352',
+    namespaceId: 'eip155',
+    name: 'Scroll',
+    label: 'ETH',
+    explorer: 'scrollscan.dev'
+  },
+  {
+    id: '42220',
+    namespaceId: 'eip155',
+    name: 'Celo',
+    label: 'CELO',
+    explorer: 'celoscan.io'
   }
 ]
 
