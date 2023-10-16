@@ -41,7 +41,7 @@ const EvidenceModal = ({ item, ...rest }) => {
           ipfsEvidenceObject[0].path}`
 
         // Request signature and submit.
-        const tx = await gtcr.submitEvidence(item.ID, ipfsEvidencePath)
+        const tx = await gtcr.submitEvidence(item.itemID, ipfsEvidencePath)
 
         rest.onCancel() // Hide the submission modal.
 
@@ -55,7 +55,7 @@ const EvidenceModal = ({ item, ...rest }) => {
               body: JSON.stringify({
                 subscriberAddr: ethers.utils.getAddress(account),
                 tcrAddr: tcrAddress,
-                itemID: item.ID,
+                itemID: item.itemID,
                 networkID: networkId
               })
             }

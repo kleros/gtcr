@@ -80,7 +80,7 @@ const RemoveModal = ({ item, itemName = 'item', fileURI, ...rest }) => {
         }
 
         // Request signature and send removal request.
-        const tx = await gtcr.removeItem(item.ID, ipfsEvidencePath, {
+        const tx = await gtcr.removeItem(item.itemID, ipfsEvidencePath, {
           value: removalDeposit
         })
 
@@ -96,7 +96,7 @@ const RemoveModal = ({ item, itemName = 'item', fileURI, ...rest }) => {
               body: JSON.stringify({
                 subscriberAddr: ethers.utils.getAddress(account),
                 tcrAddr: ethers.utils.getAddress(tcrAddress),
-                itemID: item.ID,
+                itemID: item.itemID,
                 networkID: networkId
               })
             }
@@ -112,7 +112,7 @@ const RemoveModal = ({ item, itemName = 'item', fileURI, ...rest }) => {
         }
       }),
     [
-      item.ID,
+      item.itemID,
       itemName,
       metadata,
       pushWeb3Action,

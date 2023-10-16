@@ -55,7 +55,7 @@ const ItemDetailsCard = ({
       setAvailableRewards(
         await tcrViewContext.gtcrView.availableRewards(
           tcrViewContext.tcrAddress,
-          item.ID,
+          item.itemID,
           account
         )
       )
@@ -74,7 +74,7 @@ const ItemDetailsCard = ({
       const tx = await batchWithdraw.batchRequestWithdraw(
         tcrViewContext.tcrAddress,
         account,
-        item.ID,
+        item.itemID,
         0,
         0,
         0,
@@ -87,7 +87,7 @@ const ItemDetailsCard = ({
           setAvailableRewards(
             await tcrViewContext.gtcrView.availableRewards(
               tcrViewContext.tcrAddress,
-              item.ID,
+              item.itemID,
               account
             )
           )
