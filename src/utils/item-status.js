@@ -1,4 +1,4 @@
-import { bigNumberify } from 'ethers/utils'
+import { BigNumber } from 'ethers/utils'
 
 export const PARTY = {
   NONE: 0,
@@ -13,10 +13,10 @@ export const DISPUTE_STATUS = {
 }
 
 export const CONTRACT_STATUS = {
-  ABSENT: 0,
-  REGISTERED: 1,
-  REGISTRATION_REQUESTED: 2,
-  REMOVAL_REQUESTED: 3
+  ABSENT: 'Absent',
+  REGISTERED: 'Registered',
+  REGISTRATION_REQUESTED: 'RegistrationRequested',
+  REMOVAL_REQUESTED: 'ClearingRequested'
 }
 
 export const STATUS_CODE = {
@@ -133,24 +133,15 @@ export const getActionLabel = ({ statusCode, itemName = 'item' }) => {
   }
 }
 
-export const itemToStatusCode = (
-  {
-    status,
-    disputed,
-    submissionTime,
-    disputeStatus,
-    hasPaid,
-    currentRuling,
-    appealStart,
-    appealEnd
-  },
-  timestamp,
-  challengePeriodDuration
-) => {
+export const itemToStatusCode = (item, timestamp, challengePeriodDuration) => {
+  const { status } = item
+  const request = item.requests[0]
   if (status === CONTRACT_STATUS.ABSENT) return STATUS_CODE.REJECTED
   if (status === CONTRACT_STATUS.REGISTERED) return STATUS_CODE.REGISTERED
-  if (!disputed) {
-    const challengePeriodEnd = submissionTime.add(challengePeriodDuration)
+  if (!request.disputed) {
+    const challengePeriodEnd = new BigNumber(
+      Number(request.submissionTime) + challengePeriodDuration.toNumber()
+    )
     if (timestamp.gt(challengePeriodEnd))
       if (status === CONTRACT_STATUS.REGISTRATION_REQUESTED)
         // The challenge period has passed.
@@ -163,32 +154,35 @@ export const itemToStatusCode = (
     if (status === CONTRACT_STATUS.REMOVAL_REQUESTED)
       return STATUS_CODE.REMOVAL_REQUESTED
   }
+  const round = request.rounds[0]
+  if (round.appealPeriodStart === '0')
+    // appeal period didn't start yet
+    return STATUS_CODE.CHALLENGED
 
-  if (disputeStatus === DISPUTE_STATUS.WAITING) return STATUS_CODE.CHALLENGED
-  if (disputeStatus === DISPUTE_STATUS.APPEALABLE) {
-    if (appealStart.eq(bigNumberify(0)) && appealEnd.eq(bigNumberify(0)))
-      return STATUS_CODE.CROWDFUNDING // Dispute is appealable but the arbitrator does not use appeal period.
+  // if (appealStart.eq(bigNumberify(0)) && appealEnd.eq(bigNumberify(0)))
+  //   return STATUS_CODE.CROWDFUNDING // Dispute is appealable but the arbitrator does not use appeal period.
 
-    if (currentRuling === PARTY.NONE)
-      if (timestamp.lte(appealEnd))
-        // Arbitrator did not rule or refused to rule.
-        return STATUS_CODE.CROWDFUNDING
-      else return STATUS_CODE.WAITING_ARBITRATOR
+  if (round.ruling === 'None')
+    if (timestamp.lte(round.appealPeriodEnd))
+      // Arbitrator did not rule or refused to rule.
+      return STATUS_CODE.CROWDFUNDING
+    else return STATUS_CODE.WAITING_ARBITRATOR
 
-    // Arbitrator gave a decisive ruling (i.e. Ruled in favor of either the requester or challenger).
-    if (timestamp.gt(appealEnd)) return STATUS_CODE.WAITING_ARBITRATOR
-    const appealPeriodDuration = appealEnd.sub(appealStart)
-    const appealHalfTime = appealStart.add(
-      appealPeriodDuration.div(bigNumberify(2))
-    )
-    if (timestamp.lt(appealHalfTime)) return STATUS_CODE.CROWDFUNDING // In first half of appeal period
+  // Arbitrator gave a decisive ruling (i.e. Ruled in favor of either the requester or challenger).
+  if (timestamp.gt(round.appealPeriodEnd)) return STATUS_CODE.WAITING_ARBITRATOR
+  const appealPeriodDuration =
+    Number(round.appealPeriodEnd) - Number(round.appealPeriodStart)
+  const appealHalfTime =
+    Number(round.appealPeriodStart) + appealPeriodDuration / 2
+  if (timestamp.lt(appealHalfTime)) return STATUS_CODE.CROWDFUNDING // In first half of appeal period
 
-    // If the party that lost the previous round is not fully funded
-    // before the end of the first half, the dispute is over
-    // and awaits enforecement.
-    const loser =
-      currentRuling === PARTY.REQUESTER ? PARTY.CHALLENGER : PARTY.REQUESTER
-    if (hasPaid[loser]) return STATUS_CODE.CROWDFUNDING_WINNER
-    else return STATUS_CODE.WAITING_ENFORCEMENT
-  }
+  // If the party that lost the previous round is not fully funded
+  // before the end of the first half, the dispute is over
+  // and awaits enforecement.
+  const loser = round.ruling === 'Accept' ? PARTY.CHALLENGER : PARTY.REQUESTER
+  if (
+    loser === PARTY.REQUESTER ? round.hasPaidRequester : round.hasPaidChallenger
+  )
+    return STATUS_CODE.CROWDFUNDING_WINNER
+  else return STATUS_CODE.WAITING_ENFORCEMENT
 }

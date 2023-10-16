@@ -8,7 +8,6 @@ import { ethers } from 'ethers'
 import {
   itemToStatusCode,
   STATUS_CODE,
-  DISPUTE_STATUS,
   PARTY,
   CONTRACT_STATUS,
   hasPendingRequest
@@ -42,22 +41,6 @@ const StyledSkeleton = styled(Skeleton)`
   }
 `
 
-const DisputeStatus = ({ disputeStatus }) => {
-  if (disputeStatus == null)
-    return (
-      <StyledSkeleton active paragraph={false} title={SkeletonTitleProps} />
-    )
-
-  switch (disputeStatus) {
-    case DISPUTE_STATUS.SOLVED:
-      return 'Resolved.'
-    case DISPUTE_STATUS.APPEALABLE:
-      return 'Appealable'
-    default:
-      throw new Error(`Unhandled dispute status ${disputeStatus}`)
-  }
-}
-
 const Ruling = ({ currentRuling }) => {
   if (currentRuling == null)
     return (
@@ -65,11 +48,11 @@ const Ruling = ({ currentRuling }) => {
     )
 
   switch (currentRuling) {
-    case PARTY.NONE:
+    case 'None':
       return 'The arbitrator refused to rule.'
-    case PARTY.REQUESTER:
+    case 'Accept':
       return 'The arbitrator ruled in favor of the submitter.'
-    case PARTY.CHALLENGER:
+    case 'Reject':
       return 'The arbitrator ruled in favor of the challenger.'
     default:
       throw new Error(`Unhandled ruling ${currentRuling}`)
@@ -91,9 +74,7 @@ const ItemStatusCard = ({
     challengePeriodDuration,
     tcrAddress,
     submissionDeposit,
-    gtcrView,
-    removalBaseDeposit,
-    submissionBaseDeposit
+    gtcrView
   } = useContext(LightTCRViewContext)
 
   // Get remaining appeal time, if any and build countdown.
@@ -127,19 +108,16 @@ const ItemStatusCard = ({
       </Card>
     )
 
-  const { disputeStatus, currentRuling, disputed } = item
+  const currentRuling = item.requests[0].rounds[0].ruling
+  const { disputed } = request
   const statusCode = itemToStatusCode(item, timestamp, challengePeriodDuration)
 
-  let bounty
-  if (typeof statusCode === 'number')
-    if (statusCode === STATUS_CODE.SUBMITTED) bounty = submissionBaseDeposit
-    else if (statusCode === STATUS_CODE.REMOVAL_REQUESTED)
-      bounty = removalBaseDeposit
+  const bounty = request.deposit
 
   const executeRequest = async (_, signer) => {
     const gtcr = new ethers.Contract(tcrAddress, _gtcr, signer)
     return {
-      tx: await gtcr.executeRequest(item.ID),
+      tx: await gtcr.executeRequest(item.itemID),
       actionMessage: `Executing ${
         statusCode === STATUS_CODE.PENDING_SUBMISSION ? 'submission' : 'removal'
       }`
@@ -172,6 +150,9 @@ const ItemStatusCard = ({
   const { metadata, fileURI } = metaEvidence || {}
   const { itemName } = metadata || {}
 
+  const appealable =
+    statusCode === STATUS_CODE.CROWDFUNDING_WINNER ||
+    statusCode === STATUS_CODE.CROWDFUNDING
   return (
     <>
       <Card
@@ -188,7 +169,7 @@ const ItemStatusCard = ({
           <ItemActionButton
             statusCode={statusCode}
             itemName={itemName}
-            itemID={item && item.ID}
+            itemID={item && item.itemID}
             pushWeb3Action={pushWeb3Action}
             onClick={onClick}
             type="secondary"
@@ -218,9 +199,9 @@ const ItemStatusCard = ({
             </Descriptions.Item>
           )}
           <Descriptions.Item label="Requester">
-            <ETHAddress address={item.requester} />
+            <ETHAddress address={request.requester} />
           </Descriptions.Item>
-          {disputed && disputeID.toNumber() !== 0 && (
+          {disputed && Number(disputeID) !== 0 && (
             <>
               <Descriptions.Item label="Dispute ID">
                 {klerosAddress.toLowerCase() === arbitrator.toLowerCase() ? (
@@ -232,7 +213,7 @@ const ItemStatusCard = ({
                 )}
               </Descriptions.Item>
               <Descriptions.Item label="Challenger">
-                <ETHAddress address={item.challenger} />
+                <ETHAddress address={request.challenger} />
               </Descriptions.Item>
             </>
           )}
@@ -241,14 +222,13 @@ const ItemStatusCard = ({
               <ETHAddress address={arbitrator} />
             </Descriptions.Item>
           )}
-          {disputeStatus === DISPUTE_STATUS.APPEALABLE &&
-            statusCode !== STATUS_CODE.WAITING_ENFORCEMENT && (
-              <Descriptions.Item label="Dispute Status">
-                <DisputeStatus disputeStatus={disputeStatus} />
-              </Descriptions.Item>
-            )}
-          {disputed && disputeStatus !== DISPUTE_STATUS.WAITING && (
-            <Descriptions.Item label="Ruling">
+          {appealable && (
+            <Descriptions.Item label="Dispute Status">
+              Appealable
+            </Descriptions.Item>
+          )}
+          {disputed && Number(disputeID) !== 0 && (
+            <Descriptions.Item label={appealable ? 'Current Ruling' : 'Ruling'}>
               <Ruling currentRuling={currentRuling} />
             </Descriptions.Item>
           )}

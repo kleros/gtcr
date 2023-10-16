@@ -91,9 +91,7 @@ const ItemStatusCard = ({
     challengePeriodDuration,
     tcrAddress,
     submissionDeposit,
-    gtcrView,
-    removalBaseDeposit,
-    submissionBaseDeposit
+    gtcrView
   } = useContext(TCRViewContext)
 
   // Get remaining appeal time, if any and build countdown.
@@ -126,20 +124,17 @@ const ItemStatusCard = ({
         <Skeleton active title={false} paragraph={{ rows: 2 }} />
       </Card>
     )
-
-  const { disputeStatus, currentRuling, disputed } = item
+  const disputeStatus = item.requests[0].disputeOutcome
+  const currentRuling = item.requests[0].rounds[0].ruling
+  const { disputed } = item
   const statusCode = itemToStatusCode(item, timestamp, challengePeriodDuration)
 
-  let bounty
-  if (typeof statusCode === 'number')
-    if (statusCode === STATUS_CODE.SUBMITTED) bounty = submissionBaseDeposit
-    else if (statusCode === STATUS_CODE.REMOVAL_REQUESTED)
-      bounty = removalBaseDeposit
+  const bounty = request.deposit
 
   const executeRequest = async (_, signer) => {
     const gtcr = new ethers.Contract(tcrAddress, _gtcr, signer)
     return {
-      tx: await gtcr.executeRequest(item.ID),
+      tx: await gtcr.executeRequest(item.itemID),
       actionMessage: `Executing ${
         statusCode === STATUS_CODE.PENDING_SUBMISSION ? 'submission' : 'removal'
       }`
@@ -188,7 +183,7 @@ const ItemStatusCard = ({
           <ItemActionButton
             statusCode={statusCode}
             itemName={itemName}
-            itemID={item && item.ID}
+            itemID={item?.itemID}
             pushWeb3Action={pushWeb3Action}
             onClick={onClick}
             type="secondary"
@@ -218,7 +213,7 @@ const ItemStatusCard = ({
             </Descriptions.Item>
           )}
           <Descriptions.Item label="Requester">
-            <ETHAddress address={item.requester} />
+            <ETHAddress address={request.requester} />
           </Descriptions.Item>
           {disputed && disputeID.toNumber() !== 0 && (
             <>
@@ -232,7 +227,7 @@ const ItemStatusCard = ({
                 )}
               </Descriptions.Item>
               <Descriptions.Item label="Challenger">
-                <ETHAddress address={item.challenger} />
+                <ETHAddress address={request.challenger} />
               </Descriptions.Item>
             </>
           )}

@@ -84,8 +84,8 @@ export const NETWORKS_INFO = Object.freeze({
     faucets: [],
     explorers: [
       {
-        name: 'blockscout',
-        url: 'https://blockscout.com/xdai/mainnet',
+        name: 'gnosisscan',
+        url: 'https://gnosisscan.io',
         standard: 'EIP3091'
       }
     ],

@@ -80,7 +80,7 @@ const ChallengeModal = ({ item, itemName, statusCode, fileURI, ...rest }) => {
             body: JSON.stringify({
               subscriberAddr: ethers.utils.getAddress(account),
               tcrAddr: ethers.utils.getAddress(tcrAddress),
-              itemID: item.ID,
+              itemID: item.itemID,
               networkID: networkId
             })
           }

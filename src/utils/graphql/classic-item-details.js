@@ -5,6 +5,8 @@ const CLASSIC_ITEM_DETAILS_QUERY = gql`
     item(id: $id) {
       itemID
       data
+      status
+      disputed
       requests(orderBy: submissionTime, orderDirection: desc) {
         requestType
         disputed
@@ -14,8 +16,26 @@ const CLASSIC_ITEM_DETAILS_QUERY = gql`
         requester
         arbitrator
         challenger
-        evidenceGroupID
+        deposit
+        disputeOutcome
+        resolutionTime
+        creationTx
+        resolutionTx
+        evidenceGroup {
+          id
+          evidences(orderBy: number, orderDirection: desc) {
+            party
+            title
+            description
+            fileURI
+            number
+            timestamp
+            txHash
+            fileTypeExtension
+          }
+        }
         rounds(orderBy: creationTime, orderDirection: desc) {
+          appealed
           appealPeriodStart
           appealPeriodEnd
           ruling

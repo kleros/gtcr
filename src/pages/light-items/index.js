@@ -28,7 +28,6 @@ import ItemCard from './item-card'
 import Banner from './banner'
 import AppTour from 'components/tour'
 import itemsTourSteps from './tour-steps'
-import takeLower from 'utils/lower-limit'
 import { DISPUTE_STATUS } from 'utils/item-status'
 import { useLazyQuery, useQuery } from '@apollo/client'
 import { LIGHT_ITEMS_QUERY, LIGHT_REGISTRY_QUERY } from 'utils/graphql'
@@ -256,75 +255,59 @@ const Items = () => {
         } else return i
       })
       items = await Promise.all(itemAssurancePromises)
-      items = items.map(
-        ({
-          itemID,
-          status: statusName,
-          requests,
+      items = items.map(item => {
+        const {
+          disputed,
+          disputeID,
+          submissionTime,
+          rounds,
+          resolved,
+          deposit
+        } = item.requests[0] ?? {}
+
+        const {
+          appealPeriodStart,
+          appealPeriodEnd,
+          ruling,
+          hasPaidRequester,
+          hasPaidChallenger,
+          amountPaidRequester,
+          amountPaidChallenger
+        } = rounds[0] ?? {}
+
+        const currentRuling =
+          ruling === 'None' ? 0 : ruling === 'Accept' ? 1 : 2
+        const disputeStatus = !disputed
+          ? DISPUTE_STATUS.WAITING
+          : resolved
+          ? DISPUTE_STATUS.SOLVED
+          : Number(appealPeriodEnd) > Date.now() / 1000
+          ? DISPUTE_STATUS.APPEALABLE
+          : DISPUTE_STATUS.WAITING
+
+        return {
+          ...item,
+          ID: item.itemID,
+          itemID: item.itemID,
+          disputeStatus,
+          disputed,
           data,
-          decodedData,
-          mergedData
-        }) => {
-          const {
-            disputed,
-            disputeID,
-            submissionTime,
-            rounds,
-            resolved,
-            deposit
-          } = requests[0] ?? {}
-
-          const {
-            appealPeriodStart,
-            appealPeriodEnd,
-            ruling,
-            hasPaidRequester,
-            hasPaidChallenger,
-            amountPaidRequester,
-            amountPaidChallenger
-          } = rounds[0] ?? {}
-
-          const currentRuling =
-            ruling === 'None' ? 0 : ruling === 'Accept' ? 1 : 2
-          const disputeStatus = !disputed
-            ? DISPUTE_STATUS.WAITING
-            : resolved
-            ? DISPUTE_STATUS.SOLVED
-            : Number(appealPeriodEnd) > Date.now() / 1000
-            ? DISPUTE_STATUS.APPEALABLE
-            : DISPUTE_STATUS.WAITING
-
-          const graphStatusNameToCode = {
-            Absent: 0,
-            Registered: 1,
-            RegistrationRequested: 2,
-            ClearingRequested: 3
-          }
-
-          return {
-            ID: itemID,
-            itemID,
-            status: graphStatusNameToCode[statusName],
-            disputeStatus,
-            disputed,
-            data,
-            decodedData,
-            mergedData,
-            disputeID,
-            deposit,
-            submissionTime: bigNumberify(submissionTime),
-            hasPaid: [false, hasPaidRequester, hasPaidChallenger],
-            currentRuling,
-            appealStart: bigNumberify(appealPeriodStart),
-            appealEnd: bigNumberify(appealPeriodEnd),
-            amountPaid: [
-              bigNumberify(0),
-              bigNumberify(amountPaidRequester),
-              bigNumberify(amountPaidChallenger)
-            ]
-          }
+          decodedData: item.decodedData,
+          mergedData: item.mergedData,
+          disputeID,
+          deposit,
+          submissionTime: bigNumberify(submissionTime),
+          hasPaid: [false, hasPaidRequester, hasPaidChallenger],
+          currentRuling,
+          appealStart: bigNumberify(appealPeriodStart),
+          appealEnd: bigNumberify(appealPeriodEnd),
+          amountPaid: [
+            bigNumberify(0),
+            bigNumberify(amountPaidRequester),
+            bigNumberify(amountPaidChallenger)
+          ]
         }
-      )
+      })
       setDecodedItems(items)
     })()
   }, [gtcr, itemsQuery])

@@ -34,7 +34,6 @@ import itemsTourSteps from './tour-steps'
 import { DISPUTE_STATUS } from 'utils/item-status'
 import { useLazyQuery } from '@apollo/client'
 import { CLASSIC_REGISTRY_ITEMS_QUERY } from 'utils/graphql'
-import useGetLogs from 'hooks/get-logs'
 
 const NSFW_FILTER_KEY = 'NSFW_FILTER_KEY'
 const ITEMS_TOUR_DISMISSED = 'ITEMS_TOUR_DISMISSED'
@@ -115,7 +114,6 @@ const Items = () => {
   const search = window.location.search || ''
   const { tcrAddress, chainId } = useParams()
   const { requestWeb3Auth, timestamp } = useContext(WalletContext)
-  const { library, active, account } = useWeb3Context()
   const {
     gtcr,
     metaEvidence,
@@ -126,15 +124,12 @@ const Items = () => {
     submissionDeposit
   } = useContext(TCRViewContext)
   const [submissionFormOpen, setSubmissionFormOpen] = useState()
-  const [oldActiveItems, setOldActiveItems] = useState({ data: [] })
-  const [error, setError] = useState()
   const refAttr = useRef()
   const [eventListenerSet, setEventListenerSet] = useState()
   const queryOptions = searchStrToFilterObjLight(search)
   const [nsfwFilterOn, setNSFWFilter] = useState(true)
   const [queryItemParams, setQueryItemParams] = useState()
   const [getItems, itemsQuery] = useLazyQuery(CLASSIC_REGISTRY_ITEMS_QUERY)
-  const getLogs = useGetLogs(library)
 
   const toggleNSFWFilter = useCallback(checked => {
     setNSFWFilter(checked)
@@ -222,9 +217,9 @@ const Items = () => {
     if (!data || loading || !called) return null
     let items = itemsQuery.data.items
 
-    items = items.map(({ itemID, status: statusName, requests, data }) => {
+    items = items.map(item => {
       const { disputed, disputeID, submissionTime, rounds, resolved, deposit } =
-        requests[0] ?? {}
+        item.requests[0] ?? {}
 
       const {
         appealPeriodStart,
@@ -245,20 +240,12 @@ const Items = () => {
         ? DISPUTE_STATUS.APPEALABLE
         : DISPUTE_STATUS.WAITING
 
-      const graphStatusNameToCode = {
-        Absent: 0,
-        Registered: 1,
-        RegistrationRequested: 2,
-        ClearingRequested: 3
-      }
-
       return {
-        ID: itemID,
-        itemID,
-        status: graphStatusNameToCode[statusName],
+        ...item,
+        ID: item.itemID,
+        itemID: item.itemID,
         disputeStatus,
         disputed,
-        data,
         disputeID,
         deposit,
         submissionTime: bigNumberify(submissionTime),
@@ -279,21 +266,10 @@ const Items = () => {
 
   // Decode items once meta evidence and items were fetched.
   const items = useMemo(() => {
-    if (
-      !metaEvidence ||
-      metaEvidence.address !== tcrAddress ||
-      (oldActiveItems.address && oldActiveItems.address !== tcrAddress) ||
-      !encodedItems
-    )
+    if (!metaEvidence || metaEvidence.address !== tcrAddress || !encodedItems)
       return
-    // If on page 1, display also old items with new pending
-    // requests, if any.
-    const displayedItems =
-      page && Number(page) > 1
-        ? encodedItems
-        : [...oldActiveItems.data, ...encodedItems]
 
-    return displayedItems.map((item, i) => {
+    return encodedItems.map((item, i) => {
       let decodedItem
       const errors = []
       const { columns } = metaEvidence.metadata
@@ -320,7 +296,7 @@ const Items = () => {
         errors
       }
     })
-  }, [metaEvidence, oldActiveItems, page, tcrAddress, encodedItems])
+  }, [metaEvidence, tcrAddress, encodedItems])
 
   // Watch for submissions and status change events to refetch items.
   useEffect(() => {
@@ -364,13 +340,8 @@ const Items = () => {
       />
     )
 
-  if (tcrError || error)
-    return (
-      <ErrorPage
-        code="400"
-        message={tcrError || error || 'Decoding this item.'}
-      />
-    )
+  if (tcrError)
+    return <ErrorPage code="400" message={tcrError || 'Decoding this item.'} />
 
   const { metadata } = metaEvidence || {}
   const { isConnectedTCR } = metadata || {}
