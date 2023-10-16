@@ -18,3 +18,10 @@
   from = "/*"
   to = "/index.html"
   status = 200
+
+[[redirects]]
+  from = "https://curate.kleros.io/*"
+  to = "https://curate.kleros.builders/:splat"
+  status = 301
+  force = true
+
