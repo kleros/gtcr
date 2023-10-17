@@ -334,8 +334,12 @@ const Items = () => {
         decodedData = item.decodedData
         // eslint-disable-next-line no-unused-vars
       } catch (err) {
-        errors.push(`Error decoding item ${item.ID} of list at ${tcrAddress}`)
-        console.warn(`Error decoding item ${item.ID} of list at ${tcrAddress}`)
+        errors.push(
+          `Error decoding item ${item.itemID} of list at ${tcrAddress}`
+        )
+        console.warn(
+          `Error decoding item ${item.itemID} of list at ${tcrAddress}`
+        )
         console.warn(err)
       }
 
