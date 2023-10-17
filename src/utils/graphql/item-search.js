@@ -14,6 +14,25 @@ const ITEM_SEARCH_QUERY = gql`
       registry {
         id
       }
+      requests(first: 1, orderBy: submissionTime, orderDirection: desc) {
+        disputed
+        disputeID
+        submissionTime
+        resolved
+        requester
+        challenger
+        resolutionTime
+        deposit
+        rounds(first: 1, orderBy: creationTime, orderDirection: desc) {
+          appealPeriodStart
+          appealPeriodEnd
+          ruling
+          hasPaidRequester
+          hasPaidChallenger
+          amountPaidRequester
+          amountPaidChallenger
+        }
+      }
     }
   }
 `
