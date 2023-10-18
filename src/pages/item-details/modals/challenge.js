@@ -64,7 +64,7 @@ const ChallengeModal = ({ item, itemName, statusCode, fileURI, ...rest }) => {
         ipfsEvidenceObject[0].path}`
 
       // Request signature and submit.
-      const tx = await gtcr.challengeRequest(item.ID, ipfsEvidencePath, {
+      const tx = await gtcr.challengeRequest(item.itemID, ipfsEvidencePath, {
         value: challengeDeposit
       })
 

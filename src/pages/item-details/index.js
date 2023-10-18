@@ -107,7 +107,7 @@ const ItemDetails = ({ itemID, search }) => {
           values: item.data
         })
       } catch (_) {
-        errors.push(`Error decoding ${item.ID} of TCR at ${tcrAddress}`)
+        errors.push(`Error decoding ${item.itemID} of TCR at ${tcrAddress}`)
       }
 
       setDecodedItem({
