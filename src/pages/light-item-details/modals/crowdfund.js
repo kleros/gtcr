@@ -12,10 +12,10 @@ import {
   Spin
 } from 'antd'
 import PropTypes from 'prop-types'
-import { STATUS_CODE, PARTY } from 'utils/item-status'
+import { STATUS_CODE, PARTY, SUBGRAPH_RULING } from 'utils/item-status'
 import itemPropTypes from 'prop-types/item'
 import { LightTCRViewContext } from 'contexts/light-tcr-view-context'
-import { formatEther, bigNumberify } from 'ethers/utils'
+import { formatEther, parseEther, bigNumberify } from 'ethers/utils'
 import ETHAmount from 'components/eth-amount'
 import styled from 'styled-components/macro'
 import { WalletContext } from 'contexts/wallet-context'
@@ -41,7 +41,7 @@ const StyledModal = styled(Modal)`
   }
 `
 
-const CrowdfundModal = ({ statusCode, item, fileURI, ...rest }) => {
+const CrowdfundModal = ({ statusCode, item, fileURI, appealCost, ...rest }) => {
   const { pushWeb3Action } = useContext(WalletContext)
   const { setUserSubscribed } = useContext(TourContext)
   const {
@@ -53,15 +53,23 @@ const CrowdfundModal = ({ statusCode, item, fileURI, ...rest }) => {
   } = useContext(LightTCRViewContext)
 
   const [contributionShare, setContributionShare] = useState(1)
-  const { currentRuling, hasPaid } = item
   const [userSelectedSide, setUserSelectedSide] = useState()
   const nativeCurrency = useNativeCurrency()
+
+  const round = item.requests[0].rounds[0]
+  const {
+    hasPaidRequester,
+    hasPaidChallenger,
+    currentRuling,
+    amountPaidRequester,
+    amountPaidChallenger
+  } = round
 
   const autoSelectedSide = useMemo(() => {
     if (
       currentRuling === PARTY.NONE ||
-      (hasPaid[PARTY.REQUESTER] && hasPaid[PARTY.CHALLENGER]) ||
-      (!hasPaid[PARTY.REQUESTER] && !hasPaid[PARTY.CHALLENGER])
+      (hasPaidRequester && hasPaidChallenger) ||
+      (!hasPaidRequester && !hasPaidChallenger)
     )
       return PARTY.NONE
 
@@ -71,8 +79,8 @@ const CrowdfundModal = ({ statusCode, item, fileURI, ...rest }) => {
 
     // If one of the parties is fully funded but not the other, automatically set
     // the side to the pending side.
-    return !hasPaid[PARTY.REQUESTER] ? PARTY.REQUESTER : PARTY.CHALLENGER
-  }, [currentRuling, hasPaid, statusCode])
+    return !hasPaidRequester ? PARTY.REQUESTER : PARTY.CHALLENGER
+  }, [currentRuling, hasPaidRequester, hasPaidChallenger, statusCode])
 
   const side = useMemo(() => userSelectedSide || autoSelectedSide, [
     autoSelectedSide,
@@ -90,7 +98,8 @@ const CrowdfundModal = ({ statusCode, item, fileURI, ...rest }) => {
     loserStakeMultiplier,
     currentRuling,
     item,
-    MULTIPLIER_DIVISOR
+    MULTIPLIER_DIVISOR,
+    appealCost
   })
 
   if (!sharedStakeMultiplier || !potentialReward)
@@ -101,7 +110,8 @@ const CrowdfundModal = ({ statusCode, item, fileURI, ...rest }) => {
     )
 
   if (
-    (currentRuling === PARTY.NONE || statusCode === STATUS_CODE.CROWDFUNDING) &&
+    (currentRuling === SUBGRAPH_RULING.NONE ||
+      statusCode === STATUS_CODE.CROWDFUNDING) &&
     side === PARTY.NONE // User did not select a side to fund yet.
   )
     // Arbitrator refused to rule or the dispute is in the first half
@@ -177,6 +187,8 @@ const CrowdfundModal = ({ statusCode, item, fileURI, ...rest }) => {
     })
   }
 
+  const amountPaid = side === 1 ? amountPaidRequester : amountPaidChallenger
+
   return (
     <StyledModal
       {...rest}
@@ -230,15 +242,24 @@ const CrowdfundModal = ({ statusCode, item, fileURI, ...rest }) => {
         <Col span={8}>
           <InputNumber
             min={0}
-            max={1}
-            step={0.001}
+            // Careful: this max could be strictly lower?
+            max={formatEther(amountStillRequired)}
+            step={0.01}
             style={{ marginLeft: 16 }}
             value={
               amountStillRequired
                 ? contributionShare * formatEther(amountStillRequired)
                 : contributionShare
             }
-            onChange={value => setContributionShare(value)}
+            onChange={value => {
+              // convert value to wei
+              const weiAmount = parseEther(String(value))
+              // get share
+              const shareInBasis = weiAmount
+                .mul(MULTIPLIER_DIVISOR)
+                .div(amountStillRequired)
+              setContributionShare(shareInBasis.toNumber() / MULTIPLIER_DIVISOR)
+            }}
           />{' '}
           {nativeCurrency}
         </Col>
@@ -255,7 +276,7 @@ const CrowdfundModal = ({ statusCode, item, fileURI, ...rest }) => {
         <Descriptions.Item label="Amount Paid:">
           <ETHAmount
             decimals={4}
-            amount={item && item.amountPaid[side]}
+            amount={amountPaid}
             displayUnit={` ${nativeCurrency}`}
           />
         </Descriptions.Item>
