@@ -19,7 +19,8 @@ const ItemActionModal = ({
   challengePeriodDuration,
   tcrAddress,
   metaEvidence,
-  gtcrView
+  gtcrView,
+  appealCost
 }) => {
   // Common button properties.
   const rest = {
@@ -75,6 +76,7 @@ const ItemActionModal = ({
           statusCode={statusCode}
           item={item}
           fileURI={fileURI}
+          appealCost={appealCost}
           {...rest}
         />
       )

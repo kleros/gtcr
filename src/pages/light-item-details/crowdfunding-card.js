@@ -3,14 +3,14 @@ import { Card, Typography, Progress } from 'antd'
 import styled from 'styled-components/macro'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
-  DISPUTE_STATUS,
   PARTY,
+  SUBGRAPH_RULING,
   itemToStatusCode,
   STATUS_CODE
 } from 'utils/item-status'
 import { LightTCRViewContext } from 'contexts/light-tcr-view-context'
 import useRequiredFees from 'hooks/required-fees'
-import { formatEther } from 'ethers/utils'
+import { BigNumber, formatEther } from 'ethers/utils'
 import itemPropType from 'prop-types/item'
 import BNPropType from 'prop-types/bn'
 import useNativeCurrency from 'hooks/native-currency'
@@ -18,7 +18,7 @@ import useNativeCurrency from 'hooks/native-currency'
 const StyledCard = styled(Card)`
   background: linear-gradient(111.6deg, #4d00b4 46.25%, #6500b4 96.25%);
   color: white;
-  margin: 40px 0 20px;
+  margin: 40px 0 20px !important;
 `
 
 const StyledContent = styled.div`
@@ -57,7 +57,7 @@ const StyledIcon = styled(FontAwesomeIcon)`
   margin: 12px;
 `
 
-const CrowdfundingCard = ({ item, timestamp }) => {
+const CrowdfundingCard = ({ item, timestamp, appealCost }) => {
   const {
     challengePeriodDuration,
     sharedStakeMultiplier,
@@ -74,7 +74,8 @@ const CrowdfundingCard = ({ item, timestamp }) => {
     loserStakeMultiplier,
     currentRuling: item && item.currentRuling,
     item,
-    MULTIPLIER_DIVISOR
+    MULTIPLIER_DIVISOR,
+    appealCost
   })
   const challengerFees = useRequiredFees({
     side: PARTY.CHALLENGER,
@@ -83,17 +84,17 @@ const CrowdfundingCard = ({ item, timestamp }) => {
     loserStakeMultiplier,
     currentRuling: item && item.currentRuling,
     item,
-    MULTIPLIER_DIVISOR
+    MULTIPLIER_DIVISOR,
+    appealCost
   })
 
-  if (
-    !item ||
-    !challengePeriodDuration ||
-    item.disputeStatus !== DISPUTE_STATUS.APPEALABLE
-  )
-    return null
+  if (!item || !challengePeriodDuration) return null
+  const round = item.requests[0].rounds[0]
+  const { hasPaidRequester, hasPaidChallenger, currentRuling } = round
 
-  const { hasPaid, amountPaid, currentRuling } = item
+  let { amountPaidRequester, amountPaidChallenger } = round
+  amountPaidRequester = new BigNumber(amountPaidRequester)
+  amountPaidChallenger = new BigNumber(amountPaidChallenger)
 
   if (
     !requesterFees ||
@@ -101,7 +102,8 @@ const CrowdfundingCard = ({ item, timestamp }) => {
     !challengerFees.requiredForSide ||
     !challengerFees.potentialReward ||
     !requesterFees.requiredForSide ||
-    !requesterFees.potentialReward
+    !requesterFees.potentialReward ||
+    !appealCost
   )
     return null
 
@@ -110,12 +112,12 @@ const CrowdfundingCard = ({ item, timestamp }) => {
   if (statusCode === STATUS_CODE.WAITING_ENFORCEMENT) return null
 
   const requesterPercentage =
-    amountPaid[PARTY.REQUESTER]
+    amountPaidRequester
       .mul(MULTIPLIER_DIVISOR)
       .div(requesterFees.requiredForSide)
       .toNumber() / 100
   const challengerPercentage =
-    amountPaid[PARTY.CHALLENGER]
+    amountPaidChallenger
       .mul(MULTIPLIER_DIVISOR)
       .div(challengerFees.requiredForSide)
       .toNumber() / 100
@@ -138,13 +140,13 @@ const CrowdfundingCard = ({ item, timestamp }) => {
             Submitter
           </StyledTitle>
           <Progress
-            percent={hasPaid[PARTY.REQUESTER] ? 100 : requesterPercentage}
-            status={hasPaid[PARTY.REQUESTER] ? 'success' : 'active'}
+            percent={hasPaidRequester ? 100 : requesterPercentage}
+            status={hasPaidRequester ? 'success' : 'active'}
             showInfo={false}
           />
           <br />
           <StyledParagraph>
-            {hasPaid[PARTY.REQUESTER]
+            {hasPaidRequester
               ? `Submitter funded. The challenger must now fully fund his side of the appeal before the deadline in order not to lose the dispute.`
               : `Contribute arbitration fees to the submitter's appeal for a chance to win at most ${formatEther(
                   requesterFees.potentialReward
@@ -156,13 +158,13 @@ const CrowdfundingCard = ({ item, timestamp }) => {
             Challenger
           </StyledTitle>
           <Progress
-            percent={hasPaid[PARTY.CHALLENGER] ? 100 : challengerPercentage}
-            status={hasPaid[PARTY.CHALLENGER] ? 'success' : 'active'}
+            percent={hasPaidChallenger ? 100 : challengerPercentage}
+            status={hasPaidChallenger ? 'success' : 'active'}
             showInfo={false}
           />
           <br />
           <StyledParagraph>
-            {hasPaid[PARTY.CHALLENGER]
+            {hasPaidChallenger
               ? 'Challenger fully funded. The submitter must now fully fund his side of the appeal before the deadline in order not to lose the dispute.'
               : `Contribute arbitration fees to the challenger's appeal for a chance to win at most ${formatEther(
                   challengerFees.potentialReward
@@ -172,12 +174,16 @@ const CrowdfundingCard = ({ item, timestamp }) => {
         <StyledSection>
           <StyledIcon icon="info-circle" size="2x" />
           <StyledParagraph>
-            {currentRuling === PARTY.NONE
+            {currentRuling === SUBGRAPH_RULING.NONE
               ? 'The arbitrator did not give a decisive ruling. If a party fully funds his side of an appeal, the other must also fund in order to not lose the dispute.'
               : `If the ${
-                  currentRuling === PARTY.REQUESTER ? 'challenger' : 'submitter'
+                  currentRuling === SUBGRAPH_RULING.ACCEPT
+                    ? 'challenger'
+                    : 'submitter'
                 } fully funds his side of the appeal, the ${
-                  currentRuling === PARTY.REQUESTER ? 'submitter' : 'challenger'
+                  currentRuling === SUBGRAPH_RULING.ACCEPT
+                    ? 'submitter'
+                    : 'challenger'
                 } must also fund his side of the appeal in order not to lose the case.`}
           </StyledParagraph>
         </StyledSection>

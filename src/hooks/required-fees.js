@@ -1,14 +1,14 @@
 import { useMemo } from 'react'
-import { PARTY } from '../utils/item-status'
+import { PARTY, SUBGRAPH_RULING } from '../utils/item-status'
 
 const useRequiredFees = ({
   side,
   sharedStakeMultiplier,
   winnerStakeMultiplier,
   loserStakeMultiplier,
-  currentRuling,
   item,
-  MULTIPLIER_DIVISOR
+  MULTIPLIER_DIVISOR,
+  appealCost
 }) =>
   useMemo(() => {
     if (
@@ -16,20 +16,29 @@ const useRequiredFees = ({
       !winnerStakeMultiplier ||
       !loserStakeMultiplier ||
       !MULTIPLIER_DIVISOR ||
-      typeof currentRuling === 'undefined' ||
       !item ||
-      item.resolved
+      item.resolved ||
+      !appealCost
     )
       return {}
+
+    const round = item.requests[0].rounds[0]
+    const {
+      ruling: currentRuling,
+      amountPaidRequester,
+      amountPaidChallenger
+    } = round
 
     // Calculate the fee stake multiplier.
     // The fee stake is the reward shared among parties that crowdfunded
     // the appeal of the party that wins the dispute.
     const sideIsWinner =
-      currentRuling === PARTY.NONE
+      currentRuling === SUBGRAPH_RULING.NONE
         ? null
-        : (currentRuling === PARTY.REQUESTER && side === PARTY.REQUESTER) ||
-          (currentRuling === PARTY.CHALLENGER && side === PARTY.CHALLENGER)
+        : (currentRuling === SUBGRAPH_RULING.ACCEPT &&
+            side === PARTY.REQUESTER) ||
+          (currentRuling === SUBGRAPH_RULING.REJECT &&
+            side === PARTY.CHALLENGER)
     const feeStakeMultiplier =
       sideIsWinner === null
         ? sharedStakeMultiplier
@@ -39,15 +48,15 @@ const useRequiredFees = ({
 
     // Calculate full cost to fund the side.
     // Full appeal cost = appeal cost + appeal cost * fee stake multiplier.
-    const { appealCost } = item
     const requiredForSide = appealCost.add(
       appealCost.mul(feeStakeMultiplier).div(MULTIPLIER_DIVISOR)
     )
 
     if (requiredForSide.isZero()) return {} // No fees required.
 
+    const amountPaid = side === 1 ? amountPaidRequester : amountPaidChallenger
     // Calculate amount still required to fully fund the side.
-    const amountStillRequired = requiredForSide.sub(item.amountPaid[side])
+    const amountStillRequired = requiredForSide.sub(amountPaid)
 
     // Calculate the max reward the user can earn by contributing fees.
     // Potential reward = appeal cost * opponent fee stake multiplier * share available for contribution.
@@ -73,12 +82,12 @@ const useRequiredFees = ({
     return { requiredForSide, amountStillRequired, potentialReward, appealCost }
   }, [
     MULTIPLIER_DIVISOR,
-    currentRuling,
     item,
     loserStakeMultiplier,
     sharedStakeMultiplier,
     side,
-    winnerStakeMultiplier
+    winnerStakeMultiplier,
+    appealCost
   ])
 
 export default useRequiredFees

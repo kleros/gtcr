@@ -20,6 +20,8 @@ import { useQuery } from '@apollo/client'
 import SearchBar from 'components/light-search-bar'
 import { parseIpfs } from 'utils/ipfs-parse'
 import { fetchMetaEvidence } from 'hooks/tcr-view'
+import { ethers } from 'ethers'
+import { abi as _IArbitrator } from '@kleros/erc-792/build/contracts/IArbitrator.json'
 
 const ITEM_TOUR_DISMISSED = 'ITEM_TOUR_DISMISSED'
 
@@ -71,6 +73,7 @@ const ItemDetails = ({ itemID, search }) => {
   const { timestamp } = useContext(WalletContext)
   const [modalOpen, setModalOpen] = useState()
   const { tcrError, metaEvidence } = useContext(LightTCRViewContext)
+  const [appealCost, setAppealCost] = useState()
 
   // subgraph item entities have id "<itemID>@<listaddress>"
   const compoundId = `${itemID}@${tcrAddress.toLowerCase()}`
@@ -156,6 +159,29 @@ const ItemDetails = ({ itemID, search }) => {
     setModalOpen(true)
   }, [loading, search])
 
+  // If the item is disputed, unresolved etc, get the appealCost to propagate it to
+  // crowdfunding related components
+  useEffect(() => {
+    if (!item || appealCost !== undefined) return
+    const request = item.requests[0]
+    // appeal cost might not be applicable
+    if (request.resolved || !request.disputed) setAppealCost(null)
+    else {
+      const arbitrator = new ethers.Contract(
+        request.arbitrator,
+        _IArbitrator,
+        library
+      )
+      arbitrator
+        .appealCost(request.disputeID, request.arbitratorExtraData)
+        .then(cost => setAppealCost(cost))
+        .catch(err => {
+          console.error(err)
+          setAppealCost(null)
+        })
+    }
+  }, [item, appealCost, library])
+
   if (!tcrAddress || !itemID || tcrError)
     return (
       <ErrorPage
@@ -193,6 +219,7 @@ const ItemDetails = ({ itemID, search }) => {
           request={item?.requests && { ...item.requests[0] }}
           modalOpen={modalOpen}
           setModalOpen={setModalOpen}
+          appealCost={appealCost}
           dark
         />
         <div style={{ marginBottom: '40px' }} />
@@ -206,7 +233,11 @@ const ItemDetails = ({ itemID, search }) => {
           itemMetaEvidence={itemMetaEvidence}
         />
         {/* Crowdfunding card is only rendered if the item has an appealable dispute. */}
-        <CrowdfundingCard item={decodedItem || item} timestamp={timestamp} />
+        <CrowdfundingCard
+          item={decodedItem}
+          timestamp={timestamp}
+          appealCost={appealCost}
+        />
 
         {/* Spread the `requests` parameter to convert elements from array to an object */}
         <RequestTimelines

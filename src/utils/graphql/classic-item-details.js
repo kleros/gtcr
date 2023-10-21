@@ -15,6 +15,7 @@ const CLASSIC_ITEM_DETAILS_QUERY = gql`
         resolved
         requester
         arbitrator
+        arbitratorExtraData
         challenger
         deposit
         disputeOutcome

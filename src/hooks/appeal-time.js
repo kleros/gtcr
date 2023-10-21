@@ -1,11 +1,13 @@
 import { useMemo } from 'react'
-import { DISPUTE_STATUS } from '../utils/item-status'
-import { bigNumberify } from 'ethers/utils'
+import { BigNumber, bigNumberify } from 'ethers/utils'
 
 const useAppealTime = item =>
   useMemo(() => {
-    if (!item || item.disputeStatus !== DISPUTE_STATUS.APPEALABLE) return {}
-    const { appealStart, appealEnd } = item
+    if (!item) return {}
+    const round = item.requests[0].rounds[0]
+    const { appealPeriodStart, appealPeriodEnd } = round
+    const appealStart = new BigNumber(appealPeriodStart)
+    const appealEnd = new BigNumber(appealPeriodEnd)
     const appealDuration = appealEnd.sub(appealStart)
     const appealEndLoser = appealStart.add(appealDuration.div(bigNumberify(2)))
 

@@ -10,7 +10,7 @@ import {
   STATUS_CODE,
   PARTY,
   CONTRACT_STATUS,
-  hasPendingRequest
+  SUBGRAPH_RULING
 } from 'utils/item-status'
 import itemPropTypes from 'prop-types/item'
 import ETHAddress from 'components/eth-address'
@@ -51,7 +51,7 @@ const Ruling = ({ currentRuling }) => {
     case 'None':
       return 'The arbitrator refused to rule.'
     case 'Accept':
-      return 'The arbitrator ruled in favor of the submitter.'
+      return 'The arbitrator ruled in favor of the requester.'
     case 'Reject':
       return 'The arbitrator ruled in favor of the challenger.'
     default:
@@ -64,7 +64,8 @@ const ItemStatusCard = ({
   timestamp,
   request,
   modalOpen,
-  setModalOpen
+  setModalOpen,
+  appealCost
 }) => {
   const { pushWeb3Action, requestWeb3Auth, networkId } = useContext(
     WalletContext
@@ -146,7 +147,7 @@ const ItemStatusCard = ({
     }
   }
 
-  const { disputeID, arbitrator } = request || {}
+  const { disputeID, arbitrator, resolved } = request || {}
   const { metadata, fileURI } = metaEvidence || {}
   const { itemName } = metadata || {}
 
@@ -191,18 +192,19 @@ const ItemStatusCard = ({
               </Descriptions.Item>
             </>
           )}
-          {hasPendingRequest(item.status) && (
-            <Descriptions.Item label="Request Type">
-              {item.status === CONTRACT_STATUS.REGISTRATION_REQUESTED
-                ? `Submission`
-                : `Removal request`}
-            </Descriptions.Item>
-          )}
+          <Descriptions.Item label="Request Type">
+            {item.status === CONTRACT_STATUS.REGISTRATION_REQUESTED
+              ? `Submission`
+              : `Removal`}
+          </Descriptions.Item>
           <Descriptions.Item label="Requester">
             <ETHAddress address={request.requester} />
           </Descriptions.Item>
           {disputed && Number(disputeID) !== 0 && (
             <>
+              <Descriptions.Item label="Challenger">
+                <ETHAddress address={request.challenger} />
+              </Descriptions.Item>
               <Descriptions.Item label="Dispute ID">
                 {klerosAddress.toLowerCase() === arbitrator.toLowerCase() ? (
                   <a href={uiURL.replace(':disputeID', disputeID.toString())}>
@@ -212,22 +214,17 @@ const ItemStatusCard = ({
                   disputeID.toString()
                 )}
               </Descriptions.Item>
-              <Descriptions.Item label="Challenger">
-                <ETHAddress address={request.challenger} />
+              <Descriptions.Item label="Arbitrator">
+                <ETHAddress address={arbitrator} />
               </Descriptions.Item>
             </>
-          )}
-          {hasPendingRequest(item.status) && disputed && (
-            <Descriptions.Item label="Arbitrator">
-              <ETHAddress address={arbitrator} />
-            </Descriptions.Item>
           )}
           {appealable && (
             <Descriptions.Item label="Dispute Status">
               Appealable
             </Descriptions.Item>
           )}
-          {disputed && Number(disputeID) !== 0 && (
+          {disputed && (resolved || appealable) && (
             <Descriptions.Item label={appealable ? 'Current Ruling' : 'Ruling'}>
               <Ruling currentRuling={currentRuling} />
             </Descriptions.Item>
@@ -247,20 +244,18 @@ const ItemStatusCard = ({
           )}
           {/* Display appeal countdowns, if applicable. */}
           {/* Indecisive ruling countdown. */}
-          {currentRuling === PARTY.NONE &&
+          {currentRuling === SUBGRAPH_RULING.NONE &&
             statusCode === STATUS_CODE.CROWDFUNDING && (
               <Descriptions.Item label="Remaining Time">
                 {appealCountdown}
               </Descriptions.Item>
             )}
           {/* Decisive ruling winner countdown. */}
-          {currentRuling !== PARTY.NONE &&
-            (statusCode === STATUS_CODE.CROWDFUNDING ||
-              statusCode === STATUS_CODE.CROWDFUNDING_WINNER) && (
-              <Descriptions.Item label="Winner Appeal Time">
-                {appealCountdown}
-              </Descriptions.Item>
-            )}
+          {currentRuling !== SUBGRAPH_RULING.NONE && appealable && (
+            <Descriptions.Item label="Winner Appeal Time">
+              {appealCountdown}
+            </Descriptions.Item>
+          )}
           {/* Decisive ruling loser countdown. */}
           {currentRuling !== PARTY.NONE &&
             statusCode === STATUS_CODE.CROWDFUNDING && (
@@ -286,6 +281,7 @@ const ItemStatusCard = ({
             metaEvidence={metaEvidence}
             challengePeriodDuration={challengePeriodDuration}
             gtcrView={gtcrView}
+            appealCost={appealCost}
           />
         )}
     </>

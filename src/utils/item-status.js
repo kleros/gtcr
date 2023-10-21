@@ -6,6 +6,12 @@ export const PARTY = {
   CHALLENGER: 2
 }
 
+export const SUBGRAPH_RULING = {
+  NONE: 'None',
+  ACCEPT: 'Accept',
+  REJECT: 'Reject'
+}
+
 export const DISPUTE_STATUS = {
   WAITING: 0,
   APPEALABLE: 1,
@@ -162,7 +168,7 @@ export const itemToStatusCode = (item, timestamp, challengePeriodDuration) => {
   // if (appealStart.eq(bigNumberify(0)) && appealEnd.eq(bigNumberify(0)))
   //   return STATUS_CODE.CROWDFUNDING // Dispute is appealable but the arbitrator does not use appeal period.
 
-  if (round.ruling === 'None')
+  if (round.ruling === SUBGRAPH_RULING.NONE)
     if (timestamp.lte(round.appealPeriodEnd))
       // Arbitrator did not rule or refused to rule.
       return STATUS_CODE.CROWDFUNDING
@@ -179,7 +185,8 @@ export const itemToStatusCode = (item, timestamp, challengePeriodDuration) => {
   // If the party that lost the previous round is not fully funded
   // before the end of the first half, the dispute is over
   // and awaits enforecement.
-  const loser = round.ruling === 'Accept' ? PARTY.CHALLENGER : PARTY.REQUESTER
+  const loser =
+    round.ruling === SUBGRAPH_RULING.ACCEPT ? PARTY.CHALLENGER : PARTY.REQUESTER
   if (
     loser === PARTY.REQUESTER ? round.hasPaidRequester : round.hasPaidChallenger
   )
