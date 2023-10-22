@@ -28,6 +28,7 @@ const CLASSIC_ITEM_DETAILS_QUERY = gql`
             party
             title
             description
+            URI
             fileURI
             number
             timestamp

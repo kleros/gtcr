@@ -1,4 +1,4 @@
-import React, { useMemo, useContext, useState } from 'react'
+import React, { useMemo, useContext, useState, useEffect } from 'react'
 import {
   Timeline as AntdTimeline,
   Icon,
@@ -63,6 +63,7 @@ const secondTimestamp = timestamp =>
 
 const Timeline = ({ request, item, metaEvidence }) => {
   const { networkId } = useWeb3Context()
+  const [evidenceMap, setEvidenceMap] = useState()
 
   const logs = useMemo(() => {
     if (!request) return null
@@ -89,6 +90,7 @@ const Timeline = ({ request, item, metaEvidence }) => {
       transactionHash: e.txHash,
       title: e.title,
       description: e.description,
+      URI: e.URI,
       fileURI: e.fileURI,
       fileTypeExtension: e.fileTypeExtension,
       party: e.party
@@ -109,6 +111,36 @@ const Timeline = ({ request, item, metaEvidence }) => {
   }, [request])
 
   const requestType = request.requestType
+
+  // The Graph can fail to index the evidence fields. Load unloaded fields manually
+  useEffect(() => {
+    const evidenceManualFetch = async () => {
+      const unindexedEvidenceURIs = logs
+        .filter(e => e.name === 'Evidence')
+        .filter(
+          e =>
+            e.title === null &&
+            e.description === null &&
+            e.fileURI === null &&
+            e.fileTypeExtension === null
+        )
+        .map(e => e.URI)
+
+      const evidenceJSONs = await Promise.all(
+        unindexedEvidenceURIs.map(async uri => {
+          const file = await (await fetch(parseIpfs(uri))).json()
+          return file
+        })
+      )
+      const evidenceMapProcess = {}
+      unindexedEvidenceURIs.forEach((uri, index) => {
+        evidenceMapProcess[uri] = evidenceJSONs[index]
+      })
+      setEvidenceMap(evidenceMapProcess)
+    }
+    if (!logs || evidenceMap) return
+    evidenceManualFetch()
+  }, [logs, evidenceMap, setEvidenceMap])
 
   // Display loading indicator
   if (!item || !request) return <Skeleton active />
@@ -141,7 +173,10 @@ const Timeline = ({ request, item, metaEvidence }) => {
       const txPage = getTxPage({ networkId, txHash: transactionHash })
 
       if (name === 'Evidence') {
-        const { title, description, fileURI, party } = event
+        const { party } = event
+        const { title, description, fileURI } = evidenceMap?.[event.URI]
+          ? evidenceMap[event.URI]
+          : event
         /* eslint-disable unicorn/new-for-builtins */
         const submissionTime = (
           <span>
