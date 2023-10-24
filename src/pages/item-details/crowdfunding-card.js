@@ -109,7 +109,13 @@ const CrowdfundingCard = ({ item, timestamp, appealCost }) => {
 
   const statusCode = itemToStatusCode(item, timestamp, challengePeriodDuration)
 
-  if (statusCode === STATUS_CODE.WAITING_ENFORCEMENT) return null
+  if (
+    !(
+      statusCode === STATUS_CODE.CROWDFUNDING ||
+      statusCode === STATUS_CODE.CROWDFUNDING_WINNER
+    )
+  )
+    return null
 
   const requesterPercentage =
     amountPaidRequester
