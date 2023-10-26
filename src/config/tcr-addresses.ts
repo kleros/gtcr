@@ -131,6 +131,6 @@ export const subgraphUrl = {
   '1':
     'https://api.thegraph.com/subgraphs/name/greenlucid/legacy-curate-mainnet',
   '5':
-    'https://api.thegraph.com/subgraphs/name/shotaronowhere/curate-goerli-fix',
+    'https://api.thegraph.com/subgraphs/name/greenlucid/curate-goerli',
   '100': 'https://api.thegraph.com/subgraphs/name/greenlucid/legacy-curate-xdai'
 } as const
