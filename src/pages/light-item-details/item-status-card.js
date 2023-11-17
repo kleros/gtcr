@@ -190,13 +190,13 @@ const ItemStatusCard = ({
                   displayUnit={` ${nativeCurrency}`}
                 />
               </Descriptions.Item>
+              <Descriptions.Item label="Request Type">
+                {item.status === CONTRACT_STATUS.REGISTRATION_REQUESTED
+                  ? `Submission`
+                  : `Removal`}
+              </Descriptions.Item>
             </>
           )}
-          <Descriptions.Item label="Request Type">
-            {item.status === CONTRACT_STATUS.REGISTRATION_REQUESTED
-              ? `Submission`
-              : `Removal`}
-          </Descriptions.Item>
           <Descriptions.Item label="Requester">
             <ETHAddress address={request.requester} />
           </Descriptions.Item>

@@ -4,7 +4,7 @@ import { Modal, Descriptions, Typography, Button, Spin } from 'antd'
 import styled from 'styled-components/macro'
 import { ethers } from 'ethers'
 import _gtcr from 'assets/abis/LightGeneralizedTCR.json'
-import { STATUS_CODE } from 'utils/item-status'
+import { STATUS_CODE, CONTRACT_STATUS } from 'utils/item-status'
 import { LightTCRViewContext } from 'contexts/light-tcr-view-context'
 import ETHAmount from 'components/eth-amount'
 import { WalletContext } from 'contexts/wallet-context'
@@ -39,7 +39,7 @@ const ChallengeModal = ({ item, itemName, statusCode, fileURI, ...rest }) => {
   const { pushWeb3Action } = useContext(WalletContext)
   const { setUserSubscribed } = useContext(TourContext)
   const challengeDeposit =
-    item.status === STATUS_CODE.SUBMITTED
+    item.status === CONTRACT_STATUS.REGISTRATION_REQUESTED
       ? submissionChallengeDeposit
       : removalChallengeDeposit
 
