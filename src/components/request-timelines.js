@@ -16,8 +16,8 @@ import styled from 'styled-components/macro'
 import ETHAddress from 'components/eth-address'
 import {
   CONTRACT_STATUS,
-  PARTY,
   REQUEST_TYPE_LABEL,
+  SUBGRAPH_RULING,
   hasPendingRequest
 } from 'utils/item-status'
 import { capitalizeFirstLetter } from 'utils/string'
@@ -74,7 +74,7 @@ const Timeline = ({ request, item, metaEvidence }) => {
         transactionHash: r.txHashAppealPossible,
         appealableRuling: r.ruling
       }))
-      .filter(appeal => appeal.transactionHash !== undefined)
+      .filter(appeal => !!appeal.transactionHash)
 
     const appealDecisions = request.rounds
       .map(r => ({
@@ -82,7 +82,7 @@ const Timeline = ({ request, item, metaEvidence }) => {
         timestamp: r.appealedAt,
         transactionHash: r.txHashAppealDecision
       }))
-      .filter(appeal => appeal.transactionHash !== undefined)
+      .filter(appeal => !!appeal.transactionHash)
 
     const evidences = request.evidenceGroup.evidences.map(e => ({
       name: 'Evidence',
@@ -100,7 +100,9 @@ const Timeline = ({ request, item, metaEvidence }) => {
       name: 'Resolution',
       timestamp: request.resolutionTime,
       transactionHash: request.resolutionTx,
-      disputeOutcome: request.disputeOutcome
+      disputeOutcome: !request.disputed
+        ? SUBGRAPH_RULING.ACCEPT
+        : request.disputeOutcome
     }
 
     const logArray = [...appealPossibles, ...appealDecisions, ...evidences]
@@ -226,15 +228,15 @@ const Timeline = ({ request, item, metaEvidence }) => {
         return (
           <AntdTimeline.Item key={i}>
             <span>
-              {appealableRuling === PARTY.NONE
+              {appealableRuling === SUBGRAPH_RULING.NONE
                 ? 'The arbitrator refused to rule'
-                : appealableRuling === PARTY.REQUESTER
+                : appealableRuling === SUBGRAPH_RULING.ACCEPT
                 ? `The arbitrator ruled in favor of the ${
                     requestType === CONTRACT_STATUS.REGISTRATION_REQUESTED
                       ? 'submitter'
                       : 'requester'
                   }`
-                : appealableRuling === PARTY.CHALLENGER
+                : appealableRuling === SUBGRAPH_RULING.REJECT
                 ? 'The arbitrator ruled in favor of the challenger'
                 : 'The arbitrator gave an unknown ruling'}
               <Typography.Text type="secondary">
@@ -257,39 +259,50 @@ const Timeline = ({ request, item, metaEvidence }) => {
         switch (event.disputeOutcome) {
           case 'None': {
             resultMessage =
-              requestType === 'RegistrationRequested'
-                ? 'Submission accepted'
-                : 'Removal accepted'
+              requestType === CONTRACT_STATUS.REGISTRATION_REQUESTED
+                ? 'Submission rejected'
+                : 'Removal refused'
             statusColor =
-              requestType === 'RegistrationRequested' ? 'green' : 'red'
+              requestType === CONTRACT_STATUS.REGISTRATION_REQUESTED
+                ? 'red'
+                : 'green'
             break
           }
           case 'Accept': {
             resultMessage =
-              requestType === 'RegistrationRequested'
+              requestType === CONTRACT_STATUS.REGISTRATION_REQUESTED
                 ? 'Submission accepted'
                 : `${itemName || 'item'} removed.`
 
             statusColor =
-              requestType === 'RegistrationRequested' ? 'green' : 'red'
+              requestType === CONTRACT_STATUS.REGISTRATION_REQUESTED
+                ? 'green'
+                : 'red'
             break
           }
           case 'Reject': {
             resultMessage =
-              requestType === 'RegistrationRequested'
+              requestType === CONTRACT_STATUS.REGISTRATION_REQUESTED
                 ? 'Submission rejected'
                 : `Removal refused.`
 
             statusColor =
-              requestType === 'RegistrationRequested' ? 'green' : 'red'
+              requestType === CONTRACT_STATUS.REGISTRATION_REQUESTED
+                ? 'red'
+                : 'green'
             break
           }
           default:
             throw new Error('Unhandled ruling')
         }
+        const differentAppealableRuling =
+          request.disputed &&
+          request.rounds[0].ruling !== request.disputeOutcome
 
         return (
           <AntdTimeline.Item key={i} color={statusColor}>
+            {differentAppealableRuling &&
+              'The winner of the last round did not fund the appeal. '}
             {resultMessage}
             <Typography.Text type="secondary">
               <a href={txPage}>{secondTimestamp(timestamp)}</a>

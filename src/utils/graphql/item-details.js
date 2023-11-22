@@ -45,6 +45,9 @@ const LIGHT_ITEM_DETAILS_QUERY = gql`
           hasPaidChallenger
           amountPaidRequester
           amountPaidChallenger
+          txHashAppealPossible
+          appealedAt
+          txHashAppealDecision
         }
       }
     }
