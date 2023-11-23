@@ -136,8 +136,7 @@ export const references: Reference[] = [
     name: 'Avalanche C-Chain',
     label: 'AVAX',
     explorer: 'snowtrace.io'
-  }
-  ,
+  },
   {
     id: '25',
     namespaceId: 'eip155',
