@@ -128,9 +128,7 @@ export const txBatcherAddresses = {
 } as const
 
 export const subgraphUrl = {
-  '1':
-    'https://api.thegraph.com/subgraphs/name/greenlucid/legacy-curate-mainnet',
-  '5':
-    'https://api.thegraph.com/subgraphs/name/greenlucid/curate-goerli',
-  '100': 'https://api.thegraph.com/subgraphs/name/greenlucid/legacy-curate-xdai'
+  '1': 'https://api.thegraph.com/subgraphs/name/kleros/curate',
+  '5': 'https://api.thegraph.com/subgraphs/name/kleros/curate-goerli',
+  '100': 'https://api.thegraph.com/subgraphs/name/kleros/legacy-curate-xdai'
 } as const
