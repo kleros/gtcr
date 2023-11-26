@@ -61,9 +61,13 @@ const CrowdfundModal = ({ statusCode, item, fileURI, appealCost, ...rest }) => {
     hasPaidRequester,
     hasPaidChallenger,
     currentRuling,
+    ruling,
     amountPaidRequester,
     amountPaidChallenger
   } = round
+
+  const winner =
+    ruling === SUBGRAPH_RULING.ACCEPT ? PARTY.REQUESTER : PARTY.CHALLENGER
 
   const autoSelectedSide = useMemo(() => {
     if (
@@ -75,12 +79,12 @@ const CrowdfundModal = ({ statusCode, item, fileURI, appealCost, ...rest }) => {
 
     // Automatically set crowdfunding to the winner, if the arbitrator
     // gave a decisive ruling and we are in the second half of the appeal period.
-    if (statusCode === STATUS_CODE.CROWDFUNDING_WINNER) return currentRuling
+    if (statusCode === STATUS_CODE.CROWDFUNDING_WINNER) return winner
 
     // If one of the parties is fully funded but not the other, automatically set
     // the side to the pending side.
     return !hasPaidRequester ? PARTY.REQUESTER : PARTY.CHALLENGER
-  }, [currentRuling, hasPaidRequester, hasPaidChallenger, statusCode])
+  }, [currentRuling, hasPaidRequester, hasPaidChallenger, statusCode, winner])
 
   const side = useMemo(() => userSelectedSide || autoSelectedSide, [
     autoSelectedSide,
