@@ -382,7 +382,7 @@ const Items = () => {
       <ErrorPage
         code="404"
         message="The gods are having trouble finding this list."
-        tip="Make sure your wallet is set to the correct network (is this on xDai?)."
+        tip="Make sure your wallet is set to the correct network (is this on Gnosis Chain?)."
       />
     )
 

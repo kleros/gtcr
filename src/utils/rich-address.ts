@@ -58,7 +58,7 @@ export const references: Reference[] = [
     namespaceId: 'eip155',
     name: 'Gnosis Chain',
     label: 'xDAI',
-    explorer: 'blockscout.com/xdai/mainnet'
+    explorer: 'gnosisscan.io'
   },
   {
     id: '137',

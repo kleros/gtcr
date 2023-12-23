@@ -26,7 +26,7 @@ if (process.env.REACT_APP_RPC_URLS) {
     providerURL: supportedNetworkURLs[defaultNetwork]
   })
   connectors.xDai = new NetworkOnlyConnector({
-    providerURL: supportedNetworkURLs[NETWORKS.xDai]
+    providerURL: supportedNetworkURLs[NETWORKS.gnosis]
   })
 
   connectors.Ledger = new LedgerConnector({
@@ -60,7 +60,7 @@ if (window.ethereum)
     supportedNetworks: [
       NETWORKS.ethereum,
       NETWORKS.kovan,
-      NETWORKS.xDai,
+      NETWORKS.gnosis,
       NETWORKS.goerli,
       NETWORKS['arbitrum-rinkeby']
     ]

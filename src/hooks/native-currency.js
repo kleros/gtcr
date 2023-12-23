@@ -8,7 +8,7 @@ import { NETWORKS } from '../config/networks'
 export default function useNativeCurrency() {
   const { networkId } = useWeb3Context()
   if (!networkId) return 'ETH'
-  if (networkId === NETWORKS.xDai) return 'DAI'
+  if (networkId === NETWORKS.gnosis) return 'DAI'
 
   return 'ETH'
 }

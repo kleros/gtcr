@@ -180,7 +180,7 @@ const Identicon = ({ className, large }) => {
   const switchChain = useCallback(async () => {
     if (!account) return
     const targetChainId =
-      networkId === NETWORKS.xDai ? NETWORKS.ethereum : NETWORKS.xDai
+      networkId === NETWORKS.gnosis ? NETWORKS.ethereum : NETWORKS.gnosis
     const networkInfo = NETWORKS_INFO[targetChainId]
 
     try {
@@ -215,12 +215,13 @@ const Identicon = ({ className, large }) => {
               description={
                 <>
                   <Button type="primary" onClick={switchChain}>
-                    Switch to {networkId === NETWORKS.xDai ? 'Mainnet' : 'xDai'}
+                    Switch to{' '}
+                    {networkId === NETWORKS.gnosis ? 'Mainnet' : 'Gnosis Chain'}
                   </Button>
-                  {networkId === NETWORKS.xDai && (
+                  {networkId === NETWORKS.gnosis && (
                     <a
                       style={{ marginLeft: '8px' }}
-                      href="https://bridge.xdaichain.com/"
+                      href="https://bridge.gnosischain.com/"
                     >
                       Get xDAI
                     </a>
