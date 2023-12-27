@@ -1,6 +1,6 @@
 export const NETWORKS = Object.freeze({
   ethereum: 1,
-  xDai: 100,
+  gnosis: 100,
   rinkeby: 4,
   kovan: 42,
   goerli: 5,
@@ -62,7 +62,7 @@ export const NETWORKS_INFO = Object.freeze({
     ],
     infoURL: 'https://ethereum.org'
   },
-  [NETWORKS.xDai]: {
+  [NETWORKS.gnosis]: {
     name: 'Gnosis Chain',
     color: '#48A9A6',
     supported: true,
