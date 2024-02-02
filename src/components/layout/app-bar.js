@@ -107,7 +107,7 @@ const AppBar = () => {
   const [requestedChain, setRequestedChain] = useState()
   const nextNetworkTCR =
     defaultTcrAddresses[
-      networkId === NETWORKS.xDai ? NETWORKS.ethereum : NETWORKS.xDai
+      networkId === NETWORKS.gnosis ? NETWORKS.ethereum : NETWORKS.gnosis
     ]
   const currentChainId = useMemo(() => requestedChain ?? networkId, [
     networkId,
@@ -115,9 +115,9 @@ const AppBar = () => {
   ])
 
   const switchChain = useCallback(() => {
-    let nextNetwork = NETWORKS.xDai
-    if (networkId === NETWORKS.xDai) nextNetwork = NETWORKS.ethereum
-    else nextNetwork = NETWORKS.xDai
+    let nextNetwork = NETWORKS.gnosis
+    if (networkId === NETWORKS.gnosis) nextNetwork = NETWORKS.ethereum
+    else nextNetwork = NETWORKS.gnosis
 
     setRequestedChain(nextNetwork)
     localStorage.setItem(SAVED_NETWORK_KEY, nextNetwork)
@@ -152,7 +152,7 @@ const AppBar = () => {
               <Switch
                 checkedChildren="xDai"
                 unCheckedChildren="Mainnet"
-                checked={currentChainId === NETWORKS.xDai}
+                checked={currentChainId === NETWORKS.gnosis}
                 onClick={switchChain}
               />
             ))}
