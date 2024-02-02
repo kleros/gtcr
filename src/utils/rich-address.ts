@@ -57,8 +57,8 @@ export const references: Reference[] = [
     id: '100',
     namespaceId: 'eip155',
     name: 'Gnosis Chain',
-    label: 'xDAI',
-    explorer: 'blockscout.com/xdai/mainnet'
+    label: 'GNO',
+    explorer: 'gnosisscan.io'
   },
   {
     id: '137',
@@ -155,7 +155,7 @@ export const references: Reference[] = [
     id: '1101',
     namespaceId: 'eip155',
     name: 'Polygon zkEVM',
-    label: 'ETH',
+    label: 'zkEVM',
     explorer: 'zkevm.polygonscan.com'
   },
   {
@@ -169,7 +169,7 @@ export const references: Reference[] = [
     id: '534352',
     namespaceId: 'eip155',
     name: 'Scroll',
-    label: 'ETH',
+    label: 'Scroll',
     explorer: 'scrollscan.dev'
   },
   {
@@ -178,6 +178,13 @@ export const references: Reference[] = [
     name: 'Celo',
     label: 'CELO',
     explorer: 'celoscan.io'
+  },
+  {
+    id: '324',
+    namespaceId: 'eip155',
+    name: 'zkSync Mainnet',
+    label: 'zkSync',
+    explorer: 'explorer.zksync.io'
   }
 ]
 
