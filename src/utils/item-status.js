@@ -147,20 +147,23 @@ export const itemToStatusCode = (item, timestamp, challengePeriodDuration) => {
 
   if (status === CONTRACT_STATUS.ABSENT) return STATUS_CODE.REJECTED
   if (status === CONTRACT_STATUS.REGISTERED) return STATUS_CODE.REGISTERED
-  const challengePeriodEnd = new BigNumber(
-    Number(request.submissionTime) + challengePeriodDuration.toNumber()
-  )
-  if (timestamp.gt(challengePeriodEnd))
-    if (status === CONTRACT_STATUS.REGISTRATION_REQUESTED)
-      // The challenge period has passed.
-      return STATUS_CODE.PENDING_SUBMISSION
-    else return STATUS_CODE.PENDING_REMOVAL
+  if (!request.disputed) {
+    const challengePeriodEnd = new BigNumber(
+      Number(request.submissionTime) + challengePeriodDuration.toNumber()
+    )
+    if (timestamp.gt(challengePeriodEnd))
+      if (status === CONTRACT_STATUS.REGISTRATION_REQUESTED)
+        // The challenge period has passed.
+        return STATUS_CODE.PENDING_SUBMISSION
+      else return STATUS_CODE.PENDING_REMOVAL
 
-  // Still in challenge period.
-  if (status === CONTRACT_STATUS.REGISTRATION_REQUESTED)
-    return STATUS_CODE.SUBMITTED
-  if (status === CONTRACT_STATUS.REMOVAL_REQUESTED)
-    return STATUS_CODE.REMOVAL_REQUESTED
+    // Still in challenge period.
+    if (status === CONTRACT_STATUS.REGISTRATION_REQUESTED)
+      return STATUS_CODE.SUBMITTED
+    if (status === CONTRACT_STATUS.REMOVAL_REQUESTED)
+      return STATUS_CODE.REMOVAL_REQUESTED
+  }
+
   const round = request.rounds?.[0]
   if (round?.appealPeriodStart === '0')
     // appeal period didn't start yet
