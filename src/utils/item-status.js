@@ -141,7 +141,10 @@ export const getActionLabel = ({ statusCode, itemName = 'item' }) => {
 
 export const itemToStatusCode = (item, timestamp, challengePeriodDuration) => {
   const { status } = item
-  const request = item.requests[0]
+  const request = item.requests?.[0]
+
+  if (!request) return undefined
+
   if (status === CONTRACT_STATUS.ABSENT) return STATUS_CODE.REJECTED
   if (status === CONTRACT_STATUS.REGISTERED) return STATUS_CODE.REGISTERED
   if (!request.disputed) {
@@ -160,8 +163,9 @@ export const itemToStatusCode = (item, timestamp, challengePeriodDuration) => {
     if (status === CONTRACT_STATUS.REMOVAL_REQUESTED)
       return STATUS_CODE.REMOVAL_REQUESTED
   }
-  const round = request.rounds[0]
-  if (round.appealPeriodStart === '0')
+
+  const round = request.rounds?.[0]
+  if (round?.appealPeriodStart === '0')
     // appeal period didn't start yet
     return STATUS_CODE.CHALLENGED
 
@@ -184,7 +188,7 @@ export const itemToStatusCode = (item, timestamp, challengePeriodDuration) => {
 
   // If the party that lost the previous round is not fully funded
   // before the end of the first half, the dispute is over
-  // and awaits enforecement.
+  // and awaits enforcement.
   const loser =
     round.ruling === SUBGRAPH_RULING.ACCEPT ? PARTY.CHALLENGER : PARTY.REQUESTER
   if (
