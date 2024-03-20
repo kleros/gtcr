@@ -1,15 +1,10 @@
 import React from 'react'
-import styled from 'styled-components/macro'
 import PropTypes from 'prop-types'
 import DisplaySelector from './display-selector'
 import { ItemTypes } from '@kleros/gtcr-encoder'
 import { Button } from 'antd'
 import useNavigateAndScrollTop from 'hooks/navigate-and-scroll-top'
-
-const StyledItemCol = styled.div`
-  margin-bottom: 8px;
-  text-align: center;
-`
+import { StyledItemCol } from './light-tcr-card-content'
 
 const ItemCardContent = ({ item, chainId, tcrAddress }) => {
   const navigateAndScrollTop = useNavigateAndScrollTop()

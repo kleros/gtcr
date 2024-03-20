@@ -9,7 +9,7 @@ import { fetchMetaEvidence } from 'hooks/tcr-view'
 import useNavigateAndScrollTop from 'hooks/navigate-and-scroll-top'
 import { parseIpfs } from 'utils/ipfs-parse'
 
-const StyledItemCol = styled.div`
+export const StyledItemCol = styled.div`
   margin-bottom: 8px;
   text-align: center;
   display: flex;
@@ -17,7 +17,7 @@ const StyledItemCol = styled.div`
   justify-content: center;
 `
 
-const StyledResult = styled(Result)`
+export const StyledResult = styled(Result)`
   padding: 0;
 
   & > .ant-result-title {

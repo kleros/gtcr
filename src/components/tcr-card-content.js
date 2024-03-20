@@ -1,30 +1,13 @@
 import React, { useEffect, useState } from 'react'
 import PropTypes from 'prop-types'
-import styled from 'styled-components/macro'
 import { useWeb3Context } from 'web3-react'
-import { Result, Skeleton, Button } from 'antd'
+import { Skeleton, Button } from 'antd'
 import { ItemTypes } from '@kleros/gtcr-encoder'
 import DisplaySelector from './display-selector'
 import { fetchMetaEvidence } from 'hooks/tcr-view'
 import useNavigateAndScrollTop from 'hooks/navigate-and-scroll-top'
 import { parseIpfs } from 'utils/ipfs-parse'
-
-const StyledItemCol = styled.div`
-  margin-bottom: 8px;
-  text-align: center;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-`
-
-const StyledResult = styled(Result)`
-  padding: 0;
-
-  & > .ant-result-title {
-    line-height: 1.2;
-    font-size: 1.4em;
-  }
-`
+import { StyledItemCol, StyledResult } from './light-tcr-card-content'
 
 const TCRCardContent = ({
   tcrAddress,

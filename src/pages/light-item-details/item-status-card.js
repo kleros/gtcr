@@ -25,15 +25,15 @@ import ETHAmount from 'components/eth-amount'
 import useNativeCurrency from 'hooks/native-currency'
 import { klerosAddresses } from 'config/tcr-addresses'
 
-const StyledDescriptions = styled(Descriptions)`
+export const StyledDescriptions = styled(Descriptions)`
   flex-wrap: wrap;
   justify-content: space-between;
   flex-direction: column;
   margin-right: 16px;
   max-width: 991px;
 `
-const SkeletonTitleProps = { width: 60 }
-const StyledSkeleton = styled(Skeleton)`
+export const SkeletonTitleProps = { width: 60 }
+export const StyledSkeleton = styled(Skeleton)`
   display: inline;
 
   .ant-skeleton-title {
@@ -41,7 +41,7 @@ const StyledSkeleton = styled(Skeleton)`
   }
 `
 
-const StyledItemStatusCard = styled(Card)`
+export const StyledItemStatusCard = styled(Card)`
   display: flex;
   flex-direction: column;
 

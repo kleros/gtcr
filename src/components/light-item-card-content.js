@@ -6,7 +6,7 @@ import { ItemTypes } from '@kleros/gtcr-encoder'
 import { Button } from 'antd'
 import useNavigateAndScrollTop from 'hooks/navigate-and-scroll-top'
 
-const StyledItemCol = styled.div`
+export const StyledItemCol = styled.div`
   margin-bottom: 8px;
   text-align: center;
 `

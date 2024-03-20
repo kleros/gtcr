@@ -1,15 +1,15 @@
 import { Typography, Skeleton, Button, Icon } from 'antd'
+import styled from 'styled-components'
 import { Link } from 'react-router-dom'
 import React from 'react'
 import PropTypes from 'prop-types'
-import styled from 'styled-components/macro'
 import { ZERO_ADDRESS, capitalizeFirstLetter } from 'utils/string'
 import { useWeb3Context } from 'web3-react'
 import ContractExplorerUrl from 'components/contract-explorer-url'
 import { defaultTcrAddresses } from 'config/tcr-addresses'
 import { parseIpfs } from 'utils/ipfs-parse'
 
-const StyledBanner = styled.div`
+export const StyledBanner = styled.div`
   display: flex;
   padding: 24px 9.375vw;
   background: linear-gradient(270deg, #f2e3ff 22.92%, #ffffff 76.25%);
@@ -20,32 +20,32 @@ const StyledBanner = styled.div`
   gap: 16px;
 `
 
-const StyledButton = styled(Button)`
+export const StyledButton = styled(Button)`
   text-transform: capitalize;
   margin-top: 6px;
 `
 
-const TCRInfoColumn = styled.div`
+export const TCRInfoColumn = styled.div`
   display: flex;
   flex-direction: column;
   flex-wrap: wrap;
 `
 
-const StyledImage = styled.img`
+export const StyledImage = styled.img`
   object-fit: contain;
   height: 50px;
   width: 50px;
   padding: 0 0 5px 5px;
 `
 
-const TitleContainer = styled.div`
+export const TitleContainer = styled.div`
   display: flex;
   align-items: center;
   flex-wrap: wrap;
   gap: 0 8px;
 `
 
-const StyledTitle = styled.h1`
+export const StyledTitle = styled.h1`
   display: flex;
   flex-wrap: wrap;
   margin-bottom: 0;
@@ -53,13 +53,13 @@ const StyledTitle = styled.h1`
   font-weight: 600;
 `
 
-const StyledDescription = styled.span`
+export const StyledDescription = styled.span`
   display: flex;
   flex-wrap: wrap;
   color: #b88cdc;
 `
 
-const StyledPolicyAnchor = styled.a`
+export const StyledPolicyAnchor = styled.a`
   text-decoration: underline;
   margin-top: 12px;
   width: 100%;
@@ -71,7 +71,7 @@ const StyledPolicyAnchor = styled.a`
   }
 `
 
-const ActionCol = styled.div`
+export const ActionCol = styled.div`
   display: flex;
   flex-direction: column;
   justify-content: space-between;

@@ -1,82 +1,23 @@
-import { Typography, Skeleton, Button, Icon } from 'antd'
+import { Typography, Skeleton, Icon } from 'antd'
 import { Link } from 'react-router-dom'
 import React from 'react'
 import PropTypes from 'prop-types'
-import styled from 'styled-components/macro'
 import { ZERO_ADDRESS, capitalizeFirstLetter } from 'utils/string'
 import { useWeb3Context } from 'web3-react'
 import ContractExplorerUrl from 'components/contract-explorer-url'
 import { defaultTcrAddresses } from 'config/tcr-addresses'
 import { parseIpfs } from 'utils/ipfs-parse'
-
-const StyledBanner = styled.div`
-  display: flex;
-  padding: 24px 9.375vw;
-  background: linear-gradient(270deg, #f2e3ff 22.92%, #ffffff 76.25%);
-  box-shadow: 0px 3px 24px #bc9cff;
-  color: #4d00b4;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 16px;
-`
-
-const StyledButton = styled(Button)`
-  text-transform: capitalize;
-  margin-top: 6px;
-`
-
-const TCRInfoColumn = styled.div`
-  display: flex;
-  flex-direction: column;
-  flex-wrap: wrap;
-`
-
-const StyledImage = styled.img`
-  object-fit: contain;
-  height: 50px;
-  width: 50px;
-  padding: 0 0 5px 5px;
-`
-
-const TitleContainer = styled.div`
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 0 8px;
-`
-
-const StyledTitle = styled.h1`
-  display: flex;
-  flex-wrap: wrap;
-  margin-bottom: 0;
-  font-size: 38px;
-  font-weight: 600;
-`
-
-const StyledDescription = styled.span`
-  display: flex;
-  flex-wrap: wrap;
-  color: #b88cdc;
-`
-
-const StyledPolicyAnchor = styled.a`
-  text-decoration: underline;
-  margin-top: 12px;
-  width: 100%;
-  color: #b88cdc;
-  text-align: end;
-
-  @media (max-width: 992px) {
-    text-align: start;
-  }
-`
-
-const ActionCol = styled.div`
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  align-items: flex-end;
-`
+import {
+  StyledImage,
+  StyledBanner,
+  TCRInfoColumn,
+  TitleContainer,
+  StyledTitle,
+  StyledDescription,
+  ActionCol,
+  StyledButton,
+  StyledPolicyAnchor
+} from 'pages/light-items/banner'
 
 const TCRLogo = ({ logoURI }) =>
   logoURI && <StyledImage src={parseIpfs(logoURI)} alt="item" />

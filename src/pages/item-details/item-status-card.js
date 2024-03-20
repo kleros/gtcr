@@ -3,7 +3,6 @@ import { Descriptions, Skeleton, Card } from 'antd'
 import PropTypes from 'prop-types'
 import { abi as _gtcr } from '@kleros/tcr/build/contracts/GeneralizedTCR.json'
 import ItemStatusBadge from 'components/item-status-badge'
-import styled from 'styled-components/macro'
 import { ethers } from 'ethers'
 import {
   itemToStatusCode,
@@ -24,42 +23,12 @@ import useAppealTime from 'hooks/appeal-time'
 import ETHAmount from 'components/eth-amount'
 import useNativeCurrency from 'hooks/native-currency'
 import { klerosAddresses } from 'config/tcr-addresses'
-
-const StyledDescriptions = styled(Descriptions)`
-  flex-wrap: wrap;
-  justify-content: space-between;
-  flex-direction: column;
-  margin-right: 16px;
-  max-width: 991px;
-`
-const SkeletonTitleProps = { width: 60 }
-const StyledSkeleton = styled(Skeleton)`
-  display: inline;
-
-  .ant-skeleton-title {
-    margin: -3px 0;
-  }
-`
-
-const StyledItemStatusCard = styled(Card)`
-  display: flex;
-  flex-direction: column;
-
-  .ant-card-head-wrapper {
-    flex-wrap: wrap;
-    gap: 16px 16px;
-    padding: 16px 0;
-
-    .ant-card-head-title {
-      overflow: visible;
-      padding: 0;
-    }
-    .ant-card-extra {
-      margin-left: 0;
-      padding: 0;
-    }
-  }
-`
+import {
+  StyledItemStatusCard,
+  StyledDescriptions,
+  SkeletonTitleProps,
+  StyledSkeleton
+} from 'pages/light-item-details/item-status-card'
 
 const Ruling = ({ currentRuling }) => {
   if (currentRuling == null)
