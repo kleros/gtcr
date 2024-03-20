@@ -11,28 +11,11 @@ import { TourProvider } from 'contexts/tour-context'
 import WalletModal from 'components/modals/wallet-modal'
 import WelcomeModal from 'components/modals/welcome-modal'
 import AppBar from 'components/layout/app-bar'
-import AppMenu from 'components/layout/app-menu'
 import AppRouter from './app-router'
 import connectors from 'config/connectors'
 import 'antd/dist/antd.css'
 import './theme.css'
 import './fontawesome'
-
-const StyledLayoutSider = styled(Layout.Sider)`
-  height: 100%;
-  position: fixed;
-  z-index: 2000;
-
-  @media (min-width: 992px) {
-    display: none;
-  }
-
-  .ant-layout-sider-zero-width-trigger {
-    right: -50px;
-    top: 12px;
-    width: 50px;
-  }
-`
 
 const StyledClickaway = styled.div`
   background-color: black;
@@ -46,10 +29,6 @@ const StyledClickaway = styled.div`
 
 const StyledLayout = styled(Layout)`
   min-height: 100vh !important;
-`
-
-const StyledHeader = styled(Layout.Header)`
-  padding: 0 !important;
 `
 
 const FooterWrapper = styled.div`
@@ -89,19 +68,8 @@ const App = () => {
               />
             </Helmet>
             <StyledLayout>
-              <StyledLayoutSider
-                breakpoint="lg"
-                collapsedWidth={0}
-                collapsed={isMenuClosed}
-                onClick={() => setIsMenuClosed(previousState => !previousState)}
-              >
-                <AppMenu mode="vertical" />
-              </StyledLayoutSider>
-              {/* Overflow x property must be visible for reactour scrolling to work properly. */}
-              <Layout style={{ overflowX: 'visible' }}>
-                <StyledHeader>
-                  <AppBar />
-                </StyledHeader>
+              <Layout>
+                <AppBar />
                 <AppRouter />
                 <StyledClickaway
                   isMenuClosed={isMenuClosed}

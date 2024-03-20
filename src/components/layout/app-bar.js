@@ -15,6 +15,11 @@ import { useHistory } from 'react-router-dom/cjs/react-router-dom.min'
 import AppMenu from 'components/layout/app-menu'
 import { defaultTcrAddresses } from 'config/tcr-addresses'
 
+const Container = styled.div`
+  padding: 0;
+  background-color: #1e075f;
+`
+
 const StyledCol = styled(Col)`
   align-items: center !important;
   display: flex !important;
@@ -23,16 +28,13 @@ const StyledCol = styled(Col)`
 `
 
 const StyledCenter = styled(StyledCol)`
-  @media (max-width: 992px) {
-    &.ant-col-xs-0 {
-      display: none !important;
-    }
-  }
+  height: auto !important;
 `
 
 const StyledColStart = styled(StyledCol)`
   justify-content: flex-start;
   width: 100px !important;
+  height: auto !important;
 
   @media (max-width: 992px) {
     &.ant-col-xs-0 {
@@ -44,6 +46,7 @@ const StyledColStart = styled(StyledCol)`
 const StyledColEnd = styled(StyledCol)`
   justify-content: flex-end;
   width: auto !important;
+  height: auto !important;
 `
 
 const StyledNetworkStatus = styled.span`
@@ -65,6 +68,10 @@ const StyledConnectButton = styled(Button)`
 
 const StyledAppBarRow = styled(Row)`
   padding: 0 9.375vw;
+
+  @media (max-width: 992px) {
+    padding: 8px 24px;
+  }
 `
 
 const NOTIFICATIONS_TOUR_DISMISSED = 'NOTIFICATIONS_TOUR_DISMISSED'
@@ -119,7 +126,7 @@ const AppBar = () => {
   }, [history, networkId, nextNetworkTCR])
 
   return (
-    <>
+    <Container>
       <StyledAppBarRow type="flex" justify="space-between">
         <StyledColStart md={6} sm={12} xs={0}>
           <StyledRouterLink to="/">
@@ -127,7 +134,7 @@ const AppBar = () => {
           </StyledRouterLink>
         </StyledColStart>
         <StyledCenter md={8} sm={0} xs={0}>
-          <AppMenu mode="horizontal" />
+          <AppMenu />
         </StyledCenter>
         <StyledColEnd md={7} sm={12} xs={24}>
           {web3Context.active &&
@@ -169,7 +176,7 @@ const AppBar = () => {
           steps={notificationsTourSteps}
         />
       )}
-    </>
+    </Container>
   )
 }
 

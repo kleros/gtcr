@@ -34,25 +34,25 @@ import { LIGHT_ITEMS_QUERY, LIGHT_REGISTRY_QUERY } from 'utils/graphql'
 import LightSearchBar from 'components/light-search-bar'
 import { parseIpfs } from 'utils/ipfs-parse'
 
-const NSFW_FILTER_KEY = 'NSFW_FILTER_KEY'
-const ITEMS_TOUR_DISMISSED = 'ITEMS_TOUR_DISMISSED'
+export const NSFW_FILTER_KEY = 'NSFW_FILTER_KEY'
+export const ITEMS_TOUR_DISMISSED = 'ITEMS_TOUR_DISMISSED'
 
-const StyledTopPadding = styled.div`
+export const StyledTopPadding = styled.div`
   padding-top: 24px;
   display: flex;
 `
 
-const StyledContent = styled(Layout.Content)`
+export const StyledContent = styled(Layout.Content)`
   word-break: break-word;
 `
 
-const StyledLayoutContent = styled.div`
+export const StyledLayoutContent = styled.div`
   padding: 0 9.375vw 42px;
   display: flex;
   flex-direction: column;
 `
 
-const StyledFilters = styled.div`
+export const FiltersContainer = styled.div`
   display: flex;
   margin-top: 24px;
 
@@ -62,11 +62,26 @@ const StyledFilters = styled.div`
   }
 `
 
-const StyledSelect = styled(Select)`
-  height: 32px;
+export const StyledFilters = styled.div`
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 8px 0;
 `
 
-const StyledTag = styled(Tag.CheckableTag)`
+export const StyledSelect = styled(Select)`
+  display: flex;
+  width: 120px;
+  height: 32px;
+
+  @media (max-width: 479px) {
+    &.ant-select {
+      margin-top: 8px !important;
+    }
+  }
+`
+
+export const StyledTag = styled(Tag.CheckableTag)`
   margin-bottom: 12px;
   cursor: pointer;
   &.ant-tag-checkable-checked {
@@ -74,25 +89,28 @@ const StyledTag = styled(Tag.CheckableTag)`
   }
 `
 
-const StyledPagination = styled(Pagination)`
+export const StyledPagination = styled(Pagination)`
   justify-content: flex-end;
   display: flex;
   flex-wrap: wrap;
   margin-top: 2em;
 `
 
-const StyledGrid = styled.div`
+export const StyledGrid = styled.div`
   display: grid;
   margin: 24px 0;
   grid-gap: 20px;
   grid-template-columns: repeat(auto-fill, minmax(225px, 1fr));
 `
 
-const StyledSwitch = styled(Switch)`
-  margin-right: 8px;
-
+export const StyledSwitch = styled(Switch)`
   &.ant-switch-checked {
     background-color: #6826bf;
+    margin-right: 8px;
+  }
+
+  &.ant-switch {
+    margin-right: 8px;
   }
 `
 
@@ -413,8 +431,8 @@ const Items = () => {
               <StyledTopPadding>
                 <LightSearchBar />
               </StyledTopPadding>
-              <StyledFilters id="items-filters">
-                <div>
+              <FiltersContainer id="items-filters">
+                <StyledFilters>
                   <StyledSwitch
                     checkedChildren="NSFW Filter: On"
                     unCheckedChildren="NSFW Filter: Off"
@@ -429,28 +447,29 @@ const Items = () => {
                         key !== 'mySubmissions' &&
                         key !== 'myChallenges'
                     )
-                    .map(key => (
-                      <StyledTag
-                        key={key}
-                        checked={queryOptions[key]}
-                        onChange={checked => {
-                          const newQueryStr = updateLightFilter({
-                            prevQuery: search,
-                            filter: key,
-                            checked
-                          })
-                          history.push({
-                            search: newQueryStr
-                          })
-                        }}
-                      >
-                        {filterLabelLight[key]}
-                      </StyledTag>
-                    ))}
-                </div>
+                    .map(key =>
+                      filterLabelLight[key] ? (
+                        <StyledTag
+                          key={key}
+                          checked={queryOptions[key]}
+                          onChange={checked => {
+                            const newQueryStr = updateLightFilter({
+                              prevQuery: search,
+                              filter: key,
+                              checked
+                            })
+                            history.push({
+                              search: newQueryStr
+                            })
+                          }}
+                        >
+                          {filterLabelLight[key]}
+                        </StyledTag>
+                      ) : null
+                    )}
+                </StyledFilters>
                 <StyledSelect
                   defaultValue={oldestFirst ? 'oldestFirst' : 'newestFirst'}
-                  style={{ width: 120 }}
                   onChange={val => {
                     const newQueryStr = updateLightFilter({
                       prevQuery: search,
@@ -465,7 +484,7 @@ const Items = () => {
                   <Select.Option value="newestFirst">Newest</Select.Option>
                   <Select.Option value="oldestFirst">Oldest</Select.Option>
                 </StyledSelect>
-              </StyledFilters>
+              </FiltersContainer>
               <StyledGrid id="items-grid-view">
                 {items &&
                   items

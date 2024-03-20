@@ -17,7 +17,7 @@ export const StyledBanner = styled.div`
   color: #4d00b4;
   justify-content: space-between;
   flex-wrap: wrap;
-  gap: 16px;
+  gap: 8px;
 `
 
 export const StyledButton = styled(Button)`
