@@ -25,19 +25,39 @@ import ETHAmount from 'components/eth-amount'
 import useNativeCurrency from 'hooks/native-currency'
 import { klerosAddresses } from 'config/tcr-addresses'
 
-const StyledDescriptions = styled(Descriptions)`
+export const StyledDescriptions = styled(Descriptions)`
   flex-wrap: wrap;
   justify-content: space-between;
   flex-direction: column;
   margin-right: 16px;
   max-width: 991px;
 `
-const SkeletonTitleProps = { width: 60 }
-const StyledSkeleton = styled(Skeleton)`
+export const SkeletonTitleProps = { width: 60 }
+export const StyledSkeleton = styled(Skeleton)`
   display: inline;
 
   .ant-skeleton-title {
     margin: -3px 0;
+  }
+`
+
+export const StyledItemStatusCard = styled(Card)`
+  display: flex;
+  flex-direction: column;
+
+  .ant-card-head-wrapper {
+    flex-wrap: wrap;
+    gap: 16px 16px;
+    padding: 16px 0;
+
+    .ant-card-head-title {
+      overflow: visible;
+      padding: 0;
+    }
+    .ant-card-extra {
+      margin-left: 0;
+      padding: 0;
+    }
   }
 `
 
@@ -156,7 +176,7 @@ const ItemStatusCard = ({
     statusCode === STATUS_CODE.CROWDFUNDING
   return (
     <>
-      <Card
+      <StyledItemStatusCard
         id="item-status-card"
         title={
           <ItemStatusBadge
@@ -264,7 +284,7 @@ const ItemStatusCard = ({
               </Descriptions.Item>
             )}
         </StyledDescriptions>
-      </Card>
+      </StyledItemStatusCard>
       {/* Only render modal if the item status requires it. */}
       {statusCode !== STATUS_CODE.PENDING_SUBMISSION &&
         statusCode !== STATUS_CODE.PENDING_REMOVAL &&

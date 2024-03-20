@@ -355,7 +355,7 @@ const RequestTimelines = ({ item, requests, kind, metaEvidence }) => {
           'Item'} History`}</StyledDivider>
       )}
       {hasPendingRequest(item.status) && (
-        <Row gutter={16}>
+        <Row>
           <Col xs={14} sm={17} md={19} lg={20} xl={20} xxl={21}>
             <StyledDivider orientation="left">{`${capitalizeFirstLetter(
               itemName

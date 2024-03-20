@@ -1,6 +1,6 @@
 /* eslint-disable no-unused-vars */
 // Rule disabled temporarly as filters will be added back.
-import { Layout, Spin, Pagination, Tag, Select, Switch } from 'antd'
+import { Spin, Select } from 'antd'
 import { useHistory, useParams } from 'react-router'
 import React, {
   useEffect,
@@ -10,9 +10,7 @@ import React, {
   useRef,
   useCallback
 } from 'react'
-import styled from 'styled-components/macro'
 import localforage from 'localforage'
-import { useWeb3Context } from 'web3-react'
 import qs from 'qs'
 import ErrorPage from '../error-page'
 import { WalletContext } from 'contexts/wallet-context'
@@ -34,67 +32,19 @@ import itemsTourSteps from './tour-steps'
 import { DISPUTE_STATUS } from 'utils/item-status'
 import { useLazyQuery } from '@apollo/client'
 import { CLASSIC_REGISTRY_ITEMS_QUERY } from 'utils/graphql'
-
-const NSFW_FILTER_KEY = 'NSFW_FILTER_KEY'
-const ITEMS_TOUR_DISMISSED = 'ITEMS_TOUR_DISMISSED'
-
-const StyledContent = styled(Layout.Content)`
-  word-break: break-word;
-`
-
-const StyledLayoutContent = styled.div`
-  margin-top: 24px;
-  padding: 0 9.375vw 42px;
-  display: flex;
-  flex-direction: column;
-`
-
-const StyledFilters = styled.div`
-  display: flex;
-  justify-content: space-between;
-  @media (max-width: 479px) {
-    flex-direction: column;
-  }
-`
-
-const StyledSelect = styled(Select)`
-  height: 32px;
-`
-
-const StyledTag = styled(Tag.CheckableTag)`
-  margin-bottom: 12px;
-
-  &.ant-tag-checkable-checked {
-    background-color: #6826bf;
-    cursor: pointer;
-  }
-`
-
-const StyledPagination = styled(Pagination)`
-  justify-content: flex-end;
-  display: flex;
-  flex-wrap: wrap;
-  margin-top: 2em;
-`
-
-const StyledGrid = styled.div`
-  display: grid;
-  margin: 24px 0;
-  grid-gap: 20px;
-  grid-template-columns: repeat(auto-fill, minmax(225px, 1fr));
-`
-
-const StyledSwitch = styled(Switch)`
-  margin-right: 8px;
-
-  &.ant-switch-checked {
-    background-color: #6826bf;
-  }
-`
-
-const StyledMargin = styled.div`
-  padding: 24px 9.375vw;
-`
+import {
+  NSFW_FILTER_KEY,
+  ITEMS_TOUR_DISMISSED,
+  StyledLayoutContent,
+  StyledContent,
+  StyledFilters,
+  StyledSwitch,
+  StyledTag,
+  StyledSelect,
+  StyledGrid,
+  StyledPagination,
+  FiltersContainer
+} from 'pages/light-items'
 
 const pagingItem = (_, type, originalElement) => {
   if (type === 'prev') return <span>Previous</span>
@@ -366,8 +316,8 @@ const Items = () => {
         <StyledContent>
           <Spin spinning={itemsQuery.loading || !metadata}>
             <>
-              <StyledFilters id="items-filters">
-                <div>
+              <FiltersContainer id="items-filters">
+                <StyledFilters>
                   <StyledSwitch
                     checkedChildren="NSFW Filter: On"
                     unCheckedChildren="NSFW Filter: Off"
@@ -382,28 +332,29 @@ const Items = () => {
                         key !== 'mySubmissions' &&
                         key !== 'myChallenges'
                     )
-                    .map(key => (
-                      <StyledTag
-                        key={key}
-                        checked={queryOptions[key]}
-                        onChange={checked => {
-                          const newQueryStr = updateLightFilter({
-                            prevQuery: search,
-                            filter: key,
-                            checked
-                          })
-                          history.push({
-                            search: newQueryStr
-                          })
-                        }}
-                      >
-                        {filterLabelLight[key]}
-                      </StyledTag>
-                    ))}
-                </div>
+                    .map(key =>
+                      filterLabelLight[key] ? (
+                        <StyledTag
+                          key={key}
+                          checked={queryOptions[key]}
+                          onChange={checked => {
+                            const newQueryStr = updateLightFilter({
+                              prevQuery: search,
+                              filter: key,
+                              checked
+                            })
+                            history.push({
+                              search: newQueryStr
+                            })
+                          }}
+                        >
+                          {filterLabelLight[key]}
+                        </StyledTag>
+                      ) : null
+                    )}
+                </StyledFilters>
                 <StyledSelect
                   defaultValue={oldestFirst ? 'oldestFirst' : 'newestFirst'}
-                  style={{ width: 120 }}
                   onChange={val => {
                     const newQueryStr = updateLightFilter({
                       prevQuery: search,
@@ -418,7 +369,7 @@ const Items = () => {
                   <Select.Option value="newestFirst">Newest</Select.Option>
                   <Select.Option value="oldestFirst">Oldest</Select.Option>
                 </StyledSelect>
-              </StyledFilters>
+              </FiltersContainer>
               <StyledGrid id="items-grid-view">
                 {items &&
                   items

@@ -1,30 +1,13 @@
 import React, { useEffect, useState } from 'react'
 import PropTypes from 'prop-types'
-import styled from 'styled-components/macro'
 import { useWeb3Context } from 'web3-react'
-import { Result, Skeleton, Button } from 'antd'
+import { Skeleton, Button } from 'antd'
 import { ItemTypes } from '@kleros/gtcr-encoder'
 import DisplaySelector from './display-selector'
-import { Link } from 'react-router-dom'
 import { fetchMetaEvidence } from 'hooks/tcr-view'
+import useNavigateAndScrollTop from 'hooks/navigate-and-scroll-top'
 import { parseIpfs } from 'utils/ipfs-parse'
-
-const StyledItemCol = styled.div`
-  margin-bottom: 8px;
-  text-align: center;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-`
-
-const StyledResult = styled(Result)`
-  padding: 0;
-
-  & > .ant-result-title {
-    line-height: 1.2;
-    font-size: 1.4em;
-  }
-`
+import { StyledItemCol, StyledResult } from './light-tcr-card-content'
 
 const TCRCardContent = ({
   tcrAddress,
@@ -35,6 +18,7 @@ const TCRCardContent = ({
   const { networkId } = useWeb3Context()
 
   const [metaEvidence, setMetaEvidence] = useState()
+  const navigateAndScrollTop = useNavigateAndScrollTop()
 
   useEffect(() => {
     ;(async () => {
@@ -78,16 +62,25 @@ const TCRCardContent = ({
         </div>
         <StyledItemCol>
           {!hideDetailsButton && (
-            <Link to={`/tcr/${networkId}/${currentTCRAddress}/${ID}`}>
-              <Button>Details</Button>
-            </Link>
+            <Button
+              onClick={() =>
+                navigateAndScrollTop(
+                  `/tcr/${networkId}/${currentTCRAddress}/${ID}`
+                )
+              }
+            >
+              Details
+            </Button>
           )}
-          <Link
-            to={`/tcr/${networkId}/${tcrAddress}`}
+          <Button
+            type="primary"
+            onClick={() =>
+              navigateAndScrollTop(`/tcr/${networkId}/${tcrAddress}`)
+            }
             style={{ marginLeft: '12px' }}
           >
-            <Button type="primary">Open List</Button>
-          </Link>
+            Open List
+          </Button>
         </StyledItemCol>
       </div>
     )

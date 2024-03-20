@@ -1,56 +1,92 @@
 import React from 'react'
 import styled from 'styled-components/macro'
-import PropTypes from 'prop-types'
-import { Menu, Icon } from 'antd'
 import { NavLink } from 'react-router-dom'
+import { Menu, Dropdown, Button, Icon } from 'antd'
+import MenuIcon from 'assets/images/menu-icon.png'
 
-const StyledMenu = styled(Menu)`
+const DesktopMenu = styled(Menu)`
+  @media (max-width: 768px) {
+    display: none;
+  }
   font-weight: bold;
   line-height: 64px !important;
   text-align: center;
   background-color: transparent !important;
 `
 
+const MobileDropdown = styled.div`
+  display: none;
+  @media (max-width: 768px) {
+    display: block;
+  }
+`
+
 const StyledMenuItem = styled(Menu.Item)`
   background-color: transparent !important;
 `
-const AppMenu = ({ mode }) => {
-  const isHorizontal = mode === 'horizontal'
-  const MenuWrapper = isHorizontal ? StyledMenu : Menu
 
-  return (
-    <MenuWrapper
-      mode={mode}
+const StyledButton = styled(Button)`
+  background-color: #1e075f !important;
+  color: #fff !important;
+  padding: 0 !important;
+  border: none !important;
+`
+
+const StyledImg = styled.img`
+  width: 28px;
+  height: 28px;
+`
+
+const menuItems = [
+  { key: 'browse', content: <NavLink to="/">Browse</NavLink>, isNavLink: true },
+  {
+    key: 'factory',
+    content: <NavLink to="/factory">Create a List</NavLink>,
+    isNavLink: true
+  },
+  {
+    key: 'x',
+    content: (
+      <a href="https://x.com/KlerosCurate" target="_blank" rel="noreferrer">
+        Follow Curate
+      </a>
+    ),
+    isNavLink: false
+  },
+  {
+    key: 'help',
+    content: (
+      <a href="https://t.me/KlerosCurate" target="_blank" rel="noreferrer">
+        Get Help <Icon type="info-circle" />
+      </a>
+    ),
+    isNavLink: false
+  }
+]
+
+const renderMenuItems = () =>
+  menuItems.map(({ key, content }) => (
+    <StyledMenuItem key={key}>{content}</StyledMenuItem>
+  ))
+
+const AppMenu = () => (
+  <>
+    <DesktopMenu
+      mode="horizontal"
       theme="dark"
-      defaultSelectedKeys={[isHorizontal ? 'browse' : 'home']}
+      defaultSelectedKeys={['browse']}
     >
-      {isHorizontal ? null : (
-        <Menu.Item style={{ height: '70px' }} key="home">
-          <NavLink to="/">K L E R O S</NavLink>
-        </Menu.Item>
-      )}
-      <StyledMenuItem key="browse">
-        <NavLink to="/">Browse</NavLink>
-      </StyledMenuItem>
-      <StyledMenuItem key="factory">
-        <NavLink to="/factory">Create a List</NavLink>
-      </StyledMenuItem>
-      <StyledMenuItem>
-        <a href="https://twitter.com/KlerosCurate">
-          Follow Curate <Icon type="twitter" />
-        </a>
-      </StyledMenuItem>
-      <StyledMenuItem>
-        <a href="https://t.me/KlerosCurate">
-          Get Help <Icon type="info-circle" />
-        </a>
-      </StyledMenuItem>
-    </MenuWrapper>
-  )
-}
+      {renderMenuItems()}
+    </DesktopMenu>
 
-AppMenu.propTypes = {
-  mode: PropTypes.string.isRequired
-}
+    <MobileDropdown>
+      <Dropdown overlay={<Menu>{renderMenuItems()}</Menu>} trigger={['click']}>
+        <StyledButton>
+          <StyledImg src={MenuIcon} alt="menu" />
+        </StyledButton>
+      </Dropdown>
+    </MobileDropdown>
+  </>
+)
 
 export default AppMenu
