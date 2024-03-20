@@ -5,20 +5,13 @@ import { ItemTypes } from '@kleros/gtcr-encoder'
 import { Button } from 'antd'
 import useNavigateAndScrollTop from 'hooks/navigate-and-scroll-top'
 import { StyledItemCol } from './light-tcr-card-content'
+import { Container } from './light-item-card-content'
 
 const ItemCardContent = ({ item, chainId, tcrAddress }) => {
   const navigateAndScrollTop = useNavigateAndScrollTop()
 
   return (
-    <div
-      style={{
-        height: '100%',
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'space-between',
-        alignItems: 'center'
-      }}
-    >
+    <Container>
       <div>
         {item.columns
           .filter(
@@ -46,7 +39,7 @@ const ItemCardContent = ({ item, chainId, tcrAddress }) => {
       >
         Details
       </Button>
-    </div>
+    </Container>
   )
 }
 

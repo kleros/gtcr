@@ -6,6 +6,14 @@ import { ItemTypes } from '@kleros/gtcr-encoder'
 import { Button } from 'antd'
 import useNavigateAndScrollTop from 'hooks/navigate-and-scroll-top'
 
+export const Container = styled.div`
+  display: flex;
+  height: 100%;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+`
+
 export const StyledItemCol = styled.div`
   margin-bottom: 8px;
   text-align: center;
@@ -18,15 +26,7 @@ const LightItemCardContent = ({ item, chainId, tcrAddress }) => {
     item.columns.filter(col => col.allowedFileTypes)[0]?.allowedFileTypes || ''
 
   return (
-    <div
-      style={{
-        height: '100%',
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'space-between',
-        alignItems: 'center'
-      }}
-    >
+    <Container>
       <div>
         {item.tcrData.mergedData
           .filter(
@@ -54,7 +54,7 @@ const LightItemCardContent = ({ item, chainId, tcrAddress }) => {
       >
         Details
       </Button>
-    </div>
+    </Container>
   )
 }
 
