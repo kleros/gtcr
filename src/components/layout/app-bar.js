@@ -20,22 +20,19 @@ const StyledCol = styled(Col)`
   display: flex !important;
   justify-content: center;
   height: 67px !important;
-
-  @media (max-width: 992px) {
-    width: 100% !important;
-  }
 `
 
 const StyledCenter = styled(StyledCol)`
   @media (max-width: 992px) {
     &.ant-col-xs-0 {
-      display: none;
+      display: none !important;
     }
   }
 `
 
 const StyledColStart = styled(StyledCol)`
   justify-content: flex-start;
+  width: 100px !important;
 
   @media (max-width: 992px) {
     &.ant-col-xs-0 {
@@ -46,17 +43,11 @@ const StyledColStart = styled(StyledCol)`
 
 const StyledColEnd = styled(StyledCol)`
   justify-content: flex-end;
-
-  @media (max-width: 992px) {
-    &.ant-col-xs-24 {
-      justify-content: center;
-    }
-  }
+  width: auto !important;
 `
 
 const StyledNetworkStatus = styled.span`
   color: white;
-  margin-right: 24px;
 `
 
 const StyledRouterLink = styled(Link)`

@@ -20,7 +20,6 @@ const StyledIcon = styled.svg`
 `
 
 const StyledLink = styled.a`
-  margin-left: 1rem;
   display: flex;
   align-items: center;
 `

@@ -33,6 +33,7 @@ const StyledLayoutContent = styled(Layout.Content)`
   padding: 0 9.375vw 42px;
   display: flex;
   flex-direction: column;
+  width: 100%;
 `
 
 const StyledBanner = styled.div`

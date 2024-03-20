@@ -4,21 +4,19 @@ import PropTypes from 'prop-types'
 import DisplaySelector from './display-selector'
 import { ItemTypes } from '@kleros/gtcr-encoder'
 import { Button } from 'antd'
-import { Link } from 'react-router-dom'
+import useNavigateAndScrollTop from 'hooks/navigate-and-scroll-top'
 
 const StyledItemCol = styled.div`
   margin-bottom: 8px;
   text-align: center;
 `
 
-const StyledButton = styled(Button)`
-  pointer-events: auto;
-  text-transform: capitalize;
-`
-
 const LightItemCardContent = ({ item, chainId, tcrAddress }) => {
+  const navigateAndScrollTop = useNavigateAndScrollTop()
+
   const allowedFileTypes =
     item.columns.filter(col => col.allowedFileTypes)[0]?.allowedFileTypes || ''
+
   return (
     <div
       style={{
@@ -47,9 +45,15 @@ const LightItemCardContent = ({ item, chainId, tcrAddress }) => {
             </StyledItemCol>
           ))}
       </div>
-      <Link to={`/tcr/${chainId}/${tcrAddress}/${item.tcrData.ID}`}>
-        <StyledButton>Details</StyledButton>
-      </Link>
+      <Button
+        onClick={() =>
+          navigateAndScrollTop(
+            `/tcr/${chainId}/${tcrAddress}/${item.tcrData.ID}`
+          )
+        }
+      >
+        Details
+      </Button>
     </div>
   )
 }

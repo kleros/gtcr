@@ -5,8 +5,8 @@ import { useWeb3Context } from 'web3-react'
 import { Result, Skeleton, Button } from 'antd'
 import { ItemTypes } from '@kleros/gtcr-encoder'
 import DisplaySelector from './display-selector'
-import { Link } from 'react-router-dom'
 import { fetchMetaEvidence } from 'hooks/tcr-view'
+import useNavigateAndScrollTop from 'hooks/navigate-and-scroll-top'
 import { parseIpfs } from 'utils/ipfs-parse'
 
 const StyledItemCol = styled.div`
@@ -35,6 +35,7 @@ const TCRCardContent = ({
   const { networkId } = useWeb3Context()
 
   const [metaEvidence, setMetaEvidence] = useState()
+  const navigateAndScrollTop = useNavigateAndScrollTop()
 
   useEffect(() => {
     ;(async () => {
@@ -77,16 +78,25 @@ const TCRCardContent = ({
         </div>
         <StyledItemCol>
           {!hideDetailsButton && (
-            <Link to={`/tcr/${networkId}/${currentTCRAddress}/${ID}`}>
-              <Button>Details</Button>
-            </Link>
+            <Button
+              onClick={() =>
+                navigateAndScrollTop(
+                  `/tcr/${networkId}/${currentTCRAddress}/${ID}`
+                )
+              }
+            >
+              Details
+            </Button>
           )}
-          <Link
-            to={`/tcr/${networkId}/${tcrAddress}`}
+          <Button
+            type="primary"
+            onClick={() =>
+              navigateAndScrollTop(`/tcr/${networkId}/${tcrAddress}`)
+            }
             style={{ marginLeft: '12px' }}
           >
-            <Button type="primary">Open List</Button>
-          </Link>
+            Open List
+          </Button>
         </StyledItemCol>
       </div>
     )
