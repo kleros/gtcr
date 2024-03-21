@@ -1,4 +1,5 @@
 import React, { useState, useContext, useMemo } from 'react'
+import styled from 'styled-components'
 import {
   Modal,
   Descriptions,
@@ -17,7 +18,6 @@ import itemPropTypes from 'prop-types/item'
 import { TCRViewContext } from 'contexts/tcr-view-context'
 import { formatEther, parseEther, bigNumberify } from 'ethers/utils'
 import ETHAmount from 'components/eth-amount'
-import styled from 'styled-components'
 import { WalletContext } from 'contexts/wallet-context'
 import { abi as _gtcr } from '@kleros/tcr/build/contracts/GeneralizedTCR.json'
 import { ethers } from 'ethers'

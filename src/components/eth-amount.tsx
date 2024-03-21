@@ -1,6 +1,6 @@
 import React from 'react'
-import { Skeleton } from 'antd'
 import styled from 'styled-components'
+import { Skeleton } from 'antd'
 import { ethers } from 'ethers'
 import { BigNumberish } from 'ethers/utils'
 

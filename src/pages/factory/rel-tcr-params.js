@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react'
+import styled from 'styled-components'
 import {
   Card,
   Icon,
@@ -13,10 +14,9 @@ import {
   Button,
   Divider
 } from 'antd'
-import { withFormik } from 'formik'
 import PropTypes from 'prop-types'
+import { withFormik } from 'formik'
 import * as yup from 'yup'
-import styled from 'styled-components'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { useWeb3Context } from 'web3-react'
 import { useDebounce } from 'use-debounce/lib'

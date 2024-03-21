@@ -1,7 +1,7 @@
 import React, { useContext } from 'react'
+import styled from 'styled-components'
 import { Modal, Typography, Button } from 'antd'
 import { ethers } from 'ethers'
-import styled from 'styled-components'
 import _gtcr from 'assets/abis/LightGeneralizedTCR.json'
 import { LightTCRViewContext } from 'contexts/light-tcr-view-context'
 import { WalletContext } from 'contexts/wallet-context'

@@ -1,5 +1,5 @@
 import React, { useContext, useCallback } from 'react'
-import PropTypes from 'prop-types'
+import styled from 'styled-components'
 import {
   Modal,
   Descriptions,
@@ -9,8 +9,8 @@ import {
   Button,
   Alert
 } from 'antd'
+import PropTypes from 'prop-types'
 import { ethers } from 'ethers'
-import styled from 'styled-components'
 import humanizeDuration from 'humanize-duration'
 import { abi as _gtcr } from '@kleros/tcr/build/contracts/GeneralizedTCR.json'
 import { TCRViewContext } from 'contexts/tcr-view-context'

@@ -1,6 +1,6 @@
 import React from 'react'
-import { Typography, Avatar, Checkbox } from 'antd'
 import styled from 'styled-components'
+import { Typography, Avatar, Checkbox } from 'antd'
 import PropTypes from 'prop-types'
 import GTCRAddress from './gtcr-address'
 import { ItemTypes } from '@kleros/gtcr-encoder'

@@ -1,4 +1,3 @@
-import { Steps, Button, Icon, Card, Typography, Modal } from 'antd'
 import React, {
   useState,
   useEffect,
@@ -6,9 +5,10 @@ import React, {
   useMemo,
   useContext
 } from 'react'
+import styled from 'styled-components'
+import { Steps, Button, Icon, Card, Typography, Modal } from 'antd'
 import PropTypes from 'prop-types'
 import { useDebounce } from 'use-debounce'
-import styled from 'styled-components'
 import { useWeb3Context } from 'web3-react'
 import { ethers } from 'ethers'
 import _GTCRFactory from 'assets/abis/LightGTCRFactory.json'
