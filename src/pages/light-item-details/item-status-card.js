@@ -3,7 +3,7 @@ import { Descriptions, Skeleton, Card } from 'antd'
 import PropTypes from 'prop-types'
 import _gtcr from 'assets/abis/LightGeneralizedTCR.json'
 import ItemStatusBadge from 'components/item-status-badge'
-import styled from 'styled-components/macro'
+import styled from 'styled-components'
 import { ethers } from 'ethers'
 import {
   itemToStatusCode,

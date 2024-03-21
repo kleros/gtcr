@@ -22,6 +22,8 @@ const StyledIcon = styled.svg`
 const StyledLink = styled.a`
   display: flex;
   align-items: center;
+  text-decoration: underline;
+  color: #4d00b473;
 `
 
 const ContractExplorerUrl: React.FC<{
@@ -33,12 +35,7 @@ const ContractExplorerUrl: React.FC<{
     address: contractAddress
   })}#code`
   return (
-    <StyledLink
-      href={url}
-      style={{ textDecoration: 'underline', color: '#4d00b473' }}
-      target="_blank"
-      rel="noopener noreferrer"
-    >
+    <StyledLink href={url} target="_blank">
       <StyledIcon
         xmlns="http://www.w3.org/2000/svg"
         viewBox="0 0 293.775 293.667"

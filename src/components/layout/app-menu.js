@@ -1,24 +1,31 @@
 import React from 'react'
-import styled from 'styled-components/macro'
+import styled, { css } from 'styled-components'
+import { smallScreenStyle } from 'styles/small-screen-style'
 import { NavLink } from 'react-router-dom'
 import { Menu, Dropdown, Button, Icon } from 'antd'
 import MenuIcon from 'assets/images/menu-icon.png'
 
 const DesktopMenu = styled(Menu)`
-  @media (max-width: 768px) {
-    display: none;
-  }
   font-weight: bold;
   line-height: 64px !important;
   text-align: center;
   background-color: transparent !important;
+
+  ${smallScreenStyle(
+    () => css`
+      display: none;
+    `
+  )}
 `
 
 const MobileDropdown = styled.div`
   display: none;
-  @media (max-width: 768px) {
-    display: block;
-  }
+
+  ${smallScreenStyle(
+    () => css`
+      display: block;
+    `
+  )}
 `
 
 const StyledMenuItem = styled(Menu.Item)`

@@ -1,6 +1,7 @@
 import React, { useContext } from 'react'
+import styled from 'styled-components'
+import { responsiveSize } from 'styles/responsive-size'
 import { Modal, Divider, Typography } from 'antd'
-import styled from 'styled-components/macro'
 import { ReactComponent as Logo } from 'assets/images/logo2.svg'
 import { ReactComponent as List } from 'assets/images/infographic/list.svg'
 import { ReactComponent as Kleros } from 'assets/images/infographic/kleros.svg'
@@ -45,32 +46,12 @@ const Infograph = styled.div`
 `
 
 const ResponsiveIframe = styled.iframe`
-  @media (min-width: 1200px) {
-    width: 900px;
-    height: 500px;
-  }
-
-  @media (max-width: 768px) {
-    width: 300px;
-    height: 180px;
-  }
-
-  @media (max-width: 480px) {
-    width: 260px;
-    height: 150px;
-  }
+  width: ${responsiveSize(260, 900)};
+  height: ${responsiveSize(150, 500)};
 `
 
 const StyledCurateLogo = styled.div`
-  height: 140px;
-
-  @media (max-width: 768px) {
-    height: 110px;
-  }
-
-  @media (max-width: 480px) {
-    height: 100px;
-  }
+  height: ${responsiveSize(100, 140)};
 `
 
 const WelcomeModal = () => {

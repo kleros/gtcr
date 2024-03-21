@@ -1,6 +1,7 @@
 import React, { useContext } from 'react'
+import styled, { css } from 'styled-components'
+import { smallScreenStyle } from 'styles/small-screen-style'
 import { Card, Typography, Progress } from 'antd'
-import styled from 'styled-components/macro'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   SUBGRAPH_RULING,
@@ -25,9 +26,11 @@ const StyledContent = styled.div`
   display: flex;
   justify-content: space-between;
 
-  @media (max-width: 768px) {
-    flex-direction: column;
-  }
+  ${smallScreenStyle(
+    () => css`
+      flex-direction: column;
+    `
+  )}
 `
 
 const StyledSection = styled.div`
@@ -37,10 +40,12 @@ const StyledSection = styled.div`
   align-items: center;
   margin: 12px;
 
-  @media (max-width: 768px) {
-    flex-direction: column;
-    width: auto;
-  }
+  ${smallScreenStyle(
+    () => css`
+      flex-direction: column;
+      width: auto;
+    `
+  )}
 `
 
 const StyledTitle = styled(Typography.Title)`

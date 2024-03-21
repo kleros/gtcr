@@ -79,7 +79,7 @@ module.exports = {
     'react/no-unused-prop-types': 0,
     'react/require-default-props': 0,
     'react/default-props-match-prop-types': 0,
-    
+
     'react/destructuring-assignment': 0,
 
     // hooks
@@ -89,43 +89,6 @@ module.exports = {
     // JS Standard
     'standard/computed-property-even-spacing': 0,
     'jsx-a11y/href-no-hash': 0, // Buggy
-
-    // JSDoc
-    'require-jsdoc': [
-      2,
-      {
-        require: {
-          FunctionDeclaration: true,
-          MethodDefinition: false,
-          ClassDeclaration: false,
-          ArrowFunctionExpression: false,
-          FunctionExpression: false
-        }
-      }
-    ],
-    'valid-jsdoc': [
-      2,
-      {
-        prefer: {
-          arg: 'param',
-          argument: 'param',
-          class: 'class',
-          return: 'returns',
-          virtual: 'abstract'
-        },
-        preferType: {
-          Boolean: 'boolean',
-          Number: 'number',
-          Object: 'object',
-          String: 'string'
-        },
-        requireReturn: false,
-        requireReturnType: true,
-        matchDescription: '.+',
-        requireParamDescription: true,
-        requireReturnDescription: true
-      }
-    ],
 
     // prettier
     'prettier/prettier': [

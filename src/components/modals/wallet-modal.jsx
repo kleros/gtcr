@@ -1,7 +1,7 @@
 import React, { useContext } from 'react'
 import PropTypes from 'prop-types'
 import { Button, Modal, Icon } from 'antd'
-import styled from 'styled-components/macro'
+import styled from 'styled-components'
 import { ReactComponent as TrustLogo } from 'assets/images/trust.svg'
 import { WalletContext } from 'contexts/wallet-context'
 import FrameLogo from 'assets/images/frame.png'

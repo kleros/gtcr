@@ -1,7 +1,7 @@
 import React, { useContext } from 'react'
 import PropTypes from 'prop-types'
 import { Modal, Descriptions, Typography, Button, Spin } from 'antd'
-import styled from 'styled-components/macro'
+import styled from 'styled-components'
 import { ethers } from 'ethers'
 import { abi as _gtcr } from '@kleros/tcr/build/contracts/GeneralizedTCR.json'
 import { CONTRACT_STATUS, STATUS_CODE } from 'utils/item-status'

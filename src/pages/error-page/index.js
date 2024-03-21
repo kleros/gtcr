@@ -1,7 +1,7 @@
 import { ReactComponent as Acropolis } from 'assets/images/acropolis.svg'
 import React from 'react'
 import PropTypes from 'prop-types'
-import styled from 'styled-components/macro'
+import styled from 'styled-components'
 
 const StyledDiv = styled.div`
   display: flex;

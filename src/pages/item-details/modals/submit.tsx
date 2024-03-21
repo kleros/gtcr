@@ -10,7 +10,7 @@ import {
   Descriptions,
   Alert
 } from 'antd'
-import styled from 'styled-components/macro'
+import styled from 'styled-components'
 import { abi as _gtcr } from '@kleros/tcr/build/contracts/GeneralizedTCR.json'
 import { ethers } from 'ethers'
 import { withFormik } from 'formik'

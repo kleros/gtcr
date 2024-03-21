@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect, useCallback } from 'react'
-import styled from 'styled-components/macro'
+import styled from 'styled-components'
 import { Select, InputNumber, Slider, Tooltip, Icon } from 'antd'
 import { ethers } from 'ethers'
 import PropTypes from 'prop-types'

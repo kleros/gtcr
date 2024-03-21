@@ -1,7 +1,7 @@
 import React, { useCallback, useState } from 'react'
 import { Form, Switch, Input, Upload, message, Icon } from 'antd'
 import { Field } from 'formik'
-import styled from 'styled-components/macro'
+import styled from 'styled-components'
 import { getExtension } from 'mime'
 import { ItemTypes } from '@kleros/gtcr-encoder'
 import CustomInput from './custom-input.js'

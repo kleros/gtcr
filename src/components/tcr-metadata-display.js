@@ -2,7 +2,7 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import { Icon, Tooltip } from 'antd'
 import DisplaySelector from './display-selector'
-import styled from 'styled-components/macro'
+import styled from 'styled-components'
 import { ItemTypes } from '@kleros/gtcr-encoder'
 import { parseIpfs } from 'utils/ipfs-parse'
 

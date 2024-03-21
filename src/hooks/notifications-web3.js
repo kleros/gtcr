@@ -22,7 +22,6 @@ const actionTypes = {
 const NOTIFICATION_KEY = 'WALLET_AUTHORIZATION'
 const LAST_CONNECTION_TIME = 'LAST_CONNECTION_TIME'
 
-/* eslint-disable valid-jsdoc */
 /**
  * This hook wraps web3-react connectors to request
  * authorization from the wallet when necessary and to manage

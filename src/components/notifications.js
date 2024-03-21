@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect } from 'react'
 import { useWeb3Context } from 'web3-react'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import styled from 'styled-components/macro'
+import styled from 'styled-components'
 import { Popover, List, Badge, Empty, Icon, Avatar, Button } from 'antd'
 import { Link } from 'react-router-dom'
 import { ethers } from 'ethers'

@@ -10,7 +10,7 @@ import {
   Alert
 } from 'antd'
 import { ethers } from 'ethers'
-import styled from 'styled-components/macro'
+import styled from 'styled-components'
 import humanizeDuration from 'humanize-duration'
 import _gtcr from 'assets/abis/LightGeneralizedTCR.json'
 import { LightTCRViewContext } from 'contexts/light-tcr-view-context'

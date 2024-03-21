@@ -8,7 +8,7 @@ import {
   List,
   Radio
 } from 'antd'
-import styled from 'styled-components/macro'
+import styled from 'styled-components'
 import PropTypes from 'prop-types'
 import ETHAmount from 'components/eth-amount'
 import useNativeCurrency from 'hooks/native-currency.js'

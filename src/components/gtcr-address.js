@@ -1,6 +1,6 @@
 import React, { useCallback } from 'react'
 import PropTypes from 'prop-types'
-import styled from 'styled-components/macro'
+import styled from 'styled-components'
 // import { utils } from 'ethers'
 import { Button } from 'antd'
 import { ZERO_ADDRESS } from '../utils/string'

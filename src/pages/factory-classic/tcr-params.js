@@ -5,16 +5,13 @@ import {
   Tooltip,
   Form,
   Switch,
-  Upload,
   message,
-  Alert,
   Slider,
   InputNumber
 } from 'antd'
 import { withFormik } from 'formik'
 import PropTypes from 'prop-types'
 import * as yup from 'yup'
-import styled from 'styled-components/macro'
 import { useDebounce } from 'use-debounce/lib'
 import { getAddress, parseEther, bigNumberify } from 'ethers/utils'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
@@ -32,62 +29,16 @@ import useNativeCurrency from 'hooks/native-currency'
 import { useHistory } from 'react-router'
 import { klerosAddresses } from 'config/tcr-addresses'
 import { parseIpfs } from 'utils/ipfs-parse'
-
-const StyledUpload = styled(Upload)`
-  & > .ant-upload.ant-upload-select-picture-card {
-    width: 100%;
-  }
-`
-
-const StyledAlert = styled(Alert)`
-  margin-bottom: 32px;
-`
-
-const UploadButton = ({ loading }) => (
-  <div>
-    <Icon type={loading ? 'loading' : 'plus'} />
-    <div className="ant-upload-text">Upload</div>
-  </div>
-)
-
-const StyledTCRParamContainer = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  margin-bottom: 12px;
-
-  @media (max-width: 840px) {
-    flex-direction: column;
-  }
-`
-
-const StyledUploadContainer = styled.div`
-  @media (min-width: 840px) {
-    margin-right: 12px;
-    max-width: 450px;
-  }
-`
-
-const StyledTCRInfoContainer = styled.div`
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-
-  @media (min-width: 840px) {
-    border-left: 1px solid #f8efff;
-    padding-left: 12px;
-  }
-`
-
-const StyledDepositContainer = styled.div`
-  display: flex;
-  flex-direction: column;
-  margin-bottom: 24px;
-`
-
-const StyledSliderContainer = styled.div`
-  display: flex;
-`
+import {
+  UploadButton,
+  StyledTCRParamContainer,
+  StyledTCRInfoContainer,
+  StyledUpload,
+  StyledUploadContainer,
+  StyledDepositContainer,
+  StyledSliderContainer,
+  StyledAlert
+} from 'pages/factory/tcr-params'
 
 UploadButton.propTypes = {
   loading: PropTypes.bool

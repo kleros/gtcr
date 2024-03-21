@@ -16,7 +16,7 @@ import {
 import { withFormik } from 'formik'
 import PropTypes from 'prop-types'
 import * as yup from 'yup'
-import styled from 'styled-components/macro'
+import styled from 'styled-components'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { useWeb3Context } from 'web3-react'
 import { useDebounce } from 'use-debounce/lib'

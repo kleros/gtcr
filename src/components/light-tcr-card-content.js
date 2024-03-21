@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import PropTypes from 'prop-types'
-import styled from 'styled-components/macro'
+import styled from 'styled-components'
 import { useWeb3Context } from 'web3-react'
 import { Result, Skeleton, Button } from 'antd'
 import { ItemTypes } from '@kleros/gtcr-encoder'

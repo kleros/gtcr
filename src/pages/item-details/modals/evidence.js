@@ -1,7 +1,7 @@
 import React, { useContext } from 'react'
 import { Modal, Typography, Button } from 'antd'
 import { ethers } from 'ethers'
-import styled from 'styled-components/macro'
+import styled from 'styled-components'
 import { abi as _gtcr } from '@kleros/tcr/build/contracts/GeneralizedTCR.json'
 import { TCRViewContext } from 'contexts/tcr-view-context'
 import { WalletContext } from 'contexts/wallet-context'

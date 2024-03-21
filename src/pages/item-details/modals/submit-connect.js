@@ -22,7 +22,7 @@ import {
   Result,
   Alert
 } from 'antd'
-import styled from 'styled-components/macro'
+import styled from 'styled-components'
 import PropTypes from 'prop-types'
 import { useDebounce } from 'use-debounce'
 import { abi as _gtcr } from '@kleros/tcr/build/contracts/GeneralizedTCR.json'

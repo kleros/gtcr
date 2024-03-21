@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react'
 import { Input, Checkbox, Upload, Icon, message, Form } from 'antd'
-import styled from 'styled-components/macro'
+import styled from 'styled-components'
 import { withFormik, Field } from 'formik'
 import * as yup from 'yup'
 import PropTypes from 'prop-types'
@@ -16,6 +16,15 @@ const StyledUpload = styled(Upload)`
   & > .ant-upload.ant-upload-select-picture-card {
     width: 100%;
   }
+`
+
+const StyledImg = styled.img`
+  height: 70px;
+  object-fit: contain;
+`
+
+const StyledIcon = styled(Icon)`
+  font-size: 30px;
 `
 
 const UploadButton = ({ loading }) => (
@@ -126,16 +135,12 @@ const EvidenceForm = ({
               rel="noopener noreferrer"
             >
               {values.evidenceAttachment.type.includes('image') ? (
-                <img
+                <StyledImg
                   src={parseIpfs(values.evidenceAttachment.fileURI)}
-                  style={{
-                    height: '70px',
-                    objectFit: 'contain'
-                  }}
                   alt="avatar"
                 />
               ) : (
-                <Icon type="file-pdf" style={{ fontSize: '30px' }} />
+                <StyledIcon type="file-pdf" />
               )}
             </a>
           ) : (

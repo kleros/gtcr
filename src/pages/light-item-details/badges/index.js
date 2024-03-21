@@ -6,7 +6,7 @@ import React, {
   useCallback
 } from 'react'
 import { Card, Typography, Divider, Button, Result, Icon } from 'antd'
-import styled from 'styled-components/macro'
+import styled from 'styled-components'
 import { useWeb3Context } from 'web3-react'
 import { ethers } from 'ethers'
 import PropTypes from 'prop-types'

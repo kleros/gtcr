@@ -1,5 +1,6 @@
 import { Typography, Skeleton, Button, Icon } from 'antd'
-import styled from 'styled-components'
+import styled, { css } from 'styled-components'
+import { smallScreenStyle } from 'styles/small-screen-style'
 import { Link } from 'react-router-dom'
 import React from 'react'
 import PropTypes from 'prop-types'
@@ -66,9 +67,11 @@ export const StyledPolicyAnchor = styled.a`
   color: #b88cdc;
   text-align: end;
 
-  @media (max-width: 992px) {
-    text-align: start;
-  }
+  ${smallScreenStyle(
+    () => css`
+      text-align: start;
+    `
+  )}
 `
 
 export const ActionCol = styled.div`

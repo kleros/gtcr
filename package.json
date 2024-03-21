@@ -122,11 +122,6 @@
       "last 1 safari version"
     ]
   },
-  "babelMacros": {
-    "styledComponents": {
-      "pure": true
-    }
-  },
   "volta": {
     "node": "12.22.12",
     "yarn": "1.22.19"

@@ -1,7 +1,7 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import { Button } from 'antd'
-import styled from 'styled-components/macro'
+import styled from 'styled-components'
 import { STATUS_CODE, getActionLabel } from '../utils/item-status'
 
 const StyledButton = styled(Button)`
