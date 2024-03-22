@@ -57,7 +57,7 @@ export const StyledDescription = styled.span`
   display: flex;
   flex-wrap: wrap;
   color: #b88cdc;
-  margin-top: 8px;
+  margin-top: 4px;
 `
 
 export const StyledPolicyAnchor = styled.a`
