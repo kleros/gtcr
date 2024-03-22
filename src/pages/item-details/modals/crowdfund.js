@@ -1,7 +1,5 @@
 import React, { useState, useContext, useMemo } from 'react'
-import styled from 'styled-components'
 import {
-  Modal,
   Descriptions,
   Button,
   Row,
@@ -9,8 +7,7 @@ import {
   Slider,
   InputNumber,
   Typography,
-  Divider,
-  Spin
+  Divider
 } from 'antd'
 import PropTypes from 'prop-types'
 import { STATUS_CODE, PARTY, SUBGRAPH_RULING } from 'utils/item-status'
@@ -25,21 +22,10 @@ import useRequiredFees from 'hooks/required-fees'
 import { TourContext } from 'contexts/tour-context'
 import useNativeCurrency from 'hooks/native-currency'
 import { parseIpfs } from 'utils/ipfs-parse'
-
-const StyledSpin = styled(Spin)`
-  height: 60px;
-  width: 100%;
-  align-items: center;
-  justify-content: center;
-  display: flex;
-`
-
-const StyledModal = styled(Modal)`
-  & > .ant-modal-content {
-    border-top-left-radius: 14px;
-    border-top-right-radius: 14px;
-  }
-`
+import {
+  StyledSpin,
+  StyledModal
+} from 'pages/light-item-details/modals/challenge'
 
 const CrowdfundModal = ({ statusCode, item, fileURI, appealCost, ...rest }) => {
   const { pushWeb3Action } = useContext(WalletContext)

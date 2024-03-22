@@ -9,12 +9,11 @@ import {
   Slider,
   InputNumber
 } from 'antd'
-import { withFormik } from 'formik'
 import PropTypes from 'prop-types'
+import { withFormik } from 'formik'
 import * as yup from 'yup'
 import { useDebounce } from 'use-debounce/lib'
 import { getAddress, parseEther, bigNumberify } from 'ethers/utils'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { useWeb3Context } from 'web3-react'
 import CustomInput from 'components/custom-input'
 import { ItemTypes } from '@kleros/gtcr-encoder'
@@ -30,15 +29,18 @@ import { useHistory } from 'react-router'
 import { klerosAddresses } from 'config/tcr-addresses'
 import { parseIpfs } from 'utils/ipfs-parse'
 import {
-  UploadButton,
   StyledTCRParamContainer,
   StyledTCRInfoContainer,
-  StyledUpload,
   StyledUploadContainer,
   StyledDepositContainer,
   StyledSliderContainer,
-  StyledAlert
+  StyledAlert,
+  StyledP,
+  StyledImg,
+  CheapestAndSafestContainer,
+  StyledFontAwesomeIcon
 } from 'pages/factory/tcr-params'
+import { StyledUpload, UploadButton } from 'components/input-selector'
 
 UploadButton.propTypes = {
   loading: PropTypes.bool
@@ -187,10 +189,10 @@ const TCRParams = ({
     <Card
       title="Enter the list parameters"
       extra={
-        <p style={{ color: 'white' }}>
+        <StyledP>
           Use Classic{' '}
           <Switch defaultChecked onClick={() => history.push(`/factory`)} />
-        </p>
+        </StyledP>
       }
     >
       <Form layout="vertical" id={formId} onSubmit={handleSubmit}>
@@ -215,11 +217,7 @@ const TCRParams = ({
                 onChange={fileUploadStatusChange}
               >
                 {values.tcrLogo ? (
-                  <img
-                    src={parseIpfs(values.tcrLogo)}
-                    style={{ height: '70px', objectFit: 'contain' }}
-                    alt="avatar"
-                  />
+                  <StyledImg src={parseIpfs(values.tcrLogo)} alt="avatar" />
                 ) : (
                   <UploadButton loading={uploading.tcrLogo} />
                 )}
@@ -351,20 +349,10 @@ const TCRParams = ({
               />
             </label>
             <StyledSliderContainer>
-              <div
-                style={{
-                  flex: 1,
-                  display: 'flex',
-                  alignItems: 'center',
-                  marginRight: '24px'
-                }}
-              >
+              <CheapestAndSafestContainer>
                 {width > 480 && (
                   <>
-                    <FontAwesomeIcon
-                      icon="coins"
-                      style={{ marginRight: '12px' }}
-                    />
+                    <StyledFontAwesomeIcon icon="coins" />
                     Cheapest
                   </>
                 )}
@@ -379,14 +367,10 @@ const TCRParams = ({
                 />
                 {width > 480 && (
                   <>
-                    <FontAwesomeIcon
-                      icon="shield-alt"
-                      style={{ marginRight: '12px' }}
-                    />{' '}
-                    Safest
+                    <StyledFontAwesomeIcon icon="shield-alt" /> Safest
                   </>
                 )}
-              </div>
+              </CheapestAndSafestContainer>
               <InputNumber
                 min={0}
                 max={30}

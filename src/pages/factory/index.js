@@ -30,43 +30,44 @@ import {
 const { Step } = Steps
 const { confirm } = Modal
 
-const StyledButtonGroup = styled(Button.Group)`
+export const StyledButtonGroup = styled(Button.Group)`
   &.ant-btn-group {
     margin-left: 12px;
   }
 `
 
-const StyledStepper = styled.div`
+export const StyledStepper = styled.div`
   display: flex;
   flex-direction: row;
   justify-content: flex-end;
 `
-const StyledContainer = styled.div`
+export const StyledContainer = styled.div`
   margin: 32px 0;
   word-break: break-word;
 `
 
-const StyledBanner = styled.div`
+export const StyledBanner = styled.div`
   padding: 24px 9.375vw;
   background: linear-gradient(270deg, #f2e3ff 22.92%, #ffffff 76.25%);
   box-shadow: 0px 3px 24px #bc9cff;
   color: #4d00b4;
 `
 
-const StyledGrid = styled.div`
+export const StyledGrid = styled.div`
   display: grid;
   margin: 24px 0;
   grid-gap: 20px;
   grid-template-columns: repeat(auto-fill, minmax(225px, 1fr));
 `
 
-const formIds = [
+export const formIds = [
   'tcrParamsForm',
   'itemParamsForm',
   'relTCRParamsForm',
   'deployTCRForm'
 ]
-const CurrentStep = props => (
+
+export const CurrentStep = props => (
   <>
     {(() => {
       const {

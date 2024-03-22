@@ -1,14 +1,12 @@
 import React, { useContext, useCallback, useState } from 'react'
 import {
-  Spin,
   Modal,
   Button,
   Form,
   Tooltip,
   Icon,
   Typography,
-  Descriptions,
-  Alert
+  Descriptions
 } from 'antd'
 import styled from 'styled-components'
 import _gtcr from 'assets/abis/LightGeneralizedTCR.json'
@@ -26,16 +24,10 @@ import useNativeCurrency from 'hooks/native-currency'
 import ipfsPublish from 'utils/ipfs-publish'
 import { Column } from 'pages/item-details/modals/submit'
 import { parseIpfs } from 'utils/ipfs-parse'
+import { StyledSpin } from './challenge'
+import { StyledAlert } from './remove'
 
-const StyledSpin = styled(Spin)`
-  height: 60px;
-  width: 100%;
-  align-items: center;
-  justify-content: center;
-  display: flex;
-`
-
-const StyledModal = styled(Modal)`
+export const StyledModal = styled(Modal)`
   text-transform: capitalize;
   & > .ant-modal-content {
     border-top-left-radius: 14px;
@@ -43,16 +35,11 @@ const StyledModal = styled(Modal)`
   }
 `
 
-const StyledAlert = styled(Alert)`
-  margin-bottom: 12px;
-  text-transform: initial;
-`
-
-const StyledParagraph = styled(Typography.Paragraph)`
+export const StyledParagraph = styled(Typography.Paragraph)`
   text-transform: none;
 `
 
-const SUBMISSION_FORM_ID = 'submitItemForm'
+export const SUBMISSION_FORM_ID = 'submitItemForm'
 
 const _SubmissionForm: React.FC<{
   style: any

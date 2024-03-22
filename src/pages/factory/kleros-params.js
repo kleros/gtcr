@@ -12,7 +12,7 @@ import useWindowDimensions from 'hooks/window-dimensions'
 import useNativeCurrency from 'hooks/native-currency'
 import useGetLogs from 'hooks/get-logs'
 
-const StyledExtraDataContainer = styled.div`
+export const StyledExtraDataContainer = styled.div`
   padding-bottom: 8px;
   margin-bottom: 12px;
   display: flex;
@@ -21,15 +21,20 @@ const StyledExtraDataContainer = styled.div`
   flex-wrap: wrap;
 `
 
-const StyledInputContainer = styled.div`
+export const StyledInputContainer = styled.div`
   display: flex;
   flex-direction: column;
 `
 
-const StyledContainer = styled.div`
+export const StyledContainer = styled.div`
   display: flex;
   margin-bottom: 24px;
   flex: 1;
+`
+
+export const SliderContainer = styled.div`
+  display: flex;
+  align-items: center;
 `
 
 const KlerosParams = ({
@@ -206,7 +211,7 @@ const KlerosParams = ({
             </Tooltip>
             :
           </label>
-          <div style={{ display: 'flex', alignItems: 'center' }}>
+          <SliderContainer>
             {width > 480 && (
               <Slider
                 id="numJurors"
@@ -225,7 +230,7 @@ const KlerosParams = ({
               defaultValue={3}
               onChange={onNumJurorsChange}
             />
-          </div>
+          </SliderContainer>
         </StyledInputContainer>
       </StyledContainer>
       Arbitration Cost:{' '}

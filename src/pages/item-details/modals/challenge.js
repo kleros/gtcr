@@ -1,7 +1,6 @@
 import React, { useContext } from 'react'
 import PropTypes from 'prop-types'
-import { Modal, Descriptions, Typography, Button, Spin } from 'antd'
-import styled from 'styled-components'
+import { Descriptions, Typography, Button } from 'antd'
 import { ethers } from 'ethers'
 import { abi as _gtcr } from '@kleros/tcr/build/contracts/GeneralizedTCR.json'
 import { CONTRACT_STATUS, STATUS_CODE } from 'utils/item-status'
@@ -13,21 +12,10 @@ import EvidenceForm from 'components/evidence-form'
 import ipfsPublish from 'utils/ipfs-publish.js'
 import { TourContext } from 'contexts/tour-context'
 import { parseIpfs } from 'utils/ipfs-parse'
-
-const StyledSpin = styled(Spin)`
-  height: 60px;
-  width: 100%;
-  align-items: center;
-  justify-content: center;
-  display: flex;
-`
-
-const StyledModal = styled(Modal)`
-  & > .ant-modal-content {
-    border-top-left-radius: 14px;
-    border-top-right-radius: 14px;
-  }
-`
+import {
+  StyledSpin,
+  StyledModal
+} from 'pages/light-item-details/modals/challenge'
 
 const ChallengeModal = ({ item, itemName, statusCode, fileURI, ...rest }) => {
   // Get contract data.

@@ -6,8 +6,6 @@ import React, {
   useMemo
 } from 'react'
 import {
-  Spin,
-  Modal,
   Button,
   Typography,
   Descriptions,
@@ -18,11 +16,8 @@ import {
   Tooltip,
   Icon,
   Select,
-  Skeleton,
-  Result,
-  Alert
+  Result
 } from 'antd'
-import styled from 'styled-components'
 import PropTypes from 'prop-types'
 import { useDebounce } from 'use-debounce'
 import { abi as _gtcr } from '@kleros/tcr/build/contracts/GeneralizedTCR.json'
@@ -37,35 +32,15 @@ import { TourContext } from 'contexts/tour-context.js'
 import useNativeCurrency from 'hooks/native-currency.js'
 import useGetLogs from 'hooks/get-logs'
 import { parseIpfs } from 'utils/ipfs-parse'
-
-const StyledSpin = styled(Spin)`
-  height: 60px;
-  width: 100%;
-  align-items: center;
-  justify-content: center;
-  display: flex;
-`
-
-const StyledAlert = styled(Alert)`
-  margin-bottom: 24px;
-`
-
-const StyledSkeleton = styled(Skeleton)`
-  display: inline;
-
-  .ant-skeleton-title {
-    margin: -3px 0;
-  }
-`
-
-const StyledModal = styled(Modal)`
-  & > .ant-modal-content {
-    border-top-left-radius: 14px;
-    border-top-right-radius: 14px;
-  }
-`
-
-const SkeletonTitleProps = { width: '90px' }
+import {
+  StyledSpin,
+  StyledModal
+} from 'pages/light-item-details/modals/challenge'
+import {
+  StyledAlert,
+  StyledSkeleton,
+  SkeletonTitleProps
+} from 'pages/light-item-details/modals/submit-connect'
 
 const SubmitConnectModal = props => {
   const nativeCurrency = useNativeCurrency()

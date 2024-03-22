@@ -14,7 +14,7 @@ import ipfsPublish from 'utils/ipfs-publish.js'
 import { TourContext } from 'contexts/tour-context'
 import { parseIpfs } from 'utils/ipfs-parse'
 
-const StyledSpin = styled(Spin)`
+export const StyledSpin = styled(Spin)`
   height: 60px;
   width: 100%;
   align-items: center;
@@ -22,7 +22,7 @@ const StyledSpin = styled(Spin)`
   display: flex;
 `
 
-const StyledModal = styled(Modal)`
+export const StyledModal = styled(Modal)`
   & > .ant-modal-content {
     border-top-left-radius: 14px;
     border-top-right-radius: 14px;

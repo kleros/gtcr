@@ -16,13 +16,13 @@ import itemPropType from 'prop-types/item'
 import BNPropType from 'prop-types/bn'
 import useNativeCurrency from 'hooks/native-currency'
 
-const StyledCard = styled(Card)`
+export const StyledCard = styled(Card)`
   background: linear-gradient(111.6deg, #4d00b4 46.25%, #6500b4 96.25%);
   color: white;
   margin: 40px 0 20px !important;
 `
 
-const StyledContent = styled.div`
+export const StyledContent = styled.div`
   display: flex;
   justify-content: space-between;
 
@@ -33,7 +33,7 @@ const StyledContent = styled.div`
   )}
 `
 
-const StyledSection = styled.div`
+export const StyledSection = styled.div`
   display: flex;
   flex: 1 1 0px;
   flex-direction: column;
@@ -48,17 +48,17 @@ const StyledSection = styled.div`
   )}
 `
 
-const StyledTitle = styled(Typography.Title)`
+export const StyledTitle = styled(Typography.Title)`
   color: white !important;
   text-align: center;
 `
 
-const StyledParagraph = styled(Typography.Paragraph)`
+export const StyledParagraph = styled(Typography.Paragraph)`
   color: white;
   text-align: center;
 `
 
-const StyledIcon = styled(FontAwesomeIcon)`
+export const StyledIcon = styled(FontAwesomeIcon)`
   margin: 12px;
 `
 

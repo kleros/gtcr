@@ -20,7 +20,42 @@ import {
   txBatcherAddresses
 } from 'config/tcr-addresses'
 
-const _txBatcher = [
+export const StyledDiv = styled.div`
+  word-break: break-all;
+`
+
+export const StyledSteps = styled(Steps)`
+  margin: 24px 0;
+`
+
+export const StyledAlert = styled(Alert)`
+  margin-bottom: 24px;
+`
+
+export const StyledCard = styled(Card)`
+  & > .ant-card-body {
+    display: flex;
+    flex-direction: column;
+  }
+`
+
+export const StyledActions = styled.div`
+  display: flex;
+  justify-content: flex-end;
+`
+
+export const StyledButton = styled(Button)`
+  margin-left: 12px;
+  text-transform: capitalize;
+`
+
+export const StyledSpan = styled.span`
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+`
+
+export const _txBatcher = [
   {
     constant: false,
     inputs: [
@@ -35,35 +70,6 @@ const _txBatcher = [
     type: 'function'
   }
 ]
-
-const StyledDiv = styled.div`
-  word-break: break-all;
-`
-
-const StyledSteps = styled(Steps)`
-  margin: 24px 0;
-`
-
-const StyledAlert = styled(Alert)`
-  margin-bottom: 24px;
-`
-
-const StyledCard = styled(Card)`
-  & > .ant-card-body {
-    display: flex;
-    flex-direction: column;
-  }
-`
-
-const StyledActions = styled.div`
-  display: flex;
-  justify-content: flex-end;
-`
-
-const StyledButton = styled(Button)`
-  margin-left: 12px;
-  text-transform: capitalize;
-`
 
 const getTcrMetaEvidence = async (
   tcrState,
@@ -475,13 +481,7 @@ const Deploy = ({ setTxState, tcrState, setTcrState }) => {
           />
         )}
         {currentStep === 0 && (
-          <span
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'flex-end'
-            }}
-          >
+          <StyledSpan>
             <StyledActions>
               <StyledButton
                 type="primary"
@@ -493,7 +493,7 @@ const Deploy = ({ setTxState, tcrState, setTcrState }) => {
                 Deploy!
               </StyledButton>
             </StyledActions>
-          </span>
+          </StyledSpan>
         )}
       </StyledCard>
       {metaEvidence && (

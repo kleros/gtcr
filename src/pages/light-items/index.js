@@ -120,7 +120,7 @@ export const StyledSwitch = styled(Switch)`
   }
 `
 
-const pagingItem = (_, type, originalElement) => {
+export const pagingItem = (_, type, originalElement) => {
   if (type === 'prev') return <span>Previous</span>
   if (type === 'next') return <span>Next</span>
   return originalElement
@@ -131,7 +131,9 @@ const pagingItem = (_, type, originalElement) => {
 //
 // Reference:
 // https://itnext.io/how-to-create-react-custom-hooks-for-data-fetching-with-useeffect-74c5dc47000a
-const ITEMS_PER_PAGE = 40
+
+export const ITEMS_PER_PAGE = 40
+
 const Items = () => {
   const history = useHistory()
   const { tcrAddress, chainId } = useParams()

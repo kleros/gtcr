@@ -1,6 +1,5 @@
 import React, { useContext } from 'react'
-import styled from 'styled-components'
-import { Modal, Typography, Button } from 'antd'
+import { Typography, Button } from 'antd'
 import { ethers } from 'ethers'
 import _gtcr from 'assets/abis/LightGeneralizedTCR.json'
 import { LightTCRViewContext } from 'contexts/light-tcr-view-context'
@@ -9,13 +8,7 @@ import itemPropTypes from 'prop-types/item'
 import EvidenceForm from 'components/evidence-form.js'
 import ipfsPublish from 'utils/ipfs-publish.js'
 import { TourContext } from 'contexts/tour-context'
-
-const StyledModal = styled(Modal)`
-  & > .ant-modal-content {
-    border-top-left-radius: 14px;
-    border-top-right-radius: 14px;
-  }
-`
+import { StyledModal } from './challenge'
 
 const EvidenceModal = ({ item, ...rest }) => {
   // Get contract data.

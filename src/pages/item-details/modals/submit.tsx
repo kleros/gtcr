@@ -1,16 +1,5 @@
 import React, { useContext, useCallback, useState } from 'react'
-import styled from 'styled-components'
-import {
-  Spin,
-  Modal,
-  Button,
-  Form,
-  Tooltip,
-  Icon,
-  Typography,
-  Descriptions,
-  Alert
-} from 'antd'
+import { Button, Form, Tooltip, Icon, Typography, Descriptions } from 'antd'
 import { abi as _gtcr } from '@kleros/tcr/build/contracts/GeneralizedTCR.json'
 import { ethers } from 'ethers'
 import { withFormik } from 'formik'
@@ -24,33 +13,13 @@ import { TourContext } from 'contexts/tour-context'
 import { addPeriod, capitalizeFirstLetter, getArticleFor } from 'utils/string'
 import useNativeCurrency from 'hooks/native-currency'
 import { parseIpfs } from 'utils/ipfs-parse'
-
-const StyledSpin = styled(Spin)`
-  height: 60px;
-  width: 100%;
-  align-items: center;
-  justify-content: center;
-  display: flex;
-`
-
-const StyledModal = styled(Modal)`
-  text-transform: capitalize;
-  & > .ant-modal-content {
-    border-top-left-radius: 14px;
-    border-top-right-radius: 14px;
-  }
-`
-
-const StyledAlert = styled(Alert)`
-  margin-bottom: 12px;
-  text-transform: initial;
-`
-
-const StyledParagraph = styled(Typography.Paragraph)`
-  text-transform: none;
-`
-
-const SUBMISSION_FORM_ID = 'submitItemForm'
+import {
+  SUBMISSION_FORM_ID,
+  StyledParagraph,
+  StyledModal
+} from 'pages/light-item-details/modals/submit'
+import { StyledSpin } from 'pages/light-item-details/modals/challenge'
+import { StyledAlert } from 'pages/light-item-details/modals/remove'
 
 export interface Column {
   label: string

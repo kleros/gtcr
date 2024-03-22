@@ -39,6 +39,10 @@ const StyledListItem = styled(List.Item)`
   justify-content: space-between;
 `
 
+const StyledSpan = styled.span`
+  color: ${({ clicked }) => (clicked ? '#9b77cc' : '')};
+`
+
 const Notifications = () => {
   const { account, networkId } = useWeb3Context()
   const [visible, setVisible] = useState()
@@ -125,9 +129,9 @@ const Notifications = () => {
           >
             <List.Item.Meta
               title={
-                <span style={{ color: n.clicked ? '#9b77cc' : '' }}>
+                <StyledSpan clicked={n.clicked}>
                   {typeToMessage[n.type]}
-                </span>
+                </StyledSpan>
               }
               avatar={
                 <Avatar

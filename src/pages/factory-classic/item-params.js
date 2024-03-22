@@ -1,5 +1,4 @@
 import React, { useEffect, useCallback } from 'react'
-import styled from 'styled-components'
 import {
   Card,
   Button,
@@ -11,25 +10,17 @@ import {
   Divider,
   Switch,
   Tooltip,
-  message,
-  Alert
+  message
 } from 'antd'
 import PropTypes from 'prop-types'
-import { ItemTypes as AllItemTypes } from '@kleros/gtcr-encoder'
 import { withFormik, FieldArray, Field } from 'formik'
 import * as yup from 'yup'
 import CustomInput from 'components/custom-input'
 import ItemDetailsCard from 'components/item-details-card'
 import { STATUS_CODE } from 'utils/item-status'
-import objectWithoutKey from 'utils/object-without-key'
-
-const ItemTypes = objectWithoutKey(AllItemTypes, 'TWITTER_USER_ID')
+import { StyledAlert, ItemTypes } from 'pages/factory/item-params'
 
 const { IMAGE, FILE, GTCR_ADDRESS, LONG_TEXT } = ItemTypes
-
-const StyledAlert = styled(Alert)`
-  margin-bottom: 42px;
-`
 
 const ItemParams = ({
   handleSubmit,

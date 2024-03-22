@@ -32,8 +32,9 @@ export const StyledDescriptions = styled(Descriptions)`
   margin-right: 16px;
   max-width: 991px;
 `
-export const SkeletonTitleProps = { width: 60 }
-export const StyledSkeleton = styled(Skeleton)`
+const SkeletonTitleProps = { width: 60 }
+
+const StyledSkeleton = styled(Skeleton)`
   display: inline;
 
   .ant-skeleton-title {
@@ -61,7 +62,7 @@ export const StyledItemStatusCard = styled(Card)`
   }
 `
 
-const Ruling = ({ currentRuling }) => {
+export const Ruling = ({ currentRuling }) => {
   if (currentRuling == null)
     return (
       <StyledSkeleton active paragraph={false} title={SkeletonTitleProps} />

@@ -43,22 +43,19 @@ import {
   StyledSelect,
   StyledGrid,
   StyledPagination,
-  FiltersContainer
+  FiltersContainer,
+  ITEMS_PER_PAGE,
+  pagingItem
 } from 'pages/light-items'
-
-const pagingItem = (_, type, originalElement) => {
-  if (type === 'prev') return <span>Previous</span>
-  if (type === 'next') return <span>Next</span>
-  return originalElement
-}
 
 // TODO: Ensure we don't set state for unmounted components using
 // flags and AbortController.
 //
 // Reference:
 // https://itnext.io/how-to-create-react-custom-hooks-for-data-fetching-with-useeffect-74c5dc47000a
-const ITEMS_PER_PAGE = 40
+
 const MAX_ENTITIES = 1000
+
 const Items = () => {
   const history = useHistory()
   const search = window.location.search || ''

@@ -1,8 +1,13 @@
-import { Typography } from 'antd'
 import React from 'react'
+import styled from 'styled-components'
+import { Typography } from 'antd'
+
+const StyledSpan = styled.span`
+  color: gray;
+`
 
 const LongText = ({ value }) => {
-  if (!value) return <span style={{ color: 'gray' }}>empty</span>
+  if (!value) return <StyledSpan>empty</StyledSpan>
 
   return <Typography.Paragraph>{value}</Typography.Paragraph>
 }

@@ -1,6 +1,5 @@
 import React, { useContext, useMemo } from 'react'
 import { Tooltip, Icon } from 'antd'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import PropTypes from 'prop-types'
 import ItemStatusBadge from 'components/item-status-badge'
 import ETHAmount from 'components/eth-amount'
@@ -10,6 +9,13 @@ import { WalletContext } from 'contexts/wallet-context'
 import { TCRViewContext } from 'contexts/tcr-view-context'
 import useHumanizedCountdown from 'hooks/countdown'
 import useNativeCurrency from 'hooks/native-currency'
+import {
+  Container,
+  StatusAndBountyContainer,
+  BountyContainer,
+  StyledFontAwesomeIcon,
+  CountdownContainer
+} from 'pages/light-items/item-card-title'
 
 const ItemCardTitle = ({ statusCode, tcrData }) => {
   const { challengePeriodDuration } = useContext(TCRViewContext)
@@ -35,49 +41,32 @@ const ItemCardTitle = ({ statusCode, tcrData }) => {
     statusCode = itemToStatusCode(tcrData, timestamp, challengePeriodDuration)
 
   return (
-    <div
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        minHeight: '40.5px',
-        justifyContent: 'center'
-      }}
-    >
-      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+    <Container>
+      <StatusAndBountyContainer>
         <ItemStatusBadge statusCode={statusCode} dark />
         {challengeRemainingTime > 0 && (
-          <div style={{ display: 'flex', flexDirection: 'column' }}>
+          <BountyContainer>
             <Tooltip title="This is the bounty on this item.">
               <ETHAmount
                 amount={bounty}
                 decimals={3}
                 displayUnit={` ${nativeCurrency}`}
               />
-              <FontAwesomeIcon
-                icon="coins"
-                color="white"
-                style={{ marginLeft: '6px' }}
-              />
+              <StyledFontAwesomeIcon icon="coins" color="white" />
             </Tooltip>
-          </div>
+          </BountyContainer>
         )}
-      </div>
+      </StatusAndBountyContainer>
       {challengeRemainingTime > 0 && (
-        <div
-          style={{
-            color: '#ffffff5c',
-            fontSize: '13px',
-            marginLeft: '12px'
-          }}
-        >
+        <CountdownContainer>
           Ends {challengeCountdown}
           <Tooltip title="This is the challenge period before this item is accepted into the list.">
             &nbsp;
             <Icon type="question-circle-o" />
           </Tooltip>
-        </div>
+        </CountdownContainer>
       )}
-    </div>
+    </Container>
   )
 }
 

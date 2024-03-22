@@ -1,13 +1,17 @@
 import React, { useEffect, useState } from 'react'
+import { Skeleton, Button } from 'antd'
 import PropTypes from 'prop-types'
 import { useWeb3Context } from 'web3-react'
-import { Skeleton, Button } from 'antd'
 import { ItemTypes } from '@kleros/gtcr-encoder'
 import DisplaySelector from './display-selector'
 import { fetchMetaEvidence } from 'hooks/tcr-view'
 import useNavigateAndScrollTop from 'hooks/navigate-and-scroll-top'
 import { parseIpfs } from 'utils/ipfs-parse'
-import { StyledItemCol, StyledResult } from './light-tcr-card-content'
+import {
+  StyledItemCol,
+  StyledResult,
+  Container
+} from './light-tcr-card-content'
 
 const TCRCardContent = ({
   tcrAddress,
@@ -44,14 +48,7 @@ const TCRCardContent = ({
 
   try {
     return (
-      <div
-        style={{
-          height: '100%',
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'space-between'
-        }}
-      >
+      <Container>
         <div>
           <StyledItemCol>
             <DisplaySelector type={ItemTypes.IMAGE} value={metadata.logoURI} />
@@ -82,7 +79,7 @@ const TCRCardContent = ({
             Open List
           </Button>
         </StyledItemCol>
-      </div>
+      </Container>
     )
   } catch (err) {
     return <StyledResult status="warning" subTitle={err.message} />

@@ -11,13 +11,18 @@ import AddressInput from './address-input'
 import RichAddressInput from './rich-address-input'
 import { parseIpfs } from 'utils/ipfs-parse'
 
-const StyledUpload = styled(Upload)`
+export const StyledUpload = styled(Upload)`
   & > .ant-upload.ant-upload-select-picture-card {
     width: 100%;
   }
 `
 
-const UploadButton: React.FC<{ loading: boolean }> = p => (
+const StyledImg = styled.img`
+  height: 70px;
+  object-fit: contain;
+`
+
+export const UploadButton: React.FC<{ loading: boolean }> = p => (
   <div>
     <Icon type={p.loading ? 'loading' : 'plus'} />
     <div className="ant-upload-text">Upload</div>
@@ -168,11 +173,7 @@ const InputSelector: React.FC<InputSelectorProps> = p => {
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                <img
-                  src={parseIpfs(values[name])}
-                  style={{ height: '70px', objectFit: 'contain' }}
-                  alt="preview"
-                />
+                <StyledImg src={parseIpfs(values[name])} alt="preview" />
               </a>
             ) : (
               <UploadButton loading={uploading} />

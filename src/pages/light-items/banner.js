@@ -81,6 +81,10 @@ export const ActionCol = styled.div`
   align-items: flex-end;
 `
 
+export const StyledLink = styled(Link)`
+  color: #4d00b473;
+`
+
 const TCRLogo = ({ logoURI }) =>
   logoURI && <StyledImage src={parseIpfs(logoURI)} alt="item" />
 
@@ -149,12 +153,9 @@ const Banner = ({
                 type="secondary"
                 style={{ maxWidth: '100%', textDecoration: 'underline' }}
               >
-                <Link
-                  to={`/tcr/${networkId}/${connectedTCRAddr}`}
-                  style={{ color: '#4d00b473' }}
-                >
+                <StyledLink to={`/tcr/${networkId}/${connectedTCRAddr}`}>
                   View Badges list
-                </Link>
+                </StyledLink>
               </Typography.Text>
             </>
           )}

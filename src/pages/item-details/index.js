@@ -1,65 +1,37 @@
 import React, { useState, useEffect, useContext, useMemo } from 'react'
-import styled from 'styled-components'
-import { Layout, Breadcrumb } from 'antd'
+import { Breadcrumb } from 'antd'
 import PropTypes from 'prop-types'
 import { useParams } from 'react-router'
 import qs from 'qs'
 import { useWeb3Context } from 'web3-react'
-import { Link } from 'react-router-dom'
+import { gtcrDecode } from '@kleros/gtcr-encoder'
+import { abi as _IArbitrator } from '@kleros/erc-792/build/contracts/IArbitrator.json'
 import ErrorPage from '../error-page'
 import ItemDetailsCard from 'components/item-details-card'
 import ItemStatusCard from './item-status-card'
 import CrowdfundingCard from './crowdfunding-card'
 import { TCRViewContext } from 'contexts/tcr-view-context'
-import { gtcrDecode } from '@kleros/gtcr-encoder'
 import RequestTimelines from '../../components/request-timelines'
 import { WalletContext } from 'contexts/wallet-context'
 import { capitalizeFirstLetter, ZERO_ADDRESS } from 'utils/string'
 import Badges from './badges'
 import AppTour from 'components/tour'
-import itemTourSteps from './tour-steps'
 import { parseIpfs } from 'utils/ipfs-parse'
+import { itemTourSteps } from '../light-item-details/tour-steps'
 import { fetchMetaEvidence } from 'hooks/tcr-view'
 import { CLASSIC_ITEM_DETAILS_QUERY } from 'utils/graphql'
 import { useQuery } from '@apollo/client'
 import { ethers } from 'ethers'
-import { abi as _IArbitrator } from '@kleros/erc-792/build/contracts/IArbitrator.json'
-
-const ITEM_TOUR_DISMISSED = 'ITEM_TOUR_DISMISSED'
-
-const StyledBreadcrumbItem = styled(Breadcrumb.Item)`
-  text-transform: capitalize;
-`
-
-const StyledLayoutContent = styled(Layout.Content)`
-  padding: 0 9.375vw 42px;
-  display: flex;
-  flex-direction: column;
-`
-
-const StyledBanner = styled.div`
-  padding: 24px 9.375vw;
-  background: linear-gradient(270deg, #f2e3ff 22.92%, #ffffff 76.25%);
-  box-shadow: 0px 3px 24px #bc9cff;
-  color: #4d00b4;
-`
-
-const StyledMargin = styled.div`
-  padding: 24px 9.375vw;
-  display: flex;
-`
-
-const StyledLink = styled(Link)`
-  text-decoration: underline;
-  color: rgba(77, 0, 180, 0.45);
-`
-
-const StyledBackLink = styled.div`
-  min-width: 53px;
-  margin-right: 12px;
-  display: flex;
-  align-items: center;
-`
+import {
+  Divider,
+  StyledBanner,
+  StyledBreadcrumbItem,
+  StyledLink,
+  StyledMargin,
+  StyledBackLink,
+  StyledLayoutContent,
+  ITEM_TOUR_DISMISSED
+} from 'pages/light-item-details'
 
 // TODO: Ensure we don't set state for unmounted components using
 // flags and AbortController.
@@ -229,7 +201,7 @@ const ItemDetails = ({ itemID, search }) => {
           appealCost={appealCost}
           dark
         />
-        <div style={{ marginBottom: '40px' }} />
+        <Divider />
         <ItemDetailsCard
           columns={columns}
           item={decodedItem}

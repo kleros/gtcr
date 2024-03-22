@@ -9,7 +9,7 @@ import BNPropType from 'prop-types/bn'
 import { itemToStatusCode, STATUS_CODE } from 'utils/item-status'
 import ItemCardTitle from './item-card-title'
 
-const FlipCardInner = styled.div`
+export const FlipCardInner = styled.div`
   text-align: center;
   transition: transform 0.6s;
   transform-style: preserve-3d;
@@ -24,11 +24,11 @@ const FlipCardInner = styled.div`
     `}
 `
 
-const FlipCard = styled.div`
+export const FlipCard = styled.div`
   perspective: 1000px;
 `
 
-const FlipCardFront = styled.div`
+export const FlipCardFront = styled.div`
   backface-visibility: hidden;
   box-sizing: border-box;
   width: 100%;
@@ -36,7 +36,7 @@ const FlipCardFront = styled.div`
   margin-right: -100%;
 `
 
-const FlipCardBack = styled.div`
+export const FlipCardBack = styled.div`
   transform: rotateY(180deg);
   backface-visibility: hidden;
   box-sizing: border-box;
@@ -44,7 +44,7 @@ const FlipCardBack = styled.div`
   flex: none;
 `
 
-const CardNSFWWarn = styled(Card)`
+export const CardNSFWWarn = styled(Card)`
   height: 100%;
   color: white;
   background: rgba(0, 0, 0, 0)
@@ -61,7 +61,7 @@ const CardNSFWWarn = styled(Card)`
   }
 `
 
-const StyledCardInfo = styled(Card)`
+export const StyledCardInfo = styled(Card)`
   height: 100%;
   display: flex;
   flex-direction: column;
@@ -96,12 +96,12 @@ const StyledCardInfo = styled(Card)`
   }
 `
 
-const CardBlock = styled.div`
+export const CardBlock = styled.div`
   position: relative;
   height: 100%;
 `
 
-const HideCardButton = styled(Button)`
+export const HideCardButton = styled(Button)`
   pointer-events: auto;
   width: 100%;
   height: 100%;

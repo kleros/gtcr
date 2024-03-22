@@ -8,7 +8,6 @@ import {
   Tooltip,
   Form,
   Switch,
-  Upload,
   message,
   Alert,
   Slider,
@@ -34,12 +33,7 @@ import useNativeCurrency from 'hooks/native-currency'
 import { useHistory } from 'react-router'
 import { klerosAddresses } from 'config/tcr-addresses'
 import { parseIpfs } from 'utils/ipfs-parse'
-
-export const StyledUpload = styled(Upload)`
-  & > .ant-upload.ant-upload-select-picture-card {
-    width: 100%;
-  }
-`
+import { UploadButton, StyledUpload } from 'components/input-selector'
 
 export const StyledAlert = styled(Alert)`
   margin-bottom: 32px;
@@ -81,12 +75,29 @@ export const StyledSliderContainer = styled.div`
   display: flex;
 `
 
-export const UploadButton = ({ loading }) => (
-  <div>
-    <Icon type={loading ? 'loading' : 'plus'} />
-    <div className="ant-upload-text">Upload</div>
-  </div>
-)
+export const StyledP = styled.p`
+  color: white;
+`
+
+export const StyledFontAwesomeIcon = styled(FontAwesomeIcon)`
+  margin-right: 12px;
+`
+
+export const CheapestAndSafestContainer = styled.div`
+  display: flex;
+  flex: 1;
+  align-items: center;
+  margin-right: 24px;
+`
+
+export const StyledImg = styled.img`
+  height: 70px;
+  object-fit: contain;
+`
+
+export const UploadSection = styled.div`
+  margin-bottom: 26px;
+`
 
 UploadButton.propTypes = {
   loading: PropTypes.bool
@@ -235,10 +246,10 @@ const TCRParams = ({
     <Card
       title="Enter the list parameters"
       extra={
-        <p style={{ color: 'white' }}>
+        <StyledP>
           Use Classic{' '}
           <Switch onClick={() => history.push(`/factory-classic`)} />
-        </p>
+        </StyledP>
       }
     >
       <Form layout="vertical" id={formId} onSubmit={handleSubmit}>
@@ -263,11 +274,7 @@ const TCRParams = ({
                 onChange={fileUploadStatusChange}
               >
                 {values.tcrLogo ? (
-                  <img
-                    src={parseIpfs(values.tcrLogo)}
-                    style={{ height: '70px', objectFit: 'contain' }}
-                    alt="avatar"
-                  />
+                  <StyledImg src={parseIpfs(values.tcrLogo)} alt="avatar" />
                 ) : (
                   <UploadButton loading={uploading.tcrLogo} />
                 )}
@@ -399,20 +406,10 @@ const TCRParams = ({
               />
             </label>
             <StyledSliderContainer>
-              <div
-                style={{
-                  flex: 1,
-                  display: 'flex',
-                  alignItems: 'center',
-                  marginRight: '24px'
-                }}
-              >
+              <CheapestAndSafestContainer>
                 {width > 480 && (
                   <>
-                    <FontAwesomeIcon
-                      icon="coins"
-                      style={{ marginRight: '12px' }}
-                    />
+                    <StyledFontAwesomeIcon icon="coins" />
                     Cheapest
                   </>
                 )}
@@ -427,14 +424,10 @@ const TCRParams = ({
                 />
                 {width > 480 && (
                   <>
-                    <FontAwesomeIcon
-                      icon="shield-alt"
-                      style={{ marginRight: '12px' }}
-                    />{' '}
-                    Safest
+                    <StyledFontAwesomeIcon icon="shield-alt" /> Safest
                   </>
                 )}
-              </div>
+              </CheapestAndSafestContainer>
               <InputNumber
                 min={0}
                 max={30}

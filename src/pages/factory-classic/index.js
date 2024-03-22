@@ -2,84 +2,30 @@ import { Steps, Button, Icon, Card, Typography, Modal } from 'antd'
 import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import PropTypes from 'prop-types'
 import { useDebounce } from 'use-debounce'
-import styled from 'styled-components'
 import { useWeb3Context } from 'web3-react'
 import { ethers } from 'ethers'
 import { abi as _GTCRFactory } from '@kleros/tcr/build/contracts/GTCRFactory.json'
-import TCRParams from './tcr-params'
-import ItemParams from './item-params'
-import Deploy from './deploy'
 import StyledLayoutContent from '../layout-content'
 import { version } from '../../../package.json'
 import { ItemTypes } from '@kleros/gtcr-encoder'
-import RelTCRParams from './rel-tcr-params'
 import TCRCardContent from 'components/tcr-card-content'
 import {
   defaultArbitrator as defaultArbitratorAddresses,
   defaultArbitratorExtraData as defaultArbitratorExtraDataObj,
   defaultGovernor as defaultGovernorAddresses
 } from 'config/tcr-addresses'
+import {
+  CurrentStep,
+  StyledGrid,
+  formIds,
+  StyledStepper,
+  StyledContainer,
+  StyledBanner,
+  StyledButtonGroup
+} from 'pages/factory'
 
 const { Step } = Steps
 const { confirm } = Modal
-
-const StyledButtonGroup = styled(Button.Group)`
-  &.ant-btn-group {
-    margin-left: 12px;
-  }
-`
-
-const StyledStepper = styled.div`
-  display: flex;
-  flex-direction: row;
-  justify-content: flex-end;
-`
-const StyledContainer = styled.div`
-  margin: 32px 0;
-  word-break: break-word;
-`
-
-const StyledBanner = styled.div`
-  padding: 24px 9.375vw;
-  background: linear-gradient(270deg, #f2e3ff 22.92%, #ffffff 76.25%);
-  box-shadow: 0px 3px 24px #bc9cff;
-  color: #4d00b4;
-`
-
-const StyledGrid = styled.div`
-  display: grid;
-  margin: 24px 0;
-  grid-gap: 20px;
-  grid-template-columns: repeat(auto-fill, minmax(225px, 1fr));
-`
-
-const formIds = [
-  'tcrParamsForm',
-  'itemParamsForm',
-  'relTCRParamsForm',
-  'deployTCRForm'
-]
-const CurrentStep = props => (
-  <>
-    {(() => {
-      const {
-        tcrState: { currStep }
-      } = props
-      switch (currStep) {
-        case 1:
-          return <TCRParams formId={formIds[currStep]} {...props} />
-        case 2:
-          return <ItemParams formId={formIds[currStep]} {...props} />
-        case 3:
-          return <RelTCRParams formId={formIds[currStep]} {...props} />
-        case 4:
-          return <Deploy formId={formIds[currStep]} {...props} />
-        default:
-          throw new Error('Unknown step')
-      }
-    })()}
-  </>
-)
 
 CurrentStep.propTypes = {
   tcrState: PropTypes.shape({ currStep: PropTypes.number }).isRequired

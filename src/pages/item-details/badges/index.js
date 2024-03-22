@@ -5,8 +5,7 @@ import React, {
   useMemo,
   useCallback
 } from 'react'
-import { Card, Typography, Divider, Button, Result, Icon } from 'antd'
-import styled from 'styled-components'
+import { Card, Typography, Button, Result, Icon } from 'antd'
 import { useWeb3Context } from 'web3-react'
 import { ethers } from 'ethers'
 import PropTypes from 'prop-types'
@@ -26,47 +25,15 @@ import takeLower from 'utils/lower-limit'
 import useGetLogs from 'hooks/get-logs'
 import { gtcrViewAddresses } from 'config/tcr-addresses'
 import { parseIpfs } from 'utils/ipfs-parse'
-
-const StyledGrid = styled.div`
-  display: grid;
-  grid-gap: 20px;
-  grid-template-columns: repeat(auto-fill, minmax(225px, 1fr));
-`
-
-const StyledLogo = styled.img`
-  object-fit: contain;
-  max-width: 40%;
-  padding-bottom: 12px;
-`
-
-const StyledCol = styled.div`
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-`
-
-const StyledParagraph = styled(Typography.Paragraph)`
-  text-align: center;
-`
-
-const StyledDivider = styled(Divider)`
-  margin: 24px 0 !important;
-`
-
-const DashedCard = styled(Card)`
-  box-shadow: none;
-  background: none;
-  border: dashed;
-  border-width: 2px;
-  border-color: #bc9cff;
-`
-
-const DashedCardBody = styled.div`
-  min-height: 260px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-`
+import {
+  StyledDivider,
+  StyledGrid,
+  StyledCol,
+  StyledLogo,
+  StyledParagraph,
+  DashedCard,
+  DashedCardBody
+} from 'pages/light-item-details/badges'
 
 const Badges = ({ connectedTCRAddr, item, tcrAddress }) => {
   const { timestamp, requestWeb3Auth } = useContext(WalletContext)
