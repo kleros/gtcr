@@ -30,12 +30,10 @@ const ContractExplorerUrl: React.FC<{
   networkId: number
   contractAddress: string
 }> = ({ networkId, contractAddress }) => {
-  const url = `${getAddressPage({
-    networkId,
-    address: contractAddress
-  })}#code`
+  const url = `${getAddressPage({ networkId, address: contractAddress })}#code`
+
   return (
-    <StyledLink href={url} target="_blank">
+    <StyledLink href={url} target="_blank" rel="noopener noreferrer">
       <StyledIcon
         xmlns="http://www.w3.org/2000/svg"
         viewBox="0 0 293.775 293.667"
