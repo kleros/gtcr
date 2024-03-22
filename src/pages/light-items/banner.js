@@ -57,7 +57,12 @@ export const StyledDescription = styled.span`
   display: flex;
   flex-wrap: wrap;
   color: #b88cdc;
-  margin-top: 4px;
+
+  ${smallScreenStyle(
+    () => css`
+      margin-top: 4px;
+    `
+  )}
 `
 
 export const StyledPolicyAnchor = styled.a`
