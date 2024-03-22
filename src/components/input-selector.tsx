@@ -22,9 +22,9 @@ const StyledImg = styled.img`
   object-fit: contain;
 `
 
-export const UploadButton: React.FC<{ loading: boolean }> = p => (
+export const UploadButton: React.FC<{ loading: boolean }> = ({ loading }) => (
   <div>
-    <Icon type={p.loading ? 'loading' : 'plus'} />
+    <Icon type={loading ? 'loading' : 'plus'} />
     <div className="ant-upload-text">Upload</div>
   </div>
 )

@@ -327,4 +327,8 @@ ItemStatusCard.defaultProps = {
   modalOpen: null
 }
 
+Ruling.propTypes = {
+  currentRuling: PropTypes.string.isRequired
+}
+
 export default ItemStatusCard
