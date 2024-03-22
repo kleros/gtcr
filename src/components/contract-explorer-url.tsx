@@ -6,7 +6,6 @@ const StyledIcon = styled.svg`
   height: 1.2rem;
   width: auto;
   vertical-align: text-bottom;
-  margin-left: 0.3rem;
 
   .main-stop {
     stop-color: #863fe5d9;

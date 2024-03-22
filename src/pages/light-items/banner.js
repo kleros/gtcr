@@ -36,14 +36,13 @@ export const StyledImage = styled.img`
   object-fit: contain;
   height: 50px;
   width: 50px;
-  padding: 0 0 4px 4px;
 `
 
 export const TitleContainer = styled.div`
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 0 8px;
+  gap: 0 12px;
 `
 
 export const StyledTitle = styled.h1`
@@ -58,6 +57,7 @@ export const StyledDescription = styled.span`
   display: flex;
   flex-wrap: wrap;
   color: #b88cdc;
+  margin-top: 8px;
 `
 
 export const StyledPolicyAnchor = styled.a`
