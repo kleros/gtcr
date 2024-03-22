@@ -21,6 +21,7 @@ const StyledIcon = styled.svg`
 
 const StyledLink = styled.a`
   display: flex;
+  height: 32px;
   align-items: center;
   text-decoration: underline;
   color: #4d00b473;

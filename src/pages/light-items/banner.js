@@ -36,7 +36,7 @@ export const StyledImage = styled.img`
   object-fit: contain;
   height: 50px;
   width: 50px;
-  padding: 0 0 5px 5px;
+  padding: 0 0 4px 4px;
 `
 
 export const TitleContainer = styled.div`
