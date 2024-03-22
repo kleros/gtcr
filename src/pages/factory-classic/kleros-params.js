@@ -1,5 +1,4 @@
 import React, { useMemo, useState, useEffect, useCallback } from 'react'
-import styled from 'styled-components/macro'
 import { Select, InputNumber, Slider, Tooltip, Icon } from 'antd'
 import { ethers } from 'ethers'
 import PropTypes from 'prop-types'
@@ -11,26 +10,12 @@ import { jurorsAndCourtIDFromExtraData } from 'utils/string'
 import useWindowDimensions from 'hooks/window-dimensions'
 import useNativeCurrency from 'hooks/native-currency'
 import useGetLogs from 'hooks/get-logs'
-
-const StyledExtraDataContainer = styled.div`
-  padding-bottom: 8px;
-  margin-bottom: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-`
-
-const StyledInputContainer = styled.div`
-  display: flex;
-  flex-direction: column;
-`
-
-const StyledContainer = styled.div`
-  display: flex;
-  margin-bottom: 24px;
-  flex: 1;
-`
+import {
+  StyledExtraDataContainer,
+  StyledInputContainer,
+  StyledContainer,
+  SliderContainer
+} from 'pages/factory/kleros-params'
 
 const KlerosParams = ({
   klerosAddress,
@@ -206,7 +191,7 @@ const KlerosParams = ({
             </Tooltip>
             :
           </label>
-          <div style={{ display: 'flex', alignItems: 'center' }}>
+          <SliderContainer>
             {width > 480 && (
               <Slider
                 id="numJurors"
@@ -225,7 +210,7 @@ const KlerosParams = ({
               defaultValue={3}
               onChange={onNumJurorsChange}
             />
-          </div>
+          </SliderContainer>
         </StyledInputContainer>
       </StyledContainer>
       Arbitration Cost:{' '}

@@ -1,8 +1,9 @@
 import React, { useEffect, useState, useCallback } from 'react'
+import styled, { css } from 'styled-components'
+import { smallScreenStyle } from 'styles/small-screen-style'
 import { Alert } from 'antd'
 import localforage from 'localforage'
 import TextLoop from 'react-text-loop'
-import styled from 'styled-components/macro'
 import useWindowDimensions from '../hooks/window-dimensions'
 
 const BETA_WARNING_DISMISSED = 'BETA_WARNING_DISMISSED'
@@ -10,10 +11,13 @@ const BETA_WARNING_DISMISSED = 'BETA_WARNING_DISMISSED'
 const BannerContainer = styled.div`
   background-color: #fffbe6;
   z-index: 1000;
+  padding: 0 8%;
 
-  @media (min-width: 500px) {
-    padding: 0 8%;
-  }
+  ${smallScreenStyle(
+    () => css`
+      padding: 0;
+    `
+  )}
 `
 
 const BannerText = (

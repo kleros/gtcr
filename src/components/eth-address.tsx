@@ -1,6 +1,11 @@
 import React from 'react'
+import styled from 'styled-components'
 import { useWeb3Context } from 'web3-react'
 import { getAddressPage } from '../utils/network-utils'
+
+const StyledA = styled.a`
+  text-decoration: underline;
+`
 
 const ETHAddress: React.FC<{ address: string; forceEth: boolean }> = ({
   address,
@@ -11,9 +16,9 @@ const ETHAddress: React.FC<{ address: string; forceEth: boolean }> = ({
     ? `https://etherscan.io/address/${address}`
     : getAddressPage({ networkId, address })
   return (
-    <a href={fullPage} style={{ textDecoration: 'underline' }}>
+    <StyledA href={fullPage}>
       {address.slice(0, 6)}...{address.slice(address.length - 4)}
-    </a>
+    </StyledA>
   )
 }
 

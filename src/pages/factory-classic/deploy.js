@@ -1,13 +1,12 @@
-import { Card, Button, Alert, Icon, Steps } from 'antd'
+import React, { useContext, useState } from 'react'
+import { Button, Icon, Steps } from 'antd'
 import { Link } from 'react-router-dom'
 import PropTypes from 'prop-types'
-import React, { useContext, useState } from 'react'
 import { ethers } from 'ethers'
 import Archon from '@kleros/archon'
-import { parseEther, getContractAddress, bigNumberify } from 'ethers/utils'
-import styled from 'styled-components/macro'
-import { useWeb3Context } from 'web3-react'
 import { abi as _GTCRFactory } from '@kleros/tcr/build/contracts/GTCRFactory.json'
+import { parseEther, getContractAddress, bigNumberify } from 'ethers/utils'
+import { useWeb3Context } from 'web3-react'
 import ipfsPublish from 'utils/ipfs-publish'
 import { WalletContext } from 'contexts/wallet-context'
 import { ZERO_ADDRESS, isVowel } from 'utils/string'
@@ -20,51 +19,16 @@ import {
   factoryAddresses,
   txBatcherAddresses
 } from 'config/tcr-addresses'
-
-const _txBatcher = [
-  {
-    constant: false,
-    inputs: [
-      { name: 'targets', type: 'address[]' },
-      { name: 'values', type: 'uint256[]' },
-      { name: 'datas', type: 'bytes[]' }
-    ],
-    name: 'batchSend',
-    outputs: [],
-    payable: true,
-    stateMutability: 'payable',
-    type: 'function'
-  }
-]
-
-const StyledDiv = styled.div`
-  word-break: break-all;
-`
-
-const StyledSteps = styled(Steps)`
-  margin: 24px 0;
-`
-
-const StyledAlert = styled(Alert)`
-  margin-bottom: 24px;
-`
-
-const StyledCard = styled(Card)`
-  & > .ant-card-body {
-    display: flex;
-    flex-direction: column;
-  }
-`
-
-const StyledActions = styled.div`
-  display: flex;
-  justify-content: flex-end;
-`
-
-const StyledButton = styled(Button)`
-  margin-left: 12px;
-  text-transform: capitalize;
-`
+import {
+  StyledActions,
+  StyledDiv,
+  StyledSteps,
+  StyledAlert,
+  StyledCard,
+  StyledSpan,
+  StyledButton,
+  _txBatcher
+} from 'pages/factory/deploy'
 
 const getTcrMetaEvidence = async (
   tcrState,
@@ -444,13 +408,7 @@ const Deploy = ({ setTxState, tcrState, setTcrState }) => {
           />
         )}
         {currentStep === 0 && (
-          <span
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'flex-end'
-            }}
-          >
+          <StyledSpan>
             <StyledActions>
               <StyledButton
                 type="primary"
@@ -462,7 +420,7 @@ const Deploy = ({ setTxState, tcrState, setTcrState }) => {
                 Deploy!
               </StyledButton>
             </StyledActions>
-          </span>
+          </StyledSpan>
         )}
       </StyledCard>
       {metaEvidence && (

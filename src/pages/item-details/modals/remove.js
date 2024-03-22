@@ -1,16 +1,7 @@
 import React, { useContext, useCallback } from 'react'
+import { Descriptions, Typography, Divider, Button } from 'antd'
 import PropTypes from 'prop-types'
-import {
-  Modal,
-  Descriptions,
-  Typography,
-  Divider,
-  Spin,
-  Button,
-  Alert
-} from 'antd'
 import { ethers } from 'ethers'
-import styled from 'styled-components/macro'
 import humanizeDuration from 'humanize-duration'
 import { abi as _gtcr } from '@kleros/tcr/build/contracts/GeneralizedTCR.json'
 import { TCRViewContext } from 'contexts/tcr-view-context'
@@ -22,26 +13,11 @@ import ipfsPublish from 'utils/ipfs-publish'
 import { TourContext } from 'contexts/tour-context'
 import useNativeCurrency from 'hooks/native-currency'
 import { parseIpfs } from 'utils/ipfs-parse'
-
-const StyledSpin = styled(Spin)`
-  height: 60px;
-  width: 100%;
-  align-items: center;
-  justify-content: center;
-  display: flex;
-`
-
-const StyledModal = styled(Modal)`
-  & > .ant-modal-content {
-    border-top-left-radius: 14px;
-    border-top-right-radius: 14px;
-  }
-`
-
-const StyledAlert = styled(Alert)`
-  margin-bottom: 12px;
-  text-transform: initial;
-`
+import { StyledAlert } from 'pages/light-item-details/modals/remove'
+import {
+  StyledSpin,
+  StyledModal
+} from 'pages/light-item-details/modals/challenge'
 
 const RemoveModal = ({ item, itemName = 'item', fileURI, ...rest }) => {
   const { pushWeb3Action } = useContext(WalletContext)

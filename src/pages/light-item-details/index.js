@@ -1,10 +1,12 @@
-import { Layout, Breadcrumb } from 'antd'
 import React, { useState, useEffect, useContext, useMemo } from 'react'
+import styled from 'styled-components'
+import { Layout, Breadcrumb } from 'antd'
 import { useParams } from 'react-router'
-import qs from 'qs'
-import styled from 'styled-components/macro'
-import { useWeb3Context } from 'web3-react'
 import { Link } from 'react-router-dom'
+import qs from 'qs'
+import { abi as _IArbitrator } from '@kleros/erc-792/build/contracts/IArbitrator.json'
+import { ethers } from 'ethers'
+import { useWeb3Context } from 'web3-react'
 import ErrorPage from '../error-page'
 import ItemDetailsCard from 'components/item-details-card'
 import ItemStatusCard from './item-status-card'
@@ -14,50 +16,52 @@ import RequestTimelines from '../../components/request-timelines'
 import { WalletContext } from 'contexts/wallet-context'
 import { capitalizeFirstLetter } from 'utils/string'
 import AppTour from 'components/tour'
-import itemTourSteps from './tour-steps'
+import { itemTourSteps } from './tour-steps'
 import { LIGHT_ITEM_DETAILS_QUERY } from 'utils/graphql'
 import { useQuery } from '@apollo/client'
 import SearchBar from 'components/light-search-bar'
 import { parseIpfs } from 'utils/ipfs-parse'
 import { fetchMetaEvidence } from 'hooks/tcr-view'
-import { ethers } from 'ethers'
-import { abi as _IArbitrator } from '@kleros/erc-792/build/contracts/IArbitrator.json'
 
-const ITEM_TOUR_DISMISSED = 'ITEM_TOUR_DISMISSED'
+export const ITEM_TOUR_DISMISSED = 'ITEM_TOUR_DISMISSED'
 
-const StyledBreadcrumbItem = styled(Breadcrumb.Item)`
+export const StyledBreadcrumbItem = styled(Breadcrumb.Item)`
   text-transform: capitalize;
 `
 
-const StyledLayoutContent = styled(Layout.Content)`
+export const StyledLayoutContent = styled(Layout.Content)`
   padding: 0 9.375vw 42px;
   display: flex;
   flex-direction: column;
   width: 100%;
 `
 
-const StyledBanner = styled.div`
+export const StyledBanner = styled.div`
   padding: 24px 9.375vw;
   background: linear-gradient(270deg, #f2e3ff 22.92%, #ffffff 76.25%);
   box-shadow: 0px 3px 24px #bc9cff;
   color: #4d00b4;
 `
 
-const StyledMargin = styled.div`
+export const StyledMargin = styled.div`
   padding: 24px 9.375vw;
   display: flex;
 `
 
-const StyledLink = styled(Link)`
+export const StyledLink = styled(Link)`
   text-decoration: underline;
   color: rgba(77, 0, 180, 0.45);
 `
 
-const StyledBackLink = styled.div`
+export const StyledBackLink = styled.div`
   min-width: 53px;
   margin-right: 12px;
   display: flex;
   align-items: center;
+`
+
+export const Divider = styled.div`
+  margin-bottom: 40px;
 `
 
 // TODO: Ensure we don't set state for unmounted components using
@@ -223,7 +227,7 @@ const ItemDetails = ({ itemID, search }) => {
           appealCost={appealCost}
           dark
         />
-        <div style={{ marginBottom: '40px' }} />
+        <Divider />
         <ItemDetailsCard
           columns={decodedItem?.columns}
           item={decodedItem}

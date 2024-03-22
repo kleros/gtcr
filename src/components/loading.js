@@ -1,6 +1,6 @@
 import React from 'react'
+import styled from 'styled-components'
 import { Spin } from 'antd'
-import styled from 'styled-components/macro'
 
 const LoadingWrapper = styled.div`
   display: flex;

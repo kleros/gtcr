@@ -1,4 +1,7 @@
 import React, { useMemo, useContext, useState, useEffect } from 'react'
+import styled, { css } from 'styled-components'
+import { responsiveSize } from 'styles/responsive-size'
+import { smallScreenStyle } from 'styles/small-screen-style'
 import {
   Timeline as AntdTimeline,
   Icon,
@@ -12,7 +15,6 @@ import {
   Col
 } from 'antd'
 import { useWeb3Context } from 'web3-react'
-import styled from 'styled-components/macro'
 import ETHAddress from 'components/eth-address'
 import {
   CONTRACT_STATUS,
@@ -35,17 +37,13 @@ const StyledText = styled(Typography.Text)`
 const StyledCard = styled(Card)`
   cursor: default;
 
-  @media (max-width: 768px) {
-    & > .ant-card-head > .ant-card-head-wrapper > .ant-card-head-title {
-      max-width: 450px;
-    }
-  }
-
-  @media (max-width: 480px) {
-    & > .ant-card-head > .ant-card-head-wrapper > .ant-card-head-title {
-      max-width: 160px;
-    }
-  }
+  ${smallScreenStyle(
+    () => css`
+      & > .ant-card-head > .ant-card-head-wrapper > .ant-card-head-title {
+        max-width: ${responsiveSize(160, 450)};
+      }
+    `
+  )}
 `
 
 const StyledEvidenceTitle = styled.div`

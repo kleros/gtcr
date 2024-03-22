@@ -1,9 +1,9 @@
 import React from 'react'
-import styled from 'styled-components/macro'
+import styled from 'styled-components'
+import { Button } from 'antd'
 import PropTypes from 'prop-types'
 import DisplaySelector from './display-selector'
 import { ItemTypes } from '@kleros/gtcr-encoder'
-import { Button } from 'antd'
 import useNavigateAndScrollTop from 'hooks/navigate-and-scroll-top'
 
 export const Container = styled.div`

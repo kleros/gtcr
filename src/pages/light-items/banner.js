@@ -1,5 +1,6 @@
 import { Typography, Skeleton, Button, Icon } from 'antd'
-import styled from 'styled-components'
+import styled, { css } from 'styled-components'
+import { smallScreenStyle } from 'styles/small-screen-style'
 import { Link } from 'react-router-dom'
 import React from 'react'
 import PropTypes from 'prop-types'
@@ -66,9 +67,11 @@ export const StyledPolicyAnchor = styled.a`
   color: #b88cdc;
   text-align: end;
 
-  @media (max-width: 992px) {
-    text-align: start;
-  }
+  ${smallScreenStyle(
+    () => css`
+      text-align: start;
+    `
+  )}
 `
 
 export const ActionCol = styled.div`
@@ -76,6 +79,10 @@ export const ActionCol = styled.div`
   flex-direction: column;
   justify-content: space-between;
   align-items: flex-end;
+`
+
+export const StyledLink = styled(Link)`
+  color: #4d00b473;
 `
 
 const TCRLogo = ({ logoURI }) =>
@@ -146,12 +153,9 @@ const Banner = ({
                 type="secondary"
                 style={{ maxWidth: '100%', textDecoration: 'underline' }}
               >
-                <Link
-                  to={`/tcr/${networkId}/${connectedTCRAddr}`}
-                  style={{ color: '#4d00b473' }}
-                >
+                <StyledLink to={`/tcr/${networkId}/${connectedTCRAddr}`}>
                   View Badges list
-                </Link>
+                </StyledLink>
               </Typography.Text>
             </>
           )}

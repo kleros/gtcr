@@ -1,5 +1,6 @@
 import React, { useCallback, useContext, useMemo, useState } from 'react'
-import styled from 'styled-components/macro'
+import styled, { css } from 'styled-components'
+import { smallScreenStyle } from 'styles/small-screen-style'
 import { useWeb3Context } from 'web3-react'
 import { Link } from 'react-router-dom'
 import { Col, Row, Button, Badge, Switch } from 'antd'
@@ -36,11 +37,13 @@ const StyledColStart = styled(StyledCol)`
   width: 100px !important;
   height: auto !important;
 
-  @media (max-width: 992px) {
-    &.ant-col-xs-0 {
-      display: none;
-    }
-  }
+  ${smallScreenStyle(
+    () => css`
+      &.ant-col-xs-0 {
+        display: none;
+      }
+    `
+  )}
 `
 
 const StyledColEnd = styled(StyledCol)`
@@ -69,9 +72,11 @@ const StyledConnectButton = styled(Button)`
 const StyledAppBarRow = styled(Row)`
   padding: 0 9.375vw;
 
-  @media (max-width: 992px) {
-    padding: 8px 24px;
-  }
+  ${smallScreenStyle(
+    () => css`
+      padding: 8px 24px;
+    `
+  )}
 `
 
 const NOTIFICATIONS_TOUR_DISMISSED = 'NOTIFICATIONS_TOUR_DISMISSED'

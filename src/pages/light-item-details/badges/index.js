@@ -5,11 +5,12 @@ import React, {
   useMemo,
   useCallback
 } from 'react'
+import styled from 'styled-components'
 import { Card, Typography, Divider, Button, Result, Icon } from 'antd'
-import styled from 'styled-components/macro'
+import PropTypes from 'prop-types'
 import { useWeb3Context } from 'web3-react'
 import { ethers } from 'ethers'
-import PropTypes from 'prop-types'
+import { useLazyQuery } from '@apollo/client'
 import _gtcr from 'assets/abis/LightGeneralizedTCR.json'
 import _GTCRView from 'assets/abis/LightGeneralizedTCRView.json'
 import { WalletContext } from 'contexts/wallet-context'
@@ -21,40 +22,39 @@ import SubmitModal from '../modals/submit'
 import SubmitConnectModal from '../modals/submit-connect'
 import useTcrView from 'hooks/tcr-view'
 import takeLower from 'utils/lower-limit'
-import { useLazyQuery } from '@apollo/client'
 import { LIGHT_ITEMS_QUERY } from 'utils/graphql'
 import { bigNumberify } from 'ethers/utils'
 import useGetLogs from 'hooks/get-logs'
 import { gtcrViewAddresses, subgraphUrl } from 'config/tcr-addresses'
 import { parseIpfs } from 'utils/ipfs-parse'
 
-const StyledGrid = styled.div`
+export const StyledGrid = styled.div`
   display: grid;
   grid-gap: 20px;
   grid-template-columns: repeat(auto-fill, minmax(225px, 1fr));
 `
 
-const StyledLogo = styled.img`
+export const StyledLogo = styled.img`
   object-fit: contain;
   max-width: 40%;
   padding-bottom: 12px;
 `
 
-const StyledCol = styled.div`
+export const StyledCol = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
 `
 
-const StyledParagraph = styled(Typography.Paragraph)`
+export const StyledParagraph = styled(Typography.Paragraph)`
   text-align: center;
 `
 
-const StyledDivider = styled(Divider)`
+export const StyledDivider = styled(Divider)`
   margin: 24px 0 !important;
 `
 
-const DashedCard = styled(Card)`
+export const DashedCard = styled(Card)`
   box-shadow: none;
   background: none;
   border: dashed;
@@ -62,7 +62,7 @@ const DashedCard = styled(Card)`
   border-color: #bc9cff;
 `
 
-const DashedCardBody = styled.div`
+export const DashedCardBody = styled.div`
   min-height: 260px;
   display: flex;
   align-items: center;

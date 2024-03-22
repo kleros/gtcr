@@ -7,7 +7,6 @@ import { ethers } from 'ethers'
 import {
   itemToStatusCode,
   STATUS_CODE,
-  PARTY,
   CONTRACT_STATUS,
   SUBGRAPH_RULING
 } from 'utils/item-status'
@@ -26,27 +25,8 @@ import { klerosAddresses } from 'config/tcr-addresses'
 import {
   StyledItemStatusCard,
   StyledDescriptions,
-  SkeletonTitleProps,
-  StyledSkeleton
+  Ruling
 } from 'pages/light-item-details/item-status-card'
-
-const Ruling = ({ currentRuling }) => {
-  if (currentRuling == null)
-    return (
-      <StyledSkeleton active paragraph={false} title={SkeletonTitleProps} />
-    )
-
-  switch (currentRuling) {
-    case PARTY.NONE:
-      return 'The arbitrator refused to rule.'
-    case PARTY.REQUESTER:
-      return 'The arbitrator ruled in favor of the requester.'
-    case PARTY.CHALLENGER:
-      return 'The arbitrator ruled in favor of the challenger.'
-    default:
-      throw new Error(`Unhandled ruling ${currentRuling}`)
-  }
-}
 
 const ItemStatusCard = ({
   item,

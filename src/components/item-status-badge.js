@@ -6,7 +6,7 @@ import {
   itemToStatusCode
 } from '../utils/item-status'
 import { Badge, Icon, Skeleton } from 'antd'
-import styled from 'styled-components/macro'
+import styled from 'styled-components'
 import PropTypes from 'prop-types'
 import itemPropTypes from '../prop-types/item'
 import BNPropType from '../prop-types/bn'

@@ -5,7 +5,6 @@ import {
   Tooltip,
   Form,
   Switch,
-  Upload,
   message,
   Alert,
   Slider,
@@ -13,11 +12,9 @@ import {
   Button,
   Divider
 } from 'antd'
-import { withFormik } from 'formik'
 import PropTypes from 'prop-types'
+import { withFormik } from 'formik'
 import * as yup from 'yup'
-import styled from 'styled-components/macro'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { useWeb3Context } from 'web3-react'
 import { useDebounce } from 'use-debounce/lib'
 import { getAddress, bigNumberify, parseEther } from 'ethers/utils'
@@ -33,33 +30,15 @@ import useWindowDimensions from 'hooks/window-dimensions'
 import useNativeCurrency from 'hooks/native-currency'
 import { klerosAddresses } from 'config/tcr-addresses'
 import { parseIpfs } from 'utils/ipfs-parse'
-
-const StyledUpload = styled(Upload)`
-  & > .ant-upload.ant-upload-select-picture-card {
-    width: 100%;
-  }
-`
-
-const StyledAlert = styled(Alert)`
-  margin-bottom: 32px;
-`
-
-const StyledDepositContainer = styled.div`
-  display: flex;
-  flex-direction: column;
-  margin-bottom: 24px;
-`
-
-const StyledSliderContainer = styled.div`
-  display: flex;
-`
-
-const UploadButton = ({ loading }) => (
-  <div>
-    <Icon type={loading ? 'loading' : 'plus'} />
-    <div className="ant-upload-text">Upload</div>
-  </div>
-)
+import {
+  CheapestAndSafestContainer,
+  StyledFontAwesomeIcon,
+  UploadSection,
+  StyledSliderContainer,
+  StyledDepositContainer,
+  StyledAlert
+} from 'pages/factory/tcr-params'
+import { StyledUpload, UploadButton } from 'components/input-selector'
 
 UploadButton.propTypes = {
   loading: PropTypes.bool
@@ -207,7 +186,7 @@ const RelTCRParams = ({
           Skip step
         </Button>
         <Divider />
-        <div style={{ marginBottom: '26px' }}>
+        <UploadSection>
           <div className="ant-col ant-form-item-label">
             <label htmlFor="rel-primary-document">
               <span>Acceptance Criteria (Primary Document)&nbsp;</span>
@@ -247,7 +226,7 @@ const RelTCRParams = ({
               <UploadButton loading={uploading} />
             )}
           </StyledUpload>
-        </div>
+        </UploadSection>
         {!advancedOptions && (
           <StyledDepositContainer>
             <label htmlFor="depositSlider">
@@ -263,21 +242,10 @@ const RelTCRParams = ({
               />
             </label>
             <StyledSliderContainer>
-              <div
-                style={{
-                  flex: 1,
-                  display: 'flex',
-                  alignItems: 'center',
-                  marginRight: '24px'
-                }}
-              >
+              <CheapestAndSafestContainer>
                 {width > 480 && (
                   <>
-                    <FontAwesomeIcon
-                      icon="coins"
-                      style={{ marginRight: '12px' }}
-                    />{' '}
-                    Cheapest
+                    <StyledFontAwesomeIcon icon="coins" /> Cheapest
                   </>
                 )}
                 <Slider
@@ -291,14 +259,10 @@ const RelTCRParams = ({
                 />
                 {width > 480 && (
                   <>
-                    <FontAwesomeIcon
-                      icon="shield-alt"
-                      style={{ marginRight: '12px' }}
-                    />{' '}
-                    Safest
+                    <StyledFontAwesomeIcon icon="shield-alt" /> Safest
                   </>
                 )}
-              </div>
+              </CheapestAndSafestContainer>
               <InputNumber
                 min={0}
                 max={30}

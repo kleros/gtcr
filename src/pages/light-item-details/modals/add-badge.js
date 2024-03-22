@@ -8,27 +8,27 @@ import {
   List,
   Radio
 } from 'antd'
-import styled from 'styled-components/macro'
+import styled from 'styled-components'
 import PropTypes from 'prop-types'
 import ETHAmount from 'components/eth-amount'
 import useNativeCurrency from 'hooks/native-currency.js'
 import { parseIpfs } from 'utils/ipfs-parse'
 
-const StyledSpin = styled(Spin)`
+export const StyledSpin = styled(Spin)`
+  display: flex;
   height: 60px;
   width: 100%;
   align-items: center;
   justify-content: center;
-  display: flex;
 `
 
-const StyledRadioGroup = styled(Radio.Group)`
+export const StyledRadioGroup = styled(Radio.Group)`
   width: 100%;
   max-height: 250px;
   overflow-y: auto;
 `
 
-const StyledRadio = styled(Radio)`
+export const StyledRadio = styled(Radio)`
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -38,15 +38,23 @@ const StyledRadio = styled(Radio)`
   }
 `
 
-const StyledListItem = styled(List.Item)`
+export const StyledListItem = styled(List.Item)`
   margin-left: 16px;
 `
 
-const StyledModal = styled(Modal)`
+export const StyledModal = styled(Modal)`
   & > .ant-modal-content {
     border-top-left-radius: 14px;
     border-top-right-radius: 14px;
   }
+`
+
+export const ButtonContainer = styled.div`
+  margin: 12px 0;
+`
+
+export const StyledA = styled.a`
+  text-decoration: underline;
 `
 
 const AddBadgeModal = ({
@@ -139,12 +147,9 @@ const AddBadgeModal = ({
                   description={
                     <>
                       Read the&nbsp;
-                      <a
-                        href={parseIpfs(fileURI || '')}
-                        style={{ textDecoration: 'underline' }}
-                      >
+                      <StyledA href={parseIpfs(fileURI || '')}>
                         Listing Criteria
-                      </a>
+                      </StyledA>
                     </>
                   }
                 />
@@ -156,7 +161,7 @@ const AddBadgeModal = ({
           <div>No badges available for this list</div>
         )}
       </StyledRadioGroup>
-      <div style={{ margin: '12px 0' }}>
+      <ButtonContainer>
         <Button
           type="link"
           onClick={handleEnableNewBadge}
@@ -164,7 +169,7 @@ const AddBadgeModal = ({
         >
           Enable a new badge
         </Button>
-      </div>
+      </ButtonContainer>
       {filteredAvailableBadges.length > 0 && (
         <>
           <Typography.Paragraph>

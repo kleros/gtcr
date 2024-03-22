@@ -22,7 +22,6 @@ const actionTypes = {
 const NOTIFICATION_KEY = 'WALLET_AUTHORIZATION'
 const LAST_CONNECTION_TIME = 'LAST_CONNECTION_TIME'
 
-/* eslint-disable valid-jsdoc */
 /**
  * This hook wraps web3-react connectors to request
  * authorization from the wallet when necessary and to manage
@@ -348,9 +347,10 @@ async function processWeb3Action(
         })
       else onTxMined()
   } catch (err) {
+    const errorMessage = err.data?.message ?? err.message
     notification.error({
       message: 'Error submitting transaction',
-      description: `${err.message || ''}`,
+      description: errorMessage,
       duration: 0,
       key: notificationID
     })

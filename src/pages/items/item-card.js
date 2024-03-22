@@ -3,110 +3,21 @@ import PropTypes from 'prop-types'
 import { Card, Button, Result } from 'antd'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 // eslint-disable-next-line import/named
-import styled, { css } from 'styled-components/macro'
 import TCRCardContent from 'components/tcr-card-content'
 import ItemCardContent from 'components/item-card-content'
 import BNPropType from 'prop-types/bn'
 import { itemToStatusCode, STATUS_CODE } from 'utils/item-status'
 import ItemCardTitle from './item-card-title'
-
-const FlipCardInner = styled.div`
-  text-align: center;
-  transition: transform 0.6s;
-  transform-style: preserve-3d;
-  display: flex;
-  flex-flow: row nowrap;
-  height: 100%;
-
-  ${({ revealed }) =>
-    revealed &&
-    css`
-      transform: rotateY(180deg);
-    `}
-`
-
-const FlipCard = styled.div`
-  perspective: 1000px;
-`
-
-const FlipCardFront = styled.div`
-  backface-visibility: hidden;
-  box-sizing: border-box;
-  width: 100%;
-  flex: none;
-  margin-right: -100%;
-`
-
-const FlipCardBack = styled.div`
-  transform: rotateY(180deg);
-  backface-visibility: hidden;
-  box-sizing: border-box;
-  width: 100%;
-  flex: none;
-`
-
-const CardNSFWWarn = styled(Card)`
-  height: 100%;
-  color: white;
-  background: rgba(0, 0, 0, 0)
-    linear-gradient(111.6deg, rgb(77, 0, 180) 46.25%, rgb(101, 0, 180) 96.25%)
-    repeat scroll 0% 0%;
-
-  & > .ant-card-body {
-    align-items: center;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-around;
-    flex: 1;
-  }
-`
-
-const StyledCardInfo = styled(Card)`
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  position: relative;
-  z-index: 1;
-
-  & > .ant-card-head {
-    display: flex;
-
-    & > .ant-card-head-wrapper {
-      width: 100%;
-      font-size: 14px;
-    }
-  }
-
-  & > .ant-card-body {
-    align-items: center;
-    display: flex;
-    flex-direction: column;
-    flex: 1;
-    justify-content: flex-start;
-  }
-
-  & > .ant-card-actions > li {
-    margin: 0;
-    height: 46px;
-
-    & > span {
-      width: 100%;
-      height: 100%;
-    }
-  }
-`
-
-const CardBlock = styled.div`
-  position: relative;
-  height: 100%;
-`
-
-const HideCardButton = styled(Button)`
-  pointer-events: auto;
-  width: 100%;
-  height: 100%;
-`
+import {
+  FlipCardBack,
+  FlipCardFront,
+  FlipCardInner,
+  CardBlock,
+  HideCardButton,
+  FlipCard,
+  CardNSFWWarn,
+  StyledCardInfo
+} from 'pages/light-items/item-card'
 
 const CardItemInfo = ({
   item,

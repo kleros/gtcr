@@ -1,9 +1,9 @@
 import React from 'react'
-import PropTypes from 'prop-types'
+import styled from 'styled-components'
 import { Icon, Tooltip } from 'antd'
-import DisplaySelector from './display-selector'
-import styled from 'styled-components/macro'
 import { ItemTypes } from '@kleros/gtcr-encoder'
+import PropTypes from 'prop-types'
+import DisplaySelector from './display-selector'
 import { parseIpfs } from 'utils/ipfs-parse'
 
 const StyledField = styled.div`

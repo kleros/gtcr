@@ -4,7 +4,7 @@ import { withFormik, Field } from 'formik'
 import { useWeb3Context } from 'web3-react'
 import ReactBlockies from 'react-blockies'
 import PropTypes from 'prop-types'
-import styled from 'styled-components/macro'
+import styled from 'styled-components'
 import * as yup from 'yup'
 import localforage from 'localforage'
 import ETHAddress from './eth-address'
@@ -21,6 +21,19 @@ const StyledDiv = styled.div`
 `
 const StyledReactBlockies = styled(ReactBlockies)`
   border-radius: ${({ large }) => (large ? '4' : '16')}px;
+`
+
+const StyledAlertInfo = styled(Alert)`
+  margin-bottom: 15px;
+  margin-top: -15px;
+`
+
+const StyledAlertPopup = styled(Alert)`
+  margin-bottom: 15px !important;
+`
+
+const StyledA = styled.a`
+  margin-left: 8px;
 `
 
 const EmailForm = ({
@@ -219,12 +232,9 @@ const Identicon = ({ className, large }) => {
                     {networkId === NETWORKS.gnosis ? 'Mainnet' : 'Gnosis Chain'}
                   </Button>
                   {networkId === NETWORKS.gnosis && (
-                    <a
-                      style={{ marginLeft: '8px' }}
-                      href="https://bridge.gnosischain.com/"
-                    >
+                    <StyledA href="https://bridge.gnosischain.com/">
                       Get xDAI
-                    </a>
+                    </StyledA>
                   )}
                 </>
               }
@@ -254,7 +264,7 @@ const Identicon = ({ className, large }) => {
                       formID={EMAIL_FORM_ID}
                       initialValues={fetchedEmailSettings}
                     />
-                    <Alert
+                    <StyledAlertInfo
                       message={
                         <div>
                           Note that it is necessary to subscribe for each chain.
@@ -262,10 +272,9 @@ const Identicon = ({ className, large }) => {
                       }
                       type="info"
                       showIcon
-                      style={{ marginBottom: '15px', marginTop: '-15px' }}
                     />
                     {emailStatus && emailStatus !== 'loading' && (
-                      <Alert
+                      <StyledAlertPopup
                         closable
                         type={emailStatus}
                         message={
@@ -273,7 +282,6 @@ const Identicon = ({ className, large }) => {
                             ? 'Failed to save settings.'
                             : 'Settings saved.'
                         }
-                        style={{ marginBottom: '15px' }}
                       />
                     )}
                     <Button

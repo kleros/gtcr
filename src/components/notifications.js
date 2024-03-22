@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect } from 'react'
 import { useWeb3Context } from 'web3-react'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import styled from 'styled-components/macro'
+import styled from 'styled-components'
 import { Popover, List, Badge, Empty, Icon, Avatar, Button } from 'antd'
 import { Link } from 'react-router-dom'
 import { ethers } from 'ethers'
@@ -37,6 +37,10 @@ const StyledTitle = styled.div`
 
 const StyledListItem = styled(List.Item)`
   justify-content: space-between;
+`
+
+const StyledSpan = styled.span`
+  color: ${({ clicked }) => (clicked ? '#9b77cc' : '')};
 `
 
 const Notifications = () => {
@@ -125,9 +129,9 @@ const Notifications = () => {
           >
             <List.Item.Meta
               title={
-                <span style={{ color: n.clicked ? '#9b77cc' : '' }}>
+                <StyledSpan clicked={n.clicked}>
                   {typeToMessage[n.type]}
-                </span>
+                </StyledSpan>
               }
               avatar={
                 <Avatar

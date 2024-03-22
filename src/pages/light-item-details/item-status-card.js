@@ -3,7 +3,7 @@ import { Descriptions, Skeleton, Card } from 'antd'
 import PropTypes from 'prop-types'
 import _gtcr from 'assets/abis/LightGeneralizedTCR.json'
 import ItemStatusBadge from 'components/item-status-badge'
-import styled from 'styled-components/macro'
+import styled from 'styled-components'
 import { ethers } from 'ethers'
 import {
   itemToStatusCode,
@@ -32,8 +32,9 @@ export const StyledDescriptions = styled(Descriptions)`
   margin-right: 16px;
   max-width: 991px;
 `
-export const SkeletonTitleProps = { width: 60 }
-export const StyledSkeleton = styled(Skeleton)`
+const SkeletonTitleProps = { width: 60 }
+
+const StyledSkeleton = styled(Skeleton)`
   display: inline;
 
   .ant-skeleton-title {
@@ -61,7 +62,7 @@ export const StyledItemStatusCard = styled(Card)`
   }
 `
 
-const Ruling = ({ currentRuling }) => {
+export const Ruling = ({ currentRuling }) => {
   if (currentRuling == null)
     return (
       <StyledSkeleton active paragraph={false} title={SkeletonTitleProps} />
@@ -324,6 +325,10 @@ ItemStatusCard.defaultProps = {
   timestamp: null,
   request: null,
   modalOpen: null
+}
+
+Ruling.propTypes = {
+  currentRuling: PropTypes.string.isRequired
 }
 
 export default ItemStatusCard

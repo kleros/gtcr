@@ -1,7 +1,12 @@
+import React from 'react'
+import styled from 'styled-components'
 import { Form, Input } from 'antd'
 import { Field } from 'formik'
-import React from 'react'
 import { namespaces } from 'utils/rich-address'
+
+const StyledInput = styled(Input)`
+  text-transform: lowercase;
+`
 
 const AddressInput: React.FC<{
   label: string
@@ -31,10 +36,9 @@ const AddressInput: React.FC<{
         help={p.error && p.touched ? p.error : ''}
         hasFeedback={p.hasFeedback}
       >
-        <Input
+        <StyledInput
           placeholder={p.placeholder}
           disabled={p.disabled}
-          style={{ textTransform: 'lowercase' }}
           {...field}
         />
       </Form.Item>

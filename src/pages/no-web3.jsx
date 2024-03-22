@@ -1,5 +1,5 @@
 import React, { useContext } from 'react'
-import styled from 'styled-components/macro'
+import styled from 'styled-components'
 import { WalletContext } from 'contexts/wallet-context'
 import ErrorPage from './error-page'
 

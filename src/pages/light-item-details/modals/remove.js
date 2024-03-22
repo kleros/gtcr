@@ -1,16 +1,8 @@
 import React, { useContext, useCallback } from 'react'
 import PropTypes from 'prop-types'
-import {
-  Modal,
-  Descriptions,
-  Typography,
-  Divider,
-  Spin,
-  Button,
-  Alert
-} from 'antd'
+import { Descriptions, Typography, Divider, Button, Alert } from 'antd'
 import { ethers } from 'ethers'
-import styled from 'styled-components/macro'
+import styled from 'styled-components'
 import humanizeDuration from 'humanize-duration'
 import _gtcr from 'assets/abis/LightGeneralizedTCR.json'
 import { LightTCRViewContext } from 'contexts/light-tcr-view-context'
@@ -22,23 +14,9 @@ import ipfsPublish from 'utils/ipfs-publish'
 import { TourContext } from 'contexts/tour-context'
 import useNativeCurrency from 'hooks/native-currency'
 import { parseIpfs } from 'utils/ipfs-parse'
+import { StyledSpin, StyledModal } from './challenge'
 
-const StyledSpin = styled(Spin)`
-  height: 60px;
-  width: 100%;
-  align-items: center;
-  justify-content: center;
-  display: flex;
-`
-
-const StyledModal = styled(Modal)`
-  & > .ant-modal-content {
-    border-top-left-radius: 14px;
-    border-top-right-radius: 14px;
-  }
-`
-
-const StyledAlert = styled(Alert)`
+export const StyledAlert = styled(Alert)`
   margin-bottom: 12px;
   text-transform: initial;
 `

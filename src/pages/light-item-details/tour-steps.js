@@ -1,6 +1,6 @@
 import { capitalizeFirstLetter } from 'utils/string'
 
-const itemTourSteps = metadata => {
+export const itemTourSteps = metadata => {
   const { itemName, itemNamePlural } = metadata || {}
 
   return [

@@ -1,9 +1,14 @@
-import { Icon } from 'antd'
 import React from 'react'
+import styled from 'styled-components'
+import { Icon } from 'antd'
 import { parseIpfs } from 'utils/ipfs-parse'
 
+const StyledSpan = styled.span`
+  color: gray;
+`
+
 const FileDisplay = ({ value, allowedFileTypes }) => {
-  if (!value) return <span style={{ color: 'gray' }}>empty</span>
+  if (!value) return <StyledSpan>empty</StyledSpan>
 
   if (!allowedFileTypes) return 'No allowed file types specified'
 

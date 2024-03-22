@@ -1,5 +1,5 @@
 import React from 'react'
-import styled from 'styled-components/macro'
+import styled from 'styled-components'
 import { getAddressPage } from 'utils/network-utils'
 
 const StyledIcon = styled.svg`
@@ -22,23 +22,18 @@ const StyledIcon = styled.svg`
 const StyledLink = styled.a`
   display: flex;
   align-items: center;
+  text-decoration: underline;
+  color: #4d00b473;
 `
 
 const ContractExplorerUrl: React.FC<{
   networkId: number
   contractAddress: string
 }> = ({ networkId, contractAddress }) => {
-  const url = `${getAddressPage({
-    networkId,
-    address: contractAddress
-  })}#code`
+  const url = `${getAddressPage({ networkId, address: contractAddress })}#code`
+
   return (
-    <StyledLink
-      href={url}
-      style={{ textDecoration: 'underline', color: '#4d00b473' }}
-      target="_blank"
-      rel="noopener noreferrer"
-    >
+    <StyledLink href={url} target="_blank" rel="noopener noreferrer">
       <StyledIcon
         xmlns="http://www.w3.org/2000/svg"
         viewBox="0 0 293.775 293.667"

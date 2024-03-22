@@ -1,6 +1,5 @@
-import { Typography, Skeleton, Icon } from 'antd'
-import { Link } from 'react-router-dom'
 import React from 'react'
+import { Typography, Skeleton, Icon } from 'antd'
 import PropTypes from 'prop-types'
 import { ZERO_ADDRESS, capitalizeFirstLetter } from 'utils/string'
 import { useWeb3Context } from 'web3-react'
@@ -16,7 +15,8 @@ import {
   StyledDescription,
   ActionCol,
   StyledButton,
-  StyledPolicyAnchor
+  StyledPolicyAnchor,
+  StyledLink
 } from 'pages/light-items/banner'
 
 const TCRLogo = ({ logoURI }) =>
@@ -81,12 +81,9 @@ const Banner = ({
                 type="secondary"
                 style={{ maxWidth: '100%', textDecoration: 'underline' }}
               >
-                <Link
-                  to={`/tcr/${networkId}/${connectedTCRAddr}`}
-                  style={{ color: '#4d00b473' }}
-                >
+                <StyledLink to={`/tcr/${networkId}/${connectedTCRAddr}`}>
                   View Badges list
-                </Link>
+                </StyledLink>
               </Typography.Text>
             </>
           )}

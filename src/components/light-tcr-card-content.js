@@ -1,13 +1,20 @@
 import React, { useEffect, useState } from 'react'
-import PropTypes from 'prop-types'
-import styled from 'styled-components/macro'
-import { useWeb3Context } from 'web3-react'
+import styled from 'styled-components'
 import { Result, Skeleton, Button } from 'antd'
+import PropTypes from 'prop-types'
+import { useWeb3Context } from 'web3-react'
 import { ItemTypes } from '@kleros/gtcr-encoder'
 import DisplaySelector from './display-selector'
 import { fetchMetaEvidence } from 'hooks/tcr-view'
 import useNavigateAndScrollTop from 'hooks/navigate-and-scroll-top'
 import { parseIpfs } from 'utils/ipfs-parse'
+
+export const Container = styled.div`
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+`
 
 export const StyledItemCol = styled.div`
   margin-bottom: 8px;
@@ -60,14 +67,7 @@ const TCRCardContent = ({
 
   try {
     return (
-      <div
-        style={{
-          height: '100%',
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'space-between'
-        }}
-      >
+      <Container>
         <div>
           <StyledItemCol>
             <DisplaySelector type={ItemTypes.IMAGE} value={metadata.logoURI} />
@@ -98,7 +98,7 @@ const TCRCardContent = ({
             Open List
           </Button>
         </StyledItemCol>
-      </div>
+      </Container>
     )
   } catch (err) {
     return <StyledResult status="warning" subTitle={err.message} />

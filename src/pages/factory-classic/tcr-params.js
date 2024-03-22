@@ -5,19 +5,15 @@ import {
   Tooltip,
   Form,
   Switch,
-  Upload,
   message,
-  Alert,
   Slider,
   InputNumber
 } from 'antd'
-import { withFormik } from 'formik'
 import PropTypes from 'prop-types'
+import { withFormik } from 'formik'
 import * as yup from 'yup'
-import styled from 'styled-components/macro'
 import { useDebounce } from 'use-debounce/lib'
 import { getAddress, parseEther, bigNumberify } from 'ethers/utils'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { useWeb3Context } from 'web3-react'
 import CustomInput from 'components/custom-input'
 import { ItemTypes } from '@kleros/gtcr-encoder'
@@ -32,62 +28,19 @@ import useNativeCurrency from 'hooks/native-currency'
 import { useHistory } from 'react-router'
 import { klerosAddresses } from 'config/tcr-addresses'
 import { parseIpfs } from 'utils/ipfs-parse'
-
-const StyledUpload = styled(Upload)`
-  & > .ant-upload.ant-upload-select-picture-card {
-    width: 100%;
-  }
-`
-
-const StyledAlert = styled(Alert)`
-  margin-bottom: 32px;
-`
-
-const UploadButton = ({ loading }) => (
-  <div>
-    <Icon type={loading ? 'loading' : 'plus'} />
-    <div className="ant-upload-text">Upload</div>
-  </div>
-)
-
-const StyledTCRParamContainer = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  margin-bottom: 12px;
-
-  @media (max-width: 840px) {
-    flex-direction: column;
-  }
-`
-
-const StyledUploadContainer = styled.div`
-  @media (min-width: 840px) {
-    margin-right: 12px;
-    max-width: 450px;
-  }
-`
-
-const StyledTCRInfoContainer = styled.div`
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-
-  @media (min-width: 840px) {
-    border-left: 1px solid #f8efff;
-    padding-left: 12px;
-  }
-`
-
-const StyledDepositContainer = styled.div`
-  display: flex;
-  flex-direction: column;
-  margin-bottom: 24px;
-`
-
-const StyledSliderContainer = styled.div`
-  display: flex;
-`
+import {
+  StyledTCRParamContainer,
+  StyledTCRInfoContainer,
+  StyledUploadContainer,
+  StyledDepositContainer,
+  StyledSliderContainer,
+  StyledAlert,
+  StyledP,
+  StyledImg,
+  CheapestAndSafestContainer,
+  StyledFontAwesomeIcon
+} from 'pages/factory/tcr-params'
+import { StyledUpload, UploadButton } from 'components/input-selector'
 
 UploadButton.propTypes = {
   loading: PropTypes.bool
@@ -236,10 +189,10 @@ const TCRParams = ({
     <Card
       title="Enter the list parameters"
       extra={
-        <p style={{ color: 'white' }}>
+        <StyledP>
           Use Classic{' '}
           <Switch defaultChecked onClick={() => history.push(`/factory`)} />
-        </p>
+        </StyledP>
       }
     >
       <Form layout="vertical" id={formId} onSubmit={handleSubmit}>
@@ -264,11 +217,7 @@ const TCRParams = ({
                 onChange={fileUploadStatusChange}
               >
                 {values.tcrLogo ? (
-                  <img
-                    src={parseIpfs(values.tcrLogo)}
-                    style={{ height: '70px', objectFit: 'contain' }}
-                    alt="avatar"
-                  />
+                  <StyledImg src={parseIpfs(values.tcrLogo)} alt="avatar" />
                 ) : (
                   <UploadButton loading={uploading.tcrLogo} />
                 )}
@@ -400,20 +349,10 @@ const TCRParams = ({
               />
             </label>
             <StyledSliderContainer>
-              <div
-                style={{
-                  flex: 1,
-                  display: 'flex',
-                  alignItems: 'center',
-                  marginRight: '24px'
-                }}
-              >
+              <CheapestAndSafestContainer>
                 {width > 480 && (
                   <>
-                    <FontAwesomeIcon
-                      icon="coins"
-                      style={{ marginRight: '12px' }}
-                    />
+                    <StyledFontAwesomeIcon icon="coins" />
                     Cheapest
                   </>
                 )}
@@ -428,14 +367,10 @@ const TCRParams = ({
                 />
                 {width > 480 && (
                   <>
-                    <FontAwesomeIcon
-                      icon="shield-alt"
-                      style={{ marginRight: '12px' }}
-                    />{' '}
-                    Safest
+                    <StyledFontAwesomeIcon icon="shield-alt" /> Safest
                   </>
                 )}
-              </div>
+              </CheapestAndSafestContainer>
               <InputNumber
                 min={0}
                 max={30}

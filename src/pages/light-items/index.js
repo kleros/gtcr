@@ -1,7 +1,5 @@
 /* eslint-disable no-unused-vars */
 // Rule disabled temporarly as filters will be added back.
-import { Layout, Spin, Pagination, Tag, Select, Switch } from 'antd'
-import { useHistory, useParams } from 'react-router'
 import React, {
   useEffect,
   useState,
@@ -9,13 +7,16 @@ import React, {
   useMemo,
   useCallback
 } from 'react'
-import styled from 'styled-components/macro'
+import styled, { css } from 'styled-components'
+import { smallScreenStyle } from 'styles/small-screen-style'
+import { Layout, Spin, Pagination, Tag, Select, Switch } from 'antd'
+import { useHistory, useParams } from 'react-router'
+import { bigNumberify } from 'ethers/utils'
 import localforage from 'localforage'
 import qs from 'qs'
 import ErrorPage from '../error-page'
 import { WalletContext } from 'contexts/wallet-context'
 import { LightTCRViewContext } from 'contexts/light-tcr-view-context'
-import { bigNumberify } from 'ethers/utils'
 import SubmitModal from '../light-item-details/modals/submit'
 import SubmitConnectModal from '../light-item-details/modals/submit-connect'
 import {
@@ -57,9 +58,12 @@ export const FiltersContainer = styled.div`
   margin-top: 24px;
 
   justify-content: space-between;
-  @media (max-width: 479px) {
-    flex-direction: column;
-  }
+
+  ${smallScreenStyle(
+    () => css`
+      flex-direction: column;
+    `
+  )}
 `
 
 export const StyledFilters = styled.div`
@@ -74,11 +78,13 @@ export const StyledSelect = styled(Select)`
   width: 120px;
   height: 32px;
 
-  @media (max-width: 479px) {
-    &.ant-select {
-      margin-top: 8px !important;
-    }
-  }
+  ${smallScreenStyle(
+    () => css`
+      &.ant-select {
+        margin-top: 8px !important;
+      }
+    `
+  )}
 `
 
 export const StyledTag = styled(Tag.CheckableTag)`
@@ -114,7 +120,7 @@ export const StyledSwitch = styled(Switch)`
   }
 `
 
-const pagingItem = (_, type, originalElement) => {
+export const pagingItem = (_, type, originalElement) => {
   if (type === 'prev') return <span>Previous</span>
   if (type === 'next') return <span>Next</span>
   return originalElement
@@ -125,7 +131,9 @@ const pagingItem = (_, type, originalElement) => {
 //
 // Reference:
 // https://itnext.io/how-to-create-react-custom-hooks-for-data-fetching-with-useeffect-74c5dc47000a
-const ITEMS_PER_PAGE = 40
+
+export const ITEMS_PER_PAGE = 40
+
 const Items = () => {
   const history = useHistory()
   const { tcrAddress, chainId } = useParams()

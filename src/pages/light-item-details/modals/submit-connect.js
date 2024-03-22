@@ -5,9 +5,8 @@ import React, {
   useCallback,
   useMemo
 } from 'react'
+import styled from 'styled-components'
 import {
-  Spin,
-  Modal,
   Button,
   Typography,
   Descriptions,
@@ -22,7 +21,6 @@ import {
   Result,
   Alert
 } from 'antd'
-import styled from 'styled-components/macro'
 import PropTypes from 'prop-types'
 import { useDebounce } from 'use-debounce'
 import _gtcr from 'assets/abis/LightGeneralizedTCR.json'
@@ -36,20 +34,13 @@ import { TourContext } from 'contexts/tour-context.js'
 import useNativeCurrency from 'hooks/native-currency.js'
 import useGetLogs from 'hooks/get-logs'
 import { parseIpfs } from 'utils/ipfs-parse'
+import { StyledModal, StyledSpin } from './challenge'
 
-const StyledSpin = styled(Spin)`
-  height: 60px;
-  width: 100%;
-  align-items: center;
-  justify-content: center;
-  display: flex;
-`
-
-const StyledAlert = styled(Alert)`
+export const StyledAlert = styled(Alert)`
   margin-bottom: 24px;
 `
 
-const StyledSkeleton = styled(Skeleton)`
+export const StyledSkeleton = styled(Skeleton)`
   display: inline;
 
   .ant-skeleton-title {
@@ -57,14 +48,7 @@ const StyledSkeleton = styled(Skeleton)`
   }
 `
 
-const StyledModal = styled(Modal)`
-  & > .ant-modal-content {
-    border-top-left-radius: 14px;
-    border-top-right-radius: 14px;
-  }
-`
-
-const SkeletonTitleProps = { width: '90px' }
+export const SkeletonTitleProps = { width: '90px' }
 
 const SubmitConnectModal = props => {
   const nativeCurrency = useNativeCurrency()

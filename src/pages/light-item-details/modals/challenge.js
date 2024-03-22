@@ -1,7 +1,7 @@
 import React, { useContext } from 'react'
-import PropTypes from 'prop-types'
+import styled from 'styled-components'
 import { Modal, Descriptions, Typography, Button, Spin } from 'antd'
-import styled from 'styled-components/macro'
+import PropTypes from 'prop-types'
 import { ethers } from 'ethers'
 import _gtcr from 'assets/abis/LightGeneralizedTCR.json'
 import { STATUS_CODE, CONTRACT_STATUS } from 'utils/item-status'
@@ -14,7 +14,7 @@ import ipfsPublish from 'utils/ipfs-publish.js'
 import { TourContext } from 'contexts/tour-context'
 import { parseIpfs } from 'utils/ipfs-parse'
 
-const StyledSpin = styled(Spin)`
+export const StyledSpin = styled(Spin)`
   height: 60px;
   width: 100%;
   align-items: center;
@@ -22,7 +22,7 @@ const StyledSpin = styled(Spin)`
   display: flex;
 `
 
-const StyledModal = styled(Modal)`
+export const StyledModal = styled(Modal)`
   & > .ant-modal-content {
     border-top-left-radius: 14px;
     border-top-right-radius: 14px;
