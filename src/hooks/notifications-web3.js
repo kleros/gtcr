@@ -347,9 +347,10 @@ async function processWeb3Action(
         })
       else onTxMined()
   } catch (err) {
+    const errorMessage = err.data?.message ?? err.message
     notification.error({
       message: 'Error submitting transaction',
-      description: `${err.message || ''}`,
+      description: errorMessage,
       duration: 0,
       key: notificationID
     })
