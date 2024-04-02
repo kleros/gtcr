@@ -74,16 +74,18 @@ const _SubmissionForm: React.FC<{
 
 const SubmissionForm: React.ComponentType<any> = withFormik({
   mapPropsToValues: ({ columns, initialValues }) =>
-    columns.reduce(
-      (acc: any, curr: any, i: number) => ({
+    columns.reduce((acc: any, curr: any, i: number) => {
+      const isBooleanType = curr.type === ItemTypes.BOOLEAN
+      const defaultValue = initialValues
+        ? initialValues[i]
+        : // @ts-ignore
+          typeDefaultValues[curr.type]
+
+      return {
         ...acc,
-        [curr.label]: initialValues
-          ? initialValues[i]
-          : // @ts-ignore
-            typeDefaultValues[curr.type]
-      }),
-      {}
-    ),
+        [curr.label]: isBooleanType ? String(defaultValue) : defaultValue
+      }
+    }, {}),
   handleSubmit: (values, { props, resetForm }) => {
     props.postSubmit(values, props.columns, resetForm)
   },
