@@ -87,16 +87,17 @@ const _SubmissionForm: React.FC<{
 
 const SubmissionForm: React.ComponentType<any> = withFormik({
   mapPropsToValues: ({ columns, initialValues }: any) =>
-    columns.reduce(
-      (acc: any, curr: any, i: number) => ({
+    columns.reduce((acc: any, curr: any, i: number) => {
+      const defaultValue = initialValues
+        ? initialValues[i]
+        : // @ts-ignore
+          typeDefaultValues[curr.type]
+
+      return {
         ...acc,
-        [curr.label]: initialValues
-          ? initialValues[i]
-          : // @ts-ignore
-            typeDefaultValues[curr.type]
-      }),
-      {}
-    ),
+        [curr.label]: String(defaultValue)
+      }
+    }, {}),
   handleSubmit: (values, { props, resetForm }) => {
     props.postSubmit(values, props.columns, resetForm)
   },

@@ -138,7 +138,7 @@ const InputSelector: React.FC<InputSelectorProps> = p => {
             <Form.Item label={label} style={{ display: 'flex' }}>
               <Switch
                 {...field}
-                onChange={value => p.setFieldValue(name, value)}
+                onChange={value => p.setFieldValue(name, String(value))}
               />
             </Form.Item>
           )}
