@@ -34,7 +34,7 @@ const DisplaySelector = ({ type, value, linkImage, allowedFileTypes }) => {
     case ItemTypes.NUMBER:
       return <Typography.Text>{value}</Typography.Text>
     case ItemTypes.BOOLEAN:
-      return <Checkbox disabled checked={value} />
+      return <Checkbox disabled checked={value === 'true'} />
     case ItemTypes.LONG_TEXT:
       return <LongText value={value} />
     case ItemTypes.FILE: {
