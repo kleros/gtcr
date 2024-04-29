@@ -32,6 +32,7 @@
     "antd": "^3.20.1",
     "bn.js": "^5.0.0",
     "body-scroll-lock": "^3.0.2",
+    "busboy": "^1.6.0",
     "cross-fetch": "^4.0.0",
     "ethers": "^4.0.33",
     "fast-deep-equal": "^3.1.3",
