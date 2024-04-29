@@ -11,9 +11,10 @@
 
 ## Get Started
 
-1.  Clone this repo;
+1.  Clone this repo.
 2.  Duplicate `.env.example` and rename it to `.env`. Fill the environment variables.
-3.  Run `yarn` to install dependencies and then `yarn build:theme && yarn start` to start the dev server.
+3.  Run `nvm use 16`
+4.  Run `yarn` to install dependencies and then `yarn build:theme && yarn start` to start the dev server.
 
 > Tested on node version 10.
 

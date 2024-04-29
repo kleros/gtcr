@@ -1,19 +1,14 @@
 import deepEqual from 'fast-deep-equal/es6'
+import { uploadFormDataToIPFS } from './upload-form-data-to-ipfs'
 
 const mirroredExtensions = ['.json']
 
-/**
- * Send file to IPFS network.
- * @param {string} fileName - The name that will be used to store the file. This is useful to preserve extension type.
- * @param {ArrayBuffer} data - The raw data from the file to upload.
- * @returns {object} ipfs response. Should include the hash and path of the stored item.
- */
 export default async function ipfsPublish(fileName, data) {
   if (!mirroredExtensions.some(ext => fileName.endsWith(ext)))
-    return publishToKlerosNode(fileName, data)
+    return uploadFormDataToIPFS(data)
 
   const [klerosResult, theGraphResult] = await Promise.all([
-    publishToKlerosNode(fileName, data),
+    uploadFormDataToIPFS(data),
     publishToTheGraphNode(fileName, data)
   ])
 
@@ -34,32 +29,28 @@ export default async function ipfsPublish(fileName, data) {
  * @param {ArrayBuffer} data - The raw data from the file to upload.
  * @returns {object} ipfs response. Should include the hash and path of the stored item.
  */
-async function publishToKlerosNode(fileName, data) {
-  const buffer = await Buffer.from(data)
-  const url = `${process.env.REACT_APP_IPFS_GATEWAY}/add`
+// async function publishToKlerosNode(fileName, data) {
+//   console.log('Publishing to KlerosNode with:', fileName)
+//   const buffer = await Buffer.from(data)
+//   const url = `${process.env.REACT_APP_IPFS_GATEWAY}/add`
 
-  const response = await fetch(url, {
-    method: 'POST',
-    body: JSON.stringify({
-      fileName,
-      buffer
-    }),
-    headers: {
-      'content-type': 'application/json'
-    }
-  })
+//   console.log('Sending POST request to Kleros IPFS node.')
+//   const response = await fetch(url, {
+//     method: 'POST',
+//     body: JSON.stringify({
+//       fileName,
+//       buffer
+//     }),
+//     headers: {
+//       'content-type': 'application/json'
+//     }
+//   })
 
-  const body = await response.json()
+//   const body = await response.json()
+//   console.log('Received response from Kleros IPFS node:', body.data)
+//   return body.data
+// }
 
-  return body.data
-}
-
-/**
- * Send file to IPFS network via The Graph hosted IPFS node
- * @param {string} fileName - The name that will be used to store the file. This is useful to preserve extension type.
- * @param {ArrayBuffer} data - The raw data from the file to upload.
- * @returns {object} ipfs response. Should include the hash and path of the stored item.
- */
 async function publishToTheGraphNode(fileName, data) {
   const url = `${process.env.REACT_APP_HOSTED_GRAPH_IPFS_ENDPOINT}/api/v0/add?wrap-with-directory=true`
 
