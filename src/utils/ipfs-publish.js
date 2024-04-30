@@ -4,8 +4,13 @@ import { uploadFormDataToIPFS } from './upload-form-data-to-ipfs'
 const mirroredExtensions = ['.json']
 
 export default async function ipfsPublish(fileName, file) {
+  const isBlob = file instanceof Blob
+  const blobFile = isBlob
+    ? file
+    : new Blob([file], { type: 'application/json' })
+
   const fileFormData = new FormData()
-  fileFormData.append('data', file, fileName)
+  fileFormData.append('data', blobFile, fileName)
 
   if (!mirroredExtensions.some(ext => fileName.endsWith(ext)))
     return uploadFormDataToIPFS(fileFormData)
