@@ -48,34 +48,6 @@ export default async function ipfsPublish(fileName, file) {
   return theGraphResult
 }
 
-/**
- * Send file to IPFS network via the Kleros IPFS node
- * @param {string} fileName - The name that will be used to store the file. This is useful to preserve extension type.
- * @param {ArrayBuffer} data - The raw data from the file to upload.
- * @returns {object} ipfs response. Should include the hash and path of the stored item.
- */
-// async function publishToKlerosNode(fileName, data) {
-//   console.log('Publishing to KlerosNode with:', fileName)
-//   const buffer = await Buffer.from(data)
-//   const url = `${process.env.REACT_APP_IPFS_GATEWAY}/add`
-
-//   console.log('Sending POST request to Kleros IPFS node.')
-//   const response = await fetch(url, {
-//     method: 'POST',
-//     body: JSON.stringify({
-//       fileName,
-//       buffer
-//     }),
-//     headers: {
-//       'content-type': 'application/json'
-//     }
-//   })
-
-//   const body = await response.json()
-//   console.log('Received response from Kleros IPFS node:', body.data)
-//   return body.data
-// }
-
 async function publishToTheGraphNode(fileName, data) {
   const url = `${process.env.REACT_APP_HOSTED_GRAPH_IPFS_ENDPOINT}/api/v0/add?wrap-with-directory=true`
 
