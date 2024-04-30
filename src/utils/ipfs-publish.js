@@ -20,10 +20,14 @@ export default async function ipfsPublish(fileName, file) {
     publishToTheGraphNode(fileName, file)
   ])
 
-  if (!deepEqual(klerosResult, theGraphResult)) {
+  const normalizedTheGraphResult = theGraphResult.map(item => ({
+    cids: [`ipfs://${item.Hash}/${fileName}`]
+  }))
+
+  if (!deepEqual(klerosResult, normalizedTheGraphResult[0])) {
     console.warn('IPFS upload result is different:', {
       kleros: klerosResult,
-      theGraph: theGraphResult
+      theGraph: normalizedTheGraphResult[0]
     })
     throw new Error('IPFS upload result is different.')
   }
