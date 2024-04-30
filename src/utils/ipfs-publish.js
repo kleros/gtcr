@@ -26,15 +26,15 @@ export default async function ipfsPublish(fileName, file) {
   console.log(klerosData)
 
   const normalizedKlerosResult = {
-    Name: fileName,
-    Hash: klerosHash
+    name: fileName,
+    hash: klerosHash
   }
 
   console.log(theGraphResult)
 
   const normalizedTheGraphResult = {
-    Name: theGraphResult[1].Name,
-    Hash: theGraphResult[1].Hash
+    name: fileName,
+    hash: theGraphResult[1].hash
   }
 
   if (!deepEqual(normalizedKlerosResult, normalizedTheGraphResult)) {
