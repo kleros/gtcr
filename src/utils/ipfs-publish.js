@@ -3,11 +3,17 @@ import { uploadFormDataToIPFS } from './upload-form-data-to-ipfs'
 
 const mirroredExtensions = ['.json']
 
-export default async function ipfsPublish(fileName, file) {
-  const isBlob = file instanceof Blob
+/**
+ * Send file to IPFS network.
+ * @param {string} fileName - The name that will be used to store the file. This is useful to preserve extension type.
+ * @param {ArrayBuffer} data - The raw data from the file to upload.
+ * @returns {object} ipfs response. Should include the hash and path of the stored item.
+ */
+export default async function ipfsPublish(fileName, data) {
+  const isBlob = data instanceof Blob
   const blobFile = isBlob
-    ? file
-    : new Blob([file], { type: 'application/json' })
+    ? data
+    : new Blob([data], { type: 'application/json' })
 
   const fileFormData = new FormData()
   fileFormData.append('data', blobFile, fileName)
@@ -20,7 +26,7 @@ export default async function ipfsPublish(fileName, file) {
 
   const [klerosResult, theGraphResult] = await Promise.all([
     uploadFormDataToIPFS(fileFormData),
-    publishToTheGraphNode(fileName, file)
+    publishToTheGraphNode(fileName, data)
   ])
 
   const klerosResultJSON = await klerosResult.json()
@@ -45,6 +51,12 @@ export default async function ipfsPublish(fileName, file) {
   return klerosResultJSON
 }
 
+/**
+ * Send file to IPFS network via The Graph hosted IPFS node
+ * @param {string} fileName - The name that will be used to store the file. This is useful to preserve extension type.
+ * @param {ArrayBuffer} data - The raw data from the file to upload.
+ * @returns {object} ipfs response. Should include the hash and path of the stored item.
+ */
 async function publishToTheGraphNode(fileName, data) {
   const url = `${process.env.REACT_APP_HOSTED_GRAPH_IPFS_ENDPOINT}/api/v0/add?wrap-with-directory=true`
 
