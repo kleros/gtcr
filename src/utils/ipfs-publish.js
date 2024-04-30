@@ -15,24 +15,31 @@ export default async function ipfsPublish(fileName, file) {
   if (!mirroredExtensions.some(ext => fileName.endsWith(ext)))
     return uploadFormDataToIPFS(fileFormData)
 
-  const [klerosResult, theGraphResult] = await Promise.all([
+  const [klerosResponse, theGraphResult] = await Promise.all([
     uploadFormDataToIPFS(fileFormData),
     publishToTheGraphNode(fileName, file)
   ])
 
-  const normalizedTheGraphResult = theGraphResult.map(item => ({
-    cids: [`ipfs://${item.Hash}/${fileName}`]
-  }))
+  const klerosData = await klerosResponse.json()
+  const normalizedKlerosResult = {
+    Name: fileName,
+    Hash: klerosData.cids[0].split('ipfs://')[1].split('/')[1]
+  }
 
-  if (!deepEqual(klerosResult, normalizedTheGraphResult[0])) {
+  const normalizedTheGraphResult = {
+    Name: theGraphResult[0].Name,
+    Hash: theGraphResult[0].Hash
+  }
+
+  if (!deepEqual(normalizedKlerosResult, normalizedTheGraphResult)) {
     console.warn('IPFS upload result is different:', {
-      kleros: klerosResult,
-      theGraph: normalizedTheGraphResult[0]
+      kleros: normalizedKlerosResult,
+      theGraph: normalizedTheGraphResult
     })
     throw new Error('IPFS upload result is different.')
   }
 
-  return klerosResult
+  return klerosData
 }
 
 /**
