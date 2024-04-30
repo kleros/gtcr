@@ -45,7 +45,7 @@ export default async function ipfsPublish(fileName, file) {
     throw new Error('IPFS upload result is different.')
   }
 
-  return klerosData
+  return theGraphResult
 }
 
 /**
