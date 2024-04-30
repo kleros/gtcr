@@ -21,14 +21,20 @@ export default async function ipfsPublish(fileName, file) {
   ])
 
   const klerosData = await klerosResponse.json()
+  const klerosHash = klerosData.cids[0].split('ipfs://')[1].split('/')[0]
+
+  console.log(klerosData)
+
   const normalizedKlerosResult = {
     Name: fileName,
-    Hash: klerosData.cids[0].split('ipfs://')[1].split('/')[1]
+    Hash: klerosHash
   }
 
+  console.log(theGraphResult)
+
   const normalizedTheGraphResult = {
-    Name: theGraphResult[0].Name,
-    Hash: theGraphResult[0].Hash
+    Name: theGraphResult[1].Name,
+    Hash: theGraphResult[1].Hash
   }
 
   if (!deepEqual(normalizedKlerosResult, normalizedTheGraphResult)) {
