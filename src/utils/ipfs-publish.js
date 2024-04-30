@@ -12,8 +12,11 @@ export default async function ipfsPublish(fileName, file) {
   const fileFormData = new FormData()
   fileFormData.append('data', blobFile, fileName)
 
-  if (!mirroredExtensions.some(ext => fileName.endsWith(ext)))
-    return uploadFormDataToIPFS(fileFormData).json()
+  if (!mirroredExtensions.some(ext => fileName.endsWith(ext))) {
+    const klerosResult = await uploadFormDataToIPFS(fileFormData)
+    const klerosResultJSON = await klerosResult.json()
+    return klerosResultJSON
+  }
 
   const [klerosResult, theGraphResult] = await Promise.all([
     uploadFormDataToIPFS(fileFormData),
