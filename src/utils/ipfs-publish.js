@@ -3,13 +3,16 @@ import { uploadFormDataToIPFS } from './upload-form-data-to-ipfs'
 
 const mirroredExtensions = ['.json']
 
-export default async function ipfsPublish(fileName, data) {
+export default async function ipfsPublish(fileName, file) {
+  const fileFormData = new FormData()
+  fileFormData.append('data', file, fileName)
+
   if (!mirroredExtensions.some(ext => fileName.endsWith(ext)))
-    return uploadFormDataToIPFS(data)
+    return uploadFormDataToIPFS(fileFormData)
 
   const [klerosResult, theGraphResult] = await Promise.all([
-    uploadFormDataToIPFS(data),
-    publishToTheGraphNode(fileName, data)
+    uploadFormDataToIPFS(fileFormData),
+    publishToTheGraphNode(fileName, file)
   ])
 
   if (!deepEqual(klerosResult, theGraphResult)) {
