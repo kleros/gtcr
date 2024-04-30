@@ -52,7 +52,7 @@ const InputSelector: React.FC<InputSelectorProps> = p => {
       try {
         const data = await new Response(new Blob([file])).arrayBuffer()
         const ipfsFileObj: any = await ipfsPublish(sanitize(file.name), data)
-        const fileURI = `/ipfs/${ipfsFileObj[1].hash}${ipfsFileObj[0].path}`
+        const fileURI = `/ipfs/${ipfsFileObj.cids[0].split('ipfs://')[1]}`
 
         p.setFieldValue(fieldName, fileURI)
         onSuccess('ok', parseIpfs(fileURI))

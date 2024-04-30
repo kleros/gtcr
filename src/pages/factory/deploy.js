@@ -253,7 +253,7 @@ const getTcrMetaEvidence = async (
     await Promise.all(files.map(({ name, data }) => ipfsPublish(name, data)))
   ).map(
     ipfsMetaEvidenceObject =>
-      `/ipfs/${ipfsMetaEvidenceObject[1].hash + ipfsMetaEvidenceObject[0].path}`
+      `/ipfs/${ipfsMetaEvidenceObject.cids[0].split('ipfs://')[1]}`
   )
 
   const [

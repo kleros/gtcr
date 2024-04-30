@@ -202,7 +202,7 @@ const SubmitConnectModal = props => {
     const file = new TextEncoder().encode(JSON.stringify(match))
     /* eslint-disable-next-line prettier/prettier */
     const ipfsFileObj = await ipfsPublish('match-file.json', file)
-    const fileURI = `/ipfs/${ipfsFileObj[1].hash}${ipfsFileObj[0].path}`
+    const fileURI = `/ipfs/${ipfsFileObj.cids[0].split('ipfs://')[1]}`
     const { columns, itemName } = relTCRMetaEvidence.metadata
 
     // To learn if an item is present on another TCR (i.e to learn

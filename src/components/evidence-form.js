@@ -66,7 +66,7 @@ const EvidenceForm = ({
       const fileTypeExtension = file.name.split('.')[1]
       const data = await new Response(new Blob([file])).arrayBuffer()
       const ipfsFileObj = await ipfsPublish(sanitize(file.name), data)
-      const fileURI = `/ipfs/${ipfsFileObj[1].hash}${ipfsFileObj[0].path}`
+      const fileURI = `/ipfs/${ipfsFileObj.cids[0].split('ipfs://')[1]}`
 
       setFieldValue('evidenceAttachment', {
         fileURI,
