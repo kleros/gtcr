@@ -229,8 +229,9 @@ const SubmitConnectModal = props => {
       const enc = new TextEncoder()
       const fileData = enc.encode(JSON.stringify({ columns, values }))
       const ipfsEvidenceObject = await ipfsPublish('item.json', fileData)
-      const ipfsEvidencePath = `/ipfs/${ipfsEvidenceObject[1].hash +
-        ipfsEvidenceObject[0].path}`
+      const ipfsEvidencePath = `/ipfs/${
+        ipfsEvidenceObject.cids[0].split('ipfs://')[1]
+      }`
 
       // Request signature and submit.
       const tx = await gtcr.addItem(ipfsEvidencePath, {

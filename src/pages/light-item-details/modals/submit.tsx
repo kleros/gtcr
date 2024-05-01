@@ -178,8 +178,9 @@ const SubmitModal: React.FC<{
         const enc = new TextEncoder()
         const fileData = enc.encode(JSON.stringify({ columns, values }))
         const ipfsEvidenceObject: any = await ipfsPublish('item.json', fileData)
-        const ipfsEvidencePath = `/ipfs/${ipfsEvidenceObject[1].hash +
-          ipfsEvidenceObject[0].path}`
+        const ipfsEvidencePath = `/ipfs/${
+          ipfsEvidenceObject.cids[0].split('ipfs://')[1]
+        }`
 
         // Request signature and submit.
         const tx = await gtcr.addItem(ipfsEvidencePath, {

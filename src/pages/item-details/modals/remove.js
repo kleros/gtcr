@@ -51,8 +51,9 @@ const RemoveModal = ({ item, itemName = 'item', fileURI, ...rest }) => {
             'evidence.json',
             fileData
           )
-          ipfsEvidencePath = `/ipfs/${ipfsEvidenceObject[1].hash +
-            ipfsEvidenceObject[0].path}`
+          ipfsEvidencePath = `/ipfs/${
+            ipfsEvidenceObject.cids[0].split('ipfs://')[1]
+          }`
         }
 
         // Request signature and send removal request.

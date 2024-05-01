@@ -1,4 +1,5 @@
 import deepEqual from 'fast-deep-equal/es6'
+import { uploadFormDataToIPFS } from './upload-form-data-to-ipfs'
 
 const mirroredExtensions = ['.json']
 
@@ -9,49 +10,45 @@ const mirroredExtensions = ['.json']
  * @returns {object} ipfs response. Should include the hash and path of the stored item.
  */
 export default async function ipfsPublish(fileName, data) {
-  if (!mirroredExtensions.some(ext => fileName.endsWith(ext)))
-    return publishToKlerosNode(fileName, data)
+  const isBlob = data instanceof Blob
+  const blobFile = isBlob
+    ? data
+    : new Blob([data], { type: 'application/json' })
+
+  const fileFormData = new FormData()
+  fileFormData.append('data', blobFile, fileName)
+
+  if (!mirroredExtensions.some(ext => fileName.endsWith(ext))) {
+    const klerosResult = await uploadFormDataToIPFS(fileFormData)
+    const klerosResultJSON = await klerosResult.json()
+    return klerosResultJSON
+  }
 
   const [klerosResult, theGraphResult] = await Promise.all([
-    publishToKlerosNode(fileName, data),
+    uploadFormDataToIPFS(fileFormData),
     publishToTheGraphNode(fileName, data)
   ])
 
-  if (!deepEqual(klerosResult, theGraphResult)) {
+  const klerosResultJSON = await klerosResult.json()
+  const klerosHash = klerosResultJSON.cids[0].split('ipfs://')[1].split('/')[0]
+
+  const normalizedKlerosResult = {
+    hash: klerosHash
+  }
+
+  const normalizedTheGraphResult = {
+    hash: theGraphResult[1].hash
+  }
+
+  if (!deepEqual(normalizedKlerosResult, normalizedTheGraphResult)) {
     console.warn('IPFS upload result is different:', {
-      kleros: klerosResult,
-      theGraph: theGraphResult
+      kleros: normalizedKlerosResult,
+      theGraph: normalizedTheGraphResult
     })
     throw new Error('IPFS upload result is different.')
   }
 
-  return klerosResult
-}
-
-/**
- * Send file to IPFS network via the Kleros IPFS node
- * @param {string} fileName - The name that will be used to store the file. This is useful to preserve extension type.
- * @param {ArrayBuffer} data - The raw data from the file to upload.
- * @returns {object} ipfs response. Should include the hash and path of the stored item.
- */
-async function publishToKlerosNode(fileName, data) {
-  const buffer = await Buffer.from(data)
-  const url = `${process.env.REACT_APP_IPFS_GATEWAY}/add`
-
-  const response = await fetch(url, {
-    method: 'POST',
-    body: JSON.stringify({
-      fileName,
-      buffer
-    }),
-    headers: {
-      'content-type': 'application/json'
-    }
-  })
-
-  const body = await response.json()
-
-  return body.data
+  return klerosResultJSON
 }
 
 /**

@@ -30,8 +30,9 @@ const EvidenceModal = ({ item, ...rest }) => {
         const fileData = enc.encode(JSON.stringify(evidenceJSON))
         /* eslint-enable prettier/prettier */
         const ipfsEvidenceObject = await ipfsPublish('evidence.json', fileData)
-        const ipfsEvidencePath = `/ipfs/${ipfsEvidenceObject[1].hash +
-          ipfsEvidenceObject[0].path}`
+        const ipfsEvidencePath = `/ipfs/${
+          ipfsEvidenceObject.cids[0].split('ipfs://')[1]
+        }`
 
         // Request signature and submit.
         const tx = await gtcr.submitEvidence(item.itemID, ipfsEvidencePath)

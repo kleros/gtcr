@@ -154,7 +154,7 @@ const TCRParams = ({
       try {
         const data = await new Response(new Blob([file])).arrayBuffer()
         const ipfsFileObj = await ipfsPublish(sanitize(file.name), data)
-        const fileURI = `/ipfs/${ipfsFileObj[1].hash}${ipfsFileObj[0].path}`
+        const fileURI = `/ipfs/${ipfsFileObj.cids[0].split('ipfs://')[1]}`
 
         setFieldValue(fieldName, fileURI)
         onSuccess('ok', parseIpfs(fileURI))

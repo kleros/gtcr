@@ -3,8 +3,8 @@
   command = "npm run build"
 
 [build.environment]
-  NODE_VERSION='12.22.12'
-  REACT_APP_IPFS_GATEWAY="https://ipfs.kleros.io/"
+  NODE_VERSION='16.20.2'
+  REACT_APP_IPFS_GATEWAY="https://cdn.kleros.link"
   REACT_APP_HOSTED_GRAPH_IPFS_ENDPOINT="https://api.thegraph.com/ipfs"
   REACT_APP_DEFAULT_NETWORK="1"
 
