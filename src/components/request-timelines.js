@@ -65,6 +65,7 @@ const Timeline = ({ request, item, metaEvidence }) => {
 
   const logs = useMemo(() => {
     if (!request) return null
+
     const appealPossibles = request.rounds
       .map(r => ({
         name: 'AppealPossible',
@@ -82,19 +83,17 @@ const Timeline = ({ request, item, metaEvidence }) => {
       }))
       .filter(appeal => !!appeal.transactionHash)
 
-    const evidences = request.evidenceGroup.evidences
-      .map(e => ({
-        name: 'Evidence',
-        timestamp: e.timestamp,
-        transactionHash: e.txHash,
-        title: e.title,
-        description: e.description,
-        URI: e.URI,
-        fileURI: e.fileURI,
-        fileTypeExtension: e.fileTypeExtension,
-        party: e.party
-      }))
-      .reverse()
+    const evidences = request.evidenceGroup.evidences.map(e => ({
+      name: 'Evidence',
+      timestamp: e.timestamp,
+      transactionHash: e.txHash,
+      title: e.title,
+      description: e.description,
+      URI: e.URI,
+      fileURI: e.fileURI,
+      fileTypeExtension: e.fileTypeExtension,
+      party: e.party
+    }))
 
     const resolution = {
       name: 'Resolution',
@@ -109,7 +108,7 @@ const Timeline = ({ request, item, metaEvidence }) => {
 
     if (resolution.transactionHash) logArray.push(resolution)
 
-    return logArray.sort((a, b) => a.timestamp > b.timestamp)
+    return logArray.sort((a, b) => a.timestamp - b.timestamp)
   }, [request])
 
   const requestType = request.requestType
