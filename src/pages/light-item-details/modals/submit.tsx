@@ -20,10 +20,11 @@ import ETHAmount from 'components/eth-amount'
 import useFactory from 'hooks/factory'
 import { TourContext } from 'contexts/tour-context'
 import { addPeriod, capitalizeFirstLetter, getArticleFor } from 'utils/string'
-import useNativeCurrency from 'hooks/native-currency'
-import ipfsPublish from 'utils/ipfs-publish'
-import { Column } from 'pages/item-details/modals/submit'
 import { parseIpfs } from 'utils/ipfs-parse'
+import { IPFSResultObject, getIPFSPath } from 'utils/get-ipfs-path'
+import ipfsPublish from 'utils/ipfs-publish'
+import useNativeCurrency from 'hooks/native-currency'
+import { Column } from 'pages/item-details/modals/submit'
 import { StyledSpin } from './challenge'
 import { StyledAlert } from './remove'
 
@@ -177,10 +178,9 @@ const SubmitModal: React.FC<{
         const gtcr = new ethers.Contract(tcrAddress, _gtcr, signer)
         const enc = new TextEncoder()
         const fileData = enc.encode(JSON.stringify({ columns, values }))
-        const ipfsEvidenceObject: any = await ipfsPublish('item.json', fileData)
-        const ipfsEvidencePath = `/ipfs/${
-          ipfsEvidenceObject.cids[0].split('ipfs://')[1]
-        }`
+        const ipfsEvidencePath = getIPFSPath(
+          (await ipfsPublish('item.json', fileData)) as IPFSResultObject
+        )
 
         // Request signature and submit.
         const tx = await gtcr.addItem(ipfsEvidencePath, {

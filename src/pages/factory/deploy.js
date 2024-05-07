@@ -8,8 +8,9 @@ import styled from 'styled-components'
 import { useWeb3Context } from 'web3-react'
 import _GTCRFactory from 'assets/abis/LightGTCRFactory.json'
 import ipfsPublish from 'utils/ipfs-publish'
-import { WalletContext } from 'contexts/wallet-context'
+import { getIPFSPath } from 'utils/get-ipfs-path'
 import { ZERO_ADDRESS, isVowel } from 'utils/string'
+import { WalletContext } from 'contexts/wallet-context'
 import useWindowDimensions from 'hooks/window-dimensions'
 import SubmitModal from '../item-details/modals/submit'
 import useTcrView from 'hooks/tcr-view'
@@ -251,10 +252,7 @@ const getTcrMetaEvidence = async (
 
   const ipfsMetaEvidenceObjects = (
     await Promise.all(files.map(({ name, data }) => ipfsPublish(name, data)))
-  ).map(
-    ipfsMetaEvidenceObject =>
-      `/ipfs/${ipfsMetaEvidenceObject.cids[0].split('ipfs://')[1]}`
-  )
+  ).map(ipfsMetaEvidenceObject => getIPFSPath(ipfsMetaEvidenceObject))
 
   const [
     registrationMetaEvidencePath,

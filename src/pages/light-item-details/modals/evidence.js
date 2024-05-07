@@ -7,6 +7,7 @@ import { WalletContext } from 'contexts/wallet-context'
 import itemPropTypes from 'prop-types/item'
 import EvidenceForm from 'components/evidence-form.js'
 import ipfsPublish from 'utils/ipfs-publish.js'
+import { getIPFSPath } from 'utils/get-ipfs-path'
 import { TourContext } from 'contexts/tour-context'
 import { StyledModal } from './challenge'
 
@@ -29,10 +30,9 @@ const EvidenceModal = ({ item, ...rest }) => {
         const enc = new TextEncoder()
         const fileData = enc.encode(JSON.stringify(evidenceJSON))
         /* eslint-enable prettier/prettier */
-        const ipfsEvidenceObject = await ipfsPublish('evidence.json', fileData)
-        const ipfsEvidencePath = `/ipfs/${
-          ipfsEvidenceObject.cids[0].split('ipfs://')[1]
-        }`
+        const ipfsEvidencePath = getIPFSPath(
+          await ipfsPublish('evidence.json', fileData)
+        )
 
         // Request signature and submit.
         const tx = await gtcr.submitEvidence(item.itemID, ipfsEvidencePath)

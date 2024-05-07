@@ -32,6 +32,7 @@ import { TourContext } from 'contexts/tour-context.js'
 import useNativeCurrency from 'hooks/native-currency.js'
 import useGetLogs from 'hooks/get-logs'
 import { parseIpfs } from 'utils/ipfs-parse'
+import { getIPFSPath } from 'utils/get-ipfs-path'
 import {
   StyledSpin,
   StyledModal
@@ -201,8 +202,7 @@ const SubmitConnectModal = props => {
     if (!relTCRMetaEvidence) return
     const file = new TextEncoder().encode(JSON.stringify(match))
     /* eslint-disable-next-line prettier/prettier */
-    const ipfsFileObj = await ipfsPublish('match-file.json', file)
-    const fileURI = `/ipfs/${ipfsFileObj.cids[0].split('ipfs://')[1]}`
+    const fileURI = getIPFSPath(await ipfsPublish('match-file.json', file))
     const { columns, itemName } = relTCRMetaEvidence.metadata
 
     // To learn if an item is present on another TCR (i.e to learn

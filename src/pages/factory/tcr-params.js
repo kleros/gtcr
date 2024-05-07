@@ -33,6 +33,7 @@ import useNativeCurrency from 'hooks/native-currency'
 import { useHistory } from 'react-router'
 import { klerosAddresses } from 'config/tcr-addresses'
 import { parseIpfs } from 'utils/ipfs-parse'
+import { getIPFSPath } from 'utils/get-ipfs-path'
 import { UploadButton, StyledUpload } from 'components/input-selector'
 
 export const StyledAlert = styled(Alert)`
@@ -210,8 +211,9 @@ const TCRParams = ({
     fieldName => async ({ file, onSuccess, onError }) => {
       try {
         const data = await new Response(new Blob([file])).arrayBuffer()
-        const ipfsFileObj = await ipfsPublish(sanitize(file.name), data)
-        const fileURI = `/ipfs/${ipfsFileObj.cids[0].split('ipfs://')[1]}`
+        const fileURI = getIPFSPath(
+          await ipfsPublish(sanitize(file.name), data)
+        )
 
         setFieldValue(fieldName, fileURI)
         onSuccess('ok', parseIpfs(fileURI))

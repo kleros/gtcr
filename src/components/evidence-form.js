@@ -7,6 +7,7 @@ import PropTypes from 'prop-types'
 import ipfsPublish from '../utils/ipfs-publish'
 import { sanitize } from '../utils/string'
 import { parseIpfs } from 'utils/ipfs-parse'
+import { getIPFSPath } from 'utils/get-ipfs-path'
 
 const StyledCheckbox = styled(Checkbox)`
   margin-bottom: 1em;
@@ -65,8 +66,7 @@ const EvidenceForm = ({
     try {
       const fileTypeExtension = file.name.split('.')[1]
       const data = await new Response(new Blob([file])).arrayBuffer()
-      const ipfsFileObj = await ipfsPublish(sanitize(file.name), data)
-      const fileURI = `/ipfs/${ipfsFileObj.cids[0].split('ipfs://')[1]}`
+      const fileURI = getIPFSPath(await ipfsPublish(sanitize(file.name), data))
 
       setFieldValue('evidenceAttachment', {
         fileURI,

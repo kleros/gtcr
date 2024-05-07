@@ -65,6 +65,7 @@ const Timeline = ({ request, item, metaEvidence }) => {
 
   const logs = useMemo(() => {
     if (!request) return null
+
     const appealPossibles = request.rounds
       .map(r => ({
         name: 'AppealPossible',
@@ -107,7 +108,7 @@ const Timeline = ({ request, item, metaEvidence }) => {
 
     if (resolution.transactionHash) logArray.push(resolution)
 
-    return logArray.sort((a, b) => a.timestamp > b.timestamp)
+    return logArray.sort((a, b) => a.timestamp - b.timestamp)
   }, [request])
 
   const requestType = request.requestType

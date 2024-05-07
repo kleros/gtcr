@@ -34,6 +34,7 @@ import { TourContext } from 'contexts/tour-context.js'
 import useNativeCurrency from 'hooks/native-currency.js'
 import useGetLogs from 'hooks/get-logs'
 import { parseIpfs } from 'utils/ipfs-parse'
+import { getIPFSPath } from 'utils/get-ipfs-path'
 import { StyledModal, StyledSpin } from './challenge'
 
 export const StyledAlert = styled(Alert)`
@@ -228,10 +229,9 @@ const SubmitConnectModal = props => {
       const gtcr = new ethers.Contract(relTCRAddress, _gtcr, signer)
       const enc = new TextEncoder()
       const fileData = enc.encode(JSON.stringify({ columns, values }))
-      const ipfsEvidenceObject = await ipfsPublish('item.json', fileData)
-      const ipfsEvidencePath = `/ipfs/${
-        ipfsEvidenceObject.cids[0].split('ipfs://')[1]
-      }`
+      const ipfsEvidencePath = getIPFSPath(
+        await ipfsPublish('item.json', fileData)
+      )
 
       // Request signature and submit.
       const tx = await gtcr.addItem(ipfsEvidencePath, {
