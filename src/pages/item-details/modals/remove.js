@@ -9,10 +9,11 @@ import ETHAmount from 'components/eth-amount'
 import EvidenceForm from 'components/evidence-form'
 import { WalletContext } from 'contexts/wallet-context'
 import itemPropTypes from 'prop-types/item'
-import ipfsPublish from 'utils/ipfs-publish'
 import { TourContext } from 'contexts/tour-context'
 import useNativeCurrency from 'hooks/native-currency'
+import ipfsPublish from 'utils/ipfs-publish'
 import { parseIpfs } from 'utils/ipfs-parse'
+import { getIPFSPath } from 'utils/get-ipfs-path'
 import { StyledAlert } from 'pages/light-item-details/modals/remove'
 import {
   StyledSpin,
@@ -47,13 +48,9 @@ const RemoveModal = ({ item, itemName = 'item', fileURI, ...rest }) => {
 
           const enc = new TextEncoder()
           const fileData = enc.encode(JSON.stringify(evidenceJSON))
-          const ipfsEvidenceObject = await ipfsPublish(
-            'evidence.json',
-            fileData
+          ipfsEvidencePath = getIPFSPath(
+            await ipfsPublish('evidence.json', fileData)
           )
-          ipfsEvidencePath = `/ipfs/${
-            ipfsEvidenceObject.cids[0].split('ipfs://')[1]
-          }`
         }
 
         // Request signature and send removal request.

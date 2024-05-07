@@ -82,17 +82,19 @@ const Timeline = ({ request, item, metaEvidence }) => {
       }))
       .filter(appeal => !!appeal.transactionHash)
 
-    const evidences = request.evidenceGroup.evidences.map(e => ({
-      name: 'Evidence',
-      timestamp: e.timestamp,
-      transactionHash: e.txHash,
-      title: e.title,
-      description: e.description,
-      URI: e.URI,
-      fileURI: e.fileURI,
-      fileTypeExtension: e.fileTypeExtension,
-      party: e.party
-    }))
+    const evidences = request.evidenceGroup.evidences
+      .map(e => ({
+        name: 'Evidence',
+        timestamp: e.timestamp,
+        transactionHash: e.txHash,
+        title: e.title,
+        description: e.description,
+        URI: e.URI,
+        fileURI: e.fileURI,
+        fileTypeExtension: e.fileTypeExtension,
+        party: e.party
+      }))
+      .reverse()
 
     const resolution = {
       name: 'Resolution',

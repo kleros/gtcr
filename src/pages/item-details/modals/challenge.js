@@ -3,15 +3,16 @@ import PropTypes from 'prop-types'
 import { Descriptions, Typography, Button } from 'antd'
 import { ethers } from 'ethers'
 import { abi as _gtcr } from '@kleros/tcr/build/contracts/GeneralizedTCR.json'
-import { CONTRACT_STATUS, STATUS_CODE } from 'utils/item-status'
 import { TCRViewContext } from 'contexts/tcr-view-context'
 import ETHAmount from 'components/eth-amount'
 import { WalletContext } from 'contexts/wallet-context'
 import itemPropTypes from 'prop-types/item'
 import EvidenceForm from 'components/evidence-form'
+import { CONTRACT_STATUS, STATUS_CODE } from 'utils/item-status'
 import ipfsPublish from 'utils/ipfs-publish.js'
-import { TourContext } from 'contexts/tour-context'
 import { parseIpfs } from 'utils/ipfs-parse'
+import { getIPFSPath } from 'utils/get-ipfs-path'
+import { TourContext } from 'contexts/tour-context'
 import {
   StyledSpin,
   StyledModal
@@ -47,10 +48,9 @@ const ChallengeModal = ({ item, itemName, statusCode, fileURI, ...rest }) => {
       const enc = new TextEncoder()
       const fileData = enc.encode(JSON.stringify(evidenceJSON))
       /* eslint-enable prettier/prettier */
-      const ipfsEvidenceObject = await ipfsPublish('evidence.json', fileData)
-      const ipfsEvidencePath = `/ipfs/${
-        ipfsEvidenceObject.cids[0].split('ipfs://')[1]
-      }`
+      const ipfsEvidencePath = getIPFSPath(
+        await ipfsPublish('evidence.json', fileData)
+      )
 
       // Request signature and submit.
       const tx = await gtcr.challengeRequest(item.itemID, ipfsEvidencePath, {

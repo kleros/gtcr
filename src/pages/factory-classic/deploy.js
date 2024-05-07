@@ -8,6 +8,7 @@ import { abi as _GTCRFactory } from '@kleros/tcr/build/contracts/GTCRFactory.jso
 import { parseEther, getContractAddress, bigNumberify } from 'ethers/utils'
 import { useWeb3Context } from 'web3-react'
 import ipfsPublish from 'utils/ipfs-publish'
+import { getIPFSPath } from 'utils/get-ipfs-path'
 import { WalletContext } from 'contexts/wallet-context'
 import { ZERO_ADDRESS, isVowel } from 'utils/string'
 import useWindowDimensions from 'hooks/window-dimensions'
@@ -191,10 +192,7 @@ const getTcrMetaEvidence = async (
 
   const ipfsMetaEvidenceObjects = (
     await Promise.all(files.map(file => ipfsPublish(file.multihash, file.data)))
-  ).map(
-    ipfsMetaEvidenceObject =>
-      `/ipfs/${ipfsMetaEvidenceObject.cids[0].split('ipfs://')[1]}`
-  )
+  ).map(ipfsMetaEvidenceObject => getIPFSPath(ipfsMetaEvidenceObject))
 
   return {
     registrationMetaEvidencePath: ipfsMetaEvidenceObjects[0],

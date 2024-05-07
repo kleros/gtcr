@@ -7,9 +7,10 @@ import { ItemTypes } from '@kleros/gtcr-encoder'
 import CustomInput from './custom-input.js'
 import ipfsPublish from '../utils/ipfs-publish.js'
 import { sanitize } from '../utils/string.js'
+import { IPFSEvidenceObject, getIPFSPath } from '../utils/get-ipfs-path'
+import { parseIpfs } from 'utils/ipfs-parse'
 import AddressInput from './address-input'
 import RichAddressInput from './rich-address-input'
-import { parseIpfs } from 'utils/ipfs-parse'
 
 export const StyledUpload = styled(Upload)`
   & > .ant-upload.ant-upload-select-picture-card {
@@ -51,8 +52,9 @@ const InputSelector: React.FC<InputSelectorProps> = p => {
     fieldName => async ({ file, onSuccess, onError }: any) => {
       try {
         const data = await new Response(new Blob([file])).arrayBuffer()
-        const ipfsFileObj: any = await ipfsPublish(sanitize(file.name), data)
-        const fileURI = `/ipfs/${ipfsFileObj.cids[0].split('ipfs://')[1]}`
+        const fileURI = getIPFSPath(
+          (await ipfsPublish(sanitize(file.name), data)) as IPFSEvidenceObject
+        )
 
         p.setFieldValue(fieldName, fileURI)
         onSuccess('ok', parseIpfs(fileURI))
