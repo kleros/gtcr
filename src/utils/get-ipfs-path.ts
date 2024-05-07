@@ -1,5 +1,5 @@
 export interface IPFSResultObject {
-  cids: { split: (delimiter: string) => string[] }[]
+  cids: string[]
 }
 
 export const getIPFSPath = (ipfsResultObject: IPFSResultObject): string =>
