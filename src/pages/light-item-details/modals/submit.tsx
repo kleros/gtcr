@@ -178,7 +178,7 @@ const SubmitModal: React.FC<{
         const gtcr = new ethers.Contract(tcrAddress, _gtcr, signer)
         const enc = new TextEncoder()
         const fileData = enc.encode(JSON.stringify({ columns, values }))
-        const ipfsEvidencePath: any = getIPFSPath(
+        const ipfsEvidencePath = getIPFSPath(
           (await ipfsPublish('item.json', fileData)) as IPFSResultObject
         )
 
