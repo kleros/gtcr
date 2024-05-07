@@ -21,7 +21,7 @@ import useFactory from 'hooks/factory'
 import { TourContext } from 'contexts/tour-context'
 import { addPeriod, capitalizeFirstLetter, getArticleFor } from 'utils/string'
 import { parseIpfs } from 'utils/ipfs-parse'
-import { IPFSEvidenceObject, getIPFSPath } from 'utils/get-ipfs-path'
+import { IPFSResultObject, getIPFSPath } from 'utils/get-ipfs-path'
 import ipfsPublish from 'utils/ipfs-publish'
 import useNativeCurrency from 'hooks/native-currency'
 import { Column } from 'pages/item-details/modals/submit'
@@ -179,7 +179,7 @@ const SubmitModal: React.FC<{
         const enc = new TextEncoder()
         const fileData = enc.encode(JSON.stringify({ columns, values }))
         const ipfsEvidencePath: any = getIPFSPath(
-          (await ipfsPublish('item.json', fileData)) as IPFSEvidenceObject
+          (await ipfsPublish('item.json', fileData)) as IPFSResultObject
         )
 
         // Request signature and submit.

@@ -7,7 +7,7 @@ import { ItemTypes } from '@kleros/gtcr-encoder'
 import CustomInput from './custom-input.js'
 import ipfsPublish from '../utils/ipfs-publish.js'
 import { sanitize } from '../utils/string.js'
-import { IPFSEvidenceObject, getIPFSPath } from '../utils/get-ipfs-path'
+import { IPFSResultObject, getIPFSPath } from '../utils/get-ipfs-path'
 import { parseIpfs } from 'utils/ipfs-parse'
 import AddressInput from './address-input'
 import RichAddressInput from './rich-address-input'
@@ -53,7 +53,7 @@ const InputSelector: React.FC<InputSelectorProps> = p => {
       try {
         const data = await new Response(new Blob([file])).arrayBuffer()
         const fileURI = getIPFSPath(
-          (await ipfsPublish(sanitize(file.name), data)) as IPFSEvidenceObject
+          (await ipfsPublish(sanitize(file.name), data)) as IPFSResultObject
         )
 
         p.setFieldValue(fieldName, fileURI)
