@@ -81,10 +81,11 @@ const App = () => {
               <Layout>
                 {/* temporary alert message until subgraph issues are fixed */}
                 <AlertMessage>
-                  We are currently facing technical issues with our subgraph,
-                  affecting the search functionality and preventing some entries
-                  from being found. To avoid submitting duplicates, we recommend
-                  manually checking if an entry has already been submitted.
+                  We are currently facing technical issues with our subgraph
+                  that are affecting the search functionality, making it
+                  difficult to locate certain entries. To ensure you don't
+                  submit duplicates, please manually check if an entry has
+                  already been submitted.
                 </AlertMessage>
                 <AppBar />
                 <AppRouter />
