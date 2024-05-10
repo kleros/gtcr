@@ -35,6 +35,16 @@ const FooterWrapper = styled.div`
   margin-top: auto !important;
 `
 
+export const AlertMessage = styled.div`
+  display: flex;
+  width: 100vw;
+  background-color: #a83232;
+  color: #ffffff;
+  justify-content: center;
+  text-align: center;
+  padding: 6px 0;
+`
+
 const App = () => {
   const [isMenuClosed, setIsMenuClosed] = useState(true)
 
@@ -69,6 +79,14 @@ const App = () => {
             </Helmet>
             <StyledLayout>
               <Layout>
+                {/* temporary alert message until subgraph issues are fixed */}
+                <AlertMessage>
+                  We are currently facing technical issues with our subgraph
+                  that are affecting the search functionality, making it
+                  difficult to locate certain entries. To ensure you don't
+                  submit duplicates, please manually check if an entry has
+                  already been submitted.
+                </AlertMessage>
                 <AppBar />
                 <AppRouter />
                 <StyledClickaway
