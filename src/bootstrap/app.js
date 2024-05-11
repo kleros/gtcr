@@ -81,8 +81,8 @@ const App = () => {
               <Layout>
                 {/* temporary alert message until subgraph issues are fixed */}
                 <AlertMessage>
-                  We are currently facing technical issues with our subgraph
-                  that are affecting the search functionality, making it
+                  TheGraph is currently facing intermittent issues that are
+                  affecting the search functionality on this frontend, making it
                   difficult to locate certain entries. To ensure you don't
                   submit duplicates, please manually check if an entry has
                   already been submitted.
