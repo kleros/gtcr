@@ -53,7 +53,7 @@ const OptionItem = ({ item }) => {
   // there are a few ethers queries coming from here.
   // they might have to be changed to subgraph queries
   // TODO read and figure it out
-  const { itemID, props, registry } = item
+  const { itemID, itemMetadata, registry } = item
   const { id: tcrAddress } = registry
   const {
     gtcrView,
@@ -111,14 +111,14 @@ const OptionItem = ({ item }) => {
           <>
             <StyledItemField>
               <DisplaySelector
-                type={props[0].type}
-                value={props[0].value}
-                allowedFileTypes={props[0].allowedFileTypes}
+                type={itemMetadata?.props[0].type}
+                value={itemMetadata?.props[0].value}
+                allowedFileTypes={itemMetadata?.props[0].allowedFileTypes}
               />
             </StyledItemField>
           </>
         ) : (
-          props
+          itemMetadata?.props
             .filter(col => col.isIdentifier)
             .map((column, j) => (
               <StyledItemField key={j}>
@@ -142,12 +142,14 @@ const OptionItem = ({ item }) => {
 OptionItem.propTypes = {
   item: PropTypes.shape({
     itemID: PropTypes.string,
-    props: PropTypes.arrayOf(
-      PropTypes.shape({
-        type: PropTypes.oneOf(Object.values(ItemTypes)),
-        value: PropTypes.string.isRequired
-      })
-    ),
+    metadata: PropTypes.shape({
+      props: PropTypes.arrayOf(
+        PropTypes.shape({
+          type: PropTypes.oneOf(Object.values(ItemTypes)),
+          value: PropTypes.string.isRequired
+        })
+      )
+    }),
     registry: PropTypes.shape({
       id: PropTypes.string
     })
@@ -182,7 +184,7 @@ const LightSearchBar = () => {
   }, [itemSearchQuery])
 
   const options = data.map(d => {
-    const itemLabels = d.props.filter(prop =>
+    const itemLabels = d.metadata?.props.filter(prop =>
       searchableFields.includes(prop.type)
     )
 

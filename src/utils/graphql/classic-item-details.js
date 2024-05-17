@@ -26,14 +26,17 @@ const CLASSIC_ITEM_DETAILS_QUERY = gql`
           id
           evidences(orderBy: number, orderDirection: desc) {
             party
-            title
-            description
             URI
-            fileURI
             number
             timestamp
             txHash
-            fileTypeExtension
+            metadata {
+              name
+              title
+              description
+              fileURI
+              fileTypeExtension
+            }
           }
         }
         rounds(orderBy: creationTime, orderDirection: desc) {

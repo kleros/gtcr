@@ -87,11 +87,11 @@ const Timeline = ({ request, item, metaEvidence }) => {
       name: 'Evidence',
       timestamp: e.timestamp,
       transactionHash: e.txHash,
-      title: e.title,
-      description: e.description,
+      title: e.metadata.title,
+      description: e.metadata.description,
       URI: e.URI,
-      fileURI: e.fileURI,
-      fileTypeExtension: e.fileTypeExtension,
+      fileURI: e.metadata.fileURI,
+      fileTypeExtension: e.metadat.fileTypeExtension,
       party: e.party
     }))
 
@@ -117,13 +117,13 @@ const Timeline = ({ request, item, metaEvidence }) => {
   useEffect(() => {
     const evidenceManualFetch = async () => {
       const unindexedEvidenceURIs = logs
-        .filter(e => e.name === 'Evidence')
+        .filter(e => e.metadata?.name === 'Evidence')
         .filter(
           e =>
-            e.title === null &&
-            e.description === null &&
-            e.fileURI === null &&
-            e.fileTypeExtension === null
+            e.metadata?.title === null &&
+            e.metadata?.description === null &&
+            e.metadata?.fileURI === null &&
+            e.metadata?.fileTypeExtension === null
         )
         .map(e => e.URI)
 

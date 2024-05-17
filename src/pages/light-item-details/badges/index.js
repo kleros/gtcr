@@ -73,8 +73,8 @@ const mapToLegacy = items =>
   items
     .map(item => ({
       ...item,
-      decodedData: item.props.map(({ value }) => value),
-      mergedData: item.props
+      decodedData: item.metadata?.props.map(({ value }) => value),
+      mergedData: item.metadata?.props
     }))
     .map(
       ({
@@ -327,12 +327,14 @@ const Badges = ({ connectedTCRAddr, item, tcrAddress }) => {
                     itemID
                     status
                     data
-                    props {
-                      value
-                      type
-                      label
-                      description
-                      isIdentifier
+                    metadata{
+                      props {
+                        value
+                        type
+                        label
+                        description
+                        isIdentifier
+                      }
                     }
                     requests(first: 1, orderBy: submissionTime, orderDirection: desc) {
                       disputed

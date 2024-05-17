@@ -6,10 +6,12 @@ const ITEM_SEARCH_QUERY = gql`
       id
       itemID
       data
-      props {
-        type
-        value
-        isIdentifier
+      metadata {
+        props {
+          type
+          value
+          isIdentifier
+        }
       }
       registry {
         id
