@@ -24,11 +24,13 @@ export const fetchMetaEvidence = async (tcr, networkId) => {
       }
       connectedTCR
     }
-  }`
+  }`,
+    variables: {}
   }
 
   const response = await fetch(subgraphUrl[networkId], {
     method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(query)
   })
 
