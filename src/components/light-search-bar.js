@@ -53,7 +53,7 @@ const OptionItem = ({ item }) => {
   // there are a few ethers queries coming from here.
   // they might have to be changed to subgraph queries
   // TODO read and figure it out
-  const { itemID, itemMetadata, registry } = item
+  const { itemID, metadata: itemMetadata, registry } = item
   const { id: tcrAddress } = registry
   const {
     gtcrView,
