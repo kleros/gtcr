@@ -91,7 +91,7 @@ const Timeline = ({ request, item, metaEvidence }) => {
       description: e.metadata.description,
       URI: e.URI,
       fileURI: e.metadata.fileURI,
-      fileTypeExtension: e.metadat.fileTypeExtension,
+      fileTypeExtension: e.metadata.fileTypeExtension,
       party: e.party
     }))
 
