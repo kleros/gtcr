@@ -73,8 +73,8 @@ const mapToLegacy = items =>
   items
     .map(item => ({
       ...item,
-      decodedData: item.props.map(({ value }) => value),
-      mergedData: item.props
+      decodedData: item.metadata?.props.map(({ value }) => value),
+      mergedData: item.metadata?.props
     }))
     .map(
       ({
@@ -321,18 +321,20 @@ const Badges = ({ connectedTCRAddr, item, tcrAddress }) => {
               query: `
                 {
                   litems (where:{
-                    registry: "${badgeAddr.toLowerCase()}"
-                    keywords: "${keywords}"
+                    registry: "${badgeAddr.toLowerCase()}",
+                    metadata_: {keywords: "${keywords}"}
                   }) {
                     itemID
                     status
                     data
-                    props {
-                      value
-                      type
-                      label
-                      description
-                      isIdentifier
+                    metadata{
+                      props {
+                        value
+                        type
+                        label
+                        description
+                        isIdentifier
+                      }
                     }
                     requests(first: 1, orderBy: submissionTime, orderDirection: desc) {
                       disputed
@@ -359,6 +361,7 @@ const Badges = ({ connectedTCRAddr, item, tcrAddress }) => {
             const { data } = await (
               await fetch(GTCR_SUBGRAPH_URL, {
                 method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(query)
               })
             ).json()

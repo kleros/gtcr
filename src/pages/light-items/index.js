@@ -257,8 +257,8 @@ const Items = () => {
       let { litems: items } = data
       items = items.map(item => ({
         ...item,
-        decodedData: item.props.map(({ value }) => value),
-        mergedData: item.props
+        decodedData: item.metadata?.props.map(({ value }) => value),
+        mergedData: item.metadata?.props
       }))
       // HACK:
       // the graph could have failed to include the props.
@@ -276,7 +276,12 @@ const Items = () => {
             value: item.values[column.label]
           }))
           const decodedData = mergedData.map(d => d.value)
-          const newItem = { ...i, mergedData, decodedData, props: mergedData }
+          const newItem = {
+            ...i,
+            mergedData,
+            decodedData,
+            metadata: { props: mergedData }
+          }
           return newItem
         } else return i
       })

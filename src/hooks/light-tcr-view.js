@@ -23,6 +23,7 @@ export const fetchMetaEvidence = async (tcr, networkId) => {
 
   const response = await fetch(subgraphUrl[networkId], {
     method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(query)
   })
 

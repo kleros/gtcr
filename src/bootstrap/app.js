@@ -35,16 +35,6 @@ const FooterWrapper = styled.div`
   margin-top: auto !important;
 `
 
-export const AlertMessage = styled.div`
-  display: flex;
-  width: 100vw;
-  background-color: #a83232;
-  color: #ffffff;
-  justify-content: center;
-  text-align: center;
-  padding: 6px 0;
-`
-
 const App = () => {
   const [isMenuClosed, setIsMenuClosed] = useState(true)
 
@@ -79,14 +69,6 @@ const App = () => {
             </Helmet>
             <StyledLayout>
               <Layout>
-                {/* temporary alert message until subgraph issues are fixed */}
-                <AlertMessage>
-                  TheGraph is currently facing intermittent issues that are
-                  affecting the search functionality on this frontend, making it
-                  difficult to locate certain entries. To ensure you don't
-                  submit duplicates, please manually check if an entry has
-                  already been submitted.
-                </AlertMessage>
                 <AppBar />
                 <AppRouter />
                 <StyledClickaway

@@ -26,12 +26,14 @@ const LIGHT_ITEMS_QUERY = gql`
       itemID
       status
       data
-      props {
-        value
-        type
-        label
-        description
-        isIdentifier
+      metadata {
+        props {
+          value
+          type
+          label
+          description
+          isIdentifier
+        }
       }
       requests(first: 1, orderBy: submissionTime, orderDirection: desc) {
         disputed
