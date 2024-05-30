@@ -21,7 +21,7 @@ const itemsTourSteps = metadata => {
           {metadata &&
             `In the case of ${tcrTitle}, each item is ${getArticleFor(
               itemName
-            )} ${itemName.toLowerCase()}`}
+            )} ${itemName?.toLowerCase()}`}
           .
         </div>
       )
