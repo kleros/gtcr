@@ -87,11 +87,11 @@ const Timeline = ({ request, item, metaEvidence }) => {
       name: 'Evidence',
       timestamp: e.timestamp,
       transactionHash: e.txHash,
-      title: e.metadata.title,
-      description: e.metadata.description,
+      title: e.metadata?.title,
+      description: e.metadata?.description,
       URI: e.URI,
-      fileURI: e.metadata.fileURI,
-      fileTypeExtension: e.metadata.fileTypeExtension,
+      fileURI: e.metadata?.fileURI,
+      fileTypeExtension: e.metadata?.fileTypeExtension,
       party: e.party
     }))
 

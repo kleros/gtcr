@@ -321,8 +321,8 @@ const Badges = ({ connectedTCRAddr, item, tcrAddress }) => {
               query: `
                 {
                   litems (where:{
-                    registry: "${badgeAddr.toLowerCase()}"
-                    keywords: "${keywords}"
+                    registry: "${badgeAddr.toLowerCase()}",
+                    metadata_: {keywords: "${keywords}"}
                   }) {
                     itemID
                     status

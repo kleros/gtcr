@@ -111,9 +111,9 @@ const OptionItem = ({ item }) => {
           <>
             <StyledItemField>
               <DisplaySelector
-                type={itemMetadata?.props[0].type}
-                value={itemMetadata?.props[0].value}
-                allowedFileTypes={itemMetadata?.props[0].allowedFileTypes}
+                type={itemMetadata?.props?.[0]?.type}
+                value={itemMetadata?.props?.[0]?.value}
+                allowedFileTypes={itemMetadata?.props?.[0]?.allowedFileTypes}
               />
             </StyledItemField>
           </>
@@ -184,7 +184,7 @@ const LightSearchBar = () => {
   }, [itemSearchQuery])
 
   const options = data.map(d => {
-    const itemLabels = d.metadata?.props.filter(prop =>
+    const itemLabels = d.item?.metadata?.props.filter(prop =>
       searchableFields.includes(prop.type)
     )
 
@@ -193,11 +193,11 @@ const LightSearchBar = () => {
       label =
         itemLabels.find(prop => prop.type === ItemTypes.TEXT)?.value ||
         itemLabels[0].value
-    else label = d.itemID
+    else label = d.item.itemID
 
     return (
-      <Select.Option key={d.itemID} label={label}>
-        <OptionItem item={d} tcrAddress={d.registry.id} />
+      <Select.Option key={d.item.itemID} label={label}>
+        <OptionItem item={d.item} tcrAddress={d.item.registry.id} />
       </Select.Option>
     )
   })
