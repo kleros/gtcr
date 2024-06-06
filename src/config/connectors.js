@@ -57,13 +57,7 @@ if (fortmaticApiKey)
 
 if (window.ethereum)
   connectors.Injected = new InjectedConnector({
-    supportedNetworks: [
-      NETWORKS.ethereum,
-      NETWORKS.kovan,
-      NETWORKS.gnosis,
-      NETWORKS.goerli,
-      NETWORKS['arbitrum-rinkeby']
-    ]
+    supportedNetworks: [NETWORKS.ethereum, NETWORKS.gnosis, NETWORKS.sepolia]
   })
 
 export default connectors
