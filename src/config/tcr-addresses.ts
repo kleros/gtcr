@@ -134,5 +134,5 @@ export const subgraphUrl = {
   '100':
     'https://api.studio.thegraph.com/query/61738/legacy-curate-gnosis/version/latest',
   '11155111':
-    'https://api.studio.thegraph.com/proxy/28434/curate-sepolia/v0.0.1'
+    'https://api.studio.thegraph.com/query/61738/legacy-curate-sepolia/version/latest'
 } as const
