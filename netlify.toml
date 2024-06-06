@@ -5,7 +5,6 @@
 [build.environment]
   NODE_VERSION='16.20.2'
   REACT_APP_IPFS_GATEWAY="https://cdn.kleros.link"
-  REACT_APP_HOSTED_GRAPH_IPFS_ENDPOINT="https://api.thegraph.com/ipfs"
   REACT_APP_DEFAULT_NETWORK="1"
 
   REACT_APP_REJECT_ALL_POLICY_URI='/ipfs/QmZ7RVU7re1g8nXDbAFMHV99pyie3dn4cY7Ga2X4h8mDpV/reject-all-policy.pdf'
