@@ -194,7 +194,7 @@ const useNotificationWeb3 = () => {
         notification.error({
           message: 'Authorization failed',
           description:
-            'Please ensure your wallet is set to either Mainnet, Gnosis Chain, or Goerli and authorize the request.',
+            'Please ensure your wallet is set to either Mainnet, Gnosis Chain, or Sepolia and authorize the request.',
           duration: 15,
           key: NOTIFICATION_KEY
         })

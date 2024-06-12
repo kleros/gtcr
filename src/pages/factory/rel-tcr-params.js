@@ -199,7 +199,7 @@ const RelTCRParams = ({
             <br />
             Click{' '}
             <a
-              href="https://ipfs.kleros.io/ipfs/QmUPsjDcKxNv6z6ktnmxkSb4LpqmQ7DT12yG5B73z9uLEy/curated-lists-primary-document.pdf"
+              href="https://cdn.kleros.link/ipfs/QmUPsjDcKxNv6z6ktnmxkSb4LpqmQ7DT12yG5B73z9uLEy/curated-lists-primary-document.pdf"
               target="_blank"
               rel="noopener noreferrer"
             >
