@@ -12,6 +12,7 @@
   REACT_APP_TRUST_SITE_URL='https://trustwallet.com'
   REACT_APP_WALLETCONNECT_BRIDGE_URL='https://bridge.walletconnect.org'
   REACT_APP_INSTRUCTION_VIDEO='https://www.youtube.com/embed/DKPVWzhh8Y8'
+  REACT_APP_COURT_FUNCTIONS_URL='https://kleros-api.netlify.app'
 
 [[redirects]]
   from = "/*"
