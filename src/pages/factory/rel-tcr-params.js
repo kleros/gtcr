@@ -126,10 +126,10 @@ const RelTCRParams = ({
     const isPDF = file.type === 'application/pdf'
     if (!isPDF) message.error('Please upload file as PDF.')
 
-    const isLt10M = file.size / 1024 / 1024 < 10
-    if (!isLt10M) message.error('File must smaller than 10MB.')
+    const isLt4M = file.size / 1024 / 1024 < 4
+    if (!isLt4M) message.error('File must be smaller than 4MB.')
 
-    return isPDF && isLt10M
+    return isPDF && isLt4M
   }, [])
 
   const onChangeDepositVal = useCallback(

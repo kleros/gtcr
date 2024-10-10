@@ -81,9 +81,9 @@ const EvidenceForm = ({
   }
 
   const beforeFileUpload = useCallback(file => {
-    const isLt10M = file.size / 1024 / 1024 < 15
-    if (!isLt10M) message.error('File must smaller than 15MB.')
-    return isLt10M
+    const isLt4M = file.size / 1024 / 1024 < 4
+    if (!isLt4M) message.error('File must be smaller than 4MB.')
+    return isLt4M
   }, [])
 
   return (
