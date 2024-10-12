@@ -192,7 +192,7 @@ const TCRParams = ({
     if (!isSupportedImage) message.error('Please use PNG, webp, jpeg or SVG.')
 
     const isLt2M = file.size / 1024 / 1024 < 2
-    if (!isLt2M) message.error('Image must smaller than 2MB.')
+    if (!isLt2M) message.error('Image must be smaller than 2MB.')
 
     return isSupportedImage && isLt2M
   }, [])
@@ -201,10 +201,10 @@ const TCRParams = ({
     const isPDF = file.type === 'application/pdf'
     if (!isPDF) message.error('Please upload file as PDF.')
 
-    const isLt10M = file.size / 1024 / 1024 < 10
-    if (!isLt10M) message.error('File must smaller than 10MB.')
+    const isLt4M = file.size / 1024 / 1024 < 4
+    if (!isLt4M) message.error('File must be smaller than 4MB.')
 
-    return isPDF && isLt10M
+    return isPDF && isLt4M
   }, [])
 
   const customRequest = useCallback(

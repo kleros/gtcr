@@ -91,7 +91,7 @@ const InputSelector: React.FC<InputSelectorProps> = p => {
       }
 
       if (file.size / 1024 / 1024 > (p.maxFileSizeMb || 2)) {
-        message.error(`Image must smaller than ${p.maxFileSizeMb || 2}MB.`)
+        message.error(`Image must be smaller than ${p.maxFileSizeMb || 2}MB.`)
         return false
       }
 
@@ -112,8 +112,8 @@ const InputSelector: React.FC<InputSelectorProps> = p => {
         return false
       }
 
-      if (file.size / 1024 / 1024 > (p.maxFileSizeMb || 10)) {
-        message.error(`File must smaller than ${p.maxFileSizeMb || 10}MB.`)
+      if (file.size / 1024 / 1024 > (p.maxFileSizeMb || 4)) {
+        message.error(`File must be smaller than ${p.maxFileSizeMb || 4}MB.`)
         return false
       }
 
