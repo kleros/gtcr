@@ -129,10 +129,7 @@ export const txBatcherAddresses = {
 } as const
 
 export const subgraphUrl = {
-  '1':
-    'https://api.studio.thegraph.com/query/61738/legacy-curate-mainnet/version/latest',
-  '100':
-    'https://api.studio.thegraph.com/query/61738/legacy-curate-gnosis/version/latest',
-  '11155111':
-    'https://api.studio.thegraph.com/query/61738/legacy-curate-sepolia/version/latest'
+  '1': process.env.REACT_APP_SUBGRAPH_MAINNET,
+  '100': process.env.REACT_APP_SUBGRAPH_GNOSIS,
+  '11155111': process.env.REACT_APP_SUBGRAPH_SEPOLIA
 } as const
