@@ -128,6 +128,11 @@ export const txBatcherAddresses = {
   '11155111': '0xb5418fc9b536c52c635b4c3a2978de7165b67318'
 } as const
 
+export const seerAddresses = {
+  '1': '0x4a9f8e73b3c4c9d7fa0210b9de457b1c493a3ada',
+  '100': '0x5aaf9e23a11440f8c1ad6d2e2e5109c7e52cc672'
+} as const
+
 export const subgraphUrl = {
   '1': process.env.REACT_APP_SUBGRAPH_MAINNET,
   '100': process.env.REACT_APP_SUBGRAPH_GNOSIS,

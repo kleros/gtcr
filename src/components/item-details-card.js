@@ -4,6 +4,7 @@ import { Card, Icon, Tooltip, Button, Result, Alert } from 'antd'
 import PropTypes from 'prop-types'
 import DisplaySelector from './display-selector'
 import { useWeb3Context } from 'web3-react'
+import { useParams } from 'react-router-dom'
 import { abi as _batchWithdraw } from '@kleros/tcr/build/contracts/BatchWithdraw.json'
 import { bigNumberify } from 'ethers/utils'
 import { ethers } from 'ethers'
@@ -13,7 +14,8 @@ import itemPropTypes from '../prop-types/item'
 import { WalletContext } from 'contexts/wallet-context'
 import TCRMetadataDisplay from './tcr-metadata-display'
 import { addPeriod } from '../utils/string'
-import { batchWithdrawAddresses } from 'config/tcr-addresses'
+import { batchWithdrawAddresses, seerAddresses } from 'config/tcr-addresses'
+import SeerExtraDetails from 'components/custom-registries-extra-details/seer-extra-details'
 
 const StyledFields = styled.div`
   display: flex;
@@ -45,6 +47,7 @@ const ItemDetailsCard = ({
   const [availableRewards, setAvailableRewards] = useState()
   const [rewardRef, setRewardRef] = useState()
   const BATCH_WITHDRAW_ADDRESS = batchWithdrawAddresses[networkId]
+  const { chainId, tcrAddress } = useParams()
 
   // Fetch available rewards from fee contributions.
   useEffect(() => {
@@ -181,6 +184,16 @@ const ItemDetailsCard = ({
           ))}
         </StyledFields>
       )}
+      {tcrAddress &&
+        (tcrAddress.toLowerCase() === seerAddresses[1] ||
+          tcrAddress.toLowerCase() === seerAddresses[100]) &&
+        item && (
+          <SeerExtraDetails
+            chainId={chainId}
+            contractAddress={item.decodedData[0]}
+            imagesIpfsHash={item.decodedData[1]}
+          />
+        )}
     </Card>
   )
 }

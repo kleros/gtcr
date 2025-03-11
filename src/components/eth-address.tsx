@@ -7,16 +7,11 @@ const StyledA = styled.a`
   text-decoration: underline;
 `
 
-const ETHAddress: React.FC<{ address: string; forceEth: boolean }> = ({
-  address,
-  forceEth
-}) => {
+const ETHAddress: React.FC<{ address: string }> = ({ address }) => {
   const { networkId } = useWeb3Context()
-  const fullPage = forceEth
-    ? `https://etherscan.io/address/${address}`
-    : getAddressPage({ networkId, address })
+  const fullPage = getAddressPage({ networkId, address })
   return (
-    <StyledA href={fullPage}>
+    <StyledA href={fullPage} target="_blank" rel="noopener noreferrer">
       {address.slice(0, 6)}...{address.slice(address.length - 4)}
     </StyledA>
   )
