@@ -49,8 +49,6 @@ const SeerExtraDetails: React.FC<ISeerExtraDetails> = ({
           body: JSON.stringify({ query })
         })
 
-        console.log({ response })
-
         if (!response.ok) throw new Error('Subgraph query failed')
 
         const data = await response.json()
