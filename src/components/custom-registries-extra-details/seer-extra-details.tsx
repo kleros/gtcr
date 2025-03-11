@@ -1,10 +1,4 @@
 import React, { useState, useEffect } from 'react'
-import { ethers } from 'ethers'
-
-const marketAbi = [
-  'function marketName() view returns (string)',
-  'function outcomes(uint256) view returns (string)'
-]
 
 interface ISeerExtraDetails {
   chainId: string
@@ -19,8 +13,6 @@ interface MarketDetails {
   outcomes: { name: string; image: string }[]
 }
 
-const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
-
 const SeerExtraDetails: React.FC<ISeerExtraDetails> = ({
   chainId,
   contractAddress,
@@ -33,6 +25,44 @@ const SeerExtraDetails: React.FC<ISeerExtraDetails> = ({
   useEffect(() => {
     const fetchData = async () => {
       try {
+        let subgraphUrl
+        if (chainId === '1')
+          subgraphUrl = process.env.REACT_APP_SEER_SUBGRAPH_MAINNET ?? ''
+        else if (chainId === '100')
+          subgraphUrl = process.env.REACT_APP_SEER_SUBGRAPH_GNOSIS ?? ''
+        else throw new Error(`Unsupported chainId: ${chainId}`)
+
+        const query = `
+          {
+            market(id: "${contractAddress.toLowerCase()}") {
+              marketName
+              outcomes
+            }
+          }
+        `
+
+        const response = await fetch(subgraphUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ query })
+        })
+
+        console.log({ response })
+
+        if (!response.ok) throw new Error('Subgraph query failed')
+
+        const data = await response.json()
+
+        if (!data.data.market) throw new Error('Market not found in subgraph')
+
+        const { marketName, outcomes } = data.data.market
+
+        const filteredOutcomes = outcomes.filter(
+          (outcome: string) => outcome !== 'Invalid result'
+        )
+
         const ipfsResponse = await fetch(
           `${process.env.REACT_APP_IPFS_GATEWAY}${imagesIpfsHash}`
         )
@@ -40,38 +70,18 @@ const SeerExtraDetails: React.FC<ISeerExtraDetails> = ({
         const ipfsData = await ipfsResponse.json()
         const marketImage = ipfsData.market
         const outcomeImages = ipfsData.outcomes
-        const numOutcomes = outcomeImages.length
 
-        const rpcUrls = JSON.parse(process.env.REACT_APP_RPC_URLS || '{}')
-        const rpcUrl = rpcUrls[chainId]
-        if (!rpcUrl) throw new Error(`No RPC URL found for chainId: ${chainId}`)
-        const provider = new ethers.providers.JsonRpcProvider(rpcUrl)
-
-        const marketContract = new ethers.Contract(
-          contractAddress,
-          marketAbi,
-          provider
+        const outcomesWithImages = filteredOutcomes.map(
+          (name: string, index: number) => ({
+            name,
+            image: outcomeImages[index] || ''
+          })
         )
-
-        const marketName = await marketContract.marketName()
-        await delay(250)
-
-        const outcomeNames = []
-        for (let i = 0; i < numOutcomes; i++) {
-          const outcome = await marketContract.outcomes(i)
-          outcomeNames.push(outcome)
-          if (i < numOutcomes - 1) await delay(250)
-        }
-
-        const outcomes = outcomeNames.map((name: string, index: number) => ({
-          name,
-          image: outcomeImages[index] || ''
-        }))
 
         setMarketDetails({
           marketName,
           marketImage,
-          outcomes
+          outcomes: outcomesWithImages
         })
       } catch (err) {
         setError(`Failed to load market details: ${err.message}`)
@@ -194,7 +204,10 @@ const SeerExtraDetails: React.FC<ISeerExtraDetails> = ({
             }}
           />
           <span
-            style={{ fontSize: smallDisplay ? '0.9em' : '1em', color: '#333' }}
+            style={{
+              fontSize: smallDisplay ? '0.9em' : '1em',
+              color: '#333'
+            }}
           >
             {outcome.name}
           </span>
