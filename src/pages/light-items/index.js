@@ -34,6 +34,8 @@ import { useLazyQuery, useQuery } from '@apollo/client'
 import { LIGHT_ITEMS_QUERY, LIGHT_REGISTRY_QUERY } from 'utils/graphql'
 import LightSearchBar from 'components/light-search-bar'
 import { parseIpfs } from 'utils/ipfs-parse'
+import useSeerMarketsData from 'components/custom-registries/seer/use-seer-markets-data'
+import { isSeerRegistry } from 'components/custom-registries/seer/is-seer-registry'
 
 export const NSFW_FILTER_KEY = 'NSFW_FILTER_KEY'
 export const ITEMS_TOUR_DISMISSED = 'ITEMS_TOUR_DISMISSED'
@@ -158,6 +160,7 @@ const Items = () => {
     localforage.setItem(NSFW_FILTER_KEY, checked)
   }, [])
   const [decodedItems, setDecodedItems] = useState(undefined)
+  const seerMarketsData = useSeerMarketsData(chainId, tcrAddress, decodedItems)
 
   const {
     oldestFirst,
@@ -387,10 +390,14 @@ const Items = () => {
           }),
           { key: i }
         ),
-        errors
+        errors,
+        seerMarketData:
+          isSeerRegistry(tcrAddress, chainId) &&
+          item?.decodedData &&
+          seerMarketsData[item.decodedData[1].toLowerCase()]
       }
     })
-  }, [metaEvidence, tcrAddress, decodedItems])
+  }, [metaEvidence, tcrAddress, decodedItems, chainId, seerMarketsData])
 
   // This component supports URL actions.
   // This means someone can be sent to curate with a bunch of data to submit

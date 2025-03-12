@@ -14,8 +14,9 @@ import itemPropTypes from '../prop-types/item'
 import { WalletContext } from 'contexts/wallet-context'
 import TCRMetadataDisplay from './tcr-metadata-display'
 import { addPeriod } from '../utils/string'
-import { batchWithdrawAddresses, seerAddresses } from 'config/tcr-addresses'
-import SeerExtraDetails from 'components/custom-registries-extra-details/seer-extra-details'
+import { batchWithdrawAddresses } from 'config/tcr-addresses'
+import SeerExtraDetails from 'components/custom-registries/seer/seer-item-details'
+import { isSeerRegistry } from 'components/custom-registries/seer/is-seer-registry'
 
 const StyledFields = styled.div`
   display: flex;
@@ -184,16 +185,13 @@ const ItemDetailsCard = ({
           ))}
         </StyledFields>
       )}
-      {tcrAddress &&
-        (tcrAddress.toLowerCase() === seerAddresses[1] ||
-          tcrAddress.toLowerCase() === seerAddresses[100]) &&
-        item && (
-          <SeerExtraDetails
-            chainId={chainId}
-            contractAddress={item.decodedData[0]}
-            imagesIpfsHash={item.decodedData[1]}
-          />
-        )}
+      {isSeerRegistry(tcrAddress, chainId) && item && (
+        <SeerExtraDetails
+          chainId={chainId}
+          contractAddress={item.decodedData[0]}
+          imagesIpfsHash={item.decodedData[1]}
+        />
+      )}
     </Card>
   )
 }

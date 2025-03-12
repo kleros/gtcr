@@ -4,7 +4,6 @@ interface ISeerExtraDetails {
   chainId: string
   contractAddress: string
   imagesIpfsHash: string
-  smallDisplay?: boolean
 }
 
 interface MarketDetails {
@@ -16,8 +15,7 @@ interface MarketDetails {
 const SeerExtraDetails: React.FC<ISeerExtraDetails> = ({
   chainId,
   contractAddress,
-  imagesIpfsHash,
-  smallDisplay = false
+  imagesIpfsHash
 }) => {
   const [marketDetails, setMarketDetails] = useState<MarketDetails | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -96,7 +94,7 @@ const SeerExtraDetails: React.FC<ISeerExtraDetails> = ({
         style={{
           color: 'red',
           fontFamily: 'Arial, sans-serif',
-          fontSize: smallDisplay ? '12px' : '14px'
+          fontSize: '14px'
         }}
       >
         {error}
@@ -109,7 +107,7 @@ const SeerExtraDetails: React.FC<ISeerExtraDetails> = ({
         style={{
           fontFamily: 'Arial, sans-serif',
           color: '#666',
-          fontSize: smallDisplay ? '12px' : '14px'
+          fontSize: '14px'
         }}
       >
         Loading Seer details...
@@ -122,9 +120,9 @@ const SeerExtraDetails: React.FC<ISeerExtraDetails> = ({
     <div
       style={{
         fontFamily: 'Arial, sans-serif',
-        maxWidth: smallDisplay ? '300px' : '600px',
+        maxWidth: '600px',
         margin: '16px auto',
-        padding: smallDisplay ? '10px' : '20px',
+        padding: '20px',
         border: '1px solid #e0e0e0',
         borderRadius: '8px',
         boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
@@ -139,7 +137,7 @@ const SeerExtraDetails: React.FC<ISeerExtraDetails> = ({
             color: '#007bff',
             textDecoration: 'none',
             fontWeight: 'bold',
-            fontSize: smallDisplay ? '14px' : '16px'
+            fontSize: '16px'
           }}
           onMouseOver={e =>
             (e.currentTarget.style.textDecoration = 'underline')
@@ -155,16 +153,16 @@ const SeerExtraDetails: React.FC<ISeerExtraDetails> = ({
         src={`${process.env.REACT_APP_IPFS_GATEWAY}${marketImage}`}
         alt="Market"
         style={{
-          maxWidth: smallDisplay ? '32px' : '48px',
+          maxWidth: '48px',
           height: 'auto',
           borderRadius: '4px',
-          marginBottom: smallDisplay ? '8px' : '16px'
+          marginBottom: '16px'
         }}
       />
       <h3
         style={{
           margin: '0 0 12px',
-          fontSize: smallDisplay ? '1.2em' : '1.5em',
+          fontSize: '1.5em',
           color: '#333'
         }}
       >
@@ -173,7 +171,7 @@ const SeerExtraDetails: React.FC<ISeerExtraDetails> = ({
       <h4
         style={{
           margin: '0 0 12px',
-          fontSize: smallDisplay ? '1em' : '1.2em',
+          fontSize: '1.2em',
           color: '#555'
         }}
       >
@@ -185,8 +183,8 @@ const SeerExtraDetails: React.FC<ISeerExtraDetails> = ({
           style={{
             display: 'flex',
             alignItems: 'center',
-            marginBottom: smallDisplay ? '6px' : '12px',
-            padding: smallDisplay ? '4px' : '8px',
+            marginBottom: '12px',
+            padding: '8px',
             backgroundColor: '#f9f9f9',
             borderRadius: '4px'
           }}
@@ -195,15 +193,15 @@ const SeerExtraDetails: React.FC<ISeerExtraDetails> = ({
             src={`${process.env.REACT_APP_IPFS_GATEWAY}${outcome.image}`}
             alt={`Outcome ${index}`}
             style={{
-              maxWidth: smallDisplay ? '24px' : '40px',
+              maxWidth: '40px',
               height: 'auto',
-              marginRight: smallDisplay ? '6px' : '12px',
+              marginRight: '12px',
               borderRadius: '4px'
             }}
           />
           <span
             style={{
-              fontSize: smallDisplay ? '0.9em' : '1em',
+              fontSize: '1em',
               color: '#333'
             }}
           >
