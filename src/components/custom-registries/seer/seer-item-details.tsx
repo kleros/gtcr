@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react'
+import styled, { css } from 'styled-components'
+import { smallScreenStyle } from 'styles/small-screen-style'
 
 interface ISeerExtraDetails {
   chainId: string
@@ -11,6 +13,94 @@ interface MarketDetails {
   marketImage: string
   outcomes: { name: string; image: string }[]
 }
+
+const Container = styled.div`
+  font-family: 'Arial';
+  max-width: 600px;
+  margin: 16px auto;
+  padding: 20px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+`
+
+const LinkParagraph = styled.p`
+  margin-bottom: 16px;
+`
+
+const SeerLink = styled.a`
+  color: #007bff;
+  text-decoration: none;
+  font-weight: bold;
+  font-size: 16px;
+
+  &:hover,
+  &:focus {
+    text-decoration: underline;
+  }
+`
+
+const MarketHeader = styled.div`
+  display: flex;
+  flex-direction: row;
+  gap: 16px;
+  margin-bottom: 12px;
+
+  ${smallScreenStyle(
+    () => css`
+      flex-wrap: wrap;
+    `
+  )}
+`
+
+const MarketImage = styled.img`
+  width: 64px;
+  height: 64px;
+  border-radius: 4px;
+`
+
+const MarketName = styled.h3`
+  margin: 0 0 12px;
+  font-size: 1.5em;
+  color: #333;
+`
+
+const OutcomesHeading = styled.h4`
+  margin: 0 0 12px;
+  font-size: 1.2em;
+  color: #555;
+`
+
+const OutcomeItem = styled.div`
+  display: flex;
+  align-items: center;
+  margin-bottom: 12px;
+  padding: 8px;
+  background-color: #f9f9f9;
+  border-radius: 4px;
+`
+
+const OutcomeImage = styled.img`
+  max-width: 40px;
+  height: auto;
+  margin-right: 12px;
+  border-radius: 4px;
+`
+
+const OutcomeName = styled.span`
+  font-size: 1em;
+  color: #333;
+`
+
+const ErrorMessage = styled.p`
+  color: red;
+  font-size: 14px;
+`
+
+const LoadingMessage = styled.p`
+  color: #666;
+  font-size: 14px;
+`
 
 const SeerExtraDetails: React.FC<ISeerExtraDetails> = ({
   chainId,
@@ -88,128 +178,42 @@ const SeerExtraDetails: React.FC<ISeerExtraDetails> = ({
     fetchData()
   }, [chainId, contractAddress, imagesIpfsHash])
 
-  if (error)
-    return (
-      <p
-        style={{
-          color: 'red',
-          fontFamily: 'Arial, sans-serif',
-          fontSize: '14px'
-        }}
-      >
-        {error}
-      </p>
-    )
+  if (error) return <ErrorMessage>{error}</ErrorMessage>
 
   if (!marketDetails)
-    return (
-      <p
-        style={{
-          fontFamily: 'Arial, sans-serif',
-          color: '#666',
-          fontSize: '14px'
-        }}
-      >
-        Loading Seer details...
-      </p>
-    )
+    return <LoadingMessage>Loading Seer details...</LoadingMessage>
 
   const { marketName, marketImage, outcomes } = marketDetails
 
   return (
-    <div
-      style={{
-        fontFamily: 'Arial, sans-serif',
-        maxWidth: '600px',
-        margin: '16px auto',
-        padding: '20px',
-        border: '1px solid #e0e0e0',
-        borderRadius: '8px',
-        boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
-      }}
-    >
-      <p style={{ marginBottom: '16px' }}>
-        <a
+    <Container>
+      <LinkParagraph>
+        <SeerLink
           href={`https://app.seer.pm/markets/${chainId}/${contractAddress}`}
           target="_blank"
           rel="noopener noreferrer"
-          style={{
-            color: '#007bff',
-            textDecoration: 'none',
-            fontWeight: 'bold',
-            fontSize: '16px'
-          }}
-          onMouseOver={e =>
-            (e.currentTarget.style.textDecoration = 'underline')
-          }
-          onMouseOut={e => (e.currentTarget.style.textDecoration = 'none')}
-          onFocus={e => (e.currentTarget.style.textDecoration = 'underline')}
-          onBlur={e => (e.currentTarget.style.textDecoration = 'none')}
         >
           Go to Seer
-        </a>
-      </p>
-      <img
-        src={`${process.env.REACT_APP_IPFS_GATEWAY}${marketImage}`}
-        alt="Market"
-        style={{
-          maxWidth: '48px',
-          height: 'auto',
-          borderRadius: '4px',
-          marginBottom: '16px'
-        }}
-      />
-      <h3
-        style={{
-          margin: '0 0 12px',
-          fontSize: '1.5em',
-          color: '#333'
-        }}
-      >
-        {marketName}
-      </h3>
-      <h4
-        style={{
-          margin: '0 0 12px',
-          fontSize: '1.2em',
-          color: '#555'
-        }}
-      >
-        Outcomes
-      </h4>
+        </SeerLink>
+      </LinkParagraph>
+      <MarketHeader>
+        <MarketImage
+          src={`${process.env.REACT_APP_IPFS_GATEWAY}${marketImage}`}
+          alt="Market"
+        />
+        <MarketName>{marketName}</MarketName>
+      </MarketHeader>
+      <OutcomesHeading>Outcomes</OutcomesHeading>
       {outcomes.map((outcome, index) => (
-        <div
-          key={index}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            marginBottom: '12px',
-            padding: '8px',
-            backgroundColor: '#f9f9f9',
-            borderRadius: '4px'
-          }}
-        >
-          <img
+        <OutcomeItem key={index}>
+          <OutcomeImage
             src={`${process.env.REACT_APP_IPFS_GATEWAY}${outcome.image}`}
             alt={`Outcome ${index}`}
-            style={{
-              maxWidth: '40px',
-              height: 'auto',
-              marginRight: '12px',
-              borderRadius: '4px'
-            }}
           />
-          <span
-            style={{
-              fontSize: '1em',
-              color: '#333'
-            }}
-          >
-            {outcome.name}
-          </span>
-        </div>
+          <OutcomeName>{outcome.name}</OutcomeName>
+        </OutcomeItem>
       ))}
-    </div>
+    </Container>
   )
 }
 
