@@ -75,11 +75,11 @@ export const references: Reference[] = [
     explorer: 'mempool.space'
   },
   {
-    id: '4sGjMW1sUnHzSxGspuhpqLDx6wiyjNtZ',
+    id: '5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp',
     namespaceId: 'solana',
     name: 'Solana',
     label: 'SOL',
-    explorer: 'explorer.solana.com'
+    explorer: 'solscan.io'
   },
   {
     id: '8453',
