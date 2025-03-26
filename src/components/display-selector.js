@@ -27,7 +27,7 @@ const DisplaySelector = ({ type, value, linkImage, allowedFileTypes }) => {
     case ItemTypes.GTCR_ADDRESS:
       return <GTCRAddress address={value || ZERO_ADDRESS} />
     case ItemTypes.ADDRESS:
-      return <ETHAddress address={value || ZERO_ADDRESS} forceEth />
+      return <ETHAddress address={value || ZERO_ADDRESS} />
     case ItemTypes.RICH_ADDRESS:
       return <RichAddress crude={value || pohRichAddress} />
     case ItemTypes.TEXT:

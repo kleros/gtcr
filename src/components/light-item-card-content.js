@@ -5,6 +5,8 @@ import PropTypes from 'prop-types'
 import DisplaySelector from './display-selector'
 import { ItemTypes } from '@kleros/gtcr-encoder'
 import useNavigateAndScrollTop from 'hooks/navigate-and-scroll-top'
+import SeerCardContent from 'components/custom-registries/seer/seer-card-content'
+import { isSeerRegistry } from 'components/custom-registries/seer/is-seer-registry'
 
 export const Container = styled.div`
   display: flex;
@@ -44,6 +46,16 @@ const LightItemCardContent = ({ item, chainId, tcrAddress }) => {
               />
             </StyledItemCol>
           ))}
+        {isSeerRegistry(tcrAddress, chainId) && item && (
+          <SeerCardContent
+            chainId={chainId}
+            contractAddress={item.columns[1].value}
+            imagesIpfsHash={item.columns[0].value}
+            marketName={item.seerMarketData?.marketName}
+            outcomes={item.seerMarketData?.outcomes}
+            smallDisplay
+          />
+        )}
       </div>
       <Button
         onClick={() =>
