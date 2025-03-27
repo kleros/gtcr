@@ -9,14 +9,16 @@ import {
 
 const { Option } = Select
 
-const chainOptions = references.map(reference => (
-  <Option
-    key={`${reference.namespaceId}:${reference.id}`}
-    value={`${reference.namespaceId}:${reference.id}`}
-  >
-    {reference.name}
-  </Option>
-))
+const chainOptions = references
+  .filter(reference => !reference?.deprecated)
+  .map(reference => (
+    <Option
+      key={`${reference.namespaceId}:${reference.id}`}
+      value={`${reference.namespaceId}:${reference.id}`}
+    >
+      {reference.name}
+    </Option>
+  ))
 
 const defaultAddressType = `${references[0].namespaceId}:${references[0].id}`
 
