@@ -7,6 +7,7 @@
 
 export type Reference = {
   id: string
+  deprecated?: boolean
   namespaceId: string
   name: string
   label: string
@@ -73,6 +74,14 @@ export const references: Reference[] = [
     name: 'Bitcoin',
     label: 'BTC',
     explorer: 'mempool.space'
+  },
+  {
+    deprecated: true,
+    id: '4sGjMW1sUnHzSxGspuhpqLDx6wiyjNtZ',
+    namespaceId: 'solana',
+    name: 'Solana',
+    label: 'SOL',
+    explorer: 'solscan.io'
   },
   {
     id: '5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp',
