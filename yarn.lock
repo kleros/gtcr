@@ -2459,10 +2459,10 @@
   resolved "https://registry.yarnpkg.com/@ledgerhq/logs/-/logs-4.72.0.tgz#43df23af013ad1135407e5cf33ca6e4c4c7708d5"
   integrity sha512-o+TYF8vBcyySRsb2kqBDv/KMeme8a2nwWoG+lAWzbDmWfb2/MrVWYCVYDYvjXdSoI/Cujqy1i0gIDrkdxa9chA==
 
-"@loadable/component@^5.10.1":
-  version "5.15.0"
-  resolved "https://registry.yarnpkg.com/@loadable/component/-/component-5.15.0.tgz#48b9524237be553f48b158f8c9152593f3f3fded"
-  integrity sha512-g63rQzypPOZi0BeGsK4ST2MYhsFR+i7bhL8k/McUoWDNMDuTTdUlQ2GACKxqh5sI/dNC/6nVoPrycMnSylnAgQ==
+"@loadable/component@^5.15.2":
+  version "5.15.2"
+  resolved "https://registry.yarnpkg.com/@loadable/component/-/component-5.15.2.tgz#b6c418d592e0a64f16b1d614ca9d3b1443d3b498"
+  integrity sha512-ryFAZOX5P2vFkUdzaAtTG88IGnr9qxSdvLRvJySXcUA4B4xVWurUNADu3AnKPksxOZajljqTrDEDcYjeL4lvLw==
   dependencies:
     "@babel/runtime" "^7.7.7"
     hoist-non-react-statics "^3.3.1"
@@ -2879,10 +2879,10 @@
   resolved "https://registry.yarnpkg.com/@types/stack-utils/-/stack-utils-1.0.1.tgz#0a851d3bd96498fa25c33ab7278ed3bd65f06c3e"
   integrity sha512-l42BggppR6zLmpfU6fq9HEa2oGPEI8yrSPL3GITjfRInppYFahObbIQOQK3UGxEnyQpltZLaPe75046NOZQikw==
 
-"@types/styled-components@^5.1.25":
-  version "5.1.25"
-  resolved "https://registry.yarnpkg.com/@types/styled-components/-/styled-components-5.1.25.tgz#0177c4ab5fa7c6ed0565d36f597393dae3f380ad"
-  integrity sha512-fgwl+0Pa8pdkwXRoVPP9JbqF0Ivo9llnmsm+7TCI330kbPIFd9qv1Lrhr37shf4tnxCOSu+/IgqM7uJXLWZZNQ==
+"@types/styled-components@^5.1.26":
+  version "5.1.26"
+  resolved "https://registry.yarnpkg.com/@types/styled-components/-/styled-components-5.1.26.tgz#5627e6812ee96d755028a98dae61d28e57c233af"
+  integrity sha512-KuKJ9Z6xb93uJiIyxo/+ksS7yLjS1KzG6iv5i78dhVg/X3u5t1H7juRWqVmodIdz6wGVaIApo1u01kmFRdJHVw==
   dependencies:
     "@types/hoist-non-react-statics" "*"
     "@types/react" "*"
@@ -4754,6 +4754,11 @@ bn.js@^5.0.0, bn.js@^5.1.1, bn.js@^5.1.2, bn.js@^5.2.0:
   version "5.2.0"
   resolved "https://registry.yarnpkg.com/bn.js/-/bn.js-5.2.0.tgz#358860674396c6997771a9d051fcc1b57d4ae002"
   integrity sha512-D7iWRBvnZE8ecXiLj/9wbxH7Tk79fAh8IHaTNq1RWRixsS02W+5qS+iE9yq6RYl0asXx5tw0bLhmT5pIfbSquw==
+
+bn.js@^5.2.1:
+  version "5.2.1"
+  resolved "https://registry.yarnpkg.com/bn.js/-/bn.js-5.2.1.tgz#0bc527a6a0d18d0aa8d5b0538ce4a77dccfa7b70"
+  integrity sha512-eXRvHzWyYPBuB4NBy0cmYQjGitUrtqwbvlzP3G6VFnNRbsZQIxQ10PbKKHt8gZ/HW/D/747aDl+QkDqg3KQLMQ==
 
 body-parser@1.19.0, body-parser@^1.16.0:
   version "1.19.0"
@@ -9651,10 +9656,10 @@ https-browserify@^1.0.0:
   resolved "https://registry.yarnpkg.com/https-browserify/-/https-browserify-1.0.0.tgz#ec06c10e0a34c0f2faf199f7fd7fc78fffd03c73"
   integrity sha1-7AbBDgo0wPL68Zn3/X/Hj//QPHM=
 
-humanize-duration@^3.20.1:
-  version "3.27.0"
-  resolved "https://registry.yarnpkg.com/humanize-duration/-/humanize-duration-3.27.0.tgz#3f781b7cf8022ad587f76b9839b60bc2b29636b2"
-  integrity sha512-qLo/08cNc3Tb0uD7jK0jAcU5cnqCM0n568918E7R2XhMr/+7F37p4EY062W/stg7tmzvknNn9b/1+UhVRzsYrQ==
+humanize-duration@^3.27.3:
+  version "3.27.3"
+  resolved "https://registry.yarnpkg.com/humanize-duration/-/humanize-duration-3.27.3.tgz#db654e72ebf5ccfe232c7f56bc58aa3a6fe4df88"
+  integrity sha512-iimHkHPfIAQ8zCDQLgn08pRqSVioyWvnGfaQ8gond2wf7Jq2jJ+24ykmnRyiz3fIldcn4oUuQXpjqKLhSVR7lw==
 
 husky@^3.0.0:
   version "3.1.0"
@@ -15207,10 +15212,10 @@ react@^16.8.6:
     object-assign "^4.1.1"
     prop-types "^15.6.2"
 
-reactour@^1.18.6:
-  version "1.18.6"
-  resolved "https://registry.yarnpkg.com/reactour/-/reactour-1.18.6.tgz#b8027c9d3a8b42079c483042717adc5b61bfc50e"
-  integrity sha512-6Dm3bkqf3wKfzLL6laMez2xVO6iZ9o5CFG4Na1ttE0OcdJ2VriY/aOeHSPW6O7kwnDqiy4z+sdvzhqaHuVl0fg==
+reactour@^1.18.7:
+  version "1.18.7"
+  resolved "https://registry.yarnpkg.com/reactour/-/reactour-1.18.7.tgz#86a61869890bc3444c2bf412d30833eb85352525"
+  integrity sha512-kkXy4h5+fieNPzrPYdWiLj6afl+xH2NQw4En9XJD9EwCIGsRmfcppyJ1xwqJDC6JRhPttf+5wUIsUoLSOlk/Ag==
   dependencies:
     "@rooks/use-mutation-observer" "4.11.2"
     classnames "2.3.1"
@@ -15219,7 +15224,7 @@ reactour@^1.18.6:
     lodash.pick "4.4.0"
     prop-types "15.7.2"
     react-focus-lock "2.5.2"
-    scroll-smooth "1.1.0"
+    scroll-smooth "1.1.1"
     scrollparent "2.0.1"
 
 read-pkg-up@^1.0.1:
@@ -15931,10 +15936,10 @@ schema-utils@^1.0.0:
     ajv-errors "^1.0.0"
     ajv-keywords "^3.1.0"
 
-scroll-smooth@1.1.0:
-  version "1.1.0"
-  resolved "https://registry.yarnpkg.com/scroll-smooth/-/scroll-smooth-1.1.0.tgz#467994d5bb57ffe7407e9a85bd0303b3d4524ded"
-  integrity sha512-68OUOXKN/ykM/Dbp4Lhza3O9QQUuW/c01WTsZzDOUyVgb1I5QjT/awOHCCbuYTSV1QnExUQ9w+KcxmVxlXIiAg==
+scroll-smooth@1.1.1:
+  version "1.1.1"
+  resolved "https://registry.yarnpkg.com/scroll-smooth/-/scroll-smooth-1.1.1.tgz#d00dbcfaf2652251e1cbfbaca0a98fbd5fe60d4a"
+  integrity sha512-i9e/hJf0ODPEsy+AubE0zES6xdOuIvtebe5MvdSI1lB4t91k+O+8kV15CYfPN0yPH4j4hZUoKM3rVaPVcmiOoQ==
 
 scrollparent@2.0.1:
   version "2.0.1"
