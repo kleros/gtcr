@@ -185,13 +185,16 @@ const ItemDetailsCard = ({
           ))}
         </StyledFields>
       )}
-      {isSeerRegistry(tcrAddress, chainId) && item && (
-        <SeerExtraDetails
-          chainId={chainId}
-          contractAddress={item.decodedData[0]}
-          imagesIpfsHash={item.decodedData[1]}
-        />
-      )}
+      {tcrAddress !== undefined &&
+        chainId !== undefined &&
+        isSeerRegistry(tcrAddress, chainId) &&
+        item && (
+          <SeerExtraDetails
+            chainId={chainId}
+            contractAddress={item.decodedData[0]}
+            imagesIpfsHash={item.decodedData[1]}
+          />
+        )}
     </Card>
   )
 }
