@@ -3,6 +3,7 @@ import styled, { css } from 'styled-components'
 import { smallScreenStyle } from 'styles/small-screen-style'
 import { Link } from 'react-router-dom'
 import React from 'react'
+import { Helmet } from 'react-helmet'
 import PropTypes from 'prop-types'
 import { ZERO_ADDRESS, capitalizeFirstLetter } from 'utils/string'
 import { useWeb3Context } from 'web3-react'
@@ -121,38 +122,43 @@ const Banner = ({
     : ''
 
   return (
-    <StyledBanner>
-      <TCRInfoColumn id="tcr-info-column">
-        {metadata ? (
-          <>
-            <TitleContainer>
-              <StyledTitle>{tcrTitle}</StyledTitle>
-              {defaultTCRAddress && tcrAddress !== defaultTCRAddress && (
-                <TCRLogo logoURI={logoURI} />
-              )}
-              <ContractExplorerUrl
-                networkId={networkId}
-                contractAddress={tcrAddress}
-              />
-            </TitleContainer>
-            <StyledDescription>
-              {capitalizeFirstLetter(normalizedDescription)}
-            </StyledDescription>
-          </>
-        ) : (
-          <>
-            <Skeleton active paragraph={false} title={{ width: 100 }} />
-            <Skeleton
-              active
-              paragraph={{ rows: 1, width: 150 }}
-              title={false}
-            />
-          </>
-        )}
-        {connectedTCRAddr &&
-          connectedTCRAddr !== ZERO_ADDRESS &&
-          !relTcrDisabled && (
+    <>
+      <Helmet>
+        <title>
+          {tcrTitle ? `${tcrTitle} - Kleros · Curate` : 'Kleros · Curate'}
+        </title>
+      </Helmet>
+      <StyledBanner>
+        <TCRInfoColumn id="tcr-info-column">
+          {metadata ? (
             <>
+              <TitleContainer>
+                <StyledTitle>{tcrTitle}</StyledTitle>
+                {defaultTCRAddress && tcrAddress !== defaultTCRAddress && (
+                  <TCRLogo logoURI={logoURI} />
+                )}
+                <ContractExplorerUrl
+                  networkId={networkId}
+                  contractAddress={tcrAddress}
+                />
+              </TitleContainer>
+              <StyledDescription>
+                {capitalizeFirstLetter(normalizedDescription)}
+              </StyledDescription>
+            </>
+          ) : (
+            <>
+              <Skeleton active paragraph={false} title={{ width: 100 }} />
+              <Skeleton
+                active
+                paragraph={{ rows: 1, width: 150 }}
+                title={false}
+              />
+            </>
+          )}
+          {connectedTCRAddr &&
+            connectedTCRAddr !== ZERO_ADDRESS &&
+            !relTcrDisabled && (
               <Typography.Text
                 ellipsis
                 type="secondary"
@@ -162,29 +168,29 @@ const Banner = ({
                   View Badges list
                 </StyledLink>
               </Typography.Text>
-            </>
-          )}
-      </TCRInfoColumn>
-      <ActionCol>
-        <StyledButton
-          type="primary"
-          size="large"
-          onClick={() => requestWeb3Auth(() => setSubmissionFormOpen(true))}
-          id="submit-item-button"
-        >
-          {`Submit ${capitalizeFirstLetter(itemName) || 'Item'}`}
-          <Icon type="plus-circle" />
-        </StyledButton>
-        <StyledPolicyAnchor
-          href={parseIpfs(fileURI || '')}
-          target="_blank"
-          rel="noopener noreferrer"
-          id="policy-link"
-        >
-          View Listing Policies
-        </StyledPolicyAnchor>
-      </ActionCol>
-    </StyledBanner>
+            )}
+        </TCRInfoColumn>
+        <ActionCol>
+          <StyledButton
+            type="primary"
+            size="large"
+            onClick={() => requestWeb3Auth(() => setSubmissionFormOpen(true))}
+            id="submit-item-button"
+          >
+            {`Submit ${capitalizeFirstLetter(itemName) || 'Item'}`}
+            <Icon type="plus-circle" />
+          </StyledButton>
+          <StyledPolicyAnchor
+            href={parseIpfs(fileURI || '')}
+            target="_blank"
+            rel="noopener noreferrer"
+            id="policy-link"
+          >
+            View Listing Policies
+          </StyledPolicyAnchor>
+        </ActionCol>
+      </StyledBanner>
+    </>
   )
 }
 

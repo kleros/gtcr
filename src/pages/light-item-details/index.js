@@ -3,6 +3,7 @@ import styled from 'styled-components'
 import { Layout, Breadcrumb } from 'antd'
 import { useParams } from 'react-router'
 import { Link } from 'react-router-dom'
+import { Helmet } from 'react-helmet'
 import qs from 'qs'
 import { abi as _IArbitrator } from '@kleros/erc-792/build/contracts/IArbitrator.json'
 import { ethers } from 'ethers'
@@ -197,8 +198,17 @@ const ItemDetails = ({ itemID, search }) => {
     )
 
   const { tcrTitle, itemName } = metadata || {}
+  const capitalizeFirst = s => s.charAt(0).toUpperCase() + s.slice(1)
+  const title =
+    decodedItem && metadata
+      ? `${capitalizeFirst(itemName)} - ${tcrTitle} - Kleros · Curate`
+      : 'Kleros · Curate'
+
   return (
     <>
+      <Helmet>
+        <title>{title}</title>
+      </Helmet>
       <StyledBanner>
         <Breadcrumb separator=">">
           <StyledBreadcrumbItem>
