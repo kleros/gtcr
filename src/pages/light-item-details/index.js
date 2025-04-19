@@ -3,6 +3,7 @@ import styled from 'styled-components'
 import { Layout, Breadcrumb } from 'antd'
 import { useParams } from 'react-router'
 import { Link } from 'react-router-dom'
+import { Helmet } from 'react-helmet'
 import qs from 'qs'
 import { abi as _IArbitrator } from '@kleros/erc-792/build/contracts/IArbitrator.json'
 import { ethers } from 'ethers'
@@ -21,6 +22,8 @@ import { LIGHT_ITEM_DETAILS_QUERY } from 'utils/graphql'
 import { useQuery } from '@apollo/client'
 import SearchBar from 'components/light-search-bar'
 import { parseIpfs } from 'utils/ipfs-parse'
+import { itemToStatusCode, STATUS_CODE } from 'utils/item-status'
+import { truncateAtWord } from 'utils/truncate-at-word'
 import { fetchMetaEvidence } from 'hooks/tcr-view'
 
 export const ITEM_TOUR_DISMISSED = 'ITEM_TOUR_DISMISSED'
@@ -77,7 +80,9 @@ const ItemDetails = ({ itemID, search }) => {
   const [ipfsItemData, setIpfsItemData] = useState()
   const { timestamp } = useContext(WalletContext)
   const [modalOpen, setModalOpen] = useState()
-  const { tcrError, metaEvidence } = useContext(LightTCRViewContext)
+  const { tcrError, metaEvidence, challengePeriodDuration } = useContext(
+    LightTCRViewContext
+  )
   const [appealCost, setAppealCost] = useState()
 
   // subgraph item entities have id "<itemID>@<listaddress>"
@@ -113,7 +118,7 @@ const ItemDetails = ({ itemID, search }) => {
       return ordered
     }
 
-    const result = {
+    return {
       ...item, // Spread to convert from array to object.
       errors: [],
       columns: metaEvidence.metadata.columns,
@@ -122,11 +127,62 @@ const ItemDetails = ({ itemID, search }) => {
         ipfsItemData.values
       )
     }
-    return result
   }, [item, metaEvidence, ipfsItemData])
 
   const { metadata } = metaEvidence || {}
   const { decodedData } = decodedItem || {}
+  const { tcrTitle, itemName } = metadata || {}
+
+  const statusCode = useMemo(() => {
+    if (!item || !timestamp || !challengePeriodDuration) return null
+    return itemToStatusCode(item, timestamp, challengePeriodDuration)
+  }, [item, timestamp, challengePeriodDuration])
+
+  const getStatusPhrase = statusCode => {
+    switch (statusCode) {
+      case STATUS_CODE.REGISTERED:
+        return 'is verified to be safe'
+      case STATUS_CODE.SUBMITTED:
+        return 'is pending verification'
+      case STATUS_CODE.REMOVAL_REQUESTED:
+        return 'has removal requested'
+      case STATUS_CODE.CHALLENGED:
+        return 'is under challenge'
+      case STATUS_CODE.CROWDFUNDING:
+        return 'is crowdfunding appeal'
+      case STATUS_CODE.CROWDFUNDING_WINNER:
+        return 'won crowdfunding appeal'
+      case STATUS_CODE.PENDING_SUBMISSION:
+        return 'awaits submission'
+      case STATUS_CODE.PENDING_REMOVAL:
+        return 'awaits removal'
+      case STATUS_CODE.WAITING_ARBITRATOR:
+        return 'awaits arbitrator ruling'
+      case STATUS_CODE.ABSENT:
+        return 'is not listed'
+      default:
+        return 'has unknown status'
+    }
+  }
+
+  const capitalizeFirst = s => s?.charAt(0).toUpperCase() + s?.slice(1)
+
+  const fullSeoTitle =
+    decodedItem && metadata
+      ? `${capitalizeFirst(itemName)} - ${tcrTitle} - Kleros · Curate`
+      : 'Kleros · Curate'
+  const truncatedSeoTitle = truncateAtWord(fullSeoTitle, 160)
+
+  const fullSeoMetaDescription =
+    decodedItem && metadata && statusCode !== null
+      ? `${decodedData.join(' ')} - ${getStatusPhrase(statusCode)} on ${
+          metadata.tcrTitle
+        } in Kleros Curate`
+      : 'View item details on Kleros Curate.'
+  const truncatedSeoMetaDescription = truncateAtWord(
+    fullSeoMetaDescription,
+    160
+  )
 
   // If this is a TCR in a TCR of TCRs, we fetch its metadata as well
   // to build a better item details card.
@@ -196,9 +252,12 @@ const ItemDetails = ({ itemID, search }) => {
       />
     )
 
-  const { tcrTitle, itemName } = metadata || {}
   return (
     <>
+      <Helmet>
+        <title>{truncatedSeoTitle}</title>
+        <meta name="description" content={truncatedSeoMetaDescription} />
+      </Helmet>
       <StyledBanner>
         <Breadcrumb separator=">">
           <StyledBreadcrumbItem>
