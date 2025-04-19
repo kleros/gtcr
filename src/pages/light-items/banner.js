@@ -10,6 +10,7 @@ import { useWeb3Context } from 'web3-react'
 import ContractExplorerUrl from 'components/contract-explorer-url'
 import { defaultTcrAddresses } from 'config/tcr-addresses'
 import { parseIpfs } from 'utils/ipfs-parse'
+import { truncateAtWord } from 'utils/truncate-at-word'
 
 export const StyledBanner = styled.div`
   display: flex;
@@ -121,12 +122,24 @@ const Banner = ({
       : `${tcrDescription}.`
     : ''
 
+  const fullSeoTitle = tcrTitle
+    ? `${tcrTitle} - Kleros · Curate`
+    : 'Kleros · Curate'
+  const truncatedSeoTitle = truncateAtWord(fullSeoTitle, 60)
+
+  const fullSeoMetaDescription = metadata
+    ? `Explore the ${tcrTitle} list on Kleros Curate: ${normalizedDescription}`
+    : 'Explore curated lists on Kleros Curate.'
+  const truncatedSeoMetaDescription = truncateAtWord(
+    fullSeoMetaDescription,
+    160
+  )
+
   return (
     <>
       <Helmet>
-        <title>
-          {tcrTitle ? `${tcrTitle} - Kleros · Curate` : 'Kleros · Curate'}
-        </title>
+        <title> {truncatedSeoTitle} </title>
+        <meta name="description" content={truncatedSeoMetaDescription} />
       </Helmet>
       <StyledBanner>
         <TCRInfoColumn id="tcr-info-column">
