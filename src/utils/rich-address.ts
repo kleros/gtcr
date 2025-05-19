@@ -130,7 +130,7 @@ export const references: Reference[] = [
     namespaceId: 'eip155',
     name: 'Fantom Opera',
     label: 'FTM',
-    explorer: 'ftmscan.com'
+    explorer: 'explorer.fantom.network'
   },
   {
     id: '1285',
