@@ -130,7 +130,7 @@ export const references: Reference[] = [
     namespaceId: 'eip155',
     name: 'Fantom Opera',
     label: 'FTM',
-    explorer: 'ftmscan.com'
+    explorer: 'explorer.fantom.network'
   },
   {
     id: '1285',
@@ -194,6 +194,20 @@ export const references: Reference[] = [
     name: 'zkSync Mainnet',
     label: 'zkSync',
     explorer: 'explorer.zksync.io'
+  },
+  {
+    id: '146',
+    namespaceId: 'eip155',
+    name: 'Sonic',
+    label: 'SONIC',
+    explorer: 'sonicscan.org'
+  },
+  {
+    id: '81457',
+    namespaceId: 'eip155',
+    name: 'Blast',
+    label: 'BLAST',
+    explorer: 'blastscan.io'
   }
 ]
 
