@@ -1,60 +1,48 @@
 import React, { useEffect, useState } from 'react'
-import styled from 'styled-components'
 import { Icon } from 'antd'
+import { getExtension } from 'mime'
 import { parseIpfs } from 'utils/ipfs-parse'
 
-const StyledSpan = styled.span`
-  color: gray;
-`
-
-const mimeToExt = {
-  'application/json': 'json',
-  'application/pdf': 'pdf',
-  'image/png': 'png',
-  'image/jpeg': 'jpg',
-  'image/gif': 'gif'
-}
-
 const FileDisplay = ({ value, allowedFileTypes }) => {
-  const [status, setStatus] = useState('loading')
+  const [supported, setSupported] = useState(true)
 
   useEffect(() => {
     const check = async () => {
-      if (!value) {
-        setStatus('empty')
-        return
-      }
+      if (!value) return
       if (!allowedFileTypes) {
-        setStatus('noAllowed')
+        setSupported(true)
         return
       }
       const allowed = allowedFileTypes.split(' ')
-      if (value.includes('.')) {
-        const ext = value.slice(value.lastIndexOf('.') + 1)
-        setStatus(allowed.includes(ext) ? 'ok' : 'forbidden')
-        return
-      }
-      try {
-        const r = await fetch(parseIpfs(value), { method: 'HEAD' })
-        const mime = (r.headers.get('content-type') || '').split(';')[0]
-        const ext = mimeToExt[mime] || ''
-        setStatus(allowed.includes(ext) ? 'ok' : 'forbidden')
-      } catch {
-        setStatus('forbidden')
-      }
+      let ext = ''
+      if (value.includes('.')) ext = value.slice(value.lastIndexOf('.') + 1)
+      else
+        try {
+          const res = await fetch(parseIpfs(value), { method: 'HEAD' })
+          ext = getExtension(res.headers.get('content-type') || '') || ''
+        } catch {
+          setSupported(false)
+          return
+        }
+
+      setSupported(allowed.includes(ext))
     }
     check()
   }, [value, allowedFileTypes])
 
-  if (status === 'loading') return null
-  if (status === 'empty') return <StyledSpan>empty</StyledSpan>
-  if (status === 'noAllowed') return 'No allowed file types specified'
-  if (status === 'forbidden') return 'Forbidden file type'
+  if (!value) return <span style={{ color: 'gray' }}>empty</span>
 
   return (
-    <a href={parseIpfs(value)} target="_blank" rel="noopener noreferrer">
-      View File <Icon type="paper-clip" />
-    </a>
+    <>
+      <a href={parseIpfs(value)} target="_blank" rel="noopener noreferrer">
+        View File <Icon type="paper-clip" />
+      </a>
+      {!supported && (
+        <span style={{ marginLeft: 6, color: 'red' }}>
+          File type not supported
+        </span>
+      )}
+    </>
   )
 }
 
