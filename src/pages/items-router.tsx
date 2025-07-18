@@ -22,25 +22,35 @@ const Items = loadable(
   }
 )
 
+const PermanentItems = loadable(
+  () => import(/* webpackPrefetch: true */ './permanent-items/index'),
+  {
+    fallback: <Loading />
+  }
+)
+
 const ItemsRouter = () => {
   const { tcrAddress } = useParams<{ tcrAddress: string }>()
-  const { isLightCurate, checking } = useCheckLightCurate()
+  const { isLightCurate, isClassicCurate, checking } = useCheckLightCurate()
   const { networkStatus } = useTcrNetwork()
 
   if (checking || networkStatus !== NETWORK_STATUS.supported) return <Loading />
 
-  if (isLightCurate)
+  if (isLightCurate) {
     return (
       <LightTCRViewProvider tcrAddress={tcrAddress}>
         <LightItems />
       </LightTCRViewProvider>
     )
-
-  return (
-    <TCRViewProvider tcrAddress={tcrAddress}>
-      <Items />
-    </TCRViewProvider>
-  )
+  } else if (isClassicCurate) {
+    return (
+      <TCRViewProvider tcrAddress={tcrAddress}>
+        <Items />
+      </TCRViewProvider>
+    )
+  } else {
+    return <PermanentItems />
+  }
 }
 
 export default ItemsRouter

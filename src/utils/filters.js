@@ -82,6 +82,22 @@ export const DEFAULT_FILTERS_LIGHT = {
   [FILTER_KEYS.PAGE]: '1'
 }
 
+export const P_FILTER_KEYS = {
+  ABSENT: 'absent',
+  REGISTERED: 'registered',
+  DISPUTED: 'disputed',
+  OLDEST_FIRST: 'oldestFirst',
+  PAGE: 'page'
+}
+
+export const DEFAULT_FILTERS_PERMANENT = {
+  [P_FILTER_KEYS.ABSENT]: false,
+  [P_FILTER_KEYS.REGISTERED]: false,
+  [P_FILTER_KEYS.DISPUTED]: false,
+  [FILTER_KEYS.OLDEST_FIRST]: false,
+  [FILTER_KEYS.PAGE]: '1'
+}
+
 export const searchStrToFilterObjLight = search => {
   const queryObj = qs.parse(search.replace(/\?/g, ''))
 
@@ -131,6 +147,44 @@ export const searchStrToFilterObjLight = search => {
     challengedRemovals,
     mySubmissions,
     myChallenges,
+    absent,
+    oldestFirst,
+    page,
+    countField
+  }
+}
+
+export const searchStrToFilterObjPermanent = search => {
+  const queryObj = qs.parse(search.replace(/\?/g, ''))
+
+  // Add default value filters and convert the string "true" and "false" to the boolean types.
+  const { absent, registered, disputed, oldestFirst, page } = {
+    ...DEFAULT_FILTERS_PERMANENT,
+    ...Object.keys(queryObj)
+      .map(key =>
+        queryObj[key] == null
+          ? { key, value: DEFAULT_FILTERS_PERMANENT[key] }
+          : {
+              key,
+              value:
+                key === P_FILTER_KEYS.PAGE
+                  ? queryObj[P_FILTER_KEYS.PAGE]
+                  : queryObj[key].toString() === 'true'
+            }
+      )
+      .reduce((acc, curr) => ({ ...acc, [curr.key]: curr.value }), {})
+  }
+
+  // Must assume there's no multiselect possible.
+  // It's NOT possible to track number of included and pending items.
+  let countField = 'all'
+  if (registered) countField = 'numberOfSubmitted'
+  else if (absent) countField = 'numberOfAbsent'
+  else if (disputed) countField = 'numberOfDisputed'
+
+  return {
+    registered,
+    disputed,
     absent,
     oldestFirst,
     page,

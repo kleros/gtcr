@@ -12,6 +12,12 @@ export const defaultEvidenceDisplayUri = {
   '11155111': '/ipfs/QmQjJio59WkrQDzPC5kSP3EiGaqrWxjGfkvhmD2mWwm41M/index.html'
 } as const
 
+export const defaultEvidenceDisplayUriPermanent = {
+  // '1': '/ipfs/QmQjJio59WkrQDzPC5kSP3EiGaqrWxjGfkvhmD2mWwm41M/index.html',
+  '100': '/ipfs/QmbNJRDrrd5r9cHeApTP7pZaM7jgacDFMLED5Lj1RJMn79/index.html',
+  // '11155111': '/ipfs/QmQjJio59WkrQDzPC5kSP3EiGaqrWxjGfkvhmD2mWwm41M/index.html'
+} as const
+
 export const defaultEvidenceDisplayUriClassic = {
   '1': '/ipfs/QmPJ5H5YF4fbSxA5j53CcmZAhGywxKPPiiWvJM7Zp8Zx9T/index.html'
 } as const
@@ -49,6 +55,12 @@ export const lgtcrFactoryAddresses = {
   '1': '0xb9dDC813AcAF3fD7aBC4C16735A09Bc1C0EE0054',
   '100': '0x08e58Bc26CFB0d346bABD253A1799866F269805a',
   '11155111': '0x3FB8314C628E9afE7677946D3E23443Ce748Ac17'
+} as const
+
+export const pgtcrFactoryAddresses = {
+  // '1': '0xe9dd523600b74b8ef0af164687079a6c437f9cd5',
+  '100': '0x64448588A47c0962F08127D7F12Affb11E2dDf34',
+  // '11155111': '0xcB4B48d2A7a44247A00048963F169d2b4Ab045a6'
 } as const
 
 export const defaultGovernor = {
@@ -137,4 +149,10 @@ export const subgraphUrl = {
   '1': process.env.REACT_APP_SUBGRAPH_MAINNET,
   '100': process.env.REACT_APP_SUBGRAPH_GNOSIS,
   '11155111': process.env.REACT_APP_SUBGRAPH_SEPOLIA
+} as const
+
+export const subgraphUrlPermanent = {
+  // '1': process.env.REACT_APP_SUBGRAPH_MAINNET,
+  '100': process.env.REACT_APP_SUBGRAPH_GNOSIS_PERMANENT,
+  // '11155111': process.env.REACT_APP_SUBGRAPH_SEPOLIA
 } as const
