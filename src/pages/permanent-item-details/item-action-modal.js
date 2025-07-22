@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useMemo } from 'react'
 import { STATUS_CODE, getActionLabel } from 'utils/permanent-item-status'
 import ChallengeModal from './modals/challenge'
 import SubmitModal from './modals/submit'
@@ -33,6 +33,7 @@ const ItemActionModal = ({
     title: getActionLabel({ statusCode, itemName }),
     onCancel: onClose
   }
+  const r = useMemo(() => item?.registry, [item])
 
   switch (statusCode) {
     case STATUS_CODE.ACCEPTED:
@@ -51,11 +52,13 @@ const ItemActionModal = ({
       return (
         <SubmitModal
           initialValues={item.decodedData}
-          submissionDeposit={submissionDeposit}
+          submissionDeposit={r.submissionMinDeposit}
+          submissionPeriod={r.submissionPeriod}
+          arbitrationCost={arbitrationCost}
+          withdrawingPeriod={r.withdrawingPeriod}
           tcrAddress={tcrAddress}
-          metaEvidence={metaEvidence}
+          metadata={metaEvidence.metadata}
           columns={metaEvidence.metadata.columns}
-          challengePeriodDuration={challengePeriodDuration}
           {...rest}
         />
       )

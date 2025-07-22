@@ -45,7 +45,6 @@ import { subgraphUrlPermanent } from 'config/tcr-addresses'
 import { ethers } from 'ethers'
 import useArbitrationCost from 'hooks/arbitration-cost'
 import { useWeb3Context } from 'web3-react'
-import json from './metaevidence.json'
 import { getIPFSPath } from 'utils/get-ipfs-path'
 import ipfsPublish from 'utils/ipfs-publish'
 

@@ -32,12 +32,12 @@ const StyledCard = styled(Card)`
   cursor: default;
 
   ${smallScreenStyle(
-    () => css`
+  () => css`
       & > .ant-card-head > .ant-card-head-wrapper > .ant-card-head-title {
         max-width: ${responsiveSize(160, 450)};
       }
     `
-  )}
+)}
 `
 
 const StyledEvidenceTitle = styled.div`
@@ -113,10 +113,10 @@ const Timeline = ({ submission, item, metaEvidence }) => {
     const withdrawal =
       Number(submission.withdrawingTimestamp) !== 0
         ? {
-            name: 'Withdrawal',
-            timestamp: submission.withdrawingTimestamp,
-            transactionHash: submission.withdrawingTx
-          }
+          name: 'Withdrawal',
+          timestamp: submission.withdrawingTimestamp,
+          transactionHash: submission.withdrawingTx
+        }
         : null
 
     if (withdrawal) logArray.push(withdrawal)
@@ -245,10 +245,10 @@ const Timeline = ({ submission, item, metaEvidence }) => {
               {appealableRuling === SUBGRAPH_RULING.NONE
                 ? 'The arbitrator refused to rule'
                 : appealableRuling === SUBGRAPH_RULING.ACCEPT
-                ? 'The arbitrator ruled in favor of the submitter'
-                : appealableRuling === SUBGRAPH_RULING.REJECT
-                ? 'The arbitrator ruled in favor of the challenger'
-                : 'The arbitrator gave an unknown ruling'}
+                  ? 'The arbitrator ruled in favor of the submitter'
+                  : appealableRuling === SUBGRAPH_RULING.REJECT
+                    ? 'The arbitrator ruled in favor of the challenger'
+                    : 'The arbitrator gave an unknown ruling'}
               <Typography.Text type="secondary">
                 <a href={txPage}>{secondTimestamp(timestamp)}</a>
               </Typography.Text>
@@ -338,22 +338,24 @@ const RequestTimelines = ({ item, metaEvidence }) => {
 
   return (
     <div id="request-timelines">
-      {item.status === CONTRACT_STATUS.ABSENT && (
-        <Row>
-          <Col xs={14} sm={17} md={19} lg={20} xl={20} xxl={21}>
-            <StyledDivider orientation="left">{`${capitalizeFirstLetter(
-              itemName
-            ) || 'Item'} History`}</StyledDivider>
-          </Col>
-          <Col xs={5} sm={5} md={5} lg={4} xl={3} xxl={3}>
-            <StyledButton
-              onClick={() => requestWeb3Auth(() => setEvidenceModalOpen(true))}
-            >
-              Submit Evidence
-            </StyledButton>
-          </Col>
-        </Row>
-      )}
+      <Row>
+        <Col xs={14} sm={17} md={19} lg={20} xl={20} xxl={21}>
+          <StyledDivider orientation="left">{`${capitalizeFirstLetter(
+            itemName
+          ) || 'Item'} History`}</StyledDivider>
+        </Col>
+        {
+          item.status !== CONTRACT_STATUS.ABSENT && (
+            <Col xs={5} sm={5} md={5} lg={4} xl={3} xxl={3}>
+              <StyledButton
+                onClick={() => requestWeb3Auth(() => setEvidenceModalOpen(true))}
+              >
+                Submit Evidence
+              </StyledButton>
+            </Col>
+          )}
+      </Row>
+
       {submissions && (
         <StyledCollapse bordered={false} defaultActiveKey={['0']}>
           {submissions.map((submission, i) => (

@@ -9,13 +9,11 @@ import {
   Typography,
   Divider
 } from 'antd'
-import PropTypes from 'prop-types'
-import { STATUS_CODE, PARTY, SUBGRAPH_RULING } from 'utils/item-status'
-import itemPropTypes from 'prop-types/item'
+import { STATUS_CODE, PARTY, SUBGRAPH_RULING } from 'utils/permanent-item-status'
 import { formatEther, parseEther, bigNumberify } from 'ethers/utils'
 import ETHAmount from 'components/eth-amount'
 import { WalletContext } from 'contexts/wallet-context'
-import _gtcr from 'assets/abis/LightGeneralizedTCR.json'
+import _gtcr from 'assets/abis/PermanentGTCR.json'
 import { ethers } from 'ethers'
 import useRequiredFees from 'hooks/required-fees'
 import useNativeCurrency from 'hooks/native-currency'
@@ -248,19 +246,6 @@ const CrowdfundModal = ({ statusCode, item, fileURI, appealCost, ...rest }) => {
       </Descriptions>
     </StyledModal>
   )
-}
-
-CrowdfundModal.propTypes = {
-  statusCode: PropTypes.oneOf([
-    STATUS_CODE.CROWDFUNDING,
-    STATUS_CODE.CROWDFUNDING_WINNER
-  ]).isRequired,
-  item: itemPropTypes.isRequired,
-  fileURI: PropTypes.string
-}
-
-CrowdfundModal.defaultProps = {
-  fileURI: ''
 }
 
 export default CrowdfundModal

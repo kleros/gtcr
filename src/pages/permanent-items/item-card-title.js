@@ -62,16 +62,16 @@ const ItemCardTitle = ({ statusCode, item, registry }) => {
       <StatusAndBountyContainer>
         <ItemStatusBadge statusCode={statusCode} dark />
 
-        <BountyContainer>
+        {statusCode !== STATUS_CODE.ABSENT && <BountyContainer>
           <Tooltip title="This is the bounty on this item.">
             <ETHAmount
               amount={bounty}
               decimals={3}
-              displayUnit={` sDAI`} // todo
+              displayUnit={` sDAI`}
             />
             <StyledFontAwesomeIcon icon="coins" color="white" />
           </Tooltip>
-        </BountyContainer>
+        </BountyContainer>}
       </StatusAndBountyContainer>
       {timeUntilValid > 0 && (
         <CountdownContainer>
