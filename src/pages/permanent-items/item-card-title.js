@@ -35,8 +35,6 @@ export const CountdownContainer = styled.div`
 `
 
 const ItemCardTitle = ({ statusCode, item, registry }) => {
-  console.log({ statusCode, item, registry })
-
   // Get remaining submission period, if applicable and build countdown.
   const timeUntilValid = useMemo(() => {
     if (

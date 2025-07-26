@@ -250,8 +250,6 @@ export default () => {
         txHash => !transactions[txHash].networkId !== networkId
       )
 
-      console.log({ deploymentTxHashes })
-
       const txDatas = await Promise.all(
         deploymentTxHashes.map(async txHash =>
           library.waitForTransaction(txHash)
@@ -271,7 +269,6 @@ export default () => {
     networkId,
     transactions
   ])
-  console.log({ account, cachedFactory })
   if (!account || !cachedFactory || !cachedFactory.tcrState.arbitratorAddress)
     return (
       <>

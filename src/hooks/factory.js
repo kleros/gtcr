@@ -92,7 +92,6 @@ const useFactory = () => {
         body: JSON.stringify(query)
       })
     ).json()
-    console.log('ohayou BITCHESSSSSSSSSSSSSSSSSS', { data })
     if (data.registry) return true
 
     return false

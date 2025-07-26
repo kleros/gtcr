@@ -51,10 +51,6 @@ const KlerosParams = ({
   const [courtID, setCourtID] = useState()
   const [courts, setCourts] = useState([])
   const getLogs = useGetLogs(library)
-
-  console.log({ courts, courtID, numberOfJurors, arbitrationCost })
-
-  console.log({ klerosAddress, policyAddress, arbitratorExtraData })
   const policyRegistry = useMemo(() => {
     if (!policyAddress || !active) return
     try {
