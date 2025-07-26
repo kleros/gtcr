@@ -19,7 +19,7 @@ export const DISPUTE_STATUS = {
 export const CONTRACT_STATUS = {
   ABSENT: 'Absent',
   SUBMITTED: 'Submitted',
-  REINCLUDED: 'Reinlcuded',
+  REINCLUDED: 'Reincluded',
   DISPUTED: 'Disputed'
 }
 
@@ -90,11 +90,10 @@ export const itemToStatusCode = (item, timestamp, registry) => {
       Number(item.withdrawingTimestamp) + Number(registry.withdrawingPeriod) <
         timestamp
     )
-      return STATUS_CODE.ABSENT
+      return STATUS_CODE.PENDING_WITHDRAWAL
 
   if (status === CONTRACT_STATUS.SUBMITTED) {
     const period = Number(registry.submissionPeriod)
-    console.log({ period, timestamp, inclu: Number(item.includedAt) })
     return period + Number(item.includedAt) < timestamp
       ? STATUS_CODE.ACCEPTED
       : STATUS_CODE.PENDING

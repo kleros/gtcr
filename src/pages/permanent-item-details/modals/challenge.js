@@ -1,6 +1,6 @@
-import React, { useContext } from 'react'
+import React, { useContext, useState, useEffect, useCallback } from 'react'
 import styled from 'styled-components'
-import { Modal, Descriptions, Typography, Button, Spin } from 'antd'
+import { Modal, Typography, Button, Spin, Tooltip, Icon } from 'antd'
 import PropTypes from 'prop-types'
 import { ethers } from 'ethers'
 import _gtcr from 'assets/abis/PermanentGTCR.json'
@@ -14,6 +14,10 @@ import { getIPFSPath } from 'utils/get-ipfs-path'
 import { TourContext } from 'contexts/tour-context'
 import { parseIpfs } from 'utils/ipfs-parse'
 import { BigNumber } from 'ethers/utils'
+import { useWeb3Context } from 'web3-react'
+import useNativeCurrency from 'hooks/native-currency'
+import useTokenSymbol from 'hooks/token-symbol'
+import { DepositContainer, DepositRow, DepositLabel } from './submit'
 
 export const StyledSpin = styled(Spin)`
   height: 60px;
@@ -30,6 +34,12 @@ export const StyledModal = styled(Modal)`
   }
 `
 
+const ERC20_ABI = [
+  'function balanceOf(address) view returns (uint256)',
+  'function allowance(address, address) view returns (uint256)',
+  'function approve(address, uint256) returns (bool)'
+]
+
 const ChallengeModal = ({
   item,
   itemName,
@@ -42,15 +52,62 @@ const ChallengeModal = ({
   const fileURI = registry.arbitrationSettings[0].metadata.policyURI
   const { pushWeb3Action } = useContext(WalletContext)
   const { setUserSubscribed } = useContext(TourContext)
+  const { account, library } = useWeb3Context()
+  const nativeCurrency = useNativeCurrency()
+
+  const [balance, setBalance] = useState(ethers.constants.Zero)
+  const [allowance, setAllowance] = useState(ethers.constants.Zero)
+  const [checkingToken, setCheckingToken] = useState(false)
+  const { symbol: tokenSymbol } = useTokenSymbol(registry.token)
+
   // the challengeStake is used to notify user of how much they'll pass
   // also used with the allowance/balance
-  // todo
   const challengeStake = new BigNumber(item.stake)
     .mul(registry.challengeStakeMultiplier)
     .div(10_000)
 
-  console.log({ registry, challengeStake })
-  // todo grab arbitrationCost. and youll display with an EthAmount thing with useNativeCurrency
+  const checkTokenStatus = useCallback(async () => {
+    if (!account || !library || !registry.token) return
+
+    setCheckingToken(true)
+    try {
+      const token = new ethers.Contract(registry.token, ERC20_ABI, library)
+      const [bal, allow] = await Promise.all([
+        token.balanceOf(account),
+        token.allowance(account, registry.id)
+      ])
+      setBalance(bal)
+      setAllowance(allow)
+    } catch (error) {
+      console.error('Error checking token status:', error)
+    }
+    setCheckingToken(false)
+  }, [account, library, registry.token, registry.id])
+
+  useEffect(() => {
+    checkTokenStatus()
+  }, [checkTokenStatus])
+
+  const handleApprove = useCallback(() => {
+    pushWeb3Action(async ({ account, networkId }, signer) => {
+      const token = new ethers.Contract(registry.token, ERC20_ABI, signer)
+      const tx = await token.approve(registry.id, challengeStake.toString())
+
+      return {
+        tx,
+        actionMessage: `Approving ${tokenSymbol}`,
+        onTxMined: () => {
+          checkTokenStatus()
+        }
+      }
+    })
+  }, [
+    pushWeb3Action,
+    registry.token,
+    registry.id,
+    challengeStake,
+    checkTokenStatus
+  ])
 
   const challengeRequest = async ({
     title,
@@ -101,15 +158,52 @@ const ChallengeModal = ({
       return {
         tx,
         actionMessage: `Challenging ${(itemName && itemName.toLowerCase()) ||
-          'item'} ${
-          statusCode === STATUS_CODE.SUBMITTED ? 'submission' : 'removal'
-        }`
+          'item'}`
       }
     })
   }
 
+  const hasEnoughBalance = balance.gte(challengeStake.toString())
+  const hasEnoughAllowance = allowance.gte(challengeStake.toString())
+
+  const renderChallengeButton = () => {
+    if (checkingToken) {
+      return (
+        <Button key="checking" loading>
+          Checking Token...
+        </Button>
+      )
+    }
+
+    if (!hasEnoughBalance) {
+      return (
+        <Button key="insufficient" disabled>
+          Insufficient ${tokenSymbol} Balance
+        </Button>
+      )
+    }
+
+    if (!hasEnoughAllowance) {
+      return (
+        <Button key="approve" type="primary" onClick={handleApprove}>
+          Approve ${tokenSymbol}
+        </Button>
+      )
+    }
+
+    return (
+      <Button
+        key="challengeSubmit"
+        type="primary"
+        form={EVIDENCE_FORM_ID}
+        htmlType="submit"
+      >
+        Challenge
+      </Button>
+    )
+  }
+
   const EVIDENCE_FORM_ID = 'challengeEvidenceForm'
-  console.log({ arbitrationCost })
   if (!arbitrationCost)
     return (
       <StyledModal title="Submit Item" {...rest}>
@@ -123,14 +217,7 @@ const ChallengeModal = ({
         <Button key="back" onClick={onCancel}>
           Back
         </Button>,
-        <Button
-          key="challengeSubmit"
-          type="primary"
-          form={EVIDENCE_FORM_ID}
-          htmlType="submit"
-        >
-          Challenge
-        </Button>
+        renderChallengeButton()
       ]}
       {...rest}
     >
@@ -146,29 +233,41 @@ const ChallengeModal = ({
         .
       </Typography.Title>
       <Typography.Paragraph>
-        Explain to jurors why do you think this{' '}
-        {statusCode === STATUS_CODE.SUBMITTED
-          ? 'submission '
-          : 'removal request '}
-        should be rejected:
+        Explain to jurors why do you think this item should be rejected:
       </Typography.Paragraph>
       <EvidenceForm onSubmit={challengeRequest} formID={EVIDENCE_FORM_ID} />
       <Typography.Paragraph>
-        To challenge a{' '}
-        {statusCode === STATUS_CODE.SUBMITTED
-          ? 'submission'
-          : 'removal request'}
-        , a deposit is required. This value will be awarded to the party that
-        wins the dispute.
+        To challenge this item, deposits are required. These values will be
+        awarded to the party that wins the dispute.
       </Typography.Paragraph>
-      <Descriptions
-        bordered
-        column={{ xxl: 4, xl: 3, lg: 3, md: 3, sm: 2, xs: 1 }}
-      >
-        <Descriptions.Item label="Total Deposit Required">
-          <ETHAmount decimals={3} amount={arbitrationCost.toString()} />
-        </Descriptions.Item>
-      </Descriptions>
+      <DepositContainer>
+        <DepositRow>
+          <DepositLabel>
+            Challenge Stake Deposit
+            <Tooltip title="The challenge stake deposit paid in tokens required to challenge this item.">
+              <Icon type="question-circle-o" />
+            </Tooltip>
+          </DepositLabel>
+          <ETHAmount
+            decimals={3}
+            amount={challengeStake.toString()}
+            displayUnit={` ${tokenSymbol}`}
+          />
+        </DepositRow>
+        <DepositRow>
+          <DepositLabel>
+            Arbitration Cost
+            <Tooltip title="The arbitration cost paid in native currency to cover potential disputes.">
+              <Icon type="question-circle-o" />
+            </Tooltip>
+          </DepositLabel>
+          <ETHAmount
+            decimals={3}
+            amount={arbitrationCost.toString()}
+            displayUnit={` ${nativeCurrency}`}
+          />
+        </DepositRow>
+      </DepositContainer>
     </StyledModal>
   )
 }

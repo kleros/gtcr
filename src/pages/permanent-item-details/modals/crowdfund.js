@@ -9,7 +9,11 @@ import {
   Typography,
   Divider
 } from 'antd'
-import { STATUS_CODE, PARTY, SUBGRAPH_RULING } from 'utils/permanent-item-status'
+import {
+  STATUS_CODE,
+  PARTY,
+  SUBGRAPH_RULING
+} from 'utils/permanent-item-status'
 import { formatEther, parseEther, bigNumberify } from 'ethers/utils'
 import ETHAmount from 'components/eth-amount'
 import { WalletContext } from 'contexts/wallet-context'
@@ -39,7 +43,6 @@ const CrowdfundModal = ({ statusCode, item, fileURI, appealCost, ...rest }) => {
   const {
     hasPaidRequester,
     hasPaidChallenger,
-    currentRuling,
     ruling,
     amountPaidRequester,
     amountPaidChallenger
@@ -50,7 +53,7 @@ const CrowdfundModal = ({ statusCode, item, fileURI, appealCost, ...rest }) => {
 
   const autoSelectedSide = useMemo(() => {
     if (
-      currentRuling === PARTY.NONE ||
+      ruling === PARTY.NONE ||
       (hasPaidRequester && hasPaidChallenger) ||
       (!hasPaidRequester && !hasPaidChallenger)
     )
@@ -63,7 +66,7 @@ const CrowdfundModal = ({ statusCode, item, fileURI, appealCost, ...rest }) => {
     // If one of the parties is fully funded but not the other, automatically set
     // the side to the pending side.
     return !hasPaidRequester ? PARTY.REQUESTER : PARTY.CHALLENGER
-  }, [currentRuling, hasPaidRequester, hasPaidChallenger, statusCode, winner])
+  }, [ruling, hasPaidRequester, hasPaidChallenger, statusCode, winner])
 
   const side = useMemo(() => userSelectedSide || autoSelectedSide, [
     autoSelectedSide,
@@ -79,7 +82,7 @@ const CrowdfundModal = ({ statusCode, item, fileURI, appealCost, ...rest }) => {
     sharedStakeMultiplier,
     winnerStakeMultiplier,
     loserStakeMultiplier,
-    currentRuling,
+    currentRuling: ruling,
     item,
     MULTIPLIER_DIVISOR,
     appealCost
@@ -93,7 +96,7 @@ const CrowdfundModal = ({ statusCode, item, fileURI, appealCost, ...rest }) => {
     )
 
   if (
-    (currentRuling === SUBGRAPH_RULING.NONE ||
+    (ruling === SUBGRAPH_RULING.NONE ||
       statusCode === STATUS_CODE.CROWDFUNDING) &&
     side === PARTY.NONE // User did not select a side to fund yet.
   )

@@ -1,7 +1,11 @@
-import React, { useContext, useMemo } from 'react'
-import { Descriptions, Skeleton, Card } from 'antd'
+import React, { useContext, useMemo, useState } from 'react'
+import { Descriptions, Skeleton, Card, Button, Badge } from 'antd'
 import _gtcr from 'assets/abis/PermanentGTCR.json'
-import ItemStatusBadge from 'components/permanent-item-status-badge'
+import ItemStatusBadge, {
+  badgeStatus,
+  ItemStatusBadgeWrap,
+  ItemStatusIcon
+} from 'components/permanent-item-status-badge'
 import styled from 'styled-components'
 import { ethers } from 'ethers'
 import {
@@ -9,17 +13,21 @@ import {
   STATUS_CODE,
   PARTY,
   CONTRACT_STATUS,
-  SUBGRAPH_RULING
+  SUBGRAPH_RULING,
+  STATUS_COLOR,
+  STATUS_TEXT
 } from 'utils/permanent-item-status'
 import ETHAddress from 'components/eth-address'
 import ItemActionModal from './item-action-modal'
 import ItemActionButton from 'components/permanent-item-action-button'
 import { WalletContext } from 'contexts/wallet-context'
+import { useWeb3Context } from 'web3-react'
 import useHumanizedCountdown from 'hooks/countdown'
 import useAppealTime from 'hooks/appeal-time'
 import ETHAmount from 'components/eth-amount'
 // import useNativeCurrency from 'hooks/native-currency'
 import { klerosAddresses } from 'config/tcr-addresses'
+import WithdrawModal from './modals/withdraw'
 
 export const StyledDescriptions = styled(Descriptions)`
   flex-wrap: wrap;
@@ -89,15 +97,9 @@ const ItemStatusCard = ({
   const { pushWeb3Action, requestWeb3Auth, networkId } = useContext(
     WalletContext
   )
-  console.log({
-    item,
-    registry,
-    timestamp,
-    metaEvidence,
-    modalOpen,
-    setModalOpen,
-    appealCost
-  })
+  const { account } = useWeb3Context()
+  const [withdrawModalOpen, setWithdrawModalOpen] = useState(false)
+
   // Get remaining appeal time, if any and build countdown.
   const { appealRemainingTime, appealRemainingTimeLoser } = useAppealTime(
     item,
@@ -106,36 +108,50 @@ const ItemStatusCard = ({
   const appealCountdown = useHumanizedCountdown(appealRemainingTime)
   const appealLoserCountdown = useHumanizedCountdown(appealRemainingTimeLoser)
   const { arbitrator: klerosAddress, uiURL } = klerosAddresses[networkId] || {}
-
   // Get period until valid, if applicable, and build countdown.
   const validRemainingTime = useMemo(() => {
     if (
       !item ||
       item.status === CONTRACT_STATUS.ABSENT ||
       item.status === CONTRACT_STATUS.DISPUTED ||
-      !item.submissionTime ||
+      !item.includedAt ||
       !registry.submissionPeriod ||
       !registry.reinclusionPeriod
     )
       return
 
     const { includedAt, status } = item
-
     if (status === CONTRACT_STATUS.SUBMITTED) {
       const deadline =
-        Number(includedAt) + Number(registry.submissionPeriod) * 1000
+        Number(includedAt) * 1000 + Number(registry.submissionPeriod) * 1000
       return deadline - Date.now()
     } else {
       // status === CONTRACT_STATUS.REINCLUDED
       const deadline =
-        Number(includedAt) + Number(registry.reinclusionPeriod) * 1000
+        Number(includedAt) * 1000 + Number(registry.reinclusionPeriod) * 1000
       return deadline - Date.now()
     }
   }, [registry, item])
 
   const validCountdown = useHumanizedCountdown(validRemainingTime)
+  // Calculate withdrawing remaining time, if applicable, and build countdown.
+  const withdrawingRemainingTime = useMemo(() => {
+    if (
+      !item ||
+      item.status === CONTRACT_STATUS.ABSENT ||
+      !item.withdrawingTimestamp ||
+      item.withdrawingTimestamp === '0' ||
+      !registry.withdrawingPeriod
+    )
+      return
 
-  // todo above but for withdrawal
+    const deadline =
+      Number(item.withdrawingTimestamp) * 1000 +
+      Number(registry.withdrawingPeriod) * 1000
+    return deadline - Date.now()
+  }, [registry, item])
+
+  const withdrawingCountdown = useHumanizedCountdown(withdrawingRemainingTime)
 
   // const nativeCurrency = useNativeCurrency()
 
@@ -145,10 +161,21 @@ const ItemStatusCard = ({
         <Skeleton active title={false} paragraph={{ rows: 2 }} />
       </Card>
     )
-
   const statusCode = itemToStatusCode(item, timestamp, registry)
 
+  const isWithdrawing =
+    statusCode !== STATUS_CODE.ABSENT && item.withdrawingTimestamp !== '0'
+
   const bounty = item.stake
+
+  // Check if item is withdrawable: not absent and withdrawingTimestamp === "0"
+  const isWithdrawable =
+    statusCode !== STATUS_CODE.ABSENT && item.withdrawingTimestamp === '0'
+  // Check if current user is the submitter
+  const isSubmitter =
+    account &&
+    item.submitter &&
+    account.toLowerCase() === item.submitter.toLowerCase()
 
   const executeRequest = async (_, signer) => {
     const gtcr = new ethers.Contract(registry.id, _gtcr, signer)
@@ -177,14 +204,12 @@ const ItemStatusCard = ({
         throw new Error(`Unhandled status code ${statusCode}`)
     }
   }
-
   const challenge = item.challenges[0]
-  const arbitrator = registry.arbitrator
+  const arbitrator = registry.arbitrator.id
   const { disputeID } = challenge || {}
   const round = challenge ? challenge.rounds[0] : undefined
   const { metadata } = metaEvidence || {}
   const { itemName } = metadata || {}
-  console.log('finally we got status:', statusCode)
   const appealable =
     statusCode === STATUS_CODE.CROWDFUNDING_WINNER ||
     statusCode === STATUS_CODE.CROWDFUNDING
@@ -193,23 +218,44 @@ const ItemStatusCard = ({
       <StyledItemStatusCard
         id="item-status-card"
         title={
-          <ItemStatusBadge
-            item={item}
-            statusCode={statusCode}
-            registry={registry}
-            timestamp={timestamp}
-            dark
-          />
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <ItemStatusBadge
+              item={item}
+              statusCode={statusCode}
+              registry={registry}
+              timestamp={timestamp}
+              dark
+            />
+            {isWithdrawing &&
+              (statusCode === STATUS_CODE.PENDING ||
+                statusCode === STATUS_CODE.ACCEPTED) && (
+                <ItemStatusBadgeWrap>
+                  <Badge
+                    status={badgeStatus(STATUS_CODE.PENDING_WITHDRAWAL)}
+                    text="Withdrawing"
+                    style={{ color: 'white' }}
+                  />
+                  <ItemStatusIcon statusCode={STATUS_CODE.PENDING_WITHDRAWAL} />
+                </ItemStatusBadgeWrap>
+              )}
+          </div>
         }
         extra={
-          <ItemActionButton
-            statusCode={statusCode}
-            itemName={itemName}
-            itemID={item && item.itemID}
-            pushWeb3Action={pushWeb3Action}
-            onClick={onClick}
-            type="secondary"
-          />
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            {isWithdrawable && isSubmitter && (
+              <Button type="default" onClick={() => setWithdrawModalOpen(true)}>
+                Withdraw
+              </Button>
+            )}
+            <ItemActionButton
+              statusCode={statusCode}
+              itemName={itemName}
+              itemID={item && item.itemID}
+              pushWeb3Action={pushWeb3Action}
+              onClick={onClick}
+              type="secondary"
+            />
+          </div>
         }
       >
         <StyledDescriptions
@@ -263,12 +309,25 @@ const ItemStatusCard = ({
             react fragments, which did not play well with the antd
             Descriptions component.
           */}
-          {/* Display challenge period countdown, if applicable. */}
+          {/* Display acceptance period countdown, if applicable. */}
           {validRemainingTime && (
-            <Descriptions.Item label="Item validity in">
+            <Descriptions.Item
+              label={`Item valid ${
+                statusCode === STATUS_CODE.ACCEPTED ? 'since' : 'in'
+              }`}
+            >
               {validCountdown}
             </Descriptions.Item>
           )}
+          {/* Display withdrawing countdown, if applicable and not disputed. */}
+          {isWithdrawing &&
+            (statusCode === STATUS_CODE.PENDING ||
+              statusCode === STATUS_CODE.ACCEPTED) &&
+            withdrawingRemainingTime && (
+              <Descriptions.Item label="Withdrawal in">
+                {withdrawingCountdown}
+              </Descriptions.Item>
+            )}
           {/* Display appeal countdowns, if applicable. */}
           {/* Indecisive ruling countdown. */}
           {round &&
@@ -309,6 +368,14 @@ const ItemStatusCard = ({
             arbitrationCost={arbitrationCost}
           />
         )}
+      {/* Withdraw Modal */}
+      <WithdrawModal
+        isOpen={withdrawModalOpen}
+        onCancel={() => setWithdrawModalOpen(false)}
+        item={item}
+        registry={registry}
+        itemName={itemName || 'item'}
+      />
     </>
   )
 }

@@ -38,10 +38,10 @@ export const fetchMetaEvidence = async (tcr, networkId) => {
       arbitrationSettings(orderBy: timestamp, orderDirection: desc, first: 1) {
         metaEvidenceURI
       }
+    }
   }`,
     variables: {}
   }
-
   const [data, pgtcrData] = await Promise.all([
     (
       await (
@@ -62,13 +62,7 @@ export const fetchMetaEvidence = async (tcr, networkId) => {
       ).json()
     ).data
   ])
-
-  if (
-    data.registry === null &&
-    data.lregistry === null &&
-    pgtcrData.registry === null
-  )
-    return null
+  if (!data?.registry && !data?.lregistry && !pgtcrData?.registry) return null
   else if (data.registry !== null)
     return {
       metaEvidenceURI: data.registry.registrationMetaEvidence.URI,

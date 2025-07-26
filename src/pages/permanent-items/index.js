@@ -217,7 +217,7 @@ const Items = () => {
   }, [refreshItems, registryQuery.data, registryQuery.loading])
 
   const itemCount = useMemo(() => {
-    if (!registryQuery.data || !itemsQuery.data) return 0
+    if (!registryQuery.data || !itemsQuery.data || !registryQuery.data.registry) return 0
     const r = registryQuery.data.registry
     const field = queryOptions.countField
     if (queryOptions.countField === 'all') {
@@ -242,7 +242,7 @@ const Items = () => {
   ])
 
   useEffect(() => {
-    if (!registryQuery.data) return
+    if (!registryQuery.data || !registryQuery.data.registry) return
     ;(async () => {
       const arbSetting = registryQuery.data.registry.arbitrationSettings[0]
       const response = await fetch(parseIpfs(arbSetting.metaEvidenceURI))
@@ -263,7 +263,16 @@ const Items = () => {
   if (!registryQuery.data) return null
 
   const r = registryQuery.data.registry
-  const metadata = r.arbitrationSettings[0].metadata
+  const metadata = r?.arbitrationSettings?.[0]?.metadata
+
+  if (!r)
+    return (
+      <ErrorPage
+        code="404"
+        message="The gods are having trouble finding this list."
+        tip="Make sure your wallet is set to the correct network (is this on Gnosis Chain?)."
+      />
+    )
 
   return (
     <>
@@ -391,6 +400,7 @@ const Items = () => {
               arbitrationCost={arbitrationCost.arbitrationCost}
               withdrawingPeriod={r.withdrawingPeriod}
               tcrAddress={tcrAddress}
+              tokenAddress={r.token}
               metadata={metadata}
               columns={columns}
               initialValues={queryItemParams}

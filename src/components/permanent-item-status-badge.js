@@ -16,7 +16,7 @@ const StyledSkeleton = styled(Skeleton)`
   }
 `
 
-const ItemStatusBadgeWrap = styled.div`
+export const ItemStatusBadgeWrap = styled.div`
   display: flex;
   flex-direction: row;
   align-items: center;
@@ -37,7 +37,7 @@ const iconTypes = {
   [STATUS_CODE.WAITING_ARBITRATOR]: 'hourglass'
 }
 
-const ItemStatusIcon = ({ statusCode }) => (
+export const ItemStatusIcon = ({ statusCode }) => (
   <ItemStatusIconWrap>
     <Icon type={iconTypes[statusCode]} />
   </ItemStatusIconWrap>
@@ -45,7 +45,7 @@ const ItemStatusIcon = ({ statusCode }) => (
 
 // For clarity, here "badge" refers to the ant design component,
 // and not badges related to connection between TCRs.
-const badgeStatus = statusCode => {
+export const badgeStatus = statusCode => {
   switch (statusCode) {
     case STATUS_CODE.CROWDFUNDING:
     case STATUS_CODE.CROWDFUNDING_WINNER:

@@ -32,12 +32,12 @@ const StyledCard = styled(Card)`
   cursor: default;
 
   ${smallScreenStyle(
-  () => css`
+    () => css`
       & > .ant-card-head > .ant-card-head-wrapper > .ant-card-head-title {
         max-width: ${responsiveSize(160, 450)};
       }
     `
-)}
+  )}
 `
 
 const StyledEvidenceTitle = styled.div`
@@ -103,20 +103,27 @@ const Timeline = ({ submission, item, metaEvidence }) => {
       lastRoundRuling: e.rounds[0].ruling
     }))
 
+    const challenges = item.challenges.map(e => ({
+      name: 'Challenge',
+      timestamp: e.createdAt,
+      transactionHash: e.creationTx
+    }))
+
     const logArray = [
       ...appealPossibles,
       ...appealDecisions,
       ...evidences,
-      ...resolutions
+      ...resolutions,
+      ...challenges
     ]
 
     const withdrawal =
       Number(submission.withdrawingTimestamp) !== 0
         ? {
-          name: 'Withdrawal',
-          timestamp: submission.withdrawingTimestamp,
-          transactionHash: submission.withdrawingTx
-        }
+            name: 'Withdrawal',
+            timestamp: submission.withdrawingTimestamp,
+            transactionHash: submission.withdrawingTx
+          }
         : null
 
     if (withdrawal) logArray.push(withdrawal)
@@ -127,7 +134,8 @@ const Timeline = ({ submission, item, metaEvidence }) => {
       .filter(
         log =>
           Number(submission.createdAt) <= Number(log.timestamp) &&
-          Number(submission.finishedAt) >= Number(log.timestamp)
+          (submission.finishedAt === null ||
+            Number(submission.finishedAt) >= Number(log.timestamp))
       )
       .sort((a, b) => Number(a.timestamp) - Number(b.timestamp))
   }, [item, submission])
@@ -245,10 +253,10 @@ const Timeline = ({ submission, item, metaEvidence }) => {
               {appealableRuling === SUBGRAPH_RULING.NONE
                 ? 'The arbitrator refused to rule'
                 : appealableRuling === SUBGRAPH_RULING.ACCEPT
-                  ? 'The arbitrator ruled in favor of the submitter'
-                  : appealableRuling === SUBGRAPH_RULING.REJECT
-                    ? 'The arbitrator ruled in favor of the challenger'
-                    : 'The arbitrator gave an unknown ruling'}
+                ? 'The arbitrator ruled in favor of the submitter'
+                : appealableRuling === SUBGRAPH_RULING.REJECT
+                ? 'The arbitrator ruled in favor of the challenger'
+                : 'The arbitrator gave an unknown ruling'}
               <Typography.Text type="secondary">
                 <a href={txPage}>{secondTimestamp(timestamp)}</a>
               </Typography.Text>
@@ -298,7 +306,29 @@ const Timeline = ({ submission, item, metaEvidence }) => {
             </Typography.Text>
           </AntdTimeline.Item>
         )
-      } else throw new Error(`Unhandled event ${name}`)
+      } else if (name === 'Challenge')
+        return (
+          <AntdTimeline.Item key={i}>
+            <span>
+              Item challenged
+              <Typography.Text type="secondary">
+                <a href={txPage}>{secondTimestamp(timestamp)}</a>
+              </Typography.Text>
+            </span>
+          </AntdTimeline.Item>
+        )
+      else if (name === 'Withdrawal')
+        return (
+          <AntdTimeline.Item key={i} color="orange">
+            <span>
+              Item initiated withdrawal process
+              <Typography.Text type="secondary">
+                <a href={txPage}>{secondTimestamp(timestamp)}</a>
+              </Typography.Text>
+            </span>
+          </AntdTimeline.Item>
+        )
+      else throw new Error(`Unhandled event ${name}`)
     })
 
   return <AntdTimeline>{[requestSubmittedNode, ...items]}</AntdTimeline>
@@ -344,16 +374,15 @@ const RequestTimelines = ({ item, metaEvidence }) => {
             itemName
           ) || 'Item'} History`}</StyledDivider>
         </Col>
-        {
-          item.status !== CONTRACT_STATUS.ABSENT && (
-            <Col xs={5} sm={5} md={5} lg={4} xl={3} xxl={3}>
-              <StyledButton
-                onClick={() => requestWeb3Auth(() => setEvidenceModalOpen(true))}
-              >
-                Submit Evidence
-              </StyledButton>
-            </Col>
-          )}
+        {item.status !== CONTRACT_STATUS.ABSENT && (
+          <Col xs={5} sm={5} md={5} lg={4} xl={3} xxl={3}>
+            <StyledButton
+              onClick={() => requestWeb3Auth(() => setEvidenceModalOpen(true))}
+            >
+              Submit Evidence
+            </StyledButton>
+          </Col>
+        )}
       </Row>
 
       {submissions && (

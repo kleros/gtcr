@@ -48,7 +48,7 @@ const menuItems = [
   { key: 'browse', content: <NavLink to="/">Browse</NavLink>, isNavLink: true },
   {
     key: 'factory',
-    content: <NavLink to="/factory-permanent">Create a List</NavLink>,
+    content: <NavLink to="/factory">Create a List</NavLink>,
     isNavLink: true
   },
   {

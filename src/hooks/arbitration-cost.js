@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { ethers } from 'ethers'
 import { useDebounce } from 'use-debounce'
 import { abi as _arbitrator } from '@kleros/erc-792/build/contracts/IArbitrator.json'
@@ -28,7 +28,7 @@ const useArbitrationCost = ({
     })()
   }, [address, arbitratorExtraData, library])
 
-  return { arbitrationCost, error }
+  return useMemo(() => ({ arbitrationCost, error }), [arbitrationCost, error])
 }
 
 export default useArbitrationCost

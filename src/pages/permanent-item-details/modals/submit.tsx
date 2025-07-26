@@ -1,20 +1,12 @@
-import React, { useContext, useCallback, useState } from 'react'
-import {
-  Modal,
-  Button,
-  Form,
-  Tooltip,
-  Icon,
-  Typography,
-  Descriptions,
-  Alert
-} from 'antd'
+import React, { useContext, useCallback, useState, useEffect } from 'react'
+import { Modal, Button, Form, Tooltip, Icon, Typography, Alert } from 'antd'
 import styled from 'styled-components'
 import _gtcr from 'assets/abis/PermanentGTCR.json'
 import { ethers } from 'ethers'
 import { withFormik } from 'formik'
 import humanizeDuration from 'humanize-duration'
 import { WalletContext } from 'contexts/wallet-context'
+import { useWeb3Context } from 'web3-react'
 import { ItemTypes, typeDefaultValues } from '@kleros/gtcr-encoder'
 import InputSelector from 'components/input-selector'
 import ETHAmount from 'components/eth-amount'
@@ -25,6 +17,7 @@ import { parseIpfs } from 'utils/ipfs-parse'
 import { IPFSResultObject, getIPFSPath } from 'utils/get-ipfs-path'
 import ipfsPublish from 'utils/ipfs-publish'
 import useNativeCurrency from 'hooks/native-currency'
+import useTokenSymbol from 'hooks/token-symbol'
 import { Column } from 'pages/item-details/modals/submit'
 import { StyledSpin } from './challenge'
 
@@ -34,7 +27,6 @@ export const StyledAlert = styled(Alert)`
 `
 
 export const StyledModal = styled(Modal)`
-  text-transform: capitalize;
   & > .ant-modal-content {
     border-top-left-radius: 14px;
     border-top-right-radius: 14px;
@@ -43,6 +35,31 @@ export const StyledModal = styled(Modal)`
 
 export const StyledParagraph = styled(Typography.Paragraph)`
   text-transform: none;
+`
+
+export const DepositContainer = styled.div`
+  border: 1px solid #d9d9d9;
+  border-radius: 6px;
+  padding: 16px;
+  margin: 16px 0;
+`
+
+export const DepositRow = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+
+  &:not(:last-child) {
+    border-bottom: 1px solid #f0f0f0;
+  }
+`
+
+export const DepositLabel = styled.span`
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 4px;
 `
 
 export const SUBMISSION_FORM_ID = 'submitItemForm'
@@ -113,7 +130,12 @@ const SubmissionForm: React.ComponentType<any> = withFormik({
   }),
   validate: async (
     values,
-    { columns, deployedWithFactory, deployedWithLightFactory }
+    {
+      columns,
+      deployedWithFactory,
+      deployedWithLightFactory,
+      deployedWithPermanentFactory
+    }
   ) => {
     const errors = (
       await Promise.all(
@@ -124,7 +146,8 @@ const SubmissionForm: React.ComponentType<any> = withFormik({
             wasDeployedWithFactory:
               !!values[label] &&
               ((await deployedWithFactory(values[label])) ||
-                (await deployedWithLightFactory(values[label]))),
+                (await deployedWithLightFactory(values[label])) ||
+                (await deployedWithPermanentFactory(values[label]))),
             label: label
           }))
       )
@@ -143,9 +166,16 @@ const SubmissionForm: React.ComponentType<any> = withFormik({
   }
 })(_SubmissionForm as any)
 
+const ERC20_ABI = [
+  'function balanceOf(address) view returns (uint256)',
+  'function allowance(address, address) view returns (uint256)',
+  'function approve(address, uint256) returns (bool)'
+]
+
 const SubmitModal: React.FC<{
   onCancel: any
   tcrAddress: string
+  tokenAddress: string
   initialValues: any[]
   submissionDeposit: any
   metadata: {
@@ -165,6 +195,7 @@ const SubmitModal: React.FC<{
     initialValues,
     submissionDeposit,
     tcrAddress,
+    tokenAddress,
     metadata,
     disabledFields,
     submissionPeriod,
@@ -176,10 +207,76 @@ const SubmitModal: React.FC<{
   const nativeCurrency = useNativeCurrency()
   const { pushWeb3Action } = useContext(WalletContext)
   const { setUserSubscribed } = useContext(TourContext)
-  const { deployedWithFactory, deployedWithLightFactory } = useFactory()
+  const {
+    deployedWithFactory,
+    deployedWithLightFactory,
+    deployedWithPermanentFactory
+  } = useFactory()
+  const { account, library } = useWeb3Context()
+
+  const [balance, setBalance] = useState(ethers.constants.Zero)
+  const [allowance, setAllowance] = useState(ethers.constants.Zero)
+  const [checkingToken, setCheckingToken] = useState(false)
+  const { symbol: tokenSymbol } = useTokenSymbol(tokenAddress)
 
   const { itemName, title, policyURI } = metadata || {}
-  console.log({ arbitrationCost })
+
+  const checkTokenStatus = useCallback(async () => {
+    if (!account || !library || !tokenAddress) return
+
+    setCheckingToken(true)
+    try {
+      const token = new ethers.Contract(tokenAddress, ERC20_ABI, library)
+      const [bal, allow] = await Promise.all([
+        token.balanceOf(account),
+        token.allowance(account, tcrAddress)
+      ])
+      setBalance(bal)
+      setAllowance(allow)
+    } catch (error) {
+      console.error('Error checking token status:', error)
+    }
+    setCheckingToken(false)
+  }, [account, library, tokenAddress, tcrAddress])
+
+  useEffect(() => {
+    checkTokenStatus()
+  }, [checkTokenStatus])
+
+  const handleApprove = useCallback(() => {
+    pushWeb3Action(async ({ account, networkId }: any, signer: any) => {
+      const token = new ethers.Contract(tokenAddress, ERC20_ABI, signer)
+      const tx = await token.approve(tcrAddress, submissionDeposit)
+
+      return {
+        tx,
+        actionMessage: `Approving ${tokenSymbol}`,
+        onTxMined: () => {
+          // Refresh token status after transaction is mined
+          checkTokenStatus()
+        }
+      }
+    })
+  }, [
+    pushWeb3Action,
+    tokenAddress,
+    tcrAddress,
+    submissionDeposit,
+    checkTokenStatus
+  ])
+
+  // To make sure user cannot press Submit while there are files uploading
+  // submit will be blocked until there are no files uploading.
+  const [loadingCounter, setLoadingCounter] = useState(0)
+  const setFileToUpload = (setUploading: (_: boolean) => void) => {
+    setUploading(true)
+    setLoadingCounter(loadingCounter + 1)
+  }
+  const setFileAsUploaded = (setUploading: (_: boolean) => void) => {
+    setUploading(false)
+    setLoadingCounter(loadingCounter - 1)
+  }
+
   const postSubmit = useCallback(
     (values, columns, resetForm) => {
       pushWeb3Action(async ({ account, networkId }: any, signer: any) => {
@@ -193,14 +290,9 @@ const SubmitModal: React.FC<{
 
         // Request signature and submit.
         // TODOv2 allow choosing item stake amount
-        // TODO approve needs to be done beforehand as a distinct action
-        const tx = await gtcr.addItem(
-          ipfsEvidencePath,
-          submissionDeposit,
-          {
-            value: arbitrationCost
-          }
-        )
+        const tx = await gtcr.addItem(ipfsEvidencePath, submissionDeposit, {
+          value: arbitrationCost
+        })
 
         onCancel() // Hide the submission modal.
         resetForm({})
@@ -221,16 +313,45 @@ const SubmitModal: React.FC<{
     ]
   )
 
-  // To make sure user cannot press Submit while there are files uploading
-  // submit will be blocked until there are no files uploading.
-  const [loadingCounter, setLoadingCounter] = useState(0)
-  const setFileToUpload = (setUploading: (_: boolean) => void) => {
-    setUploading(true)
-    setLoadingCounter(loadingCounter + 1)
-  }
-  const setFileAsUploaded = (setUploading: (_: boolean) => void) => {
-    setUploading(false)
-    setLoadingCounter(loadingCounter - 1)
+  const hasEnoughBalance = balance.gte(submissionDeposit)
+  const hasEnoughAllowance = allowance.gte(submissionDeposit)
+
+  const renderSubmitButton = () => {
+    if (checkingToken) {
+      return (
+        <Button key="checking" loading>
+          Checking Token...
+        </Button>
+      )
+    }
+
+    if (!hasEnoughBalance) {
+      return (
+        <Button key="insufficient" disabled>
+          Insufficient ${tokenSymbol} Balance
+        </Button>
+      )
+    }
+
+    if (!hasEnoughAllowance) {
+      return (
+        <Button key="approve" type="primary" onClick={handleApprove}>
+          Approve ${tokenSymbol}
+        </Button>
+      )
+    }
+
+    return (
+      <Button
+        key="challengeSubmit"
+        type="primary"
+        form={SUBMISSION_FORM_ID}
+        htmlType="submit"
+        loading={loadingCounter > 0}
+      >
+        Submit
+      </Button>
+    )
   }
 
   if (!metadata || !submissionDeposit)
@@ -258,15 +379,7 @@ const SubmitModal: React.FC<{
         <Button key="back" onClick={onCancel}>
           Back
         </Button>,
-        <Button
-          key="challengeSubmit"
-          type="primary"
-          form={SUBMISSION_FORM_ID}
-          htmlType="submit"
-          loading={loadingCounter > 0}
-        >
-          Submit
-        </Button>
+        renderSubmitButton()
       ]}
       {...props}
     >
@@ -284,6 +397,7 @@ const SubmitModal: React.FC<{
         disabledFields={disabledFields}
         deployedWithFactory={deployedWithFactory}
         deployedWithLightFactory={deployedWithLightFactory}
+        deployedWithPermanentFactory={deployedWithPermanentFactory}
         setFileToUpload={setFileToUpload}
         setFileAsUploaded={setFileAsUploaded}
       />
@@ -310,30 +424,34 @@ const SubmitModal: React.FC<{
         type="info"
         showIcon
       />
-      <Descriptions
-        bordered
-        column={{ xxl: 4, xl: 3, lg: 3, md: 3, sm: 2, xs: 1 }}
-      >
-        <Descriptions.Item
-          label={
-            <span>
-              Total Deposit Required
-              <Tooltip title="A deposit is required to submit. This value reimbursed at the end of the challenge period or, if there is a dispute, be awarded to the party that wins.">
-                &nbsp;
-                <Icon type="question-circle-o" />
-              </Tooltip>
-            </span>
-          }
-        >
+      <DepositContainer>
+        <DepositRow>
+          <DepositLabel>
+            Total Deposit Required
+            <Tooltip title="A deposit is required to submit. This value reimbursed at the end of the challenge period or, if there is a dispute, be awarded to the party that wins.">
+              <Icon type="question-circle-o" />
+            </Tooltip>
+          </DepositLabel>
           <ETHAmount
             decimals={3}
             amount={submissionDeposit.toString()}
-            // displayUnit={` ${nativeCurrency}`} TODO the registry's token
-            displayUnit={' sDAI'}
+            displayUnit={` ${tokenSymbol}`}
           />
-          {/* todo you need to notify of the xDAI or native amount that is sent here */}
-        </Descriptions.Item>
-      </Descriptions>
+        </DepositRow>
+        <DepositRow>
+          <DepositLabel>
+            Arbitration Cost
+            <Tooltip title="The arbitration cost paid in native currency to cover potential disputes.">
+              <Icon type="question-circle-o" />
+            </Tooltip>
+          </DepositLabel>
+          <ETHAmount
+            decimals={3}
+            amount={arbitrationCost ? arbitrationCost.toString() : '0'}
+            displayUnit={` ${nativeCurrency}`}
+          />
+        </DepositRow>
+      </DepositContainer>
     </StyledModal>
   )
 }

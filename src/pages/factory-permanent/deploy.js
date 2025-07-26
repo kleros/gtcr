@@ -11,7 +11,6 @@ import { getIPFSPath } from 'utils/get-ipfs-path'
 import { isVowel } from 'utils/string'
 import { WalletContext } from 'contexts/wallet-context'
 import useWindowDimensions from 'hooks/window-dimensions'
-import SubmitModal from '../permanent-item-details/modals/submit' // todo?
 import useTcrView from 'hooks/tcr-view'
 import {
   defaultEvidenceDisplayUriPermanent,
@@ -214,7 +213,6 @@ const Deploy = ({ setTxState, tcrState, setTcrState }) => {
       }
     })
   }
-
   return (
     <>
       <StyledCard title="Deploy the list">
@@ -309,17 +307,6 @@ const Deploy = ({ setTxState, tcrState, setTcrState }) => {
           </StyledSpan>
         )}
       </StyledCard>
-      {metaEvidence && (
-        <SubmitModal
-          initialValues={[deployedTCRAddress]}
-          visible={!!submissionFormOpen}
-          onCancel={() => setSubmissionFormOpen(false)}
-          submissionDeposit={submissionDeposit}
-          tcrAddress={defaultTCRAddress}
-          metaEvidence={metaEvidence}
-          challengePeriodDuration={challengePeriodDuration}
-        />
-      )}
     </>
   )
 }

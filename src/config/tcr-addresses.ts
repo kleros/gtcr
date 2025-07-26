@@ -59,7 +59,7 @@ export const lgtcrFactoryAddresses = {
 
 export const pgtcrFactoryAddresses = {
   // '1': '0xe9dd523600b74b8ef0af164687079a6c437f9cd5',
-  '100': '0x64448588A47c0962F08127D7F12Affb11E2dDf34',
+  '100': '0x75c0406311bb4C81988602b0c209987188DC5A93',
   // '11155111': '0xcB4B48d2A7a44247A00048963F169d2b4Ab045a6'
 } as const
 

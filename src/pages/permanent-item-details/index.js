@@ -107,10 +107,7 @@ const ItemDetails = ({ itemID, search }) => {
         .then(r => setIpfsItemData(r))
         .catch(_e => console.error('Could not set ipfs item data'))
   }, [item, ipfsItemData])
-  console.log('hello', {
-    address: registry?.id,
-    arbitratorExtraData: registry?.arbitrationSettings?.[0]?.arbitratorExtraData
-  })
+
   const arbitrationCost = useArbitrationCost({
     address: registry?.arbitrator?.id,
     arbitratorExtraData:
@@ -225,12 +222,13 @@ const ItemDetails = ({ itemID, search }) => {
     if (!challenge || challenge.disputeOutcome) setAppealCost(null)
     else {
       const arbitrator = new ethers.Contract(
-        registry.arbitrator,
+        registry?.arbitrator?.id,
         _IArbitrator,
         library
       )
+
       arbitrator
-        .appealCost(challenge.disputeID, challenge.arbitratorExtraData)
+        .appealCost(challenge.disputeID, challenge.arbitrationSetting.arbitratorExtraData)
         .then(cost => setAppealCost(cost))
         .catch(err => {
           console.error(err)
@@ -238,7 +236,6 @@ const ItemDetails = ({ itemID, search }) => {
         })
     }
   }, [item, appealCost, library, registry])
-
   if (!tcrAddress || !itemID)
     return (
       <ErrorPage

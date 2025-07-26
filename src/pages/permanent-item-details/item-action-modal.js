@@ -4,15 +4,6 @@ import ChallengeModal from './modals/challenge'
 import SubmitModal from './modals/submit'
 import CrowdfundModal from './modals/crowdfund'
 
-// ok this is one of the hardest ones to get, right?
-// lets think aloud for a bit
-// remove modal will be smart and hanlde both start w, approve into challenge and some explainer
-// 1. if absent, that'd be resubmit same item right?
-// 2. if pending/valid its either challenge/start withdraw, depending on whether signer is curr submitter AND wt === 0
-// 3. crowdfund is kinda the same too?
-// evidence is triggered somew else
-// exec withdrawal is handled already.
-
 const ItemActionModal = ({
   statusCode,
   isOpen,
@@ -20,8 +11,6 @@ const ItemActionModal = ({
   onClose,
   fileURI,
   item,
-  submissionDeposit,
-  challengePeriodDuration,
   tcrAddress,
   metaEvidence,
   appealCost,
@@ -56,7 +45,8 @@ const ItemActionModal = ({
           submissionPeriod={r.submissionPeriod}
           arbitrationCost={arbitrationCost}
           withdrawingPeriod={r.withdrawingPeriod}
-          tcrAddress={tcrAddress}
+          tcrAddress={r.id}
+          tokenAddress={r.token}
           metadata={metaEvidence.metadata}
           columns={metaEvidence.metadata.columns}
           {...rest}
@@ -74,6 +64,7 @@ const ItemActionModal = ({
         />
       )
     case STATUS_CODE.WAITING_ARBITRATOR:
+    case STATUS_CODE.PENDING_WITHDRAWAL:
       return null
     default:
       throw new Error(`Unhandled status code ${statusCode}`)

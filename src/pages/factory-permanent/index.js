@@ -18,7 +18,7 @@ import Deploy from './deploy'
 import StyledLayoutContent from '../layout-content'
 import { version } from '../../../package.json'
 import { ItemTypes } from '@kleros/gtcr-encoder'
-import TCRCardContent from 'components/tcr-card-content'
+import TCRCardContent from 'components/permanent-tcr-card-content'
 import { WalletContext } from 'contexts/wallet-context'
 import {
   defaultArbitrator as defaultArbitratorAddresses,
@@ -242,13 +242,6 @@ export default () => {
   // Fetch previously deployed list information
   useEffect(() => {
     ;(async () => {
-      console.log('anything here?', {
-        cachedFactory,
-        transactions,
-        library,
-        active,
-        factoryInterface
-      })
       if (!cachedFactory) return
       if (!transactions || Object.keys(transactions).length === 0) return
       if (!library || !active || !factoryInterface) return
@@ -263,15 +256,10 @@ export default () => {
         deploymentTxHashes.map(async txHash =>
           library.waitForTransaction(txHash)
         )
-      ) // TODO this is the fn currently crashing
-      console.log({
-        thing: txDatas.map(
-          txData => factoryInterface.parseLog(txData.logs[7]).values._address
-        )
-      })
+      )
       setPreviousDeployments(
         txDatas.map(
-          txData => factoryInterface.parseLog(txData.logs[7]).values._address
+          txData => factoryInterface.parseLog(txData.logs[1]).values._address
         )
       )
     })()
@@ -305,7 +293,7 @@ export default () => {
     <>
       <StyledBanner>
         <Typography.Title ellipsis style={{ marginBottom: '0' }}>
-          Create a List
+          Create a List (Permanent Curate)
         </Typography.Title>
       </StyledBanner>
       <StyledLayoutContent>

@@ -8,7 +8,7 @@ import {
   SUBGRAPH_RULING,
   itemToStatusCode,
   STATUS_CODE
-} from 'utils/item-status'
+} from 'utils/permanent-item-status'
 import useRequiredFees from 'hooks/required-fees'
 import { BigNumber, formatEther } from 'ethers/utils'
 import itemPropType from 'prop-types/item'
@@ -63,7 +63,7 @@ export const StyledIcon = styled(FontAwesomeIcon)`
 
 const CrowdfundingCard = ({ item, registry, timestamp, appealCost }) => {
   const nativeCurrency = useNativeCurrency()
-
+  const currentRuling = item?.challenges?.[0]?.rounds?.[0].ruling
   const { sharedStakeMultiplier, winnerStakeMultiplier, loserStakeMultiplier } =
     registry || {}
   const MULTIPLIER_DIVISOR = new BigNumber(10000)
@@ -72,7 +72,7 @@ const CrowdfundingCard = ({ item, registry, timestamp, appealCost }) => {
     sharedStakeMultiplier,
     winnerStakeMultiplier,
     loserStakeMultiplier,
-    currentRuling: item && item.currentRuling,
+    currentRuling: currentRuling,
     item,
     MULTIPLIER_DIVISOR,
     appealCost
@@ -82,7 +82,7 @@ const CrowdfundingCard = ({ item, registry, timestamp, appealCost }) => {
     sharedStakeMultiplier,
     winnerStakeMultiplier,
     loserStakeMultiplier,
-    currentRuling: item && item.currentRuling,
+    currentRuling: currentRuling,
     item,
     MULTIPLIER_DIVISOR,
     appealCost
@@ -91,7 +91,7 @@ const CrowdfundingCard = ({ item, registry, timestamp, appealCost }) => {
   if (!item || !registry || !item.challenges || item.challenges.length === 0)
     return null
   const round = item.challenges[0].rounds[0]
-  const { hasPaidRequester, hasPaidChallenger, currentRuling } = round
+  const { hasPaidRequester, hasPaidChallenger, ruling } = round
 
   let { amountPaidRequester, amountPaidChallenger } = round
   amountPaidRequester = new BigNumber(amountPaidRequester)
@@ -181,16 +181,12 @@ const CrowdfundingCard = ({ item, registry, timestamp, appealCost }) => {
         <StyledSection>
           <StyledIcon icon="info-circle" size="2x" />
           <StyledParagraph>
-            {currentRuling === SUBGRAPH_RULING.NONE
+            {ruling === SUBGRAPH_RULING.NONE
               ? 'The arbitrator did not give a decisive ruling. If a party fully funds his side of an appeal, the other must also fund in order to not lose the dispute.'
               : `If the ${
-                  currentRuling === SUBGRAPH_RULING.ACCEPT
-                    ? 'challenger'
-                    : 'submitter'
+                  ruling === SUBGRAPH_RULING.ACCEPT ? 'challenger' : 'submitter'
                 } fully funds his side of the appeal, the ${
-                  currentRuling === SUBGRAPH_RULING.ACCEPT
-                    ? 'submitter'
-                    : 'challenger'
+                  ruling === SUBGRAPH_RULING.ACCEPT ? 'submitter' : 'challenger'
                 } must also fund his side of the appeal in order not to lose the case.`}
           </StyledParagraph>
         </StyledSection>

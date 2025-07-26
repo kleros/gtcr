@@ -25,10 +25,15 @@ const PERMANENT_ITEM_DETAILS_QUERY = gql`
       challenges(orderBy: createdAt, orderDirection: desc) {
         disputeID
         createdAt
+        creationTx
         resolutionTime
+        resolutionTx
         challenger
         challengerStake
         disputeOutcome
+        arbitrationSetting {
+          arbitratorExtraData
+        }
         rounds(orderBy: creationTime, orderDirection: desc) {
           appealPeriodStart
           appealPeriodEnd
