@@ -46,13 +46,13 @@ const ItemDetailsRouter = () => {
         <LightItemDetails search={search} itemID={itemID} />
       </LightTCRViewProvider>
     )
-  else if (isClassicCurate) {
+  else if (isClassicCurate)
     return (
       <TCRViewProvider tcrAddress={tcrAddress}>
         <ItemDetails search={search} itemID={itemID} />
       </TCRViewProvider>
     )
-  }
+
   return <PermanentItemDetails search={search} itemID={itemID} />
 }
 

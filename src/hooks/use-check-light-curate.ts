@@ -15,7 +15,9 @@ const useCheckLightCurate = (): {
     }
   })
   const isLightCurate = useMemo<boolean>(() => data?.lregistry ?? false, [data])
-  const isClassicCurate = useMemo<boolean>(() => data?.registry ?? false, [data])
+  const isClassicCurate = useMemo<boolean>(() => data?.registry ?? false, [
+    data
+  ])
   return { isLightCurate, isClassicCurate, checking: loading }
 }
 

@@ -51,8 +51,8 @@ const WithdrawModal: React.FC<WithdrawModalProps> = ({
     try {
       await pushWeb3Action(executeWithdraw)
       onCancel() // Close modal on success
-    } catch (error) {
-      console.error('Withdrawal failed:', error)
+    } catch (err) {
+      console.error('Withdrawal failed:', err)
     } finally {
       setLoading(false)
     }

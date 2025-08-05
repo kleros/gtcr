@@ -217,7 +217,8 @@ const Items = () => {
   }, [refreshItems, registryQuery.data, registryQuery.loading])
 
   const itemCount = useMemo(() => {
-    if (!registryQuery.data || !itemsQuery.data || !registryQuery.data.registry) return 0
+    if (!registryQuery.data || !itemsQuery.data || !registryQuery.data.registry)
+      return 0
     const r = registryQuery.data.registry
     const field = queryOptions.countField
     if (queryOptions.countField === 'all') {

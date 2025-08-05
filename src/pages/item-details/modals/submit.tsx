@@ -94,7 +94,12 @@ const SubmissionForm: React.ComponentType<any> = withFormik({
   }),
   validate: async (
     values,
-    { columns, deployedWithFactory, deployedWithLightFactory, deployedWithPermanentFactory }
+    {
+      columns,
+      deployedWithFactory,
+      deployedWithLightFactory,
+      deployedWithPermanentFactory
+    }
   ) => {
     const errors = (
       await Promise.all(
@@ -154,7 +159,11 @@ const SubmitModal: React.FC<{
   const nativeCurrency = useNativeCurrency()
   const { pushWeb3Action } = useContext(WalletContext)
   const { setUserSubscribed } = useContext(TourContext)
-  const { deployedWithFactory, deployedWithLightFactory, deployedWithPermanentFactory } = useFactory()
+  const {
+    deployedWithFactory,
+    deployedWithLightFactory,
+    deployedWithPermanentFactory
+  } = useFactory()
 
   const { fileURI, metadata } = metaEvidence || {}
   const { itemName, columns, tcrTitle } = metadata || {}

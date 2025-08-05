@@ -206,7 +206,6 @@ const SubmitModal: React.FC<{
 
   const nativeCurrency = useNativeCurrency()
   const { pushWeb3Action } = useContext(WalletContext)
-  const { setUserSubscribed } = useContext(TourContext)
   const {
     deployedWithFactory,
     deployedWithLightFactory,
@@ -233,8 +232,8 @@ const SubmitModal: React.FC<{
       ])
       setBalance(bal)
       setAllowance(allow)
-    } catch (error) {
-      console.error('Error checking token status:', error)
+    } catch (err) {
+      console.error('Error checking token status:', err)
     }
     setCheckingToken(false)
   }, [account, library, tokenAddress, tcrAddress])
@@ -308,7 +307,6 @@ const SubmitModal: React.FC<{
       itemName,
       onCancel,
       pushWeb3Action,
-      setUserSubscribed,
       submissionDeposit,
       tcrAddress,
       arbitrationCost
@@ -319,29 +317,26 @@ const SubmitModal: React.FC<{
   const hasEnoughAllowance = allowance.gte(submissionDeposit)
 
   const renderSubmitButton = () => {
-    if (checkingToken) {
+    if (checkingToken)
       return (
         <Button key="checking" loading>
           Checking Token...
         </Button>
       )
-    }
 
-    if (!hasEnoughBalance) {
+    if (!hasEnoughBalance)
       return (
         <Button key="insufficient" disabled>
           Insufficient ${tokenSymbol} Balance
         </Button>
       )
-    }
 
-    if (!hasEnoughAllowance) {
+    if (!hasEnoughAllowance)
       return (
         <Button key="approve" type="primary" onClick={handleApprove}>
           Approve ${tokenSymbol}
         </Button>
       )
-    }
 
     return (
       <Button

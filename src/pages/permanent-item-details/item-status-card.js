@@ -13,7 +13,7 @@ import {
   STATUS_CODE,
   PARTY,
   CONTRACT_STATUS,
-  SUBGRAPH_RULING,
+  SUBGRAPH_RULING
 } from 'utils/permanent-item-status'
 import ETHAddress from 'components/eth-address'
 import ItemActionModal from './item-action-modal'

@@ -151,9 +151,7 @@ const Deploy = ({ setTxState, tcrState, setTcrState }) => {
   const defaultTCRAddress = defaultTcrAddresses[networkId]
   const evidenceDisplayInterfaceURI =
     defaultEvidenceDisplayUriPermanent[networkId]
-  const {
-    metaEvidence,
-  } = useTcrView(defaultTCRAddress)
+  const { metaEvidence } = useTcrView(defaultTCRAddress)
 
   const onDeploy = () => {
     pushWeb3Action(async (_, signer) => {

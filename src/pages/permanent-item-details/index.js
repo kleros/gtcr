@@ -228,7 +228,10 @@ const ItemDetails = ({ itemID, search }) => {
       )
 
       arbitrator
-        .appealCost(challenge.disputeID, challenge.arbitrationSetting.arbitratorExtraData)
+        .appealCost(
+          challenge.disputeID,
+          challenge.arbitrationSetting.arbitratorExtraData
+        )
         .then(cost => setAppealCost(cost))
         .catch(err => {
           console.error(err)

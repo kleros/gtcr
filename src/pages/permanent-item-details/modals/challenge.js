@@ -43,7 +43,6 @@ const ERC20_ABI = [
 const ChallengeModal = ({
   item,
   itemName,
-  statusCode,
   onCancel,
   arbitrationCost,
   ...rest
@@ -78,8 +77,8 @@ const ChallengeModal = ({
       ])
       setBalance(bal)
       setAllowance(allow)
-    } catch (error) {
-      console.error('Error checking token status:', error)
+    } catch (err) {
+      console.error('Error checking token status:', err)
     }
     setCheckingToken(false)
   }, [account, library, registry.token, registry.id])
@@ -89,7 +88,7 @@ const ChallengeModal = ({
   }, [checkTokenStatus])
 
   const handleApprove = useCallback(() => {
-    pushWeb3Action(async ({ account, networkId }, signer) => {
+    pushWeb3Action(async ({ _account, _networkId }, signer) => {
       const token = new ethers.Contract(registry.token, ERC20_ABI, signer)
       const tx = await token.approve(registry.id, challengeStake.toString())
 
@@ -168,29 +167,26 @@ const ChallengeModal = ({
   const hasEnoughAllowance = allowance.gte(challengeStake.toString())
 
   const renderChallengeButton = () => {
-    if (checkingToken) {
+    if (checkingToken)
       return (
         <Button key="checking" loading>
           Checking Token...
         </Button>
       )
-    }
 
-    if (!hasEnoughBalance) {
+    if (!hasEnoughBalance)
       return (
         <Button key="insufficient" disabled>
           Insufficient ${tokenSymbol} Balance
         </Button>
       )
-    }
 
-    if (!hasEnoughAllowance) {
+    if (!hasEnoughAllowance)
       return (
         <Button key="approve" type="primary" onClick={handleApprove}>
           Approve ${tokenSymbol}
         </Button>
       )
-    }
 
     return (
       <Button

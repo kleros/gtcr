@@ -11,7 +11,6 @@ const ItemActionModal = ({
   onClose,
   fileURI,
   item,
-  tcrAddress,
   metaEvidence,
   appealCost,
   arbitrationCost

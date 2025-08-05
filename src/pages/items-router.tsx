@@ -36,21 +36,19 @@ const ItemsRouter = () => {
 
   if (checking || networkStatus !== NETWORK_STATUS.supported) return <Loading />
 
-  if (isLightCurate) {
+  if (isLightCurate)
     return (
       <LightTCRViewProvider tcrAddress={tcrAddress}>
         <LightItems />
       </LightTCRViewProvider>
     )
-  } else if (isClassicCurate) {
+  else if (isClassicCurate)
     return (
       <TCRViewProvider tcrAddress={tcrAddress}>
         <Items />
       </TCRViewProvider>
     )
-  } else {
-    return <PermanentItems />
-  }
+  else return <PermanentItems />
 }
 
 export default ItemsRouter
