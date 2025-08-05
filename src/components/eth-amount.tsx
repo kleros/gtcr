@@ -22,22 +22,13 @@ const ETHAmount: React.FC<{
       <StyledSkeleton active paragraph={false} title={SkeletonTitleProps} />
     )
 
-  let valueDisplayed = String(
-    Number(
-      ethers.utils.formatEther(
-        typeof amount === 'number'
-          ? amount.toLocaleString('fullwide', { useGrouping: false })
-          : String(amount)
-      )
-    )
+  const formattedEther = ethers.utils.formatEther(
+    typeof amount === 'number'
+      ? amount.toLocaleString('fullwide', { useGrouping: false })
+      : String(amount)
   )
 
-  const value = Number(valueDisplayed)
-
-  if (Math.floor(value) !== value) {
-    const decimalCount = value.toString().split('.')[1].length
-    valueDisplayed = value.toFixed(Math.min(decimalCount, decimals))
-  }
+  const valueDisplayed = formattedEther
 
   return <>{valueDisplayed + (displayUnit || '')}</>
 }

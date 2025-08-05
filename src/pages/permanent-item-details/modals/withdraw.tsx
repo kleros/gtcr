@@ -4,6 +4,7 @@ import styled from 'styled-components'
 import { ethers } from 'ethers'
 import _gtcr from 'assets/abis/PermanentGTCR.json'
 import { WalletContext } from 'contexts/wallet-context'
+import humanizeDuration from 'humanize-duration'
 
 export const StyledModal: any = styled(Modal)`
   & > .ant-modal-content {
@@ -72,6 +73,17 @@ const WithdrawModal: React.FC<WithdrawModalProps> = ({
         type="warning"
         showIcon
       />
+
+      {registry?.withdrawingPeriod && (
+        <StyledAlert
+          message="Withdrawal Timing"
+          description={`Withdrawing an item takes ${humanizeDuration(
+            Number(registry.withdrawingPeriod) * 1000
+          )}. After starting the withdrawal, you must wait for this period to complete before the item is permanently removed from the registry.`}
+          type="info"
+          showIcon
+        />
+      )}
 
       <Typography.Paragraph>
         Are you sure you want to withdraw "{itemName}" from the registry? This
