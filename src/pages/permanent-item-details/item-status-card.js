@@ -14,8 +14,6 @@ import {
   PARTY,
   CONTRACT_STATUS,
   SUBGRAPH_RULING,
-  STATUS_COLOR,
-  STATUS_TEXT
 } from 'utils/permanent-item-status'
 import ETHAddress from 'components/eth-address'
 import ItemActionModal from './item-action-modal'

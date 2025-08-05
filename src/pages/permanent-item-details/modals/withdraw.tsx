@@ -4,7 +4,6 @@ import styled from 'styled-components'
 import { ethers } from 'ethers'
 import _gtcr from 'assets/abis/PermanentGTCR.json'
 import { WalletContext } from 'contexts/wallet-context'
-import { useWeb3Context } from 'web3-react'
 
 export const StyledModal: any = styled(Modal)`
   & > .ant-modal-content {
@@ -34,7 +33,6 @@ const WithdrawModal: React.FC<WithdrawModalProps> = ({
   itemName
 }) => {
   const { pushWeb3Action } = useContext(WalletContext)
-  const { account } = useWeb3Context()
   const [loading, setLoading] = useState(false)
 
   const handleStartWithdraw = async () => {

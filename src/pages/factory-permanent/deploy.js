@@ -145,16 +145,14 @@ const Deploy = ({ setTxState, tcrState, setTcrState }) => {
   const { width } = useWindowDimensions()
   const [currentStep, setCurrentStep] = useState(0)
   const [txSubmitted, setTxSubmitted] = useState()
-  const [deployedTCRAddress, setDeployedTCRAddress] = useState()
-  const [submissionFormOpen, setSubmissionFormOpen] = useState()
+  const [, setDeployedTCRAddress] = useState()
+  const [, setSubmissionFormOpen] = useState()
   const factoryAddress = pgtcrFactoryAddresses[networkId]
   const defaultTCRAddress = defaultTcrAddresses[networkId]
   const evidenceDisplayInterfaceURI =
     defaultEvidenceDisplayUriPermanent[networkId]
   const {
-    submissionDeposit,
     metaEvidence,
-    challengePeriodDuration
   } = useTcrView(defaultTCRAddress)
 
   const onDeploy = () => {

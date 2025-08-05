@@ -106,7 +106,8 @@ const ChallengeModal = ({
     registry.token,
     registry.id,
     challengeStake,
-    checkTokenStatus
+    checkTokenStatus,
+    tokenSymbol
   ])
 
   const challengeRequest = async ({

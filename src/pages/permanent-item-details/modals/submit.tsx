@@ -262,7 +262,8 @@ const SubmitModal: React.FC<{
     tokenAddress,
     tcrAddress,
     submissionDeposit,
-    checkTokenStatus
+    checkTokenStatus,
+    tokenSymbol
   ])
 
   // To make sure user cannot press Submit while there are files uploading
@@ -309,7 +310,8 @@ const SubmitModal: React.FC<{
       pushWeb3Action,
       setUserSubscribed,
       submissionDeposit,
-      tcrAddress
+      tcrAddress,
+      arbitrationCost
     ]
   )
 

@@ -32,7 +32,7 @@ const EvidenceModal = ({ item, ...rest }) => {
         )
 
         // Request signature and submit.
-        const _tx = await gtcr.submitEvidence(item.itemID, ipfsEvidencePath)
+        await gtcr.submitEvidence(item.itemID, ipfsEvidencePath)
 
         rest.onCancel() // Hide the submission modal.
       } catch (err) {
