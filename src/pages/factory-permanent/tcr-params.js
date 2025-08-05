@@ -614,6 +614,22 @@ const TCRParams = ({
               {...rest}
             />
             <CustomInput
+              name="tokenAddress"
+              placeholder="0x7331deadbeef..."
+              hasFeedback
+              error={errors.tokenAddress}
+              touched={touched.tokenAddress}
+              label={
+                <span>
+                  Token Address&nbsp;
+                  <Tooltip title="The address of the ERC-20 token that will be used for deposits. Default is sDAI token address.">
+                    <Icon type="question-circle-o" />
+                  </Tooltip>
+                </span>
+              }
+              {...rest}
+            />
+            <CustomInput
               name="challengeStakeMultiplier"
               placeholder="50"
               error={errors.challengeStakeMultiplier}
@@ -764,6 +780,10 @@ const validationSchema = yup.object().shape({
   governorAddress: yup
     .string()
     .required('A governor address is required.')
+    .max(42, 'Ethereum addresses are 42 characters long.'),
+  tokenAddress: yup
+    .string()
+    .required('A token address is required.')
     .max(42, 'Ethereum addresses are 42 characters long.'),
   itemName: yup
     .string()

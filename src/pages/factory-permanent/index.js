@@ -101,6 +101,7 @@ const useCachedFactory = (version, networkId) => {
     submissionMinDeposit: 0.05,
     arbitratorAddress: defaultArbitrator || '',
     governorAddress: account || defaultGovernor || '',
+    tokenAddress: '0xaf204776c7245bF4147c2612BF6e5972Ee483701', // sDAI token address
     submissionPeriodDuration: 84,
     reinclusionPeriodDuration: 12,
     withdrawingPeriodDuration: 84,
