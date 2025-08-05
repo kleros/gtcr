@@ -28,7 +28,7 @@ const ETHAmount: React.FC<{
       : String(amount)
   )
 
-  const valueDisplayed = formattedEther
+  const valueDisplayed = formattedEther.replace(/\.?0+$/, '')
 
   return <>{valueDisplayed + (displayUnit || '')}</>
 }
