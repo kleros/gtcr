@@ -214,6 +214,7 @@ const SubmitModal: React.FC<{
 
   const [balance, setBalance] = useState(ethers.constants.Zero)
   const [allowance, setAllowance] = useState(ethers.constants.Zero)
+  const [nativeBalance, setNativeBalance] = useState()
   const [checkingToken, setCheckingToken] = useState(false)
   const [isApproving, setIsApproving] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -227,12 +228,14 @@ const SubmitModal: React.FC<{
     setCheckingToken(true)
     try {
       const token = new ethers.Contract(tokenAddress, ERC20_ABI, library)
-      const [bal, allow] = await Promise.all([
+      const [bal, allow, nativeBal] = await Promise.all([
         token.balanceOf(account),
-        token.allowance(account, tcrAddress)
+        token.allowance(account, tcrAddress),
+        library.getBalance(account)
       ])
       setBalance(bal)
       setAllowance(allow)
+      setNativeBalance(nativeBal)
     } catch (err) {
       console.error('Error checking token status:', err)
     }
@@ -347,6 +350,8 @@ const SubmitModal: React.FC<{
 
   const hasEnoughBalance = balance.gte(submissionDeposit)
   const hasEnoughAllowance = allowance.gte(submissionDeposit)
+  const hasEnoughNativeBalance =
+    nativeBalance && (nativeBalance as any).gte(arbitrationCost || 0)
 
   const renderSubmitButton = () => {
     if (checkingToken)
@@ -359,7 +364,14 @@ const SubmitModal: React.FC<{
     if (!hasEnoughBalance)
       return (
         <Button key="insufficient" disabled>
-          Insufficient ${tokenSymbol} Balance
+          Insufficient {tokenSymbol} Balance
+        </Button>
+      )
+
+    if (!hasEnoughNativeBalance)
+      return (
+        <Button key="insufficientNative" disabled>
+          Not enough {nativeCurrency}
         </Button>
       )
 
@@ -371,7 +383,7 @@ const SubmitModal: React.FC<{
           onClick={handleApprove}
           loading={isApproving}
         >
-          Approve ${tokenSymbol}
+          Approve {tokenSymbol}
         </Button>
       )
 
@@ -469,8 +481,8 @@ const SubmitModal: React.FC<{
       <DepositContainer>
         <DepositRow>
           <DepositLabel>
-            Total Deposit Required
-            <Tooltip title="A deposit is required to submit. This value reimbursed at the end of the challenge period or, if there is a dispute, be awarded to the party that wins.">
+            Item Deposit
+            <Tooltip title="The item deposit paid in tokens required to submit this item. This value is reimbursed at the end of the challenge period or, if there is a dispute, awarded to the party that wins.">
               <Icon type="question-circle-o" />
             </Tooltip>
           </DepositLabel>

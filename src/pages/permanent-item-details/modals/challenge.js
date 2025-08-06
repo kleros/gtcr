@@ -56,6 +56,7 @@ const ChallengeModal = ({
 
   const [balance, setBalance] = useState(ethers.constants.Zero)
   const [allowance, setAllowance] = useState(ethers.constants.Zero)
+  const [nativeBalance, setNativeBalance] = useState()
   const [checkingToken, setCheckingToken] = useState(false)
   const [isApproving, setIsApproving] = useState(false)
   const [isChallenging, setIsChallenging] = useState(false)
@@ -73,12 +74,14 @@ const ChallengeModal = ({
     setCheckingToken(true)
     try {
       const token = new ethers.Contract(registry.token, ERC20_ABI, library)
-      const [bal, allow] = await Promise.all([
+      const [bal, allow, nativeBal] = await Promise.all([
         token.balanceOf(account),
-        token.allowance(account, registry.id)
+        token.allowance(account, registry.id),
+        library.getBalance(account)
       ])
       setBalance(bal)
       setAllowance(allow)
+      setNativeBalance(nativeBal)
     } catch (err) {
       console.error('Error checking token status:', err)
     }
@@ -199,6 +202,8 @@ const ChallengeModal = ({
 
   const hasEnoughBalance = balance.gte(challengeStake.toString())
   const hasEnoughAllowance = allowance.gte(challengeStake.toString())
+  const hasEnoughNativeBalance =
+    nativeBalance && nativeBalance.gte(arbitrationCost || 0)
 
   const renderChallengeButton = () => {
     if (checkingToken)
@@ -211,7 +216,14 @@ const ChallengeModal = ({
     if (!hasEnoughBalance)
       return (
         <Button key="insufficient" disabled>
-          Insufficient ${tokenSymbol} Balance
+          Insufficient {tokenSymbol} Balance
+        </Button>
+      )
+
+    if (!hasEnoughNativeBalance)
+      return (
+        <Button key="insufficientNative" disabled>
+          Not enough {nativeCurrency}
         </Button>
       )
 
@@ -223,7 +235,7 @@ const ChallengeModal = ({
           onClick={handleApprove}
           loading={isApproving}
         >
-          Approve ${tokenSymbol}
+          Approve {tokenSymbol}
         </Button>
       )
 
