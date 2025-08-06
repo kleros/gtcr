@@ -16,27 +16,28 @@ const EvidenceModal = ({ item, ...rest }) => {
 
   const submitEvidence = async ({ title, description, evidenceAttachment }) => {
     pushWeb3Action(async (_, signer) => {
-      try {
-        const gtcr = new ethers.Contract(tcrAddress, _gtcr, signer)
-        const evidenceJSON = {
-          title: title,
-          description,
-          ...evidenceAttachment
-        }
+      const gtcr = new ethers.Contract(tcrAddress, _gtcr, signer)
 
-        const enc = new TextEncoder()
-        const fileData = enc.encode(JSON.stringify(evidenceJSON))
-        /* eslint-enable prettier/prettier */
-        const ipfsEvidencePath = getIPFSPath(
-          await ipfsPublish('evidence.json', fileData)
-        )
+      const evidenceJSON = {
+        title: title,
+        description,
+        ...evidenceAttachment
+      }
 
-        // Request signature and submit.
-        await gtcr.submitEvidence(item.itemID, ipfsEvidencePath)
+      const enc = new TextEncoder()
+      const fileData = enc.encode(JSON.stringify(evidenceJSON))
 
-        rest.onCancel() // Hide the submission modal.
-      } catch (err) {
-        console.error('Error submitting evidence:', err)
+      /* eslint-enable prettier/prettier */
+      const ipfsResult = await ipfsPublish('evidence.json', fileData)
+      const ipfsEvidencePath = getIPFSPath(ipfsResult)
+
+      // Request signature and submit.
+      const tx = await gtcr.submitEvidence(item.itemID, ipfsEvidencePath)
+
+      return {
+        tx,
+        actionMessage: 'Submitting evidence...',
+        onTxMined: () => rest.onCancel()
       }
     })
   }
