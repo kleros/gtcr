@@ -49,7 +49,7 @@ const ChallengeModal = ({
 }) => {
   const registry = item.registry
   const fileURI = registry.arbitrationSettings[0].metadata.policyURI
-  const { pushWeb3Action } = useContext(WalletContext)
+  const { pushWeb3Action, cancelRequest } = useContext(WalletContext)
   const { setUserSubscribed } = useContext(TourContext)
   const { account, library } = useWeb3Context()
   const nativeCurrency = useNativeCurrency()
@@ -57,6 +57,8 @@ const ChallengeModal = ({
   const [balance, setBalance] = useState(ethers.constants.Zero)
   const [allowance, setAllowance] = useState(ethers.constants.Zero)
   const [checkingToken, setCheckingToken] = useState(false)
+  const [isApproving, setIsApproving] = useState(false)
+  const [isChallenging, setIsChallenging] = useState(false)
   const { symbol: tokenSymbol } = useTokenSymbol(registry.token)
 
   // the challengeStake is used to notify user of how much they'll pass
@@ -87,17 +89,40 @@ const ChallengeModal = ({
     checkTokenStatus()
   }, [checkTokenStatus])
 
-  const handleApprove = useCallback(() => {
-    pushWeb3Action(async ({ _account, _networkId }, signer) => {
-      const token = new ethers.Contract(registry.token, ERC20_ABI, signer)
-      const tx = await token.approve(registry.id, challengeStake.toString())
+  // Reset loading states when modal is closed
+  useEffect(
+    () => () => {
+      setIsApproving(false)
+      setIsChallenging(false)
+    },
+    []
+  )
 
-      return {
-        tx,
-        actionMessage: `Approving ${tokenSymbol}`,
-        onTxMined: () => {
-          checkTokenStatus()
+  const handleApprove = useCallback(() => {
+    setIsApproving(true)
+    pushWeb3Action(async ({ _account, _networkId }, signer) => {
+      try {
+        const token = new ethers.Contract(registry.token, ERC20_ABI, signer)
+        const tx = await token.approve(registry.id, challengeStake.toString())
+
+        return {
+          tx,
+          actionMessage: `Approving ${tokenSymbol}`,
+          onTxMined: async () => {
+            // Immediately check allowance
+            await checkTokenStatus()
+
+            // If allowance is still not enough, wait 5s and check again
+            setTimeout(async () => {
+              await checkTokenStatus()
+            }, 5000)
+
+            setIsApproving(false)
+          }
         }
+      } catch (err) {
+        setIsApproving(false)
+        throw err
       }
     })
   }, [
@@ -114,51 +139,60 @@ const ChallengeModal = ({
     description,
     evidenceAttachment
   }) => {
+    setIsChallenging(true)
     pushWeb3Action(async ({ account, networkId }, signer) => {
-      const gtcr = new ethers.Contract(registry.id, _gtcr, signer)
-      const evidenceJSON = {
-        title: title || 'Challenge Justification',
-        description,
-        ...evidenceAttachment
-      }
+      try {
+        const gtcr = new ethers.Contract(registry.id, _gtcr, signer)
+        const evidenceJSON = {
+          title: title || 'Challenge Justification',
+          description,
+          ...evidenceAttachment
+        }
 
-      const enc = new TextEncoder()
-      const fileData = enc.encode(JSON.stringify(evidenceJSON))
-      /* eslint-enable prettier/prettier */
-      const ipfsEvidencePath = getIPFSPath(
-        await ipfsPublish('evidence.json', fileData)
-      )
-
-      // Request signature and submit.
-      const tx = await gtcr.challengeItem(item.itemID, ipfsEvidencePath, {
-        value: arbitrationCost
-      })
-
-      onCancel() // Hide the submission modal.
-
-      // Subscribe for notifications
-      if (process.env.REACT_APP_NOTIFICATIONS_API_URL && !!networkId)
-        fetch(
-          `${process.env.REACT_APP_NOTIFICATIONS_API_URL}/${networkId}/api/subscribe`,
-          {
-            method: 'post',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              subscriberAddr: ethers.utils.getAddress(account),
-              tcrAddr: ethers.utils.getAddress(registry.id),
-              itemID: item.itemID,
-              networkID: networkId
-            })
-          }
+        const enc = new TextEncoder()
+        const fileData = enc.encode(JSON.stringify(evidenceJSON))
+        /* eslint-enable prettier/prettier */
+        const ipfsEvidencePath = getIPFSPath(
+          await ipfsPublish('evidence.json', fileData)
         )
-          .then(() => setUserSubscribed(true))
-          .catch(err => {
-            console.error('Failed to subscribe for notifications.', err)
-          })
-      return {
-        tx,
-        actionMessage: `Challenging ${(itemName && itemName.toLowerCase()) ||
-          'item'}`
+
+        // Request signature and submit.
+        const tx = await gtcr.challengeItem(item.itemID, ipfsEvidencePath, {
+          value: arbitrationCost
+        })
+
+        onCancel() // Hide the submission modal.
+
+        // Subscribe for notifications
+        if (process.env.REACT_APP_NOTIFICATIONS_API_URL && !!networkId)
+          fetch(
+            `${process.env.REACT_APP_NOTIFICATIONS_API_URL}/${networkId}/api/subscribe`,
+            {
+              method: 'post',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                subscriberAddr: ethers.utils.getAddress(account),
+                tcrAddr: ethers.utils.getAddress(registry.id),
+                itemID: item.itemID,
+                networkID: networkId
+              })
+            }
+          )
+            .then(() => setUserSubscribed(true))
+            .catch(err => {
+              console.error('Failed to subscribe for notifications.', err)
+            })
+        return {
+          tx,
+          actionMessage: `Challenging ${(itemName && itemName.toLowerCase()) ||
+            'item'}`,
+          onTxMined: () => {
+            setIsChallenging(false)
+          }
+        }
+      } catch (err) {
+        setIsChallenging(false)
+        throw err
       }
     })
   }
@@ -183,7 +217,12 @@ const ChallengeModal = ({
 
     if (!hasEnoughAllowance)
       return (
-        <Button key="approve" type="primary" onClick={handleApprove}>
+        <Button
+          key="approve"
+          type="primary"
+          onClick={handleApprove}
+          loading={isApproving}
+        >
           Approve ${tokenSymbol}
         </Button>
       )
@@ -194,6 +233,7 @@ const ChallengeModal = ({
         type="primary"
         form={EVIDENCE_FORM_ID}
         htmlType="submit"
+        loading={isChallenging}
       >
         Challenge
       </Button>
@@ -211,7 +251,15 @@ const ChallengeModal = ({
   return (
     <StyledModal
       footer={[
-        <Button key="back" onClick={onCancel}>
+        <Button
+          key="back"
+          onClick={() => {
+            setIsApproving(false)
+            setIsChallenging(false)
+            cancelRequest()
+            onCancel()
+          }}
+        >
           Back
         </Button>,
         renderChallengeButton()

@@ -204,7 +204,7 @@ const SubmitModal: React.FC<{
   } = props
 
   const nativeCurrency = useNativeCurrency()
-  const { pushWeb3Action } = useContext(WalletContext)
+  const { pushWeb3Action, cancelRequest } = useContext(WalletContext)
   const {
     deployedWithFactory,
     deployedWithLightFactory,
@@ -215,6 +215,8 @@ const SubmitModal: React.FC<{
   const [balance, setBalance] = useState(ethers.constants.Zero)
   const [allowance, setAllowance] = useState(ethers.constants.Zero)
   const [checkingToken, setCheckingToken] = useState(false)
+  const [isApproving, setIsApproving] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const { symbol: tokenSymbol } = useTokenSymbol(tokenAddress)
 
   const { itemName, title, policyURI } = metadata || {}
@@ -241,18 +243,40 @@ const SubmitModal: React.FC<{
     checkTokenStatus()
   }, [checkTokenStatus])
 
-  const handleApprove = useCallback(() => {
-    pushWeb3Action(async ({ account, networkId }: any, signer: any) => {
-      const token = new ethers.Contract(tokenAddress, ERC20_ABI, signer)
-      const tx = await token.approve(tcrAddress, submissionDeposit)
+  // Reset loading states when modal is closed
+  useEffect(
+    () => () => {
+      setIsApproving(false)
+      setIsSubmitting(false)
+    },
+    []
+  )
 
-      return {
-        tx,
-        actionMessage: `Approving ${tokenSymbol}`,
-        onTxMined: () => {
-          // Refresh token status after transaction is mined
-          checkTokenStatus()
+  const handleApprove = useCallback(() => {
+    setIsApproving(true)
+    pushWeb3Action(async ({ account, networkId }: any, signer: any) => {
+      try {
+        const token = new ethers.Contract(tokenAddress, ERC20_ABI, signer)
+        const tx = await token.approve(tcrAddress, submissionDeposit)
+
+        return {
+          tx,
+          actionMessage: `Approving ${tokenSymbol}`,
+          onTxMined: async () => {
+            // Immediately check allowance
+            await checkTokenStatus()
+
+            // If allowance is still not enough, wait 5s and check again
+            setTimeout(async () => {
+              await checkTokenStatus()
+            }, 5000)
+
+            setIsApproving(false)
+          }
         }
+      } catch (err) {
+        setIsApproving(false)
+        throw err
       }
     })
   }, [
@@ -278,27 +302,36 @@ const SubmitModal: React.FC<{
 
   const postSubmit = useCallback(
     (values, columns, resetForm) => {
+      setIsSubmitting(true)
       pushWeb3Action(async ({ account, networkId }: any, signer: any) => {
-        const gtcr = new ethers.Contract(tcrAddress, _gtcr, signer)
-        const enc = new TextEncoder()
-        const fileData = enc.encode(JSON.stringify({ columns, values }))
-        const ipfsEvidencePath = getIPFSPath(
-          // @ts-ignore next-line
-          (await ipfsPublish('item.json', fileData)) as IPFSResultObject
-        )
+        try {
+          const gtcr = new ethers.Contract(tcrAddress, _gtcr, signer)
+          const enc = new TextEncoder()
+          const fileData = enc.encode(JSON.stringify({ columns, values }))
+          const ipfsEvidencePath = getIPFSPath(
+            // @ts-ignore next-line
+            (await ipfsPublish('item.json', fileData)) as IPFSResultObject
+          )
 
-        // Request signature and submit.
-        // TODOv2 allow choosing item stake amount
-        const tx = await gtcr.addItem(ipfsEvidencePath, submissionDeposit, {
-          value: arbitrationCost
-        })
+          // Request signature and submit.
+          // TODOv2 allow choosing item stake amount
+          const tx = await gtcr.addItem(ipfsEvidencePath, submissionDeposit, {
+            value: arbitrationCost
+          })
 
-        onCancel() // Hide the submission modal.
-        resetForm({})
-        return {
-          tx,
-          actionMessage: `Submitting ${(itemName && itemName.toLowerCase()) ||
-            'item'}`
+          onCancel() // Hide the submission modal.
+          resetForm({})
+          return {
+            tx,
+            actionMessage: `Submitting ${(itemName && itemName.toLowerCase()) ||
+              'item'}`,
+            onTxMined: () => {
+              setIsSubmitting(false)
+            }
+          }
+        } catch (err) {
+          setIsSubmitting(false)
+          throw err
         }
       })
     },
@@ -332,7 +365,12 @@ const SubmitModal: React.FC<{
 
     if (!hasEnoughAllowance)
       return (
-        <Button key="approve" type="primary" onClick={handleApprove}>
+        <Button
+          key="approve"
+          type="primary"
+          onClick={handleApprove}
+          loading={isApproving}
+        >
           Approve ${tokenSymbol}
         </Button>
       )
@@ -343,7 +381,7 @@ const SubmitModal: React.FC<{
         type="primary"
         form={SUBMISSION_FORM_ID}
         htmlType="submit"
-        loading={loadingCounter > 0}
+        loading={loadingCounter > 0 || isSubmitting}
       >
         Submit
       </Button>
@@ -372,7 +410,15 @@ const SubmitModal: React.FC<{
       title={`Submit ${(itemName && capitalizeFirstLetter(itemName)) ||
         'Item'}`}
       footer={[
-        <Button key="back" onClick={onCancel}>
+        <Button
+          key="back"
+          onClick={() => {
+            setIsApproving(false)
+            setIsSubmitting(false)
+            cancelRequest()
+            onCancel()
+          }}
+        >
           Back
         </Button>,
         renderSubmitButton()

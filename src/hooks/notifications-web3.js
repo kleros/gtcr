@@ -324,7 +324,13 @@ async function processWeb3Action(
       )
     })
 
-    const txMined = await web3Context.library.waitForTransaction(hash)
+    // Use faster polling for faster chains like Gnosis Chain
+    const pollingInterval = networkId === 100 ? 2000 : 4000 // 2s for Gnosis, 4s for others
+    const txMined = await web3Context.library.waitForTransaction(
+      hash,
+      1,
+      pollingInterval
+    )
 
     notification.success({
       message: 'Transaction mined!',
