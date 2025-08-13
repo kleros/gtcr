@@ -353,7 +353,8 @@ async function processWeb3Action(
         })
       else onTxMined()
   } catch (err) {
-    const errorMessage = err.data?.message ?? err.message
+    const errorMessage =
+      err?.data?.message || err?.message || 'Unknown error occurred'
     notification.error({
       message: 'Error submitting transaction',
       description: errorMessage,
