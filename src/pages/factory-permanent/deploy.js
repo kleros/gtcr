@@ -193,6 +193,7 @@ const Deploy = ({ setTxState, tcrState, setTcrState }) => {
         tx: deployTx,
         actionMessage: 'Deploying List',
         deployTCR: true,
+        factoryInterface: new ethers.utils.Interface(_GTCRFactory),
         onTxMined: async ({ contractAddress }) => {
           setTxState({
             txHash: deployTx.hash,
