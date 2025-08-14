@@ -14,8 +14,8 @@ export const defaultEvidenceDisplayUri = {
 
 export const defaultEvidenceDisplayUriPermanent = {
   '1': '/ipfs/QmbNJRDrrd5r9cHeApTP7pZaM7jgacDFMLED5Lj1RJMn79/index.html',
-  '100': '/ipfs/QmbNJRDrrd5r9cHeApTP7pZaM7jgacDFMLED5Lj1RJMn79/index.html'
-  // '11155111': '/ipfs/QmQjJio59WkrQDzPC5kSP3EiGaqrWxjGfkvhmD2mWwm41M/index.html'
+  '100': '/ipfs/QmbNJRDrrd5r9cHeApTP7pZaM7jgacDFMLED5Lj1RJMn79/index.html',
+  '11155111': '/ipfs/QmbNJRDrrd5r9cHeApTP7pZaM7jgacDFMLED5Lj1RJMn79/index.html'
 } as const
 
 export const defaultEvidenceDisplayUriClassic = {
@@ -59,8 +59,8 @@ export const lgtcrFactoryAddresses = {
 
 export const pgtcrFactoryAddresses = {
   '1': '0x69816b499b0ed9a60ac52cf2beb24827e5f13a89',
-  '100': '0x75c0406311bb4C81988602b0c209987188DC5A93'
-  // '11155111': '0xcB4B48d2A7a44247A00048963F169d2b4Ab045a6'
+  '100': '0x75c0406311bb4C81988602b0c209987188DC5A93',
+  '11155111': '0x22a57cd65092da41c5c1dffad03594fffc28ce20'
 } as const
 
 export const defaultGovernor = {
@@ -153,6 +153,6 @@ export const subgraphUrl = {
 
 export const subgraphUrlPermanent = {
   '1': process.env.REACT_APP_SUBGRAPH_MAINNET_PERMANENT,
-  '100': process.env.REACT_APP_SUBGRAPH_GNOSIS_PERMANENT
-  // '11155111': process.env.REACT_APP_SUBGRAPH_SEPOLIA
+  '100': process.env.REACT_APP_SUBGRAPH_GNOSIS_PERMANENT,
+  '11155111': process.env.REACT_APP_SUBGRAPH_SEPOLIA_PERMANENT
 } as const
