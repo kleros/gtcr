@@ -306,10 +306,13 @@ async function processWeb3Action(
     key: notificationID
   })
   try {
-    const { tx, actionMessage, onTxMined, deployTCR } = await web3Action.action(
-      web3Context,
-      signer
-    )
+    const {
+      tx,
+      actionMessage,
+      onTxMined,
+      deployTCR,
+      factoryInterface: customFactoryInterface
+    } = await web3Action.action(web3Context, signer)
     const hash = tx.hash
     const txLink = getTxPage({ networkId, txHash: hash })
     notification.info({
@@ -344,14 +347,35 @@ async function processWeb3Action(
     })
 
     if (onTxMined)
-      if (deployTCR)
-        // The 8th log is the NewTCR event emitted when creating the TCR.
-        // It has the address of the new TCR.
-        onTxMined({
-          contractAddress: factoryInterface.parseLog(txMined.logs[7]).values
-            ._address
-        })
-      else onTxMined()
+      if (deployTCR) {
+        try {
+          const interfaceToUse = customFactoryInterface || factoryInterface
+          // Find the NewGTCR event in the logs instead of assuming position
+          const newGTCRLog = txMined.logs.find(log => {
+            try {
+              const parsed = interfaceToUse.parseLog(log)
+              return parsed.name === 'NewTCR' || 'NewGTCR' || 'NewPGTCR'
+            } catch {
+              return false
+            }
+          })
+
+          if (newGTCRLog) {
+            const parsedLog = interfaceToUse.parseLog(newGTCRLog)
+            onTxMined({
+              contractAddress: parsedLog.values._address
+            })
+          } else {
+            console.warn('NewGTCR event not found in transaction logs')
+            onTxMined({})
+          }
+        } catch (err) {
+          console.error('Error parsing transaction logs:', err)
+          onTxMined({})
+        }
+      } else {
+        onTxMined()
+      }
   } catch (err) {
     const errorMessage =
       err?.data?.message || err?.message || 'Unknown error occurred'
