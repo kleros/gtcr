@@ -348,17 +348,25 @@ async function processWeb3Action(
 
     if (onTxMined)
       if (deployTCR) {
-        // The 8th log is the NewTCR event emitted when creating the TCR.
-        // It has the address of the new TCR.
         try {
           const interfaceToUse = customFactoryInterface || factoryInterface
-          if (txMined.logs && txMined.logs[7])
+          // Find the NewGTCR event in the logs instead of assuming position
+          const newGTCRLog = txMined.logs.find(log => {
+            try {
+              const parsed = interfaceToUse.parseLog(log)
+              return parsed.name === 'NewTCR' || 'NewGTCR' || 'NewPGTCR'
+            } catch {
+              return false
+            }
+          })
+
+          if (newGTCRLog) {
+            const parsedLog = interfaceToUse.parseLog(newGTCRLog)
             onTxMined({
-              contractAddress: interfaceToUse.parseLog(txMined.logs[7]).values
-                ._address
+              contractAddress: parsedLog.values._address
             })
-          else {
-            console.warn('Expected log at index 7 not found')
+          } else {
+            console.warn('NewGTCR event not found in transaction logs')
             onTxMined({})
           }
         } catch (err) {
