@@ -22,7 +22,9 @@ const useRequiredFees = ({
     )
       return {}
 
-    const round = item.requests[0].rounds[0]
+    const round = item.requests
+      ? item.requests[0].rounds[0]
+      : item.challenges[0].rounds[0] // for pgtcr
     const {
       ruling: currentRuling,
       amountPaidRequester,
@@ -78,7 +80,6 @@ const useRequiredFees = ({
       .div(requiredForSide)
       .mul(totalReward)
       .div(MULTIPLIER_DIVISOR)
-
     return { requiredForSide, amountStillRequired, potentialReward, appealCost }
   }, [
     MULTIPLIER_DIVISOR,

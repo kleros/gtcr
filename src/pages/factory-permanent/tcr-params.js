@@ -25,7 +25,6 @@ import CustomInput from 'components/custom-input'
 import { ItemTypes } from '@kleros/gtcr-encoder'
 import ipfsPublish from 'utils/ipfs-publish'
 import { sanitize } from 'utils/string'
-import BaseDepositInput from 'components/base-deposit-input'
 import useArbitrationCost from 'hooks/arbitration-cost'
 import KlerosParams from './kleros-params'
 import ETHAmount from 'components/eth-amount'
@@ -36,6 +35,7 @@ import { klerosAddresses } from 'config/tcr-addresses'
 import { parseIpfs } from 'utils/ipfs-parse'
 import { getIPFSPath } from 'utils/get-ipfs-path'
 import { UploadButton, StyledUpload } from 'components/input-selector'
+import PGTCRDepositInput from 'components/pgtcr-deposit-input'
 
 export const StyledAlert = styled(Alert)`
   margin-bottom: 32px;
@@ -231,7 +231,7 @@ const TCRParams = ({
       if (isNaN(value)) return
 
       setDepositVal(value)
-      setFieldValue('submissionBaseDeposit', value)
+      setFieldValue('submissionMinDeposit', value)
       setFieldValue('removalBaseDeposit', value)
       setFieldValue('removalChallengeBaseDeposit', value)
     },
@@ -252,11 +252,11 @@ const TCRParams = ({
         <StyledP>
           Factory Type:{' '}
           <Select
-            defaultValue="light"
+            defaultValue="permanent"
             style={{ width: 120, marginLeft: 8 }}
             onChange={value => {
               if (value === 'classic') history.push(`/factory-classic`)
-              else if (value === 'permanent') history.push(`/factory-permanent`)
+              else if (value === 'light') history.push(`/factory`)
             }}
           >
             <Select.Option value="classic">Classic</Select.Option>
@@ -490,60 +490,15 @@ const TCRParams = ({
         </Form.Item>
         {advancedOptions && (
           <>
-            <BaseDepositInput
-              name="submissionBaseDeposit"
-              error={errors.submissionBaseDeposit}
-              touched={touched.submissionBaseDeposit}
+            <PGTCRDepositInput
+              name="submissionMinDeposit"
+              error={errors.submissionMinDeposit}
+              touched={touched.submissionMinDeposit}
               arbitrationCost={arbitrationCost}
               label={
                 <span>
-                  Submission Challenge Bounty&nbsp;
-                  <Tooltip title="This is the deposit required to submit an item to the list and also the amount awarded to successful challengers. If the value is too low, challengers may not have enough incentive to look for flaws in the submissions and bad ones could make it through. If it is too high, submitters may not have enough incentive to send items which may result in an empty list.">
-                    <Icon type="question-circle-o" />
-                  </Tooltip>
-                </span>
-              }
-              {...rest}
-            />
-            <BaseDepositInput
-              name="removalBaseDeposit"
-              error={errors.removalBaseDeposit}
-              touched={touched.removalBaseDeposit}
-              arbitrationCost={arbitrationCost}
-              label={
-                <span>
-                  Removal Challenge Bounty&nbsp;
-                  <Tooltip title="This is the deposit required to remove an item and also the amount awarded to successful challengers. If the value is too low, people will not have enough incentive to look for flaws in removal requests and compliant items could be removed from the list. If it is too high, people will be afraid to remove items so a non compliant submission could stay longer than it should.">
-                    <Icon type="question-circle-o" />
-                  </Tooltip>
-                </span>
-              }
-              {...rest}
-            />
-            <BaseDepositInput
-              name="submissionChallengeBaseDeposit"
-              error={errors.submissionChallengeBaseDeposit}
-              touched={touched.submissionChallengeBaseDeposit}
-              arbitrationCost={arbitrationCost}
-              label={
-                <span>
-                  Incorrect Challenge Compensation&nbsp;
-                  <Tooltip title="This amount, which is included in the deposits that challengers must make, is given to the submitter in the event that a challenged submission is ultimately ruled to be correct. One typically wants Incorrect Challenge Compensation to be zero, because being on the list should be an adequate incentive for submitters. However, if you anticipate frivolous challenges being a problem, a higher Incorrect Challenge Compensation can help protect against this. If Incorrect Challenge Compensation is too high, users will be disincentivized from challenging and incorrect entries may make it onto the list unchallenged.">
-                    <Icon type="question-circle-o" />
-                  </Tooltip>
-                </span>
-              }
-              {...rest}
-            />
-            <BaseDepositInput
-              name="removalChallengeBaseDeposit"
-              error={errors.removalChallengeBaseDeposit}
-              touched={touched.removalChallengeBaseDeposit}
-              arbitrationCost={arbitrationCost}
-              label={
-                <span>
-                  Incorrect Removal Challenge Compensation&nbsp;
-                  <Tooltip title="This amount, which is included in the deposits that challengers to removal requests must make, is given to the removal requestor in the event that a challenged removal request is ultimately ruled to be correct. If Incorrect Removal Challenge Compensation is too high, users will be disincentivized from challenging removal requests and correct entries may be removed from the list unchallenged. If Incorrect Removal Challenge Compensation is too low, users may not be adequately incentivized to submit removal requests, and incorrect entries may remain on the list longer than they should.">
+                  Min Submission Deposit&nbsp;
+                  <Tooltip title="This is the minimum amount for the deposit backing up an item in the list, which is to be awarded to successful challengers. If the value is too low, challengers may not have enough incentive to look for flaws in most of the submissions and bad ones could make it through. If it is too high, submitters may not have enough incentive to send items which may result in an empty list.">
                     <Icon type="question-circle-o" />
                   </Tooltip>
                 </span>
@@ -551,17 +506,71 @@ const TCRParams = ({
               {...rest}
             />
             <CustomInput
-              name="challengePeriodDuration"
+              name="submissionPeriodDuration"
               placeholder="84"
               addonAfter="Hours"
-              error={errors.challengePeriodDuration}
-              touched={touched.challengePeriodDuration}
+              error={errors.submissionPeriodDuration}
+              touched={touched.submissionPeriodDuration}
               type={ItemTypes.NUMBER}
               step={1}
               label={
                 <span>
-                  Challenge Period Duration (hours) &nbsp;
-                  <Tooltip title="The length of time (in hours) that a submission can be challenged before it it automatically accepted onto the list and the submitter's deposit is refunded.">
+                  Submission Period Duration (hours) &nbsp;
+                  <Tooltip title="The length of time (in hours) that a freshly submitted item needs to last without challenges before it it considered accepted onto the list.">
+                    <Icon type="question-circle-o" />
+                  </Tooltip>
+                </span>
+              }
+              {...rest}
+            />
+            <CustomInput
+              name="reinclusionPeriodDuration"
+              placeholder="6"
+              addonAfter="Hours"
+              error={errors.reinclusionPeriodDuration}
+              touched={touched.reinclusionPeriodDuration}
+              type={ItemTypes.NUMBER}
+              step={1}
+              label={
+                <span>
+                  Reinclusion Period Duration (hours) &nbsp;
+                  <Tooltip title="The length of time (in hours) that an item ruled to be kept included needs to last without challenges before it it considered accepted onto the list.">
+                    <Icon type="question-circle-o" />
+                  </Tooltip>
+                </span>
+              }
+              {...rest}
+            />
+            <CustomInput
+              name="withdrawingPeriodDuration"
+              placeholder="84"
+              addonAfter="Hours"
+              error={errors.withdrawingPeriodDuration}
+              touched={touched.withdrawingPeriodDuration}
+              type={ItemTypes.NUMBER}
+              step={1}
+              label={
+                <span>
+                  Withdrawing Period Duration (hours) &nbsp;
+                  <Tooltip title="The length of time (in hours) that an item takes to be manually withdrawn by its submitter.">
+                    <Icon type="question-circle-o" />
+                  </Tooltip>
+                </span>
+              }
+              {...rest}
+            />
+            <CustomInput
+              name="arbitrationParamsCooldown"
+              placeholder="168"
+              addonAfter="Hours"
+              error={errors.arbitrationParamsCooldown}
+              touched={touched.arbitrationParamsCooldown}
+              type={ItemTypes.NUMBER}
+              step={1}
+              label={
+                <span>
+                  Arbitration Parameters Cooldown (hours) &nbsp;
+                  <Tooltip title="The length of time (in hours) that a new Policy and Arbitration Settings need to be put into effect.">
                     <Icon type="question-circle-o" />
                   </Tooltip>
                 </span>
@@ -598,6 +607,39 @@ const TCRParams = ({
                   <Tooltip
                     title={`This is the contract address of the arbitrator that will resolve disputes regarding whether challenged submissions and challenged removal requests belong on this list. By default it is set to ${defaultArbLabel}, but you could use any other arbitrator complying with the ERC 792 standard.`}
                   >
+                    <Icon type="question-circle-o" />
+                  </Tooltip>
+                </span>
+              }
+              {...rest}
+            />
+            <CustomInput
+              name="tokenAddress"
+              placeholder="0x7331deadbeef..."
+              hasFeedback
+              error={errors.tokenAddress}
+              touched={touched.tokenAddress}
+              label={
+                <span>
+                  Token Address&nbsp;
+                  <Tooltip title="The address of the ERC-20 token that will be used for deposits. Default is sDAI token address.">
+                    <Icon type="question-circle-o" />
+                  </Tooltip>
+                </span>
+              }
+              {...rest}
+            />
+            <CustomInput
+              name="challengeStakeMultiplier"
+              placeholder="50"
+              error={errors.challengeStakeMultiplier}
+              touched={touched.challengeStakeMultiplier}
+              type={ItemTypes.NUMBER}
+              addonAfter="%"
+              label={
+                <span>
+                  Challenge stake multiplier&nbsp;
+                  <Tooltip title="This is the multiplier for the stake the challenger must pay to create a dispute against an item, which will be reimbursed if the challenge is successful, or get reinvested into the item stake if the challenge fails.">
                     <Icon type="question-circle-o" />
                   </Tooltip>
                 </span>
@@ -739,6 +781,10 @@ const validationSchema = yup.object().shape({
     .string()
     .required('A governor address is required.')
     .max(42, 'Ethereum addresses are 42 characters long.'),
+  tokenAddress: yup
+    .string()
+    .required('A token address is required.')
+    .max(42, 'Ethereum addresses are 42 characters long.'),
   itemName: yup
     .string()
     .required('An item name is required.')
@@ -747,33 +793,38 @@ const validationSchema = yup.object().shape({
     .string()
     .required('The plural of the item name is required.')
     .max(20, 'The item name must be less than 20 characters long.'),
-  submissionBaseDeposit: yup
+  submissionMinDeposit: yup
     .number()
     .typeError('Amount should be a number.')
     .required('A value is required.')
     .min(0, 'The amount must not be negative.'),
-  removalBaseDeposit: yup
+  submissionPeriodDuration: yup
     .number()
     .typeError('Amount should be a number.')
     .required('A value is required.')
     .min(0, 'The amount must not be negative.'),
-  submissionChallengeBaseDeposit: yup
+  reinclusionPeriodDuration: yup
     .number()
     .typeError('Amount should be a number.')
     .required('A value is required.')
     .min(0, 'The amount must not be negative.'),
-  removalChallengeBaseDeposit: yup
+  withdrawingPeriodDuration: yup
     .number()
     .typeError('Amount should be a number.')
     .required('A value is required.')
     .min(0, 'The amount must not be negative.'),
-  challengePeriodDuration: yup
+  arbitrationParamsCooldown: yup
     .number()
     .typeError('Amount should be a number.')
     .required('A value is required.')
     .min(0, 'The amount must not be negative.'),
   tcrPrimaryDocument: yup.string().required('A primary document is required.'),
   tcrLogo: yup.string().required('A logo is required.'),
+  challengeStakeMultiplier: yup
+    .number()
+    .typeError('Amount should be a number.')
+    .min(0, 'The stake multiplier cannot be negative.')
+    .required('A value is required'),
   sharedStakeMultiplier: yup
     .number()
     .typeError('Amount should be a number.')

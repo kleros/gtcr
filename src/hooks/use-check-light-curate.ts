@@ -5,6 +5,7 @@ import { TCR_EXISTENCE_TEST } from 'utils/graphql'
 
 const useCheckLightCurate = (): {
   isLightCurate: boolean
+  isClassicCurate: boolean
   checking: boolean
 } => {
   const { tcrAddress } = useParams<{ tcrAddress: string }>()
@@ -14,8 +15,10 @@ const useCheckLightCurate = (): {
     }
   })
   const isLightCurate = useMemo<boolean>(() => data?.lregistry ?? false, [data])
-
-  return { isLightCurate, checking: loading }
+  const isClassicCurate = useMemo<boolean>(() => data?.registry ?? false, [
+    data
+  ])
+  return { isLightCurate, isClassicCurate, checking: loading }
 }
 
 export default useCheckLightCurate

@@ -7,7 +7,8 @@ import {
   Switch,
   message,
   Slider,
-  InputNumber
+  InputNumber,
+  Select
 } from 'antd'
 import PropTypes from 'prop-types'
 import { withFormik } from 'formik'
@@ -192,8 +193,19 @@ const TCRParams = ({
       title="Enter the list parameters"
       extra={
         <StyledP>
-          Use Classic{' '}
-          <Switch defaultChecked onClick={() => history.push(`/factory`)} />
+          Factory Type:{' '}
+          <Select
+            defaultValue="classic"
+            style={{ width: 120, marginLeft: 8 }}
+            onChange={value => {
+              if (value === 'light') history.push(`/factory`)
+              else if (value === 'permanent') history.push(`/factory-permanent`)
+            }}
+          >
+            <Select.Option value="classic">Classic</Select.Option>
+            <Select.Option value="light">Light</Select.Option>
+            <Select.Option value="permanent">Permanent</Select.Option>
+          </Select>
         </StyledP>
       }
     >

@@ -8,6 +8,13 @@ import { NETWORK_STATUS } from 'config/networks'
 import useCheckLightCurate from 'hooks/use-check-light-curate'
 import Loading from 'components/loading'
 
+const PermanentItemDetails = loadable(
+  () => import(/* webpackPrefetch: true */ './permanent-item-details/index'),
+  {
+    fallback: <Loading />
+  }
+)
+
 const LightItemDetails = loadable(
   () => import(/* webpackPrefetch: true */ './light-item-details/index'),
   {
@@ -29,7 +36,7 @@ const ItemDetailsRouter = () => {
   }>()
   const { networkStatus } = useTcrNetwork()
   const search = window.location.search
-  const { isLightCurate, checking } = useCheckLightCurate()
+  const { isLightCurate, isClassicCurate, checking } = useCheckLightCurate()
 
   if (checking || networkStatus !== NETWORK_STATUS.supported) return <Loading />
 
@@ -39,12 +46,14 @@ const ItemDetailsRouter = () => {
         <LightItemDetails search={search} itemID={itemID} />
       </LightTCRViewProvider>
     )
+  else if (isClassicCurate)
+    return (
+      <TCRViewProvider tcrAddress={tcrAddress}>
+        <ItemDetails search={search} itemID={itemID} />
+      </TCRViewProvider>
+    )
 
-  return (
-    <TCRViewProvider tcrAddress={tcrAddress}>
-      <ItemDetails search={search} itemID={itemID} />
-    </TCRViewProvider>
-  )
+  return <PermanentItemDetails search={search} itemID={itemID} />
 }
 
 export default ItemDetailsRouter

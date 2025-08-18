@@ -94,7 +94,12 @@ const SubmissionForm: React.ComponentType<any> = withFormik({
   }),
   validate: async (
     values,
-    { columns, deployedWithFactory, deployedWithLightFactory }
+    {
+      columns,
+      deployedWithFactory,
+      deployedWithLightFactory,
+      deployedWithPermanentFactory
+    }
   ) => {
     const errors = (
       await Promise.all(
@@ -105,7 +110,8 @@ const SubmissionForm: React.ComponentType<any> = withFormik({
             wasDeployedWithFactory:
               !!values[label] &&
               ((await deployedWithFactory(values[label])) ||
-                (await deployedWithLightFactory(values[label]))),
+                (await deployedWithLightFactory(values[label])) ||
+                (await deployedWithPermanentFactory(values[label]))),
             label: label
           }))
       )
@@ -153,7 +159,11 @@ const SubmitModal: React.FC<{
   const nativeCurrency = useNativeCurrency()
   const { pushWeb3Action } = useContext(WalletContext)
   const { setUserSubscribed } = useContext(TourContext)
-  const { deployedWithFactory, deployedWithLightFactory } = useFactory()
+  const {
+    deployedWithFactory,
+    deployedWithLightFactory,
+    deployedWithPermanentFactory
+  } = useFactory()
 
   const { fileURI, metadata } = metaEvidence || {}
   const { itemName, columns, tcrTitle } = metadata || {}
@@ -299,6 +309,7 @@ const SubmitModal: React.FC<{
         disabledFields={disabledFields}
         deployedWithFactory={deployedWithFactory}
         deployedWithLightFactory={deployedWithLightFactory}
+        deployedWithPermanentFactory={deployedWithPermanentFactory}
         setFileToUpload={setFileToUpload}
         setFileAsUploaded={setFileAsUploaded}
       />
