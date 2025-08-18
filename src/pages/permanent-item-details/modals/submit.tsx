@@ -506,6 +506,22 @@ const SubmitModal: React.FC<{
           />
         </DepositRow>
       </DepositContainer>
+      <DepositRow style={{ marginTop: 8 }}>
+        <DepositLabel>Total deposit</DepositLabel>
+        <span style={{ display: 'flex', alignItems: 'center' }}>
+          <ETHAmount
+            decimals={3}
+            amount={submissionDeposit.toString()}
+            displayUnit={` ${tokenSymbol}`}
+          />
+          <span style={{ margin: '0 6px' }}>+</span>
+          <ETHAmount
+            decimals={3}
+            amount={arbitrationCost ? arbitrationCost.toString() : '0'}
+            displayUnit={` ${nativeCurrency}`}
+          />
+        </span>
+      </DepositRow>
     </StyledModal>
   )
 }

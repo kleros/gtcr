@@ -262,6 +262,13 @@ const ChallengeModal = ({
 
   return (
     <StyledModal
+      title="Challenge Item"
+      onCancel={() => {
+        setIsApproving(false)
+        setIsChallenging(false)
+        cancelRequest()
+        onCancel()
+      }}
       footer={[
         <Button
           key="back"
@@ -325,6 +332,22 @@ const ChallengeModal = ({
           />
         </DepositRow>
       </DepositContainer>
+      <DepositRow style={{ marginTop: 8 }}>
+        <DepositLabel>Total deposit</DepositLabel>
+        <span style={{ display: 'flex', alignItems: 'center' }}>
+          <ETHAmount
+            decimals={3}
+            amount={challengeStake.toString()}
+            displayUnit={` ${tokenSymbol}`}
+          />
+          <span style={{ margin: '0 6px' }}>+</span>
+          <ETHAmount
+            decimals={3}
+            amount={arbitrationCost.toString()}
+            displayUnit={` ${nativeCurrency}`}
+          />
+        </span>
+      </DepositRow>
     </StyledModal>
   )
 }
