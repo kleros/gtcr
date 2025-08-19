@@ -2,7 +2,7 @@ import { gql } from '@apollo/client'
 
 const LIGHT_REGISTRY_QUERY = gql`
   query lightRegistryQuery($lowerCaseTCRAddress: String!) {
-    lregistry(id: $lowerCaseTCRAddress) {
+    lregistry: LRegistry_by_pk(id: $lowerCaseTCRAddress) {
       numberOfAbsent
       numberOfRegistered
       numberOfRegistrationRequested

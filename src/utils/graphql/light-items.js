@@ -2,13 +2,13 @@ import { gql } from '@apollo/client'
 
 const LIGHT_ITEMS_QUERY = gql`
   query lightItemsQuery(
-    $skip: Int
-    $first: Int
-    $orderDirection: OrderDirection
-    $where: LItem_filter
-    $registryId: String
+    $offset: Int
+    $limit: Int
+    $order_by: [LItem_order_by!]
+    $where: LItem_bool_exp
+    $registryId: String!
   ) {
-    lregistry(id: $registryId) {
+    lregistry: LRegistry_by_pk(id: $registryId) {
       numberOfAbsent
       numberOfRegistered
       numberOfRegistrationRequested
@@ -16,26 +16,23 @@ const LIGHT_ITEMS_QUERY = gql`
       numberOfChallengedRegistrations
       numberOfChallengedClearing
     }
-    litems(
-      skip: $skip
-      first: $first
-      orderDirection: $orderDirection
-      orderBy: latestRequestSubmissionTime
+    litems: LItem(
+      offset: $offset
+      limit: $limit
+      order_by: $order_by
       where: $where
     ) {
       itemID
       status
       data
-      metadata {
-        props {
-          value
-          type
-          label
-          description
-          isIdentifier
-        }
+      props {
+        value
+        type: itemType
+        label
+        description
+        isIdentifier
       }
-      requests(first: 1, orderBy: submissionTime, orderDirection: desc) {
+      requests(limit: 1, order_by: { submissionTime: desc }) {
         disputed
         disputeID
         submissionTime
@@ -44,7 +41,7 @@ const LIGHT_ITEMS_QUERY = gql`
         challenger
         resolutionTime
         deposit
-        rounds(first: 1, orderBy: creationTime, orderDirection: desc) {
+        rounds(limit: 1, order_by: { creationTime: desc }) {
           appealPeriodStart
           appealPeriodEnd
           ruling

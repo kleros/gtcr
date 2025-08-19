@@ -96,30 +96,40 @@ const Items = () => {
   const orderDirection = oldestFirst ? 'asc' : 'desc'
 
   const itemsWhere = useMemo(() => {
-    if (absent) return { registry: tcrAddress.toLowerCase(), status: 'Absent' }
+    if (absent)
+      return {
+        registry_id: { _eq: tcrAddress.toLowerCase() },
+        status: { _eq: 'Absent' }
+      }
     if (registered)
-      return { registry: tcrAddress.toLowerCase(), status: 'Registered' }
+      return {
+        registry_id: { _eq: tcrAddress.toLowerCase() },
+        status: { _eq: 'Registered' }
+      }
     if (submitted)
       return {
-        registry: tcrAddress.toLowerCase(),
-        status: 'RegistrationRequested'
+        registry_id: { _eq: tcrAddress.toLowerCase() },
+        status: { _eq: 'RegistrationRequested' }
       }
     if (removalRequested)
-      return { registry: tcrAddress.toLowerCase(), status: 'ClearingRequested' }
+      return {
+        registry_id: { _eq: tcrAddress.toLowerCase() },
+        status: { _eq: 'ClearingRequested' }
+      }
     if (challengedSubmissions)
       return {
-        registry: tcrAddress.toLowerCase(),
-        status: 'RegistrationRequested',
-        disputed: true
+        registry_id: { _eq: tcrAddress.toLowerCase() },
+        status: { _eq: 'RegistrationRequested' },
+        disputed: { _eq: true }
       }
     if (challengedRemovals)
       return {
-        registry: tcrAddress.toLowerCase(),
-        status: 'ClearingRequested',
-        disputed: true
+        registry_id: { _eq: tcrAddress.toLowerCase() },
+        status: { _eq: 'ClearingRequested' },
+        disputed: { _eq: true }
       }
 
-    return { registry: tcrAddress.toLowerCase() }
+    return { registry_id: { _eq: tcrAddress.toLowerCase() } }
   }, [
     absent,
     challengedRemovals,
@@ -142,9 +152,9 @@ const Items = () => {
     () =>
       getItems({
         variables: {
-          skip: (Number(page) - 1) * ITEMS_PER_PAGE,
-          first: MAX_ENTITIES,
-          orderDirection: orderDirection,
+          offset: (Number(page) - 1) * ITEMS_PER_PAGE,
+          limit: MAX_ENTITIES,
+          order_by: [{ latestRequestSubmissionTime: orderDirection }],
           where: itemsWhere
         }
       }),

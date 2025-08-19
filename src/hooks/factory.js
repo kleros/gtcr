@@ -17,7 +17,7 @@ const useFactory = () => {
     const query = {
       query: `
         {
-          lregistry(id: "${tcrAddress.toLowerCase()}") {
+          lregistry:LRegistry_by_pk(id: "${tcrAddress.toLowerCase()}") {
             id
           }
         }
@@ -48,7 +48,7 @@ const useFactory = () => {
     const query = {
       query: `
         {
-          registry(id: "${tcrAddress.toLowerCase()}") {
+          registry:Registry_by_pk(id: "${tcrAddress.toLowerCase()}") {
             id
           }
         }

@@ -1,40 +1,36 @@
 import { gql } from '@apollo/client'
 
 const ITEM_SEARCH_QUERY = gql`
-  query itemSearchQuery($text: String!) {
-    itemSearch(text: $text, first: $first) {
-      item {
+  query itemSearchQuery($where: LItem_bool_exp!, $limit: Int) {
+    itemSearch: LItem(limit: $limit, where: $where) {
+      id
+      itemID
+      data
+      props {
+        type: itemType
+        value
+        isIdentifier
+      }
+      registry {
         id
-        itemID
-        data
-        metadata {
-          props {
-            type
-            value
-            isIdentifier
-          }
-        }
-        registry {
-          id
-        }
-        requests(first: 1, orderBy: submissionTime, orderDirection: desc) {
-          disputed
-          disputeID
-          submissionTime
-          resolved
-          requester
-          challenger
-          resolutionTime
-          deposit
-          rounds(first: 1, orderBy: creationTime, orderDirection: desc) {
-            appealPeriodStart
-            appealPeriodEnd
-            ruling
-            hasPaidRequester
-            hasPaidChallenger
-            amountPaidRequester
-            amountPaidChallenger
-          }
+      }
+      requests(limit: 1, order_by: { submissionTime: desc }) {
+        disputed
+        disputeID
+        submissionTime
+        resolved
+        requester
+        challenger
+        resolutionTime
+        deposit
+        rounds(limit: 1, order_by: { creationTime: desc }) {
+          appealPeriodStart
+          appealPeriodEnd
+          ruling
+          hasPaidRequester
+          hasPaidChallenger
+          amountPaidRequester
+          amountPaidChallenger
         }
       }
     }

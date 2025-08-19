@@ -2,10 +2,10 @@ import { gql } from '@apollo/client'
 
 const TCR_EXISTENCE_TEST = gql`
   query TcrExistenceTest($tcrAddress: String!) {
-    lregistry(id: $tcrAddress) {
+    lregistry: LRegistry_by_pk(id: $tcrAddress) {
       id
     }
-    registry(id: $tcrAddress) {
+    registry: Registry_by_pk(id: $tcrAddress) {
       id
     }
   }

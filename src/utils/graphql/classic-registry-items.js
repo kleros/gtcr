@@ -4,22 +4,21 @@ import { gql } from '@apollo/client'
 
 const CLASSIC_REGISTRY_ITEMS_QUERY = gql`
   query classicRegistryItemsQuery(
-    $skip: Int
-    $first: Int
-    $orderDirection: OrderDirection
-    $where: Item_filter
+    $offset: Int
+    $limit: Int
+    $order_by: [Item_order_by!]
+    $where: Item_bool_exp
   ) {
-    items(
-      skip: $skip
-      first: $first
-      orderDirection: $orderDirection
-      orderBy: latestRequestSubmissionTime
+    items: Item(
+      offset: $offset
+      limit: $limit
+      order_by: $order_by
       where: $where
     ) {
       itemID
       status
       data
-      requests(first: 1, orderBy: submissionTime, orderDirection: desc) {
+      requests(limit: 1, order_by: { submissionTime: desc }) {
         disputed
         disputeID
         submissionTime
@@ -27,7 +26,7 @@ const CLASSIC_REGISTRY_ITEMS_QUERY = gql`
         requester
         challenger
         deposit
-        rounds(first: 1, orderBy: creationTime, orderDirection: desc) {
+        rounds(limit: 1, order_by: { creationTime: desc }) {
           appealed
           appealPeriodStart
           appealPeriodEnd
