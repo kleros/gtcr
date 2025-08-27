@@ -20,20 +20,25 @@ const STORAGE_KEY = '@kleros/curate/alert/smart-contract-wallet-warning'
 
 export default function SmartContractWalletWarning() {
   const { account, library } = useWeb3Context()
-  const [isSmartContractWallet, setIsSmartContractWallet] = useState(false)
-  const [showWarning, setShowWarning] = useState(() => {
+  const [isSmartContractWallet, setIsSmartContractWallet] = useState<boolean>(
+    false
+  )
+  const [showWarning, setShowWarning] = useState<boolean>(true)
+
+  const updateAccountWarningDismissalState = (account: string) => {
     try {
-      const storedValue = localStorage.getItem(STORAGE_KEY)
-      if (storedValue === null) return true
-      return JSON.parse(storedValue)
+      const storedValue = localStorage.getItem(`${STORAGE_KEY}:${account}`)
+      if (storedValue === null) {
+        setShowWarning(true)
+      } else {
+        setShowWarning(JSON.parse(storedValue))
+      }
     } catch {
-      return true
+      setShowWarning(true)
     }
-  })
+  }
 
-  useEffect(() => {
-    if (!account || !library) return
-
+  const checkIfSmartContractWallet = (account: string, library: any) => {
     library.provider
       .send('eth_getCode', [account, 'latest'])
       .then((res: { result: string }) => {
@@ -47,6 +52,16 @@ export default function SmartContractWalletWarning() {
         console.error('Error checking smart contract wallet', err)
         setIsSmartContractWallet(false)
       })
+  }
+
+  useEffect(() => {
+    if (!account || !library) {
+      setIsSmartContractWallet(false)
+      return
+    }
+
+    updateAccountWarningDismissalState(account)
+    checkIfSmartContractWallet(account, library)
   }, [account, library])
 
   if (!showWarning || !isSmartContractWallet) {
@@ -55,7 +70,7 @@ export default function SmartContractWalletWarning() {
 
   const handleClose = () => {
     setShowWarning(false)
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(false))
+    localStorage.setItem(`${STORAGE_KEY}:${account}`, JSON.stringify(false))
   }
 
   return (
