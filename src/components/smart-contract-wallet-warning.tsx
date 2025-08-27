@@ -15,14 +15,15 @@ const StyledP = styled.p`
   margin: 0;
 `
 
-const storageKey = '@kleros/curate/alert/smart-contract-wallet-warning'
+const EIP7702_PREFIX = '0xef0100'
+const STORAGE_KEY = '@kleros/curate/alert/smart-contract-wallet-warning'
 
 export default function SmartContractWalletWarning() {
   const { account, library } = useWeb3Context()
   const [isSmartContractWallet, setIsSmartContractWallet] = useState(false)
   const [showWarning, setShowWarning] = useState(() => {
     try {
-      const storedValue = localStorage.getItem(storageKey)
+      const storedValue = localStorage.getItem(STORAGE_KEY)
       if (storedValue === null) return true
       return JSON.parse(storedValue)
     } catch {
@@ -36,7 +37,11 @@ export default function SmartContractWalletWarning() {
     library.provider
       .send('eth_getCode', [account, 'latest'])
       .then((res: { result: string }) => {
-        setIsSmartContractWallet(res.result !== '0x')
+        const formattedCode = res.result.toLowerCase()
+        const isEip7702Eoa = formattedCode.startsWith(EIP7702_PREFIX)
+
+        //Do not show warning for EIP-7702 EOAs
+        setIsSmartContractWallet(formattedCode !== '0x' && !isEip7702Eoa)
       })
       .catch((err: Error) => {
         console.error('Error checking smart contract wallet', err)
@@ -50,7 +55,7 @@ export default function SmartContractWalletWarning() {
 
   const handleClose = () => {
     setShowWarning(false)
-    localStorage.setItem(storageKey, JSON.stringify(false))
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(false))
   }
 
   return (
