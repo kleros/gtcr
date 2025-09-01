@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 import { Alert } from 'antd'
 import styled from 'styled-components'
 import { useWeb3Context } from 'web3-react'
@@ -25,7 +25,7 @@ export default function SmartContractWalletWarning() {
   )
   const [showWarning, setShowWarning] = useState<boolean>(true)
 
-  const updateAccountWarningDismissalState = (account: string) => {
+  const updateAccountWarningDismissalState = useCallback((account: string) => {
     try {
       const storedValue = localStorage.getItem(`${STORAGE_KEY}:${account}`)
       if (storedValue === null) {
@@ -36,23 +36,31 @@ export default function SmartContractWalletWarning() {
     } catch {
       setShowWarning(true)
     }
-  }
+  }, [])
 
-  const checkIfSmartContractWallet = (account: string, library: any) => {
-    library.provider
-      .send('eth_getCode', [account, 'latest'])
-      .then((res: { result: string }) => {
-        const formattedCode = res.result.toLowerCase()
-        const isEip7702Eoa = formattedCode.startsWith(EIP7702_PREFIX)
+  const checkIfSmartContractWallet = useCallback(
+    (account: string, library: any) => {
+      library.provider
+        .send('eth_getCode', [account, 'latest'])
+        .then((res: { result: string }) => {
+          const formattedCode = res.result.toLowerCase()
+          const isEip7702Eoa = formattedCode.startsWith(EIP7702_PREFIX)
 
-        //Do not show warning for EIP-7702 EOAs
-        setIsSmartContractWallet(formattedCode !== '0x' && !isEip7702Eoa)
-      })
-      .catch((err: Error) => {
-        console.error('Error checking smart contract wallet', err)
-        setIsSmartContractWallet(false)
-      })
-  }
+          //Do not show warning for EIP-7702 EOAs
+          setIsSmartContractWallet(formattedCode !== '0x' && !isEip7702Eoa)
+        })
+        .catch((err: Error) => {
+          console.error('Error checking smart contract wallet', err)
+          setIsSmartContractWallet(false)
+        })
+    },
+    []
+  )
+
+  const handleClose = useCallback(() => {
+    setShowWarning(false)
+    localStorage.setItem(`${STORAGE_KEY}:${account}`, JSON.stringify(false))
+  }, [account])
 
   useEffect(() => {
     if (!account || !library) {
@@ -62,15 +70,12 @@ export default function SmartContractWalletWarning() {
 
     updateAccountWarningDismissalState(account)
     checkIfSmartContractWallet(account, library)
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [account, library])
 
   if (!showWarning || !isSmartContractWallet) {
     return null
-  }
-
-  const handleClose = () => {
-    setShowWarning(false)
-    localStorage.setItem(`${STORAGE_KEY}:${account}`, JSON.stringify(false))
   }
 
   return (
