@@ -10,6 +10,7 @@ import { WalletProvider } from 'contexts/wallet-context'
 import { TourProvider } from 'contexts/tour-context'
 import WalletModal from 'components/modals/wallet-modal'
 import WelcomeModal from 'components/modals/welcome-modal'
+import SmartContractWalletWarning from 'components/smart-contract-wallet-warning'
 import AppBar from 'components/layout/app-bar'
 import AppRouter from './app-router'
 import connectors from 'config/connectors'
@@ -69,6 +70,7 @@ const App = () => {
             </Helmet>
             <StyledLayout>
               <Layout>
+                <SmartContractWalletWarning />
                 <AppBar />
                 <AppRouter />
                 <StyledClickaway
