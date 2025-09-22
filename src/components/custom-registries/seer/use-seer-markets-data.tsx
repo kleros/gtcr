@@ -14,7 +14,7 @@ const useSeerMarketsData = (
 
     const fetchSeerData = async () => {
       const contractAddresses = items
-        .map(item => item?.decodedData?.[1]?.toLowerCase())
+        .map(item => item?.decodedData?.[0]?.toLowerCase())
         .filter(Boolean)
       if (contractAddresses.length === 0) return
 
