@@ -6,7 +6,7 @@ const ITEM_SEARCH_QUERY = gql`
       id
       itemID
       data
-      props {
+      props(order_by: { label: asc }) {
         type: itemType
         value
         isIdentifier

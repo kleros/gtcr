@@ -25,7 +25,7 @@ const LIGHT_ITEMS_QUERY = gql`
       itemID
       status
       data
-      props {
+      props(order_by: { label: asc }) {
         value
         type: itemType
         label
