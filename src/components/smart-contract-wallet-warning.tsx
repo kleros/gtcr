@@ -28,11 +28,8 @@ export default function SmartContractWalletWarning() {
   const updateAccountWarningDismissalState = useCallback((account: string) => {
     try {
       const storedValue = localStorage.getItem(`${STORAGE_KEY}:${account}`)
-      if (storedValue === null) {
-        setShowWarning(true)
-      } else {
-        setShowWarning(JSON.parse(storedValue))
-      }
+      if (storedValue === null) setShowWarning(true)
+      else setShowWarning(JSON.parse(storedValue))
     } catch {
       setShowWarning(true)
     }
@@ -46,8 +43,9 @@ export default function SmartContractWalletWarning() {
           const formattedCode = res.result.toLowerCase()
           const isEip7702Eoa = formattedCode.startsWith(EIP7702_PREFIX)
 
-          //Do not show warning for EIP-7702 EOAs
+          // Do not show warning for EIP-7702 EOAs
           setIsSmartContractWallet(formattedCode !== '0x' && !isEip7702Eoa)
+          return null
         })
         .catch((err: Error) => {
           console.error('Error checking smart contract wallet', err)
@@ -74,9 +72,7 @@ export default function SmartContractWalletWarning() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [account, library])
 
-  if (!showWarning || !isSmartContractWallet) {
-    return null
-  }
+  if (!showWarning || !isSmartContractWallet) return null
 
   return (
     <StyledAlert

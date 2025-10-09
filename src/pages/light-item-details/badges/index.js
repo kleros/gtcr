@@ -73,8 +73,8 @@ const mapToLegacy = items =>
   items
     .map(item => ({
       ...item,
-      decodedData: item.metadata?.props.map(({ value }) => value),
-      mergedData: item.metadata?.props
+      decodedData: item?.props.map(({ value }) => value),
+      mergedData: item?.props
     }))
     .map(
       ({
@@ -320,23 +320,21 @@ const Badges = ({ connectedTCRAddr, item, tcrAddress }) => {
             const query = {
               query: `
                 {
-                  litems (where:{
-                    registry: "${badgeAddr.toLowerCase()}",
-                    metadata_: {keywords: "${keywords}"}
+                  litems:LItem (where:{
+                    registry_id: { _eq: "${badgeAddr.toLowerCase()}" },
+                    keywords: { _eq: "${keywords}" }
                   }) {
                     itemID
                     status
                     data
-                    metadata{
-                      props {
-                        value
-                        type
-                        label
-                        description
-                        isIdentifier
-                      }
+                    props {
+                      value
+                      type: itemType
+                      label
+                      description
+                      isIdentifier
                     }
-                    requests(first: 1, orderBy: submissionTime, orderDirection: desc) {
+                    requests(limit: 1, order_by: { submissionTime: desc }) {
                       disputed
                       disputeID
                       submissionTime
@@ -344,7 +342,7 @@ const Badges = ({ connectedTCRAddr, item, tcrAddress }) => {
                       requester
                       challenger
                       resolutionTime
-                      rounds(first: 1, orderBy: creationTime, orderDirection: desc) {
+                      rounds(limit: 1, order_by: { creationTime: desc }) {
                         appealPeriodStart
                         appealPeriodEnd
                         ruling

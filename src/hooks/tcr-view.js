@@ -16,15 +16,15 @@ import { parseIpfs } from 'utils/ipfs-parse'
 export const fetchMetaEvidence = async (tcr, networkId) => {
   const query = {
     query: `{
-    registry(id: "${tcr.toLowerCase()}") {
+    registry:Registry_by_pk(id: "${tcr.toLowerCase()}") {
       registrationMetaEvidence {
-        URI
+        uri
       }
       connectedTCR
     }
-    lregistry(id: "${tcr.toLowerCase()}") {
+    lregistry:LRegistry_by_pk(id: "${tcr.toLowerCase()}") {
       registrationMetaEvidence {
-        URI
+        uri
       }
       connectedTCR
     }
@@ -65,12 +65,12 @@ export const fetchMetaEvidence = async (tcr, networkId) => {
   if (!data?.registry && !data?.lregistry && !pgtcrData?.registry) return null
   else if (data.registry !== null)
     return {
-      metaEvidenceURI: data.registry.registrationMetaEvidence.URI,
+      metaEvidenceURI: data.registry.registrationMetaEvidence.uri,
       connectedTCR: data.registry.connectedTCR
     }
   else if (data.lregistry !== null)
     return {
-      metaEvidenceURI: data.lregistry.registrationMetaEvidence.URI,
+      metaEvidenceURI: data.lregistry.registrationMetaEvidence.uri,
       connectedTCR: data.lregistry.connectedTCR
     }
   else

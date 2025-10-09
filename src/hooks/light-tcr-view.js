@@ -12,9 +12,9 @@ import { parseIpfs } from 'utils/ipfs-parse'
 export const fetchMetaEvidence = async (tcr, networkId) => {
   const query = {
     query: `{
-      lregistry(id: "${tcr.toLowerCase()}") {
+      lregistry:LRegistry_by_pk(id: "${tcr.toLowerCase()}") {
         registrationMetaEvidence {
-          URI
+          uri
         }
         connectedTCR
       }
@@ -29,7 +29,7 @@ export const fetchMetaEvidence = async (tcr, networkId) => {
 
   const { data } = await response.json()
   return {
-    metaEvidenceURI: data.lregistry.registrationMetaEvidence.URI,
+    metaEvidenceURI: data.lregistry.registrationMetaEvidence.uri,
     connectedTCR: data.lregistry.connectedTCR
   }
 }
