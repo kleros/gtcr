@@ -404,7 +404,7 @@ const Items = () => {
         seerMarketData:
           isSeerRegistry(tcrAddress, chainId) &&
           item?.decodedData &&
-          seerMarketsData[item.decodedData[0].toLowerCase()]
+          seerMarketsData[item.decodedData[1].toLowerCase()]
       }
     })
   }, [metaEvidence, tcrAddress, decodedItems, chainId, seerMarketsData])
