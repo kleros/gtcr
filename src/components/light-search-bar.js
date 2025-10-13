@@ -53,7 +53,7 @@ const OptionItem = ({ item }) => {
   // there are a few ethers queries coming from here.
   // they might have to be changed to subgraph queries
   // TODO read and figure it out
-  const { itemID, metadata: itemMetadata, registry } = item
+  const { itemID, props, registry } = item
   const { id: tcrAddress } = registry
   const {
     gtcrView,
@@ -111,14 +111,14 @@ const OptionItem = ({ item }) => {
           <>
             <StyledItemField>
               <DisplaySelector
-                type={itemMetadata?.props?.[0]?.type}
-                value={itemMetadata?.props?.[0]?.value}
-                allowedFileTypes={itemMetadata?.props?.[0]?.allowedFileTypes}
+                type={props?.[0]?.type}
+                value={props?.[0]?.value}
+                allowedFileTypes={props?.[0]?.allowedFileTypes}
               />
             </StyledItemField>
           </>
         ) : (
-          itemMetadata?.props
+          props
             .filter(col => col.isIdentifier)
             .map((column, j) => (
               <StyledItemField key={j}>
@@ -139,22 +139,18 @@ const OptionItem = ({ item }) => {
   )
 }
 
-OptionItem.propTypes = {
-  item: PropTypes.shape({
-    itemID: PropTypes.string,
-    metadata: PropTypes.shape({
-      props: PropTypes.arrayOf(
-        PropTypes.shape({
-          type: PropTypes.oneOf(Object.values(ItemTypes)),
-          value: PropTypes.string.isRequired
-        })
-      )
-    }),
-    registry: PropTypes.shape({
-      id: PropTypes.string
+OptionItem.propTypes = PropTypes.shape({
+  itemID: PropTypes.string,
+  props: PropTypes.arrayOf(
+    PropTypes.shape({
+      type: PropTypes.oneOf(Object.values(ItemTypes)),
+      value: PropTypes.string.isRequired
     })
-  }).isRequired
-}
+  ),
+  registry: PropTypes.shape({
+    id: PropTypes.string
+  })
+}).isRequired
 
 const LightSearchBar = () => {
   const [value, setValue] = useState()
@@ -166,15 +162,18 @@ const LightSearchBar = () => {
 
   const [debouncedCallback] = useDebouncedCallback(input => {
     if (!input || input.length === 0) setData([])
-    else
+    else {
+      const where = {
+        keywords: { _ilike: `%${input.trim()}%` },
+        registry_id: { _eq: tcrAddress.toLowerCase() }
+      }
       makeItemSearchQuery({
         variables: {
-          text: `${tcrAddress.toLowerCase()} & ${input
-            .trim()
-            .replace(' ', ' & ')}:*`,
+          where: where,
           first: MAX_ITEM_COUNT
         }
       })
+    }
     setWriting(false)
   }, 700)
 
@@ -184,7 +183,7 @@ const LightSearchBar = () => {
   }, [itemSearchQuery])
 
   const options = data.map(d => {
-    const itemLabels = d.item?.metadata?.props.filter(prop =>
+    const itemLabels = d?.props.filter(prop =>
       searchableFields.includes(prop.type)
     )
 
@@ -193,11 +192,11 @@ const LightSearchBar = () => {
       label =
         itemLabels.find(prop => prop.type === ItemTypes.TEXT)?.value ||
         itemLabels[0].value
-    else label = d.item.itemID
+    else label = d.itemID
 
     return (
-      <Select.Option key={d.item.itemID} label={label}>
-        <OptionItem item={d.item} tcrAddress={d.item.registry.id} />
+      <Select.Option key={d.itemID} label={label}>
+        <OptionItem item={d} tcrAddress={d.registry.id} />
       </Select.Option>
     )
   })

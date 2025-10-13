@@ -2,12 +2,12 @@ import { gql } from '@apollo/client'
 
 const CLASSIC_ITEM_DETAILS_QUERY = gql`
   query classicItemDetailsQuery($id: String!) {
-    item(id: $id) {
+    item: Item_by_pk(id: $id) {
       itemID
       data
       status
       disputed
-      requests(orderBy: submissionTime, orderDirection: desc) {
+      requests(order_by: { submissionTime: desc }) {
         requestType
         disputed
         disputeID
@@ -24,22 +24,20 @@ const CLASSIC_ITEM_DETAILS_QUERY = gql`
         resolutionTx
         evidenceGroup {
           id
-          evidences(orderBy: number, orderDirection: desc) {
+          evidences(order_by: { number: desc }) {
             party
-            URI
+            uri
             number
             timestamp
             txHash
-            metadata {
-              name
-              title
-              description
-              fileURI
-              fileTypeExtension
-            }
+            name
+            title
+            description
+            fileURI
+            fileTypeExtension
           }
         }
-        rounds(orderBy: creationTime, orderDirection: desc) {
+        rounds(order_by: { creationTime: desc }) {
           appealed
           appealPeriodStart
           appealPeriodEnd

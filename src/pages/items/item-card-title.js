@@ -1,9 +1,7 @@
 import React, { useContext, useMemo } from 'react'
 import { Tooltip, Icon } from 'antd'
-import PropTypes from 'prop-types'
 import ItemStatusBadge from 'components/item-status-badge'
 import ETHAmount from 'components/eth-amount'
-import ItemPropTypes from 'prop-types/item'
 import { itemToStatusCode } from 'utils/item-status'
 import { WalletContext } from 'contexts/wallet-context'
 import { TCRViewContext } from 'contexts/tcr-view-context'
@@ -68,16 +66,6 @@ const ItemCardTitle = ({ statusCode, tcrData }) => {
       )}
     </Container>
   )
-}
-
-ItemCardTitle.propTypes = {
-  statusCode: PropTypes.number,
-  tcrData: ItemPropTypes
-}
-
-ItemCardTitle.defaultProps = {
-  statusCode: null,
-  tcrData: null
 }
 
 export default ItemCardTitle

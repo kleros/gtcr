@@ -1,10 +1,13 @@
 import { useMemo } from 'react'
 import { BigNumber, bigNumberify } from 'ethers/utils'
 
-const useAppealTime = item =>
+const useAppealTime = (item, old = true) =>
   useMemo(() => {
     if (!item) return {}
-    const round = item.requests[0].rounds[0]
+    if (!old && item.challenges.length === 0) return {}
+    const round = old
+      ? item.requests[0].rounds[0]
+      : item.challenges[0].rounds[0]
     const { appealPeriodStart, appealPeriodEnd } = round
     const appealStart = new BigNumber(appealPeriodStart)
     const appealEnd = new BigNumber(appealPeriodEnd)
@@ -20,6 +23,6 @@ const useAppealTime = item =>
       appealRemainingTime,
       appealRemainingTimeLoser
     }
-  }, [item])
+  }, [item, old])
 
 export default useAppealTime

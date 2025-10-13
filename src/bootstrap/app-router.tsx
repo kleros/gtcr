@@ -36,6 +36,11 @@ const ClassicFactory = loadable(
   { fallback: <Loading /> }
 )
 
+const PermanentFactory = loadable(
+  () => import(/* webpackPrefetch: true */ 'pages/factory-permanent/index'),
+  { fallback: <Loading /> }
+)
+
 const AppRouter = () => {
   const { networkId, error }: Web3ContextCurate = useWeb3Context()
   const isUnsupported = useMemo(
@@ -91,6 +96,7 @@ const AppRouter = () => {
         <Route path="/tcr/:chainId/:tcrAddress" component={ItemsRouter} />
         <Route path="/factory" exact component={Factory} />
         <Route path="/factory-classic" exact component={ClassicFactory} />
+        <Route path="/factory-permanent" exact component={PermanentFactory} />
         <Redirect from="/" exact to={`/tcr/${networkId}/${tcrAddress}`} />
         <Route path="*" exact component={ErrorPage} />
       </Switch>

@@ -1,0 +1,95 @@
+[
+  {
+    "type": "constructor",
+    "inputs": [
+      { "name": "_GTCR", "type": "address", "internalType": "address" }
+    ],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "GTCR",
+    "inputs": [],
+    "outputs": [{ "name": "", "type": "address", "internalType": "address" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "count",
+    "inputs": [],
+    "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "deploy",
+    "inputs": [
+      {
+        "name": "_arbitrator",
+        "type": "address",
+        "internalType": "contract IArbitrator"
+      },
+      {
+        "name": "_arbitratorExtraData",
+        "type": "bytes",
+        "internalType": "bytes"
+      },
+      { "name": "_metaEvidence", "type": "string", "internalType": "string" },
+      { "name": "_governor", "type": "address", "internalType": "address" },
+      {
+        "name": "_token",
+        "type": "address",
+        "internalType": "contract IERC20"
+      },
+      {
+        "name": "_submissionMinDeposit",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "_periods",
+        "type": "uint256[4]",
+        "internalType": "uint256[4]"
+      },
+      {
+        "name": "_stakeMultipliers",
+        "type": "uint256[4]",
+        "internalType": "uint256[4]"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "instance",
+        "type": "address",
+        "internalType": "contract PermanentGTCR"
+      }
+    ],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "instances",
+    "inputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "contract PermanentGTCR"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "event",
+    "name": "NewGTCR",
+    "inputs": [
+      {
+        "name": "_address",
+        "type": "address",
+        "indexed": true,
+        "internalType": "contract PermanentGTCR"
+      }
+    ],
+    "anonymous": false
+  }
+]

@@ -6,21 +6,25 @@ import { abi as _gtcr } from '@kleros/tcr/build/contracts/GeneralizedTCR.json'
 import { abi as _GTCRView } from '@kleros/tcr/build/contracts/GeneralizedTCRView.json'
 import useNotificationWeb3 from './notifications-web3'
 import { getAddress } from 'ethers/utils'
-import { gtcrViewAddresses, subgraphUrl } from 'config/tcr-addresses'
+import {
+  gtcrViewAddresses,
+  subgraphUrl,
+  subgraphUrlPermanent
+} from 'config/tcr-addresses'
 import { parseIpfs } from 'utils/ipfs-parse'
 
 export const fetchMetaEvidence = async (tcr, networkId) => {
   const query = {
     query: `{
-    registry(id: "${tcr.toLowerCase()}") {
+    registry:Registry_by_pk(id: "${tcr.toLowerCase()}") {
       registrationMetaEvidence {
-        URI
+        uri
       }
       connectedTCR
     }
-    lregistry(id: "${tcr.toLowerCase()}") {
+    lregistry:LRegistry_by_pk(id: "${tcr.toLowerCase()}") {
       registrationMetaEvidence {
-        URI
+        uri
       }
       connectedTCR
     }
@@ -28,25 +32,54 @@ export const fetchMetaEvidence = async (tcr, networkId) => {
     variables: {}
   }
 
-  const response = await fetch(subgraphUrl[networkId], {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(query)
-  })
-
-  const { data } = await response.json()
-  if (data.registry === null && data.lregistry === null) return null
-  else if (data.registry === null)
+  const pgtcrQuery = {
+    query: `{
+    registry(id: "${tcr.toLowerCase()}") {
+      arbitrationSettings(orderBy: timestamp, orderDirection: desc, first: 1) {
+        metaEvidenceURI
+      }
+    }
+  }`,
+    variables: {}
+  }
+  const [data, pgtcrData] = await Promise.all([
+    (
+      await (
+        await fetch(subgraphUrl[networkId], {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(query)
+        })
+      ).json()
+    ).data,
+    (
+      await (
+        await fetch(subgraphUrlPermanent[networkId], {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(pgtcrQuery)
+        })
+      ).json()
+    ).data
+  ])
+  if (!data?.registry && !data?.lregistry && !pgtcrData?.registry) return null
+  else if (data.registry !== null)
     return {
-      metaEvidenceURI: data.lregistry.registrationMetaEvidence.URI,
+      metaEvidenceURI: data.registry.registrationMetaEvidence.uri,
+      connectedTCR: data.registry.connectedTCR
+    }
+  else if (data.lregistry !== null)
+    return {
+      metaEvidenceURI: data.lregistry.registrationMetaEvidence.uri,
       connectedTCR: data.lregistry.connectedTCR
     }
   else
     return {
-      metaEvidenceURI: data.registry.registrationMetaEvidence.URI,
-      connectedTCR: data.registry.connectedTCR
+      metaEvidenceURI: pgtcrData.registry.arbitrationSettings[0].metaEvidenceURI
     }
 }
+
+// 2025 : Afaik nothing else in this file is used, only the fetchMetaEvidence function above.
 
 // TODO: Ensure we don't set state for unmounted components using
 // flags and AbortController.
