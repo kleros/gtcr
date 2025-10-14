@@ -35,6 +35,16 @@ export const namespaces: Namespace[] = [
   {
     id: 'solana',
     test: (s: string) => /(^[1-9A-HJ-NP-Za-km-z]{32,44}$)/.test(s)
+  },
+  {
+    id: 'tvm',
+    test: (s: string) =>
+      /^(0|-1):[a-fA-F0-9]{64}$/.test(s) ||
+      /^[EU][Q|f][A-Za-z0-9_-]{46}$/.test(s)
+  },
+  {
+    id: 'stacks',
+    test: (s: string) => /^(SP|ST)[\da-km-zA-HJ-NP-Z]{38}$/.test(s)
   }
 ]
 
@@ -208,6 +218,62 @@ export const references: Reference[] = [
     name: 'Blast',
     label: 'BLAST',
     explorer: 'blastscan.io'
+  },
+  {
+    id: '9745',
+    namespaceId: 'eip155',
+    name: 'Plasma',
+    label: 'XPL',
+    explorer: 'explorer.plasma.to'
+  },
+  {
+    id: '999',
+    namespaceId: 'eip155',
+    name: 'Hyperliquid',
+    label: 'HYPE',
+    explorer: 'hyperevmscan.io'
+  },
+  {
+    id: '747474',
+    namespaceId: 'eip155',
+    name: 'Katana',
+    label: 'ETH',
+    explorer: 'katanascan.com'
+  },
+  {
+    id: '130',
+    namespaceId: 'eip155',
+    name: 'Unichain',
+    label: 'ETH',
+    explorer: 'unichain.blockscout.com'
+  },
+  {
+    id: '80094',
+    namespaceId: 'eip155',
+    name: 'Berachain',
+    label: 'BERA',
+    explorer: 'berascan.com'
+  },
+  {
+    id: '480',
+    namespaceId: 'eip155',
+    name: 'World Chain',
+    label: 'ETH',
+    explorer: 'worldscan.org'
+  },
+  {
+    id: '-239',
+    namespaceId: 'tvm',
+    name: 'TON',
+    label: 'TON',
+    explorer: 'tonscan.org'
+  },
+  {
+    id: '1',
+    namespaceId: 'stacks',
+    name: 'Stacks',
+    label: 'STX',
+    explorer: 'explorer.hiro.so'
   }
 ]
 
