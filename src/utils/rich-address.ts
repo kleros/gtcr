@@ -274,13 +274,6 @@ export const references: Reference[] = [
     name: 'Stacks',
     label: 'STX',
     explorer: 'explorer.hiro.so'
-  },
-  {
-    id: '2201',
-    namespaceId: 'eip155',
-    name: 'Stable Testnet',
-    label: 'USDT',
-    explorer: 'stable-explorer.testnet.chain0.dev'
   }
 ]
 
