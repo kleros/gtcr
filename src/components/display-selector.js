@@ -9,6 +9,7 @@ import RichAddress from './rich-address'
 import ETHAddress from './eth-address'
 import LongText from './long-text'
 import FileDisplay from './file-display'
+import TruncatedLink from './truncated-link'
 import { parseIpfs } from 'utils/ipfs-parse'
 
 const pohRichAddress = 'eip155:1:0xc5e9ddebb09cd64dfacab4011a0d5cedaf7c9bdb'
@@ -21,11 +22,6 @@ const StyledImage = styled.img`
 `
 
 const protocolRegex = /:\/\//
-
-const truncateUrl = (url, maxLength = 50) => {
-  if (!url || url.length <= maxLength) return url
-  return `${url.substring(0, maxLength)}...`
-}
 
 const DisplaySelector = ({
   type,
@@ -63,17 +59,15 @@ const DisplaySelector = ({
       ) : (
         <Avatar shape="square" size="large" icon="file-image" />
       )
-    case ItemTypes.LINK:
+    case ItemTypes.LINK: {
+      const fullUrl = protocolRegex.test(value) ? value : `https://${value}`
+      if (truncateLinks) return <TruncatedLink url={fullUrl} />
       return (
-        <a
-          href={protocolRegex.test(value) ? value : `https://${value}`}
-          title={truncateLinks ? value : undefined}
-        >
-          <Typography.Text>
-            {truncateLinks ? truncateUrl(value) : value}
-          </Typography.Text>
+        <a href={fullUrl} target="_blank" rel="noopener noreferrer">
+          <Typography.Text>{value}</Typography.Text>
         </a>
       )
+    }
     default:
       return (
         <Typography.Paragraph>
