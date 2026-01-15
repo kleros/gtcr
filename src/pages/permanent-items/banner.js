@@ -55,8 +55,7 @@ export const StyledTitle = styled.h1`
 `
 
 export const StyledDescription = styled.span`
-  display: flex;
-  flex-wrap: wrap;
+  display: block;
   color: #b88cdc;
 
   ${smallScreenStyle(
@@ -91,8 +90,76 @@ export const StyledLink = styled(Link)`
   color: #4d00b473;
 `
 
+const StyledTermsLink = styled.a`
+  color: #4d00b4;
+  text-decoration: underline;
+`
+
 const TCRLogo = ({ logoURI }) =>
   logoURI && <StyledImage src={parseIpfs(logoURI)} alt="item" />
+
+// Registry-specific terms and conditions URLs
+const TERMS_AND_CONDITIONS_URLS = {
+  '0x7305c57b731876f452da8574a77d05957820e588':
+    'https://cdn.kleros.link/ipfs/QmQ53jGMU62D8uSogFa39ZskhnMXNebZ5JdqfXxLAeuwwD'
+}
+
+// Render description with "see terms and conditions" as a clickable link
+const DescriptionWithTermsLink = ({ description, tcrAddress }) => {
+  if (!description) return null
+
+  const termsUrl = TERMS_AND_CONDITIONS_URLS[tcrAddress?.toLowerCase()]
+
+  // If no terms URL configured for this registry, return plain description
+  if (!termsUrl) return <span>{description}</span>
+
+  // Match various forms of "see terms and conditions" text
+  const termsPattern = /(see\s+(the\s+)?terms?\s*(and|&)?\s*conditions?)/gi
+  const parts = description.split(termsPattern)
+
+  if (parts.length === 1)
+    // No match found, return plain description
+    return <span>{description}</span>
+
+  // Rebuild the description with the link
+  const result = []
+  let match
+
+  const regex = new RegExp(termsPattern.source, 'gi')
+  let lastIndex = 0
+
+  while ((match = regex.exec(description)) !== null) {
+    // Add text before the match
+    if (match.index > lastIndex)
+      result.push(
+        <span key={`text-${match.index}`}>
+          {description.substring(lastIndex, match.index)}
+        </span>
+      )
+
+    // Add the match as a link (inline)
+    result.push(
+      <StyledTermsLink
+        key={match.index}
+        href={termsUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        {match[0]}
+      </StyledTermsLink>
+    )
+
+    lastIndex = regex.lastIndex
+  }
+
+  // Add remaining text after last match
+  if (lastIndex < description.length)
+    result.push(
+      <span key={`text-end`}>{description.substring(lastIndex)}</span>
+    )
+
+  return <span>{result}</span>
+}
 
 const Banner = ({
   metadata,
@@ -142,7 +209,10 @@ const Banner = ({
                 />
               </TitleContainer>
               <StyledDescription>
-                {capitalizeFirstLetter(normalizedDescription)}
+                <DescriptionWithTermsLink
+                  description={capitalizeFirstLetter(normalizedDescription)}
+                  tcrAddress={tcrAddress}
+                />
               </StyledDescription>
             </>
           ) : (

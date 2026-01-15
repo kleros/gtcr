@@ -9,6 +9,7 @@ import RichAddress from './rich-address'
 import ETHAddress from './eth-address'
 import LongText from './long-text'
 import FileDisplay from './file-display'
+import TruncatedLink from './truncated-link'
 import { parseIpfs } from 'utils/ipfs-parse'
 
 const pohRichAddress = 'eip155:1:0xc5e9ddebb09cd64dfacab4011a0d5cedaf7c9bdb'
@@ -22,7 +23,13 @@ const StyledImage = styled.img`
 
 const protocolRegex = /:\/\//
 
-const DisplaySelector = ({ type, value, linkImage, allowedFileTypes }) => {
+const DisplaySelector = ({
+  type,
+  value,
+  linkImage,
+  allowedFileTypes,
+  truncateLinks = false
+}) => {
   switch (type) {
     case ItemTypes.GTCR_ADDRESS:
       return <GTCRAddress address={value || ZERO_ADDRESS} />
@@ -52,12 +59,15 @@ const DisplaySelector = ({ type, value, linkImage, allowedFileTypes }) => {
       ) : (
         <Avatar shape="square" size="large" icon="file-image" />
       )
-    case ItemTypes.LINK:
+    case ItemTypes.LINK: {
+      const fullUrl = protocolRegex.test(value) ? value : `https://${value}`
+      if (truncateLinks) return <TruncatedLink url={fullUrl} />
       return (
-        <a href={protocolRegex.test(value) ? value : `https://${value}`}>
+        <a href={fullUrl} target="_blank" rel="noopener noreferrer">
           <Typography.Text>{value}</Typography.Text>
         </a>
       )
+    }
     default:
       return (
         <Typography.Paragraph>
@@ -76,13 +86,15 @@ DisplaySelector.propTypes = {
     PropTypes.object
   ]),
   linkImage: PropTypes.bool,
-  allowedFileTypes: PropTypes.string
+  allowedFileTypes: PropTypes.string,
+  truncateLinks: PropTypes.bool
 }
 
 DisplaySelector.defaultProps = {
   linkImage: null,
   allowedFileTypes: null,
-  value: null
+  value: null,
+  truncateLinks: false
 }
 
 export default DisplaySelector
