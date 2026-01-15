@@ -37,6 +37,7 @@ const PermanentItemCardContent = ({ item, chainId, tcrAddress }) => {
                 type={column.type}
                 value={column.value}
                 allowedFileTypes={[]}
+                truncateLinks
               />
             </StyledItemCol>
           ))}

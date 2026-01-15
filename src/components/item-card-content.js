@@ -26,6 +26,7 @@ const ItemCardContent = ({ item, chainId, tcrAddress }) => {
                 type={column.type}
                 value={column.value}
                 allowedFileTypes={column.allowedFileTypes}
+                truncateLinks
               />
             </StyledItemCol>
           ))}

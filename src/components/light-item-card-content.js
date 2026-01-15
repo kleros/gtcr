@@ -43,6 +43,7 @@ const LightItemCardContent = ({ item, chainId, tcrAddress }) => {
                 type={column.type}
                 value={column.value}
                 allowedFileTypes={allowedFileTypes}
+                truncateLinks
               />
             </StyledItemCol>
           ))}

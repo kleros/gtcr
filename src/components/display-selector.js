@@ -22,7 +22,18 @@ const StyledImage = styled.img`
 
 const protocolRegex = /:\/\//
 
-const DisplaySelector = ({ type, value, linkImage, allowedFileTypes }) => {
+const truncateUrl = (url, maxLength = 50) => {
+  if (!url || url.length <= maxLength) return url
+  return `${url.substring(0, maxLength)}...`
+}
+
+const DisplaySelector = ({
+  type,
+  value,
+  linkImage,
+  allowedFileTypes,
+  truncateLinks = false
+}) => {
   switch (type) {
     case ItemTypes.GTCR_ADDRESS:
       return <GTCRAddress address={value || ZERO_ADDRESS} />
@@ -54,8 +65,13 @@ const DisplaySelector = ({ type, value, linkImage, allowedFileTypes }) => {
       )
     case ItemTypes.LINK:
       return (
-        <a href={protocolRegex.test(value) ? value : `https://${value}`}>
-          <Typography.Text>{value}</Typography.Text>
+        <a
+          href={protocolRegex.test(value) ? value : `https://${value}`}
+          title={truncateLinks ? value : undefined}
+        >
+          <Typography.Text>
+            {truncateLinks ? truncateUrl(value) : value}
+          </Typography.Text>
         </a>
       )
     default:
@@ -76,13 +92,15 @@ DisplaySelector.propTypes = {
     PropTypes.object
   ]),
   linkImage: PropTypes.bool,
-  allowedFileTypes: PropTypes.string
+  allowedFileTypes: PropTypes.string,
+  truncateLinks: PropTypes.bool
 }
 
 DisplaySelector.defaultProps = {
   linkImage: null,
   allowedFileTypes: null,
-  value: null
+  value: null,
+  truncateLinks: false
 }
 
 export default DisplaySelector

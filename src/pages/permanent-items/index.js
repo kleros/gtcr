@@ -39,7 +39,7 @@ import {
   useQuery
 } from '@apollo/client'
 import { PERMANENT_ITEMS_QUERY, PERMANENT_REGISTRY_QUERY } from 'utils/graphql'
-import LightSearchBar from 'components/light-search-bar'
+import PermanentSearchBar from 'components/permanent-search-bar'
 import { parseIpfs } from 'utils/ipfs-parse'
 import { subgraphUrlPermanent } from 'config/tcr-addresses'
 import { ethers } from 'ethers'
@@ -287,7 +287,13 @@ const Items = () => {
         <StyledContent>
           <Spin spinning={itemsQuery.loading || !metadata}>
             <>
-              <StyledTopPadding>{/* <LightSearchBar /> */}</StyledTopPadding>
+              <StyledTopPadding>
+                <PermanentSearchBar
+                  items={items}
+                  chainId={chainId}
+                  tcrAddress={tcrAddress}
+                />
+              </StyledTopPadding>
               <FiltersContainer id="items-filters">
                 <StyledFilters>
                   <StyledSwitch
