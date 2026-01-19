@@ -5,7 +5,7 @@ import { Helmet } from 'react-helmet'
 import Footer from '../components/footer.tsx'
 import Web3Provider from 'web3-react'
 import { Layout } from 'antd'
-import { register } from './service-worker'
+import { unregister } from './service-worker'
 import { WalletProvider } from 'contexts/wallet-context'
 import { TourProvider } from 'contexts/tour-context'
 import WalletModal from 'components/modals/wallet-modal'
@@ -93,7 +93,6 @@ const App = () => {
 
 export default App
 
-register({
-  onUpdate: () =>
-    console.info('An update is ready. Please close and reopen all tabs.', 0)
-})
+// Unregister service worker to prevent aggressive caching.
+// This ensures users always get the latest version without needing to clear cache.
+unregister()

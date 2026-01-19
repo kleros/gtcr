@@ -101,7 +101,7 @@ const TCRLogo = ({ logoURI }) =>
 // Registry-specific terms and conditions URLs
 const TERMS_AND_CONDITIONS_URLS = {
   '0x7305c57b731876f452da8574a77d05957820e588':
-    'https://cdn.kleros.link/ipfs/QmQ53jGMU62D8uSogFa39ZskhnMXNebZ5JdqfXxLAeuwwD'
+    'https://cdn.kleros.link/ipfs/QmcZ53agYqpPhYijRFzduC3EC64coFGZkhbRN1sPDyW7di'
 }
 
 // Render description with "see terms and conditions" as a clickable link
