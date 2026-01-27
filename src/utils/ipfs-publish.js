@@ -22,7 +22,7 @@ export default async function ipfsPublish(fileName, data) {
     return result
   }
 
-  const result = await uploadFormDataToIPFS(fileFormData, 'file', true)
+  const result = await uploadFormDataToIPFS(fileFormData, 'file', false)
 
   if (result.inconsistentCids.length > 0) {
     console.warn('IPFS upload result is different:', {
