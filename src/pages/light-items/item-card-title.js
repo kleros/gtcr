@@ -23,6 +23,21 @@ export const Container = styled.div`
 export const StatusAndBountyContainer = styled.div`
   display: flex;
   justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+`
+
+export const StatusGroup = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+`
+
+export const RightGroup = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
 `
 
 export const BountyContainer = styled.div`
@@ -41,8 +56,13 @@ export const CountdownContainer = styled.div`
 `
 
 export const StyledStakeTag = styled(StakeTag)`
-  height: 16px;
+  height: 14px;
   width: auto;
+  flex-shrink: 0;
+
+  @media (max-width: 500px) {
+    height: 12px;
+  }
 `
 
 const ItemCardTitle = ({ statusCode, tcrData, isPermanentList }) => {
@@ -72,20 +92,24 @@ const ItemCardTitle = ({ statusCode, tcrData, isPermanentList }) => {
   return (
     <Container>
       <StatusAndBountyContainer>
-        <ItemStatusBadge statusCode={statusCode} dark />
-        {isPermanentList && <StyledStakeTag />}
-        {challengeRemainingTime > 0 && (
-          <BountyContainer>
-            <Tooltip title="This is the bounty on this item.">
-              <ETHAmount
-                amount={bounty}
-                decimals={3}
-                displayUnit={` ${nativeCurrency}`}
-              />
-              <StyledFontAwesomeIcon icon="coins" color="white" />
-            </Tooltip>
-          </BountyContainer>
-        )}
+        <StatusGroup>
+          <ItemStatusBadge statusCode={statusCode} dark />
+        </StatusGroup>
+        <RightGroup>
+          {challengeRemainingTime > 0 && (
+            <BountyContainer>
+              <Tooltip title="This is the bounty on this item.">
+                <ETHAmount
+                  amount={bounty}
+                  decimals={3}
+                  displayUnit={` ${nativeCurrency}`}
+                />
+                <StyledFontAwesomeIcon icon="coins" color="white" />
+              </Tooltip>
+            </BountyContainer>
+          )}
+          {isPermanentList && <StyledStakeTag />}
+        </RightGroup>
       </StatusAndBountyContainer>
       {challengeRemainingTime > 0 && (
         <CountdownContainer>

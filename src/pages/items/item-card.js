@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react'
+import React, { useState, useCallback, useMemo } from 'react'
 import PropTypes from 'prop-types'
 import { Card, Button, Result } from 'antd'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
@@ -7,8 +7,9 @@ import TCRCardContent from 'components/tcr-card-content'
 import ItemCardContent from 'components/item-card-content'
 import BNPropType from 'prop-types/bn'
 import { itemToStatusCode, STATUS_CODE } from 'utils/item-status'
-import { useQuery } from '@apollo/client'
-import { TCR_EXISTENCE_TEST } from 'utils/graphql'
+import { useQuery, ApolloClient, HttpLink, InMemoryCache } from '@apollo/client'
+import { PERMANENT_REGISTRY_EXISTENCE_TEST } from 'utils/graphql'
+import { subgraphUrlPermanent } from 'config/tcr-addresses'
 import ItemCardTitle from './item-card-title'
 import {
   FlipCardBack,
@@ -35,18 +36,28 @@ const CardItemInfo = ({
   const { itemName, isTCRofTCRs } = metadata || {}
   const childTcrAddress = isTCRofTCRs ? item.columns[0]?.value : null
 
-  const { data: existenceData, loading: existenceLoading } = useQuery(
-    TCR_EXISTENCE_TEST,
+  // Create Apollo client for permanent subgraph
+  const permanentClient = useMemo(() => {
+    const url = subgraphUrlPermanent[chainId]
+    if (!url) return null
+    return new ApolloClient({
+      link: new HttpLink({ uri: url }),
+      cache: new InMemoryCache()
+    })
+  }, [chainId])
+
+  // Query permanent subgraph to check if it's a permanent list
+  const { data: permanentData, loading: permanentLoading } = useQuery(
+    PERMANENT_REGISTRY_EXISTENCE_TEST,
     {
       variables: { tcrAddress: (childTcrAddress || '').toLowerCase() },
-      skip: !childTcrAddress
+      skip: !childTcrAddress || !permanentClient,
+      client: permanentClient
     }
   )
+
   const isPermanentList =
-    !existenceLoading &&
-    !!childTcrAddress &&
-    !existenceData?.lregistry &&
-    !existenceData?.registry
+    !permanentLoading && !!childTcrAddress && !!permanentData?.registry
 
   if (item.errors.length > 0)
     content = (

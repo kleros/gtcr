@@ -10,6 +10,8 @@ import useNativeCurrency from 'hooks/native-currency'
 import {
   Container,
   StatusAndBountyContainer,
+  StatusGroup,
+  RightGroup,
   BountyContainer,
   StyledFontAwesomeIcon,
   CountdownContainer,
@@ -42,20 +44,24 @@ const ItemCardTitle = ({ statusCode, tcrData, isPermanentList }) => {
   return (
     <Container>
       <StatusAndBountyContainer>
-        <ItemStatusBadge statusCode={statusCode} dark />
-        {isPermanentList && <StyledStakeTag />}
-        {challengeRemainingTime > 0 && (
-          <BountyContainer>
-            <Tooltip title="This is the bounty on this item.">
-              <ETHAmount
-                amount={bounty}
-                decimals={3}
-                displayUnit={` ${nativeCurrency}`}
-              />
-              <StyledFontAwesomeIcon icon="coins" color="white" />
-            </Tooltip>
-          </BountyContainer>
-        )}
+        <StatusGroup>
+          <ItemStatusBadge statusCode={statusCode} dark />
+        </StatusGroup>
+        <RightGroup>
+          {challengeRemainingTime > 0 && (
+            <BountyContainer>
+              <Tooltip title="This is the bounty on this item.">
+                <ETHAmount
+                  amount={bounty}
+                  decimals={3}
+                  displayUnit={` ${nativeCurrency}`}
+                />
+                <StyledFontAwesomeIcon icon="coins" color="white" />
+              </Tooltip>
+            </BountyContainer>
+          )}
+          {isPermanentList && <StyledStakeTag />}
+        </RightGroup>
       </StatusAndBountyContainer>
       {challengeRemainingTime > 0 && (
         <CountdownContainer>
