@@ -136,6 +136,20 @@ export const references: Reference[] = [
     explorer: 'optimistic.etherscan.io'
   },
   {
+    id: '4326',
+    namespaceId: 'eip155',
+    name: 'MegaETH',
+    label: 'MEGA',
+    explorer: 'megaeth.blockscout.com'
+  },
+  {
+    id: '369',
+    namespaceId: 'eip155',
+    name: 'PulseChain',
+    label: 'PLS',
+    explorer: 'otter.pulsechain.com'
+  },
+  {
     id: '250',
     namespaceId: 'eip155',
     name: 'Fantom Opera',
