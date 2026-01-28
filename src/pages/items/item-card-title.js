@@ -12,10 +12,11 @@ import {
   StatusAndBountyContainer,
   BountyContainer,
   StyledFontAwesomeIcon,
-  CountdownContainer
+  CountdownContainer,
+  StyledStakeTag
 } from 'pages/light-items/item-card-title'
 
-const ItemCardTitle = ({ statusCode, tcrData }) => {
+const ItemCardTitle = ({ statusCode, tcrData, isPermanentList }) => {
   const { challengePeriodDuration } = useContext(TCRViewContext)
   const { timestamp } = useContext(WalletContext)
   const { disputed, submissionTime } = tcrData || {}
@@ -42,6 +43,7 @@ const ItemCardTitle = ({ statusCode, tcrData }) => {
     <Container>
       <StatusAndBountyContainer>
         <ItemStatusBadge statusCode={statusCode} dark />
+        {isPermanentList && <StyledStakeTag />}
         {challengeRemainingTime > 0 && (
           <BountyContainer>
             <Tooltip title="This is the bounty on this item.">

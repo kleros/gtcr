@@ -11,6 +11,7 @@ import { WalletContext } from 'contexts/wallet-context'
 import { LightTCRViewContext } from 'contexts/light-tcr-view-context'
 import useHumanizedCountdown from 'hooks/countdown'
 import useNativeCurrency from 'hooks/native-currency'
+import { ReactComponent as StakeTag } from 'assets/images/logo-stake-tag.svg'
 
 export const Container = styled.div`
   display: flex;
@@ -39,7 +40,12 @@ export const CountdownContainer = styled.div`
   margin-left: 12px;
 `
 
-const ItemCardTitle = ({ statusCode, tcrData }) => {
+export const StyledStakeTag = styled(StakeTag)`
+  height: 16px;
+  width: auto;
+`
+
+const ItemCardTitle = ({ statusCode, tcrData, isPermanentList }) => {
   const { challengePeriodDuration } = useContext(LightTCRViewContext)
   const { timestamp } = useContext(WalletContext)
   const { disputed, submissionTime } = tcrData || {}
@@ -67,6 +73,7 @@ const ItemCardTitle = ({ statusCode, tcrData }) => {
     <Container>
       <StatusAndBountyContainer>
         <ItemStatusBadge statusCode={statusCode} dark />
+        {isPermanentList && <StyledStakeTag />}
         {challengeRemainingTime > 0 && (
           <BountyContainer>
             <Tooltip title="This is the bounty on this item.">
@@ -95,12 +102,14 @@ const ItemCardTitle = ({ statusCode, tcrData }) => {
 
 ItemCardTitle.propTypes = {
   statusCode: PropTypes.number,
-  tcrData: ItemPropTypes
+  tcrData: ItemPropTypes,
+  isPermanentList: PropTypes.bool
 }
 
 ItemCardTitle.defaultProps = {
   statusCode: null,
-  tcrData: null
+  tcrData: null,
+  isPermanentList: false
 }
 
 export default ItemCardTitle

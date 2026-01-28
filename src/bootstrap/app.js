@@ -8,6 +8,7 @@ import { Layout } from 'antd'
 import { unregister } from './service-worker'
 import { WalletProvider } from 'contexts/wallet-context'
 import { TourProvider } from 'contexts/tour-context'
+import { StakeProvider } from 'contexts/stake-context'
 import WalletModal from 'components/modals/wallet-modal'
 import WelcomeModal from 'components/modals/welcome-modal'
 import SmartContractWalletWarning from 'components/smart-contract-wallet-warning'
@@ -68,17 +69,19 @@ const App = () => {
                 rel="stylesheet"
               />
             </Helmet>
-            <StyledLayout>
-              <Layout>
-                <SmartContractWalletWarning />
-                <AppBar />
-                <AppRouter />
-                <StyledClickaway
-                  isMenuClosed={isMenuClosed}
-                  onClick={isMenuClosed ? null : () => setIsMenuClosed(true)}
-                />
-              </Layout>
-            </StyledLayout>
+            <StakeProvider>
+              <StyledLayout>
+                <Layout>
+                  <SmartContractWalletWarning />
+                  <AppBar />
+                  <AppRouter />
+                  <StyledClickaway
+                    isMenuClosed={isMenuClosed}
+                    onClick={isMenuClosed ? null : () => setIsMenuClosed(true)}
+                  />
+                </Layout>
+              </StyledLayout>
+            </StakeProvider>
             <FooterWrapper>
               <Footer />
             </FooterWrapper>
