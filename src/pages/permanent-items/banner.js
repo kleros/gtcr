@@ -64,7 +64,7 @@ export const StyledTitle = styled.h1`
   margin-bottom: 0;
   font-size: 38px;
   font-weight: 600;
-  color: ${({ theme }) => (theme.name === 'dark' ? '#ffffff' : '#4d00b4')};
+  color: ${({ theme }) => (theme.name === 'dark' ? '#a78bfa' : '#4d00b4')};
 `
 
 export const StyledDescription = styled.span`
