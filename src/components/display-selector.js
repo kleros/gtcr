@@ -41,10 +41,12 @@ const ImageSkeleton = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  background: ${({ theme }) =>
-    theme.name === 'dark'
-      ? 'linear-gradient(90deg, rgba(255,255,255,0.06) 25%, rgba(255,255,255,0.12) 50%, rgba(255,255,255,0.06) 75%)'
-      : 'linear-gradient(90deg, rgba(0,0,0,0.06) 25%, rgba(0,0,0,0.1) 50%, rgba(0,0,0,0.06) 75%)'};
+  background: linear-gradient(
+    90deg,
+    ${({ theme }) => theme.skeletonBase} 25%,
+    ${({ theme }) => theme.skeletonHighlight} 50%,
+    ${({ theme }) => theme.skeletonBase} 75%
+  );
   background-size: 400px 100%;
   animation: ${shimmer} 1.5s infinite;
   border-radius: 50%;

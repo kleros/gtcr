@@ -59,8 +59,7 @@ export const DashedCard = styled(Card)`
   background: none;
   border: dashed;
   border-width: 2px;
-  border-color: ${({ theme }) =>
-    theme.name === 'dark' ? theme.borderColor : '#bc9cff'};
+  border-color: ${({ theme }) => theme.borderColor};
 `
 
 export const DashedCardBody = styled.div`

@@ -81,10 +81,7 @@ export const StyledCardInfo = styled(Card)`
 
   & > .ant-card-head {
     display: flex;
-    background: ${({ theme }) =>
-      theme.name === 'dark'
-        ? `linear-gradient(135deg, ${theme.elevatedBackground} 0%, #352d4d 50%, ${theme.elevatedBackground} 100%)`
-        : `linear-gradient(111.6deg, ${theme.gradientStart} 46.25%, ${theme.gradientEnd} 96.25%)`};
+    background: ${({ theme }) => theme.cardHeaderGradient};
     border-color: ${({ theme }) =>
       theme.name === 'dark' ? theme.borderColor : 'transparent'};
 

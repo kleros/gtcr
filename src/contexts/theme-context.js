@@ -24,6 +24,7 @@ export const lightTheme = {
   // Gradient colors (for card headers, NSFW warnings, etc.)
   gradientStart: '#4d00b4',
   gradientEnd: '#6500b4',
+  gradientMid: '#6500b4',
   // Navbar and Footer
   navbarBackground: '#1e075f',
   footerBackground: '#4d00b4',
@@ -41,7 +42,110 @@ export const lightTheme = {
   antdBackground: '#ffffff',
   antdBorderColor: '#d09cff',
   antdTextColor: '#4d00b4',
-  antdDisabledColor: 'rgba(0, 0, 0, 0.25)'
+  antdDisabledColor: 'rgba(0, 0, 0, 0.25)',
+
+  // Banner specific
+  bannerGradient: 'linear-gradient(270deg, #f2e3ff 22.92%, #ffffff 76.25%)',
+  bannerTextColor: '#4d00b4',
+  bannerTitleColor: '#4d00b4',
+  bannerDescriptionColor: '#b88cdc',
+  bannerLinkColor: '#4d00b473',
+  bannerLinkHoverColor: '#4d00b4',
+  bannerPolicyLinkColor: '#b88cdc',
+  bannerPolicyLinkHoverColor: '#9b6bc3',
+
+  // Button colors
+  buttonPrimaryBg: '#009aff',
+  buttonPrimaryText: '#1a1a2e',
+  buttonPrimaryHoverBg: '#33b1ff',
+  buttonSecondaryBg: '#6826bf',
+  buttonSecondaryText: '#ffffff',
+
+  // Switch colors
+  switchOffBg: 'rgba(0, 0, 0, 0.25)',
+  switchHoverBg: '#7c3aed',
+  switchHandleBg: '#ffffff',
+
+  // Focus/outline colors (for inputs, selects, etc.)
+  focusBorderColor: 'rgba(104, 38, 191, 0.4)',
+  focusShadowColor: 'rgba(104, 38, 191, 0.2)',
+
+  // Card specific
+  cardHeaderGradient:
+    'linear-gradient(111.6deg, #4d00b4 46.25%, #6500b4 96.25%)',
+  cardShadow: 'rgba(188, 156, 255, 0.3)',
+  cardNsfwText: '#ffffff',
+
+  // Dropdown/Select colors
+  dropdownShadow: 'rgba(188, 156, 255, 0.3)',
+  dropdownHoverBg: 'rgba(104, 38, 191, 0.1)',
+  dropdownSelectedBg: 'rgba(104, 38, 191, 0.15)',
+
+  // Modal colors
+  modalBackground: '#ffffff',
+  modalShadow: 'rgba(188, 156, 255, 0.3)',
+  modalCloseColor: '#6826bf',
+
+  // Notification/status specific colors
+  notificationPending: '#ccc',
+  notificationAccepted: '#208efa',
+  notificationChallenged: '#fa8d39',
+  notificationAppealable: '#722ed1',
+  notificationFinalRuling: '#f95638',
+  statusCrowdfundingWinner: '#9d52d6',
+
+  // Loading icon color
+  loadingIconColor: '#108ee9',
+
+  // Skeleton/shimmer colors
+  skeletonBase: 'rgba(0, 0, 0, 0.06)',
+  skeletonHighlight: 'rgba(0, 0, 0, 0.1)',
+
+  // Countdown text color
+  countdownTextColor: '#ffffff5c',
+
+  // Filter/sort component colors
+  filterBorderColor: '#9b7fcf',
+  filterTextColor: '#4d00b4',
+
+  // Tour highlight color
+  tourAccentColor: '#4004a3',
+
+  // Contract explorer colors
+  explorerGradientStart: '#863fe5d9',
+  explorerGradientEnd: '#4d00b4d9',
+  explorerTextColor: '#4d00b473',
+
+  // Welcome modal
+  welcomeModalShadow: 'rgba(188, 156, 255, 0.3)',
+
+  // Beta warning
+  betaWarningBg: '#fffbe6',
+
+  // Badge fallback color
+  badgeFallbackColor: '#ccc',
+
+  // Stake tag colors (SVG fills)
+  stakeTagBg: '#5a3490',
+  stakeTagText: '#e8dff5',
+
+  // Item details title color
+  itemDetailsTitleColor: '#4d00b4',
+  itemDetailsSubtitleColor: 'rgba(77, 0, 180, 0.45)',
+
+  // Crowdfunding card
+  crowdfundingCardText: '#ffffff',
+
+  // Rich address warning
+  richAddressWarningColor: '#787800',
+
+  // Custom registry (Seer) colors
+  seerBorderColor: '#e0e0e0',
+  seerLinkColor: '#007bff',
+  seerTextPrimary: '#333',
+  seerTextSecondary: '#666',
+  seerBackgroundAlt: '#f9f9f9',
+  seerShadow: 'rgba(0, 0, 0, 0.1)'
 }
 
 export const darkTheme = {
@@ -66,6 +170,7 @@ export const darkTheme = {
   // Gradient colors (for card headers, NSFW warnings, etc.)
   gradientStart: '#9b5fff',
   gradientEnd: '#6c4dc4',
+  gradientMid: '#352d4d',
   // Navbar and Footer - darker
   navbarBackground: '#0d0a14',
   footerBackground: '#0d0a14',
@@ -83,7 +188,111 @@ export const darkTheme = {
   antdBackground: '#1e1a28',
   antdBorderColor: '#3d3550',
   antdTextColor: '#ffffff',
-  antdDisabledColor: 'rgba(255, 255, 255, 0.35)'
+  antdDisabledColor: 'rgba(255, 255, 255, 0.35)',
+
+  // Banner specific
+  bannerGradient:
+    'linear-gradient(270deg, #1e1a28 22.92%, #2d2840 50%, #1e1a28 76.25%)',
+  bannerTextColor: '#d4c8e8',
+  bannerTitleColor: '#a78bfa',
+  bannerDescriptionColor: 'rgba(255, 255, 255, 0.6)',
+  bannerLinkColor: '#5faddb',
+  bannerLinkHoverColor: '#7cc4e8',
+  bannerPolicyLinkColor: '#5faddb',
+  bannerPolicyLinkHoverColor: '#7cc4e8',
+
+  // Button colors
+  buttonPrimaryBg: '#009aff',
+  buttonPrimaryText: '#1a1a2e',
+  buttonPrimaryHoverBg: '#33b1ff',
+  buttonSecondaryBg: '#5faddb',
+  buttonSecondaryText: '#0d0a14',
+
+  // Switch colors
+  switchOffBg: '#2d2840',
+  switchHoverBg: '#7cc4e8',
+  switchHandleBg: '#ffffff',
+
+  // Focus/outline colors (for inputs, selects, etc.)
+  focusBorderColor: 'rgba(95, 173, 219, 0.5)',
+  focusShadowColor: 'rgba(95, 173, 219, 0.2)',
+
+  // Card specific
+  cardHeaderGradient:
+    'linear-gradient(135deg, #2d2840 0%, #352d4d 50%, #2d2840 100%)',
+  cardShadow: 'rgba(0, 0, 0, 0.5)',
+  cardNsfwText: '#ffffff',
+
+  // Dropdown/Select colors
+  dropdownShadow: 'rgba(0, 0, 0, 0.5)',
+  dropdownHoverBg: 'rgba(95, 173, 219, 0.1)',
+  dropdownSelectedBg: 'rgba(95, 173, 219, 0.15)',
+
+  // Modal colors
+  modalBackground: '#1e1a28',
+  modalShadow: 'rgba(0, 0, 0, 0.5)',
+  modalCloseColor: '#5faddb',
+
+  // Notification/status specific colors
+  notificationPending: '#ccc',
+  notificationAccepted: '#208efa',
+  notificationChallenged: '#fa8d39',
+  notificationAppealable: '#722ed1',
+  notificationFinalRuling: '#f95638',
+  statusCrowdfundingWinner: '#9d52d6',
+
+  // Loading icon color
+  loadingIconColor: '#5faddb',
+
+  // Skeleton/shimmer colors
+  skeletonBase: 'rgba(255, 255, 255, 0.06)',
+  skeletonHighlight: 'rgba(255, 255, 255, 0.12)',
+
+  // Countdown text color
+  countdownTextColor: '#ffffff5c',
+
+  // Filter/sort component colors
+  filterBorderColor: '#3d3550',
+  filterTextColor: '#d4c8e8',
+
+  // Tour highlight color
+  tourAccentColor: '#9b5fff',
+
+  // Contract explorer colors
+  explorerGradientStart: '#9b5fffd9',
+  explorerGradientEnd: '#6c4dc4d9',
+  explorerTextColor: '#d4c8e8',
+
+  // Welcome modal
+  welcomeModalShadow: 'rgba(0, 0, 0, 0.5)',
+
+  // Beta warning
+  betaWarningBg: '#3d2a55',
+
+  // Badge fallback color
+  badgeFallbackColor: '#ccc',
+
+  // Stake tag colors (SVG fills)
+  stakeTagBg: '#5a3490',
+  stakeTagText: '#e8dff5',
+
+  // Item details title color
+  itemDetailsTitleColor: '#a78bfa',
+  itemDetailsSubtitleColor: 'rgba(255, 255, 255, 0.6)',
+
+  // Crowdfunding card
+  crowdfundingCardText: '#ffffff',
+
+  // Rich address warning
+  richAddressWarningColor: '#ffc53d',
+
+  // Custom registry (Seer) colors
+  seerBorderColor: '#3d3550',
+  seerLinkColor: '#5faddb',
+  seerTextPrimary: '#ffffff',
+  seerTextSecondary: '#a89cc0',
+  seerBackgroundAlt: '#252032',
+  seerShadow: 'rgba(0, 0, 0, 0.3)'
 }
 
 const ThemeContext = createContext()

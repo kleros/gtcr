@@ -102,30 +102,23 @@ export const StyledTag = styled(Tag.CheckableTag)`
       theme.name === 'dark'
         ? theme.elevatedBackground
         : 'transparent'} !important;
-    border: 1px solid
-      ${({ theme }) => (theme.name === 'dark' ? theme.borderColor : '#9b7fcf')} !important;
-    color: ${({ theme }) =>
-      theme.name === 'dark' ? theme.textPrimary : '#4d00b4'} !important;
+    border: 1px solid ${({ theme }) => theme.filterBorderColor} !important;
+    color: ${({ theme }) => theme.filterTextColor} !important;
     height: 32px;
     line-height: 30px;
     cursor: pointer;
   }
 
   &.ant-tag-checkable:hover {
-    color: ${({ theme }) =>
-      theme.name === 'dark' ? theme.textPrimary : '#4d00b4'} !important;
-    border-color: ${({ theme }) =>
-      theme.name === 'dark' ? theme.textSecondary : '#4d00b4'} !important;
+    color: ${({ theme }) => theme.filterTextColor} !important;
+    border-color: ${({ theme }) => theme.textPrimary} !important;
     cursor: pointer;
   }
 
   &.ant-tag-checkable-checked {
-    background-color: ${({ theme }) =>
-      theme.name === 'dark' ? theme.primaryColor : '#6826bf'} !important;
-    border-color: ${({ theme }) =>
-      theme.name === 'dark' ? theme.primaryColor : '#6826bf'} !important;
-    color: ${({ theme }) =>
-      theme.name === 'dark' ? theme.textOnPrimary : '#fff'} !important;
+    background-color: ${({ theme }) => theme.buttonSecondaryBg} !important;
+    border-color: ${({ theme }) => theme.buttonSecondaryBg} !important;
+    color: ${({ theme }) => theme.buttonSecondaryText} !important;
   }
 `
 
@@ -145,8 +138,7 @@ export const StyledGrid = styled.div`
 
 export const StyledSwitch = styled(Switch)`
   &.ant-switch-checked {
-    background-color: ${({ theme }) =>
-      theme.name === 'dark' ? theme.primaryColor : '#6826bf'};
+    background-color: ${({ theme }) => theme.buttonSecondaryBg};
     margin-right: 8px;
   }
 

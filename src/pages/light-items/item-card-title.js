@@ -50,7 +50,7 @@ export const StyledFontAwesomeIcon = styled(FontAwesomeIcon)`
 `
 
 export const CountdownContainer = styled.div`
-  color: #ffffff5c;
+  color: ${({ theme }) => theme.countdownTextColor};
   font-size: 13px;
   margin-left: 12px;
 `
@@ -69,10 +69,10 @@ export const StyledStakeTag = styled(StakeTag)`
     theme.name === 'dark' &&
     `
     path:first-of-type {
-      fill: #5a3490;
+      fill: ${theme.stakeTagBg};
     }
     path:last-of-type {
-      fill: #e8dff5;
+      fill: ${theme.stakeTagText};
     }
   `}
 `

@@ -16,11 +16,8 @@ const StyledModal = styled(Modal)`
 
   & > .ant-modal-content {
     border-radius: 24px;
-    box-shadow: 0px 6px 36px
-      ${({ theme }) =>
-        theme.name === 'dark' ? theme.shadowColor : '#bc9cff'};
-    background: ${({ theme }) =>
-      theme.name === 'dark' ? theme.componentBackground : '#fff'};
+    box-shadow: 0px 6px 36px ${({ theme }) => theme.welcomeModalShadow};
+    background: ${({ theme }) => theme.componentBackground};
 
     & > .ant-modal-body {
       display: flex;
@@ -29,8 +26,7 @@ const StyledModal = styled(Modal)`
     }
 
     & > .ant-modal-close {
-      color: ${({ theme }) =>
-        theme.name === 'dark' ? theme.primaryColor : '#6826bf'};
+      color: ${({ theme }) => theme.modalCloseColor};
     }
   }
 

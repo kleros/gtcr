@@ -48,10 +48,7 @@ export const StyledContainer = styled.div`
 
 export const StyledBanner = styled.div`
   padding: 24px 9.375vw;
-  background: ${({ theme }) =>
-    theme.name === 'dark'
-      ? `linear-gradient(270deg, ${theme.elevatedBackground} 22.92%, ${theme.componentBackground} 76.25%)`
-      : 'linear-gradient(270deg, #f2e3ff 22.92%, #ffffff 76.25%)'};
+  background: ${({ theme }) => theme.bannerGradient};
   box-shadow: 0px 3px 24px ${({ theme }) => theme.shadowColor};
   color: ${({ theme }) => theme.textPrimary};
   transition: background 0.3s ease, box-shadow 0.3s ease, color 0.3s ease;
@@ -68,14 +65,14 @@ export const StyledTitle = styled.h1`
   margin-bottom: 0;
   font-size: 38px;
   font-weight: 600;
-  color: ${({ theme }) => (theme.name === 'dark' ? '#a78bfa' : '#4d00b4')};
+  color: ${({ theme }) => theme.itemDetailsTitleColor};
 `
 
 export const StyledSubtitle = styled.h3`
   margin-bottom: 16px;
   font-size: 24px;
   font-weight: 500;
-  color: ${({ theme }) => (theme.name === 'dark' ? '#d4c8e8' : '#4d00b4')};
+  color: ${({ theme }) => theme.textSecondary};
 `
 
 export const formIds = [

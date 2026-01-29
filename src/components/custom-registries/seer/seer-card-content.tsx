@@ -13,19 +13,15 @@ const Container = styled.div`
   max-width: 300px;
   margin: 16px auto;
   padding: 10px;
-  border: 1px solid
-    ${({ theme }) => (theme.name === 'dark' ? theme.borderColor : '#e0e0e0')};
+  border: 1px solid ${({ theme }) => theme.seerBorderColor};
   border-radius: 8px;
-  box-shadow: 0 2px 4px
-    ${({ theme }) =>
-      theme.name === 'dark' ? theme.shadowColor : 'rgba(0, 0, 0, 0.1)'};
+  box-shadow: 0 2px 4px ${({ theme }) => theme.seerShadow};
   background: ${({ theme }) =>
     theme.name === 'dark' ? theme.componentBackground : 'transparent'};
 `
 
 const SeerLink = styled.a`
-  color: ${({ theme }) =>
-    theme.name === 'dark' ? theme.primaryColor : '#007bff'};
+  color: ${({ theme }) => theme.seerLinkColor};
   text-decoration: none;
   font-weight: bold;
   font-size: 14px;
@@ -39,14 +35,13 @@ const SeerLink = styled.a`
 const MarketName = styled.h3`
   margin: 0 0 12px;
   font-size: 1.2em;
-  color: ${({ theme }) => (theme.name === 'dark' ? theme.textPrimary : '#333')};
+  color: ${({ theme }) => theme.seerTextPrimary};
 `
 
 const OutcomesHeading = styled.h4`
   margin: 0 0 12px;
   font-size: 0.9em;
-  color: ${({ theme }) =>
-    theme.name === 'dark' ? theme.textSecondary : '#666'};
+  color: ${({ theme }) => theme.seerTextSecondary};
 `
 
 const OutcomeItem = styled.div`
@@ -54,19 +49,17 @@ const OutcomeItem = styled.div`
   align-items: center;
   margin-bottom: 6px;
   padding: 4px;
-  background-color: ${({ theme }) =>
-    theme.name === 'dark' ? theme.elevatedBackground : '#f9f9f9'};
+  background-color: ${({ theme }) => theme.seerBackgroundAlt};
   border-radius: 4px;
 `
 
 const OutcomeName = styled.span`
   font-size: 0.9em;
-  color: ${({ theme }) => (theme.name === 'dark' ? theme.textPrimary : '#333')};
+  color: ${({ theme }) => theme.seerTextPrimary};
 `
 
 const LoadingMessage = styled.p`
-  color: ${({ theme }) =>
-    theme.name === 'dark' ? theme.textSecondary : '#666'};
+  color: ${({ theme }) => theme.seerTextSecondary};
   font-size: 12px;
 `
 

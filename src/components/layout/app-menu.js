@@ -33,8 +33,7 @@ const StyledMenuItem = styled(Menu.Item)`
 `
 
 const StyledButton = styled(Button)`
-  background-color: ${({ theme }) =>
-    theme.name === 'dark' ? theme.navbarBackground : '#1e075f'} !important;
+  background-color: ${({ theme }) => theme.navbarBackground} !important;
   color: #fff !important;
   padding: 0 !important;
   border: none !important;

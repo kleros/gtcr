@@ -15,13 +15,9 @@ import { truncateAtWord } from 'utils/truncate-at-word'
 export const StyledBanner = styled.div`
   display: flex;
   padding: 24px 9.375vw;
-  background: ${({ theme }) =>
-    theme.name === 'dark'
-      ? `linear-gradient(270deg, ${theme.elevatedBackground} 22.92%, ${theme.componentBackground} 76.25%)`
-      : 'linear-gradient(270deg, #f2e3ff 22.92%, #ffffff 76.25%)'};
-  box-shadow: 0px 3px 24px
-    ${({ theme }) => (theme.name === 'dark' ? 'rgba(0, 0, 0, 0.5)' : '#bc9cff')};
-  color: ${({ theme }) => (theme.name === 'dark' ? '#d4c8e8' : '#4d00b4')};
+  background: ${({ theme }) => theme.bannerGradient};
+  box-shadow: 0px 3px 24px ${({ theme }) => theme.shadowColor};
+  color: ${({ theme }) => theme.bannerTextColor};
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 8px;
@@ -65,13 +61,12 @@ export const StyledTitle = styled.h1`
   margin-bottom: 0;
   font-size: 38px;
   font-weight: 600;
-  color: ${({ theme }) => (theme.name === 'dark' ? '#a78bfa' : '#4d00b4')};
+  color: ${({ theme }) => theme.bannerTitleColor};
 `
 
 export const StyledDescription = styled.span`
   display: inline;
-  color: ${({ theme }) =>
-    theme.name === 'dark' ? 'rgba(255, 255, 255, 0.6)' : '#b88cdc'};
+  color: ${({ theme }) => theme.bannerDescriptionColor};
 
   ${smallScreenStyle(
     () => css`
@@ -83,10 +78,10 @@ export const StyledDescription = styled.span`
 export const StyledPolicyAnchor = styled.a`
   text-decoration: none;
   margin-top: 12px;
-  color: ${({ theme }) => (theme.name === 'dark' ? '#5faddb' : '#b88cdc')};
+  color: ${({ theme }) => theme.bannerPolicyLinkColor};
 
   &:hover {
-    color: ${({ theme }) => (theme.name === 'dark' ? '#7cc4e8' : '#9b6bc3')};
+    color: ${({ theme }) => theme.bannerPolicyLinkHoverColor};
   }
 `
 
@@ -104,11 +99,11 @@ export const ActionCol = styled.div`
 `
 
 export const StyledLink = styled(Link)`
-  color: ${({ theme }) => (theme.name === 'dark' ? '#5faddb' : '#4d00b473')};
+  color: ${({ theme }) => theme.bannerLinkColor};
   text-decoration: none;
 
   &:hover {
-    color: ${({ theme }) => (theme.name === 'dark' ? '#7cc4e8' : '#4d00b4')};
+    color: ${({ theme }) => theme.bannerLinkHoverColor};
   }
 `
 

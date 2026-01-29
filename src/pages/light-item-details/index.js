@@ -30,8 +30,7 @@ export const ITEM_TOUR_DISMISSED = 'ITEM_TOUR_DISMISSED'
 
 export const StyledBreadcrumbItem = styled(Breadcrumb.Item)`
   text-transform: capitalize;
-  color: ${({ theme }) =>
-    theme.name === 'dark' ? '#a78bfa' : '#4d00b4'} !important;
+  color: ${({ theme }) => theme.itemDetailsTitleColor} !important;
 `
 
 export const StyledLayoutContent = styled(Layout.Content)`
@@ -43,10 +42,7 @@ export const StyledLayoutContent = styled(Layout.Content)`
 
 export const StyledBanner = styled.div`
   padding: 24px 9.375vw;
-  background: ${({ theme }) =>
-    theme.name === 'dark'
-      ? `linear-gradient(270deg, ${theme.elevatedBackground} 22.92%, ${theme.componentBackground} 76.25%)`
-      : 'linear-gradient(270deg, #f2e3ff 22.92%, #ffffff 76.25%)'};
+  background: ${({ theme }) => theme.bannerGradient};
   box-shadow: 0px 3px 24px ${({ theme }) => theme.shadowColor};
   color: ${({ theme }) => theme.textPrimary};
   transition: background 0.3s ease, box-shadow 0.3s ease, color 0.3s ease;
@@ -59,8 +55,7 @@ export const StyledMargin = styled.div`
 
 export const StyledLink = styled(Link)`
   text-decoration: underline;
-  color: ${({ theme }) =>
-    theme.name === 'dark' ? theme.textTertiary : 'rgba(77, 0, 180, 0.45)'};
+  color: ${({ theme }) => theme.itemDetailsSubtitleColor};
 `
 
 export const StyledBackLink = styled.div`

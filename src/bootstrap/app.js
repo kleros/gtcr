@@ -48,7 +48,7 @@ const GlobalStyle = createGlobalStyle`
       background: ${({ theme }) => theme.componentBackground} !important;
       border-color: ${({ theme }) => theme.borderColor} !important;
       color: ${({ theme }) => theme.textPrimary} !important;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4) !important;
+      box-shadow: 0 2px 8px ${({ theme }) => theme.shadowColor} !important;
     }
     .ant-card-head {
       background: ${({ theme }) => theme.elevatedBackground} !important;
@@ -93,6 +93,12 @@ const GlobalStyle = createGlobalStyle`
     .ant-modal-body {
       color: ${({ theme }) => theme.textPrimary} !important;
     }
+    .ant-modal-confirm-title {
+      color: ${({ theme }) => theme.textPrimary} !important;
+    }
+    .ant-modal-confirm-content {
+      color: ${({ theme }) => theme.textPrimary} !important;
+    }
     .ant-modal-footer {
       border-color: ${({ theme }) => theme.borderColor} !important;
       background: ${({ theme }) => theme.componentBackground} !important;
@@ -106,11 +112,11 @@ const GlobalStyle = createGlobalStyle`
       transition: all 0.25s ease !important;
     }
     .ant-input:hover {
-      border-color: rgba(95, 173, 219, 0.5) !important;
+      border-color: ${({ theme }) => theme.focusBorderColor} !important;
     }
     .ant-input:focus {
       border-color: ${({ theme }) => theme.primaryColor} !important;
-      box-shadow: 0 0 0 2px rgba(95, 173, 219, 0.2) !important;
+      box-shadow: 0 0 0 2px ${({ theme }) => theme.focusShadowColor} !important;
     }
     .ant-input::placeholder {
       color: ${({ theme }) => theme.textTertiary} !important;
@@ -121,12 +127,12 @@ const GlobalStyle = createGlobalStyle`
       transition: all 0.25s ease !important;
     }
     .ant-input-affix-wrapper:hover {
-      border-color: rgba(95, 173, 219, 0.5) !important;
+      border-color: ${({ theme }) => theme.focusBorderColor} !important;
     }
     .ant-input-affix-wrapper:focus,
     .ant-input-affix-wrapper-focused {
       border-color: ${({ theme }) => theme.primaryColor} !important;
-      box-shadow: 0 0 0 2px rgba(95, 173, 219, 0.2) !important;
+      box-shadow: 0 0 0 2px ${({ theme }) => theme.focusShadowColor} !important;
     }
     .ant-input-group-addon {
       background: ${({ theme }) => theme.elevatedBackground} !important;
@@ -142,12 +148,12 @@ const GlobalStyle = createGlobalStyle`
       transition: all 0.25s ease !important;
     }
     .ant-select-selection:hover {
-      border-color: rgba(95, 173, 219, 0.5) !important;
+      border-color: ${({ theme }) => theme.focusBorderColor} !important;
     }
     .ant-select-focused .ant-select-selection,
     .ant-select-open .ant-select-selection {
       border-color: ${({ theme }) => theme.primaryColor} !important;
-      box-shadow: 0 0 0 2px rgba(95, 173, 219, 0.2) !important;
+      box-shadow: 0 0 0 2px ${({ theme }) => theme.focusShadowColor} !important;
     }
     .ant-select-selection__rendered {
       color: ${({ theme }) => theme.textPrimary} !important;
@@ -165,21 +171,23 @@ const GlobalStyle = createGlobalStyle`
     .ant-select-dropdown {
       background: ${({ theme }) => theme.componentBackground} !important;
       border: 1px solid ${({ theme }) => theme.borderColor} !important;
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(95, 173, 219, 0.1) !important;
+      box-shadow: 0 4px 16px ${({ theme }) => theme.shadowColor}, 0 0 0 1px ${({
+  theme
+}) => theme.dropdownHoverBg} !important;
     }
     .ant-select-dropdown-menu-item {
       color: ${({ theme }) => theme.textPrimary} !important;
       transition: all 0.2s ease !important;
     }
     .ant-select-dropdown-menu-item:hover {
-      background: rgba(95, 173, 219, 0.1) !important;
+      background: ${({ theme }) => theme.dropdownHoverBg} !important;
       color: ${({ theme }) => theme.primaryColor} !important;
     }
     .ant-select-dropdown-menu-item-active {
-      background: rgba(95, 173, 219, 0.08) !important;
+      background: ${({ theme }) => theme.dropdownHoverBg} !important;
     }
     .ant-select-dropdown-menu-item-selected {
-      background: rgba(95, 173, 219, 0.15) !important;
+      background: ${({ theme }) => theme.dropdownSelectedBg} !important;
       color: ${({ theme }) => theme.primaryColor} !important;
       font-weight: 500;
     }
@@ -233,19 +241,20 @@ const GlobalStyle = createGlobalStyle`
       background-color: ${({ theme }) => theme.primaryColor} !important;
       border-color: ${({ theme }) => theme.primaryColor} !important;
       color: ${({ theme }) => theme.textOnPrimary} !important;
-      box-shadow: 0 2px 8px rgba(95, 173, 219, 0.3) !important;
+      box-shadow: 0 2px 8px ${({ theme }) => theme.focusShadowColor} !important;
     }
     .ant-btn-primary:hover,
     .ant-btn-primary:focus {
       background-color: ${({ theme }) => theme.primaryColorHover} !important;
       border-color: ${({ theme }) => theme.primaryColorHover} !important;
       color: ${({ theme }) => theme.textOnPrimary} !important;
-      box-shadow: 0 4px 16px rgba(124, 196, 232, 0.4) !important;
+      box-shadow: 0 4px 16px ${({ theme }) =>
+        theme.focusBorderColor} !important;
       transform: translateY(-1px);
     }
     .ant-btn-primary:active {
       transform: translateY(0);
-      box-shadow: 0 2px 4px rgba(95, 173, 219, 0.3) !important;
+      box-shadow: 0 2px 4px ${({ theme }) => theme.focusShadowColor} !important;
     }
     .ant-btn:not(.ant-btn-primary):not(.ant-btn-link):not(.ant-btn-ghost) {
       background: ${({ theme }) => theme.componentBackground} !important;
@@ -256,35 +265,30 @@ const GlobalStyle = createGlobalStyle`
       border-color: ${({ theme }) => theme.primaryColor} !important;
       color: ${({ theme }) => theme.primaryColor} !important;
       background: ${({ theme }) => theme.elevatedBackground} !important;
-      box-shadow: 0 2px 8px rgba(95, 173, 219, 0.15) !important;
+      box-shadow: 0 2px 8px ${({ theme }) =>
+        theme.dropdownSelectedBg} !important;
     }
 
     /* Switch */
     .ant-switch {
-      background-color: ${({ theme }) =>
-        theme.name === 'dark' ? '#2d2840' : 'rgba(0, 0, 0, 0.25)'} !important;
+      background-color: ${({ theme }) => theme.switchOffBg} !important;
       transition: all 0.25s ease !important;
     }
     .ant-switch::after,
     .ant-switch-handle::before {
-      background-color: #ffffff !important;
+      background-color: ${({ theme }) => theme.switchHandleBg} !important;
     }
     .ant-switch:hover {
-      box-shadow: 0 0 8px ${({ theme }) =>
-        theme.name === 'dark'
-          ? 'rgba(95, 173, 219, 0.4)'
-          : 'rgba(104, 38, 191, 0.4)'} !important;
+      box-shadow: 0 0 8px ${({ theme }) => theme.focusBorderColor} !important;
     }
     .ant-switch-checked {
       background-color: ${({ theme }) => theme.primaryColor} !important;
     }
     .ant-switch-checked:hover {
-      background-color: ${({ theme }) =>
-        theme.name === 'dark' ? theme.primaryColorHover : '#7c3aed'} !important;
+      background-color: ${({ theme }) => theme.switchHoverBg} !important;
     }
     .ant-switch-inner {
-      color: ${({ theme }) =>
-        theme.name === 'dark' ? '#ffffff' : 'inherit'} !important;
+      color: ${({ theme }) => theme.switchHandleBg} !important;
     }
     .ant-switch-checked .ant-switch-inner {
       color: ${({ theme }) => theme.textOnPrimary} !important;
@@ -297,10 +301,6 @@ const GlobalStyle = createGlobalStyle`
     .ant-list-item {
       border-color: ${({ theme }) => theme.borderColor} !important;
       color: ${({ theme }) => theme.textPrimary} !important;
-      transition: all 0.2s ease !important;
-    }
-    .ant-list-item:hover {
-      background: rgba(95, 173, 219, 0.05) !important;
     }
     .ant-list-item-meta-title {
       color: ${({ theme }) => theme.textPrimary} !important;
@@ -312,10 +312,7 @@ const GlobalStyle = createGlobalStyle`
     /* Popover */
     .ant-popover-inner {
       background: ${({ theme }) => theme.componentBackground} !important;
-      box-shadow: 0 4px 16px ${({ theme }) =>
-        theme.name === 'dark'
-          ? 'rgba(0, 0, 0, 0.5)'
-          : 'rgba(188, 156, 255, 0.3)'} !important;
+      box-shadow: 0 4px 16px ${({ theme }) => theme.shadowColor} !important;
       border: 1px solid ${({ theme }) => theme.borderColor} !important;
     }
     .ant-popover-title {
@@ -341,7 +338,7 @@ const GlobalStyle = createGlobalStyle`
     /* Dropdown */
     .ant-dropdown-menu {
       background: ${({ theme }) => theme.componentBackground} !important;
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5) !important;
+      box-shadow: 0 4px 16px ${({ theme }) => theme.shadowColor} !important;
       border: 1px solid ${({ theme }) => theme.borderColor} !important;
     }
     .ant-dropdown-menu-item {
@@ -349,7 +346,7 @@ const GlobalStyle = createGlobalStyle`
       transition: all 0.2s ease !important;
     }
     .ant-dropdown-menu-item:hover {
-      background: rgba(95, 173, 219, 0.1) !important;
+      background: ${({ theme }) => theme.dropdownHoverBg} !important;
       color: ${({ theme }) => theme.primaryColor} !important;
     }
 
@@ -360,7 +357,7 @@ const GlobalStyle = createGlobalStyle`
     }
     .ant-tabs-tab:hover {
       color: ${({ theme }) => theme.primaryColor} !important;
-      text-shadow: 0 0 8px rgba(95, 173, 219, 0.3);
+      text-shadow: 0 0 8px ${({ theme }) => theme.focusShadowColor};
     }
     .ant-tabs-tab-active,
     .ant-tabs-tab-active .ant-tabs-tab-btn {
@@ -399,8 +396,8 @@ const GlobalStyle = createGlobalStyle`
       transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
     }
     .ant-tag:hover {
-      border-color: rgba(95, 173, 219, 0.5) !important;
-      box-shadow: 0 0 8px rgba(95, 173, 219, 0.2) !important;
+      border-color: ${({ theme }) => theme.focusBorderColor} !important;
+      box-shadow: 0 0 8px ${({ theme }) => theme.focusShadowColor} !important;
     }
     .ant-tag-checkable:not(.ant-tag-checkable-checked) {
       background: ${({ theme }) => theme.elevatedBackground} !important;
@@ -460,7 +457,7 @@ const GlobalStyle = createGlobalStyle`
     }
     .ant-pagination-item:hover {
       border-color: ${({ theme }) => theme.primaryColor} !important;
-      background: rgba(95, 173, 219, 0.08) !important;
+      background: ${({ theme }) => theme.dropdownHoverBg} !important;
       transform: translateY(-1px);
     }
     .ant-pagination-item:hover a {
@@ -471,7 +468,7 @@ const GlobalStyle = createGlobalStyle`
     }
     .ant-pagination-item-active {
       border-color: ${({ theme }) => theme.primaryColor} !important;
-      background: rgba(95, 173, 219, 0.15) !important;
+      background: ${({ theme }) => theme.dropdownSelectedBg} !important;
     }
     .ant-pagination-item-active a {
       color: ${({ theme }) => theme.primaryColor} !important;
@@ -520,7 +517,7 @@ const GlobalStyle = createGlobalStyle`
     .ant-pagination-next:hover .ant-pagination-item-link {
       border-color: ${({ theme }) => theme.primaryColor} !important;
       color: ${({ theme }) => theme.primaryColor} !important;
-      background: rgba(95, 173, 219, 0.08) !important;
+      background: ${({ theme }) => theme.dropdownHoverBg} !important;
     }
     /* Jump prev/next (« ») */
     .ant-pagination-jump-prev,
@@ -585,8 +582,8 @@ const GlobalStyle = createGlobalStyle`
       border-color: ${({ theme }) => theme.primaryColor} !important;
     }
     .ant-checkbox-checked:hover .ant-checkbox-inner {
-      background: #7cc4e8 !important;
-      border-color: #7cc4e8 !important;
+      background: ${({ theme }) => theme.primaryColorHover} !important;
+      border-color: ${({ theme }) => theme.primaryColorHover} !important;
     }
 
     /* Radio */
@@ -606,10 +603,10 @@ const GlobalStyle = createGlobalStyle`
       background: ${({ theme }) => theme.primaryColor} !important;
     }
     .ant-radio-checked:hover .ant-radio-inner {
-      border-color: #7cc4e8 !important;
+      border-color: ${({ theme }) => theme.primaryColorHover} !important;
     }
     .ant-radio-checked:hover .ant-radio-inner::after {
-      background: #7cc4e8 !important;
+      background: ${({ theme }) => theme.primaryColorHover} !important;
     }
 
     /* Collapse */
@@ -675,7 +672,9 @@ const GlobalStyle = createGlobalStyle`
     }
     .ant-steps-item-process .ant-steps-item-icon > .ant-steps-icon {
       color: ${({ theme }) =>
-        theme.name === 'dark' ? theme.textOnPrimary : '#0d0a14'} !important;
+        theme.name === 'dark'
+          ? theme.textOnPrimary
+          : theme.textOnPrimary} !important;
     }
     .ant-steps-item-finish .ant-steps-item-icon {
       background: ${({ theme }) => theme.componentBackground} !important;
@@ -697,10 +696,7 @@ const GlobalStyle = createGlobalStyle`
       border-color: ${({ theme }) => theme.primaryColor} !important;
     }
     .ant-slider-handle:focus {
-      box-shadow: 0 0 0 5px ${({ theme }) =>
-        theme.name === 'dark'
-          ? 'rgba(95, 173, 219, 0.2)'
-          : 'rgba(104, 38, 191, 0.2)'} !important;
+      box-shadow: 0 0 0 5px ${({ theme }) => theme.focusShadowColor} !important;
     }
 
     /* InputNumber */
@@ -755,7 +751,9 @@ const GlobalStyle = createGlobalStyle`
     }
     .ant-timeline-item-head-custom .anticon {
       color: ${({ theme }) =>
-        theme.name === 'dark' ? theme.textSecondary : '#4d00b4'} !important;
+        theme.name === 'dark'
+          ? theme.textSecondary
+          : theme.tertiaryColor} !important;
       font-size: 18px;
     }
 
@@ -868,7 +866,7 @@ const GlobalStyle = createGlobalStyle`
       transition: color 0.2s ease;
     }
     a:hover {
-      color: #7cc4e8;
+      color: ${({ theme }) => theme.primaryColorHover};
     }
 
     /* Upload hover effect */
@@ -883,14 +881,14 @@ const GlobalStyle = createGlobalStyle`
 
     /* Table row hover improvement */
     .ant-table-tbody > tr:hover > td {
-      background: rgba(95, 173, 219, 0.08) !important;
+      background: ${({ theme }) => theme.dropdownHoverBg} !important;
     }
 
     /* Notification */
     .ant-notification-notice {
       background: ${({ theme }) => theme.componentBackground} !important;
       border: 1px solid ${({ theme }) => theme.borderColor} !important;
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5) !important;
+      box-shadow: 0 4px 16px ${({ theme }) => theme.shadowColor} !important;
       border-radius: 8px !important;
     }
     .ant-notification-notice-message {
@@ -923,7 +921,7 @@ const GlobalStyle = createGlobalStyle`
     .ant-message-notice-content {
       background: ${({ theme }) => theme.componentBackground} !important;
       border: 1px solid ${({ theme }) => theme.borderColor} !important;
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5) !important;
+      box-shadow: 0 4px 16px ${({ theme }) => theme.shadowColor} !important;
       color: ${({ theme }) => theme.textPrimary} !important;
       border-radius: 8px !important;
     }
@@ -950,7 +948,7 @@ const GlobalStyle = createGlobalStyle`
       background: ${({ theme }) => theme.componentBackground} !important;
       color: ${({ theme }) => theme.textPrimary} !important;
       border-radius: 12px !important;
-      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.6) !important;
+      box-shadow: 0 4px 24px ${({ theme }) => theme.shadowColor} !important;
     }
     .reactour__helper div {
       color: ${({ theme }) => theme.textPrimary} !important;
@@ -959,7 +957,7 @@ const GlobalStyle = createGlobalStyle`
       color: ${({ theme }) => theme.linkColor} !important;
     }
     .reactour__helper a:hover {
-      color: #7cc4e8 !important;
+      color: ${({ theme }) => theme.primaryColorHover} !important;
     }
     .reactour__close {
       color: ${({ theme }) => theme.textSecondary} !important;

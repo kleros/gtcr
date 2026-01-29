@@ -102,7 +102,7 @@ const OptionItem = ({ item }) => {
       <StyledStatus>
         <Badge
           color={
-            typeof statusCode === 'number' ? STATUS_COLOR[statusCode] : '#ccc'
+            typeof statusCode === 'number' ? STATUS_COLOR[statusCode] : 'gray'
           }
         />
       </StyledStatus>

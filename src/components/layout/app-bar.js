@@ -118,11 +118,11 @@ const StakeCurateLogo = styled(StakeCurateLogoRaw)`
     `
     /* Stake tag background (path with fill="#EBD4FF") */
     path[fill="#EBD4FF"] {
-      fill: #5a3490;
+      fill: ${theme.stakeTagBg};
     }
     /* Stake tag text (path with fill="#220050") */
     path[fill="#220050"] {
-      fill: #e8dff5;
+      fill: ${theme.stakeTagText};
     }
   `}
 `

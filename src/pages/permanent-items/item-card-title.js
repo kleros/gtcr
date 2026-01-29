@@ -29,7 +29,7 @@ export const StyledFontAwesomeIcon = styled(FontAwesomeIcon)`
 `
 
 export const CountdownContainer = styled.div`
-  color: #ffffff5c;
+  color: ${({ theme }) => theme.countdownTextColor};
   font-size: 13px;
   margin-left: 12px;
 `

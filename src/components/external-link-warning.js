@@ -97,15 +97,15 @@ const CancelButton = styled(Button)`
 `
 
 const ConfirmButton = styled(Button)`
-  background-color: #009aff !important;
-  border-color: #009aff !important;
-  color: #1a1a2e !important;
+  background-color: ${({ theme }) => theme.buttonPrimaryBg} !important;
+  border-color: ${({ theme }) => theme.buttonPrimaryBg} !important;
+  color: ${({ theme }) => theme.buttonPrimaryText} !important;
 
   &:hover,
   &:focus {
-    background-color: #33b1ff !important;
-    border-color: #33b1ff !important;
-    color: #1a1a2e !important;
+    background-color: ${({ theme }) => theme.buttonPrimaryHoverBg} !important;
+    border-color: ${({ theme }) => theme.buttonPrimaryHoverBg} !important;
+    color: ${({ theme }) => theme.buttonPrimaryText} !important;
   }
 `
 
