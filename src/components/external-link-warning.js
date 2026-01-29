@@ -97,16 +97,15 @@ const CancelButton = styled(Button)`
 `
 
 const ConfirmButton = styled(Button)`
-  background-color: ${({ theme }) => theme.primaryColor} !important;
-  border-color: ${({ theme }) => theme.primaryColor} !important;
-  color: white !important;
+  background-color: #009aff !important;
+  border-color: #009aff !important;
+  color: #1a1a2e !important;
 
   &:hover,
   &:focus {
-    background-color: ${({ theme }) => theme.primaryColor} !important;
-    border-color: ${({ theme }) => theme.primaryColor} !important;
-    opacity: 0.85;
-    color: white !important;
+    background-color: #33b1ff !important;
+    border-color: #33b1ff !important;
+    color: #1a1a2e !important;
   }
 `
 
@@ -143,7 +142,7 @@ const ExternalLinkWarning = ({ visible, url, onConfirm, onCancel }) => (
 
     <ButtonContainer>
       <CancelButton onClick={onCancel}>Cancel</CancelButton>
-      <ConfirmButton onClick={onConfirm}>
+      <ConfirmButton type="primary" onClick={onConfirm}>
         Continue to External Site
       </ConfirmButton>
     </ButtonContainer>
