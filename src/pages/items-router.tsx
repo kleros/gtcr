@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useContext, useEffect } from 'react'
 import { TCRViewProvider } from 'contexts/tcr-view-context'
 import { LightTCRViewProvider } from 'contexts/light-tcr-view-context'
 import loadable from '@loadable/component'
@@ -7,6 +7,7 @@ import Loading from 'components/loading'
 import useTcrNetwork from 'hooks/use-tcr-network'
 import { NETWORK_STATUS } from 'config/networks'
 import useCheckLightCurate from 'hooks/use-check-light-curate'
+import { StakeContext } from 'contexts/stake-context'
 
 const LightItems = loadable(
   () => import(/* webpackPrefetch: true */ './light-items/index'),
@@ -31,8 +32,19 @@ const PermanentItems = loadable(
 
 const ItemsRouter = () => {
   const { tcrAddress } = useParams<{ tcrAddress: string }>()
-  const { isLightCurate, isClassicCurate, checking } = useCheckLightCurate()
+  const {
+    isLightCurate,
+    isClassicCurate,
+    isPermanentCurate,
+    checking
+  } = useCheckLightCurate()
   const { networkStatus } = useTcrNetwork()
+  const { setIsPermanent } = useContext(StakeContext)
+
+  useEffect(() => {
+    setIsPermanent(isPermanentCurate)
+    return () => setIsPermanent(false)
+  }, [isPermanentCurate, setIsPermanent])
 
   if (checking || networkStatus !== NETWORK_STATUS.supported) return <Loading />
 
@@ -42,13 +54,15 @@ const ItemsRouter = () => {
         <LightItems />
       </LightTCRViewProvider>
     )
-  else if (isClassicCurate)
+  if (isClassicCurate)
     return (
       <TCRViewProvider tcrAddress={tcrAddress}>
         <Items />
       </TCRViewProvider>
     )
-  else return <PermanentItems />
+  if (isPermanentCurate) return <PermanentItems />
+
+  return <Loading />
 }
 
 export default ItemsRouter

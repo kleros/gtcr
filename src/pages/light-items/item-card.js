@@ -7,6 +7,7 @@ import TCRCardContent from 'components/light-tcr-card-content'
 import ItemCardContent from 'components/light-item-card-content'
 import BNPropType from 'prop-types/bn'
 import { itemToStatusCode, STATUS_CODE } from 'utils/item-status'
+import useCheckPermanentList from 'hooks/use-check-permanent-list'
 import ItemCardTitle from './item-card-title'
 
 export const FlipCardInner = styled.div`
@@ -119,6 +120,9 @@ const CardItemInfo = ({
   let content
   const { metadata } = metaEvidence || {}
   const { itemName, isTCRofTCRs } = metadata || {}
+  const childTcrAddress = isTCRofTCRs ? item.columns[0]?.value : null
+
+  const { isPermanentList } = useCheckPermanentList(childTcrAddress, chainId)
 
   if (item.errors.length > 0)
     content = (
@@ -148,7 +152,13 @@ const CardItemInfo = ({
   return (
     <CardBlock>
       <StyledCardInfo
-        title={<ItemCardTitle statusCode={statusCode} tcrData={item.tcrData} />}
+        title={
+          <ItemCardTitle
+            statusCode={statusCode}
+            tcrData={item.tcrData}
+            isPermanentList={isPermanentList}
+          />
+        }
         actions={
           !forceReveal &&
           toggleReveal && [

@@ -10,11 +10,13 @@ import { NETWORKS, NETWORKS_INFO } from '../../config/networks'
 import Identicon from 'components/identicon'
 import Notifications from 'components/notifications'
 import { ReactComponent as Logo } from 'assets/images/logo.svg'
+import { ReactComponent as StakeCurateLogo } from 'assets/images/logo-stake-curate.svg'
 import { capitalizeFirstLetter, SAVED_NETWORK_KEY } from 'utils/string'
 import AppTour from 'components/tour'
 import { useHistory } from 'react-router-dom/cjs/react-router-dom.min'
 import AppMenu from 'components/layout/app-menu'
 import { defaultTcrAddresses } from 'config/tcr-addresses'
+import { StakeContext } from 'contexts/stake-context'
 
 const Container = styled.div`
   padding: 0;
@@ -105,6 +107,7 @@ const AppBar = () => {
   const web3Context = useWeb3Context()
   const { requestWeb3Auth } = useContext(WalletContext)
   const { userSubscribed } = useContext(TourContext)
+  const { isPermanent } = useContext(StakeContext)
   const history = useHistory()
   const { networkId, account } = web3Context
   const [requestedChain, setRequestedChain] = useState()
@@ -135,7 +138,13 @@ const AppBar = () => {
       <StyledAppBarRow type="flex" justify="space-between">
         <StyledColStart md={6} sm={12} xs={0}>
           <StyledRouterLink to="/">
-            <Logo style={{ maxHeight: '50px', maxWidth: '100px' }} />
+            {isPermanent ? (
+              <StakeCurateLogo
+                style={{ maxHeight: '50px', maxWidth: '120px' }}
+              />
+            ) : (
+              <Logo style={{ maxHeight: '50px', maxWidth: '120px' }} />
+            )}
           </StyledRouterLink>
         </StyledColStart>
         <StyledCenter md={8} sm={0} xs={0}>

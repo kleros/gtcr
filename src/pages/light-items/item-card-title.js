@@ -11,6 +11,7 @@ import { WalletContext } from 'contexts/wallet-context'
 import { LightTCRViewContext } from 'contexts/light-tcr-view-context'
 import useHumanizedCountdown from 'hooks/countdown'
 import useNativeCurrency from 'hooks/native-currency'
+import { ReactComponent as StakeTag } from 'assets/images/logo-stake-tag.svg'
 
 export const Container = styled.div`
   display: flex;
@@ -22,6 +23,21 @@ export const Container = styled.div`
 export const StatusAndBountyContainer = styled.div`
   display: flex;
   justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+`
+
+export const StatusGroup = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+`
+
+export const RightGroup = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
 `
 
 export const BountyContainer = styled.div`
@@ -39,7 +55,17 @@ export const CountdownContainer = styled.div`
   margin-left: 12px;
 `
 
-const ItemCardTitle = ({ statusCode, tcrData }) => {
+export const StyledStakeTag = styled(StakeTag)`
+  height: 14px;
+  width: auto;
+  flex-shrink: 0;
+
+  @media (max-width: 500px) {
+    height: 12px;
+  }
+`
+
+const ItemCardTitle = ({ statusCode, tcrData, isPermanentList }) => {
   const { challengePeriodDuration } = useContext(LightTCRViewContext)
   const { timestamp } = useContext(WalletContext)
   const { disputed, submissionTime } = tcrData || {}
@@ -66,19 +92,24 @@ const ItemCardTitle = ({ statusCode, tcrData }) => {
   return (
     <Container>
       <StatusAndBountyContainer>
-        <ItemStatusBadge statusCode={statusCode} dark />
-        {challengeRemainingTime > 0 && (
-          <BountyContainer>
-            <Tooltip title="This is the bounty on this item.">
-              <ETHAmount
-                amount={bounty}
-                decimals={3}
-                displayUnit={` ${nativeCurrency}`}
-              />
-              <StyledFontAwesomeIcon icon="coins" color="white" />
-            </Tooltip>
-          </BountyContainer>
-        )}
+        <StatusGroup>
+          <ItemStatusBadge statusCode={statusCode} dark />
+        </StatusGroup>
+        <RightGroup>
+          {challengeRemainingTime > 0 && (
+            <BountyContainer>
+              <Tooltip title="This is the bounty on this item.">
+                <ETHAmount
+                  amount={bounty}
+                  decimals={3}
+                  displayUnit={` ${nativeCurrency}`}
+                />
+                <StyledFontAwesomeIcon icon="coins" color="white" />
+              </Tooltip>
+            </BountyContainer>
+          )}
+          {isPermanentList && <StyledStakeTag />}
+        </RightGroup>
       </StatusAndBountyContainer>
       {challengeRemainingTime > 0 && (
         <CountdownContainer>
@@ -95,12 +126,14 @@ const ItemCardTitle = ({ statusCode, tcrData }) => {
 
 ItemCardTitle.propTypes = {
   statusCode: PropTypes.number,
-  tcrData: ItemPropTypes
+  tcrData: ItemPropTypes,
+  isPermanentList: PropTypes.bool
 }
 
 ItemCardTitle.defaultProps = {
   statusCode: null,
-  tcrData: null
+  tcrData: null,
+  isPermanentList: false
 }
 
 export default ItemCardTitle

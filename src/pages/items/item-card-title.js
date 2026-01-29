@@ -10,12 +10,15 @@ import useNativeCurrency from 'hooks/native-currency'
 import {
   Container,
   StatusAndBountyContainer,
+  StatusGroup,
+  RightGroup,
   BountyContainer,
   StyledFontAwesomeIcon,
-  CountdownContainer
+  CountdownContainer,
+  StyledStakeTag
 } from 'pages/light-items/item-card-title'
 
-const ItemCardTitle = ({ statusCode, tcrData }) => {
+const ItemCardTitle = ({ statusCode, tcrData, isPermanentList }) => {
   const { challengePeriodDuration } = useContext(TCRViewContext)
   const { timestamp } = useContext(WalletContext)
   const { disputed, submissionTime } = tcrData || {}
@@ -41,19 +44,24 @@ const ItemCardTitle = ({ statusCode, tcrData }) => {
   return (
     <Container>
       <StatusAndBountyContainer>
-        <ItemStatusBadge statusCode={statusCode} dark />
-        {challengeRemainingTime > 0 && (
-          <BountyContainer>
-            <Tooltip title="This is the bounty on this item.">
-              <ETHAmount
-                amount={bounty}
-                decimals={3}
-                displayUnit={` ${nativeCurrency}`}
-              />
-              <StyledFontAwesomeIcon icon="coins" color="white" />
-            </Tooltip>
-          </BountyContainer>
-        )}
+        <StatusGroup>
+          <ItemStatusBadge statusCode={statusCode} dark />
+        </StatusGroup>
+        <RightGroup>
+          {challengeRemainingTime > 0 && (
+            <BountyContainer>
+              <Tooltip title="This is the bounty on this item.">
+                <ETHAmount
+                  amount={bounty}
+                  decimals={3}
+                  displayUnit={` ${nativeCurrency}`}
+                />
+                <StyledFontAwesomeIcon icon="coins" color="white" />
+              </Tooltip>
+            </BountyContainer>
+          )}
+          {isPermanentList && <StyledStakeTag />}
+        </RightGroup>
       </StatusAndBountyContainer>
       {challengeRemainingTime > 0 && (
         <CountdownContainer>
