@@ -33,6 +33,27 @@ const StyledModal = styled(Modal)`
         theme.name === 'dark' ? theme.primaryColor : '#6826bf'};
     }
   }
+
+  .ant-typography {
+    color: ${({ theme }) =>
+      theme.name === 'dark' ? theme.textPrimary : 'inherit'} !important;
+  }
+
+  h1.ant-typography,
+  h4.ant-typography {
+    color: ${({ theme }) =>
+      theme.name === 'dark' ? theme.textPrimary : 'inherit'} !important;
+  }
+
+  .ant-divider {
+    border-color: ${({ theme }) =>
+      theme.name === 'dark' ? theme.borderColor : 'inherit'} !important;
+  }
+
+  svg {
+    fill: ${({ theme }) =>
+      theme.name === 'dark' ? theme.textPrimary : 'inherit'};
+  }
 `
 
 const InfographContainer = styled.div`

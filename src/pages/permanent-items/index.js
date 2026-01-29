@@ -89,14 +89,16 @@ export const StyledFilters = styled.div`
 `
 
 export const StyledSelect = styled(Select)`
-  display: flex;
   width: 120px;
   height: 32px;
+  margin-left: auto;
+  flex-shrink: 0;
 
   ${smallScreenStyle(
     () => css`
       &.ant-select {
         margin-top: 8px !important;
+        margin-left: 0;
       }
     `
   )}

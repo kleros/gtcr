@@ -893,6 +893,48 @@ const GlobalStyle = createGlobalStyle`
     .ant-message-loading .anticon {
       color: ${({ theme }) => theme.infoColor} !important;
     }
+
+    /* Reactour (Tour/Guide modal) */
+    .reactour__helper {
+      background: ${({ theme }) => theme.componentBackground} !important;
+      color: ${({ theme }) => theme.textPrimary} !important;
+      border-radius: 12px !important;
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.6) !important;
+    }
+    .reactour__helper div {
+      color: ${({ theme }) => theme.textPrimary} !important;
+    }
+    .reactour__helper a {
+      color: ${({ theme }) => theme.linkColor} !important;
+    }
+    .reactour__helper a:hover {
+      color: #7cc4e8 !important;
+    }
+    .reactour__close {
+      color: ${({ theme }) => theme.textSecondary} !important;
+    }
+    .reactour__close:hover {
+      color: ${({ theme }) => theme.primaryColor} !important;
+    }
+    .reactour__dot {
+      background: ${({ theme }) => theme.borderColor} !important;
+      border: none !important;
+    }
+    .reactour__dot--is-active {
+      background: ${({ theme }) => theme.primaryColor} !important;
+    }
+    [data-tour-elem="left-arrow"],
+    [data-tour-elem="right-arrow"] {
+      color: ${({ theme }) => theme.textSecondary} !important;
+    }
+    [data-tour-elem="left-arrow"]:hover,
+    [data-tour-elem="right-arrow"]:hover {
+      color: ${({ theme }) => theme.primaryColor} !important;
+    }
+    [data-tour-elem="badge"] {
+      background: ${({ theme }) => theme.primaryColor} !important;
+      color: ${({ theme }) => theme.textOnPrimary} !important;
+    }
   }
 `
 
