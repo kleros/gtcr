@@ -58,7 +58,7 @@ export const StyledLayoutContent = styled.div`
 export const FiltersContainer = styled.div`
   display: flex;
   margin-top: 24px;
-
+  width: 100%;
   justify-content: space-between;
 
   ${smallScreenStyle(
