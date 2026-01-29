@@ -64,12 +64,13 @@ export const StyledTitle = styled.h1`
   margin-bottom: 0;
   font-size: 38px;
   font-weight: 600;
-  color: ${({ theme }) => (theme.name === 'dark' ? '#a78bfa' : '#4d00b4')};
+  color: ${({ theme }) => (theme.name === 'dark' ? '#ffffff' : '#4d00b4')};
 `
 
 export const StyledDescription = styled.span`
   display: block;
-  color: ${({ theme }) => (theme.name === 'dark' ? '#a89cc0' : '#b88cdc')};
+  color: ${({ theme }) =>
+    theme.name === 'dark' ? 'rgba(255, 255, 255, 0.6)' : '#b88cdc'};
 
   ${smallScreenStyle(
     () => css`
@@ -79,9 +80,13 @@ export const StyledDescription = styled.span`
 `
 
 export const StyledPolicyAnchor = styled.a`
-  text-decoration: underline;
+  text-decoration: none;
   margin-top: 12px;
-  color: ${({ theme }) => (theme.name === 'dark' ? '#a89cc0' : '#b88cdc')};
+  color: ${({ theme }) => (theme.name === 'dark' ? '#5faddb' : '#b88cdc')};
+
+  &:hover {
+    color: ${({ theme }) => (theme.name === 'dark' ? '#7cc4e8' : '#9b6bc3')};
+  }
 `
 
 export const ActionCol = styled.div`
@@ -98,8 +103,12 @@ export const ActionCol = styled.div`
 `
 
 export const StyledLink = styled(Link)`
-  color: ${({ theme }) =>
-    theme.name === 'dark' ? theme.textTertiary : '#4d00b473'};
+  color: ${({ theme }) => (theme.name === 'dark' ? '#5faddb' : '#4d00b473')};
+  text-decoration: none;
+
+  &:hover {
+    color: ${({ theme }) => (theme.name === 'dark' ? '#7cc4e8' : '#4d00b4')};
+  }
 `
 
 const StyledTermsLink = styled.a`

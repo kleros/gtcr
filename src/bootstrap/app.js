@@ -479,10 +479,34 @@ const GlobalStyle = createGlobalStyle`
     }
     .ant-pagination-prev,
     .ant-pagination-next {
+      color: ${({ theme }) => theme.textPrimary} !important;
+    }
+    .ant-pagination-prev span,
+    .ant-pagination-next span {
+      color: ${({ theme }) => theme.textPrimary} !important;
+    }
+    /* Disabled state (e.g., Previous on page 1, Next on last page) */
+    .ant-pagination-disabled,
+    .ant-pagination-disabled:hover {
+      opacity: 0.3 !important;
+      cursor: not-allowed !important;
+    }
+    .ant-pagination-disabled span,
+    .ant-pagination-disabled:hover span {
       color: ${({ theme }) => theme.textSecondary} !important;
+    }
+    .ant-pagination-disabled .ant-pagination-item-link,
+    .ant-pagination-disabled:hover .ant-pagination-item-link {
+      color: ${({ theme }) => theme.textSecondary} !important;
+      border-color: ${({ theme }) => theme.borderColor} !important;
+      background: ${({ theme }) => theme.componentBackground} !important;
     }
     .ant-pagination-prev:hover,
     .ant-pagination-next:hover {
+      color: ${({ theme }) => theme.primaryColor} !important;
+    }
+    .ant-pagination-prev:hover span,
+    .ant-pagination-next:hover span {
       color: ${({ theme }) => theme.primaryColor} !important;
     }
     .ant-pagination-prev .ant-pagination-item-link,
@@ -497,6 +521,33 @@ const GlobalStyle = createGlobalStyle`
       border-color: ${({ theme }) => theme.primaryColor} !important;
       color: ${({ theme }) => theme.primaryColor} !important;
       background: rgba(95, 173, 219, 0.08) !important;
+    }
+    /* Jump prev/next (« ») */
+    .ant-pagination-jump-prev,
+    .ant-pagination-jump-next {
+      color: ${({ theme }) => theme.textPrimary} !important;
+    }
+    .ant-pagination-jump-prev .ant-pagination-item-link,
+    .ant-pagination-jump-next .ant-pagination-item-link {
+      color: ${({ theme }) => theme.textPrimary} !important;
+    }
+    .ant-pagination-jump-prev:hover .ant-pagination-item-link,
+    .ant-pagination-jump-next:hover .ant-pagination-item-link {
+      color: ${({ theme }) => theme.primaryColor} !important;
+    }
+    /* Hide ellipsis, show arrow icons always */
+    .ant-pagination-jump-prev .ant-pagination-item-container .ant-pagination-item-ellipsis,
+    .ant-pagination-jump-next .ant-pagination-item-container .ant-pagination-item-ellipsis {
+      display: none !important;
+    }
+    .ant-pagination-jump-prev .ant-pagination-item-container .ant-pagination-item-link-icon,
+    .ant-pagination-jump-next .ant-pagination-item-container .ant-pagination-item-link-icon {
+      opacity: 1 !important;
+      color: ${({ theme }) => theme.textPrimary} !important;
+    }
+    .ant-pagination-jump-prev:hover .ant-pagination-item-container .ant-pagination-item-link-icon,
+    .ant-pagination-jump-next:hover .ant-pagination-item-container .ant-pagination-item-link-icon {
+      color: ${({ theme }) => theme.primaryColor} !important;
     }
     .ant-pagination-simple .ant-pagination-simple-pager input {
       background: ${({ theme }) => theme.componentBackground} !important;
