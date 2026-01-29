@@ -24,12 +24,16 @@ const StyledReactBlockies = styled(ReactBlockies)`
 `
 
 const StyledAlertInfo = styled(Alert)`
-  margin-bottom: 15px;
-  margin-top: -15px;
+  margin-bottom: 16px;
+  margin-top: 8px;
 `
 
 const StyledAlertPopup = styled(Alert)`
-  margin-bottom: 15px !important;
+  margin-bottom: 16px !important;
+`
+
+const StyledSaveButton = styled(Button)`
+  margin-top: 8px;
 `
 
 const StyledA = styled.a`
@@ -284,7 +288,7 @@ const Identicon = ({ className, large }) => {
                         }
                       />
                     )}
-                    <Button
+                    <StyledSaveButton
                       key="submitEmail"
                       type="primary"
                       form={EMAIL_FORM_ID}
@@ -293,7 +297,7 @@ const Identicon = ({ className, large }) => {
                       disabled={emailStatus === 'loading'}
                     >
                       {emailStatus === 'loading' ? '' : 'Save'}
-                    </Button>
+                    </StyledSaveButton>
                   </>
                 }
                 title="Email Notifications"

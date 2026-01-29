@@ -9,7 +9,8 @@ import useWindowDimensions from '../hooks/window-dimensions'
 const BETA_WARNING_DISMISSED = 'BETA_WARNING_DISMISSED'
 
 const BannerContainer = styled.div`
-  background-color: #fffbe6;
+  background-color: ${({ theme }) =>
+    theme.name === 'dark' ? theme.elevatedBackground : '#fffbe6'};
   z-index: 1000;
   padding: 0 8%;
 

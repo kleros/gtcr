@@ -15,12 +15,17 @@ import { truncateAtWord } from 'utils/truncate-at-word'
 export const StyledBanner = styled.div`
   display: flex;
   padding: 24px 9.375vw;
-  background: linear-gradient(270deg, #f2e3ff 22.92%, #ffffff 76.25%);
-  box-shadow: 0px 3px 24px #bc9cff;
-  color: #4d00b4;
+  background: ${({ theme }) =>
+    theme.name === 'dark'
+      ? `linear-gradient(270deg, ${theme.elevatedBackground} 22.92%, ${theme.componentBackground} 76.25%)`
+      : 'linear-gradient(270deg, #f2e3ff 22.92%, #ffffff 76.25%)'};
+  box-shadow: 0px 3px 24px
+    ${({ theme }) => (theme.name === 'dark' ? 'rgba(0, 0, 0, 0.5)' : '#bc9cff')};
+  color: ${({ theme }) => (theme.name === 'dark' ? '#d4c8e8' : '#4d00b4')};
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 8px;
+  transition: background 0.3s ease, box-shadow 0.3s ease, color 0.3s ease;
 `
 
 export const StyledButton = styled(Button)`
@@ -32,6 +37,13 @@ export const TCRInfoColumn = styled.div`
   display: flex;
   flex-direction: column;
   flex-wrap: wrap;
+  max-width: calc(100% - 220px);
+
+  ${smallScreenStyle(
+    () => css`
+      max-width: 100%;
+    `
+  )}
 `
 
 export const StyledImage = styled.img`
@@ -53,12 +65,13 @@ export const StyledTitle = styled.h1`
   margin-bottom: 0;
   font-size: 38px;
   font-weight: 600;
+  color: ${({ theme }) => (theme.name === 'dark' ? '#a78bfa' : '#4d00b4')};
 `
 
 export const StyledDescription = styled.span`
   display: flex;
   flex-wrap: wrap;
-  color: #b88cdc;
+  color: ${({ theme }) => (theme.name === 'dark' ? '#a89cc0' : '#b88cdc')};
 
   ${smallScreenStyle(
     () => css`
@@ -70,15 +83,7 @@ export const StyledDescription = styled.span`
 export const StyledPolicyAnchor = styled.a`
   text-decoration: underline;
   margin-top: 12px;
-  width: 100%;
-  color: #b88cdc;
-  text-align: end;
-
-  ${smallScreenStyle(
-    () => css`
-      text-align: start;
-    `
-  )}
+  color: ${({ theme }) => (theme.name === 'dark' ? '#a89cc0' : '#b88cdc')};
 `
 
 export const ActionCol = styled.div`
@@ -86,10 +91,17 @@ export const ActionCol = styled.div`
   flex-direction: column;
   justify-content: space-between;
   align-items: flex-end;
+
+  ${smallScreenStyle(
+    () => css`
+      align-items: flex-start;
+    `
+  )}
 `
 
 export const StyledLink = styled(Link)`
-  color: #4d00b473;
+  color: ${({ theme }) =>
+    theme.name === 'dark' ? theme.textTertiary : '#4d00b473'};
 `
 
 const TCRLogo = ({ logoURI }) =>

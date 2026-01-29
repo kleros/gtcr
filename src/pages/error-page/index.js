@@ -11,6 +11,59 @@ const StyledDiv = styled.div`
 const StyledAcropolis = styled(Acropolis)`
   height: auto;
   width: 100%;
+
+  /* Dark mode: adjust colors */
+  ${({ theme }) =>
+    theme.name === 'dark' &&
+    `
+    /* Background purple -> darker */
+    path[fill="#4D00B4"],
+    path[fill="#4d00b4"] {
+      fill: #1a0a2e;
+    }
+
+    /* Light mountain areas -> darker purple tones */
+    path[fill="#EAE1F2"],
+    path[fill="#eae1f2"] {
+      fill: #2d2840;
+    }
+    path[fill="#CEC2DA"],
+    path[fill="#cec2da"] {
+      fill: #252035;
+    }
+    path[fill="#C7B9D4"],
+    path[fill="#c7b9d4"] {
+      fill: #1e1a28;
+    }
+    path[fill="#DFD1EC"],
+    path[fill="#dfd1ec"] {
+      fill: #3d3550;
+    }
+    path[fill="#EAD6FE"],
+    path[fill="#ead6fe"] {
+      fill: #3a3055;
+    }
+
+    /* Accent purple -> brighter for dark mode */
+    path[fill="#9013FE"],
+    path[fill="#9013fe"] {
+      fill: #9b5fff;
+    }
+
+    /* White highlights -> muted */
+    path[fill="white"] {
+      fill: rgba(255, 255, 255, 0.15);
+    }
+
+    /* Gradient stop colors for dark mode */
+    stop[stop-color="white"] {
+      stop-color: rgba(155, 95, 255, 0.3);
+    }
+    stop[stop-color="#9013FE"],
+    stop[stop-color="#9013fe"] {
+      stop-color: #6c4dc4;
+    }
+  `}
 `
 const StyledInfoDiv = styled.div`
   flex: 1;

@@ -90,6 +90,13 @@ export const P_FILTER_KEYS = {
   PAGE: 'page'
 }
 
+export const filterLabelPermanent = {
+  [P_FILTER_KEYS.ABSENT]: 'Removed',
+  [P_FILTER_KEYS.REGISTERED]: 'Registered',
+  [P_FILTER_KEYS.DISPUTED]: 'Disputed',
+  [P_FILTER_KEYS.OLDEST_FIRST]: 'Oldest First'
+}
+
 export const DEFAULT_FILTERS_PERMANENT = {
   [P_FILTER_KEYS.ABSENT]: false,
   [P_FILTER_KEYS.REGISTERED]: false,

@@ -30,6 +30,26 @@ const StyledText = styled(Typography.Text)`
 
 const StyledCard = styled(Card)`
   cursor: default;
+  background: ${({ theme }) => theme.elevatedBackground} !important;
+  border-color: ${({ theme }) => theme.borderColor} !important;
+
+  & > .ant-card-head {
+    background: ${({ theme }) => theme.cardBackground} !important;
+    border-color: ${({ theme }) => theme.borderColor} !important;
+    color: ${({ theme }) => theme.textPrimary} !important;
+  }
+
+  & > .ant-card-head .ant-card-head-title {
+    color: ${({ theme }) => theme.textPrimary} !important;
+  }
+
+  & > .ant-card-body {
+    background: ${({ theme }) => theme.elevatedBackground} !important;
+  }
+
+  .ant-card-meta-description {
+    color: ${({ theme }) => theme.textSecondary} !important;
+  }
 
   ${smallScreenStyle(
     () => css`
@@ -43,11 +63,11 @@ const StyledCard = styled(Card)`
 const StyledEvidenceTitle = styled.div`
   white-space: pre-line;
   font-weight: 400;
-  color: #4d00b4;
+  color: ${({ theme }) => theme.textPrimary};
 `
 
 const StyledIcon = styled(Icon)`
-  color: #fff;
+  color: ${({ theme }) => theme.primaryColor};
 `
 
 const secondTimestamp = timestamp =>
@@ -348,7 +368,7 @@ const StyledLoadingCard = styled(Card)`
 `
 
 const StyledCollapse = styled(Collapse)`
-  background-color: white !important;
+  background-color: ${({ theme }) => theme.componentBackground} !important;
 `
 
 const RequestTimelines = ({ item, metaEvidence }) => {

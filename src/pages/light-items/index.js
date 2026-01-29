@@ -72,6 +72,7 @@ export const StyledFilters = styled.div`
   display: flex;
   flex-direction: row;
   flex-wrap: wrap;
+  align-items: center;
   gap: 8px 0;
 `
 
@@ -90,10 +91,38 @@ export const StyledSelect = styled(Select)`
 `
 
 export const StyledTag = styled(Tag.CheckableTag)`
-  margin-bottom: 12px;
   cursor: pointer;
+  transition: all 0.2s ease !important;
+
+  &.ant-tag-checkable {
+    background-color: ${({ theme }) =>
+      theme.name === 'dark'
+        ? theme.elevatedBackground
+        : 'transparent'} !important;
+    border: 1px solid
+      ${({ theme }) => (theme.name === 'dark' ? theme.borderColor : '#9b7fcf')} !important;
+    color: ${({ theme }) =>
+      theme.name === 'dark' ? theme.textPrimary : '#4d00b4'} !important;
+    height: 32px;
+    line-height: 30px;
+    cursor: pointer;
+  }
+
+  &.ant-tag-checkable:hover {
+    color: ${({ theme }) =>
+      theme.name === 'dark' ? theme.textPrimary : '#4d00b4'} !important;
+    border-color: ${({ theme }) =>
+      theme.name === 'dark' ? theme.textSecondary : '#4d00b4'} !important;
+    cursor: pointer;
+  }
+
   &.ant-tag-checkable-checked {
-    background-color: #6826bf;
+    background-color: ${({ theme }) =>
+      theme.name === 'dark' ? theme.primaryColor : '#6826bf'} !important;
+    border-color: ${({ theme }) =>
+      theme.name === 'dark' ? theme.primaryColor : '#6826bf'} !important;
+    color: ${({ theme }) =>
+      theme.name === 'dark' ? theme.textOnPrimary : '#fff'} !important;
   }
 `
 
@@ -113,7 +142,8 @@ export const StyledGrid = styled.div`
 
 export const StyledSwitch = styled(Switch)`
   &.ant-switch-checked {
-    background-color: #6826bf;
+    background-color: ${({ theme }) =>
+      theme.name === 'dark' ? theme.primaryColor : '#6826bf'};
     margin-right: 8px;
   }
 

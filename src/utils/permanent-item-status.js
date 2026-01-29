@@ -35,7 +35,7 @@ export const STATUS_CODE = {
 }
 
 export const STATUS_TEXT = {
-  [STATUS_CODE.ABSENT]: 'Absent',
+  [STATUS_CODE.ABSENT]: 'Removed',
   [STATUS_CODE.PENDING]: 'Pending',
   [STATUS_CODE.ACCEPTED]: 'Accepted',
   [STATUS_CODE.DISPUTED]: 'Disputed',

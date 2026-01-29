@@ -3,7 +3,7 @@ import styled from 'styled-components'
 import { Typography } from 'antd'
 
 const StyledSpan = styled.span`
-  color: gray;
+  color: ${({ theme }) => theme.textSecondary};
 `
 
 const LongText = ({ value }) => {

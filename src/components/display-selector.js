@@ -28,11 +28,12 @@ const DisplaySelector = ({
   value,
   linkImage,
   allowedFileTypes,
-  truncateLinks = false
+  truncateLinks = false,
+  disabled = false
 }) => {
   switch (type) {
     case ItemTypes.GTCR_ADDRESS:
-      return <GTCRAddress address={value || ZERO_ADDRESS} />
+      return <GTCRAddress address={value || ZERO_ADDRESS} disabled={disabled} />
     case ItemTypes.ADDRESS:
       return <ETHAddress address={value || ZERO_ADDRESS} />
     case ItemTypes.RICH_ADDRESS:
@@ -87,14 +88,16 @@ DisplaySelector.propTypes = {
   ]),
   linkImage: PropTypes.bool,
   allowedFileTypes: PropTypes.string,
-  truncateLinks: PropTypes.bool
+  truncateLinks: PropTypes.bool,
+  disabled: PropTypes.bool
 }
 
 DisplaySelector.defaultProps = {
   linkImage: null,
   allowedFileTypes: null,
   value: null,
-  truncateLinks: false
+  truncateLinks: false,
+  disabled: false
 }
 
 export default DisplaySelector

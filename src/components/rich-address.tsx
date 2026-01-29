@@ -4,11 +4,11 @@ import { Icon, Tooltip } from 'antd'
 import { parseRichAddress } from '../utils/rich-address'
 
 const StyledSpan = styled.span`
-  color: red;
+  color: ${({ theme }) => theme.errorColor};
 `
 
 const NotValidAddressAnchor = styled.a`
-  color: #787800;
+  color: ${({ theme }) => theme.warningColor};
   text-decoration: underline;
 `
 

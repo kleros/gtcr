@@ -8,10 +8,12 @@ const StyledIcon = styled.svg`
   vertical-align: text-bottom;
 
   .main-stop {
-    stop-color: #863fe5d9;
+    stop-color: ${({ theme }) =>
+      theme.name === 'dark' ? '#9b5fffd9' : '#863fe5d9'};
   }
   .alt-stop {
-    stop-color: #4d00b4d9;
+    stop-color: ${({ theme }) =>
+      theme.name === 'dark' ? '#6c4dc4d9' : '#4d00b4d9'};
   }
   path {
     fill: url(#gradient);
@@ -23,7 +25,8 @@ const StyledLink = styled.a`
   height: 32px;
   align-items: center;
   text-decoration: underline;
-  color: #4d00b473;
+  color: ${({ theme }) =>
+    theme.name === 'dark' ? theme.textTertiary : '#4d00b473'};
 `
 
 const ContractExplorerUrl: React.FC<{

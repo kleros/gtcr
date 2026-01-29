@@ -7,11 +7,12 @@ const StyledFooter = styled.footer`
   display: flex;
   width: 100%;
   padding: 24px 48px;
-  background: #4d00b4;
+  background: ${({ theme }) => theme.footerBackground};
   flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
   gap: 20px;
+  transition: background-color 0.3s ease;
 
   ${smallScreenStyle(
     () => css`
@@ -32,7 +33,11 @@ const SocialLinksContainer = styled.div`
 const StyledSecuredByKleros = styled.a`
   display: flex;
   align-items: center;
-  color: white;
+  color: white !important;
+
+  &:hover {
+    color: white !important;
+  }
 `
 
 const StyledSocialLink = styled.a`

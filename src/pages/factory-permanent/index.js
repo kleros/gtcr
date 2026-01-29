@@ -6,7 +6,7 @@ import React, {
   useContext
 } from 'react'
 import styled from 'styled-components'
-import { Steps, Button, Icon, Card, Typography, Modal } from 'antd'
+import { Steps, Button, Icon, Card, Modal } from 'antd'
 import PropTypes from 'prop-types'
 import { useDebounce } from 'use-debounce'
 import { useWeb3Context } from 'web3-react'
@@ -47,9 +47,13 @@ export const StyledContainer = styled.div`
 
 export const StyledBanner = styled.div`
   padding: 24px 9.375vw;
-  background: linear-gradient(270deg, #f2e3ff 22.92%, #ffffff 76.25%);
-  box-shadow: 0px 3px 24px #bc9cff;
-  color: #4d00b4;
+  background: ${({ theme }) =>
+    theme.name === 'dark'
+      ? `linear-gradient(270deg, ${theme.elevatedBackground} 22.92%, ${theme.componentBackground} 76.25%)`
+      : 'linear-gradient(270deg, #f2e3ff 22.92%, #ffffff 76.25%)'};
+  box-shadow: 0px 3px 24px ${({ theme }) => theme.shadowColor};
+  color: ${({ theme }) => theme.textPrimary};
+  transition: background 0.3s ease, box-shadow 0.3s ease, color 0.3s ease;
 `
 
 export const StyledGrid = styled.div`
@@ -57,6 +61,20 @@ export const StyledGrid = styled.div`
   margin: 24px 0;
   grid-gap: 20px;
   grid-template-columns: repeat(auto-fill, minmax(225px, 1fr));
+`
+
+export const StyledTitle = styled.h1`
+  margin-bottom: 0;
+  font-size: 38px;
+  font-weight: 600;
+  color: ${({ theme }) => (theme.name === 'dark' ? '#a78bfa' : '#4d00b4')};
+`
+
+export const StyledSubtitle = styled.h3`
+  margin-bottom: 16px;
+  font-size: 24px;
+  font-weight: 500;
+  color: ${({ theme }) => (theme.name === 'dark' ? '#d4c8e8' : '#4d00b4')};
 `
 
 export const formIds = ['tcrParamsForm', 'itemParamsForm', 'deployTCRForm']
@@ -274,14 +292,12 @@ export default () => {
     return (
       <>
         <StyledBanner>
-          <Typography.Title ellipsis style={{ marginBottom: '0' }}>
-            Connect your wallet
-          </Typography.Title>
+          <StyledTitle>Connect your wallet</StyledTitle>
         </StyledBanner>
         <StyledLayoutContent>
-          <Typography.Title level={3} ellipsis>
+          <StyledSubtitle>
             A wallet is required to deploy a new list
-          </Typography.Title>
+          </StyledSubtitle>
           <Button onClick={() => requestWeb3Auth()}>Connect Wallet</Button>
         </StyledLayoutContent>
       </>
@@ -290,9 +306,7 @@ export default () => {
   return (
     <>
       <StyledBanner>
-        <Typography.Title ellipsis style={{ marginBottom: '0' }}>
-          Create a List (Permanent Curate)
-        </Typography.Title>
+        <StyledTitle>Create a List (Permanent Curate)</StyledTitle>
       </StyledBanner>
       <StyledLayoutContent>
         <Steps current={currStep - 1}>

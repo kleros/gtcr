@@ -5,14 +5,15 @@ import { Modal, Button, Icon } from 'antd'
 const StyledModal = styled(Modal)`
   & > .ant-modal-content {
     border-radius: 12px;
-    box-shadow: 0px 6px 36px #bc9cff;
+    box-shadow: 0px 6px 36px ${({ theme }) => theme.shadowColor};
+    background: ${({ theme }) => theme.componentBackground};
 
     & > .ant-modal-body {
       padding: 24px;
     }
 
     & > .ant-modal-close {
-      color: #6826bf;
+      color: ${({ theme }) => theme.primaryColor};
     }
   }
 `
@@ -26,26 +27,26 @@ const Header = styled.div`
 
 const WarningIcon = styled(Icon)`
   font-size: 24px;
-  color: #faad14;
+  color: ${({ theme }) => theme.warningColor};
 `
 
 const Title = styled.h3`
-  color: #4d00b4;
+  color: ${({ theme }) => theme.textPrimary};
   font-size: 18px;
   font-weight: 600;
   margin: 0;
 `
 
 const Message = styled.p`
-  color: #4d00b4;
+  color: ${({ theme }) => theme.textPrimary};
   font-size: 14px;
   line-height: 1.6;
   margin: 0 0 16px 0;
 `
 
 const UrlContainer = styled.div`
-  background-color: #f2e3ff;
-  border: 1px solid #bc9cff;
+  background-color: ${({ theme }) => theme.elevatedBackground};
+  border: 1px solid ${({ theme }) => theme.borderColor};
   border-radius: 8px;
   padding: 12px;
   margin: 16px 0;
@@ -53,13 +54,13 @@ const UrlContainer = styled.div`
 `
 
 const Url = styled.code`
-  color: #6826bf;
+  color: ${({ theme }) => theme.primaryColor};
   font-size: 13px;
   font-family: monospace;
 `
 
 const SafetyTips = styled.div`
-  color: #4d00b4;
+  color: ${({ theme }) => theme.textPrimary};
   font-size: 13px;
   line-height: 1.6;
   margin-bottom: 8px;
@@ -84,26 +85,27 @@ const ButtonContainer = styled.div`
 
 const CancelButton = styled(Button)`
   background-color: transparent !important;
-  border-color: #bc9cff !important;
-  color: #4d00b4 !important;
+  border-color: ${({ theme }) => theme.borderColor} !important;
+  color: ${({ theme }) => theme.textPrimary} !important;
 
   &:hover,
   &:focus {
     background-color: transparent !important;
-    border-color: #6826bf !important;
-    color: #6826bf !important;
+    border-color: ${({ theme }) => theme.primaryColor} !important;
+    color: ${({ theme }) => theme.primaryColor} !important;
   }
 `
 
 const ConfirmButton = styled(Button)`
-  background-color: #4d00b4 !important;
-  border-color: #4d00b4 !important;
+  background-color: ${({ theme }) => theme.primaryColor} !important;
+  border-color: ${({ theme }) => theme.primaryColor} !important;
   color: white !important;
 
   &:hover,
   &:focus {
-    background-color: #6826bf !important;
-    border-color: #6826bf !important;
+    background-color: ${({ theme }) => theme.primaryColor} !important;
+    border-color: ${({ theme }) => theme.primaryColor} !important;
+    opacity: 0.85;
     color: white !important;
   }
 `

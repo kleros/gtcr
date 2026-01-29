@@ -63,6 +63,18 @@ export const StyledStakeTag = styled(StakeTag)`
   @media (max-width: 500px) {
     height: 12px;
   }
+
+  /* Dark mode: change background and text colors */
+  ${({ theme }) =>
+    theme.name === 'dark' &&
+    `
+    path:first-of-type {
+      fill: #5a3490;
+    }
+    path:last-of-type {
+      fill: #e8dff5;
+    }
+  `}
 `
 
 const ItemCardTitle = ({ statusCode, tcrData, isPermanentList }) => {

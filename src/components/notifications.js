@@ -40,7 +40,8 @@ const StyledListItem = styled(List.Item)`
 `
 
 const StyledSpan = styled.span`
-  color: ${({ clicked }) => (clicked ? '#9b77cc' : '')};
+  color: ${({ clicked, theme }) =>
+    clicked ? theme.textTertiary : theme.textPrimary};
 `
 
 const Notifications = () => {

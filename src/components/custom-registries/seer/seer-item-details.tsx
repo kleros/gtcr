@@ -19,9 +19,14 @@ const Container = styled.div`
   max-width: 600px;
   margin: 16px auto;
   padding: 20px;
-  border: 1px solid #e0e0e0;
+  border: 1px solid
+    ${({ theme }) => (theme.name === 'dark' ? theme.borderColor : '#e0e0e0')};
   border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 4px
+    ${({ theme }) =>
+      theme.name === 'dark' ? theme.shadowColor : 'rgba(0, 0, 0, 0.1)'};
+  background: ${({ theme }) =>
+    theme.name === 'dark' ? theme.componentBackground : 'transparent'};
 `
 
 const LinkParagraph = styled.p`
@@ -29,7 +34,8 @@ const LinkParagraph = styled.p`
 `
 
 const SeerLink = styled.a`
-  color: #007bff;
+  color: ${({ theme }) =>
+    theme.name === 'dark' ? theme.primaryColor : '#007bff'};
   text-decoration: none;
   font-weight: bold;
   font-size: 16px;
@@ -62,13 +68,14 @@ const MarketImage = styled.img`
 const MarketName = styled.h3`
   margin: 0 0 12px;
   font-size: 1.5em;
-  color: #333;
+  color: ${({ theme }) => (theme.name === 'dark' ? theme.textPrimary : '#333')};
 `
 
 const OutcomesHeading = styled.h4`
   margin: 0 0 12px;
   font-size: 1.2em;
-  color: #555;
+  color: ${({ theme }) =>
+    theme.name === 'dark' ? theme.textSecondary : '#555'};
 `
 
 const OutcomeItem = styled.div`
@@ -76,7 +83,8 @@ const OutcomeItem = styled.div`
   align-items: center;
   margin-bottom: 12px;
   padding: 8px;
-  background-color: #f9f9f9;
+  background-color: ${({ theme }) =>
+    theme.name === 'dark' ? theme.elevatedBackground : '#f9f9f9'};
   border-radius: 4px;
 `
 
@@ -89,16 +97,17 @@ const OutcomeImage = styled.img`
 
 const OutcomeName = styled.span`
   font-size: 1em;
-  color: #333;
+  color: ${({ theme }) => (theme.name === 'dark' ? theme.textPrimary : '#333')};
 `
 
 const ErrorMessage = styled.p`
-  color: red;
+  color: ${({ theme }) => (theme.name === 'dark' ? theme.errorColor : 'red')};
   font-size: 14px;
 `
 
 const LoadingMessage = styled.p`
-  color: #666;
+  color: ${({ theme }) =>
+    theme.name === 'dark' ? theme.textSecondary : '#666'};
   font-size: 14px;
 `
 
