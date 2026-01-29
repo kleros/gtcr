@@ -1,22 +1,29 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import humanizeDuration from 'humanize-duration'
 
 const useHumanizedCountdown = (duration, largest) => {
-  const [remainingTime, setRemainingTime] = useState()
+  const [remainingTime, setRemainingTime] = useState(duration)
+  const intervalRef = useRef(null)
 
+  // Sync remainingTime when duration prop changes
   useEffect(() => {
-    if (!duration) return
-    if (!remainingTime) {
-      setRemainingTime(duration)
-      return
-    }
-    const id = setInterval(() => {
-      setRemainingTime(remainingTime =>
-        remainingTime > 0 ? remainingTime - 1000 : 0
+    if (duration !== undefined && duration !== null) setRemainingTime(duration)
+  }, [duration])
+
+  // Set up interval once on mount, clean up on unmount
+  useEffect(() => {
+    intervalRef.current = setInterval(() => {
+      setRemainingTime(prev =>
+        prev === undefined || prev === null ? prev : prev - 1000
       )
     }, 1000)
-    return () => clearInterval(id)
-  }, [duration, remainingTime])
+
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current)
+    }
+  }, [])
+
+  if (remainingTime === undefined || remainingTime === null) return null
 
   const formattedTime = `${remainingTime >= 0 ? 'In ' : ''}${humanizeDuration(
     remainingTime,
