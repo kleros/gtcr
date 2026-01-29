@@ -36,7 +36,8 @@ export const STATUS_CODE = {
   WAITING_ARBITRATOR: 7,
   PENDING_SUBMISSION: 8,
   PENDING_REMOVAL: 9,
-  WAITING_ENFORCEMENT: 10
+  WAITING_ENFORCEMENT: 10,
+  REMOVED: 11
 }
 
 export const STATUS_TEXT = {
@@ -50,7 +51,8 @@ export const STATUS_TEXT = {
   [STATUS_CODE.WAITING_ARBITRATOR]: 'Waiting Arbitrator',
   [STATUS_CODE.PENDING_SUBMISSION]: 'Pending Execution',
   [STATUS_CODE.PENDING_REMOVAL]: 'Pending Execution',
-  [STATUS_CODE.WAITING_ENFORCEMENT]: 'Waiting enforcement'
+  [STATUS_CODE.WAITING_ENFORCEMENT]: 'Waiting enforcement',
+  [STATUS_CODE.REMOVED]: 'Removed'
 }
 
 export const STATUS_COLOR = {
@@ -64,7 +66,8 @@ export const STATUS_COLOR = {
   [STATUS_CODE.WAITING_ARBITRATOR]: 'magenta',
   [STATUS_CODE.PENDING_SUBMISSION]: 'cyan',
   [STATUS_CODE.PENDING_REMOVAL]: 'volcano',
-  [STATUS_CODE.WAITING_ENFORCEMENT]: 'gold'
+  [STATUS_CODE.WAITING_ENFORCEMENT]: 'gold',
+  [STATUS_CODE.REMOVED]: 'red'
 }
 
 export const SUBGRAPH_STATUS_TO_CODE = {
@@ -115,6 +118,7 @@ export const getResultStatus = ({ ruling, requestType }) => {
 export const getActionLabel = ({ statusCode, itemName = 'item' }) => {
   switch (statusCode) {
     case STATUS_CODE.REJECTED:
+    case STATUS_CODE.REMOVED:
       return `Resubmit ${itemName}`
     case STATUS_CODE.REGISTERED:
       return `Remove ${itemName}`
@@ -145,7 +149,13 @@ export const itemToStatusCode = (item, timestamp, challengePeriodDuration) => {
 
   if (!request) return undefined
 
-  if (status === CONTRACT_STATUS.ABSENT) return STATUS_CODE.REJECTED
+  if (status === CONTRACT_STATUS.ABSENT) {
+    // Differentiate between rejected (never made it) and removed (was registered then taken off)
+    const lastRequestType = request?.requestType
+    if (lastRequestType === CONTRACT_STATUS.REMOVAL_REQUESTED)
+      return STATUS_CODE.REMOVED
+    return STATUS_CODE.REJECTED
+  }
   if (status === CONTRACT_STATUS.REGISTERED) return STATUS_CODE.REGISTERED
   if (!request.disputed) {
     const challengePeriodEnd = new BigNumber(

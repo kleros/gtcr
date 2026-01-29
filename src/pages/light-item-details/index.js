@@ -165,8 +165,10 @@ const ItemDetails = ({ itemID, search }) => {
         return 'awaits removal'
       case STATUS_CODE.WAITING_ARBITRATOR:
         return 'awaits arbitrator ruling'
-      case STATUS_CODE.ABSENT:
-        return 'is not listed'
+      case STATUS_CODE.REJECTED:
+        return 'was rejected'
+      case STATUS_CODE.REMOVED:
+        return 'was removed'
       default:
         return 'has unknown status'
     }

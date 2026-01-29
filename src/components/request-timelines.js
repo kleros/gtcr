@@ -279,7 +279,7 @@ const Timeline = ({ request, item, metaEvidence }) => {
           case 'None': {
             resultMessage =
               requestType === CONTRACT_STATUS.REGISTRATION_REQUESTED
-                ? 'Submission rejected'
+                ? 'Submission removed'
                 : 'Removal refused'
             statusColor =
               requestType === CONTRACT_STATUS.REGISTRATION_REQUESTED
@@ -302,7 +302,7 @@ const Timeline = ({ request, item, metaEvidence }) => {
           case 'Reject': {
             resultMessage =
               requestType === CONTRACT_STATUS.REGISTRATION_REQUESTED
-                ? 'Submission rejected'
+                ? 'Submission removed'
                 : `Removal refused.`
 
             statusColor =

@@ -261,7 +261,13 @@ const GlobalStyle = createGlobalStyle`
 
     /* Switch */
     .ant-switch {
+      background-color: ${({ theme }) =>
+        theme.name === 'dark' ? '#2d2840' : 'rgba(0, 0, 0, 0.25)'} !important;
       transition: all 0.25s ease !important;
+    }
+    .ant-switch::after,
+    .ant-switch-handle::before {
+      background-color: #ffffff !important;
     }
     .ant-switch:hover {
       box-shadow: 0 0 8px ${({ theme }) =>
@@ -277,6 +283,10 @@ const GlobalStyle = createGlobalStyle`
         theme.name === 'dark' ? theme.primaryColorHover : '#7c3aed'} !important;
     }
     .ant-switch-inner {
+      color: ${({ theme }) =>
+        theme.name === 'dark' ? '#ffffff' : 'inherit'} !important;
+    }
+    .ant-switch-checked .ant-switch-inner {
       color: ${({ theme }) => theme.textOnPrimary} !important;
     }
 

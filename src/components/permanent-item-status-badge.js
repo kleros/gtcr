@@ -33,7 +33,8 @@ const iconTypes = {
   [STATUS_CODE.CROWDFUNDING_WINNER]: 'dollar',
   [STATUS_CODE.PENDING]: 'hourglass',
   [STATUS_CODE.PENDING_WITHDRAWAL]: 'hourglass',
-  [STATUS_CODE.ABSENT]: 'close',
+  [STATUS_CODE.REJECTED]: 'close',
+  [STATUS_CODE.REMOVED]: 'close',
   [STATUS_CODE.WAITING_ARBITRATOR]: 'hourglass'
 }
 
@@ -54,7 +55,8 @@ export const badgeStatus = statusCode => {
     case STATUS_CODE.PENDING:
     case STATUS_CODE.PENDING_WITHDRAWAL:
       return 'processing'
-    case STATUS_CODE.ABSENT:
+    case STATUS_CODE.REJECTED:
+    case STATUS_CODE.REMOVED:
     case STATUS_CODE.ACCEPTED:
       return 'default'
     default:

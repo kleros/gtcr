@@ -162,13 +162,17 @@ const ItemStatusCard = ({
   const statusCode = itemToStatusCode(item, timestamp, registry)
 
   const isWithdrawing =
-    statusCode !== STATUS_CODE.ABSENT && item.withdrawingTimestamp !== '0'
+    statusCode !== STATUS_CODE.REJECTED &&
+    statusCode !== STATUS_CODE.REMOVED &&
+    item.withdrawingTimestamp !== '0'
 
   const bounty = item.stake
 
   // Check if item is withdrawable: not absent and withdrawingTimestamp === "0"
   const isWithdrawable =
-    statusCode !== STATUS_CODE.ABSENT && item.withdrawingTimestamp === '0'
+    statusCode !== STATUS_CODE.REJECTED &&
+    statusCode !== STATUS_CODE.REMOVED &&
+    item.withdrawingTimestamp === '0'
   // Check if current user is the submitter
   const isSubmitter =
     account &&
@@ -185,7 +189,8 @@ const ItemStatusCard = ({
 
   const onClick = () => {
     switch (statusCode) {
-      case STATUS_CODE.ABSENT:
+      case STATUS_CODE.REJECTED:
+      case STATUS_CODE.REMOVED:
       case STATUS_CODE.PENDING:
       case STATUS_CODE.ACCEPTED:
       case STATUS_CODE.CROWDFUNDING:
@@ -259,13 +264,18 @@ const ItemStatusCard = ({
         <StyledDescriptions
           column={{ xxl: 3, xl: 3, lg: 2, md: 2, sm: 1, xs: 1 }}
         >
-          {statusCode !== STATUS_CODE.ABSENT && (
-            <>
-              <Descriptions.Item label="Bounty">
-                <ETHAmount amount={bounty} decimals={3} displayUnit={` sDAI`} />
-              </Descriptions.Item>
-            </>
-          )}
+          {statusCode !== STATUS_CODE.REJECTED &&
+            statusCode !== STATUS_CODE.REMOVED && (
+              <>
+                <Descriptions.Item label="Bounty">
+                  <ETHAmount
+                    amount={bounty}
+                    decimals={3}
+                    displayUnit={` sDAI`}
+                  />
+                </Descriptions.Item>
+              </>
+            )}
           <Descriptions.Item label="Submitter">
             <ETHAddress address={item.submitter} />
           </Descriptions.Item>

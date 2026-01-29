@@ -131,7 +131,7 @@ const ChallengeModal = ({ item, itemName, statusCode, fileURI, ...rest }) => {
         {statusCode === STATUS_CODE.SUBMITTED
           ? 'submission '
           : 'removal request '}
-        should be rejected:
+        should be removed:
       </Typography.Paragraph>
       <EvidenceForm onSubmit={challengeRequest} formID={EVIDENCE_FORM_ID} />
       <Typography.Paragraph>

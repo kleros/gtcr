@@ -297,7 +297,7 @@ const ChallengeModal = ({
         .
       </Typography.Title>
       <Typography.Paragraph>
-        Explain to jurors why do you think this item should be rejected:
+        Explain to jurors why do you think this item should be removed:
       </Typography.Paragraph>
       <EvidenceForm onSubmit={challengeRequest} formID={EVIDENCE_FORM_ID} />
       <Typography.Paragraph>

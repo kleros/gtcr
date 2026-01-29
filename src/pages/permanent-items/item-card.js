@@ -83,7 +83,7 @@ export const StyledCardInfo = styled(Card)`
     display: flex;
     background: ${({ theme }) =>
       theme.name === 'dark'
-        ? theme.elevatedBackground
+        ? `linear-gradient(135deg, ${theme.elevatedBackground} 0%, #352d4d 50%, ${theme.elevatedBackground} 100%)`
         : `linear-gradient(111.6deg, ${theme.gradientStart} 46.25%, ${theme.gradientEnd} 96.25%)`};
     border-color: ${({ theme }) =>
       theme.name === 'dark' ? theme.borderColor : 'transparent'};
@@ -198,7 +198,8 @@ const ItemCard = ({ item, registry, timestamp, forceReveal, ...rest }) => {
   const statusCode = itemToStatusCode(item, timestamp, registry)
 
   if (
-    statusCode !== STATUS_CODE.ABSENT &&
+    statusCode !== STATUS_CODE.REJECTED &&
+    statusCode !== STATUS_CODE.REMOVED &&
     statusCode !== STATUS_CODE.DISPUTED &&
     statusCode !== STATUS_CODE.PENDING_WITHDRAWAL &&
     statusCode !== STATUS_CODE.CROWDFUNDING &&

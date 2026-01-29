@@ -24,41 +24,45 @@ export const CONTRACT_STATUS = {
 }
 
 export const STATUS_CODE = {
-  ABSENT: 0,
+  REJECTED: 0,
   PENDING: 1,
   ACCEPTED: 2,
   DISPUTED: 3,
   CROWDFUNDING: 4,
   CROWDFUNDING_WINNER: 5,
   WAITING_ARBITRATOR: 6,
-  PENDING_WITHDRAWAL: 7
+  PENDING_WITHDRAWAL: 7,
+  REMOVED: 8
 }
 
 export const STATUS_TEXT = {
-  [STATUS_CODE.ABSENT]: 'Removed',
+  [STATUS_CODE.REJECTED]: 'Rejected',
   [STATUS_CODE.PENDING]: 'Pending',
   [STATUS_CODE.ACCEPTED]: 'Accepted',
   [STATUS_CODE.DISPUTED]: 'Disputed',
   [STATUS_CODE.CROWDFUNDING]: 'Crowdfunding',
   [STATUS_CODE.CROWDFUNDING_WINNER]: 'Crowdfunding Winner',
   [STATUS_CODE.WAITING_ARBITRATOR]: 'Waiting Arbitrator',
-  [STATUS_CODE.PENDING_WITHDRAWAL]: 'Pending Withdrawal'
+  [STATUS_CODE.PENDING_WITHDRAWAL]: 'Pending Withdrawal',
+  [STATUS_CODE.REMOVED]: 'Removed'
 }
 
 export const STATUS_COLOR = {
-  [STATUS_CODE.ABSENT]: 'red',
+  [STATUS_CODE.REJECTED]: 'red',
   [STATUS_CODE.PENDING]: 'blue',
   [STATUS_CODE.ACCEPTED]: 'green',
   [STATUS_CODE.DISPUTED]: 'orange',
   [STATUS_CODE.CROWDFUNDING]: 'purple',
   [STATUS_CODE.CROWDFUNDING_WINNER]: '#9d52d6',
   [STATUS_CODE.WAITING_ARBITRATOR]: 'magenta',
-  [STATUS_CODE.PENDING_WITHDRAWAL]: 'cyan'
+  [STATUS_CODE.PENDING_WITHDRAWAL]: 'cyan',
+  [STATUS_CODE.REMOVED]: 'red'
 }
 
 export const getActionLabel = ({ statusCode, itemName = 'item' }) => {
   switch (statusCode) {
-    case STATUS_CODE.ABSENT:
+    case STATUS_CODE.REJECTED:
+    case STATUS_CODE.REMOVED:
       return `Resubmit ${itemName}`
     case STATUS_CODE.PENDING:
     case STATUS_CODE.ACCEPTED:
@@ -80,7 +84,21 @@ export const itemToStatusCode = (item, timestamp, registry) => {
   const { status } = item
   timestamp = timestamp.toNumber()
 
-  if (status === CONTRACT_STATUS.ABSENT) return STATUS_CODE.ABSENT
+  if (status === CONTRACT_STATUS.ABSENT) {
+    // Differentiate between rejected (never made it past submission) and removed (was accepted then taken off)
+    // If includedAt + submissionPeriod < timestamp, the item passed submission and was accepted at some point
+    const submissionPeriod = Number(registry?.submissionPeriod || 0)
+    const includedAt = Number(item.includedAt || 0)
+    // Only classify as REMOVED if we have valid includedAt AND submissionPeriod
+    // This ensures we don't misclassify when data is missing
+    if (
+      includedAt > 0 &&
+      submissionPeriod > 0 &&
+      includedAt + submissionPeriod < timestamp
+    )
+      return STATUS_CODE.REMOVED
+    return STATUS_CODE.REJECTED
+  }
   if (
     status === CONTRACT_STATUS.SUBMITTED ||
     status === CONTRACT_STATUS.REINCLUDED

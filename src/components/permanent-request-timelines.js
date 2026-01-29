@@ -296,7 +296,7 @@ const Timeline = ({ submission, item, metaEvidence }) => {
         let resultMessage, statusColor
         switch (event.disputeOutcome) {
           case 'None': {
-            resultMessage = 'Item rejected by non-rule'
+            resultMessage = 'Item removed by non-rule'
             statusColor = 'red'
             break
           }
@@ -306,7 +306,7 @@ const Timeline = ({ submission, item, metaEvidence }) => {
             break
           }
           case 'Reject': {
-            resultMessage = 'Item rejected'
+            resultMessage = 'Item removed'
             statusColor = 'red'
             break
           }

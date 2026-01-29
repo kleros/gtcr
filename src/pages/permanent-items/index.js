@@ -210,19 +210,24 @@ const Items = () => {
   const { oldestFirst, page, absent, registered, disputed } = queryOptions
 
   const itemsWhere = useMemo(() => {
-    if (absent) return { registry: tcrAddress.toLowerCase(), status: 'Absent' }
-    if (registered)
-      return {
-        registry: tcrAddress.toLowerCase(),
-        status_in: ['Submitted', 'Reincluded']
-      }
-    if (disputed)
-      return {
-        registry: tcrAddress.toLowerCase(),
-        status: 'Disputed'
-      }
+    // Build status array for multi-select support
+    const statuses = []
 
-    return { registry: tcrAddress.toLowerCase() }
+    if (absent) statuses.push('Absent')
+    if (registered) {
+      statuses.push('Submitted')
+      statuses.push('Reincluded')
+    }
+    if (disputed) statuses.push('Disputed')
+
+    // No filters selected - return all items
+    if (statuses.length === 0) return { registry: tcrAddress.toLowerCase() }
+
+    // Use status_in for filtering (handles both single and multi-select)
+    return {
+      registry: tcrAddress.toLowerCase(),
+      status_in: statuses
+    }
   }, [absent, registered, disputed, tcrAddress])
 
   const orderDirection = oldestFirst ? 'asc' : 'desc'
@@ -250,15 +255,26 @@ const Items = () => {
     if (!registryQuery.data || !itemsQuery.data || !registryQuery.data.registry)
       return 0
     const r = registryQuery.data.registry
-    const field = queryOptions.countField
-    if (queryOptions.countField === 'all') {
-      const sum =
+
+    // Count selected filters and sum their counts
+    const hasAnyFilter = absent || registered || disputed
+
+    if (!hasAnyFilter)
+      // No filters - return total count
+      return (
         Number(r.numberOfAbsent) +
         Number(r.numberOfRegistered) +
         Number(r.numberOfDisputed)
-      return sum
-    } else return Number(r[field])
-  }, [queryOptions.countField, registryQuery.data, itemsQuery.data])
+      )
+
+    // Sum counts for selected filters
+    let sum = 0
+    if (absent) sum += Number(r.numberOfAbsent)
+    if (registered) sum += Number(r.numberOfRegistered)
+    if (disputed) sum += Number(r.numberOfDisputed)
+
+    return sum
+  }, [absent, registered, disputed, registryQuery.data, itemsQuery.data])
 
   // Load NSFW user setting from localforage.
   useEffect(() => {

@@ -19,6 +19,7 @@ const CLASSIC_REGISTRY_ITEMS_QUERY = gql`
       status
       data
       requests(limit: 1, order_by: { submissionTime: desc }) {
+        requestType
         disputed
         disputeID
         submissionTime

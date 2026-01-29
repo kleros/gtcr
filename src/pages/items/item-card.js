@@ -134,6 +134,7 @@ const ItemCard = ({
 
   if (
     statusCode !== STATUS_CODE.REJECTED &&
+    statusCode !== STATUS_CODE.REMOVED &&
     statusCode !== STATUS_CODE.CHALLENGED &&
     statusCode !== STATUS_CODE.CROWDFUNDING &&
     statusCode !== STATUS_CODE.CROWDFUNDING_WINNER
