@@ -32,15 +32,19 @@ const PermanentItems = loadable(
 
 const ItemsRouter = () => {
   const { tcrAddress } = useParams<{ tcrAddress: string }>()
-  const { isLightCurate, isClassicCurate, checking } = useCheckLightCurate()
+  const {
+    isLightCurate,
+    isClassicCurate,
+    isPermanentCurate,
+    checking
+  } = useCheckLightCurate()
   const { networkStatus } = useTcrNetwork()
   const { setIsPermanent } = useContext(StakeContext)
 
-  const isPermanent = !checking && !isLightCurate && !isClassicCurate
   useEffect(() => {
-    setIsPermanent(isPermanent)
+    setIsPermanent(isPermanentCurate)
     return () => setIsPermanent(false)
-  }, [isPermanent, setIsPermanent])
+  }, [isPermanentCurate, setIsPermanent])
 
   if (checking || networkStatus !== NETWORK_STATUS.supported) return <Loading />
 
@@ -50,13 +54,15 @@ const ItemsRouter = () => {
         <LightItems />
       </LightTCRViewProvider>
     )
-  else if (isClassicCurate)
+  if (isClassicCurate)
     return (
       <TCRViewProvider tcrAddress={tcrAddress}>
         <Items />
       </TCRViewProvider>
     )
-  else return <PermanentItems />
+  if (isPermanentCurate) return <PermanentItems />
+
+  return <Loading />
 }
 
 export default ItemsRouter

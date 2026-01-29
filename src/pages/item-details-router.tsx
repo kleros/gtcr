@@ -37,14 +37,18 @@ const ItemDetailsRouter = () => {
   }>()
   const { networkStatus } = useTcrNetwork()
   const search = window.location.search
-  const { isLightCurate, isClassicCurate, checking } = useCheckLightCurate()
+  const {
+    isLightCurate,
+    isClassicCurate,
+    isPermanentCurate,
+    checking
+  } = useCheckLightCurate()
   const { setIsPermanent } = useContext(StakeContext)
 
-  const isPermanent = !checking && !isLightCurate && !isClassicCurate
   useEffect(() => {
-    setIsPermanent(isPermanent)
+    setIsPermanent(isPermanentCurate)
     return () => setIsPermanent(false)
-  }, [isPermanent, setIsPermanent])
+  }, [isPermanentCurate, setIsPermanent])
 
   if (checking || networkStatus !== NETWORK_STATUS.supported) return <Loading />
 
@@ -54,14 +58,16 @@ const ItemDetailsRouter = () => {
         <LightItemDetails search={search} itemID={itemID} />
       </LightTCRViewProvider>
     )
-  else if (isClassicCurate)
+  if (isClassicCurate)
     return (
       <TCRViewProvider tcrAddress={tcrAddress}>
         <ItemDetails search={search} itemID={itemID} />
       </TCRViewProvider>
     )
+  if (isPermanentCurate)
+    return <PermanentItemDetails search={search} itemID={itemID} />
 
-  return <PermanentItemDetails search={search} itemID={itemID} />
+  return <Loading />
 }
 
 export default ItemDetailsRouter
