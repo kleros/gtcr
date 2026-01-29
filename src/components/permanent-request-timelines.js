@@ -388,14 +388,14 @@ const RequestTimelines = ({ item, metaEvidence }) => {
 
   return (
     <div id="request-timelines">
-      <Row>
-        <Col xs={14} sm={17} md={19} lg={20} xl={20} xxl={21}>
+      <Row type="flex" align="middle">
+        <Col style={{ flex: 1 }}>
           <StyledDivider orientation="left">{`${capitalizeFirstLetter(
             itemName
           ) || 'Item'} History`}</StyledDivider>
         </Col>
         {item.status !== CONTRACT_STATUS.ABSENT && (
-          <Col xs={5} sm={5} md={5} lg={4} xl={3} xxl={3}>
+          <Col style={{ marginLeft: 12 }}>
             <StyledButton
               onClick={() => requestWeb3Auth(() => setEvidenceModalOpen(true))}
             >
