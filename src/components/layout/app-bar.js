@@ -221,7 +221,7 @@ const AppBar = () => {
               </StyledNetworkStatus>
             ) : (
               <Switch
-                checkedChildren="xDai"
+                checkedChildren="Gnosis"
                 unCheckedChildren="Mainnet"
                 checked={currentChainId === NETWORKS.gnosis}
                 onClick={switchChain}
