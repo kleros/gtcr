@@ -1,5 +1,6 @@
 import React from 'react'
-import styled from 'styled-components'
+import styled, { css } from 'styled-components'
+import { smallScreenStyle } from 'styles/small-screen-style'
 import PropTypes from 'prop-types'
 import { ReactComponent as Acropolis } from 'assets/images/acropolis.svg'
 
@@ -23,6 +24,12 @@ const StyledInfoDiv = styled.div`
   flex: 1;
   padding: 0 9.375vw 62px;
   text-align: center;
+
+  ${smallScreenStyle(
+    () => css`
+      padding: 0 16px 62px;
+    `
+  )}
 `
 const Styled404Div = styled.div`
   font-size: 88px;

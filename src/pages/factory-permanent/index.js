@@ -5,7 +5,8 @@ import React, {
   useMemo,
   useContext
 } from 'react'
-import styled from 'styled-components'
+import styled, { css } from 'styled-components'
+import { smallScreenStyle } from 'styles/small-screen-style'
 import { Steps, Button, Icon, Card, Modal } from 'antd'
 import PropTypes from 'prop-types'
 import { useDebounce } from 'use-debounce'
@@ -51,6 +52,12 @@ export const StyledBanner = styled.div`
   box-shadow: 0px 3px 24px ${({ theme }) => theme.shadowColor};
   color: ${({ theme }) => theme.textPrimary};
   transition: background 0.3s ease, box-shadow 0.3s ease, color 0.3s ease;
+
+  ${smallScreenStyle(
+    () => css`
+      padding: 24px 16px;
+    `
+  )}
 `
 
 export const StyledGrid = styled.div`

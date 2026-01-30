@@ -22,6 +22,12 @@ export const StyledBanner = styled.div`
   flex-wrap: wrap;
   gap: 8px;
   transition: background 0.3s ease, box-shadow 0.3s ease, color 0.3s ease;
+
+  ${smallScreenStyle(
+    () => css`
+      padding: 24px 16px;
+    `
+  )}
 `
 
 export const StyledButton = styled(Button)`

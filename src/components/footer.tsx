@@ -18,6 +18,7 @@ const StyledFooter = styled.footer`
     () => css`
       flex-direction: column;
       justify-content: center;
+      padding: 24px 16px;
     `
   )}
 `

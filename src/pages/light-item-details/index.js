@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useContext, useMemo } from 'react'
-import styled from 'styled-components'
+import styled, { css } from 'styled-components'
+import { smallScreenStyle } from 'styles/small-screen-style'
 import { Layout, Breadcrumb } from 'antd'
 import { useParams } from 'react-router'
 import { Link } from 'react-router-dom'
@@ -38,6 +39,12 @@ export const StyledLayoutContent = styled(Layout.Content)`
   display: flex;
   flex-direction: column;
   width: 100%;
+
+  ${smallScreenStyle(
+    () => css`
+      padding: 0 16px 42px;
+    `
+  )}
 `
 
 export const StyledBanner = styled.div`
@@ -46,11 +53,23 @@ export const StyledBanner = styled.div`
   box-shadow: 0px 3px 24px ${({ theme }) => theme.shadowColor};
   color: ${({ theme }) => theme.textPrimary};
   transition: background 0.3s ease, box-shadow 0.3s ease, color 0.3s ease;
+
+  ${smallScreenStyle(
+    () => css`
+      padding: 24px 16px;
+    `
+  )}
 `
 
 export const StyledMargin = styled.div`
   padding: 24px 9.375vw;
   display: flex;
+
+  ${smallScreenStyle(
+    () => css`
+      padding: 24px 16px;
+    `
+  )}
 `
 
 export const StyledLink = styled(Link)`
