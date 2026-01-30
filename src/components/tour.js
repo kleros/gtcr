@@ -4,10 +4,12 @@ import localforage from 'localforage'
 import PropTypes from 'prop-types'
 import { disableBodyScroll, enableBodyScroll } from 'body-scroll-lock'
 import { TourContext } from '../contexts/tour-context'
+import { ThemeContext } from '../contexts/theme-context'
 
 const AppTour = ({ steps, dismissedKey }) => {
   const [dismissed, setDismissed] = useState(true)
   const { welcomeModalDismissed } = useContext(TourContext)
+  const { theme } = useContext(ThemeContext)
 
   const disableBody = target => disableBodyScroll(target)
   const enableBody = target => enableBodyScroll(target)
@@ -29,7 +31,7 @@ const AppTour = ({ steps, dismissedKey }) => {
       steps={steps}
       isOpen={welcomeModalDismissed && !dismissed}
       onRequestClose={dontShowAgain}
-      accentColor="#4004a3"
+      accentColor={theme?.tourAccentColor || '#4004a3'}
       onAfterOpen={disableBody}
       onBeforeClose={enableBody}
       inViewThreshold={200}

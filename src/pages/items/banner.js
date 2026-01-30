@@ -1,5 +1,5 @@
 import React from 'react'
-import { Typography, Skeleton, Icon } from 'antd'
+import { Skeleton, Icon } from 'antd'
 import PropTypes from 'prop-types'
 import { ZERO_ADDRESS, capitalizeFirstLetter } from 'utils/string'
 import { useWeb3Context } from 'web3-react'
@@ -60,6 +60,16 @@ const Banner = ({
             </TitleContainer>
             <StyledDescription>
               {capitalizeFirstLetter(tcrDescription)}
+              {connectedTCRAddr &&
+                connectedTCRAddr !== ZERO_ADDRESS &&
+                !relTcrDisabled && (
+                  <>
+                    {' '}
+                    <StyledLink to={`/tcr/${networkId}/${connectedTCRAddr}`}>
+                      View Badges list
+                    </StyledLink>
+                  </>
+                )}
             </StyledDescription>
           </>
         ) : (
@@ -72,21 +82,6 @@ const Banner = ({
             />
           </>
         )}
-        {connectedTCRAddr &&
-          connectedTCRAddr !== ZERO_ADDRESS &&
-          !relTcrDisabled && (
-            <>
-              <Typography.Text
-                ellipsis
-                type="secondary"
-                style={{ maxWidth: '100%', textDecoration: 'underline' }}
-              >
-                <StyledLink to={`/tcr/${networkId}/${connectedTCRAddr}`}>
-                  View Badges list
-                </StyledLink>
-              </Typography.Text>
-            </>
-          )}
       </TCRInfoColumn>
       <ActionCol>
         <StyledButton

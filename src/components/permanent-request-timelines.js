@@ -30,6 +30,26 @@ const StyledText = styled(Typography.Text)`
 
 const StyledCard = styled(Card)`
   cursor: default;
+  background: ${({ theme }) => theme.elevatedBackground} !important;
+  border-color: ${({ theme }) => theme.borderColor} !important;
+
+  & > .ant-card-head {
+    background: ${({ theme }) => theme.cardBackground} !important;
+    border-color: ${({ theme }) => theme.borderColor} !important;
+    color: ${({ theme }) => theme.textPrimary} !important;
+  }
+
+  & > .ant-card-head .ant-card-head-title {
+    color: ${({ theme }) => theme.textPrimary} !important;
+  }
+
+  & > .ant-card-body {
+    background: ${({ theme }) => theme.elevatedBackground} !important;
+  }
+
+  .ant-card-meta-description {
+    color: ${({ theme }) => theme.textSecondary} !important;
+  }
 
   ${smallScreenStyle(
     () => css`
@@ -43,11 +63,11 @@ const StyledCard = styled(Card)`
 const StyledEvidenceTitle = styled.div`
   white-space: pre-line;
   font-weight: 400;
-  color: #4d00b4;
+  color: ${({ theme }) => theme.textPrimary};
 `
 
 const StyledIcon = styled(Icon)`
-  color: #fff;
+  color: ${({ theme }) => theme.primaryColor};
 `
 
 const secondTimestamp = timestamp =>
@@ -276,7 +296,7 @@ const Timeline = ({ submission, item, metaEvidence }) => {
         let resultMessage, statusColor
         switch (event.disputeOutcome) {
           case 'None': {
-            resultMessage = 'Item rejected by non-rule'
+            resultMessage = 'Item removed by non-rule'
             statusColor = 'red'
             break
           }
@@ -286,7 +306,7 @@ const Timeline = ({ submission, item, metaEvidence }) => {
             break
           }
           case 'Reject': {
-            resultMessage = 'Item rejected'
+            resultMessage = 'Item removed'
             statusColor = 'red'
             break
           }
@@ -348,7 +368,7 @@ const StyledLoadingCard = styled(Card)`
 `
 
 const StyledCollapse = styled(Collapse)`
-  background-color: white !important;
+  background-color: ${({ theme }) => theme.componentBackground} !important;
 `
 
 const RequestTimelines = ({ item, metaEvidence }) => {
@@ -368,14 +388,14 @@ const RequestTimelines = ({ item, metaEvidence }) => {
 
   return (
     <div id="request-timelines">
-      <Row>
-        <Col xs={14} sm={17} md={19} lg={20} xl={20} xxl={21}>
+      <Row type="flex" align="middle">
+        <Col style={{ flex: 1 }}>
           <StyledDivider orientation="left">{`${capitalizeFirstLetter(
             itemName
           ) || 'Item'} History`}</StyledDivider>
         </Col>
         {item.status !== CONTRACT_STATUS.ABSENT && (
-          <Col xs={5} sm={5} md={5} lg={4} xl={3} xxl={3}>
+          <Col style={{ marginLeft: 12 }}>
             <StyledButton
               onClick={() => requestWeb3Auth(() => setEvidenceModalOpen(true))}
             >

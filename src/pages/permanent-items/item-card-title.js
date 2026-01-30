@@ -29,7 +29,7 @@ export const StyledFontAwesomeIcon = styled(FontAwesomeIcon)`
 `
 
 export const CountdownContainer = styled.div`
-  color: #ffffff5c;
+  color: ${({ theme }) => theme.countdownTextColor};
   font-size: 13px;
   margin-left: 12px;
 `
@@ -60,14 +60,15 @@ const ItemCardTitle = ({ statusCode, item, registry }) => {
       <StatusAndBountyContainer>
         <ItemStatusBadge statusCode={statusCode} dark />
 
-        {statusCode !== STATUS_CODE.ABSENT && (
-          <BountyContainer>
-            <Tooltip title="This is the bounty on this item.">
-              <ETHAmount amount={bounty} decimals={3} displayUnit={` sDAI`} />
-              <StyledFontAwesomeIcon icon="coins" color="white" />
-            </Tooltip>
-          </BountyContainer>
-        )}
+        {statusCode !== STATUS_CODE.REJECTED &&
+          statusCode !== STATUS_CODE.REMOVED && (
+            <BountyContainer>
+              <Tooltip title="This is the bounty on this item.">
+                <ETHAmount amount={bounty} decimals={3} displayUnit={` sDAI`} />
+                <StyledFontAwesomeIcon icon="coins" color="white" />
+              </Tooltip>
+            </BountyContainer>
+          )}
       </StatusAndBountyContainer>
       {timeUntilValid > 0 && (
         <CountdownContainer>

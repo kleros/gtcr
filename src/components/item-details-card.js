@@ -40,7 +40,8 @@ const ItemDetailsCard = ({
   columns,
   loading,
   item,
-  itemMetaEvidence
+  itemMetaEvidence,
+  disabled = false
 }) => {
   const { account, networkId } = useWeb3Context()
   const { pushWeb3Action } = useContext(WalletContext)
@@ -180,6 +181,7 @@ const ItemDetailsCard = ({
                 value={item && item.decodedData[index]}
                 linkImage
                 allowedFileTypes={column.allowedFileTypes}
+                disabled={disabled}
               />
             </StyledField>
           ))}
@@ -223,7 +225,8 @@ ItemDetailsCard.propTypes = {
       }).isRequired,
       error: PropTypes.string
     })
-  ])
+  ]),
+  disabled: PropTypes.bool
 }
 
 ItemDetailsCard.defaultProps = {
@@ -231,7 +234,8 @@ ItemDetailsCard.defaultProps = {
   title: null,
   item: null,
   loading: null,
-  itemMetaEvidence: null
+  itemMetaEvidence: null,
+  disabled: false
 }
 
 export default ItemDetailsCard

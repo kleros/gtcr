@@ -16,7 +16,8 @@ const StyledModal = styled(Modal)`
 
   & > .ant-modal-content {
     border-radius: 24px;
-    box-shadow: 0px 6px 36px #bc9cff;
+    box-shadow: 0px 6px 36px ${({ theme }) => theme.welcomeModalShadow};
+    background: ${({ theme }) => theme.componentBackground};
 
     & > .ant-modal-body {
       display: flex;
@@ -25,8 +26,29 @@ const StyledModal = styled(Modal)`
     }
 
     & > .ant-modal-close {
-      color: #6826bf;
+      color: ${({ theme }) => theme.modalCloseColor};
     }
+  }
+
+  .ant-typography {
+    color: ${({ theme }) =>
+      theme.name === 'dark' ? theme.textPrimary : 'inherit'} !important;
+  }
+
+  h1.ant-typography,
+  h4.ant-typography {
+    color: ${({ theme }) =>
+      theme.name === 'dark' ? theme.textPrimary : 'inherit'} !important;
+  }
+
+  .ant-divider {
+    border-color: ${({ theme }) =>
+      theme.name === 'dark' ? theme.borderColor : 'inherit'} !important;
+  }
+
+  svg {
+    fill: ${({ theme }) =>
+      theme.name === 'dark' ? theme.textPrimary : 'inherit'};
   }
 `
 

@@ -1,5 +1,5 @@
-import React from 'react'
-import styled from 'styled-components'
+import React, { useState } from 'react'
+import styled, { keyframes } from 'styled-components'
 import { Typography, Avatar, Checkbox } from 'antd'
 import PropTypes from 'prop-types'
 import GTCRAddress from './gtcr-address'
@@ -21,6 +21,76 @@ const StyledImage = styled.img`
   padding: 5px;
 `
 
+const shimmer = keyframes`
+  0% { background-position: -200px 0; }
+  100% { background-position: 200px 0; }
+`
+
+const ImageContainer = styled.div`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100px;
+  height: 100px;
+  margin: 0 auto;
+`
+
+const ImageSkeleton = styled.div`
+  width: 100px;
+  height: 100px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(
+    90deg,
+    ${({ theme }) => theme.skeletonBase} 25%,
+    ${({ theme }) => theme.skeletonHighlight} 50%,
+    ${({ theme }) => theme.skeletonBase} 75%
+  );
+  background-size: 400px 100%;
+  animation: ${shimmer} 1.5s infinite;
+  border-radius: 50%;
+`
+
+const ImageWithLoading = ({ src, alt, linkImage }) => {
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(false)
+
+  if (error)
+    return (
+      <ImageContainer>
+        <ImageSkeleton style={{ animation: 'none' }}>
+          <Avatar shape="square" size="large" icon="file-image" />
+        </ImageSkeleton>
+      </ImageContainer>
+    )
+
+  const content = (
+    <ImageContainer>
+      {loading && <ImageSkeleton />}
+      <StyledImage
+        src={src}
+        alt={alt}
+        style={{ display: loading ? 'none' : 'block' }}
+        onLoad={() => setLoading(false)}
+        onError={() => {
+          setLoading(false)
+          setError(true)
+        }}
+      />
+    </ImageContainer>
+  )
+
+  if (linkImage)
+    return (
+      <a href={src} target="_blank" rel="noopener noreferrer">
+        {content}
+      </a>
+    )
+
+  return content
+}
+
 const protocolRegex = /:\/\//
 
 const DisplaySelector = ({
@@ -28,11 +98,12 @@ const DisplaySelector = ({
   value,
   linkImage,
   allowedFileTypes,
-  truncateLinks = false
+  truncateLinks = false,
+  disabled = false
 }) => {
   switch (type) {
     case ItemTypes.GTCR_ADDRESS:
-      return <GTCRAddress address={value || ZERO_ADDRESS} />
+      return <GTCRAddress address={value || ZERO_ADDRESS} disabled={disabled} />
     case ItemTypes.ADDRESS:
       return <ETHAddress address={value || ZERO_ADDRESS} />
     case ItemTypes.RICH_ADDRESS:
@@ -49,13 +120,7 @@ const DisplaySelector = ({
     }
     case ItemTypes.IMAGE:
       return value ? (
-        linkImage ? (
-          <a href={parseIpfs(value)} target="_blank" rel="noopener noreferrer">
-            <StyledImage src={parseIpfs(value)} alt="item" />
-          </a>
-        ) : (
-          <StyledImage src={parseIpfs(value)} alt="item" />
-        )
+        <ImageWithLoading src={parseIpfs(value)} alt="" linkImage={linkImage} />
       ) : (
         <Avatar shape="square" size="large" icon="file-image" />
       )
@@ -87,14 +152,16 @@ DisplaySelector.propTypes = {
   ]),
   linkImage: PropTypes.bool,
   allowedFileTypes: PropTypes.string,
-  truncateLinks: PropTypes.bool
+  truncateLinks: PropTypes.bool,
+  disabled: PropTypes.bool
 }
 
 DisplaySelector.defaultProps = {
   linkImage: null,
   allowedFileTypes: null,
   value: null,
-  truncateLinks: false
+  truncateLinks: false,
+  disabled: false
 }
 
 export default DisplaySelector

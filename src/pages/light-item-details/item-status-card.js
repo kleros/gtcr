@@ -149,6 +149,7 @@ const ItemStatusCard = ({
   const onClick = () => {
     switch (statusCode) {
       case STATUS_CODE.REJECTED:
+      case STATUS_CODE.REMOVED:
       case STATUS_CODE.REGISTERED:
       case STATUS_CODE.SUBMITTED:
       case STATUS_CODE.REMOVAL_REQUESTED:

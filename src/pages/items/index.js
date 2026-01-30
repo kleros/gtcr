@@ -96,40 +96,48 @@ const Items = () => {
   const orderDirection = oldestFirst ? 'asc' : 'desc'
 
   const itemsWhere = useMemo(() => {
-    if (absent)
-      return {
-        registry_id: { _eq: tcrAddress.toLowerCase() },
-        status: { _eq: 'Absent' }
-      }
-    if (registered)
-      return {
-        registry_id: { _eq: tcrAddress.toLowerCase() },
-        status: { _eq: 'Registered' }
-      }
+    // Build conditions array for multi-select support
+    const conditions = []
+
+    if (absent) conditions.push({ status: { _eq: 'Absent' } })
+    if (registered) conditions.push({ status: { _eq: 'Registered' } })
     if (submitted)
-      return {
-        registry_id: { _eq: tcrAddress.toLowerCase() },
-        status: { _eq: 'RegistrationRequested' }
-      }
+      conditions.push({
+        status: { _eq: 'RegistrationRequested' },
+        disputed: { _eq: false }
+      })
     if (removalRequested)
-      return {
-        registry_id: { _eq: tcrAddress.toLowerCase() },
-        status: { _eq: 'ClearingRequested' }
-      }
+      conditions.push({
+        status: { _eq: 'ClearingRequested' },
+        disputed: { _eq: false }
+      })
     if (challengedSubmissions)
-      return {
-        registry_id: { _eq: tcrAddress.toLowerCase() },
+      conditions.push({
         status: { _eq: 'RegistrationRequested' },
         disputed: { _eq: true }
-      }
+      })
     if (challengedRemovals)
-      return {
-        registry_id: { _eq: tcrAddress.toLowerCase() },
+      conditions.push({
         status: { _eq: 'ClearingRequested' },
         disputed: { _eq: true }
+      })
+
+    // No filters selected - return all items
+    if (conditions.length === 0)
+      return { registry_id: { _eq: tcrAddress.toLowerCase() } }
+
+    // Single filter - no need for _or
+    if (conditions.length === 1)
+      return {
+        registry_id: { _eq: tcrAddress.toLowerCase() },
+        ...conditions[0]
       }
 
-    return { registry_id: { _eq: tcrAddress.toLowerCase() } }
+    // Multiple filters - use _or clause
+    return {
+      registry_id: { _eq: tcrAddress.toLowerCase() },
+      _or: conditions
+    }
   }, [
     absent,
     challengedRemovals,

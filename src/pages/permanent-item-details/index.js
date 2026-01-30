@@ -28,6 +28,7 @@ export const ITEM_TOUR_DISMISSED = 'ITEM_TOUR_DISMISSED'
 
 export const StyledBreadcrumbItem = styled(Breadcrumb.Item)`
   text-transform: capitalize;
+  color: ${({ theme }) => theme.itemDetailsTitleColor} !important;
 `
 
 export const StyledLayoutContent = styled(Layout.Content)`
@@ -39,9 +40,10 @@ export const StyledLayoutContent = styled(Layout.Content)`
 
 export const StyledBanner = styled.div`
   padding: 24px 9.375vw;
-  background: linear-gradient(270deg, #f2e3ff 22.92%, #ffffff 76.25%);
-  box-shadow: 0px 3px 24px #bc9cff;
-  color: #4d00b4;
+  background: ${({ theme }) => theme.bannerGradient};
+  box-shadow: 0px 3px 24px ${({ theme }) => theme.shadowColor};
+  color: ${({ theme }) => theme.textPrimary};
+  transition: background 0.3s ease, box-shadow 0.3s ease, color 0.3s ease;
 `
 
 export const StyledMargin = styled.div`
@@ -51,7 +53,7 @@ export const StyledMargin = styled.div`
 
 export const StyledLink = styled(Link)`
   text-decoration: underline;
-  color: rgba(77, 0, 180, 0.45);
+  color: ${({ theme }) => theme.itemDetailsSubtitleColor};
 `
 
 export const StyledBackLink = styled.div`
@@ -173,8 +175,10 @@ const ItemDetails = ({ itemID, search }) => {
         return 'awaits withdrawal'
       case STATUS_CODE.WAITING_ARBITRATOR:
         return 'awaits arbitrator ruling'
-      case STATUS_CODE.ABSENT:
-        return 'is not listed'
+      case STATUS_CODE.REJECTED:
+        return 'was rejected'
+      case STATUS_CODE.REMOVED:
+        return 'was removed'
       default:
         return 'has unknown status'
     }

@@ -55,7 +55,7 @@ const OptionItem = ({ item, chainId, tcrAddress }) => {
   return (
     <StyledOptionItem>
       <StyledStatus>
-        <Badge color={STATUS_COLOR_MAP[status] || '#ccc'} />
+        <Badge color={STATUS_COLOR_MAP[status] || 'gray'} />
       </StyledStatus>
       <StyledFieldsContainer>
         {props

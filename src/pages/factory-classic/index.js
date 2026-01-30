@@ -1,4 +1,4 @@
-import { Steps, Button, Icon, Card, Typography, Modal } from 'antd'
+import { Steps, Button, Icon, Card, Modal } from 'antd'
 import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import PropTypes from 'prop-types'
 import { useDebounce } from 'use-debounce'
@@ -21,7 +21,8 @@ import {
   StyledStepper,
   StyledContainer,
   StyledBanner,
-  StyledButtonGroup
+  StyledButtonGroup,
+  StyledTitle
 } from 'pages/factory'
 
 const { Step } = Steps
@@ -234,9 +235,7 @@ export default () => {
   return (
     <>
       <StyledBanner>
-        <Typography.Title ellipsis style={{ marginBottom: '0' }}>
-          Create a List (Classic Curate)
-        </Typography.Title>
+        <StyledTitle>Create a List (Classic Curate)</StyledTitle>
       </StyledBanner>
       <StyledLayoutContent>
         <Steps current={currStep - 1}>

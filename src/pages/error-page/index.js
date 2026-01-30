@@ -11,6 +11,13 @@ const StyledDiv = styled.div`
 const StyledAcropolis = styled(Acropolis)`
   height: auto;
   width: 100%;
+
+  /* Dark mode: use CSS filter for maintainable theming */
+  ${({ theme }) =>
+    theme.name === 'dark' &&
+    `
+    filter: brightness(0.4) saturate(0.8) hue-rotate(-10deg);
+  `}
 `
 const StyledInfoDiv = styled.div`
   flex: 1;
@@ -21,6 +28,7 @@ const Styled404Div = styled.div`
   font-size: 88px;
   font-weight: bold;
   line-height: 112px;
+  color: ${({ theme }) => theme.tertiaryColor};
 `
 const StyledMessageLine1 = styled.div`
   font-size: 28px;
@@ -37,9 +45,7 @@ const ErrorPage = ({ code, title, message, tip }) => (
   <StyledDiv>
     <StyledAcropolis />
     <StyledInfoDiv className="quaternary-background theme-background">
-      <Styled404Div className="primary-color theme-color">
-        {code || '404'}
-      </Styled404Div>
+      <Styled404Div>{code || '404'}</Styled404Div>
       <StyledMessageLine1 className="ternary-color theme-color">
         {title}
       </StyledMessageLine1>

@@ -5,8 +5,11 @@
 @kleros-purple: #4004a3;
 @primary-color : @blue-6;
 @secondary-color : #1e075f;
-@ternary-color : rgb(77, 0, 180);
+@ternary-color : #4d00b4;
 @quaternary-color: #ead6fe;
+// Gradient colors (for card headers, NSFW warnings, etc.)
+@gradient-start: @ternary-color;
+@gradient-end: #6500b4;
 @info-color : @blue-6;
 @success-color : @green-6;
 @processing-color : @blue-6;
@@ -455,7 +458,7 @@
 // Card
 // ---
 @card-head-color: white;
-@card-head-background: linear-gradient(111.6deg,#4d00b4 46.25%,#6500b4 96.25%);
+@card-head-background: linear-gradient(111.6deg, @gradient-start 46.25%, @gradient-end 96.25%);
 @card-head-padding: 16px;
 @card-inner-head-padding: 12px;
 @card-padding-base: 24px;

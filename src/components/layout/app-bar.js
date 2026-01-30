@@ -6,11 +6,14 @@ import { Link } from 'react-router-dom'
 import { Col, Row, Button, Badge, Switch } from 'antd'
 import { WalletContext } from 'contexts/wallet-context'
 import { TourContext } from 'contexts/tour-context'
+import { ThemeContext } from 'contexts/theme-context'
 import { NETWORKS, NETWORKS_INFO } from '../../config/networks'
 import Identicon from 'components/identicon'
 import Notifications from 'components/notifications'
 import { ReactComponent as Logo } from 'assets/images/logo.svg'
-import { ReactComponent as StakeCurateLogo } from 'assets/images/logo-stake-curate.svg'
+import { ReactComponent as StakeCurateLogoRaw } from 'assets/images/logo-stake-curate.svg'
+import SunIcon from 'assets/icons/sun-icon'
+import MoonIcon from 'assets/icons/moon-icon'
 import { capitalizeFirstLetter, SAVED_NETWORK_KEY } from 'utils/string'
 import AppTour from 'components/tour'
 import { useHistory } from 'react-router-dom/cjs/react-router-dom.min'
@@ -20,7 +23,36 @@ import { StakeContext } from 'contexts/stake-context'
 
 const Container = styled.div`
   padding: 0;
-  background-color: #1e075f;
+  background-color: ${({ theme }) => theme.navbarBackground};
+  transition: background-color 0.3s ease;
+`
+
+const ThemeToggleButton = styled.button`
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 12px;
+  border-radius: 50%;
+  transition: background-color 0.2s ease;
+
+  &:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+  }
+
+  svg {
+    width: 20px;
+    height: 20px;
+    fill: #fff;
+    transition: transform 0.3s ease;
+  }
+
+  &:hover svg {
+    transform: rotate(15deg);
+  }
 `
 
 const StyledCol = styled(Col)`
@@ -81,6 +113,22 @@ const StyledAppBarRow = styled(Row)`
   )}
 `
 
+const StakeCurateLogo = styled(StakeCurateLogoRaw)`
+  /* Dark mode: change stake tag background and text colors */
+  ${({ theme }) =>
+    theme.name === 'dark' &&
+    `
+    /* Stake tag background (path with fill="#EBD4FF") */
+    path[fill="#EBD4FF"] {
+      fill: ${theme.stakeTagBg};
+    }
+    /* Stake tag text (path with fill="#220050") */
+    path[fill="#220050"] {
+      fill: ${theme.stakeTagText};
+    }
+  `}
+`
+
 const NOTIFICATIONS_TOUR_DISMISSED = 'NOTIFICATIONS_TOUR_DISMISSED'
 const notificationsTourSteps = [
   {
@@ -108,6 +156,7 @@ const AppBar = () => {
   const { requestWeb3Auth } = useContext(WalletContext)
   const { userSubscribed } = useContext(TourContext)
   const { isPermanent } = useContext(StakeContext)
+  const { isDarkMode, toggleTheme } = useContext(ThemeContext)
   const history = useHistory()
   const { networkId, account } = web3Context
   const [requestedChain, setRequestedChain] = useState()
@@ -162,7 +211,7 @@ const AppBar = () => {
               </StyledNetworkStatus>
             ) : (
               <Switch
-                checkedChildren="xDai"
+                checkedChildren="Gnosis"
                 unCheckedChildren="Mainnet"
                 checked={currentChainId === NETWORKS.gnosis}
                 onClick={switchChain}
@@ -182,6 +231,12 @@ const AppBar = () => {
               Connect
             </StyledConnectButton>
           )}
+          <ThemeToggleButton
+            onClick={toggleTheme}
+            title={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+          >
+            {isDarkMode ? <SunIcon /> : <MoonIcon />}
+          </ThemeToggleButton>
         </StyledColEnd>
       </StyledAppBarRow>
       {userSubscribed && (

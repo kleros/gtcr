@@ -37,10 +37,11 @@ export const StyledParagraph = styled(Typography.Paragraph)`
 `
 
 export const DepositContainer = styled.div`
-  border: 1px solid #d9d9d9;
+  border: 1px solid ${({ theme }) => theme.borderColor};
   border-radius: 6px;
   padding: 16px;
   margin: 16px 0;
+  background: ${({ theme }) => theme.componentBackground};
 `
 
 export const DepositRow = styled.div`
@@ -50,7 +51,7 @@ export const DepositRow = styled.div`
   padding: 8px 0;
 
   &:not(:last-child) {
-    border-bottom: 1px solid #f0f0f0;
+    border-bottom: 1px solid ${({ theme }) => theme.borderColor};
   }
 `
 

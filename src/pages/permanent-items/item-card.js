@@ -43,10 +43,13 @@ export const FlipCardBack = styled.div`
 
 export const CardNSFWWarn = styled(Card)`
   height: 100%;
-  color: white;
-  background: rgba(0, 0, 0, 0)
-    linear-gradient(111.6deg, rgb(77, 0, 180) 46.25%, rgb(101, 0, 180) 96.25%)
-    repeat scroll 0% 0%;
+  color: white !important;
+  background: linear-gradient(
+    111.6deg,
+    ${({ theme }) => theme.gradientStart} 46.25%,
+    ${({ theme }) => theme.gradientEnd} 96.25%
+  ) !important;
+  border-color: transparent !important;
 
   & > .ant-card-body {
     align-items: center;
@@ -55,6 +58,14 @@ export const CardNSFWWarn = styled(Card)`
     flex-direction: column;
     justify-content: space-around;
     flex: 1;
+    background: transparent !important;
+    color: white !important;
+
+    p,
+    svg {
+      color: white !important;
+      fill: white !important;
+    }
   }
 `
 
@@ -64,9 +75,15 @@ export const StyledCardInfo = styled(Card)`
   flex-direction: column;
   position: relative;
   z-index: 1;
+  background: ${({ theme }) => theme.componentBackground};
+  border-color: ${({ theme }) => theme.borderColor};
+  transition: background 0.3s ease, border-color 0.3s ease;
 
   & > .ant-card-head {
     display: flex;
+    background: ${({ theme }) => theme.cardHeaderGradient};
+    border-color: ${({ theme }) =>
+      theme.name === 'dark' ? theme.borderColor : 'transparent'};
 
     & > .ant-card-head-wrapper {
       width: 100%;
@@ -80,6 +97,12 @@ export const StyledCardInfo = styled(Card)`
     flex-direction: column;
     flex: 1;
     justify-content: flex-start;
+    color: ${({ theme }) => theme.textPrimary};
+  }
+
+  & > .ant-card-actions {
+    background: ${({ theme }) => theme.componentBackground};
+    border-color: ${({ theme }) => theme.borderColor};
   }
 
   & > .ant-card-actions > li {
@@ -172,7 +195,8 @@ const ItemCard = ({ item, registry, timestamp, forceReveal, ...rest }) => {
   const statusCode = itemToStatusCode(item, timestamp, registry)
 
   if (
-    statusCode !== STATUS_CODE.ABSENT &&
+    statusCode !== STATUS_CODE.REJECTED &&
+    statusCode !== STATUS_CODE.REMOVED &&
     statusCode !== STATUS_CODE.DISPUTED &&
     statusCode !== STATUS_CODE.PENDING_WITHDRAWAL &&
     statusCode !== STATUS_CODE.CROWDFUNDING &&

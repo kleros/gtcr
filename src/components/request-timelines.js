@@ -36,6 +36,26 @@ const StyledText = styled(Typography.Text)`
 
 const StyledCard = styled(Card)`
   cursor: default;
+  background: ${({ theme }) => theme.elevatedBackground} !important;
+  border-color: ${({ theme }) => theme.borderColor} !important;
+
+  & > .ant-card-head {
+    background: ${({ theme }) => theme.cardBackground} !important;
+    border-color: ${({ theme }) => theme.borderColor} !important;
+    color: ${({ theme }) => theme.textPrimary} !important;
+  }
+
+  & > .ant-card-head .ant-card-head-title {
+    color: ${({ theme }) => theme.textPrimary} !important;
+  }
+
+  & > .ant-card-body {
+    background: ${({ theme }) => theme.elevatedBackground} !important;
+  }
+
+  .ant-card-meta-description {
+    color: ${({ theme }) => theme.textSecondary} !important;
+  }
 
   ${smallScreenStyle(
     () => css`
@@ -49,11 +69,11 @@ const StyledCard = styled(Card)`
 const StyledEvidenceTitle = styled.div`
   white-space: pre-line;
   font-weight: 400;
-  color: #4d00b4;
+  color: ${({ theme }) => theme.textPrimary};
 `
 
 const StyledIcon = styled(Icon)`
-  color: #fff;
+  color: ${({ theme }) => theme.primaryColor};
 `
 
 const secondTimestamp = timestamp =>
@@ -259,7 +279,7 @@ const Timeline = ({ request, item, metaEvidence }) => {
           case 'None': {
             resultMessage =
               requestType === CONTRACT_STATUS.REGISTRATION_REQUESTED
-                ? 'Submission rejected'
+                ? 'Submission removed'
                 : 'Removal refused'
             statusColor =
               requestType === CONTRACT_STATUS.REGISTRATION_REQUESTED
@@ -282,7 +302,7 @@ const Timeline = ({ request, item, metaEvidence }) => {
           case 'Reject': {
             resultMessage =
               requestType === CONTRACT_STATUS.REGISTRATION_REQUESTED
-                ? 'Submission rejected'
+                ? 'Submission removed'
                 : `Removal refused.`
 
             statusColor =
@@ -328,7 +348,7 @@ const StyledLoadingCard = styled(Card)`
 `
 
 const StyledCollapse = styled(Collapse)`
-  background-color: white !important;
+  background-color: ${({ theme }) => theme.componentBackground} !important;
 `
 
 const RequestTimelines = ({ item, requests, kind, metaEvidence }) => {
@@ -354,13 +374,13 @@ const RequestTimelines = ({ item, requests, kind, metaEvidence }) => {
           'Item'} History`}</StyledDivider>
       )}
       {hasPendingRequest(item.status) && (
-        <Row>
-          <Col xs={14} sm={17} md={19} lg={20} xl={20} xxl={21}>
+        <Row type="flex" align="middle">
+          <Col style={{ flex: 1 }}>
             <StyledDivider orientation="left">{`${capitalizeFirstLetter(
               itemName
             ) || 'Item'} History`}</StyledDivider>
           </Col>
-          <Col xs={5} sm={5} md={5} lg={4} xl={3} xxl={3}>
+          <Col style={{ marginLeft: 12 }}>
             <StyledButton
               onClick={() => requestWeb3Auth(() => setEvidenceModalOpen(true))}
             >

@@ -23,7 +23,7 @@ import ErrorPage from '../error-page'
 import { WalletContext } from 'contexts/wallet-context'
 import SubmitModal from '../permanent-item-details/modals/submit'
 import {
-  filterLabelLight,
+  filterLabelPermanent,
   LIGHT_FILTER_KEYS,
   searchStrToFilterObjPermanent,
   updateLightFilter
@@ -69,7 +69,7 @@ export const StyledLayoutContent = styled.div`
 export const FiltersContainer = styled.div`
   display: flex;
   margin-top: 24px;
-
+  width: 100%;
   justify-content: space-between;
 
   ${smallScreenStyle(
@@ -83,28 +83,53 @@ export const StyledFilters = styled.div`
   display: flex;
   flex-direction: row;
   flex-wrap: wrap;
+  align-items: center;
   gap: 8px 0;
+  flex: 1;
 `
 
 export const StyledSelect = styled(Select)`
-  display: flex;
   width: 120px;
   height: 32px;
+  margin-left: auto;
+  flex-shrink: 0;
 
   ${smallScreenStyle(
     () => css`
       &.ant-select {
         margin-top: 8px !important;
+        margin-left: 0;
       }
     `
   )}
 `
 
 export const StyledTag = styled(Tag.CheckableTag)`
-  margin-bottom: 12px;
   cursor: pointer;
+  transition: all 0.2s ease !important;
+
+  &.ant-tag-checkable {
+    background-color: ${({ theme }) =>
+      theme.name === 'dark'
+        ? theme.elevatedBackground
+        : 'transparent'} !important;
+    border: 1px solid ${({ theme }) => theme.filterBorderColor} !important;
+    color: ${({ theme }) => theme.filterTextColor} !important;
+    height: 32px;
+    line-height: 30px;
+    cursor: pointer;
+  }
+
+  &.ant-tag-checkable:hover {
+    color: ${({ theme }) => theme.filterTextColor} !important;
+    border-color: ${({ theme }) => theme.textPrimary} !important;
+    cursor: pointer;
+  }
+
   &.ant-tag-checkable-checked {
-    background-color: #6826bf;
+    background-color: ${({ theme }) => theme.buttonSecondaryBg} !important;
+    border-color: ${({ theme }) => theme.buttonSecondaryBg} !important;
+    color: ${({ theme }) => theme.buttonSecondaryText} !important;
   }
 `
 
@@ -124,7 +149,7 @@ export const StyledGrid = styled.div`
 
 export const StyledSwitch = styled(Switch)`
   &.ant-switch-checked {
-    background-color: #6826bf;
+    background-color: ${({ theme }) => theme.buttonSecondaryBg};
     margin-right: 8px;
   }
 
@@ -180,19 +205,24 @@ const Items = () => {
   const { oldestFirst, page, absent, registered, disputed } = queryOptions
 
   const itemsWhere = useMemo(() => {
-    if (absent) return { registry: tcrAddress.toLowerCase(), status: 'Absent' }
-    if (registered)
-      return {
-        registry: tcrAddress.toLowerCase(),
-        status_in: ['Submitted', 'Reincluded']
-      }
-    if (disputed)
-      return {
-        registry: tcrAddress.toLowerCase(),
-        status: 'Disputed'
-      }
+    // Build status array for multi-select support
+    const statuses = []
 
-    return { registry: tcrAddress.toLowerCase() }
+    if (absent) statuses.push('Absent')
+    if (registered) {
+      statuses.push('Submitted')
+      statuses.push('Reincluded')
+    }
+    if (disputed) statuses.push('Disputed')
+
+    // No filters selected - return all items
+    if (statuses.length === 0) return { registry: tcrAddress.toLowerCase() }
+
+    // Use status_in for filtering (handles both single and multi-select)
+    return {
+      registry: tcrAddress.toLowerCase(),
+      status_in: statuses
+    }
   }, [absent, registered, disputed, tcrAddress])
 
   const orderDirection = oldestFirst ? 'asc' : 'desc'
@@ -220,15 +250,26 @@ const Items = () => {
     if (!registryQuery.data || !itemsQuery.data || !registryQuery.data.registry)
       return 0
     const r = registryQuery.data.registry
-    const field = queryOptions.countField
-    if (queryOptions.countField === 'all') {
-      const sum =
+
+    // Count selected filters and sum their counts
+    const hasAnyFilter = absent || registered || disputed
+
+    if (!hasAnyFilter)
+      // No filters - return total count
+      return (
         Number(r.numberOfAbsent) +
         Number(r.numberOfRegistered) +
         Number(r.numberOfDisputed)
-      return sum
-    } else return Number(r[field])
-  }, [queryOptions.countField, registryQuery.data, itemsQuery.data])
+      )
+
+    // Sum counts for selected filters
+    let sum = 0
+    if (absent) sum += Number(r.numberOfAbsent)
+    if (registered) sum += Number(r.numberOfRegistered)
+    if (disputed) sum += Number(r.numberOfDisputed)
+
+    return sum
+  }, [absent, registered, disputed, registryQuery.data, itemsQuery.data])
 
   // Load NSFW user setting from localforage.
   useEffect(() => {
@@ -312,7 +353,7 @@ const Items = () => {
                       // key !== 'myChallenges'
                     )
                     .map(key =>
-                      filterLabelLight[key] ? (
+                      filterLabelPermanent[key] ? (
                         <StyledTag
                           key={key}
                           checked={queryOptions[key]}
@@ -327,7 +368,7 @@ const Items = () => {
                             })
                           }}
                         >
-                          {filterLabelLight[key]}
+                          {filterLabelPermanent[key]}
                         </StyledTag>
                       ) : null
                     )}

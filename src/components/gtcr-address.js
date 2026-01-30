@@ -1,8 +1,8 @@
-import React, { useCallback } from 'react'
+import React from 'react'
 import styled from 'styled-components'
 import { Button } from 'antd'
 import PropTypes from 'prop-types'
-import { useParams } from 'react-router-dom'
+import { useParams, Link } from 'react-router-dom'
 import { ZERO_ADDRESS } from '../utils/string'
 import ETHAddress from './eth-address'
 
@@ -16,12 +16,8 @@ const StyledSpan = styled.span`
   pointer-events: auto;
 `
 
-const GTCRAddress = ({ address }) => {
+const GTCRAddress = ({ address, disabled }) => {
   const { chainId } = useParams()
-  // We reload the page because the UI needs to redetect what type of TCR it is.
-  const navigateReload = useCallback(() => {
-    window.location.assign(`/tcr/${chainId}/${address}`)
-  }, [chainId, address])
 
   // this avoids crashes when it looks for the address "Error decoding GTCR address"
   if (!/^0x[a-fA-F0-9]{40}$/.test(address)) return null
@@ -31,13 +27,24 @@ const GTCRAddress = ({ address }) => {
       <StyledSpan>
         <ETHAddress address={address || ZERO_ADDRESS} />
       </StyledSpan>
-      <StyledButton onClick={navigateReload}>Visit</StyledButton>
+      {disabled ? (
+        <StyledButton disabled>Visit</StyledButton>
+      ) : (
+        <Link to={`/tcr/${chainId}/${address}`}>
+          <StyledButton>Visit</StyledButton>
+        </Link>
+      )}
     </>
   )
 }
 
 GTCRAddress.propTypes = {
-  address: PropTypes.string.isRequired
+  address: PropTypes.string.isRequired,
+  disabled: PropTypes.bool
+}
+
+GTCRAddress.defaultProps = {
+  disabled: false
 }
 
 export default GTCRAddress

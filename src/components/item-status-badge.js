@@ -38,6 +38,7 @@ const iconTypes = {
   [STATUS_CODE.PENDING_REMOVAL]: 'hourglass',
   [STATUS_CODE.PENDING_SUBMISSION]: 'hourglass',
   [STATUS_CODE.REJECTED]: 'close',
+  [STATUS_CODE.REMOVED]: 'close',
   [STATUS_CODE.SUBMITTED]: 'hourglass',
   [STATUS_CODE.WAITING_ARBITRATOR]: 'hourglass',
   [STATUS_CODE.WAITING_ENFORCEMENT]: 'hourglass',
@@ -65,6 +66,7 @@ const badgeStatus = statusCode => {
     case STATUS_CODE.WAITING_ENFORCEMENT:
       return 'processing'
     case STATUS_CODE.REJECTED:
+    case STATUS_CODE.REMOVED:
     case STATUS_CODE.REGISTERED:
       return 'default'
     default:

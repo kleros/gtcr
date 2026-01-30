@@ -46,8 +46,8 @@ const itemsTourSteps = metadata => {
             ⚠️
           </span>
           Before making your submission, make sure it complies with the Listing
-          Policy. If you submit a non-compliant list, it will be rejected and
-          you will lose your deposit
+          Policy. If you submit a non-compliant list, it will be removed and you
+          will lose your deposit
           <span role="img" aria-label="warning">
             ⚠️
           </span>

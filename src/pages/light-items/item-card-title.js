@@ -50,7 +50,7 @@ export const StyledFontAwesomeIcon = styled(FontAwesomeIcon)`
 `
 
 export const CountdownContainer = styled.div`
-  color: #ffffff5c;
+  color: ${({ theme }) => theme.countdownTextColor};
   font-size: 13px;
   margin-left: 12px;
 `
@@ -63,6 +63,18 @@ export const StyledStakeTag = styled(StakeTag)`
   @media (max-width: 500px) {
     height: 12px;
   }
+
+  /* Dark mode: change background and text colors */
+  ${({ theme }) =>
+    theme.name === 'dark' &&
+    `
+    path:first-of-type {
+      fill: ${theme.stakeTagBg};
+    }
+    path:last-of-type {
+      fill: ${theme.stakeTagText};
+    }
+  `}
 `
 
 const ItemCardTitle = ({ statusCode, tcrData, isPermanentList }) => {

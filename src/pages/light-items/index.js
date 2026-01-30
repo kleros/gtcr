@@ -58,7 +58,7 @@ export const StyledLayoutContent = styled.div`
 export const FiltersContainer = styled.div`
   display: flex;
   margin-top: 24px;
-
+  width: 100%;
   justify-content: space-between;
 
   ${smallScreenStyle(
@@ -72,28 +72,53 @@ export const StyledFilters = styled.div`
   display: flex;
   flex-direction: row;
   flex-wrap: wrap;
+  align-items: center;
   gap: 8px 0;
+  flex: 1;
 `
 
 export const StyledSelect = styled(Select)`
-  display: flex;
   width: 120px;
   height: 32px;
+  margin-left: auto;
+  flex-shrink: 0;
 
   ${smallScreenStyle(
     () => css`
       &.ant-select {
         margin-top: 8px !important;
+        margin-left: 0;
       }
     `
   )}
 `
 
 export const StyledTag = styled(Tag.CheckableTag)`
-  margin-bottom: 12px;
   cursor: pointer;
+  transition: all 0.2s ease !important;
+
+  &.ant-tag-checkable {
+    background-color: ${({ theme }) =>
+      theme.name === 'dark'
+        ? theme.elevatedBackground
+        : 'transparent'} !important;
+    border: 1px solid ${({ theme }) => theme.filterBorderColor} !important;
+    color: ${({ theme }) => theme.filterTextColor} !important;
+    height: 32px;
+    line-height: 30px;
+    cursor: pointer;
+  }
+
+  &.ant-tag-checkable:hover {
+    color: ${({ theme }) => theme.filterTextColor} !important;
+    border-color: ${({ theme }) => theme.textPrimary} !important;
+    cursor: pointer;
+  }
+
   &.ant-tag-checkable-checked {
-    background-color: #6826bf;
+    background-color: ${({ theme }) => theme.buttonSecondaryBg} !important;
+    border-color: ${({ theme }) => theme.buttonSecondaryBg} !important;
+    color: ${({ theme }) => theme.buttonSecondaryText} !important;
   }
 `
 
@@ -113,7 +138,7 @@ export const StyledGrid = styled.div`
 
 export const StyledSwitch = styled(Switch)`
   &.ant-switch-checked {
-    background-color: #6826bf;
+    background-color: ${({ theme }) => theme.buttonSecondaryBg};
     margin-right: 8px;
   }
 
@@ -175,40 +200,48 @@ const Items = () => {
   const orderDirection = oldestFirst ? 'asc' : 'desc'
 
   const itemsWhere = useMemo(() => {
-    if (absent)
-      return {
-        registry_id: { _eq: tcrAddress.toLowerCase() },
-        status: { _eq: 'Absent' }
-      }
-    if (registered)
-      return {
-        registry_id: { _eq: tcrAddress.toLowerCase() },
-        status: { _eq: 'Registered' }
-      }
+    // Build conditions array for multi-select support
+    const conditions = []
+
+    if (absent) conditions.push({ status: { _eq: 'Absent' } })
+    if (registered) conditions.push({ status: { _eq: 'Registered' } })
     if (submitted)
-      return {
-        registry_id: { _eq: tcrAddress.toLowerCase() },
-        status: { _eq: 'RegistrationRequested' }
-      }
+      conditions.push({
+        status: { _eq: 'RegistrationRequested' },
+        disputed: { _eq: false }
+      })
     if (removalRequested)
-      return {
-        registry_id: { _eq: tcrAddress.toLowerCase() },
-        status: { _eq: 'ClearingRequested' }
-      }
+      conditions.push({
+        status: { _eq: 'ClearingRequested' },
+        disputed: { _eq: false }
+      })
     if (challengedSubmissions)
-      return {
-        registry_id: { _eq: tcrAddress.toLowerCase() },
+      conditions.push({
         status: { _eq: 'RegistrationRequested' },
         disputed: { _eq: true }
-      }
+      })
     if (challengedRemovals)
-      return {
-        registry_id: { _eq: tcrAddress.toLowerCase() },
+      conditions.push({
         status: { _eq: 'ClearingRequested' },
         disputed: { _eq: true }
+      })
+
+    // No filters selected - return all items
+    if (conditions.length === 0)
+      return { registry_id: { _eq: tcrAddress.toLowerCase() } }
+
+    // Single filter - no need for _or
+    if (conditions.length === 1)
+      return {
+        registry_id: { _eq: tcrAddress.toLowerCase() },
+        ...conditions[0]
       }
 
-    return { registry_id: { _eq: tcrAddress.toLowerCase() } }
+    // Multiple filters - use _or clause
+    return {
+      registry_id: { _eq: tcrAddress.toLowerCase() },
+      _or: conditions
+    }
   }, [
     absent,
     challengedRemovals,
@@ -224,19 +257,48 @@ const Items = () => {
   const itemCount = useMemo(() => {
     if (!itemsQuery.data) return 0
     const r = itemsQuery.data.lregistry
-    const field = queryOptions.countField
-    if (queryOptions.countField === 'all') {
-      const sum =
+
+    // Count selected filters and sum their counts
+    const hasAnyFilter =
+      absent ||
+      registered ||
+      submitted ||
+      removalRequested ||
+      challengedSubmissions ||
+      challengedRemovals
+
+    if (!hasAnyFilter)
+      // No filters - return total count
+      return (
         Number(r.numberOfAbsent) +
         Number(r.numberOfRegistered) +
         Number(r.numberOfRegistrationRequested) +
         Number(r.numberOfClearingRequested) +
         Number(r.numberOfChallengedRegistrations) +
         Number(r.numberOfChallengedClearing)
+      )
 
-      return sum
-    } else return Number(r[field])
-  }, [queryOptions.countField, itemsQuery.data])
+    // Sum counts for selected filters
+    // Note: numberOfRegistrationRequested and numberOfChallengedRegistrations are mutually exclusive
+    // (unchallenged vs challenged), not subsets
+    let sum = 0
+    if (absent) sum += Number(r.numberOfAbsent)
+    if (registered) sum += Number(r.numberOfRegistered)
+    if (submitted) sum += Number(r.numberOfRegistrationRequested)
+    if (removalRequested) sum += Number(r.numberOfClearingRequested)
+    if (challengedSubmissions) sum += Number(r.numberOfChallengedRegistrations)
+    if (challengedRemovals) sum += Number(r.numberOfChallengedClearing)
+
+    return sum
+  }, [
+    absent,
+    registered,
+    submitted,
+    removalRequested,
+    challengedSubmissions,
+    challengedRemovals,
+    itemsQuery.data
+  ])
 
   const refreshItems = useCallback(
     () =>

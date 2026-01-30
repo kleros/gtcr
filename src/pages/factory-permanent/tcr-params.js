@@ -63,7 +63,7 @@ export const StyledTCRInfoContainer = styled.div`
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  border-left: 1px solid #f8efff;
+  border-left: 1px solid ${({ theme }) => theme.borderColor};
   padding-left: ${responsiveSize(6, 12)};
 `
 
@@ -78,11 +78,13 @@ export const StyledSliderContainer = styled.div`
 `
 
 export const StyledP = styled.p`
-  color: white;
+  color: ${({ theme }) => theme.textPrimary};
+  margin: 0;
 `
 
 export const StyledFontAwesomeIcon = styled(FontAwesomeIcon)`
   margin-right: 12px;
+  color: ${({ theme }) => theme.textSecondary};
 `
 
 export const CheapestAndSafestContainer = styled.div`
@@ -90,6 +92,7 @@ export const CheapestAndSafestContainer = styled.div`
   flex: 1;
   align-items: center;
   margin-right: 24px;
+  color: ${({ theme }) => theme.textSecondary};
 `
 
 export const StyledImg = styled.img`

@@ -19,11 +19,17 @@ export const StyledExtraDataContainer = styled.div`
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
+  color: ${({ theme }) => theme.textPrimary};
 `
 
 export const StyledInputContainer = styled.div`
   display: flex;
   flex-direction: column;
+
+  span,
+  label {
+    color: ${({ theme }) => theme.textPrimary};
+  }
 `
 
 export const StyledContainer = styled.div`

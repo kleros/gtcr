@@ -7,6 +7,7 @@ const LoadingWrapper = styled.div`
   justify-content: center;
   align-items: center;
   height: 100%;
+  padding-top: 24px;
 `
 
 const Loading = () => (

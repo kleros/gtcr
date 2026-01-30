@@ -17,9 +17,18 @@ import BNPropType from 'prop-types/bn'
 import useNativeCurrency from 'hooks/native-currency'
 
 export const StyledCard = styled(Card)`
-  background: linear-gradient(111.6deg, #4d00b4 46.25%, #6500b4 96.25%);
+  background: linear-gradient(
+    111.6deg,
+    ${({ theme }) => theme.gradientStart} 46.25%,
+    ${({ theme }) => theme.gradientEnd} 96.25%
+  ) !important;
+  border-color: transparent !important;
   color: white;
   margin: 40px 0 20px !important;
+
+  & > .ant-card-body {
+    background: transparent !important;
+  }
 `
 
 export const StyledContent = styled.div`

@@ -311,6 +311,7 @@ const ItemParams = ({
           }
         }
         style={{ maxWidth: '250px' }}
+        disabled
       />
     </Card>
   )

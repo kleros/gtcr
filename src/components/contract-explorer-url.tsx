@@ -8,10 +8,10 @@ const StyledIcon = styled.svg`
   vertical-align: text-bottom;
 
   .main-stop {
-    stop-color: #863fe5d9;
+    stop-color: ${({ theme }) => theme.explorerGradientStart};
   }
   .alt-stop {
-    stop-color: #4d00b4d9;
+    stop-color: ${({ theme }) => theme.explorerGradientEnd};
   }
   path {
     fill: url(#gradient);
@@ -23,7 +23,7 @@ const StyledLink = styled.a`
   height: 32px;
   align-items: center;
   text-decoration: underline;
-  color: #4d00b473;
+  color: ${({ theme }) => theme.explorerTextColor};
 `
 
 const ContractExplorerUrl: React.FC<{

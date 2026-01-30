@@ -33,6 +33,7 @@ const LIGHT_ITEMS_QUERY = gql`
         isIdentifier
       }
       requests(limit: 1, order_by: { submissionTime: desc }) {
+        requestType
         disputed
         disputeID
         submissionTime

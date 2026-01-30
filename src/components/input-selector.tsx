@@ -23,10 +23,16 @@ const StyledImg = styled.img`
   object-fit: contain;
 `
 
+const StyledUploadButtonText = styled.div`
+  color: ${({ theme }) => theme.textPrimary};
+`
+
 export const UploadButton: React.FC<{ loading: boolean }> = ({ loading }) => (
   <div>
     <Icon type={loading ? 'loading' : 'plus'} />
-    <div className="ant-upload-text">Upload</div>
+    <StyledUploadButtonText className="ant-upload-text">
+      Upload
+    </StyledUploadButtonText>
   </div>
 )
 

@@ -36,7 +36,8 @@ const ItemActionModal = ({
           {...rest}
         />
       )
-    case STATUS_CODE.ABSENT:
+    case STATUS_CODE.REJECTED:
+    case STATUS_CODE.REMOVED:
       return (
         <SubmitModal
           initialValues={item.decodedData}

@@ -24,7 +24,7 @@ export const FILTER_KEYS = {
 }
 
 export const filterLabelLight = {
-  [FILTER_KEYS.ABSENT]: 'Rejected',
+  [FILTER_KEYS.ABSENT]: 'Rejected/Removed',
   [FILTER_KEYS.REGISTERED]: 'Registered',
   [FILTER_KEYS.SUBMITTED]: 'Submitted',
   [FILTER_KEYS.REMOVAL_REQUESTED]: 'Removing',
@@ -88,6 +88,13 @@ export const P_FILTER_KEYS = {
   DISPUTED: 'disputed',
   OLDEST_FIRST: 'oldestFirst',
   PAGE: 'page'
+}
+
+export const filterLabelPermanent = {
+  [P_FILTER_KEYS.ABSENT]: 'Rejected/Removed',
+  [P_FILTER_KEYS.REGISTERED]: 'Registered',
+  [P_FILTER_KEYS.DISPUTED]: 'Disputed',
+  [P_FILTER_KEYS.OLDEST_FIRST]: 'Oldest First'
 }
 
 export const DEFAULT_FILTERS_PERMANENT = {
@@ -225,16 +232,13 @@ export const queryOptionsToFilterArray = (queryOptions, account) => {
 
 export const updateLightFilter = ({ prevQuery: search, filter, checked }) => {
   const queryObj = qs.parse(search.replace(/\?/g, ''))
-  // Remove previous filter. Combining states is not yet supported.
-  delete queryObj[FILTER_KEYS.ABSENT]
-  delete queryObj[FILTER_KEYS.REGISTERED]
-  delete queryObj[FILTER_KEYS.SUBMITTED]
-  delete queryObj[FILTER_KEYS.REMOVAL_REQUESTED]
-  delete queryObj[FILTER_KEYS.CHALLENGED_SUBMISSIONS]
-  delete queryObj[FILTER_KEYS.CHALLENGED_REMOVALS]
 
-  // Adding filter
-  queryObj[filter] = checked
+  // Toggle the filter (multi-select supported)
+  if (checked) queryObj[filter] = true
+  else delete queryObj[filter]
+
+  // Reset to page 1 when filters change
+  queryObj[FILTER_KEYS.PAGE] = '1'
 
   return qs.stringify(queryObj, { addPrefix: true })
 }

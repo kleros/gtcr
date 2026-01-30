@@ -41,6 +41,7 @@ const ItemActionModal = ({
       )
     }
     case STATUS_CODE.REJECTED:
+    case STATUS_CODE.REMOVED:
       return isConnectedTCR ? (
         <SubmitConnectModal
           initialValues={item.decodedData}
