@@ -331,8 +331,14 @@ const GlobalStyle = createGlobalStyle`
 
     /* Tooltip */
     .ant-tooltip-inner {
-      background: ${({ theme }) => theme.elevatedBackground} !important;
+      background: ${({ theme }) => theme.componentBackground} !important;
       color: ${({ theme }) => theme.textPrimary} !important;
+      box-shadow: 0 2px 8px ${({ theme }) => theme.shadowColor} !important;
+      border: 1px solid ${({ theme }) => theme.borderColor} !important;
+    }
+    .ant-tooltip-arrow::before {
+      background: ${({ theme }) => theme.componentBackground} !important;
+      border-color: ${({ theme }) => theme.borderColor} !important;
     }
 
     /* Dropdown */
