@@ -171,9 +171,9 @@ export const darkTheme = {
   gradientStart: '#9b5fff',
   gradientEnd: '#6c4dc4',
   gradientMid: '#352d4d',
-  // Navbar and Footer - darker
-  navbarBackground: '#0d0a14',
-  footerBackground: '#0d0a14',
+  // Navbar and Footer - dark purple with visible tint
+  navbarBackground: '#1a1625',
+  footerBackground: '#1a1625',
   // Borders and shadows - visible but subtle
   borderColor: '#3d3550',
   shadowColor: 'rgba(0, 0, 0, 0.5)',
