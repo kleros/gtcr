@@ -53,6 +53,12 @@ export const StyledLayoutContent = styled.div`
   padding: 0 9.375vw 42px;
   display: flex;
   flex-direction: column;
+
+  ${smallScreenStyle(
+    () => css`
+      padding: 0 16px 42px;
+    `
+  )}
 `
 
 export const FiltersContainer = styled.div`

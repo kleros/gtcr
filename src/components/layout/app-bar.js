@@ -12,8 +12,8 @@ import Identicon from 'components/identicon'
 import Notifications from 'components/notifications'
 import { ReactComponent as Logo } from 'assets/images/logo.svg'
 import { ReactComponent as StakeCurateLogoRaw } from 'assets/images/logo-stake-curate.svg'
-import SunIcon from 'assets/icons/sun-icon'
-import MoonIcon from 'assets/icons/moon-icon'
+import { ReactComponent as SunIcon } from 'assets/icons/sun.svg'
+import { ReactComponent as MoonIcon } from 'assets/icons/moon.svg'
 import { capitalizeFirstLetter, SAVED_NETWORK_KEY } from 'utils/string'
 import AppTour from 'components/tour'
 import { useHistory } from 'react-router-dom/cjs/react-router-dom.min'
@@ -108,7 +108,7 @@ const StyledAppBarRow = styled(Row)`
 
   ${smallScreenStyle(
     () => css`
-      padding: 8px 24px;
+      padding: 8px 16px;
     `
   )}
 `
