@@ -22,6 +22,17 @@
     <title>Kleros · Curate</title>
   </head>
   <body>
+    <script>
+      // Prevent flash of light theme on load - check dark mode preference immediately
+      (function() {
+        var saved = localStorage.getItem('kleros-curate-theme');
+        var isDark = saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        if (isDark) {
+          document.body.setAttribute('data-theme', 'dark');
+          document.body.style.backgroundColor = '#13101a';
+        }
+      })();
+    </script>
     <noscript>You need to enable JavaScript to run this app.</noscript>
     <div id="root"></div>
     <!--
