@@ -35,7 +35,7 @@ const ThemeToggleButton = styled.button`
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-left: 12px;
+  margin-left: 6px;
   border-radius: 50%;
   transition: background-color 0.2s ease;
 
