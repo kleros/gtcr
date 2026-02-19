@@ -72,43 +72,25 @@ const KlerosParams = ({
     }
   }, [active, klerosAddress, library])
 
-  // Fetch court data from policy registry by querying policies directly
-  // instead of scanning logs from block 0, which causes RPC timeouts.
-  // Queries in batches until a revert signals the end of the array.
+  // Fetch court data from policy registry.
   useEffect(() => {
     ;(async () => {
-      if (!policyRegistry || !active || !library || !library.network) return
+      if (!policyRegistry || !active) return
       setCourts([])
       try {
-        const BATCH_SIZE = 10
-        let start = 0
-        const courtsWithPolicies = []
-        let reachedEnd = false
-
-        const fetchBatch = batchStart =>
-          Promise.all(
-            Array.from({ length: BATCH_SIZE }, (_, i) =>
-              policyRegistry
-                .policies(batchStart + i)
-                .then(path => ({ courtID: batchStart + i, path }))
-                .catch(() => null)
-            )
+        // Query policies in parallel for court IDs 0 through MAX_COURTS-1.
+        // Out-of-bounds IDs safely resolve to '' via .catch, so this value
+        // only needs to exceed the highest court ID on any supported chain.
+        const MAX_COURTS = 50
+        const policyPaths = await Promise.all(
+          Array.from({ length: MAX_COURTS }, (_, i) =>
+            policyRegistry.policies(i).catch(() => '')
           )
+        )
 
-        while (!reachedEnd) {
-          const batch = await fetchBatch(start)
-
-          for (const result of batch) {
-            if (result === null) {
-              reachedEnd = true
-              break
-            }
-            if (result.path && result.path !== '')
-              courtsWithPolicies.push(result)
-          }
-
-          start += BATCH_SIZE
-        }
+        const courtsWithPolicies = policyPaths
+          .map((path, courtID) => ({ courtID, path }))
+          .filter(({ path }) => path && path !== '')
 
         if (courtsWithPolicies.length === 0) return
 
@@ -143,8 +125,7 @@ const KlerosParams = ({
         console.warn('Error fetching policies', err)
       }
     })()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [active, policyRegistry, library, library && library.network])
+  }, [active, policyRegistry])
 
   // Load arbitrator extra data
   useEffect(() => {
