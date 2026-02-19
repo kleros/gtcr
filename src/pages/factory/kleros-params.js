@@ -78,24 +78,43 @@ const KlerosParams = ({
     }
   }, [active, klerosAddress, library])
 
-  // Fetch court data from policy registry.
+  // Fetch court data from policy registry by querying policies directly
+  // instead of scanning logs from block 0, which causes RPC timeouts.
+  // Queries in batches until a revert signals the end of the array.
   useEffect(() => {
     ;(async () => {
-      if (!policyRegistry || !active) return
+      if (!policyRegistry || !active || !library || !library.network) return
       setCourts([])
       try {
-        // Query policies directly for court IDs 0-29 instead of scanning
-        // logs from block 0, which causes RPC timeouts on long chains.
-        const MAX_COURTS = 30
-        const policyPaths = await Promise.all(
-          Array.from({ length: MAX_COURTS }, (_, i) =>
-            policyRegistry.policies(i).catch(() => '')
-          )
-        )
+        const BATCH_SIZE = 10
+        let start = 0
+        const courtsWithPolicies = []
+        let reachedEnd = false
 
-        const courtsWithPolicies = policyPaths
-          .map((path, courtID) => ({ courtID, path }))
-          .filter(({ path }) => path && path !== '')
+        const fetchBatch = batchStart =>
+          Promise.all(
+            Array.from({ length: BATCH_SIZE }, (_, i) =>
+              policyRegistry
+                .policies(batchStart + i)
+                .then(path => ({ courtID: batchStart + i, path }))
+                .catch(() => null)
+            )
+          )
+
+        while (!reachedEnd) {
+          const batch = await fetchBatch(start)
+
+          for (const result of batch) {
+            if (result === null) {
+              reachedEnd = true
+              break
+            }
+            if (result.path && result.path !== '')
+              courtsWithPolicies.push(result)
+          }
+
+          start += BATCH_SIZE
+        }
 
         if (courtsWithPolicies.length === 0) return
 
@@ -130,7 +149,8 @@ const KlerosParams = ({
         console.warn('Error fetching policies', err)
       }
     })()
-  }, [active, policyRegistry])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [active, policyRegistry, library, library && library.network])
 
   // Load arbitrator extra data
   useEffect(() => {
