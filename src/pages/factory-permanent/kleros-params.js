@@ -10,7 +10,6 @@ import ETHAmount from 'components/eth-amount'
 import { jurorsAndCourtIDFromExtraData } from 'utils/string'
 import useWindowDimensions from 'hooks/window-dimensions'
 import useNativeCurrency from 'hooks/native-currency'
-import useGetLogs from 'hooks/get-logs'
 
 export const StyledExtraDataContainer = styled.div`
   padding-bottom: 8px;
@@ -50,7 +49,6 @@ const KlerosParams = ({
   const [numberOfJurors, setNumberOfJurors] = useState(3)
   const [courtID, setCourtID] = useState()
   const [courts, setCourts] = useState([])
-  const getLogs = useGetLogs(library)
   const policyRegistry = useMemo(() => {
     if (!policyAddress || !active) return
     try {
@@ -78,25 +76,55 @@ const KlerosParams = ({
   useEffect(() => {
     ;(async () => {
       if (!policyRegistry || !active) return
-      if (!getLogs) return
+      setCourts([])
       try {
-        // Todo hardcoding this. Pls set this as either chain dependant or just fix it
-        // Had to be hardcoded because RPC refused to return the data
-        // Same problem in Classic and Light atm
-        setCourts([
-          {
-            courtID: 1,
-            name: 'xDAI Curation',
-            key: '1',
-            value: 1,
-            label: 'xDAI Curation'
-          }
-        ])
+        // Query policies directly for court IDs 0-29 instead of scanning
+        // logs from block 0, which causes RPC timeouts on long chains.
+        const MAX_COURTS = 30
+        const policyPaths = await Promise.all(
+          Array.from({ length: MAX_COURTS }, (_, i) =>
+            policyRegistry.policies(i).catch(() => '')
+          )
+        )
+
+        const courtsWithPolicies = policyPaths
+          .map((path, courtID) => ({ courtID, path }))
+          .filter(({ path }) => path && path !== '')
+
+        if (courtsWithPolicies.length === 0) return
+
+        const fetchedCourts = await Promise.all(
+          courtsWithPolicies.map(async ({ courtID, path }) => {
+            try {
+              const url = path.startsWith('/ipfs/')
+                ? `${process.env.REACT_APP_IPFS_GATEWAY}${path}`
+                : path
+              const { name } = await (await fetch(url)).json()
+              return {
+                courtID,
+                name,
+                key: String(courtID),
+                value: String(courtID),
+                label: name
+              }
+            } catch {
+              return {
+                courtID,
+                name: `Court ${courtID}`,
+                key: String(courtID),
+                value: String(courtID),
+                label: `Court ${courtID}`
+              }
+            }
+          })
+        )
+
+        setCourts(fetchedCourts)
       } catch (err) {
         console.warn('Error fetching policies', err)
       }
     })()
-  }, [active, library, policyRegistry, getLogs])
+  }, [active, policyRegistry])
 
   // Load arbitrator extra data
   useEffect(() => {
