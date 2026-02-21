@@ -68,7 +68,7 @@
     "@types/uuid": "^11.0.0",
     "@typescript-eslint/eslint-plugin": "^8.56.0",
     "@typescript-eslint/parser": "^8.56.0",
-    "@vitejs/plugin-react": "^5.1.4",
+    "@vitejs/plugin-react": "^4.3.4",
     "eslint": "^8.57.0",
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-import": "^2.32.0",
@@ -80,10 +80,10 @@
     "eslint-plugin-unicorn": "^9.1.1",
     "prettier": "^3.8.1",
     "typescript": "^5.9.3",
-    "vite": "^6.4.1",
-    "vite-plugin-node-polyfills": "^0.25.0",
-    "vite-plugin-svgr": "^4.5.0",
-    "vite-tsconfig-paths": "^6.1.1"
+    "vite": "^5.4.21",
+    "vite-plugin-node-polyfills": "^0.22.0",
+    "vite-plugin-svgr": "^4.2.0",
+    "vite-tsconfig-paths": "^4.3.0"
   },
   "commitlint": {
     "extends": [
