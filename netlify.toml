@@ -3,7 +3,7 @@
   command = "yarn build"
 
 [build.environment]
-  NODE_VERSION='20.11.0'
+  NODE_VERSION='20.19.0'
   REACT_APP_IPFS_GATEWAY="https://cdn.kleros.link"
   REACT_APP_DEFAULT_NETWORK="1"
 
