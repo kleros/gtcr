@@ -18,7 +18,7 @@ import StakeCurateLogoRaw from 'assets/images/logo-stake-curate.svg?react'
 import SunIcon from 'assets/icons/sun.svg?react'
 import MoonIcon from 'assets/icons/moon.svg?react'
 import HelpIcon from 'assets/icons/help.svg?react'
-import MenuIcon from 'assets/images/menu-icon.png'
+import MenuIcon from 'assets/icons/menu.svg?react'
 import { SAVED_NETWORK_KEY } from 'utils/string'
 import AppTour from 'components/tour'
 import AppMenu from 'components/layout/app-menu'
@@ -89,11 +89,12 @@ const HamburgerButton = styled.button`
   &:hover {
     opacity: 0.7;
   }
-`
 
-const HamburgerImg = styled.img`
-  width: 28px;
-  height: 28px;
+  svg {
+    width: 22px;
+    height: 22px;
+    color: #fff;
+  }
 `
 
 const RightGroup = styled.div`
@@ -117,7 +118,7 @@ const MobileNavMenu = styled.div`
 const MobileMenuLink = styled(Link)<{ $active?: boolean }>`
   display: block;
   padding: 10px 16px;
-  color: ${({ theme }) => theme.primaryColor};
+  color: ${({ $active }) => ($active ? '#fff' : 'rgba(255, 255, 255, 0.5)')};
   text-decoration: none;
   font-size: 14px;
   transition: all 0.2s;
@@ -125,6 +126,7 @@ const MobileMenuLink = styled(Link)<{ $active?: boolean }>`
   font-weight: ${({ $active }) => ($active ? '500' : '400')};
 
   &:hover {
+    color: #fff;
     background: ${({ theme }) => theme.dropdownHoverBg};
   }
 `
@@ -394,7 +396,7 @@ const AppBar = () => {
               onVisibleChange={setMobileMenuOpen}
             >
               <HamburgerButton type="button" aria-label="Open menu">
-                <HamburgerImg src={MenuIcon} alt="" />
+                <MenuIcon />
               </HamburgerButton>
             </Dropdown>
           </MobileMenuWrapper>
