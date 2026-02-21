@@ -7,7 +7,6 @@ import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { Button, Dropdown } from 'components/ui'
 import { useAppKit } from '@reown/appkit/react'
 import { WalletContext } from 'contexts/wallet-context'
-import { TourContext } from 'contexts/tour-context'
 import { ThemeContext } from 'contexts/theme-context'
 import { NETWORKS_INFO } from 'config/networks'
 import { SUPPORTED_CHAINS } from 'config/chains'
@@ -20,7 +19,6 @@ import MoonIcon from 'assets/icons/moon.svg?react'
 import HelpIcon from 'assets/icons/help.svg?react'
 import MenuIcon from 'assets/icons/menu.svg?react'
 import { SAVED_NETWORK_KEY } from 'utils/string'
-import AppTour from 'components/tour'
 import AppMenu from 'components/layout/app-menu'
 import Help from 'components/layout/help'
 import { defaultTcrAddresses, type validChains } from 'config/tcr-addresses'
@@ -170,16 +168,6 @@ const StyledIdenticonWrapper = styled.div`
   }
 `
 
-const StyledNotificationsWrapper = styled.div`
-  cursor: not-allowed;
-  opacity: 0.4;
-  position: relative;
-
-  & > * {
-    pointer-events: none;
-  }
-`
-
 const StyledAppBarRow = styled.div`
   display: flex;
   align-items: center;
@@ -302,32 +290,9 @@ const StakeCurateLogo = styled(StakeCurateLogoRaw)`
   `}
 `
 
-const NOTIFICATIONS_TOUR_DISMISSED = 'NOTIFICATIONS_TOUR_DISMISSED'
-const notificationsTourSteps = [
-  {
-    content: () => (
-      <div>
-        Congratulations!
-        <span role="img" aria-label="celebrate">
-          🎉
-        </span>
-        <br />
-        <br />
-        We highly suggest you subscribe for notifications if you haven't done so
-        already, this way you can learn about updates as soon as possible.
-      </div>
-    )
-  },
-  {
-    selector: '#react-blockies-identicon',
-    content: 'You can do so by clicking here and setting your email.'
-  }
-]
-
 const AppBar = () => {
   const web3Context = useWeb3Context()
   const { open } = useAppKit()
-  const { userSubscribed } = useContext(TourContext)
   const { isPermanent } = useContext(StakeContext)
   const { isDarkMode, toggleTheme } = useContext(ThemeContext)
   const { switchChain: wagmiSwitchChain } = useSwitchChain()
@@ -474,12 +439,6 @@ const AppBar = () => {
           </Dropdown>
         </RightGroup>
       </StyledAppBarRow>
-      {userSubscribed && (
-        <AppTour
-          dismissedKey={NOTIFICATIONS_TOUR_DISMISSED}
-          steps={notificationsTourSteps}
-        />
-      )}
     </Container>
   )
 }

@@ -36,7 +36,6 @@ import useTokenSymbol from 'hooks/token-symbol'
 import { useEthersProvider } from 'hooks/ethers-adapters'
 
 export const NSFW_FILTER_KEY = 'NSFW_FILTER_KEY'
-export const ITEMS_TOUR_DISMISSED = 'ITEMS_TOUR_DISMISSED'
 
 export const StyledTopPadding = styled.div`
   padding-top: 24px;

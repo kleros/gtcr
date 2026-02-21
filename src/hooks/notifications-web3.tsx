@@ -1,13 +1,11 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react'
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { toast } from 'react-toastify'
 import { useAccount, useChainId } from 'wagmi'
 import { v4 as uuid } from 'uuid'
-import localforage from 'localforage'
 import { ethers, BigNumber } from 'ethers'
 import _GTCRFactory from '../assets/abis/LightGTCRFactory.json'
 import { getTxPage } from '../utils/network-utils'
-import { defaultTcrAddresses } from 'config/tcr-addresses'
-import { NETWORKS, DEFAULT_NETWORK } from 'config/networks'
+import { DEFAULT_NETWORK } from 'config/networks'
 import { useEthersProvider, useEthersSigner } from './ethers-adapters'
 import { appKitModal } from 'config/wagmi'
 
@@ -32,9 +30,8 @@ const useNotificationWeb3 = () => {
   const signer = useEthersSigner({ chainId })
   const [web3Actions, setWeb3Actions] = useState<any[]>([])
   const [timestamp, setTimestamp] = useState<any>()
-  const [network, setNetwork] = useState<any>()
   const [latestBlock, setLatestBlock] = useState<any>()
-  const TCR2_ADDRESS = defaultTcrAddresses[networkId || NETWORKS.ethereum]
+  const prevNetworkRef = useRef<number | null>(null)
 
   const factoryInterface = useMemo(
     () => new ethers.utils.Interface(_GTCRFactory),
@@ -61,19 +58,23 @@ const useNotificationWeb3 = () => {
     setWeb3Actions([])
   }, [])
 
-  // Notify of network changes.
+  // Notify of network changes (only when the user has a wallet connected).
   useEffect(() => {
-    if (!networkId) return
-    if (!network) {
-      setNetwork(networkId)
+    if (!networkId || !isConnected) {
+      prevNetworkRef.current = null
       return
     }
 
-    if (network && network !== networkId) {
-      setNetwork(networkId)
+    const prev = prevNetworkRef.current
+    prevNetworkRef.current = networkId
+
+    // Don't notify on initial tracking
+    if (prev === null) return
+
+    if (prev !== networkId) {
       toast.info('Network Changed')
     }
-  }, [networkId, network, TCR2_ADDRESS])
+  }, [networkId, isConnected])
 
   // Fetch timestamp.
   useEffect(() => {

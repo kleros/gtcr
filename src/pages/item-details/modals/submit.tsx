@@ -1,4 +1,4 @@
-import React, { useContext, useCallback, useState } from 'react'
+import React, { useCallback, useState } from 'react'
 import { Button, Form, Tooltip, Typography, Descriptions } from 'components/ui'
 import Icon from 'components/ui/Icon'
 import { abi as _gtcr } from '@kleros/tcr/build/contracts/GeneralizedTCR.json'
@@ -12,7 +12,6 @@ import InputSelector from 'components/input-selector'
 import EnsureAuth from 'components/ensure-auth'
 import ETHAmount from 'components/eth-amount'
 import useFactory from 'hooks/factory'
-import { TourContext } from 'contexts/tour-context'
 import { addPeriod, capitalizeFirstLetter, getArticleFor } from 'utils/string'
 import useNativeCurrency from 'hooks/native-currency'
 import { parseIpfs } from 'utils/ipfs-parse'
@@ -167,7 +166,6 @@ const SubmitModal: React.FC<{
   const chainId = useChainId()
   const publicClient = usePublicClient()
   const { data: walletClient } = useWalletClient()
-  const { setUserSubscribed } = useContext(TourContext)
   const {
     deployedWithFactory,
     deployedWithLightFactory,
@@ -227,7 +225,6 @@ const SubmitModal: React.FC<{
                 })
               }
             )
-              .then(() => setUserSubscribed(true))
               .catch(err => {
                 console.error('Failed to subscribe for notifications.', err)
               })
@@ -242,7 +239,6 @@ const SubmitModal: React.FC<{
       chainId,
       onCancel,
       publicClient,
-      setUserSubscribed,
       submissionDeposit,
       tcrAddress,
       walletClient

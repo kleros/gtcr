@@ -28,14 +28,11 @@ import {
 } from 'utils/filters'
 import ItemCard from './item-card'
 import Banner from './banner'
-import AppTour from 'components/tour'
-import itemsTourSteps from './tour-steps'
 import { DISPUTE_STATUS } from 'utils/item-status'
 import { CLASSIC_REGISTRY_ITEMS_QUERY } from 'utils/graphql'
 import { getGraphQLClient } from 'utils/graphql-client'
 import {
   NSFW_FILTER_KEY,
-  ITEMS_TOUR_DISMISSED,
   StyledLayoutContent,
   StyledContent,
   StyledFilters,
@@ -447,10 +444,6 @@ const Items = () => {
           </>
         )}
       </StyledLayoutContent>
-      <AppTour
-        dismissedKey={ITEMS_TOUR_DISMISSED}
-        steps={itemsTourSteps(metadata)}
-      />
     </>
   )
 }

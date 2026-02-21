@@ -16,8 +16,6 @@ import { LightTCRViewContext } from 'contexts/light-tcr-view-context'
 import RequestTimelines from '../../components/request-timelines'
 import { WalletContext } from 'contexts/wallet-context'
 import { capitalizeFirstLetter } from 'utils/string'
-import AppTour from 'components/tour'
-import { itemTourSteps } from './tour-steps'
 import { LIGHT_ITEM_DETAILS_QUERY } from 'utils/graphql'
 import { useQuery } from '@tanstack/react-query'
 import { getGraphQLClient } from 'utils/graphql-client'
@@ -26,8 +24,6 @@ import { parseIpfs } from 'utils/ipfs-parse'
 import { itemToStatusCode, STATUS_CODE } from 'utils/item-status'
 import { truncateAtWord } from 'utils/truncate-at-word'
 import { fetchMetaEvidence } from 'hooks/tcr-view'
-
-export const ITEM_TOUR_DISMISSED = 'ITEM_TOUR_DISMISSED'
 
 export const StyledBreadcrumbItem = styled(Breadcrumb.Item)`
   text-transform: capitalize;
@@ -337,10 +333,6 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
             />
           )} */}
       </StyledLayoutContent>
-      <AppTour
-        dismissedKey={ITEM_TOUR_DISMISSED}
-        steps={itemTourSteps(metadata)}
-      />
     </>
   )
 }

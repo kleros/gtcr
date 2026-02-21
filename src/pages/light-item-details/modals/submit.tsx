@@ -1,4 +1,4 @@
-import React, { useContext, useCallback, useState } from 'react'
+import React, { useCallback, useState } from 'react'
 import {
   Modal,
   Button,
@@ -20,7 +20,6 @@ import InputSelector from 'components/input-selector'
 import EnsureAuth from 'components/ensure-auth'
 import ETHAmount from 'components/eth-amount'
 import useFactory from 'hooks/factory'
-import { TourContext } from 'contexts/tour-context'
 import { addPeriod, capitalizeFirstLetter, getArticleFor } from 'utils/string'
 import { parseIpfs } from 'utils/ipfs-parse'
 import { IPFSResultObject, getIPFSPath } from 'utils/get-ipfs-path'
@@ -182,7 +181,6 @@ const SubmitModal: React.FC<{
   const chainId = useChainId()
   const publicClient = usePublicClient()
   const { data: walletClient } = useWalletClient()
-  const { setUserSubscribed } = useContext(TourContext)
   const {
     deployedWithFactory,
     deployedWithLightFactory,
@@ -236,7 +234,6 @@ const SubmitModal: React.FC<{
                 })
               }
             )
-              .then(() => setUserSubscribed(true))
               .catch(err => {
                 console.error('Failed to subscribe for notifications.', err)
               })
@@ -251,7 +248,6 @@ const SubmitModal: React.FC<{
       chainId,
       onCancel,
       publicClient,
-      setUserSubscribed,
       submissionDeposit,
       tcrAddress,
       walletClient

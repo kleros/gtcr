@@ -13,7 +13,6 @@ import EvidenceForm from 'components/evidence-form'
 import ipfsPublish from 'utils/ipfs-publish'
 import { getIPFSPath } from 'utils/get-ipfs-path'
 import { parseIpfs } from 'utils/ipfs-parse'
-import { TourContext } from 'contexts/tour-context'
 import useNativeCurrency from 'hooks/native-currency'
 import { wrapWithToast } from 'utils/wrapWithToast'
 import { wagmiConfig } from 'config/wagmi'
@@ -35,7 +34,6 @@ const RemoveModal = ({ item, itemName = 'item', fileURI, ...rest }: RemoveModalP
   const chainId = useChainId()
   const publicClient = usePublicClient()
   const { data: walletClient } = useWalletClient()
-  const { setUserSubscribed } = useContext(TourContext)
   const {
     removalDeposit,
     tcrAddress,
@@ -96,7 +94,6 @@ const RemoveModal = ({ item, itemName = 'item', fileURI, ...rest }: RemoveModalP
                 })
               }
             )
-              .then(() => setUserSubscribed(true))
               .catch(err => {
                 console.error('Failed to subscribe for notifications.', err)
               })
@@ -114,7 +111,6 @@ const RemoveModal = ({ item, itemName = 'item', fileURI, ...rest }: RemoveModalP
       removalDeposit,
       requireRemovalEvidence,
       rest,
-      setUserSubscribed,
       tcrAddress,
       walletClient
     ]

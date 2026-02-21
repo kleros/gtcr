@@ -9,7 +9,6 @@ import EnsureAuth from 'components/ensure-auth'
 import EvidenceForm from 'components/evidence-form'
 import ipfsPublish from 'utils/ipfs-publish'
 import { getIPFSPath } from 'utils/get-ipfs-path'
-import { TourContext } from 'contexts/tour-context'
 import { wrapWithToast } from 'utils/wrapWithToast'
 import { wagmiConfig } from 'config/wagmi'
 import { StyledModal } from 'pages/light-item-details/modals/challenge'
@@ -25,8 +24,6 @@ const EvidenceModal = ({ item, ...rest }: EvidenceModalProps) => {
   const chainId = useChainId()
   const publicClient = usePublicClient()
   const { data: walletClient } = useWalletClient()
-  const { setUserSubscribed } = useContext(TourContext)
-
   const submitEvidence = async ({ title, description, evidenceAttachment }) => {
     try {
       const evidenceJSON = {
@@ -71,7 +68,6 @@ const EvidenceModal = ({ item, ...rest }: EvidenceModalProps) => {
               })
             }
           )
-            .then(() => setUserSubscribed(true))
             .catch(err => {
               console.error('Failed to subscribe for notifications.', err)
             })

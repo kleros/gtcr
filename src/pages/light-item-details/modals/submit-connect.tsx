@@ -1,5 +1,4 @@
 import React, {
-  useContext,
   useState,
   useEffect,
   useCallback,
@@ -32,7 +31,6 @@ import { useEthersProvider } from 'hooks/ethers-adapters'
 import { simulateContract } from '@wagmi/core'
 import { getAddress, keccak256, encodePacked } from 'viem'
 import ipfsPublish from 'utils/ipfs-publish'
-import { TourContext } from 'contexts/tour-context'
 import useNativeCurrency from 'hooks/native-currency'
 import useGetLogs from 'hooks/get-logs'
 import { parseIpfs } from 'utils/ipfs-parse'
@@ -73,7 +71,6 @@ const SubmitConnectModal = (props: SubmitConnectModalProps) => {
   const { chainId: urlChainId } = useParams()
   const networkId = urlChainId ? Number(urlChainId) : undefined
   const library = useEthersProvider({ chainId: networkId })
-  const { setUserSubscribed } = useContext(TourContext)
   const [error, setError] = useState<any>()
 
   // This is the main TCR.
@@ -276,7 +273,6 @@ const SubmitConnectModal = (props: SubmitConnectModalProps) => {
               })
             }
           )
-            .then(() => setUserSubscribed(true))
             .catch(err => {
               console.error('Failed to subscribe for notifications.', err)
             })
@@ -295,7 +291,6 @@ const SubmitConnectModal = (props: SubmitConnectModalProps) => {
     relTCRAddress,
     relTCRMetaEvidence,
     relTCRSubmissionDeposit,
-    setUserSubscribed,
     walletClient
   ])
 

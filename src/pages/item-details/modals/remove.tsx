@@ -9,7 +9,6 @@ import { TCRViewContext } from 'contexts/tcr-view-context'
 import EnsureAuth from 'components/ensure-auth'
 import ETHAmount from 'components/eth-amount'
 import EvidenceForm from 'components/evidence-form'
-import { TourContext } from 'contexts/tour-context'
 import useNativeCurrency from 'hooks/native-currency'
 import ipfsPublish from 'utils/ipfs-publish'
 import { parseIpfs } from 'utils/ipfs-parse'
@@ -34,7 +33,6 @@ const RemoveModal = ({ item, itemName = 'item', fileURI, ...rest }: RemoveModalP
   const chainId = useChainId()
   const publicClient = usePublicClient()
   const { data: walletClient } = useWalletClient()
-  const { setUserSubscribed } = useContext(TourContext)
   const {
     removalDeposit,
     tcrAddress,
@@ -95,7 +93,6 @@ const RemoveModal = ({ item, itemName = 'item', fileURI, ...rest }: RemoveModalP
                 })
               }
             )
-              .then(() => setUserSubscribed(true))
               .catch(err => {
                 console.error('Failed to subscribe for notifications.', err)
               })
@@ -113,7 +110,6 @@ const RemoveModal = ({ item, itemName = 'item', fileURI, ...rest }: RemoveModalP
       removalDeposit,
       requireRemovalEvidence,
       rest,
-      setUserSubscribed,
       tcrAddress,
       walletClient
     ]

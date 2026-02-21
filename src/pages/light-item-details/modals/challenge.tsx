@@ -12,7 +12,6 @@ import ETHAmount from 'components/eth-amount'
 import EvidenceForm from 'components/evidence-form'
 import ipfsPublish from 'utils/ipfs-publish'
 import { getIPFSPath } from 'utils/get-ipfs-path'
-import { TourContext } from 'contexts/tour-context'
 import { parseIpfs } from 'utils/ipfs-parse'
 import { wrapWithToast } from 'utils/wrapWithToast'
 import { wagmiConfig } from 'config/wagmi'
@@ -45,7 +44,6 @@ const ChallengeModal = ({ item, itemName, statusCode, fileURI, ...rest }: Challe
   const chainId = useChainId()
   const publicClient = usePublicClient()
   const { data: walletClient } = useWalletClient()
-  const { setUserSubscribed } = useContext(TourContext)
   const challengeDeposit =
     item.status === CONTRACT_STATUS.REGISTRATION_REQUESTED
       ? submissionChallengeDeposit
@@ -100,7 +98,6 @@ const ChallengeModal = ({ item, itemName, statusCode, fileURI, ...rest }: Challe
               })
             }
           )
-            .then(() => setUserSubscribed(true))
             .catch(err => {
               console.error('Failed to subscribe for notifications.', err)
             })

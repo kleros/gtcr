@@ -20,7 +20,6 @@ import { simulateContract } from '@wagmi/core'
 import { getAddress } from 'viem'
 import { abi as _gtcr } from '@kleros/tcr/build/contracts/GeneralizedTCR.json'
 import useRequiredFees from 'hooks/required-fees'
-import { TourContext } from 'contexts/tour-context'
 import useNativeCurrency from 'hooks/native-currency'
 import { parseIpfs } from 'utils/ipfs-parse'
 import { wrapWithToast } from 'utils/wrapWithToast'
@@ -43,7 +42,6 @@ const CrowdfundModal = ({ statusCode, item, fileURI, appealCost, ...rest }: Crow
   const chainId = useChainId()
   const publicClient = usePublicClient()
   const { data: walletClient } = useWalletClient()
-  const { setUserSubscribed } = useContext(TourContext)
   const {
     sharedStakeMultiplier,
     winnerStakeMultiplier,
@@ -175,7 +173,6 @@ const CrowdfundModal = ({ statusCode, item, fileURI, appealCost, ...rest }: Crow
               })
             }
           )
-            .then(() => setUserSubscribed(true))
             .catch(err => {
               console.error('Failed to subscribe for notifications.', err)
             })

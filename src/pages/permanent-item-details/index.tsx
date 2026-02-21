@@ -24,8 +24,6 @@ import { truncateAtWord } from 'utils/truncate-at-word'
 import { getPermanentGraphQLClient } from 'utils/graphql-client'
 import useArbitrationCost from 'hooks/arbitration-cost'
 
-export const ITEM_TOUR_DISMISSED = 'ITEM_TOUR_DISMISSED'
-
 export const StyledBreadcrumbItem = styled(Breadcrumb.Item)`
   text-transform: capitalize;
   color: ${({ theme }) => theme.itemDetailsTitleColor} !important;

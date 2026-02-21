@@ -47,7 +47,6 @@
     "react-router-dom": "^6.30.3",
     "react-text-loop": "^2.3.0",
     "react-toastify": "^11.0.5",
-    "reactour": "^1.19.4",
     "styled-components": "^5.3.11",
     "use-debounce": "^10.1.0",
     "uuid": "^13.0.0",

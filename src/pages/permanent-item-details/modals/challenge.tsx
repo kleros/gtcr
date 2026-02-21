@@ -1,4 +1,4 @@
-import React, { useContext, useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import styled from 'styled-components'
 import { Modal, Typography, Button, Spin, Tooltip } from 'components/ui'
 import Icon from 'components/ui/Icon'
@@ -11,7 +11,6 @@ import { getAddress } from 'viem'
 import EvidenceForm from 'components/evidence-form'
 import ipfsPublish from 'utils/ipfs-publish'
 import { getIPFSPath } from 'utils/get-ipfs-path'
-import { TourContext } from 'contexts/tour-context'
 import { parseIpfs } from 'utils/ipfs-parse'
 import useNativeCurrency from 'hooks/native-currency'
 import useTokenSymbol from 'hooks/token-symbol'
@@ -81,7 +80,6 @@ const ChallengeModal = ({
 }: ChallengeModalProps) => {
   const registry = item.registry
   const fileURI = registry.arbitrationSettings[0].metadata.policyURI
-  const { setUserSubscribed } = useContext(TourContext)
   const { address: account } = useAccount()
   const chainId = useChainId()
   const publicClient = usePublicClient()
@@ -227,7 +225,6 @@ const ChallengeModal = ({
               })
             }
           )
-            .then(() => setUserSubscribed(true))
             .catch(err => {
               console.error('Failed to subscribe for notifications.', err)
             })

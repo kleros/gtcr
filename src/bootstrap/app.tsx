@@ -9,10 +9,8 @@ import Footer from '../components/footer.tsx'
 import Layout from 'components/ui/Layout'
 import { unregister } from './service-worker'
 import { WalletProvider } from 'contexts/wallet-context'
-import { TourProvider } from 'contexts/tour-context'
 import { StakeProvider } from 'contexts/stake-context'
 import { ThemeProvider, ThemeContext } from 'contexts/theme-context'
-import WelcomeModal from 'components/modals/welcome-modal'
 import SmartContractWalletWarning from 'components/smart-contract-wallet-warning'
 import AppBar from 'components/layout/app-bar'
 import AppRouter from './app-router'
@@ -82,12 +80,11 @@ const App = () => {
                 />
               )}
             >
-              <TourProvider>
-                <WalletProvider>
+              <WalletProvider>
                   <Helmet>
                     <title>Kleros · Curate</title>
                     <link
-                      href="https://fonts.googleapis.com/css?family=Roboto:400,400i,500,500i,700,700i"
+                      href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,400;0,500;0,700;1,400;1,500;1,700&display=swap"
                       rel="stylesheet"
                     />
                   </Helmet>
@@ -105,10 +102,8 @@ const App = () => {
                       <Footer />
                     </StyledLayout>
                   </StakeProvider>
-                  <WelcomeModal />
                   <ThemedToastContainer />
                 </WalletProvider>
-              </TourProvider>
             </ErrorBoundary>
           </BrowserRouter>
         </QueryClientProvider>

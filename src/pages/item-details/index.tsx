@@ -14,9 +14,7 @@ import RequestTimelines from '../../components/request-timelines'
 import { WalletContext } from 'contexts/wallet-context'
 import { capitalizeFirstLetter, ZERO_ADDRESS } from 'utils/string'
 import Badges from './badges'
-import AppTour from 'components/tour'
 import { parseIpfs } from 'utils/ipfs-parse'
-import { itemTourSteps } from '../light-item-details/tour-steps'
 import { fetchMetaEvidence } from 'hooks/tcr-view'
 import { CLASSIC_ITEM_DETAILS_QUERY } from 'utils/graphql'
 import { useQuery } from '@tanstack/react-query'
@@ -29,8 +27,7 @@ import {
   StyledLink,
   StyledMargin,
   StyledBackLink,
-  StyledLayoutContent,
-  ITEM_TOUR_DISMISSED
+  StyledLayoutContent
 } from 'pages/light-item-details'
 
 // TODO: Ensure we don't set state for unmounted components using
@@ -244,10 +241,6 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
             />
           )}
       </StyledLayoutContent>
-      <AppTour
-        dismissedKey={ITEM_TOUR_DISMISSED}
-        steps={itemTourSteps(metadata)}
-      />
     </>
   )
 }

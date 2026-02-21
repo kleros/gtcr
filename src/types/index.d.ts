@@ -53,12 +53,6 @@ declare module 'react-blockies' {
   export default Blockies
 }
 
-declare module 'reactour' {
-  import { ComponentType } from 'react'
-  const Tour: ComponentType<any>
-  export default Tour
-}
-
 declare module 'js-ordinal' {
   export default function ordinal(n: number): string
 }

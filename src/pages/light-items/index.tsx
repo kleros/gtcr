@@ -28,8 +28,6 @@ import {
 } from 'utils/filters'
 import ItemCard from './item-card'
 import Banner from './banner'
-import AppTour from 'components/tour'
-import itemsTourSteps from './tour-steps'
 import { DISPUTE_STATUS } from 'utils/item-status'
 import { LIGHT_ITEMS_QUERY } from 'utils/graphql'
 import LightSearchBar from 'components/light-search-bar'
@@ -39,7 +37,6 @@ import useSeerMarketsData from 'components/custom-registries/seer/use-seer-marke
 import { isSeerRegistry } from 'components/custom-registries/seer/is-seer-registry'
 
 export const NSFW_FILTER_KEY = 'NSFW_FILTER_KEY'
-export const ITEMS_TOUR_DISMISSED = 'ITEMS_TOUR_DISMISSED'
 
 export const StyledTopPadding = styled.div`
   padding-top: 24px;
@@ -649,10 +646,6 @@ const Items = () => {
           </>
         )}
       </StyledLayoutContent>
-      <AppTour
-        dismissedKey={ITEMS_TOUR_DISMISSED}
-        steps={itemsTourSteps({ ...metadata, metaEvidence })}
-      />
     </>
   )
 }
