@@ -18,7 +18,7 @@ const CircleOutline = styled.span`
   justify-content: center;
   width: 1.25em;
   height: 1.25em;
-  border: 2px solid currentColor;
+  border: 1.2px solid currentColor;
   border-radius: 50%;
 `
 
@@ -64,9 +64,6 @@ interface IconProps {
 }
 
 const Icon: React.FC<IconProps> = ({ type, style, className, onClick, spin: spinProp, ...rest }) => {
-  const icon = ICON_MAP[type]
-  if (!icon) return null
-
   if (type === 'plus-circle-outline') {
     return (
       <CircleOutline style={style} className={className} onClick={onClick}>
@@ -74,6 +71,9 @@ const Icon: React.FC<IconProps> = ({ type, style, className, onClick, spin: spin
       </CircleOutline>
     )
   }
+
+  const icon = ICON_MAP[type]
+  if (!icon) return null
 
   if (type === 'loading' || spinProp) {
     return (
