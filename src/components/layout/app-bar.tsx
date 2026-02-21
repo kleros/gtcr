@@ -8,7 +8,6 @@ import React, {
 import styled, { css } from 'styled-components'
 import { smallScreenStyle } from 'styles/small-screen-style'
 import { useWeb3Context } from 'hooks/use-web3-context'
-import { useSwitchChain } from 'wagmi'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { Button, Dropdown } from 'components/ui'
 import { useAppKit } from '@reown/appkit/react'
@@ -305,7 +304,6 @@ const AppBar = () => {
   const { open } = useAppKit()
   const { isPermanent } = useContext(StakeContext)
   const { isDarkMode, toggleTheme } = useContext(ThemeContext)
-  const { switchChain: wagmiSwitchChain } = useSwitchChain()
   const navigate = useNavigate()
   const location = useLocation()
   const { networkId, account } = web3Context
@@ -350,9 +348,10 @@ const AppBar = () => {
       const nextTcr = defaultTcrAddresses[chainId as validChains]
       if (!nextTcr) return
       localStorage.setItem(SAVED_NETWORK_KEY, chainId.toString())
-      if (account) wagmiSwitchChain({ chainId })
 
-      // Preserve current page section when switching chains
+      // Only navigate — useTcrNetwork handles the wallet switch when the
+      // URL chain changes. Calling switchChain here simultaneously creates
+      // a race condition that can trigger an infinite re-render loop.
       const factoryMatch = location.pathname.match(
         /^\/(factory(?:-classic|-permanent)?)\//,
       )
@@ -361,7 +360,7 @@ const AppBar = () => {
 
       setChainDropdownOpen(false)
     },
-    [navigate, displayedChainId, account, wagmiSwitchChain, location.pathname],
+    [navigate, displayedChainId, location.pathname],
   )
 
   const mobileMenuOverlay = (

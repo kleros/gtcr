@@ -79,6 +79,10 @@ const useNotificationWeb3 = () => {
   }, [])
 
   // Notify of network changes (only when the user has a wallet connected).
+  // Debounced to avoid toast spam if the chain oscillates during switching.
+  const networkToastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  )
   useEffect(() => {
     if (!networkId || !isConnected) {
       prevNetworkRef.current = null
@@ -91,7 +95,21 @@ const useNotificationWeb3 = () => {
     // Don't notify on initial tracking
     if (prev === null) return
 
-    if (prev !== networkId) toast.info('Network Changed')
+    if (prev !== networkId) {
+      if (networkToastTimerRef.current)
+        clearTimeout(networkToastTimerRef.current)
+      networkToastTimerRef.current = setTimeout(() => {
+        networkToastTimerRef.current = null
+        toast.info('Network Changed')
+      }, 300)
+    }
+
+    return () => {
+      if (networkToastTimerRef.current) {
+        clearTimeout(networkToastTimerRef.current)
+        networkToastTimerRef.current = null
+      }
+    }
   }, [networkId, isConnected])
 
   // Fetch timestamp.
