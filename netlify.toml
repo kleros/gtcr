@@ -4,6 +4,7 @@
 
 [build.environment]
   NODE_VERSION='20.19.0'
+  NODE_OPTIONS='--max-old-space-size=4096'
   REACT_APP_IPFS_GATEWAY="https://cdn.kleros.link"
   REACT_APP_DEFAULT_NETWORK="1"
 
