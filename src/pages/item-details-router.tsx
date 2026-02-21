@@ -1,73 +1,112 @@
-import React, { useContext, useEffect } from 'react'
+import React, { useContext, useEffect, Suspense, lazy, useMemo } from 'react'
 import { TCRViewProvider } from 'contexts/tcr-view-context'
 import { LightTCRViewProvider } from 'contexts/light-tcr-view-context'
-import loadable from '@loadable/component'
-import { useParams } from 'react-router'
+import { useParams } from 'react-router-dom'
+import { useQueryClient } from '@tanstack/react-query'
 import useTcrNetwork from 'hooks/use-tcr-network'
-import { NETWORK_STATUS } from 'config/networks'
 import useCheckLightCurate from 'hooks/use-check-light-curate'
 import Loading from 'components/loading'
+import ErrorPage from 'pages/error-page'
 import { StakeContext } from 'contexts/stake-context'
+import { getGraphQLClient, getPermanentGraphQLClient } from 'utils/graphql-client'
+import {
+  LIGHT_ITEM_DETAILS_QUERY,
+  CLASSIC_ITEM_DETAILS_QUERY,
+  PERMANENT_ITEM_DETAILS_QUERY
+} from 'utils/graphql'
 
-const PermanentItemDetails = loadable(
-  () => import(/* webpackPrefetch: true */ './permanent-item-details/index'),
-  {
-    fallback: <Loading />
-  }
+const PermanentItemDetails = lazy(
+  () => import('./permanent-item-details/index')
 )
-
-const LightItemDetails = loadable(
-  () => import(/* webpackPrefetch: true */ './light-item-details/index'),
-  {
-    fallback: <Loading />
-  }
-)
-
-const ItemDetails = loadable(
-  () => import(/* webpackPrefetch: true */ './item-details/index'),
-  {
-    fallback: <Loading />
-  }
-)
+const LightItemDetails = lazy(() => import('./light-item-details/index'))
+const ItemDetails = lazy(() => import('./item-details/index'))
 
 const ItemDetailsRouter = () => {
-  const { tcrAddress, itemID } = useParams<{
+  const { tcrAddress, itemID, chainId } = useParams<{
     tcrAddress: string
     itemID: string
+    chainId: string
   }>()
-  const { networkStatus } = useTcrNetwork()
+  useTcrNetwork()
   const search = window.location.search
   const {
     isLightCurate,
     isClassicCurate,
     isPermanentCurate,
-    checking
+    checking,
+    error
   } = useCheckLightCurate()
   const { setIsPermanent } = useContext(StakeContext)
+  const queryClient = useQueryClient()
+  const client = useMemo(() => getGraphQLClient(chainId), [chainId])
+  const pgtcrClient = useMemo(
+    () => getPermanentGraphQLClient(chainId),
+    [chainId]
+  )
 
   useEffect(() => {
     setIsPermanent(isPermanentCurate)
     return () => setIsPermanent(false)
   }, [isPermanentCurate, setIsPermanent])
 
-  if (checking || networkStatus !== NETWORK_STATUS.supported) return <Loading />
+  // Prefetch detail data in parallel with the existence check.
+  useEffect(() => {
+    if (!tcrAddress || !itemID) return
+    const compoundId = `${itemID}@${tcrAddress.toLowerCase()}`
+
+    if (client) {
+      queryClient.prefetchQuery({
+        queryKey: ['lightItemDetails', compoundId],
+        queryFn: () =>
+          client.request(LIGHT_ITEM_DETAILS_QUERY, { id: compoundId })
+      })
+      queryClient.prefetchQuery({
+        queryKey: ['classicItemDetails', compoundId],
+        queryFn: () =>
+          client.request(CLASSIC_ITEM_DETAILS_QUERY, { id: compoundId })
+      })
+    }
+    if (pgtcrClient) {
+      queryClient.prefetchQuery({
+        queryKey: ['permanentItemDetails', compoundId],
+        queryFn: () =>
+          pgtcrClient.request(PERMANENT_ITEM_DETAILS_QUERY, { id: compoundId })
+      })
+    }
+  }, [client, pgtcrClient, tcrAddress, itemID, queryClient])
+
+  if (checking) return <Loading />
 
   if (isLightCurate)
     return (
-      <LightTCRViewProvider tcrAddress={tcrAddress}>
-        <LightItemDetails search={search} itemID={itemID} />
-      </LightTCRViewProvider>
+      <Suspense fallback={<Loading />}>
+        <LightTCRViewProvider tcrAddress={tcrAddress}>
+          <LightItemDetails search={search} itemID={itemID} />
+        </LightTCRViewProvider>
+      </Suspense>
     )
   if (isClassicCurate)
     return (
-      <TCRViewProvider tcrAddress={tcrAddress}>
-        <ItemDetails search={search} itemID={itemID} />
-      </TCRViewProvider>
+      <Suspense fallback={<Loading />}>
+        <TCRViewProvider tcrAddress={tcrAddress}>
+          <ItemDetails search={search} itemID={itemID} />
+        </TCRViewProvider>
+      </Suspense>
     )
   if (isPermanentCurate)
-    return <PermanentItemDetails search={search} itemID={itemID} />
+    return (
+      <Suspense fallback={<Loading />}>
+        <PermanentItemDetails search={search} itemID={itemID} />
+      </Suspense>
+    )
 
-  return <Loading />
+  return (
+    <ErrorPage
+      code="Error"
+      title="Registry Not Found"
+      message="This registry could not be found on any subgraph. The subgraph endpoint may be down or the registry address may be invalid."
+    />
+  )
 }
 
 export default ItemDetailsRouter

@@ -1,6 +1,6 @@
 import React from 'react'
 import styled from 'styled-components'
-import { Form, Input } from 'antd'
+import { Form, Input } from 'components/ui'
 import { Field } from 'formik'
 import { namespaces } from 'utils/rich-address'
 
@@ -16,7 +16,7 @@ const AddressInput: React.FC<{
   touched: boolean
   hasFeedback: boolean
   disabled: boolean
-  style: any
+  style: React.CSSProperties
 }> = p => (
   <Field
     name={p.name}
@@ -29,7 +29,7 @@ const AddressInput: React.FC<{
       return null
     }}
   >
-    {({ field }: any) => (
+    {({ field }: { field: Record<string, unknown> }) => (
       <Form.Item
         label={p.label}
         validateStatus={p.error && p.touched ? 'error' : undefined}

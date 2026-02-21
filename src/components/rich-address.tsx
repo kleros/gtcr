@@ -1,7 +1,9 @@
 import React from 'react'
 import styled from 'styled-components'
-import { Icon, Tooltip } from 'antd'
+import { Tooltip } from 'components/ui'
+import Icon from 'components/ui/Icon'
 import { parseRichAddress } from '../utils/rich-address'
+import { shortenAddress } from '../utils/string'
 
 const StyledSpan = styled.span`
   color: ${({ theme }) => theme.errorColor};
@@ -32,7 +34,7 @@ const RichAddress: React.FC<{ crude: string }> = ({ crude }) => {
         &nbsp;
         <NotValidAddressAnchor href={link} rel="noreferrer" target="_blank">
           {labelText}
-          {address.slice(0, 6)}...{address.slice(address.length - 4)}
+          {shortenAddress(address)}
         </NotValidAddressAnchor>
       </Tooltip>
     )
@@ -40,7 +42,7 @@ const RichAddress: React.FC<{ crude: string }> = ({ crude }) => {
   return (
     <ValidAddressAnchor href={link} rel="noreferrer" target="_blank">
       {labelText}
-      {address.slice(0, 6)}...{address.slice(address.length - 4)}
+      {shortenAddress(address)}
     </ValidAddressAnchor>
   )
 }
