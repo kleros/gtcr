@@ -3,7 +3,6 @@ import styled from 'styled-components'
 import { Select, InputNumber, Slider, Tooltip } from 'components/ui'
 import Icon from 'components/ui/Icon'
 import { ethers } from 'ethers'
-import { useWeb3Context } from 'hooks/useWeb3Context'
 import { abi as _PolicyRegistry } from '@kleros/kleros/build/contracts/PolicyRegistry.json'
 import { abi as _IArbitrator } from '@kleros/erc-792/build/contracts/IArbitrator.json'
 import ETHAmount from 'components/eth-amount'
@@ -55,23 +54,24 @@ interface KlerosParamsProps {
   policyAddress: string
   setArbitratorExtraData: (val: string) => void
   arbitratorExtraData: string
+  library: any
 }
 
 const KlerosParams = ({
   klerosAddress,
   policyAddress,
   setArbitratorExtraData,
-  arbitratorExtraData
+  arbitratorExtraData,
+  library
 }: KlerosParamsProps) => {
   const { width } = useWindowDimensions()
   const nativeCurrency = useNativeCurrency()
-  const { library, active } = useWeb3Context()
   const [arbitrationCost, setArbitrationCost] = useState(0)
   const [numberOfJurors, setNumberOfJurors] = useState(3)
   const [courtID, setCourtID] = useState<any>()
   const [courts, setCourts] = useState<Court[]>([])
   const policyRegistry = useMemo(() => {
-    if (!policyAddress || !active) return
+    if (!policyAddress || !library) return
     try {
       return new ethers.Contract(policyAddress, _PolicyRegistry, library)
     } catch (err) {
@@ -81,22 +81,22 @@ const KlerosParams = ({
       )
       return null
     }
-  }, [active, library, policyAddress])
+  }, [library, policyAddress])
 
   const arbitrator = useMemo(() => {
-    if (!klerosAddress || !active) return
+    if (!klerosAddress || !library) return
     try {
       return new ethers.Contract(klerosAddress, _IArbitrator, library)
     } catch (err) {
       console.warn(`Failed to connect to kleros at ${klerosAddress}`, err)
       return null
     }
-  }, [active, klerosAddress, library])
+  }, [library, klerosAddress])
 
   // Fetch court data from policy registry.
   useEffect(() => {
     ;(async () => {
-      if (!policyRegistry || !active) return
+      if (!policyRegistry || !library) return
       setCourts([])
       try {
         const MAX_COURTS = 50
@@ -145,7 +145,7 @@ const KlerosParams = ({
         console.warn('Error fetching policies', err)
       }
     })()
-  }, [active, policyRegistry])
+  }, [library, policyRegistry])
 
   // Load arbitrator extra data
   useEffect(() => {
@@ -159,10 +159,10 @@ const KlerosParams = ({
   // Display predicted arbitration cost.
   useEffect(() => {
     ;(async () => {
-      if (!arbitratorExtraData || !arbitrator || !active) return
+      if (!arbitratorExtraData || !arbitrator || !library) return
       setArbitrationCost(await arbitrator.arbitrationCost(arbitratorExtraData))
     })()
-  }, [active, arbitrator, arbitratorExtraData])
+  }, [library, arbitrator, arbitratorExtraData])
 
   const onCourtChanged = useCallback(
     ({ key: newCourtID }) => {

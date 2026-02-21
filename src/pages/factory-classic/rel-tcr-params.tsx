@@ -14,7 +14,8 @@ import Icon from 'components/ui/Icon'
 import { toast } from 'react-toastify'
 import { withFormik } from 'formik'
 import * as yup from 'yup'
-import { useWeb3Context } from 'hooks/useWeb3Context'
+import { useEthersProvider } from 'hooks/ethers-adapters'
+import { useParams } from 'react-router-dom'
 import { useDebounce } from 'use-debounce'
 import { ethers, BigNumber } from 'ethers'
 const { getAddress, parseEther } = ethers.utils
@@ -71,15 +72,16 @@ const RelTCRParams = ({
   const { width } = useWindowDimensions()
   const [uploading, setUploading] = useState<any>()
   const [advancedOptions, setAdvancedOptions] = useState<any>()
-  const { library, networkId } = useWeb3Context()
+  const { chainId } = useParams()
+  const chainProvider = useEthersProvider({ chainId: Number(chainId) })
   const [depositVal, setDepositVal] = useState(0.05)
   const [debouncedArbitrator] = useDebounce(values.relArbitratorAddress, 1000)
   const { arbitrator: klerosAddress, policy: policyAddress } =
-    klerosAddresses[networkId] || {}
+    klerosAddresses[chainId as keyof typeof klerosAddresses] || {}
   const { arbitrationCost } = useArbitrationCost({
     address: values.relArbitratorAddress,
     arbitratorExtraData: values.relArbitratorExtraData,
-    library
+    library: chainProvider
   })
   const nativeCurrency = useNativeCurrency()
   const setRelArbitratorExtraData = useCallback(
@@ -307,6 +309,7 @@ const RelTCRParams = ({
             klerosAddress={debouncedArbitrator}
             policyAddress={policyAddress}
             setArbitratorExtraData={setRelArbitratorExtraData}
+            library={chainProvider}
           />
         )}
         <Form.Item

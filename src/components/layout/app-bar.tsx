@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useContext, useMemo } from 'react'
+import React, { useState, useCallback, useContext, useMemo, useEffect } from 'react'
 import styled, { css } from 'styled-components'
 import { smallScreenStyle } from 'styles/small-screen-style'
 import { useWeb3Context } from 'hooks/useWeb3Context'
@@ -23,6 +23,7 @@ import AppMenu from 'components/layout/app-menu'
 import Help from 'components/layout/help'
 import { defaultTcrAddresses, type validChains } from 'config/tcr-addresses'
 import { StakeContext } from 'contexts/stake-context'
+import { preloadFactory } from 'bootstrap/app-router'
 
 const Container = styled.div`
   padding: 0;
@@ -302,11 +303,25 @@ const AppBar = () => {
 
   // Parse the viewing chain from the URL (source of truth)
   const urlChainId = useMemo(() => {
-    const match = location.pathname.match(/\/tcr\/(\d+)\//)
+    const match = location.pathname.match(/\/(?:tcr|factory(?:-classic|-permanent)?)\/(\d+)/)
     return match ? Number(match[1]) : null
   }, [location.pathname])
 
-  const displayedChainId = urlChainId ?? networkId
+  // Persist URL chain so non-chain-aware pages can restore it
+  useEffect(() => {
+    if (urlChainId) {
+      localStorage.setItem(SAVED_NETWORK_KEY, urlChainId.toString())
+    }
+  }, [urlChainId])
+
+  const savedChainId = useMemo(() => {
+    const saved = localStorage.getItem(SAVED_NETWORK_KEY)
+    return saved ? Number(saved) : null
+    // Re-read on every navigation so it stays current
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.pathname])
+
+  const displayedChainId = urlChainId ?? savedChainId ?? networkId
   const [chainDropdownOpen, setChainDropdownOpen] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [helpDropdownOpen, setHelpDropdownOpen] = useState(false)
@@ -327,10 +342,17 @@ const AppBar = () => {
       if (account) {
         wagmiSwitchChain({ chainId })
       }
-      navigate(`/tcr/${chainId}/${nextTcr}`)
+
+      // Preserve current page section when switching chains
+      const factoryMatch = location.pathname.match(/^\/(factory(?:-classic|-permanent)?)\//)
+      if (factoryMatch) {
+        navigate(`/${factoryMatch[1]}/${chainId}`)
+      } else {
+        navigate(`/tcr/${chainId}/${nextTcr}`)
+      }
       setChainDropdownOpen(false)
     },
-    [navigate, displayedChainId, account, wagmiSwitchChain]
+    [navigate, displayedChainId, account, wagmiSwitchChain, location.pathname]
   )
 
   const mobileMenuOverlay = (
@@ -339,9 +361,10 @@ const AppBar = () => {
         Home
       </MobileMenuLink>
       <MobileMenuLink
-        to="/factory"
+        to={`/factory/${displayedChainId}`}
         $active={location.pathname.startsWith('/factory')}
         onClick={() => setMobileMenuOpen(false)}
+        onMouseEnter={() => preloadFactory()}
       >
         Create a List
       </MobileMenuLink>

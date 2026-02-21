@@ -10,6 +10,7 @@ import { Steps, Button, Card, Modal } from 'components/ui'
 import Icon from 'components/ui/Icon'
 import { useDebounce } from 'use-debounce'
 import { useWeb3Context } from 'hooks/useWeb3Context'
+import { useParams } from 'react-router-dom'
 import { ethers } from 'ethers'
 import _GTCRFactory from 'assets/abis/PermanentGTCRFactory.json'
 import TCRParams from './tcr-params'
@@ -159,6 +160,17 @@ const useCachedFactory = (version: string, networkId: any) => {
 
   const [tcrState, setTcrState] = useState(cache)
   const [debouncedTcrState] = useDebounce(tcrState, 1000)
+  const [prevNetworkId, setPrevNetworkId] = useState(networkId)
+
+  // Synchronous state reset when chain changes via URL.
+  if (networkId && networkId !== prevNetworkId) {
+    setPrevNetworkId(networkId)
+    setTcrState(prev => ({
+      ...JSON.parse(JSON.stringify(initialWizardState)),
+      transactions: prev.transactions
+    }))
+  }
+
   useEffect(() => {
     if (
       !networkId ||
@@ -168,14 +180,6 @@ const useCachedFactory = (version: string, networkId: any) => {
       return
     window.localStorage.setItem(key, JSON.stringify({ ...debouncedTcrState }))
   }, [debouncedTcrState, key, networkId])
-
-  useEffect(() => {
-    if (tcrState && tcrState.arbitratorAddress) return
-    if (!networkId) return
-    if (!cache.arbitratorAddress) return
-
-    setTcrState(cache)
-  }, [cache, networkId, tcrState])
 
   if (!networkId || !tcrState.arbitratorAddress) return null
 
@@ -226,8 +230,10 @@ const useCachedFactory = (version: string, networkId: any) => {
 }
 
 export default () => {
-  const { networkId, library, active, account } = useWeb3Context()
-  const cachedFactory = useCachedFactory(version, networkId)
+  const { chainId: urlChainId } = useParams()
+  const { library, active, account } = useWeb3Context()
+  const factoryChainId = Number(urlChainId)
+  const cachedFactory = useCachedFactory(version, factoryChainId)
   const { requestWeb3Auth } = useContext(WalletContext)
   const [previousDeployments, setPreviousDeployments] = useState([])
   const { tcrState, nextStep, previousStep, STEP_COUNT, resetTcrState } =
@@ -259,7 +265,7 @@ export default () => {
       if (!library || !active || !factoryInterface) return
 
       const deploymentTxHashes = Object.keys(transactions).filter(
-        txHash => !transactions[txHash].networkId !== networkId
+        txHash => !transactions[txHash].networkId !== factoryChainId
       )
 
       const txDatas = await Promise.all(
@@ -278,7 +284,7 @@ export default () => {
     cachedFactory,
     factoryInterface,
     library,
-    networkId,
+    factoryChainId,
     transactions
   ])
   if (!cachedFactory || !cachedFactory.tcrState.arbitratorAddress)
@@ -307,7 +313,7 @@ export default () => {
           <Step title="Deploy" />
         </Steps>
         <StyledContainer>
-          <CurrentStep postSubmit={() => nextStep()} {...cachedFactory} />
+          <CurrentStep key={factoryChainId} postSubmit={() => nextStep()} {...cachedFactory} />
         </StyledContainer>
         <StyledStepper>
           <Button onClick={showConfirmReset} icon="trash-alt">

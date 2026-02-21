@@ -18,9 +18,15 @@ const HomeRedirect = ({ networkId }: { networkId: number }) => {
 
 const ItemsRouter = lazy(() => import('pages/items-router'))
 const ItemDetailsRouter = lazy(() => import('pages/item-details-router'))
-const Factory = lazy(() => import('pages/factory/index'))
-const ClassicFactory = lazy(() => import('pages/factory-classic/index'))
-const PermanentFactory = lazy(() => import('pages/factory-permanent/index'))
+
+// Exported for preloading on link hover (instant navigation feel)
+export const preloadFactory = () => import('pages/factory/index')
+export const preloadClassicFactory = () => import('pages/factory-classic/index')
+export const preloadPermanentFactory = () => import('pages/factory-permanent/index')
+
+const Factory = lazy(preloadFactory)
+const ClassicFactory = lazy(preloadClassicFactory)
+const PermanentFactory = lazy(preloadPermanentFactory)
 
 const AppRouter = () => {
   const { networkId } = useWeb3Context()
@@ -28,7 +34,7 @@ const AppRouter = () => {
 
   // Parse chainId from the URL — the source of truth for data fetching
   const urlChainId = useMemo(() => {
-    const match = location.pathname.match(/\/tcr\/(\d+)\//)
+    const match = location.pathname.match(/\/(?:tcr|factory(?:-classic|-permanent)?)\/(\d+)/)
     return match ? Number(match[1]) : null
   }, [location.pathname])
 
@@ -47,9 +53,9 @@ const AppRouter = () => {
           element={<ItemDetailsRouter />}
         />
         <Route path="/tcr/:chainId/:tcrAddress" element={<ItemsRouter />} />
-        <Route path="/factory" element={<Factory />} />
-        <Route path="/factory-classic" element={<ClassicFactory />} />
-        <Route path="/factory-permanent" element={<PermanentFactory />} />
+        <Route path="/factory/:chainId" element={<Factory />} />
+        <Route path="/factory-classic/:chainId" element={<ClassicFactory />} />
+        <Route path="/factory-permanent/:chainId" element={<PermanentFactory />} />
         <Route
           path="/"
           element={<HomeRedirect networkId={networkId} />}

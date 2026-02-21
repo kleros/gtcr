@@ -20,7 +20,7 @@ import { useDebounce } from 'use-debounce'
 import { ethers, BigNumber } from 'ethers'
 const { getAddress, parseEther } = ethers.utils
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { useWeb3Context } from 'hooks/useWeb3Context'
+import { useEthersProvider } from 'hooks/ethers-adapters'
 import CustomInput from 'components/custom-input'
 import { ItemTypes } from '@kleros/gtcr-encoder'
 import ipfsPublish from 'utils/ipfs-publish'
@@ -31,7 +31,7 @@ import KlerosParams from './kleros-params'
 import ETHAmount from 'components/eth-amount'
 import useWindowDimensions from 'hooks/window-dimensions'
 import useNativeCurrency from 'hooks/native-currency'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import { klerosAddresses } from 'config/tcr-addresses'
 import { parseIpfs } from 'utils/ipfs-parse'
 import { getIPFSPath } from 'utils/get-ipfs-path'
@@ -165,16 +165,17 @@ const TCRParams = ({
   const nativeCurrency = useNativeCurrency()
   const [uploading, setUploading] = useState({})
   const [advancedOptions, setAdvancedOptions] = useState<any>()
-  const { library, networkId } = useWeb3Context()
   const [depositVal, setDepositVal] = useState(0.05)
   const navigate = useNavigate()
+  const { chainId } = useParams()
+  const chainProvider = useEthersProvider({ chainId: Number(chainId) })
   const [debouncedArbitrator] = useDebounce(values.arbitratorAddress, 1000)
   const { arbitrator: klerosAddress, policy: policyAddress } =
-    klerosAddresses[networkId] || {}
+    klerosAddresses[chainId as keyof typeof klerosAddresses] || {}
   const { arbitrationCost } = useArbitrationCost({
     address: values.arbitratorAddress,
     arbitratorExtraData: values.arbitratorExtraData,
-    library
+    library: chainProvider
   })
   const setArbitratorExtraData = useCallback(
     val => setFieldValue('arbitratorExtraData', val),
@@ -295,8 +296,8 @@ const TCRParams = ({
             defaultValue="light"
             style={{ width: 120, marginLeft: 8 }}
             onChange={value => {
-              if (value === 'classic') navigate(`/factory-classic`)
-              else if (value === 'permanent') navigate(`/factory-permanent`)
+              if (value === 'classic') navigate(`/factory-classic/${chainId}`)
+              else if (value === 'permanent') navigate(`/factory-permanent/${chainId}`)
             }}
           >
             <Select.Option value="classic">Classic</Select.Option>
@@ -517,6 +518,7 @@ const TCRParams = ({
             klerosAddress={debouncedArbitrator}
             policyAddress={policyAddress}
             setArbitratorExtraData={setArbitratorExtraData}
+            library={chainProvider}
           />
         )}
         <Form.Item

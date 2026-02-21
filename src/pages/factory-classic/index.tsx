@@ -3,6 +3,7 @@ import Icon from 'components/ui/Icon'
 import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import { useDebounce } from 'use-debounce'
 import { useWeb3Context } from 'hooks/useWeb3Context'
+import { useParams } from 'react-router-dom'
 import { ethers } from 'ethers'
 import { abi as _GTCRFactory } from '@kleros/tcr/build/contracts/GTCRFactory.json'
 import StyledLayoutContent from '../layout-content'
@@ -28,22 +29,21 @@ import {
 const { Step } = Steps
 const { confirm } = Modal
 
-const useCachedFactory = (version: string) => {
-  const { networkId } = useWeb3Context()
+const useCachedFactory = (version: string, networkId: any) => {
   const {
     address: defaultArbitrator,
     label: defaultArbLabel
-  } = defaultArbitratorAddresses[networkId]
+  } = defaultArbitratorAddresses[networkId] || {}
   const {
     address: defaultGovernor,
     label: defaultGovernorLabel
-  } = defaultGovernorAddresses[networkId]
+  } = defaultGovernorAddresses[networkId] || {}
   const {
     data: defaultArbitratorExtraData,
     label: defaultArbDataLabel
-  } = defaultArbitratorExtraDataObj[networkId]
+  } = defaultArbitratorExtraDataObj[networkId] || {}
 
-  const key = `tcrState@${version}`
+  const key = `classicTcrState@${networkId}@${version}`
   const initialWizardState = {
     tcrTitle: '',
     tcrDescription: '',
@@ -101,7 +101,8 @@ const useCachedFactory = (version: string) => {
         type: ItemTypes.TEXT
       }
     ],
-    currStep: 1
+    currStep: 1,
+    chainId: networkId
   }
   const initialState = {
     ...initialWizardState,
@@ -110,8 +111,11 @@ const useCachedFactory = (version: string) => {
   let cache = window.localStorage.getItem(key)
 
   const newInitialState = JSON.parse(JSON.stringify(initialState)) // Deep copy.
-  if (cache) cache = JSON.parse(cache)
-  else cache = newInitialState
+  if (cache) {
+    const parsed = JSON.parse(cache)
+    if (parsed.arbitratorAddress && parsed.chainId === networkId) cache = parsed
+    else cache = newInitialState
+  } else cache = newInitialState
 
   // We check for the finished flag to reset the form
   // if the user finished his previous deployment.
@@ -121,6 +125,16 @@ const useCachedFactory = (version: string) => {
 
   const [tcrState, setTcrState] = useState(cache)
   const [debouncedTcrState] = useDebounce(tcrState, 1000)
+  const [prevNetworkId, setPrevNetworkId] = useState(networkId)
+
+  // Synchronous state reset when chain changes via URL.
+  if (networkId && networkId !== prevNetworkId) {
+    setPrevNetworkId(networkId)
+    setTcrState(prev => ({
+      ...JSON.parse(JSON.stringify(initialWizardState)),
+      transactions: prev.transactions
+    }))
+  }
 
   const STEP_COUNT = 4
   const nextStep = () =>
@@ -178,8 +192,10 @@ const useCachedFactory = (version: string) => {
 }
 
 export default () => {
-  const cachedFactory = useCachedFactory(version)
-  const { networkId, library, active } = useWeb3Context()
+  const { chainId: urlChainId } = useParams()
+  const factoryChainId = Number(urlChainId)
+  const cachedFactory = useCachedFactory(version, factoryChainId)
+  const { library, active } = useWeb3Context()
   const [previousDeployments, setPreviousDeployments] = useState([])
   const {
     tcrState: { currStep, transactions },
@@ -212,7 +228,7 @@ export default () => {
       if (!library || !active || !factoryInterface) return
 
       const deploymentTxHashes = Object.keys(transactions)
-        .filter(txHash => !transactions[txHash].networkId !== networkId)
+        .filter(txHash => !transactions[txHash].networkId !== factoryChainId)
         .filter(txHash => !transactions[txHash].isConnectedTCR)
 
       const txDatas = await Promise.all(
@@ -226,7 +242,7 @@ export default () => {
         )
       )
     })()
-  }, [active, factoryInterface, library, networkId, transactions])
+  }, [active, factoryInterface, library, factoryChainId, transactions])
 
   return (
     <>
@@ -241,7 +257,7 @@ export default () => {
           <Step title="Deploy" />
         </Steps>
         <StyledContainer>
-          <CurrentStep postSubmit={() => nextStep()} {...cachedFactory} />
+          <CurrentStep key={factoryChainId} postSubmit={() => nextStep()} {...cachedFactory} />
         </StyledContainer>
         <StyledStepper>
           <Button onClick={showConfirmReset} icon="trash-alt">
