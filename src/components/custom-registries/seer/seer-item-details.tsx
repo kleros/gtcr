@@ -15,7 +15,7 @@ interface MarketDetails {
 }
 
 const Container = styled.div`
-  font-family: 'Arial';
+  font-family: 'Roboto', sans-serif;
   max-width: 600px;
   margin: 16px auto;
   padding: 20px;

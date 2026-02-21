@@ -1,0 +1,52 @@
+import React from 'react'
+import DisplaySelector from './display-selector'
+import { ItemTypes } from '@kleros/gtcr-encoder'
+import { Button } from 'components/ui'
+import useNavigateAndScrollTop from 'hooks/navigate-and-scroll-top'
+import { StyledItemCol } from './light-tcr-card-content'
+import { Container } from './light-item-card-content'
+
+interface ItemCardContentProps {
+  item: any
+  chainId: string | number
+  tcrAddress: string
+}
+
+const ItemCardContent = ({ item, chainId, tcrAddress }: ItemCardContentProps) => {
+  const navigateAndScrollTop = useNavigateAndScrollTop()
+
+  return (
+    <Container>
+      <div>
+        {item.columns
+          .filter(
+            col =>
+              col.isIdentifier ||
+              col.type === ItemTypes.IMAGE ||
+              col.type === ItemTypes.FILE
+          )
+          .map((column, j) => (
+            <StyledItemCol key={j}>
+              <DisplaySelector
+                type={column.type}
+                value={column.value}
+                allowedFileTypes={column.allowedFileTypes}
+                truncateLinks
+              />
+            </StyledItemCol>
+          ))}
+      </div>
+      <Button
+        onClick={() =>
+          navigateAndScrollTop(
+            `/tcr/${chainId}/${tcrAddress}/${item.tcrData.ID}`
+          )
+        }
+      >
+        Details
+      </Button>
+    </Container>
+  )
+}
+
+export default ItemCardContent

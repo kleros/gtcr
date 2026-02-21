@@ -9,7 +9,7 @@ interface ISeerCardContent {
 }
 
 const Container = styled.div`
-  font-family: 'Arial';
+  font-family: 'Roboto', sans-serif;
   max-width: 300px;
   margin: 16px auto;
   padding: 10px;
@@ -23,7 +23,7 @@ const Container = styled.div`
 const SeerLink = styled.a`
   color: ${({ theme }) => theme.seerLinkColor};
   text-decoration: none;
-  font-weight: bold;
+  font-weight: 500;
   font-size: 14px;
 
   &:hover,
@@ -32,15 +32,17 @@ const SeerLink = styled.a`
   }
 `
 
-const MarketName = styled.h3`
+const MarketName = styled.div`
   margin: 0 0 12px;
   font-size: 1.2em;
+  font-weight: 400;
   color: ${({ theme }) => theme.seerTextPrimary};
 `
 
-const OutcomesHeading = styled.h4`
+const OutcomesHeading = styled.div`
   margin: 0 0 12px;
   font-size: 0.9em;
+  font-weight: 500;
   color: ${({ theme }) => theme.seerTextSecondary};
 `
 

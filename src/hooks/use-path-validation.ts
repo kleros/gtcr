@@ -1,39 +1,21 @@
 import { useEffect, useState } from 'react'
-import { useHistory } from 'react-router'
+import { useNavigate, useLocation } from 'react-router-dom'
+import { request } from 'graphql-request'
 import { TCR_EXISTENCE_TEST } from 'utils/graphql'
-import { ApolloClient, InMemoryCache } from '@apollo/client'
-import { HttpLink } from '@apollo/client/link/http'
-import { useWeb3Context } from 'web3-react'
-import { SAVED_NETWORK_KEY } from 'utils/string'
 import { DEFAULT_NETWORK } from 'config/networks'
 import { defaultTcrAddresses, subgraphUrl } from 'config/tcr-addresses'
 
 const usePathValidation = () => {
-  const history = useHistory()
-  const { networkId, account } = useWeb3Context()
+  const navigate = useNavigate()
+  const location = useLocation()
 
   const [pathResolved, setPathResolved] = useState<boolean>(false)
   const [invalidTcrAddr, setInvalidTcrAddr] = useState<boolean>(false)
 
   useEffect(() => {
-    if (networkId === undefined) return
-    if (account) return // their provider will prompt to change it
-    const pathname = history.location.pathname
-    const newPathRegex = /\/tcr\/(\d+)\/0x/
-    if (!newPathRegex.test(pathname)) return // let it redirect to new path first
-    const matches = pathname.match(newPathRegex)
-    const chainId = matches ? matches[1] : DEFAULT_NETWORK
-    const pathChainId = Number(chainId)
-    if (networkId !== pathChainId) {
-      localStorage.setItem(SAVED_NETWORK_KEY, pathChainId.toString())
-      window.location.reload()
-    }
-  }, [history.location.pathname, networkId, account])
-
-  useEffect(() => {
     const checkPathValidation = async () => {
-      const pathname = history.location.pathname
-      const search = history.location.search
+      const pathname = location.pathname
+      const search = location.search
       const isOldPath = /\/tcr\/0x/.test(pathname)
 
       if (isOldPath) {
@@ -50,18 +32,11 @@ const usePathValidation = () => {
         if (tcrIndex >= 0) chainId = Number(CHAIN_IDS[tcrIndex])
         else {
           const queryResults = await Promise.all(
-            Object.values(subgraphUrl).map(subgraph => {
-              const client = new ApolloClient({
-                link: new HttpLink({ uri: subgraph as string }),
-                cache: new InMemoryCache()
-              })
-              return client.query({
-                query: TCR_EXISTENCE_TEST,
-                variables: {
-                  tcrAddress
-                }
-              })
-            })
+            Object.values(subgraphUrl).map(subgraph =>
+              request(subgraph as string, TCR_EXISTENCE_TEST, { tcrAddress })
+                .then(data => ({ data }))
+                .catch(() => ({ data: { lregistry: null, registry: null } }))
+            )
           )
           const validIndex = queryResults.findIndex(
             ({ data: { lregistry, registry } }) =>
@@ -73,13 +48,13 @@ const usePathValidation = () => {
 
         if (chainId) {
           const newPathname = pathname.replace('/tcr/', `/tcr/${chainId}/`)
-          history.push({ pathname: newPathname, search })
+          navigate({ pathname: newPathname, search })
         } else setInvalidTcrAddr(true)
       }
       setPathResolved(true)
     }
     checkPathValidation()
-  }, [history, setPathResolved])
+  }, [navigate, location, setPathResolved])
 
   return [pathResolved, invalidTcrAddr]
 }

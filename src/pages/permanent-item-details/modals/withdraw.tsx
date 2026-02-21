@@ -1,13 +1,16 @@
-import React, { useContext, useState } from 'react'
-import { Modal, Typography, Button, Alert } from 'antd'
+import React, { useState } from 'react'
+import { Modal, Typography, Button, Alert } from 'components/ui'
 import styled from 'styled-components'
-import { ethers } from 'ethers'
+import { useAccount, usePublicClient, useWalletClient } from 'wagmi'
+import { simulateContract } from '@wagmi/core'
 import _gtcr from 'assets/abis/PermanentGTCR.json'
-import { WalletContext } from 'contexts/wallet-context'
 import humanizeDuration from 'humanize-duration'
+import EnsureAuth from 'components/ensure-auth'
+import { wrapWithToast } from 'utils/wrapWithToast'
+import { wagmiConfig } from 'config/wagmi'
 
 export const StyledModal: any = styled(Modal)`
-  & > .ant-modal-content {
+  & > .ui-modal-content {
     border-top-left-radius: 14px;
     border-top-right-radius: 14px;
   }
@@ -33,7 +36,9 @@ const WithdrawModal: React.FC<WithdrawModalProps> = ({
   registry,
   itemName
 }) => {
-  const { pushWeb3Action } = useContext(WalletContext)
+  const { address: account } = useAccount()
+  const publicClient = usePublicClient()
+  const { data: walletClient } = useWalletClient()
   const [loading, setLoading] = useState(false)
 
   const handleStartWithdraw = async () => {
@@ -41,17 +46,23 @@ const WithdrawModal: React.FC<WithdrawModalProps> = ({
 
     setLoading(true)
 
-    const executeWithdraw = async (_: any, signer: any) => {
-      const gtcr = new ethers.Contract(registry.id, _gtcr, signer)
-      return {
-        tx: await gtcr.startWithdrawItem(item.itemID),
-        actionMessage: 'Starting withdrawal'
-      }
-    }
-
     try {
-      await pushWeb3Action(executeWithdraw)
-      onCancel() // Close modal on success
+      const { request } = await simulateContract(wagmiConfig, {
+        address: registry.id,
+        abi: _gtcr,
+        functionName: 'startWithdrawItem',
+        args: [item.itemID],
+        account
+      })
+
+      const result = await wrapWithToast(
+        () => walletClient.writeContract(request),
+        publicClient
+      )
+
+      if (result.status) {
+        onCancel()
+      }
     } catch (err) {
       console.error('Withdrawal failed:', err)
     } finally {
@@ -99,9 +110,11 @@ const WithdrawModal: React.FC<WithdrawModalProps> = ({
         >
           Back
         </Button>
-        <Button type="primary" onClick={handleStartWithdraw} loading={loading}>
-          Start Withdraw
-        </Button>
+        <EnsureAuth>
+          <Button type="primary" onClick={handleStartWithdraw} loading={loading}>
+            Start Withdraw
+          </Button>
+        </EnsureAuth>
       </div>
     </StyledModal>
   )

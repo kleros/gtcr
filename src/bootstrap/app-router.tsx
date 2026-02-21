@@ -1,106 +1,62 @@
-import React, { useEffect, useMemo } from 'react'
-import { Route, Switch, Redirect } from 'react-router-dom'
-import { ApolloProvider } from '@apollo/client'
-import { useWeb3Context, Connectors } from 'web3-react'
-import loadable from '@loadable/component'
+import React, { Suspense, lazy, useMemo } from 'react'
+import { Route, Routes, Navigate, useLocation } from 'react-router-dom'
+import { useWeb3Context } from 'hooks/useWeb3Context'
 import ErrorPage from 'pages/error-page'
-import NoWeb3Detected from 'pages/no-web3'
 import Loading from 'components/loading'
-import connectors from 'config/connectors'
 import { DEFAULT_NETWORK } from 'config/networks'
-import { hexlify } from 'utils/string'
 import usePathValidation from 'hooks/use-path-validation'
-import useGraphQLClient from 'hooks/use-graphql-client'
-import { Web3ContextCurate } from 'types/web3-context'
 import { defaultTcrAddresses, validChains } from 'config/tcr-addresses'
+import { SAVED_NETWORK_KEY } from 'utils/string'
 
-const { Connector } = Connectors
+/** Redirect "/" to the last-used chain (or wallet chain, or default). */
+const HomeRedirect = ({ networkId }: { networkId: number }) => {
+  const saved = localStorage.getItem(SAVED_NETWORK_KEY)
+  const chainId = saved ? Number(saved) : networkId || DEFAULT_NETWORK
+  const addr = defaultTcrAddresses[chainId as validChains]
+  return <Navigate to={`/tcr/${chainId}/${addr}`} replace />
+}
 
-const ItemsRouter = loadable(
-  () => import(/* webpackPrefetch: true */ 'pages/items-router'),
-  { fallback: <Loading /> }
-)
-
-const ItemDetailsRouter = loadable(
-  () => import(/* webpackPrefetch: true */ 'pages/item-details-router'),
-  { fallback: <Loading /> }
-)
-
-const Factory = loadable(
-  () => import(/* webpackPrefetch: true */ 'pages/factory/index'),
-  { fallback: <Loading /> }
-)
-
-const ClassicFactory = loadable(
-  () => import(/* webpackPrefetch: true */ 'pages/factory-classic/index'),
-  { fallback: <Loading /> }
-)
-
-const PermanentFactory = loadable(
-  () => import(/* webpackPrefetch: true */ 'pages/factory-permanent/index'),
-  { fallback: <Loading /> }
-)
+const ItemsRouter = lazy(() => import('pages/items-router'))
+const ItemDetailsRouter = lazy(() => import('pages/item-details-router'))
+const Factory = lazy(() => import('pages/factory/index'))
+const ClassicFactory = lazy(() => import('pages/factory-classic/index'))
+const PermanentFactory = lazy(() => import('pages/factory-permanent/index'))
 
 const AppRouter = () => {
-  const { networkId, error }: Web3ContextCurate = useWeb3Context()
-  const isUnsupported = useMemo(
-    () => error?.code === Connector.errorCodes.UNSUPPORTED_NETWORK,
-    [error]
-  )
-  const tcrAddress = defaultTcrAddresses[networkId as validChains]
+  const { networkId } = useWeb3Context()
+  const location = useLocation()
+
+  // Parse chainId from the URL — the source of truth for data fetching
+  const urlChainId = useMemo(() => {
+    const match = location.pathname.match(/\/tcr\/(\d+)\//)
+    return match ? Number(match[1]) : null
+  }, [location.pathname])
+
+  const activeChainId = urlChainId || networkId || DEFAULT_NETWORK
+  const tcrAddress = defaultTcrAddresses[activeChainId as validChains]
   const [pathResolved, invalidTcrAddr] = usePathValidation()
-  const client = useGraphQLClient(networkId)
 
-  useEffect(() => {
-    if (isUnsupported && window.ethereum) {
-      const chainIdTokens = window.location.pathname.match(/\/tcr\/(\d+)\//)
-      const chainId = hexlify(
-        chainIdTokens && chainIdTokens?.length > 1
-          ? chainIdTokens[1]
-          : DEFAULT_NETWORK
-      )
-
-      window.ethereum.request({
-        method: 'wallet_switchEthereumChain',
-        params: [{ chainId }]
-      })
-    }
-  }, [isUnsupported])
-
-  if (Object.entries(connectors).length === 0) return <NoWeb3Detected />
-
-  if (isUnsupported && error)
-    return (
-      <ErrorPage
-        code={' '}
-        title={error.code as string}
-        message={error.message}
-        tip={
-          <>
-            <p>Switching network to supported one</p>
-            <Loading />
-          </>
-        }
-      />
-    )
-  else if (!networkId || !pathResolved) return <Loading />
-  else if (invalidTcrAddr || !client) return <ErrorPage />
+  if (!pathResolved) return <Loading />
+  if (invalidTcrAddr) return <ErrorPage />
 
   return (
-    <ApolloProvider client={client}>
-      <Switch>
+    <Suspense fallback={<Loading />}>
+      <Routes>
         <Route
           path="/tcr/:chainId/:tcrAddress/:itemID"
-          component={ItemDetailsRouter}
+          element={<ItemDetailsRouter />}
         />
-        <Route path="/tcr/:chainId/:tcrAddress" component={ItemsRouter} />
-        <Route path="/factory" exact component={Factory} />
-        <Route path="/factory-classic" exact component={ClassicFactory} />
-        <Route path="/factory-permanent" exact component={PermanentFactory} />
-        <Redirect from="/" exact to={`/tcr/${networkId}/${tcrAddress}`} />
-        <Route path="*" exact component={ErrorPage} />
-      </Switch>
-    </ApolloProvider>
+        <Route path="/tcr/:chainId/:tcrAddress" element={<ItemsRouter />} />
+        <Route path="/factory" element={<Factory />} />
+        <Route path="/factory-classic" element={<ClassicFactory />} />
+        <Route path="/factory-permanent" element={<PermanentFactory />} />
+        <Route
+          path="/"
+          element={<HomeRedirect networkId={networkId} />}
+        />
+        <Route path="*" element={<ErrorPage />} />
+      </Routes>
+    </Suspense>
   )
 }
 

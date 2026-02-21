@@ -1,14 +1,13 @@
 import React from 'react'
 import styled from 'styled-components'
-import { Skeleton } from 'antd'
-import { ethers } from 'ethers'
-import { BigNumberish } from 'ethers/utils'
+import { Skeleton } from 'components/ui'
+import { ethers, BigNumberish } from 'ethers'
 
 const SkeletonTitleProps = { width: 30 }
 const StyledSkeleton = styled(Skeleton)`
   display: inline;
 
-  .ant-skeleton-title {
+  .ui-skeleton-title {
     margin: -3px 0;
   }
 `
@@ -17,7 +16,7 @@ const ETHAmount: React.FC<{
   decimals: number
   displayUnit: string
 }> = ({ amount, decimals, displayUnit }) => {
-  if (amount === null)
+  if (amount == null)
     return (
       <StyledSkeleton active paragraph={false} title={SkeletonTitleProps} />
     )

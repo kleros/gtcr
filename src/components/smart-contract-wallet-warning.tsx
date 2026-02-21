@@ -1,12 +1,12 @@
 import React, { useCallback, useEffect, useState } from 'react'
-import { Alert } from 'antd'
+import { Alert } from 'components/ui'
 import styled from 'styled-components'
-import { useWeb3Context } from 'web3-react'
+import { useWeb3Context } from 'hooks/useWeb3Context'
 
 const StyledAlert = styled(Alert)`
   text-align: center;
 
-  .ant-alert-message {
+  .ui-alert-message {
     font-weight: bold;
   }
 `
@@ -37,10 +37,10 @@ export default function SmartContractWalletWarning() {
 
   const checkIfSmartContractWallet = useCallback(
     (account: string, library: any) => {
-      library.provider
-        .send('eth_getCode', [account, 'latest'])
-        .then((res: { result: string }) => {
-          const formattedCode = res.result.toLowerCase()
+      library
+        .getCode(account)
+        .then((code: string) => {
+          const formattedCode = code.toLowerCase()
           const isEip7702Eoa = formattedCode.startsWith(EIP7702_PREFIX)
 
           // Do not show warning for EIP-7702 EOAs

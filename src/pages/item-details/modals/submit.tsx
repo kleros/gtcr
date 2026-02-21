@@ -1,21 +1,27 @@
 import React, { useContext, useCallback, useState } from 'react'
-import { Button, Form, Tooltip, Icon, Typography, Descriptions } from 'antd'
+import { Button, Form, Tooltip, Typography, Descriptions } from 'components/ui'
+import Icon from 'components/ui/Icon'
 import { abi as _gtcr } from '@kleros/tcr/build/contracts/GeneralizedTCR.json'
-import { ethers } from 'ethers'
+import { useAccount, usePublicClient, useWalletClient, useChainId } from 'wagmi'
+import { simulateContract } from '@wagmi/core'
+import { getAddress, keccak256, toHex } from 'viem'
 import { withFormik } from 'formik'
 import humanizeDuration from 'humanize-duration'
-import { WalletContext } from 'contexts/wallet-context'
 import { gtcrEncode, ItemTypes, typeDefaultValues } from '@kleros/gtcr-encoder'
 import InputSelector from 'components/input-selector'
+import EnsureAuth from 'components/ensure-auth'
 import ETHAmount from 'components/eth-amount'
 import useFactory from 'hooks/factory'
 import { TourContext } from 'contexts/tour-context'
 import { addPeriod, capitalizeFirstLetter, getArticleFor } from 'utils/string'
 import useNativeCurrency from 'hooks/native-currency'
 import { parseIpfs } from 'utils/ipfs-parse'
+import { wrapWithToast } from 'utils/wrapWithToast'
+import { wagmiConfig } from 'config/wagmi'
 import {
   SUBMISSION_FORM_ID,
   StyledParagraph,
+  StyledListingCriteria,
   StyledModal
 } from 'pages/light-item-details/modals/submit'
 import { StyledSpin } from 'pages/light-item-details/modals/challenge'
@@ -157,7 +163,10 @@ const SubmitModal: React.FC<{
     challengePeriodDuration
   } = props
   const nativeCurrency = useNativeCurrency()
-  const { pushWeb3Action } = useContext(WalletContext)
+  const { address: account } = useAccount()
+  const chainId = useChainId()
+  const publicClient = usePublicClient()
+  const { data: walletClient } = useWalletClient()
   const { setUserSubscribed } = useContext(TourContext)
   const {
     deployedWithFactory,
@@ -181,57 +190,40 @@ const SubmitModal: React.FC<{
   }
 
   const postSubmit = useCallback(
-    (values, columns, resetForm) => {
-      pushWeb3Action(
-        async ({ account, networkId, library }: any, signer: any) => {
-          const gtcr = new ethers.Contract(tcrAddress, _gtcr, signer)
-          const encodedParams = gtcrEncode({ columns, values })
+    async (values: any, columns: any, resetForm: any) => {
+      try {
+        const encodedParams = gtcrEncode({ columns, values })
 
-          // Compute gas cost. We do this because metamask (apparently)
-          // has a ceiling gas limit which, if exceeded throws an error.
-          const gtcrInterface = new ethers.utils.Interface(_gtcr)
-          const data = gtcrInterface.functions.addItem.encode([encodedParams])
-          const txObj = {
-            to: gtcr.address,
-            value: submissionDeposit,
-            data
-          }
-          let gasLimit
-          try {
-            ;(await library.estimateGas(txObj)).toNumber()
-            // eslint-disable-next-line no-unused-vars
-          } catch (err) {
-            console.warn(
-              'Gas estimation failed. Falling back to manual gas limit.'
-            )
-            gasLimit = 673909
-          }
+        const { request } = await simulateContract(wagmiConfig, {
+          address: tcrAddress as `0x${string}`,
+          abi: _gtcr,
+          functionName: 'addItem',
+          args: [encodedParams],
+          value: BigInt(submissionDeposit.toString()),
+          account
+        })
 
-          // Request signature and submit.
-          const tx = await gtcr.addItem(encodedParams, {
-            value: submissionDeposit,
-            gasLimit
-          })
+        const result = await wrapWithToast(
+          () => walletClient!.writeContract(request),
+          publicClient!
+        )
 
-          onCancel() // Hide the submission modal.
+        if (result.status) {
+          onCancel()
           resetForm({})
 
-          // Subscribe for notifications
-          if (process.env.REACT_APP_NOTIFICATIONS_API_URL && !!networkId) {
-            const itemID = ethers.utils.solidityKeccak256(
-              ['bytes'],
-              [encodedParams]
-            )
+          if (process.env.REACT_APP_NOTIFICATIONS_API_URL && !!chainId) {
+            const itemID = keccak256(encodedParams as `0x${string}`)
             fetch(
-              `${process.env.REACT_APP_NOTIFICATIONS_API_URL}/${networkId}/api/subscribe`,
+              `${process.env.REACT_APP_NOTIFICATIONS_API_URL}/${chainId}/api/subscribe`,
               {
                 method: 'post',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                  subscriberAddr: ethers.utils.getAddress(account),
-                  tcrAddr: ethers.utils.getAddress(tcrAddress),
+                  subscriberAddr: getAddress(account!),
+                  tcrAddr: getAddress(tcrAddress as `0x${string}`),
                   itemID,
-                  networkID: networkId
+                  networkID: chainId
                 })
               }
             )
@@ -240,21 +232,20 @@ const SubmitModal: React.FC<{
                 console.error('Failed to subscribe for notifications.', err)
               })
           }
-          return {
-            tx,
-            actionMessage: `Submitting ${(itemName && itemName.toLowerCase()) ||
-              'item'}`
-          }
         }
-      )
+      } catch (err) {
+        console.error('Error submitting item:', err)
+      }
     },
     [
-      itemName,
+      account,
+      chainId,
       onCancel,
-      pushWeb3Action,
+      publicClient,
       setUserSubscribed,
       submissionDeposit,
-      tcrAddress
+      tcrAddress,
+      walletClient
     ]
   )
 
@@ -283,15 +274,17 @@ const SubmitModal: React.FC<{
         <Button key="back" onClick={onCancel}>
           Back
         </Button>,
-        <Button
-          key="challengeSubmit"
-          type="primary"
-          form={SUBMISSION_FORM_ID}
-          htmlType="submit"
-          loading={loadingCounter > 0}
-        >
-          Submit
-        </Button>
+        <EnsureAuth key="ensure-auth">
+          <Button
+            key="challengeSubmit"
+            type="primary"
+            form={SUBMISSION_FORM_ID}
+            htmlType="submit"
+            loading={loadingCounter > 0}
+          >
+            Submit
+          </Button>
+        </EnsureAuth>
       ]}
       {...props}
     >
@@ -313,7 +306,7 @@ const SubmitModal: React.FC<{
         setFileToUpload={setFileToUpload}
         setFileAsUploaded={setFileAsUploaded}
       />
-      <Typography.Paragraph>
+      <StyledListingCriteria>
         Make sure your submission complies with the{' '}
         <a
           href={parseIpfs(fileURI || '')}
@@ -323,7 +316,7 @@ const SubmitModal: React.FC<{
           listing criteria
         </a>{' '}
         to avoid challenges.
-      </Typography.Paragraph>
+      </StyledListingCriteria>
       <StyledAlert
         message={`Note that this is a deposit, not a fee and it will be reimbursed if your submission is accepted. ${challengePeriodDuration &&
           `The challenge period lasts ${humanizeDuration(
@@ -335,6 +328,7 @@ const SubmitModal: React.FC<{
       <Descriptions
         bordered
         column={{ xxl: 4, xl: 3, lg: 3, md: 3, sm: 2, xs: 1 }}
+        style={{ marginTop: 4 }}
       >
         <Descriptions.Item
           label={

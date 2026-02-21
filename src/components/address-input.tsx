@@ -1,6 +1,6 @@
 import React from 'react'
 import styled from 'styled-components'
-import { Form, Input } from 'antd'
+import { Form, Input } from 'components/ui'
 import { Field } from 'formik'
 import { namespaces } from 'utils/rich-address'
 

@@ -4,18 +4,20 @@ import {
   Button,
   Form,
   Tooltip,
-  Icon,
   Typography,
   Descriptions
-} from 'antd'
+} from 'components/ui'
+import Icon from 'components/ui/Icon'
 import styled from 'styled-components'
 import _gtcr from 'assets/abis/LightGeneralizedTCR.json'
-import { ethers } from 'ethers'
+import { useAccount, usePublicClient, useWalletClient, useChainId } from 'wagmi'
+import { simulateContract } from '@wagmi/core'
+import { getAddress, keccak256, encodePacked } from 'viem'
 import { withFormik } from 'formik'
 import humanizeDuration from 'humanize-duration'
-import { WalletContext } from 'contexts/wallet-context'
 import { ItemTypes, typeDefaultValues } from '@kleros/gtcr-encoder'
 import InputSelector from 'components/input-selector'
+import EnsureAuth from 'components/ensure-auth'
 import ETHAmount from 'components/eth-amount'
 import useFactory from 'hooks/factory'
 import { TourContext } from 'contexts/tour-context'
@@ -24,20 +26,25 @@ import { parseIpfs } from 'utils/ipfs-parse'
 import { IPFSResultObject, getIPFSPath } from 'utils/get-ipfs-path'
 import ipfsPublish from 'utils/ipfs-publish'
 import useNativeCurrency from 'hooks/native-currency'
+import { wrapWithToast } from 'utils/wrapWithToast'
+import { wagmiConfig } from 'config/wagmi'
 import { Column } from 'pages/item-details/modals/submit'
 import { StyledSpin } from './challenge'
 import { StyledAlert } from './remove'
 
-export const StyledModal = styled(Modal)`
-  text-transform: capitalize;
-  & > .ant-modal-content {
-    border-top-left-radius: 14px;
-    border-top-right-radius: 14px;
-  }
-`
+export const StyledModal = styled(Modal)``
 
 export const StyledParagraph = styled(Typography.Paragraph)`
-  text-transform: none;
+  font-size: 14px;
+  line-height: 1.6;
+`
+
+export const StyledListingCriteria = styled(Typography.Paragraph)`
+  font-size: 13px;
+  line-height: 1.6;
+  color: ${({ theme }) => theme.textSecondary};
+  margin-top: 4px;
+  margin-bottom: 16px;
 `
 
 export const SUBMISSION_FORM_ID = 'submitItemForm'
@@ -171,7 +178,10 @@ const SubmitModal: React.FC<{
     challengePeriodDuration
   } = props
   const nativeCurrency = useNativeCurrency()
-  const { pushWeb3Action } = useContext(WalletContext)
+  const { address: account } = useAccount()
+  const chainId = useChainId()
+  const publicClient = usePublicClient()
+  const { data: walletClient } = useWalletClient()
   const { setUserSubscribed } = useContext(TourContext)
   const {
     deployedWithFactory,
@@ -183,60 +193,68 @@ const SubmitModal: React.FC<{
   const { itemName, columns, tcrTitle } = metadata || {}
 
   const postSubmit = useCallback(
-    (values, columns, resetForm) => {
-      pushWeb3Action(async ({ account, networkId }: any, signer: any) => {
-        const gtcr = new ethers.Contract(tcrAddress, _gtcr, signer)
+    async (values: any, columns: any, resetForm: any) => {
+      try {
         const enc = new TextEncoder()
         const fileData = enc.encode(JSON.stringify({ columns, values }))
         const ipfsEvidencePath = getIPFSPath(
           (await ipfsPublish('item.json', fileData)) as IPFSResultObject
         )
 
-        // Request signature and submit.
-        const tx = await gtcr.addItem(ipfsEvidencePath, {
-          value: submissionDeposit
+        const { request } = await simulateContract(wagmiConfig, {
+          address: tcrAddress as `0x${string}`,
+          abi: _gtcr,
+          functionName: 'addItem',
+          args: [ipfsEvidencePath],
+          value: BigInt(submissionDeposit.toString()),
+          account
         })
 
-        onCancel() // Hide the submission modal.
-        resetForm({})
-        // Subscribe for notifications
-        if (process.env.REACT_APP_NOTIFICATIONS_API_URL && !!networkId) {
-          const itemID = ethers.utils.solidityKeccak256(
-            ['string'],
-            [ipfsEvidencePath]
-          )
-          fetch(
-            `${process.env.REACT_APP_NOTIFICATIONS_API_URL}/${networkId}/api/subscribe`,
-            {
-              method: 'post',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                subscriberAddr: ethers.utils.getAddress(account),
-                tcrAddr: ethers.utils.getAddress(tcrAddress),
-                itemID,
-                networkID: networkId
+        const result = await wrapWithToast(
+          () => walletClient!.writeContract(request),
+          publicClient!
+        )
+
+        if (result.status) {
+          onCancel()
+          resetForm({})
+          // Subscribe for notifications
+          if (process.env.REACT_APP_NOTIFICATIONS_API_URL && !!chainId) {
+            const itemID = keccak256(
+              encodePacked(['string'], [ipfsEvidencePath])
+            )
+            fetch(
+              `${process.env.REACT_APP_NOTIFICATIONS_API_URL}/${chainId}/api/subscribe`,
+              {
+                method: 'post',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  subscriberAddr: getAddress(account!),
+                  tcrAddr: getAddress(tcrAddress as `0x${string}`),
+                  itemID,
+                  networkID: chainId
+                })
+              }
+            )
+              .then(() => setUserSubscribed(true))
+              .catch(err => {
+                console.error('Failed to subscribe for notifications.', err)
               })
-            }
-          )
-            .then(() => setUserSubscribed(true))
-            .catch(err => {
-              console.error('Failed to subscribe for notifications.', err)
-            })
+          }
         }
-        return {
-          tx,
-          actionMessage: `Submitting ${(itemName && itemName.toLowerCase()) ||
-            'item'}`
-        }
-      })
+      } catch (err) {
+        console.error('Error submitting item:', err)
+      }
     },
     [
-      itemName,
+      account,
+      chainId,
       onCancel,
-      pushWeb3Action,
+      publicClient,
       setUserSubscribed,
       submissionDeposit,
-      tcrAddress
+      tcrAddress,
+      walletClient
     ]
   )
 
@@ -277,15 +295,17 @@ const SubmitModal: React.FC<{
         <Button key="back" onClick={onCancel}>
           Back
         </Button>,
-        <Button
-          key="challengeSubmit"
-          type="primary"
-          form={SUBMISSION_FORM_ID}
-          htmlType="submit"
-          loading={loadingCounter > 0}
-        >
-          Submit
-        </Button>
+        <EnsureAuth key="ensure-auth">
+          <Button
+            key="challengeSubmit"
+            type="primary"
+            form={SUBMISSION_FORM_ID}
+            htmlType="submit"
+            loading={loadingCounter > 0}
+          >
+            Submit
+          </Button>
+        </EnsureAuth>
       ]}
       {...props}
     >
@@ -307,7 +327,7 @@ const SubmitModal: React.FC<{
         setFileToUpload={setFileToUpload}
         setFileAsUploaded={setFileAsUploaded}
       />
-      <Typography.Paragraph>
+      <StyledListingCriteria>
         Make sure your submission complies with the{' '}
         <a
           href={parseIpfs(fileURI || '')}
@@ -317,7 +337,7 @@ const SubmitModal: React.FC<{
           listing criteria
         </a>{' '}
         to avoid challenges.
-      </Typography.Paragraph>
+      </StyledListingCriteria>
       <StyledAlert
         message={`Note that this is a deposit, not a fee and it will be reimbursed if your submission is accepted. ${challengePeriodDuration &&
           `The challenge period lasts ${humanizeDuration(
@@ -329,6 +349,7 @@ const SubmitModal: React.FC<{
       <Descriptions
         bordered
         column={{ xxl: 4, xl: 3, lg: 3, md: 3, sm: 2, xs: 1 }}
+        style={{ marginTop: 4 }}
       >
         <Descriptions.Item
           label={
