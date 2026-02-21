@@ -54,7 +54,7 @@ export async function wrapWithToast(
     })
 }
 
-export async function catchShortMessage(promise: Promise<any>) {
+export async function catchShortMessage(promise: Promise<unknown>) {
   return await promise.catch(error =>
     toast.error(parseWagmiError(error), ERROR_OPTIONS)
   )

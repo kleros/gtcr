@@ -1,4 +1,5 @@
 import React from 'react'
+import { ethers } from 'ethers'
 import { STATUS_CODE, getActionLabel } from 'utils/item-status'
 import RemoveModal from './modals/remove'
 import ChallengeModal from './modals/challenge'
@@ -12,14 +13,14 @@ interface ItemActionModalProps {
   itemName: string
   onClose: () => void
   fileURI: string
-  item: any
+  item: SubgraphItem
   isConnectedTCR?: boolean
-  submissionDeposit?: any
-  challengePeriodDuration?: any
+  submissionDeposit?: BigNumber | undefined
+  challengePeriodDuration?: BigNumber | undefined
   tcrAddress?: string
-  metaEvidence?: any
-  gtcrView?: any
-  appealCost?: any
+  metaEvidence?: MetaEvidence | undefined
+  gtcrView?: ethers.Contract | undefined
+  appealCost?: BigNumber | undefined
 }
 
 const ItemActionModal = ({

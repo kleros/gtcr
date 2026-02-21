@@ -8,7 +8,7 @@ const mirroredExtensions = ['.json']
  * @param {ArrayBuffer} data - The raw data from the file to upload.
  * @returns {object} ipfs response. Should include the hash and path of the stored item.
  */
-export default async function ipfsPublish(fileName: string, data: Blob | ArrayBuffer): Promise<any> {
+export default async function ipfsPublish(fileName: string, data: Blob | ArrayBuffer): Promise<IpfsPublishResult> {
   const isBlob = data instanceof Blob
   const blobFile = isBlob
     ? data

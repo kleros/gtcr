@@ -22,10 +22,10 @@ import {
 } from 'pages/light-item-details/modals/challenge'
 
 interface RemoveModalProps {
-  item: any
+  item: SubgraphItem
   itemName?: string
   fileURI?: string
-  [key: string]: any
+  [key: string]: unknown
 }
 
 const RemoveModal = ({ item, itemName = 'item', fileURI, ...rest }: RemoveModalProps) => {

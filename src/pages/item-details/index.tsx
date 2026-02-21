@@ -44,13 +44,13 @@ interface ItemDetailsProps {
 const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
   const { tcrAddress, chainId } = useParams()
   const library = useEthersProvider({ chainId: chainId ? Number(chainId) : undefined })
-  const [itemMetaEvidence, setItemMetaEvidence] = useState<any>()
+  const [itemMetaEvidence, setItemMetaEvidence] = useState<MetaEvidence | undefined>()
   const { timestamp } = useContext(WalletContext)
-  const [decodedItem, setDecodedItem] = useState<any>()
-  const [metaEvidence, setMetaEvidence] = useState<any>()
-  const [modalOpen, setModalOpen] = useState<any>()
+  const [decodedItem, setDecodedItem] = useState<unknown[] | undefined>()
+  const [metaEvidence, setMetaEvidence] = useState<MetaEvidence | undefined>()
+  const [modalOpen, setModalOpen] = useState<boolean | undefined>()
   const { tcrError, connectedTCRAddr } = useContext(TCRViewContext)
-  const [appealCost, setAppealCost] = useState<any>()
+  const [appealCost, setAppealCost] = useState<BigNumber | undefined>()
 
   // subgraph item entities have id "<itemID>@<listaddress>"
   const compoundId = `${itemID}@${tcrAddress.toLowerCase()}`

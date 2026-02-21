@@ -99,8 +99,8 @@ const ImageWithLoading = ({ src, alt, linkImage }: ImageWithLoadingProps) => {
 const protocolRegex = /:\/\//
 
 interface DisplaySelectorProps {
-  type: any
-  value?: any
+  type: string
+  value?: string | number | boolean
   linkImage?: boolean | null
   allowedFileTypes?: string | null
   truncateLinks?: boolean
@@ -156,4 +156,4 @@ const DisplaySelector = ({
   }
 }
 
-export default DisplaySelector
+export default React.memo(DisplaySelector)

@@ -59,7 +59,7 @@ const StyledSaveButton = styled(Button)`
 
 interface EmailFormProps {
   formID: string
-  handleSubmit: (...args: any[]) => void
+  handleSubmit: (...args: unknown[]) => void
   initialValues?: { email?: string } | null
 }
 

@@ -125,7 +125,7 @@ const StyledItemField = styled.div`
 const MAX_ITEM_COUNT = 5
 
 interface OptionItemProps {
-  item: any
+  item: SubgraphItem
 }
 
 const OptionItem = ({ item }: OptionItemProps) => {
@@ -217,7 +217,7 @@ const OptionItem = ({ item }: OptionItemProps) => {
 
 const LightSearchBar = () => {
   const [inputValue, setInputValue] = useState('')
-  const [data, setData] = useState<any[]>([])
+  const [data, setData] = useState<SubgraphItem[]>([])
   const [writing, setWriting] = useState(false)
   const [focused, setFocused] = useState(false)
   const { tcrAddress } = useContext(LightTCRViewContext)
@@ -225,7 +225,7 @@ const LightSearchBar = () => {
   const client = useMemo(() => getGraphQLClient(chainId), [chainId])
   const containerRef = useRef<HTMLDivElement>(null)
 
-  const [searchVariables, setSearchVariables] = useState<any>(null)
+  const [searchVariables, setSearchVariables] = useState<Record<string, unknown> | null>(null)
 
   const itemSearchQuery = useQuery({
     queryKey: ['itemSearch', searchVariables],

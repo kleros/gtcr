@@ -27,11 +27,11 @@ export const StyledSpin = styled(Spin)`
 export const StyledModal = styled(Modal)``
 
 interface ChallengeModalProps {
-  item: any
+  item: SubgraphItem
   itemName?: string
-  statusCode?: any
+  statusCode?: number
   fileURI?: string
-  [key: string]: any
+  [key: string]: unknown
 }
 
 const ChallengeModal = ({ item, itemName, statusCode, fileURI, ...rest }: ChallengeModalProps) => {

@@ -41,23 +41,23 @@ export const UploadButton: React.FC<{ loading: boolean }> = ({ loading }) => (
 interface InputSelectorProps extends React.HTMLAttributes<HTMLElement> {
   type: string
   name: string
-  values: any
-  error: any
-  setFieldValue: (fieldName: string, two: any) => void
+  values: Record<string, unknown>
+  error: Record<string, string> | undefined
+  setFieldValue: (fieldName: string, value: unknown) => void
   disabled: boolean
   touched: boolean
   maxFileSizeMb?: number
-  label: any
+  label: string
   allowedFileTypes: string
   setFileToUpload: (f: (b: boolean) => void) => void
   setFileAsUploaded: (f: (b: boolean) => void) => void
-  style: any
+  style: React.CSSProperties
 }
 
 const InputSelector: React.FC<InputSelectorProps> = p => {
   const [uploading, setUploading] = useState<boolean>(false)
   const customRequest = useCallback(
-    fieldName => async ({ file, onSuccess, onError }: any) => {
+    fieldName => async ({ file, onSuccess, onError }: { file: File; onSuccess: (body: string, url: string) => void; onError: (err: unknown) => void }) => {
       try {
         const data = await new Response(new Blob([file])).arrayBuffer()
         const fileURI = getIPFSPath(
@@ -144,7 +144,7 @@ const InputSelector: React.FC<InputSelectorProps> = p => {
     case ItemTypes.BOOLEAN:
       return (
         <Field name={name}>
-          {({ field }: any) => (
+          {({ field }: { field: Record<string, unknown> }) => (
             <Form.Item label={label} style={{ display: 'flex' }}>
               <Switch
                 {...field}
@@ -157,7 +157,7 @@ const InputSelector: React.FC<InputSelectorProps> = p => {
     case ItemTypes.LONG_TEXT:
       return (
         <Field name={name}>
-          {({ field }: any) => (
+          {({ field }: { field: Record<string, unknown> }) => (
             <Form.Item label={label}>
               <Input.TextArea autosize={{ minRows: 2 }} {...field} />
             </Form.Item>

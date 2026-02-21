@@ -1,3 +1,4 @@
+import { BigNumber } from 'ethers'
 import { PARTY, SUBGRAPH_RULING, DISPUTE_STATUS } from './status-constants'
 
 export { PARTY, SUBGRAPH_RULING, DISPUTE_STATUS }
@@ -66,9 +67,9 @@ export const getActionLabel = ({ statusCode, itemName = 'item' }: { statusCode: 
   }
 }
 
-export const itemToStatusCode = (item: any, timestamp: any, registry: any): number | undefined => {
+export const itemToStatusCode = (item: SubgraphItem, timestamp: BigNumber, registry: SubgraphRegistry): number | undefined => {
   const { status } = item
-  timestamp = timestamp.toNumber()
+  const ts = timestamp.toNumber()
 
   if (status === CONTRACT_STATUS.ABSENT) {
     // Differentiate between rejected (never made it past submission) and removed (was accepted then taken off)
@@ -80,7 +81,7 @@ export const itemToStatusCode = (item: any, timestamp: any, registry: any): numb
     if (
       includedAt > 0 &&
       submissionPeriod > 0 &&
-      includedAt + submissionPeriod < timestamp
+      includedAt + submissionPeriod < ts
     )
       return STATUS_CODE.REMOVED
     return STATUS_CODE.REJECTED
@@ -92,13 +93,13 @@ export const itemToStatusCode = (item: any, timestamp: any, registry: any): numb
     if (
       Number(item.withdrawingTimestamp) > 0 &&
       Number(item.withdrawingTimestamp) + Number(registry.withdrawingPeriod) <
-        timestamp
+        ts
     )
       return STATUS_CODE.PENDING_WITHDRAWAL
 
   if (status === CONTRACT_STATUS.SUBMITTED) {
     const period = Number(registry.submissionPeriod)
-    return period + Number(item.includedAt) < timestamp
+    return period + Number(item.includedAt) < ts
       ? STATUS_CODE.ACCEPTED
       : STATUS_CODE.PENDING
   }
@@ -106,22 +107,22 @@ export const itemToStatusCode = (item: any, timestamp: any, registry: any): numb
   if (status === CONTRACT_STATUS.REINCLUDED) {
     const period = Number(registry.reinclusionPeriod)
 
-    return period + Number(item.includedAt) < timestamp
+    return period + Number(item.includedAt) < ts
       ? STATUS_CODE.ACCEPTED
       : STATUS_CODE.PENDING
   }
 
   if (status === CONTRACT_STATUS.DISPUTED) {
-    const challenge = item.challenges[0]
+    const challenge = item.challenges![0]
     const round = challenge.rounds[0]
     if (round.rulingTime === '0') return STATUS_CODE.DISPUTED
 
-    if (Number(round.appealPeriodEnd) <= timestamp)
+    if (Number(round.appealPeriodEnd) <= ts)
       return STATUS_CODE.WAITING_ARBITRATOR
 
     const appealHalfTime =
       (Number(round.appealPeriodEnd) + Number(round.appealPeriodStart)) / 2
-    if (timestamp < appealHalfTime) return STATUS_CODE.CROWDFUNDING
+    if (ts < appealHalfTime) return STATUS_CODE.CROWDFUNDING
 
     // has loser funded?
     const loser =

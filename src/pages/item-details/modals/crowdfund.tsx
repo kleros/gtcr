@@ -30,11 +30,11 @@ import {
 } from 'pages/light-item-details/modals/challenge'
 
 interface CrowdfundModalProps {
-  statusCode: any
-  item: any
+  statusCode: number
+  item: SubgraphItem
   fileURI?: string
-  appealCost: any
-  [key: string]: any
+  appealCost: BigNumber
+  [key: string]: unknown
 }
 
 const CrowdfundModal = ({ statusCode, item, fileURI, appealCost, ...rest }: CrowdfundModalProps) => {
@@ -51,7 +51,7 @@ const CrowdfundModal = ({ statusCode, item, fileURI, appealCost, ...rest }: Crow
   } = useContext(TCRViewContext)
 
   const [contributionShare, setContributionShare] = useState(1)
-  const [userSelectedSide, setUserSelectedSide] = useState<any>()
+  const [userSelectedSide, setUserSelectedSide] = useState<number | undefined>()
   const nativeCurrency = useNativeCurrency()
   const round = item.requests[0].rounds[0]
   const {

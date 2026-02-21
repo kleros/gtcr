@@ -7,7 +7,7 @@ import { StyledItemCol } from './light-tcr-card-content'
 import { Container } from './light-item-card-content'
 
 interface ItemCardContentProps {
-  item: any
+  item: SubgraphItem
   chainId: string | number
   tcrAddress: string
 }
@@ -49,4 +49,4 @@ const ItemCardContent = ({ item, chainId, tcrAddress }: ItemCardContentProps) =>
   )
 }
 
-export default ItemCardContent
+export default React.memo(ItemCardContent)

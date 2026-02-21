@@ -39,9 +39,9 @@ const UploadButton = ({ loading }: { loading?: boolean | null }) => (
 interface EvidenceFormProps {
   formID: string
   detailed?: boolean
-  handleSubmit: (...args: any[]) => void
-  setFieldValue: (field: string, value: any) => void
-  values: any
+  handleSubmit: (...args: unknown[]) => void
+  setFieldValue: (field: string, value: unknown) => void
+  values: Record<string, string>
 }
 
 const EvidenceForm = ({

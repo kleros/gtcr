@@ -1,5 +1,4 @@
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { fab } from '@fortawesome/free-brands-svg-icons'
 import {
   faQuestionCircle as farQuestionCircle,
   faCheckCircle as farCheckCircle,
@@ -54,7 +53,6 @@ library.add(
   faCoins,
   faBullhorn,
   faInfoCircle,
-  fab,
   faExternalLinkAlt,
   faSearch,
   faBell,

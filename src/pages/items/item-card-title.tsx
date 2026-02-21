@@ -20,8 +20,8 @@ import {
 } from 'pages/light-items/item-card-title'
 
 interface ItemCardTitleProps {
-  statusCode?: any
-  tcrData?: any
+  statusCode?: number
+  tcrData?: Record<string, unknown>
   isPermanentList?: boolean
 }
 

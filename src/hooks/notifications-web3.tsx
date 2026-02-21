@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { toast } from 'react-toastify'
 import { useAccount, useChainId } from 'wagmi'
-import { v4 as uuid } from 'uuid'
 import { ethers, BigNumber } from 'ethers'
 import _GTCRFactory from '../assets/abis/LightGTCRFactory.json'
 import { getTxPage } from '../utils/network-utils'
@@ -169,7 +168,7 @@ async function processWeb3Action(
   networkId: number,
   provider: any
 ): Promise<void> {
-  const notificationID = uuid()
+  const notificationID = crypto.randomUUID()
   toast.info('Requesting Signature', { toastId: notificationID, autoClose: false })
   try {
     const {

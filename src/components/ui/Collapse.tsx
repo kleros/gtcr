@@ -132,7 +132,7 @@ interface CollapseProps {
   bordered?: boolean
   defaultActiveKey?: string | string[]
   activeKey?: string | string[]
-  onChange?: (key: any) => void
+  onChange?: (key: string | string[]) => void
   children?: React.ReactNode
   style?: React.CSSProperties
   className?: string
@@ -153,7 +153,7 @@ const Collapse: CollapseComponent = ({
   className,
   accordion = false
 }) => {
-  const normalizeKeys = (keys: any): string[] => {
+  const normalizeKeys = (keys: string | string[] | undefined): string[] => {
     if (keys === undefined || keys === null) return []
     if (Array.isArray(keys)) return keys.map(String)
     return [String(keys)]
@@ -182,7 +182,7 @@ const Collapse: CollapseComponent = ({
       }
 
       if (!isControlled) setInternalActiveKeys(nextKeys)
-      if (onChange) onChange(accordion ? nextKeys[0] || null : nextKeys)
+      if (onChange) onChange(accordion ? nextKeys[0] || '' : nextKeys)
     },
     [accordion, activeKeys, isControlled, onChange]
   )
@@ -195,11 +195,12 @@ const Collapse: CollapseComponent = ({
       style={style}
       className={`ui-collapse${className ? ` ${className}` : ''}`}
     >
-      {items.map((child: any) => {
-        const panelKey = child.key != null ? String(child.key) : undefined
+      {items.map((child) => {
+        const element = child as React.ReactElement
+        const panelKey = element.key != null ? String(element.key) : undefined
         const isActive = panelKey ? activeKeys.includes(panelKey) : false
 
-        return React.cloneElement(child, {
+        return React.cloneElement(element, {
           $panelKey: panelKey,
           $active: isActive,
           $onToggle: handleToggle

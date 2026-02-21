@@ -7,7 +7,7 @@ import React, {
   Children
 } from 'react'
 import { createPortal } from 'react-dom'
-import styled, { css } from 'styled-components'
+import styled, { css, DefaultTheme } from 'styled-components'
 
 const SelectWrapper = styled.div`
   display: inline-block;
@@ -126,13 +126,13 @@ const OptionItem = styled.div<{ $selected?: boolean; $disabled?: boolean }>`
         `
       : css`
           &:hover {
-            background: ${({ theme: t }: { theme: any }) => t.dropdownHoverBg};
+            background: ${({ theme: t }: { theme: DefaultTheme }) => t.dropdownHoverBg};
           }
         `}
 `
 
 interface OptionProps {
-  value: any
+  value: string | number
   disabled?: boolean
   children?: React.ReactNode
 }
@@ -142,14 +142,14 @@ const Option: React.FC<OptionProps> = () => null
 Option.displayName = 'Select.Option'
 
 interface SelectProps {
-  value?: any
-  onChange?: (value: any) => void
+  value?: string | number
+  onChange?: (value: string | number) => void
   disabled?: boolean
   loading?: boolean
   labelInValue?: boolean
   style?: React.CSSProperties
   dropdownStyle?: React.CSSProperties
-  defaultValue?: any
+  defaultValue?: string | number
   placeholder?: string
   showSearch?: boolean
   children?: React.ReactNode
@@ -176,7 +176,7 @@ const Select: SelectComponent = ({
 }) => {
   const [open, setOpen] = useState(false)
   const [search, setSearch] = useState('')
-  const [selectedValue, setSelectedValue] = useState<any>(
+  const [selectedValue, setSelectedValue] = useState<string | number | undefined>(
     value !== undefined ? value : defaultValue
   )
   const triggerRef = useRef<HTMLDivElement>(null)
@@ -197,13 +197,14 @@ const Select: SelectComponent = ({
 
   // Parse options from children
   const options = useMemo(() => {
-    const opts: { value: any; label: React.ReactNode; disabled?: boolean }[] = []
-    Children.forEach(children, (child: any) => {
-      if (!child || !child.props) return
+    const opts: { value: string | number; label: React.ReactNode; disabled?: boolean }[] = []
+    Children.forEach(children, (child) => {
+      const element = child as React.ReactElement
+      if (!element || !element.props) return
       opts.push({
-        value: child.props.value,
-        label: child.props.children,
-        disabled: child.props.disabled
+        value: element.props.value,
+        label: element.props.children,
+        disabled: element.props.disabled
       })
     })
     return opts
@@ -266,7 +267,7 @@ const Select: SelectComponent = ({
   }, [disabled, loading, updateDropdownPosition])
 
   const handleSelect = useCallback(
-    (opt: { value: any; label: React.ReactNode; disabled?: boolean }) => {
+    (opt: { value: string | number; label: React.ReactNode; disabled?: boolean }) => {
       if (opt.disabled) return
       const newValue = opt.value
       setSelectedValue(newValue)
@@ -274,7 +275,7 @@ const Select: SelectComponent = ({
       setSearch('')
       if (onChange) {
         if (labelInValue) {
-          onChange({ key: newValue, label: opt.label })
+          onChange({ key: newValue, label: opt.label } as unknown as string | number)
         } else {
           onChange(newValue)
         }
@@ -285,18 +286,11 @@ const Select: SelectComponent = ({
 
   // Find display label for selected value
   const selectedLabel = useMemo(() => {
-    const sel =
-      typeof selectedValue === 'object' && selectedValue !== null
-        ? selectedValue.key
-        : selectedValue
-    const found = options.find(opt => opt.value === sel)
-    return found ? found.label : sel
+    const found = options.find(opt => opt.value === selectedValue)
+    return found ? found.label : selectedValue
   }, [selectedValue, options])
 
-  const currentVal =
-    typeof selectedValue === 'object' && selectedValue !== null
-      ? selectedValue.key
-      : selectedValue
+  const currentVal = selectedValue
 
   return (
     <SelectWrapper className={`ui-select${className ? ` ${className}` : ''}`}>
@@ -333,9 +327,9 @@ const Select: SelectComponent = ({
               <SearchInput
                 ref={searchRef}
                 value={search}
-                onChange={e => setSearch(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearch(e.target.value)}
                 placeholder="Search..."
-                onClick={e => e.stopPropagation()}
+                onClick={(e: React.MouseEvent) => e.stopPropagation()}
               />
             )}
             {filteredOptions.length === 0 ? (

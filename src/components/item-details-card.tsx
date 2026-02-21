@@ -39,10 +39,10 @@ const StyledAlert = styled(Alert)`
 
 interface ItemDetailsCardProps {
   title?: string | null
-  columns?: any[] | null
+  columns?: Column[] | null
   loading?: boolean | null
-  item?: any
-  itemMetaEvidence?: any
+  item?: SubgraphItem
+  itemMetaEvidence?: MetaEvidence | false
   disabled?: boolean
 }
 

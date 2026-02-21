@@ -7,7 +7,7 @@ export interface Item {
   disputeStatus: number
   hasPaid: boolean[]
   data: string
-  decodedData?: any[]
+  decodedData?: unknown[]
   currentRuling: number
   appealStart: BigNumber
   appealEnd: BigNumber
@@ -18,5 +18,5 @@ export interface Item {
 // Runtime dummy kept for unconverted .jsx consumers that still reference
 // ItemPropTypes in their .propTypes blocks.  Will be removed once all
 // consumers are migrated to TypeScript.
-const ItemPropTypes: any = {}
+const ItemPropTypes: Record<string, unknown> = {}
 export default ItemPropTypes

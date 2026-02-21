@@ -81,14 +81,14 @@ interface ItemDetailsProps {
 const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
   const { tcrAddress, chainId } = useParams()
   const library = useEthersProvider({ chainId: chainId ? Number(chainId) : undefined })
-  const [ipfsItemData, setIpfsItemData] = useState<any>()
+  const [ipfsItemData, setIpfsItemData] = useState<Record<string, unknown> | undefined>()
   const { timestamp } = useContext(WalletContext)
-  const [modalOpen, setModalOpen] = useState<any>()
+  const [modalOpen, setModalOpen] = useState<boolean | undefined>()
   const pgtcrClient = useMemo(() => getPermanentGraphQLClient(chainId), [
     chainId
   ])
-  const [appealCost, setAppealCost] = useState<any>()
-  const [metaEvidence, setMetaEvidence] = useState<any>()
+  const [appealCost, setAppealCost] = useState<BigNumber | undefined>()
+  const [metaEvidence, setMetaEvidence] = useState<MetaEvidence | undefined>()
 
   // subgraph item entities have id "<itemID>@<listaddress>"
   const compoundId = `${itemID}@${tcrAddress.toLowerCase()}`

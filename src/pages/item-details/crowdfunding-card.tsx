@@ -21,9 +21,9 @@ import {
 } from 'pages/light-item-details/crowdfunding-card'
 
 interface CrowdfundingCardProps {
-  item: any
-  timestamp: any
-  appealCost: any
+  item: SubgraphItem
+  timestamp: BigNumber
+  appealCost: BigNumber
 }
 
 const CrowdfundingCard = ({ item, timestamp, appealCost }: CrowdfundingCardProps) => {

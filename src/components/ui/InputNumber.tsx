@@ -150,7 +150,7 @@ const InputNumber: React.FC<InputNumberProps> = ({
   )
 
   const applyValue = useCallback(
-    (raw: any) => {
+    (raw: string | number | null | undefined) => {
       if (raw === '' || raw === null || raw === undefined) {
         if (!isControlled) setInternalValue('')
         if (onChange) onChange(undefined)

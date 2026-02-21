@@ -68,12 +68,12 @@ const Items = () => {
     connectedTCRAddr,
     submissionDeposit
   } = useContext(TCRViewContext)
-  const [submissionFormOpen, setSubmissionFormOpen] = useState<any>()
-  const refAttr = useRef<any>()
-  const [eventListenerSet, setEventListenerSet] = useState<any>()
+  const [submissionFormOpen, setSubmissionFormOpen] = useState<boolean | undefined>()
+  const refAttr = useRef<HTMLDivElement>()
+  const [eventListenerSet, setEventListenerSet] = useState<boolean | undefined>()
   const queryOptions = searchStrToFilterObjLight(search)
   const [nsfwFilterOn, setNSFWFilter] = useState(true)
-  const [queryItemParams, setQueryItemParams] = useState<any>()
+  const [queryItemParams, setQueryItemParams] = useState<Record<string, unknown> | undefined>()
   const client = useMemo(() => getGraphQLClient(chainId), [chainId])
 
   const toggleNSFWFilter = useCallback(checked => {

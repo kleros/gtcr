@@ -36,7 +36,7 @@ export default function SmartContractWalletWarning() {
   }, [])
 
   const checkIfSmartContractWallet = useCallback(
-    (account: string, library: any) => {
+    (account: string, library: EthersLibrary) => {
       library
         .getCode(account)
         .then((code: string) => {

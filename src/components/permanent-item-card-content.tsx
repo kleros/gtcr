@@ -20,7 +20,7 @@ export const StyledItemCol = styled.div`
 `
 
 interface PermanentItemCardContentProps {
-  item: any
+  item: SubgraphItem
   chainId: string | number
   tcrAddress: string
 }
@@ -60,4 +60,4 @@ const PermanentItemCardContent = ({ item, chainId, tcrAddress }: PermanentItemCa
   )
 }
 
-export default PermanentItemCardContent
+export default React.memo(PermanentItemCardContent)

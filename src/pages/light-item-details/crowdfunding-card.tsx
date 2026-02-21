@@ -71,9 +71,9 @@ export const StyledIcon = styled(FontAwesomeIcon)`
 `
 
 interface CrowdfundingCardProps {
-  item: any
-  timestamp: any
-  appealCost: any
+  item: SubgraphItem
+  timestamp: BigNumber
+  appealCost: BigNumber
 }
 
 const CrowdfundingCard = ({ item, timestamp, appealCost }: CrowdfundingCardProps) => {

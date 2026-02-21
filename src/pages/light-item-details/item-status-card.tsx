@@ -93,12 +93,12 @@ export const Ruling = ({ currentRuling }: RulingProps) => {
 }
 
 interface ItemStatusCardProps {
-  item: any
-  timestamp: any
-  request: any
+  item: SubgraphItem
+  timestamp: BigNumber
+  request: SubgraphRequest
   modalOpen: boolean
   setModalOpen: (open: boolean) => void
-  appealCost: any
+  appealCost: BigNumber
 }
 
 const ItemStatusCard = ({

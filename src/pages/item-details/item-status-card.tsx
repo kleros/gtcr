@@ -28,12 +28,12 @@ import {
 } from 'pages/light-item-details/item-status-card'
 
 interface ItemStatusCardProps {
-  item: any
-  timestamp: any
-  request: any
+  item: SubgraphItem
+  timestamp: BigNumber
+  request: SubgraphRequest
   modalOpen: boolean
   setModalOpen: (open: boolean) => void
-  appealCost: any
+  appealCost: BigNumber
 }
 
 const ItemStatusCard = ({

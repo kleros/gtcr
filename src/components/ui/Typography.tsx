@@ -1,14 +1,14 @@
 import React, { useCallback } from 'react'
-import styled, { css } from 'styled-components'
+import styled, { css, DefaultTheme } from 'styled-components'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 
-const typeColorMap: Record<string, (props: { theme: any }) => string> = {
+const typeColorMap: Record<string, (props: { theme: DefaultTheme }) => string> = {
   secondary: ({ theme }) => theme.textSecondary,
   warning: ({ theme }) => theme.warningColor,
   danger: ({ theme }) => theme.errorColor
 }
 
-const getTypeColor = ({ textType, theme }: { textType?: string; theme: any }): string => {
+const getTypeColor = ({ textType, theme }: { textType?: string; theme: DefaultTheme }): string => {
   const resolver = typeColorMap[textType || '']
   return resolver ? resolver({ theme }) : theme.textPrimary
 }
@@ -96,7 +96,7 @@ interface TextProps {
   children?: React.ReactNode
   style?: React.CSSProperties
   className?: string
-  [key: string]: any
+  [key: string]: unknown
 }
 
 const Text: React.FC<TextProps> = ({ type, copyable, ellipsis, strong, children, style, className, ...rest }) => {
@@ -131,7 +131,7 @@ interface TitleProps {
   children?: React.ReactNode
   style?: React.CSSProperties
   className?: string
-  [key: string]: any
+  [key: string]: unknown
 }
 
 const Title: React.FC<TitleProps> = ({ level = 1, children, style, className, ...rest }) => {
@@ -155,7 +155,7 @@ interface ParagraphProps {
   children?: React.ReactNode
   style?: React.CSSProperties
   className?: string
-  [key: string]: any
+  [key: string]: unknown
 }
 
 const Paragraph: React.FC<ParagraphProps> = ({ type, ellipsis, children, style, className, ...rest }) => (

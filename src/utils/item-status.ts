@@ -128,7 +128,7 @@ export const getActionLabel = ({ statusCode, itemName = 'item' }: { statusCode: 
   }
 }
 
-export const itemToStatusCode = (item: any, timestamp: any, challengePeriodDuration: any): number | undefined => {
+export const itemToStatusCode = (item: SubgraphItem, timestamp: BigNumber, challengePeriodDuration: BigNumber): number | undefined => {
   const { status } = item
   const request = item.requests?.[0]
 

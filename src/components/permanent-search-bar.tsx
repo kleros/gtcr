@@ -126,7 +126,7 @@ const StyledItemField = styled.div`
 const MAX_ITEM_COUNT = 5
 
 interface OptionItemProps {
-  item: any
+  item: SubgraphItem
   chainId: string | number
   tcrAddress: string
 }
@@ -142,8 +142,8 @@ const OptionItem = ({ item, chainId, tcrAddress }: OptionItemProps) => {
       </StyledStatus>
       <StyledFieldsContainer>
         {props
-          .filter((col: any) => col.isIdentifier)
-          .map((column: any, j: number) => (
+          .filter((col: Column) => col.isIdentifier)
+          .map((column: Column, j: number) => (
             <StyledItemField key={j}>
               <DisplaySelector
                 type={column.type}
@@ -163,7 +163,7 @@ const OptionItem = ({ item, chainId, tcrAddress }: OptionItemProps) => {
 }
 
 interface PermanentSearchBarProps {
-  items: any[]
+  items: SubgraphItem[]
   chainId: string | number
   tcrAddress: string
 }
@@ -186,8 +186,8 @@ const PermanentSearchBar = ({ items, chainId, tcrAddress }: PermanentSearchBarPr
     return items
       .filter(item => {
         const props = item.metadata?.props || []
-        return props.some((prop: any) => {
-          const propValue = prop.value?.toLowerCase() || ''
+        return props.some((prop: Column) => {
+          const propValue = (prop.value as string)?.toLowerCase() || ''
           return propValue.includes(searchTerm)
         })
       })
@@ -234,7 +234,7 @@ const PermanentSearchBar = ({ items, chainId, tcrAddress }: PermanentSearchBarPr
           ) : filteredItems.length === 0 ? (
             <DropdownMessage>No results</DropdownMessage>
           ) : (
-            filteredItems.map((item: any) => (
+            filteredItems.map((item: SubgraphItem) => (
               <DropdownItem key={item.itemID} onClick={() => setFocused(false)}>
                 <OptionItem item={item} chainId={chainId} tcrAddress={tcrAddress} />
               </DropdownItem>

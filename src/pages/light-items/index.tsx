@@ -183,11 +183,11 @@ const Items = () => {
     connectedTCRAddr,
     submissionDeposit
   } = useContext(LightTCRViewContext)
-  const [submissionFormOpen, setSubmissionFormOpen] = useState<any>()
-  const [error, setError] = useState<any>()
+  const [submissionFormOpen, setSubmissionFormOpen] = useState<boolean | undefined>()
+  const [error, setError] = useState<string | undefined>()
   const queryOptions = searchStrToFilterObjLight(search)
   const [nsfwFilterOn, setNSFWFilter] = useState(true)
-  const [queryItemParams, setQueryItemParams] = useState<any>()
+  const [queryItemParams, setQueryItemParams] = useState<Record<string, unknown> | undefined>()
   const toggleNSFWFilter = useCallback(checked => {
     setNSFWFilter(checked)
     localforage.setItem(NSFW_FILTER_KEY, checked)

@@ -84,7 +84,7 @@ export const StyledStakeTag = styled(StakeTag)`
 
 interface ItemCardTitleProps {
   statusCode?: number | null
-  tcrData?: any
+  tcrData?: Record<string, unknown>
   isPermanentList?: boolean
 }
 

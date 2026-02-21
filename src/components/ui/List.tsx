@@ -33,7 +33,7 @@ const ListContentWrapper = styled.ul`
   padding: 0;
 `
 
-const sizeMap: Record<string, any> = {
+const sizeMap: Record<string, ReturnType<typeof css>> = {
   small: css`
     padding: 8px 16px;
   `,
@@ -161,8 +161,8 @@ ListItem.Meta = Meta
 
 interface ListProps {
   bordered?: boolean
-  dataSource?: any[]
-  renderItem?: (item: any, index: number) => React.ReactNode
+  dataSource?: unknown[]
+  renderItem?: (item: unknown, index: number) => React.ReactNode
   loading?: boolean
   children?: React.ReactNode
   style?: React.CSSProperties
@@ -198,7 +198,7 @@ const List: ListComponent = ({
     content = (
       <ListContentWrapper>
         {dataSource.map((item, index) => {
-          const rendered = renderItem(item, index) as any
+          const rendered = renderItem(item, index) as React.ReactElement
           if (rendered && rendered.type === ListItem) {
             return React.cloneElement(rendered, {
               key: rendered.key || index,
@@ -217,10 +217,11 @@ const List: ListComponent = ({
   } else if (children) {
     content = (
       <ListContentWrapper>
-        {React.Children.map(children, (child: any, index) => {
-          if (child && child.type === ListItem) {
-            return React.cloneElement(child, {
-              key: child.key || index,
+        {React.Children.map(children, (child, index) => {
+          const element = child as React.ReactElement
+          if (element && element.type === ListItem) {
+            return React.cloneElement(element, {
+              key: element.key || index,
               $size: size,
               $split: split
             })

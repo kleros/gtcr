@@ -79,9 +79,9 @@ const secondTimestamp = timestamp =>
   ` - ${new Date(new Date(timestamp * 1000)).toGMTString()}`
 
 interface TimelineProps {
-  request: any
-  item: any
-  metaEvidence: any
+  request: SubgraphRequest
+  item: SubgraphItem
+  metaEvidence: MetaEvidence
 }
 
 const Timeline = ({ request, item, metaEvidence }: TimelineProps) => {
@@ -357,10 +357,10 @@ const StyledCollapse = styled(Collapse)`
 `
 
 interface RequestTimelinesProps {
-  item: any
-  requests: any[]
+  item: SubgraphItem
+  requests: SubgraphRequest[]
   kind: 'classic' | 'light'
-  metaEvidence: any
+  metaEvidence: MetaEvidence
 }
 
 const RequestTimelines = ({ item, requests, kind, metaEvidence }: RequestTimelinesProps) => {

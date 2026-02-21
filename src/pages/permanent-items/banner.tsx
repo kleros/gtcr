@@ -184,7 +184,7 @@ const DescriptionWithTermsLink = ({ description, tcrAddress }: DescriptionWithTe
 }
 
 interface BannerProps {
-  metadata?: any
+  metadata?: MetaEvidence
   setSubmissionFormOpen: (open: boolean) => void
   tcrAddress?: string | null
 }

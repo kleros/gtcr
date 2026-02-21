@@ -111,7 +111,7 @@ const TCRLogo = ({ logoURI = null }: TCRLogoProps) =>
   logoURI && <StyledImage src={parseIpfs(logoURI)} alt="item" />
 
 interface BannerProps {
-  metaEvidence?: any
+  metaEvidence?: MetaEvidence
   setSubmissionFormOpen: (open: boolean) => void
   connectedTCRAddr?: string | null
   tcrAddress?: string | null

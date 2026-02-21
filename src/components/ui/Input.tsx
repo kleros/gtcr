@@ -34,7 +34,7 @@ const inputBaseStyles = css`
   }
 `
 
-const sizeMap: Record<string, any> = {
+const sizeMap: Record<string, ReturnType<typeof css>> = {
   small: css`
     height: 24px;
     padding: 0 7px;
@@ -145,8 +145,8 @@ const ClearButton = styled.span<{ $hasSuffix?: boolean }>`
 `
 
 interface InputProps {
-  value?: any
-  onChange?: (e: any) => void
+  value?: string | number
+  onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void
   placeholder?: string
   disabled?: boolean
   addonBefore?: React.ReactNode
@@ -163,19 +163,19 @@ interface InputProps {
   onPressEnter?: (e: React.KeyboardEvent) => void
   onBlur?: (e: React.FocusEvent) => void
   size?: string
-  [key: string]: any
+  [key: string]: unknown
 }
 
 interface TextAreaProps {
-  value?: any
-  onChange?: (e: any) => void
+  value?: string | number
+  onChange?: (e: React.ChangeEvent<HTMLTextAreaElement>) => void
   placeholder?: string
   disabled?: boolean
   rows?: number
   autoSize?: boolean
   style?: React.CSSProperties
   className?: string
-  [key: string]: any
+  [key: string]: unknown
 }
 
 interface InputComponent extends React.ForwardRefExoticComponent<InputProps & React.RefAttributes<HTMLInputElement>> {
@@ -231,7 +231,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
         const event = {
           target: { value: '' },
           currentTarget: { value: '' }
-        }
+        } as React.ChangeEvent<HTMLInputElement>
         onChange(event)
       }
     }, [onChange])

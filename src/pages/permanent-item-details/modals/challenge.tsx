@@ -64,11 +64,11 @@ const ERC20_ABI = [
 ]
 
 interface ChallengeModalProps {
-  item: any
+  item: SubgraphItem
   itemName?: string
   onCancel: () => void
-  arbitrationCost: any
-  [key: string]: any
+  arbitrationCost: BigNumber
+  [key: string]: unknown
 }
 
 const ChallengeModal = ({
@@ -88,7 +88,7 @@ const ChallengeModal = ({
 
   const [balance, setBalance] = useState(0n)
   const [allowance, setAllowance] = useState(0n)
-  const [nativeBalance, setNativeBalance] = useState<any>()
+  const [nativeBalance, setNativeBalance] = useState<BigNumber | undefined>()
   const [checkingToken, setCheckingToken] = useState(false)
   const [isApproving, setIsApproving] = useState(false)
   const [isChallenging, setIsChallenging] = useState(false)

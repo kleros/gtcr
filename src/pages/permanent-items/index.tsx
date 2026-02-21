@@ -160,12 +160,12 @@ const Items = () => {
   const { tcrAddress, chainId } = useParams()
   const search = window.location.search
   const { timestamp } = useContext(WalletContext)
-  const [submissionFormOpen, setSubmissionFormOpen] = useState<any>()
-  const [error, setError] = useState<any>()
-  const [columns, setColumns] = useState<any>()
+  const [submissionFormOpen, setSubmissionFormOpen] = useState<boolean | undefined>()
+  const [error, setError] = useState<string | undefined>()
+  const [columns, setColumns] = useState<Column[] | undefined>()
   const queryOptions = searchStrToFilterObjPermanent(search)
   const [nsfwFilterOn, setNSFWFilter] = useState(true)
-  const [queryItemParams, setQueryItemParams] = useState<any>()
+  const [queryItemParams, setQueryItemParams] = useState<Record<string, unknown> | undefined>()
   const toggleNSFWFilter = useCallback(checked => {
     setNSFWFilter(checked)
     localforage.setItem(NSFW_FILTER_KEY, checked)

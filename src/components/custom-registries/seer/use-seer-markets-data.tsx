@@ -4,7 +4,7 @@ import { isSeerRegistry } from 'components/custom-registries/seer/is-seer-regist
 const useSeerMarketsData = (
   chainId: string,
   tcrAddress: string,
-  items: any[]
+  items: SubgraphItem[]
 ) => {
   const [seerMarketsData, setSeerMarketsData] = useState({})
 
@@ -43,7 +43,7 @@ const useSeerMarketsData = (
         if (!response.ok) throw new Error('Seer subgraph query failed')
         const data = await response.json()
         const markets = data.data.markets
-        const marketsData = markets.reduce((acc: any[], market: any) => {
+        const marketsData = markets.reduce((acc: Record<string, { marketName: string; outcomes: string[] }>, market: { id: string; marketName: string; outcomes: string[] }) => {
           acc[market.id] = {
             marketName: market.marketName,
             outcomes: market.outcomes

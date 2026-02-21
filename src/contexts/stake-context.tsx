@@ -1,6 +1,11 @@
 import React, { createContext, useState } from 'react'
 
-const StakeContext = createContext<any>(undefined)
+interface StakeContextValue {
+  isPermanent: boolean
+  setIsPermanent: React.Dispatch<React.SetStateAction<boolean>>
+}
+
+const StakeContext = createContext<StakeContextValue | undefined>(undefined)
 
 const StakeProvider = ({ children }: { children: React.ReactNode }) => {
   const [isPermanent, setIsPermanent] = useState(false)

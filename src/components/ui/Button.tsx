@@ -1,13 +1,14 @@
 import React from 'react'
-import styled, { css, keyframes } from 'styled-components'
+import styled, { css, keyframes, DefaultTheme } from 'styled-components'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import type { IconDefinition } from '@fortawesome/fontawesome-svg-core'
 
 const spin = keyframes`
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
 `
 
-const sizeStyles: Record<string, any> = {
+const sizeStyles: Record<string, ReturnType<typeof css>> = {
   small: css`
     height: 24px;
     padding: 0 7px;
@@ -25,7 +26,7 @@ const sizeStyles: Record<string, any> = {
   `
 }
 
-const getTypeStyles = ({ btnType, theme }: { btnType?: string; theme: any }) => {
+const getTypeStyles = ({ btnType, theme }: { btnType?: string; theme: DefaultTheme }) => {
   switch (btnType) {
     case 'primary':
       return css`
@@ -218,7 +219,7 @@ interface ButtonProps {
   children?: React.ReactNode
   style?: React.CSSProperties
   className?: string
-  [key: string]: any
+  [key: string]: unknown
 }
 
 interface ButtonGroupProps {
@@ -249,7 +250,7 @@ const Button: React.FC<ButtonProps> & { Group: React.FC<ButtonGroupProps> } = ({
     <Spinner icon="spinner" />
   ) : icon ? (
     typeof icon === 'string' ? (
-      <FontAwesomeIcon icon={icon as any} />
+      <FontAwesomeIcon icon={icon as IconDefinition} />
     ) : (
       icon
     )

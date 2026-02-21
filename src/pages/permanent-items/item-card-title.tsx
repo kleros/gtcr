@@ -44,8 +44,8 @@ export const CountdownContainer = styled.div`
 
 interface ItemCardTitleProps {
   statusCode: number
-  item: any
-  registry: any
+  item: SubgraphItem
+  registry: SubgraphRegistry
   tokenSymbol?: string
 }
 

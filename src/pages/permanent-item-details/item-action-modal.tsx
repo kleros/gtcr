@@ -10,10 +10,10 @@ interface ItemActionModalProps {
   itemName: string
   onClose: () => void
   fileURI?: string
-  item: any
-  metaEvidence?: any
-  appealCost?: any
-  arbitrationCost?: any
+  item: SubgraphItem
+  metaEvidence?: MetaEvidence
+  appealCost?: BigNumber | undefined
+  arbitrationCost?: BigNumber | undefined
 }
 
 const ItemActionModal = ({

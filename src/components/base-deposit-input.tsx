@@ -24,8 +24,8 @@ interface BaseDepositInputProps {
   touched?: boolean | null
   hasFeedback?: boolean | null
   disabled?: boolean | null
-  arbitrationCost?: any
-  values: Record<string, any>
+  arbitrationCost?: BigNumber
+  values: Record<string, unknown>
 }
 
 const BaseDepositInput = ({

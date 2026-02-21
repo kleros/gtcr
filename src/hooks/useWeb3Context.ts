@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import { useAccount, useChainId } from 'wagmi'
+import { providers } from 'ethers'
 import { useEthersProvider, useEthersSigner } from './ethers-adapters'
 import { DEFAULT_NETWORK } from 'config/networks'
 
@@ -13,7 +14,7 @@ interface Web3Context {
   account: string | null
   active: boolean
   networkId: number
-  library: any
+  library: providers.JsonRpcProvider | providers.FallbackProvider | undefined
   error: null
   connector: null
   connectorName: null

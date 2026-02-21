@@ -1,5 +1,5 @@
 import React from 'react'
-import styled, { css } from 'styled-components'
+import styled, { css, DefaultTheme } from 'styled-components'
 
 const StepsWrapper = styled.div<{ $direction?: string }>`
   display: flex;
@@ -27,7 +27,7 @@ const StepItem = styled.div<{ $isLast?: boolean; $direction?: string }>`
     `}
 `
 
-const getStatusColor = (status: string, theme: any) => {
+const getStatusColor = (status: string, theme: DefaultTheme) => {
   switch (status) {
     case 'finish':
       return theme.primaryColor
@@ -190,15 +190,16 @@ const Steps: StepsComponent = ({
       style={style}
       className={`ui-steps${className ? ` ${className}` : ''}`}
     >
-      {items.map((child: any, index) => {
-        let status = child.props.status
+      {items.map((child, index) => {
+        const element = child as React.ReactElement
+        let status = element.props.status
         if (!status) {
           if (index < current) status = 'finish'
           else if (index === current) status = 'process'
           else status = 'wait'
         }
 
-        return React.cloneElement(child, {
+        return React.cloneElement(element, {
           key: index,
           $index: index,
           $direction: direction,

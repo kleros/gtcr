@@ -14,8 +14,8 @@ import { wagmiConfig } from 'config/wagmi'
 import { StyledModal } from 'pages/light-item-details/modals/challenge'
 
 interface EvidenceModalProps {
-  item: any
-  [key: string]: any
+  item: SubgraphItem
+  [key: string]: unknown
 }
 
 const EvidenceModal = ({ item, ...rest }: EvidenceModalProps) => {

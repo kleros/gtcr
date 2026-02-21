@@ -1,6 +1,6 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react'
 import { createPortal } from 'react-dom'
-import styled, { css } from 'styled-components'
+import styled, { css, DefaultTheme } from 'styled-components'
 
 type Placement = 'top' | 'bottom' | 'left' | 'right'
 
@@ -10,7 +10,7 @@ const Wrapper = styled.span`
   vertical-align: middle;
 `
 
-const getArrowStyles = (placement: Placement, theme: any) => {
+const getArrowStyles = (placement: Placement, theme: DefaultTheme) => {
   const bg = theme.tooltipBg || (theme.name === 'dark'
     ? theme.elevatedBackground
     : theme.secondaryColor)

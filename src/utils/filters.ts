@@ -27,24 +27,24 @@ export const filterLabelLight = {
   [FILTER_KEYS.OLDEST_FIRST]: 'Oldest First'
 }
 
-export const filterFunctions: Record<string, (account?: string) => (item: any) => boolean> = {
-  [FILTER_KEYS.ABSENT]: () => (item: any) => item.status !== 'Absent',
-  [FILTER_KEYS.REGISTERED]: () => (item: any) => item.status !== 'Registered',
-  [FILTER_KEYS.SUBMITTED]: () => (item: any) =>
+export const filterFunctions: Record<string, (account?: string) => (item: SubgraphItem) => boolean> = {
+  [FILTER_KEYS.ABSENT]: () => (item: SubgraphItem) => item.status !== 'Absent',
+  [FILTER_KEYS.REGISTERED]: () => (item: SubgraphItem) => item.status !== 'Registered',
+  [FILTER_KEYS.SUBMITTED]: () => (item: SubgraphItem) =>
     item.status !== 'RegistrationRequested' || item.disputed,
-  [FILTER_KEYS.REMOVAL_REQUESTED]: () => (item: any) =>
+  [FILTER_KEYS.REMOVAL_REQUESTED]: () => (item: SubgraphItem) =>
     item.status !== 'ClearingRequested' || item.disputed,
-  [FILTER_KEYS.CHALLENGED_SUBMISSIONS]: () => (item: any) =>
+  [FILTER_KEYS.CHALLENGED_SUBMISSIONS]: () => (item: SubgraphItem) =>
     item.status !== 'RegistrationRequested' || !item.disputed,
-  [FILTER_KEYS.CHALLENGED_REMOVALS]: () => (item: any) =>
+  [FILTER_KEYS.CHALLENGED_REMOVALS]: () => (item: SubgraphItem) =>
     item.status !== 'ClearingRequested' || !item.disputed,
-  [FILTER_KEYS.MY_SUBMISSIONS]: (account?: string) => (item: any) =>
-    !item.requests.some(
-      (request: any) => request.requester?.toLowerCase() === account
+  [FILTER_KEYS.MY_SUBMISSIONS]: (account?: string) => (item: SubgraphItem) =>
+    !item.requests?.some(
+      (request: SubgraphRequest) => request.requester?.toLowerCase() === account
     ),
-  [FILTER_KEYS.MY_CHALLENGES]: (account?: string) => (item: any) =>
-    !item.requests.some(
-      (request: any) => request.challenger?.toLowerCase() === account
+  [FILTER_KEYS.MY_CHALLENGES]: (account?: string) => (item: SubgraphItem) =>
+    !item.requests?.some(
+      (request: SubgraphRequest) => request.challenger?.toLowerCase() === account
     )
 }
 
@@ -94,7 +94,7 @@ export const DEFAULT_FILTERS_PERMANENT = {
  * @param {string} pageKey - The key used for the page filter
  * @returns {object} Parsed filter values
  */
-const parseSearchToFilters = (search: string, defaults: Record<string, any>, pageKey: string): Record<string, any> => {
+const parseSearchToFilters = (search: string, defaults: Record<string, string | boolean>, pageKey: string): Record<string, string | boolean> => {
   const queryObj = qs.parse(search.replace(/\?/g, ''))
   return {
     ...defaults,
@@ -114,7 +114,7 @@ const parseSearchToFilters = (search: string, defaults: Record<string, any>, pag
   }
 }
 
-export const searchStrToFilterObjLight = (search: string): Record<string, any> => {
+export const searchStrToFilterObjLight = (search: string): Record<string, string | boolean> => {
   const filters = parseSearchToFilters(search, DEFAULT_FILTERS, FILTER_KEYS.PAGE)
   const {
     registered, submitted, removalRequested,
@@ -138,7 +138,7 @@ export const searchStrToFilterObjLight = (search: string): Record<string, any> =
   }
 }
 
-export const searchStrToFilterObjPermanent = (search: string): Record<string, any> => {
+export const searchStrToFilterObjPermanent = (search: string): Record<string, string | boolean> => {
   const filters = parseSearchToFilters(search, DEFAULT_FILTERS_PERMANENT, P_FILTER_KEYS.PAGE)
   const { absent, registered, disputed, oldestFirst, page } = filters
 
@@ -150,8 +150,8 @@ export const searchStrToFilterObjPermanent = (search: string): Record<string, an
   return { registered, disputed, absent, oldestFirst, page, countField }
 }
 
-export const queryOptionsToFilterArray = (queryOptions: Record<string, any>, account?: string): any[] => {
-  const filterObj: Record<string, any> = {}
+export const queryOptionsToFilterArray = (queryOptions: Record<string, boolean | string>, account?: string): (boolean | string | undefined)[] => {
+  const filterObj: Record<string, boolean | string> = {}
   Object.keys(queryOptions)
     .filter(key => key !== FILTER_KEYS.PAGE && key !== FILTER_KEYS.OLDEST_FIRST)
     .forEach(key => {
@@ -182,7 +182,7 @@ export const queryOptionsToFilterArray = (queryOptions: Record<string, any>, acc
 }
 
 export const updateLightFilter = ({ prevQuery: search, filter, checked }: { prevQuery: string; filter: string; checked: boolean }): string => {
-  const queryObj: Record<string, any> = qs.parse(search.replace(/\?/g, ''))
+  const queryObj: Record<string, string | boolean> = qs.parse(search.replace(/\?/g, '')) as Record<string, string | boolean>
 
   // Toggle the filter (multi-select supported)
   if (checked) queryObj[filter] = true

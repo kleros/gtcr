@@ -11,7 +11,7 @@ interface CustomInputProps {
   touched?: boolean | null
   addonAfter?: React.ReactNode | null
   hasFeedback?: boolean | null
-  type?: any
+  type?: string
   step?: number | null
   disabled?: boolean | null
   style?: React.CSSProperties | null

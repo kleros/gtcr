@@ -7,6 +7,7 @@ import {
 import { Badge, Skeleton } from 'components/ui'
 import Icon from 'components/ui/Icon'
 import styled from 'styled-components'
+import { BigNumber } from 'ethers'
 
 const SkeletonTitleProps = { width: 90 }
 const StyledSkeleton = styled(Skeleton)`
@@ -69,8 +70,8 @@ export const badgeStatus = (statusCode: number) => {
 }
 
 interface ItemStatusBadgeProps {
-  item?: any
-  timestamp?: any
+  item?: SubgraphItem
+  timestamp?: BigNumber
   statusCode?: number | null
   dark?: boolean | null
 }

@@ -22,7 +22,7 @@ export const StyledItemCol = styled.div`
 `
 
 interface LightItemCardContentProps {
-  item: any
+  item: SubgraphItem
   chainId: string | number
   tcrAddress: string
 }
@@ -77,4 +77,4 @@ const LightItemCardContent = ({ item, chainId, tcrAddress }: LightItemCardConten
   )
 }
 
-export default LightItemCardContent
+export default React.memo(LightItemCardContent)

@@ -1,5 +1,3 @@
-import { fetch } from 'cross-fetch'
-
 export async function uploadFormDataToIPFS(
   formData: FormData,
   operation: string = 'evidence',

@@ -131,12 +131,12 @@ export const HideCardButton = styled(Button)`
 `
 
 interface CardItemInfoProps {
-  item: any
+  item: SubgraphItem
   statusCode: number
-  registry: any
+  registry: SubgraphRegistry
   chainId?: string
   tcrAddress?: string
-  metadata?: any
+  metadata?: MetaEvidence
   toggleReveal?: (() => void) | null
   forceReveal?: boolean | null
   tokenSymbol?: string
@@ -202,15 +202,15 @@ const CardItemInfo = ({
 }
 
 interface ItemCardProps {
-  item: any
-  registry: any
-  timestamp: any
+  item: SubgraphItem
+  registry: SubgraphRegistry
+  timestamp: BigNumber
   forceReveal?: boolean | null
-  [key: string]: any
+  [key: string]: unknown
 }
 
 const ItemCard = ({ item, registry, timestamp, forceReveal, ...rest }: ItemCardProps) => {
-  const [revealed, setRevealed] = useState<any>()
+  const [revealed, setRevealed] = useState<boolean | undefined>()
   const toggleReveal = useCallback(() => {
     setRevealed(!revealed)
   }, [revealed])
@@ -263,4 +263,4 @@ const ItemCard = ({ item, registry, timestamp, forceReveal, ...rest }: ItemCardP
   )
 }
 
-export default ItemCard
+export default React.memo(ItemCard)

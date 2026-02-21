@@ -29,9 +29,9 @@ const RichAddressInput: React.FC<{
   touched: boolean
   hasFeedback: boolean
   disabled: boolean
-  style: any
-  values: any
-  setFieldValue: any
+  style: React.CSSProperties
+  values: Record<string, string>
+  setFieldValue: (field: string, value: string) => void
 }> = p => {
   const value = p.values[p.name]
   const changeAddressType = (addressType: string) => {
@@ -41,7 +41,7 @@ const RichAddressInput: React.FC<{
     p.setFieldValue(p.name, newRichAddress)
   }
 
-  const changeAddress = ({ target }: any) => {
+  const changeAddress = ({ target }: React.ChangeEvent<HTMLInputElement>) => {
     const richAddress = parseRichAddress(value)
     const addressType = richAddress
       ? `${richAddress.reference.namespaceId}:${richAddress.reference.id}`
@@ -53,7 +53,7 @@ const RichAddressInput: React.FC<{
 
   return (
     <Field
-      validate={(value: any) => {
+      validate={(value: string) => {
         const richAddress = parseRichAddress(value) as RichAddress
         if (!richAddress.passedTest) return 'Invalid format'
 
@@ -62,7 +62,7 @@ const RichAddressInput: React.FC<{
       name={p.name}
       style={{ style: p.style }}
     >
-      {({ field }: any) => {
+      {({ field }: { field: Record<string, unknown> }) => {
         const richAddress = parseRichAddress(field.value)
         const addressType = richAddress
           ? `${richAddress.reference.namespaceId}:${richAddress.reference.id}`

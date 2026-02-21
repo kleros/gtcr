@@ -1,5 +1,6 @@
 import React from 'react'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import type { IconProp } from '@fortawesome/fontawesome-svg-core'
 import styled, { keyframes } from 'styled-components'
 
 const spinAnimation = keyframes`
@@ -22,7 +23,7 @@ const CircleOutline = styled.span`
   border-radius: 50%;
 `
 
-const ICON_MAP: Record<string, any> = {
+const ICON_MAP: Record<string, IconProp> = {
   'question-circle-o': ['far', 'question-circle'],
   'question-circle': 'question-circle',
   'loading': 'spinner',
@@ -60,7 +61,7 @@ interface IconProps {
   className?: string
   onClick?: (e: React.MouseEvent) => void
   spin?: boolean
-  [key: string]: any
+  size?: 'xs' | 'sm' | 'lg' | '1x' | '2x' | '3x' | '4x' | '5x' | '6x' | '7x' | '8x' | '9x' | '10x'
 }
 
 const Icon: React.FC<IconProps> = ({ type, style, className, onClick, spin: spinProp, ...rest }) => {
