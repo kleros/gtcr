@@ -8,9 +8,9 @@ import {
   Form,
   Divider,
   Switch,
-  Tooltip
+  Tooltip,
 } from 'components/ui'
-import Icon from 'components/ui/Icon'
+import Icon from 'components/ui/icon'
 import { toast } from 'react-toastify'
 import { withFormik, FieldArray, Field } from 'formik'
 import * as yup from 'yup'
@@ -22,15 +22,17 @@ import { StyledAlert, ItemTypes } from 'pages/factory/item-params'
 const { IMAGE, FILE, GTCR_ADDRESS, LONG_TEXT } = ItemTypes
 
 interface ItemParamsProps {
-  handleSubmit: (...args: any[]) => void
-  setFieldValue: (field: string, value: any) => void
+  handleSubmit: (...args: unknown[]) => void
+  setFieldValue: (field: string, value: unknown) => void
   formId: string
-  values: { columns: any[]; isTCRofTCRs?: boolean; [key: string]: any }
-  errors: Record<string, any>
-  touched: Record<string, any>
-  setTcrState: (fn: any) => void
-  tcrState: Record<string, any>
-  [key: string]: any
+  values: { columns: Column[]; isTCRofTCRs?: boolean; [key: string]: unknown }
+  errors: Record<string, unknown>
+  touched: Record<string, unknown>
+  setTcrState: (
+    fn: (prev: Record<string, unknown>) => Record<string, unknown>,
+  ) => void
+  tcrState: Record<string, unknown>
+  [key: string]: unknown
 }
 
 const ItemParams = ({
@@ -54,18 +56,18 @@ const ItemParams = ({
           label: 'Address',
           description: 'The list address.',
           type: GTCR_ADDRESS,
-          isIdentifier: true
-        }
+          isIdentifier: true,
+        },
       ])
       setFieldValue(`isTCRofTCRs`, true)
     } else setFieldValue(`isTCRofTCRs`, false)
   }, [isTCRofTCRs, setFieldValue])
 
   useEffect(() => {
-    setTcrState(previousState => ({
+    setTcrState((previousState) => ({
       ...previousState,
       isTCRofTCRs,
-      columns
+      columns,
     }))
   }, [columns, isTCRofTCRs, setTcrState])
 
@@ -134,7 +136,7 @@ const ItemParams = ({
                 <Icon type="question-circle-o" />
               </Tooltip>
             </Col>
-            {columns.filter(col => col.type === FILE).length > 0 ? (
+            {columns.filter((col) => col.type === FILE).length > 0 ? (
               <Col span={4}>
                 Allowed File Types
                 <Tooltip title="A list of space separated allowed file extensions (e.g.: pdf doc  mp3).">
@@ -205,14 +207,16 @@ const ItemParams = ({
                                 <Select
                                   {...field}
                                   value={columns[index].type}
-                                  onChange={value => onTypeChange(index, value)}
+                                  onChange={(value) =>
+                                    onTypeChange(index, value)
+                                  }
                                 >
                                   {Object.values(ItemTypes).map(
                                     (itemType, i) => (
                                       <Select.Option value={itemType} key={i}>
                                         {itemType}
                                       </Select.Option>
-                                    )
+                                    ),
                                   )}
                                 </Select>
                               </Form.Item>
@@ -220,8 +224,9 @@ const ItemParams = ({
                           </Field>
                         </Col>
                         {(columns
-                          .map(column => column.isIdentifier)
-                          .filter(isIdentifier => !!isIdentifier).length < 3 ||
+                          .map((column) => column.isIdentifier)
+                          .filter((isIdentifier) => !!isIdentifier).length <
+                          3 ||
                           columns[index].isIdentifier) &&
                         columns[index].type !== LONG_TEXT &&
                         columns[index].type !== IMAGE &&
@@ -231,10 +236,10 @@ const ItemParams = ({
                               {({ field }) => (
                                 <Form.Item>
                                   <Switch
-                                    onChange={value =>
+                                    onChange={(value) =>
                                       setFieldValue(
                                         `columns[${index}].isIdentifier`,
-                                        value
+                                        value,
                                       )
                                     }
                                     checked={field.value}
@@ -307,9 +312,9 @@ const ItemParams = ({
               metadata: {
                 tcrTitle,
                 tcrDescription,
-                logoURI: tcrLogo
-              }
-            }
+                logoURI: tcrLogo,
+              },
+            },
           }
         }
         style={{ maxWidth: '250px' }}
@@ -325,17 +330,17 @@ const validationSchema = yup.object().shape({
       description: yup.string().required('The column description is required.'),
       allowedFileTypes: yup.string().when('type', {
         is: FILE,
-        then: yup.string().required('At least one file type is required.')
-      })
-    })
-  )
+        then: yup.string().required('At least one file type is required.'),
+      }),
+    }),
+  ),
 })
 
 export default withFormik({
   validationSchema,
   mapPropsToValues: ({ tcrState }) => tcrState,
   handleSubmit: ({ columns }, { props: { postSubmit } }) => {
-    if (!columns.some(c => c.isIdentifier)) {
+    if (!columns.some((c) => c.isIdentifier)) {
       toast.warning('At least one ID field is required.')
       return
     }
@@ -348,5 +353,5 @@ export default withFormik({
       usedLabels.add(col.label)
     }
     postSubmit()
-  }
+  },
 })(ItemParams)

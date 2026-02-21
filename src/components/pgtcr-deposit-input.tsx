@@ -25,7 +25,7 @@ const PGTCRDepositInput = ({
   touched,
   hasFeedback,
   disabled,
-  tokenSymbol = 'tokens'
+  tokenSymbol = 'tokens',
 }: PGTCRDepositInputProps) => (
   <div>
     <Field name={name}>

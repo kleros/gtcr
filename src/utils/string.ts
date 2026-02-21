@@ -1,4 +1,5 @@
 import { ethers, BigNumber } from 'ethers'
+
 const { keccak256, getAddress } = ethers.utils
 
 export const truncateETHAddress = (ethAddr: string): string =>
@@ -59,19 +60,22 @@ export const isETHAddress = (address: string): boolean => {
     }
 }
 
-export const jurorsAndCourtIDFromExtraData = (arbitratorExtraData: string): { courtID: number; numberOfJurors: number } => {
+export const jurorsAndCourtIDFromExtraData = (
+  arbitratorExtraData: string,
+): { courtID: number; numberOfJurors: number } => {
   const courtID = BigNumber.from(
-    `0x${arbitratorExtraData.slice(2, 66)}`
+    `0x${arbitratorExtraData.slice(2, 66)}`,
   ).toNumber()
 
   const numberOfJurors = BigNumber.from(
-    `0x${arbitratorExtraData.slice(66, 130)}`
+    `0x${arbitratorExtraData.slice(66, 130)}`,
   ).toNumber()
 
   return { courtID, numberOfJurors }
 }
 
-export const getArticleFor = (str: string): string => (str && isVowel(str[0]) ? 'an' : 'a')
+export const getArticleFor = (str: string): string =>
+  str && isVowel(str[0]) ? 'an' : 'a'
 
 export const SAVED_NETWORK_KEY = 'SAVED_NETWORK_KEY'
 

@@ -6,13 +6,13 @@ const justifyMap: Record<string, string> = {
   end: 'flex-end',
   center: 'center',
   'space-between': 'space-between',
-  'space-around': 'space-around'
+  'space-around': 'space-around',
 }
 
 const alignMap: Record<string, string> = {
   top: 'flex-start',
   middle: 'center',
-  bottom: 'flex-end'
+  bottom: 'flex-end',
 }
 
 interface RowWrapperProps {
@@ -59,21 +59,23 @@ interface RowProps {
 }
 
 const Row: React.FC<RowProps> = ({
-  type,
+  _type,
   justify,
   align,
   gutter = 0,
   children,
   style,
-  className
+  className,
 }) => {
   const gutterValue = typeof gutter === 'object' ? 0 : gutter
 
   const childrenWithGutter =
     gutterValue > 0
-      ? React.Children.map(children, child => {
+      ? React.Children.map(children, (child) => {
           if (!child) return child
-          return React.cloneElement(child as React.ReactElement<any>, { $gutter: gutterValue })
+          return React.cloneElement(child as React.ReactElement<any>, {
+            $gutter: gutterValue,
+          })
         })
       : children
 

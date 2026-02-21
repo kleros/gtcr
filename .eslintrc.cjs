@@ -1,27 +1,34 @@
 module.exports = {
   // Plugins
-  plugins: ['unicorn', 'react-hooks', 'prettier', 'jsx-a11y', 'promise'],
+  plugins: [
+    '@typescript-eslint',
+    'unicorn',
+    'react-hooks',
+    'prettier',
+    'jsx-a11y',
+    'promise',
+  ],
 
   // Parser
+  parser: '@typescript-eslint/parser',
   parserOptions: {
     ecmaVersion: 2022,
     sourceType: 'module',
     ecmaFeatures: {
-      jsx: true
-    }
+      jsx: true,
+    },
   },
 
   // Settings
   settings: {
     'import/resolver': {
-      node: {
-        extensions: ['.js', '.jsx', '.ts', '.tsx'],
-        moduleDirectory: ['node_modules', 'src/']
-      }
+      typescript: {
+        alwaysTryTypes: true,
+      },
     },
     react: {
-      version: 'detect'
-    }
+      version: 'detect',
+    },
   },
 
   // Extends
@@ -32,19 +39,21 @@ module.exports = {
     'plugin:jsx-a11y/recommended',
     'plugin:import/errors',
     'plugin:import/warnings',
-    'plugin:promise/recommended'
+    'plugin:import/typescript',
+    'plugin:promise/recommended',
   ],
 
   env: {
     browser: true,
     es2022: true,
-    node: true
+    node: true,
   },
 
   // Rule Overrides
   rules: {
     // Generic JS
-    'no-unused-vars': [
+    'no-unused-vars': 'off',
+    '@typescript-eslint/no-unused-vars': [
       2,
       {
         vars: 'all',
@@ -52,15 +61,15 @@ module.exports = {
         ignoreRestSiblings: false,
         caughtErrors: 'all',
         varsIgnorePattern: '^_',
-        argsIgnorePattern: '^_'
-      }
+        argsIgnorePattern: '^_',
+      },
     ],
     'prefer-const': 2,
     'arrow-body-style': [2, 'as-needed'],
     curly: [2, 'multi'],
     'padding-line-between-statements': [
       2,
-      { blankLine: 'never', prev: 'import', next: 'import' }
+      { blankLine: 'never', prev: 'import', next: 'import' },
     ],
     'no-useless-concat': 2,
     'prefer-template': 2,
@@ -72,13 +81,10 @@ module.exports = {
     'unicorn/no-abusive-eslint-disable': 'off',
     'unicorn/number-literal-case': 'off',
 
-    // import
+    // import (named, default, namespace are handled by TypeScript)
     'import/no-unresolved': 2,
-    'import/named': 2,
-    'import/default': 2,
-    'import/namespace': 2,
     'import/no-named-as-default': 2,
-    'import/no-named-as-default-member': 2,
+    'import/no-named-as-default-member': 0,
     'import/no-extraneous-dependencies': 2,
     'import/newline-after-import': 2,
     'import/no-named-default': 2,
@@ -106,35 +112,8 @@ module.exports = {
       2,
       {
         semi: false,
-        singleQuote: true
-      }
-    ]
-  },
-
-  overrides: [
-    {
-      files: ['**/*.ts', '**/*.tsx'],
-      parser: '@typescript-eslint/parser',
-      parserOptions: {
-        ecmaVersion: 2022,
-        sourceType: 'module',
-        ecmaFeatures: { jsx: true }
+        singleQuote: true,
       },
-      plugins: ['@typescript-eslint'],
-      rules: {
-        'no-unused-vars': 'off',
-        '@typescript-eslint/no-unused-vars': [
-          2,
-          {
-            vars: 'all',
-            args: 'all',
-            ignoreRestSiblings: false,
-            caughtErrors: 'all',
-            varsIgnorePattern: '^_',
-            argsIgnorePattern: '^_'
-          }
-        ]
-      }
-    }
-  ]
+    ],
+  },
 }

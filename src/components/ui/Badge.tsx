@@ -49,7 +49,7 @@ const STATUS_COLORS: Record<string, string> = {
   processing: 'primaryColor',
   error: 'errorColor',
   warning: 'warningColor',
-  default: 'badgeFallbackColor'
+  default: 'badgeFallbackColor',
 }
 
 const StatusDot = styled.span<{ $color?: string; $status?: string }>`
@@ -89,17 +89,16 @@ const Badge: React.FC<BadgeProps> = ({
   dot,
   children,
   style,
-  className
+  className,
 }) => {
   // Status mode (no children wrapper)
-  if (status || (text !== undefined && !children)) {
+  if (status || (text !== undefined && !children))
     return (
       <StatusWrapper style={style} className={className}>
         <StatusDot $status={status} $color={color} />
         {text && <StatusText>{text}</StatusText>}
       </StatusWrapper>
     )
-  }
 
   // Count/dot mode (wrapping children)
   const showBadge = dot || (count !== undefined && count !== 0)
@@ -107,11 +106,7 @@ const Badge: React.FC<BadgeProps> = ({
   return (
     <Wrapper style={style} className={className}>
       {children}
-      {showBadge && (
-        <CountBadge $dot={dot}>
-          {!dot ? count : null}
-        </CountBadge>
-      )}
+      {showBadge && <CountBadge $dot={dot}>{!dot ? count : null}</CountBadge>}
     </Wrapper>
   )
 }

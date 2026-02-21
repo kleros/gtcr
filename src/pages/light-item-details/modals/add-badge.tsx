@@ -6,7 +6,7 @@ import {
   Typography,
   Descriptions,
   List,
-  Radio
+  Radio,
 } from 'components/ui'
 import styled from 'styled-components'
 import ETHAmount from 'components/eth-amount'
@@ -56,16 +56,24 @@ export const StyledA = styled.a`
   text-decoration: underline;
 `
 
+interface BadgeInfo {
+  tcrAddress: string
+  fileURI?: string
+  submissionDeposit: { toString: () => string }
+  metadata: { tcrTitle: string; logoURI: string; columns: Column[] }
+  [key: string]: unknown
+}
+
 interface AddBadgeModalProps {
   onCancel: () => void
-  availableBadges?: any[]
+  availableBadges?: BadgeInfo[]
   visible?: boolean
   tcrAddress?: string
   connectedTCRAddr?: string
-  onSelectBadge: (badge: any) => void
+  onSelectBadge: (badge: BadgeInfo) => void
   onEnableNewBadge: () => void
   isFetchingBadges?: boolean
-  foundBadges?: any[]
+  foundBadges?: BadgeInfo[]
 }
 
 const AddBadgeModal = ({
@@ -77,10 +85,10 @@ const AddBadgeModal = ({
   onSelectBadge,
   onEnableNewBadge,
   isFetchingBadges,
-  foundBadges
+  foundBadges,
 }: AddBadgeModalProps) => {
   const nativeCurrency = useNativeCurrency()
-  const [selectedBadge, setSelectedBadge] = useState<any>()
+  const [selectedBadge, setSelectedBadge] = useState<number>()
   const handleSubmit = useCallback(() => {
     onSelectBadge(availableBadges[selectedBadge])
     onCancel()
@@ -95,7 +103,7 @@ const AddBadgeModal = ({
     availableBadges &&
     availableBadges.filter(
       ({ tcrAddress: availableBadgeAddr }) =>
-        !foundBadges.map(b => b.tcrAddress).includes(availableBadgeAddr)
+        !foundBadges.map((b) => b.tcrAddress).includes(availableBadgeAddr),
     )
 
   // The radio button doesn't trigger onSelectBadge when displayed,
@@ -116,7 +124,7 @@ const AddBadgeModal = ({
         footer={[
           <Button key="back" onClick={onCancel}>
             Cancel
-          </Button>
+          </Button>,
         ]}
         onCancel={onCancel}
       >
@@ -140,11 +148,11 @@ const AddBadgeModal = ({
           disabled={typeof selectedBadge === 'undefined'}
         >
           Add Badge
-        </Button>
+        </Button>,
       ]}
     >
       <StyledRadioGroup
-        onChange={e => setSelectedBadge(e.target.value)}
+        onChange={(e) => setSelectedBadge(e.target.value)}
         value={selectedBadge}
       >
         {filteredAvailableBadges.map(
@@ -166,7 +174,7 @@ const AddBadgeModal = ({
                 />
               </StyledListItem>
             </StyledRadio>
-          )
+          ),
         )}
         {filteredAvailableBadges.length === 0 && (
           <div>No badges available for this list</div>

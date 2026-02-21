@@ -65,5 +65,4 @@ const ErrorPage = ({ code, title, message, tip }: ErrorPageProps) => (
   </StyledDiv>
 )
 
-
 export default ErrorPage

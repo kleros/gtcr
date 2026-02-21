@@ -4,11 +4,12 @@ import {
   SUBGRAPH_RULING,
   PARTY,
   itemToStatusCode,
-  STATUS_CODE
+  STATUS_CODE,
 } from 'utils/item-status'
 import { TCRViewContext } from 'contexts/tcr-view-context'
 import useRequiredFees from 'hooks/required-fees'
 import { ethers, BigNumber } from 'ethers'
+
 const { formatEther } = ethers.utils
 import useNativeCurrency from 'hooks/native-currency'
 import {
@@ -17,7 +18,7 @@ import {
   StyledParagraph,
   StyledIcon,
   StyledCard,
-  StyledContent
+  StyledContent,
 } from 'pages/light-item-details/crowdfunding-card'
 
 interface CrowdfundingCardProps {
@@ -26,13 +27,17 @@ interface CrowdfundingCardProps {
   appealCost: BigNumber
 }
 
-const CrowdfundingCard = ({ item, timestamp, appealCost }: CrowdfundingCardProps) => {
+const CrowdfundingCard = ({
+  item,
+  timestamp,
+  appealCost,
+}: CrowdfundingCardProps) => {
   const {
     challengePeriodDuration,
     sharedStakeMultiplier,
     winnerStakeMultiplier,
     loserStakeMultiplier,
-    MULTIPLIER_DIVISOR
+    MULTIPLIER_DIVISOR,
   } = useContext(TCRViewContext)
   const nativeCurrency = useNativeCurrency()
 
@@ -44,7 +49,7 @@ const CrowdfundingCard = ({ item, timestamp, appealCost }: CrowdfundingCardProps
     currentRuling: item && item.currentRuling,
     item,
     MULTIPLIER_DIVISOR,
-    appealCost
+    appealCost,
   })
   const challengerFees = useRequiredFees({
     side: PARTY.CHALLENGER,
@@ -54,7 +59,7 @@ const CrowdfundingCard = ({ item, timestamp, appealCost }: CrowdfundingCardProps
     currentRuling: item && item.currentRuling,
     item,
     MULTIPLIER_DIVISOR,
-    appealCost
+    appealCost,
   })
 
   if (!item || !challengePeriodDuration) return null
@@ -124,7 +129,7 @@ const CrowdfundingCard = ({ item, timestamp, appealCost }: CrowdfundingCardProps
             {hasPaidRequester
               ? `Submitter funded. The challenger must now fully fund his side of the appeal before the deadline in order not to lose the dispute.`
               : `Contribute arbitration fees to the submitter's appeal for a chance to win at most ${formatEther(
-                  requesterFees.potentialReward
+                  requesterFees.potentialReward,
                 )} ${nativeCurrency}.`}
           </StyledParagraph>
         </StyledSection>
@@ -142,7 +147,7 @@ const CrowdfundingCard = ({ item, timestamp, appealCost }: CrowdfundingCardProps
             {hasPaidChallenger
               ? 'Challenger fully funded. The submitter must now fully fund his side of the appeal before the deadline in order not to lose the dispute.'
               : `Contribute arbitration fees to the challenger's appeal for a chance to win at most ${formatEther(
-                  challengerFees.potentialReward
+                  challengerFees.potentialReward,
                 )} ${nativeCurrency}.`}
           </StyledParagraph>
         </StyledSection>

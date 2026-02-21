@@ -1,12 +1,12 @@
 import { Card, Button, Alert, Steps } from 'components/ui'
-import Icon from 'components/ui/Icon'
+import Icon from 'components/ui/icon'
 import { Link } from 'react-router-dom'
 import React, { useState } from 'react'
 import {
   parseEther,
   encodeFunctionData,
   getContractAddress,
-  decodeEventLog
+  decodeEventLog,
 } from 'viem'
 import { useAccount, usePublicClient, useWalletClient, useChainId } from 'wagmi'
 import { simulateContract } from '@wagmi/core'
@@ -15,7 +15,7 @@ import _GTCRFactory from 'assets/abis/LightGTCRFactory.json'
 import ipfsPublish from 'utils/ipfs-publish'
 import { getIPFSPath } from 'utils/get-ipfs-path'
 import { ZERO_ADDRESS, isVowel } from 'utils/string'
-import { wrapWithToast } from 'utils/wrapWithToast'
+import { wrapWithToast } from 'utils/wrap-with-toast'
 import { wagmiConfig } from 'config/wagmi'
 import useWindowDimensions from 'hooks/window-dimensions'
 import EnsureAuth from 'components/ensure-auth'
@@ -25,7 +25,7 @@ import {
   defaultEvidenceDisplayUri,
   defaultTcrAddresses,
   lgtcrFactoryAddresses,
-  txBatcherAddresses
+  txBatcherAddresses,
 } from 'config/tcr-addresses'
 
 export const StyledDiv = styled.div`
@@ -69,20 +69,20 @@ export const _txBatcher = [
     inputs: [
       { name: 'targets', type: 'address[]' },
       { name: 'values', type: 'uint256[]' },
-      { name: 'datas', type: 'bytes[]' }
+      { name: 'datas', type: 'bytes[]' },
     ],
     name: 'batchSend',
     outputs: [],
     payable: true,
     stateMutability: 'payable',
-    type: 'function'
-  }
+    type: 'function',
+  },
 ]
 
 const getTcrMetaEvidence = async (
   tcrState,
   parentTCRAddress,
-  evidenceDisplayInterfaceURI
+  evidenceDisplayInterfaceURI,
 ) => {
   const {
     tcrTitle,
@@ -97,7 +97,7 @@ const getTcrMetaEvidence = async (
     relItemNamePlural,
     relTcrPrimaryDocument,
     isTCRofTCRs,
-    relTcrDisabled
+    relTcrDisabled,
   } = tcrState
   const metadata = {
     tcrTitle,
@@ -108,7 +108,7 @@ const getTcrMetaEvidence = async (
     logoURI: tcrLogo,
     requireRemovalEvidence: true,
     isTCRofTCRs,
-    relTcrDisabled
+    relTcrDisabled,
   }
 
   const relTcrTitle = `${tcrTitle} enabled badges`
@@ -122,16 +122,17 @@ const getTcrMetaEvidence = async (
     requireRemovalEvidence: true,
     isTCRofTCRs: true,
     parentTCRAddress,
-    relTcrDisabled: true
+    relTcrDisabled: true,
   }
 
   const commonMetaEvidenceProps = {
     category: 'Curated Lists',
-    question: `Does the ${(itemName && itemName.toLowerCase()) ||
-      'item'} comply with the required criteria?`,
+    question: `Does the ${
+      (itemName && itemName.toLowerCase()) || 'item'
+    } comply with the required criteria?`,
     fileURI: tcrPrimaryDocument,
     evidenceDisplayInterfaceURI,
-    metadata
+    metadata,
   }
 
   const commonRelMetaEvidenceProps = {
@@ -147,8 +148,8 @@ const getTcrMetaEvidence = async (
       'arbitrableContractAddress',
       'arbitratorContractAddress',
       'arbitrableChainID',
-      'arbitrableJsonRpcUrl'
-    ]
+      'arbitrableJsonRpcUrl',
+    ],
   }
 
   const registrationMetaEvidence = {
@@ -171,14 +172,16 @@ const getTcrMetaEvidence = async (
       rulingOptions: {
         titles: ['Yes, Add It', "No, Don't Add It"],
         descriptions: [
-          `Select this if you think the ${(itemName && itemName.toLowerCase()) ||
-            'item'} complies with the required criteria and should be added.`,
-          `Select this if you think the ${(itemName && itemName.toLowerCase()) ||
-            'item'} does not comply with the required criteria and should not be added.`
-        ]
+          `Select this if you think the ${
+            (itemName && itemName.toLowerCase()) || 'item'
+          } complies with the required criteria and should be added.`,
+          `Select this if you think the ${
+            (itemName && itemName.toLowerCase()) || 'item'
+          } does not comply with the required criteria and should not be added.`,
+        ],
       },
-      ...commonMetaEvidenceProps
-    }
+      ...commonMetaEvidenceProps,
+    },
   }
   const clearingMetaEvidence = {
     name: 'clr-meta-evidence.json',
@@ -200,14 +203,16 @@ const getTcrMetaEvidence = async (
       rulingOptions: {
         titles: ['Yes, Remove It', "No, Don't Remove It"],
         descriptions: [
-          `Select this if you think the ${(itemName && itemName.toLowerCase()) ||
-            'item'} does not comply with the required criteria and should be removed.`,
-          `Select this if you think the ${(itemName && itemName.toLowerCase()) ||
-            'item'} complies with the required criteria and should not be removed.`
-        ]
+          `Select this if you think the ${
+            (itemName && itemName.toLowerCase()) || 'item'
+          } does not comply with the required criteria and should be removed.`,
+          `Select this if you think the ${
+            (itemName && itemName.toLowerCase()) || 'item'
+          } complies with the required criteria and should not be removed.`,
+        ],
       },
-      ...commonMetaEvidenceProps
-    }
+      ...commonMetaEvidenceProps,
+    },
   }
 
   const relRegistrationMetaEvidence = {
@@ -219,11 +224,11 @@ const getTcrMetaEvidence = async (
         titles: ['Yes, Add It', "No, Don't Add It"],
         descriptions: [
           `Select this if you think the ${relItemName} complies with the required criteria and should be added.`,
-          `Select this if you think the ${relItemName} does not comply with the required criteria and should not be added.`
-        ]
+          `Select this if you think the ${relItemName} does not comply with the required criteria and should not be added.`,
+        ],
       },
-      ...commonRelMetaEvidenceProps
-    }
+      ...commonRelMetaEvidenceProps,
+    },
   }
   const relClearingMetaEvidence = {
     name: 'rel-clr-meta-evidence.json',
@@ -234,11 +239,11 @@ const getTcrMetaEvidence = async (
         titles: ['Yes, Remove It', "No, Don't Remove It"],
         descriptions: [
           `Select this if you think the ${relItemName} does not comply with the required criteria and should be removed.`,
-          `Select this if you think the ${relItemName} complies with the required criteria and should not be removed.`
-        ]
+          `Select this if you think the ${relItemName} complies with the required criteria and should not be removed.`,
+        ],
       },
-      ...commonRelMetaEvidenceProps
-    }
+      ...commonRelMetaEvidenceProps,
+    },
   }
 
   const enc = new TextEncoder()
@@ -247,36 +252,38 @@ const getTcrMetaEvidence = async (
     registrationMetaEvidence,
     clearingMetaEvidence,
     relRegistrationMetaEvidence,
-    relClearingMetaEvidence
+    relClearingMetaEvidence,
   ].map(({ name, data }) => ({
     name,
-    data: enc.encode(JSON.stringify(data))
+    data: enc.encode(JSON.stringify(data)),
   }))
 
   const ipfsMetaEvidenceObjects = (
     await Promise.all(files.map(({ name, data }) => ipfsPublish(name, data)))
-  ).map(ipfsMetaEvidenceObject => getIPFSPath(ipfsMetaEvidenceObject))
+  ).map((ipfsMetaEvidenceObject) => getIPFSPath(ipfsMetaEvidenceObject))
 
   const [
     registrationMetaEvidencePath,
     clearingMetaEvidencePath,
     relRegistrationMetaEvidencePath,
-    relClearingMetaEvidencePath
+    relClearingMetaEvidencePath,
   ] = ipfsMetaEvidenceObjects
 
   return {
     registrationMetaEvidencePath,
     clearingMetaEvidencePath,
     relRegistrationMetaEvidencePath,
-    relClearingMetaEvidencePath
+    relClearingMetaEvidencePath,
   }
 }
 
 interface DeployProps {
-  setTxState: (tx: any) => void
-  tcrState: Record<string, any>
-  setTcrState: (fn: any) => void
-  [key: string]: any
+  setTxState: (tx: Record<string, unknown>) => void
+  tcrState: Record<string, unknown>
+  setTcrState: (
+    fn: (prev: Record<string, unknown>) => Record<string, unknown>,
+  ) => void
+  [key: string]: unknown
 }
 
 const Deploy = ({ setTxState, tcrState, setTcrState }: DeployProps) => {
@@ -293,31 +300,28 @@ const Deploy = ({ setTxState, tcrState, setTcrState }: DeployProps) => {
   const defaultTCRAddress = defaultTcrAddresses[chainId]
   const batcherAddress = txBatcherAddresses[chainId]
   const evidenceDisplayInterfaceURI = defaultEvidenceDisplayUri[chainId]
-  const {
-    submissionDeposit,
-    metaEvidence,
-    challengePeriodDuration
-  } = useTcrView(defaultTCRAddress)
+  const { submissionDeposit, metaEvidence, challengePeriodDuration } =
+    useTcrView(defaultTCRAddress)
 
   const onDeploy = async () => {
     try {
       const txCount = await publicClient.getTransactionCount({
-        address: factoryAddress
+        address: factoryAddress,
       })
       const parentTCRAddress = getContractAddress({
         from: factoryAddress,
-        nonce: BigInt(txCount + 1)
+        nonce: BigInt(txCount + 1),
       })
 
       const {
         registrationMetaEvidencePath,
         clearingMetaEvidencePath,
         relRegistrationMetaEvidencePath,
-        relClearingMetaEvidencePath
+        relClearingMetaEvidencePath,
       } = await getTcrMetaEvidence(
         tcrState,
         parentTCRAddress,
-        evidenceDisplayInterfaceURI
+        evidenceDisplayInterfaceURI,
       )
 
       const relTCRArgs = [
@@ -331,29 +335,29 @@ const Deploy = ({ setTxState, tcrState, setTcrState }: DeployProps) => {
           parseEther(
             tcrState.relTcrDisabled
               ? '10000000000000'
-              : tcrState.relSubmissionBaseDeposit.toString()
+              : tcrState.relSubmissionBaseDeposit.toString(),
           ),
           parseEther(tcrState.relRemovalBaseDeposit.toString()),
           parseEther(tcrState.relSubmissionChallengeBaseDeposit.toString()),
-          parseEther(tcrState.relRemovalChallengeBaseDeposit.toString())
+          parseEther(tcrState.relRemovalChallengeBaseDeposit.toString()),
         ],
         Number(tcrState.relChallengePeriodDuration) * 60 * 60,
         [
           Math.ceil(Number(tcrState.relSharedStakeMultiplier)) * 100,
           Math.ceil(Number(tcrState.relWinnerStakeMultiplier)) * 100,
-          Math.ceil(Number(tcrState.relLoserStakeMultiplier)) * 100
+          Math.ceil(Number(tcrState.relLoserStakeMultiplier)) * 100,
         ],
-        ZERO_ADDRESS
+        ZERO_ADDRESS,
       ]
 
       const relData = encodeFunctionData({
         abi: _GTCRFactory,
         functionName: 'deploy',
-        args: relTCRArgs
+        args: relTCRArgs,
       })
       const relTCRAddress = getContractAddress({
         from: factoryAddress,
-        nonce: BigInt(txCount)
+        nonce: BigInt(txCount),
       })
 
       const TCRArgs = [
@@ -367,20 +371,20 @@ const Deploy = ({ setTxState, tcrState, setTcrState }: DeployProps) => {
           parseEther(tcrState.submissionBaseDeposit.toString()),
           parseEther(tcrState.removalBaseDeposit.toString()),
           parseEther(tcrState.submissionChallengeBaseDeposit.toString()),
-          parseEther(tcrState.removalChallengeBaseDeposit.toString())
+          parseEther(tcrState.removalChallengeBaseDeposit.toString()),
         ],
         Number(tcrState.challengePeriodDuration) * 60 * 60,
         [
           Math.ceil(Number(tcrState.sharedStakeMultiplier)) * 100,
           Math.ceil(Number(tcrState.winnerStakeMultiplier)) * 100,
-          Math.ceil(Number(tcrState.loserStakeMultiplier)) * 100
+          Math.ceil(Number(tcrState.loserStakeMultiplier)) * 100,
         ],
-        ZERO_ADDRESS
+        ZERO_ADDRESS,
       ]
       const tcrData = encodeFunctionData({
         abi: _GTCRFactory,
         functionName: 'deploy',
-        args: TCRArgs
+        args: TCRArgs,
       })
 
       const targets = [factoryAddress, factoryAddress]
@@ -393,14 +397,14 @@ const Deploy = ({ setTxState, tcrState, setTcrState }: DeployProps) => {
         functionName: 'batchSend',
         args: [targets, values, datas],
         gas: 8000000n,
-        account
+        account,
       })
 
       setCurrentStep(1)
 
       const result = await wrapWithToast(
         () => walletClient.writeContract(request),
-        publicClient
+        publicClient,
       )
 
       if (result.status) {
@@ -411,35 +415,31 @@ const Deploy = ({ setTxState, tcrState, setTcrState }: DeployProps) => {
         let contractAddress = parentTCRAddress // fallback to predicted address
         try {
           const newGTCRLogs = result.result.logs
-            .map(log => {
+            .map((log) => {
               try {
                 return decodeEventLog({
                   abi: _GTCRFactory,
                   data: log.data,
-                  topics: log.topics
+                  topics: log.topics,
                 })
               } catch {
                 return null
               }
             })
-            .filter(
-              parsed =>
-                parsed && parsed.eventName === 'NewGTCR'
-            )
+            .filter((parsed) => parsed && parsed.eventName === 'NewGTCR')
           // The second NewGTCR event is the parent TCR
-          if (newGTCRLogs.length >= 2) {
+          if (newGTCRLogs.length >= 2)
             contractAddress = newGTCRLogs[1].args._address
-          } else if (newGTCRLogs.length === 1) {
+          else if (newGTCRLogs.length === 1)
             contractAddress = newGTCRLogs[0].args._address
-          }
         } catch (err) {
           console.error('Error parsing deploy logs:', err)
         }
 
         setTxState({ txHash, status: 'mined', contractAddress })
-        setTcrState(prevState => ({
+        setTcrState((prevState) => ({
           ...prevState,
-          finished: true
+          finished: true,
         }))
         setCurrentStep(2)
         setDeployedTCRAddress(contractAddress)

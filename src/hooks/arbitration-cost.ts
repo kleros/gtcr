@@ -1,19 +1,19 @@
 import { useEffect, useState, useMemo } from 'react'
-import { ethers } from 'ethers'
+import { ethers, BigNumber } from 'ethers'
 import { useDebounce } from 'use-debounce'
 import { abi as _arbitrator } from '@kleros/erc-792/build/contracts/IArbitrator.json'
 
 const useArbitrationCost = ({
   address: inputAddress,
   arbitratorExtraData: inputArbitratorExtraData,
-  library
+  library,
 }: {
   address: string
   arbitratorExtraData: string
-  library: any
+  library: EthersLibrary | null
 }) => {
-  const [error, setError] = useState<any>()
-  const [arbitrationCost, setArbitrationCost] = useState<any>()
+  const [error, setError] = useState<unknown>()
+  const [arbitrationCost, setArbitrationCost] = useState<BigNumber>()
   const [address] = useDebounce(inputAddress, 1000)
   const [arbitratorExtraData] = useDebounce(inputArbitratorExtraData, 1000)
 
@@ -23,7 +23,7 @@ const useArbitrationCost = ({
       try {
         const arbitrator = new ethers.Contract(address, _arbitrator, library)
         setArbitrationCost(
-          await arbitrator.arbitrationCost(arbitratorExtraData)
+          await arbitrator.arbitrationCost(arbitratorExtraData),
         )
       } catch (err) {
         console.error('Error fetching arbitration cost', err)

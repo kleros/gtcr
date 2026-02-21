@@ -1,7 +1,6 @@
 import { toast, type ToastPosition } from 'react-toastify'
 import type { PublicClient, TransactionReceipt } from 'viem'
-
-import { parseWagmiError } from './parseWagmiError'
+import { parseWagmiError } from './parse-wagmi-error'
 
 export const OPTIONS = {
   position: 'top-center' as ToastPosition,
@@ -10,12 +9,12 @@ export const OPTIONS = {
   closeOnClick: true,
   pauseOnHover: true,
   draggable: true,
-  progress: undefined
+  progress: undefined,
 }
 
 export const ERROR_OPTIONS = {
   ...OPTIONS,
-  autoClose: false as const
+  autoClose: false as const,
 }
 
 export type WrapWithToastReturnType = {
@@ -30,32 +29,30 @@ export const errorToast = (message: string) =>
 
 export async function wrapWithToast(
   contractWrite: () => Promise<`0x${string}`>,
-  publicClient: PublicClient
+  publicClient: PublicClient,
 ): Promise<WrapWithToastReturnType> {
   toast.info('Transaction initiated', OPTIONS)
 
-  return await contractWrite()
-    .then(
-      async hash =>
-        await publicClient
-          .waitForTransactionReceipt({ hash, confirmations: 2 })
-          .then((res: TransactionReceipt) => {
-            const status = res.status === 'success'
-
-            if (status) toast.success('Transaction mined!', OPTIONS)
-            else toast.error('Transaction reverted!', ERROR_OPTIONS)
-
-            return { status, result: res }
-          })
-    )
-    .catch(error => {
-      toast.error(parseWagmiError(error), ERROR_OPTIONS)
-      return { status: false }
+  try {
+    const hash = await contractWrite()
+    const res = await publicClient.waitForTransactionReceipt({
+      hash,
+      confirmations: 2,
     })
+    const status = res.status === 'success'
+
+    if (status) toast.success('Transaction mined!', OPTIONS)
+    else toast.error('Transaction reverted!', ERROR_OPTIONS)
+
+    return { status, result: res }
+  } catch (err) {
+    toast.error(parseWagmiError(err), ERROR_OPTIONS)
+    return { status: false }
+  }
 }
 
 export async function catchShortMessage(promise: Promise<unknown>) {
-  return await promise.catch(error =>
-    toast.error(parseWagmiError(error), ERROR_OPTIONS)
+  return await promise.catch((err) =>
+    toast.error(parseWagmiError(err), ERROR_OPTIONS),
   )
 }

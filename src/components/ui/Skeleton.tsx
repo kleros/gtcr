@@ -78,7 +78,7 @@ const Skeleton: React.FC<SkeletonProps> = ({
   avatar = false,
   children,
   style,
-  className
+  className,
 }) => {
   if (!loading && children) return <>{children}</>
   if (!loading) return null
@@ -97,9 +97,19 @@ const Skeleton: React.FC<SkeletonProps> = ({
     <SkeletonWrapper style={style} className={className}>
       {avatar && <AvatarPlaceholder $active={active} />}
       <ContentArea>
-        {title !== false && <TitleBar className="ui-skeleton-title" $active={active} $width={titleWidth} />}
+        {title !== false && (
+          <TitleBar
+            className="ui-skeleton-title"
+            $active={active}
+            $width={titleWidth}
+          />
+        )}
         {Array.from({ length: paraRows }).map((_, i) => (
-          <ParagraphLine className="ui-skeleton-paragraph" key={i} $active={active} />
+          <ParagraphLine
+            className="ui-skeleton-paragraph"
+            key={i}
+            $active={active}
+          />
         ))}
       </ContentArea>
     </SkeletonWrapper>

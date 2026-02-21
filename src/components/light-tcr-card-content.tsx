@@ -44,7 +44,7 @@ const TCRCardContent = ({
   tcrAddress,
   currentTCRAddress,
   ID,
-  hideDetailsButton
+  hideDetailsButton,
 }: TCRCardContentProps) => {
   const { chainId } = useParams()
 
@@ -88,7 +88,7 @@ const TCRCardContent = ({
             <Button
               onClick={() =>
                 navigateAndScrollTop(
-                  `/tcr/${chainId}/${currentTCRAddress}/${ID}`
+                  `/tcr/${chainId}/${currentTCRAddress}/${ID}`,
                 )
               }
             >

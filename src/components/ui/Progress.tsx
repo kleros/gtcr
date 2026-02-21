@@ -1,5 +1,5 @@
 import React from 'react'
-import styled, { css, keyframes } from 'styled-components'
+import styled, { css, keyframes, DefaultTheme } from 'styled-components'
 
 const activeAnim = keyframes`
   0% {
@@ -39,7 +39,11 @@ const Inner = styled.div`
   overflow: hidden;
 `
 
-const getBarColor = (status: string, strokeColor: string | undefined, theme: any): string => {
+const getBarColor = (
+  status: string,
+  strokeColor: string | undefined,
+  theme: DefaultTheme,
+): string => {
   if (strokeColor) return strokeColor
   switch (status) {
     case 'success':
@@ -103,7 +107,7 @@ const Progress: React.FC<ProgressProps> = ({
   showInfo = true,
   strokeColor,
   style,
-  className
+  className,
 }) => {
   const effectiveStatus =
     status === 'normal' && percent >= 100 ? 'success' : status

@@ -199,10 +199,10 @@ const Popover: React.FC<PopoverProps> = ({
   trigger = 'hover',
   visible: controlledVisible,
   onVisibleChange,
-  arrowPointAtCenter,
+  _arrowPointAtCenter,
   children,
   style,
-  className
+  className,
 }) => {
   const [internalVisible, setInternalVisible] = useState(false)
   const isControlled = controlledVisible !== undefined
@@ -213,21 +213,19 @@ const Popover: React.FC<PopoverProps> = ({
 
   const setVisible = useCallback(
     (val: boolean) => {
-      if (!isControlled) {
-        setInternalVisible(val)
-      }
+      if (!isControlled) setInternalVisible(val)
+
       onVisibleChange && onVisibleChange(val)
     },
-    [isControlled, onVisibleChange]
+    [isControlled, onVisibleChange],
   )
 
   // Click outside
   useEffect(() => {
     if (!visible || trigger !== 'click') return
     const handleClickOutside = (e: MouseEvent) => {
-      if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node))
         setVisible(false)
-      }
     }
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
@@ -238,13 +236,11 @@ const Popover: React.FC<PopoverProps> = ({
       if (enterTimer.current) clearTimeout(enterTimer.current)
       if (leaveTimer.current) clearTimeout(leaveTimer.current)
     },
-    []
+    [],
   )
 
   const handleClick = useCallback(() => {
-    if (trigger === 'click') {
-      setVisible(!visible)
-    }
+    if (trigger === 'click') setVisible(!visible)
   }, [trigger, visible, setVisible])
 
   const handleMouseEnter = useCallback(() => {

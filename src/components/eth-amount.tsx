@@ -15,7 +15,7 @@ const ETHAmount: React.FC<{
   amount: BigNumberish
   decimals: number
   displayUnit: string
-}> = ({ amount, decimals, displayUnit }) => {
+}> = ({ amount, _decimals, displayUnit }) => {
   if (amount == null)
     return (
       <StyledSkeleton active paragraph={false} title={SkeletonTitleProps} />
@@ -24,7 +24,7 @@ const ETHAmount: React.FC<{
   const formattedEther = ethers.utils.formatEther(
     typeof amount === 'number'
       ? amount.toLocaleString('fullwide', { useGrouping: false })
-      : String(amount)
+      : String(amount),
   )
 
   const valueDisplayed = formattedEther.replace(/\.?0+$/, '')

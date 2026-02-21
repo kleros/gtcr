@@ -1,9 +1,4 @@
-import React, {
-  useState,
-  useEffect,
-  useCallback,
-  useMemo
-} from 'react'
+import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import {
   Button,
   Typography,
@@ -14,9 +9,9 @@ import {
   Form,
   Tooltip,
   Select,
-  Result
+  Result,
 } from 'components/ui'
-import Icon from 'components/ui/Icon'
+import Icon from 'components/ui/icon'
 import { useDebounce } from 'use-debounce'
 import { abi as _gtcr } from '@kleros/tcr/build/contracts/GeneralizedTCR.json'
 import ETHAmount from 'components/eth-amount'
@@ -33,24 +28,24 @@ import useNativeCurrency from 'hooks/native-currency'
 import useGetLogs from 'hooks/get-logs'
 import { parseIpfs } from 'utils/ipfs-parse'
 import { getIPFSPath } from 'utils/get-ipfs-path'
-import { wrapWithToast } from 'utils/wrapWithToast'
+import { wrapWithToast } from 'utils/wrap-with-toast'
 import { wagmiConfig } from 'config/wagmi'
 import {
   StyledSpin,
-  StyledModal
+  StyledModal,
 } from 'pages/light-item-details/modals/challenge'
 import {
   StyledAlert,
   StyledSkeleton,
-  SkeletonTitleProps
+  SkeletonTitleProps,
 } from 'pages/light-item-details/modals/submit-connect'
 
 interface SubmitConnectModalProps {
   onCancel: () => void
-  initialValues?: any[]
+  initialValues?: string[]
   tcrAddress?: string
-  gtcrView: any
-  [key: string]: any
+  gtcrView: ethers.Contract | undefined
+  [key: string]: unknown
 }
 
 const SubmitConnectModal = (props: SubmitConnectModalProps) => {
@@ -63,21 +58,28 @@ const SubmitConnectModal = (props: SubmitConnectModalProps) => {
   const { chainId: urlChainId } = useParams()
   const networkId = urlChainId ? Number(urlChainId) : undefined
   const library = useEthersProvider({ chainId: networkId })
-  const [error, setError] = useState<any>()
+  const [error, setError] = useState<string>()
 
   // This is the main TCR.
-  const [tcrAddr, setTCRAddr] = useState<any>()
+  const [tcrAddr, setTCRAddr] = useState<string>()
   const [debouncedTCRAddr] = useDebounce(tcrAddr, 300)
-  const [tcrMetaEvidence, setTCRMetaEvidence] = useState<any>()
+  const [tcrMetaEvidence, setTCRMetaEvidence] = useState<MetaEvidence>()
 
-  const [badgeTCRAddr, setBadgeTCRAddr] = useState<any>()
+  const [badgeTCRAddr, setBadgeTCRAddr] = useState<string>()
   const [debouncedBadgeTCRAddr] = useDebounce(badgeTCRAddr, 300)
-  const [badgeTCRMetadata, setBadgeTCRMetadata] = useState<any>()
+  const [badgeTCRMetadata, setBadgeTCRMetadata] =
+    useState<MetaEvidence['metadata']>()
 
-  const [relTCRMetaEvidence, setRelTCRMetaEvidence] = useState<any>()
-  const [relTCRSubmissionDeposit, setRelTCRSubmissionDeposit] = useState<any>()
+  const [relTCRMetaEvidence, setRelTCRMetaEvidence] = useState<MetaEvidence>()
+  const [relTCRSubmissionDeposit, setRelTCRSubmissionDeposit] =
+    useState<ethers.BigNumber>()
 
-  const [match, setMatch] = useState<any>()
+  const [match, setMatch] = useState<{
+    parentTCR: string
+    connectedTCR: string
+    badgeTCR: string
+    columns: (number | null)[]
+  }>()
   const getLogs = useGetLogs(library)
 
   // Set initial values, if any.
@@ -98,14 +100,14 @@ const SubmitConnectModal = (props: SubmitConnectModalProps) => {
         const logs = (
           await getLogs({
             ...tcr.filters.MetaEvidence(),
-            fromBlock: 0
+            fromBlock: 0,
           })
-        ).map(log => tcr.interface.parseLog(log))
+        ).map((log) => tcr.interface.parseLog(log))
         if (logs.length === 0) return
 
         const { _evidence: metaEvidencePath } = logs[0].values
         setTCRMetaEvidence(
-          await (await fetch(parseIpfs(metaEvidencePath))).json()
+          await (await fetch(parseIpfs(metaEvidencePath))).json(),
         )
       } catch (err) {
         console.error('Error fetching TCR metadata', err)
@@ -125,14 +127,14 @@ const SubmitConnectModal = (props: SubmitConnectModalProps) => {
         const badgeTCR = new ethers.Contract(
           debouncedBadgeTCRAddr,
           _gtcr,
-          library
+          library,
         )
         const logs = (
           await getLogs({
             ...badgeTCR.filters.MetaEvidence(),
-            fromBlock: 0
+            fromBlock: 0,
           })
-        ).map(log => badgeTCR.interface.parseLog(log))
+        ).map((log) => badgeTCR.interface.parseLog(log))
         if (logs.length === 0) return
 
         const { _evidence: metaEvidencePath } = logs[0].values
@@ -155,15 +157,15 @@ const SubmitConnectModal = (props: SubmitConnectModalProps) => {
         const logs = (
           await getLogs({
             ...relTCR.filters.MetaEvidence(),
-            fromBlock: 0
+            fromBlock: 0,
           })
-        ).map(log => relTCR.interface.parseLog(log))
+        ).map((log) => relTCR.interface.parseLog(log))
         if (logs.length === 0) return
 
         const { _evidence: metaEvidencePath } = logs[0].values
         const [fileResponse, relTCRData] = await Promise.all([
           fetch(parseIpfs(metaEvidencePath)),
-          gtcrView.fetchArbitrable(relTCRAddress)
+          gtcrView.fetchArbitrable(relTCRAddress),
         ])
 
         const { submissionBaseDeposit, arbitrationCost } = relTCRData
@@ -174,14 +176,14 @@ const SubmitConnectModal = (props: SubmitConnectModalProps) => {
         setRelTCRSubmissionDeposit(submissionDeposit)
       } catch (err) {
         console.error(err)
-        setError((err as any).message)
+        setError((err as Error).message)
       }
     })()
   }, [gtcrView, library, relTCRAddress, getLogs])
 
   const NONE = 'None'
   const handleChange = useCallback(
-    (i, j) => {
+    (i: number, j: number) => {
       if (!badgeTCRMetadata || !tcrMetaEvidence) return
       let newState
       if (!match)
@@ -189,12 +191,11 @@ const SubmitConnectModal = (props: SubmitConnectModalProps) => {
           parentTCR: debouncedTCRAddr,
           connectedTCR: relTCRAddress,
           badgeTCR: debouncedBadgeTCRAddr,
-          columns: badgeTCRMetadata.columns.map(() => null)
+          columns: badgeTCRMetadata.columns.map(() => null),
         }
       else newState = { ...match }
 
-      if (Number(j) === 0)
-        newState.columns[i] = null
+      if (Number(j) === 0) newState.columns[i] = null
       else newState.columns[i] = j - 1
       setMatch(newState)
     },
@@ -204,25 +205,25 @@ const SubmitConnectModal = (props: SubmitConnectModalProps) => {
       debouncedTCRAddr,
       match,
       relTCRAddress,
-      tcrMetaEvidence
-    ]
+      tcrMetaEvidence,
+    ],
   )
 
   const handleSubmit = useCallback(async () => {
     if (!relTCRMetaEvidence) return
     const file = new TextEncoder().encode(JSON.stringify(match))
     const fileURI = getIPFSPath(await ipfsPublish('match-file.json', file))
-    const { columns, itemName } = relTCRMetaEvidence.metadata
+    const { columns } = relTCRMetaEvidence.metadata
 
     const values = {
       Address: badgeTCRAddr,
-      'Match File URI': fileURI
+      'Match File URI': fileURI,
     }
 
     try {
       const encodedParams = gtcrEncode({
         columns,
-        values
+        values,
       })
 
       const { request } = await simulateContract(wagmiConfig, {
@@ -231,12 +232,12 @@ const SubmitConnectModal = (props: SubmitConnectModalProps) => {
         functionName: 'addItem',
         args: [encodedParams],
         value: BigInt(relTCRSubmissionDeposit.toString()),
-        account
+        account,
       })
 
       const result = await wrapWithToast(
         () => walletClient.writeContract(request),
-        publicClient
+        publicClient,
       )
 
       if (result.status) {
@@ -253,13 +254,12 @@ const SubmitConnectModal = (props: SubmitConnectModalProps) => {
                 subscriberAddr: getAddress(account),
                 tcrAddr: getAddress(relTCRAddress),
                 itemID,
-                networkID: chainId
-              })
-            }
-          )
-            .catch(err => {
-              console.error('Failed to subscribe for notifications.', err)
-            })
+                networkID: chainId,
+              }),
+            },
+          ).catch((err) => {
+            console.error('Failed to subscribe for notifications.', err)
+          })
         }
       }
     } catch (err) {
@@ -275,12 +275,12 @@ const SubmitConnectModal = (props: SubmitConnectModalProps) => {
     relTCRAddress,
     relTCRMetaEvidence,
     relTCRSubmissionDeposit,
-    walletClient
+    walletClient,
   ])
 
   const submitDisabled = useMemo(
-    () => !match || match.columns.filter(col => col !== null).length === 0,
-    [match]
+    () => !match || match.columns.filter((col) => col !== null).length === 0,
+    [match],
   )
 
   if (!relTCRMetaEvidence || !relTCRSubmissionDeposit)
@@ -290,7 +290,7 @@ const SubmitConnectModal = (props: SubmitConnectModalProps) => {
         footer={[
           <Button key="back" onClick={onCancel}>
             Cancel
-          </Button>
+          </Button>,
         ]}
         {...props}
       >
@@ -306,7 +306,7 @@ const SubmitConnectModal = (props: SubmitConnectModalProps) => {
         footer={[
           <Button key="back" onClick={onCancel}>
             Back
-          </Button>
+          </Button>,
         ]}
         {...props}
       >
@@ -329,7 +329,7 @@ const SubmitConnectModal = (props: SubmitConnectModalProps) => {
           disabled={submitDisabled}
         >
           Submit
-        </Button>
+        </Button>,
       ]}
       {...props}
     >
@@ -360,7 +360,7 @@ const SubmitConnectModal = (props: SubmitConnectModalProps) => {
         ) : (
           <Input
             placeholder="0x1337deadbeef..."
-            onChange={e => setTCRAddr(e.target.value)}
+            onChange={(e) => setTCRAddr(e.target.value)}
           />
         )}
       </Form.Item>
@@ -376,7 +376,7 @@ const SubmitConnectModal = (props: SubmitConnectModalProps) => {
       >
         <Input
           placeholder="0xbeafb047beef..."
-          onChange={e => setBadgeTCRAddr(e.target.value)}
+          onChange={(e) => setBadgeTCRAddr(e.target.value)}
           disabled={!tcrMetaEvidence}
         />
       </Form.Item>
@@ -417,7 +417,7 @@ const SubmitConnectModal = (props: SubmitConnectModalProps) => {
                       <Select.Option value={column.label} key={j}>
                         {column.label}
                       </Select.Option>
-                    )
+                    ),
                   )}
                 </Select>
               ) : (

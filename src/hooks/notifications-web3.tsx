@@ -10,7 +10,29 @@ import { appKitModal } from 'config/wagmi'
 
 const actionTypes = {
   TRANSACTION: 'TRANSACTION',
-  AUTHORIZATION: 'AUTHORIZATION'
+  AUTHORIZATION: 'AUTHORIZATION',
+} as const
+
+interface Web3Action {
+  type: string
+  action:
+    | ((ctx: Web3Context, signer: ethers.Signer) => Promise<Web3ActionResult>)
+    | (() => void)
+}
+
+interface Web3Context {
+  account: string
+  networkId: number
+  library: EthersLibrary | undefined
+  active: boolean
+}
+
+interface Web3ActionResult {
+  tx: { hash: string }
+  actionMessage?: string
+  onTxMined?: (result?: { contractAddress?: string }) => void
+  deployTCR?: boolean
+  factoryInterface?: ethers.utils.Interface
 }
 
 /**
@@ -27,29 +49,28 @@ const useNotificationWeb3 = () => {
   const networkId = chainId ?? DEFAULT_NETWORK
   const provider = useEthersProvider({ chainId })
   const signer = useEthersSigner({ chainId })
-  const [web3Actions, setWeb3Actions] = useState<any[]>([])
-  const [timestamp, setTimestamp] = useState<any>()
-  const [latestBlock, setLatestBlock] = useState<any>()
+  const [web3Actions, setWeb3Actions] = useState<Web3Action[]>([])
+  const [timestamp, setTimestamp] = useState<BigNumber>()
+  const [latestBlock, setLatestBlock] = useState<number>()
   const prevNetworkRef = useRef<number | null>(null)
 
   const factoryInterface = useMemo(
     () => new ethers.utils.Interface(_GTCRFactory),
-    []
+    [],
   )
-  const pushWeb3Action = useCallback(action => {
-    setWeb3Actions(prevState =>
-      prevState.concat({ action, type: actionTypes.TRANSACTION })
+  const pushWeb3Action = useCallback((action: Web3Action['action']) => {
+    setWeb3Actions((prevState) =>
+      prevState.concat({ action, type: actionTypes.TRANSACTION }),
     )
   }, [])
 
-  const requestWeb3Auth = useCallback(action => {
+  const requestWeb3Auth = useCallback((action?: () => void) => {
     // Open the Reown AppKit modal for wallet connection
-    if (appKitModal) {
-      appKitModal.open({ view: 'Connect' })
-    }
+    if (appKitModal) appKitModal.open({ view: 'Connect' })
+
     if (action)
-      setWeb3Actions(prevState =>
-        prevState.concat({ type: actionTypes.AUTHORIZATION, action })
+      setWeb3Actions((prevState) =>
+        prevState.concat({ type: actionTypes.AUTHORIZATION, action }),
       )
   }, [])
 
@@ -70,9 +91,7 @@ const useNotificationWeb3 = () => {
     // Don't notify on initial tracking
     if (prev === null) return
 
-    if (prev !== networkId) {
-      toast.info('Network Changed')
-    }
+    if (prev !== networkId) toast.info('Network Changed')
   }, [networkId, isConnected])
 
   // Fetch timestamp.
@@ -110,7 +129,7 @@ const useNotificationWeb3 = () => {
             account,
             networkId,
             library: provider,
-            active: isConnected
+            active: isConnected,
           }
           await processWeb3Action(
             web3Action,
@@ -118,7 +137,7 @@ const useNotificationWeb3 = () => {
             signer,
             factoryInterface,
             networkId,
-            provider
+            provider,
           )
           return
         }
@@ -137,7 +156,7 @@ const useNotificationWeb3 = () => {
     factoryInterface,
     networkId,
     provider,
-    isConnected
+    isConnected,
   ])
 
   return {
@@ -148,7 +167,7 @@ const useNotificationWeb3 = () => {
     setUserSelectedWallet: () => {},
     timestamp,
     networkId,
-    latestBlock
+    latestBlock,
   }
 }
 
@@ -161,22 +180,25 @@ const useNotificationWeb3 = () => {
  * @param {object} provider - The ethers v5 provider.
  */
 async function processWeb3Action(
-  web3Action: any,
-  web3Context: any,
-  signer: any,
-  factoryInterface: any,
+  web3Action: Web3Action,
+  web3Context: Web3Context,
+  signer: ethers.Signer,
+  factoryInterface: ethers.utils.Interface,
   networkId: number,
-  provider: any
+  provider: EthersLibrary,
 ): Promise<void> {
   const notificationID = crypto.randomUUID()
-  toast.info('Requesting Signature', { toastId: notificationID, autoClose: false })
+  toast.info('Requesting Signature', {
+    toastId: notificationID,
+    autoClose: false,
+  })
   try {
     const {
       tx,
       actionMessage,
       onTxMined,
       deployTCR,
-      factoryInterface: customFactoryInterface
+      factoryInterface: customFactoryInterface,
     } = await web3Action.action(web3Context, signer)
     const hash = tx.hash
     const txLink = getTxPage({ networkId, txHash: hash })
@@ -190,7 +212,7 @@ async function processWeb3Action(
         </div>
       ),
       type: 'info',
-      autoClose: false
+      autoClose: false,
     })
 
     // Use faster polling for faster chains like Gnosis Chain
@@ -207,14 +229,14 @@ async function processWeb3Action(
         </div>
       ),
       type: 'success',
-      autoClose: 5000
+      autoClose: 5000,
     })
 
     if (onTxMined)
-      if (deployTCR) {
+      if (deployTCR)
         try {
           const interfaceToUse = customFactoryInterface || factoryInterface
-          const newGTCRLog = txMined.logs.find(log => {
+          const newGTCRLog = txMined.logs.find((log) => {
             try {
               const parsed = interfaceToUse.parseLog(log)
               return parsed.name === 'NewTCR' || 'NewGTCR' || 'NewPGTCR'
@@ -226,7 +248,7 @@ async function processWeb3Action(
           if (newGTCRLog) {
             const parsedLog = interfaceToUse.parseLog(newGTCRLog)
             onTxMined({
-              contractAddress: parsedLog.args._address
+              contractAddress: parsedLog.args._address,
             })
           } else {
             console.warn('NewGTCR event not found in transaction logs')
@@ -236,12 +258,12 @@ async function processWeb3Action(
           console.error('Error parsing transaction logs:', err)
           onTxMined({})
         }
-      } else {
-        onTxMined()
-      }
+      else onTxMined()
   } catch (err) {
     const errorMessage =
-      (err as any)?.data?.message || (err as any)?.message || 'Unknown error occurred'
+      (err as Error & { data?: { message?: string } })?.data?.message ||
+      (err as Error)?.message ||
+      'Unknown error occurred'
     toast.update(notificationID, {
       render: (
         <div>
@@ -250,7 +272,7 @@ async function processWeb3Action(
         </div>
       ),
       type: 'error',
-      autoClose: false
+      autoClose: false,
     })
   }
 }

@@ -1,7 +1,7 @@
 import React from 'react'
 import styled from 'styled-components'
 import { Tooltip } from 'components/ui'
-import Icon from 'components/ui/Icon'
+import Icon from 'components/ui/icon'
 import { parseRichAddress } from '../utils/rich-address'
 import { shortenAddress } from '../utils/string'
 

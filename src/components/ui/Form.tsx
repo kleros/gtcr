@@ -104,7 +104,14 @@ interface FormComponent extends React.FC<FormProps> {
   Item: React.FC<FormItemProps>
 }
 
-const Form: FormComponent = ({ onSubmit, id, layout = 'vertical', style, className, children }) => {
+const Form: FormComponent = ({
+  onSubmit,
+  id,
+  layout = 'vertical',
+  style,
+  className,
+  children,
+}) => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     onSubmit && onSubmit(e)
@@ -127,13 +134,13 @@ const FormItem: React.FC<FormItemProps> = ({
   label,
   validateStatus,
   help,
-  hasFeedback,
-  name,
+  _hasFeedback,
+  _name,
   style,
   className,
   children,
   colon = true,
-  required = false
+  required = false,
 }) => (
   <FormItemWrapper
     $validateStatus={validateStatus}
@@ -147,9 +154,7 @@ const FormItem: React.FC<FormItemProps> = ({
       </Label>
     )}
     <ControlWrapper className="ui-form-item-control">{children}</ControlWrapper>
-    {help && (
-      <HelpText $isError={validateStatus === 'error'}>{help}</HelpText>
-    )}
+    {help && <HelpText $isError={validateStatus === 'error'}>{help}</HelpText>}
   </FormItemWrapper>
 )
 

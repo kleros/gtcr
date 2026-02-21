@@ -23,10 +23,16 @@ const sizeStyles: Record<string, ReturnType<typeof css>> = {
     height: 40px;
     padding: 0 15px;
     font-size: 16px;
-  `
+  `,
 }
 
-const getTypeStyles = ({ btnType, theme }: { btnType?: string; theme: DefaultTheme }) => {
+const getTypeStyles = ({
+  btnType,
+  theme,
+}: {
+  btnType?: string
+  theme: DefaultTheme
+}) => {
   switch (btnType) {
     case 'primary':
       return css`
@@ -256,7 +262,7 @@ const Button: React.FC<ButtonProps> & { Group: React.FC<ButtonGroupProps> } = ({
     )
   ) : null
 
-  if (href) {
+  if (href)
     return (
       <StyledLink
         href={href}
@@ -267,14 +273,17 @@ const Button: React.FC<ButtonProps> & { Group: React.FC<ButtonGroupProps> } = ({
         block={block}
         style={style}
         className={className}
-        onClick={disabled || loading ? (e: React.MouseEvent) => e.preventDefault() : onClick}
+        onClick={
+          disabled || loading
+            ? (e: React.MouseEvent) => e.preventDefault()
+            : onClick
+        }
         {...rest}
       >
         {iconContent}
         {children}
       </StyledLink>
     )
-  }
 
   return (
     <StyledButton

@@ -14,13 +14,13 @@ function getNetworkEnv(envVariableKey: string, networkId?: number): string {
     data = process.env[envVariableKey]
       ? JSON.parse(process.env[envVariableKey])[networkId || defaultNetwork]
       : ''
-  } catch (_) {
+  } catch {
     console.error(`Failed to parse env variable ${envVariableKey}`)
   }
 
   if (data === '')
     console.warn(
-      `Warning: no value found for ${envVariableKey}, networkId: ${networkId}`
+      `Warning: no value found for ${envVariableKey}, networkId: ${networkId}`,
     )
 
   return data

@@ -11,8 +11,7 @@ type ErrorWithMetaMessages = {
 export const parseWagmiError = (error: unknown) => {
   if (!error) return ''
 
-  const { metaMessages, shortMessage, message } =
-    error as ErrorWithMetaMessages
+  const { metaMessages, shortMessage, message } = error as ErrorWithMetaMessages
   const metaMessage = metaMessages?.[0]
 
   return metaMessage ?? shortMessage ?? message ?? 'Unknown error'

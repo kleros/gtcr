@@ -1,10 +1,10 @@
 import { Skeleton, Button } from 'components/ui'
-import Icon from 'components/ui/Icon'
+import Icon from 'components/ui/icon'
 import styled, { css } from 'styled-components'
 import { smallScreenStyle } from 'styles/small-screen-style'
 import { Link, useParams } from 'react-router-dom'
 import React from 'react'
-import { Helmet } from 'react-helmet'
+import useDocumentHead from 'hooks/use-document-head'
 import { ZERO_ADDRESS, capitalizeFirstLetter } from 'utils/string'
 import ContractExplorerUrl from 'components/contract-explorer-url'
 import { defaultTcrAddresses } from 'config/tcr-addresses'
@@ -21,7 +21,10 @@ export const StyledBanner = styled.div`
   align-items: center;
   flex-wrap: wrap;
   gap: 8px;
-  transition: background 0.3s ease, box-shadow 0.3s ease, color 0.3s ease;
+  transition:
+    background 0.3s ease,
+    box-shadow 0.3s ease,
+    color 0.3s ease;
 `
 
 export const StyledButton = styled(Button)`
@@ -37,7 +40,7 @@ export const TCRInfoColumn = styled.div`
   ${smallScreenStyle(
     () => css`
       max-width: 100%;
-    `
+    `,
   )}
 `
 
@@ -90,7 +93,7 @@ export const ActionCol = styled.div`
   ${smallScreenStyle(
     () => css`
       align-items: flex-start;
-    `
+    `,
   )}
 `
 
@@ -121,7 +124,7 @@ const Banner = ({
   metaEvidence = null,
   setSubmissionFormOpen,
   connectedTCRAddr = null,
-  tcrAddress = null
+  tcrAddress = null,
 }: BannerProps) => {
   const { chainId: networkId } = useParams()
   const defaultTCRAddress = defaultTcrAddresses[networkId]
@@ -145,15 +148,13 @@ const Banner = ({
     : 'Explore curated lists on Kleros Curate.'
   const truncatedSeoMetaDescription = truncateAtWord(
     fullSeoMetaDescription,
-    160
+    160,
   )
+
+  useDocumentHead(truncatedSeoTitle, truncatedSeoMetaDescription)
 
   return (
     <>
-      <Helmet>
-        <title> {truncatedSeoTitle} </title>
-        <meta name="description" content={truncatedSeoMetaDescription} />
-      </Helmet>
       <StyledBanner>
         <TCRInfoColumn id="tcr-info-column">
           {metadata ? (
@@ -185,11 +186,7 @@ const Banner = ({
           ) : (
             <>
               <Skeleton active paragraph={false} title={{ width: '300px' }} />
-              <Skeleton
-                active
-                paragraph={{ rows: 1 }}
-                title={false}
-              />
+              <Skeleton active paragraph={{ rows: 1 }} title={false} />
             </>
           )}
         </TCRInfoColumn>
@@ -216,6 +213,5 @@ const Banner = ({
     </>
   )
 }
-
 
 export default Banner

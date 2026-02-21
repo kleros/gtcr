@@ -51,7 +51,7 @@ const MarketHeader = styled.div`
   ${smallScreenStyle(
     () => css`
       flex-wrap: wrap;
-    `
+    `,
   )}
 `
 
@@ -107,7 +107,7 @@ const LoadingMessage = styled.p`
 const SeerExtraDetails: React.FC<ISeerExtraDetails> = ({
   chainId,
   contractAddress,
-  imagesIpfsHash
+  imagesIpfsHash,
 }) => {
   const [marketDetails, setMarketDetails] = useState<MarketDetails | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -134,9 +134,9 @@ const SeerExtraDetails: React.FC<ISeerExtraDetails> = ({
         const response = await fetch(subgraphUrl, {
           method: 'POST',
           headers: {
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ query })
+          body: JSON.stringify({ query }),
         })
 
         if (!response.ok) throw new Error('Subgraph query failed')
@@ -148,11 +148,11 @@ const SeerExtraDetails: React.FC<ISeerExtraDetails> = ({
         const { marketName, outcomes } = data.data.market
 
         const filteredOutcomes = outcomes.filter(
-          (outcome: string) => outcome !== 'Invalid result'
+          (outcome: string) => outcome !== 'Invalid result',
         )
 
         const ipfsResponse = await fetch(
-          `${process.env.REACT_APP_IPFS_GATEWAY}${imagesIpfsHash}`
+          `${process.env.REACT_APP_IPFS_GATEWAY}${imagesIpfsHash}`,
         )
         if (!ipfsResponse.ok) throw new Error('Failed to fetch IPFS data')
         const ipfsData = await ipfsResponse.json()
@@ -162,14 +162,14 @@ const SeerExtraDetails: React.FC<ISeerExtraDetails> = ({
         const outcomesWithImages = filteredOutcomes.map(
           (name: string, index: number) => ({
             name,
-            image: outcomeImages[index] || ''
-          })
+            image: outcomeImages[index] || '',
+          }),
         )
 
         setMarketDetails({
           marketName,
           marketImage,
-          outcomes: outcomesWithImages
+          outcomes: outcomesWithImages,
         })
       } catch (err) {
         setError(`Failed to load market details: ${err.message}`)

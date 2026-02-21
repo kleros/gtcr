@@ -10,14 +10,15 @@ import {
   Alert,
   Slider,
   InputNumber,
-  Select
+  Select,
 } from 'components/ui'
-import Icon from 'components/ui/Icon'
+import Icon from 'components/ui/icon'
 import { toast } from 'react-toastify'
 import { withFormik } from 'formik'
 import * as yup from 'yup'
 import { useDebounce } from 'use-debounce'
 import { ethers, BigNumber } from 'ethers'
+
 const { getAddress, parseEther } = ethers.utils
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { useEthersProvider } from 'hooks/ethers-adapters'
@@ -50,7 +51,7 @@ export const StyledTCRParamContainer = styled.div`
   ${smallScreenStyle(
     () => css`
       flex-direction: column;
-    `
+    `,
   )}
 `
 
@@ -126,17 +127,19 @@ export const UploadSection = styled.div`
 `
 
 interface TCRParamsProps {
-  handleSubmit: (...args: any[]) => void
+  handleSubmit: (...args: unknown[]) => void
   formId: string
-  errors: Record<string, any>
-  setFieldValue: (field: string, value: any) => void
-  touched: Record<string, any>
+  errors: Record<string, unknown>
+  setFieldValue: (field: string, value: unknown) => void
+  touched: Record<string, unknown>
   defaultArbLabel: string
   defaultArbDataLabel: string
   defaultGovernorLabel: string
-  values: Record<string, any>
-  setTcrState: (fn: any) => void
-  [key: string]: any
+  values: Record<string, unknown>
+  setTcrState: (
+    fn: (prev: Record<string, unknown>) => Record<string, unknown>,
+  ) => void
+  [key: string]: unknown
 }
 
 const TCRParams = ({
@@ -165,27 +168,26 @@ const TCRParams = ({
   const { arbitrationCost } = useArbitrationCost({
     address: values.arbitratorAddress,
     arbitratorExtraData: values.arbitratorExtraData,
-    library: chainProvider
+    library: chainProvider,
   })
   const { symbol: tokenSymbol } = useTokenSymbol(values.tokenAddress)
   const setArbitratorExtraData = useCallback(
-    val => setFieldValue('arbitratorExtraData', val),
-    [setFieldValue]
+    (val) => setFieldValue('arbitratorExtraData', val),
+    [setFieldValue],
   )
 
   let isKlerosArbitrator
   try {
     isKlerosArbitrator =
       getAddress(debouncedArbitrator) === getAddress(klerosAddress)
-    // eslint-disable-next-line no-unused-vars
-  } catch (err) {
+  } catch {
     isKlerosArbitrator = false
   }
 
   useEffect(() => {
-    setTcrState(previousState => ({
+    setTcrState((previousState) => ({
       ...previousState,
-      ...values
+      ...values,
     }))
   }, [values, setTcrState])
 
@@ -213,10 +215,10 @@ const TCRParams = ({
           setUploading({ ...uploading, tcrLogo: false })
         else setUploading({ ...uploading, tcrPrimaryDocument: false })
     },
-    [uploading]
+    [uploading],
   )
 
-  const beforeImageUpload = useCallback(file => {
+  const beforeImageUpload = useCallback((file) => {
     const isSupportedImage =
       file.type === 'image/png' ||
       file.type === 'image/svg+xml' ||
@@ -230,7 +232,7 @@ const TCRParams = ({
     return isSupportedImage && isLt2M
   }, [])
 
-  const beforeFileUpload = useCallback(file => {
+  const beforeFileUpload = useCallback((file) => {
     const isPDF = file.type === 'application/pdf'
     if (!isPDF) toast.error('Please upload file as PDF.')
 
@@ -241,25 +243,26 @@ const TCRParams = ({
   }, [])
 
   const customRequest = useCallback(
-    fieldName => async ({ file, onSuccess, onError }) => {
-      try {
-        const data = await new Response(new Blob([file])).arrayBuffer()
-        const fileURI = getIPFSPath(
-          await ipfsPublish(sanitize(file.name), data)
-        )
+    (fieldName) =>
+      async ({ file, onSuccess, onError }) => {
+        try {
+          const data = await new Response(new Blob([file])).arrayBuffer()
+          const fileURI = getIPFSPath(
+            await ipfsPublish(sanitize(file.name), data),
+          )
 
-        setFieldValue(fieldName, fileURI)
-        onSuccess('ok', parseIpfs(fileURI))
-      } catch (err) {
-        console.error(err)
-        onError(err)
-      }
-    },
-    [setFieldValue]
+          setFieldValue(fieldName, fileURI)
+          onSuccess('ok', parseIpfs(fileURI))
+        } catch {
+          console.error(err)
+          onError(err)
+        }
+      },
+    [setFieldValue],
   )
 
   const onChangeDepositVal = useCallback(
-    value => {
+    (value) => {
       if (isNaN(value)) return
 
       setDepositVal(value)
@@ -267,7 +270,7 @@ const TCRParams = ({
       setFieldValue('removalBaseDeposit', value)
       setFieldValue('removalChallengeBaseDeposit', value)
     },
-    [setFieldValue]
+    [setFieldValue],
   )
 
   const totalDepositSlider = useMemo(() => {
@@ -286,7 +289,7 @@ const TCRParams = ({
           <Select
             defaultValue="permanent"
             style={{ width: 120, marginLeft: 8 }}
-            onChange={value => {
+            onChange={(value) => {
               if (value === 'classic') navigate(`/factory-classic/${chainId}`)
               else if (value === 'light') navigate(`/factory/${chainId}`)
             }}
@@ -517,7 +520,7 @@ const TCRParams = ({
           style={{ marginBottom: '12px', display: 'flex' }}
         >
           <Switch
-            onChange={() => setAdvancedOptions(toggle => !toggle)}
+            onChange={() => setAdvancedOptions((toggle) => !toggle)}
             style={{ marginLeft: '8px' }}
           />
         </Form.Item>
@@ -852,7 +855,7 @@ const validationSchema = yup.object().shape({
     .number()
     .typeError('Amount should be a number.')
     .min(0, 'The stake multiplier cannot be negative.')
-    .required('A value is required')
+    .required('A value is required'),
 })
 
 export default withFormik({
@@ -864,5 +867,5 @@ export default withFormik({
   },
   handleSubmit: (_, { props: { postSubmit } }) => {
     postSubmit()
-  }
+  },
 })(TCRParams)

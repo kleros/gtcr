@@ -37,8 +37,7 @@ const TimelineDot = styled.div<{ $color?: string; $custom?: boolean }>`
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  border: 2px solid
-    ${({ $color, theme }) => $color || theme.primaryColor};
+  border: 2px solid ${({ $color, theme }) => $color || theme.primaryColor};
   background: ${({ theme }) => theme.componentBackground};
 
   /* If a custom dot node is provided, override styles */
@@ -71,7 +70,11 @@ interface TimelineItemProps {
   children?: React.ReactNode
 }
 
-const TimelineItem: React.FC<TimelineItemProps> = ({ dot, color, children }) => (
+const TimelineItem: React.FC<TimelineItemProps> = ({
+  dot,
+  color,
+  children,
+}) => (
   <TimelineItemWrapper className="ui-timeline-item">
     <TimelineTail />
     <TimelineDot $color={color} $custom={!!dot}>

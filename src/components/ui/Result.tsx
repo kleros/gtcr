@@ -5,16 +5,16 @@ import {
   faCheckCircle,
   faExclamationTriangle,
   faTimesCircle,
-  faInfoCircle
+  faInfoCircle,
 } from '@fortawesome/free-solid-svg-icons'
 
 type ResultStatus = 'success' | 'error' | 'warning' | 'info'
 
-const statusIcons: Record<ResultStatus, any> = {
+const statusIcons: Record<ResultStatus, typeof faCheckCircle> = {
   success: faCheckCircle,
   error: faTimesCircle,
   warning: faExclamationTriangle,
-  info: faInfoCircle
+  info: faInfoCircle,
 }
 
 const Wrapper = styled.div`
@@ -53,16 +53,23 @@ interface ResultProps {
   icon?: React.ReactNode
   style?: React.CSSProperties
   className?: string
-  [key: string]: any
+  [key: string]: unknown
 }
 
-const Result: React.FC<ResultProps> = ({ status = 'info', title, subTitle, extra, icon, ...rest }) => {
-  const theme = useTheme() as any
+const Result: React.FC<ResultProps> = ({
+  status = 'info',
+  title,
+  subTitle,
+  extra,
+  icon,
+  ...rest
+}) => {
+  const theme = useTheme()
   const statusColors: Record<ResultStatus, string> = {
     success: theme.successColor,
     error: theme.errorColor,
     warning: theme.warningColor,
-    info: theme.infoColor
+    info: theme.infoColor,
   }
   const color = statusColors[status] || statusColors.info
   const statusIcon = statusIcons[status] || statusIcons.info

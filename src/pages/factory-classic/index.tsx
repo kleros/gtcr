@@ -1,8 +1,8 @@
 import { Steps, Button, Card, Modal } from 'components/ui'
-import Icon from 'components/ui/Icon'
+import Icon from 'components/ui/icon'
 import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import { useDebounce } from 'use-debounce'
-import { useWeb3Context } from 'hooks/useWeb3Context'
+import { useWeb3Context } from 'hooks/use-web3-context'
 import { useParams } from 'react-router-dom'
 import { ethers } from 'ethers'
 import { abi as _GTCRFactory } from '@kleros/tcr/build/contracts/GTCRFactory.json'
@@ -13,7 +13,7 @@ import TCRCardContent from 'components/tcr-card-content'
 import {
   defaultArbitrator as defaultArbitratorAddresses,
   defaultArbitratorExtraData as defaultArbitratorExtraDataObj,
-  defaultGovernor as defaultGovernorAddresses
+  defaultGovernor as defaultGovernorAddresses,
 } from 'config/tcr-addresses'
 import {
   CurrentStep,
@@ -23,25 +23,19 @@ import {
   StyledContainer,
   StyledBanner,
   StyledButtonGroup,
-  StyledTitle
+  StyledTitle,
 } from 'pages/factory'
 
 const { Step } = Steps
 const { confirm } = Modal
 
-const useCachedFactory = (version: string, networkId: any) => {
-  const {
-    address: defaultArbitrator,
-    label: defaultArbLabel
-  } = defaultArbitratorAddresses[networkId] || {}
-  const {
-    address: defaultGovernor,
-    label: defaultGovernorLabel
-  } = defaultGovernorAddresses[networkId] || {}
-  const {
-    data: defaultArbitratorExtraData,
-    label: defaultArbDataLabel
-  } = defaultArbitratorExtraDataObj[networkId] || {}
+const useCachedFactory = (version: string, networkId: number | undefined) => {
+  const { address: defaultArbitrator, label: defaultArbLabel } =
+    defaultArbitratorAddresses[networkId] || {}
+  const { address: defaultGovernor, label: defaultGovernorLabel } =
+    defaultGovernorAddresses[networkId] || {}
+  const { data: defaultArbitratorExtraData, label: defaultArbDataLabel } =
+    defaultArbitratorExtraDataObj[networkId] || {}
 
   const key = `classicTcrState@${networkId}@${version}`
   const initialWizardState = {
@@ -84,29 +78,29 @@ const useCachedFactory = (version: string, networkId: any) => {
         label: '',
         description: '',
         type: ItemTypes.ADDRESS,
-        isIdentifier: true
-      }
+        isIdentifier: true,
+      },
     ],
     relColumns: [
       {
         label: 'Address',
         description: 'The Badges list address',
         type: ItemTypes.GTCR_ADDRESS,
-        isIdentifier: true
+        isIdentifier: true,
       },
       {
         label: 'Match File URI',
         description:
           'The URI to the JSON file for matching columns for each list.',
-        type: ItemTypes.TEXT
-      }
+        type: ItemTypes.TEXT,
+      },
     ],
     currStep: 1,
-    chainId: networkId
+    chainId: networkId,
   }
   const initialState = {
     ...initialWizardState,
-    transactions: {}
+    transactions: {},
   }
   let cache = window.localStorage.getItem(key)
 
@@ -130,50 +124,50 @@ const useCachedFactory = (version: string, networkId: any) => {
   // Synchronous state reset when chain changes via URL.
   if (networkId && networkId !== prevNetworkId) {
     setPrevNetworkId(networkId)
-    setTcrState(prev => ({
+    setTcrState((prev) => ({
       ...JSON.parse(JSON.stringify(initialWizardState)),
-      transactions: prev.transactions
+      transactions: prev.transactions,
     }))
   }
 
   const STEP_COUNT = 4
   const nextStep = () =>
-    setTcrState(prevState => ({
+    setTcrState((prevState) => ({
       ...prevState,
       currStep:
         prevState.currStep === STEP_COUNT
           ? prevState.currStep
-          : prevState.currStep + 1
+          : prevState.currStep + 1,
     }))
   const previousStep = () =>
-    setTcrState(prevState => ({
+    setTcrState((prevState) => ({
       ...prevState,
       currStep:
-        prevState.currStep === 1 ? prevState.currStep : prevState.currStep - 1
+        prevState.currStep === 1 ? prevState.currStep : prevState.currStep - 1,
     }))
   const resetStepper = () =>
-    setTcrState(prevState => ({ ...prevState, currStep: 1 }))
+    setTcrState((prevState) => ({ ...prevState, currStep: 1 }))
   const resetTcrState = () =>
-    setTcrState(prevState => ({
+    setTcrState((prevState) => ({
       ...JSON.parse(JSON.stringify(initialWizardState)),
-      transactions: prevState.transactions
+      transactions: prevState.transactions,
     }))
-  const setTxState = tx =>
-    setTcrState(prevState => ({
+  const setTxState = (tx) =>
+    setTcrState((prevState) => ({
       ...prevState,
       transactions: {
         ...prevState.transactions,
-        [tx.txHash]: tx
-      }
+        [tx.txHash]: tx,
+      },
     }))
 
   useEffect(
     () =>
       window.localStorage.setItem(
         key,
-        JSON.stringify({ ...debouncedTcrState })
+        JSON.stringify({ ...debouncedTcrState }),
       ),
-    [debouncedTcrState, key]
+    [debouncedTcrState, key],
   )
 
   return {
@@ -187,11 +181,11 @@ const useCachedFactory = (version: string, networkId: any) => {
     setTxState,
     defaultArbLabel,
     defaultArbDataLabel,
-    defaultGovernorLabel
+    defaultGovernorLabel,
   }
 }
 
-export default () => {
+const FactoryClassicPage = () => {
   const { chainId: urlChainId } = useParams()
   const factoryChainId = Number(urlChainId)
   const cachedFactory = useCachedFactory(version, factoryChainId)
@@ -202,12 +196,12 @@ export default () => {
     nextStep,
     previousStep,
     STEP_COUNT,
-    resetTcrState
+    resetTcrState,
   } = cachedFactory
 
   const factoryInterface = useMemo(
     () => new ethers.utils.Interface(_GTCRFactory),
-    []
+    [],
   )
 
   const showConfirmReset = useCallback(() => {
@@ -217,7 +211,7 @@ export default () => {
       okText: 'Yes, start over',
       onOk: () => {
         resetTcrState()
-      }
+      },
     })
   }, [resetTcrState])
 
@@ -228,18 +222,18 @@ export default () => {
       if (!library || !active || !factoryInterface) return
 
       const deploymentTxHashes = Object.keys(transactions)
-        .filter(txHash => !transactions[txHash].networkId !== factoryChainId)
-        .filter(txHash => !transactions[txHash].isConnectedTCR)
+        .filter((txHash) => !transactions[txHash].networkId !== factoryChainId)
+        .filter((txHash) => !transactions[txHash].isConnectedTCR)
 
       const txDatas = await Promise.all(
-        deploymentTxHashes.map(async txHash =>
-          library.waitForTransaction(txHash)
-        )
+        deploymentTxHashes.map(async (txHash) =>
+          library.waitForTransaction(txHash),
+        ),
       )
       setPreviousDeployments(
         txDatas.map(
-          txData => factoryInterface.parseLog(txData.logs[7]).args._address
-        )
+          (txData) => factoryInterface.parseLog(txData.logs[7]).args._address,
+        ),
       )
     })()
   }, [active, factoryInterface, library, factoryChainId, transactions])
@@ -257,7 +251,11 @@ export default () => {
           <Step title="Deploy" />
         </Steps>
         <StyledContainer>
-          <CurrentStep key={factoryChainId} postSubmit={() => nextStep()} {...cachedFactory} />
+          <CurrentStep
+            key={factoryChainId}
+            postSubmit={() => nextStep()}
+            {...cachedFactory}
+          />
         </StyledContainer>
         <StyledStepper>
           <Button onClick={showConfirmReset} icon="trash-alt">
@@ -303,3 +301,4 @@ export default () => {
     </>
   )
 }
+export default FactoryClassicPage

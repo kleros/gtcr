@@ -1,6 +1,5 @@
 import React from 'react'
 import styled from 'styled-components'
-
 import TelegramIcon from 'assets/icons/telegram.svg?react'
 import BugIcon from 'assets/icons/bug.svg?react'
 import EthIcon from 'assets/icons/eth.svg?react'
@@ -45,23 +44,23 @@ const ITEMS = [
   {
     text: 'Get Help',
     Icon: TelegramIcon,
-    url: 'https://t.me/KlerosCurate'
+    url: 'https://t.me/KlerosCurate',
   },
   {
     text: 'Report a Bug',
     Icon: BugIcon,
-    url: 'https://github.com/kleros/gtcr/issues'
+    url: 'https://github.com/kleros/gtcr/issues',
   },
   {
     text: "Crypto Beginner's Guide",
     Icon: EthIcon,
-    url: 'https://ethereum.org/wallets/'
-  }
+    url: 'https://ethereum.org/wallets/',
+  },
 ]
 
 const Help: React.FC = () => (
   <Container>
-    {ITEMS.map(item => (
+    {ITEMS.map((item) => (
       <ListItem
         href={item.url}
         key={item.text}

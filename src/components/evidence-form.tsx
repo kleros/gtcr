@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react'
 import { Input, Checkbox, Upload, Form } from 'components/ui'
-import Icon from 'components/ui/Icon'
+import Icon from 'components/ui/icon'
 import { toast } from 'react-toastify'
 import styled from 'styled-components'
 import { withFormik, Field } from 'formik'
@@ -51,7 +51,7 @@ const EvidenceForm = ({
   // Formik bag
   handleSubmit,
   setFieldValue,
-  values
+  values,
 }: EvidenceFormProps) => {
   const [includeAttachment, setIncludeAttachment] = useState()
   const [uploading, setUploading] = useState()
@@ -72,7 +72,7 @@ const EvidenceForm = ({
       setFieldValue('evidenceAttachment', {
         fileURI,
         fileTypeExtension,
-        type: file.type
+        type: file.type,
       })
       onSuccess('ok', parseIpfs(fileURI))
     } catch (err) {
@@ -81,7 +81,7 @@ const EvidenceForm = ({
     }
   }
 
-  const beforeFileUpload = useCallback(file => {
+  const beforeFileUpload = useCallback((file) => {
     const isLt4M = file.size / 1024 / 1024 < 4
     if (!isLt4M) toast.error('File must be smaller than 4MB.')
     return isLt4M
@@ -164,12 +164,12 @@ const validationSchema = ({ detailed }) =>
     description: yup
       .string()
       .required('An evidence description is required.')
-      .max(1024, 'The description must be less than 1024 characters long.')
+      .max(1024, 'The description must be less than 1024 characters long.'),
   })
 
 export default withFormik({
   validationSchema,
   handleSubmit: (values, { props: { onSubmit } }) => {
     onSubmit(values)
-  }
+  },
 })(EvidenceForm)

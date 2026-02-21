@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react'
 import styled from 'styled-components'
 import { Badge } from 'components/ui'
-import Icon from 'components/ui/Icon'
+import Icon from 'components/ui/icon'
 import { Link } from 'react-router-dom'
 import { useDebouncedCallback } from 'use-debounce'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
@@ -12,7 +12,7 @@ const STATUS_COLOR_MAP: Record<string, string> = {
   Absent: 'red',
   Submitted: 'blue',
   Reincluded: 'green',
-  Disputed: 'orange'
+  Disputed: 'orange',
 }
 
 const Container = styled.div`
@@ -168,7 +168,11 @@ interface PermanentSearchBarProps {
   tcrAddress: string
 }
 
-const PermanentSearchBar = ({ items, chainId, tcrAddress }: PermanentSearchBarProps) => {
+const PermanentSearchBar = ({
+  items,
+  chainId,
+  tcrAddress,
+}: PermanentSearchBarProps) => {
   const [inputValue, setInputValue] = useState('')
   const [searchTerm, setSearchTerm] = useState('')
   const [writing, setWriting] = useState(false)
@@ -184,7 +188,7 @@ const PermanentSearchBar = ({ items, chainId, tcrAddress }: PermanentSearchBarPr
     if (!searchTerm || !items) return []
 
     return items
-      .filter(item => {
+      .filter((item) => {
         const props = item.metadata?.props || []
         return props.some((prop: Column) => {
           const propValue = (prop.value as string)?.toLowerCase() || ''
@@ -197,27 +201,35 @@ const PermanentSearchBar = ({ items, chainId, tcrAddress }: PermanentSearchBarPr
   // Click outside to close
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(e.target as Node)
+      )
         setFocused(false)
-      }
     }
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value
-    setInputValue(val)
-    setWriting(true)
-    debouncedSearch(val)
-  }, [debouncedSearch])
+  const handleInputChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const val = e.target.value
+      setInputValue(val)
+      setWriting(true)
+      debouncedSearch(val)
+    },
+    [debouncedSearch],
+  )
 
   const showDropdown = focused && inputValue.length > 0
 
   return (
     <Container ref={containerRef} id="items-search-bar">
       <SearchInputWrapper $focused={focused}>
-        <FontAwesomeIcon icon="search" style={{ color: 'inherit', opacity: 0.5 }} />
+        <FontAwesomeIcon
+          icon="search"
+          style={{ color: 'inherit', opacity: 0.5 }}
+        />
         <StyledInput
           type="text"
           value={inputValue}
@@ -236,7 +248,11 @@ const PermanentSearchBar = ({ items, chainId, tcrAddress }: PermanentSearchBarPr
           ) : (
             filteredItems.map((item: SubgraphItem) => (
               <DropdownItem key={item.itemID} onClick={() => setFocused(false)}>
-                <OptionItem item={item} chainId={chainId} tcrAddress={tcrAddress} />
+                <OptionItem
+                  item={item}
+                  chainId={chainId}
+                  tcrAddress={tcrAddress}
+                />
               </DropdownItem>
             ))
           )}

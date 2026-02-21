@@ -1,6 +1,6 @@
 import React from 'react'
 import { Skeleton } from 'components/ui'
-import Icon from 'components/ui/Icon'
+import Icon from 'components/ui/icon'
 import { ZERO_ADDRESS, capitalizeFirstLetter } from 'utils/string'
 import { useParams } from 'react-router-dom'
 import ContractExplorerUrl from 'components/contract-explorer-url'
@@ -16,7 +16,7 @@ import {
   ActionCol,
   StyledButton,
   StyledPolicyAnchor,
-  StyledLink
+  StyledLink,
 } from 'pages/light-items/banner'
 
 interface TCRLogoProps {
@@ -37,7 +37,7 @@ const Banner = ({
   metaEvidence = null,
   setSubmissionFormOpen,
   connectedTCRAddr = null,
-  tcrAddress = null
+  tcrAddress = null,
 }: BannerProps) => {
   const { chainId: networkId } = useParams()
   const defaultTCRAddress = defaultTcrAddresses[networkId]
@@ -77,11 +77,7 @@ const Banner = ({
         ) : (
           <>
             <Skeleton active paragraph={false} title={{ width: '300px' }} />
-            <Skeleton
-              active
-              paragraph={{ rows: 1 }}
-              title={false}
-            />
+            <Skeleton active paragraph={{ rows: 1 }} title={false} />
           </>
         )}
       </TCRInfoColumn>
@@ -108,6 +104,5 @@ const Banner = ({
     </StyledBanner>
   )
 }
-
 
 export default Banner

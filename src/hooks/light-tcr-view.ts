@@ -1,16 +1,20 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useContext } from 'react'
 import { useParams } from 'react-router-dom'
 import { useEthersProvider } from 'hooks/ethers-adapters'
 import { ethers, BigNumber } from 'ethers'
 import localforage from 'localforage'
 import _gtcr from '../assets/abis/LightGeneralizedTCR.json'
 import _GTCRView from '../assets/abis/LightGeneralizedTCRView.json'
-import useNotificationWeb3 from './notifications-web3'
+import { WalletContext } from '../contexts/wallet-context'
 import { lightGtcrViewAddresses, subgraphUrl } from 'config/tcr-addresses'
 import { parseIpfs } from 'utils/ipfs-parse'
+
 const { getAddress } = ethers.utils
 
-export const fetchMetaEvidence = async (tcr: string, networkId: number): Promise<FetchMetaEvidenceResult> => {
+export const fetchMetaEvidence = async (
+  tcr: string,
+  networkId: number,
+): Promise<FetchMetaEvidenceResult> => {
   const query = {
     query: `{
       lregistry:LRegistry_by_pk(id: "${tcr.toLowerCase()}") {
@@ -19,19 +23,19 @@ export const fetchMetaEvidence = async (tcr: string, networkId: number): Promise
         }
         connectedTCR
       }
-    }`
+    }`,
   }
 
   const response = await fetch(subgraphUrl[networkId], {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(query)
+    body: JSON.stringify(query),
   })
 
   const { data } = await response.json()
   return {
     metaEvidenceURI: data.lregistry.registrationMetaEvidence.uri,
-    connectedTCR: data.lregistry.connectedTCR
+    connectedTCR: data.lregistry.connectedTCR,
   }
 }
 
@@ -41,18 +45,30 @@ export const fetchMetaEvidence = async (tcr: string, networkId: number): Promise
 // Reference:
 // https://itnext.io/how-to-create-react-custom-hooks-for-data-fetching-with-useeffect-74c5dc47000a
 const useLightTcrView = (tcrAddress: string) => {
-  const [metaEvidence, setMetaEvidence] = useState<MetaEvidence | undefined>(undefined)
+  const [metaEvidence, setMetaEvidence] = useState<MetaEvidence | undefined>(
+    undefined,
+  )
   const [error, setError] = useState<string | false>(false)
-  const [arbitrableTCRData, setArbitrableTCRData] = useState<Record<string, unknown> | undefined>(undefined)
-  const [arbitrationCost, setArbitrationCost] = useState<BigNumber | undefined>()
-  const [submissionDeposit, setSubmissionDeposit] = useState<BigNumber | undefined>()
-  const [submissionChallengeDeposit, setSubmissionChallengeDeposit] = useState<BigNumber | undefined>()
+  const [arbitrableTCRData, setArbitrableTCRData] = useState<
+    Record<string, unknown> | undefined
+  >(undefined)
+  const [arbitrationCost, setArbitrationCost] = useState<
+    BigNumber | undefined
+  >()
+  const [submissionDeposit, setSubmissionDeposit] = useState<
+    BigNumber | undefined
+  >()
+  const [submissionChallengeDeposit, setSubmissionChallengeDeposit] = useState<
+    BigNumber | undefined
+  >()
   const [removalDeposit, setRemovalDeposit] = useState<BigNumber | undefined>()
-  const [removalChallengeDeposit, setRemovalChallengeDeposit] = useState<BigNumber | undefined>()
+  const [removalChallengeDeposit, setRemovalChallengeDeposit] = useState<
+    BigNumber | undefined
+  >()
   const [connectedTCRAddr, setConnectedTCRAddr] = useState<string | undefined>()
   const [depositFor, setDepositFor] = useState<string | undefined>()
 
-  const { latestBlock } = useNotificationWeb3()
+  const latestBlock = useContext(WalletContext)?.latestBlock
 
   // Use the URL chain for provider & lookups (not the wagmi/wallet chain).
   const { chainId: urlChainId } = useParams()
@@ -95,8 +111,8 @@ const useLightTcrView = (tcrAddress: string) => {
     if (!META_EVIDENCE_CACHE_KEY) return
     localforage
       .getItem(META_EVIDENCE_CACHE_KEY)
-      .then(file => setMetaEvidence(file as MetaEvidence | undefined))
-      .catch(err => {
+      .then((file) => setMetaEvidence(file as MetaEvidence | undefined))
+      .catch((err) => {
         console.error('Error fetching meta evidence file from cache', err)
       })
   }, [META_EVIDENCE_CACHE_KEY])
@@ -108,7 +124,7 @@ const useLightTcrView = (tcrAddress: string) => {
       try {
         setArbitrableTCRData({
           ...(await gtcrView.fetchArbitrable(tcrAddress)),
-          tcrAddress
+          tcrAddress,
         })
       } catch (err) {
         console.error('Error fetching arbitrable TCR data (light-curate):', err)
@@ -132,7 +148,7 @@ const useLightTcrView = (tcrAddress: string) => {
         // Check that both urls are valid.
         getAddress(tcrAddress)
         if (depositFor) getAddress(depositFor)
-      } catch (_) {
+      } catch {
         // No-op
         return
       }
@@ -143,26 +159,28 @@ const useLightTcrView = (tcrAddress: string) => {
           removalBaseDeposit,
           submissionChallengeBaseDeposit,
           removalChallengeBaseDeposit,
-          arbitrationCost: newArbitrationCost
+          arbitrationCost: newArbitrationCost,
         } = arbitrableTCRData
 
         // Submission deposit = submitter base deposit + arbitration cost
         const newSubmissionDeposit = (submissionBaseDeposit as BigNumber).add(
-          newArbitrationCost as BigNumber
+          newArbitrationCost as BigNumber,
         )
 
         // Removal deposit = removal base deposit + arbitration cost
-        const newRemovalDeposit = (removalBaseDeposit as BigNumber).add(newArbitrationCost as BigNumber)
+        const newRemovalDeposit = (removalBaseDeposit as BigNumber).add(
+          newArbitrationCost as BigNumber,
+        )
 
         // Challenge deposit = submission challenge base deposit + arbitration cost
-        const newSubmissionChallengeDeposit = (submissionChallengeBaseDeposit as BigNumber).add(
-          newArbitrationCost as BigNumber
-        )
+        const newSubmissionChallengeDeposit = (
+          submissionChallengeBaseDeposit as BigNumber
+        ).add(newArbitrationCost as BigNumber)
 
         // Challenge deposit = removal challenge base deposit + arbitration cost
-        const newRemovalChallengeDeposit = (removalChallengeBaseDeposit as BigNumber).add(
-          newArbitrationCost as BigNumber
-        )
+        const newRemovalChallengeDeposit = (
+          removalChallengeBaseDeposit as BigNumber
+        ).add(newArbitrationCost as BigNumber)
 
         setArbitrationCost(newArbitrationCost as BigNumber)
         setSubmissionDeposit(newSubmissionDeposit)
@@ -217,7 +235,7 @@ const useLightTcrView = (tcrAddress: string) => {
     library,
     metaEvidence,
     tcrAddress,
-    networkId
+    networkId,
   ])
 
   return {
@@ -233,7 +251,7 @@ const useLightTcrView = (tcrAddress: string) => {
     gtcrView,
     latestBlock,
     connectedTCRAddr,
-    ...arbitrableTCRData
+    ...arbitrableTCRData,
   }
 }
 

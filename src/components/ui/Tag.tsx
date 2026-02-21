@@ -94,7 +94,14 @@ interface TagComponent extends React.FC<TagProps> {
   CheckableTag: React.FC<CheckableTagProps>
 }
 
-const Tag: TagComponent = ({ color, closable = false, onClose, children, style, className }) => {
+const Tag: TagComponent = ({
+  color,
+  closable = false,
+  onClose,
+  children,
+  style,
+  className,
+}) => {
   const [visible, setVisible] = useState(true)
 
   const handleClose = useCallback(
@@ -103,7 +110,7 @@ const Tag: TagComponent = ({ color, closable = false, onClose, children, style, 
       setVisible(false)
       if (onClose) onClose(e)
     },
-    [onClose]
+    [onClose],
   )
 
   if (!visible) return null
@@ -124,7 +131,13 @@ const Tag: TagComponent = ({ color, closable = false, onClose, children, style, 
   )
 }
 
-const CheckableTag: React.FC<CheckableTagProps> = ({ checked, onChange, children, style, className }) => {
+const CheckableTag: React.FC<CheckableTagProps> = ({
+  checked,
+  onChange,
+  children,
+  style,
+  className,
+}) => {
   const handleClick = useCallback(() => {
     if (onChange) onChange(!checked)
   }, [checked, onChange])

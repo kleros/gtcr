@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useContext, useMemo } from 'react'
 import { Breadcrumb } from 'components/ui'
 import { useParams } from 'react-router-dom'
-import qs from 'qs'
 import { useEthersProvider } from 'hooks/ethers-adapters'
 import { gtcrDecode } from '@kleros/gtcr-encoder'
 import { abi as _IArbitrator } from '@kleros/erc-792/build/contracts/IArbitrator.json'
@@ -27,7 +26,7 @@ import {
   StyledLink,
   StyledMargin,
   StyledBackLink,
-  StyledLayoutContent
+  StyledLayoutContent,
 } from 'pages/light-item-details'
 
 // TODO: Ensure we don't set state for unmounted components using
@@ -43,8 +42,12 @@ interface ItemDetailsProps {
 
 const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
   const { tcrAddress, chainId } = useParams()
-  const library = useEthersProvider({ chainId: chainId ? Number(chainId) : undefined })
-  const [itemMetaEvidence, setItemMetaEvidence] = useState<MetaEvidence | undefined>()
+  const library = useEthersProvider({
+    chainId: chainId ? Number(chainId) : undefined,
+  })
+  const [itemMetaEvidence, setItemMetaEvidence] = useState<
+    MetaEvidence | undefined
+  >()
   const { timestamp } = useContext(WalletContext)
   const [decodedItem, setDecodedItem] = useState<unknown[] | undefined>()
   const [metaEvidence, setMetaEvidence] = useState<MetaEvidence | undefined>()
@@ -57,13 +60,15 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
   const client = useMemo(() => getGraphQLClient(chainId), [chainId])
   const detailsViewQuery = useQuery({
     queryKey: ['classicItemDetails', compoundId],
-    queryFn: () => client.request(CLASSIC_ITEM_DETAILS_QUERY, { id: compoundId }),
-    enabled: !!client
+    queryFn: () =>
+      client.request(CLASSIC_ITEM_DETAILS_QUERY, { id: compoundId }),
+    enabled: !!client,
   })
 
   const item = useMemo(
-    () => (detailsViewQuery.isLoading ? undefined : detailsViewQuery.data?.item),
-    [detailsViewQuery.isLoading, detailsViewQuery.data]
+    () =>
+      detailsViewQuery.isLoading ? undefined : detailsViewQuery.data?.item,
+    [detailsViewQuery.isLoading, detailsViewQuery.data],
   )
 
   // Decode item bytes once we have it and the meta evidence files.
@@ -84,16 +89,16 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
       try {
         decodedData = gtcrDecode({
           columns,
-          values: item.data
+          values: item.data,
         })
-      } catch (_) {
+      } catch {
         errors.push(`Error decoding ${item.itemID} of TCR at ${tcrAddress}`)
       }
 
       setDecodedItem({
         ...item,
         decodedData,
-        errors
+        errors,
       })
     })()
   }, [item, metaEvidence, tcrAddress, chainId, decodedItem])
@@ -131,8 +136,8 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
   useEffect(() => {
     if (loading) return
 
-    const params = qs.parse(search)
-    if (!params['?action']) return
+    const params = new URLSearchParams(search)
+    if (!params.get('action')) return
 
     setModalOpen(true)
   }, [loading, search])
@@ -148,12 +153,12 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
       const arbitrator = new ethers.Contract(
         request.arbitrator,
         _IArbitrator,
-        library
+        library,
       )
       arbitrator
         .appealCost(request.disputeID, request.arbitratorExtraData)
-        .then(cost => setAppealCost(cost))
-        .catch(err => {
+        .then((cost) => setAppealCost(cost))
+        .catch((err) => {
           console.error(err)
           setAppealCost(null)
         })
@@ -226,7 +231,7 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
         {/* Spread the `requests` parameter to convert elements from array to an object */}
         <RequestTimelines
           item={item}
-          requests={item && item.requests.map(r => ({ ...r }))}
+          requests={item && item.requests.map((r) => ({ ...r }))}
           kind="classic"
           metaEvidence={metaEvidence}
         />

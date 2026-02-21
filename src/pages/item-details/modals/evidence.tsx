@@ -9,7 +9,7 @@ import EnsureAuth from 'components/ensure-auth'
 import EvidenceForm from 'components/evidence-form'
 import ipfsPublish from 'utils/ipfs-publish'
 import { getIPFSPath } from 'utils/get-ipfs-path'
-import { wrapWithToast } from 'utils/wrapWithToast'
+import { wrapWithToast } from 'utils/wrap-with-toast'
 import { wagmiConfig } from 'config/wagmi'
 import { StyledModal } from 'pages/light-item-details/modals/challenge'
 
@@ -29,13 +29,13 @@ const EvidenceModal = ({ item, ...rest }: EvidenceModalProps) => {
       const evidenceJSON = {
         title: title,
         description,
-        ...evidenceAttachment
+        ...evidenceAttachment,
       }
 
       const enc = new TextEncoder()
       const fileData = enc.encode(JSON.stringify(evidenceJSON))
       const ipfsEvidencePath = getIPFSPath(
-        await ipfsPublish('evidence.json', fileData)
+        await ipfsPublish('evidence.json', fileData),
       )
 
       const { request } = await simulateContract(wagmiConfig, {
@@ -43,12 +43,12 @@ const EvidenceModal = ({ item, ...rest }: EvidenceModalProps) => {
         abi: _gtcr,
         functionName: 'submitEvidence',
         args: [item.itemID, ipfsEvidencePath],
-        account
+        account,
       })
 
       const result = await wrapWithToast(
         () => walletClient.writeContract(request),
-        publicClient
+        publicClient,
       )
 
       if (result.status) {
@@ -64,13 +64,12 @@ const EvidenceModal = ({ item, ...rest }: EvidenceModalProps) => {
                 subscriberAddr: getAddress(account),
                 tcrAddr: tcrAddress,
                 itemID: item.itemID,
-                networkID: chainId
-              })
-            }
-          )
-            .catch(err => {
-              console.error('Failed to subscribe for notifications.', err)
-            })
+                networkID: chainId,
+              }),
+            },
+          ).catch((err) => {
+            console.error('Failed to subscribe for notifications.', err)
+          })
       }
     } catch (err) {
       console.error('Error submitting evidence:', err)
@@ -94,7 +93,7 @@ const EvidenceModal = ({ item, ...rest }: EvidenceModalProps) => {
           >
             Submit
           </Button>
-        </EnsureAuth>
+        </EnsureAuth>,
       ]}
       {...rest}
     >

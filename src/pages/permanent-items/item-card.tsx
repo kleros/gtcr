@@ -72,7 +72,9 @@ export const StyledCardInfo = styled(Card)`
   z-index: 1;
   background: ${({ theme }) => theme.componentBackground};
   border-color: ${({ theme }) => theme.borderColor};
-  transition: background 0.3s ease, border-color 0.3s ease;
+  transition:
+    background 0.3s ease,
+    border-color 0.3s ease;
 
   & > .ui-card-head {
     display: flex;
@@ -151,7 +153,7 @@ const CardItemInfo = ({
   metadata,
   toggleReveal,
   forceReveal,
-  tokenSymbol
+  tokenSymbol,
 }: CardItemInfoProps) => {
   let content
   const { itemName } = metadata || {}
@@ -189,9 +191,9 @@ const CardItemInfo = ({
         actions={
           !forceReveal &&
           toggleReveal && [
-            <HideCardButton type="link" onClick={toggleReveal}>
+            <HideCardButton key="hide" type="link" onClick={toggleReveal}>
               Hide
-            </HideCardButton>
+            </HideCardButton>,
           ]
         }
       >
@@ -209,7 +211,13 @@ interface ItemCardProps {
   [key: string]: unknown
 }
 
-const ItemCard = ({ item, registry, timestamp, forceReveal, ...rest }: ItemCardProps) => {
+const ItemCard = ({
+  item,
+  registry,
+  timestamp,
+  forceReveal,
+  ...rest
+}: ItemCardProps) => {
   const [revealed, setRevealed] = useState<boolean | undefined>()
   const toggleReveal = useCallback(() => {
     setRevealed(!revealed)

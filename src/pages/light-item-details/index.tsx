@@ -1,10 +1,8 @@
 import React, { useState, useEffect, useContext, useMemo } from 'react'
 import styled from 'styled-components'
 import { Layout, Breadcrumb } from 'components/ui'
-import { useParams } from 'react-router-dom'
-import { Link } from 'react-router-dom'
-import { Helmet } from 'react-helmet'
-import qs from 'qs'
+import { useParams, Link } from 'react-router-dom'
+import useDocumentHead from 'hooks/use-document-head'
 import { abi as _IArbitrator } from '@kleros/erc-792/build/contracts/IArbitrator.json'
 import { ethers } from 'ethers'
 import { useEthersProvider } from 'hooks/ethers-adapters'
@@ -42,7 +40,10 @@ export const StyledBanner = styled.div`
   background: ${({ theme }) => theme.bannerGradient};
   box-shadow: 0px 3px 24px ${({ theme }) => theme.shadowColor};
   color: ${({ theme }) => theme.textPrimary};
-  transition: background 0.3s ease, box-shadow 0.3s ease, color 0.3s ease;
+  transition:
+    background 0.3s ease,
+    box-shadow 0.3s ease,
+    color 0.3s ease;
 `
 
 export const StyledMargin = styled.div`
@@ -81,14 +82,19 @@ interface ItemDetailsProps {
 
 const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
   const { tcrAddress, chainId } = useParams()
-  const library = useEthersProvider({ chainId: chainId ? Number(chainId) : undefined })
-  const [itemMetaEvidence, setItemMetaEvidence] = useState<MetaEvidence | undefined>()
-  const [ipfsItemData, setIpfsItemData] = useState<Record<string, unknown> | undefined>()
+  const library = useEthersProvider({
+    chainId: chainId ? Number(chainId) : undefined,
+  })
+  const [itemMetaEvidence, setItemMetaEvidence] = useState<
+    MetaEvidence | undefined
+  >()
+  const [ipfsItemData, setIpfsItemData] = useState<
+    Record<string, unknown> | undefined
+  >()
   const { timestamp } = useContext(WalletContext)
   const [modalOpen, setModalOpen] = useState<boolean | undefined>()
-  const { tcrError, metaEvidence, challengePeriodDuration } = useContext(
-    LightTCRViewContext
-  )
+  const { tcrError, metaEvidence, challengePeriodDuration } =
+    useContext(LightTCRViewContext)
   const [appealCost, setAppealCost] = useState<BigNumber | undefined>()
 
   // subgraph item entities have id "<itemID>@<listaddress>"
@@ -97,28 +103,29 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
   const detailsViewQuery = useQuery({
     queryKey: ['lightItemDetails', compoundId],
     queryFn: () => client.request(LIGHT_ITEM_DETAILS_QUERY, { id: compoundId }),
-    enabled: !!client
+    enabled: !!client,
   })
 
   const item = useMemo(
-    () => (detailsViewQuery.isLoading ? undefined : detailsViewQuery.data?.litem),
-    [detailsViewQuery.isLoading, detailsViewQuery.data]
+    () =>
+      detailsViewQuery.isLoading ? undefined : detailsViewQuery.data?.litem,
+    [detailsViewQuery.isLoading, detailsViewQuery.data],
   )
 
   useEffect(() => {
     if (item && !ipfsItemData)
       fetch(parseIpfs(item.data))
-        .then(r => r.json())
-        .catch(_e => console.error('Could not get ipfs file'))
-        .then(r => setIpfsItemData(r))
-        .catch(_e => console.error('Could not set ipfs item data'))
+        .then((r) => r.json())
+        .catch((_e) => console.error('Could not get ipfs file'))
+        .then((r) => setIpfsItemData(r))
+        .catch((_e) => console.error('Could not set ipfs item data'))
   }, [item, ipfsItemData])
 
   const decodedItem = useMemo(() => {
     if (!item || !metaEvidence || !ipfsItemData) return undefined
 
     const orderDecodedData = (columns, values) => {
-      const labels = columns.map(column => column.label)
+      const labels = columns.map((column) => column.label)
       const ordered = []
       for (const label of labels) {
         const value = values[label]
@@ -133,8 +140,8 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
       columns: metaEvidence.metadata.columns,
       decodedData: orderDecodedData(
         metaEvidence.metadata.columns,
-        ipfsItemData.values
-      )
+        ipfsItemData.values,
+      ),
     }
   }, [item, metaEvidence, ipfsItemData])
 
@@ -147,7 +154,7 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
     return itemToStatusCode(item, timestamp, challengePeriodDuration)
   }, [item, timestamp, challengePeriodDuration])
 
-  const getStatusPhrase = statusCode => {
+  const getStatusPhrase = (statusCode) => {
     switch (statusCode) {
       case STATUS_CODE.REGISTERED:
         return 'is verified to be safe'
@@ -176,7 +183,7 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
     }
   }
 
-  const capitalizeFirst = s => s?.charAt(0).toUpperCase() + s?.slice(1)
+  const capitalizeFirst = (s) => s?.charAt(0).toUpperCase() + s?.slice(1)
 
   const fullSeoTitle =
     decodedItem && metadata
@@ -192,7 +199,7 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
       : 'View item details on Kleros Curate.'
   const truncatedSeoMetaDescription = truncateAtWord(
     fullSeoMetaDescription,
-    160
+    160,
   )
 
   // If this is a TCR in a TCR of TCRs, we fetch its metadata as well
@@ -225,8 +232,8 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
   useEffect(() => {
     if (loading) return
 
-    const params = qs.parse(search)
-    if (!params['?action']) return
+    const params = new URLSearchParams(search)
+    if (!params.get('action')) return
 
     setModalOpen(true)
   }, [loading, search])
@@ -242,17 +249,19 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
       const arbitrator = new ethers.Contract(
         request.arbitrator,
         _IArbitrator,
-        library
+        library,
       )
       arbitrator
         .appealCost(request.disputeID, request.arbitratorExtraData)
-        .then(cost => setAppealCost(cost))
-        .catch(err => {
+        .then((cost) => setAppealCost(cost))
+        .catch((err) => {
           console.error(err)
           setAppealCost(null)
         })
     }
   }, [item, appealCost, library])
+
+  useDocumentHead(truncatedSeoTitle, truncatedSeoMetaDescription)
 
   if (!tcrAddress || !itemID || tcrError)
     return (
@@ -265,10 +274,6 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
 
   return (
     <>
-      <Helmet>
-        <title>{truncatedSeoTitle}</title>
-        <meta name="description" content={truncatedSeoMetaDescription} />
-      </Helmet>
       <StyledBanner>
         <Breadcrumb separator=">">
           <StyledBreadcrumbItem>
@@ -317,7 +322,7 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
         {/* Spread the `requests` parameter to convert elements from array to an object */}
         <RequestTimelines
           item={item}
-          requests={item?.requests && item.requests.map(r => ({ ...r }))}
+          requests={item?.requests && item.requests.map((r) => ({ ...r }))}
           kind="light"
           metaEvidence={metaEvidence}
         />

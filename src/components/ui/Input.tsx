@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useCallback, useState } from 'react'
+import React, { useRef, useEffect, useCallback } from 'react'
 import styled, { css } from 'styled-components'
 
 const inputBaseStyles = css`
@@ -47,7 +47,7 @@ const sizeMap: Record<string, ReturnType<typeof css>> = {
     height: 40px;
     padding: 6px 11px;
     font-size: 16px;
-  `
+  `,
 }
 
 const StyledInput = styled.input<{ $size?: string }>`
@@ -62,7 +62,10 @@ const InputWrapper = styled.span`
   position: relative;
 `
 
-const AddonWrapper = styled.span<{ $hasAddonBefore?: boolean; $hasAddonAfter?: boolean }>`
+const AddonWrapper = styled.span<{
+  $hasAddonBefore?: boolean
+  $hasAddonAfter?: boolean
+}>`
   display: inline-flex;
   align-items: center;
   width: 100%;
@@ -178,8 +181,12 @@ interface TextAreaProps {
   [key: string]: unknown
 }
 
-interface InputComponent extends React.ForwardRefExoticComponent<InputProps & React.RefAttributes<HTMLInputElement>> {
-  TextArea: React.ForwardRefExoticComponent<TextAreaProps & React.RefAttributes<HTMLTextAreaElement>>
+interface InputComponent extends React.ForwardRefExoticComponent<
+  InputProps & React.RefAttributes<HTMLInputElement>
+> {
+  TextArea: React.ForwardRefExoticComponent<
+    TextAreaProps & React.RefAttributes<HTMLTextAreaElement>
+  >
   displayName?: string
 }
 
@@ -206,31 +213,27 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
       size,
       ...rest
     },
-    ref
+    ref,
   ) => {
     const inputRef = useRef<HTMLInputElement>(null)
     const combinedRef = (ref || inputRef) as React.RefObject<HTMLInputElement>
 
     useEffect(() => {
-      if (autoFocus && combinedRef.current) {
-        combinedRef.current.focus()
-      }
+      if (autoFocus && combinedRef.current) combinedRef.current.focus()
     }, [autoFocus, combinedRef])
 
     const handleKeyDown = useCallback(
       (e: React.KeyboardEvent) => {
-        if (e.key === 'Enter' && onPressEnter) {
-          onPressEnter(e)
-        }
+        if (e.key === 'Enter' && onPressEnter) onPressEnter(e)
       },
-      [onPressEnter]
+      [onPressEnter],
     )
 
     const handleClear = useCallback(() => {
       if (onChange) {
         const event = {
           target: { value: '' },
-          currentTarget: { value: '' }
+          currentTarget: { value: '' },
         } as React.ChangeEvent<HTMLInputElement>
         onChange(event)
       }
@@ -239,11 +242,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
     const hasAddon = addonBefore || addonAfter
     const paddingLeft = prefix ? '30px' : undefined
     const paddingRight =
-      suffix && allowClear
-        ? '52px'
-        : suffix || allowClear
-        ? '30px'
-        : undefined
+      suffix && allowClear ? '52px' : suffix || allowClear ? '30px' : undefined
 
     const inputElement = (
       <StyledInput
@@ -268,7 +267,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
       />
     )
 
-    if (hasAddon) {
+    if (hasAddon)
       return (
         <AddonWrapper
           $hasAddonBefore={!!addonBefore}
@@ -294,7 +293,6 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
           )}
         </AddonWrapper>
       )
-    }
 
     return (
       <InputWrapper>
@@ -308,7 +306,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
         {suffix && <SuffixIcon>{suffix}</SuffixIcon>}
       </InputWrapper>
     )
-  }
+  },
 ) as InputComponent
 
 Input.displayName = 'Input'
@@ -334,10 +332,11 @@ const TextArea = React.forwardRef<HTMLTextAreaElement, TextAreaProps>(
       className,
       ...rest
     },
-    ref
+    ref,
   ) => {
     const textareaRef = useRef<HTMLTextAreaElement>(null)
-    const combinedRef = (ref || textareaRef) as React.RefObject<HTMLTextAreaElement>
+    const combinedRef = (ref ||
+      textareaRef) as React.RefObject<HTMLTextAreaElement>
 
     const adjustHeight = useCallback(() => {
       const el = combinedRef.current
@@ -356,7 +355,7 @@ const TextArea = React.forwardRef<HTMLTextAreaElement, TextAreaProps>(
         // Schedule height adjustment after state update
         requestAnimationFrame(adjustHeight)
       },
-      [onChange, adjustHeight]
+      [onChange, adjustHeight],
     )
 
     return (
@@ -373,7 +372,7 @@ const TextArea = React.forwardRef<HTMLTextAreaElement, TextAreaProps>(
         {...rest}
       />
     )
-  }
+  },
 )
 
 TextArea.displayName = 'Input.TextArea'

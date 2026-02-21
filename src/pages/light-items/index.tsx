@@ -5,15 +5,22 @@ import React, {
   useState,
   useContext,
   useMemo,
-  useCallback
+  useCallback,
 } from 'react'
 import styled, { css } from 'styled-components'
 import { smallScreenStyle } from 'styles/small-screen-style'
-import { Card, Layout, Spin, Pagination, Tag, Select, Switch } from 'components/ui'
+import {
+  Card,
+  Layout,
+  Spin,
+  Pagination,
+  Tag,
+  Select,
+  Switch,
+} from 'components/ui'
 import { useNavigate, useParams } from 'react-router-dom'
 import { BigNumber } from 'ethers'
 import localforage from 'localforage'
-import qs from 'qs'
 import { useQuery } from '@tanstack/react-query'
 import ErrorPage from '../error-page'
 import { WalletContext } from 'contexts/wallet-context'
@@ -24,7 +31,7 @@ import {
   filterLabelLight,
   LIGHT_FILTER_KEYS,
   searchStrToFilterObjLight,
-  updateLightFilter
+  updateLightFilter,
 } from 'utils/filters'
 import ItemCard from './item-card'
 import Banner from './banner'
@@ -63,7 +70,7 @@ export const FiltersContainer = styled.div`
     () => css`
       flex-direction: column;
       gap: 12px;
-    `
+    `,
   )}
 `
 
@@ -87,7 +94,7 @@ export const StyledSelect = styled(Select)`
       &.ui-select {
         margin-left: 0;
       }
-    `
+    `,
   )}
 `
 
@@ -102,8 +109,9 @@ export const StyledTag = styled(Tag.CheckableTag)`
         : theme.name === 'dark'
           ? theme.elevatedBackground
           : 'transparent'} !important;
-    border: 1px solid ${({ theme, checked }) =>
-      checked ? theme.primaryColor : theme.filterBorderColor} !important;
+    border: 1px solid
+      ${({ theme, checked }) =>
+        checked ? theme.primaryColor : theme.filterBorderColor} !important;
     color: ${({ theme, checked }) =>
       checked
         ? theme.textOnPrimary || '#fff'
@@ -115,9 +123,7 @@ export const StyledTag = styled(Tag.CheckableTag)`
 
   &.ui-tag-checkable:hover {
     color: ${({ theme, checked }) =>
-      checked
-        ? theme.textOnPrimary || '#fff'
-        : theme.textPrimary} !important;
+      checked ? theme.textOnPrimary || '#fff' : theme.textPrimary} !important;
     border-color: ${({ theme, checked }) =>
       checked ? theme.primaryColorHover : theme.textPrimary} !important;
     cursor: pointer;
@@ -175,20 +181,24 @@ const Items = () => {
   const search = window.location.search
   const { timestamp } = useContext(WalletContext)
   const {
-    gtcr,
+    _gtcr,
     metaEvidence,
     challengePeriodDuration,
     tcrError,
     gtcrView,
     connectedTCRAddr,
-    submissionDeposit
+    submissionDeposit,
   } = useContext(LightTCRViewContext)
-  const [submissionFormOpen, setSubmissionFormOpen] = useState<boolean | undefined>()
+  const [submissionFormOpen, setSubmissionFormOpen] = useState<
+    boolean | undefined
+  >()
   const [error, setError] = useState<string | undefined>()
   const queryOptions = searchStrToFilterObjLight(search)
   const [nsfwFilterOn, setNSFWFilter] = useState(true)
-  const [queryItemParams, setQueryItemParams] = useState<Record<string, unknown> | undefined>()
-  const toggleNSFWFilter = useCallback(checked => {
+  const [queryItemParams, setQueryItemParams] = useState<
+    Record<string, unknown> | undefined
+  >()
+  const toggleNSFWFilter = useCallback((checked) => {
     setNSFWFilter(checked)
     localforage.setItem(NSFW_FILTER_KEY, checked)
   }, [])
@@ -204,7 +214,7 @@ const Items = () => {
     submitted,
     removalRequested,
     challengedSubmissions,
-    challengedRemovals
+    challengedRemovals,
   } = queryOptions
   const orderDirection = oldestFirst ? 'asc' : 'desc'
 
@@ -217,22 +227,22 @@ const Items = () => {
     if (submitted)
       conditions.push({
         status: { _eq: 'RegistrationRequested' },
-        disputed: { _eq: false }
+        disputed: { _eq: false },
       })
     if (removalRequested)
       conditions.push({
         status: { _eq: 'ClearingRequested' },
-        disputed: { _eq: false }
+        disputed: { _eq: false },
       })
     if (challengedSubmissions)
       conditions.push({
         status: { _eq: 'RegistrationRequested' },
-        disputed: { _eq: true }
+        disputed: { _eq: true },
       })
     if (challengedRemovals)
       conditions.push({
         status: { _eq: 'ClearingRequested' },
-        disputed: { _eq: true }
+        disputed: { _eq: true },
       })
 
     // No filters selected - return all items
@@ -243,13 +253,13 @@ const Items = () => {
     if (conditions.length === 1)
       return {
         registry_id: { _eq: tcrAddress.toLowerCase() },
-        ...conditions[0]
+        ...conditions[0],
       }
 
     // Multiple filters - use _or clause
     return {
       registry_id: { _eq: tcrAddress.toLowerCase() },
-      _or: conditions
+      _or: conditions,
     }
   }, [
     absent,
@@ -258,7 +268,7 @@ const Items = () => {
     registered,
     removalRequested,
     submitted,
-    tcrAddress
+    tcrAddress,
   ])
 
   const queryVariables = useMemo(
@@ -267,15 +277,15 @@ const Items = () => {
       limit: ITEMS_PER_PAGE,
       order_by: [{ latestRequestSubmissionTime: orderDirection }],
       where: itemsWhere,
-      registryId: tcrAddress.toLowerCase()
+      registryId: tcrAddress.toLowerCase(),
     }),
-    [page, orderDirection, itemsWhere, tcrAddress]
+    [page, orderDirection, itemsWhere, tcrAddress],
   )
 
   const itemsQuery = useQuery({
     queryKey: ['lightItems', queryVariables],
     queryFn: () => client.request(LIGHT_ITEMS_QUERY, queryVariables),
-    enabled: !!client
+    enabled: !!client,
   })
 
   const itemCount = useMemo(() => {
@@ -321,7 +331,7 @@ const Items = () => {
     removalRequested,
     challengedSubmissions,
     challengedRemovals,
-    itemsQuery.data
+    itemsQuery.data,
   ])
 
   useEffect(() => {
@@ -335,45 +345,45 @@ const Items = () => {
         return
       }
       let items = data.litems
-      items = items.map(item => ({
+      items = items.map((item) => ({
         ...item,
         decodedData: item.props?.map(({ value }) => value) || [],
-        mergedData: item.props || []
+        mergedData: item.props || [],
       }))
       // HACK:
       // the graph could have failed to include the props.
       // this may be because at indexing time, ipfs file was not available.
       // in that case, we can still manually fetch the props.
-      const itemAssurancePromises = items.map(async i => {
+      const itemAssurancePromises = items.map(async (i) => {
         if (i.decodedData.length === 0) {
           const response = await fetch(parseIpfs(i.data))
           const item = await response.json()
-          const mergedData = item.columns.map(column => ({
+          const mergedData = item.columns.map((column) => ({
             label: column.label,
             description: column.description,
             type: column.type,
             isIdentifier: column.isIdentifier,
-            value: item.values[column.label]
+            value: item.values[column.label],
           }))
-          const decodedData = mergedData.map(d => d.value)
+          const decodedData = mergedData.map((d) => d.value)
           const newItem = {
             ...i,
             mergedData,
             decodedData,
-            props: mergedData
+            props: mergedData,
           }
           return newItem
         } else return i
       })
       items = await Promise.all(itemAssurancePromises)
-      items = items.map(item => {
+      items = items.map((item) => {
         const {
           disputed,
           disputeID,
           submissionTime,
           rounds,
           resolved,
-          deposit
+          deposit,
         } = item.requests[0] ?? {}
 
         const {
@@ -383,7 +393,7 @@ const Items = () => {
           hasPaidRequester,
           hasPaidChallenger,
           amountPaidRequester,
-          amountPaidChallenger
+          amountPaidChallenger,
         } = rounds[0] ?? {}
 
         const currentRuling =
@@ -391,10 +401,10 @@ const Items = () => {
         const disputeStatus = !disputed
           ? DISPUTE_STATUS.WAITING
           : resolved
-          ? DISPUTE_STATUS.SOLVED
-          : Number(appealPeriodEnd) > Date.now() / 1000
-          ? DISPUTE_STATUS.APPEALABLE
-          : DISPUTE_STATUS.WAITING
+            ? DISPUTE_STATUS.SOLVED
+            : Number(appealPeriodEnd) > Date.now() / 1000
+              ? DISPUTE_STATUS.APPEALABLE
+              : DISPUTE_STATUS.WAITING
 
         return {
           ...item,
@@ -415,8 +425,8 @@ const Items = () => {
           amountPaid: [
             BigNumber.from(0),
             BigNumber.from(amountPaidRequester),
-            BigNumber.from(amountPaidChallenger)
-          ]
+            BigNumber.from(amountPaidChallenger),
+          ],
         }
       })
       setDecodedItems(items)
@@ -446,10 +456,10 @@ const Items = () => {
         // eslint-disable-next-line no-unused-vars
       } catch (err) {
         errors.push(
-          `Error decoding item ${item.itemID} of list at ${tcrAddress}`
+          `Error decoding item ${item.itemID} of list at ${tcrAddress}`,
         )
         console.warn(
-          `Error decoding item ${item.itemID} of list at ${tcrAddress}`
+          `Error decoding item ${item.itemID} of list at ${tcrAddress}`,
         )
         console.warn(err)
       }
@@ -458,20 +468,20 @@ const Items = () => {
       return {
         tcrData: {
           ...item, // Spread to convert from array to object.
-          decodedData
+          decodedData,
         },
         columns: columns.map(
           (col, i) => ({
             value: decodedData && decodedData[i],
-            ...col
+            ...col,
           }),
-          { key: i }
+          { key: i },
         ),
         errors,
         seerMarketData:
           isSeerRegistry(tcrAddress, chainId) &&
           item?.decodedData &&
-          seerMarketsData[item.decodedData[1].toLowerCase()]
+          seerMarketsData[item.decodedData[1].toLowerCase()],
       }
     })
   }, [metaEvidence, tcrAddress, decodedItems, chainId, seerMarketsData])
@@ -480,13 +490,13 @@ const Items = () => {
   // This means someone can be sent to curate with a bunch of data to submit
   // an item to a list.
   useEffect(() => {
-    const params = qs.parse(search)
-    if (!params['?action']) return
+    const params = new URLSearchParams(search)
+    if (!params.get('action')) return
 
-    const initialValues = []
-    Object.keys(params)
-      .filter(param => param !== '?action')
-      .forEach(key => initialValues.push(params[key]))
+    const initialValues: string[] = []
+    params.forEach((value, key) => {
+      if (key !== 'action') initialValues.push(value)
+    })
 
     setQueryItemParams(initialValues)
     setSubmissionFormOpen(true)
@@ -537,43 +547,43 @@ const Items = () => {
                   />
                   {Object.keys(queryOptions)
                     .filter(
-                      key =>
+                      (key) =>
                         key !== LIGHT_FILTER_KEYS.PAGE &&
                         key !== LIGHT_FILTER_KEYS.OLDEST_FIRST &&
                         key !== 'mySubmissions' &&
-                        key !== 'myChallenges'
+                        key !== 'myChallenges',
                     )
-                    .map(key =>
+                    .map((key) =>
                       filterLabelLight[key] ? (
                         <StyledTag
                           key={key}
                           checked={queryOptions[key]}
-                          onChange={checked => {
+                          onChange={(checked) => {
                             const newQueryStr = updateLightFilter({
                               prevQuery: search,
                               filter: key,
-                              checked
+                              checked,
                             })
                             navigate({
-                              search: newQueryStr
+                              search: newQueryStr,
                             })
                           }}
                         >
                           {filterLabelLight[key]}
                         </StyledTag>
-                      ) : null
+                      ) : null,
                     )}
                 </StyledFilters>
                 <StyledSelect
                   defaultValue={oldestFirst ? 'oldestFirst' : 'newestFirst'}
-                  onChange={val => {
+                  onChange={(val) => {
                     const newQueryStr = updateLightFilter({
                       prevQuery: search,
                       filter: 'oldestFirst',
-                      checked: val === 'oldestFirst'
+                      checked: val === 'oldestFirst',
                     })
                     navigate({
-                      search: newQueryStr
+                      search: newQueryStr,
                     })
                   }}
                 >
@@ -612,11 +622,11 @@ const Items = () => {
                 current={Number(queryOptions.page)}
                 itemRender={pagingItem}
                 pageSize={ITEMS_PER_PAGE}
-                onChange={newPage => {
+                onChange={(newPage) => {
                   navigate({
                     search: /page=\d+/g.test(search)
                       ? search.replace(/page=\d+/g, `page=${newPage}`)
-                      : `${search}&page=${newPage}`
+                      : `${search}&page=${newPage}`,
                   })
                 }}
               />

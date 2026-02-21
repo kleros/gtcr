@@ -1,6 +1,6 @@
 import React, { Suspense, lazy, useMemo } from 'react'
 import { Route, Routes, Navigate, useLocation } from 'react-router-dom'
-import { useWeb3Context } from 'hooks/useWeb3Context'
+import { useWeb3Context } from 'hooks/use-web3-context'
 import ErrorPage from 'pages/error-page'
 import Loading from 'components/loading'
 import { DEFAULT_NETWORK } from 'config/networks'
@@ -22,7 +22,8 @@ const ItemDetailsRouter = lazy(() => import('pages/item-details-router'))
 // Exported for preloading on link hover (instant navigation feel)
 export const preloadFactory = () => import('pages/factory/index')
 export const preloadClassicFactory = () => import('pages/factory-classic/index')
-export const preloadPermanentFactory = () => import('pages/factory-permanent/index')
+export const preloadPermanentFactory = () =>
+  import('pages/factory-permanent/index')
 
 const Factory = lazy(preloadFactory)
 const ClassicFactory = lazy(preloadClassicFactory)
@@ -34,12 +35,14 @@ const AppRouter = () => {
 
   // Parse chainId from the URL — the source of truth for data fetching
   const urlChainId = useMemo(() => {
-    const match = location.pathname.match(/\/(?:tcr|factory(?:-classic|-permanent)?)\/(\d+)/)
+    const match = location.pathname.match(
+      /\/(?:tcr|factory(?:-classic|-permanent)?)\/(\d+)/,
+    )
     return match ? Number(match[1]) : null
   }, [location.pathname])
 
   const activeChainId = urlChainId || networkId || DEFAULT_NETWORK
-  const tcrAddress = defaultTcrAddresses[activeChainId as validChains]
+  const _tcrAddress = defaultTcrAddresses[activeChainId as validChains]
   const [pathResolved, invalidTcrAddr] = usePathValidation()
 
   if (!pathResolved) return <Loading />
@@ -55,11 +58,11 @@ const AppRouter = () => {
         <Route path="/tcr/:chainId/:tcrAddress" element={<ItemsRouter />} />
         <Route path="/factory/:chainId" element={<Factory />} />
         <Route path="/factory-classic/:chainId" element={<ClassicFactory />} />
-        <Route path="/factory-permanent/:chainId" element={<PermanentFactory />} />
         <Route
-          path="/"
-          element={<HomeRedirect networkId={networkId} />}
+          path="/factory-permanent/:chainId"
+          element={<PermanentFactory />}
         />
+        <Route path="/" element={<HomeRedirect networkId={networkId} />} />
         <Route path="*" element={<ErrorPage />} />
       </Routes>
     </Suspense>

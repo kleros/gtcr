@@ -1,8 +1,8 @@
 import React, { useMemo, useState, useEffect, useCallback } from 'react'
 import { Select, InputNumber, Slider, Tooltip } from 'components/ui'
-import Icon from 'components/ui/Icon'
+import Icon from 'components/ui/icon'
 import { ethers } from 'ethers'
-import { abi as _PolicyRegistry } from '@kleros/kleros/build/contracts/PolicyRegistry.json'
+import { PolicyRegistryABI as _PolicyRegistry } from 'utils/abis/policy-registry'
 import { abi as _IArbitrator } from '@kleros/erc-792/build/contracts/IArbitrator.json'
 import ETHAmount from 'components/eth-amount'
 import { jurorsAndCourtIDFromExtraData } from 'utils/string'
@@ -12,7 +12,7 @@ import {
   StyledExtraDataContainer,
   StyledInputContainer,
   StyledContainer,
-  SliderContainer
+  SliderContainer,
 } from 'pages/factory/kleros-params'
 
 interface Court {
@@ -28,7 +28,7 @@ interface KlerosParamsProps {
   policyAddress: string
   setArbitratorExtraData: (val: string) => void
   arbitratorExtraData: string
-  library: any
+  library: EthersLibrary | null
 }
 
 const KlerosParams = ({
@@ -36,7 +36,7 @@ const KlerosParams = ({
   policyAddress,
   setArbitratorExtraData,
   arbitratorExtraData,
-  library
+  library,
 }: KlerosParamsProps) => {
   const { width } = useWindowDimensions()
   const nativeCurrency = useNativeCurrency()
@@ -51,7 +51,7 @@ const KlerosParams = ({
     } catch (err) {
       console.warn(
         `Failed to connect to policy registry at ${policyAddress}`,
-        err
+        err,
       )
       return null
     }
@@ -79,12 +79,12 @@ const KlerosParams = ({
             policyRegistry
               .policies(i)
               .then((path: string) => ({ courtID: i, path }))
-              .catch(() => ({ courtID: i, path: '' }))
-          )
+              .catch(() => ({ courtID: i, path: '' })),
+          ),
         )
 
         const fetchedCourts = policyPaths.filter(
-          ({ path }) => path && path !== ''
+          ({ path }) => path && path !== '',
         )
         if (fetchedCourts.length === 0) return
 
@@ -101,7 +101,7 @@ const KlerosParams = ({
                   name,
                   key: String(courtID),
                   value: String(courtID),
-                  label: name
+                  label: name,
                 }
               } catch {
                 return {
@@ -109,11 +109,11 @@ const KlerosParams = ({
                   name: `Court ${courtID}`,
                   key: String(courtID),
                   value: String(courtID),
-                  label: `Court ${courtID}`
+                  label: `Court ${courtID}`,
                 }
               }
-            })
-          )
+            }),
+          ),
         )
       } catch (err) {
         console.warn('Error fetching policies', err)
@@ -123,9 +123,8 @@ const KlerosParams = ({
 
   // Load arbitrator extra data
   useEffect(() => {
-    const { courtID, numberOfJurors } = jurorsAndCourtIDFromExtraData(
-      arbitratorExtraData
-    )
+    const { courtID, numberOfJurors } =
+      jurorsAndCourtIDFromExtraData(arbitratorExtraData)
     setCourtID(Number(courtID))
     setNumberOfJurors(Number(numberOfJurors))
   }, [arbitratorExtraData])
@@ -151,11 +150,11 @@ const KlerosParams = ({
       setArbitratorExtraData(newArbitratorExtraData)
       setCourtID(Number(newCourtID))
     },
-    [numberOfJurors, setArbitratorExtraData]
+    [numberOfJurors, setArbitratorExtraData],
   )
 
   const onNumJurorsChange = useCallback(
-    newNumJurors => {
+    (newNumJurors) => {
       if (isNaN(newNumJurors)) return
       newNumJurors = newNumJurors > 0 ? newNumJurors : 1
       newNumJurors = newNumJurors < 35 ? newNumJurors : 33
@@ -169,7 +168,7 @@ const KlerosParams = ({
       setArbitratorExtraData(newArbitratorExtraData)
       setNumberOfJurors(newNumJurors)
     },
-    [courtID, setArbitratorExtraData]
+    [courtID, setArbitratorExtraData],
   )
 
   return (
@@ -186,8 +185,8 @@ const KlerosParams = ({
             labelInValue
             value={
               courts && courts.length > 0 && typeof courtID === 'number'
-                ? courts.find(court => courtID === court.courtID)
-                : { key: 0, label: 'General Court' }
+                ? String(courtID)
+                : undefined
             }
           >
             {courts.map(({ value, label }) => (

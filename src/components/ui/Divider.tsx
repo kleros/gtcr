@@ -37,10 +37,18 @@ const DividerWrapper = styled.div<DividerWrapperProps>`
     $hasChildren &&
     css`
       &::before {
-        flex: ${$orientation === 'left' ? '0 0 5%' : $orientation === 'right' ? '1' : '1'};
+        flex: ${$orientation === 'left'
+          ? '0 0 5%'
+          : $orientation === 'right'
+            ? '1'
+            : '1'};
       }
       &::after {
-        flex: ${$orientation === 'left' ? '1' : $orientation === 'right' ? '0 0 5%' : '1'};
+        flex: ${$orientation === 'left'
+          ? '1'
+          : $orientation === 'right'
+            ? '0 0 5%'
+            : '1'};
       }
     `}
 `
@@ -56,7 +64,12 @@ interface DividerProps {
   className?: string
 }
 
-const Divider: React.FC<DividerProps> = ({ orientation = 'center', children, style, className }) => (
+const Divider: React.FC<DividerProps> = ({
+  orientation = 'center',
+  children,
+  style,
+  className,
+}) => (
   <DividerWrapper
     $hasChildren={!!children}
     $orientation={orientation}

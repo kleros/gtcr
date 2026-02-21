@@ -46,6 +46,6 @@ export function useWeb3Context(): Web3Context {
     connector: null,
     connectorName: null,
     setConnector: () => {},
-    setFirstValidConnector: () => {}
+    setFirstValidConnector: () => {},
   }
 }

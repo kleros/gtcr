@@ -1,10 +1,11 @@
 import React, { useCallback, useState } from 'react'
-import { Button, Form, Tooltip, Typography, Descriptions } from 'components/ui'
-import Icon from 'components/ui/Icon'
+import { ethers } from 'ethers'
+import { Button, Form, Tooltip, Descriptions } from 'components/ui'
+import Icon from 'components/ui/icon'
 import { abi as _gtcr } from '@kleros/tcr/build/contracts/GeneralizedTCR.json'
 import { useAccount, usePublicClient, useWalletClient, useChainId } from 'wagmi'
 import { simulateContract } from '@wagmi/core'
-import { getAddress, keccak256, toHex } from 'viem'
+import { getAddress, keccak256 } from 'viem'
 import { withFormik } from 'formik'
 import humanizeDuration from 'humanize-duration'
 import { gtcrEncode, ItemTypes, typeDefaultValues } from '@kleros/gtcr-encoder'
@@ -15,13 +16,13 @@ import useFactory from 'hooks/factory'
 import { addPeriod, capitalizeFirstLetter, getArticleFor } from 'utils/string'
 import useNativeCurrency from 'hooks/native-currency'
 import { parseIpfs } from 'utils/ipfs-parse'
-import { wrapWithToast } from 'utils/wrapWithToast'
+import { wrapWithToast } from 'utils/wrap-with-toast'
 import { wagmiConfig } from 'config/wagmi'
 import {
   SUBMISSION_FORM_ID,
   StyledParagraph,
   StyledListingCriteria,
-  StyledModal
+  StyledModal,
 } from 'pages/light-item-details/modals/submit'
 import { StyledSpin } from 'pages/light-item-details/modals/challenge'
 import { StyledAlert } from 'pages/light-item-details/modals/remove'
@@ -34,19 +35,19 @@ export interface Column {
 }
 
 const _SubmissionForm: React.FC<{
-  style: any
+  style: React.CSSProperties
   columns: Column[]
   setFieldValue: (fieldName: string, fileURI: string) => void
   handleSubmit: () => void
   disabledFields: boolean[]
-  values: any
-  errors: { [label: string]: any }
+  values: Record<string, string>
+  errors: { [label: string]: string }
   touched: { [label: string]: boolean }
   status: {
     setFileToUpload: (f: (b: boolean) => void) => void
     setFileAsUploaded: (f: (b: boolean) => void) => void
   }
-}> = p => (
+}> = (p) => (
   <Form onSubmit={p.handleSubmit} id={SUBMISSION_FORM_ID}>
     {p.columns &&
       p.columns.length > 0 &&
@@ -77,81 +78,102 @@ const _SubmissionForm: React.FC<{
   </Form>
 )
 
-const SubmissionForm: React.ComponentType<any> = withFormik({
-  mapPropsToValues: ({ columns, initialValues }) =>
-    columns.reduce((acc: any, curr: any, i: number) => {
-      const defaultValue = initialValues
-        ? initialValues[i]
-        : // @ts-ignore
-          typeDefaultValues[curr.type]
-
-      return {
-        ...acc,
-        [curr.label]: String(defaultValue)
-      }
-    }, {}),
-  handleSubmit: (values, { props, resetForm }) => {
-    props.postSubmit(values, props.columns, resetForm)
-  },
-  mapPropsToStatus: (props: any) => ({
-    setFileToUpload: props.setFileToUpload,
-    setFileAsUploaded: props.setFileAsUploaded
-  }),
-  validate: async (
-    values,
-    {
+const SubmissionForm: React.ComponentType<Record<string, unknown>> = withFormik(
+  {
+    mapPropsToValues: ({
       columns,
-      deployedWithFactory,
-      deployedWithLightFactory,
-      deployedWithPermanentFactory
-    }
-  ) => {
-    const errors = (
-      await Promise.all(
-        columns
-          .filter(({ type }: any) => type === ItemTypes.GTCR_ADDRESS)
-          .map(async ({ label }: any) => ({
-            isEmpty: !values[label],
-            wasDeployedWithFactory:
-              !!values[label] &&
-              ((await deployedWithFactory(values[label])) ||
-                (await deployedWithLightFactory(values[label])) ||
-                (await deployedWithPermanentFactory(values[label]))),
-            label: label
-          }))
-      )
-    )
-      .filter((res: any) => !res.wasDeployedWithFactory || res.isEmpty)
-      .reduce(
-        (acc: any, curr: any) => ({
+      initialValues,
+    }: {
+      columns: Column[]
+      initialValues?: string[]
+    }) =>
+      columns.reduce((acc: Record<string, string>, curr: Column, i: number) => {
+        const defaultValue = initialValues
+          ? initialValues[i]
+          : // @ts-ignore
+            typeDefaultValues[curr.type]
+
+        return {
           ...acc,
-          [curr.label]: curr.isEmpty
-            ? `Enter a list address to proceed.`
-            : `This address was not deployed with the list creator.`
-        }),
-        {}
+          [curr.label]: String(defaultValue),
+        }
+      }, {}),
+    handleSubmit: (values, { props, resetForm }) => {
+      props.postSubmit(values, props.columns, resetForm)
+    },
+    mapPropsToStatus: (props: Record<string, unknown>) => ({
+      setFileToUpload: props.setFileToUpload,
+      setFileAsUploaded: props.setFileAsUploaded,
+    }),
+    validate: async (
+      values,
+      {
+        columns,
+        deployedWithFactory,
+        deployedWithLightFactory,
+        deployedWithPermanentFactory,
+      },
+    ) => {
+      const errors = (
+        await Promise.all(
+          columns
+            .filter(({ type }: Column) => type === ItemTypes.GTCR_ADDRESS)
+            .map(async ({ label }: Column) => ({
+              isEmpty: !values[label],
+              wasDeployedWithFactory:
+                !!values[label] &&
+                ((await deployedWithFactory(values[label])) ||
+                  (await deployedWithLightFactory(values[label])) ||
+                  (await deployedWithPermanentFactory(values[label]))),
+              label: label,
+            })),
+        )
       )
-    if (Object.keys(errors as any).length > 0) throw errors
-  }
-})(_SubmissionForm as any)
+        .filter(
+          (res: {
+            wasDeployedWithFactory: boolean
+            isEmpty: boolean
+            label: string
+          }) => !res.wasDeployedWithFactory || res.isEmpty,
+        )
+        .reduce(
+          (
+            acc: Record<string, string>,
+            curr: {
+              wasDeployedWithFactory: boolean
+              isEmpty: boolean
+              label: string
+            },
+          ) => ({
+            ...acc,
+            [curr.label]: curr.isEmpty
+              ? `Enter a list address to proceed.`
+              : `This address was not deployed with the list creator.`,
+          }),
+          {},
+        )
+      if (Object.keys(errors as Record<string, string>).length > 0) throw errors
+    },
+  },
+)(_SubmissionForm as React.ComponentType<Record<string, unknown>>)
 
 const SubmitModal: React.FC<{
-  onCancel: any
+  onCancel: () => void
   tcrAddress: string
-  initialValues: any[]
-  submissionDeposit: any
+  initialValues: string[]
+  submissionDeposit: ethers.BigNumber
   metaEvidence: {
     metadata: {
       tcrTitle: string
       itemName: string
-      columns: any[]
+      columns: Column[]
       isTCRofTCRs: boolean
     }
     fileURI: string
   }
   disabledFields: boolean[]
-  challengePeriodDuration: any
-}> = props => {
+  challengePeriodDuration: ethers.BigNumber
+}> = (props) => {
   const {
     onCancel,
     initialValues,
@@ -159,7 +181,7 @@ const SubmitModal: React.FC<{
     tcrAddress,
     metaEvidence,
     disabledFields,
-    challengePeriodDuration
+    challengePeriodDuration,
   } = props
   const nativeCurrency = useNativeCurrency()
   const { address: account } = useAccount()
@@ -169,7 +191,7 @@ const SubmitModal: React.FC<{
   const {
     deployedWithFactory,
     deployedWithLightFactory,
-    deployedWithPermanentFactory
+    deployedWithPermanentFactory,
   } = useFactory()
 
   const { fileURI, metadata } = metaEvidence || {}
@@ -188,7 +210,11 @@ const SubmitModal: React.FC<{
   }
 
   const postSubmit = useCallback(
-    async (values: any, columns: any, resetForm: any) => {
+    async (
+      values: Record<string, string>,
+      columns: Column[],
+      resetForm: (nextState?: Record<string, unknown>) => void,
+    ) => {
       try {
         const encodedParams = gtcrEncode({ columns, values })
 
@@ -198,12 +224,12 @@ const SubmitModal: React.FC<{
           functionName: 'addItem',
           args: [encodedParams],
           value: BigInt(submissionDeposit.toString()),
-          account
+          account,
         })
 
         const result = await wrapWithToast(
           () => walletClient!.writeContract(request),
-          publicClient!
+          publicClient!,
         )
 
         if (result.status) {
@@ -221,13 +247,12 @@ const SubmitModal: React.FC<{
                   subscriberAddr: getAddress(account!),
                   tcrAddr: getAddress(tcrAddress as `0x${string}`),
                   itemID,
-                  networkID: chainId
-                })
-              }
-            )
-              .catch(err => {
-                console.error('Failed to subscribe for notifications.', err)
-              })
+                  networkID: chainId,
+                }),
+              },
+            ).catch((err) => {
+              console.error('Failed to subscribe for notifications.', err)
+            })
           }
         }
       } catch (err) {
@@ -241,8 +266,8 @@ const SubmitModal: React.FC<{
       publicClient,
       submissionDeposit,
       tcrAddress,
-      walletClient
-    ]
+      walletClient,
+    ],
   )
 
   if (!metaEvidence || !submissionDeposit)
@@ -253,7 +278,7 @@ const SubmitModal: React.FC<{
         footer={[
           <Button key="back" onClick={onCancel}>
             Cancel
-          </Button>
+          </Button>,
         ]}
         {...props}
       >
@@ -264,8 +289,9 @@ const SubmitModal: React.FC<{
   return (
     // @ts-ignore
     <StyledModal
-      title={`Submit ${(itemName && capitalizeFirstLetter(itemName)) ||
-        'Item'}`}
+      title={`Submit ${
+        (itemName && capitalizeFirstLetter(itemName)) || 'Item'
+      }`}
       footer={[
         <Button key="back" onClick={onCancel}>
           Back
@@ -280,7 +306,7 @@ const SubmitModal: React.FC<{
           >
             Submit
           </Button>
-        </EnsureAuth>
+        </EnsureAuth>,
       ]}
       {...props}
     >
@@ -314,10 +340,12 @@ const SubmitModal: React.FC<{
         to avoid challenges.
       </StyledListingCriteria>
       <StyledAlert
-        message={`Note that this is a deposit, not a fee and it will be reimbursed if your submission is accepted. ${challengePeriodDuration &&
+        message={`Note that this is a deposit, not a fee and it will be reimbursed if your submission is accepted. ${
+          challengePeriodDuration &&
           `The challenge period lasts ${humanizeDuration(
-            challengePeriodDuration.toNumber() * 1000
-          )}`}.`}
+            challengePeriodDuration.toNumber() * 1000,
+          )}`
+        }.`}
         type="info"
         showIcon
       />

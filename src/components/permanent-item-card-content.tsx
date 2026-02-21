@@ -25,7 +25,11 @@ interface PermanentItemCardContentProps {
   tcrAddress: string
 }
 
-const PermanentItemCardContent = ({ item, chainId, tcrAddress }: PermanentItemCardContentProps) => {
+const PermanentItemCardContent = ({
+  item,
+  chainId,
+  tcrAddress,
+}: PermanentItemCardContentProps) => {
   const navigateAndScrollTop = useNavigateAndScrollTop()
 
   return (
@@ -33,10 +37,10 @@ const PermanentItemCardContent = ({ item, chainId, tcrAddress }: PermanentItemCa
       <div>
         {item.metadata.props
           .filter(
-            col =>
+            (col) =>
               col.isIdentifier ||
               col.type === ItemTypes.IMAGE ||
-              col.type === ItemTypes.FILE
+              col.type === ItemTypes.FILE,
           )
           .map((column, j) => (
             <StyledItemCol key={j}>

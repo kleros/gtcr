@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import styled from 'styled-components'
 import { Modal, Typography, Button, Spin, Tooltip } from 'components/ui'
-import Icon from 'components/ui/Icon'
+import Icon from 'components/ui/icon'
 import _gtcr from 'assets/abis/PermanentGTCR.json'
 import EnsureAuth from 'components/ensure-auth'
 import ETHAmount from 'components/eth-amount'
@@ -14,7 +14,7 @@ import { getIPFSPath } from 'utils/get-ipfs-path'
 import { parseIpfs } from 'utils/ipfs-parse'
 import useNativeCurrency from 'hooks/native-currency'
 import useTokenSymbol from 'hooks/token-symbol'
-import { wrapWithToast } from 'utils/wrapWithToast'
+import { wrapWithToast } from 'utils/wrap-with-toast'
 import { wagmiConfig } from 'config/wagmi'
 import { DepositContainer, DepositRow, DepositLabel } from './submit'
 
@@ -39,28 +39,28 @@ const ERC20_ABI = [
     name: 'balanceOf',
     outputs: [{ name: '', type: 'uint256' }],
     stateMutability: 'view',
-    type: 'function'
+    type: 'function',
   },
   {
     inputs: [
       { name: 'owner', type: 'address' },
-      { name: 'spender', type: 'address' }
+      { name: 'spender', type: 'address' },
     ],
     name: 'allowance',
     outputs: [{ name: '', type: 'uint256' }],
     stateMutability: 'view',
-    type: 'function'
+    type: 'function',
   },
   {
     inputs: [
       { name: 'spender', type: 'address' },
-      { name: 'amount', type: 'uint256' }
+      { name: 'amount', type: 'uint256' },
     ],
     name: 'approve',
     outputs: [{ name: '', type: 'bool' }],
     stateMutability: 'nonpayable',
-    type: 'function'
-  }
+    type: 'function',
+  },
 ]
 
 interface ChallengeModalProps {
@@ -73,7 +73,7 @@ interface ChallengeModalProps {
 
 const ChallengeModal = ({
   item,
-  itemName,
+  _itemName,
   onCancel,
   arbitrationCost,
   ...rest
@@ -107,15 +107,15 @@ const ChallengeModal = ({
           address: registry.token,
           abi: ERC20_ABI,
           functionName: 'balanceOf',
-          args: [account]
+          args: [account],
         }),
         publicClient.readContract({
           address: registry.token,
           abi: ERC20_ABI,
           functionName: 'allowance',
-          args: [account, registry.id]
+          args: [account, registry.id],
         }),
-        publicClient.getBalance({ address: account })
+        publicClient.getBalance({ address: account }),
       ])
       setBalance(bal)
       setAllowance(allow)
@@ -136,7 +136,7 @@ const ChallengeModal = ({
       setIsApproving(false)
       setIsChallenging(false)
     },
-    []
+    [],
   )
 
   const handleApprove = useCallback(async () => {
@@ -147,12 +147,12 @@ const ChallengeModal = ({
         abi: ERC20_ABI,
         functionName: 'approve',
         args: [registry.id, challengeStake],
-        account
+        account,
       })
 
       const result = await wrapWithToast(
         () => walletClient.writeContract(request),
-        publicClient
+        publicClient,
       )
 
       if (result.status) {
@@ -172,26 +172,26 @@ const ChallengeModal = ({
     checkTokenStatus,
     account,
     walletClient,
-    publicClient
+    publicClient,
   ])
 
   const challengeRequest = async ({
     title,
     description,
-    evidenceAttachment
+    evidenceAttachment,
   }) => {
     setIsChallenging(true)
     try {
       const evidenceJSON = {
         title: title || 'Challenge Justification',
         description,
-        ...evidenceAttachment
+        ...evidenceAttachment,
       }
 
       const enc = new TextEncoder()
       const fileData = enc.encode(JSON.stringify(evidenceJSON))
       const ipfsEvidencePath = getIPFSPath(
-        await ipfsPublish('evidence.json', fileData)
+        await ipfsPublish('evidence.json', fileData),
       )
 
       const { request } = await simulateContract(wagmiConfig, {
@@ -200,12 +200,12 @@ const ChallengeModal = ({
         functionName: 'challengeItem',
         args: [item.itemID, ipfsEvidencePath],
         value: BigInt(arbitrationCost.toString()),
-        account
+        account,
       })
 
       const result = await wrapWithToast(
         () => walletClient.writeContract(request),
-        publicClient
+        publicClient,
       )
 
       if (result.status) {
@@ -221,13 +221,12 @@ const ChallengeModal = ({
                 subscriberAddr: getAddress(account),
                 tcrAddr: getAddress(registry.id),
                 itemID: item.itemID,
-                networkID: chainId
-              })
-            }
-          )
-            .catch(err => {
-              console.error('Failed to subscribe for notifications.', err)
-            })
+                networkID: chainId,
+              }),
+            },
+          ).catch((err) => {
+            console.error('Failed to subscribe for notifications.', err)
+          })
       }
     } catch (err) {
       console.error('Error challenging item:', err)
@@ -315,7 +314,7 @@ const ChallengeModal = ({
         >
           Back
         </Button>,
-        <EnsureAuth key="ensure-auth">{renderChallengeButton()}</EnsureAuth>
+        <EnsureAuth key="ensure-auth">{renderChallengeButton()}</EnsureAuth>,
       ]}
       {...rest}
     >

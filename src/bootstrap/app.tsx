@@ -1,12 +1,11 @@
 import React, { useContext, useEffect, useState } from 'react'
 import styled from 'styled-components'
 import { BrowserRouter } from 'react-router-dom'
-import { Helmet } from 'react-helmet'
 import { WagmiProvider } from 'wagmi'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ErrorBoundary } from 'react-error-boundary'
 import Footer from '../components/footer.tsx'
-import Layout from 'components/ui/Layout'
+import Layout from 'components/ui/layout'
 import { unregister } from './service-worker'
 import { WalletProvider } from 'contexts/wallet-context'
 import { StakeProvider } from 'contexts/stake-context'
@@ -33,9 +32,10 @@ const StyledClickaway = styled.div<{ isMenuClosed: boolean }>`
   position: fixed;
   width: 100%;
   height: 100%;
-  opacity: ${properties => (properties.isMenuClosed ? 0 : 0.4)};
+  opacity: ${(properties) => (properties.isMenuClosed ? 0 : 0.4)};
   transition: opacity 0.3s;
-  pointer-events: ${properties => (properties.isMenuClosed ? 'none' : 'auto')};
+  pointer-events: ${(properties) =>
+    properties.isMenuClosed ? 'none' : 'auto'};
 `
 
 const StyledLayout = styled(Layout)`
@@ -58,7 +58,7 @@ const App = () => {
       chainId = url.split('=')[1]
       const redirectUrl = url.replace(
         `/tcr/${tcrAddress}/${itemId}?chainId=${chainId}`,
-        `/tcr/${chainId}/${tcrAddress}/${itemId}`
+        `/tcr/${chainId}/${tcrAddress}/${itemId}`,
       )
       window.location.replace(redirectUrl)
     }
@@ -69,7 +69,9 @@ const App = () => {
       <GlobalStyle />
       <WagmiProvider config={wagmiConfig}>
         <QueryClientProvider client={queryClient}>
-          <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+          <BrowserRouter
+            future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
+          >
             <ErrorBoundary
               FallbackComponent={({ error }) => (
                 <ErrorPage
@@ -81,29 +83,22 @@ const App = () => {
               )}
             >
               <WalletProvider>
-                  <Helmet>
-                    <title>Kleros · Curate</title>
-                    <link
-                      href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,400;0,500;0,700;1,400;1,500;1,700&display=swap"
-                      rel="stylesheet"
+                <StakeProvider>
+                  <StyledLayout>
+                    <SmartContractWalletWarning />
+                    <AppBar />
+                    <AppRouter />
+                    <StyledClickaway
+                      isMenuClosed={isMenuClosed}
+                      onClick={
+                        isMenuClosed ? null : () => setIsMenuClosed(true)
+                      }
                     />
-                  </Helmet>
-                  <StakeProvider>
-                    <StyledLayout>
-                      <SmartContractWalletWarning />
-                      <AppBar />
-                      <AppRouter />
-                      <StyledClickaway
-                        isMenuClosed={isMenuClosed}
-                        onClick={
-                          isMenuClosed ? null : () => setIsMenuClosed(true)
-                        }
-                      />
-                      <Footer />
-                    </StyledLayout>
-                  </StakeProvider>
-                  <ThemedToastContainer />
-                </WalletProvider>
+                    <Footer />
+                  </StyledLayout>
+                </StakeProvider>
+                <ThemedToastContainer />
+              </WalletProvider>
             </ErrorBoundary>
           </BrowserRouter>
         </QueryClientProvider>

@@ -4,7 +4,7 @@ import { isSeerRegistry } from 'components/custom-registries/seer/is-seer-regist
 const useSeerMarketsData = (
   chainId: string,
   tcrAddress: string,
-  items: SubgraphItem[]
+  items: SubgraphItem[],
 ) => {
   const [seerMarketsData, setSeerMarketsData] = useState({})
 
@@ -14,7 +14,7 @@ const useSeerMarketsData = (
 
     const fetchSeerData = async () => {
       const contractAddresses = items
-        .map(item => item?.decodedData?.[1]?.toLowerCase())
+        .map((item) => (item?.decodedData?.[1] as string)?.toLowerCase())
         .filter(Boolean)
       if (contractAddresses.length === 0) return
 
@@ -27,7 +27,7 @@ const useSeerMarketsData = (
         const query = `
           {
             markets(where: {id_in: [${contractAddresses
-              .map(addr => `"${addr}"`)
+              .map((addr) => `"${addr}"`)
               .join(',')}]}) {
               id
               marketName
@@ -38,18 +38,24 @@ const useSeerMarketsData = (
         const response = await fetch(subgraphUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ query })
+          body: JSON.stringify({ query }),
         })
         if (!response.ok) throw new Error('Seer subgraph query failed')
         const data = await response.json()
         const markets = data.data.markets
-        const marketsData = markets.reduce((acc: Record<string, { marketName: string; outcomes: string[] }>, market: { id: string; marketName: string; outcomes: string[] }) => {
-          acc[market.id] = {
-            marketName: market.marketName,
-            outcomes: market.outcomes
-          }
-          return acc
-        }, {})
+        const marketsData = markets.reduce(
+          (
+            acc: Record<string, { marketName: string; outcomes: string[] }>,
+            market: { id: string; marketName: string; outcomes: string[] },
+          ) => {
+            acc[market.id] = {
+              marketName: market.marketName,
+              outcomes: market.outcomes,
+            }
+            return acc
+          },
+          {},
+        )
         setSeerMarketsData(marketsData)
       } catch (err) {
         console.error('Failed to fetch Seer markets:', err)

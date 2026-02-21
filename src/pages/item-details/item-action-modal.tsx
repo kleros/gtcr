@@ -6,6 +6,7 @@ import ChallengeModal from './modals/challenge'
 import SubmitModal from './modals/submit'
 import SubmitConnectModal from './modals/submit-connect'
 import CrowdfundModal from './modals/crowdfund'
+
 interface ItemActionModalProps {
   statusCode: number
   isOpen: boolean
@@ -35,13 +36,13 @@ const ItemActionModal = ({
   tcrAddress,
   metaEvidence,
   gtcrView,
-  appealCost
+  appealCost,
 }: ItemActionModalProps) => {
   // Common button properties.
   const rest = {
     visible: isOpen,
     title: getActionLabel({ statusCode, itemName }),
-    onCancel: onClose
+    onCancel: onClose,
   }
 
   switch (statusCode) {

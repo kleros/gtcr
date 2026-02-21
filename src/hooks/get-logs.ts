@@ -1,4 +1,5 @@
 import { useMemo } from 'react'
+import { ethers } from 'ethers'
 
 // once upon a time, infura was giving timeout errors.
 // alchemy was used as a result. but users tend to use
@@ -12,14 +13,18 @@ import { useMemo } from 'react'
 // doesn't seem to do anything anymore. but, it's there in case
 // these overrides come useful again. plus, refactoring it out
 // would be time consuming.
-const useGetLogs = (library: any): ((query: any) => Promise<any[]>) | null => {
+const useGetLogs = (
+  library: EthersLibrary | null,
+):
+  | ((query: ethers.providers.Filter) => Promise<ethers.providers.Log[]>)
+  | null => {
   const getLogs = useMemo(
-    () => async (query: any) => {
+    () => async (query: ethers.providers.Filter) => {
       const defResult = await library.getLogs(query)
       return defResult
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [library, library.network]
+    [library, library.network],
   )
   if (!library || !library.network) return null
   return getLogs

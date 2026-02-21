@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
-import styled, { useTheme } from 'styled-components'
-import Icon from 'components/ui/Icon'
+import styled from 'styled-components'
+import Icon from 'components/ui/icon'
 import { getExtension } from 'mime'
 import { parseIpfs } from 'utils/ipfs-parse'
 
@@ -52,9 +52,7 @@ const FileDisplay = ({ value, allowedFileTypes }: FileDisplayProps) => {
       <a href={parseIpfs(value)} target="_blank" rel="noopener noreferrer">
         View File <Icon type="paper-clip" />
       </a>
-      {!supported && (
-        <ErrorText>File type not supported</ErrorText>
-      )}
+      {!supported && <ErrorText>File type not supported</ErrorText>}
     </>
   )
 }

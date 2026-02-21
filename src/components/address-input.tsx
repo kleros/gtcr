@@ -17,7 +17,7 @@ const AddressInput: React.FC<{
   hasFeedback: boolean
   disabled: boolean
   style: React.CSSProperties
-}> = p => (
+}> = (p) => (
   <Field
     name={p.name}
     style={p.style}

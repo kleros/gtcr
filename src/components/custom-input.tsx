@@ -28,15 +28,15 @@ const CustomInput = ({
   type,
   step,
   disabled,
-  style
+  style,
 }: CustomInputProps) => (
   <Field name={name} style={style}>
-    {({ field }) => (
+    {({ field }: { field: Record<string, unknown> }) => (
       <Form.Item
         label={label}
         validateStatus={error && touched ? 'error' : undefined}
         help={error && touched ? error : ''}
-        hasFeedback={hasFeedback}
+        hasFeedback={hasFeedback ?? undefined}
       >
         {type === ItemTypes.NUMBER ? (
           <Input

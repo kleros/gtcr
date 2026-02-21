@@ -2,8 +2,11 @@
 // This is used to select which metadata to use for an item based on
 // the its blocknumber or timestamp and the block number or timestamp
 // of the metaevidence used on when it was first submitted.
-const takeLower = (list: (number | string)[], limit: number | string): number => {
-  const numList = list.map(item => Number(item))
+const takeLower = (
+  list: (number | string)[],
+  limit: number | string,
+): number => {
+  const numList = list.map((item) => Number(item))
   const numLimit = Number(limit)
   let result = numList[0]
 

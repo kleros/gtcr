@@ -2,7 +2,7 @@ import { library } from '@fortawesome/fontawesome-svg-core'
 import {
   faQuestionCircle as farQuestionCircle,
   faCheckCircle as farCheckCircle,
-  faTimesCircle as farTimesCircle
+  faTimesCircle as farTimesCircle,
 } from '@fortawesome/free-regular-svg-icons'
 import {
   faBullhorn,
@@ -42,7 +42,7 @@ import {
   faUpload,
   faChevronDown,
   faChevronUp,
-  faTrashAlt
+  faTrashAlt,
 } from '@fortawesome/free-solid-svg-icons'
 
 library.add(
@@ -86,5 +86,5 @@ library.add(
   faUpload,
   faChevronDown,
   faChevronUp,
-  faTrashAlt
+  faTrashAlt,
 )

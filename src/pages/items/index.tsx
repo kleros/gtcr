@@ -8,10 +8,9 @@ import React, {
   useContext,
   useMemo,
   useRef,
-  useCallback
+  useCallback,
 } from 'react'
 import localforage from 'localforage'
-import qs from 'qs'
 import { useQuery } from '@tanstack/react-query'
 import ErrorPage from '../error-page'
 import { WalletContext } from 'contexts/wallet-context'
@@ -24,7 +23,7 @@ import {
   searchStrToFilterObjLight,
   filterLabelLight,
   FILTER_KEYS,
-  updateLightFilter
+  updateLightFilter,
 } from 'utils/filters'
 import ItemCard from './item-card'
 import Banner from './banner'
@@ -43,7 +42,7 @@ import {
   StyledPagination,
   FiltersContainer,
   ITEMS_PER_PAGE,
-  pagingItem
+  pagingItem,
 } from 'pages/light-items'
 
 // TODO: Ensure we don't set state for unmounted components using
@@ -66,17 +65,23 @@ const Items = () => {
     tcrError,
     gtcrView,
     connectedTCRAddr,
-    submissionDeposit
+    submissionDeposit,
   } = useContext(TCRViewContext)
-  const [submissionFormOpen, setSubmissionFormOpen] = useState<boolean | undefined>()
+  const [submissionFormOpen, setSubmissionFormOpen] = useState<
+    boolean | undefined
+  >()
   const refAttr = useRef<HTMLDivElement>()
-  const [eventListenerSet, setEventListenerSet] = useState<boolean | undefined>()
+  const [eventListenerSet, setEventListenerSet] = useState<
+    boolean | undefined
+  >()
   const queryOptions = searchStrToFilterObjLight(search)
   const [nsfwFilterOn, setNSFWFilter] = useState(true)
-  const [queryItemParams, setQueryItemParams] = useState<Record<string, unknown> | undefined>()
+  const [queryItemParams, setQueryItemParams] = useState<
+    Record<string, unknown> | undefined
+  >()
   const client = useMemo(() => getGraphQLClient(chainId), [chainId])
 
-  const toggleNSFWFilter = useCallback(checked => {
+  const toggleNSFWFilter = useCallback((checked) => {
     setNSFWFilter(checked)
     localforage.setItem(NSFW_FILTER_KEY, checked)
   }, [])
@@ -89,7 +94,7 @@ const Items = () => {
     submitted,
     removalRequested,
     challengedSubmissions,
-    challengedRemovals
+    challengedRemovals,
   } = queryOptions
   const orderDirection = oldestFirst ? 'asc' : 'desc'
 
@@ -102,22 +107,22 @@ const Items = () => {
     if (submitted)
       conditions.push({
         status: { _eq: 'RegistrationRequested' },
-        disputed: { _eq: false }
+        disputed: { _eq: false },
       })
     if (removalRequested)
       conditions.push({
         status: { _eq: 'ClearingRequested' },
-        disputed: { _eq: false }
+        disputed: { _eq: false },
       })
     if (challengedSubmissions)
       conditions.push({
         status: { _eq: 'RegistrationRequested' },
-        disputed: { _eq: true }
+        disputed: { _eq: true },
       })
     if (challengedRemovals)
       conditions.push({
         status: { _eq: 'ClearingRequested' },
-        disputed: { _eq: true }
+        disputed: { _eq: true },
       })
 
     // No filters selected - return all items
@@ -128,13 +133,13 @@ const Items = () => {
     if (conditions.length === 1)
       return {
         registry_id: { _eq: tcrAddress.toLowerCase() },
-        ...conditions[0]
+        ...conditions[0],
       }
 
     // Multiple filters - use _or clause
     return {
       registry_id: { _eq: tcrAddress.toLowerCase() },
-      _or: conditions
+      _or: conditions,
     }
   }, [
     absent,
@@ -143,7 +148,7 @@ const Items = () => {
     registered,
     removalRequested,
     submitted,
-    tcrAddress
+    tcrAddress,
   ])
 
   // Load NSFW user setting from localforage.
@@ -159,15 +164,15 @@ const Items = () => {
       offset: (Number(page) - 1) * ITEMS_PER_PAGE,
       limit: MAX_ENTITIES,
       order_by: [{ latestRequestSubmissionTime: orderDirection }],
-      where: itemsWhere
+      where: itemsWhere,
     }),
-    [page, orderDirection, itemsWhere]
+    [page, orderDirection, itemsWhere],
   )
 
   const itemsQuery = useQuery({
     queryKey: ['classicItems', queryVariables],
     queryFn: () => client.request(CLASSIC_REGISTRY_ITEMS_QUERY, queryVariables),
-    enabled: !!client
+    enabled: !!client,
   })
 
   // big useEffect for fetching + encoding the data was transformed into
@@ -177,7 +182,7 @@ const Items = () => {
     if (!itemsQuery.data || itemsQuery.isLoading) return null
     let items = itemsQuery.data.items
 
-    items = items.map(item => {
+    items = items.map((item) => {
       const { disputed, disputeID, submissionTime, rounds, resolved, deposit } =
         item.requests[0] ?? {}
 
@@ -188,17 +193,17 @@ const Items = () => {
         hasPaidRequester,
         hasPaidChallenger,
         amountPaidRequester,
-        amountPaidChallenger
+        amountPaidChallenger,
       } = rounds[0] ?? {}
 
       const currentRuling = ruling === 'None' ? 0 : ruling === 'Accept' ? 1 : 2
       const disputeStatus = !disputed
         ? DISPUTE_STATUS.WAITING
         : resolved
-        ? DISPUTE_STATUS.SOLVED
-        : Number(appealPeriodEnd) > Date.now() / 1000
-        ? DISPUTE_STATUS.APPEALABLE
-        : DISPUTE_STATUS.WAITING
+          ? DISPUTE_STATUS.SOLVED
+          : Number(appealPeriodEnd) > Date.now() / 1000
+            ? DISPUTE_STATUS.APPEALABLE
+            : DISPUTE_STATUS.WAITING
 
       return {
         ...item,
@@ -216,8 +221,8 @@ const Items = () => {
         amountPaid: [
           BigNumber.from(0),
           BigNumber.from(amountPaidRequester),
-          BigNumber.from(amountPaidChallenger)
-        ]
+          BigNumber.from(amountPaidChallenger),
+        ],
       }
     })
 
@@ -235,29 +240,28 @@ const Items = () => {
       const { columns } = metaEvidence.metadata
       try {
         decodedItem = gtcrDecode({ values: item.data, columns })
-        // eslint-disable-next-line no-unused-vars
-      } catch (err) {
+      } catch {
         errors.push(
-          `Error decoding item ${item.itemID} of list at ${tcrAddress}`
+          `Error decoding item ${item.itemID} of list at ${tcrAddress}`,
         )
         console.warn(
-          `Error decoding item ${item.itemID} of list at ${tcrAddress}`
+          `Error decoding item ${item.itemID} of list at ${tcrAddress}`,
         )
       }
 
       // Return the item columns along with its TCR status data.
       return {
         tcrData: {
-          ...item // Spread to convert from array to object.
+          ...item, // Spread to convert from array to object.
         },
         columns: columns.map(
           (col, i) => ({
             value: decodedItem && decodedItem[i],
-            ...col
+            ...col,
           }),
-          { key: i }
+          { key: i },
         ),
-        errors
+        errors,
       }
     })
   }, [metaEvidence, tcrAddress, encodedItems])
@@ -275,21 +279,21 @@ const Items = () => {
     () => () => {
       if (!refAttr || !refAttr.current || !eventListenerSet) return
       refAttr.current.removeAllListeners(
-        refAttr.current.filters.ItemStatusChange()
+        refAttr.current.filters.ItemStatusChange(),
       )
     },
-    [eventListenerSet]
+    [eventListenerSet],
   )
 
   // Check if there an action in the URL.
   useEffect(() => {
-    const params = qs.parse(search)
-    if (!params['?action']) return
+    const params = new URLSearchParams(search)
+    if (!params.get('action')) return
 
-    const initialValues = []
-    Object.keys(params)
-      .filter(param => param !== '?action')
-      .forEach(key => initialValues.push(params[key]))
+    const initialValues: string[] = []
+    params.forEach((value, key) => {
+      if (key !== 'action') initialValues.push(value)
+    })
 
     setQueryItemParams(initialValues)
     setSubmissionFormOpen(true)
@@ -335,43 +339,43 @@ const Items = () => {
                   />
                   {Object.keys(queryOptions)
                     .filter(
-                      key =>
+                      (key) =>
                         key !== FILTER_KEYS.PAGE &&
                         key !== FILTER_KEYS.OLDEST_FIRST &&
                         key !== 'mySubmissions' &&
-                        key !== 'myChallenges'
+                        key !== 'myChallenges',
                     )
-                    .map(key =>
+                    .map((key) =>
                       filterLabelLight[key] ? (
                         <StyledTag
                           key={key}
                           checked={queryOptions[key]}
-                          onChange={checked => {
+                          onChange={(checked) => {
                             const newQueryStr = updateLightFilter({
                               prevQuery: search,
                               filter: key,
-                              checked
+                              checked,
                             })
                             navigate({
-                              search: newQueryStr
+                              search: newQueryStr,
                             })
                           }}
                         >
                           {filterLabelLight[key]}
                         </StyledTag>
-                      ) : null
+                      ) : null,
                     )}
                 </StyledFilters>
                 <StyledSelect
                   defaultValue={oldestFirst ? 'oldestFirst' : 'newestFirst'}
-                  onChange={val => {
+                  onChange={(val) => {
                     const newQueryStr = updateLightFilter({
                       prevQuery: search,
                       filter: 'oldestFirst',
-                      checked: val === 'oldestFirst'
+                      checked: val === 'oldestFirst',
                     })
                     navigate({
-                      search: newQueryStr
+                      search: newQueryStr,
                     })
                   }}
                 >
@@ -410,11 +414,11 @@ const Items = () => {
                 current={Number(queryOptions.page)}
                 itemRender={pagingItem}
                 pageSize={ITEMS_PER_PAGE}
-                onChange={newPage => {
+                onChange={(newPage) => {
                   navigate({
                     search: /page=\d+/g.test(search)
                       ? search.replace(/page=\d+/g, `page=${newPage}`)
-                      : `${search}&page=${newPage}`
+                      : `${search}&page=${newPage}`,
                   })
                 }}
               />

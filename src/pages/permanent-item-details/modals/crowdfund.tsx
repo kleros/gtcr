@@ -7,14 +7,15 @@ import {
   Slider,
   InputNumber,
   Typography,
-  Divider
+  Divider,
 } from 'components/ui'
 import {
   STATUS_CODE,
   PARTY,
-  SUBGRAPH_RULING
+  SUBGRAPH_RULING,
 } from 'utils/permanent-item-status'
 import { ethers, BigNumber } from 'ethers'
+
 const { formatEther, parseEther } = ethers.utils
 import { useAccount, usePublicClient, useWalletClient } from 'wagmi'
 import { simulateContract } from '@wagmi/core'
@@ -24,7 +25,7 @@ import _gtcr from 'assets/abis/PermanentGTCR.json'
 import useRequiredFees from 'hooks/required-fees'
 import useNativeCurrency from 'hooks/native-currency'
 import { parseIpfs } from 'utils/ipfs-parse'
-import { wrapWithToast } from 'utils/wrapWithToast'
+import { wrapWithToast } from 'utils/wrap-with-toast'
 import { wagmiConfig } from 'config/wagmi'
 import { StyledSpin, StyledModal } from './challenge'
 
@@ -36,7 +37,13 @@ interface CrowdfundModalProps {
   [key: string]: any
 }
 
-const CrowdfundModal = ({ statusCode, item, fileURI, appealCost, ...rest }: CrowdfundModalProps) => {
+const CrowdfundModal = ({
+  statusCode,
+  item,
+  fileURI,
+  appealCost,
+  ...rest
+}: CrowdfundModalProps) => {
   const { address: account } = useAccount()
   const publicClient = usePublicClient()
   const { data: walletClient } = useWalletClient()
@@ -44,7 +51,7 @@ const CrowdfundModal = ({ statusCode, item, fileURI, appealCost, ...rest }: Crow
     id: tcrAddress,
     sharedStakeMultiplier,
     winnerStakeMultiplier,
-    loserStakeMultiplier
+    loserStakeMultiplier,
   } = item?.registry || {}
 
   const MULTIPLIER_DIVISOR = 10_000
@@ -59,7 +66,7 @@ const CrowdfundModal = ({ statusCode, item, fileURI, appealCost, ...rest }: Crow
     hasPaidChallenger,
     ruling,
     amountPaidRequester,
-    amountPaidChallenger
+    amountPaidChallenger,
   } = round
 
   const winner =
@@ -78,25 +85,22 @@ const CrowdfundModal = ({ statusCode, item, fileURI, appealCost, ...rest }: Crow
     return !hasPaidRequester ? PARTY.REQUESTER : PARTY.CHALLENGER
   }, [ruling, hasPaidRequester, hasPaidChallenger, statusCode, winner])
 
-  const side = useMemo(() => userSelectedSide || autoSelectedSide, [
-    autoSelectedSide,
-    userSelectedSide
-  ])
+  const side = useMemo(
+    () => userSelectedSide || autoSelectedSide,
+    [autoSelectedSide, userSelectedSide],
+  )
 
-  const {
-    requiredForSide,
-    amountStillRequired,
-    potentialReward
-  } = useRequiredFees({
-    side,
-    sharedStakeMultiplier,
-    winnerStakeMultiplier,
-    loserStakeMultiplier,
-    currentRuling: ruling,
-    item,
-    MULTIPLIER_DIVISOR,
-    appealCost
-  })
+  const { requiredForSide, amountStillRequired, potentialReward } =
+    useRequiredFees({
+      side,
+      sharedStakeMultiplier,
+      winnerStakeMultiplier,
+      loserStakeMultiplier,
+      currentRuling: ruling,
+      item,
+      MULTIPLIER_DIVISOR,
+      appealCost,
+    })
 
   if (!sharedStakeMultiplier || !potentialReward)
     return (
@@ -127,7 +131,7 @@ const CrowdfundModal = ({ statusCode, item, fileURI, appealCost, ...rest }: Crow
             onClick={() => setUserSelectedSide(PARTY.CHALLENGER)}
           >
             Challenger
-          </Button>
+          </Button>,
         ]}
         {...rest}
       >
@@ -140,8 +144,8 @@ const CrowdfundModal = ({ statusCode, item, fileURI, appealCost, ...rest }: Crow
       const contribution = amountStillRequired
         .mul(
           BigNumber.from(
-            (contributionShare * MULTIPLIER_DIVISOR.toString()).toString()
-          )
+            (contributionShare * MULTIPLIER_DIVISOR.toString()).toString(),
+          ),
         )
         .div(MULTIPLIER_DIVISOR)
 
@@ -151,17 +155,15 @@ const CrowdfundModal = ({ statusCode, item, fileURI, appealCost, ...rest }: Crow
         functionName: 'fundAppeal',
         args: [item.itemID, side],
         value: BigInt(contribution.toString()),
-        account
+        account,
       })
 
       const result = await wrapWithToast(
         () => walletClient.writeContract(request),
-        publicClient
+        publicClient,
       )
 
-      if (result.status) {
-        rest.onCancel()
-      }
+      if (result.status) rest.onCancel()
     } catch (err) {
       console.error('Error contributing fees:', err)
     }
@@ -183,7 +185,7 @@ const CrowdfundModal = ({ statusCode, item, fileURI, appealCost, ...rest }: Crow
           <Button key="contribute" type="primary" onClick={crowdfundSide}>
             OK
           </Button>
-        </EnsureAuth>
+        </EnsureAuth>,
       ]}
       afterClose={() => {
         setUserSelectedSide(PARTY.NONE)
@@ -222,7 +224,7 @@ const CrowdfundModal = ({ statusCode, item, fileURI, appealCost, ...rest }: Crow
             min={0}
             max={1}
             step={0.001}
-            onChange={value => setContributionShare(value)}
+            onChange={(value) => setContributionShare(value)}
             value={contributionShare}
             tooltipVisible={false}
           />
@@ -238,7 +240,7 @@ const CrowdfundModal = ({ statusCode, item, fileURI, appealCost, ...rest }: Crow
                 ? contributionShare * formatEther(amountStillRequired)
                 : contributionShare
             }
-            onChange={value => {
+            onChange={(value) => {
               const weiAmount = parseEther(String(value))
               const shareInBasis = weiAmount
                 .mul(MULTIPLIER_DIVISOR)

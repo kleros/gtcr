@@ -63,7 +63,7 @@ const Checkbox: React.FC<CheckboxProps> = ({
   children,
   defaultChecked = false,
   style,
-  className
+  className,
 }) => {
   const [internalChecked, setInternalChecked] = useState(defaultChecked)
   const isControlled = controlledChecked !== undefined
@@ -76,7 +76,7 @@ const Checkbox: React.FC<CheckboxProps> = ({
       if (!isControlled) setInternalChecked(next)
       if (onChange) onChange(e)
     },
-    [disabled, isControlled, onChange]
+    [disabled, isControlled, onChange],
   )
 
   return (

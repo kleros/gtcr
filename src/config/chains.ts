@@ -2,7 +2,7 @@ import {
   type AppKitNetwork,
   mainnet,
   gnosis,
-  sepolia
+  sepolia,
 } from '@reown/appkit/networks'
 
 // All chains supported by this app.
@@ -11,7 +11,7 @@ import {
 export const SUPPORTED_CHAINS: [AppKitNetwork, ...AppKitNetwork[]] = [
   mainnet,
   gnosis,
-  sepolia
+  sepolia,
 ]
 
 export const DEFAULT_CHAIN = mainnet
@@ -20,9 +20,9 @@ export const DEFAULT_CHAIN = mainnet
  * Look up a chain object by its numeric ID.
  */
 export const getChainById = (
-  chainId: number | string
+  chainId: number | string,
 ): AppKitNetwork | undefined =>
-  SUPPORTED_CHAINS.find(chain => chain.id === Number(chainId))
+  SUPPORTED_CHAINS.find((chain) => chain.id === Number(chainId))
 
 /**
  * Map of chain IDs to explorer base URLs, derived from the chain definitions.
@@ -36,7 +36,7 @@ export const getExplorerUrl = (chainId: number | string): string => {
  * Map of chain IDs to native currency info.
  */
 export const getNativeCurrency = (
-  chainId: number | string
+  chainId: number | string,
 ): { name: string; symbol: string; decimals: number } => {
   const chain = getChainById(chainId)
   return chain?.nativeCurrency ?? { name: 'Ether', symbol: 'ETH', decimals: 18 }

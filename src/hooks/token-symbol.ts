@@ -1,12 +1,14 @@
 import { useState, useEffect, useCallback } from 'react'
 import { ethers } from 'ethers'
-import { useWeb3Context } from 'hooks/useWeb3Context'
+import { useWeb3Context } from 'hooks/use-web3-context'
 import { useEthersProvider } from 'hooks/ethers-adapters'
 import useUrlChainId from 'hooks/use-url-chain-id'
 
 const ERC20_SYMBOL_ABI = ['function symbol() view returns (string)']
 
-const useTokenSymbol = (tokenAddress: string | undefined): { symbol: string; loading: boolean } => {
+const useTokenSymbol = (
+  tokenAddress: string | undefined,
+): { symbol: string; loading: boolean } => {
   const [symbol, setSymbol] = useState<string>('tokens')
   const [loading, setLoading] = useState<boolean>(false)
   const { networkId } = useWeb3Context()

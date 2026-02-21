@@ -73,7 +73,7 @@ const Spin: React.FC<SpinProps> = ({
   tip,
   children,
   style,
-  className
+  className,
 }) => {
   const dotSize = SIZES[size] || SIZES.default
 
@@ -84,13 +84,12 @@ const Spin: React.FC<SpinProps> = ({
     </SpinnerCenter>
   )
 
-  if (!children) {
+  if (!children)
     return (
       <SpinnerContainer style={style} className={className}>
         {spinning && spinner}
       </SpinnerContainer>
     )
-  }
 
   return (
     <Wrapper style={style} className={className}>

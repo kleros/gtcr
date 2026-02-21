@@ -49,11 +49,9 @@ const Handle = styled.span<HandleStyledProps>`
   position: absolute;
   top: 2px;
   left: ${({ $checked, $size }) => {
-    if ($checked) {
-      return $size === 'small'
-        ? 'calc(100% - 14px)'
-        : 'calc(100% - 20px)'
-    }
+    if ($checked)
+      return $size === 'small' ? 'calc(100% - 14px)' : 'calc(100% - 20px)'
+
     return '2px'
   }};
   width: ${({ $size }) => ($size === 'small' ? '12px' : '18px')};
@@ -75,9 +73,7 @@ const InnerText = styled.span<InnerTextStyledProps>`
     $checked ? theme.textOnPrimary || '#fff' : '#fff'};
   padding: ${({ $checked, $size }) => {
     const handleSpace = $size === 'small' ? '16px' : '24px'
-    return $checked
-      ? `0 ${handleSpace} 0 6px`
-      : `0 6px 0 ${handleSpace}`
+    return $checked ? `0 ${handleSpace} 0 6px` : `0 6px 0 ${handleSpace}`
   }};
   white-space: nowrap;
   user-select: none;
@@ -106,29 +102,26 @@ const Switch: React.FC<SwitchProps> = ({
   size,
   style,
   className,
-  defaultChecked = false
+  defaultChecked = false,
 }) => {
   const [internalChecked, setInternalChecked] = useState(defaultChecked)
   const isControlled = controlledChecked !== undefined
   const checked = isControlled ? controlledChecked : internalChecked
 
   useEffect(() => {
-    if (isControlled) {
-      setInternalChecked(controlledChecked)
-    }
+    if (isControlled) setInternalChecked(controlledChecked)
   }, [isControlled, controlledChecked])
 
   const handleClick = useCallback(
     (e: React.MouseEvent) => {
       if (disabled) return
       const newChecked = !checked
-      if (!isControlled) {
-        setInternalChecked(newChecked)
-      }
+      if (!isControlled) setInternalChecked(newChecked)
+
       onChange && onChange(newChecked, e)
       onClick && onClick(newChecked, e)
     },
-    [checked, disabled, isControlled, onChange, onClick]
+    [checked, disabled, isControlled, onChange, onClick],
   )
 
   return (

@@ -18,12 +18,12 @@ interface ServiceWorkerConfig {
 
 const isLocalhost: boolean = Boolean(
   window.location.hostname === 'localhost' ||
-    // [::1] is the IPv6 localhost address.
-    window.location.hostname === '[::1]' ||
-    // 127.0.0.1/8 is considered localhost for IPv4.
-    window.location.hostname.match(
-      /^127(?:\.(?:25[0-5]|2[0-4]\d|[01]?\d\d?)){3}$/
-    )
+  // [::1] is the IPv6 localhost address.
+  window.location.hostname === '[::1]' ||
+  // 127.0.0.1/8 is considered localhost for IPv4.
+  window.location.hostname.match(
+    /^127(?:\.(?:25[0-5]|2[0-4]\d|[01]?\d\d?)){3}$/,
+  ),
 )
 
 export const register = (config?: ServiceWorkerConfig): void => {
@@ -48,7 +48,7 @@ export const register = (config?: ServiceWorkerConfig): void => {
         navigator.serviceWorker.ready.then(() => {
           console.log(
             'This web app is being served cache-first by a service ' +
-              'worker. To learn more, visit https://bit.ly/CRA-PWA'
+              'worker. To learn more, visit https://bit.ly/CRA-PWA',
           )
         })
       }
@@ -58,10 +58,13 @@ export const register = (config?: ServiceWorkerConfig): void => {
   }
 }
 
-export const registerValidSW = (swUrl: string, config?: ServiceWorkerConfig): void => {
+export const registerValidSW = (
+  swUrl: string,
+  config?: ServiceWorkerConfig,
+): void => {
   navigator.serviceWorker
     .register(swUrl)
-    .then(registration => {
+    .then((registration) => {
       registration.onupdatefound = () => {
         const installingWorker = registration.installing
         if (installingWorker == null) return
@@ -74,7 +77,7 @@ export const registerValidSW = (swUrl: string, config?: ServiceWorkerConfig): vo
               // content until all client tabs are closed.
               console.log(
                 'New content is available and will be used when all ' +
-                  'tabs for this page are closed. See https://bit.ly/CRA-PWA.'
+                  'tabs for this page are closed. See https://bit.ly/CRA-PWA.',
               )
 
               // Execute callback
@@ -91,15 +94,18 @@ export const registerValidSW = (swUrl: string, config?: ServiceWorkerConfig): vo
         }
       }
     })
-    .catch(err => {
+    .catch((err) => {
       console.error('Error during service worker registration:', err)
     })
 }
 
-const checkValidServiceWorker = (swUrl: string, config?: ServiceWorkerConfig): void => {
+const checkValidServiceWorker = (
+  swUrl: string,
+  config?: ServiceWorkerConfig,
+): void => {
   // Check if the service worker can be found. If it can't reload the page.
   fetch(swUrl)
-    .then(response => {
+    .then((response) => {
       // Ensure service worker exists, and that we really are getting a JS file.
       const contentType = response.headers.get('content-type')
       if (
@@ -107,7 +113,7 @@ const checkValidServiceWorker = (swUrl: string, config?: ServiceWorkerConfig): v
         (contentType != null && !contentType.includes('javascript'))
       )
         // No service worker found. Probably a different app. Reload the page.
-        navigator.serviceWorker.ready.then(registration => {
+        navigator.serviceWorker.ready.then((registration) => {
           registration.unregister().then(() => {
             window.location.reload()
           })
@@ -117,14 +123,14 @@ const checkValidServiceWorker = (swUrl: string, config?: ServiceWorkerConfig): v
     })
     .catch(() => {
       console.log(
-        'No internet connection found. App is running in offline mode.'
+        'No internet connection found. App is running in offline mode.',
       )
     })
 }
 
 export const unregister = (): void => {
   if ('serviceWorker' in navigator)
-    navigator.serviceWorker.ready.then(registration => {
+    navigator.serviceWorker.ready.then((registration) => {
       registration.unregister()
     })
 }

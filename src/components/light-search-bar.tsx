@@ -1,13 +1,19 @@
-import React, { useState, useEffect, useContext, useMemo, useRef, useCallback } from 'react'
+import React, {
+  useState,
+  useEffect,
+  useContext,
+  useMemo,
+  useRef,
+  useCallback,
+} from 'react'
 import styled from 'styled-components'
 import { Badge } from 'components/ui'
-import Icon from 'components/ui/Icon'
+import Icon from 'components/ui/icon'
 import { Link, useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useDebouncedCallback } from 'use-debounce'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import DisplaySelector from './display-selector'
-import { ItemTypes, searchableFields } from '@kleros/gtcr-encoder'
 import { LightTCRViewContext } from 'contexts/light-tcr-view-context'
 import { WalletContext } from 'contexts/wallet-context'
 import { itemToStatusCode, STATUS_COLOR } from '../utils/item-status'
@@ -135,7 +141,7 @@ const OptionItem = ({ item }: OptionItemProps) => {
     gtcrView,
     challengePeriodDuration,
     tcrAddress: itemTCRAddr,
-    metaEvidence
+    metaEvidence,
   } = useContext(LightTCRViewContext)
   const { timestamp } = useContext(WalletContext)
   const { chainId } = useParams()
@@ -195,7 +201,7 @@ const OptionItem = ({ item }: OptionItemProps) => {
           </>
         ) : (
           props
-            .filter(col => col.isIdentifier)
+            .filter((col) => col.isIdentifier)
             .map((column, j) => (
               <StyledItemField key={j}>
                 <DisplaySelector
@@ -225,12 +231,15 @@ const LightSearchBar = () => {
   const client = useMemo(() => getGraphQLClient(chainId), [chainId])
   const containerRef = useRef<HTMLDivElement>(null)
 
-  const [searchVariables, setSearchVariables] = useState<Record<string, unknown> | null>(null)
+  const [searchVariables, setSearchVariables] = useState<Record<
+    string,
+    unknown
+  > | null>(null)
 
   const itemSearchQuery = useQuery({
     queryKey: ['itemSearch', searchVariables],
     queryFn: () => client!.request(ITEM_SEARCH_QUERY, searchVariables),
-    enabled: !!searchVariables && !!client
+    enabled: !!searchVariables && !!client,
   })
 
   const debouncedSearch = useDebouncedCallback((input: string) => {
@@ -240,11 +249,11 @@ const LightSearchBar = () => {
     } else {
       const where = {
         keywords: { _ilike: `%${input.trim()}%` },
-        registry_id: { _eq: tcrAddress.toLowerCase() }
+        registry_id: { _eq: tcrAddress.toLowerCase() },
       }
       setSearchVariables({
         where: where,
-        limit: MAX_ITEM_COUNT
+        limit: MAX_ITEM_COUNT,
       })
     }
     setWriting(false)
@@ -258,20 +267,25 @@ const LightSearchBar = () => {
   // Click outside to close
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(e.target as Node)
+      )
         setFocused(false)
-      }
     }
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value
-    setInputValue(val)
-    setWriting(true)
-    debouncedSearch(val)
-  }, [debouncedSearch])
+  const handleInputChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const val = e.target.value
+      setInputValue(val)
+      setWriting(true)
+      debouncedSearch(val)
+    },
+    [debouncedSearch],
+  )
 
   const showDropdown = focused && inputValue.length > 0
   const isLoading = writing || itemSearchQuery.isLoading
@@ -279,7 +293,10 @@ const LightSearchBar = () => {
   return (
     <Container ref={containerRef} id="items-search-bar">
       <SearchInputWrapper $focused={focused}>
-        <FontAwesomeIcon icon="search" style={{ color: 'inherit', opacity: 0.5 }} />
+        <FontAwesomeIcon
+          icon="search"
+          style={{ color: 'inherit', opacity: 0.5 }}
+        />
         <StyledInput
           type="text"
           value={inputValue}
@@ -296,7 +313,7 @@ const LightSearchBar = () => {
           ) : data.length === 0 ? (
             <DropdownMessage>No results</DropdownMessage>
           ) : (
-            data.map(d => (
+            data.map((d) => (
               <DropdownItem key={d.itemID} onClick={() => setFocused(false)}>
                 <OptionItem item={d} />
               </DropdownItem>

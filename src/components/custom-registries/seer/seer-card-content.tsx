@@ -69,10 +69,10 @@ const SeerCardContent: React.FC<ISeerCardContent> = ({
   chainId,
   contractAddress,
   marketName,
-  outcomes
+  outcomes,
 }) => {
   const filteredOutcomes = outcomes?.filter(
-    (outcome: string) => outcome !== 'Invalid result'
+    (outcome: string) => outcome !== 'Invalid result',
   )
 
   if (!marketName)

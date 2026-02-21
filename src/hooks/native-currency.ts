@@ -1,4 +1,4 @@
-import { useWeb3Context } from 'hooks/useWeb3Context'
+import { useWeb3Context } from 'hooks/use-web3-context'
 import useUrlChainId from 'hooks/use-url-chain-id'
 import { NETWORKS } from '../config/networks'
 

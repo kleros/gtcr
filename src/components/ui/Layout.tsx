@@ -64,7 +64,11 @@ const Layout: LayoutComponent = ({ style, className, children }) => (
   </LayoutWrapper>
 )
 
-const Content: React.FC<LayoutChildProps> = ({ style, className, children }) => (
+const Content: React.FC<LayoutChildProps> = ({
+  style,
+  className,
+  children,
+}) => (
   <ContentWrapper
     style={style}
     className={`ui-layout-content${className ? ` ${className}` : ''}`}

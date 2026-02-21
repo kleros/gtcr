@@ -2,13 +2,20 @@ import React, { useCallback } from 'react'
 import styled, { css, DefaultTheme } from 'styled-components'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 
-const typeColorMap: Record<string, (props: { theme: DefaultTheme }) => string> = {
-  secondary: ({ theme }) => theme.textSecondary,
-  warning: ({ theme }) => theme.warningColor,
-  danger: ({ theme }) => theme.errorColor
-}
+const typeColorMap: Record<string, (props: { theme: DefaultTheme }) => string> =
+  {
+    secondary: ({ theme }) => theme.textSecondary,
+    warning: ({ theme }) => theme.warningColor,
+    danger: ({ theme }) => theme.errorColor,
+  }
 
-const getTypeColor = ({ textType, theme }: { textType?: string; theme: DefaultTheme }): string => {
+const getTypeColor = ({
+  textType,
+  theme,
+}: {
+  textType?: string
+  theme: DefaultTheme
+}): string => {
   const resolver = typeColorMap[textType || '']
   return resolver ? resolver({ theme }) : theme.textPrimary
 }
@@ -69,7 +76,7 @@ const StyledTitle = styled.h1<StyledTitleProps>`
       2: '30px',
       3: '24px',
       4: '20px',
-      5: '16px'
+      5: '16px',
     }
     return css`
       font-size: ${sizes[$level] || sizes[1]};
@@ -99,12 +106,19 @@ interface TextProps {
   [key: string]: unknown
 }
 
-const Text: React.FC<TextProps> = ({ type, copyable, ellipsis, strong, children, style, className, ...rest }) => {
+const Text: React.FC<TextProps> = ({
+  type,
+  copyable,
+  ellipsis,
+  strong,
+  children,
+  style,
+  className,
+  ...rest
+}) => {
   const handleCopy = useCallback(() => {
     const text = typeof children === 'string' ? children : ''
-    if (text && navigator.clipboard) {
-      navigator.clipboard.writeText(text)
-    }
+    if (text && navigator.clipboard) navigator.clipboard.writeText(text)
   }, [children])
 
   return (
@@ -134,8 +148,15 @@ interface TitleProps {
   [key: string]: unknown
 }
 
-const Title: React.FC<TitleProps> = ({ level = 1, children, style, className, ...rest }) => {
-  const tag = `h${Math.min(Math.max(level, 1), 5)}` as keyof JSX.IntrinsicElements
+const Title: React.FC<TitleProps> = ({
+  level = 1,
+  children,
+  style,
+  className,
+  ...rest
+}) => {
+  const tag =
+    `h${Math.min(Math.max(level, 1), 5)}` as keyof JSX.IntrinsicElements
   return (
     <StyledTitle
       as={tag}
@@ -158,7 +179,14 @@ interface ParagraphProps {
   [key: string]: unknown
 }
 
-const Paragraph: React.FC<ParagraphProps> = ({ type, ellipsis, children, style, className, ...rest }) => (
+const Paragraph: React.FC<ParagraphProps> = ({
+  type,
+  ellipsis,
+  children,
+  style,
+  className,
+  ...rest
+}) => (
   <StyledParagraph
     textType={type}
     $ellipsis={ellipsis}

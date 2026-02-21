@@ -42,7 +42,7 @@ const sizeMap: Record<string, ReturnType<typeof css>> = {
   `,
   large: css`
     padding: 16px 24px;
-  `
+  `,
 }
 
 const ListItemWrapper = styled.li<{ $size?: string; $split?: boolean }>`
@@ -138,7 +138,14 @@ interface ListItemComponent extends React.FC<ListItemProps> {
   Meta: React.FC<MetaProps>
 }
 
-const ListItem: ListItemComponent = ({ actions, children, style, className, $size, $split }) => (
+const ListItem: ListItemComponent = ({
+  actions,
+  children,
+  style,
+  className,
+  $size,
+  $split,
+}) => (
   <ListItemWrapper
     $size={$size}
     $split={$split}
@@ -188,24 +195,23 @@ const List: ListComponent = ({
   size = 'default',
   header,
   footer,
-  split = true
+  split = true,
 }) => {
   let content: React.ReactNode
 
-  if (loading) {
-    content = <LoadingWrapper>Loading...</LoadingWrapper>
-  } else if (dataSource && renderItem) {
+  if (loading) content = <LoadingWrapper>Loading...</LoadingWrapper>
+  else if (dataSource && renderItem)
     content = (
       <ListContentWrapper>
         {dataSource.map((item, index) => {
           const rendered = renderItem(item, index) as React.ReactElement
-          if (rendered && rendered.type === ListItem) {
+          if (rendered && rendered.type === ListItem)
             return React.cloneElement(rendered, {
               key: rendered.key || index,
               $size: size,
-              $split: split
+              $split: split,
             })
-          }
+
           return (
             <ListItemWrapper key={index} $size={size} $split={split}>
               <ListItemContent>{rendered}</ListItemContent>
@@ -214,23 +220,22 @@ const List: ListComponent = ({
         })}
       </ListContentWrapper>
     )
-  } else if (children) {
+  else if (children)
     content = (
       <ListContentWrapper>
         {React.Children.map(children, (child, index) => {
           const element = child as React.ReactElement
-          if (element && element.type === ListItem) {
+          if (element && element.type === ListItem)
             return React.cloneElement(element, {
               key: element.key || index,
               $size: size,
-              $split: split
+              $split: split,
             })
-          }
+
           return child
         })}
       </ListContentWrapper>
     )
-  }
 
   return (
     <ListWrapper

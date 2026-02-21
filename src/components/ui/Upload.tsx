@@ -183,7 +183,7 @@ const Upload: React.FC<UploadProps> = ({
   accept,
   multiple = false,
   children,
-  disabled = false
+  disabled = false,
 }) => {
   const [fileList, setFileList] = useState<UploadFile[]>([])
   const inputRef = useRef<HTMLInputElement>(null)
@@ -192,19 +192,19 @@ const Upload: React.FC<UploadProps> = ({
     (file: UploadFile, list: UploadFile[]) => {
       if (onChange) onChange({ file, fileList: list })
     },
-    [onChange]
+    [onChange],
   )
 
   const removeFile = useCallback(
     (fileUid: string) => {
-      setFileList(prev => {
-        const next = prev.filter(f => f.uid !== fileUid)
-        const removed = prev.find(f => f.uid === fileUid)
+      setFileList((prev) => {
+        const next = prev.filter((f) => f.uid !== fileUid)
+        const removed = prev.find((f) => f.uid === fileUid)
         if (removed) triggerChange({ ...removed, status: 'removed' }, next)
         return next
       })
     },
-    [triggerChange]
+    [triggerChange],
   )
 
   const processFile = useCallback(
@@ -219,74 +219,68 @@ const Upload: React.FC<UploadProps> = ({
         thumbUrl:
           file.type && file.type.startsWith('image/')
             ? URL.createObjectURL(file)
-            : null
+            : null,
       }
 
-      setFileList(prev => {
+      setFileList((prev) => {
         const next = [...prev, fileEntry]
         triggerChange(fileEntry, next)
         return next
       })
 
-      if (customRequest) {
+      if (customRequest)
         customRequest({
           file,
           onSuccess: (response: any) => {
-            setFileList(prev => {
-              const next = prev.map(f =>
+            setFileList((prev) => {
+              const next = prev.map((f) =>
                 f.uid === fileEntry.uid
                   ? { ...f, status: 'done', response }
-                  : f
+                  : f,
               )
-              triggerChange(
-                { ...fileEntry, status: 'done', response },
-                next
-              )
+              triggerChange({ ...fileEntry, status: 'done', response }, next)
               return next
             })
           },
           onError: (error: any) => {
-            setFileList(prev => {
-              const next = prev.map(f =>
-                f.uid === fileEntry.uid
-                  ? { ...f, status: 'error', error }
-                  : f
+            setFileList((prev) => {
+              const next = prev.map((f) =>
+                f.uid === fileEntry.uid ? { ...f, status: 'error', error } : f,
               )
               triggerChange({ ...fileEntry, status: 'error', error }, next)
               return next
             })
           },
           onProgress: (percent: number) => {
-            setFileList(prev =>
-              prev.map(f =>
-                f.uid === fileEntry.uid ? { ...f, percent } : f
-              )
+            setFileList((prev) =>
+              prev.map((f) =>
+                f.uid === fileEntry.uid ? { ...f, percent } : f,
+              ),
             )
-          }
+          },
         })
-      }
     },
-    [customRequest, triggerChange]
+    [customRequest, triggerChange],
   )
 
   const handleInputChange = useCallback(
     async (e: React.ChangeEvent<HTMLInputElement>) => {
-      const files = Array.from(e.target.files || [])
+      const files = [...(e.target.files || [])]
       for (const file of files) {
-        if (beforeUpload) {
+        if (beforeUpload)
           try {
             const result = await beforeUpload(file)
             if (result === false) continue
           } catch {
             continue
           }
-        }
+
         processFile(file)
       }
       // Reset the input so the same file can be selected again
       if (inputRef.current) inputRef.current.value = ''
     },
-    [beforeUpload, processFile]
+    [beforeUpload, processFile],
   )
 
   const handleTriggerClick = useCallback(() => {
@@ -297,10 +291,10 @@ const Upload: React.FC<UploadProps> = ({
   const renderFileList = () => {
     if (!showUploadList || fileList.length === 0) return null
 
-    if (listType === 'picture-card') {
+    if (listType === 'picture-card')
       return (
         <PictureCardList>
-          {fileList.map(f => (
+          {fileList.map((f) => (
             <PictureCardItem key={f.uid} $status={f.status}>
               {f.thumbUrl ? (
                 <img src={f.thumbUrl} alt={f.name} />
@@ -314,11 +308,10 @@ const Upload: React.FC<UploadProps> = ({
           ))}
         </PictureCardList>
       )
-    }
 
     return (
       <FileListWrapper>
-        {fileList.map(f => (
+        {fileList.map((f) => (
           <FileItem key={f.uid} $status={f.status}>
             <FileName>{f.name}</FileName>
             <RemoveBtn onClick={() => removeFile(f.uid)}>&#10005;</RemoveBtn>

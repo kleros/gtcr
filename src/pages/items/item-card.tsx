@@ -15,7 +15,7 @@ import {
   HideCardButton,
   FlipCard,
   CardNSFWWarn,
-  StyledCardInfo
+  StyledCardInfo,
 } from 'pages/light-items/item-card'
 
 interface CardItemInfoProps {
@@ -35,7 +35,7 @@ const CardItemInfo = ({
   tcrAddress,
   metaEvidence,
   toggleReveal = null,
-  forceReveal = null
+  forceReveal = null,
 }: CardItemInfoProps) => {
   let content
   const { metadata } = metaEvidence || {}
@@ -83,9 +83,9 @@ const CardItemInfo = ({
         actions={
           !forceReveal &&
           toggleReveal && [
-            <HideCardButton type="link" onClick={toggleReveal}>
+            <HideCardButton key="hide" type="link" onClick={toggleReveal}>
               Hide
-            </HideCardButton>
+            </HideCardButton>,
           ]
         }
       >
@@ -126,7 +126,7 @@ const ItemCard = ({
   const statusCode = itemToStatusCode(
     item.tcrData,
     timestamp,
-    challengePeriodDuration
+    challengePeriodDuration,
   )
 
   if (
@@ -136,7 +136,16 @@ const ItemCard = ({
     statusCode !== STATUS_CODE.CROWDFUNDING &&
     statusCode !== STATUS_CODE.CROWDFUNDING_WINNER
   )
-    return <CardItemInfo item={item} statusCode={statusCode} metaEvidence={metaEvidence} chainId={chainId} tcrAddress={tcrAddress} {...rest} />
+    return (
+      <CardItemInfo
+        item={item}
+        statusCode={statusCode}
+        metaEvidence={metaEvidence}
+        chainId={chainId}
+        tcrAddress={tcrAddress}
+        {...rest}
+      />
+    )
 
   return (
     <FlipCard>
@@ -166,6 +175,5 @@ const ItemCard = ({
     </FlipCard>
   )
 }
-
 
 export default React.memo(ItemCard)

@@ -27,21 +27,26 @@ interface LightItemCardContentProps {
   tcrAddress: string
 }
 
-const LightItemCardContent = ({ item, chainId, tcrAddress }: LightItemCardContentProps) => {
+const LightItemCardContent = ({
+  item,
+  chainId,
+  tcrAddress,
+}: LightItemCardContentProps) => {
   const navigateAndScrollTop = useNavigateAndScrollTop()
 
   const allowedFileTypes =
-    item.columns.filter(col => col.allowedFileTypes)[0]?.allowedFileTypes || ''
+    item.columns.filter((col) => col.allowedFileTypes)[0]?.allowedFileTypes ||
+    ''
 
   return (
     <Container>
       <div>
         {item.tcrData.mergedData
           .filter(
-            col =>
+            (col) =>
               col.isIdentifier ||
               col.type === ItemTypes.IMAGE ||
-              col.type === ItemTypes.FILE
+              col.type === ItemTypes.FILE,
           )
           .map((column, j) => (
             <StyledItemCol key={j}>
@@ -67,7 +72,7 @@ const LightItemCardContent = ({ item, chainId, tcrAddress }: LightItemCardConten
       <Button
         onClick={() =>
           navigateAndScrollTop(
-            `/tcr/${chainId}/${tcrAddress}/${item.tcrData.ID}`
+            `/tcr/${chainId}/${tcrAddress}/${item.tcrData.ID}`,
           )
         }
       >

@@ -13,12 +13,12 @@ import useNativeCurrency from 'hooks/native-currency'
 import ipfsPublish from 'utils/ipfs-publish'
 import { parseIpfs } from 'utils/ipfs-parse'
 import { getIPFSPath } from 'utils/get-ipfs-path'
-import { wrapWithToast } from 'utils/wrapWithToast'
+import { wrapWithToast } from 'utils/wrap-with-toast'
 import { wagmiConfig } from 'config/wagmi'
 import { StyledAlert } from 'pages/light-item-details/modals/remove'
 import {
   StyledSpin,
-  StyledModal
+  StyledModal,
 } from 'pages/light-item-details/modals/challenge'
 
 interface RemoveModalProps {
@@ -28,17 +28,18 @@ interface RemoveModalProps {
   [key: string]: unknown
 }
 
-const RemoveModal = ({ item, itemName = 'item', fileURI, ...rest }: RemoveModalProps) => {
+const RemoveModal = ({
+  item,
+  _itemName = 'item',
+  fileURI,
+  ...rest
+}: RemoveModalProps) => {
   const { address: account } = useAccount()
   const chainId = useChainId()
   const publicClient = usePublicClient()
   const { data: walletClient } = useWalletClient()
-  const {
-    removalDeposit,
-    tcrAddress,
-    metaEvidence,
-    challengePeriodDuration
-  } = useContext(TCRViewContext)
+  const { removalDeposit, tcrAddress, metaEvidence, challengePeriodDuration } =
+    useContext(TCRViewContext)
   const nativeCurrency = useNativeCurrency()
 
   const { metadata } = metaEvidence || {}
@@ -52,13 +53,13 @@ const RemoveModal = ({ item, itemName = 'item', fileURI, ...rest }: RemoveModalP
           const evidenceJSON = {
             title: title || 'Removal Justification',
             description,
-            ...evidenceAttachment
+            ...evidenceAttachment,
           }
 
           const enc = new TextEncoder()
           const fileData = enc.encode(JSON.stringify(evidenceJSON))
           ipfsEvidencePath = getIPFSPath(
-            await ipfsPublish('evidence.json', fileData)
+            await ipfsPublish('evidence.json', fileData),
           )
         }
 
@@ -68,12 +69,12 @@ const RemoveModal = ({ item, itemName = 'item', fileURI, ...rest }: RemoveModalP
           functionName: 'removeItem',
           args: [item.itemID, ipfsEvidencePath],
           value: BigInt(removalDeposit.toString()),
-          account
+          account,
         })
 
         const result = await wrapWithToast(
           () => walletClient.writeContract(request),
-          publicClient
+          publicClient,
         )
 
         if (result.status) {
@@ -89,13 +90,12 @@ const RemoveModal = ({ item, itemName = 'item', fileURI, ...rest }: RemoveModalP
                   subscriberAddr: getAddress(account),
                   tcrAddr: getAddress(tcrAddress),
                   itemID: item.itemID,
-                  networkID: chainId
-                })
-              }
-            )
-              .catch(err => {
-                console.error('Failed to subscribe for notifications.', err)
-              })
+                  networkID: chainId,
+                }),
+              },
+            ).catch((err) => {
+              console.error('Failed to subscribe for notifications.', err)
+            })
         }
       } catch (err) {
         console.error('Error removing item:', err)
@@ -111,8 +111,8 @@ const RemoveModal = ({ item, itemName = 'item', fileURI, ...rest }: RemoveModalP
       requireRemovalEvidence,
       rest,
       tcrAddress,
-      walletClient
-    ]
+      walletClient,
+    ],
   )
 
   if (!removalDeposit)
@@ -140,7 +140,7 @@ const RemoveModal = ({ item, itemName = 'item', fileURI, ...rest }: RemoveModalP
           >
             Send
           </Button>
-        </EnsureAuth>
+        </EnsureAuth>,
       ]}
       {...rest}
     >
@@ -164,10 +164,12 @@ const RemoveModal = ({ item, itemName = 'item', fileURI, ...rest }: RemoveModalP
         <EvidenceForm onSubmit={removeItem} formID={EVIDENCE_FORM_ID} />
       )}
       <StyledAlert
-        message={`Note that this is a deposit, not a fee and it will be reimbursed if the removal is accepted. ${challengePeriodDuration &&
+        message={`Note that this is a deposit, not a fee and it will be reimbursed if the removal is accepted. ${
+          challengePeriodDuration &&
           `The challenge period lasts ${humanizeDuration(
-            `${challengePeriodDuration.toNumber() * 1000}.`
-          )}`}.`}
+            `${challengePeriodDuration.toNumber() * 1000}.`,
+          )}`
+        }.`}
         type="info"
         showIcon
       />

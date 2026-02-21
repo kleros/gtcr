@@ -9,7 +9,7 @@ import { parseIpfs } from 'utils/ipfs-parse'
 import {
   StyledItemCol,
   StyledResult,
-  Container
+  Container,
 } from './light-tcr-card-content'
 
 interface TCRCardContentProps {
@@ -23,7 +23,7 @@ const TCRCardContent = ({
   tcrAddress = null,
   currentTCRAddress = null,
   ID = null,
-  hideDetailsButton = false
+  hideDetailsButton = false,
 }: TCRCardContentProps) => {
   const { chainId } = useParams()
 
@@ -68,7 +68,7 @@ const TCRCardContent = ({
             <Button
               onClick={() =>
                 navigateAndScrollTop(
-                  `/tcr/${chainId}/${currentTCRAddress}/${ID}`
+                  `/tcr/${chainId}/${currentTCRAddress}/${ID}`,
                 )
               }
             >

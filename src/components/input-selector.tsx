@@ -1,7 +1,7 @@
 import React, { useCallback, useState } from 'react'
 import styled from 'styled-components'
 import { Form, Switch, Input, Upload } from 'components/ui'
-import Icon from 'components/ui/Icon'
+import Icon from 'components/ui/icon'
 import { toast } from 'react-toastify'
 import { Field } from 'formik'
 import { getExtension } from 'mime'
@@ -54,24 +54,33 @@ interface InputSelectorProps extends React.HTMLAttributes<HTMLElement> {
   style: React.CSSProperties
 }
 
-const InputSelector: React.FC<InputSelectorProps> = p => {
+const InputSelector: React.FC<InputSelectorProps> = (p) => {
   const [uploading, setUploading] = useState<boolean>(false)
   const customRequest = useCallback(
-    fieldName => async ({ file, onSuccess, onError }: { file: File; onSuccess: (body: string, url: string) => void; onError: (err: unknown) => void }) => {
-      try {
-        const data = await new Response(new Blob([file])).arrayBuffer()
-        const fileURI = getIPFSPath(
-          (await ipfsPublish(sanitize(file.name), data)) as IPFSResultObject
-        )
+    (fieldName) =>
+      async ({
+        file,
+        onSuccess,
+        onError,
+      }: {
+        file: File
+        onSuccess: (body: string, url: string) => void
+        onError: (err: unknown) => void
+      }) => {
+        try {
+          const data = await new Response(new Blob([file])).arrayBuffer()
+          const fileURI = getIPFSPath(
+            (await ipfsPublish(sanitize(file.name), data)) as IPFSResultObject,
+          )
 
-        p.setFieldValue(fieldName, fileURI)
-        onSuccess('ok', parseIpfs(fileURI))
-      } catch (err) {
-        console.error(err)
-        onError(err)
-      }
-    },
-    [p]
+          p.setFieldValue(fieldName, fileURI)
+          onSuccess('ok', parseIpfs(fileURI))
+        } catch (err) {
+          console.error(err)
+          onError(err)
+        }
+      },
+    [p],
   )
 
   const fileUploadStatusChange = useCallback(
@@ -83,11 +92,11 @@ const InputSelector: React.FC<InputSelectorProps> = p => {
       if (status === 'error' || status === 'done')
         p.setFileAsUploaded(setUploading)
     },
-    [p]
+    [p],
   )
 
   const beforeImageUpload = useCallback(
-    file => {
+    (file) => {
       if (
         file.type !== 'image/png' &&
         file.type !== 'image/svg+xml' &&
@@ -105,17 +114,17 @@ const InputSelector: React.FC<InputSelectorProps> = p => {
 
       return true
     },
-    [p.maxFileSizeMb]
+    [p.maxFileSizeMb],
   )
 
   const beforeFileUpload = useCallback(
-    file => {
+    (file) => {
       const allowedFileTypesArr = p.allowedFileTypes.split(' ')
       if (!allowedFileTypesArr.includes(getExtension(file.type) as string)) {
         toast.error(
           allowedFileTypesArr.length > 1
-            ? `Allowed file types are+${allowedFileTypesArr.map(e => ` .${e}`)}`
-            : `The only allowed file type is .${allowedFileTypesArr[0]}`
+            ? `Allowed file types are+${allowedFileTypesArr.map((e) => ` .${e}`)}`
+            : `The only allowed file type is .${allowedFileTypesArr[0]}`,
         )
         return false
       }
@@ -127,7 +136,7 @@ const InputSelector: React.FC<InputSelectorProps> = p => {
 
       return true
     },
-    [p.allowedFileTypes, p.maxFileSizeMb]
+    [p.allowedFileTypes, p.maxFileSizeMb],
   )
 
   const { values, label, name } = p
@@ -148,7 +157,7 @@ const InputSelector: React.FC<InputSelectorProps> = p => {
             <Form.Item label={label} style={{ display: 'flex' }}>
               <Switch
                 {...field}
-                onChange={value => p.setFieldValue(name, String(value))}
+                onChange={(value) => p.setFieldValue(name, String(value))}
               />
             </Form.Item>
           )}

@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useContext } from 'react'
 import styled from 'styled-components'
 import { Card, Tooltip, Button, Result, Alert } from 'components/ui'
-import Icon from 'components/ui/Icon'
+import Icon from 'components/ui/icon'
 import DisplaySelector from './display-selector'
 import { useAccount, usePublicClient, useWalletClient, useChainId } from 'wagmi'
 import { simulateContract } from '@wagmi/core'
@@ -13,11 +13,27 @@ import { TCRViewContext } from 'contexts/tcr-view-context'
 import TCRMetadataDisplay from './tcr-metadata-display'
 import { addPeriod } from '../utils/string'
 import { batchWithdrawAddresses } from 'config/tcr-addresses'
-import { wrapWithToast } from 'utils/wrapWithToast'
+import { wrapWithToast } from 'utils/wrap-with-toast'
 import { wagmiConfig } from 'config/wagmi'
 import SeerExtraDetails from 'components/custom-registries/seer/seer-item-details'
 import { isSeerRegistry } from 'components/custom-registries/seer/is-seer-registry'
-import { useContext } from 'react'
+
+const StyledCard = styled(Card)`
+  .ui-card-head {
+    background: ${({ theme }) => theme.cardHeaderGradient};
+    color: white;
+    border-color: ${({ theme }) =>
+      theme.name === 'dark' ? theme.borderColor : 'transparent'};
+  }
+
+  .ui-card-head-title {
+    color: white;
+  }
+
+  .ui-card-extra {
+    color: white;
+  }
+`
 
 const StyledFields = styled.div`
   display: flex;
@@ -52,7 +68,7 @@ const ItemDetailsCard = ({
   loading,
   item,
   itemMetaEvidence,
-  disabled = false
+  disabled = false,
 }: ItemDetailsCardProps) => {
   const { address: account } = useAccount()
   const chainId = useChainId()
@@ -74,8 +90,8 @@ const ItemDetailsCard = ({
         await tcrViewContext.gtcrView.availableRewards(
           tcrViewContext.tcrAddress,
           item.itemID,
-          account
-        )
+          account,
+        ),
       )
     })()
   }, [account, item, tcrViewContext])
@@ -89,32 +105,23 @@ const ItemDetailsCard = ({
         address: BATCH_WITHDRAW_ADDRESS,
         abi: _batchWithdraw,
         functionName: 'batchRequestWithdraw',
-        args: [
-          tcrViewContext.tcrAddress,
-          account,
-          item.itemID,
-          0,
-          0,
-          0,
-          0
-        ],
-        account
+        args: [tcrViewContext.tcrAddress, account, item.itemID, 0, 0, 0, 0],
+        account,
       })
 
       const result = await wrapWithToast(
         () => walletClient.writeContract(request),
-        publicClient
+        publicClient,
       )
 
-      if (result.status) {
+      if (result.status)
         setAvailableRewards(
           await tcrViewContext.gtcrView.availableRewards(
             tcrViewContext.tcrAddress,
             item.itemID,
-            account
-          )
+            account,
+          ),
         )
-      }
     } catch (err) {
       console.error('Error withdrawing rewards:', err)
     }
@@ -125,7 +132,7 @@ const ItemDetailsCard = ({
     publicClient,
     rewardRef,
     tcrViewContext,
-    walletClient
+    walletClient,
   ])
 
   const { file: itemMetaEvidenceFile, error: itemMetaEvidenceError } =
@@ -146,7 +153,7 @@ const ItemDetailsCard = ({
     )
 
   return (
-    <Card
+    <StyledCard
       id="item-details-card"
       title={title}
       loading={loading}
@@ -157,7 +164,7 @@ const ItemDetailsCard = ({
         batchWithdrawClick &&
         availableRewards.gt(BigNumber.from(0)) && (
           <Reward
-            ref={ref => {
+            ref={(ref) => {
               setRewardRef(ref)
             }}
             type="confetti"
@@ -218,7 +225,7 @@ const ItemDetailsCard = ({
             imagesIpfsHash={item.decodedData[1]}
           />
         )}
-    </Card>
+    </StyledCard>
   )
 }
 

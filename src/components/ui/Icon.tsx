@@ -26,33 +26,33 @@ const CircleOutline = styled.span`
 const ICON_MAP: Record<string, IconProp> = {
   'question-circle-o': ['far', 'question-circle'],
   'question-circle': 'question-circle',
-  'loading': 'spinner',
-  'plus': 'plus',
+  loading: 'spinner',
+  plus: 'plus',
   'plus-circle': 'plus-circle',
-  'fire': 'fire',
-  'star': 'star',
-  'check': 'check',
+  fire: 'fire',
+  star: 'star',
+  check: 'check',
   'check-circle': ['far', 'check-circle'],
-  'flag': 'flag',
+  flag: 'flag',
   'file-pdf': 'file-pdf',
   'right-circle': 'arrow-circle-right',
-  'left': 'arrow-left',
-  'right': 'arrow-right',
+  left: 'arrow-left',
+  right: 'arrow-right',
   'file-text': 'file-alt',
   'paper-clip': 'paperclip',
-  'warning': 'exclamation-triangle',
-  'close': 'times',
-  'file': 'file',
-  'dollar': 'dollar-sign',
-  'hourglass': 'hourglass-half',
+  warning: 'exclamation-triangle',
+  close: 'times',
+  file: 'file',
+  dollar: 'dollar-sign',
+  hourglass: 'hourglass-half',
   'info-circle': 'info-circle',
   'exclamation-circle': 'exclamation-circle',
-  'search': 'search',
-  'bell': 'bell',
-  'copy': 'copy',
-  'upload': 'upload',
+  search: 'search',
+  bell: 'bell',
+  copy: 'copy',
+  upload: 'upload',
   'chevron-down': 'chevron-down',
-  'chevron-up': 'chevron-up'
+  'chevron-up': 'chevron-up',
 }
 
 interface IconProps {
@@ -61,28 +61,46 @@ interface IconProps {
   className?: string
   onClick?: (e: React.MouseEvent) => void
   spin?: boolean
-  size?: 'xs' | 'sm' | 'lg' | '1x' | '2x' | '3x' | '4x' | '5x' | '6x' | '7x' | '8x' | '9x' | '10x'
+  size?:
+    | 'xs'
+    | 'sm'
+    | 'lg'
+    | '1x'
+    | '2x'
+    | '3x'
+    | '4x'
+    | '5x'
+    | '6x'
+    | '7x'
+    | '8x'
+    | '9x'
+    | '10x'
 }
 
-const Icon: React.FC<IconProps> = ({ type, style, className, onClick, spin: spinProp, ...rest }) => {
-  if (type === 'plus-circle-outline') {
+const Icon: React.FC<IconProps> = ({
+  type,
+  style,
+  className,
+  onClick,
+  spin: spinProp,
+  ...rest
+}) => {
+  if (type === 'plus-circle-outline')
     return (
       <CircleOutline style={style} className={className} onClick={onClick}>
         <FontAwesomeIcon icon="plus" size="xs" {...rest} />
       </CircleOutline>
     )
-  }
 
   const icon = ICON_MAP[type]
   if (!icon) return null
 
-  if (type === 'loading' || spinProp) {
+  if (type === 'loading' || spinProp)
     return (
       <SpinWrapper style={style} className={className} onClick={onClick}>
         <FontAwesomeIcon icon={icon} {...rest} />
       </SpinWrapper>
     )
-  }
 
   return (
     <FontAwesomeIcon

@@ -65,15 +65,13 @@ const useTcrNetwork = () => {
     if (walletChainId === targetChainId) return
 
     const tcrAddress = defaultTcrAddresses[walletChainId]
-    if (tcrAddress) {
-      navigate(`/tcr/${walletChainId}/${tcrAddress}`)
-    }
+    if (tcrAddress) navigate(`/tcr/${walletChainId}/${tcrAddress}`)
   }, [walletChainId, isConnected, targetChainId, navigate])
 
   return {
     targetChainId,
     isCorrectChain,
-    isConnected
+    isConnected,
   }
 }
 

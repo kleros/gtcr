@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react'
 import styled from 'styled-components'
 import { Tooltip } from 'components/ui'
-import Icon from 'components/ui/Icon'
+import Icon from 'components/ui/icon'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import ItemStatusBadge from 'components/permanent-item-status-badge'
 import ETHAmount from 'components/eth-amount'
@@ -49,7 +49,12 @@ interface ItemCardTitleProps {
   tokenSymbol?: string
 }
 
-const ItemCardTitle = ({ statusCode, item, registry, tokenSymbol = 'tokens' }: ItemCardTitleProps) => {
+const ItemCardTitle = ({
+  statusCode,
+  item,
+  registry,
+  tokenSymbol = 'tokens',
+}: ItemCardTitleProps) => {
   // Get remaining submission period, if applicable and build countdown.
   const timeUntilValid = useMemo(() => {
     if (
@@ -79,7 +84,11 @@ const ItemCardTitle = ({ statusCode, item, registry, tokenSymbol = 'tokens' }: I
           statusCode !== STATUS_CODE.REMOVED && (
             <BountyContainer>
               <Tooltip title="This is the bounty on this item.">
-                <ETHAmount amount={bounty} decimals={3} displayUnit={` ${tokenSymbol}`} />
+                <ETHAmount
+                  amount={bounty}
+                  decimals={3}
+                  displayUnit={` ${tokenSymbol}`}
+                />
                 <StyledFontAwesomeIcon icon="coins" color="white" />
               </Tooltip>
             </BountyContainer>

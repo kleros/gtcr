@@ -7,7 +7,7 @@ export const CONTRACT_STATUS = {
   ABSENT: 'Absent',
   SUBMITTED: 'Submitted',
   REINCLUDED: 'Reincluded',
-  DISPUTED: 'Disputed'
+  DISPUTED: 'Disputed',
 }
 
 export const STATUS_CODE = {
@@ -19,7 +19,7 @@ export const STATUS_CODE = {
   CROWDFUNDING_WINNER: 5,
   WAITING_ARBITRATOR: 6,
   PENDING_WITHDRAWAL: 7,
-  REMOVED: 8
+  REMOVED: 8,
 }
 
 export const STATUS_TEXT = {
@@ -31,7 +31,7 @@ export const STATUS_TEXT = {
   [STATUS_CODE.CROWDFUNDING_WINNER]: 'Crowdfunding Winner',
   [STATUS_CODE.WAITING_ARBITRATOR]: 'Waiting Arbitrator',
   [STATUS_CODE.PENDING_WITHDRAWAL]: 'Pending Withdrawal',
-  [STATUS_CODE.REMOVED]: 'Removed'
+  [STATUS_CODE.REMOVED]: 'Removed',
 }
 
 export const STATUS_COLOR = {
@@ -43,10 +43,16 @@ export const STATUS_COLOR = {
   [STATUS_CODE.CROWDFUNDING_WINNER]: '#9d52d6',
   [STATUS_CODE.WAITING_ARBITRATOR]: '#eb2f96',
   [STATUS_CODE.PENDING_WITHDRAWAL]: '#36cfc9',
-  [STATUS_CODE.REMOVED]: '#ff4d4f'
+  [STATUS_CODE.REMOVED]: '#ff4d4f',
 }
 
-export const getActionLabel = ({ statusCode, itemName = 'item' }: { statusCode: number; itemName?: string }): string => {
+export const getActionLabel = ({
+  statusCode,
+  itemName = 'item',
+}: {
+  statusCode: number
+  itemName?: string
+}): string => {
   switch (statusCode) {
     case STATUS_CODE.REJECTED:
     case STATUS_CODE.REMOVED:
@@ -67,7 +73,11 @@ export const getActionLabel = ({ statusCode, itemName = 'item' }: { statusCode: 
   }
 }
 
-export const itemToStatusCode = (item: SubgraphItem, timestamp: BigNumber, registry: SubgraphRegistry): number | undefined => {
+export const itemToStatusCode = (
+  item: SubgraphItem,
+  timestamp: BigNumber,
+  registry: SubgraphRegistry,
+): number | undefined => {
   const { status } = item
   const ts = timestamp.toNumber()
 

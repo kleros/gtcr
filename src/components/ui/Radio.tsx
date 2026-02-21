@@ -1,9 +1,11 @@
 import React, { createContext, useContext, useCallback } from 'react'
 import styled, { css } from 'styled-components'
 
+type RadioValue = string | number | boolean | undefined
+
 interface RadioGroupContextValue {
-  value: any
-  onChange: (val: any) => void
+  value: RadioValue
+  onChange: (val: RadioValue) => void
   disabled: boolean
   buttonStyle: string
 }
@@ -60,19 +62,19 @@ interface RadioProps {
   checked?: boolean
   onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void
   disabled?: boolean
-  value?: any
+  value?: RadioValue
   children?: React.ReactNode
 }
 
 interface RadioButtonProps {
-  value?: any
+  value?: RadioValue
   disabled?: boolean
   children?: React.ReactNode
 }
 
 interface RadioGroupProps {
-  value?: any
-  onChange?: (e: { target: { value: any } }) => void
+  value?: RadioValue
+  onChange?: (e: { target: { value: RadioValue } }) => void
   disabled?: boolean
   children?: React.ReactNode
   buttonStyle?: string
@@ -83,7 +85,13 @@ interface RadioComponent extends React.FC<RadioProps> {
   Button: React.FC<RadioButtonProps>
 }
 
-const Radio: RadioComponent = ({ checked, onChange, disabled = false, value, children }) => {
+const Radio: RadioComponent = ({
+  checked,
+  onChange,
+  disabled = false,
+  value,
+  children,
+}) => {
   const group = useContext(RadioGroupContext)
   const isDisabled = disabled || (group && group.disabled)
   const isChecked = group ? group.value === value : checked
@@ -91,13 +99,10 @@ const Radio: RadioComponent = ({ checked, onChange, disabled = false, value, chi
   const handleChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       if (isDisabled) return
-      if (group) {
-        group.onChange(value)
-      } else if (onChange) {
-        onChange(e)
-      }
+      if (group) group.onChange(value)
+      else if (onChange) onChange(e)
     },
-    [isDisabled, group, value, onChange]
+    [isDisabled, group, value, onChange],
   )
 
   return (
@@ -116,7 +121,11 @@ const Radio: RadioComponent = ({ checked, onChange, disabled = false, value, chi
 
 // --- Radio.Button ---
 
-const RadioButtonStyled = styled.label<{ $checked?: boolean; $disabled?: boolean; $buttonStyle?: string }>`
+const RadioButtonStyled = styled.label<{
+  $checked?: boolean
+  $disabled?: boolean
+  $buttonStyle?: string
+}>`
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -157,7 +166,11 @@ const RadioButtonStyled = styled.label<{ $checked?: boolean; $disabled?: boolean
         `)}
 `
 
-const RadioButton: React.FC<RadioButtonProps> = ({ value, disabled = false, children }) => {
+const RadioButton: React.FC<RadioButtonProps> = ({
+  value,
+  disabled = false,
+  children,
+}) => {
   const group = useContext(RadioGroupContext)
   const isDisabled = disabled || (group && group.disabled)
   const isChecked = group ? group.value === value : false
@@ -197,13 +210,13 @@ const RadioGroup: React.FC<RadioGroupProps> = ({
   onChange,
   disabled = false,
   children,
-  buttonStyle = 'outline'
+  buttonStyle = 'outline',
 }) => {
   const handleChange = useCallback(
-    (val: any) => {
+    (val: RadioValue) => {
       if (onChange) onChange({ target: { value: val } })
     },
-    [onChange]
+    [onChange],
   )
 
   return (

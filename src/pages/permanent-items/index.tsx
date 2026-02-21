@@ -7,14 +7,21 @@ import React, {
   useState,
   useContext,
   useMemo,
-  useCallback
+  useCallback,
 } from 'react'
 import styled, { css } from 'styled-components'
 import { smallScreenStyle } from 'styles/small-screen-style'
-import { Card, Layout, Spin, Pagination, Tag, Select, Switch } from 'components/ui'
+import {
+  Card,
+  Layout,
+  Spin,
+  Pagination,
+  Tag,
+  Select,
+  Switch,
+} from 'components/ui'
 import { useNavigate, useParams } from 'react-router-dom'
 import localforage from 'localforage'
-import qs from 'qs'
 import { useQuery } from '@tanstack/react-query'
 import ErrorPage from '../error-page'
 import { WalletContext } from 'contexts/wallet-context'
@@ -23,7 +30,7 @@ import {
   filterLabelPermanent,
   LIGHT_FILTER_KEYS,
   searchStrToFilterObjPermanent,
-  updateLightFilter
+  updateLightFilter,
 } from 'utils/filters'
 import ItemCard from './item-card'
 import Banner from './banner'
@@ -62,7 +69,7 @@ export const FiltersContainer = styled.div`
     () => css`
       flex-direction: column;
       gap: 12px;
-    `
+    `,
   )}
 `
 
@@ -86,7 +93,7 @@ export const StyledSelect = styled(Select)`
       &.ui-select {
         margin-left: 0;
       }
-    `
+    `,
   )}
 `
 
@@ -101,8 +108,9 @@ export const StyledTag = styled(Tag.CheckableTag)`
         : theme.name === 'dark'
           ? theme.elevatedBackground
           : 'transparent'} !important;
-    border: 1px solid ${({ theme, checked }) =>
-      checked ? theme.primaryColor : theme.filterBorderColor} !important;
+    border: 1px solid
+      ${({ theme, checked }) =>
+        checked ? theme.primaryColor : theme.filterBorderColor} !important;
     color: ${({ theme, checked }) =>
       checked
         ? theme.textOnPrimary || '#fff'
@@ -114,9 +122,7 @@ export const StyledTag = styled(Tag.CheckableTag)`
 
   &.ui-tag-checkable:hover {
     color: ${({ theme, checked }) =>
-      checked
-        ? theme.textOnPrimary || '#fff'
-        : theme.textPrimary} !important;
+      checked ? theme.textOnPrimary || '#fff' : theme.textPrimary} !important;
     border-color: ${({ theme, checked }) =>
       checked ? theme.primaryColorHover : theme.textPrimary} !important;
     cursor: pointer;
@@ -160,29 +166,36 @@ const Items = () => {
   const { tcrAddress, chainId } = useParams()
   const search = window.location.search
   const { timestamp } = useContext(WalletContext)
-  const [submissionFormOpen, setSubmissionFormOpen] = useState<boolean | undefined>()
-  const [error, setError] = useState<string | undefined>()
+  const [submissionFormOpen, setSubmissionFormOpen] = useState<
+    boolean | undefined
+  >()
+  const [_error, _setError] = useState<string | undefined>()
   const [columns, setColumns] = useState<Column[] | undefined>()
   const queryOptions = searchStrToFilterObjPermanent(search)
   const [nsfwFilterOn, setNSFWFilter] = useState(true)
-  const [queryItemParams, setQueryItemParams] = useState<Record<string, unknown> | undefined>()
-  const toggleNSFWFilter = useCallback(checked => {
+  const [queryItemParams, _setQueryItemParams] = useState<
+    Record<string, unknown> | undefined
+  >()
+  const toggleNSFWFilter = useCallback((checked) => {
     setNSFWFilter(checked)
     localforage.setItem(NSFW_FILTER_KEY, checked)
   }, [])
-  const library = useEthersProvider({ chainId: chainId ? Number(chainId) : undefined })
-  const pgtcrClient = useMemo(() => getPermanentGraphQLClient(chainId), [
-    chainId
-  ])
+  const library = useEthersProvider({
+    chainId: chainId ? Number(chainId) : undefined,
+  })
+  const pgtcrClient = useMemo(
+    () => getPermanentGraphQLClient(chainId),
+    [chainId],
+  )
 
   // get registry data first, you need some variables from here to query the items.
   const registryQuery = useQuery({
     queryKey: ['permanentRegistry', tcrAddress, chainId],
     queryFn: () =>
       pgtcrClient.request(PERMANENT_REGISTRY_QUERY, {
-        lowerCaseTCRAddress: tcrAddress.toLowerCase()
+        lowerCaseTCRAddress: tcrAddress.toLowerCase(),
       }),
-    enabled: !!pgtcrClient
+    enabled: !!pgtcrClient,
   })
 
   const { oldestFirst, page, absent, registered, disputed } = queryOptions
@@ -204,7 +217,7 @@ const Items = () => {
     // Use status_in for filtering (handles both single and multi-select)
     return {
       registry: tcrAddress.toLowerCase(),
-      status_in: statuses
+      status_in: statuses,
     }
   }, [absent, registered, disputed, tcrAddress])
 
@@ -216,16 +229,15 @@ const Items = () => {
       first: ITEMS_PER_PAGE,
       orderDirection: orderDirection,
       where: itemsWhere,
-      registryId: tcrAddress.toLowerCase()
+      registryId: tcrAddress.toLowerCase(),
     }),
-    [page, orderDirection, itemsWhere, tcrAddress]
+    [page, orderDirection, itemsWhere, tcrAddress],
   )
 
   const itemsQuery = useQuery({
     queryKey: ['permanentItems', itemsVariables],
-    queryFn: () =>
-      pgtcrClient.request(PERMANENT_ITEMS_QUERY, itemsVariables),
-    enabled: !!registryQuery.data && !registryQuery.isLoading && !!pgtcrClient
+    queryFn: () => pgtcrClient.request(PERMANENT_ITEMS_QUERY, itemsVariables),
+    enabled: !!registryQuery.data && !registryQuery.isLoading && !!pgtcrClient,
   })
 
   const itemCount = useMemo(() => {
@@ -261,9 +273,10 @@ const Items = () => {
     })()
   }, [])
 
-  const items = useMemo(() => (itemsQuery.data ? itemsQuery.data.items : []), [
-    itemsQuery.data
-  ])
+  const items = useMemo(
+    () => (itemsQuery.data ? itemsQuery.data.items : []),
+    [itemsQuery.data],
+  )
 
   useEffect(() => {
     if (!registryQuery.data || !registryQuery.data.registry) return
@@ -280,9 +293,11 @@ const Items = () => {
     arbitratorExtraData:
       registryQuery.data?.registry?.arbitrationSettings?.[0]
         ?.arbitratorExtraData,
-    library
+    library,
   })
-  const { symbol: tokenSymbol } = useTokenSymbol(registryQuery.data?.registry?.token)
+  const { symbol: tokenSymbol } = useTokenSymbol(
+    registryQuery.data?.registry?.token,
+  )
 
   // provisional early return
   if (!registryQuery.data) return null
@@ -327,44 +342,44 @@ const Items = () => {
                   />
                   {Object.keys(queryOptions)
                     .filter(
-                      key =>
+                      (key) =>
                         key !== LIGHT_FILTER_KEYS.PAGE &&
-                        key !== LIGHT_FILTER_KEYS.OLDEST_FIRST
+                        key !== LIGHT_FILTER_KEYS.OLDEST_FIRST,
                       // &&
                       // key !== 'mySubmissions' &&
                       // key !== 'myChallenges'
                     )
-                    .map(key =>
+                    .map((key) =>
                       filterLabelPermanent[key] ? (
                         <StyledTag
                           key={key}
                           checked={queryOptions[key]}
-                          onChange={checked => {
+                          onChange={(checked) => {
                             const newQueryStr = updateLightFilter({
                               prevQuery: search,
                               filter: key,
-                              checked
+                              checked,
                             })
                             navigate({
-                              search: newQueryStr
+                              search: newQueryStr,
                             })
                           }}
                         >
                           {filterLabelPermanent[key]}
                         </StyledTag>
-                      ) : null
+                      ) : null,
                     )}
                 </StyledFilters>
                 <StyledSelect
                   defaultValue={oldestFirst ? 'oldestFirst' : 'newestFirst'}
-                  onChange={val => {
+                  onChange={(val) => {
                     const newQueryStr = updateLightFilter({
                       prevQuery: search,
                       filter: 'oldestFirst',
-                      checked: val === 'oldestFirst'
+                      checked: val === 'oldestFirst',
                     })
                     navigate({
-                      search: newQueryStr
+                      search: newQueryStr,
                     })
                   }}
                 >
@@ -377,7 +392,7 @@ const Items = () => {
                   ? Array.from({ length: 8 }).map((_, i) => (
                       <Card key={i} style={{ height: '100%' }} loading />
                     ))
-                  : items.map((item, i) => (
+                  : items.map((item, _i) => (
                       <ItemCard
                         item={item}
                         columns={columns}
@@ -397,11 +412,11 @@ const Items = () => {
                 current={Number(queryOptions.page)}
                 itemRender={pagingItem}
                 pageSize={ITEMS_PER_PAGE}
-                onChange={newPage => {
+                onChange={(newPage) => {
                   navigate({
                     search: /page=\d+/g.test(search)
                       ? search.replace(/page=\d+/g, `page=${newPage}`)
-                      : `${search}&page=${newPage}`
+                      : `${search}&page=${newPage}`,
                   })
                 }}
               />

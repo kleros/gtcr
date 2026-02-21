@@ -19,17 +19,14 @@ const LightItems = lazy(() => import('./light-items/index'))
 const Items = lazy(() => import('./items/index'))
 const PermanentItems = lazy(() => import('./permanent-items/index'))
 
-function computeItemsWhere(
-  queryOptions: Record<string, any>,
-  addr: string
-) {
+function computeItemsWhere(queryOptions: Record<string, any>, addr: string) {
   const {
     absent,
     registered,
     submitted,
     removalRequested,
     challengedSubmissions,
-    challengedRemovals
+    challengedRemovals,
   } = queryOptions
   const conditions: Record<string, any>[] = []
 
@@ -38,26 +35,25 @@ function computeItemsWhere(
   if (submitted)
     conditions.push({
       status: { _eq: 'RegistrationRequested' },
-      disputed: { _eq: false }
+      disputed: { _eq: false },
     })
   if (removalRequested)
     conditions.push({
       status: { _eq: 'ClearingRequested' },
-      disputed: { _eq: false }
+      disputed: { _eq: false },
     })
   if (challengedSubmissions)
     conditions.push({
       status: { _eq: 'RegistrationRequested' },
-      disputed: { _eq: true }
+      disputed: { _eq: true },
     })
   if (challengedRemovals)
     conditions.push({
       status: { _eq: 'ClearingRequested' },
-      disputed: { _eq: true }
+      disputed: { _eq: true },
     })
 
-  if (conditions.length === 0)
-    return { registry_id: { _eq: addr } }
+  if (conditions.length === 0) return { registry_id: { _eq: addr } }
   if (conditions.length === 1)
     return { registry_id: { _eq: addr }, ...conditions[0] }
   return { registry_id: { _eq: addr }, _or: conditions }
@@ -68,13 +64,8 @@ const ItemsRouter = () => {
     tcrAddress: string
     chainId: string
   }>()
-  const {
-    isLightCurate,
-    isClassicCurate,
-    isPermanentCurate,
-    checking,
-    error
-  } = useCheckLightCurate()
+  const { isLightCurate, isClassicCurate, isPermanentCurate, checking } =
+    useCheckLightCurate()
   useTcrNetwork()
   const { setIsPermanent } = useContext(StakeContext)
   const queryClient = useQueryClient()
@@ -102,22 +93,22 @@ const ItemsRouter = () => {
       limit: LIGHT_ITEMS_PER_PAGE,
       order_by: [{ latestRequestSubmissionTime: orderDirection }],
       where,
-      registryId: addr
+      registryId: addr,
     }
     queryClient.prefetchQuery({
       queryKey: ['lightItems', lightVars],
-      queryFn: () => client.request(LIGHT_ITEMS_QUERY, lightVars)
+      queryFn: () => client.request(LIGHT_ITEMS_QUERY, lightVars),
     })
 
     const classicVars = {
       offset: (page - 1) * LIGHT_ITEMS_PER_PAGE,
       limit: CLASSIC_MAX_ENTITIES,
       order_by: [{ latestRequestSubmissionTime: orderDirection }],
-      where
+      where,
     }
     queryClient.prefetchQuery({
       queryKey: ['classicItems', classicVars],
-      queryFn: () => client.request(CLASSIC_REGISTRY_ITEMS_QUERY, classicVars)
+      queryFn: () => client.request(CLASSIC_REGISTRY_ITEMS_QUERY, classicVars),
     })
   }, [client, tcrAddress, queryClient, chainId])
 

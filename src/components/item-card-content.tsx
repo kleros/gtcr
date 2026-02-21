@@ -12,7 +12,11 @@ interface ItemCardContentProps {
   tcrAddress: string
 }
 
-const ItemCardContent = ({ item, chainId, tcrAddress }: ItemCardContentProps) => {
+const ItemCardContent = ({
+  item,
+  chainId,
+  tcrAddress,
+}: ItemCardContentProps) => {
   const navigateAndScrollTop = useNavigateAndScrollTop()
 
   return (
@@ -20,10 +24,10 @@ const ItemCardContent = ({ item, chainId, tcrAddress }: ItemCardContentProps) =>
       <div>
         {item.columns
           .filter(
-            col =>
+            (col) =>
               col.isIdentifier ||
               col.type === ItemTypes.IMAGE ||
-              col.type === ItemTypes.FILE
+              col.type === ItemTypes.FILE,
           )
           .map((column, j) => (
             <StyledItemCol key={j}>
@@ -39,7 +43,7 @@ const ItemCardContent = ({ item, chainId, tcrAddress }: ItemCardContentProps) =>
       <Button
         onClick={() =>
           navigateAndScrollTop(
-            `/tcr/${chainId}/${tcrAddress}/${item.tcrData.ID}`
+            `/tcr/${chainId}/${tcrAddress}/${item.tcrData.ID}`,
           )
         }
       >

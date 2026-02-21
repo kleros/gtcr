@@ -25,13 +25,13 @@ const ItemActionModal = ({
   item,
   metaEvidence,
   appealCost,
-  arbitrationCost
+  arbitrationCost,
 }: ItemActionModalProps) => {
   // Common button properties.
   const rest = {
     visible: isOpen,
     title: getActionLabel({ statusCode, itemName }),
-    onCancel: onClose
+    onCancel: onClose,
   }
   const r = useMemo(() => item?.registry, [item])
 

@@ -8,15 +8,18 @@ import useCheckLightCurate from 'hooks/use-check-light-curate'
 import Loading from 'components/loading'
 import ErrorPage from 'pages/error-page'
 import { StakeContext } from 'contexts/stake-context'
-import { getGraphQLClient, getPermanentGraphQLClient } from 'utils/graphql-client'
+import {
+  getGraphQLClient,
+  getPermanentGraphQLClient,
+} from 'utils/graphql-client'
 import {
   LIGHT_ITEM_DETAILS_QUERY,
   CLASSIC_ITEM_DETAILS_QUERY,
-  PERMANENT_ITEM_DETAILS_QUERY
+  PERMANENT_ITEM_DETAILS_QUERY,
 } from 'utils/graphql'
 
 const PermanentItemDetails = lazy(
-  () => import('./permanent-item-details/index')
+  () => import('./permanent-item-details/index'),
 )
 const LightItemDetails = lazy(() => import('./light-item-details/index'))
 const ItemDetails = lazy(() => import('./item-details/index'))
@@ -29,19 +32,14 @@ const ItemDetailsRouter = () => {
   }>()
   useTcrNetwork()
   const search = window.location.search
-  const {
-    isLightCurate,
-    isClassicCurate,
-    isPermanentCurate,
-    checking,
-    error
-  } = useCheckLightCurate()
+  const { isLightCurate, isClassicCurate, isPermanentCurate, checking } =
+    useCheckLightCurate()
   const { setIsPermanent } = useContext(StakeContext)
   const queryClient = useQueryClient()
   const client = useMemo(() => getGraphQLClient(chainId), [chainId])
   const pgtcrClient = useMemo(
     () => getPermanentGraphQLClient(chainId),
-    [chainId]
+    [chainId],
   )
 
   useEffect(() => {
@@ -58,21 +56,20 @@ const ItemDetailsRouter = () => {
       queryClient.prefetchQuery({
         queryKey: ['lightItemDetails', compoundId],
         queryFn: () =>
-          client.request(LIGHT_ITEM_DETAILS_QUERY, { id: compoundId })
+          client.request(LIGHT_ITEM_DETAILS_QUERY, { id: compoundId }),
       })
       queryClient.prefetchQuery({
         queryKey: ['classicItemDetails', compoundId],
         queryFn: () =>
-          client.request(CLASSIC_ITEM_DETAILS_QUERY, { id: compoundId })
+          client.request(CLASSIC_ITEM_DETAILS_QUERY, { id: compoundId }),
       })
     }
-    if (pgtcrClient) {
+    if (pgtcrClient)
       queryClient.prefetchQuery({
         queryKey: ['permanentItemDetails', compoundId],
         queryFn: () =>
-          pgtcrClient.request(PERMANENT_ITEM_DETAILS_QUERY, { id: compoundId })
+          pgtcrClient.request(PERMANENT_ITEM_DETAILS_QUERY, { id: compoundId }),
       })
-    }
   }, [client, pgtcrClient, tcrAddress, itemID, queryClient])
 
   if (checking) return <Loading />

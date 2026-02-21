@@ -22,7 +22,7 @@ const Container = styled.footer`
       justify-content: center;
       padding-top: 8px;
       padding-bottom: 8px;
-    `
+    `,
   )}
 `
 
@@ -74,28 +74,28 @@ const StyledSocialButton = styled.a`
 const SOCIAL_NAV = [
   {
     icon: icons.telegram,
-    href: 'https://t.me/KlerosCurate'
+    href: 'https://t.me/KlerosCurate',
   },
   {
     icon: icons.x,
-    href: 'https://x.com/KlerosCurate'
+    href: 'https://x.com/KlerosCurate',
   },
   {
     icon: icons.discord,
-    href: 'https://discord.com/invite/MhXQGCyHd9'
+    href: 'https://discord.com/invite/MhXQGCyHd9',
   },
   {
     icon: icons.youtube,
-    href: 'https://youtube.com/@kleros_io'
+    href: 'https://youtube.com/@kleros_io',
   },
   {
     icon: icons.github,
-    href: 'https://github.com/kleros/gtcr'
+    href: 'https://github.com/kleros/gtcr',
   },
   {
     icon: icons.linkedin,
-    href: 'https://www.linkedin.com/company/kleros/'
-  }
+    href: 'https://www.linkedin.com/company/kleros/',
+  },
 ]
 
 const Footer: React.FC = () => (

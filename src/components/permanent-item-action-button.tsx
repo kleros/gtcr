@@ -15,7 +15,13 @@ interface ItemActionButtonProps {
   type?: string | null
 }
 
-const ItemActionButton = ({ statusCode, itemName, itemID, onClick, type }: ItemActionButtonProps) => {
+const ItemActionButton = ({
+  statusCode,
+  itemName,
+  itemID,
+  onClick,
+  type,
+}: ItemActionButtonProps) => {
   const theme = useTheme()
   if ((!statusCode && statusCode !== 0) || !itemName || !itemID)
     return (
@@ -39,7 +45,7 @@ const ItemActionButton = ({ statusCode, itemName, itemID, onClick, type }: ItemA
           ? {
               backgroundColor: 'transparent',
               border: 'none',
-              color: theme.textPrimary
+              color: theme.textPrimary,
             }
           : null
       }

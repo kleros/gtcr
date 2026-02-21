@@ -11,7 +11,7 @@ const projectId =
 export const wagmiAdapter = new WagmiAdapter({
   networks: SUPPORTED_CHAINS,
   projectId,
-  transports
+  transports,
 })
 
 export const wagmiConfig = wagmiAdapter.wagmiConfig
@@ -28,10 +28,10 @@ export const appKitModal = projectId
         description:
           'A UI for the Kleros powered Generalized Token Curated List',
         url: 'https://curate.kleros.builders',
-        icons: ['/favicon.ico']
+        icons: ['/favicon.ico'],
       },
       features: {
-        analytics: false
-      }
+        analytics: false,
+      },
     })
   : null

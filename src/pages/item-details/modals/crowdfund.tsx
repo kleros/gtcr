@@ -7,11 +7,12 @@ import {
   Slider,
   InputNumber,
   Typography,
-  Divider
+  Divider,
 } from 'components/ui'
 import { STATUS_CODE, PARTY, SUBGRAPH_RULING } from 'utils/item-status'
 import { TCRViewContext } from 'contexts/tcr-view-context'
 import { ethers, BigNumber } from 'ethers'
+
 const { formatEther, parseEther } = ethers.utils
 import EnsureAuth from 'components/ensure-auth'
 import ETHAmount from 'components/eth-amount'
@@ -22,11 +23,11 @@ import { abi as _gtcr } from '@kleros/tcr/build/contracts/GeneralizedTCR.json'
 import useRequiredFees from 'hooks/required-fees'
 import useNativeCurrency from 'hooks/native-currency'
 import { parseIpfs } from 'utils/ipfs-parse'
-import { wrapWithToast } from 'utils/wrapWithToast'
+import { wrapWithToast } from 'utils/wrap-with-toast'
 import { wagmiConfig } from 'config/wagmi'
 import {
   StyledSpin,
-  StyledModal
+  StyledModal,
 } from 'pages/light-item-details/modals/challenge'
 
 interface CrowdfundModalProps {
@@ -37,7 +38,13 @@ interface CrowdfundModalProps {
   [key: string]: unknown
 }
 
-const CrowdfundModal = ({ statusCode, item, fileURI, appealCost, ...rest }: CrowdfundModalProps) => {
+const CrowdfundModal = ({
+  statusCode,
+  item,
+  fileURI,
+  appealCost,
+  ...rest
+}: CrowdfundModalProps) => {
   const { address: account } = useAccount()
   const chainId = useChainId()
   const publicClient = usePublicClient()
@@ -47,7 +54,7 @@ const CrowdfundModal = ({ statusCode, item, fileURI, appealCost, ...rest }: Crow
     winnerStakeMultiplier,
     loserStakeMultiplier,
     MULTIPLIER_DIVISOR,
-    tcrAddress
+    tcrAddress,
   } = useContext(TCRViewContext)
 
   const [contributionShare, setContributionShare] = useState(1)
@@ -59,7 +66,7 @@ const CrowdfundModal = ({ statusCode, item, fileURI, appealCost, ...rest }: Crow
     hasPaidChallenger,
     currentRuling,
     amountPaidRequester,
-    amountPaidChallenger
+    amountPaidChallenger,
   } = round
 
   const autoSelectedSide = useMemo(() => {
@@ -75,25 +82,22 @@ const CrowdfundModal = ({ statusCode, item, fileURI, appealCost, ...rest }: Crow
     return !hasPaidRequester ? PARTY.REQUESTER : PARTY.CHALLENGER
   }, [currentRuling, hasPaidRequester, hasPaidChallenger, statusCode])
 
-  const side = useMemo(() => userSelectedSide || autoSelectedSide, [
-    autoSelectedSide,
-    userSelectedSide
-  ])
+  const side = useMemo(
+    () => userSelectedSide || autoSelectedSide,
+    [autoSelectedSide, userSelectedSide],
+  )
 
-  const {
-    requiredForSide,
-    amountStillRequired,
-    potentialReward
-  } = useRequiredFees({
-    side,
-    sharedStakeMultiplier,
-    winnerStakeMultiplier,
-    loserStakeMultiplier,
-    currentRuling,
-    item,
-    MULTIPLIER_DIVISOR,
-    appealCost
-  })
+  const { requiredForSide, amountStillRequired, potentialReward } =
+    useRequiredFees({
+      side,
+      sharedStakeMultiplier,
+      winnerStakeMultiplier,
+      loserStakeMultiplier,
+      currentRuling,
+      item,
+      MULTIPLIER_DIVISOR,
+      appealCost,
+    })
 
   if (!sharedStakeMultiplier || !potentialReward)
     return (
@@ -124,7 +128,7 @@ const CrowdfundModal = ({ statusCode, item, fileURI, appealCost, ...rest }: Crow
             onClick={() => setUserSelectedSide(PARTY.CHALLENGER)}
           >
             Challenger
-          </Button>
+          </Button>,
         ]}
         {...rest}
       >
@@ -137,8 +141,8 @@ const CrowdfundModal = ({ statusCode, item, fileURI, appealCost, ...rest }: Crow
       const contribution = amountStillRequired
         .mul(
           BigNumber.from(
-            (contributionShare * MULTIPLIER_DIVISOR.toString()).toString()
-          )
+            (contributionShare * MULTIPLIER_DIVISOR.toString()).toString(),
+          ),
         )
         .div(MULTIPLIER_DIVISOR)
 
@@ -148,12 +152,12 @@ const CrowdfundModal = ({ statusCode, item, fileURI, appealCost, ...rest }: Crow
         functionName: 'fundAppeal',
         args: [item.itemID, side],
         value: BigInt(contribution.toString()),
-        account
+        account,
       })
 
       const result = await wrapWithToast(
         () => walletClient.writeContract(request),
-        publicClient
+        publicClient,
       )
 
       if (result.status) {
@@ -169,13 +173,12 @@ const CrowdfundModal = ({ statusCode, item, fileURI, appealCost, ...rest }: Crow
                 subscriberAddr: getAddress(account),
                 tcrAddr: getAddress(tcrAddress),
                 itemID: item.itemID,
-                networkID: chainId
-              })
-            }
-          )
-            .catch(err => {
-              console.error('Failed to subscribe for notifications.', err)
-            })
+                networkID: chainId,
+              }),
+            },
+          ).catch((err) => {
+            console.error('Failed to subscribe for notifications.', err)
+          })
       }
     } catch (err) {
       console.error('Error funding appeal:', err)
@@ -198,7 +201,7 @@ const CrowdfundModal = ({ statusCode, item, fileURI, appealCost, ...rest }: Crow
           <Button key="contribute" type="primary" onClick={crowdfundSide}>
             OK
           </Button>
-        </EnsureAuth>
+        </EnsureAuth>,
       ]}
       afterClose={() => {
         setUserSelectedSide(PARTY.NONE)
@@ -237,7 +240,7 @@ const CrowdfundModal = ({ statusCode, item, fileURI, appealCost, ...rest }: Crow
             min={0}
             max={1}
             step={0.001}
-            onChange={value => setContributionShare(value)}
+            onChange={(value) => setContributionShare(value)}
             value={contributionShare}
             tooltipVisible={false}
           />
@@ -253,7 +256,7 @@ const CrowdfundModal = ({ statusCode, item, fileURI, appealCost, ...rest }: Crow
                 ? contributionShare * formatEther(amountStillRequired)
                 : contributionShare
             }
-            onChange={value => {
+            onChange={(value) => {
               const weiAmount = parseEther(String(value))
               const shareInBasis = weiAmount
                 .mul(MULTIPLIER_DIVISOR)

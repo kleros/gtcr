@@ -8,7 +8,8 @@ interface DescriptionsItemProps {
 }
 
 // Descriptions.Item (declarative API)
-const Item: React.FC<DescriptionsItemProps> = ({ children }) => children as React.ReactElement
+const Item: React.FC<DescriptionsItemProps> = ({ children }) =>
+  children as React.ReactElement
 Item.displayName = 'Descriptions.Item'
 
 const DescriptionsWrapper = styled.div`
@@ -37,8 +38,7 @@ const BorderedTable = styled.table`
 `
 
 const BorderedLabelCell = styled.th<{ $size?: string }>`
-  padding: ${({ $size }) =>
-    $size === 'small' ? '8px 12px' : '12px 16px'};
+  padding: ${({ $size }) => ($size === 'small' ? '8px 12px' : '12px 16px')};
   background: ${({ theme }) => theme.elevatedBackground};
   border: 1px solid ${({ theme }) => theme.borderColor};
   color: ${({ theme }) => theme.textSecondary};
@@ -48,22 +48,33 @@ const BorderedLabelCell = styled.th<{ $size?: string }>`
   white-space: nowrap;
   width: 1%;
 
-  tr:first-child & { border-top: none; }
-  tr:last-child & { border-bottom: none; }
-  &:first-child { border-left: none; }
+  tr:first-child & {
+    border-top: none;
+  }
+  tr:last-child & {
+    border-bottom: none;
+  }
+  &:first-child {
+    border-left: none;
+  }
 `
 
 const BorderedContentCell = styled.td<{ $size?: string }>`
-  padding: ${({ $size }) =>
-    $size === 'small' ? '8px 12px' : '12px 16px'};
+  padding: ${({ $size }) => ($size === 'small' ? '8px 12px' : '12px 16px')};
   border: 1px solid ${({ theme }) => theme.borderColor};
   color: ${({ theme }) => theme.textPrimary};
   font-size: 14px;
   word-break: break-word;
 
-  tr:first-child & { border-top: none; }
-  tr:last-child & { border-bottom: none; }
-  &:last-child { border-right: none; }
+  tr:first-child & {
+    border-top: none;
+  }
+  tr:last-child & {
+    border-bottom: none;
+  }
+  &:last-child {
+    border-right: none;
+  }
 `
 
 // ---- Non-bordered layout (list-like) ----
@@ -75,7 +86,8 @@ const ListGrid = styled.div<{ $columns?: number }>`
 
 const ListItem = styled.div<{ $span?: number }>`
   ${({ $span }) =>
-    $span && $span > 1 &&
+    $span &&
+    $span > 1 &&
     css`
       grid-column: span ${$span};
     `}
@@ -95,18 +107,25 @@ const ListContent = styled.span`
   line-height: 1.5;
 `
 
-const getColumnCount = (column: number | Record<string, number> | undefined, defaultVal = 3): number => {
+const getColumnCount = (
+  column: number | Record<string, number> | undefined,
+  defaultVal = 3,
+): number => {
   if (typeof column === 'number') return column
   if (typeof column === 'object' && column !== null) {
     // Simple responsive approach: pick largest available
     const breakpoints = ['xxl', 'xl', 'lg', 'md', 'sm', 'xs'] as const
     const width = typeof window !== 'undefined' ? window.innerWidth : 1200
-    const widthMap: Record<string, number> = { xxl: 1600, xl: 1200, lg: 992, md: 768, sm: 576, xs: 0 }
-    for (const bp of breakpoints) {
-      if (column[bp] !== undefined && width >= widthMap[bp]) {
-        return column[bp]
-      }
+    const widthMap: Record<string, number> = {
+      xxl: 1600,
+      xl: 1200,
+      lg: 992,
+      md: 768,
+      sm: 576,
+      xs: 0,
     }
+    for (const bp of breakpoints)
+      if (column[bp] !== undefined && width >= widthMap[bp]) return column[bp]
   }
   return defaultVal
 }
@@ -132,28 +151,35 @@ const Descriptions: DescriptionsComponent = ({
   size,
   style,
   className,
-  children
+  children,
 }) => {
   const columns = getColumnCount(column)
 
   // Parse items from children, flattening fragments
   const items = useMemo(() => {
-    const result: { label: React.ReactNode; span: number; content: React.ReactNode }[] = []
+    const result: {
+      label: React.ReactNode
+      span: number
+      content: React.ReactNode
+    }[] = []
     const flatten = (node: React.ReactNode) => {
-      Children.forEach(node, (child: any) => {
-        if (!child) return
-        // If it's a fragment, recurse into its children
-        if (child.type === React.Fragment) {
-          flatten(child.props.children)
-          return
-        }
-        if (!child.props) return
-        result.push({
-          label: child.props.label,
-          span: child.props.span || 1,
-          content: child.props.children
-        })
-      })
+      Children.forEach(
+        node,
+        (child: React.ReactElement<DescriptionsItemProps>) => {
+          if (!child) return
+          // If it's a fragment, recurse into its children
+          if (child.type === React.Fragment) {
+            flatten(child.props.children)
+            return
+          }
+          if (!child.props) return
+          result.push({
+            label: child.props.label,
+            span: child.props.span || 1,
+            content: child.props.children,
+          })
+        },
+      )
     }
     flatten(children)
     return result
@@ -161,11 +187,11 @@ const Descriptions: DescriptionsComponent = ({
 
   if (bordered) {
     // Build rows for the table
-    const rows: typeof items[] = []
+    const rows: (typeof items)[] = []
     let currentRow: typeof items = []
     let currentSpan = 0
 
-    items.forEach(item => {
+    items.forEach((item) => {
       if (currentSpan + item.span > columns) {
         rows.push(currentRow)
         currentRow = []

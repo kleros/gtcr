@@ -1,12 +1,17 @@
-import React, { useState, useCallback, useContext, useMemo, useEffect } from 'react'
+import React, {
+  useState,
+  useCallback,
+  useContext,
+  useMemo,
+  useEffect,
+} from 'react'
 import styled, { css } from 'styled-components'
 import { smallScreenStyle } from 'styles/small-screen-style'
-import { useWeb3Context } from 'hooks/useWeb3Context'
+import { useWeb3Context } from 'hooks/use-web3-context'
 import { useSwitchChain } from 'wagmi'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { Button, Dropdown } from 'components/ui'
 import { useAppKit } from '@reown/appkit/react'
-import { WalletContext } from 'contexts/wallet-context'
 import { ThemeContext } from 'contexts/theme-context'
 import { NETWORKS_INFO } from 'config/networks'
 import { SUPPORTED_CHAINS } from 'config/chains'
@@ -72,7 +77,7 @@ const MobileMenuWrapper = styled.div`
     () => css`
       display: block;
       margin-right: 12px;
-    `
+    `,
   )}
 `
 
@@ -105,7 +110,7 @@ const RightGroup = styled.div`
   ${smallScreenStyle(
     () => css`
       justify-content: flex-start;
-    `
+    `,
   )}
 `
 
@@ -182,7 +187,7 @@ const StyledAppBarRow = styled.div`
       padding-bottom: 8px;
       flex-wrap: wrap;
       row-gap: 8px;
-    `
+    `,
   )}
 `
 
@@ -199,10 +204,11 @@ const ChainSelectorButton = styled.button`
       theme.name === 'dark'
         ? 'rgba(255, 255, 255, 0.12)'
         : 'rgba(255, 255, 255, 0.25)'};
-  border-radius: 20px;
-  padding: 4px 10px;
+  border-radius: 32px;
+  padding: 0 15px;
+  height: 32px;
   color: #fff;
-  font-size: 13px;
+  font-size: 14px;
   cursor: pointer;
   transition: background-color 0.2s ease;
   white-space: nowrap;
@@ -235,7 +241,9 @@ const ChainMenuItem = styled.button<{ $active?: boolean }>`
   padding: 8px 16px;
   border: none;
   background: ${({ $active, theme }) =>
-    $active ? theme.dropdownSelectedBg || 'rgba(0, 0, 0, 0.06)' : 'transparent'};
+    $active
+      ? theme.dropdownSelectedBg || 'rgba(0, 0, 0, 0.06)'
+      : 'transparent'};
   color: ${({ theme }) => theme.textPrimary};
   font-size: 13px;
   cursor: pointer;
@@ -243,7 +251,8 @@ const ChainMenuItem = styled.button<{ $active?: boolean }>`
   white-space: nowrap;
 
   &:hover {
-    background: ${({ theme }) => theme.dropdownHoverBg || 'rgba(0, 0, 0, 0.04)'};
+    background: ${({ theme }) =>
+      theme.dropdownHoverBg || 'rgba(0, 0, 0, 0.04)'};
   }
 `
 
@@ -303,15 +312,16 @@ const AppBar = () => {
 
   // Parse the viewing chain from the URL (source of truth)
   const urlChainId = useMemo(() => {
-    const match = location.pathname.match(/\/(?:tcr|factory(?:-classic|-permanent)?)\/(\d+)/)
+    const match = location.pathname.match(
+      /\/(?:tcr|factory(?:-classic|-permanent)?)\/(\d+)/,
+    )
     return match ? Number(match[1]) : null
   }, [location.pathname])
 
   // Persist URL chain so non-chain-aware pages can restore it
   useEffect(() => {
-    if (urlChainId) {
+    if (urlChainId)
       localStorage.setItem(SAVED_NETWORK_KEY, urlChainId.toString())
-    }
   }, [urlChainId])
 
   const savedChainId = useMemo(() => {
@@ -325,7 +335,8 @@ const AppBar = () => {
   const [chainDropdownOpen, setChainDropdownOpen] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [helpDropdownOpen, setHelpDropdownOpen] = useState(false)
-  const isHome = location.pathname.startsWith('/tcr/') || location.pathname === '/'
+  const isHome =
+    location.pathname.startsWith('/tcr/') || location.pathname === '/'
 
   const currentChainInfo =
     NETWORKS_INFO[displayedChainId as keyof typeof NETWORKS_INFO]
@@ -339,25 +350,27 @@ const AppBar = () => {
       const nextTcr = defaultTcrAddresses[chainId as validChains]
       if (!nextTcr) return
       localStorage.setItem(SAVED_NETWORK_KEY, chainId.toString())
-      if (account) {
-        wagmiSwitchChain({ chainId })
-      }
+      if (account) wagmiSwitchChain({ chainId })
 
       // Preserve current page section when switching chains
-      const factoryMatch = location.pathname.match(/^\/(factory(?:-classic|-permanent)?)\//)
-      if (factoryMatch) {
-        navigate(`/${factoryMatch[1]}/${chainId}`)
-      } else {
-        navigate(`/tcr/${chainId}/${nextTcr}`)
-      }
+      const factoryMatch = location.pathname.match(
+        /^\/(factory(?:-classic|-permanent)?)\//,
+      )
+      if (factoryMatch) navigate(`/${factoryMatch[1]}/${chainId}`)
+      else navigate(`/tcr/${chainId}/${nextTcr}`)
+
       setChainDropdownOpen(false)
     },
-    [navigate, displayedChainId, account, wagmiSwitchChain, location.pathname]
+    [navigate, displayedChainId, account, wagmiSwitchChain, location.pathname],
   )
 
   const mobileMenuOverlay = (
     <MobileNavMenu>
-      <MobileMenuLink to="/" $active={isHome} onClick={() => setMobileMenuOpen(false)}>
+      <MobileMenuLink
+        to="/"
+        $active={isHome}
+        onClick={() => setMobileMenuOpen(false)}
+      >
         Home
       </MobileMenuLink>
       <MobileMenuLink
@@ -407,7 +420,7 @@ const AppBar = () => {
             placement="bottomRight"
             overlay={
               <ChainMenu>
-                {SUPPORTED_CHAINS.map(chain => {
+                {SUPPORTED_CHAINS.map((chain) => {
                   const info =
                     NETWORKS_INFO[chain.id as keyof typeof NETWORKS_INFO]
                   if (!info) return null

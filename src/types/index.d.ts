@@ -116,8 +116,14 @@ declare global {
 // @kleros/gtcr-encoder
 declare module '@kleros/gtcr-encoder' {
   export const ItemTypes: Record<string, string>
-  export function gtcrDecode(args: { columns: Column[]; values: string }): unknown[]
-  export function gtcrEncode(args: { columns: Column[]; values: unknown[] }): string
+  export function gtcrDecode(args: {
+    columns: Column[]
+    values: string
+  }): unknown[]
+  export function gtcrEncode(args: {
+    columns: Column[]
+    values: unknown[]
+  }): string
   export function searchableFields(columns: Column[]): number[]
   export function typeDefaultValues(type: string): string | number | boolean
 }
@@ -141,14 +147,10 @@ declare module '@kleros/erc-792/build/contracts/IArbitrator.json' {
   export const abi: readonly Record<string, unknown>[]
 }
 
-// @kleros/kleros contract ABIs
-declare module '@kleros/kleros/build/contracts/PolicyRegistry.json' {
-  export const abi: readonly Record<string, unknown>[]
-}
-
 // Untyped npm modules
 declare module 'react-blockies' {
   import { ComponentType } from 'react'
+
   interface BlockiesProps {
     seed: string
     size?: number
@@ -162,12 +164,9 @@ declare module 'react-blockies' {
   export default Blockies
 }
 
-declare module 'js-ordinal' {
-  export default function ordinal(n: number): string
-}
-
 declare module 'react-rewards' {
   import { ComponentType } from 'react'
+
   interface RewardProps {
     ref?: React.Ref<{ rewardMe: () => void }>
     type?: 'confetti' | 'emoji' | 'memphis'
@@ -176,21 +175,4 @@ declare module 'react-rewards' {
   }
   const Reward: ComponentType<RewardProps>
   export default Reward
-}
-
-declare module 'react-text-loop' {
-  import { ComponentType, ReactNode } from 'react'
-  interface TextLoopProps {
-    children: ReactNode
-    interval?: number | number[]
-    delay?: number
-    adjustingSpeed?: number
-    fade?: boolean
-    mask?: boolean
-    noWrap?: boolean
-    springConfig?: { stiffness?: number; damping?: number }
-    className?: string
-  }
-  const TextLoop: ComponentType<TextLoopProps>
-  export default TextLoop
 }

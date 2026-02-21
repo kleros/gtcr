@@ -19,32 +19,37 @@ const useCheckLightCurate = (): {
 
   const client = useMemo(() => getGraphQLClient(chainId), [chainId])
 
-  const { isLoading: loading, data, error: queryError } = useQuery({
+  const {
+    isLoading: loading,
+    data,
+    error: queryError,
+  } = useQuery({
     queryKey: ['tcrExistence', tcrAddress, chainId],
     queryFn: () =>
       client!.request(TCR_EXISTENCE_TEST, {
-        tcrAddress: tcrAddress.toLowerCase()
+        tcrAddress: tcrAddress.toLowerCase(),
       }),
-    enabled: !!client && !!tcrAddress
+    enabled: !!client && !!tcrAddress,
   })
 
   const {
     isPermanentList,
     checking: permanentChecking,
-    error: permanentError
+    error: permanentError,
   } = useCheckPermanentList(tcrAddress, chainId)
 
   const isLightCurate = useMemo<boolean>(() => data?.lregistry ?? false, [data])
-  const isClassicCurate = useMemo<boolean>(() => data?.registry ?? false, [
-    data
-  ])
+  const isClassicCurate = useMemo<boolean>(
+    () => data?.registry ?? false,
+    [data],
+  )
 
   return {
     isLightCurate,
     isClassicCurate,
     isPermanentCurate: isPermanentList,
     checking: loading || permanentChecking,
-    error: !!queryError && permanentError
+    error: !!queryError && permanentError,
   }
 }
 

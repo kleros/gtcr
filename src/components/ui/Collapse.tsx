@@ -72,7 +72,15 @@ interface PanelProps {
   $onToggle?: (key: string) => void
 }
 
-const Panel: React.FC<PanelProps> = ({ header, children, showArrow = true, disabled = false, $panelKey, $active, $onToggle }) => {
+const Panel: React.FC<PanelProps> = ({
+  header,
+  children,
+  showArrow = true,
+  disabled = false,
+  $panelKey,
+  $active,
+  $onToggle,
+}) => {
   const contentRef = useRef<HTMLDivElement>(null)
   const [height, setHeight] = useState($active ? 'auto' : '0px')
   const [overflow, setOverflow] = useState($active ? 'visible' : 'hidden')
@@ -116,10 +124,7 @@ const Panel: React.FC<PanelProps> = ({ header, children, showArrow = true, disab
         {showArrow && <ArrowIcon $active={$active}>&#9654;</ArrowIcon>}
         <span style={{ flex: 1 }}>{header}</span>
       </PanelHeader>
-      <PanelContentOuter
-        ref={contentRef}
-        style={{ height, overflow }}
-      >
+      <PanelContentOuter ref={contentRef} style={{ height, overflow }}>
         <PanelContentInner>{children}</PanelContentInner>
       </PanelContentOuter>
     </PanelWrapper>
@@ -151,7 +156,7 @@ const Collapse: CollapseComponent = ({
   children,
   style,
   className,
-  accordion = false
+  accordion = false,
 }) => {
   const normalizeKeys = (keys: string | string[] | undefined): string[] => {
     if (keys === undefined || keys === null) return []
@@ -160,7 +165,7 @@ const Collapse: CollapseComponent = ({
   }
 
   const [internalActiveKeys, setInternalActiveKeys] = useState<string[]>(() =>
-    normalizeKeys(defaultActiveKey)
+    normalizeKeys(defaultActiveKey),
   )
 
   const isControlled = controlledActiveKey !== undefined
@@ -173,18 +178,16 @@ const Collapse: CollapseComponent = ({
       const key = String(panelKey)
       let nextKeys: string[]
 
-      if (accordion) {
-        nextKeys = activeKeys.includes(key) ? [] : [key]
-      } else {
+      if (accordion) nextKeys = activeKeys.includes(key) ? [] : [key]
+      else
         nextKeys = activeKeys.includes(key)
-          ? activeKeys.filter(k => k !== key)
+          ? activeKeys.filter((k) => k !== key)
           : [...activeKeys, key]
-      }
 
       if (!isControlled) setInternalActiveKeys(nextKeys)
       if (onChange) onChange(accordion ? nextKeys[0] || '' : nextKeys)
     },
-    [accordion, activeKeys, isControlled, onChange]
+    [accordion, activeKeys, isControlled, onChange],
   )
 
   const items = React.Children.toArray(children)
@@ -203,7 +206,7 @@ const Collapse: CollapseComponent = ({
         return React.cloneElement(element, {
           $panelKey: panelKey,
           $active: isActive,
-          $onToggle: handleToggle
+          $onToggle: handleToggle,
         })
       })}
     </CollapseWrapper>

@@ -13,7 +13,7 @@ import EvidenceForm from 'components/evidence-form'
 import ipfsPublish from 'utils/ipfs-publish'
 import { getIPFSPath } from 'utils/get-ipfs-path'
 import { parseIpfs } from 'utils/ipfs-parse'
-import { wrapWithToast } from 'utils/wrapWithToast'
+import { wrapWithToast } from 'utils/wrap-with-toast'
 import { wagmiConfig } from 'config/wagmi'
 
 export const StyledSpin = styled(Spin)`
@@ -34,12 +34,15 @@ interface ChallengeModalProps {
   [key: string]: unknown
 }
 
-const ChallengeModal = ({ item, itemName, statusCode, fileURI, ...rest }: ChallengeModalProps) => {
-  const {
-    submissionChallengeDeposit,
-    removalChallengeDeposit,
-    tcrAddress
-  } = useContext(LightTCRViewContext)
+const ChallengeModal = ({
+  item,
+  _itemName,
+  statusCode,
+  fileURI,
+  ...rest
+}: ChallengeModalProps) => {
+  const { submissionChallengeDeposit, removalChallengeDeposit, tcrAddress } =
+    useContext(LightTCRViewContext)
   const { address: account } = useAccount()
   const chainId = useChainId()
   const publicClient = usePublicClient()
@@ -52,19 +55,19 @@ const ChallengeModal = ({ item, itemName, statusCode, fileURI, ...rest }: Challe
   const challengeRequest = async ({
     title,
     description,
-    evidenceAttachment
+    evidenceAttachment,
   }) => {
     try {
       const evidenceJSON = {
         title: title || 'Challenge Justification',
         description,
-        ...evidenceAttachment
+        ...evidenceAttachment,
       }
 
       const enc = new TextEncoder()
       const fileData = enc.encode(JSON.stringify(evidenceJSON))
       const ipfsEvidencePath = getIPFSPath(
-        await ipfsPublish('evidence.json', fileData)
+        await ipfsPublish('evidence.json', fileData),
       )
 
       const { request } = await simulateContract(wagmiConfig, {
@@ -73,12 +76,12 @@ const ChallengeModal = ({ item, itemName, statusCode, fileURI, ...rest }: Challe
         functionName: 'challengeRequest',
         args: [item.itemID, ipfsEvidencePath],
         value: BigInt(challengeDeposit.toString()),
-        account
+        account,
       })
 
       const result = await wrapWithToast(
         () => walletClient.writeContract(request),
-        publicClient
+        publicClient,
       )
 
       if (result.status) {
@@ -94,13 +97,12 @@ const ChallengeModal = ({ item, itemName, statusCode, fileURI, ...rest }: Challe
                 subscriberAddr: getAddress(account),
                 tcrAddr: getAddress(tcrAddress),
                 itemID: item.itemID,
-                networkID: chainId
-              })
-            }
-          )
-            .catch(err => {
-              console.error('Failed to subscribe for notifications.', err)
-            })
+                networkID: chainId,
+              }),
+            },
+          ).catch((err) => {
+            console.error('Failed to subscribe for notifications.', err)
+          })
       }
     } catch (err) {
       console.error('Error challenging request:', err)
@@ -131,7 +133,7 @@ const ChallengeModal = ({ item, itemName, statusCode, fileURI, ...rest }: Challe
           >
             Challenge
           </Button>
-        </EnsureAuth>
+        </EnsureAuth>,
       ]}
       {...rest}
     >

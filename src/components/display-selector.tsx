@@ -100,7 +100,7 @@ const protocolRegex = /:\/\//
 
 interface DisplaySelectorProps {
   type: string
-  value?: string | number | boolean
+  value?: string | number | boolean | null
   linkImage?: boolean | null
   allowedFileTypes?: string | null
   truncateLinks?: boolean
@@ -113,7 +113,7 @@ const DisplaySelector = ({
   linkImage = null,
   allowedFileTypes = null,
   truncateLinks = false,
-  disabled = false
+  disabled = false,
 }: DisplaySelectorProps) => {
   switch (type) {
     case ItemTypes.GTCR_ADDRESS:

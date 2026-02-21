@@ -7,12 +7,15 @@ const BREAKPOINTS: Record<string, number> = {
   md: 768,
   lg: 992,
   xl: 1200,
-  xxl: 1600
+  xxl: 1600,
 }
 
 type ResponsiveValue = number | { span?: number; offset?: number }
 
-const getResponsiveStyles = (breakpoint: string, value: ResponsiveValue | undefined) => {
+const getResponsiveStyles = (
+  breakpoint: string,
+  value: ResponsiveValue | undefined,
+) => {
   if (value === undefined || value === null) return ''
 
   const bp = BREAKPOINTS[breakpoint]
@@ -25,15 +28,12 @@ const getResponsiveStyles = (breakpoint: string, value: ResponsiveValue | undefi
   } else if (typeof value === 'object') {
     span = value.span
     offset = value.offset
-  } else {
-    return ''
-  }
+  } else return ''
 
   const styles: string[] = []
 
-  if (span === 0) {
-    styles.push('display: none;')
-  } else {
+  if (span === 0) styles.push('display: none;')
+  else {
     styles.push('display: block;')
     if (span !== undefined) {
       const width = (span / 24) * 100
@@ -47,11 +47,10 @@ const getResponsiveStyles = (breakpoint: string, value: ResponsiveValue | undefi
     styles.push(`margin-left: ${ml}%;`)
   }
 
-  if (bp === 0) {
+  if (bp === 0)
     return css`
       ${styles.join('\n')}
     `
-  }
 
   return css`
     @media (min-width: ${bp}px) {
@@ -143,7 +142,7 @@ const Col: React.FC<ColProps> = ({
   children,
   style,
   className,
-  $gutter
+  $gutter,
 }) => (
   <ColWrapper
     $span={span}

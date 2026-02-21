@@ -98,32 +98,25 @@ const SimpleInput = styled.input`
   }
 `
 
-const getPageNumbers = (current: number, total: number): (number | string)[] => {
-  if (total <= 7) {
-    return Array.from({ length: total }, (_, i) => i + 1)
-  }
+const getPageNumbers = (
+  current: number,
+  total: number,
+): (number | string)[] => {
+  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1)
 
   const pages: (number | string)[] = []
   pages.push(1)
 
-  if (current > 3) {
-    pages.push('left-ellipsis')
-  }
+  if (current > 3) pages.push('left-ellipsis')
 
   const start = Math.max(2, current - 1)
   const end = Math.min(total - 1, current + 1)
 
-  for (let i = start; i <= end; i++) {
-    pages.push(i)
-  }
+  for (let i = start; i <= end; i++) pages.push(i)
 
-  if (current < total - 2) {
-    pages.push('right-ellipsis')
-  }
+  if (current < total - 2) pages.push('right-ellipsis')
 
-  if (total > 1) {
-    pages.push(total)
-  }
+  if (total > 1) pages.push(total)
 
   return pages
 }
@@ -136,7 +129,11 @@ interface PaginationProps {
   showSizeChanger?: boolean
   pageSizeOptions?: string[]
   onShowSizeChange?: (current: number, size: number) => void
-  itemRender?: (page: number, type: string, originalElement: React.ReactNode) => React.ReactNode
+  itemRender?: (
+    page: number,
+    type: string,
+    originalElement: React.ReactNode,
+  ) => React.ReactNode
   style?: React.CSSProperties
   className?: string
   defaultCurrent?: number
@@ -155,16 +152,17 @@ const Pagination: React.FC<PaginationProps> = ({
   style,
   className,
   defaultCurrent = 1,
-  simple = false
+  simple = false,
 }) => {
   const [internalCurrent, setInternalCurrent] = useState(defaultCurrent)
   const [internalPageSize, setInternalPageSize] = useState(
-    controlledPageSize || 10
+    controlledPageSize || 10,
   )
 
   const isControlled = controlledCurrent !== undefined
   const current = isControlled ? controlledCurrent : internalCurrent
-  const pageSize = controlledPageSize !== undefined ? controlledPageSize : internalPageSize
+  const pageSize =
+    controlledPageSize !== undefined ? controlledPageSize : internalPageSize
   const totalPages = Math.max(1, Math.ceil(total / pageSize))
 
   const goTo = useCallback(
@@ -173,7 +171,7 @@ const Pagination: React.FC<PaginationProps> = ({
       if (!isControlled) setInternalCurrent(p)
       if (onChange) onChange(p, pageSize)
     },
-    [totalPages, isControlled, onChange, pageSize]
+    [totalPages, isControlled, onChange, pageSize],
   )
 
   const handleSizeChange = useCallback(
@@ -186,7 +184,7 @@ const Pagination: React.FC<PaginationProps> = ({
       if (onShowSizeChange) onShowSizeChange(newCurrent, newSize)
       if (onChange) onChange(newCurrent, newSize)
     },
-    [total, current, isControlled, onShowSizeChange, onChange]
+    [total, current, isControlled, onShowSizeChange, onChange],
   )
 
   const renderItem = useCallback(
@@ -194,29 +192,26 @@ const Pagination: React.FC<PaginationProps> = ({
       if (itemRender) return itemRender(page, type, originalElement)
       return originalElement
     },
-    [itemRender]
+    [itemRender],
   )
 
   const pages = useMemo(
     () => getPageNumbers(current, totalPages),
-    [current, totalPages]
+    [current, totalPages],
   )
 
-  if (simple) {
+  if (simple)
     return (
       <SimplePagination
         style={style}
         className={`ui-pagination ui-pagination-simple${className ? ` ${className}` : ''}`}
       >
-        <PageButton
-          disabled={current <= 1}
-          onClick={() => goTo(current - 1)}
-        >
+        <PageButton disabled={current <= 1} onClick={() => goTo(current - 1)}>
           &#8249;
         </PageButton>
         <SimpleInput
           value={current}
-          onChange={e => {
+          onChange={(e) => {
             const val = parseInt(e.target.value, 10)
             if (!isNaN(val)) goTo(val)
           }}
@@ -231,7 +226,6 @@ const Pagination: React.FC<PaginationProps> = ({
         </PageButton>
       </SimplePagination>
     )
-  }
 
   return (
     <Wrapper
@@ -247,13 +241,12 @@ const Pagination: React.FC<PaginationProps> = ({
           aria-label="Previous Page"
         >
           &#8249;
-        </PageButton>
+        </PageButton>,
       )}
 
       {pages.map((page, idx) => {
-        if (typeof page === 'string') {
+        if (typeof page === 'string')
           return <Ellipsis key={page + idx}>...</Ellipsis>
-        }
 
         return renderItem(
           page,
@@ -264,7 +257,7 @@ const Pagination: React.FC<PaginationProps> = ({
             onClick={() => goTo(page)}
           >
             {page}
-          </PageButton>
+          </PageButton>,
         )
       })}
 
@@ -277,12 +270,12 @@ const Pagination: React.FC<PaginationProps> = ({
           aria-label="Next Page"
         >
           &#8250;
-        </PageButton>
+        </PageButton>,
       )}
 
       {showSizeChanger && (
         <SizeChanger value={pageSize} onChange={handleSizeChange}>
-          {pageSizeOptions.map(opt => (
+          {pageSizeOptions.map((opt) => (
             <option key={opt} value={opt}>
               {opt} / page
             </option>

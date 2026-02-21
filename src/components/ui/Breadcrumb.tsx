@@ -41,22 +41,32 @@ interface BreadcrumbItemProps {
   $isLast?: boolean
 }
 
-const BreadcrumbItem: React.FC<BreadcrumbItemProps> = ({ children, href, onClick, $isLast }) => (
+const BreadcrumbItem: React.FC<BreadcrumbItemProps> = ({
+  children,
+  href,
+  onClick,
+  $isLast,
+}) => (
   <BreadcrumbItemWrapper $isLast={$isLast} className="ui-breadcrumb-item">
     {href ? (
       <a href={href} onClick={onClick}>
         {children}
       </a>
     ) : onClick ? (
-      <a
-        href="#"
-        onClick={(e: React.MouseEvent) => {
-          e.preventDefault()
-          onClick(e)
+      <button
+        type="button"
+        onClick={onClick}
+        style={{
+          background: 'none',
+          border: 'none',
+          padding: 0,
+          cursor: 'pointer',
+          font: 'inherit',
+          color: 'inherit',
         }}
       >
         {children}
-      </a>
+      </button>
     ) : (
       <span>{children}</span>
     )}
@@ -76,7 +86,12 @@ interface BreadcrumbComponent extends React.FC<BreadcrumbProps> {
   Item: React.FC<BreadcrumbItemProps>
 }
 
-const Breadcrumb: BreadcrumbComponent = ({ separator = '/', children, style, className }) => {
+const Breadcrumb: BreadcrumbComponent = ({
+  separator = '/',
+  children,
+  style,
+  className,
+}) => {
   const items = React.Children.toArray(children)
 
   return (
@@ -88,10 +103,10 @@ const Breadcrumb: BreadcrumbComponent = ({ separator = '/', children, style, cla
         const isLast = index === items.length - 1
         return (
           <React.Fragment key={index}>
-            {React.cloneElement(child as React.ReactElement<any>, { $isLast: isLast })}
-            {!isLast && (
-              <BreadcrumbSeparator>{separator}</BreadcrumbSeparator>
-            )}
+            {React.cloneElement(child as React.ReactElement<any>, {
+              $isLast: isLast,
+            })}
+            {!isLast && <BreadcrumbSeparator>{separator}</BreadcrumbSeparator>}
           </React.Fragment>
         )
       })}

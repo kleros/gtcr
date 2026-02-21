@@ -1,5 +1,5 @@
 import styled, { css } from 'styled-components'
-import Layout from 'components/ui/Layout'
+import Layout from 'components/ui/layout'
 import { smallScreenStyle } from 'styles/small-screen-style'
 
 const StyledLayoutContent = styled(Layout.Content)`
@@ -8,7 +8,7 @@ const StyledLayoutContent = styled(Layout.Content)`
   ${smallScreenStyle(
     () => css`
       padding-top: 24px;
-    `
+    `,
   )}
 `
 export default StyledLayoutContent

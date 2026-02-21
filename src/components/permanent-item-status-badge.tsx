@@ -2,10 +2,10 @@ import React from 'react'
 import {
   STATUS_COLOR,
   STATUS_TEXT,
-  STATUS_CODE
+  STATUS_CODE,
 } from '../utils/permanent-item-status'
 import { Badge, Skeleton } from 'components/ui'
-import Icon from 'components/ui/Icon'
+import Icon from 'components/ui/icon'
 import styled from 'styled-components'
 import { BigNumber } from 'ethers'
 
@@ -40,7 +40,7 @@ const iconTypes = {
   [STATUS_CODE.PENDING_WITHDRAWAL]: 'hourglass',
   [STATUS_CODE.REJECTED]: 'close',
   [STATUS_CODE.REMOVED]: 'close',
-  [STATUS_CODE.WAITING_ARBITRATOR]: 'hourglass'
+  [STATUS_CODE.WAITING_ARBITRATOR]: 'hourglass',
 }
 
 export const ItemStatusIcon = ({ statusCode }: { statusCode: number }) => (
@@ -77,7 +77,12 @@ interface ItemStatusBadgeProps {
 }
 
 // A wrapper around antdesign's badge component.
-const ItemStatusBadge = ({ item, timestamp, statusCode, dark }: ItemStatusBadgeProps) => {
+const ItemStatusBadge = ({
+  item,
+  timestamp,
+  statusCode,
+  _dark,
+}: ItemStatusBadgeProps) => {
   if (statusCode)
     return (
       <ItemStatusBadgeWrap>

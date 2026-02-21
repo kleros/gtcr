@@ -11,9 +11,9 @@ import {
   Button,
   Collapse,
   Row,
-  Col
+  Col,
 } from 'components/ui'
-import Icon from 'components/ui/Icon'
+import Icon from 'components/ui/icon'
 import { useParams } from 'react-router-dom'
 import ETHAddress from 'components/eth-address'
 import { CONTRACT_STATUS, SUBGRAPH_RULING } from 'utils/permanent-item-status'
@@ -21,7 +21,7 @@ import { capitalizeFirstLetter } from 'utils/string'
 import { getTxPage } from 'utils/network-utils'
 import { parseIpfs } from 'utils/ipfs-parse'
 import PermanentEvidenceModal from 'pages/permanent-item-details/modals/evidence'
-import jsOrdinal from 'js-ordinal'
+import toOrdinal from 'utils/ordinal'
 
 const StyledText = styled(Typography.Text)`
   text-transform: capitalize;
@@ -55,7 +55,7 @@ const StyledCard = styled(Card)`
       & > .ui-card-head > .ui-card-head-wrapper > .ui-card-head-title {
         max-width: ${responsiveSize(160, 450)};
       }
-    `
+    `,
   )}
 `
 
@@ -69,7 +69,7 @@ const StyledIcon = styled(Icon)`
   color: ${({ theme }) => theme.primaryColor};
 `
 
-const secondTimestamp = timestamp =>
+const secondTimestamp = (timestamp) =>
   ` - ${new Date(new Date(timestamp * 1000)).toGMTString()}`
 
 interface TimelineProps {
@@ -89,26 +89,26 @@ const Timeline = ({ submission, item, metaEvidence }: TimelineProps) => {
   const logs = useMemo(() => {
     if (!submission) return null
 
-    const allRounds = item.challenges.flatMap(c => c.rounds)
+    const allRounds = item.challenges.flatMap((c) => c.rounds)
 
     const appealPossibles = allRounds
-      .map(r => ({
+      .map((r) => ({
         name: 'AppealPossible',
         timestamp: r.appealPeriodStart,
         transactionHash: r.txHashAppealPossible,
-        appealableRuling: r.ruling
+        appealableRuling: r.ruling,
       }))
-      .filter(appeal => !!appeal.transactionHash)
+      .filter((appeal) => !!appeal.transactionHash)
 
     const appealDecisions = allRounds
-      .map(r => ({
+      .map((r) => ({
         name: 'AppealDecision',
         timestamp: r.appealedAt,
-        transactionHash: r.txHashAppealDecision
+        transactionHash: r.txHashAppealDecision,
       }))
-      .filter(appeal => !!appeal.transactionHash)
+      .filter((appeal) => !!appeal.transactionHash)
 
-    const evidences = item.evidences.map(e => ({
+    const evidences = item.evidences.map((e) => ({
       name: 'Evidence',
       timestamp: e.timestamp,
       transactionHash: e.txHash,
@@ -117,21 +117,21 @@ const Timeline = ({ submission, item, metaEvidence }: TimelineProps) => {
       URI: e.URI,
       fileURI: e.metadata?.fileURI,
       fileTypeExtension: e.metadata?.fileTypeExtension,
-      party: e.party
+      party: e.party,
     }))
 
-    const resolutions = item.challenges.map(e => ({
+    const resolutions = item.challenges.map((e) => ({
       name: 'Resolution',
       timestamp: e.resolutionTime,
       transactionHash: e.resolutionTx,
       disputeOutcome: e.disputeOutcome,
-      lastRoundRuling: e.rounds[0].ruling
+      lastRoundRuling: e.rounds[0].ruling,
     }))
 
-    const challenges = item.challenges.map(e => ({
+    const challenges = item.challenges.map((e) => ({
       name: 'Challenge',
       timestamp: e.createdAt,
-      transactionHash: e.creationTx
+      transactionHash: e.creationTx,
     }))
 
     const logArray = [
@@ -139,7 +139,7 @@ const Timeline = ({ submission, item, metaEvidence }: TimelineProps) => {
       ...appealDecisions,
       ...evidences,
       ...resolutions,
-      ...challenges
+      ...challenges,
     ]
 
     const withdrawal =
@@ -147,7 +147,7 @@ const Timeline = ({ submission, item, metaEvidence }: TimelineProps) => {
         ? {
             name: 'Withdrawal',
             timestamp: submission.withdrawingTimestamp,
-            transactionHash: submission.withdrawingTx
+            transactionHash: submission.withdrawingTx,
           }
         : null
 
@@ -157,10 +157,10 @@ const Timeline = ({ submission, item, metaEvidence }: TimelineProps) => {
 
     return logArray
       .filter(
-        log =>
+        (log) =>
           Number(submission.createdAt) <= Number(log.timestamp) &&
           (submission.finishedAt === null ||
-            Number(submission.finishedAt) >= Number(log.timestamp))
+            Number(submission.finishedAt) >= Number(log.timestamp)),
       )
       .sort((a, b) => Number(a.timestamp) - Number(b.timestamp))
   }, [item, submission])
@@ -169,21 +169,21 @@ const Timeline = ({ submission, item, metaEvidence }: TimelineProps) => {
   useEffect(() => {
     const evidenceManualFetch = async () => {
       const unindexedEvidenceURIs = logs
-        .filter(e => e.metadata?.name === 'Evidence')
+        .filter((e) => e.metadata?.name === 'Evidence')
         .filter(
-          e =>
+          (e) =>
             e.metadata?.title === null &&
             e.metadata?.description === null &&
             e.metadata?.fileURI === null &&
-            e.metadata?.fileTypeExtension === null
+            e.metadata?.fileTypeExtension === null,
         )
-        .map(e => e.URI)
+        .map((e) => e.URI)
 
       const evidenceJSONs = await Promise.all(
-        unindexedEvidenceURIs.map(async uri => {
+        unindexedEvidenceURIs.map(async (uri) => {
           const file = await (await fetch(parseIpfs(uri))).json()
           return file
-        })
+        }),
       )
       const evidenceMapProcess = {}
       unindexedEvidenceURIs.forEach((uri, index) => {
@@ -278,10 +278,10 @@ const Timeline = ({ submission, item, metaEvidence }: TimelineProps) => {
               {appealableRuling === SUBGRAPH_RULING.NONE
                 ? 'The arbitrator refused to rule'
                 : appealableRuling === SUBGRAPH_RULING.ACCEPT
-                ? 'The arbitrator ruled in favor of the submitter'
-                : appealableRuling === SUBGRAPH_RULING.REJECT
-                ? 'The arbitrator ruled in favor of the challenger'
-                : 'The arbitrator gave an unknown ruling'}
+                  ? 'The arbitrator ruled in favor of the submitter'
+                  : appealableRuling === SUBGRAPH_RULING.REJECT
+                    ? 'The arbitrator ruled in favor of the challenger'
+                    : 'The arbitrator gave an unknown ruling'}
               <Typography.Text type="secondary">
                 <a href={txPage}>{secondTimestamp(timestamp)}</a>
               </Typography.Text>
@@ -399,15 +399,13 @@ const RequestTimelines = ({ item, metaEvidence }: RequestTimelinesProps) => {
     <div id="request-timelines">
       <Row type="flex" align="middle">
         <Col style={{ flex: 1 }}>
-          <StyledDivider orientation="left">{`${capitalizeFirstLetter(
-            itemName
-          ) || 'Item'} History`}</StyledDivider>
+          <StyledDivider orientation="left">{`${
+            capitalizeFirstLetter(itemName) || 'Item'
+          } History`}</StyledDivider>
         </Col>
         {item.status !== CONTRACT_STATUS.ABSENT && (
           <Col style={{ marginLeft: 12 }}>
-            <StyledButton
-              onClick={() => setEvidenceModalOpen(true)}
-            >
+            <StyledButton onClick={() => setEvidenceModalOpen(true)}>
               Submit Evidence
             </StyledButton>
           </Col>
@@ -418,9 +416,7 @@ const RequestTimelines = ({ item, metaEvidence }: RequestTimelinesProps) => {
         <StyledCollapse bordered={false} defaultActiveKey={['0']}>
           {submissions.map((submission, i) => (
             <Collapse.Panel
-              header={`${jsOrdinal.toOrdinal(
-                submissions.length - i
-              )} submission`}
+              header={`${toOrdinal(submissions.length - i)} submission`}
               key={i}
             >
               {/* We spread `submissions` to convert it from an array to an object. */}

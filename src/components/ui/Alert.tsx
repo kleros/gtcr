@@ -8,10 +8,13 @@ const TYPE_CONFIG: Record<AlertType, { icon: string; colorKey: string }> = {
   info: { icon: 'info-circle', colorKey: 'infoColor' },
   success: { icon: 'check-circle', colorKey: 'successColor' },
   warning: { icon: 'exclamation-triangle', colorKey: 'warningColor' },
-  error: { icon: 'times-circle', colorKey: 'errorColor' }
+  error: { icon: 'times-circle', colorKey: 'errorColor' },
 }
 
-const getTypeColor = (type: AlertType, theme: any): string => {
+const getTypeColor = (
+  type: AlertType,
+  theme: Record<string, string>,
+): string => {
   const config = TYPE_CONFIG[type] || TYPE_CONFIG.info
   return theme[config.colorKey]
 }
@@ -25,10 +28,11 @@ const AlertWrapper = styled.div<AlertWrapperProps>`
   display: flex;
   align-items: flex-start;
   padding: 12px 16px;
-  border: 1px solid ${({ $type, theme }) => {
-    const color = getTypeColor($type, theme)
-    return theme.name === 'dark' ? `${color}30` : color
-  }};
+  border: 1px solid
+    ${({ $type, theme }) => {
+      const color = getTypeColor($type, theme)
+      return theme.name === 'dark' ? `${color}30` : color
+    }};
   background: ${({ $type, theme }) => {
     const color = getTypeColor($type, theme)
     return theme.name === 'dark' ? `${color}0a` : `${color}15`
@@ -114,7 +118,7 @@ const Alert: React.FC<AlertProps> = ({
   banner,
   style,
   className,
-  children
+  children,
 }) => {
   const [closed, setClosed] = useState(false)
 

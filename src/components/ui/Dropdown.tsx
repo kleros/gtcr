@@ -38,7 +38,7 @@ const placementStyles: Record<string, any> = {
     left: 50%;
     transform: translateX(-50%);
     margin-bottom: 4px;
-  `
+  `,
 }
 
 const Overlay = styled.div<{ $visible?: boolean; $placement?: string }>`
@@ -47,12 +47,17 @@ const Overlay = styled.div<{ $visible?: boolean; $placement?: string }>`
   min-width: 120px;
   background: ${({ theme }) => theme.componentBackground};
   border-radius: 4px;
-  box-shadow: 0 3px 6px -4px rgba(0, 0, 0, 0.12),
-    0 6px 16px 0 rgba(0, 0, 0, 0.08), 0 9px 28px 8px rgba(0, 0, 0, 0.05);
+  box-shadow:
+    0 3px 6px -4px rgba(0, 0, 0, 0.12),
+    0 6px 16px 0 rgba(0, 0, 0, 0.08),
+    0 9px 28px 8px rgba(0, 0, 0, 0.05);
   opacity: ${({ $visible }) => ($visible ? 1 : 0)};
   visibility: ${({ $visible }) => ($visible ? 'visible' : 'hidden')};
-  transition: opacity 0.2s, visibility 0.2s;
-  ${({ $placement }) => placementStyles[$placement || 'bottomLeft'] || placementStyles.bottomLeft}
+  transition:
+    opacity 0.2s,
+    visibility 0.2s;
+  ${({ $placement }) =>
+    placementStyles[$placement || 'bottomLeft'] || placementStyles.bottomLeft}
 `
 
 interface DropdownProps {
@@ -72,7 +77,7 @@ const Dropdown: React.FC<DropdownProps> = ({
   onVisibleChange,
   placement = 'bottomLeft',
   children,
-  disabled = false
+  disabled = false,
 }) => {
   const [internalVisible, setInternalVisible] = useState(false)
   const isControlled = controlledVisible !== undefined
@@ -86,13 +91,11 @@ const Dropdown: React.FC<DropdownProps> = ({
       if (!isControlled) setInternalVisible(val)
       if (onVisibleChange) onVisibleChange(val)
     },
-    [disabled, isControlled, onVisibleChange]
+    [disabled, isControlled, onVisibleChange],
   )
 
   const handleClick = useCallback(() => {
-    if (trigger.includes('click')) {
-      setVisible(!isVisible)
-    }
+    if (trigger.includes('click')) setVisible(!isVisible)
   }, [trigger, isVisible, setVisible])
 
   const handleMouseEnter = useCallback(() => {
@@ -106,11 +109,10 @@ const Dropdown: React.FC<DropdownProps> = ({
   }, [trigger, setVisible])
 
   const handleMouseLeave = useCallback(() => {
-    if (trigger.includes('hover')) {
+    if (trigger.includes('hover'))
       hoverTimeoutRef.current = setTimeout(() => {
         setVisible(false)
       }, 100)
-    }
   }, [trigger, setVisible])
 
   // Close on outside click
@@ -118,9 +120,8 @@ const Dropdown: React.FC<DropdownProps> = ({
     if (!isVisible) return
 
     const handleClickOutside = (e: MouseEvent) => {
-      if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node))
         setVisible(false)
-      }
     }
 
     document.addEventListener('mousedown', handleClickOutside)
@@ -128,11 +129,12 @@ const Dropdown: React.FC<DropdownProps> = ({
   }, [isVisible, setVisible])
 
   // Cleanup timeout on unmount
-  useEffect(() => {
-    return () => {
+  useEffect(
+    () => () => {
       if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current)
-    }
-  }, [])
+    },
+    [],
+  )
 
   return (
     <Wrapper

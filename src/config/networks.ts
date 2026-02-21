@@ -5,13 +5,13 @@ import {
   DEFAULT_CHAIN,
   getChainById,
   getExplorerUrl,
-  getNativeCurrency
+  getNativeCurrency,
 } from './chains'
 
 export const NETWORKS = Object.freeze({
   ethereum: mainnet.id,
   gnosis: gnosis.id,
-  sepolia: sepolia.id
+  sepolia: sepolia.id,
 })
 
 export const DEFAULT_NETWORK = DEFAULT_CHAIN.id
@@ -30,9 +30,9 @@ export const NETWORKS_INFO = Object.freeze({
     explorers: [
       {
         name: mainnet.blockExplorers?.default?.name ?? 'Etherscan',
-        url: mainnet.blockExplorers?.default?.url ?? 'https://etherscan.io'
-      }
-    ]
+        url: mainnet.blockExplorers?.default?.url ?? 'https://etherscan.io',
+      },
+    ],
   },
   [gnosis.id]: {
     name: gnosis.name,
@@ -43,9 +43,9 @@ export const NETWORKS_INFO = Object.freeze({
     explorers: [
       {
         name: gnosis.blockExplorers?.default?.name ?? 'Gnosisscan',
-        url: gnosis.blockExplorers?.default?.url ?? 'https://gnosisscan.io'
-      }
-    ]
+        url: gnosis.blockExplorers?.default?.url ?? 'https://gnosisscan.io',
+      },
+    ],
   },
   [sepolia.id]: {
     name: sepolia.name,
@@ -57,10 +57,11 @@ export const NETWORKS_INFO = Object.freeze({
       {
         name: sepolia.blockExplorers?.default?.name ?? 'Etherscan',
         url:
-          sepolia.blockExplorers?.default?.url ?? 'https://sepolia.etherscan.io'
-      }
-    ]
-  }
+          sepolia.blockExplorers?.default?.url ??
+          'https://sepolia.etherscan.io',
+      },
+    ],
+  },
 })
 
 export { getChainById, getExplorerUrl, getNativeCurrency }

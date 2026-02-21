@@ -74,7 +74,9 @@ export const StyledCardInfo = styled(Card)`
   z-index: 1;
   background: ${({ theme }) => theme.componentBackground};
   border-color: ${({ theme }) => theme.borderColor};
-  transition: background 0.3s ease, border-color 0.3s ease;
+  transition:
+    background 0.3s ease,
+    border-color 0.3s ease;
 
   & > .ui-card-head {
     display: flex;
@@ -149,7 +151,7 @@ const CardItemInfo = ({
   tcrAddress,
   metaEvidence,
   toggleReveal = null,
-  forceReveal = null
+  forceReveal = null,
 }: CardItemInfoProps) => {
   let content
   const { metadata } = metaEvidence || {}
@@ -196,9 +198,9 @@ const CardItemInfo = ({
         actions={
           !forceReveal &&
           toggleReveal && [
-            <HideCardButton type="link" onClick={toggleReveal}>
+            <HideCardButton key="hide" type="link" onClick={toggleReveal}>
               Hide
-            </HideCardButton>
+            </HideCardButton>,
           ]
         }
       >
@@ -233,7 +235,7 @@ const ItemCard = ({
   const statusCode = itemToStatusCode(
     item.tcrData,
     timestamp,
-    challengePeriodDuration
+    challengePeriodDuration,
   )
 
   if (
@@ -270,6 +272,5 @@ const ItemCard = ({
     </FlipCard>
   )
 }
-
 
 export default React.memo(ItemCard)

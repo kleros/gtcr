@@ -10,7 +10,7 @@ import {
   STATUS_CODE,
   PARTY,
   CONTRACT_STATUS,
-  SUBGRAPH_RULING
+  SUBGRAPH_RULING,
 } from 'utils/item-status'
 import ETHAddress from 'components/eth-address'
 import ItemActionModal from './item-action-modal'
@@ -21,7 +21,7 @@ import useAppealTime from 'hooks/appeal-time'
 import ETHAmount from 'components/eth-amount'
 import useNativeCurrency from 'hooks/native-currency'
 import { klerosAddresses } from 'config/tcr-addresses'
-import { wrapWithToast } from 'utils/wrapWithToast'
+import { wrapWithToast } from 'utils/wrap-with-toast'
 import { wagmiConfig } from 'config/wagmi'
 
 export const StyledDescriptions = styled(Descriptions)`
@@ -107,7 +107,7 @@ const ItemStatusCard = ({
   request,
   modalOpen,
   setModalOpen,
-  appealCost
+  appealCost,
 }: ItemStatusCardProps) => {
   const { address: account } = useAccount()
   const chainId = useChainId()
@@ -118,7 +118,7 @@ const ItemStatusCard = ({
     challengePeriodDuration,
     tcrAddress,
     submissionDeposit,
-    gtcrView
+    gtcrView,
   } = useContext(LightTCRViewContext)
 
   // Get remaining appeal time, if any and build countdown.
@@ -165,13 +165,10 @@ const ItemStatusCard = ({
         abi: _gtcr,
         functionName: 'executeRequest',
         args: [item.itemID],
-        account
+        account,
       })
 
-      await wrapWithToast(
-        () => walletClient.writeContract(req),
-        publicClient
-      )
+      await wrapWithToast(() => walletClient.writeContract(req), publicClient)
     } catch (err) {
       console.error('Error executing request:', err)
     }

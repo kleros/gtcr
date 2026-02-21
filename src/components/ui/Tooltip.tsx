@@ -11,12 +11,12 @@ const Wrapper = styled.span`
 `
 
 const getArrowStyles = (placement: Placement, theme: DefaultTheme) => {
-  const bg = theme.tooltipBg || (theme.name === 'dark'
-    ? theme.elevatedBackground
-    : theme.secondaryColor)
-  const border = theme.tooltipBorder || (theme.name === 'dark'
-    ? theme.borderColor
-    : theme.secondaryColor)
+  const bg =
+    theme.tooltipBg ||
+    (theme.name === 'dark' ? theme.elevatedBackground : theme.secondaryColor)
+  const border =
+    theme.tooltipBorder ||
+    (theme.name === 'dark' ? theme.borderColor : theme.secondaryColor)
 
   switch (placement) {
     case 'bottom':
@@ -74,7 +74,8 @@ const TooltipBubble = styled.div`
   background: ${({ theme }) => theme.tooltipBg};
   color: ${({ theme }) => theme.tooltipText};
   border: 1px solid ${({ theme }) => theme.tooltipBorder};
-  box-shadow: ${({ theme }) => `0 2px 8px ${theme.tooltipShadow || theme.shadowColor}`};
+  box-shadow: ${({ theme }) =>
+    `0 2px 8px ${theme.tooltipShadow || theme.shadowColor}`};
 `
 
 const TooltipArrow = styled.span<{ $placement: Placement }>`
@@ -94,32 +95,32 @@ interface TooltipProps {
 
 const getPositionStyle = (
   placement: Placement,
-  rect: DOMRect
+  rect: DOMRect,
 ): React.CSSProperties => {
   switch (placement) {
     case 'top':
       return {
         top: rect.top,
         left: rect.left + rect.width / 2,
-        transform: 'translate(-50%, -100%) translateY(-8px)'
+        transform: 'translate(-50%, -100%) translateY(-8px)',
       }
     case 'bottom':
       return {
         top: rect.bottom,
         left: rect.left + rect.width / 2,
-        transform: 'translate(-50%, 0) translateY(8px)'
+        transform: 'translate(-50%, 0) translateY(8px)',
       }
     case 'left':
       return {
         top: rect.top + rect.height / 2,
         left: rect.left,
-        transform: 'translate(-100%, -50%) translateX(-8px)'
+        transform: 'translate(-100%, -50%) translateX(-8px)',
       }
     case 'right':
       return {
         top: rect.top + rect.height / 2,
         left: rect.right,
-        transform: 'translate(0, -50%) translateX(8px)'
+        transform: 'translate(0, -50%) translateX(8px)',
       }
   }
 }
@@ -129,7 +130,7 @@ const Tooltip: React.FC<TooltipProps> = ({
   placement = 'top',
   children,
   mouseEnterDelay = 0.1,
-  mouseLeaveDelay = 0.1
+  mouseLeaveDelay = 0.1,
 }) => {
   const [visible, setVisible] = useState(false)
   const [posStyle, setPosStyle] = useState<React.CSSProperties>({})
@@ -163,13 +164,17 @@ const Tooltip: React.FC<TooltipProps> = ({
       if (enterTimer.current) clearTimeout(enterTimer.current)
       if (leaveTimer.current) clearTimeout(leaveTimer.current)
     },
-    []
+    [],
   )
 
   if (!title) return <>{children}</>
 
   return (
-    <Wrapper ref={wrapperRef} onMouseEnter={handleEnter} onMouseLeave={handleLeave}>
+    <Wrapper
+      ref={wrapperRef}
+      onMouseEnter={handleEnter}
+      onMouseLeave={handleLeave}
+    >
       {children}
       {visible &&
         createPortal(
@@ -177,7 +182,7 @@ const Tooltip: React.FC<TooltipProps> = ({
             <TooltipArrow $placement={placement} />
             {title}
           </TooltipBubble>,
-          document.body
+          document.body,
         )}
     </Wrapper>
   )

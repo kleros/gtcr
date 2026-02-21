@@ -8,9 +8,9 @@ import {
   Slider,
   InputNumber,
   Button,
-  Divider
+  Divider,
 } from 'components/ui'
-import Icon from 'components/ui/Icon'
+import Icon from 'components/ui/icon'
 import { toast } from 'react-toastify'
 import { withFormik } from 'formik'
 import * as yup from 'yup'
@@ -18,6 +18,7 @@ import { useEthersProvider } from 'hooks/ethers-adapters'
 import { useParams } from 'react-router-dom'
 import { useDebounce } from 'use-debounce'
 import { ethers, BigNumber } from 'ethers'
+
 const { getAddress, parseEther } = ethers.utils
 import CustomInput from 'components/custom-input'
 import { ItemTypes } from '@kleros/gtcr-encoder'
@@ -38,23 +39,25 @@ import {
   UploadSection,
   StyledSliderContainer,
   StyledDepositContainer,
-  StyledAlert
+  StyledAlert,
 } from 'pages/factory/tcr-params'
 import { StyledUpload, UploadButton } from 'components/input-selector'
 
 interface RelTCRParamsProps {
-  handleSubmit: (...args: any[]) => void
+  handleSubmit: (...args: unknown[]) => void
   formId: string
-  errors: Record<string, any>
-  setFieldValue: (field: string, value: any) => void
-  touched: Record<string, any>
+  errors: Record<string, unknown>
+  setFieldValue: (field: string, value: unknown) => void
+  touched: Record<string, unknown>
   defaultArbLabel: string
   defaultArbDataLabel: string
   defaultGovernorLabel: string
-  values: Record<string, any>
-  setTcrState: (fn: any) => void
+  values: Record<string, unknown>
+  setTcrState: (
+    fn: (prev: Record<string, unknown>) => Record<string, unknown>,
+  ) => void
   nextStep: () => void
-  [key: string]: any
+  [key: string]: unknown
 }
 
 const RelTCRParams = ({
@@ -81,27 +84,26 @@ const RelTCRParams = ({
   const { arbitrationCost } = useArbitrationCost({
     address: values.relArbitratorAddress,
     arbitratorExtraData: values.relArbitratorExtraData,
-    library: chainProvider
+    library: chainProvider,
   })
   const nativeCurrency = useNativeCurrency()
   const setRelArbitratorExtraData = useCallback(
-    val => setFieldValue('relArbitratorExtraData', val),
-    [setFieldValue]
+    (val) => setFieldValue('relArbitratorExtraData', val),
+    [setFieldValue],
   )
 
   let isKlerosArbitrator
   try {
     isKlerosArbitrator =
       getAddress(debouncedArbitrator) === getAddress(klerosAddress)
-    // eslint-disable-next-line no-unused-vars
-  } catch (err) {
+  } catch {
     isKlerosArbitrator = false
   }
 
   useEffect(() => {
-    setTcrState(previousState => ({
+    setTcrState((previousState) => ({
       ...previousState,
-      ...values
+      ...values,
     }))
   }, [values, setTcrState])
 
@@ -114,24 +116,25 @@ const RelTCRParams = ({
   }, [])
 
   const customRequest = useCallback(
-    fieldName => async ({ file, onSuccess, onError }) => {
-      try {
-        const data = await new Response(new Blob([file])).arrayBuffer()
-        const fileURI = getIPFSPath(
-          await ipfsPublish(sanitize(file.name), data)
-        )
+    (fieldName) =>
+      async ({ file, onSuccess, onError }) => {
+        try {
+          const data = await new Response(new Blob([file])).arrayBuffer()
+          const fileURI = getIPFSPath(
+            await ipfsPublish(sanitize(file.name), data),
+          )
 
-        setFieldValue(fieldName, fileURI)
-        onSuccess('ok', parseIpfs(fileURI))
-      } catch (err) {
-        console.error(err)
-        onError(err)
-      }
-    },
-    [setFieldValue]
+          setFieldValue(fieldName, fileURI)
+          onSuccess('ok', parseIpfs(fileURI))
+        } catch {
+          console.error(err)
+          onError(err)
+        }
+      },
+    [setFieldValue],
   )
 
-  const beforeFileUpload = useCallback(file => {
+  const beforeFileUpload = useCallback((file) => {
     const isPDF = file.type === 'application/pdf'
     if (!isPDF) toast.error('Please upload file as PDF.')
 
@@ -142,7 +145,7 @@ const RelTCRParams = ({
   }, [])
 
   const onChangeDepositVal = useCallback(
-    value => {
+    (value) => {
       if (isNaN(value)) return
 
       setDepositVal(value)
@@ -150,13 +153,13 @@ const RelTCRParams = ({
       setFieldValue('relRemovalBaseDeposit', value)
       setFieldValue('relRemovalChallengeBaseDeposit', value)
     },
-    [setFieldValue]
+    [setFieldValue],
   )
 
   const onSkipStep = useCallback(() => {
-    setTcrState(prevState => ({
+    setTcrState((prevState) => ({
       ...prevState,
-      relTcrDisabled: true
+      relTcrDisabled: true,
     }))
     nextStep()
   }, [nextStep, setTcrState])
@@ -184,7 +187,8 @@ const RelTCRParams = ({
               learn that it is also present in another list. To better
               understand how this can be useful, consider a list of clothing
               brands: A user is viewing brand X may be interested in knowing
-              that it is also included in the 'Eco-friendly Brands' list.
+              that it is also included in the &apos;Eco-friendly Brands&apos;
+              list.
             </div>
           }
           type="info"
@@ -317,7 +321,7 @@ const RelTCRParams = ({
           style={{ marginBottom: '12px', display: 'flex' }}
         >
           <Switch
-            onChange={() => setAdvancedOptions(toggle => !toggle)}
+            onChange={() => setAdvancedOptions((toggle) => !toggle)}
             style={{ marginLeft: '8px' }}
           />
         </Form.Item>
@@ -584,7 +588,7 @@ const validationSchema = yup.object().shape({
     .number()
     .typeError('Amount should be a number.')
     .min(0, 'The stake multiplier cannot be negative.')
-    .required('A value is required')
+    .required('A value is required'),
 })
 
 export default withFormik({
@@ -595,10 +599,10 @@ export default withFormik({
     return values
   },
   handleSubmit: (_, { props: { postSubmit, setTcrState } }) => {
-    setTcrState(prevState => {
+    setTcrState((prevState) => {
       delete prevState.relTcrDisabled
       return prevState
     })
     postSubmit()
-  }
+  },
 })(RelTCRParams)

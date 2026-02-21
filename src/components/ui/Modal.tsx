@@ -22,10 +22,13 @@ const Overlay = styled.div<{ $centered?: boolean }>`
 `
 
 const ModalContent = styled.div<{ $width?: string | number }>`
-  background: ${({ theme }) => theme.modalBackground || theme.componentBackground};
+  background: ${({ theme }) =>
+    theme.modalBackground || theme.componentBackground};
   border-radius: 12px;
-  box-shadow: ${({ theme }) => `0 8px 24px ${theme.modalShadow || theme.shadowColor}`};
-  width: ${({ $width }) => (typeof $width === 'number' ? `${$width}px` : $width)};
+  box-shadow: ${({ theme }) =>
+    `0 8px 24px ${theme.modalShadow || theme.shadowColor}`};
+  width: ${({ $width }) =>
+    typeof $width === 'number' ? `${$width}px` : $width};
   max-width: calc(100vw - 32px);
   position: relative;
   color: ${({ theme }) => theme.textPrimary};
@@ -149,26 +152,23 @@ const Modal: ModalComponent = ({
   className,
   children,
   centered = false,
-  destroyOnClose = false
+  destroyOnClose = false,
 }) => {
   const contentRef = useRef<HTMLDivElement>(null)
 
   const handleOverlayClick = useCallback(
     (e: React.MouseEvent) => {
-      if (contentRef.current && !contentRef.current.contains(e.target as Node)) {
+      if (contentRef.current && !contentRef.current.contains(e.target as Node))
         onCancel && onCancel()
-      }
     },
-    [onCancel]
+    [onCancel],
   )
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && onCancel) {
-        onCancel()
-      }
+      if (e.key === 'Escape' && onCancel) onCancel()
     },
-    [onCancel]
+    [onCancel],
   )
 
   useEffect(() => {
@@ -236,10 +236,10 @@ Modal.confirm = ({
   okText = 'OK',
   cancelText = 'Cancel',
   onOk,
-  onCancel
+  onCancel,
 }: ConfirmConfig) => {
   const container = document.createElement('div')
-  document.body.appendChild(container)
+  document.body.append(container)
   const root = createRoot(container)
 
   // Detect current theme from document body attribute
@@ -248,9 +248,7 @@ Modal.confirm = ({
 
   const destroy = () => {
     root.unmount()
-    if (container.parentNode) {
-      container.parentNode.removeChild(container)
-    }
+    if (container.parentNode) container.remove()
   }
 
   const handleOk = () => {
@@ -278,7 +276,7 @@ Modal.confirm = ({
                   fontWeight: 600,
                   fontSize: '18px',
                   marginBottom: '8px',
-                  letterSpacing: '-0.01em'
+                  letterSpacing: '-0.01em',
                 }}
               >
                 {title}

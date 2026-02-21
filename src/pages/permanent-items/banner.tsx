@@ -1,10 +1,10 @@
 import { Skeleton, Button } from 'components/ui'
-import Icon from 'components/ui/Icon'
+import Icon from 'components/ui/icon'
 import styled, { css } from 'styled-components'
 import { smallScreenStyle } from 'styles/small-screen-style'
 import { Link, useParams } from 'react-router-dom'
 import React from 'react'
-import { Helmet } from 'react-helmet'
+import useDocumentHead from 'hooks/use-document-head'
 import { capitalizeFirstLetter } from 'utils/string'
 import ContractExplorerUrl from 'components/contract-explorer-url'
 import { defaultTcrAddresses } from 'config/tcr-addresses'
@@ -21,7 +21,10 @@ export const StyledBanner = styled.div`
   align-items: center;
   flex-wrap: wrap;
   gap: 8px;
-  transition: background 0.3s ease, box-shadow 0.3s ease, color 0.3s ease;
+  transition:
+    background 0.3s ease,
+    box-shadow 0.3s ease,
+    color 0.3s ease;
 `
 
 export const StyledButton = styled(Button)`
@@ -37,7 +40,7 @@ export const TCRInfoColumn = styled.div`
   ${smallScreenStyle(
     () => css`
       max-width: 100%;
-    `
+    `,
   )}
 `
 
@@ -90,7 +93,7 @@ export const ActionCol = styled.div`
   ${smallScreenStyle(
     () => css`
       align-items: flex-start;
-    `
+    `,
   )}
 `
 
@@ -118,7 +121,7 @@ const TCRLogo = ({ logoURI }: TCRLogoProps) =>
 // Registry-specific terms and conditions URLs
 const TERMS_AND_CONDITIONS_URLS = {
   '0x7305c57b731876f452da8574a77d05957820e588':
-    'https://cdn.kleros.link/ipfs/QmcZ53agYqpPhYijRFzduC3EC64coFGZkhbRN1sPDyW7di'
+    'https://cdn.kleros.link/ipfs/QmcZ53agYqpPhYijRFzduC3EC64coFGZkhbRN1sPDyW7di',
 }
 
 // Render description with "see terms and conditions" as a clickable link
@@ -127,7 +130,10 @@ interface DescriptionWithTermsLinkProps {
   tcrAddress?: string | null
 }
 
-const DescriptionWithTermsLink = ({ description, tcrAddress }: DescriptionWithTermsLinkProps) => {
+const DescriptionWithTermsLink = ({
+  description,
+  tcrAddress,
+}: DescriptionWithTermsLinkProps) => {
   if (!description) return null
 
   const termsUrl = TERMS_AND_CONDITIONS_URLS[tcrAddress?.toLowerCase()]
@@ -156,7 +162,7 @@ const DescriptionWithTermsLink = ({ description, tcrAddress }: DescriptionWithTe
       result.push(
         <span key={`text-${match.index}`}>
           {description.substring(lastIndex, match.index)}
-        </span>
+        </span>,
       )
 
     // Add the match as a link (inline)
@@ -168,7 +174,7 @@ const DescriptionWithTermsLink = ({ description, tcrAddress }: DescriptionWithTe
         rel="noopener noreferrer"
       >
         {match[0]}
-      </StyledTermsLink>
+      </StyledTermsLink>,
     )
 
     lastIndex = regex.lastIndex
@@ -177,7 +183,7 @@ const DescriptionWithTermsLink = ({ description, tcrAddress }: DescriptionWithTe
   // Add remaining text after last match
   if (lastIndex < description.length)
     result.push(
-      <span key={`text-end`}>{description.substring(lastIndex)}</span>
+      <span key={`text-end`}>{description.substring(lastIndex)}</span>,
     )
 
   return <span>{result}</span>
@@ -192,7 +198,7 @@ interface BannerProps {
 const Banner = ({
   metadata,
   setSubmissionFormOpen,
-  tcrAddress
+  tcrAddress,
 }: BannerProps) => {
   const { chainId: networkId } = useParams()
   const defaultTCRAddress = defaultTcrAddresses[networkId]
@@ -212,15 +218,13 @@ const Banner = ({
     : 'Explore curated lists on Kleros Curate.'
   const truncatedSeoMetaDescription = truncateAtWord(
     fullSeoMetaDescription,
-    160
+    160,
   )
+
+  useDocumentHead(truncatedSeoTitle, truncatedSeoMetaDescription)
 
   return (
     <>
-      <Helmet>
-        <title> {truncatedSeoTitle} </title>
-        <meta name="description" content={truncatedSeoMetaDescription} />
-      </Helmet>
       <StyledBanner>
         <TCRInfoColumn id="tcr-info-column">
           {metadata ? (
@@ -245,11 +249,7 @@ const Banner = ({
           ) : (
             <>
               <Skeleton active paragraph={false} title={{ width: '300px' }} />
-              <Skeleton
-                active
-                paragraph={{ rows: 1 }}
-                title={false}
-              />
+              <Skeleton active paragraph={{ rows: 1 }} title={false} />
             </>
           )}
         </TCRInfoColumn>

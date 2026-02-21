@@ -1,8 +1,9 @@
 import React, { useMemo } from 'react'
 import styled from 'styled-components'
 import { Form, Input, Tooltip } from 'components/ui'
-import Icon from 'components/ui/Icon'
+import Icon from 'components/ui/icon'
 import { ethers, BigNumber } from 'ethers'
+
 const { parseEther } = ethers.utils
 import { Field } from 'formik'
 import ETHAmount from './eth-amount'
@@ -36,11 +37,11 @@ const BaseDepositInput = ({
   hasFeedback,
   disabled,
   arbitrationCost,
-  values
+  values,
 }: BaseDepositInputProps) => {
   const baseDeposit = useMemo(() => {
     try {
-      return BigNumber.from(parseEther(values[name].toString()))
+      return BigNumber.from(parseEther(String(values[name])))
     } catch (err) {
       console.warn('failed to parse basedeposit value', err)
       // No op. Wait for proper user input.
@@ -50,25 +51,25 @@ const BaseDepositInput = ({
 
   const totalDeposit = useMemo(
     () => baseDeposit && arbitrationCost && baseDeposit.add(arbitrationCost),
-    [arbitrationCost, baseDeposit]
+    [arbitrationCost, baseDeposit],
   )
 
   return (
     <div>
       <Field name={name}>
-        {({ field }) => (
+        {({ field }: { field: Record<string, unknown> }) => (
           <Form.Item
             label={label}
             validateStatus={error && touched ? 'error' : undefined}
             help={error && touched ? error : ''}
-            hasFeedback={hasFeedback}
+            hasFeedback={hasFeedback ?? undefined}
           >
             <BasedDepositContainer>
               <Input
                 addonAfter={nativeCurrency}
                 placeholder="0.1"
                 step={0.0001}
-                disabled={disabled}
+                disabled={disabled ?? undefined}
                 {...field}
               />
               <TotalCostContainer>
@@ -78,7 +79,7 @@ const BaseDepositInput = ({
                 </Tooltip>
                 :{' '}
                 <ETHAmount
-                  amount={totalDeposit}
+                  amount={totalDeposit!}
                   decimals={3}
                   displayUnit={` ${nativeCurrency}`}
                 />

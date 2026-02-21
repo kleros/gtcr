@@ -4,14 +4,14 @@ import React from 'react'
 import {
   references,
   parseRichAddress,
-  RichAddress
+  RichAddress,
 } from '../utils/rich-address'
 
 const { Option } = Select
 
 const chainOptions = references
-  .filter(reference => !reference?.deprecated)
-  .map(reference => (
+  .filter((reference) => !reference?.deprecated)
+  .map((reference) => (
     <Option
       key={`${reference.namespaceId}:${reference.id}`}
       value={`${reference.namespaceId}:${reference.id}`}
@@ -32,7 +32,7 @@ const RichAddressInput: React.FC<{
   style: React.CSSProperties
   values: Record<string, string>
   setFieldValue: (field: string, value: string) => void
-}> = p => {
+}> = (p) => {
   const value = p.values[p.name]
   const changeAddressType = (addressType: string) => {
     const richAddress = parseRichAddress(value)

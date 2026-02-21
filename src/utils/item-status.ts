@@ -7,7 +7,7 @@ export const CONTRACT_STATUS = {
   ABSENT: 'Absent',
   REGISTERED: 'Registered',
   REGISTRATION_REQUESTED: 'RegistrationRequested',
-  REMOVAL_REQUESTED: 'ClearingRequested'
+  REMOVAL_REQUESTED: 'ClearingRequested',
 }
 
 export const STATUS_CODE = {
@@ -22,7 +22,7 @@ export const STATUS_CODE = {
   PENDING_SUBMISSION: 8,
   PENDING_REMOVAL: 9,
   WAITING_ENFORCEMENT: 10,
-  REMOVED: 11
+  REMOVED: 11,
 }
 
 export const STATUS_TEXT = {
@@ -37,7 +37,7 @@ export const STATUS_TEXT = {
   [STATUS_CODE.PENDING_SUBMISSION]: 'Pending Execution',
   [STATUS_CODE.PENDING_REMOVAL]: 'Pending Execution',
   [STATUS_CODE.WAITING_ENFORCEMENT]: 'Waiting enforcement',
-  [STATUS_CODE.REMOVED]: 'Removed'
+  [STATUS_CODE.REMOVED]: 'Removed',
 }
 
 export const STATUS_COLOR = {
@@ -52,26 +52,32 @@ export const STATUS_COLOR = {
   [STATUS_CODE.PENDING_SUBMISSION]: '#36cfc9',
   [STATUS_CODE.PENDING_REMOVAL]: '#ff7a45',
   [STATUS_CODE.WAITING_ENFORCEMENT]: '#faad14',
-  [STATUS_CODE.REMOVED]: '#ff4d4f'
+  [STATUS_CODE.REMOVED]: '#ff4d4f',
 }
 
 export const SUBGRAPH_STATUS_TO_CODE = {
   Absent: 0,
   Registered: 1,
   RegistrationRequested: 2,
-  ClearingRequested: 3
+  ClearingRequested: 3,
 }
 
 export const REQUEST_TYPE_LABEL = {
   [CONTRACT_STATUS.REGISTRATION_REQUESTED]: 'Submission',
-  [CONTRACT_STATUS.REMOVAL_REQUESTED]: 'Removal'
+  [CONTRACT_STATUS.REMOVAL_REQUESTED]: 'Removal',
 }
 
 export const hasPendingRequest = (contractStatus: string): boolean =>
   contractStatus === CONTRACT_STATUS.REGISTRATION_REQUESTED ||
   contractStatus === CONTRACT_STATUS.REMOVAL_REQUESTED
 
-export const getResultStatus = ({ ruling, requestType }: { ruling: number; requestType: string }): string => {
+export const getResultStatus = ({
+  ruling,
+  requestType,
+}: {
+  ruling: number
+  requestType: string
+}): string => {
   let status: string
   if (requestType === CONTRACT_STATUS.REGISTRATION_REQUESTED)
     switch (ruling) {
@@ -100,7 +106,13 @@ export const getResultStatus = ({ ruling, requestType }: { ruling: number; reque
   return status
 }
 
-export const getActionLabel = ({ statusCode, itemName = 'item' }: { statusCode: number; itemName?: string }): string => {
+export const getActionLabel = ({
+  statusCode,
+  itemName = 'item',
+}: {
+  statusCode: number
+  itemName?: string
+}): string => {
   switch (statusCode) {
     case STATUS_CODE.REJECTED:
     case STATUS_CODE.REMOVED:
@@ -128,7 +140,11 @@ export const getActionLabel = ({ statusCode, itemName = 'item' }: { statusCode: 
   }
 }
 
-export const itemToStatusCode = (item: SubgraphItem, timestamp: BigNumber, challengePeriodDuration: BigNumber): number | undefined => {
+export const itemToStatusCode = (
+  item: SubgraphItem,
+  timestamp: BigNumber,
+  challengePeriodDuration: BigNumber,
+): number | undefined => {
   const { status } = item
   const request = item.requests?.[0]
 
@@ -144,7 +160,7 @@ export const itemToStatusCode = (item: SubgraphItem, timestamp: BigNumber, chall
   if (status === CONTRACT_STATUS.REGISTERED) return STATUS_CODE.REGISTERED
   if (!request.disputed) {
     const challengePeriodEnd = BigNumber.from(
-      Number(request.submissionTime) + challengePeriodDuration.toNumber()
+      Number(request.submissionTime) + challengePeriodDuration.toNumber(),
     )
     if (timestamp.gt(challengePeriodEnd))
       if (status === CONTRACT_STATUS.REGISTRATION_REQUESTED)

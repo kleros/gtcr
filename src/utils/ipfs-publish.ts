@@ -8,7 +8,10 @@ const mirroredExtensions = ['.json']
  * @param {ArrayBuffer} data - The raw data from the file to upload.
  * @returns {object} ipfs response. Should include the hash and path of the stored item.
  */
-export default async function ipfsPublish(fileName: string, data: Blob | ArrayBuffer): Promise<IpfsPublishResult> {
+export default async function ipfsPublish(
+  fileName: string,
+  data: Blob | ArrayBuffer,
+): Promise<IpfsPublishResult> {
   const isBlob = data instanceof Blob
   const blobFile = isBlob
     ? data
@@ -17,7 +20,7 @@ export default async function ipfsPublish(fileName: string, data: Blob | ArrayBu
   const fileFormData = new FormData()
   fileFormData.append('data', blobFile, fileName)
 
-  if (!mirroredExtensions.some(ext => fileName.endsWith(ext))) {
+  if (!mirroredExtensions.some((ext) => fileName.endsWith(ext))) {
     const result = await uploadFormDataToIPFS(fileFormData)
     return result
   }
@@ -26,7 +29,7 @@ export default async function ipfsPublish(fileName: string, data: Blob | ArrayBu
 
   if (result.inconsistentCids.length > 0) {
     console.warn('IPFS upload result is different:', {
-      inconsistentCids: result.inconsistentCids
+      inconsistentCids: result.inconsistentCids,
     })
     throw new Error('IPFS upload result is different.')
   }

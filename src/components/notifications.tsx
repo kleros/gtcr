@@ -1,15 +1,15 @@
 import React, { useState, useCallback, useEffect } from 'react'
-import { useWeb3Context } from 'hooks/useWeb3Context'
+import { useWeb3Context } from 'hooks/use-web3-context'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import styled from 'styled-components'
 import { Popover, List, Badge, Empty, Avatar, Button } from 'components/ui'
-import Icon from 'components/ui/Icon'
+import Icon from 'components/ui/icon'
 import { Link } from 'react-router-dom'
 import { ethers } from 'ethers'
 import {
   getNotificationIconFor,
   getNotificationColorFor,
-  typeToMessage
+  typeToMessage,
 } from '../utils/notifications'
 
 const StyledIcon = styled.div`
@@ -49,13 +49,13 @@ const Notifications = () => {
   const { account, networkId } = useWeb3Context()
   const [visible, setVisible] = useState()
   const [notifications, setNotifications] = useState({ notifications: [] })
-  const handleVisibleChange = useCallback(v => setVisible(v), [])
+  const handleVisibleChange = useCallback((v) => setVisible(v), [])
   const fetchNotifications = useCallback(() => {
     ;(async () => {
       try {
         const result = await (
           await fetch(
-            `${process.env.REACT_APP_NOTIFICATIONS_API_URL}/${networkId}/api/notifications/${account}`
+            `${process.env.REACT_APP_NOTIFICATIONS_API_URL}/${networkId}/api/notifications/${account}`,
           )
         ).json()
 
@@ -67,16 +67,16 @@ const Notifications = () => {
     })()
   }, [account, networkId])
   const dismissNotification = useCallback(
-    n =>
+    (n) =>
       fetch(
         `${
           process.env.REACT_APP_NOTIFICATIONS_API_URL
         }/${networkId}/api/notification/${ethers.utils.getAddress(account)}/${
           n.notificationID
         }`,
-        { method: 'delete' }
+        { method: 'delete' },
       ).then(() => fetchNotifications()),
-    [account, networkId, fetchNotifications]
+    [account, networkId, fetchNotifications],
   )
   const dismissAll = useCallback(() => {
     if (!networkId || !account) return
@@ -85,26 +85,26 @@ const Notifications = () => {
         `${
           process.env.REACT_APP_NOTIFICATIONS_API_URL
         }/${networkId}/api/notifications/${ethers.utils.getAddress(account)}`,
-        { method: 'delete' }
+        { method: 'delete' },
       )
       fetchNotifications()
     })()
   }, [networkId, account, fetchNotifications])
   const notificationClick = useCallback(
-    n => {
+    (n) => {
       fetch(
         `${
           process.env.REACT_APP_NOTIFICATIONS_API_URL
         }/${networkId}/api/notification/${ethers.utils.getAddress(account)}/${
           n.notificationID
         }`,
-        { method: 'put' }
+        { method: 'put' },
       )
         .then(() => fetchNotifications())
-        .catch(err => console.error('Failed to fetch notifications', err))
+        .catch((err) => console.error('Failed to fetch notifications', err))
       setVisible(false)
     },
-    [account, networkId, fetchNotifications]
+    [account, networkId, fetchNotifications],
   )
 
   // Fetch notifications
@@ -121,7 +121,11 @@ const Notifications = () => {
       {notifications.notifications.map((n, j) => (
         <StyledListItem
           actions={[
-            <Icon type="close" onClick={() => dismissNotification(n)} />
+            <Icon
+              key="close"
+              type="close"
+              onClick={() => dismissNotification(n)}
+            />,
           ]}
           key={j}
         >
@@ -176,7 +180,7 @@ const Notifications = () => {
         <StyledBadge
           count={
             notifications &&
-            notifications.notifications.filter(n => !n.clicked).length
+            notifications.notifications.filter((n) => !n.clicked).length
           }
         >
           <FontAwesomeIcon icon="bell" color="white" size="lg" />

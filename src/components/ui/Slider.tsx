@@ -36,7 +36,9 @@ const StyledRange = styled.input<{ $percent: number }>`
     background: #fff;
     border: 2px solid ${({ theme }) => theme.primaryColor};
     cursor: ${({ disabled }) => (disabled ? 'not-allowed' : 'pointer')};
-    transition: box-shadow 0.2s, border-color 0.2s;
+    transition:
+      box-shadow 0.2s,
+      border-color 0.2s;
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
 
     &:hover {
@@ -51,7 +53,9 @@ const StyledRange = styled.input<{ $percent: number }>`
     background: #fff;
     border: 2px solid ${({ theme }) => theme.primaryColor};
     cursor: ${({ disabled }) => (disabled ? 'not-allowed' : 'pointer')};
-    transition: box-shadow 0.2s, border-color 0.2s;
+    transition:
+      box-shadow 0.2s,
+      border-color 0.2s;
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
 
     &:hover {
@@ -88,38 +92,34 @@ const Slider: React.FC<SliderProps> = ({
   disabled = false,
   style,
   className,
-  defaultValue
+  defaultValue,
 }) => {
   const [internalValue, setInternalValue] = useState(
     controlledValue !== undefined
       ? controlledValue
       : defaultValue !== undefined
-      ? defaultValue
-      : min
+        ? defaultValue
+        : min,
   )
 
   const isControlled = controlledValue !== undefined
   const currentValue = isControlled ? controlledValue : internalValue
 
   useEffect(() => {
-    if (isControlled) {
-      setInternalValue(controlledValue)
-    }
+    if (isControlled) setInternalValue(controlledValue)
   }, [isControlled, controlledValue])
 
   const handleChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const newValue = Number(e.target.value)
-      if (!isControlled) {
-        setInternalValue(newValue)
-      }
+      if (!isControlled) setInternalValue(newValue)
+
       onChange && onChange(newValue)
     },
-    [isControlled, onChange]
+    [isControlled, onChange],
   )
 
-  const percent =
-    max !== min ? ((currentValue - min) / (max - min)) * 100 : 0
+  const percent = max !== min ? ((currentValue - min) / (max - min)) * 100 : 0
 
   return (
     <SliderWrapper style={style} className={className}>

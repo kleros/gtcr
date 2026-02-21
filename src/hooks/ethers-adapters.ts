@@ -10,7 +10,11 @@ interface ViemTransport {
 }
 
 interface ViemClient {
-  chain: { id: number; name: string; contracts?: { ensRegistry?: { address?: string } } }
+  chain: {
+    id: number
+    name: string
+    contracts?: { ensRegistry?: { address?: string } }
+  }
   transport: ViemTransport
   account?: { address: string }
 }
@@ -26,52 +30,71 @@ function getUrlsFromTransport(transport: ViemTransport): string[] {
   // Fallback transport: child transports are at value.transports
   if (transport.type === 'fallback') {
     const children = transport.value?.transports ?? transport.transports ?? []
-    return children.map((t: { value?: { url?: string } }) => t.value?.url).filter((url): url is string => Boolean(url))
+    return children
+      .map((t: { value?: { url?: string } }) => t.value?.url)
+      .filter((url): url is string => Boolean(url))
   }
   // Plain http transport
   const url = transport.value?.url ?? transport.url
   return url ? [url] : []
 }
 
-function clientToProvider(client: ViemClient | undefined): providers.JsonRpcProvider | providers.FallbackProvider | undefined {
+function clientToProvider(
+  client: ViemClient | undefined,
+): providers.JsonRpcProvider | providers.FallbackProvider | undefined {
   if (!client) return undefined
   const { chain, transport } = client
   const network = {
     chainId: chain.id,
     name: chain.name,
-    ensAddress: chain.contracts?.ensRegistry?.address
+    ensAddress: chain.contracts?.ensRegistry?.address,
   }
 
   const urls = getUrlsFromTransport(transport)
   if (urls.length === 0) return undefined
 
-  if (urls.length === 1)
-    return new providers.JsonRpcProvider(urls[0], network)
+  if (urls.length === 1) return new providers.JsonRpcProvider(urls[0], network)
 
   return new providers.FallbackProvider(
-    urls.map(url => new providers.JsonRpcProvider(url, network))
+    urls.map((url) => new providers.JsonRpcProvider(url, network)),
   )
 }
 
-function clientToSigner(client: ViemClient | undefined): providers.JsonRpcSigner | undefined {
+function clientToSigner(
+  client: ViemClient | undefined,
+): providers.JsonRpcSigner | undefined {
   if (!client) return undefined
   const { account, chain, transport } = client
   const network = {
     chainId: chain.id,
     name: chain.name,
-    ensAddress: chain.contracts?.ensRegistry?.address
+    ensAddress: chain.contracts?.ensRegistry?.address,
   }
-  const provider = new providers.Web3Provider(transport as unknown as providers.ExternalProvider, network)
+  const provider = new providers.Web3Provider(
+    transport as unknown as providers.ExternalProvider,
+    network,
+  )
   if (!account) return undefined
   return provider.getSigner(account.address)
 }
 
-export function useEthersProvider({ chainId }: { chainId?: number } = {}): providers.JsonRpcProvider | providers.FallbackProvider | undefined {
+export function useEthersProvider({ chainId }: { chainId?: number } = {}):
+  | providers.JsonRpcProvider
+  | providers.FallbackProvider
+  | undefined {
   const client = useClient({ chainId })
-  return useMemo(() => clientToProvider(client as unknown as ViemClient | undefined), [client])
+  return useMemo(
+    () => clientToProvider(client as unknown as ViemClient | undefined),
+    [client],
+  )
 }
 
-export function useEthersSigner({ chainId }: { chainId?: number } = {}): providers.JsonRpcSigner | undefined {
+export function useEthersSigner({ chainId }: { chainId?: number } = {}):
+  | providers.JsonRpcSigner
+  | undefined {
   const { data: client } = useConnectorClient({ chainId })
-  return useMemo(() => clientToSigner(client as unknown as ViemClient | undefined), [client])
+  return useMemo(
+    () => clientToSigner(client as unknown as ViemClient | undefined),
+    [client],
+  )
 }

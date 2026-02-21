@@ -6,10 +6,10 @@ import { simulateContract } from '@wagmi/core'
 import _gtcr from 'assets/abis/PermanentGTCR.json'
 import humanizeDuration from 'humanize-duration'
 import EnsureAuth from 'components/ensure-auth'
-import { wrapWithToast } from 'utils/wrapWithToast'
+import { wrapWithToast } from 'utils/wrap-with-toast'
 import { wagmiConfig } from 'config/wagmi'
 
-export const StyledModal: any = styled(Modal)`
+export const StyledModal = styled(Modal)`
   & > .ui-modal-content {
     border-top-left-radius: 14px;
     border-top-right-radius: 14px;
@@ -24,8 +24,8 @@ export const StyledAlert = styled(Alert)`
 interface WithdrawModalProps {
   isOpen: boolean
   onCancel: () => void
-  item: any
-  registry: any
+  item: SubgraphItem
+  registry: SubgraphRegistry
   itemName: string
 }
 
@@ -34,7 +34,7 @@ const WithdrawModal: React.FC<WithdrawModalProps> = ({
   onCancel,
   item,
   registry,
-  itemName
+  itemName,
 }) => {
   const { address: account } = useAccount()
   const publicClient = usePublicClient()
@@ -52,17 +52,15 @@ const WithdrawModal: React.FC<WithdrawModalProps> = ({
         abi: _gtcr,
         functionName: 'startWithdrawItem',
         args: [item.itemID],
-        account
+        account,
       })
 
       const result = await wrapWithToast(
         () => walletClient.writeContract(request),
-        publicClient
+        publicClient,
       )
 
-      if (result.status) {
-        onCancel()
-      }
+      if (result.status) onCancel()
     } catch (err) {
       console.error('Withdrawal failed:', err)
     } finally {
@@ -89,7 +87,7 @@ const WithdrawModal: React.FC<WithdrawModalProps> = ({
         <StyledAlert
           message="Withdrawal Timing"
           description={`Withdrawing an item takes ${humanizeDuration(
-            Number(registry.withdrawingPeriod) * 1000
+            Number(registry.withdrawingPeriod) * 1000,
           )}. After starting the withdrawal, you must wait for this period to complete before the item is permanently removed from the registry.`}
           type="info"
           showIcon
@@ -97,9 +95,9 @@ const WithdrawModal: React.FC<WithdrawModalProps> = ({
       )}
 
       <Typography.Paragraph>
-        Are you sure you want to withdraw "{itemName}" from the registry? This
-        will initiate the withdrawal period after which the item will be
-        permanently removed.
+        Are you sure you want to withdraw &quot;{itemName}&quot; from the
+        registry? This will initiate the withdrawal period after which the item
+        will be permanently removed.
       </Typography.Paragraph>
 
       <div style={{ textAlign: 'right', marginTop: 24 }}>
@@ -111,7 +109,11 @@ const WithdrawModal: React.FC<WithdrawModalProps> = ({
           Back
         </Button>
         <EnsureAuth>
-          <Button type="primary" onClick={handleStartWithdraw} loading={loading}>
+          <Button
+            type="primary"
+            onClick={handleStartWithdraw}
+            loading={loading}
+          >
             Start Withdraw
           </Button>
         </EnsureAuth>

@@ -1,5 +1,5 @@
 import { Card, Button, Alert, Steps } from 'components/ui'
-import Icon from 'components/ui/Icon'
+import Icon from 'components/ui/icon'
 import { Link } from 'react-router-dom'
 import React, { useState } from 'react'
 import { parseEther, decodeEventLog } from 'viem'
@@ -10,7 +10,7 @@ import _GTCRFactory from 'assets/abis/PermanentGTCRFactory.json'
 import ipfsPublish from 'utils/ipfs-publish'
 import { getIPFSPath } from 'utils/get-ipfs-path'
 import { isVowel } from 'utils/string'
-import { wrapWithToast } from 'utils/wrapWithToast'
+import { wrapWithToast } from 'utils/wrap-with-toast'
 import { wagmiConfig } from 'config/wagmi'
 import useWindowDimensions from 'hooks/window-dimensions'
 import EnsureAuth from 'components/ensure-auth'
@@ -18,7 +18,7 @@ import useTcrView from 'hooks/tcr-view'
 import {
   defaultEvidenceDisplayUriPermanent,
   defaultTcrAddresses,
-  pgtcrFactoryAddresses
+  pgtcrFactoryAddresses,
 } from 'config/tcr-addresses'
 
 export const StyledDiv = styled.div`
@@ -64,7 +64,7 @@ const getTcrMetaEvidence = async (tcrState, evidenceDisplayInterfaceURI) => {
     itemName,
     itemNamePlural,
     tcrPrimaryDocument,
-    tcrLogo
+    tcrLogo,
   } = tcrState
   const metadata = {
     tcrTitle,
@@ -73,16 +73,17 @@ const getTcrMetaEvidence = async (tcrState, evidenceDisplayInterfaceURI) => {
     itemName: itemName.toLowerCase(),
     itemNamePlural: itemNamePlural.toLowerCase(),
     logoURI: tcrLogo,
-    requireRemovalEvidence: true
+    requireRemovalEvidence: true,
   }
 
   const commonMetaEvidenceProps = {
     category: 'Curated Lists',
-    question: `Does the ${(itemName && itemName.toLowerCase()) ||
-      'item'} comply with the required criteria?`,
+    question: `Does the ${
+      (itemName && itemName.toLowerCase()) || 'item'
+    } comply with the required criteria?`,
     fileURI: tcrPrimaryDocument,
     evidenceDisplayInterfaceURI,
-    metadata
+    metadata,
   }
 
   const metaEvidenceData = {
@@ -103,13 +104,15 @@ const getTcrMetaEvidence = async (tcrState, evidenceDisplayInterfaceURI) => {
     rulingOptions: {
       titles: ['Yes, Keep It Included', 'No, Remove It'],
       descriptions: [
-        `Select this if you think the ${(itemName && itemName.toLowerCase()) ||
-          'item'} complies with the required criteria and should be kept included.`,
-        `Select this if you think the ${(itemName && itemName.toLowerCase()) ||
-          'item'} does not comply with the required criteria and should be removed.`
-      ]
+        `Select this if you think the ${
+          (itemName && itemName.toLowerCase()) || 'item'
+        } complies with the required criteria and should be kept included.`,
+        `Select this if you think the ${
+          (itemName && itemName.toLowerCase()) || 'item'
+        } does not comply with the required criteria and should be removed.`,
+      ],
     },
-    ...commonMetaEvidenceProps
+    ...commonMetaEvidenceProps,
   }
 
   const enc = new TextEncoder()
@@ -117,20 +120,22 @@ const getTcrMetaEvidence = async (tcrState, evidenceDisplayInterfaceURI) => {
   const ipfsMetaEvidencePath = getIPFSPath(
     await ipfsPublish(
       'meta-evidence.json',
-      enc.encode(JSON.stringify(metaEvidenceData))
-    )
+      enc.encode(JSON.stringify(metaEvidenceData)),
+    ),
   )
 
   return {
-    ipfsMetaEvidencePath
+    ipfsMetaEvidencePath,
   }
 }
 
 interface DeployProps {
-  setTxState: (tx: any) => void
-  tcrState: Record<string, any>
-  setTcrState: (fn: any) => void
-  [key: string]: any
+  setTxState: (tx: Record<string, unknown>) => void
+  tcrState: Record<string, unknown>
+  setTcrState: (
+    fn: (prev: Record<string, unknown>) => Record<string, unknown>,
+  ) => void
+  [key: string]: unknown
 }
 
 const Deploy = ({ setTxState, tcrState, setTcrState }: DeployProps) => {
@@ -153,7 +158,7 @@ const Deploy = ({ setTxState, tcrState, setTcrState }: DeployProps) => {
     try {
       const { ipfsMetaEvidencePath } = await getTcrMetaEvidence(
         tcrState,
-        evidenceDisplayInterfaceURI
+        evidenceDisplayInterfaceURI,
       )
 
       const { request } = await simulateContract(wagmiConfig, {
@@ -171,24 +176,24 @@ const Deploy = ({ setTxState, tcrState, setTcrState }: DeployProps) => {
             Number(tcrState.submissionPeriodDuration) * 60 * 60,
             Number(tcrState.reinclusionPeriodDuration) * 60 * 60,
             Number(tcrState.withdrawingPeriodDuration) * 60 * 60,
-            Number(tcrState.arbitrationParamsCooldown) * 60 * 60
+            Number(tcrState.arbitrationParamsCooldown) * 60 * 60,
           ],
           [
             Math.ceil(Number(tcrState.sharedStakeMultiplier)) * 100,
             Math.ceil(Number(tcrState.winnerStakeMultiplier)) * 100,
             Math.ceil(Number(tcrState.loserStakeMultiplier)) * 100,
-            Math.ceil(Number(tcrState.challengeStakeMultiplier)) * 100
-          ]
+            Math.ceil(Number(tcrState.challengeStakeMultiplier)) * 100,
+          ],
         ],
         gas: 8000000n,
-        account
+        account,
       })
 
       setCurrentStep(1)
 
       const result = await wrapWithToast(
         () => walletClient.writeContract(request),
-        publicClient
+        publicClient,
       )
 
       if (result.status) {
@@ -198,22 +203,20 @@ const Deploy = ({ setTxState, tcrState, setTcrState }: DeployProps) => {
         let contractAddress
         try {
           const newGTCRLog = result.result.logs
-            .map(log => {
+            .map((log) => {
               try {
                 return decodeEventLog({
                   abi: _GTCRFactory,
                   data: log.data,
-                  topics: log.topics
+                  topics: log.topics,
                 })
               } catch {
                 return null
               }
             })
-            .find(parsed => parsed && parsed.eventName === 'NewGTCR')
+            .find((parsed) => parsed && parsed.eventName === 'NewGTCR')
 
-          if (newGTCRLog) {
-            contractAddress = newGTCRLog.args._address
-          }
+          if (newGTCRLog) contractAddress = newGTCRLog.args._address
         } catch (err) {
           console.error('Error parsing deploy logs:', err)
         }
@@ -221,11 +224,11 @@ const Deploy = ({ setTxState, tcrState, setTcrState }: DeployProps) => {
         setTxState({
           txHash,
           status: 'mined',
-          contractAddress
+          contractAddress,
         })
-        setTcrState(prevState => ({
+        setTcrState((prevState) => ({
           ...prevState,
-          finished: true
+          finished: true,
         }))
         setCurrentStep(2)
         setDeployedTCRAddress(contractAddress)

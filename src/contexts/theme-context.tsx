@@ -97,7 +97,7 @@ export const lightTheme = {
   tooltipBg: '#4d00b4',
   tooltipText: '#ffffff',
   tooltipBorder: '#4d00b4',
-  tooltipShadow: 'rgba(77, 0, 180, 0.25)'
+  tooltipShadow: 'rgba(77, 0, 180, 0.25)',
 }
 
 export const darkTheme = {
@@ -195,7 +195,7 @@ export const darkTheme = {
   tooltipBg: '#3d3550',
   tooltipText: '#ffffff',
   tooltipBorder: '#4a3f65',
-  tooltipShadow: 'rgba(0, 0, 0, 0.6)'
+  tooltipShadow: 'rgba(0, 0, 0, 0.6)',
 }
 
 export type Theme = typeof lightTheme
@@ -219,7 +219,7 @@ const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
   const theme = isDarkMode ? darkTheme : lightTheme
 
   const toggleTheme = useCallback(() => {
-    setIsDarkMode(prev => !prev)
+    setIsDarkMode((prev) => !prev)
   }, [])
 
   useEffect(() => {

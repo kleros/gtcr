@@ -1,7 +1,7 @@
 import React from 'react'
 import styled from 'styled-components'
 import { Tooltip } from 'components/ui'
-import Icon from 'components/ui/Icon'
+import Icon from 'components/ui/icon'
 import { ItemTypes } from '@kleros/gtcr-encoder'
 import DisplaySelector from './display-selector'
 import { parseIpfs } from 'utils/ipfs-parse'
@@ -19,7 +19,12 @@ interface TCRMetadataDisplayProps {
   fileURI: string
 }
 
-const TCRMetadataDisplay = ({ logoURI, tcrTitle, tcrDescription, fileURI }: TCRMetadataDisplayProps) => (
+const TCRMetadataDisplay = ({
+  logoURI,
+  tcrTitle,
+  tcrDescription,
+  fileURI,
+}: TCRMetadataDisplayProps) => (
   <>
     <StyledField>
       <span>

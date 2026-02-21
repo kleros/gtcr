@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react'
 import { Popover, Form, Input, Button, Alert } from 'components/ui'
 import { withFormik, Field } from 'formik'
-import { useWeb3Context } from 'hooks/useWeb3Context'
+import { useWeb3Context } from 'hooks/use-web3-context'
 import { useDisconnect } from 'wagmi'
 import ReactBlockies from 'react-blockies'
 import styled from 'styled-components'
@@ -10,6 +10,7 @@ import localforage from 'localforage'
 import ETHAddress from './eth-address'
 import ETHAmount from './eth-amount'
 import { ethers, BigNumber } from 'ethers'
+
 const { randomBytes } = ethers.utils
 import useNativeCurrency from 'hooks/native-currency'
 
@@ -67,7 +68,7 @@ const EmailForm = ({
   formID,
 
   // Formik bag
-  handleSubmit
+  handleSubmit,
 }: EmailFormProps) => (
   <Form id={formID} onSubmit={handleSubmit} layout="vertical">
     <Field name="email">
@@ -88,7 +89,7 @@ const validationSchema = yup.object().shape({
   email: yup
     .string()
     .email('Invalid email.')
-    .required('A valid email is required.')
+    .required('A valid email is required.'),
 })
 
 const EnhancedEmailForm = withFormik({
@@ -96,7 +97,7 @@ const EnhancedEmailForm = withFormik({
   handleSubmit: (values, { props: { onSubmit } }) => {
     onSubmit(values)
   },
-  mapPropsToValues: ({ initialValues }) => initialValues
+  mapPropsToValues: ({ initialValues }) => initialValues,
 })(EmailForm)
 
 const EMAIL_FORM_ID = 'emailForm'
@@ -154,9 +155,9 @@ const Identicon = ({ className, large }: IdenticonProps) => {
             { name: 'name', type: 'string' },
             { name: 'version', type: 'string' },
             { name: 'chainId', type: 'uint256' },
-            { name: 'salt', type: 'bytes32' }
+            { name: 'salt', type: 'bytes32' },
           ],
-          Settings: [{ name: 'email', type: 'string' }]
+          Settings: [{ name: 'email', type: 'string' }],
         },
         primaryType: 'Settings',
         message: { email },
@@ -164,15 +165,15 @@ const Identicon = ({ className, large }: IdenticonProps) => {
           name: `${process.env.REACT_APP_NOTIFICATIONS_API_URL}`,
           chainId: networkId,
           version: 1,
-          salt: `0x${BigNumber.from(randomBytes(32)).toString(16)}`
-        }
+          salt: `0x${BigNumber.from(randomBytes(32)).toString(16)}`,
+        },
       }
       try {
         library.provider.sendAsync(
           {
             method: 'personal_sign',
             params: [account, JSON.stringify(data)],
-            from: account
+            from: account,
           },
           async (err, { result: signature }) => {
             if (err) {
@@ -190,9 +191,9 @@ const Identicon = ({ className, large }: IdenticonProps) => {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                       signature,
-                      data
-                    })
-                  }
+                      data,
+                    }),
+                  },
                 )
               ).json()
               if (response.status === 'success') {
@@ -206,14 +207,14 @@ const Identicon = ({ className, large }: IdenticonProps) => {
               setEmailStatus('error')
               console.error(err_)
             }
-          }
+          },
         )
       } catch (err) {
         setEmailStatus('error')
         console.error(err)
       }
     },
-    [account, library.provider, networkId]
+    [account, library.provider, networkId],
   )
 
   const blockiesContent = (

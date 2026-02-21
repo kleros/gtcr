@@ -11,23 +11,23 @@ import {
   Button,
   Collapse,
   Row,
-  Col
+  Col,
 } from 'components/ui'
-import Icon from 'components/ui/Icon'
+import Icon from 'components/ui/icon'
 import { useParams } from 'react-router-dom'
 import ETHAddress from 'components/eth-address'
 import {
   CONTRACT_STATUS,
   REQUEST_TYPE_LABEL,
   SUBGRAPH_RULING,
-  hasPendingRequest
+  hasPendingRequest,
 } from 'utils/item-status'
 import { capitalizeFirstLetter } from 'utils/string'
 import { getTxPage } from 'utils/network-utils'
 import { parseIpfs } from 'utils/ipfs-parse'
 import ClassicEvidenceModal from 'pages/item-details/modals/evidence'
 import LightEvidenceModal from 'pages/light-item-details/modals/evidence'
-import jsOrdinal from 'js-ordinal'
+import toOrdinal from 'utils/ordinal'
 
 const StyledText = styled(Typography.Text)`
   text-transform: capitalize;
@@ -61,7 +61,7 @@ const StyledCard = styled(Card)`
       & > .ui-card-head > .ui-card-head-wrapper > .ui-card-head-title {
         max-width: ${responsiveSize(160, 450)};
       }
-    `
+    `,
   )}
 `
 
@@ -75,7 +75,7 @@ const StyledIcon = styled(Icon)`
   color: ${({ theme }) => theme.primaryColor};
 `
 
-const secondTimestamp = timestamp =>
+const secondTimestamp = (timestamp) =>
   ` - ${new Date(new Date(timestamp * 1000)).toGMTString()}`
 
 interface TimelineProps {
@@ -92,23 +92,23 @@ const Timeline = ({ request, item, metaEvidence }: TimelineProps) => {
     if (!request) return null
 
     const appealPossibles = request.rounds
-      .map(r => ({
+      .map((r) => ({
         name: 'AppealPossible',
         timestamp: r.appealPeriodStart,
         transactionHash: r.txHashAppealPossible,
-        appealableRuling: r.ruling
+        appealableRuling: r.ruling,
       }))
-      .filter(appeal => !!appeal.transactionHash)
+      .filter((appeal) => !!appeal.transactionHash)
 
     const appealDecisions = request.rounds
-      .map(r => ({
+      .map((r) => ({
         name: 'AppealDecision',
         timestamp: r.appealedAt,
-        transactionHash: r.txHashAppealDecision
+        transactionHash: r.txHashAppealDecision,
       }))
-      .filter(appeal => !!appeal.transactionHash)
+      .filter((appeal) => !!appeal.transactionHash)
 
-    const evidences = request.evidenceGroup.evidences.map(e => ({
+    const evidences = request.evidenceGroup.evidences.map((e) => ({
       name: 'Evidence',
       timestamp: e.timestamp,
       transactionHash: e.txHash,
@@ -117,7 +117,7 @@ const Timeline = ({ request, item, metaEvidence }: TimelineProps) => {
       URI: e.uri,
       fileURI: e.fileURI,
       fileTypeExtension: e.fileTypeExtension,
-      party: e.party
+      party: e.party,
     }))
 
     const resolution = {
@@ -126,7 +126,7 @@ const Timeline = ({ request, item, metaEvidence }: TimelineProps) => {
       transactionHash: request.resolutionTx,
       disputeOutcome: !request.disputed
         ? SUBGRAPH_RULING.ACCEPT
-        : request.disputeOutcome
+        : request.disputeOutcome,
     }
 
     const logArray = [...appealPossibles, ...appealDecisions, ...evidences]
@@ -142,21 +142,21 @@ const Timeline = ({ request, item, metaEvidence }: TimelineProps) => {
   useEffect(() => {
     const evidenceManualFetch = async () => {
       const unindexedEvidenceURIs = logs
-        .filter(e => e.name === 'Evidence')
+        .filter((e) => e.name === 'Evidence')
         .filter(
-          e =>
+          (e) =>
             e.title === null &&
             e.description === null &&
             e.fileURI === null &&
-            e.fileTypeExtension === null
+            e.fileTypeExtension === null,
         )
-        .map(e => e.URI)
+        .map((e) => e.URI)
 
       const evidenceJSONs = await Promise.all(
-        unindexedEvidenceURIs.map(async uri => {
+        unindexedEvidenceURIs.map(async (uri) => {
           const file = await (await fetch(parseIpfs(uri))).json()
           return file
-        })
+        }),
       )
       const evidenceMapProcess = {}
       unindexedEvidenceURIs.forEach((uri, index) => {
@@ -255,14 +255,14 @@ const Timeline = ({ request, item, metaEvidence }: TimelineProps) => {
               {appealableRuling === SUBGRAPH_RULING.NONE
                 ? 'The arbitrator refused to rule'
                 : appealableRuling === SUBGRAPH_RULING.ACCEPT
-                ? `The arbitrator ruled in favor of the ${
-                    requestType === CONTRACT_STATUS.REGISTRATION_REQUESTED
-                      ? 'submitter'
-                      : 'requester'
-                  }`
-                : appealableRuling === SUBGRAPH_RULING.REJECT
-                ? 'The arbitrator ruled in favor of the challenger'
-                : 'The arbitrator gave an unknown ruling'}
+                  ? `The arbitrator ruled in favor of the ${
+                      requestType === CONTRACT_STATUS.REGISTRATION_REQUESTED
+                        ? 'submitter'
+                        : 'requester'
+                    }`
+                  : appealableRuling === SUBGRAPH_RULING.REJECT
+                    ? 'The arbitrator ruled in favor of the challenger'
+                    : 'The arbitrator gave an unknown ruling'}
               <Typography.Text type="secondary">
                 <a href={txPage}>{secondTimestamp(timestamp)}</a>
               </Typography.Text>
@@ -363,7 +363,12 @@ interface RequestTimelinesProps {
   metaEvidence: MetaEvidence
 }
 
-const RequestTimelines = ({ item, requests, kind, metaEvidence }: RequestTimelinesProps) => {
+const RequestTimelines = ({
+  item,
+  requests,
+  kind,
+  metaEvidence,
+}: RequestTimelinesProps) => {
   const [evidenceModalOpen, setEvidenceModalOpen] = useState()
   const EvidenceModal =
     kind === 'classic' ? ClassicEvidenceModal : LightEvidenceModal
@@ -381,20 +386,19 @@ const RequestTimelines = ({ item, requests, kind, metaEvidence }: RequestTimelin
   return (
     <div id="request-timelines">
       {!hasPendingRequest(item.status) && (
-        <StyledDivider orientation="left">{`${capitalizeFirstLetter(itemName) ||
-          'Item'} History`}</StyledDivider>
+        <StyledDivider orientation="left">{`${
+          capitalizeFirstLetter(itemName) || 'Item'
+        } History`}</StyledDivider>
       )}
       {hasPendingRequest(item.status) && (
         <Row type="flex" align="middle">
           <Col style={{ flex: 1 }}>
-            <StyledDivider orientation="left">{`${capitalizeFirstLetter(
-              itemName
-            ) || 'Item'} History`}</StyledDivider>
+            <StyledDivider orientation="left">{`${
+              capitalizeFirstLetter(itemName) || 'Item'
+            } History`}</StyledDivider>
           </Col>
           <Col style={{ marginLeft: 12 }}>
-            <StyledButton
-              onClick={() => setEvidenceModalOpen(true)}
-            >
+            <StyledButton onClick={() => setEvidenceModalOpen(true)}>
               Submit Evidence
             </StyledButton>
           </Col>
@@ -404,7 +408,7 @@ const RequestTimelines = ({ item, requests, kind, metaEvidence }: RequestTimelin
         <StyledCollapse bordered={false} defaultActiveKey={['0']}>
           {requests.map((request, i) => (
             <Collapse.Panel
-              header={`${jsOrdinal.toOrdinal(requests.length - i)} request - ${
+              header={`${toOrdinal(requests.length - i)} request - ${
                 REQUEST_TYPE_LABEL[request.requestType]
               }`}
               key={i}

@@ -1,10 +1,10 @@
-import React, { useContext, useMemo, useState } from 'react'
+import React, { useMemo, useState } from 'react'
 import { Descriptions, Skeleton, Card, Button, Badge } from 'components/ui'
 import _gtcr from 'assets/abis/PermanentGTCR.json'
 import ItemStatusBadge, {
   badgeStatus,
   ItemStatusBadgeWrap,
-  ItemStatusIcon
+  ItemStatusIcon,
 } from 'components/permanent-item-status-badge'
 import styled from 'styled-components'
 import { useAccount, usePublicClient, useWalletClient, useChainId } from 'wagmi'
@@ -14,7 +14,7 @@ import {
   STATUS_CODE,
   PARTY,
   CONTRACT_STATUS,
-  SUBGRAPH_RULING
+  SUBGRAPH_RULING,
 } from 'utils/permanent-item-status'
 import ETHAddress from 'components/eth-address'
 import ItemActionModal from './item-action-modal'
@@ -24,7 +24,7 @@ import useAppealTime from 'hooks/appeal-time'
 import ETHAmount from 'components/eth-amount'
 import useTokenSymbol from 'hooks/token-symbol'
 import { klerosAddresses } from 'config/tcr-addresses'
-import { wrapWithToast } from 'utils/wrapWithToast'
+import { wrapWithToast } from 'utils/wrap-with-toast'
 import { wagmiConfig } from 'config/wagmi'
 import WithdrawModal from './modals/withdraw'
 
@@ -115,7 +115,7 @@ const ItemStatusCard = ({
   modalOpen,
   setModalOpen,
   appealCost,
-  arbitrationCost
+  arbitrationCost,
 }: ItemStatusCardProps) => {
   const { address: account } = useAccount()
   const chainId = useChainId()
@@ -127,7 +127,7 @@ const ItemStatusCard = ({
   // Get remaining appeal time, if any and build countdown.
   const { appealRemainingTime, appealRemainingTimeLoser } = useAppealTime(
     item,
-    false
+    false,
   )
   const appealCountdown = useHumanizedCountdown(appealRemainingTime)
   const appealLoserCountdown = useHumanizedCountdown(appealRemainingTimeLoser)
@@ -210,12 +210,12 @@ const ItemStatusCard = ({
         abi: _gtcr,
         functionName: 'withdrawItem',
         args: [item.itemID],
-        account
+        account,
       })
 
       await wrapWithToast(
         () => walletClient.writeContract(request),
-        publicClient
+        publicClient,
       )
     } catch (err) {
       console.error('Error executing withdrawal:', err)

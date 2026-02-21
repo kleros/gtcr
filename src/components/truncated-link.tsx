@@ -19,7 +19,7 @@ interface TruncatedLinkProps {
 const TruncatedLink = ({ url }: TruncatedLinkProps) => {
   const [warningVisible, setWarningVisible] = useState(false)
 
-  const handleClick = e => {
+  const handleClick = (e) => {
     e.preventDefault()
     setWarningVisible(true)
   }

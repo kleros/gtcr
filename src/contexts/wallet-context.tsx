@@ -18,6 +18,7 @@ const WalletProvider = ({ children }: { children: React.ReactNode }) => {
   const ctx = useNotificationWeb3()
   const value = useMemo(
     () => ctx,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [
       ctx.requestModalOpen,
       ctx.cancelRequest,
@@ -26,13 +27,11 @@ const WalletProvider = ({ children }: { children: React.ReactNode }) => {
       ctx.setUserSelectedWallet,
       ctx.timestamp,
       ctx.networkId,
-      ctx.latestBlock
-    ]
+      ctx.latestBlock,
+    ],
   )
   return (
-    <WalletContext.Provider value={value}>
-      {children}
-    </WalletContext.Provider>
+    <WalletContext.Provider value={value}>{children}</WalletContext.Provider>
   )
 }
 

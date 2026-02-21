@@ -36,13 +36,13 @@ const ItemActionModal = ({
   tcrAddress,
   metaEvidence,
   gtcrView,
-  appealCost
+  appealCost,
 }: ItemActionModalProps) => {
   // Common button properties.
   const rest = {
     visible: isOpen,
     title: getActionLabel({ statusCode, itemName }),
-    onCancel: onClose
+    onCancel: onClose,
   }
 
   switch (statusCode) {

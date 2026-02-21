@@ -3,10 +3,10 @@ import {
   STATUS_COLOR,
   STATUS_TEXT,
   STATUS_CODE,
-  itemToStatusCode
+  itemToStatusCode,
 } from '../utils/item-status'
 import { Badge, Skeleton } from 'components/ui'
-import Icon from 'components/ui/Icon'
+import Icon from 'components/ui/icon'
 import styled from 'styled-components'
 import { BigNumber } from 'ethers'
 
@@ -44,7 +44,7 @@ const iconTypes = {
   [STATUS_CODE.SUBMITTED]: 'hourglass',
   [STATUS_CODE.WAITING_ARBITRATOR]: 'hourglass',
   [STATUS_CODE.WAITING_ENFORCEMENT]: 'hourglass',
-  [STATUS_CODE.REMOVAL_REQUESTED]: 'hourglass'
+  [STATUS_CODE.REMOVAL_REQUESTED]: 'hourglass',
 }
 
 const ItemStatusIcon = ({ statusCode }: { statusCode: number }) => (
@@ -55,7 +55,7 @@ const ItemStatusIcon = ({ statusCode }: { statusCode: number }) => (
 
 // For clarity, here "badge" refers to the ant design component,
 // and not badges related to connection between TCRs.
-const badgeStatus = statusCode => {
+const badgeStatus = (statusCode) => {
   switch (statusCode) {
     case STATUS_CODE.REMOVAL_REQUESTED:
     case STATUS_CODE.SUBMITTED:
@@ -90,7 +90,7 @@ const ItemStatusBadge = ({
   timestamp = null,
   challengePeriodDuration = null,
   statusCode = null,
-  dark = null
+  _dark = null,
 }: ItemStatusBadgeProps) => {
   if (statusCode)
     return (

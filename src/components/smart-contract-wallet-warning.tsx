@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react'
 import { Alert } from 'components/ui'
 import styled from 'styled-components'
-import { useWeb3Context } from 'hooks/useWeb3Context'
+import { useWeb3Context } from 'hooks/use-web3-context'
 
 const StyledAlert = styled(Alert)`
   text-align: center;
@@ -20,9 +20,8 @@ const STORAGE_KEY = '@kleros/curate/alert/smart-contract-wallet-warning'
 
 export default function SmartContractWalletWarning() {
   const { account, library } = useWeb3Context()
-  const [isSmartContractWallet, setIsSmartContractWallet] = useState<boolean>(
-    false
-  )
+  const [isSmartContractWallet, setIsSmartContractWallet] =
+    useState<boolean>(false)
   const [showWarning, setShowWarning] = useState<boolean>(true)
 
   const updateAccountWarningDismissalState = useCallback((account: string) => {
@@ -52,7 +51,7 @@ export default function SmartContractWalletWarning() {
           setIsSmartContractWallet(false)
         })
     },
-    []
+    [],
   )
 
   const handleClose = useCallback(() => {

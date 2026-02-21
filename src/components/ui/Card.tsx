@@ -142,11 +142,11 @@ interface CardMetaProps {
 
 const Meta: React.FC<CardMetaProps> = ({ title, description, avatar }) => (
   <MetaWrapper className="ui-card-meta">
-    {avatar && <MetaAvatar className="ui-card-meta-avatar">{avatar}</MetaAvatar>}
+    {avatar && (
+      <MetaAvatar className="ui-card-meta-avatar">{avatar}</MetaAvatar>
+    )}
     <MetaDetail className="ui-card-meta-detail">
-      {title && (
-        <MetaTitle className="ui-card-meta-title">{title}</MetaTitle>
-      )}
+      {title && <MetaTitle className="ui-card-meta-title">{title}</MetaTitle>}
       {description && (
         <MetaDescription className="ui-card-meta-description">
           {description}
@@ -183,7 +183,7 @@ const Card: CardComponent = ({
   hoverable = false,
   style,
   className,
-  children
+  children,
 }) => (
   <StyledCard
     className={`ui-card${className ? ` ${className}` : ''}`}
@@ -199,9 +199,7 @@ const Card: CardComponent = ({
               {title}
             </CardHeadTitle>
           )}
-          {extra && (
-            <CardExtra className="ui-card-extra">{extra}</CardExtra>
-          )}
+          {extra && <CardExtra className="ui-card-extra">{extra}</CardExtra>}
         </CardHeadWrapper>
       </CardHead>
     )}

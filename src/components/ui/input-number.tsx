@@ -121,7 +121,7 @@ const InputNumber: React.FC<InputNumberProps> = ({
   className,
   parser,
   formatter,
-  precision
+  precision,
 }) => {
   const [internalValue, setInternalValue] = useState<number | string>(() => {
     const init = controlledValue !== undefined ? controlledValue : defaultValue
@@ -132,9 +132,9 @@ const InputNumber: React.FC<InputNumberProps> = ({
   const inputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
-    if (isControlled && controlledValue !== internalValue) {
+    if (isControlled && controlledValue !== internalValue)
       setInternalValue(controlledValue as number | string)
-    }
+
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [controlledValue])
 
@@ -146,7 +146,7 @@ const InputNumber: React.FC<InputNumberProps> = ({
       if (precision !== undefined) n = parseFloat(n.toFixed(precision))
       return n
     },
-    [min, max, precision]
+    [min, max, precision],
   )
 
   const applyValue = useCallback(
@@ -162,7 +162,7 @@ const InputNumber: React.FC<InputNumberProps> = ({
       if (!isControlled) setInternalValue(clamped)
       if (onChange) onChange(clamped)
     },
-    [isControlled, clamp, onChange]
+    [isControlled, clamp, onChange],
   )
 
   const handleChange = useCallback(
@@ -175,13 +175,18 @@ const InputNumber: React.FC<InputNumberProps> = ({
       }
       applyValue(raw)
     },
-    [parser, isControlled, applyValue]
+    [parser, isControlled, applyValue],
   )
 
   const handleBlur = useCallback(() => {
-    if (value === '' || value === '-') {
-      applyValue(defaultValue !== undefined ? defaultValue : min !== undefined ? min : '')
-    }
+    if (value === '' || value === '-')
+      applyValue(
+        defaultValue !== undefined
+          ? defaultValue
+          : min !== undefined
+            ? min
+            : '',
+      )
   }, [value, defaultValue, min, applyValue])
 
   const increment = useCallback(() => {

@@ -1,6 +1,6 @@
 import React, { useCallback, useState, useEffect } from 'react'
 import { Modal, Button, Form, Tooltip, Typography, Alert } from 'components/ui'
-import Icon from 'components/ui/Icon'
+import Icon from 'components/ui/icon'
 import styled from 'styled-components'
 import _gtcr from 'assets/abis/PermanentGTCR.json'
 import { withFormik } from 'formik'
@@ -18,7 +18,7 @@ import { IPFSResultObject, getIPFSPath } from 'utils/get-ipfs-path'
 import ipfsPublish from 'utils/ipfs-publish'
 import useNativeCurrency from 'hooks/native-currency'
 import useTokenSymbol from 'hooks/token-symbol'
-import { wrapWithToast } from 'utils/wrapWithToast'
+import { wrapWithToast } from 'utils/wrap-with-toast'
 import { wagmiConfig } from 'config/wagmi'
 import { Column } from 'pages/item-details/modals/submit'
 import { StyledSpin } from './challenge'
@@ -71,19 +71,19 @@ export const DepositLabel = styled.span`
 export const SUBMISSION_FORM_ID = 'submitItemForm'
 
 const _SubmissionForm: React.FC<{
-  style: any
+  style: React.CSSProperties
   columns: Column[]
-  setFieldValue: (fieldName: string, value: any) => void
+  setFieldValue: (fieldName: string, value: string) => void
   handleSubmit: () => void
   disabledFields: boolean[]
-  values: any
-  errors: { [label: string]: any }
+  values: Record<string, string>
+  errors: { [label: string]: string }
   touched: { [label: string]: boolean }
   status: {
     setFileToUpload: (f: (b: boolean) => void) => void
     setFileAsUploaded: (f: (b: boolean) => void) => void
   }
-}> = p => (
+}> = (p) => (
   <Form onSubmit={p.handleSubmit} id={SUBMISSION_FORM_ID}>
     {p.columns &&
       p.columns.length > 0 &&
@@ -114,63 +114,84 @@ const _SubmissionForm: React.FC<{
   </Form>
 )
 
-const SubmissionForm: React.ComponentType<any> = withFormik({
-  mapPropsToValues: ({ columns, initialValues }: any) =>
-    columns.reduce((acc: any, curr: any, i: number) => {
-      const defaultValue = initialValues
-        ? initialValues[i]
-        : // @ts-ignore
-          typeDefaultValues[curr.type]
-
-      return {
-        ...acc,
-        [curr.label]: String(defaultValue)
-      }
-    }, {}),
-  handleSubmit: (values, { props, resetForm }) => {
-    props.postSubmit(values, props.columns, resetForm)
-  },
-  mapPropsToStatus: props => ({
-    setFileToUpload: props.setFileToUpload,
-    setFileAsUploaded: props.setFileAsUploaded
-  }),
-  validate: async (
-    values,
-    {
+const SubmissionForm: React.ComponentType<Record<string, unknown>> = withFormik(
+  {
+    mapPropsToValues: ({
       columns,
-      deployedWithFactory,
-      deployedWithLightFactory,
-      deployedWithPermanentFactory
-    }
-  ) => {
-    const errors = (
-      await Promise.all(
-        columns
-          .filter(({ type }: any) => type === ItemTypes.GTCR_ADDRESS)
-          .map(async ({ label }: any) => ({
-            isEmpty: !values[label],
-            wasDeployedWithFactory:
-              !!values[label] &&
-              ((await deployedWithFactory(values[label])) ||
-                (await deployedWithLightFactory(values[label])) ||
-                (await deployedWithPermanentFactory(values[label]))),
-            label: label
-          }))
-      )
-    )
-      .filter((res: any) => !res.wasDeployedWithFactory || res.isEmpty)
-      .reduce(
-        (acc: any, curr: any) => ({
+      initialValues,
+    }: {
+      columns: Column[]
+      initialValues?: string[]
+    }) =>
+      columns.reduce((acc: Record<string, string>, curr: Column, i: number) => {
+        const defaultValue = initialValues
+          ? initialValues[i]
+          : // @ts-ignore
+            typeDefaultValues[curr.type]
+
+        return {
           ...acc,
-          [curr.label]: curr.isEmpty
-            ? `Enter a list address to proceed.`
-            : `This address was not deployed with the list creator.`
-        }),
-        {}
+          [curr.label]: String(defaultValue),
+        }
+      }, {}),
+    handleSubmit: (values, { props, resetForm }) => {
+      props.postSubmit(values, props.columns, resetForm)
+    },
+    mapPropsToStatus: (props) => ({
+      setFileToUpload: props.setFileToUpload,
+      setFileAsUploaded: props.setFileAsUploaded,
+    }),
+    validate: async (
+      values,
+      {
+        columns,
+        deployedWithFactory,
+        deployedWithLightFactory,
+        deployedWithPermanentFactory,
+      },
+    ) => {
+      const errors = (
+        await Promise.all(
+          columns
+            .filter(({ type }: Column) => type === ItemTypes.GTCR_ADDRESS)
+            .map(async ({ label }: Column) => ({
+              isEmpty: !values[label],
+              wasDeployedWithFactory:
+                !!values[label] &&
+                ((await deployedWithFactory(values[label])) ||
+                  (await deployedWithLightFactory(values[label])) ||
+                  (await deployedWithPermanentFactory(values[label]))),
+              label: label,
+            })),
+        )
       )
-    if (Object.keys(errors as any).length > 0) throw errors
-  }
-})(_SubmissionForm as any)
+        .filter(
+          (res: {
+            wasDeployedWithFactory: boolean
+            isEmpty: boolean
+            label: string
+          }) => !res.wasDeployedWithFactory || res.isEmpty,
+        )
+        .reduce(
+          (
+            acc: Record<string, string>,
+            curr: {
+              wasDeployedWithFactory: boolean
+              isEmpty: boolean
+              label: string
+            },
+          ) => ({
+            ...acc,
+            [curr.label]: curr.isEmpty
+              ? `Enter a list address to proceed.`
+              : `This address was not deployed with the list creator.`,
+          }),
+          {},
+        )
+      if (Object.keys(errors as Record<string, string>).length > 0) throw errors
+    },
+  },
+)(_SubmissionForm as React.ComponentType<Record<string, unknown>>)
 
 const ERC20_ABI = [
   {
@@ -178,47 +199,47 @@ const ERC20_ABI = [
     name: 'balanceOf',
     outputs: [{ name: '', type: 'uint256' }],
     stateMutability: 'view',
-    type: 'function'
+    type: 'function',
   },
   {
     inputs: [
       { name: 'owner', type: 'address' },
-      { name: 'spender', type: 'address' }
+      { name: 'spender', type: 'address' },
     ],
     name: 'allowance',
     outputs: [{ name: '', type: 'uint256' }],
     stateMutability: 'view',
-    type: 'function'
+    type: 'function',
   },
   {
     inputs: [
       { name: 'spender', type: 'address' },
-      { name: 'amount', type: 'uint256' }
+      { name: 'amount', type: 'uint256' },
     ],
     name: 'approve',
     outputs: [{ name: '', type: 'bool' }],
     stateMutability: 'nonpayable',
-    type: 'function'
-  }
+    type: 'function',
+  },
 ] as const
 
 const SubmitModal: React.FC<{
-  onCancel: any
+  onCancel: () => void
   tcrAddress: string
   tokenAddress: string
-  initialValues: any[]
-  submissionDeposit: any
+  initialValues: string[]
+  submissionDeposit: { toString: () => string }
   metadata: {
     title: string
     itemName: string
     policyURI: string
   }
-  columns: any[]
+  columns: Column[]
   disabledFields: boolean[]
-  submissionPeriod: any
-  withdrawingPeriod: any
-  arbitrationCost: any
-}> = props => {
+  submissionPeriod: string | number | undefined
+  withdrawingPeriod: string | number | undefined
+  arbitrationCost: { toString: () => string } | undefined
+}> = (props) => {
   const {
     onCancel,
     initialValues,
@@ -230,14 +251,14 @@ const SubmitModal: React.FC<{
     submissionPeriod,
     withdrawingPeriod,
     arbitrationCost,
-    columns
+    columns,
   } = props
 
   const nativeCurrency = useNativeCurrency()
   const {
     deployedWithFactory,
     deployedWithLightFactory,
-    deployedWithPermanentFactory
+    deployedWithPermanentFactory,
   } = useFactory()
   const { address: account } = useAccount()
   const publicClient = usePublicClient()
@@ -263,15 +284,15 @@ const SubmitModal: React.FC<{
           address: tokenAddress as `0x${string}`,
           abi: ERC20_ABI,
           functionName: 'balanceOf',
-          args: [account]
+          args: [account],
         }),
         publicClient.readContract({
           address: tokenAddress as `0x${string}`,
           abi: ERC20_ABI,
           functionName: 'allowance',
-          args: [account, tcrAddress as `0x${string}`]
+          args: [account, tcrAddress as `0x${string}`],
         }),
-        publicClient.getBalance({ address: account })
+        publicClient.getBalance({ address: account }),
       ])
       setBalance(bal)
       setAllowance(allow)
@@ -292,7 +313,7 @@ const SubmitModal: React.FC<{
       setIsApproving(false)
       setIsSubmitting(false)
     },
-    []
+    [],
   )
 
   const handleApprove = useCallback(async () => {
@@ -304,14 +325,14 @@ const SubmitModal: React.FC<{
         functionName: 'approve',
         args: [
           tcrAddress as `0x${string}`,
-          BigInt(submissionDeposit.toString())
+          BigInt(submissionDeposit.toString()),
         ],
-        account
+        account,
       })
 
       const result = await wrapWithToast(
         () => walletClient!.writeContract(request),
-        publicClient!
+        publicClient!,
       )
 
       if (result.status) {
@@ -331,7 +352,7 @@ const SubmitModal: React.FC<{
     checkTokenStatus,
     account,
     walletClient,
-    publicClient
+    publicClient,
   ])
 
   // To make sure user cannot press Submit while there are files uploading
@@ -346,14 +367,18 @@ const SubmitModal: React.FC<{
   }
 
   const postSubmit = useCallback(
-    async (values: any, columns: any, resetForm: any) => {
+    async (
+      values: Record<string, string>,
+      columns: Column[],
+      resetForm: (nextState?: Record<string, unknown>) => void,
+    ) => {
       setIsSubmitting(true)
       try {
         const enc = new TextEncoder()
         const fileData = enc.encode(JSON.stringify({ columns, values }))
         const ipfsEvidencePath = getIPFSPath(
           // @ts-ignore next-line
-          (await ipfsPublish('item.json', fileData)) as IPFSResultObject
+          (await ipfsPublish('item.json', fileData)) as IPFSResultObject,
         )
 
         const { request } = await simulateContract(wagmiConfig, {
@@ -362,12 +387,12 @@ const SubmitModal: React.FC<{
           functionName: 'addItem',
           args: [ipfsEvidencePath, BigInt(submissionDeposit.toString())],
           value: BigInt((arbitrationCost || 0).toString()),
-          account
+          account,
         })
 
         const result = await wrapWithToast(
           () => walletClient!.writeContract(request),
-          publicClient!
+          publicClient!,
         )
 
         if (result.status) {
@@ -386,8 +411,8 @@ const SubmitModal: React.FC<{
       arbitrationCost,
       account,
       walletClient,
-      publicClient
-    ]
+      publicClient,
+    ],
   )
 
   const submissionDepositBigInt = submissionDeposit
@@ -454,7 +479,7 @@ const SubmitModal: React.FC<{
         footer={[
           <Button key="back" onClick={onCancel}>
             Cancel
-          </Button>
+          </Button>,
         ]}
         {...props}
       >
@@ -465,8 +490,9 @@ const SubmitModal: React.FC<{
   return (
     // @ts-ignore
     <StyledModal
-      title={`Submit ${(itemName && capitalizeFirstLetter(itemName)) ||
-        'Item'}`}
+      title={`Submit ${
+        (itemName && capitalizeFirstLetter(itemName)) || 'Item'
+      }`}
       footer={[
         <Button
           key="back"
@@ -478,7 +504,7 @@ const SubmitModal: React.FC<{
         >
           Back
         </Button>,
-        <EnsureAuth key="ensure-auth">{renderSubmitButton()}</EnsureAuth>
+        <EnsureAuth key="ensure-auth">{renderSubmitButton()}</EnsureAuth>,
       ]}
       {...props}
     >
@@ -512,14 +538,18 @@ const SubmitModal: React.FC<{
         to avoid challenges.
       </StyledListingCriteria>
       <StyledAlert
-        message={`Note that this is a deposit, not a fee and it will be reimbursed if your withdraw the item. ${submissionPeriod &&
+        message={`Note that this is a deposit, not a fee and it will be reimbursed if your withdraw the item. ${
+          submissionPeriod &&
           `The submission period of ${humanizeDuration(
-            Number(submissionPeriod) * 1000
-          )} is the time it takes for the item to be considered valid.`}
-          ${withdrawingPeriod &&
+            Number(submissionPeriod) * 1000,
+          )} is the time it takes for the item to be considered valid.`
+        }
+          ${
+            withdrawingPeriod &&
             `Withdrawing an item takes ${humanizeDuration(
-              Number(withdrawingPeriod) * 1000
-            )}.`}`}
+              Number(withdrawingPeriod) * 1000,
+            )}.`
+          }`}
         type="info"
         showIcon
       />

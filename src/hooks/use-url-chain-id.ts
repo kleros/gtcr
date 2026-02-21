@@ -9,7 +9,9 @@ import { useLocation } from 'react-router-dom'
 const useUrlChainId = () => {
   const location = useLocation()
   return useMemo(() => {
-    const match = location.pathname.match(/\/(?:tcr|factory(?:-classic|-permanent)?)\/(\d+)/)
+    const match = location.pathname.match(
+      /\/(?:tcr|factory(?:-classic|-permanent)?)\/(\d+)/,
+    )
     return match ? Number(match[1]) : null
   }, [location.pathname])
 }

@@ -5,17 +5,16 @@ const alchemyApiKey =
   import.meta.env.REACT_APP_ALCHEMY_API_KEY ||
   process.env.REACT_APP_ALCHEMY_API_KEY
 
-if (!alchemyApiKey) {
+if (!alchemyApiKey)
   throw new Error(
-    'Alchemy API key is not set in REACT_APP_ALCHEMY_API_KEY environment variable.'
+    'Alchemy API key is not set in REACT_APP_ALCHEMY_API_KEY environment variable.',
   )
-}
 
 // Alchemy network slug mapping
 const alchemyChainSlugs: Record<number, string> = {
   [mainnet.id]: 'eth-mainnet',
   [sepolia.id]: 'eth-sepolia',
-  [gnosis.id]: 'gnosis-mainnet'
+  [gnosis.id]: 'gnosis-mainnet',
 }
 
 /**
@@ -33,9 +32,8 @@ const alchemyTransport = (chainId: number): Transport => {
 export const getTransports = (): Record<number, Transport> => {
   const transports: Record<number, Transport> = {}
 
-  for (const chain of SUPPORTED_CHAINS) {
+  for (const chain of SUPPORTED_CHAINS)
     transports[chain.id] = alchemyTransport(chain.id)
-  }
 
   return transports
 }

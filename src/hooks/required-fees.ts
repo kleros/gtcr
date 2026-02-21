@@ -1,4 +1,5 @@
 import { useMemo } from 'react'
+import { BigNumber } from 'ethers'
 import { PARTY, SUBGRAPH_RULING } from '../utils/item-status'
 
 const useRequiredFees = ({
@@ -8,15 +9,15 @@ const useRequiredFees = ({
   loserStakeMultiplier,
   item,
   MULTIPLIER_DIVISOR,
-  appealCost
+  appealCost,
 }: {
   side: number
-  sharedStakeMultiplier: any
-  winnerStakeMultiplier: any
-  loserStakeMultiplier: any
-  item: any
-  MULTIPLIER_DIVISOR: any
-  appealCost: any
+  sharedStakeMultiplier: BigNumber | undefined
+  winnerStakeMultiplier: BigNumber | undefined
+  loserStakeMultiplier: BigNumber | undefined
+  item: SubgraphItem | undefined
+  MULTIPLIER_DIVISOR: BigNumber | undefined
+  appealCost: BigNumber | undefined
 }) =>
   useMemo(() => {
     if (
@@ -36,7 +37,7 @@ const useRequiredFees = ({
     const {
       ruling: currentRuling,
       amountPaidRequester,
-      amountPaidChallenger
+      amountPaidChallenger,
     } = round
 
     // Calculate the fee stake multiplier.
@@ -53,13 +54,13 @@ const useRequiredFees = ({
       sideIsWinner === null
         ? sharedStakeMultiplier
         : sideIsWinner
-        ? winnerStakeMultiplier
-        : loserStakeMultiplier
+          ? winnerStakeMultiplier
+          : loserStakeMultiplier
 
     // Calculate full cost to fund the side.
     // Full appeal cost = appeal cost + appeal cost * fee stake multiplier.
     const requiredForSide = appealCost.add(
-      appealCost.mul(feeStakeMultiplier).div(MULTIPLIER_DIVISOR)
+      appealCost.mul(feeStakeMultiplier).div(MULTIPLIER_DIVISOR),
     )
 
     if (requiredForSide.isZero()) return {} // No fees required.
@@ -74,8 +75,8 @@ const useRequiredFees = ({
       sideIsWinner === null
         ? sharedStakeMultiplier
         : sideIsWinner
-        ? loserStakeMultiplier
-        : winnerStakeMultiplier
+          ? loserStakeMultiplier
+          : winnerStakeMultiplier
 
     // This is the total potential reward if the user contributed 100% of the fees.
     const totalReward = appealCost
@@ -96,7 +97,7 @@ const useRequiredFees = ({
     sharedStakeMultiplier,
     side,
     winnerStakeMultiplier,
-    appealCost
+    appealCost,
   ])
 
 export default useRequiredFees

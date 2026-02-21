@@ -4,7 +4,7 @@ import styled, { css } from 'styled-components'
 const SIZES: Record<string, number> = {
   small: 24,
   default: 32,
-  large: 40
+  large: 40,
 }
 
 const resolveSize = (size: number | string): number => {
@@ -68,7 +68,7 @@ const Avatar: React.FC<AvatarProps> = ({
   src,
   style,
   className,
-  children
+  children,
 }) => {
   const px = resolveSize(size)
 
@@ -79,13 +79,7 @@ const Avatar: React.FC<AvatarProps> = ({
       style={style}
       className={className}
     >
-      {src ? (
-        <AvatarImg src={src} alt="" />
-      ) : icon ? (
-        icon
-      ) : (
-        children
-      )}
+      {src ? <AvatarImg src={src} alt="" /> : icon ? icon : children}
     </AvatarWrapper>
   )
 }

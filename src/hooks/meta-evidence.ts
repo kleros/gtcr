@@ -1,10 +1,17 @@
 import { useEffect, useState } from 'react'
+import { ethers } from 'ethers'
 import useGetLogs from './get-logs'
 import { parseIpfs } from 'utils/ipfs-parse'
 
-const useMetaEvidence = ({ arbitrable, library }: { arbitrable: any; library: any }): { metaEvidence: any; error: any } => {
-  const [metaEvidence, setMetaEvidence] = useState<any>()
-  const [error, setError] = useState<any>()
+const useMetaEvidence = ({
+  arbitrable,
+  library,
+}: {
+  arbitrable: ethers.Contract | null
+  library: EthersLibrary | null
+}): { metaEvidence: MetaEvidence | undefined; error: unknown } => {
+  const [metaEvidence, setMetaEvidence] = useState<MetaEvidence>()
+  const [error, setError] = useState<unknown>()
   const getLogs = useGetLogs(library)
 
   useEffect(() => {
@@ -16,12 +23,12 @@ const useMetaEvidence = ({ arbitrable, library }: { arbitrable: any; library: an
         const logs = (
           await getLogs({
             ...arbitrable.filters.MetaEvidence(),
-            fromBlock: 0
+            fromBlock: 0,
           })
-        ).map(log => arbitrable.interface.parseLog(log))
+        ).map((log) => arbitrable.interface.parseLog(log))
         if (logs.length === 0)
           throw new Error(
-            `No meta evidence available for TCR at. ${arbitrable.address}`
+            `No meta evidence available for TCR at. ${arbitrable.address}`,
           )
 
         // Take the penultimate item. This is the most recent meta evidence

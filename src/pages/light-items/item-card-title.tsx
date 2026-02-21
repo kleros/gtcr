@@ -1,7 +1,7 @@
 import React, { useContext, useMemo } from 'react'
 import styled from 'styled-components'
 import { Tooltip } from 'components/ui'
-import Icon from 'components/ui/Icon'
+import Icon from 'components/ui/icon'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import ItemStatusBadge from 'components/item-status-badge'
 import ETHAmount from 'components/eth-amount'
@@ -88,7 +88,11 @@ interface ItemCardTitleProps {
   isPermanentList?: boolean
 }
 
-const ItemCardTitle = ({ statusCode = null, tcrData = null, isPermanentList = false }: ItemCardTitleProps) => {
+const ItemCardTitle = ({
+  statusCode = null,
+  tcrData = null,
+  isPermanentList = false,
+}: ItemCardTitleProps) => {
   const { challengePeriodDuration } = useContext(LightTCRViewContext)
   const { timestamp } = useContext(WalletContext)
   const { disputed, submissionTime } = tcrData || {}
@@ -146,6 +150,5 @@ const ItemCardTitle = ({ statusCode = null, tcrData = null, isPermanentList = fa
     </Container>
   )
 }
-
 
 export default ItemCardTitle

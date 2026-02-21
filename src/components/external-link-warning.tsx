@@ -1,7 +1,7 @@
 import React from 'react'
 import styled from 'styled-components'
 import { Modal, Button } from 'components/ui'
-import Icon from 'components/ui/Icon'
+import Icon from 'components/ui/icon'
 
 const StyledModal = styled(Modal)`
   & > .ui-modal-content {
@@ -117,7 +117,12 @@ interface ExternalLinkWarningProps {
   onCancel: () => void
 }
 
-const ExternalLinkWarning = ({ visible, url, onConfirm, onCancel }: ExternalLinkWarningProps) => (
+const ExternalLinkWarning = ({
+  visible,
+  url,
+  onConfirm,
+  onCancel,
+}: ExternalLinkWarningProps) => (
   <StyledModal
     visible={visible}
     footer={null}

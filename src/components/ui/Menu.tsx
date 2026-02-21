@@ -1,5 +1,5 @@
 import React, { useCallback } from 'react'
-import styled, { css } from 'styled-components'
+import styled, { css, DefaultTheme } from 'styled-components'
 
 const MenuWrapper = styled.ul<{ $mode?: string }>`
   list-style: none;
@@ -25,7 +25,11 @@ const MenuWrapper = styled.ul<{ $mode?: string }>`
     `}
 `
 
-const MenuItemWrapper = styled.li<{ $disabled?: boolean; $selected?: boolean; $mode?: string }>`
+const MenuItemWrapper = styled.li<{
+  $disabled?: boolean
+  $selected?: boolean
+  $mode?: string
+}>`
   padding: 8px 16px;
   cursor: ${({ $disabled }) => ($disabled ? 'not-allowed' : 'pointer')};
   color: ${({ $disabled, $selected, theme }) =>
@@ -60,7 +64,7 @@ const MenuItemWrapper = styled.li<{ $disabled?: boolean; $selected?: boolean; $m
       border-bottom: 2px solid transparent;
       margin-bottom: -1px;
 
-      ${({ $selected, theme }: { $selected?: boolean; theme: any }) =>
+      ${({ $selected, theme }: { $selected?: boolean; theme: DefaultTheme }) =>
         $selected &&
         css`
           border-bottom-color: ${theme.primaryColor};
@@ -89,7 +93,7 @@ const MenuItem: React.FC<MenuItemProps> = ({
   $itemKey,
   $selected,
   $onMenuClick,
-  $mode
+  $mode,
 }) => {
   const handleClick = useCallback(
     (e: React.MouseEvent) => {
@@ -97,7 +101,7 @@ const MenuItem: React.FC<MenuItemProps> = ({
       if (onClick) onClick(e)
       if ($onMenuClick && $itemKey) $onMenuClick({ key: $itemKey, domEvent: e })
     },
-    [disabled, onClick, $onMenuClick, $itemKey]
+    [disabled, onClick, $onMenuClick, $itemKey],
   )
 
   return (
@@ -135,23 +139,26 @@ const Menu: MenuComponent = ({
   className,
   onClick,
   mode = 'vertical',
-  selectedKeys = []
+  selectedKeys = [],
 }) => (
   <MenuWrapper
     $mode={mode}
     style={style}
     className={`ui-menu${className ? ` ${className}` : ''}`}
   >
-    {React.Children.map(children, (child: any) => {
-      if (!child || child.type !== MenuItem) return child
-      const itemKey = child.key
-      return React.cloneElement(child, {
-        $itemKey: itemKey,
-        $selected: selectedKeys.includes(itemKey),
-        $onMenuClick: onClick,
-        $mode: mode
-      })
-    })}
+    {React.Children.map(
+      children,
+      (child: React.ReactElement<MenuItemProps>) => {
+        if (!child || child.type !== MenuItem) return child
+        const itemKey = child.key
+        return React.cloneElement(child, {
+          $itemKey: itemKey,
+          $selected: selectedKeys.includes(itemKey),
+          $onMenuClick: onClick,
+          $mode: mode,
+        })
+      },
+    )}
   </MenuWrapper>
 )
 
