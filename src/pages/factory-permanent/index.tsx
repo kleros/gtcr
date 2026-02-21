@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import styled from 'styled-components'
 import { Steps, Button, Card, Modal } from 'components/ui'
-import Icon from 'components/ui/icon'
+import Icon from 'components/ui/Icon'
 import { useDebounce } from 'use-debounce'
 import { useWeb3Context } from 'hooks/use-web3-context'
 import { useParams } from 'react-router-dom'

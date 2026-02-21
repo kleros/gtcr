@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react'
 import styled from 'styled-components'
 import { Form, Input, Tooltip } from 'components/ui'
-import Icon from 'components/ui/icon'
+import Icon from 'components/ui/Icon'
 import { ethers, BigNumber } from 'ethers'
 
 const { parseEther } = ethers.utils

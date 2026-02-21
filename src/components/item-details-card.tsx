@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useContext } from 'react'
 import styled from 'styled-components'
 import { Card, Tooltip, Button, Result, Alert } from 'components/ui'
-import Icon from 'components/ui/icon'
+import Icon from 'components/ui/Icon'
 import DisplaySelector from './display-selector'
 import { useAccount, usePublicClient, useWalletClient, useChainId } from 'wagmi'
 import { simulateContract } from '@wagmi/core'

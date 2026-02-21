@@ -10,7 +10,7 @@ import {
   Button,
   Divider,
 } from 'components/ui'
-import Icon from 'components/ui/icon'
+import Icon from 'components/ui/Icon'
 import { toast } from 'react-toastify'
 import { withFormik } from 'formik'
 import * as yup from 'yup'

@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useEffect, useCallback } from 'react'
 import styled from 'styled-components'
 import { Select, InputNumber, Slider, Tooltip } from 'components/ui'
-import Icon from 'components/ui/icon'
+import Icon from 'components/ui/Icon'
 import { ethers } from 'ethers'
 import { PolicyRegistryABI as _PolicyRegistry } from 'utils/abis/policy-registry'
 import { abi as _IArbitrator } from '@kleros/erc-792/build/contracts/IArbitrator.json'

@@ -1,7 +1,7 @@
 import React, { useCallback, useState } from 'react'
 import styled from 'styled-components'
 import { Form, Switch, Input, Upload } from 'components/ui'
-import Icon from 'components/ui/icon'
+import Icon from 'components/ui/Icon'
 import { toast } from 'react-toastify'
 import { Field } from 'formik'
 import { getExtension } from 'mime'

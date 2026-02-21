@@ -1,6 +1,6 @@
 import React, { useContext, useMemo } from 'react'
 import { Tooltip } from 'components/ui'
-import Icon from 'components/ui/icon'
+import Icon from 'components/ui/Icon'
 import ItemStatusBadge from 'components/item-status-badge'
 import ETHAmount from 'components/eth-amount'
 import { itemToStatusCode } from 'utils/item-status'

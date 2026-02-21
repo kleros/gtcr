@@ -11,7 +11,7 @@ import {
   Select,
   Result,
 } from 'components/ui'
-import Icon from 'components/ui/icon'
+import Icon from 'components/ui/Icon'
 import { useDebounce } from 'use-debounce'
 import { abi as _gtcr } from '@kleros/tcr/build/contracts/GeneralizedTCR.json'
 import ETHAmount from 'components/eth-amount'

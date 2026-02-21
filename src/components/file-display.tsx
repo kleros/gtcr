@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import styled from 'styled-components'
-import Icon from 'components/ui/icon'
+import Icon from 'components/ui/Icon'
 import { getExtension } from 'mime'
 import { parseIpfs } from 'utils/ipfs-parse'
 

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import styled from 'styled-components'
 import { Modal, Typography, Button, Spin, Tooltip } from 'components/ui'
-import Icon from 'components/ui/icon'
+import Icon from 'components/ui/Icon'
 import _gtcr from 'assets/abis/PermanentGTCR.json'
 import EnsureAuth from 'components/ensure-auth'
 import ETHAmount from 'components/eth-amount'

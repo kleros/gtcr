@@ -5,7 +5,7 @@ import {
   STATUS_CODE,
 } from '../utils/permanent-item-status'
 import { Badge, Skeleton } from 'components/ui'
-import Icon from 'components/ui/icon'
+import Icon from 'components/ui/Icon'
 import styled from 'styled-components'
 import { BigNumber } from 'ethers'
 

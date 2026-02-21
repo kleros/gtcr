@@ -8,7 +8,7 @@ import React, {
 } from 'react'
 import styled from 'styled-components'
 import { Badge } from 'components/ui'
-import Icon from 'components/ui/icon'
+import Icon from 'components/ui/Icon'
 import { Link, useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useDebouncedCallback } from 'use-debounce'

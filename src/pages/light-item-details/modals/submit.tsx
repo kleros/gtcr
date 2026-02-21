@@ -8,7 +8,7 @@ import {
   Typography,
   Descriptions,
 } from 'components/ui'
-import Icon from 'components/ui/icon'
+import Icon from 'components/ui/Icon'
 import styled from 'styled-components'
 import _gtcr from 'assets/abis/LightGeneralizedTCR.json'
 import { useAccount, usePublicClient, useWalletClient, useChainId } from 'wagmi'

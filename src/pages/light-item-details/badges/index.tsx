@@ -7,7 +7,7 @@ import React, {
 } from 'react'
 import styled from 'styled-components'
 import { Card, Typography, Divider, Button, Result } from 'components/ui'
-import Icon from 'components/ui/icon'
+import Icon from 'components/ui/Icon'
 import { useParams } from 'react-router-dom'
 import { useEthersProvider } from 'hooks/ethers-adapters'
 import { ethers, BigNumber } from 'ethers'

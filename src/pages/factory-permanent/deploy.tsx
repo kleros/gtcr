@@ -1,5 +1,5 @@
 import { Card, Button, Alert, Steps } from 'components/ui'
-import Icon from 'components/ui/icon'
+import Icon from 'components/ui/Icon'
 import { Link } from 'react-router-dom'
 import React, { useState } from 'react'
 import { parseEther, decodeEventLog } from 'viem'

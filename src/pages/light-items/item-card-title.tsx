@@ -1,7 +1,7 @@
 import React, { useContext, useMemo } from 'react'
 import styled from 'styled-components'
 import { Tooltip } from 'components/ui'
-import Icon from 'components/ui/icon'
+import Icon from 'components/ui/Icon'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import ItemStatusBadge from 'components/item-status-badge'
 import ETHAmount from 'components/eth-amount'

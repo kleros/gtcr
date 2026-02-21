@@ -6,7 +6,7 @@ import React, {
   useCallback,
 } from 'react'
 import { Card, Typography, Button, Result } from 'components/ui'
-import Icon from 'components/ui/icon'
+import Icon from 'components/ui/Icon'
 import { useParams } from 'react-router-dom'
 import { ethers } from 'ethers'
 import { useEthersProvider } from 'hooks/ethers-adapters'

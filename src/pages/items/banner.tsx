@@ -1,6 +1,6 @@
 import React from 'react'
 import { Skeleton } from 'components/ui'
-import Icon from 'components/ui/icon'
+import Icon from 'components/ui/Icon'
 import { ZERO_ADDRESS, capitalizeFirstLetter } from 'utils/string'
 import { useParams } from 'react-router-dom'
 import ContractExplorerUrl from 'components/contract-explorer-url'

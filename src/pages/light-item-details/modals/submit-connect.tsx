@@ -14,7 +14,7 @@ import {
   Result,
   Alert,
 } from 'components/ui'
-import Icon from 'components/ui/icon'
+import Icon from 'components/ui/Icon'
 import { useDebounce } from 'use-debounce'
 import _gtcr from 'assets/abis/LightGeneralizedTCR.json'
 import ETHAmount from 'components/eth-amount'

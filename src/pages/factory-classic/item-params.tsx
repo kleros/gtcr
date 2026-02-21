@@ -10,7 +10,7 @@ import {
   Switch,
   Tooltip,
 } from 'components/ui'
-import Icon from 'components/ui/icon'
+import Icon from 'components/ui/Icon'
 import { toast } from 'react-toastify'
 import { withFormik, FieldArray, Field } from 'formik'
 import * as yup from 'yup'

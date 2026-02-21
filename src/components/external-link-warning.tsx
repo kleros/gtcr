@@ -1,7 +1,7 @@
 import React from 'react'
 import styled from 'styled-components'
 import { Modal, Button } from 'components/ui'
-import Icon from 'components/ui/icon'
+import Icon from 'components/ui/Icon'
 
 const StyledModal = styled(Modal)`
   & > .ui-modal-content {

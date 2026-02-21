@@ -1,7 +1,7 @@
 import React, { useCallback, useState } from 'react'
 import { ethers } from 'ethers'
 import { Button, Form, Tooltip, Descriptions } from 'components/ui'
-import Icon from 'components/ui/icon'
+import Icon from 'components/ui/Icon'
 import { abi as _gtcr } from '@kleros/tcr/build/contracts/GeneralizedTCR.json'
 import { useAccount, usePublicClient, useWalletClient, useChainId } from 'wagmi'
 import { simulateContract } from '@wagmi/core'

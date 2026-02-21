@@ -1,5 +1,5 @@
 import { Skeleton, Button } from 'components/ui'
-import Icon from 'components/ui/icon'
+import Icon from 'components/ui/Icon'
 import styled, { css } from 'styled-components'
 import { smallScreenStyle } from 'styles/small-screen-style'
 import { Link, useParams } from 'react-router-dom'

@@ -3,7 +3,7 @@ import { useWeb3Context } from 'hooks/use-web3-context'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import styled from 'styled-components'
 import { Popover, List, Badge, Empty, Avatar, Button } from 'components/ui'
-import Icon from 'components/ui/icon'
+import Icon from 'components/ui/Icon'
 import { Link } from 'react-router-dom'
 import { ethers } from 'ethers'
 import {

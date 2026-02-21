@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react'
 import { Input, Checkbox, Upload, Form } from 'components/ui'
-import Icon from 'components/ui/icon'
+import Icon from 'components/ui/Icon'
 import { toast } from 'react-toastify'
 import styled from 'styled-components'
 import { withFormik, Field } from 'formik'

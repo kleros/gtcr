@@ -13,7 +13,7 @@ import {
   Row,
   Col,
 } from 'components/ui'
-import Icon from 'components/ui/icon'
+import Icon from 'components/ui/Icon'
 import { useParams } from 'react-router-dom'
 import ETHAddress from 'components/eth-address'
 import { CONTRACT_STATUS, SUBGRAPH_RULING } from 'utils/permanent-item-status'
