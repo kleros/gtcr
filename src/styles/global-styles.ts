@@ -30,6 +30,10 @@ const GlobalStyle = createGlobalStyle`
     --toastify-font-family: 'Roboto', sans-serif;
   }
 
+  .Toastify__toast-container--top-center {
+    top: 48px;
+  }
+
   body[data-theme="dark"] {
     background-color: ${({ theme }) => theme.bodyBackground} !important;
     color: ${({ theme }) => theme.textPrimary} !important;

@@ -24,7 +24,12 @@ const queryClient = new QueryClient()
 
 const ThemedToastContainer = () => {
   const { isDarkMode } = useContext(ThemeContext)
-  return <ToastContainer theme={isDarkMode ? 'dark' : 'light'} />
+  return (
+    <ToastContainer
+      position="top-center"
+      theme={isDarkMode ? 'dark' : 'light'}
+    />
+  )
 }
 
 const StyledClickaway = styled.div<{ isMenuClosed: boolean }>`
