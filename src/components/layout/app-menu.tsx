@@ -3,6 +3,7 @@ import styled, { css } from 'styled-components'
 import { smallScreenStyle } from 'styles/small-screen-style'
 import { NavLink, Link, useLocation } from 'react-router-dom'
 import { useWeb3Context } from 'hooks/use-web3-context'
+import useUrlChainId from 'hooks/use-url-chain-id'
 import { SAVED_NETWORK_KEY } from 'utils/string'
 import { preloadFactory } from 'bootstrap/app-router'
 
@@ -48,16 +49,14 @@ const StyledLink = styled(Link)<{ $active?: boolean }>`
 const AppMenu = () => {
   const { pathname } = useLocation()
   const { networkId } = useWeb3Context()
+  const urlChainId = useUrlChainId()
   const isHome = pathname.startsWith('/tcr/') || pathname === '/'
 
   const currentChainId = useMemo(() => {
-    const match = pathname.match(
-      /\/(?:tcr|factory(?:-classic|-permanent)?)\/(\d+)/,
-    )
-    if (match) return Number(match[1])
+    if (urlChainId) return urlChainId
     const saved = localStorage.getItem(SAVED_NETWORK_KEY)
     return saved ? Number(saved) : networkId
-  }, [pathname, networkId])
+  }, [urlChainId, networkId])
 
   return (
     <DesktopNav>

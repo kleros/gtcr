@@ -7,7 +7,7 @@ import React, {
 } from 'react'
 import { Card, Typography, Button, Result } from 'components/ui'
 import Icon from 'components/ui/Icon'
-import { useParams } from 'react-router-dom'
+import useUrlChainId from 'hooks/use-url-chain-id'
 import { ethers } from 'ethers'
 import { useEthersProvider } from 'hooks/ethers-adapters'
 import { abi as _gtcr } from '@kleros/tcr/build/contracts/GeneralizedTCR.json'
@@ -43,8 +43,8 @@ interface BadgesProps {
 
 const Badges = ({ connectedTCRAddr, item, tcrAddress }: BadgesProps) => {
   const { timestamp } = useContext(WalletContext)
-  const { chainId } = useParams()
-  const networkId = chainId ? Number(chainId) : undefined
+  const chainId = useUrlChainId()
+  const networkId = chainId ?? undefined
   const library = useEthersProvider({ chainId: networkId })
   const { metadataByTime } = useTcrView(tcrAddress)
 

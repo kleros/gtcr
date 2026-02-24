@@ -17,7 +17,7 @@ import { abi as _gtcr } from '@kleros/tcr/build/contracts/GeneralizedTCR.json'
 import ETHAmount from 'components/eth-amount'
 import { addPeriod, isETHAddress } from 'utils/string'
 import { ethers } from 'ethers'
-import { useParams } from 'react-router-dom'
+import useUrlChainId from 'hooks/use-url-chain-id'
 import { useAccount, usePublicClient, useWalletClient, useChainId } from 'wagmi'
 import { useEthersProvider } from 'hooks/ethers-adapters'
 import { simulateContract } from '@wagmi/core'
@@ -55,8 +55,8 @@ const SubmitConnectModal = (props: SubmitConnectModalProps) => {
   const chainId = useChainId()
   const publicClient = usePublicClient()
   const { data: walletClient } = useWalletClient()
-  const { chainId: urlChainId } = useParams()
-  const networkId = urlChainId ? Number(urlChainId) : undefined
+  const urlChainId = useUrlChainId()
+  const networkId = urlChainId ?? undefined
   const library = useEthersProvider({ chainId: networkId })
   const [error, setError] = useState<string>()
 

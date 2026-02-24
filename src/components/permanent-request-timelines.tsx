@@ -14,7 +14,7 @@ import {
   Col,
 } from 'components/ui'
 import Icon from 'components/ui/Icon'
-import { useParams } from 'react-router-dom'
+import useUrlChainId from 'hooks/use-url-chain-id'
 import ETHAddress from 'components/eth-address'
 import { CONTRACT_STATUS, SUBGRAPH_RULING } from 'utils/permanent-item-status'
 import { capitalizeFirstLetter } from 'utils/string'
@@ -79,7 +79,7 @@ interface TimelineProps {
 }
 
 const Timeline = ({ submission, item, metaEvidence }: TimelineProps) => {
-  const { chainId: networkId } = useParams()
+  const networkId = useUrlChainId()
   const [evidenceMap, setEvidenceMap] = useState()
   // this submission has a range associated createdAt finishedAt
   // take ALL data from the item

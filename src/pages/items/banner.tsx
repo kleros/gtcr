@@ -2,7 +2,7 @@ import React from 'react'
 import { Skeleton } from 'components/ui'
 import Icon from 'components/ui/Icon'
 import { ZERO_ADDRESS, capitalizeFirstLetter } from 'utils/string'
-import { useParams } from 'react-router-dom'
+import useUrlChainId from 'hooks/use-url-chain-id'
 import ContractExplorerUrl from 'components/contract-explorer-url'
 import { defaultTcrAddresses } from 'config/tcr-addresses'
 import { parseIpfs } from 'utils/ipfs-parse'
@@ -39,7 +39,7 @@ const Banner = ({
   connectedTCRAddr = null,
   tcrAddress = null,
 }: BannerProps) => {
-  const { chainId: networkId } = useParams()
+  const networkId = useUrlChainId()
   const defaultTCRAddress = defaultTcrAddresses[networkId]
   const { metadata, fileURI } = metaEvidence || {}
   const { itemName, tcrTitle, tcrDescription, logoURI, relTcrDisabled } =

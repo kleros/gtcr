@@ -14,7 +14,7 @@ import {
   Col,
 } from 'components/ui'
 import Icon from 'components/ui/Icon'
-import { useParams } from 'react-router-dom'
+import useUrlChainId from 'hooks/use-url-chain-id'
 import ETHAddress from 'components/eth-address'
 import {
   CONTRACT_STATUS,
@@ -85,7 +85,7 @@ interface TimelineProps {
 }
 
 const Timeline = ({ request, item, metaEvidence }: TimelineProps) => {
-  const { chainId: networkId } = useParams()
+  const networkId = useUrlChainId()
   const [evidenceMap, setEvidenceMap] = useState()
 
   const logs = useMemo(() => {

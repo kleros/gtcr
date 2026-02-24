@@ -320,8 +320,11 @@ const ItemStatusCard = ({
                   <ETHAddress address={challenge.challenger} />
                 </Descriptions.Item>
                 <Descriptions.Item label="Dispute ID">
-                  {klerosAddress.toLowerCase() === arbitrator.toLowerCase() ? (
-                    <a href={uiURL.replace(':disputeID', disputeID.toString())}>
+                  {klerosAddress?.toLowerCase() ===
+                  arbitrator?.toLowerCase() ? (
+                    <a
+                      href={uiURL?.replace(':disputeID', disputeID.toString())}
+                    >
                       {disputeID.toString()}
                     </a>
                   ) : (

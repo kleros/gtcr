@@ -7,7 +7,7 @@ import EnsureAuth from 'components/ensure-auth'
 import ETHAmount from 'components/eth-amount'
 import { useAccount, usePublicClient, useWalletClient, useChainId } from 'wagmi'
 import { simulateContract } from '@wagmi/core'
-import { getAddress } from 'viem'
+import { erc20Abi, getAddress } from 'viem'
 import EvidenceForm from 'components/evidence-form'
 import ipfsPublish from 'utils/ipfs-publish'
 import { getIPFSPath } from 'utils/get-ipfs-path'
@@ -32,36 +32,6 @@ export const StyledModal = styled(Modal)`
     border-top-right-radius: 14px;
   }
 `
-
-const ERC20_ABI = [
-  {
-    inputs: [{ name: 'owner', type: 'address' }],
-    name: 'balanceOf',
-    outputs: [{ name: '', type: 'uint256' }],
-    stateMutability: 'view',
-    type: 'function',
-  },
-  {
-    inputs: [
-      { name: 'owner', type: 'address' },
-      { name: 'spender', type: 'address' },
-    ],
-    name: 'allowance',
-    outputs: [{ name: '', type: 'uint256' }],
-    stateMutability: 'view',
-    type: 'function',
-  },
-  {
-    inputs: [
-      { name: 'spender', type: 'address' },
-      { name: 'amount', type: 'uint256' },
-    ],
-    name: 'approve',
-    outputs: [{ name: '', type: 'bool' }],
-    stateMutability: 'nonpayable',
-    type: 'function',
-  },
-]
 
 interface ChallengeModalProps {
   item: SubgraphItem
@@ -105,13 +75,13 @@ const ChallengeModal = ({
       const [bal, allow, nativeBal] = await Promise.all([
         publicClient.readContract({
           address: registry.token,
-          abi: ERC20_ABI,
+          abi: erc20Abi,
           functionName: 'balanceOf',
           args: [account],
         }),
         publicClient.readContract({
           address: registry.token,
-          abi: ERC20_ABI,
+          abi: erc20Abi,
           functionName: 'allowance',
           args: [account, registry.id],
         }),
@@ -144,7 +114,7 @@ const ChallengeModal = ({
     try {
       const { request } = await simulateContract(wagmiConfig, {
         address: registry.token,
-        abi: ERC20_ABI,
+        abi: erc20Abi,
         functionName: 'approve',
         args: [registry.id, challengeStake],
         account,

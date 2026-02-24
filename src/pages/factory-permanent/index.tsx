@@ -5,7 +5,7 @@ import { Steps, Button, Card, Modal } from 'components/ui'
 import Icon from 'components/ui/Icon'
 import { useDebounce } from 'use-debounce'
 import { useWeb3Context } from 'hooks/use-web3-context'
-import { useParams } from 'react-router-dom'
+import useUrlChainId from 'hooks/use-url-chain-id'
 import { ethers } from 'ethers'
 import _GTCRFactory from 'assets/abis/PermanentGTCRFactory.json'
 import TCRParams from './tcr-params'
@@ -235,9 +235,9 @@ const useCachedFactory = (version: string, networkId: number | undefined) => {
 }
 
 const FactoryPermanentPage = () => {
-  const { chainId: urlChainId } = useParams()
+  const urlChainId = useUrlChainId()
   const { library, active } = useWeb3Context()
-  const factoryChainId = Number(urlChainId)
+  const factoryChainId = urlChainId ?? 0
   const cachedFactory = useCachedFactory(version, factoryChainId)
   const [previousDeployments, setPreviousDeployments] = useState([])
   const { tcrState, nextStep, previousStep, STEP_COUNT, resetTcrState } =

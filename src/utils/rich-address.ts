@@ -58,6 +58,13 @@ export const references: Reference[] = [
     explorer: 'etherscan.io',
   },
   {
+    id: '11155111',
+    namespaceId: 'eip155',
+    name: 'Ethereum Sepolia',
+    label: 'SEP',
+    explorer: 'sepolia.etherscan.io',
+  },
+  {
     id: '56',
     namespaceId: 'eip155',
     name: 'Binance Smart Chain',

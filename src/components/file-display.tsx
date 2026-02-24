@@ -5,7 +5,7 @@ import { getExtension } from 'mime'
 import { parseIpfs } from 'utils/ipfs-parse'
 
 const EmptyText = styled.span`
-  color: ${({ theme }) => theme.textSecondary};
+  color: ${({ theme }) => theme.textTertiary};
 `
 
 const ErrorText = styled.span`

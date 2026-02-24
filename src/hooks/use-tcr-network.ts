@@ -1,34 +1,21 @@
 import { useEffect, useRef } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { useAccount, useChainId, useSwitchChain } from 'wagmi'
+import useUrlChainId from 'hooks/use-url-chain-id'
 import { getChainById, DEFAULT_CHAIN } from 'config/chains'
 import { defaultTcrAddresses } from 'config/tcr-addresses'
 
-/**
- * Hook that manages chain switching for the TCR app.
- *
- * Key design decisions (matching kleros-v2/web patterns):
- * - Uses wagmi's `useSwitchChain` instead of raw `window.ethereum.request()`
- * - Never blocks rendering — content is always shown (read-only mode for wrong chain)
- * - Chain switching is best-effort: if the user rejects, we still show content
- *
- * Anti-loop design:
- * - ALL tracking uses refs (never state) to avoid re-render cascades
- * - switchChain is called via a stable ref to avoid dependency churn
- * - Navigation from wallet changes is debounced to let wagmi settle
- * - Self-initiated navigations are tracked to prevent re-triggering
- */
+/** Manages wallet chain switching and URL-based chain navigation. */
 const useTcrNetwork = () => {
   const navigate = useNavigate()
-  const { chainId: urlChainId } = useParams()
+  const urlChainId = useUrlChainId()
   const walletChainId = useChainId()
   const { isConnected } = useAccount()
   const { switchChain } = useSwitchChain()
 
   // The chain the URL says we should be on
-  const targetChainId = getChainById(urlChainId)
-    ? Number(urlChainId)
-    : DEFAULT_CHAIN.id
+  const targetChainId =
+    urlChainId && getChainById(urlChainId) ? urlChainId : DEFAULT_CHAIN.id
 
   // Whether the wallet is on the correct chain for write operations
   const isCorrectChain = walletChainId === targetChainId
@@ -96,12 +83,6 @@ const useTcrNetwork = () => {
       }
     }
   }, [walletChainId, isConnected, targetChainId, navigate])
-
-  return {
-    targetChainId,
-    isCorrectChain,
-    isConnected,
-  }
 }
 
 export default useTcrNetwork

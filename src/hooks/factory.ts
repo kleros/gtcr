@@ -1,5 +1,5 @@
-import { useParams } from 'react-router-dom'
 import { ethers } from 'ethers'
+import useUrlChainId from 'hooks/use-url-chain-id'
 import { subgraphUrl, subgraphUrlPermanent } from 'config/tcr-addresses'
 
 const { getAddress } = ethers.utils
@@ -39,10 +39,11 @@ const checkRegistryExists = async (
 }
 
 const useFactory = () => {
-  const { chainId: urlChainId } = useParams()
-  const networkId = urlChainId ? Number(urlChainId) : undefined
-  const GTCR_SUBGRAPH_URL = subgraphUrl[networkId]
-  const PGTCR_SUBGRAPH_URL = subgraphUrlPermanent[networkId]
+  const urlChainId = useUrlChainId()
+  const GTCR_SUBGRAPH_URL = urlChainId ? subgraphUrl[urlChainId] : undefined
+  const PGTCR_SUBGRAPH_URL = urlChainId
+    ? subgraphUrlPermanent[urlChainId]
+    : undefined
 
   const deployedWithLightFactory = (tcrAddress) =>
     checkRegistryExists(

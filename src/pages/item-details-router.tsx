@@ -5,6 +5,7 @@ import { useParams } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import useTcrNetwork from 'hooks/use-tcr-network'
 import useCheckLightCurate from 'hooks/use-check-light-curate'
+import useUrlChainId from 'hooks/use-url-chain-id'
 import Loading from 'components/loading'
 import ErrorPage from 'pages/error-page'
 import { StakeContext } from 'contexts/stake-context'
@@ -25,20 +26,23 @@ const LightItemDetails = lazy(() => import('./light-item-details/index'))
 const ItemDetails = lazy(() => import('./item-details/index'))
 
 const ItemDetailsRouter = () => {
-  const { tcrAddress, itemID, chainId } = useParams<{
+  const { tcrAddress, itemID } = useParams<{
     tcrAddress: string
     itemID: string
-    chainId: string
   }>()
+  const chainId = useUrlChainId()
   useTcrNetwork()
   const search = window.location.search
   const { isLightCurate, isClassicCurate, isPermanentCurate, checking } =
     useCheckLightCurate()
   const { setIsPermanent } = useContext(StakeContext)
   const queryClient = useQueryClient()
-  const client = useMemo(() => getGraphQLClient(chainId), [chainId])
+  const client = useMemo(
+    () => (chainId ? getGraphQLClient(chainId) : null),
+    [chainId],
+  )
   const pgtcrClient = useMemo(
-    () => getPermanentGraphQLClient(chainId),
+    () => (chainId ? getPermanentGraphQLClient(chainId) : null),
     [chainId],
   )
 

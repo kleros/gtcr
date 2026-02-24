@@ -1,7 +1,8 @@
 import React from 'react'
 import styled from 'styled-components'
 import { Button } from 'components/ui'
-import { useParams, Link } from 'react-router-dom'
+import { Link } from 'react-router-dom'
+import useUrlChainId from 'hooks/use-url-chain-id'
 import { ZERO_ADDRESS } from '../utils/string'
 import ETHAddress from './eth-address'
 
@@ -21,7 +22,7 @@ interface GTCRAddressProps {
 }
 
 const GTCRAddress = ({ address, disabled }: GTCRAddressProps) => {
-  const { chainId } = useParams()
+  const chainId = useUrlChainId()
 
   // this avoids crashes when it looks for the address "Error decoding GTCR address"
   if (!/^0x[a-fA-F0-9]{40}$/.test(address)) return null

@@ -21,6 +21,7 @@ import {
   Switch,
 } from 'components/ui'
 import { useNavigate, useParams } from 'react-router-dom'
+import useUrlChainId from 'hooks/use-url-chain-id'
 import localforage from 'localforage'
 import { useQuery } from '@tanstack/react-query'
 import ErrorPage from '../error-page'
@@ -163,7 +164,8 @@ export const ITEMS_PER_PAGE = 40
 
 const Items = () => {
   const navigate = useNavigate()
-  const { tcrAddress, chainId } = useParams()
+  const { tcrAddress } = useParams()
+  const chainId = useUrlChainId()
   const search = window.location.search
   const { timestamp } = useContext(WalletContext)
   const [submissionFormOpen, setSubmissionFormOpen] = useState<

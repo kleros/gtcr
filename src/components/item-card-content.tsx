@@ -41,9 +41,7 @@ const ItemCardContent = ({
           ))}
       </div>
       <Button
-        {...getLinkProps(
-          `/tcr/${chainId}/${tcrAddress}/${item.tcrData.ID}`,
-        )}
+        {...getLinkProps(`/tcr/${chainId}/${tcrAddress}/${item.tcrData.ID}`)}
       >
         Details
       </Button>

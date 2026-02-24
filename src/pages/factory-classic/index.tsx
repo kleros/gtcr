@@ -3,7 +3,7 @@ import Icon from 'components/ui/Icon'
 import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import { useDebounce } from 'use-debounce'
 import { useWeb3Context } from 'hooks/use-web3-context'
-import { useParams } from 'react-router-dom'
+import useUrlChainId from 'hooks/use-url-chain-id'
 import { ethers } from 'ethers'
 import { abi as _GTCRFactory } from '@kleros/tcr/build/contracts/GTCRFactory.json'
 import StyledLayoutContent from '../layout-content'
@@ -186,8 +186,8 @@ const useCachedFactory = (version: string, networkId: number | undefined) => {
 }
 
 const FactoryClassicPage = () => {
-  const { chainId: urlChainId } = useParams()
-  const factoryChainId = Number(urlChainId)
+  const urlChainId = useUrlChainId()
+  const factoryChainId = urlChainId ?? 0
   const cachedFactory = useCachedFactory(version, factoryChainId)
   const { library, active } = useWeb3Context()
   const [previousDeployments, setPreviousDeployments] = useState([])

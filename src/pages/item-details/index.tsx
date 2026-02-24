@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useContext, useMemo } from 'react'
 import { Breadcrumb } from 'components/ui'
 import { useParams } from 'react-router-dom'
+import useUrlChainId from 'hooks/use-url-chain-id'
 import { useEthersProvider } from 'hooks/ethers-adapters'
 import { gtcrDecode } from '@kleros/gtcr-encoder'
 import { abi as _IArbitrator } from '@kleros/erc-792/build/contracts/IArbitrator.json'
@@ -35,9 +36,10 @@ interface ItemDetailsProps {
 }
 
 const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
-  const { tcrAddress, chainId } = useParams()
+  const { tcrAddress } = useParams()
+  const chainId = useUrlChainId()
   const library = useEthersProvider({
-    chainId: chainId ? Number(chainId) : undefined,
+    chainId: chainId ?? undefined,
   })
   const [itemMetaEvidence, setItemMetaEvidence] = useState<
     MetaEvidence | undefined

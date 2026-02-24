@@ -3,6 +3,7 @@ import styled from 'styled-components'
 import { MAX_WIDTH_CONTENT } from 'styles/small-screen-style'
 import { Layout, Breadcrumb } from 'components/ui'
 import { useParams, Link } from 'react-router-dom'
+import useUrlChainId from 'hooks/use-url-chain-id'
 import useDocumentHead from 'hooks/use-document-head'
 import { abi as _IArbitrator } from '@kleros/erc-792/build/contracts/IArbitrator.json'
 import { ethers } from 'ethers'
@@ -82,9 +83,10 @@ interface ItemDetailsProps {
 }
 
 const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
-  const { tcrAddress, chainId } = useParams()
+  const { tcrAddress } = useParams()
+  const chainId = useUrlChainId()
   const library = useEthersProvider({
-    chainId: chainId ? Number(chainId) : undefined,
+    chainId: chainId ?? undefined,
   })
   const [ipfsItemData, setIpfsItemData] = useState<
     Record<string, unknown> | undefined

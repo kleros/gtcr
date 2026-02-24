@@ -53,9 +53,7 @@ const PermanentItemCardContent = ({
             </StyledItemCol>
           ))}
       </div>
-      <Button
-        {...getLinkProps(`/tcr/${chainId}/${tcrAddress}/${item.itemID}`)}
-      >
+      <Button {...getLinkProps(`/tcr/${chainId}/${tcrAddress}/${item.itemID}`)}>
         Details
       </Button>
     </Container>

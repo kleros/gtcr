@@ -9,7 +9,8 @@ import React, {
 import styled from 'styled-components'
 import { Badge } from 'components/ui'
 import Icon from 'components/ui/Icon'
-import { Link, useParams } from 'react-router-dom'
+import { Link } from 'react-router-dom'
+import useUrlChainId from 'hooks/use-url-chain-id'
 import { useQuery } from '@tanstack/react-query'
 import { useDebouncedCallback } from 'use-debounce'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
@@ -144,7 +145,7 @@ const OptionItem = ({ item }: OptionItemProps) => {
     metaEvidence,
   } = useContext(LightTCRViewContext)
   const { timestamp } = useContext(WalletContext)
-  const { chainId } = useParams()
+  const chainId = useUrlChainId()
   const [itemInfo, setItemInfo] = useState()
   const { metadata } = metaEvidence || {}
   const { isTCRofTCRs } = metadata || {}
@@ -227,8 +228,11 @@ const LightSearchBar = () => {
   const [writing, setWriting] = useState(false)
   const [focused, setFocused] = useState(false)
   const { tcrAddress } = useContext(LightTCRViewContext)
-  const { chainId } = useParams()
-  const client = useMemo(() => getGraphQLClient(chainId), [chainId])
+  const chainId = useUrlChainId()
+  const client = useMemo(
+    () => (chainId ? getGraphQLClient(chainId) : null),
+    [chainId],
+  )
   const containerRef = useRef<HTMLDivElement>(null)
 
   const [searchVariables, setSearchVariables] = useState<Record<

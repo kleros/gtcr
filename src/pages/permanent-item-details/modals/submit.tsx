@@ -7,6 +7,7 @@ import { withFormik } from 'formik'
 import humanizeDuration from 'humanize-duration'
 import { useAccount, usePublicClient, useWalletClient } from 'wagmi'
 import { simulateContract } from '@wagmi/core'
+import { erc20Abi } from 'viem'
 import { ItemTypes, typeDefaultValues } from '@kleros/gtcr-encoder'
 import InputSelector from 'components/input-selector'
 import EnsureAuth from 'components/ensure-auth'
@@ -193,36 +194,6 @@ const SubmissionForm: React.ComponentType<Record<string, unknown>> = withFormik(
   },
 )(_SubmissionForm as React.ComponentType<Record<string, unknown>>)
 
-const ERC20_ABI = [
-  {
-    inputs: [{ name: 'owner', type: 'address' }],
-    name: 'balanceOf',
-    outputs: [{ name: '', type: 'uint256' }],
-    stateMutability: 'view',
-    type: 'function',
-  },
-  {
-    inputs: [
-      { name: 'owner', type: 'address' },
-      { name: 'spender', type: 'address' },
-    ],
-    name: 'allowance',
-    outputs: [{ name: '', type: 'uint256' }],
-    stateMutability: 'view',
-    type: 'function',
-  },
-  {
-    inputs: [
-      { name: 'spender', type: 'address' },
-      { name: 'amount', type: 'uint256' },
-    ],
-    name: 'approve',
-    outputs: [{ name: '', type: 'bool' }],
-    stateMutability: 'nonpayable',
-    type: 'function',
-  },
-] as const
-
 const SubmitModal: React.FC<{
   onCancel: () => void
   tcrAddress: string
@@ -282,13 +253,13 @@ const SubmitModal: React.FC<{
       const [bal, allow, nativeBal] = await Promise.all([
         publicClient.readContract({
           address: tokenAddress as `0x${string}`,
-          abi: ERC20_ABI,
+          abi: erc20Abi,
           functionName: 'balanceOf',
           args: [account],
         }),
         publicClient.readContract({
           address: tokenAddress as `0x${string}`,
-          abi: ERC20_ABI,
+          abi: erc20Abi,
           functionName: 'allowance',
           args: [account, tcrAddress as `0x${string}`],
         }),
@@ -321,7 +292,7 @@ const SubmitModal: React.FC<{
     try {
       const { request } = await simulateContract(wagmiConfig, {
         address: tokenAddress as `0x${string}`,
-        abi: ERC20_ABI,
+        abi: erc20Abi,
         functionName: 'approve',
         args: [
           tcrAddress as `0x${string}`,

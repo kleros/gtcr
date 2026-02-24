@@ -2,7 +2,8 @@ import { Skeleton, Button } from 'components/ui'
 import Icon from 'components/ui/Icon'
 import styled, { css } from 'styled-components'
 import { smallScreenStyle, MAX_WIDTH_CONTENT } from 'styles/small-screen-style'
-import { Link, useParams } from 'react-router-dom'
+import { Link } from 'react-router-dom'
+import useUrlChainId from 'hooks/use-url-chain-id'
 import React from 'react'
 import useDocumentHead from 'hooks/use-document-head'
 import { capitalizeFirstLetter } from 'utils/string'
@@ -210,7 +211,7 @@ const Banner = ({
   setSubmissionFormOpen,
   tcrAddress,
 }: BannerProps) => {
-  const { chainId: networkId } = useParams()
+  const networkId = useUrlChainId()
   const defaultTCRAddress = defaultTcrAddresses[networkId]
   const { itemName, title, description, logoURI, policyURI } = metadata || {}
 

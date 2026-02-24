@@ -7,6 +7,7 @@ import Loading from 'components/loading'
 import ErrorPage from 'pages/error-page'
 import useTcrNetwork from 'hooks/use-tcr-network'
 import useCheckLightCurate from 'hooks/use-check-light-curate'
+import useUrlChainId from 'hooks/use-url-chain-id'
 import { StakeContext } from 'contexts/stake-context'
 import { getGraphQLClient } from 'utils/graphql-client'
 import { LIGHT_ITEMS_QUERY, CLASSIC_REGISTRY_ITEMS_QUERY } from 'utils/graphql'
@@ -60,16 +61,19 @@ function computeItemsWhere(queryOptions: Record<string, any>, addr: string) {
 }
 
 const ItemsRouter = () => {
-  const { tcrAddress, chainId } = useParams<{
+  const { tcrAddress } = useParams<{
     tcrAddress: string
-    chainId: string
   }>()
+  const chainId = useUrlChainId()
   const { isLightCurate, isClassicCurate, isPermanentCurate, checking } =
     useCheckLightCurate()
   useTcrNetwork()
   const { setIsPermanent } = useContext(StakeContext)
   const queryClient = useQueryClient()
-  const client = useMemo(() => getGraphQLClient(chainId), [chainId])
+  const client = useMemo(
+    () => (chainId ? getGraphQLClient(chainId) : null),
+    [chainId],
+  )
 
   useEffect(() => {
     setIsPermanent(isPermanentCurate)

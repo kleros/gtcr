@@ -15,7 +15,7 @@ import { toast } from 'react-toastify'
 import { withFormik } from 'formik'
 import * as yup from 'yup'
 import { useEthersProvider } from 'hooks/ethers-adapters'
-import { useParams } from 'react-router-dom'
+import useUrlChainId from 'hooks/use-url-chain-id'
 import { useDebounce } from 'use-debounce'
 import { ethers, BigNumber } from 'ethers'
 
@@ -75,8 +75,8 @@ const RelTCRParams = ({
   const { width } = useWindowDimensions()
   const [uploading, setUploading] = useState<any>()
   const [advancedOptions, setAdvancedOptions] = useState<any>()
-  const { chainId } = useParams()
-  const chainProvider = useEthersProvider({ chainId: Number(chainId) })
+  const chainId = useUrlChainId()
+  const chainProvider = useEthersProvider({ chainId: chainId ?? undefined })
   const [depositVal, setDepositVal] = useState(0.05)
   const [debouncedArbitrator] = useDebounce(values.relArbitratorAddress, 1000)
   const { arbitrator: klerosAddress, policy: policyAddress } =

@@ -359,8 +359,7 @@ const AppBar = () => {
       localStorage.setItem(SAVED_NETWORK_KEY, chainId.toString())
 
       // Only navigate — useTcrNetwork handles the wallet switch when the
-      // URL chain changes. Calling switchChain here simultaneously creates
-      // a race condition that can trigger an infinite re-render loop.
+      // new page mounts, avoiding a double switchChain prompt.
       const factoryMatch = location.pathname.match(
         /^\/(factory(?:-classic|-permanent)?)\//,
       )

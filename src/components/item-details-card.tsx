@@ -6,6 +6,7 @@ import DisplaySelector from './display-selector'
 import { useAccount, usePublicClient, useWalletClient, useChainId } from 'wagmi'
 import { simulateContract } from '@wagmi/core'
 import { useParams } from 'react-router-dom'
+import useUrlChainId from 'hooks/use-url-chain-id'
 import { abi as _batchWithdraw } from '@kleros/tcr/build/contracts/BatchWithdraw.json'
 import { BigNumber } from 'ethers'
 import Reward from 'react-rewards'
@@ -85,7 +86,8 @@ const ItemDetailsCard = ({
   const [availableRewards, setAvailableRewards] = useState()
   const [rewardRef, setRewardRef] = useState()
   const BATCH_WITHDRAW_ADDRESS = batchWithdrawAddresses[chainId]
-  const { chainId: urlChainId, tcrAddress } = useParams()
+  const { tcrAddress } = useParams()
+  const urlChainId = useUrlChainId()
 
   // Fetch available rewards from fee contributions.
   useEffect(() => {

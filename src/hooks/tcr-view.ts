@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useContext } from 'react'
-import { useParams } from 'react-router-dom'
 import { useEthersProvider } from 'hooks/ethers-adapters'
+import useUrlChainId from 'hooks/use-url-chain-id'
 import { ethers, BigNumber } from 'ethers'
 import localforage from 'localforage'
 import { abi as _gtcr } from '@kleros/tcr/build/contracts/GeneralizedTCR.json'
@@ -112,8 +112,8 @@ const useTcrView = (tcrAddress: string) => {
   const latestBlock = useContext(WalletContext)?.latestBlock
 
   // Use the URL chain for provider & lookups (not the wagmi/wallet chain).
-  const { chainId: urlChainId } = useParams()
-  const networkId = urlChainId ? Number(urlChainId) : undefined
+  const urlChainId = useUrlChainId()
+  const networkId = urlChainId ?? undefined
   const library = useEthersProvider({ chainId: networkId })
 
   const arbitrableTCRViewAddr = gtcrViewAddresses[networkId]

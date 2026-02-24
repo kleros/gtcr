@@ -1,6 +1,7 @@
 /* eslint-disable no-unused-vars */
 import { Card, Spin, Select } from 'components/ui'
 import { useNavigate, useParams } from 'react-router-dom'
+import useUrlChainId from 'hooks/use-url-chain-id'
 import React, {
   useEffect,
   useState,
@@ -49,7 +50,8 @@ const MAX_ENTITIES = 1000
 const Items = () => {
   const navigate = useNavigate()
   const search = window.location.search || ''
-  const { tcrAddress, chainId } = useParams()
+  const { tcrAddress } = useParams()
+  const chainId = useUrlChainId()
   const { timestamp } = useContext(WalletContext)
   const {
     gtcr,

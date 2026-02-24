@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { Skeleton, Button } from 'components/ui'
-import { useParams } from 'react-router-dom'
+import useUrlChainId from 'hooks/use-url-chain-id'
 import { ItemTypes } from '@kleros/gtcr-encoder'
 import DisplaySelector from './display-selector'
 import { fetchMetaEvidence } from 'hooks/tcr-view'
@@ -25,7 +25,7 @@ const TCRCardContent = ({
   ID = null,
   hideDetailsButton = false,
 }: TCRCardContentProps) => {
-  const { chainId } = useParams()
+  const chainId = useUrlChainId()
 
   const [metaEvidence, setMetaEvidence] = useState()
   const { getLinkProps } = useNavigateAndScrollTop()
@@ -66,9 +66,7 @@ const TCRCardContent = ({
         <StyledItemCol>
           {!hideDetailsButton && (
             <Button
-              {...getLinkProps(
-                `/tcr/${chainId}/${currentTCRAddress}/${ID}`,
-              )}
+              {...getLinkProps(`/tcr/${chainId}/${currentTCRAddress}/${ID}`)}
             >
               Details
             </Button>

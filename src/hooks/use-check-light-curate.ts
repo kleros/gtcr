@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import { TCR_EXISTENCE_TEST } from 'utils/graphql'
 import { getGraphQLClient } from 'utils/graphql-client'
 import useCheckPermanentList from './use-check-permanent-list'
+import useUrlChainId from 'hooks/use-url-chain-id'
 
 const useCheckLightCurate = (): {
   isLightCurate: boolean
@@ -12,12 +13,15 @@ const useCheckLightCurate = (): {
   checking: boolean
   error: boolean
 } => {
-  const { tcrAddress, chainId } = useParams<{
+  const { tcrAddress } = useParams<{
     tcrAddress: string
-    chainId: string
   }>()
+  const chainId = useUrlChainId()
 
-  const client = useMemo(() => getGraphQLClient(chainId), [chainId])
+  const client = useMemo(
+    () => (chainId ? getGraphQLClient(chainId) : null),
+    [chainId],
+  )
 
   const {
     isLoading: loading,

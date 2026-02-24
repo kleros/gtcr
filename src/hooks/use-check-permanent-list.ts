@@ -5,9 +5,12 @@ import { getPermanentGraphQLClient } from 'utils/graphql-client'
 
 const useCheckPermanentList = (
   address: string | null,
-  chainId: string,
+  chainId: number | null,
 ): { isPermanentList: boolean; checking: boolean; error: boolean } => {
-  const client = useMemo(() => getPermanentGraphQLClient(chainId), [chainId])
+  const client = useMemo(
+    () => (chainId ? getPermanentGraphQLClient(chainId) : null),
+    [chainId],
+  )
 
   // Use the full registry query instead of the lightweight existence test.
   // This pre-populates the TanStack Query cache with the same key that

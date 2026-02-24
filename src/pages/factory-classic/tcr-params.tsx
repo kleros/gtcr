@@ -28,7 +28,8 @@ import KlerosParams from './kleros-params'
 import ETHAmount from 'components/eth-amount'
 import useWindowDimensions from 'hooks/window-dimensions'
 import useNativeCurrency from 'hooks/native-currency'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
+import useUrlChainId from 'hooks/use-url-chain-id'
 import { klerosAddresses } from 'config/tcr-addresses'
 import { parseIpfs } from 'utils/ipfs-parse'
 import {
@@ -78,8 +79,8 @@ const TCRParams = ({
   const [uploading, setUploading] = useState({})
   const [advancedOptions, setAdvancedOptions] = useState<any>()
   const navigate = useNavigate()
-  const { chainId } = useParams()
-  const chainProvider = useEthersProvider({ chainId: Number(chainId) })
+  const chainId = useUrlChainId()
+  const chainProvider = useEthersProvider({ chainId: chainId ?? undefined })
   const [depositVal, setDepositVal] = useState(0.05)
   const [debouncedArbitrator] = useDebounce(values.arbitratorAddress, 1000)
   const { arbitrator: klerosAddress, policy: policyAddress } =
