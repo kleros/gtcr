@@ -30,9 +30,15 @@ function getUrlsFromTransport(transport: ViemTransport): string[] {
   // Fallback transport: child transports are at value.transports
   if (transport.type === 'fallback') {
     const children = transport.value?.transports ?? transport.transports ?? []
-    return children
-      .map((t: { value?: { url?: string } }) => t.value?.url)
-      .filter((url): url is string => Boolean(url))
+    return (
+      children
+        .map((t: { value?: { url?: string } }) => t.value?.url)
+        .filter((url): url is string => Boolean(url))
+        // Reown SDK silently injects rpc.walletconnect.org as a fallback
+        // transport. Exclude it to avoid hitting their rate limits — we
+        // already have our own Alchemy RPCs configured.
+        .filter((url) => !url.includes('rpc.walletconnect.org'))
+    )
   }
   // Plain http transport
   const url = transport.value?.url ?? transport.url
