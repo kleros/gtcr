@@ -200,7 +200,7 @@ const Collapse: CollapseComponent = ({
     >
       {items.map((child) => {
         const element = child as React.ReactElement
-        const panelKey = element.key != null ? String(element.key) : undefined
+        const panelKey = element.key != null ? String(element.key).replace(/^\.\$/, '') : undefined
         const isActive = panelKey ? activeKeys.includes(panelKey) : false
 
         return React.cloneElement(element, {

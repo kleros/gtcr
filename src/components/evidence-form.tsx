@@ -30,7 +30,7 @@ const StyledIcon = styled(Icon)`
 `
 
 const UploadButton = ({ loading }: { loading?: boolean | null }) => (
-  <div>
+  <div style={{ textAlign: 'center' }}>
     <Icon type={loading ? 'loading' : 'plus'} />
     <div className="ui-upload-text">Upload</div>
   </div>
