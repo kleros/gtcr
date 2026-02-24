@@ -14,7 +14,7 @@ interface Web3Context {
   account: string | null
   active: boolean
   networkId: number
-  library: providers.JsonRpcProvider | providers.FallbackProvider | undefined
+  library: providers.JsonRpcProvider | undefined
   error: null
   connector: null
   connectorName: null

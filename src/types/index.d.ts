@@ -101,7 +101,7 @@ declare global {
   }
 
   /** Ethers library type used throughout the app (patched provider from useWeb3Context) */
-  type EthersLibrary = providers.JsonRpcProvider | providers.FallbackProvider
+  type EthersLibrary = providers.JsonRpcProvider
 
   /** IPFS publish result */
   interface IpfsPublishResult {
