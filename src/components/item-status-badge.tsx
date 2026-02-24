@@ -1,0 +1,134 @@
+import React from 'react'
+import {
+  STATUS_COLOR,
+  STATUS_TEXT,
+  STATUS_CODE,
+  itemToStatusCode,
+} from '../utils/item-status'
+import { Badge, Skeleton } from 'components/ui'
+import Icon from 'components/ui/Icon'
+import styled from 'styled-components'
+import { BigNumber } from 'ethers'
+
+const SkeletonTitleProps = { width: 90 }
+const StyledSkeleton = styled(Skeleton)`
+  display: inline;
+
+  .ui-skeleton-title {
+    margin: -3px 0;
+  }
+`
+
+const ItemStatusBadgeWrap = styled.div`
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+`
+
+const ItemStatusIconWrap = styled.div`
+  margin-left: 6px;
+  font-size: 13px;
+  display: inline-flex;
+  align-items: center;
+`
+
+const iconTypes = {
+  [STATUS_CODE.REGISTERED]: 'check-circle',
+  [STATUS_CODE.CHALLENGED]: 'fire',
+  [STATUS_CODE.CROWDFUNDING]: 'dollar',
+  [STATUS_CODE.CROWDFUNDING_WINNER]: 'dollar',
+  [STATUS_CODE.PENDING_REMOVAL]: 'hourglass',
+  [STATUS_CODE.PENDING_SUBMISSION]: 'hourglass',
+  [STATUS_CODE.REJECTED]: 'close',
+  [STATUS_CODE.REMOVED]: 'close',
+  [STATUS_CODE.SUBMITTED]: 'hourglass',
+  [STATUS_CODE.WAITING_ARBITRATOR]: 'hourglass',
+  [STATUS_CODE.WAITING_ENFORCEMENT]: 'hourglass',
+  [STATUS_CODE.REMOVAL_REQUESTED]: 'hourglass',
+}
+
+const ItemStatusIcon = ({ statusCode }: { statusCode: number }) => (
+  <ItemStatusIconWrap>
+    <Icon type={iconTypes[statusCode]} />
+  </ItemStatusIconWrap>
+)
+
+// For clarity, here "badge" refers to the ant design component,
+// and not badges related to connection between TCRs.
+const badgeStatus = (statusCode) => {
+  switch (statusCode) {
+    case STATUS_CODE.REMOVAL_REQUESTED:
+    case STATUS_CODE.SUBMITTED:
+    case STATUS_CODE.WAITING_ARBITRATOR:
+    case STATUS_CODE.CROWDFUNDING:
+    case STATUS_CODE.CROWDFUNDING_WINNER:
+    case STATUS_CODE.PENDING_SUBMISSION:
+    case STATUS_CODE.PENDING_REMOVAL:
+    case STATUS_CODE.CHALLENGED:
+    case STATUS_CODE.WAITING_ENFORCEMENT:
+      return 'processing'
+    case STATUS_CODE.REJECTED:
+    case STATUS_CODE.REMOVED:
+    case STATUS_CODE.REGISTERED:
+      return 'default'
+    default:
+      throw new Error(`Unhandled status code ${statusCode}`)
+  }
+}
+
+interface ItemStatusBadgeProps {
+  item?: SubgraphItem
+  timestamp?: BigNumber
+  challengePeriodDuration?: BigNumber
+  statusCode?: number | null
+  dark?: boolean | null
+}
+
+// A wrapper around antdesign's badge component.
+const ItemStatusBadge = ({
+  item = null,
+  timestamp = null,
+  challengePeriodDuration = null,
+  statusCode = null,
+  _dark = null,
+}: ItemStatusBadgeProps) => {
+  if (statusCode)
+    return (
+      <ItemStatusBadgeWrap>
+        <Badge
+          status={badgeStatus(statusCode)}
+          color={STATUS_COLOR[statusCode]}
+          text={STATUS_TEXT[statusCode]}
+          style={{ color: 'inherit' }}
+        />
+        <ItemStatusIcon statusCode={statusCode} />
+      </ItemStatusBadgeWrap>
+    )
+
+  if (
+    typeof statusCode !== 'number' &&
+    !item &&
+    !timestamp &&
+    !challengePeriodDuration
+  )
+    return (
+      <StyledSkeleton active paragraph={false} title={SkeletonTitleProps} />
+    )
+
+  if (typeof statusCode !== 'number')
+    statusCode = itemToStatusCode(item, timestamp, challengePeriodDuration)
+
+  return (
+    <ItemStatusBadgeWrap>
+      <Badge
+        status={badgeStatus(statusCode)}
+        color={STATUS_COLOR[statusCode]}
+        text={STATUS_TEXT[statusCode]}
+        style={{ color: 'inherit' }}
+      />
+      <ItemStatusIcon statusCode={statusCode} />
+    </ItemStatusBadgeWrap>
+  )
+}
+
+export default ItemStatusBadge

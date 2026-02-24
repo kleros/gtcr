@@ -1,24 +1,32 @@
-import React, { useContext, useCallback, useState } from 'react'
-import { Button, Form, Tooltip, Icon, Typography, Descriptions } from 'antd'
-import { abi as _gtcr } from '@kleros/tcr/build/contracts/GeneralizedTCR.json'
+import React, { useCallback, useEffect, useState } from 'react'
 import { ethers } from 'ethers'
+import { Button, Form, Tooltip, Descriptions } from 'components/ui'
+import Icon from 'components/ui/Icon'
+import { abi as _gtcr } from '@kleros/tcr/build/contracts/GeneralizedTCR.json'
+import { useAccount, usePublicClient, useWalletClient, useChainId } from 'wagmi'
+import { simulateContract } from '@wagmi/core'
+import { getAddress, keccak256 } from 'viem'
 import { withFormik } from 'formik'
 import humanizeDuration from 'humanize-duration'
-import { WalletContext } from 'contexts/wallet-context'
 import { gtcrEncode, ItemTypes, typeDefaultValues } from '@kleros/gtcr-encoder'
 import InputSelector from 'components/input-selector'
+import EnsureAuth from 'components/ensure-auth'
 import ETHAmount from 'components/eth-amount'
 import useFactory from 'hooks/factory'
-import { TourContext } from 'contexts/tour-context'
 import { addPeriod, capitalizeFirstLetter, getArticleFor } from 'utils/string'
 import useNativeCurrency from 'hooks/native-currency'
+import useNativeBalance from 'hooks/use-native-balance'
 import { parseIpfs } from 'utils/ipfs-parse'
+import { wrapWithToast, errorToast } from 'utils/wrap-with-toast'
+import { parseWagmiError } from 'utils/parse-wagmi-error'
+import { wagmiConfig } from 'config/wagmi'
 import {
   SUBMISSION_FORM_ID,
   StyledParagraph,
-  StyledModal
+  StyledListingCriteria,
+  StyledModal,
 } from 'pages/light-item-details/modals/submit'
-import { StyledSpin } from 'pages/light-item-details/modals/challenge'
+import { StyledSpin, InsufficientBalanceText } from 'pages/light-item-details/modals/challenge'
 import { StyledAlert } from 'pages/light-item-details/modals/remove'
 
 export interface Column {
@@ -26,127 +34,165 @@ export interface Column {
   description: string
   type: string
   allowedFileTypes: string
+  optional?: boolean
 }
 
 const _SubmissionForm: React.FC<{
-  style: any
+  style: React.CSSProperties
   columns: Column[]
   setFieldValue: (fieldName: string, fileURI: string) => void
   handleSubmit: () => void
   disabledFields: boolean[]
-  values: any
-  errors: { [label: string]: any }
+  values: Record<string, string>
+  errors: { [label: string]: string }
   touched: { [label: string]: boolean }
+  onFieldsComplete?: (complete: boolean) => void
   status: {
     setFileToUpload: (f: (b: boolean) => void) => void
     setFileAsUploaded: (f: (b: boolean) => void) => void
   }
-}> = p => (
-  <Form onSubmit={p.handleSubmit} id={SUBMISSION_FORM_ID}>
-    {p.columns &&
-      p.columns.length > 0 &&
-      p.columns.map((column, index) => (
-        <InputSelector
-          style={p.style}
-          type={column.type}
-          name={`${column.label}`}
-          allowedFileTypes={column.allowedFileTypes}
-          key={index}
-          values={p.values}
-          error={p.errors[column.label]}
-          setFieldValue={p.setFieldValue}
-          disabled={p.disabledFields && p.disabledFields[index]}
-          touched={p.touched[column.label]}
-          setFileToUpload={p.status.setFileToUpload}
-          setFileAsUploaded={p.status.setFileAsUploaded}
-          label={
-            <span>
-              {column.label}&nbsp;
-              <Tooltip title={addPeriod(column.description)}>
-                <Icon type="question-circle-o" />
-              </Tooltip>
-            </span>
-          }
-        />
-      ))}
-  </Form>
-)
+}> = (p) => {
+  useEffect(() => {
+    if (!p.onFieldsComplete || !p.columns) return
+    const allFilled = p.columns.every((column) => {
+      if (column.type === ItemTypes.BOOLEAN) return true
+      if (column.optional) return true
+      const value = p.values[column.label]
+      return value !== undefined && value !== '' && String(value).trim() !== ''
+    })
+    p.onFieldsComplete(allFilled)
+  }, [p.values, p.columns, p.onFieldsComplete])
 
-const SubmissionForm: React.ComponentType<any> = withFormik({
-  mapPropsToValues: ({ columns, initialValues }) =>
-    columns.reduce((acc: any, curr: any, i: number) => {
-      const defaultValue = initialValues
-        ? initialValues[i]
-        : // @ts-ignore
-          typeDefaultValues[curr.type]
+  return (
+    <Form onSubmit={p.handleSubmit} id={SUBMISSION_FORM_ID}>
+      {p.columns &&
+        p.columns.length > 0 &&
+        p.columns.map((column, index) => (
+          <InputSelector
+            style={p.style}
+            type={column.type}
+            name={`${column.label}`}
+            allowedFileTypes={column.allowedFileTypes}
+            key={index}
+            values={p.values}
+            error={p.errors[column.label]}
+            setFieldValue={p.setFieldValue}
+            disabled={p.disabledFields && p.disabledFields[index]}
+            touched={p.touched[column.label]}
+            setFileToUpload={p.status.setFileToUpload}
+            setFileAsUploaded={p.status.setFileAsUploaded}
+            label={
+              <span>
+                {column.label}&nbsp;
+                <Tooltip title={addPeriod(column.description)}>
+                  <Icon type="question-circle-o" />
+                </Tooltip>
+              </span>
+            }
+          />
+        ))}
+    </Form>
+  )
+}
 
-      return {
-        ...acc,
-        [curr.label]: String(defaultValue)
-      }
-    }, {}),
-  handleSubmit: (values, { props, resetForm }) => {
-    props.postSubmit(values, props.columns, resetForm)
-  },
-  mapPropsToStatus: (props: any) => ({
-    setFileToUpload: props.setFileToUpload,
-    setFileAsUploaded: props.setFileAsUploaded
-  }),
-  validate: async (
-    values,
-    {
+const SubmissionForm: React.ComponentType<Record<string, unknown>> = withFormik(
+  {
+    mapPropsToValues: ({
       columns,
-      deployedWithFactory,
-      deployedWithLightFactory,
-      deployedWithPermanentFactory
-    }
-  ) => {
-    const errors = (
-      await Promise.all(
-        columns
-          .filter(({ type }: any) => type === ItemTypes.GTCR_ADDRESS)
-          .map(async ({ label }: any) => ({
-            isEmpty: !values[label],
-            wasDeployedWithFactory:
-              !!values[label] &&
-              ((await deployedWithFactory(values[label])) ||
-                (await deployedWithLightFactory(values[label])) ||
-                (await deployedWithPermanentFactory(values[label]))),
-            label: label
-          }))
-      )
-    )
-      .filter((res: any) => !res.wasDeployedWithFactory || res.isEmpty)
-      .reduce(
-        (acc: any, curr: any) => ({
+      initialValues,
+    }: {
+      columns: Column[]
+      initialValues?: string[]
+    }) =>
+      columns.reduce((acc: Record<string, string>, curr: Column, i: number) => {
+        const defaultValue = initialValues
+          ? initialValues[i]
+          : curr.type === 'number'
+            ? ''
+            : // @ts-ignore
+              typeDefaultValues[curr.type]
+
+        return {
           ...acc,
-          [curr.label]: curr.isEmpty
-            ? `Enter a list address to proceed.`
-            : `This address was not deployed with the list creator.`
-        }),
-        {}
+          [curr.label]: String(defaultValue),
+        }
+      }, {}),
+    handleSubmit: (values, { props, resetForm }) => {
+      props.postSubmit(values, props.columns, resetForm)
+    },
+    mapPropsToStatus: (props: Record<string, unknown>) => ({
+      setFileToUpload: props.setFileToUpload,
+      setFileAsUploaded: props.setFileAsUploaded,
+    }),
+    validate: async (
+      values,
+      {
+        columns,
+        deployedWithFactory,
+        deployedWithLightFactory,
+        deployedWithPermanentFactory,
+      },
+    ) => {
+      const errors = (
+        await Promise.all(
+          columns
+            .filter(({ type }: Column) => type === ItemTypes.GTCR_ADDRESS)
+            .map(async ({ label }: Column) => ({
+              isEmpty: !values[label],
+              wasDeployedWithFactory:
+                !!values[label] &&
+                ((await deployedWithFactory(values[label])) ||
+                  (await deployedWithLightFactory(values[label])) ||
+                  (await deployedWithPermanentFactory(values[label]))),
+              label: label,
+            })),
+        )
       )
-    if (Object.keys(errors as any).length > 0) throw errors
-  }
-})(_SubmissionForm as any)
+        .filter(
+          (res: {
+            wasDeployedWithFactory: boolean
+            isEmpty: boolean
+            label: string
+          }) => !res.wasDeployedWithFactory || res.isEmpty,
+        )
+        .reduce(
+          (
+            acc: Record<string, string>,
+            curr: {
+              wasDeployedWithFactory: boolean
+              isEmpty: boolean
+              label: string
+            },
+          ) => ({
+            ...acc,
+            [curr.label]: curr.isEmpty
+              ? `Enter a list address to proceed.`
+              : `This address was not deployed with the list creator.`,
+          }),
+          {},
+        )
+      if (Object.keys(errors as Record<string, string>).length > 0) throw errors
+    },
+  },
+)(_SubmissionForm as React.ComponentType<Record<string, unknown>>)
 
 const SubmitModal: React.FC<{
-  onCancel: any
+  onCancel: () => void
   tcrAddress: string
-  initialValues: any[]
-  submissionDeposit: any
+  initialValues: string[]
+  submissionDeposit: ethers.BigNumber
   metaEvidence: {
     metadata: {
       tcrTitle: string
       itemName: string
-      columns: any[]
+      columns: Column[]
       isTCRofTCRs: boolean
     }
     fileURI: string
   }
   disabledFields: boolean[]
-  challengePeriodDuration: any
-}> = props => {
+  challengePeriodDuration: ethers.BigNumber
+}> = (props) => {
   const {
     onCancel,
     initialValues,
@@ -154,19 +200,29 @@ const SubmitModal: React.FC<{
     tcrAddress,
     metaEvidence,
     disabledFields,
-    challengePeriodDuration
+    challengePeriodDuration,
   } = props
   const nativeCurrency = useNativeCurrency()
-  const { pushWeb3Action } = useContext(WalletContext)
-  const { setUserSubscribed } = useContext(TourContext)
+  const { address: account } = useAccount()
+  const chainId = useChainId()
+  const publicClient = usePublicClient()
+  const { data: walletClient } = useWalletClient()
+  const { balance: nativeBalance } = useNativeBalance()
+  const insufficientBalance =
+    nativeBalance !== undefined &&
+    submissionDeposit &&
+    nativeBalance < BigInt(submissionDeposit.toString())
   const {
     deployedWithFactory,
     deployedWithLightFactory,
-    deployedWithPermanentFactory
+    deployedWithPermanentFactory,
   } = useFactory()
 
   const { fileURI, metadata } = metaEvidence || {}
   const { itemName, columns, tcrTitle } = metadata || {}
+
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [fieldsComplete, setFieldsComplete] = useState(false)
 
   // To make sure user cannot press Submit while there are files uploading
   // submit will be blocked until there are no files uploaded
@@ -181,81 +237,67 @@ const SubmitModal: React.FC<{
   }
 
   const postSubmit = useCallback(
-    (values, columns, resetForm) => {
-      pushWeb3Action(
-        async ({ account, networkId, library }: any, signer: any) => {
-          const gtcr = new ethers.Contract(tcrAddress, _gtcr, signer)
-          const encodedParams = gtcrEncode({ columns, values })
+    async (
+      values: Record<string, string>,
+      columns: Column[],
+      resetForm: (nextState?: Record<string, unknown>) => void,
+    ) => {
+      setIsSubmitting(true)
+      try {
+        const encodedParams = gtcrEncode({ columns, values })
 
-          // Compute gas cost. We do this because metamask (apparently)
-          // has a ceiling gas limit which, if exceeded throws an error.
-          const gtcrInterface = new ethers.utils.Interface(_gtcr)
-          const data = gtcrInterface.functions.addItem.encode([encodedParams])
-          const txObj = {
-            to: gtcr.address,
-            value: submissionDeposit,
-            data
-          }
-          let gasLimit
-          try {
-            ;(await library.estimateGas(txObj)).toNumber()
-            // eslint-disable-next-line no-unused-vars
-          } catch (err) {
-            console.warn(
-              'Gas estimation failed. Falling back to manual gas limit.'
-            )
-            gasLimit = 673909
-          }
+        const { request } = await simulateContract(wagmiConfig, {
+          address: tcrAddress as `0x${string}`,
+          abi: _gtcr,
+          functionName: 'addItem',
+          args: [encodedParams],
+          value: BigInt(submissionDeposit.toString()),
+          account,
+        })
 
-          // Request signature and submit.
-          const tx = await gtcr.addItem(encodedParams, {
-            value: submissionDeposit,
-            gasLimit
-          })
+        const result = await wrapWithToast(
+          () => walletClient!.writeContract(request),
+          publicClient!,
+        )
 
-          onCancel() // Hide the submission modal.
+        if (result.status) {
+          onCancel()
           resetForm({})
 
-          // Subscribe for notifications
-          if (process.env.REACT_APP_NOTIFICATIONS_API_URL && !!networkId) {
-            const itemID = ethers.utils.solidityKeccak256(
-              ['bytes'],
-              [encodedParams]
-            )
+          if (process.env.REACT_APP_NOTIFICATIONS_API_URL && !!chainId) {
+            const itemID = keccak256(encodedParams as `0x${string}`)
             fetch(
-              `${process.env.REACT_APP_NOTIFICATIONS_API_URL}/${networkId}/api/subscribe`,
+              `${process.env.REACT_APP_NOTIFICATIONS_API_URL}/${chainId}/api/subscribe`,
               {
                 method: 'post',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                  subscriberAddr: ethers.utils.getAddress(account),
-                  tcrAddr: ethers.utils.getAddress(tcrAddress),
+                  subscriberAddr: getAddress(account!),
+                  tcrAddr: getAddress(tcrAddress as `0x${string}`),
                   itemID,
-                  networkID: networkId
-                })
-              }
-            )
-              .then(() => setUserSubscribed(true))
-              .catch(err => {
-                console.error('Failed to subscribe for notifications.', err)
-              })
-          }
-          return {
-            tx,
-            actionMessage: `Submitting ${(itemName && itemName.toLowerCase()) ||
-              'item'}`
+                  networkID: chainId,
+                }),
+              },
+            ).catch((err) => {
+              console.error('Failed to subscribe for notifications.', err)
+            })
           }
         }
-      )
+      } catch (err) {
+        console.error('Error submitting item:', err)
+        errorToast(parseWagmiError(err))
+      }
+      setIsSubmitting(false)
     },
     [
-      itemName,
+      account,
+      chainId,
       onCancel,
-      pushWeb3Action,
-      setUserSubscribed,
+      publicClient,
       submissionDeposit,
-      tcrAddress
-    ]
+      tcrAddress,
+      walletClient,
+    ],
   )
 
   if (!metaEvidence || !submissionDeposit)
@@ -266,7 +308,7 @@ const SubmitModal: React.FC<{
         footer={[
           <Button key="back" onClick={onCancel}>
             Cancel
-          </Button>
+          </Button>,
         ]}
         {...props}
       >
@@ -277,21 +319,32 @@ const SubmitModal: React.FC<{
   return (
     // @ts-ignore
     <StyledModal
-      title={`Submit ${(itemName && capitalizeFirstLetter(itemName)) ||
-        'Item'}`}
+      title={`Submit ${
+        (itemName && capitalizeFirstLetter(itemName)) || 'Item'
+      }`}
       footer={[
         <Button key="back" onClick={onCancel}>
           Back
         </Button>,
-        <Button
-          key="challengeSubmit"
-          type="primary"
-          form={SUBMISSION_FORM_ID}
-          htmlType="submit"
-          loading={loadingCounter > 0}
-        >
-          Submit
-        </Button>
+        <EnsureAuth key="ensure-auth">
+          <div>
+            <Button
+              key="challengeSubmit"
+              type="primary"
+              form={SUBMISSION_FORM_ID}
+              htmlType="submit"
+              disabled={!!insufficientBalance || !fieldsComplete}
+              loading={loadingCounter > 0 || isSubmitting}
+            >
+              Submit
+            </Button>
+            {insufficientBalance && (
+              <InsufficientBalanceText>
+                Insufficient balance
+              </InsufficientBalanceText>
+            )}
+          </div>
+        </EnsureAuth>,
       ]}
       {...props}
     >
@@ -312,8 +365,9 @@ const SubmitModal: React.FC<{
         deployedWithPermanentFactory={deployedWithPermanentFactory}
         setFileToUpload={setFileToUpload}
         setFileAsUploaded={setFileAsUploaded}
+        onFieldsComplete={setFieldsComplete}
       />
-      <Typography.Paragraph>
+      <StyledListingCriteria>
         Make sure your submission complies with the{' '}
         <a
           href={parseIpfs(fileURI || '')}
@@ -323,18 +377,21 @@ const SubmitModal: React.FC<{
           listing criteria
         </a>{' '}
         to avoid challenges.
-      </Typography.Paragraph>
+      </StyledListingCriteria>
       <StyledAlert
-        message={`Note that this is a deposit, not a fee and it will be reimbursed if your submission is accepted. ${challengePeriodDuration &&
+        message={`Note that this is a deposit, not a fee and it will be reimbursed if your submission is accepted. ${
+          challengePeriodDuration &&
           `The challenge period lasts ${humanizeDuration(
-            challengePeriodDuration.toNumber() * 1000
-          )}`}.`}
+            challengePeriodDuration.toNumber() * 1000,
+          )}`
+        }.`}
         type="info"
         showIcon
       />
       <Descriptions
         bordered
         column={{ xxl: 4, xl: 3, lg: 3, md: 3, sm: 2, xs: 1 }}
+        style={{ marginTop: 4 }}
       >
         <Descriptions.Item
           label={

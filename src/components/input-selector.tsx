@@ -1,19 +1,21 @@
 import React, { useCallback, useState } from 'react'
 import styled from 'styled-components'
-import { Form, Switch, Input, Upload, message, Icon } from 'antd'
+import { Form, Switch, Input, Upload } from 'components/ui'
+import Icon from 'components/ui/Icon'
+import { toast } from 'react-toastify'
 import { Field } from 'formik'
 import { getExtension } from 'mime'
 import { ItemTypes } from '@kleros/gtcr-encoder'
-import CustomInput from './custom-input.js'
-import ipfsPublish from '../utils/ipfs-publish.js'
-import { sanitize } from '../utils/string.js'
+import CustomInput from './custom-input'
+import ipfsPublish from '../utils/ipfs-publish'
+import { sanitize } from '../utils/string'
 import { IPFSResultObject, getIPFSPath } from '../utils/get-ipfs-path'
 import { parseIpfs } from 'utils/ipfs-parse'
 import AddressInput from './address-input'
 import RichAddressInput from './rich-address-input'
 
 export const StyledUpload = styled(Upload)`
-  & > .ant-upload.ant-upload-select-picture-card {
+  & > .ui-upload.ui-upload-select-picture-card {
     width: 100%;
   }
 `
@@ -28,9 +30,9 @@ const StyledUploadButtonText = styled.div`
 `
 
 export const UploadButton: React.FC<{ loading: boolean }> = ({ loading }) => (
-  <div>
+  <div style={{ textAlign: 'center' }}>
     <Icon type={loading ? 'loading' : 'plus'} />
-    <StyledUploadButtonText className="ant-upload-text">
+    <StyledUploadButtonText className="ui-upload-text">
       Upload
     </StyledUploadButtonText>
   </div>
@@ -39,93 +41,102 @@ export const UploadButton: React.FC<{ loading: boolean }> = ({ loading }) => (
 interface InputSelectorProps extends React.HTMLAttributes<HTMLElement> {
   type: string
   name: string
-  values: any
-  error: any
-  setFieldValue: (fieldName: string, two: any) => void
+  values: Record<string, unknown>
+  error: Record<string, string> | undefined
+  setFieldValue: (fieldName: string, value: unknown) => void
   disabled: boolean
   touched: boolean
   maxFileSizeMb?: number
-  label: any
+  label: string
   allowedFileTypes: string
   setFileToUpload: (f: (b: boolean) => void) => void
   setFileAsUploaded: (f: (b: boolean) => void) => void
-  style: any
+  style: React.CSSProperties
 }
 
-const InputSelector: React.FC<InputSelectorProps> = p => {
+const InputSelector: React.FC<InputSelectorProps> = (p) => {
   const [uploading, setUploading] = useState<boolean>(false)
   const customRequest = useCallback(
-    fieldName => async ({ file, onSuccess, onError }: any) => {
-      try {
-        const data = await new Response(new Blob([file])).arrayBuffer()
-        const fileURI = getIPFSPath(
-          (await ipfsPublish(sanitize(file.name), data)) as IPFSResultObject
-        )
+    (fieldName) =>
+      async ({
+        file,
+        onSuccess,
+        onError,
+      }: {
+        file: File
+        onSuccess: (body: string, url: string) => void
+        onError: (err: unknown) => void
+      }) => {
+        try {
+          const data = await new Response(new Blob([file])).arrayBuffer()
+          const fileURI = getIPFSPath(
+            (await ipfsPublish(sanitize(file.name), data)) as IPFSResultObject,
+          )
 
-        p.setFieldValue(fieldName, fileURI)
-        onSuccess('ok', parseIpfs(fileURI))
-      } catch (err) {
-        console.error(err)
-        onError(err)
-      }
-    },
-    [p]
+          p.setFieldValue(fieldName, fileURI)
+          onSuccess('ok', parseIpfs(fileURI))
+        } catch (err) {
+          console.error(err)
+          onError(err)
+        }
+      },
+    [p],
   )
 
   const fileUploadStatusChange = useCallback(
     ({ file: { status } }) => {
-      if (status === 'done') message.success(`File uploaded successfully.`)
-      else if (status === 'error') message.error(`File upload failed.`)
+      if (status === 'done') toast.success(`File uploaded successfully.`)
+      else if (status === 'error') toast.error(`File upload failed.`)
       else if (status === 'uploading') p.setFileToUpload(setUploading)
 
       if (status === 'error' || status === 'done')
         p.setFileAsUploaded(setUploading)
     },
-    [p]
+    [p],
   )
 
   const beforeImageUpload = useCallback(
-    file => {
+    (file) => {
       if (
         file.type !== 'image/png' &&
         file.type !== 'image/svg+xml' &&
         file.type !== 'image/webp' &&
         file.type !== 'image/jpeg'
       ) {
-        message.error('Please use PNG, jpeg, webp or SVG.')
+        toast.error('Please use PNG, jpeg, webp or SVG.')
         return false
       }
 
       if (file.size / 1024 / 1024 > (p.maxFileSizeMb || 2)) {
-        message.error(`Image must be smaller than ${p.maxFileSizeMb || 2}MB.`)
+        toast.error(`Image must be smaller than ${p.maxFileSizeMb || 2}MB.`)
         return false
       }
 
       return true
     },
-    [p.maxFileSizeMb]
+    [p.maxFileSizeMb],
   )
 
   const beforeFileUpload = useCallback(
-    file => {
+    (file) => {
       const allowedFileTypesArr = p.allowedFileTypes.split(' ')
       if (!allowedFileTypesArr.includes(getExtension(file.type) as string)) {
-        message.error(
+        toast.error(
           allowedFileTypesArr.length > 1
-            ? `Allowed file types are+${allowedFileTypesArr.map(e => ` .${e}`)}`
-            : `The only allowed file type is .${allowedFileTypesArr[0]}`
+            ? `Allowed file types are+${allowedFileTypesArr.map((e) => ` .${e}`)}`
+            : `The only allowed file type is .${allowedFileTypesArr[0]}`,
         )
         return false
       }
 
       if (file.size / 1024 / 1024 > (p.maxFileSizeMb || 4)) {
-        message.error(`File must be smaller than ${p.maxFileSizeMb || 4}MB.`)
+        toast.error(`File must be smaller than ${p.maxFileSizeMb || 4}MB.`)
         return false
       }
 
       return true
     },
-    [p.allowedFileTypes, p.maxFileSizeMb]
+    [p.allowedFileTypes, p.maxFileSizeMb],
   )
 
   const { values, label, name } = p
@@ -142,11 +153,11 @@ const InputSelector: React.FC<InputSelectorProps> = p => {
     case ItemTypes.BOOLEAN:
       return (
         <Field name={name}>
-          {({ field }: any) => (
+          {({ field }: { field: Record<string, unknown> }) => (
             <Form.Item label={label} style={{ display: 'flex' }}>
               <Switch
                 {...field}
-                onChange={value => p.setFieldValue(name, String(value))}
+                onChange={(value) => p.setFieldValue(name, String(value))}
               />
             </Form.Item>
           )}
@@ -155,7 +166,7 @@ const InputSelector: React.FC<InputSelectorProps> = p => {
     case ItemTypes.LONG_TEXT:
       return (
         <Field name={name}>
-          {({ field }: any) => (
+          {({ field }: { field: Record<string, unknown> }) => (
             <Form.Item label={label}>
               <Input.TextArea autosize={{ minRows: 2 }} {...field} />
             </Form.Item>

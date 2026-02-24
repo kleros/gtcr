@@ -1,13 +1,17 @@
-import React, { useContext, useState } from 'react'
-import { Modal, Typography, Button, Alert } from 'antd'
+import React, { useState } from 'react'
+import { Modal, Typography, Button, Alert } from 'components/ui'
 import styled from 'styled-components'
-import { ethers } from 'ethers'
+import { useAccount, usePublicClient, useWalletClient } from 'wagmi'
+import { simulateContract } from '@wagmi/core'
 import _gtcr from 'assets/abis/PermanentGTCR.json'
-import { WalletContext } from 'contexts/wallet-context'
 import humanizeDuration from 'humanize-duration'
+import EnsureAuth from 'components/ensure-auth'
+import { wrapWithToast, errorToast } from 'utils/wrap-with-toast'
+import { parseWagmiError } from 'utils/parse-wagmi-error'
+import { wagmiConfig } from 'config/wagmi'
 
-export const StyledModal: any = styled(Modal)`
-  & > .ant-modal-content {
+export const StyledModal = styled(Modal)`
+  & > .ui-modal-content {
     border-top-left-radius: 14px;
     border-top-right-radius: 14px;
   }
@@ -21,8 +25,8 @@ export const StyledAlert = styled(Alert)`
 interface WithdrawModalProps {
   isOpen: boolean
   onCancel: () => void
-  item: any
-  registry: any
+  item: SubgraphItem
+  registry: SubgraphRegistry
   itemName: string
 }
 
@@ -31,9 +35,11 @@ const WithdrawModal: React.FC<WithdrawModalProps> = ({
   onCancel,
   item,
   registry,
-  itemName
+  itemName,
 }) => {
-  const { pushWeb3Action } = useContext(WalletContext)
+  const { address: account } = useAccount()
+  const publicClient = usePublicClient()
+  const { data: walletClient } = useWalletClient()
   const [loading, setLoading] = useState(false)
 
   const handleStartWithdraw = async () => {
@@ -41,19 +47,24 @@ const WithdrawModal: React.FC<WithdrawModalProps> = ({
 
     setLoading(true)
 
-    const executeWithdraw = async (_: any, signer: any) => {
-      const gtcr = new ethers.Contract(registry.id, _gtcr, signer)
-      return {
-        tx: await gtcr.startWithdrawItem(item.itemID),
-        actionMessage: 'Starting withdrawal'
-      }
-    }
-
     try {
-      await pushWeb3Action(executeWithdraw)
-      onCancel() // Close modal on success
+      const { request } = await simulateContract(wagmiConfig, {
+        address: registry.id,
+        abi: _gtcr,
+        functionName: 'startWithdrawItem',
+        args: [item.itemID],
+        account,
+      })
+
+      const result = await wrapWithToast(
+        () => walletClient.writeContract(request),
+        publicClient,
+      )
+
+      if (result.status) onCancel()
     } catch (err) {
       console.error('Withdrawal failed:', err)
+      errorToast(parseWagmiError(err))
     } finally {
       setLoading(false)
     }
@@ -78,7 +89,7 @@ const WithdrawModal: React.FC<WithdrawModalProps> = ({
         <StyledAlert
           message="Withdrawal Timing"
           description={`Withdrawing an item takes ${humanizeDuration(
-            Number(registry.withdrawingPeriod) * 1000
+            Number(registry.withdrawingPeriod) * 1000,
           )}. After starting the withdrawal, you must wait for this period to complete before the item is permanently removed from the registry.`}
           type="info"
           showIcon
@@ -86,9 +97,9 @@ const WithdrawModal: React.FC<WithdrawModalProps> = ({
       )}
 
       <Typography.Paragraph>
-        Are you sure you want to withdraw "{itemName}" from the registry? This
-        will initiate the withdrawal period after which the item will be
-        permanently removed.
+        Are you sure you want to withdraw &quot;{itemName}&quot; from the
+        registry? This will initiate the withdrawal period after which the item
+        will be permanently removed.
       </Typography.Paragraph>
 
       <div style={{ textAlign: 'right', marginTop: 24 }}>
@@ -99,9 +110,15 @@ const WithdrawModal: React.FC<WithdrawModalProps> = ({
         >
           Back
         </Button>
-        <Button type="primary" onClick={handleStartWithdraw} loading={loading}>
-          Start Withdraw
-        </Button>
+        <EnsureAuth>
+          <Button
+            type="primary"
+            onClick={handleStartWithdraw}
+            loading={loading}
+          >
+            Start Withdraw
+          </Button>
+        </EnsureAuth>
       </div>
     </StyledModal>
   )

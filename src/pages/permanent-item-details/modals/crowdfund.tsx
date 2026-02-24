@@ -1,0 +1,307 @@
+import React, { useState, useMemo } from 'react'
+import {
+  Descriptions,
+  Button,
+  Row,
+  Col,
+  Slider,
+  InputNumber,
+  Typography,
+  Divider,
+} from 'components/ui'
+import {
+  STATUS_CODE,
+  PARTY,
+  SUBGRAPH_RULING,
+} from 'utils/permanent-item-status'
+import { ethers, BigNumber } from 'ethers'
+
+const { formatEther, parseEther } = ethers.utils
+import { useAccount, usePublicClient, useWalletClient } from 'wagmi'
+import { simulateContract } from '@wagmi/core'
+import EnsureAuth from 'components/ensure-auth'
+import ETHAmount from 'components/eth-amount'
+import _gtcr from 'assets/abis/PermanentGTCR.json'
+import useRequiredFees from 'hooks/required-fees'
+import useNativeCurrency from 'hooks/native-currency'
+import useNativeBalance from 'hooks/use-native-balance'
+import { parseIpfs } from 'utils/ipfs-parse'
+import { wrapWithToast, errorToast } from 'utils/wrap-with-toast'
+import { parseWagmiError } from 'utils/parse-wagmi-error'
+import { wagmiConfig } from 'config/wagmi'
+import { StyledSpin, StyledModal } from './challenge'
+import { InsufficientBalanceText } from 'pages/light-item-details/modals/challenge'
+
+interface CrowdfundModalProps {
+  statusCode: any
+  item: any
+  fileURI?: string
+  appealCost: any
+  [key: string]: any
+}
+
+const CrowdfundModal = ({
+  statusCode,
+  item,
+  fileURI,
+  appealCost,
+  ...rest
+}: CrowdfundModalProps) => {
+  const { address: account } = useAccount()
+  const publicClient = usePublicClient()
+  const { data: walletClient } = useWalletClient()
+  const {
+    id: tcrAddress,
+    sharedStakeMultiplier,
+    winnerStakeMultiplier,
+    loserStakeMultiplier,
+  } = item?.registry || {}
+
+  const MULTIPLIER_DIVISOR = 10_000
+
+  const [contributionShare, setContributionShare] = useState(1)
+  const [userSelectedSide, setUserSelectedSide] = useState<any>()
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const nativeCurrency = useNativeCurrency()
+  const { balance: nativeBalance } = useNativeBalance()
+
+  const round = item.challenges[0].rounds[0]
+  const {
+    hasPaidRequester,
+    hasPaidChallenger,
+    ruling,
+    amountPaidRequester,
+    amountPaidChallenger,
+  } = round
+
+  const winner =
+    ruling === SUBGRAPH_RULING.ACCEPT ? PARTY.REQUESTER : PARTY.CHALLENGER
+
+  const autoSelectedSide = useMemo(() => {
+    if (
+      ruling === PARTY.NONE ||
+      (hasPaidRequester && hasPaidChallenger) ||
+      (!hasPaidRequester && !hasPaidChallenger)
+    )
+      return PARTY.NONE
+
+    if (statusCode === STATUS_CODE.CROWDFUNDING_WINNER) return winner
+
+    return !hasPaidRequester ? PARTY.REQUESTER : PARTY.CHALLENGER
+  }, [ruling, hasPaidRequester, hasPaidChallenger, statusCode, winner])
+
+  const side = useMemo(
+    () => userSelectedSide || autoSelectedSide,
+    [autoSelectedSide, userSelectedSide],
+  )
+
+  const { requiredForSide, amountStillRequired, potentialReward } =
+    useRequiredFees({
+      side,
+      sharedStakeMultiplier,
+      winnerStakeMultiplier,
+      loserStakeMultiplier,
+      currentRuling: ruling,
+      item,
+      MULTIPLIER_DIVISOR,
+      appealCost,
+    })
+
+  if (!sharedStakeMultiplier || !potentialReward)
+    return (
+      <StyledModal title="Crowdfund Item" {...rest}>
+        <StyledSpin />
+      </StyledModal>
+    )
+
+  if (
+    (ruling === SUBGRAPH_RULING.NONE ||
+      statusCode === STATUS_CODE.CROWDFUNDING) &&
+    side === PARTY.NONE
+  )
+    return (
+      <StyledModal
+        title="Contribute Fees"
+        footer={[
+          <Button
+            key="submitter"
+            type="primary"
+            onClick={() => setUserSelectedSide(PARTY.REQUESTER)}
+          >
+            Submitter
+          </Button>,
+          <Button
+            key="challenger"
+            type="primary"
+            onClick={() => setUserSelectedSide(PARTY.CHALLENGER)}
+          >
+            Challenger
+          </Button>,
+        ]}
+        {...rest}
+      >
+        Which side do you want to fund?
+      </StyledModal>
+    )
+
+  const crowdfundSide = async () => {
+    setIsSubmitting(true)
+    try {
+      const contribution = amountStillRequired
+        .mul(
+          BigNumber.from(
+            (contributionShare * MULTIPLIER_DIVISOR.toString()).toString(),
+          ),
+        )
+        .div(MULTIPLIER_DIVISOR)
+
+      const { request } = await simulateContract(wagmiConfig, {
+        address: tcrAddress,
+        abi: _gtcr,
+        functionName: 'fundAppeal',
+        args: [item.itemID, side],
+        value: BigInt(contribution.toString()),
+        account,
+      })
+
+      const result = await wrapWithToast(
+        () => walletClient.writeContract(request),
+        publicClient,
+      )
+
+      if (result.status) rest.onCancel()
+    } catch (err) {
+      console.error('Error contributing fees:', err)
+      errorToast(parseWagmiError(err))
+    }
+    setIsSubmitting(false)
+  }
+
+  const amountPaid = side === 1 ? amountPaidRequester : amountPaidChallenger
+
+  const contribution = amountStillRequired
+    .mul(
+      BigNumber.from(
+        (contributionShare * MULTIPLIER_DIVISOR.toString()).toString(),
+      ),
+    )
+    .div(MULTIPLIER_DIVISOR)
+  const insufficientBalance =
+    nativeBalance !== undefined &&
+    nativeBalance < BigInt(contribution.toString())
+
+  return (
+    <StyledModal
+      {...rest}
+      title={`Contribute Fees to ${
+        side === PARTY.REQUESTER ? 'Submitter' : 'Challenger'
+      }`}
+      footer={[
+        <Button key="back" onClick={rest.onCancel}>
+          Back
+        </Button>,
+        <EnsureAuth key="ensure-auth">
+          <div>
+            <Button
+              key="contribute"
+              type="primary"
+              onClick={crowdfundSide}
+              disabled={insufficientBalance}
+              loading={isSubmitting}
+            >
+              OK
+            </Button>
+            {insufficientBalance && (
+              <InsufficientBalanceText>
+                Insufficient balance
+              </InsufficientBalanceText>
+            )}
+          </div>
+        </EnsureAuth>,
+      ]}
+      afterClose={() => {
+        setUserSelectedSide(PARTY.NONE)
+        setContributionShare(1)
+      }}
+    >
+      <Typography.Title level={4}>
+        Read the&nbsp;
+        <a
+          href={parseIpfs(fileURI || '')}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Listing Criteria
+        </a>
+        .
+      </Typography.Title>
+      <Typography.Paragraph level={4}>
+        Contribute {nativeCurrency} for a chance to win at most{' '}
+        <ETHAmount
+          decimals={4}
+          amount={potentialReward
+            .mul(BigNumber.from(Math.ceil(contributionShare * 10000) || 1))
+            .div(10000)}
+          displayUnit={` ${nativeCurrency}`}
+        />
+        . You will earn up to this amount if the side you choose wins the next
+        round of the dispute.
+      </Typography.Paragraph>
+      <Typography.Paragraph>
+        How much {nativeCurrency} do you want to contribute?
+      </Typography.Paragraph>
+      <Row>
+        <Col span={16}>
+          <Slider
+            min={0}
+            max={1}
+            step={0.001}
+            onChange={(value) => setContributionShare(value)}
+            value={contributionShare}
+            tooltipVisible={false}
+          />
+        </Col>
+        <Col span={8}>
+          <InputNumber
+            min={0}
+            max={formatEther(amountStillRequired)}
+            step={0.01}
+            style={{ marginLeft: 16 }}
+            value={
+              amountStillRequired
+                ? contributionShare * formatEther(amountStillRequired)
+                : contributionShare
+            }
+            onChange={(value) => {
+              const weiAmount = parseEther(String(value))
+              const shareInBasis = weiAmount
+                .mul(MULTIPLIER_DIVISOR)
+                .div(amountStillRequired)
+              setContributionShare(shareInBasis.toNumber() / MULTIPLIER_DIVISOR)
+            }}
+          />{' '}
+          {nativeCurrency}
+        </Col>
+      </Row>
+      <Divider />
+      <Descriptions bordered column={1}>
+        <Descriptions.Item label="Total Required:">
+          <ETHAmount
+            decimals={4}
+            amount={requiredForSide}
+            displayUnit={` ${nativeCurrency}`}
+          />
+        </Descriptions.Item>
+        <Descriptions.Item label="Amount Paid:">
+          <ETHAmount
+            decimals={4}
+            amount={amountPaid}
+            displayUnit={` ${nativeCurrency}`}
+          />
+        </Descriptions.Item>
+      </Descriptions>
+    </StyledModal>
+  )
+}
+
+export default CrowdfundModal

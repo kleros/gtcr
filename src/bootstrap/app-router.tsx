@@ -1,106 +1,82 @@
-import React, { useEffect, useMemo } from 'react'
-import { Route, Switch, Redirect } from 'react-router-dom'
-import { ApolloProvider } from '@apollo/client'
-import { useWeb3Context, Connectors } from 'web3-react'
-import loadable from '@loadable/component'
+import React, { Suspense, lazy } from 'react'
+import { Route, Routes, Navigate, useParams } from 'react-router-dom'
+import { useWeb3Context } from 'hooks/use-web3-context'
 import ErrorPage from 'pages/error-page'
-import NoWeb3Detected from 'pages/no-web3'
 import Loading from 'components/loading'
-import connectors from 'config/connectors'
 import { DEFAULT_NETWORK } from 'config/networks'
-import { hexlify } from 'utils/string'
 import usePathValidation from 'hooks/use-path-validation'
-import useGraphQLClient from 'hooks/use-graphql-client'
-import { Web3ContextCurate } from 'types/web3-context'
+import useUrlChainId from 'hooks/use-url-chain-id'
 import { defaultTcrAddresses, validChains } from 'config/tcr-addresses'
+import { SAVED_NETWORK_KEY } from 'utils/string'
 
-const { Connector } = Connectors
+/** Redirect "/" to the last-used chain (or wallet chain, or default). */
+const HomeRedirect = ({ networkId }: { networkId: number }) => {
+  const saved = localStorage.getItem(SAVED_NETWORK_KEY)
+  const chainId = saved ? Number(saved) : networkId || DEFAULT_NETWORK
+  const addr = defaultTcrAddresses[chainId as validChains]
+  return <Navigate to={`/tcr/${chainId}/${addr}`} replace />
+}
 
-const ItemsRouter = loadable(
-  () => import(/* webpackPrefetch: true */ 'pages/items-router'),
-  { fallback: <Loading /> }
-)
+const ItemsRouter = lazy(() => import('pages/items-router'))
+const ItemDetailsRouter = lazy(() => import('pages/item-details-router'))
 
-const ItemDetailsRouter = loadable(
-  () => import(/* webpackPrefetch: true */ 'pages/item-details-router'),
-  { fallback: <Loading /> }
-)
+// Exported for preloading on link hover (instant navigation feel)
+export const preloadFactory = () => import('pages/factory/index')
+export const preloadClassicFactory = () => import('pages/factory-classic/index')
+export const preloadPermanentFactory = () =>
+  import('pages/factory-permanent/index')
 
-const Factory = loadable(
-  () => import(/* webpackPrefetch: true */ 'pages/factory/index'),
-  { fallback: <Loading /> }
-)
+const Factory = lazy(preloadFactory)
+const ClassicFactory = lazy(preloadClassicFactory)
+const PermanentFactory = lazy(preloadPermanentFactory)
 
-const ClassicFactory = loadable(
-  () => import(/* webpackPrefetch: true */ 'pages/factory-classic/index'),
-  { fallback: <Loading /> }
-)
-
-const PermanentFactory = loadable(
-  () => import(/* webpackPrefetch: true */ 'pages/factory-permanent/index'),
-  { fallback: <Loading /> }
-)
+/** Forces children to fully remount when URL params change. */
+const RouteReset = ({ children }: { children: React.ReactNode }) => {
+  const params = useParams()
+  const key = Object.values(params).join('/')
+  return <React.Fragment key={key}>{children}</React.Fragment>
+}
 
 const AppRouter = () => {
-  const { networkId, error }: Web3ContextCurate = useWeb3Context()
-  const isUnsupported = useMemo(
-    () => error?.code === Connector.errorCodes.UNSUPPORTED_NETWORK,
-    [error]
-  )
-  const tcrAddress = defaultTcrAddresses[networkId as validChains]
+  const { networkId } = useWeb3Context()
+  const urlChainId = useUrlChainId()
+
+  const activeChainId = urlChainId || networkId || DEFAULT_NETWORK
+  const _tcrAddress = defaultTcrAddresses[activeChainId as validChains]
   const [pathResolved, invalidTcrAddr] = usePathValidation()
-  const client = useGraphQLClient(networkId)
 
-  useEffect(() => {
-    if (isUnsupported && window.ethereum) {
-      const chainIdTokens = window.location.pathname.match(/\/tcr\/(\d+)\//)
-      const chainId = hexlify(
-        chainIdTokens && chainIdTokens?.length > 1
-          ? chainIdTokens[1]
-          : DEFAULT_NETWORK
-      )
-
-      window.ethereum.request({
-        method: 'wallet_switchEthereumChain',
-        params: [{ chainId }]
-      })
-    }
-  }, [isUnsupported])
-
-  if (Object.entries(connectors).length === 0) return <NoWeb3Detected />
-
-  if (isUnsupported && error)
-    return (
-      <ErrorPage
-        code={' '}
-        title={error.code as string}
-        message={error.message}
-        tip={
-          <>
-            <p>Switching network to supported one</p>
-            <Loading />
-          </>
-        }
-      />
-    )
-  else if (!networkId || !pathResolved) return <Loading />
-  else if (invalidTcrAddr || !client) return <ErrorPage />
+  if (!pathResolved) return <Loading />
+  if (invalidTcrAddr) return <ErrorPage />
 
   return (
-    <ApolloProvider client={client}>
-      <Switch>
+    <Suspense fallback={<Loading />}>
+      <Routes>
         <Route
           path="/tcr/:chainId/:tcrAddress/:itemID"
-          component={ItemDetailsRouter}
+          element={
+            <RouteReset>
+              <ItemDetailsRouter />
+            </RouteReset>
+          }
         />
-        <Route path="/tcr/:chainId/:tcrAddress" component={ItemsRouter} />
-        <Route path="/factory" exact component={Factory} />
-        <Route path="/factory-classic" exact component={ClassicFactory} />
-        <Route path="/factory-permanent" exact component={PermanentFactory} />
-        <Redirect from="/" exact to={`/tcr/${networkId}/${tcrAddress}`} />
-        <Route path="*" exact component={ErrorPage} />
-      </Switch>
-    </ApolloProvider>
+        <Route
+          path="/tcr/:chainId/:tcrAddress"
+          element={
+            <RouteReset>
+              <ItemsRouter />
+            </RouteReset>
+          }
+        />
+        <Route path="/factory/:chainId" element={<Factory />} />
+        <Route path="/factory-classic/:chainId" element={<ClassicFactory />} />
+        <Route
+          path="/factory-permanent/:chainId"
+          element={<PermanentFactory />}
+        />
+        <Route path="/" element={<HomeRedirect networkId={networkId} />} />
+        <Route path="*" element={<ErrorPage />} />
+      </Routes>
+    </Suspense>
   )
 }
 
