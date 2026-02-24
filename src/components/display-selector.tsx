@@ -11,6 +11,17 @@ import FileDisplay from './file-display'
 import TruncatedLink from './truncated-link'
 import { parseIpfs } from 'utils/ipfs-parse'
 
+const StyledLink = styled.a`
+  text-decoration: underline;
+  color: inherit;
+  transition: opacity 0.2s ease;
+
+  &:hover {
+    opacity: 0.7;
+    color: inherit;
+  }
+`
+
 const pohRichAddress = 'eip155:1:0xc5e9ddebb09cd64dfacab4011a0d5cedaf7c9bdb'
 
 const StyledImage = styled.img`
@@ -142,9 +153,9 @@ const DisplaySelector = ({
       const fullUrl = protocolRegex.test(value) ? value : `https://${value}`
       if (truncateLinks) return <TruncatedLink url={fullUrl} />
       return (
-        <a href={fullUrl} target="_blank" rel="noopener noreferrer">
+        <StyledLink href={fullUrl} target="_blank" rel="noopener noreferrer">
           <Typography.Text>{value}</Typography.Text>
-        </a>
+        </StyledLink>
       )
     }
     default:

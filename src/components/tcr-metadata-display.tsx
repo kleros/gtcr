@@ -7,9 +7,16 @@ import DisplaySelector from './display-selector'
 import { parseIpfs } from 'utils/ipfs-parse'
 
 const StyledField = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 6px;
   margin-bottom: 16px;
   margin-right: 16px;
   word-break: break-word;
+
+  div {
+    margin: 0;
+  }
 `
 
 interface TCRMetadataDisplayProps {

@@ -4,7 +4,14 @@ import { Typography } from 'components/ui'
 import ExternalLinkWarning from './external-link-warning'
 
 const StyledA = styled.a`
-  text-decoration: none;
+  text-decoration: underline;
+  color: inherit;
+  transition: opacity 0.2s ease;
+
+  &:hover {
+    opacity: 0.7;
+    color: inherit;
+  }
 `
 
 const truncateUrl = (url, maxLength = 50) => {

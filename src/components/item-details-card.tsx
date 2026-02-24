@@ -43,10 +43,17 @@ const StyledFields = styled.div`
 `
 
 const StyledField = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 6px;
   margin-bottom: 16px;
   margin-right: 16px;
   word-break: break-word;
   font-size: 14px;
+
+  div {
+    margin: 0;
+  }
 `
 
 const StyledAlert = styled(Alert)`
