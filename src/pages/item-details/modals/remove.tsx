@@ -1,4 +1,4 @@
-import React, { useContext, useCallback } from 'react'
+import React, { useContext, useCallback, useState } from 'react'
 import { Descriptions, Typography, Divider, Button } from 'components/ui'
 import humanizeDuration from 'humanize-duration'
 import { useAccount, usePublicClient, useWalletClient, useChainId } from 'wagmi'
@@ -10,15 +10,18 @@ import EnsureAuth from 'components/ensure-auth'
 import ETHAmount from 'components/eth-amount'
 import EvidenceForm from 'components/evidence-form'
 import useNativeCurrency from 'hooks/native-currency'
+import useNativeBalance from 'hooks/use-native-balance'
 import ipfsPublish from 'utils/ipfs-publish'
 import { parseIpfs } from 'utils/ipfs-parse'
 import { getIPFSPath } from 'utils/get-ipfs-path'
-import { wrapWithToast } from 'utils/wrap-with-toast'
+import { wrapWithToast, errorToast } from 'utils/wrap-with-toast'
+import { parseWagmiError } from 'utils/parse-wagmi-error'
 import { wagmiConfig } from 'config/wagmi'
 import { StyledAlert } from 'pages/light-item-details/modals/remove'
 import {
   StyledSpin,
   StyledModal,
+  InsufficientBalanceText,
 } from 'pages/light-item-details/modals/challenge'
 
 interface RemoveModalProps {
@@ -41,12 +44,20 @@ const RemoveModal = ({
   const { removalDeposit, tcrAddress, metaEvidence, challengePeriodDuration } =
     useContext(TCRViewContext)
   const nativeCurrency = useNativeCurrency()
+  const { balance: nativeBalance } = useNativeBalance()
+  const insufficientBalance =
+    nativeBalance !== undefined &&
+    removalDeposit &&
+    nativeBalance < BigInt(removalDeposit.toString())
 
   const { metadata } = metaEvidence || {}
   const { requireRemovalEvidence } = metadata || {}
 
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
   const removeItem = useCallback(
     async ({ title, description, evidenceAttachment } = {}) => {
+      setIsSubmitting(true)
       try {
         let ipfsEvidencePath = ''
         if (metadata && requireRemovalEvidence) {
@@ -99,7 +110,9 @@ const RemoveModal = ({
         }
       } catch (err) {
         console.error('Error removing item:', err)
+        errorToast(parseWagmiError(err))
       }
+      setIsSubmitting(false)
     },
     [
       account,
@@ -131,15 +144,24 @@ const RemoveModal = ({
           Back
         </Button>,
         <EnsureAuth key="ensure-auth">
-          <Button
-            key="challengeSubmit"
-            type="primary"
-            form={EVIDENCE_FORM_ID}
-            htmlType="submit"
-            onClick={metadata && !requireRemovalEvidence ? removeItem : null}
-          >
-            Send
-          </Button>
+          <div>
+            <Button
+              key="challengeSubmit"
+              type="primary"
+              form={EVIDENCE_FORM_ID}
+              htmlType="submit"
+              disabled={!!insufficientBalance}
+              onClick={metadata && !requireRemovalEvidence ? removeItem : null}
+              loading={isSubmitting}
+            >
+              Send
+            </Button>
+            {insufficientBalance && (
+              <InsufficientBalanceText>
+                Insufficient balance
+              </InsufficientBalanceText>
+            )}
+          </div>
         </EnsureAuth>,
       ]}
       {...rest}

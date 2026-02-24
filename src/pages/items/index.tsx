@@ -12,6 +12,7 @@ import React, {
 } from 'react'
 import localforage from 'localforage'
 import { useQuery } from '@tanstack/react-query'
+import { STALE_TIME } from 'consts'
 import ErrorPage from '../error-page'
 import { WalletContext } from 'contexts/wallet-context'
 import { TCRViewContext } from 'contexts/tcr-view-context'
@@ -29,7 +30,7 @@ import ItemCard from './item-card'
 import Banner from './banner'
 import { DISPUTE_STATUS } from 'utils/item-status'
 import { CLASSIC_REGISTRY_ITEMS_QUERY } from 'utils/graphql'
-import { getGraphQLClient } from 'utils/graphql-client'
+import { useGraphqlBatcher } from 'contexts/graphql-batcher'
 import {
   NSFW_FILTER_KEY,
   StyledLayoutContent,
@@ -74,7 +75,7 @@ const Items = () => {
   const [queryItemParams, setQueryItemParams] = useState<
     Record<string, unknown> | undefined
   >()
-  const client = useMemo(() => getGraphQLClient(chainId), [chainId])
+  const { graphqlBatcher } = useGraphqlBatcher()
 
   const toggleNSFWFilter = useCallback((checked) => {
     setNSFWFilter(checked)
@@ -166,8 +167,15 @@ const Items = () => {
 
   const itemsQuery = useQuery({
     queryKey: ['classicItems', queryVariables],
-    queryFn: () => client.request(CLASSIC_REGISTRY_ITEMS_QUERY, queryVariables),
-    enabled: !!client,
+    queryFn: () =>
+      graphqlBatcher.fetch({
+        id: crypto.randomUUID(),
+        document: CLASSIC_REGISTRY_ITEMS_QUERY,
+        variables: queryVariables,
+        chainId: chainId!,
+      }),
+    enabled: !!chainId,
+    staleTime: STALE_TIME,
   })
 
   // big useEffect for fetching + encoding the data was transformed into

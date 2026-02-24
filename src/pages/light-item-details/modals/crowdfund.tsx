@@ -22,10 +22,12 @@ import { getAddress } from 'viem'
 import _gtcr from 'assets/abis/LightGeneralizedTCR.json'
 import useRequiredFees from 'hooks/required-fees'
 import useNativeCurrency from 'hooks/native-currency'
+import useNativeBalance from 'hooks/use-native-balance'
 import { parseIpfs } from 'utils/ipfs-parse'
-import { wrapWithToast } from 'utils/wrap-with-toast'
+import { wrapWithToast, errorToast } from 'utils/wrap-with-toast'
+import { parseWagmiError } from 'utils/parse-wagmi-error'
 import { wagmiConfig } from 'config/wagmi'
-import { StyledSpin, StyledModal } from './challenge'
+import { StyledSpin, StyledModal, InsufficientBalanceText } from './challenge'
 
 interface CrowdfundModalProps {
   statusCode: number
@@ -56,7 +58,9 @@ const CrowdfundModal = ({
 
   const [contributionShare, setContributionShare] = useState(1)
   const [userSelectedSide, setUserSelectedSide] = useState<number | undefined>()
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const nativeCurrency = useNativeCurrency()
+  const { balance: nativeBalance } = useNativeBalance()
 
   const round = item.requests[0].rounds[0]
   const {
@@ -139,6 +143,7 @@ const CrowdfundModal = ({
     )
 
   const crowdfundSide = async () => {
+    setIsSubmitting(true)
     try {
       const contribution = amountStillRequired
         .mul(
@@ -184,10 +189,23 @@ const CrowdfundModal = ({
       }
     } catch (err) {
       console.error('Error funding appeal:', err)
+      errorToast(parseWagmiError(err))
     }
+    setIsSubmitting(false)
   }
 
   const amountPaid = side === 1 ? amountPaidRequester : amountPaidChallenger
+
+  const contribution = amountStillRequired
+    .mul(
+      BigNumber.from(
+        (contributionShare * MULTIPLIER_DIVISOR.toString()).toString(),
+      ),
+    )
+    .div(MULTIPLIER_DIVISOR)
+  const insufficientBalance =
+    nativeBalance !== undefined &&
+    nativeBalance < BigInt(contribution.toString())
 
   return (
     <StyledModal
@@ -200,9 +218,22 @@ const CrowdfundModal = ({
           Back
         </Button>,
         <EnsureAuth key="ensure-auth">
-          <Button key="contribute" type="primary" onClick={crowdfundSide}>
-            OK
-          </Button>
+          <div>
+            <Button
+              key="contribute"
+              type="primary"
+              onClick={crowdfundSide}
+              disabled={insufficientBalance}
+              loading={isSubmitting}
+            >
+              OK
+            </Button>
+            {insufficientBalance && (
+              <InsufficientBalanceText>
+                Insufficient balance
+              </InsufficientBalanceText>
+            )}
+          </div>
         </EnsureAuth>,
       ]}
       afterClose={() => {

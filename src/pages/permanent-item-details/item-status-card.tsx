@@ -24,7 +24,8 @@ import useAppealTime from 'hooks/appeal-time'
 import ETHAmount from 'components/eth-amount'
 import useTokenSymbol from 'hooks/token-symbol'
 import { klerosAddresses } from 'config/tcr-addresses'
-import { wrapWithToast } from 'utils/wrap-with-toast'
+import { wrapWithToast, errorToast } from 'utils/wrap-with-toast'
+import { parseWagmiError } from 'utils/parse-wagmi-error'
 import { wagmiConfig } from 'config/wagmi'
 import WithdrawModal from './modals/withdraw'
 
@@ -219,6 +220,7 @@ const ItemStatusCard = ({
       )
     } catch (err) {
       console.error('Error executing withdrawal:', err)
+      errorToast(parseWagmiError(err))
     }
   }
 

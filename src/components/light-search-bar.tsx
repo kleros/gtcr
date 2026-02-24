@@ -19,7 +19,7 @@ import { LightTCRViewContext } from 'contexts/light-tcr-view-context'
 import { WalletContext } from 'contexts/wallet-context'
 import { itemToStatusCode, STATUS_COLOR } from '../utils/item-status'
 import ITEM_SEARCH_QUERY from '../utils/graphql/item-search'
-import { getGraphQLClient } from 'utils/graphql-client'
+import { useGraphqlBatcher } from 'contexts/graphql-batcher'
 
 const Container = styled.div`
   position: relative;
@@ -229,10 +229,7 @@ const LightSearchBar = () => {
   const [focused, setFocused] = useState(false)
   const { tcrAddress } = useContext(LightTCRViewContext)
   const chainId = useUrlChainId()
-  const client = useMemo(
-    () => (chainId ? getGraphQLClient(chainId) : null),
-    [chainId],
-  )
+  const { graphqlBatcher } = useGraphqlBatcher()
   const containerRef = useRef<HTMLDivElement>(null)
 
   const [searchVariables, setSearchVariables] = useState<Record<
@@ -242,8 +239,15 @@ const LightSearchBar = () => {
 
   const itemSearchQuery = useQuery({
     queryKey: ['itemSearch', searchVariables],
-    queryFn: () => client!.request(ITEM_SEARCH_QUERY, searchVariables),
-    enabled: !!searchVariables && !!client,
+    queryFn: () =>
+      graphqlBatcher.fetch({
+        id: crypto.randomUUID(),
+        document: ITEM_SEARCH_QUERY,
+        variables: searchVariables as Record<string, any>,
+        chainId: chainId!,
+      }),
+    enabled: !!searchVariables && !!chainId,
+    staleTime: 0,
   })
 
   const debouncedSearch = useDebouncedCallback((input: string) => {

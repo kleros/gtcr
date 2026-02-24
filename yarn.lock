@@ -5130,6 +5130,22 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@yornaath/batshit-devtools@npm:^1.7.1":
+  version: 1.7.1
+  resolution: "@yornaath/batshit-devtools@npm:1.7.1"
+  checksum: 10c0/99702781cf1af69e52234578336e619215dcba1d9f2e716469f25a5554a21a3ebc6148c597e576de4dfa0e849f80d7e28b86c2699cdd3613392c6e2e51505a2a
+  languageName: node
+  linkType: hard
+
+"@yornaath/batshit@npm:^0.14.0":
+  version: 0.14.0
+  resolution: "@yornaath/batshit@npm:0.14.0"
+  dependencies:
+    "@yornaath/batshit-devtools": "npm:^1.7.1"
+  checksum: 10c0/6ce206f0902ae0c0d86f34bb53b7c95cc9e02bc529561128aefd1d1da355e1b17264e573ab15ac9bc08206f31862bb2bfa4a7748b75efbd1e1c44aa824e70432
+  languageName: node
+  linkType: hard
+
 "abbrev@npm:^4.0.0":
   version: 4.0.0
   resolution: "abbrev@npm:4.0.0"
@@ -9753,6 +9769,7 @@ __metadata:
     "@typescript-eslint/parser": "npm:^8.56.0"
     "@vitejs/plugin-react": "npm:^4.3.4"
     "@wagmi/core": "npm:^2.22.1"
+    "@yornaath/batshit": "npm:^0.14.0"
     eslint: "npm:^8.57.0"
     eslint-config-prettier: "npm:^9.1.0"
     eslint-import-resolver-typescript: "npm:^4.4.4"

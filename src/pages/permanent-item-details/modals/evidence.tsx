@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { Typography, Button } from 'components/ui'
 import { useAccount, usePublicClient, useWalletClient } from 'wagmi'
 import { simulateContract } from '@wagmi/core'
@@ -7,7 +7,8 @@ import EnsureAuth from 'components/ensure-auth'
 import EvidenceForm from 'components/evidence-form'
 import ipfsPublish from 'utils/ipfs-publish'
 import { getIPFSPath } from 'utils/get-ipfs-path'
-import { wrapWithToast } from 'utils/wrap-with-toast'
+import { wrapWithToast, errorToast } from 'utils/wrap-with-toast'
+import { parseWagmiError } from 'utils/parse-wagmi-error'
 import { wagmiConfig } from 'config/wagmi'
 import { StyledModal } from './challenge'
 
@@ -21,8 +22,10 @@ const EvidenceModal = ({ item, ...rest }: EvidenceModalProps) => {
   const { address: account } = useAccount()
   const publicClient = usePublicClient()
   const { data: walletClient } = useWalletClient()
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const submitEvidence = async ({ title, description, evidenceAttachment }) => {
+    setIsSubmitting(true)
     try {
       const evidenceJSON = {
         title: title,
@@ -52,7 +55,9 @@ const EvidenceModal = ({ item, ...rest }: EvidenceModalProps) => {
       if (result.status) rest.onCancel()
     } catch (err) {
       console.error('Error submitting evidence:', err)
+      errorToast(parseWagmiError(err))
     }
+    setIsSubmitting(false)
   }
 
   const EVIDENCE_FORM_ID = 'submitEvidenceForm'
@@ -69,6 +74,7 @@ const EvidenceModal = ({ item, ...rest }: EvidenceModalProps) => {
             type="primary"
             form={EVIDENCE_FORM_ID}
             htmlType="submit"
+            loading={isSubmitting}
           >
             Submit
           </Button>

@@ -21,7 +21,8 @@ import useAppealTime from 'hooks/appeal-time'
 import ETHAmount from 'components/eth-amount'
 import useNativeCurrency from 'hooks/native-currency'
 import { klerosAddresses } from 'config/tcr-addresses'
-import { wrapWithToast } from 'utils/wrap-with-toast'
+import { wrapWithToast, errorToast } from 'utils/wrap-with-toast'
+import { parseWagmiError } from 'utils/parse-wagmi-error'
 import { wagmiConfig } from 'config/wagmi'
 
 export const StyledDescriptions = styled(Descriptions)`
@@ -171,6 +172,7 @@ const ItemStatusCard = ({
       await wrapWithToast(() => walletClient.writeContract(req), publicClient)
     } catch (err) {
       console.error('Error executing request:', err)
+      errorToast(parseWagmiError(err))
     }
   }
 

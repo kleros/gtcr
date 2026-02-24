@@ -22,6 +22,7 @@ import useUrlChainId from 'hooks/use-url-chain-id'
 import { BigNumber } from 'ethers'
 import localforage from 'localforage'
 import { useQuery } from '@tanstack/react-query'
+import { STALE_TIME } from 'consts'
 import ErrorPage from '../error-page'
 import { WalletContext } from 'contexts/wallet-context'
 import { LightTCRViewContext } from 'contexts/light-tcr-view-context'
@@ -39,7 +40,7 @@ import { DISPUTE_STATUS } from 'utils/item-status'
 import { LIGHT_ITEMS_QUERY } from 'utils/graphql'
 import LightSearchBar from 'components/light-search-bar'
 import { parseIpfs } from 'utils/ipfs-parse'
-import { getGraphQLClient } from 'utils/graphql-client'
+import { useGraphqlBatcher } from 'contexts/graphql-batcher'
 import useSeerMarketsData from 'components/custom-registries/seer/use-seer-markets-data'
 import { isSeerRegistry } from 'components/custom-registries/seer/is-seer-registry'
 
@@ -199,7 +200,7 @@ const Items = () => {
   }, [])
   const [decodedItems, setDecodedItems] = useState(undefined)
   const seerMarketsData = useSeerMarketsData(chainId, tcrAddress, decodedItems)
-  const client = useMemo(() => getGraphQLClient(chainId), [chainId])
+  const { graphqlBatcher } = useGraphqlBatcher()
 
   const {
     oldestFirst,
@@ -279,8 +280,15 @@ const Items = () => {
 
   const itemsQuery = useQuery({
     queryKey: ['lightItems', queryVariables],
-    queryFn: () => client.request(LIGHT_ITEMS_QUERY, queryVariables),
-    enabled: !!client,
+    queryFn: () =>
+      graphqlBatcher.fetch({
+        id: crypto.randomUUID(),
+        document: LIGHT_ITEMS_QUERY,
+        variables: queryVariables,
+        chainId: chainId!,
+      }),
+    enabled: !!chainId,
+    staleTime: STALE_TIME,
   })
 
   const itemCount = useMemo(() => {

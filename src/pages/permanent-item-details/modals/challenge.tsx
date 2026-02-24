@@ -14,7 +14,8 @@ import { getIPFSPath } from 'utils/get-ipfs-path'
 import { parseIpfs } from 'utils/ipfs-parse'
 import useNativeCurrency from 'hooks/native-currency'
 import useTokenSymbol from 'hooks/token-symbol'
-import { wrapWithToast } from 'utils/wrap-with-toast'
+import { wrapWithToast, errorToast } from 'utils/wrap-with-toast'
+import { parseWagmiError } from 'utils/parse-wagmi-error'
 import { wagmiConfig } from 'config/wagmi'
 import { DepositContainer, DepositRow, DepositLabel } from './submit'
 
@@ -133,6 +134,7 @@ const ChallengeModal = ({
       }
     } catch (err) {
       console.error('Error approving token:', err)
+      errorToast(parseWagmiError(err))
     }
     setIsApproving(false)
   }, [
@@ -200,6 +202,7 @@ const ChallengeModal = ({
       }
     } catch (err) {
       console.error('Error challenging item:', err)
+      errorToast(parseWagmiError(err))
     }
     setIsChallenging(false)
   }

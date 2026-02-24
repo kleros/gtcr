@@ -16,6 +16,7 @@ import AppBar from 'components/layout/app-bar'
 import AppRouter from './app-router'
 import ErrorPage from 'pages/error-page'
 import { wagmiConfig } from 'config/wagmi'
+import { GraphqlBatcherProvider } from 'contexts/graphql-batcher'
 import { ToastContainer } from 'react-toastify'
 import GlobalStyle from 'styles/global-styles'
 import 'react-toastify/dist/ReactToastify.css'
@@ -82,6 +83,7 @@ const App = () => {
       <GlobalStyle />
       <WagmiProvider config={wagmiConfig}>
         <QueryClientProvider client={queryClient}>
+          <GraphqlBatcherProvider>
           <BrowserRouter future={{ v7_relativeSplatPath: true }}>
             <ErrorBoundary
               FallbackComponent={({ error }) => (
@@ -114,6 +116,7 @@ const App = () => {
               </WalletProvider>
             </ErrorBoundary>
           </BrowserRouter>
+          </GraphqlBatcherProvider>
         </QueryClientProvider>
       </WagmiProvider>
     </ThemeProvider>

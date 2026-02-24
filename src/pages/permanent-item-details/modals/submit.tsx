@@ -19,7 +19,8 @@ import { IPFSResultObject, getIPFSPath } from 'utils/get-ipfs-path'
 import ipfsPublish from 'utils/ipfs-publish'
 import useNativeCurrency from 'hooks/native-currency'
 import useTokenSymbol from 'hooks/token-symbol'
-import { wrapWithToast } from 'utils/wrap-with-toast'
+import { wrapWithToast, errorToast } from 'utils/wrap-with-toast'
+import { parseWagmiError } from 'utils/parse-wagmi-error'
 import { wagmiConfig } from 'config/wagmi'
 import { Column } from 'pages/item-details/modals/submit'
 import { StyledSpin } from './challenge'
@@ -80,40 +81,54 @@ const _SubmissionForm: React.FC<{
   values: Record<string, string>
   errors: { [label: string]: string }
   touched: { [label: string]: boolean }
+  onFieldsComplete?: (complete: boolean) => void
   status: {
     setFileToUpload: (f: (b: boolean) => void) => void
     setFileAsUploaded: (f: (b: boolean) => void) => void
   }
-}> = (p) => (
-  <Form onSubmit={p.handleSubmit} id={SUBMISSION_FORM_ID}>
-    {p.columns &&
-      p.columns.length > 0 &&
-      p.columns.map((column, index) => (
-        <InputSelector
-          style={p.style}
-          type={column.type}
-          name={`${column.label}`}
-          allowedFileTypes={column.allowedFileTypes}
-          key={index}
-          values={p.values}
-          error={p.errors[column.label]}
-          setFieldValue={p.setFieldValue}
-          disabled={p.disabledFields && p.disabledFields[index]}
-          touched={p.touched[column.label]}
-          setFileToUpload={p.status.setFileToUpload}
-          setFileAsUploaded={p.status.setFileAsUploaded}
-          label={
-            <span>
-              {column.label}&nbsp;
-              <Tooltip title={addPeriod(column.description)}>
-                <Icon type="question-circle-o" />
-              </Tooltip>
-            </span>
-          }
-        />
-      ))}
-  </Form>
-)
+}> = (p) => {
+  useEffect(() => {
+    if (!p.onFieldsComplete || !p.columns) return
+    const allFilled = p.columns.every((column) => {
+      if (column.type === ItemTypes.BOOLEAN) return true
+      if (column.optional) return true
+      const value = p.values[column.label]
+      return value !== undefined && value !== '' && String(value).trim() !== ''
+    })
+    p.onFieldsComplete(allFilled)
+  }, [p.values, p.columns, p.onFieldsComplete])
+
+  return (
+    <Form onSubmit={p.handleSubmit} id={SUBMISSION_FORM_ID}>
+      {p.columns &&
+        p.columns.length > 0 &&
+        p.columns.map((column, index) => (
+          <InputSelector
+            style={p.style}
+            type={column.type}
+            name={`${column.label}`}
+            allowedFileTypes={column.allowedFileTypes}
+            key={index}
+            values={p.values}
+            error={p.errors[column.label]}
+            setFieldValue={p.setFieldValue}
+            disabled={p.disabledFields && p.disabledFields[index]}
+            touched={p.touched[column.label]}
+            setFileToUpload={p.status.setFileToUpload}
+            setFileAsUploaded={p.status.setFileAsUploaded}
+            label={
+              <span>
+                {column.label}&nbsp;
+                <Tooltip title={addPeriod(column.description)}>
+                  <Icon type="question-circle-o" />
+                </Tooltip>
+              </span>
+            }
+          />
+        ))}
+    </Form>
+  )
+}
 
 const SubmissionForm: React.ComponentType<Record<string, unknown>> = withFormik(
   {
@@ -127,8 +142,10 @@ const SubmissionForm: React.ComponentType<Record<string, unknown>> = withFormik(
       columns.reduce((acc: Record<string, string>, curr: Column, i: number) => {
         const defaultValue = initialValues
           ? initialValues[i]
-          : // @ts-ignore
-            typeDefaultValues[curr.type]
+          : curr.type === 'number'
+            ? ''
+            : // @ts-ignore
+              typeDefaultValues[curr.type]
 
         return {
           ...acc,
@@ -241,6 +258,7 @@ const SubmitModal: React.FC<{
   const [checkingToken, setCheckingToken] = useState(false)
   const [isApproving, setIsApproving] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [fieldsComplete, setFieldsComplete] = useState(false)
   const { symbol: tokenSymbol } = useTokenSymbol(tokenAddress)
 
   const { itemName, title, policyURI } = metadata || {}
@@ -314,6 +332,7 @@ const SubmitModal: React.FC<{
       }
     } catch (err) {
       console.error('Error approving token:', err)
+      errorToast(parseWagmiError(err))
     }
     setIsApproving(false)
   }, [
@@ -372,6 +391,7 @@ const SubmitModal: React.FC<{
         }
       } catch (err) {
         console.error('Error submitting item:', err)
+      errorToast(parseWagmiError(err))
       }
       setIsSubmitting(false)
     },
@@ -435,6 +455,7 @@ const SubmitModal: React.FC<{
         type="primary"
         form={SUBMISSION_FORM_ID}
         htmlType="submit"
+        disabled={!fieldsComplete}
         loading={loadingCounter > 0 || isSubmitting}
       >
         Submit
@@ -496,6 +517,7 @@ const SubmitModal: React.FC<{
         deployedWithPermanentFactory={deployedWithPermanentFactory}
         setFileToUpload={setFileToUpload}
         setFileAsUploaded={setFileAsUploaded}
+        onFieldsComplete={setFieldsComplete}
       />
       <StyledListingCriteria>
         Make sure your submission complies with the{' '}

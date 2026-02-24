@@ -18,7 +18,8 @@ import { parseIpfs } from 'utils/ipfs-parse'
 import { fetchMetaEvidence } from 'hooks/tcr-view'
 import { CLASSIC_ITEM_DETAILS_QUERY } from 'utils/graphql'
 import { useQuery } from '@tanstack/react-query'
-import { getGraphQLClient } from 'utils/graphql-client'
+import { STALE_TIME } from 'consts'
+import { useGraphqlBatcher } from 'contexts/graphql-batcher'
 import { ethers } from 'ethers'
 import {
   Divider,
@@ -53,12 +54,18 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
 
   // subgraph item entities have id "<itemID>@<listaddress>"
   const compoundId = `${itemID}@${tcrAddress.toLowerCase()}`
-  const client = useMemo(() => getGraphQLClient(chainId), [chainId])
+  const { graphqlBatcher } = useGraphqlBatcher()
   const detailsViewQuery = useQuery({
     queryKey: ['classicItemDetails', compoundId],
     queryFn: () =>
-      client.request(CLASSIC_ITEM_DETAILS_QUERY, { id: compoundId }),
-    enabled: !!client,
+      graphqlBatcher.fetch({
+        id: crypto.randomUUID(),
+        document: CLASSIC_ITEM_DETAILS_QUERY,
+        variables: { id: compoundId },
+        chainId: chainId!,
+      }),
+    enabled: !!chainId,
+    staleTime: STALE_TIME,
   })
 
   const item = useMemo(

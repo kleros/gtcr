@@ -15,7 +15,8 @@ import _GTCRFactory from 'assets/abis/LightGTCRFactory.json'
 import ipfsPublish from 'utils/ipfs-publish'
 import { getIPFSPath } from 'utils/get-ipfs-path'
 import { ZERO_ADDRESS, isVowel } from 'utils/string'
-import { wrapWithToast } from 'utils/wrap-with-toast'
+import { wrapWithToast, errorToast } from 'utils/wrap-with-toast'
+import { parseWagmiError } from 'utils/parse-wagmi-error'
 import { wagmiConfig } from 'config/wagmi'
 import useWindowDimensions from 'hooks/window-dimensions'
 import EnsureAuth from 'components/ensure-auth'
@@ -446,6 +447,7 @@ const Deploy = ({ setTxState, tcrState, setTcrState }: DeployProps) => {
       }
     } catch (err) {
       console.error('Error deploying list:', err)
+      errorToast(parseWagmiError(err))
     }
   }
 

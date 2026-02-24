@@ -3,13 +3,14 @@ import { TCRViewProvider } from 'contexts/tcr-view-context'
 import { LightTCRViewProvider } from 'contexts/light-tcr-view-context'
 import { useParams } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
+import { STALE_TIME } from 'consts'
 import Loading from 'components/loading'
 import ErrorPage from 'pages/error-page'
 import useTcrNetwork from 'hooks/use-tcr-network'
 import useCheckLightCurate from 'hooks/use-check-light-curate'
 import useUrlChainId from 'hooks/use-url-chain-id'
 import { StakeContext } from 'contexts/stake-context'
-import { getGraphQLClient } from 'utils/graphql-client'
+import { useGraphqlBatcher } from 'contexts/graphql-batcher'
 import { LIGHT_ITEMS_QUERY, CLASSIC_REGISTRY_ITEMS_QUERY } from 'utils/graphql'
 import { searchStrToFilterObjLight } from 'utils/filters'
 
@@ -70,10 +71,7 @@ const ItemsRouter = () => {
   useTcrNetwork()
   const { setIsPermanent } = useContext(StakeContext)
   const queryClient = useQueryClient()
-  const client = useMemo(
-    () => (chainId ? getGraphQLClient(chainId) : null),
-    [chainId],
-  )
+  const { graphqlBatcher } = useGraphqlBatcher()
 
   useEffect(() => {
     setIsPermanent(isPermanentCurate)
@@ -84,7 +82,7 @@ const ItemsRouter = () => {
   // This overlaps the items fetch with the registry type check,
   // eliminating the serial waterfall.
   useEffect(() => {
-    if (!client || !tcrAddress) return
+    if (!chainId || !tcrAddress) return
     const addr = tcrAddress.toLowerCase()
     const search = window.location.search || ''
     const queryOptions = searchStrToFilterObjLight(search)
@@ -101,7 +99,14 @@ const ItemsRouter = () => {
     }
     queryClient.prefetchQuery({
       queryKey: ['lightItems', lightVars],
-      queryFn: () => client.request(LIGHT_ITEMS_QUERY, lightVars),
+      queryFn: () =>
+        graphqlBatcher.fetch({
+          id: crypto.randomUUID(),
+          document: LIGHT_ITEMS_QUERY,
+          variables: lightVars,
+          chainId,
+        }),
+      staleTime: STALE_TIME,
     })
 
     const classicVars = {
@@ -112,9 +117,16 @@ const ItemsRouter = () => {
     }
     queryClient.prefetchQuery({
       queryKey: ['classicItems', classicVars],
-      queryFn: () => client.request(CLASSIC_REGISTRY_ITEMS_QUERY, classicVars),
+      queryFn: () =>
+        graphqlBatcher.fetch({
+          id: crypto.randomUUID(),
+          document: CLASSIC_REGISTRY_ITEMS_QUERY,
+          variables: classicVars,
+          chainId,
+        }),
+      staleTime: STALE_TIME,
     })
-  }, [client, tcrAddress, queryClient, chainId])
+  }, [chainId, tcrAddress, queryClient, graphqlBatcher])
 
   if (checking) return <Loading />
 

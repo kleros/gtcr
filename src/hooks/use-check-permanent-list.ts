@@ -1,16 +1,13 @@
 import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { PERMANENT_REGISTRY_QUERY } from 'utils/graphql'
-import { getPermanentGraphQLClient } from 'utils/graphql-client'
+import { useGraphqlBatcher } from 'contexts/graphql-batcher'
 
 const useCheckPermanentList = (
   address: string | null,
   chainId: number | null,
 ): { isPermanentList: boolean; checking: boolean; error: boolean } => {
-  const client = useMemo(
-    () => (chainId ? getPermanentGraphQLClient(chainId) : null),
-    [chainId],
-  )
+  const { graphqlBatcher } = useGraphqlBatcher()
 
   // Use the full registry query instead of the lightweight existence test.
   // This pre-populates the TanStack Query cache with the same key that
@@ -22,10 +19,15 @@ const useCheckPermanentList = (
   } = useQuery({
     queryKey: ['permanentRegistry', address, chainId],
     queryFn: () =>
-      client!.request(PERMANENT_REGISTRY_QUERY, {
-        lowerCaseTCRAddress: (address || '').toLowerCase(),
+      graphqlBatcher.fetch({
+        id: crypto.randomUUID(),
+        document: PERMANENT_REGISTRY_QUERY,
+        variables: { lowerCaseTCRAddress: (address || '').toLowerCase() },
+        chainId: chainId!,
+        isPermanent: true,
       }),
-    enabled: !!address && !!client,
+    enabled: !!address && !!chainId,
+    staleTime: Infinity,
   })
 
   const isPermanentList = useMemo<boolean>(

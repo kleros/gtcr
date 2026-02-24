@@ -1,4 +1,4 @@
-import React, { useContext, useCallback } from 'react'
+import React, { useContext, useCallback, useState } from 'react'
 import { Descriptions, Typography, Divider, Button, Alert } from 'components/ui'
 import styled from 'styled-components'
 import humanizeDuration from 'humanize-duration'
@@ -14,9 +14,11 @@ import ipfsPublish from 'utils/ipfs-publish'
 import { getIPFSPath } from 'utils/get-ipfs-path'
 import { parseIpfs } from 'utils/ipfs-parse'
 import useNativeCurrency from 'hooks/native-currency'
-import { wrapWithToast } from 'utils/wrap-with-toast'
+import useNativeBalance from 'hooks/use-native-balance'
+import { wrapWithToast, errorToast } from 'utils/wrap-with-toast'
+import { parseWagmiError } from 'utils/parse-wagmi-error'
 import { wagmiConfig } from 'config/wagmi'
-import { StyledSpin, StyledModal } from './challenge'
+import { StyledSpin, StyledModal, InsufficientBalanceText } from './challenge'
 
 export const StyledAlert = styled(Alert)`
   margin-bottom: 16px;
@@ -42,12 +44,20 @@ const RemoveModal = ({
   const { removalDeposit, tcrAddress, metaEvidence, challengePeriodDuration } =
     useContext(LightTCRViewContext)
   const nativeCurrency = useNativeCurrency()
+  const { balance: nativeBalance } = useNativeBalance()
+  const insufficientBalance =
+    nativeBalance !== undefined &&
+    removalDeposit &&
+    nativeBalance < BigInt(removalDeposit.toString())
 
   const { metadata } = metaEvidence || {}
   const { requireRemovalEvidence } = metadata || {}
 
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
   const removeItem = useCallback(
     async ({ title, description, evidenceAttachment } = {}) => {
+      setIsSubmitting(true)
       try {
         let ipfsEvidencePath = ''
         if (metadata && requireRemovalEvidence) {
@@ -100,7 +110,9 @@ const RemoveModal = ({
         }
       } catch (err) {
         console.error('Error removing item:', err)
+        errorToast(parseWagmiError(err))
       }
+      setIsSubmitting(false)
     },
     [
       account,
@@ -132,15 +144,24 @@ const RemoveModal = ({
           Back
         </Button>,
         <EnsureAuth key="ensure-auth">
-          <Button
-            key="challengeSubmit"
-            type="primary"
-            form={EVIDENCE_FORM_ID}
-            htmlType="submit"
-            onClick={metadata && !requireRemovalEvidence ? removeItem : null}
-          >
-            Send
-          </Button>
+          <div>
+            <Button
+              key="challengeSubmit"
+              type="primary"
+              form={EVIDENCE_FORM_ID}
+              htmlType="submit"
+              disabled={!!insufficientBalance}
+              onClick={metadata && !requireRemovalEvidence ? removeItem : null}
+              loading={isSubmitting}
+            >
+              Send
+            </Button>
+            {insufficientBalance && (
+              <InsufficientBalanceText>
+                Insufficient balance
+              </InsufficientBalanceText>
+            )}
+          </div>
         </EnsureAuth>,
       ]}
       {...rest}

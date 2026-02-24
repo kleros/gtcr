@@ -2,7 +2,7 @@ import { useMemo } from 'react'
 import { useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { TCR_EXISTENCE_TEST } from 'utils/graphql'
-import { getGraphQLClient } from 'utils/graphql-client'
+import { useGraphqlBatcher } from 'contexts/graphql-batcher'
 import useCheckPermanentList from './use-check-permanent-list'
 import useUrlChainId from 'hooks/use-url-chain-id'
 
@@ -17,11 +17,7 @@ const useCheckLightCurate = (): {
     tcrAddress: string
   }>()
   const chainId = useUrlChainId()
-
-  const client = useMemo(
-    () => (chainId ? getGraphQLClient(chainId) : null),
-    [chainId],
-  )
+  const { graphqlBatcher } = useGraphqlBatcher()
 
   const {
     isLoading: loading,
@@ -30,10 +26,14 @@ const useCheckLightCurate = (): {
   } = useQuery({
     queryKey: ['tcrExistence', tcrAddress, chainId],
     queryFn: () =>
-      client!.request(TCR_EXISTENCE_TEST, {
-        tcrAddress: tcrAddress.toLowerCase(),
+      graphqlBatcher.fetch({
+        id: crypto.randomUUID(),
+        document: TCR_EXISTENCE_TEST,
+        variables: { tcrAddress: tcrAddress.toLowerCase() },
+        chainId: chainId!,
       }),
-    enabled: !!client && !!tcrAddress,
+    enabled: !!chainId && !!tcrAddress,
+    staleTime: Infinity,
   })
 
   const {

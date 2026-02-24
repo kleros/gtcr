@@ -25,14 +25,17 @@ import { keccak256, encodePacked, getAddress } from 'viem'
 import ipfsPublish from 'utils/ipfs-publish'
 import { gtcrEncode } from '@kleros/gtcr-encoder'
 import useNativeCurrency from 'hooks/native-currency'
+import useNativeBalance from 'hooks/use-native-balance'
 import useGetLogs from 'hooks/get-logs'
 import { parseIpfs } from 'utils/ipfs-parse'
 import { getIPFSPath } from 'utils/get-ipfs-path'
-import { wrapWithToast } from 'utils/wrap-with-toast'
+import { wrapWithToast, errorToast } from 'utils/wrap-with-toast'
+import { parseWagmiError } from 'utils/parse-wagmi-error'
 import { wagmiConfig } from 'config/wagmi'
 import {
   StyledSpin,
   StyledModal,
+  InsufficientBalanceText,
 } from 'pages/light-item-details/modals/challenge'
 import {
   StyledAlert,
@@ -50,6 +53,7 @@ interface SubmitConnectModalProps {
 
 const SubmitConnectModal = (props: SubmitConnectModalProps) => {
   const nativeCurrency = useNativeCurrency()
+  const { balance: nativeBalance } = useNativeBalance()
   const { onCancel, initialValues, tcrAddress: relTCRAddress, gtcrView } = props
   const { address: account } = useAccount()
   const chainId = useChainId()
@@ -209,8 +213,11 @@ const SubmitConnectModal = (props: SubmitConnectModalProps) => {
     ],
   )
 
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
   const handleSubmit = useCallback(async () => {
     if (!relTCRMetaEvidence) return
+    setIsSubmitting(true)
     const file = new TextEncoder().encode(JSON.stringify(match))
     const fileURI = getIPFSPath(await ipfsPublish('match-file.json', file))
     const { columns } = relTCRMetaEvidence.metadata
@@ -264,7 +271,9 @@ const SubmitConnectModal = (props: SubmitConnectModalProps) => {
       }
     } catch (err) {
       console.error('Error submitting badge:', err)
+      errorToast(parseWagmiError(err))
     }
+    setIsSubmitting(false)
   }, [
     account,
     badgeTCRAddr,
@@ -277,6 +286,11 @@ const SubmitConnectModal = (props: SubmitConnectModalProps) => {
     relTCRSubmissionDeposit,
     walletClient,
   ])
+
+  const insufficientBalance =
+    nativeBalance !== undefined &&
+    relTCRSubmissionDeposit &&
+    nativeBalance < BigInt(relTCRSubmissionDeposit.toString())
 
   const submitDisabled = useMemo(
     () => !match || match.columns.filter((col) => col !== null).length === 0,
@@ -321,15 +335,22 @@ const SubmitConnectModal = (props: SubmitConnectModalProps) => {
         <Button key="back" onClick={onCancel}>
           Back
         </Button>,
-        <Button
-          key="submit"
-          type="primary"
-          htmlType="submit"
-          onClick={handleSubmit}
-          disabled={submitDisabled}
-        >
-          Submit
-        </Button>,
+        <div key="submit">
+          <Button
+            type="primary"
+            htmlType="submit"
+            onClick={handleSubmit}
+            disabled={submitDisabled || !!insufficientBalance}
+            loading={isSubmitting}
+          >
+            Submit
+          </Button>
+          {insufficientBalance && (
+            <InsufficientBalanceText>
+              Insufficient balance
+            </InsufficientBalanceText>
+          )}
+        </div>,
       ]}
       {...props}
     >

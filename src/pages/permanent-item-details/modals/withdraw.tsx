@@ -6,7 +6,8 @@ import { simulateContract } from '@wagmi/core'
 import _gtcr from 'assets/abis/PermanentGTCR.json'
 import humanizeDuration from 'humanize-duration'
 import EnsureAuth from 'components/ensure-auth'
-import { wrapWithToast } from 'utils/wrap-with-toast'
+import { wrapWithToast, errorToast } from 'utils/wrap-with-toast'
+import { parseWagmiError } from 'utils/parse-wagmi-error'
 import { wagmiConfig } from 'config/wagmi'
 
 export const StyledModal = styled(Modal)`
@@ -63,6 +64,7 @@ const WithdrawModal: React.FC<WithdrawModalProps> = ({
       if (result.status) onCancel()
     } catch (err) {
       console.error('Withdrawal failed:', err)
+      errorToast(parseWagmiError(err))
     } finally {
       setLoading(false)
     }

@@ -24,6 +24,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import useUrlChainId from 'hooks/use-url-chain-id'
 import localforage from 'localforage'
 import { useQuery } from '@tanstack/react-query'
+import { STALE_TIME } from 'consts'
 import ErrorPage from '../error-page'
 import { WalletContext } from 'contexts/wallet-context'
 import SubmitModal from '../permanent-item-details/modals/submit'
@@ -38,7 +39,7 @@ import Banner from './banner'
 import { PERMANENT_ITEMS_QUERY, PERMANENT_REGISTRY_QUERY } from 'utils/graphql'
 import PermanentSearchBar from 'components/permanent-search-bar'
 import { parseIpfs } from 'utils/ipfs-parse'
-import { getPermanentGraphQLClient } from 'utils/graphql-client'
+import { useGraphqlBatcher } from 'contexts/graphql-batcher'
 import useArbitrationCost from 'hooks/arbitration-cost'
 import useTokenSymbol from 'hooks/token-symbol'
 import { useEthersProvider } from 'hooks/ethers-adapters'
@@ -185,19 +186,21 @@ const Items = () => {
   const library = useEthersProvider({
     chainId: chainId ? Number(chainId) : undefined,
   })
-  const pgtcrClient = useMemo(
-    () => getPermanentGraphQLClient(chainId),
-    [chainId],
-  )
+  const { graphqlBatcher } = useGraphqlBatcher()
 
   // get registry data first, you need some variables from here to query the items.
   const registryQuery = useQuery({
     queryKey: ['permanentRegistry', tcrAddress, chainId],
     queryFn: () =>
-      pgtcrClient.request(PERMANENT_REGISTRY_QUERY, {
-        lowerCaseTCRAddress: tcrAddress.toLowerCase(),
+      graphqlBatcher.fetch({
+        id: crypto.randomUUID(),
+        document: PERMANENT_REGISTRY_QUERY,
+        variables: { lowerCaseTCRAddress: tcrAddress.toLowerCase() },
+        chainId: chainId!,
+        isPermanent: true,
       }),
-    enabled: !!pgtcrClient,
+    enabled: !!chainId,
+    staleTime: Infinity,
   })
 
   const { oldestFirst, page, absent, registered, disputed } = queryOptions
@@ -238,8 +241,16 @@ const Items = () => {
 
   const itemsQuery = useQuery({
     queryKey: ['permanentItems', itemsVariables],
-    queryFn: () => pgtcrClient.request(PERMANENT_ITEMS_QUERY, itemsVariables),
-    enabled: !!registryQuery.data && !registryQuery.isLoading && !!pgtcrClient,
+    queryFn: () =>
+      graphqlBatcher.fetch({
+        id: crypto.randomUUID(),
+        document: PERMANENT_ITEMS_QUERY,
+        variables: itemsVariables,
+        chainId: chainId!,
+        isPermanent: true,
+      }),
+    enabled: !!registryQuery.data && !registryQuery.isLoading && !!chainId,
+    staleTime: STALE_TIME,
   })
 
   const itemCount = useMemo(() => {

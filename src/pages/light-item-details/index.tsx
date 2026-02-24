@@ -18,7 +18,8 @@ import { WalletContext } from 'contexts/wallet-context'
 import { capitalizeFirstLetter } from 'utils/string'
 import { LIGHT_ITEM_DETAILS_QUERY } from 'utils/graphql'
 import { useQuery } from '@tanstack/react-query'
-import { getGraphQLClient } from 'utils/graphql-client'
+import { STALE_TIME } from 'consts'
+import { useGraphqlBatcher } from 'contexts/graphql-batcher'
 import SearchBar from 'components/light-search-bar'
 import { parseIpfs } from 'utils/ipfs-parse'
 import { itemToStatusCode, STATUS_CODE } from 'utils/item-status'
@@ -104,11 +105,18 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
 
   // subgraph item entities have id "<itemID>@<listaddress>"
   const compoundId = `${itemID}@${tcrAddress.toLowerCase()}`
-  const client = useMemo(() => getGraphQLClient(chainId), [chainId])
+  const { graphqlBatcher } = useGraphqlBatcher()
   const detailsViewQuery = useQuery({
     queryKey: ['lightItemDetails', compoundId],
-    queryFn: () => client.request(LIGHT_ITEM_DETAILS_QUERY, { id: compoundId }),
-    enabled: !!client,
+    queryFn: () =>
+      graphqlBatcher.fetch({
+        id: crypto.randomUUID(),
+        document: LIGHT_ITEM_DETAILS_QUERY,
+        variables: { id: compoundId },
+        chainId: chainId!,
+      }),
+    enabled: !!chainId,
+    staleTime: STALE_TIME,
   })
 
   const item = useMemo(

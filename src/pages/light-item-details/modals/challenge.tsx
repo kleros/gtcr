@@ -1,4 +1,4 @@
-import React, { useContext } from 'react'
+import React, { useContext, useState } from 'react'
 import styled from 'styled-components'
 import { Modal, Descriptions, Typography, Button, Spin } from 'components/ui'
 import { useAccount, usePublicClient, useWalletClient, useChainId } from 'wagmi'
@@ -10,10 +10,12 @@ import { LightTCRViewContext } from 'contexts/light-tcr-view-context'
 import EnsureAuth from 'components/ensure-auth'
 import ETHAmount from 'components/eth-amount'
 import EvidenceForm from 'components/evidence-form'
+import useNativeBalance from 'hooks/use-native-balance'
 import ipfsPublish from 'utils/ipfs-publish'
 import { getIPFSPath } from 'utils/get-ipfs-path'
 import { parseIpfs } from 'utils/ipfs-parse'
-import { wrapWithToast } from 'utils/wrap-with-toast'
+import { wrapWithToast, errorToast } from 'utils/wrap-with-toast'
+import { parseWagmiError } from 'utils/parse-wagmi-error'
 import { wagmiConfig } from 'config/wagmi'
 
 export const StyledSpin = styled(Spin)`
@@ -25,6 +27,13 @@ export const StyledSpin = styled(Spin)`
 `
 
 export const StyledModal = styled(Modal)``
+
+export const InsufficientBalanceText = styled.div`
+  color: ${({ theme }) => theme.errorColor};
+  font-size: 12px;
+  margin-top: 4px;
+  text-align: center;
+`
 
 interface ChallengeModalProps {
   item: SubgraphItem
@@ -47,16 +56,24 @@ const ChallengeModal = ({
   const chainId = useChainId()
   const publicClient = usePublicClient()
   const { data: walletClient } = useWalletClient()
+  const { balance: nativeBalance } = useNativeBalance()
   const challengeDeposit =
     item.status === CONTRACT_STATUS.REGISTRATION_REQUESTED
       ? submissionChallengeDeposit
       : removalChallengeDeposit
+  const insufficientBalance =
+    nativeBalance !== undefined &&
+    challengeDeposit &&
+    nativeBalance < BigInt(challengeDeposit.toString())
+
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const challengeRequest = async ({
     title,
     description,
     evidenceAttachment,
   }) => {
+    setIsSubmitting(true)
     try {
       const evidenceJSON = {
         title: title || 'Challenge Justification',
@@ -106,7 +123,9 @@ const ChallengeModal = ({
       }
     } catch (err) {
       console.error('Error challenging request:', err)
+      errorToast(parseWagmiError(err))
     }
+    setIsSubmitting(false)
   }
 
   const EVIDENCE_FORM_ID = 'challengeEvidenceForm'
@@ -125,14 +144,23 @@ const ChallengeModal = ({
           Back
         </Button>,
         <EnsureAuth key="ensure-auth">
-          <Button
-            key="challengeSubmit"
-            type="primary"
-            form={EVIDENCE_FORM_ID}
-            htmlType="submit"
-          >
-            Challenge
-          </Button>
+          <div>
+            <Button
+              key="challengeSubmit"
+              type="primary"
+              form={EVIDENCE_FORM_ID}
+              htmlType="submit"
+              disabled={!!insufficientBalance}
+              loading={isSubmitting}
+            >
+              Challenge
+            </Button>
+            {insufficientBalance && (
+              <InsufficientBalanceText>
+                Insufficient balance
+              </InsufficientBalanceText>
+            )}
+          </div>
         </EnsureAuth>,
       ]}
       {...rest}

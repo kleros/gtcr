@@ -12,6 +12,7 @@ import useUrlChainId from 'hooks/use-url-chain-id'
 import { useEthersProvider } from 'hooks/ethers-adapters'
 import { ethers, BigNumber } from 'ethers'
 import { useQuery } from '@tanstack/react-query'
+import { STALE_TIME } from 'consts'
 import _gtcr from 'assets/abis/LightGeneralizedTCR.json'
 import _GTCRView from 'assets/abis/LightGeneralizedTCRView.json'
 import { WalletContext } from 'contexts/wallet-context'
@@ -23,7 +24,7 @@ import SubmitConnectModal from '../modals/submit-connect'
 import useTcrView from 'hooks/tcr-view'
 import takeLower from 'utils/lower-limit'
 import { LIGHT_ITEMS_QUERY } from 'utils/graphql'
-import { getGraphQLClient } from 'utils/graphql-client'
+import { useGraphqlBatcher } from 'contexts/graphql-batcher'
 import useGetLogs from 'hooks/get-logs'
 import { gtcrViewAddresses, subgraphUrl } from 'config/tcr-addresses'
 import { parseIpfs } from 'utils/ipfs-parse'
@@ -151,10 +152,7 @@ const Badges = ({ connectedTCRAddr, item, tcrAddress }: BadgesProps) => {
   const networkId = chainId ?? undefined
   const library = useEthersProvider({ chainId: networkId })
   const { metadataByTime } = useTcrView(connectedTCRAddr)
-  const client = useMemo(
-    () => (chainId ? getGraphQLClient(chainId) : null),
-    [chainId],
-  )
+  const { graphqlBatcher } = useGraphqlBatcher()
 
   const [error, setError] = useState(false)
   const [addBadgeVisible, setAddBadgeVisible] = useState(false)
@@ -194,8 +192,15 @@ const Badges = ({ connectedTCRAddr, item, tcrAddress }: BadgesProps) => {
 
   const badgesQuery = useQuery({
     queryKey: ['badges', connectedTCRAddr],
-    queryFn: () => client.request(LIGHT_ITEMS_QUERY, { where: badgesWhere }),
-    enabled: !!connectedTCRAddr && !!client,
+    queryFn: () =>
+      graphqlBatcher.fetch({
+        id: crypto.randomUUID(),
+        document: LIGHT_ITEMS_QUERY,
+        variables: { where: badgesWhere },
+        chainId: chainId!,
+      }),
+    enabled: !!connectedTCRAddr && !!chainId,
+    staleTime: STALE_TIME,
   })
 
   useEffect(() => {

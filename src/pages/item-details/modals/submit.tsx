@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 import { ethers } from 'ethers'
 import { Button, Form, Tooltip, Descriptions } from 'components/ui'
 import Icon from 'components/ui/Icon'
@@ -15,8 +15,10 @@ import ETHAmount from 'components/eth-amount'
 import useFactory from 'hooks/factory'
 import { addPeriod, capitalizeFirstLetter, getArticleFor } from 'utils/string'
 import useNativeCurrency from 'hooks/native-currency'
+import useNativeBalance from 'hooks/use-native-balance'
 import { parseIpfs } from 'utils/ipfs-parse'
-import { wrapWithToast } from 'utils/wrap-with-toast'
+import { wrapWithToast, errorToast } from 'utils/wrap-with-toast'
+import { parseWagmiError } from 'utils/parse-wagmi-error'
 import { wagmiConfig } from 'config/wagmi'
 import {
   SUBMISSION_FORM_ID,
@@ -24,7 +26,7 @@ import {
   StyledListingCriteria,
   StyledModal,
 } from 'pages/light-item-details/modals/submit'
-import { StyledSpin } from 'pages/light-item-details/modals/challenge'
+import { StyledSpin, InsufficientBalanceText } from 'pages/light-item-details/modals/challenge'
 import { StyledAlert } from 'pages/light-item-details/modals/remove'
 
 export interface Column {
@@ -32,6 +34,7 @@ export interface Column {
   description: string
   type: string
   allowedFileTypes: string
+  optional?: boolean
 }
 
 const _SubmissionForm: React.FC<{
@@ -43,40 +46,54 @@ const _SubmissionForm: React.FC<{
   values: Record<string, string>
   errors: { [label: string]: string }
   touched: { [label: string]: boolean }
+  onFieldsComplete?: (complete: boolean) => void
   status: {
     setFileToUpload: (f: (b: boolean) => void) => void
     setFileAsUploaded: (f: (b: boolean) => void) => void
   }
-}> = (p) => (
-  <Form onSubmit={p.handleSubmit} id={SUBMISSION_FORM_ID}>
-    {p.columns &&
-      p.columns.length > 0 &&
-      p.columns.map((column, index) => (
-        <InputSelector
-          style={p.style}
-          type={column.type}
-          name={`${column.label}`}
-          allowedFileTypes={column.allowedFileTypes}
-          key={index}
-          values={p.values}
-          error={p.errors[column.label]}
-          setFieldValue={p.setFieldValue}
-          disabled={p.disabledFields && p.disabledFields[index]}
-          touched={p.touched[column.label]}
-          setFileToUpload={p.status.setFileToUpload}
-          setFileAsUploaded={p.status.setFileAsUploaded}
-          label={
-            <span>
-              {column.label}&nbsp;
-              <Tooltip title={addPeriod(column.description)}>
-                <Icon type="question-circle-o" />
-              </Tooltip>
-            </span>
-          }
-        />
-      ))}
-  </Form>
-)
+}> = (p) => {
+  useEffect(() => {
+    if (!p.onFieldsComplete || !p.columns) return
+    const allFilled = p.columns.every((column) => {
+      if (column.type === ItemTypes.BOOLEAN) return true
+      if (column.optional) return true
+      const value = p.values[column.label]
+      return value !== undefined && value !== '' && String(value).trim() !== ''
+    })
+    p.onFieldsComplete(allFilled)
+  }, [p.values, p.columns, p.onFieldsComplete])
+
+  return (
+    <Form onSubmit={p.handleSubmit} id={SUBMISSION_FORM_ID}>
+      {p.columns &&
+        p.columns.length > 0 &&
+        p.columns.map((column, index) => (
+          <InputSelector
+            style={p.style}
+            type={column.type}
+            name={`${column.label}`}
+            allowedFileTypes={column.allowedFileTypes}
+            key={index}
+            values={p.values}
+            error={p.errors[column.label]}
+            setFieldValue={p.setFieldValue}
+            disabled={p.disabledFields && p.disabledFields[index]}
+            touched={p.touched[column.label]}
+            setFileToUpload={p.status.setFileToUpload}
+            setFileAsUploaded={p.status.setFileAsUploaded}
+            label={
+              <span>
+                {column.label}&nbsp;
+                <Tooltip title={addPeriod(column.description)}>
+                  <Icon type="question-circle-o" />
+                </Tooltip>
+              </span>
+            }
+          />
+        ))}
+    </Form>
+  )
+}
 
 const SubmissionForm: React.ComponentType<Record<string, unknown>> = withFormik(
   {
@@ -90,8 +107,10 @@ const SubmissionForm: React.ComponentType<Record<string, unknown>> = withFormik(
       columns.reduce((acc: Record<string, string>, curr: Column, i: number) => {
         const defaultValue = initialValues
           ? initialValues[i]
-          : // @ts-ignore
-            typeDefaultValues[curr.type]
+          : curr.type === 'number'
+            ? ''
+            : // @ts-ignore
+              typeDefaultValues[curr.type]
 
         return {
           ...acc,
@@ -188,6 +207,11 @@ const SubmitModal: React.FC<{
   const chainId = useChainId()
   const publicClient = usePublicClient()
   const { data: walletClient } = useWalletClient()
+  const { balance: nativeBalance } = useNativeBalance()
+  const insufficientBalance =
+    nativeBalance !== undefined &&
+    submissionDeposit &&
+    nativeBalance < BigInt(submissionDeposit.toString())
   const {
     deployedWithFactory,
     deployedWithLightFactory,
@@ -196,6 +220,9 @@ const SubmitModal: React.FC<{
 
   const { fileURI, metadata } = metaEvidence || {}
   const { itemName, columns, tcrTitle } = metadata || {}
+
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [fieldsComplete, setFieldsComplete] = useState(false)
 
   // To make sure user cannot press Submit while there are files uploading
   // submit will be blocked until there are no files uploaded
@@ -215,6 +242,7 @@ const SubmitModal: React.FC<{
       columns: Column[],
       resetForm: (nextState?: Record<string, unknown>) => void,
     ) => {
+      setIsSubmitting(true)
       try {
         const encodedParams = gtcrEncode({ columns, values })
 
@@ -257,7 +285,9 @@ const SubmitModal: React.FC<{
         }
       } catch (err) {
         console.error('Error submitting item:', err)
+        errorToast(parseWagmiError(err))
       }
+      setIsSubmitting(false)
     },
     [
       account,
@@ -297,15 +327,23 @@ const SubmitModal: React.FC<{
           Back
         </Button>,
         <EnsureAuth key="ensure-auth">
-          <Button
-            key="challengeSubmit"
-            type="primary"
-            form={SUBMISSION_FORM_ID}
-            htmlType="submit"
-            loading={loadingCounter > 0}
-          >
-            Submit
-          </Button>
+          <div>
+            <Button
+              key="challengeSubmit"
+              type="primary"
+              form={SUBMISSION_FORM_ID}
+              htmlType="submit"
+              disabled={!!insufficientBalance || !fieldsComplete}
+              loading={loadingCounter > 0 || isSubmitting}
+            >
+              Submit
+            </Button>
+            {insufficientBalance && (
+              <InsufficientBalanceText>
+                Insufficient balance
+              </InsufficientBalanceText>
+            )}
+          </div>
         </EnsureAuth>,
       ]}
       {...props}
@@ -327,6 +365,7 @@ const SubmitModal: React.FC<{
         deployedWithPermanentFactory={deployedWithPermanentFactory}
         setFileToUpload={setFileToUpload}
         setFileAsUploaded={setFileAsUploaded}
+        onFieldsComplete={setFieldsComplete}
       />
       <StyledListingCriteria>
         Make sure your submission complies with the{' '}

@@ -14,7 +14,8 @@ import { TCRViewContext } from 'contexts/tcr-view-context'
 import TCRMetadataDisplay from './tcr-metadata-display'
 import { addPeriod } from '../utils/string'
 import { batchWithdrawAddresses } from 'config/tcr-addresses'
-import { wrapWithToast } from 'utils/wrap-with-toast'
+import { wrapWithToast, errorToast } from 'utils/wrap-with-toast'
+import { parseWagmiError } from 'utils/parse-wagmi-error'
 import { wagmiConfig } from 'config/wagmi'
 import SeerExtraDetails from 'components/custom-registries/seer/seer-item-details'
 import { isSeerRegistry } from 'components/custom-registries/seer/is-seer-registry'
@@ -138,6 +139,7 @@ const ItemDetailsCard = ({
         )
     } catch (err) {
       console.error('Error withdrawing rewards:', err)
+      errorToast(parseWagmiError(err))
     }
   }, [
     BATCH_WITHDRAW_ADDRESS,

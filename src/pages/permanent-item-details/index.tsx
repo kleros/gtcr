@@ -17,10 +17,11 @@ import { WalletContext } from 'contexts/wallet-context'
 import { capitalizeFirstLetter } from 'utils/string'
 import { PERMANENT_ITEM_DETAILS_QUERY } from 'utils/graphql'
 import { useQuery } from '@tanstack/react-query'
+import { STALE_TIME } from 'consts'
 import { parseIpfs } from 'utils/ipfs-parse'
 import { itemToStatusCode, STATUS_CODE } from 'utils/permanent-item-status'
 import { truncateAtWord } from 'utils/truncate-at-word'
-import { getPermanentGraphQLClient } from 'utils/graphql-client'
+import { useGraphqlBatcher } from 'contexts/graphql-batcher'
 import useArbitrationCost from 'hooks/arbitration-cost'
 
 export const StyledBreadcrumbItem = styled(Breadcrumb.Item)`
@@ -93,10 +94,7 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
   >()
   const { timestamp } = useContext(WalletContext)
   const [modalOpen, setModalOpen] = useState<boolean | undefined>()
-  const pgtcrClient = useMemo(
-    () => getPermanentGraphQLClient(chainId),
-    [chainId],
-  )
+  const { graphqlBatcher } = useGraphqlBatcher()
   const [appealCost, setAppealCost] = useState<BigNumber | undefined>()
   const [metaEvidence, setMetaEvidence] = useState<MetaEvidence | undefined>()
 
@@ -105,8 +103,15 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
   const query = useQuery({
     queryKey: ['permanentItemDetails', compoundId],
     queryFn: () =>
-      pgtcrClient.request(PERMANENT_ITEM_DETAILS_QUERY, { id: compoundId }),
-    enabled: !!pgtcrClient,
+      graphqlBatcher.fetch({
+        id: crypto.randomUUID(),
+        document: PERMANENT_ITEM_DETAILS_QUERY,
+        variables: { id: compoundId },
+        chainId: chainId!,
+        isPermanent: true,
+      }),
+    enabled: !!chainId,
+    staleTime: STALE_TIME,
   })
 
   const item = useMemo(

@@ -1,8 +1,8 @@
-import { useState, useEffect, useMemo, useContext } from 'react'
+import { useState, useMemo, useContext } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { useEthersProvider } from 'hooks/ethers-adapters'
 import useUrlChainId from 'hooks/use-url-chain-id'
 import { ethers, BigNumber } from 'ethers'
-import localforage from 'localforage'
 import { abi as _gtcr } from '@kleros/tcr/build/contracts/GeneralizedTCR.json'
 import { abi as _GTCRView } from '@kleros/tcr/build/contracts/GeneralizedTCRView.json'
 import { WalletContext } from '../contexts/wallet-context'
@@ -12,8 +12,6 @@ import {
   subgraphUrlPermanent,
 } from 'config/tcr-addresses'
 import { parseIpfs } from 'utils/ipfs-parse'
-
-const { getAddress } = ethers.utils
 
 export const fetchMetaEvidence = async (
   tcr: string,
@@ -86,28 +84,7 @@ export const fetchMetaEvidence = async (
 }
 
 const useTcrView = (tcrAddress: string) => {
-  const [metaEvidence, setMetaEvidence] = useState<MetaEvidence | undefined>(
-    undefined,
-  )
   const [error, setError] = useState<string | false>(false)
-  const [arbitrableTCRData, setArbitrableTCRData] = useState<
-    Record<string, unknown> | undefined
-  >(undefined)
-  const [arbitrationCost, setArbitrationCost] = useState<
-    BigNumber | undefined
-  >()
-  const [submissionDeposit, setSubmissionDeposit] = useState<
-    BigNumber | undefined
-  >()
-  const [submissionChallengeDeposit, setSubmissionChallengeDeposit] = useState<
-    BigNumber | undefined
-  >()
-  const [removalDeposit, setRemovalDeposit] = useState<BigNumber | undefined>()
-  const [removalChallengeDeposit, setRemovalChallengeDeposit] = useState<
-    BigNumber | undefined
-  >()
-  const [connectedTCRAddr, setConnectedTCRAddr] = useState<string | undefined>()
-  const [depositFor, setDepositFor] = useState<string | undefined>()
 
   const latestBlock = useContext(WalletContext)?.latestBlock
 
@@ -139,142 +116,84 @@ const useTcrView = (tcrAddress: string) => {
     }
   }, [library, networkId, tcrAddress])
 
-  const META_EVIDENCE_CACHE_KEY = useMemo(() => {
-    if (!gtcr || typeof networkId === 'undefined') return null
-    return `metaEvidence-${gtcr.address}@networkID-${networkId}`
-  }, [networkId, gtcr])
-
-  useEffect(() => {
-    if (!META_EVIDENCE_CACHE_KEY) return
-    localforage
-      .getItem(META_EVIDENCE_CACHE_KEY)
-      .then((file) => setMetaEvidence(file as MetaEvidence | undefined))
-      .catch((err) => {
-        console.error('Error fetching meta evidence file from cache', err)
-      })
-  }, [META_EVIDENCE_CACHE_KEY])
-
-  useEffect(() => {
-    if (!gtcrView || !tcrAddress) return
-    ;(async () => {
-      try {
-        setArbitrableTCRData({
-          ...(await gtcrView.fetchArbitrable(tcrAddress)),
-          tcrAddress,
-        })
-      } catch (err) {
-        console.error('Error fetching arbitrable TCR data:', err)
-        // Non-fatal: items still load from subgraph. Deposit/challenge features
-        // will be unavailable but the page remains browsable.
+  // MetaEvidence is immutable — fetch once and cache for the session.
+  const metaEvidenceQuery = useQuery({
+    queryKey: ['metaEvidence', 'classic', tcrAddress, networkId],
+    queryFn: async () => {
+      const fetchedData = await fetchMetaEvidence(tcrAddress, networkId!)
+      if (!fetchedData) return null
+      const response = await fetch(parseIpfs(fetchedData.metaEvidenceURI))
+      const file = await response.json()
+      return {
+        metaEvidence: { ...file, address: tcrAddress } as MetaEvidence,
+        connectedTCR: fetchedData.connectedTCR,
       }
-    })()
-  }, [gtcrView, tcrAddress])
+    },
+    enabled: !!tcrAddress && !!networkId,
+    staleTime: Infinity,
+  })
 
-  // Get the current arbitration cost to calculate request and challenge deposits.
-  useEffect(() => {
-    ;(async () => {
-      if (
-        !arbitrableTCRData ||
-        tcrAddress === depositFor ||
-        (arbitrationCost && depositFor && tcrAddress === depositFor)
-      )
-        return
+  const metaEvidence = metaEvidenceQuery.data?.metaEvidence
+  const connectedTCRAddr = metaEvidenceQuery.data?.connectedTCR
 
-      try {
-        getAddress(tcrAddress)
-        if (depositFor) getAddress(depositFor)
-      } catch {
-        return
-      }
+  // On-chain TCR params (deposits, costs) — cached, rarely changes.
+  const arbitrableQuery = useQuery({
+    queryKey: ['arbitrableTCRData', 'classic', tcrAddress, networkId],
+    queryFn: async () => {
+      const data = await gtcrView!.fetchArbitrable(tcrAddress)
+      return { ...data, tcrAddress }
+    },
+    enabled: !!gtcrView && !!tcrAddress,
+    staleTime: Infinity,
+  })
 
-      try {
-        const {
-          submissionBaseDeposit,
-          removalBaseDeposit,
-          submissionChallengeBaseDeposit,
-          removalChallengeBaseDeposit,
-          arbitrationCost: newArbitrationCost,
-        } = arbitrableTCRData
+  const arbitrableTCRData = arbitrableQuery.data
 
-        const newSubmissionDeposit = (submissionBaseDeposit as BigNumber).add(
-          newArbitrationCost as BigNumber,
-        )
+  // Derive deposits from arbitrable data (pure computation, no network).
+  const deposits = useMemo(() => {
+    if (!arbitrableTCRData) return {}
 
-        const newRemovalDeposit = (removalBaseDeposit as BigNumber).add(
-          newArbitrationCost as BigNumber,
-        )
+    try {
+      const {
+        submissionBaseDeposit,
+        removalBaseDeposit,
+        submissionChallengeBaseDeposit,
+        removalChallengeBaseDeposit,
+        arbitrationCost: cost,
+      } = arbitrableTCRData
 
-        const newSubmissionChallengeDeposit = (
+      return {
+        arbitrationCost: cost as BigNumber,
+        submissionDeposit: (submissionBaseDeposit as BigNumber).add(
+          cost as BigNumber,
+        ),
+        removalDeposit: (removalBaseDeposit as BigNumber).add(
+          cost as BigNumber,
+        ),
+        submissionChallengeDeposit: (
           submissionChallengeBaseDeposit as BigNumber
-        ).add(newArbitrationCost as BigNumber)
-
-        const newRemovalChallengeDeposit = (
+        ).add(cost as BigNumber),
+        removalChallengeDeposit: (
           removalChallengeBaseDeposit as BigNumber
-        ).add(newArbitrationCost as BigNumber)
-
-        setArbitrationCost(newArbitrationCost as BigNumber)
-        setSubmissionDeposit(newSubmissionDeposit)
-        setSubmissionChallengeDeposit(newSubmissionChallengeDeposit)
-        setRemovalDeposit(newRemovalDeposit)
-        setRemovalChallengeDeposit(newRemovalChallengeDeposit)
-        setDepositFor(arbitrableTCRData.tcrAddress as string | undefined)
-      } catch (err) {
-        console.error('Error computing arbitration cost:', err)
-        if ((err as Error).message === 'header not found' && arbitrationCost)
-          // No-op, arbitration cost was already set when metamask threw.
-          return
-
-        setError('Error computing arbitration cost')
+        ).add(cost as BigNumber),
       }
-    })()
-  }, [arbitrableTCRData, arbitrationCost, depositFor, library, tcrAddress])
-
-  useEffect(() => {
-    if (
-      !gtcr ||
-      !library ||
-      gtcr.address !== tcrAddress ||
-      (metaEvidence && metaEvidence.address === tcrAddress)
-    )
-      return
-    ;(async () => {
-      try {
-        const fetchedData = await fetchMetaEvidence(tcrAddress, networkId!)
-        if (!fetchedData) return
-        setConnectedTCRAddr(fetchedData.connectedTCR)
-
-        const response = await fetch(parseIpfs(fetchedData.metaEvidenceURI))
-        const file = await response.json()
-
-        setMetaEvidence({ ...file, address: tcrAddress })
-        localforage.setItem(META_EVIDENCE_CACHE_KEY!, file)
-      } catch (err) {
-        console.error('Error fetching meta evidence', err)
-        setError('Error fetching meta evidence')
-      }
-    })()
-
-    return () => {
-      gtcr.removeAllListeners(gtcr.filters.MetaEvidence())
+    } catch (err) {
+      console.error('Error computing arbitration cost:', err)
+      return {}
     }
-  }, [
-    META_EVIDENCE_CACHE_KEY,
-    gtcr,
-    library,
-    metaEvidence,
-    tcrAddress,
-    networkId,
-  ])
+  }, [arbitrableTCRData])
 
   return {
     gtcr,
     metaEvidence,
-    tcrError: error,
-    arbitrationCost,
-    submissionDeposit,
-    submissionChallengeDeposit,
-    removalDeposit,
-    removalChallengeDeposit,
+    tcrError:
+      error ||
+      (metaEvidenceQuery.error ? 'Error fetching meta evidence' : false),
+    arbitrationCost: deposits.arbitrationCost,
+    submissionDeposit: deposits.submissionDeposit,
+    submissionChallengeDeposit: deposits.submissionChallengeDeposit,
+    removalDeposit: deposits.removalDeposit,
+    removalChallengeDeposit: deposits.removalChallengeDeposit,
     tcrAddress,
     gtcrView,
     latestBlock,
