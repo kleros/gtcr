@@ -66,7 +66,13 @@ const ThemeToggleButton = styled.button`
 const LeftGroup = styled.div`
   display: flex;
   align-items: center;
-  flex-shrink: 0;
+  flex: 1;
+
+  ${smallScreenStyle(
+    () => css`
+      flex: 0 0 auto;
+    `,
+  )}
 `
 
 const MobileMenuWrapper = styled.div`
@@ -104,10 +110,11 @@ const RightGroup = styled.div`
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  flex-shrink: 0;
+  flex: 1;
 
   ${smallScreenStyle(
     () => css`
+      flex: 0 0 auto;
       justify-content: flex-start;
     `,
   )}
