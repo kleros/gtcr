@@ -52,7 +52,6 @@ export const register = (config?: ServiceWorkerConfig): void => {
           )
         })
       }
-      // Is not localhost. Just register service worker
       else registerValidSW(swUrl, config)
     })
   }
@@ -80,7 +79,6 @@ export const registerValidSW = (
                   'tabs for this page are closed. See https://bit.ly/CRA-PWA.',
               )
 
-              // Execute callback
               if (config && config.onUpdate) config.onUpdate(registration)
             } else {
               // At this point, everything has been precached.
@@ -88,7 +86,6 @@ export const registerValidSW = (
               // "Content is cached for offline use." message.
               console.log('Content is cached for offline use.')
 
-              // Execute callback
               if (config && config.onSuccess) config.onSuccess(registration)
             }
         }
@@ -118,7 +115,6 @@ const checkValidServiceWorker = (
             window.location.reload()
           })
         })
-      // Service worker found. Proceed as normal.
       else registerValidSW(swUrl, config)
     })
     .catch(() => {

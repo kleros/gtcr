@@ -1,5 +1,4 @@
 /* eslint-disable no-unused-vars */
-// Rule disabled temporarly as filters will be added back.
 import React, {
   useEffect,
   useState,
@@ -166,12 +165,6 @@ export const pagingItem = (_, type, originalElement) => {
   if (type === 'next') return <span>Next</span>
   return originalElement
 }
-
-// TODO: Ensure we don't set state for unmounted components using
-// flags and AbortController.
-//
-// Reference:
-// https://itnext.io/how-to-create-react-custom-hooks-for-data-fetching-with-useeffect-74c5dc47000a
 
 export const ITEMS_PER_PAGE = 40
 

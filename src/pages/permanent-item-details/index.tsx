@@ -15,7 +15,6 @@ import { WalletContext } from 'contexts/wallet-context'
 import { capitalizeFirstLetter } from 'utils/string'
 import { PERMANENT_ITEM_DETAILS_QUERY } from 'utils/graphql'
 import { useQuery } from '@tanstack/react-query'
-// import SearchBar from 'components/light-search-bar'
 import { parseIpfs } from 'utils/ipfs-parse'
 import { itemToStatusCode, STATUS_CODE } from 'utils/permanent-item-status'
 import { truncateAtWord } from 'utils/truncate-at-word'
@@ -68,12 +67,6 @@ export const Divider = styled.div`
   margin-bottom: 40px;
 `
 
-// TODO: Ensure we don't set state for unmounted components using
-// flags and AbortController.
-//
-// Reference:
-// https://itnext.io/how-to-create-react-custom-hooks-for-data-fetching-with-useeffect-74c5dc47000a
-// TODO: Ensure http requests are being sent in parallel.
 interface ItemDetailsProps {
   itemID: string
   search?: string
@@ -137,7 +130,7 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
       const arbSetting = registry.arbitrationSettings[0]
       const response = await fetch(parseIpfs(arbSetting.metaEvidenceURI))
       const file = await response.json()
-      setMetaEvidence(file) // btw we do this because thegraph doesnt have it... would be nice
+      setMetaEvidence(file)
     })()
   }, [registry])
 
@@ -287,7 +280,6 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
         <StyledBackLink>
           <StyledLink to={`/tcr/${chainId}/${tcrAddress}`}>Go Back</StyledLink>
         </StyledBackLink>
-        {/* <SearchBar /> */}
       </StyledMargin>
       <StyledLayoutContent>
         <ItemStatusCard

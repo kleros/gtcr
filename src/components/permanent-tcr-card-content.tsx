@@ -8,8 +8,6 @@ import { fetchMetaEvidence } from 'hooks/tcr-view'
 import useNavigateAndScrollTop from 'hooks/navigate-and-scroll-top'
 import { parseIpfs } from 'utils/ipfs-parse'
 
-// Note: I think this file may be useless?
-
 export const Container = styled.div`
   height: 100%;
   display: flex;

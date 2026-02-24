@@ -1,5 +1,3 @@
-// fetch the items belonging to a classic registry
-
 import { gql } from 'graphql-request'
 
 const CLASSIC_REGISTRY_ITEMS_QUERY = gql`

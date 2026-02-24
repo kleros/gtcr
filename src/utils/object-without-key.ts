@@ -1,5 +1,3 @@
-// i don't want to have to import lodash just for this
-
 const objectWithoutKey = <T extends Record<string, any>>(
   object: T,
   key: string,

@@ -69,12 +69,6 @@ export const Divider = styled.div`
   margin-bottom: 40px;
 `
 
-// TODO: Ensure we don't set state for unmounted components using
-// flags and AbortController.
-//
-// Reference:
-// https://itnext.io/how-to-create-react-custom-hooks-for-data-fetching-with-useeffect-74c5dc47000a
-// TODO: Ensure http requests are being sent in parallel.
 interface ItemDetailsProps {
   itemID: string
   search?: string
@@ -326,17 +320,6 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
           kind="light"
           metaEvidence={metaEvidence}
         />
-        {/* Todo: Fix badges later */}
-        {/* {connectedTCRAddr !== ZERO_ADDRESS &&
-          metadata &&
-          !isConnectedTCR &&
-          !relTcrDisabled && (
-            <Badges
-              connectedTCRAddr={connectedTCRAddr}
-              item={decodedItem}
-              tcrAddress={tcrAddress}
-            />
-          )} */}
       </StyledLayoutContent>
     </>
   )

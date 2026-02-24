@@ -112,7 +112,6 @@ const useNotificationWeb3 = () => {
     }
   }, [networkId, isConnected])
 
-  // Fetch timestamp.
   useEffect(() => {
     if (!provider || timestamp) return
     ;(async () => {
@@ -139,7 +138,6 @@ const useNotificationWeb3 = () => {
 
       if (!signer) return
 
-      // Process actions
       while (web3Actions.length > 0) {
         const web3Action = web3Actions.pop()
         if (web3Action.type === actionTypes.TRANSACTION) {

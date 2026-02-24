@@ -1,5 +1,4 @@
 /* eslint-disable no-unused-vars */
-// Rule disabled temporarly as filters will be added back.
 import { Card, Spin, Select } from 'components/ui'
 import { useNavigate, useParams } from 'react-router-dom'
 import React, {
@@ -44,12 +43,6 @@ import {
   ITEMS_PER_PAGE,
   pagingItem,
 } from 'pages/light-items'
-
-// TODO: Ensure we don't set state for unmounted components using
-// flags and AbortController.
-//
-// Reference:
-// https://itnext.io/how-to-create-react-custom-hooks-for-data-fetching-with-useeffect-74c5dc47000a
 
 const MAX_ENTITIES = 1000
 
@@ -314,7 +307,6 @@ const Items = () => {
   const { metadata } = metaEvidence || {}
   const { isConnectedTCR } = metadata || {}
 
-  // todo: the number of elements is currently wrong. it will never go beyond 20 pages.
   const itemCount = Math.floor(itemsQuery.data?.items?.length) ?? 0
 
   return (

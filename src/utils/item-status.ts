@@ -180,9 +180,6 @@ export const itemToStatusCode = (
     // appeal period didn't start yet
     return STATUS_CODE.CHALLENGED
 
-  // if (appealStart.eq(bigNumberify(0)) && appealEnd.eq(bigNumberify(0)))
-  //   return STATUS_CODE.CROWDFUNDING // Dispute is appealable but the arbitrator does not use appeal period.
-
   if (round.ruling === SUBGRAPH_RULING.NONE)
     if (timestamp.lte(round.appealPeriodEnd))
       // Arbitrator did not rule or refused to rule.

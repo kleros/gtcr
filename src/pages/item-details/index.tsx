@@ -29,12 +29,6 @@ import {
   StyledLayoutContent,
 } from 'pages/light-item-details'
 
-// TODO: Ensure we don't set state for unmounted components using
-// flags and AbortController.
-//
-// Reference:
-// https://itnext.io/how-to-create-react-custom-hooks-for-data-fetching-with-useeffect-74c5dc47000a
-// TODO: Ensure http requests are being sent in parallel.
 interface ItemDetailsProps {
   itemID: string
   search?: string

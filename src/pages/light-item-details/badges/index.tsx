@@ -170,7 +170,6 @@ const Badges = ({ connectedTCRAddr, item, tcrAddress }: BadgesProps) => {
   })
   const getLogs = useGetLogs(library)
 
-  // Wire up the TCR.
   const gtcrView = useMemo(() => {
     if (!library || !ARBITRABLE_TCR_VIEW_ADDRESS || !networkId) return
     try {
@@ -196,9 +195,6 @@ const Badges = ({ connectedTCRAddr, item, tcrAddress }: BadgesProps) => {
     enabled: !!connectedTCRAddr && !!client,
   })
 
-  // Fetch enabled badges.
-  // TODO: Refactor this to use badge terminology and avoid
-  // confusion with the item passed as props (i.e. fetchItems -> fetchBadges)
   useEffect(() => {
     if (!badgesQuery) return
 

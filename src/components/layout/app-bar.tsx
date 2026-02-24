@@ -15,7 +15,6 @@ import { ThemeContext } from 'contexts/theme-context'
 import { NETWORKS_INFO } from 'config/networks'
 import { SUPPORTED_CHAINS } from 'config/chains'
 import Identicon from 'components/identicon'
-// import Notifications from 'components/notifications' // TODO: Re-enable once notifications are implemented.
 import Logo from 'assets/images/logo.svg?react'
 import StakeCurateLogoRaw from 'assets/images/logo-stake-curate.svg?react'
 import SunIcon from 'assets/icons/sun.svg?react'

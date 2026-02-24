@@ -85,13 +85,6 @@ export const fetchMetaEvidence = async (
     }
 }
 
-// 2025 : Afaik nothing else in this file is used, only the fetchMetaEvidence function above.
-
-// TODO: Ensure we don't set state for unmounted components using
-// flags and AbortController.
-//
-// Reference:
-// https://itnext.io/how-to-create-react-custom-hooks-for-data-fetching-with-useeffect-74c5dc47000a
 const useTcrView = (tcrAddress: string) => {
   const [metaEvidence, setMetaEvidence] = useState<MetaEvidence | undefined>(
     undefined,
@@ -124,7 +117,6 @@ const useTcrView = (tcrAddress: string) => {
   const library = useEthersProvider({ chainId: networkId })
 
   const arbitrableTCRViewAddr = gtcrViewAddresses[networkId]
-  // Wire up the TCR.
   const gtcrView = useMemo(() => {
     if (!library || !arbitrableTCRViewAddr || !networkId) return
     try {
@@ -152,8 +144,6 @@ const useTcrView = (tcrAddress: string) => {
     return `metaEvidence-${gtcr.address}@networkID-${networkId}`
   }, [networkId, gtcr])
 
-  // Use cached meta evidence, if any is available.
-  // It will be overwritten by the latest once it has been fetched.
   useEffect(() => {
     if (!META_EVIDENCE_CACHE_KEY) return
     localforage
@@ -164,7 +154,6 @@ const useTcrView = (tcrAddress: string) => {
       })
   }, [META_EVIDENCE_CACHE_KEY])
 
-  // Get TCR data.
   useEffect(() => {
     if (!gtcrView || !tcrAddress) return
     ;(async () => {
@@ -192,11 +181,9 @@ const useTcrView = (tcrAddress: string) => {
         return
 
       try {
-        // Check that both urls are valid.
         getAddress(tcrAddress)
         if (depositFor) getAddress(depositFor)
       } catch {
-        // No-op
         return
       }
 
@@ -209,22 +196,18 @@ const useTcrView = (tcrAddress: string) => {
           arbitrationCost: newArbitrationCost,
         } = arbitrableTCRData
 
-        // Submission deposit = submitter base deposit + arbitration cost
         const newSubmissionDeposit = (submissionBaseDeposit as BigNumber).add(
           newArbitrationCost as BigNumber,
         )
 
-        // Removal deposit = removal base deposit + arbitration cost
         const newRemovalDeposit = (removalBaseDeposit as BigNumber).add(
           newArbitrationCost as BigNumber,
         )
 
-        // Challenge deposit = submission challenge base deposit + arbitration cost
         const newSubmissionChallengeDeposit = (
           submissionChallengeBaseDeposit as BigNumber
         ).add(newArbitrationCost as BigNumber)
 
-        // Challenge deposit = removal challenge base deposit + arbitration cost
         const newRemovalChallengeDeposit = (
           removalChallengeBaseDeposit as BigNumber
         ).add(newArbitrationCost as BigNumber)
@@ -246,7 +229,6 @@ const useTcrView = (tcrAddress: string) => {
     })()
   }, [arbitrableTCRData, arbitrationCost, depositFor, library, tcrAddress])
 
-  // Fetch meta evidence.
   useEffect(() => {
     if (
       !gtcr ||
@@ -257,8 +239,6 @@ const useTcrView = (tcrAddress: string) => {
       return
     ;(async () => {
       try {
-        // Take the latest meta evidence.
-
         const fetchedData = await fetchMetaEvidence(tcrAddress, networkId!)
         if (!fetchedData) return
         setConnectedTCRAddr(fetchedData.connectedTCR)
