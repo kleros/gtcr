@@ -187,7 +187,7 @@ const useCachedFactory = (version: string, networkId: number | undefined) => {
 
 const FactoryClassicPage = () => {
   const urlChainId = useUrlChainId()
-  const factoryChainId = urlChainId ?? 0
+  const factoryChainId = urlChainId ?? undefined
   const cachedFactory = useCachedFactory(version, factoryChainId)
   const { library, active } = useWeb3Context()
   const [previousDeployments, setPreviousDeployments] = useState([])
@@ -222,7 +222,7 @@ const FactoryClassicPage = () => {
       if (!library || !active || !factoryInterface) return
 
       const deploymentTxHashes = Object.keys(transactions)
-        .filter((txHash) => !transactions[txHash].networkId !== factoryChainId)
+        .filter((txHash) => transactions[txHash].networkId === factoryChainId)
         .filter((txHash) => !transactions[txHash].isConnectedTCR)
 
       const txDatas = await Promise.all(

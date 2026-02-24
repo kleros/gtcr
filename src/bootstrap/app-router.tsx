@@ -1,10 +1,11 @@
-import React, { Suspense, lazy, useMemo } from 'react'
-import { Route, Routes, Navigate, useLocation } from 'react-router-dom'
+import React, { Suspense, lazy } from 'react'
+import { Route, Routes, Navigate, useParams } from 'react-router-dom'
 import { useWeb3Context } from 'hooks/use-web3-context'
 import ErrorPage from 'pages/error-page'
 import Loading from 'components/loading'
 import { DEFAULT_NETWORK } from 'config/networks'
 import usePathValidation from 'hooks/use-path-validation'
+import useUrlChainId from 'hooks/use-url-chain-id'
 import { defaultTcrAddresses, validChains } from 'config/tcr-addresses'
 import { SAVED_NETWORK_KEY } from 'utils/string'
 
@@ -29,17 +30,16 @@ const Factory = lazy(preloadFactory)
 const ClassicFactory = lazy(preloadClassicFactory)
 const PermanentFactory = lazy(preloadPermanentFactory)
 
+/** Forces children to fully remount when URL params change. */
+const RouteReset = ({ children }: { children: React.ReactNode }) => {
+  const params = useParams()
+  const key = Object.values(params).join('/')
+  return <React.Fragment key={key}>{children}</React.Fragment>
+}
+
 const AppRouter = () => {
   const { networkId } = useWeb3Context()
-  const location = useLocation()
-
-  // Parse chainId from the URL — the source of truth for data fetching
-  const urlChainId = useMemo(() => {
-    const match = location.pathname.match(
-      /\/(?:tcr|factory(?:-classic|-permanent)?)\/(\d+)/,
-    )
-    return match ? Number(match[1]) : null
-  }, [location.pathname])
+  const urlChainId = useUrlChainId()
 
   const activeChainId = urlChainId || networkId || DEFAULT_NETWORK
   const _tcrAddress = defaultTcrAddresses[activeChainId as validChains]
@@ -53,9 +53,20 @@ const AppRouter = () => {
       <Routes>
         <Route
           path="/tcr/:chainId/:tcrAddress/:itemID"
-          element={<ItemDetailsRouter />}
+          element={
+            <RouteReset>
+              <ItemDetailsRouter />
+            </RouteReset>
+          }
         />
-        <Route path="/tcr/:chainId/:tcrAddress" element={<ItemsRouter />} />
+        <Route
+          path="/tcr/:chainId/:tcrAddress"
+          element={
+            <RouteReset>
+              <ItemsRouter />
+            </RouteReset>
+          }
+        />
         <Route path="/factory/:chainId" element={<Factory />} />
         <Route path="/factory-classic/:chainId" element={<ClassicFactory />} />
         <Route

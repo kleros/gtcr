@@ -82,9 +82,7 @@ const App = () => {
       <GlobalStyle />
       <WagmiProvider config={wagmiConfig}>
         <QueryClientProvider client={queryClient}>
-          <BrowserRouter
-            future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
-          >
+          <BrowserRouter future={{ v7_relativeSplatPath: true }}>
             <ErrorBoundary
               FallbackComponent={({ error }) => (
                 <ErrorPage

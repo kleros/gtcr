@@ -37,12 +37,12 @@ const shimmer = keyframes`
 `
 
 const ImageContainer = styled.div`
-  display: flex;
+  display: inline-flex;
   justify-content: center;
   align-items: center;
   width: 100px;
   height: 100px;
-  margin: 0 auto;
+  vertical-align: middle;
 `
 
 const ImageSkeleton = styled.div`

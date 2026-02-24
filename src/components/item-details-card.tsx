@@ -38,19 +38,24 @@ const StyledCard = styled(Card)`
 
 const StyledFields = styled.div`
   display: flex;
-  flex-direction: row;
   flex-wrap: wrap;
-  align-items: center;
+  gap: 12px 24px;
+  align-items: baseline;
 `
 
 const StyledField = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-bottom: 16px;
-  margin-right: 16px;
   word-break: break-word;
   font-size: 14px;
+
+  > span:first-child {
+    margin-right: 4px;
+    white-space: nowrap;
+  }
+
+  p {
+    display: inline;
+    margin: 0;
+  }
 
   div {
     margin: 0;
@@ -211,8 +216,8 @@ const ItemDetailsCard = ({
                     <Icon type="question-circle-o" />
                   </Tooltip>
                 )}
-              </span>
-              :{' '}
+                :
+              </span>{' '}
               <DisplaySelector
                 type={column.type}
                 value={item && item.decodedData[index]}

@@ -20,6 +20,8 @@ export const StatusAndBountyContainer = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
 `
 
 export const BountyContainer = styled.div`

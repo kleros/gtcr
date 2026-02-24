@@ -26,6 +26,7 @@ import AppMenu from 'components/layout/app-menu'
 import Help from 'components/layout/help'
 import { defaultTcrAddresses, type validChains } from 'config/tcr-addresses'
 import { StakeContext } from 'contexts/stake-context'
+import useUrlChainId from 'hooks/use-url-chain-id'
 import { preloadFactory } from 'bootstrap/app-router'
 
 const Container = styled.div`
@@ -317,13 +318,7 @@ const AppBar = () => {
   const location = useLocation()
   const { networkId, account } = web3Context
 
-  // Parse the viewing chain from the URL (source of truth)
-  const urlChainId = useMemo(() => {
-    const match = location.pathname.match(
-      /\/(?:tcr|factory(?:-classic|-permanent)?)\/(\d+)/,
-    )
-    return match ? Number(match[1]) : null
-  }, [location.pathname])
+  const urlChainId = useUrlChainId()
 
   // Persist URL chain so non-chain-aware pages can restore it
   useEffect(() => {

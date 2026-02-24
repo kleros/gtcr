@@ -89,6 +89,9 @@ export const StyledCardInfo = styled(Card)`
 
       .ui-card-head-title {
         color: white;
+        overflow: visible;
+        white-space: normal;
+        text-overflow: unset;
       }
       .ui-card-extra {
         color: white;
