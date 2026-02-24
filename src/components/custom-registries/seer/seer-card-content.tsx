@@ -2,7 +2,7 @@ import React from 'react'
 import styled from 'styled-components'
 
 interface ISeerCardContent {
-  chainId: string
+  chainId: string | number
   contractAddress: string
   marketName?: string
   outcomes?: string[]

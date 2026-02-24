@@ -3,7 +3,7 @@ import styled, { css } from 'styled-components'
 import { smallScreenStyle } from 'styles/small-screen-style'
 
 interface ISeerExtraDetails {
-  chainId: string
+  chainId: string | number
   contractAddress: string
   imagesIpfsHash: string
 }
@@ -114,10 +114,11 @@ const SeerExtraDetails: React.FC<ISeerExtraDetails> = ({
   useEffect(() => {
     const fetchData = async () => {
       try {
+        const chain = String(chainId)
         let subgraphUrl
-        if (chainId === '1')
+        if (chain === '1')
           subgraphUrl = process.env.REACT_APP_SEER_SUBGRAPH_MAINNET ?? ''
-        else if (chainId === '100')
+        else if (chain === '100')
           subgraphUrl = process.env.REACT_APP_SEER_SUBGRAPH_GNOSIS ?? ''
         else throw new Error(`Unsupported chainId: ${chainId}`)
 

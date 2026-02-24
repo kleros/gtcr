@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { isSeerRegistry } from 'components/custom-registries/seer/is-seer-registry'
 
 const useSeerMarketsData = (
-  chainId: string,
+  chainId: string | number,
   tcrAddress: string,
   items: SubgraphItem[],
 ) => {
@@ -19,11 +19,13 @@ const useSeerMarketsData = (
       if (contractAddresses.length === 0) return
 
       try {
+        const chain = String(chainId)
         let subgraphUrl = ''
-        if (chainId === '1')
+        if (chain === '1')
           subgraphUrl = process.env.REACT_APP_SEER_SUBGRAPH_MAINNET ?? ''
-        else if (chainId === '100')
+        else if (chain === '100')
           subgraphUrl = process.env.REACT_APP_SEER_SUBGRAPH_GNOSIS ?? ''
+        if (!subgraphUrl) return
         const query = `
           {
             markets(where: {id_in: [${contractAddresses
