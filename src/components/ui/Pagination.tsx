@@ -232,17 +232,13 @@ const Pagination: React.FC<PaginationProps> = ({
       style={style}
       className={`ui-pagination${className ? ` ${className}` : ''}`}
     >
-      {renderItem(
-        current - 1,
-        'prev',
-        <PageButton
-          disabled={current <= 1}
-          onClick={() => goTo(current - 1)}
-          aria-label="Previous Page"
-        >
-          &#8249;
-        </PageButton>,
-      )}
+      <PageButton
+        disabled={current <= 1}
+        onClick={() => goTo(current - 1)}
+        aria-label="Previous Page"
+      >
+        {renderItem(current - 1, 'prev', <>&#8249;</>)}
+      </PageButton>
 
       {pages.map((page, idx) => {
         if (typeof page === 'string')
@@ -261,17 +257,13 @@ const Pagination: React.FC<PaginationProps> = ({
         )
       })}
 
-      {renderItem(
-        current + 1,
-        'next',
-        <PageButton
-          disabled={current >= totalPages}
-          onClick={() => goTo(current + 1)}
-          aria-label="Next Page"
-        >
-          &#8250;
-        </PageButton>,
-      )}
+      <PageButton
+        disabled={current >= totalPages}
+        onClick={() => goTo(current + 1)}
+        aria-label="Next Page"
+      >
+        {renderItem(current + 1, 'next', <>&#8250;</>)}
+      </PageButton>
 
       {showSizeChanger && (
         <SizeChanger value={pageSize} onChange={handleSizeChange}>
