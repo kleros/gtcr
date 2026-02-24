@@ -6,11 +6,25 @@ const GlobalStyle = createGlobalStyle`
     box-sizing: border-box;
   }
 
+  button, input, select, textarea {
+    font-family: inherit;
+  }
+
   body {
     margin: 0;
     font-family: 'Roboto', sans-serif;
+    font-size: 14px;
     transition: background-color 0.3s ease, color 0.3s ease;
-    --horizontal-padding: 4.6875vw;
+    --horizontal-padding: min(4.6875vw, 66px);
+
+    /* Font size scale */
+    --font-size-page-title: 36px;
+    --font-size-section-title: 24px;
+    --font-size-title: 18px;
+    --font-size-large: 16px;
+    --font-size-base: 14px;
+    --font-size-small: 13px;
+    --font-size-xs: 12px;
 
     @media (max-width: ${BREAKPOINT_LANDSCAPE}px) {
       --horizontal-padding: 16px;

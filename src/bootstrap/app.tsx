@@ -1,5 +1,6 @@
 import React, { useContext, useEffect, useState } from 'react'
 import styled from 'styled-components'
+import { MAX_WIDTH_CONTENT } from 'styles/small-screen-style'
 import { BrowserRouter } from 'react-router-dom'
 import { WagmiProvider } from 'wagmi'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -49,6 +50,13 @@ const StyledLayout = styled(Layout)`
   overflow-x: hidden;
 `
 
+const ContentContainer = styled.div`
+  max-width: ${MAX_WIDTH_CONTENT};
+  margin: 0 auto;
+  width: 100%;
+  flex: 1;
+`
+
 const App = () => {
   const [isMenuClosed, setIsMenuClosed] = useState(true)
 
@@ -92,7 +100,9 @@ const App = () => {
                   <StyledLayout>
                     <SmartContractWalletWarning />
                     <AppBar />
-                    <AppRouter />
+                    <ContentContainer>
+                      <AppRouter />
+                    </ContentContainer>
                     <StyledClickaway
                       isMenuClosed={isMenuClosed}
                       onClick={

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import styled from 'styled-components'
+import { MAX_WIDTH_CONTENT } from 'styles/small-screen-style'
 import { Steps, Button, Card, Modal } from 'components/ui'
 import Icon from 'components/ui/Icon'
 import { useDebounce } from 'use-debounce'
@@ -40,7 +41,11 @@ export const StyledContainer = styled.div`
 `
 
 export const StyledBanner = styled.div`
-  padding: 24px var(--horizontal-padding);
+  padding: 24px
+    max(
+      var(--horizontal-padding),
+      calc(50vw - ${MAX_WIDTH_CONTENT} / 2 + var(--horizontal-padding))
+    );
   background: ${({ theme }) => theme.bannerGradient};
   box-shadow: 0px 3px 24px ${({ theme }) => theme.shadowColor};
   color: ${({ theme }) => theme.textPrimary};
@@ -48,6 +53,10 @@ export const StyledBanner = styled.div`
     background 0.3s ease,
     box-shadow 0.3s ease,
     color 0.3s ease;
+  width: 100vw;
+  position: relative;
+  left: 50%;
+  margin-left: -50vw;
 `
 
 export const StyledGrid = styled.div`
@@ -59,14 +68,14 @@ export const StyledGrid = styled.div`
 
 export const StyledTitle = styled.h1`
   margin: 0;
-  font-size: 36px;
+  font-size: var(--font-size-page-title);
   font-weight: 600;
   color: ${({ theme }) => theme.itemDetailsTitleColor};
 `
 
 export const StyledSubtitle = styled.h3`
   margin-bottom: 16px;
-  font-size: 24px;
+  font-size: var(--font-size-section-title);
   font-weight: 500;
   color: ${({ theme }) => theme.textSecondary};
 `

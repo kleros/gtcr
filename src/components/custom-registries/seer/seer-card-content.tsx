@@ -9,7 +9,6 @@ interface ISeerCardContent {
 }
 
 const Container = styled.div`
-  font-family: 'Roboto', sans-serif;
   max-width: 300px;
   margin: 16px auto;
   padding: 10px;

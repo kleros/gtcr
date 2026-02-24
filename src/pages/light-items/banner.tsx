@@ -1,7 +1,7 @@
 import { Skeleton, Button } from 'components/ui'
 import Icon from 'components/ui/Icon'
 import styled, { css } from 'styled-components'
-import { smallScreenStyle } from 'styles/small-screen-style'
+import { smallScreenStyle, MAX_WIDTH_CONTENT } from 'styles/small-screen-style'
 import { Link, useParams } from 'react-router-dom'
 import React from 'react'
 import useDocumentHead from 'hooks/use-document-head'
@@ -13,7 +13,11 @@ import { truncateAtWord } from 'utils/truncate-at-word'
 
 export const StyledBanner = styled.div`
   display: flex;
-  padding: 24px var(--horizontal-padding);
+  padding: 24px
+    max(
+      var(--horizontal-padding),
+      calc(50vw - ${MAX_WIDTH_CONTENT} / 2 + var(--horizontal-padding))
+    );
   background: ${({ theme }) => theme.bannerGradient};
   box-shadow: 0px 3px 24px ${({ theme }) => theme.shadowColor};
   color: ${({ theme }) => theme.bannerTextColor};
@@ -25,6 +29,10 @@ export const StyledBanner = styled.div`
     background 0.3s ease,
     box-shadow 0.3s ease,
     color 0.3s ease;
+  width: 100vw;
+  position: relative;
+  left: 50%;
+  margin-left: -50vw;
 `
 
 export const StyledButton = styled(Button)`
@@ -62,7 +70,7 @@ export const StyledTitle = styled.h1`
   flex-wrap: wrap;
   align-items: center;
   margin: 0;
-  font-size: 36px;
+  font-size: var(--font-size-page-title);
   line-height: 1.2;
   font-weight: 600;
   color: ${({ theme }) => theme.bannerTitleColor};
@@ -71,12 +79,14 @@ export const StyledTitle = styled.h1`
 export const StyledDescription = styled.span`
   display: inline;
   margin-top: 4px;
+  font-size: var(--font-size-base);
   color: ${({ theme }) => theme.bannerDescriptionColor};
 `
 
 export const StyledPolicyAnchor = styled.a`
   text-decoration: none;
   margin-top: 12px;
+  font-size: var(--font-size-base);
   color: ${({ theme }) => theme.bannerPolicyLinkColor};
 
   &:hover {

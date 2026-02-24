@@ -10,6 +10,7 @@ const DesktopNav = styled.nav`
   display: flex;
   align-items: center;
   gap: 24px;
+  font-size: var(--font-size-large);
   font-weight: 400;
   line-height: 64px;
 

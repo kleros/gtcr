@@ -32,7 +32,6 @@ const ModalContent = styled.div<{ $width?: string | number }>`
   max-width: calc(100vw - 32px);
   position: relative;
   color: ${({ theme }) => theme.textPrimary};
-  font-family: 'Roboto', sans-serif;
 `
 
 const ModalHeader = styled.div`

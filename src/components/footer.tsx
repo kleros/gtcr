@@ -1,19 +1,25 @@
 import React from 'react'
 import styled, { css } from 'styled-components'
-import { smallScreenStyle } from 'styles/small-screen-style'
+import { smallScreenStyle, MAX_WIDTH_CONTENT } from 'styles/small-screen-style'
 import icons from './social-icons'
 
 const Container = styled.footer`
-  height: 64px;
   width: 100%;
   background-color: ${({ theme }) => theme.footerBackground};
+  margin-top: auto;
+`
+
+const FooterInner = styled.div`
   display: flex;
   flex-direction: row;
   justify-content: space-between;
   align-items: center;
   padding: 0 var(--horizontal-padding);
+  height: 64px;
   gap: 16px;
-  margin-top: auto;
+  max-width: ${MAX_WIDTH_CONTENT};
+  margin: 0 auto;
+  width: 100%;
 
   ${smallScreenStyle(
     () => css`
@@ -100,25 +106,27 @@ const SOCIAL_NAV = [
 
 const Footer: React.FC = () => (
   <Container>
-    <StyledSecuredByKleros
-      href="https://kleros.io"
-      target="_blank"
-      rel="noopener noreferrer"
-    >
-      {icons.securedByKleros}
-    </StyledSecuredByKleros>
-    <StyledSocialMedia>
-      {SOCIAL_NAV.map((item, index) => (
-        <StyledSocialButton
-          key={index}
-          href={item.href}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          {item.icon}
-        </StyledSocialButton>
-      ))}
-    </StyledSocialMedia>
+    <FooterInner>
+      <StyledSecuredByKleros
+        href="https://kleros.io"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        {icons.securedByKleros}
+      </StyledSecuredByKleros>
+      <StyledSocialMedia>
+        {SOCIAL_NAV.map((item, index) => (
+          <StyledSocialButton
+            key={index}
+            href={item.href}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            {item.icon}
+          </StyledSocialButton>
+        ))}
+      </StyledSocialMedia>
+    </FooterInner>
   </Container>
 )
 

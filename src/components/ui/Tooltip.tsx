@@ -69,7 +69,6 @@ const TooltipBubble = styled.div`
   line-height: 1.5;
   border-radius: 6px;
   pointer-events: none;
-  font-family: 'Roboto', sans-serif;
 
   background: ${({ theme }) => theme.tooltipBg};
   color: ${({ theme }) => theme.tooltipText};

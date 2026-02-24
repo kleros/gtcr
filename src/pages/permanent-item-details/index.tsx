@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useContext, useMemo } from 'react'
 import styled from 'styled-components'
+import { MAX_WIDTH_CONTENT } from 'styles/small-screen-style'
 import { Layout, Breadcrumb } from 'components/ui'
 import { useParams, Link } from 'react-router-dom'
 import useDocumentHead from 'hooks/use-document-head'
@@ -34,7 +35,11 @@ export const StyledLayoutContent = styled(Layout.Content)`
 `
 
 export const StyledBanner = styled.div`
-  padding: 24px var(--horizontal-padding);
+  padding: 24px
+    max(
+      var(--horizontal-padding),
+      calc(50vw - ${MAX_WIDTH_CONTENT} / 2 + var(--horizontal-padding))
+    );
   background: ${({ theme }) => theme.bannerGradient};
   box-shadow: 0px 3px 24px ${({ theme }) => theme.shadowColor};
   color: ${({ theme }) => theme.textPrimary};
@@ -42,6 +47,10 @@ export const StyledBanner = styled.div`
     background 0.3s ease,
     box-shadow 0.3s ease,
     color 0.3s ease;
+  width: 100vw;
+  position: relative;
+  left: 50%;
+  margin-left: -50vw;
 `
 
 export const StyledMargin = styled.div`

@@ -6,7 +6,7 @@ import React, {
   useEffect,
 } from 'react'
 import styled, { css } from 'styled-components'
-import { smallScreenStyle } from 'styles/small-screen-style'
+import { smallScreenStyle, MAX_WIDTH_CONTENT } from 'styles/small-screen-style'
 import { useWeb3Context } from 'hooks/use-web3-context'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { Button, Dropdown } from 'components/ui'
@@ -129,7 +129,7 @@ const MobileMenuLink = styled(Link)<{ $active?: boolean }>`
   padding: 10px 16px;
   color: ${({ $active }) => ($active ? '#fff' : 'rgba(255, 255, 255, 0.5)')};
   text-decoration: none;
-  font-size: 14px;
+  font-size: var(--font-size-base);
   transition: all 0.2s;
   white-space: nowrap;
   font-weight: ${({ $active }) => ($active ? '500' : '400')};
@@ -185,6 +185,9 @@ const StyledAppBarRow = styled.div`
   justify-content: space-between;
   padding: 0 var(--horizontal-padding);
   min-height: 67px;
+  max-width: ${MAX_WIDTH_CONTENT};
+  margin: 0 auto;
+  width: 100%;
 
   ${smallScreenStyle(
     () => css`
