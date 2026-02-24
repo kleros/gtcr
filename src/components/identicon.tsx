@@ -131,6 +131,7 @@ const Identicon = ({ className, large }: IdenticonProps) => {
   const [emailStatus, setEmailStatus] = useState()
   const [fetchedEmailSettings, setFetchedEmailSettings] = useState()
   useEffect(() => {
+    if (!library || !account) return
     ;(async () => {
       setBalance(await library.getBalance(account))
     })()

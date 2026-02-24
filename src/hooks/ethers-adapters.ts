@@ -20,28 +20,24 @@ interface ViemClient {
 }
 
 /**
- * Extract usable RPC URLs from a viem transport.
+ * Extract the primary RPC URL from a viem transport.
  *
  * WagmiAdapter from @reown/appkit-adapter-wagmi wraps all transports
- * in a fallback() transport. The child transports live at
- * `transport.value.transports`, NOT `transport.transports`.
+ * in a fallback() transport, appending its own RPC proxy as an extra
+ * child.  We only need our own (first) transport — the Alchemy RPC
+ * configured in config/rpc.ts — so we take just that.
  */
-function getUrlsFromTransport(transport: ViemTransport): string[] {
-  // Fallback transport: child transports are at value.transports
+function getUrlFromTransport(transport: ViemTransport): string | undefined {
   if (transport.type === 'fallback') {
     const children = transport.value?.transports ?? transport.transports ?? []
-    return children
-      .map((t: { value?: { url?: string } }) => t.value?.url)
-      .filter((url): url is string => Boolean(url))
+    return children[0]?.value?.url
   }
-  // Plain http transport
-  const url = transport.value?.url ?? transport.url
-  return url ? [url] : []
+  return transport.value?.url ?? transport.url
 }
 
 function clientToProvider(
   client: ViemClient | undefined,
-): providers.JsonRpcProvider | providers.FallbackProvider | undefined {
+): providers.JsonRpcProvider | undefined {
   if (!client) return undefined
   const { chain, transport } = client
   const network = {
@@ -50,14 +46,10 @@ function clientToProvider(
     ensAddress: chain.contracts?.ensRegistry?.address,
   }
 
-  const urls = getUrlsFromTransport(transport)
-  if (urls.length === 0) return undefined
+  const url = getUrlFromTransport(transport)
+  if (!url) return undefined
 
-  if (urls.length === 1) return new providers.JsonRpcProvider(urls[0], network)
-
-  return new providers.FallbackProvider(
-    urls.map((url) => new providers.JsonRpcProvider(url, network)),
-  )
+  return new providers.JsonRpcProvider(url, network)
 }
 
 function clientToSigner(
@@ -80,7 +72,6 @@ function clientToSigner(
 
 export function useEthersProvider({ chainId }: { chainId?: number } = {}):
   | providers.JsonRpcProvider
-  | providers.FallbackProvider
   | undefined {
   const client = useClient({ chainId })
   return useMemo(
