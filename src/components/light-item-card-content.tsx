@@ -32,7 +32,7 @@ const LightItemCardContent = ({
   chainId,
   tcrAddress,
 }: LightItemCardContentProps) => {
-  const navigateAndScrollTop = useNavigateAndScrollTop()
+  const { getLinkProps } = useNavigateAndScrollTop()
 
   const allowedFileTypes =
     item.columns.filter((col) => col.allowedFileTypes)[0]?.allowedFileTypes ||
@@ -70,11 +70,9 @@ const LightItemCardContent = ({
         )}
       </div>
       <Button
-        onClick={() =>
-          navigateAndScrollTop(
-            `/tcr/${chainId}/${tcrAddress}/${item.tcrData.ID}`,
-          )
-        }
+        {...getLinkProps(
+          `/tcr/${chainId}/${tcrAddress}/${item.tcrData.ID}`,
+        )}
       >
         Details
       </Button>

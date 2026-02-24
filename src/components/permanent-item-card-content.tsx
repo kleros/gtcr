@@ -30,7 +30,7 @@ const PermanentItemCardContent = ({
   chainId,
   tcrAddress,
 }: PermanentItemCardContentProps) => {
-  const navigateAndScrollTop = useNavigateAndScrollTop()
+  const { getLinkProps } = useNavigateAndScrollTop()
 
   return (
     <Container>
@@ -54,9 +54,7 @@ const PermanentItemCardContent = ({
           ))}
       </div>
       <Button
-        onClick={() =>
-          navigateAndScrollTop(`/tcr/${chainId}/${tcrAddress}/${item.itemID}`)
-        }
+        {...getLinkProps(`/tcr/${chainId}/${tcrAddress}/${item.itemID}`)}
       >
         Details
       </Button>

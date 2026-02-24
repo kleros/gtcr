@@ -28,7 +28,7 @@ const TCRCardContent = ({
   const { chainId } = useParams()
 
   const [metaEvidence, setMetaEvidence] = useState()
-  const navigateAndScrollTop = useNavigateAndScrollTop()
+  const { getLinkProps } = useNavigateAndScrollTop()
 
   useEffect(() => {
     ;(async () => {
@@ -66,20 +66,16 @@ const TCRCardContent = ({
         <StyledItemCol>
           {!hideDetailsButton && (
             <Button
-              onClick={() =>
-                navigateAndScrollTop(
-                  `/tcr/${chainId}/${currentTCRAddress}/${ID}`,
-                )
-              }
+              {...getLinkProps(
+                `/tcr/${chainId}/${currentTCRAddress}/${ID}`,
+              )}
             >
               Details
             </Button>
           )}
           <Button
             type="primary"
-            onClick={() =>
-              navigateAndScrollTop(`/tcr/${chainId}/${tcrAddress}`)
-            }
+            {...getLinkProps(`/tcr/${chainId}/${tcrAddress}`)}
             style={{ marginLeft: '12px' }}
           >
             Open List

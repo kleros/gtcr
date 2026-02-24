@@ -44,6 +44,7 @@ const getTypeStyles = ({
         &:focus:not(:disabled) {
           background: ${theme.buttonPrimaryHoverBg};
           border-color: ${theme.buttonPrimaryHoverBg};
+          color: ${theme.buttonPrimaryText};
         }
       `
     case 'ghost':

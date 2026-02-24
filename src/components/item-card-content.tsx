@@ -17,7 +17,7 @@ const ItemCardContent = ({
   chainId,
   tcrAddress,
 }: ItemCardContentProps) => {
-  const navigateAndScrollTop = useNavigateAndScrollTop()
+  const { getLinkProps } = useNavigateAndScrollTop()
 
   return (
     <Container>
@@ -41,11 +41,9 @@ const ItemCardContent = ({
           ))}
       </div>
       <Button
-        onClick={() =>
-          navigateAndScrollTop(
-            `/tcr/${chainId}/${tcrAddress}/${item.tcrData.ID}`,
-          )
-        }
+        {...getLinkProps(
+          `/tcr/${chainId}/${tcrAddress}/${item.tcrData.ID}`,
+        )}
       >
         Details
       </Button>
