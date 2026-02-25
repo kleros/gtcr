@@ -35,8 +35,8 @@ const StyledText = styled(Typography.Text)`
 
 const StyledCard = styled(Card)`
   cursor: default;
-  background: ${({ theme }) => theme.elevatedBackground} !important;
-  border-color: ${({ theme }) => theme.borderColor} !important;
+  background: ${({ theme }) => theme.componentBackground} !important;
+  border-color: ${({ theme }) => theme.evidenceCardBorder} !important;
 
   & > .ui-card-head {
     background: ${({ theme }) => theme.cardHeaderGradient} !important;
@@ -49,15 +49,15 @@ const StyledCard = styled(Card)`
   }
 
   & > .ui-card-head .ui-card-extra a {
-    color: ${({ theme }) => theme.primaryColor} !important;
+    color: ${({ theme }) => theme.cardHeaderLinkColor} !important;
 
     &:hover {
-      color: ${({ theme }) => theme.primaryColorHover} !important;
+      color: ${({ theme }) => theme.cardHeaderLinkHoverColor} !important;
     }
   }
 
   & > .ui-card-body {
-    background: ${({ theme }) => theme.elevatedBackground} !important;
+    background: ${({ theme }) => theme.componentBackground} !important;
   }
 
   .ui-card-meta-description {

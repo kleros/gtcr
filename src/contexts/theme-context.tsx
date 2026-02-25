@@ -55,6 +55,9 @@ export const lightTheme = {
   focusShadowColor: 'rgba(104, 38, 191, 0.2)',
   cardHeaderGradient:
     'linear-gradient(111.6deg, #4d00b4 46.25%, #6500b4 96.25%)',
+  cardHeaderLinkColor: '#82d1ff',
+  cardHeaderLinkHoverColor: '#b8e4ff',
+  evidenceCardBorder: '#e0d4f0',
   cardShadow: 'rgba(188, 156, 255, 0.3)',
   cardNsfwText: '#ffffff',
   dropdownShadow: 'rgba(188, 156, 255, 0.3)',
@@ -153,6 +156,9 @@ export const darkTheme = {
   focusShadowColor: 'rgba(95, 173, 219, 0.2)',
   cardHeaderGradient:
     'linear-gradient(135deg, #2d2840 0%, #352d4d 50%, #2d2840 100%)',
+  cardHeaderLinkColor: '#7cc4e8',
+  cardHeaderLinkHoverColor: '#a8daf0',
+  evidenceCardBorder: '#3d3550',
   cardShadow: 'rgba(0, 0, 0, 0.5)',
   cardNsfwText: '#ffffff',
   dropdownShadow: 'rgba(0, 0, 0, 0.5)',
