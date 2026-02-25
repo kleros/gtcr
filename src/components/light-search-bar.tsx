@@ -215,7 +215,7 @@ const LightSearchBar = () => {
         chainId: chainId!,
       }),
     enabled: !!searchVariables && !!chainId,
-    staleTime: 0,
+    staleTime: 10000,
   })
 
   const debouncedSearch = useDebouncedCallback((input: string) => {

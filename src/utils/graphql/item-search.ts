@@ -18,21 +18,13 @@ const ITEM_SEARCH_QUERY = gql`
       requests(limit: 1, order_by: { submissionTime: desc }) {
         requestType
         disputed
-        disputeID
         submissionTime
-        resolved
-        requester
-        challenger
-        resolutionTime
-        deposit
         rounds(limit: 1, order_by: { creationTime: desc }) {
           appealPeriodStart
           appealPeriodEnd
           ruling
           hasPaidRequester
           hasPaidChallenger
-          amountPaidRequester
-          amountPaidChallenger
         }
       }
     }

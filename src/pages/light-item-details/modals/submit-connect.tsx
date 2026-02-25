@@ -90,7 +90,7 @@ const SubmitConnectModal = (props: SubmitConnectModalProps) => {
     setTCRAddr(initialValues[0])
   }, [initialValues])
 
-  // Fetch MetaEvidence via subgraph (cached permanently).
+  // Fetch MetaEvidence via subgraph (cached for 1 day).
   const validParentAddr =
     debouncedTCRAddr && isETHAddress(debouncedTCRAddr)
       ? debouncedTCRAddr
