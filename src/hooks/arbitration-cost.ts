@@ -1,6 +1,7 @@
-import { useEffect, useState, useMemo } from 'react'
+import { useMemo } from 'react'
 import { ethers, BigNumber } from 'ethers'
 import { useDebounce } from 'use-debounce'
+import { useQuery } from '@tanstack/react-query'
 import { abi as _arbitrator } from '@kleros/erc-792/build/contracts/IArbitrator.json'
 
 const useArbitrationCost = ({
@@ -12,25 +13,18 @@ const useArbitrationCost = ({
   arbitratorExtraData: string
   library: EthersLibrary | null
 }) => {
-  const [error, setError] = useState<unknown>()
-  const [arbitrationCost, setArbitrationCost] = useState<BigNumber>()
   const [address] = useDebounce(inputAddress, 1000)
   const [arbitratorExtraData] = useDebounce(inputArbitratorExtraData, 1000)
 
-  useEffect(() => {
-    if (!address || !library || !arbitratorExtraData) return
-    ;(async () => {
-      try {
-        const arbitrator = new ethers.Contract(address, _arbitrator, library)
-        setArbitrationCost(
-          await arbitrator.arbitrationCost(arbitratorExtraData),
-        )
-      } catch (err) {
-        console.error('Error fetching arbitration cost', err)
-        setError(err)
-      }
-    })()
-  }, [address, arbitratorExtraData, library])
+  const { data: arbitrationCost, error } = useQuery<BigNumber>({
+    queryKey: ['arbitrationCost', address, arbitratorExtraData],
+    queryFn: async () => {
+      const arbitrator = new ethers.Contract(address!, _arbitrator, library!)
+      return arbitrator.arbitrationCost(arbitratorExtraData!)
+    },
+    enabled: !!address && !!library && !!arbitratorExtraData,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  })
 
   return useMemo(() => ({ arbitrationCost, error }), [arbitrationCost, error])
 }

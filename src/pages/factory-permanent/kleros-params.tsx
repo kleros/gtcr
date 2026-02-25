@@ -3,12 +3,12 @@ import styled from 'styled-components'
 import { Select, InputNumber, Slider, Tooltip } from 'components/ui'
 import Icon from 'components/ui/Icon'
 import { ethers } from 'ethers'
-import { PolicyRegistryABI as _PolicyRegistry } from 'utils/abis/policy-registry'
 import { abi as _IArbitrator } from '@kleros/erc-792/build/contracts/IArbitrator.json'
 import ETHAmount from 'components/eth-amount'
 import { jurorsAndCourtIDFromExtraData } from 'utils/string'
 import useWindowDimensions from 'hooks/window-dimensions'
 import useNativeCurrency from 'hooks/native-currency'
+import useCourtPolicies from 'hooks/use-court-policies'
 
 export const StyledExtraDataContainer = styled.div`
   padding-bottom: 8px;
@@ -41,14 +41,6 @@ export const SliderContainer = styled.div`
   align-items: center;
 `
 
-interface Court {
-  courtID: number
-  name: string
-  key: string
-  value: string
-  label: string
-}
-
 interface KlerosParamsProps {
   klerosAddress: string
   policyAddress: string
@@ -69,19 +61,7 @@ const KlerosParams = ({
   const [arbitrationCost, setArbitrationCost] = useState(0)
   const [numberOfJurors, setNumberOfJurors] = useState(3)
   const [courtID, setCourtID] = useState<any>()
-  const [courts, setCourts] = useState<Court[]>([])
-  const policyRegistry = useMemo(() => {
-    if (!policyAddress || !library) return
-    try {
-      return new ethers.Contract(policyAddress, _PolicyRegistry, library)
-    } catch (err) {
-      console.warn(
-        `Failed to connect to policy registry at ${policyAddress}`,
-        err,
-      )
-      return null
-    }
-  }, [library, policyAddress])
+  const { data: courts = [] } = useCourtPolicies(policyAddress, library)
 
   const arbitrator = useMemo(() => {
     if (!klerosAddress || !library) return
@@ -92,60 +72,6 @@ const KlerosParams = ({
       return null
     }
   }, [library, klerosAddress])
-
-  // Fetch court data from policy registry.
-  useEffect(() => {
-    ;(async () => {
-      if (!policyRegistry || !library) return
-      setCourts([])
-      try {
-        const MAX_COURTS = 50
-        const policyPaths = await Promise.all(
-          Array.from({ length: MAX_COURTS }, (_, i) =>
-            policyRegistry
-              .policies(i)
-              .then((path: string) => ({ courtID: i, path }))
-              .catch(() => ({ courtID: i, path: '' })),
-          ),
-        )
-
-        const fetchedCourts = policyPaths.filter(
-          ({ path }) => path && path !== '',
-        )
-        if (fetchedCourts.length === 0) return
-
-        setCourts(
-          await Promise.all(
-            fetchedCourts.map(async ({ courtID, path }) => {
-              const URL = path.startsWith('/ipfs/')
-                ? `${process.env.REACT_APP_IPFS_GATEWAY}${path}`
-                : path
-              try {
-                const { name } = await (await fetch(URL)).json()
-                return {
-                  courtID,
-                  name,
-                  key: String(courtID),
-                  value: String(courtID),
-                  label: name,
-                }
-              } catch {
-                return {
-                  courtID,
-                  name: `Court ${courtID}`,
-                  key: String(courtID),
-                  value: String(courtID),
-                  label: `Court ${courtID}`,
-                }
-              }
-            }),
-          ),
-        )
-      } catch (err) {
-        console.warn('Error fetching policies', err)
-      }
-    })()
-  }, [library, policyRegistry])
 
   // Load arbitrator extra data
   useEffect(() => {

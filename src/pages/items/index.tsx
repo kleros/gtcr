@@ -7,7 +7,6 @@ import React, {
   useState,
   useContext,
   useMemo,
-  useRef,
   useCallback,
 } from 'react'
 import localforage from 'localforage'
@@ -55,7 +54,6 @@ const Items = () => {
   const chainId = useUrlChainId()
   const { timestamp } = useContext(WalletContext)
   const {
-    gtcr,
     metaEvidence,
     challengePeriodDuration,
     tcrError,
@@ -64,10 +62,6 @@ const Items = () => {
     submissionDeposit,
   } = useContext(TCRViewContext)
   const [submissionFormOpen, setSubmissionFormOpen] = useState<
-    boolean | undefined
-  >()
-  const refAttr = useRef<HTMLDivElement>()
-  const [eventListenerSet, setEventListenerSet] = useState<
     boolean | undefined
   >()
   const queryOptions = searchStrToFilterObjLight(search)
@@ -176,6 +170,7 @@ const Items = () => {
       }),
     enabled: !!chainId,
     staleTime: STALE_TIME,
+    refetchInterval: 30_000, // Poll subgraph every 30s for status changes
   })
 
   // big useEffect for fetching + encoding the data was transformed into
@@ -268,25 +263,6 @@ const Items = () => {
       }
     })
   }, [metaEvidence, tcrAddress, encodedItems])
-
-  // Watch for submissions and status change events to refetch items.
-  useEffect(() => {
-    if (!gtcr || eventListenerSet) return
-    setEventListenerSet(true)
-    gtcr.on(gtcr.filters.ItemStatusChange(), () => itemsQuery.refetch())
-    refAttr.current = gtcr
-  }, [eventListenerSet, gtcr, itemsQuery])
-
-  // Teardown listeners.
-  useEffect(
-    () => () => {
-      if (!refAttr || !refAttr.current || !eventListenerSet) return
-      refAttr.current.removeAllListeners(
-        refAttr.current.filters.ItemStatusChange(),
-      )
-    },
-    [eventListenerSet],
-  )
 
   // Check if there an action in the URL.
   useEffect(() => {

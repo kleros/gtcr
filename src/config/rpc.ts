@@ -22,7 +22,9 @@ const alchemyChainSlugs: Record<number, string> = {
  */
 const alchemyTransport = (chainId: number): Transport => {
   const slug = alchemyChainSlugs[chainId]
-  return http(`https://${slug}.g.alchemy.com/v2/${alchemyApiKey}`)
+  return http(`https://${slug}.g.alchemy.com/v2/${alchemyApiKey}`, {
+    batch: true,
+  })
 }
 
 /**

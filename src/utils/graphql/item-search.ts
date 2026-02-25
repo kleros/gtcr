@@ -5,6 +5,7 @@ const ITEM_SEARCH_QUERY = gql`
     itemSearch: LItem(limit: $limit, where: $where) {
       id
       itemID
+      status
       data
       props(order_by: { label: asc }) {
         type: itemType
@@ -15,6 +16,7 @@ const ITEM_SEARCH_QUERY = gql`
         id
       }
       requests(limit: 1, order_by: { submissionTime: desc }) {
+        requestType
         disputed
         disputeID
         submissionTime
