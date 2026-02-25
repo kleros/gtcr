@@ -47,7 +47,7 @@ const StyledInput = styled.input`
 
   &:disabled {
     cursor: not-allowed;
-    color: ${({ theme }) => theme.antdDisabledColor};
+    color: ${({ theme }) => theme.disabledColor};
   }
 `
 

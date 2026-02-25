@@ -80,6 +80,7 @@ module.exports = {
     'unicorn/prevent-abbreviations': 'off',
     'unicorn/no-abusive-eslint-disable': 'off',
     'unicorn/number-literal-case': 'off',
+    'unicorn/filename-case': 'off',
 
     // import (named, default, namespace are handled by TypeScript)
     'import/no-unresolved': 2,

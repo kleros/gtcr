@@ -22,13 +22,13 @@ import { addPeriod, isETHAddress } from 'utils/string'
 import { ethers } from 'ethers'
 import useUrlChainId from 'hooks/use-url-chain-id'
 import { useAccount, usePublicClient, useWalletClient, useChainId } from 'wagmi'
-import { useEthersProvider } from 'hooks/ethers-adapters'
+import { useQuery } from '@tanstack/react-query'
 import { simulateContract } from '@wagmi/core'
 import { getAddress, keccak256, encodePacked } from 'viem'
 import ipfsPublish from 'utils/ipfs-publish'
 import useNativeCurrency from 'hooks/native-currency'
 import useNativeBalance from 'hooks/use-native-balance'
-import useGetLogs from 'hooks/get-logs'
+import useTcrMetaEvidence from 'hooks/use-tcr-meta-evidence'
 import { parseIpfs } from 'utils/ipfs-parse'
 import { getIPFSPath } from 'utils/get-ipfs-path'
 import { wrapWithToast, errorToast } from 'utils/wrap-with-toast'
@@ -68,23 +68,14 @@ const SubmitConnectModal = (props: SubmitConnectModalProps) => {
   const { data: walletClient } = useWalletClient()
   const urlChainId = useUrlChainId()
   const networkId = urlChainId ?? undefined
-  const library = useEthersProvider({ chainId: networkId })
   const [error, setError] = useState<string>()
 
   // This is the main TCR.
-  // TODO: Find a way to fetch this information from somewhere without centralization. The user should not have to type this.
   const [tcrAddr, setTCRAddr] = useState<string>()
   const [debouncedTCRAddr] = useDebounce(tcrAddr, 300)
-  const [tcrMetaEvidence, setTCRMetaEvidence] = useState<MetaEvidence>()
 
-  const [badgeTCRAddr, setBadgeTCRAddr] = useState<string>() // This is the TCR the user wants enable as a badge.
+  const [badgeTCRAddr, setBadgeTCRAddr] = useState<string>()
   const [debouncedBadgeTCRAddr] = useDebounce(badgeTCRAddr, 300)
-  const [badgeTCRMetadata, setBadgeTCRMetadata] =
-    useState<MetaEvidence['metadata']>()
-
-  const [relTCRMetaEvidence, setRelTCRMetaEvidence] = useState<MetaEvidence>()
-  const [relTCRSubmissionDeposit, setRelTCRSubmissionDeposit] =
-    useState<ethers.BigNumber>()
 
   const [match, setMatch] = useState<{
     parentTCR: string
@@ -92,7 +83,6 @@ const SubmitConnectModal = (props: SubmitConnectModalProps) => {
     badgeTCR: string
     columns: (number | null)[]
   }>()
-  const getLogs = useGetLogs(library)
 
   // Set initial values, if any.
   useEffect(() => {
@@ -100,100 +90,41 @@ const SubmitConnectModal = (props: SubmitConnectModalProps) => {
     setTCRAddr(initialValues[0])
   }, [initialValues])
 
-  // Fetch metadata of the parent TCR.
+  // Fetch MetaEvidence via subgraph (cached for 1 day).
+  const validParentAddr =
+    debouncedTCRAddr && isETHAddress(debouncedTCRAddr)
+      ? debouncedTCRAddr
+      : undefined
+  const validBadgeAddr =
+    debouncedBadgeTCRAddr && isETHAddress(debouncedBadgeTCRAddr)
+      ? debouncedBadgeTCRAddr
+      : undefined
+
+  const parentMetaQuery = useTcrMetaEvidence(validParentAddr, networkId)
+  const badgeMetaQuery = useTcrMetaEvidence(validBadgeAddr, networkId)
+  const relMetaQuery = useTcrMetaEvidence(relTCRAddress, networkId)
+
+  const tcrMetaEvidence = parentMetaQuery.data ?? undefined
+  const badgeTCRMetadata = badgeMetaQuery.data?.metadata
+  const relTCRMetaEvidence = relMetaQuery.data ?? undefined
+
+  // Fetch submission deposit for the relation TCR (on-chain, cached).
+  const arbitrableQuery = useQuery<ethers.BigNumber>({
+    queryKey: ['fetchArbitrable', 'light', relTCRAddress?.toLowerCase()],
+    queryFn: async () => {
+      const relTCRData = await gtcrView!.fetchArbitrable(relTCRAddress!)
+      const { submissionBaseDeposit, arbitrationCost } = relTCRData
+      return submissionBaseDeposit.add(arbitrationCost)
+    },
+    enabled: !!relTCRAddress && !!gtcrView,
+    staleTime: Infinity,
+  })
+  const relTCRSubmissionDeposit = arbitrableQuery.data
+
   useEffect(() => {
-    if (!debouncedTCRAddr) return
-    if (!isETHAddress(debouncedTCRAddr)) return
-    if (!library || !networkId) return
-    if (!getLogs) return
-    ;(async () => {
-      try {
-        const tcr = new ethers.Contract(debouncedTCRAddr, _gtcr, library)
-        const logs = (
-          await getLogs({
-            ...tcr.filters.MetaEvidence(),
-            fromBlock: 0,
-          })
-        ).map((log) => tcr.interface.parseLog(log))
-        if (logs.length === 0) return
-
-        const { _evidence: metaEvidencePath } = logs[0].values
-        setTCRMetaEvidence(
-          await (await fetch(parseIpfs(metaEvidencePath))).json(),
-        )
-      } catch (err) {
-        console.error('Error fetching TCR metadata', err)
-        setError('Error fetching list metadata')
-      }
-    })()
-  }, [debouncedTCRAddr, library, networkId, getLogs])
-
-  // Fetch metadata of the badge TCR.
-  useEffect(() => {
-    if (!debouncedBadgeTCRAddr) return
-    if (!isETHAddress(debouncedBadgeTCRAddr)) return
-    if (!library || !networkId) return
-    if (!getLogs) return
-    ;(async () => {
-      try {
-        const badgeTCR = new ethers.Contract(
-          debouncedBadgeTCRAddr,
-          _gtcr,
-          library,
-        )
-        const logs = (
-          await getLogs({
-            ...badgeTCR.filters.MetaEvidence(),
-            fromBlock: 0,
-          })
-        ).map((log) => badgeTCR.interface.parseLog(log))
-        if (logs.length === 0) return
-
-        const { _evidence: metaEvidencePath } = logs[0].values
-        const file = await (await fetch(parseIpfs(metaEvidencePath))).json()
-        setBadgeTCRMetadata(file.metadata)
-      } catch (err) {
-        console.error('Error fetching TCR metadata', err)
-        setError('Error fetching list metadata')
-      }
-    })()
-  }, [debouncedBadgeTCRAddr, library, networkId, getLogs])
-
-  // Fetch meta evidence and tcr data from connect tcr.
-  useEffect(() => {
-    if (!relTCRAddress || !gtcrView) return
-    if (!getLogs) return
-    ;(async () => {
-      try {
-        const relTCR = new ethers.Contract(relTCRAddress, _gtcr, library)
-        const logs = (
-          await getLogs({
-            ...relTCR.filters.MetaEvidence(),
-            fromBlock: 0,
-          })
-        ).map((log) => relTCR.interface.parseLog(log))
-        if (logs.length === 0) return
-
-        const { _evidence: metaEvidencePath } = logs[0].values
-        const [fileResponse, relTCRData] = await Promise.all([
-          fetch(parseIpfs(metaEvidencePath)),
-          gtcrView.fetchArbitrable(relTCRAddress),
-        ])
-
-        // Submission deposit = submitter base deposit + arbitration cost + fee stake
-        // fee stake = arbitration cost * shared stake multiplier / multiplier divisor
-        const { submissionBaseDeposit, arbitrationCost } = relTCRData
-        const submissionDeposit = submissionBaseDeposit.add(arbitrationCost)
-
-        const file = await fileResponse.json()
-        setRelTCRMetaEvidence(file)
-        setRelTCRSubmissionDeposit(submissionDeposit)
-      } catch (err) {
-        console.error(err)
-        setError((err as Error).message)
-      }
-    })()
-  }, [gtcrView, library, relTCRAddress, getLogs])
+    if (arbitrableQuery.error)
+      setError((arbitrableQuery.error as Error).message)
+  }, [arbitrableQuery.error])
 
   const NONE = 'None'
   const handleChange = useCallback(

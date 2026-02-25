@@ -138,48 +138,16 @@ interface OptionItemProps {
 const OptionItem = ({ item }: OptionItemProps) => {
   const { itemID, props, registry } = item
   const { id: tcrAddress } = registry
-  const {
-    gtcrView,
-    challengePeriodDuration,
-    tcrAddress: itemTCRAddr,
-    metaEvidence,
-  } = useContext(LightTCRViewContext)
+  const { challengePeriodDuration, metaEvidence } =
+    useContext(LightTCRViewContext)
   const { timestamp } = useContext(WalletContext)
   const chainId = useUrlChainId()
-  const [itemInfo, setItemInfo] = useState()
   const { metadata } = metaEvidence || {}
   const { isTCRofTCRs } = metadata || {}
-
-  useEffect(() => {
-    if (
-      !itemID ||
-      !gtcrView ||
-      !tcrAddress ||
-      itemInfo ||
-      tcrAddress !== itemTCRAddr
-    )
-      return
-    ;(async () => {
-      try {
-        setItemInfo(await gtcrView.getItem(tcrAddress, itemID))
-      } catch (err) {
-        setItemInfo({ errored: true })
-        console.error(`Error fetching item status for ${itemID}`, err)
-      }
-    })()
-  }, [gtcrView, itemID, itemInfo, itemTCRAddr, tcrAddress])
-
   const statusCode = useMemo(() => {
-    if (
-      !itemInfo ||
-      (itemInfo && itemInfo.erroed) ||
-      !timestamp ||
-      !challengePeriodDuration
-    )
-      return
-
-    return itemToStatusCode(itemInfo, timestamp, challengePeriodDuration)
-  }, [challengePeriodDuration, itemInfo, timestamp])
+    if (!item || !timestamp || !challengePeriodDuration) return
+    return itemToStatusCode(item, timestamp, challengePeriodDuration)
+  }, [challengePeriodDuration, item, timestamp])
   return (
     <StyledOptionItem>
       <StyledStatus>
@@ -247,7 +215,7 @@ const LightSearchBar = () => {
         chainId: chainId!,
       }),
     enabled: !!searchVariables && !!chainId,
-    staleTime: 0,
+    staleTime: 10000,
   })
 
   const debouncedSearch = useDebouncedCallback((input: string) => {

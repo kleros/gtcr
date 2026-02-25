@@ -13,6 +13,14 @@ const ErrorText = styled.span`
   color: ${({ theme }) => theme.errorColor};
 `
 
+const StyledA = styled.a`
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+`
+
 interface FileDisplayProps {
   value?: string | null
   allowedFileTypes?: string | null
@@ -49,9 +57,9 @@ const FileDisplay = ({ value, allowedFileTypes }: FileDisplayProps) => {
 
   return (
     <>
-      <a href={parseIpfs(value)} target="_blank" rel="noopener noreferrer">
+      <StyledA href={parseIpfs(value)} target="_blank" rel="noopener noreferrer">
         View File <Icon type="paper-clip" />
-      </a>
+      </StyledA>
       {!supported && <ErrorText>File type not supported</ErrorText>}
     </>
   )

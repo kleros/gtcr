@@ -41,19 +41,20 @@ const TimelineDot = styled.div<{ $color?: string; $custom?: boolean }>`
   background: ${({ theme }) => theme.componentBackground};
 
   /* If a custom dot node is provided, override styles */
-  ${({ $custom }) =>
+  ${({ $custom, theme }) =>
     $custom &&
     `
     width: auto;
     height: auto;
     border: none;
     border-radius: 0;
-    background: transparent;
+    background: ${theme.componentBackground};
     transform: translateX(-50%);
     left: 6px;
     display: flex;
     align-items: center;
     justify-content: center;
+    color: ${theme.timelineDotColor};
   `}
 `
 
@@ -62,6 +63,14 @@ const TimelineContent = styled.div`
   font-size: 14px;
   line-height: 1.5;
   min-height: 20px;
+
+  a {
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
 `
 
 interface TimelineItemProps {

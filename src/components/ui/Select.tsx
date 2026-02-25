@@ -46,7 +46,7 @@ const SelectTrigger = styled.div<{ $focused?: boolean; $disabled?: boolean }>`
     $disabled &&
     css`
       background: ${theme.elevatedBackground};
-      color: ${theme.antdDisabledColor};
+      color: ${theme.disabledColor};
       cursor: not-allowed;
 
       &:hover {
@@ -121,7 +121,7 @@ const OptionItem = styled.div<{ $selected?: boolean; $disabled?: boolean }>`
   ${({ $disabled, theme }) =>
     $disabled
       ? css`
-          color: ${theme.antdDisabledColor};
+          color: ${theme.disabledColor};
           cursor: not-allowed;
         `
       : css`
@@ -353,7 +353,10 @@ const Select: SelectComponent = ({
                   key={opt.value}
                   $selected={opt.value === currentVal}
                   $disabled={opt.disabled}
-                  onClick={() => handleSelect(opt)}
+                  onClick={(e: React.MouseEvent) => {
+                    e.stopPropagation()
+                    handleSelect(opt)
+                  }}
                 >
                   {opt.label}
                 </OptionItem>

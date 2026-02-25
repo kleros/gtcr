@@ -53,7 +53,7 @@ const ItemStatusIcon = ({ statusCode }: { statusCode: number }) => (
   </ItemStatusIconWrap>
 )
 
-// For clarity, here "badge" refers to the ant design component,
+// For clarity, here "badge" refers to the status badge UI component,
 // and not badges related to connection between TCRs.
 const badgeStatus = (statusCode) => {
   switch (statusCode) {
@@ -84,7 +84,6 @@ interface ItemStatusBadgeProps {
   dark?: boolean | null
 }
 
-// A wrapper around antdesign's badge component.
 const ItemStatusBadge = ({
   item = null,
   timestamp = null,

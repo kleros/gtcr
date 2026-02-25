@@ -6,7 +6,11 @@ import { getAddressPage } from '../utils/network-utils'
 import { shortenAddress } from '../utils/string'
 
 const StyledA = styled.a`
-  text-decoration: underline;
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
 `
 
 const ETHAddress: React.FC<{ address: string }> = ({ address }) => {

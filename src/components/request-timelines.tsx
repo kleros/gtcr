@@ -1,9 +1,8 @@
 import React, { useMemo, useState, useEffect } from 'react'
 import styled, { css } from 'styled-components'
-import { responsiveSize } from 'styles/responsive-size'
 import { smallScreenStyle } from 'styles/small-screen-style'
 import {
-  Timeline as AntdTimeline,
+  Timeline as UITimeline,
   Card,
   Skeleton,
   Typography,
@@ -14,6 +13,7 @@ import {
   Col,
 } from 'components/ui'
 import Icon from 'components/ui/Icon'
+import PaperclipIcon from 'assets/icons/paperclip.svg?react'
 import useUrlChainId from 'hooks/use-url-chain-id'
 import ETHAddress from 'components/eth-address'
 import {
@@ -35,31 +35,50 @@ const StyledText = styled(Typography.Text)`
 
 const StyledCard = styled(Card)`
   cursor: default;
-  background: ${({ theme }) => theme.elevatedBackground} !important;
-  border-color: ${({ theme }) => theme.borderColor} !important;
+  background: ${({ theme }) => theme.componentBackground} !important;
+  border-color: ${({ theme }) => theme.evidenceCardBorder} !important;
 
   & > .ui-card-head {
-    background: ${({ theme }) => theme.cardBackground} !important;
-    border-color: ${({ theme }) => theme.borderColor} !important;
-    color: ${({ theme }) => theme.textPrimary} !important;
+    background: ${({ theme }) => theme.cardHeaderGradient} !important;
+    border-color: transparent !important;
+    color: #ffffff !important;
   }
 
   & > .ui-card-head .ui-card-head-title {
-    color: ${({ theme }) => theme.textPrimary} !important;
+    color: #ffffff !important;
+  }
+
+  & > .ui-card-head .ui-card-extra a {
+    color: ${({ theme }) => theme.cardHeaderLinkColor} !important;
+
+    &:hover {
+      color: ${({ theme }) => theme.cardHeaderLinkHoverColor} !important;
+    }
   }
 
   & > .ui-card-body {
-    background: ${({ theme }) => theme.elevatedBackground} !important;
+    background: ${({ theme }) => theme.componentBackground} !important;
   }
 
   .ui-card-meta-description {
     color: ${({ theme }) => theme.textSecondary} !important;
+
+    a {
+      text-decoration: none;
+
+      &:hover {
+        text-decoration: underline;
+      }
+    }
   }
 
   ${smallScreenStyle(
     () => css`
+      & > .ui-card-head > .ui-card-head-wrapper {
+        flex-wrap: wrap;
+      }
       & > .ui-card-head > .ui-card-head-wrapper > .ui-card-head-title {
-        max-width: ${responsiveSize(160, 450)};
+        white-space: normal;
       }
     `,
   )}
@@ -71,8 +90,34 @@ const StyledEvidenceTitle = styled.div`
   color: ${({ theme }) => theme.textPrimary};
 `
 
-const StyledIcon = styled(Icon)`
-  color: ${({ theme }) => theme.primaryColor};
+const StyledFileLink = styled.a`
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  text-decoration: none;
+  color: ${({ theme }) => theme.cardHeaderLinkColor};
+
+  &:hover {
+    color: ${({ theme }) => theme.cardHeaderLinkHoverColor};
+    text-decoration: none !important;
+  }
+`
+
+const StyledFileLinkText = styled.span`
+  ${smallScreenStyle(
+    () => css`
+      display: none;
+    `,
+  )}
+`
+
+const StyledFileLinkTextMobile = styled.span`
+  display: none;
+  ${smallScreenStyle(
+    () => css`
+      display: inline;
+    `,
+  )}
 `
 
 const secondTimestamp = (timestamp) =>
@@ -176,7 +221,7 @@ const Timeline = ({ request, item, metaEvidence }: TimelineProps) => {
   const itemName = metadata ? capitalizeFirstLetter(metadata.itemName) : 'Item'
 
   const requestSubmittedNode = (
-    <AntdTimeline.Item key={1337}>
+    <UITimeline.Item key={1337}>
       <span>
         <StyledText>
           {requestType === 'RegistrationRequested'
@@ -184,12 +229,16 @@ const Timeline = ({ request, item, metaEvidence }: TimelineProps) => {
             : 'Removal requested'}
         </StyledText>
         <Typography.Text type="secondary">
-          <a href={getTxPage({ networkId, txHash: request.creationTx })}>
+          <a
+            href={getTxPage({ networkId, txHash: request.creationTx })}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
             {secondTimestamp(request.submissionTime)}
           </a>
         </Typography.Text>
       </span>
-    </AntdTimeline.Item>
+    </UITimeline.Item>
   )
 
   const items = logs
@@ -206,14 +255,16 @@ const Timeline = ({ request, item, metaEvidence }: TimelineProps) => {
         /* eslint-disable unicorn/new-for-builtins */
         const submissionTime = (
           <span>
-            <a href={txPage}>Submitted{secondTimestamp(timestamp)}</a> by{' '}
-            <ETHAddress address={party} />
+            <a href={txPage} target="_blank" rel="noopener noreferrer">
+              {new Date(timestamp * 1000).toGMTString()}
+            </a>{' '}
+            by <ETHAddress address={party} />
           </span>
         )
 
         /* eslint-enable unicorn/new-for-builtins */
         return (
-          <AntdTimeline.Item
+          <UITimeline.Item
             dot={<Icon type="file-text" />}
             key={i}
             color="grey"
@@ -222,14 +273,15 @@ const Timeline = ({ request, item, metaEvidence }: TimelineProps) => {
               title={title}
               extra={
                 fileURI && (
-                  <a
+                  <StyledFileLink
                     href={parseIpfs(fileURI)}
-                    alt="evidence-file"
                     target="_blank"
                     rel="noopener noreferrer"
                   >
-                    <StyledIcon type="file-text" />
-                  </a>
+                    <PaperclipIcon />
+                    <StyledFileLinkText>View attached file</StyledFileLinkText>
+                    <StyledFileLinkTextMobile>File</StyledFileLinkTextMobile>
+                  </StyledFileLink>
                 )
               }
             >
@@ -238,19 +290,19 @@ const Timeline = ({ request, item, metaEvidence }: TimelineProps) => {
                 description={submissionTime}
               />
             </StyledCard>
-          </AntdTimeline.Item>
+          </UITimeline.Item>
         )
       } else if (name === 'AppealPossible') {
         const appealableRuling = event.appealableRuling
         if (typeof appealableRuling === 'undefined')
           return (
-            <AntdTimeline.Item dot={<Icon type="file-text" />} key={i}>
+            <UITimeline.Item dot={<Icon type="file-text" />} key={i}>
               <Skeleton active paragraph={false} title={{ width: '200px' }} />
-            </AntdTimeline.Item>
+            </UITimeline.Item>
           )
 
         return (
-          <AntdTimeline.Item key={i}>
+          <UITimeline.Item key={i}>
             <span>
               {appealableRuling === SUBGRAPH_RULING.NONE
                 ? 'The arbitrator refused to rule'
@@ -264,19 +316,23 @@ const Timeline = ({ request, item, metaEvidence }: TimelineProps) => {
                     ? 'The arbitrator ruled in favor of the challenger'
                     : 'The arbitrator gave an unknown ruling'}
               <Typography.Text type="secondary">
-                <a href={txPage}>{secondTimestamp(timestamp)}</a>
+                <a href={txPage} target="_blank" rel="noopener noreferrer">
+                  {secondTimestamp(timestamp)}
+                </a>
               </Typography.Text>
             </span>
-          </AntdTimeline.Item>
+          </UITimeline.Item>
         )
       } else if (name === 'AppealDecision')
         return (
-          <AntdTimeline.Item key={i}>
+          <UITimeline.Item key={i}>
             Ruling appealed{' '}
             <Typography.Text type="secondary">
-              <a href={txPage}>{secondTimestamp(timestamp)}</a>
+              <a href={txPage} target="_blank" rel="noopener noreferrer">
+                {secondTimestamp(timestamp)}
+              </a>
             </Typography.Text>
-          </AntdTimeline.Item>
+          </UITimeline.Item>
         )
       else if (name === 'Resolution') {
         let resultMessage, statusColor
@@ -324,19 +380,21 @@ const Timeline = ({ request, item, metaEvidence }: TimelineProps) => {
           request.rounds[0].ruling !== request.disputeOutcome
 
         return (
-          <AntdTimeline.Item key={i} color={statusColor}>
+          <UITimeline.Item key={i} color={statusColor}>
             {differentAppealableRuling &&
               'The winner of the last round did not fund the appeal. '}
             {resultMessage}
             <Typography.Text type="secondary">
-              <a href={txPage}>{secondTimestamp(timestamp)}</a>
+              <a href={txPage} target="_blank" rel="noopener noreferrer">
+                {secondTimestamp(timestamp)}
+              </a>
             </Typography.Text>
-          </AntdTimeline.Item>
+          </UITimeline.Item>
         )
       } else throw new Error(`Unhandled event ${name}`)
     })
 
-  return <AntdTimeline>{[requestSubmittedNode, ...items]}</AntdTimeline>
+  return <UITimeline>{[requestSubmittedNode, ...items]}</UITimeline>
 }
 
 const StyledDivider = styled(Divider)`
@@ -354,6 +412,8 @@ const StyledLoadingCard = styled(Card)`
 
 const StyledCollapse = styled(Collapse)`
   background-color: ${({ theme }) => theme.componentBackground} !important;
+  border: 1px solid ${({ theme }) => theme.borderColor};
+  border-radius: 8px;
 `
 
 interface RequestTimelinesProps {

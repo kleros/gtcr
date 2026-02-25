@@ -29,7 +29,7 @@ const inputBaseStyles = css`
 
   &:disabled {
     background: ${({ theme }) => theme.elevatedBackground};
-    color: ${({ theme }) => theme.antdDisabledColor};
+    color: ${({ theme }) => theme.disabledColor};
     cursor: not-allowed;
   }
 `
