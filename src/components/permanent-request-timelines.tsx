@@ -93,6 +93,7 @@ const StyledFileLink = styled.a`
 
   &:hover {
     color: ${({ theme }) => theme.cardHeaderLinkHoverColor};
+    text-decoration: none !important;
   }
 `
 

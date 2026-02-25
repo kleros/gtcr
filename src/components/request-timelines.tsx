@@ -99,6 +99,7 @@ const StyledFileLink = styled.a`
 
   &:hover {
     color: ${({ theme }) => theme.cardHeaderLinkHoverColor};
+    text-decoration: none !important;
   }
 `
 
@@ -255,7 +256,7 @@ const Timeline = ({ request, item, metaEvidence }: TimelineProps) => {
         const submissionTime = (
           <span>
             <a href={txPage} target="_blank" rel="noopener noreferrer">
-              Submitted{secondTimestamp(timestamp)}
+              {new Date(timestamp * 1000).toGMTString()}
             </a>{' '}
             by <ETHAddress address={party} />
           </span>
