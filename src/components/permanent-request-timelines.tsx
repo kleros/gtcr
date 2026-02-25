@@ -2,7 +2,7 @@ import React, { useMemo, useState, useEffect } from 'react'
 import styled, { css } from 'styled-components'
 import { smallScreenStyle } from 'styles/small-screen-style'
 import {
-  Timeline as AntdTimeline,
+  Timeline as UITimeline,
   Card,
   Skeleton,
   Typography,
@@ -81,6 +81,11 @@ const StyledFileLink = styled.a`
   align-items: center;
   gap: 6px;
   text-decoration: none;
+  color: ${({ theme }) => theme.cardHeaderLinkColor};
+
+  &:hover {
+    color: ${({ theme }) => theme.cardHeaderLinkHoverColor};
+  }
 `
 
 const StyledFileLinkText = styled.span`
@@ -234,7 +239,7 @@ const Timeline = ({ submission, item, metaEvidence }: TimelineProps) => {
   const itemName = metadata ? capitalizeFirstLetter(metadata.itemName) : 'Item'
 
   const requestSubmittedNode = (
-    <AntdTimeline.Item key={1337}>
+    <UITimeline.Item key={1337}>
       <span>
         <StyledText>{`${itemName} submitted`}</StyledText>
         <Typography.Text type="secondary">
@@ -243,7 +248,7 @@ const Timeline = ({ submission, item, metaEvidence }: TimelineProps) => {
           </a>
         </Typography.Text>
       </span>
-    </AntdTimeline.Item>
+    </UITimeline.Item>
   )
 
   const items = logs
@@ -269,7 +274,7 @@ const Timeline = ({ submission, item, metaEvidence }: TimelineProps) => {
 
         /* eslint-enable unicorn/new-for-builtins */
         return (
-          <AntdTimeline.Item
+          <UITimeline.Item
             dot={<Icon type="file-text" />}
             key={i}
             color="grey"
@@ -295,19 +300,19 @@ const Timeline = ({ submission, item, metaEvidence }: TimelineProps) => {
                 description={submissionTime}
               />
             </StyledCard>
-          </AntdTimeline.Item>
+          </UITimeline.Item>
         )
       } else if (name === 'AppealPossible') {
         const appealableRuling = event.appealableRuling
         if (typeof appealableRuling === 'undefined')
           return (
-            <AntdTimeline.Item dot={<Icon type="file-text" />} key={i}>
+            <UITimeline.Item dot={<Icon type="file-text" />} key={i}>
               <Skeleton active paragraph={false} title={{ width: '200px' }} />
-            </AntdTimeline.Item>
+            </UITimeline.Item>
           )
 
         return (
-          <AntdTimeline.Item key={i}>
+          <UITimeline.Item key={i}>
             <span>
               {appealableRuling === SUBGRAPH_RULING.NONE
                 ? 'The arbitrator refused to rule'
@@ -322,18 +327,18 @@ const Timeline = ({ submission, item, metaEvidence }: TimelineProps) => {
                 </a>
               </Typography.Text>
             </span>
-          </AntdTimeline.Item>
+          </UITimeline.Item>
         )
       } else if (name === 'AppealDecision')
         return (
-          <AntdTimeline.Item key={i}>
+          <UITimeline.Item key={i}>
             Ruling appealed{' '}
             <Typography.Text type="secondary">
               <a href={txPage} target="_blank" rel="noopener noreferrer">
                 {secondTimestamp(timestamp)}
               </a>
             </Typography.Text>
-          </AntdTimeline.Item>
+          </UITimeline.Item>
         )
       else if (name === 'Resolution') {
         let resultMessage, statusColor
@@ -360,7 +365,7 @@ const Timeline = ({ submission, item, metaEvidence }: TimelineProps) => {
           event.lastRoundRuling !== event.disputeOutcome
 
         return (
-          <AntdTimeline.Item key={i} color={statusColor}>
+          <UITimeline.Item key={i} color={statusColor}>
             {differentAppealableRuling &&
               'The winner of the last round did not fund the appeal. '}
             {resultMessage}
@@ -369,11 +374,11 @@ const Timeline = ({ submission, item, metaEvidence }: TimelineProps) => {
                 {secondTimestamp(timestamp)}
               </a>
             </Typography.Text>
-          </AntdTimeline.Item>
+          </UITimeline.Item>
         )
       } else if (name === 'Challenge')
         return (
-          <AntdTimeline.Item key={i}>
+          <UITimeline.Item key={i}>
             <span>
               Item challenged
               <Typography.Text type="secondary">
@@ -382,11 +387,11 @@ const Timeline = ({ submission, item, metaEvidence }: TimelineProps) => {
                 </a>
               </Typography.Text>
             </span>
-          </AntdTimeline.Item>
+          </UITimeline.Item>
         )
       else if (name === 'Withdrawal')
         return (
-          <AntdTimeline.Item key={i} color="orange">
+          <UITimeline.Item key={i} color="orange">
             <span>
               Item initiated withdrawal process
               <Typography.Text type="secondary">
@@ -395,12 +400,12 @@ const Timeline = ({ submission, item, metaEvidence }: TimelineProps) => {
                 </a>
               </Typography.Text>
             </span>
-          </AntdTimeline.Item>
+          </UITimeline.Item>
         )
       else throw new Error(`Unhandled event ${name}`)
     })
 
-  return <AntdTimeline>{[requestSubmittedNode, ...items]}</AntdTimeline>
+  return <UITimeline>{[requestSubmittedNode, ...items]}</UITimeline>
 }
 
 const StyledDivider = styled(Divider)`
@@ -418,6 +423,8 @@ const StyledLoadingCard = styled(Card)`
 
 const StyledCollapse = styled(Collapse)`
   background-color: ${({ theme }) => theme.componentBackground} !important;
+  border: 1px solid ${({ theme }) => theme.borderColor};
+  border-radius: 8px;
 `
 
 interface RequestTimelinesProps {

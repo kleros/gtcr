@@ -34,7 +34,7 @@ const MenuItemWrapper = styled.li<{
   cursor: ${({ $disabled }) => ($disabled ? 'not-allowed' : 'pointer')};
   color: ${({ $disabled, $selected, theme }) =>
     $disabled
-      ? theme.antdDisabledColor
+      ? theme.disabledColor
       : $selected
         ? theme.primaryColor
         : theme.textPrimary};

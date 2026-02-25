@@ -48,13 +48,13 @@ const TimelineDot = styled.div<{ $color?: string; $custom?: boolean }>`
     height: auto;
     border: none;
     border-radius: 0;
-    background: transparent;
+    background: ${theme.componentBackground};
     transform: translateX(-50%);
     left: 6px;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: ${theme.textSecondary};
+    color: ${theme.timelineDotColor};
   `}
 `
 
