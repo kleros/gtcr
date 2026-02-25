@@ -41,7 +41,7 @@ const TimelineDot = styled.div<{ $color?: string; $custom?: boolean }>`
   background: ${({ theme }) => theme.componentBackground};
 
   /* If a custom dot node is provided, override styles */
-  ${({ $custom }) =>
+  ${({ $custom, theme }) =>
     $custom &&
     `
     width: auto;
@@ -54,6 +54,7 @@ const TimelineDot = styled.div<{ $color?: string; $custom?: boolean }>`
     display: flex;
     align-items: center;
     justify-content: center;
+    color: ${theme.textSecondary};
   `}
 `
 

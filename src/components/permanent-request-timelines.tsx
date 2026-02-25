@@ -1,6 +1,5 @@
 import React, { useMemo, useState, useEffect } from 'react'
 import styled, { css } from 'styled-components'
-import { responsiveSize } from 'styles/responsive-size'
 import { smallScreenStyle } from 'styles/small-screen-style'
 import {
   Timeline as AntdTimeline,
@@ -14,6 +13,7 @@ import {
   Col,
 } from 'components/ui'
 import Icon from 'components/ui/Icon'
+import PaperclipIcon from 'assets/icons/paperclip.svg?react'
 import useUrlChainId from 'hooks/use-url-chain-id'
 import ETHAddress from 'components/eth-address'
 import { CONTRACT_STATUS, SUBGRAPH_RULING } from 'utils/permanent-item-status'
@@ -33,13 +33,21 @@ const StyledCard = styled(Card)`
   border-color: ${({ theme }) => theme.borderColor} !important;
 
   & > .ui-card-head {
-    background: ${({ theme }) => theme.cardBackground} !important;
-    border-color: ${({ theme }) => theme.borderColor} !important;
-    color: ${({ theme }) => theme.textPrimary} !important;
+    background: ${({ theme }) => theme.cardHeaderGradient} !important;
+    border-color: transparent !important;
+    color: #ffffff !important;
   }
 
   & > .ui-card-head .ui-card-head-title {
-    color: ${({ theme }) => theme.textPrimary} !important;
+    color: #ffffff !important;
+  }
+
+  & > .ui-card-head .ui-card-extra a {
+    color: ${({ theme }) => theme.primaryColor} !important;
+
+    &:hover {
+      color: ${({ theme }) => theme.primaryColorHover} !important;
+    }
   }
 
   & > .ui-card-body {
@@ -52,8 +60,11 @@ const StyledCard = styled(Card)`
 
   ${smallScreenStyle(
     () => css`
+      & > .ui-card-head > .ui-card-head-wrapper {
+        flex-wrap: wrap;
+      }
       & > .ui-card-head > .ui-card-head-wrapper > .ui-card-head-title {
-        max-width: ${responsiveSize(160, 450)};
+        white-space: normal;
       }
     `,
   )}
@@ -65,8 +76,28 @@ const StyledEvidenceTitle = styled.div`
   color: ${({ theme }) => theme.textPrimary};
 `
 
-const StyledIcon = styled(Icon)`
-  color: ${({ theme }) => theme.primaryColor};
+const StyledFileLink = styled.a`
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  text-decoration: none;
+`
+
+const StyledFileLinkText = styled.span`
+  ${smallScreenStyle(
+    () => css`
+      display: none;
+    `,
+  )}
+`
+
+const StyledFileLinkTextMobile = styled.span`
+  display: none;
+  ${smallScreenStyle(
+    () => css`
+      display: inline;
+    `,
+  )}
 `
 
 const secondTimestamp = (timestamp) =>
@@ -229,8 +260,10 @@ const Timeline = ({ submission, item, metaEvidence }: TimelineProps) => {
         /* eslint-disable unicorn/new-for-builtins */
         const submissionTime = (
           <span>
-            <a href={txPage}>Submitted{secondTimestamp(timestamp)}</a> by{' '}
-            <ETHAddress address={party} />
+            <a href={txPage} target="_blank" rel="noopener noreferrer">
+              Submitted{secondTimestamp(timestamp)}
+            </a>{' '}
+            by <ETHAddress address={party} />
           </span>
         )
 
@@ -245,14 +278,15 @@ const Timeline = ({ submission, item, metaEvidence }: TimelineProps) => {
               title={title}
               extra={
                 fileURI && (
-                  <a
+                  <StyledFileLink
                     href={parseIpfs(fileURI)}
-                    alt="evidence-file"
                     target="_blank"
                     rel="noopener noreferrer"
                   >
-                    <StyledIcon type="file-text" />
-                  </a>
+                    <PaperclipIcon />
+                    <StyledFileLinkText>View attached file</StyledFileLinkText>
+                    <StyledFileLinkTextMobile>File</StyledFileLinkTextMobile>
+                  </StyledFileLink>
                 )
               }
             >
@@ -283,7 +317,9 @@ const Timeline = ({ submission, item, metaEvidence }: TimelineProps) => {
                     ? 'The arbitrator ruled in favor of the challenger'
                     : 'The arbitrator gave an unknown ruling'}
               <Typography.Text type="secondary">
-                <a href={txPage}>{secondTimestamp(timestamp)}</a>
+                <a href={txPage} target="_blank" rel="noopener noreferrer">
+                  {secondTimestamp(timestamp)}
+                </a>
               </Typography.Text>
             </span>
           </AntdTimeline.Item>
@@ -293,7 +329,9 @@ const Timeline = ({ submission, item, metaEvidence }: TimelineProps) => {
           <AntdTimeline.Item key={i}>
             Ruling appealed{' '}
             <Typography.Text type="secondary">
-              <a href={txPage}>{secondTimestamp(timestamp)}</a>
+              <a href={txPage} target="_blank" rel="noopener noreferrer">
+                {secondTimestamp(timestamp)}
+              </a>
             </Typography.Text>
           </AntdTimeline.Item>
         )
@@ -327,7 +365,9 @@ const Timeline = ({ submission, item, metaEvidence }: TimelineProps) => {
               'The winner of the last round did not fund the appeal. '}
             {resultMessage}
             <Typography.Text type="secondary">
-              <a href={txPage}>{secondTimestamp(timestamp)}</a>
+              <a href={txPage} target="_blank" rel="noopener noreferrer">
+                {secondTimestamp(timestamp)}
+              </a>
             </Typography.Text>
           </AntdTimeline.Item>
         )
@@ -337,7 +377,9 @@ const Timeline = ({ submission, item, metaEvidence }: TimelineProps) => {
             <span>
               Item challenged
               <Typography.Text type="secondary">
-                <a href={txPage}>{secondTimestamp(timestamp)}</a>
+                <a href={txPage} target="_blank" rel="noopener noreferrer">
+                  {secondTimestamp(timestamp)}
+                </a>
               </Typography.Text>
             </span>
           </AntdTimeline.Item>
@@ -348,7 +390,9 @@ const Timeline = ({ submission, item, metaEvidence }: TimelineProps) => {
             <span>
               Item initiated withdrawal process
               <Typography.Text type="secondary">
-                <a href={txPage}>{secondTimestamp(timestamp)}</a>
+                <a href={txPage} target="_blank" rel="noopener noreferrer">
+                  {secondTimestamp(timestamp)}
+                </a>
               </Typography.Text>
             </span>
           </AntdTimeline.Item>
