@@ -353,7 +353,10 @@ const Select: SelectComponent = ({
                   key={opt.value}
                   $selected={opt.value === currentVal}
                   $disabled={opt.disabled}
-                  onClick={() => handleSelect(opt)}
+                  onClick={(e: React.MouseEvent) => {
+                    e.stopPropagation()
+                    handleSelect(opt)
+                  }}
                 >
                   {opt.label}
                 </OptionItem>
