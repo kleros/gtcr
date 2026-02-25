@@ -63,6 +63,14 @@ const TimelineContent = styled.div`
   font-size: 14px;
   line-height: 1.5;
   min-height: 20px;
+
+  a {
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
 `
 
 interface TimelineItemProps {

@@ -56,6 +56,14 @@ const StyledCard = styled(Card)`
 
   .ui-card-meta-description {
     color: ${({ theme }) => theme.textSecondary} !important;
+
+    a {
+      text-decoration: none;
+
+      &:hover {
+        text-decoration: underline;
+      }
+    }
   }
 
   ${smallScreenStyle(
