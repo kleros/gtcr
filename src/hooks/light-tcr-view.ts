@@ -8,6 +8,7 @@ import _GTCRView from '../assets/abis/LightGeneralizedTCRView.json'
 import { WalletContext } from '../contexts/wallet-context'
 import { lightGtcrViewAddresses, subgraphUrl } from 'config/tcr-addresses'
 import { parseIpfs } from 'utils/ipfs-parse'
+import { fetchMetaEvidenceViaRPC } from './tcr-view'
 
 export const fetchMetaEvidence = async (
   tcr: string,
@@ -24,16 +25,26 @@ export const fetchMetaEvidence = async (
     }`,
   }
 
-  const response = await fetch(subgraphUrl[networkId], {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(query),
-  })
+  try {
+    const response = await fetch(subgraphUrl[networkId], {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(query),
+    })
 
-  const { data } = await response.json()
-  return {
-    metaEvidenceURI: data.lregistry.registrationMetaEvidence.uri,
-    connectedTCR: data.lregistry.connectedTCR,
+    const { data } = await response.json()
+    return {
+      metaEvidenceURI: data.lregistry.registrationMetaEvidence.uri,
+      connectedTCR: data.lregistry.connectedTCR,
+    }
+  } catch (err) {
+    console.warn(
+      'Light subgraph MetaEvidence fetch failed, falling back to RPC',
+      err,
+    )
+    const result = await fetchMetaEvidenceViaRPC(tcr, networkId)
+    if (!result) throw new Error('MetaEvidence not found via RPC fallback')
+    return result
   }
 }
 
@@ -71,7 +82,7 @@ const useLightTcrView = (tcrAddress: string) => {
     }
   }, [library, networkId, tcrAddress])
 
-  // MetaEvidence is immutable — fetch once and cache for the session.
+  // Cached for 1 day (meta evidence rarely changes but is not immutable).
   const metaEvidenceQuery = useQuery({
     queryKey: ['metaEvidence', 'light', tcrAddress, networkId],
     queryFn: async () => {
@@ -84,7 +95,7 @@ const useLightTcrView = (tcrAddress: string) => {
       }
     },
     enabled: !!tcrAddress && !!networkId,
-    staleTime: Infinity,
+    staleTime: 24 * 60 * 60 * 1000, // 1 day
   })
 
   const metaEvidence = metaEvidenceQuery.data?.metaEvidence
@@ -127,9 +138,9 @@ const useLightTcrView = (tcrAddress: string) => {
         submissionChallengeDeposit: (
           submissionChallengeBaseDeposit as BigNumber
         ).add(cost as BigNumber),
-        removalChallengeDeposit: (
-          removalChallengeBaseDeposit as BigNumber
-        ).add(cost as BigNumber),
+        removalChallengeDeposit: (removalChallengeBaseDeposit as BigNumber).add(
+          cost as BigNumber,
+        ),
       }
     } catch (err) {
       console.error('Error computing arbitration cost:', err)

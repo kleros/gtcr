@@ -41,6 +41,7 @@ import { LIGHT_ITEMS_QUERY } from 'utils/graphql'
 import LightSearchBar from 'components/light-search-bar'
 import { parseIpfs } from 'utils/ipfs-parse'
 import { useGraphqlBatcher } from 'contexts/graphql-batcher'
+import { fetchLightItemsViaRPC } from 'utils/rpc-item-fallback'
 import useSeerMarketsData from 'components/custom-registries/seer/use-seer-markets-data'
 import { isSeerRegistry } from 'components/custom-registries/seer/is-seer-registry'
 
@@ -280,13 +281,21 @@ const Items = () => {
 
   const itemsQuery = useQuery({
     queryKey: ['lightItems', queryVariables],
-    queryFn: () =>
-      graphqlBatcher.fetch({
+    queryFn: async () => {
+      const result = await graphqlBatcher.fetch({
         id: crypto.randomUUID(),
         document: LIGHT_ITEMS_QUERY,
         variables: queryVariables,
         chainId: chainId!,
-      }),
+      })
+      if (result?.litems) return result
+      // Subgraph failed — fall back to RPC.
+      console.warn('Light items subgraph failed, trying RPC fallback')
+      return (
+        (await fetchLightItemsViaRPC(tcrAddress, chainId!, queryVariables)) ??
+        result
+      )
+    },
     enabled: !!chainId,
     staleTime: STALE_TIME,
   })

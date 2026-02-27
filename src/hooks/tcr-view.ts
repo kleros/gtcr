@@ -11,13 +11,43 @@ import {
   subgraphUrl,
   subgraphUrlPermanent,
 } from 'config/tcr-addresses'
+import { getAlchemyRpcUrl } from 'config/rpc'
 import { parseIpfs } from 'utils/ipfs-parse'
+
+/**
+ * Last-resort fallback: fetch MetaEvidence URI from on-chain event logs
+ * when all subgraphs are unavailable. Uses the same pattern as the badges
+ * component (src/pages/item-details/badges/index.tsx).
+ */
+export const fetchMetaEvidenceViaRPC = async (
+  tcr: string,
+  networkId: number,
+): Promise<FetchMetaEvidenceResult | null> => {
+  const rpcUrl = getAlchemyRpcUrl(networkId)
+  if (!rpcUrl) return null
+
+  const provider = new ethers.providers.JsonRpcProvider(rpcUrl)
+  const contract = new ethers.Contract(tcr, _gtcr, provider)
+
+  const logs = (
+    await provider.getLogs({
+      ...contract.filters.MetaEvidence(),
+      fromBlock: 0,
+    })
+  ).map((log) => contract.interface.parseLog(log))
+
+  if (logs.length === 0) return null
+
+  return {
+    metaEvidenceURI: logs[logs.length - 1].args._evidence,
+  }
+}
 
 export const fetchMetaEvidence = async (
   tcr: string,
   networkId: number,
 ): Promise<FetchMetaEvidenceResult | null> => {
-  const query = {
+  const envioQuery = {
     query: `{
     registry:Registry_by_pk(id: "${tcr.toLowerCase()}") {
       registrationMetaEvidence {
@@ -45,17 +75,32 @@ export const fetchMetaEvidence = async (
   }`,
     variables: {},
   }
-  const [data, pgtcrData] = await Promise.all([
-    (
+
+  try {
+    // 1. Try Envio first (fast) — covers Classic + Light TCRs.
+    const envioData = (
       await (
         await fetch(subgraphUrl[networkId], {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(query),
+          body: JSON.stringify(envioQuery),
         })
       ).json()
-    ).data,
-    (
+    ).data
+
+    if (envioData?.registry)
+      return {
+        metaEvidenceURI: envioData.registry.registrationMetaEvidence.uri,
+        connectedTCR: envioData.registry.connectedTCR,
+      }
+    if (envioData?.lregistry)
+      return {
+        metaEvidenceURI: envioData.lregistry.registrationMetaEvidence.uri,
+        connectedTCR: envioData.lregistry.connectedTCR,
+      }
+
+    // 2. Only try Goldsky if Envio didn't find it (rare — permanent TCRs).
+    const pgtcrData = (
       await (
         await fetch(subgraphUrlPermanent[networkId], {
           method: 'POST',
@@ -63,24 +108,20 @@ export const fetchMetaEvidence = async (
           body: JSON.stringify(pgtcrQuery),
         })
       ).json()
-    ).data,
-  ])
-  if (!data?.registry && !data?.lregistry && !pgtcrData?.registry) return null
-  else if (data.registry !== null)
-    return {
-      metaEvidenceURI: data.registry.registrationMetaEvidence.uri,
-      connectedTCR: data.registry.connectedTCR,
-    }
-  else if (data.lregistry !== null)
-    return {
-      metaEvidenceURI: data.lregistry.registrationMetaEvidence.uri,
-      connectedTCR: data.lregistry.connectedTCR,
-    }
-  else
-    return {
-      metaEvidenceURI:
-        pgtcrData.registry.arbitrationSettings[0].metaEvidenceURI,
-    }
+    ).data
+
+    if (pgtcrData?.registry)
+      return {
+        metaEvidenceURI:
+          pgtcrData.registry.arbitrationSettings[0].metaEvidenceURI,
+      }
+
+    return null
+  } catch (err) {
+    // 3. Both subgraphs failed — fall back to RPC event logs.
+    console.warn('Subgraph MetaEvidence fetch failed, falling back to RPC', err)
+    return fetchMetaEvidenceViaRPC(tcr, networkId)
+  }
 }
 
 const useTcrView = (tcrAddress: string) => {
@@ -116,7 +157,7 @@ const useTcrView = (tcrAddress: string) => {
     }
   }, [library, networkId, tcrAddress])
 
-  // MetaEvidence is immutable — fetch once and cache for the session.
+  // Cached for 1 day (meta evidence rarely changes but is not immutable).
   const metaEvidenceQuery = useQuery({
     queryKey: ['metaEvidence', 'classic', tcrAddress, networkId],
     queryFn: async () => {
@@ -130,7 +171,7 @@ const useTcrView = (tcrAddress: string) => {
       }
     },
     enabled: !!tcrAddress && !!networkId,
-    staleTime: Infinity,
+    staleTime: 24 * 60 * 60 * 1000, // 1 day
   })
 
   const metaEvidence = metaEvidenceQuery.data?.metaEvidence
@@ -173,9 +214,9 @@ const useTcrView = (tcrAddress: string) => {
         submissionChallengeDeposit: (
           submissionChallengeBaseDeposit as BigNumber
         ).add(cost as BigNumber),
-        removalChallengeDeposit: (
-          removalChallengeBaseDeposit as BigNumber
-        ).add(cost as BigNumber),
+        removalChallengeDeposit: (removalChallengeBaseDeposit as BigNumber).add(
+          cost as BigNumber,
+        ),
       }
     } catch (err) {
       console.error('Error computing arbitration cost:', err)

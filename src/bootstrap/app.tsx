@@ -91,38 +91,38 @@ const App = () => {
       <WagmiProvider config={wagmiConfig}>
         <QueryClientProvider client={queryClient}>
           <GraphqlBatcherProvider>
-          <BrowserRouter future={{ v7_relativeSplatPath: true }}>
-            <ErrorBoundary
-              FallbackComponent={({ error }) => (
-                <ErrorPage
-                  code="Error"
-                  title="Something went wrong"
-                  message={error?.message || 'An unexpected error occurred.'}
-                  tip="Try refreshing the page."
-                />
-              )}
-            >
-              <WalletProvider>
-                <StakeProvider>
-                  <StyledLayout>
-                    <SmartContractWalletWarning />
-                    <AppBar />
-                    <ContentContainer>
-                      <AppRouter />
-                    </ContentContainer>
-                    <StyledClickaway
-                      isMenuClosed={isMenuClosed}
-                      onClick={
-                        isMenuClosed ? null : () => setIsMenuClosed(true)
-                      }
-                    />
-                    <Footer />
-                  </StyledLayout>
-                </StakeProvider>
-                <ThemedToastContainer />
-              </WalletProvider>
-            </ErrorBoundary>
-          </BrowserRouter>
+            <BrowserRouter future={{ v7_relativeSplatPath: true }}>
+              <ErrorBoundary
+                FallbackComponent={({ error }) => (
+                  <ErrorPage
+                    code="Error"
+                    title="Something went wrong"
+                    message={error?.message || 'An unexpected error occurred.'}
+                    tip="Try refreshing the page."
+                  />
+                )}
+              >
+                <WalletProvider>
+                  <StakeProvider>
+                    <StyledLayout>
+                      <SmartContractWalletWarning />
+                      <AppBar />
+                      <ContentContainer>
+                        <AppRouter />
+                      </ContentContainer>
+                      <StyledClickaway
+                        isMenuClosed={isMenuClosed}
+                        onClick={
+                          isMenuClosed ? null : () => setIsMenuClosed(true)
+                        }
+                      />
+                      <Footer />
+                    </StyledLayout>
+                  </StakeProvider>
+                  <ThemedToastContainer />
+                </WalletProvider>
+              </ErrorBoundary>
+            </BrowserRouter>
           </GraphqlBatcherProvider>
         </QueryClientProvider>
       </WagmiProvider>
