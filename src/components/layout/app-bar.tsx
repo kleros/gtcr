@@ -238,6 +238,17 @@ const ChainDot = styled.span<{ $color: string }>`
   flex-shrink: 0;
 `
 
+const ChainDropdownWrapper = styled.div`
+  ${smallScreenStyle(
+    () => css`
+      .ui-dropdown > div:last-child {
+        right: auto;
+        left: 0;
+      }
+    `,
+  )}
+`
+
 const ChainMenu = styled.div`
   padding: 4px 0;
 `
@@ -316,7 +327,7 @@ const AppBar = () => {
   const { isDarkMode, toggleTheme } = useContext(ThemeContext)
   const navigate = useNavigate()
   const location = useLocation()
-  const { networkId, account } = web3Context
+  const { networkId, account: _account } = web3Context
 
   const urlChainId = useUrlChainId()
 
@@ -415,36 +426,38 @@ const AppBar = () => {
         </LeftGroup>
         <AppMenu />
         <RightGroup>
-          <Dropdown
-            trigger={['click']}
-            visible={chainDropdownOpen}
-            onVisibleChange={setChainDropdownOpen}
-            placement="bottomRight"
-            overlay={
-              <ChainMenu>
-                {SUPPORTED_CHAINS.map((chain) => {
-                  const info =
-                    NETWORKS_INFO[chain.id as keyof typeof NETWORKS_INFO]
-                  if (!info) return null
-                  return (
-                    <ChainMenuItem
-                      key={chain.id}
-                      $active={chain.id === displayedChainId}
-                      onClick={() => handleChainSelect(Number(chain.id))}
-                    >
-                      <ChainDot $color={info.color} />
-                      {info.name}
-                    </ChainMenuItem>
-                  )
-                })}
-              </ChainMenu>
-            }
-          >
-            <ChainSelectorButton>
-              <ChainDot $color={currentChainInfo?.color || '#ccc'} />
-              {currentChainInfo?.name || 'Select Chain'}
-            </ChainSelectorButton>
-          </Dropdown>
+          <ChainDropdownWrapper>
+            <Dropdown
+              trigger={['click']}
+              visible={chainDropdownOpen}
+              onVisibleChange={setChainDropdownOpen}
+              placement="bottomRight"
+              overlay={
+                <ChainMenu>
+                  {SUPPORTED_CHAINS.map((chain) => {
+                    const info =
+                      NETWORKS_INFO[chain.id as keyof typeof NETWORKS_INFO]
+                    if (!info) return null
+                    return (
+                      <ChainMenuItem
+                        key={chain.id}
+                        $active={chain.id === displayedChainId}
+                        onClick={() => handleChainSelect(Number(chain.id))}
+                      >
+                        <ChainDot $color={info.color} />
+                        {info.name}
+                      </ChainMenuItem>
+                    )
+                  })}
+                </ChainMenu>
+              }
+            >
+              <ChainSelectorButton>
+                <ChainDot $color={currentChainInfo?.color || '#ccc'} />
+                {currentChainInfo?.name || 'Select Chain'}
+              </ChainSelectorButton>
+            </Dropdown>
+          </ChainDropdownWrapper>
           {web3Context.active && web3Context.account ? (
             <StyledIdenticonWrapper>
               <Identicon />

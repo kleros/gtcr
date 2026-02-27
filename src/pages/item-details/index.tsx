@@ -14,13 +14,13 @@ import RequestTimelines from '../../components/request-timelines'
 import { WalletContext } from 'contexts/wallet-context'
 import { capitalizeFirstLetter, ZERO_ADDRESS } from 'utils/string'
 import Badges from './badges'
-import { parseIpfs } from 'utils/ipfs-parse'
-import { fetchMetaEvidence } from 'hooks/tcr-view'
 import { CLASSIC_ITEM_DETAILS_QUERY } from 'utils/graphql'
 import { useQuery } from '@tanstack/react-query'
 import { STALE_TIME } from 'consts'
 import { useGraphqlBatcher } from 'contexts/graphql-batcher'
+import { fetchClassicItemDetailViaRPC } from 'utils/rpc-item-fallback'
 import { ethers } from 'ethers'
+import useTcrMetaEvidence from 'hooks/use-tcr-meta-evidence'
 import {
   Divider,
   StyledBanner,
@@ -42,14 +42,11 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
   const library = useEthersProvider({
     chainId: chainId ?? undefined,
   })
-  const [itemMetaEvidence, setItemMetaEvidence] = useState<
-    MetaEvidence | undefined
-  >()
   const { timestamp } = useContext(WalletContext)
   const [decodedItem, setDecodedItem] = useState<unknown[] | undefined>()
-  const [metaEvidence, setMetaEvidence] = useState<MetaEvidence | undefined>()
   const [modalOpen, setModalOpen] = useState<boolean | undefined>()
-  const { tcrError, connectedTCRAddr } = useContext(TCRViewContext)
+  const { tcrError, connectedTCRAddr, metaEvidence } =
+    useContext(TCRViewContext)
   const [appealCost, setAppealCost] = useState<BigNumber | undefined>()
 
   // subgraph item entities have id "<itemID>@<listaddress>"
@@ -57,13 +54,20 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
   const { graphqlBatcher } = useGraphqlBatcher()
   const detailsViewQuery = useQuery({
     queryKey: ['classicItemDetails', compoundId],
-    queryFn: () =>
-      graphqlBatcher.fetch({
+    queryFn: async () => {
+      const result = await graphqlBatcher.fetch({
         id: crypto.randomUUID(),
         document: CLASSIC_ITEM_DETAILS_QUERY,
         variables: { id: compoundId },
         chainId: chainId!,
-      }),
+      })
+      if (result?.item !== undefined) return result
+      console.warn('Classic item detail subgraph failed, trying RPC fallback')
+      return (
+        (await fetchClassicItemDetailViaRPC(tcrAddress, itemID, chainId!)) ??
+        result
+      )
+    },
     enabled: !!chainId,
     staleTime: STALE_TIME,
   })
@@ -74,62 +78,44 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
     [detailsViewQuery.isLoading, detailsViewQuery.data],
   )
 
-  // Decode item bytes once we have it and the meta evidence files.
+  // Decode item bytes once we have it and the meta evidence from context.
   useEffect(() => {
-    ;(async () => {
-      if (!item || decodedItem) return
+    if (!item || decodedItem || !metaEvidence) return
 
-      const path = await fetchMetaEvidence(tcrAddress, chainId)
-      const file = await (await fetch(parseIpfs(path.metaEvidenceURI))).json()
+    const { columns } = metaEvidence.metadata || {}
+    if (!columns) return
 
-      setMetaEvidence(file)
-      const { metadata } = file || {}
-
-      const { columns } = metadata
-
-      const errors = []
-      let decodedData
-      try {
-        decodedData = gtcrDecode({
-          columns,
-          values: item.data,
-        })
-      } catch {
-        errors.push(`Error decoding ${item.itemID} of TCR at ${tcrAddress}`)
-      }
-
-      setDecodedItem({
-        ...item,
-        decodedData,
-        errors,
+    const errors = []
+    let decodedData
+    try {
+      decodedData = gtcrDecode({
+        columns,
+        values: item.data,
       })
-    })()
-  }, [item, metaEvidence, tcrAddress, chainId, decodedItem])
+    } catch {
+      errors.push(`Error decoding ${item.itemID} of TCR at ${tcrAddress}`)
+    }
+
+    setDecodedItem({
+      ...item,
+      decodedData,
+      errors,
+    })
+  }, [item, metaEvidence, tcrAddress, decodedItem])
 
   const { metadata } = metaEvidence || {}
   const { decodedData } = decodedItem || {}
 
-  // If this is a TCR in a TCR of TCRs, we fetch its metadata as well
-  // to build a better item details card.
-  useEffect(() => {
-    ;(async () => {
-      const { isTCRofTCRs } = metadata || {}
-      if (!isTCRofTCRs) return
-      if (!decodedItem) return
-      const itemAddress = decodedItem.decodedData[0] // There is only one column, the TCR address.
-
-      try {
-        // Take the latest meta evidence.
-        const path = await fetchMetaEvidence(itemAddress, chainId)
-        const file = await (await fetch(parseIpfs(path.metaEvidenceURI))).json()
-
-        setItemMetaEvidence({ file })
-      } catch (err) {
-        console.error('Error fetching meta evidence', err)
-        setItemMetaEvidence({ error: err })
-      }
-    })()
-  }, [decodedItem, library, metadata, chainId])
+  // If this is a TCR in a TCR of TCRs, fetch its metadata via cached hook.
+  const itemAddress = metadata?.isTCRofTCRs
+    ? decodedItem?.decodedData?.[0]
+    : undefined
+  const itemMetaQuery = useTcrMetaEvidence(itemAddress, chainId ?? undefined)
+  const itemMetaEvidence = useMemo(() => {
+    if (itemMetaQuery.error) return { error: itemMetaQuery.error }
+    if (itemMetaQuery.data) return { file: itemMetaQuery.data }
+    return undefined
+  }, [itemMetaQuery.data, itemMetaQuery.error])
 
   const loading =
     !metadata ||

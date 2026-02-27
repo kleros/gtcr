@@ -57,7 +57,11 @@ const FileDisplay = ({ value, allowedFileTypes }: FileDisplayProps) => {
 
   return (
     <>
-      <StyledA href={parseIpfs(value)} target="_blank" rel="noopener noreferrer">
+      <StyledA
+        href={parseIpfs(value)}
+        target="_blank"
+        rel="noopener noreferrer"
+      >
         View File <Icon type="paper-clip" />
       </StyledA>
       {!supported && <ErrorText>File type not supported</ErrorText>}

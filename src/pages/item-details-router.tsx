@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, Suspense, lazy, useMemo } from 'react'
+import React, { useContext, useEffect, Suspense, lazy } from 'react'
 import { TCRViewProvider } from 'contexts/tcr-view-context'
 import { LightTCRViewProvider } from 'contexts/light-tcr-view-context'
 import { useParams } from 'react-router-dom'
@@ -14,8 +14,11 @@ import { useGraphqlBatcher } from 'contexts/graphql-batcher'
 import {
   LIGHT_ITEM_DETAILS_QUERY,
   CLASSIC_ITEM_DETAILS_QUERY,
-  PERMANENT_ITEM_DETAILS_QUERY,
 } from 'utils/graphql'
+import {
+  fetchLightItemDetailViaRPC,
+  fetchClassicItemDetailViaRPC,
+} from 'utils/rpc-item-fallback'
 
 const PermanentItemDetails = lazy(
   () => import('./permanent-item-details/index'),
@@ -49,36 +52,36 @@ const ItemDetailsRouter = () => {
 
     queryClient.prefetchQuery({
       queryKey: ['lightItemDetails', compoundId],
-      queryFn: () =>
-        graphqlBatcher.fetch({
+      queryFn: async () => {
+        const result = await graphqlBatcher.fetch({
           id: crypto.randomUUID(),
           document: LIGHT_ITEM_DETAILS_QUERY,
           variables: { id: compoundId },
           chainId,
-        }),
+        })
+        if (result?.litem !== undefined) return result
+        return (
+          (await fetchLightItemDetailViaRPC(tcrAddress, itemID, chainId)) ??
+          result
+        )
+      },
       staleTime: STALE_TIME,
     })
     queryClient.prefetchQuery({
       queryKey: ['classicItemDetails', compoundId],
-      queryFn: () =>
-        graphqlBatcher.fetch({
+      queryFn: async () => {
+        const result = await graphqlBatcher.fetch({
           id: crypto.randomUUID(),
           document: CLASSIC_ITEM_DETAILS_QUERY,
           variables: { id: compoundId },
           chainId,
-        }),
-      staleTime: STALE_TIME,
-    })
-    queryClient.prefetchQuery({
-      queryKey: ['permanentItemDetails', compoundId],
-      queryFn: () =>
-        graphqlBatcher.fetch({
-          id: crypto.randomUUID(),
-          document: PERMANENT_ITEM_DETAILS_QUERY,
-          variables: { id: compoundId },
-          chainId,
-          isPermanent: true,
-        }),
+        })
+        if (result?.item !== undefined) return result
+        return (
+          (await fetchClassicItemDetailViaRPC(tcrAddress, itemID, chainId)) ??
+          result
+        )
+      },
       staleTime: STALE_TIME,
     })
   }, [chainId, tcrAddress, itemID, queryClient, graphqlBatcher])
