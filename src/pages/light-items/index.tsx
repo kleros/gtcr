@@ -291,10 +291,15 @@ const Items = () => {
       if (result?.litems) return result
       // Subgraph failed — fall back to RPC.
       console.warn('Light items subgraph failed, trying RPC fallback')
-      return (
-        (await fetchLightItemsViaRPC(tcrAddress, chainId!, queryVariables)) ??
-        result
-      )
+      try {
+        return (
+          (await fetchLightItemsViaRPC(tcrAddress, chainId!, queryVariables)) ??
+          result
+        )
+      } catch (err) {
+        console.error('Light items RPC fallback also failed', err)
+        return result
+      }
     },
     enabled: !!chainId,
     staleTime: STALE_TIME,

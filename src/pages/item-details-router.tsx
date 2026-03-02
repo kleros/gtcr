@@ -60,10 +60,15 @@ const ItemDetailsRouter = () => {
           chainId,
         })
         if (result?.litem !== undefined) return result
-        return (
-          (await fetchLightItemDetailViaRPC(tcrAddress, itemID, chainId)) ??
-          result
-        )
+        try {
+          return (
+            (await fetchLightItemDetailViaRPC(tcrAddress, itemID, chainId)) ??
+            result
+          )
+        } catch (err) {
+          console.error('Light item detail RPC fallback failed', err)
+          return result
+        }
       },
       staleTime: STALE_TIME,
     })
@@ -77,10 +82,15 @@ const ItemDetailsRouter = () => {
           chainId,
         })
         if (result?.item !== undefined) return result
-        return (
-          (await fetchClassicItemDetailViaRPC(tcrAddress, itemID, chainId)) ??
-          result
-        )
+        try {
+          return (
+            (await fetchClassicItemDetailViaRPC(tcrAddress, itemID, chainId)) ??
+            result
+          )
+        } catch (err) {
+          console.error('Classic item detail RPC fallback failed', err)
+          return result
+        }
       },
       staleTime: STALE_TIME,
     })

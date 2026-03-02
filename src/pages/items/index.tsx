@@ -172,13 +172,18 @@ const Items = () => {
       if (result?.items) return result
       // Subgraph failed — fall back to RPC.
       console.warn('Classic items subgraph failed, trying RPC fallback')
-      return (
-        (await fetchClassicItemsViaRPC(
-          tcrAddress,
-          chainId!,
-          queryVariables.where,
-        )) ?? result
-      )
+      try {
+        return (
+          (await fetchClassicItemsViaRPC(
+            tcrAddress,
+            chainId!,
+            queryVariables.where,
+          )) ?? result
+        )
+      } catch (err) {
+        console.error('Classic items RPC fallback also failed', err)
+        return result
+      }
     },
     enabled: !!chainId,
     staleTime: STALE_TIME,

@@ -8,12 +8,12 @@ import _GTCRView from '../assets/abis/LightGeneralizedTCRView.json'
 import { WalletContext } from '../contexts/wallet-context'
 import { lightGtcrViewAddresses, subgraphUrl } from 'config/tcr-addresses'
 import { parseIpfs } from 'utils/ipfs-parse'
-import { fetchMetaEvidenceViaRPC } from './tcr-view'
+import { fetchMetaEvidenceViaRPC } from 'utils/rpc-item-fallback'
 
 export const fetchMetaEvidence = async (
   tcr: string,
   networkId: number,
-): Promise<FetchMetaEvidenceResult> => {
+): Promise<FetchMetaEvidenceResult | null> => {
   const query = {
     query: `{
       lregistry:LRegistry_by_pk(id: "${tcr.toLowerCase()}") {
@@ -25,26 +25,35 @@ export const fetchMetaEvidence = async (
     }`,
   }
 
+  let subgraphResult: FetchMetaEvidenceResult | null = null
+
   try {
-    const response = await fetch(subgraphUrl[networkId], {
+    const response = await fetch(subgraphUrl[networkId]!, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(query),
     })
 
     const { data } = await response.json()
-    return {
-      metaEvidenceURI: data.lregistry.registrationMetaEvidence.uri,
-      connectedTCR: data.lregistry.connectedTCR,
-    }
+
+    if (data?.lregistry?.registrationMetaEvidence?.uri)
+      subgraphResult = {
+        metaEvidenceURI: data.lregistry.registrationMetaEvidence.uri,
+        connectedTCR: data.lregistry.connectedTCR,
+      }
   } catch (err) {
-    console.warn(
-      'Light subgraph MetaEvidence fetch failed, falling back to RPC',
-      err,
-    )
-    const result = await fetchMetaEvidenceViaRPC(tcr, networkId)
-    if (!result) throw new Error('MetaEvidence not found via RPC fallback')
-    return result
+    console.warn('Light subgraph MetaEvidence fetch failed', err)
+  }
+
+  if (subgraphResult) return subgraphResult
+
+  // Subgraph failed or returned empty — try RPC as last resort.
+  console.warn('Falling back to RPC for Light MetaEvidence')
+  try {
+    return await fetchMetaEvidenceViaRPC(tcr, networkId)
+  } catch (err) {
+    console.error('RPC MetaEvidence fallback also failed', err)
+    return null
   }
 }
 
@@ -58,7 +67,7 @@ const useLightTcrView = (tcrAddress: string) => {
   const networkId = urlChainId ?? undefined
   const library = useEthersProvider({ chainId: networkId })
 
-  const arbitrableTCRViewAddr = lightGtcrViewAddresses[networkId]
+  const arbitrableTCRViewAddr = lightGtcrViewAddresses[networkId!]
 
   const gtcrView = useMemo(() => {
     if (!library || !arbitrableTCRViewAddr || !networkId) return
@@ -87,6 +96,7 @@ const useLightTcrView = (tcrAddress: string) => {
     queryKey: ['metaEvidence', 'light', tcrAddress, networkId],
     queryFn: async () => {
       const fetchedData = await fetchMetaEvidence(tcrAddress, networkId!)
+      if (!fetchedData) return null
       const response = await fetch(parseIpfs(fetchedData.metaEvidenceURI))
       const file = await response.json()
       return {

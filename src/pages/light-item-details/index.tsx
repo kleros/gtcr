@@ -115,10 +115,15 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
       })
       if (result?.litem !== undefined) return result
       console.warn('Light item detail subgraph failed, trying RPC fallback')
-      return (
-        (await fetchLightItemDetailViaRPC(tcrAddress, itemID, chainId!)) ??
-        result
-      )
+      try {
+        return (
+          (await fetchLightItemDetailViaRPC(tcrAddress, itemID, chainId!)) ??
+          result
+        )
+      } catch (err) {
+        console.error('Light item detail RPC fallback also failed', err)
+        return result
+      }
     },
     enabled: !!chainId,
     staleTime: STALE_TIME,

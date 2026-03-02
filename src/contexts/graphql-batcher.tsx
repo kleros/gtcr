@@ -51,7 +51,7 @@ const getSubgraphUrl = (
   isPermanent: boolean,
 ): string => {
   const urlMap = isPermanent ? subgraphUrlPermanent : subgraphUrl
-  const url = urlMap[String(chainId) as keyof typeof urlMap]
+  const url = urlMap[chainId]
   if (!url) throw new Error(`No subgraph URL for chain ${chainId}`)
   return url
 }

@@ -63,10 +63,15 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
       })
       if (result?.item !== undefined) return result
       console.warn('Classic item detail subgraph failed, trying RPC fallback')
-      return (
-        (await fetchClassicItemDetailViaRPC(tcrAddress, itemID, chainId!)) ??
-        result
-      )
+      try {
+        return (
+          (await fetchClassicItemDetailViaRPC(tcrAddress, itemID, chainId!)) ??
+          result
+        )
+      } catch (err) {
+        console.error('Classic item detail RPC fallback also failed', err)
+        return result
+      }
     },
     enabled: !!chainId,
     staleTime: STALE_TIME,
