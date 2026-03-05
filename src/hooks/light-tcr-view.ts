@@ -8,7 +8,6 @@ import _GTCRView from '../assets/abis/LightGeneralizedTCRView.json'
 import { WalletContext } from '../contexts/wallet-context'
 import { lightGtcrViewAddresses, subgraphUrl } from 'config/tcr-addresses'
 import { parseIpfs } from 'utils/ipfs-parse'
-import { fetchMetaEvidenceViaRPC } from 'utils/rpc-item-fallback'
 
 export const fetchMetaEvidence = async (
   tcr: string,
@@ -45,16 +44,7 @@ export const fetchMetaEvidence = async (
     console.warn('Light subgraph MetaEvidence fetch failed', err)
   }
 
-  if (subgraphResult) return subgraphResult
-
-  // Subgraph failed or returned empty — try RPC as last resort.
-  console.warn('Falling back to RPC for Light MetaEvidence')
-  try {
-    return await fetchMetaEvidenceViaRPC(tcr, networkId)
-  } catch (err) {
-    console.error('RPC MetaEvidence fallback also failed', err)
-    return null
-  }
+  return subgraphResult
 }
 
 const useLightTcrView = (tcrAddress: string) => {

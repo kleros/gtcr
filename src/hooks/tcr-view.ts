@@ -11,7 +11,6 @@ import {
   subgraphUrl,
   subgraphUrlPermanent,
 } from 'config/tcr-addresses'
-import { fetchMetaEvidenceViaRPC } from 'utils/rpc-item-fallback'
 import { parseIpfs } from 'utils/ipfs-parse'
 
 export const fetchMetaEvidence = async (
@@ -94,16 +93,7 @@ export const fetchMetaEvidence = async (
     console.warn('Subgraph MetaEvidence fetch failed', err)
   }
 
-  if (subgraphResult) return subgraphResult
-
-  // 3. All subgraphs failed or returned empty — try RPC as last resort.
-  console.warn('Falling back to RPC for MetaEvidence')
-  try {
-    return await fetchMetaEvidenceViaRPC(tcr, networkId)
-  } catch (err) {
-    console.error('RPC MetaEvidence fallback also failed', err)
-    return null
-  }
+  return subgraphResult
 }
 
 const useTcrView = (tcrAddress: string) => {

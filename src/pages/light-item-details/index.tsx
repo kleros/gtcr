@@ -20,7 +20,6 @@ import { LIGHT_ITEM_DETAILS_QUERY } from 'utils/graphql'
 import { useQuery } from '@tanstack/react-query'
 import { STALE_TIME } from 'consts'
 import { useGraphqlBatcher } from 'contexts/graphql-batcher'
-import { fetchLightItemDetailViaRPC } from 'utils/rpc-item-fallback'
 import SearchBar from 'components/light-search-bar'
 import { parseIpfs } from 'utils/ipfs-parse'
 import { itemToStatusCode, STATUS_CODE } from 'utils/item-status'
@@ -106,25 +105,13 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
   const { graphqlBatcher } = useGraphqlBatcher()
   const detailsViewQuery = useQuery({
     queryKey: ['lightItemDetails', compoundId],
-    queryFn: async () => {
-      const result = await graphqlBatcher.fetch({
+    queryFn: () =>
+      graphqlBatcher.fetch({
         id: crypto.randomUUID(),
         document: LIGHT_ITEM_DETAILS_QUERY,
         variables: { id: compoundId },
         chainId: chainId!,
-      })
-      if (result?.litem !== undefined) return result
-      console.warn('Light item detail subgraph failed, trying RPC fallback')
-      try {
-        return (
-          (await fetchLightItemDetailViaRPC(tcrAddress, itemID, chainId!)) ??
-          result
-        )
-      } catch (err) {
-        console.error('Light item detail RPC fallback also failed', err)
-        return result
-      }
-    },
+      }),
     enabled: !!chainId,
     staleTime: STALE_TIME,
   })

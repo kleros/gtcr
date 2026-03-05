@@ -18,7 +18,6 @@ import { CLASSIC_ITEM_DETAILS_QUERY } from 'utils/graphql'
 import { useQuery } from '@tanstack/react-query'
 import { STALE_TIME } from 'consts'
 import { useGraphqlBatcher } from 'contexts/graphql-batcher'
-import { fetchClassicItemDetailViaRPC } from 'utils/rpc-item-fallback'
 import { ethers } from 'ethers'
 import useTcrMetaEvidence from 'hooks/use-tcr-meta-evidence'
 import {
@@ -54,25 +53,13 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
   const { graphqlBatcher } = useGraphqlBatcher()
   const detailsViewQuery = useQuery({
     queryKey: ['classicItemDetails', compoundId],
-    queryFn: async () => {
-      const result = await graphqlBatcher.fetch({
+    queryFn: () =>
+      graphqlBatcher.fetch({
         id: crypto.randomUUID(),
         document: CLASSIC_ITEM_DETAILS_QUERY,
         variables: { id: compoundId },
         chainId: chainId!,
-      })
-      if (result?.item !== undefined) return result
-      console.warn('Classic item detail subgraph failed, trying RPC fallback')
-      try {
-        return (
-          (await fetchClassicItemDetailViaRPC(tcrAddress, itemID, chainId!)) ??
-          result
-        )
-      } catch (err) {
-        console.error('Classic item detail RPC fallback also failed', err)
-        return result
-      }
-    },
+      }),
     enabled: !!chainId,
     staleTime: STALE_TIME,
   })

@@ -15,10 +15,6 @@ import {
   LIGHT_ITEM_DETAILS_QUERY,
   CLASSIC_ITEM_DETAILS_QUERY,
 } from 'utils/graphql'
-import {
-  fetchLightItemDetailViaRPC,
-  fetchClassicItemDetailViaRPC,
-} from 'utils/rpc-item-fallback'
 
 const PermanentItemDetails = lazy(
   () => import('./permanent-item-details/index'),
@@ -52,46 +48,24 @@ const ItemDetailsRouter = () => {
 
     queryClient.prefetchQuery({
       queryKey: ['lightItemDetails', compoundId],
-      queryFn: async () => {
-        const result = await graphqlBatcher.fetch({
+      queryFn: () =>
+        graphqlBatcher.fetch({
           id: crypto.randomUUID(),
           document: LIGHT_ITEM_DETAILS_QUERY,
           variables: { id: compoundId },
           chainId,
-        })
-        if (result?.litem !== undefined) return result
-        try {
-          return (
-            (await fetchLightItemDetailViaRPC(tcrAddress, itemID, chainId)) ??
-            result
-          )
-        } catch (err) {
-          console.error('Light item detail RPC fallback failed', err)
-          return result
-        }
-      },
+        }),
       staleTime: STALE_TIME,
     })
     queryClient.prefetchQuery({
       queryKey: ['classicItemDetails', compoundId],
-      queryFn: async () => {
-        const result = await graphqlBatcher.fetch({
+      queryFn: () =>
+        graphqlBatcher.fetch({
           id: crypto.randomUUID(),
           document: CLASSIC_ITEM_DETAILS_QUERY,
           variables: { id: compoundId },
           chainId,
-        })
-        if (result?.item !== undefined) return result
-        try {
-          return (
-            (await fetchClassicItemDetailViaRPC(tcrAddress, itemID, chainId)) ??
-            result
-          )
-        } catch (err) {
-          console.error('Classic item detail RPC fallback failed', err)
-          return result
-        }
-      },
+        }),
       staleTime: STALE_TIME,
     })
   }, [chainId, tcrAddress, itemID, queryClient, graphqlBatcher])

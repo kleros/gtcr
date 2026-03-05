@@ -30,7 +30,6 @@ import Banner from './banner'
 import { DISPUTE_STATUS } from 'utils/item-status'
 import { CLASSIC_REGISTRY_ITEMS_QUERY } from 'utils/graphql'
 import { useGraphqlBatcher } from 'contexts/graphql-batcher'
-import { fetchClassicItemsViaRPC } from 'utils/rpc-item-fallback'
 import {
   NSFW_FILTER_KEY,
   StyledLayoutContent,
@@ -162,29 +161,13 @@ const Items = () => {
 
   const itemsQuery = useQuery({
     queryKey: ['classicItems', queryVariables],
-    queryFn: async () => {
-      const result = await graphqlBatcher.fetch({
+    queryFn: () =>
+      graphqlBatcher.fetch({
         id: crypto.randomUUID(),
         document: CLASSIC_REGISTRY_ITEMS_QUERY,
         variables: queryVariables,
         chainId: chainId!,
-      })
-      if (result?.items) return result
-      // Subgraph failed — fall back to RPC.
-      console.warn('Classic items subgraph failed, trying RPC fallback')
-      try {
-        return (
-          (await fetchClassicItemsViaRPC(
-            tcrAddress,
-            chainId!,
-            queryVariables.where,
-          )) ?? result
-        )
-      } catch (err) {
-        console.error('Classic items RPC fallback also failed', err)
-        return result
-      }
-    },
+      }),
     enabled: !!chainId,
     staleTime: STALE_TIME,
     refetchInterval: 30_000, // Poll subgraph every 30s for status changes

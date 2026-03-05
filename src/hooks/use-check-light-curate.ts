@@ -3,7 +3,6 @@ import { useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { TCR_EXISTENCE_TEST } from 'utils/graphql'
 import { useGraphqlBatcher } from 'contexts/graphql-batcher'
-import { detectRegistryTypeViaRPC } from 'utils/rpc-item-fallback'
 import useCheckPermanentList from './use-check-permanent-list'
 import useUrlChainId from 'hooks/use-url-chain-id'
 
@@ -33,17 +32,7 @@ const useCheckLightCurate = (): {
         variables: { tcrAddress: tcrAddress.toLowerCase() },
         chainId: chainId!,
       })
-      // Subgraph returned valid data (lregistry/registry are null or an object).
-      if (result?.lregistry !== undefined || result?.registry !== undefined)
-        return result
-      // Subgraph failed (returned {}) — detect registry type via RPC.
-      console.warn('TCR existence subgraph failed, trying RPC fallback')
-      const type = await detectRegistryTypeViaRPC(tcrAddress, chainId!)
-      if (type === 'classic')
-        return { registry: { id: tcrAddress }, lregistry: null }
-      if (type === 'light')
-        return { registry: null, lregistry: { id: tcrAddress } }
-      return result // neither found — permanent check or error page
+      return result
     },
     enabled: !!chainId && !!tcrAddress,
     staleTime: Infinity,
