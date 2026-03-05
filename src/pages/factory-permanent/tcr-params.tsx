@@ -165,7 +165,7 @@ const TCRParams = ({
   const chainProvider = useEthersProvider({ chainId: chainId ?? undefined })
   const [debouncedArbitrator] = useDebounce(values.arbitratorAddress, 1000)
   const { arbitrator: klerosAddress, policy: policyAddress } =
-    klerosAddresses[chainId as keyof typeof klerosAddresses] || {}
+    klerosAddresses[chainId] || {}
   const { arbitrationCost } = useArbitrationCost({
     address: values.arbitratorAddress,
     arbitratorExtraData: values.arbitratorExtraData,

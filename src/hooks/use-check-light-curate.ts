@@ -25,22 +25,18 @@ const useCheckLightCurate = (): {
     error: queryError,
   } = useQuery({
     queryKey: ['tcrExistence', tcrAddress, chainId],
-    queryFn: () =>
-      graphqlBatcher.fetch({
+    queryFn: async () => {
+      const result = await graphqlBatcher.fetch({
         id: crypto.randomUUID(),
         document: TCR_EXISTENCE_TEST,
         variables: { tcrAddress: tcrAddress.toLowerCase() },
         chainId: chainId!,
-      }),
+      })
+      return result
+    },
     enabled: !!chainId && !!tcrAddress,
     staleTime: Infinity,
   })
-
-  const {
-    isPermanentList,
-    checking: permanentChecking,
-    error: permanentError,
-  } = useCheckPermanentList(tcrAddress, chainId)
 
   const isLightCurate = useMemo<boolean>(() => data?.lregistry ?? false, [data])
   const isClassicCurate = useMemo<boolean>(
@@ -48,11 +44,21 @@ const useCheckLightCurate = (): {
     [data],
   )
 
+  // Only check Goldsky (permanent) after Envio responds with no match.
+  // This prevents the slow Goldsky query from being batched together with
+  // the fast Envio query, which would block the entire page render.
+  const envioFoundNothing = !loading && !isLightCurate && !isClassicCurate
+  const {
+    isPermanentList,
+    checking: permanentChecking,
+    error: permanentError,
+  } = useCheckPermanentList(tcrAddress, chainId, envioFoundNothing)
+
   return {
     isLightCurate,
     isClassicCurate,
     isPermanentCurate: isPermanentList,
-    checking: loading || permanentChecking,
+    checking: loading || (envioFoundNothing && permanentChecking),
     error: !!queryError && permanentError,
   }
 }

@@ -26,7 +26,10 @@ import {
   StyledListingCriteria,
   StyledModal,
 } from 'pages/light-item-details/modals/submit'
-import { StyledSpin, InsufficientBalanceText } from 'pages/light-item-details/modals/challenge'
+import {
+  StyledSpin,
+  InsufficientBalanceText,
+} from 'pages/light-item-details/modals/challenge'
 import { StyledAlert } from 'pages/light-item-details/modals/remove'
 
 export interface Column {
@@ -61,7 +64,7 @@ const _SubmissionForm: React.FC<{
       return value !== undefined && value !== '' && String(value).trim() !== ''
     })
     p.onFieldsComplete(allFilled)
-  }, [p.values, p.columns, p.onFieldsComplete])
+  }, [p])
 
   return (
     <Form onSubmit={p.handleSubmit} id={SUBMISSION_FORM_ID}>

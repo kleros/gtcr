@@ -17,7 +17,7 @@ export const fetchMetaEvidence = async (
   tcr: string,
   networkId: number,
 ): Promise<FetchMetaEvidenceResult | null> => {
-  const query = {
+  const envioQuery = {
     query: `{
     registry:Registry_by_pk(id: "${tcr.toLowerCase()}") {
       registrationMetaEvidence {
@@ -45,42 +45,55 @@ export const fetchMetaEvidence = async (
   }`,
     variables: {},
   }
-  const [data, pgtcrData] = await Promise.all([
-    (
+
+  let subgraphResult: FetchMetaEvidenceResult | null = null
+
+  try {
+    // 1. Try Envio first (fast) — covers Classic + Light TCRs.
+    const envioData = (
       await (
-        await fetch(subgraphUrl[networkId], {
+        await fetch(subgraphUrl[networkId]!, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(query),
+          body: JSON.stringify(envioQuery),
         })
       ).json()
-    ).data,
-    (
-      await (
-        await fetch(subgraphUrlPermanent[networkId], {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(pgtcrQuery),
-        })
-      ).json()
-    ).data,
-  ])
-  if (!data?.registry && !data?.lregistry && !pgtcrData?.registry) return null
-  else if (data.registry !== null)
-    return {
-      metaEvidenceURI: data.registry.registrationMetaEvidence.uri,
-      connectedTCR: data.registry.connectedTCR,
+    ).data
+
+    if (envioData?.registry)
+      subgraphResult = {
+        metaEvidenceURI: envioData.registry.registrationMetaEvidence.uri,
+        connectedTCR: envioData.registry.connectedTCR,
+      }
+    else if (envioData?.lregistry)
+      subgraphResult = {
+        metaEvidenceURI: envioData.lregistry.registrationMetaEvidence.uri,
+        connectedTCR: envioData.lregistry.connectedTCR,
+      }
+
+    // 2. Only try Goldsky if Envio didn't find it (rare — permanent TCRs).
+    if (!subgraphResult) {
+      const pgtcrData = (
+        await (
+          await fetch(subgraphUrlPermanent[networkId]!, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(pgtcrQuery),
+          })
+        ).json()
+      ).data
+
+      if (pgtcrData?.registry)
+        subgraphResult = {
+          metaEvidenceURI:
+            pgtcrData.registry.arbitrationSettings[0].metaEvidenceURI,
+        }
     }
-  else if (data.lregistry !== null)
-    return {
-      metaEvidenceURI: data.lregistry.registrationMetaEvidence.uri,
-      connectedTCR: data.lregistry.connectedTCR,
-    }
-  else
-    return {
-      metaEvidenceURI:
-        pgtcrData.registry.arbitrationSettings[0].metaEvidenceURI,
-    }
+  } catch (err) {
+    console.warn('Subgraph MetaEvidence fetch failed', err)
+  }
+
+  return subgraphResult
 }
 
 const useTcrView = (tcrAddress: string) => {
@@ -93,7 +106,7 @@ const useTcrView = (tcrAddress: string) => {
   const networkId = urlChainId ?? undefined
   const library = useEthersProvider({ chainId: networkId })
 
-  const arbitrableTCRViewAddr = gtcrViewAddresses[networkId]
+  const arbitrableTCRViewAddr = gtcrViewAddresses[networkId!]
   const gtcrView = useMemo(() => {
     if (!library || !arbitrableTCRViewAddr || !networkId) return
     try {
@@ -116,7 +129,7 @@ const useTcrView = (tcrAddress: string) => {
     }
   }, [library, networkId, tcrAddress])
 
-  // MetaEvidence is immutable — fetch once and cache for the session.
+  // Cached for 1 day (meta evidence rarely changes but is not immutable).
   const metaEvidenceQuery = useQuery({
     queryKey: ['metaEvidence', 'classic', tcrAddress, networkId],
     queryFn: async () => {
@@ -130,7 +143,7 @@ const useTcrView = (tcrAddress: string) => {
       }
     },
     enabled: !!tcrAddress && !!networkId,
-    staleTime: Infinity,
+    staleTime: 24 * 60 * 60 * 1000, // 1 day
   })
 
   const metaEvidence = metaEvidenceQuery.data?.metaEvidence
@@ -173,9 +186,9 @@ const useTcrView = (tcrAddress: string) => {
         submissionChallengeDeposit: (
           submissionChallengeBaseDeposit as BigNumber
         ).add(cost as BigNumber),
-        removalChallengeDeposit: (
-          removalChallengeBaseDeposit as BigNumber
-        ).add(cost as BigNumber),
+        removalChallengeDeposit: (removalChallengeBaseDeposit as BigNumber).add(
+          cost as BigNumber,
+        ),
       }
     } catch (err) {
       console.error('Error computing arbitration cost:', err)

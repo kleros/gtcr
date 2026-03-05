@@ -7,10 +7,7 @@ import {
 import { request } from 'graphql-request'
 import type { DocumentNode } from 'graphql'
 import { toast } from 'react-toastify'
-import {
-  subgraphUrl,
-  subgraphUrlPermanent,
-} from 'config/tcr-addresses'
+import { subgraphUrl, subgraphUrlPermanent } from 'config/tcr-addresses'
 
 interface IGraphqlBatcher {
   graphqlBatcher: Batcher<any, IQuery>
@@ -42,8 +39,8 @@ const fetchGraphql = async (
 ) => {
   try {
     return await request(url, document, variables)
-  } catch (error) {
-    console.error('Graph error: ', { error })
+  } catch (err) {
+    console.error('Graph error:', { err })
     debounceErrorToast('Graph query error: failed to fetch data.')
     return {}
   }
@@ -54,7 +51,7 @@ const getSubgraphUrl = (
   isPermanent: boolean,
 ): string => {
   const urlMap = isPermanent ? subgraphUrlPermanent : subgraphUrl
-  const url = urlMap[String(chainId) as keyof typeof urlMap]
+  const url = urlMap[chainId]
   if (!url) throw new Error(`No subgraph URL for chain ${chainId}`)
   return url
 }
@@ -91,7 +88,9 @@ export const GraphqlBatcherProvider: React.FC<{
   )
 
   return (
-    <Context.Provider value={useMemo(() => ({ graphqlBatcher }), [graphqlBatcher])}>
+    <Context.Provider
+      value={useMemo(() => ({ graphqlBatcher }), [graphqlBatcher])}
+    >
       {children}
     </Context.Provider>
   )
@@ -99,8 +98,7 @@ export const GraphqlBatcherProvider: React.FC<{
 
 export const useGraphqlBatcher = () => {
   const context = useContext(Context)
-  if (!context) {
-    throw new Error('GraphqlBatcherProvider not found.')
-  }
+  if (!context) throw new Error('GraphqlBatcherProvider not found.')
+
   return context
 }

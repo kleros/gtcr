@@ -6,6 +6,7 @@ import { useGraphqlBatcher } from 'contexts/graphql-batcher'
 const useCheckPermanentList = (
   address: string | null,
   chainId: number | null,
+  shouldCheck: boolean = true,
 ): { isPermanentList: boolean; checking: boolean; error: boolean } => {
   const { graphqlBatcher } = useGraphqlBatcher()
 
@@ -26,7 +27,7 @@ const useCheckPermanentList = (
         chainId: chainId!,
         isPermanent: true,
       }),
-    enabled: !!address && !!chainId,
+    enabled: shouldCheck && !!address && !!chainId,
     staleTime: Infinity,
   })
 

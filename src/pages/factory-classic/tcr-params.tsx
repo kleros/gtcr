@@ -84,7 +84,7 @@ const TCRParams = ({
   const [depositVal, setDepositVal] = useState(0.05)
   const [debouncedArbitrator] = useDebounce(values.arbitratorAddress, 1000)
   const { arbitrator: klerosAddress, policy: policyAddress } =
-    klerosAddresses[chainId as keyof typeof klerosAddresses] || {}
+    klerosAddresses[chainId] || {}
   const { arbitrationCost } = useArbitrationCost({
     address: values.arbitratorAddress,
     arbitratorExtraData: values.arbitratorExtraData,

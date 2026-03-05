@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, Suspense, lazy, useMemo } from 'react'
+import React, { useContext, useEffect, Suspense, lazy } from 'react'
 import { TCRViewProvider } from 'contexts/tcr-view-context'
 import { LightTCRViewProvider } from 'contexts/light-tcr-view-context'
 import { useParams } from 'react-router-dom'

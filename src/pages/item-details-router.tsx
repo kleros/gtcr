@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, Suspense, lazy, useMemo } from 'react'
+import React, { useContext, useEffect, Suspense, lazy } from 'react'
 import { TCRViewProvider } from 'contexts/tcr-view-context'
 import { LightTCRViewProvider } from 'contexts/light-tcr-view-context'
 import { useParams } from 'react-router-dom'
@@ -14,7 +14,6 @@ import { useGraphqlBatcher } from 'contexts/graphql-batcher'
 import {
   LIGHT_ITEM_DETAILS_QUERY,
   CLASSIC_ITEM_DETAILS_QUERY,
-  PERMANENT_ITEM_DETAILS_QUERY,
 } from 'utils/graphql'
 
 const PermanentItemDetails = lazy(
@@ -66,18 +65,6 @@ const ItemDetailsRouter = () => {
           document: CLASSIC_ITEM_DETAILS_QUERY,
           variables: { id: compoundId },
           chainId,
-        }),
-      staleTime: STALE_TIME,
-    })
-    queryClient.prefetchQuery({
-      queryKey: ['permanentItemDetails', compoundId],
-      queryFn: () =>
-        graphqlBatcher.fetch({
-          id: crypto.randomUUID(),
-          document: PERMANENT_ITEM_DETAILS_QUERY,
-          variables: { id: compoundId },
-          chainId,
-          isPermanent: true,
         }),
       staleTime: STALE_TIME,
     })

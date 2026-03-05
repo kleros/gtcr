@@ -24,7 +24,7 @@ import SearchBar from 'components/light-search-bar'
 import { parseIpfs } from 'utils/ipfs-parse'
 import { itemToStatusCode, STATUS_CODE } from 'utils/item-status'
 import { truncateAtWord } from 'utils/truncate-at-word'
-import { fetchMetaEvidence } from 'hooks/tcr-view'
+import useTcrMetaEvidence from 'hooks/use-tcr-meta-evidence'
 
 export const StyledBreadcrumbItem = styled(Breadcrumb.Item)`
   text-transform: capitalize;
@@ -91,9 +91,6 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
   const library = useEthersProvider({
     chainId: chainId ?? undefined,
   })
-  const [itemMetaEvidence, setItemMetaEvidence] = useState<
-    MetaEvidence | undefined
-  >()
   const [ipfsItemData, setIpfsItemData] = useState<
     Record<string, unknown> | undefined
   >()
@@ -215,27 +212,16 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
     160,
   )
 
-  // If this is a TCR in a TCR of TCRs, we fetch its metadata as well
-  // to build a better item details card.
-  useEffect(() => {
-    ;(async () => {
-      const { isTCRofTCRs } = metadata || {}
-      if (!isTCRofTCRs) return
-      if (!decodedItem) return
-      const itemAddress = decodedItem.decodedData[0] // There is only one column, the TCR address.
-
-      try {
-        // Take the latest meta evidence.
-        const path = await fetchMetaEvidence(itemAddress, chainId)
-        const file = await (await fetch(parseIpfs(path.metaEvidenceURI))).json()
-
-        setItemMetaEvidence({ file })
-      } catch (err) {
-        console.error('Error fetching meta evidence', err)
-        setItemMetaEvidence({ error: err })
-      }
-    })()
-  }, [decodedItem, library, metadata, chainId])
+  // If this is a TCR in a TCR of TCRs, fetch its metadata via cached hook.
+  const itemAddress = metadata?.isTCRofTCRs
+    ? decodedItem?.decodedData?.[0]
+    : undefined
+  const itemMetaQuery = useTcrMetaEvidence(itemAddress, chainId ?? undefined)
+  const itemMetaEvidence = useMemo(() => {
+    if (itemMetaQuery.error) return { error: itemMetaQuery.error }
+    if (itemMetaQuery.data) return { file: itemMetaQuery.data }
+    return undefined
+  }, [itemMetaQuery.data, itemMetaQuery.error])
 
   const loading =
     !metadata ||

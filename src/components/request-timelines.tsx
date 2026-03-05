@@ -264,11 +264,7 @@ const Timeline = ({ request, item, metaEvidence }: TimelineProps) => {
 
         /* eslint-enable unicorn/new-for-builtins */
         return (
-          <UITimeline.Item
-            dot={<Icon type="file-text" />}
-            key={i}
-            color="grey"
-          >
+          <UITimeline.Item dot={<Icon type="file-text" />} key={i} color="grey">
             <StyledCard
               title={title}
               extra={

@@ -12,7 +12,7 @@ import { parseIpfs } from 'utils/ipfs-parse'
 export const fetchMetaEvidence = async (
   tcr: string,
   networkId: number,
-): Promise<FetchMetaEvidenceResult> => {
+): Promise<FetchMetaEvidenceResult | null> => {
   const query = {
     query: `{
       lregistry:LRegistry_by_pk(id: "${tcr.toLowerCase()}") {
@@ -24,17 +24,27 @@ export const fetchMetaEvidence = async (
     }`,
   }
 
-  const response = await fetch(subgraphUrl[networkId], {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(query),
-  })
+  let subgraphResult: FetchMetaEvidenceResult | null = null
 
-  const { data } = await response.json()
-  return {
-    metaEvidenceURI: data.lregistry.registrationMetaEvidence.uri,
-    connectedTCR: data.lregistry.connectedTCR,
+  try {
+    const response = await fetch(subgraphUrl[networkId]!, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(query),
+    })
+
+    const { data } = await response.json()
+
+    if (data?.lregistry?.registrationMetaEvidence?.uri)
+      subgraphResult = {
+        metaEvidenceURI: data.lregistry.registrationMetaEvidence.uri,
+        connectedTCR: data.lregistry.connectedTCR,
+      }
+  } catch (err) {
+    console.warn('Light subgraph MetaEvidence fetch failed', err)
   }
+
+  return subgraphResult
 }
 
 const useLightTcrView = (tcrAddress: string) => {
@@ -47,7 +57,7 @@ const useLightTcrView = (tcrAddress: string) => {
   const networkId = urlChainId ?? undefined
   const library = useEthersProvider({ chainId: networkId })
 
-  const arbitrableTCRViewAddr = lightGtcrViewAddresses[networkId]
+  const arbitrableTCRViewAddr = lightGtcrViewAddresses[networkId!]
 
   const gtcrView = useMemo(() => {
     if (!library || !arbitrableTCRViewAddr || !networkId) return
@@ -71,11 +81,12 @@ const useLightTcrView = (tcrAddress: string) => {
     }
   }, [library, networkId, tcrAddress])
 
-  // MetaEvidence is immutable — fetch once and cache for the session.
+  // Cached for 1 day (meta evidence rarely changes but is not immutable).
   const metaEvidenceQuery = useQuery({
     queryKey: ['metaEvidence', 'light', tcrAddress, networkId],
     queryFn: async () => {
       const fetchedData = await fetchMetaEvidence(tcrAddress, networkId!)
+      if (!fetchedData) return null
       const response = await fetch(parseIpfs(fetchedData.metaEvidenceURI))
       const file = await response.json()
       return {
@@ -84,7 +95,7 @@ const useLightTcrView = (tcrAddress: string) => {
       }
     },
     enabled: !!tcrAddress && !!networkId,
-    staleTime: Infinity,
+    staleTime: 24 * 60 * 60 * 1000, // 1 day
   })
 
   const metaEvidence = metaEvidenceQuery.data?.metaEvidence
@@ -127,9 +138,9 @@ const useLightTcrView = (tcrAddress: string) => {
         submissionChallengeDeposit: (
           submissionChallengeBaseDeposit as BigNumber
         ).add(cost as BigNumber),
-        removalChallengeDeposit: (
-          removalChallengeBaseDeposit as BigNumber
-        ).add(cost as BigNumber),
+        removalChallengeDeposit: (removalChallengeBaseDeposit as BigNumber).add(
+          cost as BigNumber,
+        ),
       }
     } catch (err) {
       console.error('Error computing arbitration cost:', err)

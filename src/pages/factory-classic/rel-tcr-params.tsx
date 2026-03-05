@@ -80,7 +80,7 @@ const RelTCRParams = ({
   const [depositVal, setDepositVal] = useState(0.05)
   const [debouncedArbitrator] = useDebounce(values.relArbitratorAddress, 1000)
   const { arbitrator: klerosAddress, policy: policyAddress } =
-    klerosAddresses[chainId as keyof typeof klerosAddresses] || {}
+    klerosAddresses[chainId] || {}
   const { arbitrationCost } = useArbitrationCost({
     address: values.relArbitratorAddress,
     arbitratorExtraData: values.relArbitratorExtraData,

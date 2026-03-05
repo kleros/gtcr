@@ -75,7 +75,7 @@ const _SubmissionForm: React.FC<{
       return value !== undefined && value !== '' && String(value).trim() !== ''
     })
     p.onFieldsComplete(allFilled)
-  }, [p.values, p.columns, p.onFieldsComplete])
+  }, [p])
 
   return (
     <Form onSubmit={p.handleSubmit} id={SUBMISSION_FORM_ID}>
