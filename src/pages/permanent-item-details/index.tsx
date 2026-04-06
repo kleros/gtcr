@@ -23,6 +23,7 @@ import { itemToStatusCode, STATUS_CODE } from 'utils/permanent-item-status'
 import { truncateAtWord } from 'utils/truncate-at-word'
 import { useGraphqlBatcher } from 'contexts/graphql-batcher'
 import useArbitrationCost from 'hooks/arbitration-cost'
+import { PolicyLink } from 'pages/light-item-details'
 
 export const StyledBreadcrumbItem = styled(Breadcrumb.Item)`
   text-transform: capitalize;
@@ -53,6 +54,9 @@ export const StyledBanner = styled.div`
   position: relative;
   left: 50%;
   margin-left: -50vw;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 `
 
 export const StyledMargin = styled.div`
@@ -291,6 +295,13 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
             {itemName && capitalizeFirstLetter(itemName)} Details
           </StyledBreadcrumbItem>
         </Breadcrumb>
+        {registry?.arbitrationSettings?.[0]?.metadata?.policyURI && (
+          <PolicyLink
+            href={parseIpfs(
+              registry.arbitrationSettings[0].metadata.policyURI,
+            )}
+          />
+        )}
       </StyledBanner>
       <StyledMargin>
         <StyledBackLink>
