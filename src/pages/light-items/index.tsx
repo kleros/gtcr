@@ -339,16 +339,17 @@ const Items = () => {
 
   useEffect(() => {
     const data = itemsQuery.data
-    if (!data || itemsQuery.error || itemsQuery.isLoading) return
-    // Prevents the background IPFS callback from overwriting items
-    // if the user paginated/filtered before it resolved.
-    let stale = false
 
     if (itemsQuery.error) {
       console.error(itemsQuery.error)
       setError(itemsQuery.error.message)
       return
     }
+
+    if (!data || itemsQuery.isLoading) return
+    // Prevents the background IPFS callback from overwriting items
+    // if the user paginated/filtered before it resolved.
+    let stale = false
 
     const addDecodedFields = (items) =>
       items.map((item) => ({
@@ -506,7 +507,7 @@ const Items = () => {
         errors,
         seerMarketData:
           isSeerRegistry(tcrAddress, chainId) &&
-          item?.decodedData &&
+          item?.decodedData?.length > 1 &&
           seerMarketsData[item.decodedData[1].toLowerCase()],
       }
     })

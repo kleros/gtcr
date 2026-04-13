@@ -213,7 +213,7 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
   const truncatedSeoTitle = truncateAtWord(fullSeoTitle, 160)
 
   const fullSeoMetaDescription =
-    decodedItem && metadata && statusCode !== null
+    decodedItem && metadata && statusCode !== null && decodedData?.length > 0
       ? `${decodedData.join(' ')} - ${getStatusPhrase(statusCode)} on ${
           metadata.tcrTitle
         } in Kleros Curate`
