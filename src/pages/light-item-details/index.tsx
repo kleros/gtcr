@@ -132,26 +132,37 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
   }, [item, ipfsItemData])
 
   const decodedItem = useMemo(() => {
-    if (!item || !metaEvidence || !ipfsItemData) return undefined
+    if (!item || !metaEvidence) return undefined
 
-    const orderDecodedData = (columns, values) => {
-      const labels = columns.map((column) => column.label)
-      const ordered = []
-      for (const label of labels) {
-        const value = values[label]
-        ordered.push(value)
+    if (ipfsItemData) {
+      const orderDecodedData = (columns, values) => {
+        const labels = columns.map((column) => column.label)
+        const ordered = []
+        for (const label of labels) {
+          const value = values[label]
+          ordered.push(value)
+        }
+        return ordered
       }
-      return ordered
+
+      return {
+        ...item,
+        errors: [],
+        columns: metaEvidence.metadata.columns,
+        decodedData: orderDecodedData(
+          metaEvidence.metadata.columns,
+          ipfsItemData.values,
+        ),
+      }
     }
 
+    // IPFS data unavailable — still return item so the status card
+    // and challenge button can render. Only item details are missing.
     return {
-      ...item, // Spread to convert from array to object.
-      errors: [],
+      ...item,
+      errors: ['IPFS data unavailable for this item.'],
       columns: metaEvidence.metadata.columns,
-      decodedData: orderDecodedData(
-        metaEvidence.metadata.columns,
-        ipfsItemData.values,
-      ),
+      decodedData: [],
     }
   }, [item, metaEvidence, ipfsItemData])
 
