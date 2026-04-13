@@ -340,6 +340,8 @@ const Items = () => {
   useEffect(() => {
     const data = itemsQuery.data
     if (!data || itemsQuery.error || itemsQuery.isLoading) return
+    // Prevents the background IPFS callback from overwriting items
+    // if the user paginated/filtered before it resolved.
     let stale = false
 
     if (itemsQuery.error) {
@@ -446,7 +448,9 @@ const Items = () => {
         )
         if (stale) return
         // Every promise has a try/catch returning the original item, so all settle as fulfilled.
-        const patched = results.map((r: any) => r.value)
+        const patched = results.map(
+          (r) => (r as PromiseFulfilledResult<(typeof itemsWithDecoded)[number]>).value,
+        )
         setDecodedItems(transformItems(patched))
       })()
 

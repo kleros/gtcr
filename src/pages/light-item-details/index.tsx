@@ -160,7 +160,7 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
     // and challenge button can render. Only item details are missing.
     return {
       ...item,
-      errors: ['IPFS data unavailable for this item.'],
+      errors: [`IPFS data unavailable for this item (${item.data}).`],
       columns: metaEvidence.metadata.columns,
       decodedData: [],
     }
