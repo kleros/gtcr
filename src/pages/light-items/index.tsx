@@ -338,48 +338,28 @@ const Items = () => {
   ])
 
   useEffect(() => {
-    ;(async () => {
-      const data = itemsQuery.data
-      if (!data || itemsQuery.error || itemsQuery.isLoading) return
+    const data = itemsQuery.data
 
-      if (itemsQuery.error) {
-        console.error(itemsQuery.error)
-        setError(itemsQuery.error.message)
-        return
-      }
-      let items = data.litems
-      items = items.map((item) => ({
+    if (itemsQuery.error) {
+      console.error(itemsQuery.error)
+      setError(itemsQuery.error.message)
+      return
+    }
+
+    if (!data || itemsQuery.isLoading) return
+    // Prevents the background IPFS callback from overwriting items
+    // if the user paginated/filtered before it resolved.
+    let stale = false
+
+    const addDecodedFields = (items) =>
+      items.map((item) => ({
         ...item,
         decodedData: item.props?.map(({ value }) => value) || [],
         mergedData: item.props || [],
       }))
-      // HACK:
-      // the graph could have failed to include the props.
-      // this may be because at indexing time, ipfs file was not available.
-      // in that case, we can still manually fetch the props.
-      const itemAssurancePromises = items.map(async (i) => {
-        if (i.decodedData.length === 0) {
-          const response = await fetch(parseIpfs(i.data))
-          const item = await response.json()
-          const mergedData = item.columns.map((column) => ({
-            label: column.label,
-            description: column.description,
-            type: column.type,
-            isIdentifier: column.isIdentifier,
-            value: item.values[column.label],
-          }))
-          const decodedData = mergedData.map((d) => d.value)
-          const newItem = {
-            ...i,
-            mergedData,
-            decodedData,
-            props: mergedData,
-          }
-          return newItem
-        } else return i
-      })
-      items = await Promise.all(itemAssurancePromises)
-      items = items.map((item) => {
+
+    const transformItems = (items) =>
+      items.map((item) => {
         const {
           disputed,
           disputeID,
@@ -432,8 +412,52 @@ const Items = () => {
           ],
         }
       })
-      setDecodedItems(items)
-    })()
+
+    // Render items immediately with whatever data the subgraph has.
+    const itemsWithDecoded = addDecodedFields(data.litems)
+    setDecodedItems(transformItems(itemsWithDecoded))
+
+    // HACK: the graph could have failed to include the props.
+    // This may be because at indexing time, the IPFS file was not available.
+    // In that case, we manually fetch the props in the background so one
+    // broken item doesn't block the entire page from rendering.
+    const needsIpfs = itemsWithDecoded.some((i) => i.decodedData.length === 0)
+    if (needsIpfs)
+      void (async () => {
+        const results = await Promise.allSettled(
+          itemsWithDecoded.map(async (i) => {
+            if (i.decodedData.length === 0)
+              try {
+                const response = await fetch(parseIpfs(i.data))
+                if (!response.ok) return i
+                const item = await response.json()
+                const mergedData = item.columns.map((column) => ({
+                  label: column.label,
+                  description: column.description,
+                  type: column.type,
+                  isIdentifier: column.isIdentifier,
+                  value: item.values[column.label],
+                }))
+                const decodedData = mergedData.map((d) => d.value)
+                return { ...i, mergedData, decodedData, props: mergedData }
+              } catch {
+                return i
+              }
+
+            return i
+          }),
+        )
+        if (stale) return
+        // Every promise has a try/catch returning the original item, so all settle as fulfilled.
+        const patched = results.map(
+          (r) => (r as PromiseFulfilledResult<(typeof itemsWithDecoded)[number]>).value,
+        )
+        setDecodedItems(transformItems(patched))
+      })()
+
+    return () => {
+      stale = true
+    }
   }, [itemsQuery.data, itemsQuery.error, itemsQuery.isLoading])
 
   // Load NSFW user setting from localforage.
@@ -483,7 +507,7 @@ const Items = () => {
         errors,
         seerMarketData:
           isSeerRegistry(tcrAddress, chainId) &&
-          item?.decodedData &&
+          item?.decodedData?.length > 1 &&
           seerMarketsData[item.decodedData[1].toLowerCase()],
       }
     })
