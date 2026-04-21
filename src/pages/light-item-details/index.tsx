@@ -83,21 +83,21 @@ export const Divider = styled.div`
   margin-bottom: 40px;
 `
 
+const StyledPolicyAnchor = styled.a`
+  text-decoration: none;
+  white-space: nowrap;
+  font-size: var(--font-size-base);
+  color: ${({ theme }) => theme.bannerPolicyLinkColor};
+
+  &:hover {
+    color: ${({ theme }) => theme.bannerPolicyLinkHoverColor};
+  }
+`
+
 export const PolicyLink: React.FC<{ href: string }> = ({ href }) => (
-  <a
-    href={href}
-    target="_blank"
-    rel="noopener noreferrer"
-    style={{
-      textDecoration: 'none',
-      whiteSpace: 'nowrap',
-      fontSize: 'var(--font-size-base)',
-      color: 'inherit',
-      opacity: 0.8,
-    }}
-  >
+  <StyledPolicyAnchor href={href} target="_blank" rel="noopener noreferrer">
     View Listing Policies
-  </a>
+  </StyledPolicyAnchor>
 )
 
 interface ItemDetailsProps {
