@@ -9,7 +9,6 @@ import { useParams } from 'react-router-dom'
 import useUrlChainId from 'hooks/use-url-chain-id'
 import { abi as _batchWithdraw } from '@kleros/tcr/build/contracts/BatchWithdraw.json'
 import { BigNumber } from 'ethers'
-import Reward from 'react-rewards'
 import { TCRViewContext } from 'contexts/tcr-view-context'
 import TCRMetadataDisplay from './tcr-metadata-display'
 import { addPeriod } from '../utils/string'
@@ -90,7 +89,6 @@ const ItemDetailsCard = ({
   const { data: walletClient } = useWalletClient()
   const tcrViewContext = useContext(TCRViewContext)
   const [availableRewards, setAvailableRewards] = useState()
-  const [rewardRef, setRewardRef] = useState()
   const BATCH_WITHDRAW_ADDRESS = batchWithdrawAddresses[chainId]
   const { tcrAddress } = useParams()
   const urlChainId = useUrlChainId()
@@ -112,7 +110,6 @@ const ItemDetailsCard = ({
   }, [account, item, tcrViewContext])
 
   const batchWithdrawClick = useCallback(async () => {
-    rewardRef.rewardMe()
     if (!tcrViewContext || !BATCH_WITHDRAW_ADDRESS || !item) return
 
     try {
@@ -146,7 +143,6 @@ const ItemDetailsCard = ({
     account,
     item,
     publicClient,
-    rewardRef,
     tcrViewContext,
     walletClient,
   ])
@@ -179,14 +175,7 @@ const ItemDetailsCard = ({
         availableRewards &&
         batchWithdrawClick &&
         availableRewards.gt(BigNumber.from(0)) && (
-          <Reward
-            ref={(ref) => {
-              setRewardRef(ref)
-            }}
-            type="confetti"
-          >
-            <Button onClick={batchWithdrawClick}>Withdraw Rewards</Button>
-          </Reward>
+          <Button onClick={batchWithdrawClick}>Withdraw Rewards</Button>
         )
       }
     >

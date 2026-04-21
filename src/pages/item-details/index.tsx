@@ -20,6 +20,7 @@ import { STALE_TIME } from 'consts'
 import { useGraphqlBatcher } from 'contexts/graphql-batcher'
 import { ethers } from 'ethers'
 import useTcrMetaEvidence from 'hooks/use-tcr-meta-evidence'
+import { parseIpfs } from 'utils/ipfs-parse'
 import {
   Divider,
   StyledBanner,
@@ -28,6 +29,7 @@ import {
   StyledMargin,
   StyledBackLink,
   StyledLayoutContent,
+  PolicyLink,
 } from 'pages/light-item-details'
 
 interface ItemDetailsProps {
@@ -176,6 +178,9 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
             {itemName && capitalizeFirstLetter(itemName)} Details
           </StyledBreadcrumbItem>
         </Breadcrumb>
+        {metaEvidence?.fileURI && (
+          <PolicyLink href={parseIpfs(metaEvidence.fileURI)} />
+        )}
       </StyledBanner>
       <StyledMargin>
         <StyledBackLink>

@@ -55,6 +55,9 @@ export const StyledBanner = styled.div`
   position: relative;
   left: 50%;
   margin-left: -50vw;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 `
 
 export const StyledMargin = styled.div`
@@ -79,6 +82,23 @@ export const StyledBackLink = styled.div`
 export const Divider = styled.div`
   margin-bottom: 40px;
 `
+
+const StyledPolicyAnchor = styled.a`
+  text-decoration: none;
+  white-space: nowrap;
+  font-size: var(--font-size-base);
+  color: ${({ theme }) => theme.bannerPolicyLinkColor};
+
+  &:hover {
+    color: ${({ theme }) => theme.bannerPolicyLinkHoverColor};
+  }
+`
+
+export const PolicyLink: React.FC<{ href: string }> = ({ href }) => (
+  <StyledPolicyAnchor href={href} target="_blank" rel="noopener noreferrer">
+    View Listing Policies
+  </StyledPolicyAnchor>
+)
 
 interface ItemDetailsProps {
   itemID: string
@@ -295,6 +315,9 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
             {itemName && capitalizeFirstLetter(itemName)} Details
           </StyledBreadcrumbItem>
         </Breadcrumb>
+        {metaEvidence?.fileURI && (
+          <PolicyLink href={parseIpfs(metaEvidence.fileURI)} />
+        )}
       </StyledBanner>
       <StyledMargin>
         <StyledBackLink>
