@@ -3874,6 +3874,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@tanstack/query-core@npm:^5.90.20":
+  version: 5.99.2
+  resolution: "@tanstack/query-core@npm:5.99.2"
+  checksum: 10c0/099532b312c8c939bc9a98824e4cded67d567c10bc686f4e0d407bf3f868250cf3cd23be8d4a81b8d7c3e99f6245a08278ddcceed7cd8f290058a6f503163d98
+  languageName: node
+  linkType: hard
+
 "@tanstack/react-query@npm:^5.90.21":
   version: 5.90.21
   resolution: "@tanstack/react-query@npm:5.90.21"
@@ -9671,6 +9678,7 @@ __metadata:
     "@kleros/tcr": "npm:^2.0.0"
     "@reown/appkit": "npm:^1.8.18"
     "@reown/appkit-adapter-wagmi": "npm:^1.8.18"
+    "@tanstack/query-core": "npm:^5.90.20"
     "@tanstack/react-query": "npm:^5.90.21"
     "@types/humanize-duration": "npm:^3.27.4"
     "@types/mime": "npm:^3.0.0"
