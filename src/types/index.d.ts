@@ -164,15 +164,3 @@ declare module 'react-blockies' {
   export default Blockies
 }
 
-declare module 'react-rewards' {
-  import { ComponentType } from 'react'
-
-  interface RewardProps {
-    ref?: React.Ref<{ rewardMe: () => void }>
-    type?: 'confetti' | 'emoji' | 'memphis'
-    config?: Record<string, unknown>
-    children?: React.ReactNode
-  }
-  const Reward: ComponentType<RewardProps>
-  export default Reward
-}
