@@ -4,6 +4,7 @@
   "version": "3.0.0",
   "license": "MIT",
   "type": "module",
+  "packageManager": "yarn@4.7.0",
   "scripts": {
     "dev": "vite",
     "start": "vite",
