@@ -127,7 +127,6 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
   const [ipfsItemData, setIpfsItemData] = useState<
     Record<string, unknown> | undefined
   >()
-  const [ipfsFetchFailed, setIpfsFetchFailed] = useState(false)
   const { timestamp } = useContext(WalletContext)
   const [modalOpen, setModalOpen] = useState<boolean | undefined>()
   const { tcrError, metaEvidence, challengePeriodDuration } =
@@ -156,64 +155,86 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
     [detailsViewQuery.isLoading, detailsViewQuery.data],
   )
 
+  // Scout-style fire-and-forget IPFS background fetch. Only runs when the
+  // subgraph didn't index props (indexer hit IPFS failure). Never blocks
+  // rendering — the unavailable warning shows immediately and is silently
+  // upgraded to real fields if/when the fetch resolves.
+  const subgraphPropsMissing =
+    !!item && (!item.props || item.props.length === 0)
+
   useEffect(() => {
-    if (!item || ipfsItemData || ipfsFetchFailed) return
+    if (!item || !subgraphPropsMissing || ipfsItemData) return
     let cancelled = false
-    fetch(parseIpfs(item.data))
-      .then((r) => r.json())
-      .then((r) => {
-        if (cancelled) return null
-        setIpfsItemData(r)
-        return null
-      })
-      .catch((err) => {
+    const controller = new AbortController()
+    ;(async () => {
+      try {
+        const r = await fetch(parseIpfs(item.data), {
+          signal: controller.signal,
+        })
+        if (!r.ok) return
+        const data = await r.json()
+        if (!cancelled) setIpfsItemData(data)
+      } catch (err) {
         if (cancelled) return
         console.error('Could not get ipfs file', err)
-        setIpfsFetchFailed(true)
-      })
+      }
+    })()
     return () => {
       cancelled = true
+      controller.abort()
     }
-  }, [item, ipfsItemData, ipfsFetchFailed])
+  }, [item, subgraphPropsMissing, ipfsItemData])
 
   const decodedItem = useMemo(() => {
-    if (!item || !metaEvidence) return undefined
+    if (!item) return undefined
 
-    if (ipfsItemData) {
-      const orderDecodedData = (columns, values) => {
-        const labels = columns.map((column) => column.label)
-        const ordered = []
-        for (const label of labels) {
-          const value = values[label]
-          ordered.push(value)
-        }
-        return ordered
+    // Happy path: subgraph already decoded the item into props. Derive columns
+    // from props directly so the fields card does not have to wait for the
+    // metaEvidence IPFS fetch (which also hits cdn.kleros.link and can lag).
+    if (item.props && item.props.length > 0) {
+      type ItemProp = {
+        label: string
+        value: unknown
+        type: string
+        description?: string
+        isIdentifier?: boolean
       }
-
       return {
         ...item,
         errors: [],
-        columns: metaEvidence.metadata.columns,
-        decodedData: orderDecodedData(
-          metaEvidence.metadata.columns,
-          ipfsItemData.values,
+        columns: item.props.map((p: ItemProp) => ({
+          label: p.label,
+          type: p.type,
+          description: p.description,
+          isIdentifier: p.isIdentifier,
+        })),
+        decodedData: item.props.map((p: ItemProp) => p.value),
+      }
+    }
+
+    // Props missing from subgraph. If the background IPFS fetch succeeded,
+    // show fields; otherwise show the "unavailable" warning immediately so the
+    // user isn't stuck behind a hanging gateway.
+    if (ipfsItemData && metaEvidence) {
+      const columns = metaEvidence.metadata.columns
+      return {
+        ...item,
+        errors: [],
+        columns,
+        decodedData: columns.map(
+          (c: { label: string }) =>
+            (ipfsItemData.values as Record<string, unknown>)?.[c.label],
         ),
       }
     }
 
-    // Fetch still in flight — stay in loading state so the skeleton shows
-    // instead of briefly flashing the "unavailable" warning.
-    if (!ipfsFetchFailed) return undefined
-
-    // IPFS fetch failed — still return item so the status card
-    // and challenge button can render. Only item details are missing.
     return {
       ...item,
       errors: [`IPFS data unavailable for this item (${item.data}).`],
-      columns: metaEvidence.metadata.columns,
+      columns: metaEvidence?.metadata?.columns ?? [],
       decodedData: [],
     }
-  }, [item, metaEvidence, ipfsItemData, ipfsFetchFailed])
+  }, [item, metaEvidence, ipfsItemData])
 
   const { metadata } = metaEvidence || {}
   const { decodedData } = decodedItem || {}
@@ -283,10 +304,11 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
     return undefined
   }, [itemMetaQuery.data, itemMetaQuery.error])
 
-  const loading =
-    !metadata ||
-    (!!item && !decodedItem && !ipfsFetchFailed) ||
-    (!decodedData && decodedItem && decodedItem.errors.length === 0)
+  // Fields render as soon as the subgraph responds. Neither metaEvidence nor
+  // the background IPFS fetch blocks the card: if props are missing, the card
+  // shows the "unavailable" warning immediately and silently upgrades if IPFS
+  // ever resolves.
+  const loading = !item
 
   // Check if there is some action on the URL and, if so, run it.
   useEffect(() => {
