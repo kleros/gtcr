@@ -16,6 +16,7 @@
     "format": "yarn run lint:eslint:fix && yarn run lint:prettier:fix"
   },
   "dependencies": {
+    "@cyntler/react-doc-viewer": "^1.16.3",
     "@fortawesome/fontawesome-svg-core": "^6.7.2",
     "@fortawesome/free-regular-svg-icons": "^6.7.2",
     "@fortawesome/free-solid-svg-icons": "^6.7.2",
@@ -41,6 +42,7 @@
     "react-dom": "^18.3.1",
     "react-error-boundary": "^6.1.1",
     "react-is": "^16.13.1",
+    "react-markdown": "^8.0.7",
     "react-router-dom": "^6.30.3",
     "react-toastify": "^11.0.5",
     "styled-components": "^5.3.11",

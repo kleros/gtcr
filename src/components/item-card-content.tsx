@@ -36,6 +36,7 @@ const ItemCardContent = ({
                 value={column.value}
                 allowedFileTypes={column.allowedFileTypes}
                 truncateLinks
+                linkImage
               />
             </StyledItemCol>
           ))}

@@ -55,6 +55,7 @@ const LightItemCardContent = ({
                 value={column.value}
                 allowedFileTypes={allowedFileTypes}
                 truncateLinks
+                linkImage
               />
             </StyledItemCol>
           ))}

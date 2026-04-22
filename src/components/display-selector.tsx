@@ -10,6 +10,8 @@ import LongText from './long-text'
 import FileDisplay from './file-display'
 import TruncatedLink from './truncated-link'
 import { parseIpfs } from 'utils/ipfs-parse'
+import { useAttachment } from 'hooks/use-attachment'
+import { buttonReset } from 'styles/button-reset'
 
 const StyledLink = styled.a`
   text-decoration: underline;
@@ -19,6 +21,18 @@ const StyledLink = styled.a`
   &:hover {
     opacity: 0.7;
     color: inherit;
+  }
+`
+
+const ImageLinkButton = styled.button`
+  ${buttonReset}
+  display: inline-flex;
+  align-items: center;
+  vertical-align: middle;
+  transition: opacity 0.2s ease;
+
+  &:hover {
+    opacity: 0.85;
   }
 `
 
@@ -71,6 +85,7 @@ interface ImageWithLoadingProps {
 const ImageWithLoading = ({ src, alt, linkImage }: ImageWithLoadingProps) => {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
+  const openAttachment = useAttachment()
 
   if (error)
     return (
@@ -99,9 +114,9 @@ const ImageWithLoading = ({ src, alt, linkImage }: ImageWithLoadingProps) => {
 
   if (linkImage)
     return (
-      <a href={src} target="_blank" rel="noopener noreferrer">
+      <ImageLinkButton type="button" onClick={() => openAttachment(src)}>
         {content}
-      </a>
+      </ImageLinkButton>
     )
 
   return content

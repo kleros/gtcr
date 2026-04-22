@@ -450,7 +450,9 @@ const Items = () => {
         if (stale) return
         // Every promise has a try/catch returning the original item, so all settle as fulfilled.
         const patched = results.map(
-          (r) => (r as PromiseFulfilledResult<(typeof itemsWithDecoded)[number]>).value,
+          (r) =>
+            (r as PromiseFulfilledResult<(typeof itemsWithDecoded)[number]>)
+              .value,
         )
         setDecodedItems(transformItems(patched))
       })()

@@ -13,7 +13,7 @@ import {
   Col,
 } from 'components/ui'
 import Icon from 'components/ui/Icon'
-import PaperclipIcon from 'assets/icons/paperclip.svg?react'
+import EvidenceFileLink from 'components/evidence-file-link'
 import useUrlChainId from 'hooks/use-url-chain-id'
 import ETHAddress from 'components/eth-address'
 import { CONTRACT_STATUS, SUBGRAPH_RULING } from 'utils/permanent-item-status'
@@ -82,36 +82,6 @@ const StyledEvidenceTitle = styled.div`
   white-space: pre-line;
   font-weight: 400;
   color: ${({ theme }) => theme.textPrimary};
-`
-
-const StyledFileLink = styled.a`
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  text-decoration: none;
-  color: ${({ theme }) => theme.cardHeaderLinkColor};
-
-  &:hover {
-    color: ${({ theme }) => theme.cardHeaderLinkHoverColor};
-    text-decoration: none !important;
-  }
-`
-
-const StyledFileLinkText = styled.span`
-  ${smallScreenStyle(
-    () => css`
-      display: none;
-    `,
-  )}
-`
-
-const StyledFileLinkTextMobile = styled.span`
-  display: none;
-  ${smallScreenStyle(
-    () => css`
-      display: inline;
-    `,
-  )}
 `
 
 const secondTimestamp = (timestamp) =>
@@ -286,19 +256,7 @@ const Timeline = ({ submission, item, metaEvidence }: TimelineProps) => {
           <UITimeline.Item dot={<Icon type="file-text" />} key={i} color="grey">
             <StyledCard
               title={title}
-              extra={
-                fileURI && (
-                  <StyledFileLink
-                    href={parseIpfs(fileURI)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    <PaperclipIcon />
-                    <StyledFileLinkText>View attached file</StyledFileLinkText>
-                    <StyledFileLinkTextMobile>File</StyledFileLinkTextMobile>
-                  </StyledFileLink>
-                )
-              }
+              extra={fileURI && <EvidenceFileLink fileURI={fileURI} />}
             >
               <Card.Meta
                 title={<StyledEvidenceTitle>{description}</StyledEvidenceTitle>}

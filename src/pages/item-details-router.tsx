@@ -1,14 +1,16 @@
 import React, { useContext, useEffect, Suspense, lazy } from 'react'
 import { TCRViewProvider } from 'contexts/tcr-view-context'
 import { LightTCRViewProvider } from 'contexts/light-tcr-view-context'
-import { useParams } from 'react-router-dom'
+import { useParams, useSearchParams } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { STALE_TIME } from 'consts'
 import useTcrNetwork from 'hooks/use-tcr-network'
 import useCheckLightCurate from 'hooks/use-check-light-curate'
 import useUrlChainId from 'hooks/use-url-chain-id'
+import { usePolicyHistory } from 'hooks/use-policy-history'
 import Loading from 'components/loading'
 import ErrorPage from 'pages/error-page'
+import AttachmentDisplay from 'components/attachment-display'
 import { StakeContext } from 'contexts/stake-context'
 import { useGraphqlBatcher } from 'contexts/graphql-batcher'
 import {
@@ -28,6 +30,8 @@ const ItemDetailsRouter = () => {
     itemID: string
   }>()
   const chainId = useUrlChainId()
+  const [searchParams] = useSearchParams()
+  const isAttachmentOpen = searchParams.has('attachment')
   useTcrNetwork()
   const search = window.location.search
   const { isLightCurate, isClassicCurate, isPermanentCurate, checking } =
@@ -40,6 +44,10 @@ const ItemDetailsRouter = () => {
     setIsPermanent(isPermanentCurate)
     return () => setIsPermanent(false)
   }, [isPermanentCurate, setIsPermanent])
+
+  // Prefetch the latest policy timestamp so the "(updated X ago)" badge
+  // on the PolicyLink is warm in cache by the time the banner renders.
+  usePolicyHistory(tcrAddress, chainId ?? undefined, 'latest')
 
   // Prefetch detail data in parallel with the existence check.
   useEffect(() => {
@@ -69,6 +77,8 @@ const ItemDetailsRouter = () => {
       staleTime: STALE_TIME,
     })
   }, [chainId, tcrAddress, itemID, queryClient, graphqlBatcher])
+
+  if (isAttachmentOpen) return <AttachmentDisplay />
 
   if (checking) return <Loading />
 

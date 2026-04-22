@@ -1,14 +1,16 @@
 import React, { useContext, useEffect, Suspense, lazy } from 'react'
 import { TCRViewProvider } from 'contexts/tcr-view-context'
 import { LightTCRViewProvider } from 'contexts/light-tcr-view-context'
-import { useParams } from 'react-router-dom'
+import { useParams, useSearchParams } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { STALE_TIME } from 'consts'
 import Loading from 'components/loading'
 import ErrorPage from 'pages/error-page'
+import AttachmentDisplay from 'components/attachment-display'
 import useTcrNetwork from 'hooks/use-tcr-network'
 import useCheckLightCurate from 'hooks/use-check-light-curate'
 import useUrlChainId from 'hooks/use-url-chain-id'
+import { usePolicyHistory } from 'hooks/use-policy-history'
 import { StakeContext } from 'contexts/stake-context'
 import { useGraphqlBatcher } from 'contexts/graphql-batcher'
 import { LIGHT_ITEMS_QUERY, CLASSIC_REGISTRY_ITEMS_QUERY } from 'utils/graphql'
@@ -66,6 +68,8 @@ const ItemsRouter = () => {
     tcrAddress: string
   }>()
   const chainId = useUrlChainId()
+  const [searchParams] = useSearchParams()
+  const isAttachmentOpen = searchParams.has('attachment')
   const { isLightCurate, isClassicCurate, isPermanentCurate, checking } =
     useCheckLightCurate()
   useTcrNetwork()
@@ -77,6 +81,10 @@ const ItemsRouter = () => {
     setIsPermanent(isPermanentCurate)
     return () => setIsPermanent(false)
   }, [isPermanentCurate, setIsPermanent])
+
+  // Prefetch the latest policy timestamp so the "(updated X ago)" badge
+  // is warm in cache by the time the banner renders.
+  usePolicyHistory(tcrAddress, chainId ?? undefined, 'latest')
 
   // Prefetch items data in parallel with the existence check.
   // This overlaps the items fetch with the registry type check,
@@ -127,6 +135,8 @@ const ItemsRouter = () => {
       staleTime: STALE_TIME,
     })
   }, [chainId, tcrAddress, queryClient, graphqlBatcher])
+
+  if (isAttachmentOpen) return <AttachmentDisplay />
 
   if (checking) return <Loading />
 

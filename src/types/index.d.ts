@@ -163,4 +163,3 @@ declare module 'react-blockies' {
   const Blockies: ComponentType<BlockiesProps>
   export default Blockies
 }
-

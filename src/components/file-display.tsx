@@ -3,6 +3,8 @@ import styled from 'styled-components'
 import Icon from 'components/ui/Icon'
 import { getExtension } from 'mime'
 import { parseIpfs } from 'utils/ipfs-parse'
+import { useAttachment } from 'hooks/use-attachment'
+import { buttonReset } from 'styles/button-reset'
 
 const EmptyText = styled.span`
   color: ${({ theme }) => theme.textTertiary};
@@ -13,7 +15,9 @@ const ErrorText = styled.span`
   color: ${({ theme }) => theme.errorColor};
 `
 
-const StyledA = styled.a`
+const StyledViewButton = styled.button`
+  ${buttonReset}
+  color: inherit;
   text-decoration: none;
 
   &:hover {
@@ -28,6 +32,7 @@ interface FileDisplayProps {
 
 const FileDisplay = ({ value, allowedFileTypes }: FileDisplayProps) => {
   const [supported, setSupported] = useState(true)
+  const openAttachment = useAttachment()
 
   useEffect(() => {
     const check = async () => {
@@ -57,13 +62,12 @@ const FileDisplay = ({ value, allowedFileTypes }: FileDisplayProps) => {
 
   return (
     <>
-      <StyledA
-        href={parseIpfs(value)}
-        target="_blank"
-        rel="noopener noreferrer"
+      <StyledViewButton
+        type="button"
+        onClick={() => openAttachment(parseIpfs(value))}
       >
         View File <Icon type="paper-clip" />
-      </StyledA>
+      </StyledViewButton>
       {!supported && <ErrorText>File type not supported</ErrorText>}
     </>
   )

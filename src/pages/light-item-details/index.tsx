@@ -25,6 +25,9 @@ import { parseIpfs } from 'utils/ipfs-parse'
 import { itemToStatusCode, STATUS_CODE } from 'utils/item-status'
 import { truncateAtWord } from 'utils/truncate-at-word'
 import useTcrMetaEvidence from 'hooks/use-tcr-meta-evidence'
+import { useAttachment } from 'hooks/use-attachment'
+import { buttonReset } from 'styles/button-reset'
+import PolicyUpdatedBadge from 'components/policy-updated-badge'
 
 export const StyledBreadcrumbItem = styled(Breadcrumb.Item)`
   text-transform: capitalize;
@@ -84,6 +87,7 @@ export const Divider = styled.div`
 `
 
 const StyledPolicyAnchor = styled.a`
+  ${buttonReset}
   text-decoration: none;
   white-space: nowrap;
   font-size: var(--font-size-base);
@@ -94,11 +98,20 @@ const StyledPolicyAnchor = styled.a`
   }
 `
 
-export const PolicyLink: React.FC<{ href: string }> = ({ href }) => (
-  <StyledPolicyAnchor href={href} target="_blank" rel="noopener noreferrer">
-    View Listing Policies
-  </StyledPolicyAnchor>
-)
+export const PolicyLink: React.FC<{ href: string }> = ({ href }) => {
+  const openAttachment = useAttachment()
+  const { tcrAddress } = useParams<{ tcrAddress: string }>()
+  return (
+    <StyledPolicyAnchor
+      as="button"
+      type="button"
+      onClick={() => openAttachment(href, true)}
+    >
+      View Submission Policy
+      <PolicyUpdatedBadge registryAddress={tcrAddress} />
+    </StyledPolicyAnchor>
+  )
+}
 
 interface ItemDetailsProps {
   itemID: string
@@ -114,6 +127,7 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
   const [ipfsItemData, setIpfsItemData] = useState<
     Record<string, unknown> | undefined
   >()
+  const [ipfsFetchFailed, setIpfsFetchFailed] = useState(false)
   const { timestamp } = useContext(WalletContext)
   const [modalOpen, setModalOpen] = useState<boolean | undefined>()
   const { tcrError, metaEvidence, challengePeriodDuration } =
@@ -143,13 +157,24 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
   )
 
   useEffect(() => {
-    if (item && !ipfsItemData)
-      fetch(parseIpfs(item.data))
-        .then((r) => r.json())
-        .catch((_e) => console.error('Could not get ipfs file'))
-        .then((r) => setIpfsItemData(r))
-        .catch((_e) => console.error('Could not set ipfs item data'))
-  }, [item, ipfsItemData])
+    if (!item || ipfsItemData || ipfsFetchFailed) return
+    let cancelled = false
+    fetch(parseIpfs(item.data))
+      .then((r) => r.json())
+      .then((r) => {
+        if (cancelled) return null
+        setIpfsItemData(r)
+        return null
+      })
+      .catch((err) => {
+        if (cancelled) return
+        console.error('Could not get ipfs file', err)
+        setIpfsFetchFailed(true)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [item, ipfsItemData, ipfsFetchFailed])
 
   const decodedItem = useMemo(() => {
     if (!item || !metaEvidence) return undefined
@@ -176,7 +201,11 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
       }
     }
 
-    // IPFS data unavailable — still return item so the status card
+    // Fetch still in flight — stay in loading state so the skeleton shows
+    // instead of briefly flashing the "unavailable" warning.
+    if (!ipfsFetchFailed) return undefined
+
+    // IPFS fetch failed — still return item so the status card
     // and challenge button can render. Only item details are missing.
     return {
       ...item,
@@ -184,7 +213,7 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
       columns: metaEvidence.metadata.columns,
       decodedData: [],
     }
-  }, [item, metaEvidence, ipfsItemData])
+  }, [item, metaEvidence, ipfsItemData, ipfsFetchFailed])
 
   const { metadata } = metaEvidence || {}
   const { decodedData } = decodedItem || {}
@@ -256,6 +285,7 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
 
   const loading =
     !metadata ||
+    (!!item && !decodedItem && !ipfsFetchFailed) ||
     (!decodedData && decodedItem && decodedItem.errors.length === 0)
 
   // Check if there is some action on the URL and, if so, run it.

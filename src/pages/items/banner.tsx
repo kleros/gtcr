@@ -6,6 +6,8 @@ import useUrlChainId from 'hooks/use-url-chain-id'
 import ContractExplorerUrl from 'components/contract-explorer-url'
 import { defaultTcrAddresses } from 'config/tcr-addresses'
 import { parseIpfs } from 'utils/ipfs-parse'
+import { useAttachment } from 'hooks/use-attachment'
+import PolicyUpdatedBadge from 'components/policy-updated-badge'
 import {
   StyledImage,
   StyledBanner,
@@ -41,6 +43,7 @@ const Banner = ({
 }: BannerProps) => {
   const networkId = useUrlChainId()
   const defaultTCRAddress = defaultTcrAddresses[networkId]
+  const openAttachment = useAttachment()
   const { metadata, fileURI } = metaEvidence || {}
   const { itemName, tcrTitle, tcrDescription, logoURI, relTcrDisabled } =
     metadata || {}
@@ -93,12 +96,13 @@ const Banner = ({
         </StyledButton>
 
         <StyledPolicyAnchor
-          href={parseIpfs(fileURI || '')}
-          target="_blank"
-          rel="noopener noreferrer"
+          as="button"
+          type="button"
           id="policy-link"
+          onClick={() => fileURI && openAttachment(parseIpfs(fileURI), true)}
         >
-          View Listing Policies
+          View Submission Policy
+          <PolicyUpdatedBadge registryAddress={tcrAddress} />
         </StyledPolicyAnchor>
       </ActionCol>
     </StyledBanner>
