@@ -8,31 +8,30 @@ export default defineConfig(({ mode }) => {
   // Load .env files and map REACT_APP_* vars to process.env.* for legacy compat
   const loadedEnv = loadEnv(mode, process.cwd(), ['REACT_APP_', 'VITE_'])
   const define: Record<string, string> = {}
-  for (const [key, value] of Object.entries(loadedEnv)) {
+  for (const [key, value] of Object.entries(loadedEnv))
     define[`process.env.${key}`] = JSON.stringify(value)
-  }
 
   return {
     plugins: [
       react(),
-      svgr(),
+      svgr({ include: '**/*.svg' }),
       tsconfigPaths(),
       nodePolyfills({
         include: ['buffer', 'process', 'util', 'stream', 'events', 'crypto'],
-        globals: { Buffer: true, global: true, process: true }
-      })
+        globals: { Buffer: true, global: true, process: true },
+      }),
     ],
     envPrefix: ['VITE_', 'REACT_APP_'],
     define: {
       ...define,
-      'process.env.NODE_ENV': JSON.stringify(mode)
+      'process.env.NODE_ENV': JSON.stringify(mode),
     },
     build: {
       outDir: 'build',
-      sourcemap: true
+      sourcemap: true,
     },
     server: {
-      port: 3000
-    }
+      port: 3000,
+    },
   }
 })

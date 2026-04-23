@@ -1,6 +1,6 @@
 import { providers, utils } from 'ethers'
 import { getAlchemyRpcUrl } from 'config/rpc'
-import { parseIpfs } from 'utils/ipfs-parse'
+import { getFormattedPath, parseIpfs } from 'utils/ipfs-parse'
 
 export interface PolicyHistoryEntry {
   startDate: string
@@ -15,9 +15,10 @@ const META_EVIDENCE_TOPIC = utils.id('MetaEvidence(uint256,string)')
 
 /**
  * Per-chain public RPC endpoints prepended in front of Alchemy. Public
- * Gnosis RPCs allow much larger `getLogs` block ranges (100k) than Alchemy's
- * 10k-result cap, so they dominate the full-history scan. Chains without an
- * entry here just fall back to Alchemy.
+ * Gnosis RPCs don't enforce Alchemy's 10k-result cap, which matters for
+ * `getLogs` calls filtered by `address + MetaEvidence` topic: the result
+ * set stays small so they tend to return the full history in one request.
+ * Chains without an entry here fall back to Alchemy.
  */
 const RPC_URLS_BY_CHAIN: Record<number, string[]> = {
   100: [
@@ -71,6 +72,14 @@ const BACKWARD_SCAN_MAX_ITERATIONS = 30
 // Even values are clearing policies — filter those out.
 const isRegistrationLog = (log: providers.Log): boolean =>
   BigInt(log.topics[1]) % 2n === 1n
+
+// Validates that `v` is an IPFS pointer `parseIpfs` can resolve. We lean on
+// `getFormattedPath`'s normalizer — if it produces a `/ipfs/...` path, the
+// input was one of the accepted shapes (`/ipfs/...`, `ipfs/...`, `ipfs://...`,
+// or a raw CID); anything else (http URLs, empty strings, garbage) stays as
+// its input and fails this check.
+const isIpfsPointer = (v: unknown): v is string =>
+  typeof v === 'string' && getFormattedPath(v).startsWith('/ipfs/')
 
 const withTimeout = <T>(
   p: Promise<T>,
@@ -203,8 +212,9 @@ const fetchLatestRegistrationLog = async (
     const registrationLogs = logs.filter(isRegistrationLog)
 
     if (registrationLogs.length > 0) {
-      const latest = registrationLogs.reduce((a, b) =>
-        a.blockNumber > b.blockNumber ? a : b,
+      const latest = registrationLogs.reduce(
+        (a, b) => (a.blockNumber > b.blockNumber ? a : b),
+        registrationLogs[0],
       )
       return [latest]
     }
@@ -250,10 +260,7 @@ const buildEntries = async (
         const response = await fetch(parseIpfs(metaEvidenceURI))
         if (!response.ok) throw new Error(`HTTP ${response.status}`)
         const json = await response.json()
-        const fileURI =
-          typeof json.fileURI === 'string' && json.fileURI.startsWith('/ipfs/')
-            ? json.fileURI
-            : undefined
+        const fileURI = isIpfsPointer(json.fileURI) ? json.fileURI : undefined
         return {
           txHash: log.transactionHash,
           blockNumber: log.blockNumber,

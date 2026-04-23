@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react'
-import styled from 'styled-components'
+import styled, { DefaultTheme } from 'styled-components'
 import { useParams, useSearchParams } from 'react-router-dom'
 import { Modal, Skeleton } from 'components/ui'
 import useUrlChainId from 'hooks/use-url-chain-id'
@@ -9,7 +9,7 @@ import { parseIpfs } from 'utils/ipfs-parse'
 import { formatPolicyDate } from 'utils/format-updated-ago'
 import { buttonReset } from 'styles/button-reset'
 import { getTxPage } from 'utils/network-utils'
-import NewTabIcon from 'assets/icons/new-tab.svg?react'
+import NewTabIcon from 'assets/icons/new-tab.svg'
 
 const HistoryList = styled.div`
   display: flex;
@@ -25,25 +25,40 @@ const HistoryList = styled.div`
   margin-right: -4px;
 `
 
+interface HistoryItemStyleProps {
+  $isCurrent: boolean
+  $isViewing: boolean
+  theme: DefaultTheme
+}
+
+const getBorderColor = ({
+  $isViewing,
+  $isCurrent,
+  theme,
+}: HistoryItemStyleProps): string => {
+  if ($isViewing) return theme.primaryColor
+  if ($isCurrent) return theme.borderColor
+  return 'transparent'
+}
+
+const getBackground = ({
+  $isViewing,
+  $isCurrent,
+  theme,
+}: HistoryItemStyleProps): string => {
+  if ($isViewing) return `${theme.primaryColor}1f`
+  if ($isCurrent) return theme.elevatedBackground
+  return 'transparent'
+}
+
 const HistoryItem = styled.div<{ $isCurrent: boolean; $isViewing: boolean }>`
   display: flex;
   flex-direction: column;
   gap: 4px;
   padding: 10px 12px;
   border-radius: 10px;
-  border: 1px solid
-    ${({ $isViewing, $isCurrent, theme }) =>
-      $isViewing
-        ? theme.primaryColor
-        : $isCurrent
-          ? theme.borderColor
-          : 'transparent'};
-  background: ${({ $isViewing, $isCurrent, theme }) =>
-    $isViewing
-      ? `${theme.primaryColor}1f`
-      : $isCurrent
-        ? theme.elevatedBackground
-        : 'transparent'};
+  border: 1px solid ${getBorderColor};
+  background: ${getBackground};
   transition:
     background 0.2s ease,
     border-color 0.2s ease;
@@ -155,6 +170,8 @@ const EmptyState = styled.div`
 const truncateHash = (hash: string): string =>
   `${hash.slice(0, 10)}...${hash.slice(-6)}`
 
+const SKELETON_KEYS = ['skeleton-0', 'skeleton-1', 'skeleton-2'] as const
+
 interface PolicyHistoryModalProps {
   onClose: () => void
 }
@@ -205,8 +222,8 @@ const PolicyHistoryModal: React.FC<PolicyHistoryModalProps> = ({ onClose }) => {
       <HistoryList>
         {isLoading && history.length === 0 ? (
           <>
-            {Array.from({ length: 3 }).map((_, i) => (
-              <HistoryItem key={i} $isCurrent={false} $isViewing={false}>
+            {SKELETON_KEYS.map((key) => (
+              <HistoryItem key={key} $isCurrent={false} $isViewing={false}>
                 <Skeleton active paragraph={{ rows: 1 }} />
               </HistoryItem>
             ))}
@@ -221,7 +238,8 @@ const PolicyHistoryModal: React.FC<PolicyHistoryModalProps> = ({ onClose }) => {
           <EmptyState>No policy history found for this registry.</EmptyState>
         ) : null}
         {history.map((entry) => {
-          const isCurrent = entry.endDate === null
+          const { endDate } = entry
+          const isCurrent = endDate === null
           const isViewing = currentPolicyTx
             ? entry.txHash === currentPolicyTx
             : isCurrent && currentAttachmentUrl === parseIpfs(entry.policyURI)
@@ -235,7 +253,7 @@ const PolicyHistoryModal: React.FC<PolicyHistoryModalProps> = ({ onClose }) => {
                 <DateRange>
                   {formatPolicyDate(entry.startDate)}
                   {' → '}
-                  {isCurrent ? 'Present' : formatPolicyDate(entry.endDate!)}
+                  {isCurrent ? 'Present' : formatPolicyDate(endDate)}
                 </DateRange>
                 <BadgesContainer>
                   {isViewing && <Pill $tone="success">Viewing</Pill>}

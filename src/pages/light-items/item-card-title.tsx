@@ -10,7 +10,7 @@ import { WalletContext } from 'contexts/wallet-context'
 import { LightTCRViewContext } from 'contexts/light-tcr-view-context'
 import useHumanizedCountdown from 'hooks/countdown'
 import useNativeCurrency from 'hooks/native-currency'
-import StakeTag from 'assets/images/logo-stake-tag.svg?react'
+import StakeTag from 'assets/images/logo-stake-tag.svg'
 
 export const Container = styled.div`
   display: flex;

@@ -4,7 +4,7 @@ import { smallScreenStyle } from 'styles/small-screen-style'
 import { buttonReset } from 'styles/button-reset'
 import { parseIpfs } from 'utils/ipfs-parse'
 import { useAttachment } from 'hooks/use-attachment'
-import PaperclipIcon from 'assets/icons/paperclip.svg?react'
+import PaperclipIcon from 'assets/icons/paperclip.svg'
 
 const StyledFileLink = styled.button`
   ${buttonReset}
@@ -45,10 +45,7 @@ const MobileText = styled.span`
 const EvidenceFileLink: React.FC<{ fileURI: string }> = ({ fileURI }) => {
   const openAttachment = useAttachment()
   return (
-    <StyledFileLink
-      type="button"
-      onClick={() => openAttachment(parseIpfs(fileURI))}
-    >
+    <StyledFileLink onClick={() => openAttachment(parseIpfs(fileURI))}>
       <PaperclipIcon />
       <DesktopText>View attached file</DesktopText>
       <MobileText>File</MobileText>

@@ -83,7 +83,7 @@ export function usePolicyHistory(
   const enabled = !!normalized && typeof chainId === 'number'
 
   const cachedEntry = useMemo(
-    () => (enabled ? getCachedEntry(chainId!, normalized!, mode) : null),
+    () => (enabled ? getCachedEntry(chainId, normalized, mode) : null),
     [enabled, chainId, normalized, mode],
   )
 
@@ -97,22 +97,22 @@ export function usePolicyHistory(
       // another RPC scan. Bounded by LATEST_STALE_MS (not CACHE_EXPIRY) so
       // we don't serve day-old derived data as a fresh 'latest' refetch.
       if (mode === 'latest') {
-        const fullCached = getCachedEntry(chainId!, normalized!, 'full')
+        const fullCached = getCachedEntry(chainId, normalized, 'full')
         if (fullCached && Date.now() - fullCached.timestamp < LATEST_STALE_MS) {
           const current = fullCached.data.find((e) => e.endDate === null)
           const derived = current ? [current] : []
-          setCachedEntry(chainId!, normalized!, 'latest', derived)
+          setCachedEntry(chainId, normalized, 'latest', derived)
           return derived
         }
       }
 
-      const entries = await fetchPolicyHistory(normalized!, chainId!, mode)
-      setCachedEntry(chainId!, normalized!, mode, entries)
+      const entries = await fetchPolicyHistory(normalized, chainId, mode)
+      setCachedEntry(chainId, normalized, mode, entries)
 
       // Write-through: a fresh 'full' fetch also warms the 'latest' cache.
       if (mode === 'full' && entries.length > 0) {
         const current = entries.find((e) => e.endDate === null)
-        if (current) setCachedEntry(chainId!, normalized!, 'latest', [current])
+        if (current) setCachedEntry(chainId, normalized, 'latest', [current])
       }
 
       return entries

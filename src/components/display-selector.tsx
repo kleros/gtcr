@@ -114,7 +114,7 @@ const ImageWithLoading = ({ src, alt, linkImage }: ImageWithLoadingProps) => {
 
   if (linkImage)
     return (
-      <ImageLinkButton type="button" onClick={() => openAttachment(src)}>
+      <ImageLinkButton onClick={() => openAttachment(src)}>
         {content}
       </ImageLinkButton>
     )

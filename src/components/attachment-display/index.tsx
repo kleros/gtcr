@@ -8,7 +8,7 @@ import { usePolicyHistory } from 'hooks/use-policy-history'
 import { parseIpfs } from 'utils/ipfs-parse'
 import { formatPolicyDate } from 'utils/format-updated-ago'
 import { buttonReset } from 'styles/button-reset'
-import NewTabIcon from 'assets/icons/new-tab.svg?react'
+import NewTabIcon from 'assets/icons/new-tab.svg'
 import Header from './header'
 
 const FileViewer = lazy(() => import('components/file-viewer'))
@@ -131,17 +131,18 @@ const AttachmentDisplay: React.FC = () => {
     const currentEntry = historyData.find((e) => e.endDate === null)
     return {
       startDate: formatPolicyDate(matchedEntry.startDate),
-      endDate: formatPolicyDate(matchedEntry.endDate!),
+      endDate: formatPolicyDate(matchedEntry.endDate),
       currentPolicyURL: currentEntry ? parseIpfs(currentEntry.policyURI) : null,
     }
   }, [url, policyTx, historyData])
 
   const handleViewCurrent = () => {
-    if (!pastPolicyInfo?.currentPolicyURL) return
+    const currentPolicyURL = pastPolicyInfo?.currentPolicyURL
+    if (!currentPolicyURL) return
     setSearchParams(
       (prev) => {
         const newParams = new URLSearchParams(prev)
-        newParams.set('attachment', pastPolicyInfo.currentPolicyURL!)
+        newParams.set('attachment', currentPolicyURL)
         newParams.delete('policyTx')
         newParams.set('isPolicy', 'true')
         return newParams
