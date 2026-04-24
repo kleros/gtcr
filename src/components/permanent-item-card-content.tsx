@@ -49,6 +49,7 @@ const PermanentItemCardContent = ({
                 value={column.value}
                 allowedFileTypes={[]}
                 truncateLinks
+                linkImage
               />
             </StyledItemCol>
           ))}

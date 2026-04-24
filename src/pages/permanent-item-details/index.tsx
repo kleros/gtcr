@@ -297,9 +297,7 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
         </Breadcrumb>
         {registry?.arbitrationSettings?.[0]?.metadata?.policyURI && (
           <PolicyLink
-            href={parseIpfs(
-              registry.arbitrationSettings[0].metadata.policyURI,
-            )}
+            href={parseIpfs(registry.arbitrationSettings[0].metadata.policyURI)}
           />
         )}
       </StyledBanner>

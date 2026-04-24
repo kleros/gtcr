@@ -49,7 +49,11 @@ const TCRCardContent = ({
       <Container>
         <div>
           <StyledItemCol>
-            <DisplaySelector type={ItemTypes.IMAGE} value={metadata.logoURI} />
+            <DisplaySelector
+              type={ItemTypes.IMAGE}
+              value={metadata.logoURI}
+              linkImage
+            />
           </StyledItemCol>
           <StyledItemCol>
             <DisplaySelector type={ItemTypes.TEXT} value={metadata.tcrTitle} />

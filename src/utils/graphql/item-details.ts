@@ -7,6 +7,13 @@ const LIGHT_ITEM_DETAILS_QUERY = gql`
       itemID
       status
       disputed
+      props {
+        value
+        type: itemType
+        label
+        description
+        isIdentifier
+      }
       requests(order_by: { submissionTime: desc }) {
         requestType
         disputed

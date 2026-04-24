@@ -11,6 +11,9 @@ import ContractExplorerUrl from 'components/contract-explorer-url'
 import { defaultTcrAddresses } from 'config/tcr-addresses'
 import { parseIpfs } from 'utils/ipfs-parse'
 import { truncateAtWord } from 'utils/truncate-at-word'
+import { useAttachment } from 'hooks/use-attachment'
+import { buttonReset } from 'styles/button-reset'
+import PolicyUpdatedBadge from 'components/policy-updated-badge'
 
 export const StyledBanner = styled.div`
   display: flex;
@@ -85,6 +88,7 @@ export const StyledDescription = styled.span`
 `
 
 export const StyledPolicyAnchor = styled.a`
+  ${buttonReset}
   text-decoration: none;
   margin-top: 12px;
   font-size: var(--font-size-base);
@@ -213,6 +217,7 @@ const Banner = ({
 }: BannerProps) => {
   const networkId = useUrlChainId()
   const defaultTCRAddress = defaultTcrAddresses[networkId]
+  const openAttachment = useAttachment()
   const { itemName, title, description, logoURI, policyURI } = metadata || {}
 
   const normalizedDescription = description
@@ -275,12 +280,15 @@ const Banner = ({
             <Icon type="plus-circle-outline" />
           </StyledButton>
           <StyledPolicyAnchor
-            href={parseIpfs(policyURI || '')}
-            target="_blank"
-            rel="noopener noreferrer"
+            as="button"
+            type="button"
             id="policy-link"
+            onClick={() =>
+              policyURI && openAttachment(parseIpfs(policyURI), true)
+            }
           >
-            View Listing Policies
+            View Submission Policy
+            <PolicyUpdatedBadge registryAddress={tcrAddress} />
           </StyledPolicyAnchor>
         </ActionCol>
       </StyledBanner>

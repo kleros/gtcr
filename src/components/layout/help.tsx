@@ -1,8 +1,8 @@
 import React from 'react'
 import styled from 'styled-components'
-import TelegramIcon from 'assets/icons/telegram.svg?react'
-import BugIcon from 'assets/icons/bug.svg?react'
-import EthIcon from 'assets/icons/eth.svg?react'
+import TelegramIcon from 'assets/icons/telegram.svg'
+import BugIcon from 'assets/icons/bug.svg'
+import EthIcon from 'assets/icons/eth.svg'
 
 const Container = styled.div`
   display: flex;

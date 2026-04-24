@@ -5,6 +5,8 @@ import Icon from 'components/ui/Icon'
 import { ItemTypes } from '@kleros/gtcr-encoder'
 import DisplaySelector from './display-selector'
 import { parseIpfs } from 'utils/ipfs-parse'
+import { useAttachment } from 'hooks/use-attachment'
+import { buttonReset } from 'styles/button-reset'
 
 const StyledField = styled.div`
   display: flex;
@@ -16,6 +18,16 @@ const StyledField = styled.div`
 
   div {
     margin: 0;
+  }
+`
+
+const InlineLinkButton = styled.button`
+  ${buttonReset}
+  color: ${({ theme }) => theme.linkColor};
+  text-decoration: underline;
+
+  &:hover {
+    color: ${({ theme }) => theme.primaryColorHover};
   }
 `
 
@@ -31,52 +43,58 @@ const TCRMetadataDisplay = ({
   tcrTitle,
   tcrDescription,
   fileURI,
-}: TCRMetadataDisplayProps) => (
-  <>
-    <StyledField>
-      <span>
-        Logo:
-        <Tooltip title="The list logo.">
-          &nbsp;
-          <Icon type="question-circle-o" />
-        </Tooltip>
-      </span>
-      : <DisplaySelector type={ItemTypes.IMAGE} linkImage value={logoURI} />
-    </StyledField>
-    <StyledField>
-      <span>
-        Title
-        <Tooltip title="The list title.">
-          &nbsp;
-          <Icon type="question-circle-o" />
-        </Tooltip>
-      </span>
-      : <DisplaySelector type={ItemTypes.TEXT} value={tcrTitle} />
-    </StyledField>
-    <StyledField>
-      <span>
-        Description
-        <Tooltip title="The list description.">
-          &nbsp;
-          <Icon type="question-circle-o" />
-        </Tooltip>
-      </span>
-      : <DisplaySelector type={ItemTypes.TEXT} value={tcrDescription} />
-    </StyledField>
-    <StyledField>
-      <span>
-        Primary document
-        <Tooltip title="The primary document used by this list.">
-          &nbsp;
-          <Icon type="question-circle-o" />
-        </Tooltip>
-      </span>
-      :{' '}
-      <a href={parseIpfs(fileURI)} target="_blank" rel="noopener noreferrer">
-        Link
-      </a>
-    </StyledField>
-  </>
-)
+}: TCRMetadataDisplayProps) => {
+  const openAttachment = useAttachment()
+  return (
+    <>
+      <StyledField>
+        <span>
+          Logo:
+          <Tooltip title="The list logo.">
+            &nbsp;
+            <Icon type="question-circle-o" />
+          </Tooltip>
+        </span>
+        : <DisplaySelector type={ItemTypes.IMAGE} linkImage value={logoURI} />
+      </StyledField>
+      <StyledField>
+        <span>
+          Title
+          <Tooltip title="The list title.">
+            &nbsp;
+            <Icon type="question-circle-o" />
+          </Tooltip>
+        </span>
+        : <DisplaySelector type={ItemTypes.TEXT} value={tcrTitle} />
+      </StyledField>
+      <StyledField>
+        <span>
+          Description
+          <Tooltip title="The list description.">
+            &nbsp;
+            <Icon type="question-circle-o" />
+          </Tooltip>
+        </span>
+        : <DisplaySelector type={ItemTypes.TEXT} value={tcrDescription} />
+      </StyledField>
+      <StyledField>
+        <span>
+          Primary document
+          <Tooltip title="The primary document used by this list.">
+            &nbsp;
+            <Icon type="question-circle-o" />
+          </Tooltip>
+        </span>
+        :{' '}
+        <InlineLinkButton
+          type="button"
+          onClick={() => openAttachment(parseIpfs(fileURI))}
+        >
+          Link
+        </InlineLinkButton>
+      </StyledField>
+    </>
+  )
+}
 
 export default TCRMetadataDisplay

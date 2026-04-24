@@ -1,6 +1,6 @@
 import React from 'react'
 import styled from 'styled-components'
-import Acropolis from 'assets/images/acropolis.svg?react'
+import Acropolis from 'assets/images/acropolis.svg'
 
 const StyledDiv = styled.div`
   display: flex;

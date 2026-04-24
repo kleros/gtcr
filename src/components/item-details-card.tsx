@@ -40,7 +40,7 @@ const StyledFields = styled.div`
   display: flex;
   flex-wrap: wrap;
   gap: 12px 24px;
-  align-items: baseline;
+  align-items: center;
 `
 
 const StyledField = styled.div`

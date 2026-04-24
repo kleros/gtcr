@@ -25,6 +25,9 @@ import { parseIpfs } from 'utils/ipfs-parse'
 import { itemToStatusCode, STATUS_CODE } from 'utils/item-status'
 import { truncateAtWord } from 'utils/truncate-at-word'
 import useTcrMetaEvidence from 'hooks/use-tcr-meta-evidence'
+import { useAttachment } from 'hooks/use-attachment'
+import { buttonReset } from 'styles/button-reset'
+import PolicyUpdatedBadge from 'components/policy-updated-badge'
 
 export const StyledBreadcrumbItem = styled(Breadcrumb.Item)`
   text-transform: capitalize;
@@ -84,6 +87,7 @@ export const Divider = styled.div`
 `
 
 const StyledPolicyAnchor = styled.a`
+  ${buttonReset}
   text-decoration: none;
   white-space: nowrap;
   font-size: var(--font-size-base);
@@ -94,11 +98,20 @@ const StyledPolicyAnchor = styled.a`
   }
 `
 
-export const PolicyLink: React.FC<{ href: string }> = ({ href }) => (
-  <StyledPolicyAnchor href={href} target="_blank" rel="noopener noreferrer">
-    View Listing Policies
-  </StyledPolicyAnchor>
-)
+export const PolicyLink: React.FC<{ href: string }> = ({ href }) => {
+  const openAttachment = useAttachment()
+  const { tcrAddress } = useParams<{ tcrAddress: string }>()
+  return (
+    <StyledPolicyAnchor
+      as="button"
+      type="button"
+      onClick={() => openAttachment(href, true)}
+    >
+      View Submission Policy
+      <PolicyUpdatedBadge registryAddress={tcrAddress} />
+    </StyledPolicyAnchor>
+  )
+}
 
 interface ItemDetailsProps {
   itemID: string
@@ -142,46 +155,83 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
     [detailsViewQuery.isLoading, detailsViewQuery.data],
   )
 
+  // Scout-style fire-and-forget IPFS background fetch. Only runs when the
+  // subgraph didn't index props (indexer hit IPFS failure). Never blocks
+  // rendering — the unavailable warning shows immediately and is silently
+  // upgraded to real fields if/when the fetch resolves.
+  const subgraphPropsMissing =
+    !!item && (!item.props || item.props.length === 0)
+
   useEffect(() => {
-    if (item && !ipfsItemData)
-      fetch(parseIpfs(item.data))
-        .then((r) => r.json())
-        .catch((_e) => console.error('Could not get ipfs file'))
-        .then((r) => setIpfsItemData(r))
-        .catch((_e) => console.error('Could not set ipfs item data'))
-  }, [item, ipfsItemData])
+    if (!item || !subgraphPropsMissing || ipfsItemData) return
+    let cancelled = false
+    const controller = new AbortController()
+    ;(async () => {
+      try {
+        const r = await fetch(parseIpfs(item.data), {
+          signal: controller.signal,
+        })
+        if (!r.ok) return
+        const data = await r.json()
+        if (!cancelled) setIpfsItemData(data)
+      } catch (err) {
+        if (cancelled) return
+        console.error('Could not get ipfs file', err)
+      }
+    })()
+    return () => {
+      cancelled = true
+      controller.abort()
+    }
+  }, [item, subgraphPropsMissing, ipfsItemData])
 
   const decodedItem = useMemo(() => {
-    if (!item || !metaEvidence) return undefined
+    if (!item) return undefined
 
-    if (ipfsItemData) {
-      const orderDecodedData = (columns, values) => {
-        const labels = columns.map((column) => column.label)
-        const ordered = []
-        for (const label of labels) {
-          const value = values[label]
-          ordered.push(value)
-        }
-        return ordered
+    // Happy path: subgraph already decoded the item into props. Derive columns
+    // from props directly so the fields card does not have to wait for the
+    // metaEvidence IPFS fetch (which also hits cdn.kleros.link and can lag).
+    if (item.props && item.props.length > 0) {
+      type ItemProp = {
+        label: string
+        value: unknown
+        type: string
+        description?: string
+        isIdentifier?: boolean
       }
-
       return {
         ...item,
         errors: [],
-        columns: metaEvidence.metadata.columns,
-        decodedData: orderDecodedData(
-          metaEvidence.metadata.columns,
-          ipfsItemData.values,
+        columns: item.props.map((p: ItemProp) => ({
+          label: p.label,
+          type: p.type,
+          description: p.description,
+          isIdentifier: p.isIdentifier,
+        })),
+        decodedData: item.props.map((p: ItemProp) => p.value),
+      }
+    }
+
+    // Props missing from subgraph. If the background IPFS fetch succeeded,
+    // show fields; otherwise show the "unavailable" warning immediately so the
+    // user isn't stuck behind a hanging gateway.
+    if (ipfsItemData && metaEvidence) {
+      const columns = metaEvidence.metadata.columns
+      return {
+        ...item,
+        errors: [],
+        columns,
+        decodedData: columns.map(
+          (c: { label: string }) =>
+            (ipfsItemData.values as Record<string, unknown>)?.[c.label],
         ),
       }
     }
 
-    // IPFS data unavailable — still return item so the status card
-    // and challenge button can render. Only item details are missing.
     return {
       ...item,
       errors: [`IPFS data unavailable for this item (${item.data}).`],
-      columns: metaEvidence.metadata.columns,
+      columns: metaEvidence?.metadata?.columns ?? [],
       decodedData: [],
     }
   }, [item, metaEvidence, ipfsItemData])
@@ -254,9 +304,11 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
     return undefined
   }, [itemMetaQuery.data, itemMetaQuery.error])
 
-  const loading =
-    !metadata ||
-    (!decodedData && decodedItem && decodedItem.errors.length === 0)
+  // Fields render as soon as the subgraph responds. Neither metaEvidence nor
+  // the background IPFS fetch blocks the card: if props are missing, the card
+  // shows the "unavailable" warning immediately and silently upgrades if IPFS
+  // ever resolves.
+  const loading = !item
 
   // Check if there is some action on the URL and, if so, run it.
   useEffect(() => {
