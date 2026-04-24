@@ -16,7 +16,7 @@ import useFactory from 'hooks/factory'
 import { addPeriod, capitalizeFirstLetter, getArticleFor } from 'utils/string'
 import useNativeCurrency from 'hooks/native-currency'
 import useNativeBalance from 'hooks/use-native-balance'
-import { parseIpfs } from 'utils/ipfs-parse'
+import ListingCriteriaLink from 'components/listing-criteria-link'
 import { wrapWithToast, errorToast } from 'utils/wrap-with-toast'
 import { parseWagmiError } from 'utils/parse-wagmi-error'
 import { wagmiConfig } from 'config/wagmi'
@@ -372,13 +372,9 @@ const SubmitModal: React.FC<{
       />
       <StyledListingCriteria>
         Make sure your submission complies with the{' '}
-        <a
-          href={parseIpfs(fileURI || '')}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
+        <ListingCriteriaLink fileURI={fileURI}>
           listing criteria
-        </a>{' '}
+        </ListingCriteriaLink>{' '}
         to avoid challenges.
       </StyledListingCriteria>
       <StyledAlert

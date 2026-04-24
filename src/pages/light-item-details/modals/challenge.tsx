@@ -13,7 +13,7 @@ import EvidenceForm from 'components/evidence-form'
 import useNativeBalance from 'hooks/use-native-balance'
 import ipfsPublish from 'utils/ipfs-publish'
 import { getIPFSPath } from 'utils/get-ipfs-path'
-import { parseIpfs } from 'utils/ipfs-parse'
+import ListingCriteriaLink from 'components/listing-criteria-link'
 import { wrapWithToast, errorToast } from 'utils/wrap-with-toast'
 import { parseWagmiError } from 'utils/parse-wagmi-error'
 import { wagmiConfig } from 'config/wagmi'
@@ -167,13 +167,9 @@ const ChallengeModal = ({
     >
       <Typography.Title level={4}>
         Read the&nbsp;
-        <a
-          href={parseIpfs(fileURI || '')}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
+        <ListingCriteriaLink fileURI={fileURI}>
           Listing Criteria
-        </a>
+        </ListingCriteriaLink>
         .
       </Typography.Title>
       <Typography.Paragraph>

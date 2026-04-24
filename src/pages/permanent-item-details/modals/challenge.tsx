@@ -11,7 +11,7 @@ import { erc20Abi, getAddress } from 'viem'
 import EvidenceForm from 'components/evidence-form'
 import ipfsPublish from 'utils/ipfs-publish'
 import { getIPFSPath } from 'utils/get-ipfs-path'
-import { parseIpfs } from 'utils/ipfs-parse'
+import ListingCriteriaLink from 'components/listing-criteria-link'
 import useNativeCurrency from 'hooks/native-currency'
 import useTokenSymbol from 'hooks/token-symbol'
 import { wrapWithToast, errorToast } from 'utils/wrap-with-toast'
@@ -293,13 +293,9 @@ const ChallengeModal = ({
     >
       <Typography.Title level={4}>
         Read the&nbsp;
-        <a
-          href={parseIpfs(fileURI || '')}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
+        <ListingCriteriaLink fileURI={fileURI}>
           Listing Criteria
-        </a>
+        </ListingCriteriaLink>
         .
       </Typography.Title>
       <Typography.Paragraph>

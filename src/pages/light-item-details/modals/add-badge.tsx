@@ -10,6 +10,7 @@ import {
 } from 'components/ui'
 import styled from 'styled-components'
 import ETHAmount from 'components/eth-amount'
+import ListingCriteriaLink from 'components/listing-criteria-link'
 import useNativeCurrency from 'hooks/native-currency'
 import { parseIpfs } from 'utils/ipfs-parse'
 
@@ -52,7 +53,7 @@ export const ButtonContainer = styled.div`
   margin: 12px 0;
 `
 
-export const StyledA = styled.a`
+export const StyledListingCriteriaLink = styled(ListingCriteriaLink)`
   text-decoration: underline;
 `
 
@@ -166,9 +167,9 @@ const AddBadgeModal = ({
                   description={
                     <>
                       Read the&nbsp;
-                      <StyledA href={parseIpfs(fileURI || '')}>
+                      <StyledListingCriteriaLink fileURI={fileURI}>
                         Listing Criteria
-                      </StyledA>
+                      </StyledListingCriteriaLink>
                     </>
                   }
                 />
