@@ -14,7 +14,7 @@ import EnsureAuth from 'components/ensure-auth'
 import ETHAmount from 'components/eth-amount'
 import useFactory from 'hooks/factory'
 import { addPeriod, capitalizeFirstLetter, getArticleFor } from 'utils/string'
-import { parseIpfs } from 'utils/ipfs-parse'
+import ListingCriteriaLink from 'components/listing-criteria-link'
 import { IPFSResultObject, getIPFSPath } from 'utils/get-ipfs-path'
 import ipfsPublish from 'utils/ipfs-publish'
 import useNativeCurrency from 'hooks/native-currency'
@@ -521,13 +521,9 @@ const SubmitModal: React.FC<{
       />
       <StyledListingCriteria>
         Make sure your submission complies with the{' '}
-        <a
-          href={parseIpfs(policyURI || '')}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
+        <ListingCriteriaLink fileURI={policyURI}>
           listing criteria
-        </a>{' '}
+        </ListingCriteriaLink>{' '}
         to avoid challenges.
       </StyledListingCriteria>
       <StyledAlert

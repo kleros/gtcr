@@ -25,7 +25,7 @@ import _gtcr from 'assets/abis/PermanentGTCR.json'
 import useRequiredFees from 'hooks/required-fees'
 import useNativeCurrency from 'hooks/native-currency'
 import useNativeBalance from 'hooks/use-native-balance'
-import { parseIpfs } from 'utils/ipfs-parse'
+import ListingCriteriaLink from 'components/listing-criteria-link'
 import { wrapWithToast, errorToast } from 'utils/wrap-with-toast'
 import { parseWagmiError } from 'utils/parse-wagmi-error'
 import { wagmiConfig } from 'config/wagmi'
@@ -226,13 +226,9 @@ const CrowdfundModal = ({
     >
       <Typography.Title level={4}>
         Read the&nbsp;
-        <a
-          href={parseIpfs(fileURI || '')}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
+        <ListingCriteriaLink fileURI={fileURI}>
           Listing Criteria
-        </a>
+        </ListingCriteriaLink>
         .
       </Typography.Title>
       <Typography.Paragraph level={4}>

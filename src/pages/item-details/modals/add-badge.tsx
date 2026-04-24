@@ -4,7 +4,7 @@ import ETHAmount from 'components/eth-amount'
 import useNativeCurrency from 'hooks/native-currency'
 import { parseIpfs } from 'utils/ipfs-parse'
 import {
-  StyledA,
+  StyledListingCriteriaLink,
   ButtonContainer,
   StyledModal,
   StyledSpin,
@@ -123,9 +123,9 @@ const AddBadgeModal = ({
                   description={
                     <>
                       Read the&nbsp;
-                      <StyledA href={parseIpfs(fileURI || '')}>
+                      <StyledListingCriteriaLink fileURI={fileURI}>
                         Listing Criteria
-                      </StyledA>
+                      </StyledListingCriteriaLink>
                     </>
                   }
                 />
