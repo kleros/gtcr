@@ -17,6 +17,7 @@ import AppRouter from './app-router'
 import ErrorPage from 'pages/error-page'
 import { wagmiConfig } from 'config/wagmi'
 import { GraphqlBatcherProvider } from 'contexts/graphql-batcher'
+import AtlasProvider from 'contexts/atlas-provider'
 import { ToastContainer } from 'react-toastify'
 import GlobalStyle from 'styles/global-styles'
 import 'react-toastify/dist/ReactToastify.css'
@@ -90,40 +91,44 @@ const App = () => {
       <GlobalStyle />
       <WagmiProvider config={wagmiConfig}>
         <QueryClientProvider client={queryClient}>
-          <GraphqlBatcherProvider>
-            <BrowserRouter future={{ v7_relativeSplatPath: true }}>
-              <ErrorBoundary
-                FallbackComponent={({ error }) => (
-                  <ErrorPage
-                    code="Error"
-                    title="Something went wrong"
-                    message={error?.message || 'An unexpected error occurred.'}
-                    tip="Try refreshing the page."
-                  />
-                )}
-              >
-                <WalletProvider>
-                  <StakeProvider>
-                    <StyledLayout>
-                      <SmartContractWalletWarning />
-                      <AppBar />
-                      <ContentContainer>
-                        <AppRouter />
-                      </ContentContainer>
-                      <StyledClickaway
-                        isMenuClosed={isMenuClosed}
-                        onClick={
-                          isMenuClosed ? null : () => setIsMenuClosed(true)
-                        }
-                      />
-                      <Footer />
-                    </StyledLayout>
-                  </StakeProvider>
-                  <ThemedToastContainer />
-                </WalletProvider>
-              </ErrorBoundary>
-            </BrowserRouter>
-          </GraphqlBatcherProvider>
+          <AtlasProvider>
+            <GraphqlBatcherProvider>
+              <BrowserRouter future={{ v7_relativeSplatPath: true }}>
+                <ErrorBoundary
+                  FallbackComponent={({ error }) => (
+                    <ErrorPage
+                      code="Error"
+                      title="Something went wrong"
+                      message={
+                        error?.message || 'An unexpected error occurred.'
+                      }
+                      tip="Try refreshing the page."
+                    />
+                  )}
+                >
+                  <WalletProvider>
+                    <StakeProvider>
+                      <StyledLayout>
+                        <SmartContractWalletWarning />
+                        <AppBar />
+                        <ContentContainer>
+                          <AppRouter />
+                        </ContentContainer>
+                        <StyledClickaway
+                          isMenuClosed={isMenuClosed}
+                          onClick={
+                            isMenuClosed ? null : () => setIsMenuClosed(true)
+                          }
+                        />
+                        <Footer />
+                      </StyledLayout>
+                    </StakeProvider>
+                    <ThemedToastContainer />
+                  </WalletProvider>
+                </ErrorBoundary>
+              </BrowserRouter>
+            </GraphqlBatcherProvider>
+          </AtlasProvider>
         </QueryClientProvider>
       </WagmiProvider>
     </ThemeProvider>

@@ -5,8 +5,8 @@ import { simulateContract } from '@wagmi/core'
 import _gtcr from 'assets/abis/PermanentGTCR.json'
 import EnsureAuth from 'components/ensure-auth'
 import EvidenceForm from 'components/evidence-form'
-import ipfsPublish from 'utils/ipfs-publish'
-import { getIPFSPath } from 'utils/get-ipfs-path'
+import { useAtlasProvider } from '@kleros/kleros-app'
+import { uploadEvidence } from 'utils/upload-evidence'
 import { wrapWithToast, errorToast } from 'utils/wrap-with-toast'
 import { parseWagmiError } from 'utils/parse-wagmi-error'
 import { wagmiConfig } from 'config/wagmi'
@@ -22,22 +22,18 @@ const EvidenceModal = ({ item, ...rest }: EvidenceModalProps) => {
   const { address: account } = useAccount()
   const publicClient = usePublicClient()
   const { data: walletClient } = useWalletClient()
+  const { uploadFile } = useAtlasProvider()
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const submitEvidence = async ({ title, description, evidenceAttachment }) => {
     setIsSubmitting(true)
     try {
-      const evidenceJSON = {
-        title: title,
+      const ipfsEvidencePath = await uploadEvidence({
+        title,
         description,
-        ...evidenceAttachment,
-      }
-
-      const enc = new TextEncoder()
-      const fileData = enc.encode(JSON.stringify(evidenceJSON))
-      const ipfsEvidencePath = getIPFSPath(
-        await ipfsPublish('evidence.json', fileData),
-      )
+        attachment: evidenceAttachment as File | undefined,
+        uploadFile,
+      })
 
       const { request } = await simulateContract(wagmiConfig, {
         address: tcrAddress,

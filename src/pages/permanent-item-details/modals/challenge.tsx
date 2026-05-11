@@ -9,8 +9,8 @@ import { useAccount, usePublicClient, useWalletClient, useChainId } from 'wagmi'
 import { simulateContract } from '@wagmi/core'
 import { erc20Abi, getAddress } from 'viem'
 import EvidenceForm from 'components/evidence-form'
-import ipfsPublish from 'utils/ipfs-publish'
-import { getIPFSPath } from 'utils/get-ipfs-path'
+import { useAtlasProvider } from '@kleros/kleros-app'
+import { uploadEvidence } from 'utils/upload-evidence'
 import ListingCriteriaLink from 'components/listing-criteria-link'
 import useNativeCurrency from 'hooks/native-currency'
 import useTokenSymbol from 'hooks/token-symbol'
@@ -55,6 +55,7 @@ const ChallengeModal = ({
   const chainId = useChainId()
   const publicClient = usePublicClient()
   const { data: walletClient } = useWalletClient()
+  const { uploadFile } = useAtlasProvider()
   const nativeCurrency = useNativeCurrency()
 
   const [balance, setBalance] = useState(0n)
@@ -154,17 +155,12 @@ const ChallengeModal = ({
   }) => {
     setIsChallenging(true)
     try {
-      const evidenceJSON = {
+      const ipfsEvidencePath = await uploadEvidence({
         title: title || 'Challenge Justification',
         description,
-        ...evidenceAttachment,
-      }
-
-      const enc = new TextEncoder()
-      const fileData = enc.encode(JSON.stringify(evidenceJSON))
-      const ipfsEvidencePath = getIPFSPath(
-        await ipfsPublish('evidence.json', fileData),
-      )
+        attachment: evidenceAttachment as File | undefined,
+        uploadFile,
+      })
 
       const { request } = await simulateContract(wagmiConfig, {
         address: registry.id,

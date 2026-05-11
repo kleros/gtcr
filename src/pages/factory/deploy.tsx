@@ -12,8 +12,8 @@ import { useAccount, usePublicClient, useWalletClient, useChainId } from 'wagmi'
 import { simulateContract } from '@wagmi/core'
 import styled from 'styled-components'
 import _GTCRFactory from 'assets/abis/LightGTCRFactory.json'
-import ipfsPublish from 'utils/ipfs-publish'
-import { getIPFSPath } from 'utils/get-ipfs-path'
+import { Roles, useAtlasProvider } from '@kleros/kleros-app'
+import { JSON_UPLOAD_ROLE } from 'utils/atlas-roles'
 import { ZERO_ADDRESS, isVowel } from 'utils/string'
 import { wrapWithToast, errorToast } from 'utils/wrap-with-toast'
 import { parseWagmiError } from 'utils/parse-wagmi-error'
@@ -84,6 +84,7 @@ const getTcrMetaEvidence = async (
   tcrState,
   parentTCRAddress,
   evidenceDisplayInterfaceURI,
+  uploadFile: (file: File, role: Roles) => Promise<string | null>,
 ) => {
   const {
     tcrTitle,
@@ -247,28 +248,27 @@ const getTcrMetaEvidence = async (
     },
   }
 
-  const enc = new TextEncoder()
-
   const files = [
     registrationMetaEvidence,
     clearingMetaEvidence,
     relRegistrationMetaEvidence,
     relClearingMetaEvidence,
-  ].map(({ name, data }) => ({
-    name,
-    data: enc.encode(JSON.stringify(data)),
-  }))
+  ].map(
+    ({ name, data }) =>
+      new File([JSON.stringify(data)], name, { type: 'application/json' }),
+  )
 
-  const ipfsMetaEvidenceObjects = (
-    await Promise.all(files.map(({ name, data }) => ipfsPublish(name, data)))
-  ).map((ipfsMetaEvidenceObject) => getIPFSPath(ipfsMetaEvidenceObject))
-
+  const uploaded = await Promise.all(
+    files.map((file) => uploadFile(file, JSON_UPLOAD_ROLE)),
+  )
+  if (uploaded.some((p) => !p))
+    throw new Error('Failed to upload meta-evidence to IPFS.')
   const [
     registrationMetaEvidencePath,
     clearingMetaEvidencePath,
     relRegistrationMetaEvidencePath,
     relClearingMetaEvidencePath,
-  ] = ipfsMetaEvidenceObjects
+  ] = uploaded as string[]
 
   return {
     registrationMetaEvidencePath,
@@ -303,6 +303,7 @@ const Deploy = ({ setTxState, tcrState, setTcrState }: DeployProps) => {
   const evidenceDisplayInterfaceURI = defaultEvidenceDisplayUri[chainId]
   const { submissionDeposit, metaEvidence, challengePeriodDuration } =
     useTcrView(defaultTCRAddress)
+  const { uploadFile } = useAtlasProvider()
 
   const onDeploy = async () => {
     try {
@@ -323,6 +324,7 @@ const Deploy = ({ setTxState, tcrState, setTcrState }: DeployProps) => {
         tcrState,
         parentTCRAddress,
         evidenceDisplayInterfaceURI,
+        uploadFile,
       )
 
       const relTCRArgs = [

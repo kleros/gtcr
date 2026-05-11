@@ -12,8 +12,8 @@ import {
 import { abi as _GTCRFactory } from '@kleros/tcr/build/contracts/GTCRFactory.json'
 import { useAccount, usePublicClient, useWalletClient, useChainId } from 'wagmi'
 import { simulateContract } from '@wagmi/core'
-import ipfsPublish from 'utils/ipfs-publish'
-import { getIPFSPath } from 'utils/get-ipfs-path'
+import { Roles, useAtlasProvider } from '@kleros/kleros-app'
+import { JSON_UPLOAD_ROLE } from 'utils/atlas-roles'
 import { ZERO_ADDRESS, isVowel } from 'utils/string'
 import { wrapWithToast, errorToast } from 'utils/wrap-with-toast'
 import { parseWagmiError } from 'utils/parse-wagmi-error'
@@ -43,6 +43,7 @@ const getTcrMetaEvidence = async (
   tcrState,
   parentTCRAddress,
   evidenceDisplayInterfaceURI,
+  uploadFile: (file: File, role: Roles) => Promise<string | null>,
 ) => {
   const {
     tcrTitle,
@@ -196,16 +197,16 @@ const getTcrMetaEvidence = async (
     relClearingMetaEvidence,
   ].map((rme) => enc.encode(JSON.stringify(rme)))
 
-  const files = [...metaEvidenceFiles, ...relMetaEvidenceFiles].map((file) => ({
-    data: file,
-    multihash: keccak256(file),
-  }))
+  const files = [...metaEvidenceFiles, ...relMetaEvidenceFiles].map((data) => {
+    const multihash = keccak256(data)
+    return new File([data], `${multihash}.json`, { type: 'application/json' })
+  })
 
-  const ipfsMetaEvidenceObjects = (
-    await Promise.all(
-      files.map((file) => ipfsPublish(file.multihash, file.data)),
-    )
-  ).map((ipfsMetaEvidenceObject) => getIPFSPath(ipfsMetaEvidenceObject))
+  const ipfsMetaEvidenceObjects = await Promise.all(
+    files.map((file) => uploadFile(file, JSON_UPLOAD_ROLE)),
+  )
+  if (ipfsMetaEvidenceObjects.some((p) => !p))
+    throw new Error('Failed to upload meta-evidence to IPFS.')
 
   return {
     registrationMetaEvidencePath: ipfsMetaEvidenceObjects[0],
@@ -241,6 +242,7 @@ const Deploy = ({ setTxState, tcrState, setTcrState }: DeployProps) => {
 
   const { submissionDeposit, metaEvidence, challengePeriodDuration } =
     useTcrView(defaultTCRAddress)
+  const { uploadFile } = useAtlasProvider()
 
   const onDeploy = async () => {
     try {
@@ -261,6 +263,7 @@ const Deploy = ({ setTxState, tcrState, setTcrState }: DeployProps) => {
         tcrState,
         parentTCRAddress,
         evidenceDisplayInterfaceURI,
+        uploadFile,
       )
 
       const relTCRArgs = [

@@ -11,8 +11,8 @@ import EnsureAuth from 'components/ensure-auth'
 import ETHAmount from 'components/eth-amount'
 import EvidenceForm from 'components/evidence-form'
 import useNativeBalance from 'hooks/use-native-balance'
-import ipfsPublish from 'utils/ipfs-publish'
-import { getIPFSPath } from 'utils/get-ipfs-path'
+import { useAtlasProvider } from '@kleros/kleros-app'
+import { uploadEvidence } from 'utils/upload-evidence'
 import ListingCriteriaLink from 'components/listing-criteria-link'
 import { wrapWithToast, errorToast } from 'utils/wrap-with-toast'
 import { parseWagmiError } from 'utils/parse-wagmi-error'
@@ -56,6 +56,7 @@ const ChallengeModal = ({
   const chainId = useChainId()
   const publicClient = usePublicClient()
   const { data: walletClient } = useWalletClient()
+  const { uploadFile } = useAtlasProvider()
   const { balance: nativeBalance } = useNativeBalance()
   const challengeDeposit =
     item.status === CONTRACT_STATUS.REGISTRATION_REQUESTED
@@ -75,17 +76,12 @@ const ChallengeModal = ({
   }) => {
     setIsSubmitting(true)
     try {
-      const evidenceJSON = {
+      const ipfsEvidencePath = await uploadEvidence({
         title: title || 'Challenge Justification',
         description,
-        ...evidenceAttachment,
-      }
-
-      const enc = new TextEncoder()
-      const fileData = enc.encode(JSON.stringify(evidenceJSON))
-      const ipfsEvidencePath = getIPFSPath(
-        await ipfsPublish('evidence.json', fileData),
-      )
+        attachment: evidenceAttachment as File | undefined,
+        uploadFile,
+      })
 
       const { request } = await simulateContract(wagmiConfig, {
         address: tcrAddress,

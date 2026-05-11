@@ -1,14 +1,10 @@
-import React, { useState, useCallback } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 import { Input, Checkbox, Upload, Form } from 'components/ui'
 import Icon from 'components/ui/Icon'
 import { toast } from 'react-toastify'
 import styled from 'styled-components'
 import { withFormik, Field } from 'formik'
 import * as yup from 'yup'
-import ipfsPublish from '../utils/ipfs-publish'
-import { sanitize } from '../utils/string'
-import { parseIpfs } from 'utils/ipfs-parse'
-import { getIPFSPath } from 'utils/get-ipfs-path'
 
 const StyledCheckbox = styled(Checkbox)`
   margin-bottom: 1em;
@@ -29,10 +25,10 @@ const StyledIcon = styled(Icon)`
   font-size: 30px;
 `
 
-const UploadButton = ({ loading }: { loading?: boolean | null }) => (
+const UploadButton = () => (
   <div style={{ textAlign: 'center' }}>
-    <Icon type={loading ? 'loading' : 'plus'} />
-    <div className="ui-upload-text">Upload</div>
+    <Icon type="plus" />
+    <div className="ui-upload-text">Attach</div>
   </div>
 )
 
@@ -41,51 +37,46 @@ interface EvidenceFormProps {
   detailed?: boolean
   handleSubmit: (...args: unknown[]) => void
   setFieldValue: (field: string, value: unknown) => void
-  values: Record<string, string>
+  values: Record<string, any>
 }
 
 const EvidenceForm = ({
   formID,
-  detailed, // Should the evidence form let the user input an evidence title?
-
-  // Formik bag
+  detailed,
   handleSubmit,
   setFieldValue,
   values,
 }: EvidenceFormProps) => {
-  const [includeAttachment, setIncludeAttachment] = useState()
-  const [uploading, setUploading] = useState()
-  const fileUploadStatusChange = useCallback(({ file: { status } }) => {
-    if (status === 'done') toast.success(`File uploaded successfully.`)
-    else if (status === 'error') toast.error(`File upload failed.`)
-    else if (status === 'uploading') setUploading(true)
+  const [includeAttachment, setIncludeAttachment] = useState(false)
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
 
-    if (status === 'error' || status === 'done') setUploading(false)
-  }, [])
-
-  const customRequest = async ({ file, onSuccess, onError }) => {
-    try {
-      const fileTypeExtension = file.name.split('.')[1]
-      const data = await new Response(new Blob([file])).arrayBuffer()
-      const fileURI = getIPFSPath(await ipfsPublish(sanitize(file.name), data))
-
-      setFieldValue('evidenceAttachment', {
-        fileURI,
-        fileTypeExtension,
-        type: file.type,
-      })
-      onSuccess('ok', parseIpfs(fileURI))
-    } catch (err) {
-      console.error(err)
-      onError(err)
-    }
-  }
+  // Defer the actual IPFS upload to submit time. The parent modal's Submit
+  // button is the EnsureAuth/SIWE gate; if we uploaded here the request would
+  // race the sign-in flow and fail before the user is verified.
+  const customRequest = useCallback(
+    ({ file, onSuccess }) => {
+      setFieldValue('evidenceAttachment', file)
+      onSuccess('ok', file)
+    },
+    [setFieldValue],
+  )
 
   const beforeFileUpload = useCallback((file) => {
     const isLt4M = file.size / 1024 / 1024 < 4
     if (!isLt4M) toast.error('File must be smaller than 4MB.')
     return isLt4M
   }, [])
+
+  useEffect(() => {
+    const file = values.evidenceAttachment as File | undefined
+    if (!file) {
+      setPreviewUrl(null)
+      return
+    }
+    const url = URL.createObjectURL(file)
+    setPreviewUrl(url)
+    return () => URL.revokeObjectURL(url)
+  }, [values.evidenceAttachment])
 
   return (
     <Form id={formID} onSubmit={handleSubmit}>
@@ -127,25 +118,17 @@ const EvidenceForm = ({
           showUploadList={false}
           customRequest={customRequest}
           beforeUpload={beforeFileUpload}
-          onChange={fileUploadStatusChange}
         >
-          {values.evidenceAttachment ? (
-            <a
-              href={parseIpfs(values.evidenceAttachment.fileURI)}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              {values.evidenceAttachment.type.includes('image') ? (
-                <StyledImg
-                  src={parseIpfs(values.evidenceAttachment.fileURI)}
-                  alt="avatar"
-                />
+          {values.evidenceAttachment && previewUrl ? (
+            <a href={previewUrl} target="_blank" rel="noopener noreferrer">
+              {(values.evidenceAttachment as File).type.includes('image') ? (
+                <StyledImg src={previewUrl} alt="attachment preview" />
               ) : (
                 <StyledIcon type="file-pdf" />
               )}
             </a>
           ) : (
-            <UploadButton loading={uploading} />
+            <UploadButton />
           )}
         </StyledUpload>
       )}

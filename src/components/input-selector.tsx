@@ -7,12 +7,11 @@ import { Field } from 'formik'
 import { getExtension } from 'mime'
 import { ItemTypes } from '@kleros/gtcr-encoder'
 import CustomInput from './custom-input'
-import ipfsPublish from '../utils/ipfs-publish'
-import { sanitize } from '../utils/string'
-import { IPFSResultObject, getIPFSPath } from '../utils/get-ipfs-path'
+import { Roles, useAtlasProvider } from '@kleros/kleros-app'
 import { parseIpfs } from 'utils/ipfs-parse'
 import AddressInput from './address-input'
 import RichAddressInput from './rich-address-input'
+import EnsureAuth from './ensure-auth'
 
 export const StyledUpload = styled(Upload)`
   & > .ui-upload.ui-upload-select-picture-card {
@@ -56,8 +55,9 @@ interface InputSelectorProps extends React.HTMLAttributes<HTMLElement> {
 
 const InputSelector: React.FC<InputSelectorProps> = (p) => {
   const [uploading, setUploading] = useState<boolean>(false)
+  const { uploadFile } = useAtlasProvider()
   const customRequest = useCallback(
-    (fieldName) =>
+    (fieldName: string, role: Roles) =>
       async ({
         file,
         onSuccess,
@@ -68,10 +68,8 @@ const InputSelector: React.FC<InputSelectorProps> = (p) => {
         onError: (err: unknown) => void
       }) => {
         try {
-          const data = await new Response(new Blob([file])).arrayBuffer()
-          const fileURI = getIPFSPath(
-            (await ipfsPublish(sanitize(file.name), data)) as IPFSResultObject,
-          )
+          const fileURI = await uploadFile(file, role)
+          if (!fileURI) throw new Error('Failed to upload file to IPFS.')
 
           p.setFieldValue(fieldName, fileURI)
           onSuccess('ok', parseIpfs(fileURI))
@@ -80,7 +78,7 @@ const InputSelector: React.FC<InputSelectorProps> = (p) => {
           onError(err)
         }
       },
-    [p],
+    [p, uploadFile],
   )
 
   const fileUploadStatusChange = useCallback(
@@ -176,55 +174,61 @@ const InputSelector: React.FC<InputSelectorProps> = (p) => {
     case ItemTypes.IMAGE:
       return (
         <>
-          {label}:{/* @ts-ignore */}
-          <StyledUpload
-            name={name}
-            listType="picture-card"
-            className="avatar-uploader"
-            showUploadList={false}
-            customRequest={customRequest(name)}
-            beforeUpload={beforeImageUpload}
-            onChange={fileUploadStatusChange}
-          >
-            {values[name] ? (
-              <a
-                href={parseIpfs(values[name])}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <StyledImg src={parseIpfs(values[name])} alt="preview" />
-              </a>
-            ) : (
-              <UploadButton loading={uploading} />
-            )}
-          </StyledUpload>
+          {label}:
+          <EnsureAuth>
+            {/* @ts-ignore */}
+            <StyledUpload
+              name={name}
+              listType="picture-card"
+              className="avatar-uploader"
+              showUploadList={false}
+              customRequest={customRequest(name, Roles.CurateItemImage)}
+              beforeUpload={beforeImageUpload}
+              onChange={fileUploadStatusChange}
+            >
+              {values[name] ? (
+                <a
+                  href={parseIpfs(values[name])}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <StyledImg src={parseIpfs(values[name])} alt="preview" />
+                </a>
+              ) : (
+                <UploadButton loading={uploading} />
+              )}
+            </StyledUpload>
+          </EnsureAuth>
         </>
       )
     case ItemTypes.FILE:
       return (
         <>
-          {label}:{/* @ts-ignore */}
-          <StyledUpload
-            name={name}
-            listType="picture-card"
-            className="avatar-uploader"
-            showUploadList={false}
-            customRequest={customRequest(name)}
-            beforeUpload={beforeFileUpload}
-            onChange={fileUploadStatusChange}
-          >
-            {values[name] ? (
-              <a
-                href={parseIpfs(values[name])}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <Icon type="file" style={{ fontSize: '30px' }} />
-              </a>
-            ) : (
-              <UploadButton loading={uploading} />
-            )}
-          </StyledUpload>
+          {label}:
+          <EnsureAuth>
+            {/* @ts-ignore */}
+            <StyledUpload
+              name={name}
+              listType="picture-card"
+              className="avatar-uploader"
+              showUploadList={false}
+              customRequest={customRequest(name, Roles.CurateItemFile)}
+              beforeUpload={beforeFileUpload}
+              onChange={fileUploadStatusChange}
+            >
+              {values[name] ? (
+                <a
+                  href={parseIpfs(values[name])}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <Icon type="file" style={{ fontSize: '30px' }} />
+                </a>
+              ) : (
+                <UploadButton loading={uploading} />
+              )}
+            </StyledUpload>
+          </EnsureAuth>
         </>
       )
     default:

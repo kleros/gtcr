@@ -25,12 +25,13 @@ import { useAccount, usePublicClient, useWalletClient, useChainId } from 'wagmi'
 import { useQuery } from '@tanstack/react-query'
 import { simulateContract } from '@wagmi/core'
 import { getAddress, keccak256, encodePacked } from 'viem'
-import ipfsPublish from 'utils/ipfs-publish'
+import { useAtlasProvider } from '@kleros/kleros-app'
+import { JSON_UPLOAD_ROLE } from 'utils/atlas-roles'
 import useNativeCurrency from 'hooks/native-currency'
 import useNativeBalance from 'hooks/use-native-balance'
 import useTcrMetaEvidence from 'hooks/use-tcr-meta-evidence'
 import ListingCriteriaLink from 'components/listing-criteria-link'
-import { getIPFSPath } from 'utils/get-ipfs-path'
+import EnsureAuth from 'components/ensure-auth'
 import { wrapWithToast, errorToast } from 'utils/wrap-with-toast'
 import { parseWagmiError } from 'utils/parse-wagmi-error'
 import { wagmiConfig } from 'config/wagmi'
@@ -66,6 +67,7 @@ const SubmitConnectModal = (props: SubmitConnectModalProps) => {
   const chainId = useChainId()
   const publicClient = usePublicClient()
   const { data: walletClient } = useWalletClient()
+  const { uploadFile } = useAtlasProvider()
   const urlChainId = useUrlChainId()
   const networkId = urlChainId ?? undefined
   const [error, setError] = useState<string>()
@@ -162,9 +164,11 @@ const SubmitConnectModal = (props: SubmitConnectModalProps) => {
     if (!relTCRMetaEvidence) return
     setIsSubmitting(true)
     try {
-      const file = new TextEncoder().encode(JSON.stringify(match))
-      const ipfsFileObj = await ipfsPublish('match-file.json', file)
-      const fileURI = `/ipfs/${ipfsFileObj[1].hash}${ipfsFileObj[0].path}`
+      const matchFile = new File([JSON.stringify(match)], 'match-file.json', {
+        type: 'application/json',
+      })
+      const fileURI = await uploadFile(matchFile, JSON_UPLOAD_ROLE)
+      if (!fileURI) throw new Error('Failed to upload match file to IPFS.')
       const { columns } = relTCRMetaEvidence.metadata
 
       const values = {
@@ -172,11 +176,14 @@ const SubmitConnectModal = (props: SubmitConnectModalProps) => {
         'Match File URI': fileURI,
       }
 
-      const enc = new TextEncoder()
-      const fileData = enc.encode(JSON.stringify({ columns, values }))
-      const ipfsEvidencePath = getIPFSPath(
-        await ipfsPublish('item.json', fileData),
+      const itemFile = new File(
+        [JSON.stringify({ columns, values })],
+        'item.json',
+        { type: 'application/json' },
       )
+      const ipfsEvidencePath = await uploadFile(itemFile, JSON_UPLOAD_ROLE)
+      if (!ipfsEvidencePath)
+        throw new Error('Failed to upload item metadata to IPFS.')
 
       const { request } = await simulateContract(wagmiConfig, {
         address: relTCRAddress,
@@ -229,6 +236,7 @@ const SubmitConnectModal = (props: SubmitConnectModalProps) => {
     relTCRAddress,
     relTCRMetaEvidence,
     relTCRSubmissionDeposit,
+    uploadFile,
     walletClient,
   ])
 
@@ -281,15 +289,17 @@ const SubmitConnectModal = (props: SubmitConnectModalProps) => {
           Back
         </Button>,
         <div key="submit">
-          <Button
-            type="primary"
-            htmlType="submit"
-            onClick={handleSubmit}
-            disabled={submitDisabled || !!insufficientBalance}
-            loading={isSubmitting}
-          >
-            Submit
-          </Button>
+          <EnsureAuth>
+            <Button
+              type="primary"
+              htmlType="submit"
+              onClick={handleSubmit}
+              disabled={submitDisabled || !!insufficientBalance}
+              loading={isSubmitting}
+            >
+              Submit
+            </Button>
+          </EnsureAuth>
           {insufficientBalance && (
             <InsufficientBalanceText>
               Insufficient balance

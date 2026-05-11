@@ -10,8 +10,8 @@ import { LightTCRViewContext } from 'contexts/light-tcr-view-context'
 import EnsureAuth from 'components/ensure-auth'
 import ETHAmount from 'components/eth-amount'
 import EvidenceForm from 'components/evidence-form'
-import ipfsPublish from 'utils/ipfs-publish'
-import { getIPFSPath } from 'utils/get-ipfs-path'
+import { useAtlasProvider } from '@kleros/kleros-app'
+import { uploadEvidence } from 'utils/upload-evidence'
 import ListingCriteriaLink from 'components/listing-criteria-link'
 import useNativeCurrency from 'hooks/native-currency'
 import useNativeBalance from 'hooks/use-native-balance'
@@ -45,6 +45,7 @@ const RemoveModal = ({
     useContext(LightTCRViewContext)
   const nativeCurrency = useNativeCurrency()
   const { balance: nativeBalance } = useNativeBalance()
+  const { uploadFile } = useAtlasProvider()
   const insufficientBalance =
     nativeBalance !== undefined &&
     removalDeposit &&
@@ -61,17 +62,12 @@ const RemoveModal = ({
       try {
         let ipfsEvidencePath = ''
         if (metadata && requireRemovalEvidence) {
-          const evidenceJSON = {
+          ipfsEvidencePath = await uploadEvidence({
             title: title || 'Removal Justification',
             description,
-            ...evidenceAttachment,
-          }
-
-          const enc = new TextEncoder()
-          const fileData = enc.encode(JSON.stringify(evidenceJSON))
-          ipfsEvidencePath = getIPFSPath(
-            await ipfsPublish('evidence.json', fileData),
-          )
+            attachment: evidenceAttachment as File | undefined,
+            uploadFile,
+          })
         }
 
         const { request } = await simulateContract(wagmiConfig, {
@@ -124,6 +120,7 @@ const RemoveModal = ({
       requireRemovalEvidence,
       rest,
       tcrAddress,
+      uploadFile,
       walletClient,
     ],
   )

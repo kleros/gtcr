@@ -1835,6 +1835,23 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@kleros/kleros-app@npm:^2.2.2":
+  version: 2.2.2
+  resolution: "@kleros/kleros-app@npm:2.2.2"
+  dependencies:
+    jose: "npm:^5.9.6"
+  peerDependencies:
+    "@tanstack/react-query": ^5.69.0
+    graphql: ^16.9.0
+    graphql-request: ^7.1.2
+    react: ^18.3.1
+    react-dom: ^18.3.1
+    viem: ^2.24.1
+    wagmi: ^2.14.15
+  checksum: 10c0/96712b793b761127354ed967d0b88b3d14f880c4d00019af8d3d234d66ae9714ee51a505cd619724b348a4e66ef30e0faffcb062e83a8ebd8115ec47f591fe1b
+  languageName: node
+  linkType: hard
+
 "@kleros/tcr@npm:^2.0.0":
   version: 2.0.0
   resolution: "@kleros/tcr@npm:2.0.0"
@@ -9874,6 +9891,7 @@ __metadata:
     "@fortawesome/react-fontawesome": "npm:^0.2.6"
     "@kleros/erc-792": "npm:^4.0.1"
     "@kleros/gtcr-encoder": "npm:^1.6.1"
+    "@kleros/kleros-app": "npm:^2.2.2"
     "@kleros/tcr": "npm:^2.0.0"
     "@reown/appkit": "npm:^1.8.18"
     "@reown/appkit-adapter-wagmi": "npm:^1.8.18"
@@ -11118,6 +11136,13 @@ __metadata:
   bin:
     jiti: lib/jiti-cli.mjs
   checksum: 10c0/79b2e96a8e623f66c1b703b98ec1b8be4500e1d217e09b09e343471bbb9c105381b83edbb979d01cef18318cc45ce6e153571b6c83122170eefa531c64b6789b
+  languageName: node
+  linkType: hard
+
+"jose@npm:^5.9.6":
+  version: 5.10.0
+  resolution: "jose@npm:5.10.0"
+  checksum: 10c0/e20d9fc58d7e402f2e5f04e824b8897d5579aae60e64cb88ebdea1395311c24537bf4892f7de413fab1acf11e922797fb1b42269bc8fc65089a3749265ccb7b0
   languageName: node
   linkType: hard
 

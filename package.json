@@ -23,6 +23,7 @@
     "@fortawesome/react-fontawesome": "^0.2.6",
     "@kleros/erc-792": "^4.0.1",
     "@kleros/gtcr-encoder": "^1.6.1",
+    "@kleros/kleros-app": "^2.2.2",
     "@kleros/tcr": "^2.0.0",
     "@reown/appkit": "^1.8.18",
     "@reown/appkit-adapter-wagmi": "^1.8.18",
