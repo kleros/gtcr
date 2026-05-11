@@ -7,8 +7,7 @@ import { useAccount, usePublicClient, useWalletClient, useChainId } from 'wagmi'
 import { simulateContract } from '@wagmi/core'
 import styled from 'styled-components'
 import _GTCRFactory from 'assets/abis/PermanentGTCRFactory.json'
-import ipfsPublish from 'utils/ipfs-publish'
-import { getIPFSPath } from 'utils/get-ipfs-path'
+import { Roles, useAtlasProvider } from '@kleros/kleros-app'
 import { isVowel } from 'utils/string'
 import { wrapWithToast, errorToast } from 'utils/wrap-with-toast'
 import { parseWagmiError } from 'utils/parse-wagmi-error'
@@ -57,7 +56,11 @@ export const StyledSpan = styled.span`
   justify-content: flex-end;
 `
 
-const getTcrMetaEvidence = async (tcrState, evidenceDisplayInterfaceURI) => {
+const getTcrMetaEvidence = async (
+  tcrState,
+  evidenceDisplayInterfaceURI,
+  uploadFile: (file: File, role: Roles) => Promise<string | null>,
+) => {
   const {
     tcrTitle,
     tcrDescription,
@@ -116,14 +119,17 @@ const getTcrMetaEvidence = async (tcrState, evidenceDisplayInterfaceURI) => {
     ...commonMetaEvidenceProps,
   }
 
-  const enc = new TextEncoder()
-
-  const ipfsMetaEvidencePath = getIPFSPath(
-    await ipfsPublish(
-      'meta-evidence.json',
-      enc.encode(JSON.stringify(metaEvidenceData)),
-    ),
+  const metaEvidenceFile = new File(
+    [JSON.stringify(metaEvidenceData)],
+    'meta-evidence.json',
+    { type: 'application/json' },
   )
+  const ipfsMetaEvidencePath = await uploadFile(
+    metaEvidenceFile,
+    Roles.MetaEvidence,
+  )
+  if (!ipfsMetaEvidencePath)
+    throw new Error('Failed to upload meta-evidence to IPFS.')
 
   return {
     ipfsMetaEvidencePath,
@@ -154,12 +160,14 @@ const Deploy = ({ setTxState, tcrState, setTcrState }: DeployProps) => {
   const evidenceDisplayInterfaceURI =
     defaultEvidenceDisplayUriPermanent[chainId]
   const { metaEvidence } = useTcrView(defaultTCRAddress)
+  const { uploadFile } = useAtlasProvider()
 
   const onDeploy = async () => {
     try {
       const { ipfsMetaEvidencePath } = await getTcrMetaEvidence(
         tcrState,
         evidenceDisplayInterfaceURI,
+        uploadFile,
       )
 
       const { request } = await simulateContract(wagmiConfig, {

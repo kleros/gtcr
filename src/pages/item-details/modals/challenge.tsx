@@ -10,9 +10,8 @@ import ETHAmount from 'components/eth-amount'
 import EvidenceForm from 'components/evidence-form'
 import useNativeBalance from 'hooks/use-native-balance'
 import { CONTRACT_STATUS, STATUS_CODE } from 'utils/item-status'
-import ipfsPublish from 'utils/ipfs-publish'
+import { Roles, useAtlasProvider } from '@kleros/kleros-app'
 import ListingCriteriaLink from 'components/listing-criteria-link'
-import { getIPFSPath } from 'utils/get-ipfs-path'
 import { wrapWithToast, errorToast } from 'utils/wrap-with-toast'
 import { parseWagmiError } from 'utils/parse-wagmi-error'
 import { wagmiConfig } from 'config/wagmi'
@@ -43,6 +42,7 @@ const ChallengeModal = ({
   const chainId = useChainId()
   const publicClient = usePublicClient()
   const { data: walletClient } = useWalletClient()
+  const { uploadFile } = useAtlasProvider()
   const { balance: nativeBalance } = useNativeBalance()
   const challengeDeposit =
     item.status === CONTRACT_STATUS.REGISTRATION_REQUESTED
@@ -68,11 +68,14 @@ const ChallengeModal = ({
         ...evidenceAttachment,
       }
 
-      const enc = new TextEncoder()
-      const fileData = enc.encode(JSON.stringify(evidenceJSON))
-      const ipfsEvidencePath = getIPFSPath(
-        await ipfsPublish('evidence.json', fileData),
+      const evidenceFile = new File(
+        [JSON.stringify(evidenceJSON)],
+        'evidence.json',
+        { type: 'application/json' },
       )
+      const ipfsEvidencePath = await uploadFile(evidenceFile, Roles.Evidence)
+      if (!ipfsEvidencePath)
+        throw new Error('Failed to upload evidence to IPFS.')
 
       const { request } = await simulateContract(wagmiConfig, {
         address: tcrAddress,

@@ -10,8 +10,7 @@ import { LightTCRViewContext } from 'contexts/light-tcr-view-context'
 import EnsureAuth from 'components/ensure-auth'
 import ETHAmount from 'components/eth-amount'
 import EvidenceForm from 'components/evidence-form'
-import ipfsPublish from 'utils/ipfs-publish'
-import { getIPFSPath } from 'utils/get-ipfs-path'
+import { Roles, useAtlasProvider } from '@kleros/kleros-app'
 import ListingCriteriaLink from 'components/listing-criteria-link'
 import useNativeCurrency from 'hooks/native-currency'
 import useNativeBalance from 'hooks/use-native-balance'
@@ -45,6 +44,7 @@ const RemoveModal = ({
     useContext(LightTCRViewContext)
   const nativeCurrency = useNativeCurrency()
   const { balance: nativeBalance } = useNativeBalance()
+  const { uploadFile } = useAtlasProvider()
   const insufficientBalance =
     nativeBalance !== undefined &&
     removalDeposit &&
@@ -67,11 +67,14 @@ const RemoveModal = ({
             ...evidenceAttachment,
           }
 
-          const enc = new TextEncoder()
-          const fileData = enc.encode(JSON.stringify(evidenceJSON))
-          ipfsEvidencePath = getIPFSPath(
-            await ipfsPublish('evidence.json', fileData),
+          const evidenceFile = new File(
+            [JSON.stringify(evidenceJSON)],
+            'evidence.json',
+            { type: 'application/json' },
           )
+          const uploaded = await uploadFile(evidenceFile, Roles.Evidence)
+          if (!uploaded) throw new Error('Failed to upload evidence to IPFS.')
+          ipfsEvidencePath = uploaded
         }
 
         const { request } = await simulateContract(wagmiConfig, {
@@ -124,6 +127,7 @@ const RemoveModal = ({
       requireRemovalEvidence,
       rest,
       tcrAddress,
+      uploadFile,
       walletClient,
     ],
   )

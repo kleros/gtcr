@@ -22,8 +22,7 @@ import { ethers, BigNumber } from 'ethers'
 const { getAddress, parseEther } = ethers.utils
 import CustomInput from 'components/custom-input'
 import { ItemTypes } from '@kleros/gtcr-encoder'
-import ipfsPublish from 'utils/ipfs-publish'
-import { sanitize } from 'utils/string'
+import { Roles, useAtlasProvider } from '@kleros/kleros-app'
 import useArbitrationCost from 'hooks/arbitration-cost'
 import KlerosParams from './kleros-params'
 import BaseDepositInput from 'components/base-deposit-input'
@@ -32,7 +31,6 @@ import useWindowDimensions from 'hooks/window-dimensions'
 import useNativeCurrency from 'hooks/native-currency'
 import { klerosAddresses } from 'config/tcr-addresses'
 import { parseIpfs } from 'utils/ipfs-parse'
-import { getIPFSPath } from 'utils/get-ipfs-path'
 import {
   CheapestAndSafestContainer,
   StyledFontAwesomeIcon,
@@ -73,6 +71,7 @@ const RelTCRParams = ({
 }: RelTCRParamsProps) => {
   const { values, setTcrState, nextStep } = rest
   const { width } = useWindowDimensions()
+  const { uploadFile } = useAtlasProvider()
   const [uploading, setUploading] = useState<any>()
   const [advancedOptions, setAdvancedOptions] = useState<any>()
   const chainId = useUrlChainId()
@@ -116,22 +115,20 @@ const RelTCRParams = ({
   }, [])
 
   const customRequest = useCallback(
-    (fieldName) =>
+    (fieldName, role: Roles) =>
       async ({ file, onSuccess, onError }) => {
         try {
-          const data = await new Response(new Blob([file])).arrayBuffer()
-          const fileURI = getIPFSPath(
-            await ipfsPublish(sanitize(file.name), data),
-          )
+          const fileURI = await uploadFile(file, role)
+          if (!fileURI) throw new Error('Failed to upload file to IPFS.')
 
           setFieldValue(fieldName, fileURI)
           onSuccess('ok', parseIpfs(fileURI))
-        } catch {
+        } catch (err) {
           console.error(err)
           onError(err)
         }
       },
-    [setFieldValue],
+    [setFieldValue, uploadFile],
   )
 
   const beforeFileUpload = useCallback((file) => {
@@ -225,7 +222,7 @@ const RelTCRParams = ({
             listType="picture-card"
             className="avatar-uploader"
             showUploadList={false}
-            customRequest={customRequest('relTcrPrimaryDocument')}
+            customRequest={customRequest('relTcrPrimaryDocument', Roles.Policy)}
             beforeUpload={beforeFileUpload}
             onChange={fileUploadStatusChange}
           >

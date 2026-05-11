@@ -24,8 +24,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { useEthersProvider } from 'hooks/ethers-adapters'
 import CustomInput from 'components/custom-input'
 import { ItemTypes } from '@kleros/gtcr-encoder'
-import ipfsPublish from 'utils/ipfs-publish'
-import { sanitize } from 'utils/string'
+import { Roles, useAtlasProvider } from '@kleros/kleros-app'
 import useArbitrationCost from 'hooks/arbitration-cost'
 import KlerosParams from './kleros-params'
 import ETHAmount from 'components/eth-amount'
@@ -35,7 +34,6 @@ import { useNavigate } from 'react-router-dom'
 import useUrlChainId from 'hooks/use-url-chain-id'
 import { klerosAddresses } from 'config/tcr-addresses'
 import { parseIpfs } from 'utils/ipfs-parse'
-import { getIPFSPath } from 'utils/get-ipfs-path'
 import { UploadButton, StyledUpload } from 'components/input-selector'
 import PGTCRDepositInput from 'components/pgtcr-deposit-input'
 import useTokenSymbol from 'hooks/token-symbol'
@@ -157,6 +155,7 @@ const TCRParams = ({
   const { values, setTcrState } = rest
   const { width } = useWindowDimensions()
   const nativeCurrency = useNativeCurrency()
+  const { uploadFile } = useAtlasProvider()
   const [uploading, setUploading] = useState({})
   const [advancedOptions, setAdvancedOptions] = useState<any>()
   const [depositVal, setDepositVal] = useState(0.05)
@@ -244,22 +243,20 @@ const TCRParams = ({
   }, [])
 
   const customRequest = useCallback(
-    (fieldName) =>
+    (fieldName, role: Roles) =>
       async ({ file, onSuccess, onError }) => {
         try {
-          const data = await new Response(new Blob([file])).arrayBuffer()
-          const fileURI = getIPFSPath(
-            await ipfsPublish(sanitize(file.name), data),
-          )
+          const fileURI = await uploadFile(file, role)
+          if (!fileURI) throw new Error('Failed to upload file to IPFS.')
 
           setFieldValue(fieldName, fileURI)
           onSuccess('ok', parseIpfs(fileURI))
-        } catch {
+        } catch (err) {
           console.error(err)
           onError(err)
         }
       },
-    [setFieldValue],
+    [setFieldValue, uploadFile],
   )
 
   const onChangeDepositVal = useCallback(
@@ -319,7 +316,7 @@ const TCRParams = ({
                 listType="picture-card"
                 className="avatar-uploader"
                 showUploadList={false}
-                customRequest={customRequest('tcrLogo')}
+                customRequest={customRequest('tcrLogo', Roles.Logo)}
                 beforeUpload={beforeImageUpload}
                 onChange={fileUploadStatusChange}
               >
@@ -354,7 +351,10 @@ const TCRParams = ({
                 listType="picture-card"
                 className="avatar-uploader"
                 showUploadList={false}
-                customRequest={customRequest('tcrPrimaryDocument')}
+                customRequest={customRequest(
+                  'tcrPrimaryDocument',
+                  Roles.Policy,
+                )}
                 beforeUpload={beforeFileUpload}
                 onChange={fileUploadStatusChange}
               >

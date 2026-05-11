@@ -9,8 +9,7 @@ import { useAccount, usePublicClient, useWalletClient, useChainId } from 'wagmi'
 import { simulateContract } from '@wagmi/core'
 import { erc20Abi, getAddress } from 'viem'
 import EvidenceForm from 'components/evidence-form'
-import ipfsPublish from 'utils/ipfs-publish'
-import { getIPFSPath } from 'utils/get-ipfs-path'
+import { Roles, useAtlasProvider } from '@kleros/kleros-app'
 import ListingCriteriaLink from 'components/listing-criteria-link'
 import useNativeCurrency from 'hooks/native-currency'
 import useTokenSymbol from 'hooks/token-symbol'
@@ -55,6 +54,7 @@ const ChallengeModal = ({
   const chainId = useChainId()
   const publicClient = usePublicClient()
   const { data: walletClient } = useWalletClient()
+  const { uploadFile } = useAtlasProvider()
   const nativeCurrency = useNativeCurrency()
 
   const [balance, setBalance] = useState(0n)
@@ -160,11 +160,14 @@ const ChallengeModal = ({
         ...evidenceAttachment,
       }
 
-      const enc = new TextEncoder()
-      const fileData = enc.encode(JSON.stringify(evidenceJSON))
-      const ipfsEvidencePath = getIPFSPath(
-        await ipfsPublish('evidence.json', fileData),
+      const evidenceFile = new File(
+        [JSON.stringify(evidenceJSON)],
+        'evidence.json',
+        { type: 'application/json' },
       )
+      const ipfsEvidencePath = await uploadFile(evidenceFile, Roles.Evidence)
+      if (!ipfsEvidencePath)
+        throw new Error('Failed to upload evidence to IPFS.')
 
       const { request } = await simulateContract(wagmiConfig, {
         address: registry.id,

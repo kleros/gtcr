@@ -5,10 +5,8 @@ import { toast } from 'react-toastify'
 import styled from 'styled-components'
 import { withFormik, Field } from 'formik'
 import * as yup from 'yup'
-import ipfsPublish from '../utils/ipfs-publish'
-import { sanitize } from '../utils/string'
+import { Roles, useAtlasProvider } from '@kleros/kleros-app'
 import { parseIpfs } from 'utils/ipfs-parse'
-import { getIPFSPath } from 'utils/get-ipfs-path'
 
 const StyledCheckbox = styled(Checkbox)`
   margin-bottom: 1em;
@@ -55,6 +53,7 @@ const EvidenceForm = ({
 }: EvidenceFormProps) => {
   const [includeAttachment, setIncludeAttachment] = useState()
   const [uploading, setUploading] = useState()
+  const { uploadFile } = useAtlasProvider()
   const fileUploadStatusChange = useCallback(({ file: { status } }) => {
     if (status === 'done') toast.success(`File uploaded successfully.`)
     else if (status === 'error') toast.error(`File upload failed.`)
@@ -66,8 +65,8 @@ const EvidenceForm = ({
   const customRequest = async ({ file, onSuccess, onError }) => {
     try {
       const fileTypeExtension = file.name.split('.')[1]
-      const data = await new Response(new Blob([file])).arrayBuffer()
-      const fileURI = getIPFSPath(await ipfsPublish(sanitize(file.name), data))
+      const fileURI = await uploadFile(file, Roles.Evidence)
+      if (!fileURI) throw new Error('Failed to upload attachment to IPFS.')
 
       setFieldValue('evidenceAttachment', {
         fileURI,

@@ -23,8 +23,7 @@ import ETHAmount from 'components/eth-amount'
 import useFactory from 'hooks/factory'
 import { addPeriod, capitalizeFirstLetter, getArticleFor } from 'utils/string'
 import ListingCriteriaLink from 'components/listing-criteria-link'
-import { IPFSResultObject, getIPFSPath } from 'utils/get-ipfs-path'
-import ipfsPublish from 'utils/ipfs-publish'
+import { Roles, useAtlasProvider } from '@kleros/kleros-app'
 import useNativeCurrency from 'hooks/native-currency'
 import useNativeBalance from 'hooks/use-native-balance'
 import { wrapWithToast, errorToast } from 'utils/wrap-with-toast'
@@ -221,6 +220,7 @@ const SubmitModal: React.FC<{
   const chainId = useChainId()
   const publicClient = usePublicClient()
   const { data: walletClient } = useWalletClient()
+  const { uploadFile } = useAtlasProvider()
   const { balance: nativeBalance } = useNativeBalance()
   const insufficientBalance =
     nativeBalance !== undefined &&
@@ -246,11 +246,14 @@ const SubmitModal: React.FC<{
     ) => {
       setIsSubmitting(true)
       try {
-        const enc = new TextEncoder()
-        const fileData = enc.encode(JSON.stringify({ columns, values }))
-        const ipfsEvidencePath = getIPFSPath(
-          (await ipfsPublish('item.json', fileData)) as IPFSResultObject,
+        const itemFile = new File(
+          [JSON.stringify({ columns, values })],
+          'item.json',
+          { type: 'application/json' },
         )
+        const ipfsEvidencePath = await uploadFile(itemFile, Roles.Generic)
+        if (!ipfsEvidencePath)
+          throw new Error('Failed to upload item metadata to IPFS.')
 
         const { request } = await simulateContract(wagmiConfig, {
           address: tcrAddress as `0x${string}`,
@@ -304,6 +307,7 @@ const SubmitModal: React.FC<{
       publicClient,
       submissionDeposit,
       tcrAddress,
+      uploadFile,
       walletClient,
     ],
   )

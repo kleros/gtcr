@@ -22,13 +22,12 @@ import { useAccount, usePublicClient, useWalletClient, useChainId } from 'wagmi'
 import { useQuery } from '@tanstack/react-query'
 import { simulateContract } from '@wagmi/core'
 import { keccak256, encodePacked, getAddress } from 'viem'
-import ipfsPublish from 'utils/ipfs-publish'
+import { Roles, useAtlasProvider } from '@kleros/kleros-app'
 import { gtcrEncode } from '@kleros/gtcr-encoder'
 import useNativeCurrency from 'hooks/native-currency'
 import useNativeBalance from 'hooks/use-native-balance'
 import useTcrMetaEvidence from 'hooks/use-tcr-meta-evidence'
 import ListingCriteriaLink from 'components/listing-criteria-link'
-import { getIPFSPath } from 'utils/get-ipfs-path'
 import { wrapWithToast, errorToast } from 'utils/wrap-with-toast'
 import { parseWagmiError } from 'utils/parse-wagmi-error'
 import { wagmiConfig } from 'config/wagmi'
@@ -59,6 +58,7 @@ const SubmitConnectModal = (props: SubmitConnectModalProps) => {
   const chainId = useChainId()
   const publicClient = usePublicClient()
   const { data: walletClient } = useWalletClient()
+  const { uploadFile } = useAtlasProvider()
   const urlChainId = useUrlChainId()
   const networkId = urlChainId ?? undefined
   const [error, setError] = useState<string>()
@@ -152,8 +152,15 @@ const SubmitConnectModal = (props: SubmitConnectModalProps) => {
   const handleSubmit = useCallback(async () => {
     if (!relTCRMetaEvidence) return
     setIsSubmitting(true)
-    const file = new TextEncoder().encode(JSON.stringify(match))
-    const fileURI = getIPFSPath(await ipfsPublish('match-file.json', file))
+    const matchFile = new File([JSON.stringify(match)], 'match-file.json', {
+      type: 'application/json',
+    })
+    const fileURI = await uploadFile(matchFile, Roles.Generic)
+    if (!fileURI) {
+      setIsSubmitting(false)
+      errorToast('Failed to upload match file to IPFS.')
+      return
+    }
     const { columns } = relTCRMetaEvidence.metadata
 
     const values = {
@@ -218,6 +225,7 @@ const SubmitConnectModal = (props: SubmitConnectModalProps) => {
     relTCRAddress,
     relTCRMetaEvidence,
     relTCRSubmissionDeposit,
+    uploadFile,
     walletClient,
   ])
 

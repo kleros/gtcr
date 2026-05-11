@@ -11,9 +11,8 @@ import ETHAmount from 'components/eth-amount'
 import EvidenceForm from 'components/evidence-form'
 import useNativeCurrency from 'hooks/native-currency'
 import useNativeBalance from 'hooks/use-native-balance'
-import ipfsPublish from 'utils/ipfs-publish'
+import { Roles, useAtlasProvider } from '@kleros/kleros-app'
 import ListingCriteriaLink from 'components/listing-criteria-link'
-import { getIPFSPath } from 'utils/get-ipfs-path'
 import { wrapWithToast, errorToast } from 'utils/wrap-with-toast'
 import { parseWagmiError } from 'utils/parse-wagmi-error'
 import { wagmiConfig } from 'config/wagmi'
@@ -45,6 +44,7 @@ const RemoveModal = ({
     useContext(TCRViewContext)
   const nativeCurrency = useNativeCurrency()
   const { balance: nativeBalance } = useNativeBalance()
+  const { uploadFile } = useAtlasProvider()
   const insufficientBalance =
     nativeBalance !== undefined &&
     removalDeposit &&
@@ -67,11 +67,14 @@ const RemoveModal = ({
             ...evidenceAttachment,
           }
 
-          const enc = new TextEncoder()
-          const fileData = enc.encode(JSON.stringify(evidenceJSON))
-          ipfsEvidencePath = getIPFSPath(
-            await ipfsPublish('evidence.json', fileData),
+          const evidenceFile = new File(
+            [JSON.stringify(evidenceJSON)],
+            'evidence.json',
+            { type: 'application/json' },
           )
+          const uploaded = await uploadFile(evidenceFile, Roles.Evidence)
+          if (!uploaded) throw new Error('Failed to upload evidence to IPFS.')
+          ipfsEvidencePath = uploaded
         }
 
         const { request } = await simulateContract(wagmiConfig, {
@@ -124,6 +127,7 @@ const RemoveModal = ({
       requireRemovalEvidence,
       rest,
       tcrAddress,
+      uploadFile,
       walletClient,
     ],
   )
