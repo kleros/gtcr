@@ -25,7 +25,8 @@ import { useAccount, usePublicClient, useWalletClient, useChainId } from 'wagmi'
 import { useQuery } from '@tanstack/react-query'
 import { simulateContract } from '@wagmi/core'
 import { getAddress, keccak256, encodePacked } from 'viem'
-import { Roles, useAtlasProvider } from '@kleros/kleros-app'
+import { useAtlasProvider } from '@kleros/kleros-app'
+import { JSON_UPLOAD_ROLE } from 'utils/atlas-roles'
 import useNativeCurrency from 'hooks/native-currency'
 import useNativeBalance from 'hooks/use-native-balance'
 import useTcrMetaEvidence from 'hooks/use-tcr-meta-evidence'
@@ -165,7 +166,7 @@ const SubmitConnectModal = (props: SubmitConnectModalProps) => {
       const matchFile = new File([JSON.stringify(match)], 'match-file.json', {
         type: 'application/json',
       })
-      const fileURI = await uploadFile(matchFile, Roles.CurateItemFile)
+      const fileURI = await uploadFile(matchFile, JSON_UPLOAD_ROLE)
       if (!fileURI) throw new Error('Failed to upload match file to IPFS.')
       const { columns } = relTCRMetaEvidence.metadata
 
@@ -179,7 +180,7 @@ const SubmitConnectModal = (props: SubmitConnectModalProps) => {
         'item.json',
         { type: 'application/json' },
       )
-      const ipfsEvidencePath = await uploadFile(itemFile, Roles.CurateItemFile)
+      const ipfsEvidencePath = await uploadFile(itemFile, JSON_UPLOAD_ROLE)
       if (!ipfsEvidencePath)
         throw new Error('Failed to upload item metadata to IPFS.')
 

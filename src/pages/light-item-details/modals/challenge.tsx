@@ -11,7 +11,8 @@ import EnsureAuth from 'components/ensure-auth'
 import ETHAmount from 'components/eth-amount'
 import EvidenceForm from 'components/evidence-form'
 import useNativeBalance from 'hooks/use-native-balance'
-import { Roles, useAtlasProvider } from '@kleros/kleros-app'
+import { useAtlasProvider } from '@kleros/kleros-app'
+import { JSON_UPLOAD_ROLE } from 'utils/atlas-roles'
 import ListingCriteriaLink from 'components/listing-criteria-link'
 import { wrapWithToast, errorToast } from 'utils/wrap-with-toast'
 import { parseWagmiError } from 'utils/parse-wagmi-error'
@@ -86,7 +87,7 @@ const ChallengeModal = ({
         'evidence.json',
         { type: 'application/json' },
       )
-      const ipfsEvidencePath = await uploadFile(evidenceFile, Roles.CurateItemFile)
+      const ipfsEvidencePath = await uploadFile(evidenceFile, JSON_UPLOAD_ROLE)
       if (!ipfsEvidencePath)
         throw new Error('Failed to upload evidence to IPFS.')
 

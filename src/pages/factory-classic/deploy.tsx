@@ -13,6 +13,7 @@ import { abi as _GTCRFactory } from '@kleros/tcr/build/contracts/GTCRFactory.jso
 import { useAccount, usePublicClient, useWalletClient, useChainId } from 'wagmi'
 import { simulateContract } from '@wagmi/core'
 import { Roles, useAtlasProvider } from '@kleros/kleros-app'
+import { JSON_UPLOAD_ROLE } from 'utils/atlas-roles'
 import { ZERO_ADDRESS, isVowel } from 'utils/string'
 import { wrapWithToast, errorToast } from 'utils/wrap-with-toast'
 import { parseWagmiError } from 'utils/parse-wagmi-error'
@@ -202,7 +203,7 @@ const getTcrMetaEvidence = async (
   })
 
   const ipfsMetaEvidenceObjects = await Promise.all(
-    files.map((file) => uploadFile(file, Roles.CurateItemFile)),
+    files.map((file) => uploadFile(file, JSON_UPLOAD_ROLE)),
   )
   if (ipfsMetaEvidenceObjects.some((p) => !p))
     throw new Error('Failed to upload meta-evidence to IPFS.')

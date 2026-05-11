@@ -15,7 +15,8 @@ import ETHAmount from 'components/eth-amount'
 import useFactory from 'hooks/factory'
 import { addPeriod, capitalizeFirstLetter, getArticleFor } from 'utils/string'
 import ListingCriteriaLink from 'components/listing-criteria-link'
-import { Roles, useAtlasProvider } from '@kleros/kleros-app'
+import { useAtlasProvider } from '@kleros/kleros-app'
+import { JSON_UPLOAD_ROLE } from 'utils/atlas-roles'
 import useNativeCurrency from 'hooks/native-currency'
 import useTokenSymbol from 'hooks/token-symbol'
 import { wrapWithToast, errorToast } from 'utils/wrap-with-toast'
@@ -369,7 +370,7 @@ const SubmitModal: React.FC<{
           'item.json',
           { type: 'application/json' },
         )
-        const ipfsEvidencePath = await uploadFile(itemFile, Roles.CurateItemFile)
+        const ipfsEvidencePath = await uploadFile(itemFile, JSON_UPLOAD_ROLE)
         if (!ipfsEvidencePath)
           throw new Error('Failed to upload item metadata to IPFS.')
 

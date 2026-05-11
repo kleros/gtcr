@@ -22,7 +22,8 @@ import { useAccount, usePublicClient, useWalletClient, useChainId } from 'wagmi'
 import { useQuery } from '@tanstack/react-query'
 import { simulateContract } from '@wagmi/core'
 import { keccak256, encodePacked, getAddress } from 'viem'
-import { Roles, useAtlasProvider } from '@kleros/kleros-app'
+import { useAtlasProvider } from '@kleros/kleros-app'
+import { JSON_UPLOAD_ROLE } from 'utils/atlas-roles'
 import { gtcrEncode } from '@kleros/gtcr-encoder'
 import useNativeCurrency from 'hooks/native-currency'
 import useNativeBalance from 'hooks/use-native-balance'
@@ -155,7 +156,7 @@ const SubmitConnectModal = (props: SubmitConnectModalProps) => {
     const matchFile = new File([JSON.stringify(match)], 'match-file.json', {
       type: 'application/json',
     })
-    const fileURI = await uploadFile(matchFile, Roles.CurateItemFile)
+    const fileURI = await uploadFile(matchFile, JSON_UPLOAD_ROLE)
     if (!fileURI) {
       setIsSubmitting(false)
       errorToast('Failed to upload match file to IPFS.')

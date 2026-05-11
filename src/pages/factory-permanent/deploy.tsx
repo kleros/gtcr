@@ -8,6 +8,7 @@ import { simulateContract } from '@wagmi/core'
 import styled from 'styled-components'
 import _GTCRFactory from 'assets/abis/PermanentGTCRFactory.json'
 import { Roles, useAtlasProvider } from '@kleros/kleros-app'
+import { JSON_UPLOAD_ROLE } from 'utils/atlas-roles'
 import { isVowel } from 'utils/string'
 import { wrapWithToast, errorToast } from 'utils/wrap-with-toast'
 import { parseWagmiError } from 'utils/parse-wagmi-error'
@@ -126,7 +127,7 @@ const getTcrMetaEvidence = async (
   )
   const ipfsMetaEvidencePath = await uploadFile(
     metaEvidenceFile,
-    Roles.CurateItemFile,
+    JSON_UPLOAD_ROLE,
   )
   if (!ipfsMetaEvidencePath)
     throw new Error('Failed to upload meta-evidence to IPFS.')

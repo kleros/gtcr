@@ -5,7 +5,8 @@ import { simulateContract } from '@wagmi/core'
 import _gtcr from 'assets/abis/PermanentGTCR.json'
 import EnsureAuth from 'components/ensure-auth'
 import EvidenceForm from 'components/evidence-form'
-import { Roles, useAtlasProvider } from '@kleros/kleros-app'
+import { useAtlasProvider } from '@kleros/kleros-app'
+import { JSON_UPLOAD_ROLE } from 'utils/atlas-roles'
 import { wrapWithToast, errorToast } from 'utils/wrap-with-toast'
 import { parseWagmiError } from 'utils/parse-wagmi-error'
 import { wagmiConfig } from 'config/wagmi'
@@ -38,7 +39,7 @@ const EvidenceModal = ({ item, ...rest }: EvidenceModalProps) => {
         'evidence.json',
         { type: 'application/json' },
       )
-      const ipfsEvidencePath = await uploadFile(evidenceFile, Roles.CurateItemFile)
+      const ipfsEvidencePath = await uploadFile(evidenceFile, JSON_UPLOAD_ROLE)
       if (!ipfsEvidencePath)
         throw new Error('Failed to upload evidence to IPFS.')
 
