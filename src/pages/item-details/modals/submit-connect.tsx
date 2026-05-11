@@ -29,6 +29,7 @@ import useNativeCurrency from 'hooks/native-currency'
 import useNativeBalance from 'hooks/use-native-balance'
 import useTcrMetaEvidence from 'hooks/use-tcr-meta-evidence'
 import ListingCriteriaLink from 'components/listing-criteria-link'
+import EnsureAuth from 'components/ensure-auth'
 import { wrapWithToast, errorToast } from 'utils/wrap-with-toast'
 import { parseWagmiError } from 'utils/parse-wagmi-error'
 import { wagmiConfig } from 'config/wagmi'
@@ -279,15 +280,17 @@ const SubmitConnectModal = (props: SubmitConnectModalProps) => {
           Back
         </Button>,
         <div key="submit">
-          <Button
-            type="primary"
-            htmlType="submit"
-            onClick={handleSubmit}
-            disabled={submitDisabled || !!insufficientBalance}
-            loading={isSubmitting}
-          >
-            Submit
-          </Button>
+          <EnsureAuth>
+            <Button
+              type="primary"
+              htmlType="submit"
+              onClick={handleSubmit}
+              disabled={submitDisabled || !!insufficientBalance}
+              loading={isSubmitting}
+            >
+              Submit
+            </Button>
+          </EnsureAuth>
           {insufficientBalance && (
             <InsufficientBalanceText>
               Insufficient balance

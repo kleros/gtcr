@@ -36,6 +36,7 @@ import useUrlChainId from 'hooks/use-url-chain-id'
 import { klerosAddresses } from 'config/tcr-addresses'
 import { parseIpfs } from 'utils/ipfs-parse'
 import { UploadButton, StyledUpload } from 'components/input-selector'
+import EnsureAuth from 'components/ensure-auth'
 
 export const StyledAlert = styled(Alert)`
   margin-bottom: 32px;
@@ -321,21 +322,23 @@ const TCRParams = ({
                   </Tooltip>
                 </label>
               </div>
-              <StyledUpload
-                name="primary-document"
-                listType="picture-card"
-                className="avatar-uploader"
-                showUploadList={false}
-                customRequest={customRequest('tcrLogo', Roles.Logo)}
-                beforeUpload={beforeImageUpload}
-                onChange={fileUploadStatusChange}
-              >
-                {values.tcrLogo ? (
-                  <StyledImg src={parseIpfs(values.tcrLogo)} alt="avatar" />
-                ) : (
-                  <UploadButton loading={uploading.tcrLogo} />
-                )}
-              </StyledUpload>
+              <EnsureAuth>
+                <StyledUpload
+                  name="primary-document"
+                  listType="picture-card"
+                  className="avatar-uploader"
+                  showUploadList={false}
+                  customRequest={customRequest('tcrLogo', Roles.Logo)}
+                  beforeUpload={beforeImageUpload}
+                  onChange={fileUploadStatusChange}
+                >
+                  {values.tcrLogo ? (
+                    <StyledImg src={parseIpfs(values.tcrLogo)} alt="avatar" />
+                  ) : (
+                    <UploadButton loading={uploading.tcrLogo} />
+                  )}
+                </StyledUpload>
+              </EnsureAuth>
             </div>
             <div>
               <div className="ui-col ui-form-item-label">
@@ -356,26 +359,28 @@ const TCRParams = ({
                 </a>{' '}
                 to see an example.
               </div>
-              <StyledUpload
-                name="primary-document"
-                listType="picture-card"
-                className="avatar-uploader"
-                showUploadList={false}
-                customRequest={customRequest(
-                  'tcrPrimaryDocument',
-                  Roles.Policy,
-                )}
-                beforeUpload={beforeFileUpload}
-                onChange={fileUploadStatusChange}
-              >
-                {values.tcrPrimaryDocument ? (
-                  <a href={parseIpfs(values.tcrPrimaryDocument)}>
-                    <Icon type="file-pdf" style={{ fontSize: '30px' }} />
-                  </a>
-                ) : (
-                  <UploadButton loading={uploading.tcrPrimaryDocument} />
-                )}
-              </StyledUpload>
+              <EnsureAuth>
+                <StyledUpload
+                  name="primary-document"
+                  listType="picture-card"
+                  className="avatar-uploader"
+                  showUploadList={false}
+                  customRequest={customRequest(
+                    'tcrPrimaryDocument',
+                    Roles.Policy,
+                  )}
+                  beforeUpload={beforeFileUpload}
+                  onChange={fileUploadStatusChange}
+                >
+                  {values.tcrPrimaryDocument ? (
+                    <a href={parseIpfs(values.tcrPrimaryDocument)}>
+                      <Icon type="file-pdf" style={{ fontSize: '30px' }} />
+                    </a>
+                  ) : (
+                    <UploadButton loading={uploading.tcrPrimaryDocument} />
+                  )}
+                </StyledUpload>
+              </EnsureAuth>
             </div>
           </StyledUploadContainer>
           <StyledTCRInfoContainer>

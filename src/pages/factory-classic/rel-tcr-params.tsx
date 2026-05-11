@@ -40,6 +40,7 @@ import {
   StyledAlert,
 } from 'pages/factory/tcr-params'
 import { StyledUpload, UploadButton } from 'components/input-selector'
+import EnsureAuth from 'components/ensure-auth'
 
 interface RelTCRParamsProps {
   handleSubmit: (...args: unknown[]) => void
@@ -217,27 +218,32 @@ const RelTCRParams = ({
             </a>{' '}
             to see an example.
           </div>
-          <StyledUpload
-            name="rel-primary-document"
-            listType="picture-card"
-            className="avatar-uploader"
-            showUploadList={false}
-            customRequest={customRequest('relTcrPrimaryDocument', Roles.Policy)}
-            beforeUpload={beforeFileUpload}
-            onChange={fileUploadStatusChange}
-          >
-            {values.relTcrPrimaryDocument ? (
-              <a
-                href={parseIpfs(values.relTcrPrimaryDocument)}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <Icon type="file-pdf" style={{ fontSize: '30px' }} />
-              </a>
-            ) : (
-              <UploadButton loading={uploading} />
-            )}
-          </StyledUpload>
+          <EnsureAuth>
+            <StyledUpload
+              name="rel-primary-document"
+              listType="picture-card"
+              className="avatar-uploader"
+              showUploadList={false}
+              customRequest={customRequest(
+                'relTcrPrimaryDocument',
+                Roles.Policy,
+              )}
+              beforeUpload={beforeFileUpload}
+              onChange={fileUploadStatusChange}
+            >
+              {values.relTcrPrimaryDocument ? (
+                <a
+                  href={parseIpfs(values.relTcrPrimaryDocument)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <Icon type="file-pdf" style={{ fontSize: '30px' }} />
+                </a>
+              ) : (
+                <UploadButton loading={uploading} />
+              )}
+            </StyledUpload>
+          </EnsureAuth>
         </UploadSection>
         {!advancedOptions && (
           <StyledDepositContainer>

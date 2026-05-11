@@ -7,7 +7,7 @@ import { abi as _gtcr } from '@kleros/tcr/build/contracts/GeneralizedTCR.json'
 import { TCRViewContext } from 'contexts/tcr-view-context'
 import EnsureAuth from 'components/ensure-auth'
 import EvidenceForm from 'components/evidence-form'
-import { useAtlasProvider } from '@kleros/kleros-app'
+import { Roles, useAtlasProvider } from '@kleros/kleros-app'
 import { JSON_UPLOAD_ROLE } from 'utils/atlas-roles'
 import { wrapWithToast, errorToast } from 'utils/wrap-with-toast'
 import { parseWagmiError } from 'utils/parse-wagmi-error'
@@ -30,10 +30,24 @@ const EvidenceModal = ({ item, ...rest }: EvidenceModalProps) => {
   const submitEvidence = async ({ title, description, evidenceAttachment }) => {
     setIsSubmitting(true)
     try {
+      const attachmentFields: Record<string, string> = {}
+      if (evidenceAttachment) {
+        const fileURI = await uploadFile(
+          evidenceAttachment as File,
+          Roles.Evidence,
+        )
+        if (!fileURI) throw new Error('Failed to upload attachment to IPFS.')
+        attachmentFields.fileURI = fileURI
+        attachmentFields.fileTypeExtension = (
+          evidenceAttachment as File
+        ).name.split('.')[1]
+        attachmentFields.type = (evidenceAttachment as File).type
+      }
+
       const evidenceJSON = {
         title: title,
         description,
-        ...evidenceAttachment,
+        ...attachmentFields,
       }
 
       const evidenceFile = new File(

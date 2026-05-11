@@ -10,7 +10,7 @@ import ETHAmount from 'components/eth-amount'
 import EvidenceForm from 'components/evidence-form'
 import useNativeBalance from 'hooks/use-native-balance'
 import { CONTRACT_STATUS, STATUS_CODE } from 'utils/item-status'
-import { useAtlasProvider } from '@kleros/kleros-app'
+import { Roles, useAtlasProvider } from '@kleros/kleros-app'
 import { JSON_UPLOAD_ROLE } from 'utils/atlas-roles'
 import ListingCriteriaLink from 'components/listing-criteria-link'
 import { wrapWithToast, errorToast } from 'utils/wrap-with-toast'
@@ -63,10 +63,24 @@ const ChallengeModal = ({
   }) => {
     setIsSubmitting(true)
     try {
+      const attachmentFields: Record<string, string> = {}
+      if (evidenceAttachment) {
+        const fileURI = await uploadFile(
+          evidenceAttachment as File,
+          Roles.Evidence,
+        )
+        if (!fileURI) throw new Error('Failed to upload attachment to IPFS.')
+        attachmentFields.fileURI = fileURI
+        attachmentFields.fileTypeExtension = (
+          evidenceAttachment as File
+        ).name.split('.')[1]
+        attachmentFields.type = (evidenceAttachment as File).type
+      }
+
       const evidenceJSON = {
         title: title || 'Challenge Justification',
         description,
-        ...evidenceAttachment,
+        ...attachmentFields,
       }
 
       const evidenceFile = new File(
