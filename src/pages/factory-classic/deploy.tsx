@@ -202,7 +202,7 @@ const getTcrMetaEvidence = async (
   })
 
   const ipfsMetaEvidenceObjects = await Promise.all(
-    files.map((file) => uploadFile(file, Roles.MetaEvidence)),
+    files.map((file) => uploadFile(file, Roles.CurateItemFile)),
   )
   if (ipfsMetaEvidenceObjects.some((p) => !p))
     throw new Error('Failed to upload meta-evidence to IPFS.')

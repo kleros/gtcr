@@ -72,7 +72,7 @@ const RemoveModal = ({
             'evidence.json',
             { type: 'application/json' },
           )
-          const uploaded = await uploadFile(evidenceFile, Roles.Evidence)
+          const uploaded = await uploadFile(evidenceFile, Roles.CurateItemFile)
           if (!uploaded) throw new Error('Failed to upload evidence to IPFS.')
           ipfsEvidencePath = uploaded
         }

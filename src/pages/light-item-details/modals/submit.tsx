@@ -251,7 +251,7 @@ const SubmitModal: React.FC<{
           'item.json',
           { type: 'application/json' },
         )
-        const ipfsEvidencePath = await uploadFile(itemFile, Roles.Generic)
+        const ipfsEvidencePath = await uploadFile(itemFile, Roles.CurateItemFile)
         if (!ipfsEvidencePath)
           throw new Error('Failed to upload item metadata to IPFS.')
 

@@ -126,7 +126,7 @@ const getTcrMetaEvidence = async (
   )
   const ipfsMetaEvidencePath = await uploadFile(
     metaEvidenceFile,
-    Roles.MetaEvidence,
+    Roles.CurateItemFile,
   )
   if (!ipfsMetaEvidencePath)
     throw new Error('Failed to upload meta-evidence to IPFS.')

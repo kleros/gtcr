@@ -86,7 +86,7 @@ const ChallengeModal = ({
         'evidence.json',
         { type: 'application/json' },
       )
-      const ipfsEvidencePath = await uploadFile(evidenceFile, Roles.Evidence)
+      const ipfsEvidencePath = await uploadFile(evidenceFile, Roles.CurateItemFile)
       if (!ipfsEvidencePath)
         throw new Error('Failed to upload evidence to IPFS.')
 

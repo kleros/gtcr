@@ -155,7 +155,7 @@ const SubmitConnectModal = (props: SubmitConnectModalProps) => {
     const matchFile = new File([JSON.stringify(match)], 'match-file.json', {
       type: 'application/json',
     })
-    const fileURI = await uploadFile(matchFile, Roles.Generic)
+    const fileURI = await uploadFile(matchFile, Roles.CurateItemFile)
     if (!fileURI) {
       setIsSubmitting(false)
       errorToast('Failed to upload match file to IPFS.')

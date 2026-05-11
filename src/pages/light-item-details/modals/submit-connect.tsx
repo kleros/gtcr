@@ -165,7 +165,7 @@ const SubmitConnectModal = (props: SubmitConnectModalProps) => {
       const matchFile = new File([JSON.stringify(match)], 'match-file.json', {
         type: 'application/json',
       })
-      const fileURI = await uploadFile(matchFile, Roles.Generic)
+      const fileURI = await uploadFile(matchFile, Roles.CurateItemFile)
       if (!fileURI) throw new Error('Failed to upload match file to IPFS.')
       const { columns } = relTCRMetaEvidence.metadata
 
@@ -179,7 +179,7 @@ const SubmitConnectModal = (props: SubmitConnectModalProps) => {
         'item.json',
         { type: 'application/json' },
       )
-      const ipfsEvidencePath = await uploadFile(itemFile, Roles.Generic)
+      const ipfsEvidencePath = await uploadFile(itemFile, Roles.CurateItemFile)
       if (!ipfsEvidencePath)
         throw new Error('Failed to upload item metadata to IPFS.')
 
