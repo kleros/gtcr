@@ -10,8 +10,8 @@ import ETHAmount from 'components/eth-amount'
 import EvidenceForm from 'components/evidence-form'
 import useNativeBalance from 'hooks/use-native-balance'
 import { CONTRACT_STATUS, STATUS_CODE } from 'utils/item-status'
-import { Roles, useAtlasProvider } from '@kleros/kleros-app'
-import { JSON_UPLOAD_ROLE } from 'utils/atlas-roles'
+import { useAtlasProvider } from '@kleros/kleros-app'
+import { uploadEvidence } from 'utils/upload-evidence'
 import ListingCriteriaLink from 'components/listing-criteria-link'
 import { wrapWithToast, errorToast } from 'utils/wrap-with-toast'
 import { parseWagmiError } from 'utils/parse-wagmi-error'
@@ -63,34 +63,12 @@ const ChallengeModal = ({
   }) => {
     setIsSubmitting(true)
     try {
-      const attachmentFields: Record<string, string> = {}
-      if (evidenceAttachment) {
-        const fileURI = await uploadFile(
-          evidenceAttachment as File,
-          Roles.Evidence,
-        )
-        if (!fileURI) throw new Error('Failed to upload attachment to IPFS.')
-        attachmentFields.fileURI = fileURI
-        attachmentFields.fileTypeExtension = (
-          evidenceAttachment as File
-        ).name.split('.')[1]
-        attachmentFields.type = (evidenceAttachment as File).type
-      }
-
-      const evidenceJSON = {
+      const ipfsEvidencePath = await uploadEvidence({
         title: title || 'Challenge Justification',
         description,
-        ...attachmentFields,
-      }
-
-      const evidenceFile = new File(
-        [JSON.stringify(evidenceJSON)],
-        'evidence.json',
-        { type: 'application/json' },
-      )
-      const ipfsEvidencePath = await uploadFile(evidenceFile, JSON_UPLOAD_ROLE)
-      if (!ipfsEvidencePath)
-        throw new Error('Failed to upload evidence to IPFS.')
+        attachment: evidenceAttachment as File | undefined,
+        uploadFile,
+      })
 
       const { request } = await simulateContract(wagmiConfig, {
         address: tcrAddress,

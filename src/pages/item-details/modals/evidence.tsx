@@ -7,8 +7,8 @@ import { abi as _gtcr } from '@kleros/tcr/build/contracts/GeneralizedTCR.json'
 import { TCRViewContext } from 'contexts/tcr-view-context'
 import EnsureAuth from 'components/ensure-auth'
 import EvidenceForm from 'components/evidence-form'
-import { Roles, useAtlasProvider } from '@kleros/kleros-app'
-import { JSON_UPLOAD_ROLE } from 'utils/atlas-roles'
+import { useAtlasProvider } from '@kleros/kleros-app'
+import { uploadEvidence } from 'utils/upload-evidence'
 import { wrapWithToast, errorToast } from 'utils/wrap-with-toast'
 import { parseWagmiError } from 'utils/parse-wagmi-error'
 import { wagmiConfig } from 'config/wagmi'
@@ -30,34 +30,12 @@ const EvidenceModal = ({ item, ...rest }: EvidenceModalProps) => {
   const submitEvidence = async ({ title, description, evidenceAttachment }) => {
     setIsSubmitting(true)
     try {
-      const attachmentFields: Record<string, string> = {}
-      if (evidenceAttachment) {
-        const fileURI = await uploadFile(
-          evidenceAttachment as File,
-          Roles.Evidence,
-        )
-        if (!fileURI) throw new Error('Failed to upload attachment to IPFS.')
-        attachmentFields.fileURI = fileURI
-        attachmentFields.fileTypeExtension = (
-          evidenceAttachment as File
-        ).name.split('.')[1]
-        attachmentFields.type = (evidenceAttachment as File).type
-      }
-
-      const evidenceJSON = {
-        title: title,
+      const ipfsEvidencePath = await uploadEvidence({
+        title,
         description,
-        ...attachmentFields,
-      }
-
-      const evidenceFile = new File(
-        [JSON.stringify(evidenceJSON)],
-        'evidence.json',
-        { type: 'application/json' },
-      )
-      const ipfsEvidencePath = await uploadFile(evidenceFile, JSON_UPLOAD_ROLE)
-      if (!ipfsEvidencePath)
-        throw new Error('Failed to upload evidence to IPFS.')
+        attachment: evidenceAttachment as File | undefined,
+        uploadFile,
+      })
 
       const { request } = await simulateContract(wagmiConfig, {
         address: tcrAddress,
