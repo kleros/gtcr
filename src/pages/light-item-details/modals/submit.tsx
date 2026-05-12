@@ -23,7 +23,8 @@ import ETHAmount from 'components/eth-amount'
 import useFactory from 'hooks/factory'
 import { addPeriod, capitalizeFirstLetter, getArticleFor } from 'utils/string'
 import ListingCriteriaLink from 'components/listing-criteria-link'
-import { Roles, useAtlasProvider } from '@kleros/kleros-app'
+import { useAtlasProvider } from '@kleros/kleros-app'
+import { resolveStashedFiles } from 'utils/resolve-stashed-files'
 import { JSON_UPLOAD_ROLE } from 'utils/atlas-roles'
 import useNativeCurrency from 'hooks/native-currency'
 import useNativeBalance from 'hooks/use-native-balance'
@@ -242,22 +243,12 @@ const SubmitModal: React.FC<{
     ) => {
       setIsSubmitting(true)
       try {
-        const resolvedValues: Record<string, string> = {}
-        for (const column of columns) {
-          const value = values[column.label]
-          if (value instanceof File) {
-            const role =
-              column.type === ItemTypes.IMAGE
-                ? Roles.CurateItemImage
-                : Roles.CurateItemFile
-            const uri = await uploadFile(value, role)
-            if (!uri)
-              throw new Error(`Failed to upload ${column.label} to IPFS.`)
-            resolvedValues[column.label] = uri
-            // Persist URI so retries after a tx failure don't re-upload.
-            setFieldValue(column.label, uri, false)
-          } else resolvedValues[column.label] = (value as string) ?? ''
-        }
+        const resolvedValues = await resolveStashedFiles({
+          columns,
+          values,
+          uploadFile,
+          setFieldValue,
+        })
 
         const itemFile = new File(
           [JSON.stringify({ columns, values: resolvedValues })],

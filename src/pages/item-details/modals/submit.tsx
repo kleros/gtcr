@@ -13,7 +13,8 @@ import InputSelector from 'components/input-selector'
 import EnsureAuth from 'components/ensure-auth'
 import ETHAmount from 'components/eth-amount'
 import useFactory from 'hooks/factory'
-import { Roles, useAtlasProvider } from '@kleros/kleros-app'
+import { useAtlasProvider } from '@kleros/kleros-app'
+import { resolveStashedFiles } from 'utils/resolve-stashed-files'
 import { addPeriod, capitalizeFirstLetter, getArticleFor } from 'utils/string'
 import useNativeCurrency from 'hooks/native-currency'
 import useNativeBalance from 'hooks/use-native-balance'
@@ -232,22 +233,12 @@ const SubmitModal: React.FC<{
     ) => {
       setIsSubmitting(true)
       try {
-        const resolvedValues: Record<string, string> = {}
-        for (const column of columns) {
-          const value = values[column.label]
-          if (value instanceof File) {
-            const role =
-              column.type === ItemTypes.IMAGE
-                ? Roles.CurateItemImage
-                : Roles.CurateItemFile
-            const uri = await uploadFile(value, role)
-            if (!uri)
-              throw new Error(`Failed to upload ${column.label} to IPFS.`)
-            resolvedValues[column.label] = uri
-            // Persist URI so retries after a tx failure don't re-upload.
-            setFieldValue(column.label, uri, false)
-          } else resolvedValues[column.label] = (value as string) ?? ''
-        }
+        const resolvedValues = await resolveStashedFiles({
+          columns,
+          values,
+          uploadFile,
+          setFieldValue,
+        })
 
         const encodedParams = gtcrEncode({
           columns,
