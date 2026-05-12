@@ -115,8 +115,8 @@ const SubmissionForm: React.ComponentType<Record<string, unknown>> = withFormik(
           [curr.label]: String(defaultValue),
         }
       }, {}),
-    handleSubmit: (values, { props, resetForm }) => {
-      props.postSubmit(values, props.columns, resetForm)
+    handleSubmit: (values, { props, resetForm, setFieldValue }) => {
+      props.postSubmit(values, props.columns, resetForm, setFieldValue)
     },
     validate: async (
       values,
@@ -224,6 +224,11 @@ const SubmitModal: React.FC<{
       values: Record<string, string | File>,
       columns: Column[],
       resetForm: (nextState?: Record<string, unknown>) => void,
+      setFieldValue: (
+        field: string,
+        value: unknown,
+        shouldValidate?: boolean,
+      ) => void,
     ) => {
       setIsSubmitting(true)
       try {
@@ -239,6 +244,8 @@ const SubmitModal: React.FC<{
             if (!uri)
               throw new Error(`Failed to upload ${column.label} to IPFS.`)
             resolvedValues[column.label] = uri
+            // Persist URI so retries after a tx failure don't re-upload.
+            setFieldValue(column.label, uri, false)
           } else resolvedValues[column.label] = (value as string) ?? ''
         }
 
