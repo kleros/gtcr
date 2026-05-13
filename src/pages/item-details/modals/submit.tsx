@@ -13,6 +13,8 @@ import InputSelector from 'components/input-selector'
 import EnsureAuth from 'components/ensure-auth'
 import ETHAmount from 'components/eth-amount'
 import useFactory from 'hooks/factory'
+import { useAtlasProvider } from '@kleros/kleros-app'
+import { resolveStashedFiles } from 'utils/resolve-stashed-files'
 import { addPeriod, capitalizeFirstLetter, getArticleFor } from 'utils/string'
 import useNativeCurrency from 'hooks/native-currency'
 import useNativeBalance from 'hooks/use-native-balance'
@@ -43,17 +45,13 @@ export interface Column {
 const _SubmissionForm: React.FC<{
   style: React.CSSProperties
   columns: Column[]
-  setFieldValue: (fieldName: string, fileURI: string) => void
+  setFieldValue: (fieldName: string, value: unknown) => void
   handleSubmit: () => void
   disabledFields: boolean[]
-  values: Record<string, string>
+  values: Record<string, string | File>
   errors: { [label: string]: string }
   touched: { [label: string]: boolean }
   onFieldsComplete?: (complete: boolean) => void
-  status: {
-    setFileToUpload: (f: (b: boolean) => void) => void
-    setFileAsUploaded: (f: (b: boolean) => void) => void
-  }
 }> = (p) => {
   useEffect(() => {
     if (!p.onFieldsComplete || !p.columns) return
@@ -82,8 +80,6 @@ const _SubmissionForm: React.FC<{
             setFieldValue={p.setFieldValue}
             disabled={p.disabledFields && p.disabledFields[index]}
             touched={p.touched[column.label]}
-            setFileToUpload={p.status.setFileToUpload}
-            setFileAsUploaded={p.status.setFileAsUploaded}
             label={
               <span>
                 {column.label}&nbsp;
@@ -120,13 +116,9 @@ const SubmissionForm: React.ComponentType<Record<string, unknown>> = withFormik(
           [curr.label]: String(defaultValue),
         }
       }, {}),
-    handleSubmit: (values, { props, resetForm }) => {
-      props.postSubmit(values, props.columns, resetForm)
+    handleSubmit: (values, { props, resetForm, setFieldValue }) => {
+      props.postSubmit(values, props.columns, resetForm, setFieldValue)
     },
-    mapPropsToStatus: (props: Record<string, unknown>) => ({
-      setFileToUpload: props.setFileToUpload,
-      setFileAsUploaded: props.setFileAsUploaded,
-    }),
     validate: async (
       values,
       {
@@ -210,6 +202,7 @@ const SubmitModal: React.FC<{
   const chainId = useChainId()
   const publicClient = usePublicClient()
   const { data: walletClient } = useWalletClient()
+  const { uploadFile } = useAtlasProvider()
   const { balance: nativeBalance } = useNativeBalance()
   const insufficientBalance =
     nativeBalance !== undefined &&
@@ -227,27 +220,30 @@ const SubmitModal: React.FC<{
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [fieldsComplete, setFieldsComplete] = useState(false)
 
-  // To make sure user cannot press Submit while there are files uploading
-  // submit will be blocked until there are no files uploaded
-  const [loadingCounter, setLoadingCounter] = useState(0)
-  const setFileToUpload = (setUploading: (_: boolean) => void) => {
-    setUploading(true)
-    setLoadingCounter(loadingCounter + 1)
-  }
-  const setFileAsUploaded = (setUploading: (_: boolean) => void) => {
-    setUploading(false)
-    setLoadingCounter(loadingCounter - 1)
-  }
-
   const postSubmit = useCallback(
     async (
-      values: Record<string, string>,
+      values: Record<string, string | File>,
       columns: Column[],
       resetForm: (nextState?: Record<string, unknown>) => void,
+      setFieldValue: (
+        field: string,
+        value: unknown,
+        shouldValidate?: boolean,
+      ) => void,
     ) => {
       setIsSubmitting(true)
       try {
-        const encodedParams = gtcrEncode({ columns, values })
+        const resolvedValues = await resolveStashedFiles({
+          columns,
+          values,
+          uploadFile,
+          setFieldValue,
+        })
+
+        const encodedParams = gtcrEncode({
+          columns,
+          values: resolvedValues,
+        })
 
         const { request } = await simulateContract(wagmiConfig, {
           address: tcrAddress as `0x${string}`,
@@ -299,6 +295,7 @@ const SubmitModal: React.FC<{
       publicClient,
       submissionDeposit,
       tcrAddress,
+      uploadFile,
       walletClient,
     ],
   )
@@ -337,7 +334,7 @@ const SubmitModal: React.FC<{
               form={SUBMISSION_FORM_ID}
               htmlType="submit"
               disabled={!!insufficientBalance || !fieldsComplete}
-              loading={loadingCounter > 0 || isSubmitting}
+              loading={isSubmitting}
             >
               Submit
             </Button>
@@ -366,8 +363,6 @@ const SubmitModal: React.FC<{
         deployedWithFactory={deployedWithFactory}
         deployedWithLightFactory={deployedWithLightFactory}
         deployedWithPermanentFactory={deployedWithPermanentFactory}
-        setFileToUpload={setFileToUpload}
-        setFileAsUploaded={setFileAsUploaded}
         onFieldsComplete={setFieldsComplete}
       />
       <StyledListingCriteria>

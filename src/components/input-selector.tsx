@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 import styled from 'styled-components'
 import { Form, Switch, Input, Upload } from 'components/ui'
 import Icon from 'components/ui/Icon'
@@ -7,11 +7,9 @@ import { Field } from 'formik'
 import { getExtension } from 'mime'
 import { ItemTypes } from '@kleros/gtcr-encoder'
 import CustomInput from './custom-input'
-import { Roles, useAtlasProvider } from '@kleros/kleros-app'
 import { parseIpfs } from 'utils/ipfs-parse'
 import AddressInput from './address-input'
 import RichAddressInput from './rich-address-input'
-import EnsureAuth from './ensure-auth'
 
 export const StyledUpload = styled(Upload)`
   & > .ui-upload.ui-upload-select-picture-card {
@@ -19,7 +17,7 @@ export const StyledUpload = styled(Upload)`
   }
 `
 
-const StyledImg = styled.img`
+const StyledImg = styled.img<React.ImgHTMLAttributes<HTMLImageElement>>`
   height: 70px;
   object-fit: contain;
 `
@@ -48,48 +46,123 @@ interface InputSelectorProps extends React.HTMLAttributes<HTMLElement> {
   maxFileSizeMb?: number
   label: string
   allowedFileTypes: string
-  setFileToUpload: (f: (b: boolean) => void) => void
-  setFileAsUploaded: (f: (b: boolean) => void) => void
   style: React.CSSProperties
 }
 
+const useObjectUrl = (file: File | null): string | null => {
+  const [url, setUrl] = useState<string | null>(null)
+  useEffect(() => {
+    if (!file) {
+      setUrl(null)
+      return
+    }
+    const next = URL.createObjectURL(file)
+    setUrl(next)
+    return () => URL.revokeObjectURL(next)
+  }, [file])
+  return url
+}
+
+type UploadAdapter = ({
+  file,
+  onSuccess,
+}: {
+  file: File
+  onSuccess: (body: string, url: string) => void
+}) => void
+
+interface PreviewUploadProps {
+  name: string
+  value: unknown
+  stashFile: (fieldName: string) => UploadAdapter
+  beforeUpload: (file: File) => boolean
+}
+
+const ImagePreviewUpload: React.FC<PreviewUploadProps> = ({
+  name,
+  value,
+  stashFile,
+  beforeUpload,
+}) => {
+  const file = value instanceof File ? value : null
+  const blobUrl = useObjectUrl(file)
+  const ipfsUrl =
+    !file && typeof value === 'string' && value ? parseIpfs(value) : null
+  const previewSrc = blobUrl ?? ipfsUrl
+  return (
+    // @ts-ignore
+    <StyledUpload
+      name={name}
+      listType="picture-card"
+      className="avatar-uploader"
+      showUploadList={false}
+      customRequest={stashFile(name)}
+      beforeUpload={beforeUpload}
+    >
+      {previewSrc ? (
+        ipfsUrl ? (
+          <a href={ipfsUrl} target="_blank" rel="noopener noreferrer">
+            <StyledImg src={previewSrc} alt="preview" />
+          </a>
+        ) : (
+          <StyledImg src={previewSrc} alt="preview" />
+        )
+      ) : (
+        <UploadButton loading={false} />
+      )}
+    </StyledUpload>
+  )
+}
+
+const FilePreviewUpload: React.FC<PreviewUploadProps> = ({
+  name,
+  value,
+  stashFile,
+  beforeUpload,
+}) => {
+  const ipfsUrl =
+    !(value instanceof File) && typeof value === 'string' && value
+      ? parseIpfs(value)
+      : null
+  const hasFile = value instanceof File || !!ipfsUrl
+  return (
+    // @ts-ignore
+    <StyledUpload
+      name={name}
+      listType="picture-card"
+      className="avatar-uploader"
+      showUploadList={false}
+      customRequest={stashFile(name)}
+      beforeUpload={beforeUpload}
+    >
+      {hasFile ? (
+        ipfsUrl ? (
+          <a href={ipfsUrl} target="_blank" rel="noopener noreferrer">
+            <Icon type="file" style={{ fontSize: '30px' }} />
+          </a>
+        ) : (
+          <Icon type="file" style={{ fontSize: '30px' }} />
+        )
+      ) : (
+        <UploadButton loading={false} />
+      )}
+    </StyledUpload>
+  )
+}
+
 const InputSelector: React.FC<InputSelectorProps> = (p) => {
-  const [uploading, setUploading] = useState<boolean>(false)
-  const { uploadFile } = useAtlasProvider()
-  const customRequest = useCallback(
-    (fieldName: string, role: Roles) =>
-      async ({
+  const stashFile = useCallback(
+    (fieldName: string) =>
+      ({
         file,
         onSuccess,
-        onError,
       }: {
         file: File
         onSuccess: (body: string, url: string) => void
-        onError: (err: unknown) => void
       }) => {
-        try {
-          const fileURI = await uploadFile(file, role)
-          if (!fileURI) throw new Error('Failed to upload file to IPFS.')
-
-          p.setFieldValue(fieldName, fileURI)
-          onSuccess('ok', parseIpfs(fileURI))
-        } catch (err) {
-          console.error(err)
-          onError(err)
-        }
+        p.setFieldValue(fieldName, file)
+        onSuccess('ok', '')
       },
-    [p, uploadFile],
-  )
-
-  const fileUploadStatusChange = useCallback(
-    ({ file: { status } }) => {
-      if (status === 'done') toast.success(`File uploaded successfully.`)
-      else if (status === 'error') toast.error(`File upload failed.`)
-      else if (status === 'uploading') p.setFileToUpload(setUploading)
-
-      if (status === 'error' || status === 'done')
-        p.setFileAsUploaded(setUploading)
-    },
     [p],
   )
 
@@ -175,60 +248,24 @@ const InputSelector: React.FC<InputSelectorProps> = (p) => {
       return (
         <>
           {label}:
-          <EnsureAuth>
-            {/* @ts-ignore */}
-            <StyledUpload
-              name={name}
-              listType="picture-card"
-              className="avatar-uploader"
-              showUploadList={false}
-              customRequest={customRequest(name, Roles.CurateItemImage)}
-              beforeUpload={beforeImageUpload}
-              onChange={fileUploadStatusChange}
-            >
-              {values[name] ? (
-                <a
-                  href={parseIpfs(values[name])}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <StyledImg src={parseIpfs(values[name])} alt="preview" />
-                </a>
-              ) : (
-                <UploadButton loading={uploading} />
-              )}
-            </StyledUpload>
-          </EnsureAuth>
+          <ImagePreviewUpload
+            name={name}
+            value={values[name]}
+            stashFile={stashFile}
+            beforeUpload={beforeImageUpload}
+          />
         </>
       )
     case ItemTypes.FILE:
       return (
         <>
           {label}:
-          <EnsureAuth>
-            {/* @ts-ignore */}
-            <StyledUpload
-              name={name}
-              listType="picture-card"
-              className="avatar-uploader"
-              showUploadList={false}
-              customRequest={customRequest(name, Roles.CurateItemFile)}
-              beforeUpload={beforeFileUpload}
-              onChange={fileUploadStatusChange}
-            >
-              {values[name] ? (
-                <a
-                  href={parseIpfs(values[name])}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <Icon type="file" style={{ fontSize: '30px' }} />
-                </a>
-              ) : (
-                <UploadButton loading={uploading} />
-              )}
-            </StyledUpload>
-          </EnsureAuth>
+          <FilePreviewUpload
+            name={name}
+            value={values[name]}
+            stashFile={stashFile}
+            beforeUpload={beforeFileUpload}
+          />
         </>
       )
     default:
