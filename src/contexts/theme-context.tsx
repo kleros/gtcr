@@ -227,6 +227,9 @@ const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     localStorage.setItem(THEME_STORAGE_KEY, isDarkMode ? 'dark' : 'light')
     document.body.setAttribute('data-theme', isDarkMode ? 'dark' : 'light')
+    // Shared @kleros/ui-components-library components (e.g. FileViewer) read
+    // their CSS variables from `:root.dark`, so keep that class in sync.
+    document.documentElement.classList.toggle('dark', isDarkMode)
   }, [isDarkMode])
 
   return (
