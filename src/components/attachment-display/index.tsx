@@ -47,9 +47,6 @@ const FileViewerSurface = styled.div`
   --color-klerosUIComponentsPrimaryText: ${({ theme }) => theme.textPrimary};
   --color-klerosUIComponentsSecondaryText: ${({ theme }) =>
     theme.textSecondary};
-
-  border: 1px solid ${({ theme }) => theme.evidenceCardBorder};
-  border-radius: 3px;
 `
 
 const LoaderContainer = styled.div`
