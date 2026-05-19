@@ -302,7 +302,21 @@ const buildEntries = async (
     })
   }
 
-  return entries
+  // Merge consecutive entries that share the same policyURI. These are
+  // re-registrations of identical content (a governance act that re-affirmed
+  // the existing policy without changing it). Surfacing them as separate rows
+  // is misleading: each row would point to the same IPFS file, and clicking
+  // one in the history modal looks like a no-op to the user. Collapse them
+  // into one continuous active period, keeping the earliest startDate/txHash
+  // (the original registration) and extending endDate to the next real change.
+  const deduped: PolicyHistoryEntry[] = []
+  for (const entry of entries) {
+    const prev = deduped[deduped.length - 1]
+    if (prev && prev.policyURI === entry.policyURI) prev.endDate = entry.endDate
+    else deduped.push({ ...entry })
+  }
+
+  return deduped
 }
 
 /**
