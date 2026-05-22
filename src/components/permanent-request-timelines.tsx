@@ -168,6 +168,25 @@ const Timeline = ({ submission, item, metaEvidence }: TimelineProps) => {
 
     if (withdrawal) logArray.push(withdrawal)
 
+    // The only paths to Absent are withdrawItem() and rule(). Dispute removals are
+    // already rendered as Resolution nodes (whose tx equals the ruling tx), so a
+    // finishedTx that is NOT any resolution tx can only be a completed voluntary
+    // withdrawal (the withdrawItem() execution).
+    const resolutionTxs = new Set(
+      item.challenges.map((c) => c.resolutionTx).filter((tx) => !!tx),
+    )
+
+    const withdrawalCompleted =
+      submission.finishedTx && !resolutionTxs.has(submission.finishedTx)
+        ? {
+            name: 'WithdrawalCompleted',
+            timestamp: submission.finishedAt,
+            transactionHash: submission.finishedTx,
+          }
+        : null
+
+    if (withdrawalCompleted) logArray.push(withdrawalCompleted)
+
     // purge then sort
 
     return logArray
@@ -357,6 +376,19 @@ const Timeline = ({ submission, item, metaEvidence }: TimelineProps) => {
           <UITimeline.Item key={i} color="orange">
             <span>
               Item initiated withdrawal process
+              <Typography.Text type="secondary">
+                <a href={txPage} target="_blank" rel="noopener noreferrer">
+                  {secondTimestamp(timestamp)}
+                </a>
+              </Typography.Text>
+            </span>
+          </UITimeline.Item>
+        )
+      else if (name === 'WithdrawalCompleted')
+        return (
+          <UITimeline.Item key={i} color="gray">
+            <span>
+              Item withdrawn
               <Typography.Text type="secondary">
                 <a href={txPage} target="_blank" rel="noopener noreferrer">
                   {secondTimestamp(timestamp)}

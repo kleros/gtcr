@@ -83,7 +83,8 @@ const ItemCardTitle = ({
         <ItemStatusBadge statusCode={statusCode} dark />
 
         {statusCode !== STATUS_CODE.REJECTED &&
-          statusCode !== STATUS_CODE.REMOVED && (
+          statusCode !== STATUS_CODE.REMOVED &&
+          statusCode !== STATUS_CODE.WITHDRAWN && (
             <BountyContainer>
               <Tooltip title="This is the bounty on this item.">
                 <ETHAmount

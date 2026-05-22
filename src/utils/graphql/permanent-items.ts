@@ -35,11 +35,13 @@ const PERMANENT_ITEMS_QUERY = gql`
       arbitrationDeposit
       submissions(first: 1, orderBy: createdAt, orderDirection: desc) {
         submitter
+        finishedTx
       }
       challenges(first: 1, orderBy: createdAt, orderDirection: desc) {
         disputeID
         createdAt
         resolutionTime
+        resolutionTx
         challenger
         challengerStake
         disputeOutcome
