@@ -20,6 +20,7 @@ export const STATUS_CODE = {
   WAITING_ARBITRATOR: 6,
   PENDING_WITHDRAWAL: 7,
   REMOVED: 8,
+  WITHDRAWN: 9,
 }
 
 export const STATUS_TEXT = {
@@ -32,6 +33,7 @@ export const STATUS_TEXT = {
   [STATUS_CODE.WAITING_ARBITRATOR]: 'Waiting Arbitrator',
   [STATUS_CODE.PENDING_WITHDRAWAL]: 'Pending Withdrawal',
   [STATUS_CODE.REMOVED]: 'Removed',
+  [STATUS_CODE.WITHDRAWN]: 'Withdrawn',
 }
 
 export const STATUS_COLOR = {
@@ -44,6 +46,7 @@ export const STATUS_COLOR = {
   [STATUS_CODE.WAITING_ARBITRATOR]: '#eb2f96',
   [STATUS_CODE.PENDING_WITHDRAWAL]: '#36cfc9',
   [STATUS_CODE.REMOVED]: '#ff4d4f',
+  [STATUS_CODE.WITHDRAWN]: '#8c8c8c',
 }
 
 export const getActionLabel = ({
@@ -56,6 +59,7 @@ export const getActionLabel = ({
   switch (statusCode) {
     case STATUS_CODE.REJECTED:
     case STATUS_CODE.REMOVED:
+    case STATUS_CODE.WITHDRAWN:
       return `Resubmit ${itemName}`
     case STATUS_CODE.PENDING:
     case STATUS_CODE.ACCEPTED:
@@ -82,6 +86,23 @@ export const itemToStatusCode = (
   const ts = timestamp.toNumber()
 
   if (status === CONTRACT_STATUS.ABSENT) {
+    // The only paths to Absent are withdrawItem() and rule(). Dispute removals carry a
+    // resolution tx, so a latest-submission finishedTx that is NOT any resolution tx can
+    // only be a completed voluntary withdrawal. This intercepts that case only; every
+    // other Absent item still falls through to the REJECTED/REMOVED logic unchanged.
+    // Note: in list views these fields may be absent from the query, so detection simply
+    // (and safely) falls through to REMOVED/REJECTED.
+    const submissions = (item.submissions as { finishedTx?: string }[]) || []
+    const finishedTx = submissions.length > 0 ? submissions[0].finishedTx : null
+    if (finishedTx) {
+      const resolutionTxs = new Set(
+        ((item.challenges as { resolutionTx?: string }[]) || [])
+          .map((c) => c.resolutionTx)
+          .filter((tx) => !!tx),
+      )
+      if (!resolutionTxs.has(finishedTx)) return STATUS_CODE.WITHDRAWN
+    }
+
     // Differentiate between rejected (never made it past submission) and removed (was accepted then taken off)
     // If includedAt + submissionPeriod < timestamp, the item passed submission and was accepted at some point
     const submissionPeriod = Number(registry?.submissionPeriod || 0)

@@ -189,6 +189,7 @@ const ItemStatusCard = ({
   const isWithdrawing =
     statusCode !== STATUS_CODE.REJECTED &&
     statusCode !== STATUS_CODE.REMOVED &&
+    statusCode !== STATUS_CODE.WITHDRAWN &&
     item.withdrawingTimestamp !== '0'
 
   const bounty = item.stake
@@ -197,6 +198,7 @@ const ItemStatusCard = ({
   const isWithdrawable =
     statusCode !== STATUS_CODE.REJECTED &&
     statusCode !== STATUS_CODE.REMOVED &&
+    statusCode !== STATUS_CODE.WITHDRAWN &&
     item.withdrawingTimestamp === '0'
   // Check if current user is the submitter
   const isSubmitter =
@@ -228,6 +230,7 @@ const ItemStatusCard = ({
     switch (statusCode) {
       case STATUS_CODE.REJECTED:
       case STATUS_CODE.REMOVED:
+      case STATUS_CODE.WITHDRAWN:
       case STATUS_CODE.PENDING:
       case STATUS_CODE.ACCEPTED:
       case STATUS_CODE.CROWDFUNDING:
@@ -300,7 +303,8 @@ const ItemStatusCard = ({
           column={{ xxl: 3, xl: 3, lg: 2, md: 2, sm: 1, xs: 1 }}
         >
           {statusCode !== STATUS_CODE.REJECTED &&
-            statusCode !== STATUS_CODE.REMOVED && (
+            statusCode !== STATUS_CODE.REMOVED &&
+            statusCode !== STATUS_CODE.WITHDRAWN && (
               <>
                 <Descriptions.Item label="Bounty">
                   <ETHAmount

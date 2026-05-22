@@ -40,6 +40,7 @@ const iconTypes = {
   [STATUS_CODE.PENDING_WITHDRAWAL]: 'hourglass',
   [STATUS_CODE.REJECTED]: 'close',
   [STATUS_CODE.REMOVED]: 'close',
+  [STATUS_CODE.WITHDRAWN]: 'close',
   [STATUS_CODE.WAITING_ARBITRATOR]: 'hourglass',
 }
 
@@ -62,6 +63,7 @@ export const badgeStatus = (statusCode: number) => {
       return 'processing'
     case STATUS_CODE.REJECTED:
     case STATUS_CODE.REMOVED:
+    case STATUS_CODE.WITHDRAWN:
     case STATUS_CODE.ACCEPTED:
       return 'default'
     default:

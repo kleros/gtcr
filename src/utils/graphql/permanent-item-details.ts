@@ -16,6 +16,7 @@ const PERMANENT_ITEM_DETAILS_QUERY = gql`
         createdAt
         creationTx
         finishedAt
+        finishedTx
         withdrawingTimestamp
         withdrawingTx
         submitter
