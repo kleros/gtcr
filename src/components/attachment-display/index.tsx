@@ -11,7 +11,11 @@ import { buttonReset } from 'styles/button-reset'
 import NewTabIcon from 'assets/icons/new-tab.svg'
 import Header from './header'
 
-const FileViewer = lazy(() => import('components/file-viewer'))
+const FileViewer = lazy(() =>
+  import('@kleros/ui-components-library').then((m) => ({
+    default: m.FileViewer,
+  })),
+)
 
 const Container = styled.div`
   width: 100%;
@@ -19,6 +23,30 @@ const Container = styled.div`
   display: flex;
   flex-direction: column;
   gap: 12px;
+`
+
+/**
+ * Bridges the app's styled-components theme onto the CSS custom properties
+ * the shared `FileViewer` reads, so the viewer tracks light/dark mode. The
+ * `--color-*` aliases mirror the same tokens because the component's Tailwind
+ * utilities resolve colors through that layer.
+ */
+const FileViewerSurface = styled.div`
+  --klerosUIComponentsWhiteBackground: ${({ theme }) =>
+    theme.componentBackground};
+  --klerosUIComponentsLightBackground: ${({ theme }) =>
+    theme.elevatedBackground};
+  --klerosUIComponentsPrimaryText: ${({ theme }) => theme.textPrimary};
+  --klerosUIComponentsSecondaryText: ${({ theme }) => theme.textSecondary};
+  --klerosUIComponentsImageCheckerColor: ${({ theme }) =>
+    theme.skeletonHighlight};
+  --color-klerosUIComponentsWhiteBackground: ${({ theme }) =>
+    theme.componentBackground};
+  --color-klerosUIComponentsLightBackground: ${({ theme }) =>
+    theme.elevatedBackground};
+  --color-klerosUIComponentsPrimaryText: ${({ theme }) => theme.textPrimary};
+  --color-klerosUIComponentsSecondaryText: ${({ theme }) =>
+    theme.textSecondary};
 `
 
 const LoaderContainer = styled.div`
@@ -183,7 +211,9 @@ const AttachmentDisplay: React.FC = () => {
           </LoaderContainer>
         }
       >
-        <FileViewer url={url} />
+        <FileViewerSurface>
+          <FileViewer url={url} />
+        </FileViewerSurface>
       </Suspense>
     </Container>
   )

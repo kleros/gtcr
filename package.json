@@ -16,7 +16,6 @@
     "format": "yarn run lint:eslint:fix && yarn run lint:prettier:fix"
   },
   "dependencies": {
-    "@cyntler/react-doc-viewer": "^1.16.3",
     "@fortawesome/fontawesome-svg-core": "^6.7.2",
     "@fortawesome/free-regular-svg-icons": "^6.7.2",
     "@fortawesome/free-solid-svg-icons": "^6.7.2",
@@ -25,6 +24,7 @@
     "@kleros/gtcr-encoder": "^1.6.1",
     "@kleros/kleros-app": "^2.2.2",
     "@kleros/tcr": "^2.0.0",
+    "@kleros/ui-components-library": "^3.8.0",
     "@reown/appkit": "^1.8.18",
     "@reown/appkit-adapter-wagmi": "^1.8.18",
     "@tanstack/query-core": "^5.90.20",
@@ -43,7 +43,6 @@
     "react-dom": "^18.3.1",
     "react-error-boundary": "^6.1.1",
     "react-is": "^16.13.1",
-    "react-markdown": "^8.0.7",
     "react-router-dom": "^6.30.3",
     "react-toastify": "^11.0.5",
     "styled-components": "^5.3.11",
