@@ -206,6 +206,8 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
         return 'was rejected'
       case STATUS_CODE.REMOVED:
         return 'was removed'
+      case STATUS_CODE.WITHDRAWN:
+        return 'was withdrawn'
       default:
         return 'has unknown status'
     }

@@ -233,6 +233,7 @@ const ItemCard = ({
   if (
     statusCode !== STATUS_CODE.REJECTED &&
     statusCode !== STATUS_CODE.REMOVED &&
+    statusCode !== STATUS_CODE.WITHDRAWN &&
     statusCode !== STATUS_CODE.DISPUTED &&
     statusCode !== STATUS_CODE.PENDING_WITHDRAWAL &&
     statusCode !== STATUS_CODE.CROWDFUNDING &&

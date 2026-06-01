@@ -50,6 +50,7 @@ const ItemActionModal = ({
       )
     case STATUS_CODE.REJECTED:
     case STATUS_CODE.REMOVED:
+    case STATUS_CODE.WITHDRAWN:
       return (
         <SubmitModal
           initialValues={item.decodedData}
