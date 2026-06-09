@@ -6,6 +6,7 @@ import Loading from 'components/loading'
 import useUrlChainId from 'hooks/use-url-chain-id'
 import { usePolicyHistory } from 'hooks/use-policy-history'
 import { parseIpfs } from 'utils/ipfs-parse'
+import { getAllowedAttachmentUrl } from 'utils/url-validation'
 import { formatPolicyDate } from 'utils/format-updated-ago'
 import { buttonReset } from 'styles/button-reset'
 import NewTabIcon from 'assets/icons/new-tab.svg'
@@ -140,6 +141,7 @@ const AttachmentDisplay: React.FC = () => {
   const chainId = useUrlChainId()
 
   const url = searchParams.get('attachment')
+  const safeUrl = getAllowedAttachmentUrl(url)
   const policyTx = searchParams.get('policyTx')
 
   // Only fetch history when a past policy is being viewed (policyTx is set).
@@ -179,7 +181,7 @@ const AttachmentDisplay: React.FC = () => {
     )
   }
 
-  if (!url) return null
+  if (!safeUrl) return null
 
   return (
     <Container>
@@ -200,7 +202,7 @@ const AttachmentDisplay: React.FC = () => {
           )}
         </PastPolicyBanner>
       )}
-      <OpenInNewTab href={url} rel="noreferrer" target="_blank">
+      <OpenInNewTab href={safeUrl} rel="noreferrer" target="_blank">
         Open in new tab
         <StyledNewTabIcon />
       </OpenInNewTab>
@@ -212,7 +214,7 @@ const AttachmentDisplay: React.FC = () => {
         }
       >
         <FileViewerSurface>
-          <FileViewer url={url} />
+          <FileViewer url={safeUrl} />
         </FileViewerSurface>
       </Suspense>
     </Container>

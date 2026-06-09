@@ -10,6 +10,7 @@ import LongText from './long-text'
 import FileDisplay from './file-display'
 import TruncatedLink from './truncated-link'
 import { parseIpfs } from 'utils/ipfs-parse'
+import { isSafeNavigationUrl } from 'utils/url-validation'
 import { useAttachment } from 'hooks/use-attachment'
 import { buttonReset } from 'styles/button-reset'
 
@@ -166,6 +167,8 @@ const DisplaySelector = ({
       )
     case ItemTypes.LINK: {
       const fullUrl = protocolRegex.test(value) ? value : `https://${value}`
+      if (!isSafeNavigationUrl(fullUrl))
+        return <Typography.Text>{value}</Typography.Text>
       if (truncateLinks) return <TruncatedLink url={fullUrl} />
       return (
         <StyledLink href={fullUrl} target="_blank" rel="noopener noreferrer">
