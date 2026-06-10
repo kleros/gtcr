@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import styled from 'styled-components'
 import { Typography } from 'components/ui'
+import { isSafeNavigationUrl } from 'utils/url-validation'
 import ExternalLinkWarning from './external-link-warning'
 
 const StyledA = styled.a`
@@ -33,6 +34,7 @@ const TruncatedLink = ({ url }: TruncatedLinkProps) => {
 
   const handleConfirm = () => {
     setWarningVisible(false)
+    if (!isSafeNavigationUrl(url)) return
     window.open(url, '_blank', 'noopener,noreferrer')
   }
 
