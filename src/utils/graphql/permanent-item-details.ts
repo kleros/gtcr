@@ -69,7 +69,11 @@ const PERMANENT_ITEM_DETAILS_QUERY = gql`
         arbitrator {
           id
         }
-        arbitrationSettings {
+        arbitrationSettings(
+          orderBy: timestamp
+          orderDirection: desc
+          first: 1
+        ) {
           timestamp
           arbitratorExtraData
           metaEvidenceURI
