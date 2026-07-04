@@ -3812,7 +3812,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/node@npm:*":
+"@types/node@npm:*, @types/node@npm:16.7.10":
   version: 16.7.10
   resolution: "@types/node@npm:16.7.10"
   checksum: 10c0/c4c1562696a9160ca2ba74dbf01ec8eb1b1dba89265ceffb4d8395493fa2644599da20eccb868f91017b8221afb310a3e6d56c1ba11529cd2333bb47b14186ba
@@ -9567,6 +9567,7 @@ __metadata:
     "@tanstack/react-query": "npm:^5.90.21"
     "@types/humanize-duration": "npm:^3.27.4"
     "@types/mime": "npm:^3.0.0"
+    "@types/node": "npm:16.7.10"
     "@types/react": "npm:^18.3.28"
     "@types/react-dom": "npm:^18.3.7"
     "@types/styled-components": "npm:^5.1.36"
