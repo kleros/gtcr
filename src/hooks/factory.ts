@@ -11,12 +11,12 @@ const { getAddress } = ethers.utils
  * @param {string} entityKey - The key to check in the response data
  */
 const checkRegistryExists = async (
-  subgraphEndpoint: string,
+  subgraphEndpoint: string | undefined,
   queryTemplate: string,
   entityKey: string,
   tcrAddress: string,
 ): Promise<boolean> => {
-  if (!tcrAddress) return false
+  if (!tcrAddress || !subgraphEndpoint) return false
   let checksumAddress: string
   try {
     checksumAddress = getAddress(tcrAddress)
@@ -45,7 +45,7 @@ const useFactory = () => {
     ? subgraphUrlPermanent[urlChainId]
     : undefined
 
-  const deployedWithLightFactory = (tcrAddress) =>
+  const deployedWithLightFactory = (tcrAddress: string) =>
     checkRegistryExists(
       GTCR_SUBGRAPH_URL,
       '{ lregistry:LRegistry_by_pk(id: "$address") { id } }',
@@ -53,7 +53,7 @@ const useFactory = () => {
       tcrAddress,
     )
 
-  const deployedWithFactory = (tcrAddress) =>
+  const deployedWithFactory = (tcrAddress: string) =>
     checkRegistryExists(
       GTCR_SUBGRAPH_URL,
       '{ registry:Registry_by_pk(id: "$address") { id } }',
@@ -61,7 +61,7 @@ const useFactory = () => {
       tcrAddress,
     )
 
-  const deployedWithPermanentFactory = (tcrAddress) =>
+  const deployedWithPermanentFactory = (tcrAddress: string) =>
     checkRegistryExists(
       PGTCR_SUBGRAPH_URL,
       '{ registry(id: "$address") { id } }',

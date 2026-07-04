@@ -43,14 +43,14 @@ const CustomInput = ({
             addonAfter={addonAfter}
             placeholder={placeholder}
             step={step || 0.0001}
-            disabled={disabled}
+            disabled={disabled ?? undefined}
             {...field}
           />
         ) : (
           <Input
             addonAfter={addonAfter}
             placeholder={placeholder}
-            disabled={disabled}
+            disabled={disabled ?? undefined}
             {...field}
           />
         )}

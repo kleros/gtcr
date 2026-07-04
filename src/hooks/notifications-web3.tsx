@@ -13,12 +13,17 @@ const actionTypes = {
   AUTHORIZATION: 'AUTHORIZATION',
 } as const
 
-interface Web3Action {
-  type: string
-  action:
-    | ((ctx: Web3Context, signer: ethers.Signer) => Promise<Web3ActionResult>)
-    | (() => void)
+interface TransactionWeb3Action {
+  type: typeof actionTypes.TRANSACTION
+  action: (ctx: Web3Context, signer: ethers.Signer) => Promise<Web3ActionResult>
 }
+
+interface AuthorizationWeb3Action {
+  type: typeof actionTypes.AUTHORIZATION
+  action: () => void
+}
+
+type Web3Action = TransactionWeb3Action | AuthorizationWeb3Action
 
 interface Web3Context {
   account: string
@@ -58,11 +63,14 @@ const useNotificationWeb3 = () => {
     () => new ethers.utils.Interface(_GTCRFactory),
     [],
   )
-  const pushWeb3Action = useCallback((action: Web3Action['action']) => {
-    setWeb3Actions((prevState) =>
-      prevState.concat({ action, type: actionTypes.TRANSACTION }),
-    )
-  }, [])
+  const pushWeb3Action = useCallback(
+    (action: TransactionWeb3Action['action']) => {
+      setWeb3Actions((prevState) =>
+        prevState.concat({ action, type: actionTypes.TRANSACTION }),
+      )
+    },
+    [],
+  )
 
   const requestWeb3Auth = useCallback((action?: () => void) => {
     // Open the Reown AppKit modal for wallet connection
@@ -116,7 +124,7 @@ const useNotificationWeb3 = () => {
     if (!provider || timestamp) return
     ;(async () => {
       try {
-        const block = await provider.getBlock()
+        const block = await provider.getBlock('latest')
         setTimestamp(BigNumber.from(block.timestamp))
         setLatestBlock(block.number)
       } catch (err) {
@@ -136,10 +144,11 @@ const useNotificationWeb3 = () => {
         return
       }
 
-      if (!signer) return
+      if (!signer || !provider) return
 
       while (web3Actions.length > 0) {
         const web3Action = web3Actions.pop()
+        if (!web3Action) break
         if (web3Action.type === actionTypes.TRANSACTION) {
           const web3Context = {
             account,
@@ -196,7 +205,7 @@ const useNotificationWeb3 = () => {
  * @param {object} provider - The ethers v5 provider.
  */
 async function processWeb3Action(
-  web3Action: Web3Action,
+  web3Action: TransactionWeb3Action,
   web3Context: Web3Context,
   signer: ethers.Signer,
   factoryInterface: ethers.utils.Interface,

@@ -8,7 +8,7 @@ import { simulateContract } from '@wagmi/core'
 import { useParams } from 'react-router-dom'
 import useUrlChainId from 'hooks/use-url-chain-id'
 import { abi as _batchWithdraw } from '@kleros/tcr/build/contracts/BatchWithdraw.json'
-import { BigNumber } from 'ethers'
+import { BigNumber, Contract } from 'ethers'
 import { TCRViewContext } from 'contexts/tcr-view-context'
 import TCRMetadataDisplay from './tcr-metadata-display'
 import { addPeriod } from '../utils/string'
@@ -71,7 +71,7 @@ interface ItemDetailsCardProps {
   columns?: Column[] | null
   loading?: boolean | null
   item?: SubgraphItem
-  itemMetaEvidence?: MetaEvidence | false
+  itemMetaEvidence?: { file?: MetaEvidence; error?: Error } | false | null
   disabled?: boolean
 }
 
@@ -88,7 +88,9 @@ const ItemDetailsCard = ({
   const publicClient = usePublicClient()
   const { data: walletClient } = useWalletClient()
   const tcrViewContext = useContext(TCRViewContext)
-  const [availableRewards, setAvailableRewards] = useState()
+  const [availableRewards, setAvailableRewards] = useState<
+    BigNumber | undefined
+  >()
   const BATCH_WITHDRAW_ADDRESS = batchWithdrawAddresses[chainId]
   const { tcrAddress } = useParams()
   const urlChainId = useUrlChainId()
@@ -100,7 +102,7 @@ const ItemDetailsCard = ({
         return
 
       setAvailableRewards(
-        await tcrViewContext.gtcrView.availableRewards(
+        await (tcrViewContext.gtcrView as Contract).availableRewards(
           tcrViewContext.tcrAddress,
           item.itemID,
           account,
@@ -110,11 +112,18 @@ const ItemDetailsCard = ({
   }, [account, item, tcrViewContext])
 
   const batchWithdrawClick = useCallback(async () => {
-    if (!tcrViewContext || !BATCH_WITHDRAW_ADDRESS || !item) return
+    if (
+      !tcrViewContext ||
+      !BATCH_WITHDRAW_ADDRESS ||
+      !item ||
+      !walletClient ||
+      !publicClient
+    )
+      return
 
     try {
       const { request } = await simulateContract(wagmiConfig, {
-        address: BATCH_WITHDRAW_ADDRESS,
+        address: BATCH_WITHDRAW_ADDRESS as `0x${string}`,
         abi: _batchWithdraw,
         functionName: 'batchRequestWithdraw',
         args: [tcrViewContext.tcrAddress, account, item.itemID, 0, 0, 0, 0],
@@ -128,7 +137,7 @@ const ItemDetailsCard = ({
 
       if (result.status)
         setAvailableRewards(
-          await tcrViewContext.gtcrView.availableRewards(
+          await (tcrViewContext.gtcrView as Contract).availableRewards(
             tcrViewContext.tcrAddress,
             item.itemID,
             account,
@@ -152,12 +161,12 @@ const ItemDetailsCard = ({
   const { metadata: itemMetaData, fileURI } = itemMetaEvidenceFile || {}
   const { tcrTitle, tcrDescription, logoURI } = itemMetaData || {}
 
-  if (!loading && item && item.errors.length > 0)
+  if (!loading && item && (item.errors as string[]).length > 0)
     return (
       <Result
         id="item-details-card"
         status="warning"
-        subTitle={item.errors.map((e, i) => (
+        subTitle={(item.errors as string[]).map((e, i) => (
           <p key={i}>{e}</p>
         ))}
         style={{ width: '100%' }}
@@ -166,9 +175,8 @@ const ItemDetailsCard = ({
 
   return (
     <StyledCard
-      id="item-details-card"
       title={title}
-      loading={loading}
+      loading={loading ?? undefined}
       extra={
         item &&
         item.resolved &&
@@ -192,9 +200,9 @@ const ItemDetailsCard = ({
           {itemMetaData && (
             <TCRMetadataDisplay
               logoURI={logoURI}
-              tcrTitle={tcrTitle}
-              fileURI={fileURI}
-              tcrDescription={tcrDescription}
+              tcrTitle={tcrTitle ?? ''}
+              fileURI={fileURI ?? ''}
+              tcrDescription={tcrDescription ?? ''}
             />
           )}
           {columns.map((column, index) => (
@@ -211,7 +219,14 @@ const ItemDetailsCard = ({
               </span>{' '}
               <DisplaySelector
                 type={column.type}
-                value={item && item.decodedData[index]}
+                value={
+                  item &&
+                  (item.decodedData?.[index] as
+                    | string
+                    | number
+                    | boolean
+                    | null)
+                }
                 linkImage
                 allowedFileTypes={column.allowedFileTypes}
                 disabled={disabled}
@@ -221,13 +236,13 @@ const ItemDetailsCard = ({
         </StyledFields>
       )}
       {tcrAddress !== undefined &&
-        urlChainId !== undefined &&
+        urlChainId !== null &&
         isSeerRegistry(tcrAddress, urlChainId) &&
         item && (
           <SeerExtraDetails
             chainId={urlChainId}
-            contractAddress={item.decodedData[0]}
-            imagesIpfsHash={item.decodedData[1]}
+            contractAddress={item.decodedData?.[0] as string}
+            imagesIpfsHash={item.decodedData?.[1] as string}
           />
         )}
     </StyledCard>

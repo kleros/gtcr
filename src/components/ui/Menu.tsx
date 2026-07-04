@@ -146,19 +146,21 @@ const Menu: MenuComponent = ({
     style={style}
     className={`ui-menu${className ? ` ${className}` : ''}`}
   >
-    {React.Children.map(
-      children,
-      (child: React.ReactElement<MenuItemProps>) => {
-        if (!child || child.type !== MenuItem) return child
-        const itemKey = child.key
-        return React.cloneElement(child, {
-          $itemKey: itemKey,
-          $selected: selectedKeys.includes(itemKey),
-          $onMenuClick: onClick,
-          $mode: mode,
-        })
-      },
-    )}
+    {React.Children.map(children, (child) => {
+      if (
+        !child ||
+        !React.isValidElement<MenuItemProps>(child) ||
+        child.type !== MenuItem
+      )
+        return child
+      const itemKey = child.key
+      return React.cloneElement(child, {
+        $itemKey: itemKey ?? undefined,
+        $selected: itemKey !== null && selectedKeys.includes(itemKey),
+        $onMenuClick: onClick,
+        $mode: mode,
+      })
+    })}
   </MenuWrapper>
 )
 

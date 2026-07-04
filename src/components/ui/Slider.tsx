@@ -78,6 +78,8 @@ interface SliderProps {
   onChange?: (value: number) => void
   step?: number
   disabled?: boolean
+  id?: string
+  tooltipVisible?: false
   style?: React.CSSProperties
   className?: string
   defaultValue?: number
@@ -90,6 +92,7 @@ const Slider: React.FC<SliderProps> = ({
   onChange,
   step = 1,
   disabled = false,
+  id,
   style,
   className,
   defaultValue,
@@ -125,6 +128,7 @@ const Slider: React.FC<SliderProps> = ({
     <SliderWrapper style={style} className={className}>
       <StyledRange
         type="range"
+        id={id}
         min={min}
         max={max}
         step={step}

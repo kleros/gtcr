@@ -142,9 +142,16 @@ interface OptionProps {
 const Option: React.FC<OptionProps> = () => null
 Option.displayName = 'Select.Option'
 
+export interface LabeledValue {
+  key: string | number
+  label: React.ReactNode
+}
+
+export type SelectChangeValue = string | number | LabeledValue
+
 interface SelectProps {
   value?: string | number
-  onChange?: (value: string | number) => void
+  onChange?: (value: SelectChangeValue) => void
   disabled?: boolean
   loading?: boolean
   labelInValue?: boolean
@@ -279,10 +286,7 @@ const Select: SelectComponent = ({
       setOpen(false)
       setSearch('')
       if (onChange)
-        if (labelInValue)
-          onChange({ key: newValue, label: opt.label } as unknown as
-            | string
-            | number)
+        if (labelInValue) onChange({ key: newValue, label: opt.label })
         else onChange(newValue)
     },
     [onChange, labelInValue],

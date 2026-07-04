@@ -105,7 +105,9 @@ const useLightTcrView = (tcrAddress: string) => {
   const arbitrableQuery = useQuery({
     queryKey: ['arbitrableTCRData', 'light', tcrAddress, networkId],
     queryFn: async () => {
-      const data = await gtcrView!.fetchArbitrable(tcrAddress)
+      const data = (await gtcrView!.fetchArbitrable(
+        tcrAddress,
+      )) as ArbitrableTCRData
       return { ...data, tcrAddress }
     },
     enabled: !!gtcrView && !!tcrAddress,
@@ -115,7 +117,13 @@ const useLightTcrView = (tcrAddress: string) => {
   const arbitrableTCRData = arbitrableQuery.data
 
   // Derive deposits from arbitrable data (pure computation, no network).
-  const deposits = useMemo(() => {
+  const deposits = useMemo<{
+    arbitrationCost?: BigNumber
+    submissionDeposit?: BigNumber
+    submissionChallengeDeposit?: BigNumber
+    removalDeposit?: BigNumber
+    removalChallengeDeposit?: BigNumber
+  }>(() => {
     if (!arbitrableTCRData) return {}
 
     try {
@@ -128,19 +136,11 @@ const useLightTcrView = (tcrAddress: string) => {
       } = arbitrableTCRData
 
       return {
-        arbitrationCost: cost as BigNumber,
-        submissionDeposit: (submissionBaseDeposit as BigNumber).add(
-          cost as BigNumber,
-        ),
-        removalDeposit: (removalBaseDeposit as BigNumber).add(
-          cost as BigNumber,
-        ),
-        submissionChallengeDeposit: (
-          submissionChallengeBaseDeposit as BigNumber
-        ).add(cost as BigNumber),
-        removalChallengeDeposit: (removalChallengeBaseDeposit as BigNumber).add(
-          cost as BigNumber,
-        ),
+        arbitrationCost: cost,
+        submissionDeposit: submissionBaseDeposit.add(cost),
+        removalDeposit: removalBaseDeposit.add(cost),
+        submissionChallengeDeposit: submissionChallengeBaseDeposit.add(cost),
+        removalChallengeDeposit: removalChallengeBaseDeposit.add(cost),
       }
     } catch (err) {
       console.error('Error computing arbitration cost:', err)

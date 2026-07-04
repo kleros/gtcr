@@ -9,7 +9,7 @@ import Icon from 'components/ui/Icon'
 import styled from 'styled-components'
 import { BigNumber } from 'ethers'
 
-const SkeletonTitleProps = { width: 90 }
+const SkeletonTitleProps = { width: '90px' }
 const StyledSkeleton = styled(Skeleton)`
   display: inline;
 
@@ -82,7 +82,6 @@ const ItemStatusBadge = ({
   item,
   timestamp,
   statusCode,
-  _dark,
 }: ItemStatusBadgeProps) => {
   if (statusCode)
     return (
@@ -101,6 +100,9 @@ const ItemStatusBadge = ({
     return (
       <StyledSkeleton active paragraph={false} title={SkeletonTitleProps} />
     )
+
+  if (typeof statusCode !== 'number')
+    throw new Error(`Unhandled status code ${statusCode}`)
 
   return (
     <ItemStatusBadgeWrap>

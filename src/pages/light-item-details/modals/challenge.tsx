@@ -9,7 +9,7 @@ import { STATUS_CODE, CONTRACT_STATUS } from 'utils/item-status'
 import { LightTCRViewContext } from 'contexts/light-tcr-view-context'
 import EnsureAuth from 'components/ensure-auth'
 import ETHAmount from 'components/eth-amount'
-import EvidenceForm from 'components/evidence-form'
+import EvidenceForm, { EvidenceFormValues } from 'components/evidence-form'
 import useNativeBalance from 'hooks/use-native-balance'
 import { useAtlasProvider } from '@kleros/kleros-app'
 import { uploadEvidence } from 'utils/upload-evidence'
@@ -40,18 +40,19 @@ interface ChallengeModalProps {
   itemName?: string
   statusCode?: number
   fileURI?: string
-  [key: string]: unknown
+  visible?: boolean
+  title?: React.ReactNode
+  onCancel: () => void
 }
 
 const ChallengeModal = ({
   item,
-  _itemName,
   statusCode,
   fileURI,
   ...rest
 }: ChallengeModalProps) => {
   const { submissionChallengeDeposit, removalChallengeDeposit, tcrAddress } =
-    useContext(LightTCRViewContext)
+    useContext(LightTCRViewContext) || {}
   const { address: account } = useAccount()
   const chainId = useChainId()
   const publicClient = usePublicClient()
@@ -73,18 +74,26 @@ const ChallengeModal = ({
     title,
     description,
     evidenceAttachment,
-  }) => {
+  }: EvidenceFormValues) => {
+    if (
+      !account ||
+      !tcrAddress ||
+      !walletClient ||
+      !publicClient ||
+      !challengeDeposit
+    )
+      return
     setIsSubmitting(true)
     try {
       const ipfsEvidencePath = await uploadEvidence({
         title: title || 'Challenge Justification',
-        description,
+        description: description ?? '',
         attachment: evidenceAttachment as File | undefined,
         uploadFile,
       })
 
       const { request } = await simulateContract(wagmiConfig, {
-        address: tcrAddress,
+        address: tcrAddress as `0x${string}`,
         abi: _gtcr,
         functionName: 'challengeRequest',
         args: [item.itemID, ipfsEvidencePath],

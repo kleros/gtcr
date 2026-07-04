@@ -1,6 +1,17 @@
 import { toast, type ToastPosition } from 'react-toastify'
-import type { PublicClient, TransactionReceipt } from 'viem'
+import type { TransactionReceipt } from 'viem'
 import { parseWagmiError } from './parse-wagmi-error'
+
+/**
+ * Minimal structural surface of a viem/wagmi public client. Declared as a
+ * method so chain-specific client generics stay assignable (bivariance).
+ */
+export interface TransactionReceiptClient {
+  waitForTransactionReceipt(args: {
+    hash: `0x${string}`
+    confirmations?: number
+  }): Promise<TransactionReceipt>
+}
 
 export const OPTIONS = {
   position: 'top-center' as ToastPosition,
@@ -29,7 +40,7 @@ export const errorToast = (message: string) =>
 
 export async function wrapWithToast(
   contractWrite: () => Promise<`0x${string}`>,
-  publicClient: PublicClient,
+  publicClient: TransactionReceiptClient,
 ): Promise<WrapWithToastReturnType> {
   toast.info('Transaction initiated', OPTIONS)
 

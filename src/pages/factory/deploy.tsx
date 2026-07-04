@@ -28,6 +28,7 @@ import {
   lgtcrFactoryAddresses,
   txBatcherAddresses,
 } from 'config/tcr-addresses'
+import type { StepProps, TcrState } from '.'
 
 export const StyledDiv = styled.div`
   word-break: break-all;
@@ -81,9 +82,9 @@ export const _txBatcher = [
 ]
 
 const getTcrMetaEvidence = async (
-  tcrState,
-  parentTCRAddress,
-  evidenceDisplayInterfaceURI,
+  tcrState: TcrState,
+  parentTCRAddress: string,
+  evidenceDisplayInterfaceURI: string,
   uploadFile: (file: File, role: Roles) => Promise<string | null>,
 ) => {
   const {
@@ -278,14 +279,7 @@ const getTcrMetaEvidence = async (
   }
 }
 
-interface DeployProps {
-  setTxState: (tx: Record<string, unknown>) => void
-  tcrState: Record<string, unknown>
-  setTcrState: (
-    fn: (prev: Record<string, unknown>) => Record<string, unknown>,
-  ) => void
-  [key: string]: unknown
-}
+type DeployProps = StepProps
 
 const Deploy = ({ setTxState, tcrState, setTcrState }: DeployProps) => {
   const chainId = useChainId()
@@ -294,24 +288,34 @@ const Deploy = ({ setTxState, tcrState, setTcrState }: DeployProps) => {
   const { data: walletClient } = useWalletClient()
   const { width } = useWindowDimensions()
   const [currentStep, setCurrentStep] = useState(0)
-  const [txSubmitted, setTxSubmitted] = useState<any>()
-  const [deployedTCRAddress, setDeployedTCRAddress] = useState<any>()
-  const [submissionFormOpen, setSubmissionFormOpen] = useState<any>()
+  const [txSubmitted, setTxSubmitted] = useState<string>()
+  const [deployedTCRAddress, setDeployedTCRAddress] = useState<string>()
+  const [submissionFormOpen, setSubmissionFormOpen] = useState(false)
   const factoryAddress = lgtcrFactoryAddresses[chainId]
   const defaultTCRAddress = defaultTcrAddresses[chainId]
   const batcherAddress = txBatcherAddresses[chainId]
   const evidenceDisplayInterfaceURI = defaultEvidenceDisplayUri[chainId]
   const { submissionDeposit, metaEvidence, challengePeriodDuration } =
-    useTcrView(defaultTCRAddress)
+    useTcrView(defaultTCRAddress ?? '')
   const { uploadFile } = useAtlasProvider()
 
   const onDeploy = async () => {
+    if (
+      !factoryAddress ||
+      !batcherAddress ||
+      !evidenceDisplayInterfaceURI ||
+      !publicClient ||
+      !walletClient
+    )
+      return
+    const factory = factoryAddress as `0x${string}`
+    const batcher = batcherAddress as `0x${string}`
     try {
       const txCount = await publicClient.getTransactionCount({
-        address: factoryAddress,
+        address: factory,
       })
       const parentTCRAddress = getContractAddress({
-        from: factoryAddress,
+        from: factory,
         nonce: BigInt(txCount + 1),
       })
 
@@ -359,7 +363,7 @@ const Deploy = ({ setTxState, tcrState, setTcrState }: DeployProps) => {
         args: relTCRArgs,
       })
       const relTCRAddress = getContractAddress({
-        from: factoryAddress,
+        from: factory,
         nonce: BigInt(txCount),
       })
 
@@ -390,12 +394,12 @@ const Deploy = ({ setTxState, tcrState, setTcrState }: DeployProps) => {
         args: TCRArgs,
       })
 
-      const targets = [factoryAddress, factoryAddress]
+      const targets = [factory, factory]
       const values = [0n, 0n]
       const datas = [relData, tcrData]
 
       const { request } = await simulateContract(wagmiConfig, {
-        address: batcherAddress,
+        address: batcher,
         abi: _txBatcher,
         functionName: 'batchSend',
         args: [targets, values, datas],
@@ -410,12 +414,12 @@ const Deploy = ({ setTxState, tcrState, setTcrState }: DeployProps) => {
         publicClient,
       )
 
-      if (result.status) {
+      if (result.status && result.result) {
         const txHash = result.result.transactionHash
         setTxSubmitted(txHash)
 
         // Find the deployed contract address from the receipt logs
-        let contractAddress = parentTCRAddress // fallback to predicted address
+        let contractAddress: string = parentTCRAddress // fallback to predicted address
         try {
           const newGTCRLogs = result.result.logs
             .map((log) => {
@@ -429,12 +433,21 @@ const Deploy = ({ setTxState, tcrState, setTcrState }: DeployProps) => {
                 return null
               }
             })
-            .filter((parsed) => parsed && parsed.eventName === 'NewGTCR')
+            .filter(
+              (parsed): parsed is NonNullable<typeof parsed> =>
+                !!parsed && parsed.eventName === 'NewGTCR',
+            )
           // The second NewGTCR event is the parent TCR
+          const pickAddress = (args: unknown): string | undefined =>
+            args && typeof args === 'object' && '_address' in args
+              ? ((args as { _address?: string })._address ?? undefined)
+              : undefined
           if (newGTCRLogs.length >= 2)
-            contractAddress = newGTCRLogs[1].args._address
+            contractAddress =
+              pickAddress(newGTCRLogs[1].args) ?? contractAddress
           else if (newGTCRLogs.length === 1)
-            contractAddress = newGTCRLogs[0].args._address
+            contractAddress =
+              pickAddress(newGTCRLogs[0].args) ?? contractAddress
         } catch (err) {
           console.error('Error parsing deploy logs:', err)
         }
@@ -507,9 +520,15 @@ const Deploy = ({ setTxState, tcrState, setTcrState }: DeployProps) => {
                 <StyledDiv>
                   Your list was created at the following address:{' '}
                   <Link
-                    to={`/tcr/${chainId}/${tcrState.transactions[txSubmitted].contractAddress}`}
+                    to={`/tcr/${chainId}/${
+                      (txSubmitted &&
+                        tcrState.transactions[txSubmitted]?.contractAddress) ||
+                      ''
+                    }`}
                   >
-                    {tcrState.transactions[txSubmitted].contractAddress}
+                    {(txSubmitted &&
+                      tcrState.transactions[txSubmitted]?.contractAddress) ||
+                      ''}
                   </Link>
                   .
                 </StyledDiv>
@@ -518,13 +537,12 @@ const Deploy = ({ setTxState, tcrState, setTcrState }: DeployProps) => {
                   listing criteria,{' '}
                   <Button
                     type="link"
-                    onClick={setSubmissionFormOpen}
+                    onClick={() => setSubmissionFormOpen(true)}
                     style={{ padding: 0 }}
                   >
                     submit it to{' '}
-                    {(metaEvidence && metaEvidence.metadata.tcrTitle) ||
-                      'Curated Lists'}{' '}
-                    so other users can find it.
+                    {metaEvidence?.metadata?.tcrTitle || 'Curated Lists'} so
+                    other users can find it.
                   </Button>
                 </StyledDiv>
               </>
@@ -549,17 +567,20 @@ const Deploy = ({ setTxState, tcrState, setTcrState }: DeployProps) => {
           </StyledSpan>
         )}
       </StyledCard>
-      {metaEvidence && (
-        <SubmitModal
-          initialValues={[deployedTCRAddress]}
-          visible={!!submissionFormOpen}
-          onCancel={() => setSubmissionFormOpen(false)}
-          submissionDeposit={submissionDeposit}
-          tcrAddress={defaultTCRAddress}
-          metaEvidence={metaEvidence}
-          challengePeriodDuration={challengePeriodDuration}
-        />
-      )}
+      {metaEvidence &&
+        submissionDeposit &&
+        challengePeriodDuration &&
+        defaultTCRAddress && (
+          <SubmitModal
+            initialValues={deployedTCRAddress ? [deployedTCRAddress] : []}
+            visible={!!submissionFormOpen}
+            onCancel={() => setSubmissionFormOpen(false)}
+            submissionDeposit={submissionDeposit}
+            tcrAddress={defaultTCRAddress}
+            metaEvidence={metaEvidence}
+            challengePeriodDuration={challengePeriodDuration}
+          />
+        )}
     </>
   )
 }

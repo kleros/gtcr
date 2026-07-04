@@ -3,7 +3,7 @@ import { Modal, Button, Form, Tooltip, Typography, Alert } from 'components/ui'
 import Icon from 'components/ui/Icon'
 import styled from 'styled-components'
 import _gtcr from 'assets/abis/PermanentGTCR.json'
-import { withFormik } from 'formik'
+import { withFormik, FormikProps, FormikState } from 'formik'
 import humanizeDuration from 'humanize-duration'
 import { useAccount, usePublicClient, useWalletClient } from 'wagmi'
 import { simulateContract } from '@wagmi/core'
@@ -23,7 +23,6 @@ import useTokenSymbol from 'hooks/token-symbol'
 import { wrapWithToast, errorToast } from 'utils/wrap-with-toast'
 import { parseWagmiError } from 'utils/parse-wagmi-error'
 import { wagmiConfig } from 'config/wagmi'
-import { Column } from 'pages/item-details/modals/submit'
 import { StyledSpin } from './challenge'
 
 export const StyledAlert = styled(Alert)`
@@ -73,17 +72,32 @@ export const DepositLabel = styled.span`
 
 export const SUBMISSION_FORM_ID = 'submitItemForm'
 
-const _SubmissionForm: React.FC<{
-  style: React.CSSProperties
+type SubmitFormValues = Record<string, string>
+
+interface SubmissionFormOuterProps {
+  style?: React.CSSProperties
   columns: Column[]
-  setFieldValue: (fieldName: string, value: unknown) => void
-  handleSubmit: () => void
-  disabledFields: boolean[]
-  values: Record<string, string | File>
-  errors: { [label: string]: string }
-  touched: { [label: string]: boolean }
+  disabledFields?: boolean[]
+  postSubmit: (
+    values: Record<string, string | File>,
+    columns: Column[],
+    resetForm: (nextState?: Partial<FormikState<SubmitFormValues>>) => void,
+    setFieldValue: (
+      field: string,
+      value: unknown,
+      shouldValidate?: boolean,
+    ) => void,
+  ) => void
+  deployedWithFactory: (tcrAddress: string) => Promise<boolean>
+  deployedWithLightFactory: (tcrAddress: string) => Promise<boolean>
+  deployedWithPermanentFactory: (tcrAddress: string) => Promise<boolean>
+  initialValues?: unknown[]
   onFieldsComplete?: (complete: boolean) => void
-}> = (p) => {
+}
+
+const _SubmissionForm: React.FC<
+  SubmissionFormOuterProps & FormikProps<SubmitFormValues>
+> = (p) => {
   useEffect(() => {
     if (!p.onFieldsComplete || !p.columns) return
     const allFilled = p.columns.every((column) => {
@@ -125,99 +139,92 @@ const _SubmissionForm: React.FC<{
   )
 }
 
-const SubmissionForm: React.ComponentType<Record<string, unknown>> = withFormik(
-  {
-    mapPropsToValues: ({
-      columns,
-      initialValues,
-    }: {
-      columns: Column[]
-      initialValues?: string[]
-    }) =>
-      columns.reduce((acc: Record<string, string>, curr: Column, i: number) => {
-        const defaultValue = initialValues
-          ? initialValues[i]
-          : curr.type === 'number'
-            ? ''
-            : // @ts-ignore
-              typeDefaultValues[curr.type]
+const SubmissionForm = withFormik<SubmissionFormOuterProps, SubmitFormValues>({
+  mapPropsToValues: ({ columns, initialValues }) =>
+    columns.reduce((acc: Record<string, string>, curr: Column, i: number) => {
+      const defaultValue = initialValues
+        ? initialValues[i]
+        : curr.type === 'number'
+          ? ''
+          : // @ts-ignore
+            typeDefaultValues[curr.type]
 
-        return {
-          ...acc,
-          [curr.label]: String(defaultValue),
-        }
-      }, {}),
-    handleSubmit: (values, { props, resetForm, setFieldValue }) => {
-      props.postSubmit(values, props.columns, resetForm, setFieldValue)
+      return {
+        ...acc,
+        [curr.label]: String(defaultValue),
+      }
+    }, {}),
+  handleSubmit: (values, { props, resetForm, setFieldValue }) => {
+    props.postSubmit(values, props.columns, resetForm, setFieldValue)
+  },
+  validate: async (
+    values,
+    {
+      columns,
+      deployedWithFactory,
+      deployedWithLightFactory,
+      deployedWithPermanentFactory,
     },
-    validate: async (
-      values,
-      {
-        columns,
-        deployedWithFactory,
-        deployedWithLightFactory,
-        deployedWithPermanentFactory,
-      },
-    ) => {
-      const errors = (
-        await Promise.all(
-          columns
-            .filter(({ type }: Column) => type === ItemTypes.GTCR_ADDRESS)
-            .map(async ({ label }: Column) => ({
-              isEmpty: !values[label],
-              wasDeployedWithFactory:
-                !!values[label] &&
-                ((await deployedWithFactory(values[label])) ||
-                  (await deployedWithLightFactory(values[label])) ||
-                  (await deployedWithPermanentFactory(values[label]))),
-              label: label,
-            })),
-        )
+  ) => {
+    const errors = (
+      await Promise.all(
+        columns
+          .filter(({ type }: Column) => type === ItemTypes.GTCR_ADDRESS)
+          .map(async ({ label }: Column) => ({
+            isEmpty: !values[label],
+            wasDeployedWithFactory:
+              !!values[label] &&
+              ((await deployedWithFactory(values[label])) ||
+                (await deployedWithLightFactory(values[label])) ||
+                (await deployedWithPermanentFactory(values[label]))),
+            label: label,
+          })),
       )
-        .filter(
-          (res: {
+    )
+      .filter(
+        (res: {
+          wasDeployedWithFactory: boolean
+          isEmpty: boolean
+          label: string
+        }) => !res.wasDeployedWithFactory || res.isEmpty,
+      )
+      .reduce(
+        (
+          acc: Record<string, string>,
+          curr: {
             wasDeployedWithFactory: boolean
             isEmpty: boolean
             label: string
-          }) => !res.wasDeployedWithFactory || res.isEmpty,
-        )
-        .reduce(
-          (
-            acc: Record<string, string>,
-            curr: {
-              wasDeployedWithFactory: boolean
-              isEmpty: boolean
-              label: string
-            },
-          ) => ({
-            ...acc,
-            [curr.label]: curr.isEmpty
-              ? `Enter a list address to proceed.`
-              : `This address was not deployed with the list creator.`,
-          }),
-          {},
-        )
-      if (Object.keys(errors as Record<string, string>).length > 0) throw errors
-    },
+          },
+        ) => ({
+          ...acc,
+          [curr.label]: curr.isEmpty
+            ? `Enter a list address to proceed.`
+            : `This address was not deployed with the list creator.`,
+        }),
+        {},
+      )
+    if (Object.keys(errors as Record<string, string>).length > 0) throw errors
   },
-)(_SubmissionForm as React.ComponentType<Record<string, unknown>>)
+})(_SubmissionForm)
 
 const SubmitModal: React.FC<{
   onCancel: () => void
   tcrAddress: string
   tokenAddress: string
-  initialValues: string[]
+  initialValues?: unknown[]
   submissionDeposit: { toString: () => string }
-  metadata: {
+  metadata?: {
     title: string
     itemName: string
     policyURI: string
   }
   columns: Column[]
-  disabledFields: boolean[]
+  disabledFields?: boolean[]
   submissionPeriod: string | number | undefined
   withdrawingPeriod: string | number | undefined
   arbitrationCost: { toString: () => string } | undefined
+  visible?: boolean
 }> = (props) => {
   const {
     onCancel,
@@ -341,7 +348,7 @@ const SubmitModal: React.FC<{
     async (
       values: Record<string, string | File>,
       columns: Column[],
-      resetForm: (nextState?: Record<string, unknown>) => void,
+      resetForm: (nextState?: Partial<FormikState<SubmitFormValues>>) => void,
       setFieldValue: (
         field: string,
         value: unknown,

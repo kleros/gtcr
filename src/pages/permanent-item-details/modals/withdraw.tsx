@@ -43,13 +43,13 @@ const WithdrawModal: React.FC<WithdrawModalProps> = ({
   const [loading, setLoading] = useState(false)
 
   const handleStartWithdraw = async () => {
-    if (!item || !registry) return
+    if (!item || !registry || !walletClient || !publicClient) return
 
     setLoading(true)
 
     try {
       const { request } = await simulateContract(wagmiConfig, {
-        address: registry.id,
+        address: registry.id as `0x${string}`,
         abi: _gtcr,
         functionName: 'startWithdrawItem',
         args: [item.itemID],

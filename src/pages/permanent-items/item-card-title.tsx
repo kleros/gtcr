@@ -97,7 +97,7 @@ const ItemCardTitle = ({
             </BountyContainer>
           )}
       </StatusAndBountyContainer>
-      {timeUntilValid > 0 && (
+      {(timeUntilValid ?? 0) > 0 && (
         <CountdownContainer>
           Ends {validityCountdown}
           <Tooltip title="This is the challenge period before this item is accepted into the list.">

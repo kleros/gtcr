@@ -6,7 +6,7 @@ import { useParams, Link } from 'react-router-dom'
 import useUrlChainId from 'hooks/use-url-chain-id'
 import useDocumentHead from 'hooks/use-document-head'
 import { abi as _IArbitrator } from '@kleros/erc-792/build/contracts/IArbitrator.json'
-import { ethers } from 'ethers'
+import { ethers, BigNumber } from 'ethers'
 import { useEthersProvider } from 'hooks/ethers-adapters'
 import ErrorPage from '../error-page'
 import ItemDetailsCard from 'components/item-details-card'
@@ -127,14 +127,14 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
   const [ipfsItemData, setIpfsItemData] = useState<
     Record<string, unknown> | undefined
   >()
-  const { timestamp } = useContext(WalletContext)
+  const { timestamp } = useContext(WalletContext) || {}
   const [modalOpen, setModalOpen] = useState<boolean | undefined>()
   const { tcrError, metaEvidence, challengePeriodDuration } =
-    useContext(LightTCRViewContext)
-  const [appealCost, setAppealCost] = useState<BigNumber | undefined>()
+    useContext(LightTCRViewContext) || {}
+  const [appealCost, setAppealCost] = useState<BigNumber | null | undefined>()
 
   // subgraph item entities have id "<itemID>@<listaddress>"
-  const compoundId = `${itemID}@${tcrAddress.toLowerCase()}`
+  const compoundId = `${itemID}@${tcrAddress?.toLowerCase()}`
   const { graphqlBatcher } = useGraphqlBatcher()
   const detailsViewQuery = useQuery({
     queryKey: ['lightItemDetails', compoundId],
@@ -216,7 +216,7 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
     // show fields; otherwise show the "unavailable" warning immediately so the
     // user isn't stuck behind a hanging gateway.
     if (ipfsItemData && metaEvidence) {
-      const columns = metaEvidence.metadata.columns
+      const columns = metaEvidence.metadata?.columns ?? []
       return {
         ...item,
         errors: [],
@@ -245,7 +245,7 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
     return itemToStatusCode(item, timestamp, challengePeriodDuration)
   }, [item, timestamp, challengePeriodDuration])
 
-  const getStatusPhrase = (statusCode) => {
+  const getStatusPhrase = (statusCode: number | undefined) => {
     switch (statusCode) {
       case STATUS_CODE.REGISTERED:
         return 'is verified to be safe'
@@ -274,7 +274,8 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
     }
   }
 
-  const capitalizeFirst = (s) => s?.charAt(0).toUpperCase() + s?.slice(1)
+  const capitalizeFirst = (s: string | undefined) =>
+    s ? s.charAt(0).toUpperCase() + s.slice(1) : s
 
   const fullSeoTitle =
     decodedItem && metadata
@@ -335,8 +336,8 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
       )
       arbitrator
         .appealCost(request.disputeID, request.arbitratorExtraData)
-        .then((cost) => setAppealCost(cost))
-        .catch((err) => {
+        .then((cost: BigNumber) => setAppealCost(cost))
+        .catch((err: unknown) => {
           console.error(err)
           setAppealCost(null)
         })
@@ -349,7 +350,11 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
     return (
       <ErrorPage
         code="400"
-        message={tcrError || 'This item could not be found.'}
+        message={
+          typeof tcrError === 'string'
+            ? tcrError
+            : 'This item could not be found.'
+        }
         tip="Make sure your wallet is set to the correct network (is this on Gnosis Chain?)."
       />
     )
@@ -384,8 +389,7 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
           request={item?.requests && { ...item.requests[0] }}
           modalOpen={modalOpen}
           setModalOpen={setModalOpen}
-          appealCost={appealCost}
-          dark
+          appealCost={appealCost ?? undefined}
         />
         <Divider />
         <ItemDetailsCard
@@ -401,13 +405,16 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
         <CrowdfundingCard
           item={decodedItem}
           timestamp={timestamp}
-          appealCost={appealCost}
+          appealCost={appealCost ?? undefined}
         />
 
         {/* Spread the `requests` parameter to convert elements from array to an object */}
         <RequestTimelines
           item={item}
-          requests={item?.requests && item.requests.map((r) => ({ ...r }))}
+          requests={
+            item?.requests &&
+            item.requests.map((r: SubgraphRequest) => ({ ...r }))
+          }
           kind="light"
           metaEvidence={metaEvidence}
         />

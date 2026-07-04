@@ -12,28 +12,26 @@ import {
 } from 'components/ui'
 import Icon from 'components/ui/Icon'
 import { toast } from 'react-toastify'
-import { withFormik, FieldArray, Field } from 'formik'
+import {
+  withFormik,
+  FieldArray,
+  Field,
+  type FormikProps,
+  type FieldProps,
+  type FormikErrors,
+} from 'formik'
+import type { StepProps, TcrState } from 'pages/factory'
+import type { SelectChangeValue } from 'components/ui/Select'
 import * as yup from 'yup'
 import CustomInput from 'components/custom-input'
 import ItemDetailsCard from 'components/item-details-card'
-import { STATUS_CODE } from 'utils/item-status'
 import { StyledAlert, ItemTypes } from 'pages/factory/item-params'
+import { ItemTypes as AllItemTypes } from '@kleros/gtcr-encoder'
 
-const { IMAGE, FILE, GTCR_ADDRESS, LONG_TEXT } = ItemTypes
+const { IMAGE, FILE, GTCR_ADDRESS, LONG_TEXT } = AllItemTypes
 
-interface ItemParamsProps {
-  handleSubmit: (...args: unknown[]) => void
-  setFieldValue: (field: string, value: unknown) => void
-  formId: string
-  values: { columns: Column[]; isTCRofTCRs?: boolean; [key: string]: unknown }
-  errors: Record<string, unknown>
-  touched: Record<string, unknown>
-  setTcrState: (
-    fn: (prev: Record<string, unknown>) => Record<string, unknown>,
-  ) => void
-  tcrState: Record<string, unknown>
-  [key: string]: unknown
-}
+type ItemFormValues = TcrState
+type ItemParamsProps = StepProps & FormikProps<ItemFormValues>
 
 const ItemParams = ({
   handleSubmit,
@@ -71,7 +69,16 @@ const ItemParams = ({
     }))
   }, [columns, isTCRofTCRs, setTcrState])
 
-  const onTypeChange = (index, value) => {
+  const columnError = (index: number, key: keyof Column) => {
+    const cols = errors.columns
+    if (!Array.isArray(cols)) return undefined
+    const entry = cols[index]
+    return entry && typeof entry === 'object'
+      ? ((entry as FormikErrors<Column>)[key] as string | undefined)
+      : undefined
+  }
+
+  const onTypeChange = (index: number, value: SelectChangeValue) => {
     setFieldValue(`columns[${index}].type`, value)
     if (value === LONG_TEXT)
       // Long text fields cannot be identifiers.
@@ -175,11 +182,7 @@ const ItemParams = ({
                               touched.columns[index] &&
                               touched.columns[index].label
                             }
-                            error={
-                              errors.columns &&
-                              errors.columns[index] &&
-                              errors.columns[index].label
-                            }
+                            error={columnError(index, 'label')}
                             {...rest}
                           />
                         </Col>
@@ -192,17 +195,13 @@ const ItemParams = ({
                               touched.columns[index] &&
                               touched.columns[index].description
                             }
-                            error={
-                              errors.columns &&
-                              errors.columns[index] &&
-                              errors.columns[index].description
-                            }
+                            error={columnError(index, 'description')}
                             {...rest}
                           />
                         </Col>
                         <Col span={4}>
                           <Field name={`columns[${index}].type`}>
-                            {({ field }) => (
+                            {({ field }: FieldProps) => (
                               <Form.Item>
                                 <Select
                                   {...field}
@@ -213,8 +212,11 @@ const ItemParams = ({
                                 >
                                   {Object.values(ItemTypes).map(
                                     (itemType, i) => (
-                                      <Select.Option value={itemType} key={i}>
-                                        {itemType}
+                                      <Select.Option
+                                        value={String(itemType)}
+                                        key={i}
+                                      >
+                                        {String(itemType)}
                                       </Select.Option>
                                     ),
                                   )}
@@ -233,7 +235,7 @@ const ItemParams = ({
                         columns[index].type !== FILE ? ( // Image, file and long text cannot be identifiers.
                           <Col span={3}>
                             <Field name={`columns[${index}].isIdentifier`}>
-                              {({ field }) => (
+                              {({ field }: FieldProps) => (
                                 <Form.Item>
                                   <Switch
                                     onChange={(value) =>
@@ -262,11 +264,7 @@ const ItemParams = ({
                                 touched.columns[index] &&
                                 touched.columns[index].allowedFileTypes
                               }
-                              error={
-                                errors.columns &&
-                                errors.columns[index] &&
-                                errors.columns[index].allowedFileTypes
-                              }
+                              error={columnError(index, 'allowedFileTypes')}
                               {...rest}
                             />
                           </Col>
@@ -304,7 +302,6 @@ const ItemParams = ({
       <ItemDetailsCard
         title="Preview"
         columns={columns}
-        statusCode={STATUS_CODE.REGISTERED}
         itemMetaEvidence={
           isTCRofTCRs && {
             file: {
@@ -317,7 +314,6 @@ const ItemParams = ({
             },
           }
         }
-        style={{ maxWidth: '250px' }}
       />
     </Card>
   )
@@ -330,13 +326,14 @@ const validationSchema = yup.object().shape({
       description: yup.string().required('The column description is required.'),
       allowedFileTypes: yup.string().when('type', {
         is: FILE,
-        then: yup.string().required('At least one file type is required.'),
+        then: (schema) =>
+          schema.required('At least one file type is required.'),
       }),
     }),
   ),
 })
 
-export default withFormik({
+export default withFormik<StepProps, ItemFormValues>({
   validationSchema,
   mapPropsToValues: ({ tcrState }) => tcrState,
   handleSubmit: ({ columns }, { props: { postSubmit } }) => {

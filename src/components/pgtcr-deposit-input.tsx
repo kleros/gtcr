@@ -29,19 +29,19 @@ const PGTCRDepositInput = ({
 }: PGTCRDepositInputProps) => (
   <div>
     <Field name={name}>
-      {({ field }) => (
+      {({ field }: { field: Record<string, unknown> }) => (
         <Form.Item
           label={label}
           validateStatus={error && touched ? 'error' : undefined}
           help={error && touched ? error : ''}
-          hasFeedback={hasFeedback}
+          hasFeedback={hasFeedback ?? undefined}
         >
           <BasedDepositContainer>
             <Input
               addonAfter={tokenSymbol}
               placeholder="0.1"
               step={0.0001}
-              disabled={disabled}
+              disabled={disabled ?? undefined}
               {...field}
             />
           </BasedDepositContainer>

@@ -8,8 +8,9 @@
   "scripts": {
     "dev": "vite",
     "start": "vite",
-    "build": "vite build",
+    "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
     "lint": "eslint \"./src/**/*.ts\" \"./src/**/*.tsx\"",
     "lint:eslint:fix": "eslint \"./src/**/*.ts\" \"./src/**/*.tsx\" --fix",
     "lint:prettier:fix": "prettier --write \"./src/**/*.ts\" \"./src/**/*.tsx\"",
@@ -101,6 +102,36 @@
     "yarn": "1.22.22"
   },
   "resolutions": {
-    "@reown/appkit-adapter-wagmi/@wagmi/connectors": "^5.7.11"
+    "@reown/appkit-adapter-wagmi/@wagmi/connectors": "^5.7.11",
+    "@types/react": "^18.3.28",
+    "@ethersproject/abi": "5.8.0",
+    "@ethersproject/abstract-provider": "5.8.0",
+    "@ethersproject/abstract-signer": "5.8.0",
+    "@ethersproject/address": "5.8.0",
+    "@ethersproject/basex": "5.8.0",
+    "@ethersproject/bignumber": "5.8.0",
+    "@ethersproject/bytes": "5.8.0",
+    "@ethersproject/constants": "5.8.0",
+    "@ethersproject/contracts": "5.8.0",
+    "@ethersproject/hash": "5.8.0",
+    "@ethersproject/hdnode": "5.8.0",
+    "@ethersproject/json-wallets": "5.8.0",
+    "@ethersproject/keccak256": "5.8.0",
+    "@ethersproject/logger": "5.8.0",
+    "@ethersproject/networks": "5.8.0",
+    "@ethersproject/pbkdf2": "5.8.0",
+    "@ethersproject/properties": "5.8.0",
+    "@ethersproject/providers": "5.8.0",
+    "@ethersproject/random": "5.8.0",
+    "@ethersproject/rlp": "5.8.0",
+    "@ethersproject/sha2": "5.8.0",
+    "@ethersproject/signing-key": "5.8.0",
+    "@ethersproject/solidity": "5.8.0",
+    "@ethersproject/strings": "5.8.0",
+    "@ethersproject/transactions": "5.8.0",
+    "@ethersproject/units": "5.8.0",
+    "@ethersproject/wallet": "5.8.0",
+    "@ethersproject/web": "5.8.0",
+    "@ethersproject/wordlists": "5.8.0"
   }
 }

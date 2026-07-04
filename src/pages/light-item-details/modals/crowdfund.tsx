@@ -33,7 +33,8 @@ interface CrowdfundModalProps {
   statusCode: number
   item: SubgraphItem
   fileURI?: string
-  appealCost: BigNumber
+  appealCost?: BigNumber
+  onCancel: () => void
   [key: string]: unknown
 }
 
@@ -54,7 +55,7 @@ const CrowdfundModal = ({
     loserStakeMultiplier,
     MULTIPLIER_DIVISOR,
     tcrAddress,
-  } = useContext(LightTCRViewContext)
+  } = useContext(LightTCRViewContext) || {}
 
   const [contributionShare, setContributionShare] = useState(1)
   const [userSelectedSide, setUserSelectedSide] = useState<number | undefined>()
@@ -62,11 +63,10 @@ const CrowdfundModal = ({
   const nativeCurrency = useNativeCurrency()
   const { balance: nativeBalance } = useNativeBalance()
 
-  const round = item.requests[0].rounds[0]
+  const round = (item.requests?.[0]?.rounds?.[0] ?? {}) as SubgraphRound
   const {
     hasPaidRequester,
     hasPaidChallenger,
-    currentRuling,
     ruling,
     amountPaidRequester,
     amountPaidChallenger,
@@ -77,7 +77,7 @@ const CrowdfundModal = ({
 
   const autoSelectedSide = useMemo(() => {
     if (
-      currentRuling === PARTY.NONE ||
+      ruling === SUBGRAPH_RULING.NONE ||
       (hasPaidRequester && hasPaidChallenger) ||
       (!hasPaidRequester && !hasPaidChallenger)
     )
@@ -86,7 +86,7 @@ const CrowdfundModal = ({
     if (statusCode === STATUS_CODE.CROWDFUNDING_WINNER) return winner
 
     return !hasPaidRequester ? PARTY.REQUESTER : PARTY.CHALLENGER
-  }, [currentRuling, hasPaidRequester, hasPaidChallenger, statusCode, winner])
+  }, [ruling, hasPaidRequester, hasPaidChallenger, statusCode, winner])
 
   const side = useMemo(
     () => userSelectedSide || autoSelectedSide,
@@ -99,13 +99,12 @@ const CrowdfundModal = ({
       sharedStakeMultiplier,
       winnerStakeMultiplier,
       loserStakeMultiplier,
-      currentRuling,
       item,
       MULTIPLIER_DIVISOR,
       appealCost,
     })
 
-  if (!sharedStakeMultiplier || !potentialReward)
+  if (!sharedStakeMultiplier || !potentialReward || !MULTIPLIER_DIVISOR)
     return (
       <StyledModal title="Crowdfund Item" {...rest}>
         <StyledSpin />
@@ -113,7 +112,7 @@ const CrowdfundModal = ({
     )
 
   if (
-    (currentRuling === SUBGRAPH_RULING.NONE ||
+    (ruling === SUBGRAPH_RULING.NONE ||
       statusCode === STATUS_CODE.CROWDFUNDING) &&
     side === PARTY.NONE
   )
@@ -143,18 +142,19 @@ const CrowdfundModal = ({
     )
 
   const crowdfundSide = async () => {
+    if (!tcrAddress || !account || !walletClient || !publicClient) return
     setIsSubmitting(true)
     try {
       const contribution = amountStillRequired
         .mul(
           BigNumber.from(
-            (contributionShare * MULTIPLIER_DIVISOR.toString()).toString(),
+            (contributionShare * MULTIPLIER_DIVISOR.toNumber()).toString(),
           ),
         )
         .div(MULTIPLIER_DIVISOR)
 
       const { request } = await simulateContract(wagmiConfig, {
-        address: tcrAddress,
+        address: tcrAddress as `0x${string}`,
         abi: _gtcr,
         functionName: 'fundAppeal',
         args: [item.itemID, side],
@@ -199,7 +199,7 @@ const CrowdfundModal = ({
   const contribution = amountStillRequired
     .mul(
       BigNumber.from(
-        (contributionShare * MULTIPLIER_DIVISOR.toString()).toString(),
+        (contributionShare * MULTIPLIER_DIVISOR.toNumber()).toString(),
       ),
     )
     .div(MULTIPLIER_DIVISOR)
@@ -236,10 +236,6 @@ const CrowdfundModal = ({
           </div>
         </EnsureAuth>,
       ]}
-      afterClose={() => {
-        setUserSelectedSide(PARTY.NONE)
-        setContributionShare(1)
-      }}
     >
       <Typography.Title level={4}>
         Read the&nbsp;
@@ -277,12 +273,12 @@ const CrowdfundModal = ({
         <Col span={8}>
           <InputNumber
             min={0}
-            max={formatEther(amountStillRequired)}
+            max={Number(formatEther(amountStillRequired))}
             step={0.01}
             style={{ marginLeft: 16 }}
             value={
               amountStillRequired
-                ? contributionShare * formatEther(amountStillRequired)
+                ? contributionShare * Number(formatEther(amountStillRequired))
                 : contributionShare
             }
             onChange={(value) => {
@@ -290,7 +286,9 @@ const CrowdfundModal = ({
               const shareInBasis = weiAmount
                 .mul(MULTIPLIER_DIVISOR)
                 .div(amountStillRequired)
-              setContributionShare(shareInBasis.toNumber() / MULTIPLIER_DIVISOR)
+              setContributionShare(
+                shareInBasis.toNumber() / MULTIPLIER_DIVISOR.toNumber(),
+              )
             }}
           />{' '}
           {nativeCurrency}

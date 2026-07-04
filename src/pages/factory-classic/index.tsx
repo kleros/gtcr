@@ -25,17 +25,21 @@ import {
   StyledButtonGroup,
   StyledTitle,
 } from 'pages/factory'
+import type { TcrState, CachedFactory, TransactionInfo } from 'pages/factory'
 
 const { Step } = Steps
 const { confirm } = Modal
 
-const useCachedFactory = (version: string, networkId: number | undefined) => {
+const useCachedFactory = (
+  version: string,
+  networkId: number | undefined,
+): CachedFactory => {
   const { address: defaultArbitrator, label: defaultArbLabel } =
-    defaultArbitratorAddresses[networkId] || {}
+    (networkId !== undefined && defaultArbitratorAddresses[networkId]) || {}
   const { address: defaultGovernor, label: defaultGovernorLabel } =
-    defaultGovernorAddresses[networkId] || {}
+    (networkId !== undefined && defaultGovernorAddresses[networkId]) || {}
   const { data: defaultArbitratorExtraData, label: defaultArbDataLabel } =
-    defaultArbitratorExtraDataObj[networkId] || {}
+    (networkId !== undefined && defaultArbitratorExtraDataObj[networkId]) || {}
 
   const key = `classicTcrState@${networkId}@${version}`
   const initialWizardState = {
@@ -98,26 +102,30 @@ const useCachedFactory = (version: string, networkId: number | undefined) => {
     currStep: 1,
     chainId: networkId,
   }
-  const initialState = {
+  const initialState: TcrState = {
     ...initialWizardState,
     transactions: {},
   }
-  let cache = window.localStorage.getItem(key)
 
-  const newInitialState = JSON.parse(JSON.stringify(initialState)) // Deep copy.
-  if (cache) {
-    const parsed = JSON.parse(cache)
-    if (parsed.arbitratorAddress && parsed.chainId === networkId) cache = parsed
-    else cache = newInitialState
-  } else cache = newInitialState
+  const newInitialState: TcrState = JSON.parse(JSON.stringify(initialState)) // Deep copy.
+  const cached = window.localStorage.getItem(key)
+  let resolvedState: TcrState = newInitialState
+  if (cached) {
+    const parsed = JSON.parse(cached) as TcrState
+    if (parsed.arbitratorAddress && parsed.chainId === networkId)
+      resolvedState = parsed
+  }
 
   // We check for the finished flag to reset the form
   // if the user finished his previous deployment.
   // We only keep the deployment transactions.
-  if (cache.finished)
-    cache = { ...newInitialState, transactions: cache.transactions }
+  if (resolvedState.finished)
+    resolvedState = {
+      ...newInitialState,
+      transactions: resolvedState.transactions,
+    }
 
-  const [tcrState, setTcrState] = useState(cache)
+  const [tcrState, setTcrState] = useState<TcrState>(resolvedState)
   const [debouncedTcrState] = useDebounce(tcrState, 1000)
   const [prevNetworkId, setPrevNetworkId] = useState(networkId)
 
@@ -152,7 +160,7 @@ const useCachedFactory = (version: string, networkId: number | undefined) => {
       ...JSON.parse(JSON.stringify(initialWizardState)),
       transactions: prevState.transactions,
     }))
-  const setTxState = (tx) =>
+  const setTxState = (tx: TransactionInfo) =>
     setTcrState((prevState) => ({
       ...prevState,
       transactions: {
@@ -190,7 +198,7 @@ const FactoryClassicPage = () => {
   const factoryChainId = urlChainId ?? undefined
   const cachedFactory = useCachedFactory(version, factoryChainId)
   const { library, active } = useWeb3Context()
-  const [previousDeployments, setPreviousDeployments] = useState([])
+  const [previousDeployments, setPreviousDeployments] = useState<string[]>([])
   const {
     tcrState: { currStep, transactions },
     nextStep,

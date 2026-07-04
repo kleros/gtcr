@@ -1,9 +1,9 @@
 import React, { createContext, useMemo } from 'react'
 import useTcrView from '../hooks/tcr-view'
 
-const TCRViewContext = createContext<Record<string, unknown> | undefined>(
-  undefined,
-)
+export type TCRViewContextValue = ReturnType<typeof useTcrView>
+
+const TCRViewContext = createContext<TCRViewContextValue | undefined>(undefined)
 const TCRViewProvider = ({
   children,
   tcrAddress,

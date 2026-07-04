@@ -7,12 +7,12 @@ import ItemStatusBadge, {
   ItemStatusIcon,
 } from 'components/permanent-item-status-badge'
 import styled from 'styled-components'
+import { BigNumber } from 'ethers'
 import { useAccount, usePublicClient, useWalletClient, useChainId } from 'wagmi'
 import { simulateContract } from '@wagmi/core'
 import {
   itemToStatusCode,
   STATUS_CODE,
-  PARTY,
   CONTRACT_STATUS,
   SUBGRAPH_RULING,
 } from 'utils/permanent-item-status'
@@ -97,15 +97,31 @@ export const Ruling = ({ currentRuling }: RulingProps) => {
   }
 }
 
+interface StatusChallenge extends SubgraphChallenge {
+  disputeID: string
+  challenger: string
+}
+
+interface StatusItem extends SubgraphItem {
+  submitter: string
+  challenges: StatusChallenge[]
+}
+
+interface StatusRegistry extends SubgraphRegistry {
+  id: `0x${string}`
+  token: string
+  arbitrator: { id: string }
+}
+
 interface ItemStatusCardProps {
-  item: SubgraphItem
-  registry: SubgraphRegistry
-  timestamp: BigNumber
-  metaEvidence: MetaEvidence
+  item: StatusItem
+  registry: StatusRegistry
+  timestamp?: BigNumber
+  metaEvidence?: MetaEvidence
   modalOpen: boolean
   setModalOpen: (open: boolean) => void
-  appealCost: BigNumber
-  arbitrationCost: BigNumber
+  appealCost?: BigNumber
+  arbitrationCost?: BigNumber
 }
 
 const ItemStatusCard = ({
@@ -185,6 +201,12 @@ const ItemStatusCard = ({
       </Card>
     )
   const statusCode = itemToStatusCode(item, timestamp, registry)
+  if (statusCode === undefined)
+    return (
+      <Card id="item-status-card">
+        <Skeleton active title={false} paragraph={{ rows: 2 }} />
+      </Card>
+    )
 
   const isWithdrawing =
     statusCode !== STATUS_CODE.REJECTED &&
@@ -207,6 +229,7 @@ const ItemStatusCard = ({
     account.toLowerCase() === item.submitter.toLowerCase()
 
   const executeWithdrawal = async () => {
+    if (!walletClient || !publicClient) return
     try {
       const { request } = await simulateContract(wagmiConfig, {
         address: registry.id,
@@ -265,7 +288,6 @@ const ItemStatusCard = ({
             <ItemStatusBadge
               item={item}
               statusCode={statusCode}
-              registry={registry}
               timestamp={timestamp}
               dark
             />
@@ -349,7 +371,7 @@ const ItemStatusCard = ({
           )}
           {item.status === CONTRACT_STATUS.DISPUTED && appealable && (
             <Descriptions.Item label="Current Ruling">
-              <Ruling currentRuling={round.ruling} />
+              <Ruling currentRuling={round?.ruling ?? null} />
             </Descriptions.Item>
           )}
           {validRemainingTime && (
@@ -382,7 +404,7 @@ const ItemStatusCard = ({
             </Descriptions.Item>
           )}
           {round &&
-            round.ruling !== PARTY.NONE &&
+            round.ruling !== SUBGRAPH_RULING.NONE &&
             statusCode === STATUS_CODE.CROWDFUNDING && (
               <Descriptions.Item label="Loser Appeal Time">
                 {appealLoserCountdown}
@@ -396,7 +418,6 @@ const ItemStatusCard = ({
             statusCode={statusCode}
             itemName={itemName || 'item'}
             item={item}
-            registry={registry}
             metaEvidence={metaEvidence}
             isOpen={modalOpen}
             onClose={() => setModalOpen(false)}

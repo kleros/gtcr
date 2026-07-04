@@ -1,17 +1,7 @@
 import React, { createContext, useMemo } from 'react'
-import { BigNumber } from 'ethers'
 import useNotificationWeb3 from '../hooks/notifications-web3'
 
-interface WalletContextValue {
-  requestModalOpen: boolean
-  cancelRequest: () => void
-  pushWeb3Action: (action: unknown) => void
-  requestWeb3Auth: (action?: unknown) => void
-  setUserSelectedWallet: () => void
-  timestamp: BigNumber | undefined
-  networkId: number
-  latestBlock: number | undefined
-}
+type WalletContextValue = ReturnType<typeof useNotificationWeb3>
 
 const WalletContext = createContext<WalletContextValue | undefined>(undefined)
 const WalletProvider = ({ children }: { children: React.ReactNode }) => {

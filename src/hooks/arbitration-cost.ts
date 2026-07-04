@@ -9,9 +9,9 @@ const useArbitrationCost = ({
   arbitratorExtraData: inputArbitratorExtraData,
   library,
 }: {
-  address: string
-  arbitratorExtraData: string
-  library: EthersLibrary | null
+  address?: string
+  arbitratorExtraData?: string
+  library?: EthersLibrary | null
 }) => {
   const [address] = useDebounce(inputAddress, 1000)
   const [arbitratorExtraData] = useDebounce(inputArbitratorExtraData, 1000)

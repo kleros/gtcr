@@ -172,7 +172,11 @@ const SeerExtraDetails: React.FC<ISeerExtraDetails> = ({
           outcomes: outcomesWithImages,
         })
       } catch (err) {
-        setError(`Failed to load market details: ${err.message}`)
+        setError(
+          `Failed to load market details: ${
+            err instanceof Error ? err.message : String(err)
+          }`,
+        )
         console.error(err)
       }
     }

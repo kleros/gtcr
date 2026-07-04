@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from 'react'
+import { BigNumber } from 'ethers'
 import styled, { css } from 'styled-components'
 import { Card, Button, Result } from 'components/ui'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
@@ -8,7 +9,7 @@ import { itemToStatusCode, STATUS_CODE } from 'utils/item-status'
 import useCheckPermanentList from 'hooks/use-check-permanent-list'
 import ItemCardTitle from './item-card-title'
 
-export const FlipCardInner = styled.div`
+export const FlipCardInner = styled.div<{ revealed?: boolean }>`
   text-align: center;
   transition: transform 0.6s;
   transform-style: preserve-3d;
@@ -137,12 +138,17 @@ export const HideCardButton = styled(Button)`
   height: 100%;
 `
 
+export interface EnrichedItem extends SubgraphItem {
+  tcrData: SubgraphItem
+  columns: { value?: string }[]
+}
+
 interface CardItemInfoProps {
-  item: SubgraphItem
+  item: EnrichedItem
   statusCode: number
-  chainId?: string
+  chainId?: number | null
   tcrAddress: string
-  metaEvidence: MetaEvidence
+  metaEvidence?: MetaEvidence
   toggleReveal?: (() => void) | null
   forceReveal?: boolean | null
 }
@@ -158,12 +164,15 @@ const CardItemInfo = ({
 }: CardItemInfoProps) => {
   let content
   const { metadata } = metaEvidence || {}
-  const { itemName, isTCRofTCRs } = metadata || {}
-  const childTcrAddress = isTCRofTCRs ? item.columns[0]?.value : null
+  const { isTCRofTCRs } = metadata || {}
+  const childTcrAddress = isTCRofTCRs ? (item.columns[0]?.value ?? null) : null
 
-  const { isPermanentList } = useCheckPermanentList(childTcrAddress, chainId)
+  const { isPermanentList } = useCheckPermanentList(
+    childTcrAddress,
+    chainId ?? null,
+  )
 
-  if (item.errors.length > 0)
+  if (item.errors && item.errors.length > 0)
     content = (
       <Result
         status="warning"
@@ -176,18 +185,12 @@ const CardItemInfo = ({
     content = isTCRofTCRs ? (
       <TCRCardContent
         ID={item.tcrData.ID}
-        tcrAddress={item.columns[0].value}
-        itemName={itemName}
+        tcrAddress={item.columns[0]?.value}
         currentTCRAddress={tcrAddress}
       />
-    ) : (
-      <ItemCardContent
-        item={item}
-        chainId={chainId}
-        tcrAddress={tcrAddress}
-        itemName={itemName}
-      />
-    )
+    ) : chainId != null ? (
+      <ItemCardContent item={item} chainId={chainId} tcrAddress={tcrAddress} />
+    ) : null
   return (
     <CardBlock>
       <StyledCardInfo
@@ -214,11 +217,13 @@ const CardItemInfo = ({
 }
 
 interface ItemCardProps {
-  item: SubgraphItem
-  challengePeriodDuration: BigNumber
-  timestamp: BigNumber
+  item: EnrichedItem
+  challengePeriodDuration?: BigNumber
+  timestamp?: BigNumber
   forceReveal?: boolean | null
-  [key: string]: unknown
+  metaEvidence?: MetaEvidence
+  chainId?: number | null
+  tcrAddress: string
 }
 
 const ItemCard = ({
@@ -226,7 +231,9 @@ const ItemCard = ({
   challengePeriodDuration,
   timestamp,
   forceReveal = null,
-  ...rest
+  metaEvidence,
+  chainId,
+  tcrAddress,
 }: ItemCardProps) => {
   const [revealed, setRevealed] = useState<boolean | undefined>()
   const toggleReveal = useCallback(() => {
@@ -241,6 +248,9 @@ const ItemCard = ({
     challengePeriodDuration,
   )
 
+  if (statusCode === undefined)
+    return <Card style={{ height: '100%' }} loading />
+
   if (
     statusCode !== STATUS_CODE.REJECTED &&
     statusCode !== STATUS_CODE.REMOVED &&
@@ -248,7 +258,15 @@ const ItemCard = ({
     statusCode !== STATUS_CODE.CROWDFUNDING &&
     statusCode !== STATUS_CODE.CROWDFUNDING_WINNER
   )
-    return <CardItemInfo item={item} statusCode={statusCode} {...rest} />
+    return (
+      <CardItemInfo
+        item={item}
+        statusCode={statusCode}
+        metaEvidence={metaEvidence}
+        chainId={chainId}
+        tcrAddress={tcrAddress}
+      />
+    )
 
   return (
     <FlipCard>
@@ -268,7 +286,9 @@ const ItemCard = ({
             statusCode={statusCode}
             toggleReveal={toggleReveal}
             forceReveal={forceReveal}
-            {...rest}
+            metaEvidence={metaEvidence}
+            chainId={chainId}
+            tcrAddress={tcrAddress}
           />
         </FlipCardBack>
       </FlipCardInner>

@@ -36,14 +36,14 @@ const ItemDetailsRouter = () => {
   const search = window.location.search
   const { isLightCurate, isClassicCurate, isPermanentCurate, checking } =
     useCheckLightCurate()
-  const { setIsPermanent } = useContext(StakeContext)
+  const stakeContext = useContext(StakeContext)
   const queryClient = useQueryClient()
   const { graphqlBatcher } = useGraphqlBatcher()
 
   useEffect(() => {
-    setIsPermanent(isPermanentCurate)
-    return () => setIsPermanent(false)
-  }, [isPermanentCurate, setIsPermanent])
+    stakeContext?.setIsPermanent(isPermanentCurate)
+    return () => stakeContext?.setIsPermanent(false)
+  }, [isPermanentCurate, stakeContext])
 
   // Prefetch the latest policy timestamp so the "(updated X ago)" badge
   // on the PolicyLink is warm in cache by the time the banner renders.
@@ -81,6 +81,14 @@ const ItemDetailsRouter = () => {
   if (isAttachmentOpen) return <AttachmentDisplay />
 
   if (checking) return <Loading />
+
+  if (!tcrAddress || !itemID)
+    return (
+      <ErrorPage
+        code="404"
+        message="The gods are having trouble finding this item."
+      />
+    )
 
   if (isLightCurate)
     return (

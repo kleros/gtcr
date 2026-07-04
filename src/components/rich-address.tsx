@@ -30,7 +30,7 @@ const RichAddress: React.FC<{ crude: string }> = ({ crude }) => {
   if (!passedTest)
     return (
       <Tooltip title="Address is invalid">
-        <Icon type="warning" theme="filled" style={{ color: 'inherit' }} />
+        <Icon type="warning" style={{ color: 'inherit' }} />
         &nbsp;
         <NotValidAddressAnchor href={link} rel="noreferrer" target="_blank">
           {labelText}

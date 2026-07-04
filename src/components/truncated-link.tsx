@@ -15,7 +15,7 @@ const StyledA = styled.a`
   }
 `
 
-const truncateUrl = (url, maxLength = 50) => {
+const truncateUrl = (url: string, maxLength = 50) => {
   if (!url || url.length <= maxLength) return url
   return `${url.substring(0, maxLength)}...`
 }
@@ -27,7 +27,7 @@ interface TruncatedLinkProps {
 const TruncatedLink = ({ url }: TruncatedLinkProps) => {
   const [warningVisible, setWarningVisible] = useState(false)
 
-  const handleClick = (e) => {
+  const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
     e.preventDefault()
     setWarningVisible(true)
   }

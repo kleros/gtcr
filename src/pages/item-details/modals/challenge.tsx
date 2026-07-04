@@ -7,7 +7,7 @@ import { abi as _gtcr } from '@kleros/tcr/build/contracts/GeneralizedTCR.json'
 import { TCRViewContext } from 'contexts/tcr-view-context'
 import EnsureAuth from 'components/ensure-auth'
 import ETHAmount from 'components/eth-amount'
-import EvidenceForm from 'components/evidence-form'
+import EvidenceForm, { EvidenceFormValues } from 'components/evidence-form'
 import useNativeBalance from 'hooks/use-native-balance'
 import { CONTRACT_STATUS, STATUS_CODE } from 'utils/item-status'
 import { useAtlasProvider } from '@kleros/kleros-app'
@@ -27,6 +27,7 @@ interface ChallengeModalProps {
   itemName?: string
   statusCode?: number
   fileURI?: string
+  onCancel: () => void
   [key: string]: unknown
 }
 
@@ -38,7 +39,7 @@ const ChallengeModal = ({
   ...rest
 }: ChallengeModalProps) => {
   const { submissionChallengeDeposit, removalChallengeDeposit, tcrAddress } =
-    useContext(TCRViewContext)
+    useContext(TCRViewContext) ?? {}
   const { address: account } = useAccount()
   const chainId = useChainId()
   const publicClient = usePublicClient()
@@ -60,18 +61,26 @@ const ChallengeModal = ({
     title,
     description,
     evidenceAttachment,
-  }) => {
+  }: EvidenceFormValues) => {
+    if (
+      !tcrAddress ||
+      !account ||
+      !walletClient ||
+      !publicClient ||
+      !challengeDeposit
+    )
+      return
     setIsSubmitting(true)
     try {
       const ipfsEvidencePath = await uploadEvidence({
         title: title || 'Challenge Justification',
-        description,
-        attachment: evidenceAttachment as File | undefined,
+        description: description ?? '',
+        attachment: evidenceAttachment,
         uploadFile,
       })
 
       const { request } = await simulateContract(wagmiConfig, {
-        address: tcrAddress,
+        address: tcrAddress as `0x${string}`,
         abi: _gtcr,
         functionName: 'challengeRequest',
         args: [item.itemID, ipfsEvidencePath],

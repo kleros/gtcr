@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useEffect } from 'react'
 import { useWeb3Context } from 'hooks/use-web3-context'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import type { IconName } from '@fortawesome/fontawesome-svg-core'
 import styled from 'styled-components'
 import { Popover, List, Badge, Empty, Avatar, Button } from 'components/ui'
 import Icon from 'components/ui/Icon'
@@ -40,20 +41,30 @@ const StyledListItem = styled(List.Item)`
   justify-content: space-between;
 `
 
-const StyledSpan = styled.span`
+const StyledSpan = styled.span<{ clicked?: boolean }>`
   color: ${({ clicked, theme }) =>
     clicked ? theme.textTertiary : theme.textPrimary};
 `
 
+interface CurateNotification {
+  notificationID: string
+  clicked: boolean
+  type: string
+  tcrAddr: string
+  itemID: string
+}
+
 const Notifications = () => {
   const { account, networkId } = useWeb3Context()
-  const [visible, setVisible] = useState()
-  const [notifications, setNotifications] = useState({ notifications: [] })
-  const handleVisibleChange = useCallback((v) => setVisible(v), [])
+  const [visible, setVisible] = useState<boolean | undefined>()
+  const [notifications, setNotifications] = useState<{
+    notifications: CurateNotification[]
+  }>({ notifications: [] })
+  const handleVisibleChange = useCallback((v: boolean) => setVisible(v), [])
   const fetchNotifications = useCallback(() => {
     ;(async () => {
       try {
-        const result = await (
+        const result: { notifications: CurateNotification[] } = await (
           await fetch(
             `${process.env.REACT_APP_NOTIFICATIONS_API_URL}/${networkId}/api/notifications/${account}`,
           )
@@ -67,7 +78,8 @@ const Notifications = () => {
     })()
   }, [account, networkId])
   const dismissNotification = useCallback(
-    (n) =>
+    (n: CurateNotification) => {
+      if (!account) return
       fetch(
         `${
           process.env.REACT_APP_NOTIFICATIONS_API_URL
@@ -75,7 +87,10 @@ const Notifications = () => {
           n.notificationID
         }`,
         { method: 'delete' },
-      ).then(() => fetchNotifications()),
+      )
+        .then(() => fetchNotifications())
+        .catch(() => {})
+    },
     [account, networkId, fetchNotifications],
   )
   const dismissAll = useCallback(() => {
@@ -91,7 +106,8 @@ const Notifications = () => {
     })()
   }, [networkId, account, fetchNotifications])
   const notificationClick = useCallback(
-    (n) => {
+    (n: CurateNotification) => {
+      if (!account) return
       fetch(
         `${
           process.env.REACT_APP_NOTIFICATIONS_API_URL
@@ -115,7 +131,7 @@ const Notifications = () => {
 
   const content = (
     <StyledList>
-      {!notifications.notifications.length >= 1 && (
+      {!(notifications.notifications.length >= 1) && (
         <Empty description="All done." image={Empty.PRESENTED_IMAGE_SIMPLE} />
       )}
       {notifications.notifications.map((n, j) => (
@@ -144,7 +160,7 @@ const Notifications = () => {
                   style={{ backgroundColor: 'transparent' }}
                   icon={
                     <FontAwesomeIcon
-                      icon={getNotificationIconFor(n.type)}
+                      icon={getNotificationIconFor(n.type) as IconName}
                       color={getNotificationColorFor(n.type)}
                     />
                   }

@@ -6,7 +6,7 @@ import { getAddress } from 'viem'
 import { abi as _gtcr } from '@kleros/tcr/build/contracts/GeneralizedTCR.json'
 import { TCRViewContext } from 'contexts/tcr-view-context'
 import EnsureAuth from 'components/ensure-auth'
-import EvidenceForm from 'components/evidence-form'
+import EvidenceForm, { EvidenceFormValues } from 'components/evidence-form'
 import { useAtlasProvider } from '@kleros/kleros-app'
 import { uploadEvidence } from 'utils/upload-evidence'
 import { wrapWithToast, errorToast } from 'utils/wrap-with-toast'
@@ -16,29 +16,35 @@ import { StyledModal } from 'pages/light-item-details/modals/challenge'
 
 interface EvidenceModalProps {
   item: SubgraphItem
+  onCancel: () => void
   [key: string]: unknown
 }
 
 const EvidenceModal = ({ item, ...rest }: EvidenceModalProps) => {
-  const { tcrAddress } = useContext(TCRViewContext)
+  const { tcrAddress } = useContext(TCRViewContext) ?? {}
   const { address: account } = useAccount()
   const chainId = useChainId()
   const publicClient = usePublicClient()
   const { data: walletClient } = useWalletClient()
   const { uploadFile } = useAtlasProvider()
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const submitEvidence = async ({ title, description, evidenceAttachment }) => {
+  const submitEvidence = async ({
+    title,
+    description,
+    evidenceAttachment,
+  }: EvidenceFormValues) => {
+    if (!tcrAddress || !account || !walletClient || !publicClient) return
     setIsSubmitting(true)
     try {
       const ipfsEvidencePath = await uploadEvidence({
-        title,
-        description,
-        attachment: evidenceAttachment as File | undefined,
+        title: title ?? '',
+        description: description ?? '',
+        attachment: evidenceAttachment,
         uploadFile,
       })
 
       const { request } = await simulateContract(wagmiConfig, {
-        address: tcrAddress,
+        address: tcrAddress as `0x${string}`,
         abi: _gtcr,
         functionName: 'submitEvidence',
         args: [item.itemID, ipfsEvidencePath],

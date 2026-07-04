@@ -3,7 +3,7 @@ import styled from 'styled-components'
 import { Skeleton } from 'components/ui'
 import { ethers, BigNumberish } from 'ethers'
 
-const SkeletonTitleProps = { width: 30 }
+const SkeletonTitleProps = { width: '30px' }
 const StyledSkeleton = styled(Skeleton)`
   display: inline;
 
@@ -12,10 +12,10 @@ const StyledSkeleton = styled(Skeleton)`
   }
 `
 const ETHAmount: React.FC<{
-  amount: BigNumberish
-  decimals: number
-  displayUnit: string
-}> = ({ amount, _decimals, displayUnit }) => {
+  amount?: BigNumberish | null
+  decimals?: number
+  displayUnit?: string
+}> = ({ amount, displayUnit }) => {
   if (amount == null)
     return (
       <StyledSkeleton active paragraph={false} title={SkeletonTitleProps} />

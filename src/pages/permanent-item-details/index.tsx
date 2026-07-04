@@ -6,7 +6,7 @@ import { useParams, Link } from 'react-router-dom'
 import useUrlChainId from 'hooks/use-url-chain-id'
 import useDocumentHead from 'hooks/use-document-head'
 import { abi as _IArbitrator } from '@kleros/erc-792/build/contracts/IArbitrator.json'
-import { ethers } from 'ethers'
+import { ethers, BigNumber } from 'ethers'
 import { useEthersProvider } from 'hooks/ethers-adapters'
 import ErrorPage from '../error-page'
 import ItemDetailsCard from 'components/item-details-card'
@@ -94,16 +94,16 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
     chainId: chainId ?? undefined,
   })
   const [ipfsItemData, setIpfsItemData] = useState<
-    Record<string, unknown> | undefined
+    { values?: Record<string, unknown> } | undefined
   >()
-  const { timestamp } = useContext(WalletContext)
-  const [modalOpen, setModalOpen] = useState<boolean | undefined>()
+  const timestamp = useContext(WalletContext)?.timestamp
+  const [modalOpen, setModalOpen] = useState(false)
   const { graphqlBatcher } = useGraphqlBatcher()
-  const [appealCost, setAppealCost] = useState<BigNumber | undefined>()
+  const [appealCost, setAppealCost] = useState<BigNumber | null | undefined>()
   const [metaEvidence, setMetaEvidence] = useState<MetaEvidence | undefined>()
 
   // subgraph item entities have id "<itemID>@<listaddress>"
-  const compoundId = `${itemID}@${tcrAddress.toLowerCase()}`
+  const compoundId = `${itemID}@${tcrAddress?.toLowerCase()}`
   const query = useQuery({
     queryKey: ['permanentItemDetails', compoundId],
     queryFn: () =>
@@ -155,13 +155,17 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
   }, [registry])
 
   const decodedItem = useMemo(() => {
-    if (!item || !metaEvidence || !ipfsItemData) return undefined
+    if (!item || !metaEvidence?.metadata?.columns || !ipfsItemData)
+      return undefined
 
-    const orderDecodedData = (columns, values) => {
+    const orderDecodedData = (
+      columns: Column[],
+      values: Record<string, unknown> | undefined,
+    ) => {
       const labels = columns.map((column) => column.label)
-      const ordered = []
+      const ordered: unknown[] = []
       for (const label of labels) {
-        const value = values[label]
+        const value = values?.[label]
         ordered.push(value)
       }
       return ordered
@@ -187,7 +191,7 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
     return itemToStatusCode(item, timestamp, registry)
   }, [item, timestamp, registry])
 
-  const getStatusPhrase = (statusCode) => {
+  const getStatusPhrase = (statusCode: number | null | undefined) => {
     switch (statusCode) {
       case STATUS_CODE.ACCEPTED:
         return 'is verified to be safe'
@@ -213,7 +217,8 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
     }
   }
 
-  const capitalizeFirst = (s) => s?.charAt(0).toUpperCase() + s?.slice(1)
+  const capitalizeFirst = (s: string | undefined) =>
+    s ? s.charAt(0).toUpperCase() + s.slice(1) : ''
 
   const fullSeoTitle =
     decodedItem && metadata
@@ -265,8 +270,8 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
           challenge.disputeID,
           challenge.arbitrationSetting.arbitratorExtraData,
         )
-        .then((cost) => setAppealCost(cost))
-        .catch((err) => {
+        .then((cost: BigNumber) => setAppealCost(cost))
+        .catch((err: unknown) => {
           console.error(err)
           setAppealCost(null)
         })
@@ -316,9 +321,8 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
           modalOpen={modalOpen}
           metaEvidence={metaEvidence}
           setModalOpen={setModalOpen}
-          appealCost={appealCost}
+          appealCost={appealCost ?? undefined}
           arbitrationCost={arbitrationCost.arbitrationCost}
-          dark
         />
         <Divider />
         <ItemDetailsCard
@@ -335,7 +339,7 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
           item={decodedItem}
           registry={registry}
           timestamp={timestamp}
-          appealCost={appealCost}
+          appealCost={appealCost ?? undefined}
         />
 
         <RequestTimelines item={item} metaEvidence={metaEvidence} />

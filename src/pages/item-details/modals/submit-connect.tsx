@@ -124,14 +124,21 @@ const SubmitConnectModal = (props: SubmitConnectModalProps) => {
   const NONE = 'None'
   const handleChange = useCallback(
     (i: number, j: number) => {
-      if (!badgeTCRMetadata || !tcrMetaEvidence) return
+      if (
+        !badgeTCRMetadata?.columns ||
+        !tcrMetaEvidence ||
+        !debouncedTCRAddr ||
+        !relTCRAddress ||
+        !debouncedBadgeTCRAddr
+      )
+        return
       let newState
       if (!match)
         newState = {
           parentTCR: debouncedTCRAddr,
           connectedTCR: relTCRAddress,
           badgeTCR: debouncedBadgeTCRAddr,
-          columns: badgeTCRMetadata.columns.map(() => null),
+          columns: badgeTCRMetadata.columns.map((): number | null => null),
         }
       else newState = { ...match }
 
@@ -152,7 +159,15 @@ const SubmitConnectModal = (props: SubmitConnectModalProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const handleSubmit = useCallback(async () => {
-    if (!relTCRMetaEvidence) return
+    if (
+      !relTCRMetaEvidence?.metadata?.columns ||
+      !relTCRAddress ||
+      !relTCRSubmissionDeposit ||
+      !account ||
+      !walletClient ||
+      !publicClient
+    )
+      return
     setIsSubmitting(true)
     const matchFile = new File([JSON.stringify(match)], 'match-file.json', {
       type: 'application/json',
@@ -177,7 +192,7 @@ const SubmitConnectModal = (props: SubmitConnectModalProps) => {
       })
 
       const { request } = await simulateContract(wagmiConfig, {
-        address: relTCRAddress,
+        address: relTCRAddress as `0x${string}`,
         abi: _gtcr,
         functionName: 'addItem',
         args: [encodedParams],
@@ -194,7 +209,9 @@ const SubmitConnectModal = (props: SubmitConnectModalProps) => {
         onCancel()
 
         if (process.env.REACT_APP_NOTIFICATIONS_API_URL && !!chainId) {
-          const itemID = keccak256(encodePacked(['bytes'], [encodedParams]))
+          const itemID = keccak256(
+            encodePacked(['bytes'], [encodedParams as `0x${string}`]),
+          )
           fetch(
             `${process.env.REACT_APP_NOTIFICATIONS_API_URL}/${chainId}/api/subscribe`,
             {
@@ -354,45 +371,50 @@ const SubmitConnectModal = (props: SubmitConnectModalProps) => {
         for the item in the badge list. The more fields matched, the stricter
         the search.
       </Typography.Paragraph>
-      {badgeTCRMetadata &&
-        badgeTCRMetadata.columns.map((column, i) => (
-          <Row key={i} gutter={[8, 8]}>
-            <Col span={12}>
-              <span>
-                {column.label}
-                {column.description && (
-                  <Tooltip title={addPeriod(column.description)}>
-                    &nbsp;
-                    <Icon type="question-circle-o" />
-                  </Tooltip>
-                )}
-              </span>
-            </Col>
-            <Col span={12}>
-              {tcrMetaEvidence.metadata ? (
-                <Select
-                  defaultValue={NONE}
-                  style={{ width: '100%' }}
-                  onChange={(_, { key }) => handleChange(i, key)}
-                >
-                  {[{ label: NONE }, ...tcrMetaEvidence.metadata.columns].map(
-                    (column, j) => (
-                      <Select.Option value={column.label} key={j}>
-                        {column.label}
-                      </Select.Option>
-                    ),
-                  )}
-                </Select>
-              ) : (
-                <StyledSkeleton
-                  active
-                  paragraph={false}
-                  title={SkeletonTitleProps}
-                />
+      {badgeTCRMetadata?.columns?.map((column, i) => (
+        <Row key={i} gutter={[8, 8]}>
+          <Col span={12}>
+            <span>
+              {column.label}
+              {column.description && (
+                <Tooltip title={addPeriod(column.description)}>
+                  &nbsp;
+                  <Icon type="question-circle-o" />
+                </Tooltip>
               )}
-            </Col>
-          </Row>
-        ))}
+            </span>
+          </Col>
+          <Col span={12}>
+            {tcrMetaEvidence?.metadata ? (
+              <Select
+                defaultValue={0}
+                style={{ width: '100%' }}
+                onChange={(value) =>
+                  handleChange(
+                    i,
+                    Number(typeof value === 'object' ? value.key : value),
+                  )
+                }
+              >
+                {[
+                  { label: NONE },
+                  ...(tcrMetaEvidence.metadata.columns ?? []),
+                ].map((column, j) => (
+                  <Select.Option value={j} key={j}>
+                    {column.label}
+                  </Select.Option>
+                ))}
+              </Select>
+            ) : (
+              <StyledSkeleton
+                active
+                paragraph={false}
+                title={SkeletonTitleProps}
+              />
+            )}
+          </Col>
+        </Row>
+      ))}
       <Typography.Paragraph>
         A deposit is required to submit. This value reimbursed at the end of the
         challenge period or, if there is a dispute, be awarded to the party that

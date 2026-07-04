@@ -1,6 +1,5 @@
 import { Roles } from '@kleros/kleros-app'
 import { ItemTypes } from '@kleros/gtcr-encoder'
-import type { Column } from 'pages/item-details/modals/submit'
 
 type UploadFile = (file: File, role: Roles) => Promise<string | null>
 type SetFieldValue = (
