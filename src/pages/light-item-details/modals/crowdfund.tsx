@@ -18,7 +18,7 @@ import EnsureAuth from 'components/ensure-auth'
 import ETHAmount from 'components/eth-amount'
 import { useAccount, usePublicClient, useWalletClient, useChainId } from 'wagmi'
 import { simulateContract } from '@wagmi/core'
-import { getAddress } from 'viem'
+import { getAddress, type Address } from 'viem'
 import _gtcr from 'assets/abis/LightGeneralizedTCR.json'
 import useRequiredFees from 'hooks/required-fees'
 import useNativeCurrency from 'hooks/native-currency'
@@ -154,7 +154,7 @@ const CrowdfundModal = ({
         .div(MULTIPLIER_DIVISOR)
 
       const { request } = await simulateContract(wagmiConfig, {
-        address: tcrAddress as `0x${string}`,
+        address: tcrAddress as Address,
         abi: _gtcr,
         functionName: 'fundAppeal',
         args: [item.itemID, side],

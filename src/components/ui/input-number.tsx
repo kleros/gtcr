@@ -157,7 +157,7 @@ const InputNumber: React.FC<InputNumberProps> = ({
         return
       }
       const num = typeof raw === 'string' ? parseFloat(raw) : raw
-      if (isNaN(num)) return
+      if (Number.isNaN(num)) return
       const clamped = clamp(num)
       if (!isControlled) setInternalValue(clamped)
       if (onChange) onChange(clamped)

@@ -5,7 +5,7 @@ import Icon from 'components/ui/Icon'
 import { abi as _gtcr } from '@kleros/tcr/build/contracts/GeneralizedTCR.json'
 import { useAccount, usePublicClient, useWalletClient, useChainId } from 'wagmi'
 import { simulateContract } from '@wagmi/core'
-import { getAddress, keccak256 } from 'viem'
+import { getAddress, keccak256, type Address, type Hex } from 'viem'
 import { withFormik, FormikProps, FormikState } from 'formik'
 import humanizeDuration from 'humanize-duration'
 import { gtcrEncode, ItemTypes, typeDefaultValues } from '@kleros/gtcr-encoder'
@@ -50,9 +50,9 @@ interface SubmissionFormOuterProps {
       shouldValidate?: boolean,
     ) => void,
   ) => void
-  deployedWithFactory: (tcrAddress: string) => Promise<boolean>
-  deployedWithLightFactory: (tcrAddress: string) => Promise<boolean>
-  deployedWithPermanentFactory: (tcrAddress: string) => Promise<boolean>
+  deployedWithFactory: (tcrAddress: Address) => Promise<boolean>
+  deployedWithLightFactory: (tcrAddress: Address) => Promise<boolean>
+  deployedWithPermanentFactory: (tcrAddress: Address) => Promise<boolean>
   initialValues?: string[]
   onFieldsComplete?: (complete: boolean) => void
 }
@@ -136,9 +136,9 @@ const SubmissionForm = withFormik<SubmissionFormOuterProps, SubmitFormValues>({
             isEmpty: !values[label],
             wasDeployedWithFactory:
               !!values[label] &&
-              ((await deployedWithFactory(values[label])) ||
-                (await deployedWithLightFactory(values[label])) ||
-                (await deployedWithPermanentFactory(values[label]))),
+              ((await deployedWithFactory(values[label] as Address)) ||
+                (await deployedWithLightFactory(values[label] as Address)) ||
+                (await deployedWithPermanentFactory(values[label] as Address))),
             label: label,
           })),
       )
@@ -239,7 +239,7 @@ const SubmitModal: React.FC<{
         })
 
         const { request } = await simulateContract(wagmiConfig, {
-          address: tcrAddress as `0x${string}`,
+          address: tcrAddress as Address,
           abi: _gtcr,
           functionName: 'addItem',
           args: [encodedParams],
@@ -257,7 +257,7 @@ const SubmitModal: React.FC<{
           resetForm({})
 
           if (process.env.REACT_APP_NOTIFICATIONS_API_URL && !!chainId) {
-            const itemID = keccak256(encodedParams as `0x${string}`)
+            const itemID = keccak256(encodedParams as Hex)
             fetch(
               `${process.env.REACT_APP_NOTIFICATIONS_API_URL}/${chainId}/api/subscribe`,
               {
@@ -265,7 +265,7 @@ const SubmitModal: React.FC<{
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                   subscriberAddr: getAddress(account!),
-                  tcrAddr: getAddress(tcrAddress as `0x${string}`),
+                  tcrAddr: getAddress(tcrAddress as Address),
                   itemID,
                   networkID: chainId,
                 }),

@@ -21,7 +21,13 @@ import useUrlChainId from 'hooks/use-url-chain-id'
 import { useAccount, usePublicClient, useWalletClient, useChainId } from 'wagmi'
 import { useQuery } from '@tanstack/react-query'
 import { simulateContract } from '@wagmi/core'
-import { keccak256, encodePacked, getAddress } from 'viem'
+import {
+  keccak256,
+  encodePacked,
+  getAddress,
+  type Address,
+  type Hex,
+} from 'viem'
 import { useAtlasProvider } from '@kleros/kleros-app'
 import { JSON_UPLOAD_ROLE } from 'utils/atlas-roles'
 import { gtcrEncode } from '@kleros/gtcr-encoder'
@@ -192,7 +198,7 @@ const SubmitConnectModal = (props: SubmitConnectModalProps) => {
       })
 
       const { request } = await simulateContract(wagmiConfig, {
-        address: relTCRAddress as `0x${string}`,
+        address: relTCRAddress as Address,
         abi: _gtcr,
         functionName: 'addItem',
         args: [encodedParams],
@@ -210,7 +216,7 @@ const SubmitConnectModal = (props: SubmitConnectModalProps) => {
 
         if (process.env.REACT_APP_NOTIFICATIONS_API_URL && !!chainId) {
           const itemID = keccak256(
-            encodePacked(['bytes'], [encodedParams as `0x${string}`]),
+            encodePacked(['bytes'], [encodedParams as Hex]),
           )
           fetch(
             `${process.env.REACT_APP_NOTIFICATIONS_API_URL}/${chainId}/api/subscribe`,

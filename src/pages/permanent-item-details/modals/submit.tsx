@@ -7,7 +7,7 @@ import { withFormik, FormikProps, FormikState } from 'formik'
 import humanizeDuration from 'humanize-duration'
 import { useAccount, usePublicClient, useWalletClient } from 'wagmi'
 import { simulateContract } from '@wagmi/core'
-import { erc20Abi } from 'viem'
+import { erc20Abi, type Address } from 'viem'
 import { ItemTypes, typeDefaultValues } from '@kleros/gtcr-encoder'
 import InputSelector from 'components/input-selector'
 import EnsureAuth from 'components/ensure-auth'
@@ -88,9 +88,9 @@ interface SubmissionFormOuterProps {
       shouldValidate?: boolean,
     ) => void,
   ) => void
-  deployedWithFactory: (tcrAddress: string) => Promise<boolean>
-  deployedWithLightFactory: (tcrAddress: string) => Promise<boolean>
-  deployedWithPermanentFactory: (tcrAddress: string) => Promise<boolean>
+  deployedWithFactory: (tcrAddress: Address) => Promise<boolean>
+  deployedWithLightFactory: (tcrAddress: Address) => Promise<boolean>
+  deployedWithPermanentFactory: (tcrAddress: Address) => Promise<boolean>
   initialValues?: unknown[]
   onFieldsComplete?: (complete: boolean) => void
 }
@@ -174,9 +174,9 @@ const SubmissionForm = withFormik<SubmissionFormOuterProps, SubmitFormValues>({
             isEmpty: !values[label],
             wasDeployedWithFactory:
               !!values[label] &&
-              ((await deployedWithFactory(values[label])) ||
-                (await deployedWithLightFactory(values[label])) ||
-                (await deployedWithPermanentFactory(values[label]))),
+              ((await deployedWithFactory(values[label] as Address)) ||
+                (await deployedWithLightFactory(values[label] as Address)) ||
+                (await deployedWithPermanentFactory(values[label] as Address))),
             label: label,
           })),
       )
@@ -269,16 +269,16 @@ const SubmitModal: React.FC<{
     try {
       const [bal, allow, nativeBal] = await Promise.all([
         publicClient.readContract({
-          address: tokenAddress as `0x${string}`,
+          address: tokenAddress as Address,
           abi: erc20Abi,
           functionName: 'balanceOf',
           args: [account],
         }),
         publicClient.readContract({
-          address: tokenAddress as `0x${string}`,
+          address: tokenAddress as Address,
           abi: erc20Abi,
           functionName: 'allowance',
-          args: [account, tcrAddress as `0x${string}`],
+          args: [account, tcrAddress as Address],
         }),
         publicClient.getBalance({ address: account }),
       ])
@@ -308,13 +308,10 @@ const SubmitModal: React.FC<{
     setIsApproving(true)
     try {
       const { request } = await simulateContract(wagmiConfig, {
-        address: tokenAddress as `0x${string}`,
+        address: tokenAddress as Address,
         abi: erc20Abi,
         functionName: 'approve',
-        args: [
-          tcrAddress as `0x${string}`,
-          BigInt(submissionDeposit.toString()),
-        ],
+        args: [tcrAddress as Address, BigInt(submissionDeposit.toString())],
         account,
       })
 
@@ -374,7 +371,7 @@ const SubmitModal: React.FC<{
           throw new Error('Failed to upload item metadata to IPFS.')
 
         const { request } = await simulateContract(wagmiConfig, {
-          address: tcrAddress as `0x${string}`,
+          address: tcrAddress as Address,
           abi: _gtcr,
           functionName: 'addItem',
           args: [ipfsEvidencePath, BigInt(submissionDeposit.toString())],

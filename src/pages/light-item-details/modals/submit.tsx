@@ -13,7 +13,7 @@ import styled from 'styled-components'
 import _gtcr from 'assets/abis/LightGeneralizedTCR.json'
 import { useAccount, usePublicClient, useWalletClient, useChainId } from 'wagmi'
 import { simulateContract } from '@wagmi/core'
-import { getAddress, keccak256, encodePacked } from 'viem'
+import { getAddress, keccak256, encodePacked, type Address } from 'viem'
 import { withFormik, FormikProps } from 'formik'
 import humanizeDuration from 'humanize-duration'
 import { ItemTypes, typeDefaultValues } from '@kleros/gtcr-encoder'
@@ -71,9 +71,9 @@ interface SubmissionFormProps {
       shouldValidate?: boolean,
     ) => void,
   ) => void
-  deployedWithFactory: (tcrAddress: string) => Promise<boolean>
-  deployedWithLightFactory: (tcrAddress: string) => Promise<boolean>
-  deployedWithPermanentFactory: (tcrAddress: string) => Promise<boolean>
+  deployedWithFactory: (tcrAddress: Address) => Promise<boolean>
+  deployedWithLightFactory: (tcrAddress: Address) => Promise<boolean>
+  deployedWithPermanentFactory: (tcrAddress: Address) => Promise<boolean>
 }
 
 const _SubmissionForm: React.FC<{
@@ -166,9 +166,9 @@ const SubmissionForm = withFormik<SubmissionFormProps, FormValues>({
             isEmpty: !values[label],
             wasDeployedWithFactory:
               !!values[label] &&
-              ((await deployedWithFactory(values[label])) ||
-                (await deployedWithLightFactory(values[label])) ||
-                (await deployedWithPermanentFactory(values[label]))),
+              ((await deployedWithFactory(values[label] as Address)) ||
+                (await deployedWithLightFactory(values[label] as Address)) ||
+                (await deployedWithPermanentFactory(values[label] as Address))),
             label: label,
           })),
       )
@@ -284,7 +284,7 @@ const SubmitModal: React.FC<{
           throw new Error('Failed to upload item metadata to IPFS.')
 
         const { request } = await simulateContract(wagmiConfig, {
-          address: tcrAddress as `0x${string}`,
+          address: tcrAddress as Address,
           abi: _gtcr,
           functionName: 'addItem',
           args: [ipfsEvidencePath],
@@ -312,7 +312,7 @@ const SubmitModal: React.FC<{
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                   subscriberAddr: getAddress(account),
-                  tcrAddr: getAddress(tcrAddress as `0x${string}`),
+                  tcrAddr: getAddress(tcrAddress as Address),
                   itemID,
                   networkID: chainId,
                 }),

@@ -3,7 +3,7 @@ import styled from 'styled-components'
 import { Modal, Descriptions, Typography, Button, Spin } from 'components/ui'
 import { useAccount, usePublicClient, useWalletClient, useChainId } from 'wagmi'
 import { simulateContract } from '@wagmi/core'
-import { getAddress } from 'viem'
+import { getAddress, type Address } from 'viem'
 import _gtcr from 'assets/abis/LightGeneralizedTCR.json'
 import { STATUS_CODE, CONTRACT_STATUS } from 'utils/item-status'
 import { LightTCRViewContext } from 'contexts/light-tcr-view-context'
@@ -93,7 +93,7 @@ const ChallengeModal = ({
       })
 
       const { request } = await simulateContract(wagmiConfig, {
-        address: tcrAddress as `0x${string}`,
+        address: tcrAddress as Address,
         abi: _gtcr,
         functionName: 'challengeRequest',
         args: [item.itemID, ipfsEvidencePath],

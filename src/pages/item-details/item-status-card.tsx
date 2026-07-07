@@ -1,4 +1,5 @@
 import React, { useContext, useMemo } from 'react'
+import type { Address } from 'viem'
 import { BigNumber } from 'ethers'
 import { Descriptions, Skeleton, Card } from 'components/ui'
 import { abi as _gtcr } from '@kleros/tcr/build/contracts/GeneralizedTCR.json'
@@ -105,7 +106,7 @@ const ItemStatusCard = ({
     if (!tcrAddress || !walletClient || !publicClient) return
     try {
       const { request: req } = await simulateContract(wagmiConfig, {
-        address: tcrAddress as `0x${string}`,
+        address: tcrAddress as Address,
         abi: _gtcr,
         functionName: 'executeRequest',
         args: [item.itemID],

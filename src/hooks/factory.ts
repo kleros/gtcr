@@ -1,4 +1,5 @@
 import { ethers } from 'ethers'
+import type { Address } from 'viem'
 import useUrlChainId from 'hooks/use-url-chain-id'
 import { subgraphUrl, subgraphUrlPermanent } from 'config/tcr-addresses'
 
@@ -45,7 +46,7 @@ const useFactory = () => {
     ? subgraphUrlPermanent[urlChainId]
     : undefined
 
-  const deployedWithLightFactory = (tcrAddress: string) =>
+  const deployedWithLightFactory = (tcrAddress: Address) =>
     checkRegistryExists(
       GTCR_SUBGRAPH_URL,
       '{ lregistry:LRegistry_by_pk(id: "$address") { id } }',
@@ -53,7 +54,7 @@ const useFactory = () => {
       tcrAddress,
     )
 
-  const deployedWithFactory = (tcrAddress: string) =>
+  const deployedWithFactory = (tcrAddress: Address) =>
     checkRegistryExists(
       GTCR_SUBGRAPH_URL,
       '{ registry:Registry_by_pk(id: "$address") { id } }',
@@ -61,7 +62,7 @@ const useFactory = () => {
       tcrAddress,
     )
 
-  const deployedWithPermanentFactory = (tcrAddress: string) =>
+  const deployedWithPermanentFactory = (tcrAddress: Address) =>
     checkRegistryExists(
       PGTCR_SUBGRAPH_URL,
       '{ registry(id: "$address") { id } }',

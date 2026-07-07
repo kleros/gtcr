@@ -68,7 +68,7 @@ const KlerosParams = ({
   const onCourtChanged = useCallback(
     (value: SelectChangeValue) => {
       const newCourtID = typeof value === 'object' ? value.key : value
-      if (isNaN(Number(newCourtID))) return
+      if (Number.isNaN(Number(newCourtID))) return
 
       const newArbitratorExtraData = `0x${Number(newCourtID)
         .toString(16)
@@ -84,7 +84,7 @@ const KlerosParams = ({
 
   const onNumJurorsChange = useCallback(
     (value: number | undefined) => {
-      if (value === undefined || isNaN(value)) return
+      if (value === undefined || Number.isNaN(value)) return
       let newNumJurors = value > 0 ? value : 1
       newNumJurors = newNumJurors < 35 ? newNumJurors : 33
       if (newNumJurors % 2 === 0) newNumJurors = newNumJurors - 1

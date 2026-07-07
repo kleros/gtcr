@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react'
+import type { Address } from 'viem'
 import { Descriptions, Skeleton, Card, Button, Badge } from 'components/ui'
 import _gtcr from 'assets/abis/PermanentGTCR.json'
 import ItemStatusBadge, {
@@ -108,7 +109,7 @@ interface StatusItem extends SubgraphItem {
 }
 
 interface StatusRegistry extends SubgraphRegistry {
-  id: `0x${string}`
+  id: Address
   token: string
   arbitrator: { id: string }
 }

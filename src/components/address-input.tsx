@@ -12,7 +12,7 @@ const AddressInput: React.FC<{
   label?: React.ReactNode
   name: string
   placeholder?: string
-  error?: string | null
+  error?: string
   touched?: boolean
   hasFeedback?: boolean
   disabled?: boolean

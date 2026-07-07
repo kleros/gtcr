@@ -266,7 +266,7 @@ const TCRParams = ({
 
   const onChangeDepositVal = useCallback(
     (value: number | undefined) => {
-      if (value === undefined || isNaN(value)) return
+      if (value === undefined || Number.isNaN(value)) return
 
       setDepositVal(value)
       setFieldValue('submissionMinDeposit', value)

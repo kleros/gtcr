@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import type { Address } from 'viem'
 import { Typography, Button } from 'components/ui'
 import { useAccount, usePublicClient, useWalletClient } from 'wagmi'
 import { simulateContract } from '@wagmi/core'
@@ -19,7 +20,7 @@ interface EvidenceModalProps {
 }
 
 const EvidenceModal = ({ item, ...rest }: EvidenceModalProps) => {
-  const tcrAddress = (item?.registry as { id?: `0x${string}` } | undefined)?.id
+  const tcrAddress = (item?.registry as { id?: Address } | undefined)?.id
   const { address: account } = useAccount()
   const publicClient = usePublicClient()
   const { data: walletClient } = useWalletClient()

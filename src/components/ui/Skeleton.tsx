@@ -86,7 +86,11 @@ const Skeleton: React.FC<SkeletonProps> = ({
   const rawTitleWidth =
     title && typeof title === 'object' ? title.width : undefined
   const titleWidth =
-    typeof rawTitleWidth === 'number' ? `${rawTitleWidth}px` : rawTitleWidth
+    typeof rawTitleWidth !== 'number'
+      ? rawTitleWidth
+      : Number.isNaN(rawTitleWidth)
+        ? undefined
+        : `${rawTitleWidth}px`
 
   const paraRows =
     paragraph === false

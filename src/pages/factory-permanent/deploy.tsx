@@ -2,7 +2,7 @@ import { Card, Button, Alert, Steps } from 'components/ui'
 import Icon from 'components/ui/Icon'
 import { Link } from 'react-router-dom'
 import React, { useState } from 'react'
-import { parseEther, decodeEventLog } from 'viem'
+import { parseEther, decodeEventLog, type Address } from 'viem'
 import { useAccount, usePublicClient, useWalletClient, useChainId } from 'wagmi'
 import { simulateContract } from '@wagmi/core'
 import styled from 'styled-components'
@@ -165,7 +165,7 @@ const Deploy = ({ setTxState, tcrState, setTcrState }: DeployProps) => {
       !walletClient
     )
       return
-    const factory = factoryAddress as `0x${string}`
+    const factory = factoryAddress as Address
     try {
       const { ipfsMetaEvidencePath } = await getTcrMetaEvidence(
         tcrState,

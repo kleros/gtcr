@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react'
+import type { Address } from 'viem'
 import styled from 'styled-components'
 import { BigNumber } from 'ethers'
 import { Modal, Typography, Button, Spin, Tooltip } from 'components/ui'
@@ -36,8 +37,8 @@ export const StyledModal = styled(Modal)`
 `
 
 interface ChallengeRegistry {
-  id: `0x${string}`
-  token: `0x${string}`
+  id: Address
+  token: Address
   challengeStakeMultiplier: string
   arbitrationSettings: { metadata: { policyURI: string } }[]
 }

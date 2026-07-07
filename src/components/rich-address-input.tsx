@@ -26,7 +26,7 @@ const defaultAddressType = `${references[0].namespaceId}:${references[0].id}`
 const RichAddressInput: React.FC<{
   label?: React.ReactNode
   name: string
-  error?: string | null
+  error?: string
   touched?: boolean
   hasFeedback?: boolean
   disabled?: boolean

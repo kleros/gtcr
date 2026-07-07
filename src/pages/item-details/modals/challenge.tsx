@@ -2,7 +2,7 @@ import React, { useContext, useState } from 'react'
 import { Descriptions, Typography, Button } from 'components/ui'
 import { useAccount, usePublicClient, useWalletClient, useChainId } from 'wagmi'
 import { simulateContract } from '@wagmi/core'
-import { getAddress } from 'viem'
+import { getAddress, type Address } from 'viem'
 import { abi as _gtcr } from '@kleros/tcr/build/contracts/GeneralizedTCR.json'
 import { TCRViewContext } from 'contexts/tcr-view-context'
 import EnsureAuth from 'components/ensure-auth'
@@ -80,7 +80,7 @@ const ChallengeModal = ({
       })
 
       const { request } = await simulateContract(wagmiConfig, {
-        address: tcrAddress as `0x${string}`,
+        address: tcrAddress as Address,
         abi: _gtcr,
         functionName: 'challengeRequest',
         args: [item.itemID, ipfsEvidencePath],

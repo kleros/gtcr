@@ -7,6 +7,7 @@ import {
   encodeFunctionData,
   getContractAddress,
   decodeEventLog,
+  type Address,
 } from 'viem'
 import { useAccount, usePublicClient, useWalletClient, useChainId } from 'wagmi'
 import { simulateContract } from '@wagmi/core'
@@ -308,8 +309,8 @@ const Deploy = ({ setTxState, tcrState, setTcrState }: DeployProps) => {
       !walletClient
     )
       return
-    const factory = factoryAddress as `0x${string}`
-    const batcher = batcherAddress as `0x${string}`
+    const factory = factoryAddress as Address
+    const batcher = batcherAddress as Address
     try {
       const txCount = await publicClient.getTransactionCount({
         address: factory,

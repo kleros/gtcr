@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useContext } from 'react'
+import type { Address } from 'viem'
 import styled from 'styled-components'
 import { Card, Tooltip, Button, Result, Alert } from 'components/ui'
 import Icon from 'components/ui/Icon'
@@ -69,7 +70,7 @@ const StyledAlert = styled(Alert)`
 interface ItemDetailsCardProps {
   title?: string | null
   columns?: Column[] | null
-  loading?: boolean | null
+  loading?: boolean
   item?: SubgraphItem
   itemMetaEvidence?: { file?: MetaEvidence; error?: Error } | false | null
   disabled?: boolean
@@ -123,7 +124,7 @@ const ItemDetailsCard = ({
 
     try {
       const { request } = await simulateContract(wagmiConfig, {
-        address: BATCH_WITHDRAW_ADDRESS as `0x${string}`,
+        address: BATCH_WITHDRAW_ADDRESS as Address,
         abi: _batchWithdraw,
         functionName: 'batchRequestWithdraw',
         args: [tcrViewContext.tcrAddress, account, item.itemID, 0, 0, 0, 0],
@@ -176,7 +177,7 @@ const ItemDetailsCard = ({
   return (
     <StyledCard
       title={title}
-      loading={loading ?? undefined}
+      loading={loading}
       extra={
         item &&
         item.resolved &&
@@ -241,7 +242,7 @@ const ItemDetailsCard = ({
         item && (
           <SeerExtraDetails
             chainId={urlChainId}
-            contractAddress={item.decodedData?.[0] as string}
+            contractAddress={item.decodedData?.[0] as Address}
             imagesIpfsHash={item.decodedData?.[1] as string}
           />
         )}

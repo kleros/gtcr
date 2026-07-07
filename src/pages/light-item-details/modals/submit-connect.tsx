@@ -24,7 +24,7 @@ import useUrlChainId from 'hooks/use-url-chain-id'
 import { useAccount, usePublicClient, useWalletClient, useChainId } from 'wagmi'
 import { useQuery } from '@tanstack/react-query'
 import { simulateContract } from '@wagmi/core'
-import { getAddress, keccak256, encodePacked } from 'viem'
+import { getAddress, keccak256, encodePacked, type Address } from 'viem'
 import { useAtlasProvider } from '@kleros/kleros-app'
 import { JSON_UPLOAD_ROLE } from 'utils/atlas-roles'
 import useNativeCurrency from 'hooks/native-currency'
@@ -194,7 +194,7 @@ const SubmitConnectModal = (props: SubmitConnectModalProps) => {
         throw new Error('Failed to upload item metadata to IPFS.')
 
       const { request } = await simulateContract(wagmiConfig, {
-        address: relTCRAddress as `0x${string}`,
+        address: relTCRAddress as Address,
         abi: _gtcr,
         functionName: 'addItem',
         args: [ipfsEvidencePath],

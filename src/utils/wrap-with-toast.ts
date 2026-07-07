@@ -1,5 +1,5 @@
 import { toast, type ToastPosition } from 'react-toastify'
-import type { TransactionReceipt } from 'viem'
+import type { TransactionReceipt, Hash } from 'viem'
 import { parseWagmiError } from './parse-wagmi-error'
 
 /**
@@ -8,7 +8,7 @@ import { parseWagmiError } from './parse-wagmi-error'
  */
 export interface TransactionReceiptClient {
   waitForTransactionReceipt(args: {
-    hash: `0x${string}`
+    hash: Hash
     confirmations?: number
   }): Promise<TransactionReceipt>
 }
@@ -39,7 +39,7 @@ export const errorToast = (message: string) =>
   toast.error(message, ERROR_OPTIONS)
 
 export async function wrapWithToast(
-  contractWrite: () => Promise<`0x${string}`>,
+  contractWrite: () => Promise<Hash>,
   publicClient: TransactionReceiptClient,
 ): Promise<WrapWithToastReturnType> {
   toast.info('Transaction initiated', OPTIONS)

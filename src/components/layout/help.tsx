@@ -40,10 +40,6 @@ const Icon = styled.svg`
   transition: fill 0.15s;
 `
 
-// vite-plugin-svgr is configured with `include: '**/*.svg'`, so plain .svg
-// imports resolve to React components at runtime despite the URL-string type.
-type SvgComponent = React.FC<React.SVGProps<SVGSVGElement>>
-
 const ITEMS = [
   {
     text: 'Get Help',
@@ -71,7 +67,7 @@ const Help: React.FC = () => (
         target="_blank"
         rel="noopener noreferrer"
       >
-        <Icon as={item.Icon as unknown as SvgComponent} />
+        <Icon as={item.Icon} />
         {item.text}
       </ListItem>
     ))}
