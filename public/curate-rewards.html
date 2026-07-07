@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Kleros Curate Rewards</title>
+  <style>
+    :root {
+      --bg: #f6f7fb; --card: #ffffff; --ink: #1b1f2a; --muted: #6b7280;
+      --line: #e6e8f0; --accent: #4d00b4; --accent-soft: #efe7fb;
+      --sub: #2563eb; --rem: #c026d3; --good: #0a7c42;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0f1117; --card: #171a22; --ink: #e8eaf2;
+        --muted: #9aa1b1; --line: #262b36; --accent: #b794f6; --accent-soft: #241a38;
+        --sub: #7aa2ff; --rem: #e879f9; --good: #34d399;
+      }
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; background: var(--bg); color: var(--ink);
+      font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+    .wrap { max-width: 1040px; margin: 0 auto; padding: 28px 18px 64px; }
+    header h1 { margin: 0 0 4px; font-size: 26px; letter-spacing: -0.02em; }
+    header p { margin: 0; color: var(--muted); }
+    .stats { display: flex; flex-wrap: wrap; gap: 12px; margin: 22px 0; }
+    .stat {
+      flex: 1 1 170px; background: var(--card); border: 1px solid var(--line);
+      border-radius: 14px; padding: 14px 16px;
+    }
+    .stat .k { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; }
+    .stat .v { font-size: 21px; font-weight: 650; margin-top: 4px; white-space: nowrap; }
+    .tabs {
+      display: flex; gap: 2px; overflow-x: auto; border-bottom: 1px solid var(--line);
+      margin-bottom: 16px;
+    }
+    .tab {
+      padding: 9px 14px; font-size: 13px; white-space: nowrap; color: var(--muted);
+      cursor: pointer; border: none; background: none; border-bottom: 2px solid transparent;
+      border-radius: 0;
+    }
+    .tab.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
+    .tab:hover { color: var(--ink); }
+    .controls { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
+    input[type="search"] {
+      flex: 1 1 320px; padding: 11px 14px; border-radius: 12px;
+      border: 1px solid var(--line); background: var(--card); color: var(--ink); font-size: 15px;
+    }
+    button {
+      padding: 11px 16px; border-radius: 12px; border: 1px solid var(--line);
+      background: var(--card); color: var(--ink); cursor: pointer; font-size: 14px;
+    }
+    button:hover { border-color: var(--accent); }
+    .card {
+      background: var(--card); border: 1px solid var(--line); border-radius: 16px;
+      overflow: hidden; margin-bottom: 18px;
+    }
+    .table-scroll { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; min-width: 560px; }
+    th, td { text-align: left; padding: 11px 16px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+    th { font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); cursor: pointer; user-select: none; }
+    th:hover { color: var(--ink); }
+    tbody tr:last-child td { border-bottom: none; }
+    tbody tr.row-link:hover { background: var(--accent-soft); }
+    .addr { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; }
+    .num { text-align: right; font-variant-numeric: tabular-nums; }
+    .pill { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; }
+    .pill.sub { background: color-mix(in srgb, var(--sub) 16%, transparent); color: var(--sub); }
+    .pill.rem { background: color-mix(in srgb, var(--rem) 16%, transparent); color: var(--rem); }
+    .pill.atq { background: color-mix(in srgb, var(--accent) 16%, transparent); color: var(--accent); }
+    .muted { color: var(--muted); }
+    .pager {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 10px 16px; border-top: 1px solid var(--line); font-size: 12px; color: var(--muted);
+    }
+    .pager .btns { display: flex; gap: 6px; }
+    .pager button { padding: 4px 11px; font-size: 12px; border-radius: 8px; }
+    .pager button:disabled { opacity: 0.4; cursor: default; }
+    .detail-head { display: flex; justify-content: space-between; align-items: center; padding: 14px 16px; border-bottom: 1px solid var(--line); flex-wrap: wrap; gap: 8px; }
+    .period-block { padding: 6px 16px 12px; }
+    .period-block h4 { margin: 14px 0 6px; font-size: 13px; color: var(--muted); }
+    .msg { padding: 30px 16px; text-align: center; color: var(--muted); }
+    a { color: var(--accent); }
+    .foot { margin-top: 26px; color: var(--muted); font-size: 12px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>Kleros Curate Rewards</h1>
+      <p>Monthly PNK rewards for submissions, removals and ATQ across the Address Tags, Tokens and Domains registries.</p>
+    </header>
+
+    <div class="stats" id="stats"></div>
+    <div class="tabs" id="tabs"></div>
+
+    <div class="controls">
+      <input id="search" type="search" placeholder="Search…" autocomplete="off" />
+      <button id="csv">Download CSV</button>
+    </div>
+
+    <div id="content"><div class="msg">Loading reward data…</div></div>
+    <div class="foot" id="foot"></div>
+  </div>
+
+  <script>
+    // ---- Config -------------------------------------------------------------
+    // The index is produced by the reward calculator (`--mode document`). Point
+    // this at wherever curate-rewards-index.json is hosted, or pass ?index=<url>.
+    const CONFIG = {
+      indexUrl:
+        new URLSearchParams(location.search).get("index") ||
+        "./data/curate-rewards-index.json",
+      ipfsGateway: "https://cdn.kleros.link/ipfs",
+    };
+    const PAGE_SIZE = 100;
+    const SUMMARY = "Summary";
+    const MONTHLY = "Monthly Totals";
+
+    // ---- Helpers ------------------------------------------------------------
+    const WEI = 1000000000000000000n;
+    function fmtPnk(wei) {
+      wei = typeof wei === "bigint" ? wei : BigInt(wei || "0");
+      const whole = wei / WEI, frac = (wei % WEI) * 100n / WEI;
+      const w = whole.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+      return `${w}.${frac.toString().padStart(2, "0")}`;
+    }
+    function short(a) { return a ? a.slice(0, 6) + "…" + a.slice(-4) : ""; }
+    function el(html) { const t = document.createElement("template"); t.innerHTML = html.trim(); return t.content.firstChild; }
+    function esc(s) { return String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
+    function registryLabel(r) {
+      return r === "addressTags" ? "Address Tags" : r === "tokens" ? "Kleros Tokens" : r === "domains" ? "Domains" : r === "atq" ? "ATQ" : r;
+    }
+    async function fetchJson(url) {
+      const res = await fetch(url, { cache: "no-cache" });
+      if (!res.ok) throw new Error(`${res.status} ${url}`);
+      return res.json();
+    }
+    // An index entry may be a bare URL string, or an object ({ url } | { cid, file } | { file }).
+    function entryUrl(entry) {
+      if (typeof entry === "string") return entry;
+      if (entry.url) return entry.url;
+      if (entry.cid) return `${CONFIG.ipfsGateway}/${entry.cid}/${entry.file}`;
+      const base = CONFIG.indexUrl.replace(/[^/]*$/, "");
+      return base + entry.file;
+    }
+    // Period label comes from the snapshot itself; the index only needs the URL.
+    function labelFor(entry, snapshot) {
+      if (snapshot && snapshot.period && snapshot.period.label) return snapshot.period.label;
+      if (entry && typeof entry === "object" && entry.period) return entry.period;
+      const m = String(entryUrl(entry)).match(/(\d{4}-\d{2})/);
+      return m ? m[1] : entryUrl(entry).split("/").pop();
+    }
+    const sumLines = (arr) => (arr || []).reduce((t, x) => t + BigInt(x.amount || "0"), 0n);
+
+    // ---- State --------------------------------------------------------------
+    let SNAPSHOTS = [];      // [{ label, snapshot }] newest first
+    let GRAND = new Map();   // addr -> { submissions, removals, atq, total } (bigint)
+    let activeTab = SUMMARY;
+    let sortKey = "total", sortDir = -1;
+    let search = "", page = 0;
+
+    function aggregate() {
+      GRAND = new Map();
+      for (const { snapshot } of SNAPSHOTS) {
+        for (const [addr, rec] of Object.entries(snapshot.recipients || {})) {
+          const g = GRAND.get(addr) || { submissions: 0n, removals: 0n, atq: 0n, total: 0n };
+          const s = sumLines(rec.submissions), r = sumLines(rec.removals), a = sumLines(rec.atq);
+          g.submissions += s; g.removals += r; g.atq += a; g.total += s + r + a;
+          GRAND.set(addr, g);
+        }
+      }
+    }
+
+    // Per-wallet rows for a single snapshot.
+    function walletRows(snapshot) {
+      return Object.entries(snapshot.recipients || {}).map(([addr, rec]) => {
+        const s = sumLines(rec.submissions), r = sumLines(rec.removals), a = sumLines(rec.atq);
+        return { addr, submissions: s, removals: r, atq: a, total: s + r + a };
+      });
+    }
+    // Per-wallet rows aggregated across all periods.
+    function grandRows() {
+      return [...GRAND.entries()].map(([addr, g]) => ({ addr, ...g }));
+    }
+    // One row per period (totals across all wallets).
+    function monthlyRows() {
+      return SNAPSHOTS.map(({ label, snapshot }) => {
+        const t = snapshot.totals || {};
+        return {
+          month: label,
+          submissions: BigInt(t.submissions || "0"),
+          removals: BigInt(t.removals || "0"),
+          atq: BigInt(t.atq || "0"),
+          total: BigInt(t.total || "0"),
+        };
+      });
+    }
+
+    // Stats for the current scope (all periods, or one month).
+    function scopeStats(tab) {
+      if (tab === SUMMARY || tab === MONTHLY) {
+        let s = 0n, r = 0n, a = 0n;
+        for (const g of GRAND.values()) { s += g.submissions; r += g.removals; a += g.atq; }
+        return { scope: "all", periods: SNAPSHOTS.length, recipients: GRAND.size, submissions: s, removals: r, atq: a, total: s + r + a };
+      }
+      const snap = (SNAPSHOTS.find((x) => x.label === tab) || {}).snapshot || { recipients: {}, totals: {} };
+      const t = snap.totals || {};
+      return {
+        scope: tab, periods: 1, recipients: Object.keys(snap.recipients || {}).length,
+        submissions: BigInt(t.submissions || "0"), removals: BigInt(t.removals || "0"),
+        atq: BigInt(t.atq || "0"), total: BigInt(t.total || "0"),
+      };
+    }
+
+    // ---- Rendering ----------------------------------------------------------
+    function renderStats() {
+      const st = scopeStats(activeTab);
+      const first = st.scope === "all" ? ["Periods", String(st.periods)] : ["Period", st.scope];
+      const stats = [
+        first,
+        ["Recipients", String(st.recipients)],
+        ["Submissions", fmtPnk(st.submissions) + " PNK"],
+        ["Removals", fmtPnk(st.removals) + " PNK"],
+        ["ATQ", fmtPnk(st.atq) + " PNK"],
+        ["Total distributed", fmtPnk(st.total) + " PNK"],
+      ];
+      document.getElementById("stats").innerHTML = stats
+        .map(([k, v]) => `<div class="stat"><div class="k">${esc(k)}</div><div class="v">${esc(v)}</div></div>`)
+        .join("");
+    }
+
+    function renderTabs() {
+      const tabs = [SUMMARY, MONTHLY, ...SNAPSHOTS.map((s) => s.label)];
+      const bar = document.getElementById("tabs");
+      bar.innerHTML = "";
+      for (const t of tabs) {
+        const b = el(`<button class="tab${t === activeTab ? " active" : ""}">${esc(t)}</button>`);
+        b.addEventListener("click", () => selectTab(t));
+        bar.appendChild(b);
+      }
+    }
+
+    function selectTab(tab) {
+      activeTab = tab;
+      search = ""; page = 0;
+      document.getElementById("search").value = "";
+      // sensible default sort per tab
+      if (tab === MONTHLY) { sortKey = "month"; sortDir = -1; }
+      else { sortKey = "total"; sortDir = -1; }
+      route();
+    }
+
+    // Generic sortable + paginated table.
+    function renderTable({ columns, rows, searchKey, onRow }) {
+      const q = search.trim().toLowerCase();
+      let list = q ? rows.filter((r) => String(r[searchKey] ?? "").toLowerCase().includes(q)) : rows.slice();
+
+      const col = columns.find((c) => c.key === sortKey) || columns[columns.length - 1];
+      list.sort((a, b) => {
+        const va = a[col.key], vb = b[col.key];
+        let cmp;
+        if (typeof va === "bigint") cmp = va < vb ? -1 : va > vb ? 1 : 0;
+        else cmp = String(va).localeCompare(String(vb));
+        return cmp * sortDir;
+      });
+
+      const totalPages = Math.max(1, Math.ceil(list.length / PAGE_SIZE));
+      if (page >= totalPages) page = totalPages - 1;
+      const pageRows = list.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
+
+      const arrow = (k) => (sortKey === k ? (sortDir < 0 ? " ↓" : " ↑") : "");
+      const thead = columns
+        .map((c) => `<th data-k="${c.key}"${c.align === "right" ? ' class="num"' : ""}>${esc(c.label)}${arrow(c.key)}</th>`)
+        .join("");
+      const body = pageRows
+        .map((row) => {
+          const tds = columns.map((c) => c.cell(row)).join("");
+          return `<tr${onRow ? ' class="row-link" data-row="' + esc(row[searchKey]) + '"' : ""}>${tds}</tr>`;
+        })
+        .join("");
+
+      const card = el(`<div class="card"><div class="table-scroll"><table>
+        <thead><tr>${thead}</tr></thead><tbody>${body || `<tr><td colspan="${columns.length}"><div class="msg">No rows${q ? " match your search" : ""}.</div></td></tr>`}</tbody>
+      </table></div></div>`);
+
+      card.querySelectorAll("th").forEach((th) =>
+        th.addEventListener("click", () => {
+          const k = th.getAttribute("data-k");
+          if (sortKey === k) sortDir *= -1;
+          else { sortKey = k; sortDir = k === searchKey ? 1 : -1; }
+          page = 0; route();
+        })
+      );
+      if (onRow) {
+        card.querySelectorAll("tr.row-link").forEach((tr) =>
+          tr.addEventListener("click", () => onRow(tr.getAttribute("data-row")))
+        );
+      }
+
+      if (totalPages > 1) {
+        const from = page * PAGE_SIZE + 1, to = Math.min((page + 1) * PAGE_SIZE, list.length);
+        const pager = el(`<div class="pager">
+          <span>${from.toLocaleString()}–${to.toLocaleString()} of ${list.length.toLocaleString()}</span>
+          <div class="btns">
+            <button ${page === 0 ? "disabled" : ""} data-p="prev">‹ Prev</button>
+            <span style="padding:4px 6px">${page + 1} / ${totalPages}</span>
+            <button ${page >= totalPages - 1 ? "disabled" : ""} data-p="next">Next ›</button>
+          </div>
+        </div>`);
+        pager.querySelector('[data-p="prev"]').addEventListener("click", () => { if (page > 0) { page--; route(); } });
+        pager.querySelector('[data-p="next"]').addEventListener("click", () => { if (page < totalPages - 1) { page++; route(); } });
+        card.appendChild(pager);
+      }
+
+      const content = document.getElementById("content");
+      content.innerHTML = "";
+      content.appendChild(card);
+    }
+
+    // Column presets
+    const numCell = (key, opts = {}) => (row) =>
+      `<td class="num${opts.strong ? "" : " muted"}">${opts.strong ? "<strong>" + fmtPnk(row[key]) + "</strong>" : fmtPnk(row[key])}</td>`;
+    function walletColumns() {
+      return [
+        { key: "addr", label: "Recipient", align: "left", cell: (r) => `<td class="addr">${esc(short(r.addr))}</td>` },
+        { key: "submissions", label: "Submissions", align: "right", cell: numCell("submissions") },
+        { key: "removals", label: "Removals", align: "right", cell: numCell("removals") },
+        { key: "atq", label: "ATQ", align: "right", cell: numCell("atq") },
+        { key: "total", label: "Total (PNK)", align: "right", cell: numCell("total", { strong: true }) },
+      ];
+    }
+    function monthlyColumns() {
+      return [
+        { key: "month", label: "Month", align: "left", cell: (r) => `<td>${esc(r.month)}</td>` },
+        { key: "submissions", label: "Submissions", align: "right", cell: numCell("submissions") },
+        { key: "removals", label: "Removals", align: "right", cell: numCell("removals") },
+        { key: "atq", label: "ATQ", align: "right", cell: numCell("atq") },
+        { key: "total", label: "Total (PNK)", align: "right", cell: numCell("total", { strong: true }) },
+      ];
+    }
+
+    function renderDetail(addr) {
+      addr = addr.toLowerCase();
+      const content = document.getElementById("content");
+      let grand = 0n;
+      for (const { snapshot } of SNAPSHOTS) {
+        const rec = (snapshot.recipients || {})[addr];
+        if (rec) grand += BigInt(rec.total || "0");
+      }
+      const card = el(`<div class="card">
+        <div class="detail-head">
+          <div><div class="muted">Rewards for</div><div class="addr" style="font-size:15px">${esc(addr)}</div></div>
+          <div style="text-align:right"><div class="muted">All-time total</div><div style="font-size:20px;font-weight:650">${fmtPnk(grand)} PNK</div></div>
+        </div>
+        <div id="periods"></div>
+      </div>`);
+      const periods = card.querySelector("#periods");
+      let any = false;
+      for (const { label, snapshot } of SNAPSHOTS) {
+        const rec = (snapshot.recipients || {})[addr];
+        if (!rec) continue;
+        any = true;
+        const block = el(`<div class="period-block"></div>`);
+        block.appendChild(el(`<h4>${esc(label)} — ${fmtPnk(rec.total)} PNK</h4>`));
+        const lines = [
+          ...(rec.submissions || []).map((l) => ({ ...l, kind: "sub" })),
+          ...(rec.removals || []).map((l) => ({ ...l, kind: "rem" })),
+          ...(rec.atq || []).map((l) => ({ ...l, kind: "atq" })),
+        ];
+        const kindLabel = { sub: "Submission", rem: "Removal", atq: "ATQ" };
+        const t = el(`<div class="table-scroll"><table><tbody></tbody></table></div>`);
+        const tb = t.querySelector("tbody");
+        for (const l of lines) {
+          tb.appendChild(el(`<tr>
+            <td><span class="pill ${l.kind}">${kindLabel[l.kind]}</span></td>
+            <td>${esc(registryLabel(l.registry))}</td>
+            <td class="muted">${esc(l.chainName || l.chain || "")}</td>
+            <td class="addr muted">${esc(short(l.tagAddress))}</td>
+            <td class="num">${fmtPnk(l.amount)} PNK</td>
+          </tr>`));
+        }
+        block.appendChild(t);
+        periods.appendChild(block);
+      }
+      if (!any) periods.appendChild(el(`<div class="msg">No rewards recorded for this address.</div>`));
+
+      const back = el(`<div style="margin-bottom:14px"><button id="back">← Back</button></div>`);
+      content.innerHTML = "";
+      content.appendChild(back);
+      content.appendChild(card);
+      document.getElementById("back").addEventListener("click", () => route());
+    }
+
+    // Route to the active tab's view.
+    function route() {
+      renderTabs();
+      renderStats();
+      if (activeTab === MONTHLY) {
+        document.getElementById("search").placeholder = "Search month…";
+        renderTable({ columns: monthlyColumns(), rows: monthlyRows(), searchKey: "month", onRow: (m) => selectTab(m) });
+      } else {
+        document.getElementById("search").placeholder = "Search by wallet address (0x…)";
+        const rows = activeTab === SUMMARY ? grandRows() : walletRows((SNAPSHOTS.find((x) => x.label === activeTab) || {}).snapshot || { recipients: {} });
+        renderTable({ columns: walletColumns(), rows, searchKey: "addr", onRow: (a) => renderDetail(a) });
+      }
+    }
+
+    function downloadCsv() {
+      const isMonthly = activeTab === MONTHLY;
+      const header = isMonthly
+        ? ["Month", "Submissions (PNK)", "Removals (PNK)", "ATQ (PNK)", "Total (PNK)"]
+        : ["Recipient", "Submissions (PNK)", "Removals (PNK)", "ATQ (PNK)", "Total (PNK)"];
+      const src = isMonthly
+        ? monthlyRows().map((r) => [r.month, fmtPnk(r.submissions), fmtPnk(r.removals), fmtPnk(r.atq), fmtPnk(r.total)])
+        : (activeTab === SUMMARY ? grandRows() : walletRows((SNAPSHOTS.find((x) => x.label === activeTab) || {}).snapshot || { recipients: {} }))
+            .map((r) => [r.addr, fmtPnk(r.submissions), fmtPnk(r.removals), fmtPnk(r.atq), fmtPnk(r.total)]);
+      const rows = [header, ...src];
+      const csv = rows.map((r) => r.map((c) => /[",\n]/.test(c) ? `"${c.replace(/"/g, '""')}"` : c).join(",")).join("\n");
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
+      a.download = `curate-rewards-${activeTab.replace(/\s+/g, "-").toLowerCase()}.csv`;
+      a.click();
+    }
+
+    // ---- Boot ---------------------------------------------------------------
+    async function boot() {
+      try {
+        const index = await fetchJson(CONFIG.indexUrl);
+        if (!Array.isArray(index) || !index.length) {
+          document.getElementById("content").innerHTML = `<div class="card"><div class="msg">No reward periods published yet.</div></div>`;
+          return;
+        }
+        const settled = await Promise.allSettled(
+          index.map(async (entry) => {
+            const snapshot = await fetchJson(entryUrl(entry));
+            return { label: labelFor(entry, snapshot), snapshot };
+          })
+        );
+        SNAPSHOTS = settled.filter((s) => s.status === "fulfilled").map((s) => s.value)
+          .sort((a, b) => (a.label < b.label ? 1 : -1));
+        const failed = settled.length - SNAPSHOTS.length;
+
+        aggregate();
+        route();
+        document.getElementById("foot").textContent =
+          `Data from ${SNAPSHOTS.length} period(s)` + (failed ? ` · ${failed} snapshot(s) failed to load` : "") +
+          `. Amounts are on-chain PNK on Gnosis, disbursed directly to recipients.`;
+      } catch (err) {
+        document.getElementById("content").innerHTML =
+          `<div class="card"><div class="msg">Could not load reward index.<br><span class="addr">${esc(String(err))}</span><br><br>Set the index URL via <code>?index=&lt;url&gt;</code>.</div></div>`;
+      }
+    }
+
+    document.getElementById("search").addEventListener("input", (e) => { search = e.target.value; page = 0; route(); });
+    document.getElementById("csv").addEventListener("click", downloadCsv);
+    boot();
+  </script>
+</body>
+</html>
