@@ -1,7 +1,7 @@
 import { NETWORKS_INFO } from 'config/networks'
 
 const getExplorerUrl = (networkId: number): string =>
-  NETWORKS_INFO[networkId].explorers[0].url
+  NETWORKS_INFO[networkId as keyof typeof NETWORKS_INFO].explorers[0].url
 
 export const getAddressPage = ({
   networkId,

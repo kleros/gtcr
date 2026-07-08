@@ -57,6 +57,7 @@ const ICON_MAP: Record<string, IconProp> = {
 
 interface IconProps {
   type: string
+  theme?: 'filled' | 'outlined' | 'twoTone'
   style?: React.CSSProperties
   className?: string
   onClick?: (e: React.MouseEvent) => void

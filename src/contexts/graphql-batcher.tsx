@@ -4,8 +4,7 @@ import {
   windowedFiniteBatchScheduler,
   type Batcher,
 } from '@yornaath/batshit'
-import { request } from 'graphql-request'
-import type { DocumentNode } from 'graphql'
+import { request, type RequestDocument } from 'graphql-request'
 import { toast } from 'react-toastify'
 import { subgraphUrl, subgraphUrlPermanent } from 'config/tcr-addresses'
 
@@ -15,7 +14,7 @@ interface IGraphqlBatcher {
 
 export interface IQuery {
   id: string
-  document: DocumentNode
+  document: RequestDocument
   variables: Record<string, any>
   isPermanent?: boolean
   chainId: number | string
@@ -34,7 +33,7 @@ const debounceErrorToast = (msg: string) => {
 
 const fetchGraphql = async (
   url: string,
-  document: DocumentNode,
+  document: RequestDocument,
   variables: Record<string, any>,
 ) => {
   try {

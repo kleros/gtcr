@@ -33,7 +33,8 @@ const useRequiredFees = ({
 
     const round = item.requests
       ? item.requests[0].rounds[0]
-      : item.challenges[0].rounds[0] // for pgtcr
+      : item.challenges && item.challenges[0].rounds[0] // for pgtcr
+    if (!round) return {}
     const {
       ruling: currentRuling,
       amountPaidRequester,

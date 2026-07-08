@@ -101,9 +101,8 @@ const CrowdfundModal = ({
       sharedStakeMultiplier,
       winnerStakeMultiplier,
       loserStakeMultiplier,
-      currentRuling: ruling,
       item,
-      MULTIPLIER_DIVISOR,
+      MULTIPLIER_DIVISOR: BigNumber.from(MULTIPLIER_DIVISOR),
       appealCost,
     })
 
@@ -145,13 +144,12 @@ const CrowdfundModal = ({
     )
 
   const crowdfundSide = async () => {
+    if (!walletClient || !publicClient) return
     setIsSubmitting(true)
     try {
       const contribution = amountStillRequired
         .mul(
-          BigNumber.from(
-            (contributionShare * MULTIPLIER_DIVISOR.toString()).toString(),
-          ),
+          BigNumber.from((contributionShare * MULTIPLIER_DIVISOR).toString()),
         )
         .div(MULTIPLIER_DIVISOR)
 
@@ -180,11 +178,7 @@ const CrowdfundModal = ({
   const amountPaid = side === 1 ? amountPaidRequester : amountPaidChallenger
 
   const contribution = amountStillRequired
-    .mul(
-      BigNumber.from(
-        (contributionShare * MULTIPLIER_DIVISOR.toString()).toString(),
-      ),
-    )
+    .mul(BigNumber.from((contributionShare * MULTIPLIER_DIVISOR).toString()))
     .div(MULTIPLIER_DIVISOR)
   const insufficientBalance =
     nativeBalance !== undefined &&
@@ -219,10 +213,6 @@ const CrowdfundModal = ({
           </div>
         </EnsureAuth>,
       ]}
-      afterClose={() => {
-        setUserSelectedSide(PARTY.NONE)
-        setContributionShare(1)
-      }}
     >
       <Typography.Title level={4}>
         Read the&nbsp;
@@ -260,12 +250,12 @@ const CrowdfundModal = ({
         <Col span={8}>
           <InputNumber
             min={0}
-            max={formatEther(amountStillRequired)}
+            max={Number(formatEther(amountStillRequired))}
             step={0.01}
             style={{ marginLeft: 16 }}
             value={
               amountStillRequired
-                ? contributionShare * formatEther(amountStillRequired)
+                ? contributionShare * Number(formatEther(amountStillRequired))
                 : contributionShare
             }
             onChange={(value) => {

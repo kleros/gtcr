@@ -21,6 +21,8 @@ export const StyledItemCol = styled.div`
   font-size: 14px;
 `
 
+type ItemColumn = Column & { value?: string | number | boolean | null }
+
 interface LightItemCardContentProps {
   item: SubgraphItem
   chainId: string | number
@@ -33,15 +35,19 @@ const LightItemCardContent = ({
   tcrAddress,
 }: LightItemCardContentProps) => {
   const { getLinkProps } = useNavigateAndScrollTop()
+  const columns = item.columns as ItemColumn[]
+  const tcrData = item.tcrData as { ID: string; mergedData: ItemColumn[] }
+  const seerMarketData = item.seerMarketData as
+    | { marketName?: string; outcomes?: string[] }
+    | undefined
 
   const allowedFileTypes =
-    item.columns.filter((col) => col.allowedFileTypes)[0]?.allowedFileTypes ||
-    ''
+    columns.filter((col) => col.allowedFileTypes)[0]?.allowedFileTypes || ''
 
   return (
     <Container>
       <div>
-        {item.tcrData.mergedData
+        {tcrData.mergedData
           .filter(
             (col) =>
               col.isIdentifier ||
@@ -62,17 +68,13 @@ const LightItemCardContent = ({
         {isSeerRegistry(tcrAddress, chainId) && item && (
           <SeerCardContent
             chainId={chainId}
-            contractAddress={item.columns[1].value}
-            imagesIpfsHash={item.columns[0].value}
-            marketName={item.seerMarketData?.marketName}
-            outcomes={item.seerMarketData?.outcomes}
-            smallDisplay
+            contractAddress={columns[1].value as string}
+            marketName={seerMarketData?.marketName}
+            outcomes={seerMarketData?.outcomes}
           />
         )}
       </div>
-      <Button
-        {...getLinkProps(`/tcr/${chainId}/${tcrAddress}/${item.tcrData.ID}`)}
-      >
+      <Button {...getLinkProps(`/tcr/${chainId}/${tcrAddress}/${tcrData.ID}`)}>
         Details
       </Button>
     </Container>

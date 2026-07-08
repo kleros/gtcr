@@ -6,6 +6,7 @@ import React, {
   useRef,
   useCallback,
 } from 'react'
+import type { BigNumber } from 'ethers'
 import styled from 'styled-components'
 import { Badge } from 'components/ui'
 import Icon from 'components/ui/Icon'
@@ -131,19 +132,34 @@ const StyledItemField = styled.div`
 
 const MAX_ITEM_COUNT = 5
 
+interface SearchItemProp {
+  type: string
+  value?: string
+  isIdentifier?: boolean
+  allowedFileTypes?: string
+}
+
+interface SearchResultItem extends SubgraphItem {
+  props: SearchItemProp[]
+  registry: { id: string }
+}
+
 interface OptionItemProps {
-  item: SubgraphItem
+  item: SearchResultItem
 }
 
 const OptionItem = ({ item }: OptionItemProps) => {
   const { itemID, props, registry } = item
   const { id: tcrAddress } = registry
-  const { challengePeriodDuration, metaEvidence } =
-    useContext(LightTCRViewContext)
-  const { timestamp } = useContext(WalletContext)
+  const lightTcrContext = useContext(LightTCRViewContext)
+  const challengePeriodDuration = lightTcrContext?.challengePeriodDuration as
+    | BigNumber
+    | undefined
+  const metaEvidence = lightTcrContext?.metaEvidence as MetaEvidence | undefined
+  const timestamp = useContext(WalletContext)?.timestamp
   const chainId = useUrlChainId()
-  const { metadata } = metaEvidence || {}
-  const { isTCRofTCRs } = metadata || {}
+  const metadata = metaEvidence?.metadata
+  const isTCRofTCRs = metadata?.isTCRofTCRs
   const statusCode = useMemo(() => {
     if (!item || !timestamp || !challengePeriodDuration) return
     return itemToStatusCode(item, timestamp, challengePeriodDuration)
@@ -192,10 +208,10 @@ const OptionItem = ({ item }: OptionItemProps) => {
 
 const LightSearchBar = () => {
   const [inputValue, setInputValue] = useState('')
-  const [data, setData] = useState<SubgraphItem[]>([])
+  const [data, setData] = useState<SearchResultItem[]>([])
   const [writing, setWriting] = useState(false)
   const [focused, setFocused] = useState(false)
-  const { tcrAddress } = useContext(LightTCRViewContext)
+  const tcrAddress = useContext(LightTCRViewContext)?.tcrAddress as string
   const chainId = useUrlChainId()
   const { graphqlBatcher } = useGraphqlBatcher()
   const containerRef = useRef<HTMLDivElement>(null)

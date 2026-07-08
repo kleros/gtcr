@@ -84,18 +84,134 @@ const StyledEvidenceTitle = styled.div`
   color: ${({ theme }) => theme.textPrimary};
 `
 
-const secondTimestamp = (timestamp) =>
-  ` - ${new Date(new Date(timestamp * 1000)).toGMTString()}`
+const secondTimestamp = (timestamp: string | number | null | undefined) =>
+  ` - ${new Date(new Date(Number(timestamp) * 1000)).toUTCString()}`
+
+interface TimelineRound extends SubgraphRound {
+  txHashAppealPossible?: string | null
+  appealedAt?: string | null
+  txHashAppealDecision?: string | null
+}
+
+interface TimelineChallenge extends SubgraphChallenge {
+  createdAt: string
+  creationTx: string
+  resolutionTime?: string | null
+  resolutionTx?: string | null
+  disputeOutcome?: string | null
+  rounds: TimelineRound[]
+}
+
+interface TimelineEvidenceItem {
+  party: string
+  URI: string
+  number?: string
+  timestamp: string
+  txHash: string
+  metadata: {
+    name?: string | null
+    title?: string | null
+    description?: string | null
+    fileURI?: string | null
+    fileTypeExtension?: string | null
+  } | null
+}
+
+interface SubgraphSubmission {
+  id?: string
+  createdAt: string
+  creationTx: string
+  finishedAt: string | null
+  finishedTx: string | null
+  withdrawingTimestamp?: string | null
+  withdrawingTx?: string | null
+  submitter?: string
+  initialStake?: string
+  arbitrationDeposit?: string
+}
+
+interface TimelineItem extends SubgraphItem {
+  challenges: TimelineChallenge[]
+  evidences: TimelineEvidenceItem[]
+  submissions?: SubgraphSubmission[]
+}
+
+interface AppealPossibleLog {
+  name: 'AppealPossible'
+  timestamp: string
+  transactionHash: string
+  appealableRuling: string
+}
+
+interface AppealDecisionLog {
+  name: 'AppealDecision'
+  timestamp: string
+  transactionHash: string
+}
+
+interface EvidenceLog {
+  name: 'Evidence'
+  timestamp: string
+  transactionHash: string
+  title: string | null
+  description: string | null
+  URI: string
+  fileURI: string | null
+  fileTypeExtension: string | null
+  party: string
+}
+
+interface ResolutionLog {
+  name: 'Resolution'
+  timestamp?: string | null
+  transactionHash?: string | null
+  disputeOutcome?: string | null
+  lastRoundRuling: string
+}
+
+interface ChallengeLog {
+  name: 'Challenge'
+  timestamp: string
+  transactionHash: string
+}
+
+interface WithdrawalLog {
+  name: 'Withdrawal'
+  timestamp?: string | null
+  transactionHash?: string | null
+}
+
+interface WithdrawalCompletedLog {
+  name: 'WithdrawalCompleted'
+  timestamp: string | null
+  transactionHash: string
+}
+
+type TimelineLog =
+  | AppealPossibleLog
+  | AppealDecisionLog
+  | EvidenceLog
+  | ResolutionLog
+  | ChallengeLog
+  | WithdrawalLog
+  | WithdrawalCompletedLog
+
+interface EvidenceFile {
+  title?: string | null
+  description?: string | null
+  fileURI?: string | null
+  fileTypeExtension?: string | null
+}
 
 interface TimelineProps {
-  submission: SubgraphItem
-  item: SubgraphItem
-  metaEvidence: MetaEvidence
+  submission: SubgraphSubmission
+  item: TimelineItem
+  metaEvidence?: MetaEvidence
 }
 
 const Timeline = ({ submission, item, metaEvidence }: TimelineProps) => {
   const networkId = useUrlChainId()
-  const [evidenceMap, setEvidenceMap] = useState()
+  const [evidenceMap, setEvidenceMap] = useState<Record<string, EvidenceFile>>()
   // this submission has a range associated createdAt finishedAt
   // take ALL data from the item
   // then filter out all data whose "inclusion" is not in the provided range.
@@ -113,7 +229,7 @@ const Timeline = ({ submission, item, metaEvidence }: TimelineProps) => {
         transactionHash: r.txHashAppealPossible,
         appealableRuling: r.ruling,
       }))
-      .filter((appeal) => !!appeal.transactionHash)
+      .filter((appeal): appeal is AppealPossibleLog => !!appeal.transactionHash)
 
     const appealDecisions = allRounds
       .map((r) => ({
@@ -121,35 +237,41 @@ const Timeline = ({ submission, item, metaEvidence }: TimelineProps) => {
         timestamp: r.appealedAt,
         transactionHash: r.txHashAppealDecision,
       }))
-      .filter((appeal) => !!appeal.transactionHash)
+      .filter((appeal): appeal is AppealDecisionLog => !!appeal.transactionHash)
 
-    const evidences = item.evidences.map((e) => ({
-      name: 'Evidence',
-      timestamp: e.timestamp,
-      transactionHash: e.txHash,
-      title: e.metadata?.title,
-      description: e.metadata?.description,
-      URI: e.URI,
-      fileURI: e.metadata?.fileURI,
-      fileTypeExtension: e.metadata?.fileTypeExtension,
-      party: e.party,
-    }))
+    const evidences = item.evidences.map(
+      (e): EvidenceLog => ({
+        name: 'Evidence',
+        timestamp: e.timestamp,
+        transactionHash: e.txHash,
+        title: e.metadata?.title ?? null,
+        description: e.metadata?.description ?? null,
+        URI: e.URI,
+        fileURI: e.metadata?.fileURI ?? null,
+        fileTypeExtension: e.metadata?.fileTypeExtension ?? null,
+        party: e.party,
+      }),
+    )
 
-    const resolutions = item.challenges.map((e) => ({
-      name: 'Resolution',
-      timestamp: e.resolutionTime,
-      transactionHash: e.resolutionTx,
-      disputeOutcome: e.disputeOutcome,
-      lastRoundRuling: e.rounds[0].ruling,
-    }))
+    const resolutions = item.challenges.map(
+      (e): ResolutionLog => ({
+        name: 'Resolution',
+        timestamp: e.resolutionTime,
+        transactionHash: e.resolutionTx,
+        disputeOutcome: e.disputeOutcome,
+        lastRoundRuling: e.rounds[0].ruling,
+      }),
+    )
 
-    const challenges = item.challenges.map((e) => ({
-      name: 'Challenge',
-      timestamp: e.createdAt,
-      transactionHash: e.creationTx,
-    }))
+    const challenges = item.challenges.map(
+      (e): ChallengeLog => ({
+        name: 'Challenge',
+        timestamp: e.createdAt,
+        transactionHash: e.creationTx,
+      }),
+    )
 
-    const logArray = [
+    const logArray: TimelineLog[] = [
       ...appealPossibles,
       ...appealDecisions,
       ...evidences,
@@ -157,7 +279,7 @@ const Timeline = ({ submission, item, metaEvidence }: TimelineProps) => {
       ...challenges,
     ]
 
-    const withdrawal =
+    const withdrawal: WithdrawalLog | null =
       Number(submission.withdrawingTimestamp) !== 0
         ? {
             name: 'Withdrawal',
@@ -176,7 +298,7 @@ const Timeline = ({ submission, item, metaEvidence }: TimelineProps) => {
       item.challenges.map((c) => c.resolutionTx).filter((tx) => !!tx),
     )
 
-    const withdrawalCompleted =
+    const withdrawalCompleted: WithdrawalCompletedLog | null =
       submission.finishedTx && !resolutionTxs.has(submission.finishedTx)
         ? {
             name: 'WithdrawalCompleted',
@@ -201,15 +323,16 @@ const Timeline = ({ submission, item, metaEvidence }: TimelineProps) => {
 
   // The Graph can fail to index the evidence fields. Load unloaded fields manually
   useEffect(() => {
+    if (!logs || evidenceMap) return
     const evidenceManualFetch = async () => {
       const unindexedEvidenceURIs = logs
-        .filter((e) => e.metadata?.name === 'Evidence')
+        .filter((e): e is EvidenceLog => e.name === 'Evidence')
         .filter(
           (e) =>
-            e.metadata?.title === null &&
-            e.metadata?.description === null &&
-            e.metadata?.fileURI === null &&
-            e.metadata?.fileTypeExtension === null,
+            e.title === null &&
+            e.description === null &&
+            e.fileURI === null &&
+            e.fileTypeExtension === null,
         )
         .map((e) => e.URI)
 
@@ -219,29 +342,35 @@ const Timeline = ({ submission, item, metaEvidence }: TimelineProps) => {
           return file
         }),
       )
-      const evidenceMapProcess = {}
+      const evidenceMapProcess: Record<string, EvidenceFile> = {}
       unindexedEvidenceURIs.forEach((uri, index) => {
         evidenceMapProcess[uri] = evidenceJSONs[index]
       })
       setEvidenceMap(evidenceMapProcess)
     }
-    if (!logs || evidenceMap) return
     evidenceManualFetch()
   }, [logs, evidenceMap, setEvidenceMap])
 
   // Display loading indicator
-  if (!item || !submission) return <Skeleton active />
+  if (!item || !submission || !logs) return <Skeleton active />
 
-  const { metadata } = metaEvidence || {}
+  const metadata = metaEvidence?.metadata
   // Build nodes from request events.
-  const itemName = metadata ? capitalizeFirstLetter(metadata.itemName) : 'Item'
+  const itemName = metadata?.itemName
+    ? capitalizeFirstLetter(metadata.itemName)
+    : 'Item'
 
   const requestSubmittedNode = (
     <UITimeline.Item key={1337}>
       <span>
         <StyledText>{`${itemName} submitted`}</StyledText>
         <Typography.Text type="secondary">
-          <a href={getTxPage({ networkId, txHash: submission.creationTx })}>
+          <a
+            href={getTxPage({
+              networkId: networkId ?? 0,
+              txHash: submission.creationTx,
+            })}
+          >
             {secondTimestamp(submission.createdAt)}
           </a>
         </Typography.Text>
@@ -249,156 +378,157 @@ const Timeline = ({ submission, item, metaEvidence }: TimelineProps) => {
     </UITimeline.Item>
   )
 
-  const items = logs
-    .sort((a, b) => a.blockNumber - b.blockNumber)
-    .map((event, i) => {
-      const { name, transactionHash, timestamp } = event
-      const txPage = getTxPage({ networkId, txHash: transactionHash })
-
-      if (name === 'Evidence') {
-        const { party } = event
-        const { title, description, fileURI } = evidenceMap?.[event.URI]
-          ? evidenceMap[event.URI]
-          : event
-        /* eslint-disable unicorn/new-for-builtins */
-        const submissionTime = (
-          <span>
-            <a href={txPage} target="_blank" rel="noopener noreferrer">
-              Submitted{secondTimestamp(timestamp)}
-            </a>{' '}
-            by <ETHAddress address={party} />
-          </span>
-        )
-
-        /* eslint-enable unicorn/new-for-builtins */
-        return (
-          <UITimeline.Item dot={<Icon type="file-text" />} key={i} color="grey">
-            <StyledCard
-              title={title}
-              extra={fileURI && <EvidenceFileLink fileURI={fileURI} />}
-            >
-              <Card.Meta
-                title={<StyledEvidenceTitle>{description}</StyledEvidenceTitle>}
-                description={submissionTime}
-              />
-            </StyledCard>
-          </UITimeline.Item>
-        )
-      } else if (name === 'AppealPossible') {
-        const appealableRuling = event.appealableRuling
-        if (typeof appealableRuling === 'undefined')
-          return (
-            <UITimeline.Item dot={<Icon type="file-text" />} key={i}>
-              <Skeleton active paragraph={false} title={{ width: '200px' }} />
-            </UITimeline.Item>
-          )
-
-        return (
-          <UITimeline.Item key={i}>
-            <span>
-              {appealableRuling === SUBGRAPH_RULING.NONE
-                ? 'The arbitrator refused to rule'
-                : appealableRuling === SUBGRAPH_RULING.ACCEPT
-                  ? 'The arbitrator ruled in favor of the submitter'
-                  : appealableRuling === SUBGRAPH_RULING.REJECT
-                    ? 'The arbitrator ruled in favor of the challenger'
-                    : 'The arbitrator gave an unknown ruling'}
-              <Typography.Text type="secondary">
-                <a href={txPage} target="_blank" rel="noopener noreferrer">
-                  {secondTimestamp(timestamp)}
-                </a>
-              </Typography.Text>
-            </span>
-          </UITimeline.Item>
-        )
-      } else if (name === 'AppealDecision')
-        return (
-          <UITimeline.Item key={i}>
-            Ruling appealed{' '}
-            <Typography.Text type="secondary">
-              <a href={txPage} target="_blank" rel="noopener noreferrer">
-                {secondTimestamp(timestamp)}
-              </a>
-            </Typography.Text>
-          </UITimeline.Item>
-        )
-      else if (name === 'Resolution') {
-        let resultMessage, statusColor
-        switch (event.disputeOutcome) {
-          case 'None': {
-            resultMessage = 'Item removed by non-rule'
-            statusColor = 'red'
-            break
-          }
-          case 'Accept': {
-            resultMessage = 'Item accepted'
-            statusColor = 'green'
-            break
-          }
-          case 'Reject': {
-            resultMessage = 'Item removed'
-            statusColor = 'red'
-            break
-          }
-          default:
-            throw new Error('Unhandled ruling')
-        }
-        const differentAppealableRuling =
-          event.lastRoundRuling !== event.disputeOutcome
-
-        return (
-          <UITimeline.Item key={i} color={statusColor}>
-            {differentAppealableRuling &&
-              'The winner of the last round did not fund the appeal. '}
-            {resultMessage}
-            <Typography.Text type="secondary">
-              <a href={txPage} target="_blank" rel="noopener noreferrer">
-                {secondTimestamp(timestamp)}
-              </a>
-            </Typography.Text>
-          </UITimeline.Item>
-        )
-      } else if (name === 'Challenge')
-        return (
-          <UITimeline.Item key={i}>
-            <span>
-              Item challenged
-              <Typography.Text type="secondary">
-                <a href={txPage} target="_blank" rel="noopener noreferrer">
-                  {secondTimestamp(timestamp)}
-                </a>
-              </Typography.Text>
-            </span>
-          </UITimeline.Item>
-        )
-      else if (name === 'Withdrawal')
-        return (
-          <UITimeline.Item key={i} color="orange">
-            <span>
-              Item initiated withdrawal process
-              <Typography.Text type="secondary">
-                <a href={txPage} target="_blank" rel="noopener noreferrer">
-                  {secondTimestamp(timestamp)}
-                </a>
-              </Typography.Text>
-            </span>
-          </UITimeline.Item>
-        )
-      else if (name === 'WithdrawalCompleted')
-        return (
-          <UITimeline.Item key={i} color="gray">
-            <span>
-              Item withdrawn
-              <Typography.Text type="secondary">
-                <a href={txPage} target="_blank" rel="noopener noreferrer">
-                  {secondTimestamp(timestamp)}
-                </a>
-              </Typography.Text>
-            </span>
-          </UITimeline.Item>
-        )
-      else throw new Error(`Unhandled event ${name}`)
+  const items = logs.map((event, i) => {
+    const { name, transactionHash, timestamp } = event
+    const txPage = getTxPage({
+      networkId: networkId ?? 0,
+      txHash: transactionHash ?? '',
     })
+
+    if (event.name === 'Evidence') {
+      const { party } = event
+      const { title, description, fileURI } = evidenceMap?.[event.URI]
+        ? evidenceMap[event.URI]
+        : event
+      /* eslint-disable unicorn/new-for-builtins */
+      const submissionTime = (
+        <span>
+          <a href={txPage} target="_blank" rel="noopener noreferrer">
+            Submitted{secondTimestamp(timestamp)}
+          </a>{' '}
+          by <ETHAddress address={party} />
+        </span>
+      )
+
+      /* eslint-enable unicorn/new-for-builtins */
+      return (
+        <UITimeline.Item dot={<Icon type="file-text" />} key={i} color="grey">
+          <StyledCard
+            title={title}
+            extra={fileURI && <EvidenceFileLink fileURI={fileURI} />}
+          >
+            <Card.Meta
+              title={<StyledEvidenceTitle>{description}</StyledEvidenceTitle>}
+              description={submissionTime}
+            />
+          </StyledCard>
+        </UITimeline.Item>
+      )
+    } else if (event.name === 'AppealPossible') {
+      const appealableRuling = event.appealableRuling
+      if (typeof appealableRuling === 'undefined')
+        return (
+          <UITimeline.Item dot={<Icon type="file-text" />} key={i}>
+            <Skeleton active paragraph={false} title={{ width: '200px' }} />
+          </UITimeline.Item>
+        )
+
+      return (
+        <UITimeline.Item key={i}>
+          <span>
+            {appealableRuling === SUBGRAPH_RULING.NONE
+              ? 'The arbitrator refused to rule'
+              : appealableRuling === SUBGRAPH_RULING.ACCEPT
+                ? 'The arbitrator ruled in favor of the submitter'
+                : appealableRuling === SUBGRAPH_RULING.REJECT
+                  ? 'The arbitrator ruled in favor of the challenger'
+                  : 'The arbitrator gave an unknown ruling'}
+            <Typography.Text type="secondary">
+              <a href={txPage} target="_blank" rel="noopener noreferrer">
+                {secondTimestamp(timestamp)}
+              </a>
+            </Typography.Text>
+          </span>
+        </UITimeline.Item>
+      )
+    } else if (event.name === 'AppealDecision')
+      return (
+        <UITimeline.Item key={i}>
+          Ruling appealed{' '}
+          <Typography.Text type="secondary">
+            <a href={txPage} target="_blank" rel="noopener noreferrer">
+              {secondTimestamp(timestamp)}
+            </a>
+          </Typography.Text>
+        </UITimeline.Item>
+      )
+    else if (event.name === 'Resolution') {
+      let resultMessage, statusColor
+      switch (event.disputeOutcome) {
+        case 'None': {
+          resultMessage = 'Item removed by non-rule'
+          statusColor = 'red'
+          break
+        }
+        case 'Accept': {
+          resultMessage = 'Item accepted'
+          statusColor = 'green'
+          break
+        }
+        case 'Reject': {
+          resultMessage = 'Item removed'
+          statusColor = 'red'
+          break
+        }
+        default:
+          throw new Error('Unhandled ruling')
+      }
+      const differentAppealableRuling =
+        event.lastRoundRuling !== event.disputeOutcome
+
+      return (
+        <UITimeline.Item key={i} color={statusColor}>
+          {differentAppealableRuling &&
+            'The winner of the last round did not fund the appeal. '}
+          {resultMessage}
+          <Typography.Text type="secondary">
+            <a href={txPage} target="_blank" rel="noopener noreferrer">
+              {secondTimestamp(timestamp)}
+            </a>
+          </Typography.Text>
+        </UITimeline.Item>
+      )
+    } else if (event.name === 'Challenge')
+      return (
+        <UITimeline.Item key={i}>
+          <span>
+            Item challenged
+            <Typography.Text type="secondary">
+              <a href={txPage} target="_blank" rel="noopener noreferrer">
+                {secondTimestamp(timestamp)}
+              </a>
+            </Typography.Text>
+          </span>
+        </UITimeline.Item>
+      )
+    else if (event.name === 'Withdrawal')
+      return (
+        <UITimeline.Item key={i} color="orange">
+          <span>
+            Item initiated withdrawal process
+            <Typography.Text type="secondary">
+              <a href={txPage} target="_blank" rel="noopener noreferrer">
+                {secondTimestamp(timestamp)}
+              </a>
+            </Typography.Text>
+          </span>
+        </UITimeline.Item>
+      )
+    else if (event.name === 'WithdrawalCompleted')
+      return (
+        <UITimeline.Item key={i} color="gray">
+          <span>
+            Item withdrawn
+            <Typography.Text type="secondary">
+              <a href={txPage} target="_blank" rel="noopener noreferrer">
+                {secondTimestamp(timestamp)}
+              </a>
+            </Typography.Text>
+          </span>
+        </UITimeline.Item>
+      )
+    else throw new Error(`Unhandled event ${name}`)
+  })
 
   return <UITimeline>{[requestSubmittedNode, ...items]}</UITimeline>
 }
@@ -423,21 +553,21 @@ const StyledCollapse = styled(Collapse)`
 `
 
 interface RequestTimelinesProps {
-  item: SubgraphItem
-  metaEvidence: MetaEvidence
+  item?: TimelineItem
+  metaEvidence?: MetaEvidence
 }
 
 const RequestTimelines = ({ item, metaEvidence }: RequestTimelinesProps) => {
-  const [evidenceModalOpen, setEvidenceModalOpen] = useState()
+  const [evidenceModalOpen, setEvidenceModalOpen] = useState<boolean>()
 
-  const { metadata } = metaEvidence || {}
-  const { itemName } = metadata || {}
-  const { submissions } = item || {}
+  const metadata = metaEvidence?.metadata
+  const itemName = metadata?.itemName
+  const submissions = item?.submissions
 
   if (!item)
     return (
       <>
-        <StyledLoadingCard loading id="request-timelines" />
+        <StyledLoadingCard loading />
       </>
     )
 
@@ -446,7 +576,7 @@ const RequestTimelines = ({ item, metaEvidence }: RequestTimelinesProps) => {
       <Row type="flex" align="middle">
         <Col style={{ flex: 1 }}>
           <StyledDivider orientation="left">{`${
-            capitalizeFirstLetter(itemName) || 'Item'
+            capitalizeFirstLetter(itemName ?? '') || 'Item'
           } History`}</StyledDivider>
         </Col>
         {item.status !== CONTRACT_STATUS.ABSENT && (

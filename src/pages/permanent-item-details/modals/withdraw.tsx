@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import type { Address } from 'viem'
 import { Modal, Typography, Button, Alert } from 'components/ui'
 import styled from 'styled-components'
 import { useAccount, usePublicClient, useWalletClient } from 'wagmi'
@@ -43,13 +44,13 @@ const WithdrawModal: React.FC<WithdrawModalProps> = ({
   const [loading, setLoading] = useState(false)
 
   const handleStartWithdraw = async () => {
-    if (!item || !registry) return
+    if (!item || !registry || !walletClient || !publicClient) return
 
     setLoading(true)
 
     try {
       const { request } = await simulateContract(wagmiConfig, {
-        address: registry.id,
+        address: registry.id as Address,
         abi: _gtcr,
         functionName: 'startWithdrawItem',
         args: [item.itemID],

@@ -1,7 +1,7 @@
 import React from 'react'
 import styled, { css, keyframes, DefaultTheme } from 'styled-components'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import type { IconDefinition } from '@fortawesome/fontawesome-svg-core'
+import type { IconName } from '@fortawesome/fontawesome-svg-core'
 
 const spin = keyframes`
   from { transform: rotate(0deg); }
@@ -257,7 +257,7 @@ const Button: React.FC<ButtonProps> & { Group: React.FC<ButtonGroupProps> } = ({
     <Spinner icon="spinner" />
   ) : icon ? (
     typeof icon === 'string' ? (
-      <FontAwesomeIcon icon={icon as IconDefinition} />
+      <FontAwesomeIcon icon={icon as IconName} />
     ) : (
       icon
     )

@@ -134,7 +134,7 @@ const TCRLogo = ({ logoURI }: TCRLogoProps) =>
   logoURI && <StyledImage src={parseIpfs(logoURI)} alt="item" />
 
 // Registry-specific terms and conditions URLs
-const TERMS_AND_CONDITIONS_URLS = {
+const TERMS_AND_CONDITIONS_URLS: Record<string, string> = {
   '0x7305c57b731876f452da8574a77d05957820e588':
     'https://cdn.kleros.link/ipfs/QmcZ53agYqpPhYijRFzduC3EC64coFGZkhbRN1sPDyW7di',
 }
@@ -151,7 +151,9 @@ const DescriptionWithTermsLink = ({
 }: DescriptionWithTermsLinkProps) => {
   if (!description) return null
 
-  const termsUrl = TERMS_AND_CONDITIONS_URLS[tcrAddress?.toLowerCase()]
+  const termsUrl = tcrAddress
+    ? TERMS_AND_CONDITIONS_URLS[tcrAddress.toLowerCase()]
+    : undefined
 
   // If no terms URL configured for this registry, return plain description
   if (!termsUrl) return <span>{description}</span>
@@ -216,7 +218,8 @@ const Banner = ({
   tcrAddress,
 }: BannerProps) => {
   const networkId = useUrlChainId()
-  const defaultTCRAddress = defaultTcrAddresses[networkId]
+  const defaultTCRAddress =
+    networkId != null ? defaultTcrAddresses[networkId] : undefined
   const openAttachment = useAttachment()
   const { itemName, title, description, logoURI, policyURI } = metadata || {}
 
@@ -248,12 +251,16 @@ const Banner = ({
               <TitleContainer>
                 <StyledTitle>{title}</StyledTitle>
                 {defaultTCRAddress && tcrAddress !== defaultTCRAddress && (
-                  <TCRLogo logoURI={logoURI} />
+                  <TCRLogo
+                    logoURI={typeof logoURI === 'string' ? logoURI : undefined}
+                  />
                 )}
-                <ContractExplorerUrl
-                  networkId={networkId}
-                  contractAddress={tcrAddress}
-                />
+                {networkId != null && tcrAddress && (
+                  <ContractExplorerUrl
+                    networkId={networkId}
+                    contractAddress={tcrAddress}
+                  />
+                )}
               </TitleContainer>
               <StyledDescription>
                 <DescriptionWithTermsLink
@@ -276,7 +283,7 @@ const Banner = ({
             onClick={() => setSubmissionFormOpen(true)}
             id="submit-item-button"
           >
-            {`Submit ${capitalizeFirstLetter(itemName) || 'Item'}`}
+            {`Submit ${itemName ? capitalizeFirstLetter(itemName) : 'Item'}`}
             <Icon type="plus-circle-outline" />
           </StyledButton>
           <StyledPolicyAnchor
@@ -284,7 +291,8 @@ const Banner = ({
             type="button"
             id="policy-link"
             onClick={() =>
-              policyURI && openAttachment(parseIpfs(policyURI), true)
+              typeof policyURI === 'string' &&
+              openAttachment(parseIpfs(policyURI), true)
             }
           >
             View Submission Policy

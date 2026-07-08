@@ -1,7 +1,9 @@
 import React, { createContext, useMemo } from 'react'
 import useLightTcrView from 'hooks/light-tcr-view'
 
-const LightTCRViewContext = createContext<Record<string, unknown> | undefined>(
+export type LightTCRViewContextValue = ReturnType<typeof useLightTcrView>
+
+const LightTCRViewContext = createContext<LightTCRViewContextValue | undefined>(
   undefined,
 )
 const LightTCRViewProvider = ({

@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react'
 import { Popover, Form, Input, Button, Alert } from 'components/ui'
-import { withFormik, Field } from 'formik'
+import { withFormik, Field, FormikProps, FieldProps } from 'formik'
 import { useWeb3Context } from 'hooks/use-web3-context'
 import { useDisconnect } from 'wagmi'
 import ReactBlockies from 'react-blockies'
@@ -19,7 +19,7 @@ const StyledDiv = styled.div`
   line-height: 100%;
   width: 32px;
 `
-const StyledReactBlockies = styled(ReactBlockies)`
+const StyledReactBlockies = styled(ReactBlockies)<{ large?: boolean }>`
   border-radius: ${({ large }) => (large ? '4' : '16')}px;
 `
 
@@ -58,9 +58,13 @@ const StyledSaveButton = styled(Button)`
   margin-top: 8px;
 `
 
-interface EmailFormProps {
+interface EmailFormValues {
+  email?: string
+}
+
+interface EmailFormOuterProps {
   formID: string
-  handleSubmit: (...args: unknown[]) => void
+  onSubmit: (values: EmailFormValues) => void
   initialValues?: { email?: string } | null
 }
 
@@ -69,10 +73,13 @@ const EmailForm = ({
 
   // Formik bag
   handleSubmit,
-}: EmailFormProps) => (
+}: EmailFormOuterProps & FormikProps<EmailFormValues>) => (
   <Form id={formID} onSubmit={handleSubmit} layout="vertical">
     <Field name="email">
-      {({ field, form: { errors, touched } }) => (
+      {({
+        field,
+        form: { errors, touched },
+      }: FieldProps<string | undefined, EmailFormValues>) => (
         <Form.Item
           help={errors.email && touched.email ? errors.email : ''}
           validateStatus={errors.email && touched.email ? 'error' : undefined}
@@ -92,12 +99,12 @@ const validationSchema = yup.object().shape({
     .required('A valid email is required.'),
 })
 
-const EnhancedEmailForm = withFormik({
+const EnhancedEmailForm = withFormik<EmailFormOuterProps, EmailFormValues>({
   validationSchema,
   handleSubmit: (values, { props: { onSubmit } }) => {
     onSubmit(values)
   },
-  mapPropsToValues: ({ initialValues }) => initialValues,
+  mapPropsToValues: ({ initialValues }) => ({ ...initialValues }),
 })(EmailForm)
 
 const EMAIL_FORM_ID = 'emailForm'
@@ -118,7 +125,7 @@ const StyledDisconnectButton = styled(Button)`
 `
 
 interface IdenticonProps {
-  className?: string | null
+  className?: string
   large?: boolean
 }
 
@@ -127,9 +134,13 @@ const Identicon = ({ className, large }: IdenticonProps) => {
   const { disconnect } = useDisconnect()
   const nativeCurrency = useNativeCurrency()
 
-  const [balance, setBalance] = useState()
-  const [emailStatus, setEmailStatus] = useState()
-  const [fetchedEmailSettings, setFetchedEmailSettings] = useState()
+  const [balance, setBalance] = useState<BigNumber>()
+  const [emailStatus, setEmailStatus] = useState<
+    'loading' | 'success' | 'error'
+  >()
+  const [fetchedEmailSettings, setFetchedEmailSettings] = useState<{
+    email: string
+  } | null>()
   useEffect(() => {
     if (!library || !account) return
     ;(async () => {
@@ -142,13 +153,15 @@ const Identicon = ({ className, large }: IdenticonProps) => {
     if (!process.env.REACT_APP_NOTIFICATIONS_API_URL || !account || !networkId)
       return
     ;(async () => {
-      const cachedSettings = await localforage.getItem(CACHED_SETTINGS)
+      const cachedSettings = await localforage.getItem<{ email: string }>(
+        CACHED_SETTINGS,
+      )
       setFetchedEmailSettings(cachedSettings)
     })()
   }, [account, networkId])
 
   const submitEmail = useCallback(
-    ({ email }) => {
+    ({ email }: EmailFormValues) => {
       setEmailStatus('loading')
       const data = {
         types: {
@@ -166,23 +179,18 @@ const Identicon = ({ className, large }: IdenticonProps) => {
           name: `${process.env.REACT_APP_NOTIFICATIONS_API_URL}`,
           chainId: networkId,
           version: 1,
-          salt: `0x${BigNumber.from(randomBytes(32)).toString(16)}`,
+          salt: BigNumber.from(randomBytes(32)).toHexString(),
         },
       }
+      if (!library) {
+        setEmailStatus('error')
+        return
+      }
       try {
-        library.provider.sendAsync(
-          {
-            method: 'personal_sign',
-            params: [account, JSON.stringify(data)],
-            from: account,
-          },
-          async (err, { result: signature }) => {
-            if (err) {
-              console.error(err)
-              setEmailStatus('error')
-              return
-            }
-
+        library
+          .getSigner()
+          .provider.send('personal_sign', [account, JSON.stringify(data)])
+          .then(async (signature) => {
             try {
               const response = await (
                 await fetch(
@@ -204,19 +212,25 @@ const Identicon = ({ className, large }: IdenticonProps) => {
                 setEmailStatus('error')
                 console.error(response)
               }
-            } catch (err_) {
+            } catch (err) {
               setEmailStatus('error')
-              console.error(err_)
+              console.error(err)
             }
-          },
-        )
+            return null
+          })
+          .catch((err) => {
+            console.error(err)
+            setEmailStatus('error')
+          })
       } catch (err) {
         setEmailStatus('error')
         console.error(err)
       }
     },
-    [account, library.provider, networkId],
+    [account, library, networkId],
   )
+
+  if (!account) return null
 
   const blockiesContent = (
     <StyledDiv className={className} id="react-blockies-identicon">

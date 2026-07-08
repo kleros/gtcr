@@ -163,23 +163,21 @@ const Descriptions: DescriptionsComponent = ({
       content: React.ReactNode
     }[] = []
     const flatten = (node: React.ReactNode) => {
-      Children.forEach(
-        node,
-        (child: React.ReactElement<DescriptionsItemProps>) => {
-          if (!child) return
-          // If it's a fragment, recurse into its children
-          if (child.type === React.Fragment) {
-            flatten(child.props.children)
-            return
-          }
-          if (!child.props) return
-          result.push({
-            label: child.props.label,
-            span: child.props.span || 1,
-            content: child.props.children,
-          })
-        },
-      )
+      Children.forEach(node, (child) => {
+        if (!child || !React.isValidElement<DescriptionsItemProps>(child))
+          return
+        // If it's a fragment, recurse into its children
+        if (child.type === React.Fragment) {
+          flatten(child.props.children)
+          return
+        }
+        if (!child.props) return
+        result.push({
+          label: child.props.label,
+          span: child.props.span || 1,
+          content: child.props.children,
+        })
+      })
     }
     flatten(children)
     return result

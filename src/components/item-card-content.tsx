@@ -6,6 +6,8 @@ import useNavigateAndScrollTop from 'hooks/navigate-and-scroll-top'
 import { StyledItemCol } from './light-tcr-card-content'
 import { Container } from './light-item-card-content'
 
+type ItemColumn = Column & { value?: string | number | boolean | null }
+
 interface ItemCardContentProps {
   item: SubgraphItem
   chainId: string | number
@@ -18,11 +20,13 @@ const ItemCardContent = ({
   tcrAddress,
 }: ItemCardContentProps) => {
   const { getLinkProps } = useNavigateAndScrollTop()
+  const columns = item.columns as ItemColumn[]
+  const tcrData = item.tcrData as { ID: string }
 
   return (
     <Container>
       <div>
-        {item.columns
+        {columns
           .filter(
             (col) =>
               col.isIdentifier ||
@@ -41,9 +45,7 @@ const ItemCardContent = ({
             </StyledItemCol>
           ))}
       </div>
-      <Button
-        {...getLinkProps(`/tcr/${chainId}/${tcrAddress}/${item.tcrData.ID}`)}
-      >
+      <Button {...getLinkProps(`/tcr/${chainId}/${tcrAddress}/${tcrData.ID}`)}>
         Details
       </Button>
     </Container>

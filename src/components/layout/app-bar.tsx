@@ -15,8 +15,8 @@ import { ThemeContext } from 'contexts/theme-context'
 import { NETWORKS_INFO } from 'config/networks'
 import { SUPPORTED_CHAINS } from 'config/chains'
 import Identicon from 'components/identicon'
-import Logo from 'assets/images/logo.svg'
-import StakeCurateLogoRaw from 'assets/images/logo-stake-curate.svg'
+import LogoSvg from 'assets/images/logo.svg'
+import StakeCurateLogoSvg from 'assets/images/logo-stake-curate.svg'
 import SunIcon from 'assets/icons/sun.svg'
 import MoonIcon from 'assets/icons/moon.svg'
 import HelpIcon from 'assets/icons/help.svg'
@@ -304,7 +304,7 @@ const HelpButton = styled.button`
   }
 `
 
-const StakeCurateLogo = styled(StakeCurateLogoRaw)`
+const StakeCurateLogo = styled(StakeCurateLogoSvg)`
   /* Dark mode: change stake tag background and text colors */
   ${({ theme }) =>
     theme.name === 'dark' &&
@@ -323,8 +323,10 @@ const StakeCurateLogo = styled(StakeCurateLogoRaw)`
 const AppBar = () => {
   const web3Context = useWeb3Context()
   const { open } = useAppKit()
-  const { isPermanent } = useContext(StakeContext)
-  const { isDarkMode, toggleTheme } = useContext(ThemeContext)
+  const isPermanent = useContext(StakeContext)?.isPermanent
+  const themeContext = useContext(ThemeContext)
+  const isDarkMode = themeContext?.isDarkMode
+  const toggleTheme = themeContext?.toggleTheme
   const navigate = useNavigate()
   const location = useLocation()
   const { networkId, account: _account } = web3Context
@@ -420,7 +422,7 @@ const AppBar = () => {
                 style={{ maxHeight: '50px', maxWidth: '120px' }}
               />
             ) : (
-              <Logo style={{ maxHeight: '50px', maxWidth: '120px' }} />
+              <LogoSvg style={{ maxHeight: '50px', maxWidth: '120px' }} />
             )}
           </StyledRouterLink>
         </LeftGroup>

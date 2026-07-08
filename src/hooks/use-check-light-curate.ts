@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import { useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
+import { parse } from 'graphql'
 import { TCR_EXISTENCE_TEST } from 'utils/graphql'
 import { useGraphqlBatcher } from 'contexts/graphql-batcher'
 import useCheckPermanentList from './use-check-permanent-list'
@@ -28,8 +29,8 @@ const useCheckLightCurate = (): {
     queryFn: async () => {
       const result = await graphqlBatcher.fetch({
         id: crypto.randomUUID(),
-        document: TCR_EXISTENCE_TEST,
-        variables: { tcrAddress: tcrAddress.toLowerCase() },
+        document: parse(TCR_EXISTENCE_TEST),
+        variables: { tcrAddress: (tcrAddress || '').toLowerCase() },
         chainId: chainId!,
       })
       return result
@@ -52,7 +53,7 @@ const useCheckLightCurate = (): {
     isPermanentList,
     checking: permanentChecking,
     error: permanentError,
-  } = useCheckPermanentList(tcrAddress, chainId, envioFoundNothing)
+  } = useCheckPermanentList(tcrAddress ?? null, chainId, envioFoundNothing)
 
   return {
     isLightCurate,

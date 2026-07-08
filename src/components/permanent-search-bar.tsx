@@ -125,6 +125,12 @@ const StyledItemField = styled.div`
 
 const MAX_ITEM_COUNT = 5
 
+type ItemColumn = Column & { value?: string | number | boolean | null }
+
+interface PermanentItemMetadata {
+  props?: ItemColumn[]
+}
+
 interface OptionItemProps {
   item: SubgraphItem
   chainId: string | number
@@ -132,7 +138,8 @@ interface OptionItemProps {
 }
 
 const OptionItem = ({ item, chainId, tcrAddress }: OptionItemProps) => {
-  const { itemID, status, metadata } = item
+  const { itemID, status } = item
+  const metadata = item.metadata as PermanentItemMetadata | null
   const props = metadata?.props || []
 
   return (
@@ -142,13 +149,12 @@ const OptionItem = ({ item, chainId, tcrAddress }: OptionItemProps) => {
       </StyledStatus>
       <StyledFieldsContainer>
         {props
-          .filter((col: Column) => col.isIdentifier)
-          .map((column: Column, j: number) => (
+          .filter((col: ItemColumn) => col.isIdentifier)
+          .map((column: ItemColumn, j: number) => (
             <StyledItemField key={j}>
               <DisplaySelector
                 type={column.type}
                 value={column.value}
-                allowedFileTypes={[]}
                 truncateLinks
                 key={j}
               />
@@ -189,8 +195,9 @@ const PermanentSearchBar = ({
 
     return items
       .filter((item) => {
-        const props = item.metadata?.props || []
-        return props.some((prop: Column) => {
+        const props =
+          (item.metadata as PermanentItemMetadata | null)?.props || []
+        return props.some((prop: ItemColumn) => {
           const propValue = (prop.value as string)?.toLowerCase() || ''
           return propValue.includes(searchTerm)
         })

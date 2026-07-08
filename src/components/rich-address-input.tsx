@@ -1,4 +1,5 @@
 import { Form, Input, Select } from 'components/ui'
+import type { SelectChangeValue } from 'components/ui/Select'
 import { Field } from 'formik'
 import React from 'react'
 import {
@@ -23,18 +24,19 @@ const chainOptions = references
 const defaultAddressType = `${references[0].namespaceId}:${references[0].id}`
 
 const RichAddressInput: React.FC<{
-  label: string
+  label?: React.ReactNode
   name: string
-  error: string
-  touched: boolean
-  hasFeedback: boolean
-  disabled: boolean
-  style: React.CSSProperties
+  error?: string
+  touched?: boolean
+  hasFeedback?: boolean
+  disabled?: boolean
+  style?: React.CSSProperties
   values: Record<string, string>
   setFieldValue: (field: string, value: string) => void
 }> = (p) => {
   const value = p.values[p.name]
-  const changeAddressType = (addressType: string) => {
+  const changeAddressType = (selected: SelectChangeValue) => {
+    const addressType = typeof selected === 'object' ? selected.key : selected
     const richAddress = parseRichAddress(value)
     const address = richAddress ? richAddress.address : ''
     const newRichAddress = `${addressType}:${address}`
@@ -62,7 +64,7 @@ const RichAddressInput: React.FC<{
       name={p.name}
       style={{ style: p.style }}
     >
-      {({ field }: { field: Record<string, unknown> }) => {
+      {({ field }: { field: Record<string, unknown> & { value: string } }) => {
         const richAddress = parseRichAddress(field.value)
         const addressType = richAddress
           ? `${richAddress.reference.namespaceId}:${richAddress.reference.id}`

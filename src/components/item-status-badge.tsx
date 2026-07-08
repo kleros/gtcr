@@ -10,7 +10,7 @@ import Icon from 'components/ui/Icon'
 import styled from 'styled-components'
 import { BigNumber } from 'ethers'
 
-const SkeletonTitleProps = { width: 90 }
+const SkeletonTitleProps = { width: '90px' }
 const StyledSkeleton = styled(Skeleton)`
   display: inline;
 
@@ -55,7 +55,7 @@ const ItemStatusIcon = ({ statusCode }: { statusCode: number }) => (
 
 // For clarity, here "badge" refers to the status badge UI component,
 // and not badges related to connection between TCRs.
-const badgeStatus = (statusCode) => {
+const badgeStatus = (statusCode: number) => {
   switch (statusCode) {
     case STATUS_CODE.REMOVAL_REQUESTED:
     case STATUS_CODE.SUBMITTED:
@@ -77,19 +77,18 @@ const badgeStatus = (statusCode) => {
 }
 
 interface ItemStatusBadgeProps {
-  item?: SubgraphItem
-  timestamp?: BigNumber
-  challengePeriodDuration?: BigNumber
+  item?: SubgraphItem | null
+  timestamp?: BigNumber | null
+  challengePeriodDuration?: BigNumber | null
   statusCode?: number | null
   dark?: boolean | null
 }
 
 const ItemStatusBadge = ({
-  item = null,
-  timestamp = null,
-  challengePeriodDuration = null,
-  statusCode = null,
-  _dark = null,
+  item,
+  timestamp,
+  challengePeriodDuration,
+  statusCode,
 }: ItemStatusBadgeProps) => {
   if (statusCode)
     return (
@@ -115,7 +114,19 @@ const ItemStatusBadge = ({
     )
 
   if (typeof statusCode !== 'number')
-    statusCode = itemToStatusCode(item, timestamp, challengePeriodDuration)
+    statusCode = itemToStatusCode(
+      item as SubgraphItem,
+      timestamp as BigNumber,
+      challengePeriodDuration as BigNumber,
+    )
+
+  // Status can't be determined yet (clock/params still loading, or the item
+  // has no requests indexed). Fall back to the loading skeleton instead of
+  // crashing the surrounding view.
+  if (typeof statusCode !== 'number')
+    return (
+      <StyledSkeleton active paragraph={false} title={SkeletonTitleProps} />
+    )
 
   return (
     <ItemStatusBadgeWrap>

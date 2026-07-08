@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { parse } from 'graphql'
 import { PERMANENT_REGISTRY_QUERY } from 'utils/graphql'
 import { useGraphqlBatcher } from 'contexts/graphql-batcher'
 
@@ -22,7 +23,7 @@ const useCheckPermanentList = (
     queryFn: () =>
       graphqlBatcher.fetch({
         id: crypto.randomUUID(),
-        document: PERMANENT_REGISTRY_QUERY,
+        document: parse(PERMANENT_REGISTRY_QUERY),
         variables: { lowerCaseTCRAddress: (address || '').toLowerCase() },
         chainId: chainId!,
         isPermanent: true,

@@ -199,7 +199,6 @@ const Popover: React.FC<PopoverProps> = ({
   trigger = 'hover',
   visible: controlledVisible,
   onVisibleChange,
-  _arrowPointAtCenter,
   children,
   style,
   className,

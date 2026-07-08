@@ -78,7 +78,12 @@ const TCRCardContent = ({
       </Container>
     )
   } catch (err) {
-    return <StyledResult status="warning" subTitle={err.message} />
+    return (
+      <StyledResult
+        status="warning"
+        subTitle={err instanceof Error ? err.message : String(err)}
+      />
+    )
   }
 }
 

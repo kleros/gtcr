@@ -48,7 +48,9 @@ interface SiderProps extends LayoutChildProps {
   width?: number | string
 }
 
-interface LayoutComponent extends React.FC<LayoutChildProps> {
+interface LayoutComponent {
+  (props: LayoutChildProps): React.ReactElement | null
+  displayName?: string
   Content: React.FC<LayoutChildProps>
   Header: React.FC<LayoutChildProps>
   Footer: React.FC<LayoutChildProps>

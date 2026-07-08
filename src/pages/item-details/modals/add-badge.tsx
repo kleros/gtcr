@@ -1,8 +1,9 @@
 import React, { useState, useCallback, useEffect } from 'react'
+import { BigNumber } from 'ethers'
 import { Button, Typography, Descriptions, List } from 'components/ui'
+import { parseIpfs } from 'utils/ipfs-parse'
 import ETHAmount from 'components/eth-amount'
 import useNativeCurrency from 'hooks/native-currency'
-import { parseIpfs } from 'utils/ipfs-parse'
 import {
   StyledListingCriteriaLink,
   ButtonContainer,
@@ -13,11 +14,15 @@ import {
   StyledListItem,
 } from 'pages/light-item-details/modals/add-badge'
 
-interface BadgeInfo {
+export interface BadgeInfo {
   tcrAddress: string
   fileURI?: string
-  submissionDeposit: { toString: () => string }
+  submissionDeposit: BigNumber
   metadata: { tcrTitle: string; logoURI: string; columns: Column[] }
+  matchFile?: { columns: (number | null)[] }
+  decodedData?: unknown[]
+  metaEvidence?: MetaEvidence
+  challengePeriodDuration?: BigNumber
   [key: string]: unknown
 }
 
@@ -30,7 +35,7 @@ interface AddBadgeModalProps {
   onSelectBadge: (badge: BadgeInfo) => void
   onEnableNewBadge: () => void
   isFetchingBadges?: boolean
-  foundBadges?: BadgeInfo[]
+  foundBadges?: { tcrAddress: string }[]
 }
 
 const AddBadgeModal = ({
@@ -47,6 +52,7 @@ const AddBadgeModal = ({
   const nativeCurrency = useNativeCurrency()
   const [selectedBadge, setSelectedBadge] = useState<number>()
   const handleSubmit = useCallback(() => {
+    if (!availableBadges || selectedBadge === undefined) return
     onSelectBadge(availableBadges[selectedBadge])
     onCancel()
   }, [availableBadges, onCancel, onSelectBadge, selectedBadge])
@@ -56,12 +62,12 @@ const AddBadgeModal = ({
     onEnableNewBadge()
   }, [onCancel, onEnableNewBadge])
 
-  const filteredAvailableBadges =
-    availableBadges &&
-    availableBadges.filter(
-      ({ tcrAddress: availableBadgeAddr }) =>
-        !foundBadges.map((b) => b.tcrAddress).includes(availableBadgeAddr),
-    )
+  const filteredAvailableBadges = (availableBadges ?? []).filter(
+    ({ tcrAddress: availableBadgeAddr }) =>
+      !(foundBadges ?? [])
+        .map((b) => b.tcrAddress)
+        .includes(availableBadgeAddr),
+  )
 
   // The radio button doesn't trigger onSelectBadge when displayed,
   // which can cause inconsistency between the what is displayed on the UI
@@ -109,16 +115,17 @@ const AddBadgeModal = ({
       ]}
     >
       <StyledRadioGroup
-        onChange={(e) => setSelectedBadge(e.target.value)}
+        onChange={(e) => setSelectedBadge(Number(e.target.value))}
         value={selectedBadge}
       >
         {filteredAvailableBadges.map(
           ({ fileURI, metadata: { tcrTitle, logoURI } }, i) => (
             <StyledRadio value={i} key={i}>
-              <StyledListItem
-                extra={<img width={50} alt="logo" src={parseIpfs(logoURI)} />}
-              >
+              <StyledListItem>
                 <List.Item.Meta
+                  avatar={
+                    <img width={50} alt="logo" src={parseIpfs(logoURI)} />
+                  }
                   title={tcrTitle}
                   description={
                     <>

@@ -1,5 +1,5 @@
 import React from 'react'
-import styled, { css } from 'styled-components'
+import styled, { css, DefaultTheme } from 'styled-components'
 
 const Wrapper = styled.span`
   display: inline-flex;
@@ -44,7 +44,7 @@ const StatusWrapper = styled.span`
   line-height: 1;
 `
 
-const STATUS_COLORS: Record<string, string> = {
+const STATUS_COLORS: Record<string, keyof DefaultTheme> = {
   success: 'successColor',
   processing: 'primaryColor',
   error: 'errorColor',

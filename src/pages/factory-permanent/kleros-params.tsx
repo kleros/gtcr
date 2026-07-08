@@ -1,6 +1,7 @@
 import React, { useMemo, useState, useEffect, useCallback } from 'react'
 import styled from 'styled-components'
 import { Select, InputNumber, Slider, Tooltip } from 'components/ui'
+import type { SelectChangeValue } from 'components/ui/Select'
 import Icon from 'components/ui/Icon'
 import { ethers } from 'ethers'
 import { abi as _IArbitrator } from '@kleros/erc-792/build/contracts/IArbitrator.json'
@@ -42,11 +43,11 @@ export const SliderContainer = styled.div`
 `
 
 interface KlerosParamsProps {
-  klerosAddress: string
-  policyAddress: string
+  klerosAddress?: string
+  policyAddress?: string
   setArbitratorExtraData: (val: string) => void
-  arbitratorExtraData: string
-  library: EthersLibrary | null
+  arbitratorExtraData?: string
+  library?: EthersLibrary | null
 }
 
 const KlerosParams = ({
@@ -60,7 +61,7 @@ const KlerosParams = ({
   const nativeCurrency = useNativeCurrency()
   const [arbitrationCost, setArbitrationCost] = useState(0)
   const [numberOfJurors, setNumberOfJurors] = useState(3)
-  const [courtID, setCourtID] = useState<any>()
+  const [courtID, setCourtID] = useState<number>()
   const { data: courts = [] } = useCourtPolicies(policyAddress, library)
 
   const arbitrator = useMemo(() => {
@@ -75,6 +76,7 @@ const KlerosParams = ({
 
   // Load arbitrator extra data
   useEffect(() => {
+    if (!arbitratorExtraData) return
     const { courtID, numberOfJurors } =
       jurorsAndCourtIDFromExtraData(arbitratorExtraData)
     setCourtID(Number(courtID))
@@ -90,8 +92,9 @@ const KlerosParams = ({
   }, [library, arbitrator, arbitratorExtraData])
 
   const onCourtChanged = useCallback(
-    ({ key: newCourtID }) => {
-      if (isNaN(newCourtID)) return
+    (value: SelectChangeValue) => {
+      const newCourtID = typeof value === 'object' ? value.key : value
+      if (Number.isNaN(Number(newCourtID))) return
 
       const newArbitratorExtraData = `0x${Number(newCourtID)
         .toString(16)
@@ -106,13 +109,13 @@ const KlerosParams = ({
   )
 
   const onNumJurorsChange = useCallback(
-    (newNumJurors) => {
-      if (isNaN(newNumJurors)) return
-      newNumJurors = newNumJurors > 0 ? newNumJurors : 1
+    (value: number | undefined) => {
+      if (value === undefined || Number.isNaN(value)) return
+      let newNumJurors = value > 0 ? value : 1
       newNumJurors = newNumJurors < 35 ? newNumJurors : 33
       if (newNumJurors % 2 === 0) newNumJurors = newNumJurors - 1
 
-      const newArbitratorExtraData = `0x${courtID
+      const newArbitratorExtraData = `0x${(courtID ?? 0)
         .toString(16)
         .padStart(64, '0')}${Math.ceil(newNumJurors)
         .toString(16)
@@ -183,7 +186,6 @@ const KlerosParams = ({
         displayUnit={` ${nativeCurrency}`}
         decimals={4}
         amount={arbitrationCost}
-        step="1"
       />
     </StyledExtraDataContainer>
   )

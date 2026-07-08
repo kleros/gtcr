@@ -34,7 +34,7 @@ import {
   searchStrToFilterObjLight,
   updateLightFilter,
 } from 'utils/filters'
-import ItemCard from './item-card'
+import ItemCard, { type EnrichedItem } from './item-card'
 import Banner from './banner'
 import { DISPUTE_STATUS } from 'utils/item-status'
 import { LIGHT_ITEMS_QUERY } from 'utils/graphql'
@@ -162,7 +162,11 @@ export const StyledSwitch = styled(Switch)`
   }
 `
 
-export const pagingItem = (_, type, originalElement) => {
+export const pagingItem = (
+  _: number,
+  type: string,
+  originalElement: React.ReactNode,
+) => {
   if (type === 'prev') return <span>Previous</span>
   if (type === 'next') return <span>Next</span>
   return originalElement
@@ -170,36 +174,74 @@ export const pagingItem = (_, type, originalElement) => {
 
 export const ITEMS_PER_PAGE = 40
 
+interface RawRound {
+  appealPeriodStart: string
+  appealPeriodEnd: string
+  ruling: string
+  hasPaidRequester: boolean
+  hasPaidChallenger: boolean
+  amountPaidRequester: string
+  amountPaidChallenger: string
+}
+
+interface RawRequest {
+  disputed: boolean
+  disputeID: string
+  submissionTime: string
+  resolved: boolean
+  deposit: string
+  rounds: RawRound[]
+}
+
+interface RawLightItem {
+  status: string
+  data: string
+  requests: RawRequest[]
+  props?: {
+    value?: unknown
+    label?: string
+    description?: string
+    type?: string
+    isIdentifier?: boolean
+  }[]
+  itemID?: string
+  decodedData?: unknown[]
+  mergedData?: unknown
+  [key: string]: unknown
+}
+
 const Items = () => {
   const navigate = useNavigate()
   const { tcrAddress } = useParams()
   const chainId = useUrlChainId()
   const search = window.location.search
-  const { timestamp } = useContext(WalletContext)
-  const {
-    _gtcr,
-    metaEvidence,
-    challengePeriodDuration,
-    tcrError,
-    gtcrView,
-    connectedTCRAddr,
-    submissionDeposit,
-  } = useContext(LightTCRViewContext)
+  const timestamp = useContext(WalletContext)?.timestamp
+  const tcrViewContext = useContext(LightTCRViewContext)
+  const metaEvidence = tcrViewContext?.metaEvidence
+  const challengePeriodDuration = tcrViewContext?.challengePeriodDuration
+  const tcrError = tcrViewContext?.tcrError
+  const gtcrView = tcrViewContext?.gtcrView
+  const connectedTCRAddr = tcrViewContext?.connectedTCRAddr
+  const submissionDeposit = tcrViewContext?.submissionDeposit
   const [submissionFormOpen, setSubmissionFormOpen] = useState<
     boolean | undefined
   >()
   const [error, setError] = useState<string | undefined>()
   const queryOptions = searchStrToFilterObjLight(search)
   const [nsfwFilterOn, setNSFWFilter] = useState(true)
-  const [queryItemParams, setQueryItemParams] = useState<
-    Record<string, unknown> | undefined
-  >()
-  const toggleNSFWFilter = useCallback((checked) => {
+  const [queryItemParams, setQueryItemParams] = useState<string[] | undefined>()
+  const toggleNSFWFilter = useCallback((checked: boolean) => {
     setNSFWFilter(checked)
     localforage.setItem(NSFW_FILTER_KEY, checked)
   }, [])
-  const [decodedItems, setDecodedItems] = useState(undefined)
-  const seerMarketsData = useSeerMarketsData(chainId, tcrAddress, decodedItems)
+  const [decodedItems, setDecodedItems] = useState<SubgraphItem[] | undefined>(
+    undefined,
+  )
+  const seerMarketsData = useSeerMarketsData(
+    chainId ?? 0,
+    tcrAddress ?? '',
+    decodedItems ?? [],
+  )
   const { graphqlBatcher } = useGraphqlBatcher()
 
   const {
@@ -243,18 +285,18 @@ const Items = () => {
 
     // No filters selected - return all items
     if (conditions.length === 0)
-      return { registry_id: { _eq: tcrAddress.toLowerCase() } }
+      return { registry_id: { _eq: tcrAddress?.toLowerCase() } }
 
     // Single filter - no need for _or
     if (conditions.length === 1)
       return {
-        registry_id: { _eq: tcrAddress.toLowerCase() },
+        registry_id: { _eq: tcrAddress?.toLowerCase() },
         ...conditions[0],
       }
 
     // Multiple filters - use _or clause
     return {
-      registry_id: { _eq: tcrAddress.toLowerCase() },
+      registry_id: { _eq: tcrAddress?.toLowerCase() },
       _or: conditions,
     }
   }, [
@@ -273,7 +315,7 @@ const Items = () => {
       limit: ITEMS_PER_PAGE,
       order_by: [{ latestRequestSubmissionTime: orderDirection }],
       where: itemsWhere,
-      registryId: tcrAddress.toLowerCase(),
+      registryId: tcrAddress?.toLowerCase(),
     }),
     [page, orderDirection, itemsWhere, tcrAddress],
   )
@@ -351,15 +393,15 @@ const Items = () => {
     // if the user paginated/filtered before it resolved.
     let stale = false
 
-    const addDecodedFields = (items) =>
-      items.map((item) => ({
+    const addDecodedFields = (items: RawLightItem[]) =>
+      items.map((item: RawLightItem) => ({
         ...item,
         decodedData: item.props?.map(({ value }) => value) || [],
         mergedData: item.props || [],
       }))
 
-    const transformItems = (items) =>
-      items.map((item) => {
+    const transformItems = (items: RawLightItem[]) =>
+      items.map((item: RawLightItem) => {
         const {
           disputed,
           disputeID,
@@ -415,7 +457,9 @@ const Items = () => {
 
     // Render items immediately with whatever data the subgraph has.
     const itemsWithDecoded = addDecodedFields(data.litems)
-    setDecodedItems(transformItems(itemsWithDecoded))
+    setDecodedItems(
+      transformItems(itemsWithDecoded) as unknown as SubgraphItem[],
+    )
 
     // HACK: the graph could have failed to include the props.
     // This may be because at indexing time, the IPFS file was not available.
@@ -431,14 +475,16 @@ const Items = () => {
                 const response = await fetch(parseIpfs(i.data))
                 if (!response.ok) return i
                 const item = await response.json()
-                const mergedData = item.columns.map((column) => ({
+                const mergedData = item.columns.map((column: Column) => ({
                   label: column.label,
                   description: column.description,
                   type: column.type,
                   isIdentifier: column.isIdentifier,
                   value: item.values[column.label],
                 }))
-                const decodedData = mergedData.map((d) => d.value)
+                const decodedData = mergedData.map(
+                  (d: { value?: unknown }) => d.value,
+                )
                 return { ...i, mergedData, decodedData, props: mergedData }
               } catch {
                 return i
@@ -454,7 +500,7 @@ const Items = () => {
             (r as PromiseFulfilledResult<(typeof itemsWithDecoded)[number]>)
               .value,
         )
-        setDecodedItems(transformItems(patched))
+        setDecodedItems(transformItems(patched) as unknown as SubgraphItem[])
       })()
 
     return () => {
@@ -476,10 +522,10 @@ const Items = () => {
     if (!metaEvidence || metaEvidence.address !== tcrAddress || !decodedItems)
       return
 
-    return decodedItems.map((item, i) => {
-      let decodedData
-      const errors = []
-      const { columns } = metaEvidence.metadata
+    return decodedItems.map((item: SubgraphItem, i: number) => {
+      let decodedData: unknown[] | undefined
+      const errors: string[] = []
+      const columns = metaEvidence.metadata?.columns || []
       try {
         decodedData = item.decodedData
         // eslint-disable-next-line no-unused-vars
@@ -500,7 +546,7 @@ const Items = () => {
           decodedData,
         },
         columns: columns.map(
-          (col, i) => ({
+          (col: Column, i: number) => ({
             value: decodedData && decodedData[i],
             ...col,
           }),
@@ -508,11 +554,15 @@ const Items = () => {
         ),
         errors,
         seerMarketData:
+          tcrAddress != null &&
+          chainId != null &&
           isSeerRegistry(tcrAddress, chainId) &&
-          item?.decodedData?.length > 1 &&
-          seerMarketsData[item.decodedData[1].toLowerCase()],
+          (item.decodedData?.length ?? 0) > 1 &&
+          (seerMarketsData as Record<string, unknown>)[
+            String(item.decodedData?.[1]).toLowerCase()
+          ],
       }
-    })
+    }) as unknown as EnrichedItem[]
   }, [metaEvidence, tcrAddress, decodedItems, chainId, seerMarketsData])
 
   // This component supports URL actions.
@@ -544,7 +594,11 @@ const Items = () => {
     return (
       <ErrorPage
         code="400"
-        message={tcrError || error || 'Decoding this item.'}
+        message={
+          typeof tcrError === 'string'
+            ? tcrError
+            : error || 'Decoding this item.'
+        }
       />
     )
 
@@ -586,7 +640,7 @@ const Items = () => {
                       filterLabelLight[key] ? (
                         <StyledTag
                           key={key}
-                          checked={queryOptions[key]}
+                          checked={!!queryOptions[key]}
                           onChange={(checked) => {
                             const newQueryStr = updateLightFilter({
                               prevQuery: search,
@@ -623,14 +677,19 @@ const Items = () => {
               <StyledGrid id="items-grid-view">
                 {items
                   ? items
-                      .sort(({ tcrData: tcrDataA }, { tcrData: tcrDataB }) => {
-                        // Display items with pending requests first.
-                        if (!tcrDataA || !tcrDataB) return 0 // Handle errored TCRs.
-                        if (!tcrDataA.resolved && tcrDataB.resolved) return -1
-                        if (tcrDataA.resolved && !tcrDataB.resolved) return 1
-                        return 0
-                      })
-                      .map((item, i) => (
+                      .sort(
+                        (
+                          { tcrData: tcrDataA }: EnrichedItem,
+                          { tcrData: tcrDataB }: EnrichedItem,
+                        ) => {
+                          // Display items with pending requests first.
+                          if (!tcrDataA || !tcrDataB) return 0 // Handle errored TCRs.
+                          if (!tcrDataA.resolved && tcrDataB.resolved) return -1
+                          if (tcrDataA.resolved && !tcrDataB.resolved) return 1
+                          return 0
+                        },
+                      )
+                      .map((item: EnrichedItem, i: number) => (
                         <ItemCard
                           item={item}
                           key={i}

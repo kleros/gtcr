@@ -213,7 +213,7 @@ const Pagination: React.FC<PaginationProps> = ({
           value={current}
           onChange={(e) => {
             const val = parseInt(e.target.value, 10)
-            if (!isNaN(val)) goTo(val)
+            if (!Number.isNaN(val)) goTo(val)
           }}
         />
         <span>/</span>

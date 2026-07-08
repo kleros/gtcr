@@ -10,7 +10,8 @@ import {
 } from 'components/ui'
 import Icon from 'components/ui/Icon'
 import { toast } from 'react-toastify'
-import { withFormik } from 'formik'
+import { withFormik, type FormikProps } from 'formik'
+import type { StepProps, TcrState } from 'pages/factory'
 import * as yup from 'yup'
 import { useDebounce } from 'use-debounce'
 import { ethers, BigNumber } from 'ethers'
@@ -45,21 +46,8 @@ import {
 import { StyledUpload, UploadButton } from 'components/input-selector'
 import EnsureAuth from 'components/ensure-auth'
 
-interface TCRParamsProps {
-  handleSubmit: (...args: unknown[]) => void
-  formId: string
-  errors: Record<string, unknown>
-  setFieldValue: (field: string, value: unknown) => void
-  touched: Record<string, unknown>
-  defaultArbLabel: string
-  defaultArbDataLabel: string
-  defaultGovernorLabel: string
-  values: Record<string, unknown>
-  setTcrState: (
-    fn: (prev: Record<string, unknown>) => Record<string, unknown>,
-  ) => void
-  [key: string]: unknown
-}
+type TCRFormValues = Omit<TcrState, 'transactions'>
+type TCRParamsProps = StepProps & FormikProps<TCRFormValues>
 
 const TCRParams = ({
   handleSubmit,
@@ -76,29 +64,32 @@ const TCRParams = ({
   const { width } = useWindowDimensions()
   const nativeCurrency = useNativeCurrency()
   const { uploadFile } = useAtlasProvider()
-  const [uploading, setUploading] = useState({})
-  const [advancedOptions, setAdvancedOptions] = useState<any>()
+  const [uploading, setUploading] = useState<{
+    tcrLogo?: boolean
+    tcrPrimaryDocument?: boolean
+  }>({})
+  const [advancedOptions, setAdvancedOptions] = useState(false)
   const navigate = useNavigate()
   const chainId = useUrlChainId()
   const chainProvider = useEthersProvider({ chainId: chainId ?? undefined })
   const [depositVal, setDepositVal] = useState(0.05)
   const [debouncedArbitrator] = useDebounce(values.arbitratorAddress, 1000)
   const { arbitrator: klerosAddress, policy: policyAddress } =
-    klerosAddresses[chainId] || {}
+    (chainId !== null && klerosAddresses[chainId]) || {}
   const { arbitrationCost } = useArbitrationCost({
     address: values.arbitratorAddress,
     arbitratorExtraData: values.arbitratorExtraData,
     library: chainProvider,
   })
   const setArbitratorExtraData = useCallback(
-    (val) => setFieldValue('arbitratorExtraData', val),
+    (val: string) => setFieldValue('arbitratorExtraData', val),
     [setFieldValue],
   )
 
   let isKlerosArbitrator
   try {
     isKlerosArbitrator =
-      getAddress(debouncedArbitrator) === getAddress(klerosAddress)
+      getAddress(debouncedArbitrator) === getAddress(klerosAddress ?? '')
   } catch {
     isKlerosArbitrator = false
   }
@@ -111,7 +102,12 @@ const TCRParams = ({
   }, [values, setTcrState])
 
   const fileUploadStatusChange = useCallback(
-    ({ file: { status }, file }) => {
+    ({
+      file: { status },
+      file,
+    }: {
+      file: { status: string; type: string }
+    }) => {
       if (status === 'done') toast.success(`File uploaded successfully.`)
       else if (status === 'error') toast.error(`File upload failed.`)
       else if (status === 'uploading')
@@ -137,7 +133,7 @@ const TCRParams = ({
     [uploading],
   )
 
-  const beforeImageUpload = useCallback((file) => {
+  const beforeImageUpload = useCallback((file: File) => {
     const isSupportedImage =
       file.type === 'image/png' ||
       file.type === 'image/svg+xml' ||
@@ -151,7 +147,7 @@ const TCRParams = ({
     return isSupportedImage && isLt2M
   }, [])
 
-  const beforeFileUpload = useCallback((file) => {
+  const beforeFileUpload = useCallback((file: File) => {
     const isPDF = file.type === 'application/pdf'
     if (!isPDF) toast.error('Please upload file as PDF.')
 
@@ -162,8 +158,16 @@ const TCRParams = ({
   }, [])
 
   const customRequest = useCallback(
-    (fieldName, role: Roles) =>
-      async ({ file, onSuccess, onError }) => {
+    (fieldName: string, role: Roles) =>
+      async ({
+        file,
+        onSuccess,
+        onError,
+      }: {
+        file: File
+        onSuccess: (response: unknown, hash?: unknown) => void
+        onError: (error: unknown) => void
+      }) => {
         try {
           const fileURI = await uploadFile(file, role)
           if (!fileURI) throw new Error('Failed to upload file to IPFS.')
@@ -179,8 +183,8 @@ const TCRParams = ({
   )
 
   const onChangeDepositVal = useCallback(
-    (value) => {
-      if (isNaN(value)) return
+    (value: number | undefined) => {
+      if (value === undefined || Number.isNaN(value)) return
 
       setDepositVal(value)
       setFieldValue('submissionBaseDeposit', value)
@@ -244,7 +248,7 @@ const TCRParams = ({
                   {values.tcrLogo ? (
                     <StyledImg src={parseIpfs(values.tcrLogo)} alt="avatar" />
                   ) : (
-                    <UploadButton loading={uploading.tcrLogo} />
+                    <UploadButton loading={uploading.tcrLogo ?? false} />
                   )}
                 </StyledUpload>
               </EnsureAuth>
@@ -286,7 +290,9 @@ const TCRParams = ({
                       <Icon type="file-pdf" style={{ fontSize: '30px' }} />
                     </a>
                   ) : (
-                    <UploadButton loading={uploading.tcrPrimaryDocument} />
+                    <UploadButton
+                      loading={uploading.tcrPrimaryDocument ?? false}
+                    />
                   )}
                 </StyledUpload>
               </EnsureAuth>
@@ -731,11 +737,10 @@ const validationSchema = yup.object().shape({
     .required('A value is required'),
 })
 
-export default withFormik({
+export default withFormik<StepProps, TCRFormValues>({
   validationSchema,
   mapPropsToValues: ({ tcrState }) => {
-    const values = { ...tcrState }
-    delete values.transactions
+    const { transactions: _transactions, ...values } = tcrState
     return values
   },
   handleSubmit: (_, { props: { postSubmit } }) => {

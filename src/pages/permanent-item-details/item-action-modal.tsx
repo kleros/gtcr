@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react'
+import { BigNumber } from 'ethers'
 import { STATUS_CODE, getActionLabel } from 'utils/permanent-item-status'
 import ChallengeModal from './modals/challenge'
 import SubmitModal from './modals/submit'
@@ -14,6 +15,14 @@ interface ItemActionModalProps {
   metaEvidence?: MetaEvidence
   appealCost?: BigNumber | undefined
   arbitrationCost?: BigNumber | undefined
+}
+
+interface SubmitRegistry {
+  id: string
+  token: string
+  submissionMinDeposit: string
+  submissionPeriod: string
+  withdrawingPeriod: string
 }
 
 const ItemActionModal = ({
@@ -33,7 +42,14 @@ const ItemActionModal = ({
     title: getActionLabel({ statusCode, itemName }),
     onCancel: onClose,
   }
-  const r = useMemo(() => item?.registry, [item])
+  const r = useMemo(() => item?.registry as SubmitRegistry, [item])
+  const submitMetadata = metaEvidence?.metadata
+    ? {
+        title: String(metaEvidence.metadata.title ?? ''),
+        itemName: metaEvidence.metadata.itemName ?? '',
+        policyURI: String(metaEvidence.metadata.policyURI ?? ''),
+      }
+    : undefined
 
   switch (statusCode) {
     case STATUS_CODE.ACCEPTED:
@@ -60,8 +76,8 @@ const ItemActionModal = ({
           withdrawingPeriod={r.withdrawingPeriod}
           tcrAddress={r.id}
           tokenAddress={r.token}
-          metadata={metaEvidence.metadata}
-          columns={metaEvidence.metadata.columns}
+          metadata={submitMetadata}
+          columns={metaEvidence?.metadata?.columns ?? []}
           {...rest}
         />
       )

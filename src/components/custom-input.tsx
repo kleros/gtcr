@@ -4,17 +4,17 @@ import React from 'react'
 import { ItemTypes } from '@kleros/gtcr-encoder'
 
 interface CustomInputProps {
-  label?: string | React.ReactNode | null
+  label?: React.ReactNode
   name: string
   placeholder?: string
-  error?: string | null
-  touched?: boolean | null
-  addonAfter?: React.ReactNode | null
-  hasFeedback?: boolean | null
+  error?: string
+  touched?: boolean
+  addonAfter?: React.ReactNode
+  hasFeedback?: boolean
   type?: string
-  step?: number | null
-  disabled?: boolean | null
-  style?: React.CSSProperties | null
+  step?: number
+  disabled?: boolean
+  style?: React.CSSProperties
 }
 
 const CustomInput = ({
@@ -36,7 +36,7 @@ const CustomInput = ({
         label={label}
         validateStatus={error && touched ? 'error' : undefined}
         help={error && touched ? error : ''}
-        hasFeedback={hasFeedback ?? undefined}
+        hasFeedback={hasFeedback}
       >
         {type === ItemTypes.NUMBER ? (
           <Input

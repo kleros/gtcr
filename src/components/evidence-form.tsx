@@ -3,7 +3,7 @@ import { Input, Checkbox, Upload, Form } from 'components/ui'
 import Icon from 'components/ui/Icon'
 import { toast } from 'react-toastify'
 import styled from 'styled-components'
-import { withFormik, Field } from 'formik'
+import { withFormik, Field, FormikProps, FieldProps } from 'formik'
 import * as yup from 'yup'
 
 const StyledCheckbox = styled(Checkbox)`
@@ -32,13 +32,21 @@ const UploadButton = () => (
   </div>
 )
 
-interface EvidenceFormProps {
+export interface EvidenceFormValues {
+  title?: string
+  description?: string
+  evidenceAttachment?: File
+  [key: string]: unknown
+}
+
+interface EvidenceFormOuterProps {
   formID: string
   detailed?: boolean
-  handleSubmit: (...args: unknown[]) => void
-  setFieldValue: (field: string, value: unknown) => void
-  values: Record<string, any>
+  onSubmit: (values: EvidenceFormValues) => void
 }
+
+type EvidenceFormProps = EvidenceFormOuterProps &
+  FormikProps<EvidenceFormValues>
 
 const EvidenceForm = ({
   formID,
@@ -54,14 +62,20 @@ const EvidenceForm = ({
   // button is the EnsureAuth/SIWE gate; if we uploaded here the request would
   // race the sign-in flow and fail before the user is verified.
   const customRequest = useCallback(
-    ({ file, onSuccess }) => {
+    ({
+      file,
+      onSuccess,
+    }: {
+      file: File
+      onSuccess: (response: string, file: File) => void
+    }) => {
       setFieldValue('evidenceAttachment', file)
       onSuccess('ok', file)
     },
     [setFieldValue],
   )
 
-  const beforeFileUpload = useCallback((file) => {
+  const beforeFileUpload = useCallback((file: File) => {
     const isLt4M = file.size / 1024 / 1024 < 4
     if (!isLt4M) toast.error('File must be smaller than 4MB.')
     return isLt4M
@@ -82,7 +96,11 @@ const EvidenceForm = ({
     <Form id={formID} onSubmit={handleSubmit}>
       {detailed && (
         <Field name="title">
-          {({ field: { name }, field, form: { errors } }) => (
+          {({
+            field: { name },
+            field,
+            form: { errors },
+          }: FieldProps<string | undefined, EvidenceFormValues>) => (
             <Form.Item
               name={name}
               validateStatus={errors[name] ? 'error' : undefined}
@@ -95,7 +113,11 @@ const EvidenceForm = ({
         </Field>
       )}
       <Field name="description">
-        {({ field, field: { name }, form: { errors } }) => (
+        {({
+          field,
+          field: { name },
+          form: { errors },
+        }: FieldProps<string | undefined, EvidenceFormValues>) => (
           <Form.Item
             validateStatus={errors[name] ? 'error' : undefined}
             help={errors[name] ? errors[name] : ''}
@@ -136,21 +158,26 @@ const EvidenceForm = ({
   )
 }
 
-const validationSchema = ({ detailed }) =>
+const validationSchema = ({ detailed }: { detailed?: boolean }) =>
   yup.object().shape({
-    title: detailed
-      ? yup
-          .string()
-          .required('An evidence title is required.')
-          .max(255, 'The evidence title should be at most 255 characters long.')
-      : null,
+    ...(detailed
+      ? {
+          title: yup
+            .string()
+            .required('An evidence title is required.')
+            .max(
+              255,
+              'The evidence title should be at most 255 characters long.',
+            ),
+        }
+      : {}),
     description: yup
       .string()
       .required('An evidence description is required.')
       .max(1024, 'The description must be less than 1024 characters long.'),
   })
 
-export default withFormik({
+export default withFormik<EvidenceFormOuterProps, EvidenceFormValues>({
   validationSchema,
   handleSubmit: (values, { props: { onSubmit } }) => {
     onSubmit(values)

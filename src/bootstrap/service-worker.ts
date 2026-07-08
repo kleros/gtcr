@@ -29,7 +29,10 @@ const isLocalhost: boolean = Boolean(
 export const register = (config?: ServiceWorkerConfig): void => {
   if (process.env.NODE_ENV === 'production' && 'serviceWorker' in navigator) {
     // The URL constructor is available in all browsers that support SW.
-    const publicUrl = new URL(process.env.PUBLIC_URL, window.location.href)
+    const publicUrl = new URL(
+      process.env.PUBLIC_URL ?? '',
+      window.location.href,
+    )
     if (publicUrl.origin !== window.location.origin)
       // Our service worker won't work if PUBLIC_URL is on a different origin
       // from what our page is served on. This might happen if a CDN is used to
@@ -51,8 +54,7 @@ export const register = (config?: ServiceWorkerConfig): void => {
               'worker. To learn more, visit https://bit.ly/CRA-PWA',
           )
         })
-      }
-      else registerValidSW(swUrl, config)
+      } else registerValidSW(swUrl, config)
     })
   }
 }

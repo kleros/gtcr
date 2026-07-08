@@ -35,18 +35,18 @@ export const UploadButton: React.FC<{ loading: boolean }> = ({ loading }) => (
   </div>
 )
 
-interface InputSelectorProps extends React.HTMLAttributes<HTMLElement> {
+interface InputSelectorProps {
   type: string
   name: string
   values: Record<string, unknown>
-  error: Record<string, string> | undefined
+  error?: string
   setFieldValue: (fieldName: string, value: unknown) => void
-  disabled: boolean
-  touched: boolean
+  disabled?: boolean
+  touched?: boolean
   maxFileSizeMb?: number
-  label: string
-  allowedFileTypes: string
-  style: React.CSSProperties
+  label?: React.ReactNode
+  allowedFileTypes?: string
+  style?: React.CSSProperties
 }
 
 const useObjectUrl = (file: File | null): string | null => {
@@ -167,7 +167,7 @@ const InputSelector: React.FC<InputSelectorProps> = (p) => {
   )
 
   const beforeImageUpload = useCallback(
-    (file) => {
+    (file: File) => {
       if (
         file.type !== 'image/png' &&
         file.type !== 'image/svg+xml' &&
@@ -189,8 +189,8 @@ const InputSelector: React.FC<InputSelectorProps> = (p) => {
   )
 
   const beforeFileUpload = useCallback(
-    (file) => {
-      const allowedFileTypesArr = p.allowedFileTypes.split(' ')
+    (file: File) => {
+      const allowedFileTypesArr = (p.allowedFileTypes || '').split(' ')
       if (!allowedFileTypesArr.includes(getExtension(file.type) as string)) {
         toast.error(
           allowedFileTypesArr.length > 1
@@ -220,7 +220,13 @@ const InputSelector: React.FC<InputSelectorProps> = (p) => {
     case ItemTypes.GTCR_ADDRESS:
       return <AddressInput placeholder="address" hasFeedback {...p} />
     case ItemTypes.RICH_ADDRESS:
-      return <RichAddressInput hasFeedback {...p} />
+      return (
+        <RichAddressInput
+          hasFeedback
+          {...p}
+          values={p.values as Record<string, string>}
+        />
+      )
     case ItemTypes.BOOLEAN:
       return (
         <Field name={name}>

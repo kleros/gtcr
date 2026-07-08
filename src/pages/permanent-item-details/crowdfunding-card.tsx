@@ -73,8 +73,8 @@ export const StyledIcon = styled(FontAwesomeIcon)`
 interface CrowdfundingCardProps {
   item: SubgraphItem
   registry: SubgraphRegistry
-  timestamp: BigNumber
-  appealCost: BigNumber
+  timestamp?: BigNumber
+  appealCost?: BigNumber
 }
 
 const CrowdfundingCard = ({
@@ -84,32 +84,37 @@ const CrowdfundingCard = ({
   appealCost,
 }: CrowdfundingCardProps) => {
   const nativeCurrency = useNativeCurrency()
-  const currentRuling = item?.challenges?.[0]?.rounds?.[0].ruling
   const { sharedStakeMultiplier, winnerStakeMultiplier, loserStakeMultiplier } =
     registry || {}
+  const toBigNumber = (value: unknown): BigNumber | undefined =>
+    value == null ? undefined : BigNumber.from(String(value))
   const MULTIPLIER_DIVISOR = BigNumber.from(10000)
   const requesterFees = useRequiredFees({
     side: PARTY.REQUESTER,
-    sharedStakeMultiplier,
-    winnerStakeMultiplier,
-    loserStakeMultiplier,
-    currentRuling: currentRuling,
+    sharedStakeMultiplier: toBigNumber(sharedStakeMultiplier),
+    winnerStakeMultiplier: toBigNumber(winnerStakeMultiplier),
+    loserStakeMultiplier: toBigNumber(loserStakeMultiplier),
     item,
     MULTIPLIER_DIVISOR,
     appealCost,
   })
   const challengerFees = useRequiredFees({
     side: PARTY.CHALLENGER,
-    sharedStakeMultiplier,
-    winnerStakeMultiplier,
-    loserStakeMultiplier,
-    currentRuling: currentRuling,
+    sharedStakeMultiplier: toBigNumber(sharedStakeMultiplier),
+    winnerStakeMultiplier: toBigNumber(winnerStakeMultiplier),
+    loserStakeMultiplier: toBigNumber(loserStakeMultiplier),
     item,
     MULTIPLIER_DIVISOR,
     appealCost,
   })
 
-  if (!item || !registry || !item.challenges || item.challenges.length === 0)
+  if (
+    !item ||
+    !registry ||
+    !timestamp ||
+    !item.challenges ||
+    item.challenges.length === 0
+  )
     return null
   const round = item.challenges[0].rounds[0]
   const { hasPaidRequester, hasPaidChallenger, ruling } = round

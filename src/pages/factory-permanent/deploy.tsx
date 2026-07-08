@@ -2,7 +2,7 @@ import { Card, Button, Alert, Steps } from 'components/ui'
 import Icon from 'components/ui/Icon'
 import { Link } from 'react-router-dom'
 import React, { useState } from 'react'
-import { parseEther, decodeEventLog } from 'viem'
+import { parseEther, decodeEventLog, type Address } from 'viem'
 import { useAccount, usePublicClient, useWalletClient, useChainId } from 'wagmi'
 import { simulateContract } from '@wagmi/core'
 import styled from 'styled-components'
@@ -21,6 +21,7 @@ import {
   defaultTcrAddresses,
   pgtcrFactoryAddresses,
 } from 'config/tcr-addresses'
+import type { StepProps, TcrState } from '.'
 
 export const StyledDiv = styled.div`
   word-break: break-all;
@@ -58,8 +59,8 @@ export const StyledSpan = styled.span`
 `
 
 const getTcrMetaEvidence = async (
-  tcrState,
-  evidenceDisplayInterfaceURI,
+  tcrState: TcrState,
+  evidenceDisplayInterfaceURI: string,
   uploadFile: (file: File, role: Roles) => Promise<string | null>,
 ) => {
   const {
@@ -137,14 +138,7 @@ const getTcrMetaEvidence = async (
   }
 }
 
-interface DeployProps {
-  setTxState: (tx: Record<string, unknown>) => void
-  tcrState: Record<string, unknown>
-  setTcrState: (
-    fn: (prev: Record<string, unknown>) => Record<string, unknown>,
-  ) => void
-  [key: string]: unknown
-}
+type DeployProps = StepProps
 
 const Deploy = ({ setTxState, tcrState, setTcrState }: DeployProps) => {
   const chainId = useChainId()
@@ -153,17 +147,25 @@ const Deploy = ({ setTxState, tcrState, setTcrState }: DeployProps) => {
   const { data: walletClient } = useWalletClient()
   const { width } = useWindowDimensions()
   const [currentStep, setCurrentStep] = useState(0)
-  const [txSubmitted, setTxSubmitted] = useState<any>()
-  const [, setDeployedTCRAddress] = useState<any>()
-  const [, setSubmissionFormOpen] = useState<any>()
+  const [txSubmitted, setTxSubmitted] = useState<string>()
+  const [, setDeployedTCRAddress] = useState<string>()
+  const [, setSubmissionFormOpen] = useState(false)
   const factoryAddress = pgtcrFactoryAddresses[chainId]
   const defaultTCRAddress = defaultTcrAddresses[chainId]
   const evidenceDisplayInterfaceURI =
     defaultEvidenceDisplayUriPermanent[chainId]
-  const { metaEvidence } = useTcrView(defaultTCRAddress)
+  const { metaEvidence } = useTcrView(defaultTCRAddress ?? '')
   const { uploadFile } = useAtlasProvider()
 
   const onDeploy = async () => {
+    if (
+      !factoryAddress ||
+      !evidenceDisplayInterfaceURI ||
+      !publicClient ||
+      !walletClient
+    )
+      return
+    const factory = factoryAddress as Address
     try {
       const { ipfsMetaEvidencePath } = await getTcrMetaEvidence(
         tcrState,
@@ -172,7 +174,7 @@ const Deploy = ({ setTxState, tcrState, setTcrState }: DeployProps) => {
       )
 
       const { request } = await simulateContract(wagmiConfig, {
-        address: factoryAddress,
+        address: factory,
         abi: _GTCRFactory,
         functionName: 'deploy',
         args: [
@@ -206,11 +208,11 @@ const Deploy = ({ setTxState, tcrState, setTcrState }: DeployProps) => {
         publicClient,
       )
 
-      if (result.status) {
+      if (result.status && result.result) {
         const txHash = result.result.transactionHash
         setTxSubmitted(txHash)
 
-        let contractAddress
+        let contractAddress: string | undefined
         try {
           const newGTCRLog = result.result.logs
             .map((log) => {
@@ -226,7 +228,11 @@ const Deploy = ({ setTxState, tcrState, setTcrState }: DeployProps) => {
             })
             .find((parsed) => parsed && parsed.eventName === 'NewGTCR')
 
-          if (newGTCRLog) contractAddress = newGTCRLog.args._address
+          const pickAddress = (args: unknown): string | undefined =>
+            args && typeof args === 'object' && '_address' in args
+              ? ((args as { _address?: string })._address ?? undefined)
+              : undefined
+          if (newGTCRLog) contractAddress = pickAddress(newGTCRLog.args)
         } catch (err) {
           console.error('Error parsing deploy logs:', err)
         }
@@ -303,9 +309,15 @@ const Deploy = ({ setTxState, tcrState, setTcrState }: DeployProps) => {
                 <StyledDiv>
                   Your list was created at the following address:{' '}
                   <Link
-                    to={`/tcr/${chainId}/${tcrState.transactions[txSubmitted].contractAddress}`}
+                    to={`/tcr/${chainId}/${
+                      (txSubmitted &&
+                        tcrState.transactions[txSubmitted]?.contractAddress) ||
+                      ''
+                    }`}
                   >
-                    {tcrState.transactions[txSubmitted].contractAddress}
+                    {(txSubmitted &&
+                      tcrState.transactions[txSubmitted]?.contractAddress) ||
+                      ''}
                   </Link>
                   .
                 </StyledDiv>
@@ -314,13 +326,12 @@ const Deploy = ({ setTxState, tcrState, setTcrState }: DeployProps) => {
                   listing criteria,{' '}
                   <Button
                     type="link"
-                    onClick={setSubmissionFormOpen}
+                    onClick={() => setSubmissionFormOpen(true)}
                     style={{ padding: 0 }}
                   >
                     submit it to{' '}
-                    {(metaEvidence && metaEvidence.metadata.tcrTitle) ||
-                      'Curated Lists'}{' '}
-                    so other users can find it.
+                    {metaEvidence?.metadata?.tcrTitle || 'Curated Lists'} so
+                    other users can find it.
                   </Button>
                 </StyledDiv>
               </>

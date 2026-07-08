@@ -59,7 +59,6 @@ interface RowProps {
 }
 
 const Row: React.FC<RowProps> = ({
-  _type,
   justify,
   align,
   gutter = 0,

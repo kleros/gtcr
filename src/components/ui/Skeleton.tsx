@@ -62,7 +62,7 @@ const ParagraphLine = styled.div<{ $active: boolean }>`
 interface SkeletonProps {
   active?: boolean
   paragraph?: boolean | { rows?: number }
-  title?: boolean | { width?: string }
+  title?: boolean | { width?: string | number }
   loading?: boolean
   avatar?: boolean
   children?: React.ReactNode
@@ -83,8 +83,14 @@ const Skeleton: React.FC<SkeletonProps> = ({
   if (!loading && children) return <>{children}</>
   if (!loading) return null
 
-  const titleWidth =
+  const rawTitleWidth =
     title && typeof title === 'object' ? title.width : undefined
+  const titleWidth =
+    typeof rawTitleWidth !== 'number'
+      ? rawTitleWidth
+      : Number.isNaN(rawTitleWidth)
+        ? undefined
+        : `${rawTitleWidth}px`
 
   const paraRows =
     paragraph === false
