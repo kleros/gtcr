@@ -63,7 +63,7 @@ const fetchCourtPolicies = async (
 
 const useCourtPolicies = (
   policyAddress: string | undefined,
-  library: EthersLibrary | null,
+  library: EthersLibrary | null | undefined,
 ) =>
   useQuery({
     queryKey: ['courtPolicies', policyAddress],

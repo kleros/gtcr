@@ -19,6 +19,8 @@ export const StyledItemCol = styled.div`
   font-size: 14px;
 `
 
+type ItemColumn = Column & { value?: string | number | boolean | null }
+
 interface PermanentItemCardContentProps {
   item: SubgraphItem
   chainId: string | number
@@ -31,11 +33,12 @@ const PermanentItemCardContent = ({
   tcrAddress,
 }: PermanentItemCardContentProps) => {
   const { getLinkProps } = useNavigateAndScrollTop()
+  const metadata = item.metadata as { props: ItemColumn[] }
 
   return (
     <Container>
       <div>
-        {item.metadata.props
+        {metadata.props
           .filter(
             (col) =>
               col.isIdentifier ||
@@ -47,7 +50,6 @@ const PermanentItemCardContent = ({
               <DisplaySelector
                 type={column.type}
                 value={column.value}
-                allowedFileTypes={[]}
                 truncateLinks
                 linkImage
               />

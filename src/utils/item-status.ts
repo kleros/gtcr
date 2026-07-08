@@ -142,8 +142,8 @@ export const getActionLabel = ({
 
 export const itemToStatusCode = (
   item: SubgraphItem,
-  timestamp: BigNumber,
-  challengePeriodDuration: BigNumber,
+  timestamp: BigNumber | null | undefined,
+  challengePeriodDuration: BigNumber | null | undefined,
 ): number | undefined => {
   const { status } = item
   const request = item.requests?.[0]
@@ -158,6 +158,11 @@ export const itemToStatusCode = (
     return STATUS_CODE.REJECTED
   }
   if (status === CONTRACT_STATUS.REGISTERED) return STATUS_CODE.REGISTERED
+
+  // Time-dependent statuses can't be computed until the clock and TCR
+  // params have loaded.
+  if (!timestamp || !challengePeriodDuration) return undefined
+
   if (!request.disputed) {
     const challengePeriodEnd = BigNumber.from(
       Number(request.submissionTime) + challengePeriodDuration.toNumber(),
@@ -176,7 +181,9 @@ export const itemToStatusCode = (
   }
 
   const round = request.rounds?.[0]
-  if (round?.appealPeriodStart === '0')
+  if (!round) return undefined
+
+  if (round.appealPeriodStart === '0')
     // appeal period didn't start yet
     return STATUS_CODE.CHALLENGED
 

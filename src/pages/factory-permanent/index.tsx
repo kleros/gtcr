@@ -24,6 +24,62 @@ import {
 const { Step } = Steps
 const { confirm } = Modal
 
+interface TransactionInfo {
+  txHash: string
+  networkId?: number
+  isConnectedTCR?: boolean
+  status?: string
+  contractAddress?: string
+  [key: string]: unknown
+}
+
+export interface TcrState {
+  tcrTitle: string
+  tcrDescription: string
+  submissionMinDeposit: number
+  arbitratorAddress: string
+  governorAddress: string
+  tokenAddress: string
+  submissionPeriodDuration: number
+  reinclusionPeriodDuration: number
+  withdrawingPeriodDuration: number
+  arbitrationParamsCooldown: number
+  itemName: string
+  itemNamePlural: string
+  requireRemovalEvidence: boolean
+  tcrPrimaryDocument: string
+  tcrLogo: string
+  arbitratorExtraData?: string
+  challengeStakeMultiplier: number
+  sharedStakeMultiplier: number
+  winnerStakeMultiplier: number
+  loserStakeMultiplier: number
+  columns: Column[]
+  currStep: number
+  chainId?: number
+  transactions: Record<string, TransactionInfo>
+  finished?: boolean
+}
+
+export interface CachedFactory {
+  tcrState: TcrState
+  setTcrState: React.Dispatch<React.SetStateAction<TcrState>>
+  resetTcrState: () => void
+  nextStep: () => void
+  previousStep: () => void
+  resetStepper: () => void
+  STEP_COUNT: number
+  setTxState: (tx: TransactionInfo) => void
+  defaultArbLabel?: string
+  defaultArbDataLabel?: string
+  defaultGovernorLabel?: string
+}
+
+export interface StepProps extends CachedFactory {
+  formId?: string
+  postSubmit: () => void
+}
+
 export const StyledButtonGroup = styled(Button.Group)`
   &.ui-btn-group {
     margin-left: 12px;
@@ -82,7 +138,9 @@ export const StyledSubtitle = styled.h3`
 
 export const formIds = ['tcrParamsForm', 'itemParamsForm', 'deployTCRForm']
 
-export const CurrentStep = (props: Record<string, unknown>) => (
+export const CurrentStep = (
+  props: CachedFactory & { postSubmit: () => void },
+) => (
   <>
     {(() => {
       const {
@@ -102,14 +160,17 @@ export const CurrentStep = (props: Record<string, unknown>) => (
   </>
 )
 
-const useCachedFactory = (version: string, networkId: number | undefined) => {
+const useCachedFactory = (
+  version: string,
+  networkId: number | undefined,
+): CachedFactory | null => {
   const { account } = useWeb3Context()
   const { address: defaultArbitrator, label: defaultArbLabel } =
-    defaultArbitratorAddresses[networkId] || {}
+    (networkId !== undefined && defaultArbitratorAddresses[networkId]) || {}
   const { address: defaultGovernor, label: defaultGovernorLabel } =
-    defaultGovernorAddresses[networkId] || {}
+    (networkId !== undefined && defaultGovernorAddresses[networkId]) || {}
   const { data: defaultArbitratorExtraData, label: defaultArbDataLabel } =
-    defaultArbitratorExtraDataObj[networkId] || {}
+    (networkId !== undefined && defaultArbitratorExtraDataObj[networkId]) || {}
 
   const key = `pgtcrState@${networkId}@${version}`
   const initialWizardState = {
@@ -144,26 +205,30 @@ const useCachedFactory = (version: string, networkId: number | undefined) => {
     currStep: 1,
     chainId: networkId,
   }
-  const initialState = {
+  const initialState: TcrState = {
     ...initialWizardState,
     transactions: {},
   }
-  let cache = window.localStorage.getItem(key)
 
-  const newInitialState = JSON.parse(JSON.stringify(initialState)) // Deep copy.
-  if (cache) {
-    const parsed = JSON.parse(cache)
-    if (parsed.arbitratorAddress && parsed.chainId === networkId) cache = parsed
-    else cache = newInitialState
-  } else cache = newInitialState
+  const newInitialState: TcrState = JSON.parse(JSON.stringify(initialState)) // Deep copy.
+  const cached = window.localStorage.getItem(key)
+  let resolvedState: TcrState = newInitialState
+  if (cached) {
+    const parsed = JSON.parse(cached) as TcrState
+    if (parsed.arbitratorAddress && parsed.chainId === networkId)
+      resolvedState = parsed
+  }
 
   // We check for the finished flag to reset the form
   // if the user finished his previous deployment.
   // We only keep the deployment transactions.
-  if (cache.finished)
-    cache = { ...newInitialState, transactions: cache.transactions }
+  if (resolvedState.finished)
+    resolvedState = {
+      ...newInitialState,
+      transactions: resolvedState.transactions,
+    }
 
-  const [tcrState, setTcrState] = useState(cache)
+  const [tcrState, setTcrState] = useState<TcrState>(resolvedState)
   const [debouncedTcrState] = useDebounce(tcrState, 1000)
   const [prevNetworkId, setPrevNetworkId] = useState(networkId)
 
@@ -210,7 +275,7 @@ const useCachedFactory = (version: string, networkId: number | undefined) => {
       ...JSON.parse(JSON.stringify(initialWizardState)),
       transactions: prevState.transactions,
     }))
-  const setTxState = (tx) =>
+  const setTxState = (tx: TransactionInfo) =>
     setTcrState((prevState) => ({
       ...prevState,
       transactions: {
@@ -239,11 +304,15 @@ const FactoryPermanentPage = () => {
   const { library, active } = useWeb3Context()
   const factoryChainId = urlChainId ?? undefined
   const cachedFactory = useCachedFactory(version, factoryChainId)
-  const [previousDeployments, setPreviousDeployments] = useState([])
-  const { tcrState, nextStep, previousStep, STEP_COUNT, resetTcrState } =
-    cachedFactory ?? {}
+  const [previousDeployments, setPreviousDeployments] = useState<string[]>([])
+  const tcrState = cachedFactory?.tcrState
+  const nextStep = cachedFactory?.nextStep
+  const previousStep = cachedFactory?.previousStep
+  const STEP_COUNT = cachedFactory?.STEP_COUNT
+  const resetTcrState = cachedFactory?.resetTcrState
 
-  const { currStep, transactions } = tcrState ?? {}
+  const currStep = tcrState?.currStep ?? 1
+  const transactions = tcrState?.transactions
 
   const factoryInterface = useMemo(
     () => new ethers.utils.Interface(_GTCRFactory),
@@ -256,7 +325,7 @@ const FactoryPermanentPage = () => {
       content: 'This will clear all fields and reset the wizard to step 1',
       okText: 'Yes, start over',
       onOk: () => {
-        resetTcrState()
+        resetTcrState?.()
       },
     })
   }, [resetTcrState])
@@ -317,7 +386,7 @@ const FactoryPermanentPage = () => {
         <StyledContainer>
           <CurrentStep
             key={factoryChainId}
-            postSubmit={() => nextStep()}
+            postSubmit={() => nextStep?.()}
             {...cachedFactory}
           />
         </StyledContainer>
@@ -327,7 +396,7 @@ const FactoryPermanentPage = () => {
           </Button>
           <StyledButtonGroup>
             <Button
-              onClick={() => previousStep()}
+              onClick={() => previousStep?.()}
               type="primary"
               disabled={currStep === 1}
             >

@@ -7,10 +7,11 @@ const useAppealTime = (
 ): { appealRemainingTime?: number; appealRemainingTimeLoser?: number } =>
   useMemo(() => {
     if (!item) return {}
-    if (!old && item.challenges.length === 0) return {}
+    if (!old && (!item.challenges || item.challenges.length === 0)) return {}
     const round = old
-      ? item.requests[0].rounds[0]
-      : item.challenges[0].rounds[0]
+      ? item.requests && item.requests[0].rounds[0]
+      : item.challenges && item.challenges[0].rounds[0]
+    if (!round) return {}
     const { appealPeriodStart, appealPeriodEnd } = round
     const appealStart = BigNumber.from(appealPeriodStart)
     const appealEnd = BigNumber.from(appealPeriodEnd)

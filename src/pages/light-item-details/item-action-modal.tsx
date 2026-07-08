@@ -1,5 +1,5 @@
 import React from 'react'
-import { ethers } from 'ethers'
+import { ethers, BigNumber } from 'ethers'
 import { STATUS_CODE, getActionLabel } from 'utils/item-status'
 import RemoveModal from './modals/remove'
 import ChallengeModal from './modals/challenge'
@@ -60,14 +60,14 @@ const ItemActionModal = ({
     case STATUS_CODE.REMOVED:
       return isConnectedTCR ? (
         <SubmitConnectModal
-          initialValues={item.decodedData}
+          initialValues={item.decodedData?.map(String)}
           tcrAddress={tcrAddress}
           gtcrView={gtcrView}
           {...rest}
         />
       ) : (
         <SubmitModal
-          initialValues={item.decodedData}
+          initialValues={item.decodedData?.map(String)}
           submissionDeposit={submissionDeposit}
           tcrAddress={tcrAddress}
           metaEvidence={metaEvidence}

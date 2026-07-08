@@ -29,7 +29,7 @@ const TCRLogo = ({ logoURI = null }: TCRLogoProps) =>
   logoURI && <StyledImage src={parseIpfs(logoURI)} alt="item" />
 
 interface BannerProps {
-  metaEvidence?: MetaEvidence
+  metaEvidence?: MetaEvidence | null
   setSubmissionFormOpen: (open: boolean) => void
   connectedTCRAddr?: string | null
   tcrAddress?: string | null
@@ -42,7 +42,7 @@ const Banner = ({
   tcrAddress = null,
 }: BannerProps) => {
   const networkId = useUrlChainId()
-  const defaultTCRAddress = defaultTcrAddresses[networkId]
+  const defaultTCRAddress = defaultTcrAddresses[networkId ?? '']
   const openAttachment = useAttachment()
   const { metadata, fileURI } = metaEvidence || {}
   const { itemName, tcrTitle, tcrDescription, logoURI, relTcrDisabled } =
@@ -58,13 +58,15 @@ const Banner = ({
               {defaultTCRAddress && tcrAddress !== defaultTCRAddress && (
                 <TCRLogo logoURI={logoURI} />
               )}
-              <ContractExplorerUrl
-                networkId={networkId}
-                contractAddress={tcrAddress}
-              />
+              {networkId != null && tcrAddress && (
+                <ContractExplorerUrl
+                  networkId={networkId}
+                  contractAddress={tcrAddress}
+                />
+              )}
             </TitleContainer>
             <StyledDescription>
-              {capitalizeFirstLetter(tcrDescription)}
+              {capitalizeFirstLetter(tcrDescription ?? '')}
               {connectedTCRAddr &&
                 connectedTCRAddr !== ZERO_ADDRESS &&
                 !relTcrDisabled && (
@@ -91,7 +93,7 @@ const Banner = ({
           onClick={() => setSubmissionFormOpen(true)}
           id="submit-item-button"
         >
-          {`Submit ${capitalizeFirstLetter(itemName) || 'Item'}`}
+          {`Submit ${capitalizeFirstLetter(itemName ?? '') || 'Item'}`}
           <Icon type="plus-circle-outline" />
         </StyledButton>
 

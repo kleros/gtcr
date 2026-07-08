@@ -144,29 +144,45 @@ const DisplaySelector = ({
 }: DisplaySelectorProps) => {
   switch (type) {
     case ItemTypes.GTCR_ADDRESS:
-      return <GTCRAddress address={value || ZERO_ADDRESS} disabled={disabled} />
+      return (
+        <GTCRAddress
+          address={String(value || ZERO_ADDRESS)}
+          disabled={disabled}
+        />
+      )
     case ItemTypes.ADDRESS:
-      return <ETHAddress address={value || ZERO_ADDRESS} />
+      return <ETHAddress address={String(value || ZERO_ADDRESS)} />
     case ItemTypes.RICH_ADDRESS:
-      return <RichAddress crude={value || pohRichAddress} />
+      return <RichAddress crude={String(value || pohRichAddress)} />
     case ItemTypes.TEXT:
     case ItemTypes.NUMBER:
       return <Typography.Text>{value}</Typography.Text>
     case ItemTypes.BOOLEAN:
       return <Checkbox disabled checked={value === 'true'} />
     case ItemTypes.LONG_TEXT:
-      return <LongText value={value} />
+      return <LongText value={value ? String(value) : null} />
     case ItemTypes.FILE: {
-      return <FileDisplay value={value} allowedFileTypes={allowedFileTypes} />
+      return (
+        <FileDisplay
+          value={value ? String(value) : null}
+          allowedFileTypes={allowedFileTypes}
+        />
+      )
     }
     case ItemTypes.IMAGE:
       return value ? (
-        <ImageWithLoading src={parseIpfs(value)} alt="" linkImage={linkImage} />
+        <ImageWithLoading
+          src={parseIpfs(String(value))}
+          alt=""
+          linkImage={linkImage}
+        />
       ) : (
         <Avatar shape="square" size="large" icon="file-image" />
       )
     case ItemTypes.LINK: {
-      const fullUrl = protocolRegex.test(value) ? value : `https://${value}`
+      const fullUrl = protocolRegex.test(String(value))
+        ? String(value)
+        : `https://${value}`
       if (!isSafeNavigationUrl(fullUrl))
         return <Typography.Text>{value}</Typography.Text>
       if (truncateLinks) return <TruncatedLink url={fullUrl} />

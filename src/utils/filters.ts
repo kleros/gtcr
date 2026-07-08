@@ -7,6 +7,8 @@ export const FILTER_KEYS = {
   REMOVAL_REQUESTED: 'removalRequested',
   CHALLENGED_SUBMISSIONS: 'challengedSubmissions',
   CHALLENGED_REMOVALS: 'challengedRemovals',
+  MY_SUBMISSIONS: 'mySubmissions',
+  MY_CHALLENGES: 'myChallenges',
   OLDEST_FIRST: 'oldestFirst',
   PAGE: 'page',
 }

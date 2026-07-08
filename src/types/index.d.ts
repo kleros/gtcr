@@ -60,6 +60,10 @@ declare global {
     submissionTime?: string
     includedAt?: string
     withdrawingTimestamp?: string
+    /** Permanent-TCR stake bounty (wei string) */
+    stake?: string
+    /** Attached by item-details pages when decoding fails */
+    errors?: string[]
     [key: string]: unknown
   }
 
@@ -100,6 +104,27 @@ declare global {
     connectedTCR?: string
   }
 
+  /**
+   * Struct returned by GeneralizedTCRView/LightGeneralizedTCRView
+   * `fetchArbitrable` (identical in both ABIs).
+   */
+  interface ArbitrableTCRData {
+    governor: string
+    arbitrator: string
+    arbitratorExtraData: string
+    submissionBaseDeposit: BigNumber
+    removalBaseDeposit: BigNumber
+    submissionChallengeBaseDeposit: BigNumber
+    removalChallengeBaseDeposit: BigNumber
+    challengePeriodDuration: BigNumber
+    metaEvidenceUpdates: BigNumber
+    winnerStakeMultiplier: BigNumber
+    loserStakeMultiplier: BigNumber
+    sharedStakeMultiplier: BigNumber
+    MULTIPLIER_DIVISOR: BigNumber
+    arbitrationCost: BigNumber
+  }
+
   /** Ethers library type used throughout the app (patched provider from useWeb3Context) */
   type EthersLibrary = providers.JsonRpcProvider
 
@@ -122,7 +147,7 @@ declare module '@kleros/gtcr-encoder' {
   }): unknown[]
   export function gtcrEncode(args: {
     columns: Column[]
-    values: unknown[]
+    values: Record<string, unknown> | unknown[]
   }): string
   export function searchableFields(columns: Column[]): number[]
   export function typeDefaultValues(type: string): string | number | boolean
@@ -145,21 +170,4 @@ declare module '@kleros/tcr/build/contracts/BatchWithdraw.json' {
 // @kleros/erc-792 contract ABIs
 declare module '@kleros/erc-792/build/contracts/IArbitrator.json' {
   export const abi: readonly Record<string, unknown>[]
-}
-
-// Untyped npm modules
-declare module 'react-blockies' {
-  import { ComponentType } from 'react'
-
-  interface BlockiesProps {
-    seed: string
-    size?: number
-    scale?: number
-    className?: string
-    color?: string
-    bgColor?: string
-    spotColor?: string
-  }
-  const Blockies: ComponentType<BlockiesProps>
-  export default Blockies
 }

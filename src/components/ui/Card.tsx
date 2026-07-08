@@ -161,10 +161,11 @@ Meta.displayName = 'Card.Meta'
 interface CardProps {
   title?: React.ReactNode
   extra?: React.ReactNode
-  actions?: React.ReactNode[]
+  actions?: React.ReactNode[] | null | false
   bordered?: boolean
   loading?: boolean
   hoverable?: boolean
+  id?: string
   style?: React.CSSProperties
   className?: string
   children?: React.ReactNode
@@ -181,6 +182,7 @@ const Card: CardComponent = ({
   bordered = true,
   loading = false,
   hoverable = false,
+  id,
   style,
   className,
   children,
@@ -189,6 +191,7 @@ const Card: CardComponent = ({
     className={`ui-card${className ? ` ${className}` : ''}`}
     $bordered={bordered}
     $hoverable={hoverable}
+    id={id}
     style={style}
   >
     {(title || extra) && (

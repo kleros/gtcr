@@ -1,4 +1,5 @@
 import React, { useContext, useMemo } from 'react'
+import { BigNumber } from 'ethers'
 import styled from 'styled-components'
 import { Tooltip } from 'components/ui'
 import Icon from 'components/ui/Icon'
@@ -84,7 +85,7 @@ export const StyledStakeTag = styled(StakeTag)`
 
 interface ItemCardTitleProps {
   statusCode?: number | null
-  tcrData?: Record<string, unknown>
+  tcrData?: SubgraphItem | null
   isPermanentList?: boolean
 }
 
@@ -93,9 +94,11 @@ const ItemCardTitle = ({
   tcrData = null,
   isPermanentList = false,
 }: ItemCardTitleProps) => {
-  const { challengePeriodDuration } = useContext(LightTCRViewContext)
-  const { timestamp } = useContext(WalletContext)
-  const { disputed, submissionTime } = tcrData || {}
+  const challengePeriodDuration =
+    useContext(LightTCRViewContext)?.challengePeriodDuration
+  const timestamp = useContext(WalletContext)?.timestamp
+  const disputed = tcrData?.disputed
+  const submissionTime = tcrData?.submissionTime
   const nativeCurrency = useNativeCurrency()
 
   // Get remaining challenge period, if applicable and build countdown.
@@ -104,17 +107,19 @@ const ItemCardTitle = ({
       return
 
     const deadline =
-      submissionTime.add(challengePeriodDuration).toNumber() * 1000
+      BigNumber.from(submissionTime).add(challengePeriodDuration).toNumber() *
+      1000
 
     return deadline - Date.now()
   }, [challengePeriodDuration, disputed, submissionTime, tcrData])
 
   const challengeCountdown = useHumanizedCountdown(challengeRemainingTime, 1)
 
-  if (typeof statusCode !== 'number')
-    statusCode = itemToStatusCode(tcrData, timestamp, challengePeriodDuration)
+  if (typeof statusCode !== 'number' && tcrData)
+    statusCode =
+      itemToStatusCode(tcrData, timestamp, challengePeriodDuration) ?? null
 
-  const bounty = tcrData.deposit
+  const bounty = tcrData?.deposit
 
   return (
     <Container>
@@ -123,11 +128,15 @@ const ItemCardTitle = ({
           <ItemStatusBadge statusCode={statusCode} dark />
         </StatusGroup>
         <RightGroup>
-          {challengeRemainingTime > 0 && (
+          {(challengeRemainingTime ?? 0) > 0 && (
             <BountyContainer>
               <Tooltip title="This is the bounty on this item.">
                 <ETHAmount
-                  amount={bounty}
+                  amount={
+                    BigNumber.isBigNumber(bounty) || typeof bounty === 'string'
+                      ? bounty
+                      : undefined
+                  }
                   decimals={3}
                   displayUnit={` ${nativeCurrency}`}
                 />
@@ -138,7 +147,7 @@ const ItemCardTitle = ({
           {isPermanentList && <StyledStakeTag />}
         </RightGroup>
       </StatusAndBountyContainer>
-      {challengeRemainingTime > 0 && (
+      {(challengeRemainingTime ?? 0) > 0 && (
         <CountdownContainer>
           Ends {challengeCountdown}
           <Tooltip title="This is the challenge period before this item is accepted into the list.">

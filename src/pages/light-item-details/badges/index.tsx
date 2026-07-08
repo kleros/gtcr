@@ -17,7 +17,7 @@ import _gtcr from 'assets/abis/LightGeneralizedTCR.json'
 import _GTCRView from 'assets/abis/LightGeneralizedTCRView.json'
 import { WalletContext } from 'contexts/wallet-context'
 import ItemStatusBadge from 'components/item-status-badge'
-import AddBadgeModal from '../modals/add-badge'
+import AddBadgeModal, { BadgeInfo } from '../modals/add-badge'
 import { CONTRACT_STATUS, DISPUTE_STATUS } from 'utils/item-status'
 import SubmitModal from '../modals/submit'
 import SubmitConnectModal from '../modals/submit-connect'
@@ -70,7 +70,72 @@ export const DashedCardBody = styled.div`
   justify-content: center;
 `
 
-const mapToLegacy = (items) =>
+interface BadgeRound {
+  appealPeriodStart: string
+  appealPeriodEnd: string
+  ruling: string
+  hasPaidRequester: boolean
+  hasPaidChallenger: boolean
+  amountPaidRequester: string
+  amountPaidChallenger: string
+}
+
+interface BadgeRequest {
+  disputed: boolean
+  disputeID: string
+  submissionTime: string
+  resolved: boolean
+  rounds: BadgeRound[]
+}
+
+interface RawBadgeItem {
+  itemID: string
+  status: string
+  data: string
+  requests: BadgeRequest[]
+  props: { value: unknown }[]
+}
+
+interface LegacyBadgeItem {
+  ID: string
+  itemID: string
+  status: string | number
+  disputeStatus: number
+  disputed: boolean
+  data: string
+  decodedData: unknown[]
+  mergedData: { value: unknown }[]
+  disputeID: string
+  submissionTime: BigNumber
+  hasPaid: boolean[]
+  currentRuling: number
+  appealStart: BigNumber
+  appealEnd: BigNumber
+  amountPaid: BigNumber[]
+  timestamp?: number | string
+}
+
+interface MetadataByTime {
+  byTimestamp: {
+    [timestamp: string]: { metadata: { columns: Column[] } }
+  }
+}
+
+interface FoundBadge {
+  tcrAddress: string
+  item: SubgraphItem
+  metadata: { logoURI: string; tcrTitle: string; tcrDescription: string }
+  tcrData: { challengePeriodDuration?: BigNumber }
+}
+
+interface FetchItemsState {
+  fetchStarted?: boolean
+  isFetching?: boolean
+  data?: LegacyBadgeItem[] | null
+  connectedTCRAddr?: string
+}
+
+const mapToLegacy = (items: RawBadgeItem[]): LegacyBadgeItem[] =>
   items
     .map((item) => ({
       ...item,
@@ -109,7 +174,7 @@ const mapToLegacy = (items) =>
               ? DISPUTE_STATUS.APPEALABLE
               : DISPUTE_STATUS.WAITING
 
-        const graphStatusNameToCode = {
+        const graphStatusNameToCode: Record<string, number> = {
           Absent: 0,
           Registered: 1,
           RegistrationRequested: 2,
@@ -147,29 +212,33 @@ interface BadgesProps {
 }
 
 const Badges = ({ connectedTCRAddr, item, tcrAddress }: BadgesProps) => {
-  const { timestamp } = useContext(WalletContext)
+  const { timestamp } = useContext(WalletContext) || {}
   const chainId = useUrlChainId()
   const networkId = chainId ?? undefined
   const library = useEthersProvider({ chainId: networkId })
-  const { metadataByTime } = useTcrView(connectedTCRAddr)
+  const tcrView: { metadataByTime?: MetadataByTime; tcrAddress?: string } =
+    useTcrView(connectedTCRAddr ?? '')
+  const { metadataByTime } = tcrView
   const { graphqlBatcher } = useGraphqlBatcher()
 
-  const [error, setError] = useState(false)
+  const [error, setError] = useState<string | false>(false)
   const [addBadgeVisible, setAddBadgeVisible] = useState(false)
   const [submissionFormOpen, setSubmissionFormOpen] = useState(false)
-  const [badgeToSubmit, setBadgeToSubmit] = useState<Record<string, unknown>>()
-  const [foundBadges, setFoundBadges] = useState([])
-  const [connectedBadges, setConnectedBadges] = useState([])
+  const [badgeToSubmit, setBadgeToSubmit] = useState<BadgeInfo>()
+  const [foundBadges, setFoundBadges] = useState<FoundBadge[]>([])
+  const [connectedBadges, setConnectedBadges] = useState<BadgeInfo[]>([])
   const [isFetchingBadges, setIsFetchingBadges] = useState(false)
   const [submitConnectVisible, setSubmitConnectVisible] = useState(false)
-  const ARBITRABLE_TCR_VIEW_ADDRESS = gtcrViewAddresses[networkId]
-  const GTCR_SUBGRAPH_URL = subgraphUrl[networkId]
-  const [fetchItems, setFetchItems] = useState({
+  const ARBITRABLE_TCR_VIEW_ADDRESS = networkId
+    ? gtcrViewAddresses[networkId]
+    : undefined
+  const GTCR_SUBGRAPH_URL = networkId ? subgraphUrl[networkId] : undefined
+  const [fetchItems, setFetchItems] = useState<FetchItemsState>({
     fetchStarted: true,
     isFetching: false,
     data: null,
   })
-  const getLogs = useGetLogs(library)
+  const getLogs = useGetLogs(library ?? null)
 
   const gtcrView = useMemo(() => {
     if (!library || !ARBITRABLE_TCR_VIEW_ADDRESS || !networkId) return
@@ -186,7 +255,7 @@ const Badges = ({ connectedTCRAddr, item, tcrAddress }: BadgesProps) => {
   }, [ARBITRABLE_TCR_VIEW_ADDRESS, library, networkId])
 
   const badgesWhere = useMemo(
-    () => ({ registry: connectedTCRAddr.toLowerCase(), status: 'Registered' }),
+    () => ({ registry: connectedTCRAddr?.toLowerCase(), status: 'Registered' }),
     [connectedTCRAddr],
   )
 
@@ -242,11 +311,14 @@ const Badges = ({ connectedTCRAddr, item, tcrAddress }: BadgesProps) => {
     const { data: encodedItems } = fetchItems
 
     return encodedItems.map((item, i) => {
-      let decodedData
-      const errors = []
+      let decodedData: unknown[] | undefined
+      const errors: string[] = []
       const { columns } =
         metadataByTime.byTimestamp[
-          takeLower(Object.keys(metadataByTime.byTimestamp), item.timestamp)
+          takeLower(
+            Object.keys(metadataByTime.byTimestamp),
+            item.timestamp ?? 0,
+          )
         ].metadata
       try {
         decodedData = item.decodedData
@@ -276,15 +348,15 @@ const Badges = ({ connectedTCRAddr, item, tcrAddress }: BadgesProps) => {
   // search for the current item.
   useEffect(() => {
     if (!enabledBadges || !gtcrView || !item) return
-    if (!getLogs) return
+    if (!getLogs || !GTCR_SUBGRAPH_URL) return
     ;(async () => {
-      const foundBadges = []
-      const connectedBadges = []
+      const foundBadges: FoundBadge[] = []
+      const connectedBadges: BadgeInfo[] = []
       try {
         await Promise.all(
           enabledBadges.map(async ({ columns }) => {
-            const badgeAddr = columns[0].value
-            const matchFileURI = columns[1].value
+            const badgeAddr = String(columns[0].value)
+            const matchFileURI = String(columns[1].value)
             const badgeContract = new ethers.Contract(badgeAddr, _gtcr, library)
             // Get the badge contract metadata.
             const logs = (
@@ -297,7 +369,7 @@ const Badges = ({ connectedTCRAddr, item, tcrAddress }: BadgesProps) => {
               console.warn('Could not fetch metadata for contract', badgeAddr)
               return
             }
-            const { _evidence: metaEvidencePath } = logs[logs.length - 1].values
+            const { _evidence: metaEvidencePath } = logs[logs.length - 1].args
             const [badgeMetaEvidenceResponse, matchFileResponse, badgeTcrData] =
               await Promise.all([
                 fetch(parseIpfs(metaEvidencePath)),
@@ -322,10 +394,13 @@ const Badges = ({ connectedTCRAddr, item, tcrAddress }: BadgesProps) => {
             })
 
             // Search for the item on the badge TCR.
-            const keywords = matchColumns.reduce((acc, curr) => {
-              if (typeof curr !== 'number') return acc
-              return `${acc} | ${item.decodedData[curr]}`
-            }, badgeAddr.toLowerCase())
+            const keywords = matchColumns.reduce(
+              (acc: string, curr: unknown) => {
+                if (typeof curr !== 'number') return acc
+                return `${acc} | ${item.decodedData?.[curr]}`
+              },
+              badgeAddr.toLowerCase(),
+            )
             const query = {
               query: `
                 {
@@ -378,15 +453,17 @@ const Badges = ({ connectedTCRAddr, item, tcrAddress }: BadgesProps) => {
             if (result.length > 0)
               foundBadges.push({
                 tcrAddress: badgeAddr,
-                item: { ...result[0] }, // Convert array to object.
+                // Convert array to object. Legacy item shape (numeric status,
+                // BigNumber timestamps) is adapted to SubgraphItem for display.
+                item: { ...result[0] } as unknown as SubgraphItem,
                 metadata: badgeMetadata,
                 tcrData: badgeTcrData,
               })
           }),
         )
-      } catch {
+      } catch (err) {
         console.error(err)
-        setError((err as Error).message)
+        setError(err instanceof Error ? err.message : String(err))
       } finally {
         setIsFetchingBadges(false)
         setFoundBadges(foundBadges || [])
@@ -408,7 +485,7 @@ const Badges = ({ connectedTCRAddr, item, tcrAddress }: BadgesProps) => {
     )
   }, [connectedBadges, enabledBadges])
 
-  const onSelectBadge = useCallback((selectedBadge) => {
+  const onSelectBadge = useCallback((selectedBadge: BadgeInfo) => {
     setSubmissionFormOpen(true)
     setBadgeToSubmit(selectedBadge)
   }, [])
@@ -488,10 +565,10 @@ const Badges = ({ connectedTCRAddr, item, tcrAddress }: BadgesProps) => {
           challengePeriodDuration={badgeToSubmit.challengePeriodDuration}
           tcrAddress={badgeToSubmit.tcrAddress}
           metaEvidence={badgeToSubmit.metaEvidence}
-          initialValues={badgeToSubmit.matchFile.columns.map((col) =>
-            col !== null ? badgeToSubmit.decodedData[col] : null,
+          initialValues={badgeToSubmit.matchFile?.columns.map((col) =>
+            col !== null ? badgeToSubmit.decodedData?.[col] : null,
           )}
-          disabledFields={badgeToSubmit.matchFile.columns.map(
+          disabledFields={badgeToSubmit.matchFile?.columns.map(
             (col) => col !== null,
           )}
         />
@@ -499,7 +576,7 @@ const Badges = ({ connectedTCRAddr, item, tcrAddress }: BadgesProps) => {
       <SubmitConnectModal
         visible={submitConnectVisible}
         onCancel={() => setSubmitConnectVisible(false)}
-        initialValues={[tcrAddress]}
+        initialValues={[tcrAddress ?? '']}
         tcrAddress={connectedTCRAddr}
         gtcrView={gtcrView}
       />

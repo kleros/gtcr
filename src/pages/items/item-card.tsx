@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from 'react'
+import { BigNumber } from 'ethers'
 import { Card, Button, Result } from 'components/ui'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 // eslint-disable-next-line import/named
@@ -16,14 +17,15 @@ import {
   FlipCard,
   CardNSFWWarn,
   StyledCardInfo,
+  EnrichedItem,
 } from 'pages/light-items/item-card'
 
 interface CardItemInfoProps {
-  item: SubgraphItem
+  item: EnrichedItem
   statusCode: number
-  chainId?: string
+  chainId?: number | null
   tcrAddress: string
-  metaEvidence: MetaEvidence
+  metaEvidence?: MetaEvidence
   toggleReveal?: (() => void) | null
   forceReveal?: boolean | null
 }
@@ -39,12 +41,15 @@ const CardItemInfo = ({
 }: CardItemInfoProps) => {
   let content
   const { metadata } = metaEvidence || {}
-  const { itemName, isTCRofTCRs } = metadata || {}
-  const childTcrAddress = isTCRofTCRs ? item.columns[0]?.value : null
+  const { isTCRofTCRs } = metadata || {}
+  const childTcrAddress = isTCRofTCRs ? (item.columns[0]?.value ?? null) : null
 
-  const { isPermanentList } = useCheckPermanentList(childTcrAddress, chainId)
+  const { isPermanentList } = useCheckPermanentList(
+    childTcrAddress,
+    chainId ?? null,
+  )
 
-  if (item.errors.length > 0)
+  if (item.errors && item.errors.length > 0)
     content = (
       <Result
         status="warning"
@@ -57,18 +62,12 @@ const CardItemInfo = ({
     content = isTCRofTCRs ? (
       <TCRCardContent
         ID={item.tcrData.ID}
-        tcrAddress={item.columns[0].value}
-        itemName={itemName}
+        tcrAddress={item.columns[0]?.value}
         currentTCRAddress={tcrAddress}
       />
-    ) : (
-      <ItemCardContent
-        item={item}
-        chainId={chainId}
-        tcrAddress={tcrAddress}
-        itemName={itemName}
-      />
-    )
+    ) : chainId != null ? (
+      <ItemCardContent item={item} chainId={chainId} tcrAddress={tcrAddress} />
+    ) : null
 
   return (
     <CardBlock>
@@ -96,14 +95,13 @@ const CardItemInfo = ({
 }
 
 interface ItemCardProps {
-  item: SubgraphItem
-  challengePeriodDuration: BigNumber
-  timestamp: BigNumber
+  item: EnrichedItem
+  challengePeriodDuration?: BigNumber
+  timestamp?: BigNumber
   forceReveal?: boolean | null
-  metaEvidence: MetaEvidence
-  chainId?: string
+  metaEvidence?: MetaEvidence
+  chainId?: number | null
   tcrAddress: string
-  [key: string]: unknown
 }
 
 const ItemCard = ({
@@ -114,20 +112,22 @@ const ItemCard = ({
   metaEvidence,
   chainId,
   tcrAddress,
-  ...rest
 }: ItemCardProps) => {
   const [revealed, setRevealed] = useState<boolean | undefined>()
   const toggleReveal = useCallback(() => {
     setRevealed(!revealed)
   }, [revealed])
   if (!challengePeriodDuration || !timestamp || !item)
-    return <Card style={{ height: '100%' }} loading {...rest} />
+    return <Card style={{ height: '100%' }} loading />
 
   const statusCode = itemToStatusCode(
     item.tcrData,
     timestamp,
     challengePeriodDuration,
   )
+
+  if (statusCode === undefined)
+    return <Card style={{ height: '100%' }} loading />
 
   if (
     statusCode !== STATUS_CODE.REJECTED &&
@@ -143,7 +143,6 @@ const ItemCard = ({
         metaEvidence={metaEvidence}
         chainId={chainId}
         tcrAddress={tcrAddress}
-        {...rest}
       />
     )
 
@@ -168,7 +167,6 @@ const ItemCard = ({
             metaEvidence={metaEvidence}
             chainId={chainId}
             tcrAddress={tcrAddress}
-            {...rest}
           />
         </FlipCardBack>
       </FlipCardInner>

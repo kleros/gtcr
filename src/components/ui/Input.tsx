@@ -147,7 +147,10 @@ const ClearButton = styled.span<{ $hasSuffix?: boolean }>`
   }
 `
 
-interface InputProps {
+interface InputProps extends Omit<
+  React.InputHTMLAttributes<HTMLInputElement>,
+  'size' | 'prefix'
+> {
   value?: string | number
   onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void
   placeholder?: string
@@ -166,19 +169,18 @@ interface InputProps {
   onPressEnter?: (e: React.KeyboardEvent) => void
   onBlur?: (e: React.FocusEvent) => void
   size?: string
-  [key: string]: unknown
 }
 
-interface TextAreaProps {
+interface TextAreaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
   value?: string | number
   onChange?: (e: React.ChangeEvent<HTMLTextAreaElement>) => void
   placeholder?: string
   disabled?: boolean
   rows?: number
   autoSize?: boolean
+  autosize?: boolean | { minRows?: number; maxRows?: number }
   style?: React.CSSProperties
   className?: string
-  [key: string]: unknown
 }
 
 interface InputComponent extends React.ForwardRefExoticComponent<

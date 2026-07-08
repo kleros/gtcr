@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from 'react'
+import { BigNumber } from 'ethers'
 import styled, { css } from 'styled-components'
 import { Card, Button, Result } from 'components/ui'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
@@ -6,7 +7,7 @@ import ItemCardContent from 'components/permanent-item-card-content'
 import { itemToStatusCode, STATUS_CODE } from 'utils/permanent-item-status'
 import ItemCardTitle from './item-card-title'
 
-export const FlipCardInner = styled.div`
+export const FlipCardInner = styled.div<{ revealed?: boolean }>`
   text-align: center;
   transition: transform 0.6s;
   transform-style: preserve-3d;
@@ -139,7 +140,7 @@ interface CardItemInfoProps {
   item: SubgraphItem
   statusCode: number
   registry: SubgraphRegistry
-  chainId?: string
+  chainId?: number | null
   tcrAddress?: string
   metadata?: MetaEvidence
   toggleReveal?: (() => void) | null
@@ -153,13 +154,11 @@ const CardItemInfo = ({
   registry,
   chainId,
   tcrAddress,
-  metadata,
   toggleReveal,
   forceReveal,
   tokenSymbol,
 }: CardItemInfoProps) => {
   let content
-  const { itemName } = metadata || {}
 
   if (item.errors && item.errors.length > 0)
     content = (
@@ -171,14 +170,14 @@ const CardItemInfo = ({
       />
     )
   else
-    content = (
-      <ItemCardContent
-        item={item}
-        chainId={chainId}
-        tcrAddress={tcrAddress}
-        itemName={itemName}
-      />
-    )
+    content =
+      chainId != null && tcrAddress != null ? (
+        <ItemCardContent
+          item={item}
+          chainId={chainId}
+          tcrAddress={tcrAddress}
+        />
+      ) : null
 
   return (
     <CardBlock>
@@ -209,9 +208,12 @@ const CardItemInfo = ({
 interface ItemCardProps {
   item: SubgraphItem
   registry: SubgraphRegistry
-  timestamp: BigNumber
+  timestamp?: BigNumber
   forceReveal?: boolean | null
-  [key: string]: unknown
+  metadata?: MetaEvidence
+  chainId?: number | null
+  tcrAddress?: string
+  tokenSymbol?: string
 }
 
 const ItemCard = ({
@@ -219,7 +221,10 @@ const ItemCard = ({
   registry,
   timestamp,
   forceReveal,
-  ...rest
+  metadata,
+  chainId,
+  tcrAddress,
+  tokenSymbol,
 }: ItemCardProps) => {
   const [revealed, setRevealed] = useState<boolean | undefined>()
   const toggleReveal = useCallback(() => {
@@ -229,6 +234,9 @@ const ItemCard = ({
     return <Card style={{ height: '100%' }} loading />
 
   const statusCode = itemToStatusCode(item, timestamp, registry)
+
+  if (statusCode === undefined)
+    return <Card style={{ height: '100%' }} loading />
 
   if (
     statusCode !== STATUS_CODE.REJECTED &&
@@ -244,7 +252,10 @@ const ItemCard = ({
         item={item}
         statusCode={statusCode}
         registry={registry}
-        {...rest}
+        metadata={metadata}
+        chainId={chainId}
+        tcrAddress={tcrAddress}
+        tokenSymbol={tokenSymbol}
       />
     )
 
@@ -265,9 +276,12 @@ const ItemCard = ({
             item={item}
             statusCode={statusCode}
             registry={registry}
+            metadata={metadata}
+            chainId={chainId}
+            tcrAddress={tcrAddress}
+            tokenSymbol={tokenSymbol}
             toggleReveal={toggleReveal}
             forceReveal={forceReveal}
-            {...rest}
           />
         </FlipCardBack>
       </FlipCardInner>

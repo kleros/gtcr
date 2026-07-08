@@ -1,3 +1,5 @@
+import type { IconName } from '@fortawesome/fontawesome-svg-core'
+
 export const NOTIFICATION_TYPES = {
   SUBMISSION_PENDING: 'SUBMISSION_PENDING',
   REMOVAL_PENDING: 'REMOVAL_PENDING',
@@ -26,7 +28,7 @@ export const typeToMessage = {
   [NOTIFICATION_TYPES.HAS_PAID_FEES]: 'Side fully funded',
 }
 
-const NOTIFICATION_CONFIG: Record<string, { color: string; icon: string }> = {
+const NOTIFICATION_CONFIG: Record<string, { color: string; icon: IconName }> = {
   [NOTIFICATION_TYPES.SUBMISSION_PENDING]: {
     color: '#ccc',
     icon: 'hourglass-half',
@@ -64,7 +66,7 @@ export const getNotificationColorFor = (notificationType: string): string => {
   return config.color
 }
 
-export const getNotificationIconFor = (notificationType: string): string => {
+export const getNotificationIconFor = (notificationType: string): IconName => {
   const config = NOTIFICATION_CONFIG[notificationType]
   if (!config) throw new Error('Unhandled notification type')
   return config.icon

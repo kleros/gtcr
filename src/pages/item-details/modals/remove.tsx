@@ -3,12 +3,12 @@ import { Descriptions, Typography, Divider, Button } from 'components/ui'
 import humanizeDuration from 'humanize-duration'
 import { useAccount, usePublicClient, useWalletClient, useChainId } from 'wagmi'
 import { simulateContract } from '@wagmi/core'
-import { getAddress } from 'viem'
+import { getAddress, type Address } from 'viem'
 import { abi as _gtcr } from '@kleros/tcr/build/contracts/GeneralizedTCR.json'
 import { TCRViewContext } from 'contexts/tcr-view-context'
 import EnsureAuth from 'components/ensure-auth'
 import ETHAmount from 'components/eth-amount'
-import EvidenceForm from 'components/evidence-form'
+import EvidenceForm, { EvidenceFormValues } from 'components/evidence-form'
 import useNativeCurrency from 'hooks/native-currency'
 import useNativeBalance from 'hooks/use-native-balance'
 import { useAtlasProvider } from '@kleros/kleros-app'
@@ -28,6 +28,7 @@ interface RemoveModalProps {
   item: SubgraphItem
   itemName?: string
   fileURI?: string
+  onCancel: () => void
   [key: string]: unknown
 }
 
@@ -42,7 +43,7 @@ const RemoveModal = ({
   const publicClient = usePublicClient()
   const { data: walletClient } = useWalletClient()
   const { removalDeposit, tcrAddress, metaEvidence, challengePeriodDuration } =
-    useContext(TCRViewContext)
+    useContext(TCRViewContext) ?? {}
   const nativeCurrency = useNativeCurrency()
   const { balance: nativeBalance } = useNativeBalance()
   const { uploadFile } = useAtlasProvider()
@@ -57,21 +58,32 @@ const RemoveModal = ({
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const removeItem = useCallback(
-    async ({ title, description, evidenceAttachment } = {}) => {
+    async ({
+      title,
+      description,
+      evidenceAttachment,
+    }: EvidenceFormValues = {}) => {
+      if (
+        !tcrAddress ||
+        !account ||
+        !walletClient ||
+        !publicClient ||
+        !removalDeposit
+      )
+        return
       setIsSubmitting(true)
       try {
         let ipfsEvidencePath = ''
-        if (metadata && requireRemovalEvidence) {
+        if (metadata && requireRemovalEvidence)
           ipfsEvidencePath = await uploadEvidence({
             title: title || 'Removal Justification',
-            description,
-            attachment: evidenceAttachment as File | undefined,
+            description: description ?? '',
+            attachment: evidenceAttachment,
             uploadFile,
           })
-        }
 
         const { request } = await simulateContract(wagmiConfig, {
-          address: tcrAddress,
+          address: tcrAddress as Address,
           abi: _gtcr,
           functionName: 'removeItem',
           args: [item.itemID, ipfsEvidencePath],
@@ -148,7 +160,11 @@ const RemoveModal = ({
               form={EVIDENCE_FORM_ID}
               htmlType="submit"
               disabled={!!insufficientBalance}
-              onClick={metadata && !requireRemovalEvidence ? removeItem : null}
+              onClick={
+                metadata && !requireRemovalEvidence
+                  ? () => removeItem()
+                  : undefined
+              }
               loading={isSubmitting}
             >
               Send
@@ -182,7 +198,7 @@ const RemoveModal = ({
         message={`Note that this is a deposit, not a fee and it will be reimbursed if the removal is accepted. ${
           challengePeriodDuration &&
           `The challenge period lasts ${humanizeDuration(
-            `${challengePeriodDuration.toNumber() * 1000}.`,
+            challengePeriodDuration.toNumber() * 1000,
           )}`
         }.`}
         type="info"

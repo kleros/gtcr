@@ -1,10 +1,11 @@
 import React, { useState } from 'react'
+import type { Address } from 'viem'
 import { Typography, Button } from 'components/ui'
 import { useAccount, usePublicClient, useWalletClient } from 'wagmi'
 import { simulateContract } from '@wagmi/core'
 import _gtcr from 'assets/abis/PermanentGTCR.json'
 import EnsureAuth from 'components/ensure-auth'
-import EvidenceForm from 'components/evidence-form'
+import EvidenceForm, { EvidenceFormValues } from 'components/evidence-form'
 import { useAtlasProvider } from '@kleros/kleros-app'
 import { uploadEvidence } from 'utils/upload-evidence'
 import { wrapWithToast, errorToast } from 'utils/wrap-with-toast'
@@ -14,24 +15,30 @@ import { StyledModal } from './challenge'
 
 interface EvidenceModalProps {
   item: SubgraphItem
-  [key: string]: unknown
+  visible?: boolean
+  onCancel: () => void
 }
 
 const EvidenceModal = ({ item, ...rest }: EvidenceModalProps) => {
-  const tcrAddress = item?.registry?.id
+  const tcrAddress = (item?.registry as { id?: Address } | undefined)?.id
   const { address: account } = useAccount()
   const publicClient = usePublicClient()
   const { data: walletClient } = useWalletClient()
   const { uploadFile } = useAtlasProvider()
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const submitEvidence = async ({ title, description, evidenceAttachment }) => {
+  const submitEvidence = async ({
+    title,
+    description,
+    evidenceAttachment,
+  }: EvidenceFormValues) => {
+    if (!tcrAddress || !walletClient || !publicClient) return
     setIsSubmitting(true)
     try {
       const ipfsEvidencePath = await uploadEvidence({
-        title,
-        description,
-        attachment: evidenceAttachment as File | undefined,
+        title: title ?? '',
+        description: description ?? '',
+        attachment: evidenceAttachment,
         uploadFile,
       })
 

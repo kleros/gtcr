@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react'
+import type { Address } from 'viem'
 import styled from 'styled-components'
+import { BigNumber } from 'ethers'
 import { Modal, Typography, Button, Spin, Tooltip } from 'components/ui'
 import Icon from 'components/ui/Icon'
 import _gtcr from 'assets/abis/PermanentGTCR.json'
@@ -8,7 +10,7 @@ import ETHAmount from 'components/eth-amount'
 import { useAccount, usePublicClient, useWalletClient, useChainId } from 'wagmi'
 import { simulateContract } from '@wagmi/core'
 import { erc20Abi, getAddress } from 'viem'
-import EvidenceForm from 'components/evidence-form'
+import EvidenceForm, { EvidenceFormValues } from 'components/evidence-form'
 import { useAtlasProvider } from '@kleros/kleros-app'
 import { uploadEvidence } from 'utils/upload-evidence'
 import ListingCriteriaLink from 'components/listing-criteria-link'
@@ -34,11 +36,18 @@ export const StyledModal = styled(Modal)`
   }
 `
 
+interface ChallengeRegistry {
+  id: Address
+  token: Address
+  challengeStakeMultiplier: string
+  arbitrationSettings: { metadata: { policyURI: string } }[]
+}
+
 interface ChallengeModalProps {
   item: SubgraphItem
   itemName?: string
   onCancel: () => void
-  arbitrationCost: BigNumber
+  arbitrationCost?: BigNumber
   [key: string]: unknown
 }
 
@@ -49,7 +58,7 @@ const ChallengeModal = ({
   arbitrationCost,
   ...rest
 }: ChallengeModalProps) => {
-  const registry = item.registry
+  const registry = item.registry as ChallengeRegistry
   const fileURI = registry.arbitrationSettings[0].metadata.policyURI
   const { address: account } = useAccount()
   const chainId = useChainId()
@@ -60,14 +69,15 @@ const ChallengeModal = ({
 
   const [balance, setBalance] = useState(0n)
   const [allowance, setAllowance] = useState(0n)
-  const [nativeBalance, setNativeBalance] = useState<BigNumber | undefined>()
+  const [nativeBalance, setNativeBalance] = useState<bigint | undefined>()
   const [checkingToken, setCheckingToken] = useState(false)
   const [isApproving, setIsApproving] = useState(false)
   const [isChallenging, setIsChallenging] = useState(false)
   const { symbol: tokenSymbol } = useTokenSymbol(registry.token)
 
   const challengeStake =
-    (BigInt(item.stake) * BigInt(registry.challengeStakeMultiplier)) / 10_000n
+    (BigInt(item.stake ?? '0') * BigInt(registry.challengeStakeMultiplier)) /
+    10_000n
 
   const checkTokenStatus = useCallback(async () => {
     if (!account || !publicClient || !registry.token) return
@@ -112,6 +122,7 @@ const ChallengeModal = ({
   )
 
   const handleApprove = useCallback(async () => {
+    if (!walletClient || !publicClient) return
     setIsApproving(true)
     try {
       const { request } = await simulateContract(wagmiConfig, {
@@ -152,13 +163,14 @@ const ChallengeModal = ({
     title,
     description,
     evidenceAttachment,
-  }) => {
+  }: EvidenceFormValues) => {
+    if (!walletClient || !publicClient || !account || !arbitrationCost) return
     setIsChallenging(true)
     try {
       const ipfsEvidencePath = await uploadEvidence({
         title: title || 'Challenge Justification',
-        description,
-        attachment: evidenceAttachment as File | undefined,
+        description: description ?? '',
+        attachment: evidenceAttachment,
         uploadFile,
       })
 

@@ -79,7 +79,7 @@ const ControlWrapper = styled.div`
 `
 
 interface FormProps {
-  onSubmit?: (e: React.FormEvent) => void
+  onSubmit?: React.FormEventHandler<HTMLFormElement>
   id?: string
   layout?: string
   style?: React.CSSProperties
@@ -112,7 +112,7 @@ const Form: FormComponent = ({
   className,
   children,
 }) => {
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit: React.FormEventHandler<HTMLFormElement> = (e) => {
     e.preventDefault()
     onSubmit && onSubmit(e)
   }
@@ -134,8 +134,6 @@ const FormItem: React.FC<FormItemProps> = ({
   label,
   validateStatus,
   help,
-  _hasFeedback,
-  _name,
   style,
   className,
   children,

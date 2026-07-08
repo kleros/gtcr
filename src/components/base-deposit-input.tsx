@@ -19,12 +19,12 @@ const TotalCostContainer = styled.span`
 `
 
 interface BaseDepositInputProps {
-  label?: string | React.ReactNode | null
+  label?: React.ReactNode
   name: string
-  error?: string | null
-  touched?: boolean | null
-  hasFeedback?: boolean | null
-  disabled?: boolean | null
+  error?: string
+  touched?: boolean
+  hasFeedback?: boolean
+  disabled?: boolean
   arbitrationCost?: BigNumber
   values: Record<string, unknown>
 }
@@ -62,14 +62,14 @@ const BaseDepositInput = ({
             label={label}
             validateStatus={error && touched ? 'error' : undefined}
             help={error && touched ? error : ''}
-            hasFeedback={hasFeedback ?? undefined}
+            hasFeedback={hasFeedback}
           >
             <BasedDepositContainer>
               <Input
                 addonAfter={nativeCurrency}
                 placeholder="0.1"
                 step={0.0001}
-                disabled={disabled ?? undefined}
+                disabled={disabled}
                 {...field}
               />
               <TotalCostContainer>

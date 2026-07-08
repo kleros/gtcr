@@ -24,7 +24,7 @@ import useUrlChainId from 'hooks/use-url-chain-id'
 import { useAccount, usePublicClient, useWalletClient, useChainId } from 'wagmi'
 import { useQuery } from '@tanstack/react-query'
 import { simulateContract } from '@wagmi/core'
-import { getAddress, keccak256, encodePacked } from 'viem'
+import { getAddress, keccak256, encodePacked, type Address } from 'viem'
 import { useAtlasProvider } from '@kleros/kleros-app'
 import { JSON_UPLOAD_ROLE } from 'utils/atlas-roles'
 import useNativeCurrency from 'hooks/native-currency'
@@ -80,9 +80,9 @@ const SubmitConnectModal = (props: SubmitConnectModalProps) => {
   const [debouncedBadgeTCRAddr] = useDebounce(badgeTCRAddr, 300)
 
   const [match, setMatch] = useState<{
-    parentTCR: string
-    connectedTCR: string
-    badgeTCR: string
+    parentTCR: string | undefined
+    connectedTCR: string | undefined
+    badgeTCR: string | undefined
     columns: (number | null)[]
   }>()
 
@@ -130,7 +130,7 @@ const SubmitConnectModal = (props: SubmitConnectModalProps) => {
 
   const NONE = 'None'
   const handleChange = useCallback(
-    (i: number, j: number) => {
+    (i: number, j: string | number) => {
       if (!badgeTCRMetadata || !tcrMetaEvidence) return
       let newState
       if (!match)
@@ -138,14 +138,14 @@ const SubmitConnectModal = (props: SubmitConnectModalProps) => {
           parentTCR: debouncedTCRAddr,
           connectedTCR: relTCRAddress,
           badgeTCR: debouncedBadgeTCRAddr,
-          columns: badgeTCRMetadata.columns.map(() => null),
+          columns: (badgeTCRMetadata.columns ?? []).map(() => null),
         }
       else newState = { ...match }
 
       if (Number(j) === 0)
         // User did not select a column (i.e. selected None).
         newState.columns[i] = null
-      else newState.columns[i] = j - 1
+      else newState.columns[i] = Number(j) - 1
       setMatch(newState)
     },
     [
@@ -161,7 +161,15 @@ const SubmitConnectModal = (props: SubmitConnectModalProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const handleSubmit = useCallback(async () => {
-    if (!relTCRMetaEvidence) return
+    if (
+      !relTCRMetaEvidence ||
+      !relTCRAddress ||
+      !relTCRSubmissionDeposit ||
+      !walletClient ||
+      !publicClient ||
+      !account
+    )
+      return
     setIsSubmitting(true)
     try {
       const matchFile = new File([JSON.stringify(match)], 'match-file.json', {
@@ -169,7 +177,7 @@ const SubmitConnectModal = (props: SubmitConnectModalProps) => {
       })
       const fileURI = await uploadFile(matchFile, JSON_UPLOAD_ROLE)
       if (!fileURI) throw new Error('Failed to upload match file to IPFS.')
-      const { columns } = relTCRMetaEvidence.metadata
+      const { columns } = relTCRMetaEvidence.metadata ?? {}
 
       const values = {
         Address: badgeTCRAddr,
@@ -186,7 +194,7 @@ const SubmitConnectModal = (props: SubmitConnectModalProps) => {
         throw new Error('Failed to upload item metadata to IPFS.')
 
       const { request } = await simulateContract(wagmiConfig, {
-        address: relTCRAddress,
+        address: relTCRAddress as Address,
         abi: _gtcr,
         functionName: 'addItem',
         args: [ipfsEvidencePath],
@@ -364,7 +372,7 @@ const SubmitConnectModal = (props: SubmitConnectModalProps) => {
         the search.
       </Typography.Paragraph>
       {badgeTCRMetadata &&
-        badgeTCRMetadata.columns.map((column, i) => (
+        badgeTCRMetadata.columns?.map((column, i) => (
           <Row key={i} gutter={[8, 8]}>
             <Col span={12}>
               <span>
@@ -378,20 +386,26 @@ const SubmitConnectModal = (props: SubmitConnectModalProps) => {
               </span>
             </Col>
             <Col span={12}>
-              {tcrMetaEvidence.metadata ? (
+              {tcrMetaEvidence?.metadata ? (
                 <Select
                   defaultValue={NONE}
                   style={{ width: '100%' }}
-                  onChange={(_, { key }) => handleChange(i, key)}
+                  onChange={(value) =>
+                    handleChange(
+                      i,
+                      typeof value === 'object' ? value.key : value,
+                    )
+                  }
                   disabled={!column.isIdentifier}
                 >
-                  {[{ label: NONE }, ...tcrMetaEvidence.metadata.columns].map(
-                    (column, j) => (
-                      <Select.Option value={column.label} key={j}>
-                        {column.label}
-                      </Select.Option>
-                    ),
-                  )}
+                  {[
+                    { label: NONE },
+                    ...(tcrMetaEvidence?.metadata?.columns ?? []),
+                  ].map((column, j) => (
+                    <Select.Option value={column.label} key={j}>
+                      {column.label}
+                    </Select.Option>
+                  ))}
                 </Select>
               ) : (
                 <StyledSkeleton
