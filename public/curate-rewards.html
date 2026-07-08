@@ -222,9 +222,9 @@
       const stats = [
         first,
         ["Recipients", String(st.recipients)],
-        ["Submissions", fmtPnk(st.submissions) + " PNK"],
-        ["Removals", fmtPnk(st.removals) + " PNK"],
-        ["ATQ", fmtPnk(st.atq) + " PNK"],
+        ["Submission rewards", fmtPnk(st.submissions) + " PNK"],
+        ["Removal rewards", fmtPnk(st.removals) + " PNK"],
+        ["ATQ rewards", fmtPnk(st.atq) + " PNK"],
         ["Total distributed", fmtPnk(st.total) + " PNK"],
       ];
       document.getElementById("stats").innerHTML = stats
@@ -326,18 +326,18 @@
     function walletColumns() {
       return [
         { key: "addr", label: "Recipient", align: "left", cell: (r) => `<td class="addr">${esc(short(r.addr))}</td>` },
-        { key: "submissions", label: "Submissions", align: "right", cell: numCell("submissions") },
-        { key: "removals", label: "Removals", align: "right", cell: numCell("removals") },
-        { key: "atq", label: "ATQ", align: "right", cell: numCell("atq") },
+        { key: "submissions", label: "Submission rewards", align: "right", cell: numCell("submissions") },
+        { key: "removals", label: "Removal rewards", align: "right", cell: numCell("removals") },
+        { key: "atq", label: "ATQ rewards", align: "right", cell: numCell("atq") },
         { key: "total", label: "Total (PNK)", align: "right", cell: numCell("total", { strong: true }) },
       ];
     }
     function monthlyColumns() {
       return [
         { key: "month", label: "Month", align: "left", cell: (r) => `<td>${esc(r.month)}</td>` },
-        { key: "submissions", label: "Submissions", align: "right", cell: numCell("submissions") },
-        { key: "removals", label: "Removals", align: "right", cell: numCell("removals") },
-        { key: "atq", label: "ATQ", align: "right", cell: numCell("atq") },
+        { key: "submissions", label: "Submission rewards", align: "right", cell: numCell("submissions") },
+        { key: "removals", label: "Removal rewards", align: "right", cell: numCell("removals") },
+        { key: "atq", label: "ATQ rewards", align: "right", cell: numCell("atq") },
         { key: "total", label: "Total (PNK)", align: "right", cell: numCell("total", { strong: true }) },
       ];
     }
