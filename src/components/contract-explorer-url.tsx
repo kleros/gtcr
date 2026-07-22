@@ -30,7 +30,12 @@ const ContractExplorerUrl: React.FC<{
   networkId: number
   contractAddress: string
 }> = ({ networkId, contractAddress }) => {
-  const url = `${getAddressPage({ networkId, address: contractAddress })}#code`
+  const addressPage = getAddressPage({ networkId, address: contractAddress })
+  // Blockscout uses a query param for the contract tab, Etherscan-style
+  // explorers use a hash anchor.
+  const url = addressPage.includes('blockscout')
+    ? `${addressPage}?tab=contract`
+    : `${addressPage}#code`
 
   return (
     <StyledLink href={url} target="_blank" rel="noopener noreferrer">

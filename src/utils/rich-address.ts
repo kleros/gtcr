@@ -5,6 +5,8 @@
  * `/tx/`${txHash}`
  */
 
+import { gnosis } from 'config/chains'
+
 export type Reference = {
   id: string
   deprecated?: boolean
@@ -76,7 +78,7 @@ export const references: Reference[] = [
     namespaceId: 'eip155',
     name: 'Gnosis Chain',
     label: 'GNO',
-    explorer: 'gnosisscan.io',
+    explorer: new URL(gnosis.blockExplorers.default.url).host,
   },
   {
     id: '137',

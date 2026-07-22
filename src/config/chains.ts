@@ -1,9 +1,25 @@
 import {
   type AppKitNetwork,
   mainnet,
-  gnosis,
+  gnosis as gnosisBase,
   sepolia,
 } from '@reown/appkit/networks'
+
+// Gnosisscan is being deprecated; override the chain default with the
+// official Blockscout instance. Single source of truth for this URL —
+// everything else derives from the `gnosis` object below.
+const GNOSIS_BLOCKSCOUT_URL = 'https://gnosis.blockscout.com'
+
+export const gnosis = {
+  ...gnosisBase,
+  blockExplorers: {
+    default: {
+      name: 'Blockscout',
+      url: GNOSIS_BLOCKSCOUT_URL,
+      apiUrl: `${GNOSIS_BLOCKSCOUT_URL}/api`,
+    },
+  },
+}
 
 // All chains supported by this app.
 // Unlike kleros-v2 which is single-chain-at-a-time,
@@ -42,5 +58,5 @@ export const getNativeCurrency = (
   return chain?.nativeCurrency ?? { name: 'Ether', symbol: 'ETH', decimals: 18 }
 }
 
-export { mainnet, gnosis, sepolia }
+export { mainnet, sepolia }
 export type { AppKitNetwork }
