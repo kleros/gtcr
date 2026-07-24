@@ -42,8 +42,8 @@ export const NETWORKS_INFO = Object.freeze({
     rpc: gnosis.rpcUrls?.default?.http ?? [],
     explorers: [
       {
-        name: gnosis.blockExplorers?.default?.name ?? 'Gnosisscan',
-        url: gnosis.blockExplorers?.default?.url ?? 'https://gnosisscan.io',
+        name: gnosis.blockExplorers.default.name,
+        url: gnosis.blockExplorers.default.url,
       },
     ],
   },
