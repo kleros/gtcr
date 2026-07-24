@@ -226,7 +226,7 @@ export const references: Reference[] = [
     namespaceId: 'eip155',
     name: 'zkSync Mainnet',
     label: 'zkSync',
-    explorer: 'explorer.zksync.io',
+    explorer: 'zksync.blockscout.com',
   },
   {
     id: '146',
@@ -283,6 +283,13 @@ export const references: Reference[] = [
     name: 'World Chain',
     label: 'ETH',
     explorer: 'worldscan.org',
+  },
+  {
+    id: '4663',
+    namespaceId: 'eip155',
+    name: 'Robinhood Chain',
+    label: 'Robinhood',
+    explorer: 'robinhoodchain.blockscout.com',
   },
   {
     id: '-239',
