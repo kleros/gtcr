@@ -36,24 +36,33 @@ export const getAlchemyRpcUrl = (chainId: number): string | undefined => {
  * Mainnet and Sepolia stay Alchemy-first because public mainnet endpoints
  * reject the wide-range `getLogs` scans used by the badges views.
  */
-const getOrderedRpcUrls = (chainId: number): string[] => {
+// Only Alchemy is batched: its batch support is known-good, while public
+// endpoints vary — a batching quirk on a primary endpoint would defeat the
+// fallback ordering. `batch` is tagged where each URL is built so no code
+// needs to re-derive an endpoint's provenance from its URL string.
+interface RpcEndpoint {
+  url: string
+  batch: boolean
+}
+
+const getOrderedRpcEndpoints = (chainId: number): RpcEndpoint[] => {
   const publicUrl = SUPPORTED_CHAINS.find((c) => Number(c.id) === chainId)
     ?.rpcUrls.default.http[0]
   const alchemyUrl = getAlchemyRpcUrl(chainId)
-  const urls =
-    chainId === gnosis.id ? [publicUrl, alchemyUrl] : [alchemyUrl, publicUrl]
-  return urls.filter((u): u is string => !!u)
+  const publicEndpoint = publicUrl ? [{ url: publicUrl, batch: false }] : []
+  const alchemyEndpoint = alchemyUrl ? [{ url: alchemyUrl, batch: true }] : []
+  return chainId === gnosis.id
+    ? [...publicEndpoint, ...alchemyEndpoint]
+    : [...alchemyEndpoint, ...publicEndpoint]
 }
-
-// Only Alchemy is batched: its batch support is known-good, while public
-// endpoints vary — a batching quirk on a primary endpoint would defeat the
-// fallback ordering.
-const toTransport = (url: string) =>
-  http(url, url.includes('.g.alchemy.com') ? { batch: true } : undefined)
 
 export const transports: Record<number, Transport> = Object.fromEntries(
   SUPPORTED_CHAINS.map((chain) => [
     chain.id,
-    fallback(getOrderedRpcUrls(Number(chain.id)).map(toTransport)),
+    fallback(
+      getOrderedRpcEndpoints(Number(chain.id)).map(({ url, batch }) =>
+        http(url, batch ? { batch: true } : undefined),
+      ),
+    ),
   ]),
 )
