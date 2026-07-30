@@ -2,10 +2,15 @@ import { useMemo } from 'react'
 import { useClient, useConnectorClient } from 'wagmi'
 import { providers } from 'ethers'
 
+// Cap per-endpoint stalls so a hanging endpoint falls through to the next
+// URL instead of holding requests for ethers' 120s default.
+const RPC_TIMEOUT_MS = 30_000
+
 interface ViemTransport {
   type?: string
-  value?: { transports?: Array<{ value?: { url?: string } }>; url?: string }
-  transports?: Array<{ value?: { url?: string } }>
+  config?: { type?: string }
+  value?: { transports?: ViemTransport[]; url?: string }
+  transports?: ViemTransport[]
   url?: string
 }
 
@@ -20,19 +25,67 @@ interface ViemClient {
 }
 
 /**
- * Extract the primary RPC URL from a viem transport.
+ * Collect the http RPC URLs from a viem transport, in fallback order.
  *
- * WagmiAdapter from @reown/appkit-adapter-wagmi wraps all transports
- * in a fallback() transport, appending its own RPC proxy as an extra
- * child.  We only need our own (first) transport — the Alchemy RPC
- * configured in config/rpc.ts — so we take just that.
+ * Two shapes appear here: the client's top-level transport is flattened
+ * ({...config, ...value}) while nested child transports keep their fields
+ * under `config`/`value`. WagmiAdapter from @reown/appkit-adapter-wagmi
+ * wraps whatever we configure in config/rpc.ts in another fallback() with
+ * Reown's RPC proxy appended, so our own fallback list arrives nested one
+ * level deep — hence the recursion. The proxy is kept as a last-resort leg.
  */
-function getUrlFromTransport(transport: ViemTransport): string | undefined {
-  if (transport.type === 'fallback') {
+function getUrlsFromTransport(transport: ViemTransport | undefined): string[] {
+  if (!transport) return []
+  const type = transport.type ?? transport.config?.type
+  if (type === 'fallback') {
     const children = transport.value?.transports ?? transport.transports ?? []
-    return children[0]?.value?.url
+    return children.flatMap(getUrlsFromTransport)
   }
-  return transport.value?.url ?? transport.url
+  const url = transport.value?.url ?? transport.url
+  return typeof url === 'string' && url.startsWith('http') ? [url] : []
+}
+
+/**
+ * JsonRpcProvider that retries each request on the next URL when the
+ * current one errors, in order — the same sequential-pool strategy as
+ * utils/fetch-policy-history.ts. Built on StaticJsonRpcProvider because
+ * plain JsonRpcProvider re-verifies the chain with an `eth_chainId`
+ * round-trip on every getNetwork(), which makes a dead endpoint fail
+ * calls that never needed it. (ethers' own FallbackProvider has exactly
+ * that flaw: its detectNetwork() Promise.alls every member, so one dead
+ * member poisons all reads.)
+ */
+class SequentialFallbackProvider extends providers.StaticJsonRpcProvider {
+  private fallbacks: providers.StaticJsonRpcProvider[]
+
+  constructor(urls: string[], network: providers.Networkish) {
+    super({ url: urls[0], timeout: RPC_TIMEOUT_MS }, network)
+    this.fallbacks = urls
+      .slice(1)
+      .map(
+        (url) =>
+          new providers.StaticJsonRpcProvider(
+            { url, timeout: RPC_TIMEOUT_MS },
+            network,
+          ),
+      )
+  }
+
+  async perform(method: string, params: unknown): Promise<unknown> {
+    let lastError: unknown
+    try {
+      return await super.perform(method, params)
+    } catch (err) {
+      lastError = err
+    }
+    for (const fallbackProvider of this.fallbacks)
+      try {
+        return await fallbackProvider.perform(method, params)
+      } catch (err) {
+        lastError = err
+      }
+    throw lastError
+  }
 }
 
 function clientToProvider(
@@ -46,10 +99,15 @@ function clientToProvider(
     ensAddress: chain.contracts?.ensRegistry?.address,
   }
 
-  const url = getUrlFromTransport(transport)
-  if (!url) return undefined
+  const urls = getUrlsFromTransport(transport)
+  if (urls.length === 0) return undefined
+  if (urls.length === 1)
+    return new providers.StaticJsonRpcProvider(
+      { url: urls[0], timeout: RPC_TIMEOUT_MS },
+      network,
+    )
 
-  return new providers.JsonRpcProvider(url, network)
+  return new SequentialFallbackProvider(urls, network)
 }
 
 function clientToSigner(

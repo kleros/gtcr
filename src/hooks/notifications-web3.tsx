@@ -129,6 +129,11 @@ const useNotificationWeb3 = () => {
         setLatestBlock(block.number)
       } catch (err) {
         console.error('Error fetching timestamp', err)
+        // Every RPC endpoint failed. Fall back to wall clock — block
+        // timestamps track it within seconds — so views that gate on the
+        // chain clock (e.g. item cards) still render indexer data instead
+        // of loading skeletons forever.
+        setTimestamp(BigNumber.from(Math.floor(Date.now() / 1000)))
       }
     })()
   }, [timestamp, provider])
