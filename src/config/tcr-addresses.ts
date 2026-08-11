@@ -4,8 +4,8 @@ export type validChains = '1' | '100' | '11155111' | 1 | 100 | 11155111
 type ChainMap<T> = Readonly<Record<number | string, T | undefined>>
 
 export const defaultTcrAddresses: ChainMap<string> = {
-  '1': '0xba0304273a54dfec1fc7f4bccbf4b15519aecf15',
-  '100': '0x2442D40B0aeCad0298C2724A97F2f1BbDF2C2615',
+  '1': '0x2acf59a420ca888f46d46974f62570f8a38cd4da',
+  '100': '0x2418D887d0d0Fe03b793A6aF4321fa488226A0b5',
   '11155111': '0xD965Ce430afE0423Ff19A5eb08F7C5722EFabCaF',
 } as const
 
@@ -19,10 +19,6 @@ export const defaultEvidenceDisplayUriPermanent: ChainMap<string> = {
   '1': '/ipfs/QmbNJRDrrd5r9cHeApTP7pZaM7jgacDFMLED5Lj1RJMn79/index.html',
   '100': '/ipfs/QmbNJRDrrd5r9cHeApTP7pZaM7jgacDFMLED5Lj1RJMn79/index.html',
   '11155111': '/ipfs/QmbNJRDrrd5r9cHeApTP7pZaM7jgacDFMLED5Lj1RJMn79/index.html',
-} as const
-
-export const defaultEvidenceDisplayUriClassic: ChainMap<string> = {
-  '1': '/ipfs/QmPJ5H5YF4fbSxA5j53CcmZAhGywxKPPiiWvJM7Zp8Zx9T/index.html',
 } as const
 
 export const gtcrViewAddresses: ChainMap<string> = {
@@ -46,12 +42,6 @@ export const lightBatchWithdrawAddresses: ChainMap<string> = {
   '1': '0x5C6363cFA9462Ae11e22d2A5A0eb15dbB8719E4A',
   '100': '0x36B00c87553330E4351ED0CB287ed3917c12a197',
   '11155111': '0x43458fa7b40Fd7Bb32cC3a2b95186F91A95Ef0c8',
-} as const
-
-export const factoryAddresses: ChainMap<string> = {
-  '1': '0xe9dd523600b74b8ef0af164687079a6c437f9cd5',
-  '100': '0x794Cee5a6e1501b633eC13b8c1e327d9860FE039',
-  '11155111': '0xcB4B48d2A7a44247A00048963F169d2b4Ab045a6',
 } as const
 
 export const lgtcrFactoryAddresses: ChainMap<string> = {

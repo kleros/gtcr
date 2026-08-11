@@ -72,20 +72,25 @@ const ItemStatusCard = ({
   const { arbitrator: klerosAddress, uiURL } = klerosAddresses[chainId] || {}
 
   // Get remaining challenge period, if applicable and build countdown.
+  // Only pending (unresolved, undisputed) requests are challengeable —
+  // resolved requests must not show a countdown even if the registry's
+  // challenge period duration was increased since they resolved.
   const challengeRemainingTime = useMemo(() => {
     if (
       !item ||
-      item.disputed ||
-      !item.submissionTime ||
+      !request ||
+      request.disputed ||
+      request.resolved ||
+      !request.submissionTime ||
       !challengePeriodDuration
     )
       return
 
-    const { submissionTime } = item
     const deadline =
-      (Number(submissionTime) + challengePeriodDuration.toNumber()) * 1000
+      (Number(request.submissionTime) + challengePeriodDuration.toNumber()) *
+      1000
     return deadline - Date.now()
-  }, [challengePeriodDuration, item])
+  }, [challengePeriodDuration, item, request])
   const challengeCountdown = useHumanizedCountdown(challengeRemainingTime)
   const nativeCurrency = useNativeCurrency()
 

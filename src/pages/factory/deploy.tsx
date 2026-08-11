@@ -21,8 +21,8 @@ import { parseWagmiError } from 'utils/parse-wagmi-error'
 import { wagmiConfig } from 'config/wagmi'
 import useWindowDimensions from 'hooks/window-dimensions'
 import EnsureAuth from 'components/ensure-auth'
-import SubmitModal from '../item-details/modals/submit'
-import useTcrView from 'hooks/tcr-view'
+import SubmitModal from '../light-item-details/modals/submit'
+import useLightTcrView from 'hooks/light-tcr-view'
 import {
   defaultEvidenceDisplayUri,
   defaultTcrAddresses,
@@ -297,7 +297,7 @@ const Deploy = ({ setTxState, tcrState, setTcrState }: DeployProps) => {
   const batcherAddress = txBatcherAddresses[chainId]
   const evidenceDisplayInterfaceURI = defaultEvidenceDisplayUri[chainId]
   const { submissionDeposit, metaEvidence, challengePeriodDuration } =
-    useTcrView(defaultTCRAddress ?? '')
+    useLightTcrView(defaultTCRAddress ?? '')
   const { uploadFile } = useAtlasProvider()
 
   const onDeploy = async () => {
