@@ -28,12 +28,6 @@ export const preloadPermanentFactory = () =>
 const Factory = lazy(preloadFactory)
 const PermanentFactory = lazy(preloadPermanentFactory)
 
-/** Redirect legacy classic-factory URLs to the standard factory. */
-const ClassicFactoryRedirect = () => {
-  const { chainId } = useParams()
-  return <Navigate to={`/factory/${chainId}`} replace />
-}
-
 /** Forces children to fully remount when URL params change. */
 const RouteReset = ({ children }: { children: React.ReactNode }) => {
   const params = useParams()
@@ -72,10 +66,6 @@ const AppRouter = () => {
           }
         />
         <Route path="/factory/:chainId" element={<Factory />} />
-        <Route
-          path="/factory-classic/:chainId"
-          element={<ClassicFactoryRedirect />}
-        />
         <Route
           path="/factory-permanent/:chainId"
           element={<PermanentFactory />}
