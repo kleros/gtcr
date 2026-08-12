@@ -15,7 +15,7 @@ import { parseWagmiError } from 'utils/parse-wagmi-error'
 import { wagmiConfig } from 'config/wagmi'
 import useWindowDimensions from 'hooks/window-dimensions'
 import EnsureAuth from 'components/ensure-auth'
-import useTcrView from 'hooks/tcr-view'
+import useLightTcrView from 'hooks/light-tcr-view'
 import {
   defaultEvidenceDisplayUriPermanent,
   defaultTcrAddresses,
@@ -154,7 +154,7 @@ const Deploy = ({ setTxState, tcrState, setTcrState }: DeployProps) => {
   const defaultTCRAddress = defaultTcrAddresses[chainId]
   const evidenceDisplayInterfaceURI =
     defaultEvidenceDisplayUriPermanent[chainId]
-  const { metaEvidence } = useTcrView(defaultTCRAddress ?? '')
+  const { metaEvidence } = useLightTcrView(defaultTCRAddress ?? '')
   const { uploadFile } = useAtlasProvider()
 
   const onDeploy = async () => {

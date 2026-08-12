@@ -22,12 +22,10 @@ const ItemDetailsRouter = lazy(() => import('pages/item-details-router'))
 
 // Exported for preloading on link hover (instant navigation feel)
 export const preloadFactory = () => import('pages/factory/index')
-export const preloadClassicFactory = () => import('pages/factory-classic/index')
 export const preloadPermanentFactory = () =>
   import('pages/factory-permanent/index')
 
 const Factory = lazy(preloadFactory)
-const ClassicFactory = lazy(preloadClassicFactory)
 const PermanentFactory = lazy(preloadPermanentFactory)
 
 /** Forces children to fully remount when URL params change. */
@@ -68,7 +66,6 @@ const AppRouter = () => {
           }
         />
         <Route path="/factory/:chainId" element={<Factory />} />
-        <Route path="/factory-classic/:chainId" element={<ClassicFactory />} />
         <Route
           path="/factory-permanent/:chainId"
           element={<PermanentFactory />}

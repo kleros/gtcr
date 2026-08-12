@@ -290,10 +290,9 @@ const Items = () => {
     })()
   }, [])
 
-  const items = useMemo(
-    () => (itemsQuery.data ? itemsQuery.data.items : []),
-    [itemsQuery.data],
-  )
+  // The graphql batcher resolves failed requests to {}, so guard against
+  // a truthy result that has no items field.
+  const items = useMemo(() => itemsQuery.data?.items ?? [], [itemsQuery.data])
 
   useEffect(() => {
     if (!registryQuery.data || !registryQuery.data.registry) return

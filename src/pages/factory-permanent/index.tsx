@@ -375,7 +375,7 @@ const FactoryPermanentPage = () => {
   return (
     <>
       <StyledBanner>
-        <StyledTitle>Create a List (Permanent Curate)</StyledTitle>
+        <StyledTitle>Create a List (Stake Curate)</StyledTitle>
       </StyledBanner>
       <StyledLayoutContent>
         <Steps current={currStep - 1}>

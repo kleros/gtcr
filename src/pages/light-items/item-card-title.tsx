@@ -98,12 +98,21 @@ const ItemCardTitle = ({
     useContext(LightTCRViewContext)?.challengePeriodDuration
   const timestamp = useContext(WalletContext)?.timestamp
   const disputed = tcrData?.disputed
+  const resolved = tcrData?.resolved
   const submissionTime = tcrData?.submissionTime
   const nativeCurrency = useNativeCurrency()
 
   // Get remaining challenge period, if applicable and build countdown.
+  // Resolved requests are no longer challengeable, so changing the registry's
+  // challenge period duration must not resurrect their countdown.
   const challengeRemainingTime = useMemo(() => {
-    if (!tcrData || disputed || !submissionTime || !challengePeriodDuration)
+    if (
+      !tcrData ||
+      disputed ||
+      resolved ||
+      !submissionTime ||
+      !challengePeriodDuration
+    )
       return
 
     const deadline =
@@ -111,7 +120,7 @@ const ItemCardTitle = ({
       1000
 
     return deadline - Date.now()
-  }, [challengePeriodDuration, disputed, submissionTime, tcrData])
+  }, [challengePeriodDuration, disputed, resolved, submissionTime, tcrData])
 
   const challengeCountdown = useHumanizedCountdown(challengeRemainingTime, 1)
 

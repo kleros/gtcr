@@ -369,7 +369,7 @@ const AppBar = () => {
       // Only navigate — useTcrNetwork handles the wallet switch when the
       // new page mounts, avoiding a double switchChain prompt.
       const factoryMatch = location.pathname.match(
-        /^\/(factory(?:-classic|-permanent)?)\//,
+        /^\/(factory(?:-permanent)?)\//,
       )
       if (factoryMatch) navigate(`/${factoryMatch[1]}/${chainId}`)
       else navigate(`/tcr/${chainId}/${nextTcr}`)

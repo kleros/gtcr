@@ -302,14 +302,12 @@ const TCRParams = ({
             defaultValue="light"
             style={{ width: 120, marginLeft: 8 }}
             onChange={(value) => {
-              if (value === 'classic') navigate(`/factory-classic/${chainId}`)
-              else if (value === 'permanent')
+              if (value === 'permanent')
                 navigate(`/factory-permanent/${chainId}`)
             }}
           >
-            <Select.Option value="classic">Classic</Select.Option>
-            <Select.Option value="light">Light</Select.Option>
-            <Select.Option value="permanent">Permanent</Select.Option>
+            <Select.Option value="light">Standard</Select.Option>
+            <Select.Option value="permanent">Stake</Select.Option>
           </Select>
         </StyledP>
       }

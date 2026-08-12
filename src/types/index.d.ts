@@ -160,9 +160,6 @@ declare module '@kleros/tcr/build/contracts/GeneralizedTCR.json' {
 declare module '@kleros/tcr/build/contracts/GeneralizedTCRView.json' {
   export const abi: readonly Record<string, unknown>[]
 }
-declare module '@kleros/tcr/build/contracts/GTCRFactory.json' {
-  export const abi: readonly Record<string, unknown>[]
-}
 declare module '@kleros/tcr/build/contracts/BatchWithdraw.json' {
   export const abi: readonly Record<string, unknown>[]
 }
