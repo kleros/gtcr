@@ -9599,6 +9599,7 @@ __metadata:
     react-dom: "npm:^18.3.1"
     react-error-boundary: "npm:^6.1.1"
     react-is: "npm:^16.13.1"
+    react-markdown: "npm:^9.0.1"
     react-router-dom: "npm:^6.30.3"
     react-toastify: "npm:^11.0.5"
     styled-components: "npm:^5.3.11"
