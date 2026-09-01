@@ -24,6 +24,7 @@ import {
 import { capitalizeFirstLetter } from 'utils/string'
 import { getTxPage } from 'utils/network-utils'
 import { parseIpfs } from 'utils/ipfs-parse'
+import EvidenceDescription from 'components/evidence-description'
 import EvidenceFileLink from 'components/evidence-file-link'
 import ClassicEvidenceModal from 'pages/item-details/modals/evidence'
 import LightEvidenceModal from 'pages/light-item-details/modals/evidence'
@@ -82,12 +83,6 @@ const StyledCard = styled(Card)`
       }
     `,
   )}
-`
-
-const StyledEvidenceTitle = styled.div`
-  white-space: pre-line;
-  font-weight: 400;
-  color: ${({ theme }) => theme.textPrimary};
 `
 
 const secondTimestamp = (timestamp: string | number | null | undefined) =>
@@ -326,7 +321,7 @@ const Timeline = ({ request, item, metaEvidence }: TimelineProps) => {
             extra={fileURI && <EvidenceFileLink fileURI={fileURI} />}
           >
             <Card.Meta
-              title={<StyledEvidenceTitle>{description}</StyledEvidenceTitle>}
+              title={<EvidenceDescription>{description}</EvidenceDescription>}
               description={submissionTime}
             />
           </StyledCard>

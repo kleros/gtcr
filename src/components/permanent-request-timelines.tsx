@@ -13,6 +13,7 @@ import {
   Col,
 } from 'components/ui'
 import Icon from 'components/ui/Icon'
+import EvidenceDescription from 'components/evidence-description'
 import EvidenceFileLink from 'components/evidence-file-link'
 import useUrlChainId from 'hooks/use-url-chain-id'
 import ETHAddress from 'components/eth-address'
@@ -76,12 +77,6 @@ const StyledCard = styled(Card)`
       }
     `,
   )}
-`
-
-const StyledEvidenceTitle = styled.div`
-  white-space: pre-line;
-  font-weight: 400;
-  color: ${({ theme }) => theme.textPrimary};
 `
 
 const secondTimestamp = (timestamp: string | number | null | undefined) =>
@@ -408,7 +403,7 @@ const Timeline = ({ submission, item, metaEvidence }: TimelineProps) => {
             extra={fileURI && <EvidenceFileLink fileURI={fileURI} />}
           >
             <Card.Meta
-              title={<StyledEvidenceTitle>{description}</StyledEvidenceTitle>}
+              title={<EvidenceDescription>{description}</EvidenceDescription>}
               description={submissionTime}
             />
           </StyledCard>
