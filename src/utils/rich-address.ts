@@ -292,6 +292,13 @@ export const references: Reference[] = [
     explorer: 'robinhoodchain.blockscout.com',
   },
   {
+    id: '5042',
+    namespaceId: 'eip155',
+    name: 'Arc Mainnet',
+    label: 'Arc',
+    explorer: 'explorer.arc.io',
+  },
+  {
     id: '-239',
     namespaceId: 'tvm',
     name: 'TON',
