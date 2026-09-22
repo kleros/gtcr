@@ -296,7 +296,7 @@ export const references: Reference[] = [
     namespaceId: 'eip155',
     name: 'Arc Mainnet',
     label: 'Arc',
-    explorer: 'explorer.arc.io',
+    explorer: 'arc.etherscan.io',
   },
   {
     id: '-239',
