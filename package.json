@@ -44,6 +44,7 @@
     "react-dom": "^18.3.1",
     "react-error-boundary": "^6.1.1",
     "react-is": "^16.13.1",
+    "react-markdown": "^9.0.1",
     "react-router-dom": "^6.30.3",
     "react-toastify": "^11.0.5",
     "styled-components": "^5.3.11",
