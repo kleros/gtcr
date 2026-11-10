@@ -31,6 +31,7 @@ import {
 } from './fields'
 import { tcrSchemaFor, type FactorySection } from './schemas'
 import type { StepProps, TcrState } from '.'
+import useWalletGovernor from './use-wallet-governor'
 
 const { getAddress } = ethers.utils
 
@@ -197,6 +198,14 @@ const TCRParams = ({
   const ids = useId()
   const nativeCurrency = useNativeCurrency()
   const [advancedOptions, setAdvancedOptions] = useState(false)
+  // This form writes every wizard field back, the badges list's governor
+  // included, so it fills both.
+  useWalletGovernor(values.governorAddress, (address) =>
+    setFieldValue('governorAddress', address),
+  )
+  useWalletGovernor(values.relGovernorAddress, (address) =>
+    setFieldValue('relGovernorAddress', address),
+  )
   const [depositText, setDepositText] = useState(
     String(values.submissionBaseDeposit ?? 0),
   )

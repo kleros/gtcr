@@ -16,6 +16,7 @@ import {
   defaultArbitrator as defaultArbitratorAddresses,
   defaultArbitratorExtraData as defaultArbitratorExtraDataObj,
   defaultGovernor as defaultGovernorAddresses,
+  governorNeedsWallet,
 } from 'config/tcr-addresses'
 import { NETWORKS_INFO } from 'config/networks'
 import useNativeCurrency from 'hooks/native-currency'
@@ -266,8 +267,16 @@ const useCachedFactory = (
   const { account } = useWeb3Context()
   const { address: defaultArbitrator, label: defaultArbLabel } =
     (networkId !== undefined && defaultArbitratorAddresses[networkId]) || {}
-  const { address: defaultGovernor, label: defaultGovernorLabel } =
-    (networkId !== undefined && defaultGovernorAddresses[networkId]) || {}
+  const {
+    address: chainDefaultGovernor,
+    label: chainGovernorLabel,
+    placeholder: governorPlaceholder,
+  } = (networkId !== undefined && defaultGovernorAddresses[networkId]) || {}
+  // A placeholder governor is never filled in: the wallet takes its place.
+  const defaultGovernor = governorPlaceholder ? undefined : chainDefaultGovernor
+  const defaultGovernorLabel = governorPlaceholder
+    ? 'your wallet'
+    : chainGovernorLabel
   const { data: defaultArbitratorExtraData, label: defaultArbDataLabel } =
     (networkId !== undefined && defaultArbitratorExtraDataObj[networkId]) || {}
 
@@ -394,27 +403,27 @@ const useCachedFactory = (
   }, [debouncedTcrState, key, networkId])
 
   // The governor defaults to the wallet. A draft started before connecting
-  // took the chain default instead (an EOA on Gnosis and Sepolia), and the
-  // field sits under Advanced: once a wallet connects it takes over any
-  // governor still on that default.
+  // (or kept from before this rule) may hold no governor or the chain's
+  // placeholder: the wallet fills those in once it connects. The step forms
+  // do the same for their own fields while they are on screen (they write
+  // their values back here), so the two never disagree.
   useEffect(() => {
-    if (!account || !defaultGovernor) return
-    const onDefault = (value?: string) =>
-      !value || value.toLowerCase() === defaultGovernor.toLowerCase()
-    setTcrState((prev) =>
-      onDefault(prev.governorAddress) || onDefault(prev.relGovernorAddress)
+    if (!account) return
+    setTcrState((prev) => {
+      const governor = governorNeedsWallet(prev.governorAddress, networkId)
+      const relGovernor = governorNeedsWallet(
+        prev.relGovernorAddress,
+        networkId,
+      )
+      return governor || relGovernor
         ? {
             ...prev,
-            governorAddress: onDefault(prev.governorAddress)
-              ? account
-              : prev.governorAddress,
-            relGovernorAddress: onDefault(prev.relGovernorAddress)
-              ? account
-              : prev.relGovernorAddress,
+            governorAddress: governor ? account : prev.governorAddress,
+            relGovernorAddress: relGovernor ? account : prev.relGovernorAddress,
           }
-        : prev,
-    )
-  }, [account, defaultGovernor])
+        : prev
+    })
+  }, [account, networkId])
 
   if (!networkId || !tcrState.arbitratorAddress) return null
 

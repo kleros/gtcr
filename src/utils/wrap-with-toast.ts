@@ -43,8 +43,11 @@ export const successToast = (message: string) => toast.success(message, OPTIONS)
 export const errorToast = (message: string) =>
   toast.error(message, ERROR_OPTIONS)
 
+// The wallet's own words for its owner declining (MetaMask, viem's
+// UserRejectedRequestError, WalletConnect). Not "request rejected": nodes
+// and relays use that for their own failures, which must stay errors.
 const REJECTION =
-  /user (rejected|denied|cancell?ed)|rejected the request|request rejected|denied transaction signature/i
+  /user (rejected|denied|cancell?ed)|denied transaction signature/i
 
 /** The wallet's owner declined the request (EIP-1193 error 4001). */
 export const isUserRejection = (error: unknown): boolean => {

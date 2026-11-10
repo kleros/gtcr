@@ -120,7 +120,8 @@ const isEvmAddress = (value: string): boolean => namespaces[0].test(value)
  * address input checks its own value too, but Formik runs a field's check only
  * while the field is on screen and the review step unmounts them: without this
  * a malformed address would be sent (stored as 0x0…12ab on a Classic list).
- * Like those inputs, an empty address does not pass.
+ * Like those inputs, an empty address does not pass, unless the list marks
+ * the column optional.
  */
 export const addressFormatErrors = (
   columns: Column[],
@@ -130,6 +131,7 @@ export const addressFormatErrors = (
   for (const column of columns) {
     const value = values[column.label]
     const text = typeof value === 'string' ? value : ''
+    if (!text.trim() && !isRequired(column)) continue
     if (column.type === ItemTypes.ADDRESS && !isEvmAddress(text))
       errors[column.label] = 'Invalid format'
     else if (

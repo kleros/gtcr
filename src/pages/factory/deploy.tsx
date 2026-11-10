@@ -744,7 +744,7 @@ const Deploy = ({
           parseEther(tcrState.relSubmissionChallengeBaseDeposit.toString()),
           parseEther(tcrState.relRemovalChallengeBaseDeposit.toString()),
         ],
-        Number(tcrState.relChallengePeriodDuration) * 60 * 60,
+        Math.round(Number(tcrState.relChallengePeriodDuration) * 60 * 60),
         [
           Math.ceil(Number(tcrState.relSharedStakeMultiplier)) * 100,
           Math.ceil(Number(tcrState.relWinnerStakeMultiplier)) * 100,
@@ -777,7 +777,7 @@ const Deploy = ({
           parseEther(tcrState.submissionChallengeBaseDeposit.toString()),
           parseEther(tcrState.removalChallengeBaseDeposit.toString()),
         ],
-        Number(tcrState.challengePeriodDuration) * 60 * 60,
+        Math.round(Number(tcrState.challengePeriodDuration) * 60 * 60),
         [
           Math.ceil(Number(tcrState.sharedStakeMultiplier)) * 100,
           Math.ceil(Number(tcrState.winnerStakeMultiplier)) * 100,

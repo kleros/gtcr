@@ -472,6 +472,8 @@ const Items = () => {
         : undefined,
   })
   const refreshing = itemsQuery.isPlaceholderData && itemsQuery.isFetching
+  // A whole-list search still waiting for the indexer's answer.
+  const searchPending = wholeListSearch && itemsQuery.isPlaceholderData
 
   const freshCounters = itemsQuery.data?.lregistry ?? undefined
   if (freshCounters)
@@ -707,8 +709,11 @@ const Items = () => {
   const visibleItems = useMemo(() => {
     if (!items) return undefined
 
+    // The indexer's answer is already the search. Until it lands, the
+    // previous page stands in, so it is filtered like any page.
+    const searchAnswered = wholeListSearch && !searchPending
     return [...items]
-      .filter((item) => wholeListSearch || itemMatchesSearch(item, itemSearch))
+      .filter((item) => searchAnswered || itemMatchesSearch(item, itemSearch))
       .sort(({ tcrData: tcrDataA }, { tcrData: tcrDataB }) => {
         // Display items with pending requests first.
         if (!tcrDataA || !tcrDataB) return 0 // Handle errored TCRs.
@@ -716,7 +721,7 @@ const Items = () => {
         if (tcrDataA.resolved && !tcrDataB.resolved) return 1
         return 0
       })
-  }, [itemSearch, items, wholeListSearch])
+  }, [itemSearch, items, wholeListSearch, searchPending])
 
   // A ?action= link (someone sent here with the values to submit) opens
   // the full-page submit form with those values in its URL, so the link

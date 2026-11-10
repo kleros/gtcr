@@ -33,6 +33,7 @@ import {
 } from './tcr-params'
 import { relSchema } from './schemas'
 import type { StepProps, TcrState } from '.'
+import useWalletGovernor from './use-wallet-governor'
 
 const { getAddress } = ethers.utils
 
@@ -69,6 +70,14 @@ const RelTCRParams = ({
   const ids = useId()
   const nativeCurrency = useNativeCurrency()
   const [advancedOptions, setAdvancedOptions] = useState(false)
+  // This form writes every wizard field back, the list's own governor
+  // included, so it fills both.
+  useWalletGovernor(values.relGovernorAddress, (address) =>
+    setFieldValue('relGovernorAddress', address),
+  )
+  useWalletGovernor(values.governorAddress, (address) =>
+    setFieldValue('governorAddress', address),
+  )
   const [depositText, setDepositText] = useState(
     String(values.relSubmissionBaseDeposit ?? 0),
   )

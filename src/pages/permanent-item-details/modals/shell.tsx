@@ -203,6 +203,12 @@ export const ModalShell = ({
 }) => {
   const titleId = useId()
   const dialogRef = useRef<HTMLDivElement>(null)
+  // Callers pass a new close function on every render (the status card
+  // re-renders each second for its countdown). Read through a ref, it does
+  // not re-run the effect below, which would pull focus out of the field
+  // being typed in.
+  const onCloseRef = useRef(onClose)
+  onCloseRef.current = onClose
 
   // Keep Tab inside the dialog: wrap from the last focusable to the first
   // and from the first (or the dialog itself) back to the last.
@@ -237,7 +243,8 @@ export const ModalShell = ({
     document.body.style.overflow = 'hidden'
     dialogRef.current?.focus({ preventScroll: true })
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose()
+      // Escape in the wallet modal closes that modal, not this dialog.
+      if (event.key === 'Escape' && !appKitModal?.isOpen()) onCloseRef.current()
     }
     window.addEventListener('keydown', onKey)
     return () => {
@@ -245,7 +252,7 @@ export const ModalShell = ({
       document.body.style.overflow = overflow
       previous?.focus?.()
     }
-  }, [open, onClose])
+  }, [open])
 
   if (!open) return null
 

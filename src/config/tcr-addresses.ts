@@ -56,7 +56,16 @@ export const pgtcrFactoryAddresses: ChainMap<string> = {
   '11155111': '0x22a57cd65092da41c5c1dffad03594fffc28ce20',
 } as const
 
-export const defaultGovernor: ChainMap<{ address: string; label: string }> = {
+/**
+ * A new list's governor when no wallet is connected. A `placeholder` is an
+ * outside wallet that only stands in for the creator's own: it is never
+ * filled in or deployed, the connected wallet takes its place.
+ */
+export const defaultGovernor: ChainMap<{
+  address: string
+  label: string
+  placeholder?: boolean
+}> = {
   '1': {
     address: '0x3a7edc1eb16cb454e4964ec51642f7d7b35b5292',
     label: 'Kleros Governor',
@@ -65,13 +74,28 @@ export const defaultGovernor: ChainMap<{ address: string; label: string }> = {
     label:
       'This is an EOA governor (you probably want to use your own address)',
     address: '0xdC8C1a8CB38F27C188a43CE0eBBC8e42e393D0d3',
+    placeholder: true,
   },
   '11155111': {
     label:
       'This is an EOA governor (you probably want to use your own address)',
     address: '0xdC8C1a8CB38F27C188a43CE0eBBC8e42e393D0d3',
+    placeholder: true,
   },
 } as const
+
+/** Whether a governor value still needs the creator's wallet: empty or the chain's placeholder. */
+export const governorNeedsWallet = (
+  value: string | undefined,
+  chainId: number | undefined,
+): boolean => {
+  if (!value) return true
+  const fallback = chainId !== undefined ? defaultGovernor[chainId] : undefined
+  return (
+    !!fallback?.placeholder &&
+    value.toLowerCase() === fallback.address.toLowerCase()
+  )
+}
 
 export const defaultArbitrator: ChainMap<{ label: string; address: string }> = {
   '1': {

@@ -439,10 +439,10 @@ const Deploy = ({
             tokenDecimals,
           ),
           [
-            Number(tcrState.submissionPeriodDuration) * 60 * 60,
-            Number(tcrState.reinclusionPeriodDuration) * 60 * 60,
-            Number(tcrState.withdrawingPeriodDuration) * 60 * 60,
-            Number(tcrState.arbitrationParamsCooldown) * 60 * 60,
+            Math.round(Number(tcrState.submissionPeriodDuration) * 60 * 60),
+            Math.round(Number(tcrState.reinclusionPeriodDuration) * 60 * 60),
+            Math.round(Number(tcrState.withdrawingPeriodDuration) * 60 * 60),
+            Math.round(Number(tcrState.arbitrationParamsCooldown) * 60 * 60),
           ],
           [
             Math.ceil(Number(tcrState.sharedStakeMultiplier)) * 100,

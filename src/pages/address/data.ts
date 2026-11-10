@@ -334,16 +334,25 @@ const safeRequest = async <T>(
   variables: Record<string, unknown>,
 ): Promise<T | null> => {
   if (!url) return null
+  // A slow indexer is cut off, not left running: the request is aborted and
+  // its timer cleared (as the dashboard's reads do).
+  const controller = new AbortController()
+  const timer = window.setTimeout(
+    () => controller.abort(),
+    PROFILE_QUERY_TIMEOUT_MS,
+  )
   try {
-    return await Promise.race([
-      request<T>(url, query, variables),
-      new Promise<null>((resolve) =>
-        setTimeout(() => resolve(null), PROFILE_QUERY_TIMEOUT_MS),
-      ),
-    ])
+    return await request<T>({
+      url,
+      document: query,
+      variables,
+      signal: controller.signal,
+    })
   } catch (err) {
     console.warn('Address profile query failed', err)
     return null
+  } finally {
+    window.clearTimeout(timer)
   }
 }
 
