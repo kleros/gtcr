@@ -1,158 +1,291 @@
-import React, { useEffect, useState, useCallback, useMemo } from 'react'
-import styled, { css } from 'styled-components'
-import { smallScreenStyle } from 'styles/small-screen-style'
-import { responsiveSize } from 'styles/responsive-size'
-import {
-  Card,
-  Tooltip,
-  Form,
-  Switch,
-  Alert,
-  Slider,
-  InputNumber,
-  Select,
-} from 'components/ui'
-import Icon from 'components/ui/Icon'
-import { toast } from 'react-toastify'
-import { withFormik, type FormikProps } from 'formik'
-import type { StepProps, TcrState } from '.'
-import * as yup from 'yup'
+import React, { useCallback, useEffect, useId, useMemo, useState } from 'react'
+import styled from 'styled-components'
+import { useField, withFormik, type FormikProps } from 'formik'
 import { useDebounce } from 'use-debounce'
-import { ethers, BigNumber } from 'ethers'
-
-const { getAddress, parseEther } = ethers.utils
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { useEthersProvider } from 'hooks/ethers-adapters'
-import CustomInput from 'components/custom-input'
-import { ItemTypes } from '@kleros/gtcr-encoder'
+import { ethers } from 'ethers'
+import { toast } from 'react-toastify'
 import { Roles, useAtlasProvider } from '@kleros/kleros-app'
+import { useEthersProvider } from 'hooks/ethers-adapters'
 import useArbitrationCost from 'hooks/arbitration-cost'
-import KlerosParams from './kleros-params'
-import ETHAmount from 'components/eth-amount'
-import useWindowDimensions from 'hooks/window-dimensions'
 import useNativeCurrency from 'hooks/native-currency'
-import { useNavigate } from 'react-router-dom'
+import useTokenSymbol from 'hooks/token-symbol'
 import useUrlChainId from 'hooks/use-url-chain-id'
 import { klerosAddresses } from 'config/tcr-addresses'
-import { parseIpfs } from 'utils/ipfs-parse'
-import { UploadButton, StyledUpload } from 'components/input-selector'
-import EnsureAuth from 'components/ensure-auth'
-import PGTCRDepositInput from 'components/pgtcr-deposit-input'
-import useTokenSymbol from 'hooks/token-symbol'
+import { NETWORKS_INFO } from 'config/networks'
+import {
+  Data,
+  Label,
+  Row,
+  SkeletonBlock,
+  Small,
+  Stack,
+  StatusDot,
+  truncateMiddle,
+} from 'components/curate/primitives'
+import { FACTORY_COPY } from 'components/curate/v2-factory-shell'
+import KlerosParams from './kleros-params'
+import {
+  AmountInput,
+  Divider,
+  ErrorText,
+  FieldGrid,
+  FormField,
+  NarrowOnly,
+  Note,
+  RangeInput,
+  SliderEnds,
+  StepBody,
+  StepHeader,
+  SwitchField,
+  TextField,
+  TextLink,
+  UploadField,
+} from './controls'
+import {
+  EXAMPLE_POLICY_URL,
+  LOGO_MAX_MB,
+  LOGO_TYPES,
+  POLICY_MAX_MB,
+  POLICY_TYPE,
+  STAKE_SLIDER,
+  WIZARD_DEFAULTS,
+} from './defaults'
+import {
+  formatMaybe,
+  enforcedStake as enforcedStakeText,
+  groupAmount,
+  stakeProblem,
+  stakeProblemText,
+  plainDecimal,
+} from './format'
+import { tcrSchemaFor, type FactorySection } from './schemas'
+import type { StepProps, TcrState } from '.'
 
-export const StyledAlert = styled(Alert)`
-  margin-bottom: 32px;
-`
+/*
+ * The list step of the Stake factory, one section per visual step: name,
+ * description, logo, policy, the stake token, then the minimum stake with
+ * the court (and the advanced periods, roles and multipliers), and the item
+ * name. Values sync into the cached wizard state as they change; Next
+ * submits the form and only the open section's schema runs.
+ */
 
-export const StyledTCRParamContainer = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  margin-bottom: 12px;
-
-  ${smallScreenStyle(
-    () => css`
-      flex-direction: column;
-    `,
-  )}
-`
-
-export const StyledUploadContainer = styled.div`
-  margin-right: ${responsiveSize(0, 12)};
-  max-width: ${responsiveSize(300, 450)};
-  color: ${({ theme }) => theme.textPrimary};
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-
-  label,
-  span {
-    color: ${({ theme }) => theme.textPrimary};
-  }
-
-  .ui-form-item-label label {
-    display: inline-flex;
-    align-items: center;
-  }
-
-  & > div {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-`
-
-export const StyledTCRInfoContainer = styled.div`
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  border-left: 1px solid ${({ theme }) => theme.borderColor};
-  padding-left: ${responsiveSize(6, 12)};
-`
-
-export const StyledDepositContainer = styled.div`
-  display: flex;
-  flex-direction: column;
-  margin-bottom: 24px;
-`
-
-export const StyledSliderContainer = styled.div`
-  display: flex;
-`
-
-export const StyledP = styled.p`
-  color: ${({ theme }) => theme.textPrimary};
-  margin: 0;
-`
-
-export const StyledFontAwesomeIcon = styled(FontAwesomeIcon)`
-  margin-right: 12px;
-  color: ${({ theme }) => theme.textSecondary};
-`
-
-export const CheapestAndSafestContainer = styled.div`
-  display: flex;
-  flex: 1;
-  align-items: center;
-  margin-right: 24px;
-  color: ${({ theme }) => theme.textSecondary};
-`
-
-export const StyledImg = styled.img`
-  height: 70px;
-  object-fit: contain;
-`
-
-export const UploadSection = styled.div`
-  margin-bottom: 26px;
-`
+const { getAddress, isAddress } = ethers.utils
 
 type TCRFormValues = Omit<TcrState, 'transactions'>
-type TCRParamsProps = StepProps & FormikProps<TCRFormValues>
+type TCRParamsOuterProps = StepProps & {
+  factorySection?: FactorySection
+  /** Open with the advanced options shown (an Edit from the review). */
+  startAdvanced?: boolean
+}
+type TCRParamsProps = TCRParamsOuterProps & FormikProps<TCRFormValues>
 
-const TCRParams = ({
-  handleSubmit,
-  formId,
-  errors,
-  setFieldValue,
-  touched,
-  defaultArbLabel,
-  defaultArbDataLabel,
-  defaultGovernorLabel,
-  ...rest
-}: TCRParamsProps) => {
-  const { values, setTcrState } = rest
-  const { width } = useWindowDimensions()
+/** The list sections both factories share read the same in each. */
+const SECTION_COPY: Record<FactorySection, { heading: string; lede: string }> =
+  {
+    ...FACTORY_COPY.sections,
+    token: {
+      heading: 'Choose the stake token',
+      lede: 'The ERC-20 every submitter locks while an entry is listed. It cannot be changed after deployment.',
+    },
+    stake: {
+      heading: 'Set the stake and the court',
+      lede: 'The stake stays locked while an entry is listed; a successful challenger takes it.',
+    },
+  }
+
+const rejectLogo = (file: File): string => {
+  if (!LOGO_TYPES.has(file.type)) return 'Use a PNG, SVG, WebP or JPEG image.'
+  if (file.size / 1024 / 1024 >= LOGO_MAX_MB)
+    return `The image must be smaller than ${LOGO_MAX_MB} MB.`
+  return ''
+}
+
+const rejectPolicy = (file: File): string => {
+  if (file.type !== POLICY_TYPE) return 'Upload the policy as a PDF.'
+  if (file.size / 1024 / 1024 >= POLICY_MAX_MB)
+    return `The file must be smaller than ${POLICY_MAX_MB} MB.`
+  return ''
+}
+
+/* ---------- Token read-out ---------- */
+
+const TokenCard = styled.div`
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px 20px;
+  padding: 16px 18px;
+  border-radius: var(--radius);
+  background: var(--color-raised);
+
+  @media (max-width: 520px) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+`
+
+const TokenSymbol = styled.span`
+  display: block;
+  color: var(--color-text);
+  font-family: var(--font-figure);
+  font-size: 30px;
+  line-height: 34px;
+  font-weight: 500;
+  letter-spacing: -0.03em;
+  overflow-wrap: anywhere;
+`
+
+const TokenFacts = styled.dl`
+  display: flex;
+  gap: 20px;
+  margin: 0;
+
+  div {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  dd {
+    margin: 0;
+  }
+`
+
+/**
+ * What the chain says is at the typed address: the ERC-20's symbol and
+ * decimals, or why none could be read. Read only; it never blocks Next.
+ */
+const TokenReadout = ({
+  address,
+  symbol,
+  decimals,
+  loading,
+}: {
+  address: string
+  symbol: string
+  decimals: number
+  loading: boolean
+}) => {
+  const trimmed = address.trim()
+  if (!trimmed) return null
+  const valid = isAddress(trimmed)
+  const found = valid && !loading && symbol !== 'tokens'
+  return (
+    <TokenCard role="status" aria-live="polite">
+      <Stack $gap={6} style={{ minWidth: 0 }}>
+        <Row $gap={8}>
+          <StatusDot
+            $tone={found ? 'registered' : valid && loading ? 'window' : 'off'}
+            aria-hidden
+          />
+          <Label $tone="muted">
+            {!valid
+              ? 'Not an address'
+              : loading
+                ? 'Reading the token'
+                : found
+                  ? 'ERC-20 found'
+                  : 'No ERC-20 read at this address'}
+          </Label>
+        </Row>
+        {valid && loading ? (
+          <SkeletonBlock $height="34px" $width="120px" />
+        ) : found ? (
+          <TokenSymbol>{symbol}</TokenSymbol>
+        ) : (
+          <Small $muted>
+            {valid
+              ? 'Check the address and the network: the token must be on this chain.'
+              : 'An address is 0x followed by 40 hexadecimal characters.'}
+          </Small>
+        )}
+      </Stack>
+      {found && (
+        <TokenFacts>
+          <div>
+            <Label as="dt" $tone="muted">
+              Decimals
+            </Label>
+            <dd>
+              <Data>{decimals}</Data>
+            </dd>
+          </div>
+          <div>
+            <Label as="dt" $tone="muted">
+              Contract
+            </Label>
+            <dd>
+              <Data $mono $muted $weight={400} title={trimmed}>
+                {truncateMiddle(trimmed, 6, 4)}
+              </Data>
+            </dd>
+          </div>
+        </TokenFacts>
+      )}
+    </TokenCard>
+  )
+}
+
+/* ---------- Appeal note ---------- */
+
+const multiple = new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 })
+
+/** The appeal multipliers in one note, with the example computed from the loser field. */
+const AppealStakeNote = () => {
+  const [field] = useField<unknown>('loserStakeMultiplier')
+  const loser = Number(field.value)
+  const valid = field.value !== '' && Number.isFinite(loser) && loser >= 0
+  return (
+    <Note>
+      <Small $muted>
+        To appeal, each side pays the next round’s juror fees plus a stake, a
+        share of those fees; the losing side’s stake rewards whoever funded the
+        winner.
+      </Small>
+      <Small>
+        Total appeal fee for one side = juror fees + juror fees × stake
+        multiplier.
+        {valid &&
+          ` At ${multiple.format(loser)}%, the side the court ruled against pays ${multiple.format(1 + loser / 100)}× the juror fees.`}
+      </Small>
+    </Note>
+  )
+}
+
+/* ---------- The step ---------- */
+
+const TCRParams = (props: TCRParamsProps) => {
+  const {
+    handleSubmit,
+    formId,
+    factorySection,
+    startAdvanced,
+    errors,
+    touched,
+    values,
+    setFieldValue,
+    setFieldTouched,
+    setTcrState,
+    defaultArbLabel,
+    defaultArbDataLabel,
+    defaultGovernorLabel,
+    defaultStakeTokenLabel,
+  } = props
+  const ids = useId()
   const nativeCurrency = useNativeCurrency()
   const { uploadFile } = useAtlasProvider()
   const [uploading, setUploading] = useState<{
     tcrLogo?: boolean
     tcrPrimaryDocument?: boolean
   }>({})
-  const [advancedOptions, setAdvancedOptions] = useState(false)
-  const [depositVal, setDepositVal] = useState(0.05)
-  const navigate = useNavigate()
+  const [advancedOptions, setAdvancedOptions] = useState(!!startAdvanced)
+  // The typed text while the amount box has focus; the stored value otherwise.
+  const [depositDraft, setDepositDraft] = useState<string | null>(null)
   const chainId = useUrlChainId()
+  const chainName =
+    chainId === null
+      ? 'this chain'
+      : (NETWORKS_INFO[chainId as keyof typeof NETWORKS_INFO]?.name ??
+        `chain ${chainId}`)
   const chainProvider = useEthersProvider({ chainId: chainId ?? undefined })
   const [debouncedArbitrator] = useDebounce(values.arbitratorAddress, 1000)
   const { arbitrator: klerosAddress, policy: policyAddress } =
@@ -162,713 +295,425 @@ const TCRParams = ({
     arbitratorExtraData: values.arbitratorExtraData,
     library: chainProvider,
   })
-  const { symbol: tokenSymbol } = useTokenSymbol(values.tokenAddress)
+  const {
+    symbol: tokenSymbol,
+    decimals: tokenDecimals,
+    decimalsRead,
+    loading: loadingSymbol,
+  } = useTokenSymbol(values.tokenAddress || undefined)
   const setArbitratorExtraData = useCallback(
     (val: string) => setFieldValue('arbitratorExtraData', val),
     [setFieldValue],
   )
 
-  let isKlerosArbitrator
-  try {
-    isKlerosArbitrator =
-      getAddress(debouncedArbitrator) === getAddress(klerosAddress ?? '')
-  } catch {
-    isKlerosArbitrator = false
-  }
+  const isKlerosArbitrator = useMemo(() => {
+    try {
+      return getAddress(debouncedArbitrator) === getAddress(klerosAddress ?? '')
+    } catch {
+      return false
+    }
+  }, [debouncedArbitrator, klerosAddress])
 
+  // The page owns where the wizard is: the step fields are not synced back.
   useEffect(() => {
+    const {
+      currStep: _currStep,
+      visualStep: _visualStep,
+      maxVisualStep: _maxVisualStep,
+      ...fields
+    } = values
     setTcrState((previousState) => ({
       ...previousState,
-      ...values,
+      ...fields,
     }))
   }, [values, setTcrState])
 
-  const fileUploadStatusChange = useCallback(
-    ({
-      file: { status },
-      file,
-    }: {
-      file: { status: string; type: string }
-    }) => {
-      if (status === 'done') toast.success(`File uploaded successfully.`)
-      else if (status === 'error') toast.error(`File upload failed.`)
-      else if (status === 'uploading')
-        if (
-          file.type === 'image/png' ||
-          file.type === 'image/svg+xml' ||
-          file.type === 'image/webp' ||
-          file.type === 'image/jpeg'
-        )
-          setUploading({ ...uploading, tcrLogo: true })
-        else setUploading({ ...uploading, tcrPrimaryDocument: true })
-
-      if (status === 'error' || status === 'done')
-        if (
-          file.type === 'image/png' ||
-          file.type === 'image/svg+xml' ||
-          file.type === 'image/webp' ||
-          file.type === 'image/jpeg'
-        )
-          setUploading({ ...uploading, tcrLogo: false })
-        else setUploading({ ...uploading, tcrPrimaryDocument: false })
+  const upload = useCallback(
+    async (
+      field: 'tcrLogo' | 'tcrPrimaryDocument',
+      role: Roles,
+      file: File,
+    ) => {
+      setUploading((previous) => ({ ...previous, [field]: true }))
+      try {
+        const fileURI = await uploadFile(file, role)
+        if (!fileURI) throw new Error('Failed to upload file to IPFS.')
+        setFieldValue(field, fileURI)
+        setFieldTouched(field, true, false)
+        toast.success('File uploaded successfully.')
+      } catch (err) {
+        console.error(err)
+        toast.error('File upload failed.')
+      } finally {
+        setUploading((previous) => ({ ...previous, [field]: false }))
+      }
     },
-    [uploading],
+    [setFieldTouched, setFieldValue, uploadFile],
   )
 
-  const beforeImageUpload = useCallback((file: File) => {
-    const isSupportedImage =
-      file.type === 'image/png' ||
-      file.type === 'image/svg+xml' ||
-      file.type === 'image/webp' ||
-      file.type === 'image/jpeg'
-    if (!isSupportedImage) toast.error('Please use PNG, webp, jpeg or SVG.')
-
-    const isLt2M = file.size / 1024 / 1024 < 2
-    if (!isLt2M) toast.error('Image must be smaller than 2MB.')
-
-    return isSupportedImage && isLt2M
-  }, [])
-
-  const beforeFileUpload = useCallback((file: File) => {
-    const isPDF = file.type === 'application/pdf'
-    if (!isPDF) toast.error('Please upload file as PDF.')
-
-    const isLt4M = file.size / 1024 / 1024 < 4
-    if (!isLt4M) toast.error('File must be smaller than 4MB.')
-
-    return isPDF && isLt4M
-  }, [])
-
-  const customRequest = useCallback(
-    (fieldName: string, role: Roles) =>
-      async ({
-        file,
-        onSuccess,
-        onError,
-      }: {
-        file: File
-        onSuccess: (response: unknown, hash?: unknown) => void
-        onError: (error: unknown) => void
-      }) => {
-        try {
-          const fileURI = await uploadFile(file, role)
-          if (!fileURI) throw new Error('Failed to upload file to IPFS.')
-
-          setFieldValue(fieldName, fileURI)
-          onSuccess('ok', parseIpfs(fileURI))
-        } catch (err) {
-          console.error(err)
-          onError(err)
-        }
-      },
-    [setFieldValue, uploadFile],
-  )
-
+  // The typed text is stored as typed: a float would round an 18-decimal
+  // amount before it is encoded. The slider stores its plain numbers.
   const onChangeDepositVal = useCallback(
-    (value: number | undefined) => {
-      if (value === undefined || Number.isNaN(value)) return
-
-      setDepositVal(value)
+    (value: number | string) => {
+      if (typeof value === 'number' && Number.isNaN(value)) return
       setFieldValue('submissionMinDeposit', value)
-      setFieldValue('removalBaseDeposit', value)
-      setFieldValue('removalChallengeBaseDeposit', value)
     },
     [setFieldValue],
   )
 
-  const totalDepositSlider = useMemo(() => {
-    if (!arbitrationCost) return null
-    const d = parseEther(Number(depositVal).toString())
-    const a = arbitrationCost || BigNumber.from(0)
-    return BigNumber.from(d).add(BigNumber.from(a))
-  }, [arbitrationCost, depositVal])
+  const show = (section: FactorySection) =>
+    !factorySection || factorySection === section
+  const copy = factorySection ? SECTION_COPY[factorySection] : null
+  const stored = Number(values.submissionMinDeposit)
+  const sliderValue = Number.isFinite(stored)
+    ? Math.min(STAKE_SLIDER.max, Math.max(STAKE_SLIDER.min, stored))
+    : WIZARD_DEFAULTS.submissionMinDeposit
+  const depositText = depositDraft ?? plainDecimal(values.submissionMinDeposit)
+  const tokenFound =
+    !!values.tokenAddress &&
+    !loadingSymbol &&
+    tokenSymbol !== 'tokens' &&
+    decimalsRead
+  const enforcedStake = groupAmount(
+    enforcedStakeText(
+      values.submissionMinDeposit,
+      tokenFound ? tokenDecimals : 18,
+    ),
+  )
+  const costText = formatMaybe(arbitrationCost)
+  // The minimum is encoded in the token's base units: it must be a plain
+  // number with no more decimal places than the token has, within a uint256.
+  // The form's own rules (required, not negative) speak first.
+  const problem = tokenFound
+    ? stakeProblem(values.submissionMinDeposit, tokenDecimals)
+    : null
+  const schemaAccepts = (() => {
+    try {
+      tcrSchemaFor('stake').validateSyncAt('submissionMinDeposit', values)
+      return true
+    } catch {
+      return false
+    }
+  })()
+  const stakeError =
+    problem && schemaAccepts
+      ? stakeProblemText(problem, tokenSymbol, tokenDecimals)
+      : null
+  const onSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    const stakeShown = !factorySection || factorySection === 'stake'
+    // Wait for the token's decimals before judging the stake.
+    const tokenPending = !!values.tokenAddress && loadingSymbol
+    if (stakeShown && (stakeError || tokenPending)) {
+      event.preventDefault()
+      return
+    }
+    handleSubmit(event)
+  }
 
   return (
-    <Card
-      title="Enter the list parameters"
-      extra={
-        <StyledP>
-          Factory Type:{' '}
-          <Select
-            defaultValue="permanent"
-            style={{ width: 120, marginLeft: 8 }}
-            onChange={(value) => {
-              if (value === 'light') navigate(`/factory/${chainId}`)
-            }}
-          >
-            <Select.Option value="light">Standard</Select.Option>
-            <Select.Option value="permanent">Stake</Select.Option>
-          </Select>
-        </StyledP>
-      }
-    >
-      <Form layout="vertical" id={formId} onSubmit={handleSubmit}>
-        <StyledTCRParamContainer>
-          <StyledUploadContainer>
-            <div>
-              <div className="ui-col ui-form-item-label">
-                <label htmlFor="tcr-logo">
-                  <span>List Logo (transparent background): &nbsp;</span>
-                  <Tooltip title="The logo should be a 1:1 aspect ratio image with transparent background in SVG or PNG.">
-                    <Icon type="question-circle-o" />
-                  </Tooltip>
-                </label>
-              </div>
-              <EnsureAuth>
-                <StyledUpload
-                  name="primary-document"
-                  listType="picture-card"
-                  className="avatar-uploader"
-                  showUploadList={false}
-                  customRequest={customRequest('tcrLogo', Roles.Logo)}
-                  beforeUpload={beforeImageUpload}
-                  onChange={fileUploadStatusChange}
-                >
-                  {values.tcrLogo ? (
-                    <StyledImg src={parseIpfs(values.tcrLogo)} alt="avatar" />
-                  ) : (
-                    <UploadButton loading={uploading.tcrLogo ?? false} />
-                  )}
-                </StyledUpload>
-              </EnsureAuth>
-            </div>
-            <div>
-              <div className="ui-col ui-form-item-label">
-                <label htmlFor="primary-document">
-                  <span>Acceptance Criteria (Primary Document)&nbsp;</span>
-                  <Tooltip title="The list primary document defines the acceptance criteria that jurors and challengers will use to evaluate submissions. Use the PDF file format.">
-                    <Icon type="question-circle-o" />
-                  </Tooltip>
-                </label>
-                <br />
-                Click{' '}
-                <a
-                  href="https://cdn.kleros.link/ipfs/QmUPsjDcKxNv6z6ktnmxkSb4LpqmQ7DT12yG5B73z9uLEy/curated-lists-primary-document.pdf"
+    <form id={formId} noValidate onSubmit={onSubmit}>
+      <StepBody>
+        <StepHeader
+          heading={copy ? copy.heading : 'List parameters'}
+          lede={copy?.lede}
+        />
+
+        {show('title') && (
+          <TextField name="tcrTitle" {...FACTORY_COPY.fields.title} />
+        )}
+
+        {show('description') && (
+          <TextField
+            name="tcrDescription"
+            {...FACTORY_COPY.fields.description}
+          />
+        )}
+
+        {show('logo') && (
+          <UploadField
+            id={`${ids}-logo`}
+            label="List logo"
+            help="A square image, ideally with a transparent background."
+            hint={`PNG, SVG, WebP or JPEG · under ${LOGO_MAX_MB} MB`}
+            kind="image"
+            accept={[...LOGO_TYPES].join(',')}
+            value={values.tcrLogo}
+            uploading={!!uploading.tcrLogo}
+            error={errors.tcrLogo}
+            showError={!!touched.tcrLogo}
+            what="the logo"
+            reject={rejectLogo}
+            onPick={(file) => upload('tcrLogo', Roles.Logo, file)}
+          />
+        )}
+
+        {show('policy') && (
+          <UploadField
+            id={`${ids}-policy`}
+            label="Listing policy (PDF)"
+            help={
+              <>
+                The acceptance criteria every submission is judged by.{' '}
+                <TextLink
+                  href={EXAMPLE_POLICY_URL}
                   target="_blank"
                   rel="noopener noreferrer"
                 >
-                  here
-                </a>{' '}
-                to see an example.
-              </div>
-              <EnsureAuth>
-                <StyledUpload
-                  name="primary-document"
-                  listType="picture-card"
-                  className="avatar-uploader"
-                  showUploadList={false}
-                  customRequest={customRequest(
-                    'tcrPrimaryDocument',
-                    Roles.Policy,
-                  )}
-                  beforeUpload={beforeFileUpload}
-                  onChange={fileUploadStatusChange}
-                >
-                  {values.tcrPrimaryDocument ? (
-                    <a href={parseIpfs(values.tcrPrimaryDocument)}>
-                      <Icon type="file-pdf" style={{ fontSize: '30px' }} />
-                    </a>
-                  ) : (
-                    <UploadButton
-                      loading={uploading.tcrPrimaryDocument ?? false}
-                    />
-                  )}
-                </StyledUpload>
-              </EnsureAuth>
-            </div>
-          </StyledUploadContainer>
-          <StyledTCRInfoContainer>
-            <CustomInput
-              name="tcrTitle"
-              placeholder="Red Socks"
-              label={
-                <span>
-                  Title&nbsp;
-                  <Tooltip title="This will be the title of your list. Try to keep it as short as possible for increased compatibility with mobile devices, Twitter bots and push notifications. For example: Red Socks.">
-                    <Icon type="question-circle-o" />
-                  </Tooltip>
-                </span>
-              }
-              error={errors.tcrTitle}
-              touched={touched.tcrTitle}
-              hasFeedback
-              {...rest}
-            />
-            <CustomInput
-              name="tcrDescription"
-              placeholder="A list of red socks"
-              hasFeedback
-              error={errors.tcrDescription}
-              touched={touched.tcrDescription}
-              label={
-                <span>
-                  Description&nbsp;
-                  <Tooltip title="Enter a short sentence to describe the type of item that will be displayed in the list and what the listing criteria are. For example: Images of red socks from various manufacturers.">
-                    <Icon type="question-circle-o" />
-                  </Tooltip>
-                </span>
-              }
-              {...rest}
-            />
-            <CustomInput
-              style={{ marginBottom: 0 }}
-              name="itemName"
-              placeholder="sock"
-              hasFeedback
-              error={errors.itemName}
-              touched={touched.itemName}
-              label={
-                <span>
-                  Item Name&nbsp;
-                  <Tooltip
-                    title={`Enter a noun that describes the item that will be listed. This will replace the word "item" in the list interface and notifications. For example: if you set this to the word "Socks", on the list interface you will see buttons such as "Submit Socks" and "Challenge Socks".`}
-                  >
-                    <Icon type="question-circle-o" />
-                  </Tooltip>
-                </span>
-              }
-              {...rest}
-            />
-            <CustomInput
-              style={{ marginBottom: 0 }}
-              name="itemNamePlural"
-              placeholder="socks"
-              hasFeedback
-              error={errors.itemNamePlural}
-              touched={touched.itemNamePlural}
-              label={
-                <span>
-                  Item Name Plural&nbsp;
-                  <Tooltip
-                    title={`This is the plural of the item name. In other words, if "Item Name" is "bus", this should be "buses"`}
-                  >
-                    <Icon type="question-circle-o" />
-                  </Tooltip>
-                </span>
-              }
-              {...rest}
-            />
-          </StyledTCRInfoContainer>
-        </StyledTCRParamContainer>
-        {!advancedOptions && (
-          <StyledDepositContainer>
-            <label htmlFor="depositSlider">
-              Deposit&nbsp;
-              <Tooltip title="These are the funds users will have to deposit in order to make a submission into the list, which are sufficient to cover both arbitration costs paid to jurors and the rewards that users earn for a successful challenge. If the deposit is too low, incorrect submissions may not be flagged for dispute which could result in incorrect items being accepted in the list. If the deposit is too high, challengers will be likely to catch most malicious submissions, but people will only rarely submit to your list (so you may end up having a list that is difficult to attack but largely empty).">
-                <Icon type="question-circle-o" />
-              </Tooltip>
-              :{' '}
-              <ETHAmount
-                amount={totalDepositSlider}
-                decimals={3}
-                displayUnit={` ${nativeCurrency}`}
-              />
-            </label>
-            <StyledSliderContainer>
-              <CheapestAndSafestContainer>
-                {width > 480 && (
-                  <>
-                    <StyledFontAwesomeIcon icon="coins" />
-                    Cheapest
-                  </>
-                )}
-                <Slider
-                  id="depositSlider"
-                  min={0}
-                  max={30}
-                  onChange={onChangeDepositVal}
-                  value={typeof depositVal === 'number' ? depositVal : 0}
-                  step={0.01}
-                  style={{ flex: 1, margin: '0 24px' }}
-                />
-                {width > 480 && (
-                  <>
-                    <StyledFontAwesomeIcon icon="shield-alt" /> Safest
-                  </>
-                )}
-              </CheapestAndSafestContainer>
-              <InputNumber
-                min={0}
-                max={30}
-                step={0.01}
-                value={depositVal}
-                onChange={onChangeDepositVal}
-              />
-            </StyledSliderContainer>
-          </StyledDepositContainer>
-        )}
-        {isKlerosArbitrator === false ? (
-          <CustomInput
-            name="arbitratorExtraData"
-            placeholder="0x7331deadbeef..."
-            hasFeedback
-            error={errors.arbitratorExtraData}
-            touched={touched.arbitratorExtraData}
-            label={
-              <span>
-                Arbitrator Extra Data&nbsp;
-                <Tooltip
-                  title={`The extra data for the arbitrator. See ERC 792 for more information. Default: ${defaultArbDataLabel}`}
-                >
-                  <Icon type="question-circle-o" />
-                </Tooltip>
-              </span>
+                  See an example policy
+                </TextLink>
+              </>
             }
-            {...rest}
-          />
-        ) : (
-          <KlerosParams
-            arbitratorExtraData={values.arbitratorExtraData}
-            klerosAddress={debouncedArbitrator}
-            policyAddress={policyAddress}
-            setArbitratorExtraData={setArbitratorExtraData}
-            library={chainProvider}
+            hint={`PDF · under ${POLICY_MAX_MB} MB`}
+            kind="pdf"
+            accept={POLICY_TYPE}
+            value={values.tcrPrimaryDocument}
+            uploading={!!uploading.tcrPrimaryDocument}
+            error={errors.tcrPrimaryDocument}
+            showError={!!touched.tcrPrimaryDocument}
+            what="the policy"
+            reject={rejectPolicy}
+            onPick={(file) => upload('tcrPrimaryDocument', Roles.Policy, file)}
           />
         )}
-        <Form.Item
-          label="Advanced options"
-          style={{ marginBottom: '12px', display: 'flex' }}
-        >
-          <Switch
-            onChange={() => setAdvancedOptions((toggle) => !toggle)}
-            style={{ marginLeft: '8px' }}
+
+        {show('token') && (
+          <TextField
+            name="tokenAddress"
+            label="Stake token address"
+            mono
+            placeholder="0x…"
+            help={
+              defaultStakeTokenLabel
+                ? `Pre-filled with ${defaultStakeTokenLabel} on ${chainName}.`
+                : `There is no default on ${chainName}; enter the token's address.`
+            }
           />
-        </Form.Item>
-        {advancedOptions && (
-          <>
-            <PGTCRDepositInput
-              name="submissionMinDeposit"
-              error={errors.submissionMinDeposit}
-              touched={touched.submissionMinDeposit}
-              tokenSymbol={tokenSymbol}
-              label={
-                <span>
-                  Min Submission Deposit&nbsp;
-                  <Tooltip title="This is the minimum amount for the deposit backing up an item in the list, which is to be awarded to successful challengers. If the value is too low, challengers may not have enough incentive to look for flaws in most of the submissions and bad ones could make it through. If it is too high, submitters may not have enough incentive to send items which may result in an empty list.">
-                    <Icon type="question-circle-o" />
-                  </Tooltip>
-                </span>
-              }
-              {...rest}
+        )}
+
+        {show('token') && (
+          <TokenReadout
+            address={values.tokenAddress ?? ''}
+            symbol={tokenSymbol}
+            decimals={tokenDecimals}
+            loading={loadingSymbol}
+          />
+        )}
+
+        {show('stake') && !advancedOptions && (
+          <FormField
+            id={`${ids}-stake`}
+            label="Minimum stake"
+            help="What a submitter locks at least; they may stake more."
+            error={errors.submissionMinDeposit as string | undefined}
+            showError={!!touched.submissionMinDeposit}
+          >
+            {(a11y) => (
+              <Stack $gap={8}>
+                <Row $gap={14}>
+                  <RangeInput
+                    type="range"
+                    aria-label="Minimum stake slider"
+                    min={STAKE_SLIDER.min}
+                    max={STAKE_SLIDER.max}
+                    step={STAKE_SLIDER.step}
+                    value={sliderValue}
+                    onChange={(event) => {
+                      setDepositDraft(null)
+                      onChangeDepositVal(Number(event.target.value))
+                    }}
+                  />
+                  <AmountInput
+                    {...a11y}
+                    type="text"
+                    inputMode="decimal"
+                    value={depositText}
+                    onChange={(event) => {
+                      setDepositDraft(event.target.value)
+                      if (event.target.value.trim() !== '')
+                        onChangeDepositVal(event.target.value.trim())
+                    }}
+                    onBlur={() => setDepositDraft(null)}
+                  />
+                  <Small $muted style={{ minWidth: 40 }}>
+                    {tokenSymbol}
+                  </Small>
+                </Row>
+                <SliderEnds>
+                  <Small $faint>Lower: more submissions</Small>
+                  <Small $faint>Higher: wrong entries cost more</Small>
+                </SliderEnds>
+                {stakeError && <ErrorText role="alert">{stakeError}</ErrorText>}
+                <NarrowOnly>
+                  <Small $muted>
+                    A submitter locks at least{' '}
+                    <Small>
+                      {enforcedStake ?? '—'} {tokenSymbol}
+                    </Small>{' '}
+                    and a{' '}
+                    <Small>
+                      {costText ?? '…'} {nativeCurrency}
+                    </Small>{' '}
+                    arbitration deposit.
+                  </Small>
+                </NarrowOnly>
+              </Stack>
+            )}
+          </FormField>
+        )}
+
+        {show('stake') &&
+          (isKlerosArbitrator ? (
+            <KlerosParams
+              arbitratorExtraData={values.arbitratorExtraData}
+              klerosAddress={debouncedArbitrator}
+              policyAddress={policyAddress}
+              setArbitratorExtraData={setArbitratorExtraData}
+              library={chainProvider}
             />
-            <CustomInput
-              name="submissionPeriodDuration"
-              placeholder="84"
-              addonAfter="Hours"
-              error={errors.submissionPeriodDuration}
-              touched={touched.submissionPeriodDuration}
-              type={ItemTypes.NUMBER}
-              step={1}
-              label={
-                <span>
-                  Submission Period Duration (hours) &nbsp;
-                  <Tooltip title="The length of time (in hours) that a freshly submitted item needs to last without challenges before it it considered accepted onto the list.">
-                    <Icon type="question-circle-o" />
-                  </Tooltip>
-                </span>
-              }
-              {...rest}
+          ) : (
+            <TextField
+              name="arbitratorExtraData"
+              label="Arbitrator extra data"
+              placeholder="0x…"
+              mono
+              help={`Passed to the arbitrator with every dispute (ERC-792). ${defaultArbDataLabel ?? ''}`}
             />
-            <CustomInput
-              name="reinclusionPeriodDuration"
-              placeholder="6"
-              addonAfter="Hours"
-              error={errors.reinclusionPeriodDuration}
-              touched={touched.reinclusionPeriodDuration}
-              type={ItemTypes.NUMBER}
-              step={1}
-              label={
-                <span>
-                  Reinclusion Period Duration (hours) &nbsp;
-                  <Tooltip title="The length of time (in hours) that an item ruled to be kept included needs to last without challenges before it it considered accepted onto the list.">
-                    <Icon type="question-circle-o" />
-                  </Tooltip>
-                </span>
-              }
-              {...rest}
-            />
-            <CustomInput
-              name="withdrawingPeriodDuration"
-              placeholder="84"
-              addonAfter="Hours"
-              error={errors.withdrawingPeriodDuration}
-              touched={touched.withdrawingPeriodDuration}
-              type={ItemTypes.NUMBER}
-              step={1}
-              label={
-                <span>
-                  Withdrawing Period Duration (hours) &nbsp;
-                  <Tooltip title="The length of time (in hours) that an item takes to be manually withdrawn by its submitter.">
-                    <Icon type="question-circle-o" />
-                  </Tooltip>
-                </span>
-              }
-              {...rest}
-            />
-            <CustomInput
-              name="arbitrationParamsCooldown"
-              placeholder="168"
-              addonAfter="Hours"
-              error={errors.arbitrationParamsCooldown}
-              touched={touched.arbitrationParamsCooldown}
-              type={ItemTypes.NUMBER}
-              step={1}
-              label={
-                <span>
-                  Arbitration Parameters Cooldown (hours) &nbsp;
-                  <Tooltip title="The length of time (in hours) that a new Policy and Arbitration Settings need to be put into effect.">
-                    <Icon type="question-circle-o" />
-                  </Tooltip>
-                </span>
-              }
-              {...rest}
-            />
-            <CustomInput
+          ))}
+
+        {show('stake') && (
+          <SwitchField
+            id={`${ids}-advanced`}
+            label="Advanced options"
+            help="Periods, challenger stake, governor and arbitrator, appeal multipliers."
+            checked={advancedOptions}
+            onChange={setAdvancedOptions}
+          />
+        )}
+
+        {show('stake') && advancedOptions && (
+          <Stack $gap={24}>
+            <Divider label="Stake" />
+            <FieldGrid $alignEnd>
+              <TextField
+                name="submissionMinDeposit"
+                label="Minimum submission stake"
+                numeric
+                unit={tokenSymbol}
+                placeholder={String(WIZARD_DEFAULTS.submissionMinDeposit)}
+                help="The least a submitter can stake. A successful challenger takes it."
+                trailing={
+                  stakeError ? (
+                    <ErrorText role="alert">{stakeError}</ErrorText>
+                  ) : undefined
+                }
+              />
+              <TextField
+                name="challengeStakeMultiplier"
+                label="Challenger stake"
+                numeric
+                unit="%"
+                placeholder={String(WIZARD_DEFAULTS.challengeStakeMultiplier)}
+                help="A share of the entry's stake. Back to the challenger on a win; added to the entry's stake on a loss."
+              />
+            </FieldGrid>
+            <Divider label="Periods" />
+            <FieldGrid $alignEnd>
+              <TextField
+                name="submissionPeriodDuration"
+                label="Submission period"
+                numeric
+                unit="hours"
+                placeholder={String(WIZARD_DEFAULTS.submissionPeriodDuration)}
+                help="Unchallenged this long, a new entry counts as accepted."
+              />
+              <TextField
+                name="reinclusionPeriodDuration"
+                label="Reinclusion period"
+                numeric
+                unit="hours"
+                placeholder={String(WIZARD_DEFAULTS.reinclusionPeriodDuration)}
+                help="The same, for an entry the jurors kept."
+              />
+              <TextField
+                name="withdrawingPeriodDuration"
+                label="Withdrawing period"
+                numeric
+                unit="hours"
+                placeholder={String(WIZARD_DEFAULTS.withdrawingPeriodDuration)}
+                help="From asking to withdraw to getting the stake back."
+              />
+              <TextField
+                name="arbitrationParamsCooldown"
+                label="Arbitration parameters cooldown"
+                numeric
+                unit="hours"
+                placeholder={String(WIZARD_DEFAULTS.arbitrationParamsCooldown)}
+                help="How long a new policy or arbitration settings wait to apply."
+              />
+            </FieldGrid>
+            <Divider label="Roles" />
+            <TextField
               name="governorAddress"
-              placeholder="0x7331deadbeef..."
-              hasFeedback
-              error={errors.governorAddress}
-              touched={touched.governorAddress}
-              label={
-                <span>
-                  Governor&nbsp;
-                  <Tooltip
-                    title={`The address of the governor to use for this list. It can update parameters such as the challenge period duration, deposits, primary document, etc. This address can also be used to transfer the role of governor to another address. By default this is set to ${defaultGovernorLabel}`}
-                  >
-                    <Icon type="question-circle-o" />
-                  </Tooltip>
-                </span>
-              }
-              {...rest}
+              label="Governor"
+              placeholder="0x…"
+              mono
+              help={`Can change the periods, deposits and policy, and hand the role to another address. Default: ${defaultGovernorLabel ?? 'none'}.`}
             />
-            <CustomInput
+            <TextField
               name="arbitratorAddress"
-              placeholder="0x7331deadbeef..."
-              hasFeedback
-              error={errors.arbitratorAddress}
-              touched={touched.arbitratorAddress}
-              label={
-                <span>
-                  Arbitrator&nbsp;
-                  <Tooltip
-                    title={`This is the contract address of the arbitrator that will resolve disputes regarding whether challenged submissions and challenged removal requests belong on this list. By default it is set to ${defaultArbLabel}, but you could use any other arbitrator complying with the ERC 792 standard.`}
-                  >
-                    <Icon type="question-circle-o" />
-                  </Tooltip>
-                </span>
-              }
-              {...rest}
+              label="Arbitrator"
+              placeholder="0x…"
+              mono
+              help={`The contract that rules on challenges. Default: ${defaultArbLabel ?? 'none'}; any ERC-792 arbitrator works.`}
             />
-            <CustomInput
-              name="tokenAddress"
-              placeholder="0x7331deadbeef..."
-              hasFeedback
-              error={errors.tokenAddress}
-              touched={touched.tokenAddress}
-              label={
-                <span>
-                  Token Address&nbsp;
-                  <Tooltip title="The address of the ERC-20 token that will be used for deposits. Default is sDAI token address.">
-                    <Icon type="question-circle-o" />
-                  </Tooltip>
-                </span>
-              }
-              {...rest}
-            />
-            <CustomInput
-              name="challengeStakeMultiplier"
-              placeholder="50"
-              error={errors.challengeStakeMultiplier}
-              touched={touched.challengeStakeMultiplier}
-              type={ItemTypes.NUMBER}
-              addonAfter="%"
-              label={
-                <span>
-                  Challenge stake multiplier&nbsp;
-                  <Tooltip title="This is the multiplier for the stake the challenger must pay to create a dispute against an item, which will be reimbursed if the challenge is successful, or get reinvested into the item stake if the challenge fails.">
-                    <Icon type="question-circle-o" />
-                  </Tooltip>
-                </span>
-              }
-              {...rest}
-            />
-            <StyledAlert
-              message={
-                <div>
-                  To appeal, in addition to paying enough fees to cover the
-                  payment to the jurors in case the appeal is lost, parties must
-                  also pay an additional stake. The stake of the side that
-                  ultimately loses the dispute is used as the reward given to
-                  the appeal fee contributors that funded the side that
-                  ultimately wins the dispute.
-                  <br />
-                  <br />
-                  This amount is calculated proportionally to the total juror
-                  fees required for appeal using the multipliers below, given in
-                  percentage. For example, a multiplier of 10% will result in
-                  the stake being 10% of the total juror fees.
-                  <br />
-                  <br />
-                  If you choose very large stake multipliers, the expected
-                  returns of crowdfunders will improve, but appeal costs may
-                  become so large as to be a barrier. If you choose very small
-                  stake multipliers, total appeal costs are reduced, but
-                  crowdfunders may not be sufficiently incentivized to
-                  participate. Different multipliers can be chosen for the sides
-                  that won and lost the previous appeal round. The more one of
-                  these multipliers is larger than the other, the more the side
-                  with the smaller multiplier is favoured.
-                </div>
-              }
-              type="info"
-              showIcon
-            />
-            <StyledAlert
-              message="The total cost to fully fund one side of an appeal is: Total Appeal Cost=Total Juror Fees+Total Juror Fees*Stake Multiplier"
-              type="info"
-              showIcon
-            />
-            <CustomInput
-              name="sharedStakeMultiplier"
-              placeholder="100"
-              error={errors.sharedStakeMultiplier}
-              touched={touched.sharedStakeMultiplier}
-              type={ItemTypes.NUMBER}
-              addonAfter="%"
-              label={
-                <span>
-                  Shared stake multiplier&nbsp;
-                  <Tooltip title="This is the multiplier for the stake both parties must pay to fully fund their side of an appeal when there isn't a winner or loser (e.g. when the arbitrator refused to rule).">
-                    <Icon type="question-circle-o" />
-                  </Tooltip>
-                </span>
-              }
-              {...rest}
-            />
-            <CustomInput
-              name="winnerStakeMultiplier"
-              placeholder="100"
-              error={errors.winnerStakeMultiplier}
-              touched={touched.winnerStakeMultiplier}
-              type={ItemTypes.NUMBER}
-              addonAfter="%"
-              label={
-                <span>
-                  Winner stake multiplier&nbsp;
-                  <Tooltip title="This is the multiplier for the fee stake the winner of a round must pay to fully fund his side of an appeal.">
-                    <Icon type="question-circle-o" />
-                  </Tooltip>
-                </span>
-              }
-              {...rest}
-            />
-            <CustomInput
-              name="loserStakeMultiplier"
-              placeholder="200"
-              error={errors.loserStakeMultiplier}
-              touched={touched.loserStakeMultiplier}
-              type={ItemTypes.NUMBER}
-              addonAfter="%"
-              label={
-                <span>
-                  Loser stake multiplier&nbsp;
-                  <Tooltip title="This is the multiplier for the fee stake the loser of a round must pay to fully fund his side of an appeal.">
-                    <Icon type="question-circle-o" />
-                  </Tooltip>
-                </span>
-              }
-              {...rest}
-            />
-          </>
+            <Divider label="Appeal stakes" />
+            <AppealStakeNote />
+            <FieldGrid $columns={3} $alignEnd>
+              <TextField
+                name="sharedStakeMultiplier"
+                label="Shared"
+                numeric
+                unit="%"
+                placeholder={String(WIZARD_DEFAULTS.sharedStakeMultiplier)}
+                help="Both sides, when the arbitrator refused to rule."
+              />
+              <TextField
+                name="winnerStakeMultiplier"
+                label="Winner"
+                numeric
+                unit="%"
+                placeholder={String(WIZARD_DEFAULTS.winnerStakeMultiplier)}
+                help="The side the court currently favours."
+              />
+              <TextField
+                name="loserStakeMultiplier"
+                label="Loser"
+                numeric
+                unit="%"
+                placeholder={String(WIZARD_DEFAULTS.loserStakeMultiplier)}
+                help="The side the court currently rules against."
+              />
+            </FieldGrid>
+          </Stack>
         )}
-      </Form>
-    </Card>
+
+        {show('custom') && (
+          <FieldGrid>
+            <TextField name="itemName" {...FACTORY_COPY.fields.itemName} />
+            <TextField
+              name="itemNamePlural"
+              {...FACTORY_COPY.fields.itemNamePlural}
+            />
+          </FieldGrid>
+        )}
+      </StepBody>
+    </form>
   )
 }
 
-const validationSchema = yup.object().shape({
-  tcrTitle: yup
-    .string()
-    .required('A title is required.')
-    .max(40, 'Title must be less than 40 characters long.'),
-  tcrDescription: yup
-    .string()
-    .required('A description is required.')
-    .max(255, 'Description must be less than 255 characters long.'),
-  arbitratorAddress: yup
-    .string()
-    .required('An arbitrator address is required.')
-    .max(42, 'Ethereum addresses are 42 characters long.'),
-  arbitratorExtraData: yup
-    .string()
-    .required('The arbitrator extra data is required.'),
-  governorAddress: yup
-    .string()
-    .required('A governor address is required.')
-    .max(42, 'Ethereum addresses are 42 characters long.'),
-  tokenAddress: yup
-    .string()
-    .required('A token address is required.')
-    .max(42, 'Ethereum addresses are 42 characters long.'),
-  itemName: yup
-    .string()
-    .required('An item name is required.')
-    .max(20, 'The item name must be less than 20 characters long.'),
-  itemNamePlural: yup
-    .string()
-    .required('The plural of the item name is required.')
-    .max(20, 'The item name must be less than 20 characters long.'),
-  submissionMinDeposit: yup
-    .number()
-    .typeError('Amount should be a number.')
-    .required('A value is required.')
-    .min(0, 'The amount must not be negative.'),
-  submissionPeriodDuration: yup
-    .number()
-    .typeError('Amount should be a number.')
-    .required('A value is required.')
-    .min(0, 'The amount must not be negative.'),
-  reinclusionPeriodDuration: yup
-    .number()
-    .typeError('Amount should be a number.')
-    .required('A value is required.')
-    .min(0, 'The amount must not be negative.'),
-  withdrawingPeriodDuration: yup
-    .number()
-    .typeError('Amount should be a number.')
-    .required('A value is required.')
-    .min(0, 'The amount must not be negative.'),
-  arbitrationParamsCooldown: yup
-    .number()
-    .typeError('Amount should be a number.')
-    .required('A value is required.')
-    .min(0, 'The amount must not be negative.'),
-  tcrPrimaryDocument: yup.string().required('A primary document is required.'),
-  tcrLogo: yup.string().required('A logo is required.'),
-  challengeStakeMultiplier: yup
-    .number()
-    .typeError('Amount should be a number.')
-    .min(0, 'The stake multiplier cannot be negative.')
-    .required('A value is required'),
-  sharedStakeMultiplier: yup
-    .number()
-    .typeError('Amount should be a number.')
-    .min(0, 'The stake multiplier cannot be negative.')
-    .required('A value is required'),
-  winnerStakeMultiplier: yup
-    .number()
-    .typeError('Amount should be a number.')
-    .min(0, 'The stake multiplier cannot be negative.')
-    .required('A value is required'),
-  loserStakeMultiplier: yup
-    .number()
-    .typeError('Amount should be a number.')
-    .min(0, 'The stake multiplier cannot be negative.')
-    .required('A value is required'),
-})
-
-export default withFormik<StepProps, TCRFormValues>({
-  validationSchema,
+export default withFormik<TCRParamsOuterProps, TCRFormValues>({
+  validationSchema: ({ factorySection }: TCRParamsOuterProps) =>
+    tcrSchemaFor(factorySection),
   mapPropsToValues: ({ tcrState }) => {
     const { transactions: _transactions, ...values } = tcrState
     return values

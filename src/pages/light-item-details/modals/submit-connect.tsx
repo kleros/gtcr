@@ -1,68 +1,104 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import styled from 'styled-components'
-import {
-  Button,
-  Typography,
-  Descriptions,
-  Input,
-  Col,
-  Row,
-  Form,
-  Tooltip,
-  Select,
-  Skeleton,
-  Result,
-  Alert,
-} from 'components/ui'
-import Icon from 'components/ui/Icon'
 import { useDebounce } from 'use-debounce'
-import _gtcr from 'assets/abis/LightGeneralizedTCR.json'
-import ETHAmount from 'components/eth-amount'
-import { addPeriod, isETHAddress } from 'utils/string'
-import { ethers } from 'ethers'
-import useUrlChainId from 'hooks/use-url-chain-id'
+import type { BigNumber, ethers } from 'ethers'
 import { useAccount, usePublicClient, useWalletClient, useChainId } from 'wagmi'
 import { useQuery } from '@tanstack/react-query'
 import { simulateContract } from '@wagmi/core'
-import { getAddress, keccak256, encodePacked, type Address } from 'viem'
+import { getAddress, keccak256, encodePacked } from 'viem'
 import { useAtlasProvider } from '@kleros/kleros-app'
+import _gtcr from 'assets/abis/LightGeneralizedTCR.json'
+import { addPeriod, isETHAddress } from 'utils/string'
+import useUrlChainId from 'hooks/use-url-chain-id'
 import { JSON_UPLOAD_ROLE } from 'utils/atlas-roles'
 import useNativeCurrency from 'hooks/native-currency'
-import useNativeBalance from 'hooks/use-native-balance'
 import useTcrMetaEvidence from 'hooks/use-tcr-meta-evidence'
-import ListingCriteriaLink from 'components/listing-criteria-link'
-import EnsureAuth from 'components/ensure-auth'
 import { wrapWithToast, errorToast } from 'utils/wrap-with-toast'
 import { parseWagmiError } from 'utils/parse-wagmi-error'
 import { wagmiConfig } from 'config/wagmi'
-import { StyledModal, StyledSpin, InsufficientBalanceText } from './challenge'
+import {
+  Body,
+  Button,
+  Row,
+  SkeletonBlock,
+  Small,
+  Stack,
+  TextInput,
+} from 'components/curate/primitives'
+import {
+  WhatHappensNext,
+  type OutcomeStep,
+  type ReceiptLine,
+} from 'components/curate/what-happens-next'
+import Select from 'components/ui/Select'
+import { Dialog } from 'components/curate/item-light-dialog'
+import { gatedConfirm, useActionGate } from 'components/curate/item-light-gate'
+import { FieldLabel, Notice } from 'components/curate/item-light-notice'
+import { formatAmount } from 'components/curate/item-light-format'
+import { SubmissionFlowScaffold, SubmissionNavigation } from './submit'
 
-export const StyledAlert = styled(Alert)`
-  margin-bottom: 24px;
+/*
+ * Enable a badge: connect a badge list to a parent list by submitting the
+ * pair, plus a match file of the columns compared, to the parent's
+ * connected list. The deposit is the connected list's submission deposit.
+ */
+
+const FieldBlock = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 `
 
-export const StyledSkeleton = styled(Skeleton)`
-  display: inline;
+/* The app's glass Select, at the field's full width. */
+const ColumnSelect = styled(Select)`
+  display: block;
+  width: 100%;
+  min-width: 0;
 
-  .ui-skeleton-title {
-    margin: -3px 0;
+  .ui-select-trigger {
+    font-size: var(--fs-body);
+    line-height: var(--lh-body);
   }
 `
 
-export const SkeletonTitleProps = { width: '90px' }
+const MatchRow = styled.div`
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+
+  @media (max-width: 520px) {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+`
+
+const MatchCell = styled.div`
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+`
 
 interface SubmitConnectModalProps {
   onCancel: () => void
   initialValues?: string[]
   tcrAddress?: string
   gtcrView: ethers.Contract | undefined
+  visible?: boolean
   [key: string]: unknown
 }
 
+const NONE = 'None'
+
 const SubmitConnectModal = (props: SubmitConnectModalProps) => {
   const nativeCurrency = useNativeCurrency()
-  const { balance: nativeBalance } = useNativeBalance()
-  const { onCancel, initialValues, tcrAddress: relTCRAddress, gtcrView } = props
+  const {
+    onCancel,
+    initialValues,
+    tcrAddress: relTCRAddress,
+    gtcrView,
+    visible,
+  } = props
   const { address: account } = useAccount()
   const chainId = useChainId()
   const publicClient = usePublicClient()
@@ -80,9 +116,9 @@ const SubmitConnectModal = (props: SubmitConnectModalProps) => {
   const [debouncedBadgeTCRAddr] = useDebounce(badgeTCRAddr, 300)
 
   const [match, setMatch] = useState<{
-    parentTCR: string | undefined
-    connectedTCR: string | undefined
-    badgeTCR: string | undefined
+    parentTCR?: string
+    connectedTCR?: string
+    badgeTCR?: string
     columns: (number | null)[]
   }>()
 
@@ -110,25 +146,38 @@ const SubmitConnectModal = (props: SubmitConnectModalProps) => {
   const badgeTCRMetadata = badgeMetaQuery.data?.metadata
   const relTCRMetaEvidence = relMetaQuery.data ?? undefined
 
-  // Fetch submission deposit for the relation TCR (on-chain, cached).
-  const arbitrableQuery = useQuery<ethers.BigNumber>({
-    queryKey: ['fetchArbitrable', 'light', relTCRAddress?.toLowerCase()],
+  // Fetch the submission deposit of the connected list (on-chain, cached),
+  // with its breakdown for the receipt.
+  const arbitrableQuery = useQuery<{
+    total: BigNumber
+    base: BigNumber
+    arbitrationCost: BigNumber
+  }>({
+    queryKey: [
+      'fetchArbitrable',
+      'light',
+      'breakdown',
+      relTCRAddress?.toLowerCase(),
+    ],
     queryFn: async () => {
       const relTCRData = await gtcrView!.fetchArbitrable(relTCRAddress!)
       const { submissionBaseDeposit, arbitrationCost } = relTCRData
-      return submissionBaseDeposit.add(arbitrationCost)
+      return {
+        total: submissionBaseDeposit.add(arbitrationCost),
+        base: submissionBaseDeposit,
+        arbitrationCost,
+      }
     },
     enabled: !!relTCRAddress && !!gtcrView,
     staleTime: Infinity,
   })
-  const relTCRSubmissionDeposit = arbitrableQuery.data
+  const relTCRSubmissionDeposit = arbitrableQuery.data?.total
 
   useEffect(() => {
     if (arbitrableQuery.error)
       setError((arbitrableQuery.error as Error).message)
   }, [arbitrableQuery.error])
 
-  const NONE = 'None'
   const handleChange = useCallback(
     (i: number, j: string | number) => {
       if (!badgeTCRMetadata || !tcrMetaEvidence) return
@@ -165,9 +214,9 @@ const SubmitConnectModal = (props: SubmitConnectModalProps) => {
       !relTCRMetaEvidence ||
       !relTCRAddress ||
       !relTCRSubmissionDeposit ||
+      !account ||
       !walletClient ||
-      !publicClient ||
-      !account
+      !publicClient
     )
       return
     setIsSubmitting(true)
@@ -177,7 +226,7 @@ const SubmitConnectModal = (props: SubmitConnectModalProps) => {
       })
       const fileURI = await uploadFile(matchFile, JSON_UPLOAD_ROLE)
       if (!fileURI) throw new Error('Failed to upload match file to IPFS.')
-      const { columns } = relTCRMetaEvidence.metadata ?? {}
+      const columns = relTCRMetaEvidence.metadata?.columns ?? []
 
       const values = {
         Address: badgeTCRAddr,
@@ -194,7 +243,7 @@ const SubmitConnectModal = (props: SubmitConnectModalProps) => {
         throw new Error('Failed to upload item metadata to IPFS.')
 
       const { request } = await simulateContract(wagmiConfig, {
-        address: relTCRAddress as Address,
+        address: relTCRAddress as `0x${string}`,
         abi: _gtcr,
         functionName: 'addItem',
         args: [ipfsEvidencePath],
@@ -248,193 +297,228 @@ const SubmitConnectModal = (props: SubmitConnectModalProps) => {
     walletClient,
   ])
 
-  const insufficientBalance =
-    nativeBalance !== undefined &&
-    relTCRSubmissionDeposit &&
-    nativeBalance < BigInt(relTCRSubmissionDeposit.toString())
-
   const submitDisabled = useMemo(
     () => !match || match.columns.filter((col) => col !== null).length === 0,
     [match],
   )
 
+  const gate = useActionGate({
+    verb: 'enable the badge',
+    shortVerb: 'enable the badge',
+    amount: relTCRSubmissionDeposit,
+    pending: relTCRSubmissionDeposit ? undefined : 'Loading the deposit',
+  })
+
   if (!relTCRMetaEvidence || !relTCRSubmissionDeposit)
     return (
-      <StyledModal
-        title="Enable Badge"
-        footer={[
-          <Button key="back" onClick={onCancel}>
-            Cancel
-          </Button>,
-        ]}
-        {...props}
+      <Dialog
+        open={!!visible}
+        onClose={onCancel}
+        title="Enable a badge"
+        width="lg"
       >
-        <StyledSpin />
-      </StyledModal>
+        <SkeletonBlock $height="220px" />
+      </Dialog>
     )
 
   const { fileURI } = relTCRMetaEvidence
   if (error)
     return (
-      <StyledModal
-        title="Enable Badge"
-        footer={[
-          <Button key="back" onClick={onCancel}>
+      <Dialog
+        open={!!visible}
+        onClose={onCancel}
+        title="Enable a badge"
+        footer={
+          <Button type="button" $variant="secondary" onClick={onCancel}>
             Back
-          </Button>,
-        ]}
-        {...props}
+          </Button>
+        }
       >
-        <Result status="warning" title={error} />
-      </StyledModal>
+        <Notice tone="contested" role="alert">
+          {error}
+        </Notice>
+      </Dialog>
     )
 
+  const total = formatAmount(relTCRSubmissionDeposit, nativeCurrency)
+  const receipt: ReceiptLine[] = arbitrableQuery.data
+    ? [
+        {
+          label: 'Base deposit',
+          value: formatAmount(arbitrableQuery.data.base, nativeCurrency),
+        },
+        {
+          label: 'Arbitration cost',
+          value: formatAmount(
+            arbitrableQuery.data.arbitrationCost,
+            nativeCurrency,
+          ),
+        },
+      ]
+    : [{ label: 'Deposit (base + arbitration cost)', value: total }]
+  const steps: OutcomeStep[] = [
+    {
+      title: `You deposit ${total} now`,
+      body: 'The badge connection is submitted to the connected list and its challenge period opens.',
+    },
+    {
+      title: 'No challenge',
+      body: 'After the challenge period the request can be executed: the badge is enabled and your deposit comes back.',
+    },
+    {
+      title: 'If someone challenges',
+      branch: true,
+      body: "Kleros jurors check it against the listing policy. If they side with you, you get your deposit back plus the challenger's, less the arbitration cost; if not, it goes to the challenger.",
+    },
+  ]
+  const confirmBlocker = submitDisabled
+    ? 'Match at least one identifier column'
+    : gate.blocker
+
   return (
-    <StyledModal
-      title="Enable Badge"
-      footer={[
-        <Button key="back" onClick={onCancel}>
-          Back
-        </Button>,
-        <div key="submit">
-          <EnsureAuth>
-            <Button
-              type="primary"
-              htmlType="submit"
-              onClick={handleSubmit}
-              disabled={submitDisabled || !!insufficientBalance}
-              loading={isSubmitting}
-            >
-              Submit
-            </Button>
-          </EnsureAuth>
-          {insufficientBalance && (
-            <InsufficientBalanceText>
-              Insufficient balance
-            </InsufficientBalanceText>
-          )}
-        </div>,
-      ]}
-      {...props}
+    <Dialog
+      open={!!visible}
+      onClose={onCancel}
+      title="Enable a badge"
+      width="lg"
     >
-      <Typography.Title level={4}>
-        Read the&nbsp;
-        <ListingCriteriaLink fileURI={fileURI}>
-          Listing Criteria
-        </ListingCriteriaLink>
-        .
-      </Typography.Title>
-      <Form.Item
-        label={
-          <span>
-            Parent list Address&nbsp;
-            <Tooltip title="Fill with the address of the parent list.">
-              <Icon type="question-circle-o" />
-            </Tooltip>
-          </span>
-        }
-        style={{ marginBottom: '12px' }}
-      >
-        {initialValues ? (
-          <Input value={initialValues[0]} disabled />
-        ) : (
-          <Input
-            placeholder="0x1337deadbeef..."
-            onChange={(e) => setTCRAddr(e.target.value)}
-          />
-        )}
-      </Form.Item>
-      <Form.Item
-        label={
-          <span>
-            Badge list address&nbsp;
-            <Tooltip title="Fill here the address of the badge list.">
-              <Icon type="question-circle-o" />
-            </Tooltip>
-          </span>
-        }
-      >
-        <Input
-          placeholder="0xbeafb047beef..."
-          onChange={(e) => setBadgeTCRAddr(e.target.value)}
-          disabled={!tcrMetaEvidence}
-        />
-      </Form.Item>
-      <StyledAlert
-        message="Understand Badges"
-        description="An item has a badge if it is also present on the badge list. As an example, a token submission 'PNK' on a list of Tokens can display the ERC20 Badge if the same submission is also present on the ERC20 Badge list. To check if an item is present on two lists we must match common fields. In the example we would choose field 'Address'. The comparison is strict, in other words, if multiple fields are matched, ALL values must match perfectly. In general, you should use the least amount of columns that are enough to uniquely identify a submission on both lists to avoid items not being detected due to (for example, case differences)."
-        type="info"
-        showIcon
-      />
-      <Typography.Paragraph>
-        Match at least one ID column of the parent list to use to when searching
-        for the item in the badge list. The more fields matched, the stricter
-        the search.
-      </Typography.Paragraph>
-      {badgeTCRMetadata &&
-        badgeTCRMetadata.columns?.map((column, i) => (
-          <Row key={i} gutter={[8, 8]}>
-            <Col span={12}>
-              <span>
-                {column.label}
-                {column.description && (
-                  <Tooltip title={addPeriod(column.description)}>
-                    &nbsp;
-                    <Icon type="question-circle-o" />
-                  </Tooltip>
-                )}
-              </span>
-            </Col>
-            <Col span={12}>
-              {tcrMetaEvidence?.metadata ? (
-                <Select
-                  defaultValue={NONE}
-                  style={{ width: '100%' }}
-                  onChange={(value) =>
-                    handleChange(
-                      i,
-                      typeof value === 'object' ? value.key : value,
-                    )
-                  }
-                  disabled={!column.isIdentifier}
-                >
-                  {[
-                    { label: NONE },
-                    ...(tcrMetaEvidence?.metadata?.columns ?? []),
-                  ].map((column, j) => (
-                    <Select.Option value={column.label} key={j}>
-                      {column.label}
-                    </Select.Option>
-                  ))}
-                </Select>
-              ) : (
-                <StyledSkeleton
-                  active
-                  paragraph={false}
-                  title={SkeletonTitleProps}
-                />
+      <SubmissionFlowScaffold
+        tcrTitle={relTCRMetaEvidence.metadata?.tcrTitle || 'this list'}
+        itemName="badge"
+        nativeCurrency={nativeCurrency}
+        submissionDeposit={relTCRSubmissionDeposit}
+        fileURI={fileURI}
+        activeStep={0}
+        steps={['Connect the lists', 'Review and confirm']}
+        fieldLabels={[
+          'Parent list address',
+          'Badge list address',
+          'Column matching',
+        ]}
+        navigation={
+          <Stack $gap={12}>
+            <WhatHappensNext
+              receipt={receipt}
+              total={total}
+              steps={steps}
+              {...gatedConfirm(gate, {
+                label: 'Enable badge',
+                onConfirm: handleSubmit,
+                disabled: !!confirmBlocker || isSubmitting,
+                blocker: confirmBlocker,
+                loading: isSubmitting,
+              })}
+              policy={`This is a deposit, not a fee. Amounts are in ${nativeCurrency}.`}
+            />
+            <SubmissionNavigation>
+              <Button type="button" $variant="secondary" onClick={onCancel}>
+                Back
+              </Button>
+              {!gate.fix && gate.controls && (
+                <Row $gap={8}>{gate.controls}</Row>
               )}
-            </Col>
-          </Row>
-        ))}
-      <Typography.Paragraph>
-        A deposit is required to submit. This value reimbursed at the end of the
-        challenge period or, if there is a dispute, be awarded to the party that
-        wins.
-      </Typography.Paragraph>
-      <Descriptions
-        bordered
-        column={{ xxl: 4, xl: 3, lg: 3, md: 3, sm: 2, xs: 1 }}
+            </SubmissionNavigation>
+          </Stack>
+        }
       >
-        <Descriptions.Item label="Total Deposit Required">
-          <ETHAmount
-            decimals={3}
-            amount={relTCRSubmissionDeposit.toString()}
-            displayUnit={` ${nativeCurrency}`}
-          />
-        </Descriptions.Item>
-      </Descriptions>
-    </StyledModal>
+        <Stack $gap={16}>
+          <Body $muted>
+            An entry has a badge when it is also present on the badge list. The
+            lists are compared on the matched columns, and every matched value
+            must be identical, so match the fewest columns that identify an
+            entry on both lists.
+          </Body>
+          <FieldBlock>
+            <FieldLabel htmlFor="connect-parent-list">
+              Parent list address
+            </FieldLabel>
+            {initialValues ? (
+              <TextInput
+                id="connect-parent-list"
+                value={initialValues[0]}
+                disabled
+              />
+            ) : (
+              <TextInput
+                id="connect-parent-list"
+                placeholder="0x…"
+                onChange={(e) => setTCRAddr(e.target.value)}
+              />
+            )}
+          </FieldBlock>
+          <FieldBlock>
+            <FieldLabel htmlFor="connect-badge-list">
+              Badge list address
+            </FieldLabel>
+            <TextInput
+              id="connect-badge-list"
+              placeholder="0x…"
+              onChange={(e) => setBadgeTCRAddr(e.target.value)}
+              disabled={!tcrMetaEvidence}
+            />
+            {!tcrMetaEvidence && (
+              <Small $muted>Enter a valid parent list address first.</Small>
+            )}
+          </FieldBlock>
+          {badgeTCRMetadata && (
+            <Stack $gap={10}>
+              <Small $muted>
+                For each badge column, pick the parent list column it should
+                match. Only identifier columns can be matched.
+              </Small>
+              {(badgeTCRMetadata.columns ?? []).map((column, i) => {
+                const selectId = `connect-match-${i}`
+                return (
+                  <MatchRow key={i}>
+                    <FieldLabel
+                      id={`${selectId}-label`}
+                      htmlFor={selectId}
+                      title={
+                        column.description
+                          ? addPeriod(column.description)
+                          : undefined
+                      }
+                    >
+                      {column.label}
+                    </FieldLabel>
+                    {tcrMetaEvidence?.metadata ? (
+                      <MatchCell>
+                        <ColumnSelect
+                          id={selectId}
+                          aria-labelledby={`${selectId}-label`}
+                          aria-describedby={
+                            column.isIdentifier ? undefined : `${selectId}-why`
+                          }
+                          defaultValue={0}
+                          disabled={!column.isIdentifier}
+                          onChange={(value) => handleChange(i, Number(value))}
+                        >
+                          {[
+                            { label: NONE },
+                            ...(tcrMetaEvidence.metadata.columns ?? []),
+                          ].map((parentColumn, j) => (
+                            <Select.Option value={j} key={j}>
+                              {parentColumn.label}
+                            </Select.Option>
+                          ))}
+                        </ColumnSelect>
+                        {!column.isIdentifier && (
+                          <Small $muted id={`${selectId}-why`}>
+                            Not an identifier column, so it is not matched.
+                          </Small>
+                        )}
+                      </MatchCell>
+                    ) : (
+                      <SkeletonBlock $height="40px" />
+                    )}
+                  </MatchRow>
+                )
+              })}
+            </Stack>
+          )}
+        </Stack>
+      </SubmissionFlowScaffold>
+    </Dialog>
   )
 }
 

@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react'
-import { Popover, Form, Input, Button, Alert } from 'components/ui'
+import { Popover, Form, Input, Alert } from 'components/ui'
 import { withFormik, Field, FormikProps, FieldProps } from 'formik'
 import { useWeb3Context } from 'hooks/use-web3-context'
 import { useDisconnect } from 'wagmi'
@@ -7,55 +7,123 @@ import ReactBlockies from 'react-blockies'
 import styled from 'styled-components'
 import * as yup from 'yup'
 import localforage from 'localforage'
-import ETHAddress from './eth-address'
-import ETHAmount from './eth-amount'
 import { ethers, BigNumber } from 'ethers'
+import useNativeCurrency from 'hooks/native-currency'
+import { Button, Label, Small, Stack } from 'components/curate/primitives'
+import { CurateIcon } from 'components/curate/icons'
+import ETHAddress from './eth-address'
+import TokenAmount from './token-amount'
 
 const { randomBytes } = ethers.utils
-import useNativeCurrency from 'hooks/native-currency'
 
-const StyledDiv = styled.div`
-  height: 32px;
-  line-height: 100%;
-  width: 32px;
-`
-const StyledReactBlockies = styled(ReactBlockies)<{ large?: boolean }>`
-  border-radius: ${({ large }) => (large ? '4' : '16')}px;
-`
+/*
+ * Account avatar and menu. The blockies avatar sits in a hairline ring (a
+ * rounded tile at the large size). The menu leads with the balance as its
+ * figure, then the address with copy and explorer, the email form, and a
+ * quiet disconnect.
+ */
 
-const PopoverMenu = styled.div`
-  margin: -12px -16px;
-  min-width: 260px;
-`
+const AvatarFrame = styled.span<{ $large?: boolean }>`
+  position: relative;
+  display: inline-flex;
+  flex: 0 0 auto;
+  width: ${({ $large }) => ($large ? '98px' : '32px')};
+  height: ${({ $large }) => ($large ? '98px' : '32px')};
+  overflow: hidden;
+  border-radius: ${({ $large }) =>
+    $large ? 'var(--radius-lg)' : 'var(--radius-pill)'};
 
-const MenuSection = styled.div`
-  padding: 12px 16px;
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    box-shadow:
+      inset 0 0 0 1px var(--glass-border),
+      inset 0 1px 0 var(--glass-highlight);
+    pointer-events: none;
+  }
 
-  &:not(:last-child) {
-    border-bottom: 1px solid ${({ theme }) => theme.borderColor};
+  canvas {
+    display: block;
   }
 `
 
-const MenuLabel = styled.div`
-  font-size: 11px;
-  font-weight: 600;
-  color: ${({ theme }) => theme.textSecondary};
-  margin-bottom: 6px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+const AvatarButton = styled.button`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  cursor: pointer;
+  transition:
+    box-shadow var(--motion),
+    transform var(--motion);
+
+  &:hover,
+  &[aria-expanded='true'] {
+    box-shadow: 0 0 0 3px var(--color-primary-soft);
+  }
 `
 
-const StyledAlertInfo = styled(Alert)`
-  margin-bottom: 16px;
-  margin-top: 8px;
+const Menu = styled.div`
+  margin: -12px -14px;
+  min-width: 280px;
 `
 
-const StyledAlertPopup = styled(Alert)`
-  margin-bottom: 16px !important;
+const MenuSection = styled(Stack)`
+  padding: 14px 16px;
+
+  &:not(:last-child) {
+    box-shadow: inset 0 -1px 0 var(--glass-border);
+  }
 `
 
-const StyledSaveButton = styled(Button)`
-  margin-top: 8px;
+const Balance = styled.span`
+  color: var(--color-text);
+  font-family: var(--font-figure);
+  font-size: 28px;
+  line-height: 32px;
+  font-weight: 500;
+  letter-spacing: -0.035em;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+`
+
+/** The currency after the figure: half its size, quiet, on its baseline. */
+const BalanceUnit = styled.span`
+  margin-left: 0.2em;
+  color: var(--color-muted);
+  font-size: 0.5em;
+  font-weight: 400;
+  letter-spacing: 0;
+`
+
+const Disconnect = styled.button`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  height: 38px;
+  border: 1px solid var(--glass-border);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--status-off);
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    background var(--motion),
+    border-color var(--motion);
+
+  &:hover {
+    border-color: color-mix(in srgb, var(--status-off) 40%, transparent);
+    background: var(--status-off-soft);
+  }
 `
 
 interface EmailFormValues {
@@ -85,7 +153,11 @@ const EmailForm = ({
           validateStatus={errors.email && touched.email ? 'error' : undefined}
           hasFeedback
         >
-          <Input placeholder="alice@pm.me" {...field} />
+          <Input
+            placeholder="you@example.org"
+            aria-label="Email address"
+            {...field}
+          />
         </Form.Item>
       )}
     </Field>
@@ -95,8 +167,8 @@ const EmailForm = ({
 const validationSchema = yup.object().shape({
   email: yup
     .string()
-    .email('Invalid email.')
-    .required('A valid email is required.'),
+    .email('Enter a valid email address.')
+    .required('An email address is required.'),
 })
 
 const EnhancedEmailForm = withFormik<EmailFormOuterProps, EmailFormValues>({
@@ -110,20 +182,6 @@ const EnhancedEmailForm = withFormik<EmailFormOuterProps, EmailFormValues>({
 const EMAIL_FORM_ID = 'emailForm'
 const CACHED_SETTINGS = 'CACHED_SETTINGS'
 
-const StyledDisconnectButton = styled(Button)`
-  width: 100%;
-  background: transparent !important;
-  color: ${({ theme }) => theme.errorColor} !important;
-  border-color: ${({ theme }) => theme.errorColor} !important;
-
-  &:hover,
-  &:focus {
-    color: #fff !important;
-    background-color: ${({ theme }) => theme.errorColor} !important;
-    border-color: ${({ theme }) => theme.errorColor} !important;
-  }
-`
-
 interface IdenticonProps {
   className?: string
   large?: boolean
@@ -134,6 +192,7 @@ const Identicon = ({ className, large }: IdenticonProps) => {
   const { disconnect } = useDisconnect()
   const nativeCurrency = useNativeCurrency()
 
+  const [menuOpen, setMenuOpen] = useState(false)
   const [balance, setBalance] = useState<BigNumber>()
   const [emailStatus, setEmailStatus] = useState<
     'loading' | 'success' | 'error'
@@ -232,85 +291,88 @@ const Identicon = ({ className, large }: IdenticonProps) => {
 
   if (!account) return null
 
-  const blockiesContent = (
-    <StyledDiv className={className} id="react-blockies-identicon">
-      <StyledReactBlockies
-        large={large}
+  const avatar = (
+    <AvatarFrame
+      className={className}
+      $large={large}
+      id="react-blockies-identicon"
+      aria-hidden="true"
+    >
+      <ReactBlockies
         scale={large ? 7 : 4}
         seed={account.toLowerCase()}
         size={large ? 14 : 8}
       />
-    </StyledDiv>
+    </AvatarFrame>
   )
 
-  return large ? (
-    blockiesContent
-  ) : (
+  if (large) return avatar
+
+  return (
     <Popover
-      arrowPointAtCenter
       content={
-        <PopoverMenu>
-          <MenuSection>
-            <MenuLabel>Address</MenuLabel>
+        <Menu>
+          <MenuSection $gap={6}>
+            <Label $tone="faint">Balance</Label>
+            <Balance>
+              {/* Rounded to 4 decimals: wei would print up to 18. */}
+              <TokenAmount amount={balance} precision={4} />
+              {balance && <BalanceUnit>{nativeCurrency}</BalanceUnit>}
+            </Balance>
             <ETHAddress address={account} />
           </MenuSection>
-          {account && (
-            <MenuSection>
-              <MenuLabel>{nativeCurrency}</MenuLabel>
-              <ETHAmount amount={balance} decimals={4} />
-            </MenuSection>
-          )}
           {process.env.REACT_APP_NOTIFICATIONS_API_URL && networkId && (
-            <MenuSection>
-              <MenuLabel>Email Notifications</MenuLabel>
+            <MenuSection $gap={8}>
+              <Label $tone="faint">Email notifications</Label>
               <EnhancedEmailForm
                 onSubmit={submitEmail}
                 formID={EMAIL_FORM_ID}
                 initialValues={fetchedEmailSettings}
               />
-              <StyledAlertInfo
-                message={
-                  <div>
-                    Note that it is necessary to subscribe for each chain.
-                  </div>
-                }
-                type="info"
-                showIcon
-              />
+              <Small $muted>Subscriptions are per chain.</Small>
               {emailStatus && emailStatus !== 'loading' && (
-                <StyledAlertPopup
+                <Alert
                   closable
                   type={emailStatus}
                   message={
                     emailStatus === 'error'
-                      ? 'Failed to save settings.'
+                      ? 'Settings could not be saved.'
                       : 'Settings saved.'
                   }
                 />
               )}
-              <StyledSaveButton
-                key="submitEmail"
-                type="primary"
+              <Button
+                type="submit"
                 form={EMAIL_FORM_ID}
-                htmlType="submit"
-                loading={emailStatus === 'loading'}
+                $variant="primary"
+                $size="sm"
                 disabled={emailStatus === 'loading'}
               >
-                {emailStatus === 'loading' ? '' : 'Save'}
-              </StyledSaveButton>
+                {emailStatus === 'loading' ? 'Saving…' : 'Save'}
+              </Button>
             </MenuSection>
           )}
           <MenuSection>
-            <StyledDisconnectButton onClick={() => disconnect()}>
+            <Disconnect type="button" onClick={() => disconnect()}>
+              <CurateIcon name="wallet" size={15} />
               Disconnect
-            </StyledDisconnectButton>
+            </Disconnect>
           </MenuSection>
-        </PopoverMenu>
+        </Menu>
       }
       placement="bottomRight"
       trigger="click"
+      visible={menuOpen}
+      onVisibleChange={setMenuOpen}
     >
-      {blockiesContent}
+      <AvatarButton
+        type="button"
+        aria-label="Account menu"
+        aria-haspopup="menu"
+        aria-expanded={menuOpen}
+      >
+        {avatar}
+      </AvatarButton>
     </Popover>
   )
 }

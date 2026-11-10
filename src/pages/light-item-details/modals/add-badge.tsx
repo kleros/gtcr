@@ -1,61 +1,134 @@
 import React, { useState, useCallback, useEffect } from 'react'
-import { BigNumber } from 'ethers'
-import {
-  Spin,
-  Modal,
-  Button,
-  Typography,
-  Descriptions,
-  List,
-  Radio,
-} from 'components/ui'
 import styled from 'styled-components'
-import ETHAmount from 'components/eth-amount'
-import ListingCriteriaLink from 'components/listing-criteria-link'
+import { litEdgeBackground } from 'components/ui/kit-styles'
+import { BigNumber } from 'ethers'
 import useNativeCurrency from 'hooks/native-currency'
+import { useAttachment } from 'hooks/use-attachment'
 import { parseIpfs } from 'utils/ipfs-parse'
+import { CurateIcon } from 'components/curate/icons'
+import {
+  Button,
+  Data,
+  EmptyState,
+  Label,
+  SkeletonBlock,
+  Small,
+  Stack,
+  Title,
+} from 'components/curate/primitives'
+import { Dialog } from 'components/curate/item-light-dialog'
+import { formatAmount } from 'components/curate/item-light-format'
 
-export const StyledSpin = styled(Spin)`
+/*
+ * Pick a badge list to submit this entry to. The deposit shown is the badge
+ * list's own submission deposit; the submission itself opens the submit
+ * flow with the matched columns pre-filled.
+ */
+
+const RadioList = styled.div`
   display: flex;
-  height: 60px;
-  width: 100%;
-  align-items: center;
-  justify-content: center;
-`
-
-export const StyledRadioGroup = styled(Radio.Group)`
-  width: 100%;
-  max-height: 250px;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 320px;
   overflow-y: auto;
 `
 
-export const StyledRadio = styled(Radio)`
-  display: flex;
-  justify-content: space-between;
+/*
+ * One badge list per row, in the selector language: the chosen row is
+ * encircled by the lit edge, and its radio is a ring whose centre lights.
+ * Nothing is chosen until someone picks; the native radio keeps the
+ * keyboard (arrows move and choose inside the group).
+ */
+const RadioRow = styled.label<{ $selected: boolean }>`
+  --edge-angle: 210deg;
+  position: relative;
+  display: grid;
+  grid-template-columns: 20px 48px minmax(0, 1fr);
+  gap: 12px;
   align-items: center;
+  padding: 10px 12px;
+  border: 1px solid
+    ${({ $selected }) => ($selected ? 'transparent' : 'var(--color-border)')};
+  border-radius: var(--radius);
+  background: ${({ $selected }) =>
+    $selected
+      ? litEdgeBackground('var(--color-surface)')
+      : 'var(--color-surface)'};
+  box-shadow: ${({ $selected }) =>
+    $selected
+      ? '0 0 0 3px color-mix(in srgb, var(--edge-2) 12%, transparent), 0 10px 26px -16px var(--cta-glow)'
+      : 'none'};
+  cursor: pointer;
+  transition:
+    border-color var(--motion),
+    box-shadow var(--motion);
 
-  & > span + span {
-    flex: 1;
+  &:hover {
+    border-color: ${({ $selected }) =>
+      $selected ? 'transparent' : 'var(--color-border-strong)'};
+  }
+
+  input {
+    appearance: none;
+    position: relative;
+    width: 16px;
+    height: 16px;
+    margin: 0;
+    border: 1.5px solid var(--color-faint);
+    border-radius: 50%;
+    background: transparent;
+    cursor: pointer;
+    transition: border-color var(--motion);
+  }
+
+  input::after {
+    content: '';
+    position: absolute;
+    inset: 2px;
+    border-radius: 50%;
+    background: var(--edge-2);
+    box-shadow: 0 0 10px var(--edge-2);
+    transform: scale(0);
+    transition: transform var(--dur-control) var(--ease-spring);
+  }
+
+  input:checked {
+    border-color: var(--edge-2);
+  }
+
+  input:checked::after {
+    transform: scale(1);
+  }
+
+  input:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 3px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    input::after {
+      transition: none;
+    }
   }
 `
 
-export const StyledListItem = styled(List.Item)`
-  margin-left: 16px;
+const Logo = styled.img`
+  width: 48px;
+  height: 48px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  object-fit: contain;
+  background: var(--color-raised);
 `
 
-export const StyledModal = styled(Modal)`
-  & > .ui-modal-content {
-    border-top-left-radius: 14px;
-    border-top-right-radius: 14px;
-  }
-`
-
-export const ButtonContainer = styled.div`
-  margin: 12px 0;
-`
-
-export const StyledListingCriteriaLink = styled(ListingCriteriaLink)`
-  text-decoration: underline;
+const DepositLine = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--color-border);
 `
 
 export interface BadgeInfo {
@@ -94,6 +167,7 @@ const AddBadgeModal = ({
   foundBadges,
 }: AddBadgeModalProps) => {
   const nativeCurrency = useNativeCurrency()
+  const openAttachment = useAttachment()
   const [selectedBadge, setSelectedBadge] = useState<number>()
   const handleSubmit = useCallback(() => {
     if (!availableBadges || selectedBadge === undefined) return
@@ -113,11 +187,8 @@ const AddBadgeModal = ({
         .includes(availableBadgeAddr),
   )
 
-  // The radio button doesn't trigger onSelectBadge when displayed,
-  // which can cause inconsistency between the what is displayed on the UI
-  // and the component state (i.e. it shows A is selected, but actually B is).
-  // To get around this, once we have a list of available badges loaded,
-  // explicitly select it.
+  // Select the first badge once the list is loaded so the displayed choice
+  // and the component state never disagree.
   useEffect(() => {
     if (!filteredAvailableBadges || filteredAvailableBadges.length === 0) return
     setSelectedBadge(0)
@@ -125,107 +196,117 @@ const AddBadgeModal = ({
 
   if (!availableBadges || !tcrAddress || !connectedTCRAddr || isFetchingBadges)
     return (
-      <StyledModal
-        title="Add Badge"
-        visible={visible}
-        footer={[
-          <Button key="back" onClick={onCancel}>
+      <Dialog
+        open={!!visible}
+        onClose={onCancel}
+        title="Add a badge"
+        footer={
+          <Button type="button" $variant="secondary" onClick={onCancel}>
             Cancel
-          </Button>,
-        ]}
-        onCancel={onCancel}
+          </Button>
+        }
       >
-        <StyledSpin />
-      </StyledModal>
+        <SkeletonBlock $height="120px" />
+      </Dialog>
     )
 
+  const selected =
+    selectedBadge === undefined ? undefined : availableBadges[selectedBadge]
+
   return (
-    <StyledModal
-      title="Add Badge"
-      visible={visible}
-      onCancel={onCancel}
-      footer={[
-        <Button key="back" onClick={onCancel}>
-          Cancel
-        </Button>,
-        <Button
-          key="add-badge"
-          type="primary"
-          onClick={handleSubmit}
-          disabled={typeof selectedBadge === 'undefined'}
-        >
-          Add Badge
-        </Button>,
-      ]}
-    >
-      <StyledRadioGroup
-        onChange={(e) => setSelectedBadge(Number(e.target.value))}
-        value={selectedBadge}
-      >
-        {filteredAvailableBadges.map(
-          ({ fileURI, metadata: { tcrTitle, logoURI } }, i) => (
-            <StyledRadio value={i} key={i}>
-              <StyledListItem>
-                <List.Item.Meta
-                  avatar={
-                    <img width={50} alt="logo" src={parseIpfs(logoURI)} />
-                  }
-                  title={tcrTitle}
-                  description={
-                    <>
-                      Read the&nbsp;
-                      <StyledListingCriteriaLink fileURI={fileURI}>
-                        Listing Criteria
-                      </StyledListingCriteriaLink>
-                    </>
-                  }
-                />
-              </StyledListItem>
-            </StyledRadio>
-          ),
-        )}
-        {filteredAvailableBadges.length === 0 && (
-          <div>No badges available for this list</div>
-        )}
-      </StyledRadioGroup>
-      <ButtonContainer>
-        <Button
-          type="link"
-          onClick={handleEnableNewBadge}
-          style={{ padding: 0 }}
-        >
-          Enable a new badge
-        </Button>
-      </ButtonContainer>
-      {filteredAvailableBadges.length > 0 && (
+    <Dialog
+      open={!!visible}
+      onClose={onCancel}
+      title="Add a badge"
+      footer={
         <>
-          <Typography.Paragraph>
-            A deposit is required to submit. This value reimbursed at the end of
-            the challenge period or, if there is a dispute, be awarded to the
-            party that wins.
-          </Typography.Paragraph>
-          <Descriptions
-            bordered
-            column={{ xxl: 4, xl: 3, lg: 3, md: 3, sm: 2, xs: 1 }}
-            style={{ marginBottom: '16px' }}
+          <Button type="button" $variant="secondary" onClick={onCancel}>
+            Cancel
+          </Button>
+          <Button
+            type="button"
+            $variant="primary"
+            onClick={handleSubmit}
+            disabled={selectedBadge === undefined}
+            aria-disabled={selectedBadge === undefined}
+            title={selectedBadge === undefined ? 'Choose a badge' : undefined}
           >
-            <Descriptions.Item label="Total Deposit Required">
-              <ETHAmount
-                decimals={3}
-                amount={
-                  typeof selectedBadge !== 'undefined'
-                    ? availableBadges[
-                        selectedBadge
-                      ].submissionDeposit.toString()
-                    : 0
-                }
-                displayUnit={` ${nativeCurrency}`}
-              />
-            </Descriptions.Item>
-          </Descriptions>
+            Continue
+            {selected
+              ? ` · ${formatAmount(selected.submissionDeposit, nativeCurrency)}`
+              : ''}
+          </Button>
         </>
-      )}
-    </StyledModal>
+      }
+    >
+      <Stack $gap={16}>
+        <RadioList role="radiogroup" aria-label="Available badges">
+          {filteredAvailableBadges.map(
+            ({ fileURI, metadata: { tcrTitle, logoURI } }, i) => (
+              <RadioRow key={i} $selected={selectedBadge === i}>
+                <input
+                  type="radio"
+                  name="badge"
+                  value={i}
+                  checked={selectedBadge === i}
+                  onChange={() => setSelectedBadge(i)}
+                />
+                <Logo src={parseIpfs(logoURI)} alt="" />
+                <div style={{ minWidth: 0 }}>
+                  <Title>{tcrTitle}</Title>
+                  <Button
+                    type="button"
+                    $variant="ghost"
+                    $size="sm"
+                    disabled={!fileURI}
+                    onClick={(event) => {
+                      event.preventDefault()
+                      if (fileURI) openAttachment(parseIpfs(fileURI), true)
+                    }}
+                  >
+                    <CurateIcon name="policy" size={14} />
+                    Listing policy
+                  </Button>
+                </div>
+              </RadioRow>
+            ),
+          )}
+          {filteredAvailableBadges.length === 0 && (
+            <EmptyState icon="verified" title="No badges available">
+              No badge list is connected to this list yet.
+            </EmptyState>
+          )}
+        </RadioList>
+        <div>
+          <Button
+            type="button"
+            $variant="ghost"
+            $size="sm"
+            onClick={handleEnableNewBadge}
+          >
+            Enable a new badge
+          </Button>
+        </div>
+        {filteredAvailableBadges.length > 0 && (
+          <DepositLine>
+            <div>
+              <Label>Deposit</Label>
+              <Small $muted>
+                {' '}
+                Back after the challenge period; in a dispute, it goes to the
+                side the jurors agree with.
+              </Small>
+            </div>
+            <Data>
+              {formatAmount(
+                selected ? selected.submissionDeposit : 0,
+                nativeCurrency,
+              )}
+            </Data>
+          </DepositLine>
+        )}
+      </Stack>
+    </Dialog>
   )
 }
 

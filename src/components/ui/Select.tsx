@@ -3,133 +3,205 @@ import React, {
   useRef,
   useEffect,
   useCallback,
+  useLayoutEffect,
   useMemo,
+  useId,
   Children,
 } from 'react'
 import { createPortal } from 'react-dom'
-import styled, { css, DefaultTheme } from 'styled-components'
+import styled, { css } from 'styled-components'
+import { useFormItemControl } from './form-item-context'
+import { KitIcon } from './kit-icons'
+import {
+  fieldFocus,
+  fieldHover,
+  fieldSurface,
+  floatingEntrance,
+  glassPopover,
+  joinClassNames,
+  menuRow,
+  ringSpinner,
+} from './kit-styles'
+
+/*
+ * Select, v2: the same raised 44px field as Input with a chevron that turns
+ * on open; the option panel is glass like SelectMenu's and the app bar
+ * menus (40px rows, radius 12, the row under the pointer or the keyboard
+ * lit, the chosen row in full text with a check). Keyboard works throughout
+ * (arrows, Enter, Escape, Tab), and the panel flips above when there is no
+ * room. Escape closes only the panel, never a dialog around it, and the
+ * panel closes as soon as focus leaves the field.
+ */
+/* Panel geometry: 40px rows with a 2px gap, 6px padding and a hairline. */
+const PANEL_MAX = 296
+const PANEL_MIN = 120
+const PANEL_GAP = 6
+const VIEWPORT_EDGE = 8
+const OPTION_ROW = 42
+const SEARCH_ROW = 46
+const PANEL_CHROME = 14
 
 const SelectWrapper = styled.div`
   display: inline-block;
+  max-width: 100%;
 `
 
-const SelectTrigger = styled.div<{ $focused?: boolean; $disabled?: boolean }>`
+const SelectTrigger = styled.button<{ $focused?: boolean }>`
+  ${fieldSurface}
   display: inline-flex;
   align-items: center;
   justify-content: space-between;
+  gap: 10px;
   width: 100%;
-  min-height: 32px;
-  padding: 4px 11px;
-  font-size: 14px;
-  line-height: 1.5;
-  color: ${({ theme }) => theme.textPrimary};
-  background: ${({ theme }) => theme.componentBackground};
-  border: 1px solid ${({ theme }) => theme.borderColor};
-  border-radius: 4px;
+  min-height: 44px;
+  padding: 0 12px 0 14px;
+  font-family: var(--font-sans);
+  font-size: var(--fs-body-lg);
+  line-height: var(--lh-body-lg);
+  text-align: left;
   cursor: pointer;
-  transition: all 0.3s;
-  box-sizing: border-box;
   user-select: none;
 
-  &:hover {
-    border-color: ${({ theme }) => theme.primaryColor};
+  /* Hover never outranks focus or the open state. */
+  &:hover:not(:disabled):not(:focus-visible):not([aria-expanded='true']) {
+    ${fieldHover}
   }
 
-  ${({ $focused, theme }) =>
+  ${({ $focused }) =>
     $focused &&
     css`
-      border-color: ${theme.primaryColor};
-      box-shadow: 0 0 0 2px ${theme.focusShadowColor};
-    `}
-
-  ${({ $disabled, theme }) =>
-    $disabled &&
-    css`
-      background: ${theme.elevatedBackground};
-      color: ${theme.disabledColor};
-      cursor: not-allowed;
-
-      &:hover {
-        border-color: ${theme.borderColor};
+      && {
+        ${fieldFocus}
       }
     `}
+
+  &:focus-visible {
+    ${fieldFocus}
+  }
+
+  &:disabled {
+    background: transparent;
+    color: var(--color-muted);
+    cursor: not-allowed;
+  }
 `
 
 const SelectValue = styled.span`
   flex: 1;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 `
 
 const Placeholder = styled.span`
-  color: ${({ theme }) => theme.textTertiary};
+  color: var(--color-faint);
 `
 
 const Arrow = styled.span<{ $open?: boolean }>`
-  margin-left: 4px;
-  font-size: 12px;
-  color: ${({ theme }) => theme.textTertiary};
-  transition: transform 0.3s;
-  transform: ${({ $open }) => ($open ? 'rotate(180deg)' : 'rotate(0deg)')};
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 24px;
+  height: 24px;
+  border-radius: var(--radius-pill);
+  color: ${({ $open }) =>
+    $open ? 'var(--color-primary)' : 'var(--color-faint)'};
+  transform: rotate(${({ $open }) => ($open ? '180deg' : '0deg')});
+  transition:
+    transform var(--dur-control) var(--ease-spring),
+    color var(--dur-hover) var(--ease-out);
 `
 
-const DropdownStyled = styled.div`
+const Spinner = styled.span`
+  ${ringSpinner}
+  width: 16px;
+  height: 16px;
+  color: var(--color-primary);
+`
+
+const DropdownStyled = styled.div<{ $up?: boolean }>`
   position: fixed;
   z-index: 1050;
-  background: ${({ theme }) => theme.componentBackground};
-  border: 1px solid ${({ theme }) => theme.borderColor};
-  border-radius: 4px;
-  box-shadow: ${({ theme }) => `0 4px 12px ${theme.shadowColor}`};
-  max-height: 256px;
+  max-height: ${PANEL_MAX}px;
+  padding: 6px;
   overflow-y: auto;
-  padding: 4px 0;
+  overscroll-behavior: contain;
+  ${glassPopover}
+  transform-origin: ${({ $up }) => ($up ? '50% 100%' : '50% 0')};
+  ${({ $up }) => floatingEntrance($up)}
 `
 
+/* No type attribute, so the global text-input rules leave it alone. */
 const SearchInput = styled.input`
+  ${fieldSurface}
   width: 100%;
-  padding: 5px 12px;
-  margin-bottom: 4px;
-  border: none;
-  border-bottom: 1px solid ${({ theme }) => theme.borderColor};
-  background: ${({ theme }) => theme.componentBackground};
-  color: ${({ theme }) => theme.textPrimary};
-  font-size: 14px;
-  outline: none;
-  box-sizing: border-box;
+  height: 40px;
+  margin-bottom: 6px;
+  padding: 0 12px;
+  font-family: var(--font-sans);
+  font-size: var(--fs-body);
 
   &::placeholder {
-    color: ${({ theme }) => theme.textTertiary};
+    color: var(--color-faint);
+  }
+
+  &:focus-visible {
+    ${fieldFocus}
   }
 `
 
-const OptionItem = styled.div<{ $selected?: boolean; $disabled?: boolean }>`
-  padding: 5px 12px;
+const OptionItem = styled.div<{
+  $selected?: boolean
+  $disabled?: boolean
+  $highlighted?: boolean
+}>`
+  ${menuRow}
+  justify-content: space-between;
+  color: ${({ $selected, $highlighted }) =>
+    $selected || $highlighted ? 'var(--color-text)' : 'var(--color-muted)'};
+  background: ${({ $highlighted }) =>
+    $highlighted ? 'var(--hover-fill)' : 'transparent'};
+  font-weight: ${({ $selected }) => ($selected ? 500 : 400)};
   cursor: pointer;
-  transition: background 0.3s;
-  color: ${({ theme }) => theme.textPrimary};
-  font-size: 14px;
-  line-height: 22px;
 
-  ${({ $selected, theme }) =>
-    $selected &&
-    css`
-      background: ${theme.dropdownSelectedBg};
-      font-weight: 600;
-    `}
+  & + & {
+    margin-top: 2px;
+  }
 
-  ${({ $disabled, theme }) =>
+  ${({ $disabled }) =>
     $disabled
       ? css`
-          color: ${theme.disabledColor};
+          color: var(--color-muted);
           cursor: not-allowed;
+          opacity: 0.5;
         `
       : css`
           &:hover {
-            background: ${({ theme: t }: { theme: DefaultTheme }) =>
-              t.dropdownHoverBg};
+            color: var(--color-text);
+            background: var(--hover-fill);
           }
         `}
+`
+
+const OptionLabel = styled.span`
+  flex: 1;
+  min-width: 0;
+`
+
+const OptionCheck = styled.span`
+  display: inline-flex;
+  flex: 0 0 auto;
+  color: var(--color-primary);
+`
+
+const EmptyOption = styled.div`
+  padding: 12px 10px;
+  color: var(--color-faint);
+  font-size: var(--fs-small);
+  line-height: var(--lh-small);
+  text-align: center;
 `
 
 interface OptionProps {
@@ -162,10 +234,22 @@ interface SelectProps {
   showSearch?: boolean
   children?: React.ReactNode
   className?: string
+  id?: string
+  name?: string
+  'aria-label'?: string
+  'aria-labelledby'?: string
+  'aria-describedby'?: string
+  'aria-invalid'?: React.AriaAttributes['aria-invalid']
 }
 
 interface SelectComponent extends React.FC<SelectProps> {
   Option: React.FC<OptionProps>
+}
+
+type ParsedOption = {
+  value: string | number
+  label: React.ReactNode
+  disabled?: boolean
 }
 
 const Select: SelectComponent = ({
@@ -181,19 +265,41 @@ const Select: SelectComponent = ({
   showSearch = false,
   children,
   className,
+  id,
+  'aria-label': ariaLabel,
+  'aria-labelledby': ariaLabelledby,
+  'aria-describedby': ariaDescribedby,
+  'aria-invalid': ariaInvalid,
 }) => {
+  const a11y = useFormItemControl({
+    id,
+    'aria-label': ariaLabel,
+    'aria-labelledby': ariaLabelledby,
+    'aria-describedby': ariaDescribedby,
+    'aria-invalid': ariaInvalid,
+  })
   const [open, setOpen] = useState(false)
   const [search, setSearch] = useState('')
+  const [highlighted, setHighlighted] = useState(-1)
   const [selectedValue, setSelectedValue] = useState<
     string | number | undefined
-  >(value !== undefined ? value : defaultValue)
-  const triggerRef = useRef<HTMLDivElement>(null)
+  >(value === undefined ? defaultValue : value)
+  const triggerRef = useRef<HTMLButtonElement>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
   const searchRef = useRef<HTMLInputElement>(null)
-  const [dropdownPos, setDropdownPos] = useState({
+  const listboxId = useId()
+  const optionId = (index: number) => `${listboxId}-opt-${index}`
+  const [dropdownPos, setDropdownPos] = useState<{
+    top?: number
+    bottom?: number
+    left: number
+    width: number
+    maxHeight: number
+  }>({
     top: 0,
     left: 0,
     width: 0,
+    maxHeight: PANEL_MAX,
   })
 
   // Sync controlled value
@@ -203,11 +309,7 @@ const Select: SelectComponent = ({
 
   // Parse options from children
   const options = useMemo(() => {
-    const opts: {
-      value: string | number
-      label: React.ReactNode
-      disabled?: boolean
-    }[] = []
+    const opts: ParsedOption[] = []
     Children.forEach(children, (child) => {
       const element = child as React.ReactElement
       if (!element || !element.props) return
@@ -231,66 +333,197 @@ const Select: SelectComponent = ({
     })
   }, [options, search, showSearch])
 
-  // Calculate dropdown position
+  // Until the panel has rendered, estimate its height from the rows it holds.
+  const estimatedHeight = Math.min(
+    PANEL_MAX,
+    (showSearch ? SEARCH_ROW : 0) +
+      Math.max(1, filteredOptions.length) * OPTION_ROW +
+      PANEL_CHROME,
+  )
+  const estimateRef = useRef(estimatedHeight)
+  estimateRef.current = estimatedHeight
+
+  // Place the panel under the trigger (fixed, so it escapes clipped parents).
+  // It opens upward only when its real height does not fit below and there
+  // is more room above; when neither side fits it is capped to the room.
   const updateDropdownPosition = useCallback(() => {
     if (!triggerRef.current) return
     const rect = triggerRef.current.getBoundingClientRect()
-    setDropdownPos({
-      top: rect.bottom + 4,
-      left: rect.left,
-      width: rect.width,
-    })
+    const below = window.innerHeight - rect.bottom - PANEL_GAP - VIEWPORT_EDGE
+    const above = rect.top - PANEL_GAP - VIEWPORT_EDGE
+    const panel = dropdownRef.current
+    const needed = Math.min(
+      PANEL_MAX,
+      panel ? panel.scrollHeight + 2 : estimateRef.current,
+    )
+    const up = below < needed && above > below
+    const maxHeight = Math.max(
+      PANEL_MIN,
+      Math.min(PANEL_MAX, up ? above : below),
+    )
+    if (up)
+      setDropdownPos({
+        bottom: window.innerHeight - rect.top + PANEL_GAP,
+        left: rect.left,
+        width: rect.width,
+        maxHeight,
+      })
+    else
+      setDropdownPos({
+        top: rect.bottom + PANEL_GAP,
+        left: rect.left,
+        width: rect.width,
+        maxHeight,
+      })
   }, [])
 
-  // Click outside detection
+  // Re-place the panel once it has rendered and whenever its rows change.
+  useLayoutEffect(() => {
+    if (open) updateDropdownPosition()
+  }, [open, filteredOptions.length, updateDropdownPosition])
+
+  const close = useCallback(() => {
+    setOpen(false)
+    setSearch('')
+    setHighlighted(-1)
+  }, [])
+
+  // While open: a click outside or focus moving elsewhere closes the panel,
+  // and scroll or resize re-place it.
   useEffect(() => {
-    if (!open) return
+    if (!open) return undefined
+    const outside = (target: EventTarget | null) =>
+      !(target instanceof Node) ||
+      (!triggerRef.current?.contains(target) &&
+        !dropdownRef.current?.contains(target))
     const handleClickOutside = (e: MouseEvent) => {
-      if (
-        triggerRef.current &&
-        !triggerRef.current.contains(e.target as Node) &&
-        dropdownRef.current &&
-        !dropdownRef.current.contains(e.target as Node)
-      ) {
-        setOpen(false)
-        setSearch('')
-      }
+      if (outside(e.target)) close()
+    }
+    const handleFocusIn = (e: FocusEvent) => {
+      if (outside(e.target)) close()
+    }
+    // Escape belongs to the open panel alone. This runs in the capture phase
+    // and stops there, so a dialog listening on the document never sees the
+    // key; it also catches the key when focus has fallen to <body>.
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return
+      e.preventDefault()
+      e.stopPropagation()
+      close()
+      triggerRef.current?.focus()
     }
     document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [open])
+    document.addEventListener('focusin', handleFocusIn)
+    document.addEventListener('keydown', handleEscape, true)
+    window.addEventListener('scroll', updateDropdownPosition, true)
+    window.addEventListener('resize', updateDropdownPosition)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+      document.removeEventListener('focusin', handleFocusIn)
+      document.removeEventListener('keydown', handleEscape, true)
+      window.removeEventListener('scroll', updateDropdownPosition, true)
+      window.removeEventListener('resize', updateDropdownPosition)
+    }
+  }, [open, close, updateDropdownPosition])
 
-  // Focus search input when dropdown opens
+  // Keep the highlighted row in view as the arrow keys move it.
+  useEffect(() => {
+    if (!open || highlighted < 0) return
+    dropdownRef.current
+      ?.querySelectorAll('[role="option"]')
+      [highlighted]?.scrollIntoView({ block: 'nearest' })
+  }, [open, highlighted])
+
+  // Focus the search input when the panel opens
   useEffect(() => {
     if (open && showSearch && searchRef.current) searchRef.current.focus()
   }, [open, showSearch])
 
   const handleToggle = useCallback(() => {
     if (disabled || loading) return
-    setOpen((prev) => {
-      if (!prev) updateDropdownPosition()
-      return !prev
-    })
-    setSearch('')
-  }, [disabled, loading, updateDropdownPosition])
+    if (open) close()
+    else {
+      updateDropdownPosition()
+      setHighlighted(options.findIndex((opt) => opt.value === selectedValue))
+      setOpen(true)
+    }
+  }, [
+    disabled,
+    loading,
+    open,
+    close,
+    updateDropdownPosition,
+    options,
+    selectedValue,
+  ])
 
   const handleSelect = useCallback(
-    (opt: {
-      value: string | number
-      label: React.ReactNode
-      disabled?: boolean
-    }) => {
+    (opt: ParsedOption) => {
       if (opt.disabled) return
       const newValue = opt.value
       setSelectedValue(newValue)
-      setOpen(false)
-      setSearch('')
+      close()
       if (onChange)
         if (labelInValue) onChange({ key: newValue, label: opt.label })
         else onChange(newValue)
     },
-    [onChange, labelInValue],
+    [onChange, labelInValue, close],
   )
+
+  const moveHighlight = useCallback(
+    (delta: number) => {
+      if (filteredOptions.length === 0) return
+      setHighlighted((prev) => {
+        let next = prev
+        for (let i = 0; i < filteredOptions.length; i++) {
+          next =
+            (next + delta + filteredOptions.length) % filteredOptions.length
+          if (!filteredOptions[next].disabled) return next
+        }
+        return prev
+      })
+    },
+    [filteredOptions],
+  )
+
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (disabled || loading) return
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        e.preventDefault()
+        if (!open) {
+          handleToggle()
+          return
+        }
+        moveHighlight(e.key === 'ArrowDown' ? 1 : -1)
+      } else if (e.key === 'Enter' && open) {
+        e.preventDefault()
+        const opt = filteredOptions[highlighted]
+        if (opt) handleSelect(opt)
+      } else if (e.key === 'Tab' && open) {
+        // Focus moves on as usual. From the search box (in the floating
+        // panel) it moves on from the trigger, so the tab order holds.
+        if (e.target !== triggerRef.current) triggerRef.current?.focus()
+        close()
+      }
+    },
+    [
+      disabled,
+      loading,
+      open,
+      handleToggle,
+      moveHighlight,
+      filteredOptions,
+      highlighted,
+      handleSelect,
+      close,
+    ],
+  )
+
+  const activeDescendant =
+    open && highlighted >= 0 && highlighted < filteredOptions.length
+      ? optionId(highlighted)
+      : undefined
 
   // Find display label for selected value
   const selectedLabel = useMemo(() => {
@@ -299,70 +532,121 @@ const Select: SelectComponent = ({
   }, [selectedValue, options])
 
   const currentVal = selectedValue
+  const hasValue =
+    currentVal !== undefined && currentVal !== null && currentVal !== ''
 
   return (
-    <SelectWrapper className={`ui-select${className ? ` ${className}` : ''}`}>
+    <SelectWrapper
+      className={joinClassNames(
+        'ui-select',
+        open && 'ui-select-open',
+        disabled && 'ui-select-disabled',
+        className,
+      )}
+    >
       <SelectTrigger
         ref={triggerRef}
+        type="button"
+        {...a11y}
+        role="combobox"
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        aria-controls={open ? listboxId : undefined}
+        aria-activedescendant={activeDescendant}
+        aria-busy={loading || undefined}
+        disabled={disabled}
         onClick={handleToggle}
+        onKeyDown={handleKeyDown}
         $focused={open}
-        $disabled={disabled}
         style={style}
         className="ui-select-trigger"
       >
-        <SelectValue>
-          {currentVal !== undefined &&
-          currentVal !== null &&
-          currentVal !== '' ? (
+        <SelectValue className="ui-select-value">
+          {hasValue ? (
             selectedLabel
           ) : (
-            <Placeholder>{placeholder || '\u00A0'}</Placeholder>
+            <Placeholder className="ui-select-placeholder">
+              {placeholder || ' '}
+            </Placeholder>
           )}
         </SelectValue>
-        <Arrow $open={open}>&#x25BC;</Arrow>
+        {loading ? (
+          <Spinner aria-hidden />
+        ) : (
+          <Arrow className="ui-select-arrow" $open={open} aria-hidden>
+            <KitIcon name="chevron-down" size={16} />
+          </Arrow>
+        )}
       </SelectTrigger>
 
       {open &&
         createPortal(
           <DropdownStyled
             ref={dropdownRef}
+            id={listboxId}
+            role="listbox"
+            className="ui-select-dropdown"
+            $up={dropdownPos.bottom !== undefined}
             style={{
               top: dropdownPos.top,
+              bottom: dropdownPos.bottom,
               left: dropdownPos.left,
               width: dropdownPos.width,
+              maxHeight: dropdownPos.maxHeight,
               ...dropdownStyle,
             }}
           >
             {showSearch && (
               <SearchInput
                 ref={searchRef}
+                className="ui-select-search"
                 value={search}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                   setSearch(e.target.value)
-                }
-                placeholder="Search..."
+                  setHighlighted(0)
+                }}
+                onKeyDown={handleKeyDown}
+                placeholder="Search"
+                role="combobox"
+                aria-label="Search options"
+                aria-autocomplete="list"
+                aria-expanded={open}
+                aria-controls={listboxId}
+                aria-activedescendant={activeDescendant}
                 onClick={(e: React.MouseEvent) => e.stopPropagation()}
               />
             )}
             {filteredOptions.length === 0 ? (
-              <OptionItem
-                style={{ cursor: 'default', textAlign: 'center' }}
-                $disabled
-              >
-                No options
-              </OptionItem>
+              <EmptyOption className="ui-select-empty">No options</EmptyOption>
             ) : (
-              filteredOptions.map((opt) => (
+              filteredOptions.map((opt, index) => (
                 <OptionItem
                   key={opt.value}
+                  id={optionId(index)}
+                  role="option"
+                  aria-selected={opt.value === currentVal}
+                  aria-disabled={opt.disabled || undefined}
+                  className={joinClassNames(
+                    'ui-select-option',
+                    opt.value === currentVal && 'ui-select-option-selected',
+                  )}
                   $selected={opt.value === currentVal}
                   $disabled={opt.disabled}
+                  $highlighted={index === highlighted}
+                  onMouseEnter={() => setHighlighted(index)}
+                  // Keep focus on the trigger (or the search box) on click.
+                  onMouseDown={(e: React.MouseEvent) => e.preventDefault()}
                   onClick={(e: React.MouseEvent) => {
                     e.stopPropagation()
                     handleSelect(opt)
                   }}
                 >
-                  {opt.label}
+                  <OptionLabel>{opt.label}</OptionLabel>
+                  {opt.value === currentVal && (
+                    <OptionCheck aria-hidden>
+                      <KitIcon name="check" size={16} />
+                    </OptionCheck>
+                  )}
                 </OptionItem>
               ))
             )}

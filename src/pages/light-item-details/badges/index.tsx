@@ -6,8 +6,7 @@ import React, {
   useCallback,
 } from 'react'
 import styled from 'styled-components'
-import { Card, Typography, Divider, Button, Result } from 'components/ui'
-import Icon from 'components/ui/Icon'
+import { Link } from 'react-router-dom'
 import useUrlChainId from 'hooks/use-url-chain-id'
 import { useEthersProvider } from 'hooks/ethers-adapters'
 import { ethers, BigNumber } from 'ethers'
@@ -28,46 +27,81 @@ import { useGraphqlBatcher } from 'contexts/graphql-batcher'
 import useGetLogs from 'hooks/get-logs'
 import { gtcrViewAddresses, subgraphUrl } from 'config/tcr-addresses'
 import { parseIpfs } from 'utils/ipfs-parse'
+import { CurateIcon } from 'components/curate/icons'
+import {
+  Body,
+  Grid,
+  Label,
+  PanelHeader,
+  Small,
+  Stack,
+  Subheading,
+  Title,
+} from 'components/curate/primitives'
+import { Notice } from 'components/curate/item-light-notice'
 
-export const StyledGrid = styled.div`
-  display: grid;
-  grid-gap: 20px;
-  grid-template-columns: repeat(auto-fill, minmax(225px, 1fr));
-`
+/*
+ * Badges: the other lists this entry is also on, found through the parent
+ * list's connected badge lists and their match files. Each card links to
+ * the entry on the badge list and shows its status there.
+ */
 
-export const StyledLogo = styled.img`
-  object-fit: contain;
-  max-width: 40%;
-  padding-bottom: 12px;
-`
-
-export const StyledCol = styled.div`
+const BadgeCard = styled(Link)`
   display: flex;
   flex-direction: column;
   align-items: center;
-`
-
-export const StyledParagraph = styled(Typography.Paragraph)`
+  gap: 10px;
+  min-height: 200px;
+  padding: 20px 16px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-card);
+  color: inherit;
   text-align: center;
+  text-decoration: none;
+  transition:
+    border-color var(--motion),
+    box-shadow var(--motion);
+
+  &:hover {
+    border-color: var(--color-border-strong);
+    box-shadow: var(--shadow-card-hover);
+  }
 `
 
-export const StyledDivider = styled(Divider)`
-  margin: 24px 0 !important;
+const BadgeLogo = styled.img`
+  width: 64px;
+  height: 64px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  object-fit: contain;
+  background: var(--color-raised);
 `
 
-export const DashedCard = styled(Card)`
-  box-shadow: none;
-  background: none;
-  border: dashed;
-  border-width: 2px;
-  border-color: ${({ theme }) => theme.borderColor};
-`
-
-export const DashedCardBody = styled.div`
-  min-height: 260px;
+const AddCard = styled.button`
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 8px;
+  min-height: 200px;
+  padding: 20px 16px;
+  border: 1px dashed var(--color-border-strong);
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--color-muted);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    border-color var(--motion),
+    color var(--motion);
+
+  &:hover {
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+  }
 `
 
 interface BadgeRound {
@@ -490,62 +524,54 @@ const Badges = ({ connectedTCRAddr, item, tcrAddress }: BadgesProps) => {
     setBadgeToSubmit(selectedBadge)
   }, [])
 
-  if (error) return <Result status="warning" title={error} />
+  if (error)
+    return (
+      <Notice tone="contested" role="alert">
+        {error}
+      </Notice>
+    )
 
   return (
-    <>
-      <StyledDivider orientation="left">
-        <span>
-          {isFetchingBadges && (
-            <Icon type="loading" style={{ marginRight: '12px' }} />
-          )}
-          Badges
-        </span>
-      </StyledDivider>
-      <StyledGrid id="badges">
+    <Stack $gap={12}>
+      <PanelHeader style={{ marginBottom: 0 }}>
+        <div>
+          <Subheading>Badges</Subheading>
+          <Small $muted>Other lists this entry is also on.</Small>
+        </div>
+        {isFetchingBadges && <Label $tone="faint">Loading</Label>}
+      </PanelHeader>
+      <Grid $min={220} id="badges">
         {foundBadges.map(
           (
             {
-              tcrAddress,
-              item,
+              tcrAddress: badgeAddress,
+              item: badgeItem,
               metadata: { logoURI, tcrTitle, tcrDescription },
               tcrData: { challengePeriodDuration },
             },
             i,
           ) => (
-            <Card
+            <BadgeCard
               key={i}
-              title={
-                <ItemStatusBadge
-                  item={item}
-                  challengePeriodDuration={challengePeriodDuration}
-                  timestamp={timestamp}
-                  dark
-                />
-              }
+              to={`/tcr/${chainId}/${badgeAddress}/${badgeItem.ID}`}
             >
-              <a href={`/tcr/${tcrAddress}/${item.ID}`}>
-                <StyledCol>
-                  <StyledLogo src={parseIpfs(logoURI)} />
-                  <Typography.Title level={4}>{tcrTitle}</Typography.Title>
-                  <StyledParagraph>{tcrDescription}</StyledParagraph>
-                </StyledCol>
-              </a>
-            </Card>
+              <BadgeLogo src={parseIpfs(logoURI)} alt="" />
+              <Title>{tcrTitle}</Title>
+              {tcrDescription && <Body $muted>{tcrDescription}</Body>}
+              <ItemStatusBadge
+                item={badgeItem}
+                challengePeriodDuration={challengePeriodDuration}
+                timestamp={timestamp}
+                dark
+              />
+            </BadgeCard>
           ),
         )}
-        <DashedCard>
-          <DashedCardBody>
-            <Button
-              type="secondary"
-              size="large"
-              onClick={() => setAddBadgeVisible(true)}
-            >
-              Add Badge
-            </Button>
-          </DashedCardBody>
-        </DashedCard>
-      </StyledGrid>
+        <AddCard type="button" onClick={() => setAddBadgeVisible(true)}>
+          <CurateIcon name="verified" size={20} />
+          Add a badge
+        </AddCard>
+      </Grid>
       <AddBadgeModal
         visible={addBadgeVisible}
         onCancel={() => setAddBadgeVisible(false)}
@@ -580,7 +606,7 @@ const Badges = ({ connectedTCRAddr, item, tcrAddress }: BadgesProps) => {
         tcrAddress={connectedTCRAddr}
         gtcrView={gtcrView}
       />
-    </>
+    </Stack>
   )
 }
 

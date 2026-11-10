@@ -6,7 +6,6 @@ const PERMANENT_ITEMS_QUERY = gql`
     $first: Int
     $orderDirection: OrderDirection
     $where: Item_filter
-    $registryId: String
   ) {
     items(
       skip: $skip
@@ -35,7 +34,7 @@ const PERMANENT_ITEMS_QUERY = gql`
       arbitrationDeposit
       submissions(first: 1, orderBy: createdAt, orderDirection: desc) {
         submitter
-        finishedTx
+        withdrawingTx
       }
       challenges(first: 1, orderBy: createdAt, orderDirection: desc) {
         disputeID

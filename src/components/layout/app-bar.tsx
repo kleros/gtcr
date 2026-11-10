@@ -6,67 +6,89 @@ import React, {
   useEffect,
 } from 'react'
 import styled, { css } from 'styled-components'
-import { smallScreenStyle, MAX_WIDTH_CONTENT } from 'styles/small-screen-style'
+import { smallScreenStyle } from 'styles/small-screen-style'
 import { useWeb3Context } from 'hooks/use-web3-context'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
-import { Button, Dropdown } from 'components/ui'
+import { Dropdown } from 'components/ui'
 import { useAppKit } from '@reown/appkit/react'
-import { ThemeContext } from 'contexts/theme-context'
 import { NETWORKS_INFO } from 'config/networks'
 import { SUPPORTED_CHAINS } from 'config/chains'
 import Identicon from 'components/identicon'
-import LogoSvg from 'assets/images/logo.svg'
-import StakeCurateLogoSvg from 'assets/images/logo-stake-curate.svg'
-import SunIcon from 'assets/icons/sun.svg'
-import MoonIcon from 'assets/icons/moon.svg'
-import HelpIcon from 'assets/icons/help.svg'
-import MenuIcon from 'assets/icons/menu.svg'
+import CurateWordmark from 'assets/images/curate-v2-wordmark.svg'
 import { SAVED_NETWORK_KEY } from 'utils/string'
 import AppMenu from 'components/layout/app-menu'
 import Help from 'components/layout/help'
+import ThemeMenu from 'components/layout/theme-menu'
+import {
+  BarAccountAddress,
+  BarAccountPill,
+  BarConnectButton,
+  BarIconButton,
+} from 'components/layout/app-bar-controls'
 import { defaultTcrAddresses, type validChains } from 'config/tcr-addresses'
 import { StakeContext } from 'contexts/stake-context'
 import useUrlChainId from 'hooks/use-url-chain-id'
 import { preloadFactory } from 'bootstrap/app-router'
+import { CurateIcon } from 'components/curate/icons'
+import ChainLogo from 'components/chain-logo'
+import {
+  ChainStack,
+  SelectMenu,
+  type SelectMenuOption,
+  truncateMiddle,
+} from 'components/curate/primitives'
+import { MAINNET_CHAIN_IDS, TESTNET_CHAIN_IDS } from 'pages/dashboard/view'
+import { useLaunchChainId } from './launch-chain'
 
-const Container = styled.div`
-  padding: 0;
-  background-color: ${({ theme }) => theme.navbarBackground};
-  transition: background-color 0.3s ease;
+/*
+ * App bar (DESIGN.md, Frame and stage; round 2): a full-width sticky bar.
+ * Transparent over the aurora at the top of the page; once the page scrolls
+ * it takes a blurred, translucent stage fill and a hairline bottom edge. It
+ * never floats or turns into a pill. Logo, primary navigation, chain chip,
+ * Connect (or the account pill), theme menu, help. On phones the navigation
+ * moves under the menu button.
+ */
+const Container = styled.header`
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  width: 100%;
+  border-bottom: 1px solid transparent;
+  background: transparent;
+  transition:
+    background-color 240ms var(--ease-in-out),
+    border-color 240ms var(--ease-in-out);
+
+  &[data-scrolled='true'] {
+    border-bottom-color: var(--glass-border);
+    background: color-mix(in srgb, var(--stage) 72%, transparent);
+    -webkit-backdrop-filter: blur(16px) saturate(160%);
+    backdrop-filter: blur(16px) saturate(160%);
+  }
 `
 
-const ThemeToggleButton = styled.button`
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  padding: 8px;
+const Row = styled.div`
   display: flex;
   align-items: center;
-  justify-content: center;
-  margin-left: 6px;
-  border-radius: 50%;
-  transition: background-color 0.2s ease;
+  gap: 16px;
+  height: var(--app-bar-height);
+  max-width: var(--page-max-width);
+  margin: 0 auto;
+  padding: 0 var(--horizontal-padding);
 
-  &:hover {
-    background-color: rgba(255, 255, 255, 0.1);
-  }
-
-  svg {
-    width: 20px;
-    height: 20px;
-    fill: #fff;
-    transition: transform 0.3s ease;
-  }
-
-  &:hover svg {
-    transform: rotate(15deg);
-  }
+  ${smallScreenStyle(
+    () => css`
+      gap: 8px;
+    `,
+  )}
 `
 
 const LeftGroup = styled.div`
   display: flex;
   align-items: center;
+  gap: 8px;
   flex: 1;
+  min-width: 0;
 
   ${smallScreenStyle(
     () => css`
@@ -81,255 +103,140 @@ const MobileMenuWrapper = styled.div`
   ${smallScreenStyle(
     () => css`
       display: block;
-      margin-right: 12px;
     `,
   )}
-`
-
-const HamburgerButton = styled.button`
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  padding: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  &:hover {
-    opacity: 0.7;
-  }
-
-  svg {
-    width: 22px;
-    height: 22px;
-    color: #fff;
-  }
 `
 
 const RightGroup = styled.div`
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  flex: 1;
-
-  ${smallScreenStyle(
-    () => css`
-      flex: 0 0 auto;
-      justify-content: flex-start;
-    `,
-  )}
-`
-
-const MobileNavMenu = styled.div`
-  padding: 4px 0;
-  min-width: 160px;
-`
-
-const MobileMenuLink = styled(Link)<{ $active?: boolean }>`
-  display: block;
-  padding: 10px 16px;
-  color: ${({ $active }) => ($active ? '#fff' : 'rgba(255, 255, 255, 0.5)')};
-  text-decoration: none;
-  font-size: var(--font-size-base);
-  transition: all 0.2s;
-  white-space: nowrap;
-  font-weight: ${({ $active }) => ($active ? '500' : '400')};
-
-  &:hover {
-    color: #fff;
-    background: ${({ theme }) => theme.dropdownHoverBg};
-  }
-`
-
-const StyledRouterLink = styled(Link)`
-  color: #fff;
-  display: flex;
-  transition: opacity 0.2s ease;
-
-  &:hover {
-    opacity: 0.7;
-  }
-`
-
-const StyledConnectButton = styled(Button)`
-  background: rgba(255, 255, 255, 0.1);
-  color: white;
-  border-color: rgba(255, 255, 255, 0.3);
-
-  &:hover:not(:disabled),
-  &:focus:not(:disabled) {
-    background: rgba(255, 255, 255, 0.2);
-    color: white;
-    border-color: rgba(255, 255, 255, 0.5);
-  }
-  margin-left: 8px;
-`
-
-const StyledIdenticonWrapper = styled.div`
-  margin-left: 8px;
-  border-radius: 50%;
-  padding: 4px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background-color 0.2s ease;
-
-  &:hover {
-    background-color: rgba(255, 255, 255, 0.15);
-  }
-`
-
-const StyledAppBarRow = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 var(--horizontal-padding);
-  min-height: 67px;
-  max-width: ${MAX_WIDTH_CONTENT};
-  margin: 0 auto;
-  width: 100%;
-
-  ${smallScreenStyle(
-    () => css`
-      padding-top: 8px;
-      padding-bottom: 8px;
-      flex-wrap: wrap;
-      row-gap: 8px;
-    `,
-  )}
-`
-
-const ChainSelectorButton = styled.button`
-  display: inline-flex;
-  align-items: center;
   gap: 6px;
-  background: ${({ theme }) =>
-    theme.name === 'dark'
-      ? 'rgba(255, 255, 255, 0.08)'
-      : 'rgba(255, 255, 255, 0.15)'};
-  border: 1px solid
-    ${({ theme }) =>
-      theme.name === 'dark'
-        ? 'rgba(255, 255, 255, 0.12)'
-        : 'rgba(255, 255, 255, 0.25)'};
-  border-radius: 32px;
-  padding: 0 15px;
-  height: 32px;
-  color: #fff;
-  font-size: 14px;
-  cursor: pointer;
-  transition: background-color 0.2s ease;
+  flex: 1;
+  /* never narrower than its controls: the nav moves aside instead of
+     sliding under them */
+  min-width: max-content;
+`
+
+const MobileNavMenu = styled.nav`
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 220px;
+  padding: 6px;
+`
+
+/* Phone menu rows: glass rows; the current section is lit like a thumb. */
+const MobileMenuLink = styled(Link)<{ $active?: boolean }>`
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-height: 40px;
+  padding: 0 12px;
+  border-radius: 10px;
+  color: ${({ $active }) =>
+    $active ? 'var(--color-text)' : 'var(--color-muted)'};
+  background: ${({ $active }) => ($active ? 'var(--thumb)' : 'transparent')};
+  box-shadow: ${({ $active }) => ($active ? 'var(--thumb-shadow)' : 'none')};
+  text-decoration: none;
+  font-size: var(--fs-body);
+  font-weight: 500;
   white-space: nowrap;
+  transition:
+    background var(--motion),
+    color var(--motion);
 
   &:hover {
-    background: ${({ theme }) =>
-      theme.name === 'dark'
-        ? 'rgba(255, 255, 255, 0.15)'
-        : 'rgba(255, 255, 255, 0.3)'};
+    color: var(--color-text);
+    background: ${({ $active }) =>
+      $active ? 'var(--thumb)' : 'var(--hover-fill)'};
   }
 `
 
-const ChainDot = styled.span<{ $color: string }>`
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: ${({ $color }) => $color};
-  flex-shrink: 0;
-`
-
-const ChainDropdownWrapper = styled.div`
-  ${smallScreenStyle(
-    () => css`
-      .ui-dropdown > div:last-child {
-        right: auto;
-        left: 0;
-      }
-    `,
-  )}
-`
-
-const ChainMenu = styled.div`
-  padding: 4px 0;
-`
-
-const ChainMenuItem = styled.button<{ $active?: boolean }>`
+const LogoLink = styled(Link)`
   display: flex;
   align-items: center;
-  gap: 8px;
-  width: 100%;
-  padding: 8px 16px;
-  border: none;
-  background: ${({ $active, theme }) =>
-    $active
-      ? theme.dropdownSelectedBg || 'rgba(0, 0, 0, 0.06)'
-      : 'transparent'};
-  color: ${({ theme }) => theme.textPrimary};
-  font-size: 13px;
-  cursor: pointer;
-  transition: background 0.15s;
-  white-space: nowrap;
+  color: var(--color-text);
+  transition: opacity var(--motion);
 
   &:hover {
-    background: ${({ theme }) =>
-      theme.dropdownHoverBg || 'rgba(0, 0, 0, 0.04)'};
-  }
-`
-
-const HelpButton = styled.button`
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  padding: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-left: -2px;
-  border-radius: 50%;
-  transition: background-color 0.2s ease;
-
-  &:hover {
-    background-color: rgba(255, 255, 255, 0.1);
+    opacity: 0.8;
   }
 
   svg {
-    width: 20px;
-    height: 20px;
-    fill: #fff;
-    transition: transform 0.3s ease;
+    display: block;
+    height: 26px;
+    width: auto;
   }
 
-  &:hover svg {
-    transform: rotate(15deg);
+  /* Phones: keep only the hexagon mark (the first ~37 of 130 units). */
+  @media (max-width: 600px) {
+    width: 24px;
+    overflow: hidden;
+
+    svg {
+      flex: 0 0 auto;
+      width: 84px;
+      max-width: none;
+    }
   }
 `
 
-const StakeCurateLogo = styled(StakeCurateLogoSvg)`
-  /* Dark mode: change stake tag background and text colors */
-  ${({ theme }) =>
-    theme.name === 'dark' &&
-    `
-    /* Stake tag background (path with fill="#EBD4FF") */
-    path[fill="#EBD4FF"] {
-      fill: ${theme.stakeTagBg};
-    }
-    /* Stake tag text (path with fill="#220050") */
-    path[fill="#220050"] {
-      fill: ${theme.stakeTagText};
-    }
-  `}
+const StakeTag = styled.span`
+  margin-left: 8px;
+  padding: 2px 8px;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-pill);
+  color: var(--color-muted);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
 `
+
+/*
+ * Connect keeps its label everywhere but phones, where it is a 38px
+ * circle (the label stays for screen readers).
+ */
+const ConnectLabel = styled.span`
+  @media (max-width: 600px) {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+`
+
+/*
+ * The chain chip gives way first: on phones and between 901 and 1099px
+ * (the nav is back but the bar is narrow) it shows only its mark, the
+ * chosen chain's logo or, for "All chains", the Ethereum and Gnosis marks
+ * together, next to its chevron. Its name stays the accessible name and
+ * the tooltip.
+ */
+const ChainSlot = styled.span`
+  display: contents;
+
+  @media (max-width: 600px), (min-width: 901px) and (max-width: 1099px) {
+    [data-part='value'] {
+      display: none;
+    }
+  }
+`
+
+/** The scope value for "All chains" (no `chain` param). */
+const ALL_SCOPE = 'all'
+const ALL_CHAINS = 'All chains'
 
 const AppBar = () => {
   const web3Context = useWeb3Context()
   const { open } = useAppKit()
   const isPermanent = useContext(StakeContext)?.isPermanent
-  const themeContext = useContext(ThemeContext)
-  const isDarkMode = themeContext?.isDarkMode
-  const toggleTheme = themeContext?.toggleTheme
   const navigate = useNavigate()
   const location = useLocation()
-  const { networkId, account: _account } = web3Context
+  const { networkId } = web3Context
 
   const urlChainId = useUrlChainId()
 
@@ -340,28 +247,83 @@ const AppBar = () => {
   }, [urlChainId])
 
   const savedChainId = useMemo(() => {
-    const saved = localStorage.getItem(SAVED_NETWORK_KEY)
-    return saved ? Number(saved) : null
-    // Re-read on every navigation so it stays current
+    try {
+      const saved = localStorage.getItem(SAVED_NETWORK_KEY)
+      return saved ? Number(saved) : null
+    } catch {
+      return null
+    }
+    // Re-read on every navigation (location.key) so it stays current
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [location.pathname])
+  }, [location.key])
 
   const displayedChainId = urlChainId ?? savedChainId ?? networkId
-  const [chainDropdownOpen, setChainDropdownOpen] = useState(false)
+  const launchChainId = useLaunchChainId()
+  const [scrolled, setScrolled] = useState(false)
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 4)
+    onScroll()
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [helpDropdownOpen, setHelpDropdownOpen] = useState(false)
-  const isHome =
-    location.pathname.startsWith('/tcr/') || location.pathname === '/'
 
+  /*
+   * Browse is a scoped page: the chip shows and sets its `?chain=` scope, so
+   * the bar and the page never disagree. "All chains" (no `chain` param)
+   * means Ethereum and Gnosis; Sepolia is a testnet, listed apart and picked
+   * on its own (DESIGN.md, Data rules). The dashboard sets the same scope
+   * with its own control, next to the figures it scopes, so the bar does not
+   * repeat it there.
+   */
+  const isDashboard = location.pathname === '/'
+  const isBrowse = location.pathname === '/browse'
+  const isScoped = isBrowse
+  const showChainMenu = !isDashboard
+  const scopeChainIds = useMemo(
+    () =>
+      new URLSearchParams(location.search)
+        .get('chain')
+        ?.split(',')
+        .map(Number)
+        .filter((chainId) =>
+          SUPPORTED_CHAINS.some((chain) => Number(chain.id) === chainId),
+        ) ?? [],
+    [location.search],
+  )
+  const scopeChainId = scopeChainIds.length === 1 ? scopeChainIds[0] : null
   const currentChainInfo =
-    NETWORKS_INFO[displayedChainId as keyof typeof NETWORKS_INFO]
+    NETWORKS_INFO[
+      (isScoped ? scopeChainId : displayedChainId) as keyof typeof NETWORKS_INFO
+    ]
+  const scopeLabel =
+    scopeChainIds.length === 0
+      ? ALL_CHAINS
+      : scopeChainIds.length === 1
+        ? currentChainInfo?.name || 'Select chain'
+        : `${scopeChainIds.length} chains`
+
+  const handleScopeSelect = useCallback(
+    (chainId: number | null) => {
+      const next = new URLSearchParams(location.search)
+      if (chainId) next.set('chain', String(chainId))
+      else next.delete('chain')
+      next.delete('page')
+      const search = next.toString()
+      // Browse keeps each filter step in the history.
+      navigate(`${location.pathname}${search ? `?${search}` : ''}`)
+    },
+    [location.search, location.pathname, navigate],
+  )
 
   const handleChainSelect = useCallback(
     (chainId: number) => {
-      if (chainId === displayedChainId) {
-        setChainDropdownOpen(false)
+      if (isScoped) {
+        handleScopeSelect(chainId)
         return
       }
+      if (chainId === displayedChainId) return
       const nextTcr = defaultTcrAddresses[chainId as validChains]
       if (!nextTcr) return
       localStorage.setItem(SAVED_NETWORK_KEY, chainId.toString())
@@ -369,39 +331,126 @@ const AppBar = () => {
       // Only navigate — useTcrNetwork handles the wallet switch when the
       // new page mounts, avoiding a double switchChain prompt.
       const factoryMatch = location.pathname.match(
-        /^\/(factory(?:-permanent)?)\//,
+        /^\/(factory(?:-permanent)?|launch)\//,
       )
       if (factoryMatch) navigate(`/${factoryMatch[1]}/${chainId}`)
       else navigate(`/tcr/${chainId}/${nextTcr}`)
-
-      setChainDropdownOpen(false)
     },
-    [navigate, displayedChainId, location.pathname],
+    [
+      navigate,
+      displayedChainId,
+      handleScopeSelect,
+      isScoped,
+      location.pathname,
+    ],
   )
 
+  const chainOptions = useMemo(() => {
+    const chains: SelectMenuOption<string>[] = SUPPORTED_CHAINS.flatMap(
+      (chain) => {
+        const info = NETWORKS_INFO[chain.id as keyof typeof NETWORKS_INFO]
+        if (!info) return []
+        const testnet = TESTNET_CHAIN_IDS.includes(Number(chain.id))
+        return [
+          {
+            value: String(chain.id),
+            label: info.name,
+            icon: <ChainLogo chainId={Number(chain.id)} size={18} />,
+            tag: testnet ? 'testnet' : undefined,
+          },
+        ]
+      },
+    )
+    // Testnets close the list, under a hairline.
+    const mainnets = chains.filter((option) => !option.tag)
+    const testnets = chains
+      .filter((option) => option.tag)
+      .map((option, index) => ({ ...option, divider: index === 0 }))
+    const all: SelectMenuOption<string>[] = isScoped
+      ? [
+          {
+            value: ALL_SCOPE,
+            label: ALL_CHAINS,
+            hint: mainnets.map((option) => option.label).join(' and '),
+            icon: <ChainStack chainIds={MAINNET_CHAIN_IDS} size={18} />,
+          },
+        ]
+      : []
+    return [...all, ...mainnets, ...testnets]
+  }, [isScoped])
+
+  const chainValue = isScoped
+    ? scopeChainIds.length === 0
+      ? ALL_SCOPE
+      : scopeChainIds.length === 1
+        ? String(scopeChainIds[0])
+        : ''
+    : String(displayedChainId ?? '')
+
+  const chainMenuLabel = isBrowse ? 'Filter registries by chain' : 'Chain'
+
+  const account =
+    web3Context.active && web3Context.account ? web3Context.account : null
+
   const mobileMenuOverlay = (
-    <MobileNavMenu>
+    <MobileNavMenu aria-label="Main">
       <MobileMenuLink
         to="/"
-        $active={isHome}
+        $active={location.pathname === '/'}
         onClick={() => setMobileMenuOpen(false)}
       >
-        Home
+        Dashboard
       </MobileMenuLink>
       <MobileMenuLink
-        to={`/factory/${displayedChainId}`}
-        $active={location.pathname.startsWith('/factory')}
+        to="/browse"
+        $active={
+          location.pathname === '/browse' ||
+          location.pathname.startsWith('/tcr/')
+        }
+        onClick={() => setMobileMenuOpen(false)}
+      >
+        Browse
+      </MobileMenuLink>
+      <MobileMenuLink
+        to={`/launch/${launchChainId}`}
+        $active={
+          location.pathname.startsWith('/launch') ||
+          location.pathname.startsWith('/factory')
+        }
         onClick={() => setMobileMenuOpen(false)}
         onMouseEnter={() => preloadFactory()}
       >
-        Create a List
+        Launch a list
       </MobileMenuLink>
+      <MobileMenuLink
+        to="/guide"
+        $active={location.pathname === '/guide'}
+        onClick={() => setMobileMenuOpen(false)}
+      >
+        Guide
+      </MobileMenuLink>
+      <MobileMenuLink
+        to="/pro"
+        $active={location.pathname === '/pro'}
+        onClick={() => setMobileMenuOpen(false)}
+      >
+        Curate Pro
+      </MobileMenuLink>
+      {account && (
+        <MobileMenuLink
+          to={`/address/${account}`}
+          $active={location.pathname.startsWith('/address/')}
+          onClick={() => setMobileMenuOpen(false)}
+        >
+          Your profile
+        </MobileMenuLink>
+      )}
     </MobileNavMenu>
   )
 
   return (
-    <Container>
-      <StyledAppBarRow>
+    <Container data-scrolled={scrolled}>
+      <Row>
         <LeftGroup>
           <MobileMenuWrapper>
             <Dropdown
@@ -411,74 +460,63 @@ const AppBar = () => {
               visible={mobileMenuOpen}
               onVisibleChange={setMobileMenuOpen}
             >
-              <HamburgerButton type="button" aria-label="Open menu">
-                <MenuIcon />
-              </HamburgerButton>
+              <BarIconButton
+                type="button"
+                aria-label="Open menu"
+                aria-expanded={mobileMenuOpen}
+              >
+                <CurateIcon name="menu" size={20} />
+              </BarIconButton>
             </Dropdown>
           </MobileMenuWrapper>
-          <StyledRouterLink to="/">
-            {isPermanent ? (
-              <StakeCurateLogo
-                style={{ maxHeight: '50px', maxWidth: '120px' }}
-              />
-            ) : (
-              <LogoSvg style={{ maxHeight: '50px', maxWidth: '120px' }} />
-            )}
-          </StyledRouterLink>
+          <LogoLink to="/" aria-label="Kleros Curate, dashboard">
+            <CurateWordmark aria-hidden />
+            {isPermanent && <StakeTag>Stake</StakeTag>}
+          </LogoLink>
         </LeftGroup>
         <AppMenu />
         <RightGroup>
-          <ChainDropdownWrapper>
-            <Dropdown
-              trigger={['click']}
-              visible={chainDropdownOpen}
-              onVisibleChange={setChainDropdownOpen}
-              placement="bottomRight"
-              overlay={
-                <ChainMenu>
-                  {SUPPORTED_CHAINS.map((chain) => {
-                    const info =
-                      NETWORKS_INFO[chain.id as keyof typeof NETWORKS_INFO]
-                    if (!info) return null
-                    return (
-                      <ChainMenuItem
-                        key={chain.id}
-                        $active={chain.id === displayedChainId}
-                        onClick={() => handleChainSelect(Number(chain.id))}
-                      >
-                        <ChainDot $color={info.color} />
-                        {info.name}
-                      </ChainMenuItem>
-                    )
-                  })}
-                </ChainMenu>
-              }
-            >
-              <ChainSelectorButton>
-                <ChainDot $color={currentChainInfo?.color || '#ccc'} />
-                {currentChainInfo?.name || 'Select Chain'}
-              </ChainSelectorButton>
-            </Dropdown>
-          </ChainDropdownWrapper>
-          {web3Context.active && web3Context.account ? (
-            <StyledIdenticonWrapper>
+          {showChainMenu && (
+            <ChainSlot>
+              <SelectMenu<string>
+                appearance="chip"
+                align="end"
+                label={chainMenuLabel}
+                title={chainMenuLabel}
+                heading={isScoped ? 'Chains' : 'Chain'}
+                value={chainValue}
+                placeholder={isScoped ? scopeLabel : 'Select chain'}
+                options={chainOptions}
+                menuWidth={232}
+                renderValue={(option) => option?.label ?? scopeLabel}
+                onChange={(next) =>
+                  isScoped && next === ALL_SCOPE
+                    ? handleScopeSelect(null)
+                    : handleChainSelect(Number(next))
+                }
+              />
+            </ChainSlot>
+          )}
+          {account ? (
+            <BarAccountPill>
               <Identicon />
-            </StyledIdenticonWrapper>
+              <BarAccountAddress
+                to={`/address/${account}`}
+                title="Open profile"
+              >
+                {truncateMiddle(account)}
+              </BarAccountAddress>
+            </BarAccountPill>
           ) : (
-            <StyledConnectButton
-              ghost
-              shape="round"
+            <BarConnectButton
+              type="button"
               onClick={() => open({ view: 'Connect' })}
             >
-              Connect
-            </StyledConnectButton>
+              <CurateIcon name="wallet" size={16} />
+              <ConnectLabel>Connect</ConnectLabel>
+            </BarConnectButton>
           )}
-          <ThemeToggleButton
-            onClick={toggleTheme}
-            title={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
-          >
-            {isDarkMode ? <SunIcon /> : <MoonIcon />}
-          </ThemeToggleButton>
+          <ThemeMenu />
           <Dropdown
             trigger={['click']}
             visible={helpDropdownOpen}
@@ -486,12 +524,18 @@ const AppBar = () => {
             placement="bottomRight"
             overlay={<Help />}
           >
-            <HelpButton type="button" title="Help">
-              <HelpIcon />
-            </HelpButton>
+            <BarIconButton
+              type="button"
+              aria-label="Help"
+              aria-haspopup="menu"
+              aria-expanded={helpDropdownOpen}
+              title="Help"
+            >
+              <CurateIcon name="help" size={19} />
+            </BarIconButton>
           </Dropdown>
         </RightGroup>
-      </StyledAppBarRow>
+      </Row>
     </Container>
   )
 }

@@ -36,18 +36,26 @@ export const STATUS_TEXT = {
   [STATUS_CODE.WITHDRAWN]: 'Withdrawn',
 }
 
-export const STATUS_COLOR = {
-  [STATUS_CODE.REJECTED]: '#ff4d4f',
-  [STATUS_CODE.PENDING]: '#4da6ff',
-  [STATUS_CODE.ACCEPTED]: '#52c41a',
-  [STATUS_CODE.DISPUTED]: '#fa8c16',
-  [STATUS_CODE.CROWDFUNDING]: '#b37feb',
-  [STATUS_CODE.CROWDFUNDING_WINNER]: '#9d52d6',
-  [STATUS_CODE.WAITING_ARBITRATOR]: '#eb2f96',
-  [STATUS_CODE.PENDING_WITHDRAWAL]: '#36cfc9',
-  [STATUS_CODE.REMOVED]: '#ff4d4f',
-  [STATUS_CODE.WITHDRAWN]: '#8c8c8c',
-}
+/** DESIGN.md status roles for Stake Curate items; see utils/item-status.ts. */
+export const STATUS_ROLE = {
+  [STATUS_CODE.REJECTED]: 'off',
+  [STATUS_CODE.PENDING]: 'window',
+  [STATUS_CODE.ACCEPTED]: 'registered',
+  [STATUS_CODE.DISPUTED]: 'contested',
+  [STATUS_CODE.CROWDFUNDING]: 'contested',
+  [STATUS_CODE.CROWDFUNDING_WINNER]: 'contested',
+  [STATUS_CODE.WAITING_ARBITRATOR]: 'contested',
+  [STATUS_CODE.PENDING_WITHDRAWAL]: 'neutral',
+  [STATUS_CODE.REMOVED]: 'off',
+  [STATUS_CODE.WITHDRAWN]: 'off',
+} as const
+
+export const STATUS_COLOR: Record<number, string> = Object.fromEntries(
+  Object.entries(STATUS_ROLE).map(([code, role]) => [
+    Number(code),
+    `var(--status-${role})`,
+  ]),
+)
 
 export const getActionLabel = ({
   statusCode,
@@ -87,21 +95,15 @@ export const itemToStatusCode = (
 
   if (status === CONTRACT_STATUS.ABSENT) {
     // The only paths to Absent are withdrawItem() and rule(). Dispute removals carry a
-    // resolution tx, so a latest-submission finishedTx that is NOT any resolution tx can
-    // only be a completed voluntary withdrawal. This intercepts that case only; every
-    // other Absent item still falls through to the REJECTED/REMOVED logic unchanged.
+    // resolution tx, so a latest-submission withdrawingTx can identify a completed
+    // voluntary withdrawal. This intercepts that case only; every other Absent item
+    // still falls through to the REJECTED/REMOVED logic unchanged.
     // Note: in list views these fields may be absent from the query, so detection simply
     // (and safely) falls through to REMOVED/REJECTED.
-    const submissions = (item.submissions as { finishedTx?: string }[]) || []
-    const finishedTx = submissions.length > 0 ? submissions[0].finishedTx : null
-    if (finishedTx) {
-      const resolutionTxs = new Set(
-        ((item.challenges as { resolutionTx?: string }[]) || [])
-          .map((c) => c.resolutionTx)
-          .filter((tx) => !!tx),
-      )
-      if (!resolutionTxs.has(finishedTx)) return STATUS_CODE.WITHDRAWN
-    }
+    const submissions = (item.submissions as { withdrawingTx?: string }[]) || []
+    const withdrawingTx =
+      submissions.length > 0 ? submissions[0].withdrawingTx : null
+    if (withdrawingTx) return STATUS_CODE.WITHDRAWN
 
     // Differentiate between rejected (never made it past submission) and removed (was accepted then taken off)
     // If includedAt + submissionPeriod < timestamp, the item passed submission and was accepted at some point

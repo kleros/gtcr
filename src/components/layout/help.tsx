@@ -4,31 +4,45 @@ import TelegramIcon from 'assets/icons/telegram.svg'
 import BugIcon from 'assets/icons/bug.svg'
 import EthIcon from 'assets/icons/eth.svg'
 
+/* The help menu: glass rows like SelectMenu's, external links only. */
 const Container = styled.div`
   display: flex;
   flex-direction: column;
-  padding: 8px 0;
-  min-width: 220px;
+  gap: 2px;
+  min-width: 232px;
+  padding: 6px;
 `
 
 const ListItem = styled.a`
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 10px 16px;
-  cursor: pointer;
+  min-height: 38px;
+  padding: 0 12px;
+  border-radius: 10px;
+  color: var(--color-muted);
+  font-size: var(--fs-small);
+  line-height: var(--lh-small);
+  font-weight: 500;
   text-decoration: none;
-  transition: background-color 0.15s;
-  color: ${({ theme }) => theme.textPrimary};
-  font-size: 14px;
-  font-weight: 400;
+  cursor: pointer;
+  transition:
+    background var(--motion),
+    color var(--motion);
 
-  &:hover {
-    background-color: ${({ theme }) => theme.dropdownHoverBg};
+  &:hover,
+  &:focus-visible {
+    color: var(--color-text);
+    background: var(--hover-fill);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: -2px;
   }
 
   &:hover svg {
-    fill: ${({ theme }) => theme.primaryColor};
+    fill: var(--color-text);
   }
 `
 
@@ -36,8 +50,8 @@ const Icon = styled.svg`
   width: 16px;
   height: 16px;
   flex-shrink: 0;
-  fill: ${({ theme }) => theme.textTertiary};
-  transition: fill 0.15s;
+  fill: var(--color-muted);
+  transition: fill var(--motion);
 `
 
 const ITEMS = [

@@ -1,0 +1,5 @@
+# Kleros Curate
+
+Canonical agent instructions: https://curate.kleros.io/llms.txt
+Full context: https://curate.kleros.io/llms-full.txt
+Curate skill: https://curate.kleros.io/skills/kleros-curate/SKILL.md

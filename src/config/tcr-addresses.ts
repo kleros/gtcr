@@ -153,3 +153,50 @@ export const subgraphUrlPermanent: ChainMap<string> = {
   '100': process.env.REACT_APP_SUBGRAPH_GNOSIS_PERMANENT,
   '11155111': process.env.REACT_APP_SUBGRAPH_SEPOLIA_PERMANENT,
 } as const
+
+/**
+ * Every factory the Curate indexers track, with the block it was deployed at.
+ * Each list they create emits NewGTCR(address), whose block is the list's
+ * creation time. Source: kleros/gtcr-subgraph networks.json.
+ */
+export const registryFactories: Record<
+  number,
+  { kind: 'light' | 'classic'; address: string; startBlock: number }[]
+> = {
+  1: [
+    {
+      kind: 'light',
+      address: '0xb9dDC813AcAF3fD7aBC4C16735A09Bc1C0EE0054',
+      startBlock: 13810085,
+    },
+    {
+      kind: 'classic',
+      address: '0xe9dd523600b74b8ef0af164687079a6c437f9cd5',
+      startBlock: 10247117,
+    },
+  ],
+  100: [
+    {
+      kind: 'light',
+      address: '0x08e58Bc26CFB0d346bABD253A1799866F269805a',
+      startBlock: 19592773,
+    },
+    {
+      kind: 'classic',
+      address: '0x794Cee5a6e1501b633eC13b8c1e327d9860FE039',
+      startBlock: 16969180,
+    },
+  ],
+  11155111: [
+    {
+      kind: 'light',
+      address: '0x3FB8314C628E9afE7677946D3E23443Ce748Ac17',
+      startBlock: 4048287,
+    },
+    {
+      kind: 'classic',
+      address: '0xcB4B48d2A7a44247A00048963F169d2b4Ab045a6',
+      startBlock: 4048282,
+    },
+  ],
+}

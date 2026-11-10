@@ -1,11 +1,17 @@
 import React from 'react'
-import { ethers, BigNumber } from 'ethers'
-import { STATUS_CODE, getActionLabel } from 'utils/item-status'
+import type { ethers, BigNumber } from 'ethers'
+import { STATUS_CODE } from 'utils/item-status'
+import { itemActionLabel } from 'components/item-action-button'
 import RemoveModal from './modals/remove'
 import ChallengeModal from './modals/challenge'
 import SubmitModal from './modals/submit'
 import SubmitConnectModal from './modals/submit-connect'
 import CrowdfundModal from './modals/crowdfund'
+
+/*
+ * Opens the one modal the entry's status calls for: remove, resubmit,
+ * challenge or contribute appeal fees.
+ */
 
 interface ItemActionModalProps {
   statusCode: number
@@ -38,10 +44,10 @@ const ItemActionModal = ({
   gtcrView,
   appealCost,
 }: ItemActionModalProps) => {
-  // Common button properties.
+  // Common modal properties.
   const rest = {
     visible: isOpen,
-    title: getActionLabel({ statusCode, itemName }),
+    title: itemActionLabel(statusCode, itemName),
     onCancel: onClose,
   }
 

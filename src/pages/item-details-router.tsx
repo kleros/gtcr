@@ -34,16 +34,22 @@ const ItemDetailsRouter = () => {
   const isAttachmentOpen = searchParams.has('attachment')
   useTcrNetwork()
   const search = window.location.search
-  const { isLightCurate, isClassicCurate, isPermanentCurate, checking } =
-    useCheckLightCurate()
-  const stakeContext = useContext(StakeContext)
+  const {
+    isLightCurate,
+    isClassicCurate,
+    isPermanentCurate,
+    checking,
+    error,
+    retry,
+  } = useCheckLightCurate()
+  const setIsPermanent = useContext(StakeContext)?.setIsPermanent
   const queryClient = useQueryClient()
   const { graphqlBatcher } = useGraphqlBatcher()
 
   useEffect(() => {
-    stakeContext?.setIsPermanent(isPermanentCurate)
-    return () => stakeContext?.setIsPermanent(false)
-  }, [isPermanentCurate, stakeContext])
+    setIsPermanent?.(isPermanentCurate)
+    return () => setIsPermanent?.(false)
+  }, [isPermanentCurate, setIsPermanent])
 
   // Prefetch the latest policy timestamp so the "(updated X ago)" badge
   // on the PolicyLink is warm in cache by the time the banner renders.
@@ -82,11 +88,22 @@ const ItemDetailsRouter = () => {
 
   if (checking) return <Loading />
 
+  if (error)
+    return (
+      <ErrorPage
+        code="Error"
+        title="This entry did not load"
+        message="The indexer did not answer."
+        onRetry={retry}
+      />
+    )
+
   if (!tcrAddress || !itemID)
     return (
       <ErrorPage
-        code="404"
-        message="The gods are having trouble finding this item."
+        code="Error"
+        title="List not found"
+        message="No Curate list answers at this address on this chain."
       />
     )
 

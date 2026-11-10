@@ -1,46 +1,80 @@
-import React, { useMemo, useState, useEffect, useCallback } from 'react'
+import React, { useMemo, useState, useEffect, useCallback, useId } from 'react'
 import styled from 'styled-components'
-import { Select, InputNumber, Slider, Tooltip } from 'components/ui'
-import type { SelectChangeValue } from 'components/ui/Select'
-import Icon from 'components/ui/Icon'
-import { ethers } from 'ethers'
+import { ethers, type BigNumber } from 'ethers'
 import { abi as _IArbitrator } from '@kleros/erc-792/build/contracts/IArbitrator.json'
-import ETHAmount from 'components/eth-amount'
 import { jurorsAndCourtIDFromExtraData } from 'utils/string'
-import useWindowDimensions from 'hooks/window-dimensions'
 import useNativeCurrency from 'hooks/native-currency'
 import useCourtPolicies from 'hooks/use-court-policies'
+import { AnimatedNumber } from 'components/curate/motion/animated-number'
+import {
+  Label,
+  Row,
+  SkeletonBlock,
+  Small,
+  Stack,
+} from 'components/curate/primitives'
+import {
+  FieldGrid,
+  FormField,
+  Input,
+  RangeInput,
+  Select,
+  amountFormat,
+  formatNative,
+} from './fields'
 
-export const StyledExtraDataContainer = styled.div`
-  padding-bottom: 8px;
-  margin-bottom: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  color: ${({ theme }) => theme.textPrimary};
+/*
+ * Court and number of jurors for a Kleros arbitrator, encoded into the
+ * arbitrator extra data, with the resulting arbitration cost read from the
+ * arbitrator contract. Used by the list step and the badges step.
+ */
+
+const JurorsInput = styled(Input)`
+  flex: 0 0 auto;
+  width: 64px;
+  text-align: center;
+  font-family: var(--font-figure);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
 `
 
-export const StyledInputContainer = styled.div`
+/** The cost read-out: one figure, its unit and one line on who pays it. */
+const CostLine = styled.div`
   display: flex;
-  flex-direction: column;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  padding: 14px 16px;
+  border-radius: var(--radius);
+  background: var(--color-raised);
+`
 
-  span,
-  label {
-    color: ${({ theme }) => theme.textPrimary};
+const CostFigure = styled.span`
+  color: var(--color-text);
+  font-family: var(--font-figure);
+  font-size: 22px;
+  line-height: 26px;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+
+  small {
+    margin-left: 6px;
+    color: var(--color-muted);
+    font-size: var(--fs-small);
+    font-weight: 500;
+    letter-spacing: 0;
   }
 `
 
-export const StyledContainer = styled.div`
-  display: flex;
-  margin-bottom: 24px;
-  flex: 1;
-`
+const MIN_JURORS = 1
+const MAX_JURORS = 33
 
-export const SliderContainer = styled.div`
-  display: flex;
-  align-items: center;
-`
+const encodeExtraData = (courtID: number, numberOfJurors: number) =>
+  `0x${courtID.toString(16).padStart(64, '0')}${Math.ceil(numberOfJurors)
+    .toString(16)
+    .padStart(64, '0')}`
 
 interface KlerosParamsProps {
   klerosAddress?: string
@@ -57,9 +91,9 @@ const KlerosParams = ({
   arbitratorExtraData,
   library,
 }: KlerosParamsProps) => {
-  const { width } = useWindowDimensions()
+  const ids = useId()
   const nativeCurrency = useNativeCurrency()
-  const [arbitrationCost, setArbitrationCost] = useState(0)
+  const [arbitrationCost, setArbitrationCost] = useState<BigNumber>()
   const [numberOfJurors, setNumberOfJurors] = useState(3)
   const [courtID, setCourtID] = useState<number>()
   const { data: courts = [] } = useCourtPolicies(policyAddress, library)
@@ -77,117 +111,124 @@ const KlerosParams = ({
   // Load arbitrator extra data
   useEffect(() => {
     if (!arbitratorExtraData) return
-    const { courtID, numberOfJurors } =
-      jurorsAndCourtIDFromExtraData(arbitratorExtraData)
-    setCourtID(Number(courtID))
-    setNumberOfJurors(Number(numberOfJurors))
+    const parsed = jurorsAndCourtIDFromExtraData(arbitratorExtraData)
+    setCourtID(Number(parsed.courtID))
+    setNumberOfJurors(Number(parsed.numberOfJurors))
   }, [arbitratorExtraData])
 
-  // Display predicted arbitration cost.
+  // Display predicted arbitration fee.
   useEffect(() => {
+    let cancelled = false
+    setArbitrationCost(undefined)
     ;(async () => {
       if (!arbitratorExtraData || !arbitrator || !library) return
-      setArbitrationCost(await arbitrator.arbitrationCost(arbitratorExtraData))
+      try {
+        const cost = await arbitrator.arbitrationCost(arbitratorExtraData)
+        if (!cancelled) setArbitrationCost(cost)
+      } catch (err) {
+        console.warn('Failed to read the arbitration cost', err)
+      }
     })()
+    return () => {
+      cancelled = true
+    }
   }, [library, arbitrator, arbitratorExtraData])
 
   const onCourtChanged = useCallback(
-    (value: SelectChangeValue) => {
-      const newCourtID = typeof value === 'object' ? value.key : value
-      if (Number.isNaN(Number(newCourtID))) return
-
-      const newArbitratorExtraData = `0x${Number(newCourtID)
-        .toString(16)
-        .padStart(64, '0')}${Math.ceil(numberOfJurors)
-        .toString(16)
-        .padStart(64, '0')}`
-
-      setArbitratorExtraData(newArbitratorExtraData)
-      setCourtID(Number(newCourtID))
+    (value: string) => {
+      const newCourtID = Number(value)
+      if (Number.isNaN(newCourtID)) return
+      setArbitratorExtraData(encodeExtraData(newCourtID, numberOfJurors))
+      setCourtID(newCourtID)
     },
     [numberOfJurors, setArbitratorExtraData],
   )
 
   const onNumJurorsChange = useCallback(
-    (value: number | undefined) => {
-      if (value === undefined || Number.isNaN(value)) return
-      let newNumJurors = value > 0 ? value : 1
-      newNumJurors = newNumJurors < 35 ? newNumJurors : 33
+    (value: number) => {
+      if (Number.isNaN(value)) return
+      let newNumJurors = value > 0 ? value : MIN_JURORS
+      newNumJurors = newNumJurors < 35 ? newNumJurors : MAX_JURORS
       if (newNumJurors % 2 === 0) newNumJurors = newNumJurors - 1
-
-      const newArbitratorExtraData = `0x${(courtID ?? 0)
-        .toString(16)
-        .padStart(64, '0')}${Math.ceil(newNumJurors)
-        .toString(16)
-        .padStart(64, '0')}`
-      setArbitratorExtraData(newArbitratorExtraData)
+      setArbitratorExtraData(encodeExtraData(courtID ?? 0, newNumJurors))
       setNumberOfJurors(newNumJurors)
     },
     [courtID, setArbitratorExtraData],
   )
 
+  const loadingCourts = courts.length === 0 || typeof courtID !== 'number'
+  const cost = formatNative(arbitrationCost)
+
   return (
-    <StyledExtraDataContainer>
-      <StyledContainer>
-        <StyledInputContainer>
-          <span>Court:</span>
-          <Select
-            style={{ width: 120 }}
-            dropdownStyle={{ minWidth: 250 }}
-            onChange={onCourtChanged}
-            loading={courts.length === 0 || typeof courtID !== 'number'}
-            disabled={courts.length === 0 || typeof courtID !== 'number'}
-            labelInValue
-            value={
-              courts && courts.length > 0 && typeof courtID === 'number'
-                ? String(courtID)
-                : undefined
-            }
-          >
-            {courts.map(({ value, label }) => (
-              <Select.Option value={value} key={value}>
-                {label}
-              </Select.Option>
-            ))}
-          </Select>
-        </StyledInputContainer>
-        <StyledInputContainer style={{ flex: 1, margin: '0 12px' }}>
-          <label htmlFor="depositSlider">
-            Number of Jurors&nbsp;
-            <Tooltip title="This determines how many jurors will be drawn in the first round of any eventual disputes involving your list. In general, a standard number is 3. In cases where the decision is straightforward and not much effort is required, one juror might be sufficient. In situations where significant effort is required to review the case, it can be better to require more jurors. However, if you set a higher number of initial jurors, this will result in larger deposits being required by users which may result in a lower amount of submissions.">
-              <Icon type="question-circle-o" />
-            </Tooltip>
-            :
-          </label>
-          <SliderContainer>
-            {width > 480 && (
-              <Slider
-                id="numJurors"
-                min={1}
-                max={33}
-                onChange={onNumJurorsChange}
-                value={Number(numberOfJurors)}
-                step={2}
-                style={{ flex: 1, marginRight: '24px' }}
-              />
-            )}
-            <InputNumber
-              value={Number(numberOfJurors)}
-              min={1}
-              max={33}
-              defaultValue={3}
-              onChange={onNumJurorsChange}
+    <Stack $gap={20}>
+      <FieldGrid>
+        <FormField
+          id={`${ids}-court`}
+          label="Court"
+          help="The Kleros court whose jurors rule on this list's disputes."
+        >
+          {(a11y) => (
+            <Select
+              {...a11y}
+              value={typeof courtID === 'number' ? String(courtID) : ''}
+              disabled={loadingCourts}
+              placeholder={loadingCourts ? 'Loading courts…' : undefined}
+              onChange={onCourtChanged}
+              options={courts.map(({ value, label }) => ({
+                value: String(value),
+                label,
+              }))}
             />
-          </SliderContainer>
-        </StyledInputContainer>
-      </StyledContainer>
-      Arbitration Cost:{' '}
-      <ETHAmount
-        displayUnit={` ${nativeCurrency}`}
-        decimals={4}
-        amount={arbitrationCost}
-      />
-    </StyledExtraDataContainer>
+          )}
+        </FormField>
+        <FormField
+          id={`${ids}-jurors`}
+          label="Jurors in the first round"
+          help="Always odd; each extra juror raises the arbitration cost."
+        >
+          {(a11y) => (
+            <Row $gap={14}>
+              <RangeInput
+                type="range"
+                min={MIN_JURORS}
+                max={MAX_JURORS}
+                step={2}
+                value={numberOfJurors}
+                aria-label="Number of jurors"
+                onChange={(event) =>
+                  onNumJurorsChange(Number(event.target.value))
+                }
+              />
+              <JurorsInput
+                {...a11y}
+                type="text"
+                inputMode="numeric"
+                value={numberOfJurors}
+                onChange={(event) =>
+                  onNumJurorsChange(Number(event.target.value))
+                }
+              />
+            </Row>
+          )}
+        </FormField>
+      </FieldGrid>
+      <CostLine role="group" aria-label="Arbitration cost">
+        <Stack $gap={2}>
+          <Label $tone="muted">Arbitration cost</Label>
+          <Small $muted>
+            Paid up front to open a dispute, refunded to the side that wins.
+          </Small>
+        </Stack>
+        {cost === null ? (
+          <SkeletonBlock $height="26px" $width="120px" />
+        ) : (
+          <CostFigure>
+            <AnimatedNumber value={Number(cost)} format={amountFormat(cost)} />
+            <small>{nativeCurrency}</small>
+          </CostFigure>
+        )}
+      </CostLine>
+    </Stack>
   )
 }
 

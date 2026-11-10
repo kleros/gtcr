@@ -70,17 +70,23 @@ const ItemsRouter = () => {
   const chainId = useUrlChainId()
   const [searchParams] = useSearchParams()
   const isAttachmentOpen = searchParams.has('attachment')
-  const { isLightCurate, isClassicCurate, isPermanentCurate, checking } =
-    useCheckLightCurate()
+  const {
+    isLightCurate,
+    isClassicCurate,
+    isPermanentCurate,
+    checking,
+    error,
+    retry,
+  } = useCheckLightCurate()
   useTcrNetwork()
-  const stakeContext = useContext(StakeContext)
+  const setIsPermanent = useContext(StakeContext)?.setIsPermanent
   const queryClient = useQueryClient()
   const { graphqlBatcher } = useGraphqlBatcher()
 
   useEffect(() => {
-    stakeContext?.setIsPermanent(isPermanentCurate)
-    return () => stakeContext?.setIsPermanent(false)
-  }, [isPermanentCurate, stakeContext])
+    setIsPermanent?.(isPermanentCurate)
+    return () => setIsPermanent?.(false)
+  }, [isPermanentCurate, setIsPermanent])
 
   // Prefetch the latest policy timestamp so the "(updated X ago)" badge
   // is warm in cache by the time the banner renders.
@@ -140,11 +146,22 @@ const ItemsRouter = () => {
 
   if (checking) return <Loading />
 
+  if (error)
+    return (
+      <ErrorPage
+        code="Error"
+        title="This list did not load"
+        message="The indexer did not answer."
+        onRetry={retry}
+      />
+    )
+
   if (!tcrAddress)
     return (
       <ErrorPage
-        code="404"
-        message="The gods are having trouble finding this list."
+        code="Error"
+        title="List not found"
+        message="No Curate list answers at this address on this chain."
       />
     )
 

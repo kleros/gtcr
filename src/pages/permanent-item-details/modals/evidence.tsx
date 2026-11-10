@@ -1,42 +1,63 @@
 import React, { useState } from 'react'
-import type { Address } from 'viem'
-import { Typography, Button } from 'components/ui'
 import { useAccount, usePublicClient, useWalletClient } from 'wagmi'
 import { simulateContract } from '@wagmi/core'
-import _gtcr from 'assets/abis/PermanentGTCR.json'
-import EnsureAuth from 'components/ensure-auth'
-import EvidenceForm, { EvidenceFormValues } from 'components/evidence-form'
 import { useAtlasProvider } from '@kleros/kleros-app'
+import _gtcr from 'assets/abis/PermanentGTCR.json'
+import EvidenceForm, { type EvidenceFormValues } from 'components/evidence-form'
+import InlineEvidenceComposer from 'components/inline-evidence-composer'
 import { uploadEvidence } from 'utils/upload-evidence'
 import { wrapWithToast, errorToast } from 'utils/wrap-with-toast'
 import { parseWagmiError } from 'utils/parse-wagmi-error'
 import { wagmiConfig } from 'config/wagmi'
-import { StyledModal } from './challenge'
+import { Body, Button, Row, Stack } from 'components/curate/primitives'
+import { FormBlock, GateHelper, ModalShell, useActionGate } from './shell'
+
+/*
+ * Evidence on a Stake Curate item: a title, a description and an optional
+ * file, uploaded through Atlas and published on-chain. Inline it is the
+ * item page's always-open composer under the history (connect, sign in and
+ * switch named on its button); as a modal it is the same form in a dialog.
+ */
+
+const EVIDENCE_FORM_ID = 'submitEvidenceForm'
 
 interface EvidenceModalProps {
   item: SubgraphItem
+  inline?: boolean
+  composerId?: string
   visible?: boolean
-  onCancel: () => void
+  onCancel?: () => void
+  title?: React.ReactNode
+  [key: string]: unknown
 }
 
-const EvidenceModal = ({ item, ...rest }: EvidenceModalProps) => {
-  const tcrAddress = (item?.registry as { id?: Address } | undefined)?.id
+const EvidenceModal = ({
+  item,
+  inline = false,
+  composerId = 'evidence-composer',
+  visible = false,
+  onCancel,
+  title,
+}: EvidenceModalProps) => {
+  const tcrAddress = item?.registry?.id
   const { address: account } = useAccount()
   const publicClient = usePublicClient()
   const { data: walletClient } = useWalletClient()
   const { uploadFile } = useAtlasProvider()
+  const gate = useActionGate('submit evidence', { needsSignIn: true })
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [formKey, setFormKey] = useState(0)
 
   const submitEvidence = async ({
-    title,
+    title: evidenceTitle,
     description,
     evidenceAttachment,
   }: EvidenceFormValues) => {
-    if (!tcrAddress || !walletClient || !publicClient) return
+    if (!account || !walletClient || !publicClient || !tcrAddress) return
     setIsSubmitting(true)
     try {
       const ipfsEvidencePath = await uploadEvidence({
-        title: title ?? '',
+        title: evidenceTitle ?? '',
         description: description ?? '',
         attachment: evidenceAttachment,
         uploadFile,
@@ -55,7 +76,9 @@ const EvidenceModal = ({ item, ...rest }: EvidenceModalProps) => {
         publicClient,
       )
 
-      if (result.status) rest.onCancel()
+      if (result.status)
+        if (inline) setFormKey((key) => key + 1)
+        else onCancel?.()
     } catch (err) {
       console.error('Error submitting evidence:', err)
       errorToast(parseWagmiError(err))
@@ -63,35 +86,53 @@ const EvidenceModal = ({ item, ...rest }: EvidenceModalProps) => {
     setIsSubmitting(false)
   }
 
-  const EVIDENCE_FORM_ID = 'submitEvidenceForm'
+  if (inline)
+    return (
+      <InlineEvidenceComposer
+        id={composerId}
+        formID={EVIDENCE_FORM_ID}
+        formKey={formKey}
+        isSubmitting={isSubmitting}
+        onSubmit={submitEvidence}
+      />
+    )
+
+  const disabled = !gate.ready || isSubmitting
 
   return (
-    <StyledModal
-      footer={[
-        <Button key="back" onClick={rest.onCancel}>
-          Back
-        </Button>,
-        <EnsureAuth key="ensure-auth">
-          <Button
-            key="submitEvidence"
-            type="primary"
-            form={EVIDENCE_FORM_ID}
-            htmlType="submit"
-            loading={isSubmitting}
-          >
-            Submit
-          </Button>
-        </EnsureAuth>,
-      ]}
-      {...rest}
+    <ModalShell
+      open={visible}
+      title={title ?? 'Add evidence'}
+      onClose={() => onCancel?.()}
     >
-      <Typography.Title level={4}>Evidence Submission</Typography.Title>
-      <EvidenceForm
-        onSubmit={submitEvidence}
-        formID={EVIDENCE_FORM_ID}
-        detailed
-      />
-    </StyledModal>
+      <Stack $gap={14}>
+        <Body $muted>Published on-chain with this item, for the jurors.</Body>
+        <FormBlock>
+          <EvidenceForm
+            key={formKey}
+            onSubmit={submitEvidence}
+            formID={EVIDENCE_FORM_ID}
+            detailed
+          />
+        </FormBlock>
+        <Row $justify="flex-end" $gap={8} $wrap>
+          <Button type="button" $variant="secondary" onClick={onCancel}>
+            Cancel
+          </Button>
+          <Button
+            type="submit"
+            form={EVIDENCE_FORM_ID}
+            $variant="primary"
+            disabled={disabled}
+            aria-disabled={disabled}
+            title={!gate.ready ? gate.blocker : undefined}
+          >
+            {isSubmitting ? 'Waiting for your wallet…' : 'Submit evidence'}
+          </Button>
+        </Row>
+        <GateHelper gate={gate} />
+      </Stack>
+    </ModalShell>
   )
 }
 

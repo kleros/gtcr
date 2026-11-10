@@ -1,6 +1,5 @@
 import React, { useContext, useEffect, useState } from 'react'
 import styled from 'styled-components'
-import { MAX_WIDTH_CONTENT } from 'styles/small-screen-style'
 import { BrowserRouter } from 'react-router-dom'
 import { WagmiProvider } from 'wagmi'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -13,6 +12,7 @@ import { StakeProvider } from 'contexts/stake-context'
 import { ThemeProvider, ThemeContext } from 'contexts/theme-context'
 import SmartContractWalletWarning from 'components/smart-contract-wallet-warning'
 import AppBar from 'components/layout/app-bar'
+import Stage from 'components/layout/stage'
 import AppRouter from './app-router'
 import ErrorPage from 'pages/error-page'
 import { wagmiConfig } from 'config/wagmi'
@@ -53,14 +53,20 @@ const StyledClickaway = styled.div<{ isMenuClosed: boolean }>`
     properties.isMenuClosed ? 'none' : 'auto'};
 `
 
+/*
+ * Full bleed (round 2): the app runs edge to edge on the stage colour, with
+ * the aurora as a soft glow behind the top of the page (Stage). No frame, no
+ * corner or side borders. Horizontal overflow is clipped here, not scrolled.
+ */
 const StyledLayout = styled(Layout)`
+  position: relative;
+  z-index: 1;
   min-height: 100vh !important;
-  background: ${({ theme }) => theme.bodyBackground} !important;
-  overflow-x: hidden;
+  background: transparent !important;
+  overflow-x: clip;
 `
 
 const ContentContainer = styled.div`
-  max-width: ${MAX_WIDTH_CONTENT};
   margin: 0 auto;
   width: 100%;
   flex: 1;
@@ -109,6 +115,7 @@ const App = () => {
                 >
                   <WalletProvider>
                     <StakeProvider>
+                      <Stage />
                       <StyledLayout>
                         <SmartContractWalletWarning />
                         <AppBar />

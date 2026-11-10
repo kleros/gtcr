@@ -1,25 +1,14 @@
 import React from 'react'
-import styled from 'styled-components'
-import { Skeleton } from 'components/ui'
 import { ethers, BigNumberish } from 'ethers'
+import { AmountPending } from 'components/curate/chrome-amount'
 
-const SkeletonTitleProps = { width: '30px' }
-const StyledSkeleton = styled(Skeleton)`
-  display: inline;
-
-  .ui-skeleton-title {
-    margin: -3px 0;
-  }
-`
+/** A native-currency amount from wei; a short shimmer while unknown. */
 const ETHAmount: React.FC<{
   amount?: BigNumberish | null
   decimals?: number
   displayUnit?: string
 }> = ({ amount, displayUnit }) => {
-  if (amount == null)
-    return (
-      <StyledSkeleton active paragraph={false} title={SkeletonTitleProps} />
-    )
+  if (amount == null) return <AmountPending />
 
   const formattedEther = ethers.utils.formatEther(
     typeof amount === 'number'

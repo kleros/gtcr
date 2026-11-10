@@ -64,14 +64,49 @@ declare global {
     stake?: string
     /** Attached by item-details pages when decoding fails */
     errors?: string[]
+    /** Present on permanent TCR items */
+    registry?: SubgraphRegistry
     [key: string]: unknown
+  }
+
+  /** Registry metadata carried by a permanent TCR arbitration setting */
+  interface SubgraphArbitrationSettingMetadata {
+    title?: string
+    description?: string
+    itemName?: string
+    itemNamePlural?: string
+    policyURI?: string
+    logoURI?: string
+    requireRemovalEvidence?: boolean
+    [key: string]: unknown
+  }
+
+  /** One arbitration setting revision of a permanent TCR registry */
+  interface SubgraphArbitrationSetting {
+    timestamp?: string
+    arbitratorExtraData?: string
+    metaEvidenceURI?: string
+    metadata?: SubgraphArbitrationSettingMetadata
   }
 
   /** Permanent TCR registry data from subgraph */
   interface SubgraphRegistry {
+    id?: `0x${string}`
+    token?: `0x${string}`
+    numberOfSubmitted?: string | number
+    numberOfAbsent?: string | number
+    numberOfDisputed?: string | number
+    arbitrator?: { id?: `0x${string}` }
+    arbitrationSettings?: SubgraphArbitrationSetting[]
+    submissionMinDeposit?: string | number
     submissionPeriod?: string | number
     reinclusionPeriod?: string | number
     withdrawingPeriod?: string | number
+    arbitrationParamsCooldown?: string | number
+    challengeStakeMultiplier?: string | number
+    winnerStakeMultiplier?: string | number
+    loserStakeMultiplier?: string | number
+    sharedStakeMultiplier?: string | number
     [key: string]: unknown
   }
 
@@ -86,9 +121,14 @@ declare global {
     metadata?: {
       tcrTitle?: string
       tcrDescription?: string
+      /** Some registries publish the plain `title`/`description` keys instead. */
+      title?: string
+      description?: string
       columns?: Column[]
       itemName?: string
+      itemNamePlural?: string
       logoURI?: string
+      policyURI?: string
       isTCRofTCRs?: boolean
       requireRemovalEvidence?: boolean
       [key: string]: unknown
@@ -150,7 +190,7 @@ declare module '@kleros/gtcr-encoder' {
     values: Record<string, unknown> | unknown[]
   }): string
   export function searchableFields(columns: Column[]): number[]
-  export function typeDefaultValues(type: string): string | number | boolean
+  export const typeDefaultValues: Record<string, string | number | boolean>
 }
 
 // @kleros/tcr contract ABIs

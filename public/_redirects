@@ -1,0 +1,4 @@
+/agent /llms.txt 200
+/agent.txt /llms.txt 200
+/agent-context /curate-agent-context.md 200
+/skills /guide 302

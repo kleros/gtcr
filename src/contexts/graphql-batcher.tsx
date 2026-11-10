@@ -40,7 +40,7 @@ const fetchGraphql = async (
     return await request(url, document, variables)
   } catch (err) {
     console.error('Graph error:', { err })
-    debounceErrorToast('Graph query error: failed to fetch data.')
+    debounceErrorToast('Some data did not load. Try again in a moment.')
     return {}
   }
 }

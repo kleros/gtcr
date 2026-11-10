@@ -1,11 +1,12 @@
 import { useMemo } from 'react'
 import { useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { parse } from 'graphql'
+import { request } from 'graphql-request'
 import { TCR_EXISTENCE_TEST } from 'utils/graphql'
-import { useGraphqlBatcher } from 'contexts/graphql-batcher'
 import useCheckPermanentList from './use-check-permanent-list'
 import useUrlChainId from 'hooks/use-url-chain-id'
+import { subgraphUrl } from 'config/tcr-addresses'
+import { STALE_TIME } from 'consts'
 
 const useCheckLightCurate = (): {
   isLightCurate: boolean
@@ -13,30 +14,32 @@ const useCheckLightCurate = (): {
   isPermanentCurate: boolean
   checking: boolean
   error: boolean
+  /** Asks again whichever check failed. */
+  retry: () => void
 } => {
   const { tcrAddress } = useParams<{
     tcrAddress: string
   }>()
   const chainId = useUrlChainId()
-  const { graphqlBatcher } = useGraphqlBatcher()
 
   const {
     isLoading: loading,
     data,
     error: queryError,
+    refetch,
   } = useQuery({
     queryKey: ['tcrExistence', tcrAddress, chainId],
     queryFn: async () => {
-      const result = await graphqlBatcher.fetch({
-        id: crypto.randomUUID(),
-        document: parse(TCR_EXISTENCE_TEST),
-        variables: { tcrAddress: (tcrAddress || '').toLowerCase() },
-        chainId: chainId!,
+      const url = subgraphUrl[chainId!]
+      if (!url) throw new Error(`No subgraph URL for chain ${chainId}`)
+
+      return request(url, TCR_EXISTENCE_TEST, {
+        tcrAddress: tcrAddress?.toLowerCase(),
       })
-      return result
     },
     enabled: !!chainId && !!tcrAddress,
-    staleTime: Infinity,
+    retry: 2,
+    staleTime: STALE_TIME,
   })
 
   const isLightCurate = useMemo<boolean>(() => data?.lregistry ?? false, [data])
@@ -48,11 +51,13 @@ const useCheckLightCurate = (): {
   // Only check Goldsky (permanent) after Envio responds with no match.
   // This prevents the slow Goldsky query from being batched together with
   // the fast Envio query, which would block the entire page render.
-  const envioFoundNothing = !loading && !isLightCurate && !isClassicCurate
+  const envioFoundNothing =
+    !loading && !queryError && !isLightCurate && !isClassicCurate
   const {
     isPermanentList,
     checking: permanentChecking,
     error: permanentError,
+    retry: permanentRetry,
   } = useCheckPermanentList(tcrAddress ?? null, chainId, envioFoundNothing)
 
   return {
@@ -60,7 +65,11 @@ const useCheckLightCurate = (): {
     isClassicCurate,
     isPermanentCurate: isPermanentList,
     checking: loading || (envioFoundNothing && permanentChecking),
-    error: !!queryError && permanentError,
+    error: !!queryError || (envioFoundNothing && permanentError),
+    retry: () => {
+      if (queryError) void refetch()
+      else if (permanentError) permanentRetry()
+    },
   }
 }
 

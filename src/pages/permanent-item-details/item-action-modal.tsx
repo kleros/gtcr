@@ -1,28 +1,25 @@
 import React, { useMemo } from 'react'
-import { BigNumber } from 'ethers'
-import { STATUS_CODE, getActionLabel } from 'utils/permanent-item-status'
+import type { BigNumber } from 'ethers'
+import { STATUS_CODE } from 'utils/permanent-item-status'
+import { stakeActionLabel } from 'components/permanent-item-action-button'
 import ChallengeModal from './modals/challenge'
 import SubmitModal from './modals/submit'
 import CrowdfundModal from './modals/crowdfund'
+
+/*
+ * Picks the modal behind the item's one action: challenge while listed,
+ * resubmit once off the list, fund an appeal while an appeal is open.
+ */
 
 interface ItemActionModalProps {
   statusCode: number
   isOpen: boolean
   itemName: string
   onClose: () => void
-  fileURI?: string
   item: SubgraphItem
   metaEvidence?: MetaEvidence
   appealCost?: BigNumber | undefined
   arbitrationCost?: BigNumber | undefined
-}
-
-interface SubmitRegistry {
-  id: string
-  token: string
-  submissionMinDeposit: string
-  submissionPeriod: string
-  withdrawingPeriod: string
 }
 
 const ItemActionModal = ({
@@ -30,22 +27,23 @@ const ItemActionModal = ({
   isOpen,
   itemName,
   onClose,
-  fileURI,
   item,
   metaEvidence,
   appealCost,
   arbitrationCost,
 }: ItemActionModalProps) => {
-  // Common button properties.
   const rest = {
     visible: isOpen,
-    title: getActionLabel({ statusCode, itemName }),
+    title: stakeActionLabel({ statusCode, itemName }),
     onCancel: onClose,
   }
-  const r = useMemo(() => item?.registry as SubmitRegistry, [item])
+  const r = useMemo(() => item?.registry, [item])
+  const policyURI = r?.arbitrationSettings?.[0]?.metadata?.policyURI
   const submitMetadata = metaEvidence?.metadata
     ? {
-        title: String(metaEvidence.metadata.title ?? ''),
+        title: String(
+          metaEvidence.metadata.tcrTitle ?? metaEvidence.metadata.title ?? '',
+        ),
         itemName: metaEvidence.metadata.itemName ?? '',
         policyURI: String(metaEvidence.metadata.policyURI ?? ''),
       }
@@ -58,8 +56,6 @@ const ItemActionModal = ({
         <ChallengeModal
           item={item}
           itemName={itemName}
-          fileURI={fileURI}
-          statusCode={statusCode}
           arbitrationCost={arbitrationCost}
           {...rest}
         />
@@ -70,12 +66,13 @@ const ItemActionModal = ({
       return (
         <SubmitModal
           initialValues={item.decodedData}
-          submissionDeposit={r.submissionMinDeposit}
-          submissionPeriod={r.submissionPeriod}
+          submissionDeposit={r?.submissionMinDeposit}
+          submissionPeriod={r?.submissionPeriod}
           arbitrationCost={arbitrationCost}
-          withdrawingPeriod={r.withdrawingPeriod}
-          tcrAddress={r.id}
-          tokenAddress={r.token}
+          withdrawingPeriod={r?.withdrawingPeriod}
+          challengeStakeMultiplier={r?.challengeStakeMultiplier}
+          tcrAddress={r?.id}
+          tokenAddress={r?.token}
           metadata={submitMetadata}
           columns={metaEvidence?.metadata?.columns ?? []}
           {...rest}
@@ -87,11 +84,12 @@ const ItemActionModal = ({
         <CrowdfundModal
           statusCode={statusCode}
           item={item}
-          fileURI={fileURI}
+          fileURI={policyURI}
           appealCost={appealCost}
           {...rest}
         />
       )
+    case STATUS_CODE.DISPUTED:
     case STATUS_CODE.WAITING_ARBITRATOR:
     case STATUS_CODE.PENDING_WITHDRAWAL:
       return null
