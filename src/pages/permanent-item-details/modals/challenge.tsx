@@ -1,8 +1,8 @@
 import React, { useCallback, useEffect, useId, useMemo, useState } from 'react'
 import type { BigNumber } from 'ethers'
-import { useAccount, usePublicClient, useWalletClient, useChainId } from 'wagmi'
+import { useAccount, usePublicClient, useWalletClient } from 'wagmi'
 import { simulateContract } from '@wagmi/core'
-import { erc20Abi, getAddress } from 'viem'
+import { erc20Abi } from 'viem'
 import { useAtlasProvider } from '@kleros/kleros-app'
 import _gtcr from 'assets/abis/PermanentGTCR.json'
 import EvidenceForm, { type EvidenceFormValues } from 'components/evidence-form'
@@ -63,7 +63,6 @@ const ChallengeModal = ({
   const tokenAddress = registry?.token
   const fileURI = registry?.arbitrationSettings?.[0]?.metadata?.policyURI
   const { address: account } = useAccount()
-  const chainId = useChainId()
   const publicClient = usePublicClient()
   const { data: walletClient } = useWalletClient()
   const { uploadFile } = useAtlasProvider()
@@ -224,26 +223,7 @@ const ChallengeModal = ({
         publicClient,
       )
 
-      if (result.status) {
-        onCancel()
-
-        if (process.env.REACT_APP_NOTIFICATIONS_API_URL && !!chainId)
-          fetch(
-            `${process.env.REACT_APP_NOTIFICATIONS_API_URL}/${chainId}/api/subscribe`,
-            {
-              method: 'post',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                subscriberAddr: getAddress(account),
-                tcrAddr: getAddress(registryAddress),
-                itemID: item.itemID,
-                networkID: chainId,
-              }),
-            },
-          ).catch((err) => {
-            console.error('Failed to subscribe for notifications.', err)
-          })
-      }
+      if (result.status) onCancel()
     } catch (err) {
       console.error('Error challenging item:', err)
       errorToast(parseWagmiError(err))

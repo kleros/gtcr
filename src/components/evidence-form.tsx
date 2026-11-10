@@ -10,7 +10,13 @@ import {
   Stack,
   TextInput,
 } from 'components/curate/primitives'
+import { Roles, useAtlasProvider } from '@kleros/kleros-app'
 import { CurateIcon } from 'components/curate/icons'
+import {
+  atlasLimit,
+  atlasUploadProblem,
+  formatLimit,
+} from 'utils/upload-restrictions'
 import { FieldError, FieldLabel } from 'components/curate/item-light-notice'
 
 /*
@@ -25,6 +31,7 @@ import { FieldError, FieldLabel } from 'components/curate/item-light-notice'
  * edge with the attachment on the left and the caller's action on the right.
  */
 
+// Used until Atlas has said what evidence attachments it takes.
 const MAX_FILE_MB = 4
 
 const FieldBlock = styled.div`
@@ -409,6 +416,12 @@ const EvidenceForm = ({
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [fileError, setFileError] = useState<string | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+  // Attachments are stored by Atlas as evidence: its own limits, once known.
+  const { roleRestrictions } = useAtlasProvider()
+  const evidenceLimit = atlasLimit(Roles.Evidence, roleRestrictions)
+  const sizeLabel = evidenceLimit
+    ? formatLimit(evidenceLimit.maxSize)
+    : `${MAX_FILE_MB} MB`
   const errorsId = useId()
   const file = values.evidenceAttachment as File | undefined
   const drafted = !!(values.title || values.description || file)
@@ -425,14 +438,19 @@ const EvidenceForm = ({
       const picked = event.currentTarget.files?.[0]
       event.currentTarget.value = ''
       if (!picked) return
-      if (picked.size / 1024 / 1024 >= MAX_FILE_MB) {
-        setFileError(`File must be smaller than ${MAX_FILE_MB}MB.`)
+      const problem = evidenceLimit
+        ? atlasUploadProblem(picked, Roles.Evidence, roleRestrictions)
+        : picked.size / 1024 / 1024 >= MAX_FILE_MB
+          ? `File must be smaller than ${MAX_FILE_MB}MB.`
+          : ''
+      if (problem) {
+        setFileError(problem)
         return
       }
       setFileError(null)
       setFieldValue('evidenceAttachment', picked)
     },
-    [setFieldValue],
+    [setFieldValue, evidenceLimit, roleRestrictions],
   )
 
   useEffect(() => {
@@ -452,6 +470,7 @@ const EvidenceForm = ({
       type="file"
       tabIndex={-1}
       aria-label="Attach a file"
+      accept={evidenceLimit?.allowedMimeTypes.join(',')}
       onChange={onPick}
     />
   )
@@ -546,7 +565,7 @@ const EvidenceForm = ({
                 <PaperclipIcon />
                 Attach a file
                 <span>
-                  <span aria-hidden>· </span>up to {MAX_FILE_MB} MB
+                  <span aria-hidden>· </span>up to {sizeLabel}
                 </span>
               </Attach>
             )}
@@ -651,7 +670,7 @@ const EvidenceForm = ({
               >
                 Attach a file
               </Button>
-              <Small $muted>Optional, up to {MAX_FILE_MB} MB.</Small>
+              <Small $muted>Optional, up to {sizeLabel}.</Small>
             </PickRow>
           )}
           {fileInput}

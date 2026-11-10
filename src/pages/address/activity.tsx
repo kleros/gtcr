@@ -264,12 +264,13 @@ const RowItem = styled.li`
 const RowText = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
   min-width: 0;
 
+  /* 24px tall: the smallest target WCAG 2.2 allows (2.5.8). */
   > [data-title] > a {
     font-size: 15px;
-    line-height: 22px;
+    line-height: 24px;
   }
 `
 
@@ -760,7 +761,11 @@ export const ActivitySection = ({
             aria-label={entryLabel(activity)}
           />
           <CardTop>
-            <RegistryLogo uri={activity.registryLogo} size={36} />
+            <RegistryLogo
+              uri={activity.registryLogo}
+              seed={activity.registryAddress}
+              size={36}
+            />
             <RowText>
               <ListTitle
                 to={registryHref(activity)}
@@ -798,7 +803,11 @@ export const ActivitySection = ({
             data-overlay
             aria-label={entryLabel(activity)}
           />
-          <RegistryLogo uri={activity.registryLogo} data-logo />
+          <RegistryLogo
+            uri={activity.registryLogo}
+            seed={activity.registryAddress}
+            data-logo
+          />
           <RowText data-text>
             <ListTitle
               to={registryHref(activity)}
@@ -949,7 +958,7 @@ export const ActivitySection = ({
                 </RailHead>
                 {shares.slice(0, 5).map((share) => (
                   <ShareRow key={share.key}>
-                    <RegistryLogo uri={share.logo} size={24} />
+                    <RegistryLogo uri={share.logo} seed={share.key} size={24} />
                     <ListTitle
                       to={share.href}
                       verified={share.verified}

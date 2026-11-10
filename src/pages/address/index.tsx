@@ -13,8 +13,14 @@ import ErrorPage from 'pages/error-page'
 import {
   ZERO_ADDRESS,
   fetchDashboardData,
+  fetchTestnetDashboardData,
   normalizeAddress,
 } from 'pages/dashboard/data'
+import {
+  DASHBOARD_QUERY_KEY,
+  DASHBOARD_STALE_MS,
+  TESTNET_DASHBOARD_QUERY_KEY,
+} from 'pages/dashboard/query'
 import {
   ACTIVITY_LIMIT,
   SUPPORTED_CHAIN_IDS,
@@ -26,6 +32,7 @@ import {
   type AddressProfileData,
   type AddressStats,
   type GovernedRegistry,
+  type RegistryIndex,
 } from './data'
 import { GovernancePanel } from './governance'
 import {
@@ -59,6 +66,12 @@ const Governed = styled.div`
   ${reveal}
 `
 
+/** How often an open profile (and its governance scan) is read again. */
+const PROFILE_REFRESH_MS = 5 * 60_000
+
+/** How long the registry index stays cached for an open profile. */
+const INDEX_GC_MS = 30 * 60_000
+
 const AddressPage = () => {
   const params = useParams()
   const [searchParams, setSearchParams] = useSearchParams()
@@ -86,29 +99,52 @@ const AddressPage = () => {
       : undefined,
   )
 
-  // The registry index comes from the dashboard's own query, so the profile,
-  // the governance scan and the dashboard and browse pages share one load
-  // and its cache. Kleros Verified is stamped by the shared rule (the
-  // registry pages' and Browse's cached sets), never taken from the index.
+  // The registry index comes from the dashboard's own queries (the mainnets
+  // and the testnet, every chain a profile covers), so the profile, the
+  // governance scan and the dashboard and browse pages share their loads and
+  // cache: a load already in the cache is reused as it is (titles, logos and
+  // the lists to scan barely change), so a profile's own refresh never
+  // re-runs a whole dashboard load. Kleros Verified is stamped by the shared
+  // rule (the registry pages' and Browse's cached sets), never taken from the
+  // index.
   const queryClient = useQueryClient()
-  const readIndex = useCallback(async () => {
-    const [dashboard, sets] = await Promise.all([
-      queryClient.fetchQuery({
-        queryKey: ['curateDashboard'],
+  const readIndex = useCallback(async (): Promise<RegistryIndex> => {
+    const [mainnets, testnet, sets] = await Promise.all([
+      // Nothing on this page observes these keys, so the default five-minute
+      // gcTime would drop them just before each refresh and re-run both
+      // whole loads: keep them for the life of an open profile.
+      queryClient.ensureQueryData({
+        queryKey: DASHBOARD_QUERY_KEY,
         queryFn: fetchDashboardData,
-        staleTime: 60_000,
+        staleTime: DASHBOARD_STALE_MS,
+        gcTime: INDEX_GC_MS,
+      }),
+      queryClient.ensureQueryData({
+        queryKey: TESTNET_DASHBOARD_QUERY_KEY,
+        queryFn: fetchTestnetDashboardData,
+        staleTime: DASHBOARD_STALE_MS,
+        gcTime: INDEX_GC_MS,
       }),
       readVerifiedSets(SUPPORTED_CHAIN_IDS, queryClient),
     ])
-    return withVerified(dashboard.registries, sets)
+    return {
+      registries: withVerified(
+        [...mainnets.registries, ...testnet.registries],
+        sets,
+      ),
+      missingChains: [
+        ...(mainnets.listFailedChains ?? []),
+        ...(testnet.listFailedChains ?? []),
+      ],
+    }
   }, [queryClient])
 
   const query = useQuery({
     queryKey: ['addressProfile', address],
     queryFn: () => fetchAddressProfileData(address, readIndex),
     enabled: validAddress,
-    staleTime: 60_000,
-    refetchInterval: 120_000,
+    staleTime: PROFILE_REFRESH_MS,
+    refetchInterval: PROFILE_REFRESH_MS,
   })
   const data: AddressProfileData | undefined = query.data
   // isPending is false once the query errors, so the error state can render.
@@ -120,10 +156,11 @@ const AddressPage = () => {
     queryKey: ['addressProfile', address, 'governed'],
     queryFn: () => fetchGovernedRegistries(address, readIndex),
     enabled: validAddress,
-    staleTime: 60_000,
-    refetchInterval: 120_000,
+    staleTime: PROFILE_REFRESH_MS,
+    refetchInterval: PROFILE_REFRESH_MS,
   })
-  const governedAll: GovernedRegistry[] | undefined = governedQuery.data
+  const governedAll: GovernedRegistry[] | undefined =
+    governedQuery.data?.registries
   const governedPending = validAddress && governedQuery.isPending
 
   const setParam = (key: string, value: string, fallback: string) => {
@@ -193,8 +230,28 @@ const AddressPage = () => {
   const capped = (data?.cappedChains ?? []).filter((chainId) =>
     inScope(scope, chainId),
   )
+  // Chains in the scope whose indexer did not answer: their actions are
+  // missing, so the figures are lower bounds, and with nothing read the
+  // profile is unknown rather than quiet.
+  const failed = (data?.failedChains ?? []).filter((chainId) =>
+    inScope(scope, chainId),
+  )
+  const unread = !loading && failed.length > 0 && activities.length === 0
+  // Chains in the scope where some list's governor() could not be read.
+  const governedPartial = (governedQuery.data?.unreadChains ?? []).some(
+    (chainId) => inScope(scope, chainId),
+  )
+  // A refresh that fails keeps the last data (React Query keeps it on a
+  // failed refetch): the sections stay, an open governance dialog included,
+  // and a note says the data is older. Only no data at all is an error.
+  const profileFailed = query.isError && !data
+  const profileStale = query.isError && !!data
+  const governedStaleSince =
+    governedQuery.isError && governedAll
+      ? governedQuery.dataUpdatedAt
+      : undefined
   // A quiet scope says so once, in the profile panel; no empty list below.
-  const quiet = !loading && !query.isError && activities.length === 0
+  const quiet = !loading && !!data && activities.length === 0
   const chainList =
     scope === 'all'
       ? SUPPORTED_CHAIN_IDS.map(chainName).join(', ')
@@ -216,15 +273,23 @@ const AddressPage = () => {
         isYou={isYou}
         isZero={isZero}
         loading={loading}
-        error={query.isError}
-        onRetry={() => query.refetch()}
+        error={profileFailed || unread}
+        failed={failed}
+        onRetry={() => {
+          void query.refetch()
+          if (governedQuery.isError || governedPartial)
+            void governedQuery.refetch()
+        }}
         generatedAt={data?.generatedAt}
+        refreshFailed={profileStale}
+        governedStaleSince={governedStaleSince}
         scope={scope}
         onScope={setScope}
         chains={chains}
         stats={stats}
         governedCount={governedPending ? undefined : governed.length}
         governedError={governedQuery.isError && !governedAll}
+        governedPartial={!governedPending && governedPartial}
         activities={activities}
         complete={complete}
         listed={listed}
@@ -232,7 +297,7 @@ const AddressPage = () => {
         now={now}
       />
 
-      {!query.isError && !quiet && (
+      {(loading || !!data) && !quiet && (
         <ActivitySection
           address={address}
           loading={loading}
@@ -254,8 +319,9 @@ const AddressPage = () => {
       )}
 
       {/* Only an address that governs a list gets the section: most govern
-          none, and the hero's figure already says so. */}
-      {!query.isError && !loading && governed.length > 0 && (
+          none, and the hero's figure already says so. It stays while the
+          governance scan has data, whatever a later refresh does. */}
+      {!loading && governed.length > 0 && (
         <Governed style={{ ['--i' as string]: 4 }}>
           <GovernancePanel
             registries={governed}

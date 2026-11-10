@@ -38,7 +38,18 @@ import { AnimatedNumber } from 'components/curate/motion/animated-number'
 import { reveal } from 'components/curate/motion/reveal'
 import { Pagination } from 'components/ui'
 import Tooltip from 'components/ui/Tooltip'
-import { fetchDashboardData } from 'pages/dashboard/data'
+import {
+  fetchDashboardData,
+  fetchTestnetDashboardData,
+  withTestnetLists,
+} from 'pages/dashboard/data'
+import {
+  DASHBOARD_QUERY_KEY,
+  DASHBOARD_REFRESH_MS,
+  DASHBOARD_STALE_MS,
+  TESTNET_DASHBOARD_QUERY_KEY,
+  isLiveLoad,
+} from 'pages/dashboard/query'
 import {
   applyCreationTimes,
   fetchRegistryCreationTimes,
@@ -1341,23 +1352,26 @@ const ArrowIcon = ({ size = 16 }: { size?: number }) => (
   </svg>
 )
 
-type Freshness = 'live' | 'partial' | 'stale' | 'connecting' | 'down'
+type Freshness = 'live' | 'partial' | 'stale' | 'aged' | 'connecting' | 'down'
 
 const FRESHNESS_TONE: Record<Exclude<Freshness, 'live'>, StatusTone> = {
   partial: 'contested',
   stale: 'contested',
+  aged: 'neutral',
   connecting: 'neutral',
   down: 'off',
 }
 
 /**
  * The data's state, said plainly: a pulsing "Live" only while the figures are
- * loaded and the last fetch worked; a still dot otherwise.
+ * loaded, recent and the last fetch worked; a still dot otherwise. "aged" is
+ * a load older than the refresh interval (the tab was in the background).
  */
 const FreshnessPill = ({
   state,
   missing,
   updatedAt,
+  refreshing,
   now,
   index,
 }: {
@@ -1365,6 +1379,8 @@ const FreshnessPill = ({
   /** The chains whose data did not load, named, when `state` is partial. */
   missing?: string
   updatedAt?: number
+  /** A newer load is on its way. */
+  refreshing?: boolean
   now: number
   index: number
 }) => {
@@ -1381,7 +1397,8 @@ const FreshnessPill = ({
       )}
       {state === 'live' && <b>Live</b>}
       {state === 'partial' && <b>Partial</b>}
-      {state === 'live'
+      {state === 'aged' && <b>{refreshing ? 'Refreshing' : 'Not live'}</b>}
+      {state === 'live' || state === 'aged'
         ? ago
         : state === 'partial'
           ? `Some ${missing} data did not load`
@@ -1424,16 +1441,53 @@ const BrowsePage = () => {
   )
   const now = useNow(30_000)
 
-  const query = useQuery({
-    queryKey: ['curateDashboard'],
+  const mainnets = useQuery({
+    queryKey: DASHBOARD_QUERY_KEY,
     queryFn: fetchDashboardData,
-    staleTime: 60_000,
-    refetchInterval: 60_000,
+    staleTime: DASHBOARD_STALE_MS,
+    refetchInterval: DASHBOARD_REFRESH_MS,
+    // Back from another tab: refresh only a load older than the stale time.
+    refetchOnWindowFocus: true,
   })
-  const data = query.data
+  // The Sepolia testnet is a load of its own, read when the scope includes
+  // it, or when a choice finds nothing on the mainnets (so the page can say
+  // whether the testnet has it).
+  const scopeHasTestnet = chains.some((chainId) =>
+    TESTNET_CHAIN_IDS.includes(chainId),
+  )
+  const [testnetAsked, setTestnetAsked] = useState(false)
+  const wantsTestnet = scopeHasTestnet || testnetAsked
+  const testnet = useQuery({
+    queryKey: TESTNET_DASHBOARD_QUERY_KEY,
+    queryFn: fetchTestnetDashboardData,
+    staleTime: DASHBOARD_STALE_MS,
+    refetchInterval: DASHBOARD_REFRESH_MS,
+    refetchOnWindowFocus: true,
+    enabled: wantsTestnet,
+  })
+  const data = useMemo(
+    () =>
+      mainnets.data && wantsTestnet && testnet.data
+        ? withTestnetLists(mainnets.data, testnet.data)
+        : mainnets.data,
+    [mainnets.data, testnet.data, wantsTestnet],
+  )
+  // The two loads as one: the testnet's only counts when the scope shows it.
+  const query = {
+    isLoading: mainnets.isLoading || (scopeHasTestnet && testnet.isLoading),
+    isError: mainnets.isError || (scopeHasTestnet && testnet.isError),
+    isFetching: mainnets.isFetching || (wantsTestnet && testnet.isFetching),
+    refetch: () =>
+      Promise.all([
+        mainnets.refetch(),
+        wantsTestnet ? testnet.refetch() : undefined,
+      ]),
+  }
 
-  // Real creation blocks (factory NewGTCR events), cached once read. Until
-  // they arrive the dashboard data already carries whatever was cached.
+  // Real creation blocks (factory NewGTCR events): the shipped snapshot plus
+  // the blocks since, read once per chain and shared with the dashboard
+  // load's own read (utils/registry-creation.ts). The dashboard data already
+  // carries what was known when it loaded.
   const creation = useQuery({
     queryKey: ['registryCreationTimes'],
     queryFn: () => fetchRegistryCreationTimes(SUPPORTED_CHAIN_IDS),
@@ -1550,6 +1604,17 @@ const BrowsePage = () => {
     kinds,
     search,
   ])
+  // The testnet's lists are not loaded with "All chains": a choice that
+  // finds nothing on the mainnets reads them once, so the hint above can say
+  // whether the testnet has a match.
+  const nothingOnMainnets =
+    !!mainnets.data &&
+    chains.length === 0 &&
+    registries.length === 0 &&
+    otherMatches === 0
+  useEffect(() => {
+    if (nothingOnMainnets) setTestnetAsked(true)
+  }, [nothingOnMainnets])
   const pageCount = Math.max(1, Math.ceil(registries.length / PAGE_SIZE))
   const currentPage = Math.min(requestedPage, pageCount)
   const visible = registries.slice(
@@ -1671,7 +1736,9 @@ const BrowsePage = () => {
         ? 'stale'
         : partialChains.length > 0
           ? 'partial'
-          : 'live'
+          : isLiveLoad(data.generatedAt, now)
+            ? 'live'
+            : 'aged'
       : failed
         ? 'down'
         : 'connecting'
@@ -1689,6 +1756,7 @@ const BrowsePage = () => {
           state={freshness}
           missing={listFormat(partialChains.map(chainName))}
           updatedAt={data ? Math.floor(data.generatedAt / 1000) : undefined}
+          refreshing={query.isFetching}
           now={now}
           index={1}
         />

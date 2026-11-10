@@ -22,6 +22,7 @@ import { litThumb, recessTrack } from 'components/ui/kit-styles'
 import { reveal } from 'components/curate/motion/reveal'
 import { ChainSwitch } from './chain-switch'
 import { Lifecycle, axisScale, type LifecycleSpec } from './lifecycle'
+import { LIGHT_WIZARD_DEFAULTS } from 'pages/factory/defaults'
 
 /*
  * Launch a list (route /launch/:chainId): a choice between the two list
@@ -48,17 +49,8 @@ const TESTNETS: number[] = [NETWORKS.sepolia]
 
 const HOUR = 60 * 60
 
-/*
- * The Light wizard's defaults. They live inside the factory's state hook
- * (pages/factory/index.tsx, initialWizardState) and are not exported, so
- * they are mirrored here: keep the two in sync. The Stake defaults are
- * imported from the Stake factory.
- */
-const STANDARD_DEFAULTS = {
-  submissionBaseDeposit: 0.05,
-  removalBaseDeposit: 0.05,
-  challengePeriodDuration: 84,
-} as const
+/* Both kinds' defaults come from their wizards, so the page and a new list agree. */
+const STANDARD_DEFAULTS = LIGHT_WIZARD_DEFAULTS
 
 const CONTACT_HREF =
   'mailto:contact@kleros.io?subject=Launch%20a%20Curate%20list'

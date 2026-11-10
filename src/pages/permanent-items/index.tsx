@@ -653,6 +653,8 @@ const StakeRegistry = () => {
   const withdrawingPeriod = seconds(registry?.withdrawingPeriod)
   const periodValue = (value: string | number | undefined) => {
     const s = seconds(value)
+    // A zero period is a setting ("accepted right away"), not a duration.
+    if (s === 0) return 'None'
     return s === undefined ? undefined : formatDurationLong(s)
   }
 

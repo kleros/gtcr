@@ -12,6 +12,7 @@ import { StakeProvider } from 'contexts/stake-context'
 import { ThemeProvider, ThemeContext } from 'contexts/theme-context'
 import SmartContractWalletWarning from 'components/smart-contract-wallet-warning'
 import AppBar from 'components/layout/app-bar'
+import RefreshAfterTransactions from 'components/refresh-after-transactions'
 import Stage from 'components/layout/stage'
 import AppRouter from './app-router'
 import ErrorPage from 'pages/error-page'
@@ -134,6 +135,7 @@ const App = () => {
                       </StyledLayout>
                     </StakeProvider>
                     <ThemedToastContainer />
+                    <RefreshAfterTransactions />
                   </WalletProvider>
                 </ErrorBoundary>
               </BrowserRouter>

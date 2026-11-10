@@ -14,7 +14,6 @@ Registry routes:
 - Item: https://curate.kleros.io/tcr/{chainId}/{registryAddress}/{itemID}
 - Address profile: https://curate.kleros.io/address/{walletAddress}
 - Light factory: https://curate.kleros.io/factory/{chainId}
-- Classic factory: https://curate.kleros.io/factory-classic/{chainId}
 - Permanent factory: https://curate.kleros.io/factory-permanent/{chainId}
 
 Supported chains:
@@ -23,7 +22,7 @@ Supported chains:
 - Sepolia: 11155111
 
 Kleros lists of lists:
-A registry is Kleros Verified when it is one of these lists of lists or a Registered entry of any of them. Light and Classic count the same. New lists are submitted to the Light one, with Light Curate `addItem(string)` (the skill's light-curate reference); the skill's list-of-lists notes predate it and describe the Classic ones, which take `GeneralizedTCR.addItem(bytes)`.
+A registry is Kleros Verified when it is one of these lists of lists or a Registered entry of any of them. Light and Classic count the same. New lists are submitted to the Light one with `LightGeneralizedTCR.addItem(string)` (the skill's references/verify-your-list.md); the older Classic ones take `GeneralizedTCR.addItem(bytes)`. Use the addresses listed here: the skill reference still names an older Ethereum Mainnet list (0xB79B610bB8E5E26e5b93b8d45Cdb34858AfEb190), which does not grant Kleros Verified.
 - Ethereum Mainnet, Light: 0x2acf59a420ca888f46d46974f62570f8a38cd4da
 - Ethereum Mainnet, Classic: 0xba0304273a54dfec1fc7f4bccbf4b15519aecf15
 - Gnosis, Light: 0x2418d887d0d0fe03b793a6af4321fa488226a0b5
@@ -37,7 +36,6 @@ Agent rules:
 - Do not guess deposits, challenge windows, arbitrator extra data, schemas, columns, or evidence requirements.
 - Validate item JSON against the registry schema before upload.
 - Upload policy and MetaEvidence intentionally; incorrect MetaEvidence can break frontend visualization.
-- Preserve registry mechanics, contracts, subgraphs, IPFS metadata, wallet/network handling, and factory behavior.
 
 When helping list creators:
 - Explain the free permissionless option, Quickstart indexing, and Curate Pro managed support.

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useContext, useMemo } from 'react'
 import styled from 'styled-components'
-import { useParams, Link } from 'react-router-dom'
+import { useParams, Link, useLocation } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { ethers, BigNumber } from 'ethers'
 import { abi as _IArbitrator } from '@kleros/erc-792/build/contracts/IArbitrator.json'
@@ -49,6 +49,14 @@ import {
 } from 'components/curate/item-light-fields'
 import { StickyActionBarSpacer } from 'components/curate/item-light-action-bar'
 import ErrorPage from '../error-page'
+import {
+  ENTRY_LINK_TIP,
+  ENTRY_LOAD_FAILED,
+  ENTRY_INDEXING_MESSAGE,
+  ENTRY_INDEXING_TITLE,
+  ENTRY_MISSING_TIP,
+  justSubmitted,
+} from '../error-page/copy'
 import ItemStatusCard from './item-status-card'
 import { formatSince } from 'pages/item-details/format-since'
 import { StakeWindowPanel } from './item-window'
@@ -399,6 +407,10 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
   const openAttachment = useAttachment()
   const nativeCurrency = useNativeCurrency()
 
+  // Opened right after submitting it (submit-item): a missing entry is
+  // still being indexed, not absent.
+  const location = useLocation()
+  const recentlySubmitted = justSubmitted(location.state)
   // Subgraph item entities have id "<itemID>@<listaddress>".
   const compoundId = `${itemID}@${tcrAddress?.toLowerCase()}`
   const query = useQuery({
@@ -413,6 +425,16 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
       }),
     enabled: !!chainId,
     staleTime: STALE_TIME,
+    // An entry sent a moment ago can take a while to reach the subgraph:
+    // keep looking for two minutes before settling on "not found".
+    refetchInterval: (query) =>
+      query.state.status === 'success' &&
+      !query.state.data?.item &&
+      query.state.dataUpdateCount < (recentlySubmitted ? 180 : 12)
+        ? recentlySubmitted
+          ? 5_000
+          : 10_000
+        : false,
   })
 
   // Every settings change of the list, for the date of the policy in force.
@@ -627,8 +649,44 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
     return (
       <ErrorPage
         code="400"
-        message={'This item could not be found.'}
-        tip="Make sure your wallet is set to the correct network (is this on Gnosis Chain?)."
+        message="This entry could not be found."
+        tip={ENTRY_LINK_TIP}
+      />
+    )
+
+  // A failed read and a missing entry each get their own page; neither is
+  // left as a loading skeleton.
+  if (query.isError && !query.data)
+    return (
+      <ErrorPage
+        code="Error"
+        title="This entry did not load"
+        message={ENTRY_LOAD_FAILED}
+        onRetry={() => query.refetch()}
+      />
+    )
+
+  if (query.isSuccess && !query.data?.item && recentlySubmitted)
+    return (
+      <ErrorPage
+        code="Indexing"
+        tone="window"
+        title={ENTRY_INDEXING_TITLE}
+        message={ENTRY_INDEXING_MESSAGE}
+        home={{
+          to: `/tcr/${chainId}/${tcrAddress}`,
+          label: 'Back to the list',
+        }}
+      />
+    )
+
+  if (query.isSuccess && !query.data?.item)
+    return (
+      <ErrorPage
+        code="404"
+        title="Entry not found"
+        message="This list has no entry with this ID."
+        tip={ENTRY_MISSING_TIP}
       />
     )
 
@@ -865,6 +923,7 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
             item={cardItem}
             title="Fields"
             loading={Boolean(loading) && !fieldsUnavailable}
+            kind="stake"
           />
           <RequestTimelines item={item} metaEvidence={metaEvidence} />
           <Explainer

@@ -37,8 +37,16 @@ import { getNativeCurrency } from 'config/chains'
 import {
   completeChallengeWindows,
   fetchDashboardData,
+  fetchTestnetDashboardData,
   loadRulingCards,
 } from './data'
+import {
+  DASHBOARD_QUERY_KEY,
+  DASHBOARD_REFRESH_MS,
+  DASHBOARD_STALE_MS,
+  TESTNET_DASHBOARD_QUERY_KEY,
+  isLiveLoad,
+} from './query'
 import {
   HappeningNow,
   type OpenListChip,
@@ -76,6 +84,7 @@ import {
   type ChainFilter,
   type DashboardCard,
 } from './view'
+import { Avatar as ListLogo } from 'pages/browse/avatar'
 
 /*
  * Dashboard: a short statement, the entries per chain as the data hero, one
@@ -205,6 +214,18 @@ const LivePill = styled.span`
 
     i {
       background: var(--status-contested);
+      animation: none;
+    }
+  }
+
+  /* An older load (the tab was in the background): shown, not called live. */
+  &[data-stale] {
+    b {
+      color: var(--color-muted);
+    }
+
+    i {
+      background: var(--color-muted);
       animation: none;
     }
   }
@@ -529,20 +550,6 @@ const RegistryCell = styled.div`
   min-width: 0;
 `
 
-const Logo = styled.span<{ $image?: string | null }>`
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex: 0 0 auto;
-  width: 34px;
-  height: 34px;
-  border: 1px solid var(--glass-border);
-  border-radius: var(--radius-sm);
-  background: ${({ $image }) =>
-    $image ? `url(${$image}) center / cover` : 'var(--color-raised)'};
-  color: var(--color-faint);
-`
-
 const NameLine = styled.span`
   display: flex;
   align-items: center;
@@ -694,9 +701,7 @@ const bountyLabel = (
 }
 
 const RegistryLogo = ({ registry }: { registry: DashboardRegistry }) => (
-  <Logo $image={mediaUrl(registry.logoURI)} aria-hidden>
-    {!registry.logoURI && <CurateIcon name="registry" size={15} />}
-  </Logo>
+  <ListLogo uri={registry.logoURI} seed={registry.address} size={34} />
 )
 
 const Dashboard = () => {
@@ -710,11 +715,19 @@ const Dashboard = () => {
   const now = useNow(30_000)
   const launchChain = useLaunchChainId()
 
+  // Every scope is either the mainnets ("All chains" or one of them) or the
+  // Sepolia testnet alone: the testnet is its own load, read only when chosen.
+  const testnetScope = chain !== 'all' && TESTNET_CHAIN_IDS.includes(chain)
+  const loadKey = testnetScope
+    ? TESTNET_DASHBOARD_QUERY_KEY
+    : DASHBOARD_QUERY_KEY
   const query = useQuery({
-    queryKey: ['curateDashboard'],
-    queryFn: fetchDashboardData,
-    staleTime: 60_000,
-    refetchInterval: 60_000,
+    queryKey: loadKey,
+    queryFn: testnetScope ? fetchTestnetDashboardData : fetchDashboardData,
+    staleTime: DASHBOARD_STALE_MS,
+    refetchInterval: DASHBOARD_REFRESH_MS,
+    // Back from another tab: refresh only a load older than the stale time.
+    refetchOnWindowFocus: true,
   })
   const data = query.data
   const loading = query.isLoading || !data
@@ -736,7 +749,7 @@ const Dashboard = () => {
     queryFn: async () => {
       if (!data) return false
       const next = await completeChallengeWindows(data)
-      queryClient.setQueryData<DashboardData>(['curateDashboard'], (current) =>
+      queryClient.setQueryData<DashboardData>(loadKey, (current) =>
         current?.generatedAt === data.generatedAt ? next : current,
       )
       return true
@@ -1023,6 +1036,12 @@ const Dashboard = () => {
     .map((id) => chainInfo(id)?.name)
     .filter(Boolean)
     .join(' and ')
+  // The load refreshes every few minutes while on screen; one older than
+  // that (the tab was in the background) is shown as such, not as live.
+  const live = !!data && isLiveLoad(data.generatedAt, now)
+  const updated = data
+    ? `Updated ${formatAgo(Math.floor(data.generatedAt / 1000), now)}`
+    : ''
 
   return (
     <Page>
@@ -1030,15 +1049,26 @@ const Dashboard = () => {
         <LivePill
           style={{ ['--i' as string]: 0 }}
           data-partial={partialChains.length > 0 ? '' : undefined}
+          data-stale={
+            data && !live && partialChains.length === 0 ? '' : undefined
+          }
           role="status"
         >
           <i aria-hidden />
-          <b>{partialChains.length > 0 ? 'Partial' : 'Live'}</b>
+          <b>
+            {partialChains.length > 0
+              ? 'Partial'
+              : !data || live
+                ? 'Live'
+                : query.isFetching
+                  ? 'Refreshing'
+                  : 'Not live'}
+          </b>
           {!data
             ? 'Connecting to the indexers'
             : partialChains.length > 0
               ? `Some ${partialNames} data did not load; figures may be incomplete`
-              : `Updated ${formatAgo(Math.floor(data.generatedAt / 1000), now)}`}
+              : updated}
         </LivePill>
         <Headline style={{ ['--i' as string]: 1 }}>
           Lists anyone can challenge. <em>Settled by jurors.</em>
@@ -1130,7 +1160,11 @@ const Dashboard = () => {
         {loading ? (
           <SkeletonBlock $height="240px" />
         ) : seriesRequests + seriesChallenges === 0 ? (
-          <ChartEmpty>No requests in the last 30 days</ChartEmpty>
+          <ChartEmpty>
+            {partialNames
+              ? `${partialNames} requests did not load`
+              : 'No requests in the last 30 days'}
+          </ChartEmpty>
         ) : (
           <ActivityWave
             key={chains.join('-')}
@@ -1221,6 +1255,7 @@ const Dashboard = () => {
           openLists={board.openLists}
           now={now}
           checking={checkingWindows}
+          unloaded={partialNames || undefined}
           stakeHref={
             scoped.some((registry) => registry.kind === 'permanent')
               ? `/browse?trust=all&kind=permanent&${browseScope}`
@@ -1319,7 +1354,11 @@ const Dashboard = () => {
           {loading ? (
             <SkeletonBlock $height="260px" style={{ marginTop: 16 }} />
           ) : curators.length === 0 ? (
-            <EmptyNote>No curator activity in the last 30 days.</EmptyNote>
+            <EmptyNote>
+              {partialNames
+                ? `${partialNames} curator activity did not load.`
+                : 'No curator activity in the last 30 days.'}
+            </EmptyNote>
           ) : (
             <div style={{ marginTop: 8 }}>
               {curators.map((row, index) => (

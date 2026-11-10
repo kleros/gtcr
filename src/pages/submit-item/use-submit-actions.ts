@@ -1,8 +1,15 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { ethers } from 'ethers'
-import { useAccount, useChainId, usePublicClient, useWalletClient } from 'wagmi'
-import { simulateContract } from '@wagmi/core'
-import { encodePacked, erc20Abi, getAddress, keccak256 } from 'viem'
+import { useAccount, usePublicClient } from 'wagmi'
+import { simulateContract, writeContract } from '@wagmi/core'
+import {
+  decodeEventLog,
+  encodePacked,
+  erc20Abi,
+  keccak256,
+  type Abi,
+  type TransactionReceipt,
+} from 'viem'
 import { gtcrEncode } from '@kleros/gtcr-encoder'
 import { useAtlasProvider } from '@kleros/kleros-app'
 import { abi as _classicGtcr } from '@kleros/tcr/build/contracts/GeneralizedTCR.json'
@@ -13,12 +20,39 @@ import { resolveStashedFiles } from 'utils/resolve-stashed-files'
 import { JSON_UPLOAD_ROLE } from 'utils/atlas-roles'
 import { errorToast, wrapWithToast } from 'utils/wrap-with-toast'
 import { parseWagmiError } from 'utils/parse-wagmi-error'
-import type { SubmissionValues } from './form'
+import { encoderValues, type SubmissionValues } from './form'
+import { useTxChainId } from './use-wallet-gate'
+
+/**
+ * The submitted entry's ID, read from the list's own ItemStatusChange event
+ * in the receipt (every kind of list emits it with the ID first), so the
+ * page can open the new entry. Undefined if the receipt does not say.
+ */
+const itemIdFromReceipt = (
+  receipt: TransactionReceipt | undefined,
+  list: string,
+  abi: Abi,
+): `0x${string}` | undefined => {
+  for (const log of receipt?.logs ?? []) {
+    if (log.address.toLowerCase() !== list.toLowerCase()) continue
+    try {
+      const event = decodeEventLog({ abi, data: log.data, topics: log.topics })
+      if (event.eventName === 'ItemStatusChange')
+        return (event.args as unknown as { _itemID: `0x${string}` })._itemID
+    } catch {
+      // Not one of the list's events.
+    }
+  }
+  return undefined
+}
 
 /*
- * Contract plumbing lifted unchanged from the submit modals: stash → IPFS →
- * simulate → write → receipt, with the same toasts and the same notification
- * subscription. Only the UI around it is new.
+ * Contract plumbing lifted from the submit modals: stash → IPFS → simulate →
+ * write → receipt, with the same toasts and the same notification
+ * subscription. Two safeguards on top: every call is simulated on the URL's
+ * chain and sent with wagmi's writeContract for that chain, which refuses to
+ * send while the wallet is elsewhere; and Classic boolean columns are
+ * encoded as booleans (the encoder reads the string "false" as true).
  */
 
 export type SubmitPhase = 'idle' | 'uploading' | 'wallet'
@@ -35,30 +69,6 @@ export type SubmitHandler = (
   setFieldValue: SetFieldValue,
 ) => Promise<void>
 
-const subscribeToNotifications = (
-  chainId: number,
-  account: `0x${string}`,
-  tcrAddress: string,
-  itemID: `0x${string}`,
-) => {
-  if (!process.env.REACT_APP_NOTIFICATIONS_API_URL) return
-  fetch(
-    `${process.env.REACT_APP_NOTIFICATIONS_API_URL}/${chainId}/api/subscribe`,
-    {
-      method: 'post',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        subscriberAddr: getAddress(account),
-        tcrAddr: getAddress(tcrAddress as `0x${string}`),
-        itemID,
-        networkID: chainId,
-      }),
-    },
-  ).catch((err) => {
-    console.error('Failed to subscribe for notifications.', err)
-  })
-}
-
 /** Light and classic Curate: one native deposit (base + arbitration cost) with `addItem`. */
 export const useDepositSubmit = ({
   kind,
@@ -69,12 +79,12 @@ export const useDepositSubmit = ({
   kind: 'light' | 'classic'
   tcrAddress: string
   submissionDeposit?: ethers.BigNumber
-  onDone: () => void
+  /** Called with the new entry's ID once the submission is confirmed. */
+  onDone: (itemID?: `0x${string}`) => void
 }) => {
   const { address: account } = useAccount()
-  const chainId = useChainId()
+  const chainId = useTxChainId()
   const publicClient = usePublicClient()
-  const { data: walletClient } = useWalletClient()
   const { uploadFile } = useAtlasProvider()
   const [phase, setPhase] = useState<SubmitPhase>('idle')
 
@@ -93,7 +103,7 @@ export const useDepositSubmit = ({
         const address = tcrAddress as `0x${string}`
 
         let itemID: `0x${string}`
-        let request
+        let send: () => Promise<`0x${string}`>
         if (kind === 'light') {
           const itemFile = new File(
             [JSON.stringify({ columns, values: resolvedValues })],
@@ -105,42 +115,46 @@ export const useDepositSubmit = ({
             throw new Error('Failed to upload item metadata to IPFS.')
           itemID = keccak256(encodePacked(['string'], [ipfsEvidencePath]))
           setPhase('wallet')
-          request = (
-            await simulateContract(wagmiConfig, {
-              address,
-              abi: _lightGtcr,
-              functionName: 'addItem',
-              args: [ipfsEvidencePath],
-              value,
-              account,
-            })
-          ).request
+          const { request } = await simulateContract(wagmiConfig, {
+            address,
+            abi: _lightGtcr,
+            functionName: 'addItem',
+            args: [ipfsEvidencePath],
+            value,
+            account,
+            chainId,
+          })
+          send = () => writeContract(wagmiConfig, request)
         } else {
-          const encodedParams = gtcrEncode({ columns, values: resolvedValues })
+          const encodedParams = gtcrEncode({
+            columns,
+            values: encoderValues(columns, resolvedValues),
+          })
           itemID = keccak256(encodedParams as `0x${string}`)
           setPhase('wallet')
-          request = (
-            await simulateContract(wagmiConfig, {
-              address,
-              abi: _classicGtcr,
-              functionName: 'addItem',
-              args: [encodedParams],
-              value,
-              account,
-            })
-          ).request
+          const { request } = await simulateContract(wagmiConfig, {
+            address,
+            abi: _classicGtcr,
+            functionName: 'addItem',
+            args: [encodedParams],
+            value,
+            account,
+            chainId,
+          })
+          send = () => writeContract(wagmiConfig, request)
         }
 
-        const result = await wrapWithToast(
-          () => walletClient!.writeContract(request),
-          publicClient!,
-        )
+        const result = await wrapWithToast(send, publicClient!)
 
         if (result.status) {
-          onDone()
+          onDone(
+            itemIdFromReceipt(
+              result.result,
+              address,
+              (kind === 'light' ? _lightGtcr : _classicGtcr) as Abi,
+            ) ?? itemID,
+          )
           resetForm({})
-          if (chainId && account)
-            subscribeToNotifications(chainId, account, tcrAddress, itemID)
         }
       } catch (err) {
         console.error('Error submitting item:', err)
@@ -157,7 +171,6 @@ export const useDepositSubmit = ({
       submissionDeposit,
       tcrAddress,
       uploadFile,
-      walletClient,
     ],
   )
 
@@ -180,11 +193,12 @@ export const usePermanentSubmit = ({
   tokenAddress?: string
   submissionDeposit?: { toString: () => string }
   arbitrationCost?: { toString: () => string }
-  onDone: () => void
+  /** Called with the new entry's ID once the submission is confirmed. */
+  onDone: (itemID?: `0x${string}`) => void
 }) => {
   const { address: account } = useAccount()
+  const chainId = useTxChainId()
   const publicClient = usePublicClient()
-  const { data: walletClient } = useWalletClient()
   const { uploadFile } = useAtlasProvider()
   // Undefined until read: the page never prints a balance it did not load.
   const [balance, setBalance] = useState<bigint>()
@@ -242,10 +256,11 @@ export const usePermanentSubmit = ({
           BigInt(submissionDeposit.toString()),
         ],
         account,
+        chainId,
       })
 
       const result = await wrapWithToast(
-        () => walletClient!.writeContract(request),
+        () => writeContract(wagmiConfig, request),
         publicClient!,
       )
 
@@ -266,13 +281,14 @@ export const usePermanentSubmit = ({
     submissionDeposit,
     checkTokenStatus,
     account,
-    walletClient,
+    chainId,
     publicClient,
   ])
 
   const submit = useCallback<SubmitHandler>(
     async (values, columns, resetForm, setFieldValue) => {
-      if (!submissionDeposit) return
+      // The arbitration deposit is the native value: never send it as 0.
+      if (!submissionDeposit || !arbitrationCost) return
       setPhase('uploading')
       try {
         const resolvedValues = await resolveStashedFiles({
@@ -297,17 +313,20 @@ export const usePermanentSubmit = ({
           abi: _permanentGtcr,
           functionName: 'addItem',
           args: [ipfsEvidencePath, BigInt(submissionDeposit.toString())],
-          value: BigInt((arbitrationCost || 0).toString()),
+          value: BigInt(arbitrationCost.toString()),
           account,
+          chainId,
         })
 
         const result = await wrapWithToast(
-          () => walletClient!.writeContract(request),
+          () => writeContract(wagmiConfig, request),
           publicClient!,
         )
 
         if (result.status) {
-          onDone()
+          onDone(
+            itemIdFromReceipt(result.result, tcrAddress, _permanentGtcr as Abi),
+          )
           resetForm({})
         }
       } catch (err) {
@@ -322,7 +341,7 @@ export const usePermanentSubmit = ({
       tcrAddress,
       arbitrationCost,
       account,
-      walletClient,
+      chainId,
       publicClient,
       uploadFile,
     ],

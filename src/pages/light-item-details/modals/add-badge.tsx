@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react'
+import React, { useState, useCallback, useEffect, useMemo } from 'react'
 import styled from 'styled-components'
 import { litEdgeBackground } from 'components/ui/kit-styles'
 import { BigNumber } from 'ethers'
@@ -169,30 +169,43 @@ const AddBadgeModal = ({
   const nativeCurrency = useNativeCurrency()
   const openAttachment = useAttachment()
   const [selectedBadge, setSelectedBadge] = useState<number>()
+
+  // Badge lists this entry is not on yet. The radio buttons, the deposit and
+  // the submitted choice all index into this one list (indexing the
+  // unfiltered list sent the entry to a badge list the user did not pick).
+  const filteredAvailableBadges = useMemo(
+    () =>
+      (availableBadges ?? []).filter(
+        ({ tcrAddress: availableBadgeAddr }) =>
+          !(foundBadges ?? [])
+            .map((b) => b.tcrAddress)
+            .includes(availableBadgeAddr),
+      ),
+    [availableBadges, foundBadges],
+  )
+  const choices = filteredAvailableBadges
+    .map((badge) => badge.tcrAddress)
+    .join(',')
+
   const handleSubmit = useCallback(() => {
-    if (!availableBadges || selectedBadge === undefined) return
-    onSelectBadge(availableBadges[selectedBadge])
+    if (selectedBadge === undefined) return
+    const badge = filteredAvailableBadges[selectedBadge]
+    if (!badge) return
+    onSelectBadge(badge)
     onCancel()
-  }, [availableBadges, onCancel, onSelectBadge, selectedBadge])
+  }, [filteredAvailableBadges, onCancel, onSelectBadge, selectedBadge])
 
   const handleEnableNewBadge = useCallback(() => {
     onCancel()
     onEnableNewBadge()
   }, [onCancel, onEnableNewBadge])
 
-  const filteredAvailableBadges = (availableBadges ?? []).filter(
-    ({ tcrAddress: availableBadgeAddr }) =>
-      !(foundBadges ?? [])
-        .map((b) => b.tcrAddress)
-        .includes(availableBadgeAddr),
-  )
-
-  // Select the first badge once the list is loaded so the displayed choice
-  // and the component state never disagree.
+  // Select the first badge once the list is loaded (or changes) so the
+  // displayed choice and the component state never disagree. Keyed on the
+  // choices, not the array, so a re-render does not undo the user's pick.
   useEffect(() => {
-    if (!filteredAvailableBadges || filteredAvailableBadges.length === 0) return
-    setSelectedBadge(0)
-  }, [availableBadges, filteredAvailableBadges, onSelectBadge])
+    setSelectedBadge(choices ? 0 : undefined)
+  }, [choices])
 
   if (!availableBadges || !tcrAddress || !connectedTCRAddr || isFetchingBadges)
     return (
@@ -211,7 +224,9 @@ const AddBadgeModal = ({
     )
 
   const selected =
-    selectedBadge === undefined ? undefined : availableBadges[selectedBadge]
+    selectedBadge === undefined
+      ? undefined
+      : filteredAvailableBadges[selectedBadge]
 
   return (
     <Dialog

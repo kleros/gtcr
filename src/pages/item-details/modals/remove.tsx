@@ -1,7 +1,7 @@
 import React, { useContext, useCallback, useState } from 'react'
-import { useAccount, usePublicClient, useWalletClient, useChainId } from 'wagmi'
+import { useAccount, usePublicClient, useWalletClient } from 'wagmi'
 import { simulateContract } from '@wagmi/core'
-import { getAddress, type Address } from 'viem'
+import { type Address } from 'viem'
 import { useAtlasProvider } from '@kleros/kleros-app'
 import { abi as _gtcr } from '@kleros/tcr/build/contracts/GeneralizedTCR.json'
 import { TCRViewContext } from 'contexts/tcr-view-context'
@@ -57,7 +57,6 @@ const RemoveModal = ({
   visible,
 }: RemoveModalProps) => {
   const { address: account } = useAccount()
-  const chainId = useChainId()
   const publicClient = usePublicClient()
   const { data: walletClient } = useWalletClient()
   const {
@@ -74,7 +73,11 @@ const RemoveModal = ({
 
   const { metadata } = metaEvidence || {}
   const { requireRemovalEvidence } = metadata || {}
-  const needsEvidence = !!metadata && !!requireRemovalEvidence
+  // Whether the list requires a justification is only known once its
+  // metadata is in. Until then (or if it never loads) nothing is sent, so a
+  // removal can never go out without the justification the list asks for.
+  const metadataKnown = !!metadata
+  const needsEvidence = metadataKnown && !!requireRemovalEvidence
   const name = itemName || 'entry'
 
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -82,7 +85,11 @@ const RemoveModal = ({
     verb: 'request the removal',
     amount: removalDeposit,
     needsAuth: needsEvidence,
-    pending: removalDeposit ? undefined : 'Loading the deposit',
+    pending: !metadataKnown
+      ? 'Loading the list…'
+      : removalDeposit
+        ? undefined
+        : 'Loading the deposit',
   })
 
   const removeItem = useCallback(
@@ -92,6 +99,7 @@ const RemoveModal = ({
       evidenceAttachment,
     }: EvidenceFormValues = {}) => {
       if (
+        !metadata ||
         !tcrAddress ||
         !account ||
         !walletClient ||
@@ -124,26 +132,7 @@ const RemoveModal = ({
           publicClient,
         )
 
-        if (result.status) {
-          onCancel()
-
-          if (process.env.REACT_APP_NOTIFICATIONS_API_URL && !!chainId)
-            fetch(
-              `${process.env.REACT_APP_NOTIFICATIONS_API_URL}/${chainId}/api/subscribe`,
-              {
-                method: 'post',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  subscriberAddr: getAddress(account),
-                  tcrAddr: getAddress(tcrAddress),
-                  itemID: item.itemID,
-                  networkID: chainId,
-                }),
-              },
-            ).catch((err) => {
-              console.error('Failed to subscribe for notifications.', err)
-            })
-        }
+        if (result.status) onCancel()
       } catch (err) {
         console.error('Error removing item:', err)
         errorToast(parseWagmiError(err))
@@ -152,7 +141,6 @@ const RemoveModal = ({
     },
     [
       account,
-      chainId,
       item.itemID,
       metadata,
       onCancel,
@@ -166,6 +154,7 @@ const RemoveModal = ({
   )
 
   const confirm = () => {
+    if (!metadataKnown) return
     if (needsEvidence) {
       const form = document.querySelector<HTMLFormElement>(
         `#${EVIDENCE_FORM_ID}`,
@@ -229,8 +218,14 @@ const RemoveModal = ({
           <Stack $gap={16}>
             {/* The justification form asks for itself; without one, a
                 single line says what the request does. */}
-            {!needsEvidence && (
-              <Body>Ask for this {name} to be taken off the list.</Body>
+            {!metadataKnown ? (
+              <Body $muted role="status">
+                Loading the list…
+              </Body>
+            ) : (
+              !needsEvidence && (
+                <Body>Ask for this {name} to be taken off the list.</Body>
+              )
             )}
             <div>
               <Button

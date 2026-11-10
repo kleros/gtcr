@@ -8,7 +8,7 @@ import React, {
 } from 'react'
 import type { BigNumber } from 'ethers'
 import { useQuery } from '@tanstack/react-query'
-import { useLocation, useNavigate, useParams } from 'react-router-dom'
+import { Navigate, useLocation, useNavigate, useParams } from 'react-router-dom'
 import ErrorPage from 'pages/error-page'
 import useCheckLightCurate from 'hooks/use-check-light-curate'
 import useTcrNetwork from 'hooks/use-tcr-network'
@@ -28,6 +28,7 @@ import { useGraphqlBatcher } from 'contexts/graphql-batcher'
 import { PERMANENT_REGISTRY_QUERY } from 'utils/graphql'
 import { parseIpfs } from 'utils/ipfs-parse'
 import { formatDuration, formatDurationLong } from 'utils/time'
+import { isLinkValueKey } from 'components/curate/registry-shared-action-link'
 import {
   SubmitPage,
   SubmitPageSkeleton,
@@ -37,6 +38,22 @@ import {
 import { amountText, formatAmount, type Amount } from './amounts'
 import { useWalletGate } from './use-wallet-gate'
 import { useDepositSubmit, usePermanentSubmit } from './use-submit-actions'
+
+/**
+ * After a confirmed submission, the new entry opens; it says it is being
+ * indexed until the indexer has it. Without its ID (an unexpected
+ * receipt), the list opens instead.
+ */
+const openSubmitted = (
+  navigate: ReturnType<typeof useNavigate>,
+  registryPath: string,
+  itemID?: string,
+) =>
+  itemID
+    ? navigate(`${registryPath}/${itemID}`, {
+        state: { submittedAt: Date.now() },
+      })
+    : navigate(registryPath)
 
 /*
  * /tcr/:chainId/:tcrAddress/submit. The registry kind decides the data
@@ -50,14 +67,15 @@ const NO_DISABLED_FIELDS: boolean[] = []
 /**
  * Values a shared ?action= link carried (the registry forwards them here as
  * the query string), in column order, as the previous submit dialog read
- * them. The theme preview parameter is not a value.
+ * them. `action`, the list's filters, the theme preview and tracking tags
+ * are not values, so a link straight to this page reads the same.
  */
 const useLinkValues = (): unknown[] => {
   const { search } = useLocation()
   return useMemo(() => {
     const values: string[] = []
     new URLSearchParams(search).forEach((value, key) => {
-      if (key !== 'cv-theme') values.push(value)
+      if (isLinkValueKey(key)) values.push(value)
     })
     return values
   }, [search])
@@ -117,7 +135,7 @@ const DepositSubmitPage = ({
   const factoryChecks = useFactory()
   const wallet = useWalletGate()
   const onDone = useCallback(
-    () => navigate(registryPath),
+    (itemID?: string) => openSubmitted(navigate, registryPath, itemID),
     [navigate, registryPath],
   )
   const { submit, phase, submitting } = useDepositSubmit({
@@ -276,14 +294,25 @@ const DepositSubmitPage = ({
   )
 }
 
+/**
+ * A connected (badges) list takes a badge list plus a match file that only
+ * its own dialog on the list page builds, never this generic form: the list
+ * page opens that dialog for ?action=submit.
+ */
+const isConnectedList = (metaEvidence?: MetaEvidence): boolean =>
+  Boolean(metaEvidence?.metadata?.isConnectedTCR)
+
 const ClassicSubmitPage = () => {
   const { tcrAddress } = useParams<{ tcrAddress: string }>()
+  const registryPath = useRegistryPath()
   const tcrViewContext = useContext(TCRViewContext)
   const tcrError = tcrViewContext?.tcrError
 
   if (typeof tcrError === 'string')
     return <ErrorPage code="400" message={tcrError} />
   if (!tcrAddress) return <SubmitPageSkeleton />
+  if (isConnectedList(tcrViewContext?.metaEvidence))
+    return <Navigate to={`${registryPath}?action=submit`} replace />
 
   return (
     <DepositSubmitPage
@@ -303,12 +332,15 @@ const ClassicSubmitPage = () => {
 
 const LightSubmitPage = () => {
   const { tcrAddress } = useParams<{ tcrAddress: string }>()
+  const registryPath = useRegistryPath()
   const tcrViewContext = useContext(LightTCRViewContext)
   const tcrError = tcrViewContext?.tcrError
 
   if (typeof tcrError === 'string')
     return <ErrorPage code="400" message={tcrError} />
   if (!tcrAddress) return <SubmitPageSkeleton />
+  if (isConnectedList(tcrViewContext?.metaEvidence))
+    return <Navigate to={`${registryPath}?action=submit`} replace />
 
   return (
     <DepositSubmitPage
@@ -397,7 +429,7 @@ const PermanentSubmitPage = () => {
     loading: tokenLoading,
   } = useTokenSymbol(registry?.token)
   const onDone = useCallback(
-    () => navigate(registryPath),
+    (itemID?: string) => openSubmitted(navigate, registryPath, itemID),
     [navigate, registryPath],
   )
   const stakeCurate = usePermanentSubmit({

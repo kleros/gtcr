@@ -5,6 +5,8 @@ import { useDebounce } from 'use-debounce'
 import { ethers } from 'ethers'
 import { toast } from 'react-toastify'
 import { Roles, useAtlasProvider } from '@kleros/kleros-app'
+import { toPng } from 'utils/image-to-png'
+import { uploadFailure } from 'utils/upload-restrictions'
 import { useEthersProvider } from 'hooks/ethers-adapters'
 import useArbitrationCost from 'hooks/arbitration-cost'
 import useNativeCurrency from 'hooks/native-currency'
@@ -336,14 +338,16 @@ const TCRParams = (props: TCRParamsProps) => {
     ) => {
       setUploading((previous) => ({ ...previous, [field]: true }))
       try {
-        const fileURI = await uploadFile(file, role)
-        if (!fileURI) throw new Error('Failed to upload file to IPFS.')
+        // Atlas takes logos as PNG only: anything else is redrawn first.
+        const prepared = role === Roles.Logo ? await toPng(file) : file
+        const fileURI = await uploadFile(prepared, role)
+        if (!fileURI) throw new Error('Sign in, then pick the file again.')
         setFieldValue(field, fileURI)
         setFieldTouched(field, true, false)
         toast.success('File uploaded successfully.')
       } catch (err) {
         console.error(err)
-        toast.error('File upload failed.')
+        toast.error(uploadFailure(err))
       } finally {
         setUploading((previous) => ({ ...previous, [field]: false }))
       }

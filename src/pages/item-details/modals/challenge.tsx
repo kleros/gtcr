@@ -1,7 +1,7 @@
 import React, { useContext, useState } from 'react'
-import { useAccount, usePublicClient, useWalletClient, useChainId } from 'wagmi'
+import { useAccount, usePublicClient, useWalletClient } from 'wagmi'
 import { simulateContract } from '@wagmi/core'
-import { getAddress, type Address } from 'viem'
+import { type Address } from 'viem'
 import { useAtlasProvider } from '@kleros/kleros-app'
 import { abi as _gtcr } from '@kleros/tcr/build/contracts/GeneralizedTCR.json'
 import { CONTRACT_STATUS } from 'utils/item-status'
@@ -68,7 +68,6 @@ const ChallengeModal = ({
     tcrAddress,
   } = useContext(TCRViewContext) ?? {}
   const { address: account } = useAccount()
-  const chainId = useChainId()
   const publicClient = usePublicClient()
   const { data: walletClient } = useWalletClient()
   const { uploadFile } = useAtlasProvider()
@@ -130,26 +129,7 @@ const ChallengeModal = ({
         publicClient,
       )
 
-      if (result.status) {
-        onCancel()
-
-        if (process.env.REACT_APP_NOTIFICATIONS_API_URL && !!chainId)
-          fetch(
-            `${process.env.REACT_APP_NOTIFICATIONS_API_URL}/${chainId}/api/subscribe`,
-            {
-              method: 'post',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                subscriberAddr: getAddress(account),
-                tcrAddr: getAddress(tcrAddress),
-                itemID: item.itemID,
-                networkID: chainId,
-              }),
-            },
-          ).catch((err) => {
-            console.error('Failed to subscribe for notifications.', err)
-          })
-      }
+      if (result.status) onCancel()
     } catch (err) {
       console.error('Error challenging request:', err)
       errorToast(parseWagmiError(err))

@@ -76,31 +76,81 @@ export const missingRequired = (
       isRequired(column) && isEmptyField(column, values[column.label]),
   ).length
 
-/** Blank rich addresses that only carry a chain ("eip155:1:") are sent as empty. */
+/**
+ * The values gtcrEncode gets for a Classic list. The encoder reads a boolean
+ * column by truthiness, so the form's "false" (a string) would go on chain
+ * as true; boolean columns get real booleans instead.
+ */
+export const encoderValues = (
+  columns: Column[],
+  values: Record<string, unknown>,
+): Record<string, unknown> => {
+  const next: Record<string, unknown> = { ...values }
+  // Exactly what the switch and the review show as "Yes": "True" from a link
+  // reads as No there, so it must not go on chain as true.
+  for (const column of columns)
+    if (column.type === ItemTypes.BOOLEAN)
+      next[column.label] = String(values[column.label]) === 'true'
+  return next
+}
+
+/**
+ * Blank rich addresses that only carry a chain ("eip155:1:") are sent as
+ * empty, and links as validated: without surrounding spaces.
+ */
 export const normaliseValues = (
   columns: Column[],
   values: SubmissionValues,
 ): SubmissionValues => {
   const next: SubmissionValues = { ...values }
-  for (const column of columns)
-    if (
-      column.type === ItemTypes.RICH_ADDRESS &&
-      typeof next[column.label] === 'string' &&
-      isEmptyField(column, next[column.label])
-    )
+  for (const column of columns) {
+    const value = next[column.label]
+    if (typeof value !== 'string') continue
+    if (column.type === ItemTypes.RICH_ADDRESS && isEmptyField(column, value))
       next[column.label] = ''
+    else if (column.type === ItemTypes.LINK) next[column.label] = value.trim()
+  }
   return next
 }
 
 const isEvmAddress = (value: string): boolean => namespaces[0].test(value)
 
-/** An http(s) link to a named host: "https://example.org/path". */
-const isWebLink = (value: string): boolean => {
-  try {
-    const { protocol, hostname } = new URL(value)
-    return (
-      (protocol === 'https:' || protocol === 'http:') && hostname.includes('.')
+/**
+ * The submit dialogs' address format checks, run for the whole form. Each
+ * address input checks its own value too, but Formik runs a field's check only
+ * while the field is on screen and the review step unmounts them: without this
+ * a malformed address would be sent (stored as 0x0…12ab on a Classic list).
+ * Like those inputs, an empty address does not pass.
+ */
+export const addressFormatErrors = (
+  columns: Column[],
+  values: Record<string, unknown>,
+): SubmissionErrors => {
+  const errors: SubmissionErrors = {}
+  for (const column of columns) {
+    const value = values[column.label]
+    const text = typeof value === 'string' ? value : ''
+    if (column.type === ItemTypes.ADDRESS && !isEvmAddress(text))
+      errors[column.label] = 'Invalid format'
+    else if (
+      column.type === ItemTypes.RICH_ADDRESS &&
+      !parseRichAddress(text)?.passedTest
     )
+      errors[column.label] = 'Invalid format'
+  }
+  return errors
+}
+
+/**
+ * A full link: anything the URL parser takes with a scheme (https, ipfs,
+ * mailto…), since lists cite more than web pages and the previous dialog took
+ * any text. Script and data URLs are refused; pages only make https clickable.
+ */
+const isFullLink = (value: string): boolean => {
+  if (/\s/.test(value)) return false
+  try {
+    const { protocol } = new URL(value)
+    return !['javascript:', 'data:', 'vbscript:'].includes(protocol)
   } catch {
     return false
   }
@@ -148,8 +198,8 @@ export const validateSubmission = async (
       !parseRichAddress(value)?.passedTest
     )
       errors[column.label] = 'Enter a valid address for the selected chain.'
-    if (column.type === ItemTypes.LINK && !isWebLink(value.trim()))
-      errors[column.label] = 'Enter a full link starting with https://'
+    if (column.type === ItemTypes.LINK && !isFullLink(value.trim()))
+      errors[column.label] = 'Enter a full link, like https://example.org'
   }
 
   // A list address must have been deployed by one of the list creators

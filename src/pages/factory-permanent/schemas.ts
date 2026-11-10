@@ -34,6 +34,41 @@ const amount = yup
     'Amount should be a number.',
     (value) => value === undefined || Number.isFinite(value),
   )
+  // yup reads "1e3" as a number, but the deploy (parseUnits) would throw on
+  // it after the uploads: only plain digits with one dot.
+  .test('plain', 'Use digits and one dot, like 0.5.', function (value) {
+    const raw = this.originalValue
+    return (
+      value === undefined ||
+      typeof raw === 'number' ||
+      /^\s*\d+(\.\d+)?\s*$/.test(String(raw))
+    )
+  })
+
+/** Ten years: longer periods are typos, and long cooldowns overflow. */
+const MAX_PERIOD_HOURS = 87_600
+
+/**
+ * A duration in hours. The deploy sends hours × 3600 as whole seconds, so a
+ * value that is not (0.123 h) would only fail there, after the uploads.
+ * `positive` periods can't be 0: with no withdrawing period a submitter can
+ * withdraw ahead of any challenge, so the stake is never at risk.
+ */
+const period = (positive: boolean) =>
+  amount
+    .max(MAX_PERIOD_HOURS, 'Keep periods under ten years.')
+    .test(
+      'whole-seconds',
+      'Use a duration that is a whole number of seconds.',
+      (value) =>
+        value === undefined ||
+        Math.abs(value * 3600 - Math.round(value * 3600)) < 1e-6,
+    )
+    .test(
+      'positive',
+      'Must be longer than 0.',
+      (value) => !positive || value === undefined || value > 0,
+    )
 
 const multiplier = yup
   .number()
@@ -72,10 +107,10 @@ const TCR_FIELDS: Record<FactorySection, Record<string, yup.AnySchema>> = {
       .required('The arbitrator extra data is required.'),
     governorAddress: address('A governor address is required.'),
     submissionMinDeposit: amount,
-    submissionPeriodDuration: amount,
-    reinclusionPeriodDuration: amount,
-    withdrawingPeriodDuration: amount,
-    arbitrationParamsCooldown: amount,
+    submissionPeriodDuration: period(false),
+    reinclusionPeriodDuration: period(false),
+    withdrawingPeriodDuration: period(true),
+    arbitrationParamsCooldown: period(false),
     challengeStakeMultiplier: multiplier,
     sharedStakeMultiplier: multiplier,
     winnerStakeMultiplier: multiplier,

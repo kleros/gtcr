@@ -28,6 +28,41 @@ const amount = yup
   .typeError('Amount should be a number.')
   .required('A value is required.')
   .min(0, 'The amount must not be negative.')
+  // yup reads "1e3" as a number, but the deploy (parseEther) would throw on
+  // it after the uploads: only plain digits with one dot.
+  .test('plain', 'Use digits and one dot, like 0.5.', function (value) {
+    const raw = this.originalValue
+    return (
+      value === undefined ||
+      typeof raw === 'number' ||
+      /^\s*\d+(\.\d+)?\s*$/.test(String(raw))
+    )
+  })
+
+/** Ten years: longer periods are typos (and long cooldowns overflow). */
+const MAX_PERIOD_HOURS = 87_600
+
+/**
+ * A duration in hours. The deploy sends hours × 3600 as whole seconds, so a
+ * value that is not (0.123 h) would only fail there, after the uploads.
+ * `positive` periods can't be 0: a 0 challenge period leaves no time to
+ * challenge anything.
+ */
+const period = (positive: boolean) =>
+  amount
+    .max(MAX_PERIOD_HOURS, 'Keep periods under ten years.')
+    .test(
+      'whole-seconds',
+      'Use a duration that is a whole number of seconds.',
+      (value) =>
+        value === undefined ||
+        Math.abs(value * 3600 - Math.round(value * 3600)) < 1e-6,
+    )
+    .test(
+      'positive',
+      'Must be longer than 0.',
+      (value) => !positive || value === undefined || value > 0,
+    )
 
 const multiplier = yup
   .number()
@@ -66,7 +101,7 @@ const TCR_FIELDS: Record<FactorySection, Record<string, yup.AnySchema>> = {
     removalBaseDeposit: amount,
     submissionChallengeBaseDeposit: amount,
     removalChallengeBaseDeposit: amount,
-    challengePeriodDuration: amount,
+    challengePeriodDuration: period(true),
     sharedStakeMultiplier: multiplier,
     winnerStakeMultiplier: multiplier,
     loserStakeMultiplier: multiplier,
@@ -127,7 +162,7 @@ export const relSchema = yup.object().shape({
   relRemovalBaseDeposit: amount,
   relSubmissionChallengeBaseDeposit: amount,
   relRemovalChallengeBaseDeposit: amount,
-  relChallengePeriodDuration: amount,
+  relChallengePeriodDuration: period(true),
   relTcrPrimaryDocument: yup
     .string()
     .required('A primary document is required.'),

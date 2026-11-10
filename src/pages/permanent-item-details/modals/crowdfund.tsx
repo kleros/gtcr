@@ -380,6 +380,8 @@ const CrowdfundModal = ({
             <AmountField>
               <TextInput
                 type="number"
+                // A wheel over the focused field would change the amount.
+                onWheel={(event) => event.currentTarget.blur()}
                 min={0}
                 max={stillNeededNumber}
                 step={0.01}

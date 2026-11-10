@@ -15,6 +15,8 @@ import {
   withWebScheme,
   type FieldValue,
 } from './form'
+import { Roles, useAtlasProvider } from '@kleros/kleros-app'
+import { atlasUploadProblem } from 'utils/upload-restrictions'
 
 /*
  * One field per registry column. A state mark in the left gutter (a faint
@@ -593,6 +595,8 @@ const UploadField = ({
   const inputRef = useRef<HTMLInputElement>(null)
   const [rejection, setRejection] = useState('')
   const [over, setOver] = useState(false)
+  // Atlas stores entry files under these roles and refuses other types.
+  const { roleRestrictions } = useAtlasProvider()
   const isImage = column.type === ItemTypes.IMAGE
   const file = value instanceof File ? value : undefined
   const uri =
@@ -611,7 +615,13 @@ const UploadField = ({
   const image = isImage ? previewUrl || uri : ''
 
   const pick = (picked: File) => {
-    const problem = isImage ? rejectImage(picked) : rejectFile(picked, allowed)
+    const problem =
+      (isImage ? rejectImage(picked) : rejectFile(picked, allowed)) ||
+      atlasUploadProblem(
+        picked,
+        isImage ? Roles.CurateItemImage : Roles.CurateItemFile,
+        roleRestrictions,
+      )
     setRejection(problem)
     if (problem) onBlur()
     else onCommit(picked)

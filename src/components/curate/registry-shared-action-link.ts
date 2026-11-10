@@ -15,6 +15,17 @@ const LIST_STATE_KEYS = new Set<string>([
   ...Object.values(P_FILTER_KEYS),
 ])
 
+// Tracking tags that sites and newsletters append are never values either.
+const isTrackingKey = (key: string) =>
+  /^utm_/i.test(key) || key === 'fbclid' || key === 'gclid'
+
+/** Whether a parameter of an ?action= link (or the submit page) is a value. */
+export const isLinkValueKey = (key: string): boolean =>
+  key !== 'action' &&
+  key !== THEME_KEY &&
+  !LIST_STATE_KEYS.has(key) &&
+  !isTrackingKey(key)
+
 export interface ActionLink {
   /** The field values, in the link's order. */
   values: string[]
@@ -29,7 +40,7 @@ export const readActionLink = (search: string): ActionLink | undefined => {
   const rest = new URLSearchParams()
   const values: string[] = []
   params.forEach((value, key) => {
-    if (key === 'action' || LIST_STATE_KEYS.has(key)) return
+    if (key !== THEME_KEY && !isLinkValueKey(key)) return
     rest.append(key, value)
     if (key !== THEME_KEY) values.push(value)
   })

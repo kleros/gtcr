@@ -70,10 +70,10 @@ const Shell = styled.section`
   flex-direction: column;
   gap: 22px;
   margin-top: 104px;
-  scroll-margin-top: calc(var(--app-bar-height) + 32px);
+  scroll-margin-top: 24px;
 
   @media (max-width: 1023px) {
-    scroll-margin-top: calc(var(--app-bar-height) + 72px);
+    scroll-margin-top: 64px;
   }
 
   @media (max-width: 720px) {
@@ -314,11 +314,15 @@ const StepItem = styled.li`
   p a {
     color: var(--color-primary);
     font-variant-numeric: tabular-nums;
-    text-decoration: none;
+    /* Underlined, not only coloured: a link in running text must show
+       without colour vision (WCAG 1.4.1). */
+    text-decoration: underline;
+    text-decoration-color: color-mix(in srgb, currentColor 45%, transparent);
+    text-underline-offset: 3px;
   }
 
   p a:hover {
-    text-decoration: underline;
+    text-decoration-color: currentColor;
   }
 `
 
@@ -781,11 +785,15 @@ const Footnote = styled(Small).attrs({ $muted: true })`
   a {
     color: var(--color-primary);
     font-variant-numeric: tabular-nums;
-    text-decoration: none;
+    /* Underlined, not only coloured: a link in running text must show
+       without colour vision (WCAG 1.4.1). */
+    text-decoration: underline;
+    text-decoration-color: color-mix(in srgb, currentColor 45%, transparent);
+    text-underline-offset: 3px;
   }
 
   a:hover {
-    text-decoration: underline;
+    text-decoration-color: currentColor;
   }
 `
 
@@ -997,11 +1005,15 @@ export const Definitions = styled.dl`
   dd a {
     color: var(--color-primary);
     font-variant-numeric: tabular-nums;
-    text-decoration: none;
+    /* Underlined, not only coloured: a link in running text must show
+       without colour vision (WCAG 1.4.1). */
+    text-decoration: underline;
+    text-decoration-color: color-mix(in srgb, currentColor 45%, transparent);
+    text-underline-offset: 3px;
   }
 
   dd a:hover {
-    text-decoration: underline;
+    text-decoration-color: currentColor;
   }
 
   @media (max-width: 760px) {

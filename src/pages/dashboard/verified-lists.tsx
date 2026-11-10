@@ -17,10 +17,10 @@ import {
   VerifiedBadge,
 } from 'components/curate/verified-badge'
 import { isListOfLists } from 'config/list-of-lists'
-import { parseIpfs } from 'utils/ipfs-parse'
 import { formatDate } from 'utils/time'
 import type { DashboardRegistry } from './types'
 import { chainInfo, entryCount, registryHref } from './view'
+import { Avatar as ListLogo } from 'pages/browse/avatar'
 
 /*
  * Kleros Verified (round 2, items 16 and 17): the lists that carry the
@@ -47,12 +47,6 @@ const monthYear = new Intl.DateTimeFormat('en-GB', {
   year: 'numeric',
   timeZone: 'UTC',
 })
-
-const mediaUrl = (uri?: string | null): string | null => {
-  if (!uri) return null
-  if (/^https?:\/\//i.test(uri)) return uri
-  return parseIpfs(uri)
-}
 
 const Band = styled(Surface)`
   display: grid;
@@ -217,19 +211,6 @@ const LogoWrap = styled.span`
   }
 `
 
-const Logo = styled.span<{ $image?: string | null }>`
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  border: 1px solid var(--glass-border);
-  border-radius: 12px;
-  background: ${({ $image }) =>
-    $image ? `url(${$image}) center / cover` : 'var(--color-surface)'};
-  color: var(--color-faint);
-`
-
 const Name = styled.span`
   display: -webkit-box;
   min-height: 36px;
@@ -385,11 +366,11 @@ export const VerifiedLists = ({
                 title={`${registry.title} · ${integer.format(entryCount(registry))} ${entryCount(registry) === 1 ? 'entry' : 'entries'}${registry.verifiedAt ? ` · Kleros Verified since ${formatDate(registry.verifiedAt)}` : ''}`}
               >
                 <LogoWrap>
-                  <Logo $image={mediaUrl(registry.logoURI)} aria-hidden>
-                    {!registry.logoURI && (
-                      <CurateIcon name="registry" size={18} />
-                    )}
-                  </Logo>
+                  <ListLogo
+                    uri={registry.logoURI}
+                    seed={registry.address}
+                    size={40}
+                  />
                   <VerifiedBadge size={14} decorative />
                 </LogoWrap>
                 <Name>

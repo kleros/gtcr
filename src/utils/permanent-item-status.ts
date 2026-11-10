@@ -95,15 +95,33 @@ export const itemToStatusCode = (
 
   if (status === CONTRACT_STATUS.ABSENT) {
     // The only paths to Absent are withdrawItem() and rule(). Dispute removals carry a
-    // resolution tx, so a latest-submission withdrawingTx can identify a completed
-    // voluntary withdrawal. This intercepts that case only; every other Absent item
-    // still falls through to the REJECTED/REMOVED logic unchanged.
-    // Note: in list views these fields may be absent from the query, so detection simply
-    // (and safely) falls through to REMOVED/REJECTED.
-    const submissions = (item.submissions as { withdrawingTx?: string }[]) || []
-    const withdrawingTx =
-      submissions.length > 0 ? submissions[0].withdrawingTx : null
-    if (withdrawingTx) return STATUS_CODE.WITHDRAWN
+    // resolution tx, so a latest-submission finishedTx that is NOT any resolution tx can
+    // only be a completed voluntary withdrawal. A started withdrawal (withdrawingTx) is
+    // not enough: the item stays challengeable while withdrawing, and a ruling against
+    // it then removes it, with the stake going to the challenger.
+    // This intercepts that case only; every other Absent item still falls through to
+    // the REJECTED/REMOVED logic unchanged.
+    const submissions =
+      (item.submissions as {
+        finishedTx?: string | null
+        withdrawingTx?: string | null
+      }[]) || []
+    const latest = submissions.length > 0 ? submissions[0] : undefined
+    const resolutionTxs = new Set(
+      ((item.challenges as { resolutionTx?: string | null }[]) || [])
+        .map((c) => c.resolutionTx)
+        .filter((tx): tx is string => !!tx),
+    )
+    if (latest?.finishedTx) {
+      if (!resolutionTxs.has(latest.finishedTx)) return STATUS_CODE.WITHDRAWN
+    } else if (
+      // Queries that do not select finishedTx: a started withdrawal with no
+      // resolved challenge on record.
+      latest?.finishedTx === undefined &&
+      latest?.withdrawingTx &&
+      resolutionTxs.size === 0
+    )
+      return STATUS_CODE.WITHDRAWN
 
     // Differentiate between rejected (never made it past submission) and removed (was accepted then taken off)
     // If includedAt + submissionPeriod < timestamp, the item passed submission and was accepted at some point

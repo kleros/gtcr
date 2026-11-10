@@ -6,7 +6,7 @@ import { simulateContract } from '@wagmi/core'
 import { Roles, useAtlasProvider } from '@kleros/kleros-app'
 import _GTCRFactory from 'assets/abis/PermanentGTCRFactory.json'
 import { JSON_UPLOAD_ROLE } from 'utils/atlas-roles'
-import { isVowel } from 'utils/string'
+import { getArticleFor } from 'utils/string'
 import { wrapWithToast, errorToast } from 'utils/wrap-with-toast'
 import { parseWagmiError } from 'utils/parse-wagmi-error'
 import { parseIpfs } from 'utils/ipfs-parse'
@@ -107,16 +107,12 @@ const getTcrMetaEvidence = async (
   const metaEvidenceData = {
     title: `Keep ${
       itemName
-        ? isVowel(itemName[0])
-          ? `an ${itemName.toLowerCase()}`
-          : `a ${itemName.toLowerCase()}`
+        ? `${getArticleFor(itemName)} ${itemName.toLowerCase()}`
         : 'an item'
     } in ${tcrTitle}`,
     description: `Someone requested to remove ${
       itemName
-        ? isVowel(itemName[0])
-          ? `an ${itemName.toLowerCase()}`
-          : `a ${itemName.toLowerCase()}`
+        ? `${getArticleFor(itemName)} ${itemName.toLowerCase()}`
         : 'an item'
     } from ${tcrTitle}`,
     rulingOptions: {

@@ -30,7 +30,8 @@ export const formatDurationLong = (seconds: number): string => {
   if (days) parts.push(`${days} day${days === 1 ? '' : 's'}`)
   if (hours) parts.push(`${hours} hour${hours === 1 ? '' : 's'}`)
   if (!days && minutes) parts.push(`${minutes} min`)
-  return parts.join(' ') || '0 min'
+  // Under a minute: the seconds, so a short period never reads as zero.
+  return parts.join(' ') || (s > 0 ? `${s} sec` : '0 min')
 }
 
 /** Seconds from `now` (default: the wall clock) to `deadline`; negative once passed. */

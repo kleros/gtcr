@@ -12,7 +12,7 @@ import { simulateContract } from '@wagmi/core'
 import _GTCRFactory from 'assets/abis/LightGTCRFactory.json'
 import { Roles, useAtlasProvider } from '@kleros/kleros-app'
 import { JSON_UPLOAD_ROLE } from 'utils/atlas-roles'
-import { ZERO_ADDRESS, isVowel } from 'utils/string'
+import { ZERO_ADDRESS, getArticleFor } from 'utils/string'
 import { wrapWithToast, errorToast } from 'utils/wrap-with-toast'
 import { parseWagmiError } from 'utils/parse-wagmi-error'
 import { formatDurationLong } from 'utils/time'
@@ -153,16 +153,12 @@ const getTcrMetaEvidence = async (
     data: {
       title: `Add ${
         itemName
-          ? isVowel(itemName[0])
-            ? `an ${itemName.toLowerCase()}`
-            : `a ${itemName.toLowerCase()}`
+          ? `${getArticleFor(itemName)} ${itemName.toLowerCase()}`
           : 'an item'
       } to ${tcrTitle}`,
       description: `Someone requested to add ${
         itemName
-          ? isVowel(itemName[0])
-            ? `an ${itemName.toLowerCase()}`
-            : `a ${itemName.toLowerCase()}`
+          ? `${getArticleFor(itemName)} ${itemName.toLowerCase()}`
           : 'an item'
       } to ${tcrTitle}`,
       rulingOptions: {
@@ -184,16 +180,12 @@ const getTcrMetaEvidence = async (
     data: {
       title: `Remove ${
         itemName
-          ? isVowel(itemName[0])
-            ? `an ${itemName.toLowerCase()}`
-            : `a ${itemName.toLowerCase()}`
+          ? `${getArticleFor(itemName)} ${itemName.toLowerCase()}`
           : 'an item'
       } from ${tcrTitle}`,
       description: `Someone requested to remove ${
         itemName
-          ? isVowel(itemName[0])
-            ? `an ${itemName.toLowerCase()}`
-            : `a ${itemName.toLowerCase()}`
+          ? `${getArticleFor(itemName)} ${itemName.toLowerCase()}`
           : 'an item'
       } from ${tcrTitle}`,
       rulingOptions: {
@@ -982,6 +974,21 @@ const Deploy = ({
           },
         ]
       : []),
+    // Who can change the list later. The field sits under Advanced, so the
+    // review names it, and says when it is not the connected wallet.
+    {
+      label: 'Governor',
+      value: tcrState.governorAddress
+        ? `${truncateMiddle(tcrState.governorAddress, 8, 6)}${
+            account &&
+            tcrState.governorAddress.toLowerCase() === account.toLowerCase()
+              ? ' (your wallet)'
+              : ' (not your wallet)'
+          }`
+        : 'Not set',
+      empty: !tcrState.governorAddress,
+      step: 'Deposit',
+    },
     {
       label: 'Badges list',
       value: tcrState.relTcrDisabled ? 'Skipped' : 'Included',

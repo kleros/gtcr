@@ -37,7 +37,7 @@ const Shell = styled(Surface)`
   display: flex;
   flex-direction: column;
   gap: 16px;
-  scroll-margin-top: calc(var(--app-bar-height, 64px) + 24px);
+  scroll-margin-top: 16px;
   scroll-margin-bottom: 140px;
 `
 

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useContext, useMemo } from 'react'
 import { ethers, type BigNumber } from 'ethers'
 import { ItemTypes } from '@kleros/gtcr-encoder'
 import styled from 'styled-components'
-import { useParams, Link } from 'react-router-dom'
+import { useParams, Link, useLocation } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { abi as _IArbitrator } from '@kleros/erc-792/build/contracts/IArbitrator.json'
 import useUrlChainId from 'hooks/use-url-chain-id'
@@ -12,6 +12,14 @@ import { useEthersProvider } from 'hooks/ethers-adapters'
 import useTcrMetaEvidence from 'hooks/use-tcr-meta-evidence'
 import { useAttachment } from 'hooks/use-attachment'
 import ErrorPage from '../error-page'
+import {
+  ENTRY_LINK_TIP,
+  ENTRY_LOAD_FAILED,
+  ENTRY_INDEXING_MESSAGE,
+  ENTRY_INDEXING_TITLE,
+  ENTRY_MISSING_TIP,
+  justSubmitted,
+} from '../error-page/copy'
 import ItemDetailsCard from 'components/item-details-card'
 import RequestTimelines, {
   type TimelineRequest,
@@ -429,6 +437,10 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
   const [appealCost, setAppealCost] = useState<BigNumber | null | undefined>()
   const now = useNow()
 
+  // Opened right after submitting it (submit-item): a missing entry is
+  // still being indexed, not absent.
+  const location = useLocation()
+  const recentlySubmitted = justSubmitted(location.state)
   // subgraph item entities have id "<itemID>@<listaddress>"
   const compoundId = `${itemID}@${tcrAddress?.toLowerCase()}`
   const { graphqlBatcher } = useGraphqlBatcher()
@@ -443,6 +455,16 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
       }),
     enabled: !!chainId,
     staleTime: STALE_TIME,
+    // An entry sent a moment ago can take a while to reach the indexer:
+    // keep looking for two minutes before settling on "not found".
+    refetchInterval: (query) =>
+      query.state.status === 'success' &&
+      !query.state.data?.litem &&
+      query.state.dataUpdateCount < (recentlySubmitted ? 180 : 12)
+        ? recentlySubmitted
+          ? 5_000
+          : 10_000
+        : false,
   })
 
   const item = useMemo(
@@ -450,6 +472,11 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
       detailsViewQuery.isLoading ? undefined : detailsViewQuery.data?.litem,
     [detailsViewQuery.isLoading, detailsViewQuery.data],
   )
+  // A failed read and a missing entry each get their own page; neither is
+  // left as a loading skeleton.
+  const itemLoadFailed = detailsViewQuery.isError && !detailsViewQuery.data
+  const itemMissing =
+    detailsViewQuery.isSuccess && !detailsViewQuery.data?.litem
 
   // Scout-style fire-and-forget IPFS background fetch. Only runs when the
   // subgraph didn't index props (indexer hit IPFS failure). Never blocks
@@ -483,6 +510,9 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
 
   const decodedItem = useMemo(() => {
     if (!item) return undefined
+    // The fields card offers the reward withdrawal once the latest request
+    // is resolved; like the Classic page, the entry says whether it is.
+    const resolved = !!item.requests?.[0]?.resolved
 
     // Happy path: subgraph already decoded the item into props. Derive columns
     // from props directly so the fields card does not have to wait for the
@@ -497,6 +527,7 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
       }
       return {
         ...item,
+        resolved,
         errors: [],
         columns: item.props.map((p: ItemProp) => ({
           label: p.label,
@@ -515,6 +546,7 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
       const columns = metaEvidence.metadata?.columns ?? []
       return {
         ...item,
+        resolved,
         errors: [],
         columns,
         decodedData: columns.map(
@@ -526,6 +558,7 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
 
     return {
       ...item,
+      resolved,
       errors: [`IPFS data unavailable for this item (${item.data}).`],
       columns: metaEvidence?.metadata?.columns ?? [],
       decodedData: [],
@@ -647,7 +680,41 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
             ? tcrError
             : 'This entry could not be found.'
         }
-        tip="Make sure your wallet is set to the correct network (is this on Gnosis Chain?)."
+        tip={ENTRY_LINK_TIP}
+      />
+    )
+
+  if (itemLoadFailed)
+    return (
+      <ErrorPage
+        code="Error"
+        title="This entry did not load"
+        message={ENTRY_LOAD_FAILED}
+        onRetry={() => detailsViewQuery.refetch()}
+      />
+    )
+
+  if (itemMissing && recentlySubmitted)
+    return (
+      <ErrorPage
+        code="Indexing"
+        tone="window"
+        title={ENTRY_INDEXING_TITLE}
+        message={ENTRY_INDEXING_MESSAGE}
+        home={{
+          to: `/tcr/${chainId}/${tcrAddress}`,
+          label: 'Back to the list',
+        }}
+      />
+    )
+
+  if (itemMissing)
+    return (
+      <ErrorPage
+        code="404"
+        title="Entry not found"
+        message="This list has no entry with this ID."
+        tip={ENTRY_MISSING_TIP}
       />
     )
 
@@ -825,6 +892,7 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
             loading={loading}
             itemMetaEvidence={itemMetaEvidence}
             exclude={heroFields}
+            kind="light"
           />
           {/* Spread the `requests` parameter to convert elements from array to an object */}
           <RequestTimelines

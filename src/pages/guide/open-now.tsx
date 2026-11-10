@@ -15,6 +15,7 @@ import {
   chainInfo,
   scopedFigures,
 } from 'pages/dashboard/view'
+import { DASHBOARD_QUERY_KEY, DASHBOARD_STALE_MS } from 'pages/dashboard/query'
 import type { DashboardData } from 'pages/dashboard/types'
 import { useInView } from './hooks'
 
@@ -133,9 +134,9 @@ export const OpenNow = () => {
   const seen = useInView(ref, 0.2)
   const now = useNow(30_000)
   const query = useQuery({
-    queryKey: ['curateDashboard'],
+    queryKey: DASHBOARD_QUERY_KEY,
     queryFn: loadDashboard,
-    staleTime: 60_000,
+    staleTime: DASHBOARD_STALE_MS,
     enabled: seen,
   })
   const data = query.data

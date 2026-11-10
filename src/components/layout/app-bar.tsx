@@ -163,20 +163,22 @@ const LogoLink = styled(Link)`
     opacity: 0.8;
   }
 
+  /* 40px tall, the size Kleros v2 gives its header logo: a 40px mark and
+     16px capitals. */
   svg {
     display: block;
-    height: 26px;
+    flex: 0 0 auto;
+    height: 40px;
     width: auto;
   }
 
-  /* Phones: keep only the hexagon mark (the first ~37 of 130 units). */
+  /* Phones: keep only the hexagon mark (the first 36 of 145 units). */
   @media (max-width: 600px) {
-    width: 24px;
+    width: 36px;
     overflow: hidden;
 
     svg {
-      flex: 0 0 auto;
-      width: 84px;
+      width: 145px;
       max-width: none;
     }
   }

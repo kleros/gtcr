@@ -47,6 +47,10 @@ export const extractRegistryAddress = (
 }
 
 const PAGE = 500
+/** Pages read at most (a few dozen entries today): a bound, not a guess. */
+const MAX_PAGES = 20
+/** How long one page may take before the read counts as failed. */
+const PAGE_TIMEOUT_MS = 10_000
 
 /** The lists of lists' Registered entries (Classic Item or Light LItem), a page. */
 const VERIFIED_REGISTRIES_QUERY = gql`
@@ -112,9 +116,29 @@ export const verifiedSetFrom = (
   return verified
 }
 
+/** One page, aborted past PAGE_TIMEOUT_MS so no page can wait on it forever. */
+const readPage = async (
+  url: string,
+  variables: { chainId: number; listsOfLists: string[]; offset: number },
+): Promise<VerifiedRegistriesResult> => {
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), PAGE_TIMEOUT_MS)
+  try {
+    return await request<VerifiedRegistriesResult>({
+      url,
+      document: VERIFIED_REGISTRIES_QUERY,
+      variables,
+      signal: controller.signal,
+    })
+  } finally {
+    clearTimeout(timer)
+  }
+}
+
 /**
  * Every Kleros Verified registry on a chain, lowercase. Throws when the
- * indexer fails, so no page shows a trust mark it cannot back.
+ * indexer fails, times out or pages past MAX_PAGES, so no page shows a trust
+ * mark it cannot back.
  */
 export const fetchVerifiedRegistries = async (
   chainId: number,
@@ -124,12 +148,14 @@ export const fetchVerifiedRegistries = async (
   const url = subgraphUrl[chainId]
   if (!url) throw new Error(`No indexer for chain ${chainId}`)
   const entries: VerifiedEntry[] = []
-  for (let offset = 0; ; offset += PAGE) {
-    const result = await request<VerifiedRegistriesResult>(
-      url,
-      VERIFIED_REGISTRIES_QUERY,
-      { chainId, listsOfLists, offset },
-    )
+  for (let page = 0; ; page += 1) {
+    if (page >= MAX_PAGES)
+      throw new Error(`Kleros Verified read past ${MAX_PAGES} pages`)
+    const result = await readPage(url, {
+      chainId,
+      listsOfLists,
+      offset: page * PAGE,
+    })
     const classic = result.verifiedClassic ?? []
     const light = result.verifiedLight ?? []
     entries.push(...classic, ...light)

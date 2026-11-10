@@ -6,6 +6,13 @@ const GlobalStyle = createGlobalStyle`
     box-sizing: border-box;
   }
 
+  /* Whatever the browser scrolls into view (a focused control, a #link)
+     clears the sticky app bar: 64px (--app-bar-height, set on body so not
+     readable here) plus a little air. Scroll margins add to it. */
+  html {
+    scroll-padding-top: 72px;
+  }
+
   button, input, select, textarea {
     font-family: inherit;
     font-size: inherit;

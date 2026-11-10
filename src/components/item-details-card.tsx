@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useContext } from 'react'
 import styled from 'styled-components'
-import { useAccount, usePublicClient, useWalletClient, useChainId } from 'wagmi'
-import { simulateContract } from '@wagmi/core'
+import { useAccount, usePublicClient } from 'wagmi'
+import { simulateContract, writeContract } from '@wagmi/core'
 import { useParams } from 'react-router-dom'
 import { BigNumber } from 'ethers'
 import { abi as _batchWithdraw } from '@kleros/tcr/build/contracts/BatchWithdraw.json'
@@ -10,11 +10,16 @@ import useUrlChainId from 'hooks/use-url-chain-id'
 import useNativeCurrency from 'hooks/native-currency'
 import { useAttachment } from 'hooks/use-attachment'
 import { TCRViewContext } from 'contexts/tcr-view-context'
-import { batchWithdrawAddresses } from 'config/tcr-addresses'
+import { LightTCRViewContext } from 'contexts/light-tcr-view-context'
+import {
+  batchWithdrawAddresses,
+  lightBatchWithdrawAddresses,
+} from 'config/tcr-addresses'
 import { wrapWithToast, errorToast } from 'utils/wrap-with-toast'
 import { parseWagmiError } from 'utils/parse-wagmi-error'
 import { wagmiConfig } from 'config/wagmi'
 import { parseIpfs } from 'utils/ipfs-parse'
+import { cssImageUrl } from 'utils/url-validation'
 import SeerExtraDetails from 'components/custom-registries/seer/seer-item-details'
 import { isSeerRegistry } from 'components/custom-registries/seer/is-seer-registry'
 import { CurateIcon } from 'components/curate/icons'
@@ -76,8 +81,10 @@ const LogoButton = styled.button<{ $image?: string }>`
   padding: 0;
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
-  background: ${({ $image }) =>
-    $image ? `url(${$image}) center / contain no-repeat` : 'none'};
+  background: ${({ $image }) => {
+    const image = cssImageUrl($image)
+    return image ? `${image} center / contain no-repeat` : 'none'
+  }};
   background-color: var(--color-raised);
   color: var(--color-faint);
   cursor: ${({ $image }) => ($image ? 'pointer' : 'default')};
@@ -170,6 +177,12 @@ interface ItemDetailsCardProps {
    * identifiers), left out of the list so no row repeats them.
    */
   exclude?: EntryField[]
+  /**
+   * The kind of list, which picks the batch withdrawer for rewards: Classic
+   * and Light lists each have their own (their getters differ), and Stake
+   * lists settle rewards elsewhere, so they get no button here.
+   */
+  kind?: 'classic' | 'light' | 'stake'
 }
 
 const ItemDetailsCard = ({
@@ -179,56 +192,84 @@ const ItemDetailsCard = ({
   item,
   itemMetaEvidence,
   exclude,
+  kind = 'classic',
 }: ItemDetailsCardProps) => {
   const { address: account } = useAccount()
-  const chainId = useChainId()
   const publicClient = usePublicClient()
-  const { data: walletClient } = useWalletClient()
-  const tcrViewContext = useContext(TCRViewContext)
+  // Light pages provide the Light view context, Classic pages the Classic
+  // one: each has the view contract that answers availableRewards for it.
+  const classicView = useContext(TCRViewContext)
+  const lightView = useContext(LightTCRViewContext)
+  const tcrViewContext = (kind === 'light' ? lightView : classicView) as
+    | {
+        gtcrView?: {
+          availableRewards: (...args: unknown[]) => Promise<BigNumber>
+        }
+        tcrAddress?: string
+      }
+    | undefined
   const [availableRewards, setAvailableRewards] = useState<BigNumber>()
-  const BATCH_WITHDRAW_ADDRESS = batchWithdrawAddresses[chainId]
   const { tcrAddress } = useParams()
   const urlChainId = useUrlChainId()
+  // The batch withdrawer of the list's chain (the URL's), not the wallet's.
+  // A chain without one gets no button rather than one that does nothing.
+  const BATCH_WITHDRAW_ADDRESS =
+    !urlChainId || kind === 'stake'
+      ? undefined
+      : kind === 'light'
+        ? lightBatchWithdrawAddresses[urlChainId]
+        : batchWithdrawAddresses[urlChainId]
   const nativeCurrency = useNativeCurrency()
   const openAttachment = useAttachment()
 
-  // Fetch available rewards from fee contributions (Classic view contract).
+  // Fetch available rewards from fee contributions (the list's view
+  // contract). Stake lists settle rewards elsewhere.
   useEffect(() => {
+    if (kind === 'stake') return
+    let cancelled = false
     ;(async () => {
       if (!tcrViewContext || !tcrViewContext.gtcrView || !account || !item)
         return
-
-      setAvailableRewards(
-        await tcrViewContext.gtcrView.availableRewards(
+      try {
+        const rewards = await tcrViewContext.gtcrView.availableRewards(
           tcrViewContext.tcrAddress,
           item.itemID,
           account,
-        ),
-      )
+        )
+        if (!cancelled) setAvailableRewards(rewards)
+      } catch (err) {
+        console.error('Could not read the available rewards', err)
+      }
     })()
-  }, [account, item, tcrViewContext])
+    return () => {
+      cancelled = true
+    }
+  }, [account, item, tcrViewContext, kind])
 
   const batchWithdrawClick = useCallback(async () => {
     if (
       !tcrViewContext ||
       !BATCH_WITHDRAW_ADDRESS ||
+      !urlChainId ||
       !item ||
-      !walletClient ||
       !publicClient
     )
       return
 
     try {
+      // Simulated on the list's chain; writeContract refuses to send while
+      // the wallet is on another one.
       const { request } = await simulateContract(wagmiConfig, {
         address: BATCH_WITHDRAW_ADDRESS as `0x${string}`,
         abi: _batchWithdraw,
         functionName: 'batchRequestWithdraw',
         args: [tcrViewContext.tcrAddress, account, item.itemID, 0, 0, 0, 0],
         account,
+        chainId: urlChainId,
       })
 
       const result = await wrapWithToast(
-        () => walletClient.writeContract(request),
+        () => writeContract(wagmiConfig, request),
         publicClient,
       )
 
@@ -250,7 +291,7 @@ const ItemDetailsCard = ({
     item,
     publicClient,
     tcrViewContext,
-    walletClient,
+    urlChainId,
   ])
 
   const { file: itemMetaEvidenceFile, error: itemMetaEvidenceError } =
@@ -289,6 +330,7 @@ const ItemDetailsCard = ({
       }) || []
   const errors = item?.errors ?? []
   const withdrawable =
+    !!BATCH_WITHDRAW_ADDRESS &&
     !!item &&
     !!item.resolved &&
     !!availableRewards &&

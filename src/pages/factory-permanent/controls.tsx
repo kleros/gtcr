@@ -645,9 +645,9 @@ export interface WalletGate {
 }
 
 const signIn = (authoriseUser: () => Promise<unknown>) => {
-  infoToast('Signing in...')
+  infoToast('Signing in…')
   authoriseUser()
-    .then(() => successToast('Signed in successfully.'))
+    .then(() => successToast('Signed in.'))
     .catch((err) => {
       console.error(err)
       errorToast(`Sign-in failed: ${err?.message ?? 'unknown error'}`)

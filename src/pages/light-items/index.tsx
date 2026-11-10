@@ -34,7 +34,12 @@ import { isSeerRegistry } from 'components/custom-registries/seer/is-seer-regist
 import ETHAmount from 'components/eth-amount'
 import { Pagination } from 'components/ui'
 import type { V2Field } from 'components/curate/v2'
-import { Button, Page, truncateMiddle } from 'components/curate/primitives'
+import {
+  Button,
+  Page,
+  Small,
+  truncateMiddle,
+} from 'components/curate/primitives'
 import { CurateIcon } from 'components/curate/icons'
 import { reveal } from 'components/curate/motion/reveal'
 import {
@@ -82,6 +87,21 @@ import SubmitConnectModal from '../light-item-details/modals/submit-connect'
 
 export const NSFW_FILTER_KEY = 'NSFW_FILTER_KEY'
 export const ITEMS_PER_PAGE = 40
+/** Whole-list search results shown at once (the indexer's keyword match). */
+const SEARCH_LIMIT = 100
+
+/** A search term inside an ILIKE pattern, its wildcards taken literally. */
+const likePattern = (term: string) =>
+  `%${term.replace(/[\\%_]/g, (char) => `\\${char}`)}%`
+
+/** Every entry the registry counters know of. */
+const counterTotal = (counters: RegistryCounters) =>
+  Number(counters.numberOfAbsent) +
+  Number(counters.numberOfRegistered) +
+  Number(counters.numberOfRegistrationRequested) +
+  Number(counters.numberOfClearingRequested) +
+  Number(counters.numberOfChallengedRegistrations) +
+  Number(counters.numberOfChallengedClearing)
 
 /** Statuses hidden behind a reveal while the sensitive-content filter is on. */
 const HIDDEN_STATUS_CODES = new Set<number>([
@@ -310,6 +330,12 @@ const Items = () => {
   const [error, setError] = useState<string | undefined>()
   const [nsfwFilterOn, setNSFWFilter] = useState(true)
   const [itemSearch, setItemSearch] = useState('')
+  // The term once typing pauses: what a whole-list search asks the indexer.
+  const [searchTerm, setSearchTerm] = useState('')
+  useEffect(() => {
+    const id = window.setTimeout(() => setSearchTerm(itemSearch.trim()), 350)
+    return () => window.clearTimeout(id)
+  }, [itemSearch])
   const [queryItemParams, setQueryItemParams] = useState<string[] | undefined>()
   const [revealed, setRevealed] = useState<Set<string>>(() => new Set())
   const [decodedItems, setDecodedItems] = useState<SubgraphItem[] | undefined>(
@@ -394,15 +420,36 @@ const Items = () => {
     tcrAddress,
   ])
 
+  // The registry-wide counters, kept across a refetch that comes back
+  // without them, for this registry only.
+  const countersKey = `${chainId}:${tcrAddress?.toLowerCase()}`
+  const lastCounters = useRef<{ key: string; value: RegistryCounters }>()
+
+  /*
+   * A list longer than a page is searched whole, on the indexer's keyword
+   * index (each entry's identifying fields), as the previous search bar
+   * did; a one-page list is filtered where it is. The list's size comes
+   * from the counters the last answer carried.
+   */
+  const knownTotal =
+    lastCounters.current?.key === countersKey
+      ? counterTotal(lastCounters.current.value)
+      : undefined
+  const wholeListSearch =
+    searchTerm.length >= 2 &&
+    (knownTotal === undefined || knownTotal > ITEMS_PER_PAGE)
+
   const queryVariables = useMemo(
     () => ({
-      offset: (Number(page) - 1) * ITEMS_PER_PAGE,
-      limit: ITEMS_PER_PAGE,
+      offset: wholeListSearch ? 0 : (Number(page) - 1) * ITEMS_PER_PAGE,
+      limit: wholeListSearch ? SEARCH_LIMIT : ITEMS_PER_PAGE,
       order_by: [{ latestRequestSubmissionTime: orderDirection }],
-      where: itemsWhere,
+      where: wholeListSearch
+        ? { ...itemsWhere, keywords: { _ilike: likePattern(searchTerm) } }
+        : itemsWhere,
       registryId: tcrAddress?.toLowerCase(),
     }),
-    [page, orderDirection, itemsWhere, tcrAddress],
+    [page, orderDirection, itemsWhere, tcrAddress, wholeListSearch, searchTerm],
   )
 
   const itemsQuery = useQuery({
@@ -426,10 +473,6 @@ const Items = () => {
   })
   const refreshing = itemsQuery.isPlaceholderData && itemsQuery.isFetching
 
-  // The registry-wide counters, kept across a refetch that comes back
-  // without them, for this registry only.
-  const countersKey = `${chainId}:${tcrAddress?.toLowerCase()}`
-  const lastCounters = useRef<{ key: string; value: RegistryCounters }>()
   const freshCounters = itemsQuery.data?.lregistry ?? undefined
   if (freshCounters)
     lastCounters.current = { key: countersKey, value: freshCounters }
@@ -665,7 +708,7 @@ const Items = () => {
     if (!items) return undefined
 
     return [...items]
-      .filter((item) => itemMatchesSearch(item, itemSearch))
+      .filter((item) => wholeListSearch || itemMatchesSearch(item, itemSearch))
       .sort(({ tcrData: tcrDataA }, { tcrData: tcrDataB }) => {
         // Display items with pending requests first.
         if (!tcrDataA || !tcrDataB) return 0 // Handle errored TCRs.
@@ -673,7 +716,7 @@ const Items = () => {
         if (tcrDataA.resolved && !tcrDataB.resolved) return 1
         return 0
       })
-  }, [itemSearch, items])
+  }, [itemSearch, items, wholeListSearch])
 
   // A ?action= link (someone sent here with the values to submit) opens
   // the full-page submit form with those values in its URL, so the link
@@ -871,8 +914,11 @@ const Items = () => {
     },
   ]
 
+  // A connected (badges) list takes a badge list and its match file through
+  // its own dialog, as an ?action= link does; never the generic form.
   const onPrimary = () => {
-    if (chainId && tcrAddress) navigate(`/tcr/${chainId}/${tcrAddress}/submit`)
+    if (!connectedList && chainId && tcrAddress)
+      navigate(`/tcr/${chainId}/${tcrAddress}/submit`)
     else setSubmissionFormOpen(true)
   }
   const onOpenPolicy = fileURI
@@ -1052,12 +1098,15 @@ const Items = () => {
     !visibleItems ||
     !timestamp ||
     !challengePeriodDuration
-  const showPagination = itemCount > ITEMS_PER_PAGE
+  // A whole-list search answers in one go: no pages while it is shown.
+  const showPagination = itemCount > ITEMS_PER_PAGE && !wholeListSearch
   const pageNumber = Number(page) || 1
   const pageItemCount = items?.length ?? 0
   const searching = itemSearch.trim() !== ''
-  // The search filters the page already loaded, not the whole list.
-  const pageScopedSearch = itemCount > ITEMS_PER_PAGE
+  // Until a term settles (or for a single character) the search filters
+  // the page already loaded.
+  const pageScopedSearch = itemCount > ITEMS_PER_PAGE && !wholeListSearch
+  const searchCapped = wholeListSearch && pageItemCount >= SEARCH_LIMIT
   const filtersActive = !!(
     absent ||
     registered ||
@@ -1185,9 +1234,7 @@ const Items = () => {
         <RegistryToolbar
           search={itemSearch}
           onSearch={setItemSearch}
-          placeholder={
-            pageScopedSearch ? 'Search this page' : `Search ${itemNamePlural}`
-          }
+          placeholder={`Search ${itemNamePlural}`}
           chips={chips}
           onChipChange={setFilter}
           sort={oldestFirst ? 'oldest' : 'newest'}
@@ -1197,7 +1244,7 @@ const Items = () => {
           nsfwFilter={nsfwFilterOn}
           onNsfwChange={toggleNSFWFilter}
           shown={listLoading ? 0 : (visibleItems?.length ?? 0)}
-          total={searching ? pageItemCount : itemCount}
+          total={searching && !wholeListSearch ? pageItemCount : itemCount}
         />
       </Toolbar>
 
@@ -1223,6 +1270,14 @@ const Items = () => {
             itemName={itemName}
             itemNamePlural={itemNamePlural}
           />
+        )}
+        {searchCapped && (
+          <Footer style={{ ['--i' as string]: 2 }}>
+            <Small $muted as="p" style={{ margin: 0 }}>
+              The first {integer.format(SEARCH_LIMIT)} matches. A longer search
+              narrows them down.
+            </Small>
+          </Footer>
         )}
         {showPagination && (
           <Footer style={{ ['--i' as string]: 2 }}>

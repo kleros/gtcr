@@ -1858,6 +1858,12 @@ export const SearchField = styled.label`
   input::placeholder {
     color: var(--color-faint);
   }
+
+  /* The field's own ring (focus-within above) shows the focus; the global
+     input outline would draw a second, square one inside it. */
+  input:focus-visible {
+    outline: none;
+  }
 `
 
 /* ---------- Status ---------- */

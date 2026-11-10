@@ -5,6 +5,8 @@ import { toast } from 'react-toastify'
 import { ethers, BigNumber, type BigNumberish } from 'ethers'
 import { useAccount, useChainId, useSwitchChain } from 'wagmi'
 import { Roles, useAtlasProvider } from '@kleros/kleros-app'
+import { toPng } from 'utils/image-to-png'
+import { uploadFailure } from 'utils/upload-restrictions'
 import { appKitModal } from 'config/wagmi'
 import { NETWORKS_INFO } from 'config/networks'
 import useUrlChainId from 'hooks/use-url-chain-id'
@@ -721,9 +723,9 @@ export interface WalletGate {
 }
 
 const signIn = (authoriseUser: () => Promise<unknown>) => {
-  infoToast('Signing in...')
+  infoToast('Signing in…')
   authoriseUser()
-    .then(() => successToast('Signed in successfully.'))
+    .then(() => successToast('Signed in.'))
     .catch((err) => {
       console.error(err)
       errorToast(`Sign-in failed: ${err?.message ?? 'unknown error'}`)
@@ -894,13 +896,15 @@ export const UploadField = ({
       }
       setUploading(true)
       try {
-        const fileURI = await uploadFile(file, role)
-        if (!fileURI) throw new Error('Failed to upload file to IPFS.')
+        // Atlas takes logos as PNG only: anything else is redrawn first.
+        const prepared = role === Roles.Logo ? await toPng(file) : file
+        const fileURI = await uploadFile(prepared, role)
+        if (!fileURI) throw new Error('Sign in, then pick the file again.')
         onChange(fileURI)
         toast.success('File uploaded successfully.')
       } catch (err) {
         console.error(err)
-        toast.error('File upload failed.')
+        toast.error(uploadFailure(err))
       } finally {
         setUploading(false)
         if (inputRef.current) inputRef.current.value = ''

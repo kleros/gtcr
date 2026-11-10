@@ -773,7 +773,7 @@ const StepPanel = styled(Surface)`
   display: flex;
   flex-direction: column;
   padding: 28px 32px 24px;
-  scroll-margin-top: calc(var(--app-bar-height) + 24px);
+  scroll-margin-top: 16px;
 
   @media (max-width: 720px) {
     padding: 20px;

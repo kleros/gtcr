@@ -84,6 +84,7 @@ import {
   submitPathFor,
 } from 'components/curate/registry-shared-action-link'
 import ErrorPage from '../error-page'
+import { LIST_LINK_TIP } from '../error-page/copy'
 
 // The submission forms load on first use: they are heavy and most visits to
 // a list never open one (Submit goes to the full submission page). React.lazy
@@ -847,7 +848,7 @@ const Items = () => {
       <ErrorPage
         code="404"
         message="The gods are having trouble finding this list."
-        tip="Make sure your wallet is set to the correct network (is this on Gnosis Chain?)."
+        tip={LIST_LINK_TIP}
       />
     )
 
@@ -1006,8 +1007,11 @@ const Items = () => {
       ? `/tcr/${chainId}/${connectedTCRAddr}`
       : undefined
 
+  // A connected (badges) list takes a badge list and its match file through
+  // its own dialog, as an ?action= link does; never the generic form.
   const openSubmit = () => {
-    if (chainId && tcrAddress) navigate(submitPathFor(chainId, tcrAddress))
+    if (!connectedList && chainId && tcrAddress)
+      navigate(submitPathFor(chainId, tcrAddress))
     else setSubmissionFormOpen(true)
   }
 

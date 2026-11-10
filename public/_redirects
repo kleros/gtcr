@@ -2,3 +2,5 @@
 /agent.txt /llms.txt 200
 /agent-context /curate-agent-context.md 200
 /skills /guide 302
+/skills/kleros-curate/references/* https://raw.githubusercontent.com/kleros/kleros-skills/master/kleros-curate/references/:splat 302
+/skills/feedback/* https://raw.githubusercontent.com/kleros/kleros-skills/master/feedback/:splat 302

@@ -488,20 +488,30 @@ const unitWord: Record<string, string> = {
 
 /* ---------- Panel ---------- */
 
+/** "Ethereum", "Ethereum and Gnosis", "Ethereum, Gnosis and Sepolia". */
+const chainList = new Intl.ListFormat('en', {
+  style: 'long',
+  type: 'conjunction',
+})
+
 export const ProfilePanel = ({
   address,
   isYou,
   isZero,
   loading,
   error,
+  failed,
   onRetry,
   generatedAt,
+  refreshFailed = false,
+  governedStaleSince,
   scope,
   onScope,
   chains,
   stats,
   governedCount,
   governedError,
+  governedPartial,
   activities,
   complete,
   listed,
@@ -512,10 +522,20 @@ export const ProfilePanel = ({
   isYou: boolean
   isZero: boolean
   loading: boolean
+  /** Nothing could be read: the profile is unknown. */
   error: boolean
+  /**
+   * Chains in the scope whose indexer did not answer: their actions are
+   * missing, so the figures read are lower bounds.
+   */
+  failed: number[]
   onRetry: () => void
   /** When the profile was read, ms. */
   generatedAt?: number
+  /** The latest refresh failed: the profile shown is the one read at `generatedAt`. */
+  refreshFailed?: boolean
+  /** The governance scan's latest refresh failed: its lists are from then, ms. */
+  governedStaleSince?: number
   scope: Scope
   onScope: (value: string) => void
   /** Chains the address acted on or governs a list on, busiest first. */
@@ -526,6 +546,11 @@ export const ProfilePanel = ({
   governedCount?: number
   /** The governance scan failed: the count is unknown, never 0. */
   governedError: boolean
+  /**
+   * Some list's governor() could not be read in the scope: the count is a
+   * lower bound, and 0 is unknown rather than none.
+   */
+  governedPartial: boolean
   /** Listed actions in the scope, newest first. */
   activities: ProfileActivity[]
   /** True when every indexed action is listed (no cut at the list limit). */
@@ -563,15 +588,21 @@ export const ProfilePanel = ({
   const showGauge = !loading && !error && (record?.total ?? 0) > 0
   const isCapped = !loading && capped.length > 0
   const cappedOn = capped.map(chainName).join(' and ')
+  // An indexer that did not answer leaves its chain's actions out: what was
+  // read stands, as lower bounds, like a capped read.
+  const isPartial = !loading && failed.length > 0
+  const failedOn = chainList.format(failed.map(chainName))
+  const lowerBound = isCapped || isPartial
   // Nothing indexed and no list governed: the empty state leads the panel
-  // instead of a row of zeros. A capped read keeps its figures, which are
-  // lower bounds, and a failed governance scan keeps "unavailable".
+  // instead of a row of zeros. A capped or partial read keeps its figures,
+  // which are lower bounds, and a failed governance scan keeps "unavailable".
   const quiet =
     !loading &&
-    !isCapped &&
+    !lowerBound &&
     stats !== undefined &&
     stats.activity === 0 &&
     !governedError &&
+    !governedPartial &&
     !(governedCount && governedCount > 0)
   const testnetIncluded =
     scope === 'all'
@@ -742,7 +773,9 @@ export const ProfilePanel = ({
             </Button>
           }
         >
-          The indexers did not answer. Try again in a moment.
+          {failed.length > 0
+            ? `The indexer did not answer for ${failedOn}, so this address’s actions there are unknown. Try again in a moment.`
+            : 'The indexers did not answer. Try again in a moment.'}
         </QuietState>
       ) : (
         <>
@@ -764,11 +797,13 @@ export const ProfilePanel = ({
                         title={
                           isCapped
                             ? `At least ${formatInt(stats?.submissions ?? 0)}: the read stopped before the oldest requests on ${cappedOn}. ${limits}`
-                            : undefined
+                            : isPartial
+                              ? `At least ${formatInt(stats?.submissions ?? 0)}: the indexer did not answer for ${failedOn}.`
+                              : undefined
                         }
                       >
                         <Odometer value={stats?.submissions} />
-                        {isCapped && <OrMore />}
+                        {lowerBound && <OrMore />}
                       </Big>
                     )}
                   </HeadlineFigure>
@@ -790,7 +825,10 @@ export const ProfilePanel = ({
                       {
                         label: 'Lists governed',
                         value: governedCount,
-                        unavailable: governedError,
+                        // Some governor() reads failed: 0 is not "none".
+                        unavailable:
+                          governedError || (governedPartial && !governedCount),
+                        partial: governedPartial,
                       },
                     ].map((figure) => (
                       <div key={figure.label}>
@@ -799,7 +837,13 @@ export const ProfilePanel = ({
                         </Label>
                         <dd>
                           {figure.unavailable ? (
-                            <Unavailable title="The governor reads failed; try again later">
+                            <Unavailable
+                              title={
+                                governedError
+                                  ? 'The governor reads failed; try again later'
+                                  : 'Some lists could not be read; try again later'
+                              }
+                            >
                               unavailable
                             </Unavailable>
                           ) : loading || figure.value === undefined ? (
@@ -812,7 +856,8 @@ export const ProfilePanel = ({
                           ) : (
                             <>
                               <AnimatedNumber value={figure.value} />
-                              {isCapped && figure.read && <OrMore />}
+                              {((lowerBound && figure.read) ||
+                                figure.partial) && <OrMore />}
                             </>
                           )}
                         </dd>
@@ -952,15 +997,24 @@ export const ProfilePanel = ({
 
           <Footnote>
             {generatedAt
-              ? `Updated ${formatAgo(Math.floor(generatedAt / 1000), now)}.`
+              ? refreshFailed
+                ? `Couldn’t refresh; showing data from ${formatAgo(Math.floor(generatedAt / 1000), now)}.`
+                : `Updated ${formatAgo(Math.floor(generatedAt / 1000), now)}.`
               : loading
                 ? 'Reading the indexers.'
                 : ''}
+            {governedStaleSince !== undefined &&
+              ` Couldn’t refresh the governed lists; showing them as of ${formatAgo(Math.floor(governedStaleSince / 1000), now)}.`}
             {isCapped && (
               <span title={limits}>
                 {` On ${cappedOn} the read stopped before the oldest requests (a read limit or an indexer timeout): figures marked + are lower bounds.`}
               </span>
             )}
+            {isPartial &&
+              ` The indexer did not answer for ${failedOn}: its actions are missing and figures marked + are lower bounds.`}
+            {governedPartial &&
+              !governedError &&
+              ' Some lists’ governor could not be read: the lists governed are a lower bound.'}
             {buckets?.partialFrom !== undefined &&
               ` The first ${unit} holds only the listed actions.`}
           </Footnote>

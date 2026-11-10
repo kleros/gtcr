@@ -2,8 +2,8 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import styled from 'styled-components'
 import { ethers } from 'ethers'
 import { withFormik, type FormikProps } from 'formik'
-import { useAccount, usePublicClient, useWalletClient } from 'wagmi'
-import { simulateContract } from '@wagmi/core'
+import { useAccount, usePublicClient } from 'wagmi'
+import { simulateContract, writeContract } from '@wagmi/core'
 import { erc20Abi } from 'viem'
 import { ItemTypes, typeDefaultValues } from '@kleros/gtcr-encoder'
 import { useAtlasProvider } from '@kleros/kleros-app'
@@ -21,6 +21,7 @@ import { formatDurationLong } from 'utils/time'
 import { wrapWithToast, errorToast } from 'utils/wrap-with-toast'
 import { parseWagmiError } from 'utils/parse-wagmi-error'
 import { wagmiConfig } from 'config/wagmi'
+import { useTxChainId } from 'pages/submit-item/use-wallet-gate'
 import {
   Body,
   Button,
@@ -63,6 +64,12 @@ type RegistryExistsCheck = (tcrAddress: string) => Promise<boolean>
 interface SubmissionFormOuterProps {
   columns: Column[]
   initialValues?: unknown[]
+  /**
+   * Only the confirm may submit: Enter in a field submits a one-field form
+   * implicitly, and that must not skip the required fields, the stake and
+   * balance checks or the wallet gate.
+   */
+  canSubmit?: boolean
   disabledFields: boolean[]
   postSubmit: (
     values: SubmissionFormValues,
@@ -102,7 +109,16 @@ const _SubmissionForm: React.FC<
   }, [p])
 
   return (
-    <Form onSubmit={p.handleSubmit} id={SUBMISSION_FORM_ID}>
+    <Form
+      onSubmit={(event) => {
+        if (!p.canSubmit) {
+          event.preventDefault()
+          return
+        }
+        p.handleSubmit(event)
+      }}
+      id={SUBMISSION_FORM_ID}
+    >
       {p.columns &&
         p.columns.length > 0 &&
         p.columns.map((column, index) => (
@@ -285,8 +301,8 @@ const SubmitModal: React.FC<{
     deployedWithPermanentFactory,
   } = useFactory()
   const { address: account } = useAccount()
+  const chainId = useTxChainId()
   const publicClient = usePublicClient()
-  const { data: walletClient } = useWalletClient()
   const { uploadFile } = useAtlasProvider()
   const gate = useActionGate('submit', { needsSignIn: true })
 
@@ -387,20 +403,52 @@ const SubmitModal: React.FC<{
     [],
   )
 
+  const hasEnoughBalance = balance >= depositWei
+  const hasEnoughAllowance = allowance >= depositWei
+  const hasEnoughNativeBalance =
+    nativeBalance !== undefined && nativeBalance >= arbitrationWei
+
+  // The first blocker wins; the approve step is its own button above the confirm.
+  const blocker = !gate.ready
+    ? gate.blocker
+    : !arbitrationCost
+      ? 'Loading the arbitration deposit'
+      : checkingToken || tokenLoading
+        ? 'Checking balances'
+        : decimalsMissing
+          ? `Could not read how many decimals ${tokenSymbol} has; try again later`
+          : stakeError
+            ? stakeError
+            : !fieldsComplete
+              ? 'Fill in every required field'
+              : !hasEnoughBalance
+                ? `Not enough ${tokenSymbol}: you hold ${tokenText(balance, tokenDecimals, tokenSymbol)}`
+                : !hasEnoughNativeBalance
+                  ? `Not enough ${nativeCurrency} for the arbitration deposit`
+                  : !hasEnoughAllowance
+                    ? `Approve ${tokenSymbol} first`
+                    : undefined
+  // Enter in a one-field form submits it implicitly: it may only go through
+  // when the confirm button itself could.
+  const submitAllowed = !blocker && !isSubmitting
+
   const handleApprove = useCallback(async () => {
-    if (!submissionDeposit || !walletClient || !publicClient) return
+    if (!submissionDeposit || !publicClient) return
     setIsApproving(true)
     try {
+      // Simulated on the list's chain; writeContract refuses to send while
+      // the wallet is on another one.
       const { request } = await simulateContract(wagmiConfig, {
         address: tokenAddress as `0x${string}`,
         abi: erc20Abi,
         functionName: 'approve',
         args: [tcrAddress as `0x${string}`, depositWei],
         account,
+        chainId,
       })
 
       const result = await wrapWithToast(
-        () => walletClient.writeContract(request),
+        () => writeContract(wagmiConfig, request),
         publicClient,
       )
 
@@ -422,7 +470,7 @@ const SubmitModal: React.FC<{
     depositWei,
     checkTokenStatus,
     account,
-    walletClient,
+    chainId,
     publicClient,
   ])
 
@@ -437,7 +485,7 @@ const SubmitModal: React.FC<{
         shouldValidate?: boolean,
       ) => void,
     ) => {
-      if (!submissionDeposit || !walletClient || !publicClient) return
+      if (!submitAllowed || !submissionDeposit || !publicClient) return
       setIsSubmitting(true)
       try {
         const resolvedValues = await resolveStashedFiles({
@@ -463,10 +511,11 @@ const SubmitModal: React.FC<{
           args: [ipfsEvidencePath, depositWei],
           value: arbitrationWei,
           account,
+          chainId,
         })
 
         const result = await wrapWithToast(
-          () => walletClient.writeContract(request),
+          () => writeContract(wagmiConfig, request),
           publicClient,
         )
 
@@ -483,11 +532,12 @@ const SubmitModal: React.FC<{
     [
       onCancel,
       submissionDeposit,
+      submitAllowed,
       tcrAddress,
       depositWei,
       arbitrationWei,
       account,
-      walletClient,
+      chainId,
       publicClient,
       uploadFile,
     ],
@@ -505,11 +555,6 @@ const SubmitModal: React.FC<{
     )
     form?.requestSubmit()
   }
-
-  const hasEnoughBalance = balance >= depositWei
-  const hasEnoughAllowance = allowance >= depositWei
-  const hasEnoughNativeBalance =
-    nativeBalance !== undefined && nativeBalance >= arbitrationWei
 
   const stakeText = tokenText(depositWei, tokenDecimals, tokenSymbol)
   const minText = tokenText(minDeposit, tokenDecimals, tokenSymbol)
@@ -529,24 +574,6 @@ const SubmitModal: React.FC<{
   const withdrawingWindow =
     withdrawingSeconds > 0 ? formatDurationLong(withdrawingSeconds) : undefined
 
-  // The first blocker wins; the approve step is its own button above the confirm.
-  const blocker = !gate.ready
-    ? gate.blocker
-    : checkingToken || tokenLoading
-      ? 'Checking balances'
-      : decimalsMissing
-        ? `Could not read how many decimals ${tokenSymbol} has; try again later`
-        : stakeError
-          ? stakeError
-          : !fieldsComplete
-            ? 'Fill in every required field'
-            : !hasEnoughBalance
-              ? `Not enough ${tokenSymbol}: you hold ${tokenText(balance, tokenDecimals, tokenSymbol)}`
-              : !hasEnoughNativeBalance
-                ? `Not enough ${nativeCurrency} for the arbitration deposit`
-                : !hasEnoughAllowance
-                  ? `Approve ${tokenSymbol} first`
-                  : undefined
   const showApprove =
     gate.ready &&
     !checkingToken &&
@@ -574,6 +601,7 @@ const SubmitModal: React.FC<{
       <FormBlock>
         <SubmissionForm
           columns={columns ?? []}
+          canSubmit={submitAllowed}
           postSubmit={postSubmit}
           initialValues={initialValues}
           disabledFields={disabledFields ?? []}

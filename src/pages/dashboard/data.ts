@@ -70,6 +70,14 @@ const SUPPORTED_CHAIN_IDS = [
   NETWORKS.gnosis,
   NETWORKS.sepolia,
 ]
+/**
+ * The two loads the app makes: the mainnets ("All chains", what every page
+ * opens on) and the Sepolia testnet, read only when a page asks for it.
+ */
+export const MAINNET_LOAD_CHAINS = SUPPORTED_CHAIN_IDS.filter(
+  (chainId) => chainId !== NETWORKS.sepolia,
+)
+export const TESTNET_LOAD_CHAINS = [NETWORKS.sepolia]
 
 /**
  * Start of the 30-day window every "30 days" figure shares: the chart's
@@ -725,11 +733,13 @@ const challengeTimeOf = (row: {
     ? toNumber(row.challengeTime)
     : toNumber(row.rounds?.[1]?.creationTime)
 
+/** The 30-day window's Stake submissions and challenges, a page of each. */
 const PERMANENT_CURATOR_PAGE_QUERY = gql`
-  query PermanentCuratorPage($first: Int!, $skip: Int!) {
+  query PermanentCuratorPage($since: BigInt!, $first: Int!, $skip: Int!) {
     submissions(
       first: $first
       skip: $skip
+      where: { createdAt_gte: $since }
       orderBy: createdAt
       orderDirection: desc
     ) {
@@ -740,6 +750,7 @@ const PERMANENT_CURATOR_PAGE_QUERY = gql`
     challenges(
       first: $first
       skip: $skip
+      where: { createdAt_gte: $since }
       orderBy: createdAt
       orderDirection: desc
     ) {
@@ -1684,8 +1695,52 @@ const buildSeries = (
   return days
 }
 
-const pageRows = (payload: any, keys: string[]) =>
-  Math.max(0, ...keys.map((key) => (payload?.[key] ?? []).length))
+const ENVIO_CURATOR_KEYS = [
+  'lightRequests',
+  'classicRequests',
+  'lightChallenges',
+  'classicChallenges',
+]
+const PERMANENT_CURATOR_KEYS = ['submissions', 'challenges']
+
+/**
+ * One indexer's 30-day rows, a page at a time until no list fills its page
+ * (most windows fit in the first). Rows are kept once per id, so a row that
+ * shifts across a page boundary between two reads counts once. `failed`: a
+ * page did not load (the rows read so far are kept); `truncated`: the last
+ * page allowed was still full, so the window holds more.
+ */
+const readCuratorPages = async (
+  fetchPage: (
+    page: number,
+  ) => Promise<Record<string, any[] | undefined> | null>,
+  keys: string[],
+): Promise<{
+  payload: Record<string, any[]>
+  failed: boolean
+  truncated: boolean
+}> => {
+  const payload: Record<string, any[]> = Object.fromEntries(
+    keys.map((key) => [key, []]),
+  )
+  const seen = new Set<string>()
+  for (let page = 0; page < LEADERBOARD_MAX_PAGES; page += 1) {
+    const next = await fetchPage(page)
+    if (!next) return { payload, failed: true, truncated: false }
+    for (const key of keys)
+      for (const row of next[key] ?? []) {
+        const id = `${key}:${row?.id}`
+        if (row?.id !== undefined && seen.has(id)) continue
+        seen.add(id)
+        payload[key].push(row)
+      }
+    const full = keys.some(
+      (key) => (next[key]?.length ?? 0) >= LEADERBOARD_PAGE_SIZE,
+    )
+    if (!full) return { payload, failed: false, truncated: false }
+  }
+  return { payload, failed: false, truncated: true }
+}
 
 const fetchCuratorLeaderboard = async (
   since: number,
@@ -1697,69 +1752,67 @@ const fetchCuratorLeaderboard = async (
   seriesByChain: Record<number, DashboardDay[]>
   seriesTruncated: boolean
 }> => {
-  const lastPage = LEADERBOARD_MAX_PAGES - 1
-  const noteFailure = (chainId: number) => {
-    failed.add(chainId)
-    return null
-  }
-  const pages = await Promise.all(
-    chains.flatMap((chainId) =>
-      Array.from({ length: LEADERBOARD_MAX_PAGES }).flatMap((_, page) => [
-        safeRequest<any>(subgraphUrl[chainId], ENVIO_CURATOR_PAGE_QUERY, {
-          chainId,
-          since,
-          limit: LEADERBOARD_PAGE_SIZE,
-          offset: page * LEADERBOARD_PAGE_SIZE,
-        }).then((payload) =>
-          payload
-            ? {
-                users: normalizeEnvioLeaderboardPage(payload, chainId, since),
-                events: envioPageEvents(payload, chainId, since),
-                full:
-                  page === lastPage &&
-                  pageRows(payload, [
-                    'lightRequests',
-                    'classicRequests',
-                    'lightChallenges',
-                    'classicChallenges',
-                  ]) >= LEADERBOARD_PAGE_SIZE,
-              }
-            : noteFailure(chainId),
-        ),
-        safeRequest<any>(
-          subgraphUrlPermanent[chainId],
-          PERMANENT_CURATOR_PAGE_QUERY,
-          {
-            first: LEADERBOARD_PAGE_SIZE,
-            skip: page * LEADERBOARD_PAGE_SIZE,
-          },
-        ).then((payload) =>
-          payload
-            ? {
-                users: normalizePermanentLeaderboardPage(
-                  payload,
+  // Each chain and indexer reads on its own, its pages one after another.
+  // An indexer with no URL is not configured: no rows, and not a failure.
+  const reads = await Promise.all(
+    chains.flatMap((chainId) => {
+      const envioUrl = subgraphUrl[chainId]
+      const stakeUrl = subgraphUrlPermanent[chainId]
+      return [
+        envioUrl
+          ? readCuratorPages(
+              (page) =>
+                safeRequest<any>(envioUrl, ENVIO_CURATOR_PAGE_QUERY, {
                   chainId,
                   since,
-                ),
-                events: permanentPageEvents(payload, since, chainId),
-                full: false,
-              }
-            : noteFailure(chainId),
-        ),
-      ]),
-    ),
+                  limit: LEADERBOARD_PAGE_SIZE,
+                  offset: page * LEADERBOARD_PAGE_SIZE,
+                }),
+              ENVIO_CURATOR_KEYS,
+            ).then((read) => ({
+              ...read,
+              chainId,
+              users: normalizeEnvioLeaderboardPage(
+                read.payload,
+                chainId,
+                since,
+              ),
+              events: envioPageEvents(read.payload, chainId, since),
+            }))
+          : null,
+        stakeUrl
+          ? readCuratorPages(
+              (page) =>
+                safeRequest<any>(stakeUrl, PERMANENT_CURATOR_PAGE_QUERY, {
+                  since: String(since),
+                  first: LEADERBOARD_PAGE_SIZE,
+                  skip: page * LEADERBOARD_PAGE_SIZE,
+                }),
+              PERMANENT_CURATOR_KEYS,
+            ).then((read) => ({
+              ...read,
+              chainId,
+              users: normalizePermanentLeaderboardPage(
+                read.payload,
+                chainId,
+                since,
+              ),
+              events: permanentPageEvents(read.payload, since, chainId),
+            }))
+          : null,
+      ]
+    }),
   )
 
-  const valid = pages.filter(Boolean) as {
-    users: Map<string, DashboardUser>
-    events: ActivityEvent[]
-    full: boolean
-  }[]
-  const events = valid.flatMap((page) => page.events)
+  const valid = reads.filter(
+    (read): read is NonNullable<(typeof reads)[number]> => read !== null,
+  )
+  for (const read of valid) if (read.failed) failed.add(read.chainId)
+  const events = valid.flatMap((read) => read.events)
   return {
     // Every curator, not a top slice: the page's totals (curators,
     // challenges, decided, won) are summed from this list.
-    users: mergeUsers(valid.map((page) => page.users)),
+    users: mergeUsers(valid.map((read) => read.users)),
     series: buildSeries(events, since),
     seriesByChain: Object.fromEntries(
       chains.map((chainId) => [
@@ -1770,7 +1823,7 @@ const fetchCuratorLeaderboard = async (
         ),
       ]),
     ),
-    seriesTruncated: valid.some((page) => page.full),
+    seriesTruncated: valid.some((read) => read.truncated),
   }
 }
 
@@ -1829,22 +1882,35 @@ const buildMetrics = (
   curators: users.length,
 })
 
+/**
+ * One indexer query, null when it fails or takes longer than
+ * DASHBOARD_QUERY_TIMEOUT_MS (the request is then aborted, so a slow indexer
+ * does not keep answering loads nobody waits for). Callers check that the
+ * indexer is configured first: an unset URL is "no rows", not a failure.
+ */
 const safeRequest = async <T>(
   url: string | undefined,
   query: string,
-  variables?: Record<string, unknown>,
+  variables: Record<string, unknown> = {},
 ): Promise<T | null> => {
   if (!url) return null
+  const controller = new AbortController()
+  const timer = window.setTimeout(
+    () => controller.abort(),
+    DASHBOARD_QUERY_TIMEOUT_MS,
+  )
   try {
-    return await Promise.race([
-      request<T>(url, query, variables),
-      new Promise<null>((resolve) => {
-        setTimeout(() => resolve(null), DASHBOARD_QUERY_TIMEOUT_MS)
-      }),
-    ])
+    return await request<T>({
+      url,
+      document: query,
+      variables,
+      signal: controller.signal,
+    })
   } catch (err) {
     console.warn('Dashboard query failed', err)
     return null
+  } finally {
+    window.clearTimeout(timer)
   }
 }
 
@@ -1987,24 +2053,43 @@ const challengeRuling = (
 }
 
 /**
+ * Part of a chain's ledger (one indexer): its rows, `capped` when they are a
+ * lower bound (the page limit, or a later page that failed: the rows read
+ * stay), `failed` when a page did not load. Null when the first page did not
+ * load, so nothing of that part is known.
+ */
+type LedgerPart = {
+  rows: RulingRow[]
+  capped: boolean
+  failed: boolean
+} | null
+
+/**
  * One chain's ledger: every Light, Classic and Stake dispute the court has
- * closed, newest first, read page by page to the end. Null when a page did
- * not load (the figures would be partial).
+ * closed, newest first, read page by page to the end. An indexer that is not
+ * configured has no rows. A page that fails keeps what was read before it,
+ * as a lower bound (`capped`) on a chain marked `failed`; null only when
+ * neither indexer gave a single page.
  */
 const readRulings = async (
   chainId: number,
-): Promise<{ rows: RulingRow[]; capped: boolean } | null> => {
-  const envio = (async () => {
+): Promise<{ rows: RulingRow[]; capped: boolean; failed: boolean } | null> => {
+  const envio = (async (): Promise<LedgerPart> => {
+    const url = subgraphUrl[chainId]
+    if (!url) return { rows: [], capped: false, failed: false }
     const rows = new Map<string, RulingRow>()
     for (let page = 0; page < RULINGS_MAX_PAGES; page += 1) {
       const payload = await safeRequest<{
         light?: LedgerRequestRow[]
         classic?: LedgerRequestRow[]
-      }>(subgraphUrl[chainId], ENVIO_RULINGS_PAGE_QUERY, {
+      }>(url, ENVIO_RULINGS_PAGE_QUERY, {
         chainId,
         offset: page * RULINGS_PAGE_SIZE,
       })
-      if (!payload) return null
+      if (!payload)
+        return page === 0
+          ? null
+          : { rows: [...rows.values()], capped: true, failed: true }
       const light = payload.light ?? []
       const classic = payload.classic ?? []
       // A ruling landing between two pages shifts the rest by one: the
@@ -2017,13 +2102,13 @@ const readRulings = async (
         light.length < RULINGS_PAGE_SIZE &&
         classic.length < RULINGS_PAGE_SIZE
       )
-        return { rows: [...rows.values()], capped: false }
+        return { rows: [...rows.values()], capped: false, failed: false }
     }
-    return { rows: [...rows.values()], capped: true }
+    return { rows: [...rows.values()], capped: true, failed: false }
   })()
-  const stake = (async () => {
+  const stake = (async (): Promise<LedgerPart> => {
     const url = subgraphUrlPermanent[chainId]
-    if (!url) return { rows: [], capped: false }
+    if (!url) return { rows: [], capped: false, failed: false }
     const rows: RulingRow[] = []
     let after = ''
     for (let page = 0; page < RULINGS_MAX_PAGES; page += 1) {
@@ -2032,21 +2117,25 @@ const readRulings = async (
         PERMANENT_RULINGS_PAGE_QUERY,
         { after },
       )
-      if (!payload) return null
+      if (!payload)
+        return page === 0 ? null : { rows, capped: true, failed: true }
       const challenges = payload.challenges ?? []
       rows.push(...challenges.map((row) => challengeRuling(row, chainId)))
-      if (challenges.length < RULINGS_PAGE_SIZE) return { rows, capped: false }
+      if (challenges.length < RULINGS_PAGE_SIZE)
+        return { rows, capped: false, failed: false }
       after = challenges[challenges.length - 1].id
     }
-    return { rows, capped: true }
+    return { rows, capped: true, failed: false }
   })()
-  const [requests, challenges] = await Promise.all([envio, stake])
-  if (!requests || !challenges) return null
+  const parts = await Promise.all([envio, stake])
+  if (parts.every((part) => part === null)) return null
   return {
-    rows: [...requests.rows, ...challenges.rows].sort(
-      (a, b) => b.resolvedAt - a.resolvedAt || a.id.localeCompare(b.id),
-    ),
-    capped: requests.capped || challenges.capped,
+    rows: parts
+      .flatMap((part) => part?.rows ?? [])
+      .sort((a, b) => b.resolvedAt - a.resolvedAt || a.id.localeCompare(b.id)),
+    // A part that did not load leaves the chain's figures as lower bounds.
+    capped: parts.some((part) => !part || part.capped),
+    failed: parts.some((part) => !part || part.failed),
   }
 }
 
@@ -2110,7 +2199,42 @@ export const loadRulingCards = async (
 
 /** The app's load: every chain, list metadata, creation-time refresh. */
 export const fetchDashboardData = (): Promise<DashboardData> =>
-  loadDashboardData({ refreshCreationTimes: true, challengeWindows: true })
+  loadDashboardData({
+    refreshCreationTimes: true,
+    challengeWindows: true,
+    chains: MAINNET_LOAD_CHAINS,
+  })
+
+/** The same load for the Sepolia testnet, read only when a page shows it. */
+export const fetchTestnetDashboardData = (): Promise<DashboardData> =>
+  loadDashboardData({
+    refreshCreationTimes: true,
+    challengeWindows: true,
+    chains: TESTNET_LOAD_CHAINS,
+  })
+
+/**
+ * The mainnet load with the testnet's lists and latest activity added, for
+ * the pages that read lists (Browse, the profile's registry index): the
+ * registries, activities and failed chains of both. Every other field is
+ * the mainnet load's, which those pages do not read.
+ */
+export const withTestnetLists = (
+  mainnets: DashboardData,
+  testnet: DashboardData,
+): DashboardData => ({
+  ...mainnets,
+  generatedAt: Math.min(mainnets.generatedAt, testnet.generatedAt),
+  failedChains: [...mainnets.failedChains, ...testnet.failedChains],
+  listFailedChains: [
+    ...(mainnets.listFailedChains ?? []),
+    ...(testnet.listFailedChains ?? []),
+  ],
+  registries: [...mainnets.registries, ...testnet.registries],
+  activities: [...mainnets.activities, ...testnet.activities].sort(
+    (a, b) => b.timestamp - a.timestamp,
+  ),
+})
 
 /** A promise that settles to null past its budget. */
 const withBudget = <T>(promise: Promise<T>, ms: number): Promise<T | null> => {
@@ -2236,27 +2360,28 @@ export const loadDashboardData = async ({
   if (refreshCreationTimes)
     void fetchRegistryCreationTimes(chains).catch(() => undefined)
 
-  // The Stake lists (another indexer) load alongside the main query.
+  // The Stake lists (another indexer) load alongside the main query. A
+  // chain with no Stake indexer configured has no Stake lists: an empty
+  // answer, not a failure.
   const permanentRead = Promise.all(
-    chains.map((chainId) =>
-      safeRequest<any>(
-        subgraphUrlPermanent[chainId],
-        PERMANENT_DASHBOARD_QUERY,
-      ),
-    ),
+    chains.map((chainId) => {
+      const url = subgraphUrlPermanent[chainId]
+      return url
+        ? safeRequest<any>(url, PERMANENT_DASHBOARD_QUERY)
+        : Promise.resolve({})
+    }),
   )
 
   const envioResults = await Promise.all(
     chains.map(async (chainId) => {
-      const payload = await safeRequest<any>(
-        subgraphUrl[chainId],
-        ENVIO_DASHBOARD_QUERY,
-        {
-          chainId,
-          since,
-          listsOfLists: getListOfListsAddresses(chainId),
-        },
-      )
+      const url = subgraphUrl[chainId]
+      // Not configured: no Light or Classic lists here, not a failure.
+      if (!url) return null
+      const payload = await safeRequest<any>(url, ENVIO_DASHBOARD_QUERY, {
+        chainId,
+        since,
+        listsOfLists: getListOfListsAddresses(chainId),
+      })
       if (!payload) listsMissing(chainId)
       return payload
         ? normalizeEnvio(
@@ -2276,7 +2401,7 @@ export const loadDashboardData = async ({
   const rulingsRead = Promise.all(
     chains.map((chainId) =>
       readRulings(chainId).then((ledger) => {
-        if (!ledger) failed.add(chainId)
+        if (!ledger || ledger.failed) failed.add(chainId)
         return ledger
       }),
     ),

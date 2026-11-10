@@ -68,8 +68,28 @@ export const jurorsAndCourtIDFromExtraData = (
   return { courtID, numberOfJurors }
 }
 
-export const getArticleFor = (str: string): string =>
-  str && isVowel(str[0]) ? 'an' : 'a'
+// Letters whose spoken name starts with a vowel sound ("an NFT", "an SDK").
+const VOWEL_SOUND_LETTERS = /^[AEFHILMNORSX]/
+// Vowel letters read with a consonant sound ("a user", "a euro", "a one-off").
+const CONSONANT_SOUND_START =
+  /^(u[bcfgklmnprstvz][aeiou]|uni|eu|ewe|one\b|once\b|uk\b)/i
+// A silent h ("an hour", "an honest mistake").
+const SILENT_H_START = /^(hour|honest|honou?r|heir)/i
+
+/**
+ * "a" or "an" for the word that follows, by how it sounds rather than how it
+ * is spelled: a user, a euro, an hour, an NFT, a URL.
+ */
+export const getArticleFor = (str: string): string => {
+  const word = (str || '').trim().split(/[\s-]/)[0] ?? ''
+  if (!word) return 'a'
+  if (/^[A-Z]{2,}\d*$/.test(word))
+    return VOWEL_SOUND_LETTERS.test(word) ? 'an' : 'a'
+  if (/^(8|11|18)/.test(word)) return 'an'
+  if (SILENT_H_START.test(word)) return 'an'
+  if (CONSONANT_SOUND_START.test(word)) return 'a'
+  return isVowel(word[0]) ? 'an' : 'a'
+}
 
 export const SAVED_NETWORK_KEY = 'SAVED_NETWORK_KEY'
 

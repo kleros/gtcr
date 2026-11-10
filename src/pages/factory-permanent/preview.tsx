@@ -6,7 +6,7 @@ import useArbitrationCost from 'hooks/arbitration-cost'
 import useTokenSymbol from 'hooks/token-symbol'
 import useNow from 'hooks/use-now'
 import { parseIpfs } from 'utils/ipfs-parse'
-import { isVowel } from 'utils/string'
+import { getArticleFor } from 'utils/string'
 import { formatAbsolute, formatDuration, formatDurationLong } from 'utils/time'
 import { CurateIcon } from 'components/curate/icons'
 import { AnimatedNumber } from 'components/curate/motion/animated-number'
@@ -734,7 +734,7 @@ export const StakePreview = ({
   const logo = tcrState.tcrLogo ? parseIpfs(tcrState.tcrLogo) : ''
   const { itemName } = tcrState
   const fieldCount = tcrState.columns.length
-  const article = itemName && isVowel(itemName[0]) ? 'an' : 'a'
+  const article = getArticleFor(itemName)
 
   const native = (label: string) => (
     <Native>

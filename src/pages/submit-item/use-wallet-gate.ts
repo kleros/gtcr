@@ -31,6 +31,18 @@ export interface WalletGate {
   fix?: GateFix
 }
 
+/**
+ * The chain a submission must go to: the URL's chain when it is a supported
+ * one, else the wallet's (as before). It is passed to simulateContract and
+ * to wagmi's writeContract, which refuses to send while the wallet is on
+ * another chain, whatever the buttons say.
+ */
+export const useTxChainId = (): number => {
+  const urlChainId = useUrlChainId()
+  const walletChainId = useChainId()
+  return urlChainId && getChainById(urlChainId) ? urlChainId : walletChainId
+}
+
 export const useWalletGate = (verb = 'submit'): WalletGate => {
   const urlChainId = useUrlChainId()
   const targetChainId =
@@ -48,9 +60,9 @@ export const useWalletGate = (verb = 'submit'): WalletGate => {
   }, [open])
 
   const signIn = useCallback(() => {
-    infoToast('Signing in...')
+    infoToast('Signing in…')
     authoriseUser()
-      .then(() => successToast('Signed in successfully.'))
+      .then(() => successToast('Signed in.'))
       .catch((err) => {
         console.error(err)
         errorToast(`Sign-in failed: ${err?.message ?? 'unknown error'}`)

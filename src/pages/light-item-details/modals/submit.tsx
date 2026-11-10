@@ -2,9 +2,8 @@ import React, { useCallback, useContext, useEffect, useState } from 'react'
 import styled from 'styled-components'
 import type { BigNumber } from 'ethers'
 import _gtcr from 'assets/abis/LightGeneralizedTCR.json'
-import { useAccount, usePublicClient, useWalletClient, useChainId } from 'wagmi'
-import { simulateContract } from '@wagmi/core'
-import { getAddress, keccak256, encodePacked } from 'viem'
+import { useAccount, usePublicClient } from 'wagmi'
+import { simulateContract, writeContract } from '@wagmi/core'
 import { withFormik, type FormikProps } from 'formik'
 import { ItemTypes, typeDefaultValues } from '@kleros/gtcr-encoder'
 import { useAtlasProvider } from '@kleros/kleros-app'
@@ -39,6 +38,9 @@ import {
   type ReceiptLine,
 } from 'components/curate/what-happens-next'
 import { Dialog } from 'components/curate/item-light-dialog'
+import { FieldError } from 'components/curate/item-light-notice'
+import { useTxChainId } from 'pages/submit-item/use-wallet-gate'
+import { addressFormatErrors } from 'pages/submit-item/form'
 import { gatedConfirm, useActionGate } from 'components/curate/item-light-gate'
 import {
   formatAmount,
@@ -373,6 +375,12 @@ interface SubmissionFormOuterProps {
   columns: Column[]
   initialValues?: unknown[]
   activeStage?: SubmissionStage
+  /**
+   * Only the review step's confirm may submit: Enter in a field submits a
+   * one-field form implicitly, and that must not skip the review, the
+   * required fields or the wallet checks.
+   */
+  canSubmit?: boolean
   disabledFields: boolean[]
   fileURI?: string
   postSubmit: (
@@ -426,7 +434,17 @@ const _SubmissionForm: React.FC<
   const activeStage = p.activeStage || 'field'
 
   return (
-    <form onSubmit={p.handleSubmit} id={SUBMISSION_FORM_ID} noValidate>
+    <form
+      onSubmit={(event) => {
+        if (!p.canSubmit) {
+          event.preventDefault()
+          return
+        }
+        p.handleSubmit(event)
+      }}
+      id={SUBMISSION_FORM_ID}
+      noValidate
+    >
       {activeStage === 'field' && (
         <Stack $gap={16}>
           {p.columns.map((column, index) => (
@@ -490,7 +508,17 @@ const _SubmissionForm: React.FC<
               return (
                 <React.Fragment key={column.label}>
                   <dt>{column.label}</dt>
-                  <dd>{displayValue ?? <Small $faint>Not provided</Small>}</dd>
+                  <dd>
+                    {displayValue ?? <Small $faint>Not provided</Small>}
+                    {/* The fields are not on screen here, so a value that
+                        fails validation says so next to its review line. */}
+                    {p.errors[column.label] && (
+                      <FieldError role="alert">
+                        {String(p.errors[column.label])} Go back to the fields
+                        to fix it.
+                      </FieldError>
+                    )}
+                  </dd>
                 </React.Fragment>
               )
             })}
@@ -579,7 +607,10 @@ const SubmissionForm = withFormik<
         {},
       )
     // Formik 2 applies returned errors; a thrown object is treated as a crash.
-    return errors as Record<string, string>
+    return {
+      ...addressFormatErrors(columns, values),
+      ...(errors as Record<string, string>),
+    }
   },
 })(_SubmissionForm)
 
@@ -614,9 +645,8 @@ const SubmitModal: React.FC<{
   } = props
   const nativeCurrency = useNativeCurrency()
   const { address: account } = useAccount()
-  const chainId = useChainId()
+  const chainId = useTxChainId()
   const publicClient = usePublicClient()
-  const { data: walletClient } = useWalletClient()
   const { uploadFile } = useAtlasProvider()
   const listContext = useContext(LightTCRViewContext)
   const {
@@ -654,6 +684,10 @@ const SubmitModal: React.FC<{
     pending:
       !metaEvidence || !submissionDeposit ? 'Loading the list' : undefined,
   })
+  // Only the review step's confirm sends, with every field filled and the
+  // wallet ready (connected, on the list's chain, signed in, funded).
+  const submitAllowed =
+    activeStage === 'preview' && fieldsComplete && gate.ready && !isSubmitting
 
   const goBack = useCallback(() => {
     if (activeStage === 'preview') {
@@ -683,7 +717,7 @@ const SubmitModal: React.FC<{
         shouldValidate?: boolean,
       ) => void,
     ) => {
-      if (!submissionDeposit) return
+      if (!submitAllowed || !submissionDeposit) return
       setIsSubmitting(true)
       try {
         const resolvedValues = await resolveStashedFiles({
@@ -702,6 +736,8 @@ const SubmitModal: React.FC<{
         if (!ipfsEvidencePath)
           throw new Error('Failed to upload item metadata to IPFS.')
 
+        // Simulated on the list's chain; writeContract refuses to send while
+        // the wallet is on another one.
         const { request } = await simulateContract(wagmiConfig, {
           address: tcrAddress as `0x${string}`,
           abi: _gtcr,
@@ -709,10 +745,11 @@ const SubmitModal: React.FC<{
           args: [ipfsEvidencePath],
           value: BigInt(submissionDeposit.toString()),
           account,
+          chainId,
         })
 
         const result = await wrapWithToast(
-          () => walletClient!.writeContract(request),
+          () => writeContract(wagmiConfig, request),
           publicClient!,
         )
 
@@ -720,26 +757,6 @@ const SubmitModal: React.FC<{
           onCancel()
           resetForm({})
           // Subscribe for notifications
-          if (process.env.REACT_APP_NOTIFICATIONS_API_URL && !!chainId) {
-            const itemID = keccak256(
-              encodePacked(['string'], [ipfsEvidencePath]),
-            )
-            fetch(
-              `${process.env.REACT_APP_NOTIFICATIONS_API_URL}/${chainId}/api/subscribe`,
-              {
-                method: 'post',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  subscriberAddr: getAddress(account!),
-                  tcrAddr: getAddress(tcrAddress as `0x${string}`),
-                  itemID,
-                  networkID: chainId,
-                }),
-              },
-            ).catch((err) => {
-              console.error('Failed to subscribe for notifications.', err)
-            })
-          }
         }
       } catch (err) {
         console.error('Error submitting item:', err)
@@ -753,9 +770,9 @@ const SubmitModal: React.FC<{
       onCancel,
       publicClient,
       submissionDeposit,
+      submitAllowed,
       tcrAddress,
       uploadFile,
-      walletClient,
     ],
   )
 
@@ -873,6 +890,7 @@ const SubmitModal: React.FC<{
       <SubmissionForm
         columns={columns ?? []}
         activeStage={activeStage}
+        canSubmit={submitAllowed}
         postSubmit={postSubmit}
         initialValues={initialValues}
         disabledFields={disabledFields ?? []}

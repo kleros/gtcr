@@ -10,7 +10,10 @@ export const formatAmount = (value: BigNumberish, decimals = 18): string => {
     typeof value === 'number'
       ? value.toLocaleString('fullwide', { useGrouping: false })
       : value
-  return ethers.utils.formatUnits(integer, decimals).replace(/\.?0+$/, '')
+  const text = ethers.utils.formatUnits(integer, decimals)
+  // Only a fraction's trailing zeros go: with 0 decimals there is no point,
+  // and "100" must not become "1" (nor "0" become "").
+  return text.includes('.') ? text.replace(/\.?0+$/, '') : text
 }
 
 /** An exact on-chain amount with the unit it is printed in. */

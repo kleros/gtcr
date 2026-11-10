@@ -1,9 +1,9 @@
 import React, { useState, useContext, useMemo } from 'react'
 import styled from 'styled-components'
 import { ethers, BigNumber } from 'ethers'
-import { useAccount, usePublicClient, useWalletClient, useChainId } from 'wagmi'
+import { useAccount, usePublicClient, useWalletClient } from 'wagmi'
 import { simulateContract } from '@wagmi/core'
-import { getAddress, type Address } from 'viem'
+import { type Address } from 'viem'
 import _gtcr from 'assets/abis/LightGeneralizedTCR.json'
 import {
   STATUS_CODE,
@@ -106,7 +106,6 @@ const CrowdfundModal = ({
   visible,
 }: CrowdfundModalProps) => {
   const { address: account } = useAccount()
-  const chainId = useChainId()
   const publicClient = usePublicClient()
   const { data: walletClient } = useWalletClient()
   const {
@@ -217,26 +216,7 @@ const CrowdfundModal = ({
         publicClient,
       )
 
-      if (result.status) {
-        onCancel()
-
-        if (process.env.REACT_APP_NOTIFICATIONS_API_URL && !!chainId)
-          fetch(
-            `${process.env.REACT_APP_NOTIFICATIONS_API_URL}/${chainId}/api/subscribe`,
-            {
-              method: 'post',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                subscriberAddr: getAddress(account),
-                tcrAddr: getAddress(tcrAddress),
-                itemID: item.itemID,
-                networkID: chainId,
-              }),
-            },
-          ).catch((err) => {
-            console.error('Failed to subscribe for notifications.', err)
-          })
-      }
+      if (result.status) onCancel()
     } catch (err) {
       console.error('Error funding appeal:', err)
       errorToast(parseWagmiError(err))
@@ -435,6 +415,8 @@ const CrowdfundModal = ({
               <Row $gap={8}>
                 <TextInput
                   type="number"
+                  // A wheel over the focused field would change the amount.
+                  onWheel={(event) => event.currentTarget.blur()}
                   inputMode="decimal"
                   min={0}
                   max={maxAmount}

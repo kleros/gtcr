@@ -238,6 +238,12 @@ const TCRParams = ({
   }, [values, setTcrState])
 
   const depositVal = clampDeposit(Number(values.submissionBaseDeposit) || 0)
+  // The typed text follows the deposit when it changes elsewhere (the slider
+  // or the advanced fields), but never while the person is typing in it.
+  const [typingDeposit, setTypingDeposit] = useState(false)
+  useEffect(() => {
+    if (!typingDeposit) setDepositText(String(depositVal))
+  }, [depositVal, typingDeposit])
 
   const onChangeDepositVal = useCallback(
     (value: number) => {
@@ -355,7 +361,11 @@ const TCRParams = ({
                       if (event.target.value.trim() !== '')
                         onChangeDepositVal(parsed)
                     }}
-                    onBlur={() => setDepositText(String(depositVal))}
+                    onFocus={() => setTypingDeposit(true)}
+                    onBlur={() => {
+                      setTypingDeposit(false)
+                      setDepositText(String(depositVal))
+                    }}
                   />
                   <Small $muted style={{ minWidth: 32 }}>
                     {nativeCurrency}

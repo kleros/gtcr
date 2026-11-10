@@ -6,6 +6,7 @@ import { formatAbsolute, formatAgo } from 'utils/time'
 import { CurateIcon, type CurateIconName } from 'components/curate/icons'
 import { Small } from 'components/curate/primitives'
 import { VerifiedBadge } from 'components/curate/verified-badge'
+import { Avatar as ListLogo } from 'pages/browse/avatar'
 
 /*
  * Small pieces the curator profile shares between its panels: the registry
@@ -19,35 +20,32 @@ export const mediaUrl = (uri?: string | null): string | null => {
   return parseIpfs(uri)
 }
 
-const LogoBox = styled.span<{ $image?: string | null; $size: number }>`
+/* Holds the logo where a layout places it (grid areas, data hooks). */
+const LogoSlot = styled.span`
   display: inline-flex;
-  align-items: center;
-  justify-content: center;
   flex: 0 0 auto;
-  width: ${({ $size }) => $size}px;
-  height: ${({ $size }) => $size}px;
-  border: 1px solid var(--glass-border);
-  border-radius: ${({ $size }) => ($size >= 36 ? 12 : 8)}px;
-  background: ${({ $image }) =>
-    $image ? `url("${$image}") center / cover` : 'var(--color-surface)'};
-  color: var(--color-faint);
 `
 
 export const RegistryLogo = ({
   uri,
+  seed,
   size = 40,
   ...rest
 }: {
   uri?: string | null
+  /** The list's address: picks the mark shown when there is no logo. */
+  seed?: string
   size?: number
-} & React.HTMLAttributes<HTMLSpanElement>) => {
-  const image = mediaUrl(uri)
-  return (
-    <LogoBox {...rest} $image={image} $size={size} aria-hidden>
-      {!image && <CurateIcon name="registry" size={Math.round(size * 0.42)} />}
-    </LogoBox>
-  )
-}
+} & React.HTMLAttributes<HTMLSpanElement>) => (
+  <LogoSlot {...rest} aria-hidden>
+    <ListLogo
+      uri={uri}
+      seed={seed ?? uri ?? 'registry'}
+      size={size}
+      radius={size >= 36 ? 12 : 8}
+    />
+  </LogoSlot>
+)
 
 /** "3h ago", with the absolute UTC time on hover. */
 export const When = ({

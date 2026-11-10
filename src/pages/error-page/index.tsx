@@ -313,6 +313,13 @@ interface ErrorPageProps {
   onHome?: () => void
   /** A failed read that may answer now: offers "Try again" beside home. */
   onRetry?: () => void
+  /**
+   * The dot beside a word code: amber for a failure (the default), blue for
+   * a state that resolves by itself (an entry still being indexed).
+   */
+  tone?: 'contested' | 'window'
+  /** Where the main way out leads, if not the dashboard. */
+  home?: { to: string; label: string }
 }
 
 /** "noindex" while a 4xx page is shown; the previous value comes back after. */
@@ -390,6 +397,8 @@ const ErrorPage = ({
   tip,
   onHome,
   onRetry,
+  tone = 'contested',
+  home,
 }: ErrorPageProps) => {
   const [stageRef, stageStyle] = useFitViewport()
   // Set only when this page is an error boundary's fallback.
@@ -449,7 +458,7 @@ const ErrorPage = ({
           </CodeStage>
         ) : (
           <Eyebrow style={next()}>
-            <StatusDot $tone="contested" aria-hidden />
+            <StatusDot $tone={tone} aria-hidden />
             <Label $tone="text">{shownCode}</Label>
           </Eyebrow>
         )}
@@ -476,11 +485,11 @@ const ErrorPage = ({
             </Button>
           )}
           <ButtonLink
-            to="/"
+            to={home?.to ?? '/'}
             $variant={onRetry ? 'secondary' : 'primary'}
-            onClick={handleHome}
+            onClick={home ? undefined : handleHome}
           >
-            Go to the dashboard
+            {home?.label ?? 'Go to the dashboard'}
             <CurateIcon name="chevron-down" size={15} />
           </ButtonLink>
         </Action>

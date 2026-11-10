@@ -34,6 +34,7 @@ const PERMANENT_ITEMS_QUERY = gql`
       arbitrationDeposit
       submissions(first: 1, orderBy: createdAt, orderDirection: desc) {
         submitter
+        finishedTx
         withdrawingTx
       }
       challenges(first: 1, orderBy: createdAt, orderDirection: desc) {

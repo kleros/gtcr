@@ -24,6 +24,7 @@ import {
   windowProgress,
 } from 'utils/time'
 import { formatAgoLong, type DashboardCard } from './view'
+import { Avatar as ListLogo } from 'pages/browse/avatar'
 
 /*
  * Happening now: two boxes in the page's scope.
@@ -244,26 +245,31 @@ const LiveRow = styled(Link)`
   }
 `
 
-const AvatarShape = styled.span<{ $image?: string | null; $small?: boolean }>`
+const AvatarShape = styled.span<{ $small?: boolean }>`
   display: inline-flex;
-  align-items: center;
-  justify-content: center;
   grid-row: ${({ $small }) => ($small ? 'auto' : 'span 3')};
   align-self: ${({ $small }) => ($small ? 'center' : 'start')};
-  width: ${({ $small }) => ($small ? 28 : 36)}px;
-  height: ${({ $small }) => ($small ? 28 : 36)}px;
   border-radius: 999px;
-  border: 1px solid var(--glass-border);
-  background: ${({ $image }) =>
-    $image ? `url(${$image}) center / cover` : 'var(--color-surface)'};
   box-shadow: 0 0 0 3px var(--color-surface);
-  color: var(--color-faint);
 `
 
 /** The list's logo, or the registry glyph when it has none. */
-const Avatar = ({ logo, small }: { logo?: string | null; small?: boolean }) => (
-  <AvatarShape $image={logo} $small={small} aria-hidden>
-    {!logo && <CurateIcon name="registry" size={small ? 13 : 16} />}
+const Avatar = ({
+  logo,
+  seed,
+  small,
+}: {
+  logo?: string | null
+  seed: string
+  small?: boolean
+}) => (
+  <AvatarShape $small={small} aria-hidden>
+    <ListLogo
+      uri={logo}
+      seed={seed}
+      size={small ? 28 : 36}
+      radius={small ? 14 : 18}
+    />
   </AvatarShape>
 )
 
@@ -332,9 +338,10 @@ const IdValue = styled.span`
       white-space: nowrap;
     }
 
+    /* Muted, not faint: at 12px faint falls under 4.5:1 on the cards. */
     > [data-network] {
       display: inline-block;
-      color: var(--color-faint);
+      color: var(--color-muted);
       font-family: var(--font-sans);
     }
   }
@@ -639,19 +646,6 @@ const ListLink = styled(Link)`
   }
 `
 
-const ListAvatar = styled.span<{ $image?: string | null }>`
-  display: inline-flex;
-  flex: 0 0 auto;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-  border-radius: 999px;
-  background: ${({ $image }) =>
-    $image ? `url(${$image}) center / cover` : 'var(--color-raised)'};
-  color: var(--color-faint);
-`
-
 const Footer = styled.div`
   display: flex;
   flex-wrap: wrap;
@@ -755,7 +749,7 @@ const OpenRow = ({
   const removal = card.request === 'removal'
   return (
     <Row to={card.href} title={card.actor ? `by ${card.actor}` : undefined}>
-      <Avatar logo={card.logo} />
+      <Avatar logo={card.logo} seed={card.registryAddress} />
       <RowTop>
         <Registry card={card} />
         <ChainChip chainId={card.chainId} size="sm" />
@@ -847,6 +841,7 @@ export const HappeningNow = ({
   now,
   checking,
   stakeHref,
+  unloaded,
 }: {
   open: DashboardCard[]
   /** The lists holding the open requests, most first. */
@@ -859,6 +854,11 @@ export const HappeningNow = ({
   checking: boolean
   /** Browse's Stake lists in scope, when there are any. */
   stakeHref?: string
+  /**
+   * Chains in scope whose indexer did not answer ("Gnosis and Ethereum"): an
+   * empty panel says their data did not load rather than that nothing is on.
+   */
+  unloaded?: string
 }) => {
   const openTitleId = useId()
   const disputesTitleId = useId()
@@ -949,9 +949,11 @@ export const HappeningNow = ({
         </PanelHead>
         {openShown.length === 0 && (
           <Empty>
-            {known
-              ? 'No request in its challenge window'
-              : 'No request waiting for a challenge'}
+            {unloaded
+              ? `${unloaded} requests did not load`
+              : known
+                ? 'No request in its challenge window'
+                : 'No request waiting for a challenge'}
           </Empty>
         )}
         {openShown.map((card) => (
@@ -978,9 +980,12 @@ export const HappeningNow = ({
               {openLists.map((list) => (
                 <li key={list.key} style={{ minWidth: 0, maxWidth: '100%' }}>
                   <ListLink to={list.href} title={list.title}>
-                    <ListAvatar $image={list.logo} aria-hidden>
-                      {!list.logo && <CurateIcon name="registry" size={12} />}
-                    </ListAvatar>
+                    <ListLogo
+                      uri={list.logo}
+                      seed={list.key}
+                      size={24}
+                      radius={12}
+                    />
                     <span>{list.title}</span>
                     <b>{formatInt(list.count)}</b>
                   </ListLink>
@@ -1054,7 +1059,9 @@ export const HappeningNow = ({
         {live.length === 0 ? (
           <NoLive>
             <StatusDot $tone="neutral" aria-hidden />
-            No live disputes
+            {unloaded
+              ? `${unloaded} disputes did not load`
+              : 'No live disputes'}
           </NoLive>
         ) : (
           liveShown.map((card) => (
@@ -1063,7 +1070,7 @@ export const HappeningNow = ({
               to={card.href}
               title={card.actor ? `by ${card.actor}` : undefined}
             >
-              <Avatar logo={card.logo} />
+              <Avatar logo={card.logo} seed={card.registryAddress} />
               <RowTop>
                 <Registry card={card} />
                 <ChainChip chainId={card.chainId} size="sm" />
@@ -1105,7 +1112,7 @@ export const HappeningNow = ({
           <RulingList ref={rulingList}>
             {rulings.cards.map((card) => (
               <DecidedRow key={card.id} to={card.href}>
-                <Avatar logo={card.logo} small />
+                <Avatar logo={card.logo} seed={card.registryAddress} small />
                 <RulingName>
                   <Registry card={card} quiet />
                   {rulings.pending.has(card.id) ? (

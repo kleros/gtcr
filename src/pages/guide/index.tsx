@@ -181,12 +181,12 @@ const LifecyclePanel = styled(Surface)`
   gap: 24px;
   margin-top: 56px;
   padding: 26px 28px 24px;
-  scroll-margin-top: calc(var(--app-bar-height) + 32px);
+  scroll-margin-top: 24px;
   ${reveal}
 
   @media (max-width: 1023px) {
     margin-top: 24px;
-    scroll-margin-top: calc(var(--app-bar-height) + 72px);
+    scroll-margin-top: 64px;
   }
 
   @media (max-width: 720px) {

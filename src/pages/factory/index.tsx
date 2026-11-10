@@ -62,6 +62,7 @@ import {
   relSchema,
   tcrSchemaFor,
 } from './schemas'
+import { LIGHT_WIZARD_DEFAULTS } from './defaults'
 
 /*
  * /factory/:chainId, the Light Curate list wizard: the page's
@@ -274,13 +275,13 @@ const useCachedFactory = (
   const initialWizardState = {
     tcrTitle: '',
     tcrDescription: '',
-    submissionBaseDeposit: 0.05,
-    removalBaseDeposit: 0.05,
+    submissionBaseDeposit: LIGHT_WIZARD_DEFAULTS.submissionBaseDeposit,
+    removalBaseDeposit: LIGHT_WIZARD_DEFAULTS.removalBaseDeposit,
     submissionChallengeBaseDeposit: 0,
     removalChallengeBaseDeposit: 0.05,
     arbitratorAddress: defaultArbitrator || '',
     governorAddress: account || defaultGovernor || '',
-    challengePeriodDuration: 84,
+    challengePeriodDuration: LIGHT_WIZARD_DEFAULTS.challengePeriodDuration,
     itemName: 'item',
     itemNamePlural: 'items',
     requireRemovalEvidence: true,
@@ -354,6 +355,19 @@ const useCachedFactory = (
       transactions: resolvedState.transactions,
     }
 
+  // The switch, the review and the deployment read one flag, so a draft
+  // always carries it. Without it, a draft is either fresh (badges off) or
+  // from the previous wizard, which deleted the flag once its badges step was
+  // completed: that step required the badges policy, so a draft that holds
+  // one had badges on.
+  resolvedState = {
+    ...resolvedState,
+    relTcrDisabled:
+      typeof resolvedState.relTcrDisabled === 'boolean'
+        ? resolvedState.relTcrDisabled
+        : !resolvedState.relTcrPrimaryDocument,
+  }
+
   const [tcrState, setTcrState] = useState<TcrState>(resolvedState)
   const [debouncedTcrState] = useDebounce(tcrState, 1000)
   const [prevNetworkId, setPrevNetworkId] = useState(networkId)
@@ -378,6 +392,29 @@ const useCachedFactory = (
       return
     window.localStorage.setItem(key, JSON.stringify({ ...debouncedTcrState }))
   }, [debouncedTcrState, key, networkId])
+
+  // The governor defaults to the wallet. A draft started before connecting
+  // took the chain default instead (an EOA on Gnosis and Sepolia), and the
+  // field sits under Advanced: once a wallet connects it takes over any
+  // governor still on that default.
+  useEffect(() => {
+    if (!account || !defaultGovernor) return
+    const onDefault = (value?: string) =>
+      !value || value.toLowerCase() === defaultGovernor.toLowerCase()
+    setTcrState((prev) =>
+      onDefault(prev.governorAddress) || onDefault(prev.relGovernorAddress)
+        ? {
+            ...prev,
+            governorAddress: onDefault(prev.governorAddress)
+              ? account
+              : prev.governorAddress,
+            relGovernorAddress: onDefault(prev.relGovernorAddress)
+              ? account
+              : prev.relGovernorAddress,
+          }
+        : prev,
+    )
+  }, [account, defaultGovernor])
 
   if (!networkId || !tcrState.arbitratorAddress) return null
 

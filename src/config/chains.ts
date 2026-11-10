@@ -8,7 +8,9 @@ import {
 // The chain's default public node (eth.merkle.io) refuses browser requests:
 // it answers the CORS preflight with 405, so the Ethereum fallback behind
 // Alchemy failed in every browser. dRPC's public node allows browser
-// requests and archive reads (eth_getLogs is capped at 10,000 blocks).
+// requests and plain reads, but its free plan refuses eth_getLogs beyond a
+// few hundred blocks (the error wrongly says "over 10000"), so log scans on
+// Ethereum need REACT_APP_ALCHEMY_API_KEY.
 const ETHEREUM_PUBLIC_RPC = 'https://eth.drpc.org'
 
 export const mainnet = {

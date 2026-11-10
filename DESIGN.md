@@ -223,8 +223,10 @@ open, amber contested, red off the list, grey neutral; always a haloed dot plus 
 
 ## Controls: "Lit edge" (round 2)
 
-Light lives on the edges, never in a flat fill. Three directions were compared side by side in
-[`docs/design/controls/`](docs/design/controls/index.html); this is the one built. The helpers live in
+Light lives on the edges, never in a flat fill. Three directions were compared side by side (the
+explorations, mock-ups and taste interview stay in the
+[CurateVision repo](https://github.com/fortuvp/curatevision/tree/master/docs/design)); this is the
+one built. The helpers live in
 `src/components/ui/kit-styles.ts` (`ctaButton`, `ctaButtonLit`, `quietButton`, `recessTrack`,
 `litThumb`, `glassPopover`, `litEdgeBackground`) and every control composes them.
 

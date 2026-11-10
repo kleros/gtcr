@@ -11,7 +11,6 @@ Kleros Curate is the verification layer for policy-driven token-curated registri
 - Registry pages: https://curate.kleros.io/tcr/{chainId}/{registryAddress}
 - Item detail pages: https://curate.kleros.io/tcr/{chainId}/{registryAddress}/{itemID}
 - Factory: https://curate.kleros.io/factory/{chainId}
-- Classic factory: https://curate.kleros.io/factory-classic/{chainId}
 - Permanent factory: https://curate.kleros.io/factory-permanent/{chainId}
 
 ## Agent Skill
@@ -24,7 +23,8 @@ Agents working with Curate should load the kleros-curate skill before submitting
 
 ## Supported Registry Flavors
 
-- Light Curate: LightGeneralizedTCR, optimistic challenge window, native deposits.
+- Light Curate: LightGeneralizedTCR, optimistic challenge window, native deposits. New lists are created with the Light factory.
+- Classic Curate: GeneralizedTCR, the older flavor. Existing Classic lists keep working (submit, challenge, remove, appeal); new Classic lists can no longer be created in the app.
 - Stake Curate: PermanentGTCR, ERC20 stake model, Goldsky-backed indexed data.
 - Scout: Gnosis Light Curate overlay for token lists, address tags, contract domain names, and CDN mappings.
 
@@ -39,7 +39,7 @@ Agents working with Curate should load the kleros-curate skill before submitting
 
 ## Kleros Lists Of Lists
 
-A registry is Kleros Verified when it is one of these lists of lists or a Registered entry of any of them. Light and Classic count the same. New lists are submitted to the Light one, with Light Curate `addItem(string)` (the skill's light-curate reference); the skill's list-of-lists notes predate it and describe the Classic ones, which take `GeneralizedTCR.addItem(bytes)`.
+A registry is Kleros Verified when it is one of these lists of lists or a Registered entry of any of them. Light and Classic count the same. New lists are submitted to the Light one with `LightGeneralizedTCR.addItem(string)` (the skill's references/verify-your-list.md); the older Classic ones take `GeneralizedTCR.addItem(bytes)`. Use the addresses listed here: the skill reference still names an older Ethereum Mainnet list (0xB79B610bB8E5E26e5b93b8d45Cdb34858AfEb190), which does not grant Kleros Verified.
 - Ethereum Mainnet, Light: 0x2acf59a420ca888f46d46974f62570f8a38cd4da
 - Ethereum Mainnet, Classic: 0xba0304273a54dfec1fc7f4bccbf4b15519aecf15
 - Gnosis, Light: 0x2418d887d0d0fe03b793a6af4321fa488226a0b5

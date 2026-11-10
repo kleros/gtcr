@@ -1,6 +1,12 @@
 import { gql, request } from 'graphql-request'
 import { readContract } from '@wagmi/core'
-import { erc20Abi, type Abi } from 'viem'
+import {
+  BaseError,
+  ContractFunctionRevertedError,
+  ContractFunctionZeroDataError,
+  erc20Abi,
+  type Abi,
+} from 'viem'
 import classicAbi from 'assets/abis/GeneralizedTCR.json'
 import lightAbi from 'assets/abis/LightGeneralizedTCR.json'
 import permanentAbi from 'assets/abis/PermanentGTCR.json'
@@ -10,8 +16,10 @@ import { wagmiConfig } from 'config/wagmi'
 import {
   buildActivityHref,
   fetchDashboardData,
+  fetchTestnetDashboardData,
   normalizeAddress,
   shortAddress,
+  withTestnetLists,
   ZERO_ADDRESS,
 } from 'pages/dashboard/data'
 import {
@@ -70,7 +78,7 @@ const ENVIO_PROFILE_QUERY = gql`
           { challenger: { _eq: $address } }
         ]
       }
-      order_by: [{ submissionTime: desc }]
+      order_by: [{ submissionTime: desc }, { id: asc }]
     ) {
       id
       chainId
@@ -100,7 +108,7 @@ const ENVIO_PROFILE_QUERY = gql`
           { challenger: { _eq: $address } }
         ]
       }
-      order_by: [{ submissionTime: desc }]
+      order_by: [{ submissionTime: desc }, { id: asc }]
     ) {
       id
       chainId
@@ -251,6 +259,30 @@ export interface AddressProfileData {
    * there are lower bounds.
    */
   cappedChains: number[]
+  /**
+   * Chains where an indexer did not answer at all (its first page failed or
+   * timed out): their actions are missing, so the counts are lower bounds
+   * and an empty profile there is unknown, never "no activity". A chain
+   * whose indexer is not configured is not listed: it has no rows to read.
+   */
+  failedChains: number[]
+}
+
+/** The lists the governance scan reads, with the chains it could not cover. */
+export interface RegistryIndex {
+  registries: DashboardRegistry[]
+  /** Chains whose lists did not load: none of their lists was read. */
+  missingChains: number[]
+}
+
+/** The lists whose governor() is an address, and where the scan fell short. */
+export interface GovernanceScan {
+  registries: GovernedRegistry[]
+  /**
+   * Chains where some list's governor() could not be read (or whose lists
+   * did not load): the scan is partial there, so its count is a lower bound.
+   */
+  unreadChains: number[]
 }
 
 const toNumber = (value: unknown): number => {
@@ -449,24 +481,59 @@ export const abiForKind = (kind: RegistryKind): Abi => {
   return classicAbi as Abi
 }
 
+const callParam = async (
+  registry: DashboardRegistry,
+  functionName: string,
+): Promise<string | undefined> => {
+  const value = await readContract(wagmiConfig, {
+    chainId: registry.chainId,
+    address: registry.address as `0x${string}`,
+    abi: abiForKind(registry.kind),
+    functionName,
+  } as any)
+  if (typeof value === 'string') return value
+  if (typeof value === 'bigint') return value.toString()
+  if (value && typeof value === 'object' && 'toString' in value)
+    return String(value)
+  return value === undefined || value === null ? undefined : String(value)
+}
+
 const readParam = async (
   registry: DashboardRegistry,
   functionName: string,
 ): Promise<string | undefined> => {
   try {
-    const value = await readContract(wagmiConfig, {
-      chainId: registry.chainId,
-      address: registry.address as `0x${string}`,
-      abi: abiForKind(registry.kind),
-      functionName,
-    } as any)
-    if (typeof value === 'string') return value
-    if (typeof value === 'bigint') return value.toString()
-    if (value && typeof value === 'object' && 'toString' in value)
-      return String(value)
-    return value === undefined || value === null ? undefined : String(value)
+    return await callParam(registry, functionName)
   } catch (err) {
     console.warn('Governance read failed', registry.address, functionName, err)
+    return undefined
+  }
+}
+
+/**
+ * True when the chain answered the call: it reverted, or the address holds
+ * no such function. Anything else (a node down, a timeout) is no answer.
+ */
+const chainAnswered = (err: unknown): boolean =>
+  err instanceof BaseError &&
+  !!err.walk(
+    (cause) =>
+      cause instanceof ContractFunctionRevertedError ||
+      cause instanceof ContractFunctionZeroDataError,
+  )
+
+/**
+ * A list's governor, lowercase: '' when the contract answered without one,
+ * undefined when the read itself failed (so the list was not read).
+ */
+const readGovernor = async (
+  registry: DashboardRegistry,
+): Promise<string | undefined> => {
+  try {
+    return normalizeAddress(await callParam(registry, 'governor'))
+  } catch (err) {
+    if (chainAnswered(err)) return ''
+    console.warn('Governor read failed', registry.address, err)
     return undefined
   }
 }
@@ -550,28 +617,36 @@ const readGovernanceParams = async (
  * query caches, so the profile, the governance scan and the dashboard and
  * browse pages share one load.
  */
-export type RegistryIndexReader = () => Promise<DashboardRegistry[]>
+export type RegistryIndexReader = () => Promise<RegistryIndex>
 
 const readRegistryIndex: RegistryIndexReader = async () => {
-  const [dashboard, sets] = await Promise.all([
+  const [mainnets, testnet, sets] = await Promise.all([
     fetchDashboardData(),
+    fetchTestnetDashboardData(),
     readVerifiedSets(SUPPORTED_CHAIN_IDS),
   ])
-  return withVerified(dashboard.registries, sets)
+  const dashboard = withTestnetLists(mainnets, testnet)
+  return {
+    registries: withVerified(dashboard.registries, sets),
+    missingChains: dashboard.listFailedChains ?? [],
+  }
 }
 
 /**
  * The lists whose governor() is this address, with their parameters. Read
  * apart from the profile: one governor() call per indexed list takes a few
- * seconds, and the figures, chart and list should not wait for it.
+ * seconds, and the figures, chart and list should not wait for it. A list
+ * whose governor() could not be read is not counted as "not governed": its
+ * chain is reported in `unreadChains`, like a chain whose lists did not load.
  */
 export const fetchGovernedRegistries = async (
   rawAddress: string,
   readIndex: RegistryIndexReader = readRegistryIndex,
-): Promise<GovernedRegistry[]> => {
+): Promise<GovernanceScan> => {
   const address = normalizeAddress(rawAddress)
-  const registries = await readIndex()
+  const { registries, missingChains } = await readIndex()
   const governed: GovernedRegistry[] = []
+  const unreadChains = new Set(missingChains)
   for (
     let start = 0;
     start < registries.length;
@@ -581,9 +656,11 @@ export const fetchGovernedRegistries = async (
       registries
         .slice(start, start + GOVERNANCE_READ_BATCH)
         .map(async (registry) => {
-          const governor = normalizeAddress(
-            await readParam(registry, 'governor'),
-          )
+          const governor = await readGovernor(registry)
+          if (governor === undefined) {
+            unreadChains.add(registry.chainId)
+            return null
+          }
           if (!governor || governor !== address) return null
           const params = await readGovernanceParams(registry)
           return { ...registry, governor, params } satisfies GovernedRegistry
@@ -591,7 +668,7 @@ export const fetchGovernedRegistries = async (
     )
     for (const registry of round) if (registry) governed.push(registry)
   }
-  return governed
+  return { registries: governed, unreadChains: [...unreadChains] }
 }
 
 /**
@@ -601,6 +678,8 @@ export const fetchGovernedRegistries = async (
  * pages are read is not counted twice. `cut` is true when the read stopped
  * before the end (the page ceiling, or a page that failed after the first):
  * the rows are then the most recent ones and every count is a lower bound.
+ * `failed` is true when the first page itself did not load: no row was read,
+ * which says nothing about the address.
  */
 const readPages = async (
   fetchPage: (
@@ -608,7 +687,7 @@ const readPages = async (
   ) => Promise<Record<string, any[] | undefined> | null>,
   keys: string[],
   maxPages: number,
-): Promise<{ rows: Record<string, any[]>; cut: boolean }> => {
+): Promise<{ rows: Record<string, any[]>; cut: boolean; failed: boolean }> => {
   const rows: Record<string, any[]> = Object.fromEntries(
     keys.map((key) => [key, []]),
   )
@@ -626,9 +705,9 @@ const readPages = async (
     keys.some((key) => (payload[key]?.length ?? 0) >= PAGE_ROWS)
 
   const first = await fetchPage(0)
-  if (!first) return { rows, cut: false }
+  if (!first) return { rows, cut: false, failed: true }
   append(first)
-  if (!full(first)) return { rows, cut: false }
+  if (!full(first)) return { rows, cut: false, failed: false }
   let page = 1
   while (page < maxPages) {
     const batch = Array.from(
@@ -637,14 +716,21 @@ const readPages = async (
     )
     const payloads = await Promise.all(batch.map(fetchPage))
     for (const payload of payloads) {
-      if (!payload) return { rows, cut: true }
+      if (!payload) return { rows, cut: true, failed: false }
       append(payload)
-      if (!full(payload)) return { rows, cut: false }
+      if (!full(payload)) return { rows, cut: false, failed: false }
     }
     page += batch.length
   }
-  return { rows, cut: true }
+  return { rows, cut: true, failed: false }
 }
+
+/** An indexer with no URL has nothing to read: no rows, and not a failure. */
+const unconfigured = (keys: string[]) => ({
+  rows: Object.fromEntries(keys.map((key) => [key, [] as any[]])),
+  cut: false,
+  failed: false,
+})
 
 export const buildBadges = (stats: AddressStats): AddressBadge[] => [
   {
@@ -683,6 +769,7 @@ export const fetchAddressProfileData = async (
   const activities: ProfileActivity[] = []
   const disputes: ProfileActivity[] = []
   const capped = new Set<number>()
+  const failed = new Set<number>()
   // The zero address matches every unchallenged request through the
   // challenger field; none of those rows are its own, so one page is read
   // and no cut applies.
@@ -695,39 +782,53 @@ export const fetchAddressProfileData = async (
   // being reported as unhandled while the profile queries are still running.
   indexPromise.catch(() => undefined)
 
+  const envioKeys = ['lightRequests', 'classicRequests']
+  const permanentKeys = ['submissions', 'challenges']
   const [envioResults, permanentResults] = await Promise.all([
     Promise.all(
       SUPPORTED_CHAIN_IDS.map(async (chainId) => {
-        const read = await readPages(
-          (page) =>
-            safeRequest<any>(subgraphUrl[chainId], ENVIO_PROFILE_QUERY, {
-              chainId,
-              address,
-              limit: PAGE_ROWS,
-              offset: page * PAGE_ROWS,
-            }),
-          ['lightRequests', 'classicRequests'],
-          isZero ? 1 : ENVIO_MAX_PAGES,
-        )
+        const url = subgraphUrl[chainId]
+        const read = url
+          ? await readPages(
+              (page) =>
+                safeRequest<any>(url, ENVIO_PROFILE_QUERY, {
+                  chainId,
+                  address,
+                  limit: PAGE_ROWS,
+                  offset: page * PAGE_ROWS,
+                }),
+              envioKeys,
+              isZero ? 1 : ENVIO_MAX_PAGES,
+            )
+          : unconfigured(envioKeys)
         return { chainId, ...read }
       }),
     ),
     Promise.all(
       SUPPORTED_CHAIN_IDS.map(async (chainId) => {
-        const read = await readPages(
-          (page) =>
-            safeRequest<any>(
-              subgraphUrlPermanent[chainId],
-              PERMANENT_PROFILE_QUERY,
-              { address, first: PAGE_ROWS, skip: page * PAGE_ROWS },
-            ),
-          ['submissions', 'challenges'],
-          isZero ? 1 : PERMANENT_MAX_PAGES,
-        )
+        const url = subgraphUrlPermanent[chainId]
+        const read = url
+          ? await readPages(
+              (page) =>
+                safeRequest<any>(url, PERMANENT_PROFILE_QUERY, {
+                  address,
+                  first: PAGE_ROWS,
+                  skip: page * PAGE_ROWS,
+                }),
+              permanentKeys,
+              isZero ? 1 : PERMANENT_MAX_PAGES,
+            )
+          : unconfigured(permanentKeys)
         return { chainId, ...read }
       }),
     ),
   ])
+
+  for (const { chainId, failed: noAnswer } of [
+    ...envioResults,
+    ...permanentResults,
+  ])
+    if (noAnswer) failed.add(chainId)
 
   for (const { chainId, rows, cut } of envioResults) {
     if (!chainBreakdown[chainId]) chainBreakdown[chainId] = emptyStats()
@@ -774,7 +875,7 @@ export const fetchAddressProfileData = async (
     }
   }
 
-  const registries = await indexPromise
+  const { registries } = await indexPromise
   const index = new Map(
     registries.map((registry) => [
       `${registry.chainId}:${normalizeAddress(registry.address)}`,
@@ -808,6 +909,7 @@ export const fetchAddressProfileData = async (
     disputes: disputes.slice(0, DISPUTE_LIMIT),
     chainBreakdown,
     cappedChains: [...capped],
+    failedChains: [...failed],
   }
 }
 

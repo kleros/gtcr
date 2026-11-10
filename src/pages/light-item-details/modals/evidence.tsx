@@ -1,7 +1,6 @@
 import React, { useContext, useState } from 'react'
-import { useAccount, usePublicClient, useWalletClient, useChainId } from 'wagmi'
+import { useAccount, usePublicClient, useWalletClient } from 'wagmi'
 import { simulateContract } from '@wagmi/core'
-import { getAddress } from 'viem'
 import { useAtlasProvider } from '@kleros/kleros-app'
 import _gtcr from 'assets/abis/LightGeneralizedTCR.json'
 import { LightTCRViewContext } from 'contexts/light-tcr-view-context'
@@ -41,7 +40,6 @@ const EvidenceModal = ({
 }: EvidenceModalProps) => {
   const tcrAddress = useContext(LightTCRViewContext)?.tcrAddress
   const { address: account } = useAccount()
-  const chainId = useChainId()
   const publicClient = usePublicClient()
   const { data: walletClient } = useWalletClient()
   const { uploadFile } = useAtlasProvider()
@@ -77,27 +75,9 @@ const EvidenceModal = ({
         publicClient,
       )
 
-      if (result.status) {
+      if (result.status)
         if (inline) setFormKey((key) => key + 1)
         else onCancel?.()
-
-        if (process.env.REACT_APP_NOTIFICATIONS_API_URL && !!chainId)
-          fetch(
-            `${process.env.REACT_APP_NOTIFICATIONS_API_URL}/${chainId}/api/subscribe`,
-            {
-              method: 'post',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                subscriberAddr: getAddress(account),
-                tcrAddr: tcrAddress,
-                itemID: item.itemID,
-                networkID: chainId,
-              }),
-            },
-          ).catch((err) => {
-            console.error('Failed to subscribe for notifications.', err)
-          })
-      }
     } catch (err) {
       console.error('Error submitting evidence:', err)
       errorToast(parseWagmiError(err))

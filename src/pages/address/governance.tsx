@@ -1,11 +1,24 @@
-import React, { useEffect, useId, useRef, useState } from 'react'
+import React, { useEffect, useId, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import styled, { keyframes } from 'styled-components'
 import { Link } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { getPublicClient, simulateContract } from '@wagmi/core'
-import { useAccount, useSwitchChain, useWalletClient } from 'wagmi'
-import { formatEther, isAddress, parseEther } from 'viem'
+import {
+  useAccount,
+  useReadContract,
+  useSwitchChain,
+  useWalletClient,
+} from 'wagmi'
+import {
+  erc20Abi,
+  formatEther,
+  formatUnits,
+  isAddress,
+  parseEther,
+  parseUnits,
+  zeroAddress,
+} from 'viem'
 import { useAtlasProvider } from '@kleros/kleros-app'
 import EnsureAuth from 'components/ensure-auth'
 import Select from 'components/ui/Select'
@@ -29,16 +42,17 @@ import {
   truncateMiddle,
 } from 'components/curate/primitives'
 import { getNativeCurrency } from 'config/chains'
-import { klerosAddresses } from 'config/tcr-addresses'
+import { klerosAddresses, subgraphUrl } from 'config/tcr-addresses'
 import { appKitModal, wagmiConfig } from 'config/wagmi'
 import { useEthersProvider } from 'hooks/ethers-adapters'
 import useCourtPolicies from 'hooks/use-court-policies'
-import { formatDate } from 'utils/time'
+import { formatDate, formatDurationLong } from 'utils/time'
+import { parseWagmiError } from 'utils/parse-wagmi-error'
 import { fetchRegistryCreationTimes } from 'utils/registry-creation'
 import { parseIpfs } from 'utils/ipfs-parse'
 import { jurorsAndCourtIDFromExtraData } from 'utils/string'
 import { JSON_UPLOAD_ROLE } from 'utils/atlas-roles'
-import { errorToast, wrapWithToast } from 'utils/wrap-with-toast'
+import { errorToast, successToast, wrapWithToast } from 'utils/wrap-with-toast'
 import { normalizeAddress, shortAddress } from 'pages/dashboard/data'
 import { VerifiedBadge } from 'components/curate/verified-badge'
 import {
@@ -49,6 +63,7 @@ import {
   type GovernedRegistry,
 } from './data'
 import { formatInt, kindLabel } from './view'
+import { Avatar as ListLogo } from 'pages/browse/avatar'
 
 /*
  * Governed lists: the registries whose governor is the profile address, and
@@ -57,10 +72,18 @@ import { formatInt, kindLabel } from './view'
  * contract calls, Atlas upload and court lookup are the same as before.
  */
 
-/* ---------- Parameter plumbing (unchanged) ---------- */
+/* ---------- Parameter plumbing ---------- */
 
-type ParamKind = 'wei' | 'seconds' | 'raw' | 'address' | 'policy'
-type ParamKey = keyof GovernanceParams | 'policyURI'
+/*
+ * Every value is shown in the unit people think in (the chain's coin, the
+ * stake token, days, percent) and written in the unit the contract stores
+ * (wei, the token's base units, seconds, basis points). Parsing is strict: no
+ * grouping, no exponent, no more decimals than the unit has, and an empty
+ * field is never read as 0.
+ */
+
+type ParamKind = 'wei' | 'token' | 'seconds' | 'multiplier' | 'address'
+type ParamKey = keyof GovernanceParams
 
 interface ParamConfig {
   key: ParamKey
@@ -68,7 +91,28 @@ interface ParamConfig {
   kind: ParamKind
   functionName: string
   hint?: string
+  /** A period that must stay above zero (0 would skip a protection window). */
+  positive?: boolean
 }
+
+/** What the dialog reads beyond the registry row. */
+interface ParamContext {
+  /** The Stake Curate token's decimals; undefined until read (or unreadable). */
+  tokenDecimals?: number
+}
+
+const DAY_SECONDS = 86_400
+/** MULTIPLIER_DIVISOR is 10000 on every Curate contract, so 100% = 10000. */
+const BPS_PER_PERCENT = 100
+const PLAIN_DECIMAL = /^\d+(\.\d+)?$/
+
+/** A fixed-point string without grouping or exponent, trailing zeros trimmed. */
+const plainDecimal = (value: number, maxDecimals: number) => {
+  const fixed = value.toFixed(maxDecimals)
+  return fixed.includes('.') ? fixed.replace(/\.?0+$/, '') : fixed
+}
+
+const decimalsIn = (text: string) => text.split('.')[1]?.length ?? 0
 
 // The shared helper, so Gnosis reads "xDAI" here like everywhere else.
 const nativeSymbol = (chainId: number) => getNativeCurrency(chainId).symbol
@@ -76,51 +120,144 @@ const nativeSymbol = (chainId: number) => getNativeCurrency(chainId).symbol
 const formatParamValue = (
   value: string | undefined,
   kind: ParamKind,
+  context: ParamContext,
 ): string => {
-  if (!value) return ''
-  if (kind === 'wei')
-    try {
-      return formatEther(BigInt(value))
-    } catch {
-      return value
-    }
-  if (kind === 'seconds') {
-    const days = Number(value) / 86_400
-    return Number.isFinite(days)
-      ? new Intl.NumberFormat('en-US', {
-          maximumFractionDigits: days >= 10 ? 1 : 3,
-        }).format(days)
-      : value
+  if (value === undefined || value === '') return ''
+  try {
+    if (kind === 'wei') return formatEther(BigInt(value))
+    if (kind === 'token')
+      return context.tokenDecimals === undefined
+        ? ''
+        : formatUnits(BigInt(value), context.tokenDecimals)
+    // Six decimals of a day is under a tenth of a second, so whole seconds
+    // survive the round trip exactly.
+    if (kind === 'seconds') return plainDecimal(Number(value) / DAY_SECONDS, 6)
+    if (kind === 'multiplier')
+      return plainDecimal(Number(value) / BPS_PER_PERCENT, 2)
+  } catch {
+    return value
   }
   return value
 }
 
-const parseParamValue = (value: string, kind: ParamKind) => {
-  if (kind === 'wei') return parseEther(value || '0')
-  if (kind === 'seconds')
-    return BigInt(Math.max(0, Math.round(Number(value || '0') * 86_400)))
-  if (kind === 'raw') return BigInt(value || '0')
-  return value
+type Parsed =
+  | { value: bigint | string; error?: undefined }
+  | { value?: undefined; error: string }
+
+const parseParamValue = (
+  raw: string,
+  config: ParamConfig,
+  context: ParamContext,
+): Parsed => {
+  const text = raw.trim()
+  if (config.kind === 'address')
+    return isAddress(text)
+      ? { value: text }
+      : { error: 'Enter a valid address' }
+  if (text === '') return { error: 'Enter a value' }
+  if (!PLAIN_DECIMAL.test(text))
+    return { error: 'Use digits and one dot, like 0.5' }
+  if (config.kind === 'wei') {
+    if (decimalsIn(text) > 18) return { error: 'At most 18 decimals' }
+    return { value: parseEther(text) }
+  }
+  if (config.kind === 'token') {
+    const decimals = context.tokenDecimals
+    if (decimals === undefined)
+      return { error: "The token's decimals could not be read" }
+    if (decimalsIn(text) > decimals)
+      return { error: `At most ${decimals} decimals for this token` }
+    return { value: parseUnits(text, decimals) }
+  }
+  if (config.kind === 'seconds') {
+    const seconds = Math.round(Number(text) * DAY_SECONDS)
+    if (config.positive && seconds <= 0)
+      return { error: 'Must be longer than 0' }
+    return { value: BigInt(seconds) }
+  }
+  if (decimalsIn(text) > 2) return { error: 'At most 2 decimals' }
+  return { value: BigInt(Math.round(Number(text) * BPS_PER_PERCENT)) }
 }
+
+/** True when the typed value equals what the contract holds now. */
+const isUnchanged = (
+  parsed: Parsed,
+  current: string | undefined,
+  kind: ParamKind,
+) => {
+  if (parsed.error !== undefined || current === undefined) return false
+  if (kind === 'address')
+    return String(parsed.value).toLowerCase() === current.toLowerCase()
+  try {
+    return BigInt(current) === parsed.value
+  } catch {
+    return false
+  }
+}
+
+/** The typed value in the stored unit, so nothing is a surprise on chain. */
+const describeParsed = (parsed: Parsed, kind: ParamKind) => {
+  if (parsed.error !== undefined) return undefined
+  if (kind === 'seconds') {
+    const seconds = Number(parsed.value)
+    return `${formatDurationLong(seconds)} (${seconds.toLocaleString('en-US')} s)`
+  }
+  if (kind === 'multiplier')
+    return `Stored as ${Number(parsed.value).toLocaleString('en-US')} basis points (10,000 = 100%)`
+  return undefined
+}
+
+const APPEAL_HINT =
+  'Appeal stakes are a percent of the appeal cost that each side adds on top when funding an appeal. The winner of the dispute takes the stakes.'
 
 const editableParams = (registry: GovernedRegistry): ParamConfig[] => {
   const permanentTokenLabel =
     registry.params?.tokenSymbol ||
-    (registry.token ? shortAddress(registry.token) : 'registry token')
+    (registry.token ? shortAddress(registry.token) : 'stake token')
+
+  const appealStakes: ParamConfig[] = [
+    {
+      key: 'winnerStakeMultiplier',
+      label: 'Appeal stake, side that won (%)',
+      kind: 'multiplier',
+      functionName: 'changeWinnerStakeMultiplier',
+      hint: APPEAL_HINT,
+    },
+    {
+      key: 'loserStakeMultiplier',
+      label: 'Appeal stake, side that lost (%)',
+      kind: 'multiplier',
+      functionName: 'changeLoserStakeMultiplier',
+    },
+    {
+      key: 'sharedStakeMultiplier',
+      label: 'Appeal stake, no winner (%)',
+      kind: 'multiplier',
+      functionName: 'changeSharedStakeMultiplier',
+    },
+  ]
+  const governor: ParamConfig = {
+    key: 'governor',
+    label: 'Governor address',
+    kind: 'address',
+    functionName: 'changeGovernor',
+    hint: 'Hands every setting of this list to another address. After it is mined, this wallet can no longer change anything.',
+  }
 
   if (registry.kind === 'permanent')
     return [
       {
         key: 'submissionMinDeposit',
-        label: `Submission minimum deposit (${permanentTokenLabel})`,
-        kind: 'wei',
+        label: `Minimum stake (${permanentTokenLabel})`,
+        kind: 'token',
         functionName: 'changeSubmissionMinDeposit',
-        hint: 'Stake Curate lists use their configured staking token, which may differ from the chain native currency.',
+        hint: "The least a submitter must lock to list an entry, in the list's stake token.",
       },
       {
         key: 'submissionPeriod',
         label: 'Submission period (days)',
         kind: 'seconds',
+        positive: true,
         functionName: 'changeSubmissionPeriod',
       },
       {
@@ -133,73 +270,43 @@ const editableParams = (registry: GovernedRegistry): ParamConfig[] => {
         key: 'withdrawingPeriod',
         label: 'Withdrawal period (days)',
         kind: 'seconds',
+        positive: true,
         functionName: 'changeWithdrawingPeriod',
+        hint: 'How long a withdrawing entry stays open to challenge before its stake can be taken back.',
       },
       {
         key: 'challengeStakeMultiplier',
-        label: 'Challenge stake multiplier',
-        kind: 'raw',
+        label: "Challenger stake (% of the entry's stake)",
+        kind: 'multiplier',
         functionName: 'changeChallengeStakeMultiplier',
       },
-      {
-        key: 'winnerStakeMultiplier',
-        label: 'Winner appeal multiplier',
-        kind: 'raw',
-        functionName: 'changeWinnerStakeMultiplier',
-      },
-      {
-        key: 'loserStakeMultiplier',
-        label: 'Loser appeal multiplier',
-        kind: 'raw',
-        functionName: 'changeLoserStakeMultiplier',
-      },
-      {
-        key: 'sharedStakeMultiplier',
-        label: 'Shared appeal multiplier',
-        kind: 'raw',
-        functionName: 'changeSharedStakeMultiplier',
-      },
-      {
-        key: 'governor',
-        label: 'Governor address',
-        kind: 'address',
-        functionName: 'changeGovernor',
-      },
+      ...appealStakes,
+      governor,
     ]
 
+  const symbol = nativeSymbol(registry.chainId)
   return [
-    ...(registry.kind === 'classic'
-      ? [
-          {
-            key: 'policyURI' as ParamKey,
-            label: 'MetaEvidence URI',
-            kind: 'policy' as ParamKind,
-            functionName: 'changeMetaEvidence',
-            hint: 'Advanced: this sets the registration and clearing MetaEvidence to the same URI. A wrong URI can break how the list is displayed.',
-          },
-        ]
-      : []),
     {
       key: 'submissionBaseDeposit',
-      label: `Submission deposit (${nativeSymbol(registry.chainId)})`,
+      label: `Submission deposit (${symbol})`,
       kind: 'wei',
       functionName: 'changeSubmissionBaseDeposit',
     },
     {
       key: 'submissionChallengeBaseDeposit',
-      label: `Submission challenge deposit (${nativeSymbol(registry.chainId)})`,
+      label: `Challenge deposit, submissions (${symbol})`,
       kind: 'wei',
       functionName: 'changeSubmissionChallengeBaseDeposit',
     },
     {
       key: 'removalBaseDeposit',
-      label: `Removal deposit (${nativeSymbol(registry.chainId)})`,
+      label: `Removal deposit (${symbol})`,
       kind: 'wei',
       functionName: 'changeRemovalBaseDeposit',
     },
     {
       key: 'removalChallengeBaseDeposit',
-      label: `Removal challenge deposit (${nativeSymbol(registry.chainId)})`,
+      label: `Challenge deposit, removals (${symbol})`,
       kind: 'wei',
       functionName: 'changeRemovalChallengeBaseDeposit',
     },
@@ -207,35 +314,19 @@ const editableParams = (registry: GovernedRegistry): ParamConfig[] => {
       key: 'challengePeriodDuration',
       label: 'Challenge period (days)',
       kind: 'seconds',
+      positive: true,
       functionName:
         registry.kind === 'light'
           ? 'changeChallengePeriodDuration'
           : 'changeTimeToChallenge',
     },
-    {
-      key: 'winnerStakeMultiplier',
-      label: 'Winner appeal multiplier',
-      kind: 'raw',
-      functionName: 'changeWinnerStakeMultiplier',
-    },
-    {
-      key: 'loserStakeMultiplier',
-      label: 'Loser appeal multiplier',
-      kind: 'raw',
-      functionName: 'changeLoserStakeMultiplier',
-    },
-    {
-      key: 'sharedStakeMultiplier',
-      label: 'Shared appeal multiplier',
-      kind: 'raw',
-      functionName: 'changeSharedStakeMultiplier',
-    },
+    ...appealStakes,
     {
       key: 'connectedTCR',
-      label: 'Connected TCR address',
+      label: 'Badges list (connected TCR) address',
       kind: 'address',
       functionName: 'changeConnectedTCR',
-      hint: 'Optional contract hook for connected registry flows. Leave it unless your list uses one.',
+      hint: "The list that holds badges for this list's entries. Use the zero address to disconnect it.",
     },
     ...(registry.kind === 'light'
       ? [
@@ -244,44 +335,229 @@ const editableParams = (registry: GovernedRegistry): ParamConfig[] => {
             label: 'Relayer contract address',
             kind: 'address' as ParamKind,
             functionName: 'changeRelayerContract',
-            hint: 'Optional relayer for delegated Light Curate submissions.',
+            hint: 'A relayer can add and remove entries directly, with no deposit and no challenge period. Keep the zero address unless you run one.',
           },
         ]
       : []),
-    {
-      key: 'governor',
-      label: 'Governor address',
-      kind: 'address',
-      functionName: 'changeGovernor',
-    },
+    governor,
   ]
 }
 
-const buildArgs = (
-  registry: GovernedRegistry,
-  config: ParamConfig,
-  value: string,
-) => {
-  if (config.kind === 'policy') {
-    if (registry.kind === 'classic') return [value, value]
-    if (registry.kind === 'light')
-      return [
-        registry.params?.arbitrator,
-        registry.params?.arbitratorExtraData || '0x',
-        value,
-        value,
-      ]
-    return [registry.params?.arbitratorExtraData || '0x', value]
-  }
-  return [parseParamValue(value, config.kind)]
-}
-
-const buildArbitratorExtraData = (courtID: string, jurors: string) =>
-  `0x${Number(courtID || 0)
-    .toString(16)
-    .padStart(64, '0')}${Math.max(1, Math.ceil(Number(jurors || 1)))
+const buildArbitratorExtraData = (courtID: number, jurors: number) =>
+  `0x${courtID.toString(16).padStart(64, '0')}${jurors
     .toString(16)
     .padStart(64, '0')}`
+
+/** Juror count as typed: a whole, odd number from 1 to 33. */
+const parseJurors = (text: string): { value?: number; error?: string } => {
+  if (!/^\d+$/.test(text.trim())) return { error: 'Enter a whole number' }
+  const value = Number(text)
+  if (value < 1 || value > 33) return { error: 'Between 1 and 33 jurors' }
+  if (value % 2 === 0)
+    return { error: 'Use an odd number, so votes cannot tie' }
+  return { value }
+}
+
+/* ---------- MetaEvidence checks ---------- */
+
+/*
+ * A registry's MetaEvidence decides what jurors are asked and how entries
+ * decode, so new files are read before anything is signed: each must be a
+ * MetaEvidence JSON, keep the live columns (old entries must still decode),
+ * and the registration and clearing files must be two different files in
+ * the right places.
+ */
+
+interface MetaEvidenceFile {
+  title?: unknown
+  fileURI?: unknown
+  metadata?: { columns?: { label?: string; type?: string }[] }
+  rulingOptions?: { titles?: string[] }
+}
+
+export interface CurrentMetaEvidence {
+  registration?: string
+  clearing?: string
+  /**
+   * The connected (badges) list. Neither contract has a getter for it, only
+   * the ConnectedTCRSet event, so it comes from the indexer.
+   */
+  connectedTCR?: string
+}
+
+/**
+ * What this page's saves wrote to a list. The indexers and the cached
+ * registry index trail the chain, and a Stake list has no getter for its
+ * court or MetaEvidence at all, so the console shows these as the current
+ * values until the page reloads. Without them the dialog would show the
+ * values a save just replaced, and a second save could quietly send them
+ * again (the court with the old MetaEvidence, say).
+ */
+export interface Written {
+  params?: GovernanceParams
+  metaEvidence?: CurrentMetaEvidence
+}
+
+const mergeWritten = (
+  previous: Written | undefined,
+  next: Written,
+): Written => ({
+  params: { ...previous?.params, ...next.params },
+  metaEvidence: { ...previous?.metaEvidence, ...next.metaEvidence },
+})
+
+const withWritten = (
+  registry: GovernedRegistry,
+  written: Written | undefined,
+): GovernedRegistry =>
+  written?.params
+    ? {
+        ...registry,
+        governor: written.params.governor ?? registry.governor,
+        params: { ...registry.params, ...written.params },
+      }
+    : registry
+
+const metaEvidenceUrl = (uri: string) =>
+  /^https?:\/\//i.test(uri) ? uri : parseIpfs(uri)
+
+const readMetaEvidence = async (uri: string): Promise<MetaEvidenceFile> => {
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), 15_000)
+  try {
+    const response = await fetch(metaEvidenceUrl(uri), {
+      signal: controller.signal,
+    })
+    if (!response.ok) throw new Error(`HTTP ${response.status}`)
+    return (await response.json()) as MetaEvidenceFile
+  } finally {
+    clearTimeout(timer)
+  }
+}
+
+const columnsKey = (file: MetaEvidenceFile) =>
+  JSON.stringify(
+    (file.metadata?.columns ?? []).map((column) => [column.label, column.type]),
+  )
+
+/**
+ * Whether the file asks jurors to add (or remove) an entry: its title opens
+ * with the verb, as the factory writes them ("Add a token to …", "Remove a
+ * token from …"), or its first ruling option does ("Yes, Add It"). Names later
+ * in the title never count, so a list called "Removals" can still update its
+ * registration file, and neutral wording ("Yes" / "No") never flags a file.
+ */
+const asks = (file: MetaEvidenceFile, verb: 'add' | 'remove') => {
+  const word = verb === 'add' ? 'add\\b' : 'remov'
+  return (
+    new RegExp(`^\\W*${word}`, 'i').test(String(file.title ?? '')) ||
+    new RegExp(`^\\W*yes\\W+${word}`, 'i').test(
+      String(file.rulingOptions?.titles?.[0] ?? ''),
+    )
+  )
+}
+
+/**
+ * What is wrong with a proposed MetaEvidence change, or undefined when it is
+ * fine. Files equal to the live ones are not re-read.
+ */
+const checkMetaEvidence = async ({
+  registration,
+  clearing,
+  current,
+}: {
+  registration: string
+  /** Undefined on Stake Curate, which has a single MetaEvidence. */
+  clearing?: string
+  current: CurrentMetaEvidence
+}): Promise<string | undefined> => {
+  if (!registration.trim()) return 'Enter the MetaEvidence URI'
+  if (clearing !== undefined) {
+    if (!clearing.trim()) return 'Enter the clearing MetaEvidence URI'
+    if (registration.trim() === clearing.trim())
+      return 'The registration and clearing MetaEvidence must be two different files: jurors are asked to add in one and to remove in the other.'
+  }
+  const changed = [
+    { uri: registration.trim(), role: 'registration' as const },
+    ...(clearing !== undefined
+      ? [{ uri: clearing.trim(), role: 'clearing' as const }]
+      : []),
+  ].filter(({ uri, role }) => uri !== current[role])
+  if (changed.length === 0) return undefined
+
+  let baseline: MetaEvidenceFile | undefined
+  if (current.registration)
+    try {
+      baseline = await readMetaEvidence(current.registration)
+    } catch {
+      // Without the live file the columns can't be compared: wait rather than
+      // let a column change through while the gateway is slow.
+      return 'The current registration file could not be read, so its columns cannot be compared. Try again in a minute.'
+    }
+
+  for (const { uri, role } of changed) {
+    let file: MetaEvidenceFile
+    try {
+      file = await readMetaEvidence(uri)
+    } catch {
+      return `The ${role} MetaEvidence could not be read from ${uri}. Check the URI, or wait for the upload to reach the gateway.`
+    }
+    if (typeof file.fileURI !== 'string' || !file.metadata?.columns)
+      return `The ${role} file is not a Curate MetaEvidence JSON (it needs fileURI and metadata.columns).`
+    if (baseline && columnsKey(file) !== columnsKey(baseline))
+      return `The ${role} file changes the list's columns. Entries already on the list would no longer display, so keep the same columns.`
+    // The registration file asks about adding, the clearing file about
+    // removing; a file that says the opposite was put in the wrong field.
+    if (role === 'registration' && asks(file, 'remove') && !asks(file, 'add'))
+      return 'The registration file asks jurors about removing entries. It looks like the clearing file: swap the two.'
+    if (role === 'clearing' && asks(file, 'add') && !asks(file, 'remove'))
+      return 'The clearing file asks jurors about adding entries, not removing them. It looks like the registration file: swap the two.'
+  }
+  return undefined
+}
+
+/**
+ * The live registration and clearing MetaEvidence of a list. It throws when
+ * the indexer can't say (no endpoint, an error, a timeout, an unknown list),
+ * so the dialog refuses MetaEvidence changes instead of starting from blank
+ * fields that the checks have nothing to compare with.
+ */
+const fetchCurrentMetaEvidence = async (
+  registry: GovernedRegistry,
+): Promise<CurrentMetaEvidence> => {
+  if (registry.kind === 'permanent')
+    return {
+      registration:
+        registry.params?.metaEvidenceURI || registry.metaEvidenceURI,
+    }
+  const url = subgraphUrl[registry.chainId]
+  if (!url) throw new Error('No indexer for this chain')
+  const entity =
+    registry.kind === 'light' ? 'LRegistry_by_pk' : 'Registry_by_pk'
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), 15_000)
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        query: `{ registry: ${entity}(id: "${registry.address.toLowerCase()}") { registrationMetaEvidence { uri } clearingMetaEvidence { uri } connectedTCR } }`,
+      }),
+      signal: controller.signal,
+    })
+    if (!response.ok) throw new Error(`HTTP ${response.status}`)
+    const { data, errors } = await response.json()
+    if (errors?.length || !data?.registry)
+      throw new Error('The indexer has no MetaEvidence for this list')
+    return {
+      registration: data.registry.registrationMetaEvidence?.uri || undefined,
+      clearing: data.registry.clearingMetaEvidence?.uri || undefined,
+      connectedTCR: data.registry.connectedTCR || undefined,
+    }
+  } finally {
+    clearTimeout(timer)
+  }
+}
 
 /* ---------- Dialog shell ---------- */
 
@@ -544,98 +820,24 @@ interface SaveGate {
   helper?: { label: string; onClick: () => void; loading?: boolean }
 }
 
-/* ---------- Arbitration and court (plumbing unchanged) ---------- */
+/* ---------- Writes ---------- */
 
-const ArbitrationGovernanceField = ({
-  registry,
-  gate,
-  onSaved,
-}: {
-  registry: GovernedRegistry
-  gate: SaveGate
-  onSaved: () => void
-}) => {
-  const queryClient = useQueryClient()
+const FieldNote = styled(Small)<{ $error?: boolean }>`
+  display: block;
+  color: ${({ $error }) =>
+    $error ? 'var(--color-danger)' : 'var(--color-faint)'};
+`
+
+/**
+ * Simulates the call from the connected wallet, sends it with a toast, and
+ * turns a revert or a refused signature into a message instead of failing
+ * silently. Resolves true once the transaction is mined and succeeded.
+ */
+const useGovernanceWrite = (registry: GovernedRegistry) => {
   const { data: walletClient } = useWalletClient()
-  const chainProvider = useEthersProvider({ chainId: registry.chainId })
-  const knownKleros = klerosAddresses[registry.chainId]
-  const [arbitrator, setArbitrator] = useState(
-    registry.params?.arbitrator || knownKleros?.arbitrator || '',
-  )
-  const courtArbitrator =
-    registry.kind === 'permanent' ? knownKleros?.arbitrator : arbitrator
-  const { data: courts = [] } = useCourtPolicies(
-    knownKleros?.policy,
-    chainProvider ?? null,
-    courtArbitrator,
-  )
-  const currentMetaEvidenceURI =
-    registry.params?.metaEvidenceURI || registry.metaEvidenceURI || ''
-  const [extraData, setExtraData] = useState(
-    registry.params?.arbitratorExtraData || '0x',
-  )
-  const [courtID, setCourtID] = useState('')
-  const [jurors, setJurors] = useState('3')
-  const [registrationMetaEvidence, setRegistrationMetaEvidence] = useState('')
-  const [clearingMetaEvidence, setClearingMetaEvidence] = useState('')
-  const [metaEvidence, setMetaEvidence] = useState(currentMetaEvidenceURI)
   const [pending, setPending] = useState(false)
-  const ids = useId()
-
-  useEffect(() => {
-    if (!extraData || extraData === '0x') return
-    const decoded = jurorsAndCourtIDFromExtraData(extraData)
-    setCourtID(String(decoded.courtID))
-    setJurors(String(decoded.numberOfJurors))
-  }, [extraData])
-
-  const updateCourt = (nextCourtID: string) => {
-    setCourtID(nextCourtID)
-    if (!Number.isNaN(Number(nextCourtID)))
-      setExtraData(buildArbitratorExtraData(nextCourtID, jurors))
-  }
-
-  const updateJurors = (nextJurors: string) => {
-    const normalized = Math.max(1, Math.min(33, Number(nextJurors || 1)))
-    const oddJurors = normalized % 2 === 0 ? normalized - 1 : normalized
-    setJurors(String(oddJurors))
-    if (courtID !== '')
-      setExtraData(buildArbitratorExtraData(courtID, String(oddJurors)))
-  }
-
-  const save = async () => {
-    if (registry.kind !== 'permanent' && !isAddress(arbitrator)) {
-      errorToast('Enter a valid arbitrator address.')
-      return
-    }
-    if (
-      registry.kind === 'light' &&
-      (!registrationMetaEvidence.trim() || !clearingMetaEvidence.trim())
-    ) {
-      errorToast('Light Curate lists need both MetaEvidence URIs.')
-      return
-    }
-    if (registry.kind === 'permanent' && !metaEvidence.trim()) {
-      errorToast('Stake Curate lists need a MetaEvidence URI.')
-      return
-    }
-
-    const functionName =
-      registry.kind === 'classic'
-        ? 'changeArbitrator'
-        : 'changeArbitrationParams'
-    const args =
-      registry.kind === 'classic'
-        ? [arbitrator, extraData || '0x']
-        : registry.kind === 'light'
-          ? [
-              arbitrator,
-              extraData || '0x',
-              registrationMetaEvidence,
-              clearingMetaEvidence,
-            ]
-          : [extraData || '0x', metaEvidence]
-
+  const send = async (functionName: string, args: unknown[]) => {
+    if (!walletClient) return false
     setPending(true)
     try {
       const { request } = await simulateContract(wagmiConfig, {
@@ -649,22 +851,299 @@ const ArbitrationGovernanceField = ({
         chainId: registry.chainId,
       })
       const result = await wrapWithToast(
-        () => walletClient!.writeContract(request),
+        () => walletClient.writeContract(request),
         publicClient!,
       )
-      if (result.status) {
-        onSaved()
-        queryClient.invalidateQueries({ queryKey: ['addressProfile'] })
-      }
+      return result.status
+    } catch (err) {
+      console.error(err)
+      errorToast(parseWagmiError(err))
+      return false
     } finally {
       setPending(false)
     }
   }
+  return { walletClient, pending, send }
+}
 
-  const locked = Boolean(gate.blocker) || pending
-  const disabled = locked || !walletClient
+/**
+ * False once the field unmounts: a save whose dialog was closed while its
+ * checks ran must not go on to open the wallet.
+ */
+const useAlive = () => {
+  const alive = useRef(true)
+  useEffect(() => {
+    alive.current = true
+    return () => {
+      alive.current = false
+    }
+  }, [])
+  return alive
+}
+
+/* ---------- MetaEvidence input ---------- */
+
+const UriRow = styled.div`
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+
+  @media (max-width: 520px) {
+    grid-template-columns: 1fr;
+  }
+`
+
+const MetaEvidenceInput = ({
+  label,
+  value,
+  disabled,
+  onChange,
+}: {
+  label: string
+  value: string
+  disabled?: boolean
+  onChange: (value: string) => void
+}) => {
+  const { uploadFile } = useAtlasProvider()
+  const [uploading, setUploading] = useState(false)
+  const id = useId()
+
+  const upload = async (file?: File) => {
+    if (!file) return
+    if (
+      file.type !== 'application/json' &&
+      !file.name.toLowerCase().endsWith('.json')
+    ) {
+      errorToast('Upload a MetaEvidence JSON file.')
+      return
+    }
+    setUploading(true)
+    try {
+      const uri = await uploadFile(file, JSON_UPLOAD_ROLE)
+      if (!uri) throw new Error('Atlas upload failed.')
+      onChange(uri)
+    } catch (err) {
+      console.error(err)
+      errorToast('MetaEvidence upload failed.')
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  return (
+    <Stack $gap={4}>
+      <Label as="label" htmlFor={id}>
+        {label}
+      </Label>
+      <UriRow>
+        <TextInput
+          id={id}
+          value={value}
+          disabled={disabled || uploading}
+          onChange={(event) => onChange(event.currentTarget.value)}
+          placeholder="/ipfs/… or https://…"
+        />
+        <EnsureAuth>
+          <ButtonAnchor
+            as="label"
+            $variant="secondary"
+            $size="sm"
+            aria-disabled={disabled || uploading}
+          >
+            <CurateIcon name="submit" size={14} />
+            {uploading ? 'Uploading…' : 'Upload JSON'}
+            <HiddenFileInput
+              type="file"
+              accept="application/json,.json"
+              disabled={disabled || uploading}
+              onChange={(event) => upload(event.currentTarget.files?.[0])}
+            />
+          </ButtonAnchor>
+        </EnsureAuth>
+      </UriRow>
+    </Stack>
+  )
+}
+
+/**
+ * The registration and clearing URIs as fields that start on the live files
+ * and follow them until the governor edits one.
+ */
+const useMetaEvidenceDraft = (current: CurrentMetaEvidence | undefined) => {
+  const [registration, setRegistration] = useState('')
+  const [clearing, setClearing] = useState('')
+  const [edited, setEdited] = useState(false)
+  useEffect(() => {
+    if (edited || !current) return
+    setRegistration(current.registration ?? '')
+    setClearing(current.clearing ?? '')
+  }, [current, edited])
+  return {
+    registration,
+    clearing,
+    setRegistration: (value: string) => {
+      setEdited(true)
+      setRegistration(value)
+    },
+    setClearing: (value: string) => {
+      setEdited(true)
+      setClearing(value)
+    },
+    reset: () => setEdited(false),
+  }
+}
+
+/* ---------- Arbitration and court ---------- */
+
+const ArbitrationGovernanceField = ({
+  registry,
+  current,
+  currentError,
+  gate,
+  onSaved,
+}: {
+  registry: GovernedRegistry
+  /** The live MetaEvidence; undefined while it loads or if it can't be read. */
+  current: CurrentMetaEvidence | undefined
+  /** The live MetaEvidence could not be read. */
+  currentError?: boolean
+  gate: SaveGate
+  onSaved: (written: Written) => void
+}) => {
+  const { walletClient, pending, send } = useGovernanceWrite(registry)
+  const alive = useAlive()
+  const chainProvider = useEthersProvider({ chainId: registry.chainId })
+  const knownKleros = klerosAddresses[registry.chainId]
+  const currentArbitrator = registry.params?.arbitrator || ''
+  const [arbitrator, setArbitrator] = useState(
+    currentArbitrator || knownKleros?.arbitrator || '',
+  )
+  const courtArbitrator =
+    registry.kind === 'permanent' ? knownKleros?.arbitrator : arbitrator
+  const { data: courts = [] } = useCourtPolicies(
+    knownKleros?.policy,
+    chainProvider ?? null,
+    courtArbitrator,
+  )
+  const currentExtraData = registry.params?.arbitratorExtraData || ''
+  const decodedCurrent = useMemo(() => {
+    if (!currentExtraData || currentExtraData === '0x') return undefined
+    try {
+      return jurorsAndCourtIDFromExtraData(currentExtraData)
+    } catch {
+      return undefined
+    }
+  }, [currentExtraData])
+  const [courtID, setCourtID] = useState(
+    decodedCurrent ? String(decodedCurrent.courtID) : '',
+  )
+  const [jurors, setJurors] = useState(
+    decodedCurrent ? String(decodedCurrent.numberOfJurors) : '3',
+  )
+  const meta = useMetaEvidenceDraft(current)
+  const [checking, setChecking] = useState(false)
+  const ids = useId()
+
+  const usesPair = registry.kind === 'light'
+  const usesSingle = registry.kind === 'permanent'
+  const jurorCount = parseJurors(jurors)
+  const courtNumber = /^\d+$/.test(courtID) ? Number(courtID) : undefined
+  const extraData =
+    courtNumber !== undefined && jurorCount.value !== undefined
+      ? buildArbitratorExtraData(courtNumber, jurorCount.value)
+      : undefined
+  const changed =
+    (registry.kind !== 'permanent' &&
+      arbitrator.toLowerCase() !== currentArbitrator.toLowerCase()) ||
+    (extraData !== undefined &&
+      extraData.toLowerCase() !== currentExtraData.toLowerCase()) ||
+    ((usesPair || usesSingle) &&
+      meta.registration.trim() !== (current?.registration ?? '')) ||
+    (usesPair && meta.clearing.trim() !== (current?.clearing ?? ''))
+  // Without the live arbitrator the field would start on Kleros' and a court
+  // change would quietly switch the arbitrator too: refuse instead.
+  const inputError =
+    registry.kind !== 'permanent' && !currentArbitrator
+      ? 'The current arbitrator could not be read. Reload the page to try again.'
+      : registry.kind !== 'permanent' && !isAddress(arbitrator)
+        ? 'Enter a valid arbitrator address'
+        : courtNumber === undefined
+          ? 'Choose a court'
+          : jurorCount.error
+            ? `Jurors: ${jurorCount.error}`
+            : (usesPair || usesSingle) && !current
+              ? currentError
+                ? 'The current MetaEvidence could not be read. Close and reopen this dialog to try again.'
+                : 'Reading the current MetaEvidence…'
+              : undefined
   const blocker =
-    gate.blocker ?? (!walletClient ? 'Wallet not ready' : undefined)
+    gate.blocker ??
+    (!walletClient
+      ? 'Wallet not ready'
+      : (inputError ?? (changed ? undefined : 'No change')))
+  const locked = Boolean(gate.blocker) || pending || checking
+
+  const save = async () => {
+    if (blocker || !extraData) return
+    const arbitratorChanged =
+      registry.kind !== 'permanent' &&
+      arbitrator.toLowerCase() !== currentArbitrator.toLowerCase()
+    if (arbitratorChanged || usesPair || usesSingle) {
+      setChecking(true)
+      const problem = await (async () => {
+        // A mistyped arbitrator would mine, and the list could take no
+        // request (every arbitration cost read reverts) until it is fixed.
+        if (arbitratorChanged) {
+          const code = await getPublicClient(wagmiConfig, {
+            chainId: registry.chainId,
+          })?.getCode({ address: arbitrator as `0x${string}` })
+          if (!code || code === '0x')
+            return `There is no contract at ${arbitrator} on ${chainName(registry.chainId)}, so it cannot arbitrate.`
+        }
+        if (!usesPair && !usesSingle) return undefined
+        return checkMetaEvidence({
+          registration: meta.registration,
+          clearing: usesPair ? meta.clearing : undefined,
+          current: current ?? {},
+        })
+      })().catch(() => 'The checks before saving failed. Try again.')
+      if (!alive.current) return
+      setChecking(false)
+      if (problem) {
+        errorToast(problem)
+        return
+      }
+    }
+    const registration = meta.registration.trim()
+    const clearing = meta.clearing.trim()
+    const functionName =
+      registry.kind === 'classic'
+        ? 'changeArbitrator'
+        : 'changeArbitrationParams'
+    const args =
+      registry.kind === 'classic'
+        ? [arbitrator, extraData]
+        : registry.kind === 'light'
+          ? [arbitrator, extraData, registration, clearing]
+          : [extraData, registration]
+    if (await send(functionName, args)) {
+      meta.reset()
+      onSaved({
+        params: {
+          ...(registry.kind !== 'permanent' ? { arbitrator } : {}),
+          arbitratorExtraData: extraData,
+          ...(usesSingle ? { metaEvidenceURI: registration } : {}),
+        },
+        ...(usesPair
+          ? { metaEvidence: { registration, clearing } }
+          : usesSingle
+            ? { metaEvidence: { registration } }
+            : {}),
+      })
+    }
+  }
+
   const selectedCourt = courts.find(
     (court) => String(court.courtID) === courtID,
   )
@@ -685,10 +1164,11 @@ const ArbitrationGovernanceField = ({
             : 'Arbitrator and court'}
         </FieldLabel>
         <Small $muted>
-          Choosing a court rewrites the arbitrator extra data. Light and Stake
-          Curate contracts update the court together with the MetaEvidence, so
-          those URIs are required here. An invalid URI can break how the list is
-          displayed.
+          {registry.kind === 'classic'
+            ? 'Choosing a court rewrites the arbitrator extra data.'
+            : registry.kind === 'light'
+              ? 'Light Curate changes the court together with both MetaEvidence files. They start on the live files: keep them to change only the court, or upload new ones (same columns) to change the policy too.'
+              : 'Stake Curate changes the court together with its MetaEvidence. It starts on the live file: keep it to change only the court.'}
         </Small>
       </div>
       <Controls>
@@ -720,7 +1200,7 @@ const ArbitrationGovernanceField = ({
                   courts.length > 0 ? 'Select court' : 'Court list unavailable'
                 }
                 onChange={(value) =>
-                  updateCourt(
+                  setCourtID(
                     String(typeof value === 'object' ? value.key : value),
                   )
                 }
@@ -740,9 +1220,10 @@ const ArbitrationGovernanceField = ({
                 id={`${ids}-jurors`}
                 value={jurors}
                 disabled={locked}
-                onChange={(event) => updateJurors(event.currentTarget.value)}
+                onChange={(event) => setJurors(event.currentTarget.value)}
                 placeholder="Number of jurors"
                 inputMode="numeric"
+                aria-invalid={Boolean(jurorCount.error)}
               />
             </Stack>
           </TwoUp>
@@ -757,201 +1238,287 @@ const ArbitrationGovernanceField = ({
             </Small>
           )}
           <TextInput
-            value={extraData}
+            value={extraData ?? currentExtraData}
             disabled
             readOnly
             aria-label="Arbitrator extra data"
             placeholder="Arbitrator extra data is generated from the court"
           />
-          {registry.kind === 'light' && (
+          {usesPair && (
             <TwoUp>
-              <TextInput
-                value={registrationMetaEvidence}
+              <MetaEvidenceInput
+                label="Registration MetaEvidence"
+                value={meta.registration}
                 disabled={locked}
-                onChange={(event) =>
-                  setRegistrationMetaEvidence(event.currentTarget.value)
-                }
-                placeholder="Registration MetaEvidence URI"
-                aria-label="Registration MetaEvidence URI"
+                onChange={meta.setRegistration}
               />
-              <TextInput
-                value={clearingMetaEvidence}
+              <MetaEvidenceInput
+                label="Clearing MetaEvidence"
+                value={meta.clearing}
                 disabled={locked}
-                onChange={(event) =>
-                  setClearingMetaEvidence(event.currentTarget.value)
-                }
-                placeholder="Clearing MetaEvidence URI"
-                aria-label="Clearing MetaEvidence URI"
+                onChange={meta.setClearing}
               />
             </TwoUp>
           )}
-          {registry.kind === 'permanent' && (
-            <TextInput
-              value={metaEvidence}
+          {usesSingle && (
+            <MetaEvidenceInput
+              label="MetaEvidence"
+              value={meta.registration}
               disabled={locked}
-              onChange={(event) => setMetaEvidence(event.currentTarget.value)}
-              placeholder="MetaEvidence URI"
-              aria-label="MetaEvidence URI"
+              onChange={meta.setRegistration}
             />
+          )}
+          {inputError && !gate.blocker && (
+            <FieldNote $error role="alert">
+              {inputError}
+            </FieldNote>
           )}
         </Stack>
         <Button
           type="button"
           $variant="primary"
-          disabled={disabled}
+          disabled={Boolean(blocker) || locked}
           title={blocker}
           onClick={save}
         >
-          {pending ? 'Saving…' : 'Save'}
+          {checking ? 'Checking…' : pending ? 'Saving…' : 'Save'}
         </Button>
       </Controls>
     </Field>
   )
 }
 
-/* ---------- One parameter (plumbing unchanged) ---------- */
+/* ---------- MetaEvidence of a Classic list ---------- */
+
+const MetaEvidencePairField = ({
+  registry,
+  current,
+  currentError,
+  gate,
+  onSaved,
+}: {
+  registry: GovernedRegistry
+  current: CurrentMetaEvidence | undefined
+  currentError?: boolean
+  gate: SaveGate
+  onSaved: (written: Written) => void
+}) => {
+  const { walletClient, pending, send } = useGovernanceWrite(registry)
+  const alive = useAlive()
+  const meta = useMetaEvidenceDraft(current)
+  const [checking, setChecking] = useState(false)
+  const changed =
+    meta.registration.trim() !== (current?.registration ?? '') ||
+    meta.clearing.trim() !== (current?.clearing ?? '')
+  const blocker =
+    gate.blocker ??
+    (!walletClient
+      ? 'Wallet not ready'
+      : !current
+        ? currentError
+          ? 'The current MetaEvidence could not be read. Close and reopen this dialog to try again.'
+          : 'Reading the current MetaEvidence…'
+        : changed
+          ? undefined
+          : 'No change')
+  const locked = Boolean(gate.blocker) || pending || checking
+
+  const save = async () => {
+    if (blocker || !current) return
+    setChecking(true)
+    const problem = await checkMetaEvidence({
+      registration: meta.registration,
+      clearing: meta.clearing,
+      current,
+    }).catch(() => 'The MetaEvidence check failed. Try again.')
+    if (!alive.current) return
+    setChecking(false)
+    if (problem) {
+      errorToast(problem)
+      return
+    }
+    const registration = meta.registration.trim()
+    const clearing = meta.clearing.trim()
+    if (await send('changeMetaEvidence', [registration, clearing])) {
+      meta.reset()
+      onSaved({ metaEvidence: { registration, clearing } })
+    }
+  }
+
+  return (
+    <Field>
+      <div>
+        <FieldLabel as="div">MetaEvidence</FieldLabel>
+        <Small $muted>
+          Two files: jurors read the registration file on submissions and the
+          clearing file on removals. To change the policy, upload both with the
+          new policy and the same columns.
+        </Small>
+      </div>
+      <Controls>
+        <Stack $gap={8}>
+          <MetaEvidenceInput
+            label="Registration MetaEvidence"
+            value={meta.registration}
+            disabled={locked}
+            onChange={meta.setRegistration}
+          />
+          <MetaEvidenceInput
+            label="Clearing MetaEvidence"
+            value={meta.clearing}
+            disabled={locked}
+            onChange={meta.setClearing}
+          />
+        </Stack>
+        <Button
+          type="button"
+          $variant="primary"
+          disabled={Boolean(blocker) || locked}
+          title={blocker}
+          onClick={save}
+        >
+          {checking ? 'Checking…' : pending ? 'Saving…' : 'Save'}
+        </Button>
+      </Controls>
+    </Field>
+  )
+}
+
+/* ---------- One parameter ---------- */
 
 const GovernanceField = ({
   registry,
   config,
+  context,
   gate,
   onSaved,
 }: {
   registry: GovernedRegistry
   config: ParamConfig
+  context: ParamContext
   gate: SaveGate
-  onSaved: () => void
+  onSaved: (written: Written) => void
 }) => {
-  const { data: walletClient } = useWalletClient()
-  const { uploadFile } = useAtlasProvider()
+  const { walletClient, pending, send } = useGovernanceWrite(registry)
   const inputId = useId()
-  const [value, setValue] = useState(() =>
-    formatParamValue(
-      config.key === 'policyURI' ? '' : registry.params?.[config.key],
-      config.kind,
-    ),
-  )
-  const [pending, setPending] = useState(false)
-  const [uploading, setUploading] = useState(false)
+  const noteId = useId()
+  const current = registry.params?.[config.key]
+  const initial = formatParamValue(current, config.kind, context)
+  const [value, setValue] = useState(initial)
+  const [edited, setEdited] = useState(false)
+  // A governor transfer takes a second, deliberate click.
+  const [armed, setArmed] = useState(false)
+  // Whether the new governor has code on this chain; undefined until read.
+  const [governorHasCode, setGovernorHasCode] = useState<boolean>()
+  // Follow the live value (and late reads such as token decimals) until edited.
+  useEffect(() => {
+    if (!edited) setValue(initial)
+  }, [initial, edited])
 
-  const locked = Boolean(gate.blocker) || pending || uploading
-  const disabled =
-    locked || !walletClient || (config.kind === 'policy' && !value.trim())
+  const parsed = parseParamValue(value, config, context)
+  const isGovernor = config.key === 'governor'
+  const target = isGovernor ? String(parsed.value ?? '').toLowerCase() : ''
+  // Contracts that can never send a governance call would freeze the list.
+  const inert = [registry.params?.arbitrator, registry.token]
+    .filter((address): address is string => Boolean(address))
+    .some((address) => address.toLowerCase() === target)
+  const inputError =
+    parsed.error ??
+    (!isGovernor
+      ? undefined
+      : target === zeroAddress
+        ? 'The zero address would leave the list without a governor'
+        : target === registry.address.toLowerCase()
+          ? 'The list cannot govern itself: nobody could change it again'
+          : inert
+            ? "That is the list's arbitrator or token contract, which cannot send governance transactions"
+            : undefined)
+  const unchanged = isUnchanged(parsed, current, config.kind)
   const blocker =
     gate.blocker ??
     (!walletClient
       ? 'Wallet not ready'
-      : config.kind === 'policy' && !value.trim()
-        ? 'Enter or upload a MetaEvidence URI'
-        : undefined)
-
-  const uploadMetaEvidence = async (file?: File) => {
-    if (!file) return
-    if (
-      file.type !== 'application/json' &&
-      !file.name.toLowerCase().endsWith('.json')
-    ) {
-      errorToast('Upload a MetaEvidence JSON file.')
-      return
-    }
-    setUploading(true)
-    try {
-      const uri = await uploadFile(file, JSON_UPLOAD_ROLE)
-      if (!uri) throw new Error('Atlas upload failed.')
-      setValue(uri)
-    } catch (err) {
-      console.error(err)
-      errorToast('MetaEvidence upload failed.')
-    } finally {
-      setUploading(false)
-    }
-  }
+      : (inputError ?? (unchanged ? 'No change' : undefined)))
+  const locked = Boolean(gate.blocker) || pending
+  const description = describeParsed(parsed, config.kind)
 
   const save = async () => {
-    if (config.kind === 'address' && !isAddress(value)) {
-      errorToast('Enter a valid address.')
+    if (blocker || parsed.error !== undefined) return
+    if (isGovernor && !armed) {
+      setArmed(true)
+      setGovernorHasCode(undefined)
+      getPublicClient(wagmiConfig, { chainId: registry.chainId })
+        ?.getCode({ address: target as `0x${string}` })
+        .then((code) => setGovernorHasCode(Boolean(code && code !== '0x')))
+        .catch(() => setGovernorHasCode(undefined))
       return
     }
-
-    const args = buildArgs(registry, config, value)
-    if (args.some((arg) => arg === undefined || arg === '')) {
-      errorToast('Missing current arbitration parameters for this update.')
-      return
-    }
-
-    setPending(true)
-    try {
-      const { request } = await simulateContract(wagmiConfig, {
-        chainId: registry.chainId,
-        address: registry.address as `0x${string}`,
-        abi: abiForKind(registry.kind),
-        functionName: config.functionName,
-        args,
-      } as any)
-      const publicClient = getPublicClient(wagmiConfig, {
-        chainId: registry.chainId,
+    if (await send(config.functionName, [parsed.value])) {
+      setEdited(false)
+      setArmed(false)
+      onSaved({
+        params: { [config.key]: String(parsed.value) } as GovernanceParams,
       })
-      const result = await wrapWithToast(
-        () => walletClient!.writeContract(request),
-        publicClient!,
-      )
-      if (result.status) onSaved()
-    } finally {
-      setPending(false)
     }
   }
 
   const placeholder =
-    config.kind === 'policy'
-      ? '/ipfs/… or https://…'
-      : config.kind === 'seconds'
-        ? 'days'
-        : undefined
+    config.kind === 'seconds'
+      ? 'days'
+      : config.kind === 'multiplier'
+        ? '%'
+        : config.kind === 'address'
+          ? '0x…'
+          : undefined
 
   return (
     <Field>
       <FieldLabel htmlFor={inputId}>{config.label}</FieldLabel>
       <Controls>
-        <Stack $gap={8}>
+        <Stack $gap={6}>
           <TextInput
             id={inputId}
             value={value}
             placeholder={placeholder}
             disabled={locked}
-            onChange={(event) => setValue(event.currentTarget.value)}
+            inputMode={config.kind === 'address' ? 'text' : 'decimal'}
+            aria-invalid={edited && Boolean(inputError)}
+            aria-describedby={noteId}
+            onChange={(event) => {
+              setValue(event.currentTarget.value)
+              setEdited(true)
+              setArmed(false)
+            }}
           />
-          {config.kind === 'policy' && (
-            <Row $gap={8} $wrap>
-              <EnsureAuth>
-                <ButtonAnchor
-                  as="label"
-                  $variant="secondary"
-                  $size="sm"
-                  aria-disabled={locked}
-                >
-                  <CurateIcon name="submit" size={14} />
-                  {uploading ? 'Uploading…' : 'Upload MetaEvidence JSON'}
-                  <HiddenFileInput
-                    type="file"
-                    accept="application/json,.json"
-                    disabled={locked}
-                    onChange={(event) =>
-                      uploadMetaEvidence(event.currentTarget.files?.[0])
-                    }
-                  />
-                </ButtonAnchor>
-              </EnsureAuth>
-            </Row>
+          {edited && inputError ? (
+            <FieldNote id={noteId} $error role="alert">
+              {inputError}
+            </FieldNote>
+          ) : description ? (
+            <FieldNote id={noteId}>{description}</FieldNote>
+          ) : null}
+          {armed && (
+            <GateRow role="alert">
+              <Small>
+                This hands {registry.title} to{' '}
+                <Data $mono style={{ overflowWrap: 'anywhere' }}>
+                  {String(parsed.value)}
+                </Data>
+                . After it is mined, only that address can change the list.
+                {governorHasCode === false &&
+                  ` There is no contract at that address on ${chainName(registry.chainId)}: fine for a personal wallet, but a Safe must exist on ${chainName(registry.chainId)} itself.`}
+              </Small>
+            </GateRow>
           )}
         </Stack>
         <Button
           type="button"
-          $variant="primary"
-          disabled={disabled}
+          $variant={armed ? 'danger' : 'primary'}
+          disabled={Boolean(blocker) || locked}
           title={blocker}
           onClick={save}
         >
-          {pending ? 'Saving…' : 'Save'}
+          {pending ? 'Saving…' : armed ? 'Confirm transfer' : 'Save'}
         </Button>
       </Controls>
       {config.hint && <Small $muted>{config.hint}</Small>}
@@ -965,11 +1532,17 @@ const GovernanceDialog = ({
   registry,
   editable,
   profileAddress,
+  written,
+  onWritten,
   onClose,
 }: {
+  /** The list, with this page's saved params already laid over it. */
   registry: GovernedRegistry
   editable: boolean
   profileAddress: string
+  /** What this page's saves wrote to the list (see Written). */
+  written?: Written
+  onWritten: (written: Written) => void
   onClose: () => void
 }) => {
   const queryClient = useQueryClient()
@@ -988,10 +1561,64 @@ const GovernanceDialog = ({
           },
         }
       : {}
-  const invalidate = () =>
-    queryClient.invalidateQueries({
+  const saved = (next: Written) => {
+    onWritten(next)
+    void queryClient.invalidateQueries({
       queryKey: ['addressProfile', profileAddress],
     })
+    void queryClient.invalidateQueries({
+      queryKey: ['governanceMetaEvidence', registry.chainId, registry.address],
+    })
+  }
+  // The live MetaEvidence pair, so URI fields start on the current files.
+  const metaEvidence = useQuery({
+    queryKey: ['governanceMetaEvidence', registry.chainId, registry.address],
+    queryFn: () => fetchCurrentMetaEvidence(registry),
+    staleTime: 60_000,
+    retry: 1,
+  })
+  // What this page saved wins over the indexer, which may not have caught up.
+  const fetchedMetaEvidence = metaEvidence.data
+  const writtenMetaEvidence = written?.metaEvidence
+  const currentMetaEvidence = useMemo<CurrentMetaEvidence | undefined>(
+    () =>
+      fetchedMetaEvidence
+        ? { ...fetchedMetaEvidence, ...writtenMetaEvidence }
+        : writtenMetaEvidence?.registration
+          ? writtenMetaEvidence
+          : undefined,
+    [fetchedMetaEvidence, writtenMetaEvidence],
+  )
+  const metaEvidenceError = metaEvidence.isError && !currentMetaEvidence
+  // Stake amounts are in the token's own decimals, never assumed to be 18.
+  const tokenDecimals = useReadContract({
+    address: registry.token as `0x${string}` | undefined,
+    abi: erc20Abi,
+    functionName: 'decimals',
+    chainId: registry.chainId,
+    query: {
+      enabled: registry.kind === 'permanent' && Boolean(registry.token),
+      staleTime: Infinity,
+    },
+  })
+  // The connected (badges) list has no contract getter: use the indexer's.
+  const withIndexedParams = useMemo<GovernedRegistry>(
+    () =>
+      currentMetaEvidence?.connectedTCR && !registry.params?.connectedTCR
+        ? {
+            ...registry,
+            params: {
+              ...registry.params,
+              connectedTCR: currentMetaEvidence.connectedTCR,
+            },
+          }
+        : registry,
+    [registry, currentMetaEvidence?.connectedTCR],
+  )
+  const context: ParamContext = {
+    tokenDecimals:
+      tokenDecimals.data === undefined ? undefined : Number(tokenDecimals.data),
+  }
 
   return (
     <DialogShell title={`Update ${registry.title}`} onClose={onClose}>
@@ -1022,19 +1649,34 @@ const GovernanceDialog = ({
         <Label>Arbitration and court</Label>
         <ArbitrationGovernanceField
           registry={registry}
+          current={currentMetaEvidence}
+          currentError={metaEvidenceError}
           gate={gate}
-          onSaved={invalidate}
+          onSaved={saved}
         />
       </div>
+      {registry.kind === 'classic' && (
+        <div>
+          <Label>Policy</Label>
+          <MetaEvidencePairField
+            registry={registry}
+            current={currentMetaEvidence}
+            currentError={metaEvidenceError}
+            gate={gate}
+            onSaved={saved}
+          />
+        </div>
+      )}
       <div>
         <Label>Registry parameters</Label>
         {editableParams(registry).map((config) => (
           <GovernanceField
             key={`${registry.id}-${config.key}`}
-            registry={registry}
+            registry={withIndexedParams}
             config={config}
+            context={context}
             gate={gate}
-            onSaved={invalidate}
+            onSaved={saved}
           />
         ))}
       </div>
@@ -1208,19 +1850,6 @@ const GovActions = styled.div`
   }
 `
 
-const GovLogo = styled.span<{ $image?: string | null }>`
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  border: 1px solid var(--glass-border);
-  border-radius: 12px;
-  background: ${({ $image }) =>
-    $image ? `url("${$image}") center / cover` : 'var(--color-surface)'};
-  color: var(--color-faint);
-`
-
 const GovHead = styled.div`
   display: flex;
   align-items: flex-end;
@@ -1269,12 +1898,6 @@ const GovHead = styled.div`
   }
 `
 
-const logoUrl = (uri?: string | null): string | null => {
-  if (!uri) return null
-  if (/^https?:\/\//i.test(uri)) return uri
-  return parseIpfs(uri)
-}
-
 /** The creation date, a placeholder while it is read, or a dash. */
 const CreatedValue = ({
   time,
@@ -1304,7 +1927,39 @@ export const GovernancePanel = ({
   isZero?: boolean
 }) => {
   const { address: connectedAddress, isConnected } = useAccount()
-  const [selected, setSelected] = useState<GovernedRegistry | null>(null)
+  // What this page's saves wrote, by list (see Written). The rows and the
+  // dialog show it over the indexed values, which trail the chain.
+  const [written, setWritten] = useState<Record<string, Written>>({})
+  const shown = useMemo(
+    () =>
+      registries.map((registry) => withWritten(registry, written[registry.id])),
+    [registries, written],
+  )
+  // The open dialog follows the live list by id, so a background refresh
+  // shows newer values than the snapshot taken when the dialog opened.
+  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [snapshot, setSnapshot] = useState<GovernedRegistry | null>(null)
+  const selectedBase = selectedId
+    ? (registries.find((registry) => registry.id === selectedId) ?? snapshot)
+    : null
+  const selected = selectedBase
+    ? withWritten(selectedBase, written[selectedBase.id])
+    : null
+  const setSelected = (registry: GovernedRegistry | null) => {
+    setSelectedId(registry?.id ?? null)
+    setSnapshot(registry)
+  }
+  const recordWritten = (registry: GovernedRegistry, next: Written) => {
+    setWritten((previous) => ({
+      ...previous,
+      [registry.id]: mergeWritten(previous[registry.id], next),
+    }))
+    // A governor transfer ends this wallet's say over the list.
+    if (next.params?.governor) {
+      setSelected(null)
+      successToast(`${registry.title} has a new governor.`)
+    }
+  }
   const connected = normalizeAddress(connectedAddress)
   const isOwner = isConnected && connected === profileAddress
   const selectedEditable =
@@ -1350,16 +2005,17 @@ export const GovernancePanel = ({
         </GovList>
       ) : (
         <GovList>
-          {registries.map((registry) => {
+          {shown.map((registry) => {
             const editable =
               isOwner && normalizeAddress(registry.governor) === connected
             const href = `/tcr/${registry.chainId}/${registry.address}`
-            const image = logoUrl(registry.logoURI)
             return (
               <GovRow key={registry.id}>
-                <GovLogo $image={image} aria-hidden>
-                  {!image && <CurateIcon name="registry" size={17} />}
-                </GovLogo>
+                <ListLogo
+                  uri={registry.logoURI}
+                  seed={registry.address}
+                  size={40}
+                />
                 <GovName>
                   <TitleLine>
                     <RegistryTitle to={href}>{registry.title}</RegistryTitle>
@@ -1460,6 +2116,8 @@ export const GovernancePanel = ({
           registry={selected}
           editable={selectedEditable}
           profileAddress={profileAddress}
+          written={written[selected.id]}
+          onWritten={(next) => recordWritten(selected, next)}
           onClose={() => setSelected(null)}
         />
       )}

@@ -2,10 +2,9 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import styled from 'styled-components'
 import { useDebounce } from 'use-debounce'
 import type { BigNumber, ethers } from 'ethers'
-import { useAccount, usePublicClient, useWalletClient, useChainId } from 'wagmi'
+import { useAccount, usePublicClient, useWalletClient } from 'wagmi'
 import { useQuery } from '@tanstack/react-query'
 import { simulateContract } from '@wagmi/core'
-import { getAddress, keccak256, encodePacked } from 'viem'
 import { useAtlasProvider } from '@kleros/kleros-app'
 import _gtcr from 'assets/abis/LightGeneralizedTCR.json'
 import { addPeriod, isETHAddress } from 'utils/string'
@@ -100,7 +99,6 @@ const SubmitConnectModal = (props: SubmitConnectModalProps) => {
     visible,
   } = props
   const { address: account } = useAccount()
-  const chainId = useChainId()
   const publicClient = usePublicClient()
   const { data: walletClient } = useWalletClient()
   const { uploadFile } = useAtlasProvider()
@@ -256,28 +254,7 @@ const SubmitConnectModal = (props: SubmitConnectModalProps) => {
         publicClient,
       )
 
-      if (result.status) {
-        onCancel()
-
-        if (process.env.REACT_APP_NOTIFICATIONS_API_URL && !!chainId) {
-          const itemID = keccak256(encodePacked(['string'], [ipfsEvidencePath]))
-          fetch(
-            `${process.env.REACT_APP_NOTIFICATIONS_API_URL}/${chainId}/api/subscribe`,
-            {
-              method: 'post',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                subscriberAddr: getAddress(account),
-                tcrAddr: getAddress(relTCRAddress),
-                itemID,
-                networkID: chainId,
-              }),
-            },
-          ).catch((err) => {
-            console.error('Failed to subscribe for notifications.', err)
-          })
-        }
-      }
+      if (result.status) onCancel()
     } catch (err) {
       console.error('Error submitting badge connection:', err)
       errorToast(parseWagmiError(err))
@@ -286,7 +263,6 @@ const SubmitConnectModal = (props: SubmitConnectModalProps) => {
   }, [
     account,
     badgeTCRAddr,
-    chainId,
     match,
     onCancel,
     publicClient,

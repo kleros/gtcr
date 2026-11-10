@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useContext, useMemo } from 'react'
 import { ethers, type BigNumber } from 'ethers'
 import styled from 'styled-components'
-import { useParams, Link } from 'react-router-dom'
+import { useParams, Link, useLocation } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { request } from 'graphql-request'
 import { gtcrDecode } from '@kleros/gtcr-encoder'
@@ -13,6 +13,14 @@ import { useEthersProvider } from 'hooks/ethers-adapters'
 import useTcrMetaEvidence from 'hooks/use-tcr-meta-evidence'
 import { useAttachment } from 'hooks/use-attachment'
 import ErrorPage from '../error-page'
+import {
+  ENTRY_LINK_TIP,
+  ENTRY_LOAD_FAILED,
+  ENTRY_INDEXING_MESSAGE,
+  ENTRY_INDEXING_TITLE,
+  ENTRY_MISSING_TIP,
+  justSubmitted,
+} from '../error-page/copy'
 import ItemDetailsCard from 'components/item-details-card'
 import RequestTimelines, {
   type TimelineRequest,
@@ -430,6 +438,10 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
   const [appealCost, setAppealCost] = useState<BigNumber | null | undefined>()
   const now = useNow()
 
+  // Opened right after submitting it (submit-item): a missing entry is
+  // still being indexed, not absent.
+  const location = useLocation()
+  const recentlySubmitted = justSubmitted(location.state)
   // subgraph item entities have id "<itemID>@<listaddress>"
   const compoundId = `${itemID}@${tcrAddress?.toLowerCase()}`
   const detailsViewQuery = useQuery({
@@ -441,6 +453,16 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
     },
     enabled: !!chainId,
     staleTime: STALE_TIME,
+    // An entry sent a moment ago can take a while to reach the indexer:
+    // keep looking for two minutes before settling on "not found".
+    refetchInterval: (query) =>
+      query.state.status === 'success' &&
+      !query.state.data?.item &&
+      query.state.dataUpdateCount < (recentlySubmitted ? 180 : 12)
+        ? recentlySubmitted
+          ? 5_000
+          : 10_000
+        : false,
   })
 
   const item = useMemo<SubgraphItem | undefined>(
@@ -562,12 +584,7 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
     }
   }, [item, appealCost, library])
 
-  if (
-    !tcrAddress ||
-    !itemID ||
-    tcrError ||
-    (!detailsViewQuery.isLoading && !detailsViewQuery.data?.item)
-  )
+  if (!tcrAddress || !itemID || tcrError)
     return (
       <ErrorPage
         code="400"
@@ -576,7 +593,46 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
             ? tcrError
             : 'This entry could not be found.'
         }
-        tip="Make sure your wallet is set to the correct network (is this on Gnosis Chain?)."
+        tip={ENTRY_LINK_TIP}
+      />
+    )
+
+  // A failed read and a missing entry each get their own page.
+  if (detailsViewQuery.isError && !detailsViewQuery.data)
+    return (
+      <ErrorPage
+        code="Error"
+        title="This entry did not load"
+        message={ENTRY_LOAD_FAILED}
+        onRetry={() => detailsViewQuery.refetch()}
+      />
+    )
+
+  if (
+    detailsViewQuery.isSuccess &&
+    !detailsViewQuery.data?.item &&
+    recentlySubmitted
+  )
+    return (
+      <ErrorPage
+        code="Indexing"
+        tone="window"
+        title={ENTRY_INDEXING_TITLE}
+        message={ENTRY_INDEXING_MESSAGE}
+        home={{
+          to: `/tcr/${chainId}/${tcrAddress}`,
+          label: 'Back to the list',
+        }}
+      />
+    )
+
+  if (detailsViewQuery.isSuccess && !detailsViewQuery.data?.item)
+    return (
+      <ErrorPage
+        code="404"
+        title="Entry not found"
+        message="This list has no entry with this ID."
+        tip={ENTRY_MISSING_TIP}
       />
     )
 

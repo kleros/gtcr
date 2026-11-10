@@ -43,12 +43,19 @@ const combineReads = (
 ): Array<RegistryMetadata | null | undefined> =>
   results.map((result) => result.data)
 
-/** Metadata by MetaEvidence path, for the paths read so far. */
-const useMetadataReads = (paths: string[]): Map<string, RegistryMetadata> => {
+/**
+ * Metadata by MetaEvidence path, for the paths read so far. `urgent` reads
+ * (the lists on screen) go before the background ones in the shared read
+ * queue (utils/registry-metadata.ts).
+ */
+const useMetadataReads = (
+  paths: string[],
+  urgent = false,
+): Map<string, RegistryMetadata> => {
   const reads = useQueries({
     queries: paths.map((path) => ({
       queryKey: ['registryMetadata', path],
-      queryFn: () => readRegistryMetadata(path),
+      queryFn: () => readRegistryMetadata(path, { urgent }),
       // Content-addressed: it never changes.
       staleTime: Infinity,
       gcTime: 60 * 60_000,
@@ -122,7 +129,7 @@ export const useCompletedRegistries = (
     () => pathsOf(registries.filter(isIncomplete)),
     [registries],
   )
-  const byPath = useMetadataReads(paths)
+  const byPath = useMetadataReads(paths, true)
 
   return (registry) => {
     const path = ipfsPath(registry.metadataURI)
