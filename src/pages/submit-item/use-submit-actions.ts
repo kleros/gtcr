@@ -18,6 +18,7 @@ import _permanentGtcr from 'assets/abis/PermanentGTCR.json'
 import { wagmiConfig } from 'config/wagmi'
 import { resolveStashedFiles } from 'utils/resolve-stashed-files'
 import { JSON_UPLOAD_ROLE } from 'utils/atlas-roles'
+import { confirmStored } from 'utils/confirm-stored'
 import { errorToast, wrapWithToast } from 'utils/wrap-with-toast'
 import { parseWagmiError } from 'utils/parse-wagmi-error'
 import { encoderValues, type SubmissionValues } from './form'
@@ -116,6 +117,8 @@ export const useDepositSubmit = ({
           const ipfsEvidencePath = await uploadFile(itemFile, JSON_UPLOAD_ROLE)
           if (!ipfsEvidencePath)
             throw new Error('Failed to upload item metadata to IPFS.')
+          // The entry is this file: make sure it can be read before paying.
+          await confirmStored(ipfsEvidencePath)
           itemID = keccak256(encodePacked(['string'], [ipfsEvidencePath]))
           setPhase('wallet')
           const { request } = await simulateContract(wagmiConfig, {
@@ -309,6 +312,8 @@ export const usePermanentSubmit = ({
         const ipfsEvidencePath = await uploadFile(itemFile, JSON_UPLOAD_ROLE)
         if (!ipfsEvidencePath)
           throw new Error('Failed to upload item metadata to IPFS.')
+        // The entry is this file: make sure it can be read before paying.
+        await confirmStored(ipfsEvidencePath)
 
         setPhase('wallet')
         const { request } = await simulateContract(wagmiConfig, {

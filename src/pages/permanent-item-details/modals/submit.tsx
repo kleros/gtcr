@@ -16,6 +16,7 @@ import useNativeCurrency from 'hooks/native-currency'
 import useTokenSymbol from 'hooks/token-symbol'
 import { resolveStashedFiles } from 'utils/resolve-stashed-files'
 import { JSON_UPLOAD_ROLE } from 'utils/atlas-roles'
+import { confirmStored } from 'utils/confirm-stored'
 import { addPeriod, capitalizeFirstLetter } from 'utils/string'
 import { formatDurationLong } from 'utils/time'
 import { wrapWithToast, errorToast } from 'utils/wrap-with-toast'
@@ -524,6 +525,8 @@ const SubmitModal: React.FC<{
         const ipfsEvidencePath = await uploadFile(itemFile, JSON_UPLOAD_ROLE)
         if (!ipfsEvidencePath)
           throw new Error('Failed to upload item metadata to IPFS.')
+        // The entry is this file: make sure it can be read before paying.
+        await confirmStored(ipfsEvidencePath)
 
         const { request } = await simulateContract(wagmiConfig, {
           address: tcrAddress as `0x${string}`,
