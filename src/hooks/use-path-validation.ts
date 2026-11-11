@@ -52,7 +52,8 @@ const usePathValidation = () => {
       }
       setPathResolved(true)
     }
-    checkPathValidation()
+    // Its reads carry their own catch: nothing to await here.
+    void checkPathValidation()
   }, [navigate, location, setPathResolved])
 
   return [pathResolved, invalidTcrAddr]
