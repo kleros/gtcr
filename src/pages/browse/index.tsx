@@ -45,11 +45,12 @@ import {
 } from 'pages/dashboard/data'
 import {
   DASHBOARD_QUERY_KEY,
-  DASHBOARD_REFRESH_MS,
+  dashboardRefreshIn,
   DASHBOARD_STALE_MS,
   TESTNET_DASHBOARD_QUERY_KEY,
   isLiveLoad,
 } from 'pages/dashboard/query'
+import { useSavedLoadsReady } from 'pages/dashboard/saved-load'
 import {
   applyCreationTimes,
   fetchRegistryCreationTimes,
@@ -1441,11 +1442,14 @@ const BrowsePage = () => {
   )
   const now = useNow(30_000)
 
+  // A load saved by an earlier page load is looked up first (saved-load.ts).
+  const savedReady = useSavedLoadsReady()
   const mainnets = useQuery({
     queryKey: DASHBOARD_QUERY_KEY,
     queryFn: fetchDashboardData,
+    enabled: savedReady,
     staleTime: DASHBOARD_STALE_MS,
-    refetchInterval: DASHBOARD_REFRESH_MS,
+    refetchInterval: dashboardRefreshIn,
     // Back from another tab: refresh only a load older than the stale time.
     refetchOnWindowFocus: true,
   })
@@ -1461,9 +1465,9 @@ const BrowsePage = () => {
     queryKey: TESTNET_DASHBOARD_QUERY_KEY,
     queryFn: fetchTestnetDashboardData,
     staleTime: DASHBOARD_STALE_MS,
-    refetchInterval: DASHBOARD_REFRESH_MS,
+    refetchInterval: dashboardRefreshIn,
     refetchOnWindowFocus: true,
-    enabled: wantsTestnet,
+    enabled: savedReady && wantsTestnet,
   })
   const data = useMemo(
     () =>

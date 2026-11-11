@@ -1,4 +1,5 @@
-import { gql, request } from 'graphql-request'
+import { gql } from 'graphql-request'
+import { request } from 'utils/indexer-request'
 import { ItemTypes } from '@kleros/gtcr-encoder'
 import { subgraphUrl, subgraphUrlPermanent } from 'config/tcr-addresses'
 import type { RegistryKind } from 'pages/dashboard/types'

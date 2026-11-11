@@ -42,11 +42,12 @@ import {
 } from './data'
 import {
   DASHBOARD_QUERY_KEY,
-  DASHBOARD_REFRESH_MS,
+  dashboardRefreshIn,
   DASHBOARD_STALE_MS,
   TESTNET_DASHBOARD_QUERY_KEY,
   isLiveLoad,
 } from './query'
+import { useSavedLoadsReady } from './saved-load'
 import {
   HappeningNow,
   type OpenListChip,
@@ -721,11 +722,14 @@ const Dashboard = () => {
   const loadKey = testnetScope
     ? TESTNET_DASHBOARD_QUERY_KEY
     : DASHBOARD_QUERY_KEY
+  // A load saved by an earlier page load is looked up first (saved-load.ts).
+  const savedReady = useSavedLoadsReady()
   const query = useQuery({
     queryKey: loadKey,
     queryFn: testnetScope ? fetchTestnetDashboardData : fetchDashboardData,
+    enabled: savedReady,
     staleTime: DASHBOARD_STALE_MS,
-    refetchInterval: DASHBOARD_REFRESH_MS,
+    refetchInterval: dashboardRefreshIn,
     // Back from another tab: refresh only a load older than the stale time.
     refetchOnWindowFocus: true,
   })

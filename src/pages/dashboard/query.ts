@@ -24,6 +24,22 @@ export const DASHBOARD_STALE_MS = 5 * 60_000
 export const DASHBOARD_REFRESH_MS = 5 * 60_000
 
 /**
+ * When a page on screen reads the load again: once it is
+ * DASHBOARD_REFRESH_MS old. A load can arrive already aged (saved by an
+ * earlier page load, see saved-load.ts), so the wait counts from the load's
+ * own time, not from when this page opened.
+ */
+export const dashboardRefreshIn = (query: {
+  state: { data?: { generatedAt?: number } }
+}): number => {
+  const generatedAt = query.state.data?.generatedAt
+  if (typeof generatedAt !== 'number') return DASHBOARD_REFRESH_MS
+  const wait = generatedAt + DASHBOARD_REFRESH_MS - Date.now()
+  // Overdue means the last refresh failed: try again in a minute, not at once.
+  return wait > 0 ? Math.max(15_000, wait) : 60_000
+}
+
+/**
  * A load older than this is not called live: the page was in the
  * background, or the refresh is late (a minute of slack for the load itself).
  */

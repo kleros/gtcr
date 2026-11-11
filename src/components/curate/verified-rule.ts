@@ -1,5 +1,6 @@
 import type { QueryClient } from '@tanstack/react-query'
-import { gql, request } from 'graphql-request'
+import { gql } from 'graphql-request'
+import { request } from 'utils/indexer-request'
 import { subgraphUrl } from 'config/tcr-addresses'
 import { getListOfListsAddresses } from 'config/list-of-lists'
 import type { TrustStatus } from 'pages/dashboard/types'

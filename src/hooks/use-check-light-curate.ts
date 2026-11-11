@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { request } from 'graphql-request'
+import { request } from 'utils/indexer-request'
 import { TCR_EXISTENCE_TEST } from 'utils/graphql'
 import useCheckPermanentList from './use-check-permanent-list'
 import useUrlChainId from 'hooks/use-url-chain-id'

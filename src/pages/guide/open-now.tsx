@@ -16,6 +16,7 @@ import {
   scopedFigures,
 } from 'pages/dashboard/view'
 import { DASHBOARD_QUERY_KEY, DASHBOARD_STALE_MS } from 'pages/dashboard/query'
+import { useSavedLoadsReady } from 'pages/dashboard/saved-load'
 import type { DashboardData } from 'pages/dashboard/types'
 import { useInView } from './hooks'
 
@@ -133,11 +134,12 @@ export const OpenNow = () => {
   const ref = useRef<HTMLDivElement>(null)
   const seen = useInView(ref, 0.2)
   const now = useNow(30_000)
+  const savedReady = useSavedLoadsReady()
   const query = useQuery({
     queryKey: DASHBOARD_QUERY_KEY,
     queryFn: loadDashboard,
     staleTime: DASHBOARD_STALE_MS,
-    enabled: seen,
+    enabled: seen && savedReady,
   })
   const data = query.data
 

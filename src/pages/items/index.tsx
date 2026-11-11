@@ -12,7 +12,7 @@ import styled from 'styled-components'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { useQuery, type UseQueryResult } from '@tanstack/react-query'
 import { ErrorBoundary } from 'react-error-boundary'
-import { request } from 'graphql-request'
+import { request } from 'utils/indexer-request'
 import localforage from 'localforage'
 import { BigNumber, ethers } from 'ethers'
 import { gtcrDecode } from '@kleros/gtcr-encoder'
@@ -113,6 +113,14 @@ const lazyForms = (attempt: number) => ({
 
 const MAX_ENTITIES = 1000
 const ITEMS_PER_PAGE = 40
+/*
+ * How often an open list reads its rows again by itself. Each read is a
+ * 1,000-row query against an indexer whose request limit every visitor
+ * shares, so this is minutes, not the 30 seconds it used to be: statuses
+ * tick on the local clock in between, and the reader's own transactions
+ * refresh the list at once (RefreshAfterTransactions).
+ */
+const LIST_REFRESH_MS = 5 * 60_000
 const NSFW_FILTER_KEY = 'NSFW_FILTER_KEY'
 const KIND_LABEL = 'Classic Curate'
 
@@ -593,7 +601,7 @@ const Items = () => {
     queryFn: () => fetchClassicItems(chainId, queryVariables),
     enabled: !!chainId,
     staleTime: STALE_TIME,
-    refetchInterval: 30_000, // Poll subgraph every 30s for status changes
+    refetchInterval: LIST_REFRESH_MS,
   })
   useRefetchWhenEmpty(itemsQuery, queryVariables)
   const loadedItems = itemsQuery.data?.items
@@ -615,7 +623,7 @@ const Items = () => {
     queryFn: () => fetchClassicItems(chainId, overviewVariables),
     enabled: !!chainId && !!tcrAddress,
     staleTime: STALE_TIME,
-    refetchInterval: 30_000,
+    refetchInterval: LIST_REFRESH_MS,
   })
   useRefetchWhenEmpty(overviewQuery, overviewVariables)
   const overviewItems = overviewQuery.data?.items

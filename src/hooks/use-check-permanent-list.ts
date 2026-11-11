@@ -1,8 +1,6 @@
 import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { request } from 'graphql-request'
-import { PERMANENT_REGISTRY_EXISTENCE_TEST } from 'utils/graphql'
-import { subgraphUrlPermanent } from 'config/tcr-addresses'
+import { isPermanentRegistry } from 'utils/permanent-registry-check'
 import { STALE_TIME } from 'consts'
 
 const useCheckPermanentList = (
@@ -22,14 +20,12 @@ const useCheckPermanentList = (
     refetch,
   } = useQuery({
     queryKey: ['permanentRegistryExistence', address, chainId],
-    queryFn: () => {
-      const url = subgraphUrlPermanent[chainId!]
-      if (!url)
-        throw new Error(`No permanent subgraph URL for chain ${chainId}`)
-
-      return request(url, PERMANENT_REGISTRY_EXISTENCE_TEST, {
-        tcrAddress: (address || '').toLowerCase(),
-      })
+    // Every row of a list of lists asks this: the checks asked together
+    // travel as one query (utils/permanent-registry-check.ts).
+    queryFn: async () => {
+      const id = (address || '').toLowerCase()
+      const exists = await isPermanentRegistry(chainId!, id)
+      return { registry: exists ? { id } : null }
     },
     enabled: shouldCheck && !!address && !!chainId,
     retry: 2,

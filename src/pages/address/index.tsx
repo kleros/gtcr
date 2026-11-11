@@ -21,6 +21,7 @@ import {
   DASHBOARD_STALE_MS,
   TESTNET_DASHBOARD_QUERY_KEY,
 } from 'pages/dashboard/query'
+import { seedSavedLoads } from 'pages/dashboard/saved-load'
 import {
   ACTIVITY_LIMIT,
   SUPPORTED_CHAIN_IDS,
@@ -66,7 +67,7 @@ const Governed = styled.div`
   ${reveal}
 `
 
-/** How often an open profile (and its governance scan) is read again. */
+/** How long a profile's read (and its governance scan) counts as fresh. */
 const PROFILE_REFRESH_MS = 5 * 60_000
 
 /** How long the registry index stays cached for an open profile. */
@@ -109,6 +110,8 @@ const AddressPage = () => {
   // index.
   const queryClient = useQueryClient()
   const readIndex = useCallback(async (): Promise<RegistryIndex> => {
+    // Loads saved by an earlier page load come first (saved-load.ts).
+    await seedSavedLoads(queryClient)
     const [mainnets, testnet, sets] = await Promise.all([
       // Nothing on this page observes these keys, so the default five-minute
       // gcTime would drop them just before each refresh and re-run both
@@ -118,12 +121,18 @@ const AddressPage = () => {
         queryFn: fetchDashboardData,
         staleTime: DASHBOARD_STALE_MS,
         gcTime: INDEX_GC_MS,
+        // A load saved by an earlier visit may be hours old: use it now and
+        // refresh it behind the page.
+        revalidateIfStale: true,
       }),
       queryClient.ensureQueryData({
         queryKey: TESTNET_DASHBOARD_QUERY_KEY,
         queryFn: fetchTestnetDashboardData,
         staleTime: DASHBOARD_STALE_MS,
         gcTime: INDEX_GC_MS,
+        // A load saved by an earlier visit may be hours old: use it now and
+        // refresh it behind the page.
+        revalidateIfStale: true,
       }),
       readVerifiedSets(SUPPORTED_CHAIN_IDS, queryClient),
     ])
@@ -143,8 +152,11 @@ const AddressPage = () => {
     queryKey: ['addressProfile', address],
     queryFn: () => fetchAddressProfileData(address, readIndex),
     enabled: validAddress,
+    // Read when the profile opens and after the reader's own transactions
+    // (they invalidate this key); not on a timer: each refresh walks every
+    // request of the address on a shared request limit, for a page nobody
+    // watches live.
     staleTime: PROFILE_REFRESH_MS,
-    refetchInterval: PROFILE_REFRESH_MS,
   })
   const data: AddressProfileData | undefined = query.data
   // isPending is false once the query errors, so the error state can render.
@@ -157,7 +169,6 @@ const AddressPage = () => {
     queryFn: () => fetchGovernedRegistries(address, readIndex),
     enabled: validAddress,
     staleTime: PROFILE_REFRESH_MS,
-    refetchInterval: PROFILE_REFRESH_MS,
   })
   const governedAll: GovernedRegistry[] | undefined =
     governedQuery.data?.registries

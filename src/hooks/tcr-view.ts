@@ -12,6 +12,7 @@ import {
   subgraphUrlPermanent,
 } from 'config/tcr-addresses'
 import { parseIpfs } from 'utils/ipfs-parse'
+import { request } from 'utils/indexer-request'
 
 export const fetchMetaEvidence = async (
   tcr: string,
@@ -46,54 +47,40 @@ export const fetchMetaEvidence = async (
     variables: {},
   }
 
-  let subgraphResult: FetchMetaEvidenceResult | null = null
+  // A failed read is thrown, not turned into "no metadata": the queries that
+  // ask keep their answer for a day, so a swallowed failure left the page on
+  // its skeleton (and a list-of-lists row without its name) until a reload.
+  // Thrown, React Query retries it.
 
-  try {
-    // 1. Try Envio first (fast) — covers Classic + Light TCRs.
-    const envioData = (
-      await (
-        await fetch(subgraphUrl[networkId]!, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(envioQuery),
-        })
-      ).json()
-    ).data
-
-    if (envioData?.registry)
-      subgraphResult = {
-        metaEvidenceURI: envioData.registry.registrationMetaEvidence.uri,
-        connectedTCR: envioData.registry.connectedTCR,
-      }
-    else if (envioData?.lregistry)
-      subgraphResult = {
-        metaEvidenceURI: envioData.lregistry.registrationMetaEvidence.uri,
-        connectedTCR: envioData.lregistry.connectedTCR,
-      }
-
-    // 2. Only try Goldsky if Envio didn't find it (rare — permanent TCRs).
-    if (!subgraphResult) {
-      const pgtcrData = (
-        await (
-          await fetch(subgraphUrlPermanent[networkId]!, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(pgtcrQuery),
-          })
-        ).json()
-      ).data
-
-      if (pgtcrData?.registry)
-        subgraphResult = {
-          metaEvidenceURI:
-            pgtcrData.registry.arbitrationSettings[0].metaEvidenceURI,
-        }
+  // 1. Try Envio first (fast) — covers Classic + Light TCRs. It travels
+  // with the page's other indexer reads (utils/indexer-request.ts): a list
+  // of lists asks this once per row.
+  const envioData = await request(
+    subgraphUrl[networkId]!,
+    envioQuery.query,
+    envioQuery.variables,
+  )
+  if (envioData?.registry)
+    return {
+      metaEvidenceURI: envioData.registry.registrationMetaEvidence.uri,
+      connectedTCR: envioData.registry.connectedTCR,
     }
-  } catch (err) {
-    console.warn('Subgraph MetaEvidence fetch failed', err)
-  }
+  if (envioData?.lregistry)
+    return {
+      metaEvidenceURI: envioData.lregistry.registrationMetaEvidence.uri,
+      connectedTCR: envioData.lregistry.connectedTCR,
+    }
 
-  return subgraphResult
+  // 2. Only try Goldsky if Envio didn't find it (rare — permanent TCRs).
+  const permanentUrl = subgraphUrlPermanent[networkId]
+  if (!permanentUrl) return null
+  const pgtcrData = await request(permanentUrl, pgtcrQuery.query)
+  return pgtcrData?.registry?.arbitrationSettings?.[0]?.metaEvidenceURI
+    ? {
+        metaEvidenceURI:
+          pgtcrData.registry.arbitrationSettings[0].metaEvidenceURI,
+      }
+    : null
 }
 
 const useTcrView = (tcrAddress: string) => {

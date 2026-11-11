@@ -3,7 +3,7 @@ import { ethers, type BigNumber } from 'ethers'
 import styled from 'styled-components'
 import { useParams, Link, useLocation } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { request } from 'graphql-request'
+import { request } from 'utils/indexer-request'
 import { gtcrDecode } from '@kleros/gtcr-encoder'
 import { abi as _IArbitrator } from '@kleros/erc-792/build/contracts/IArbitrator.json'
 import useUrlChainId from 'hooks/use-url-chain-id'
@@ -20,6 +20,7 @@ import {
   ENTRY_INDEXING_TITLE,
   ENTRY_MISSING_TIP,
   justSubmitted,
+  missingEntryPollMs,
 } from '../error-page/copy'
 import ItemDetailsCard from 'components/item-details-card'
 import RequestTimelines, {
@@ -452,14 +453,10 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
     enabled: !!chainId,
     staleTime: STALE_TIME,
     // An entry sent a moment ago can take a while to reach the indexer:
-    // keep looking for two minutes before settling on "not found".
+    // keep looking for a while before settling on "not found".
     refetchInterval: (query) =>
-      query.state.status === 'success' &&
-      !query.state.data?.item &&
-      query.state.dataUpdateCount < (recentlySubmitted ? 180 : 12)
-        ? recentlySubmitted
-          ? 5_000
-          : 10_000
+      query.state.status === 'success' && !query.state.data?.item
+        ? missingEntryPollMs(query.state.dataUpdateCount, recentlySubmitted)
         : false,
   })
 

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { request } from 'graphql-request'
+import { request } from 'utils/indexer-request'
 import { TCR_EXISTENCE_TEST } from 'utils/graphql'
 import { defaultTcrAddresses, subgraphUrl } from 'config/tcr-addresses'
 

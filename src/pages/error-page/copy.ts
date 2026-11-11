@@ -27,6 +27,23 @@ export const ENTRY_INDEXING_MESSAGE =
 /** How long after a submission a missing entry is taken as still indexing. */
 export const INDEXING_GRACE_MS = 15 * 60_000
 
+/**
+ * When a missing entry is looked for again, by how many answers have come
+ * back so far; false once it is time to settle on "not found". A link to an
+ * entry is tried for two minutes. An entry this reader just submitted is
+ * looked for every 5 seconds for the first two minutes (it usually shows
+ * within one), then every 30 until the grace above runs out: each look is a
+ * request against a limit every visitor shares.
+ */
+export const missingEntryPollMs = (
+  answers: number,
+  recentlySubmitted: boolean,
+): number | false => {
+  if (!recentlySubmitted) return answers < 12 ? 10_000 : false
+  if (answers < 24) return 5_000
+  return answers < 50 ? 30_000 : false
+}
+
 /** The submission time a page was opened with (see submit-item), if recent. */
 export const justSubmitted = (state: unknown): boolean => {
   const submittedAt = (state as { submittedAt?: unknown } | null)?.submittedAt

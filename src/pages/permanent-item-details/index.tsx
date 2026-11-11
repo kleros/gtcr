@@ -57,6 +57,7 @@ import {
   ENTRY_INDEXING_TITLE,
   ENTRY_MISSING_TIP,
   justSubmitted,
+  missingEntryPollMs,
 } from '../error-page/copy'
 import ItemStatusCard from './item-status-card'
 import { formatSince } from 'pages/item-details/format-since'
@@ -427,14 +428,10 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
     enabled: !!chainId,
     staleTime: STALE_TIME,
     // An entry sent a moment ago can take a while to reach the subgraph:
-    // keep looking for two minutes before settling on "not found".
+    // keep looking for a while before settling on "not found".
     refetchInterval: (query) =>
-      query.state.status === 'success' &&
-      !query.state.data?.item &&
-      query.state.dataUpdateCount < (recentlySubmitted ? 180 : 12)
-        ? recentlySubmitted
-          ? 5_000
-          : 10_000
+      query.state.status === 'success' && !query.state.data?.item
+        ? missingEntryPollMs(query.state.dataUpdateCount, recentlySubmitted)
         : false,
   })
 

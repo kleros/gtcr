@@ -53,6 +53,12 @@ export default defineConfig(({ mode }) => {
     define: {
       ...define,
       'process.env.NODE_ENV': JSON.stringify(mode),
+      // Names the build, so data a page saved in the browser is only read
+      // back by the build that wrote it (pages/dashboard/saved-load.ts).
+      // COMMIT_REF is Netlify's; elsewhere each build or dev start is new.
+      'import.meta.env.VITE_BUILD_ID': JSON.stringify(
+        process.env.COMMIT_REF || String(Date.now()),
+      ),
     },
     build: {
       outDir: 'build',

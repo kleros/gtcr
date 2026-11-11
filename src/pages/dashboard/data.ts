@@ -1,4 +1,5 @@
-import { gql, request } from 'graphql-request'
+import { gql } from 'graphql-request'
+import { request } from 'utils/indexer-request'
 import { NETWORKS } from 'config/networks'
 import { subgraphUrl, subgraphUrlPermanent } from 'config/tcr-addresses'
 import { getListOfListsAddresses, isListOfLists } from 'config/list-of-lists'

@@ -1,4 +1,6 @@
 import { loadDashboardData } from 'pages/dashboard/data'
+import { DASHBOARD_QUERY_KEY, DASHBOARD_STALE_MS } from 'pages/dashboard/query'
+import { readSavedLoad, saveLoad } from 'pages/dashboard/saved-load'
 import type { DashboardRegistry } from 'pages/dashboard/types'
 import {
   MAINNET_CHAIN_IDS,
@@ -159,16 +161,30 @@ const withMetadata = async (
   )
 }
 
+/** This page's own load (no list metadata), kept apart from the app's. */
+const LANDING_LOAD = 'landing'
+
 const readLive = async (): Promise<LandingData | null> => {
   const chains = MAINNET_CHAIN_IDS
   // All chains (no testnet), no list metadata for every list (the page
   // needs counts), the challenge periods to place open requests.
-  const data = await loadDashboardData({
-    refreshCreationTimes: false,
-    chains,
-    enrichMetadata: false,
-    challengeWindows: true,
-  })
+  // The same read the app's dashboard makes (with list metadata on top): a
+  // load either page saved in the last few minutes is used as it is.
+  const saved = (
+    await Promise.all([
+      readSavedLoad(DASHBOARD_QUERY_KEY[1]),
+      readSavedLoad(LANDING_LOAD),
+    ])
+  ).find((load) => load && Date.now() - load.generatedAt < DASHBOARD_STALE_MS)
+  const data =
+    saved ??
+    (await loadDashboardData({
+      refreshCreationTimes: false,
+      chains,
+      enrichMetadata: false,
+      challengeWindows: true,
+    }))
+  if (!saved) saveLoad(LANDING_LOAD, data)
   // Any failed or timed-out query (the rulings ledger included) makes the
   // figures partial: rather than label partial numbers as live, the page
   // keeps the dated snapshot. So does a 30-day window cut at its page cap.
