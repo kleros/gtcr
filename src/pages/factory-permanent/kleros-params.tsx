@@ -115,7 +115,7 @@ const KlerosParams = ({
   // Read the arbitration cost the current settings set.
   useEffect(() => {
     let cancelled = false
-    ;(async () => {
+    void (async () => {
       if (!arbitratorExtraData || !arbitrator || !library) return
       try {
         const cost: BigNumber =

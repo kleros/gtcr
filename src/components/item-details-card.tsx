@@ -209,6 +209,14 @@ const ItemDetailsCard = ({
       }
     | undefined
   const [availableRewards, setAvailableRewards] = useState<BigNumber>()
+  // batchRequestWithdraw walks the requests from the first one, and both list
+  // contracts revert a withdrawal from a request that is still open (Light:
+  // one under dispute). While the latest request is open the walk stops
+  // before it (_count is where the walk ends); the view's availableRewards
+  // counts the same resolved requests. 0 walks them all, as before.
+  const withdrawCount = item?.resolved
+    ? 0
+    : Math.max(0, (item?.requests?.length ?? 0) - 1)
   const { tcrAddress } = useParams()
   const urlChainId = useUrlChainId()
   // The batch withdrawer of the list's chain (the URL's), not the wallet's.
@@ -227,7 +235,7 @@ const ItemDetailsCard = ({
   useEffect(() => {
     if (kind === 'stake') return
     let cancelled = false
-    ;(async () => {
+    void (async () => {
       if (!tcrViewContext || !tcrViewContext.gtcrView || !account || !item)
         return
       try {
@@ -263,7 +271,15 @@ const ItemDetailsCard = ({
         address: BATCH_WITHDRAW_ADDRESS as `0x${string}`,
         abi: _batchWithdraw,
         functionName: 'batchRequestWithdraw',
-        args: [tcrViewContext.tcrAddress, account, item.itemID, 0, 0, 0, 0],
+        args: [
+          tcrViewContext.tcrAddress,
+          account,
+          item.itemID,
+          0,
+          withdrawCount,
+          0,
+          0,
+        ],
         account,
         chainId: urlChainId,
       })
@@ -292,6 +308,7 @@ const ItemDetailsCard = ({
     publicClient,
     tcrViewContext,
     urlChainId,
+    withdrawCount,
   ])
 
   const { file: itemMetaEvidenceFile, error: itemMetaEvidenceError } =
@@ -332,10 +349,24 @@ const ItemDetailsCard = ({
   const withdrawable =
     !!BATCH_WITHDRAW_ADDRESS &&
     !!item &&
-    !!item.resolved &&
+    (!!item.resolved || withdrawCount > 0) &&
     !!availableRewards &&
     availableRewards.gt(BigNumber.from(0))
   const logo = logoURI ? parseIpfs(logoURI) : undefined
+  // Rewards do not depend on the entry's data, so an entry that cannot be
+  // decoded still offers them.
+  const withdrawAction = withdrawable ? (
+    <Actions>
+      <Button
+        type="button"
+        $variant="primary"
+        $size="sm"
+        onClick={batchWithdrawClick}
+      >
+        Withdraw rewards · {formatAmount(availableRewards, nativeCurrency)}
+      </Button>
+    </Actions>
+  ) : null
 
   if (!loading && item && errors.length > 0)
     return (
@@ -347,6 +378,7 @@ const ItemDetailsCard = ({
               {error}
             </Notice>
           ))}
+          {withdrawAction}
         </Stack>
       </Surface>
     )
@@ -434,19 +466,7 @@ const ItemDetailsCard = ({
         {columns && detailFields.length > 0 && (
           <EntryFields fields={detailFields} />
         )}
-        {withdrawable && (
-          <Actions>
-            <Button
-              type="button"
-              $variant="primary"
-              $size="sm"
-              onClick={batchWithdrawClick}
-            >
-              Withdraw rewards ·{' '}
-              {formatAmount(availableRewards, nativeCurrency)}
-            </Button>
-          </Actions>
-        )}
+        {withdrawAction}
         {tcrAddress !== undefined &&
           urlChainId !== null &&
           isSeerRegistry(tcrAddress, urlChainId) &&

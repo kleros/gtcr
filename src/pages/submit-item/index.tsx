@@ -28,7 +28,7 @@ import { useGraphqlBatcher } from 'contexts/graphql-batcher'
 import { PERMANENT_REGISTRY_QUERY } from 'utils/graphql'
 import { parseIpfs } from 'utils/ipfs-parse'
 import { formatDuration, formatDurationLong } from 'utils/time'
-import { isLinkValueKey } from 'components/curate/registry-shared-action-link'
+import { linkValueParams } from 'components/curate/registry-shared-action-link'
 import {
   SubmitPage,
   SubmitPageSkeleton,
@@ -67,18 +67,16 @@ const NO_DISABLED_FIELDS: boolean[] = []
 /**
  * Values a shared ?action= link carried (the registry forwards them here as
  * the query string), in column order, as the previous submit dialog read
- * them. `action`, the list's filters, the theme preview and tracking tags
- * are not values, so a link straight to this page reads the same.
+ * them. The rules are the registry's (linkValueParams): the theme preview,
+ * the policy viewer's parameters and tracking tags are never values, so a
+ * link straight to this page reads the same.
  */
 const useLinkValues = (): unknown[] => {
   const { search } = useLocation()
-  return useMemo(() => {
-    const values: string[] = []
-    new URLSearchParams(search).forEach((value, key) => {
-      if (isLinkValueKey(key)) values.push(value)
-    })
-    return values
-  }, [search])
+  return useMemo(
+    () => linkValueParams(search).map(([, value]) => value),
+    [search],
+  )
 }
 
 const useRegistryPath = () => {
@@ -282,6 +280,7 @@ const DepositSubmitPage = ({
       columns={columns}
       initialValues={linkValues}
       disabledFields={NO_DISABLED_FIELDS}
+      wholeNumbers={kind === 'classic'}
       policyURI={policyURI}
       terms={terms}
       ready={ready}
@@ -397,7 +396,7 @@ const PermanentSubmitPage = () => {
     setColumnsError(undefined)
 
     if (!metaEvidenceURI) return undefined
-    ;(async () => {
+    void (async () => {
       try {
         const response = await fetch(parseIpfs(metaEvidenceURI))
         const file = await response.json()

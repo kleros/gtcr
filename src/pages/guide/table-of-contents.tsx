@@ -242,7 +242,7 @@ const useActiveBox = (
     measure()
     // Web fonts can land after the first measure and shift the entries.
     let live = true
-    document.fonts?.ready.then(() => live && measure())
+    void document.fonts?.ready.then(() => live && measure())
     window.addEventListener('resize', measure)
     return () => {
       live = false

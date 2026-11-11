@@ -156,7 +156,7 @@ export const ChainSwitch = ({
       )
     }
     let live = true
-    document.fonts?.ready.then(() => live && remeasure())
+    void document.fonts?.ready.then(() => live && remeasure())
     if (typeof ResizeObserver === 'undefined')
       return () => {
         live = false

@@ -64,11 +64,23 @@ const period = (positive: boolean) =>
       (value) => !positive || value === undefined || value > 0,
     )
 
+/**
+ * A percent. The contract takes basis points (hundredths of a percent) and
+ * the deploy sends percent × 100, so a third decimal (12.345%) has no exact
+ * value there.
+ */
 const multiplier = yup
   .number()
   .typeError('Amount should be a number.')
   .min(0, 'The stake multiplier cannot be negative.')
   .required('A value is required.')
+  .test(
+    'basis-points',
+    'Use at most two decimal places, like 12.5.',
+    (value) =>
+      value === undefined ||
+      Math.abs(value * 100 - Math.round(value * 100)) < 1e-6,
+  )
 
 const TCR_FIELDS: Record<FactorySection, Record<string, yup.AnySchema>> = {
   title: {

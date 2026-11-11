@@ -55,6 +55,11 @@ interface WithdrawModalProps {
   item: SubgraphItem
   registry: SubgraphRegistry
   itemName: string
+  /**
+   * The submitter as the contract records it, which startWithdrawItem
+   * checks; the subgraph's is the transaction sender, not a Safe's address.
+   */
+  submitter?: string
 }
 
 const WithdrawModal: React.FC<WithdrawModalProps> = ({
@@ -63,6 +68,7 @@ const WithdrawModal: React.FC<WithdrawModalProps> = ({
   item,
   registry,
   itemName,
+  submitter: submitterProp,
 }) => {
   const { address: account } = useAccount()
   const publicClient = usePublicClient()
@@ -74,7 +80,7 @@ const WithdrawModal: React.FC<WithdrawModalProps> = ({
   )
   const gate = useActionGate('withdraw')
 
-  const submitter = item?.submitter as string | undefined
+  const submitter = submitterProp ?? (item?.submitter as string | undefined)
   const isSubmitter =
     !!account &&
     !!submitter &&

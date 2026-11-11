@@ -13,6 +13,9 @@ export const ENTRY_LOAD_FAILED =
 export const ENTRY_MISSING_TIP =
   'Check the link. An entry sent a moment ago can take a minute or two to appear; this page keeps looking.'
 
+/** A list (or its entries) the indexer did not serve. */
+export const LIST_LOAD_FAILED = ENTRY_LOAD_FAILED
+
 export const LIST_LINK_TIP =
   'Check the address, and that the chain in the URL is the one the list lives on.'
 

@@ -1,6 +1,6 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import { BigNumber, type BigNumberish } from 'ethers'
-import { useAccount, useChainId, useSwitchChain } from 'wagmi'
+import { useAccount, useSwitchChain } from 'wagmi'
 import { useAtlasProvider } from '@kleros/kleros-app'
 import useUrlChainId from 'hooks/use-url-chain-id'
 import useNativeBalance from 'hooks/use-native-balance'
@@ -51,11 +51,14 @@ export const useActionGate = ({
   /** A blocker from the caller while its data loads ("Loading the deposit"). */
   pending?: string
 }): ActionGate => {
-  const { isConnected } = useAccount()
-  const walletChainId = useChainId()
+  // The wallet's own chain. useChainId() keeps the last chain the app
+  // supports while the wallet sits on one it does not (wagmi only follows
+  // configured chains), which would let the check below pass and every
+  // write then do nothing.
+  const { isConnected, chainId: walletChainId } = useAccount()
   const urlChainId = useUrlChainId()
   const { isVerified } = useAtlasProvider()
-  const { balance } = useNativeBalance()
+  const { balance, refetch: refetchBalance } = useNativeBalance()
   const currency = useNativeCurrency()
   const { switchChain, isPending } = useSwitchChain()
   // Its connect and sign-in steps (with their toasts) are reused; its chain
@@ -75,6 +78,16 @@ export const useActionGate = ({
     amount !== undefined &&
     balance !== undefined &&
     balance < BigInt(BigNumber.from(amount).toString())
+
+  // The balance is read when the page loads. While it is what blocks the
+  // action, read it again each time the page regains focus: the user may
+  // have topped up in another tab or in the wallet.
+  useEffect(() => {
+    if (!insufficient) return
+    const refresh = () => void refetchBalance()
+    window.addEventListener('focus', refresh)
+    return () => window.removeEventListener('focus', refresh)
+  }, [insufficient, refetchBalance])
 
   let blocker: string | undefined
   if (pending) blocker = pending

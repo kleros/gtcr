@@ -21,6 +21,15 @@ export interface FactoryChecks {
   deployedWithPermanentFactory: RegistryExistsCheck
 }
 
+/**
+ * The Formik path of a column's value. Formik reads a field name as a path,
+ * so setFieldValue("No. of tokens", …) would store {No: {" of tokens": …}},
+ * where nothing reads it. Quoted in brackets, the label is one key, the way
+ * the form reads it.
+ */
+export const fieldPath = (label: string): string =>
+  `["${label.replace(/["\\]/g, '\\$&')}"]`
+
 export const isRequired = (column: Column): boolean =>
   column.type !== ItemTypes.BOOLEAN && !column.optional
 
@@ -174,10 +183,30 @@ export const withWebScheme = (value: string): string => {
   return `https://${text.replace(/^\/+/, '')}`
 }
 
+const MAX_INT256 = 2n ** 255n - 1n
+const MIN_INT256 = -(2n ** 255n)
+
+/**
+ * What gtcrEncode takes for a Classic number or Twitter user column: bn.js
+ * reads it with every space removed, as digits with an optional leading
+ * minus, and the encoder refuses anything outside an int256. "1.5", "1,000"
+ * or "abc" make it throw, and a lone "-" would go on chain as 2^256.
+ */
+export const integerProblem = (value: string): string | undefined => {
+  const digits = value.replace(/\s+/g, '')
+  if (!/^-?\d+$/.test(digits)) return 'Enter a whole number, like 42.'
+  const number = BigInt(digits)
+  if (number > MAX_INT256 || number < MIN_INT256)
+    return 'This number is too large for the list to store.'
+  return undefined
+}
+
 export const validateSubmission = async (
   columns: Column[],
   values: SubmissionValues,
   checks: FactoryChecks,
+  /** Number columns go on chain as integers (Classic lists encode them). */
+  wholeNumbers = false,
 ): Promise<SubmissionErrors> => {
   const errors: SubmissionErrors = {}
 
@@ -188,6 +217,14 @@ export const validateSubmission = async (
       continue
     }
     if (typeof value !== 'string' || isEmptyField(column, value)) continue
+    if (
+      wholeNumbers &&
+      (column.type === ItemTypes.NUMBER ||
+        column.type === ItemTypes.TWITTER_USER_ID)
+    ) {
+      const problem = integerProblem(value)
+      if (problem) errors[column.label] = problem
+    }
     if (
       (column.type === ItemTypes.ADDRESS ||
         column.type === ItemTypes.GTCR_ADDRESS) &&

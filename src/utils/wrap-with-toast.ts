@@ -15,6 +15,7 @@ export interface TransactionReceiptClient {
   waitForTransactionReceipt(args: {
     hash: Hash
     confirmations?: number
+    timeout?: number
   }): Promise<TransactionReceipt>
 }
 
@@ -91,10 +92,51 @@ const withExplorerLink = (text: string, chainId?: number, hash?: Hash) =>
       )
     : text
 
+/** How long a transaction whose receipt is late is still followed. */
+const LATE_RECEIPT_MS = 15 * 60_000
+
+/**
+ * A sent transaction whose receipt did not come back in time (a slow chain,
+ * or a node that stopped answering) may still go through: keep following it
+ * and turn the toast into its outcome, refreshing the data if it confirms.
+ */
+const followLateReceipt = async (
+  publicClient: TransactionReceiptClient,
+  id: ReturnType<typeof toast.info>,
+  chainId: number | undefined,
+  hash: Hash,
+) => {
+  try {
+    const res = await publicClient.waitForTransactionReceipt({
+      hash,
+      confirmations: 1,
+      timeout: LATE_RECEIPT_MS,
+    })
+    const confirmed = res.status === 'success'
+    toast.update(id, {
+      render: withExplorerLink(
+        confirmed
+          ? 'Transaction confirmed.'
+          : 'The transaction failed on chain (reverted).',
+        chainId,
+        hash,
+      ),
+      type: confirmed ? 'success' : 'error',
+      isLoading: false,
+      autoClose: confirmed ? OPTIONS.autoClose : false,
+    })
+    if (confirmed) emitTxConfirmed()
+  } catch {
+    // Still no answer: the warning and its explorer link stay.
+  }
+}
+
 /**
  * Sends a transaction and follows it in one toast: confirm in the wallet,
  * sent (with an explorer link), then confirmed or failed. A request the
- * wallet's owner declines closes quietly; it is not an error.
+ * wallet's owner declines closes quietly; it is not an error. A transaction
+ * that was sent but whose receipt is late is not reported as failed: only a
+ * reverted receipt says that.
  */
 export async function wrapWithToast(
   contractWrite: () => Promise<Hash>,
@@ -154,7 +196,19 @@ export async function wrapWithToast(
         isLoading: false,
         autoClose: 4000,
       })
-    else
+    else if (hash) {
+      toast.update(id, {
+        render: withExplorerLink(
+          'Still waiting for this transaction to confirm. It may yet go through.',
+          chainId,
+          hash,
+        ),
+        type: 'warning',
+        isLoading: false,
+        autoClose: false,
+      })
+      void followLateReceipt(publicClient, id, chainId, hash)
+    } else
       toast.update(id, {
         render: withExplorerLink(parseWagmiError(err), chainId, hash),
         type: 'error',

@@ -568,9 +568,13 @@ const Items = () => {
 
   // Load NSFW user setting from localforage.
   useEffect(() => {
-    ;(async () => {
-      const savedSetting = await localforage.getItem(NSFW_FILTER_KEY)
-      if (typeof savedSetting === 'boolean') setNSFWFilter(savedSetting)
+    void (async () => {
+      try {
+        const savedSetting = await localforage.getItem(NSFW_FILTER_KEY)
+        if (typeof savedSetting === 'boolean') setNSFWFilter(savedSetting)
+      } catch {
+        // Storage can be blocked (private windows): keep the default.
+      }
     })()
   }, [])
 
@@ -724,10 +728,11 @@ const Items = () => {
 
   // A ?action= link opens the full-page submit form with the link's values
   // in its URL, so it still fills the form after a reload; a connected list
-  // keeps its own dialog. Every other parameter is a field value, in column
-  // order, except list state (filters, sort, page) and the theme preview.
-  // It acts when the link itself changes, not when a chip, the sort or the
-  // page does, once the metadata says which kind of list this is.
+  // keeps its own dialog. Its parameters are field values in column order,
+  // as registry-shared-action-link.ts reads them (list state only counts
+  // after the last value). It acts when the link itself changes, not when a
+  // chip, the sort or the page does, once the metadata says which kind of
+  // list this is.
   const actionLink = useMemo(() => {
     const link = readActionLink(search)
     return link ? JSON.stringify(link) : undefined
@@ -764,7 +769,7 @@ const Items = () => {
       : `${tcrDescription}.`
     : ''
   const seoTitle = truncateAtWord(
-    tcrTitle ? `${tcrTitle} - Kleros · Curate` : 'Kleros · Curate',
+    tcrTitle ? `${tcrTitle} | Kleros Curate` : 'Kleros Curate',
     60,
   )
   const seoDescription = truncateAtWord(
@@ -789,6 +794,9 @@ const Items = () => {
   }, [])
 
   const verifiedEntries = trust.listOfLists ? trust.verifiedSet : undefined
+  // An entry whose data does not decode with the list's columns says so in
+  // its row, as the old cards did, instead of a row of dashes.
+  const undecodable = `This ${midSentence(itemName)} could not be decoded with the list’s columns.`
   const entries = useMemo<EntryRow[]>(() => {
     if (!visibleItems || !tcrAddress) return []
     return visibleItems.map((entry) => {
@@ -819,6 +827,7 @@ const Items = () => {
         onReveal: hidden
           ? (event?: React.SyntheticEvent) => reveal(id, event)
           : undefined,
+        problem: entry.errors.length > 0 ? undecodable : undefined,
       }
     })
   }, [
@@ -832,6 +841,7 @@ const Items = () => {
     isTCRofTCRs,
     verifiedEntries,
     reveal,
+    undecodable,
   ])
 
   const court = useMemo(() => {

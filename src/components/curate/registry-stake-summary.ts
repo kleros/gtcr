@@ -43,6 +43,7 @@ const STAKE_SUMMARY_QUERY = gql`
       }
       submissions(first: 1, orderBy: createdAt, orderDirection: desc) {
         withdrawingTx
+        finishedTx
       }
       listings: submissions(
         first: 100
@@ -55,6 +56,7 @@ const STAKE_SUMMARY_QUERY = gql`
       challenges(first: 1, orderBy: createdAt, orderDirection: desc) {
         createdAt
         resolutionTime
+        resolutionTx
         disputeOutcome
         rounds(first: 1, orderBy: creationTime, orderDirection: desc) {
           appealPeriodStart
@@ -68,6 +70,7 @@ const STAKE_SUMMARY_QUERY = gql`
       history: challenges(first: 100, orderBy: createdAt, orderDirection: asc) {
         createdAt
         resolutionTime
+        disputeOutcome
       }
     }
   }
@@ -81,7 +84,11 @@ interface SummaryItem extends SubgraphItem {
   withdrawingTimestamp?: string
   metadata?: { props?: V2Field[] } | null
   listings?: { createdAt: string; finishedAt?: string | null }[]
-  history?: { createdAt: string; resolutionTime?: string | null }[]
+  history?: {
+    createdAt: string
+    resolutionTime?: string | null
+    disputeOutcome?: string | null
+  }[]
 }
 
 export type ListingEnd = 'removed' | 'withdrawn'
@@ -205,8 +212,11 @@ const summarize = (
 
     // A listing ends either with a ruling (the dispute resolves in the same
     // transaction) or with a withdrawal: the only two ways back to Absent.
-    const resolutions = new Set(
+    // A ruling that keeps the entry ends its listing only when a withdrawal
+    // was pending, and then it is that withdrawal that ends it.
+    const removals = new Set(
       (item.history ?? [])
+        .filter((challenge) => challenge.disputeOutcome !== 'Accept')
         .map((challenge) => num(challenge.resolutionTime))
         .filter((time) => time > 0),
     )
@@ -220,14 +230,16 @@ const summarize = (
           endedBy:
             end === undefined
               ? undefined
-              : resolutions.has(end)
+              : removals.has(end)
                 ? 'removed'
                 : 'withdrawn',
         }
       })
       .filter((listing) => listing.start > 0)
-    const ends = new Set(
-      listings.map((listing) => listing.end).filter(Boolean) as number[],
+    const removedAt = new Set(
+      listings
+        .filter((listing) => listing.endedBy === 'removed')
+        .map((listing) => listing.end),
     )
     const laneChallenges = (item.history ?? [])
       .map((challenge): StakeChallenge => {
@@ -235,7 +247,7 @@ const summarize = (
         return {
           start: num(challenge.createdAt),
           end,
-          removed: end !== undefined && ends.has(end),
+          removed: end !== undefined && removedAt.has(end),
         }
       })
       .filter((challenge) => challenge.start > 0)

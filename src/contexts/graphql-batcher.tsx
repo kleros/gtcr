@@ -31,17 +31,23 @@ const debounceErrorToast = (msg: string) => {
   }, 5000)
 }
 
+// A failed read is an error, not an empty answer: an empty answer would read
+// as "this entry does not exist" and be cached as fresh, so the page could not
+// tell an outage from a missing entry and React Query would not retry it.
 const fetchGraphql = async (
   url: string,
   document: RequestDocument,
   variables: Record<string, any>,
 ) => {
   try {
-    return await request(url, document, variables)
+    const data = await request(url, document, variables)
+    // The indexer answers again: drop a warning still waiting to show.
+    clearTimeout(toastTimeout)
+    return data
   } catch (err) {
     console.error('Graph error:', { err })
     debounceErrorToast('Some data did not load. Try again in a moment.')
-    return {}
+    throw err
   }
 }
 
@@ -55,19 +61,20 @@ const getSubgraphUrl = (
   return url
 }
 
-const fetcher = async (queries: IQuery[]) => {
-  const results = await Promise.all(
-    queries.map(({ document, variables, isPermanent, chainId }) => {
-      const url = getSubgraphUrl(chainId, isPermanent ?? false)
-      return fetchGraphql(url, document, variables)
+type BatchResult = { id: string; result?: any; error?: unknown }
+
+// Each query in a batch succeeds or fails on its own.
+const fetcher = (queries: IQuery[]): Promise<BatchResult[]> =>
+  Promise.all(
+    queries.map(async ({ id, document, variables, isPermanent, chainId }) => {
+      try {
+        const url = getSubgraphUrl(chainId, isPermanent ?? false)
+        return { id, result: await fetchGraphql(url, document, variables) }
+      } catch (err) {
+        return { id, error: err ?? new Error('The indexer did not answer.') }
+      }
     }),
   )
-
-  return results.map((result, index) => ({
-    id: queries[index].id,
-    result,
-  }))
-}
 
 export const GraphqlBatcherProvider: React.FC<{
   children?: React.ReactNode
@@ -76,8 +83,12 @@ export const GraphqlBatcherProvider: React.FC<{
     () =>
       create({
         fetcher,
-        resolver: (results, query) =>
-          results.find((result) => result.id === query.id)!['result'],
+        resolver: (results, query) => {
+          const answer = results.find((result) => result.id === query.id)
+          if (!answer) throw new Error('The indexer did not answer.')
+          if (answer.error) throw answer.error
+          return answer.result
+        },
         scheduler: windowedFiniteBatchScheduler({
           windowMs: 100,
           maxBatchSize: 5,

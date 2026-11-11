@@ -265,10 +265,12 @@ type Box = { y: number; x0: number; x1: number }
 const wrap = (text: string): string[] | undefined => {
   const spaces = [...text.matchAll(/ /g)].map((match) => match.index ?? 0)
   if (spaces.length === 0) return undefined
-  const cut = spaces.reduce((best, index) =>
-    Math.abs(index - text.length / 2) < Math.abs(best - text.length / 2)
-      ? index
-      : best,
+  const cut = spaces.reduce(
+    (best, index) =>
+      Math.abs(index - text.length / 2) < Math.abs(best - text.length / 2)
+        ? index
+        : best,
+    spaces[0],
   )
   return [text.slice(0, cut), text.slice(cut + 1)]
 }
@@ -308,7 +310,7 @@ export const Lifecycle = ({
     readFonts()
     // Measure again once the webfonts have swapped in.
     let live = true
-    document.fonts?.ready.then(() => live && readFonts())
+    void document.fonts?.ready.then(() => live && readFonts())
     if (typeof ResizeObserver === 'undefined')
       return () => {
         live = false

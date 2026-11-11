@@ -136,9 +136,18 @@ const Identicon = ({ className, large }: IdenticonProps) => {
   const [balance, setBalance] = useState<BigNumber>()
   useEffect(() => {
     if (!library || !account) return
-    ;(async () => {
-      setBalance(await library.getBalance(account))
+    let live = true
+    void (async () => {
+      try {
+        const next = await library.getBalance(account)
+        if (live) setBalance(next)
+      } catch {
+        // The menu simply shows no balance if the node does not answer.
+      }
     })()
+    return () => {
+      live = false
+    }
   }, [library, account])
 
   if (!account) return null

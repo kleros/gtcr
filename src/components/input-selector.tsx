@@ -214,6 +214,8 @@ const InputSelector: React.FC<InputSelectorProps> = (p) => {
   switch (p.type) {
     case ItemTypes.TEXT:
     case ItemTypes.NUMBER:
+    // Older lists have Twitter user ID columns: a number, typed like one.
+    case ItemTypes.TWITTER_USER_ID:
     case ItemTypes.LINK:
       return <CustomInput hasFeedback {...p} />
     case ItemTypes.ADDRESS:

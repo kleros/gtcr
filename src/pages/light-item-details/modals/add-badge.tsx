@@ -3,7 +3,6 @@ import styled from 'styled-components'
 import { litEdgeBackground } from 'components/ui/kit-styles'
 import { BigNumber } from 'ethers'
 import useNativeCurrency from 'hooks/native-currency'
-import { useAttachment } from 'hooks/use-attachment'
 import { parseIpfs } from 'utils/ipfs-parse'
 import { CurateIcon } from 'components/curate/icons'
 import {
@@ -18,6 +17,7 @@ import {
 } from 'components/curate/primitives'
 import { Dialog } from 'components/curate/item-light-dialog'
 import { formatAmount } from 'components/curate/item-light-format'
+import { PolicyButton } from '../policy-button'
 
 /*
  * Pick a badge list to submit this entry to. The deposit shown is the badge
@@ -167,7 +167,6 @@ const AddBadgeModal = ({
   foundBadges,
 }: AddBadgeModalProps) => {
   const nativeCurrency = useNativeCurrency()
-  const openAttachment = useAttachment()
   const [selectedBadge, setSelectedBadge] = useState<number>()
 
   // Badge lists this entry is not on yet. The radio buttons, the deposit and
@@ -257,7 +256,14 @@ const AddBadgeModal = ({
       <Stack $gap={16}>
         <RadioList role="radiogroup" aria-label="Available badges">
           {filteredAvailableBadges.map(
-            ({ fileURI, metadata: { tcrTitle, logoURI } }, i) => (
+            (
+              {
+                fileURI,
+                tcrAddress: badgeAddress,
+                metadata: { tcrTitle, logoURI },
+              },
+              i,
+            ) => (
               <RadioRow key={i} $selected={selectedBadge === i}>
                 <input
                   type="radio"
@@ -269,19 +275,11 @@ const AddBadgeModal = ({
                 <Logo src={parseIpfs(logoURI)} alt="" />
                 <div style={{ minWidth: 0 }}>
                   <Title>{tcrTitle}</Title>
-                  <Button
-                    type="button"
-                    $variant="ghost"
-                    $size="sm"
-                    disabled={!fileURI}
-                    onClick={(event) => {
-                      event.preventDefault()
-                      if (fileURI) openAttachment(parseIpfs(fileURI), true)
-                    }}
-                  >
+                  {/* The policy of that badge list, not of this one. */}
+                  <PolicyButton fileURI={fileURI} tcrAddress={badgeAddress}>
                     <CurateIcon name="policy" size={14} />
                     Listing policy
-                  </Button>
+                  </PolicyButton>
                 </div>
               </RadioRow>
             ),

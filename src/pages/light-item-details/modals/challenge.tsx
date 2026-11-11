@@ -10,19 +10,11 @@ import { LightTCRViewContext } from 'contexts/light-tcr-view-context'
 import EvidenceForm, { type EvidenceFormValues } from 'components/evidence-form'
 import { uploadEvidence } from 'utils/upload-evidence'
 import useNativeCurrency from 'hooks/native-currency'
-import { useAttachment } from 'hooks/use-attachment'
-import { parseIpfs } from 'utils/ipfs-parse'
 import { wrapWithToast, errorToast } from 'utils/wrap-with-toast'
 import { parseWagmiError } from 'utils/parse-wagmi-error'
 import { wagmiConfig } from 'config/wagmi'
 import { CurateIcon } from 'components/curate/icons'
-import {
-  Body,
-  Button,
-  Row,
-  SkeletonBlock,
-  Stack,
-} from 'components/curate/primitives'
+import { Body, Row, SkeletonBlock, Stack } from 'components/curate/primitives'
 import {
   WhatHappensNext,
   type OutcomeStep,
@@ -31,6 +23,9 @@ import {
 import { Dialog, DialogColumns } from 'components/curate/item-light-dialog'
 import { gatedConfirm, useActionGate } from 'components/curate/item-light-gate'
 import { formatAmount, sumAmounts } from 'components/curate/item-light-format'
+import { useChallengeCost } from '../challenge-cost'
+import { PolicyButton } from '../policy-button'
+import type { LightRequest } from '../request-facts'
 
 /*
  * Challenge a submission or a removal request (DESIGN.md: before any
@@ -99,29 +94,28 @@ const ChallengeModal = ({
   visible,
   onCancel,
 }: ChallengeModalProps) => {
-  const {
-    submissionChallengeDeposit,
-    removalChallengeDeposit,
-    submissionChallengeBaseDeposit,
-    removalChallengeBaseDeposit,
-    arbitrationCost,
-    tcrAddress,
-  } = useContext(LightTCRViewContext) || {}
+  const tcrView = useContext(LightTCRViewContext)
+  const tcrAddress = tcrView?.tcrAddress
   const { address: account } = useAccount()
   const publicClient = usePublicClient()
   const { data: walletClient } = useWalletClient()
   const { uploadFile } = useAtlasProvider()
   const nativeCurrency = useNativeCurrency()
-  const openAttachment = useAttachment()
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const isRemoval = item.status === CONTRACT_STATUS.REMOVAL_REQUESTED
-  const challengeDeposit = isRemoval
-    ? removalChallengeDeposit
-    : submissionChallengeDeposit
-  const baseDeposit = isRemoval
-    ? removalChallengeBaseDeposit
-    : submissionChallengeBaseDeposit
+  // The contract charges the arbitration cost of the arbitrationParamsChanges
+  // entry the request was made with; the indexer records its arbitrator and
+  // extra data on the request (LightGeneralizedTCR.challengeRequest).
+  const {
+    base: baseDeposit,
+    arbitrationCost,
+    total: challengeDeposit,
+  } = useChallengeCost({
+    request: item.requests?.[0] as LightRequest | undefined,
+    isRemoval,
+    list: tcrView,
+  })
   const requesterDeposit = (
     item.requests?.[0] as { deposit?: string } | undefined
   )?.deposit
@@ -251,18 +245,10 @@ const ChallengeModal = ({
               Your justification is published as evidence.
             </Body>
             <div>
-              <Button
-                type="button"
-                $variant="ghost"
-                $size="sm"
-                disabled={!fileURI}
-                onClick={() =>
-                  fileURI && openAttachment(parseIpfs(fileURI), true)
-                }
-              >
+              <PolicyButton fileURI={fileURI}>
                 <CurateIcon name="policy" size={14} />
                 Read the listing policy
-              </Button>
+              </PolicyButton>
             </div>
             <EvidenceForm
               onSubmit={challengeRequest}

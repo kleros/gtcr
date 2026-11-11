@@ -6,6 +6,8 @@ import {
   getContractAddress,
   decodeEventLog,
   type Address,
+  type Hash,
+  type TransactionReceipt,
 } from 'viem'
 import { useAccount, usePublicClient, useWalletClient, useChainId } from 'wagmi'
 import { simulateContract } from '@wagmi/core'
@@ -624,7 +626,11 @@ const Deploy = ({
   const [txSubmitted, setTxSubmitted] = useState<string>()
   const [deployedTCRAddress, setDeployedTCRAddress] = useState<string>()
   const [submissionFormOpen, setSubmissionFormOpen] = useState(false)
-  const [pendingHash, setPendingHash] = useState<string>()
+  const [pendingHash, setPendingHash] = useState<Hash>()
+  // Sent, but no receipt came back (viem stops waiting after three minutes,
+  // or the node failed): it may still be mined, so it is not a failure, and
+  // deploying again could make a second list.
+  const [stillPending, setStillPending] = useState(false)
   const [metaEvidencePaths, setMetaEvidencePaths] = useState<string[]>([])
   const [predicted, setPredicted] = useState<{
     list: string
@@ -694,6 +700,7 @@ const Deploy = ({
     let stage: DeployPhase = 'uploading'
     setFailedAt(undefined)
     setPendingHash(undefined)
+    setStillPending(false)
     setMetaEvidencePaths([])
     setPredicted(undefined)
     try {
@@ -745,10 +752,11 @@ const Deploy = ({
           parseEther(tcrState.relRemovalChallengeBaseDeposit.toString()),
         ],
         Math.round(Number(tcrState.relChallengePeriodDuration) * 60 * 60),
+        // Percent to basis points, exactly as typed (12.5% is 1250).
         [
-          Math.ceil(Number(tcrState.relSharedStakeMultiplier)) * 100,
-          Math.ceil(Number(tcrState.relWinnerStakeMultiplier)) * 100,
-          Math.ceil(Number(tcrState.relLoserStakeMultiplier)) * 100,
+          Math.round(Number(tcrState.relSharedStakeMultiplier) * 100),
+          Math.round(Number(tcrState.relWinnerStakeMultiplier) * 100),
+          Math.round(Number(tcrState.relLoserStakeMultiplier) * 100),
         ],
         ZERO_ADDRESS,
       ]
@@ -779,9 +787,9 @@ const Deploy = ({
         ],
         Math.round(Number(tcrState.challengePeriodDuration) * 60 * 60),
         [
-          Math.ceil(Number(tcrState.sharedStakeMultiplier)) * 100,
-          Math.ceil(Number(tcrState.winnerStakeMultiplier)) * 100,
-          Math.ceil(Number(tcrState.loserStakeMultiplier)) * 100,
+          Math.round(Number(tcrState.sharedStakeMultiplier) * 100),
+          Math.round(Number(tcrState.winnerStakeMultiplier) * 100),
+          Math.round(Number(tcrState.loserStakeMultiplier) * 100),
         ],
         ZERO_ADDRESS,
       ]
@@ -816,57 +824,13 @@ const Deploy = ({
         publicClient,
       )
 
-      if (result.status && result.result) {
-        const txHash = result.result.transactionHash
-        setTxSubmitted(txHash)
-
-        // Find the deployed contract address from the receipt logs
-        let contractAddress: string = parentTCRAddress // fallback to predicted address
-        try {
-          const newGTCRLogs = result.result.logs
-            .map((log) => {
-              try {
-                return decodeEventLog({
-                  abi: _GTCRFactory,
-                  data: log.data,
-                  topics: log.topics,
-                })
-              } catch {
-                return null
-              }
-            })
-            .filter(
-              (parsed): parsed is NonNullable<typeof parsed> =>
-                !!parsed && parsed.eventName === 'NewGTCR',
-            )
-          // The second NewGTCR event is the parent TCR
-          const pickAddress = (args: unknown): string | undefined =>
-            args && typeof args === 'object' && '_address' in args
-              ? ((args as { _address?: string })._address ?? undefined)
-              : undefined
-          if (newGTCRLogs.length >= 2)
-            contractAddress =
-              pickAddress(newGTCRLogs[1].args) ?? contractAddress
-          else if (newGTCRLogs.length === 1)
-            contractAddress =
-              pickAddress(newGTCRLogs[0].args) ?? contractAddress
-        } catch (err) {
-          console.error('Error parsing deploy logs:', err)
-        }
-
-        setTxState({
-          txHash,
-          networkId: chainId,
-          status: 'mined',
-          contractAddress,
-        })
-        setTcrState((prevState) => ({
-          ...prevState,
-          finished: true,
-        }))
-        setPhase('mined')
-        setDeployedTCRAddress(contractAddress)
-      } else {
+      if (result.status && result.result)
+        onMined(result.result, parentTCRAddress)
+      // Sent (the callback above moved the stage on), but no receipt, which
+      // a revert would have: the transaction is still pending.
+      else if ((stage as DeployPhase) === 'mining' && !result.result)
+        setStillPending(true)
+      else {
         setFailedAt(stage)
         setPhase('idle')
       }
@@ -875,6 +839,77 @@ const Deploy = ({
       errorToast(parseWagmiError(err))
       setFailedAt(stage)
       setPhase('idle')
+    }
+  }
+
+  /** The deployment is mined: the list's address, saved with the transaction. */
+  const onMined = (receipt: TransactionReceipt, predictedAddress: string) => {
+    const txHash = receipt.transactionHash
+    setTxSubmitted(txHash)
+
+    // Find the deployed contract address from the receipt logs
+    let contractAddress: string = predictedAddress // fallback to predicted address
+    try {
+      const newGTCRLogs = receipt.logs
+        .map((log) => {
+          try {
+            return decodeEventLog({
+              abi: _GTCRFactory,
+              data: log.data,
+              topics: log.topics,
+            })
+          } catch {
+            return null
+          }
+        })
+        .filter(
+          (parsed): parsed is NonNullable<typeof parsed> =>
+            !!parsed && parsed.eventName === 'NewGTCR',
+        )
+      // The second NewGTCR event is the parent TCR
+      const pickAddress = (args: unknown): string | undefined =>
+        args && typeof args === 'object' && '_address' in args
+          ? ((args as { _address?: string })._address ?? undefined)
+          : undefined
+      if (newGTCRLogs.length >= 2)
+        contractAddress = pickAddress(newGTCRLogs[1].args) ?? contractAddress
+      else if (newGTCRLogs.length === 1)
+        contractAddress = pickAddress(newGTCRLogs[0].args) ?? contractAddress
+    } catch (err) {
+      console.error('Error parsing deploy logs:', err)
+    }
+
+    setTxState({
+      txHash,
+      networkId: chainId,
+      status: 'mined',
+      contractAddress,
+    })
+    setTcrState((prevState) => ({
+      ...prevState,
+      finished: true,
+    }))
+    setPhase('mined')
+    setDeployedTCRAddress(contractAddress)
+  }
+
+  /** Waits for the same transaction again; nothing new is sent. */
+  const checkAgain = async () => {
+    if (!publicClient || !pendingHash) return
+    setStillPending(false)
+    try {
+      const receipt = await publicClient.waitForTransactionReceipt({
+        hash: pendingHash,
+        confirmations: 2,
+      })
+      if (receipt.status === 'success') onMined(receipt, predicted?.list ?? '')
+      else {
+        setFailedAt('mining')
+        setPhase('idle')
+      }
+    } catch (err) {
+      console.error('Error waiting for the deploy transaction:', err)
+      setStillPending(true)
     }
   }
 
@@ -1106,7 +1141,9 @@ const Deploy = ({
               note={
                 stepStatus('mining') === 'failed'
                   ? 'The transaction did not go through; nothing was deployed.'
-                  : 'Keep this page open until the transaction is mined.'
+                  : stillPending
+                    ? 'Not mined yet, but it may still go through: follow it on the explorer before deploying again.'
+                    : 'Keep this page open until the transaction is mined.'
               }
             >
               {shownHash && explorerTxUrl && (
@@ -1170,7 +1207,11 @@ const Deploy = ({
         {phase !== 'mined' && (
           <ActionArea>
             <Row $gap={10} $wrap>
-              {walletFix ? (
+              {stillPending ? (
+                <Button type="button" $variant="primary" onClick={checkAgain}>
+                  Check again
+                </Button>
+              ) : walletFix ? (
                 <Button
                   type="button"
                   $variant="primary"
@@ -1214,7 +1255,9 @@ const Deploy = ({
                     ? 'Uploading the list details to IPFS'
                     : phase === 'wallet'
                       ? 'Confirm the transaction in your wallet'
-                      : 'Waiting for the transaction to be mined'}
+                      : stillPending
+                        ? 'The transaction is still pending'
+                        : 'Waiting for the transaction to be mined'}
                 </Small>
               </Row>
             )}

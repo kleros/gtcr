@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { ItemTypes } from '@kleros/gtcr-encoder'
 import DisplaySelector from 'components/display-selector'
 import { parseIpfs } from 'utils/ipfs-parse'
+import { isSafeNavigationUrl } from 'utils/url-validation'
 import type { ListLayout } from 'hooks/use-stored-layout'
 import {
   Button,
@@ -11,6 +12,7 @@ import {
   Grid,
   Label,
   Small,
+  StatusDot,
   Surface,
   Table,
   TableScroller,
@@ -33,6 +35,15 @@ import { VerifiedBadge } from './verified-badge'
  * nothing nests.
  */
 
+/** A page elsewhere that a value stands for, opened in a new tab. */
+export interface EntryOutLink {
+  href: string
+  /** The link's own short text, shown after the value ("Seer"). */
+  label: string
+  /** What it does, for its tooltip and screen readers ("Go to Seer"). */
+  title: string
+}
+
 export interface EntryRow {
   id: string
   href: string
@@ -48,6 +59,18 @@ export interface EntryRow {
   /** Potentially offensive content hidden behind a reveal. */
   hidden?: boolean
   onReveal?: () => void
+  /**
+   * Pages elsewhere that a value stands for, by column label (a Seer market
+   * beside its name). Set by the page, never taken from list data, and
+   * shown only for https links.
+   */
+  outLinks?: Record<string, EntryOutLink>
+  /**
+   * Why the entry's fields could not be read (its data did not decode with
+   * the list's columns): said in place of the fields, which would only be
+   * dashes. The entry still opens, and its page says the same.
+   */
+  problem?: string
 }
 
 const normalizeType = (type?: string) => (type || '').toLowerCase()
@@ -75,6 +98,15 @@ export const tableColumns = (fields: V2Field[]): V2Field[] => {
 /** The entry's own value for a column, falling back to the column itself. */
 const fieldFor = (entry: EntryRow, column: V2Field) =>
   entry.fields.find((f) => f.label === column.label) ?? column
+
+/** The page's link for a column's value, if it is a safe (https) one. */
+const outLinkFor = (
+  entry: EntryRow,
+  column?: V2Field,
+): EntryOutLink | undefined => {
+  const link = column?.label ? entry.outLinks?.[column.label] : undefined
+  return link && isSafeNavigationUrl(link.href) ? link : undefined
+}
 
 /** The overlay link's name; a hidden entry never gives its content away. */
 const openLabel = (entry: EntryRow, itemName: string, name?: string) =>
@@ -123,8 +155,7 @@ const ThumbSlot = styled.span`
   background: var(--color-surface);
 `
 
-const FieldValue = ({ field }: { field: V2Field }) => {
-  if (!hasValue(field)) return <Small $faint>—</Small>
+const TypedValue = ({ field }: { field: V2Field }) => {
   if (isImage(field))
     return (
       <Thumb src={parseIpfs(String(field.value))} alt={field.label || ''} />
@@ -139,6 +170,72 @@ const FieldValue = ({ field }: { field: V2Field }) => {
       truncateLinks
       linkImage
     />
+  )
+}
+
+/* A value with its page elsewhere beside it: the value gives way first, so
+   the link stays whole in a narrow cell. */
+const WithOutLink = styled.span`
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  max-width: 100%;
+
+  > span:first-child {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+`
+
+const OutLinkAnchor = styled.a`
+  && {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 4px;
+    color: var(--color-primary);
+    font-size: var(--fs-small);
+    line-height: var(--lh-small);
+    font-weight: 500;
+    white-space: nowrap;
+    text-decoration: none;
+  }
+
+  &&:hover {
+    color: var(--color-primary-hover);
+    text-decoration: underline;
+  }
+`
+
+const FieldValue = ({
+  field,
+  link,
+}: {
+  field: V2Field
+  link?: EntryOutLink
+}) => {
+  if (!hasValue(field)) return <Small $faint>—</Small>
+  if (!link) return <TypedValue field={field} />
+  const name = textOf(field)
+  return (
+    <WithOutLink>
+      <span>
+        <TypedValue field={field} />
+      </span>
+      <OutLinkAnchor
+        href={link.href}
+        target="_blank"
+        rel="noopener noreferrer"
+        title={link.title}
+        aria-label={name ? `${link.title}: ${name}` : link.title}
+      >
+        {link.label}
+        <CurateIcon name="external" size={12} />
+      </OutLinkAnchor>
+    </WithOutLink>
   )
 }
 
@@ -165,8 +262,16 @@ const SealLine = styled.span`
   height: 1lh;
 `
 
-const TitleValue = ({ entry, field }: { entry: EntryRow; field?: V2Field }) => {
-  const value = field ? <FieldValue field={field} /> : '—'
+const TitleValue = ({
+  entry,
+  field,
+  link,
+}: {
+  entry: EntryRow
+  field?: V2Field
+  link?: EntryOutLink
+}) => {
+  const value = field ? <FieldValue field={field} link={link} /> : '—'
   return entry.verified ? (
     <Sealed>
       <span>{value}</span>
@@ -208,6 +313,39 @@ const HiddenNotice = ({ entry }: { entry: EntryRow }) => (
     )}
   </Hidden>
 )
+
+/* Nothing in it can be clicked, so it stays under the row's own link. */
+const Problem = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  color: var(--color-muted);
+  font-size: var(--fs-small);
+  line-height: var(--lh-small);
+
+  > span:last-child {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+`
+
+const ProblemNotice = ({ problem }: { problem: string }) => (
+  <Problem data-problem-notice>
+    <StatusDot $tone="contested" aria-hidden />
+    <span title={problem}>{problem}</span>
+  </Problem>
+)
+
+/** What stands in for an entry's fields: the reveal, or why they are missing. */
+const FieldsNotice = ({ entry }: { entry: EntryRow }) =>
+  entry.hidden ? (
+    <HiddenNotice entry={entry} />
+  ) : entry.problem ? (
+    <ProblemNotice problem={entry.problem} />
+  ) : null
 
 /** One link stretched over the whole row or card; inner links sit above it. */
 const Overlay = styled(Link).attrs({ 'data-overlay': true })`
@@ -376,10 +514,18 @@ const RowMeta = styled.div`
   @media (max-width: 720px) {
     flex-direction: column;
     align-items: flex-start;
-    gap: 2px;
+    gap: 0;
 
+    /* Stacked, each line is its own 24px tap target. */
     > span {
       max-width: 100%;
+      min-height: 24px;
+    }
+
+    a {
+      display: inline-flex;
+      align-items: center;
+      min-height: 24px;
     }
 
     > span + span::before {
@@ -479,18 +625,25 @@ const EntryRows = ({
               ) : (
                 <ThumbSlot aria-hidden />
               ))}
-            {entry.hidden ? (
-              <HiddenNotice entry={entry} />
+            {entry.hidden || entry.problem ? (
+              <FieldsNotice entry={entry} />
             ) : (
               <RowText>
                 <RowTitle>
-                  <TitleValue entry={entry} field={titleField} />
+                  <TitleValue
+                    entry={entry}
+                    field={titleField}
+                    link={outLinkFor(entry, title)}
+                  />
                 </RowTitle>
                 {meta.length > 0 && (
                   <RowMeta>
                     {meta.map((column) => (
                       <span key={column.label} title={column.label}>
-                        <FieldValue field={fieldFor(entry, column)} />
+                        <FieldValue
+                          field={fieldFor(entry, column)}
+                          link={outLinkFor(entry, column)}
+                        />
                       </span>
                     ))}
                   </RowMeta>
@@ -523,6 +676,7 @@ const LEAD_WIDTH = 260
 const LEAD_IMAGE_WIDTH = 88
 const STATUS_WIDTH = 272
 const FIELD_WIDTH = 170
+const LIST_WIDTH = 124
 const OPEN_WIDTH = 52
 
 const EntryTableEl = styled(Table)`
@@ -581,6 +735,14 @@ const EntryTableEl = styled(Table)`
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
+  }
+
+  th.list {
+    width: ${LIST_WIDTH}px;
+  }
+
+  td.list {
+    text-align: right;
   }
 
   th.open {
@@ -654,13 +816,17 @@ const EntryTable = ({
   // The identifying column first, then the status, then the other fields.
   const [lead, ...others] = columns
   const leadIsImage = !!lead && isImage(lead)
+  // Lists of lists open the registry each entry points to from a column of
+  // its own, beside the entry's chevron, as rows and cards offer it.
+  const opensLists = entries.some((entry) => !!entry.openListTo)
   const minWidth =
     (lead ? (leadIsImage ? LEAD_IMAGE_WIDTH : LEAD_WIDTH) : 0) +
     STATUS_WIDTH +
     others.length * FIELD_WIDTH +
+    (opensLists ? LIST_WIDTH : 0) +
     OPEN_WIDTH
-  // A hidden entry's notice goes in the field cells it blanks out; only a
-  // list with no other field puts it in the identifying cell.
+  // A hidden or unreadable entry's notice goes in the field cells it blanks
+  // out; only a list with no other field puts it in the identifying cell.
   const noticeInLead = !!lead && others.length === 0
   // Each row's open link carries its entry's name, so a links list tells
   // the rows apart (a hidden entry stays generic).
@@ -677,9 +843,16 @@ const EntryTable = ({
     <td key={column.label}>
       <CellValue>
         {column === lead ? (
-          <TitleValue entry={entry} field={fieldFor(entry, column)} />
+          <TitleValue
+            entry={entry}
+            field={fieldFor(entry, column)}
+            link={outLinkFor(entry, column)}
+          />
         ) : (
-          <FieldValue field={fieldFor(entry, column)} />
+          <FieldValue
+            field={fieldFor(entry, column)}
+            link={outLinkFor(entry, column)}
+          />
         )}
       </CellValue>
     </td>
@@ -700,12 +873,14 @@ const EntryTable = ({
                 {columnLabel(column)}
               </th>
             ))}
+            {opensLists && <th className="list" aria-label="Open list" />}
             <th className="open" aria-label="Open" />
           </tr>
         </thead>
         <tbody>
           {entries.map((entry, index) => {
             const name = title ? textOf(fieldFor(entry, title)) : undefined
+            const blank = entry.hidden || !!entry.problem
             return (
               <tr
                 key={entry.id}
@@ -717,10 +892,10 @@ const EntryTable = ({
                 }}
               >
                 {lead &&
-                  (entry.hidden ? (
+                  (blank ? (
                     <td>
                       {noticeInLead ? (
-                        <HiddenNotice entry={entry} />
+                        <FieldsNotice entry={entry} />
                       ) : (
                         <Small $faint aria-hidden>
                           —
@@ -733,13 +908,20 @@ const EntryTable = ({
                 <td className="status">
                   <StatusSlot entry={entry} now={now} />
                 </td>
-                {entry.hidden
+                {blank
                   ? others.length > 0 && (
                       <td colSpan={others.length}>
-                        {!noticeInLead && <HiddenNotice entry={entry} />}
+                        {!noticeInLead && <FieldsNotice entry={entry} />}
                       </td>
                     )
                   : others.map((column) => cell(entry, column))}
+                {opensLists && (
+                  <td className="list">
+                    {entry.openListTo && (
+                      <OpenList to={entry.openListTo}>Open list</OpenList>
+                    )}
+                  </td>
+                )}
                 <td className="open">
                   <Link
                     to={entry.href}
@@ -942,12 +1124,16 @@ const EntryCards = ({
                 <CoverEmpty aria-hidden />
               ))}
             <CardBody>
-              {entry.hidden ? (
-                <HiddenNotice entry={entry} />
+              {entry.hidden || entry.problem ? (
+                <FieldsNotice entry={entry} />
               ) : (
                 <>
                   <CardTitle>
-                    <TitleValue entry={entry} field={titleField} />
+                    <TitleValue
+                      entry={entry}
+                      field={titleField}
+                      link={outLinkFor(entry, title)}
+                    />
                   </CardTitle>
                   {meta.length > 0 && (
                     <CardFields>
@@ -957,7 +1143,10 @@ const EntryCards = ({
                             <Label $tone="faint">{columnLabel(column)}</Label>
                           </dt>
                           <dd>
-                            <FieldValue field={fieldFor(entry, column)} />
+                            <FieldValue
+                              field={fieldFor(entry, column)}
+                              link={outLinkFor(entry, column)}
+                            />
                           </dd>
                         </div>
                       ))}

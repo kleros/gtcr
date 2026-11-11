@@ -13,6 +13,7 @@ import useNativeCurrency from 'hooks/native-currency'
 import useTokenSymbol from 'hooks/token-symbol'
 import useUrlChainId from 'hooks/use-url-chain-id'
 import { klerosAddresses } from 'config/tcr-addresses'
+import useWalletGovernor from 'pages/factory/use-wallet-governor'
 import { NETWORKS_INFO } from 'config/networks'
 import {
   Data,
@@ -275,6 +276,11 @@ const TCRParams = (props: TCRParamsProps) => {
   const ids = useId()
   const nativeCurrency = useNativeCurrency()
   const { uploadFile } = useAtlasProvider()
+  // This form writes its fields back over the wizard's state, so the wallet
+  // fills an empty or placeholder governor here as well.
+  useWalletGovernor(values.governorAddress, (address) =>
+    setFieldValue('governorAddress', address),
+  )
   const [uploading, setUploading] = useState<{
     tcrLogo?: boolean
     tcrPrimaryDocument?: boolean

@@ -364,6 +364,7 @@ const SubmitConnectModal = (props: SubmitConnectModalProps) => {
         nativeCurrency={nativeCurrency}
         submissionDeposit={relTCRSubmissionDeposit}
         fileURI={fileURI}
+        tcrAddress={relTCRAddress}
         activeStep={0}
         steps={['Connect the lists', 'Review and confirm']}
         fieldLabels={[

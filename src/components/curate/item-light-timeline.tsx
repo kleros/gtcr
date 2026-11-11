@@ -126,6 +126,9 @@ const whenStyles = css`
 
 const When = styled.a`
   ${whenStyles}
+  /* A 24px tap target without moving the line: padding out, margin back. */
+  padding-block: 3px;
+  margin-block: -3px;
   text-decoration: none;
   transition: color var(--motion);
 

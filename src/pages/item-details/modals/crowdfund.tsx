@@ -1,4 +1,4 @@
-import React, { useState, useContext, useMemo } from 'react'
+import React, { useState, useContext, useEffect, useMemo } from 'react'
 import styled from 'styled-components'
 import { ethers, BigNumber } from 'ethers'
 import { useAccount, usePublicClient, useWalletClient } from 'wagmi'
@@ -14,8 +14,6 @@ import {
 import { TCRViewContext } from 'contexts/tcr-view-context'
 import useRequiredFees from 'hooks/required-fees'
 import useNativeCurrency from 'hooks/native-currency'
-import { useAttachment } from 'hooks/use-attachment'
-import { parseIpfs } from 'utils/ipfs-parse'
 import { wrapWithToast, errorToast } from 'utils/wrap-with-toast'
 import { parseWagmiError } from 'utils/parse-wagmi-error'
 import { wagmiConfig } from 'config/wagmi'
@@ -38,6 +36,8 @@ import {
 import { Dialog, DialogColumns } from 'components/curate/item-light-dialog'
 import { useActionGate } from 'components/curate/item-light-gate'
 import { formatAmount, formatEther } from 'components/curate/item-light-format'
+import { Notice } from 'components/curate/item-light-notice'
+import { PolicyButton } from 'pages/light-item-details/policy-button'
 
 const { parseEther } = ethers.utils
 
@@ -91,6 +91,9 @@ interface CrowdfundModalProps {
   item: SubgraphItem
   fileURI?: string
   appealCost?: BigNumber
+  /** The appeal cost could not be read: offer a retry, not a skeleton. */
+  appealCostFailed?: boolean
+  retryAppealCost?: () => void
   onCancel: () => void
   visible?: boolean
   title?: React.ReactNode
@@ -102,6 +105,8 @@ const CrowdfundModal = ({
   item,
   fileURI,
   appealCost,
+  appealCostFailed,
+  retryAppealCost,
   onCancel,
   visible,
 }: CrowdfundModalProps) => {
@@ -121,7 +126,18 @@ const CrowdfundModal = ({
   const [userSelectedSide, setUserSelectedSide] = useState<number | undefined>()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const nativeCurrency = useNativeCurrency()
-  const openAttachment = useAttachment()
+
+  // The component stays mounted while the dialog is closed, so it is reset
+  // on closing and every opening starts afresh: a side picked earlier may be
+  // fully funded by then, and an amount typed was a share of what was still
+  // needed at the time. (Closed, the dialog renders nothing, so the reset is
+  // never seen.)
+  useEffect(() => {
+    if (visible) return
+    setUserSelectedSide(undefined)
+    setAmountText(undefined)
+    setContributionShare(1)
+  }, [visible])
 
   const round = (item.requests?.[0]?.rounds?.[0] ?? {}) as SubgraphRound
   const {
@@ -238,7 +254,28 @@ const CrowdfundModal = ({
         onClose={onCancel}
         title="Contribute appeal fees"
       >
-        <SkeletonBlock $height="120px" />
+        {appealCostFailed && !appealCost ? (
+          <Stack $gap={12}>
+            <Notice tone="contested" role="alert">
+              The court&apos;s appeal fee could not be read, so the amounts
+              cannot be shown yet.
+            </Notice>
+            {retryAppealCost && (
+              <Row>
+                <Button
+                  type="button"
+                  $variant="secondary"
+                  $size="sm"
+                  onClick={retryAppealCost}
+                >
+                  Try again
+                </Button>
+              </Row>
+            )}
+          </Stack>
+        ) : (
+          <SkeletonBlock $height="120px" />
+        )}
       </Dialog>
     )
 
@@ -384,18 +421,10 @@ const CrowdfundModal = ({
             share the other side&apos;s fees in proportion to what they put in.
           </Body>
           <div>
-            <Button
-              type="button"
-              $variant="ghost"
-              $size="sm"
-              disabled={!fileURI}
-              onClick={() =>
-                fileURI && openAttachment(parseIpfs(fileURI), true)
-              }
-            >
+            <PolicyButton fileURI={fileURI}>
               <CurateIcon name="policy" size={14} />
               Read the listing policy
-            </Button>
+            </PolicyButton>
           </div>
           <Stack $gap={8}>
             <Label>Your contribution</Label>

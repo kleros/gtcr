@@ -18,6 +18,7 @@ import { parseWagmiError } from 'utils/parse-wagmi-error'
 import { wagmiConfig } from 'config/wagmi'
 import {
   Body,
+  Button,
   ChipButton,
   Label,
   Row,
@@ -121,6 +122,9 @@ interface CrowdfundModalProps {
   item: SubgraphItem
   fileURI?: string
   appealCost?: BigNumber
+  /** The appeal cost could not be read, even after retrying. */
+  appealCostFailed?: boolean
+  onRetryAppealCost?: () => void
   onCancel: () => void
   visible?: boolean
   title?: React.ReactNode
@@ -143,6 +147,8 @@ const CrowdfundModal = ({
   item,
   fileURI,
   appealCost,
+  appealCostFailed,
+  onRetryAppealCost,
   onCancel,
   visible = false,
   title,
@@ -226,6 +232,40 @@ const CrowdfundModal = ({
         onClose={close}
       >
         <ModalSkeleton />
+      </ModalShell>
+    )
+
+  // Every amount below derives from the appeal cost the arbitrator reports:
+  // wait for it, or say the read failed and offer to read it again, rather
+  // than claim there is nothing to fund.
+  if (!appealCost)
+    return (
+      <ModalShell
+        open={visible}
+        title={title ?? 'Fund an appeal'}
+        eyebrow="Contribute appeal fees"
+        onClose={close}
+      >
+        {appealCostFailed ? (
+          <Stack $gap={12}>
+            <Body $muted>
+              The appeal cost could not be read from the arbitrator.
+            </Body>
+            {onRetryAppealCost && (
+              <Row>
+                <Button
+                  type="button"
+                  $variant="secondary"
+                  onClick={onRetryAppealCost}
+                >
+                  Try again
+                </Button>
+              </Row>
+            )}
+          </Stack>
+        ) : (
+          <ModalSkeleton />
+        )}
       </ModalShell>
     )
 

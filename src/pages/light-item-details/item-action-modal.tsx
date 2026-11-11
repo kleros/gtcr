@@ -2,6 +2,7 @@ import React from 'react'
 import type { ethers, BigNumber } from 'ethers'
 import { STATUS_CODE } from 'utils/item-status'
 import { itemActionLabel } from 'components/item-action-button'
+import useOpenResubmitted from 'pages/submit-item/use-open-resubmitted'
 import RemoveModal from './modals/remove'
 import ChallengeModal from './modals/challenge'
 import SubmitModal from './modals/submit'
@@ -27,6 +28,8 @@ interface ItemActionModalProps {
   metaEvidence?: MetaEvidence | undefined
   gtcrView?: ethers.Contract | undefined
   appealCost?: BigNumber | undefined
+  appealCostFailed?: boolean
+  retryAppealCost?: () => void
 }
 
 const ItemActionModal = ({
@@ -43,7 +46,10 @@ const ItemActionModal = ({
   metaEvidence,
   gtcrView,
   appealCost,
+  appealCostFailed,
+  retryAppealCost,
 }: ItemActionModalProps) => {
+  const openResubmitted = useOpenResubmitted()
   // Common modal properties.
   const rest = {
     visible: isOpen,
@@ -78,6 +84,7 @@ const ItemActionModal = ({
           tcrAddress={tcrAddress}
           metaEvidence={metaEvidence}
           challengePeriodDuration={challengePeriodDuration}
+          onSubmitted={openResubmitted}
           {...rest}
         />
       )
@@ -100,6 +107,8 @@ const ItemActionModal = ({
           item={item}
           fileURI={fileURI}
           appealCost={appealCost}
+          appealCostFailed={appealCostFailed}
+          retryAppealCost={retryAppealCost}
           {...rest}
         />
       )

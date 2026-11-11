@@ -92,7 +92,7 @@ const AddressPage = () => {
   // An invalid address renders the error page, which names itself.
   useDocumentHead(
     validAddress
-      ? `Curator ${truncateMiddle(address)} · Kleros Curate`
+      ? `Curator ${truncateMiddle(address)} | Kleros Curate`
       : undefined,
     validAddress
       ? `Submissions, removals, challenges and governed lists of ${address} across Kleros Curate registries.`

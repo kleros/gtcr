@@ -383,7 +383,7 @@ const Badges = ({ connectedTCRAddr, item, tcrAddress }: BadgesProps) => {
   useEffect(() => {
     if (!enabledBadges || !gtcrView || !item) return
     if (!getLogs || !GTCR_SUBGRAPH_URL) return
-    ;(async () => {
+    void (async () => {
       const foundBadges: FoundBadge[] = []
       const connectedBadges: BadgeInfo[] = []
       try {

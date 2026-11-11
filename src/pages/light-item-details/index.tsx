@@ -433,8 +433,6 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
   const tcrError = tcrViewContext?.tcrError
   const metaEvidence = tcrViewContext?.metaEvidence
   const challengePeriodDuration = tcrViewContext?.challengePeriodDuration
-  // null means "resolved, but no appeal cost applies"; undefined means "not yet fetched".
-  const [appealCost, setAppealCost] = useState<BigNumber | null | undefined>()
   const now = useNow()
 
   // Opened right after submitting it (submit-item): a missing entry is
@@ -489,7 +487,7 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
     if (!item || !subgraphPropsMissing || ipfsItemData) return
     let cancelled = false
     const controller = new AbortController()
-    ;(async () => {
+    void (async () => {
       try {
         const r = await fetch(parseIpfs(item.data), {
           signal: controller.signal,
@@ -602,10 +600,15 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
   const capitalizeFirst = (s: string | undefined) =>
     s ? s.charAt(0).toUpperCase() + s.slice(1) : ''
 
+  // The tab names the entry itself (its heading), then its list.
+  const seoName =
+    primaryField && hasValue(primaryField)
+      ? String(primaryField.value)
+      : capitalizeFirst(itemName) || 'Entry'
   const fullSeoTitle =
     decodedItem && metadata
-      ? `${capitalizeFirst(itemName)} - ${tcrTitle} - Kleros · Curate`
-      : 'Kleros · Curate'
+      ? `${seoName} · ${tcrTitle} | Kleros Curate`
+      : 'Kleros Curate'
   const truncatedSeoTitle = truncateAtWord(fullSeoTitle, 160)
 
   const fullSeoMetaDescription =
@@ -646,28 +649,40 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
     setModalOpen(true)
   }, [loading, search])
 
-  // If the item is disputed, unresolved etc, get the appealCost to propagate it to
-  // crowdfunding related components
-  useEffect(() => {
-    if (!item || appealCost !== undefined) return
-    const request = item.requests[0]
-    // appeal cost might not be applicable
-    if (request.resolved || !request.disputed) setAppealCost(null)
-    else {
+  // The court's appeal fee for the latest request's dispute, for the
+  // crowdfunding card and dialog. It applies only while the dispute is open;
+  // an entry added directly by the list's relayer has no request at all.
+  // The key holds the dispute and its round count, so an appeal that opens a
+  // new round reads the new fee; a failed read is retried, and the dialog
+  // offers another try instead of loading forever.
+  const latestRequest = item?.requests?.[0] as LightRequest | undefined
+  const appealCostApplies =
+    !!library && !!latestRequest?.disputed && !latestRequest.resolved
+  const appealCostQuery = useQuery({
+    queryKey: [
+      'appealCost',
+      chainId,
+      latestRequest?.arbitrator,
+      latestRequest?.disputeID,
+      latestRequest?.arbitratorExtraData,
+      latestRequest?.rounds?.length,
+    ],
+    queryFn: async (): Promise<BigNumber> => {
       const arbitrator = new ethers.Contract(
-        request.arbitrator,
+        latestRequest!.arbitrator,
         _IArbitrator,
         library,
       )
-      arbitrator
-        .appealCost(request.disputeID, request.arbitratorExtraData)
-        .then((cost: BigNumber) => setAppealCost(cost))
-        .catch((err: unknown) => {
-          console.error(err)
-          setAppealCost(null)
-        })
-    }
-  }, [item, appealCost, library])
+      return arbitrator.appealCost(
+        latestRequest!.disputeID,
+        latestRequest!.arbitratorExtraData,
+      )
+    },
+    enabled: appealCostApplies,
+  })
+  const appealCost = appealCostApplies ? appealCostQuery.data : undefined
+  const appealCostFailed =
+    appealCostApplies && appealCostQuery.isError && !appealCostQuery.isFetching
 
   useDocumentHead(truncatedSeoTitle, truncatedSeoMetaDescription)
 
@@ -945,14 +960,16 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
             request={item?.requests && { ...item.requests[0] }}
             modalOpen={modalOpen}
             setModalOpen={setModalOpen}
-            appealCost={appealCost ?? undefined}
+            appealCost={appealCost}
+            appealCostFailed={appealCostFailed}
+            retryAppealCost={() => void appealCostQuery.refetch()}
             dark
           />
           {/* Appeal funding is only rendered if the item has an appealable dispute. */}
           <CrowdfundingCard
             item={decodedItem}
             timestamp={timestamp}
-            appealCost={appealCost ?? undefined}
+            appealCost={appealCost}
           />
         </Rail>
       </Columns>

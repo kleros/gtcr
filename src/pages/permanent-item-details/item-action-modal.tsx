@@ -2,6 +2,7 @@ import React, { useMemo } from 'react'
 import type { BigNumber } from 'ethers'
 import { STATUS_CODE } from 'utils/permanent-item-status'
 import { stakeActionLabel } from 'components/permanent-item-action-button'
+import useOpenResubmitted from 'pages/submit-item/use-open-resubmitted'
 import ChallengeModal from './modals/challenge'
 import SubmitModal from './modals/submit'
 import CrowdfundModal from './modals/crowdfund'
@@ -19,7 +20,14 @@ interface ItemActionModalProps {
   item: SubgraphItem
   metaEvidence?: MetaEvidence
   appealCost?: BigNumber | undefined
+  appealCostFailed?: boolean
+  onRetryAppealCost?: () => void
+  /** A resubmission's arbitration cost: the newest setting's. */
   arbitrationCost?: BigNumber | undefined
+  /** A challenge's arbitration cost: the setting the contract picks for this entry. */
+  challengeArbitrationCost?: BigNumber | undefined
+  /** The policy this entry is judged by; the newest one when not given. */
+  policyURI?: string
 }
 
 const ItemActionModal = ({
@@ -30,15 +38,21 @@ const ItemActionModal = ({
   item,
   metaEvidence,
   appealCost,
+  appealCostFailed,
+  onRetryAppealCost,
   arbitrationCost,
+  challengeArbitrationCost,
+  policyURI: entryPolicyURI,
 }: ItemActionModalProps) => {
+  const openResubmitted = useOpenResubmitted()
   const rest = {
     visible: isOpen,
     title: stakeActionLabel({ statusCode, itemName }),
     onCancel: onClose,
   }
   const r = useMemo(() => item?.registry, [item])
-  const policyURI = r?.arbitrationSettings?.[0]?.metadata?.policyURI
+  const policyURI =
+    entryPolicyURI ?? r?.arbitrationSettings?.[0]?.metadata?.policyURI
   const submitMetadata = metaEvidence?.metadata
     ? {
         title: String(
@@ -56,7 +70,8 @@ const ItemActionModal = ({
         <ChallengeModal
           item={item}
           itemName={itemName}
-          arbitrationCost={arbitrationCost}
+          arbitrationCost={challengeArbitrationCost}
+          policyURI={policyURI}
           {...rest}
         />
       )
@@ -75,6 +90,7 @@ const ItemActionModal = ({
           tokenAddress={r?.token}
           metadata={submitMetadata}
           columns={metaEvidence?.metadata?.columns ?? []}
+          onSubmitted={openResubmitted}
           {...rest}
         />
       )
@@ -86,6 +102,8 @@ const ItemActionModal = ({
           item={item}
           fileURI={policyURI}
           appealCost={appealCost}
+          appealCostFailed={appealCostFailed}
+          onRetryAppealCost={onRetryAppealCost}
           {...rest}
         />
       )

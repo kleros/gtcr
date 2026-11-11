@@ -741,7 +741,7 @@ const FactoryPage = () => {
   // Fetch previously deployed list information
   useEffect(() => {
     let cancelled = false
-    ;(async () => {
+    void (async () => {
       if (!cachedFactory) return
       if (!transactions || Object.keys(transactions).length === 0) return
 
@@ -755,8 +755,14 @@ const FactoryPage = () => {
         deployments.map(async (tx) => {
           if (tx.contractAddress) return tx.contractAddress
           if (!library || !active) return undefined
+          // A transaction that never mined (sped up or cancelled in the
+          // wallet) times out instead of holding back the others.
           try {
-            const receipt = await library.waitForTransaction(tx.txHash)
+            const receipt = await library.waitForTransaction(
+              tx.txHash,
+              1,
+              30_000,
+            )
             return deployedAddressFromLogs(receipt.logs, factoryInterface)
           } catch (err) {
             console.warn('Could not read a previous deployment', err)

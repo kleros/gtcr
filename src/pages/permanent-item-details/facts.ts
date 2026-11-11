@@ -39,6 +39,7 @@ export interface StakeSubmission {
   createdAt?: string | null
   creationTx?: string | null
   finishedAt?: string | null
+  finishedTx?: string | null
   withdrawingTimestamp?: string | null
   withdrawingTx?: string | null
   submitter?: string | null

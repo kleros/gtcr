@@ -1,15 +1,19 @@
 // Scans every Curate factory's NewGTCR(address) logs and writes the list
 // creation times snapshot that utils/registry-creation.ts ships with, so a
 // browser only reads the blocks after it. Run it now and then (e.g. before a
-// release), from the repo root:
-//   node scripts/registry-creation-snapshot.mjs . src/config/registry-creation-snapshot.json
-// The Alchemy key is read from <repo root>/.env and never printed. Keep the
-// factories below in sync with registryFactories in src/config/tcr-addresses.ts.
+// release):
+//   node scripts/registry-creation-snapshot.mjs
+// It reads the Alchemy key from the repo's .env (never printed) and writes
+// src/config/registry-creation-snapshot.json; both paths are fixed, relative
+// to this script. Keep the factories below in sync with registryFactories in
+// src/config/tcr-addresses.ts.
 import { readFileSync, writeFileSync } from 'node:fs'
-import { join } from 'node:path'
+import { dirname, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 
-const [, , repo, output] = process.argv
-const env = readFileSync(join(repo, '.env'), 'utf8')
+const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
+const output = resolve(ROOT, 'src/config/registry-creation-snapshot.json')
+const env = readFileSync(resolve(ROOT, '.env'), 'utf8')
 const KEY = (env.match(/^REACT_APP_ALCHEMY_API_KEY=(.*)$/m)?.[1] ?? '')
   .trim()
   .replace(/^['"]|['"]$/g, '')

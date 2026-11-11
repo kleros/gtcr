@@ -4,8 +4,8 @@ import { ethers } from 'ethers'
 import { withFormik, type FormikProps } from 'formik'
 import { useAccount, usePublicClient } from 'wagmi'
 import { simulateContract, writeContract } from '@wagmi/core'
-import { erc20Abi } from 'viem'
-import { ItemTypes, typeDefaultValues } from '@kleros/gtcr-encoder'
+import { erc20Abi, type Abi } from 'viem'
+import { ItemTypes } from '@kleros/gtcr-encoder'
 import { useAtlasProvider } from '@kleros/kleros-app'
 import _gtcr from 'assets/abis/PermanentGTCR.json'
 import { Form } from 'components/ui'
@@ -22,6 +22,8 @@ import { wrapWithToast, errorToast } from 'utils/wrap-with-toast'
 import { parseWagmiError } from 'utils/parse-wagmi-error'
 import { wagmiConfig } from 'config/wagmi'
 import { useTxChainId } from 'pages/submit-item/use-wallet-gate'
+import { itemIdFromReceipt } from 'pages/submit-item/use-submit-actions'
+import { buildInitialValues } from 'pages/submit-item/form'
 import {
   Body,
   Button,
@@ -58,6 +60,15 @@ export const SUBMISSION_FORM_ID = 'submitItemForm'
 
 /** A field value is a string, or a File while an upload is stashed. */
 type SubmissionFormValues = Record<string, string | File>
+
+/**
+ * The form's key for a column. Formik reads a field name as a path, so a
+ * label such as "No. of tokens" would be stored as {No: {" of tokens": …}}
+ * while the submission reads the label itself, and the input selector reads
+ * some values by name directly. Each column is keyed by its position; the
+ * values go back under their labels before anything is uploaded.
+ */
+const fieldName = (index: number) => `column${index}`
 
 type RegistryExistsCheck = (tcrAddress: string) => Promise<boolean>
 
@@ -99,10 +110,10 @@ const _SubmissionForm: React.FC<
 > = (p) => {
   useEffect(() => {
     if (!p.onFieldsComplete || !p.columns) return
-    const allFilled = p.columns.every((column) => {
+    const allFilled = p.columns.every((column, index) => {
       if (column.type === ItemTypes.BOOLEAN) return true
       if (column.optional) return true
-      const value = p.values[column.label]
+      const value = p.values[fieldName(index)]
       return value !== undefined && value !== '' && String(value).trim() !== ''
     })
     p.onFieldsComplete(allFilled)
@@ -125,14 +136,14 @@ const _SubmissionForm: React.FC<
           <InputSelector
             style={p.style}
             type={column.type}
-            name={`${column.label}`}
+            name={fieldName(index)}
             allowedFileTypes={column.allowedFileTypes}
             key={index}
             values={p.values}
-            error={p.errors[column.label]}
+            error={p.errors[fieldName(index)]}
             setFieldValue={p.setFieldValue}
             disabled={p.disabledFields && p.disabledFields[index]}
-            touched={p.touched[column.label]}
+            touched={p.touched[fieldName(index)]}
             label={
               <FieldLabel>
                 <span>
@@ -154,21 +165,24 @@ const SubmissionForm = withFormik<
   SubmissionFormOuterProps,
   SubmissionFormValues
 >({
-  mapPropsToValues: ({ columns, initialValues }) =>
-    columns.reduce((acc: Record<string, string>, curr: Column, i: number) => {
-      const defaultValue = initialValues
-        ? initialValues[i]
-        : curr.type === 'number'
-          ? ''
-          : typeDefaultValues[curr.type]
-
-      return {
-        ...acc,
-        [curr.label]: String(defaultValue),
-      }
-    }, {}),
+  mapPropsToValues: ({ columns, initialValues }) => {
+    // The submit page's defaults: a value the entry lacks starts as the
+    // column's default, never as the text "undefined".
+    const values = buildInitialValues(columns, initialValues)
+    return Object.fromEntries(
+      columns.map((column, index) => [fieldName(index), values[column.label]]),
+    )
+  },
   handleSubmit: (values, { props, resetForm, setFieldValue }) => {
-    props.postSubmit(values, props.columns, resetForm, setFieldValue)
+    const { columns } = props
+    const byLabel = Object.fromEntries(
+      columns.map((column, index) => [column.label, values[fieldName(index)]]),
+    )
+    // The uploads come back by label: stored under the column's own key.
+    props.postSubmit(byLabel, columns, resetForm, (label, value, validate) => {
+      const index = columns.findIndex((column) => column.label === label)
+      if (index >= 0) setFieldValue(fieldName(index), value, validate)
+    })
   },
   validate: async (
     values,
@@ -182,9 +196,13 @@ const SubmissionForm = withFormik<
     const errors = (
       await Promise.all(
         columns
-          .filter(({ type }: Column) => type === ItemTypes.GTCR_ADDRESS)
-          .map(async ({ label }: Column) => {
-            const value = values[label]
+          .map((column, index) => ({
+            type: column.type,
+            name: fieldName(index),
+          }))
+          .filter(({ type }) => type === ItemTypes.GTCR_ADDRESS)
+          .map(async ({ name }) => {
+            const value = values[name]
             // A GTCR address column always holds a string; a stashed File
             // is never a registry address, so it reads as "not deployed".
             const address = typeof value === 'string' ? value : ''
@@ -195,7 +213,7 @@ const SubmissionForm = withFormik<
                 ((await deployedWithFactory(address)) ||
                   (await deployedWithLightFactory(address)) ||
                   (await deployedWithPermanentFactory(address))),
-              label: label,
+              name,
             }
           }),
       )
@@ -204,7 +222,7 @@ const SubmissionForm = withFormik<
         (res: {
           wasDeployedWithFactory: boolean
           isEmpty: boolean
-          label: string
+          name: string
         }) => !res.wasDeployedWithFactory || res.isEmpty,
       )
       .reduce(
@@ -213,11 +231,11 @@ const SubmissionForm = withFormik<
           curr: {
             wasDeployedWithFactory: boolean
             isEmpty: boolean
-            label: string
+            name: string
           },
         ) => ({
           ...acc,
-          [curr.label]: curr.isEmpty
+          [curr.name]: curr.isEmpty
             ? `Enter a list address to proceed.`
             : `This address was not deployed with the list creator.`,
         }),
@@ -275,6 +293,8 @@ const SubmitModal: React.FC<{
   /** Share of the stake a challenger must match, in basis points. */
   challengeStakeMultiplier?: string | number
   embedded?: boolean
+  /** Called with the confirmed entry's ID (see useOpenResubmitted). */
+  onSubmitted?: (itemID?: string) => void
 }> = (props) => {
   const {
     onCancel,
@@ -292,6 +312,7 @@ const SubmitModal: React.FC<{
     challengeStakeMultiplier,
     columns,
     embedded = false,
+    onSubmitted,
   } = props
 
   const nativeCurrency = useNativeCurrency()
@@ -522,6 +543,9 @@ const SubmitModal: React.FC<{
         if (result.status) {
           onCancel()
           resetForm({})
+          onSubmitted?.(
+            itemIdFromReceipt(result.result, tcrAddress ?? '', _gtcr as Abi),
+          )
         }
       } catch (err) {
         console.error('Error submitting item:', err)
@@ -531,6 +555,7 @@ const SubmitModal: React.FC<{
     },
     [
       onCancel,
+      onSubmitted,
       submissionDeposit,
       submitAllowed,
       tcrAddress,

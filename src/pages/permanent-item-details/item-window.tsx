@@ -572,7 +572,20 @@ export const StakeWindowPanel = ({
     case STATUS_CODE.WITHDRAWN:
       title = 'Withdrawn on'
       since = facts.endedAt
-      line = 'withdrawn by the submitter, stake and deposit returned'
+      // A ruling that keeps an entry with a pending withdrawal completes the
+      // withdrawal in the same transaction.
+      line =
+        caseRef &&
+        challenge?.disputeOutcome === 'Accept' &&
+        !!challenge.resolutionTx &&
+        challenge.resolutionTx === facts.submission?.finishedTx ? (
+          <>
+            kept by jurors in {caseRef}, then withdrawn as the submitter had
+            asked
+          </>
+        ) : (
+          'withdrawn by the submitter, stake and deposit returned'
+        )
       break
     case STATUS_CODE.REMOVED:
     case STATUS_CODE.REJECTED: {

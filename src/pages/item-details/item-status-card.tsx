@@ -6,6 +6,7 @@ import { useAccount, usePublicClient, useWalletClient } from 'wagmi'
 import { simulateContract } from '@wagmi/core'
 import { abi as _gtcr } from '@kleros/tcr/build/contracts/GeneralizedTCR.json'
 import {
+  CONTRACT_STATUS,
   itemToStatusCode,
   STATUS_CODE,
   SUBGRAPH_RULING,
@@ -48,6 +49,7 @@ import {
   requestFacts,
   type LightRequest as ClassicRequest,
 } from 'pages/light-item-details/request-facts'
+import { useChallengeCost } from 'pages/light-item-details/challenge-cost'
 
 /*
  * The action card of a Classic entry (right rail; a bottom bar on phones).
@@ -250,6 +252,9 @@ interface ItemStatusCardProps {
   modalOpen?: boolean
   setModalOpen: (open: boolean) => void
   appealCost?: BigNumber
+  /** The appeal cost could not be read; the funding dialog offers a retry. */
+  appealCostFailed?: boolean
+  retryAppealCost?: () => void
   dark?: boolean
 }
 
@@ -260,28 +265,33 @@ const ItemStatusCard = ({
   modalOpen,
   setModalOpen,
   appealCost,
+  appealCostFailed,
+  retryAppealCost,
 }: ItemStatusCardProps) => {
   const { address: account } = useAccount()
   const publicClient = usePublicClient()
   const { data: walletClient } = useWalletClient()
+  const tcrView = useContext(TCRViewContext)
   const {
     metaEvidence,
     challengePeriodDuration,
     tcrAddress,
     submissionDeposit,
     removalDeposit,
-    submissionChallengeDeposit,
-    removalChallengeDeposit,
     submissionBaseDeposit,
     removalBaseDeposit,
-    submissionChallengeBaseDeposit,
-    removalChallengeBaseDeposit,
     arbitrationCost,
     gtcrView,
-  } = useContext(TCRViewContext) ?? {}
+  } = tcrView ?? {}
   const urlChainId = useUrlChainId()
   const nativeCurrency = useNativeCurrency()
   const now = useNow()
+  // A challenge is priced with the settings the request was made with.
+  const challenge = useChallengeCost({
+    request,
+    isRemoval: item?.status === CONTRACT_STATUS.REMOVAL_REQUESTED,
+    list: tcrView,
+  })
 
   const statusCode = useMemo(
     () =>
@@ -356,16 +366,8 @@ const ItemStatusCard = ({
   const itemName = metadata?.itemName || 'entry'
   const { resolved } = request
 
-  const challengeCost =
-    statusCode === STATUS_CODE.SUBMITTED
-      ? submissionChallengeDeposit
-      : statusCode === STATUS_CODE.REMOVAL_REQUESTED
-        ? removalChallengeDeposit
-        : undefined
-  const challengeBase =
-    statusCode === STATUS_CODE.SUBMITTED
-      ? submissionChallengeBaseDeposit
-      : removalChallengeBaseDeposit
+  const challengeCost = inWindow ? challenge.total : undefined
+  const challengeBase = challenge.base
   const isResubmit =
     statusCode === STATUS_CODE.REJECTED || statusCode === STATUS_CODE.REMOVED
   const buttonAmount = inWindow
@@ -416,10 +418,16 @@ const ItemStatusCard = ({
       appealable ||
       statusCode === STATUS_CODE.WAITING_ARBITRATOR ||
       statusCode === STATUS_CODE.WAITING_ENFORCEMENT)
+  // Once resolved, the outcome can differ from the jurors' last ruling: a
+  // side that alone funded the last appeal wins (rule() in the list
+  // contract). The request records that final outcome.
+  const ruling = resolved
+    ? (request.disputeOutcome ?? currentRuling)
+    : currentRuling
   const rulingText =
-    currentRuling === SUBGRAPH_RULING.ACCEPT
+    ruling === SUBGRAPH_RULING.ACCEPT
       ? `For the ${requesterName}`
-      : currentRuling === SUBGRAPH_RULING.REJECT
+      : ruling === SUBGRAPH_RULING.REJECT
         ? 'For the challenger'
         : 'Refused to rule'
 
@@ -558,7 +566,7 @@ const ItemStatusCard = ({
                 </Amount>
                 <AmountSplit
                   base={amountBase}
-                  cost={arbitrationCost}
+                  cost={inWindow ? challenge.arbitrationCost : arbitrationCost}
                   baseLabel={inWindow ? 'Challenge deposit' : 'Deposit'}
                   currency={nativeCurrency}
                 />
@@ -658,6 +666,8 @@ const ItemStatusCard = ({
             challengePeriodDuration={challengePeriodDuration}
             gtcrView={gtcrView}
             appealCost={appealCost}
+            appealCostFailed={appealCostFailed}
+            retryAppealCost={retryAppealCost}
           />
         )}
     </>

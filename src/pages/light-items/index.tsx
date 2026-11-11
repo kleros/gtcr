@@ -72,6 +72,7 @@ import {
   submitPathFor,
 } from 'components/curate/registry-shared-action-link'
 import ErrorPage from '../error-page'
+import { LIST_LOAD_FAILED } from '../error-page/copy'
 import SubmitModal from '../light-item-details/modals/submit'
 import SubmitConnectModal from '../light-item-details/modals/submit-connect'
 
@@ -164,12 +165,27 @@ interface SeerMarket {
   outcomes?: string[]
 }
 
+/*
+ * Seer registries: each entry is a Seer market (its "Market" column is the
+ * market's address). The list adds the market's name, its outcomes and a
+ * link to the market on Seer, with the details block's URL. The added
+ * columns are named apart from the registry's own, since cells are matched
+ * to columns by label.
+ */
+const SEER_MARKET_LABEL = 'Market name'
+const SEER_OUTCOMES_LABEL = 'Outcomes'
+
+const seerMarketUrl = (chainId: number, marketAddress: string) =>
+  `https://app.seer.pm/markets/${chainId}/${marketAddress}`
+
 /** A subgraph item with its decoded fields, as the list renders it. */
 interface RegistryItem {
   tcrData: SubgraphItem & { mergedData?: V2Field[] }
   columns: V2Field[]
   errors: string[]
   seerMarketData?: SeerMarket
+  /** The address its Seer market was found by, for the link to Seer. */
+  seerMarketAddress?: string
 }
 
 const integer = new Intl.NumberFormat('en-US')
@@ -672,9 +688,13 @@ const Items = () => {
 
   // Load NSFW user setting from localforage.
   useEffect(() => {
-    ;(async () => {
-      const savedSetting = await localforage.getItem(NSFW_FILTER_KEY)
-      if (typeof savedSetting === 'boolean') setNSFWFilter(savedSetting)
+    void (async () => {
+      try {
+        const savedSetting = await localforage.getItem(NSFW_FILTER_KEY)
+        if (typeof savedSetting === 'boolean') setNSFWFilter(savedSetting)
+      } catch {
+        // Storage can be blocked (private windows): keep the default.
+      }
     })()
   }, [])
 
@@ -691,6 +711,14 @@ const Items = () => {
 
     return decodedItems.map((item: SubgraphItem) => {
       const decodedData = item.decodedData
+      // The same field useSeerMarketsData looks the markets up by.
+      const marketAddress =
+        seer && (decodedData?.length ?? 0) > 1
+          ? String(decodedData?.[1])
+          : undefined
+      const seerMarketData = marketAddress
+        ? seerMarketsData[marketAddress.toLowerCase()]
+        : undefined
       return {
         tcrData: { ...item, decodedData },
         columns: columns.map((col: Column, index: number) => ({
@@ -698,10 +726,8 @@ const Items = () => {
           ...col,
         })),
         errors: [],
-        seerMarketData:
-          seer && (decodedData?.length ?? 0) > 1
-            ? seerMarketsData[String(decodedData?.[1]).toLowerCase()]
-            : undefined,
+        seerMarketData,
+        seerMarketAddress: seerMarketData ? marketAddress : undefined,
       }
     })
   }, [metaEvidence, tcrAddress, decodedItems, chainId, seerMarketsData])
@@ -776,8 +802,8 @@ const Items = () => {
   )
 
   const fullSeoTitle = tcrTitle
-    ? `${tcrTitle} - Kleros · Curate`
-    : 'Kleros · Curate'
+    ? `${tcrTitle} | Kleros Curate`
+    : 'Kleros Curate'
   const fullSeoMetaDescription = metadata
     ? `Explore the ${tcrTitle} list on Kleros Curate: ${normalizedDescription}`
     : 'Explore curated lists on Kleros Curate.'
@@ -1005,8 +1031,14 @@ const Items = () => {
     Object.keys(seerMarketsData).length > 0
   const columns = useMemo(() => {
     const base = tableColumns((metadata?.columns ?? []) as V2Field[])
-    // Seer registries also show the market name fetched for each entry.
-    return hasSeerMarkets ? [...base, { label: 'Market', type: 'text' }] : base
+    // Seer registries also show each entry's market, fetched from Seer.
+    return hasSeerMarkets
+      ? [
+          ...base,
+          { label: SEER_MARKET_LABEL, type: 'text' },
+          { label: SEER_OUTCOMES_LABEL, type: 'text' },
+        ]
+      : base
   }, [metadata, hasSeerMarkets])
 
   const verifiedEntries = trust.listOfLists ? trust.verifiedSet : undefined
@@ -1024,12 +1056,35 @@ const Items = () => {
           ? item.tcrData.mergedData
           : item.columns),
       ]
-      if (item.seerMarketData?.marketName)
+      const market = item.seerMarketData
+      if (market?.marketName) {
         fields.push({
-          label: 'Market',
-          value: item.seerMarketData.marketName,
+          label: SEER_MARKET_LABEL,
+          value: market.marketName,
           type: 'text',
         })
+        // Every Seer market has an "Invalid result" outcome; like the Seer
+        // details block, the list shows only the real answers.
+        const outcomes = (market.outcomes ?? []).filter(
+          (outcome) => outcome !== 'Invalid result',
+        )
+        if (outcomes.length > 0)
+          fields.push({
+            label: SEER_OUTCOMES_LABEL,
+            value: outcomes.join(' · '),
+            type: 'text',
+          })
+      }
+      const outLinks =
+        market?.marketName && item.seerMarketAddress && chainId
+          ? {
+              [SEER_MARKET_LABEL]: {
+                href: seerMarketUrl(chainId, item.seerMarketAddress),
+                label: 'Seer',
+                title: 'Go to Seer',
+              },
+            }
+          : undefined
       const firstColumnValue = item.columns[0]?.value
       const openListTo =
         isTCRofTCRs && typeof firstColumnValue === 'string'
@@ -1057,6 +1112,7 @@ const Items = () => {
         onReveal: hidden
           ? () => setRevealed((prev) => new Set(prev).add(id))
           : undefined,
+        outLinks,
       }
     })
   }, [
@@ -1082,15 +1138,28 @@ const Items = () => {
       />
     )
 
-  if (tcrError || error)
+  if (tcrError)
     return (
       <ErrorPage
         code="400"
         message={
           typeof tcrError === 'string'
             ? tcrError
-            : error || 'This list could not be loaded.'
+            : 'This list could not be loaded.'
         }
+      />
+    )
+
+  if (error)
+    return (
+      <ErrorPage
+        code="Error"
+        title="This list did not load"
+        message={LIST_LOAD_FAILED}
+        onRetry={() => {
+          setError(undefined)
+          void itemsQuery.refetch()
+        }}
       />
     )
 

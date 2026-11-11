@@ -541,8 +541,8 @@ export const WindowPanel = ({
       ) ?? request)
     : request
   const since = toSeconds(deciding?.resolutionTime)
-  const decidedInCourt =
-    !!deciding?.disputed && Number(deciding.disputeID) !== 0
+  // Case 0 is a real case: the arbitrator numbers its first dispute 0.
+  const decidedInCourt = !!deciding?.disputed
   const title = registered
     ? 'Registered since'
     : statusCode === STATUS_CODE.REMOVED

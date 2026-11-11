@@ -44,7 +44,10 @@ interface ChallengeModalProps {
   item: SubgraphItem
   itemName?: string
   onCancel: () => void
+  /** The cost of the arbitration setting the contract picks for this entry. */
   arbitrationCost?: BigNumber
+  /** That setting's policy; the newest one when not given. */
+  policyURI?: string
   visible?: boolean
   title?: React.ReactNode
   [key: string]: unknown
@@ -55,13 +58,15 @@ const ChallengeModal = ({
   itemName,
   onCancel,
   arbitrationCost,
+  policyURI,
   visible = false,
   title,
 }: ChallengeModalProps) => {
   const registry = item.registry
   const registryAddress = registry?.id
   const tokenAddress = registry?.token
-  const fileURI = registry?.arbitrationSettings?.[0]?.metadata?.policyURI
+  const fileURI =
+    policyURI ?? registry?.arbitrationSettings?.[0]?.metadata?.policyURI
   const { address: account } = useAccount()
   const publicClient = usePublicClient()
   const { data: walletClient } = useWalletClient()

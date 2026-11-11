@@ -225,23 +225,21 @@ const SubmitConnectModal = (props: SubmitConnectModalProps) => {
     )
       return
     setIsSubmitting(true)
-    const matchFile = new File([JSON.stringify(match)], 'match-file.json', {
-      type: 'application/json',
-    })
-    const fileURI = await uploadFile(matchFile, JSON_UPLOAD_ROLE)
-    if (!fileURI) {
-      setIsSubmitting(false)
-      errorToast('Failed to upload match file to IPFS.')
-      return
-    }
-    const { columns } = relTCRMetaEvidence.metadata
-
-    const values = {
-      Address: badgeTCRAddr,
-      'Match File URI': fileURI,
-    }
-
+    // The upload is inside the try: Atlas throws on network and session
+    // errors, and those must end the loading state with a toast too.
     try {
+      const matchFile = new File([JSON.stringify(match)], 'match-file.json', {
+        type: 'application/json',
+      })
+      const fileURI = await uploadFile(matchFile, JSON_UPLOAD_ROLE)
+      if (!fileURI) throw new Error('Failed to upload match file to IPFS.')
+      const { columns } = relTCRMetaEvidence.metadata
+
+      const values = {
+        Address: badgeTCRAddr,
+        'Match File URI': fileURI,
+      }
+
       const encodedParams = gtcrEncode({
         columns,
         values,
@@ -376,6 +374,7 @@ const SubmitConnectModal = (props: SubmitConnectModalProps) => {
         nativeCurrency={nativeCurrency}
         submissionDeposit={relTCRSubmissionDeposit}
         fileURI={fileURI}
+        tcrAddress={relTCRAddress}
         activeStep={0}
         steps={['Connect the lists', 'Review and confirm']}
         fieldLabels={[

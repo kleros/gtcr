@@ -4,6 +4,7 @@ import { useParams, Link, useLocation } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { ethers, BigNumber } from 'ethers'
 import { abi as _IArbitrator } from '@kleros/erc-792/build/contracts/IArbitrator.json'
+import _gtcr from 'assets/abis/PermanentGTCR.json'
 import useUrlChainId from 'hooks/use-url-chain-id'
 import useDocumentHead from 'hooks/use-document-head'
 import useNow from 'hooks/use-now'
@@ -62,6 +63,7 @@ import { formatSince } from 'pages/item-details/format-since'
 import { StakeWindowPanel } from './item-window'
 import { PolicySince, policyInForceSince } from './policy-since'
 import { multiplierPercent, nativeText, tokenText } from './modals/shell'
+import { entrySetting } from './arbitration-setting'
 import {
   stakeFacts,
   stakeStatusCode,
@@ -401,7 +403,6 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
   const timestamp = useContext(WalletContext)?.timestamp
   const [modalOpen, setModalOpen] = useState(false)
   const { graphqlBatcher } = useGraphqlBatcher()
-  const [appealCost, setAppealCost] = useState<BigNumber | null | undefined>()
   const [metaEvidence, setMetaEvidence] = useState<MetaEvidence | undefined>()
   const now = useNow()
   const openAttachment = useAttachment()
@@ -452,9 +453,9 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
     enabled: !!chainId && !!tcrAddress,
     staleTime: STALE_TIME,
   })
-  const policySince = policyInForceSince(
-    settingsQuery.data?.registry?.arbitrationSettings,
-  )
+  const listSettings = settingsQuery.data?.registry?.arbitrationSettings as
+    | SubgraphArbitrationSetting[]
+    | undefined
 
   const item = useMemo(
     () =>
@@ -481,12 +482,94 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
       })
   }, [item, ipfsItemData, ipfsError])
 
+  // A new submission takes the newest arbitration setting. A challenge, and
+  // the policy the entry is judged by, take the one the contract picks for
+  // this entry (arbitration-setting.ts): for a while after the governor
+  // changes the settings, that is still the previous one.
+  const latestSetting = registry?.arbitrationSettings?.[0]
+  const chainNow = timestamp?.toNumber()
+  const setting = useMemo(() => {
+    if (!item || !registry || chainNow === undefined) return undefined
+    return entrySetting(listSettings, {
+      status: item.status,
+      includedAt: toNum(item.includedAt),
+      withdrawingAt: toNum(item.withdrawingTimestamp),
+      challengedAt: toNum(item.challenges?.[0]?.createdAt),
+      cooldown: toNum(registry.arbitrationParamsCooldown),
+      now: chainNow,
+    })
+  }, [item, registry, listSettings, chainNow])
+  const settingInForce = setting ?? latestSetting
+
   const arbitrationCost = useArbitrationCost({
     address: registry?.arbitrator?.id,
-    arbitratorExtraData:
-      registry?.arbitrationSettings?.[0]?.arbitratorExtraData,
+    arbitratorExtraData: latestSetting?.arbitratorExtraData,
     library,
   })
+  // Until the list's settings load, which one a challenge uses is unknown,
+  // so no challenge cost is offered yet.
+  const challengeCost = useArbitrationCost({
+    address: registry?.arbitrator?.id,
+    arbitratorExtraData: settingsQuery.isLoading
+      ? undefined
+      : settingInForce?.arbitratorExtraData,
+    library,
+  })
+
+  // The submitter as the contract records it (msg.sender). The subgraph
+  // records the transaction's sender, another address when a contract wallet
+  // such as a Safe submitted, and only the contract's record can start a
+  // withdrawal. The subgraph's value stands in while this loads.
+  const submitterQuery = useQuery({
+    queryKey: [
+      'permanentItemSubmitter',
+      chainId,
+      registry?.id,
+      item?.itemID,
+      item?.includedAt,
+    ],
+    queryFn: async () => {
+      const list = new ethers.Contract(registry!.id, _gtcr, library!)
+      const record = await list.items(item!.itemID)
+      return String(record.submitter).toLowerCase()
+    },
+    enabled: !!registry?.id && !!library && !!item?.itemID,
+    staleTime: STALE_TIME,
+  })
+  const submitter = submitterQuery.data ?? item?.submitter
+
+  // What the next appeal costs, for the appeal funding card and dialog. It
+  // is read again for each new challenge or round, and a failed read is
+  // retried, so the dialog never waits on a stale or missing figure.
+  const latestChallenge = item?.challenges?.[0]
+  const appealCostQuery = useQuery({
+    queryKey: [
+      'permanentAppealCost',
+      chainId,
+      registry?.arbitrator?.id,
+      latestChallenge?.disputeID,
+      latestChallenge?.rounds?.length,
+    ],
+    queryFn: async (): Promise<BigNumber> => {
+      const arbitrator = new ethers.Contract(
+        registry!.arbitrator.id,
+        _IArbitrator,
+        library!,
+      )
+      return arbitrator.appealCost(
+        latestChallenge!.disputeID,
+        latestChallenge!.arbitrationSetting.arbitratorExtraData,
+      )
+    },
+    enabled:
+      !!registry &&
+      !!library &&
+      !!latestChallenge &&
+      !latestChallenge.disputeOutcome,
+    staleTime: STALE_TIME,
+  })
+  const appealCostFailed =
+    appealCostQuery.isError && !appealCostQuery.isFetching
 
   useEffect(() => {
     if (!registry) return
@@ -580,10 +663,15 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
     }
   }
 
+  // The tab names the entry itself (its heading), then its list.
+  const seoName =
+    primaryField && hasValue(primaryField)
+      ? String(primaryField.value)
+      : capitalizeFirstLetter(itemName ?? '') || 'Entry'
   const fullSeoTitle =
     decodedItem && metadata
-      ? `${capitalizeFirstLetter(itemName ?? '')} - ${tcrTitle} - Kleros · Curate`
-      : 'Kleros · Curate'
+      ? `${seoName} · ${tcrTitle} | Kleros Curate`
+      : 'Kleros Curate'
   const truncatedSeoTitle = truncateAtWord(fullSeoTitle, 160)
 
   const fullSeoMetaDescription =
@@ -615,33 +703,6 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
 
     setModalOpen(true)
   }, [loading, search])
-
-  // If the item is disputed, unresolved etc, get the appealCost to propagate it
-  // to the appeal funding components.
-  useEffect(() => {
-    if (!item || !registry || appealCost !== undefined) return
-    const challenge = item.challenges[0]
-    // Appeal cost might not be applicable.
-    if (!challenge || challenge.disputeOutcome) setAppealCost(null)
-    else {
-      const arbitrator = new ethers.Contract(
-        registry.arbitrator.id,
-        _IArbitrator,
-        library,
-      )
-
-      arbitrator
-        .appealCost(
-          challenge.disputeID,
-          challenge.arbitrationSetting.arbitratorExtraData,
-        )
-        .then((cost: BigNumber) => setAppealCost(cost))
-        .catch((err: unknown) => {
-          console.error(err)
-          setAppealCost(null)
-        })
-    }
-  }, [item, appealCost, library, registry])
 
   useDocumentHead(truncatedSeoTitle, truncatedSeoMetaDescription)
 
@@ -693,7 +754,17 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
   const name = itemName || 'item'
   const Name = capitalizeFirstLetter(name)
   const registryHref = `/tcr/${chainId}/${tcrAddress}`
-  const policyURI = registry?.arbitrationSettings?.[0]?.metadata?.policyURI
+  const policyURI =
+    settingInForce?.metadata?.policyURI ?? latestSetting?.metadata?.policyURI
+  // When that policy took effect: settings newer than the one in force for
+  // this entry do not apply to it yet.
+  const policySince = policyInForceSince(
+    setting && listSettings
+      ? listSettings.filter(
+          (other) => toNum(other.timestamp) <= toNum(setting.timestamp),
+        )
+      : listSettings,
+  )
   const logo = logoOf(fields)
   const titleText =
     primaryField && hasValue(primaryField) ? String(primaryField.value) : Name
@@ -866,13 +937,13 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
                   {facts.includedAt ? formatSince(facts.includedAt, now) : '—'}
                 </dd>
               </div>
-              {item.submitter && (
+              {submitter && (
                 <div>
                   <Label as="dt" $tone="faint">
                     By
                   </Label>
                   <dd>
-                    <AddressLink address={item.submitter} />
+                    <AddressLink address={submitter} />
                   </dd>
                 </div>
               )}
@@ -942,8 +1013,13 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
             modalOpen={modalOpen}
             metaEvidence={metaEvidence}
             setModalOpen={setModalOpen}
-            appealCost={appealCost ?? undefined}
+            appealCost={appealCostQuery.data}
+            appealCostFailed={appealCostFailed}
+            onRetryAppealCost={() => void appealCostQuery.refetch()}
             arbitrationCost={arbitrationCost.arbitrationCost}
+            challengeArbitrationCost={challengeCost.arbitrationCost}
+            submitter={submitter}
+            policyURI={policyURI}
           />
         </Rail>
       </Columns>

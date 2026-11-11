@@ -22,6 +22,7 @@ import {
 import { ColumnField, useObjectUrl } from './fields'
 import {
   buildInitialValues,
+  fieldPath,
   isEmptyField,
   isRequired,
   type FieldValue,
@@ -82,6 +83,11 @@ export interface SubmitPageProps {
   columns?: Column[]
   initialValues?: unknown[]
   disabledFields?: boolean[]
+  /**
+   * A Classic list encodes number and Twitter user columns as int256, so
+   * they take whole numbers only; Light and Stake lists store the text.
+   */
+  wholeNumbers?: boolean
   policyURI?: string | null
   terms: SubmitTerms
   /** Columns and deposit are known; until then the workspace is a skeleton. */
@@ -834,6 +840,7 @@ const Workspace = ({
   const {
     initialValues,
     disabledFields,
+    wholeNumbers,
     factoryChecks,
     onSubmit,
     gate,
@@ -856,7 +863,8 @@ const Workspace = ({
     // Validation runs the list-creator subgraph checks for GTCR address
     // columns, so it waits for blur and submit instead of every keystroke.
     validateOnChange: false,
-    validate: (values) => validateSubmission(columns, values, factoryChecks),
+    validate: (values) =>
+      validateSubmission(columns, values, factoryChecks, wholeNumbers),
     onSubmit: (values, helpers) => {
       // Enter in a field submits the form too: the gate still applies.
       if (gate.blocker || submitting) return undefined
@@ -864,7 +872,9 @@ const Workspace = ({
         normaliseValues(columns, values),
         columns,
         helpers.resetForm,
-        helpers.setFieldValue,
+        // The uploads are stored back under their column's label.
+        (label, value, shouldValidate) =>
+          helpers.setFieldValue(fieldPath(label), value, shouldValidate),
       )
     },
   })
@@ -944,13 +954,20 @@ const Workspace = ({
                     error={formik.errors[column.label]}
                     showError={!!formik.touched[column.label]}
                     disabled={submitting || !!disabledFields?.[index]}
+                    wholeNumber={wholeNumbers}
                     onChange={(value) =>
-                      formik.setFieldValue(column.label, value)
+                      formik.setFieldValue(fieldPath(column.label), value)
                     }
-                    onBlur={() => formik.setFieldTouched(column.label, true)}
+                    onBlur={() =>
+                      formik.setFieldTouched(fieldPath(column.label), true)
+                    }
                     onCommit={(value) => {
-                      formik.setFieldTouched(column.label, true, false)
-                      formik.setFieldValue(column.label, value, true)
+                      formik.setFieldTouched(
+                        fieldPath(column.label),
+                        true,
+                        false,
+                      )
+                      formik.setFieldValue(fieldPath(column.label), value, true)
                     }}
                   />
                 ))}
@@ -1006,7 +1023,9 @@ export const SubmitPage = (props: SubmitPageProps) => {
   const article = getArticleFor(itemName)
   const confirmLabel = `Submit ${article} ${itemName}`
   useDocumentHead(
-    `Submit ${article} ${itemName} · ${registryTitle ?? 'Kleros Curate'}`,
+    registryTitle
+      ? `Submit ${article} ${itemName} · ${registryTitle} | Kleros Curate`
+      : `Submit ${article} ${itemName} | Kleros Curate`,
   )
 
   return (

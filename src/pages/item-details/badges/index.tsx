@@ -339,7 +339,7 @@ const Badges = ({ connectedTCRAddr, item, tcrAddress }: BadgesProps) => {
     const filter = [false, true, false, true, false, false, false, false]
     const oldestFirst = false
     const itemsPerRequest = 100
-    ;(async () => {
+    void (async () => {
       try {
         const result = await gtcrView.queryItems(
           connectedTCRAddr,
@@ -403,7 +403,7 @@ const Badges = ({ connectedTCRAddr, item, tcrAddress }: BadgesProps) => {
     if (!enabledBadges || !gtcrView || !item) return
     if (!getLogs) return
     let cancelled = false
-    ;(async () => {
+    void (async () => {
       const found: FoundBadge[] = []
       const connected: BadgeInfo[] = []
       try {
@@ -476,8 +476,10 @@ const Badges = ({ connectedTCRAddr, item, tcrAddress }: BadgesProps) => {
 
             const itemsPerRequest = 100
             for (let i = 0; i < Math.ceil(itemCount / itemsPerRequest); i++) {
-              const cursor =
-                i > 0 && i < itemCount - 1 ? i * itemsPerRequest + 1 : 0
+              // GeneralizedTCRView.findItem scans from _cursor up to, not
+              // including, _count: an end index, not a page size.
+              const cursor = i * itemsPerRequest
+              const end = Math.min(cursor + itemsPerRequest, itemCount)
               const ignoreColumns = matchColumns.map(
                 (col: unknown) => typeof col !== 'number',
               )
@@ -486,7 +488,7 @@ const Badges = ({ connectedTCRAddr, item, tcrAddress }: BadgesProps) => {
                   badgeAddr,
                   encodedMatch,
                   cursor,
-                  itemsPerRequest > itemCount ? 0 : itemsPerRequest,
+                  itemsPerRequest > itemCount ? 0 : end,
                   [true, false, false, false], // Whether to skip items in the [absent, registered, submitted, removalRequested] states.
                   ignoreColumns,
                 )

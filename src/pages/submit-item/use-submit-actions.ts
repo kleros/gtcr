@@ -24,11 +24,14 @@ import { encoderValues, type SubmissionValues } from './form'
 import { useTxChainId } from './use-wallet-gate'
 
 /**
- * The submitted entry's ID, read from the list's own ItemStatusChange event
- * in the receipt (every kind of list emits it with the ID first), so the
- * page can open the new entry. Undefined if the receipt does not say.
+ * The submitted entry's ID, read from the list's own events in the receipt
+ * so the page can open the new entry: ItemStatusChange, or NewItem, the only
+ * one a Stake Curate list emits for an entry's first submission. Both carry
+ * the ID as `_itemID`. Undefined if the receipt does not say.
  */
-const itemIdFromReceipt = (
+const ITEM_EVENTS = new Set(['ItemStatusChange', 'NewItem'])
+
+export const itemIdFromReceipt = (
   receipt: TransactionReceipt | undefined,
   list: string,
   abi: Abi,
@@ -37,7 +40,7 @@ const itemIdFromReceipt = (
     if (log.address.toLowerCase() !== list.toLowerCase()) continue
     try {
       const event = decodeEventLog({ abi, data: log.data, topics: log.topics })
-      if (event.eventName === 'ItemStatusChange')
+      if (event.eventName && ITEM_EVENTS.has(event.eventName))
         return (event.args as unknown as { _itemID: `0x${string}` })._itemID
     } catch {
       // Not one of the list's events.

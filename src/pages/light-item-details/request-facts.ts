@@ -18,6 +18,13 @@ export interface LightRequest extends SubgraphRequest {
   deposit?: BigNumber | string
   disputeID: string
   arbitrator: string
+  /** The extra data the request was made with; its challenge is priced with it. */
+  arbitratorExtraData?: string
+  /**
+   * The final ruling once the request is resolved. It differs from the
+   * jurors' last ruling when only one side funded the last appeal.
+   */
+  disputeOutcome?: string | null
   resolutionTime?: string | null
   evidenceGroup?: { evidences?: unknown[] }
 }
@@ -74,7 +81,9 @@ export const requestFacts = ({
 
   const { arbitrator: klerosArbitrator, uiURL } =
     (chainId && klerosAddresses[chainId as keyof typeof klerosAddresses]) || {}
-  const hasDispute = !!request.disputed && Number(request.disputeID) !== 0
+  // A disputed request always has a case, and the arbitrator numbers its
+  // first one 0.
+  const hasDispute = !!request.disputed
   const disputeHref =
     hasDispute &&
     uiURL &&

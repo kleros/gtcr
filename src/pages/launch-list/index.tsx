@@ -833,7 +833,7 @@ const LaunchListPage = () => {
   const kindParam = searchParams.get('kind')
   const kind = isKind(kindParam) ? kindParam : undefined
   const choose = (next: Kind) => {
-    KINDS[next].preload()
+    KINDS[next].preload().catch(() => undefined)
     setSearchParams(
       (previous) => {
         const params = new URLSearchParams(previous)

@@ -1,20 +1,22 @@
 import React, { useState } from 'react'
 import styled, { css } from 'styled-components'
+import { Link } from 'react-router-dom'
 import { ItemTypes } from '@kleros/gtcr-encoder'
 import DisplaySelector from 'components/display-selector'
+import ETHAddress from 'components/eth-address'
 import { parseIpfs } from 'utils/ipfs-parse'
 import useTcrMetaEvidence from 'hooks/use-tcr-meta-evidence'
 import useCheckPermanentList from 'hooks/use-check-permanent-list'
 import useUrlChainId from 'hooks/use-url-chain-id'
 import { CurateIcon } from './icons'
-import { AddressWrap, CopyValue } from './chrome-address'
 import { Chip, SkeletonBlock, Small, truncateMiddle } from './primitives'
 
 /*
  * Field rendering shared by the entry list and the item pages: a field by
- * its type, images in a rounded frame that zooms on hover, and "list of
- * lists" references as a small registry identity (logo, title, address with
- * copy, Stake Curate chip). V2Card is the surface the factory shell builds on.
+ * its type, images in a rounded frame that zooms on hover, and registry
+ * references (GTCR address fields) as a small registry identity: logo, the
+ * title that opens the list, the address (on an entry page, it opens the
+ * explorer) and the Stake Curate chip. V2Card is the surface the factory shell builds on.
  */
 
 export type V2Field = {
@@ -207,7 +209,7 @@ const ListReferenceText = styled.div`
  * Detailed, the title takes the type of where it stands (a page title, a
  * field row); compact, it is a 14px row title.
  */
-const ListReferenceTitle = styled.span<{ $detailed?: boolean }>`
+const titleText = css<{ $detailed?: boolean }>`
   max-width: 100%;
   overflow: hidden;
   color: var(--color-text);
@@ -230,6 +232,34 @@ const ListReferenceTitle = styled.span<{ $detailed?: boolean }>`
         `}
 `
 
+const ListReferenceTitle = styled.span<{ $detailed?: boolean }>`
+  ${titleText}
+`
+
+/*
+ * The title as the way into the list. It keeps the name's colour wherever it
+ * stands (table cells and page titles colour their links) and shows it is a
+ * link on hover, as the address under it does. In a list it sits above the
+ * row's own link, so a click opens the list, not the entry.
+ */
+const ListReferenceLink = styled(Link)<{ $detailed?: boolean }>`
+  && {
+    ${titleText}
+    text-decoration: none;
+    /* In a row, a 24px tap target: the line itself is that tall. */
+    ${({ $detailed }) =>
+      !$detailed &&
+      css`
+        line-height: 24px;
+      `}
+  }
+
+  &&:hover {
+    color: var(--color-primary);
+    text-decoration: underline;
+  }
+`
+
 const ListReferenceMeta = styled.span`
   display: inline-flex;
   align-items: center;
@@ -238,14 +268,31 @@ const ListReferenceMeta = styled.span`
   min-width: 0;
 `
 
-/* An AddressWrap, so the copy action surfaces on hover like any address. */
-const ListReferenceAddress = styled(AddressWrap)`
+/*
+ * On an entry page the address under the list's name opens the explorer and
+ * copies, as every address field does, but stays quieter than the name it
+ * belongs to. Each line is a 24px tap target.
+ */
+const ListReferenceAddress = styled.span`
+  display: inline-flex;
+  min-width: 0;
+  max-width: 100%;
+
+  && a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 24px;
+    color: var(--color-muted);
+    font-weight: 400;
+  }
+`
+
+/* A value that is not an address: shown as it is, with nothing to open. */
+const ListReferenceRaw = styled.span`
   color: var(--color-muted);
   font-family: var(--font-mono);
   font-size: 12px;
   line-height: 16px;
-  font-weight: 400;
-  letter-spacing: 0;
   font-variant-numeric: tabular-nums;
 `
 
@@ -257,7 +304,15 @@ const isImageField = (field: V2Field) =>
 const isGtcrAddressField = (field: V2Field) =>
   normalizeType(field.type) === normalizeType(ItemTypes.GTCR_ADDRESS)
 
-/** A registry referenced from a "list of lists" entry: logo, title, address. */
+/** A contract address; anything else in a GTCR field has nothing to open. */
+const isAddress = (value: string) => /^0x[0-9a-f]{40}$/i.test(value)
+
+/**
+ * A registry referenced from an entry (a "list of lists" entry, a badges
+ * list's badge list): logo, title, address. The title opens the list in
+ * Curate on the chain in the URL; on an entry page the address opens the
+ * explorer.
+ */
 const V2ListReferenceField = ({
   address,
   detailed,
@@ -280,6 +335,8 @@ const V2ListReferenceField = ({
   const metadata = metaEvidence?.metadata
   const logoURI = metadata?.logoURI
   const title = metadata?.tcrTitle || metadata?.title
+  const linked = isAddress(address)
+  const listHref = linked && chainId ? `/tcr/${chainId}/${address}` : undefined
 
   return (
     <ListReference $detailed={detailed}>
@@ -296,19 +353,38 @@ const V2ListReferenceField = ({
       )}
       <ListReferenceText>
         {title ? (
-          <ListReferenceTitle $detailed={detailed} title={title}>
-            {title}
-          </ListReferenceTitle>
+          listHref ? (
+            <ListReferenceLink to={listHref} $detailed={detailed} title={title}>
+              {title}
+            </ListReferenceLink>
+          ) : (
+            <ListReferenceTitle $detailed={detailed} title={title}>
+              {title}
+            </ListReferenceTitle>
+          )
+        ) : isLoading ? (
+          <SkeletonBlock $width="120px" $height="14px" />
         ) : (
-          isLoading && <SkeletonBlock $width="120px" $height="14px" />
+          // A list whose metadata did not load still opens: the link says so.
+          listHref && (
+            <ListReferenceLink to={listHref} $detailed={detailed}>
+              Open list
+            </ListReferenceLink>
+          )
         )}
         <ListReferenceMeta>
-          <ListReferenceAddress title={address}>
-            {truncateMiddle(address, 6, 4)}
-            {detailed && (
-              <CopyValue value={address} label="Copy list address" />
-            )}
-          </ListReferenceAddress>
+          {/* In a row the title is the one way in: a second link stacked
+              under it would be too close to tap apart. On the entry page
+              the address opens the explorer. */}
+          {linked && detailed ? (
+            <ListReferenceAddress>
+              <ETHAddress address={address} />
+            </ListReferenceAddress>
+          ) : (
+            <ListReferenceRaw title={address}>
+              {truncateMiddle(address, 6, 4)}
+            </ListReferenceRaw>
+          )}
           {showStakeBadge && isPermanentList && <Chip>Stake Curate</Chip>}
         </ListReferenceMeta>
       </ListReferenceText>

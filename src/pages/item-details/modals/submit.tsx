@@ -4,6 +4,7 @@ import type { BigNumber } from 'ethers'
 import { abi as _gtcr } from '@kleros/tcr/build/contracts/GeneralizedTCR.json'
 import { useAccount, usePublicClient } from 'wagmi'
 import { simulateContract, writeContract } from '@wagmi/core'
+import type { Abi } from 'viem'
 import { withFormik, type FormikProps } from 'formik'
 import { gtcrEncode, ItemTypes, typeDefaultValues } from '@kleros/gtcr-encoder'
 import { useAtlasProvider } from '@kleros/kleros-app'
@@ -12,8 +13,6 @@ import useFactory from 'hooks/factory'
 import { resolveStashedFiles } from 'utils/resolve-stashed-files'
 import { addPeriod, capitalizeFirstLetter } from 'utils/string'
 import useNativeCurrency from 'hooks/native-currency'
-import { useAttachment } from 'hooks/use-attachment'
-import { parseIpfs } from 'utils/ipfs-parse'
 import { formatDurationLong } from 'utils/time'
 import { wrapWithToast, errorToast } from 'utils/wrap-with-toast'
 import { parseWagmiError } from 'utils/parse-wagmi-error'
@@ -40,11 +39,16 @@ import { FieldError } from 'components/curate/item-light-notice'
 import { useActionGate } from 'components/curate/item-light-gate'
 import { formatAmount } from 'components/curate/item-light-format'
 import {
+  addressErrorsByKey,
+  fieldName,
   SubmissionFlowScaffold,
   SubmissionNavigation,
+  valuesByLabel,
 } from 'pages/light-item-details/modals/submit'
-import { addressFormatErrors, encoderValues } from 'pages/submit-item/form'
+import { PolicyButton } from 'pages/light-item-details/policy-button'
+import { encoderValues, integerProblem } from 'pages/submit-item/form'
 import { useTxChainId } from 'pages/submit-item/use-wallet-gate'
+import { itemIdFromReceipt } from 'pages/submit-item/use-submit-actions'
 
 /*
  * Submit an entry to a Classic Curate list in three steps: fill in the
@@ -77,6 +81,8 @@ interface SubmissionFormOuterProps {
   canSubmit?: boolean
   disabledFields: boolean[]
   fileURI?: string
+  /** The list submitted to, whose policy the policy step opens. */
+  tcrAddress?: string
   postSubmit: (
     values: SubmissionFormValues,
     columns: Column[],
@@ -112,14 +118,12 @@ const PreviewList = styled(KeyValueList)`
 const _SubmissionForm: React.FC<
   SubmissionFormOuterProps & FormikProps<SubmissionFormValues>
 > = (p) => {
-  const openAttachment = useAttachment()
-
   useEffect(() => {
     if (!p.onFieldsComplete || !p.columns) return
-    const allFilled = p.columns.every((column) => {
+    const allFilled = p.columns.every((column, index) => {
       if (column.type === ItemTypes.BOOLEAN) return true
       if (column.optional) return true
-      const value = p.values[column.label]
+      const value = p.values[fieldName(index)]
       return value !== undefined && value !== '' && String(value).trim() !== ''
     })
     p.onFieldsComplete(allFilled)
@@ -146,13 +150,13 @@ const _SubmissionForm: React.FC<
               key={column.label}
               style={p.style}
               type={column.type}
-              name={`${column.label}`}
+              name={fieldName(index)}
               allowedFileTypes={column.allowedFileTypes}
               values={p.values}
-              error={p.errors[column.label]}
+              error={p.errors[fieldName(index)]}
               setFieldValue={p.setFieldValue}
               disabled={p.disabledFields && p.disabledFields[index]}
-              touched={p.touched[column.label]}
+              touched={p.touched[fieldName(index)]}
               label={
                 <span>
                   {column.label}
@@ -172,17 +176,15 @@ const _SubmissionForm: React.FC<
             Kleros jurors rule on this policy if an entry is challenged.
           </Body>
           <div>
-            <Button
-              type="button"
-              $variant="secondary"
-              disabled={!p.fileURI}
-              onClick={() =>
-                p.fileURI && openAttachment(parseIpfs(p.fileURI), true)
-              }
+            <PolicyButton
+              fileURI={p.fileURI}
+              tcrAddress={p.tcrAddress}
+              variant="secondary"
+              size="md"
             >
               <CurateIcon name="policy" size={16} />
               Open the listing policy
-            </Button>
+            </PolicyButton>
           </div>
         </Stack>
       )}
@@ -190,8 +192,8 @@ const _SubmissionForm: React.FC<
         <Stack $gap={12}>
           <Subheading>Review the submission</Subheading>
           <PreviewList>
-            {p.columns.map((column) => {
-              const value = p.values[column.label]
+            {p.columns.map((column, index) => {
+              const value = p.values[fieldName(index)]
               const displayValue =
                 value instanceof File
                   ? value.name
@@ -201,7 +203,7 @@ const _SubmissionForm: React.FC<
 
               // The fields are not on screen here, so a value that fails
               // validation says so next to its review line.
-              const error = p.errors[column.label]
+              const error = p.errors[fieldName(index)]
 
               return (
                 <React.Fragment key={column.label}>
@@ -242,11 +244,22 @@ const SubmissionForm = withFormik<
 
       return {
         ...acc,
-        [curr.label]: String(defaultValue),
+        [fieldName(i)]: String(defaultValue),
       }
     }, {}),
   handleSubmit: (values, { props, resetForm, setFieldValue }) => {
-    props.postSubmit(values, props.columns, resetForm, setFieldValue)
+    const { columns } = props
+    // The submission reads the values by label; an upload comes back by
+    // label and is stored under the column's own key.
+    props.postSubmit(
+      valuesByLabel(columns, values),
+      columns,
+      resetForm,
+      (label, value, validate) => {
+        const index = columns.findIndex((column) => column.label === label)
+        if (index >= 0) void setFieldValue(fieldName(index), value, validate)
+      },
+    )
   },
   validate: async (
     values,
@@ -260,9 +273,13 @@ const SubmissionForm = withFormik<
     const errors = (
       await Promise.all(
         columns
-          .filter(({ type }: Column) => type === ItemTypes.GTCR_ADDRESS)
-          .map(async ({ label }: Column) => {
-            const value = values[label]
+          .map((column, index) => ({
+            type: column.type,
+            name: fieldName(index),
+          }))
+          .filter(({ type }) => type === ItemTypes.GTCR_ADDRESS)
+          .map(async ({ name }) => {
+            const value = values[name]
             // A GTCR address column always holds a string; a stashed File
             // is never a registry address, so it reads as "not deployed".
             const address = typeof value === 'string' ? value : ''
@@ -273,7 +290,7 @@ const SubmissionForm = withFormik<
                 ((await deployedWithFactory(address)) ||
                   (await deployedWithLightFactory(address)) ||
                   (await deployedWithPermanentFactory(address))),
-              label: label,
+              name,
             }
           }),
       )
@@ -282,7 +299,7 @@ const SubmissionForm = withFormik<
         (res: {
           wasDeployedWithFactory: boolean
           isEmpty: boolean
-          label: string
+          name: string
         }) => !res.wasDeployedWithFactory || res.isEmpty,
       )
       .reduce(
@@ -291,19 +308,37 @@ const SubmissionForm = withFormik<
           curr: {
             wasDeployedWithFactory: boolean
             isEmpty: boolean
-            label: string
+            name: string
           },
         ) => ({
           ...acc,
-          [curr.label]: curr.isEmpty
+          [curr.name]: curr.isEmpty
             ? `Enter a list address to proceed.`
             : `This address was not deployed with the list creator.`,
         }),
         {},
       )
+    // A Classic list stores number and Twitter user columns as integers:
+    // gtcrEncode throws on anything else, after the files were uploaded.
+    // The form refuses such a value first. An empty one is left to the
+    // required-field check.
+    const integerErrors = Object.fromEntries(
+      columns.flatMap((column, index) => {
+        if (
+          column.type !== ItemTypes.NUMBER &&
+          column.type !== ItemTypes.TWITTER_USER_ID
+        )
+          return []
+        const value = values[fieldName(index)]
+        if (typeof value !== 'string' || !value.trim()) return []
+        const problem = integerProblem(value)
+        return problem ? [[fieldName(index), problem]] : []
+      }),
+    )
     // Formik 2 applies returned errors; a thrown object is treated as a crash.
     return {
-      ...addressFormatErrors(columns, values),
+      ...integerErrors,
+      ...addressErrorsByKey(columns, values),
       ...(errors as Record<string, string>),
     }
   },
@@ -323,6 +358,8 @@ const SubmitModal: React.FC<{
   disabledFields?: boolean[]
   challengePeriodDuration?: BigNumber
   embedded?: boolean
+  /** Called with the confirmed entry's ID (see useOpenResubmitted). */
+  onSubmitted?: (itemID?: string) => void
 }> = (props) => {
   const {
     onCancel,
@@ -335,6 +372,7 @@ const SubmitModal: React.FC<{
     disabledFields,
     challengePeriodDuration,
     embedded = false,
+    onSubmitted,
   } = props
   const nativeCurrency = useNativeCurrency()
   const { address: account } = useAccount()
@@ -447,6 +485,9 @@ const SubmitModal: React.FC<{
         if (result.status) {
           onCancel()
           resetForm({})
+          onSubmitted?.(
+            itemIdFromReceipt(result.result, tcrAddress ?? '', _gtcr as Abi),
+          )
         }
       } catch (err) {
         console.error('Error submitting item:', err)
@@ -458,6 +499,7 @@ const SubmitModal: React.FC<{
       account,
       chainId,
       onCancel,
+      onSubmitted,
       publicClient,
       submissionDeposit,
       submitAllowed,
@@ -571,6 +613,7 @@ const SubmitModal: React.FC<{
       submissionDeposit={submissionDeposit}
       challengePeriodDuration={challengePeriodDuration}
       fileURI={fileURI}
+      tcrAddress={tcrAddress}
       activeStep={activeStep}
       fieldLabels={fieldLabels}
       navigation={navigation}
@@ -583,6 +626,7 @@ const SubmitModal: React.FC<{
         initialValues={initialValues}
         disabledFields={disabledFields ?? []}
         fileURI={fileURI}
+        tcrAddress={tcrAddress}
         deployedWithFactory={deployedWithFactory}
         deployedWithLightFactory={deployedWithLightFactory}
         deployedWithPermanentFactory={deployedWithPermanentFactory}

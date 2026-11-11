@@ -18,6 +18,7 @@ import {
   defaultArbitrator as defaultArbitratorAddresses,
   defaultArbitratorExtraData as defaultArbitratorExtraDataObj,
   defaultGovernor as defaultGovernorAddresses,
+  governorNeedsWallet,
   pgtcrFactoryAddresses,
 } from 'config/tcr-addresses'
 import { CurateIcon } from 'components/curate/icons'
@@ -282,8 +283,16 @@ const useCachedFactory = (
   const { account } = useWeb3Context()
   const { address: defaultArbitrator, label: defaultArbLabel } =
     (networkId !== undefined && defaultArbitratorAddresses[networkId]) || {}
-  const { address: defaultGovernor, label: defaultGovernorLabel } =
-    (networkId !== undefined && defaultGovernorAddresses[networkId]) || {}
+  const {
+    address: chainDefaultGovernor,
+    label: chainGovernorLabel,
+    placeholder: governorPlaceholder,
+  } = (networkId !== undefined && defaultGovernorAddresses[networkId]) || {}
+  // A placeholder governor is never filled in: the wallet takes its place.
+  const defaultGovernor = governorPlaceholder ? undefined : chainDefaultGovernor
+  const defaultGovernorLabel = governorPlaceholder
+    ? 'your wallet'
+    : chainGovernorLabel
   const { data: defaultArbitratorExtraData, label: defaultArbDataLabel } =
     (networkId !== undefined && defaultArbitratorExtraDataObj[networkId]) || {}
   const { address: defaultToken, label: defaultStakeTokenLabel } =
@@ -360,6 +369,19 @@ const useCachedFactory = (
       return
     window.localStorage.setItem(key, JSON.stringify({ ...debouncedTcrState }))
   }, [debouncedTcrState, key, networkId])
+
+  // The governor defaults to the wallet. A draft started before connecting
+  // (or kept from before this rule) may hold no governor or the chain's
+  // placeholder: the wallet fills it in once it connects. The step form does
+  // the same while it is on screen (it writes its values back here).
+  useEffect(() => {
+    if (!account) return
+    setTcrState((prev) =>
+      governorNeedsWallet(prev.governorAddress, networkId)
+        ? { ...prev, governorAddress: account }
+        : prev,
+    )
+  }, [account, networkId])
 
   if (!networkId || !tcrState.arbitratorAddress) return null
 
@@ -535,18 +557,21 @@ const FactoryPermanentPage = () => {
   // the transaction, or read from its receipt's NewGTCR log.
   useEffect(() => {
     let cancelled = false
-    ;(async () => {
+    void (async () => {
       if (!transactions || factoryChainId === undefined) return
       const own = Object.values(transactions).filter(
         (tx) => tx.networkId === factoryChainId,
       )
       if (own.length === 0) return
-      try {
-        const topic = factoryInterface.getEventTopic('NewGTCR')
-        const addresses = await Promise.all(
-          own.map(async (tx) => {
-            if (tx.contractAddress) return tx.contractAddress
-            if (!provider) return ''
+      const topic = factoryInterface.getEventTopic('NewGTCR')
+      let failures = 0
+      const addresses = await Promise.all(
+        own.map(async (tx) => {
+          if (tx.contractAddress) return tx.contractAddress
+          if (!provider) return ''
+          // One receipt at a time: a transaction that never mined (sped up or
+          // cancelled in the wallet) must not hide the others.
+          try {
             const receipt = await provider.waitForTransaction(
               tx.txHash,
               1,
@@ -556,16 +581,17 @@ const FactoryPermanentPage = () => {
             return log
               ? String(factoryInterface.parseLog(log).args._address)
               : ''
-          }),
-        )
-        if (!cancelled) {
-          setPreviousDeployments(addresses.filter(Boolean))
-          setDeploymentsFailed(false)
-        }
-      } catch (err) {
-        console.error('Could not read previous deployments:', err)
-        if (!cancelled) setDeploymentsFailed(true)
-      }
+          } catch (err) {
+            console.error('Could not read a previous deployment:', err)
+            failures += 1
+            return ''
+          }
+        }),
+      )
+      if (cancelled) return
+      const found = addresses.filter(Boolean)
+      setPreviousDeployments(found)
+      setDeploymentsFailed(found.length === 0 && failures > 0)
     })()
     return () => {
       cancelled = true

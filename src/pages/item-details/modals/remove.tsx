@@ -8,20 +8,12 @@ import { TCRViewContext } from 'contexts/tcr-view-context'
 import EvidenceForm, { type EvidenceFormValues } from 'components/evidence-form'
 import { uploadEvidence } from 'utils/upload-evidence'
 import useNativeCurrency from 'hooks/native-currency'
-import { useAttachment } from 'hooks/use-attachment'
-import { parseIpfs } from 'utils/ipfs-parse'
 import { formatDuration, formatDurationLong } from 'utils/time'
 import { wrapWithToast, errorToast } from 'utils/wrap-with-toast'
 import { parseWagmiError } from 'utils/parse-wagmi-error'
 import { wagmiConfig } from 'config/wagmi'
 import { CurateIcon } from 'components/curate/icons'
-import {
-  Body,
-  Button,
-  Row,
-  SkeletonBlock,
-  Stack,
-} from 'components/curate/primitives'
+import { Body, Row, SkeletonBlock, Stack } from 'components/curate/primitives'
 import {
   WhatHappensNext,
   type OutcomeStep,
@@ -30,6 +22,7 @@ import {
 import { Dialog, DialogColumns } from 'components/curate/item-light-dialog'
 import { useActionGate } from 'components/curate/item-light-gate'
 import { formatAmount } from 'components/curate/item-light-format'
+import { PolicyButton } from 'pages/light-item-details/policy-button'
 
 /*
  * Request the removal of a registered entry from a Classic list. The list
@@ -69,7 +62,6 @@ const RemoveModal = ({
   } = useContext(TCRViewContext) ?? {}
   const nativeCurrency = useNativeCurrency()
   const { uploadFile } = useAtlasProvider()
-  const openAttachment = useAttachment()
 
   const { metadata } = metaEvidence || {}
   const { requireRemovalEvidence } = metadata || {}
@@ -228,18 +220,10 @@ const RemoveModal = ({
               )
             )}
             <div>
-              <Button
-                type="button"
-                $variant="ghost"
-                $size="sm"
-                disabled={!fileURI}
-                onClick={() =>
-                  fileURI && openAttachment(parseIpfs(fileURI), true)
-                }
-              >
+              <PolicyButton fileURI={fileURI}>
                 <CurateIcon name="policy" size={14} />
                 Read the listing policy
-              </Button>
+              </PolicyButton>
             </div>
             {needsEvidence && (
               <EvidenceForm onSubmit={removeItem} formID={EVIDENCE_FORM_ID} />

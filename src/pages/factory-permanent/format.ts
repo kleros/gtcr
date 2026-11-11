@@ -6,8 +6,8 @@ import { jurorsAndCourtIDFromExtraData } from 'utils/string'
  * stake is in tokens: the deploy call encodes it in the stake token's own
  * base units (parseUnits with the token's decimals), the same way the submit
  * dialog and the item pages read stakes. The challenger's share uses the
- * deploy call's rounding (the percent rounded up, times 100, over a divisor
- * of 10 000).
+ * contract's arithmetic: the percent in basis points (as the deploy call
+ * sends it), over a divisor of 10 000.
  */
 
 const trimZeros = (text: string) => text.replace(/\.?0+$/, '')
@@ -122,16 +122,21 @@ export const stakeProblemText = (
         ? 'Enter the minimum stake as a plain number, such as 0.05.'
         : null
 
-/** The percent the deploy call sends: rounded up, or null if not a number. */
+/**
+ * The percent the deploy call sends (in basis points, so to two decimals),
+ * or null if not a number.
+ */
 export const effectivePercent = (value: unknown): number | null => {
   if (value === '' || value === undefined || value === null) return null
   const parsed = Number(value)
-  return Number.isFinite(parsed) && parsed >= 0 ? Math.ceil(parsed) : null
+  return Number.isFinite(parsed) && parsed >= 0
+    ? Math.round(parsed * 100) / 100
+    : null
 }
 
 /** stake × percent, with the contract's basis-point arithmetic. */
 export const shareOf = (stake: BigNumber, percent: number): BigNumber =>
-  stake.mul(percent * 100).div(10_000)
+  stake.mul(Math.round(percent * 100)).div(10_000)
 
 /** The typed minimum stake as the contract will enforce it, in tokens. */
 export const enforcedStake = (

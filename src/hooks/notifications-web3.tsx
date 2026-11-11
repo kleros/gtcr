@@ -132,7 +132,7 @@ const useNotificationWeb3 = () => {
   useEffect(() => {
     if (!provider || clockOffsetRef.current !== null) return
     let cancelled = false
-    ;(async () => {
+    void (async () => {
       let offset = 0
       try {
         const block = await provider.getBlock('latest')
@@ -165,7 +165,7 @@ const useNotificationWeb3 = () => {
 
   // Process queued web3 actions when account becomes available.
   useEffect(() => {
-    ;(async () => {
+    void (async () => {
       if (web3Actions.length === 0) return
 
       // If not connected, open the Reown modal
@@ -294,7 +294,7 @@ async function processWeb3Action(
           const newGTCRLog = txMined.logs.find((log) => {
             try {
               const parsed = interfaceToUse.parseLog(log)
-              return parsed.name === 'NewTCR' || 'NewGTCR' || 'NewPGTCR'
+              return ['NewTCR', 'NewGTCR', 'NewPGTCR'].includes(parsed.name)
             } catch {
               return false
             }

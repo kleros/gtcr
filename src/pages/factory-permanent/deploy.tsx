@@ -1,6 +1,12 @@
 import React, { useMemo, useState } from 'react'
 import styled from 'styled-components'
-import { parseUnits, decodeEventLog, type Address } from 'viem'
+import {
+  parseUnits,
+  decodeEventLog,
+  type Address,
+  type Hash,
+  type TransactionReceipt,
+} from 'viem'
 import { useAccount, usePublicClient, useWalletClient } from 'wagmi'
 import { simulateContract } from '@wagmi/core'
 import { Roles, useAtlasProvider } from '@kleros/kleros-app'
@@ -319,7 +325,11 @@ const Deploy = ({
   const [failure, setFailure] = useState('')
   const [failedAt, setFailedAt] = useState<Phase>()
   const [txSubmitted, setTxSubmitted] = useState<string>()
-  const [pendingHash, setPendingHash] = useState<string>()
+  const [pendingHash, setPendingHash] = useState<Hash>()
+  // Sent, but no receipt came back (viem stops waiting after three minutes,
+  // or the node failed): it may still be mined, so it is not a failure, and
+  // deploying again could make a second list.
+  const [stillPending, setStillPending] = useState(false)
   const [metaEvidencePath, setMetaEvidencePath] = useState<string>()
   const factoryAddress =
     targetChainId === undefined
@@ -410,6 +420,7 @@ const Deploy = ({
     setFailure('')
     setFailedAt(undefined)
     setPendingHash(undefined)
+    setStillPending(false)
     setMetaEvidencePath(undefined)
     try {
       setPhase('uploading')
@@ -444,11 +455,12 @@ const Deploy = ({
             Math.round(Number(tcrState.withdrawingPeriodDuration) * 60 * 60),
             Math.round(Number(tcrState.arbitrationParamsCooldown) * 60 * 60),
           ],
+          // Percent to basis points, exactly as typed (12.5% is 1250).
           [
-            Math.ceil(Number(tcrState.sharedStakeMultiplier)) * 100,
-            Math.ceil(Number(tcrState.winnerStakeMultiplier)) * 100,
-            Math.ceil(Number(tcrState.loserStakeMultiplier)) * 100,
-            Math.ceil(Number(tcrState.challengeStakeMultiplier)) * 100,
+            Math.round(Number(tcrState.sharedStakeMultiplier) * 100),
+            Math.round(Number(tcrState.winnerStakeMultiplier) * 100),
+            Math.round(Number(tcrState.loserStakeMultiplier) * 100),
+            Math.round(Number(tcrState.challengeStakeMultiplier) * 100),
           ],
         ],
         gas: 8000000n,
@@ -464,43 +476,12 @@ const Deploy = ({
         return hash
       }, publicClient)
 
-      if (result.status && result.result) {
-        const txHash = result.result.transactionHash
-        setTxSubmitted(txHash)
-
-        let contractAddress: string | undefined
-        try {
-          const newGTCRLog = result.result.logs
-            .map((log) => {
-              try {
-                return decodeEventLog({
-                  abi: _GTCRFactory,
-                  data: log.data,
-                  topics: log.topics,
-                })
-              } catch {
-                return null
-              }
-            })
-            .find((parsed) => parsed && parsed.eventName === 'NewGTCR')
-
-          if (newGTCRLog) contractAddress = pickAddress(newGTCRLog.args)
-        } catch (err) {
-          console.error('Error parsing deploy logs:', err)
-        }
-
-        setTxState({
-          txHash,
-          networkId: targetChainId,
-          status: 'mined',
-          contractAddress,
-        })
-        setTcrState((prevState) => ({
-          ...prevState,
-          finished: true,
-        }))
-        setPhase('done')
-      } else {
+      if (result.status && result.result) onMined(result.result)
+      // Sent (the callback above moved the stage on), but no receipt, which
+      // a revert would have: the transaction is still pending.
+      else if ((stage as Phase) === 'mining' && !result.result)
+        setStillPending(true)
+      else {
         setFailedAt(stage)
         setPhase('idle')
         setFailure('The transaction did not go through.')
@@ -512,6 +493,66 @@ const Deploy = ({
       setFailedAt(stage)
       setPhase('idle')
       setFailure(message)
+    }
+  }
+
+  /** The deployment is mined: the list's address, saved with the transaction. */
+  const onMined = (receipt: TransactionReceipt) => {
+    const txHash = receipt.transactionHash
+    setTxSubmitted(txHash)
+
+    let contractAddress: string | undefined
+    try {
+      const newGTCRLog = receipt.logs
+        .map((log) => {
+          try {
+            return decodeEventLog({
+              abi: _GTCRFactory,
+              data: log.data,
+              topics: log.topics,
+            })
+          } catch {
+            return null
+          }
+        })
+        .find((parsed) => parsed && parsed.eventName === 'NewGTCR')
+
+      if (newGTCRLog) contractAddress = pickAddress(newGTCRLog.args)
+    } catch (err) {
+      console.error('Error parsing deploy logs:', err)
+    }
+
+    setTxState({
+      txHash,
+      networkId: targetChainId,
+      status: 'mined',
+      contractAddress,
+    })
+    setTcrState((prevState) => ({
+      ...prevState,
+      finished: true,
+    }))
+    setPhase('done')
+  }
+
+  /** Waits for the same transaction again; nothing new is sent. */
+  const checkAgain = async () => {
+    if (!publicClient || !pendingHash) return
+    setStillPending(false)
+    try {
+      const receipt = await publicClient.waitForTransactionReceipt({
+        hash: pendingHash,
+        confirmations: 2,
+      })
+      if (receipt.status === 'success') onMined(receipt)
+      else {
+        setFailedAt('mining')
+        setPhase('idle')
+        setFailure('The transaction did not go through.')
+      }
+    } catch (err) {
+      console.error('Error waiting for the deploy transaction:', err)
+      setStillPending(true)
     }
   }
 
@@ -546,6 +587,8 @@ const Deploy = ({
     .filter(Boolean)
     .join(', ')
   const percent = effectivePercent(tcrState.challengeStakeMultiplier)
+  // A multiplier as the deploy call sends it.
+  const percentText = (value: unknown) => `${effectivePercent(value) ?? value}%`
   // Base units as the deploy call encodes them (the token's own decimals).
   const stake = parseAmount(tcrState.submissionMinDeposit, decimals)
   const stakeText = groupAmount(formatToken(stake, decimals))
@@ -696,7 +739,7 @@ const Deploy = ({
     },
     {
       label: 'Appeal multipliers',
-      value: `shared ${tcrState.sharedStakeMultiplier}% · winner ${tcrState.winnerStakeMultiplier}% · loser ${tcrState.loserStakeMultiplier}%`,
+      value: `shared ${percentText(tcrState.sharedStakeMultiplier)} · winner ${percentText(tcrState.winnerStakeMultiplier)} · loser ${percentText(tcrState.loserStakeMultiplier)}`,
       step: 'Stake',
       advanced: true,
     },
@@ -802,7 +845,9 @@ const Deploy = ({
             note={
               stepStatus('mining') === 'failed'
                 ? 'The transaction did not go through; nothing was deployed.'
-                : 'Keep this page open until the transaction is mined.'
+                : stillPending
+                  ? 'Not mined yet, but it may still go through: follow it on the explorer before deploying again.'
+                  : 'Keep this page open until the transaction is mined.'
             }
           >
             {shownHash && (
@@ -873,7 +918,11 @@ const Deploy = ({
       {phase !== 'done' ? (
         <ActionArea>
           <Row $gap={10} $wrap>
-            {walletFix ? (
+            {stillPending ? (
+              <Button type="button" $variant="primary" onClick={checkAgain}>
+                Check again
+              </Button>
+            ) : walletFix ? (
               <Button
                 type="button"
                 $variant="primary"
@@ -912,7 +961,9 @@ const Deploy = ({
                     ? 'Uploading the list metadata to IPFS'
                     : phase === 'wallet'
                       ? 'Waiting for your wallet: confirm the deployment'
-                      : 'Deploying: waiting for the transaction; keep this page open'}
+                      : stillPending
+                        ? 'The transaction is still pending'
+                        : 'Deploying: waiting for the transaction; keep this page open'}
                 </Small>
               </Row>
             ) : failedAt || failure ? (

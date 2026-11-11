@@ -107,13 +107,24 @@ export const itemToStatusCode = (
         withdrawingTx?: string | null
       }[]) || []
     const latest = submissions.length > 0 ? submissions[0] : undefined
+    const challenges =
+      (item.challenges as {
+        resolutionTx?: string | null
+        disputeOutcome?: string | null
+        createdAt?: string | null
+      }[]) || []
     const resolutionTxs = new Set(
-      ((item.challenges as { resolutionTx?: string | null }[]) || [])
-        .map((c) => c.resolutionTx)
-        .filter((tx): tx is string => !!tx),
+      challenges.map((c) => c.resolutionTx).filter((tx): tx is string => !!tx),
     )
     if (latest?.finishedTx) {
-      if (!resolutionTxs.has(latest.finishedTx)) return STATUS_CODE.WITHDRAWN
+      const ruling = challenges.find(
+        (c) => c.resolutionTx === latest.finishedTx,
+      )
+      // A ruling that keeps the entry while its withdrawal is pending also
+      // completes that withdrawal: rule() reincludes it, then withdraws it in
+      // the same transaction, the stakes going back to the submitter.
+      if (!ruling || ruling.disputeOutcome === SUBGRAPH_RULING.ACCEPT)
+        return STATUS_CODE.WITHDRAWN
     } else if (
       // Queries that do not select finishedTx: a started withdrawal with no
       // resolved challenge on record.
@@ -124,15 +135,18 @@ export const itemToStatusCode = (
       return STATUS_CODE.WITHDRAWN
 
     // Differentiate between rejected (never made it past submission) and removed (was accepted then taken off)
-    // If includedAt + submissionPeriod < timestamp, the item passed submission and was accepted at some point
+    // If includedAt + submissionPeriod < the time it was challenged, the item passed submission and was
+    // accepted at some point. Compared with now instead, every ruling that outlasts the submission period
+    // would read as a removal.
     const submissionPeriod = Number(registry?.submissionPeriod || 0)
     const includedAt = Number(item.includedAt || 0)
+    const challengedAt = Number(challenges[0]?.createdAt || 0)
     // Only classify as REMOVED if we have valid includedAt AND submissionPeriod
     // This ensures we don't misclassify when data is missing
     if (
       includedAt > 0 &&
       submissionPeriod > 0 &&
-      includedAt + submissionPeriod < ts
+      includedAt + submissionPeriod < (challengedAt > 0 ? challengedAt : ts)
     )
       return STATUS_CODE.REMOVED
     return STATUS_CODE.REJECTED

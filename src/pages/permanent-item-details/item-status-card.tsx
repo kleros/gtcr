@@ -303,7 +303,17 @@ interface ItemStatusCardProps {
   modalOpen: boolean
   setModalOpen: (open: boolean) => void
   appealCost?: BigNumber
+  /** The appeal cost could not be read, even after retrying. */
+  appealCostFailed?: boolean
+  onRetryAppealCost?: () => void
+  /** What a new submission pays: the newest setting's arbitration cost. */
   arbitrationCost?: BigNumber
+  /** What a challenge pays: the cost of the setting the contract picks for this entry. */
+  challengeArbitrationCost?: BigNumber
+  /** The submitter as the contract records it, else the subgraph's. */
+  submitter?: string
+  /** The policy this entry is judged by. */
+  policyURI?: string
 }
 
 const ItemStatusCard = ({
@@ -314,7 +324,12 @@ const ItemStatusCard = ({
   modalOpen,
   setModalOpen,
   appealCost,
+  appealCostFailed,
+  onRetryAppealCost,
   arbitrationCost,
+  challengeArbitrationCost,
+  submitter: submitterProp,
+  policyURI,
 }: ItemStatusCardProps) => {
   const { address: account } = useAccount()
   const publicClient = usePublicClient()
@@ -370,10 +385,11 @@ const ItemStatusCard = ({
     challengedAt,
   } = facts
   const itemName = metaEvidence?.metadata?.itemName || 'item'
+  const submitter = submitterProp ?? item.submitter
   const isSubmitter =
     !!account &&
-    !!item.submitter &&
-    account.toLowerCase() === item.submitter.toLowerCase()
+    !!submitter &&
+    account.toLowerCase() === submitter.toLowerCase()
 
   const stakeText = tokenText(item.stake, tokenDecimals, tokenSymbol)
   const minStake = registry.submissionMinDeposit ?? 0
@@ -386,6 +402,9 @@ const ItemStatusCard = ({
   const challengerText = tokenText(challengerStake, tokenDecimals, tokenSymbol)
   const costText = arbitrationCost
     ? nativeText(arbitrationCost, nativeCurrency)
+    : undefined
+  const challengeCostText = challengeArbitrationCost
+    ? nativeText(challengeArbitrationCost, nativeCurrency)
     : undefined
   // While disputed the challenger's stake is on record; before, it is the
   // list's share of the entry's stake.
@@ -434,7 +453,7 @@ const ItemStatusCard = ({
         setModalOpen(true)
         return
       case STATUS_CODE.PENDING_WITHDRAWAL:
-        executeWithdrawal()
+        void executeWithdrawal()
         return
       case STATUS_CODE.DISPUTED:
       case STATUS_CODE.WAITING_ARBITRATOR:
@@ -447,8 +466,8 @@ const ItemStatusCard = ({
   const challengeable =
     statusCode === STATUS_CODE.PENDING || statusCode === STATUS_CODE.ACCEPTED
   const amounts = challengeable
-    ? costText
-      ? `${challengerText} + ${costText}`
+    ? challengeCostText
+      ? `${challengerText} + ${challengeCostText}`
       : challengerText
     : offList
       ? costText
@@ -685,10 +704,10 @@ const ItemStatusCard = ({
 
         {(challengeable || underDispute || offList) && (
           <Rows>
-            {challengeable && costText && (
+            {challengeable && challengeCostText && (
               <div>
                 <dt>Arbitration cost</dt>
-                <dd>{costText}</dd>
+                <dd>{challengeCostText}</dd>
               </div>
             )}
             {(challengeable || underDispute) && (
@@ -835,7 +854,11 @@ const ItemStatusCard = ({
           isOpen={modalOpen}
           onClose={() => setModalOpen(false)}
           appealCost={appealCost}
+          appealCostFailed={appealCostFailed}
+          onRetryAppealCost={onRetryAppealCost}
           arbitrationCost={arbitrationCost}
+          challengeArbitrationCost={challengeArbitrationCost}
+          policyURI={policyURI}
         />
       )}
       <WithdrawModal
@@ -844,6 +867,7 @@ const ItemStatusCard = ({
         item={item}
         registry={registry}
         itemName={itemName}
+        submitter={submitter}
       />
     </>
   )

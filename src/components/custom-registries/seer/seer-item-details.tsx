@@ -181,7 +181,7 @@ const SeerExtraDetails: React.FC<ISeerExtraDetails> = ({
       }
     }
 
-    fetchData()
+    void fetchData()
   }, [chainId, contractAddress, imagesIpfsHash])
 
   if (error) return <ErrorMessage>{error}</ErrorMessage>

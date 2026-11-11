@@ -120,7 +120,7 @@ const KlerosParams = ({
   useEffect(() => {
     let cancelled = false
     setArbitrationCost(undefined)
-    ;(async () => {
+    void (async () => {
       if (!arbitratorExtraData || !arbitrator || !library) return
       try {
         const cost = await arbitrator.arbitrationCost(arbitratorExtraData)

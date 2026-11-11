@@ -76,6 +76,7 @@ import { StakeInsights } from 'components/curate/registry-stake-insights'
 import { useRegistryLayout } from 'components/curate/registry-shared-layout'
 import { useRegistryVerified } from 'components/curate/registry-shared-verified'
 import ErrorPage from '../error-page'
+import { LIST_LOAD_FAILED } from '../error-page/copy'
 
 /*
  * Stake Curate registry page. The registry is read first (its periods and
@@ -404,9 +405,13 @@ const StakeRegistry = () => {
 
   // The sensitive-content setting is shared with the other registry pages.
   useEffect(() => {
-    ;(async () => {
-      const saved = await localforage.getItem(NSFW_FILTER_KEY)
-      if (typeof saved === 'boolean') setNsfwFilterOn(saved)
+    void (async () => {
+      try {
+        const saved = await localforage.getItem(NSFW_FILTER_KEY)
+        if (typeof saved === 'boolean') setNsfwFilterOn(saved)
+      } catch {
+        // Storage can be blocked (private windows): keep the default.
+      }
     })()
   }, [])
   const toggleNsfwFilter = useCallback((checked: boolean) => {
@@ -522,10 +527,7 @@ const StakeRegistry = () => {
     : undefined
 
   useDocumentHead(
-    truncateAtWord(
-      title ? `${title} - Kleros · Curate` : 'Kleros · Curate',
-      60,
-    ),
+    truncateAtWord(title ? `${title} | Kleros Curate` : 'Kleros Curate', 60),
     truncateAtWord(
       title
         ? `Explore the ${title} list on Kleros Curate: ${normalizedDescription}`
@@ -850,7 +852,17 @@ const StakeRegistry = () => {
       />
     )
 
-  if (registryQuery.isError || (registryQuery.data && !registry))
+  if (registryQuery.isError && !registryQuery.data)
+    return (
+      <ErrorPage
+        code="Error"
+        title="This list did not load"
+        message={LIST_LOAD_FAILED}
+        onRetry={() => void registryQuery.refetch()}
+      />
+    )
+
+  if (registryQuery.data && !registry)
     return (
       <ErrorPage
         code="404"
@@ -984,6 +996,25 @@ const StakeRegistry = () => {
               ))}
             </Stack>
           )
+        ) : itemsQuery.isError && !itemsQuery.data ? (
+          <Surface $padding="none">
+            <EmptyState
+              icon="list"
+              title={`The ${itemNamePlural} did not load`}
+              action={
+                <Button
+                  type="button"
+                  $variant="secondary"
+                  $size="sm"
+                  onClick={() => void itemsQuery.refetch()}
+                >
+                  Try again
+                </Button>
+              }
+            >
+              {LIST_LOAD_FAILED}
+            </EmptyState>
+          </Surface>
         ) : outOfRange ? (
           <Surface $padding="none">
             <EmptyState

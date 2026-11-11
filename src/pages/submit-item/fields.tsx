@@ -733,6 +733,8 @@ export interface ColumnFieldProps {
   /** Errors show once the field was touched (or the form was submitted). */
   showError: boolean
   disabled?: boolean
+  /** Number columns take whole numbers only (a Classic list's). */
+  wholeNumber?: boolean
   onChange: (value: FieldValue) => void
   onBlur: () => void
   /**
@@ -748,6 +750,7 @@ export const ColumnField = ({
   error,
   showError,
   disabled,
+  wholeNumber,
   onChange,
   onBlur,
   onCommit,
@@ -889,7 +892,7 @@ export const ColumnField = ({
       <Input
         {...shared}
         type={isLink ? 'url' : 'text'}
-        inputMode={numeric ? 'decimal' : undefined}
+        inputMode={numeric ? (wholeNumber ? 'numeric' : 'decimal') : undefined}
         placeholder={isLink ? 'https://' : undefined}
         value={text}
         onChange={(event) => onChange(event.target.value)}

@@ -151,7 +151,7 @@ const FileDisplay = ({ value, allowedFileTypes }: FileDisplayProps) => {
       const allowed = allowedFileTypes.split(' ')
       setSupported(allowed.includes(ext))
     }
-    check()
+    void check()
     return () => {
       live = false
     }

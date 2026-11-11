@@ -429,7 +429,7 @@ const ErrorPage = ({
   const path =
     notFound && typeof window !== 'undefined' ? window.location.pathname : null
 
-  useDocumentHead(`${heading} · Kleros Curate`)
+  useDocumentHead(`${heading} | Kleros Curate`)
   useNoIndex(/^4\d\d$/.test(shownCode))
 
   // Under a numeric code the words follow the digits as they rise.
