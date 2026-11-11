@@ -5,7 +5,11 @@ import { SUPPORTED_CHAINS, DEFAULT_CHAIN } from './chains'
 import { transports } from './rpc'
 
 const APP_NAME = 'Kleros Curate'
-const APP_ICON = '/favicon.ico'
+// Wallets show the name and icon when someone connects and check the URL
+// against the page that asked, so both are this site's own absolute
+// addresses (curate.kleros.io and curate.kleros.builders serve the app).
+const APP_URL = window.location.origin
+const APP_ICON = `${APP_URL}/icon-192.png`
 
 const projectId =
   import.meta.env.REACT_APP_REOWN_PROJECT_ID ||
@@ -42,7 +46,7 @@ export const appKitModal = projectId
         name: APP_NAME,
         description:
           'A UI for the Kleros powered Generalized Token Curated List',
-        url: 'https://curate.kleros.builders',
+        url: APP_URL,
         icons: [APP_ICON],
       },
       features: {

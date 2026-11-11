@@ -576,6 +576,10 @@ const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
     document.body.setAttribute('data-theme', resolved)
     document.body.style.backgroundColor = theme.stage
     document.body.style.colorScheme = isDarkMode ? 'dark' : 'light'
+    // Mobile browsers tint their bars with this: keep it the page's colour.
+    document
+      .querySelector('meta[name="theme-color"]')
+      ?.setAttribute('content', theme.stage)
     // Shared @kleros/ui-components-library components (e.g. FileViewer) read
     // their CSS variables from `:root.dark`, so keep that class in sync.
     document.documentElement.classList.toggle('dark', isDarkMode)
