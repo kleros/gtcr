@@ -1,7 +1,7 @@
 import React, { useId, useRef, useState } from 'react'
 import styled, { css } from 'styled-components'
 import { useField } from 'formik'
-import { useAccount, useChainId, useSwitchChain } from 'wagmi'
+import { useAccount, useSwitchChain } from 'wagmi'
 import { useAtlasProvider } from '@kleros/kleros-app'
 import { appKitModal } from 'config/wagmi'
 import { NETWORKS_INFO } from 'config/networks'
@@ -666,8 +666,9 @@ export const useWalletGate = ({
   verb: string
   needsChain?: boolean
 }): WalletGate => {
-  const { isConnected } = useAccount()
-  const walletChainId = useChainId()
+  // The wallet's own chain: useChainId() stays on the last chain the app
+  // supports while the wallet sits on one it does not.
+  const { isConnected, chainId: walletChainId } = useAccount()
   const urlChainId = useUrlChainId()
   const { switchChain, isPending: switching } = useSwitchChain()
   const { isVerified, isSigningIn, authoriseUser } = useAtlasProvider()

@@ -49,8 +49,10 @@ export const useWalletGate = (verb = 'submit'): WalletGate => {
     urlChainId && getChainById(urlChainId) ? urlChainId : DEFAULT_CHAIN.id
   const chainName =
     getChainById(targetChainId)?.name ?? `chain ${targetChainId}`
-  const { isConnected } = useAccount()
-  const walletChainId = useChainId()
+  // The wallet's own chain. useChainId() stays on the last chain the app
+  // supports while the wallet sits on one it does not, so the button would
+  // offer to submit and the send fail only after the uploads.
+  const { isConnected, chainId: walletChainId } = useAccount()
   const { switchChain, isPending: switching } = useSwitchChain()
   const { open } = useAppKit()
   const { isVerified, isSigningIn, authoriseUser } = useAtlasProvider()
