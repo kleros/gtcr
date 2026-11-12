@@ -1,6 +1,5 @@
 import { createAppKit } from '@reown/appkit/react'
 import { WagmiAdapter } from '@reown/appkit-adapter-wagmi'
-import { coinbaseWallet } from 'wagmi/connectors'
 import { SUPPORTED_CHAINS, DEFAULT_CHAIN } from './chains'
 import { transports } from './rpc'
 
@@ -20,16 +19,6 @@ export const wagmiAdapter = new WagmiAdapter({
   networks: SUPPORTED_CHAINS,
   projectId,
   transports,
-  // AppKit's own Coinbase connector cannot turn off the Coinbase SDK's
-  // telemetry, which loads a tracking script on every page. This one is
-  // the same connector with that switched off (see enableCoinbase below).
-  connectors: [
-    coinbaseWallet({
-      appName: APP_NAME,
-      appLogoUrl: APP_ICON,
-      preference: { options: 'all', telemetry: false },
-    }),
-  ],
 })
 
 export const wagmiConfig = wagmiAdapter.wagmiConfig
@@ -41,7 +30,17 @@ export const appKitModal = projectId
       defaultNetwork: DEFAULT_CHAIN,
       projectId,
       allowUnsupportedChain: true,
-      enableCoinbase: false,
+      // AppKit's own Coinbase connector, with the Coinbase SDK's telemetry
+      // (a tracking script it loads on every page) switched off. AppKit
+      // hands this option to the connector as its preference; the typings
+      // name only the strings, but the SDK takes this object. A connector
+      // of our own was registered before the Coinbase extension announced
+      // itself, so AppKit dropped the extension as its duplicate and the
+      // wallet modal listed no Coinbase Wallet at all.
+      coinbasePreference: {
+        options: 'all',
+        telemetry: false,
+      } as unknown as 'all',
       metadata: {
         name: APP_NAME,
         description:
