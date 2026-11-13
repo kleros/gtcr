@@ -6,6 +6,8 @@ import { simulateContract } from '@wagmi/core'
 import _gtcr from 'assets/abis/PermanentGTCR.json'
 import ListingCriteriaLink from 'components/listing-criteria-link'
 import useNativeCurrency from 'hooks/native-currency'
+import useNow from 'hooks/use-now'
+import { formatAbsolute, formatDuration } from 'utils/time'
 import useNativeBalance from 'hooks/use-native-balance'
 import useRequiredFees from 'hooks/required-fees'
 import {
@@ -39,8 +41,9 @@ import {
 
 /*
  * Fund one side of an appeal on a Stake Curate dispute. Contributions are in
- * the chain's native currency; backers of the side that wins the next round
- * get their money back plus a share of the other side's funding.
+ * the chain's native currency; backers of the side that wins the dispute
+ * (its final ruling) get their money back plus a share of the other side's
+ * funding.
  */
 
 const { formatEther, parseEther } = ethers.utils
@@ -201,6 +204,22 @@ const CrowdfundModal = ({
   const winner =
     ruling === SUBGRAPH_RULING.ACCEPT ? PARTY.REQUESTER : PARTY.CHALLENGER
 
+  // Each side's deadline, shown where the funding happens (the hero's ring
+  // is under the dialog): the loser funds only in the first half, where the
+  // contract's integer division puts it; the winner, or either side when
+  // jurors refused to rule, until the end of the period.
+  const now = useNow()
+  const appealStart = Number(round?.appealPeriodStart ?? 0)
+  const appealEnd = Number(round?.appealPeriodEnd ?? 0)
+  const deadlineFor = (party: number) =>
+    ruling !== SUBGRAPH_RULING.NONE && party !== winner
+      ? appealStart + Math.floor((appealEnd - appealStart) / 2)
+      : appealEnd
+  const timeLeft = (party: number) => {
+    const at = deadlineFor(party)
+    return at > now ? `${formatDuration(at - now)} left` : 'time is up'
+  }
+
   // Once one side is fully funded only the other can be funded (the
   // contract refuses a second contribution to a funded side), whatever the
   // ruling.
@@ -315,7 +334,7 @@ const CrowdfundModal = ({
               setContributionShare(1)
             }}
           >
-            {sideName(party)}
+            {sideName(party)} · {timeLeft(party)}
           </ChipButton>
         ))}
       </Row>
@@ -500,6 +519,10 @@ const CrowdfundModal = ({
                 label: 'Already funded',
                 value: nativeText(amountPaid, nativeCurrency),
               },
+              {
+                label: `The ${name} funds until`,
+                value: `${formatAbsolute(deadlineFor(side))} · ${timeLeft(side)}`,
+              },
             ]}
             total={contributionText}
             steps={[
@@ -508,13 +531,18 @@ const CrowdfundModal = ({
                 body: `${contributionText} counts toward the ${nativeText(amountStillRequired, nativeCurrency)} still needed before the appeal deadline.`,
               },
               {
-                title: `The ${name} wins the next round`,
-                body: `You get your ${contributionText} back plus a share of the other side's funding: up to ${nativeText(reward, nativeCurrency)} for this contribution.`,
+                title: `The ${name} wins the dispute`,
+                body: `Once the final ruling is in, after any further appeal, you get your ${contributionText} back plus a share of the other side's funding: up to ${nativeText(reward, nativeCurrency)} for this contribution.`,
               },
               {
-                title: `The ${name} loses the next round`,
+                title: `The ${name} loses the dispute`,
                 branch: true,
                 body: 'Your contribution goes to the backers of the winning side.',
+              },
+              {
+                title: 'Jurors finally refuse to rule',
+                branch: true,
+                body: "Every backer of this round gets back their contribution, less a share of the court's fee.",
               },
               {
                 title: 'Only one side is fully funded',

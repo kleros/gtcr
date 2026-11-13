@@ -14,6 +14,8 @@ import {
 import { TCRViewContext } from 'contexts/tcr-view-context'
 import useRequiredFees from 'hooks/required-fees'
 import useNativeCurrency from 'hooks/native-currency'
+import useNow from 'hooks/use-now'
+import { formatAbsolute, formatDuration } from 'utils/time'
 import { wrapWithToast, errorToast } from 'utils/wrap-with-toast'
 import { parseWagmiError } from 'utils/parse-wagmi-error'
 import { wagmiConfig } from 'config/wagmi'
@@ -155,6 +157,22 @@ const CrowdfundModal = ({
   const winner =
     ruling === SUBGRAPH_RULING.ACCEPT ? PARTY.REQUESTER : PARTY.CHALLENGER
 
+  // Each side's deadline, shown where the funding happens (the hero's ring
+  // is under the dialog): the loser funds only in the first half, where the
+  // contracts' integer division puts it; the winner, or either side when
+  // jurors refused to rule, until the end of the period.
+  const now = useNow()
+  const appealStart = Number(round.appealPeriodStart ?? 0)
+  const appealEnd = Number(round.appealPeriodEnd ?? 0)
+  const deadlineFor = (party: number) =>
+    ruling !== SUBGRAPH_RULING.NONE && party !== winner
+      ? appealStart + Math.floor((appealEnd - appealStart) / 2)
+      : appealEnd
+  const timeLeft = (party: number) => {
+    const at = deadlineFor(party)
+    return at > now ? `${formatDuration(at - now)} left` : 'time is up'
+  }
+
   // Once one side is fully funded only the other can be funded (the
   // contract refuses more for a funded side), whatever the ruling: with no
   // ruling too, the dialog goes to the side still raising rather than
@@ -294,7 +312,7 @@ const CrowdfundModal = ({
       >
         <Stack $gap={16}>
           <Body $muted>
-            Pick a side. If it wins the next round, its backers share the other
+            Pick a side. If it wins the dispute, its backers share the other
             side&apos;s fees.
           </Body>
           <Row $gap={12} $wrap $align="stretch">
@@ -324,7 +342,9 @@ const CrowdfundModal = ({
                       ? 'Favoured by the current ruling'
                       : 'Against the current ruling'}
                   {' · '}
-                  {option.paid ? 'fully funded' : 'still raising'}
+                  {option.paid
+                    ? 'fully funded'
+                    : `still raising · ${timeLeft(option.party)}`}
                 </small>
               </SideButton>
             ))}
@@ -385,6 +405,10 @@ const CrowdfundModal = ({
       value: formatAmount(amountStillRequired, nativeCurrency),
     },
     {
+      label: `The ${sideName} funds until`,
+      value: `${formatAbsolute(deadlineFor(side))} · ${timeLeft(side)}`,
+    },
+    {
       label: 'Your share of what is needed',
       value: `${Math.round(contributionShare * 1000) / 10}%`,
     },
@@ -395,16 +419,21 @@ const CrowdfundModal = ({
       body: `It funds the ${sideName}'s appeal. Contributions stay locked until the request is resolved; then they are paid out, or reimbursed if the appeal was not fully funded, with Withdraw rewards on this page.`,
     },
     {
-      title: `The ${sideName} wins the next round`,
-      body: `You get your contribution back plus a share of the other side's fees: up to ${formatAmount(
+      title: `The ${sideName} wins the dispute`,
+      body: `Once the final ruling is in, after any further appeal, you get your contribution back plus a share of the other side's fees: up to ${formatAmount(
         reward,
         nativeCurrency,
       )}.`,
     },
     {
-      title: `The ${sideName} loses the next round`,
+      title: `The ${sideName} loses the dispute`,
       branch: true,
       body: 'Your contribution goes to the funders of the winning side.',
+    },
+    {
+      title: 'Jurors finally refuse to rule',
+      branch: true,
+      body: "Every backer of this round gets back their contribution, less a share of the court's fee.",
     },
     {
       title: 'The appeal is not fully funded on both sides',
@@ -425,8 +454,8 @@ const CrowdfundModal = ({
         <Stack $gap={16}>
           <Body>
             Choose how much of the remaining {maxAmount} {nativeCurrency} you
-            contribute. If the {sideName} wins the next round, contributors
-            share the other side&apos;s fees in proportion to what they put in.
+            contribute. If the {sideName} wins the dispute, contributors share
+            the other side&apos;s fees in proportion to what they put in.
           </Body>
           <div>
             <PolicyButton fileURI={fileURI}>
