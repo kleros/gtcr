@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
+import { isOptionalColumn, buildInitialValues } from 'pages/submit-item/form'
 import styled from 'styled-components'
 import { ethers } from 'ethers'
 import { withFormik, type FormikProps } from 'formik'
@@ -24,7 +25,6 @@ import { parseWagmiError } from 'utils/parse-wagmi-error'
 import { wagmiConfig } from 'config/wagmi'
 import { useTxChainId } from 'pages/submit-item/use-wallet-gate'
 import { itemIdFromReceipt } from 'pages/submit-item/use-submit-actions'
-import { buildInitialValues } from 'pages/submit-item/form'
 import {
   Body,
   Button,
@@ -113,7 +113,7 @@ const _SubmissionForm: React.FC<
     if (!p.onFieldsComplete || !p.columns) return
     const allFilled = p.columns.every((column, index) => {
       if (column.type === ItemTypes.BOOLEAN) return true
-      if (column.optional) return true
+      if (isOptionalColumn(column)) return true
       const value = p.values[fieldName(index)]
       return value !== undefined && value !== '' && String(value).trim() !== ''
     })
@@ -149,7 +149,7 @@ const _SubmissionForm: React.FC<
               <FieldLabel>
                 <span>
                   {column.label}
-                  {column.optional ? '' : ' *'}
+                  {isOptionalColumn(column) ? '' : ' *'}
                 </span>
                 {column.description && (
                   <Small $muted>{addPeriod(column.description)}</Small>

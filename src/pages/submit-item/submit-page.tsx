@@ -20,6 +20,8 @@ import {
   truncateMiddle,
 } from 'components/curate/primitives'
 import { ColumnField, useObjectUrl } from './fields'
+import { Notice } from 'components/curate/item-light-notice'
+import { useDuplicateEntry, type DuplicateCheck } from './duplicate-entry'
 import {
   buildInitialValues,
   fieldPath,
@@ -70,6 +72,19 @@ export interface SubmitTerms {
   status: { label: string; detail?: string }
 }
 
+/** How a duplicate's status reads after "A token with the same address". */
+const DUPLICATE_PHRASE: Record<string, string> = {
+  Registered: 'is already on this list',
+  ClearingRequested: 'is already on this list',
+  RegistrationRequested: 'was already submitted and is in its challenge period',
+  Submitted: 'is already on this list',
+  Reincluded: 'is already on this list',
+  Disputed: 'is on this list, under a challenge',
+}
+
+const capitalizeFirst = (text: string) =>
+  text.charAt(0).toUpperCase() + text.slice(1)
+
 export interface SubmitPageProps {
   registryPath: string
   registryTitle?: string
@@ -97,6 +112,11 @@ export interface SubmitPageProps {
   submitting: boolean
   factoryChecks: FactoryChecks
   onSubmit: SubmitHandler
+  /**
+   * Warn when the first identifier is already on the list (Light and Stake;
+   * a Classic contract refuses an identical entry itself).
+   */
+  duplicateCheck?: DuplicateCheck
 }
 
 /* ---------- Layout ---------- */
@@ -853,6 +873,7 @@ const Workspace = ({
     registryTitle,
     registryPath,
     chainId,
+    duplicateCheck,
   } = props
   const initial = useMemo(
     () => buildInitialValues(columns, initialValues),
@@ -882,6 +903,14 @@ const Workspace = ({
 
   const requiredColumns = columns.filter((column) => isRequired(column))
   const missing = missingRequired(columns, formik.values)
+  // The first identifier is what lists tell duplicates by (key0).
+  const keyColumn = columns.find((column) => column.isIdentifier)
+  const keyValue = keyColumn ? formik.values[keyColumn.label] : undefined
+  const duplicate = useDuplicateEntry({
+    check: duplicateCheck,
+    chainId,
+    value: typeof keyValue === 'string' ? keyValue : undefined,
+  })
   const highlighted = columns.some(
     (column) => formik.errors[column.label] && formik.touched[column.label],
   )
@@ -948,29 +977,44 @@ const Workspace = ({
               />
               <Fields>
                 {columns.map((column, index) => (
-                  <ColumnField
-                    key={column.label}
-                    column={column}
-                    value={formik.values[column.label]}
-                    error={formik.errors[column.label]}
-                    showError={!!formik.touched[column.label]}
-                    disabled={submitting || !!disabledFields?.[index]}
-                    wholeNumber={wholeNumbers}
-                    onChange={(value) =>
-                      formik.setFieldValue(fieldPath(column.label), value)
-                    }
-                    onBlur={() =>
-                      formik.setFieldTouched(fieldPath(column.label), true)
-                    }
-                    onCommit={(value) => {
-                      formik.setFieldTouched(
-                        fieldPath(column.label),
-                        true,
-                        false,
-                      )
-                      formik.setFieldValue(fieldPath(column.label), value, true)
-                    }}
-                  />
+                  <React.Fragment key={column.label}>
+                    <ColumnField
+                      column={column}
+                      value={formik.values[column.label]}
+                      error={formik.errors[column.label]}
+                      showError={!!formik.touched[column.label]}
+                      disabled={submitting || !!disabledFields?.[index]}
+                      wholeNumber={wholeNumbers}
+                      onChange={(value) =>
+                        formik.setFieldValue(fieldPath(column.label), value)
+                      }
+                      onBlur={() =>
+                        formik.setFieldTouched(fieldPath(column.label), true)
+                      }
+                      onCommit={(value) => {
+                        formik.setFieldTouched(
+                          fieldPath(column.label),
+                          true,
+                          false,
+                        )
+                        formik.setFieldValue(
+                          fieldPath(column.label),
+                          value,
+                          true,
+                        )
+                      }}
+                    />
+                    {column === keyColumn && duplicate && (
+                      <Notice tone="contested" role="status">
+                        {`${capitalizeFirst(getArticleFor(itemName))} ${itemName} with the same ${column.label} ${DUPLICATE_PHRASE[duplicate.status] ?? 'is already on this list'}: `}
+                        <Link to={`${registryPath}/${duplicate.itemID}`}>
+                          open it
+                        </Link>
+                        . Most lists reject duplicates, so a second one is
+                        likely to be challenged and lose its deposit.
+                      </Notice>
+                    )}
+                  </React.Fragment>
                 ))}
               </Fields>
             </form>

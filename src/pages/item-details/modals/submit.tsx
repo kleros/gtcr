@@ -1,4 +1,9 @@
 import React, { useCallback, useContext, useEffect, useState } from 'react'
+import {
+  isOptionalColumn,
+  encoderValues,
+  integerProblem,
+} from 'pages/submit-item/form'
 import styled from 'styled-components'
 import type { BigNumber } from 'ethers'
 import { abi as _gtcr } from '@kleros/tcr/build/contracts/GeneralizedTCR.json'
@@ -46,7 +51,6 @@ import {
   valuesByLabel,
 } from 'pages/light-item-details/modals/submit'
 import { PolicyButton } from 'pages/light-item-details/policy-button'
-import { encoderValues, integerProblem } from 'pages/submit-item/form'
 import { useTxChainId } from 'pages/submit-item/use-wallet-gate'
 import { itemIdFromReceipt } from 'pages/submit-item/use-submit-actions'
 
@@ -122,7 +126,7 @@ const _SubmissionForm: React.FC<
     if (!p.onFieldsComplete || !p.columns) return
     const allFilled = p.columns.every((column, index) => {
       if (column.type === ItemTypes.BOOLEAN) return true
-      if (column.optional) return true
+      if (isOptionalColumn(column)) return true
       const value = p.values[fieldName(index)]
       return value !== undefined && value !== '' && String(value).trim() !== ''
     })

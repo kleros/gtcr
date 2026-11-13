@@ -1,4 +1,5 @@
 import React, { useCallback, useContext, useEffect, useState } from 'react'
+import { isOptionalColumn, addressFormatErrors } from 'pages/submit-item/form'
 import styled from 'styled-components'
 import type { BigNumber } from 'ethers'
 import _gtcr from 'assets/abis/LightGeneralizedTCR.json'
@@ -41,7 +42,6 @@ import { Dialog } from 'components/curate/item-light-dialog'
 import { FieldError } from 'components/curate/item-light-notice'
 import { useTxChainId } from 'pages/submit-item/use-wallet-gate'
 import { itemIdFromReceipt } from 'pages/submit-item/use-submit-actions'
-import { addressFormatErrors } from 'pages/submit-item/form'
 import { gatedConfirm, useActionGate } from 'components/curate/item-light-gate'
 import {
   formatAmount,
@@ -455,7 +455,7 @@ const _SubmissionForm: React.FC<
     if (!p.onFieldsComplete || !p.columns) return
     const allFilled = p.columns.every((column, index) => {
       if (column.type === ItemTypes.BOOLEAN) return true
-      if (column.optional) return true
+      if (isOptionalColumn(column)) return true
       const value = p.values[fieldName(index)]
       return value !== undefined && value !== '' && String(value).trim() !== ''
     })

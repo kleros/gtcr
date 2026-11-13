@@ -30,8 +30,16 @@ export interface FactoryChecks {
 export const fieldPath = (label: string): string =>
   `["${label.replace(/["\\]/g, '\\$&')}"]`
 
+/**
+ * A column the list does not require: marked optional in its metadata, or
+ * labelled so ("Logo (Optional)"), the only way the list factories let a
+ * creator say it.
+ */
+export const isOptionalColumn = (column: Column): boolean =>
+  !!column.optional || /\(optional\)\s*$/i.test(column.label ?? '')
+
 export const isRequired = (column: Column): boolean =>
-  column.type !== ItemTypes.BOOLEAN && !column.optional
+  column.type !== ItemTypes.BOOLEAN && !isOptionalColumn(column)
 
 export const isEmptyValue = (value: FieldValue | undefined): boolean =>
   value === undefined || (typeof value === 'string' && value.trim() === '')
@@ -201,6 +209,10 @@ export const integerProblem = (value: string): string | undefined => {
   return undefined
 }
 
+/** A plain decimal number: "18", "-3", "0.5", ".5". */
+const isPlainNumber = (value: string): boolean =>
+  /^-?(\d+(\.\d*)?|\.\d+)$/.test(value.trim())
+
 export const validateSubmission = async (
   columns: Column[],
   values: SubmissionValues,
@@ -224,7 +236,10 @@ export const validateSubmission = async (
     ) {
       const problem = integerProblem(value)
       if (problem) errors[column.label] = problem
-    }
+    } else if (column.type === ItemTypes.NUMBER && !isPlainNumber(value))
+      // Light and Stake lists store the text as typed: "eighteen" would go
+      // into a number column and invite a challenge.
+      errors[column.label] = 'Enter a number, like 18 or 0.5.'
     if (
       (column.type === ItemTypes.ADDRESS ||
         column.type === ItemTypes.GTCR_ADDRESS) &&

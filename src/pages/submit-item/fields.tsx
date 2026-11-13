@@ -606,8 +606,10 @@ const UploadField = ({
   const accept = isImage
     ? [...IMAGE_TYPES].join(',')
     : allowed.map((ext) => `.${ext}`).join(',') || undefined
+  // What the app can upload; a list's policy can ask for less (one format,
+  // a smaller file), and its column help says so.
   const hint = isImage
-    ? `PNG, JPEG, WebP or SVG, up to ${IMAGE_MAX_MB} MB`
+    ? `PNG, JPEG, WebP or SVG, up to ${IMAGE_MAX_MB} MB · the list's policy may ask for less`
     : allowed.length > 0
       ? `${allowed.map((ext) => `.${ext}`).join(', ')}, up to ${FILE_MAX_MB} MB`
       : `Up to ${FILE_MAX_MB} MB`

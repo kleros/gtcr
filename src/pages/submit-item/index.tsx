@@ -268,7 +268,7 @@ const DepositSubmitPage = ({
       lede={
         seconds === undefined
           ? undefined
-          : `If your ${itemName} follows the list's policy, it is verified and your deposit comes back.`
+          : `If your ${itemName} follows the list's policy, it is accepted and your deposit comes back.`
       }
       ledeMeta={
         seconds === undefined
@@ -281,6 +281,9 @@ const DepositSubmitPage = ({
       initialValues={linkValues}
       disabledFields={NO_DISABLED_FIELDS}
       wholeNumbers={kind === 'classic'}
+      duplicateCheck={
+        kind === 'light' ? { kind: 'light', tcrAddress } : undefined
+      }
       policyURI={policyURI}
       terms={terms}
       ready={ready}
@@ -477,6 +480,20 @@ const PermanentSubmitPage = () => {
       : { value: costWei, decimals: 18, symbol: nativeCurrency }
   const stake = amountText(stakeAmount)
   const cost = amountText(costAmount)
+  // A challenger stakes this share of the entry's stake; a challenge that
+  // fails adds it to the entry's stake (PermanentGTCR rule()).
+  const challengerStake =
+    stakeWei === undefined ||
+    tokenLoading ||
+    registry.challengeStakeMultiplier === undefined
+      ? undefined
+      : amountText({
+          value:
+            (stakeWei * BigInt(String(registry.challengeStakeMultiplier))) /
+            10_000n,
+          decimals,
+          symbol,
+        })
   const submissionSeconds =
     registry.submissionPeriod === undefined ||
     registry.submissionPeriod === null
@@ -520,10 +537,10 @@ const PermanentSubmitPage = () => {
         tone: 'registered',
         title: 'No challenge',
         status: 'Accepted',
-        figure: `${stake} locked`,
+        figure: `${stake} + ${cost} locked`,
         note: withdrawingPeriod
-          ? `withdraw any time; withdrawing takes ${withdrawingPeriod}`
-          : 'withdraw any time',
+          ? `both come back when you withdraw; withdrawing takes ${withdrawingPeriod}`
+          : 'both come back when you withdraw',
       },
       {
         key: 'challenged',
@@ -537,7 +554,8 @@ const PermanentSubmitPage = () => {
             tone: 'registered',
             title: 'Jurors side with you',
             status: 'Accepted',
-            note: "your stake grows by the challenger's stake",
+            figure: challengerStake ? `+${challengerStake}` : undefined,
+            note: "the challenger's stake is added to yours, locked while listed",
           },
           {
             key: 'lose',
@@ -611,7 +629,7 @@ const PermanentSubmitPage = () => {
       lede={
         tokenLoading
           ? undefined
-          : `If your ${itemName} follows the list's policy, it stays listed and you get your stake back when you withdraw.`
+          : `If your ${itemName} follows the list's policy, it stays listed, and your stake and arbitration deposit come back when you withdraw.`
       }
       ledeMeta={
         submissionSeconds !== undefined &&
@@ -623,6 +641,7 @@ const PermanentSubmitPage = () => {
       columns={columns}
       initialValues={linkValues}
       disabledFields={NO_DISABLED_FIELDS}
+      duplicateCheck={tcrAddress ? { kind: 'stake', tcrAddress } : undefined}
       policyURI={metadata?.policyURI}
       terms={terms}
       ready={ready}
