@@ -98,7 +98,8 @@ export const requestFacts = ({
     windowEnd: submissionTime + challengePeriodDuration.toNumber(),
     appealStart,
     appealEnd,
-    appealHalf: appealStart + (appealEnd - appealStart) / 2,
+    // Where the contracts' integer division puts it (utils/item-status.ts).
+    appealHalf: appealStart + Math.floor((appealEnd - appealStart) / 2),
     currentRuling,
     loserName: requesterWins ? 'challenger' : requesterName,
     winnerName: requesterWins ? requesterName : 'challenger',
@@ -126,3 +127,21 @@ export const requestFacts = ({
 /** "Submitter" from "submitter". */
 export const capitalize = (value: string): string =>
   value.charAt(0).toUpperCase() + value.slice(1)
+
+/**
+ * The side that alone fully funded the latest round's appeal, when exactly
+ * one did. Once the appeal period is over that side wins, whatever the
+ * jurors ruled: rule() in the list contracts gives the ruling to the only
+ * side that paid, and the other side's backers are reimbursed.
+ */
+export const fundedAlone = (
+  request: LightRequest | undefined,
+  requesterName: string,
+): string | undefined => {
+  const round = request?.rounds?.[0]
+  if (!round) return undefined
+  const requesterPaid = !!round.hasPaidRequester
+  const challengerPaid = !!round.hasPaidChallenger
+  if (requesterPaid === challengerPaid) return undefined
+  return requesterPaid ? requesterName : 'challenger'
+}

@@ -72,7 +72,7 @@ import ItemStatusCard from './item-status-card'
 import { formatSince } from './format-since'
 import CrowdfundingCard from './crowdfunding-card'
 import Badges from './badges'
-import { ClassicWindowPanel } from './appeal-funding'
+import { AppealWindowPanel } from './appeal-funding'
 
 /*
  * Classic Curate item page, composed like the Light one. A breadcrumb, then
@@ -733,7 +733,7 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
         </HeroMain>
         <HeroSide>
           {item && latestRequest && facts && statusCode !== undefined ? (
-            <ClassicWindowPanel
+            <AppealWindowPanel
               item={item}
               request={latestRequest}
               statusCode={statusCode}

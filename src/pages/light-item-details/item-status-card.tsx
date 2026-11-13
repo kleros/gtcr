@@ -42,7 +42,8 @@ import { StickyActionBar } from 'components/curate/item-light-action-bar'
 import { AddressLink } from 'components/curate/item-light-fields'
 import { formatAmount, formatEther } from 'components/curate/item-light-format'
 import ItemActionModal from './item-action-modal'
-import { requestFacts, type LightRequest } from './request-facts'
+import { appealFunding } from 'pages/item-details/appeal-funding'
+import { fundedAlone, requestFacts, type LightRequest } from './request-facts'
 import { useChallengeCost } from './challenge-cost'
 
 /*
@@ -456,15 +457,25 @@ const ItemStatusCard = ({
             ? 'Fund the appeal'
             : undefined
 
+  // Once one side is fully funded, the clock is the other side's (the loser
+  // can be funded before its half is over).
+  const funding = appealFunding(request, facts, statusCode)
+  // After the period, a side that alone funded the appeal wins.
+  const aloneWinner =
+    statusCode === STATUS_CODE.WAITING_ARBITRATOR && !resolved
+      ? fundedAlone(request, requesterName)
+      : undefined
   const prompt = isPending
     ? `The window closed ${formatAgo(windowEnd, now)} with no challenge. Anyone can execute it; the deposit returns to the ${requesterName}.`
-    : appealable
-      ? currentRuling === SUBGRAPH_RULING.NONE
-        ? `Jurors refused to rule. If one side fully funds an appeal by ${formatAbsolute(appealEnd)}, the other must fund too or loses.`
-        : statusCode === STATUS_CODE.CROWDFUNDING
-          ? `The ${loserName} has ${formatDuration(appealHalf - now)} to fund an appeal, or the ruling stands.`
-          : `The ${loserName} funded the appeal. The ${winnerName} has ${formatDuration(appealEnd - now)} to fund too, or loses.`
-      : undefined
+    : funding
+      ? `The ${funding.funded} is fully funded. The ${funding.pending} has ${formatDuration(funding.deadline - now)} to fund too, or loses.`
+      : appealable
+        ? currentRuling === SUBGRAPH_RULING.NONE
+          ? `Jurors refused to rule. If one side fully funds an appeal by ${formatAbsolute(appealEnd)}, the other must fund too or loses.`
+          : statusCode === STATUS_CODE.CROWDFUNDING
+            ? `The ${loserName} has ${formatDuration(appealHalf - now)} to fund an appeal, or the ruling stands.`
+            : `The ${loserName} funded the appeal. The ${winnerName} has ${formatDuration(appealEnd - now)} to fund too, or loses.`
+        : undefined
 
   const action = hasRequestAction ? (
     <ItemActionButton
@@ -528,7 +539,9 @@ const ItemStatusCard = ({
               {statusCode === STATUS_CODE.CHALLENGED
                 ? 'Know something the jurors should? Add it before they vote.'
                 : statusCode === STATUS_CODE.WAITING_ARBITRATOR
-                  ? 'Enforced once the court gives the final ruling.'
+                  ? aloneWinner
+                    ? `The ${aloneWinner} funded the appeal alone, so the ${aloneWinner} wins when the ruling is enforced.`
+                    : 'Enforced once the court gives the final ruling.'
                   : 'Waiting to be enforced.'}
             </Prompt>
             {statusCode === STATUS_CODE.CHALLENGED && (

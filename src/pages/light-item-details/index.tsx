@@ -66,7 +66,7 @@ import {
 import { StickyActionBarSpacer } from 'components/curate/item-light-action-bar'
 import ItemStatusCard from './item-status-card'
 import CrowdfundingCard from './crowdfunding-card'
-import { WindowPanel } from './item-window'
+import { AppealWindowPanel } from 'pages/item-details/appeal-funding'
 import { requestFacts, type LightRequest } from './request-facts'
 
 /*
@@ -822,7 +822,8 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
         </HeroMain>
         <HeroSide>
           {item && request && facts && statusCode !== undefined ? (
-            <WindowPanel
+            // Once one side is fully funded, the ring follows the other's clock.
+            <AppealWindowPanel
               item={item}
               request={request}
               statusCode={statusCode}

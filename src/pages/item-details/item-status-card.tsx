@@ -46,6 +46,7 @@ import { formatAmount, formatEther } from 'components/curate/item-light-format'
 import ItemActionModal from './item-action-modal'
 import { appealFunding } from './appeal-funding'
 import {
+  fundedAlone,
   requestFacts,
   type LightRequest as ClassicRequest,
 } from 'pages/light-item-details/request-facts'
@@ -447,6 +448,11 @@ const ItemStatusCard = ({
 
   // Once one side is fully funded, the clock is the other side's.
   const funding = appealFunding(request, facts, statusCode)
+  // After the period, a side that alone funded the appeal wins.
+  const aloneWinner =
+    statusCode === STATUS_CODE.WAITING_ARBITRATOR && !resolved
+      ? fundedAlone(request, requesterName)
+      : undefined
   const prompt = isPending
     ? `The window closed ${formatAgo(windowEnd, now)} with no challenge. Anyone can execute it; the deposit returns to the ${requesterName}.`
     : funding
@@ -526,7 +532,9 @@ const ItemStatusCard = ({
               {statusCode === STATUS_CODE.CHALLENGED
                 ? 'Jurors read the evidence before they vote. If you know something they should, add it now.'
                 : statusCode === STATUS_CODE.WAITING_ARBITRATOR
-                  ? `The appeal period ended ${formatAbsolute(appealEnd)}. The final ruling waits to be given and enforced.`
+                  ? aloneWinner
+                    ? `The appeal period ended ${formatAbsolute(appealEnd)}. The ${aloneWinner} funded the appeal alone, so the ${aloneWinner} wins when the ruling is enforced.`
+                    : `The appeal period ended ${formatAbsolute(appealEnd)}. The final ruling waits to be given and enforced.`
                   : `The ${loserName} did not fund the appeal in time. The ruling is final and waits to be enforced.`}
             </Prompt>
             {statusCode === STATUS_CODE.CHALLENGED && (

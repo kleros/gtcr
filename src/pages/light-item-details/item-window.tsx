@@ -14,6 +14,7 @@ import { WindowRing } from 'components/curate/item-light-window-ring'
 import { toSeconds } from 'components/curate/item-light-format'
 import {
   capitalize,
+  fundedAlone,
   type LightRequest,
   type RequestFacts,
 } from './request-facts'
@@ -478,6 +479,10 @@ export const WindowPanel = ({
 
   if (facts.inCourt) {
     const challenged = statusCode === STATUS_CODE.CHALLENGED
+    const aloneWinner =
+      statusCode === STATUS_CODE.WAITING_ARBITRATOR
+        ? fundedAlone(request, requesterName)
+        : undefined
     return (
       <Court>
         <CourtTop>
@@ -515,12 +520,17 @@ export const WindowPanel = ({
           <Line>
             {rulingLine(currentRuling, requesterName)}
             {statusCode === STATUS_CODE.WAITING_ARBITRATOR ? (
-              <>
-                {' · '}
-                <span title={formatAbsolute(appealEnd)}>
-                  appeal closed {formatDate(appealEnd)}
-                </span>
-              </>
+              aloneWinner ? (
+                // rule() gives the ruling to the only side that paid.
+                ` · the ${aloneWinner} funded the appeal alone and wins`
+              ) : (
+                <>
+                  {' · '}
+                  <span title={formatAbsolute(appealEnd)}>
+                    appeal closed {formatDate(appealEnd)}
+                  </span>
+                </>
+              )
             ) : (
               ' · not appealed'
             )}

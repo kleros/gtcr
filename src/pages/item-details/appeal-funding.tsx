@@ -49,8 +49,11 @@ export const appealFunding = (
   return undefined
 }
 
-/** The hero's clock, with the appeal ring pointed at the side that still has to fund. */
-export const ClassicWindowPanel = ({
+/**
+ * The hero's clock for Light and Classic entries, with the appeal ring
+ * pointed at the side that still has to fund.
+ */
+export const AppealWindowPanel = ({
   item,
   request,
   statusCode,

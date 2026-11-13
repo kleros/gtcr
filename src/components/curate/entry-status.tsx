@@ -72,6 +72,8 @@ interface AppealRound {
   appealPeriodEnd?: string
   ruling?: string
   rulingTime?: string
+  hasPaidRequester?: boolean
+  hasPaidChallenger?: boolean
 }
 
 /**
@@ -86,7 +88,8 @@ const appealOpen = (
 ): EntryStatusView => {
   const start = toNum(round?.appealPeriodStart)
   const end = toNum(round?.appealPeriodEnd)
-  const half = start + (end - start) / 2
+  // Where the contracts' integer division puts it (utils/item-status.ts).
+  const half = start + Math.floor((end - start) / 2)
   if (round?.ruling === SUBGRAPH_RULING.NONE)
     return {
       code,
@@ -98,6 +101,13 @@ const appealOpen = (
       deadlineVerb: 'either side funds',
       passedDetail: 'appeal closing',
     }
+  // The loser can be fully funded before its half is over: from then on the
+  // clock that runs is the winner's, until the end.
+  const loserPaid =
+    round?.ruling === SUBGRAPH_RULING.ACCEPT
+      ? round?.hasPaidChallenger
+      : round?.hasPaidRequester
+  if (ts < half && loserPaid) return winnerFunding(code, round)
   if (ts < half)
     return {
       code,
