@@ -592,9 +592,10 @@ const PLAIN_TEXT = new Set<string>([ItemTypes.TEXT, ItemTypes.LONG_TEXT])
 const isImageColumn = (column: Column) => column.type === ItemTypes.IMAGE
 
 /**
- * The list's own rules (entry-list): the row shows the identifier columns
- * (then image columns, at most four); the title is the first plain-text one,
- * else the first non-image one, and the rest follow as the meta line.
+ * The list's own rules (entry-list): the row shows the identifier columns,
+ * at most four, with the image apart as its thumbnail; the title is the
+ * first plain-text one, else the first non-image one, and the rest follow as
+ * the meta line.
  */
 const rowColumns = (columns: Column[]) => {
   const shown = tableColumns(columns) as Column[]

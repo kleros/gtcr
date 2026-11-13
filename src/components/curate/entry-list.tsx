@@ -78,6 +78,10 @@ const isImage = (field: V2Field) =>
   normalizeType(field.type) === normalizeType(ItemTypes.IMAGE)
 const isGtcrAddress = (field: V2Field) =>
   normalizeType(field.type) === normalizeType(ItemTypes.GTCR_ADDRESS)
+const isBareAddress = (field: V2Field) =>
+  [ItemTypes.ADDRESS, ItemTypes.RICH_ADDRESS]
+    .map(normalizeType)
+    .includes(normalizeType(field.type))
 const isPlainText = (field: V2Field) =>
   [ItemTypes.TEXT, ItemTypes.LONG_TEXT, 'text', 'long text']
     .map(normalizeType)
@@ -87,12 +91,22 @@ const hasValue = (field: V2Field) =>
   field.value !== null &&
   String(field.value) !== ''
 
-/** Columns worth a table column: identifiers first, then images, max 4. */
+/**
+ * The columns an entry shows in a list: the list's identifiers, at most 4.
+ * Images take none of those places, as every layout shows the entry's image
+ * on its own (the table's thumbnail, the row's avatar, the card's cover). A
+ * list whose only identifiers are images shows those, and one with neither
+ * identifiers nor images its first columns.
+ */
 export const tableColumns = (fields: V2Field[]): V2Field[] => {
   const identifiers = fields.filter((field) => field.isIdentifier)
-  const images = fields.filter((field) => isImage(field) && !field.isIdentifier)
-  const chosen = [...identifiers, ...images]
-  return (chosen.length > 0 ? chosen : fields).slice(0, 4)
+  const named = identifiers.filter((field) => !isImage(field))
+  if (named.length > 0) return named.slice(0, 4)
+  const images = [
+    ...identifiers,
+    ...fields.filter((field) => isImage(field) && !field.isIdentifier),
+  ]
+  return (images.length > 0 ? images : fields).slice(0, 4)
 }
 
 /** The entry's own value for a column, falling back to the column itself. */
@@ -126,6 +140,23 @@ const splitColumns = (columns: V2Field[]) => {
   return { title, meta: textual.filter((column) => column !== title) }
 }
 
+/**
+ * The table's first column: the list's own first one, unless that is a bare
+ * address and one of the list's text identifiers names the entry (a token's
+ * name, a contract's tag), which then leads, as in rows and cards. Any other
+ * first column (a link, a number, a list) stays, as a text column after it
+ * may hold a hash or a key, and so do columns a page adds (a Seer market's
+ * question, a Stake entry's stake).
+ */
+const leadColumn = (columns: V2Field[]): V2Field | undefined => {
+  const [first] = columns
+  if (!first || !isBareAddress(first)) return first
+  return (
+    columns.find((column) => column.isIdentifier && isPlainText(column)) ??
+    first
+  )
+}
+
 /** A column's name as a heading: the form's "(optional)" hint dropped. */
 const columnLabel = (column: V2Field): string =>
   (column.label ?? '').replace(/\s*\(optional\)\s*$/i, '')
@@ -146,12 +177,13 @@ const Thumb = styled.img<{ $size?: number }>`
   background: var(--color-raised);
 `
 
-const ThumbSlot = styled.span`
+const ThumbSlot = styled.span<{ $size?: number }>`
   display: block;
-  width: 44px;
-  height: 44px;
+  flex: 0 0 auto;
+  width: ${({ $size }) => $size ?? 44}px;
+  height: ${({ $size }) => $size ?? 44}px;
   border: 1px solid var(--glass-border);
-  border-radius: 12px;
+  border-radius: ${({ $size }) => (($size ?? 44) >= 40 ? 12 : 8)}px;
   background: var(--color-surface);
 `
 
@@ -674,6 +706,8 @@ const EntryRows = ({
    middle-truncated address, the status keeps its countdown, the rest share. */
 const LEAD_WIDTH = 260
 const LEAD_IMAGE_WIDTH = 88
+/** The entry's 32px image and its 10px gap, beside the identifying value. */
+const THUMB_ROOM = 42
 const STATUS_WIDTH = 272
 const FIELD_WIDTH = 170
 const LIST_WIDTH = 124
@@ -700,6 +734,10 @@ const EntryTableEl = styled(Table)`
     width: ${LEAD_IMAGE_WIDTH}px;
   }
 
+  th.lead.thumbs {
+    width: ${LEAD_WIDTH + THUMB_ROOM}px;
+  }
+
   /* One identifying column and nothing else: it takes the spare room, so
      the status sits at the right beside the open chevron, as in Rows. */
   @media (min-width: 721px) {
@@ -708,8 +746,9 @@ const EntryTableEl = styled(Table)`
     }
   }
 
-  /* Phones: a narrower identifying column (the chain label gives way first)
-     so the status and its countdown start inside the screen. */
+  /* Phones: a narrower identifying column (the chain label gives way first,
+     then the name beside an image) so the status and its countdown start
+     inside the screen. */
   @media (max-width: 720px) {
     th.lead:not(.image) {
       width: 184px;
@@ -801,6 +840,19 @@ const CellValue = styled.div`
   }
 `
 
+/* The entry's image, then its identifying value, which is what truncates. */
+const WithThumb = styled.div`
+  display: flex;
+  align-items: center;
+  gap: ${THUMB_ROOM - 32}px;
+  min-width: 0;
+
+  > :last-child {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+`
+
 const EntryTable = ({
   entries,
   columns,
@@ -813,14 +865,32 @@ const EntryTable = ({
   itemName: string
 }) => {
   const navigate = useNavigate()
+  // Each row's open link carries its entry's name, so a links list tells
+  // the rows apart (a hidden entry stays generic).
+  const { title } = splitColumns(columns)
   // The identifying column first, then the status, then the other fields.
-  const [lead, ...others] = columns
+  const lead = leadColumn(columns)
   const leadIsImage = !!lead && isImage(lead)
+  // The entry's image sits beside the identifying value, as the rows' avatar
+  // does, unless the image is that value.
+  const thumbs =
+    !!lead &&
+    !leadIsImage &&
+    entries.some((entry) =>
+      entry.fields.some((field) => isImage(field) && hasValue(field)),
+    )
+  const others = columns.filter(
+    (column) => column !== lead && !(thumbs && isImage(column)),
+  )
   // Lists of lists open the registry each entry points to from a column of
   // its own, beside the entry's chevron, as rows and cards offer it.
   const opensLists = entries.some((entry) => !!entry.openListTo)
   const minWidth =
-    (lead ? (leadIsImage ? LEAD_IMAGE_WIDTH : LEAD_WIDTH) : 0) +
+    (lead
+      ? leadIsImage
+        ? LEAD_IMAGE_WIDTH
+        : LEAD_WIDTH + (thumbs ? THUMB_ROOM : 0)
+      : 0) +
     STATUS_WIDTH +
     others.length * FIELD_WIDTH +
     (opensLists ? LIST_WIDTH : 0) +
@@ -828,35 +898,62 @@ const EntryTable = ({
   // A hidden or unreadable entry's notice goes in the field cells it blanks
   // out; only a list with no other field puts it in the identifying cell.
   const noticeInLead = !!lead && others.length === 0
-  // Each row's open link carries its entry's name, so a links list tells
-  // the rows apart (a hidden entry stays generic).
-  const { title } = splitColumns(columns)
   const leadClass = [
     'lead',
     leadIsImage ? 'image' : '',
+    thumbs ? 'thumbs' : '',
     others.length === 0 ? 'solo' : '',
   ]
     .filter(Boolean)
     .join(' ')
-  // The identifying column carries a Kleros Verified entry's seal.
   const cell = (entry: EntryRow, column: V2Field) => (
     <td key={column.label}>
       <CellValue>
-        {column === lead ? (
-          <TitleValue
-            entry={entry}
-            field={fieldFor(entry, column)}
-            link={outLinkFor(entry, column)}
-          />
-        ) : (
-          <FieldValue
-            field={fieldFor(entry, column)}
-            link={outLinkFor(entry, column)}
-          />
-        )}
+        <FieldValue
+          field={fieldFor(entry, column)}
+          link={outLinkFor(entry, column)}
+        />
       </CellValue>
     </td>
   )
+  // The identifying cell carries a Kleros Verified entry's seal, and the
+  // entry's image when the list has images (never a hidden entry's).
+  const leadCell = (entry: EntryRow, blank: boolean) => {
+    if (!lead) return null
+    const value = blank ? (
+      noticeInLead ? (
+        <FieldsNotice entry={entry} />
+      ) : (
+        <Small $faint aria-hidden>
+          —
+        </Small>
+      )
+    ) : (
+      <CellValue>
+        <TitleValue
+          entry={entry}
+          field={fieldFor(entry, lead)}
+          link={outLinkFor(entry, lead)}
+        />
+      </CellValue>
+    )
+    if (!thumbs) return <td>{value}</td>
+    const image = entry.hidden
+      ? undefined
+      : entry.fields.find((field) => isImage(field) && hasValue(field))
+    return (
+      <td>
+        <WithThumb>
+          {image ? (
+            <Thumb src={parseIpfs(String(image.value))} alt="" loading="lazy" />
+          ) : (
+            <ThumbSlot $size={32} aria-hidden />
+          )}
+          {value}
+        </WithThumb>
+      </td>
+    )
+  }
   return (
     <TableScroller>
       <EntryTableEl style={{ minWidth }}>
@@ -891,20 +988,7 @@ const EntryTable = ({
                   navigate(entry.href)
                 }}
               >
-                {lead &&
-                  (blank ? (
-                    <td>
-                      {noticeInLead ? (
-                        <FieldsNotice entry={entry} />
-                      ) : (
-                        <Small $faint aria-hidden>
-                          —
-                        </Small>
-                      )}
-                    </td>
-                  ) : (
-                    cell(entry, lead)
-                  ))}
+                {leadCell(entry, blank)}
                 <td className="status">
                   <StatusSlot entry={entry} now={now} />
                 </td>
