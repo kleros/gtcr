@@ -1,6 +1,7 @@
 import React from 'react'
 import { createRoot } from 'react-dom/client'
 import App from './bootstrap/app'
+import { onlyBackgroundLoadsPending } from './utils/background-preload'
 
 /*
  * After a new release, a tab still running the previous one asks for page
@@ -10,6 +11,9 @@ import App from './bootstrap/app'
  */
 const RELOADED_AT_KEY = 'curate:reloaded-for-release'
 window.addEventListener('vite:preloadError', (event) => {
+  // Code loaded ahead of a likely click failed while nothing else was
+  // loading: keep the page in view (utils/background-preload.ts).
+  if (onlyBackgroundLoadsPending()) return
   try {
     const last = Number(sessionStorage.getItem(RELOADED_AT_KEY)) || 0
     if (Date.now() - last < 60_000) return

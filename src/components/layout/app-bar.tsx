@@ -28,7 +28,7 @@ import {
 import { defaultTcrAddresses, type validChains } from 'config/tcr-addresses'
 import { StakeContext } from 'contexts/stake-context'
 import useUrlChainId from 'hooks/use-url-chain-id'
-import { preloadFactory } from 'bootstrap/app-router'
+import { warmFactory } from 'bootstrap/app-router'
 import { CurateIcon } from 'components/curate/icons'
 import ChainLogo from 'components/chain-logo'
 import {
@@ -420,7 +420,7 @@ const AppBar = () => {
           location.pathname.startsWith('/factory')
         }
         onClick={() => setMobileMenuOpen(false)}
-        onMouseEnter={() => preloadFactory()}
+        onMouseEnter={warmFactory}
       >
         Launch a list
       </MobileMenuLink>

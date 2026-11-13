@@ -16,6 +16,8 @@ const useCheckLightCurate = (): {
   error: boolean
   /** Asks again whichever check failed. */
   retry: () => void
+  /** Asks both indexers again, as for a list deployed moments ago. */
+  recheck: () => void
 } => {
   const { tcrAddress } = useParams<{
     tcrAddress: string
@@ -51,8 +53,11 @@ const useCheckLightCurate = (): {
   // Only check Goldsky (permanent) after Envio responds with no match.
   // This prevents the slow Goldsky query from being batched together with
   // the fast Envio query, which would block the entire page render.
+  // A failed refetch keeps the answer already shown (react-query keeps its
+  // data): only a check with no answer at all is an error.
+  const envioFailed = !!queryError && !data
   const envioFoundNothing =
-    !loading && !queryError && !isLightCurate && !isClassicCurate
+    !loading && !envioFailed && !isLightCurate && !isClassicCurate
   const {
     isPermanentList,
     checking: permanentChecking,
@@ -65,10 +70,14 @@ const useCheckLightCurate = (): {
     isClassicCurate,
     isPermanentCurate: isPermanentList,
     checking: loading || (envioFoundNothing && permanentChecking),
-    error: !!queryError || (envioFoundNothing && permanentError),
+    error: envioFailed || (envioFoundNothing && permanentError),
     retry: () => {
-      if (queryError) void refetch()
+      if (envioFailed) void refetch()
       else if (permanentError) permanentRetry()
+    },
+    recheck: () => {
+      void refetch()
+      if (envioFoundNothing) permanentRetry()
     },
   }
 }

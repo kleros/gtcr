@@ -93,7 +93,15 @@ const TruncatedLink = ({ url }: TruncatedLinkProps) => {
 
   return (
     <>
-      <StyledA href={url} onClick={handleClick} title={url}>
+      <StyledA
+        href={url}
+        onClick={handleClick}
+        // A middle click would open the URL in a new tab with no warning.
+        onAuxClick={(event) => {
+          if (event.button === 1) handleClick(event)
+        }}
+        title={url}
+      >
         <span>
           {host}
           {rest && <i>{rest}</i>}

@@ -4,6 +4,7 @@ import { ItemTypes } from '@kleros/gtcr-encoder'
 import DisplaySelector from 'components/display-selector'
 import useUrlChainId from 'hooks/use-url-chain-id'
 import { getAddressPage } from 'utils/network-utils'
+import { displayableValue } from 'utils/display-value'
 import { V2FieldDisplay, type V2Field } from './v2'
 import { Data, Small, truncateMiddle } from './primitives'
 
@@ -75,10 +76,20 @@ export const identifierFields = (fields: EntryField[]): EntryField[] =>
     (field) => field.isIdentifier && hasValue(field) && !isImageField(field),
   )
 
-/** The field that names the entry: a non-address identifier, else any identifier, else the first value. */
+const isPlainTextField = (field: EntryField) =>
+  [ItemTypes.TEXT, ItemTypes.LONG_TEXT]
+    .map(normalizeType)
+    .includes(normalizeType(field.type) || normalizeType(ItemTypes.TEXT))
+
+/**
+ * The field that names the entry, chosen as the list rows choose theirs: a
+ * text identifier (a name reads better than a link or an address), else a
+ * non-address identifier, else any identifier, else the first value.
+ */
 export const titleField = (fields: EntryField[]): EntryField | undefined => {
   const identifiers = identifierFields(fields)
   return (
+    identifiers.find(isPlainTextField) ??
     identifiers.find((field) => !isAddressLikeField(field)) ??
     identifiers[0] ??
     fields.find((field) => hasValue(field) && !isImageField(field))
@@ -103,7 +114,7 @@ export const FieldValue = ({
 }) => {
   if (!hasValue(field)) return <Small $faint>Not provided</Small>
   const type = normalizeType(field.type)
-  const value = field.value as string | number | boolean
+  const value = displayableValue(field.value) as string | number | boolean
 
   if (isGtcrAddressField(field))
     return <V2FieldDisplay detailed={detailed} field={field} showStakeBadge />

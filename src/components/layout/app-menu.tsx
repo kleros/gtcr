@@ -9,7 +9,7 @@ import styled, { css } from 'styled-components'
 import { litThumb, recessTrack } from 'components/ui/kit-styles'
 import { smallScreenStyle } from 'styles/small-screen-style'
 import { Link, useLocation } from 'react-router-dom'
-import { preloadFactory } from 'bootstrap/app-router'
+import { warmFactory } from 'bootstrap/app-router'
 import { useLaunchChainId } from './launch-chain'
 
 /*
@@ -149,7 +149,7 @@ const AppMenu = () => {
       <NavLink
         to={`/launch/${launchChainId}`}
         aria-current={current('launch')}
-        onMouseEnter={() => preloadFactory()}
+        onMouseEnter={warmFactory}
       >
         Launch a list
       </NavLink>

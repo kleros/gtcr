@@ -10,6 +10,7 @@ import {
 import { capitalizeFirstLetter } from 'utils/string'
 import { getTxPage } from 'utils/network-utils'
 import { parseIpfs } from 'utils/ipfs-parse'
+import { evidenceFileFields } from 'utils/evidence-file'
 import toOrdinal from 'utils/ordinal'
 import EvidenceFileLink from 'components/evidence-file-link'
 import ClassicEvidenceModal from 'pages/item-details/modals/evidence'
@@ -367,7 +368,7 @@ const RequestTimeline = ({
       )
       const evidenceMapProcess: Record<string, EvidenceFile> = {}
       unindexedEvidenceURIs.forEach((uri, index) => {
-        evidenceMapProcess[uri] = evidenceJSONs[index]
+        evidenceMapProcess[uri] = evidenceFileFields(evidenceJSONs[index])
       })
       setEvidenceMap(evidenceMapProcess)
     }

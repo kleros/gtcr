@@ -4,7 +4,7 @@ import { Link, useParams, useSearchParams } from 'react-router-dom'
 import useDocumentHead from 'hooks/use-document-head'
 import { NETWORKS, NETWORKS_INFO, getNativeCurrency } from 'config/networks'
 import { formatDuration, formatDurationLong } from 'utils/time'
-import { preloadFactory, preloadPermanentFactory } from 'bootstrap/app-router'
+import { warmFactory, warmPermanentFactory } from 'bootstrap/app-router'
 import {
   WIZARD_DEFAULTS as STAKE_DEFAULTS,
   defaultStakeToken,
@@ -61,12 +61,12 @@ const KINDS = {
   standard: {
     name: 'Light list',
     href: (chainId: number) => `/factory/${chainId}`,
-    preload: preloadFactory,
+    preload: warmFactory,
   },
   stake: {
     name: 'Stake list',
     href: (chainId: number) => `/factory-permanent/${chainId}`,
-    preload: preloadPermanentFactory,
+    preload: warmPermanentFactory,
   },
 } as const
 
@@ -833,7 +833,7 @@ const LaunchListPage = () => {
   const kindParam = searchParams.get('kind')
   const kind = isKind(kindParam) ? kindParam : undefined
   const choose = (next: Kind) => {
-    KINDS[next].preload().catch(() => undefined)
+    KINDS[next].preload()
     setSearchParams(
       (previous) => {
         const params = new URLSearchParams(previous)

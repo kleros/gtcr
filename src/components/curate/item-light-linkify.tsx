@@ -38,16 +38,21 @@ const EvidenceLink = ({
   children: React.ReactNode
 }) => {
   const [warningVisible, setWarningVisible] = useState(false)
+  const warn = (event: React.MouseEvent) => {
+    event.preventDefault()
+    event.stopPropagation()
+    setWarningVisible(true)
+  }
   return (
     <>
       <Link
         href={href}
         target="_blank"
         rel="noopener noreferrer nofollow ugc"
-        onClick={(event) => {
-          event.preventDefault()
-          event.stopPropagation()
-          setWarningVisible(true)
+        onClick={warn}
+        // A middle click would open the URL in a new tab with no warning.
+        onAuxClick={(event) => {
+          if (event.button === 1) warn(event)
         }}
       >
         {children}

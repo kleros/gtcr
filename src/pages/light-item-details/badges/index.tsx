@@ -27,6 +27,7 @@ import { useGraphqlBatcher } from 'contexts/graphql-batcher'
 import useGetLogs from 'hooks/get-logs'
 import { gtcrViewAddresses, subgraphUrl } from 'config/tcr-addresses'
 import { parseIpfs } from 'utils/ipfs-parse'
+import { sanitizeMetaEvidence } from 'utils/meta-evidence-guard'
 import { CurateIcon } from 'components/curate/icons'
 import {
   Body,
@@ -410,7 +411,9 @@ const Badges = ({ connectedTCRAddr, item, tcrAddress }: BadgesProps) => {
                 fetch(parseIpfs(matchFileURI)),
                 gtcrView.fetchArbitrable(badgeAddr),
               ])
-            const badgeMetaEvidence = await badgeMetaEvidenceResponse.json()
+            // Another list's file, shown on this entry: well-typed fields only.
+            const badgeMetaEvidence: any =
+              sanitizeMetaEvidence(await badgeMetaEvidenceResponse.json()) ?? {}
             const matchFile = await matchFileResponse.json()
             const { columns: matchColumns } = matchFile
             const { metadata: badgeMetadata, fileURI } = badgeMetaEvidence

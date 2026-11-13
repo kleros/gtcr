@@ -204,18 +204,21 @@ export const itemToStatusCode = (
     // appeal period didn't start yet
     return STATUS_CODE.CHALLENGED
 
+  // The contracts take contributions while now < appealPeriodEnd.
   if (round.ruling === SUBGRAPH_RULING.NONE)
-    if (timestamp.lte(round.appealPeriodEnd))
+    if (timestamp.lt(round.appealPeriodEnd))
       // Arbitrator did not rule or refused to rule.
       return STATUS_CODE.CROWDFUNDING
     else return STATUS_CODE.WAITING_ARBITRATOR
 
   // Arbitrator gave a decisive ruling (i.e. Ruled in favor of either the requester or challenger).
-  if (timestamp.gt(round.appealPeriodEnd)) return STATUS_CODE.WAITING_ARBITRATOR
+  if (timestamp.gte(round.appealPeriodEnd))
+    return STATUS_CODE.WAITING_ARBITRATOR
   const appealPeriodDuration =
     Number(round.appealPeriodEnd) - Number(round.appealPeriodStart)
+  // The loser's half ends where the contracts' integer division puts it.
   const appealHalfTime =
-    Number(round.appealPeriodStart) + appealPeriodDuration / 2
+    Number(round.appealPeriodStart) + Math.floor(appealPeriodDuration / 2)
   if (timestamp.lt(appealHalfTime)) return STATUS_CODE.CROWDFUNDING // In first half of appeal period
 
   // If the party that lost the previous round is not fully funded

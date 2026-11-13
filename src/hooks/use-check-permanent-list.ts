@@ -40,7 +40,8 @@ const useCheckPermanentList = (
   return {
     isPermanentList,
     checking: loading,
-    error: !!queryError,
+    // A failed refetch keeps the answer already shown.
+    error: !!queryError && !data,
     retry: () => void refetch(),
   }
 }

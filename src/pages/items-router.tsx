@@ -77,6 +77,7 @@ const ItemsRouter = () => {
     checking,
     error,
     retry,
+    recheck,
   } = useCheckLightCurate()
   useTcrNetwork()
   const setIsPermanent = useContext(StakeContext)?.setIsPermanent
@@ -192,7 +193,8 @@ const ItemsRouter = () => {
     <ErrorPage
       code="Error"
       title="Registry Not Found"
-      message="This registry could not be found on any subgraph. The subgraph endpoint may be down or the registry address may be invalid."
+      message="No Curate list was found at this address on this chain. A list created in the last few minutes may not be indexed yet: check again in a minute."
+      onRetry={recheck}
     />
   )
 }

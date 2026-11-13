@@ -21,6 +21,7 @@ import { ZERO_ADDRESS, ZERO_BYTES32 } from 'utils/string'
 import { STATUS_CODE } from 'utils/item-status'
 import { gtcrViewAddresses } from 'config/tcr-addresses'
 import { parseIpfs } from 'utils/ipfs-parse'
+import { sanitizeMetaEvidence } from 'utils/meta-evidence-guard'
 import { CurateIcon } from 'components/curate/icons'
 import {
   Button,
@@ -433,7 +434,9 @@ const Badges = ({ connectedTCRAddr, item, tcrAddress }: BadgesProps) => {
                 gtcrView.fetchArbitrable(badgeAddr),
               ])
             const itemCount = (await badgeContract.itemCount()).toNumber()
-            const badgeMetaEvidence = await badgeMetaEvidenceResponse.json()
+            // Another list's file, shown on this entry: well-typed fields only.
+            const badgeMetaEvidence: any =
+              sanitizeMetaEvidence(await badgeMetaEvidenceResponse.json()) ?? {}
             const matchFile = await matchFileResponse.json()
             const { columns: matchColumns } = matchFile
             const { metadata: badgeMetadata, fileURI } = badgeMetaEvidence

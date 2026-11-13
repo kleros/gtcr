@@ -49,6 +49,7 @@ import {
 } from 'components/curate/stake-factory-shell'
 import { SafeImage, StepBody, StepHeader, useWalletGate } from './controls'
 import { useCourtSummary } from './court'
+import useArbitratorCheck from 'hooks/use-arbitrator-check'
 import {
   effectivePercent,
   formatHours,
@@ -381,11 +382,24 @@ const Deploy = ({
               tokenDecimals,
             ) ?? '')
 
+  // A Stake list can never change its arbitrator: one that can't price a
+  // dispute would leave the list unable to take a single entry.
+  const arbitratorCheck = useArbitratorCheck(
+    targetChainId,
+    tcrState.arbitratorAddress,
+    tcrState.arbitratorExtraData,
+    chainName,
+  )
+  const arbitratorBlocker = arbitratorCheck.checking
+    ? 'Checking the arbitrator'
+    : (arbitratorCheck.problem ?? '')
+
   let blocker = ''
   if (configError) blocker = configError
   else if (phase === 'done') blocker = 'This list is deployed'
   else if (problems.length > 0) blocker = deployBlocker(problems)
   else if (tokenBlocker) blocker = tokenBlocker
+  else if (arbitratorBlocker) blocker = arbitratorBlocker
   else if (gate.blocker) blocker = gate.blocker
   // Only the wallet stands in the way: its fix becomes the primary action.
   const walletFix =
@@ -393,6 +407,7 @@ const Deploy = ({
     !configError &&
     problems.length === 0 &&
     !tokenBlocker &&
+    !arbitratorBlocker &&
     gate.blocker
       ? gate.fix
       : undefined

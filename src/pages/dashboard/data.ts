@@ -359,6 +359,7 @@ const ENVIO_DASHBOARD_QUERY = gql`
     openLightRequests: LRequest(
       limit: ${OPEN_REQUEST_LIMIT}
       where: { chainId: { _eq: $chainId }, resolved: { _eq: false } }
+      order_by: [{ submissionTime: desc }, { id: asc }]
     ) {
       id
       registry_id
@@ -369,6 +370,7 @@ const ENVIO_DASHBOARD_QUERY = gql`
     openClassicRequests: Request(
       limit: ${OPEN_REQUEST_LIMIT}
       where: { chainId: { _eq: $chainId }, resolved: { _eq: false } }
+      order_by: [{ submissionTime: desc }, { id: asc }]
     ) {
       id
       registry_id
@@ -962,15 +964,26 @@ const cleanPreviewValue = (value: unknown): string => {
   return text
 }
 
-const previewProps = (props?: any[]): { label: string; value: string }[] =>
-  (props ?? [])
-    .filter((prop) => prop?.isIdentifier || prop?.label || prop?.value)
+/**
+ * The two fields that name an entry: its identifiers first (the indexer
+ * returns the fields sorted by label, so a list's "Address" would otherwise
+ * name it before its "Name"), and a bare IPFS file only when nothing else
+ * has a value. The sort is stable, so the label order breaks ties.
+ */
+const previewProps = (props?: any[]): { label: string; value: string }[] => {
+  const rank = (prop: { value: string; identifier: boolean }) =>
+    (prop.identifier ? 0 : 2) + (prop.value === 'IPFS file' ? 1 : 0)
+  return (props ?? [])
     .map((prop) => ({
       label: String(prop?.label || 'Field'),
       value: cleanPreviewValue(prop?.value),
+      identifier: Boolean(prop?.isIdentifier),
     }))
     .filter((prop) => prop.value)
+    .sort((a, b) => rank(a) - rank(b))
     .slice(0, 2)
+    .map(({ label, value }) => ({ label, value }))
+}
 
 /**
  * Court outcome of a resolved dispute. Ruling Accept favors the requester,

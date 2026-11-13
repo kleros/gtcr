@@ -14,6 +14,7 @@ import permanentAbi from 'assets/abis/PermanentGTCR.json'
 import { NETWORKS, NETWORKS_INFO } from 'config/networks'
 import { subgraphUrl, subgraphUrlPermanent } from 'config/tcr-addresses'
 import { wagmiConfig } from 'config/wagmi'
+import { readStakeArbitrationParams } from 'utils/stake-arbitration-params'
 import {
   buildActivityHref,
   fetchDashboardData,
@@ -569,8 +570,9 @@ const readTokenSymbol = async (
 const readGovernanceParams = async (
   registry: DashboardRegistry,
 ): Promise<GovernanceParams> => {
-  const common = ['governor', 'arbitrator', 'arbitratorExtraData'] as const
+  const common = ['governor', 'arbitrator'] as const
   const classicAndLight = [
+    'arbitratorExtraData',
     'challengePeriodDuration',
     'submissionBaseDeposit',
     'submissionChallengeBaseDeposit',
@@ -604,14 +606,19 @@ const readGovernanceParams = async (
     entries.filter(([, value]) => value !== undefined),
   ) as GovernanceParams
 
-  if (
-    registry.kind === 'permanent' &&
-    !params.arbitratorExtraData &&
-    registry.arbitratorExtraData
-  )
-    params.arbitratorExtraData = registry.arbitratorExtraData
-
   if (registry.kind === 'permanent') {
+    // The court new challenges use is the latest settings entry on chain (a
+    // Stake list has no getter for it). The index's copy can be a day old,
+    // so it is only shown when the chain can't be read.
+    const live = await readStakeArbitrationParams(
+      registry.chainId,
+      registry.address,
+    ).catch((err: unknown) => {
+      console.warn('Governance read failed', registry.address, err)
+      return undefined
+    })
+    const extraData = live?.arbitratorExtraData ?? registry.arbitratorExtraData
+    if (extraData) params.arbitratorExtraData = extraData
     if (registry.metaEvidenceURI)
       params.metaEvidenceURI = registry.metaEvidenceURI
     params.tokenSymbol = await readTokenSymbol(registry)

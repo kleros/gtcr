@@ -1,8 +1,9 @@
-import React, { Suspense, lazy } from 'react'
-import { Route, Routes, useParams } from 'react-router-dom'
+import React, { Suspense, lazy, useEffect } from 'react'
+import { Route, Routes, useLocation, useParams } from 'react-router-dom'
 import ErrorPage from 'pages/error-page'
 import Loading from 'components/loading'
 import usePathValidation from 'hooks/use-path-validation'
+import { noteNavigation, preloadInBackground } from 'utils/background-preload'
 
 const Dashboard = lazy(() => import('pages/dashboard'))
 const Browse = lazy(() => import('pages/browse'))
@@ -14,10 +15,15 @@ const ItemsRouter = lazy(() => import('pages/items-router'))
 const ItemDetailsRouter = lazy(() => import('pages/item-details-router'))
 const SubmitItem = lazy(() => import('pages/submit-item'))
 
-// Exported for preloading on link hover (instant navigation feel)
+// The factories' code, loaded early on hover or focus of a link to them
+// (instant navigation feel) through the warm* helpers, which never reload a
+// tab whose release changed underneath it (utils/background-preload.ts).
 export const preloadFactory = () => import('pages/factory/index')
 export const preloadPermanentFactory = () =>
   import('pages/factory-permanent/index')
+export const warmFactory = () => preloadInBackground(preloadFactory)
+export const warmPermanentFactory = () =>
+  preloadInBackground(preloadPermanentFactory)
 
 const Factory = lazy(preloadFactory)
 const PermanentFactory = lazy(preloadPermanentFactory)
@@ -30,10 +36,24 @@ const RouteReset = ({ children }: { children: React.ReactNode }) => {
 }
 
 const AppRouter = () => {
-  const [pathResolved, invalidTcrAddr] = usePathValidation()
+  const { pathname } = useLocation()
+  const { resolved, invalid, failed, retry } = usePathValidation()
 
-  if (!pathResolved) return <Loading />
-  if (invalidTcrAddr) return <ErrorPage />
+  useEffect(() => {
+    noteNavigation()
+  }, [pathname])
+
+  if (!resolved) return <Loading />
+  if (failed)
+    return (
+      <ErrorPage
+        code="Error"
+        title="This link did not load"
+        message="The indexer did not answer, so the list this link points to could not be found."
+        onRetry={retry}
+      />
+    )
+  if (invalid) return <ErrorPage />
 
   return (
     <Suspense fallback={<Loading />}>

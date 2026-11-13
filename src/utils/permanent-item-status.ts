@@ -157,9 +157,11 @@ export const itemToStatusCode = (
   )
     if (
       Number(item.withdrawingTimestamp) > 0 &&
-      Number(item.withdrawingTimestamp) + Number(registry.withdrawingPeriod) <
+      Number(item.withdrawingTimestamp) + Number(registry.withdrawingPeriod) <=
         ts
     )
+      // From withdrawingTimestamp + withdrawingPeriod on, the contract allows
+      // withdrawItem and refuses challengeItem.
       return STATUS_CODE.PENDING_WITHDRAWAL
 
   if (status === CONTRACT_STATUS.SUBMITTED) {
@@ -185,8 +187,10 @@ export const itemToStatusCode = (
     if (Number(round.appealPeriodEnd) <= ts)
       return STATUS_CODE.WAITING_ARBITRATOR
 
-    const appealHalfTime =
-      (Number(round.appealPeriodEnd) + Number(round.appealPeriodStart)) / 2
+    // The loser's half ends where the contract's integer division puts it.
+    const appealHalfTime = Math.floor(
+      (Number(round.appealPeriodEnd) + Number(round.appealPeriodStart)) / 2,
+    )
     if (ts < appealHalfTime) return STATUS_CODE.CROWDFUNDING
 
     // has loser funded?

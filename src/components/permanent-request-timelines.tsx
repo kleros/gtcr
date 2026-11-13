@@ -8,6 +8,7 @@ import { CONTRACT_STATUS, SUBGRAPH_RULING } from 'utils/permanent-item-status'
 import { capitalizeFirstLetter } from 'utils/string'
 import { getTxPage } from 'utils/network-utils'
 import { parseIpfs } from 'utils/ipfs-parse'
+import { evidenceFileFields } from 'utils/evidence-file'
 import { formatDate } from 'utils/time'
 import PermanentEvidenceModal from 'pages/permanent-item-details/modals/evidence'
 import toOrdinal from 'utils/ordinal'
@@ -445,7 +446,7 @@ const Timeline = ({ submission, item, metaEvidence, live }: TimelineProps) => {
       )
       const evidenceMapProcess: Record<string, EvidenceFile> = {}
       unindexedEvidenceURIs.forEach((uri, index) => {
-        evidenceMapProcess[uri] = evidenceJSONs[index]
+        evidenceMapProcess[uri] = evidenceFileFields(evidenceJSONs[index])
       })
       setEvidenceMap(evidenceMapProcess)
     }

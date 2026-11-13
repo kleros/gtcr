@@ -13,6 +13,8 @@ import ETHAddress from './eth-address'
 import LongText from './long-text'
 import FileDisplay from './file-display'
 import TruncatedLink from './truncated-link'
+import ExternalLinkWarning from './external-link-warning'
+import { displayableValue } from 'utils/display-value'
 
 /*
  * Renders one entry field by its MetaEvidence type. Addresses are mono with
@@ -261,6 +263,58 @@ const ImageWithLoading = ({ src, alt, linkImage }: ImageWithLoadingProps) => {
 
 const protocolRegex = /:\/\//
 
+/**
+ * A link field shown in full (on an entry page). Like every link from list
+ * data it opens behind the external-link warning, which shows the host the
+ * browser will really open: the text can say one site and lead to another.
+ * A middle click asks too; only a plain left click used to.
+ */
+const WarnedLink = ({
+  url,
+  children,
+}: {
+  url: string
+  children: React.ReactNode
+}) => {
+  const [warningVisible, setWarningVisible] = useState(false)
+  const warn = (event: React.MouseEvent) => {
+    event.preventDefault()
+    event.stopPropagation()
+    setWarningVisible(true)
+  }
+  return (
+    <>
+      <StyledLink
+        href={url}
+        target="_blank"
+        rel="noopener noreferrer nofollow ugc"
+        onClick={warn}
+        onAuxClick={(event) => {
+          if (event.button === 1) warn(event)
+        }}
+      >
+        {children}
+      </StyledLink>
+      {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- not a control: it only stops the dialog's clicks from bubbling */}
+      <span
+        style={{ display: 'contents' }}
+        onClick={(event) => event.stopPropagation()}
+      >
+        <ExternalLinkWarning
+          visible={warningVisible}
+          url={url}
+          onConfirm={() => {
+            setWarningVisible(false)
+            if (isSafeNavigationUrl(url))
+              window.open(url, '_blank', 'noopener,noreferrer')
+          }}
+          onCancel={() => setWarningVisible(false)}
+        />
+      </span>
+    </>
+  )
+}
+
 interface DisplaySelectorProps {
   type: string
   value?: string | number | boolean | null
@@ -272,12 +326,13 @@ interface DisplaySelectorProps {
 
 const DisplaySelector = ({
   type,
-  value = null,
+  value: rawValue = null,
   linkImage = null,
   allowedFileTypes = null,
   truncateLinks = false,
   disabled = false,
 }: DisplaySelectorProps) => {
+  const value = displayableValue(rawValue) ?? null
   switch (type) {
     case ItemTypes.GTCR_ADDRESS:
       return value ? (
@@ -346,10 +401,10 @@ const DisplaySelector = ({
       if (!isSafeNavigationUrl(fullUrl)) return <Plain>{value}</Plain>
       if (truncateLinks) return <TruncatedLink url={fullUrl} />
       return (
-        <StyledLink href={fullUrl} target="_blank" rel="noopener noreferrer">
+        <WarnedLink url={fullUrl}>
           {value}
           <CurateIcon name="external" size={12} />
-        </StyledLink>
+        </WarnedLink>
       )
     }
     default:

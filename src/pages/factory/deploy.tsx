@@ -47,6 +47,8 @@ import {
 import { StepBody, StepHeader, formatNative, useWalletGate } from './fields'
 import { incompleteSteps, listInProse } from './schemas'
 import { useCourtSummary } from './court'
+import { plainDecimal } from 'pages/factory-permanent/format'
+import useArbitratorCheck from 'hooks/use-arbitrator-check'
 import type { StepProps, TcrState } from '.'
 
 /*
@@ -59,6 +61,31 @@ import type { StepProps, TcrState } from '.'
  * name what stops the deploy. The meta-evidence upload and the contract
  * calls are unchanged.
  */
+
+/**
+ * A typed amount in wei. The form can hold a number (5e-7) or text with
+ * spaces, which parseEther refuses after the uploads: written out first.
+ */
+const toWei = (value: unknown): bigint => parseEther(plainDecimal(value))
+
+/*
+ * The badges list is deployed even when it is skipped (closed by a deposit
+ * no one can pay), with whatever its fields hold. A field left half-typed
+ * before switching it off must not fail the deploy after the uploads, so a
+ * skipped list's values that don't parse go out as 0.
+ */
+const relWei = (value: unknown, skipped: boolean): bigint => {
+  if (!skipped) return toWei(value)
+  try {
+    return toWei(value)
+  } catch {
+    return 0n
+  }
+}
+const relWhole = (value: unknown, scale: number, skipped: boolean): number => {
+  const whole = Math.round(Number(value) * scale)
+  return skipped && !Number.isFinite(whole) ? 0 : whole
+}
 
 export const _txBatcher = [
   {
@@ -655,14 +682,37 @@ const Deploy = ({
   const busy = phase === 'uploading' || phase === 'wallet' || phase === 'mining'
   const configured =
     !!factoryAddress && !!batcherAddress && !!evidenceDisplayInterfaceURI
+  const arbitratorCheck = useArbitratorCheck(
+    chainId,
+    tcrState.arbitratorAddress,
+    tcrState.arbitratorExtraData,
+    chainName,
+  )
+  const badgesArbitratorCheck = useArbitratorCheck(
+    chainId,
+    tcrState.relTcrDisabled ? undefined : tcrState.relArbitratorAddress,
+    tcrState.relArbitratorExtraData,
+    chainName,
+  )
+  const arbitratorBlocker =
+    arbitratorCheck.checking || badgesArbitratorCheck.checking
+      ? 'Checking the arbitrator'
+      : (arbitratorCheck.problem ??
+        (badgesArbitratorCheck.problem
+          ? `Badges list: ${badgesArbitratorCheck.problem}`
+          : undefined))
   const blocker = !configured
     ? `Lists cannot be deployed on ${chainName}: no factory is configured`
     : incomplete.length > 0
       ? `Complete ${listInProse(incomplete)} before deploying`
-      : gate.blocker
+      : (arbitratorBlocker ?? gate.blocker)
   // Only the wallet stands in the way: its fix becomes the primary action.
   const walletFix =
-    !busy && configured && incomplete.length === 0 && gate.blocker
+    !busy &&
+    configured &&
+    incomplete.length === 0 &&
+    !arbitratorBlocker &&
+    gate.blocker
       ? gate.fix
       : undefined
 
@@ -734,6 +784,7 @@ const Deploy = ({
       stage = 'wallet'
       setPhase('wallet')
 
+      const skipped = !!tcrState.relTcrDisabled
       const relTCRArgs = [
         tcrState.relArbitratorAddress,
         tcrState.relArbitratorExtraData,
@@ -742,21 +793,19 @@ const Deploy = ({
         relClearingMetaEvidencePath,
         tcrState.relGovernorAddress,
         [
-          parseEther(
-            tcrState.relTcrDisabled
-              ? '10000000000000'
-              : tcrState.relSubmissionBaseDeposit.toString(),
-          ),
-          parseEther(tcrState.relRemovalBaseDeposit.toString()),
-          parseEther(tcrState.relSubmissionChallengeBaseDeposit.toString()),
-          parseEther(tcrState.relRemovalChallengeBaseDeposit.toString()),
+          skipped
+            ? parseEther('10000000000000')
+            : toWei(tcrState.relSubmissionBaseDeposit),
+          relWei(tcrState.relRemovalBaseDeposit, skipped),
+          relWei(tcrState.relSubmissionChallengeBaseDeposit, skipped),
+          relWei(tcrState.relRemovalChallengeBaseDeposit, skipped),
         ],
-        Math.round(Number(tcrState.relChallengePeriodDuration) * 60 * 60),
+        relWhole(tcrState.relChallengePeriodDuration, 60 * 60, skipped),
         // Percent to basis points, exactly as typed (12.5% is 1250).
         [
-          Math.round(Number(tcrState.relSharedStakeMultiplier) * 100),
-          Math.round(Number(tcrState.relWinnerStakeMultiplier) * 100),
-          Math.round(Number(tcrState.relLoserStakeMultiplier) * 100),
+          relWhole(tcrState.relSharedStakeMultiplier, 100, skipped),
+          relWhole(tcrState.relWinnerStakeMultiplier, 100, skipped),
+          relWhole(tcrState.relLoserStakeMultiplier, 100, skipped),
         ],
         ZERO_ADDRESS,
       ]
@@ -780,10 +829,10 @@ const Deploy = ({
         clearingMetaEvidencePath,
         tcrState.governorAddress,
         [
-          parseEther(tcrState.submissionBaseDeposit.toString()),
-          parseEther(tcrState.removalBaseDeposit.toString()),
-          parseEther(tcrState.submissionChallengeBaseDeposit.toString()),
-          parseEther(tcrState.removalChallengeBaseDeposit.toString()),
+          toWei(tcrState.submissionBaseDeposit),
+          toWei(tcrState.removalBaseDeposit),
+          toWei(tcrState.submissionChallengeBaseDeposit),
+          toWei(tcrState.removalChallengeBaseDeposit),
         ],
         Math.round(Number(tcrState.challengePeriodDuration) * 60 * 60),
         [
@@ -798,6 +847,18 @@ const Deploy = ({
         functionName: 'deploy',
         args: TCRArgs,
       })
+
+      // Both addresses were predicted from the factory's nonce before the
+      // uploads (the badges file names its parent list). A list deployed by
+      // anyone since would shift them, and the batch would still go through
+      // with this list pointing at someone else's badges list: start over.
+      const nonceNow = await publicClient.getTransactionCount({
+        address: factory,
+      })
+      if (nonceNow !== txCount)
+        throw new Error(
+          'Another list was just deployed through the same factory, so the addresses prepared for this one are taken. Deploy again: its files are prepared afresh.',
+        )
 
       const targets = [factory, factory]
       const values = [0n, 0n]
@@ -825,7 +886,7 @@ const Deploy = ({
       )
 
       if (result.status && result.result)
-        onMined(result.result, parentTCRAddress)
+        onMined(result.result, parentTCRAddress, relTCRAddress)
       // Sent (the callback above moved the stage on), but no receipt, which
       // a revert would have: the transaction is still pending.
       else if ((stage as DeployPhase) === 'mining' && !result.result)
@@ -843,7 +904,11 @@ const Deploy = ({
   }
 
   /** The deployment is mined: the list's address, saved with the transaction. */
-  const onMined = (receipt: TransactionReceipt, predictedAddress: string) => {
+  const onMined = (
+    receipt: TransactionReceipt,
+    predictedAddress: string,
+    predictedBadges?: string,
+  ) => {
     const txHash = receipt.transactionHash
     setTxSubmitted(txHash)
 
@@ -871,9 +936,20 @@ const Deploy = ({
         args && typeof args === 'object' && '_address' in args
           ? ((args as { _address?: string })._address ?? undefined)
           : undefined
-      if (newGTCRLogs.length >= 2)
+      if (newGTCRLogs.length >= 2) {
         contractAddress = pickAddress(newGTCRLogs[1].args) ?? contractAddress
-      else if (newGTCRLogs.length === 1)
+        // A deploy that slipped in after the check above shifts the
+        // addresses: say so, with the way to repair it.
+        const badges = pickAddress(newGTCRLogs[0].args)
+        if (
+          badges &&
+          predictedBadges &&
+          badges.toLowerCase() !== predictedBadges.toLowerCase()
+        )
+          errorToast(
+            `Another list was deployed in the same block, so this list's badges point at ${predictedBadges} instead of the badges list deployed with it (${badges}). Its governor can repair this with changeConnectedTCR.`,
+          )
+      } else if (newGTCRLogs.length === 1)
         contractAddress = pickAddress(newGTCRLogs[0].args) ?? contractAddress
     } catch (err) {
       console.error('Error parsing deploy logs:', err)
@@ -902,7 +978,8 @@ const Deploy = ({
         hash: pendingHash,
         confirmations: 2,
       })
-      if (receipt.status === 'success') onMined(receipt, predicted?.list ?? '')
+      if (receipt.status === 'success')
+        onMined(receipt, predicted?.list ?? '', predicted?.badges)
       else {
         setFailedAt('mining')
         setPhase('idle')

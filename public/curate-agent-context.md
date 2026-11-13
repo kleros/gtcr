@@ -17,9 +17,7 @@ Curate is a verification layer for policy-driven token-curated registries. A reg
 A registry is Kleros Verified when it is one of the Kleros lists of lists below, or a Registered entry
 of any of them. Light and Classic lists of lists count the same. New lists are submitted to the Light
 one with `LightGeneralizedTCR.addItem(string)` (the skill's references/verify-your-list.md); the
-older Classic ones take `GeneralizedTCR.addItem(bytes)`. Use the addresses listed here: the skill
-reference still names an older Ethereum Mainnet list (`0xB79B610bB8E5E26e5b93b8d45Cdb34858AfEb190`),
-which does not grant Kleros Verified.
+older Classic ones take `GeneralizedTCR.addItem(bytes)`.
 
 - Ethereum Mainnet, Light: `0x2acf59a420ca888f46d46974f62570f8a38cd4da`
 - Ethereum Mainnet, Classic: `0xba0304273a54dfec1fc7f4bccbf4b15519aecf15`

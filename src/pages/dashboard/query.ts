@@ -23,6 +23,9 @@ export const DASHBOARD_STALE_MS = 5 * 60_000
 /** How often a page on screen refreshes the load. */
 export const DASHBOARD_REFRESH_MS = 5 * 60_000
 
+/** How soon a load with a chain missing is asked for again. */
+const PARTIAL_RETRY_MS = 60_000
+
 /**
  * When a page on screen reads the load again: once it is
  * DASHBOARD_REFRESH_MS old. A load can arrive already aged (saved by an
@@ -30,10 +33,13 @@ export const DASHBOARD_REFRESH_MS = 5 * 60_000
  * own time, not from when this page opened.
  */
 export const dashboardRefreshIn = (query: {
-  state: { data?: { generatedAt?: number } }
+  state: { data?: { generatedAt?: number; failedChains?: unknown[] } }
 }): number => {
   const generatedAt = query.state.data?.generatedAt
   if (typeof generatedAt !== 'number') return DASHBOARD_REFRESH_MS
+  // A chain did not load (the page says so): ask again in a minute rather
+  // than leave its lists out for the whole refresh period.
+  if (query.state.data?.failedChains?.length) return PARTIAL_RETRY_MS
   const wait = generatedAt + DASHBOARD_REFRESH_MS - Date.now()
   // Overdue means the last refresh failed: try again in a minute, not at once.
   return wait > 0 ? Math.max(15_000, wait) : 60_000
