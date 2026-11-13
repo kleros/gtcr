@@ -155,9 +155,12 @@ const CrowdfundModal = ({
   const winner =
     ruling === SUBGRAPH_RULING.ACCEPT ? PARTY.REQUESTER : PARTY.CHALLENGER
 
+  // Once one side is fully funded only the other can be funded (the
+  // contract refuses more for a funded side), whatever the ruling: with no
+  // ruling too, the dialog goes to the side still raising rather than
+  // offering one with nothing left to fund.
   const autoSelectedSide = useMemo(() => {
     if (
-      ruling === SUBGRAPH_RULING.NONE ||
       (hasPaidRequester && hasPaidChallenger) ||
       (!hasPaidRequester && !hasPaidChallenger)
     )
@@ -166,7 +169,7 @@ const CrowdfundModal = ({
     if (statusCode === STATUS_CODE.CROWDFUNDING_WINNER) return winner
 
     return !hasPaidRequester ? PARTY.REQUESTER : PARTY.CHALLENGER
-  }, [ruling, hasPaidRequester, hasPaidChallenger, statusCode, winner])
+  }, [hasPaidRequester, hasPaidChallenger, statusCode, winner])
 
   const side = useMemo(
     () => userSelectedSide || autoSelectedSide,
