@@ -1,4 +1,5 @@
 import * as yup from 'yup'
+import { isAddress } from 'viem'
 import { ItemTypes } from '@kleros/gtcr-encoder'
 import type { TcrState } from '.'
 
@@ -18,11 +19,30 @@ export type FactorySection =
   | 'stake'
   | 'custom'
 
+// The deploy encodes addresses with viem, which refuses what isAddress
+// refuses (a typo, a space, a wrong-case checksum), but only after the
+// uploads: refused here, at the field, instead.
 const address = (message: string) =>
   yup
     .string()
     .required(message)
     .max(42, 'Ethereum addresses are 42 characters long.')
+    .test(
+      'address',
+      'Not a valid address: check it for a typo or a space.',
+      (value) => !value || isAddress(value),
+    )
+
+// Hex bytes, as the court picker writes them. viem encodes bytes without
+// checking them, and pads an odd length into other extra data (another
+// court or number of jurors).
+const extraData = yup
+  .string()
+  .required('The arbitrator extra data is required.')
+  .matches(
+    /^0x(?:[0-9a-fA-F]{2})*$/,
+    'Extra data is hex bytes: 0x, then pairs of 0-9 and a-f.',
+  )
 
 const amount = yup
   .number()
@@ -114,9 +134,7 @@ const TCR_FIELDS: Record<FactorySection, Record<string, yup.AnySchema>> = {
   },
   stake: {
     arbitratorAddress: address('An arbitrator address is required.'),
-    arbitratorExtraData: yup
-      .string()
-      .required('The arbitrator extra data is required.'),
+    arbitratorExtraData: extraData,
     governorAddress: address('A governor address is required.'),
     submissionMinDeposit: amount,
     submissionPeriodDuration: period(false),
