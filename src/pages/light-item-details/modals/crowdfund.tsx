@@ -384,7 +384,7 @@ const CrowdfundModal = ({
   const steps: OutcomeStep[] = [
     {
       title: `You contribute ${total} now`,
-      body: `It funds the ${sideName}'s appeal. Contributions are locked until the appeal period ends.`,
+      body: `It funds the ${sideName}'s appeal. Contributions stay locked until the request is resolved; then they are paid out, or reimbursed if the appeal was not fully funded, with Withdraw rewards on this page.`,
     },
     {
       title: `The ${sideName} wins the next round`,

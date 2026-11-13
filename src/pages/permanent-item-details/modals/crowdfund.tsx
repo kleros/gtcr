@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import styled from 'styled-components'
 import { ethers, BigNumber } from 'ethers'
 import { useAccount, usePublicClient, useWalletClient } from 'wagmi'
@@ -172,6 +172,18 @@ const CrowdfundModal = ({
   const nativeCurrency = useNativeCurrency()
   const { balance: nativeBalance } = useNativeBalance()
   const gate = useActionGate('fund an appeal')
+
+  // The component stays mounted while the dialog is closed, so it is reset
+  // on closing and every opening starts afresh, as on Light and Classic: a
+  // side picked earlier may be fully funded by then (with the picker hidden,
+  // the other side could not be chosen), and an amount typed was a share of
+  // what was still needed at the time.
+  useEffect(() => {
+    if (visible) return
+    setUserSelectedSide(undefined)
+    setContributionInput(null)
+    setContributionShare(1)
+  }, [visible])
 
   const round = item.challenges?.[0]?.rounds?.[0]
   const {
@@ -425,22 +437,25 @@ const CrowdfundModal = ({
                 min={0}
                 max={stillNeededNumber}
                 step={0.01}
-                value={
-                  contributionInput ??
-                  (contributionShare * stillNeededNumber).toFixed(4)
-                }
+                // The exact amount, as on Light and Classic: rounded, the
+                // figure typed back would fall short of funding the side.
+                value={contributionInput ?? formatEther(contribution)}
                 aria-label={`Contribution in ${nativeCurrency}`}
                 onChange={(event) => {
                   // The field keeps what was typed; the share follows only
                   // once the text parses, so "0." is not rewritten mid-entry.
-                  setContributionInput(event.target.value)
-                  const raw = Number(event.target.value)
-                  if (event.target.value === '' || !Number.isFinite(raw)) return
-                  if (raw < 0) return
+                  // The text is read as wei, never through a float: what is
+                  // still needed, or more, funds the side in full.
+                  const text = event.target.value
+                  setContributionInput(text)
+                  if (text === '' || amountStillRequired.isZero()) return
                   try {
-                    const weiAmount = parseEther(
-                      Math.min(raw, stillNeededNumber).toString(),
-                    )
+                    const weiAmount = parseEther(text)
+                    if (weiAmount.isNegative()) return
+                    if (weiAmount.gte(amountStillRequired)) {
+                      setContributionShare(1)
+                      return
+                    }
                     const shareInBasis = weiAmount
                       .mul(MULTIPLIER_DIVISOR)
                       .div(amountStillRequired)
