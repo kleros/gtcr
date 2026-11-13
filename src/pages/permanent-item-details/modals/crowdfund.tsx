@@ -167,6 +167,9 @@ const CrowdfundModal = ({
   const [contributionInput, setContributionInput] = useState<string | null>(
     null,
   )
+  // A typed amount, in wei: sent as typed (capped at what is still needed),
+  // never rounded to a share. Undefined while the slider sets the amount.
+  const [typedWei, setTypedWei] = useState<BigNumber>()
   const [userSelectedSide, setUserSelectedSide] = useState<number>()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const nativeCurrency = useNativeCurrency()
@@ -182,6 +185,7 @@ const CrowdfundModal = ({
     if (visible) return
     setUserSelectedSide(undefined)
     setContributionInput(null)
+    setTypedWei(undefined)
     setContributionShare(1)
   }, [visible])
 
@@ -303,7 +307,13 @@ const CrowdfundModal = ({
             key={party}
             type="button"
             $selected={userSelectedSide === party}
-            onClick={() => setUserSelectedSide(party)}
+            onClick={() => {
+              // An amount typed for one side is not meant for the other.
+              setUserSelectedSide(party)
+              setContributionInput(null)
+              setTypedWei(undefined)
+              setContributionShare(1)
+            }}
           >
             {sideName(party)}
           </ChipButton>
@@ -328,9 +338,13 @@ const CrowdfundModal = ({
       </ModalShell>
     )
 
-  const contribution = amountStillRequired
-    .mul(BigNumber.from(Math.round(contributionShare * MULTIPLIER_DIVISOR)))
-    .div(MULTIPLIER_DIVISOR)
+  const contribution = typedWei
+    ? typedWei.gt(amountStillRequired)
+      ? amountStillRequired
+      : typedWei
+    : amountStillRequired
+        .mul(BigNumber.from(Math.round(contributionShare * MULTIPLIER_DIVISOR)))
+        .div(MULTIPLIER_DIVISOR)
   const reward = (potentialReward ?? BigNumber.from(0))
     .mul(BigNumber.from(Math.ceil(contributionShare * MULTIPLIER_DIVISOR) || 1))
     .div(MULTIPLIER_DIVISOR)
@@ -427,6 +441,7 @@ const CrowdfundModal = ({
               onChange={(event) => {
                 setContributionShare(Number(event.target.value))
                 setContributionInput(null)
+                setTypedWei(undefined)
               }}
             />
             <AmountField>
@@ -452,15 +467,16 @@ const CrowdfundModal = ({
                   try {
                     const weiAmount = parseEther(text)
                     if (weiAmount.isNegative()) return
-                    if (weiAmount.gte(amountStillRequired)) {
-                      setContributionShare(1)
-                      return
-                    }
-                    const shareInBasis = weiAmount
-                      .mul(MULTIPLIER_DIVISOR)
-                      .div(amountStillRequired)
+                    setTypedWei(weiAmount)
+                    // The share only drives the slider and the reward
+                    // estimate; the amount sent is the one typed.
                     setContributionShare(
-                      shareInBasis.toNumber() / MULTIPLIER_DIVISOR,
+                      weiAmount.gte(amountStillRequired)
+                        ? 1
+                        : weiAmount
+                            .mul(MULTIPLIER_DIVISOR)
+                            .div(amountStillRequired)
+                            .toNumber() / MULTIPLIER_DIVISOR,
                     )
                   } catch {
                     // Partial input is kept as typed until it parses.

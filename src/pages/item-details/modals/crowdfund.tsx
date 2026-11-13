@@ -123,6 +123,9 @@ const CrowdfundModal = ({
 
   const [contributionShare, setContributionShare] = useState(1)
   const [amountText, setAmountText] = useState<string>()
+  // A typed amount, in wei: sent as typed (capped at what is still needed),
+  // never rounded to a share. Undefined while the slider sets the amount.
+  const [typedWei, setTypedWei] = useState<BigNumber>()
   const [userSelectedSide, setUserSelectedSide] = useState<number | undefined>()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const nativeCurrency = useNativeCurrency()
@@ -136,6 +139,7 @@ const CrowdfundModal = ({
     if (visible) return
     setUserSelectedSide(undefined)
     setAmountText(undefined)
+    setTypedWei(undefined)
     setContributionShare(1)
   }, [visible])
 
@@ -180,21 +184,20 @@ const CrowdfundModal = ({
       appealCost,
     })
 
-  const contribution = useMemo(
-    () =>
-      amountStillRequired && MULTIPLIER_DIVISOR
-        ? amountStillRequired
-            .mul(
-              BigNumber.from(
-                Math.round(
-                  contributionShare * MULTIPLIER_DIVISOR.toNumber(),
-                ).toString(),
-              ),
-            )
-            .div(MULTIPLIER_DIVISOR)
-        : undefined,
-    [amountStillRequired, MULTIPLIER_DIVISOR, contributionShare],
-  )
+  const contribution = useMemo(() => {
+    if (!amountStillRequired || !MULTIPLIER_DIVISOR) return undefined
+    if (typedWei)
+      return typedWei.gt(amountStillRequired) ? amountStillRequired : typedWei
+    return amountStillRequired
+      .mul(
+        BigNumber.from(
+          Math.round(
+            contributionShare * MULTIPLIER_DIVISOR.toNumber(),
+          ).toString(),
+        ),
+      )
+      .div(MULTIPLIER_DIVISOR)
+  }, [amountStillRequired, MULTIPLIER_DIVISOR, contributionShare, typedWei])
 
   const gate = useActionGate({
     verb: 'contribute',
@@ -350,15 +353,17 @@ const CrowdfundModal = ({
       return
     try {
       const wei = parseEther(text || '0')
-      const shareInBasis = wei.mul(MULTIPLIER_DIVISOR).div(amountStillRequired)
+      if (wei.isNegative()) return
+      setTypedWei(wei)
+      // The share only drives the slider and the reward estimate.
       setContributionShare(
-        Math.min(
-          1,
-          Math.max(0, shareInBasis.toNumber() / MULTIPLIER_DIVISOR.toNumber()),
-        ),
+        wei.gte(amountStillRequired)
+          ? 1
+          : wei.mul(MULTIPLIER_DIVISOR).div(amountStillRequired).toNumber() /
+              MULTIPLIER_DIVISOR.toNumber(),
       )
     } catch {
-      // Not a number yet; keep the previous share.
+      // Not a number yet; keep the previous amount.
     }
   }
 
@@ -438,6 +443,7 @@ const CrowdfundModal = ({
                 aria-label="Share of the remaining amount"
                 onChange={(event) => {
                   setAmountText(undefined)
+                  setTypedWei(undefined)
                   setContributionShare(Number(event.currentTarget.value))
                 }}
               />
