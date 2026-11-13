@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect, useRef } from 'react'
 import styled, { css, keyframes } from 'styled-components'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import useDocumentHead from 'hooks/use-document-head'
@@ -635,6 +635,8 @@ const Foot = styled.div`
   margin: 24px 0 0;
   padding-top: 20px;
   border-top: 1px solid var(--glass-border);
+  /* Brought into view on a pick: some room under the button. */
+  scroll-margin-bottom: 32px;
   animation: ${footIn} 360ms var(--ease-out) both;
 
   @media (prefers-reduced-motion: reduce) {
@@ -717,6 +719,9 @@ const ProActions = styled.div`
 
 /* ---------- One option of the radio group ---------- */
 
+const prefersReducedMotion = () =>
+  !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+
 /** True when the click ended a text selection inside `node`. */
 const selectingText = (node: Node) => {
   const selection = window.getSelection()
@@ -753,6 +758,24 @@ const Choice = ({
   const titleId = `launch-${kind}`
   const verbId = `launch-${kind}-verb`
   const summaryId = `launch-${kind}-summary`
+  const footRef = useRef<HTMLDivElement>(null)
+  // Set by a pick on this card, so a choice the URL restores never scrolls.
+  const picked = useRef(false)
+  const pick = () => {
+    picked.current = true
+    onChoose(kind)
+  }
+
+  // The button that goes on opens at the card's foot, under the fold when
+  // the card is chosen from its head: bring it into view.
+  useEffect(() => {
+    if (!checked || !picked.current) return
+    picked.current = false
+    footRef.current?.scrollIntoView({
+      behavior: prefersReducedMotion() ? 'auto' : 'smooth',
+      block: 'nearest',
+    })
+  }, [checked])
 
   /*
    * Pointer convenience on top of the native radio (which keeps the
@@ -764,7 +787,7 @@ const Choice = ({
     const target = event.target as Element
     if (target.closest('a, button, label, input')) return
     if (selectingText(event.currentTarget)) return
-    onChoose(kind)
+    pick()
   }
 
   return (
@@ -786,7 +809,7 @@ const Choice = ({
             name="launch-kind"
             value={kind}
             checked={checked}
-            onChange={() => onChoose(kind)}
+            onChange={pick}
             aria-labelledby={`${verbId} ${titleId}`}
             aria-describedby={summaryId}
           />
@@ -799,7 +822,7 @@ const Choice = ({
       <VisuallyHidden id={summaryId}>{summary}</VisuallyHidden>
       {children}
       {checked && (
-        <Foot>
+        <Foot ref={footRef}>
           <ButtonLink
             to={href(chainId)}
             $variant="primary"
@@ -874,7 +897,7 @@ const LaunchListPage = () => {
         <Choice
           kind="standard"
           family="Light Curate"
-          summary={`When the entry follows the rules, the submitter's deposit, in ${symbol}, comes back in full after the ${formatDurationLong(challengePeriod)} challenge period; a challenger who shows within that period that it breaks them earns its base deposit.`}
+          summary={`If nobody challenges the entry, the submitter's deposit, in ${symbol}, comes back in full after the ${formatDurationLong(challengePeriod)} challenge period; a challenger who shows within that period that it breaks the rules earns its base deposit.`}
           checked={kind === 'standard'}
           onChoose={choose}
           chainId={chainId}
@@ -891,7 +914,7 @@ const LaunchListPage = () => {
                   Back in <b>{period}</b>
                 </Outcome>
                 <Condition>
-                  The whole deposit, when the entry follows the rules
+                  The whole deposit, if nobody challenges the entry
                 </Condition>
               </dd>
             </Side>
