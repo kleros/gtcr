@@ -1018,11 +1018,17 @@ const Deploy = ({
               </ButtonLink>
             )}
             {targetChainId !== undefined && defaultTCRAddress && (
+              // Its submit page, with the new list's address as the first
+              // value (a list of lists' column), as the Light deploy's form.
               <ButtonLink
-                to={`/tcr/${targetChainId}/${defaultTCRAddress}`}
+                to={
+                  deployedAddress
+                    ? `/tcr/${targetChainId}/${defaultTCRAddress}/submit?address=${deployedAddress}`
+                    : `/tcr/${targetChainId}/${defaultTCRAddress}`
+                }
                 $variant="secondary"
               >
-                Open {listOfListsTitle} to submit this list
+                Submit it to {listOfListsTitle}
               </ButtonLink>
             )}
           </Row>
