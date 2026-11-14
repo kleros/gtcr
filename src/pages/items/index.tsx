@@ -9,7 +9,7 @@ import React, {
   useState,
 } from 'react'
 import styled from 'styled-components'
-import { useLocation, useNavigate, useParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { useQuery, type UseQueryResult } from '@tanstack/react-query'
 import { ErrorBoundary } from 'react-error-boundary'
 import { request } from 'utils/indexer-request'
@@ -26,6 +26,7 @@ import { useAttachment } from 'hooks/use-attachment'
 import { WalletContext } from 'contexts/wallet-context'
 import { TCRViewContext } from 'contexts/tcr-view-context'
 import { subgraphUrl } from 'config/tcr-addresses'
+import { replacedListOfLists } from 'config/list-of-lists'
 import { CLASSIC_REGISTRY_ITEMS_QUERY } from 'utils/graphql'
 import { CONTRACT_STATUS, DISPUTE_STATUS, STATUS_CODE } from 'utils/item-status'
 import {
@@ -454,6 +455,15 @@ const AddressLink = styled.a`
   }
 `
 
+const SuccessorLink = styled(Link)`
+  color: var(--color-primary);
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+`
+
 const Items = () => {
   const navigate = useNavigate()
   const { search } = useLocation()
@@ -485,6 +495,8 @@ const Items = () => {
   const now = useNow()
   const [layout, setLayout] = useRegistryLayout('entries')
   const trust = useRegistryVerified(chainId, tcrAddress)
+  // A retired Kleros list of lists: what replaced it, so submitters go there.
+  const replacement = replacedListOfLists(chainId, tcrAddress)
   const [submissionFormOpen, setSubmissionFormOpen] = useState<
     boolean | undefined
   >()
@@ -1117,14 +1129,27 @@ const Items = () => {
       />
 
       <Legacy style={{ '--i': 1 } as React.CSSProperties}>
-        {/* Not on a Classic list of lists: it is Kleros Verified and keeps
-            granting the badge, so nothing there may read as retired. */}
-        {!trust.listOfLists && (
+        {/* A list of lists keeps granting the badge, so nothing on it may
+            read as retired; a retired one names its replacement. */}
+        {replacement ? (
           <Deprecation>
             <InfoIcon />
-            Classic Curate is deprecated: this list keeps working, but new lists
-            use Light Curate.
+            <span>
+              Kleros no longer uses this list of lists: new lists go to{' '}
+              <SuccessorLink to={`/tcr/${chainId}/${replacement}`}>
+                the current one
+              </SuccessorLink>
+              , and only the lists registered there are Kleros Verified.
+            </span>
           </Deprecation>
+        ) : (
+          !trust.listOfLists && (
+            <Deprecation>
+              <InfoIcon />
+              Classic Curate is deprecated: this list keeps working, but new
+              lists use Light Curate.
+            </Deprecation>
+          )
         )}
         {overview && (
           <ClassicLifetime

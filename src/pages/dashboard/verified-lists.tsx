@@ -27,13 +27,13 @@ import { Avatar as ListLogo } from 'pages/browse/avatar'
  * badge of approval, shown as themselves rather than as a share of every
  * list. The badge (its tooltip says what Verified means), how many there
  * are in the page's scope, and a strip of them, newest to earn the badge
- * first: logo, name, chain and when it earned the badge (its earliest
- * registration on any of the chain's Kleros lists of lists, Light or
- * Classic), each leading to its list. The lists of lists themselves grant
- * the badge, read "List of lists" and close the strip. The Most
- * active table below ranks by open requests, so the two never mirror. The
- * last tile leads to every Verified list in Browse. On wide screens the
- * strip shows as many as fit on one row; on phones it scrolls sideways.
+ * first: logo, name, chain and when it earned the badge (its registration
+ * on the chain's Kleros list of lists), each leading to its list. The lists
+ * of lists themselves grant the badge, read "List of lists" and close the
+ * strip. The Most active table below ranks by open requests, so the two
+ * never mirror. The last tile leads to every Verified list in Browse. On
+ * wide screens the strip shows as many as fit on one row; on phones it
+ * scrolls sideways.
  */
 
 /** Tiles read for the strip (wide screens show the ones that fit). */

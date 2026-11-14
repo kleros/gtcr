@@ -8,7 +8,13 @@ import React, {
 } from 'react'
 import type { BigNumber } from 'ethers'
 import { useQuery } from '@tanstack/react-query'
-import { Navigate, useLocation, useNavigate, useParams } from 'react-router-dom'
+import {
+  Link,
+  Navigate,
+  useLocation,
+  useNavigate,
+  useParams,
+} from 'react-router-dom'
 import ErrorPage from 'pages/error-page'
 import useCheckLightCurate from 'hooks/use-check-light-curate'
 import useTcrNetwork from 'hooks/use-tcr-network'
@@ -25,6 +31,7 @@ import {
   LightTCRViewProvider,
 } from 'contexts/light-tcr-view-context'
 import { useGraphqlBatcher } from 'contexts/graphql-batcher'
+import { replacedListOfLists } from 'config/list-of-lists'
 import { PERMANENT_REGISTRY_QUERY } from 'utils/graphql'
 import { parseIpfs } from 'utils/ipfs-parse'
 import { formatDuration, formatDurationLong } from 'utils/time'
@@ -245,6 +252,20 @@ const DepositSubmitPage = ({
     },
   }
 
+  // A retired Kleros list of lists still takes entries, but they earn no
+  // Kleros Verified badge: point to the list of lists that replaced it.
+  const replacement = replacedListOfLists(chainId, tcrAddress)
+  const notice = replacement ? (
+    <>
+      Kleros no longer uses this list of lists, so a list registered here is not
+      Kleros Verified. To get the badge, submit it to{' '}
+      <Link to={`/tcr/${chainId}/${replacement}/submit`}>
+        the current list of lists
+      </Link>
+      .
+    </>
+  ) : undefined
+
   const lowBalance = submissionDeposit
     ? balanceBlocker(
         balance,
@@ -277,6 +298,7 @@ const DepositSubmitPage = ({
             ? `Challenge period · ${formatDurationLong(seconds)}`
             : 'No challenge period'
       }
+      notice={notice}
       columns={columns}
       initialValues={linkValues}
       disabledFields={NO_DISABLED_FIELDS}

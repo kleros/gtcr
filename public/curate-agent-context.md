@@ -14,16 +14,17 @@ Curate is a verification layer for policy-driven token-curated registries. A reg
 
 ## Verified Registries
 
-A registry is Kleros Verified when it is one of the Kleros lists of lists below, or a Registered entry
-of any of them. Light and Classic lists of lists count the same. New lists are submitted to the Light
-one with `LightGeneralizedTCR.addItem(string)` (the skill's references/verify-your-list.md); the
-older Classic ones take `GeneralizedTCR.addItem(bytes)`.
+A registry is Kleros Verified when it is its chain's Kleros list of lists below, or a Registered
+entry of it. New lists are submitted with `LightGeneralizedTCR.addItem(string)` (the skill's
+references/verify-your-list.md).
 
-- Ethereum Mainnet, Light: `0x2acf59a420ca888f46d46974f62570f8a38cd4da`
-- Ethereum Mainnet, Classic: `0xba0304273a54dfec1fc7f4bccbf4b15519aecf15`
-- Gnosis, Light: `0x2418d887d0d0fe03b793a6af4321fa488226a0b5`
-- Gnosis, Classic: `0x2442d40b0aecad0298c2724a97f2f1bbdf2c2615`
-- Sepolia, Light: `0xd965ce430afe0423ff19a5eb08f7c5722efabcaf`
+- Ethereum Mainnet: `0x2acf59a420ca888f46d46974f62570f8a38cd4da`
+- Gnosis: `0x2418d887d0d0fe03b793a6af4321fa488226a0b5`
+- Sepolia: `0xd965ce430afe0423ff19a5eb08f7c5722efabcaf`
+
+The older Classic lists of lists (Ethereum Mainnet `0xba0304273a54dfec1fc7f4bccbf4b15519aecf15`,
+Gnosis `0x2442d40b0aecad0298c2724a97f2f1bbdf2c2615`) are retired: they still take submissions, but a
+list registered on them is not Kleros Verified. Never submit a list to them.
 
 ## Required Agent Behavior
 

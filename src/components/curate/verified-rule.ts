@@ -8,13 +8,12 @@ import type { TrustStatus } from 'pages/dashboard/types'
 /*
  * One rule for "Kleros Verified", shared by the dashboard, Browse, the
  * registry pages, the profile and the landing page: a registry is Kleros
- * Verified when it is one of the chain's Kleros lists of lists, or a
- * Registered entry of one. The lists of lists are the Light ones and the
- * older Classic ones (config/list-of-lists.ts: getListOfListsAddresses), and
- * a list registered on any of them carries the approval seal
- * (verified-badge.tsx). Every other list is a Community list.
+ * Verified when it is the chain's Kleros list of lists (the Light one in
+ * config/list-of-lists.ts), or a Registered entry of it, and then carries
+ * the approval seal (verified-badge.tsx). Every other list is a Community
+ * list, the lists only on the retired Classic lists of lists included.
  *
- * A chain's set is one small read (its lists of lists' Registered entries,
+ * A chain's set is one small read (the list of lists' Registered entries,
  * a few dozen rows, paged). This module holds no React, so the landing page
  * can use it; the hooks (registry-shared-verified.ts) cache it per chain.
  */
@@ -53,27 +52,13 @@ const MAX_PAGES = 20
 /** How long one page may take before the read counts as failed. */
 const PAGE_TIMEOUT_MS = 10_000
 
-/** The lists of lists' Registered entries (Classic Item or Light LItem), a page. */
+/** The list of lists' Registered entries (Light LItem), a page. */
 const VERIFIED_REGISTRIES_QUERY = gql`
   query VerifiedRegistries(
     $chainId: Int!
     $listsOfLists: [String!]!
     $offset: Int!
   ) {
-    verifiedClassic: Item(
-      limit: ${PAGE}
-      offset: $offset
-      order_by: [{ id: asc }]
-      where: {
-        chainId: { _eq: $chainId }
-        registry_id: { _in: $listsOfLists }
-        status: { _eq: "Registered" }
-      }
-    ) {
-      id
-      data
-      registry_id
-    }
     verifiedLight: LItem(
       limit: ${PAGE}
       offset: $offset
@@ -100,11 +85,10 @@ interface VerifiedEntry {
 }
 
 interface VerifiedRegistriesResult {
-  verifiedClassic?: VerifiedEntry[] | null
   verifiedLight?: VerifiedEntry[] | null
 }
 
-/** The registries the lists of lists vouch for, plus the lists themselves. */
+/** The registries the list of lists vouches for, plus the list itself. */
 export const verifiedSetFrom = (
   chainId: number,
   entries: VerifiedEntry[],
@@ -157,10 +141,9 @@ export const fetchVerifiedRegistries = async (
       listsOfLists,
       offset: page * PAGE,
     })
-    const classic = result.verifiedClassic ?? []
     const light = result.verifiedLight ?? []
-    entries.push(...classic, ...light)
-    if (classic.length < PAGE && light.length < PAGE) break
+    entries.push(...light)
+    if (light.length < PAGE) break
   }
   return [...verifiedSetFrom(chainId, entries)]
 }

@@ -22,8 +22,8 @@ import { parseIpfs } from 'utils/ipfs-parse'
  * Ethereum and Gnosis) and the same figures (scopedFigures, scopedSeries,
  * scopedBounties), so both pages show the same numbers:
  *   - Kleros Verified by the one rule (components/curate/verified-rule.ts):
- *     the chain's Kleros lists of lists, Light and Classic, and the lists
- *     registered on any of them; the load stamps each list with it.
+ *     the chain's Kleros list of lists and the lists registered on it;
+ *     the load stamps each list with it.
  *   - Challenges per day on the day each challenge was made, including
  *     challenges to requests made before the window.
  * The Kleros Verified lists themselves come along (name, logo, chain), each

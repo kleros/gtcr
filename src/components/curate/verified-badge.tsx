@@ -5,16 +5,16 @@ import { litEdgeBackground } from 'components/ui/kit-styles'
 
 /*
  * The trust marks for a list (round 2, item 16). A list is Kleros Verified
- * when it is one of the chain's Kleros lists of lists (the Light ones and
- * the older Classic ones) or a Registered entry of any of them (the rule in
- * verified-rule.ts). Every other list is a Community list: anyone can launch
- * a Curate list, and this one is simply not on a list of lists. Verified
- * carries a badge of approval; Community is a plain name, never a warning.
+ * when it is the chain's Kleros list of lists or a Registered entry of it
+ * (the rule in verified-rule.ts). Every other list is a Community list:
+ * anyone can launch a Curate list, and this one is simply not on the list
+ * of lists. Verified carries a badge of approval; Community is a plain name,
+ * never a warning.
  *
- * The lists of lists on Ethereum and Gnosis, Light and Classic, accept
- * every list except the offensive, obviously insecure, malformed or
- * duplicate ones (their policy documents, read 2026-10-19), so the
- * explanation names what that policy rejects and claims no more.
+ * The lists of lists on Ethereum and Gnosis accept every list except the
+ * offensive, obviously insecure, malformed or duplicate ones (their policy
+ * documents, read 2026-10-19), so the explanation names what that policy
+ * rejects and claims no more.
  *
  * API
  *   <VerifiedBadge />                      the seal alone, 16px, named
@@ -70,12 +70,12 @@ export const COMMUNITY_LISTS_LABEL = 'Community lists'
 
 /** Why a list is Verified: what its list of lists' policy checks. */
 export const VERIFIED_EXPLANATION =
-  'On a Kleros list of lists, whose policy rejects insecure, malformed and offensive lists.'
+  'On the Kleros list of lists, whose policy rejects insecure, malformed and offensive lists.'
 /** The same for a list that is itself a list of lists. */
 export const LIST_OF_LISTS_EXPLANATION =
-  'A Kleros list of lists: the lists it accepts are Kleros Verified.'
+  'The Kleros list of lists: the lists it accepts are Kleros Verified.'
 export const COMMUNITY_EXPLANATION =
-  'Not on a Kleros list of lists. Anyone can launch a Curate list.'
+  'Not on the Kleros list of lists. Anyone can launch a Curate list.'
 
 /* ---------- The seal ---------- */
 

@@ -95,6 +95,8 @@ export interface SubmitPageProps {
   /** A quiet fact under it on narrow screens ("Challenge period · 3 days"),
    *  where the panel that shows the window sits below the form. */
   ledeMeta?: string
+  /** A warning under the lede, shown before anything is filled in. */
+  notice?: React.ReactNode
   columns?: Column[]
   initialValues?: unknown[]
   disabledFields?: boolean[]
@@ -765,9 +767,10 @@ const PageHeader = ({
   itemName,
   lede,
   ledeMeta,
+  notice,
 }: Pick<
   SubmitPageProps,
-  'registryPath' | 'registryTitle' | 'itemName' | 'lede' | 'ledeMeta'
+  'registryPath' | 'registryTitle' | 'itemName' | 'lede' | 'ledeMeta' | 'notice'
 >) => {
   const article = getArticleFor(itemName)
   return (
@@ -805,13 +808,18 @@ const PageHeader = ({
           {ledeMeta}
         </LedeMeta>
       )}
+      {notice && (
+        <Notice tone="contested" role="status">
+          {notice}
+        </Notice>
+      )}
     </Header>
   )
 }
 
 type HeaderProps = Pick<
   SubmitPageProps,
-  'registryPath' | 'registryTitle' | 'itemName' | 'lede' | 'ledeMeta'
+  'registryPath' | 'registryTitle' | 'itemName' | 'lede' | 'ledeMeta' | 'notice'
 >
 
 const LoadingWorkspace = (props: HeaderProps) => (

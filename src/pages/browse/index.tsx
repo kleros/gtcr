@@ -1545,10 +1545,9 @@ const BrowsePage = () => {
   // before filtering and sorting, so search and "Name A to Z" use the name
   // each row shows.
   const named = useNamedRegistries(dated)
-  // Kleros Verified by the shared rule (the chain's Kleros lists of lists,
-  // Light and Classic, and the lists registered on any of them), read apart
-  // from the dashboard load: a list whose chain has not answered is neither
-  // Verified nor Community yet.
+  // Kleros Verified by the shared rule (the chain's Kleros list of lists
+  // and the lists registered on it), read apart from the dashboard load: a
+  // list whose chain has not answered is neither Verified nor Community yet.
   const verifiedSets = useVerifiedSets(SUPPORTED_CHAIN_IDS)
   const trusted = useMemo(
     () => withVerified(named, verifiedSets.sets),
@@ -1631,7 +1630,7 @@ const BrowsePage = () => {
     () => verifiedShowcase(trusted, chains, SHOWCASE_SIZE),
     [trusted, chains],
   )
-  // A chain in scope whose lists of lists did not answer: its lists are in
+  // A chain in scope whose list of lists did not answer: its lists are in
   // neither count, so neither count is given.
   const trustFailed = verifiedSets.failed.filter((chainId) =>
     inScope(chains, chainId),

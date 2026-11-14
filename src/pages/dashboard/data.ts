@@ -190,27 +190,12 @@ const ENVIO_REQUEST_CARDS_QUERY = gql`
 `
 
 /*
- * The Registered entries of the chain's Kleros lists of lists, Light and
- * Classic (config/list-of-lists.ts): the lists they point to are Kleros
- * Verified (components/curate/verified-rule.ts). The first page comes with
- * the dashboard query; a full page reads on (ENVIO_VERIFIED_PAGE_QUERY).
+ * The Registered entries of the chain's Kleros list of lists
+ * (config/list-of-lists.ts): the lists they point to are Kleros Verified
+ * (components/curate/verified-rule.ts). The first page comes with the
+ * dashboard query; a full page reads on (ENVIO_VERIFIED_PAGE_QUERY).
  */
 const VERIFIED_ENTRIES = (offset: 0 | '$offset') => `
-    verifiedClassic: Item(
-      limit: ${VERIFIED_PAGE_SIZE}
-      offset: ${offset}
-      order_by: [{ id: asc }]
-      where: {
-        chainId: { _eq: $chainId }
-        registry_id: { _in: $listsOfLists }
-        status: { _eq: "Registered" }
-      }
-    ) {
-      id
-      data
-      registry_id
-      ${REGISTERED_SINCE}
-    }
     verifiedLight: LItem(
       limit: ${VERIFIED_PAGE_SIZE}
       offset: ${offset}
@@ -1225,13 +1210,10 @@ interface NormalizedChain {
 
 const normalizeEnvio = (payload: any, chainId: number): NormalizedChain => {
   // The shared Kleros Verified rule (components/curate/verified-rule.ts):
-  // the chain's Kleros lists of lists, Light and Classic, and the lists
-  // registered on any of them. A list holds the badge since its earliest
-  // registration on one; the lists of lists grant it, so have no date.
-  const verifiedEntries = [
-    ...(payload.verifiedClassic ?? []),
-    ...(payload.verifiedLight ?? []),
-  ]
+  // the chain's Kleros list of lists and the lists registered on it. A list
+  // holds the badge since its registration there; the list of lists grants
+  // it, so has no date.
+  const verifiedEntries = payload.verifiedLight ?? []
   const verifiedAddresses = verifiedSetFrom(chainId, verifiedEntries)
 
   const verifiedSince: Record<string, number> = {}
@@ -1961,7 +1943,7 @@ const readRemainingRegistries = async (
       variables: {},
     },
     {
-      keys: ['verifiedClassic', 'verifiedLight'],
+      keys: ['verifiedLight'],
       query: ENVIO_VERIFIED_PAGE_QUERY,
       size: VERIFIED_PAGE_SIZE,
       maxPages: REGISTRY_MAX_PAGES,
