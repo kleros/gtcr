@@ -5,45 +5,190 @@ import React, {
   useMemo,
   useCallback,
 } from 'react'
-import { Card, Typography, Button, Result } from 'components/ui'
-import Icon from 'components/ui/Icon'
-import useUrlChainId from 'hooks/use-url-chain-id'
+import styled from 'styled-components'
+import { Link } from 'react-router-dom'
 import { ethers, BigNumber } from 'ethers'
-import { useEthersProvider } from 'hooks/ethers-adapters'
 import { abi as _gtcr } from '@kleros/tcr/build/contracts/GeneralizedTCR.json'
 import { abi as _GTCRView } from '@kleros/tcr/build/contracts/GeneralizedTCRView.json'
+import { gtcrDecode, gtcrEncode } from '@kleros/gtcr-encoder'
+import useUrlChainId from 'hooks/use-url-chain-id'
+import { useEthersProvider } from 'hooks/ethers-adapters'
+import useGetLogs from 'hooks/get-logs'
+import useTcrMetaEvidence from 'hooks/use-tcr-meta-evidence'
 import { WalletContext } from 'contexts/wallet-context'
 import ItemStatusBadge from 'components/item-status-badge'
 import { ZERO_ADDRESS, ZERO_BYTES32 } from 'utils/string'
-import { gtcrDecode, gtcrEncode } from '@kleros/gtcr-encoder'
-import AddBadgeModal, { BadgeInfo } from '../modals/add-badge'
-import { CONTRACT_STATUS } from 'utils/item-status'
-import SubmitModal from '../modals/submit'
-import SubmitConnectModal from '../modals/submit-connect'
-import useTcrView from 'hooks/tcr-view'
-import takeLower from 'utils/lower-limit'
-import useGetLogs from 'hooks/get-logs'
+import { STATUS_CODE } from 'utils/item-status'
 import { gtcrViewAddresses } from 'config/tcr-addresses'
 import { parseIpfs } from 'utils/ipfs-parse'
+import { sanitizeMetaEvidence } from 'utils/meta-evidence-guard'
+import { CurateIcon } from 'components/curate/icons'
 import {
-  StyledDivider,
-  StyledGrid,
-  StyledCol,
-  StyledLogo,
-  StyledParagraph,
-  DashedCard,
-  DashedCardBody,
-} from 'pages/light-item-details/badges'
+  Button,
+  Chip,
+  SkeletonBlock,
+  Small,
+  Surface,
+} from 'components/curate/primitives'
+import { Notice } from 'components/curate/item-light-notice'
+import { reveal } from 'components/curate/motion/reveal'
+import AddBadgeModal, { type BadgeInfo } from '../modals/add-badge'
+import SubmitModal from '../modals/submit'
+import SubmitConnectModal from '../modals/submit-connect'
 
-type MetadataByTime = {
-  byTimestamp: Record<string, { metadata: { columns: Column[] } }>
-}
+/*
+ * Badges: the other lists this Classic entry is also on. The parent list's
+ * connected list holds one entry per badge list (its address and a match
+ * file of the columns compared); each badge list is searched on chain for
+ * this entry's matched values. Found badges are rows linking to the entry
+ * on the badge list with its status there; "Add a badge" submits the entry
+ * to a connected badge list, or connects a new one.
+ */
 
+const Head = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  margin-bottom: 16px;
+`
+
+const PanelName = styled.h2`
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  color: var(--color-text);
+  font-family: var(--font-display);
+  font-size: 22px;
+  line-height: 28px;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+`
+
+const Rows = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+`
+
+const BadgeRow = styled(Link)`
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: center;
+  min-height: 64px;
+  padding: 10px 14px 10px 10px;
+  border: 1px solid var(--glass-border);
+  border-radius: 14px;
+  background: var(--color-raised);
+  color: inherit;
+  text-decoration: none;
+  transition:
+    border-color var(--motion),
+    transform var(--motion);
+  ${reveal}
+
+  &:hover {
+    border-color: var(--color-border-strong);
+    transform: translateY(-1px);
+  }
+
+  &:hover > svg {
+    color: var(--color-text);
+    transform: translateX(2px);
+  }
+
+  > svg {
+    color: var(--color-faint);
+    transition:
+      color var(--motion),
+      transform var(--motion);
+  }
+
+  @media (max-width: 560px) {
+    grid-template-columns: 44px minmax(0, 1fr);
+
+    > svg {
+      display: none;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    &:hover,
+    &:hover > svg {
+      transform: none;
+    }
+  }
+`
+
+const Logo = styled.img`
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  background: var(--color-surface);
+  object-fit: contain;
+`
+
+const LogoFallback = styled.span`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  background: var(--color-surface);
+  color: var(--color-faint);
+`
+
+const Identity = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+
+  strong {
+    overflow: hidden;
+    color: var(--color-text);
+    font-size: 15px;
+    line-height: 20px;
+    font-weight: 500;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+`
+
+const StatusSlot = styled.div`
+  display: flex;
+  min-width: 0;
+`
+
+const Empty = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  color: var(--color-muted);
+  font-size: var(--fs-small);
+  line-height: var(--lh-small);
+
+  svg {
+    flex: 0 0 auto;
+    color: var(--color-faint);
+  }
+`
+
+/** A row of GeneralizedTCRView.queryItems / findItem (numeric status). */
 interface QueriedItem {
   ID: string
   data: string
-  timestamp: string
-  status?: string
+  status?: number
+  disputed?: boolean
+  disputeStatus?: number
+  submissionTime?: BigNumber
   [key: string]: unknown
 }
 
@@ -56,7 +201,7 @@ interface FetchItemsState {
 
 interface FoundBadge {
   tcrAddress: string
-  item: SubgraphItem & { ID: string }
+  item: QueriedItem
   metadata: {
     logoURI?: string
     tcrTitle?: string
@@ -65,6 +210,37 @@ interface FoundBadge {
     [key: string]: unknown
   }
   tcrData: { challengePeriodDuration?: BigNumber; [key: string]: unknown }
+}
+
+/** GeneralizedTCRView dispute status: 1 is "appealable". */
+const DISPUTE_APPEALABLE = 1
+
+/** The entry's status on the badge list, from the view contract's row. */
+const badgeStatusCode = (
+  found: QueriedItem,
+  challengePeriodDuration: BigNumber | undefined,
+  now: number,
+): number | undefined => {
+  const status = Number(found.status)
+  if (status === 1) return STATUS_CODE.REGISTERED
+  if (status !== 2 && status !== 3) return undefined
+  const isSubmission = status === 2
+  if (found.disputed)
+    return Number(found.disputeStatus) === DISPUTE_APPEALABLE
+      ? STATUS_CODE.CROWDFUNDING
+      : STATUS_CODE.CHALLENGED
+  const submitted = found.submissionTime
+    ? BigNumber.from(found.submissionTime).toNumber()
+    : 0
+  if (
+    challengePeriodDuration &&
+    submitted > 0 &&
+    now > submitted + challengePeriodDuration.toNumber()
+  )
+    return isSubmission
+      ? STATUS_CODE.PENDING_SUBMISSION
+      : STATUS_CODE.PENDING_REMOVAL
+  return isSubmission ? STATUS_CODE.SUBMITTED : STATUS_CODE.REMOVAL_REQUESTED
 }
 
 interface BadgesProps {
@@ -78,9 +254,14 @@ const Badges = ({ connectedTCRAddr, item, tcrAddress }: BadgesProps) => {
   const chainId = useUrlChainId()
   const networkId = chainId ?? undefined
   const library = useEthersProvider({ chainId: networkId })
-  const { metadataByTime } = useTcrView(tcrAddress ?? '') as {
-    metadataByTime?: MetadataByTime
-  }
+  // The connected list's columns (badge address, match file) decode its rows.
+  const connectedMetaQuery = useTcrMetaEvidence(
+    connectedTCRAddr && connectedTCRAddr !== ZERO_ADDRESS
+      ? connectedTCRAddr
+      : undefined,
+    networkId,
+  )
+  const connectedColumns = connectedMetaQuery.data?.metadata?.columns
 
   const [error, setError] = useState<string | false>(false)
   const [addBadgeVisible, setAddBadgeVisible] = useState(false)
@@ -88,7 +269,7 @@ const Badges = ({ connectedTCRAddr, item, tcrAddress }: BadgesProps) => {
   const [badgeToSubmit, setBadgeToSubmit] = useState<BadgeInfo>()
   const [foundBadges, setFoundBadges] = useState<FoundBadge[]>([])
   const [connectedBadges, setConnectedBadges] = useState<BadgeInfo[]>([])
-  const [isFetchingBadges, setIsFetchingBadges] = useState(false)
+  const [isFetchingBadges, setIsFetchingBadges] = useState(true)
   const [submitConnectVisible, setSubmitConnectVisible] = useState(false)
   const ARBITRABLE_TCR_VIEW_ADDRESS =
     networkId !== undefined ? gtcrViewAddresses[networkId] : undefined
@@ -99,7 +280,7 @@ const Badges = ({ connectedTCRAddr, item, tcrAddress }: BadgesProps) => {
   })
   const getLogs = useGetLogs(library ?? null)
 
-  // Wire up the TCR.
+  // Wire up the view contract and the connected list.
   const gtcrView = useMemo(() => {
     if (!library || !ARBITRABLE_TCR_VIEW_ADDRESS || !networkId) return
     try {
@@ -124,7 +305,16 @@ const Badges = ({ connectedTCRAddr, item, tcrAddress }: BadgesProps) => {
     }
   }, [connectedTCRAddr, library, networkId])
 
-  // Fetch enabled badges.
+  // The connected list's meta evidence could not be read: nothing to decode.
+  useEffect(() => {
+    if (!connectedMetaQuery.isFetched) return
+    if (connectedMetaQuery.error || !connectedColumns) {
+      setError('The connected badge list could not be read.')
+      setIsFetchingBadges(false)
+    }
+  }, [connectedColumns, connectedMetaQuery.error, connectedMetaQuery.isFetched])
+
+  // Fetch the enabled badges: registered rows of the connected list.
   useEffect(() => {
     if (
       !gtcr ||
@@ -149,11 +339,10 @@ const Badges = ({ connectedTCRAddr, item, tcrAddress }: BadgesProps) => {
     //  - Include items challenged by _party.
     const filter = [false, true, false, true, false, false, false, false]
     const oldestFirst = false
-    let encodedItems
     const itemsPerRequest = 100
-    ;(async () => {
+    void (async () => {
       try {
-        encodedItems = await gtcrView.queryItems(
+        const result = await gtcrView.queryItems(
           connectedTCRAddr,
           0,
           itemsPerRequest,
@@ -162,70 +351,62 @@ const Badges = ({ connectedTCRAddr, item, tcrAddress }: BadgesProps) => {
           ZERO_ADDRESS,
           itemsPerRequest,
         )
-
         // Filter out empty slots from the results.
-        encodedItems = encodedItems[0].filter(
-          (item: QueriedItem) => item.ID !== ZERO_BYTES32,
+        const encodedItems = (result[0] as QueriedItem[]).filter(
+          (row) => row.ID !== ZERO_BYTES32,
         )
-      } catch (err) {
-        console.error('Error fetching items', err)
-        setError('Error fetching items')
-        setFetchItems({ isFetching: false, fetchStarted: false })
-      } finally {
         setFetchItems({
           isFetching: false,
           fetchStarted: false,
           data: encodedItems,
           connectedTCRAddr,
         })
+      } catch (err) {
+        console.error('Error fetching items', err)
+        setError('The badge lists could not be fetched.')
+        setIsFetchingBadges(false)
+        setFetchItems({ isFetching: false, fetchStarted: false })
       }
     })()
   }, [gtcrView, connectedTCRAddr, fetchItems, gtcr])
 
-  // Decode items once meta data and items were fetched.
+  // Decode the rows once both the rows and the columns are in.
   const enabledBadges = useMemo(() => {
-    if (!fetchItems.data || !metadataByTime) return
+    if (!fetchItems.data || !connectedColumns) return
 
-    const { data: encodedItems } = fetchItems
-
-    return encodedItems.map((item, i) => {
+    return fetchItems.data.map((row) => {
       let decodedItem: unknown[] | undefined
-      const { columns } =
-        metadataByTime.byTimestamp[
-          takeLower(Object.keys(metadataByTime.byTimestamp), item.timestamp)
-        ].metadata
       const errors: string[] = []
       try {
-        decodedItem = gtcrDecode({ values: item.data, columns })
+        decodedItem = gtcrDecode({
+          values: row.data,
+          columns: connectedColumns,
+        })
       } catch {
-        errors.push(`Error decoding item ${item.ID} of TCR at ${tcrAddress}`)
+        errors.push(`Error decoding item ${row.ID} of TCR at ${tcrAddress}`)
       }
 
-      // Return the item columns along with its TCR status data.
+      // The row's columns along with its TCR status data.
       return {
-        tcrData: {
-          ...item, // Spread to convert from array to object.
-        },
-        columns: columns.map(
-          (col, i) => ({
-            value: decodedItem && decodedItem[i],
-            ...col,
-          }),
-          { key: i },
-        ),
+        tcrData: { ...row }, // Spread to convert from array to object.
+        columns: connectedColumns.map((col, i) => ({
+          value: decodedItem && decodedItem[i],
+          ...col,
+        })),
         errors,
       }
     })
-  }, [fetchItems, metadataByTime, tcrAddress])
+  }, [fetchItems, connectedColumns, tcrAddress])
 
-  // With the badge tcr addresses and the match file,
-  // search for the current item.
+  // With the badge list addresses and the match files, search each badge
+  // list for this entry.
   useEffect(() => {
     if (!enabledBadges || !gtcrView || !item) return
     if (!getLogs) return
-    ;(async () => {
-      const foundBadges: FoundBadge[] = []
-      const connectedBadges: BadgeInfo[] = []
+    let cancelled = false
+    void (async () => {
+      const found: FoundBadge[] = []
+      const connected: BadgeInfo[] = []
       try {
         await Promise.all(
           enabledBadges.map(async ({ columns }) => {
@@ -253,25 +434,30 @@ const Badges = ({ connectedTCRAddr, item, tcrAddress }: BadgesProps) => {
                 gtcrView.fetchArbitrable(badgeAddr),
               ])
             const itemCount = (await badgeContract.itemCount()).toNumber()
-            const badgeMetaEvidence = await badgeMetaEvidenceResponse.json()
+            // Another list's file, shown on this entry: well-typed fields only.
+            const badgeMetaEvidence: any =
+              sanitizeMetaEvidence(await badgeMetaEvidenceResponse.json()) ?? {}
             const matchFile = await matchFileResponse.json()
             const { columns: matchColumns } = matchFile
             const { metadata: badgeMetadata, fileURI } = badgeMetaEvidence
 
-            // Submission deposit = submitter base deposit + arbitration cost
+            // Submission deposit = submitter base deposit + arbitration fee
             const { submissionBaseDeposit, arbitrationCost } = badgeTcrData
             const submissionDeposit = submissionBaseDeposit.add(arbitrationCost)
 
             const { decodedData } = item
 
-            connectedBadges.push({
+            connected.push({
               metadata: badgeMetadata,
               submissionDeposit,
+              baseDeposit: submissionBaseDeposit,
+              arbitrationCost,
               metaEvidence: badgeMetaEvidence,
               tcrAddress: badgeAddr,
               fileURI,
               matchFile,
               decodedData,
+              challengePeriodDuration: badgeTcrData.challengePeriodDuration,
             })
 
             // Search for the item on the badge TCR.
@@ -293,8 +479,10 @@ const Badges = ({ connectedTCRAddr, item, tcrAddress }: BadgesProps) => {
 
             const itemsPerRequest = 100
             for (let i = 0; i < Math.ceil(itemCount / itemsPerRequest); i++) {
-              const cursor =
-                i > 0 && i < itemCount - 1 ? i * itemsPerRequest + 1 : 0
+              // GeneralizedTCRView.findItem scans from _cursor up to, not
+              // including, _count: an end index, not a page size.
+              const cursor = i * itemsPerRequest
+              const end = Math.min(cursor + itemsPerRequest, itemCount)
               const ignoreColumns = matchColumns.map(
                 (col: unknown) => typeof col !== 'number',
               )
@@ -303,13 +491,13 @@ const Badges = ({ connectedTCRAddr, item, tcrAddress }: BadgesProps) => {
                   badgeAddr,
                   encodedMatch,
                   cursor,
-                  itemsPerRequest > itemCount ? 0 : itemsPerRequest,
+                  itemsPerRequest > itemCount ? 0 : end,
                   [true, false, false, false], // Whether to skip items in the [absent, registered, submitted, removalRequested] states.
                   ignoreColumns,
                 )
               ).filter((res: QueriedItem) => res.ID !== ZERO_BYTES32)
               if (result.length > 0) {
-                foundBadges.push({
+                found.push({
                   tcrAddress: badgeAddr,
                   item: { ...result[0] }, // Convert array to object.
                   metadata: badgeMetadata,
@@ -322,89 +510,126 @@ const Badges = ({ connectedTCRAddr, item, tcrAddress }: BadgesProps) => {
         )
       } catch (err) {
         console.error(err)
-        setError((err as Error).message)
+        if (!cancelled)
+          setError(
+            err instanceof Error
+              ? err.message
+              : 'The badge lists could not be searched.',
+          )
       } finally {
-        setIsFetchingBadges(false)
-        setFoundBadges(foundBadges || [])
-        setConnectedBadges(connectedBadges || [])
+        if (!cancelled) {
+          setIsFetchingBadges(false)
+          setFoundBadges(found)
+          setConnectedBadges(connected)
+        }
       }
     })()
-  }, [enabledBadges, gtcr, gtcrView, item, library, getLogs])
+    return () => {
+      cancelled = true
+    }
+  }, [enabledBadges, gtcrView, item, library, getLogs])
 
-  // The available badges are the connected badges for which
-  // there are no pending requests for this item.
-  const availableBadges = useMemo(() => {
-    if (!enabledBadges || !connectedBadges) return []
-    return connectedBadges.filter((connectedBadge) =>
-      enabledBadges.filter(
-        (enabledBadge) =>
-          enabledBadge.columns[0].value !== connectedBadge ||
-          enabledBadge.tcrData.status === CONTRACT_STATUS.ABSENT,
-      ),
-    )
-  }, [connectedBadges, enabledBadges])
+  // Every connected badge list can be offered; the badge modal leaves out
+  // the lists this entry is already on.
+  const availableBadges = useMemo(
+    () => (enabledBadges ? connectedBadges : []),
+    [connectedBadges, enabledBadges],
+  )
 
   const onSelectBadge = useCallback((selectedBadge: BadgeInfo) => {
     setSubmissionFormOpen(true)
     setBadgeToSubmit(selectedBadge)
   }, [])
 
-  if (error) return <Result status="warning" title={error} />
+  const now = timestamp ? timestamp.toNumber() : Math.floor(Date.now() / 1000)
 
   return (
-    <>
-      <StyledDivider orientation="left">
-        <span>
-          {isFetchingBadges && (
-            <Icon type="loading" style={{ marginRight: '12px' }} />
-          )}
+    <Surface
+      id="badges"
+      $padding="standard"
+      role="region"
+      aria-label="Badges"
+      aria-busy={isFetchingBadges || undefined}
+    >
+      <Head>
+        <PanelName>
           Badges
-        </span>
-      </StyledDivider>
-      <StyledGrid id="badges">
-        {foundBadges.map(
-          (
-            {
-              tcrAddress,
-              item,
-              metadata: { logoURI, tcrTitle, tcrDescription },
-              tcrData: { challengePeriodDuration },
-            },
-            i,
-          ) => (
-            <Card
-              key={i}
-              title={
-                <ItemStatusBadge
-                  item={item}
-                  challengePeriodDuration={challengePeriodDuration}
-                  timestamp={timestamp}
-                  dark
-                />
-              }
-            >
-              <a href={`/tcr/${tcrAddress}/${item.ID}`}>
-                <StyledCol>
-                  <StyledLogo src={parseIpfs(logoURI ?? '')} />
-                  <Typography.Title level={4}>{tcrTitle}</Typography.Title>
-                  <StyledParagraph>{tcrDescription}</StyledParagraph>
-                </StyledCol>
-              </a>
-            </Card>
-          ),
-        )}
-        <DashedCard>
-          <DashedCardBody>
-            <Button
-              type="secondary"
-              size="large"
-              onClick={() => setAddBadgeVisible(true)}
-            >
-              Add Badge
-            </Button>
-          </DashedCardBody>
-        </DashedCard>
-      </StyledGrid>
+          {foundBadges.length > 0 && <Chip>{foundBadges.length}</Chip>}
+        </PanelName>
+        <Button
+          type="button"
+          $variant="ghost"
+          $size="sm"
+          onClick={() => setAddBadgeVisible(true)}
+        >
+          <CurateIcon name="verified" size={14} />
+          Add a badge
+        </Button>
+      </Head>
+
+      {error ? (
+        <Notice tone="contested" role="alert">
+          {error}
+        </Notice>
+      ) : isFetchingBadges && foundBadges.length === 0 ? (
+        <Rows aria-hidden>
+          <SkeletonBlock $height="64px" style={{ borderRadius: 14 }} />
+        </Rows>
+      ) : foundBadges.length > 0 ? (
+        <Rows>
+          {foundBadges.map(
+            (
+              {
+                tcrAddress: badgeAddress,
+                item: badgeItem,
+                metadata: { logoURI, tcrTitle, tcrDescription },
+                tcrData: { challengePeriodDuration },
+              },
+              i,
+            ) => (
+              <BadgeRow
+                key={badgeAddress}
+                to={`/tcr/${chainId}/${badgeAddress}/${badgeItem.ID}`}
+                style={{ ['--i' as string]: i }}
+              >
+                {logoURI ? (
+                  <Logo src={parseIpfs(logoURI)} alt="" />
+                ) : (
+                  <LogoFallback aria-hidden>
+                    <CurateIcon name="registry" size={20} />
+                  </LogoFallback>
+                )}
+                <Identity>
+                  <strong title={tcrTitle}>{tcrTitle || 'Badge list'}</strong>
+                  <StatusSlot>
+                    <ItemStatusBadge
+                      statusCode={badgeStatusCode(
+                        badgeItem,
+                        challengePeriodDuration,
+                        now,
+                      )}
+                    />
+                  </StatusSlot>
+                  {tcrDescription && (
+                    <Small $muted title={tcrDescription}>
+                      {tcrDescription.length > 120
+                        ? `${tcrDescription.slice(0, 119)}…`
+                        : tcrDescription}
+                    </Small>
+                  )}
+                </Identity>
+                <CurateIcon name="external" size={16} />
+              </BadgeRow>
+            ),
+          )}
+        </Rows>
+      ) : (
+        <Empty>
+          <CurateIcon name="verified" size={18} />
+          Not on any badge list of this registry yet.
+        </Empty>
+      )}
+
       <AddBadgeModal
         visible={addBadgeVisible}
         onCancel={() => setAddBadgeVisible(false)}
@@ -414,21 +639,21 @@ const Badges = ({ connectedTCRAddr, item, tcrAddress }: BadgesProps) => {
         foundBadges={foundBadges}
         onSelectBadge={onSelectBadge}
         onEnableNewBadge={() => setSubmitConnectVisible(true)}
-        isFetchingBadges={isFetchingBadges}
+        isFetchingBadges={isFetchingBadges && !error}
       />
       {badgeToSubmit && (
         <SubmitModal
           visible={submissionFormOpen}
           onCancel={() => setSubmissionFormOpen(false)}
           submissionDeposit={badgeToSubmit.submissionDeposit}
+          baseDeposit={badgeToSubmit.baseDeposit}
+          arbitrationCost={badgeToSubmit.arbitrationCost}
           challengePeriodDuration={badgeToSubmit.challengePeriodDuration}
           tcrAddress={badgeToSubmit.tcrAddress}
           metaEvidence={badgeToSubmit.metaEvidence}
-          initialValues={
-            badgeToSubmit.matchFile?.columns.map((col) =>
-              col !== null ? badgeToSubmit.decodedData?.[col] : null,
-            ) as string[] | undefined
-          }
+          initialValues={badgeToSubmit.matchFile?.columns.map((col) =>
+            col !== null ? badgeToSubmit.decodedData?.[col] : null,
+          )}
           disabledFields={badgeToSubmit.matchFile?.columns.map(
             (col) => col !== null,
           )}
@@ -441,7 +666,7 @@ const Badges = ({ connectedTCRAddr, item, tcrAddress }: BadgesProps) => {
         tcrAddress={connectedTCRAddr}
         gtcrView={gtcrView}
       />
-    </>
+    </Surface>
   )
 }
 

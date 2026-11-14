@@ -1,8 +1,35 @@
-import { defineConfig, loadEnv } from 'vite'
+import { dirname, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
+import { defineConfig, loadEnv, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
 import svgr from 'vite-plugin-svgr'
 import { nodePolyfills } from 'vite-plugin-node-polyfills'
 import tsconfigPaths from 'vite-tsconfig-paths'
+
+const root = dirname(fileURLToPath(import.meta.url))
+
+// The standalone landing page is landing/index.html (assets in public/landing/).
+// Static hosts serve /landing/ as its index; the dev server needs the hint.
+const landingRewrite = (
+  req: { url?: string },
+  _res: unknown,
+  next: () => void,
+) => {
+  const [path, query] = (req.url ?? '').split('?')
+  if (path === '/landing' || path === '/landing/')
+    req.url = `/landing/index.html${query ? `?${query}` : ''}`
+  next()
+}
+
+const landingIndex = (): Plugin => ({
+  name: 'landing-index',
+  configureServer(server) {
+    server.middlewares.use(landingRewrite)
+  },
+  configurePreviewServer(server) {
+    server.middlewares.use(landingRewrite)
+  },
+})
 
 export default defineConfig(({ mode }) => {
   // Load .env files and map REACT_APP_* vars to process.env.* for legacy compat
@@ -13,6 +40,7 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins: [
+      landingIndex(),
       react(),
       svgr({ include: '**/*.svg' }),
       tsconfigPaths(),
@@ -25,10 +53,23 @@ export default defineConfig(({ mode }) => {
     define: {
       ...define,
       'process.env.NODE_ENV': JSON.stringify(mode),
+      // Names the build, so data a page saved in the browser is only read
+      // back by the build that wrote it (pages/dashboard/saved-load.ts).
+      // COMMIT_REF is Netlify's; elsewhere each build or dev start is new.
+      'import.meta.env.VITE_BUILD_ID': JSON.stringify(
+        process.env.COMMIT_REF || String(Date.now()),
+      ),
     },
     build: {
       outDir: 'build',
       sourcemap: true,
+      rollupOptions: {
+        // The app, and the standalone landing page served at /landing/.
+        input: {
+          main: resolve(root, 'index.html'),
+          landing: resolve(root, 'landing/index.html'),
+        },
+      },
     },
     server: {
       port: 3000,

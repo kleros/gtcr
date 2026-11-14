@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { fetchMetaEvidence } from './tcr-view'
 import { parseIpfs } from 'utils/ipfs-parse'
+import { sanitizeMetaEvidence } from 'utils/meta-evidence-guard'
 
 const ONE_DAY = 24 * 60 * 60 * 1000
 
@@ -18,8 +19,8 @@ const useTcrMetaEvidence = (
       const result = await fetchMetaEvidence(tcrAddress!, networkId!)
       if (!result) return null
       const response = await fetch(parseIpfs(result.metaEvidenceURI))
-      const file = await response.json()
-      return file as MetaEvidence
+      // Another list's file, shown on this page: only well-typed fields.
+      return sanitizeMetaEvidence(await response.json())
     },
     enabled: !!tcrAddress && !!networkId,
     staleTime: ONE_DAY,

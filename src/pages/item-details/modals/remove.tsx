@@ -1,61 +1,88 @@
 import React, { useContext, useCallback, useState } from 'react'
-import { Descriptions, Typography, Divider, Button } from 'components/ui'
-import humanizeDuration from 'humanize-duration'
-import { useAccount, usePublicClient, useWalletClient, useChainId } from 'wagmi'
+import { useAccount, usePublicClient, useWalletClient } from 'wagmi'
 import { simulateContract } from '@wagmi/core'
-import { getAddress, type Address } from 'viem'
+import { type Address } from 'viem'
+import { useAtlasProvider } from '@kleros/kleros-app'
 import { abi as _gtcr } from '@kleros/tcr/build/contracts/GeneralizedTCR.json'
 import { TCRViewContext } from 'contexts/tcr-view-context'
-import EnsureAuth from 'components/ensure-auth'
-import ETHAmount from 'components/eth-amount'
-import EvidenceForm, { EvidenceFormValues } from 'components/evidence-form'
-import useNativeCurrency from 'hooks/native-currency'
-import useNativeBalance from 'hooks/use-native-balance'
-import { useAtlasProvider } from '@kleros/kleros-app'
+import EvidenceForm, { type EvidenceFormValues } from 'components/evidence-form'
 import { uploadEvidence } from 'utils/upload-evidence'
-import ListingCriteriaLink from 'components/listing-criteria-link'
+import useNativeCurrency from 'hooks/native-currency'
+import { formatDuration, formatDurationLong } from 'utils/time'
 import { wrapWithToast, errorToast } from 'utils/wrap-with-toast'
 import { parseWagmiError } from 'utils/parse-wagmi-error'
 import { wagmiConfig } from 'config/wagmi'
-import { StyledAlert } from 'pages/light-item-details/modals/remove'
+import { CurateIcon } from 'components/curate/icons'
+import { Body, Row, SkeletonBlock, Stack } from 'components/curate/primitives'
 import {
-  StyledSpin,
-  StyledModal,
-  InsufficientBalanceText,
-} from 'pages/light-item-details/modals/challenge'
+  WhatHappensNext,
+  type OutcomeStep,
+  type ReceiptLine,
+} from 'components/curate/what-happens-next'
+import { Dialog, DialogColumns } from 'components/curate/item-light-dialog'
+import { useActionGate } from 'components/curate/item-light-gate'
+import { formatAmount } from 'components/curate/item-light-format'
+import { PolicyButton } from 'pages/light-item-details/policy-button'
+
+/*
+ * Request the removal of a registered entry from a Classic list. The list
+ * decides whether a justification is required (requireRemovalEvidence).
+ * Before the deposit: the receipt, the outcomes and the challenge period.
+ */
+
+const EVIDENCE_FORM_ID = 'removeEvidenceForm'
 
 interface RemoveModalProps {
   item: SubgraphItem
   itemName?: string
   fileURI?: string
   onCancel: () => void
+  visible?: boolean
+  title?: React.ReactNode
   [key: string]: unknown
 }
 
 const RemoveModal = ({
   item,
-  _itemName = 'item',
+  itemName,
   fileURI,
-  ...rest
+  onCancel,
+  visible,
 }: RemoveModalProps) => {
   const { address: account } = useAccount()
-  const chainId = useChainId()
   const publicClient = usePublicClient()
   const { data: walletClient } = useWalletClient()
-  const { removalDeposit, tcrAddress, metaEvidence, challengePeriodDuration } =
-    useContext(TCRViewContext) ?? {}
+  const {
+    removalDeposit,
+    removalBaseDeposit,
+    arbitrationCost,
+    tcrAddress,
+    metaEvidence,
+    challengePeriodDuration,
+  } = useContext(TCRViewContext) ?? {}
   const nativeCurrency = useNativeCurrency()
-  const { balance: nativeBalance } = useNativeBalance()
   const { uploadFile } = useAtlasProvider()
-  const insufficientBalance =
-    nativeBalance !== undefined &&
-    removalDeposit &&
-    nativeBalance < BigInt(removalDeposit.toString())
 
   const { metadata } = metaEvidence || {}
   const { requireRemovalEvidence } = metadata || {}
+  // Whether the list requires a justification is only known once its
+  // metadata is in. Until then (or if it never loads) nothing is sent, so a
+  // removal can never go out without the justification the list asks for.
+  const metadataKnown = !!metadata
+  const needsEvidence = metadataKnown && !!requireRemovalEvidence
+  const name = itemName || 'entry'
 
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const gate = useActionGate({
+    verb: 'request the removal',
+    amount: removalDeposit,
+    needsAuth: needsEvidence,
+    pending: !metadataKnown
+      ? 'Loading the list…'
+      : removalDeposit
+        ? undefined
+        : 'Loading the deposit',
+  })
 
   const removeItem = useCallback(
     async ({
@@ -64,6 +91,7 @@ const RemoveModal = ({
       evidenceAttachment,
     }: EvidenceFormValues = {}) => {
       if (
+        !metadata ||
         !tcrAddress ||
         !account ||
         !walletClient ||
@@ -96,26 +124,7 @@ const RemoveModal = ({
           publicClient,
         )
 
-        if (result.status) {
-          rest.onCancel()
-
-          if (process.env.REACT_APP_NOTIFICATIONS_API_URL && !!chainId)
-            fetch(
-              `${process.env.REACT_APP_NOTIFICATIONS_API_URL}/${chainId}/api/subscribe`,
-              {
-                method: 'post',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  subscriberAddr: getAddress(account),
-                  tcrAddr: getAddress(tcrAddress),
-                  itemID: item.itemID,
-                  networkID: chainId,
-                }),
-              },
-            ).catch((err) => {
-              console.error('Failed to subscribe for notifications.', err)
-            })
-        }
+        if (result.status) onCancel()
       } catch (err) {
         console.error('Error removing item:', err)
         errorToast(parseWagmiError(err))
@@ -124,100 +133,124 @@ const RemoveModal = ({
     },
     [
       account,
-      chainId,
       item.itemID,
       metadata,
+      onCancel,
       publicClient,
       removalDeposit,
       requireRemovalEvidence,
-      rest,
       tcrAddress,
       uploadFile,
       walletClient,
     ],
   )
 
-  if (!removalDeposit)
-    return (
-      <StyledModal title="Remove Item" {...rest}>
-        <StyledSpin />
-      </StyledModal>
-    )
+  const confirm = () => {
+    if (!metadataKnown) return
+    if (needsEvidence) {
+      const form = document.querySelector<HTMLFormElement>(
+        `#${EVIDENCE_FORM_ID}`,
+      )
+      form?.requestSubmit()
+    } else removeItem()
+  }
 
-  const EVIDENCE_FORM_ID = 'removeEvidenceForm'
+  const total = formatAmount(removalDeposit, nativeCurrency)
+  const periodSeconds = challengePeriodDuration?.toNumber()
+  const windowSpan = periodSeconds ? (
+    <span title={formatDurationLong(periodSeconds)}>
+      {formatDuration(periodSeconds)}
+    </span>
+  ) : undefined
+  const receipt: ReceiptLine[] =
+    removalBaseDeposit && arbitrationCost
+      ? [
+          {
+            label: 'Removal deposit',
+            value: formatAmount(removalBaseDeposit, nativeCurrency),
+          },
+          {
+            label: 'Arbitration cost',
+            value: formatAmount(arbitrationCost, nativeCurrency),
+          },
+        ]
+      : [{ label: 'Removal deposit (base + arbitration cost)', value: total }]
+  const steps: OutcomeStep[] = [
+    {
+      title: 'Challenge period opens',
+      body: windowSpan ? (
+        <>
+          {windowSpan}, while the {name} stays listed
+        </>
+      ) : (
+        `While the ${name} stays listed`
+      ),
+    },
+    {
+      title: 'No challenge',
+      body: `The ${name} is removed and your deposit comes back`,
+    },
+    {
+      title: 'If someone challenges',
+      branch: true,
+      body: "Jurors decide. If they side with you, you get your deposit back plus the challenger's, less the arbitration cost; if not, it goes to the challenger",
+    },
+  ]
 
   return (
-    <StyledModal
-      footer={[
-        <Button key="back" onClick={rest.onCancel}>
-          Back
-        </Button>,
-        <EnsureAuth key="ensure-auth">
-          <div>
-            <Button
-              key="challengeSubmit"
-              type="primary"
-              form={EVIDENCE_FORM_ID}
-              htmlType="submit"
-              disabled={!!insufficientBalance}
-              onClick={
-                metadata && !requireRemovalEvidence
-                  ? () => removeItem()
-                  : undefined
-              }
-              loading={isSubmitting}
-            >
-              Send
-            </Button>
-            {insufficientBalance && (
-              <InsufficientBalanceText>
-                Insufficient balance
-              </InsufficientBalanceText>
-            )}
-          </div>
-        </EnsureAuth>,
-      ]}
-      {...rest}
+    <Dialog
+      open={!!visible}
+      onClose={onCancel}
+      eyebrow={name}
+      title="Request the removal"
+      width="lg"
     >
-      <Typography.Title level={4}>
-        Read the&nbsp;
-        <ListingCriteriaLink fileURI={fileURI}>
-          Listing Criteria
-        </ListingCriteriaLink>
-        .
-      </Typography.Title>
-      {metadata && requireRemovalEvidence && (
-        <Typography.Paragraph>
-          Explain to jurors why do you think this item should be removed.
-        </Typography.Paragraph>
+      {removalDeposit ? (
+        <DialogColumns>
+          <Stack $gap={16}>
+            {/* The justification form asks for itself; without one, a
+                single line says what the request does. */}
+            {!metadataKnown ? (
+              <Body $muted role="status">
+                Loading the list…
+              </Body>
+            ) : (
+              !needsEvidence && (
+                <Body>Ask for this {name} to be taken off the list.</Body>
+              )
+            )}
+            <div>
+              <PolicyButton fileURI={fileURI}>
+                <CurateIcon name="policy" size={14} />
+                Read the listing policy
+              </PolicyButton>
+            </div>
+            {needsEvidence && (
+              <EvidenceForm onSubmit={removeItem} formID={EVIDENCE_FORM_ID} />
+            )}
+          </Stack>
+          <Stack $gap={12}>
+            <WhatHappensNext
+              receipt={receipt}
+              total={total}
+              steps={steps}
+              confirmLabel={`Remove ${name}`}
+              onConfirm={confirm}
+              confirmDisabled={!gate.ready || isSubmitting}
+              confirmBlocker={gate.blocker}
+              loading={isSubmitting}
+            />
+            {gate.controls && (
+              <Row $justify="flex-end" $wrap>
+                {gate.controls}
+              </Row>
+            )}
+          </Stack>
+        </DialogColumns>
+      ) : (
+        <SkeletonBlock $height="220px" />
       )}
-      {metadata && requireRemovalEvidence && (
-        <EvidenceForm onSubmit={removeItem} formID={EVIDENCE_FORM_ID} />
-      )}
-      <StyledAlert
-        message={`Note that this is a deposit, not a fee and it will be reimbursed if the removal is accepted. ${
-          challengePeriodDuration &&
-          `The challenge period lasts ${humanizeDuration(
-            challengePeriodDuration.toNumber() * 1000,
-          )}`
-        }.`}
-        type="info"
-        showIcon
-      />
-      <Divider />
-      <Descriptions
-        bordered
-        column={{ xxl: 4, xl: 3, lg: 3, md: 3, sm: 2, xs: 1 }}
-      >
-        <Descriptions.Item label="Total Deposit Required">
-          <ETHAmount
-            decimals={3}
-            amount={removalDeposit.toString()}
-            displayUnit={` ${nativeCurrency}`}
-          />
-        </Descriptions.Item>
-      </Descriptions>
-    </StyledModal>
+    </Dialog>
   )
 }
 

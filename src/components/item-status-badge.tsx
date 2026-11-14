@@ -1,78 +1,87 @@
-import React from 'react'
+import React, { useMemo } from 'react'
+import type { BigNumber } from 'ethers'
+import { STATUS_CODE } from 'utils/item-status'
+import useNow from 'hooks/use-now'
+import { SkeletonBlock } from 'components/curate/primitives'
 import {
-  STATUS_COLOR,
-  STATUS_TEXT,
-  STATUS_CODE,
-  itemToStatusCode,
-} from '../utils/item-status'
-import { Badge, Skeleton } from 'components/ui'
-import Icon from 'components/ui/Icon'
-import styled from 'styled-components'
-import { BigNumber } from 'ethers'
+  EntryStatus,
+  lightEntryStatus,
+  type EntryStatusView,
+} from 'components/curate/entry-status'
 
-const SkeletonTitleProps = { width: '90px' }
-const StyledSkeleton = styled(Skeleton)`
-  display: inline;
+/*
+ * Entry status as a dot and a plain label with the time left (DESIGN.md).
+ * Given an item, it derives the status and its deadline from the request
+ * data; given only a status code, it shows the label without a countdown.
+ */
 
-  .ui-skeleton-title {
-    margin: -3px 0;
-  }
-`
-
-const ItemStatusBadgeWrap = styled.div`
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-`
-
-const ItemStatusIconWrap = styled.div`
-  margin-left: 6px;
-  font-size: 13px;
-  display: inline-flex;
-  align-items: center;
-`
-
-const iconTypes = {
-  [STATUS_CODE.REGISTERED]: 'check-circle',
-  [STATUS_CODE.CHALLENGED]: 'fire',
-  [STATUS_CODE.CROWDFUNDING]: 'dollar',
-  [STATUS_CODE.CROWDFUNDING_WINNER]: 'dollar',
-  [STATUS_CODE.PENDING_REMOVAL]: 'hourglass',
-  [STATUS_CODE.PENDING_SUBMISSION]: 'hourglass',
-  [STATUS_CODE.REJECTED]: 'close',
-  [STATUS_CODE.REMOVED]: 'close',
-  [STATUS_CODE.SUBMITTED]: 'hourglass',
-  [STATUS_CODE.WAITING_ARBITRATOR]: 'hourglass',
-  [STATUS_CODE.WAITING_ENFORCEMENT]: 'hourglass',
-  [STATUS_CODE.REMOVAL_REQUESTED]: 'hourglass',
-}
-
-const ItemStatusIcon = ({ statusCode }: { statusCode: number }) => (
-  <ItemStatusIconWrap>
-    <Icon type={iconTypes[statusCode]} />
-  </ItemStatusIconWrap>
-)
-
-// For clarity, here "badge" refers to the status badge UI component,
-// and not badges related to connection between TCRs.
-const badgeStatus = (statusCode: number) => {
+const viewFromCode = (statusCode: number): EntryStatusView | undefined => {
   switch (statusCode) {
-    case STATUS_CODE.REMOVAL_REQUESTED:
-    case STATUS_CODE.SUBMITTED:
-    case STATUS_CODE.WAITING_ARBITRATOR:
-    case STATUS_CODE.CROWDFUNDING:
-    case STATUS_CODE.CROWDFUNDING_WINNER:
-    case STATUS_CODE.PENDING_SUBMISSION:
-    case STATUS_CODE.PENDING_REMOVAL:
-    case STATUS_CODE.CHALLENGED:
-    case STATUS_CODE.WAITING_ENFORCEMENT:
-      return 'processing'
-    case STATUS_CODE.REJECTED:
-    case STATUS_CODE.REMOVED:
     case STATUS_CODE.REGISTERED:
-      return 'default'
+      return { code: statusCode, tone: 'registered', label: 'Registered' }
+    case STATUS_CODE.SUBMITTED:
+      return {
+        code: statusCode,
+        tone: 'window',
+        label: 'Submitted',
+        detail: 'challenge window open',
+      }
+    case STATUS_CODE.REMOVAL_REQUESTED:
+      return {
+        code: statusCode,
+        tone: 'window',
+        label: 'Removal requested',
+        detail: 'challenge window open',
+      }
+    case STATUS_CODE.PENDING_SUBMISSION:
+      return {
+        code: statusCode,
+        tone: 'neutral',
+        label: 'Ready to execute',
+        detail: 'unchallenged submission',
+      }
+    case STATUS_CODE.PENDING_REMOVAL:
+      return {
+        code: statusCode,
+        tone: 'neutral',
+        label: 'Ready to execute',
+        detail: 'unchallenged removal',
+      }
+    case STATUS_CODE.CHALLENGED:
+      return {
+        code: statusCode,
+        tone: 'contested',
+        label: 'Challenged',
+        detail: 'jurors deciding',
+      }
+    case STATUS_CODE.CROWDFUNDING:
+      return { code: statusCode, tone: 'contested', label: 'Appeal open' }
+    case STATUS_CODE.CROWDFUNDING_WINNER:
+      return {
+        code: statusCode,
+        tone: 'contested',
+        label: 'Appeal · winner funding',
+      }
+    case STATUS_CODE.WAITING_ARBITRATOR:
+      return {
+        code: statusCode,
+        tone: 'contested',
+        label: 'Awaiting ruling',
+        detail: 'appeal period over',
+      }
+    case STATUS_CODE.WAITING_ENFORCEMENT:
+      return {
+        code: statusCode,
+        tone: 'contested',
+        label: 'Ruling final',
+        detail: 'awaiting enforcement',
+      }
+    case STATUS_CODE.REJECTED:
+      return { code: statusCode, tone: 'off', label: 'Rejected' }
+    case STATUS_CODE.REMOVED:
+      return { code: statusCode, tone: 'off', label: 'Removed' }
     default:
-      throw new Error(`Unhandled status code ${statusCode}`)
+      return undefined
   }
 }
 
@@ -81,6 +90,7 @@ interface ItemStatusBadgeProps {
   timestamp?: BigNumber | null
   challengePeriodDuration?: BigNumber | null
   statusCode?: number | null
+  /** Kept for callers; the status roles follow the theme on their own. */
   dark?: boolean | null
 }
 
@@ -90,55 +100,24 @@ const ItemStatusBadge = ({
   challengePeriodDuration,
   statusCode,
 }: ItemStatusBadgeProps) => {
-  if (statusCode)
-    return (
-      <ItemStatusBadgeWrap>
-        <Badge
-          status={badgeStatus(statusCode)}
-          color={STATUS_COLOR[statusCode]}
-          text={STATUS_TEXT[statusCode]}
-          style={{ color: 'inherit' }}
-        />
-        <ItemStatusIcon statusCode={statusCode} />
-      </ItemStatusBadgeWrap>
-    )
-
-  if (
-    typeof statusCode !== 'number' &&
-    !item &&
-    !timestamp &&
-    !challengePeriodDuration
+  const now = useNow()
+  const view = useMemo(
+    () =>
+      typeof statusCode === 'number'
+        ? viewFromCode(statusCode)
+        : lightEntryStatus(
+            item ?? undefined,
+            timestamp,
+            challengePeriodDuration,
+          ),
+    [statusCode, item, timestamp, challengePeriodDuration],
   )
-    return (
-      <StyledSkeleton active paragraph={false} title={SkeletonTitleProps} />
-    )
-
-  if (typeof statusCode !== 'number')
-    statusCode = itemToStatusCode(
-      item as SubgraphItem,
-      timestamp as BigNumber,
-      challengePeriodDuration as BigNumber,
-    )
 
   // Status can't be determined yet (clock/params still loading, or the item
-  // has no requests indexed). Fall back to the loading skeleton instead of
-  // crashing the surrounding view.
-  if (typeof statusCode !== 'number')
-    return (
-      <StyledSkeleton active paragraph={false} title={SkeletonTitleProps} />
-    )
+  // has no requests indexed): show a skeleton instead of crashing the view.
+  if (!view) return <SkeletonBlock $height="18px" $width="120px" />
 
-  return (
-    <ItemStatusBadgeWrap>
-      <Badge
-        status={badgeStatus(statusCode)}
-        color={STATUS_COLOR[statusCode]}
-        text={STATUS_TEXT[statusCode]}
-        style={{ color: 'inherit' }}
-      />
-      <ItemStatusIcon statusCode={statusCode} />
-    </ItemStatusBadgeWrap>
-  )
+  return <EntryStatus status={view} now={now} />
 }
 
 export default ItemStatusBadge

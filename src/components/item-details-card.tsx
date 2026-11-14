@@ -1,79 +1,188 @@
 import React, { useState, useEffect, useCallback, useContext } from 'react'
-import type { Address } from 'viem'
 import styled from 'styled-components'
-import { Card, Tooltip, Button, Result, Alert } from 'components/ui'
-import Icon from 'components/ui/Icon'
-import DisplaySelector from './display-selector'
-import { useAccount, usePublicClient, useWalletClient, useChainId } from 'wagmi'
-import { simulateContract } from '@wagmi/core'
+import { useAccount, usePublicClient } from 'wagmi'
+import { simulateContract, writeContract } from '@wagmi/core'
 import { useParams } from 'react-router-dom'
-import useUrlChainId from 'hooks/use-url-chain-id'
+import { BigNumber } from 'ethers'
 import { abi as _batchWithdraw } from '@kleros/tcr/build/contracts/BatchWithdraw.json'
-import { BigNumber, Contract } from 'ethers'
+import { ItemTypes } from '@kleros/gtcr-encoder'
+import useUrlChainId from 'hooks/use-url-chain-id'
+import useNativeCurrency from 'hooks/native-currency'
+import { useAttachment } from 'hooks/use-attachment'
 import { TCRViewContext } from 'contexts/tcr-view-context'
-import TCRMetadataDisplay from './tcr-metadata-display'
-import { addPeriod } from '../utils/string'
-import { batchWithdrawAddresses } from 'config/tcr-addresses'
+import { LightTCRViewContext } from 'contexts/light-tcr-view-context'
+import {
+  batchWithdrawAddresses,
+  lightBatchWithdrawAddresses,
+} from 'config/tcr-addresses'
 import { wrapWithToast, errorToast } from 'utils/wrap-with-toast'
 import { parseWagmiError } from 'utils/parse-wagmi-error'
 import { wagmiConfig } from 'config/wagmi'
+import { parseIpfs } from 'utils/ipfs-parse'
+import { cssImageUrl } from 'utils/url-validation'
 import SeerExtraDetails from 'components/custom-registries/seer/seer-item-details'
 import { isSeerRegistry } from 'components/custom-registries/seer/is-seer-registry'
+import { CurateIcon } from 'components/curate/icons'
+import {
+  Body,
+  Button,
+  ButtonLink,
+  Chip,
+  Data,
+  IconButton,
+  Row,
+  SkeletonBlock,
+  Small,
+  Stack,
+  Subheading,
+  Surface,
+  truncateMiddle,
+} from 'components/curate/primitives'
+import {
+  EntryFields,
+  type EntryField,
+} from 'components/curate/item-light-fields'
+import { Notice } from 'components/curate/item-light-notice'
+import { formatAmount } from 'components/curate/item-light-format'
 
-const StyledCard = styled(Card)`
-  .ui-card-head {
-    background: ${({ theme }) => theme.cardHeaderGradient};
-    color: white;
-    border-color: ${({ theme }) =>
-      theme.name === 'dark' ? theme.borderColor : 'transparent'};
-  }
+/*
+ * The entry's fields: every field as a label/value row rendered by its
+ * type, separated by hairlines, less any the page already shows in full.
+ * For a list of lists it also shows the linked registry's identity, its
+ * policy and a link to it.
+ * Classic lists keep the fee-reward withdrawal here. Shared by the Light,
+ * Classic and Stake item pages and by the factory previews.
+ */
 
-  .ui-card-head-title {
-    color: white;
-  }
+/* A divider under it only when fields follow; when only the actions do,
+   their own top border is the one line. */
+const RegistryBlock = styled.div<{ $divided: boolean }>`
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr);
+  gap: 16px;
+  ${({ $divided }) =>
+    $divided &&
+    `
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--color-border);
+  `}
 
-  .ui-card-extra {
-    color: white;
+  @media (max-width: 520px) {
+    grid-template-columns: 1fr;
   }
 `
 
-const StyledFields = styled.div`
+const LogoButton = styled.button<{ $image?: string }>`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  padding: 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: ${({ $image }) => {
+    const image = cssImageUrl($image)
+    return image ? `${image} center / contain no-repeat` : 'none'
+  }};
+  background-color: var(--color-raised);
+  color: var(--color-faint);
+  cursor: ${({ $image }) => ($image ? 'pointer' : 'default')};
+  overflow: hidden;
+
+  &:hover {
+    border-color: var(--color-border-strong);
+  }
+`
+
+const Head = styled.div`
   display: flex;
   flex-wrap: wrap;
-  gap: 12px 24px;
   align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  margin-bottom: 8px;
 `
 
-const StyledField = styled.div`
-  word-break: break-word;
-  font-size: 14px;
-
-  > span:first-child {
-    margin-right: 4px;
-    white-space: nowrap;
-  }
-
-  p {
-    display: inline;
-    margin: 0;
-  }
-
-  div {
-    margin: 0;
-  }
+const PanelName = styled.h2`
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  color: var(--color-text);
+  font-family: var(--font-display);
+  font-size: 22px;
+  line-height: 28px;
+  font-weight: 500;
+  letter-spacing: -0.02em;
 `
 
-const StyledAlert = styled(Alert)`
-  margin-bottom: 12px;
+const Actions = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding-top: 16px;
+  border-top: 1px solid var(--color-border);
 `
+
+const CopyId = ({ id }: { id: string }) => {
+  const [copied, setCopied] = useState(false)
+  useEffect(() => {
+    if (!copied) return
+    const timer = window.setTimeout(() => setCopied(false), 1500)
+    return () => window.clearTimeout(timer)
+  }, [copied])
+  return (
+    <Row $gap={4} title={id}>
+      <Small $muted>ID</Small>
+      <Data $mono $muted>
+        {truncateMiddle(id, 8, 6)}
+      </Data>
+      <IconButton
+        type="button"
+        aria-label="Copy item ID"
+        onClick={() => {
+          navigator.clipboard
+            ?.writeText(id)
+            .then(() => setCopied(true))
+            .catch(() => setCopied(false))
+        }}
+      >
+        <CurateIcon name={copied ? 'check' : 'copy'} size={14} />
+      </IconButton>
+      {copied && (
+        <Small $muted role="status">
+          Copied
+        </Small>
+      )}
+    </Row>
+  )
+}
+
+/** What the item-details pages resolve for a child registry's meta evidence. */
+interface ItemMetaEvidenceState {
+  file?: MetaEvidence
+  error?: unknown
+}
 
 interface ItemDetailsCardProps {
   title?: string | null
   columns?: Column[] | null
-  loading?: boolean
+  loading?: boolean | null
   item?: SubgraphItem
-  itemMetaEvidence?: { file?: MetaEvidence; error?: Error } | false | null
+  itemMetaEvidence?: ItemMetaEvidenceState | false | null
   disabled?: boolean
+  /**
+   * Fields the page already shows in full elsewhere (the item hero's
+   * identifiers), left out of the list so no row repeats them.
+   */
+  exclude?: EntryField[]
+  /**
+   * The kind of list, which picks the batch withdrawer for rewards: Classic
+   * and Light lists each have their own (their getters differ), and Stake
+   * lists settle rewards elsewhere, so they get no button here.
+   */
+  kind?: 'classic' | 'light' | 'stake'
 }
 
 const ItemDetailsCard = ({
@@ -82,63 +191,107 @@ const ItemDetailsCard = ({
   loading,
   item,
   itemMetaEvidence,
-  disabled = false,
+  exclude,
+  kind = 'classic',
 }: ItemDetailsCardProps) => {
   const { address: account } = useAccount()
-  const chainId = useChainId()
   const publicClient = usePublicClient()
-  const { data: walletClient } = useWalletClient()
-  const tcrViewContext = useContext(TCRViewContext)
-  const [availableRewards, setAvailableRewards] = useState<
-    BigNumber | undefined
-  >()
-  const BATCH_WITHDRAW_ADDRESS = batchWithdrawAddresses[chainId]
+  // Light pages provide the Light view context, Classic pages the Classic
+  // one: each has the view contract that answers availableRewards for it.
+  const classicView = useContext(TCRViewContext)
+  const lightView = useContext(LightTCRViewContext)
+  const tcrViewContext = (kind === 'light' ? lightView : classicView) as
+    | {
+        gtcrView?: {
+          availableRewards: (...args: unknown[]) => Promise<BigNumber>
+        }
+        tcrAddress?: string
+      }
+    | undefined
+  const [availableRewards, setAvailableRewards] = useState<BigNumber>()
+  // batchRequestWithdraw walks the requests from the first one, and both list
+  // contracts revert a withdrawal from a request that is still open (Light:
+  // one under dispute). While the latest request is open the walk stops
+  // before it (_count is where the walk ends); the view's availableRewards
+  // counts the same resolved requests. 0 walks them all, as before.
+  const withdrawCount = item?.resolved
+    ? 0
+    : Math.max(0, (item?.requests?.length ?? 0) - 1)
   const { tcrAddress } = useParams()
   const urlChainId = useUrlChainId()
+  // The batch withdrawer of the list's chain (the URL's), not the wallet's.
+  // A chain without one gets no button rather than one that does nothing.
+  const BATCH_WITHDRAW_ADDRESS =
+    !urlChainId || kind === 'stake'
+      ? undefined
+      : kind === 'light'
+        ? lightBatchWithdrawAddresses[urlChainId]
+        : batchWithdrawAddresses[urlChainId]
+  const nativeCurrency = useNativeCurrency()
+  const openAttachment = useAttachment()
 
-  // Fetch available rewards from fee contributions.
+  // Fetch available rewards from fee contributions (the list's view
+  // contract). Stake lists settle rewards elsewhere.
   useEffect(() => {
-    ;(async () => {
+    if (kind === 'stake') return
+    let cancelled = false
+    void (async () => {
       if (!tcrViewContext || !tcrViewContext.gtcrView || !account || !item)
         return
-
-      setAvailableRewards(
-        await (tcrViewContext.gtcrView as Contract).availableRewards(
+      try {
+        const rewards = await tcrViewContext.gtcrView.availableRewards(
           tcrViewContext.tcrAddress,
           item.itemID,
           account,
-        ),
-      )
+        )
+        if (!cancelled) setAvailableRewards(rewards)
+      } catch (err) {
+        console.error('Could not read the available rewards', err)
+      }
     })()
-  }, [account, item, tcrViewContext])
+    return () => {
+      cancelled = true
+    }
+  }, [account, item, tcrViewContext, kind])
 
   const batchWithdrawClick = useCallback(async () => {
     if (
       !tcrViewContext ||
       !BATCH_WITHDRAW_ADDRESS ||
+      !urlChainId ||
       !item ||
-      !walletClient ||
       !publicClient
     )
       return
 
     try {
+      // Simulated on the list's chain; writeContract refuses to send while
+      // the wallet is on another one.
       const { request } = await simulateContract(wagmiConfig, {
-        address: BATCH_WITHDRAW_ADDRESS as Address,
+        address: BATCH_WITHDRAW_ADDRESS as `0x${string}`,
         abi: _batchWithdraw,
         functionName: 'batchRequestWithdraw',
-        args: [tcrViewContext.tcrAddress, account, item.itemID, 0, 0, 0, 0],
+        args: [
+          tcrViewContext.tcrAddress,
+          account,
+          item.itemID,
+          0,
+          withdrawCount,
+          0,
+          0,
+        ],
         account,
+        chainId: urlChainId,
       })
 
       const result = await wrapWithToast(
-        () => walletClient.writeContract(request),
+        () => writeContract(wagmiConfig, request),
         publicClient,
       )
 
-      if (result.status)
+      if (result.status && tcrViewContext.gtcrView)
         setAvailableRewards(
-          await (tcrViewContext.gtcrView as Contract).availableRewards(
+          await tcrViewContext.gtcrView.availableRewards(
             tcrViewContext.tcrAddress,
             item.itemID,
             account,
@@ -154,99 +307,180 @@ const ItemDetailsCard = ({
     item,
     publicClient,
     tcrViewContext,
-    walletClient,
+    urlChainId,
+    withdrawCount,
   ])
 
   const { file: itemMetaEvidenceFile, error: itemMetaEvidenceError } =
     itemMetaEvidence || {}
   const { metadata: itemMetaData, fileURI } = itemMetaEvidenceFile || {}
   const { tcrTitle, tcrDescription, logoURI } = itemMetaData || {}
+  const itemMetaEvidenceErrorMessage =
+    itemMetaEvidenceError instanceof Error
+      ? itemMetaEvidenceError.message
+      : String(itemMetaEvidenceError)
+  const childRegistryAddress =
+    itemMetaData && item?.decodedData?.[0]
+      ? String(item.decodedData[0])
+      : undefined
+  const excluded = new Set(
+    (exclude ?? []).map((field) => `${field.label}\u0000${field.type}`),
+  )
+  const detailFields: EntryField[] =
+    columns
+      ?.map((column, index) => ({
+        ...column,
+        value: item && item.decodedData?.[index],
+      }))
+      .filter(
+        (field) =>
+          excluded.size === 0 ||
+          !excluded.has(`${field.label}\u0000${field.type}`),
+      )
+      .filter((field) => {
+        if (!itemMetaData) return true
+        const type = String(field.type || '').toLowerCase()
+        return (
+          type !== String(ItemTypes.GTCR_ADDRESS).toLowerCase() &&
+          type !== 'gtcr address'
+        )
+      }) || []
+  const errors = item?.errors ?? []
+  const withdrawable =
+    !!BATCH_WITHDRAW_ADDRESS &&
+    !!item &&
+    (!!item.resolved || withdrawCount > 0) &&
+    !!availableRewards &&
+    availableRewards.gt(BigNumber.from(0))
+  const logo = logoURI ? parseIpfs(logoURI) : undefined
+  // Rewards do not depend on the entry's data, so an entry that cannot be
+  // decoded still offers them.
+  const withdrawAction = withdrawable ? (
+    <Actions>
+      <Button
+        type="button"
+        $variant="primary"
+        $size="sm"
+        onClick={batchWithdrawClick}
+      >
+        Withdraw rewards · {formatAmount(availableRewards, nativeCurrency)}
+      </Button>
+    </Actions>
+  ) : null
 
-  if (!loading && item && (item.errors as string[]).length > 0)
+  if (!loading && item && errors.length > 0)
     return (
-      <Result
-        id="item-details-card"
-        status="warning"
-        subTitle={(item.errors as string[]).map((e, i) => (
-          <p key={i}>{e}</p>
-        ))}
-        style={{ width: '100%' }}
-      />
+      <Surface id="item-details-card" $padding="standard">
+        <Stack $gap={10}>
+          <PanelName>{title || 'Fields'}</PanelName>
+          {errors.map((error, index) => (
+            <Notice key={index} tone="contested" role="alert">
+              {error}
+            </Notice>
+          ))}
+          {withdrawAction}
+        </Stack>
+      </Surface>
+    )
+
+  if (loading)
+    return (
+      <Surface id="item-details-card" $padding="standard" aria-busy="true">
+        <Stack $gap={12}>
+          <SkeletonBlock $height="18px" $width="40%" />
+          <SkeletonBlock $height="20px" />
+          <SkeletonBlock $height="20px" $width="70%" />
+          <SkeletonBlock $height="20px" $width="55%" />
+        </Stack>
+      </Surface>
     )
 
   return (
-    <StyledCard
-      title={title}
-      loading={loading}
-      extra={
-        item &&
-        item.resolved &&
-        availableRewards &&
-        batchWithdrawClick &&
-        availableRewards.gt(BigNumber.from(0)) && (
-          <Button onClick={batchWithdrawClick}>Withdraw Rewards</Button>
-        )
-      }
+    <Surface
+      id="item-details-card"
+      $padding="standard"
+      aria-label={title || undefined}
     >
-      {itemMetaEvidenceError && (
-        <StyledAlert
-          message={`Warning: Malformed submission, cannot display TCR information. Error: ${itemMetaEvidenceError.message}`}
-          type="warning"
-          showIcon
-          closable
-        />
-      )}
-      {columns && (
-        <StyledFields>
-          {itemMetaData && (
-            <TCRMetadataDisplay
-              logoURI={logoURI}
-              tcrTitle={tcrTitle ?? ''}
-              fileURI={fileURI ?? ''}
-              tcrDescription={tcrDescription ?? ''}
+      <Head>
+        <PanelName>
+          {title || 'Fields'}
+          {detailFields.length > 0 && <Chip>{detailFields.length}</Chip>}
+        </PanelName>
+        {item?.itemID && <CopyId id={item.itemID} />}
+      </Head>
+      <Stack $gap={16}>
+        {!!itemMetaEvidenceError && (
+          <Notice tone="contested" role="alert">
+            Malformed submission: the linked registry could not be read (
+            {itemMetaEvidenceErrorMessage}).
+          </Notice>
+        )}
+        {!item?.decodedData?.length && !columns?.length ? (
+          <Notice tone="contested">
+            This entry does not pass the validation checks. Review it carefully.
+          </Notice>
+        ) : null}
+        {itemMetaData && (
+          <RegistryBlock $divided={detailFields.length > 0}>
+            <LogoButton
+              type="button"
+              $image={logo}
+              disabled={!logo}
+              aria-label="Open registry logo"
+              onClick={() => logo && openAttachment(logo)}
+            >
+              {!logo && <CurateIcon name="registry" size={24} />}
+            </LogoButton>
+            <Stack $gap={6}>
+              <Subheading>{tcrTitle}</Subheading>
+              {tcrDescription && <Body $muted>{tcrDescription}</Body>}
+              {(fileURI || (childRegistryAddress && urlChainId)) && (
+                <Row $gap={8} $wrap>
+                  {fileURI && (
+                    <Button
+                      type="button"
+                      $variant="ghost"
+                      $size="sm"
+                      aria-label={`${tcrTitle || 'Linked list'} listing policy`}
+                      onClick={() => openAttachment(parseIpfs(fileURI), true)}
+                    >
+                      <CurateIcon name="policy" size={14} />
+                      Its policy
+                    </Button>
+                  )}
+                  {childRegistryAddress && urlChainId && (
+                    <ButtonLink
+                      to={`/tcr/${urlChainId}/${childRegistryAddress}`}
+                      $variant="secondary"
+                      $size="sm"
+                    >
+                      Open registry
+                      <CurateIcon name="external" size={14} />
+                    </ButtonLink>
+                  )}
+                </Row>
+              )}
+            </Stack>
+          </RegistryBlock>
+        )}
+        {columns && detailFields.length > 0 && (
+          <EntryFields fields={detailFields} />
+        )}
+        {withdrawAction}
+        {tcrAddress !== undefined &&
+          urlChainId !== null &&
+          isSeerRegistry(tcrAddress, urlChainId) &&
+          item &&
+          typeof item.decodedData?.[0] === 'string' &&
+          typeof item.decodedData?.[1] === 'string' && (
+            <SeerExtraDetails
+              chainId={urlChainId}
+              contractAddress={item.decodedData[0]}
+              imagesIpfsHash={item.decodedData[1]}
             />
           )}
-          {columns.map((column, index) => (
-            <StyledField key={index}>
-              <span>
-                <b>{column.label}</b>
-                {column.description && (
-                  <Tooltip title={addPeriod(column.description)}>
-                    &nbsp;
-                    <Icon type="question-circle-o" />
-                  </Tooltip>
-                )}
-                :
-              </span>{' '}
-              <DisplaySelector
-                type={column.type}
-                value={
-                  item &&
-                  (item.decodedData?.[index] as
-                    | string
-                    | number
-                    | boolean
-                    | null)
-                }
-                linkImage
-                allowedFileTypes={column.allowedFileTypes}
-                disabled={disabled}
-              />
-            </StyledField>
-          ))}
-        </StyledFields>
-      )}
-      {tcrAddress !== undefined &&
-        urlChainId !== null &&
-        isSeerRegistry(tcrAddress, urlChainId) &&
-        item && (
-          <SeerExtraDetails
-            chainId={urlChainId}
-            contractAddress={item.decodedData?.[0] as Address}
-            imagesIpfsHash={item.decodedData?.[1] as string}
-          />
-        )}
-    </StyledCard>
+      </Stack>
+    </Surface>
   )
 }
 

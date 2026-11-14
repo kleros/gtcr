@@ -1,75 +1,160 @@
-import React, { useContext } from 'react'
-import styled, { css } from 'styled-components'
-import { smallScreenStyle } from 'styles/small-screen-style'
-import { Card, Typography, Progress } from 'components/ui'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import React, { useContext, useEffect, useState } from 'react'
+import styled from 'styled-components'
+import { BigNumber } from 'ethers'
 import {
   PARTY,
   SUBGRAPH_RULING,
+  CONTRACT_STATUS,
   itemToStatusCode,
   STATUS_CODE,
 } from 'utils/item-status'
 import { LightTCRViewContext } from 'contexts/light-tcr-view-context'
 import useRequiredFees from 'hooks/required-fees'
-import { ethers, BigNumber } from 'ethers'
-
-const { formatEther } = ethers.utils
 import useNativeCurrency from 'hooks/native-currency'
+import {
+  Chip,
+  Label,
+  Small,
+  Stack,
+  Surface,
+} from 'components/curate/primitives'
+import { formatAmount, formatEther } from 'components/curate/item-light-format'
 
-export const StyledCard = styled(Card)`
-  background: linear-gradient(
-    111.6deg,
-    ${({ theme }) => theme.gradientStart} 46.25%,
-    ${({ theme }) => theme.gradientEnd} 96.25%
-  ) !important;
-  border-color: transparent !important;
-  color: white;
-  margin: 40px 0 20px !important;
+/*
+ * Appeal funding: for each side, how much of its appeal fee is raised. The
+ * bar is the share funded (filled) against what is still needed (hatched),
+ * with the exact amounts under it and what backers can win. Rendered only
+ * while the dispute can be appealed.
+ */
 
-  & > .ui-card-body {
-    background: transparent !important;
+const Card = styled(Surface)`
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+`
+
+const SideHead = styled.div`
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+`
+
+const Name = styled.span`
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--color-text);
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
+  font-weight: 500;
+`
+
+const Share = styled.span`
+  color: var(--color-text);
+  font-family: var(--font-figure);
+  font-size: 26px;
+  line-height: 1;
+  font-weight: 500;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+`
+
+const Track = styled.div`
+  position: relative;
+  height: 10px;
+  overflow: hidden;
+  border-radius: var(--radius-pill);
+  background: repeating-linear-gradient(
+    135deg,
+    var(--color-raised) 0 3px,
+    transparent 3px 7px
+  );
+  box-shadow: inset 0 0 0 1px var(--glass-border);
+`
+
+/* Grows by width from nothing (scaleX would squash the round ends). */
+const Fill = styled.span<{ $tone: string }>`
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: var(--radius-pill);
+  background: ${({ $tone }) => $tone};
+  box-shadow: 0 0 14px
+    color-mix(in srgb, ${({ $tone }) => $tone} 55%, transparent);
+  transition:
+    width 900ms var(--ease-out),
+    min-width 900ms var(--ease-out);
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
   }
 `
 
-export const StyledContent = styled.div`
-  display: flex;
-  justify-content: space-between;
-
-  ${smallScreenStyle(
-    () => css`
-      flex-direction: column;
-    `,
-  )}
-`
-
-export const StyledSection = styled.div`
-  display: flex;
-  flex: 1 1 0px;
-  flex-direction: column;
-  align-items: center;
-  margin: 12px;
-
-  ${smallScreenStyle(
-    () => css`
-      flex-direction: column;
-      width: auto;
-    `,
-  )}
-`
-
-export const StyledTitle = styled(Typography.Title)`
-  color: white !important;
-  text-align: center;
-`
-
-export const StyledParagraph = styled(Typography.Paragraph)`
-  color: white;
-  text-align: center;
-`
-
-export const StyledIcon = styled(FontAwesomeIcon)`
-  margin: 12px;
-`
+const Side = ({
+  name,
+  paid,
+  required,
+  funded,
+  reward,
+  role,
+  currency,
+}: {
+  name: string
+  paid: BigNumber
+  required: BigNumber
+  funded: boolean
+  reward: BigNumber
+  role?: 'winning' | 'losing'
+  currency: string
+}) => {
+  const share = funded
+    ? 1
+    : required.isZero()
+      ? 0
+      : paid.mul(10000).div(required).toNumber() / 10000
+  const tone = funded ? 'var(--status-registered)' : 'var(--status-contested)'
+  const width = Math.round(Math.min(1, Math.max(0, share)) * 100)
+  // Start at zero, then grow to the share on the next frame.
+  const [shown, setShown] = useState(false)
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => setShown(true))
+    return () => cancelAnimationFrame(frame)
+  }, [])
+  return (
+    <Stack
+      $gap={8}
+      role="group"
+      aria-label={`${name}: ${Math.round(share * 100)}% of the appeal fee raised, ${formatEther(
+        paid,
+      )} of ${formatAmount(required, currency)}`}
+    >
+      <SideHead>
+        <Name>
+          {name}
+          {role && <Chip>{role}</Chip>}
+        </Name>
+        <Share>{Math.round(share * 100)}%</Share>
+      </SideHead>
+      <Track aria-hidden>
+        <Fill
+          $tone={tone}
+          style={{
+            width: shown ? `${width}%` : '0%',
+            minWidth: shown && width > 0 ? 10 : 0,
+          }}
+        />
+      </Track>
+      <Small $muted>
+        {funded
+          ? `Fully funded · ${formatAmount(required, currency)}`
+          : `${formatEther(paid)} of ${formatAmount(
+              required,
+              currency,
+            )} raised · backers can win up to ${formatAmount(reward, currency)}`}
+      </Small>
+    </Stack>
+  )
+}
 
 interface CrowdfundingCardProps {
   item: SubgraphItem
@@ -115,9 +200,8 @@ const CrowdfundingCard = ({
   if (!round) return null
   const { hasPaidRequester, hasPaidChallenger, ruling: currentRuling } = round
 
-  let { amountPaidRequester, amountPaidChallenger } = round
-  amountPaidRequester = BigNumber.from(amountPaidRequester)
-  amountPaidChallenger = BigNumber.from(amountPaidChallenger)
+  const amountPaidRequester = BigNumber.from(round.amountPaidRequester)
+  const amountPaidChallenger = BigNumber.from(round.amountPaidChallenger)
 
   if (
     !requesterFees ||
@@ -140,84 +224,46 @@ const CrowdfundingCard = ({
   )
     return null
 
-  const requesterPercentage =
-    amountPaidRequester
-      .mul(MULTIPLIER_DIVISOR)
-      .div(requesterFees.requiredForSide)
-      .toNumber() / 100
-  const challengerPercentage =
-    amountPaidChallenger
-      .mul(MULTIPLIER_DIVISOR)
-      .div(challengerFees.requiredForSide)
-      .toNumber() / 100
+  const isRegistration = item.status === CONTRACT_STATUS.REGISTRATION_REQUESTED
+  const requesterName = isRegistration ? 'Submitter' : 'Requester'
+  const decisive = currentRuling !== SUBGRAPH_RULING.NONE
+  const requesterWins = currentRuling === SUBGRAPH_RULING.ACCEPT
+  const winner = requesterWins ? requesterName.toLowerCase() : 'challenger'
+  const loser = requesterWins ? 'challenger' : requesterName.toLowerCase()
 
   return (
-    <StyledCard>
-      <StyledContent>
-        <StyledSection>
-          <StyledTitle strong level={4}>
-            Appeal Crowdfunding
-          </StyledTitle>
-          <StyledIcon icon="coins" size="2x" />
-          <StyledParagraph>
-            Contribute appeal fees and earn rewards if the side you back wins
-            the round
-          </StyledParagraph>
-        </StyledSection>
-        <StyledSection>
-          <StyledTitle strong level={4}>
-            Submitter
-          </StyledTitle>
-          <Progress
-            percent={hasPaidRequester ? 100 : requesterPercentage}
-            status={hasPaidRequester ? 'success' : 'active'}
-            showInfo={false}
-          />
-          <br />
-          <StyledParagraph>
-            {hasPaidRequester
-              ? `Submitter funded. The challenger must now fully fund his side of the appeal before the deadline in order not to lose the dispute.`
-              : `Contribute arbitration fees to the submitter's appeal for a chance to win at most ${formatEther(
-                  requesterFees.potentialReward,
-                )} ${nativeCurrency}.`}
-          </StyledParagraph>
-        </StyledSection>
-        <StyledSection>
-          <StyledTitle strong level={4}>
-            Challenger
-          </StyledTitle>
-          <Progress
-            percent={hasPaidChallenger ? 100 : challengerPercentage}
-            status={hasPaidChallenger ? 'success' : 'active'}
-            showInfo={false}
-          />
-          <br />
-          <StyledParagraph>
-            {hasPaidChallenger
-              ? 'Challenger fully funded. The submitter must now fully fund his side of the appeal before the deadline in order not to lose the dispute.'
-              : `Contribute arbitration fees to the challenger's appeal for a chance to win at most ${formatEther(
-                  challengerFees.potentialReward,
-                )} ${nativeCurrency}.`}
-          </StyledParagraph>
-        </StyledSection>
-        <StyledSection>
-          <StyledIcon icon="info-circle" size="2x" />
-          <StyledParagraph>
-            {currentRuling === SUBGRAPH_RULING.NONE
-              ? 'The arbitrator did not give a decisive ruling. If a party fully funds his side of an appeal, the other must also fund in order to not lose the dispute.'
-              : `If the ${
-                  currentRuling === SUBGRAPH_RULING.ACCEPT
-                    ? 'challenger'
-                    : 'submitter'
-                } fully funds his side of the appeal, the ${
-                  currentRuling === SUBGRAPH_RULING.ACCEPT
-                    ? 'submitter'
-                    : 'challenger'
-                } must also fund his side of the appeal in order not to lose the case.`}
-          </StyledParagraph>
-        </StyledSection>
-      </StyledContent>
-    </StyledCard>
+    <Card $padding="standard" role="region" aria-label="Appeal funding">
+      <Stack $gap={4}>
+        <Label $tone="faint">Appeal funding</Label>
+        <Small $muted>
+          Share of each side&apos;s appeal fee raised so far. Hatched: still
+          needed.
+        </Small>
+      </Stack>
+      <Side
+        name={requesterName}
+        paid={amountPaidRequester}
+        required={requesterFees.requiredForSide}
+        funded={!!hasPaidRequester}
+        reward={requesterFees.potentialReward}
+        role={decisive ? (requesterWins ? 'winning' : 'losing') : undefined}
+        currency={nativeCurrency}
+      />
+      <Side
+        name="Challenger"
+        paid={amountPaidChallenger}
+        required={challengerFees.requiredForSide}
+        funded={!!hasPaidChallenger}
+        reward={challengerFees.potentialReward}
+        role={decisive ? (requesterWins ? 'losing' : 'winning') : undefined}
+        currency={nativeCurrency}
+      />
+      <Small $faint>
+        {decisive
+          ? `The ${loser} must be fully funded in the first half of the period; then the ${winner} must fund too, or the ${loser} wins.`
+          : 'If one side is fully funded, the other must fund too or loses the dispute.'}
+      </Small>
+    </Card>
   )
 }
 

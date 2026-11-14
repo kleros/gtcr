@@ -1,55 +1,68 @@
 import React from 'react'
-import styled, { css } from 'styled-components'
-import { smallScreenStyle } from 'styles/small-screen-style'
-import { buttonReset } from 'styles/button-reset'
+import styled from 'styled-components'
 import { parseIpfs } from 'utils/ipfs-parse'
 import { useAttachment } from 'hooks/use-attachment'
-import PaperclipIcon from 'assets/icons/paperclip.svg'
+import { Button } from 'components/curate/primitives'
 
-const StyledFileLink = styled.button`
-  ${buttonReset}
-  display: inline-flex;
-  align-items: center;
+const FileButton = styled(Button)`
   gap: 6px;
-  text-decoration: none;
-  color: ${({ theme }) => theme.cardHeaderLinkColor};
 
-  &:hover {
-    color: ${({ theme }) => theme.cardHeaderLinkHoverColor};
-    text-decoration: none !important;
+  .long {
+    display: inline;
+  }
+
+  .short {
+    display: none;
+  }
+
+  @media (max-width: 640px) {
+    .long {
+      display: none;
+    }
+
+    .short {
+      display: inline;
+    }
   }
 `
 
-const DesktopText = styled.span`
-  ${smallScreenStyle(
-    () => css`
-      display: none;
-    `,
-  )}
-`
-
-const MobileText = styled.span`
-  display: none;
-  ${smallScreenStyle(
-    () => css`
-      display: inline;
-    `,
-  )}
-`
+const Paperclip = () => (
+  <svg
+    width="14"
+    height="14"
+    viewBox="0 0 24 24"
+    fill="none"
+    aria-hidden="true"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <path
+      d="M21 11.5 12.5 20a5.5 5.5 0 0 1-7.8-7.8l9-9a3.5 3.5 0 0 1 5 5l-9 9a1.5 1.5 0 0 1-2.1-2.1L16 6.7"
+      stroke="currentColor"
+      strokeWidth="1.85"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </svg>
+)
 
 /**
- * "View attached file" button rendered in the evidence timeline card
- * extras slot. Shared between classic/light (`request-timelines.tsx`)
- * and permanent (`permanent-request-timelines.tsx`).
+ * "View attached file" button rendered next to an evidence entry. Shared
+ * between classic/light (`request-timelines.tsx`) and permanent
+ * (`permanent-request-timelines.tsx`). Opens the in-app attachment viewer.
  */
 const EvidenceFileLink: React.FC<{ fileURI: string }> = ({ fileURI }) => {
   const openAttachment = useAttachment()
   return (
-    <StyledFileLink onClick={() => openAttachment(parseIpfs(fileURI))}>
-      <PaperclipIcon />
-      <DesktopText>View attached file</DesktopText>
-      <MobileText>File</MobileText>
-    </StyledFileLink>
+    <FileButton
+      type="button"
+      $variant="ghost"
+      $size="sm"
+      onClick={() => openAttachment(parseIpfs(fileURI))}
+    >
+      <Paperclip />
+      <span className="long">View attached file</span>
+      <span className="short">File</span>
+    </FileButton>
   )
 }
 

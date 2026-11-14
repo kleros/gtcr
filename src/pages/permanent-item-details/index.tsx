@@ -1,86 +1,390 @@
 import React, { useState, useEffect, useContext, useMemo } from 'react'
 import styled from 'styled-components'
-import { MAX_WIDTH_CONTENT } from 'styles/small-screen-style'
-import { Layout, Breadcrumb } from 'components/ui'
-import { useParams, Link } from 'react-router-dom'
+import { useParams, Link, useLocation } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
+import { ethers, BigNumber } from 'ethers'
+import { abi as _IArbitrator } from '@kleros/erc-792/build/contracts/IArbitrator.json'
+import _gtcr from 'assets/abis/PermanentGTCR.json'
 import useUrlChainId from 'hooks/use-url-chain-id'
 import useDocumentHead from 'hooks/use-document-head'
-import { abi as _IArbitrator } from '@kleros/erc-792/build/contracts/IArbitrator.json'
-import { ethers, BigNumber } from 'ethers'
+import useNow from 'hooks/use-now'
+import useNativeCurrency from 'hooks/native-currency'
+import useTokenSymbol from 'hooks/token-symbol'
+import useArbitrationCost from 'hooks/arbitration-cost'
 import { useEthersProvider } from 'hooks/ethers-adapters'
-import ErrorPage from '../error-page'
-import ItemDetailsCard from 'components/item-details-card'
-import ItemStatusCard from './item-status-card'
-import CrowdfundingCard from './crowdfunding-card'
-import RequestTimelines from '../../components/permanent-request-timelines'
+import { useAttachment } from 'hooks/use-attachment'
 import { WalletContext } from 'contexts/wallet-context'
-import { capitalizeFirstLetter } from 'utils/string'
-import { PERMANENT_ITEM_DETAILS_QUERY } from 'utils/graphql'
-import { useQuery } from '@tanstack/react-query'
+import { useGraphqlBatcher } from 'contexts/graphql-batcher'
+import {
+  PERMANENT_ITEM_DETAILS_QUERY,
+  PERMANENT_REGISTRY_QUERY,
+} from 'utils/graphql'
 import { STALE_TIME } from 'consts'
 import { parseIpfs } from 'utils/ipfs-parse'
-import { itemToStatusCode, STATUS_CODE } from 'utils/permanent-item-status'
+import { capitalizeFirstLetter } from 'utils/string'
 import { truncateAtWord } from 'utils/truncate-at-word'
-import { useGraphqlBatcher } from 'contexts/graphql-batcher'
-import useArbitrationCost from 'hooks/arbitration-cost'
-import { PolicyLink } from 'pages/light-item-details'
+import { formatAbsolute, formatDurationLong } from 'utils/time'
+import { STATUS_CODE } from 'utils/permanent-item-status'
+import ItemDetailsCard from 'components/item-details-card'
+import RequestTimelines from 'components/permanent-request-timelines'
+import { AddressLink } from 'components/curate/item-stake-address'
+import { CurateIcon } from 'components/curate/icons'
+import {
+  ChainChip,
+  Label,
+  Page,
+  SkeletonBlock,
+  Surface,
+} from 'components/curate/primitives'
+import { EntryStatus, stakeEntryStatus } from 'components/curate/entry-status'
+import { Explainer } from 'components/curate/explainer'
+import { AnimatedNumber } from 'components/curate/motion/animated-number'
+import { reveal } from 'components/curate/motion/reveal'
+import {
+  FieldValue,
+  hasValue,
+  identifierFields,
+  isImageField,
+  titleField,
+  type EntryField,
+} from 'components/curate/item-light-fields'
+import { StickyActionBarSpacer } from 'components/curate/item-light-action-bar'
+import ErrorPage from '../error-page'
+import {
+  ENTRY_LINK_TIP,
+  ENTRY_LOAD_FAILED,
+  ENTRY_INDEXING_MESSAGE,
+  ENTRY_INDEXING_TITLE,
+  ENTRY_MISSING_TIP,
+  justSubmitted,
+  missingEntryPollMs,
+} from '../error-page/copy'
+import ItemStatusCard from './item-status-card'
+import { formatSince } from 'pages/item-details/format-since'
+import { StakeWindowPanel } from './item-window'
+import { PolicySince, policyInForceSince } from './policy-since'
+import { multiplierPercent, nativeText, tokenText } from './modals/shell'
+import { entrySetting } from './arbitration-setting'
+import {
+  stakeFacts,
+  stakeStatusCode,
+  toNum,
+  type StakeItem,
+  type StakeRegistry,
+} from './facts'
 
-export const StyledBreadcrumbItem = styled(Breadcrumb.Item)`
-  text-transform: capitalize;
-  color: ${({ theme }) => theme.itemDetailsTitleColor} !important;
+/*
+ * Stake Curate item page, on the Light item composition. A breadcrumb, then
+ * the hero (the one featured panel): the entry's identifiers set large with
+ * its status, and on the right whatever clock is running (submission
+ * period, withdrawal period, appeal period, the court case, or the date it
+ * settled). Under it, two columns: the fields and the history on the left;
+ * on the right the action card led by the stake at risk, the withdrawal
+ * stepper and the appeal funding (a bottom bar on phones). Every figure
+ * comes from the subgraph, the list contract and the clock.
+ */
+
+const Crumbs = styled.nav`
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  color: var(--color-faint);
+  font-size: var(--fs-small);
+  line-height: var(--lh-small);
+  ${reveal}
+
+  a {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--color-muted);
+    text-decoration: none;
+    transition: color var(--motion);
+  }
+
+  a:hover {
+    color: var(--color-text);
+  }
+
+  span[aria-current] {
+    color: var(--color-text);
+  }
 `
 
-export const StyledLayoutContent = styled(Layout.Content)`
-  padding: 0 var(--horizontal-padding) 42px;
+/* Desktop: identity and stats on the left, the clock on the right. When it
+   stacks, the clock comes straight after the identity. */
+const Hero = styled(Surface)`
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  grid-template-rows: 1fr auto;
+  grid-template-areas:
+    'main side'
+    'stats side';
+  margin-top: 20px;
+  ${reveal}
+
+  @media (max-width: 1000px) {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto;
+    grid-template-areas:
+      'main'
+      'side'
+      'stats';
+  }
+`
+
+const HeroMain = styled.div`
+  grid-area: main;
   display: flex;
   flex-direction: column;
-  width: 100%;
+  gap: 18px;
+  min-width: 0;
+  padding: 32px 36px 20px;
+
+  @media (max-width: 720px) {
+    padding: 22px 18px 18px;
+  }
 `
 
-export const StyledBanner = styled.div`
-  padding: 24px
-    max(
-      var(--horizontal-padding),
-      calc(50vw - ${MAX_WIDTH_CONTENT} / 2 + var(--horizontal-padding))
-    );
-  background: ${({ theme }) => theme.bannerGradient};
-  box-shadow: 0px 3px 24px ${({ theme }) => theme.shadowColor};
-  color: ${({ theme }) => theme.textPrimary};
+const HeroStats = styled.div`
+  grid-area: stats;
+  min-width: 0;
+  padding: 0 36px 28px;
+
+  @media (max-width: 1000px) {
+    padding-top: 4px;
+  }
+
+  @media (max-width: 720px) {
+    padding: 4px 18px 20px;
+  }
+`
+
+const HeroSide = styled.div`
+  grid-area: side;
+  min-width: 0;
+  padding: 28px 28px 24px;
+  border-left: 1px solid var(--glass-border);
+
+  @media (max-width: 1000px) {
+    border-top: 1px solid var(--glass-border);
+    border-left: 0;
+  }
+
+  @media (max-width: 720px) {
+    padding: 22px 18px 20px;
+  }
+`
+
+const Eyebrow = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+`
+
+const Identity = styled.div`
+  display: flex;
+  align-items: flex-start;
+  gap: 18px;
+  min-width: 0;
+`
+
+const Logo = styled.img`
+  flex: 0 0 auto;
+  width: 64px;
+  height: 64px;
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  background: var(--color-raised);
+  object-fit: contain;
+
+  @media (max-width: 720px) {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+  }
+`
+
+const Title = styled.h1<{ $size: 'lg' | 'md' | 'sm' }>`
+  margin: 0;
+  min-width: 0;
+  color: var(--color-text);
+  font-family: var(--font-display);
+  font-size: ${({ $size }) =>
+    $size === 'lg'
+      ? 'clamp(30px, 1.6vw + 18px, 40px)'
+      : $size === 'md'
+        ? 'clamp(24px, 1vw + 16px, 32px)'
+        : 'clamp(20px, 0.6vw + 14px, 26px)'};
+  line-height: 1.08;
+  font-weight: 500;
+  letter-spacing: -0.03em;
+  overflow-wrap: anywhere;
+  text-wrap: balance;
+
+  a {
+    color: inherit;
+  }
+`
+
+const KeyRow = styled.dl`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 28px;
+  margin: 0;
+
+  div {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  dt {
+    color: var(--color-faint);
+    font-size: 12px;
+    line-height: 16px;
+  }
+
+  dd {
+    margin: 0;
+    min-width: 0;
+    color: var(--color-text);
+    font-size: var(--fs-body);
+    line-height: var(--lh-body);
+    overflow-wrap: anywhere;
+  }
+`
+
+const StatusRow = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 16px;
+`
+
+const Stats = styled.dl`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px 40px;
+  margin: 0;
+  padding-top: 20px;
+  border-top: 1px solid var(--glass-border);
+
+  div {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+  }
+
+  dd {
+    margin: 0;
+    color: var(--color-text);
+    font-size: 18px;
+    line-height: 22px;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+  }
+`
+
+const Columns = styled.div`
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  gap: 24px;
+  align-items: start;
+  margin-top: 24px;
+
+  @media (max-width: 1100px) {
+    grid-template-columns: 1fr;
+  }
+`
+
+const Main = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  min-width: 0;
+
+  > * {
+    ${reveal}
+  }
+
+  > :nth-child(1) {
+    --i: 3;
+  }
+
+  > :nth-child(2) {
+    --i: 4;
+  }
+
+  > :nth-child(3) {
+    --i: 5;
+  }
+
+  > :nth-child(4) {
+    --i: 6;
+  }
+`
+
+/* Sticky under the app bar. */
+const Rail = styled.aside`
+  position: sticky;
+  top: calc(var(--app-bar-height) + 24px);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+
+  > * {
+    ${reveal}
+    --i: 2;
+  }
+
+  @media (max-width: 1100px) {
+    position: static;
+    order: -1;
+  }
+`
+
+const PolicyButton = styled.button`
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 12px 0 10px;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-pill);
+  background: var(--color-raised);
+  color: var(--color-muted);
+  font-size: var(--fs-small);
+  line-height: var(--lh-small);
+  font-weight: 500;
+  cursor: pointer;
   transition:
-    background 0.3s ease,
-    box-shadow 0.3s ease,
-    color 0.3s ease;
-  width: 100vw;
-  position: relative;
-  left: 50%;
-  margin-left: -50vw;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+    color var(--motion),
+    border-color var(--motion);
+
+  &:hover {
+    border-color: var(--color-border-strong);
+    color: var(--color-text);
+  }
 `
 
-export const StyledMargin = styled.div`
-  padding: 24px var(--horizontal-padding);
-  display: flex;
-  align-items: center;
-`
+/** The size the title is set at, so long identifiers stay readable. */
+const titleSize = (text: string): 'lg' | 'md' | 'sm' =>
+  text.length > 90 ? 'sm' : text.length > 44 ? 'md' : 'lg'
 
-export const StyledLink = styled(Link)`
-  text-decoration: underline;
-  color: ${({ theme }) => theme.itemDetailsSubtitleColor};
-`
-
-export const StyledBackLink = styled.div`
-  margin-right: 12px;
-  display: flex;
-  align-items: center;
-  white-space: nowrap;
-  flex-shrink: 0;
-`
-
-export const Divider = styled.div`
-  margin-bottom: 40px;
-`
+/** A logo or picture among the fields, shown next to the title. */
+const logoOf = (fields: EntryField[]): string | undefined => {
+  const image = fields.find((field) => isImageField(field) && hasValue(field))
+  if (!image) return undefined
+  const value = String(image.value)
+  return /^https?:\/\//i.test(value) ? value : parseIpfs(value)
+}
 
 interface ItemDetailsProps {
   itemID: string
@@ -96,13 +400,20 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
   const [ipfsItemData, setIpfsItemData] = useState<
     { values?: Record<string, unknown> } | undefined
   >()
+  const [ipfsError, setIpfsError] = useState(false)
   const timestamp = useContext(WalletContext)?.timestamp
   const [modalOpen, setModalOpen] = useState(false)
   const { graphqlBatcher } = useGraphqlBatcher()
-  const [appealCost, setAppealCost] = useState<BigNumber | null | undefined>()
   const [metaEvidence, setMetaEvidence] = useState<MetaEvidence | undefined>()
+  const now = useNow()
+  const openAttachment = useAttachment()
+  const nativeCurrency = useNativeCurrency()
 
-  // subgraph item entities have id "<itemID>@<listaddress>"
+  // Opened right after submitting it (submit-item): a missing entry is
+  // still being indexed, not absent.
+  const location = useLocation()
+  const recentlySubmitted = justSubmitted(location.state)
+  // Subgraph item entities have id "<itemID>@<listaddress>".
   const compoundId = `${itemID}@${tcrAddress?.toLowerCase()}`
   const query = useQuery({
     queryKey: ['permanentItemDetails', compoundId],
@@ -116,42 +427,158 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
       }),
     enabled: !!chainId,
     staleTime: STALE_TIME,
+    // An entry sent a moment ago can take a while to reach the subgraph:
+    // keep looking for a while before settling on "not found".
+    refetchInterval: (query) =>
+      query.state.status === 'success' && !query.state.data?.item
+        ? missingEntryPollMs(query.state.dataUpdateCount, recentlySubmitted)
+        : false,
   })
 
+  // Every settings change of the list, for the date of the policy in force.
+  // The list page reads the same query, so it is cached when coming from it.
+  const settingsQuery = useQuery({
+    queryKey: ['permanentRegistry', tcrAddress, chainId],
+    queryFn: () =>
+      graphqlBatcher.fetch({
+        id: crypto.randomUUID(),
+        document: PERMANENT_REGISTRY_QUERY,
+        variables: { lowerCaseTCRAddress: tcrAddress?.toLowerCase() },
+        chainId: chainId!,
+        isPermanent: true,
+      }),
+    enabled: !!chainId && !!tcrAddress,
+    staleTime: STALE_TIME,
+  })
+  const listSettings = settingsQuery.data?.registry?.arbitrationSettings as
+    | SubgraphArbitrationSetting[]
+    | undefined
+
   const item = useMemo(
-    () => (query.isLoading ? undefined : query.data?.item),
+    () =>
+      (query.isLoading ? undefined : query.data?.item) as StakeItem | undefined,
     [query.isLoading, query.data],
   )
 
   const registry = useMemo(
-    () => (query.isLoading ? undefined : query.data?.item?.registry),
+    () =>
+      (query.isLoading ? undefined : query.data?.item?.registry) as
+        | StakeRegistry
+        | undefined,
     [query.isLoading, query.data],
   )
 
   useEffect(() => {
-    if (item && !ipfsItemData)
-      fetch(parseIpfs(item.data))
-        .then((r) => r.json())
-        .catch((_e) => console.error('Could not get ipfs file'))
-        .then((r) => setIpfsItemData(r))
-        .catch((_e) => console.error('Could not set ipfs item data'))
-  }, [item, ipfsItemData])
+    if (!item || ipfsItemData || ipfsError) return
+    fetch(parseIpfs(item.data))
+      .then((r) => r.json())
+      .then((r) => setIpfsItemData(r))
+      .catch((err: unknown) => {
+        console.error('Could not get ipfs file', err)
+        setIpfsError(true)
+      })
+  }, [item, ipfsItemData, ipfsError])
+
+  // A new submission takes the newest arbitration setting. A challenge, and
+  // the policy the entry is judged by, take the one the contract picks for
+  // this entry (arbitration-setting.ts): for a while after the governor
+  // changes the settings, that is still the previous one.
+  const latestSetting = registry?.arbitrationSettings?.[0]
+  const chainNow = timestamp?.toNumber()
+  const setting = useMemo(() => {
+    if (!item || !registry || chainNow === undefined) return undefined
+    return entrySetting(listSettings, {
+      status: item.status,
+      includedAt: toNum(item.includedAt),
+      withdrawingAt: toNum(item.withdrawingTimestamp),
+      challengedAt: toNum(item.challenges?.[0]?.createdAt),
+      cooldown: toNum(registry.arbitrationParamsCooldown),
+      now: chainNow,
+    })
+  }, [item, registry, listSettings, chainNow])
+  const settingInForce = setting ?? latestSetting
 
   const arbitrationCost = useArbitrationCost({
     address: registry?.arbitrator?.id,
-    arbitratorExtraData:
-      registry?.arbitrationSettings?.[0]?.arbitratorExtraData,
+    arbitratorExtraData: latestSetting?.arbitratorExtraData,
     library,
   })
+  // Until the list's settings load, which one a challenge uses is unknown,
+  // so no challenge cost is offered yet.
+  const challengeCost = useArbitrationCost({
+    address: registry?.arbitrator?.id,
+    arbitratorExtraData: settingsQuery.isLoading
+      ? undefined
+      : settingInForce?.arbitratorExtraData,
+    library,
+  })
+
+  // The submitter as the contract records it (msg.sender). The subgraph
+  // records the transaction's sender, another address when a contract wallet
+  // such as a Safe submitted, and only the contract's record can start a
+  // withdrawal. The subgraph's value stands in while this loads.
+  const submitterQuery = useQuery({
+    queryKey: [
+      'permanentItemSubmitter',
+      chainId,
+      registry?.id,
+      item?.itemID,
+      item?.includedAt,
+    ],
+    queryFn: async () => {
+      const list = new ethers.Contract(registry!.id, _gtcr, library!)
+      const record = await list.items(item!.itemID)
+      return String(record.submitter).toLowerCase()
+    },
+    enabled: !!registry?.id && !!library && !!item?.itemID,
+    staleTime: STALE_TIME,
+  })
+  const submitter = submitterQuery.data ?? item?.submitter
+
+  // What the next appeal costs, for the appeal funding card and dialog. It
+  // is read again for each new challenge or round, and a failed read is
+  // retried, so the dialog never waits on a stale or missing figure.
+  const latestChallenge = item?.challenges?.[0]
+  const appealCostQuery = useQuery({
+    queryKey: [
+      'permanentAppealCost',
+      chainId,
+      registry?.arbitrator?.id,
+      latestChallenge?.disputeID,
+      latestChallenge?.rounds?.length,
+    ],
+    queryFn: async (): Promise<BigNumber> => {
+      const arbitrator = new ethers.Contract(
+        registry!.arbitrator.id,
+        _IArbitrator,
+        library!,
+      )
+      return arbitrator.appealCost(
+        latestChallenge!.disputeID,
+        latestChallenge!.arbitrationSetting.arbitratorExtraData,
+      )
+    },
+    enabled:
+      !!registry &&
+      !!library &&
+      !!latestChallenge &&
+      !latestChallenge.disputeOutcome,
+    staleTime: STALE_TIME,
+  })
+  const appealCostFailed =
+    appealCostQuery.isError && !appealCostQuery.isFetching
 
   useEffect(() => {
     if (!registry) return
     ;(async () => {
-      const arbSetting = registry.arbitrationSettings[0]
+      const arbSetting = registry.arbitrationSettings?.[0]
+      if (!arbSetting?.metaEvidenceURI) return
       const response = await fetch(parseIpfs(arbSetting.metaEvidenceURI))
       const file = await response.json()
       setMetaEvidence(file)
-    })()
+    })().catch((err: unknown) => {
+      console.error('Could not get the list metadata', err)
+    })
   }, [registry])
 
   const decodedItem = useMemo(() => {
@@ -161,19 +588,11 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
     const orderDecodedData = (
       columns: Column[],
       values: Record<string, unknown> | undefined,
-    ) => {
-      const labels = columns.map((column) => column.label)
-      const ordered: unknown[] = []
-      for (const label of labels) {
-        const value = values?.[label]
-        ordered.push(value)
-      }
-      return ordered
-    }
+    ) => columns.map((column) => values?.[column.label])
 
     return {
       ...item, // Spread to convert from array to object.
-      errors: [],
+      errors: [] as string[],
       columns: metaEvidence.metadata.columns,
       decodedData: orderDecodedData(
         metaEvidence.metadata.columns,
@@ -183,16 +602,40 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
   }, [item, metaEvidence, ipfsItemData])
 
   const { metadata } = metaEvidence || {}
-  const { decodedData } = decodedItem || {}
+  const { decodedData, columns } = decodedItem || {}
   const { tcrTitle, itemName } = metadata || {}
+  const { symbol: tokenSymbol, decimals: tokenDecimals } = useTokenSymbol(
+    registry?.token,
+  )
 
   const statusCode = useMemo(() => {
     if (!item || !timestamp || !registry) return null
-    return itemToStatusCode(item, timestamp, registry)
+    return stakeStatusCode(item, timestamp, registry) ?? null
   }, [item, timestamp, registry])
 
-  const getStatusPhrase = (statusCode: number | null | undefined) => {
-    switch (statusCode) {
+  const entryStatus = useMemo(
+    () => stakeEntryStatus(item, timestamp, registry),
+    [item, timestamp, registry],
+  )
+
+  const fields = useMemo<EntryField[]>(
+    () =>
+      columns
+        ? columns.map((column, index) => ({
+            ...column,
+            value: decodedData?.[index],
+          }))
+        : [],
+    [columns, decodedData],
+  )
+  const primaryField = useMemo(() => titleField(fields), [fields])
+  const otherIdentifiers = useMemo(
+    () => identifierFields(fields).filter((field) => field !== primaryField),
+    [fields, primaryField],
+  )
+
+  const getStatusPhrase = (code: number | null | undefined) => {
+    switch (code) {
       case STATUS_CODE.ACCEPTED:
         return 'is verified to be safe'
       case STATUS_CODE.PENDING:
@@ -217,17 +660,19 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
     }
   }
 
-  const capitalizeFirst = (s: string | undefined) =>
-    s ? s.charAt(0).toUpperCase() + s.slice(1) : ''
-
+  // The tab names the entry itself (its heading), then its list.
+  const seoName =
+    primaryField && hasValue(primaryField)
+      ? String(primaryField.value)
+      : capitalizeFirstLetter(itemName ?? '') || 'Entry'
   const fullSeoTitle =
     decodedItem && metadata
-      ? `${capitalizeFirst(itemName)} - ${tcrTitle} - Kleros · Curate`
-      : 'Kleros · Curate'
+      ? `${seoName} · ${tcrTitle} | Kleros Curate`
+      : 'Kleros Curate'
   const truncatedSeoTitle = truncateAtWord(fullSeoTitle, 160)
 
   const fullSeoMetaDescription =
-    decodedItem && metadata && statusCode !== null
+    decodedItem && metadata && statusCode !== null && decodedData
       ? `${decodedData.join(' ')} - ${getStatusPhrase(statusCode)} on ${
           metadata.tcrTitle
         } in Kleros Curate`
@@ -240,6 +685,11 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
   const loading =
     !metadata ||
     (!decodedData && decodedItem && decodedItem.errors.length === 0)
+  // The subgraph item is here but its fields cannot be decoded: the IPFS
+  // file failed to load, or the list's metadata declares no columns.
+  const fieldsUnavailable = Boolean(
+    item && metadata && !decodedItem && (ipfsError || !metadata.columns),
+  )
 
   // Check if there is some action on the URL and, if so, run it.
   useEffect(() => {
@@ -251,100 +701,327 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
     setModalOpen(true)
   }, [loading, search])
 
-  // If the item is disputed, unresolved etc, get the appealCost to propagate it to
-  // crowdfunding related components
-  useEffect(() => {
-    if (!item || !registry || appealCost !== undefined) return
-    const challenge = item.challenges[0]
-    // appeal cost might not be applicable
-    if (!challenge || challenge.disputeOutcome) setAppealCost(null)
-    else {
-      const arbitrator = new ethers.Contract(
-        registry?.arbitrator?.id,
-        _IArbitrator,
-        library,
-      )
-
-      arbitrator
-        .appealCost(
-          challenge.disputeID,
-          challenge.arbitrationSetting.arbitratorExtraData,
-        )
-        .then((cost: BigNumber) => setAppealCost(cost))
-        .catch((err: unknown) => {
-          console.error(err)
-          setAppealCost(null)
-        })
-    }
-  }, [item, appealCost, library, registry])
-
   useDocumentHead(truncatedSeoTitle, truncatedSeoMetaDescription)
 
   if (!tcrAddress || !itemID)
     return (
       <ErrorPage
         code="400"
-        message={'This item could not be found.'}
-        tip="Make sure your wallet is set to the correct network (is this on Gnosis Chain?)."
+        message="This entry could not be found."
+        tip={ENTRY_LINK_TIP}
       />
     )
 
-  return (
-    <>
-      <StyledBanner>
-        <Breadcrumb separator=">">
-          <StyledBreadcrumbItem>
-            <StyledLink to={`/tcr/${chainId}/${tcrAddress}`}>
-              {tcrTitle}
-            </StyledLink>
-          </StyledBreadcrumbItem>
-          <StyledBreadcrumbItem>
-            {itemName && capitalizeFirstLetter(itemName)} Details
-          </StyledBreadcrumbItem>
-        </Breadcrumb>
-        {registry?.arbitrationSettings?.[0]?.metadata?.policyURI && (
-          <PolicyLink
-            href={parseIpfs(registry.arbitrationSettings[0].metadata.policyURI)}
-          />
-        )}
-      </StyledBanner>
-      <StyledMargin>
-        <StyledBackLink>
-          <StyledLink to={`/tcr/${chainId}/${tcrAddress}`}>Go Back</StyledLink>
-        </StyledBackLink>
-      </StyledMargin>
-      <StyledLayoutContent>
-        <ItemStatusCard
-          item={decodedItem}
-          registry={registry}
-          timestamp={timestamp}
-          modalOpen={modalOpen}
-          metaEvidence={metaEvidence}
-          setModalOpen={setModalOpen}
-          appealCost={appealCost ?? undefined}
-          arbitrationCost={arbitrationCost.arbitrationCost}
-        />
-        <Divider />
-        <ItemDetailsCard
-          columns={decodedItem?.columns}
-          item={decodedItem}
-          title={`${
-            itemName ? capitalizeFirstLetter(itemName) : 'Item'
-          } Details`}
-          loading={loading}
-          itemMetaEvidence={null}
-        />
-        {/* Crowdfunding card is only rendered if the item has an appealable dispute. */}
-        <CrowdfundingCard
-          item={decodedItem}
-          registry={registry}
-          timestamp={timestamp}
-          appealCost={appealCost ?? undefined}
-        />
+  // A failed read and a missing entry each get their own page; neither is
+  // left as a loading skeleton.
+  if (query.isError && !query.data)
+    return (
+      <ErrorPage
+        code="Error"
+        title="This entry did not load"
+        message={ENTRY_LOAD_FAILED}
+        onRetry={() => query.refetch()}
+      />
+    )
 
-        <RequestTimelines item={item} metaEvidence={metaEvidence} />
-      </StyledLayoutContent>
-    </>
+  if (query.isSuccess && !query.data?.item && recentlySubmitted)
+    return (
+      <ErrorPage
+        code="Indexing"
+        tone="window"
+        title={ENTRY_INDEXING_TITLE}
+        message={ENTRY_INDEXING_MESSAGE}
+        home={{
+          to: `/tcr/${chainId}/${tcrAddress}`,
+          label: 'Back to the list',
+        }}
+      />
+    )
+
+  if (query.isSuccess && !query.data?.item)
+    return (
+      <ErrorPage
+        code="404"
+        title="Entry not found"
+        message="This list has no entry with this ID."
+        tip={ENTRY_MISSING_TIP}
+      />
+    )
+
+  const name = itemName || 'item'
+  const Name = capitalizeFirstLetter(name)
+  const registryHref = `/tcr/${chainId}/${tcrAddress}`
+  const policyURI =
+    settingInForce?.metadata?.policyURI ?? latestSetting?.metadata?.policyURI
+  // When that policy took effect: settings newer than the one in force for
+  // this entry do not apply to it yet.
+  const policySince = policyInForceSince(
+    setting && listSettings
+      ? listSettings.filter(
+          (other) => toNum(other.timestamp) <= toNum(setting.timestamp),
+        )
+      : listSettings,
+  )
+  const logo = logoOf(fields)
+  const titleText =
+    primaryField && hasValue(primaryField) ? String(primaryField.value) : Name
+
+  const facts =
+    item && registry && statusCode !== null
+      ? stakeFacts({ item, registry, statusCode, chainId })
+      : undefined
+  const challenge = facts?.challenge
+  const challengeInSubmission =
+    !!facts &&
+    !!challenge?.challenger &&
+    facts.hasDispute &&
+    toNum(challenge.createdAt) >= facts.submissionStart
+  const evidenceCount = facts
+    ? (item?.evidences ?? []).filter(
+        (evidence) => toNum(evidence.timestamp) >= facts.submissionStart,
+      ).length
+    : 0
+
+  // The fields card shows why the fields cannot be read.
+  const cardItem = fieldsUnavailable
+    ? {
+        ...(item as StakeItem),
+        errors: [
+          ipfsError
+            ? `The ${name}'s data could not be loaded from IPFS.`
+            : `This list's metadata declares no fields, so the ${name} cannot be displayed.`,
+        ],
+      }
+    : decodedItem
+
+  const minStake = registry?.submissionMinDeposit
+  const explainerSteps = [
+    {
+      title: 'A stake backs every entry',
+      body: registry
+        ? `At least ${tokenText(minStake ?? 0, tokenDecimals, tokenSymbol)} in the list's token${
+            arbitrationCost.arbitrationCost
+              ? ` plus ${nativeText(arbitrationCost.arbitrationCost, nativeCurrency)} for arbitration`
+              : ' plus an arbitration deposit'
+          }. It backs the ${name} while listed and comes back when the submitter withdraws.`
+        : `A token stake and an arbitration deposit back the ${name} while listed, and come back when the submitter withdraws.`,
+    },
+    {
+      title: 'Spot a mistake, earn the stake',
+      body: registry
+        ? `Challenge a ${name} that breaks the policy, at any time, with ${multiplierPercent(registry.challengeStakeMultiplier)} of its stake plus the arbitration cost. If jurors agree, you take its stake and arbitration deposit and your stake comes back; if not, your stake is added to the ${name}'s. ${
+            toNum(registry.submissionPeriod) > 0
+              ? `Pending for ${formatDurationLong(toNum(registry.submissionPeriod))}, then accepted.`
+              : `Accepted at once: this list has no submission period.`
+          }`
+        : `Challenge a ${name} that breaks the policy, at any time, with a share of its stake. If jurors agree, you take its stake and your stake comes back; if not, your stake is added to the ${name}'s.`,
+    },
+    {
+      title: 'Withdraw to get the stake back',
+      body: registry
+        ? `The submitter starts a withdrawal${
+            toNum(registry.withdrawingPeriod) > 0
+              ? `, waits ${formatDurationLong(toNum(registry.withdrawingPeriod))}`
+              : ''
+          }, then anyone executes it. Still challengeable while withdrawing.`
+        : `The submitter starts a withdrawal, waits the withdrawing period, then anyone executes it.`,
+    },
+  ]
+
+  return (
+    <Page>
+      <Crumbs aria-label="Breadcrumb">
+        <Link to={registryHref}>
+          <CurateIcon name="registry" size={14} />
+          {tcrTitle || 'Registry'}
+        </Link>
+        <span aria-hidden>/</span>
+        <span aria-current="page">{Name}</span>
+      </Crumbs>
+
+      <Hero
+        as="section"
+        $featured
+        $padding="none"
+        aria-label={`${Name} overview`}
+        style={{ ['--i' as string]: 1 }}
+      >
+        <HeroMain>
+          <Eyebrow>
+            <Label $tone="faint">
+              {metadata ? Name : 'Stake Curate entry'}
+            </Label>
+            {chainId && <ChainChip chainId={chainId} size="sm" />}
+          </Eyebrow>
+          <Identity>
+            {logo && <Logo src={logo} alt="" />}
+            {loading && !fieldsUnavailable ? (
+              <SkeletonBlock $height="40px" $width="min(420px, 100%)" />
+            ) : (
+              <Title $size={titleSize(titleText)}>
+                {primaryField ? (
+                  <FieldValue field={primaryField} detailed />
+                ) : (
+                  Name
+                )}
+              </Title>
+            )}
+          </Identity>
+          {otherIdentifiers.length > 0 && (
+            <KeyRow>
+              {otherIdentifiers.map((field, index) => (
+                <div key={`${field.label}-${index}`}>
+                  <dt>{field.label}</dt>
+                  <dd>
+                    <FieldValue field={field} />
+                  </dd>
+                </div>
+              ))}
+            </KeyRow>
+          )}
+          <StatusRow>
+            {entryStatus ? (
+              <EntryStatus status={entryStatus} now={now} />
+            ) : (
+              <SkeletonBlock $height="18px" $width="220px" />
+            )}
+            {policyURI && (
+              <PolicyButton
+                type="button"
+                onClick={() => openAttachment(parseIpfs(policyURI), true)}
+              >
+                <CurateIcon name="policy" size={14} />
+                Listing policy
+                <PolicySince
+                  since={policySince}
+                  loading={settingsQuery.isLoading}
+                  now={now}
+                />
+              </PolicyButton>
+            )}
+          </StatusRow>
+        </HeroMain>
+        <HeroSide>
+          {item && facts && statusCode !== null ? (
+            <StakeWindowPanel
+              item={item}
+              facts={facts}
+              statusCode={statusCode}
+              now={now}
+            />
+          ) : (
+            <SkeletonBlock
+              $height="216px"
+              $width="216px"
+              style={{ margin: '0 auto', borderRadius: '50%' }}
+            />
+          )}
+        </HeroSide>
+        <HeroStats>
+          {item && facts ? (
+            <Stats>
+              <div>
+                <Label as="dt" $tone="faint">
+                  {facts.reincluded ? 'Reincluded' : 'Submitted'}
+                </Label>
+                <dd
+                  title={
+                    facts.includedAt
+                      ? formatAbsolute(facts.includedAt)
+                      : undefined
+                  }
+                >
+                  {facts.includedAt ? formatSince(facts.includedAt, now) : '—'}
+                </dd>
+              </div>
+              {submitter && (
+                <div>
+                  <Label as="dt" $tone="faint">
+                    By
+                  </Label>
+                  <dd>
+                    <AddressLink address={submitter} />
+                  </dd>
+                </div>
+              )}
+              {challengeInSubmission && challenge && (
+                <div>
+                  <Label as="dt" $tone="faint">
+                    Challenged by
+                  </Label>
+                  <dd>
+                    <AddressLink address={challenge.challenger} />
+                  </dd>
+                </div>
+              )}
+              {/* While jurors decide the court panel leads with the same count. */}
+              {!facts.inCourt && (
+                <div>
+                  <Label as="dt" $tone="faint">
+                    Evidence
+                  </Label>
+                  <dd>
+                    <AnimatedNumber value={evidenceCount} />
+                  </dd>
+                </div>
+              )}
+              <div>
+                <Label as="dt" $tone="faint">
+                  Submissions
+                </Label>
+                <dd>
+                  {item.submissions ? (
+                    <AnimatedNumber value={item.submissions.length} />
+                  ) : (
+                    '—'
+                  )}
+                </dd>
+              </div>
+            </Stats>
+          ) : (
+            <SkeletonBlock $height="44px" />
+          )}
+        </HeroStats>
+      </Hero>
+
+      <Columns>
+        <Main>
+          <ItemDetailsCard
+            columns={columns ?? metadata?.columns}
+            item={cardItem}
+            title="Fields"
+            loading={Boolean(loading) && !fieldsUnavailable}
+            kind="stake"
+          />
+          <RequestTimelines item={item} metaEvidence={metaEvidence} />
+          <Explainer
+            id="stake-curate-item"
+            eyebrow="How this list works"
+            heading="A stake backs every entry. Spot a bad one and it is yours."
+            steps={explainerSteps}
+          />
+        </Main>
+
+        <Rail aria-label="Actions">
+          <ItemStatusCard
+            item={decodedItem ?? item}
+            registry={registry}
+            timestamp={timestamp}
+            modalOpen={modalOpen}
+            metaEvidence={metaEvidence}
+            setModalOpen={setModalOpen}
+            appealCost={appealCostQuery.data}
+            appealCostFailed={appealCostFailed}
+            onRetryAppealCost={() => void appealCostQuery.refetch()}
+            arbitrationCost={arbitrationCost.arbitrationCost}
+            challengeArbitrationCost={challengeCost.arbitrationCost}
+            submitter={submitter}
+            policyURI={policyURI}
+          />
+        </Rail>
+      </Columns>
+      <StickyActionBarSpacer aria-hidden />
+    </Page>
   )
 }
 

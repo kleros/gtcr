@@ -1,99 +1,249 @@
-import React, { useState, useMemo } from 'react'
-import {
-  Descriptions,
-  Button,
-  Row,
-  Col,
-  Slider,
-  InputNumber,
-  Typography,
-  Divider,
-} from 'components/ui'
-import {
-  STATUS_CODE,
-  PARTY,
-  SUBGRAPH_RULING,
-} from 'utils/permanent-item-status'
+import React, { useEffect, useMemo, useState } from 'react'
+import styled from 'styled-components'
 import { ethers, BigNumber } from 'ethers'
-
-const { formatEther, parseEther } = ethers.utils
 import { useAccount, usePublicClient, useWalletClient } from 'wagmi'
 import { simulateContract } from '@wagmi/core'
-import EnsureAuth from 'components/ensure-auth'
-import ETHAmount from 'components/eth-amount'
 import _gtcr from 'assets/abis/PermanentGTCR.json'
-import useRequiredFees from 'hooks/required-fees'
-import useNativeCurrency from 'hooks/native-currency'
-import useNativeBalance from 'hooks/use-native-balance'
 import ListingCriteriaLink from 'components/listing-criteria-link'
+import useNativeCurrency from 'hooks/native-currency'
+import useNow from 'hooks/use-now'
+import { formatAbsolute, formatDuration } from 'utils/time'
+import useNativeBalance from 'hooks/use-native-balance'
+import useRequiredFees from 'hooks/required-fees'
+import {
+  PARTY,
+  STATUS_CODE,
+  SUBGRAPH_RULING,
+} from 'utils/permanent-item-status'
 import { wrapWithToast, errorToast } from 'utils/wrap-with-toast'
 import { parseWagmiError } from 'utils/parse-wagmi-error'
 import { wagmiConfig } from 'config/wagmi'
-import { StyledSpin, StyledModal } from './challenge'
-import { InsufficientBalanceText } from 'pages/light-item-details/modals/challenge'
+import {
+  Body,
+  Button,
+  ChipButton,
+  Label,
+  Row,
+  Small,
+  Stack,
+  TextInput,
+} from 'components/curate/primitives'
+import { WhatHappensNext } from 'components/curate/what-happens-next'
+import {
+  DialogColumns,
+  GateHelper,
+  ModalShell,
+  ModalSkeleton,
+  PolicyText,
+  nativeText,
+  useActionGate,
+} from './shell'
+
+/*
+ * Fund one side of an appeal on a Stake Curate dispute. Contributions are in
+ * the chain's native currency; backers of the side that wins the dispute
+ * (its final ruling) get their money back plus a share of the other side's
+ * funding.
+ */
+
+const { formatEther, parseEther } = ethers.utils
+
+const MULTIPLIER_DIVISOR = 10_000
+
+const Range = styled.input`
+  width: 100%;
+  accent-color: var(--color-primary);
+`
+
+/* The amount in the field, the currency as a suffix inside it. */
+const AmountField = styled.div`
+  position: relative;
+
+  input {
+    padding-right: 72px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  span {
+    position: absolute;
+    top: 50%;
+    right: 14px;
+    color: var(--color-faint);
+    font-size: var(--fs-small);
+    line-height: var(--lh-small);
+    font-weight: 500;
+    transform: translateY(-50%);
+    pointer-events: none;
+  }
+`
+
+/* The side being funded: how much of its fee is raised so far. */
+const SideBlock = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius);
+  background: var(--color-raised);
+`
+
+const SideShare = styled.span`
+  color: var(--color-text);
+  font-family: var(--font-figure);
+  font-size: 26px;
+  line-height: 1;
+  font-weight: 500;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+`
+
+const Track = styled.div`
+  position: relative;
+  height: 10px;
+  overflow: hidden;
+  border-radius: var(--radius-pill);
+  background: repeating-linear-gradient(
+    135deg,
+    var(--color-surface) 0 3px,
+    transparent 3px 7px
+  );
+  box-shadow: inset 0 0 0 1px var(--glass-border);
+
+  span {
+    position: absolute;
+    inset: 0 auto 0 0;
+    border-radius: var(--radius-pill);
+    background: var(--status-contested);
+    box-shadow: 0 0 12px
+      color-mix(in srgb, var(--status-contested) 55%, transparent);
+  }
+`
 
 interface CrowdfundModalProps {
-  statusCode: any
-  item: any
+  statusCode: number
+  item: SubgraphItem
   fileURI?: string
-  appealCost: any
-  [key: string]: any
+  appealCost?: BigNumber
+  /** The appeal cost could not be read, even after retrying. */
+  appealCostFailed?: boolean
+  onRetryAppealCost?: () => void
+  onCancel: () => void
+  visible?: boolean
+  title?: React.ReactNode
+  [key: string]: unknown
 }
+
+const toBigNumber = (value: unknown): BigNumber | undefined =>
+  value === null || value === undefined
+    ? undefined
+    : BigNumber.from(String(value))
+
+const capitalize = (text: string) =>
+  text ? text.charAt(0).toUpperCase() + text.slice(1) : text
+
+const sideName = (side: number) =>
+  side === PARTY.REQUESTER ? 'submitter' : 'challenger'
 
 const CrowdfundModal = ({
   statusCode,
   item,
   fileURI,
   appealCost,
-  ...rest
+  appealCostFailed,
+  onRetryAppealCost,
+  onCancel,
+  visible = false,
+  title,
 }: CrowdfundModalProps) => {
   const { address: account } = useAccount()
   const publicClient = usePublicClient()
   const { data: walletClient } = useWalletClient()
-  const {
-    id: tcrAddress,
-    sharedStakeMultiplier,
-    winnerStakeMultiplier,
-    loserStakeMultiplier,
-  } = item?.registry || {}
-
-  const MULTIPLIER_DIVISOR = 10_000
+  const registry = item?.registry
+  const tcrAddress = registry?.id
+  const sharedStakeMultiplier = toBigNumber(registry?.sharedStakeMultiplier)
+  const winnerStakeMultiplier = toBigNumber(registry?.winnerStakeMultiplier)
+  const loserStakeMultiplier = toBigNumber(registry?.loserStakeMultiplier)
 
   const [contributionShare, setContributionShare] = useState(1)
-  const [userSelectedSide, setUserSelectedSide] = useState<any>()
+  // What the amount field shows while being typed; null follows the slider.
+  const [contributionInput, setContributionInput] = useState<string | null>(
+    null,
+  )
+  // A typed amount, in wei: sent as typed (capped at what is still needed),
+  // never rounded to a share. Undefined while the slider sets the amount.
+  const [typedWei, setTypedWei] = useState<BigNumber>()
+  const [userSelectedSide, setUserSelectedSide] = useState<number>()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const nativeCurrency = useNativeCurrency()
   const { balance: nativeBalance } = useNativeBalance()
+  const gate = useActionGate('fund an appeal')
 
-  const round = item.challenges[0].rounds[0]
+  // The component stays mounted while the dialog is closed, so it is reset
+  // on closing and every opening starts afresh, as on Light and Classic: a
+  // side picked earlier may be fully funded by then (with the picker hidden,
+  // the other side could not be chosen), and an amount typed was a share of
+  // what was still needed at the time.
+  useEffect(() => {
+    if (visible) return
+    setUserSelectedSide(undefined)
+    setContributionInput(null)
+    setTypedWei(undefined)
+    setContributionShare(1)
+  }, [visible])
+
+  const round = item.challenges?.[0]?.rounds?.[0]
   const {
-    hasPaidRequester,
-    hasPaidChallenger,
+    hasPaidRequester = false,
+    hasPaidChallenger = false,
     ruling,
     amountPaidRequester,
     amountPaidChallenger,
-  } = round
+  } = round ?? {}
 
   const winner =
     ruling === SUBGRAPH_RULING.ACCEPT ? PARTY.REQUESTER : PARTY.CHALLENGER
 
+  // Each side's deadline, shown where the funding happens (the hero's ring
+  // is under the dialog): the loser funds only in the first half, where the
+  // contract's integer division puts it; the winner, or either side when
+  // jurors refused to rule, until the end of the period.
+  const now = useNow()
+  const appealStart = Number(round?.appealPeriodStart ?? 0)
+  const appealEnd = Number(round?.appealPeriodEnd ?? 0)
+  const deadlineFor = (party: number) =>
+    ruling !== SUBGRAPH_RULING.NONE && party !== winner
+      ? appealStart + Math.floor((appealEnd - appealStart) / 2)
+      : appealEnd
+  const timeLeft = (party: number) => {
+    const at = deadlineFor(party)
+    return at > now ? `${formatDuration(at - now)} left` : 'time is up'
+  }
+
+  // Once one side is fully funded only the other can be funded (the
+  // contract refuses a second contribution to a funded side), whatever the
+  // ruling.
   const autoSelectedSide = useMemo(() => {
     if (
-      ruling === PARTY.NONE ||
       (hasPaidRequester && hasPaidChallenger) ||
       (!hasPaidRequester && !hasPaidChallenger)
     )
       return PARTY.NONE
 
-    if (statusCode === STATUS_CODE.CROWDFUNDING_WINNER) return winner
+    if (
+      ruling !== SUBGRAPH_RULING.NONE &&
+      statusCode === STATUS_CODE.CROWDFUNDING_WINNER
+    )
+      return winner
 
-    return !hasPaidRequester ? PARTY.REQUESTER : PARTY.CHALLENGER
+    return hasPaidRequester ? PARTY.CHALLENGER : PARTY.REQUESTER
   }, [ruling, hasPaidRequester, hasPaidChallenger, statusCode, winner])
 
-  const side = useMemo(
-    () => userSelectedSide || autoSelectedSide,
-    [autoSelectedSide, userSelectedSide],
-  )
+  const side = userSelectedSide ?? autoSelectedSide
+  const canPickSide =
+    (ruling === SUBGRAPH_RULING.NONE ||
+      statusCode === STATUS_CODE.CROWDFUNDING) &&
+    autoSelectedSide === PARTY.NONE
 
   const { requiredForSide, amountStillRequired, potentialReward } =
     useRequiredFees({
@@ -106,53 +256,127 @@ const CrowdfundModal = ({
       appealCost,
     })
 
-  if (!sharedStakeMultiplier || !potentialReward)
+  const close = () => onCancel()
+
+  if (!sharedStakeMultiplier || !round)
     return (
-      <StyledModal title="Crowdfund Item" {...rest}>
-        <StyledSpin />
-      </StyledModal>
+      <ModalShell
+        open={visible}
+        title={title ?? 'Fund an appeal'}
+        eyebrow="Contribute appeal fees"
+        onClose={close}
+      >
+        <ModalSkeleton />
+      </ModalShell>
     )
 
-  if (
-    (ruling === SUBGRAPH_RULING.NONE ||
-      statusCode === STATUS_CODE.CROWDFUNDING) &&
-    side === PARTY.NONE
-  )
+  // Every amount below derives from the appeal cost the arbitrator reports:
+  // wait for it, or say the read failed and offer to read it again, rather
+  // than claim there is nothing to fund.
+  if (!appealCost)
     return (
-      <StyledModal
-        title="Contribute Fees"
-        footer={[
-          <Button
-            key="submitter"
-            type="primary"
-            onClick={() => setUserSelectedSide(PARTY.REQUESTER)}
-          >
-            Submitter
-          </Button>,
-          <Button
-            key="challenger"
-            type="primary"
-            onClick={() => setUserSelectedSide(PARTY.CHALLENGER)}
-          >
-            Challenger
-          </Button>,
-        ]}
-        {...rest}
+      <ModalShell
+        open={visible}
+        title={title ?? 'Fund an appeal'}
+        eyebrow="Contribute appeal fees"
+        onClose={close}
       >
-        Which side do you want to fund?
-      </StyledModal>
+        {appealCostFailed ? (
+          <Stack $gap={12}>
+            <Body $muted>
+              The appeal cost could not be read from the arbitrator.
+            </Body>
+            {onRetryAppealCost && (
+              <Row>
+                <Button
+                  type="button"
+                  $variant="secondary"
+                  onClick={onRetryAppealCost}
+                >
+                  Try again
+                </Button>
+              </Row>
+            )}
+          </Stack>
+        ) : (
+          <ModalSkeleton />
+        )}
+      </ModalShell>
     )
+
+  const sidePaid = (party: number) =>
+    BigNumber.from(
+      String(
+        party === PARTY.REQUESTER
+          ? (amountPaidRequester ?? 0)
+          : (amountPaidChallenger ?? 0),
+      ),
+    )
+
+  const pickSide = (
+    <Stack $gap={12}>
+      <Body>
+        {ruling === SUBGRAPH_RULING.NONE
+          ? 'The jurors did not give a decisive ruling. Whichever side you fund, the other must fund too or lose the dispute.'
+          : 'Pick the side you want to back.'}
+      </Body>
+      <Row $gap={8} $wrap>
+        {[PARTY.REQUESTER, PARTY.CHALLENGER].map((party) => (
+          <ChipButton
+            key={party}
+            type="button"
+            $selected={userSelectedSide === party}
+            onClick={() => {
+              // An amount typed for one side is not meant for the other.
+              setUserSelectedSide(party)
+              setContributionInput(null)
+              setTypedWei(undefined)
+              setContributionShare(1)
+            }}
+          >
+            {sideName(party)} · {timeLeft(party)}
+          </ChipButton>
+        ))}
+      </Row>
+    </Stack>
+  )
+
+  if (side === PARTY.NONE || !requiredForSide || !amountStillRequired)
+    return (
+      <ModalShell
+        open={visible}
+        title={title ?? 'Fund an appeal'}
+        eyebrow="Contribute appeal fees"
+        onClose={close}
+      >
+        {canPickSide ? (
+          pickSide
+        ) : (
+          <Body $muted>There is nothing to fund on this round right now.</Body>
+        )}
+      </ModalShell>
+    )
+
+  const contribution = typedWei
+    ? typedWei.gt(amountStillRequired)
+      ? amountStillRequired
+      : typedWei
+    : amountStillRequired
+        .mul(BigNumber.from(Math.round(contributionShare * MULTIPLIER_DIVISOR)))
+        .div(MULTIPLIER_DIVISOR)
+  const reward = (potentialReward ?? BigNumber.from(0))
+    .mul(BigNumber.from(Math.ceil(contributionShare * MULTIPLIER_DIVISOR) || 1))
+    .div(MULTIPLIER_DIVISOR)
+  const insufficientBalance =
+    nativeBalance !== undefined &&
+    nativeBalance < BigInt(contribution.toString())
+  const amountPaid = sidePaid(side)
+  const stillNeededNumber = Number(formatEther(amountStillRequired))
 
   const crowdfundSide = async () => {
-    if (!walletClient || !publicClient) return
+    if (!walletClient || !publicClient || !tcrAddress) return
     setIsSubmitting(true)
     try {
-      const contribution = amountStillRequired
-        .mul(
-          BigNumber.from((contributionShare * MULTIPLIER_DIVISOR).toString()),
-        )
-        .div(MULTIPLIER_DIVISOR)
-
       const { request } = await simulateContract(wagmiConfig, {
         address: tcrAddress,
         abi: _gtcr,
@@ -167,7 +391,7 @@ const CrowdfundModal = ({
         publicClient,
       )
 
-      if (result.status) rest.onCancel()
+      if (result.status) onCancel()
     } catch (err) {
       console.error('Error contributing fees:', err)
       errorToast(parseWagmiError(err))
@@ -175,118 +399,183 @@ const CrowdfundModal = ({
     setIsSubmitting(false)
   }
 
-  const amountPaid = side === 1 ? amountPaidRequester : amountPaidChallenger
+  const blocker = !gate.ready
+    ? gate.blocker
+    : contribution.isZero()
+      ? 'Choose an amount above zero'
+      : insufficientBalance
+        ? `Not enough ${nativeCurrency}`
+        : undefined
 
-  const contribution = amountStillRequired
-    .mul(BigNumber.from((contributionShare * MULTIPLIER_DIVISOR).toString()))
-    .div(MULTIPLIER_DIVISOR)
-  const insufficientBalance =
-    nativeBalance !== undefined &&
-    nativeBalance < BigInt(contribution.toString())
+  const contributionText = nativeText(contribution, nativeCurrency)
+  const name = sideName(side)
+
+  const fundedShare = requiredForSide.isZero()
+    ? 0
+    : amountPaid.mul(MULTIPLIER_DIVISOR).div(requiredForSide).toNumber() /
+      MULTIPLIER_DIVISOR
 
   return (
-    <StyledModal
-      {...rest}
-      title={`Contribute Fees to ${
-        side === PARTY.REQUESTER ? 'Submitter' : 'Challenger'
-      }`}
-      footer={[
-        <Button key="back" onClick={rest.onCancel}>
-          Back
-        </Button>,
-        <EnsureAuth key="ensure-auth">
-          <div>
-            <Button
-              key="contribute"
-              type="primary"
-              onClick={crowdfundSide}
-              disabled={insufficientBalance}
-              loading={isSubmitting}
-            >
-              OK
-            </Button>
-            {insufficientBalance && (
-              <InsufficientBalanceText>
-                Insufficient balance
-              </InsufficientBalanceText>
-            )}
-          </div>
-        </EnsureAuth>,
-      ]}
+    <ModalShell
+      open={visible}
+      title={title ?? `Fund the ${name}'s appeal`}
+      eyebrow="Contribute appeal fees"
+      onClose={close}
+      width="lg"
     >
-      <Typography.Title level={4}>
-        Read the&nbsp;
-        <ListingCriteriaLink fileURI={fileURI}>
-          Listing Criteria
-        </ListingCriteriaLink>
-        .
-      </Typography.Title>
-      <Typography.Paragraph level={4}>
-        Contribute {nativeCurrency} for a chance to win at most{' '}
-        <ETHAmount
-          decimals={4}
-          amount={potentialReward
-            .mul(BigNumber.from(Math.ceil(contributionShare * 10000) || 1))
-            .div(10000)}
-          displayUnit={` ${nativeCurrency}`}
-        />
-        . You will earn up to this amount if the side you choose wins the next
-        round of the dispute.
-      </Typography.Paragraph>
-      <Typography.Paragraph>
-        How much {nativeCurrency} do you want to contribute?
-      </Typography.Paragraph>
-      <Row>
-        <Col span={16}>
-          <Slider
-            min={0}
-            max={1}
-            step={0.001}
-            onChange={(value) => setContributionShare(value)}
-            value={contributionShare}
-            tooltipVisible={false}
-          />
-        </Col>
-        <Col span={8}>
-          <InputNumber
-            min={0}
-            max={Number(formatEther(amountStillRequired))}
-            step={0.01}
-            style={{ marginLeft: 16 }}
-            value={
-              amountStillRequired
-                ? contributionShare * Number(formatEther(amountStillRequired))
-                : contributionShare
+      <DialogColumns>
+        <Stack $gap={16}>
+          {canPickSide && pickSide}
+          <SideBlock
+            role="group"
+            aria-label={`${capitalize(name)} side: ${Math.round(fundedShare * 100)}% of its appeal fee raised, ${nativeText(amountPaid, nativeCurrency)} of ${nativeText(requiredForSide, nativeCurrency)}`}
+          >
+            <Row $justify="space-between" $gap={12} $align="baseline">
+              <Label>{name} side</Label>
+              <SideShare>{Math.round(fundedShare * 100)}%</SideShare>
+            </Row>
+            <Track aria-hidden>
+              <span
+                style={{
+                  width: `${Math.round(Math.min(1, Math.max(0, fundedShare)) * 100)}%`,
+                }}
+              />
+            </Track>
+            <Small $muted>
+              {nativeText(amountPaid, nativeCurrency)} of{' '}
+              {nativeText(requiredForSide, nativeCurrency)} raised · still
+              needed {nativeText(amountStillRequired, nativeCurrency)}
+            </Small>
+          </SideBlock>
+
+          <Stack $gap={8}>
+            <Label>Your contribution</Label>
+            <Range
+              type="range"
+              min={0}
+              max={1}
+              step={0.001}
+              value={contributionShare}
+              aria-label="Share of the amount still needed"
+              onChange={(event) => {
+                setContributionShare(Number(event.target.value))
+                setContributionInput(null)
+                setTypedWei(undefined)
+              }}
+            />
+            <AmountField>
+              <TextInput
+                type="number"
+                // A wheel over the focused field would change the amount.
+                onWheel={(event) => event.currentTarget.blur()}
+                min={0}
+                max={stillNeededNumber}
+                step={0.01}
+                // The exact amount, as on Light and Classic: rounded, the
+                // figure typed back would fall short of funding the side.
+                value={contributionInput ?? formatEther(contribution)}
+                aria-label={`Contribution in ${nativeCurrency}`}
+                onChange={(event) => {
+                  // The field keeps what was typed; the share follows only
+                  // once the text parses, so "0." is not rewritten mid-entry.
+                  // The text is read as wei, never through a float: what is
+                  // still needed, or more, funds the side in full.
+                  const text = event.target.value
+                  setContributionInput(text)
+                  if (text === '' || amountStillRequired.isZero()) return
+                  try {
+                    const weiAmount = parseEther(text)
+                    if (weiAmount.isNegative()) return
+                    setTypedWei(weiAmount)
+                    // The share only drives the slider and the reward
+                    // estimate; the amount sent is the one typed.
+                    setContributionShare(
+                      weiAmount.gte(amountStillRequired)
+                        ? 1
+                        : weiAmount
+                            .mul(MULTIPLIER_DIVISOR)
+                            .div(amountStillRequired)
+                            .toNumber() / MULTIPLIER_DIVISOR,
+                    )
+                  } catch {
+                    // Partial input is kept as typed until it parses.
+                  }
+                }}
+                onBlur={() => setContributionInput(null)}
+              />
+              <span aria-hidden>{nativeCurrency}</span>
+            </AmountField>
+          </Stack>
+        </Stack>
+
+        <Stack $gap={12}>
+          <WhatHappensNext
+            receipt={[
+              {
+                label: `Required for the ${name}`,
+                value: nativeText(requiredForSide, nativeCurrency),
+              },
+              {
+                label: 'Already funded',
+                value: nativeText(amountPaid, nativeCurrency),
+              },
+              {
+                label: `The ${name} funds until`,
+                value: `${formatAbsolute(deadlineFor(side))} · ${timeLeft(side)}`,
+              },
+            ]}
+            total={contributionText}
+            steps={[
+              {
+                title: `You fund the ${name}'s side`,
+                body: `${contributionText} counts toward the ${nativeText(amountStillRequired, nativeCurrency)} still needed before the appeal deadline.`,
+              },
+              {
+                title: `The ${name} wins the dispute`,
+                body: `Once the final ruling is in, after any further appeal, you get your ${contributionText} back plus a share of the other side's funding: up to ${nativeText(reward, nativeCurrency)} for this contribution.`,
+              },
+              {
+                title: `The ${name} loses the dispute`,
+                branch: true,
+                body: 'Your contribution goes to the backers of the winning side.',
+              },
+              {
+                title: 'Jurors finally refuse to rule',
+                branch: true,
+                body: "Every backer of this round gets back their contribution, less a share of the court's fee.",
+              },
+              {
+                title: 'Only one side is fully funded',
+                branch: true,
+                body: 'That side wins without a new round, whatever the current ruling. Every contribution to this round, on either side, can be withdrawn after the ruling.',
+              },
+              {
+                title: 'Neither side is fully funded',
+                branch: true,
+                body: 'The current ruling stands. Every contribution to this round can be withdrawn after the ruling.',
+              },
+            ]}
+            confirmLabel={`Fund the ${name}`}
+            onConfirm={crowdfundSide}
+            confirmDisabled={Boolean(blocker)}
+            confirmBlocker={blocker}
+            loading={isSubmitting}
+            policy={
+              fileURI ? (
+                <>
+                  Jurors decide against the{' '}
+                  <ListingCriteriaLink fileURI={fileURI}>
+                    <PolicyText as="span">listing policy</PolicyText>
+                  </ListingCriteriaLink>
+                  .
+                </>
+              ) : undefined
             }
-            onChange={(value) => {
-              const weiAmount = parseEther(String(value))
-              const shareInBasis = weiAmount
-                .mul(MULTIPLIER_DIVISOR)
-                .div(amountStillRequired)
-              setContributionShare(shareInBasis.toNumber() / MULTIPLIER_DIVISOR)
-            }}
-          />{' '}
-          {nativeCurrency}
-        </Col>
-      </Row>
-      <Divider />
-      <Descriptions bordered column={1}>
-        <Descriptions.Item label="Total Required:">
-          <ETHAmount
-            decimals={4}
-            amount={requiredForSide}
-            displayUnit={` ${nativeCurrency}`}
           />
-        </Descriptions.Item>
-        <Descriptions.Item label="Amount Paid:">
-          <ETHAmount
-            decimals={4}
-            amount={amountPaid}
-            displayUnit={` ${nativeCurrency}`}
-          />
-        </Descriptions.Item>
-      </Descriptions>
-    </StyledModal>
+          <GateHelper gate={gate} caption={false} />
+        </Stack>
+      </DialogColumns>
+    </ModalShell>
   )
 }
 

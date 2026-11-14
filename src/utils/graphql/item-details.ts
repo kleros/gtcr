@@ -29,6 +29,8 @@ const LIGHT_ITEM_DETAILS_QUERY = gql`
         deposit
         disputeOutcome
         resolutionTime
+        challengeTime
+        txHashChallenge
         evidenceGroup {
           id
           evidences(order_by: { number: desc }) {

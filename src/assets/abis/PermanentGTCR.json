@@ -750,5 +750,21 @@
     "name": "SettingsUpdated",
     "inputs": [],
     "anonymous": false
-  }
+  },
+  { "type": "error", "name": "AlreadyInitialized", "inputs": [] },
+  { "type": "error", "name": "AppealAlreadyFunded", "inputs": [] },
+  { "type": "error", "name": "AppealLoserNotWithinPeriod", "inputs": [] },
+  { "type": "error", "name": "AppealNotRtA", "inputs": [] },
+  { "type": "error", "name": "AppealNotWithinPeriod", "inputs": [] },
+  { "type": "error", "name": "ArbitratorOnly", "inputs": [] },
+  { "type": "error", "name": "BelowArbitrationDeposit", "inputs": [] },
+  { "type": "error", "name": "BelowDeposit", "inputs": [] },
+  { "type": "error", "name": "GovernorOnly", "inputs": [] },
+  { "type": "error", "name": "ItemWithdrawingAlready", "inputs": [] },
+  { "type": "error", "name": "ItemWithdrawingNotYet", "inputs": [] },
+  { "type": "error", "name": "ItemWrongStatus", "inputs": [] },
+  { "type": "error", "name": "RewardsPendingDispute", "inputs": [] },
+  { "type": "error", "name": "RulingInvalidOption", "inputs": [] },
+  { "type": "error", "name": "SubmitterOnly", "inputs": [] },
+  { "type": "error", "name": "TransferFailed", "inputs": [] }
 ]

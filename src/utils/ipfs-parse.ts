@@ -12,8 +12,9 @@ export const getFormattedPath = (url: string) => {
 }
 
 export const parseIpfs = (path: string) => {
-  const ipfsResourceLink =
-    process.env.REACT_APP_IPFS_GATEWAY + getFormattedPath(path)
-
-  return ipfsResourceLink
+  const formatted = getFormattedPath(path)
+  // The link stays on the gateway whatever the path holds: glued on without
+  // a slash, ".evil.example/x" or "@evil.example/x" would change the host.
+  const onGateway = formatted.startsWith('/') ? formatted : `/${formatted}`
+  return `${process.env.REACT_APP_IPFS_GATEWAY}${onGateway}`
 }

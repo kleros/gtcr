@@ -120,27 +120,52 @@ const useNotificationWeb3 = () => {
     }
   }, [networkId, isConnected])
 
+  /*
+   * The chain clock. The latest block is read once to learn how far the
+   * chain's time is from this device's clock; from then on the timestamp
+   * advances with the device clock, so statuses and the actions they offer
+   * (Challenge, Execute, Withdraw) move on when a deadline passes, without a
+   * reload, in step with the countdowns.
+   */
+  const clockOffsetRef = useRef<number | null>(null)
+  const hasTimestamp = !!timestamp
   useEffect(() => {
-    if (!provider || timestamp) return
-    ;(async () => {
+    if (!provider || clockOffsetRef.current !== null) return
+    let cancelled = false
+    void (async () => {
+      let offset = 0
       try {
         const block = await provider.getBlock('latest')
-        setTimestamp(BigNumber.from(block.timestamp))
-        setLatestBlock(block.number)
+        offset = block.timestamp - Math.floor(Date.now() / 1000)
+        if (!cancelled) setLatestBlock(block.number)
       } catch (err) {
         console.error('Error fetching timestamp', err)
         // Every RPC endpoint failed. Fall back to wall clock — block
         // timestamps track it within seconds — so views that gate on the
         // chain clock (e.g. item cards) still render indexer data instead
         // of loading skeletons forever.
-        setTimestamp(BigNumber.from(Math.floor(Date.now() / 1000)))
       }
+      if (cancelled) return
+      clockOffsetRef.current = offset
+      setTimestamp(BigNumber.from(Math.floor(Date.now() / 1000) + offset))
     })()
-  }, [timestamp, provider])
+    return () => {
+      cancelled = true
+    }
+  }, [provider])
+
+  useEffect(() => {
+    if (!hasTimestamp) return
+    const id = window.setInterval(() => {
+      const offset = clockOffsetRef.current ?? 0
+      setTimestamp(BigNumber.from(Math.floor(Date.now() / 1000) + offset))
+    }, 15_000)
+    return () => window.clearInterval(id)
+  }, [hasTimestamp])
 
   // Process queued web3 actions when account becomes available.
   useEffect(() => {
-    ;(async () => {
+    void (async () => {
       if (web3Actions.length === 0) return
 
       // If not connected, open the Reown modal
@@ -269,7 +294,7 @@ async function processWeb3Action(
           const newGTCRLog = txMined.logs.find((log) => {
             try {
               const parsed = interfaceToUse.parseLog(log)
-              return parsed.name === 'NewTCR' || 'NewGTCR' || 'NewPGTCR'
+              return ['NewTCR', 'NewGTCR', 'NewPGTCR'].includes(parsed.name)
             } catch {
               return false
             }

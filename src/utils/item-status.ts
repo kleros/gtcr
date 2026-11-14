@@ -40,20 +40,37 @@ export const STATUS_TEXT = {
   [STATUS_CODE.REMOVED]: 'Removed',
 }
 
-export const STATUS_COLOR = {
-  [STATUS_CODE.REJECTED]: '#ff4d4f',
-  [STATUS_CODE.REGISTERED]: '#52c41a',
-  [STATUS_CODE.SUBMITTED]: '#4da6ff',
-  [STATUS_CODE.REMOVAL_REQUESTED]: '#ff85c0',
-  [STATUS_CODE.CHALLENGED]: '#fa8c16',
-  [STATUS_CODE.CROWDFUNDING]: '#b37feb',
-  [STATUS_CODE.CROWDFUNDING_WINNER]: '#9d52d6',
-  [STATUS_CODE.WAITING_ARBITRATOR]: '#eb2f96',
-  [STATUS_CODE.PENDING_SUBMISSION]: '#36cfc9',
-  [STATUS_CODE.PENDING_REMOVAL]: '#ff7a45',
-  [STATUS_CODE.WAITING_ENFORCEMENT]: '#faad14',
-  [STATUS_CODE.REMOVED]: '#ff4d4f',
-}
+/**
+ * Status colors are the five DESIGN.md roles, as CSS variables so they follow the
+ * active theme: registered (green), window open (blue), contested (amber),
+ * off the list (red), neutral/final (grey). Never color alone: always with the label.
+ */
+export const STATUS_ROLE = {
+  [STATUS_CODE.REJECTED]: 'off',
+  [STATUS_CODE.REGISTERED]: 'registered',
+  [STATUS_CODE.SUBMITTED]: 'window',
+  [STATUS_CODE.REMOVAL_REQUESTED]: 'window',
+  [STATUS_CODE.CHALLENGED]: 'contested',
+  [STATUS_CODE.CROWDFUNDING]: 'contested',
+  [STATUS_CODE.CROWDFUNDING_WINNER]: 'contested',
+  [STATUS_CODE.WAITING_ARBITRATOR]: 'contested',
+  [STATUS_CODE.PENDING_SUBMISSION]: 'neutral',
+  [STATUS_CODE.PENDING_REMOVAL]: 'neutral',
+  [STATUS_CODE.WAITING_ENFORCEMENT]: 'contested',
+  [STATUS_CODE.REMOVED]: 'off',
+} as const
+
+export type StatusRole = (typeof STATUS_ROLE)[keyof typeof STATUS_ROLE]
+
+export const statusRoleColor = (role: StatusRole): string =>
+  `var(--status-${role})`
+
+export const STATUS_COLOR: Record<number, string> = Object.fromEntries(
+  Object.entries(STATUS_ROLE).map(([code, role]) => [
+    Number(code),
+    statusRoleColor(role),
+  ]),
+)
 
 export const SUBGRAPH_STATUS_TO_CODE = {
   Absent: 0,
@@ -187,18 +204,21 @@ export const itemToStatusCode = (
     // appeal period didn't start yet
     return STATUS_CODE.CHALLENGED
 
+  // The contracts take contributions while now < appealPeriodEnd.
   if (round.ruling === SUBGRAPH_RULING.NONE)
-    if (timestamp.lte(round.appealPeriodEnd))
+    if (timestamp.lt(round.appealPeriodEnd))
       // Arbitrator did not rule or refused to rule.
       return STATUS_CODE.CROWDFUNDING
     else return STATUS_CODE.WAITING_ARBITRATOR
 
   // Arbitrator gave a decisive ruling (i.e. Ruled in favor of either the requester or challenger).
-  if (timestamp.gt(round.appealPeriodEnd)) return STATUS_CODE.WAITING_ARBITRATOR
+  if (timestamp.gte(round.appealPeriodEnd))
+    return STATUS_CODE.WAITING_ARBITRATOR
   const appealPeriodDuration =
     Number(round.appealPeriodEnd) - Number(round.appealPeriodStart)
+  // The loser's half ends where the contracts' integer division puts it.
   const appealHalfTime =
-    Number(round.appealPeriodStart) + appealPeriodDuration / 2
+    Number(round.appealPeriodStart) + Math.floor(appealPeriodDuration / 2)
   if (timestamp.lt(appealHalfTime)) return STATUS_CODE.CROWDFUNDING // In first half of appeal period
 
   // If the party that lost the previous round is not fully funded

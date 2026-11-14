@@ -1,59 +1,249 @@
-import React, { useEffect, useCallback } from 'react'
+import React, { useEffect, useCallback, useId } from 'react'
 import styled from 'styled-components'
-import {
-  Card,
-  Button,
-  Row,
-  Col,
-  Select,
-  Form,
-  Divider,
-  Switch,
-  Tooltip,
-  Alert,
-} from 'components/ui'
-import Icon from 'components/ui/Icon'
 import { toast } from 'react-toastify'
-import {
-  withFormik,
-  FieldArray,
-  Field,
-  type FormikProps,
-  type FieldProps,
-  type FormikErrors,
-} from 'formik'
-import type { StepProps, TcrState } from '.'
-import type { SelectChangeValue } from 'components/ui/Select'
+import { withFormik, FieldArray, useField, type FormikProps } from 'formik'
 import { ItemTypes as AllItemTypes } from '@kleros/gtcr-encoder'
-import * as yup from 'yup'
-import CustomInput from 'components/custom-input'
-import ItemDetailsCard from 'components/item-details-card'
 import objectWithoutKey from 'utils/object-without-key'
+import { CurateIcon } from 'components/curate/icons'
+import Switch from 'components/ui/Switch'
+import { reveal } from 'components/curate/motion/reveal'
+import {
+  Button,
+  IconButton,
+  Label,
+  Small,
+  Stack,
+} from 'components/curate/primitives'
+import {
+  ErrorText,
+  Input,
+  Select,
+  StepBody,
+  StepHeader,
+  SwitchField,
+  TextField,
+} from './fields'
+import { itemColumnsProblem, itemSchema } from './schemas'
+import type { StepProps, TcrState } from '.'
 
-export const StyledAlert = styled(Alert)`
-  margin-bottom: 42px;
-`
+/*
+ * Step 2, the item: the fields every entry has (one row per field, a
+ * column header with one line of help on wide screens, stacked labels on
+ * phones) and the list-of-lists switch. The identifier rules and the two
+ * submit checks (one ID field, unique names) are the ones the previous step
+ * had.
+ */
 
 export const ItemTypes = objectWithoutKey(AllItemTypes, 'TWITTER_USER_ID')
 
 const { IMAGE, FILE, GTCR_ADDRESS, LONG_TEXT } = AllItemTypes
 
+const TYPE_OPTIONS = Object.values(ItemTypes).map((itemType) => ({
+  value: String(itemType),
+  label: String(itemType),
+}))
+
+const MAX_IDENTIFIERS = 5
+
+const COLUMNS = '28px minmax(0, 1fr) minmax(0, 1.25fr) 150px 72px 34px'
+
+const COLUMN_HELP = {
+  name: 'Label on the submit form',
+  description: 'What submitters should enter',
+  type: 'Kind of value',
+  indexed: `Searchable, max ${MAX_IDENTIFIERS}`,
+}
+
+const Editor = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+`
+
+const HeaderRow = styled.div`
+  display: grid;
+  grid-template-columns: ${COLUMNS};
+  gap: 12px;
+  padding: 0 12px 4px;
+
+  > span {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+
+  @media (max-width: 900px) {
+    display: none;
+  }
+`
+
+const FieldRow = styled.div`
+  display: grid;
+  grid-template-columns: ${COLUMNS};
+  align-items: start;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  background: var(--color-raised);
+  transition:
+    border-color var(--motion),
+    transform var(--motion);
+  ${reveal}
+
+  &:hover,
+  &:focus-within {
+    border-color: var(--glass-border);
+  }
+
+  @media (max-width: 900px) {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 14px;
+    padding: 14px;
+  }
+`
+
+const Index = styled.span`
+  display: inline-flex;
+  align-items: center;
+  height: 44px;
+  color: var(--color-faint);
+  font-family: var(--font-figure);
+  font-size: 13px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+
+  @media (max-width: 900px) {
+    height: auto;
+  }
+`
+
+const Cell = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+
+  @media (max-width: 900px) {
+    grid-column: 1 / -1;
+  }
+`
+
+const CellLabel = styled.label`
+  display: none;
+  flex-direction: column;
+  gap: 2px;
+
+  @media (max-width: 900px) {
+    display: flex;
+  }
+`
+
+const RemoveSlot = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  height: 44px;
+
+  @media (max-width: 900px) {
+    grid-row: 1;
+    grid-column: 2;
+    height: auto;
+  }
+`
+
+const ToggleCell = styled.div`
+  display: flex;
+  align-items: center;
+  height: 44px;
+
+  @media (max-width: 900px) {
+    grid-column: 1 / -1;
+    height: auto;
+  }
+`
+
+const FileTypes = styled.div`
+  grid-column: 2 / 5;
+
+  @media (max-width: 900px) {
+    grid-column: 1 / -1;
+  }
+`
+
+const ToggleLabel = styled.label`
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+
+  /* The visible name, phones only (the switch's own parts are not direct children). */
+  > span {
+    display: none;
+    color: var(--color-text);
+    font-size: var(--fs-body);
+    font-weight: 500;
+  }
+
+  @media (max-width: 900px) {
+    > span {
+      display: inline;
+    }
+  }
+`
+
+/** A text input bound to one column property, labelled for screen readers. */
+const ColumnInput = ({
+  name,
+  label,
+  help,
+  placeholder,
+}: {
+  name: string
+  label: string
+  help: string
+  placeholder?: string
+}) => {
+  const id = useId()
+  const [field, meta] = useField<string | undefined>(name)
+  const invalid = !!meta.touched && !!meta.error
+  return (
+    <Cell>
+      <CellLabel htmlFor={id}>
+        <Label $tone="muted">{label}</Label>
+        <Small $muted>{help}</Small>
+      </CellLabel>
+      <Input
+        id={id}
+        name={field.name}
+        value={field.value ?? ''}
+        placeholder={placeholder}
+        aria-label={label}
+        aria-invalid={invalid || undefined}
+        aria-describedby={invalid ? `${id}-error` : undefined}
+        autoComplete="off"
+        onChange={field.onChange}
+        onBlur={field.onBlur}
+      />
+      {invalid && <ErrorText id={`${id}-error`}>{meta.error}</ErrorText>}
+    </Cell>
+  )
+}
+
 type ItemFormValues = TcrState
-type ItemParamsProps = StepProps & FormikProps<ItemFormValues>
+type ItemParamsOuterProps = StepProps
+type ItemParamsProps = ItemParamsOuterProps & FormikProps<ItemFormValues>
 
 const ItemParams = ({
   handleSubmit,
   setFieldValue,
   formId,
   values: { columns, isTCRofTCRs },
-  errors,
-  touched,
-  ...rest
+  status,
+  setTcrState,
 }: ItemParamsProps) => {
-  const { setTcrState } = rest
-  const { tcrState } = rest || {}
-  const { tcrLogo, tcrPrimaryDocument, tcrDescription, tcrTitle } =
-    tcrState || {}
+  const ids = useId()
 
   const toggleTCRofTCRs = useCallback(() => {
     if (!isTCRofTCRs) {
@@ -77,287 +267,187 @@ const ItemParams = ({
     }))
   }, [columns, isTCRofTCRs, setTcrState])
 
-  const columnError = (index: number, key: keyof Column) => {
-    const cols = errors.columns
-    if (!Array.isArray(cols)) return undefined
-    const entry = cols[index]
-    return entry && typeof entry === 'object'
-      ? ((entry as FormikErrors<Column>)[key] as string | undefined)
-      : undefined
+  const onTypeChange = (index: number, value: string) => {
+    setFieldValue(`columns[${index}].type`, value)
+    // Long text and image fields cannot be identifiers.
+    if (value === LONG_TEXT || value === IMAGE)
+      setFieldValue(`columns[${index}].isIdentifier`, false)
   }
 
-  const onTypeChange = (index: number, value: SelectChangeValue) => {
-    setFieldValue(`columns[${index}].type`, value)
-    if (value === LONG_TEXT)
-      // Long text fields cannot be identifiers.
-      setFieldValue(`columns[${index}].isIdentifier`, false)
-    if (value === IMAGE)
-      // Image fields cannot be identifiers.
-      setFieldValue(`columns[${index}].isIdentifier`, false)
-  }
+  const identifierCount = columns.filter((column) => column.isIdentifier).length
+  const problem = typeof status === 'string' ? status : ''
 
   return (
-    <Card title="Choose the item parameters">
-      <Row>
-        <Col span={24}>
-          Is this a list of lists?
-          <Tooltip title="A list of lists has only one column: the list address. Information such as its title, description and logo will be pulled from the list itself.">
-            &nbsp;
-            <Icon type="question-circle-o" />
-          </Tooltip>
-          {'  '}
-          <Switch checked={isTCRofTCRs} onChange={toggleTCRofTCRs} />
-        </Col>
-      </Row>
-      <Divider />
-      {!isTCRofTCRs && (
-        <>
-          <StyledAlert
-            description="The column order defined here will be used to display the items. In other words, if your item has an image or title, you probably want it to be the first columns displayed."
-            type="info"
-            showIcon
-            closable
-          />
-          <Row
-            gutter={{ xs: 3, sm: 6, md: 10 }}
-            type="flex"
-            justify="space-between"
-          >
-            <Col span={4}>
-              Name
-              <Tooltip title="This will be the field label displayed to users when submitting an item.">
-                &nbsp;
-                <Icon type="question-circle-o" />
-              </Tooltip>
-            </Col>
-            <Col span={6}>
-              Description
-              <Tooltip title="This will be the text displayed when the user clicks the '?' symbol near the field label.">
-                &nbsp;
-                <Icon type="question-circle-o" />
-              </Tooltip>
-            </Col>
-            <Col span={4}>
-              Type
-              <Tooltip title="This is the column type">
-                &nbsp;
-                <Icon type="question-circle-o" />
-              </Tooltip>
-            </Col>
-            <Col span={3}>
-              Indexed
-              <Tooltip title="Indexed fields are searcheable and displayed on the card in the items view (along with image field types). Toggle these for the fields you consider most important.">
-                &nbsp;
-                <Icon type="question-circle-o" />
-              </Tooltip>
-            </Col>
-            {columns.filter((col) => col.type === FILE).length > 0 ? (
-              <Col span={4}>
-                Allowed File Types
-                <Tooltip title="A list of space separated allowed file extensions (e.g.: pdf doc  mp3).">
-                  &nbsp;
-                  <Icon type="question-circle-o" />
-                </Tooltip>
-              </Col>
-            ) : (
-              <Col span={4} />
-            )}
-            {columns.length > 1 && <Col span={1} />}
-          </Row>
-        </>
-      )}
-      <form id={formId} onSubmit={handleSubmit}>
+    <form id={formId} onSubmit={handleSubmit} noValidate>
+      <StepBody>
+        <StepHeader
+          heading="Define the entry fields"
+          lede="Each field is a column of the list, shown in this order: put the image or the title first."
+        />
+
+        <SwitchField
+          id={`${ids}-list-of-lists`}
+          label="This is a list of lists"
+          help="Entries are other lists: one field, the list address; title and logo come from each list."
+          checked={!!isTCRofTCRs}
+          onChange={toggleTCRofTCRs}
+        />
+
         {!isTCRofTCRs && (
-          <>
-            <FieldArray name="columns">
-              {({ push, remove }) => (
-                <>
-                  {columns &&
-                    columns.length > 0 &&
-                    columns.map((_, index) => (
-                      <Row
-                        gutter={{ xs: 3, sm: 6, md: 10 }}
-                        key={index}
-                        type="flex"
-                        justify="space-between"
-                      >
-                        <Col span={4}>
-                          <CustomInput
-                            name={`columns[${index}].label`}
-                            hasFeedback
-                            touched={
-                              touched.columns &&
-                              touched.columns[index] &&
-                              touched.columns[index].label
+          <FieldArray name="columns">
+            {({ push, remove }) => (
+              <Editor role="group" aria-label="Entry fields">
+                <HeaderRow aria-hidden>
+                  <span />
+                  <span>
+                    <Label $tone="faint">Name</Label>
+                    <Small $faint>{COLUMN_HELP.name}</Small>
+                  </span>
+                  <span>
+                    <Label $tone="faint">Description</Label>
+                    <Small $faint>{COLUMN_HELP.description}</Small>
+                  </span>
+                  <span>
+                    <Label $tone="faint">Type</Label>
+                    <Small $faint>{COLUMN_HELP.type}</Small>
+                  </span>
+                  <span>
+                    <Label $tone="faint">Indexed</Label>
+                    <Small $faint>{COLUMN_HELP.indexed}</Small>
+                  </span>
+                  <span />
+                </HeaderRow>
+                {columns.map((column, index) => {
+                  const canBeIdentifier =
+                    (identifierCount < MAX_IDENTIFIERS ||
+                      !!column.isIdentifier) &&
+                    column.type !== LONG_TEXT &&
+                    column.type !== IMAGE &&
+                    column.type !== FILE
+                  const typeId = `${ids}-type-${index}`
+                  const indexedId = `${ids}-indexed-${index}`
+                  return (
+                    <FieldRow
+                      key={index}
+                      role="group"
+                      aria-label={`Field ${index + 1}`}
+                      style={{ ['--i' as string]: Math.min(index, 6) }}
+                    >
+                      <Index aria-hidden>
+                        {String(index + 1).padStart(2, '0')}
+                      </Index>
+                      <ColumnInput
+                        name={`columns[${index}].label`}
+                        label="Name"
+                        help={COLUMN_HELP.name}
+                        placeholder="Name"
+                      />
+                      <ColumnInput
+                        name={`columns[${index}].description`}
+                        label="Description"
+                        help={COLUMN_HELP.description}
+                        placeholder="What to enter"
+                      />
+                      <Cell>
+                        <CellLabel htmlFor={typeId}>
+                          <Label $tone="muted">Type</Label>
+                          <Small $muted>{COLUMN_HELP.type}</Small>
+                        </CellLabel>
+                        <Select
+                          id={typeId}
+                          aria-label={`Field ${index + 1} type`}
+                          value={String(column.type)}
+                          onChange={(value) => onTypeChange(index, value)}
+                          options={TYPE_OPTIONS}
+                          menuMinWidth={180}
+                        />
+                      </Cell>
+                      <ToggleCell>
+                        <ToggleLabel
+                          htmlFor={indexedId}
+                          title={
+                            canBeIdentifier
+                              ? `Searchable and shown on the entry card; up to ${MAX_IDENTIFIERS} fields.`
+                              : 'Long text, image and file fields cannot be indexed.'
+                          }
+                        >
+                          <Switch
+                            id={indexedId}
+                            aria-label={`Field ${index + 1} indexed`}
+                            checked={!!column.isIdentifier}
+                            disabled={!canBeIdentifier}
+                            onChange={(checked) =>
+                              setFieldValue(
+                                `columns[${index}].isIdentifier`,
+                                checked,
+                              )
                             }
-                            error={columnError(index, 'label')}
-                            {...rest}
                           />
-                        </Col>
-                        <Col span={6}>
-                          <CustomInput
-                            name={`columns[${index}].description`}
-                            hasFeedback
-                            touched={
-                              touched.columns &&
-                              touched.columns[index] &&
-                              touched.columns[index].description
-                            }
-                            error={columnError(index, 'description')}
-                            {...rest}
-                          />
-                        </Col>
-                        <Col span={4}>
-                          <Field name={`columns[${index}].type`}>
-                            {({ field }: FieldProps) => (
-                              <Form.Item>
-                                <Select
-                                  {...field}
-                                  value={columns[index].type}
-                                  onChange={(value) =>
-                                    onTypeChange(index, value)
-                                  }
-                                >
-                                  {Object.values(ItemTypes).map(
-                                    (itemType, i) => (
-                                      <Select.Option
-                                        value={String(itemType)}
-                                        key={i}
-                                      >
-                                        {String(itemType)}
-                                      </Select.Option>
-                                    ),
-                                  )}
-                                </Select>
-                              </Form.Item>
-                            )}
-                          </Field>
-                        </Col>
-                        {(columns
-                          .map((column) => column.isIdentifier)
-                          .filter((isIdentifier) => !!isIdentifier).length <
-                          5 ||
-                          columns[index].isIdentifier) &&
-                        columns[index].type !== LONG_TEXT &&
-                        columns[index].type !== IMAGE &&
-                        columns[index].type !== FILE ? ( // Image, file and long text cannot be identifiers.
-                          <Col span={3}>
-                            <Field name={`columns[${index}].isIdentifier`}>
-                              {({ field }: FieldProps) => (
-                                <Form.Item>
-                                  <Switch
-                                    onChange={(value) =>
-                                      setFieldValue(
-                                        `columns[${index}].isIdentifier`,
-                                        value,
-                                      )
-                                    }
-                                    checked={field.value}
-                                    size="small"
-                                  />
-                                </Form.Item>
-                              )}
-                            </Field>
-                          </Col>
-                        ) : (
-                          <Col span={3} />
-                        )}
-                        {columns[index].type === FILE ? (
-                          <Col span={4}>
-                            <CustomInput
-                              name={`columns[${index}].allowedFileTypes`}
-                              hasFeedback
-                              touched={
-                                touched.columns &&
-                                touched.columns[index] &&
-                                touched.columns[index].allowedFileTypes
-                              }
-                              error={columnError(index, 'allowedFileTypes')}
-                              {...rest}
-                            />
-                          </Col>
-                        ) : (
-                          <Col span={4} />
-                        )}
+                          <span>Indexed</span>
+                        </ToggleLabel>
+                      </ToggleCell>
+                      <RemoveSlot>
                         {columns.length > 1 && (
-                          <Col span={1}>
-                            <Form.Item>
-                              <Icon
-                                className="dynamic-delete-button"
-                                type="minus-circle-o"
-                                onClick={() => remove(index)}
-                              />
-                            </Form.Item>
-                          </Col>
+                          <IconButton
+                            type="button"
+                            aria-label={`Remove field ${index + 1}`}
+                            onClick={() => remove(index)}
+                          >
+                            <CurateIcon name="remove" size={16} />
+                          </IconButton>
                         )}
-                      </Row>
-                    ))}
-                  <Button
-                    onClick={() =>
-                      push({ label: '', description: '', type: 'address' })
-                    }
-                    type="primary"
-                  >
-                    Add Field
-                  </Button>
-                </>
-              )}
-            </FieldArray>
-            <Divider />
-          </>
+                      </RemoveSlot>
+                      {column.type === FILE && (
+                        <FileTypes>
+                          <TextField
+                            name={`columns[${index}].allowedFileTypes`}
+                            label="Allowed file types"
+                            placeholder="pdf doc mp3"
+                            help="Extensions separated by spaces."
+                          />
+                        </FileTypes>
+                      )}
+                    </FieldRow>
+                  )
+                })}
+                <Stack $gap={10} style={{ marginTop: 8 }}>
+                  <div>
+                    <Button
+                      type="button"
+                      $variant="secondary"
+                      $size="sm"
+                      onClick={() =>
+                        push({ label: '', description: '', type: 'address' })
+                      }
+                    >
+                      Add a field
+                    </Button>
+                  </div>
+                  {problem && <ErrorText role="alert">{problem}</ErrorText>}
+                </Stack>
+              </Editor>
+            )}
+          </FieldArray>
         )}
-      </form>
-      <ItemDetailsCard
-        title="Preview"
-        columns={columns}
-        itemMetaEvidence={
-          isTCRofTCRs && {
-            file: {
-              fileURI: tcrPrimaryDocument,
-              metadata: {
-                tcrTitle,
-                tcrDescription,
-                logoURI: tcrLogo,
-              },
-            },
-          }
-        }
-        disabled
-      />
-    </Card>
+      </StepBody>
+    </form>
   )
 }
 
-const validationSchema = yup.object().shape({
-  columns: yup.array().of(
-    yup.object().shape({
-      label: yup.string().required('The column label is required.'),
-      description: yup.string().required('The column description is required.'),
-      allowedFileTypes: yup.string().when('type', {
-        is: FILE,
-        then: (schema) =>
-          schema.required('At least one file type is required.'),
-      }),
-    }),
-  ),
-})
-
-export default withFormik<StepProps, ItemFormValues>({
-  validationSchema,
+export default withFormik<ItemParamsOuterProps, ItemFormValues>({
+  validationSchema: itemSchema,
   mapPropsToValues: ({ tcrState }) => tcrState,
-  handleSubmit: ({ columns }, { props: { postSubmit } }) => {
-    if (!columns.some((c) => c.isIdentifier)) {
-      toast.warning('At least one ID field is required.')
+  handleSubmit: (
+    { columns, isTCRofTCRs },
+    { props: { postSubmit }, setStatus },
+  ) => {
+    const problem = isTCRofTCRs ? null : itemColumnsProblem(columns)
+    if (problem) {
+      toast.warning(problem)
+      setStatus(problem)
       return
     }
-    const usedLabels = new Set()
-    for (const col of columns) {
-      if (usedLabels.has(col.label)) {
-        toast.warning('Column names must be unique.')
-        return
-      }
-      usedLabels.add(col.label)
-    }
+    setStatus(undefined)
     postSubmit()
   },
 })(ItemParams)

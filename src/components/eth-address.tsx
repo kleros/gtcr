@@ -1,18 +1,14 @@
 import React from 'react'
-import styled from 'styled-components'
 import { useWeb3Context } from 'hooks/use-web3-context'
 import useUrlChainId from 'hooks/use-url-chain-id'
+import { ChromeAddress } from 'components/curate/chrome-address'
+import { truncateMiddle } from 'components/curate/primitives'
 import { getAddressPage } from '../utils/network-utils'
-import { shortenAddress } from '../utils/string'
 
-const StyledA = styled.a`
-  text-decoration: none;
-
-  &:hover {
-    text-decoration: underline;
-  }
-`
-
+/*
+ * An account or contract address: middle-truncated mono that opens the
+ * explorer of the chain in the URL (else the wallet's chain), plus copy.
+ */
 const ETHAddress: React.FC<{ address: string }> = ({ address }) => {
   const { networkId } = useWeb3Context()
   const urlChainId = useUrlChainId()
@@ -22,9 +18,11 @@ const ETHAddress: React.FC<{ address: string }> = ({ address }) => {
     address,
   })
   return (
-    <StyledA href={fullPage} target="_blank" rel="noopener noreferrer">
-      {shortenAddress(address)}
-    </StyledA>
+    <ChromeAddress
+      address={address}
+      href={fullPage}
+      display={truncateMiddle(address, 6, 4)}
+    />
   )
 }
 

@@ -8,6 +8,7 @@ import _GTCRView from '../assets/abis/LightGeneralizedTCRView.json'
 import { WalletContext } from '../contexts/wallet-context'
 import { lightGtcrViewAddresses, subgraphUrl } from 'config/tcr-addresses'
 import { parseIpfs } from 'utils/ipfs-parse'
+import { request } from 'utils/indexer-request'
 
 export const fetchMetaEvidence = async (
   tcr: string,
@@ -24,27 +25,17 @@ export const fetchMetaEvidence = async (
     }`,
   }
 
-  let subgraphResult: FetchMetaEvidenceResult | null = null
-
-  try {
-    const response = await fetch(subgraphUrl[networkId]!, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(query),
-    })
-
-    const { data } = await response.json()
-
-    if (data?.lregistry?.registrationMetaEvidence?.uri)
-      subgraphResult = {
+  // A failed read is thrown, not turned into "no metadata": the query that
+  // asks would keep that answer for a day and leave the page on its
+  // skeleton. Thrown, React Query retries it. It travels with the page's
+  // other indexer reads (utils/indexer-request.ts).
+  const data = await request(subgraphUrl[networkId]!, query.query)
+  return data?.lregistry?.registrationMetaEvidence?.uri
+    ? {
         metaEvidenceURI: data.lregistry.registrationMetaEvidence.uri,
         connectedTCR: data.lregistry.connectedTCR,
       }
-  } catch (err) {
-    console.warn('Light subgraph MetaEvidence fetch failed', err)
-  }
-
-  return subgraphResult
+    : null
 }
 
 const useLightTcrView = (tcrAddress: string) => {

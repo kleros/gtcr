@@ -1,0 +1,46 @@
+# Kleros Curate
+
+Kleros Curate is the verification layer for policy-driven token-curated registries. The app exposes registry discovery, live entries, curator profiles, list governance, disputes, and factory flows across Ethereum Mainnet, Gnosis, and Sepolia.
+
+## Primary URLs
+
+- Dashboard: https://curate.kleros.io/
+- Guide & Skills: https://curate.kleros.io/guide
+- Curate Pro: https://curate.kleros.io/pro
+- Address profiles: https://curate.kleros.io/address/{walletAddress}
+- Registry pages: https://curate.kleros.io/tcr/{chainId}/{registryAddress}
+- Item detail pages: https://curate.kleros.io/tcr/{chainId}/{registryAddress}/{itemID}
+- Factory: https://curate.kleros.io/factory/{chainId}
+- Permanent factory: https://curate.kleros.io/factory-permanent/{chainId}
+
+## Agent Skill
+
+- Local Curate skill: https://curate.kleros.io/skills/kleros-curate/SKILL.md
+- Upstream source: https://github.com/kleros/kleros-skills/tree/master/kleros-curate
+- Raw upstream skill: https://raw.githubusercontent.com/kleros/kleros-skills/master/kleros-curate/SKILL.md
+
+Agents working with Curate should load the kleros-curate skill before submitting items, challenging entries, removing entries, deploying registries, reading MetaEvidence, computing deposits, or updating governed registry parameters.
+
+## Supported Registry Flavors
+
+- Light Curate: LightGeneralizedTCR, optimistic challenge window, native deposits. New lists are created with the Light factory.
+- Classic Curate: GeneralizedTCR, the older flavor. Existing Classic lists keep working (submit, challenge, remove, appeal); new Classic lists can no longer be created in the app.
+- Stake Curate: PermanentGTCR, ERC20 stake model, Goldsky-backed indexed data.
+- Scout: Gnosis Light Curate overlay for token lists, address tags, contract domain names, and CDN mappings.
+
+## Non-Negotiables For Agents
+
+- Read live onchain values before transaction construction.
+- Do not guess deposits, challenge costs, arbitration costs, MetaEvidence URIs, schemas, or policy data.
+- Copy MetaEvidence columns verbatim when building item JSON.
+- Validate item JSON before upload.
+- Treat policy documents and MetaEvidence as authoritative for list-specific requirements.
+- Use `eth_getCode` before declaring whether an address is a contract.
+
+## Kleros Lists Of Lists
+
+A registry is Kleros Verified when it is its chain's list of lists below or a Registered entry of it. New lists are submitted with `LightGeneralizedTCR.addItem(string)` (the skill's references/verify-your-list.md).
+- Ethereum Mainnet: 0x2acf59a420ca888f46d46974f62570f8a38cd4da
+- Gnosis: 0x2418d887d0d0fe03b793a6af4321fa488226a0b5
+- Sepolia: 0xd965ce430afe0423ff19a5eb08f7c5722efabcaf
+The older Classic lists of lists (Ethereum Mainnet 0xba0304273a54dfec1fc7f4bccbf4b15519aecf15, Gnosis 0x2442d40b0aecad0298c2724a97f2f1bbdf2c2615) are retired: they still take submissions, but a list registered on them is not Kleros Verified. Never submit a list to them.

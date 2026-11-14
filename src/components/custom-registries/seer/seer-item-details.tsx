@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react'
 import styled, { css } from 'styled-components'
-import type { Address } from 'viem'
 import { smallScreenStyle } from 'styles/small-screen-style'
 
 interface ISeerExtraDetails {
   chainId: string | number
-  contractAddress: Address
+  contractAddress: string
   imagesIpfsHash: string
 }
 
@@ -182,7 +181,7 @@ const SeerExtraDetails: React.FC<ISeerExtraDetails> = ({
       }
     }
 
-    fetchData()
+    void fetchData()
   }, [chainId, contractAddress, imagesIpfsHash])
 
   if (error) return <ErrorMessage>{error}</ErrorMessage>

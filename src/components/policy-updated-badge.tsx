@@ -6,24 +6,60 @@ import {
   formatUpdatedAgo,
   POLICY_RECENT_THRESHOLD_DAYS,
 } from 'utils/format-updated-ago'
+import { StatusDot } from 'components/curate/primitives'
+
+/*
+ * "updated N days ago" beside the listing policy link. A policy changed in
+ * the last 7 days carries a warning dot, because entries are judged by the
+ * policy in force now. While the history loads, a short shimmer holds the
+ * place instead of words.
+ */
 
 const Suffix = styled.span<{ $recent: boolean }>`
-  margin-left: 6px;
-  color: ${({ theme, $recent }) =>
-    $recent ? theme.warningColor : theme.textTertiary};
-  font-weight: ${({ $recent }) => ($recent ? 600 : 400)};
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: 4px;
+  color: ${({ $recent }) =>
+    $recent ? 'var(--color-text)' : 'var(--color-faint)'};
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: ${({ $recent }) => ($recent ? 500 : 400)};
+  white-space: nowrap;
+
+  &::before {
+    content: '·';
+    color: var(--color-faint);
+    font-weight: 400;
+  }
 `
 
-const pulse = keyframes`
-  0%, 100% { opacity: 0.55; }
-  50% { opacity: 1; }
+const shimmer = keyframes`
+  from { background-position: 100% 0; }
+  to { background-position: -100% 0; }
 `
 
 const LoadingSuffix = styled.span`
-  margin-left: 6px;
-  color: ${({ theme }) => theme.textTertiary};
-  font-style: italic;
-  animation: ${pulse} 1.4s ease-in-out infinite;
+  display: inline-block;
+  width: 72px;
+  height: 8px;
+  margin-left: 8px;
+  border-radius: var(--radius-pill);
+  background:
+    linear-gradient(
+        90deg,
+        transparent,
+        color-mix(in srgb, var(--color-text) 14%, transparent),
+        transparent
+      )
+      0 0 / 200% 100%,
+    var(--color-raised);
+  vertical-align: middle;
+  animation: ${shimmer} 1.4s linear infinite;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
 `
 
 interface PolicyUpdatedBadgeProps {
@@ -31,10 +67,10 @@ interface PolicyUpdatedBadgeProps {
 }
 
 /**
- * Subtle "(updated N days ago)" annotation rendered next to the policy link.
- * Uses the `'latest'` mode so it only scans backwards until the first hit —
- * much cheaper than a full history scan and warmed by the `'full'` cache
- * whenever the user has already opened Previous Policies.
+ * "updated N days ago" annotation rendered next to the policy link.
+ * Uses the `'latest'` mode so it only scans backwards until the first hit,
+ * warmed by the `'full'` cache whenever the user has already opened the
+ * policy history.
  */
 const PolicyUpdatedBadge: React.FC<PolicyUpdatedBadgeProps> = ({
   registryAddress,
@@ -58,15 +94,23 @@ const PolicyUpdatedBadge: React.FC<PolicyUpdatedBadgeProps> = ({
 
   if (!registryAddress) return null
 
-  if (updatedInfo)
+  if (updatedInfo) {
+    const recent = updatedInfo.days < POLICY_RECENT_THRESHOLD_DAYS
     return (
-      <Suffix $recent={updatedInfo.days < POLICY_RECENT_THRESHOLD_DAYS}>
-        ({updatedInfo.text})
+      <Suffix
+        $recent={recent}
+        title={recent ? 'Policy changed in the last 7 days' : undefined}
+      >
+        {recent && <StatusDot $tone="contested" aria-hidden />}
+        {updatedInfo.text}
       </Suffix>
     )
+  }
 
   if (isLoading || isFetching)
-    return <LoadingSuffix>(fetching update…)</LoadingSuffix>
+    return (
+      <LoadingSuffix role="status" aria-label="Checking for policy updates" />
+    )
 
   return null
 }

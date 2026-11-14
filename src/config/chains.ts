@@ -1,9 +1,25 @@
 import {
   type AppKitNetwork,
-  mainnet,
+  mainnet as mainnetBase,
   gnosis as gnosisBase,
   sepolia,
 } from '@reown/appkit/networks'
+
+// The chain's default public node (eth.merkle.io) refuses browser requests:
+// it answers the CORS preflight with 405, so the Ethereum fallback behind
+// Alchemy failed in every browser. dRPC's public node allows browser
+// requests and plain reads, but its free plan refuses eth_getLogs beyond a
+// few hundred blocks (the error wrongly says "over 10000"), so log scans on
+// Ethereum need REACT_APP_ALCHEMY_API_KEY.
+const ETHEREUM_PUBLIC_RPC = 'https://eth.drpc.org'
+
+export const mainnet = {
+  ...mainnetBase,
+  rpcUrls: {
+    ...mainnetBase.rpcUrls,
+    default: { http: [ETHEREUM_PUBLIC_RPC] },
+  },
+}
 
 // Gnosisscan is being deprecated; override the chain default with the
 // official Blockscout instance. Single source of truth for this URL —
@@ -55,8 +71,15 @@ export const getNativeCurrency = (
   chainId: number | string,
 ): { name: string; symbol: string; decimals: number } => {
   const chain = getChainById(chainId)
-  return chain?.nativeCurrency ?? { name: 'Ether', symbol: 'ETH', decimals: 18 }
+  const currency = chain?.nativeCurrency ?? {
+    name: 'Ether',
+    symbol: 'ETH',
+    decimals: 18,
+  }
+  // viem spells Gnosis's coin "XDAI"; the app (useNativeCurrency) and the
+  // Kleros docs write xDAI, so every page shows the same symbol.
+  return currency.symbol === 'XDAI' ? { ...currency, symbol: 'xDAI' } : currency
 }
 
-export { mainnet, sepolia }
+export { sepolia }
 export type { AppKitNetwork }

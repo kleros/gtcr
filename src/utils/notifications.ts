@@ -30,34 +30,49 @@ export const typeToMessage = {
 
 const NOTIFICATION_CONFIG: Record<string, { color: string; icon: IconName }> = {
   [NOTIFICATION_TYPES.SUBMISSION_PENDING]: {
-    color: '#ccc',
+    color: 'var(--status-neutral)',
     icon: 'hourglass-half',
   },
   [NOTIFICATION_TYPES.REMOVAL_PENDING]: {
-    color: '#ccc',
+    color: 'var(--status-neutral)',
     icon: 'hourglass-half',
   },
   [NOTIFICATION_TYPES.EVIDENCE_SUBMITTED]: {
-    color: '#009aff',
+    color: 'var(--status-registered)',
     icon: 'file-alt',
   },
-  [NOTIFICATION_TYPES.SUBMISSION_ACCEPTED]: { color: '#009aff', icon: 'check' },
-  [NOTIFICATION_TYPES.REMOVAL_ACCEPTED]: { color: '#009aff', icon: 'check' },
-  [NOTIFICATION_TYPES.APPEALED]: { color: '#fa8d39', icon: 'balance-scale' },
+  [NOTIFICATION_TYPES.SUBMISSION_ACCEPTED]: {
+    color: 'var(--status-registered)',
+    icon: 'check',
+  },
+  [NOTIFICATION_TYPES.REMOVAL_ACCEPTED]: {
+    color: 'var(--status-registered)',
+    icon: 'check',
+  },
+  [NOTIFICATION_TYPES.APPEALED]: {
+    color: 'var(--status-contested)',
+    icon: 'balance-scale',
+  },
   [NOTIFICATION_TYPES.SUBMISSION_CHALLENGED]: {
-    color: '#fa8d39',
+    color: 'var(--status-contested)',
     icon: 'balance-scale',
   },
   [NOTIFICATION_TYPES.REMOVAL_CHALLENGED]: {
-    color: '#fa8d39',
+    color: 'var(--status-contested)',
     icon: 'balance-scale',
   },
-  [NOTIFICATION_TYPES.APPEALABLE_RULING]: { color: '#722ed1', icon: 'gavel' },
+  [NOTIFICATION_TYPES.APPEALABLE_RULING]: {
+    color: 'var(--status-contested)',
+    icon: 'gavel',
+  },
   [NOTIFICATION_TYPES.HAS_PAID_FEES]: {
-    color: '#722ed1',
+    color: 'var(--status-contested)',
     icon: 'exclamation-triangle',
   },
-  [NOTIFICATION_TYPES.FINAL_RULING]: { color: '#f95638', icon: 'gavel' },
+  [NOTIFICATION_TYPES.FINAL_RULING]: {
+    color: 'var(--status-off)',
+    icon: 'gavel',
+  },
 }
 
 export const getNotificationColorFor = (notificationType: string): string => {
