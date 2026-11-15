@@ -538,8 +538,10 @@ const Guide = () => {
 
           <GuideSection id="disputes" heading="Jurors rule, anyone can appeal">
             <Prose>
-              A challenge opens a dispute in the Kleros court the list chose
-              when it was created.
+              A challenge opens a dispute in the Kleros court the list names.
+              Its governor can change the court. In a Light or Classic list the
+              change applies to later requests; in a Stake list, to existing
+              entries once a cooldown has passed.
             </Prose>
             <Steps steps={DISPUTE_STEPS} />
             <AppealWindow />
@@ -558,7 +560,9 @@ const Guide = () => {
               roles={OUTCOMES}
             />
             <Prose $quiet>
-              Appeal returns are claimed on the entry once the ruling is final.
+              In a Light list, appeal returns are claimed on the entry once the
+              ruling is final; in a Classic list too, on Ethereum and Sepolia.
+              In a Stake list a Kleros bot sends them to backers.
             </Prose>
           </GuideSection>
 

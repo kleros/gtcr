@@ -249,6 +249,13 @@ export interface LegendItem {
 
 const APPEAL_OPEN = 'Jurors have voted; either side can fund an appeal.'
 const WINNER_FUNDING = 'The loser funded; the winner has until the period ends.'
+// The loser's half of the appeal period is over and its side was not funded,
+// while the period itself still runs.
+const RULING_STANDS =
+  'The losing side was not funded in time, so no appeal can follow.'
+// The appeal period is over.
+const RULING_FINAL =
+  'No new round was funded; the outcome takes effect once the ruling is executed.'
 
 /* Labels and details as the app writes them (components/curate/entry-status). */
 export const LEGEND: { group: string; items: LegendItem[] }[] = [
@@ -299,17 +306,17 @@ export const LEGEND: { group: string; items: LegendItem[] }[] = [
       },
       {
         tone: 'contested',
-        label: 'Awaiting ruling',
-        detail: 'appeal period over',
-        meaning: 'No new round was funded; the final ruling is pending.',
-        codes: [LIGHT_STATUS.WAITING_ARBITRATOR],
+        label: 'Ruling stands',
+        detail: 'loser did not fund',
+        meaning: RULING_STANDS,
+        codes: [LIGHT_STATUS.WAITING_ENFORCEMENT],
       },
       {
         tone: 'contested',
         label: 'Ruling final',
         detail: 'awaiting enforcement',
-        meaning: 'The loser did not fund in time; the ruling stands.',
-        codes: [LIGHT_STATUS.WAITING_ENFORCEMENT],
+        meaning: RULING_FINAL,
+        codes: [LIGHT_STATUS.WAITING_ARBITRATOR],
       },
       {
         tone: 'registered',
@@ -338,7 +345,7 @@ export const LEGEND: { group: string; items: LegendItem[] }[] = [
         tone: 'window',
         label: 'Pending',
         detail: 'until accepted',
-        meaning: 'A new entry inside its submission period.',
+        meaning: 'A new or just-kept entry, until its period ends.',
         codes: [STAKE_STATUS.PENDING],
       },
       {
@@ -371,9 +378,16 @@ export const LEGEND: { group: string; items: LegendItem[] }[] = [
       },
       {
         tone: 'contested',
-        label: 'Awaiting ruling',
-        detail: 'appeal period over / loser did not fund',
-        meaning: 'No new round was funded; the final ruling is pending.',
+        label: 'Ruling stands',
+        detail: 'loser did not fund',
+        meaning: RULING_STANDS,
+        codes: [STAKE_STATUS.WAITING_ARBITRATOR],
+      },
+      {
+        tone: 'contested',
+        label: 'Ruling final',
+        detail: 'awaiting enforcement',
+        meaning: RULING_FINAL,
         codes: [STAKE_STATUS.WAITING_ARBITRATOR],
       },
       {
@@ -398,7 +412,7 @@ export const LEGEND: { group: string; items: LegendItem[] }[] = [
       {
         tone: 'off',
         label: 'Withdrawn',
-        meaning: 'The owner took the stake back; the entry left the list.',
+        meaning: 'The submitter took the stake back; the entry left the list.',
         codes: [STAKE_STATUS.WITHDRAWN],
       },
     ],
@@ -491,7 +505,7 @@ export const DECISIONS: { term: string; definition: string }[] = [
   {
     term: 'Governor',
     definition:
-      'The address that can later change deposits, the period, the arbitrator and the policy.',
+      'The address that can later change deposits, periods, the court and the policy. A Light list’s governor can also replace the arbitrator; a Stake list’s arbitrator and token never change.',
   },
 ]
 
