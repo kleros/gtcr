@@ -96,11 +96,25 @@ const prefersReducedMotion = () =>
   typeof window !== 'undefined' &&
   !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
 
+/**
+ * Where a piece being sent is: its files going up to IPFS, the wallet
+ * asking to sign, or the signed transaction waiting to be mined.
+ */
+export type EvidencePhase = 'uploading' | 'wallet' | 'mining'
+
+const PHASE_LABEL: Record<EvidencePhase, string> = {
+  uploading: 'Uploading…',
+  wallet: 'Confirm in your wallet…',
+  mining: 'Waiting for confirmation…',
+}
+
 interface InlineEvidenceComposerProps {
   id?: string
   formID: string
   formKey?: number
   isSubmitting?: boolean
+  /** While submitting: what the button says is happening. */
+  phase?: EvidencePhase
   onSubmit: (values: EvidenceFormValues) => void
 }
 
@@ -109,6 +123,7 @@ const InlineEvidenceComposer = ({
   formID,
   formKey,
   isSubmitting,
+  phase,
   onSubmit,
 }: InlineEvidenceComposerProps) => {
   const gate = useActionGate({ verb: 'submit evidence', needsAuth: true })
@@ -160,7 +175,11 @@ const InlineEvidenceComposer = ({
         aria-describedby={gate.blocker ? statusId : undefined}
         title={gate.blocker}
       >
-        {isSubmitting ? 'Waiting for your wallet…' : 'Submit evidence'}
+        {isSubmitting
+          ? phase
+            ? PHASE_LABEL[phase]
+            : 'Waiting for your wallet…'
+          : 'Submit evidence'}
       </Button>
     </>
   )
@@ -189,14 +208,15 @@ const InlineEvidenceComposer = ({
         blocked={disabled}
       />
       {/* The button names the wallet step; this says it for screen readers,
-          and in words when no single button clears it. */}
+          and in words when no single button clears it. While a piece is
+          sent, it says what the button says is happening. */}
       {gate.blocker && !fix ? (
         <Small $muted id={statusId} role="status">
           {gate.blocker}
         </Small>
       ) : (
         <VisuallyHidden id={statusId} role="status">
-          {gate.blocker ?? ''}
+          {gate.blocker ?? (isSubmitting && phase ? PHASE_LABEL[phase] : '')}
         </VisuallyHidden>
       )}
     </Shell>
