@@ -14,7 +14,11 @@ import { wrapWithToast, errorToast } from 'utils/wrap-with-toast'
 import { parseWagmiError } from 'utils/parse-wagmi-error'
 import { wagmiConfig } from 'config/wagmi'
 import { Body, Button, Small, Stack } from 'components/curate/primitives'
-import { WhatHappensNext } from 'components/curate/what-happens-next'
+import {
+  WhatHappensNext,
+  sendPhaseLabel,
+  type SendPhase,
+} from 'components/curate/what-happens-next'
 import {
   APPROVE_ABI,
   DialogColumns,
@@ -88,7 +92,9 @@ const ChallengeModal = ({
   const [checkingToken, setCheckingToken] = useState(false)
   const [checkFailed, setCheckFailed] = useState(false)
   const [approvePhase, setApprovePhase] = useState<TxPhase>()
-  const [isChallenging, setIsChallenging] = useState(false)
+  // Where the challenge being sent is: uploading, in the wallet, being mined.
+  const [challengePhase, setChallengePhase] = useState<SendPhase>()
+  const isChallenging = !!challengePhase
   const { symbol: tokenSymbol, decimals: tokenDecimals } =
     useTokenSymbol(tokenAddress)
 
@@ -152,7 +158,7 @@ const ChallengeModal = ({
   useEffect(
     () => () => {
       setApprovePhase(undefined)
-      setIsChallenging(false)
+      setChallengePhase(undefined)
     },
     [],
   )
@@ -220,7 +226,7 @@ const ChallengeModal = ({
       !arbitrationCost
     )
       return
-    setIsChallenging(true)
+    setChallengePhase('uploading')
     try {
       const ipfsEvidencePath = await uploadEvidence({
         title: evidenceTitle || 'Challenge justification',
@@ -229,6 +235,7 @@ const ChallengeModal = ({
         uploadFile,
       })
 
+      setChallengePhase('wallet')
       const { request } = await simulateContract(wagmiConfig, {
         address: registryAddress,
         abi: _gtcr,
@@ -239,7 +246,11 @@ const ChallengeModal = ({
       })
 
       const result = await wrapWithToast(
-        () => walletClient.writeContract(request),
+        () =>
+          walletClient.writeContract(request).then((hash) => {
+            setChallengePhase('mining')
+            return hash
+          }),
         publicClient,
       )
 
@@ -248,7 +259,7 @@ const ChallengeModal = ({
       console.error('Error challenging item:', err)
       errorToast(parseWagmiError(err))
     }
-    setIsChallenging(false)
+    setChallengePhase(undefined)
   }
 
   // Closing leaves a transaction in flight locked: the dialog stays mounted,
@@ -421,6 +432,7 @@ const ChallengeModal = ({
               confirmDisabled={Boolean(blocker)}
               confirmBlocker={blocker}
               loading={isChallenging}
+              loadingLabel={sendPhaseLabel(challengePhase)}
             />
             <GateHelper gate={retry ?? gate} caption={false} />
           </Stack>

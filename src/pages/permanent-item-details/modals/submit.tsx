@@ -34,7 +34,11 @@ import {
   Stack,
   TextInput,
 } from 'components/curate/primitives'
-import { WhatHappensNext } from 'components/curate/what-happens-next'
+import {
+  WhatHappensNext,
+  sendPhaseLabel,
+  type SendPhase,
+} from 'components/curate/what-happens-next'
 import {
   APPROVE_ABI,
   DialogColumns,
@@ -339,7 +343,9 @@ const SubmitModal: React.FC<{
   const [checkingToken, setCheckingToken] = useState(false)
   const [checkFailed, setCheckFailed] = useState(false)
   const [approvePhase, setApprovePhase] = useState<TxPhase>()
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  // Where the submission being sent is: uploading, in the wallet, being mined.
+  const [submitPhase, setSubmitPhase] = useState<SendPhase>()
+  const isSubmitting = !!submitPhase
   const [fieldsComplete, setFieldsComplete] = useState(false)
   const [stakeInput, setStakeInput] = useState('')
   const [stakeTouched, setStakeTouched] = useState(false)
@@ -431,7 +437,7 @@ const SubmitModal: React.FC<{
   useEffect(
     () => () => {
       setApprovePhase(undefined)
-      setIsSubmitting(false)
+      setSubmitPhase(undefined)
     },
     [],
   )
@@ -561,7 +567,7 @@ const SubmitModal: React.FC<{
       ) => void,
     ) => {
       if (!submitAllowed || !submissionDeposit || !publicClient) return
-      setIsSubmitting(true)
+      setSubmitPhase('uploading')
       try {
         const resolvedValues = await resolveStashedFiles({
           columns,
@@ -581,6 +587,7 @@ const SubmitModal: React.FC<{
         // The entry is this file: make sure it can be read before paying.
         await confirmStored(ipfsEvidencePath)
 
+        setSubmitPhase('wallet')
         const { request } = await simulateContract(wagmiConfig, {
           address: tcrAddress as `0x${string}`,
           abi: _gtcr,
@@ -592,7 +599,11 @@ const SubmitModal: React.FC<{
         })
 
         const result = await wrapWithToast(
-          () => writeContract(wagmiConfig, request),
+          () =>
+            writeContract(wagmiConfig, request).then((hash) => {
+              setSubmitPhase('mining')
+              return hash
+            }),
           publicClient,
         )
 
@@ -607,7 +618,7 @@ const SubmitModal: React.FC<{
         console.error('Error submitting item:', err)
         errorToast(parseWagmiError(err))
       }
-      setIsSubmitting(false)
+      setSubmitPhase(undefined)
     },
     [
       onCancel,
@@ -789,6 +800,7 @@ const SubmitModal: React.FC<{
         confirmDisabled={Boolean(blocker)}
         confirmBlocker={blocker}
         loading={isSubmitting}
+        loadingLabel={sendPhaseLabel(submitPhase)}
         policy={
           policyURI ? (
             <>

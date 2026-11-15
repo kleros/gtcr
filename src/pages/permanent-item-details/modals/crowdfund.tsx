@@ -29,7 +29,11 @@ import {
   Stack,
   TextInput,
 } from 'components/curate/primitives'
-import { WhatHappensNext } from 'components/curate/what-happens-next'
+import {
+  WhatHappensNext,
+  sendPhaseLabel,
+  type SendPhase,
+} from 'components/curate/what-happens-next'
 import {
   DialogColumns,
   GateHelper,
@@ -175,7 +179,9 @@ const CrowdfundModal = ({
   // never rounded to a share. Undefined while the slider sets the amount.
   const [typedWei, setTypedWei] = useState<BigNumber>()
   const [userSelectedSide, setUserSelectedSide] = useState<number>()
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  // In the wallet, then being mined: the confirm says which.
+  const [fundPhase, setFundPhase] = useState<SendPhase>()
+  const isSubmitting = !!fundPhase
   const nativeCurrency = useNativeCurrency()
   const { balance: nativeBalance } = useNativeBalance()
   const gate = useActionGate('fund an appeal')
@@ -382,7 +388,7 @@ const CrowdfundModal = ({
 
   const crowdfundSide = async () => {
     if (!walletClient || !publicClient || !tcrAddress) return
-    setIsSubmitting(true)
+    setFundPhase('wallet')
     try {
       const { request } = await simulateContract(wagmiConfig, {
         address: tcrAddress,
@@ -394,7 +400,11 @@ const CrowdfundModal = ({
       })
 
       const result = await wrapWithToast(
-        () => walletClient.writeContract(request),
+        () =>
+          walletClient.writeContract(request).then((hash) => {
+            setFundPhase('mining')
+            return hash
+          }),
         publicClient,
       )
 
@@ -403,7 +413,7 @@ const CrowdfundModal = ({
       console.error('Error contributing fees:', err)
       errorToast(parseWagmiError(err))
     }
-    setIsSubmitting(false)
+    setFundPhase(undefined)
   }
 
   const blocker = !gate.ready
@@ -572,6 +582,7 @@ const CrowdfundModal = ({
             confirmDisabled={Boolean(blocker)}
             confirmBlocker={blocker}
             loading={isSubmitting}
+            loadingLabel={sendPhaseLabel(fundPhase)}
             policy={
               fileURI ? (
                 <>
