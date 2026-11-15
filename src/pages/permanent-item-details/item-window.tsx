@@ -445,7 +445,7 @@ export const StakeWindowPanel = ({
   if (statusCode === STATUS_CODE.ACCEPTED && facts.isWithdrawing)
     return (
       <WindowRing
-        title="Withdrawal period"
+        title="Withdrawing period"
         start={withdrawingAt}
         end={withdrawReadyAt}
         now={now}
@@ -508,8 +508,15 @@ export const StakeWindowPanel = ({
     return (
       <Court>
         <CourtTop>
+          {/* Past the ruling nothing changes any more: the loser did not
+              fund in its half (the ruling stands), or the appeal period
+              is over (the ruling is final and waits to be enforced). */}
           <Label $tone="muted">
-            {deciding ? 'Jurors deciding' : 'Awaiting the final ruling'}
+            {deciding
+              ? 'Jurors deciding'
+              : now < appealEnd
+                ? 'Ruling stands'
+                : 'Ruling final'}
           </Label>
           {facts.disputeID &&
             (facts.courtHref ? (

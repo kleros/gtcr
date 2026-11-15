@@ -718,16 +718,16 @@ const ItemStatusCard = ({
                 <dd>{challengeCostText}</dd>
               </div>
             )}
+            {/* What a challenger nets: the arbitration deposit they also
+                receive only repays the arbitration cost they paid. */}
             {(challengeable || underDispute) && (
               <div>
                 <dt
-                  title={`The ${itemName}'s stake and its arbitration deposit. A successful challenger also gets their own stake back.`}
+                  title={`The ${itemName}'s stake. They also get their own stake back, and the arbitration deposit repays their court fee.`}
                 >
                   A successful challenger wins
                 </dt>
-                <dd>
-                  {depositText ? `${stakeText} + ${depositText}` : stakeText}
-                </dd>
+                <dd>{stakeText}</dd>
               </div>
             )}
             {offList && (

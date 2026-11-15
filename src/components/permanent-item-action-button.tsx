@@ -32,8 +32,10 @@ export const stakeActionLabel = ({
       return 'Fund an appeal'
     case STATUS_CODE.DISPUTED:
       return 'Jurors deciding'
+    // The loser did not fund in time, or the appeal period is over: the
+    // ruling no longer changes, it waits to be enforced.
     case STATUS_CODE.WAITING_ARBITRATOR:
-      return 'Awaiting ruling'
+      return 'Ruling final'
     case STATUS_CODE.PENDING_WITHDRAWAL:
       return 'Execute withdrawal'
     default:
@@ -113,7 +115,11 @@ const ItemActionButton = ({
 
   const passive = isPassiveStatus(statusCode)
   const isDisabled = Boolean(disabled || passive || loading)
-  const reason = passive ? 'Nothing to do until the arbitrator rules' : blocker
+  const reason = passive
+    ? statusCode === STATUS_CODE.WAITING_ARBITRATOR
+      ? 'Nothing to do until the ruling is enforced'
+      : 'Nothing to do until the arbitrator rules'
+    : blocker
 
   return (
     <ActionButton
