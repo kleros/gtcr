@@ -11,7 +11,7 @@ import {
   subgraphUrl,
   subgraphUrlPermanent,
 } from 'config/tcr-addresses'
-import { parseIpfs } from 'utils/ipfs-parse'
+import { fetchMetaEvidenceFile } from 'utils/meta-evidence-guard'
 import { request } from 'utils/indexer-request'
 
 export const fetchMetaEvidence = async (
@@ -122,8 +122,9 @@ const useTcrView = (tcrAddress: string) => {
     queryFn: async () => {
       const fetchedData = await fetchMetaEvidence(tcrAddress, networkId!)
       if (!fetchedData) return null
-      const response = await fetch(parseIpfs(fetchedData.metaEvidenceURI))
-      const file = await response.json()
+      // Written by whoever governs the list and rendered on every page of
+      // it: a title that is an object took the list and its entries down.
+      const file = await fetchMetaEvidenceFile(fetchedData.metaEvidenceURI)
       return {
         metaEvidence: { ...file, address: tcrAddress } as MetaEvidence,
         connectedTCR: fetchedData.connectedTCR,
@@ -189,6 +190,12 @@ const useTcrView = (tcrAddress: string) => {
     tcrError:
       error ||
       (metaEvidenceQuery.error ? 'Error fetching meta evidence' : false),
+    /** The list's file did not load (the gateway or the indexer failed). */
+    metaEvidenceFailed: metaEvidenceQuery.isError && !metaEvidenceQuery.data,
+    retryMetaEvidence: metaEvidenceQuery.refetch,
+    /** The list's deposits and periods could not be read from the chain. */
+    paramsFailed: arbitrableQuery.isError && !arbitrableQuery.data,
+    retryParams: arbitrableQuery.refetch,
     arbitrationCost: deposits.arbitrationCost,
     submissionDeposit: deposits.submissionDeposit,
     submissionChallengeDeposit: deposits.submissionChallengeDeposit,

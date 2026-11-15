@@ -30,6 +30,8 @@ const LightTCRViewProvider = ({
       ctx.gtcrView,
       ctx.latestBlock,
       ctx.connectedTCRAddr,
+      ctx.metaEvidenceFailed,
+      ctx.paramsFailed,
     ],
   )
   return (
