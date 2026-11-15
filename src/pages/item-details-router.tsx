@@ -13,6 +13,7 @@ import ErrorPage from 'pages/error-page'
 import AttachmentDisplay from 'components/attachment-display'
 import { StakeContext } from 'contexts/stake-context'
 import { useGraphqlBatcher } from 'contexts/graphql-batcher'
+import { getChainById } from 'config/chains'
 import {
   LIGHT_ITEM_DETAILS_QUERY,
   CLASSIC_ITEM_DETAILS_QUERY,
@@ -29,7 +30,10 @@ const ItemDetailsRouter = () => {
     tcrAddress: string
     itemID: string
   }>()
-  const chainId = useUrlChainId()
+  const urlChainId = useUrlChainId()
+  // The URL's chain when Curate runs on it. Any other gets its own page
+  // (below) at once, and nothing is asked for it.
+  const chainId = urlChainId && getChainById(urlChainId) ? urlChainId : null
   const [searchParams] = useSearchParams()
   const isAttachmentOpen = searchParams.has('attachment')
   useTcrNetwork()
@@ -85,6 +89,15 @@ const ItemDetailsRouter = () => {
     })
   }, [chainId, tcrAddress, itemID, queryClient, graphqlBatcher])
 
+  if (!chainId)
+    return (
+      <ErrorPage
+        code="404"
+        title="Chain not supported"
+        message="Curate runs on Ethereum, Gnosis and Sepolia."
+      />
+    )
+
   if (isAttachmentOpen) return <AttachmentDisplay />
 
   if (checking) return <Loading />
@@ -134,7 +147,7 @@ const ItemDetailsRouter = () => {
   return (
     <ErrorPage
       code="Error"
-      title="Registry Not Found"
+      title="List not found"
       message="No Curate list was found at this address on this chain. A list created in the last few minutes may not be indexed yet: check again in a minute."
       onRetry={recheck}
     />

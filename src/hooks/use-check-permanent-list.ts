@@ -11,7 +11,8 @@ const useCheckPermanentList = (
   isPermanentList: boolean
   checking: boolean
   error: boolean
-  retry: () => void
+  /** Asks again; settles once the answer is in. */
+  retry: () => Promise<unknown>
 } => {
   const {
     isLoading: loading,
@@ -42,7 +43,7 @@ const useCheckPermanentList = (
     checking: loading,
     // A failed refetch keeps the answer already shown.
     error: !!queryError && !data,
-    retry: () => void refetch(),
+    retry: () => refetch(),
   }
 }
 
