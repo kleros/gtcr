@@ -7,7 +7,7 @@ import React, {
   useState,
 } from 'react'
 import type { BigNumber } from 'ethers'
-import { useQuery } from '@tanstack/react-query'
+import { useIsFetching, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   Link,
   Navigate,
@@ -16,6 +16,7 @@ import {
   useParams,
 } from 'react-router-dom'
 import ErrorPage from 'pages/error-page'
+import { LIST_LOAD_FAILED } from 'pages/error-page/copy'
 import useCheckLightCurate from 'hooks/use-check-light-curate'
 import useTcrNetwork from 'hooks/use-tcr-network'
 import useUrlChainId from 'hooks/use-url-chain-id'
@@ -31,7 +32,9 @@ import {
   LightTCRViewProvider,
 } from 'contexts/light-tcr-view-context'
 import { useGraphqlBatcher } from 'contexts/graphql-batcher'
+import { getChainById } from 'config/chains'
 import { replacedListOfLists } from 'config/list-of-lists'
+import { isKlerosArbitrator } from 'config/tcr-addresses'
 import { PERMANENT_REGISTRY_QUERY } from 'utils/graphql'
 import { parseIpfs } from 'utils/ipfs-parse'
 import { formatDuration, formatDurationLong } from 'utils/time'
@@ -45,11 +48,13 @@ import {
 import { amountText, formatAmount, type Amount } from './amounts'
 import { useWalletGate } from './use-wallet-gate'
 import { useDepositSubmit, usePermanentSubmit } from './use-submit-actions'
+import { useRefreshOnFocus } from './use-refresh-on-focus'
 
 /**
  * After a confirmed submission, the new entry opens; it says it is being
  * indexed until the indexer has it. Without its ID (an unexpected
- * receipt), the list opens instead.
+ * receipt), the list opens instead. Either replaces the submit page in the
+ * history, so Back does not return to a form for an entry already sent.
  */
 const openSubmitted = (
   navigate: ReturnType<typeof useNavigate>,
@@ -58,9 +63,10 @@ const openSubmitted = (
 ) =>
   itemID
     ? navigate(`${registryPath}/${itemID}`, {
+        replace: true,
         state: { submittedAt: Date.now() },
       })
-    : navigate(registryPath)
+    : navigate(registryPath, { replace: true })
 
 /*
  * /tcr/:chainId/:tcrAddress/submit. The registry kind decides the data
@@ -120,6 +126,7 @@ const DepositSubmitPage = ({
   submissionChallengeBaseDeposit,
   arbitrationCost,
   challengePeriodDuration,
+  arbitrator,
 }: {
   kind: 'light' | 'classic'
   tcrAddress: string
@@ -130,13 +137,19 @@ const DepositSubmitPage = ({
   submissionChallengeBaseDeposit?: BigNumber
   arbitrationCost?: BigNumber
   challengePeriodDuration?: BigNumber
+  /** The list's arbitrator contract. */
+  arbitrator?: string
 }) => {
   const navigate = useNavigate()
   const registryPath = useRegistryPath()
   const linkValues = useLinkValues()
   const chainId = useUrlChainId()
   const currency = useNativeCurrency()
-  const { balance } = useNativeBalance()
+  const {
+    balance,
+    checking: checkingBalance,
+    refetch: refetchBalance,
+  } = useNativeBalance()
   const factoryChecks = useFactory()
   const wallet = useWalletGate()
   const onDone = useCallback(
@@ -176,6 +189,8 @@ const DepositSubmitPage = ({
     challengeBaseAmount && challengeBaseAmount.value > 0n
       ? amountText(challengeBaseAmount)
       : ''
+  // Jurors are Kleros's: a list can name any arbitrator.
+  const kleros = isKlerosArbitrator(chainId, arbitrator)
 
   const terms: SubmitTerms = {
     headline: totalAmount,
@@ -218,12 +233,16 @@ const DepositSubmitPage = ({
         tone: 'contested',
         title: 'If challenged',
         status: 'Challenged',
-        note: 'Kleros jurors check it against the policy',
+        note: kleros
+          ? 'Kleros jurors check it against the policy'
+          : "the list's arbitrator checks it against the policy",
         children: [
           {
             key: 'win',
             tone: 'registered',
-            title: 'Jurors side with you',
+            title: kleros
+              ? 'Jurors side with you'
+              : 'The arbitrator sides with you',
             status: 'Registered',
             figure: challengerBase
               ? [`${total} back`, `+${challengerBase}`]
@@ -235,7 +254,9 @@ const DepositSubmitPage = ({
           {
             key: 'lose',
             tone: 'off',
-            title: 'Jurors side with the challenger',
+            title: kleros
+              ? 'Jurors side with the challenger'
+              : 'The arbitrator sides with the challenger',
             status: 'Rejected',
             figure: `−${total}`,
             note: `${base} to the challenger, ${cost} for arbitration`,
@@ -274,10 +295,20 @@ const DepositSubmitPage = ({
         'deposit',
       )
     : ''
+  // A top-up clears the blocker without a reload, which would empty the form.
+  useRefreshOnFocus(!!lowBalance && !wallet.blocker, refetchBalance)
   const gate: ConfirmGate = wallet.blocker
     ? { blocker: wallet.blocker, fix: wallet.fix }
     : lowBalance
-      ? { blocker: lowBalance }
+      ? checkingBalance
+        ? { blocker: `Checking your ${currency} balance…` }
+        : {
+            blocker: lowBalance,
+            fix: {
+              label: 'Check balance again',
+              onClick: () => void refetchBalance(),
+            },
+          }
       : {}
 
   return (
@@ -350,6 +381,7 @@ const ClassicSubmitPage = () => {
       }
       arbitrationCost={tcrViewContext?.arbitrationCost}
       challengePeriodDuration={tcrViewContext?.challengePeriodDuration}
+      arbitrator={tcrViewContext?.arbitrator}
     />
   )
 }
@@ -378,6 +410,7 @@ const LightSubmitPage = () => {
       }
       arbitrationCost={tcrViewContext?.arbitrationCost}
       challengePeriodDuration={tcrViewContext?.challengePeriodDuration}
+      arbitrator={tcrViewContext?.arbitrator}
     />
   )
 }
@@ -428,8 +461,7 @@ const PermanentSubmitPage = () => {
         if (!cancelled) setColumns(file?.metadata?.columns || [])
       } catch (err) {
         console.error('Error loading permanent registry meta evidence:', err)
-        if (!cancelled)
-          setColumnsError('Could not load this registry submission fields.')
+        if (!cancelled) setColumnsError("Could not load this list's fields.")
       }
     })()
 
@@ -438,11 +470,19 @@ const PermanentSubmitPage = () => {
     }
   }, [metaEvidenceURI])
 
-  const { arbitrationCost } = useArbitrationCost({
+  const { arbitrationCost, error: arbitrationCostError } = useArbitrationCost({
     address: registry?.arbitrator?.id || '',
     arbitratorExtraData: arbitrationSettings?.arbitratorExtraData || '',
     library,
   })
+  // A cost that cannot be read must not keep the page loading for ever: the
+  // form shows, and the confirm waits for the cost with a way to ask again.
+  const queryClient = useQueryClient()
+  const readingArbitrationCost =
+    useIsFetching({ queryKey: ['arbitrationCost'] }) > 0
+  const retryArbitrationCost = useCallback(() => {
+    void queryClient.refetchQueries({ queryKey: ['arbitrationCost'] })
+  }, [queryClient])
 
   const nativeCurrency = useNativeCurrency()
   const factoryChecks = useFactory()
@@ -464,14 +504,23 @@ const PermanentSubmitPage = () => {
     onDone,
   })
 
+  if (registryQuery.isError && !registryQuery.data)
+    return (
+      <ErrorPage
+        code="Error"
+        title="This list did not load"
+        message={LIST_LOAD_FAILED}
+        onRetry={() => void registryQuery.refetch()}
+      />
+    )
   if (registryQuery.isLoading || !registryQuery.data)
     return <SubmitPageSkeleton />
   if (!registry)
     return (
       <ErrorPage
         code="Error"
-        title="Registry Not Found"
-        message="This permanent registry could not be found on the configured PGTCR subgraph."
+        title="List not found"
+        message="No Stake list answers at this address on this chain."
       />
     )
   if (columnsError)
@@ -524,7 +573,14 @@ const PermanentSubmitPage = () => {
   const withdrawingPeriod = registry.withdrawingPeriod
     ? formatDurationLong(Number(registry.withdrawingPeriod))
     : ''
-  const ready = !!metadata && !!columns && !!arbitrationCost && !tokenLoading
+  const costUnread = costWei === undefined && !!arbitrationCostError
+  const ready =
+    !!metadata &&
+    !!columns &&
+    (costWei !== undefined || costUnread) &&
+    !tokenLoading
+  // Jurors and their court are Kleros's: a list can name any arbitrator.
+  const kleros = isKlerosArbitrator(chainId, registry.arbitrator?.id)
 
   const terms: SubmitTerms = {
     headline: stakeAmount,
@@ -574,7 +630,9 @@ const PermanentSubmitPage = () => {
           {
             key: 'win',
             tone: 'registered',
-            title: 'Jurors side with you',
+            title: kleros
+              ? 'Jurors side with you'
+              : 'The arbitrator sides with you',
             status: 'Accepted',
             figure: challengerStake ? `+${challengerStake}` : undefined,
             note: "the challenger's stake is added to yours, locked while listed",
@@ -582,10 +640,14 @@ const PermanentSubmitPage = () => {
           {
             key: 'lose',
             tone: 'off',
-            title: 'Jurors side with the challenger',
+            title: kleros
+              ? 'Jurors side with the challenger'
+              : 'The arbitrator sides with the challenger',
             status: 'Removed',
             figure: [`−${stake}`, `−${cost}`],
-            note: 'the stake is the challenger’s bounty; the arbitration deposit repays their court fee',
+            note: kleros
+              ? 'the stake is the challenger’s bounty; the arbitration deposit repays their court fee'
+              : 'the stake is the challenger’s bounty; the arbitration deposit repays their arbitration fee',
           },
         ],
       },
@@ -621,8 +683,21 @@ const PermanentSubmitPage = () => {
     stakeCurate.allowance !== undefined &&
     stakeCurate.allowance < stakeWei
 
+  // A top-up clears a low balance on focus too (usePermanentSubmit).
+  const checkBalance = {
+    label: 'Check balance again',
+    onClick: () => void stakeCurate.recheck(),
+  }
+
   let gate: ConfirmGate = {}
-  if (wallet.blocker) gate = { blocker: wallet.blocker, fix: wallet.fix }
+  if (costUnread)
+    gate = readingArbitrationCost
+      ? { blocker: 'Reading the arbitration deposit…' }
+      : {
+          blocker: 'The arbitration deposit could not be read',
+          fix: { label: 'Try again', onClick: retryArbitrationCost },
+        }
+  else if (wallet.blocker) gate = { blocker: wallet.blocker, fix: wallet.fix }
   else if (stakeCurate.checkFailed)
     gate = {
       blocker: `Could not read your ${symbol} balance`,
@@ -630,8 +705,8 @@ const PermanentSubmitPage = () => {
     }
   else if (stakeCurate.checking || !balancesRead)
     gate = { blocker: `Checking your ${symbol} balance…` }
-  else if (lowStake) gate = { blocker: lowStake }
-  else if (lowNative) gate = { blocker: lowNative }
+  else if (lowStake) gate = { blocker: lowStake, fix: checkBalance }
+  else if (lowNative) gate = { blocker: lowNative, fix: checkBalance }
   else if (needsApproval)
     gate = {
       blocker: `Approve ${stake} so the list can lock your stake`,
@@ -680,6 +755,7 @@ const PermanentSubmitPage = () => {
 
 const SubmitItem = () => {
   const { tcrAddress } = useParams<{ tcrAddress: string }>()
+  const chainId = useUrlChainId()
   const {
     isLightCurate,
     isClassicCurate,
@@ -691,6 +767,16 @@ const SubmitItem = () => {
   } = useCheckLightCurate()
   useTcrNetwork()
 
+  // No indexer serves another chain: asking would only fail, and offer a
+  // "Try again" that fails the same way.
+  if (!chainId || !getChainById(chainId))
+    return (
+      <ErrorPage
+        code="404"
+        title="Chain not supported"
+        message="Curate runs on Ethereum, Gnosis and Sepolia."
+      />
+    )
   if (checking) return <SubmitPageSkeleton />
   if (error)
     return (
@@ -739,7 +825,7 @@ const SubmitItem = () => {
   return (
     <ErrorPage
       code="Error"
-      title="Registry Not Found"
+      title="List not found"
       message="No Curate list was found at this address on this chain. A list created in the last few minutes may not be indexed yet: check again in a minute."
       onRetry={recheck}
     />
