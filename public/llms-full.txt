@@ -4,6 +4,7 @@ Kleros Curate is the verification layer for token-curated registries, live submi
 
 Primary entrypoints:
 - Dashboard: https://curate.kleros.io/
+- Browse registries by chain, kind and standing: https://curate.kleros.io/browse
 - Guide & Skills: https://curate.kleros.io/guide
 - Curate Pro: https://curate.kleros.io/pro
 - Agent skill: https://curate.kleros.io/skills/kleros-curate/SKILL.md
@@ -11,10 +12,12 @@ Primary entrypoints:
 
 Registry routes:
 - Registry: https://curate.kleros.io/tcr/{chainId}/{registryAddress}
+- Submit an entry: https://curate.kleros.io/tcr/{chainId}/{registryAddress}/submit
 - Item: https://curate.kleros.io/tcr/{chainId}/{registryAddress}/{itemID}
 - Address profile: https://curate.kleros.io/address/{walletAddress}
+- Launch a list (choose Light or Stake): https://curate.kleros.io/launch/{chainId}
 - Light factory: https://curate.kleros.io/factory/{chainId}
-- Permanent factory: https://curate.kleros.io/factory-permanent/{chainId}
+- Stake factory: https://curate.kleros.io/factory-permanent/{chainId}
 
 Supported chains:
 - Ethereum Mainnet: 1
