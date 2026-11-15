@@ -133,6 +133,14 @@ export const defaultArbitratorExtraData: ChainMap<{
   },
 } as const
 
+/*
+ * Court case links name their chain: the same dispute number exists on every
+ * chain, and Court opens a link without one on the visitor's connected (or
+ * last used, else Ethereum) chain, so a Gnosis case would show Ethereum's
+ * dispute of that number. `requiredChainId` is the parameter Court has always
+ * read for this (its newer builds rewrite it to their /<chain>/cases/<id>
+ * paths).
+ */
 export const klerosAddresses: ChainMap<{
   arbitrator: string
   policy: string
@@ -141,17 +149,17 @@ export const klerosAddresses: ChainMap<{
   '1': {
     arbitrator: '0x988b3a538b618c7a603e1c11ab82cd16dbe28069',
     policy: '0xCf1f07713d5193FaE5c1653C9f61953D048BECe4',
-    uiURL: 'https://court.kleros.io/cases/:disputeID',
+    uiURL: 'https://court.kleros.io/cases/:disputeID?requiredChainId=1',
   },
   '100': {
     arbitrator: '0x9C1dA9A04925bDfDedf0f6421bC7EEa8305F9002',
     policy: '0x9d494768936b6bDaabc46733b8D53A937A6c6D7e',
-    uiURL: 'https://court.kleros.io/cases/:disputeID',
+    uiURL: 'https://court.kleros.io/cases/:disputeID?requiredChainId=100',
   },
   '11155111': {
     arbitrator: '0x90992fb4e15ce0c59aeffb376460fda4ee19c879',
     policy: '0x88Fb25D399310c07d35cB9091b8346d8b1893aa5',
-    uiURL: 'https://court.kleros.io/cases/:disputeID',
+    uiURL: 'https://court.kleros.io/cases/:disputeID?requiredChainId=11155111',
   },
 } as const
 
