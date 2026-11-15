@@ -1,6 +1,6 @@
 import React, { useState, useContext, useEffect, useMemo } from 'react'
 import styled from 'styled-components'
-import { ethers, BigNumber } from 'ethers'
+import { BigNumber } from 'ethers'
 import { useAccount, usePublicClient, useWalletClient } from 'wagmi'
 import { simulateContract } from '@wagmi/core'
 import { type Address } from 'viem'
@@ -40,8 +40,7 @@ import { useActionGate } from 'components/curate/item-light-gate'
 import { formatAmount, formatEther } from 'components/curate/item-light-format'
 import { Notice } from 'components/curate/item-light-notice'
 import { PolicyButton } from 'pages/light-item-details/policy-button'
-
-const { parseEther } = ethers.utils
+import { typedAmountWei } from 'pages/light-item-details/typed-amount'
 
 /*
  * Contribute appeal fees to one side of a dispute on a Classic list
@@ -374,20 +373,17 @@ const CrowdfundModal = ({
       amountStillRequired.isZero()
     )
       return
-    try {
-      const wei = parseEther(text || '0')
-      if (wei.isNegative()) return
-      setTypedWei(wei)
-      // The share only drives the slider and the reward estimate.
-      setContributionShare(
-        wei.gte(amountStillRequired)
-          ? 1
-          : wei.mul(MULTIPLIER_DIVISOR).div(amountStillRequired).toNumber() /
-              MULTIPLIER_DIVISOR.toNumber(),
-      )
-    } catch {
-      // Not a number yet; keep the previous amount.
-    }
+    // Text that cannot be read sets zero, never the previous amount: the
+    // button sends only what the field shows.
+    const wei = typedAmountWei(text)
+    setTypedWei(wei)
+    // The share only drives the slider and the reward estimate.
+    setContributionShare(
+      wei.gte(amountStillRequired)
+        ? 1
+        : wei.mul(MULTIPLIER_DIVISOR).div(amountStillRequired).toNumber() /
+            MULTIPLIER_DIVISOR.toNumber(),
+    )
   }
 
   const total = formatAmount(contribution, nativeCurrency)
