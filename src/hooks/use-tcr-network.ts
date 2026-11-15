@@ -30,7 +30,9 @@ const useTcrNetwork = () => {
   const { isConnected, chainId: connectedChainId } = useAccount()
   const { switchChain } = useSwitchChain()
 
-  // The chain the URL says we should be on
+  // The chain the URL says we should be on. A chain Curate does not run on
+  // gets its own "Chain not supported" page: nothing to move the wallet to.
+  const supported = !urlChainId || !!getChainById(urlChainId)
   const targetChainId =
     urlChainId && getChainById(urlChainId) ? urlChainId : DEFAULT_CHAIN.id
 
@@ -45,7 +47,7 @@ const useTcrNetwork = () => {
   // once per chain and visit: a wallet already there counts as asked, and a
   // refusal is not met with the same request on the next page.
   useEffect(() => {
-    if (!isConnected) return
+    if (!isConnected || !supported) return
     if (isCorrectChain) {
       // Wallet is already on the right chain — mark as attempted
       askedChains.add(targetChainId)
@@ -59,7 +61,7 @@ const useTcrNetwork = () => {
     } catch {
       // User rejected or error — that's fine, show content in read-only
     }
-  }, [isConnected, isCorrectChain, targetChainId])
+  }, [isConnected, isCorrectChain, targetChainId, supported])
 }
 
 export default useTcrNetwork

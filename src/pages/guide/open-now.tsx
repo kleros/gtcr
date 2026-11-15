@@ -1,6 +1,6 @@
 import React, { useMemo, useRef } from 'react'
 import styled, { css, keyframes } from 'styled-components'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, type QueryFunctionContext } from '@tanstack/react-query'
 import useNow from 'hooks/use-now'
 import {
   ButtonLink,
@@ -30,8 +30,12 @@ import { useInView } from './hooks'
  * failed to load, it shows no number rather than a partial one.
  */
 
-const loadDashboard = (): Promise<DashboardData> =>
-  import('pages/dashboard/data').then((module) => module.fetchDashboardData())
+// React Query's context goes along: a refresh that missed some chain's
+// lists must not replace a complete load in the cache the dashboard shares.
+const loadDashboard = (context: QueryFunctionContext): Promise<DashboardData> =>
+  import('pages/dashboard/data').then((module) =>
+    module.fetchDashboardData(context),
+  )
 
 const integer = new Intl.NumberFormat('en-US')
 
