@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef } from 'react'
-import styled from 'styled-components'
+import styled, { createGlobalStyle } from 'styled-components'
 import { Link, useParams } from 'react-router-dom'
 import { useFormik } from 'formik'
 import { ItemTypes } from '@kleros/gtcr-encoder'
@@ -587,6 +587,26 @@ const StickyBar = styled.div`
   }
 `
 
+/*
+ * While the form shows, a field the browser scrolls into view (by Tab, or
+ * to an error) clears the sticky bar at the bottom as it clears the app bar
+ * at the top: the bar is about 77px tall up to 1000px and 141px on phones,
+ * where a field tabbed to near the bottom used to land under it.
+ */
+const ClearStickyBar = createGlobalStyle`
+  @media (max-width: 1000px) {
+    html {
+      scroll-padding-bottom: 96px;
+    }
+  }
+
+  @media (max-width: 720px) {
+    html {
+      scroll-padding-bottom: 168px;
+    }
+  }
+`
+
 const BarTotal = styled.div`
   display: flex;
   align-items: center;
@@ -1127,6 +1147,7 @@ const Workspace = ({
         </Aside>
       </Layout>
 
+      <ClearStickyBar />
       <StickyBar>
         <BarTotal>
           <ButtonLink
