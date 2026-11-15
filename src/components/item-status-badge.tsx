@@ -62,19 +62,21 @@ const viewFromCode = (statusCode: number): EntryStatusView | undefined => {
         tone: 'contested',
         label: 'Appeal · winner funding',
       }
+    // The appeal period is over: the ruling only needs executing.
     case STATUS_CODE.WAITING_ARBITRATOR:
-      return {
-        code: statusCode,
-        tone: 'contested',
-        label: 'Awaiting ruling',
-        detail: 'appeal period over',
-      }
-    case STATUS_CODE.WAITING_ENFORCEMENT:
       return {
         code: statusCode,
         tone: 'contested',
         label: 'Ruling final',
         detail: 'awaiting enforcement',
+      }
+    // Second half of the appeal period, loser unfunded: no appeal can follow.
+    case STATUS_CODE.WAITING_ENFORCEMENT:
+      return {
+        code: statusCode,
+        tone: 'contested',
+        label: 'Ruling stands',
+        detail: 'loser did not fund',
       }
     case STATUS_CODE.REJECTED:
       return { code: statusCode, tone: 'off', label: 'Rejected' }
