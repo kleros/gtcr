@@ -102,6 +102,9 @@
         document.body.setAttribute('data-theme', resolved)
         document.body.style.backgroundColor = backgrounds[resolved]
         document.body.style.colorScheme = resolved === 'light' ? 'light' : 'dark'
+        // The page's own scrollbar takes the root's scheme, not the body's.
+        document.documentElement.style.colorScheme =
+          resolved === 'light' ? 'light' : 'dark'
         var themeColor = document.querySelector('meta[name="theme-color"]')
         if (themeColor) themeColor.setAttribute('content', backgrounds[resolved])
         if (resolved !== 'light') document.documentElement.classList.add('dark')
