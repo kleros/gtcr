@@ -844,7 +844,7 @@ const registryTitle = (
   kind?: RegistryKind,
 ): string => {
   if (title && title.trim() && title.trim() !== '-') return title.trim()
-  if (kind === 'permanent') return `Permanent registry ${shortAddress(address)}`
+  if (kind === 'permanent') return `Stake list ${shortAddress(address)}`
   return `Registry ${shortAddress(address)}`
 }
 
@@ -1054,7 +1054,7 @@ const requestToActivity = (
         ? `Dispute #${requestEntity.disputeID || 'pending'}`
         : isRemoval
           ? 'Removal requested'
-          : 'Registration requested',
+          : 'Submitted',
     timestamp,
     href: buildActivityHref(chainId, registryAddress, itemID),
   }

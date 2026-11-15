@@ -184,7 +184,7 @@ export const openRequests = (registry: DashboardRegistry): number =>
 
 /** A list whose title is only its address (the indexer had no name for it). */
 export const hasAddressTitle = (registry: DashboardRegistry): boolean =>
-  /^(Permanent registry|Registry) 0x[0-9a-f]{4}(\.\.\.|…)[0-9a-f]{4}$/i.test(
+  /^(Stake list|Registry) 0x[0-9a-f]{4}(\.\.\.|…)[0-9a-f]{4}$/i.test(
     registry.title,
   )
 

@@ -588,7 +588,7 @@ export const buildBoard = (
     }
   }
   const verb = (activity: DashboardActivity) =>
-    activity.requestType === 'removal' ? 'removal asked' : 'submitted'
+    activity.requestType === 'removal' ? 'removal requested' : 'submitted'
   const windowsKnown = chains.every((chainId) =>
     chainWindowsKnown(data, chainId),
   )

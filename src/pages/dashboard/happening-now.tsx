@@ -766,7 +766,7 @@ const OpenRow = ({
       </IdLine>
       {windowStart !== undefined && windowEnd !== undefined ? (
         <WindowLine
-          title={`${removal ? 'Removal asked' : 'Submitted'} ${formatAgo(windowStart, now)} · challenge window closes ${formatAbsolute(windowEnd)}`}
+          title={`${removal ? 'Removal requested' : 'Submitted'} ${formatAgo(windowStart, now)} · challenge period closes ${formatAbsolute(windowEnd)}`}
         >
           <Small $muted>{removal ? 'Removal' : 'Submission'}</Small>
           <WindowRail
@@ -923,7 +923,7 @@ export const HappeningNow = ({
               rules can claim the bounty
             </Small>
             {checking && (
-              <Checking role="status">Checking challenge windows…</Checking>
+              <Checking role="status">Checking challenge periods…</Checking>
             )}
           </Heading>
           <Tally>
@@ -952,7 +952,7 @@ export const HappeningNow = ({
             {unloaded
               ? `${unloaded} requests did not load`
               : known
-                ? 'No request in its challenge window'
+                ? 'No request in its challenge period'
                 : 'No request waiting for a challenge'}
           </Empty>
         )}

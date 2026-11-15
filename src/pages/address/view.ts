@@ -83,8 +83,8 @@ const activityDetail = (activity: ProfileActivity): string | undefined => {
 /**
  * Dot and label for an action. Actions are events, not entry states, so the
  * dot stays grey; it turns amber only while the request's dispute is still
- * open. The label is the data layer's own wording ("Submitted entry",
- * "Challenged dispute #12").
+ * open. The label is the data layer's own wording ("Submitted",
+ * "Challenged · case 12").
  */
 export const activityStatus = (activity: ProfileActivity): EntryStatusView => ({
   tone:

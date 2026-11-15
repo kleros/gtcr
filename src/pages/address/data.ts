@@ -326,7 +326,7 @@ const registryTitle = (
   kind?: RegistryKind,
 ) => {
   if (title && title.trim() && title.trim() !== '-') return title.trim()
-  if (kind === 'permanent') return `Permanent registry ${shortAddress(address)}`
+  if (kind === 'permanent') return `Stake list ${shortAddress(address)}`
   return `Registry ${shortAddress(address)}`
 }
 
@@ -426,11 +426,14 @@ const requestToActivity = (
       actor: requester,
       secondaryActor: challenger,
       kind: isChallenger ? 'challenge' : isRemoval ? 'removal' : 'submission',
+      // The words the entry pages use ("Removal requested", "Case 12").
       status: isChallenger
-        ? `Challenged dispute #${requestEntity.disputeID || 'pending'}`
+        ? requestEntity.disputeID
+          ? `Challenged · case ${requestEntity.disputeID}`
+          : 'Challenged'
         : isRemoval
-          ? 'Requested removal'
-          : 'Submitted entry',
+          ? 'Removal requested'
+          : 'Submitted',
       timestamp,
       href: buildActivityHref(chainId, registryAddress, itemID),
       disputed,
@@ -454,7 +457,7 @@ const permanentSubmissionToActivity = (
     itemID: submission.item?.itemID,
     actor: normalizeAddress(submission.submitter),
     kind: 'submission',
-    status: 'Submitted permanent entry',
+    status: 'Submitted Stake entry',
     timestamp: toNumber(submission.createdAt),
     href: buildActivityHref(chainId, registryAddress, submission.item?.itemID),
   }
@@ -477,7 +480,9 @@ const permanentChallengeToActivity = (
     itemID: challenge.item?.itemID,
     actor: normalizeAddress(challenge.challenger),
     kind: 'challenge',
-    status: `Challenged dispute #${challenge.disputeID || 'pending'}`,
+    status: challenge.disputeID
+      ? `Challenged · case ${challenge.disputeID}`
+      : 'Challenged',
     timestamp: toNumber(challenge.createdAt),
     href: buildActivityHref(chainId, registryAddress, challenge.item?.itemID),
     disputed: true,
@@ -909,7 +914,7 @@ export const fetchAddressProfileData = async (
     // Stake Curate requests carry no title; the index has the list's own.
     if (
       registry.title &&
-      /^(Permanent registry|Registry) 0x/.test(activity.registryTitle)
+      /^(Stake list|Registry) 0x/.test(activity.registryTitle)
     )
       activity.registryTitle = registry.title
   }

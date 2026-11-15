@@ -1200,7 +1200,7 @@ const TitleSeal = styled(VerifiedBadge)`
  * address, whole and in mono ("0x0391…ad67"), not "Registry 0x0391…".
  */
 const ListName = ({ title, address }: { title: string; address: string }) =>
-  /^(Permanent registry|Registry) 0x/i.test(title) ? (
+  /^(Stake list|Registry) 0x/i.test(title) ? (
     <code title={address}>{truncateMiddle(address)}</code>
   ) : (
     <span>{title}</span>

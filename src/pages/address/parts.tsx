@@ -2,7 +2,8 @@ import React from 'react'
 import styled, { css } from 'styled-components'
 import { Link } from 'react-router-dom'
 import { parseIpfs } from 'utils/ipfs-parse'
-import { formatAbsolute, formatAgo } from 'utils/time'
+import { formatAbsolute } from 'utils/time'
+import { formatSince } from 'pages/item-details/format-since'
 import { CurateIcon, type CurateIconName } from 'components/curate/icons'
 import { Small } from 'components/curate/primitives'
 import { VerifiedBadge } from 'components/curate/verified-badge'
@@ -47,7 +48,10 @@ export const RegistryLogo = ({
   </LogoSlot>
 )
 
-/** "3h ago", with the absolute UTC time on hover. */
+/**
+ * "3h 12m ago", past two days "12 days ago", "2 years ago": the entry
+ * pages' form, never "812d 6h ago". The absolute UTC time on hover.
+ */
 export const When = ({
   timestamp,
   now,
@@ -63,7 +67,7 @@ export const When = ({
       dateTime={new Date(timestamp * 1000).toISOString()}
       title={formatAbsolute(timestamp)}
     >
-      {formatAgo(timestamp, now)}
+      {formatSince(timestamp, now)}
     </time>
   ) : (
     <Small $faint className={className}>
