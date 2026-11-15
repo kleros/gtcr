@@ -680,7 +680,15 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
   const appealCostFailed =
     appealCostApplies && appealCostQuery.isError && !appealCostQuery.isFetching
 
-  useDocumentHead(truncatedSeoTitle, truncatedSeoMetaDescription)
+  // An error page names itself in the head (and keeps a 404 out of search
+  // engines), but this page's effect runs after its child's: while one is
+  // shown, the entry leaves the head alone.
+  const showsErrorPage =
+    !tcrAddress || !itemID || !!tcrError || itemLoadFailed || itemMissing
+  useDocumentHead(
+    showsErrorPage ? undefined : truncatedSeoTitle,
+    showsErrorPage ? undefined : truncatedSeoMetaDescription,
+  )
 
   if (!tcrAddress || !itemID || tcrError)
     return (
@@ -702,6 +710,10 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
         title="This entry did not load"
         message={ENTRY_LOAD_FAILED}
         onRetry={() => detailsViewQuery.refetch()}
+        home={{
+          to: `/tcr/${chainId}/${tcrAddress}`,
+          label: 'Back to the list',
+        }}
       />
     )
 
@@ -726,6 +738,10 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
         title="Entry not found"
         message="This list has no entry with this ID."
         tip={ENTRY_MISSING_TIP}
+        home={{
+          to: `/tcr/${chainId}/${tcrAddress}`,
+          label: 'Back to the list',
+        }}
       />
     )
 

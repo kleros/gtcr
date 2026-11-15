@@ -31,9 +31,12 @@ const Bare = styled.div`
   min-width: 0;
 `
 
+/* Labels keep at least 45% of the width; a long value (a deadline with its
+   time left) wraps in the rest instead of squeezing every label into a
+   narrow column, three lines for "Required for the challenger". */
 const Receipt = styled.dl`
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(45%, 1fr) minmax(0, auto);
   align-items: baseline;
   gap: 10px 16px;
   margin: 0;

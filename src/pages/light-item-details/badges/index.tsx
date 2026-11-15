@@ -159,7 +159,8 @@ interface MetadataByTime {
 interface FoundBadge {
   tcrAddress: string
   item: SubgraphItem
-  metadata: { logoURI: string; tcrTitle: string; tcrDescription: string }
+  /** The badge list's guarded MetaEvidence metadata: any of it can be missing. */
+  metadata?: { logoURI?: string; tcrTitle?: string; tcrDescription?: string }
   tcrData: { challengePeriodDuration?: BigNumber }
 }
 
@@ -549,7 +550,7 @@ const Badges = ({ connectedTCRAddr, item, tcrAddress }: BadgesProps) => {
             {
               tcrAddress: badgeAddress,
               item: badgeItem,
-              metadata: { logoURI, tcrTitle, tcrDescription },
+              metadata: { logoURI, tcrTitle, tcrDescription } = {},
               tcrData: { challengePeriodDuration },
             },
             i,
@@ -558,8 +559,8 @@ const Badges = ({ connectedTCRAddr, item, tcrAddress }: BadgesProps) => {
               key={i}
               to={`/tcr/${chainId}/${badgeAddress}/${badgeItem.ID}`}
             >
-              <BadgeLogo src={parseIpfs(logoURI)} alt="" />
-              <Title>{tcrTitle}</Title>
+              {logoURI && <BadgeLogo src={parseIpfs(logoURI)} alt="" />}
+              <Title>{tcrTitle || 'Badge list'}</Title>
               {tcrDescription && <Body $muted>{tcrDescription}</Body>}
               <ItemStatusBadge
                 item={badgeItem}

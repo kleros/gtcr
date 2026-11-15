@@ -526,9 +526,18 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
     decodedItem && metadata && view && (decodedData?.length ?? 0) > 0
       ? `${decodedData?.join(' ')} · ${view.label} on ${tcrTitle} in Kleros Curate`
       : 'View entry details on Kleros Curate.'
+  // An error page names itself in the head (and keeps a 404 out of search
+  // engines), but this page's effect runs after its child's: while one is
+  // shown, the entry leaves the head alone.
+  const showsErrorPage =
+    !tcrAddress ||
+    !itemID ||
+    !!tcrError ||
+    (detailsViewQuery.isError && !detailsViewQuery.data) ||
+    (detailsViewQuery.isSuccess && !detailsViewQuery.data?.item)
   useDocumentHead(
-    truncateAtWord(fullSeoTitle, 160),
-    truncateAtWord(fullSeoMetaDescription, 160),
+    showsErrorPage ? undefined : truncateAtWord(fullSeoTitle, 160),
+    showsErrorPage ? undefined : truncateAtWord(fullSeoMetaDescription, 160),
   )
 
   // If this is a TCR in a TCR of TCRs, fetch its metadata via cached hook.
@@ -612,6 +621,10 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
         title="This entry did not load"
         message={ENTRY_LOAD_FAILED}
         onRetry={() => detailsViewQuery.refetch()}
+        home={{
+          to: `/tcr/${chainId}/${tcrAddress}`,
+          label: 'Back to the list',
+        }}
       />
     )
 
@@ -640,6 +653,10 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
         title="Entry not found"
         message="This list has no entry with this ID."
         tip={ENTRY_MISSING_TIP}
+        home={{
+          to: `/tcr/${chainId}/${tcrAddress}`,
+          label: 'Back to the list',
+        }}
       />
     )
 

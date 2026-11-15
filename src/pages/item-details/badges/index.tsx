@@ -202,7 +202,8 @@ interface FetchItemsState {
 interface FoundBadge {
   tcrAddress: string
   item: QueriedItem
-  metadata: {
+  /** The badge list's guarded MetaEvidence metadata: any of it can be missing. */
+  metadata?: {
     logoURI?: string
     tcrTitle?: string
     tcrDescription?: string
@@ -582,7 +583,7 @@ const Badges = ({ connectedTCRAddr, item, tcrAddress }: BadgesProps) => {
               {
                 tcrAddress: badgeAddress,
                 item: badgeItem,
-                metadata: { logoURI, tcrTitle, tcrDescription },
+                metadata: { logoURI, tcrTitle, tcrDescription } = {},
                 tcrData: { challengePeriodDuration },
               },
               i,

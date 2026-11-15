@@ -121,6 +121,19 @@ const Logo = styled.img`
   background: var(--color-raised);
 `
 
+/* A badge list with no logo in its MetaEvidence. */
+const LogoFallback = styled.span`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-raised);
+  color: var(--color-faint);
+`
+
 const DepositLine = styled.div`
   display: flex;
   flex-wrap: wrap;
@@ -135,7 +148,11 @@ export interface BadgeInfo {
   tcrAddress: string
   fileURI?: string
   submissionDeposit: BigNumber
-  metadata: { tcrTitle: string; logoURI: string; columns: Column[] }
+  /**
+   * From the badge list's MetaEvidence, after the guard (which drops a
+   * field of the wrong type): any of it can be missing.
+   */
+  metadata?: { tcrTitle?: string; logoURI?: string; columns?: Column[] }
   metaEvidence?: MetaEvidence
   matchFile?: { columns: (number | null)[] }
   decodedData?: unknown[]
@@ -260,7 +277,7 @@ const AddBadgeModal = ({
               {
                 fileURI,
                 tcrAddress: badgeAddress,
-                metadata: { tcrTitle, logoURI },
+                metadata: { tcrTitle, logoURI } = {},
               },
               i,
             ) => (
@@ -272,9 +289,15 @@ const AddBadgeModal = ({
                   checked={selectedBadge === i}
                   onChange={() => setSelectedBadge(i)}
                 />
-                <Logo src={parseIpfs(logoURI)} alt="" />
+                {logoURI ? (
+                  <Logo src={parseIpfs(logoURI)} alt="" />
+                ) : (
+                  <LogoFallback aria-hidden>
+                    <CurateIcon name="registry" size={20} />
+                  </LogoFallback>
+                )}
                 <div style={{ minWidth: 0 }}>
-                  <Title>{tcrTitle}</Title>
+                  <Title>{tcrTitle || 'Badge list'}</Title>
                   {/* The policy of that badge list, not of this one. */}
                   <PolicyButton fileURI={fileURI} tcrAddress={badgeAddress}>
                     <CurateIcon name="policy" size={14} />
