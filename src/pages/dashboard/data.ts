@@ -1,4 +1,5 @@
 import { gql } from 'graphql-request'
+import type { QueryFunctionContext } from '@tanstack/react-query'
 import { request } from 'utils/indexer-request'
 import { NETWORKS } from 'config/networks'
 import { subgraphUrl, subgraphUrlPermanent } from 'config/tcr-addresses'
@@ -2194,21 +2195,61 @@ export const loadRulingCards = async (
   return cards.flat()
 }
 
+/**
+ * How long a load with every chain's lists is kept over a refresh that
+ * missed some (an indexer that refused or timed out, often a rate limit
+ * that clears within a minute). Past this the refresh is shown as it is,
+ * with the missing lists said, so a long outage never hides newer data.
+ */
+const KEEP_COMPLETE_MS = 15 * 60_000
+
+/**
+ * A refresh that missed some chain's lists does not replace a complete load
+ * in the query cache (under the key being refreshed): the pages keep the
+ * full figures, labelled with their time (query.ts: isLiveLoad), and ask
+ * again a minute later, as for any refresh that is overdue
+ * (dashboardRefreshIn). Without a query context (a direct call) the load is
+ * returned as it is.
+ */
+const keepCompleteLoad = async (
+  load: Promise<DashboardData>,
+  context?: Pick<QueryFunctionContext, 'client' | 'queryKey'>,
+): Promise<DashboardData> => {
+  const next = await load
+  if (!context || !next.listFailedChains?.length) return next
+  const kept = context.client.getQueryData<DashboardData>(context.queryKey)
+  return kept &&
+    !kept.listFailedChains?.length &&
+    next.generatedAt - kept.generatedAt < KEEP_COMPLETE_MS
+    ? kept
+    : next
+}
+
 /** The app's load: every chain, list metadata, creation-time refresh. */
-export const fetchDashboardData = (): Promise<DashboardData> =>
-  loadDashboardData({
-    refreshCreationTimes: true,
-    challengeWindows: true,
-    chains: MAINNET_LOAD_CHAINS,
-  })
+export const fetchDashboardData = (
+  context?: QueryFunctionContext,
+): Promise<DashboardData> =>
+  keepCompleteLoad(
+    loadDashboardData({
+      refreshCreationTimes: true,
+      challengeWindows: true,
+      chains: MAINNET_LOAD_CHAINS,
+    }),
+    context,
+  )
 
 /** The same load for the Sepolia testnet, read only when a page shows it. */
-export const fetchTestnetDashboardData = (): Promise<DashboardData> =>
-  loadDashboardData({
-    refreshCreationTimes: true,
-    challengeWindows: true,
-    chains: TESTNET_LOAD_CHAINS,
-  })
+export const fetchTestnetDashboardData = (
+  context?: QueryFunctionContext,
+): Promise<DashboardData> =>
+  keepCompleteLoad(
+    loadDashboardData({
+      refreshCreationTimes: true,
+      challengeWindows: true,
+      chains: TESTNET_LOAD_CHAINS,
+    }),
+    context,
+  )
 
 /**
  * The mainnet load with the testnet's lists and latest activity added, for

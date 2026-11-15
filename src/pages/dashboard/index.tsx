@@ -219,6 +219,12 @@ const LivePill = styled.span`
     }
   }
 
+  /* No list in scope loaded: the indexers did not answer at all. */
+  &[data-down] i {
+    background: var(--status-off);
+    animation: none;
+  }
+
   /* An older load (the tab was in the background): shown, not called live. */
   &[data-stale] {
     b {
@@ -1018,6 +1024,25 @@ const Dashboard = () => {
     [series],
   )
 
+  /*
+   * Chains in this scope whose lists did not load (an indexer refused or
+   * timed out): their lists, entries and requests are missing, not zero, so
+   * the figures built on them read "—" rather than a low count, as on
+   * Browse. With no list in scope at all, the indexers did not answer.
+   */
+  const listsMissing = (data?.listFailedChains ?? []).filter((id) =>
+    chains.includes(id),
+  )
+  const figuresUnknown = listsMissing.length > 0
+  const missingNames = listsMissing
+    .map((id) => chainInfo(id)?.name ?? String(id))
+    .join(' and ')
+  const unanswered = figuresUnknown && scoped.length === 0
+  // A chain whose lists did not load has no count in the breakdown.
+  const segmentUnknown = (key: string) =>
+    figuresUnknown &&
+    (chains.length === 1 || listsMissing.includes(Number(key)))
+
   const breakdownTotal = breakdown.segments.reduce(
     (sum, seg) => sum + seg.value,
     0,
@@ -1027,7 +1052,7 @@ const Dashboard = () => {
     .filter((seg) => seg.key !== 'rest' && seg.value > 0)
     .sort((a, b) => b.value - a.value)[0]
   const leading =
-    breakdownTotal && leader
+    !figuresUnknown && breakdownTotal && leader
       ? { label: leader.label, share: leader.value / breakdownTotal }
       : undefined
 
@@ -1046,33 +1071,39 @@ const Dashboard = () => {
   const updated = data
     ? `Updated ${formatAgo(Math.floor(data.generatedAt / 1000), now)}`
     : ''
+  const partial = partialChains.length > 0 && !unanswered
 
   return (
     <Page>
       <Hero>
         <LivePill
           style={{ ['--i' as string]: 0 }}
-          data-partial={partialChains.length > 0 ? '' : undefined}
+          data-partial={partial ? '' : undefined}
+          data-down={unanswered ? '' : undefined}
           data-stale={
             data && !live && partialChains.length === 0 ? '' : undefined
           }
           role="status"
         >
           <i aria-hidden />
-          <b>
-            {partialChains.length > 0
-              ? 'Partial'
-              : !data || live
-                ? 'Live'
-                : query.isFetching
-                  ? 'Refreshing'
-                  : 'Not live'}
-          </b>
+          {!unanswered && (
+            <b>
+              {partial
+                ? 'Partial'
+                : !data || live
+                  ? 'Live'
+                  : query.isFetching
+                    ? 'Refreshing'
+                    : 'Not live'}
+            </b>
+          )}
           {!data
             ? 'Connecting to the indexers'
-            : partialChains.length > 0
-              ? `Some ${partialNames} data did not load; figures may be incomplete`
-              : updated}
+            : unanswered
+              ? 'Indexers not answering'
+              : partial
+                ? `Some ${partialNames} data did not load; figures may be incomplete`
+                : updated}
         </LivePill>
         <Headline style={{ ['--i' as string]: 1 }}>
           Lists anyone can challenge. <em>Settled by jurors.</em>
@@ -1126,7 +1157,7 @@ const Dashboard = () => {
           <HeadlineFigure>
             <Label $tone="faint">Entries</Label>
             <Big $hero>
-              <Odometer value={figures?.entries} />
+              <Odometer value={figuresUnknown ? undefined : figures?.entries} />
             </Big>
           </HeadlineFigure>
           <InlineStats>
@@ -1139,7 +1170,9 @@ const Dashboard = () => {
               <InlineStat key={figure.label}>
                 <Label $tone="faint">{figure.label}</Label>
                 <b>
-                  <AnimatedNumber value={figure.value} />
+                  <AnimatedNumber
+                    value={figuresUnknown ? undefined : figure.value}
+                  />
                 </b>
               </InlineStat>
             ))}
@@ -1203,15 +1236,27 @@ const Dashboard = () => {
           ) : (
             <OrbitChart
               key={chains.join('-')}
-              segments={breakdown.segments}
+              // Shares of a total that misses a chain's lists would mislead:
+              // no arcs until they load.
+              segments={figuresUnknown ? [] : breakdown.segments}
               total={leading ? `${Math.round(leading.share * 100)}%` : '—'}
-              caption={leading ? `in ${leading.label}` : 'No entries'}
-              ariaLabel={`${breakdown.title}: ${breakdown.segments
-                .map(
-                  (seg) =>
-                    `${seg.label} ${formatInt(seg.value)} (${breakdownTotal ? Math.round((seg.value / breakdownTotal) * 100) : 0}%)`,
-                )
-                .join(', ')}`}
+              caption={
+                leading
+                  ? `in ${leading.label}`
+                  : figuresUnknown
+                    ? 'did not load'
+                    : 'No entries'
+              }
+              ariaLabel={
+                figuresUnknown
+                  ? `${breakdown.title}: the ${missingNames} lists did not load`
+                  : `${breakdown.title}: ${breakdown.segments
+                      .map(
+                        (seg) =>
+                          `${seg.label} ${formatInt(seg.value)} (${breakdownTotal ? Math.round((seg.value / breakdownTotal) * 100) : 0}%)`,
+                      )
+                      .join(', ')}`
+              }
               size={168}
             />
           )}
@@ -1222,7 +1267,11 @@ const Dashboard = () => {
                 <li key={seg.key}>
                   <i style={{ background: seg.color }} aria-hidden />
                   <span title={seg.label}>{seg.label}</span>
-                  <b>{loading ? '—' : formatInt(seg.value)}</b>
+                  <b>
+                    {loading || segmentUnknown(seg.key)
+                      ? '—'
+                      : formatInt(seg.value)}
+                  </b>
                 </li>
               ))}
             </Legend>
@@ -1338,6 +1387,13 @@ const Dashboard = () => {
                     <td className="num">{formatInt(registry.disputeCount)}</td>
                   </tr>
                 ))}
+                {figuresUnknown && (
+                  <tr>
+                    <td colSpan={5}>
+                      <Small $muted>{missingNames} lists did not load</Small>
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </ActiveTable>
           </TableScroller>
