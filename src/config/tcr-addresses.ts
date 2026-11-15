@@ -155,6 +155,20 @@ export const klerosAddresses: ChainMap<{
   },
 } as const
 
+/**
+ * Whether `address` is this chain's Kleros arbitrator. Courts, jurors and
+ * "Kleros jurors decide" only describe a list whose arbitrator is Kleros:
+ * any ERC-792 contract can be a list's arbitrator.
+ */
+export const isKlerosArbitrator = (
+  chainId: number | string | null | undefined,
+  address: string | null | undefined,
+): boolean => {
+  if (chainId === null || chainId === undefined || !address) return false
+  const kleros = klerosAddresses[chainId]?.arbitrator
+  return !!kleros && kleros.toLowerCase() === address.toLowerCase()
+}
+
 export const txBatcherAddresses: ChainMap<string> = {
   '1': '0x82458d1c812d7c930bb3229c9e159cbabd9aa8cb',
   '100': '0xD7572AD1523F3f116258b8d9dDeBA1d5e76235ac',

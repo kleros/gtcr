@@ -71,6 +71,36 @@ export const isUserRejection = (error: unknown): boolean => {
   return false
 }
 
+/**
+ * The Atlas sign-in every upload needs, with its outcome in a toast. A
+ * declined signature is the person's choice, not a failure: it gets a short
+ * note, not a sticky error carrying the wallet library's internals.
+ */
+export const signInWithToast = (authoriseUser: () => Promise<unknown>) => {
+  infoToast('Signing in…')
+  authoriseUser()
+    .then(() => successToast('Signed in.'))
+    .catch((err: unknown) => {
+      console.error(err)
+      if (isUserRejection(err)) infoToast('Sign-in cancelled.')
+      else errorToast(`Sign-in failed: ${parseWagmiError(err) || 'try again.'}`)
+    })
+}
+
+/**
+ * For a "Switch to <chain>" control: a wallet that did not switch says why
+ * in a toast. A declined request is left alone; anything else (a request
+ * already waiting in the wallet, a wallet that cannot add the network)
+ * points to the wallet, where it can be solved.
+ */
+export const reportSwitchFailure = (error: unknown, chainName?: string) => {
+  if (isUserRejection(error)) return
+  console.error(error)
+  errorToast(
+    `Your wallet did not switch${chainName ? ` to ${chainName}` : ''}. Open it: a request may be waiting there, or change the network in the wallet itself.`,
+  )
+}
+
 /** A line of toast text, with the transaction on the chain's explorer. */
 const withExplorerLink = (text: string, chainId?: number, hash?: Hash) =>
   chainId && hash
