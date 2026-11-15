@@ -15,7 +15,7 @@ import _GTCRFactory from 'assets/abis/LightGTCRFactory.json'
 import { Roles, useAtlasProvider } from '@kleros/kleros-app'
 import { JSON_UPLOAD_ROLE } from 'utils/atlas-roles'
 import { ZERO_ADDRESS, getArticleFor } from 'utils/string'
-import { wrapWithToast, errorToast } from 'utils/wrap-with-toast'
+import { wrapWithToast, errorToast, replacementOf } from 'utils/wrap-with-toast'
 import { parseWagmiError } from 'utils/parse-wagmi-error'
 import { formatDurationLong } from 'utils/time'
 import { parseIpfs } from 'utils/ipfs-parse'
@@ -941,12 +941,17 @@ const Deploy = ({
       if (result.status && result.result)
         onMined(result.result, parentTCRAddress, relTCRAddress)
       // Sent (the callback above moved the stage on), but no receipt, which
-      // a revert would have: the transaction is still pending.
-      else if ((stage as DeployPhase) === 'mining' && !result.result) {
+      // a revert would have: the transaction is still pending. Unless the
+      // wallet cancelled or replaced it: then it never will be.
+      else if (
+        (stage as DeployPhase) === 'mining' &&
+        !result.result &&
+        !result.replaced
+      ) {
         setStillPending(true)
         setWaited(true)
       } else {
-        // Reverted on chain: nothing is pending any more.
+        // Reverted on chain, or cancelled: nothing is pending any more.
         if ((stage as DeployPhase) === 'mining') keepPending(undefined)
         setFailedAt(stage)
         setPhase('idle')
@@ -1035,7 +1040,12 @@ const Deploy = ({
         hash: pendingHash,
         confirmations: 2,
       })
-      if (receipt.status === 'success')
+      // viem answers a replaced transaction with its replacement's receipt,
+      // which succeeded: a cancel from the wallet deployed nothing, and the
+      // predicted addresses hold no list.
+      const cancelled =
+        replacementOf(receipt, pendingHash)?.reason === 'cancelled'
+      if (receipt.status === 'success' && !cancelled)
         onMined(receipt, predicted?.list ?? '', predicted?.badges)
       else {
         keepPending(undefined)

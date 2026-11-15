@@ -13,7 +13,7 @@ import { Roles, useAtlasProvider } from '@kleros/kleros-app'
 import _GTCRFactory from 'assets/abis/PermanentGTCRFactory.json'
 import { JSON_UPLOAD_ROLE } from 'utils/atlas-roles'
 import { getArticleFor } from 'utils/string'
-import { wrapWithToast, errorToast } from 'utils/wrap-with-toast'
+import { wrapWithToast, errorToast, replacementOf } from 'utils/wrap-with-toast'
 import { parseWagmiError } from 'utils/parse-wagmi-error'
 import { parseIpfs } from 'utils/ipfs-parse'
 import { formatDurationLong } from 'utils/time'
@@ -536,12 +536,17 @@ const Deploy = ({
 
       if (result.status && result.result) onMined(result.result)
       // Sent (the callback above moved the stage on), but no receipt, which
-      // a revert would have: the transaction is still pending.
-      else if ((stage as Phase) === 'mining' && !result.result) {
+      // a revert would have: the transaction is still pending. Unless the
+      // wallet cancelled or replaced it: then it never will be.
+      else if (
+        (stage as Phase) === 'mining' &&
+        !result.result &&
+        !result.replaced
+      ) {
         setStillPending(true)
         setWaited(true)
       } else {
-        // Reverted on chain: nothing is pending any more.
+        // Reverted on chain, or cancelled: nothing is pending any more.
         if ((stage as Phase) === 'mining') keepPending(undefined)
         setFailedAt(stage)
         setPhase('idle')
@@ -606,7 +611,11 @@ const Deploy = ({
         hash: pendingHash,
         confirmations: 2,
       })
-      if (receipt.status === 'success') onMined(receipt)
+      // viem answers a replaced transaction with its replacement's receipt,
+      // which succeeded: a cancel from the wallet deployed nothing.
+      const cancelled =
+        replacementOf(receipt, pendingHash)?.reason === 'cancelled'
+      if (receipt.status === 'success' && !cancelled) onMined(receipt)
       else {
         keepPending(undefined)
         setFailedAt('mining')

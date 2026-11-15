@@ -48,6 +48,11 @@ export const ERROR_OPTIONS = {
 export type WrapWithToastReturnType = {
   status: boolean
   result?: TransactionReceipt
+  /**
+   * The wallet cancelled the transaction or sent a different one in its
+   * place: it will never be mined, and nothing it would have done happened.
+   */
+  replaced?: boolean
 }
 
 export const infoToast = (message: string) => toast.info(message, OPTIONS)
@@ -169,7 +174,7 @@ const report = (id: ReturnType<typeof toast.info>, update: ToastUpdate) => {
  * then; an empty transfer to oneself is the wallets' cancel, anything else
  * is taken for a speed-up (the common case).
  */
-const replacementOf = (
+export const replacementOf = (
   receipt: TransactionReceipt,
   hash: Hash,
 ): Replacement | undefined => {
@@ -299,7 +304,7 @@ export async function wrapWithToast(
     replacement ??= replacementOf(res, hash)
     if (replacement && replacement.reason !== 'repriced') {
       report(id, replacedUpdate(replacement, chainId))
-      return { status: false }
+      return { status: false, replaced: true }
     }
     // Sped up in the wallet: the same call, under the new hash.
     if (replacement) hash = replacement.transaction.hash
