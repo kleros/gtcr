@@ -4,8 +4,9 @@
 /index.html
   Cache-Control: no-cache
 
-# Service worker - always revalidate (even though we're unregistering it,
-# this ensures any old cached service-worker.js gets refreshed)
+# Service worker: the kill switch that removes the old Create React App
+# worker (public/service-worker.js). Always revalidate, so the old worker's
+# update check gets this file rather than a cached copy.
 /service-worker.js
   Cache-Control: no-cache
 
