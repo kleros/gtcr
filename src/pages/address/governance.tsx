@@ -455,6 +455,19 @@ const withWritten = (
 const metaEvidenceUrl = (uri: string) =>
   /^https?:\/\//i.test(uri) ? uri : parseIpfs(uri)
 
+/**
+ * A MetaEvidence URI in the form the list stores. Every reader of the list
+ * puts the IPFS gateway in front of the stored value, so a gateway link
+ * (https://<host>/ipfs/<cid>/…) or an ipfs:// URI is stored as the /ipfs/
+ * path it points to. An /ipfs/ path is kept exactly as typed.
+ */
+const toStoredUri = (text: string) =>
+  text
+    .trim()
+    .replace(/^(?:ipfs:\/\/|https?:\/\/[^/?#]+\/ipfs\/)(?=[^/?#])/i, '/ipfs/')
+
+const isWebAddress = (uri: string) => /^https?:\/\//i.test(uri.trim())
+
 const readMetaEvidence = async (uri: string): Promise<MetaEvidenceFile> => {
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), 15_000)
@@ -511,6 +524,10 @@ const checkMetaEvidence = async ({
     if (registration.trim() === clearing.trim())
       return 'The registration and clearing MetaEvidence must be two different files: jurors are asked to add in one and to remove in the other.'
   }
+  // The values come in stored form (toStoredUri): a web address left now is
+  // not an IPFS file, and no reader could open the list until another save.
+  if ([registration, clearing].some((uri) => uri && isWebAddress(uri)))
+    return "MetaEvidence must be on IPFS: Curate reads it only through the IPFS gateway, so a web address would break the list. Use Upload JSON, or enter the file's /ipfs/… path."
   const changed = [
     { uri: registration.trim(), role: 'registration' as const },
     ...(clearing !== undefined
@@ -1120,7 +1137,7 @@ const MetaEvidenceInput = ({
           value={value}
           disabled={disabled || uploading}
           onChange={(event) => onChange(event.currentTarget.value)}
-          placeholder="/ipfs/… or https://…"
+          placeholder="/ipfs/…"
         />
         <EnsureAuth>
           <ButtonAnchor
@@ -1254,8 +1271,10 @@ const ArbitrationGovernanceField = ({
     (extraData !== undefined &&
       extraData.toLowerCase() !== currentExtraData.toLowerCase()) ||
     ((usesPair || usesSingle) &&
-      meta.registration.trim() !== (current?.registration ?? '')) ||
-    (usesPair && meta.clearing.trim() !== (current?.clearing ?? ''))
+      toStoredUri(meta.registration) !==
+        toStoredUri(current?.registration ?? '')) ||
+    (usesPair &&
+      toStoredUri(meta.clearing) !== toStoredUri(current?.clearing ?? ''))
   // Every save sends values the governor did not touch along with the ones
   // they did (Light and Stake send the court and the MetaEvidence together):
   // without the live values, refuse rather than send stale ones back.
@@ -1286,6 +1305,8 @@ const ArbitrationGovernanceField = ({
     const arbitratorChanged =
       registry.kind !== 'permanent' &&
       arbitrator.toLowerCase() !== currentArbitrator.toLowerCase()
+    const registration = toStoredUri(meta.registration)
+    const clearing = toStoredUri(meta.clearing)
     setChecking(true)
     let outdated = false
     const problem = await (async () => {
@@ -1307,8 +1328,8 @@ const ArbitrationGovernanceField = ({
       }
       if (!usesPair && !usesSingle) return undefined
       return checkMetaEvidence({
-        registration: meta.registration,
-        clearing: usesPair ? meta.clearing : undefined,
+        registration,
+        clearing: usesPair ? clearing : undefined,
         current,
       })
     })().catch(() => 'The checks before saving failed. Try again.')
@@ -1319,8 +1340,6 @@ const ArbitrationGovernanceField = ({
       errorToast(problem)
       return
     }
-    const registration = meta.registration.trim()
-    const clearing = meta.clearing.trim()
     const functionName =
       registry.kind === 'classic'
         ? 'changeArbitrator'
@@ -1526,8 +1545,9 @@ const MetaEvidencePairField = ({
   const meta = useMetaEvidenceDraft(current)
   const [checking, setChecking] = useState(false)
   const changed =
-    meta.registration.trim() !== (current?.registration ?? '') ||
-    meta.clearing.trim() !== (current?.clearing ?? '')
+    toStoredUri(meta.registration) !==
+      toStoredUri(current?.registration ?? '') ||
+    toStoredUri(meta.clearing) !== toStoredUri(current?.clearing ?? '')
   // Both files are sent together: one left as it was must be the live one.
   const blocker =
     gate.blocker ??
@@ -1548,6 +1568,8 @@ const MetaEvidencePairField = ({
 
   const save = async () => {
     if (blocker || !current) return
+    const registration = toStoredUri(meta.registration)
+    const clearing = toStoredUri(meta.clearing)
     setChecking(true)
     let outdated = false
     const problem = await (async () => {
@@ -1555,11 +1577,7 @@ const MetaEvidencePairField = ({
         outdated = true
         return SETTINGS_CHANGED
       }
-      return checkMetaEvidence({
-        registration: meta.registration,
-        clearing: meta.clearing,
-        current,
-      })
+      return checkMetaEvidence({ registration, clearing, current })
     })().catch(() => 'The MetaEvidence check failed. Try again.')
     if (!alive.current) return
     setChecking(false)
@@ -1568,8 +1586,6 @@ const MetaEvidencePairField = ({
       errorToast(problem)
       return
     }
-    const registration = meta.registration.trim()
-    const clearing = meta.clearing.trim()
     if (await send('changeMetaEvidence', [registration, clearing])) {
       meta.reset()
       // changeMetaEvidence adds one to metaEvidenceUpdates.
