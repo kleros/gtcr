@@ -616,8 +616,8 @@ const Guide = () => {
               periods.
             </Prose>
             <Aside label={VERIFIED_LABEL}>
-              Every new list starts as a Community list. Submit it to a Kleros
-              list of lists on its chain: once it is registered on one, it
+              Every new list starts as a Community list. Submit it to the Kleros
+              list of lists on its chain: once it is registered there, it
               carries the <VerifiedBadge size={16} decorative />{' '}
               {VERIFIED_LABEL} seal.
             </Aside>

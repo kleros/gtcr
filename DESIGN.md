@@ -151,8 +151,8 @@ Three themes: **Dark** (blue aurora, the default on a dark system), **Light** (a
 pastel aurora) and **Kleros** (the production Kleros palette on a purple aurora). **System** follows
 the OS between Light and Dark. `?cv-theme=light|dark|kleros` previews a theme without saving it. In
 the theme menu the Kleros theme is marked by a wireframe icosahedron (`IcosahedronIcon` in
-`components/layout/theme-menu.tsx`); each mode's hint says what it does in plain words ("Matches
-your device", "Light background", "Dark background", "Kleros purple").
+`components/layout/theme-menu.tsx`); only System carries a hint ("Matches your device"), as the
+others are named by their label and icon (`THEME_MODES` in `contexts/theme-context.tsx`).
 
 # Stage and app bar
 
@@ -187,7 +187,7 @@ your device", "Light background", "Dark background", "Kleros purple").
 | success / warning / danger | `#127D47` / `#9A5B00` / `#C92A2A` | `#34D399` / `#F5B04A` / `#FF6B7A` | `#65DC7F` / `#FFC46B` / `#FF5A78` |
 | aurora a / b / c | `#9DB7FF` / `#B8E3FF` / `#C9B8FF` | `#1B2FFF` / `#0A7CFF` / `#5B2BFF` | `#7E1BD4` / `#4D00B4` / `#27CDFE` |
 | viz 1–4 (chart categories) | `#2A63F0` `#0A87AD` `#7B4FD6` `#C43C84` | `#3D7BFF` `#1AA3C4` `#A274FF` `#D9558F` | as Dark |
-| edge 1 / 2 / 3 (the lit edge) | `#2A63F0` / `#0A9FD0` / `#7B4FD6` | `#7AA7FF` / `#45D4FF` / `#9B7BFF` | `#C084FF` / `#27CDFE` / `#6CC5FF` |
+| edge 1 / 2 / 3 (the lit edge) | `#2A63F0` / `#00A0DC` / `#8A4DFF` | `#7AA7FF` / `#45D4FF` / `#9B7BFF` | `#C084FF` / `#27CDFE` / `#6CC5FF` |
 | cta top / bottom (primary glass) | `#1D2742` / `#0B1220` | `#15264F` / `#0A1226` | `#2C1266` / `#150437` |
 | cta-ink (primary label) | `#FFFFFF` | `#F4F6FB` | `#EAF4FF` |
 | recess (tracks) | ink 5.5% | black 32% | black 30% |
@@ -294,12 +294,15 @@ nowhere else; the rule lives in `components/curate/verified-rule.ts` (no React, 
 uses it too; the hooks are in `registry-shared-verified.ts`), and every page applies it the same
 way (dashboard, Browse, registry pages, the profile, the landing page).
 
-- **Kleros Verified**: one of the chain's Kleros lists of lists, or a list registered on any of
-  them. The lists of lists are the Light ones (`VERIFIED_LIST_OF_LISTS_ADDRESSES`, where new lists
-  are submitted) and the older Classic ones (`FALLBACK_LIST_OF_LISTS_ADDRESSES`), all returned by
-  `getListOfListsAddresses` in `config/list-of-lists.ts`; they count the same. A Kleros Verified
-  list carries the approval **seal**, the Kleros icosahedron cut as a gem in the edge hues with a
-  check on its front face. Its explanation names what the lists of lists' policies reject
+- **Kleros Verified**: the chain's Kleros list of lists, or a list on it. The list of lists is the
+  chain's Light one (`VERIFIED_LIST_OF_LISTS_ADDRESSES` in `config/list-of-lists.ts`, where new
+  lists are submitted). A list is on it while its entry is Registered, or Registered with a removal
+  request still open (it stays until that request is executed); the entry's "Address" field alone
+  says which list it is (`listOfListsEntryAddress`), never another field or the file name. The
+  older Classic lists of lists are retired (`RETIRED_LIST_OF_LISTS_ADDRESSES`,
+  `replacedListOfLists`): they grant nothing, and their pages point to the current one. A Kleros
+  Verified list carries the approval **seal**, the Kleros icosahedron cut as a gem in the edge hues
+  with a check on its front face. Its explanation names what the list of lists' policy rejects
   (offensive, malformed and obviously insecure lists) and claims no more: the seal is not a
   security review.
 - **Community**: every list that is not Kleros Verified. Every Curate list, Verified
@@ -315,10 +318,10 @@ way (dashboard, Browse, registry pages, the profile, the landing page).
   Verified (the default), Community or All above its toolbar, with the choice's meaning in one
   line beside it.
 - Kleros Verified is shown as a count with its lists, each leading to its list (the dashboard's
-  tiles, newest to earn the badge first with the month of its earliest registration on any of the
-  chain's lists of lists, the lists of lists themselves last as "List of lists"; Browse's logos
-  with their names on hover and focus; the landing page's, most open requests first), never as a
-  share of every list: most lists are Community lists and always will be.
+  tiles, newest to earn the badge first with the month of its earliest registration on its chain's
+  list of lists, the lists of lists themselves last as "List of lists"; Browse's logos with their
+  names on hover and focus; the landing page's, most open requests first), never as a share of
+  every list: most lists are Community lists and always will be.
 
 # Data rules
 

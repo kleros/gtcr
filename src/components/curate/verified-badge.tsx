@@ -70,7 +70,7 @@ export const COMMUNITY_LISTS_LABEL = 'Community lists'
 
 /** Why a list is Verified: what its list of lists' policy checks. */
 export const VERIFIED_EXPLANATION =
-  'On the Kleros list of lists, whose policy rejects insecure, malformed and offensive lists.'
+  'On the Kleros list of lists, whose policy rejects offensive, malformed and obviously insecure lists.'
 /** The same for a list that is itself a list of lists. */
 export const LIST_OF_LISTS_EXPLANATION =
   'The Kleros list of lists: the lists it accepts are Kleros Verified.'
