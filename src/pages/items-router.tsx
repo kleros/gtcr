@@ -10,12 +10,14 @@ import AttachmentDisplay from 'components/attachment-display'
 import useTcrNetwork from 'hooks/use-tcr-network'
 import useCheckLightCurate from 'hooks/use-check-light-curate'
 import useUrlChainId from 'hooks/use-url-chain-id'
+import { useAttachmentPlace } from 'hooks/use-attachment'
 import { usePolicyHistory } from 'hooks/use-policy-history'
 import { StakeContext } from 'contexts/stake-context'
 import { useGraphqlBatcher } from 'contexts/graphql-batcher'
 import { getChainById } from 'config/chains'
 import { LIGHT_ITEMS_QUERY, CLASSIC_REGISTRY_ITEMS_QUERY } from 'utils/graphql'
 import { searchStrToFilterObjLight } from 'utils/filters'
+import { getAllowedAttachmentUrl } from 'utils/url-validation'
 
 const LIGHT_ITEMS_PER_PAGE = 40
 const CLASSIC_MAX_ENTITIES = 1000
@@ -73,7 +75,12 @@ const ItemsRouter = () => {
   // (below) at once, and nothing is asked for it.
   const chainId = urlChainId && getChainById(urlChainId) ? urlChainId : null
   const [searchParams] = useSearchParams()
-  const isAttachmentOpen = searchParams.has('attachment')
+  // A file the viewer cannot show (no value, or not on the IPFS gateway)
+  // leaves the list in view.
+  const isAttachmentOpen = !!getAllowedAttachmentUrl(
+    searchParams.get('attachment'),
+  )
+  useAttachmentPlace(isAttachmentOpen)
   const {
     isLightCurate,
     isClassicCurate,
@@ -156,59 +163,66 @@ const ItemsRouter = () => {
       />
     )
 
-  if (isAttachmentOpen) return <AttachmentDisplay />
+  // The viewer shows in the list's place. What the list shows stays mounted
+  // under it, hidden, so its search, filters and place are there on Return.
+  const withViewer = (list: React.ReactNode) => (
+    <>
+      {isAttachmentOpen && <AttachmentDisplay />}
+      <div hidden={isAttachmentOpen}>{list}</div>
+    </>
+  )
 
-  if (checking) return <Loading />
+  if (checking) return withViewer(<Loading />)
 
   if (error)
-    return (
+    return withViewer(
       <ErrorPage
         code="Error"
         title="This list did not load"
         message="The indexer did not answer."
         onRetry={retry}
-      />
+      />,
     )
 
   if (!tcrAddress)
-    return (
+    return withViewer(
       <ErrorPage
         code="Error"
         title="List not found"
         message="No Curate list answers at this address on this chain."
-      />
+      />,
     )
 
   if (isLightCurate)
-    return (
+    return withViewer(
       <Suspense fallback={<Loading />}>
         <LightTCRViewProvider tcrAddress={tcrAddress}>
           <LightItems />
         </LightTCRViewProvider>
-      </Suspense>
+      </Suspense>,
     )
   if (isClassicCurate)
-    return (
+    return withViewer(
       <Suspense fallback={<Loading />}>
         <TCRViewProvider tcrAddress={tcrAddress}>
           <Items />
         </TCRViewProvider>
-      </Suspense>
+      </Suspense>,
     )
   if (isPermanentCurate)
-    return (
+    return withViewer(
       <Suspense fallback={<Loading />}>
         <PermanentItems />
-      </Suspense>
+      </Suspense>,
     )
 
-  return (
+  return withViewer(
     <ErrorPage
       code="Error"
       title="List not found"
       message="No Curate list was found at this address on this chain. A list created in the last few minutes may not be indexed yet: check again in a minute."
       onRetry={recheck}
-    />
+    />,
   )
 }
 

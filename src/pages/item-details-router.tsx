@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, Suspense, lazy } from 'react'
+import React, { useContext, useEffect, useMemo, Suspense, lazy } from 'react'
 import { TCRViewProvider } from 'contexts/tcr-view-context'
 import { LightTCRViewProvider } from 'contexts/light-tcr-view-context'
 import { useParams, useSearchParams } from 'react-router-dom'
@@ -7,6 +7,7 @@ import { STALE_TIME } from 'consts'
 import useTcrNetwork from 'hooks/use-tcr-network'
 import useCheckLightCurate from 'hooks/use-check-light-curate'
 import useUrlChainId from 'hooks/use-url-chain-id'
+import { useAttachmentPlace } from 'hooks/use-attachment'
 import { usePolicyHistory } from 'hooks/use-policy-history'
 import Loading from 'components/loading'
 import ErrorPage from 'pages/error-page'
@@ -18,6 +19,10 @@ import {
   LIGHT_ITEM_DETAILS_QUERY,
   CLASSIC_ITEM_DETAILS_QUERY,
 } from 'utils/graphql'
+import { getAllowedAttachmentUrl } from 'utils/url-validation'
+
+/** The viewer's parameters (see useAttachment), not the entry page's. */
+const VIEWER_PARAMS = ['attachment', 'isPolicy', 'policyTx']
 
 const PermanentItemDetails = lazy(
   () => import('./permanent-item-details/index'),
@@ -35,9 +40,22 @@ const ItemDetailsRouter = () => {
   // (below) at once, and nothing is asked for it.
   const chainId = urlChainId && getChainById(urlChainId) ? urlChainId : null
   const [searchParams] = useSearchParams()
-  const isAttachmentOpen = searchParams.has('attachment')
+  // A file the viewer cannot show (no value, or not on the IPFS gateway)
+  // leaves the entry in view.
+  const isAttachmentOpen = !!getAllowedAttachmentUrl(
+    searchParams.get('attachment'),
+  )
+  useAttachmentPlace(isAttachmentOpen)
   useTcrNetwork()
-  const search = window.location.search
+  // The entry page stays mounted under the viewer and runs an ?action= link
+  // whenever this string changes: opening a file and coming back must not
+  // run it again, so the viewer's parameters are left out.
+  const search = useMemo(() => {
+    const params = new URLSearchParams(searchParams)
+    VIEWER_PARAMS.forEach((key) => params.delete(key))
+    const query = params.toString()
+    return query ? `?${query}` : ''
+  }, [searchParams])
   const {
     isLightCurate,
     isClassicCurate,
@@ -98,59 +116,67 @@ const ItemDetailsRouter = () => {
       />
     )
 
-  if (isAttachmentOpen) return <AttachmentDisplay />
+  // The viewer shows in the entry's place. What the entry page shows stays
+  // mounted under it, hidden, so a half-written evidence and the reader's
+  // place are there on Return.
+  const withViewer = (entry: React.ReactNode) => (
+    <>
+      {isAttachmentOpen && <AttachmentDisplay />}
+      <div hidden={isAttachmentOpen}>{entry}</div>
+    </>
+  )
 
-  if (checking) return <Loading />
+  if (checking) return withViewer(<Loading />)
 
   if (error)
-    return (
+    return withViewer(
       <ErrorPage
         code="Error"
         title="This entry did not load"
         message="The indexer did not answer."
         onRetry={retry}
-      />
+      />,
     )
 
   if (!tcrAddress || !itemID)
-    return (
+    return withViewer(
       <ErrorPage
         code="Error"
         title="List not found"
         message="No Curate list answers at this address on this chain."
-      />
+      />,
     )
 
   if (isLightCurate)
-    return (
+    return withViewer(
       <Suspense fallback={<Loading />}>
         <LightTCRViewProvider tcrAddress={tcrAddress}>
           <LightItemDetails search={search} itemID={itemID} />
         </LightTCRViewProvider>
-      </Suspense>
+      </Suspense>,
     )
   if (isClassicCurate)
-    return (
+    return withViewer(
       <Suspense fallback={<Loading />}>
         <TCRViewProvider tcrAddress={tcrAddress}>
           <ItemDetails search={search} itemID={itemID} />
         </TCRViewProvider>
-      </Suspense>
+      </Suspense>,
     )
   if (isPermanentCurate)
-    return (
+    return withViewer(
       <Suspense fallback={<Loading />}>
         <PermanentItemDetails search={search} itemID={itemID} />
-      </Suspense>
+      </Suspense>,
     )
 
-  return (
+  return withViewer(
     <ErrorPage
       code="Error"
       title="List not found"
       message="No Curate list was found at this address on this chain. A list created in the last few minutes may not be indexed yet: check again in a minute."
       onRetry={recheck}
-    />
+    />,
   )
 }
 

@@ -1,6 +1,6 @@
 import React, { lazy, Suspense, useMemo } from 'react'
 import styled from 'styled-components'
-import { useSearchParams, useParams } from 'react-router-dom'
+import { useLocation, useSearchParams, useParams } from 'react-router-dom'
 import Icon from 'components/ui/Icon'
 import Loading from 'components/loading'
 import useUrlChainId from 'hooks/use-url-chain-id'
@@ -55,6 +55,12 @@ const LoaderContainer = styled.div`
   display: flex;
   justify-content: center;
   padding: 24px;
+`
+
+const Unavailable = styled.p`
+  margin: 0;
+  color: ${({ theme }) => theme.textSecondary};
+  font-size: 14px;
 `
 
 const OpenInNewTab = styled.a`
@@ -137,6 +143,8 @@ const ViewCurrentButton = styled.button`
  */
 const AttachmentDisplay: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams()
+  // Kept on each switch of policy, so Return still steps back to the page.
+  const { state } = useLocation()
   const { tcrAddress } = useParams<{ tcrAddress: string }>()
   const chainId = useUrlChainId()
 
@@ -177,11 +185,19 @@ const AttachmentDisplay: React.FC = () => {
         newParams.set('isPolicy', 'true')
         return newParams
       },
-      { replace: true },
+      { replace: true, state },
     )
   }
 
-  if (!safeUrl) return null
+  // An address the viewer will not load (no value, or not on the IPFS
+  // gateway) still offers the way back.
+  if (!safeUrl)
+    return (
+      <Container>
+        <Header />
+        <Unavailable>This file cannot be shown here.</Unavailable>
+      </Container>
+    )
 
   return (
     <Container>

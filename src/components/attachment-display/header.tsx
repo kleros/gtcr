@@ -1,7 +1,8 @@
 import React, { useState } from 'react'
 import styled from 'styled-components'
-import { useSearchParams } from 'react-router-dom'
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import Icon from 'components/ui/Icon'
+import { isOpenedHere } from 'hooks/use-attachment'
 import { buttonReset } from 'styles/button-reset'
 import PolicyHistoryModal from './policy-history-modal'
 
@@ -54,11 +55,21 @@ const HeaderButton = styled.button`
 
 const Header: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams()
+  const navigate = useNavigate()
+  const { state } = useLocation()
   const [isHistoryOpen, setIsHistoryOpen] = useState(false)
 
   const isPolicy = searchParams.has('isPolicy') || searchParams.has('policyTx')
 
   const handleReturn = () => {
+    // Opened from the page under it: step back to that page, as the
+    // browser's Back does, so the viewer leaves no entry behind. A viewer
+    // reached by a link has no such entry: its page is the same address
+    // without the viewer's parameters.
+    if (isOpenedHere(state)) {
+      navigate(-1)
+      return
+    }
     setSearchParams(
       (prev) => {
         const newParams = new URLSearchParams(prev)
