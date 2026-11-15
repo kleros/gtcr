@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useMemo } from 'react'
 import styled, { css } from 'styled-components'
 import { Link, useNavigate } from 'react-router-dom'
 import { ItemTypes } from '@kleros/gtcr-encoder'
@@ -161,9 +161,31 @@ const leadColumn = (columns: V2Field[]): V2Field | undefined => {
   )
 }
 
-/** A column's name as a heading: the form's "(optional)" hint dropped. */
-const columnLabel = (column: V2Field): string =>
-  (column.label ?? '').replace(/\s*\(optional\)\s*$/i, '')
+const OPTIONAL_HINT = '(optional)'
+
+/**
+ * A column's name as a heading: the form's "(optional)" hint dropped. The
+ * label comes from the list's own file (or, on a Stake list, from an entry
+ * standing in for it), so anything but text reads as none, and it is cut
+ * without a regex: a pattern with \s* around the hint backtracks
+ * quadratically over a long run of spaces and froze the page.
+ */
+const columnLabel = (column: V2Field): string => {
+  const label = typeof column.label === 'string' ? column.label : ''
+  const trimmed = label.trimEnd()
+  return trimmed.slice(-OPTIONAL_HINT.length).toLowerCase() === OPTIONAL_HINT
+    ? trimmed.slice(0, -OPTIONAL_HINT.length).trimEnd()
+    : label
+}
+
+/** Each column's heading, worked out once per set of columns, not per tick. */
+const useColumnLabels = (columns: V2Field[]) => {
+  const labels = useMemo(
+    () => new Map(columns.map((column) => [column, columnLabel(column)])),
+    [columns],
+  )
+  return (column: V2Field) => labels.get(column) ?? columnLabel(column)
+}
 
 const textOf = (field?: V2Field): string | undefined =>
   field && hasValue(field) && typeof field.value !== 'object'
@@ -869,6 +891,7 @@ const EntryTable = ({
   itemName: string
 }) => {
   const navigate = useNavigate()
+  const labelOf = useColumnLabels(columns)
   // Each row's open link carries its entry's name, so a links list tells
   // the rows apart (a hidden entry stays generic).
   const { title } = splitColumns(columns)
@@ -964,14 +987,14 @@ const EntryTable = ({
         <thead>
           <tr>
             {lead && (
-              <th className={leadClass} title={columnLabel(lead)}>
-                {columnLabel(lead)}
+              <th className={leadClass} title={labelOf(lead)}>
+                {labelOf(lead)}
               </th>
             )}
             <th className="status">Status</th>
             {others.map((column) => (
-              <th key={column.label} title={columnLabel(column)}>
-                {columnLabel(column)}
+              <th key={column.label} title={labelOf(column)}>
+                {labelOf(column)}
               </th>
             ))}
             {opensLists && <th className="list" aria-label="Open list" />}
@@ -1181,6 +1204,7 @@ const EntryCards = ({
   itemName: string
 }) => {
   const { title, meta } = splitColumns(columns)
+  const labelOf = useColumnLabels(columns)
   const listHasImages = entries.some((entry) =>
     entry.fields.some((field) => isImage(field) && hasValue(field)),
   )
@@ -1227,8 +1251,8 @@ const EntryCards = ({
                     <CardFields>
                       {meta.slice(0, 3).map((column) => (
                         <div key={column.label}>
-                          <dt title={columnLabel(column)}>
-                            <Label $tone="faint">{columnLabel(column)}</Label>
+                          <dt title={labelOf(column)}>
+                            <Label $tone="faint">{labelOf(column)}</Label>
                           </dt>
                           <dd>
                             <FieldValue

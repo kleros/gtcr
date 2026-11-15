@@ -21,6 +21,7 @@ import {
   updateLightFilter,
 } from 'utils/filters'
 import { parseIpfs } from 'utils/ipfs-parse'
+import { sanitizeMetaEvidence } from 'utils/meta-evidence-guard'
 import {
   capitalizeFirstLetter,
   jurorsAndCourtIDFromExtraData,
@@ -90,6 +91,8 @@ import { LIST_LOAD_FAILED } from '../error-page/copy'
 const NSFW_FILTER_KEY = 'NSFW_FILTER_KEY'
 const ITEMS_PER_PAGE = 40
 const KIND_LABEL = 'Stake Curate'
+/** How long the MetaEvidence file may take before its read is tried again. */
+const COLUMNS_TIMEOUT_MS = 20_000
 
 // Registries whose description says "see terms and conditions" link to them.
 const TERMS_AND_CONDITIONS_URLS: Record<string, string | undefined> = {
@@ -97,7 +100,9 @@ const TERMS_AND_CONDITIONS_URLS: Record<string, string | undefined> = {
     'https://cdn.kleros.link/ipfs/QmcZ53agYqpPhYijRFzduC3EC64coFGZkhbRN1sPDyW7di',
 }
 
-const TERMS_PATTERN = /see\s+(?:the\s+)?terms?\s*(?:and|&)?\s*conditions?/gi
+// One run of spaces before "and" and one after: two \s* side by side split a
+// long run of spaces every possible way (quadratic time on list text).
+const TERMS_PATTERN = /see\s+(?:the\s+)?terms?\s*(?:(?:and|&)\s*)?conditions?/gi
 
 /** Statuses hidden behind a reveal while the sensitive-content filter is on. */
 const HIDDEN_STATUSES = new Set([
@@ -359,14 +364,32 @@ const StakeRegistry = () => {
   })
 
   // The columns live only in the MetaEvidence file, not in the subgraph.
+  // Whoever runs the list writes that file: only well-typed columns reach
+  // the page (a label that is an object would take it down for everyone).
+  // A failed, malformed or stalled read throws, so it is retried and the
+  // entries' own labels stand in meanwhile.
   const arbitrationSetting = registry?.arbitrationSettings?.[0]
   const metaEvidenceURI = arbitrationSetting?.metaEvidenceURI
   const columnsQuery = useQuery({
     queryKey: ['permanentRegistryColumns', metaEvidenceURI],
     queryFn: async () => {
-      const response = await fetch(parseIpfs(metaEvidenceURI!))
-      const file: MetaEvidence = await response.json()
-      return file.metadata?.columns ?? []
+      const controller = new AbortController()
+      const timeout = window.setTimeout(
+        () => controller.abort(),
+        COLUMNS_TIMEOUT_MS,
+      )
+      try {
+        const response = await fetch(parseIpfs(metaEvidenceURI!), {
+          signal: controller.signal,
+        })
+        if (!response.ok)
+          throw new Error(`MetaEvidence read failed (${response.status})`)
+        const file = sanitizeMetaEvidence(await response.json())
+        if (!file) throw new Error('MetaEvidence is not a JSON object')
+        return file.metadata?.columns ?? []
+      } finally {
+        window.clearTimeout(timeout)
+      }
     },
     enabled: !!metaEvidenceURI,
     staleTime: Infinity,
