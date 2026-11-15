@@ -58,6 +58,7 @@ import { request } from 'utils/indexer-request'
 import { readStakeArbitrationParams } from 'utils/stake-arbitration-params'
 import { jurorsAndCourtIDFromExtraData } from 'utils/string'
 import { JSON_UPLOAD_ROLE } from 'utils/atlas-roles'
+import { normalizeDecimalInput } from 'utils/decimal-input'
 import { errorToast, successToast, wrapWithToast } from 'utils/wrap-with-toast'
 import { normalizeAddress, shortAddress } from 'pages/dashboard/data'
 import { VerifiedBadge } from 'components/curate/verified-badge'
@@ -155,14 +156,17 @@ const parseParamValue = (
   config: ParamConfig,
   context: ParamContext,
 ): Parsed => {
-  const text = raw.trim()
+  // An amount may use a comma for the decimal point (0,5 reads as 0.5);
+  // "1,000" stays as typed, so the plain-decimal check below refuses it.
+  const text =
+    config.kind === 'address' ? raw.trim() : normalizeDecimalInput(raw)
   if (config.kind === 'address')
     return isAddress(text)
       ? { value: text }
       : { error: 'Enter a valid address' }
   if (text === '') return { error: 'Enter a value' }
   if (!PLAIN_DECIMAL.test(text))
-    return { error: 'Use digits and one dot, like 0.5' }
+    return { error: 'Use digits and one dot or comma, like 0.5' }
   if (config.kind === 'wei') {
     if (decimalsIn(text) > 18) return { error: 'At most 18 decimals' }
     return { value: parseEther(text) }
@@ -274,7 +278,7 @@ const editableParams = (registry: GovernedRegistry): ParamConfig[] => {
       },
       {
         key: 'withdrawingPeriod',
-        label: 'Withdrawal period (days)',
+        label: 'Withdrawing period (days)',
         kind: 'seconds',
         positive: true,
         functionName: 'changeWithdrawingPeriod',
@@ -1382,7 +1386,8 @@ const ArbitrationGovernanceField = ({
               disabled={locked}
               onChange={(event) => {
                 setSettingsEdited(true)
-                setArbitrator(event.currentTarget.value)
+                // A pasted address often brings a space along: drop it.
+                setArbitrator(event.currentTarget.value.trim())
               }}
               placeholder="Arbitrator address"
               aria-label="Arbitrator address"
