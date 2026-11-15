@@ -26,13 +26,26 @@ import {
 
 /* ---------- Layout ---------- */
 
-export const Page = styled.main`
+/** The id of the page's main region, the app bar's skip link target. */
+export const MAIN_ID = 'main'
+
+/*
+ * A page renders one Page, its main region (only the file viewer and the
+ * loading screen have none). The skip link focuses it (tabindex -1:
+ * focusable from script, never a Tab stop); it is not a control, so it
+ * draws no focus ring.
+ */
+export const Page = styled.main.attrs({ id: MAIN_ID, tabIndex: -1 })`
   position: relative;
   z-index: 1;
   width: 100%;
   max-width: var(--page-max-width);
   margin: 0 auto;
   padding: 40px var(--horizontal-padding) 96px;
+
+  &:focus {
+    outline: none;
+  }
 
   @media (max-width: 720px) {
     padding-top: 24px;

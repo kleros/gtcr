@@ -42,7 +42,7 @@ const Head = styled.div`
   justify-content: space-between;
   gap: 4px 16px;
 
-  h3 {
+  h2 {
     margin: 0;
   }
 `
@@ -210,7 +210,7 @@ export const BountiesBody = ({ bounties }: { bounties?: Bounties }) => {
   return (
     <Body>
       <Head>
-        <h3 id={titleId}>Bounties won</h3>
+        <h2 id={titleId}>Bounties won</h2>
         <Label $tone="faint">All time</Label>
       </Head>
       {!bounties ? (

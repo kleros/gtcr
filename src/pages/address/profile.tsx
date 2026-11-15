@@ -761,6 +761,7 @@ export const ProfilePanel = ({
         <QuietState
           icon="activity"
           title="This profile could not be loaded"
+          level={2}
           role="status"
           action={
             <Button
@@ -923,6 +924,7 @@ export const ProfilePanel = ({
                 ) : (
                   <QuietState
                     icon="activity"
+                    level={2}
                     tight={quiet}
                     title={
                       stats && stats.activity > 0

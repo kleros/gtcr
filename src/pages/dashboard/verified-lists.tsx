@@ -315,7 +315,7 @@ export const VerifiedLists = ({
       aria-labelledby={titleId}
       style={{ ['--i' as string]: 8 }}
     >
-      <VisuallyHidden as="h3" id={titleId}>
+      <VisuallyHidden as="h2" id={titleId}>
         {VERIFIED_LISTS_LABEL}
       </VisuallyHidden>
       <Head>

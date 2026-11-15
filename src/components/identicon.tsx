@@ -195,10 +195,11 @@ const Identicon = ({ className, large }: IdenticonProps) => {
       visible={menuOpen}
       onVisibleChange={setMenuOpen}
     >
+      {/* A disclosure, not a menu: the panel holds a balance, an address
+          and a button, so it announces no menu popup. */}
       <AvatarButton
         type="button"
         aria-label="Account menu"
-        aria-haspopup="menu"
         aria-expanded={menuOpen}
       >
         {avatar}

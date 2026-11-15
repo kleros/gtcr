@@ -205,6 +205,10 @@ const LivePill = styled.span`
     border-radius: var(--radius-pill);
     background: var(--status-registered);
     animation: ${pulse} 2.4s infinite;
+
+    @media (prefers-reduced-motion: reduce) {
+      animation: none;
+    }
   }
 
   /* Some indexer did not answer: the figures are partial, not live. */
@@ -236,6 +240,13 @@ const LivePill = styled.span`
       animation: none;
     }
   }
+`
+
+/* The pill's state word and what went wrong, spaced as the pill spaces them. */
+const PillState = styled.span`
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
 `
 
 const Headline = styled(HeroStatement)`
@@ -398,7 +409,9 @@ const GaugeCard = styled(Surface)<{ $stack?: boolean }>`
         : ''}
   }
 
-  h3 {
+  /* Each card is a section of its own: its title is an h2 (no h2 comes
+     before it on the page), set small. */
+  h2 {
     margin: 0 0 6px;
     color: var(--color-text);
     font-family: var(--font-display);
@@ -1090,27 +1103,31 @@ const Dashboard = () => {
           data-stale={
             data && !live && partialChains.length === 0 ? '' : undefined
           }
-          role="status"
         >
           <i aria-hidden />
-          {!unanswered && (
-            <b>
-              {partial
-                ? 'Partial'
-                : !data || live
-                  ? 'Live'
-                  : query.isFetching
-                    ? 'Refreshing'
-                    : 'Not live'}
-            </b>
-          )}
-          {!data
-            ? 'Connecting to the indexers'
-            : unanswered
-              ? 'Indexers not answering'
-              : partial
-                ? `Some ${partialNames} data did not load; figures may be incomplete`
-                : updated}
+          {/* Only the state is announced: the age after it changes every
+              minute, and a live region would read it out each time. */}
+          <PillState role="status">
+            {!unanswered && (
+              <b>
+                {partial
+                  ? 'Partial'
+                  : !data || live
+                    ? 'Live'
+                    : query.isFetching
+                      ? 'Refreshing'
+                      : 'Not live'}
+              </b>
+            )}
+            {!data
+              ? 'Connecting to the indexers'
+              : unanswered
+                ? 'Indexers not answering'
+                : partial
+                  ? `Some ${partialNames} data did not load; figures may be incomplete`
+                  : null}
+          </PillState>
+          {data && partialChains.length === 0 && updated}
         </LivePill>
         <Headline style={{ ['--i' as string]: 1 }}>
           Lists anyone can challenge. <em>Settled by jurors.</em>
@@ -1268,7 +1285,7 @@ const Dashboard = () => {
             />
           )}
           <div style={{ minWidth: 0, flex: 1 }}>
-            <h3>{breakdown.title}</h3>
+            <h2>{breakdown.title}</h2>
             <Legend aria-label={breakdown.title}>
               {breakdown.segments.map((seg) => (
                 <li key={seg.key}>

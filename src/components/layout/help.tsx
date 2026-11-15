@@ -72,14 +72,21 @@ const ITEMS = [
   },
 ]
 
+/*
+ * A menu of links: the Help button announces one, and ui/Dropdown gives
+ * menu items their keys (the arrows, Home and End move between them, Escape
+ * closes). Items are reached by the arrows, not by Tab.
+ */
 const Help: React.FC = () => (
-  <Container>
+  <Container role="menu" aria-label="Help">
     {ITEMS.map((item) => (
       <ListItem
         href={item.url}
         key={item.text}
         target="_blank"
         rel="noopener noreferrer"
+        role="menuitem"
+        tabIndex={-1}
       >
         <Icon as={item.Icon} />
         {item.text}

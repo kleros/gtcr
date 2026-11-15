@@ -33,6 +33,7 @@ import { CurateIcon } from 'components/curate/icons'
 import ChainLogo from 'components/chain-logo'
 import {
   ChainStack,
+  MAIN_ID,
   SelectMenu,
   type SelectMenuOption,
   truncateMiddle,
@@ -195,6 +196,38 @@ const StakeTag = styled.span`
   letter-spacing: var(--tracking-label);
   text-transform: uppercase;
 `
+
+/*
+ * Skip link (WCAG 2.4.1): the first stop of every page, shown only while
+ * focused; it moves focus past the bar to the page's main region (Page).
+ * The primary glass look, as on the landing page.
+ */
+const SkipLink = styled.a`
+  position: absolute;
+  top: -60px;
+  left: 16px;
+  z-index: 1;
+  padding: 8px 14px;
+  border-radius: var(--radius-pill);
+  background: linear-gradient(180deg, var(--cta-top), var(--cta-bottom));
+  box-shadow: inset 0 0 0 1px var(--edge-2);
+  color: var(--cta-ink);
+  font-size: var(--fs-small);
+  line-height: var(--lh-small);
+  font-weight: 500;
+  text-decoration: none;
+
+  &:focus {
+    top: 12px;
+    color: var(--cta-ink);
+  }
+`
+
+/** Moves focus to the page's main region, without touching the URL. */
+const skipToContent = (event: React.MouseEvent<HTMLAnchorElement>) => {
+  event.preventDefault()
+  document.querySelector<HTMLElement>(`#${MAIN_ID}`)?.focus()
+}
 
 /*
  * Connect keeps its label everywhere but phones, where it is a 38px
@@ -452,6 +485,9 @@ const AppBar = () => {
 
   return (
     <Container data-scrolled={scrolled}>
+      <SkipLink href={`#${MAIN_ID}`} onClick={skipToContent}>
+        Skip to content
+      </SkipLink>
       <Row>
         <LeftGroup>
           <MobileMenuWrapper>

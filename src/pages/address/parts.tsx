@@ -204,6 +204,7 @@ const QuietWrap = styled.div<{ $tight?: boolean }>`
     pointer-events: none;
   }
 
+  h2,
   h3 {
     margin: 0;
     color: var(--color-text);
@@ -244,6 +245,7 @@ export const QuietState = ({
   action,
   role,
   tight = false,
+  level = 3,
 }: {
   icon?: CurateIconName
   title: React.ReactNode
@@ -252,12 +254,14 @@ export const QuietState = ({
   role?: string
   /** Less room above: the state leads its panel right under a header. */
   tight?: boolean
+  /** The title's heading level: 2 right under the page's h1, 3 in a section. */
+  level?: 2 | 3
 }) => (
   <QuietWrap role={role} $tight={tight}>
     <QuietGlyph aria-hidden>
       <CurateIcon name={icon} size={18} />
     </QuietGlyph>
-    <h3>{title}</h3>
+    {level === 2 ? <h2>{title}</h2> : <h3>{title}</h3>}
     {children && <p>{children}</p>}
     {action && <div style={{ marginTop: 8 }}>{action}</div>}
   </QuietWrap>

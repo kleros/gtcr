@@ -28,9 +28,9 @@ import {
  * on open; the option panel is glass like SelectMenu's and the app bar
  * menus (40px rows, radius 12, the row under the pointer or the keyboard
  * lit, the chosen row in full text with a check). Keyboard works throughout
- * (arrows, Enter, Escape, Tab), and the panel flips above when there is no
- * room. Escape closes only the panel, never a dialog around it, and the
- * panel closes as soon as focus leaves the field.
+ * (arrows, Home, End, Enter or Space to pick, Escape, Tab), and the panel
+ * flips above when there is no room. Escape closes only the panel, never a
+ * dialog around it, and the panel closes as soon as focus leaves the field.
  */
 /* Panel geometry: 40px rows with a 2px gap, 6px padding and a hairline. */
 const PANEL_MAX = 296
@@ -486,9 +486,27 @@ const Select: SelectComponent = ({
     [filteredOptions],
   )
 
+  // The first and last options that can be picked (Home and End).
+  const edgeOption = useCallback(
+    (last: boolean) => {
+      const indexes = filteredOptions.map((_, index) => index)
+      if (last) indexes.reverse()
+      return indexes.find((index) => !filteredOptions[index].disabled) ?? -1
+    },
+    [filteredOptions],
+  )
+
+  // Space picked on the trigger: its keyup must not click the button too
+  // (that would open the list again).
+  const spacePicked = useRef(false)
+
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
       if (disabled || loading) return
+      // A new press of Space (not its auto-repeat) starts afresh.
+      if (e.key === ' ' && !e.repeat) spacePicked.current = false
+      // Space, Home and End belong to the search box while one has focus.
+      const onTrigger = e.target === triggerRef.current
       if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
         e.preventDefault()
         if (!open) {
@@ -496,10 +514,22 @@ const Select: SelectComponent = ({
           return
         }
         moveHighlight(e.key === 'ArrowDown' ? 1 : -1)
-      } else if (e.key === 'Enter' && open) {
+      } else if (open && (e.key === 'Enter' || (e.key === ' ' && onTrigger))) {
+        // Enter or Space picks the highlighted option, as in SelectMenu.
+        // Space with none highlighted closes the list, as it did before.
         e.preventDefault()
+        if (e.key === ' ') spacePicked.current = true
         const opt = filteredOptions[highlighted]
         if (opt) handleSelect(opt)
+        else if (e.key === ' ') close()
+      } else if ((e.key === 'Home' || e.key === 'End') && onTrigger) {
+        e.preventDefault()
+        const index = edgeOption(e.key === 'End')
+        if (!open) {
+          updateDropdownPosition()
+          setOpen(true)
+        }
+        setHighlighted(index)
       } else if (e.key === 'Tab' && open) {
         // Focus moves on as usual. From the search box (in the floating
         // panel) it moves on from the trigger, so the tab order holds.
@@ -516,9 +546,17 @@ const Select: SelectComponent = ({
       filteredOptions,
       highlighted,
       handleSelect,
+      edgeOption,
+      updateDropdownPosition,
       close,
     ],
   )
+
+  const handleKeyUp = useCallback((e: React.KeyboardEvent) => {
+    if (e.key !== ' ' || !spacePicked.current) return
+    spacePicked.current = false
+    e.preventDefault()
+  }, [])
 
   const activeDescendant =
     open && highlighted >= 0 && highlighted < filteredOptions.length
@@ -557,6 +595,7 @@ const Select: SelectComponent = ({
         disabled={disabled}
         onClick={handleToggle}
         onKeyDown={handleKeyDown}
+        onKeyUp={handleKeyUp}
         $focused={open}
         style={style}
         className="ui-select-trigger"
