@@ -170,7 +170,9 @@ const Clamp = styled.p<{ $clamped: boolean }>`
 `
 
 const MoreButton = styled.button`
-  padding: 0;
+  /* A 24px tap target without moving the line: padding out, margin back. */
+  padding: 3px 0;
+  margin: -3px 0;
   border: 0;
   background: none;
   color: var(--color-primary);
