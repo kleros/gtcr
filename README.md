@@ -12,11 +12,21 @@
 ## Get Started
 
 1.  Clone this repo.
-2.  Duplicate `.env.example` and rename it to `.env`. Fill the environment variables.
-3.  Run `nvm use 16`
-4.  Run `yarn` to install dependencies and then `yarn build:theme && yarn start` to start the dev server.
+2.  Use Node 20.19 (`NODE_VERSION` in `netlify.toml`) and run `corepack enable`, so that the Yarn version `package.json` names (`packageManager`) is the one that runs.
+3.  Run `yarn` to install the dependencies.
+4.  Copy `.env.example` to `.env` and fill it in (see below).
+5.  Run `yarn dev` and open http://localhost:3000. The landing page is at http://localhost:3000/landing/.
 
-> Tested on node version 10.
+## Environment Variables
+
+The build reads only the `REACT_APP_` variables listed in `.env.example`. The app does not render without `REACT_APP_REOWN_PROJECT_ID`, and it shows no Light or Classic list without the Envio indexer URLs. Without `REACT_APP_ALCHEMY_API_KEY` it uses public RPC endpoints.
+
+## Before a Release
+
+Two snapshots ship with the app and are refreshed by hand:
+
+- `public/landing/data.js`: the figures the landing page draws before its live read answers. Open `/landing/`, wait until the activity panel reads "Live", run `copy(JSON.stringify(await window.CURATE_LANDING_LIVE, null, 2))` in the browser console and paste the result over the whole object in the file, minus its `live` field. Update the date in the file's header comment; never edit single figures by hand.
+- `src/config/registry-creation-snapshot.json`: when each list was created. Run `node scripts/registry-creation-snapshot.mjs`; it reads `REACT_APP_ALCHEMY_API_KEY` from `.env`.
 
 ## Supporting New Field Types
 
@@ -30,16 +40,12 @@ The evidence display interface code of the Generalized TCR can be found at [http
 
 ## Other Scripts
 
-- `yarn format` - Lint, fix and prettify all the project.
-- `yarn run cz` - Run commitizen.
-- `yarn run build` - Create a production build.
+- `yarn build` - Type check, then create a production build in `build/`.
+- `yarn preview` - Serve the production build.
+- `yarn typecheck` - Type check only.
+- `yarn lint` - Lint the sources.
+- `yarn format` - Lint, fix and prettify the sources.
 
 ## Netlify Deployment
 
-When setting up the repo for publishing on netlify:
-1. Fill the env variables in netlify.toml;
-2. Set the following environment variables on the site's build config in netlify's dashboard:
-```
-REACT_APP_RPC_URLS
-REACT_APP_FORMATIC_API_KEYS
-```
+`netlify.toml` sets the build command, the Node version and the public variables. Set the other variables from `.env.example` in the site's environment variables on Netlify.
