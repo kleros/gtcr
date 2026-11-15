@@ -10,7 +10,8 @@
     <meta name="robots" content="index,follow,max-image-preview:large" />
     <meta name="ai-agent-instructions" content="/llms.txt" />
     <link rel="manifest" href="/manifest.json" />
-    <link rel="canonical" href="https://curate.kleros.io/" />
+    <!-- No canonical or og:url here: this file answers every route, so each
+         page sets its own (hooks/use-document-head.ts). -->
     <link rel="llms" type="text/plain" href="/llms.txt" />
     <link
       rel="alternate"
@@ -49,7 +50,6 @@
       content="Discover Kleros Curate registries, live entries, disputes, curator profiles, governance tools, and agent-ready registry skills."
     />
     <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://curate.kleros.io/" />
     <meta property="og:image" content="https://curate.kleros.io/og-image.png" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />

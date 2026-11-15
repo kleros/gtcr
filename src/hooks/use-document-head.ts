@@ -1,5 +1,12 @@
 import { useEffect } from 'react'
 
+/**
+ * The host every page names as canonical, the one sitemap.xml, robots.txt
+ * and llms*.txt name. The same build also answers on curate.kleros.builders,
+ * whose pages must point here rather than to themselves.
+ */
+const CANONICAL_ORIGIN = 'https://curate.kleros.io'
+
 const upsertMeta = (selector: string, attributes: Record<string, string>) => {
   let meta = document.querySelector(selector) as HTMLMetaElement | null
   if (!meta) {
@@ -30,7 +37,7 @@ const useDocumentHead = (title?: string, description?: string) => {
   useEffect(() => {
     if (!description) return
     const currentTitle = title || document.title
-    const canonical = `${window.location.origin}${window.location.pathname}`
+    const canonical = `${CANONICAL_ORIGIN}${window.location.pathname}`
 
     upsertMeta('meta[name="description"]', {
       name: 'description',
