@@ -346,10 +346,12 @@ const hasOwn = (map: object, key: string) =>
 
 export const parseRichAddress = (crude: string): RichAddress | null => {
   if (typeof crude !== 'string' || !crude) return null
-  // if no 2 colons, it's badly formatted
-  if (crude.split(':').length !== 3) return null
-
-  const [namespaceId, referenceId, address] = crude.split(':')
+  // "<namespace>:<reference>:<address>". The address is everything after
+  // the second colon: a raw TON address ("0:<64 hex>", which the tvm test
+  // accepts) holds a colon of its own.
+  const [namespaceId, referenceId, ...rest] = crude.split(':')
+  if (rest.length === 0) return null
+  const address = rest.join(':')
   // Own keys only. Values are written by anyone: "__proto__:constructor:x"
   // or "eip155:toString:x" would otherwise read Object's own members as a
   // network and crash every page that shows the entry.
