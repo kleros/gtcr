@@ -42,9 +42,7 @@ interface Found {
 /** The identifiers the indexers keep: key0 to key4. */
 const MAX_KEYS = 5
 
-const LIGHT_DUPLICATE = `
-  query SubmitDuplicateLight($where: LItem_bool_exp!) {
-    duplicates: LItem(limit: 3, where: $where) {
+const LIGHT_KEYS = `
       itemID
       status
       key0
@@ -52,8 +50,39 @@ const LIGHT_DUPLICATE = `
       key2
       key3
       key4
-    }
+`
+
+const LIGHT_DUPLICATE = `
+  query SubmitDuplicateLight($where: LItem_bool_exp!) {
+    duplicates: LItem(limit: 3, where: $where) {${LIGHT_KEYS}    }
   }
+`
+
+/*
+ * The same, plus the entry that matches on every identifier, asked in the
+ * same request: a list can hold its first identifier hundreds of times (one
+ * contract under many domains), so the three rows above rarely hold it.
+ */
+const LIGHT_DUPLICATE_FULL = `
+  query SubmitDuplicateLightFull(
+    $where: LItem_bool_exp!
+    $whereAll: LItem_bool_exp!
+  ) {
+    duplicates: LItem(limit: 3, where: $where) {${LIGHT_KEYS}    }
+    full: LItem(limit: 1, where: $whereAll) {${LIGHT_KEYS}    }
+  }
+`
+
+const STAKE_FIELDS = `
+      itemID
+      status
+      metadata {
+        key0
+        key1
+        key2
+        key3
+        key4
+      }
 `
 
 const STAKE_DUPLICATE = `
@@ -65,17 +94,33 @@ const STAKE_DUPLICATE = `
         status_in: [Submitted, Reincluded, Disputed]
         metadata_: { key0_contains_nocase: $value }
       }
-    ) {
-      itemID
-      status
-      metadata {
-        key0
-        key1
-        key2
-        key3
-        key4
+    ) {${STAKE_FIELDS}    }
+  }
+`
+
+/** As LIGHT_DUPLICATE_FULL: the entry matching every identifier too. */
+const STAKE_DUPLICATE_FULL = `
+  query SubmitDuplicateStakeFull(
+    $registry: String!
+    $value: String!
+    $metadataAll: ItemMetadata_filter!
+  ) {
+    duplicates: items(
+      first: 3
+      where: {
+        registry: $registry
+        status_in: [Submitted, Reincluded, Disputed]
+        metadata_: { key0_contains_nocase: $value }
       }
-    }
+    ) {${STAKE_FIELDS}    }
+    full: items(
+      first: 3
+      where: {
+        registry: $registry
+        status_in: [Submitted, Reincluded, Disputed]
+        metadata_: $metadataAll
+      }
+    ) {${STAKE_FIELDS}    }
   }
 `
 
@@ -146,48 +191,96 @@ export const useDuplicateEntry = ({
       chainId,
       check?.tcrAddress.toLowerCase(),
       typed.toLowerCase(),
+      othersText.toLowerCase(),
     ],
     enabled,
     staleTime: 30_000,
     queryFn: async ({ signal }): Promise<Found[]> => {
       const registry = check!.tcrAddress.toLowerCase()
+      // The other identifiers, when each can be compared: the entry that
+      // matches them all is asked for by name, not hoped for among the rows
+      // sharing the first one.
+      const others = JSON.parse(othersText) as (string | null)[]
+      const comparable =
+        others.length > 0 &&
+        others.length < MAX_KEYS &&
+        others.every((value) => value !== null)
+      const fullFirst = (full: Found[], rest: Found[]): Found[] => [
+        ...full,
+        ...rest.filter((entry) => !full.some((f) => f.itemID === entry.itemID)),
+      ]
       if (check!.kind === 'light') {
-        const result = await request<{
-          duplicates: (Keys & { itemID: string; status: string })[]
-        }>({
+        type Row = Keys & { itemID: string; status: string }
+        const where = {
+          registry_id: { _eq: registry },
+          status: { _in: LIGHT_LIVE },
+          key0: { _ilike: exactLike(typed) },
+        }
+        // An empty identifier is stored as empty or not at all.
+        const keyIs = (value: string) =>
+          value ? { _ilike: exactLike(value) } : { _in: [''] as string[] }
+        const result = await request<{ duplicates: Row[]; full?: Row[] }>({
           url: url!,
-          document: LIGHT_DUPLICATE,
-          variables: {
-            where: {
-              registry_id: { _eq: registry },
-              status: { _in: LIGHT_LIVE },
-              key0: { _ilike: exactLike(typed) },
-            },
-          },
+          document: comparable ? LIGHT_DUPLICATE_FULL : LIGHT_DUPLICATE,
+          variables: comparable
+            ? {
+                where,
+                whereAll: {
+                  ...where,
+                  _and: others.map((value, index) =>
+                    value
+                      ? { [`key${index + 1}`]: keyIs(value) }
+                      : {
+                          _or: [
+                            { [`key${index + 1}`]: keyIs('') },
+                            { [`key${index + 1}`]: { _is_null: true } },
+                          ],
+                        },
+                  ),
+                },
+              }
+            : { where },
           signal,
         })
-        return result.duplicates.map(({ itemID, status, ...keys }) => ({
+        const found = ({ itemID, status, ...keys }: Row): Found => ({
           itemID,
           status,
           keys,
-        }))
+        })
+        return fullFirst(
+          (result.full ?? []).map(found),
+          result.duplicates.map(found),
+        )
       }
+      type StakeRow = { itemID: string; status: string; metadata?: Keys }
+      const metadataAll = Object.fromEntries([
+        ['key0_contains_nocase', typed],
+        ...others.map((value, index) => [
+          `key${index + 1}_contains_nocase`,
+          value ?? '',
+        ]),
+      ])
       const result = await request<{
-        duplicates: { itemID: string; status: string; metadata?: Keys }[]
+        duplicates: StakeRow[]
+        full?: StakeRow[]
       }>({
         url: url!,
-        document: STAKE_DUPLICATE,
-        variables: { registry, value: typed },
+        document: comparable ? STAKE_DUPLICATE_FULL : STAKE_DUPLICATE,
+        variables: comparable
+          ? { registry, value: typed, metadataAll }
+          : { registry, value: typed },
         signal,
       })
       // "contains" is the closest the subgraph has to equal, ignoring case.
-      return result.duplicates
-        .filter((entry) => sameKey(entry.metadata?.key0, typed))
-        .map(({ itemID, status, metadata }) => ({
-          itemID,
-          status,
-          keys: metadata ?? {},
-        }))
+      const found = ({ itemID, status, metadata }: StakeRow): Found => ({
+        itemID,
+        status,
+        keys: metadata ?? {},
+      })
+      return fullFirst(
+        (result.full ?? []).map(found),
+        result.duplicates.map(found),
+      ).filter((entry) => sameKey(entry.keys.key0, typed))
     },
   })
   return enabled && data
