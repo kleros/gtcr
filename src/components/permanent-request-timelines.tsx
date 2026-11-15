@@ -7,6 +7,7 @@ import EvidenceFileLink, {
   EvidenceFileUnavailable,
 } from 'components/evidence-file-link'
 import { AddressLink } from 'components/curate/item-stake-address'
+import { linkify } from 'components/curate/item-light-linkify'
 import { CONTRACT_STATUS, SUBGRAPH_RULING } from 'utils/permanent-item-status'
 import { capitalizeFirstLetter } from 'utils/string'
 import { getTxPage } from 'utils/network-utils'
@@ -201,13 +202,24 @@ const MoreButton = styled.button`
   }
 `
 
-/** Long evidence opens at six lines; the rest is one click away. */
+/**
+ * Long evidence opens at six lines; the rest is one click away. URLs are
+ * links; tabbing onto one hidden by the clamp opens the text first.
+ */
 const EvidenceText = ({ text }: { text: string }) => {
   const long = text.length > 420 || text.split('\n').length > 6
   const [expanded, setExpanded] = useState(false)
+  const content = useMemo(() => linkify(text), [text])
   return (
     <>
-      <Clamp $clamped={long && !expanded}>{text}</Clamp>
+      <Clamp
+        $clamped={long && !expanded}
+        onFocus={() => {
+          if (long) setExpanded(true)
+        }}
+      >
+        {content}
+      </Clamp>
       {long && (
         <MoreButton
           type="button"
