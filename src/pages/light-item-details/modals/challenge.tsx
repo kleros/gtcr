@@ -10,6 +10,8 @@ import { LightTCRViewContext } from 'contexts/light-tcr-view-context'
 import EvidenceForm, { type EvidenceFormValues } from 'components/evidence-form'
 import { uploadEvidence } from 'utils/upload-evidence'
 import useNativeCurrency from 'hooks/native-currency'
+import useNow from 'hooks/use-now'
+import { formatAbsolute, formatDuration } from 'utils/time'
 import { wrapWithToast, errorToast } from 'utils/wrap-with-toast'
 import { parseWagmiError } from 'utils/parse-wagmi-error'
 import { wagmiConfig } from 'config/wagmi'
@@ -27,7 +29,7 @@ import { gatedConfirm, useActionGate } from 'components/curate/item-light-gate'
 import { formatAmount, sumAmounts } from 'components/curate/item-light-format'
 import { useChallengeCost } from '../challenge-cost'
 import { PolicyButton } from '../policy-button'
-import type { LightRequest } from '../request-facts'
+import { requestFacts, type LightRequest } from '../request-facts'
 
 /*
  * Challenge a submission or a removal request (DESIGN.md: before any
@@ -92,6 +94,7 @@ interface ChallengeModalProps {
 const ChallengeModal = ({
   item,
   itemName,
+  statusCode,
   fileURI,
   visible,
   onCancel,
@@ -103,8 +106,11 @@ const ChallengeModal = ({
   const { data: walletClient } = useWalletClient()
   const { uploadFile } = useAtlasProvider()
   const nativeCurrency = useNativeCurrency()
+  const now = useNow()
   const [phase, setPhase] = useState<SendPhase>()
   const isSubmitting = !!phase
+  // Whether the justification has anything in it (EvidenceForm tells).
+  const [drafted, setDrafted] = useState(false)
 
   const isRemoval = item.status === CONTRACT_STATUS.REMOVAL_REQUESTED
   // The contract charges the arbitration cost of the arbitrationParamsChanges
@@ -122,6 +128,20 @@ const ChallengeModal = ({
   const requesterDeposit = (
     item.requests?.[0] as { deposit?: string } | undefined
   )?.deposit
+  const latestRequest = item.requests?.[0] as LightRequest | undefined
+  // When the window this challenge must land in closes, as the entry's
+  // ring shows it (the ring is under the dialog).
+  const windowEnd =
+    latestRequest &&
+    statusCode !== undefined &&
+    tcrView?.challengePeriodDuration
+      ? requestFacts({
+          item,
+          request: latestRequest,
+          statusCode,
+          challengePeriodDuration: tcrView.challengePeriodDuration,
+        }).windowEnd
+      : undefined
   const name = itemName || 'entry'
   const verb = isRemoval ? 'challenge the removal' : 'challenge the submission'
 
@@ -184,6 +204,12 @@ const ChallengeModal = ({
   const confirm = () => {
     const form = document.querySelector<HTMLFormElement>(`#${EVIDENCE_FORM_ID}`)
     form?.requestSubmit()
+    // An attachment alone counts as a draft, but the description is still
+    // required: in one column its error is a screen above, so go to it.
+    const description = document.querySelector<HTMLTextAreaElement>(
+      `#${EVIDENCE_FORM_ID}-description`,
+    )
+    if (description && !description.value) description.focus()
   }
 
   const total = formatAmount(challengeDeposit, nativeCurrency)
@@ -205,6 +231,15 @@ const ChallengeModal = ({
           },
         ]
       : [{ label: 'Challenge deposit (base + arbitration cost)', value: total }]
+  if (windowEnd)
+    receipt.push({
+      label: 'Challenge period ends',
+      value: `${formatAbsolute(windowEnd)} · ${
+        windowEnd > now
+          ? `${formatDuration(windowEnd - now)} left`
+          : 'time is up'
+      }`,
+    })
   const steps: OutcomeStep[] = [
     {
       title: `You deposit ${total} now`,
@@ -261,6 +296,7 @@ const ChallengeModal = ({
             <EvidenceForm
               onSubmit={challengeRequest}
               formID={EVIDENCE_FORM_ID}
+              onDraftChange={setDrafted}
             />
           </Stack>
           <Stack $gap={12}>
@@ -271,8 +307,13 @@ const ChallengeModal = ({
               {...gatedConfirm(gate, {
                 label: isRemoval ? 'Challenge removal' : 'Challenge submission',
                 onConfirm: confirm,
-                disabled: !gate.ready || isSubmitting,
-                blocker: gate.blocker,
+                // The justification is required, and in one column its
+                // field (and error) are a screen above this button: the
+                // button names it rather than failing up there.
+                disabled: !gate.ready || !drafted || isSubmitting,
+                blocker:
+                  gate.blocker ??
+                  (drafted ? undefined : 'Write your justification first'),
                 loading: isSubmitting,
                 loadingLabel: sendPhaseLabel(phase),
               })}

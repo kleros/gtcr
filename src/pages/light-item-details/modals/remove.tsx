@@ -76,6 +76,9 @@ const RemoveModal = ({
 
   const [phase, setPhase] = useState<SendPhase>()
   const isSubmitting = !!phase
+  // Whether the justification has anything in it (EvidenceForm tells).
+  const [drafted, setDrafted] = useState(false)
+  const justificationMissing = needsEvidence && !drafted
   const gate = useActionGate({
     verb: 'request the removal',
     shortVerb: 'remove',
@@ -162,6 +165,13 @@ const RemoveModal = ({
         `#${EVIDENCE_FORM_ID}`,
       )
       form?.requestSubmit()
+      // An attachment alone counts as a draft, but the description is
+      // still required: in one column its error is a screen above, so go
+      // to it.
+      const description = document.querySelector<HTMLTextAreaElement>(
+        `#${EVIDENCE_FORM_ID}-description`,
+      )
+      if (description && !description.value) description.focus()
     } else removeItem()
   }
 
@@ -229,7 +239,11 @@ const RemoveModal = ({
               </PolicyButton>
             </div>
             {needsEvidence && (
-              <EvidenceForm onSubmit={removeItem} formID={EVIDENCE_FORM_ID} />
+              <EvidenceForm
+                onSubmit={removeItem}
+                formID={EVIDENCE_FORM_ID}
+                onDraftChange={setDrafted}
+              />
             )}
           </Stack>
           <Stack $gap={12}>
@@ -240,8 +254,14 @@ const RemoveModal = ({
               {...gatedConfirm(gate, {
                 label: `Remove ${name}`,
                 onConfirm: confirm,
-                disabled: !gate.ready || isSubmitting,
-                blocker: gate.blocker,
+                // A required justification is named on the button: in one
+                // column its field (and error) are a screen above it.
+                disabled: !gate.ready || justificationMissing || isSubmitting,
+                blocker:
+                  gate.blocker ??
+                  (justificationMissing
+                    ? 'Write your justification first'
+                    : undefined),
                 loading: isSubmitting,
                 loadingLabel: sendPhaseLabel(phase),
               })}

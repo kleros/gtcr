@@ -207,12 +207,26 @@ export const Dialog = ({
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape' && !appKitModal?.isOpen()) onCloseRef.current()
     }
+    // The Tab trap only hears keys from inside the panel. Focus that lands
+    // on the page behind (Tab from <body> once the wallet modal has closed,
+    // say) is pulled back into the panel; a layer on top of the dialog (the
+    // wallet modal, another modal dialog) keeps its own focus.
+    const onFocusIn = (event: FocusEvent) => {
+      const panel = panelRef.current
+      const { target } = event
+      if (!panel || !(target instanceof Element) || panel.contains(target))
+        return
+      if (appKitModal?.isOpen() || target.closest('[aria-modal="true"]')) return
+      panel.focus({ preventScroll: true })
+    }
     document.body.style.overflow = 'hidden'
     document.addEventListener('keydown', onKeyDown)
+    document.addEventListener('focusin', onFocusIn)
     panelRef.current?.focus({ preventScroll: true })
     return () => {
       document.body.style.overflow = overflow
       document.removeEventListener('keydown', onKeyDown)
+      document.removeEventListener('focusin', onFocusIn)
       previous?.focus?.()
     }
   }, [open])

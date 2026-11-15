@@ -1,4 +1,4 @@
-import React, { useState, useContext, useEffect, useMemo } from 'react'
+import React, { useState, useContext, useEffect, useMemo, useRef } from 'react'
 import styled from 'styled-components'
 import { BigNumber } from 'ethers'
 import { useAccount, usePublicClient, useWalletClient } from 'wagmi'
@@ -146,6 +146,17 @@ const CrowdfundModal = ({
     setTypedWei(undefined)
     setContributionShare(1)
   }, [visible])
+
+  // Picking a side removes the side buttons, and focus with them (to
+  // <body>): hand it to the dialog, so the keyboard and screen readers
+  // stay in it.
+  const columnsRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (userSelectedSide === undefined) return
+    columnsRef.current
+      ?.closest<HTMLElement>('[role="dialog"]')
+      ?.focus({ preventScroll: true })
+  }, [userSelectedSide])
 
   const round = (item.requests?.[0]?.rounds?.[0] ?? {}) as SubgraphRound
   const {
@@ -453,7 +464,7 @@ const CrowdfundModal = ({
       eyebrow="Contribute appeal fees"
       width="lg"
     >
-      <DialogColumns>
+      <DialogColumns ref={columnsRef}>
         <Stack $gap={16}>
           <Body>
             Choose how much of the remaining {maxAmount} {nativeCurrency} you

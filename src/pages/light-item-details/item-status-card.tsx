@@ -1,4 +1,4 @@
-import React, { useContext, useMemo, useState } from 'react'
+import React, { useContext, useEffect, useMemo, useRef, useState } from 'react'
 import styled from 'styled-components'
 import type { Address } from 'viem'
 import type { BigNumber, BigNumberish } from 'ethers'
@@ -15,7 +15,7 @@ import { LightTCRViewContext } from 'contexts/light-tcr-view-context'
 import useNativeCurrency from 'hooks/native-currency'
 import useUrlChainId from 'hooks/use-url-chain-id'
 import useNow from 'hooks/use-now'
-import { wrapWithToast, errorToast } from 'utils/wrap-with-toast'
+import { wrapWithToast, errorToast, infoToast } from 'utils/wrap-with-toast'
 import { parseWagmiError } from 'utils/parse-wagmi-error'
 import { wagmiConfig } from 'config/wagmi'
 import {
@@ -47,7 +47,12 @@ import { AddressLink } from 'components/curate/item-light-fields'
 import { formatAmount, formatEther } from 'components/curate/item-light-format'
 import ItemActionModal from './item-action-modal'
 import { appealFunding } from 'pages/item-details/appeal-funding'
-import { fundedAlone, requestFacts, type LightRequest } from './request-facts'
+import {
+  fundedAlone,
+  requestFacts,
+  statusChangeNotice,
+  type LightRequest,
+} from './request-facts'
 import { useChallengeCost } from './challenge-cost'
 
 /*
@@ -320,6 +325,22 @@ const ItemStatusCard = ({
     () => lightEntryStatus(item, timestamp, challengePeriodDuration),
     [item, timestamp, challengePeriodDuration],
   )
+
+  // A dialog belongs to the status it opened under. When the status moves
+  // on while it is open (a period ends, someone else acts first), it closes
+  // and says why: it used to vanish without a word, and the flag it left
+  // set opened the next status's dialog by itself (Remove, after Execute).
+  const shownStatus = useRef<number>()
+  useEffect(() => {
+    if (statusCode === undefined) return
+    const previous = shownStatus.current
+    shownStatus.current = statusCode
+    if (previous === undefined || previous === statusCode || !modalOpen) return
+    setModalOpen(false)
+    const notice = statusChangeNotice(previous, statusCode)
+    if (notice) infoToast(notice)
+  }, [statusCode, modalOpen, setModalOpen])
+
   const executeGate = useActionGate({
     verb: 'execute the request',
     needsAuth: false,

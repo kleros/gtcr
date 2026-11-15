@@ -404,6 +404,13 @@ const SubmitModal: React.FC<{
     activeStage === 'field' ? 0 : activeStage === 'policy' ? 1 : 2
   const fieldLabels = columns?.map((column) => column.label) || []
 
+  // The form unmounts with the dialog and drops its edits, so a closed
+  // dialog starts again at the fields: reopened on the review, it showed
+  // the old values with Submit live.
+  useEffect(() => {
+    if (!visible && !embedded) setActiveStage('field')
+  }, [visible, embedded])
+
   // The breakdown comes from the caller (a badge list passes its own) or,
   // for the list in context, from the list's contract.
   const sameList =

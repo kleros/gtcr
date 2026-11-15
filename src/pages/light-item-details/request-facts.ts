@@ -128,6 +128,49 @@ export const requestFacts = ({
 export const capitalize = (value: string): string =>
   value.charAt(0).toUpperCase() + value.slice(1)
 
+/** The statuses whose action opens a dialog (ItemActionModal). */
+const DIALOG_STATUSES = new Set([
+  STATUS_CODE.REJECTED,
+  STATUS_CODE.REMOVED,
+  STATUS_CODE.REGISTERED,
+  STATUS_CODE.SUBMITTED,
+  STATUS_CODE.REMOVAL_REQUESTED,
+  STATUS_CODE.CROWDFUNDING,
+  STATUS_CODE.CROWDFUNDING_WINNER,
+])
+
+/**
+ * Why the entry's dialog closed when its status moved from `from` to `to`
+ * while it was open, for a toast; undefined when `from` had no dialog
+ * showing (a link's ?action= under a status without one), which closes
+ * quietly.
+ */
+export const statusChangeNotice = (
+  from: number,
+  to: number,
+): string | undefined => {
+  if (!DIALOG_STATUSES.has(from)) return undefined
+  if (
+    (from === STATUS_CODE.SUBMITTED ||
+      from === STATUS_CODE.REMOVAL_REQUESTED) &&
+    (to === STATUS_CODE.PENDING_SUBMISSION ||
+      to === STATUS_CODE.PENDING_REMOVAL)
+  )
+    return 'The challenge period has ended.'
+  if (
+    (from === STATUS_CODE.CROWDFUNDING ||
+      from === STATUS_CODE.CROWDFUNDING_WINNER) &&
+    to === STATUS_CODE.WAITING_ARBITRATOR
+  )
+    return 'The appeal period has ended.'
+  if (
+    from === STATUS_CODE.CROWDFUNDING &&
+    to === STATUS_CODE.WAITING_ENFORCEMENT
+  )
+    return "The losing side's half of the appeal period has ended."
+  return "This entry's status changed."
+}
+
 /**
  * The side that alone fully funded the latest round's appeal, when exactly
  * one did. Once the appeal period is over that side wins, whatever the
