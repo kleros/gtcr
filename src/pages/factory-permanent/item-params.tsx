@@ -13,6 +13,8 @@ import {
   Small,
   Stack,
 } from 'components/curate/primitives'
+import { useFailedSubmitFocus } from 'components/curate/v2-factory-shell'
+import { normalizeFileTypes } from 'pages/factory/file-types'
 import {
   ErrorText,
   Input,
@@ -43,6 +45,16 @@ const TYPE_OPTIONS = Object.values(ItemTypes).map((itemType) => ({
 }))
 
 const MAX_IDENTIFIERS = 5
+
+/** Why a field of this type can never be an identifier, or '' if it can be. */
+const notIdentifierReason = (type: string): string =>
+  type === LONG_TEXT
+    ? 'Not for long text'
+    : type === IMAGE
+      ? 'Not for images'
+      : type === FILE
+        ? 'Not for files'
+        : ''
 
 const COLUMNS = '28px minmax(0, 1fr) minmax(0, 1.25fr) 150px 108px 34px'
 
@@ -152,13 +164,21 @@ const RemoveSlot = styled.div`
 
 const ToggleCell = styled.div`
   display: flex;
-  align-items: center;
-  height: 44px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  min-width: 0;
 
   @media (max-width: 900px) {
     grid-column: 1 / -1;
-    height: auto;
   }
+`
+
+/** Why a switch is off and cannot be turned on, under it while it is disabled. */
+const ToggleReason = styled.span`
+  color: var(--color-faint);
+  font-size: var(--fs-small);
+  line-height: var(--lh-small);
 `
 
 const FileTypes = styled.div`
@@ -173,6 +193,8 @@ const ToggleLabel = styled.label`
   display: inline-flex;
   align-items: center;
   gap: 10px;
+  /* The height of the inputs beside it, so the switch lines up with them. */
+  height: 44px;
   cursor: pointer;
 
   /* The visible name, phones only (the switch's own parts are not direct children). */
@@ -184,6 +206,8 @@ const ToggleLabel = styled.label`
   }
 
   @media (max-width: 900px) {
+    height: auto;
+
     > span {
       display: inline;
     }
@@ -223,7 +247,11 @@ const ColumnInput = ({
         onChange={field.onChange}
         onBlur={field.onBlur}
       />
-      {invalid && <ErrorText id={`${id}-error`}>{meta.error}</ErrorText>}
+      {invalid && (
+        <ErrorText id={`${id}-error`} role="alert">
+          {meta.error}
+        </ErrorText>
+      )}
     </Cell>
   )
 }
@@ -237,10 +265,14 @@ const ItemParams = ({
   setFieldValue,
   formId,
   values: { columns },
+  errors,
+  submitCount,
+  isSubmitting,
   status,
   setTcrState,
 }: ItemParamsProps) => {
   const ids = useId()
+  useFailedSubmitFocus({ formId, submitCount, isSubmitting, errors })
 
   useEffect(() => {
     setTcrState((previousState) => ({
@@ -251,8 +283,8 @@ const ItemParams = ({
 
   const onTypeChange = (index: number, value: string) => {
     setFieldValue(`columns[${index}].type`, value)
-    // Long text and image fields cannot be identifiers.
-    if (value === LONG_TEXT || value === IMAGE)
+    // Long text, image and file fields cannot be identifiers.
+    if (notIdentifierReason(value))
       setFieldValue(`columns[${index}].isIdentifier`, false)
   }
 
@@ -293,14 +325,16 @@ const ItemParams = ({
                 <span />
               </HeaderRow>
               {columns.map((column, index) => {
-                const canBeIdentifier =
-                  (identifierCount < MAX_IDENTIFIERS ||
-                    !!column.isIdentifier) &&
-                  column.type !== LONG_TEXT &&
-                  column.type !== IMAGE &&
-                  column.type !== FILE
+                // Why the switch cannot be turned on, printed under it.
+                const reason =
+                  notIdentifierReason(String(column.type)) ||
+                  (identifierCount >= MAX_IDENTIFIERS && !column.isIdentifier
+                    ? `Max ${MAX_IDENTIFIERS} reached`
+                    : '')
+                const canBeIdentifier = !reason
                 const typeId = `${ids}-type-${index}`
                 const identifierId = `${ids}-identifier-${index}`
+                const reasonId = `${identifierId}-reason`
                 return (
                   <FieldRow
                     key={index}
@@ -343,18 +377,17 @@ const ItemParams = ({
                         title={
                           canBeIdentifier
                             ? `Searchable and shown on the entry card; up to ${MAX_IDENTIFIERS} fields.`
-                            : column.type === LONG_TEXT ||
-                                column.type === IMAGE ||
-                                column.type === FILE
-                              ? 'Long text, image and file fields cannot be identifiers.'
-                              : `Already ${MAX_IDENTIFIERS} identifiers.`
+                            : undefined
                         }
                       >
                         <Toggle
                           id={identifierId}
                           aria-label={`Field ${index + 1} identifier`}
+                          aria-describedby={reason ? reasonId : undefined}
                           checked={!!column.isIdentifier}
-                          disabled={!canBeIdentifier}
+                          // A draft saved before a type change cleared it
+                          // can still turn it off.
+                          disabled={!canBeIdentifier && !column.isIdentifier}
                           onChange={(checked) =>
                             setFieldValue(
                               `columns[${index}].isIdentifier`,
@@ -364,6 +397,9 @@ const ItemParams = ({
                         />
                         <span>Identifier</span>
                       </ToggleLabel>
+                      {reason && (
+                        <ToggleReason id={reasonId}>{reason}</ToggleReason>
+                      )}
                     </ToggleCell>
                     <RemoveSlot>
                       {columns.length > 1 && (
@@ -381,8 +417,9 @@ const ItemParams = ({
                         <TextField
                           name={`columns[${index}].allowedFileTypes`}
                           label="Allowed file types"
-                          placeholder="pdf doc mp3"
-                          help="Extensions separated by spaces."
+                          placeholder="pdf png mp4"
+                          help="Extensions separated by spaces: images, videos, PDF, JSON, text, Markdown or CSV."
+                          normalize={normalizeFileTypes}
                         />
                       </FileTypes>
                     )}

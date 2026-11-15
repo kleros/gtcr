@@ -1,6 +1,8 @@
 import * as yup from 'yup'
 import { isAddress } from 'viem'
 import { ItemTypes } from '@kleros/gtcr-encoder'
+import { normalizeDecimalInput } from 'utils/decimal-input'
+import { fileTypesProblem } from 'pages/factory/file-types'
 import type { TcrState } from '.'
 
 /*
@@ -21,12 +23,12 @@ export type FactorySection =
 
 // The deploy encodes addresses with viem, which refuses what isAddress
 // refuses (a typo, a space, a wrong-case checksum), but only after the
-// uploads: refused here, at the field, instead.
+// uploads: refused here, at the field, instead. No length rule: its message
+// would speak first and hide this one, which names the likely cause.
 const address = (message: string) =>
   yup
     .string()
     .required(message)
-    .max(42, 'Ethereum addresses are 42 characters long.')
     .test(
       'address',
       'Not a valid address: check it for a typo or a space.',
@@ -44,26 +46,46 @@ const extraData = yup
     'Extra data is hex bytes: 0x, then pairs of 0-9 and a-f.',
   )
 
+/**
+ * A typed number as the deploy reads it: one comma with no dot is the
+ * decimal point ("0,5", as decimal keypads write it in many regions), while
+ * "1,000" stays unreadable instead of becoming 1. An emptied field is a
+ * missing value.
+ */
+const typedNumber = (value: unknown, raw: unknown) => {
+  if (typeof raw !== 'string') return value
+  const text = normalizeDecimalInput(raw)
+  return text === '' ? undefined : Number(text)
+}
+
+const NOT_A_NUMBER =
+  'Use a plain number like 1000 or 0.5; a dot or a comma marks decimals.'
+
 const amount = yup
   .number()
-  .typeError('Amount should be a number.')
+  .transform(typedNumber)
+  .typeError(NOT_A_NUMBER)
   .required('A value is required.')
   .min(0, 'The amount must not be negative.')
   .test(
     'finite',
-    'Amount should be a number.',
+    NOT_A_NUMBER,
     (value) => value === undefined || Number.isFinite(value),
   )
   // yup reads "1e3" as a number, but the deploy (parseUnits) would throw on
-  // it after the uploads: only plain digits with one dot.
-  .test('plain', 'Use digits and one dot, like 0.5.', function (value) {
-    const raw = this.originalValue
-    return (
-      value === undefined ||
-      typeof raw === 'number' ||
-      /^\s*\d+(\.\d+)?\s*$/.test(String(raw))
-    )
-  })
+  // it after the uploads: only plain digits, with one dot or comma.
+  .test(
+    'plain',
+    'Use digits with one dot or comma for decimals, like 0.5.',
+    function (value) {
+      const raw = this.originalValue
+      return (
+        value === undefined ||
+        typeof raw === 'number' ||
+        /^\d+(\.\d+)?$/.test(normalizeDecimalInput(String(raw)))
+      )
+    },
+  )
 
 /** Ten years: longer periods are typos, and long cooldowns overflow. */
 const MAX_PERIOD_HOURS = 87_600
@@ -97,7 +119,8 @@ const period = (positive: boolean) =>
  */
 const multiplier = yup
   .number()
-  .typeError('Amount should be a number.')
+  .transform(typedNumber)
+  .typeError(NOT_A_NUMBER)
   .min(0, 'The stake multiplier cannot be negative.')
   .required('A value is required')
   .test(
@@ -113,21 +136,19 @@ const TCR_FIELDS: Record<FactorySection, Record<string, yup.AnySchema>> = {
     tcrTitle: yup
       .string()
       .required('A title is required.')
-      .max(40, 'Title must be less than 40 characters long.'),
+      .max(40, 'Keep the title to 40 characters or fewer.'),
   },
   description: {
     tcrDescription: yup
       .string()
       .required('A description is required.')
-      .max(255, 'Description must be less than 255 characters long.'),
+      .max(255, 'Keep the description to 255 characters or fewer.'),
   },
   logo: {
     tcrLogo: yup.string().required('A logo is required.'),
   },
   policy: {
-    tcrPrimaryDocument: yup
-      .string()
-      .required('A primary document is required.'),
+    tcrPrimaryDocument: yup.string().required('Upload the listing policy.'),
   },
   token: {
     tokenAddress: address('A stake token address is required.'),
@@ -150,11 +171,11 @@ const TCR_FIELDS: Record<FactorySection, Record<string, yup.AnySchema>> = {
     itemName: yup
       .string()
       .required('An item name is required.')
-      .max(20, 'The item name must be less than 20 characters long.'),
+      .max(20, 'Keep the item name to 20 characters or fewer.'),
     itemNamePlural: yup
       .string()
       .required('The plural of the item name is required.')
-      .max(20, 'The item name must be less than 20 characters long.'),
+      .max(20, 'Keep the plural to 20 characters or fewer.'),
   },
 }
 
@@ -171,10 +192,14 @@ export const itemSchema = yup.object().shape({
     yup.object().shape({
       label: yup.string().required('The column label is required.'),
       description: yup.string().required('The column description is required.'),
+      // Types entries can hold (see file-types), deployed with the list.
       allowedFileTypes: yup.string().when('type', {
         is: ItemTypes.FILE,
         then: (schema) =>
-          schema.required('At least one file type is required.'),
+          schema.test('file-types', '', (value, context) => {
+            const problem = fileTypesProblem(value)
+            return problem ? context.createError({ message: problem }) : true
+          }),
       }),
     }),
   ),
@@ -205,7 +230,7 @@ const FIELD_LABELS: Record<string, string> = {
   submissionPeriodDuration: 'the submission period',
   reinclusionPeriodDuration: 'the reinclusion period',
   withdrawingPeriodDuration: 'the withdrawing period',
-  arbitrationParamsCooldown: 'the parameters cooldown',
+  arbitrationParamsCooldown: 'the cooldown',
   arbitratorAddress: 'the arbitrator',
   governorAddress: 'the governor',
   sharedStakeMultiplier: 'the shared appeal multiplier',
@@ -268,7 +293,11 @@ export const deployProblems = (state: TcrState): DeployProblem[] => {
     problems.push({
       path: 'columns',
       label: 'the file types of the file fields',
-      missing: true,
+      // Empty ("Add …"), or naming a type entries cannot hold ("Fix …").
+      missing: columns.some(
+        (column) =>
+          column.type === ItemTypes.FILE && isBlank(column.allowedFileTypes),
+      ),
     })
   if (!columns.some((column) => column.isIdentifier))
     problems.push({

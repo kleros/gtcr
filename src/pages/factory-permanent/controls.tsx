@@ -7,7 +7,8 @@ import { appKitModal } from 'config/wagmi'
 import { NETWORKS_INFO } from 'config/networks'
 import useUrlChainId from 'hooks/use-url-chain-id'
 import { parseIpfs } from 'utils/ipfs-parse'
-import { errorToast, infoToast, successToast } from 'utils/wrap-with-toast'
+import { normalizeDecimalInput } from 'utils/decimal-input'
+import { reportSwitchFailure, signInWithToast } from 'utils/wrap-with-toast'
 import { CurateIcon } from 'components/curate/icons'
 import KitSelect from 'components/ui/Select'
 import Switch from 'components/ui/Switch'
@@ -131,6 +132,17 @@ const StepTitle = styled.h2`
   line-height: 1.12;
   font-weight: 500;
   letter-spacing: -0.03em;
+
+  /* Focused when the step opens (see useFactoryWizard): the app's ring for keyboards only. */
+  &:focus {
+    outline: none;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
+  }
 `
 
 const StepLede = styled.p`
@@ -149,7 +161,7 @@ export const StepHeader = ({
   lede?: React.ReactNode
 }) => (
   <HeaderShell>
-    <StepTitle>{heading}</StepTitle>
+    <StepTitle tabIndex={-1}>{heading}</StepTitle>
     {lede && <StepLede>{lede}</StepLede>}
   </HeaderShell>
 )
@@ -489,7 +501,11 @@ export const FormField = ({
         'aria-invalid': invalid || undefined,
         'aria-describedby': describedBy,
       })}
-      {invalid && <ErrorText id={errorId}>{error}</ErrorText>}
+      {invalid && (
+        <ErrorText id={errorId} role="alert">
+          {error}
+        </ErrorText>
+      )}
     </Shell>
   )
 }
@@ -522,6 +538,7 @@ export const TextField = ({
   unit,
   mono,
   numeric,
+  normalize,
   trailing,
 }: {
   name: string
@@ -529,16 +546,22 @@ export const TextField = ({
   help?: React.ReactNode
   placeholder?: string
   unit?: React.ReactNode
+  /** An address or hex: Geist Mono, and pasted spaces around it dropped. */
   mono?: boolean
   numeric?: boolean
+  /** How the text is stored once the field is left (numbers: "0,5" as "0.5"). */
+  normalize?: (text: string) => string
   /** Extra content under the input. */
   trailing?: React.ReactNode
 }) => {
   const id = useId()
-  const [field, meta] = useField<string | number | undefined>(name)
+  const [field, meta, helpers] = useField<string | number | undefined>(name)
   const Control = mono ? MonoInput : Input
   const value =
     field.value === undefined || field.value === null ? '' : String(field.value)
+  // Rewritten on leaving the field, never while typing: "1,000" keystroke by
+  // keystroke passes through "1," and must not become 1.
+  const tidy = normalize ?? (numeric ? normalizeDecimalInput : undefined)
   return (
     <FormField
       id={id}
@@ -560,8 +583,20 @@ export const TextField = ({
               spellCheck={mono ? false : undefined}
               autoCapitalize={mono ? 'none' : undefined}
               autoComplete="off"
-              onChange={field.onChange}
-              onBlur={field.onBlur}
+              onChange={
+                mono
+                  ? (event) => helpers.setValue(event.target.value.trim())
+                  : field.onChange
+              }
+              onBlur={(event) => {
+                field.onBlur(event)
+                // After the blur's own check, so the last one reads the
+                // stored text.
+                if (tidy && typeof field.value === 'string') {
+                  const tidied = tidy(field.value)
+                  if (tidied !== field.value) helpers.setValue(tidied)
+                }
+              }}
             />
             {unit && <Unit>{unit}</Unit>}
           </UnitRow>
@@ -644,16 +679,6 @@ export interface WalletGate {
   control: React.ReactNode
 }
 
-const signIn = (authoriseUser: () => Promise<unknown>) => {
-  infoToast('Signing in…')
-  authoriseUser()
-    .then(() => successToast('Signed in.'))
-    .catch((err) => {
-      console.error(err)
-      errorToast(`Sign-in failed: ${err?.message ?? 'unknown error'}`)
-    })
-}
-
 /**
  * Connect, then (for anything written on the URL chain) the chain switch,
  * then the Atlas sign-in. Each blocker names the action it blocks:
@@ -681,10 +706,15 @@ export const useWalletGate = ({
     needsChain && isConnected && !!urlChainId && walletChainId !== urlChainId
 
   const connect = () => appKitModal?.open({ view: 'Connect' })
+  // A wallet that does not switch says why (a declined request stays quiet).
   const switchToUrlChain = () => {
-    if (urlChainId) switchChain({ chainId: urlChainId })
+    if (urlChainId)
+      switchChain(
+        { chainId: urlChainId },
+        { onError: (err) => reportSwitchFailure(err, chainName) },
+      )
   }
-  const startSignIn = () => signIn(authoriseUser)
+  const startSignIn = () => signInWithToast(authoriseUser)
 
   if (!isConnected)
     return {

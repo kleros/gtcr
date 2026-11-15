@@ -53,7 +53,7 @@ export const FACTORY_COPY = {
   sections: {
     title: {
       heading: 'Name the list',
-      lede: 'Short and plain: it shows on cards, in notifications and on the list of lists.',
+      lede: 'Short and plain: it shows on cards and on the list of lists.',
     },
     description: {
       heading: 'Describe what belongs on it',
@@ -303,15 +303,24 @@ export const useFactoryWizard = <D extends FactoryWizardDraft>({
     resetTriggerRef.current?.focus()
   }, [confirmingReset])
 
-  // A new step starts at its top: bring the panel back if it scrolled away.
+  // A new step starts at its top: focus moves to its heading, so keyboard
+  // and screen-reader users hear the step change instead of staying on
+  // Next, and the panel comes back if it scrolled away (the focus itself
+  // does not scroll, so the page moves once).
   useEffect(() => {
     if (firstStep.current) {
       firstStep.current = false
       return
     }
     const panel = panelRef.current
+    if (!panel) return
+    // Start over hands focus back to its own button (above): it stays there.
+    if (document.activeElement !== resetTriggerRef.current)
+      panel
+        .querySelector<HTMLElement>('h2[tabindex="-1"]')
+        ?.focus({ preventScroll: true })
     // 72px: below the sticky app bar (64px) with a little air.
-    if (!panel || panel.getBoundingClientRect().top >= 72) return
+    if (panel.getBoundingClientRect().top >= 72) return
     const reduced = window.matchMedia?.(
       '(prefers-reduced-motion: reduce)',
     ).matches
@@ -393,6 +402,79 @@ export const useFactoryWizard = <D extends FactoryWizardDraft>({
     resetTriggerRef,
     keepEditingRef,
   }
+}
+
+/** A control that takes focus, from the fields marked invalid. */
+const focusTarget = (element: HTMLElement): HTMLElement | null => {
+  // An upload's file input is hidden: the button that opens it stands in.
+  if (element instanceof HTMLInputElement && element.type === 'file')
+    return (
+      element.parentElement?.querySelector<HTMLElement>(
+        'button:not(:disabled)',
+      ) ?? null
+    )
+  return element.matches('input, textarea, select, button, [tabindex]') &&
+    !element.matches(':disabled')
+    ? element
+    : null
+}
+
+/**
+ * After Next fails on a step form (formik's own submit, so its schema ran),
+ * focus moves to the first field marked invalid, brought to the middle of
+ * the screen, so keyboard and screen-reader users land on what to fix.
+ * `reveal` runs first with the fields in error, to open a collapsed section
+ * that holds one of them; focus moves once it has rendered.
+ */
+export const useFailedSubmitFocus = ({
+  formId,
+  submitCount,
+  isSubmitting,
+  errors,
+  reveal,
+}: {
+  formId?: string
+  submitCount: number
+  isSubmitting: boolean
+  errors: object
+  reveal?: (fields: string[]) => void
+}) => {
+  const handled = useRef(submitCount)
+  const [focusRequest, setFocusRequest] = useState(0)
+
+  // Formik counts the attempt, validates, then sets the errors and ends
+  // the submit together: a failure is an ended attempt that left errors.
+  useEffect(() => {
+    if (isSubmitting || submitCount === handled.current) return
+    handled.current = submitCount
+    const fields = Object.keys(errors)
+    if (fields.length === 0) return
+    reveal?.(fields)
+    setFocusRequest((count) => count + 1)
+    // reveal is recreated on every render; the attempt is what is watched.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [errors, isSubmitting, submitCount])
+
+  useEffect(() => {
+    if (focusRequest === 0 || !formId) return
+    const form = document.querySelector(`form[id="${CSS.escape(formId)}"]`)
+    if (!form) return
+    for (const element of form.querySelectorAll<HTMLElement>(
+      '[aria-invalid="true"]',
+    )) {
+      const target = focusTarget(element)
+      if (!target) continue
+      const reduced = window.matchMedia?.(
+        '(prefers-reduced-motion: reduce)',
+      ).matches
+      target.focus({ preventScroll: true })
+      target.scrollIntoView({
+        block: 'center',
+        behavior: reduced ? 'auto' : 'smooth',
+      })
+      return
+    }
+  }, [focusRequest, formId])
 }
 
 /* ---------- Layout ---------- */

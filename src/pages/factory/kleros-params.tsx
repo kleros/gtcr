@@ -71,6 +71,21 @@ const CostFigure = styled.span`
 const MIN_JURORS = 1
 const MAX_JURORS = 33
 
+/** Why typed jurors cannot be used (the rules the slider snaps to), or ''. */
+export const jurorsProblem = (
+  text: string,
+  min = MIN_JURORS,
+  max = MAX_JURORS,
+): string => {
+  const typed = text.trim()
+  if (!/^\d+$/.test(typed))
+    return `Use an odd number between ${min} and ${max}.`
+  const count = Number(typed)
+  if (count < min || count > max) return `Between ${min} and ${max} jurors.`
+  if (count % 2 === 0) return 'Use an odd number.'
+  return ''
+}
+
 const encodeExtraData = (courtID: number, numberOfJurors: number) =>
   `0x${courtID.toString(16).padStart(64, '0')}${Math.ceil(numberOfJurors)
     .toString(16)
@@ -95,6 +110,11 @@ const KlerosParams = ({
   const nativeCurrency = useNativeCurrency()
   const [arbitrationCost, setArbitrationCost] = useState<BigNumber>()
   const [numberOfJurors, setNumberOfJurors] = useState(3)
+  // The jurors as typed, until the box is left or Enter is pressed: each
+  // keystroke must not set the court's jurors (clearing "3" to type 5 would
+  // pass through 1, then 15).
+  const [jurorsText, setJurorsText] = useState<string | null>(null)
+  const [jurorsError, setJurorsError] = useState('')
   const [courtID, setCourtID] = useState<number>()
   const { data: courts = [] } = useCourtPolicies(policyAddress, library)
 
@@ -152,9 +172,21 @@ const KlerosParams = ({
       if (newNumJurors % 2 === 0) newNumJurors = newNumJurors - 1
       setArbitratorExtraData(encodeExtraData(courtID ?? 0, newNumJurors))
       setNumberOfJurors(newNumJurors)
+      setJurorsText(null)
+      setJurorsError('')
     },
     [courtID, setArbitratorExtraData],
   )
+
+  // The typed jurors take effect only when they follow the slider's rules;
+  // otherwise the box keeps the text and says what to change.
+  const commitJurors = () => {
+    if (jurorsText === null) return
+    const problem = jurorsProblem(jurorsText)
+    setJurorsError(problem)
+    if (problem) return
+    onNumJurorsChange(Number(jurorsText.trim()))
+  }
 
   const loadingCourts = courts.length === 0 || typeof courtID !== 'number'
   const cost = formatNative(arbitrationCost)
@@ -185,6 +217,8 @@ const KlerosParams = ({
           id={`${ids}-jurors`}
           label="Jurors in the first round"
           help="Always odd; each extra juror raises the arbitration cost."
+          error={jurorsError}
+          showError={!!jurorsError}
         >
           {(a11y) => (
             <Row $gap={14}>
@@ -203,10 +237,18 @@ const KlerosParams = ({
                 {...a11y}
                 type="text"
                 inputMode="numeric"
-                value={numberOfJurors}
-                onChange={(event) =>
-                  onNumJurorsChange(Number(event.target.value))
-                }
+                value={jurorsText ?? String(numberOfJurors)}
+                onChange={(event) => {
+                  setJurorsText(event.target.value)
+                  setJurorsError('')
+                }}
+                onBlur={commitJurors}
+                onKeyDown={(event) => {
+                  // Enter sets the jurors; it does not leave the step.
+                  if (event.key !== 'Enter') return
+                  event.preventDefault()
+                  commitJurors()
+                }}
               />
             </Row>
           )}

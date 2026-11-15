@@ -11,7 +11,9 @@ import { appKitModal } from 'config/wagmi'
 import { NETWORKS_INFO } from 'config/networks'
 import useUrlChainId from 'hooks/use-url-chain-id'
 import { parseIpfs } from 'utils/ipfs-parse'
-import { errorToast, infoToast, successToast } from 'utils/wrap-with-toast'
+import { normalizeDecimalInput } from 'utils/decimal-input'
+import { reportSwitchFailure, signInWithToast } from 'utils/wrap-with-toast'
+import { plainDecimal } from 'pages/factory-permanent/format'
 import { CurateIcon } from 'components/curate/icons'
 import KitSelect from 'components/ui/Select'
 import Switch from 'components/ui/Switch'
@@ -55,8 +57,9 @@ export const totalDeposit = (
 ): BigNumber | null => {
   if (arbitrationCost === null || arbitrationCost === undefined) return null
   try {
+    // Read as the deploy reads it: "0,5" is 0.5.
     return ethers.utils
-      .parseEther(String(base ?? '0'))
+      .parseEther(plainDecimal(base ?? '0'))
       .add(BigNumber.from(arbitrationCost))
   } catch {
     return null
@@ -541,6 +544,17 @@ const StepTitle = styled.h2`
   line-height: 1.12;
   font-weight: 500;
   letter-spacing: -0.03em;
+
+  /* Focused when the step opens (see useFactoryWizard): the app's ring for keyboards only. */
+  &:focus {
+    outline: none;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
+  }
 `
 
 const StepLede = styled.p`
@@ -562,7 +576,7 @@ export const StepHeader = ({
 }) => (
   <HeaderShell>
     {eyebrow && <Label $tone="primary">{eyebrow}</Label>}
-    <StepTitle>{heading}</StepTitle>
+    <StepTitle tabIndex={-1}>{heading}</StepTitle>
     {lede && <StepLede>{lede}</StepLede>}
   </HeaderShell>
 )
@@ -607,7 +621,11 @@ export const FormField = ({
         'aria-invalid': invalid || undefined,
         'aria-describedby': describedBy,
       })}
-      {invalid && <ErrorText id={errorId}>{error}</ErrorText>}
+      {invalid && (
+        <ErrorText id={errorId} role="alert">
+          {error}
+        </ErrorText>
+      )}
     </Shell>
   )
 }
@@ -622,6 +640,7 @@ export const TextField = ({
   unit,
   mono,
   numeric,
+  normalize,
   trailing,
 }: {
   name: string
@@ -630,16 +649,22 @@ export const TextField = ({
   placeholder?: string
   /** A unit after the input: the currency, "hours", "%". */
   unit?: React.ReactNode
+  /** An address or hex: Geist Mono, and pasted spaces around it dropped. */
   mono?: boolean
   numeric?: boolean
+  /** How the text is stored once the field is left (numbers: "0,5" as "0.5"). */
+  normalize?: (text: string) => string
   /** Extra content under the input, e.g. the total with the arbitration cost. */
   trailing?: React.ReactNode
 }) => {
   const id = useId()
-  const [field, meta] = useField<string | number | undefined>(name)
+  const [field, meta, helpers] = useField<string | number | undefined>(name)
   const Control = mono ? MonoInput : Input
   const value =
     field.value === undefined || field.value === null ? '' : String(field.value)
+  // Rewritten on leaving the field, never while typing: "1,000" keystroke by
+  // keystroke passes through "1," and must not become 1.
+  const tidy = normalize ?? (numeric ? normalizeDecimalInput : undefined)
   return (
     <FormField
       id={id}
@@ -660,8 +685,20 @@ export const TextField = ({
               inputMode={numeric ? 'decimal' : undefined}
               spellCheck={mono ? false : undefined}
               autoComplete="off"
-              onChange={field.onChange}
-              onBlur={field.onBlur}
+              onChange={
+                mono
+                  ? (event) => helpers.setValue(event.target.value.trim())
+                  : field.onChange
+              }
+              onBlur={(event) => {
+                field.onBlur(event)
+                // After the blur's own check, so the last one reads the
+                // stored text.
+                if (tidy && typeof field.value === 'string') {
+                  const tidied = tidy(field.value)
+                  if (tidied !== field.value) helpers.setValue(tidied)
+                }
+              }}
             />
             {unit && <Small $muted>{unit}</Small>}
           </UnitRow>
@@ -722,16 +759,6 @@ export interface WalletGate {
   control: React.ReactNode
 }
 
-const signIn = (authoriseUser: () => Promise<unknown>) => {
-  infoToast('Signing in…')
-  authoriseUser()
-    .then(() => successToast('Signed in.'))
-    .catch((err) => {
-      console.error(err)
-      errorToast(`Sign-in failed: ${err?.message ?? 'unknown error'}`)
-    })
-}
-
 /**
  * Connect, then (for anything that writes on the URL chain) the chain
  * switch, then the Atlas sign-in uploads need. Each blocker names the
@@ -759,10 +786,15 @@ export const useWalletGate = ({
     needsChain && isConnected && !!urlChainId && walletChainId !== urlChainId
 
   const connect = () => appKitModal?.open({ view: 'Connect' })
+  // A wallet that does not switch says why (a declined request stays quiet).
   const switchToUrlChain = () => {
-    if (urlChainId) switchChain({ chainId: urlChainId })
+    if (urlChainId)
+      switchChain(
+        { chainId: urlChainId },
+        { onError: (err) => reportSwitchFailure(err, chainName) },
+      )
   }
-  const startSignIn = () => signIn(authoriseUser)
+  const startSignIn = () => signInWithToast(authoriseUser)
 
   if (!isConnected)
     return {

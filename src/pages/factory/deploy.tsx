@@ -47,7 +47,8 @@ import {
 import { StepBody, StepHeader, formatNative, useWalletGate } from './fields'
 import { incompleteSteps, listInProse } from './schemas'
 import { useCourtSummary } from './court'
-import { plainDecimal } from 'pages/factory-permanent/format'
+import { withNormalizedFileTypes } from './file-types'
+import { plainDecimal, typedNumber } from 'pages/factory-permanent/format'
 import useArbitratorCheck from 'hooks/use-arbitrator-check'
 import type { StepProps, TcrState } from '.'
 
@@ -64,9 +65,14 @@ import type { StepProps, TcrState } from '.'
 
 /**
  * A typed amount in wei. The form can hold a number (5e-7) or text with
- * spaces, which parseEther refuses after the uploads: written out first.
+ * spaces or a decimal comma, which parseEther refuses after the uploads:
+ * written out first.
  */
 const toWei = (value: unknown): bigint => parseEther(plainDecimal(value))
+
+/** A typed number times `scale`, in whole units: hours to seconds, percent to basis points. */
+const toWhole = (value: unknown, scale: number): number =>
+  Math.round(typedNumber(value) * scale)
 
 /*
  * The badges list is deployed even when it is skipped (closed by a deposit
@@ -83,7 +89,7 @@ const relWei = (value: unknown, skipped: boolean): bigint => {
   }
 }
 const relWhole = (value: unknown, scale: number, skipped: boolean): number => {
-  const whole = Math.round(Number(value) * scale)
+  const whole = toWhole(value, scale)
   return skipped && !Number.isFinite(whole) ? 0 : whole
 }
 
@@ -127,7 +133,9 @@ const getTcrMetaEvidence = async (
   const metadata = {
     tcrTitle,
     tcrDescription,
-    columns,
+    // File types as the field stores them once left ("PDF, jpg" is "pdf
+    // jpg jpeg"), even if the step was left without that.
+    columns: withNormalizedFileTypes(columns),
     itemName: itemName.toLowerCase(),
     itemNamePlural: itemNamePlural.toLowerCase(),
     logoURI: tcrLogo,
@@ -341,10 +349,24 @@ const ReviewRow = styled.div`
     font-weight: 400;
   }
 
+  /* An address shown in full, on two lines where it must. */
+  dd[data-wrap='true'] {
+    overflow: visible;
+    white-space: normal;
+  }
+
   button {
     grid-column: 2;
     grid-row: 1 / span 2;
   }
+`
+
+/** An address in the review: Geist Mono, whole, breaking anywhere on a phone. */
+const AddressText = styled.span`
+  font-family: var(--font-mono);
+  font-size: var(--fs-data);
+  font-weight: 400;
+  overflow-wrap: anywhere;
 `
 
 const EditButton = styled.button`
@@ -723,7 +745,7 @@ const Deploy = ({
     tcrState.arbitratorAddress,
     tcrState.arbitratorExtraData,
   )
-  const periodHours = Number(tcrState.challengePeriodDuration)
+  const periodHours = typedNumber(tcrState.challengePeriodDuration)
   const period =
     Number.isFinite(periodHours) && periodHours > 0
       ? formatDurationLong(periodHours * 60 * 60)
@@ -785,13 +807,19 @@ const Deploy = ({
       setPhase('wallet')
 
       const skipped = !!tcrState.relTcrDisabled
+      // A skipped badges list is never validated (its step has nothing to
+      // check), so its placeholder takes the list's own arbitrator, extra
+      // data and governor, which were: a half-edited hidden field must not
+      // fail the deploy after the sign-in and the uploads.
       const relTCRArgs = [
-        tcrState.relArbitratorAddress,
-        tcrState.relArbitratorExtraData,
+        skipped ? tcrState.arbitratorAddress : tcrState.relArbitratorAddress,
+        skipped
+          ? tcrState.arbitratorExtraData
+          : tcrState.relArbitratorExtraData,
         ZERO_ADDRESS,
         relRegistrationMetaEvidencePath,
         relClearingMetaEvidencePath,
-        tcrState.relGovernorAddress,
+        skipped ? tcrState.governorAddress : tcrState.relGovernorAddress,
         [
           skipped
             ? parseEther('10000000000000')
@@ -834,11 +862,11 @@ const Deploy = ({
           toWei(tcrState.submissionChallengeBaseDeposit),
           toWei(tcrState.removalChallengeBaseDeposit),
         ],
-        Math.round(Number(tcrState.challengePeriodDuration) * 60 * 60),
+        toWhole(tcrState.challengePeriodDuration, 60 * 60),
         [
-          Math.round(Number(tcrState.sharedStakeMultiplier) * 100),
-          Math.round(Number(tcrState.winnerStakeMultiplier) * 100),
-          Math.round(Number(tcrState.loserStakeMultiplier) * 100),
+          toWhole(tcrState.sharedStakeMultiplier, 100),
+          toWhole(tcrState.winnerStakeMultiplier, 100),
+          toWhole(tcrState.loserStakeMultiplier, 100),
         ],
         ZERO_ADDRESS,
       ]
@@ -1030,6 +1058,8 @@ const Deploy = ({
     label: string
     value: React.ReactNode
     empty?: boolean
+    /** A value that wraps instead of being cut: a whole address. */
+    wrap?: boolean
     step: string
   }[] = [
     {
@@ -1057,7 +1087,7 @@ const Deploy = ({
     },
     {
       label: 'Submission deposit',
-      value: `${String(tcrState.submissionBaseDeposit)} ${nativeCurrency} + arbitration cost`,
+      value: `${plainDecimal(tcrState.submissionBaseDeposit)} ${nativeCurrency} + arbitration cost`,
       step: 'Deposit',
     },
     {
@@ -1069,10 +1099,14 @@ const Deploy = ({
       ? [
           {
             label: 'Arbitrator',
-            value: tcrState.arbitratorAddress
-              ? truncateMiddle(tcrState.arbitratorAddress, 8, 6)
-              : 'Not set',
+            // In full: the creator checks what they deploy.
+            value: tcrState.arbitratorAddress ? (
+              <AddressText>{tcrState.arbitratorAddress}</AddressText>
+            ) : (
+              'Not set'
+            ),
             empty: !tcrState.arbitratorAddress,
+            wrap: true,
             step: 'Deposit',
           },
         ]
@@ -1087,18 +1121,22 @@ const Deploy = ({
         ]
       : []),
     // Who can change the list later. The field sits under Advanced, so the
-    // review names it, and says when it is not the connected wallet.
+    // review names it in full, and says when it is not the connected wallet.
     {
       label: 'Governor',
-      value: tcrState.governorAddress
-        ? `${truncateMiddle(tcrState.governorAddress, 8, 6)}${
-            account &&
-            tcrState.governorAddress.toLowerCase() === account.toLowerCase()
-              ? ' (your wallet)'
-              : ' (not your wallet)'
-          }`
-        : 'Not set',
+      value: tcrState.governorAddress ? (
+        <>
+          <AddressText>{tcrState.governorAddress}</AddressText>
+          {account &&
+          tcrState.governorAddress.toLowerCase() === account.toLowerCase()
+            ? ' (your wallet)'
+            : ' (not your wallet)'}
+        </>
+      ) : (
+        'Not set'
+      ),
       empty: !tcrState.governorAddress,
+      wrap: true,
       step: 'Deposit',
     },
     {
@@ -1129,6 +1167,7 @@ const Deploy = ({
                 </Label>
                 <dd
                   data-empty={row.empty || undefined}
+                  data-wrap={row.wrap || undefined}
                   title={typeof row.value === 'string' ? row.value : undefined}
                 >
                   {row.value}

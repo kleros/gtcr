@@ -47,6 +47,7 @@ import {
   TxStep,
   type TxStatus,
 } from 'components/curate/stake-factory-shell'
+import { withNormalizedFileTypes } from 'pages/factory/file-types'
 import { SafeImage, StepBody, StepHeader, useWalletGate } from './controls'
 import { useCourtSummary } from './court'
 import useArbitratorCheck from 'hooks/use-arbitrator-check'
@@ -63,6 +64,7 @@ import {
   shareOf,
   stakeProblem,
   stakeProblemText,
+  typedNumber,
 } from './format'
 import { deployBlocker, deployProblems } from './schemas'
 import type { StepProps, TcrState } from '.'
@@ -94,7 +96,9 @@ const getTcrMetaEvidence = async (
   const metadata = {
     tcrTitle,
     tcrDescription,
-    columns,
+    // File types as the field stores them once left ("PDF, jpg" is "pdf
+    // jpg jpeg"), even if the step was left without that.
+    columns: withNormalizedFileTypes(columns),
     itemName: itemName.toLowerCase(),
     itemNamePlural: itemNamePlural.toLowerCase(),
     logoURI: tcrLogo,
@@ -219,10 +223,24 @@ const ReviewRow = styled.div`
     font-weight: 400;
   }
 
+  /* An address shown in full, on two lines where it must. */
+  dd[data-wrap='true'] {
+    overflow: visible;
+    white-space: normal;
+  }
+
   button {
     grid-column: 2;
     grid-row: 1 / span 2;
   }
+`
+
+/** An address in the review: Geist Mono, whole, breaking anywhere on a phone. */
+const AddressText = styled.span`
+  font-family: var(--font-mono);
+  font-size: var(--fs-data);
+  font-weight: 400;
+  overflow-wrap: anywhere;
 `
 
 /** The logo row's value: a 24px thumbnail beside the word. */
@@ -290,6 +308,8 @@ type ReviewItem = {
   title?: string
   empty?: boolean
   mono?: boolean
+  /** A value that wraps instead of being cut: a whole address. */
+  wrap?: boolean
   step: string
   advanced?: boolean
   /** A line under the value that must not be missed. */
@@ -464,18 +484,19 @@ const Deploy = ({
             plainDecimal(tcrState.submissionMinDeposit),
             tokenDecimals,
           ),
+          // Hours to seconds, read as typed ("84,5" is 84.5).
           [
-            Math.round(Number(tcrState.submissionPeriodDuration) * 60 * 60),
-            Math.round(Number(tcrState.reinclusionPeriodDuration) * 60 * 60),
-            Math.round(Number(tcrState.withdrawingPeriodDuration) * 60 * 60),
-            Math.round(Number(tcrState.arbitrationParamsCooldown) * 60 * 60),
+            Math.round(typedNumber(tcrState.submissionPeriodDuration) * 3600),
+            Math.round(typedNumber(tcrState.reinclusionPeriodDuration) * 3600),
+            Math.round(typedNumber(tcrState.withdrawingPeriodDuration) * 3600),
+            Math.round(typedNumber(tcrState.arbitrationParamsCooldown) * 3600),
           ],
           // Percent to basis points, exactly as typed (12.5% is 1250).
           [
-            Math.round(Number(tcrState.sharedStakeMultiplier) * 100),
-            Math.round(Number(tcrState.winnerStakeMultiplier) * 100),
-            Math.round(Number(tcrState.loserStakeMultiplier) * 100),
-            Math.round(Number(tcrState.challengeStakeMultiplier) * 100),
+            Math.round(typedNumber(tcrState.sharedStakeMultiplier) * 100),
+            Math.round(typedNumber(tcrState.winnerStakeMultiplier) * 100),
+            Math.round(typedNumber(tcrState.loserStakeMultiplier) * 100),
+            Math.round(typedNumber(tcrState.challengeStakeMultiplier) * 100),
           ],
         ],
         gas: 8000000n,
@@ -612,6 +633,10 @@ const Deploy = ({
       ? groupAmount(formatToken(shareOf(stake, percent), decimals))
       : null
   const logo = tcrState.tcrLogo ? parseIpfs(tcrState.tcrLogo) : ''
+  const governorIsWallet =
+    !!account &&
+    !!tcrState.governorAddress &&
+    tcrState.governorAddress.toLowerCase() === account.toLowerCase()
   // Days and hours, as the Light review and the preview read them; the
   // hours typed in the wizard on hover.
   const hours = (value: number | string) => {
@@ -673,13 +698,19 @@ const Deploy = ({
       empty: !fields,
       step: 'Fields',
     },
+    // Addresses in full: the creator checks what they deploy.
     {
       label: 'Stake token',
-      value: tcrState.tokenAddress
-        ? `${tokenSymbol} · ${truncateMiddle(tcrState.tokenAddress)}`
-        : 'Not set',
+      value: tcrState.tokenAddress ? (
+        <>
+          {tokenSymbol} · <AddressText>{tcrState.tokenAddress}</AddressText>
+        </>
+      ) : (
+        'Not set'
+      ),
       title: tcrState.tokenAddress,
       empty: !tcrState.tokenAddress,
+      wrap: true,
       step: 'Token',
     },
     {
@@ -720,7 +751,7 @@ const Deploy = ({
       advanced: true,
     },
     {
-      label: 'Parameters cooldown',
+      label: 'Cooldown',
       ...hours(tcrState.arbitrationParamsCooldown),
       step: 'Stake',
       advanced: true,
@@ -738,19 +769,38 @@ const Deploy = ({
     },
     {
       label: 'Arbitrator',
-      value: truncateMiddle(tcrState.arbitratorAddress),
+      value: tcrState.arbitratorAddress ? (
+        <AddressText>{tcrState.arbitratorAddress}</AddressText>
+      ) : (
+        'Not set'
+      ),
       title: tcrState.arbitratorAddress,
-      mono: true,
+      empty: !tcrState.arbitratorAddress,
+      wrap: true,
       step: 'Stake',
       advanced: true,
     },
+    // Who can change the list later. Drafts are kept per chain, not per
+    // wallet, so the review says when it is not the connected wallet.
     {
       label: 'Governor',
-      value: truncateMiddle(tcrState.governorAddress),
+      value: tcrState.governorAddress ? (
+        <>
+          <AddressText>{tcrState.governorAddress}</AddressText>
+          {governorIsWallet ? ' (your wallet)' : ' (not your wallet)'}
+        </>
+      ) : (
+        'Not set'
+      ),
       title: tcrState.governorAddress,
-      mono: true,
+      empty: !tcrState.governorAddress,
+      wrap: true,
       step: 'Stake',
       advanced: true,
+      warning:
+        account && tcrState.governorAddress && !governorIsWallet
+          ? 'Not the connected wallet: only this address will be able to change the list’s settings.'
+          : undefined,
     },
     {
       label: 'Appeal multipliers',
@@ -767,7 +817,7 @@ const Deploy = ({
         lede={
           phase === 'done'
             ? 'The list is live; it is also saved in this browser under your deployments.'
-            : `One transaction on ${chainName}, gas only: submitters stake ${tokenSymbol} and pay arbitration in ${nativeCurrency} later. The governor can change most parameters; the stake token is fixed.`
+            : `One transaction on ${chainName}, gas only: submitters stake ${tokenSymbol} and pay arbitration in ${nativeCurrency} later. The governor can change most parameters; the stake token, the arbitrator and the cooldown are fixed.`
         }
       />
 
@@ -781,6 +831,7 @@ const Deploy = ({
               <dd
                 data-empty={row.empty || undefined}
                 data-mono={row.mono || undefined}
+                data-wrap={row.wrap || undefined}
                 title={
                   row.title ??
                   (typeof row.value === 'string' ? row.value : undefined)

@@ -806,7 +806,7 @@ export const StakePreview = ({
             aria-label={
               stakeShown === null
                 ? 'Submitter: the minimum stake is not a valid amount'
-                : `Submitter stakes at least ${stakeShown} ${unit}${grownText ? `; a failed challenge raises the minimum stake to ${grownText} ${unit}` : ''}`
+                : `Submitter stakes at least ${stakeShown} ${unit}${grownText ? `; a failed challenge raises the entry’s stake to ${grownText} ${unit}` : ''}`
             }
           >
             {stakeNumber > 0 && (

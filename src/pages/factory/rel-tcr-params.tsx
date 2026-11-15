@@ -9,7 +9,10 @@ import useArbitrationCost from 'hooks/arbitration-cost'
 import useNativeCurrency from 'hooks/native-currency'
 import useUrlChainId from 'hooks/use-url-chain-id'
 import { klerosAddresses } from 'config/tcr-addresses'
+import { normalizeDecimalInput } from 'utils/decimal-input'
 import { Row, Small, Stack } from 'components/curate/primitives'
+import { useFailedSubmitFocus } from 'components/curate/v2-factory-shell'
+import { plainDecimal } from 'pages/factory-permanent/format'
 import KlerosParams from './kleros-params'
 import {
   Divider,
@@ -30,6 +33,8 @@ import {
   DepositTotalLine,
   POLICY_EXAMPLE_URL,
   SliderEnds,
+  readsAsAmount,
+  sliderDeposit,
 } from './tcr-params'
 import { relSchema } from './schemas'
 import type { StepProps, TcrState } from '.'
@@ -51,6 +56,19 @@ const DEPOSIT_STEP = 0.01
 const clampDeposit = (value: number) =>
   Math.min(DEPOSIT_MAX, Math.max(DEPOSIT_MIN, value))
 
+/** The badges step's fields that only Advanced options shows. */
+const ADVANCED_FIELDS = new Set([
+  'relRemovalBaseDeposit',
+  'relSubmissionChallengeBaseDeposit',
+  'relRemovalChallengeBaseDeposit',
+  'relChallengePeriodDuration',
+  'relGovernorAddress',
+  'relArbitratorAddress',
+  'relSharedStakeMultiplier',
+  'relWinnerStakeMultiplier',
+  'relLoserStakeMultiplier',
+])
+
 type RelTCRFormValues = Omit<TcrState, 'transactions'>
 type RelTCRParamsProps = StepProps & FormikProps<RelTCRFormValues>
 
@@ -60,16 +78,29 @@ const RelTCRParams = ({
   errors,
   touched,
   values,
+  submitCount,
+  isSubmitting,
   setFieldValue,
   setFieldTouched,
   setTcrState,
   defaultArbLabel,
-  defaultArbDataLabel,
   defaultGovernorLabel,
 }: RelTCRParamsProps) => {
   const ids = useId()
   const nativeCurrency = useNativeCurrency()
   const [advancedOptions, setAdvancedOptions] = useState(false)
+  // Next checks the fields under Advanced options too: when one of them
+  // fails, the section opens so its error shows, and focus moves to it.
+  useFailedSubmitFocus({
+    formId,
+    submitCount,
+    isSubmitting,
+    errors,
+    reveal: (fields) => {
+      if (fields.some((field) => ADVANCED_FIELDS.has(field)))
+        setAdvancedOptions(true)
+    },
+  })
   // This form writes every wizard field back, the list's own governor
   // included, so it fills both.
   useWalletGovernor(values.relGovernorAddress, (address) =>
@@ -78,9 +109,8 @@ const RelTCRParams = ({
   useWalletGovernor(values.governorAddress, (address) =>
     setFieldValue('governorAddress', address),
   )
-  const [depositText, setDepositText] = useState(
-    String(values.relSubmissionBaseDeposit ?? 0),
-  )
+  // The typed text while the amount box has focus; the stored value otherwise.
+  const [depositDraft, setDepositDraft] = useState<string | null>(null)
   const chainId = useUrlChainId()
   const chainProvider = useEthersProvider({ chainId: chainId ?? undefined })
   const [debouncedArbitrator] = useDebounce(values.relArbitratorAddress, 1000)
@@ -119,18 +149,29 @@ const RelTCRParams = ({
   }, [values, setTcrState])
 
   const badgesOn = values.relTcrDisabled === false
-  const depositVal = clampDeposit(Number(values.relSubmissionBaseDeposit) || 0)
+  const depositVal = sliderDeposit(values.relSubmissionBaseDeposit)
+  const depositText =
+    depositDraft ?? plainDecimal(values.relSubmissionBaseDeposit)
 
+  // The simple box stands for three deposits: connecting a badge, removing
+  // one and challenging a removal.
   const onChangeDepositVal = useCallback(
-    (value: number) => {
-      if (Number.isNaN(value)) return
-      const next = clampDeposit(value)
-      setFieldValue('relSubmissionBaseDeposit', next)
-      setFieldValue('relRemovalBaseDeposit', next)
-      setFieldValue('relRemovalChallengeBaseDeposit', next)
+    (value: number | string) => {
+      setFieldValue('relSubmissionBaseDeposit', value)
+      setFieldValue('relRemovalBaseDeposit', value)
+      setFieldValue('relRemovalChallengeBaseDeposit', value)
     },
     [setFieldValue],
   )
+  // As the list's own deposit box: typed text is kept as typed ("0,5"
+  // stored as "0.5"); text that is not an amount yet goes to the badge
+  // deposit alone, for its error to show.
+  const onTypeDeposit = (text: string) => {
+    setDepositDraft(text)
+    const typed = normalizeDecimalInput(text)
+    if (readsAsAmount(typed)) onChangeDepositVal(typed)
+    else setFieldValue('relSubmissionBaseDeposit', typed)
+  }
 
   return (
     <form id={formId} onSubmit={handleSubmit} noValidate>
@@ -196,8 +237,10 @@ const RelTCRParams = ({
                     value={depositVal}
                     aria-label="Badges deposit"
                     onChange={(event) => {
-                      setDepositText(event.target.value)
-                      onChangeDepositVal(Number(event.target.value))
+                      setDepositDraft(null)
+                      onChangeDepositVal(
+                        clampDeposit(Number(event.target.value)),
+                      )
                     }}
                   />
                   <AmountInput
@@ -205,12 +248,11 @@ const RelTCRParams = ({
                     type="text"
                     inputMode="decimal"
                     value={depositText}
-                    onChange={(event) => {
-                      setDepositText(event.target.value)
-                      if (event.target.value.trim() !== '')
-                        onChangeDepositVal(Number(event.target.value))
+                    onChange={(event) => onTypeDeposit(event.target.value)}
+                    onBlur={() => {
+                      setDepositDraft(null)
+                      setFieldTouched('relSubmissionBaseDeposit', true)
                     }}
-                    onBlur={() => setDepositText(String(depositVal))}
                   />
                   <Small $muted style={{ minWidth: 32 }}>
                     {nativeCurrency}
@@ -246,7 +288,7 @@ const RelTCRParams = ({
               label="Arbitrator extra data"
               placeholder="0x7331deadbeef..."
               mono
-              help={`Hex extra data for the arbitrator (ERC 792). Default: ${defaultArbDataLabel ?? 'the chain default'}.`}
+              help="Hex extra data passed to the arbitrator with every dispute (ERC 792)."
             />
           ))}
 
@@ -309,7 +351,7 @@ const RelTCRParams = ({
               label="Governor"
               placeholder="0x7331deadbeef..."
               mono
-              help={`Can later change deposits, period, policy and governor. Default: ${defaultGovernorLabel ?? 'the chain default'}.`}
+              help={`Can later change every setting, the arbitrator and court included, and set a relayer that adds or removes badges without a challenge. Default: ${defaultGovernorLabel ?? 'the chain default'}.`}
             />
             <TextField
               name="relArbitratorAddress"

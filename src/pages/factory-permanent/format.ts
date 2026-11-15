@@ -1,5 +1,6 @@
 import { BigNumber, ethers, type BigNumberish } from 'ethers'
 import { jurorsAndCourtIDFromExtraData } from 'utils/string'
+import { normalizeDecimalInput } from 'utils/decimal-input'
 
 /*
  * Amounts, durations and extra data for the Stake wizard. The typed minimum
@@ -42,14 +43,31 @@ export const formatToken = (
 }
 
 /**
+ * A wizard number as typed: one comma with no dot is the decimal point
+ * ("0,5"), as the schemas read it; "1,000" stays as typed, so it is not a
+ * number. Numbers are written as JavaScript writes them.
+ */
+export const typedText = (value: unknown): string =>
+  typeof value === 'string'
+    ? normalizeDecimalInput(value)
+    : value === undefined || value === null
+      ? ''
+      : String(value)
+
+/** A wizard number as a number ("0,5" is 0.5); NaN when empty or not one. */
+export const typedNumber = (value: unknown): number => {
+  const text = typedText(value)
+  return text === '' ? NaN : Number(text)
+}
+
+/**
  * A stored amount as a plain decimal string: the shortest form JavaScript
  * gives a number, with its exponent written out ("5e-14" becomes
- * "0.00000000000005"), so parseUnits reads it.
+ * "0.00000000000005"), so parseUnits reads it. A typed decimal comma reads
+ * as the point.
  */
 export const plainDecimal = (value: unknown): string => {
-  const text = String(value ?? '')
-    .trim()
-    .replace(/^\+/, '')
+  const text = typedText(value).replace(/^\+/, '')
   const match = /^(-?)(\d*)(?:\.(\d*))?e([+-]?\d+)$/i.exec(text)
   if (!match || !`${match[2]}${match[3] ?? ''}`) return text
   const [, sign, wholeText, fraction = '', exponentText] = match
@@ -119,7 +137,7 @@ export const stakeProblemText = (
     : problem === 'too-large'
       ? 'The minimum stake is too large.'
       : problem === 'invalid'
-        ? 'Enter the minimum stake as a plain number, such as 0.05.'
+        ? 'Enter the minimum stake as a plain number, such as 0.05 or 0,05.'
         : null
 
 /**
@@ -127,8 +145,7 @@ export const stakeProblemText = (
  * or null if not a number.
  */
 export const effectivePercent = (value: unknown): number | null => {
-  if (value === '' || value === undefined || value === null) return null
-  const parsed = Number(value)
+  const parsed = typedNumber(value)
   return Number.isFinite(parsed) && parsed >= 0
     ? Math.round(parsed * 100) / 100
     : null
@@ -174,8 +191,7 @@ export const formatHours = (hours: number | string): string => {
 
 /** Hours typed in a field as seconds, or null if not a valid duration. */
 export const hoursToSeconds = (hours: unknown): number | null => {
-  if (hours === '' || hours === undefined || hours === null) return null
-  const parsed = Number(hours)
+  const parsed = typedNumber(hours)
   return Number.isFinite(parsed) && parsed >= 0
     ? Math.round(parsed * 3600)
     : null

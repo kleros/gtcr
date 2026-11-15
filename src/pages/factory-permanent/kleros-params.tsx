@@ -13,6 +13,7 @@ import {
   Small,
   Stack,
 } from 'components/curate/primitives'
+import { jurorsProblem } from 'pages/factory/kleros-params'
 import { FieldGrid, FormField, Input, RangeInput, Select } from './controls'
 import { JURORS } from './defaults'
 import {
@@ -88,6 +89,11 @@ const KlerosParams = ({
   const nativeCurrency = useNativeCurrency()
   const [arbitrationCost, setArbitrationCost] = useState<BigNumber | null>(null)
   const [numberOfJurors, setNumberOfJurors] = useState(3)
+  // The jurors as typed, until the box is left or Enter is pressed: each
+  // keystroke must not set the court's jurors (clearing "3" to type 5 would
+  // pass through 1, then 15).
+  const [jurorsText, setJurorsText] = useState<string | null>(null)
+  const [jurorsError, setJurorsError] = useState('')
   const [courtID, setCourtID] = useState<number>()
   const { data: courts = [], isLoading: loadingCourts } = useCourtPolicies(
     policyAddress,
@@ -149,9 +155,21 @@ const KlerosParams = ({
       if (newNumJurors % 2 === 0) newNumJurors = newNumJurors - 1
       setArbitratorExtraData(encodeExtraData(courtID ?? 0, newNumJurors))
       setNumberOfJurors(newNumJurors)
+      setJurorsText(null)
+      setJurorsError('')
     },
     [courtID, setArbitratorExtraData],
   )
+
+  // The typed jurors take effect only when they follow the slider's rules;
+  // otherwise the box keeps the text and says what to change.
+  const commitJurors = () => {
+    if (jurorsText === null) return
+    const problem = jurorsProblem(jurorsText, JURORS.min, JURORS.max)
+    setJurorsError(problem)
+    if (problem) return
+    onNumJurorsChange(Number(jurorsText.trim()))
+  }
 
   const courtsReady = courts.length > 0 && typeof courtID === 'number'
   const selectedCourt = courts.find((court) => court.courtID === courtID)
@@ -189,6 +207,8 @@ const KlerosParams = ({
           id={`${ids}-jurors`}
           label="Jurors in the first round"
           help="Always odd; each extra juror raises the arbitration cost."
+          error={jurorsError}
+          showError={!!jurorsError}
         >
           {(a11y) => (
             <Row $gap={14}>
@@ -207,10 +227,18 @@ const KlerosParams = ({
                 {...a11y}
                 type="text"
                 inputMode="numeric"
-                value={numberOfJurors}
-                onChange={(event) =>
-                  onNumJurorsChange(Number(event.target.value))
-                }
+                value={jurorsText ?? String(numberOfJurors)}
+                onChange={(event) => {
+                  setJurorsText(event.target.value)
+                  setJurorsError('')
+                }}
+                onBlur={commitJurors}
+                onKeyDown={(event) => {
+                  // Enter sets the jurors; it does not leave the step.
+                  if (event.key !== 'Enter') return
+                  event.preventDefault()
+                  commitJurors()
+                }}
               />
             </Row>
           )}

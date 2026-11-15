@@ -9,8 +9,13 @@ import useArbitrationCost from 'hooks/arbitration-cost'
 import useNativeCurrency from 'hooks/native-currency'
 import useUrlChainId from 'hooks/use-url-chain-id'
 import { klerosAddresses } from 'config/tcr-addresses'
+import { normalizeDecimalInput } from 'utils/decimal-input'
 import { Row, Small, Stack } from 'components/curate/primitives'
-import { FACTORY_COPY } from 'components/curate/v2-factory-shell'
+import {
+  FACTORY_COPY,
+  useFailedSubmitFocus,
+} from 'components/curate/v2-factory-shell'
+import { plainDecimal, typedNumber } from 'pages/factory-permanent/format'
 import KlerosParams from './kleros-params'
 import {
   Divider,
@@ -84,6 +89,33 @@ const DEPOSIT_STEP = 0.01
 const clampDeposit = (value: number) =>
   Math.min(DEPOSIT_MAX, Math.max(DEPOSIT_MIN, value))
 
+/** Typed text, read with normalizeDecimalInput, that is an amount: digits and one dot. */
+export const readsAsAmount = (normalized: string) =>
+  /^\d+(\.\d+)?$/.test(normalized)
+
+/**
+ * Where the simple deposit box sits on its slider: the stored amount, the
+ * slider's end for one above it (the amount itself is kept, as the advanced
+ * fields keep it), 0 while the text is not an amount.
+ */
+export const sliderDeposit = (stored: unknown) => {
+  const amount = typedNumber(stored)
+  return clampDeposit(Number.isFinite(amount) ? amount : 0)
+}
+
+/** The deposit step's fields that only Advanced options shows. */
+const ADVANCED_FIELDS = new Set([
+  'removalBaseDeposit',
+  'submissionChallengeBaseDeposit',
+  'removalChallengeBaseDeposit',
+  'challengePeriodDuration',
+  'governorAddress',
+  'arbitratorAddress',
+  'sharedStakeMultiplier',
+  'winnerStakeMultiplier',
+  'loserStakeMultiplier',
+])
+
 /* ---------- Shared with the badges step ---------- */
 
 /**
@@ -110,7 +142,8 @@ export const DepositTotalLine = ({
         <Small>
           {total ?? '…'} {currency}
         </Small>{' '}
-        = {String(base ?? 0)} base deposit + {cost ?? '…'} arbitration cost.
+        = {plainDecimal(base ?? 0)} base deposit + {cost ?? '…'} arbitration
+        cost.
       </Small>
     </NarrowOnly>
   )
@@ -157,8 +190,9 @@ const multiple = new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 })
  */
 export const AppealStakeNote = ({ loserName }: { loserName: string }) => {
   const [field] = useField<unknown>(loserName)
-  const loser = Number(field.value)
-  const valid = field.value !== '' && Number.isFinite(loser) && loser >= 0
+  // "12,5" reads as 12.5, as the deploy reads it.
+  const loser = typedNumber(field.value)
+  const valid = Number.isFinite(loser) && loser >= 0
   return (
     <Note>
       <Small $muted>
@@ -188,16 +222,29 @@ const TCRParams = ({
   errors,
   touched,
   values,
+  submitCount,
+  isSubmitting,
   setFieldValue,
   setFieldTouched,
   setTcrState,
   defaultArbLabel,
-  defaultArbDataLabel,
   defaultGovernorLabel,
 }: TCRParamsProps) => {
   const ids = useId()
   const nativeCurrency = useNativeCurrency()
   const [advancedOptions, setAdvancedOptions] = useState(false)
+  // Next checks the fields under Advanced options too: when one of them
+  // fails, the section opens so its error shows, and focus moves to it.
+  useFailedSubmitFocus({
+    formId,
+    submitCount,
+    isSubmitting,
+    errors,
+    reveal: (fields) => {
+      if (fields.some((field) => ADVANCED_FIELDS.has(field)))
+        setAdvancedOptions(true)
+    },
+  })
   // This form writes every wizard field back, the badges list's governor
   // included, so it fills both.
   useWalletGovernor(values.governorAddress, (address) =>
@@ -206,9 +253,8 @@ const TCRParams = ({
   useWalletGovernor(values.relGovernorAddress, (address) =>
     setFieldValue('relGovernorAddress', address),
   )
-  const [depositText, setDepositText] = useState(
-    String(values.submissionBaseDeposit ?? 0),
-  )
+  // The typed text while the amount box has focus; the stored value otherwise.
+  const [depositDraft, setDepositDraft] = useState<string | null>(null)
   const chainId = useUrlChainId()
   const chainProvider = useEthersProvider({ chainId: chainId ?? undefined })
   const [debouncedArbitrator] = useDebounce(values.arbitratorAddress, 1000)
@@ -246,24 +292,30 @@ const TCRParams = ({
     }))
   }, [values, setTcrState])
 
-  const depositVal = clampDeposit(Number(values.submissionBaseDeposit) || 0)
-  // The typed text follows the deposit when it changes elsewhere (the slider
-  // or the advanced fields), but never while the person is typing in it.
-  const [typingDeposit, setTypingDeposit] = useState(false)
-  useEffect(() => {
-    if (!typingDeposit) setDepositText(String(depositVal))
-  }, [depositVal, typingDeposit])
+  const depositVal = sliderDeposit(values.submissionBaseDeposit)
+  const depositText = depositDraft ?? plainDecimal(values.submissionBaseDeposit)
 
+  // The simple box stands for three deposits: the submission deposit, the
+  // removal deposit and the removal challenge deposit.
   const onChangeDepositVal = useCallback(
-    (value: number) => {
-      if (Number.isNaN(value)) return
-      const next = clampDeposit(value)
-      setFieldValue('submissionBaseDeposit', next)
-      setFieldValue('removalBaseDeposit', next)
-      setFieldValue('removalChallengeBaseDeposit', next)
+    (value: number | string) => {
+      setFieldValue('submissionBaseDeposit', value)
+      setFieldValue('removalBaseDeposit', value)
+      setFieldValue('removalChallengeBaseDeposit', value)
     },
     [setFieldValue],
   )
+  // Typed text is kept as typed ("0,5" stored as "0.5"), above the slider's
+  // end too, as the advanced fields keep it. Text that is not an amount yet
+  // goes to the submission deposit alone, so its error shows under the box
+  // while the other two keep the last amount; nothing half-typed is stored
+  // as a number.
+  const onTypeDeposit = (text: string) => {
+    setDepositDraft(text)
+    const typed = normalizeDecimalInput(text)
+    if (readsAsAmount(typed)) onChangeDepositVal(typed)
+    else setFieldValue('submissionBaseDeposit', typed)
+  }
 
   const show = (section: FactorySection) =>
     !factorySection || factorySection === section
@@ -355,8 +407,10 @@ const TCRParams = ({
                     value={depositVal}
                     aria-label="Submission deposit"
                     onChange={(event) => {
-                      setDepositText(event.target.value)
-                      onChangeDepositVal(Number(event.target.value))
+                      setDepositDraft(null)
+                      onChangeDepositVal(
+                        clampDeposit(Number(event.target.value)),
+                      )
                     }}
                   />
                   <AmountInput
@@ -364,16 +418,10 @@ const TCRParams = ({
                     type="text"
                     inputMode="decimal"
                     value={depositText}
-                    onChange={(event) => {
-                      setDepositText(event.target.value)
-                      const parsed = Number(event.target.value)
-                      if (event.target.value.trim() !== '')
-                        onChangeDepositVal(parsed)
-                    }}
-                    onFocus={() => setTypingDeposit(true)}
+                    onChange={(event) => onTypeDeposit(event.target.value)}
                     onBlur={() => {
-                      setTypingDeposit(false)
-                      setDepositText(String(depositVal))
+                      setDepositDraft(null)
+                      setFieldTouched('submissionBaseDeposit', true)
                     }}
                   />
                   <Small $muted style={{ minWidth: 32 }}>
@@ -410,7 +458,7 @@ const TCRParams = ({
               label="Arbitrator extra data"
               placeholder="0x7331deadbeef..."
               mono
-              help={`Hex extra data for the arbitrator (ERC 792). Default: ${defaultArbDataLabel ?? 'the chain default'}.`}
+              help="Hex extra data passed to the arbitrator with every dispute (ERC 792)."
             />
           ))}
 
@@ -473,7 +521,7 @@ const TCRParams = ({
               label="Governor"
               placeholder="0x7331deadbeef..."
               mono
-              help={`Can later change deposits, period, policy and governor. Default: ${defaultGovernorLabel ?? 'the chain default'}.`}
+              help={`Can later change every setting, the arbitrator and court included, and set a relayer that adds or removes entries without a challenge. Default: ${defaultGovernorLabel ?? 'the chain default'}.`}
             />
             <TextField
               name="arbitratorAddress"

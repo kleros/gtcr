@@ -14,6 +14,7 @@ import useTokenSymbol from 'hooks/token-symbol'
 import useUrlChainId from 'hooks/use-url-chain-id'
 import { klerosAddresses } from 'config/tcr-addresses'
 import useWalletGovernor from 'pages/factory/use-wallet-governor'
+import { normalizeDecimalInput } from 'utils/decimal-input'
 import { NETWORKS_INFO } from 'config/networks'
 import {
   Data,
@@ -25,7 +26,10 @@ import {
   StatusDot,
   truncateMiddle,
 } from 'components/curate/primitives'
-import { FACTORY_COPY } from 'components/curate/v2-factory-shell'
+import {
+  FACTORY_COPY,
+  useFailedSubmitFocus,
+} from 'components/curate/v2-factory-shell'
 import KlerosParams from './kleros-params'
 import {
   AmountInput,
@@ -60,6 +64,7 @@ import {
   stakeProblem,
   stakeProblemText,
   plainDecimal,
+  typedNumber,
 } from './format'
 import { tcrSchemaFor, type FactorySection } from './schemas'
 import type { StepProps, TcrState } from '.'
@@ -73,6 +78,20 @@ import type { StepProps, TcrState } from '.'
  */
 
 const { getAddress, isAddress } = ethers.utils
+
+/** The stake step's fields that only Advanced options shows. */
+const ADVANCED_FIELDS = new Set([
+  'challengeStakeMultiplier',
+  'submissionPeriodDuration',
+  'reinclusionPeriodDuration',
+  'withdrawingPeriodDuration',
+  'arbitrationParamsCooldown',
+  'governorAddress',
+  'arbitratorAddress',
+  'sharedStakeMultiplier',
+  'winnerStakeMultiplier',
+  'loserStakeMultiplier',
+])
 
 type TCRFormValues = Omit<TcrState, 'transactions'>
 type TCRParamsOuterProps = StepProps & {
@@ -235,8 +254,9 @@ const multiple = new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 })
 /** The appeal multipliers in one note, with the example computed from the loser field. */
 const AppealStakeNote = () => {
   const [field] = useField<unknown>('loserStakeMultiplier')
-  const loser = Number(field.value)
-  const valid = field.value !== '' && Number.isFinite(loser) && loser >= 0
+  // "12,5" reads as 12.5, as the deploy reads it.
+  const loser = typedNumber(field.value)
+  const valid = Number.isFinite(loser) && loser >= 0
   return (
     <Note>
       <Small $muted>
@@ -265,6 +285,8 @@ const TCRParams = (props: TCRParamsProps) => {
     errors,
     touched,
     values,
+    submitCount,
+    isSubmitting,
     setFieldValue,
     setFieldTouched,
     setTcrState,
@@ -286,6 +308,18 @@ const TCRParams = (props: TCRParamsProps) => {
     tcrPrimaryDocument?: boolean
   }>({})
   const [advancedOptions, setAdvancedOptions] = useState(!!startAdvanced)
+  // Next checks the fields under Advanced options too: when one of them
+  // fails, the section opens so its error shows, and focus moves to it.
+  useFailedSubmitFocus({
+    formId,
+    submitCount,
+    isSubmitting,
+    errors,
+    reveal: (fields) => {
+      if (fields.some((field) => ADVANCED_FIELDS.has(field)))
+        setAdvancedOptions(true)
+    },
+  })
   // The typed text while the amount box has focus; the stored value otherwise.
   const [depositDraft, setDepositDraft] = useState<string | null>(null)
   const chainId = useUrlChainId()
@@ -361,8 +395,10 @@ const TCRParams = (props: TCRParamsProps) => {
     [setFieldTouched, setFieldValue, uploadFile],
   )
 
-  // The typed text is stored as typed: a float would round an 18-decimal
-  // amount before it is encoded. The slider stores its plain numbers.
+  // The typed text is stored as typed (a float would round an 18-decimal
+  // amount before it is encoded), a decimal comma as the point: "0,05" is
+  // "0.05", while "1,000" stays as typed for the schema to refuse. The
+  // slider stores its plain numbers.
   const onChangeDepositVal = useCallback(
     (value: number | string) => {
       if (typeof value === 'number' && Number.isNaN(value)) return
@@ -374,7 +410,7 @@ const TCRParams = (props: TCRParamsProps) => {
   const show = (section: FactorySection) =>
     !factorySection || factorySection === section
   const copy = factorySection ? SECTION_COPY[factorySection] : null
-  const stored = Number(values.submissionMinDeposit)
+  const stored = typedNumber(values.submissionMinDeposit)
   const sliderValue = Number.isFinite(stored)
     ? Math.min(STAKE_SLIDER.max, Math.max(STAKE_SLIDER.min, stored))
     : WIZARD_DEFAULTS.submissionMinDeposit
@@ -540,7 +576,9 @@ const TCRParams = (props: TCRParamsProps) => {
                     onChange={(event) => {
                       setDepositDraft(event.target.value)
                       if (event.target.value.trim() !== '')
-                        onChangeDepositVal(event.target.value.trim())
+                        onChangeDepositVal(
+                          normalizeDecimalInput(event.target.value),
+                        )
                     }}
                     onBlur={() => setDepositDraft(null)}
                   />
@@ -654,11 +692,11 @@ const TCRParams = (props: TCRParamsProps) => {
               />
               <TextField
                 name="arbitrationParamsCooldown"
-                label="Arbitration parameters cooldown"
+                label="Cooldown"
                 numeric
                 unit="hours"
                 placeholder={String(WIZARD_DEFAULTS.arbitrationParamsCooldown)}
-                help="How long a new policy or arbitration settings wait to apply."
+                help="How long a new policy or court waits before it applies to entries already listed. It cannot be changed later."
               />
             </FieldGrid>
             <Divider label="Roles" />
@@ -667,14 +705,14 @@ const TCRParams = (props: TCRParamsProps) => {
               label="Governor"
               placeholder="0x…"
               mono
-              help={`Can change the periods, deposits and policy, and hand the role to another address. Default: ${defaultGovernorLabel ?? 'none'}.`}
+              help={`Can later change every setting but the stake token, the arbitrator and the cooldown. Default: ${defaultGovernorLabel ?? 'none'}.`}
             />
             <TextField
               name="arbitratorAddress"
               label="Arbitrator"
               placeholder="0x…"
               mono
-              help={`The contract that rules on challenges. Default: ${defaultArbLabel ?? 'none'}; any ERC-792 arbitrator works.`}
+              help={`The contract that rules on challenges; it cannot be changed later. Default: ${defaultArbLabel ?? 'none'}; any ERC-792 arbitrator works.`}
             />
             <Divider label="Appeal stakes" />
             <AppealStakeNote />
