@@ -782,8 +782,15 @@ const Dashboard = () => {
   const scopeName = listFormat.format(
     chains.map((chainId) => chainInfo(chainId)?.name ?? String(chainId)),
   )
-  // Links to Browse keep the page's scope ("All chains" is Ethereum + Gnosis).
-  const browseScope = `chain=${chains.join(',')}`
+  // Links to Browse keep the page's scope. "All chains" is Browse's own
+  // default, no `chain` parameter (DESIGN.md, Data rules): spelled out as
+  // ?chain=1,100 it read as a custom choice of two chains there.
+  const browseHref = (params = '') => {
+    const query = [params, chain === 'all' ? '' : `chain=${chain}`]
+      .filter(Boolean)
+      .join('&')
+    return query ? `/browse?${query}` : '/browse'
+  }
   const scoped = useMemo(
     () => (data?.registries ?? []).filter((r) => chains.includes(r.chainId)),
     [data, chains],
@@ -1113,7 +1120,7 @@ const Dashboard = () => {
           bounty if jurors agree.
         </Lede>
         <Actions style={{ ['--i' as string]: 3 }}>
-          <ButtonLink to={`/browse?${browseScope}`} $variant="primary">
+          <ButtonLink to={browseHref()} $variant="primary">
             Explore registries
           </ButtonLink>
           <ButtonLink to={`/launch/${launchChain}`} $variant="secondary">
@@ -1286,7 +1293,7 @@ const Dashboard = () => {
       <VerifiedLists
         lists={verifiedLists}
         loading={loading}
-        browseHref={`/browse?trust=verified&${browseScope}`}
+        browseHref={browseHref('trust=verified')}
         scopeKey={chains.join('-')}
         failed={partialChains.length > 0}
       />
@@ -1311,7 +1318,7 @@ const Dashboard = () => {
           unloaded={partialNames || undefined}
           stakeHref={
             scoped.some((registry) => registry.kind === 'permanent')
-              ? `/browse?trust=all&kind=permanent&${browseScope}`
+              ? browseHref('trust=all&kind=permanent')
               : undefined
           }
         />
@@ -1319,7 +1326,7 @@ const Dashboard = () => {
 
       <SectionHead>
         <SectionTitle>Most active</SectionTitle>
-        <SeeAll to={`/browse?trust=all&sort=activity&${browseScope}`}>
+        <SeeAll to={browseHref('trust=all&sort=activity')}>
           All registries <CurateIcon name="submit" size={13} />
         </SeeAll>
       </SectionHead>
@@ -1343,7 +1350,13 @@ const Dashboard = () => {
                   <tr
                     key={registry.id}
                     data-href={registryHref(registry)}
-                    onClick={() => navigate(registryHref(registry))}
+                    onClick={(event) => {
+                      // A click on the name is its link's alone (Cmd or
+                      // Ctrl+click opens a tab): the row does not navigate too.
+                      if ((event.target as HTMLElement).closest('a, button'))
+                        return
+                      navigate(registryHref(registry))
+                    }}
                   >
                     <td>
                       <RegistryCell>
