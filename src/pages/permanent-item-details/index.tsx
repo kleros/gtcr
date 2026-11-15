@@ -8,6 +8,7 @@ import _gtcr from 'assets/abis/PermanentGTCR.json'
 import useUrlChainId from 'hooks/use-url-chain-id'
 import useDocumentHead from 'hooks/use-document-head'
 import useNow from 'hooks/use-now'
+import useStickyTop from 'hooks/use-sticky-top'
 import useNativeCurrency from 'hooks/native-currency'
 import useTokenSymbol from 'hooks/token-symbol'
 import useArbitrationCost from 'hooks/arbitration-cost'
@@ -338,7 +339,9 @@ const Main = styled.div`
 /* Sticky under the app bar. */
 const Rail = styled.aside`
   position: sticky;
-  top: calc(var(--app-bar-height) + 24px);
+  /* Under the app bar while it fits; taller than the window, high enough
+     that its actions stay in view (useStickyTop sets --stick). */
+  top: var(--stick, calc(var(--app-bar-height) + 24px));
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -419,6 +422,8 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
   const [ipfsItemData, setIpfsItemData] = useState<ItemFile | undefined>()
   const [ipfsError, setIpfsError] = useState(false)
   const timestamp = useContext(WalletContext)?.timestamp
+  // The actions column stays reachable on short windows (useStickyTop).
+  const railRef = useStickyTop(24)
   const [modalOpen, setModalOpen] = useState(false)
   const { graphqlBatcher } = useGraphqlBatcher()
   const now = useNow()
@@ -1058,7 +1063,7 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
           />
         </Main>
 
-        <Rail aria-label="Actions">
+        <Rail ref={railRef} aria-label="Actions">
           <ItemStatusCard
             item={decodedItem ?? item}
             registry={registry}

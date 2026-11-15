@@ -8,6 +8,7 @@ import { abi as _IArbitrator } from '@kleros/erc-792/build/contracts/IArbitrator
 import useUrlChainId from 'hooks/use-url-chain-id'
 import useDocumentHead from 'hooks/use-document-head'
 import useNow from 'hooks/use-now'
+import useStickyTop from 'hooks/use-sticky-top'
 import { useEthersProvider } from 'hooks/ethers-adapters'
 import useTcrMetaEvidence from 'hooks/use-tcr-meta-evidence'
 import { useAttachment } from 'hooks/use-attachment'
@@ -333,7 +334,9 @@ const Main = styled.div`
 /* Sticky under the app bar. */
 const Rail = styled.aside`
   position: sticky;
-  top: calc(var(--app-bar-height) + 24px);
+  /* Under the app bar while it fits; taller than the window, high enough
+     that its actions stay in view (useStickyTop sets --stick). */
+  top: var(--stick, calc(var(--app-bar-height) + 24px));
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -431,6 +434,8 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
   })
   const [ipfsItemData, setIpfsItemData] = useState<ItemFile | undefined>()
   const timestamp = useContext(WalletContext)?.timestamp
+  // The actions column stays reachable on short windows (useStickyTop).
+  const railRef = useStickyTop(24)
   const [modalOpen, setModalOpen] = useState<boolean | undefined>()
   const tcrViewContext = useContext(LightTCRViewContext)
   const tcrError = tcrViewContext?.tcrError
@@ -997,7 +1002,7 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
           />
         </Main>
 
-        <Rail aria-label="Actions">
+        <Rail ref={railRef} aria-label="Actions">
           <ItemStatusCard
             item={decodedItem}
             timestamp={timestamp}

@@ -1,5 +1,6 @@
-import React, { useEffect, useMemo, useRef } from 'react'
+import React, { useEffect, useMemo } from 'react'
 import styled, { createGlobalStyle } from 'styled-components'
+import useStickyTop from 'hooks/use-sticky-top'
 import { Link, useParams } from 'react-router-dom'
 import { useFormik } from 'formik'
 import { ItemTypes } from '@kleros/gtcr-encoder'
@@ -169,38 +170,6 @@ const Aside = styled.aside`
     top: var(--stick, calc(var(--app-bar-height) + 20px));
   }
 `
-
-const GAP = 20
-
-/** Keeps the sticky panel's action reachable when it is taller than the window. */
-const useStickyTop = () => {
-  const ref = useRef<HTMLElement>(null)
-  useEffect(() => {
-    const node = ref.current
-    if (!node || typeof ResizeObserver === 'undefined') return undefined
-    const update = () => {
-      // The token lives on body, not on the root element.
-      const appBar =
-        parseFloat(
-          getComputedStyle(document.body).getPropertyValue('--app-bar-height'),
-        ) || 64
-      const top = Math.min(
-        appBar + GAP,
-        window.innerHeight - node.offsetHeight - GAP,
-      )
-      node.style.setProperty('--stick', `${Math.round(top)}px`)
-    }
-    const observer = new ResizeObserver(update)
-    observer.observe(node)
-    window.addEventListener('resize', update)
-    update()
-    return () => {
-      observer.disconnect()
-      window.removeEventListener('resize', update)
-    }
-  }, [])
-  return ref
-}
 
 /**
  * Once the panel drops under the form, the sticky bar carries the action,
@@ -917,7 +886,7 @@ const Workspace = ({
     () => buildInitialValues(columns, initialValues),
     [columns, initialValues],
   )
-  const asideRef = useStickyTop()
+  const asideRef = useStickyTop(20)
   const formik = useFormik<SubmissionValues>({
     initialValues: initial,
     // Validation runs the list-creator subgraph checks for GTCR address
