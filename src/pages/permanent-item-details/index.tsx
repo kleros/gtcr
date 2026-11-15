@@ -9,6 +9,7 @@ import useUrlChainId from 'hooks/use-url-chain-id'
 import useDocumentHead from 'hooks/use-document-head'
 import useNow from 'hooks/use-now'
 import useStickyTop from 'hooks/use-sticky-top'
+import { inkPlate, PlatedImg } from 'components/curate/logo-ink'
 import useNativeCurrency from 'hooks/native-currency'
 import useTokenSymbol from 'hooks/token-symbol'
 import useArbitrationCost from 'hooks/arbitration-cost'
@@ -197,7 +198,8 @@ const Identity = styled.div`
   min-width: 0;
 `
 
-const Logo = styled.img`
+/* The entry's picture, on its own tile; a plate when its ink is lost. */
+const Logo = styled(PlatedImg)`
   flex: 0 0 auto;
   width: 64px;
   height: 64px;
@@ -205,6 +207,7 @@ const Logo = styled.img`
   border-radius: 16px;
   background: var(--color-raised);
   object-fit: contain;
+  ${inkPlate}
 
   @media (max-width: 720px) {
     width: 48px;

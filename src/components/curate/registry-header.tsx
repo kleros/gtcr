@@ -3,6 +3,7 @@ import styled, { css, keyframes } from 'styled-components'
 import { Link } from 'react-router-dom'
 import { parseIpfs } from 'utils/ipfs-parse'
 import PolicyUpdatedBadge from 'components/policy-updated-badge'
+import { inkPlate, useLogoInk } from 'components/curate/logo-ink'
 import { getAddressPage } from 'utils/network-utils'
 import {
   Button,
@@ -86,6 +87,9 @@ const Logo = styled.span`
     object-fit: contain;
   }
 
+  /* A logo whose ink is lost on the tile (a black mark in a dark theme). */
+  ${inkPlate}
+
   @media (max-width: 520px) {
     width: 48px;
     height: 48px;
@@ -94,11 +98,11 @@ const Logo = styled.span`
 `
 
 const LogoMark = ({ src }: { src?: string | null }) => {
-  const [failed, setFailed] = useState(false)
+  const ink = useLogoInk(src)
   return (
-    <Logo aria-hidden>
-      {src && !failed ? (
-        <img src={src} alt="" onError={() => setFailed(true)} />
+    <Logo aria-hidden {...(src && !ink.failed ? ink.plate : {})}>
+      {src && !ink.failed ? (
+        <img key={ink.key} src={src} alt="" {...ink.img} />
       ) : (
         <CurateIcon name="registry" size={24} />
       )}

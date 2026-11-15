@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react'
 import styled, { css } from 'styled-components'
+import { inkPlate, PlatedImg } from 'components/curate/logo-ink'
 import { Link, useNavigate } from 'react-router-dom'
 import { ItemTypes } from '@kleros/gtcr-encoder'
 import { displayableValue } from 'utils/display-value'
@@ -201,7 +202,8 @@ const insetFocus = css`
   }
 `
 
-const Thumb = styled.img<{ $size?: number }>`
+/* An entry's picture on its own tile; a plate when its ink is lost. */
+const Thumb = styled(PlatedImg)<{ $size?: number }>`
   display: block;
   flex: 0 0 auto;
   width: ${({ $size }) => $size ?? 32}px;
@@ -210,6 +212,7 @@ const Thumb = styled.img<{ $size?: number }>`
   border-radius: ${({ $size }) => (($size ?? 32) >= 40 ? 12 : 8)}px;
   object-fit: cover;
   background: var(--color-raised);
+  ${inkPlate}
 `
 
 const ThumbSlot = styled.span<{ $size?: number }>`
