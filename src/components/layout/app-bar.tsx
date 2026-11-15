@@ -61,6 +61,9 @@ const Container = styled.header`
 
   &[data-scrolled='true'] {
     border-bottom-color: var(--glass-border);
+    /* A solid fill first: a browser without color-mix() (iOS before 16.2,
+       Chrome before 111) drops the next line and keeps this one. */
+    background: var(--stage);
     background: color-mix(in srgb, var(--stage) 72%, transparent);
     -webkit-backdrop-filter: blur(16px) saturate(160%);
     backdrop-filter: blur(16px) saturate(160%);

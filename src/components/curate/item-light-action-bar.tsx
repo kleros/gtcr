@@ -33,6 +33,9 @@ const Bar = styled.div<{ $hidden: boolean }>`
     padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
     border-top: 1px solid var(--glass-border);
     border-radius: 18px 18px 0 0;
+    /* A solid fill first: a browser without color-mix() (iOS before 16.2,
+       Chrome before 111) drops the next line and keeps this one. */
+    background: var(--color-surface);
     background: color-mix(in srgb, var(--color-surface) 84%, transparent);
     box-shadow:
       inset 0 1px 0 var(--glass-highlight),

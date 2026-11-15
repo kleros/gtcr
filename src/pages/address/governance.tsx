@@ -797,6 +797,9 @@ const Layer = styled.div`
 const Backdrop = styled.div`
   position: fixed;
   inset: 0;
+  /* A solid fill first: a browser without color-mix() (iOS before 16.2,
+     Chrome before 111) drops the next line and keeps this one. */
+  background: var(--stage);
   background: color-mix(in srgb, var(--stage) 62%, transparent);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
