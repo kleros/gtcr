@@ -712,6 +712,7 @@ const Deploy = ({
     arbitrationCost,
     metaEvidence,
     challengePeriodDuration,
+    arbitrator: listOfListsArbitrator,
   } = useLightTcrView(defaultTCRAddress ?? '')
   const { uploadFile } = useAtlasProvider()
   const gate = useWalletGate({ verb: 'deploy', needsChain: true })
@@ -1477,6 +1478,7 @@ const Deploy = ({
             submissionDeposit={submissionDeposit}
             baseDeposit={submissionBaseDeposit}
             arbitrationCost={arbitrationCost}
+            arbitrator={listOfListsArbitrator}
             tcrAddress={defaultTCRAddress}
             metaEvidence={metaEvidence}
             challengePeriodDuration={challengePeriodDuration}
