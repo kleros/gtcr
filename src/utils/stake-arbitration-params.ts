@@ -15,6 +15,31 @@ import { wagmiConfig } from 'config/wagmi'
 
 const BATCH = 8
 const MAX_ENTRIES = 1024
+const FUNCTION_NAME = 'arbitrationParamsChanges'
+// viem's names for a call that reverted or returned no data.
+const END_OF_ARRAY = new Set([
+  'ContractFunctionRevertedError',
+  'ContractFunctionZeroDataError',
+  'AbiDecodingZeroDataError',
+])
+
+/**
+ * Whether a failed read is the end of the array: this call itself reverted
+ * (an index past the last entry) or returned no data. When the node does not
+ * answer a batch, viem fails every call in it with the batch's own error (the
+ * aggregate3 call, at times dressed as a revert): that says nothing about
+ * where the array ends, so it must not turn an older entry into the latest.
+ */
+const isPastTheEnd = (error: unknown) => {
+  if ((error as { functionName?: unknown })?.functionName !== FUNCTION_NAME)
+    return false
+  let cause = error as { name?: unknown; cause?: unknown } | undefined
+  for (let depth = 0; cause && depth < 8; depth++) {
+    if (END_OF_ARRAY.has(String(cause.name))) return true
+    cause = cause.cause as typeof cause
+  }
+  return false
+}
 
 export interface StakeArbitrationParams {
   /** How many entries the list holds: the latest is `count - 1`. */
@@ -35,12 +60,14 @@ export const readStakeArbitrationParams = async (
       contracts: Array.from({ length: BATCH }, (_, offset) => ({
         address: address as `0x${string}`,
         abi: permanentAbi as Abi,
-        functionName: 'arbitrationParamsChanges',
+        functionName: FUNCTION_NAME,
         args: [BigInt(start + offset)],
       })),
     })
     for (const [offset, result] of results.entries()) {
       if (result.status === 'failure') {
+        // Anything but the end (a node that did not answer) fails the read.
+        if (!isPastTheEnd(result.error)) throw result.error
         if (!latest)
           throw new Error('This list has no arbitration settings to read')
         return { count: start + offset, arbitratorExtraData: latest }
