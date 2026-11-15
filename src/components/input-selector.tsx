@@ -4,10 +4,13 @@ import { Form, Switch, Input, Upload } from 'components/ui'
 import Icon from 'components/ui/Icon'
 import { toast } from 'react-toastify'
 import { Field } from 'formik'
-import { getExtension } from 'mime'
 import { ItemTypes } from '@kleros/gtcr-encoder'
 import CustomInput from './custom-input'
 import { parseIpfs } from 'utils/ipfs-parse'
+import {
+  allowedExtensions,
+  fileTypeProblem,
+} from 'pages/submit-item/file-types'
 import AddressInput from './address-input'
 import RichAddressInput from './rich-address-input'
 
@@ -190,13 +193,13 @@ const InputSelector: React.FC<InputSelectorProps> = (p) => {
 
   const beforeFileUpload = useCallback(
     (file: File) => {
-      const allowedFileTypesArr = (p.allowedFileTypes || '').split(' ')
-      if (!allowedFileTypesArr.includes(getExtension(file.type) as string)) {
-        toast.error(
-          allowedFileTypesArr.length > 1
-            ? `Allowed file types are+${allowedFileTypesArr.map((e) => ` .${e}`)}`
-            : `The only allowed file type is .${allowedFileTypesArr[0]}`,
-        )
+      // The submit page's rule: a column with no types takes any file.
+      const problem = fileTypeProblem(
+        file,
+        allowedExtensions(p.allowedFileTypes),
+      )
+      if (problem) {
+        toast.error(problem)
         return false
       }
 
@@ -234,8 +237,10 @@ const InputSelector: React.FC<InputSelectorProps> = (p) => {
         <Field name={name}>
           {({ field }: { field: Record<string, unknown> }) => (
             <Form.Item label={label} style={{ display: 'flex' }}>
+              {/* The switch reads `checked`, not a field's value: an entry
+                  whose value is "true" (or true) starts On. */}
               <Switch
-                {...field}
+                checked={String(field.value) === 'true'}
                 onChange={(value) => p.setFieldValue(name, String(value))}
               />
             </Form.Item>

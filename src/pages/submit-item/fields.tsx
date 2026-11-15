@@ -1,14 +1,19 @@
 import React, { useEffect, useId, useRef, useState } from 'react'
 import styled, { css, keyframes } from 'styled-components'
 import { ItemTypes } from '@kleros/gtcr-encoder'
-import { getExtension } from 'mime'
 import { parseIpfs } from 'utils/ipfs-parse'
 import { addPeriod } from 'utils/string'
-import { parseRichAddress, references } from 'utils/rich-address'
+import { normalizeDecimalInput } from 'utils/decimal-input'
+import {
+  parseRichAddress,
+  references,
+  type Reference,
+} from 'utils/rich-address'
 import { Button } from 'components/curate/primitives'
 import Select from 'components/ui/Select'
 import Switch from 'components/ui/Switch'
 import { formatFileSize } from './amounts'
+import { allowedExtensions, extensionList, fileTypeProblem } from './file-types'
 import {
   isEmptyField,
   isRequired,
@@ -35,8 +40,20 @@ const IMAGE_TYPES = new Set([
 ])
 const IMAGE_MAX_MB = 2
 const FILE_MAX_MB = 4
+const chainKeyOf = (reference: Reference) =>
+  `${reference.namespaceId}:${reference.id}`
 const chainOptions = references.filter((reference) => !reference.deprecated)
-const DEFAULT_CHAIN_KEY = `${references[0].namespaceId}:${references[0].id}`
+const CHAIN_KEYS = references.map(chainKeyOf)
+const DEFAULT_CHAIN_KEY = CHAIN_KEYS[0]
+
+/**
+ * The chain a stored rich address starts with ("eip155:100:…"), read by its
+ * prefix rather than by parsing the whole value: text the parser cannot
+ * split (a pasted "gno:0x…", a raw TON "0:…") still reads under the chain
+ * that was picked. No two keys can both match: neither half holds a colon.
+ */
+const storedChainKey = (text: string): string | undefined =>
+  CHAIN_KEYS.find((key) => text.startsWith(`${key}:`))
 
 type FieldState = 'empty' | 'filled' | 'valid' | 'error'
 
@@ -485,6 +502,11 @@ const Thumb = styled.div`
   }
 `
 
+/*
+ * The file name and the hint wrap rather than run past the zone: in the
+ * phones' column layout the text block spans the zone's width, and a name
+ * with no spaces breaks where it must.
+ */
 const DropText = styled.div`
   display: flex;
   flex-direction: column;
@@ -494,14 +516,16 @@ const DropText = styled.div`
   color: var(--color-text);
   font-size: var(--fs-body);
   line-height: var(--lh-body);
+  overflow-wrap: anywhere;
 
   span {
-    overflow: hidden;
     color: var(--color-faint);
     font-size: var(--fs-small);
     line-height: var(--lh-small);
-    text-overflow: ellipsis;
-    white-space: nowrap;
+  }
+
+  @media (max-width: 520px) {
+    align-self: stretch;
   }
 `
 
@@ -566,8 +590,8 @@ const rejectImage = (file: File): string => {
 }
 
 const rejectFile = (file: File, allowed: string[]): string => {
-  if (allowed.length > 0 && !allowed.includes(getExtension(file.type) ?? ''))
-    return `Allowed file types: ${allowed.map((ext) => `.${ext}`).join(', ')}.`
+  const typeProblem = fileTypeProblem(file, allowed)
+  if (typeProblem) return typeProblem
   if (file.size / 1024 / 1024 > FILE_MAX_MB)
     return `The file must be smaller than ${FILE_MAX_MB} MB.`
   return ''
@@ -602,7 +626,7 @@ const UploadField = ({
   const uri =
     !file && typeof value === 'string' && value ? parseIpfs(value) : ''
   const previewUrl = useObjectUrl(isImage ? file : undefined)
-  const allowed = (column.allowedFileTypes || '').split(' ').filter(Boolean)
+  const allowed = allowedExtensions(column.allowedFileTypes)
   const accept = isImage
     ? [...IMAGE_TYPES].join(',')
     : allowed.map((ext) => `.${ext}`).join(',') || undefined
@@ -611,7 +635,7 @@ const UploadField = ({
   const hint = isImage
     ? `PNG, JPEG, WebP or SVG, up to ${IMAGE_MAX_MB} MB · the list's policy may ask for less`
     : allowed.length > 0
-      ? `${allowed.map((ext) => `.${ext}`).join(', ')}, up to ${FILE_MAX_MB} MB`
+      ? `${extensionList(allowed)}, up to ${FILE_MAX_MB} MB`
       : `Up to ${FILE_MAX_MB} MB`
   const hasValue = !!file || !!uri
   const image = isImage ? previewUrl || uri : ''
@@ -681,12 +705,20 @@ const UploadField = ({
             </>
           )}
         </DropText>
+        {/* The label, hint and error point at the hidden input, which the
+            keyboard skips: the buttons name the column and carry them. */}
         <DropActions>
           <Button
             type="button"
             $variant="secondary"
             $size="sm"
             disabled={disabled}
+            aria-label={
+              hasValue
+                ? `Replace the file for ${column.label}`
+                : `Choose a file for ${column.label}`
+            }
+            aria-describedby={describedBy}
             onClick={() => inputRef.current?.click()}
           >
             {hasValue ? 'Replace' : 'Choose a file'}
@@ -697,6 +729,8 @@ const UploadField = ({
               $variant="ghost"
               $size="sm"
               disabled={disabled}
+              aria-label={`Remove the file for ${column.label}`}
+              aria-describedby={describedBy}
               onClick={clear}
             >
               Remove
@@ -725,6 +759,102 @@ const UploadField = ({
         </ErrorText>
       )}
     </>
+  )
+}
+
+/**
+ * Chain picker and address as one field. The stored value is
+ * "<chain>:<address>", built from the picked chain and the typed text, and
+ * the chain is read back by its prefix: text the parser cannot split stays
+ * in the box under the chain that was picked, and validation calls it
+ * invalid, instead of the box emptying and the chain going back to Ethereum.
+ */
+const RichAddressField = ({
+  column,
+  text,
+  invalid,
+  disabled,
+  inputProps,
+  onChange,
+  onBlur,
+}: {
+  column: Column
+  text: string
+  invalid: boolean
+  disabled?: boolean
+  inputProps: React.InputHTMLAttributes<HTMLInputElement>
+  onChange: (value: FieldValue) => void
+  onBlur: () => void
+}) => {
+  const pickerRef = useRef<HTMLDivElement>(null)
+  const chainKey = storedChainKey(text) ?? DEFAULT_CHAIN_KEY
+  const address = text.startsWith(`${chainKey}:`)
+    ? text.slice(chainKey.length + 1)
+    : ''
+  return (
+    <Joined $invalid={invalid}>
+      {/* The picker's panel, with its search box, is portalled to <body>:
+          focus moving into it or back to the trigger has not left the
+          picker, so only a blur to anywhere else marks the field. */}
+      <SelectWrap
+        ref={pickerRef}
+        onBlur={(event) => {
+          const next = event.relatedTarget
+          if (
+            next instanceof Element &&
+            (event.currentTarget.contains(next) ||
+              next.closest('.ui-select-dropdown'))
+          )
+            return
+          onBlur()
+        }}
+      >
+        <Select
+          aria-label={`${column.label} chain`}
+          value={chainKey}
+          disabled={disabled}
+          showSearch
+          dropdownStyle={{ minWidth: 220 }}
+          onChange={(next) => {
+            onChange(`${typeof next === 'object' ? next.key : next}:${address}`)
+            // The search box had focus and closes with the panel: focus goes
+            // back to the picker, where it stays without a search box.
+            pickerRef.current
+              ?.querySelector<HTMLElement>('.ui-select-trigger')
+              ?.focus()
+          }}
+        >
+          {chainOptions.map((reference) => (
+            <Select.Option
+              key={chainKeyOf(reference)}
+              value={chainKeyOf(reference)}
+            >
+              {reference.name}
+            </Select.Option>
+          ))}
+        </Select>
+      </SelectWrap>
+      <JoinedInput
+        {...inputProps}
+        type="text"
+        value={address}
+        placeholder="Address"
+        spellCheck={false}
+        autoComplete="off"
+        autoCapitalize="none"
+        onChange={(event) => {
+          const typed = event.target.value.trim()
+          // A full CAIP-10 address ("eip155:100:0x…") on a chain the picker
+          // offers sets both halves.
+          const full = parseRichAddress(typed)
+          onChange(
+            full && chainOptions.includes(full.reference)
+              ? typed
+              : `${chainKey}:${typed}`,
+          )
+        }}
+      />
+    </Joined>
   )
 }
 
@@ -827,53 +957,19 @@ export const ColumnField = ({
         onChange={(event) => onChange(event.target.value.trim())}
       />
     )
-  else if (type === ItemTypes.RICH_ADDRESS) {
-    const parsed = text ? parseRichAddress(text) : null
-    const chainKey = parsed
-      ? `${parsed.reference.namespaceId}:${parsed.reference.id}`
-      : DEFAULT_CHAIN_KEY
-    const address = parsed ? parsed.address : ''
+  else if (type === ItemTypes.RICH_ADDRESS)
     control = (
-      <Joined $invalid={invalid}>
-        {/* The trigger keeps focus while its panel is open, so this blur
-            fires only when focus leaves the chain picker. */}
-        <SelectWrap onBlur={onBlur}>
-          <Select
-            aria-label={`${column.label} chain`}
-            value={chainKey}
-            disabled={disabled}
-            dropdownStyle={{ minWidth: 220 }}
-            onChange={(next) =>
-              onChange(
-                `${typeof next === 'object' ? next.key : next}:${address}`,
-              )
-            }
-          >
-            {chainOptions.map((reference) => (
-              <Select.Option
-                key={`${reference.namespaceId}:${reference.id}`}
-                value={`${reference.namespaceId}:${reference.id}`}
-              >
-                {reference.name}
-              </Select.Option>
-            ))}
-          </Select>
-        </SelectWrap>
-        <JoinedInput
-          {...shared}
-          type="text"
-          value={address}
-          placeholder="Address"
-          spellCheck={false}
-          autoComplete="off"
-          autoCapitalize="none"
-          onChange={(event) =>
-            onChange(`${chainKey}:${event.target.value.trim()}`)
-          }
-        />
-      </Joined>
+      <RichAddressField
+        column={column}
+        text={text}
+        invalid={invalid}
+        disabled={disabled}
+        inputProps={shared}
+        onChange={onChange}
+        onBlur={onBlur}
+      />
     )
-  } else if (type === ItemTypes.IMAGE || type === ItemTypes.FILE)
+  else if (type === ItemTypes.IMAGE || type === ItemTypes.FILE)
     control = (
       <UploadField
         id={id}
@@ -899,8 +995,14 @@ export const ColumnField = ({
         value={text}
         onChange={(event) => onChange(event.target.value)}
         onBlur={() => {
-          // "example.org" becomes "https://example.org", then validates.
-          const next = isLink ? withWebScheme(text) : text
+          // "example.org" becomes "https://example.org", and a decimal typed
+          // with a comma ("0,5", from a keypad with no dot) reads "0.5"; then
+          // it validates.
+          const next = isLink
+            ? withWebScheme(text)
+            : type === ItemTypes.NUMBER && !wholeNumber
+              ? normalizeDecimalInput(text)
+              : text
           if (next !== text) onCommit(next)
           else onBlur()
         }}

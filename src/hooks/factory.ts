@@ -1,8 +1,33 @@
 import { ethers } from 'ethers'
 import useUrlChainId from 'hooks/use-url-chain-id'
 import { subgraphUrl, subgraphUrlPermanent } from 'config/tcr-addresses'
+import { request } from 'utils/indexer-request'
 
 const { getAddress } = ethers.utils
+
+/**
+ * The answer's data. Light and Classic lists come from the Envio indexer,
+ * whose requests count against a limit the whole app shares: those reads go
+ * through the batcher, like every other. A read that gets no answer throws,
+ * so it is never taken for "not deployed here".
+ */
+const readIndexer = async (
+  endpoint: string,
+  query: string,
+): Promise<Record<string, unknown>> => {
+  if (Object.values(subgraphUrl).includes(endpoint))
+    return request<Record<string, unknown>>(endpoint, query)
+  const response = await fetch(endpoint, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ query }),
+  })
+  if (!response.ok) throw new Error(`The indexer answered ${response.status}.`)
+  const { data, errors } = await response.json()
+  if (!data)
+    throw new Error(errors?.[0]?.message ?? 'The indexer returned no data.')
+  return data
+}
 
 /**
  * Check if a TCR address exists in a subgraph by querying an entity.
@@ -24,16 +49,10 @@ const checkRegistryExists = async (
     return false
   }
 
-  const query = {
-    query: queryTemplate.replace('$address', checksumAddress.toLowerCase()),
-  }
-  const { data } = await (
-    await fetch(subgraphEndpoint, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(query),
-    })
-  ).json()
+  const data = await readIndexer(
+    subgraphEndpoint,
+    queryTemplate.replace('$address', checksumAddress.toLowerCase()),
+  )
 
   return !!data[entityKey]
 }

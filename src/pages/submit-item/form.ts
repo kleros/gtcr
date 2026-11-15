@@ -1,5 +1,6 @@
 import { ItemTypes, typeDefaultValues } from '@kleros/gtcr-encoder'
 import { namespaces, parseRichAddress } from 'utils/rich-address'
+import { normalizeDecimalInput } from 'utils/decimal-input'
 
 /*
  * Form plumbing shared by the three registry kinds: the value shape the
@@ -113,7 +114,8 @@ export const encoderValues = (
 
 /**
  * Blank rich addresses that only carry a chain ("eip155:1:") are sent as
- * empty, and links as validated: without surrounding spaces.
+ * empty, links as validated (without surrounding spaces) and numbers with
+ * a dot for decimals: "0,5" goes on chain as "0.5".
  */
 export const normaliseValues = (
   columns: Column[],
@@ -126,6 +128,8 @@ export const normaliseValues = (
     if (column.type === ItemTypes.RICH_ADDRESS && isEmptyField(column, value))
       next[column.label] = ''
     else if (column.type === ItemTypes.LINK) next[column.label] = value.trim()
+    else if (column.type === ItemTypes.NUMBER)
+      next[column.label] = normalizeDecimalInput(value)
   }
   return next
 }
@@ -209,9 +213,12 @@ export const integerProblem = (value: string): string | undefined => {
   return undefined
 }
 
-/** A plain decimal number: "18", "-3", "0.5", ".5". */
+/**
+ * A plain decimal number: "18", "-3", "0.5", ".5", or "0,5" as typed on a
+ * keypad with a comma for decimals ("1,000" stays refused: thousand or one?).
+ */
 const isPlainNumber = (value: string): boolean =>
-  /^-?(\d+(\.\d*)?|\.\d+)$/.test(value.trim())
+  /^-?(\d+(\.\d*)?|\.\d+)$/.test(normalizeDecimalInput(value))
 
 export const validateSubmission = async (
   columns: Column[],
@@ -239,7 +246,8 @@ export const validateSubmission = async (
     } else if (column.type === ItemTypes.NUMBER && !isPlainNumber(value))
       // Light and Stake lists store the text as typed: "eighteen" would go
       // into a number column and invite a challenge.
-      errors[column.label] = 'Enter a number, like 18 or 0.5.'
+      errors[column.label] =
+        'Enter a number, like 18 or 0.5. A dot or a comma works for decimals.'
     if (
       (column.type === ItemTypes.ADDRESS ||
         column.type === ItemTypes.GTCR_ADDRESS) &&
@@ -269,13 +277,22 @@ export const validateSubmission = async (
       )
       .map(async (column) => {
         const address = values[column.label] as string
-        const deployed =
-          (await checks.deployedWithFactory(address)) ||
-          (await checks.deployedWithLightFactory(address)) ||
-          (await checks.deployedWithPermanentFactory(address))
-        if (!deployed)
+        try {
+          const deployed =
+            (await checks.deployedWithFactory(address)) ||
+            (await checks.deployedWithLightFactory(address)) ||
+            (await checks.deployedWithPermanentFactory(address))
+          if (!deployed)
+            errors[column.label] =
+              'This address was not deployed with the list creator.'
+        } catch (err) {
+          // An indexer that does not answer is not a verdict on the address,
+          // but the submission must wait for one: said at the field, it also
+          // names the button's blocker instead of the button doing nothing.
+          console.error('Error checking the list address:', err)
           errors[column.label] =
-            'This address was not deployed with the list creator.'
+            'Could not check this address right now. Try again.'
+        }
       }),
   )
 
