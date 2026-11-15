@@ -15,6 +15,7 @@ import useTcrMetaEvidence from 'hooks/use-tcr-meta-evidence'
 import { wrapWithToast, errorToast } from 'utils/wrap-with-toast'
 import { parseWagmiError } from 'utils/parse-wagmi-error'
 import { wagmiConfig } from 'config/wagmi'
+import { isKlerosArbitrator } from 'config/tcr-addresses'
 import {
   Body,
   Button,
@@ -152,6 +153,7 @@ const SubmitConnectModal = (props: SubmitConnectModalProps) => {
     total: BigNumber
     base: BigNumber
     arbitrationCost: BigNumber
+    arbitrator: string
   }>({
     queryKey: [
       'fetchArbitrable',
@@ -161,11 +163,12 @@ const SubmitConnectModal = (props: SubmitConnectModalProps) => {
     ],
     queryFn: async () => {
       const relTCRData = await gtcrView!.fetchArbitrable(relTCRAddress!)
-      const { submissionBaseDeposit, arbitrationCost } = relTCRData
+      const { submissionBaseDeposit, arbitrationCost, arbitrator } = relTCRData
       return {
         total: submissionBaseDeposit.add(arbitrationCost),
         base: submissionBaseDeposit,
         arbitrationCost,
+        arbitrator,
       }
     },
     enabled: !!relTCRAddress && !!gtcrView,
@@ -352,7 +355,12 @@ const SubmitConnectModal = (props: SubmitConnectModalProps) => {
     {
       title: 'If someone challenges',
       branch: true,
-      body: "Kleros jurors check it against the listing policy. If they side with you, you get your deposit back plus the challenger's, less the arbitration cost; if not, it goes to the challenger.",
+      // The connected list's arbitrator decides; only Kleros has jurors.
+      body: `${
+        isKlerosArbitrator(urlChainId, arbitrableQuery.data?.arbitrator)
+          ? 'Kleros jurors check it'
+          : "The list's arbitrator checks it"
+      } against the listing policy. If they side with you, you get your deposit back plus the challenger's, less the arbitration cost; if not, it goes to the challenger.`,
     },
   ]
   const confirmBlocker = submitDisabled

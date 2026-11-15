@@ -49,6 +49,7 @@ import { AddressLink } from 'components/curate/item-light-fields'
 import { formatAmount, formatEther } from 'components/curate/item-light-format'
 import ItemActionModal from './item-action-modal'
 import { appealFunding } from './appeal-funding'
+import { RetiredListNotice } from './retired-list-notice'
 import {
   fundedAlone,
   requestFacts,
@@ -590,8 +591,8 @@ const ItemStatusCard = ({
                 : statusCode === STATUS_CODE.WAITING_ARBITRATOR
                   ? aloneWinner
                     ? `The appeal period ended ${formatAbsolute(appealEnd)}. The ${aloneWinner} funded the appeal alone, so the ${aloneWinner} wins when the ruling is enforced.`
-                    : `The appeal period ended ${formatAbsolute(appealEnd)}. The final ruling waits to be given and enforced.`
-                  : `The ${loserName} did not fund the appeal in time. The ruling is final and waits to be enforced.`}
+                    : `The appeal period ended ${formatAbsolute(appealEnd)}. The ruling is final and waits to be enforced.`
+                  : 'The losing side did not fund its appeal, so the ruling stands.'}
             </Prompt>
             {statusCode === STATUS_CODE.CHALLENGED && (
               <Stack $gap={8}>
@@ -631,7 +632,7 @@ const ItemStatusCard = ({
                 <AmountSplit
                   base={amountBase}
                   cost={inWindow ? challenge.arbitrationCost : arbitrationCost}
-                  baseLabel={inWindow ? 'Challenge deposit' : 'Deposit'}
+                  baseLabel="Base deposit"
                   currency={nativeCurrency}
                 />
               </>
@@ -639,6 +640,11 @@ const ItemStatusCard = ({
               prompt && <Prompt>{prompt}</Prompt>
             )}
           </Head>
+        )}
+
+        {/* On a retired list of lists, said before any deposit is sent. */}
+        {action && (
+          <RetiredListNotice chainId={urlChainId} tcrAddress={tcrAddress} />
         )}
 
         {action && (

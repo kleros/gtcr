@@ -22,6 +22,7 @@ import { formatDurationLong } from 'utils/time'
 import { wrapWithToast, errorToast } from 'utils/wrap-with-toast'
 import { parseWagmiError } from 'utils/parse-wagmi-error'
 import { wagmiConfig } from 'config/wagmi'
+import { isKlerosArbitrator } from 'config/tcr-addresses'
 import { TCRViewContext } from 'contexts/tcr-view-context'
 import { CurateIcon } from 'components/curate/icons'
 import {
@@ -55,6 +56,7 @@ import {
 import { PolicyButton } from 'pages/light-item-details/policy-button'
 import { useTxChainId } from 'pages/submit-item/use-wallet-gate'
 import { itemIdFromReceipt } from 'pages/submit-item/use-submit-actions'
+import { RetiredListNotice } from '../retired-list-notice'
 
 /*
  * Submit an entry to a Classic Curate list in three steps: fill in the
@@ -104,6 +106,8 @@ interface SubmissionFormOuterProps {
   deployedWithPermanentFactory: RegistryExistsCheck
   onFieldsComplete?: (complete: boolean) => void
   style?: React.CSSProperties
+  /** The list's arbitrator is Kleros, whose jurors the policy step names. */
+  klerosDecides?: boolean
 }
 
 const PreviewList = styled(KeyValueList)`
@@ -179,7 +183,9 @@ const _SubmissionForm: React.FC<
         <Stack $gap={12}>
           <Subheading>Read the listing policy</Subheading>
           <Body>
-            Kleros jurors rule on this policy if an entry is challenged.
+            {p.klerosDecides
+              ? 'Kleros jurors rule on this policy if an entry is challenged.'
+              : "The list's arbitrator rules on this policy if an entry is challenged."}
           </Body>
           <div>
             <PolicyButton
@@ -423,6 +429,12 @@ const SubmitModal: React.FC<{
   const arbitrationCost =
     props.arbitrationCost ??
     (sameList ? listContext?.arbitrationCost : undefined)
+  // A challenge goes to the list's arbitrator; only Kleros has jurors to
+  // name. Another list's is not read here, so it gets the plain wording.
+  const klerosDecides = isKlerosArbitrator(
+    chainId,
+    sameList ? listContext?.arbitrator : undefined,
+  )
 
   const gate = useActionGate({
     verb: `submit the ${name}`,
@@ -588,7 +600,11 @@ const SubmitModal: React.FC<{
     {
       title: 'If someone challenges',
       branch: true,
-      body: "Kleros jurors check it against the listing policy. If they side with you, you get your deposit back plus the challenger's, less the arbitration cost; if not, it goes to the challenger.",
+      body: `${
+        klerosDecides
+          ? 'Kleros jurors check it'
+          : "The list's arbitrator checks it"
+      } against the listing policy. If they side with you, you get your deposit back plus the challenger's, less the arbitration cost; if not, it goes to the challenger.`,
     },
   ]
   const confirmBlocker = !fieldsComplete
@@ -643,6 +659,7 @@ const SubmitModal: React.FC<{
       fieldLabels={fieldLabels}
       navigation={navigation}
     >
+      <RetiredListNotice chainId={chainId} tcrAddress={tcrAddress} />
       <SubmissionForm
         columns={columns ?? []}
         activeStage={activeStage}
@@ -656,6 +673,7 @@ const SubmitModal: React.FC<{
         deployedWithLightFactory={deployedWithLightFactory}
         deployedWithPermanentFactory={deployedWithPermanentFactory}
         onFieldsComplete={setFieldsComplete}
+        klerosDecides={klerosDecides}
       />
     </SubmissionFlowScaffold>
   )

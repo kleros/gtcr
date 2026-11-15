@@ -15,6 +15,8 @@ import { TCRViewContext } from 'contexts/tcr-view-context'
 import useRequiredFees from 'hooks/required-fees'
 import useNativeCurrency from 'hooks/native-currency'
 import useNow from 'hooks/use-now'
+import useUrlChainId from 'hooks/use-url-chain-id'
+import { batchWithdrawAddresses } from 'config/tcr-addresses'
 import { formatAbsolute, formatDuration } from 'utils/time'
 import { wrapWithToast, errorToast } from 'utils/wrap-with-toast'
 import { parseWagmiError } from 'utils/parse-wagmi-error'
@@ -243,6 +245,11 @@ const CrowdfundModal = ({
   const isRegistration = item.status === CONTRACT_STATUS.REGISTRATION_REQUESTED
   const requesterLabel = isRegistration ? 'submitter' : 'requester'
   const sideName = side === PARTY.REQUESTER ? requesterLabel : 'challenger'
+  // The entry page offers Withdraw rewards only where a Classic batch
+  // withdrawer is deployed (not on Gnosis); elsewhere the list contract
+  // pays contributions out itself.
+  const urlChainId = useUrlChainId()
+  const withdrawHere = !!urlChainId && !!batchWithdrawAddresses[urlChainId]
 
   const crowdfundSide = async () => {
     if (
@@ -430,7 +437,11 @@ const CrowdfundModal = ({
   const steps: OutcomeStep[] = [
     {
       title: `You contribute ${total} now`,
-      body: `It funds the ${sideName}'s appeal. Contributions stay locked until the request is resolved; then they are paid out, or reimbursed if the appeal was not fully funded, with Withdraw rewards on this page.`,
+      body: `It funds the ${sideName}'s appeal. Contributions stay locked until the request is resolved; then they are paid out, or reimbursed if the appeal was not fully funded, ${
+        withdrawHere
+          ? 'with Withdraw rewards on this page'
+          : 'with withdrawFeesAndRewards on the list contract'
+      }.`,
     },
     {
       title: `The ${sideName} wins the dispute`,

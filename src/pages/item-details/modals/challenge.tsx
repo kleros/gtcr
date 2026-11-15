@@ -10,10 +10,12 @@ import EvidenceForm, { type EvidenceFormValues } from 'components/evidence-form'
 import { uploadEvidence } from 'utils/upload-evidence'
 import useNativeCurrency from 'hooks/native-currency'
 import useNow from 'hooks/use-now'
+import useUrlChainId from 'hooks/use-url-chain-id'
 import { formatAbsolute, formatDuration } from 'utils/time'
 import { wrapWithToast, errorToast } from 'utils/wrap-with-toast'
 import { parseWagmiError } from 'utils/parse-wagmi-error'
 import { wagmiConfig } from 'config/wagmi'
+import { isKlerosArbitrator } from 'config/tcr-addresses'
 import { CurateIcon } from 'components/curate/icons'
 import { Body, Row, SkeletonBlock, Stack } from 'components/curate/primitives'
 import {
@@ -69,6 +71,7 @@ const ChallengeModal = ({
   const { data: walletClient } = useWalletClient()
   const { uploadFile } = useAtlasProvider()
   const nativeCurrency = useNativeCurrency()
+  const chainId = useUrlChainId()
   const now = useNow()
   const [phase, setPhase] = useState<SendPhase>()
   const isSubmitting = !!phase
@@ -106,6 +109,9 @@ const ChallengeModal = ({
           challengePeriodDuration: tcrView.challengePeriodDuration,
         }).windowEnd
       : undefined
+  // The dispute goes to the arbitrator the request was made with; only
+  // Kleros has jurors to name.
+  const klerosDecides = isKlerosArbitrator(chainId, latestRequest?.arbitrator)
   const name = itemName || 'entry'
 
   const gate = useActionGate({
@@ -183,7 +189,7 @@ const ChallengeModal = ({
     baseDeposit && arbitrationCost
       ? [
           {
-            label: 'Challenge deposit',
+            label: 'Base deposit',
             value: formatAmount(baseDeposit, nativeCurrency),
           },
           {
@@ -207,7 +213,7 @@ const ChallengeModal = ({
       body: 'Your justification is published as evidence and the request goes to the jurors. It can no longer be executed.',
     },
     {
-      title: 'Kleros jurors decide',
+      title: klerosDecides ? 'Kleros jurors decide' : 'The arbitrator decides',
       body: 'They rule on the listing policy. Anyone can add evidence until the request is resolved.',
     },
     {

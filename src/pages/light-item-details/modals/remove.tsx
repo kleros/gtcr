@@ -8,10 +8,12 @@ import { LightTCRViewContext } from 'contexts/light-tcr-view-context'
 import EvidenceForm, { type EvidenceFormValues } from 'components/evidence-form'
 import { uploadEvidence } from 'utils/upload-evidence'
 import useNativeCurrency from 'hooks/native-currency'
+import useUrlChainId from 'hooks/use-url-chain-id'
 import { formatDurationLong } from 'utils/time'
 import { wrapWithToast, errorToast } from 'utils/wrap-with-toast'
 import { parseWagmiError } from 'utils/parse-wagmi-error'
 import { wagmiConfig } from 'config/wagmi'
+import { isKlerosArbitrator } from 'config/tcr-addresses'
 import { CurateIcon } from 'components/curate/icons'
 import { Body, Row, SkeletonBlock, Stack } from 'components/curate/primitives'
 import {
@@ -61,9 +63,13 @@ const RemoveModal = ({
     tcrAddress,
     metaEvidence,
     challengePeriodDuration,
+    arbitrator,
   } = useContext(LightTCRViewContext) || {}
   const nativeCurrency = useNativeCurrency()
   const { uploadFile } = useAtlasProvider()
+  const chainId = useUrlChainId()
+  // A new request goes to the list's arbitrator; only Kleros has jurors.
+  const klerosDecides = isKlerosArbitrator(chainId, arbitrator)
 
   const { metadata } = metaEvidence || {}
   const { requireRemovalEvidence } = metadata || {}
@@ -183,7 +189,7 @@ const RemoveModal = ({
     removalBaseDeposit && arbitrationCost
       ? [
           {
-            label: 'Removal deposit',
+            label: 'Base deposit',
             value: formatAmount(removalBaseDeposit, nativeCurrency),
           },
           {
@@ -206,7 +212,11 @@ const RemoveModal = ({
     {
       title: 'If someone challenges',
       branch: true,
-      body: "Kleros jurors check it against the listing policy. If they side with you, you get your deposit back plus the challenger's, less the arbitration cost; if not, it goes to the challenger.",
+      body: `${
+        klerosDecides
+          ? 'Kleros jurors check it'
+          : "The list's arbitrator checks it"
+      } against the listing policy. If they side with you, you get your deposit back plus the challenger's, less the arbitration cost; if not, it goes to the challenger.`,
     },
   ]
 

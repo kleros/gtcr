@@ -597,8 +597,8 @@ const ItemStatusCard = ({
                 : statusCode === STATUS_CODE.WAITING_ARBITRATOR
                   ? aloneWinner
                     ? `The ${aloneWinner} funded the appeal alone, so the ${aloneWinner} wins when the ruling is enforced.`
-                    : 'Enforced once the court gives the final ruling.'
-                  : 'Waiting to be enforced.'}
+                    : 'The ruling is final and waits to be enforced.'
+                  : 'The losing side did not fund its appeal, so the ruling stands.'}
             </Prompt>
             {statusCode === STATUS_CODE.CHALLENGED && (
               <Stack $gap={8}>
@@ -638,7 +638,7 @@ const ItemStatusCard = ({
                 <AmountSplit
                   base={amountBase}
                   cost={inWindow ? challenge.arbitrationCost : arbitrationCost}
-                  baseLabel={inWindow ? 'Challenge deposit' : 'Deposit'}
+                  baseLabel="Base deposit"
                   currency={nativeCurrency}
                 />
               </>

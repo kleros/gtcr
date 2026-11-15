@@ -486,12 +486,14 @@ export const WindowPanel = ({
     return (
       <Court>
         <CourtTop>
+          {/* The period over: final. Earlier, the loser's half over with
+              nothing funded: the ruling stands. */}
           <Label $tone="muted">
             {challenged
               ? 'Jurors deciding'
               : statusCode === STATUS_CODE.WAITING_ARBITRATOR
-                ? 'Awaiting the final ruling'
-                : 'Ruling final'}
+                ? 'Ruling final'
+                : 'Ruling stands'}
           </Label>
           {facts.disputeID &&
             (facts.disputeHref ? (

@@ -209,19 +209,21 @@ export const lightEntryStatus = (
       return appealOpen(code, timestamp.toNumber(), round)
     case LIGHT_STATUS.CROWDFUNDING_WINNER:
       return winnerFunding(code, round)
+    // The loser's half can end with nothing funded (WAITING_ENFORCEMENT: the
+    // ruling stands) before the period ends (WAITING_ARBITRATOR: it is final).
     case LIGHT_STATUS.WAITING_ARBITRATOR:
-      return {
-        code,
-        tone: 'contested',
-        label: 'Awaiting ruling',
-        detail: 'appeal period over',
-      }
-    case LIGHT_STATUS.WAITING_ENFORCEMENT:
       return {
         code,
         tone: 'contested',
         label: 'Ruling final',
         detail: 'awaiting enforcement',
+      }
+    case LIGHT_STATUS.WAITING_ENFORCEMENT:
+      return {
+        code,
+        tone: 'contested',
+        label: 'Ruling stands',
+        detail: 'loser did not fund',
       }
     case LIGHT_STATUS.REJECTED:
       return { code, tone: 'off', label: 'Rejected' }
@@ -296,9 +298,9 @@ export const stakeEntryStatus = (
       return {
         code,
         tone: 'contested',
-        label: 'Awaiting ruling',
         // Before the period ends this means the loser did not fund in time.
-        detail: appealRunning ? 'loser did not fund' : 'appeal period over',
+        label: appealRunning ? 'Ruling stands' : 'Ruling final',
+        detail: appealRunning ? 'loser did not fund' : 'awaiting enforcement',
       }
     case STAKE_STATUS.PENDING_WITHDRAWAL:
       return {

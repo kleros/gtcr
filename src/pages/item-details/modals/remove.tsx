@@ -185,7 +185,7 @@ const RemoveModal = ({
     removalBaseDeposit && arbitrationCost
       ? [
           {
-            label: 'Removal deposit',
+            label: 'Base deposit',
             value: formatAmount(removalBaseDeposit, nativeCurrency),
           },
           {

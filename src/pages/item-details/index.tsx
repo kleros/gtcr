@@ -40,7 +40,7 @@ import { formatAbsolute } from 'utils/time'
 import { STALE_TIME } from 'consts'
 import { parseIpfs } from 'utils/ipfs-parse'
 import { truncateAtWord } from 'utils/truncate-at-word'
-import { subgraphUrl } from 'config/tcr-addresses'
+import { isKlerosArbitrator, subgraphUrl } from 'config/tcr-addresses'
 import { CurateIcon } from 'components/curate/icons'
 import {
   ChainChip,
@@ -670,6 +670,14 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
     !!metadata &&
     !metadata.isConnectedTCR &&
     !metadata.relTcrDisabled
+  // An open request is decided by the arbitrator it was made with, a new
+  // one by the list's; only Kleros has jurors to name.
+  const klerosDecides = isKlerosArbitrator(
+    chainId,
+    latestRequest && !latestRequest.resolved
+      ? latestRequest.arbitrator
+      : tcrViewContext?.arbitrator,
+  )
 
   return (
     <Page>
@@ -857,7 +865,9 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
                 body: "Challenge a request that breaks the policy during its challenge period. If jurors agree, you earn the requester's base deposit and yours comes back.",
               },
               {
-                title: 'Kleros jurors decide',
+                title: klerosDecides
+                  ? 'Kleros jurors decide'
+                  : 'The arbitrator decides',
                 body: "The side they agree with gets its deposit back plus the other side's, less the arbitration cost.",
               },
             ]}

@@ -38,9 +38,9 @@ export const itemActionLabel = (
     case STATUS_CODE.CHALLENGED:
       return 'Challenged'
     case STATUS_CODE.WAITING_ARBITRATOR:
-      return 'Awaiting ruling'
-    case STATUS_CODE.WAITING_ENFORCEMENT:
       return 'Ruling final'
+    case STATUS_CODE.WAITING_ENFORCEMENT:
+      return 'Ruling stands'
     default:
       return 'Loading'
   }
@@ -111,16 +111,16 @@ const ItemActionButton = ({
     return (
       <Status
         tone="contested"
-        label="Awaiting ruling"
-        detail="appeal period over"
+        label="Ruling final"
+        detail="awaiting enforcement"
       />
     )
   if (statusCode === STATUS_CODE.WAITING_ENFORCEMENT)
     return (
       <Status
         tone="contested"
-        label="Ruling final"
-        detail="awaiting enforcement"
+        label="Ruling stands"
+        detail="loser did not fund"
       />
     )
 
