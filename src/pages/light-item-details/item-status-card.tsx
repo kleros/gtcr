@@ -1,4 +1,4 @@
-import React, { useContext, useMemo } from 'react'
+import React, { useContext, useMemo, useState } from 'react'
 import styled from 'styled-components'
 import type { Address } from 'viem'
 import type { BigNumber, BigNumberish } from 'ethers'
@@ -38,6 +38,10 @@ import {
 } from 'components/curate/primitives'
 import { EntryStatus, lightEntryStatus } from 'components/curate/entry-status'
 import { useActionGate } from 'components/curate/item-light-gate'
+import {
+  sendPhaseLabel,
+  type SendPhase,
+} from 'components/curate/what-happens-next'
 import { StickyActionBar } from 'components/curate/item-light-action-bar'
 import { AddressLink } from 'components/curate/item-light-fields'
 import { formatAmount, formatEther } from 'components/curate/item-light-format'
@@ -320,9 +324,13 @@ const ItemStatusCard = ({
     verb: 'execute the request',
     needsAuth: false,
   })
+  // Busy until the transaction settles, so a second click (here or on the
+  // phone bar) cannot send a second one.
+  const [executing, setExecuting] = useState<SendPhase>()
 
   const executeRequest = async () => {
     if (!tcrAddress || !walletClient || !publicClient) return
+    setExecuting('wallet')
     try {
       const { request: req } = await simulateContract(wagmiConfig, {
         address: tcrAddress as Address,
@@ -332,11 +340,19 @@ const ItemStatusCard = ({
         account,
       })
 
-      await wrapWithToast(() => walletClient.writeContract(req), publicClient)
+      await wrapWithToast(
+        () =>
+          walletClient.writeContract(req).then((hash) => {
+            setExecuting('mining')
+            return hash
+          }),
+        publicClient,
+      )
     } catch (err) {
       console.error('Error executing request:', err)
       errorToast(parseWagmiError(err))
     }
+    setExecuting(undefined)
   }
 
   if (!item || !timestamp || !challengePeriodDuration || !request)
@@ -487,6 +503,8 @@ const ItemStatusCard = ({
       block
       disabled={isPending && !executeGate.ready}
       blocker={executeGate.blocker}
+      loading={!!executing}
+      loadingLabel={sendPhaseLabel(executing)}
     />
   ) : null
 
@@ -501,16 +519,33 @@ const ItemStatusCard = ({
         Add evidence
       </Button>
     ) : hasRequestAction ? (
-      <ItemActionButton
-        statusCode={statusCode}
-        itemName={itemName}
-        itemID={item.itemID}
-        onClick={onClick}
-        amount={amountLabel}
-        block
-        disabled={isPending && !executeGate.ready}
-        blocker={executeGate.blocker}
-      />
+      isPending && executeGate.fix ? (
+        // The card names the blocker beside its control; the bar has room
+        // for one button, so it offers the step that unblocks Execute
+        // (connect, switch network) instead of a dead one.
+        <Button
+          type="button"
+          $variant="primary"
+          $block
+          disabled={!!executeGate.fix.loading}
+          onClick={executeGate.fix.onClick}
+        >
+          {executeGate.fix.label}
+        </Button>
+      ) : (
+        <ItemActionButton
+          statusCode={statusCode}
+          itemName={itemName}
+          itemID={item.itemID}
+          onClick={onClick}
+          amount={amountLabel}
+          block
+          disabled={isPending && !executeGate.ready}
+          blocker={executeGate.blocker}
+          loading={!!executing}
+          loadingLabel={sendPhaseLabel(executing)}
+        />
+      )
     ) : null
 
   // The subgraph stores the request's base deposit: what a successful

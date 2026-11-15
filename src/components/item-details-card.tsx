@@ -44,6 +44,11 @@ import {
 } from 'components/curate/item-light-fields'
 import { Notice } from 'components/curate/item-light-notice'
 import { formatAmount } from 'components/curate/item-light-format'
+import { useActionGate } from 'components/curate/item-light-gate'
+import {
+  sendPhaseLabel,
+  type SendPhase,
+} from 'components/curate/what-happens-next'
 
 /*
  * The entry's fields: every field as a label/value row rendered by its
@@ -159,6 +164,52 @@ const CopyId = ({ id }: { id: string }) => {
   )
 }
 
+/**
+ * Withdraw rewards, gated like Execute: the batch withdrawer is on the
+ * list's chain, so the wallet must be connected there (the card offers the
+ * switch and names the blocker). Busy until the transaction settles, so a
+ * second click cannot send a second one. Rendered only while there is
+ * something to withdraw, so other pages pay for no balance read.
+ */
+const WithdrawRewards = ({
+  amount,
+  phase,
+  onWithdraw,
+}: {
+  amount: string
+  /** Where the withdrawal is while it is being sent. */
+  phase?: SendPhase
+  onWithdraw: () => void
+}) => {
+  const gate = useActionGate({ verb: 'withdraw rewards', needsAuth: false })
+  const busy = !!phase
+  return (
+    <Actions>
+      <Stack $gap={8}>
+        <Row $gap={8} $wrap>
+          <Button
+            type="button"
+            $variant="primary"
+            $size="sm"
+            disabled={!gate.ready || busy}
+            aria-disabled={!gate.ready || busy}
+            title={gate.ready ? undefined : gate.blocker}
+            onClick={onWithdraw}
+          >
+            {busy ? sendPhaseLabel(phase) : `Withdraw rewards · ${amount}`}
+          </Button>
+          {gate.controls}
+        </Row>
+        {gate.blocker && (
+          <Small $muted role="status">
+            {gate.blocker}
+          </Small>
+        )}
+      </Stack>
+    </Actions>
+  )
+}
+
 /** What the item-details pages resolve for a child registry's meta evidence. */
 interface ItemMetaEvidenceState {
   file?: MetaEvidence
@@ -209,6 +260,7 @@ const ItemDetailsCard = ({
       }
     | undefined
   const [availableRewards, setAvailableRewards] = useState<BigNumber>()
+  const [withdrawing, setWithdrawing] = useState<SendPhase>()
   // batchRequestWithdraw walks the requests from the first one, and both list
   // contracts revert a withdrawal from a request that is still open (Light:
   // one under dispute). While the latest request is open the walk stops
@@ -229,6 +281,10 @@ const ItemDetailsCard = ({
         : batchWithdrawAddresses[urlChainId]
   const nativeCurrency = useNativeCurrency()
   const openAttachment = useAttachment()
+
+  // The figure is the connected account's: it goes as soon as the account
+  // changes or disconnects, never offered to the next one.
+  useEffect(() => setAvailableRewards(undefined), [account])
 
   // Fetch available rewards from fee contributions (the list's view
   // contract). Stake lists settle rewards elsewhere.
@@ -264,9 +320,10 @@ const ItemDetailsCard = ({
     )
       return
 
+    setWithdrawing('wallet')
     try {
       // Simulated on the list's chain; writeContract refuses to send while
-      // the wallet is on another one.
+      // the wallet is on another one (the button's gate asks to switch).
       const { request } = await simulateContract(wagmiConfig, {
         address: BATCH_WITHDRAW_ADDRESS as `0x${string}`,
         abi: _batchWithdraw,
@@ -285,7 +342,11 @@ const ItemDetailsCard = ({
       })
 
       const result = await wrapWithToast(
-        () => writeContract(wagmiConfig, request),
+        () =>
+          writeContract(wagmiConfig, request).then((hash) => {
+            setWithdrawing('mining')
+            return hash
+          }),
         publicClient,
       )
 
@@ -301,6 +362,7 @@ const ItemDetailsCard = ({
       console.error('Error withdrawing rewards:', err)
       errorToast(parseWagmiError(err))
     }
+    setWithdrawing(undefined)
   }, [
     BATCH_WITHDRAW_ADDRESS,
     account,
@@ -356,16 +418,11 @@ const ItemDetailsCard = ({
   // Rewards do not depend on the entry's data, so an entry that cannot be
   // decoded still offers them.
   const withdrawAction = withdrawable ? (
-    <Actions>
-      <Button
-        type="button"
-        $variant="primary"
-        $size="sm"
-        onClick={batchWithdrawClick}
-      >
-        Withdraw rewards · {formatAmount(availableRewards, nativeCurrency)}
-      </Button>
-    </Actions>
+    <WithdrawRewards
+      amount={formatAmount(availableRewards, nativeCurrency)}
+      phase={withdrawing}
+      onWithdraw={batchWithdrawClick}
+    />
   ) : null
 
   if (!loading && item && errors.length > 0)

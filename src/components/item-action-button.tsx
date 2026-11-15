@@ -68,6 +68,8 @@ interface ItemActionButtonProps {
   /** Why the button is disabled, named in the tooltip. */
   blocker?: string
   loading?: boolean
+  /** What the busy button says (sendPhaseLabel); the wallet wait by default. */
+  loadingLabel?: string
   block?: boolean
   size?: 'sm' | 'md'
 }
@@ -82,6 +84,7 @@ const ItemActionButton = ({
   disabled,
   blocker,
   loading,
+  loadingLabel,
   block,
   size,
 }: ItemActionButtonProps) => {
@@ -135,7 +138,7 @@ const ItemActionButton = ({
       title={disabled ? blocker : undefined}
     >
       {loading
-        ? 'Waiting for your wallet…'
+        ? (loadingLabel ?? 'Waiting for your wallet…')
         : itemActionLabel(statusCode, itemName)}
       {!loading && amount ? <span>· {amount}</span> : null}
     </Button>

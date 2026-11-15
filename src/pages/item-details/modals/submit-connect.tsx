@@ -28,8 +28,10 @@ import {
 } from 'components/curate/primitives'
 import {
   WhatHappensNext,
+  sendPhaseLabel,
   type OutcomeStep,
   type ReceiptLine,
+  type SendPhase,
 } from 'components/curate/what-happens-next'
 import Select from 'components/ui/Select'
 import { Dialog } from 'components/curate/item-light-dialog'
@@ -212,7 +214,8 @@ const SubmitConnectModal = (props: SubmitConnectModalProps) => {
     ],
   )
 
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [phase, setPhase] = useState<SendPhase>()
+  const isSubmitting = !!phase
 
   const handleSubmit = useCallback(async () => {
     if (
@@ -224,7 +227,7 @@ const SubmitConnectModal = (props: SubmitConnectModalProps) => {
       !publicClient
     )
       return
-    setIsSubmitting(true)
+    setPhase('uploading')
     // The upload is inside the try: Atlas throws on network and session
     // errors, and those must end the loading state with a toast too.
     try {
@@ -254,8 +257,13 @@ const SubmitConnectModal = (props: SubmitConnectModalProps) => {
         account,
       })
 
+      setPhase('wallet')
       const result = await wrapWithToast(
-        () => walletClient.writeContract(request),
+        () =>
+          walletClient.writeContract(request).then((hash) => {
+            setPhase('mining')
+            return hash
+          }),
         publicClient,
       )
 
@@ -264,7 +272,7 @@ const SubmitConnectModal = (props: SubmitConnectModalProps) => {
       console.error('Error submitting badge:', err)
       errorToast(parseWagmiError(err))
     }
-    setIsSubmitting(false)
+    setPhase(undefined)
   }, [
     account,
     badgeTCRAddr,
@@ -393,6 +401,7 @@ const SubmitConnectModal = (props: SubmitConnectModalProps) => {
               confirmDisabled={!!confirmBlocker || isSubmitting}
               confirmBlocker={confirmBlocker}
               loading={isSubmitting}
+              loadingLabel={sendPhaseLabel(phase)}
               policy={`This is a deposit, not a fee. Amounts are in ${nativeCurrency}.`}
             />
             <SubmissionNavigation>

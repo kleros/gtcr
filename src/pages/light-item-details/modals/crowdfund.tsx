@@ -32,8 +32,10 @@ import {
 } from 'components/curate/primitives'
 import {
   WhatHappensNext,
+  sendPhaseLabel,
   type OutcomeStep,
   type ReceiptLine,
+  type SendPhase,
 } from 'components/curate/what-happens-next'
 import { Dialog, DialogColumns } from 'components/curate/item-light-dialog'
 import { gatedConfirm, useActionGate } from 'components/curate/item-light-gate'
@@ -128,7 +130,8 @@ const CrowdfundModal = ({
   // never rounded to a share. Undefined while the slider sets the amount.
   const [typedWei, setTypedWei] = useState<BigNumber>()
   const [userSelectedSide, setUserSelectedSide] = useState<number | undefined>()
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [phase, setPhase] = useState<SendPhase>()
+  const isSubmitting = !!phase
   const nativeCurrency = useNativeCurrency()
 
   // The component stays mounted while the dialog is closed, so it is reset
@@ -239,7 +242,7 @@ const CrowdfundModal = ({
       !contribution
     )
       return
-    setIsSubmitting(true)
+    setPhase('wallet')
     try {
       const { request } = await simulateContract(wagmiConfig, {
         address: tcrAddress as Address,
@@ -251,7 +254,11 @@ const CrowdfundModal = ({
       })
 
       const result = await wrapWithToast(
-        () => walletClient.writeContract(request),
+        () =>
+          walletClient.writeContract(request).then((hash) => {
+            setPhase('mining')
+            return hash
+          }),
         publicClient,
       )
 
@@ -260,7 +267,7 @@ const CrowdfundModal = ({
       console.error('Error funding appeal:', err)
       errorToast(parseWagmiError(err))
     }
-    setIsSubmitting(false)
+    setPhase(undefined)
   }
 
   const loading =
@@ -514,6 +521,7 @@ const CrowdfundModal = ({
                   ? 'Choose an amount above zero'
                   : undefined),
               loading: isSubmitting,
+              loadingLabel: sendPhaseLabel(phase),
             })}
             policy={`Amounts are in ${nativeCurrency}. Appeal fees are set by the list's stake multipliers and the court's arbitration cost.`}
           />

@@ -277,6 +277,22 @@ export interface OutcomeStep {
   branch?: boolean
 }
 
+/**
+ * Where a sending flow is, so its busy button says what it waits for:
+ * the uploads (and their read-back), the wallet's signature, or the
+ * transaction being mined once the wallet has sent it.
+ */
+export type SendPhase = 'uploading' | 'wallet' | 'mining'
+
+export const sendPhaseLabel = (phase?: SendPhase): string | undefined =>
+  phase === 'uploading'
+    ? 'Uploading…'
+    : phase === 'wallet'
+      ? 'Confirm in your wallet…'
+      : phase === 'mining'
+        ? 'Waiting for confirmation…'
+        : undefined
+
 export const WhatHappensNext = ({
   title = 'What happens next',
   receipt,
@@ -287,6 +303,8 @@ export const WhatHappensNext = ({
   confirmDisabled,
   confirmBlocker,
   loading,
+  loadingLabel,
+  showAmount,
   policy,
   featured = false,
   bare = false,
@@ -302,6 +320,14 @@ export const WhatHappensNext = ({
   /** Why the button is disabled ("Connect wallet to submit"). */
   confirmBlocker?: string
   loading?: boolean
+  /** What the busy button says (sendPhaseLabel); the wallet wait by default. */
+  loadingLabel?: string
+  /**
+   * False while the button runs a wallet step instead of the confirm
+   * (connect, switch network, sign in): that step sends nothing, so it
+   * carries no amount.
+   */
+  showAmount?: boolean
   policy?: React.ReactNode
   /** Carry the page's one iridescent rim (the submit page's receipt). */
   featured?: boolean
@@ -364,11 +390,11 @@ export const WhatHappensNext = ({
         onClick={onConfirm}
       >
         {loading ? (
-          'Waiting for your wallet…'
+          (loadingLabel ?? 'Waiting for your wallet…')
         ) : (
           <>
             {confirmLabel}
-            <Amount>· {total}</Amount>
+            {showAmount !== false && <Amount>· {total}</Amount>}
           </>
         )}
       </Button>

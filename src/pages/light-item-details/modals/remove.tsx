@@ -16,8 +16,10 @@ import { CurateIcon } from 'components/curate/icons'
 import { Body, Row, SkeletonBlock, Stack } from 'components/curate/primitives'
 import {
   WhatHappensNext,
+  sendPhaseLabel,
   type OutcomeStep,
   type ReceiptLine,
+  type SendPhase,
 } from 'components/curate/what-happens-next'
 import { Dialog, DialogColumns } from 'components/curate/item-light-dialog'
 import { gatedConfirm, useActionGate } from 'components/curate/item-light-gate'
@@ -72,7 +74,8 @@ const RemoveModal = ({
   const needsEvidence = metadataKnown && !!requireRemovalEvidence
   const name = itemName || 'entry'
 
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [phase, setPhase] = useState<SendPhase>()
+  const isSubmitting = !!phase
   const gate = useActionGate({
     verb: 'request the removal',
     shortVerb: 'remove',
@@ -100,10 +103,11 @@ const RemoveModal = ({
         !removalDeposit
       )
         return
-      setIsSubmitting(true)
+      const uploads = !!(metadata && requireRemovalEvidence)
+      setPhase(uploads ? 'uploading' : 'wallet')
       try {
         let ipfsEvidencePath = ''
-        if (metadata && requireRemovalEvidence)
+        if (uploads)
           ipfsEvidencePath = await uploadEvidence({
             title: title || 'Removal Justification',
             description: description ?? '',
@@ -120,8 +124,13 @@ const RemoveModal = ({
           account,
         })
 
+        setPhase('wallet')
         const result = await wrapWithToast(
-          () => walletClient.writeContract(request),
+          () =>
+            walletClient.writeContract(request).then((hash) => {
+              setPhase('mining')
+              return hash
+            }),
           publicClient,
         )
 
@@ -130,7 +139,7 @@ const RemoveModal = ({
         console.error('Error removing item:', err)
         errorToast(parseWagmiError(err))
       }
-      setIsSubmitting(false)
+      setPhase(undefined)
     },
     [
       account,
@@ -234,6 +243,7 @@ const RemoveModal = ({
                 disabled: !gate.ready || isSubmitting,
                 blocker: gate.blocker,
                 loading: isSubmitting,
+                loadingLabel: sendPhaseLabel(phase),
               })}
               policy={`This is a deposit, not a fee: it is returned if the removal is accepted. The challenge period lasts ${period}.`}
             />

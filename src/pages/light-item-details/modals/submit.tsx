@@ -35,8 +35,10 @@ import {
 } from 'components/curate/primitives'
 import {
   WhatHappensNext,
+  sendPhaseLabel,
   type OutcomeStep,
   type ReceiptLine,
+  type SendPhase,
 } from 'components/curate/what-happens-next'
 import { Dialog } from 'components/curate/item-light-dialog'
 import { FieldError } from 'components/curate/item-light-notice'
@@ -706,7 +708,8 @@ const SubmitModal: React.FC<{
   const { itemName, columns, tcrTitle } = metadata || {}
   const name = itemName || 'entry'
 
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [phase, setPhase] = useState<SendPhase>()
+  const isSubmitting = !!phase
   const [fieldsComplete, setFieldsComplete] = useState(false)
   const [activeStage, setActiveStage] = useState<SubmissionStage>('field')
   const activeStep =
@@ -765,7 +768,7 @@ const SubmitModal: React.FC<{
       ) => void,
     ) => {
       if (!submitAllowed || !submissionDeposit) return
-      setIsSubmitting(true)
+      setPhase('uploading')
       try {
         const resolvedValues = await resolveStashedFiles({
           columns,
@@ -797,8 +800,13 @@ const SubmitModal: React.FC<{
           chainId,
         })
 
+        setPhase('wallet')
         const result = await wrapWithToast(
-          () => writeContract(wagmiConfig, request),
+          () =>
+            writeContract(wagmiConfig, request).then((hash) => {
+              setPhase('mining')
+              return hash
+            }),
           publicClient!,
         )
 
@@ -813,7 +821,7 @@ const SubmitModal: React.FC<{
         console.error('Error submitting item:', err)
         errorToast(parseWagmiError(err))
       }
-      setIsSubmitting(false)
+      setPhase(undefined)
     },
     [
       account,
@@ -904,6 +912,7 @@ const SubmitModal: React.FC<{
             disabled: !!confirmBlocker || isSubmitting,
             blocker: confirmBlocker,
             loading: isSubmitting,
+            loadingLabel: sendPhaseLabel(phase),
           })}
           policy={`This is a deposit, not a fee. Amounts are in ${nativeCurrency}.`}
         />

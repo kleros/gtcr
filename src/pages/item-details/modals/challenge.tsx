@@ -16,8 +16,10 @@ import { CurateIcon } from 'components/curate/icons'
 import { Body, Row, SkeletonBlock, Stack } from 'components/curate/primitives'
 import {
   WhatHappensNext,
+  sendPhaseLabel,
   type OutcomeStep,
   type ReceiptLine,
+  type SendPhase,
 } from 'components/curate/what-happens-next'
 import { Dialog, DialogColumns } from 'components/curate/item-light-dialog'
 import { useActionGate } from 'components/curate/item-light-gate'
@@ -60,7 +62,8 @@ const ChallengeModal = ({
   const { data: walletClient } = useWalletClient()
   const { uploadFile } = useAtlasProvider()
   const nativeCurrency = useNativeCurrency()
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [phase, setPhase] = useState<SendPhase>()
+  const isSubmitting = !!phase
 
   const isSubmission = item.status === CONTRACT_STATUS.REGISTRATION_REQUESTED
   // The contract charges the arbitration cost of the arbitrator and extra
@@ -100,7 +103,7 @@ const ChallengeModal = ({
       !challengeDeposit
     )
       return
-    setIsSubmitting(true)
+    setPhase('uploading')
     try {
       const ipfsEvidencePath = await uploadEvidence({
         title: title || 'Challenge Justification',
@@ -118,8 +121,13 @@ const ChallengeModal = ({
         account,
       })
 
+      setPhase('wallet')
       const result = await wrapWithToast(
-        () => walletClient.writeContract(request),
+        () =>
+          walletClient.writeContract(request).then((hash) => {
+            setPhase('mining')
+            return hash
+          }),
         publicClient,
       )
 
@@ -128,7 +136,7 @@ const ChallengeModal = ({
       console.error('Error challenging request:', err)
       errorToast(parseWagmiError(err))
     }
-    setIsSubmitting(false)
+    setPhase(undefined)
   }
 
   const confirm = () => {
@@ -232,6 +240,7 @@ const ChallengeModal = ({
               confirmDisabled={!gate.ready || isSubmitting}
               confirmBlocker={gate.blocker}
               loading={isSubmitting}
+              loadingLabel={sendPhaseLabel(phase)}
               policy={`Deposits are in ${nativeCurrency}. The ruling can be appealed by funding appeal fees during the appeal period.`}
             />
             {gate.controls && (

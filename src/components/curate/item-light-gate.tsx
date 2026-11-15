@@ -7,6 +7,7 @@ import useNativeBalance from 'hooks/use-native-balance'
 import useNativeCurrency from 'hooks/native-currency'
 import EnsureAuth from 'components/ensure-auth'
 import { NETWORKS_INFO } from 'config/networks'
+import { reportSwitchFailure } from 'utils/wrap-with-toast'
 import { useWalletGate, type GateFix } from 'pages/submit-item/use-wallet-gate'
 import { Button } from './primitives'
 import { formatAmount } from './item-light-format'
@@ -100,6 +101,8 @@ export const useActionGate = ({
       currency,
     )} plus gas`
 
+  // A wallet that does not switch says why in a toast (a request already
+  // waiting in it, a network it cannot add); a declined request stays quiet.
   let controls: React.ReactNode = null
   if (!isConnected || (!wrongChain && needsAuth && !isVerified))
     controls = <EnsureAuth>{null}</EnsureAuth>
@@ -109,7 +112,12 @@ export const useActionGate = ({
         type="button"
         $variant="secondary"
         disabled={isPending}
-        onClick={() => switchChain({ chainId: targetChain })}
+        onClick={() =>
+          switchChain(
+            { chainId: targetChain },
+            { onError: (err) => reportSwitchFailure(err, chainName) },
+          )
+        }
       >
         Switch to {chainName}
       </Button>
@@ -120,7 +128,11 @@ export const useActionGate = ({
   else if (wrongChain && targetChain)
     fix = {
       label: `Switch to ${chainName}`,
-      onClick: () => switchChain({ chainId: targetChain }),
+      onClick: () =>
+        switchChain(
+          { chainId: targetChain },
+          { onError: (err) => reportSwitchFailure(err, chainName) },
+        ),
       loading: isPending,
     }
   else if (needsAuth && !isVerified && wallet.connected && wallet.correctChain)
@@ -131,8 +143,9 @@ export const useActionGate = ({
 
 /**
  * The confirm props for WhatHappensNext: while the wallet blocks, the
- * primary button runs the step that clears it (connect, switch, sign in);
- * otherwise it is the confirm, disabled with its blocker named.
+ * primary button runs the step that clears it (connect, switch, sign in),
+ * without the amount, since that step sends nothing; otherwise it is the
+ * confirm with its amount, disabled with its blocker named.
  */
 export const gatedConfirm = (
   gate: ActionGate,
@@ -142,6 +155,8 @@ export const gatedConfirm = (
     disabled?: boolean
     blocker?: string
     loading?: boolean
+    /** What the busy confirm says (sendPhaseLabel). */
+    loadingLabel?: string
   },
 ) =>
   gate.fix
@@ -151,6 +166,8 @@ export const gatedConfirm = (
         confirmDisabled: !!gate.fix.loading,
         confirmBlocker: undefined,
         loading: !!gate.fix.loading,
+        loadingLabel: undefined,
+        showAmount: false,
       }
     : {
         confirmLabel: confirm.label,
@@ -158,6 +175,8 @@ export const gatedConfirm = (
         confirmDisabled: confirm.disabled,
         confirmBlocker: confirm.blocker,
         loading: confirm.loading,
+        loadingLabel: confirm.loadingLabel,
+        showAmount: true,
       }
 
 export default useActionGate
