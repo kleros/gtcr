@@ -17,6 +17,26 @@
   const $ = (selector, scope = doc) => scope.querySelector(selector)
   const $$ = (selector, scope = doc) => [...scope.querySelectorAll(selector)]
 
+  /* ---------- Reveals ---------- */
+
+  // First of all: the head script's .js class keeps every [data-reveal]
+  // block invisible until it is marked in, so nothing that throws further
+  // down may stand between the page and this.
+  const revealables = $$('[data-reveal]')
+  if ('IntersectionObserver' in globalThis && !reducedMotion()) {
+    const revealer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries)
+          if (entry.isIntersecting) {
+            entry.target.classList.add('in')
+            revealer.unobserve(entry.target)
+          }
+      },
+      { threshold: 0.12, rootMargin: '0px 0px -6% 0px' },
+    )
+    for (const node of revealables) revealer.observe(node)
+  } else for (const node of revealables) node.classList.add('in')
+
   const integer = new Intl.NumberFormat('en-US')
   const dayFormat = new Intl.DateTimeFormat('en-GB', {
     day: 'numeric',
@@ -257,22 +277,6 @@
   }
   doc.addEventListener('visibilitychange', syncPaused)
   syncPaused()
-  /* ---------- Reveals ---------- */
-
-  const revealables = $$('[data-reveal]')
-  if ('IntersectionObserver' in globalThis && !reducedMotion()) {
-    const revealer = new IntersectionObserver(
-      (entries) => {
-        for (const entry of entries)
-          if (entry.isIntersecting) {
-            entry.target.classList.add('in')
-            revealer.unobserve(entry.target)
-          }
-      },
-      { threshold: 0.12, rootMargin: '0px 0px -6% 0px' },
-    )
-    for (const node of revealables) revealer.observe(node)
-  } else for (const node of revealables) node.classList.add('in')
 
   /* ---------- Figures: live from the indexers, or the dated snapshot ---------- */
 
@@ -445,6 +449,7 @@
           ? `open for verification ${when}`
           : `unchallenged requests ${when}`,
       )
+      setText('inCourtLabel', `In court ${when}`)
     }
     setText('verifiedUnit', facts.verified === 1 ? 'list' : 'lists')
     if (stamp) {

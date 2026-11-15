@@ -320,7 +320,7 @@
               <dd data-count data-fig="challenged">—</dd>
             </div>
             <div>
-              <dt class="label">In court now</dt>
+              <dt class="label" data-fig="inCourtLabel">In court now</dt>
               <dd data-count data-fig="inCourt">—</dd>
             </div>
             <div>
@@ -714,6 +714,11 @@
          data.js is the dated snapshot the page draws first and falls back to. -->
     <script type="module" src="/src/landing/boot.ts"></script>
     <script src="/landing/data.js"></script>
-    <script src="/landing/landing.js"></script>
+    <!-- landing.js reveals the blocks the head script's .js class hides; if
+         it cannot load, the page drops the class and shows them as they are. -->
+    <script
+      src="/landing/landing.js"
+      onerror="document.documentElement.classList.remove('js')"
+    ></script>
   </body>
 </html>
