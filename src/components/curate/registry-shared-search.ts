@@ -13,12 +13,17 @@ export const listSearchFrom = (search: string): string =>
 
 /**
  * The query string with the search set to `term` (dropped when empty). A new
- * search starts from the first page.
+ * search over the whole list starts from its first page; a search that only
+ * filters the page on screen (`keepPage`, the Stake list's) stays on it.
  */
-export const withListSearch = (search: string, term: string): string => {
+export const withListSearch = (
+  search: string,
+  term: string,
+  { keepPage = false }: { keepPage?: boolean } = {},
+): string => {
   const params = new URLSearchParams(search)
   if (term) params.set(LIST_SEARCH_KEY, term)
   else params.delete(LIST_SEARCH_KEY)
-  params.delete(FILTER_KEYS.PAGE)
+  if (!keepPage) params.delete(FILTER_KEYS.PAGE)
   return `?${params.toString()}`
 }

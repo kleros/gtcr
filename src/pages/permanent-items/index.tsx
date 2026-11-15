@@ -317,10 +317,14 @@ const StakeRegistry = () => {
   const [nsfwFilterOn, setNsfwFilterOn] = useState(true)
   // The search box lives in the URL (?q=), so Back from an entry, a reload
   // or a shared link keeps it. Typing replaces the history entry: Back
-  // leaves the list instead of undoing keystrokes.
+  // leaves the list instead of undoing keystrokes. It filters the page on
+  // screen, so typing stays on that page.
   const itemSearch = listSearchFrom(search)
   const setItemSearch = (term: string) =>
-    navigate({ search: withListSearch(search, term) }, { replace: true })
+    navigate(
+      { search: withListSearch(search, term, { keepPage: true }) },
+      { replace: true },
+    )
   const [revealed, setRevealed] = useState<Set<string>>(() => new Set())
 
   const queryOptions = searchStrToFilterObjPermanent(search)
