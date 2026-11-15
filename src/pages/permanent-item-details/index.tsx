@@ -22,21 +22,25 @@ import {
 import { STALE_TIME } from 'consts'
 import { parseIpfs } from 'utils/ipfs-parse'
 import { type ItemFile, sanitizeItemFile } from 'utils/item-file-guard'
+import { sanitizeMetaEvidence } from 'utils/meta-evidence-guard'
 import { capitalizeFirstLetter } from 'utils/string'
 import { truncateAtWord } from 'utils/truncate-at-word'
 import { formatAbsolute, formatDurationLong } from 'utils/time'
-import { STATUS_CODE } from 'utils/permanent-item-status'
 import ItemDetailsCard from 'components/item-details-card'
 import RequestTimelines from 'components/permanent-request-timelines'
 import { AddressLink } from 'components/curate/item-stake-address'
 import { CurateIcon } from 'components/curate/icons'
 import {
+  Button,
   ChainChip,
   Label,
   Page,
+  Row,
   SkeletonBlock,
+  Stack,
   Surface,
 } from 'components/curate/primitives'
+import { Notice } from 'components/curate/item-light-notice'
 import { EntryStatus, stakeEntryStatus } from 'components/curate/entry-status'
 import { Explainer } from 'components/curate/explainer'
 import { AnimatedNumber } from 'components/curate/motion/animated-number'
@@ -351,6 +355,17 @@ const Rail = styled.aside`
   }
 `
 
+/* The Fields card's title, set as the card sets it. */
+const FieldsTitle = styled.h2`
+  margin: 0;
+  color: var(--color-text);
+  font-family: var(--font-display);
+  font-size: 22px;
+  line-height: 28px;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+`
+
 const PolicyButton = styled.button`
   display: inline-flex;
   align-items: center;
@@ -374,6 +389,9 @@ const PolicyButton = styled.button`
     color: var(--color-text);
   }
 `
+
+/** How long the list's MetaEvidence file may take before its read fails. */
+const META_EVIDENCE_TIMEOUT_MS = 20_000
 
 /** The size the title is set at, so long identifiers stay readable. */
 const titleSize = (text: string): 'lg' | 'md' | 'sm' =>
@@ -403,7 +421,6 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
   const timestamp = useContext(WalletContext)?.timestamp
   const [modalOpen, setModalOpen] = useState(false)
   const { graphqlBatcher } = useGraphqlBatcher()
-  const [metaEvidence, setMetaEvidence] = useState<MetaEvidence | undefined>()
   const now = useNow()
   const openAttachment = useAttachment()
   const nativeCurrency = useNativeCurrency()
@@ -571,18 +588,41 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
   const appealCostFailed =
     appealCostQuery.isError && !appealCostQuery.isFetching
 
-  useEffect(() => {
-    if (!registry) return
-    ;(async () => {
-      const arbSetting = registry.arbitrationSettings?.[0]
-      if (!arbSetting?.metaEvidenceURI) return
-      const response = await fetch(parseIpfs(arbSetting.metaEvidenceURI))
-      const file = await response.json()
-      setMetaEvidence(file)
-    })().catch((err: unknown) => {
-      console.error('Could not get the list metadata', err)
-    })
-  }, [registry])
+  // The list's MetaEvidence: its title, item name and field names. Whoever
+  // governs the list writes it, so it gets the shape the page reads before
+  // anything renders it (a title that is an object took the page down). A
+  // gateway that errors or hangs, or a file that is not a MetaEvidence with
+  // its metadata, is a failed read: retried, then said, with Try again,
+  // rather than left loading for ever.
+  const metaEvidenceURI = latestSetting?.metaEvidenceURI
+  const metaEvidenceQuery = useQuery({
+    queryKey: ['permanentMetaEvidence', metaEvidenceURI],
+    queryFn: async (): Promise<MetaEvidence> => {
+      const controller = new AbortController()
+      // Not AbortSignal.timeout: iOS 15 lacks it.
+      const timer = setTimeout(
+        () => controller.abort(),
+        META_EVIDENCE_TIMEOUT_MS,
+      )
+      try {
+        const response = await fetch(parseIpfs(metaEvidenceURI!), {
+          signal: controller.signal,
+        })
+        if (!response.ok)
+          throw new Error(`The list metadata answered ${response.status}`)
+        const file = sanitizeMetaEvidence(await response.json())
+        if (!file?.metadata)
+          throw new Error('The list metadata is not a MetaEvidence file')
+        return file
+      } finally {
+        clearTimeout(timer)
+      }
+    },
+    enabled: !!metaEvidenceURI,
+    staleTime: Infinity,
+  })
+  const metaEvidence = metaEvidenceQuery.data
+  const metaEvidenceFailed = metaEvidenceQuery.isError && !metaEvidence
 
   const decodedItem = useMemo(() => {
     if (!item || !metaEvidence?.metadata?.columns || !ipfsItemData)
@@ -635,32 +675,6 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
     [fields, primaryField],
   )
 
-  const getStatusPhrase = (code: number | null | undefined) => {
-    switch (code) {
-      case STATUS_CODE.ACCEPTED:
-        return 'is verified to be safe'
-      case STATUS_CODE.PENDING:
-        return 'is pending verification'
-      case STATUS_CODE.DISPUTED:
-        return 'is under challenge'
-      case STATUS_CODE.CROWDFUNDING:
-      case STATUS_CODE.CROWDFUNDING_WINNER:
-        return 'is crowdfunding appeal'
-      case STATUS_CODE.PENDING_WITHDRAWAL:
-        return 'awaits withdrawal'
-      case STATUS_CODE.WAITING_ARBITRATOR:
-        return 'awaits arbitrator ruling'
-      case STATUS_CODE.REJECTED:
-        return 'was rejected'
-      case STATUS_CODE.REMOVED:
-        return 'was removed'
-      case STATUS_CODE.WITHDRAWN:
-        return 'was withdrawn'
-      default:
-        return 'has unknown status'
-    }
-  }
-
   // The tab names the entry itself (its heading), then its list.
   const seoName =
     primaryField && hasValue(primaryField)
@@ -672,9 +686,12 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
       : 'Kleros Curate'
   const truncatedSeoTitle = truncateAtWord(fullSeoTitle, 160)
 
+  // The status as the page labels it, as on Light entries. Accepted only
+  // means nobody challenged it in time, and it stays challengeable: the
+  // description claims no verification.
   const fullSeoMetaDescription =
-    decodedItem && metadata && statusCode !== null && decodedData
-      ? `${decodedData.join(' ')} - ${getStatusPhrase(statusCode)} on ${
+    decodedItem && metadata && entryStatus && decodedData
+      ? `${decodedData.join(' ')} · ${entryStatus.label} on ${
           metadata.tcrTitle
         } in Kleros Curate`
       : 'View item details on Kleros Curate.'
@@ -702,7 +719,17 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
     setModalOpen(true)
   }, [loading, search])
 
-  useDocumentHead(truncatedSeoTitle, truncatedSeoMetaDescription)
+  const loadFailed = query.isError && !query.data
+  const missing = query.isSuccess && !query.data?.item
+  // An error page sets its own title, and keeps a missing entry out of
+  // search results: this page's head would overwrite both (its effects run
+  // after the error page's), so it waits for an entry to describe.
+  const errorPage = !tcrAddress || !itemID || loadFailed || missing
+  useDocumentHead(
+    errorPage ? undefined : truncatedSeoTitle,
+    errorPage ? undefined : truncatedSeoMetaDescription,
+  )
+  const registryHref = `/tcr/${chainId}/${tcrAddress}`
 
   if (!tcrAddress || !itemID)
     return (
@@ -714,44 +741,47 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
     )
 
   // A failed read and a missing entry each get their own page; neither is
-  // left as a loading skeleton.
-  if (query.isError && !query.data)
+  // left as a loading skeleton. Each leads back to the list.
+  if (loadFailed)
     return (
       <ErrorPage
         code="Error"
         title="This entry did not load"
         message={ENTRY_LOAD_FAILED}
         onRetry={() => query.refetch()}
+        home={{ to: registryHref, label: 'Back to the list' }}
       />
     )
 
-  if (query.isSuccess && !query.data?.item && recentlySubmitted)
+  if (missing && recentlySubmitted)
     return (
       <ErrorPage
         code="Indexing"
         tone="window"
         title={ENTRY_INDEXING_TITLE}
         message={ENTRY_INDEXING_MESSAGE}
-        home={{
-          to: `/tcr/${chainId}/${tcrAddress}`,
-          label: 'Back to the list',
-        }}
+        home={{ to: registryHref, label: 'Back to the list' }}
       />
     )
 
-  if (query.isSuccess && !query.data?.item)
+  if (missing)
     return (
       <ErrorPage
         code="404"
         title="Entry not found"
         message="This list has no entry with this ID."
         tip={ENTRY_MISSING_TIP}
+        home={{ to: registryHref, label: 'Back to the list' }}
       />
     )
 
   const name = itemName || 'item'
   const Name = capitalizeFirstLetter(name)
-  const registryHref = `/tcr/${chainId}/${tcrAddress}`
+  // Without the list's file there are no fields to title the entry with:
+  // the list's item name as the subgraph keeps it stands in, else "Entry".
+  const heading = metaEvidenceFailed
+    ? capitalizeFirstLetter(latestSetting?.metadata?.itemName ?? '') || 'Entry'
+    : Name
   const policyURI =
     settingInForce?.metadata?.policyURI ?? latestSetting?.metadata?.policyURI
   // When that policy took effect: settings newer than the one in force for
@@ -765,7 +795,9 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
   )
   const logo = logoOf(fields)
   const titleText =
-    primaryField && hasValue(primaryField) ? String(primaryField.value) : Name
+    primaryField && hasValue(primaryField)
+      ? String(primaryField.value)
+      : heading
 
   const facts =
     item && registry && statusCode !== null
@@ -856,14 +888,14 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
           </Eyebrow>
           <Identity>
             {logo && <Logo src={logo} alt="" />}
-            {loading && !fieldsUnavailable ? (
+            {loading && !fieldsUnavailable && !metaEvidenceFailed ? (
               <SkeletonBlock $height="40px" $width="min(420px, 100%)" />
             ) : (
               <Title $size={titleSize(titleText)}>
                 {primaryField ? (
                   <FieldValue field={primaryField} detailed />
                 ) : (
-                  Name
+                  heading
                 )}
               </Title>
             )}
@@ -987,13 +1019,36 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
 
       <Columns>
         <Main>
-          <ItemDetailsCard
-            columns={columns ?? metadata?.columns}
-            item={cardItem}
-            title="Fields"
-            loading={Boolean(loading) && !fieldsUnavailable}
-            kind="stake"
-          />
+          {metaEvidenceFailed ? (
+            // The card's own notice, with a way to read the file again.
+            <Surface id="item-details-card" $padding="standard">
+              <Stack $gap={10}>
+                <FieldsTitle>Fields</FieldsTitle>
+                <Notice tone="contested" role="alert">
+                  The list&apos;s field names could not be loaded from IPFS.
+                </Notice>
+                <Row>
+                  <Button
+                    type="button"
+                    $variant="secondary"
+                    $size="sm"
+                    disabled={metaEvidenceQuery.isFetching}
+                    onClick={() => void metaEvidenceQuery.refetch()}
+                  >
+                    {metaEvidenceQuery.isFetching ? 'Loading…' : 'Try again'}
+                  </Button>
+                </Row>
+              </Stack>
+            </Surface>
+          ) : (
+            <ItemDetailsCard
+              columns={columns ?? metadata?.columns}
+              item={cardItem}
+              title="Fields"
+              loading={Boolean(loading) && !fieldsUnavailable}
+              kind="stake"
+            />
+          )}
           <RequestTimelines item={item} metaEvidence={metaEvidence} />
           <Explainer
             id="stake-curate-item"
