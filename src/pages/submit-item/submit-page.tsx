@@ -1,4 +1,5 @@
-import React, { useEffect, useMemo } from 'react'
+import React, { useEffect, useMemo, useRef } from 'react'
+import { useAppKitState } from '@reown/appkit/react'
 import styled, { createGlobalStyle } from 'styled-components'
 import useStickyTop from 'hooks/use-sticky-top'
 import { Link, useParams } from 'react-router-dom'
@@ -946,9 +947,16 @@ const Workspace = ({
   // ask before it is lost. Never while a submission runs, so nothing holds
   // up the redirect to the new entry.
   const unsaved = formik.dirty && !submitting
+  // A wallet step on a phone opens the wallet app by navigating this tab
+  // (WalletConnect): not leaving, and a prompt there would stop it. Read
+  // through a ref, so a deep link fired before React re-renders is covered.
+  const { open: walletModalOpen } = useAppKitState()
+  const walletStep = useRef(false)
+  walletStep.current = walletModalOpen || !!gate.fix?.loading
   useEffect(() => {
     if (!unsaved) return undefined
     const warn = (event: BeforeUnloadEvent) => {
+      if (walletStep.current) return
       event.preventDefault()
       // Older browsers only ask when a return value is set.
       event.returnValue = ''
