@@ -8,9 +8,12 @@ const GlobalStyle = createGlobalStyle`
 
   /* Whatever the browser scrolls into view (a focused control, a #link)
      clears the sticky app bar: 64px (--app-bar-height, set on body so not
-     readable here) plus a little air. Scroll margins add to it. */
+     readable here) plus a little air. Scroll margins add to it. The page's
+     own scrollbar is the root element's: it takes its colours from here,
+     and the tokens are set on body, so the theme's value is written out. */
   html {
     scroll-padding-top: 72px;
+    scrollbar-color: ${({ theme }) => theme.curateBorderStrong} transparent;
   }
 
   button, input, select, textarea {
@@ -348,9 +351,12 @@ const GlobalStyle = createGlobalStyle`
     background: transparent;
   }
 
+  /* The fallback serves the page's own scrollbar (the root's, where the
+     body's tokens are not defined) in browsers without scrollbar-color. */
   ::-webkit-scrollbar-thumb {
     border-radius: var(--radius-pill);
-    background: var(--color-border-strong);
+    background: var(--color-border-strong, ${({ theme }) =>
+      theme.curateBorderStrong});
   }
 
   h1,
@@ -396,6 +402,17 @@ const GlobalStyle = createGlobalStyle`
   input::placeholder,
   textarea::placeholder {
     color: var(--v2-faint);
+  }
+
+  /* iOS Safari zooms the page into any field under 16px when it takes focus,
+     and leaves it zoomed. Only iOS matches this query, so the type scale
+     everywhere else is untouched. */
+  @supports (-webkit-touch-callout: none) {
+    input,
+    textarea,
+    select {
+      font-size: 16px !important;
+    }
   }
 
   .ant-modal-content,

@@ -576,6 +576,9 @@ const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
     document.body.setAttribute('data-theme', resolved)
     document.body.style.backgroundColor = theme.stage
     document.body.style.colorScheme = isDarkMode ? 'dark' : 'light'
+    // The page's own scrollbar belongs to the root element: it takes the
+    // scheme from <html>, not from <body>.
+    document.documentElement.style.colorScheme = isDarkMode ? 'dark' : 'light'
     // Mobile browsers tint their bars with this: keep it the page's colour.
     document
       .querySelector('meta[name="theme-color"]')
