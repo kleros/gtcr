@@ -323,19 +323,21 @@ const V2ListReferenceField = ({
   showStakeBadge?: boolean
 }) => {
   const chainId = useUrlChainId()
+  // The value is the entry's own text, whatever its field claims to be:
+  // only an address is looked up, so no other text reaches the indexers.
+  const linked = isAddress(address)
   const { data: metaEvidence, isLoading } = useTcrMetaEvidence(
-    address || undefined,
+    linked ? address : undefined,
     chainId ?? undefined,
   )
   const { isPermanentList } = useCheckPermanentList(
-    address || null,
+    linked ? address : null,
     chainId ?? null,
-    !!address && !!chainId,
+    linked && !!chainId,
   )
   const metadata = metaEvidence?.metadata
   const logoURI = metadata?.logoURI
   const title = metadata?.tcrTitle || metadata?.title
-  const linked = isAddress(address)
   const listHref = linked && chainId ? `/tcr/${chainId}/${address}` : undefined
 
   return (

@@ -14,22 +14,29 @@ export const fetchMetaEvidence = async (
   tcr: string,
   networkId: number,
 ): Promise<FetchMetaEvidenceResult | null> => {
+  // The address travels as a variable, never as query text (tcr-view.ts
+  // says why).
   const query = {
-    query: `{
-      lregistry:LRegistry_by_pk(id: "${tcr.toLowerCase()}") {
+    query: `query LightRegistryMetaEvidence($id: String!) {
+      lregistry:LRegistry_by_pk(id: $id) {
         registrationMetaEvidence {
           uri
         }
         connectedTCR
       }
     }`,
+    variables: { id: tcr.toLowerCase() },
   }
 
   // A failed read is thrown, not turned into "no metadata": the query that
   // asks would keep that answer for a day and leave the page on its
   // skeleton. Thrown, React Query retries it. It travels with the page's
   // other indexer reads (utils/indexer-request.ts).
-  const data = await request(subgraphUrl[networkId]!, query.query)
+  const data = await request(
+    subgraphUrl[networkId]!,
+    query.query,
+    query.variables,
+  )
   return data?.lregistry?.registrationMetaEvidence?.uri
     ? {
         metaEvidenceURI: data.lregistry.registrationMetaEvidence.uri,

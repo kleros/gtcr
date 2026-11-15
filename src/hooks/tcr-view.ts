@@ -18,33 +18,37 @@ export const fetchMetaEvidence = async (
   tcr: string,
   networkId: number,
 ): Promise<FetchMetaEvidenceResult | null> => {
+  // The address travels as a variable: it can come from an entry's own
+  // field (a list reference), and glued into the query text it would be
+  // query text written by that entry, sent from every visitor's browser.
+  const id = tcr.toLowerCase()
   const envioQuery = {
-    query: `{
-    registry:Registry_by_pk(id: "${tcr.toLowerCase()}") {
+    query: `query RegistryMetaEvidence($id: String!) {
+    registry:Registry_by_pk(id: $id) {
       registrationMetaEvidence {
         uri
       }
       connectedTCR
     }
-    lregistry:LRegistry_by_pk(id: "${tcr.toLowerCase()}") {
+    lregistry:LRegistry_by_pk(id: $id) {
       registrationMetaEvidence {
         uri
       }
       connectedTCR
     }
   }`,
-    variables: {},
+    variables: { id },
   }
 
   const pgtcrQuery = {
-    query: `{
-    registry(id: "${tcr.toLowerCase()}") {
+    query: `query StakeRegistryMetaEvidence($id: ID!) {
+    registry(id: $id) {
       arbitrationSettings(orderBy: timestamp, orderDirection: desc, first: 1) {
         metaEvidenceURI
       }
     }
   }`,
-    variables: {},
+    variables: { id },
   }
 
   // A failed read is thrown, not turned into "no metadata": the queries that
@@ -74,7 +78,11 @@ export const fetchMetaEvidence = async (
   // 2. Only try Goldsky if Envio didn't find it (rare — permanent TCRs).
   const permanentUrl = subgraphUrlPermanent[networkId]
   if (!permanentUrl) return null
-  const pgtcrData = await request(permanentUrl, pgtcrQuery.query)
+  const pgtcrData = await request(
+    permanentUrl,
+    pgtcrQuery.query,
+    pgtcrQuery.variables,
+  )
   return pgtcrData?.registry?.arbitrationSettings?.[0]?.metaEvidenceURI
     ? {
         metaEvidenceURI:
