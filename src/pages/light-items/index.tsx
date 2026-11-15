@@ -51,6 +51,7 @@ import {
 } from 'components/curate/registry-header'
 import {
   RegistryToolbar,
+  scrollToToolbar,
   type FilterChip,
 } from 'components/curate/registry-toolbar'
 import {
@@ -74,6 +75,10 @@ import {
   readActionLink,
   submitPathFor,
 } from 'components/curate/registry-shared-action-link'
+import {
+  listSearchFrom,
+  withListSearch,
+} from 'components/curate/registry-shared-search'
 import ErrorPage from '../error-page'
 import { LIST_LOAD_FAILED } from '../error-page/copy'
 import SubmitModal from '../light-item-details/modals/submit'
@@ -346,11 +351,16 @@ const Items = () => {
   const [submissionFormOpen, setSubmissionFormOpen] = useState<
     boolean | undefined
   >()
-  const [error, setError] = useState<string | undefined>()
   const [nsfwFilterOn, setNSFWFilter] = useState(true)
-  const [itemSearch, setItemSearch] = useState('')
+  // The search box lives in the URL (?q=), so Back from an entry, a reload
+  // or a shared link keeps it. Typing replaces the history entry: Back
+  // leaves the list instead of undoing keystrokes.
+  const itemSearch = listSearchFrom(search)
+  const setItemSearch = (term: string) =>
+    navigate({ search: withListSearch(search, term) }, { replace: true })
   // The term once typing pauses: what a whole-list search asks the indexer.
-  const [searchTerm, setSearchTerm] = useState('')
+  // A search the URL already carries is asked at once.
+  const [searchTerm, setSearchTerm] = useState(() => itemSearch.trim())
   useEffect(() => {
     const id = window.setTimeout(() => setSearchTerm(itemSearch.trim()), 350)
     return () => window.clearTimeout(id)
@@ -560,15 +570,12 @@ const Items = () => {
     counts,
   ])
 
+  // A failed refetch keeps the rows already on screen (react-query keeps
+  // its data): only a read with nothing to show fails the page.
+  const listFailed = !!itemsQuery.error && !itemsQuery.data
+
   useEffect(() => {
     const data = itemsQuery.data
-
-    if (itemsQuery.error) {
-      console.error(itemsQuery.error)
-      setError(itemsQuery.error.message)
-      return
-    }
-
     if (!data || itemsQuery.isLoading) return
     // Prevents the background IPFS callback from overwriting items
     // if the user paginated/filtered before it resolved.
@@ -688,7 +695,7 @@ const Items = () => {
     return () => {
       stale = true
     }
-  }, [itemsQuery.data, itemsQuery.error, itemsQuery.isLoading])
+  }, [itemsQuery.data, itemsQuery.isLoading])
 
   // Load NSFW user setting from localforage.
   useEffect(() => {
@@ -1015,18 +1022,19 @@ const Items = () => {
       search: updateLightFilter({ prevQuery: search, filter, checked }),
     })
 
+  // The pager sits at the foot of the list: a new page starts at its top.
+  const toolbarRef = useRef<HTMLDivElement>(null)
   const goToPage = (newPage: number) => {
     const params = new URLSearchParams(search)
     params.set('page', String(newPage))
     navigate({ search: `?${params.toString()}` })
+    scrollToToolbar(toolbarRef.current)
   }
 
   // Clears the search and every status filter and returns to page 1; the
   // sort order is a preference, not a filter, so it stays.
-  const clearFilters = () => {
-    setItemSearch('')
+  const clearFilters = () =>
     navigate({ search: oldestFirst ? '?oldestFirst=true' : '' })
-  }
 
   const hasSeerMarkets =
     tcrAddress != null &&
@@ -1163,16 +1171,13 @@ const Items = () => {
       />
     )
 
-  if (error)
+  if (listFailed)
     return (
       <ErrorPage
         code="Error"
         title="This list did not load"
         message={LIST_LOAD_FAILED}
-        onRetry={() => {
-          setError(undefined)
-          void itemsQuery.refetch()
-        }}
+        onRetry={() => void itemsQuery.refetch()}
       />
     )
 
@@ -1317,7 +1322,7 @@ const Items = () => {
         loading={!metadata || (!counters && itemsQuery.isFetching)}
       />
 
-      <Toolbar style={{ ['--i' as string]: 1 }}>
+      <Toolbar ref={toolbarRef} style={{ ['--i' as string]: 1 }}>
         <RegistryToolbar
           search={itemSearch}
           onSearch={setItemSearch}
@@ -1330,8 +1335,17 @@ const Items = () => {
           onLayoutChange={setLayout}
           nsfwFilter={nsfwFilterOn}
           onNsfwChange={toggleNSFWFilter}
-          shown={listLoading ? 0 : (visibleItems?.length ?? 0)}
-          total={searching && !wholeListSearch ? pageItemCount : itemCount}
+          // Unknown (not "0 of 0") until the list and its counts are in.
+          shown={listLoading ? undefined : visibleItems?.length}
+          total={
+            listLoading
+              ? undefined
+              : searching && !wholeListSearch
+                ? pageItemCount
+                : counts
+                  ? itemCount
+                  : undefined
+          }
         />
       </Toolbar>
 

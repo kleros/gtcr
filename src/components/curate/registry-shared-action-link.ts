@@ -1,4 +1,5 @@
 import { FILTER_KEYS, P_FILTER_KEYS } from 'utils/filters'
+import { LIST_SEARCH_KEY } from './registry-shared-search'
 
 /*
  * ?action= links: anyone can send people to a list with the values to
@@ -6,10 +7,10 @@ import { FILTER_KEYS, P_FILTER_KEYS } from 'utils/filters'
  * as they always have, each parameter other than `action` filling the next
  * column. Some parameters are never values: the app-wide theme preview
  * (?cv-theme=, which rides along to the submit page), the policy viewer's
- * parameters and tracking tags. The list's own state (filters, sort, page)
- * is added after a link's values, so it is dropped only there: between two
- * values, a key named like it (a column keyed "page") is a value, and the
- * values after it keep their columns.
+ * parameters and tracking tags. The list's own state (filters, sort, page,
+ * search) is added after a link's values, so it is dropped only there:
+ * between two values, a key named like it (a column keyed "page") is a
+ * value, and the values after it keep their columns.
  */
 
 const THEME_KEY = 'cv-theme'
@@ -20,6 +21,7 @@ const VIEWER_KEYS = new Set(['attachment', 'isPolicy', 'policyTx'])
 const LIST_STATE_KEYS = new Set<string>([
   ...Object.values(FILTER_KEYS),
   ...Object.values(P_FILTER_KEYS),
+  LIST_SEARCH_KEY,
 ])
 
 // Tracking tags that sites and newsletters append are never values either.

@@ -1297,6 +1297,8 @@ export const EntryList = ({
   itemNamePlural = 'entries',
   loading,
   emptyAction,
+  emptyTitle,
+  emptyLine = 'Change the filters or search, or be the first to submit.',
 }: {
   layout: ListLayout
   entries: EntryRow[]
@@ -1306,6 +1308,10 @@ export const EntryList = ({
   itemNamePlural?: string
   loading?: boolean
   emptyAction?: React.ReactNode
+  /** The empty state's title; by default it says that nothing matches. */
+  emptyTitle?: string
+  /** The line under it; the page says why the list is empty. */
+  emptyLine?: string
 }) => {
   if (loading && entries.length === 0)
     return (
@@ -1318,10 +1324,10 @@ export const EntryList = ({
       <Surface $padding="none">
         <EmptyState
           icon="list"
-          title={`No ${itemNamePlural} match`}
+          title={emptyTitle ?? `No ${itemNamePlural} match`}
           action={emptyAction}
         >
-          Change the filters or search, or be the first to submit.
+          {emptyLine}
         </EmptyState>
       </Surface>
     )

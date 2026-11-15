@@ -182,6 +182,29 @@ export interface FilterChip {
   checked: boolean
 }
 
+/**
+ * After a page change, the list's top (its toolbar) back in view: the pager
+ * at the foot of a long list would otherwise leave the reader at the bottom
+ * of the new rows. Only when the toolbar is out of view under the app bar
+ * (html's scroll-padding-top, which scrollIntoView keeps clear too); instant
+ * under reduced motion.
+ */
+export const scrollToToolbar = (toolbar: HTMLElement | null) => {
+  if (!toolbar) return
+  const clearance =
+    Number.parseFloat(
+      getComputedStyle(document.documentElement).scrollPaddingTop,
+    ) || 0
+  if (toolbar.getBoundingClientRect().top >= clearance) return
+  const reduced = window.matchMedia?.(
+    '(prefers-reduced-motion: reduce)',
+  ).matches
+  toolbar.scrollIntoView({
+    behavior: reduced ? 'auto' : 'smooth',
+    block: 'start',
+  })
+}
+
 export const RegistryToolbar = ({
   search,
   onSearch,
@@ -208,11 +231,16 @@ export const RegistryToolbar = ({
   onLayoutChange: (layout: ListLayout) => void
   nsfwFilter: boolean
   onNsfwChange: (checked: boolean) => void
-  shown: number
-  total: number
+  /** Entries shown; undefined while the list or its counts load. */
+  shown?: number
+  /** Entries the filters cover; undefined while unknown. */
+  total?: number
 }) => {
   const nsfwLabelId = useId()
   const [rail, railOverflows] = useOverflow()
+  // Nothing is counted until both figures are known: a loading list never
+  // reads (or announces) "0 of 0".
+  const counted = shown !== undefined && total !== undefined
   return (
     <Bar role="region" aria-label="Filters">
       <Search>
@@ -223,8 +251,11 @@ export const RegistryToolbar = ({
           value={search}
           onChange={(event) => onSearch(event.currentTarget.value)}
         />
-        <Count aria-live="polite" title="Shown of total">
-          {integer.format(shown)} of {integer.format(total)}
+        <Count
+          aria-live="polite"
+          title={counted ? 'Shown of total' : undefined}
+        >
+          {counted && `${integer.format(shown)} of ${integer.format(total)}`}
         </Count>
       </Search>
       <SwitchField>

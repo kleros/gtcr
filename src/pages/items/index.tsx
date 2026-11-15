@@ -60,6 +60,7 @@ import {
 } from 'components/curate/registry-header'
 import {
   RegistryToolbar,
+  scrollToToolbar,
   type FilterChip,
 } from 'components/curate/registry-toolbar'
 import {
@@ -84,8 +85,12 @@ import {
   readActionLink,
   submitPathFor,
 } from 'components/curate/registry-shared-action-link'
+import {
+  listSearchFrom,
+  withListSearch,
+} from 'components/curate/registry-shared-search'
 import ErrorPage from '../error-page'
-import { LIST_LINK_TIP } from '../error-page/copy'
+import { LIST_LINK_TIP, LIST_LOAD_FAILED } from '../error-page/copy'
 
 // The submission forms load on first use: they are heavy and most visits to
 // a list never open one (Submit goes to the full submission page). React.lazy
@@ -494,6 +499,8 @@ const Items = () => {
   const openAttachment = useAttachment()
   const now = useNow()
   const [layout, setLayout] = useRegistryLayout('entries')
+  // The pager sits at the foot of the list: a new page starts at its top.
+  const toolbarRef = useRef<HTMLDivElement>(null)
   const trust = useRegistryVerified(chainId, tcrAddress)
   // A retired Kleros list of lists: what replaced it, so submitters go there.
   const replacement = replacedListOfLists(chainId, tcrAddress)
@@ -503,7 +510,12 @@ const Items = () => {
   const [formAttempt, setFormAttempt] = useState(0)
   const forms = useMemo(() => lazyForms(formAttempt), [formAttempt])
   const [nsfwFilterOn, setNSFWFilter] = useState(true)
-  const [itemSearch, setItemSearch] = useState('')
+  // The search box lives in the URL (?q=), so Back from an entry, a reload
+  // or a shared link keeps it. Typing replaces the history entry: Back
+  // leaves the list instead of undoing keystrokes.
+  const itemSearch = listSearchFrom(search)
+  const setItemSearch = (term: string) =>
+    navigate({ search: withListSearch(search, term) }, { replace: true })
   const [queryItemParams, setQueryItemParams] = useState<string[] | undefined>()
   const [revealed, setRevealed] = useState<ReadonlySet<string>>(() => new Set())
   const queryOptions = searchStrToFilterObjLight(search)
@@ -1054,6 +1066,7 @@ const Items = () => {
     const params = new URLSearchParams(search)
     params.set(FILTER_KEYS.PAGE, String(newPage))
     navigate({ search: `?${params.toString()}` })
+    scrollToToolbar(toolbarRef.current)
   }
 
   // Each chip carries its status's count when the whole list is loaded.
@@ -1067,11 +1080,14 @@ const Items = () => {
   }))
   const checkedChips = chips.filter((chip) => chip.checked)
   const filtersActive = searching || checkedChips.length > 0
-  const clearFilters = () => {
-    setItemSearch('')
-    navigate({ search: '' })
-  }
+  // Clears the search too: it lives in the same query string.
+  const clearFilters = () => navigate({ search: '' })
+  // No filter, no search and the first page, yet no rows: the list is empty.
+  const listEmpty = !filtersActive && offset === 0
 
+  // A failed refetch (the list reads itself again every few minutes) keeps
+  // the rows already on screen: only a read with nothing to show fails.
+  const listFailed = !!itemsQuery.error && !itemsQuery.data
   const loading = itemsQuery.isLoading || !metadata || !items
   const loadedTotal = loadedItems?.length ?? 0
   const knownTotal = windowStart + loadedTotal
@@ -1162,25 +1178,28 @@ const Items = () => {
         )}
       </Legacy>
 
-      <RegistryToolbar
-        search={itemSearch}
-        onSearch={setItemSearch}
-        placeholder={`Search ${itemNamePlural}`}
-        chips={chips}
-        onChipChange={setFilter}
-        sort={oldestFirst ? 'oldest' : 'newest'}
-        onSortChange={(sort) =>
-          setFilter(FILTER_KEYS.OLDEST_FIRST, sort === 'oldest')
-        }
-        layout={layout}
-        onLayoutChange={setLayout}
-        nsfwFilter={nsfwFilterOn}
-        onNsfwChange={toggleNSFWFilter}
-        shown={entries.length}
-        total={listTotal}
-      />
+      <div ref={toolbarRef}>
+        <RegistryToolbar
+          search={itemSearch}
+          onSearch={setItemSearch}
+          placeholder={`Search ${itemNamePlural}`}
+          chips={chips}
+          onChipChange={setFilter}
+          sort={oldestFirst ? 'oldest' : 'newest'}
+          onSortChange={(sort) =>
+            setFilter(FILTER_KEYS.OLDEST_FIRST, sort === 'oldest')
+          }
+          layout={layout}
+          onLayoutChange={setLayout}
+          nsfwFilter={nsfwFilterOn}
+          onNsfwChange={toggleNSFWFilter}
+          // Unknown (not "0 of 0") until the rows are in.
+          shown={loading ? undefined : entries.length}
+          total={loading ? undefined : listTotal}
+        />
+      </div>
 
-      {itemsQuery.error ? (
+      {listFailed ? (
         <Surface $padding="none">
           <EmptyState
             icon="activity"
@@ -1196,7 +1215,7 @@ const Items = () => {
               </Button>
             }
           >
-            {itemsQuery.error.message}
+            {LIST_LOAD_FAILED}
           </EmptyState>
         </Surface>
       ) : (
@@ -1208,6 +1227,8 @@ const Items = () => {
           itemName={itemWord}
           itemNamePlural={itemNamePlural}
           loading={loading}
+          emptyTitle={listEmpty ? `No ${itemNamePlural} yet` : undefined}
+          emptyLine={listEmpty ? 'Be the first to submit one.' : undefined}
           emptyAction={
             filtersActive ? (
               <Button
@@ -1225,7 +1246,7 @@ const Items = () => {
 
       {/* Past the last page (?page=N with no rows) the footer stays so the
           pagination can take the reader back. */}
-      {!loading && !itemsQuery.error && (entries.length > 0 || offset > 0) && (
+      {!loading && !listFailed && (entries.length > 0 || offset > 0) && (
         <ListFooter>
           <Small $muted>
             {searching

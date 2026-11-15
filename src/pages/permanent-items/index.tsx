@@ -3,6 +3,7 @@ import React, {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react'
 import styled from 'styled-components'
@@ -48,6 +49,7 @@ import {
 } from 'components/curate/registry-header'
 import {
   RegistryToolbar,
+  scrollToToolbar,
   type FilterChip,
 } from 'components/curate/registry-toolbar'
 import {
@@ -76,6 +78,10 @@ import type { StakeLane } from 'components/curate/registry-stake-summary'
 import { StakeInsights } from 'components/curate/registry-stake-insights'
 import { useRegistryLayout } from 'components/curate/registry-shared-layout'
 import { useRegistryVerified } from 'components/curate/registry-shared-verified'
+import {
+  listSearchFrom,
+  withListSearch,
+} from 'components/curate/registry-shared-search'
 import ErrorPage from '../error-page'
 import { LIST_LOAD_FAILED } from '../error-page/copy'
 
@@ -304,9 +310,16 @@ const StakeRegistry = () => {
   const library = useEthersProvider({ chainId: chainId ?? undefined })
   const nativeCurrency = useNativeCurrency()
   const [layout, setLayout] = useRegistryLayout('registry-entries')
+  // The pager sits at the foot of the list: a new page starts at its top.
+  const toolbarRef = useRef<HTMLDivElement>(null)
   const trust = useRegistryVerified(chainId, tcrAddress)
   const [nsfwFilterOn, setNsfwFilterOn] = useState(true)
-  const [itemSearch, setItemSearch] = useState('')
+  // The search box lives in the URL (?q=), so Back from an entry, a reload
+  // or a shared link keeps it. Typing replaces the history entry: Back
+  // leaves the list instead of undoing keystrokes.
+  const itemSearch = listSearchFrom(search)
+  const setItemSearch = (term: string) =>
+    navigate({ search: withListSearch(search, term) }, { replace: true })
   const [revealed, setRevealed] = useState<Set<string>>(() => new Set())
 
   const queryOptions = searchStrToFilterObjPermanent(search)
@@ -653,6 +666,7 @@ const StakeRegistry = () => {
     const params = new URLSearchParams(search)
     params.set(P_FILTER_KEYS.PAGE, String(nextPage))
     navigate({ search: `?${params.toString()}` })
+    scrollToToolbar(toolbarRef.current)
   }
 
   const minStake =
@@ -915,6 +929,12 @@ const StakeRegistry = () => {
     pageStart <= footerTotal
   const toolbarTotal =
     itemCount ?? (outOfRange ? 0 : pageStartIndex + items.length)
+  // The search box's count stays blank (never "0 of 0") until the page and
+  // the counts are in, and when the page did not load.
+  const countUnknown =
+    itemsLoading || !countsReady || (itemsQuery.isError && !itemsQuery.data)
+  // No filter and no search, yet nothing on the first page: an empty list.
+  const listEmpty = !absent && !registered && !disputed && !itemSearch.trim()
   const noun = (count: number) => (count === 1 ? itemName : itemNamePlural)
   const outOfRangeLine =
     itemCount === undefined
@@ -974,23 +994,25 @@ const StakeRegistry = () => {
         onOpen={openLane}
       />
 
-      <RegistryToolbar
-        search={itemSearch}
-        onSearch={setItemSearch}
-        placeholder={`Search ${itemNamePlural}`}
-        chips={chips}
-        onChipChange={setFilter}
-        sort={oldestFirst ? 'oldest' : 'newest'}
-        onSortChange={(sort) =>
-          setFilter(P_FILTER_KEYS.OLDEST_FIRST, sort === 'oldest')
-        }
-        layout={layout}
-        onLayoutChange={setLayout}
-        nsfwFilter={nsfwFilterOn}
-        onNsfwChange={toggleNsfwFilter}
-        shown={itemsLoading ? 0 : entries.length}
-        total={toolbarTotal}
-      />
+      <div ref={toolbarRef}>
+        <RegistryToolbar
+          search={itemSearch}
+          onSearch={setItemSearch}
+          placeholder={`Search ${itemNamePlural}`}
+          chips={chips}
+          onChipChange={setFilter}
+          sort={oldestFirst ? 'oldest' : 'newest'}
+          onSortChange={(sort) =>
+            setFilter(P_FILTER_KEYS.OLDEST_FIRST, sort === 'oldest')
+          }
+          layout={layout}
+          onLayoutChange={setLayout}
+          nsfwFilter={nsfwFilterOn}
+          onNsfwChange={toggleNsfwFilter}
+          shown={countUnknown ? undefined : entries.length}
+          total={countUnknown ? undefined : toolbarTotal}
+        />
+      </div>
 
       {columnsQuery.isError && (
         <Notice role="status">
@@ -1065,6 +1087,8 @@ const StakeRegistry = () => {
             now={now}
             itemName={itemName}
             itemNamePlural={itemNamePlural}
+            emptyTitle={listEmpty ? `No ${itemNamePlural} yet` : undefined}
+            emptyLine={listEmpty ? 'Be the first to submit one.' : undefined}
             emptyAction={
               <Button
                 type="button"
