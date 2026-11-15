@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import styled from 'styled-components'
 import { Link, useNavigate } from 'react-router-dom'
 import { useDebounce } from 'use-debounce'
@@ -130,6 +130,11 @@ export interface TcrState {
   chainId?: number
   transactions: Record<string, TransactionInfo>
   finished?: boolean
+  /**
+   * A deployment sent and not yet seen mined. A reload while it mines
+   * checks it again instead of offering to deploy a second list.
+   */
+  pendingDeploy?: { hash: string }
 }
 
 export interface CachedFactory {
@@ -361,6 +366,20 @@ const useCachedFactory = (
       return
     window.localStorage.setItem(key, JSON.stringify({ ...debouncedTcrState }))
   }, [debouncedTcrState, key, networkId])
+
+  // A sent deployment is saved at once, not a second later with the rest of
+  // the draft: a reload while it mines must find it.
+  const pendingHash = tcrState.pendingDeploy?.hash
+  const savedPendingHash = useRef(pendingHash)
+  useEffect(() => {
+    if (pendingHash === savedPendingHash.current) return
+    savedPendingHash.current = pendingHash
+    if (!networkId || !tcrState.arbitratorAddress) return
+    window.localStorage.setItem(key, JSON.stringify({ ...tcrState }))
+    // Only a change of the pending deployment saves here; the effect above
+    // saves everything else.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingHash])
 
   // The governor defaults to the wallet. A draft started before connecting
   // (or kept from before this rule) may hold no governor or the chain's

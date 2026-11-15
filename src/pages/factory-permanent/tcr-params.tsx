@@ -762,8 +762,14 @@ const TCRParams = (props: TCRParamsProps) => {
 export default withFormik<TCRParamsOuterProps, TCRFormValues>({
   validationSchema: ({ factorySection }: TCRParamsOuterProps) =>
     tcrSchemaFor(factorySection),
+  // The deploy step owns the transactions and a sent deployment: a form
+  // writing its values back must not restore an old copy of either.
   mapPropsToValues: ({ tcrState }) => {
-    const { transactions: _transactions, ...values } = tcrState
+    const {
+      transactions: _transactions,
+      pendingDeploy: _pendingDeploy,
+      ...values
+    } = tcrState
     return values
   },
   handleSubmit: (_, { props: { postSubmit } }) => {

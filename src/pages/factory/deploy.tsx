@@ -669,22 +669,38 @@ const Deploy = ({
     `chain ${chainId}`
   const { address: account } = useAccount()
   const publicClient = usePublicClient()
+  // The list's own chain, to check a deployment again after a reload, when
+  // the wallet may not be back yet or may sit on another chain.
+  const receiptClient = usePublicClient({ chainId })
   const { data: walletClient } = useWalletClient()
   const nativeCurrency = useNativeCurrency()
-  const [phase, setPhase] = useState<DeployPhase>('idle')
+  // A deployment sent before this page reloaded, kept with the draft until
+  // it is mined or fails: it reopens on its confirmations, to be checked
+  // again, instead of offering to deploy a second list.
+  const restored = tcrState.pendingDeploy
+  const [phase, setPhase] = useState<DeployPhase>(restored ? 'mining' : 'idle')
   const [txSubmitted, setTxSubmitted] = useState<string>()
   const [deployedTCRAddress, setDeployedTCRAddress] = useState<string>()
   const [submissionFormOpen, setSubmissionFormOpen] = useState(false)
-  const [pendingHash, setPendingHash] = useState<Hash>()
+  const [pendingHash, setPendingHash] = useState<Hash | undefined>(
+    restored?.hash as Hash | undefined,
+  )
   // Sent, but no receipt came back (viem stops waiting after three minutes,
   // or the node failed): it may still be mined, so it is not a failure, and
   // deploying again could make a second list.
-  const [stillPending, setStillPending] = useState(false)
+  const [stillPending, setStillPending] = useState(!!restored)
+  // A wait for the receipt ended without one. Only then is deploying again
+  // offered, beside "Check again": a deployment restored after a reload is
+  // checked first.
+  const [waited, setWaited] = useState(false)
   const [metaEvidencePaths, setMetaEvidencePaths] = useState<string[]>([])
-  const [predicted, setPredicted] = useState<{
-    list: string
-    badges: string
-  }>()
+  const [predicted, setPredicted] = useState<
+    | {
+        list: string
+        badges: string
+      }
+    | undefined
+  >(restored ? { list: restored.list, badges: restored.badges } : undefined)
   const [failedAt, setFailedAt] = useState<DeployPhase>()
   const factoryAddress = lgtcrFactoryAddresses[chainId]
   const defaultTCRAddress = defaultTcrAddresses[chainId]
@@ -751,6 +767,10 @@ const Deploy = ({
       ? formatDurationLong(periodHours * 60 * 60)
       : '—'
 
+  /** Keeps a sent deployment with the draft (saved at once), or forgets it. */
+  const keepPending = (pendingDeploy?: TcrState['pendingDeploy']) =>
+    setTcrState((previous) => ({ ...previous, pendingDeploy }))
+
   const onDeploy = async () => {
     if (
       !factoryAddress ||
@@ -773,8 +793,11 @@ const Deploy = ({
     setFailedAt(undefined)
     setPendingHash(undefined)
     setStillPending(false)
+    setWaited(false)
     setMetaEvidencePaths([])
     setPredicted(undefined)
+    // Deploying again gives up the deployment kept from before.
+    if (tcrState.pendingDeploy) keepPending(undefined)
     try {
       setPhase('uploading')
       const txCount = await publicClient.getTransactionCount({
@@ -904,10 +927,12 @@ const Deploy = ({
       const result = await wrapWithToast(
         () =>
           walletClient.writeContract(request).then((hash) => {
-            // Signed: show the hash while the confirmations come in.
+            // Signed: show the hash while the confirmations come in, and
+            // keep it with the draft for a reload in the meantime.
             stage = 'mining'
             setPendingHash(hash)
             setPhase('mining')
+            keepPending({ hash, list: parentTCRAddress, badges: relTCRAddress })
             return hash
           }),
         publicClient,
@@ -917,9 +942,12 @@ const Deploy = ({
         onMined(result.result, parentTCRAddress, relTCRAddress)
       // Sent (the callback above moved the stage on), but no receipt, which
       // a revert would have: the transaction is still pending.
-      else if ((stage as DeployPhase) === 'mining' && !result.result)
+      else if ((stage as DeployPhase) === 'mining' && !result.result) {
         setStillPending(true)
-      else {
+        setWaited(true)
+      } else {
+        // Reverted on chain: nothing is pending any more.
+        if ((stage as DeployPhase) === 'mining') keepPending(undefined)
         setFailedAt(stage)
         setPhase('idle')
       }
@@ -992,6 +1020,7 @@ const Deploy = ({
     setTcrState((prevState) => ({
       ...prevState,
       finished: true,
+      pendingDeploy: undefined,
     }))
     setPhase('mined')
     setDeployedTCRAddress(contractAddress)
@@ -999,22 +1028,24 @@ const Deploy = ({
 
   /** Waits for the same transaction again; nothing new is sent. */
   const checkAgain = async () => {
-    if (!publicClient || !pendingHash) return
+    if (!receiptClient || !pendingHash) return
     setStillPending(false)
     try {
-      const receipt = await publicClient.waitForTransactionReceipt({
+      const receipt = await receiptClient.waitForTransactionReceipt({
         hash: pendingHash,
         confirmations: 2,
       })
       if (receipt.status === 'success')
         onMined(receipt, predicted?.list ?? '', predicted?.badges)
       else {
+        keepPending(undefined)
         setFailedAt('mining')
         setPhase('idle')
       }
     } catch (err) {
       console.error('Error waiting for the deploy transaction:', err)
       setStillPending(true)
+      setWaited(true)
     }
   }
 
@@ -1257,9 +1288,11 @@ const Deploy = ({
               note={
                 stepStatus('mining') === 'failed'
                   ? 'The transaction did not go through; nothing was deployed.'
-                  : stillPending
-                    ? 'Not mined yet, but it may still go through: follow it on the explorer before deploying again.'
-                    : 'Keep this page open until the transaction is mined.'
+                  : stillPending && !waited
+                    ? 'Sent before this page reloaded: check whether it went through.'
+                    : stillPending
+                      ? 'Not mined yet, but it may still go through: follow it on the explorer before deploying again.'
+                      : 'Keep this page open until the transaction is mined.'
               }
             >
               {shownHash && explorerTxUrl && (
@@ -1324,9 +1357,21 @@ const Deploy = ({
           <ActionArea>
             <Row $gap={10} $wrap>
               {stillPending ? (
-                <Button type="button" $variant="primary" onClick={checkAgain}>
-                  Check again
-                </Button>
+                <>
+                  <Button type="button" $variant="primary" onClick={checkAgain}>
+                    Check again
+                  </Button>
+                  {/* After a wait that found no receipt: a dropped transaction must not lock the draft. */}
+                  {waited && !blocker && (
+                    <Button
+                      type="button"
+                      $variant="secondary"
+                      onClick={onDeploy}
+                    >
+                      Deploy again
+                    </Button>
+                  )}
+                </>
               ) : walletFix ? (
                 <Button
                   type="button"
@@ -1371,9 +1416,11 @@ const Deploy = ({
                     ? 'Uploading the list details to IPFS'
                     : phase === 'wallet'
                       ? 'Confirm the transaction in your wallet'
-                      : stillPending
-                        ? 'The transaction is still pending'
-                        : 'Waiting for the transaction to be mined'}
+                      : stillPending && !waited
+                        ? 'Check whether the transaction went through'
+                        : stillPending
+                          ? 'The transaction is still pending'
+                          : 'Waiting for the transaction to be mined'}
                 </Small>
               </Row>
             )}

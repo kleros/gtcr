@@ -400,8 +400,14 @@ export default withFormik<StepProps, RelTCRFormValues>({
   validationSchema: yup.lazy((values: RelTCRFormValues) =>
     values.relTcrDisabled === false ? relSchema : yup.object(),
   ),
+  // The deploy step owns the transactions and a sent deployment: a form
+  // writing its values back must not restore an old copy of either.
   mapPropsToValues: ({ tcrState }) => {
-    const { transactions: _transactions, ...values } = tcrState
+    const {
+      transactions: _transactions,
+      pendingDeploy: _pendingDeploy,
+      ...values
+    } = tcrState
     return values
   },
   handleSubmit: (values, { props: { postSubmit, setTcrState } }) => {
