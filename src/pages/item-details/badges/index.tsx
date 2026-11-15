@@ -453,6 +453,7 @@ const Badges = ({ connectedTCRAddr, item, tcrAddress }: BadgesProps) => {
               submissionDeposit,
               baseDeposit: submissionBaseDeposit,
               arbitrationCost,
+              arbitrator: badgeTcrData.arbitrator,
               metaEvidence: badgeMetaEvidence,
               tcrAddress: badgeAddr,
               fileURI,
@@ -649,6 +650,7 @@ const Badges = ({ connectedTCRAddr, item, tcrAddress }: BadgesProps) => {
           submissionDeposit={badgeToSubmit.submissionDeposit}
           baseDeposit={badgeToSubmit.baseDeposit}
           arbitrationCost={badgeToSubmit.arbitrationCost}
+          arbitrator={badgeToSubmit.arbitrator}
           challengePeriodDuration={badgeToSubmit.challengePeriodDuration}
           tcrAddress={badgeToSubmit.tcrAddress}
           metaEvidence={badgeToSubmit.metaEvidence}

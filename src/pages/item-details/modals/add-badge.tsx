@@ -167,6 +167,8 @@ export interface BadgeInfo {
   /** The badge list's submission base deposit and its court's fee. */
   baseDeposit?: BigNumber
   arbitrationCost?: BigNumber
+  /** The badge list's arbitrator, which decides a challenge there. */
+  arbitrator?: string
   /**
    * From the badge list's MetaEvidence, after the guard (which drops a
    * field of the wrong type): any of it can be missing.

@@ -389,6 +389,8 @@ const SubmitModal: React.FC<{
   /** Optional breakdown; read from the list context when it is the same list. */
   baseDeposit?: BigNumber
   arbitrationCost?: BigNumber
+  /** The list's arbitrator, likewise (it decides whether jurors are named). */
+  arbitrator?: string
   metaEvidence?: MetaEvidence
   disabledFields?: boolean[]
   challengePeriodDuration?: BigNumber
@@ -453,10 +455,10 @@ const SubmitModal: React.FC<{
     props.arbitrationCost ??
     (sameList ? listContext?.arbitrationCost : undefined)
   // A challenge goes to the list's arbitrator; only Kleros has jurors to
-  // name. Another list's is not read here, so it gets the plain wording.
+  // name. Unknown (another list, nothing passed), it gets the plain wording.
   const klerosDecides = isKlerosArbitrator(
     chainId,
-    sameList ? listContext?.arbitrator : undefined,
+    props.arbitrator ?? (sameList ? listContext?.arbitrator : undefined),
   )
 
   const gate = useActionGate({
