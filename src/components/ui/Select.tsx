@@ -463,11 +463,14 @@ const Select: SelectComponent = ({
       const newValue = opt.value
       setSelectedValue(newValue)
       close()
+      // The search box had focus and leaves with the panel: focus goes back
+      // to the field, not to <body> (Escape does the same).
+      if (showSearch) triggerRef.current?.focus()
       if (onChange)
         if (labelInValue) onChange({ key: newValue, label: opt.label })
         else onChange(newValue)
     },
-    [onChange, labelInValue, close],
+    [onChange, labelInValue, close, showSearch],
   )
 
   const moveHighlight = useCallback(
