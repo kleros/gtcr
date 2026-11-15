@@ -1,14 +1,16 @@
-import React, { useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 import { Popover } from 'components/ui'
 import { useWeb3Context } from 'hooks/use-web3-context'
 import { useDisconnect } from 'wagmi'
 import ReactBlockies from 'react-blockies'
 import styled from 'styled-components'
 import { BigNumber } from 'ethers'
-import useNativeCurrency from 'hooks/native-currency'
-import { Label, Stack } from 'components/curate/primitives'
+import { getNativeCurrency } from 'config/chains'
+import { getAddressPage } from 'utils/network-utils'
+import { onTxConfirmed } from 'utils/tx-events'
+import { Label, Stack, truncateMiddle } from 'components/curate/primitives'
+import { ChromeAddress } from 'components/curate/chrome-address'
 import { CurateIcon } from 'components/curate/icons'
-import ETHAddress from './eth-address'
 import TokenAmount from './token-amount'
 
 /*
@@ -128,19 +130,30 @@ interface IdenticonProps {
 }
 
 const Identicon = ({ className, large }: IdenticonProps) => {
-  const { account, library } = useWeb3Context()
+  const { account, library, networkId } = useWeb3Context()
   const { disconnect } = useDisconnect()
-  const nativeCurrency = useNativeCurrency()
 
   const [menuOpen, setMenuOpen] = useState(false)
-  const [balance, setBalance] = useState<BigNumber>()
+  // The balance with the chain it was read on (the wallet's): its unit and
+  // the explorer link follow that chain, not the page's, which a wallet
+  // left on another network does not match.
+  const [balance, setBalance] = useState<{
+    value: BigNumber
+    chainId: number
+  }>()
+  // Read again each time the menu opens and after every confirmed
+  // transaction, so it never shows the balance from before a deposit.
+  const [reads, setReads] = useState(0)
+  const readAgain = useCallback(() => setReads((count) => count + 1), [])
+  useEffect(() => onTxConfirmed(readAgain), [readAgain])
   useEffect(() => {
     if (!library || !account) return
     let live = true
+    const chainId = networkId
     void (async () => {
       try {
         const next = await library.getBalance(account)
-        if (live) setBalance(next)
+        if (live) setBalance({ value: next, chainId })
       } catch {
         // The menu simply shows no balance if the node does not answer.
       }
@@ -148,7 +161,7 @@ const Identicon = ({ className, large }: IdenticonProps) => {
     return () => {
       live = false
     }
-  }, [library, account])
+  }, [library, account, networkId, reads])
 
   if (!account) return null
 
@@ -177,10 +190,21 @@ const Identicon = ({ className, large }: IdenticonProps) => {
             <Label $tone="faint">Balance</Label>
             <Balance>
               {/* Rounded to 4 decimals: wei would print up to 18. */}
-              <TokenAmount amount={balance} precision={4} />
-              {balance && <BalanceUnit>{nativeCurrency}</BalanceUnit>}
+              <TokenAmount amount={balance?.value} precision={4} />
+              {balance && (
+                <BalanceUnit>
+                  {getNativeCurrency(balance.chainId).symbol}
+                </BalanceUnit>
+              )}
             </Balance>
-            <ETHAddress address={account} />
+            <ChromeAddress
+              address={account}
+              href={getAddressPage({
+                networkId: balance?.chainId ?? networkId,
+                address: account,
+              })}
+              display={truncateMiddle(account, 6, 4)}
+            />
           </MenuSection>
           <MenuSection>
             <Disconnect type="button" onClick={() => disconnect()}>
@@ -193,7 +217,10 @@ const Identicon = ({ className, large }: IdenticonProps) => {
       placement="bottomRight"
       trigger="click"
       visible={menuOpen}
-      onVisibleChange={setMenuOpen}
+      onVisibleChange={(open) => {
+        setMenuOpen(open)
+        if (open) readAgain()
+      }}
     >
       {/* A disclosure, not a menu: the panel holds a balance, an address
           and a button, so it announces no menu popup. */}
