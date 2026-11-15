@@ -184,6 +184,11 @@ const LifecyclePanel = styled(Surface)`
   scroll-margin-top: 24px;
   ${reveal}
 
+  /* Focus lands here only by code, after a jump from the contents. */
+  &:focus {
+    outline: none;
+  }
+
   @media (max-width: 1023px) {
     margin-top: 24px;
     scroll-margin-top: 64px;
@@ -422,6 +427,7 @@ const Guide = () => {
             as="section"
             id="lifecycle"
             aria-labelledby="lifecycle-title"
+            tabIndex={-1}
             $featured
             $padding="none"
             style={{ ['--i' as string]: 4 }}

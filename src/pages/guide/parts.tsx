@@ -79,6 +79,11 @@ const Shell = styled.section`
   @media (max-width: 720px) {
     margin-top: 72px;
   }
+
+  /* Focus lands here only by code, after a jump from the contents. */
+  &:focus {
+    outline: none;
+  }
 `
 
 const Head = styled.header`
@@ -109,7 +114,7 @@ export const GuideSection = ({
   heading: string
   children: React.ReactNode
 }) => (
-  <Shell id={id} aria-labelledby={`${id}-title`}>
+  <Shell id={id} aria-labelledby={`${id}-title`} tabIndex={-1}>
     <Head>
       <Eyebrow id={id} />
       <SectionTitle id={`${id}-title`}>{heading}</SectionTitle>

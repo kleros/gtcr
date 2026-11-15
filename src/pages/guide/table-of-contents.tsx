@@ -36,13 +36,19 @@ const useActiveSection = (ids: string[], offset: number): string => {
   return active
 }
 
-/** Smooth-scrolls to a section and keeps the hash in the address bar. */
+/**
+ * Smooth-scrolls to a section, moves the keyboard focus and the screen
+ * reader's place there with it, and keeps the hash in the address bar.
+ */
 export const useJump = () => {
   const reduced = useReducedMotion()
   return (event: React.MouseEvent<HTMLAnchorElement>, id: string) => {
-    const target = document.querySelector(`#${id}`)
+    const target = document.querySelector<HTMLElement>(`#${id}`)
     if (!target) return
     event.preventDefault()
+    // Sections take focus by code only (tabIndex -1). Focused first and
+    // without its own scroll, so the smooth scroll below runs undisturbed.
+    target.focus({ preventScroll: true })
     target.scrollIntoView({
       behavior: reduced ? 'auto' : 'smooth',
       block: 'start',
