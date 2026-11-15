@@ -745,14 +745,19 @@ const fetchCurrentMetaEvidence = async (
   }
 }
 
+/**
+ * How often the dialog reads the settings again while the indexer trails
+ * the chain or does not answer (the two notes below say 15 seconds).
+ */
+const REREAD_MS = 15_000
 const CURRENT_UNREADABLE =
   "The list's current settings could not be read. Close and reopen this dialog to try again."
 const META_EVIDENCE_UNREADABLE =
-  "The list's current MetaEvidence could not be read from the indexer. Close and reopen this dialog to try again."
+  "The list's current MetaEvidence could not be read from the indexer. This dialog tries again every 15 seconds."
 const INDEXER_BEHIND =
-  "The indexer has not caught up with this list's latest MetaEvidence yet, so this dialog can't start from the live files. Try again in a minute."
+  "The indexer has not caught up with this list's latest MetaEvidence yet, so this dialog can't start from the live files. It checks again every 15 seconds."
 const SETTINGS_CHANGED =
-  "This list's settings changed since this dialog opened, so nothing was sent. The fields you did not edit now show the new values: check them and save again."
+  "This list's settings changed since this dialog opened, so nothing was sent. The form now shows the live settings: make your change again."
 
 /* ---------- Dialog shell ---------- */
 
@@ -1195,6 +1200,7 @@ const ArbitrationGovernanceField = ({
   registry,
   current,
   currentError,
+  refreshing,
   gate,
   onSaved,
   onOutdated,
@@ -1204,8 +1210,11 @@ const ArbitrationGovernanceField = ({
   current: CurrentMetaEvidence | undefined
   /** The live settings could not be read. */
   currentError?: boolean
+  /** The live settings are being read again after a change. */
+  refreshing?: boolean
   gate: SaveGate
-  onSaved: (written: Written) => void
+  /** Records the save; resolves once the live settings are read again. */
+  onSaved: (written: Written) => Promise<unknown>
   /** The chain changed since `current` was read: read it again. */
   onOutdated: () => void
 }) => {
@@ -1278,27 +1287,31 @@ const ArbitrationGovernanceField = ({
   // Every save sends values the governor did not touch along with the ones
   // they did (Light and Stake send the court and the MetaEvidence together):
   // without the live values, refuse rather than send stale ones back.
-  const inputError = !current
-    ? currentError
-      ? CURRENT_UNREADABLE
-      : 'Reading the current settings…'
-    : (usesPair || usesSingle) && current.unreadable
-      ? META_EVIDENCE_UNREADABLE
-      : (usesPair || usesSingle) && current.behind
-        ? INDEXER_BEHIND
-        : registry.kind !== 'permanent' && !isAddress(arbitrator)
-          ? 'Enter a valid arbitrator address'
-          : courtNumber === undefined
-            ? 'Choose a court'
-            : jurorCount.error
-              ? `Jurors: ${jurorCount.error}`
-              : undefined
+  const inputError =
+    !current || refreshing
+      ? currentError
+        ? CURRENT_UNREADABLE
+        : 'Reading the current settings…'
+      : (usesPair || usesSingle) && current.unreadable
+        ? META_EVIDENCE_UNREADABLE
+        : (usesPair || usesSingle) && current.behind
+          ? INDEXER_BEHIND
+          : registry.kind !== 'permanent' && !isAddress(arbitrator)
+            ? 'Enter a valid arbitrator address'
+            : courtNumber === undefined
+              ? 'Choose a court'
+              : jurorCount.error
+                ? `Jurors: ${jurorCount.error}`
+                : undefined
   const blocker =
     gate.blocker ??
     (!walletClient
       ? 'Wallet not ready'
       : (inputError ?? (changed ? undefined : 'No change')))
-  const locked = Boolean(gate.blocker) || pending || checking
+  // The inputs wait for the live settings, and for each read after a
+  // change, so no edit starts from the scan's values or from older ones.
+  const locked =
+    Boolean(gate.blocker) || pending || checking || !current || refreshing
 
   const save = async () => {
     if (blocker || !extraData || !current) return
@@ -1335,7 +1348,14 @@ const ArbitrationGovernanceField = ({
     })().catch(() => 'The checks before saving failed. Try again.')
     if (!alive.current) return
     setChecking(false)
-    if (outdated) onOutdated()
+    if (outdated) {
+      // Every field goes back to the live values, read again now: an edit
+      // kept would hold its untouched neighbours on the older values, and
+      // the next save would send them back.
+      meta.reset()
+      setSettingsEdited(false)
+      onOutdated()
+    }
     if (problem) {
       errorToast(problem)
       return
@@ -1351,11 +1371,11 @@ const ArbitrationGovernanceField = ({
           ? [arbitrator, extraData, registration, clearing]
           : [extraData, registration]
     if (await send(functionName, args)) {
-      meta.reset()
-      setSettingsEdited(false)
       // Light and Stake add a settings entry: one more MetaEvidence change.
       const changes = (current.changes ?? 0) + 1
-      onSaved({
+      // The fields keep the saved values until the live settings are read
+      // again: un-edited sooner, they would show the ones from before.
+      await onSaved({
         params: {
           ...(registry.kind !== 'permanent' ? { arbitrator } : {}),
           arbitratorExtraData: extraData,
@@ -1367,6 +1387,9 @@ const ArbitrationGovernanceField = ({
             ? { metaEvidence: { registration, changes } }
             : {}),
       })
+      if (!alive.current) return
+      meta.reset()
+      setSettingsEdited(false)
     }
   }
 
@@ -1528,6 +1551,7 @@ const MetaEvidencePairField = ({
   registry,
   current,
   currentError,
+  refreshing,
   gate,
   onSaved,
   onOutdated,
@@ -1535,8 +1559,11 @@ const MetaEvidencePairField = ({
   registry: GovernedRegistry
   current: CurrentMetaEvidence | undefined
   currentError?: boolean
+  /** The live settings are being read again after a change. */
+  refreshing?: boolean
   gate: SaveGate
-  onSaved: (written: Written) => void
+  /** Records the save; resolves once the live settings are read again. */
+  onSaved: (written: Written) => Promise<unknown>
   /** The chain changed since `current` was read: read it again. */
   onOutdated: () => void
 }) => {
@@ -1553,7 +1580,7 @@ const MetaEvidencePairField = ({
     gate.blocker ??
     (!walletClient
       ? 'Wallet not ready'
-      : !current
+      : !current || refreshing
         ? currentError
           ? CURRENT_UNREADABLE
           : 'Reading the current MetaEvidence…'
@@ -1564,7 +1591,9 @@ const MetaEvidencePairField = ({
             : changed
               ? undefined
               : 'No change')
-  const locked = Boolean(gate.blocker) || pending || checking
+  // As in ArbitrationGovernanceField: no edit starts from older values.
+  const locked =
+    Boolean(gate.blocker) || pending || checking || !current || refreshing
 
   const save = async () => {
     if (blocker || !current) return
@@ -1581,21 +1610,28 @@ const MetaEvidencePairField = ({
     })().catch(() => 'The MetaEvidence check failed. Try again.')
     if (!alive.current) return
     setChecking(false)
-    if (outdated) onOutdated()
+    if (outdated) {
+      // Both files go back to the live ones, read again now: an edit kept
+      // would hold the other file on its older value.
+      meta.reset()
+      onOutdated()
+    }
     if (problem) {
       errorToast(problem)
       return
     }
     if (await send('changeMetaEvidence', [registration, clearing])) {
-      meta.reset()
-      // changeMetaEvidence adds one to metaEvidenceUpdates.
-      onSaved({
+      // changeMetaEvidence adds one to metaEvidenceUpdates. The files keep
+      // the saved values until the live ones are read again.
+      await onSaved({
         metaEvidence: {
           registration,
           clearing,
           changes: (current.changes ?? 0) + 1,
         },
       })
+      if (!alive.current) return
+      meta.reset()
     }
   }
 
@@ -1815,21 +1851,40 @@ const GovernanceDialog = ({
           },
         }
       : {}
+  // After a court or MetaEvidence save, and after a save refused because the
+  // settings changed, the live settings are read again. The settings fields
+  // wait for that read, so no edit starts from the values read before.
+  const [rereads, setRereads] = useState(0)
+  const waitForRead = async (read: Promise<unknown>) => {
+    setRereads((count) => count + 1)
+    try {
+      await read
+    } finally {
+      setRereads((count) => count - 1)
+    }
+  }
   const saved = (next: Written) => {
     onWritten(next)
     void queryClient.invalidateQueries({
       queryKey: ['addressProfile', profileAddress],
     })
-    void queryClient.invalidateQueries({
+    return queryClient.invalidateQueries({
       queryKey: ['governanceMetaEvidence', registry.chainId, registry.address],
     })
   }
-  // The list's live settings, read again each time the dialog opens.
+  const savedSettings = (next: Written) => waitForRead(saved(next))
+  // The list's live settings, read again each time the dialog opens, and
+  // every REREAD_MS while the indexer trails the chain or does not answer,
+  // so that waiting is enough.
   const metaEvidence = useQuery({
     queryKey: ['governanceMetaEvidence', registry.chainId, registry.address],
     queryFn: () => fetchCurrentMetaEvidence(registry),
     staleTime: 0,
     retry: 1,
+    refetchInterval: (query) =>
+      query.state.data?.behind || query.state.data?.unreadable
+        ? REREAD_MS
+        : false,
   })
   // This page's last MetaEvidence save stands in for the indexer, which may
   // not have caught up with it, while the chain still holds the change it
@@ -1851,8 +1906,11 @@ const GovernanceDialog = ({
       unreadable: false,
     }
   }, [fetchedMetaEvidence, writtenMetaEvidence])
-  const metaEvidenceError = metaEvidence.isError && !currentMetaEvidence
-  const readSettingsAgain = () => void metaEvidence.refetch()
+  // A failed read keeps the previous answer in the cache, from before a
+  // save perhaps: the settings fields show the failure, not older values.
+  const liveSettings = metaEvidence.isError ? undefined : currentMetaEvidence
+  const metaEvidenceError = metaEvidence.isError
+  const readSettingsAgain = () => void waitForRead(metaEvidence.refetch())
   // Stake amounts are in the token's own decimals, never assumed to be 18.
   const tokenDecimals = useReadContract({
     address: registry.token as `0x${string}` | undefined,
@@ -1912,10 +1970,11 @@ const GovernanceDialog = ({
         <Label>Arbitration and court</Label>
         <ArbitrationGovernanceField
           registry={registry}
-          current={currentMetaEvidence}
+          current={liveSettings}
           currentError={metaEvidenceError}
+          refreshing={rereads > 0}
           gate={gate}
-          onSaved={saved}
+          onSaved={savedSettings}
           onOutdated={readSettingsAgain}
         />
       </div>
@@ -1924,10 +1983,11 @@ const GovernanceDialog = ({
           <Label>Policy</Label>
           <MetaEvidencePairField
             registry={registry}
-            current={currentMetaEvidence}
+            current={liveSettings}
             currentError={metaEvidenceError}
+            refreshing={rereads > 0}
             gate={gate}
-            onSaved={saved}
+            onSaved={savedSettings}
             onOutdated={readSettingsAgain}
           />
         </div>
