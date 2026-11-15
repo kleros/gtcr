@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import styled, { css } from 'styled-components'
 import { smallScreenStyle } from 'styles/small-screen-style'
+import { parseIpfs } from 'utils/ipfs-parse'
 
 interface ISeerExtraDetails {
   chainId: string | number
@@ -10,9 +11,27 @@ interface ISeerExtraDetails {
 
 interface MarketDetails {
   marketName: string
-  marketImage: string
-  outcomes: { name: string; image: string }[]
+  marketImage?: string
+  outcomes: { name: string; image?: string }[]
 }
+
+/*
+ * The entry and its images file are written by anyone: a path glued to the
+ * gateway with no slash (".evil.example/x") would change the host the
+ * browser loads from, and a value that is not text would crash the page.
+ * parseIpfs keeps the URL on the gateway; anything else shows no image.
+ */
+const gatewayUrl = (path: unknown): string | undefined =>
+  typeof path === 'string' && path.trim() ? parseIpfs(path.trim()) : undefined
+
+const MARKET_QUERY = `
+  query SeerMarket($id: ID!) {
+    market(id: $id) {
+      marketName
+      outcomes
+    }
+  }
+`
 
 const Container = styled.div`
   max-width: 600px;
@@ -122,21 +141,17 @@ const SeerExtraDetails: React.FC<ISeerExtraDetails> = ({
           subgraphUrl = process.env.REACT_APP_SEER_SUBGRAPH_GNOSIS ?? ''
         else throw new Error(`Unsupported chainId: ${chainId}`)
 
-        const query = `
-          {
-            market(id: "${contractAddress.toLowerCase()}") {
-              marketName
-              outcomes
-            }
-          }
-        `
-
+        // The address is the entry's own text: sent as a variable, it can
+        // never become part of the query.
         const response = await fetch(subgraphUrl, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ query }),
+          body: JSON.stringify({
+            query: MARKET_QUERY,
+            variables: { id: contractAddress.toLowerCase() },
+          }),
         })
 
         if (!response.ok) throw new Error('Subgraph query failed')
@@ -151,18 +166,20 @@ const SeerExtraDetails: React.FC<ISeerExtraDetails> = ({
           (outcome: string) => outcome !== 'Invalid result',
         )
 
-        const ipfsResponse = await fetch(
-          `${process.env.REACT_APP_IPFS_GATEWAY}${imagesIpfsHash}`,
-        )
+        const imagesUrl = gatewayUrl(imagesIpfsHash)
+        if (!imagesUrl) throw new Error('No images file')
+        const ipfsResponse = await fetch(imagesUrl)
         if (!ipfsResponse.ok) throw new Error('Failed to fetch IPFS data')
         const ipfsData = await ipfsResponse.json()
-        const marketImage = ipfsData.market
-        const outcomeImages = ipfsData.outcomes
+        const marketImage = gatewayUrl(ipfsData?.market)
+        const outcomeImages: unknown[] = Array.isArray(ipfsData?.outcomes)
+          ? ipfsData.outcomes
+          : []
 
         const outcomesWithImages = filteredOutcomes.map(
           (name: string, index: number) => ({
             name,
-            image: outcomeImages[index] || '',
+            image: gatewayUrl(outcomeImages[index]),
           }),
         )
 
@@ -203,19 +220,15 @@ const SeerExtraDetails: React.FC<ISeerExtraDetails> = ({
         </SeerLink>
       </LinkParagraph>
       <MarketHeader>
-        <MarketImage
-          src={`${process.env.REACT_APP_IPFS_GATEWAY}${marketImage}`}
-          alt="Market"
-        />
+        {marketImage && <MarketImage src={marketImage} alt="Market" />}
         <MarketName>{marketName}</MarketName>
       </MarketHeader>
       <OutcomesHeading>Outcomes</OutcomesHeading>
       {outcomes.map((outcome, index) => (
         <OutcomeItem key={index}>
-          <OutcomeImage
-            src={`${process.env.REACT_APP_IPFS_GATEWAY}${outcome.image}`}
-            alt={`Outcome ${index}`}
-          />
+          {outcome.image && (
+            <OutcomeImage src={outcome.image} alt={`Outcome ${index}`} />
+          )}
           <OutcomeName>{outcome.name}</OutcomeName>
         </OutcomeItem>
       ))}
