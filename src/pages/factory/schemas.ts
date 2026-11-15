@@ -1,7 +1,11 @@
 import * as yup from 'yup'
 import { isAddress } from 'viem'
 import { ItemTypes } from '@kleros/gtcr-encoder'
-import { normalizeDecimalInput } from 'utils/decimal-input'
+import {
+  AMBIGUOUS_COMMA,
+  isAmbiguousComma,
+  normalizeDecimalInput,
+} from 'utils/decimal-input'
 import { fileTypesProblem } from './file-types'
 import type { TcrState } from '.'
 
@@ -60,10 +64,16 @@ const typedNumber = (value: unknown, raw: unknown) => {
 const NOT_A_NUMBER =
   'Use a plain number like 1000 or 0.5; a dot or a comma marks decimals.'
 
+/** The refusal, or the reason a comma was not read ("2,375": thousands?). */
+const notANumber = ({ originalValue }: { originalValue?: unknown }) =>
+  typeof originalValue === 'string' && isAmbiguousComma(originalValue)
+    ? AMBIGUOUS_COMMA
+    : NOT_A_NUMBER
+
 const amount = yup
   .number()
   .transform(typedNumber)
-  .typeError(NOT_A_NUMBER)
+  .typeError(notANumber)
   .required('A value is required.')
   .min(0, 'The amount must not be negative.')
   // yup reads "1e3" as a number, but the deploy (parseEther) would throw on
@@ -114,7 +124,7 @@ const period = (positive: boolean) =>
 const multiplier = yup
   .number()
   .transform(typedNumber)
-  .typeError(NOT_A_NUMBER)
+  .typeError(notANumber)
   .min(0, 'The stake multiplier cannot be negative.')
   .required('A value is required.')
   .test(

@@ -58,7 +58,11 @@ import { request } from 'utils/indexer-request'
 import { readStakeArbitrationParams } from 'utils/stake-arbitration-params'
 import { jurorsAndCourtIDFromExtraData } from 'utils/string'
 import { JSON_UPLOAD_ROLE } from 'utils/atlas-roles'
-import { normalizeDecimalInput } from 'utils/decimal-input'
+import {
+  AMBIGUOUS_COMMA,
+  isAmbiguousComma,
+  normalizeDecimalInput,
+} from 'utils/decimal-input'
 import {
   errorToast,
   reportSwitchFailure,
@@ -171,7 +175,11 @@ const parseParamValue = (
       : { error: 'Enter a valid address' }
   if (text === '') return { error: 'Enter a value' }
   if (!PLAIN_DECIMAL.test(text))
-    return { error: 'Use digits and one dot or comma, like 0.5' }
+    return {
+      error: isAmbiguousComma(raw)
+        ? AMBIGUOUS_COMMA
+        : 'Use digits and one dot or comma, like 0.5',
+    }
   if (config.kind === 'wei') {
     if (decimalsIn(text) > 18) return { error: 'At most 18 decimals' }
     return { value: parseEther(text) }

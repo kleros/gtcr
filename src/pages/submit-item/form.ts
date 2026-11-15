@@ -1,6 +1,10 @@
 import { ItemTypes, typeDefaultValues } from '@kleros/gtcr-encoder'
 import { namespaces, parseRichAddress } from 'utils/rich-address'
-import { normalizeDecimalInput } from 'utils/decimal-input'
+import {
+  AMBIGUOUS_COMMA,
+  isAmbiguousComma,
+  normalizeDecimalInput,
+} from 'utils/decimal-input'
 
 /*
  * Form plumbing shared by the three registry kinds: the value shape the
@@ -246,8 +250,9 @@ export const validateSubmission = async (
     } else if (column.type === ItemTypes.NUMBER && !isPlainNumber(value))
       // Light and Stake lists store the text as typed: "eighteen" would go
       // into a number column and invite a challenge.
-      errors[column.label] =
-        'Enter a number, like 18 or 0.5. A dot or a comma works for decimals.'
+      errors[column.label] = isAmbiguousComma(value)
+        ? AMBIGUOUS_COMMA
+        : 'Enter a number, like 18 or 0.5. A dot or a comma works for decimals.'
     if (
       (column.type === ItemTypes.ADDRESS ||
         column.type === ItemTypes.GTCR_ADDRESS) &&
