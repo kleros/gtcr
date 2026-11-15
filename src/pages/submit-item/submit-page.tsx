@@ -72,11 +72,15 @@ export interface SubmitTerms {
   status: { label: string; detail?: string }
 }
 
-/** How a duplicate's status reads after "A token with the same address". */
+/**
+ * How a duplicate's status reads after "A token with the same address". A
+ * pending request may be in its challenge period, challenged, or past it
+ * and not yet executed: "still pending" is true of all three.
+ */
 const DUPLICATE_PHRASE: Record<string, string> = {
   Registered: 'is already on this list',
   ClearingRequested: 'is already on this list',
-  RegistrationRequested: 'was already submitted and is in its challenge period',
+  RegistrationRequested: 'was already submitted and is still pending',
   Submitted: 'is already on this list',
   Reincluded: 'is already on this list',
   Disputed: 'is on this list, under a challenge',
@@ -84,6 +88,12 @@ const DUPLICATE_PHRASE: Record<string, string> = {
 
 const capitalizeFirst = (text: string) =>
   text.charAt(0).toUpperCase() + text.slice(1)
+
+/** "Name", "Name and Ticker", "Name, Ticker and Address". */
+const joinLabels = (labels: string[]): string =>
+  labels.length > 1
+    ? `${labels.slice(0, -1).join(', ')} and ${labels[labels.length - 1]}`
+    : (labels[0] ?? '')
 
 export interface SubmitPageProps {
   registryPath: string
@@ -115,8 +125,8 @@ export interface SubmitPageProps {
   factoryChecks: FactoryChecks
   onSubmit: SubmitHandler
   /**
-   * Warn when the first identifier is already on the list (Light and Stake;
-   * a Classic contract refuses an identical entry itself).
+   * Warn when an entry with the same identifiers is already on the list
+   * (Light and Stake; a Classic contract refuses an identical entry itself).
    */
   duplicateCheck?: DuplicateCheck
 }
@@ -911,13 +921,21 @@ const Workspace = ({
 
   const requiredColumns = columns.filter((column) => isRequired(column))
   const missing = missingRequired(columns, formik.values)
-  // The first identifier is what lists tell duplicates by (key0).
-  const keyColumn = columns.find((column) => column.isIdentifier)
-  const keyValue = keyColumn ? formik.values[keyColumn.label] : undefined
+  // The indexers keep the identifier columns, in order, as key0…key4: an
+  // entry with the same value in each is a duplicate. Values are compared
+  // as they would be sent.
+  const identifiers = columns.filter((column) => column.isIdentifier)
+  const keyColumn = identifiers[0]
+  const sent = normaliseValues(columns, formik.values)
   const duplicate = useDuplicateEntry({
-    check: duplicateCheck,
+    // A switch holds a value from the start ("false"), which tells no entry
+    // apart: it is not looked up.
+    check: keyColumn?.type === ItemTypes.BOOLEAN ? undefined : duplicateCheck,
     chainId,
-    value: typeof keyValue === 'string' ? keyValue : undefined,
+    values: identifiers.map((column) => {
+      const value = sent[column.label]
+      return typeof value === 'string' ? value : null
+    }),
   })
   const highlighted = columns.some(
     (column) => formik.errors[column.label] && formik.touched[column.label],
@@ -934,6 +952,49 @@ const Workspace = ({
       console.error('Error validating the submission:', err)
     })
   }
+
+  // What was typed or picked lives only on this page: Cancel and a reload
+  // ask before it is lost. Never while a submission runs, so nothing holds
+  // up the redirect to the new entry.
+  const unsaved = formik.dirty && !submitting
+  useEffect(() => {
+    if (!unsaved) return undefined
+    const warn = (event: BeforeUnloadEvent) => {
+      event.preventDefault()
+      // Older browsers only ask when a return value is set.
+      event.returnValue = ''
+    }
+    window.addEventListener('beforeunload', warn)
+    return () => window.removeEventListener('beforeunload', warn)
+  }, [unsaved])
+  const confirmLeave = (event: React.MouseEvent) => {
+    if (
+      unsaved &&
+      !window.confirm('Leave this page? What you entered will be lost.')
+    )
+      event.preventDefault()
+  }
+
+  // A file dropped just outside a drop zone would make the browser open it
+  // in place of the page. The zones take theirs (they prevent the default
+  // first); anywhere else a dragged file cannot be dropped.
+  useEffect(() => {
+    const refuse = (event: DragEvent) => {
+      if (
+        event.defaultPrevented ||
+        !event.dataTransfer?.types.includes('Files')
+      )
+        return
+      event.preventDefault()
+      if (event.type === 'dragover') event.dataTransfer.dropEffect = 'none'
+    }
+    window.addEventListener('dragover', refuse)
+    window.addEventListener('drop', refuse)
+    return () => {
+      window.removeEventListener('dragover', refuse)
+      window.removeEventListener('drop', refuse)
+    }
+  }, [])
 
   const action = (
     <ConfirmAction
@@ -1014,12 +1075,22 @@ const Workspace = ({
                     />
                     {column === keyColumn && duplicate && (
                       <Notice tone="contested" role="status">
-                        {`${capitalizeFirst(getArticleFor(itemName))} ${itemName} with the same ${column.label} ${DUPLICATE_PHRASE[duplicate.status] ?? 'is already on this list'}: `}
-                        <Link to={`${registryPath}/${duplicate.itemID}`}>
+                        {`${capitalizeFirst(getArticleFor(itemName))} ${itemName} with the same ${
+                          duplicate.allMatch
+                            ? joinLabels(identifiers.map(({ label }) => label))
+                            : column.label
+                        } ${DUPLICATE_PHRASE[duplicate.status] ?? 'is already on this list'}: `}
+                        {/* In a new tab: leaving this page would lose the form. */}
+                        <a
+                          href={`${registryPath}/${duplicate.itemID}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
                           open it
-                        </Link>
-                        . Most lists reject duplicates, so a second one is
-                        likely to be challenged and lose its deposit.
+                        </a>
+                        {duplicate.allMatch
+                          ? '. Most lists reject duplicates, so a second one is likely to be challenged and lose its deposit.'
+                          : '.'}
                       </Notice>
                     )}
                   </React.Fragment>
@@ -1046,6 +1117,7 @@ const Workspace = ({
                   $variant="ghost"
                   $size="sm"
                   $block
+                  onClick={confirmLeave}
                 >
                   Cancel
                 </CancelLink>
@@ -1057,7 +1129,12 @@ const Workspace = ({
 
       <StickyBar>
         <BarTotal>
-          <ButtonLink to={registryPath} $variant="ghost" $size="sm">
+          <ButtonLink
+            to={registryPath}
+            $variant="ghost"
+            $size="sm"
+            onClick={confirmLeave}
+          >
             Cancel
           </ButtonLink>
           <BarAmount>
