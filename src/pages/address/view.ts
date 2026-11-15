@@ -35,6 +35,10 @@ export const parseFilter = (value: string | null): ActivityFilter =>
     ? (value as ActivityFilter)
     : 'all'
 
+/** The activity page in the URL (?page=), 1 when absent or not a number. */
+export const parsePage = (value: string | null): number =>
+  Math.max(1, Math.floor(Number(value)) || 1)
+
 /**
  * The listed actions a filter shows. Every tab counts the same population,
  * the listed actions: "Disputed" is those whose request went to court.

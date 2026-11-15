@@ -562,6 +562,10 @@ const entryLabel = (activity: ProfileActivity) =>
     ? `Open entry ${truncateMiddle(activity.itemID, 8, 6)} in ${activity.registryTitle}`
     : `Open ${activity.registryTitle}`
 
+const prefersReducedMotion = () =>
+  typeof window !== 'undefined' &&
+  !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+
 /* ---------- Section ---------- */
 
 /** What the filter shows, as a noun for "1–20 of 120 …" and empty states. */
@@ -615,6 +619,16 @@ export const ActivitySection = ({
   now: number
 }) => {
   const navigate = useNavigate()
+  // A new page starts at the top of the list, not at the pager just used
+  // (the rows change under it, the viewport stayed at the bottom).
+  const sectionRef = useRef<HTMLElement>(null)
+  const goToPage = (next: number) => {
+    onPage(next)
+    sectionRef.current?.scrollIntoView({
+      block: 'start',
+      behavior: prefersReducedMotion() ? 'auto' : 'smooth',
+    })
+  }
   const counts = loading
     ? undefined
     : (Object.fromEntries(
@@ -836,7 +850,7 @@ export const ActivitySection = ({
   )
 
   return (
-    <section aria-label="Activity">
+    <section aria-label="Activity" ref={sectionRef}>
       <SectionHead>
         <SectionTitle>
           Activity
@@ -881,7 +895,7 @@ export const ActivitySection = ({
                   current={page}
                   pageSize={PAGE_SIZE}
                   total={shown.length}
-                  onChange={onPage}
+                  onChange={goToPage}
                 />
               )}
             </ListFoot>

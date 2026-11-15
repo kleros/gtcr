@@ -1325,6 +1325,10 @@ const useNarrow = (): boolean => {
   return narrow
 }
 
+const prefersReducedMotion = () =>
+  typeof window !== 'undefined' &&
+  !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+
 /** "In court" with an amber haloed dot when something is in court. */
 const CourtValue = ({ count }: { count: number }) => (
   <>
@@ -1505,6 +1509,17 @@ const BrowsePage = () => {
       else next.delete(key)
     })
     setSearchParams(next, { replace: true })
+  }
+
+  // A new page starts at the top of the list, not at the pager just used
+  // (the rows change under it, the viewport stayed at the bottom).
+  const explorerRef = useRef<HTMLElement>(null)
+  const goToPage = (page: number) => {
+    setParam({ page: page === 1 ? null : String(page) })
+    explorerRef.current?.scrollIntoView({
+      block: 'start',
+      behavior: prefersReducedMotion() ? 'auto' : 'smooth',
+    })
   }
 
   // Any filter change returns to the first page, including changes made
@@ -1879,6 +1894,7 @@ const BrowsePage = () => {
 
       <Split>
         <Explorer
+          ref={explorerRef}
           aria-labelledby="browse-explorer-title"
           style={{ ['--i' as string]: 3 }}
         >
@@ -2292,9 +2308,7 @@ const BrowsePage = () => {
                   current={currentPage}
                   pageSize={PAGE_SIZE}
                   total={registries.length}
-                  onChange={(page: number) =>
-                    setParam({ page: page === 1 ? null : String(page) })
-                  }
+                  onChange={goToPage}
                 />
               )}
             </Footer>

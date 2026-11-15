@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react'
+import React, { useCallback, useMemo } from 'react'
 import styled from 'styled-components'
 import { useParams, useSearchParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
@@ -46,6 +46,7 @@ import {
   filterActivities,
   inScope,
   parseFilter,
+  parsePage,
   parseScope,
   type ActivityFilter,
 } from './view'
@@ -81,7 +82,9 @@ const AddressPage = () => {
   const isZero = address === ZERO_ADDRESS
   const filter = parseFilter(searchParams.get('show'))
   const scope = parseScope(searchParams.get('chain'))
-  const [page, setPage] = useState(1)
+  // In the URL with the filter and the scope, so Back from an entry, a
+  // reload or a shared link opens the same page of the activity.
+  const page = parsePage(searchParams.get('page'))
   const [layout, setLayout] = useStoredLayout('address', 'rows')
   const now = useNow(30_000)
   const { address: connectedAddress, isConnected } = useAccount()
@@ -178,14 +181,13 @@ const AddressPage = () => {
     const next = new URLSearchParams(searchParams)
     if (value === fallback) next.delete(key)
     else next.set(key, value)
+    // Another filter or scope starts again from the first page.
+    if (key !== 'page') next.delete('page')
     setSearchParams(next, { replace: true })
   }
   const setFilter = (value: ActivityFilter) => setParam('show', value, 'all')
   const setScope = (value: string) => setParam('chain', value, 'all')
-
-  useEffect(() => {
-    setPage(1)
-  }, [filter, scope, address])
+  const setPage = (value: number) => setParam('page', String(value), '1')
 
   // The profile's per-chain figures with the governed lists added once the
   // scan settles, so a chain the address only governs on gets its chip.
