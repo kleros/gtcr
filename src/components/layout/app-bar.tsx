@@ -15,7 +15,6 @@ import { NETWORKS_INFO } from 'config/networks'
 import { SUPPORTED_CHAINS } from 'config/chains'
 import Identicon from 'components/identicon'
 import CurateWordmark from 'assets/images/curate-v2-wordmark.svg'
-import { SAVED_NETWORK_KEY } from 'utils/string'
 import AppMenu from 'components/layout/app-menu'
 import Help from 'components/layout/help'
 import ThemeMenu from 'components/layout/theme-menu'
@@ -39,7 +38,7 @@ import {
   truncateMiddle,
 } from 'components/curate/primitives'
 import { MAINNET_CHAIN_IDS, TESTNET_CHAIN_IDS } from 'pages/dashboard/view'
-import { useLaunchChainId } from './launch-chain'
+import { saveChainId, useLaunchChainId, useSavedChainId } from './launch-chain'
 
 /*
  * App bar (DESIGN.md, Frame and stage; round 2): a full-width sticky bar.
@@ -185,6 +184,12 @@ const LogoLink = styled(Link)`
   }
 `
 
+/*
+ * The tag gives way where the bar is tight, as the chain chip's name does:
+ * between 901 and 1099px the nav is back but the room beside the logo is
+ * not (the tag slid under the nav), and on narrow tablets it pushed the
+ * bar's last controls off the screen. Phones show only the logo's mark.
+ */
 const StakeTag = styled.span`
   margin-left: 8px;
   padding: 2px 8px;
@@ -195,6 +200,10 @@ const StakeTag = styled.span`
   font-size: 10px;
   letter-spacing: var(--tracking-label);
   text-transform: uppercase;
+
+  @media (max-width: 700px), (min-width: 901px) and (max-width: 1099px) {
+    display: none;
+  }
 `
 
 /*
@@ -277,20 +286,10 @@ const AppBar = () => {
 
   // Persist URL chain so non-chain-aware pages can restore it
   useEffect(() => {
-    if (urlChainId)
-      localStorage.setItem(SAVED_NETWORK_KEY, urlChainId.toString())
+    if (urlChainId) saveChainId(urlChainId)
   }, [urlChainId])
 
-  const savedChainId = useMemo(() => {
-    try {
-      const saved = localStorage.getItem(SAVED_NETWORK_KEY)
-      return saved ? Number(saved) : null
-    } catch {
-      return null
-    }
-    // Re-read on every navigation (location.key) so it stays current
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [location.key])
+  const savedChainId = useSavedChainId()
 
   const displayedChainId = urlChainId ?? savedChainId ?? networkId
   const launchChainId = useLaunchChainId()
@@ -308,14 +307,15 @@ const AppBar = () => {
    * Browse is a scoped page: the chip shows and sets its `?chain=` scope, so
    * the bar and the page never disagree. "All chains" (no `chain` param)
    * means Ethereum and Gnosis; Sepolia is a testnet, listed apart and picked
-   * on its own (DESIGN.md, Data rules). The dashboard sets the same scope
-   * with its own control, next to the figures it scopes, so the bar does not
-   * repeat it there.
+   * on its own (DESIGN.md, Data rules). The dashboard and a profile set
+   * their scope with their own control, next to the figures it scopes, so
+   * the bar does not repeat it there.
    */
   const isDashboard = location.pathname === '/'
+  const isProfile = location.pathname.startsWith('/address/')
   const isBrowse = location.pathname === '/browse'
   const isScoped = isBrowse
-  const showChainMenu = !isDashboard
+  const showChainMenu = !isDashboard && !isProfile
   const scopeChainIds = useMemo(
     () =>
       new URLSearchParams(location.search)
@@ -361,7 +361,12 @@ const AppBar = () => {
       if (chainId === displayedChainId) return
       const nextTcr = defaultTcrAddresses[chainId as validChains]
       if (!nextTcr) return
-      localStorage.setItem(SAVED_NETWORK_KEY, chainId.toString())
+      saveChainId(chainId)
+
+      // A page with no chain in its address (the guide, Curate Pro) only
+      // remembers the choice, which its launch links follow: it is not left
+      // for that chain's list of lists.
+      if (!urlChainId) return
 
       // Only navigate — useTcrNetwork handles the wallet switch when the
       // new page mounts, avoiding a double switchChain prompt.
@@ -377,6 +382,7 @@ const AppBar = () => {
       handleScopeSelect,
       isScoped,
       location.pathname,
+      urlChainId,
     ],
   )
 
