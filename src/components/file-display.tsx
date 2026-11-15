@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react'
 import styled from 'styled-components'
-import { getExtension } from 'mime'
+import { getExtension, getType } from 'mime'
 import { parseIpfs } from 'utils/ipfs-parse'
+import { allowedExtensions } from 'pages/submit-item/file-types'
 import { useAttachment } from 'hooks/use-attachment'
 import { buttonReset } from 'styles/button-reset'
 import { CurateIcon } from 'components/curate/icons'
@@ -144,12 +145,19 @@ const FileDisplay = ({ value, allowedFileTypes }: FileDisplayProps) => {
 
       if (!live) return
       setKind(cleanExtension(ext))
-      if (!allowedFileTypes) {
-        setSupported(true)
-        return
-      }
-      const allowed = allowedFileTypes.split(' ')
-      setSupported(allowed.includes(ext))
+      // The submit form's reading of the list's types ("PDF", ".pdf" and
+      // "pdf, png" name the same formats), and a .jpeg is a jpg: a file
+      // the form took must not be flagged here as the wrong type.
+      const allowed = allowedExtensions(allowedFileTypes)
+      const own = ext.toLowerCase()
+      const type = getType(own)
+      setSupported(
+        allowed.length === 0 ||
+          allowed.some(
+            (allowedExt) =>
+              allowedExt === own || (!!type && getType(allowedExt) === type),
+          ),
+      )
     }
     void check()
     return () => {
