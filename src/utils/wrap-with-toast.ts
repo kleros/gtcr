@@ -6,6 +6,16 @@ import { getTxPage } from './network-utils'
 import { emitTxConfirmed } from './tx-events'
 
 /**
+ * A sent transaction the wallet replaced before it was mined, as viem
+ * reports it: sped up ("repriced", the same call), cancelled (an empty
+ * transfer to oneself) or replaced by a different transaction.
+ */
+interface Replacement {
+  reason: 'cancelled' | 'replaced' | 'repriced'
+  transaction: { hash: Hash }
+}
+
+/**
  * Minimal structural surface of a viem/wagmi public client. Declared as a
  * method so chain-specific client generics stay assignable (bivariance).
  * `chain` names the explorer to link to.
@@ -16,6 +26,7 @@ export interface TransactionReceiptClient {
     hash: Hash
     confirmations?: number
     timeout?: number
+    onReplaced?: (replacement: Replacement) => void
   }): Promise<TransactionReceipt>
 }
 
@@ -146,6 +157,58 @@ const report = (id: ReturnType<typeof toast.info>, update: ToastUpdate) => {
     })
 }
 
+/*
+ * viem answers a replaced transaction with the receipt of its replacement,
+ * which succeeded: left alone, a transaction cancelled from the wallet read
+ * "Transaction confirmed." (and a submission then opened an entry that never
+ * comes). Only a speed-up did what was asked.
+ *
+ * viem says so through onReplaced only when one confirmation is asked for:
+ * with two it finds the replacement at one, waits, and resolves with the
+ * replacement's receipt without a word. A receipt for another hash tells it
+ * then; an empty transfer to oneself is the wallets' cancel, anything else
+ * is taken for a speed-up (the common case).
+ */
+const replacementOf = (
+  receipt: TransactionReceipt,
+  hash: Hash,
+): Replacement | undefined => {
+  if (receipt.transactionHash.toLowerCase() === hash.toLowerCase())
+    return undefined
+  const toSelf =
+    !!receipt.to && receipt.to.toLowerCase() === receipt.from.toLowerCase()
+  return {
+    reason: toSelf ? 'cancelled' : 'repriced',
+    transaction: { hash: receipt.transactionHash },
+  }
+}
+
+const replacedUpdate = (
+  replacement: Replacement,
+  chainId: number | undefined,
+): ToastUpdate =>
+  replacement.reason === 'cancelled'
+    ? {
+        render: withExplorerLink(
+          'This transaction was cancelled in your wallet.',
+          chainId,
+          replacement.transaction.hash,
+        ),
+        type: 'default',
+        isLoading: false,
+        autoClose: OPTIONS.autoClose,
+      }
+    : {
+        render: withExplorerLink(
+          'Your wallet replaced this transaction with a different one, so it did not go through.',
+          chainId,
+          replacement.transaction.hash,
+        ),
+        type: 'warning',
+        isLoading: false,
+        autoClose: false,
+      }
+
 /** How long a transaction whose receipt is late is still followed. */
 const LATE_RECEIPT_MS = 15 * 60_000
 
@@ -161,11 +224,20 @@ const followLateReceipt = async (
   hash: Hash,
 ) => {
   try {
+    let replacement: Replacement | undefined
     const res = await publicClient.waitForTransactionReceipt({
       hash,
       confirmations: 1,
       timeout: LATE_RECEIPT_MS,
+      onReplaced: (next) => {
+        replacement = next
+      },
     })
+    replacement ??= replacementOf(res, hash)
+    if (replacement && replacement.reason !== 'repriced') {
+      report(id, replacedUpdate(replacement, chainId))
+      return
+    }
     const confirmed = res.status === 'success'
     report(id, {
       render: withExplorerLink(
@@ -173,7 +245,7 @@ const followLateReceipt = async (
           ? 'Transaction confirmed.'
           : 'The transaction failed on chain (reverted).',
         chainId,
-        hash,
+        replacement?.transaction.hash ?? hash,
       ),
       type: confirmed ? 'success' : 'error',
       isLoading: false,
@@ -216,10 +288,21 @@ export async function wrapWithToast(
       isLoading: true,
       autoClose: false,
     })
+    let replacement: Replacement | undefined
     const res = await publicClient.waitForTransactionReceipt({
       hash,
       confirmations: 2,
+      onReplaced: (next) => {
+        replacement = next
+      },
     })
+    replacement ??= replacementOf(res, hash)
+    if (replacement && replacement.reason !== 'repriced') {
+      report(id, replacedUpdate(replacement, chainId))
+      return { status: false }
+    }
+    // Sped up in the wallet: the same call, under the new hash.
+    if (replacement) hash = replacement.transaction.hash
     const status = res.status === 'success'
 
     if (status) {
