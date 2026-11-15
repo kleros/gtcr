@@ -94,7 +94,6 @@ import {
   LIST_FILE_FAILED,
   LIST_LINK_TIP,
   LIST_LOAD_FAILED,
-  LIST_SETTINGS_FAILED,
 } from '../error-page/copy'
 
 // The submission forms load on first use: they are heavy and most visits to
@@ -901,24 +900,16 @@ const Items = () => {
       />
     )
 
-  // The list's file or its deposits and periods did not load: said, with a
-  // retry, instead of a dead end or skeleton rows for ever (the rows' status
-  // needs the challenge period).
-  if (tcrViewContext?.metaEvidenceFailed || tcrViewContext?.paramsFailed)
+  // The list's file did not load: said, with a retry, instead of a dead end.
+  // (Its rows do not need the deposits and periods read from the chain:
+  // settled entries carry their own status.)
+  if (tcrViewContext?.metaEvidenceFailed)
     return (
       <ErrorPage
         code="Error"
         title="This list did not load"
-        message={
-          tcrViewContext.metaEvidenceFailed
-            ? LIST_FILE_FAILED
-            : LIST_SETTINGS_FAILED
-        }
-        onRetry={() =>
-          void (tcrViewContext.metaEvidenceFailed
-            ? tcrViewContext.retryMetaEvidence()
-            : tcrViewContext.retryParams())
-        }
+        message={LIST_FILE_FAILED}
+        onRetry={() => void tcrViewContext.retryMetaEvidence()}
       />
     )
 

@@ -298,9 +298,11 @@
    * A list logo's URL: https as it is, an IPFS path through the app's
    * gateway (src/landing/boot.ts provides the resolver); none without it.
    */
+  // Every logo goes through the app's resolver (src/landing/boot.ts), which
+  // keeps it on the IPFS gateway: a web address a list names is not loaded,
+  // or every visitor's browser would call that host.
   const mediaUrl = (uri) => {
     if (typeof uri !== 'string' || !uri.trim()) return null
-    if (/^https:\/\//i.test(uri)) return uri
     const resolve = globalThis.CURATE_LANDING_MEDIA
     if (typeof resolve !== 'function') return null
     try {
