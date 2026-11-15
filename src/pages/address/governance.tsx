@@ -59,7 +59,12 @@ import { readStakeArbitrationParams } from 'utils/stake-arbitration-params'
 import { jurorsAndCourtIDFromExtraData } from 'utils/string'
 import { JSON_UPLOAD_ROLE } from 'utils/atlas-roles'
 import { normalizeDecimalInput } from 'utils/decimal-input'
-import { errorToast, successToast, wrapWithToast } from 'utils/wrap-with-toast'
+import {
+  errorToast,
+  reportSwitchFailure,
+  successToast,
+  wrapWithToast,
+} from 'utils/wrap-with-toast'
 import { normalizeAddress, shortAddress } from 'pages/dashboard/data'
 import { VerifiedBadge } from 'components/curate/verified-badge'
 import {
@@ -1836,7 +1841,7 @@ const GovernanceDialog = ({
   onClose: () => void
 }) => {
   const queryClient = useQueryClient()
-  const { chainId: walletChainId } = useAccount()
+  const { chainId: walletChainId, isConnected } = useAccount()
   const { switchChain, isPending: switching } = useSwitchChain()
   const wrongChain = editable && walletChainId !== registry.chainId
   const gate: SaveGate = !editable
@@ -1846,11 +1851,32 @@ const GovernanceDialog = ({
           blocker: `Switch to ${chainName(registry.chainId)} to save`,
           helper: {
             label: `Switch to ${chainName(registry.chainId)}`,
-            onClick: () => switchChain({ chainId: registry.chainId }),
+            onClick: () =>
+              switchChain(
+                { chainId: registry.chainId },
+                {
+                  onError: (err) =>
+                    reportSwitchFailure(err, chainName(registry.chainId)),
+                },
+              ),
             loading: switching,
           },
         }
       : {}
+  // wagmi keys the wallet client by useChainId(), so a wallet back from a
+  // chain the app does not configure keeps the lookup that failed there, and
+  // every Save would stay disabled: look it up again then, as list pages do
+  // (hooks/use-tcr-network.ts). Read without fetching: the fields fetch it.
+  const {
+    data: walletClient,
+    isError: walletClientFailed,
+    refetch: refetchWalletClient,
+  } = useWalletClient({ query: { enabled: false } })
+  const onListChain = isConnected && walletChainId === registry.chainId
+  useEffect(() => {
+    if (onListChain && walletClientFailed)
+      void refetchWalletClient({ cancelRefetch: false })
+  }, [onListChain, walletClientFailed, refetchWalletClient])
   // After a court or MetaEvidence save, and after a save refused because the
   // settings changed, the live settings are read again. The settings fields
   // wait for that read, so no edit starts from the values read before.
@@ -1964,6 +1990,13 @@ const GovernanceDialog = ({
               {gate.helper.loading ? 'Waiting…' : gate.helper.label}
             </Button>
           )}
+        </GateRow>
+      )}
+      {!gate.blocker && walletClientFailed && !walletClient && (
+        <GateRow>
+          <Small $muted role="status">
+            Wallet not ready: reconnect it or reload the page to save changes.
+          </Small>
         </GateRow>
       )}
       <div>
