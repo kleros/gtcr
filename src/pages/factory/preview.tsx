@@ -26,6 +26,7 @@ import {
 } from './fields'
 import { useCourtSummary } from './court'
 import type { TcrState } from '.'
+import { plainDecimal, typedNumber } from 'pages/factory-permanent/format'
 
 /*
  * The preview beside the wizard: the list as people will see it, what each
@@ -522,7 +523,8 @@ const SideBar = ({
   const total = totalDeposit(side.base, arbitrationCost)
   const totalText = formatNative(total)
   const costText = formatNative(arbitrationCost)
-  const base = Number(side.base)
+  // As the review and the deploy read it: "0,5" is 0.5.
+  const base = typedNumber(side.base)
   const cost = toNumber(arbitrationCost ?? null)
   const baseValid =
     side.base !== '' &&
@@ -564,7 +566,7 @@ const SideBar = ({
             ? loading
               ? `${side.label}: waiting for the arbitration cost`
               : `${side.label}: the base deposit is not a valid amount`
-            : `${side.label} ${totalText} ${currency}: ${String(side.base ?? 0)} base deposit and ${costText} arbitration cost`
+            : `${side.label} ${totalText} ${currency}: ${plainDecimal(side.base ?? 0)} base deposit and ${costText} arbitration cost`
         }
       >
         {baseShare > 0 && (
@@ -577,7 +579,7 @@ const SideBar = ({
       <Breakdown aria-hidden>
         <span>
           <i style={{ background: baseFill }} />
-          {baseValid ? String(side.base) : '—'} base deposit
+          {baseValid ? plainDecimal(side.base) : '—'} base deposit
         </span>
         <span>
           <i style={{ background: hatch }} />
@@ -668,13 +670,13 @@ export const LivePreview = ({
   const cost = toNumber(arbitrationCost ?? null) ?? 0
   const scaleMax = Math.max(
     ...sides.map((side) => {
-      const base = Number(side.base)
+      const base = typedNumber(side.base)
       return (Number.isFinite(base) && base > 0 ? base : 0) + cost
     }),
     0,
   )
 
-  const hours = Number(
+  const hours = typedNumber(
     badges
       ? tcrState.relChallengePeriodDuration
       : tcrState.challengePeriodDuration,
