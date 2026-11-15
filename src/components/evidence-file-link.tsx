@@ -2,7 +2,9 @@ import React from 'react'
 import styled from 'styled-components'
 import { parseIpfs } from 'utils/ipfs-parse'
 import { useAttachment } from 'hooks/use-attachment'
-import { Button } from 'components/curate/primitives'
+import { evidenceFileHref } from 'hooks/use-unindexed-evidence'
+import { Button, Small } from 'components/curate/primitives'
+import TruncatedLink from 'components/truncated-link'
 
 const FileButton = styled(Button)`
   gap: 6px;
@@ -63,6 +65,27 @@ const EvidenceFileLink: React.FC<{ fileURI: string }> = ({ fileURI }) => {
       <span className="long">View attached file</span>
       <span className="short">File</span>
     </FileButton>
+  )
+}
+
+/**
+ * In place of an evidence file that could not be read (missing on IPFS, not
+ * JSON, or no answer in time): one line saying so, and the file's address
+ * so the reader can still try it. Opening it asks first, as every link from
+ * evidence does.
+ */
+export const EvidenceFileUnavailable: React.FC<{ uri: string }> = ({ uri }) => {
+  const href = evidenceFileHref(uri)
+  return (
+    <Small $muted>
+      This evidence file could not be loaded.
+      {href && (
+        <>
+          {' '}
+          <TruncatedLink url={href} />
+        </>
+      )}
+    </Small>
   )
 }
 

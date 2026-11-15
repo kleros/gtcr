@@ -1,6 +1,7 @@
-import React, { useMemo, useState, useEffect } from 'react'
+import React, { useMemo, useState } from 'react'
 import styled from 'styled-components'
 import useUrlChainId from 'hooks/use-url-chain-id'
+import useUnindexedEvidence from 'hooks/use-unindexed-evidence'
 import {
   CONTRACT_STATUS,
   REQUEST_TYPE_LABEL,
@@ -9,10 +10,10 @@ import {
 } from 'utils/item-status'
 import { capitalizeFirstLetter } from 'utils/string'
 import { getTxPage } from 'utils/network-utils'
-import { parseIpfs } from 'utils/ipfs-parse'
-import { evidenceFileFields } from 'utils/evidence-file'
 import toOrdinal from 'utils/ordinal'
-import EvidenceFileLink from 'components/evidence-file-link'
+import EvidenceFileLink, {
+  EvidenceFileUnavailable,
+} from 'components/evidence-file-link'
 import ClassicEvidenceModal from 'pages/item-details/modals/evidence'
 import LightEvidenceModal from 'pages/light-item-details/modals/evidence'
 import { klerosAddresses } from 'config/tcr-addresses'
@@ -130,13 +131,6 @@ type TimelineLog =
   | EvidenceLog
   | ResolutionLog
 
-interface EvidenceFile {
-  title?: string | null
-  description?: string | null
-  fileURI?: string | null
-  fileTypeExtension?: string | null
-}
-
 /** The case on the Kleros court site, when the arbitrator is Kleros. */
 const useCaseLink = (request?: TimelineRequest) => {
   const networkId = useUrlChainId()
@@ -253,7 +247,6 @@ const RequestTimeline = ({
   hideCase = false,
 }: TimelineProps) => {
   const networkId = useUrlChainId()
-  const [evidenceMap, setEvidenceMap] = useState<Record<string, EvidenceFile>>()
   const disputeCase = useCaseLink(request)
   const caseLink = hideCase ? undefined : disputeCase
 
@@ -340,42 +333,23 @@ const RequestTimeline = ({
   const isRegistration = requestType === CONTRACT_STATUS.REGISTRATION_REQUESTED
 
   // The indexer can miss the evidence fields. Load unindexed files manually.
-  useEffect(() => {
-    if (!logs || evidenceMap) return
-    const evidenceManualFetch = async () => {
-      const unindexedEvidenceURIs = logs
-        .flatMap((e): EvidenceLog[] =>
-          e.name === 'Evidence'
-            ? [e]
-            : e.name === 'Challenge' && e.evidence
-              ? [e.evidence]
-              : [],
-        )
-        .filter(
-          (e) =>
-            e.title === null &&
-            e.description === null &&
-            e.fileURI === null &&
-            e.fileTypeExtension === null,
-        )
-        .map((e) => e.URI)
-
-      const evidenceJSONs = await Promise.all(
-        unindexedEvidenceURIs.map(async (uri) => {
-          const file = await (await fetch(parseIpfs(uri))).json()
-          return file
-        }),
-      )
-      const evidenceMapProcess: Record<string, EvidenceFile> = {}
-      unindexedEvidenceURIs.forEach((uri, index) => {
-        evidenceMapProcess[uri] = evidenceFileFields(evidenceJSONs[index])
-      })
-      setEvidenceMap(evidenceMapProcess)
-    }
-    evidenceManualFetch().catch((err) => {
-      console.error('Could not load unindexed evidence', err)
-    })
-  }, [logs, evidenceMap, setEvidenceMap])
+  const unindexedEvidenceURIs = (logs ?? [])
+    .flatMap((e): EvidenceLog[] =>
+      e.name === 'Evidence'
+        ? [e]
+        : e.name === 'Challenge' && e.evidence
+          ? [e.evidence]
+          : [],
+    )
+    .filter(
+      (e) =>
+        e.title === null &&
+        e.description === null &&
+        e.fileURI === null &&
+        e.fileTypeExtension === null,
+    )
+    .map((e) => e.URI)
+  const evidenceMap = useUnindexedEvidence(unindexedEvidenceURIs)
 
   if (!item || !request || !logs) return <SkeletonBlock $height="80px" />
 
@@ -406,14 +380,15 @@ const RequestTimeline = ({
       )
   const caseOnSubmission = !hasChallengeEvent && caseEvidenceIndex < 0
   const evidenceQuote = (evidence: EvidenceLog, heading?: string | null) => {
-    const { description, fileURI } = evidenceMap?.[evidence.URI]
-      ? evidenceMap[evidence.URI]
-      : evidence
-    return heading || description || fileURI ? (
+    const file = evidenceMap.get(evidence.URI)
+    const { description, fileURI } = file ?? evidence
+    const failed = !!file?.failed
+    return heading || description || fileURI || failed ? (
       <TimelineQuote>
         {heading && <QuoteTitle>{heading}</QuoteTitle>}
         {description && <EvidenceText text={description} />}
         {fileURI && <EvidenceFileLink fileURI={fileURI} />}
+        {failed && <EvidenceFileUnavailable uri={evidence.URI} />}
       </TimelineQuote>
     ) : null
   }
@@ -449,7 +424,7 @@ const RequestTimeline = ({
           const justification = event.evidence
           const customTitle =
             justification &&
-            (evidenceMap?.[justification.URI]?.title ?? justification.title)
+            (evidenceMap.get(justification.URI)?.title ?? justification.title)
           return (
             <TimelineEvent
               key={i}
@@ -484,9 +459,7 @@ const RequestTimeline = ({
         }
 
         if (event.name === 'Evidence') {
-          const { title } = evidenceMap?.[event.URI]
-            ? evidenceMap[event.URI]
-            : event
+          const { title } = evidenceMap.get(event.URI) ?? event
           return (
             <TimelineEvent
               key={i}
@@ -751,10 +724,9 @@ const RequestGroup = ({
       </GroupToggle>
       {open && (
         <GroupBody id={panelId}>
-          {/* The request is spread to convert it from an array to an object. */}
           <RequestTimeline
             item={item}
-            request={{ ...request }}
+            request={request}
             metaEvidence={metaEvidence}
             hideCase={hideCase}
           />

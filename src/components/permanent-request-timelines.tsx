@@ -1,14 +1,15 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useMemo, useState } from 'react'
 import styled from 'styled-components'
 import useNow from 'hooks/use-now'
 import useUrlChainId from 'hooks/use-url-chain-id'
-import EvidenceFileLink from 'components/evidence-file-link'
+import useUnindexedEvidence from 'hooks/use-unindexed-evidence'
+import EvidenceFileLink, {
+  EvidenceFileUnavailable,
+} from 'components/evidence-file-link'
 import { AddressLink } from 'components/curate/item-stake-address'
 import { CONTRACT_STATUS, SUBGRAPH_RULING } from 'utils/permanent-item-status'
 import { capitalizeFirstLetter } from 'utils/string'
 import { getTxPage } from 'utils/network-utils'
-import { parseIpfs } from 'utils/ipfs-parse'
-import { evidenceFileFields } from 'utils/evidence-file'
 import { formatDate } from 'utils/time'
 import PermanentEvidenceModal from 'pages/permanent-item-details/modals/evidence'
 import toOrdinal from 'utils/ordinal'
@@ -167,13 +168,6 @@ type TimelineLog =
   | WithdrawalLog
   | WithdrawalCompletedLog
 
-interface EvidenceFile {
-  title?: string | null
-  description?: string | null
-  fileURI?: string | null
-  fileTypeExtension?: string | null
-}
-
 const toSeconds = (value: unknown): number => {
   const n = Number(value ?? 0)
   return Number.isFinite(n) ? n : 0
@@ -266,7 +260,6 @@ interface TimelineProps {
 
 const Timeline = ({ submission, item, metaEvidence, live }: TimelineProps) => {
   const networkId = useUrlChainId()
-  const [evidenceMap, setEvidenceMap] = useState<Record<string, EvidenceFile>>()
 
   // This submission has a range (createdAt, finishedAt). Take every event of
   // the item, keep the ones inside the range, then sort them.
@@ -424,36 +417,17 @@ const Timeline = ({ submission, item, metaEvidence, live }: TimelineProps) => {
   }, [item, submission])
 
   // The Graph can fail to index the evidence fields. Load unloaded fields manually.
-  useEffect(() => {
-    if (!logs || evidenceMap) return
-    const evidenceManualFetch = async () => {
-      const unindexedEvidenceURIs = logs
-        .filter((e): e is EvidenceLog => e.name === 'Evidence')
-        .filter(
-          (e) =>
-            e.title === null &&
-            e.description === null &&
-            e.fileURI === null &&
-            e.fileTypeExtension === null,
-        )
-        .map((e) => e.URI)
-
-      const evidenceJSONs = await Promise.all(
-        unindexedEvidenceURIs.map(async (uri) => {
-          const file = await (await fetch(parseIpfs(uri))).json()
-          return file
-        }),
-      )
-      const evidenceMapProcess: Record<string, EvidenceFile> = {}
-      unindexedEvidenceURIs.forEach((uri, index) => {
-        evidenceMapProcess[uri] = evidenceFileFields(evidenceJSONs[index])
-      })
-      setEvidenceMap(evidenceMapProcess)
-    }
-    evidenceManualFetch().catch((err: unknown) => {
-      console.error('Could not load unindexed evidence', err)
-    })
-  }, [logs, evidenceMap, setEvidenceMap])
+  const unindexedEvidenceURIs = (logs ?? [])
+    .filter((e): e is EvidenceLog => e.name === 'Evidence')
+    .filter(
+      (e) =>
+        e.title === null &&
+        e.description === null &&
+        e.fileURI === null &&
+        e.fileTypeExtension === null,
+    )
+    .map((e) => e.URI)
+  const evidenceMap = useUnindexedEvidence(unindexedEvidenceURIs)
 
   if (!item || !submission || !logs) return <SkeletonBlock $height="80px" />
 
@@ -501,9 +475,9 @@ const Timeline = ({ submission, item, metaEvidence, live }: TimelineProps) => {
         const index = i + 1
 
         if (event.name === 'Evidence') {
-          const { title, description, fileURI } = evidenceMap?.[event.URI]
-            ? evidenceMap[event.URI]
-            : event
+          const file = evidenceMap.get(event.URI)
+          const { title, description, fileURI } = file ?? event
+          const failed = !!file?.failed
           const role = roleOf(event.party)
           return (
             <TimelineEvent
@@ -527,10 +501,11 @@ const Timeline = ({ submission, item, metaEvidence, live }: TimelineProps) => {
                 </span>
               }
             >
-              {(description || fileURI) && (
+              {(description || fileURI || failed) && (
                 <TimelineQuote>
                   {description && <EvidenceText text={description} />}
                   {fileURI && <EvidenceFileLink fileURI={fileURI} />}
+                  {failed && <EvidenceFileUnavailable uri={event.URI} />}
                 </TimelineQuote>
               )}
             </TimelineEvent>
@@ -922,10 +897,11 @@ const RequestTimelines = ({ item, metaEvidence }: RequestTimelinesProps) => {
                 </GroupToggle>
                 {open && (
                   <GroupBody id={panelId}>
-                    {/* Spread `submission` to convert it from an array row to an object. */}
+                    {/* Passed as it is: a copy would be new on every render (the
+                        page ticks every second) and rebuild the events each time. */}
                     <Timeline
                       item={item}
-                      submission={{ ...submission }}
+                      submission={submission}
                       metaEvidence={metaEvidence}
                       live={live && i === 0}
                     />
