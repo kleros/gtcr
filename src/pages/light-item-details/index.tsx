@@ -70,6 +70,7 @@ import ItemStatusCard from './item-status-card'
 import CrowdfundingCard from './crowdfunding-card'
 import { AppealWindowPanel } from 'pages/item-details/appeal-funding'
 import { requestFacts, type LightRequest } from './request-facts'
+import { linkedListAddress } from './linked-list'
 
 /*
  * Light Curate item page. A breadcrumb, then the hero (the one featured
@@ -618,9 +619,11 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
     160,
   )
 
-  // If this is a TCR in a TCR of TCRs, fetch its metadata via cached hook.
+  // If this is a TCR in a TCR of TCRs, fetch its metadata via cached hook:
+  // the list its field labelled like the list's GTCR address column names,
+  // the one the seal reads, never just the file's first field.
   const itemAddress = metadata?.isTCRofTCRs
-    ? decodedItem?.decodedData?.[0]
+    ? linkedListAddress(fields, metadata.columns)
     : undefined
   const itemMetaQuery = useTcrMetaEvidence(itemAddress, chainId ?? undefined)
   const itemMetaEvidence = useMemo(() => {
@@ -927,6 +930,7 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
             title="Details"
             loading={loading}
             itemMetaEvidence={itemMetaEvidence}
+            registryAddress={itemAddress}
             exclude={heroFields}
             kind="light"
           />

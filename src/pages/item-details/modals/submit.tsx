@@ -47,6 +47,7 @@ import { FieldError } from 'components/curate/item-light-notice'
 import { useActionGate } from 'components/curate/item-light-gate'
 import { formatAmount } from 'components/curate/item-light-format'
 import {
+  ADDRESS_CHECK_FAILED,
   addressErrorsByKey,
   fieldName,
   SubmissionFlowScaffold,
@@ -214,7 +215,8 @@ const _SubmissionForm: React.FC<
                     : String(value)
 
               // The fields are not on screen here, so a value that fails
-              // validation says so next to its review line.
+              // validation says so next to its review line (an address that
+              // could not be checked needs only another try).
               const error = p.errors[fieldName(index)]
 
               return (
@@ -224,7 +226,10 @@ const _SubmissionForm: React.FC<
                     {displayValue ?? <Small $faint>Not provided</Small>}
                     {error && (
                       <FieldError role="alert">
-                        {String(error)} Go back to the fields to fix it.
+                        {String(error)}
+                        {error === ADDRESS_CHECK_FAILED
+                          ? ''
+                          : ' Go back to the fields to fix it.'}
                       </FieldError>
                     )}
                   </dd>
@@ -295,14 +300,28 @@ const SubmissionForm = withFormik<
             // A GTCR address column always holds a string; a stashed File
             // is never a registry address, so it reads as "not deployed".
             const address = typeof value === 'string' ? value : ''
-            return {
-              isEmpty: !value,
-              wasDeployedWithFactory:
-                !!value &&
-                ((await deployedWithFactory(address)) ||
-                  (await deployedWithLightFactory(address)) ||
-                  (await deployedWithPermanentFactory(address))),
-              name,
+            // An indexer that does not answer is no verdict on the address,
+            // but the submission waits for one: said at the field, where a
+            // thrown check left Submit doing nothing at all.
+            try {
+              return {
+                isEmpty: !value,
+                wasDeployedWithFactory:
+                  !!value &&
+                  ((await deployedWithFactory(address)) ||
+                    (await deployedWithLightFactory(address)) ||
+                    (await deployedWithPermanentFactory(address))),
+                checkFailed: false,
+                name,
+              }
+            } catch (err) {
+              console.error('Error checking the list address:', err)
+              return {
+                isEmpty: !value,
+                wasDeployedWithFactory: false,
+                checkFailed: true,
+                name,
+              }
             }
           }),
       )
@@ -311,6 +330,7 @@ const SubmissionForm = withFormik<
         (res: {
           wasDeployedWithFactory: boolean
           isEmpty: boolean
+          checkFailed: boolean
           name: string
         }) => !res.wasDeployedWithFactory || res.isEmpty,
       )
@@ -320,13 +340,16 @@ const SubmissionForm = withFormik<
           curr: {
             wasDeployedWithFactory: boolean
             isEmpty: boolean
+            checkFailed: boolean
             name: string
           },
         ) => ({
           ...acc,
           [curr.name]: curr.isEmpty
             ? `Enter a list address to proceed.`
-            : `This address was not deployed with the list creator.`,
+            : curr.checkFailed
+              ? ADDRESS_CHECK_FAILED
+              : `This address was not deployed with the list creator.`,
         }),
         {},
       )

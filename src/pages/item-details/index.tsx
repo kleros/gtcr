@@ -68,6 +68,7 @@ import {
   requestFacts,
   type LightRequest as ClassicRequest,
 } from 'pages/light-item-details/request-facts'
+import { linkedListAddress } from 'pages/light-item-details/linked-list'
 import ItemStatusCard from './item-status-card'
 import { formatSince } from './format-since'
 import CrowdfundingCard from './crowdfunding-card'
@@ -540,12 +541,12 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
     showsErrorPage ? undefined : truncateAtWord(fullSeoMetaDescription, 160),
   )
 
-  // If this is a TCR in a TCR of TCRs, fetch its metadata via cached hook.
-  const firstDecodedValue = decodedData?.[0]
-  const itemAddress =
-    metadata?.isTCRofTCRs && typeof firstDecodedValue === 'string'
-      ? firstDecodedValue
-      : undefined
+  // If this is a TCR in a TCR of TCRs, fetch its metadata via cached hook:
+  // the list its field labelled like the list's GTCR address column names,
+  // as on Light (a Classic entry's fields are the list's own columns).
+  const itemAddress = metadata?.isTCRofTCRs
+    ? linkedListAddress(fields, metadata.columns)
+    : undefined
   const itemMetaQuery = useTcrMetaEvidence(itemAddress, chainId ?? undefined)
   const itemMetaEvidence = useMemo(() => {
     if (itemMetaQuery.error) return { error: itemMetaQuery.error }
@@ -839,6 +840,7 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
             title="Fields"
             loading={loading}
             itemMetaEvidence={itemMetaEvidence}
+            registryAddress={itemAddress}
           />
           {/* Spread the `requests` parameter to convert elements from array to an object */}
           <RequestTimelines

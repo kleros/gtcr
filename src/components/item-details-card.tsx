@@ -222,6 +222,12 @@ interface ItemDetailsCardProps {
   loading?: boolean | null
   item?: SubgraphItem
   itemMetaEvidence?: ItemMetaEvidenceState | false | null
+  /**
+   * On a list of lists, the list the entry points to, which the page read
+   * `itemMetaEvidence` for: the field the seal reads, never simply the
+   * entry's first field (a Light entry's file orders its own columns).
+   */
+  registryAddress?: string
   disabled?: boolean
   /**
    * Fields the page already shows in full elsewhere (the item hero's
@@ -242,6 +248,7 @@ const ItemDetailsCard = ({
   loading,
   item,
   itemMetaEvidence,
+  registryAddress,
   exclude,
   kind = 'classic',
 }: ItemDetailsCardProps) => {
@@ -381,10 +388,7 @@ const ItemDetailsCard = ({
     itemMetaEvidenceError instanceof Error
       ? itemMetaEvidenceError.message
       : String(itemMetaEvidenceError)
-  const childRegistryAddress =
-    itemMetaData && item?.decodedData?.[0]
-      ? String(item.decodedData[0])
-      : undefined
+  const childRegistryAddress = itemMetaData ? registryAddress : undefined
   const excluded = new Set(
     (exclude ?? []).map((field) => `${field.label}\u0000${field.type}`),
   )
@@ -490,6 +494,13 @@ const ItemDetailsCard = ({
             </LogoButton>
             <Stack $gap={6}>
               <Subheading>{tcrTitle}</Subheading>
+              {/* The address field stays out of the rows below (this block
+                  stands for it), so its address shows here. */}
+              {childRegistryAddress && (
+                <Data $mono $muted title={childRegistryAddress}>
+                  {truncateMiddle(childRegistryAddress, 8, 6)}
+                </Data>
+              )}
               {tcrDescription && <Body $muted>{tcrDescription}</Body>}
               {(fileURI || (childRegistryAddress && urlChainId)) && (
                 <Row $gap={8} $wrap>
