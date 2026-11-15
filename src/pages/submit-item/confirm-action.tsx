@@ -46,7 +46,9 @@ const Note = styled.p`
 /**
  * While a transaction is pending the label says what to do and a 2px light
  * runs along the bottom edge (no spinner). It stays full strength: pending
- * is a state, not a disabled button.
+ * is a state, not a disabled button. The light takes the lit edge's hue,
+ * which shows in every theme on the busy button's raised fill (on-primary
+ * ink is white on Light's pale fill and near black on Kleros's dark one).
  */
 const Wide = styled(Button)`
   height: 48px;
@@ -68,12 +70,7 @@ const Wide = styled(Button)`
     bottom: 0;
     width: 40%;
     height: 2px;
-    background: linear-gradient(
-      90deg,
-      transparent,
-      var(--color-on-primary),
-      transparent
-    );
+    background: linear-gradient(90deg, transparent, var(--edge-2), transparent);
     opacity: 0.85;
     animation: ${shimmer} 1.4s var(--ease-in-out) infinite;
   }
@@ -93,7 +90,16 @@ const phaseNote = (phase: SubmitPhase, itemName: string): string =>
     ? `Uploading your ${itemName} to IPFS…`
     : phase === 'wallet'
       ? 'Confirm in your wallet. The page waits until the transaction is mined.'
-      : ''
+      : phase === 'mining'
+        ? 'Sent. Waiting for the transaction to be mined.'
+        : ''
+
+const phaseLabel = (phase: SubmitPhase): string =>
+  phase === 'uploading'
+    ? 'Uploading…'
+    : phase === 'mining'
+      ? 'Confirming…'
+      : 'Confirm in wallet…'
 
 export const ConfirmAction = ({
   gate,
@@ -119,7 +125,7 @@ export const ConfirmAction = ({
     return (
       <>
         <Wide type="button" $variant="primary" $block disabled aria-busy>
-          {phase === 'uploading' ? 'Uploading…' : 'Confirm in wallet…'}
+          {phaseLabel(phase)}
         </Wide>
         <Note role="status">{phaseNote(phase, itemName)}</Note>
       </>

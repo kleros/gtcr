@@ -7,6 +7,7 @@ import {
   encodePacked,
   erc20Abi,
   keccak256,
+  parseAbi,
   type Abi,
   type TransactionReceipt,
 } from 'viem'
@@ -23,6 +24,16 @@ import { errorToast, wrapWithToast } from 'utils/wrap-with-toast'
 import { parseWagmiError } from 'utils/parse-wagmi-error'
 import { encoderValues, type SubmissionValues } from './form'
 import { useTxChainId } from './use-wallet-gate'
+import { useRefreshOnFocus } from './use-refresh-on-focus'
+
+/**
+ * ERC-20 approve with no declared return. Tokens such as USDT return
+ * nothing from approve, and viem's erc20Abi declares a bool: decoding their
+ * empty answer fails, so the simulation refused an approval that works.
+ */
+const approveAbi = parseAbi([
+  'function approve(address spender, uint256 amount)',
+])
 
 /**
  * The submitted entry's ID, read from the list's own events in the receipt
@@ -59,7 +70,8 @@ export const itemIdFromReceipt = (
  * encoded as booleans (the encoder reads the string "false" as true).
  */
 
-export type SubmitPhase = 'idle' | 'uploading' | 'wallet'
+/** 'mining': the wallet signed and sent; the receipt is awaited. */
+export type SubmitPhase = 'idle' | 'uploading' | 'wallet' | 'mining'
 export type ResetForm = (nextState?: Record<string, unknown>) => void
 export type SetFieldValue = (
   field: string,
@@ -150,7 +162,12 @@ export const useDepositSubmit = ({
           send = () => writeContract(wagmiConfig, request)
         }
 
-        const result = await wrapWithToast(send, publicClient!)
+        const result = await wrapWithToast(async () => {
+          const hash = await send()
+          // Signed and sent: the page now waits for it to be mined.
+          setPhase('mining')
+          return hash
+        }, publicClient!)
 
         if (result.status) {
           onDone(
@@ -186,7 +203,7 @@ export const useDepositSubmit = ({
 /**
  * Stake Curate: an ERC20 stake (approve first) plus the arbitration cost in
  * native currency, with the token balance, allowance and native balance read
- * on mount and again after an approval.
+ * on mount, after an approval and, while one is too low, on window focus.
  */
 export const usePermanentSubmit = ({
   tcrAddress,
@@ -249,13 +266,26 @@ export const usePermanentSubmit = ({
     checkTokenStatus()
   }, [checkTokenStatus])
 
+  // While the stake or the arbitration deposit is more than the wallet holds
+  // (the page's blocker), the balances are read again each time the page
+  // regains focus: a top-up clears it without a reload, which would empty
+  // the form.
+  const short =
+    (submissionDeposit !== undefined &&
+      balance !== undefined &&
+      balance < BigInt(submissionDeposit.toString())) ||
+    (arbitrationCost !== undefined &&
+      nativeBalance !== undefined &&
+      nativeBalance < BigInt(arbitrationCost.toString()))
+  useRefreshOnFocus(short, checkTokenStatus)
+
   const approve = useCallback(async () => {
     if (!submissionDeposit) return
     setApproving(true)
     try {
       const { request } = await simulateContract(wagmiConfig, {
         address: tokenAddress as `0x${string}`,
-        abi: erc20Abi,
+        abi: approveAbi,
         functionName: 'approve',
         args: [
           tcrAddress as `0x${string}`,
@@ -326,10 +356,12 @@ export const usePermanentSubmit = ({
           chainId,
         })
 
-        const result = await wrapWithToast(
-          () => writeContract(wagmiConfig, request),
-          publicClient!,
-        )
+        const result = await wrapWithToast(async () => {
+          const hash = await writeContract(wagmiConfig, request)
+          // Signed and sent: the page now waits for it to be mined.
+          setPhase('mining')
+          return hash
+        }, publicClient!)
 
         if (result.status) {
           onDone(

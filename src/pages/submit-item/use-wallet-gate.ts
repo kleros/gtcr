@@ -4,7 +4,7 @@ import { useAppKit } from '@reown/appkit/react'
 import { useAtlasProvider } from '@kleros/kleros-app'
 import useUrlChainId from 'hooks/use-url-chain-id'
 import { DEFAULT_CHAIN, getChainById } from 'config/chains'
-import { errorToast, infoToast, successToast } from 'utils/wrap-with-toast'
+import { reportSwitchFailure, signInWithToast } from 'utils/wrap-with-toast'
 
 /*
  * The wallet side of the confirm button: the same gates as `EnsureAuth`
@@ -61,19 +61,19 @@ export const useWalletGate = (verb = 'submit'): WalletGate => {
     open({ view: 'Connect' })
   }, [open])
 
-  const signIn = useCallback(() => {
-    infoToast('Signing in…')
-    authoriseUser()
-      .then(() => successToast('Signed in.'))
-      .catch((err) => {
-        console.error(err)
-        errorToast(`Sign-in failed: ${err?.message ?? 'unknown error'}`)
-      })
-  }, [authoriseUser])
+  // A declined signature is a short note, not a sticky error.
+  const signIn = useCallback(
+    () => signInWithToast(authoriseUser),
+    [authoriseUser],
+  )
 
+  // A wallet that does not switch says why instead of nothing happening.
   const switchToTarget = useCallback(() => {
-    switchChain({ chainId: targetChainId })
-  }, [switchChain, targetChainId])
+    switchChain(
+      { chainId: targetChainId },
+      { onError: (err) => reportSwitchFailure(err, chainName) },
+    )
+  }, [chainName, switchChain, targetChainId])
 
   return useMemo(() => {
     const correctChain = walletChainId === targetChainId
