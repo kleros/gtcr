@@ -9,6 +9,7 @@ import {
   Small,
   Stack,
   TextInput,
+  VisuallyHidden,
 } from 'components/curate/primitives'
 import { Roles, useAtlasProvider } from '@kleros/kleros-app'
 import { CurateIcon } from 'components/curate/icons'
@@ -33,6 +34,12 @@ import { FieldError, FieldLabel } from 'components/curate/item-light-notice'
 
 // Used until Atlas has said what evidence attachments it takes.
 const MAX_FILE_MB = 4
+
+// The description's limit, and the length from which its count shows.
+const DESCRIPTION_MAX = 1024
+const COUNT_FROM = 900
+
+const integer = new Intl.NumberFormat('en-US')
 
 const FieldBlock = styled.div`
   display: flex;
@@ -128,6 +135,28 @@ const PickRow = styled.div`
   flex-wrap: wrap;
   align-items: center;
   gap: 10px;
+`
+
+/** After a required field's label: quieter, in sentence case. */
+const Required = styled.span`
+  color: var(--color-faint);
+  font-family: var(--font-sans);
+  font-size: var(--fs-small);
+  font-weight: 400;
+  letter-spacing: normal;
+  text-transform: none;
+`
+
+/* The description's length once it nears the limit, in the danger colour
+   past it. The auto margin keeps it at the end of its row or column. */
+const Count = styled.span<{ $over: boolean }>`
+  margin-left: auto;
+  color: ${({ $over }) =>
+    $over ? 'var(--color-danger)' : 'var(--color-muted)'};
+  font-size: var(--fs-small);
+  line-height: var(--lh-small);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 `
 
 /* ---------- Composer layout ---------- */
@@ -423,8 +452,19 @@ const EvidenceForm = ({
     ? formatLimit(evidenceLimit.maxSize)
     : `${MAX_FILE_MB} MB`
   const errorsId = useId()
+  const countId = useId()
   const file = values.evidenceAttachment as File | undefined
   const drafted = !!(values.title || values.description || file)
+
+  // The limit is said while typing, not only once submit is pressed.
+  const length = values.description?.length ?? 0
+  const counting = length > COUNT_FROM
+  const count = counting ? (
+    <Count id={countId} $over={length > DESCRIPTION_MAX}>
+      {integer.format(length)} / {integer.format(DESCRIPTION_MAX)}
+      <VisuallyHidden> characters</VisuallyHidden>
+    </Count>
+  ) : null
 
   useEffect(() => {
     onDraftChange?.(drafted)
@@ -510,6 +550,7 @@ const EvidenceForm = ({
                     placeholder="Title"
                     maxLength={255}
                     autoComplete="off"
+                    aria-required
                     aria-invalid={submitCount > 0 && !!errors.title}
                     aria-describedby={shown.length > 0 ? errorsId : undefined}
                   />
@@ -536,8 +577,13 @@ const EvidenceForm = ({
                   }}
                   rows={3}
                   placeholder="What should the jurors know? Point to the listing policy."
+                  aria-required
                   aria-invalid={submitCount > 0 && !!errors.description}
-                  aria-describedby={shown.length > 0 ? errorsId : undefined}
+                  aria-describedby={
+                    [counting && countId, shown.length > 0 && errorsId]
+                      .filter(Boolean)
+                      .join(' ') || undefined
+                  }
                 />
               </>
             )}
@@ -569,6 +615,7 @@ const EvidenceForm = ({
                 </span>
               </Attach>
             )}
+            {count}
             {actions && <ToolbarEnd>{actions}</ToolbarEnd>}
           </Toolbar>
           {fileInput}
@@ -594,7 +641,9 @@ const EvidenceForm = ({
               form: { errors: fieldErrors },
             }: FieldProps<string | undefined, EvidenceFormValues>) => (
               <FieldBlock>
-                <FieldLabel htmlFor={`${formID}-title`}>Title</FieldLabel>
+                <FieldLabel htmlFor={`${formID}-title`}>
+                  Title <Required>required</Required>
+                </FieldLabel>
                 <TextInput
                   id={`${formID}-title`}
                   {...field}
@@ -619,7 +668,7 @@ const EvidenceForm = ({
           }: FieldProps<string | undefined, EvidenceFormValues>) => (
             <FieldBlock>
               <FieldLabel htmlFor={`${formID}-description`}>
-                Description
+                Description <Required>required</Required>
               </FieldLabel>
               <Textarea
                 id={`${formID}-description`}
@@ -628,7 +677,9 @@ const EvidenceForm = ({
                 rows={5}
                 placeholder="What the jurors should know, with references to the listing policy"
                 aria-invalid={!!fieldErrors.description}
+                aria-describedby={counting ? countId : undefined}
               />
+              {count}
               {fieldErrors.description && (
                 <FieldError role="alert">
                   {String(fieldErrors.description)}
@@ -697,7 +748,12 @@ const validationSchema = ({ detailed }: { detailed?: boolean }) =>
     description: yup
       .string()
       .required('An evidence description is required.')
-      .max(1024, 'The description must be less than 1024 characters long.'),
+      .max(DESCRIPTION_MAX, ({ value }: { value?: string }) => {
+        const over = (value?.length ?? 0) - DESCRIPTION_MAX
+        return `The description is ${integer.format(over)} character${
+          over === 1 ? '' : 's'
+        } too long (${integer.format(DESCRIPTION_MAX)} at most).`
+      }),
   })
 
 export default withFormik<EvidenceFormOuterProps, EvidenceFormValues>({
