@@ -15,6 +15,7 @@ import ErrorPage from '../error-page'
 import {
   ENTRY_LINK_TIP,
   ENTRY_LOAD_FAILED,
+  LIST_FILE_FAILED,
   ENTRY_INDEXING_MESSAGE,
   ENTRY_INDEXING_TITLE,
   ENTRY_MISSING_TIP,
@@ -692,6 +693,22 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
     showsErrorPage ? undefined : truncatedSeoTitle,
     showsErrorPage ? undefined : truncatedSeoMetaDescription,
   )
+
+  // The list's file did not load: said, with a retry and the way back,
+  // instead of a dead end.
+  if (tcrAddress && itemID && tcrViewContext?.metaEvidenceFailed)
+    return (
+      <ErrorPage
+        code="Error"
+        title="This entry did not load"
+        message={LIST_FILE_FAILED}
+        onRetry={() => void tcrViewContext.retryMetaEvidence()}
+        home={{
+          to: `/tcr/${chainId}/${tcrAddress}`,
+          label: 'Back to the list',
+        }}
+      />
+    )
 
   if (!tcrAddress || !itemID || tcrError)
     return (

@@ -80,7 +80,11 @@ import {
   withListSearch,
 } from 'components/curate/registry-shared-search'
 import ErrorPage from '../error-page'
-import { LIST_LOAD_FAILED } from '../error-page/copy'
+import {
+  LIST_FILE_FAILED,
+  LIST_LOAD_FAILED,
+  LIST_SETTINGS_FAILED,
+} from '../error-page/copy'
 import SubmitModal from '../light-item-details/modals/submit'
 import SubmitConnectModal from '../light-item-details/modals/submit-connect'
 
@@ -1158,6 +1162,27 @@ const Items = () => {
         code="404"
         message="This list could not be found."
         tip="Check the address, and that the chain in the URL is the one the list lives on."
+      />
+    )
+
+  // The list's file or its deposits and periods did not load: said, with a
+  // retry, instead of a dead end or skeleton rows for ever (the rows' status
+  // needs the challenge period).
+  if (tcrViewContext?.metaEvidenceFailed || tcrViewContext?.paramsFailed)
+    return (
+      <ErrorPage
+        code="Error"
+        title="This list did not load"
+        message={
+          tcrViewContext.metaEvidenceFailed
+            ? LIST_FILE_FAILED
+            : LIST_SETTINGS_FAILED
+        }
+        onRetry={() =>
+          void (tcrViewContext.metaEvidenceFailed
+            ? tcrViewContext.retryMetaEvidence()
+            : tcrViewContext.retryParams())
+        }
       />
     )
 

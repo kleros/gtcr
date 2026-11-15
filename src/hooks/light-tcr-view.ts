@@ -150,9 +150,13 @@ const useLightTcrView = (tcrAddress: string) => {
   return {
     gtcr,
     metaEvidence,
+    // A file that failed with nothing to show: a failed background refetch
+    // keeps the page on the file it already has.
     tcrError:
       error ||
-      (metaEvidenceQuery.error ? 'Error fetching meta evidence' : false),
+      (metaEvidenceQuery.isError && !metaEvidenceQuery.data
+        ? 'Error fetching meta evidence'
+        : false),
     /** The list's file did not load (the gateway or the indexer failed). */
     metaEvidenceFailed: metaEvidenceQuery.isError && !metaEvidenceQuery.data,
     retryMetaEvidence: metaEvidenceQuery.refetch,

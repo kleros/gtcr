@@ -16,6 +16,14 @@ export const ENTRY_MISSING_TIP =
 /** A list (or its entries) the indexer did not serve. */
 export const LIST_LOAD_FAILED = ENTRY_LOAD_FAILED
 
+/** The list's own file (MetaEvidence), which IPFS did not serve. */
+export const LIST_FILE_FAILED =
+  "The list's details (its title, fields and policy) did not load from IPFS. Try again in a moment."
+
+/** The list's deposits and periods, which the chain did not answer with. */
+export const LIST_SETTINGS_FAILED =
+  "The list's deposits and periods could not be read from the chain. Try again in a moment."
+
 export const LIST_LINK_TIP =
   'Check the address, and that the chain in the URL is the one the list lives on.'
 

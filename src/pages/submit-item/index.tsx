@@ -16,7 +16,11 @@ import {
   useParams,
 } from 'react-router-dom'
 import ErrorPage from 'pages/error-page'
-import { LIST_LOAD_FAILED } from 'pages/error-page/copy'
+import {
+  LIST_FILE_FAILED,
+  LIST_LOAD_FAILED,
+  LIST_SETTINGS_FAILED,
+} from 'pages/error-page/copy'
 import useCheckLightCurate from 'hooks/use-check-light-curate'
 import useTcrNetwork from 'hooks/use-tcr-network'
 import useUrlChainId from 'hooks/use-url-chain-id'
@@ -357,12 +361,43 @@ const DepositSubmitPage = ({
 const isConnectedList = (metaEvidence?: MetaEvidence): boolean =>
   Boolean(metaEvidence?.metadata?.isConnectedTCR)
 
+/**
+ * The list's file or its deposits and periods did not load: the form cannot
+ * be shown without them, so the page says which and offers to try again,
+ * instead of a dead end or a skeleton for ever.
+ */
+const ListPartFailed = ({
+  fileFailed,
+  onRetry,
+}: {
+  fileFailed: boolean
+  onRetry: () => unknown
+}) => (
+  <ErrorPage
+    code="Error"
+    title="This list did not load"
+    message={fileFailed ? LIST_FILE_FAILED : LIST_SETTINGS_FAILED}
+    onRetry={() => void onRetry()}
+  />
+)
+
 const ClassicSubmitPage = () => {
   const { tcrAddress } = useParams<{ tcrAddress: string }>()
   const registryPath = useRegistryPath()
   const tcrViewContext = useContext(TCRViewContext)
   const tcrError = tcrViewContext?.tcrError
 
+  if (tcrViewContext?.metaEvidenceFailed || tcrViewContext?.paramsFailed)
+    return (
+      <ListPartFailed
+        fileFailed={tcrViewContext.metaEvidenceFailed}
+        onRetry={
+          tcrViewContext.metaEvidenceFailed
+            ? tcrViewContext.retryMetaEvidence
+            : tcrViewContext.retryParams
+        }
+      />
+    )
   if (typeof tcrError === 'string')
     return <ErrorPage code="400" message={tcrError} />
   if (!tcrAddress) return <SubmitPageSkeleton />
@@ -392,6 +427,17 @@ const LightSubmitPage = () => {
   const tcrViewContext = useContext(LightTCRViewContext)
   const tcrError = tcrViewContext?.tcrError
 
+  if (tcrViewContext?.metaEvidenceFailed || tcrViewContext?.paramsFailed)
+    return (
+      <ListPartFailed
+        fileFailed={tcrViewContext.metaEvidenceFailed}
+        onRetry={
+          tcrViewContext.metaEvidenceFailed
+            ? tcrViewContext.retryMetaEvidence
+            : tcrViewContext.retryParams
+        }
+      />
+    )
   if (typeof tcrError === 'string')
     return <ErrorPage code="400" message={tcrError} />
   if (!tcrAddress) return <SubmitPageSkeleton />

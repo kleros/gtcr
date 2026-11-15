@@ -90,7 +90,12 @@ import {
   withListSearch,
 } from 'components/curate/registry-shared-search'
 import ErrorPage from '../error-page'
-import { LIST_LINK_TIP, LIST_LOAD_FAILED } from '../error-page/copy'
+import {
+  LIST_FILE_FAILED,
+  LIST_LINK_TIP,
+  LIST_LOAD_FAILED,
+  LIST_SETTINGS_FAILED,
+} from '../error-page/copy'
 
 // The submission forms load on first use: they are heavy and most visits to
 // a list never open one (Submit goes to the full submission page). React.lazy
@@ -890,8 +895,30 @@ const Items = () => {
     return (
       <ErrorPage
         code="404"
-        message="The gods are having trouble finding this list."
+        title="List not found"
+        message="No Curate list answers at this address on this chain."
         tip={LIST_LINK_TIP}
+      />
+    )
+
+  // The list's file or its deposits and periods did not load: said, with a
+  // retry, instead of a dead end or skeleton rows for ever (the rows' status
+  // needs the challenge period).
+  if (tcrViewContext?.metaEvidenceFailed || tcrViewContext?.paramsFailed)
+    return (
+      <ErrorPage
+        code="Error"
+        title="This list did not load"
+        message={
+          tcrViewContext.metaEvidenceFailed
+            ? LIST_FILE_FAILED
+            : LIST_SETTINGS_FAILED
+        }
+        onRetry={() =>
+          void (tcrViewContext.metaEvidenceFailed
+            ? tcrViewContext.retryMetaEvidence()
+            : tcrViewContext.retryParams())
+        }
       />
     )
 

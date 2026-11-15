@@ -42,6 +42,8 @@ import {
   sendPhaseLabel,
   type SendPhase,
 } from 'components/curate/what-happens-next'
+import { Notice } from 'components/curate/item-light-notice'
+import { LIST_SETTINGS_FAILED } from 'pages/error-page/copy'
 import { StickyActionBar } from 'components/curate/item-light-action-bar'
 import { AddressLink } from 'components/curate/item-light-fields'
 import { formatAmount, formatEther } from 'components/curate/item-light-format'
@@ -375,6 +377,30 @@ const ItemStatusCard = ({
     }
     setExecuting(undefined)
   }
+
+  // The list's deposits and periods did not load: the card can tell
+  // neither the status nor the amounts, and says so with a retry instead of
+  // keeping its skeleton for ever.
+  if (!challengePeriodDuration && tcrView?.paramsFailed)
+    return (
+      <Card id="item-status-card" $padding="standard">
+        <Stack $gap={12}>
+          <Notice tone="contested" role="alert">
+            {LIST_SETTINGS_FAILED}
+          </Notice>
+          <div>
+            <Button
+              type="button"
+              $variant="secondary"
+              $size="sm"
+              onClick={() => void tcrView.retryParams()}
+            >
+              Try again
+            </Button>
+          </div>
+        </Stack>
+      </Card>
+    )
 
   if (!item || !timestamp || !challengePeriodDuration || !request)
     return (
