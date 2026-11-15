@@ -92,6 +92,30 @@ const withExplorerLink = (text: string, chainId?: number, hash?: Hash) =>
       )
     : text
 
+type ToastUpdate = NonNullable<Parameters<typeof toast.update>[1]>
+
+/**
+ * The transaction's one toast is not closed by a click: its "View on
+ * explorer" link is a click, and a toast closed that way could never show
+ * how the transaction ended.
+ */
+const TX_TOAST = { closeOnClick: false } as const
+
+/**
+ * Writes the next state into the transaction's toast. If the person closed
+ * it meanwhile, the outcome still deserves a toast of its own.
+ */
+const report = (id: ReturnType<typeof toast.info>, update: ToastUpdate) => {
+  if (toast.isActive(id)) toast.update(id, update)
+  else if (!update.isLoading && update.render)
+    toast(update.render, {
+      ...OPTIONS,
+      ...TX_TOAST,
+      type: update.type ?? undefined,
+      autoClose: update.autoClose ?? undefined,
+    })
+}
+
 /** How long a transaction whose receipt is late is still followed. */
 const LATE_RECEIPT_MS = 15 * 60_000
 
@@ -113,7 +137,7 @@ const followLateReceipt = async (
       timeout: LATE_RECEIPT_MS,
     })
     const confirmed = res.status === 'success'
-    toast.update(id, {
+    report(id, {
       render: withExplorerLink(
         confirmed
           ? 'Transaction confirmed.'
@@ -144,6 +168,7 @@ export async function wrapWithToast(
 ): Promise<WrapWithToastReturnType> {
   const id = toast.info('Confirm the transaction in your wallet.', {
     ...OPTIONS,
+    ...TX_TOAST,
     autoClose: false,
   })
   const chainId = publicClient.chain?.id
@@ -151,7 +176,7 @@ export async function wrapWithToast(
 
   try {
     hash = await contractWrite()
-    toast.update(id, {
+    report(id, {
       render: withExplorerLink(
         'Transaction sent. Waiting for confirmation.',
         chainId,
@@ -168,7 +193,7 @@ export async function wrapWithToast(
     const status = res.status === 'success'
 
     if (status) {
-      toast.update(id, {
+      report(id, {
         render: withExplorerLink('Transaction confirmed.', chainId, hash),
         type: 'success',
         isLoading: false,
@@ -176,7 +201,7 @@ export async function wrapWithToast(
       })
       emitTxConfirmed()
     } else
-      toast.update(id, {
+      report(id, {
         render: withExplorerLink(
           'The transaction failed on chain (reverted).',
           chainId,
@@ -190,14 +215,14 @@ export async function wrapWithToast(
     return { status, result: res }
   } catch (err) {
     if (!hash && isUserRejection(err))
-      toast.update(id, {
+      report(id, {
         render: 'Transaction cancelled in your wallet.',
         type: 'default',
         isLoading: false,
         autoClose: 4000,
       })
     else if (hash) {
-      toast.update(id, {
+      report(id, {
         render: withExplorerLink(
           'Still waiting for this transaction to confirm. It may yet go through.',
           chainId,
@@ -209,7 +234,7 @@ export async function wrapWithToast(
       })
       void followLateReceipt(publicClient, id, chainId, hash)
     } else
-      toast.update(id, {
+      report(id, {
         render: withExplorerLink(parseWagmiError(err), chainId, hash),
         type: 'error',
         isLoading: false,

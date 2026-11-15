@@ -482,9 +482,18 @@ const GlobalStyle = createGlobalStyle`
   }
 
 
+  /*
+   * Reduced motion: every animation and transition ends at once, and a loop
+   * runs once (a 0.01ms loop would flicker for ever). The toast's timer bar
+   * is left out: react-toastify closes a toast when that bar's animation
+   * ends, so cutting it short removed every toast after a few frames.
+   */
   @media (prefers-reduced-motion: reduce) {
-    *, *::before, *::after {
+    *:not(.Toastify__progress-bar),
+    *::before,
+    *::after {
       animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
       transition-duration: 0.01ms !important;
     }
   }
