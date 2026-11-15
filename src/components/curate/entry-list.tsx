@@ -1350,6 +1350,7 @@ export const EntryList = ({
       <Surface $padding="none">
         <EmptyState
           icon="list"
+          titleAs="h2"
           title={emptyTitle ?? `No ${itemNamePlural} match`}
           action={emptyAction}
         >

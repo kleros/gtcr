@@ -2162,11 +2162,14 @@ const EmptyIcon = styled.div`
 export const EmptyState = ({
   icon = 'list',
   title,
+  titleAs,
   children,
   action,
 }: {
   icon?: CurateIconName
   title: React.ReactNode
+  /** The title's heading level where it sits under the page's h1. */
+  titleAs?: 'h2' | 'h3'
   children?: React.ReactNode
   action?: React.ReactNode
 }) => (
@@ -2174,7 +2177,7 @@ export const EmptyState = ({
     <EmptyIcon>
       <CurateIcon name={icon} size={18} />
     </EmptyIcon>
-    <Title>{title}</Title>
+    <Title as={titleAs}>{title}</Title>
     {children && <Body $muted>{children}</Body>}
     {action && <div style={{ marginTop: 10 }}>{action}</div>}
   </EmptyWrap>

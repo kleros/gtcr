@@ -1215,6 +1215,7 @@ const Items = () => {
         <Surface $padding="none">
           <EmptyState
             icon="activity"
+            titleAs="h2"
             title={`Could not load the ${itemNamePlural}`}
             action={
               <Button

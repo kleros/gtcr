@@ -785,9 +785,11 @@ const StakeRegistry = () => {
       hint: `Between starting a withdrawal and taking the stake back. The ${itemName} can still be challenged meanwhile.`,
     },
     {
-      label: 'Arbitration params cooldown',
+      // The Stake wizard's name and words: entries added after a change
+      // take the new settings at once (PermanentGTCR challengeItem).
+      label: 'Cooldown',
       value: periodValue(registry?.arbitrationParamsCooldown),
-      hint: 'Delay before new arbitration settings apply to every entry.',
+      hint: 'How long a new policy or court waits before it applies to entries already listed.',
     },
     {
       label: 'Arbitrator',
@@ -1056,6 +1058,7 @@ const StakeRegistry = () => {
           <Surface $padding="none">
             <EmptyState
               icon="list"
+              titleAs="h2"
               title={`The ${itemNamePlural} did not load`}
               action={
                 <Button
@@ -1075,6 +1078,7 @@ const StakeRegistry = () => {
           <Surface $padding="none">
             <EmptyState
               icon="list"
+              titleAs="h2"
               title={`No ${itemNamePlural} on page ${formatInt(currentPage)}`}
               action={
                 <Button
