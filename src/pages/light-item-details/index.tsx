@@ -992,7 +992,11 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
               },
               {
                 title: 'Spot a mistake, earn a bounty',
-                body: "Challenge a request that breaks the policy during its challenge period. If jurors agree, you earn the requester's base deposit and yours comes back.",
+                // Jurors only where the arbitrator is Kleros, as the list
+                // page's explainer says.
+                body: `Challenge a request that breaks the policy during its challenge period. If ${
+                  klerosDecides ? 'jurors agree' : 'the arbitrator agrees'
+                }, you earn the requester's base deposit and yours comes back.`,
               },
               {
                 title: klerosDecides
