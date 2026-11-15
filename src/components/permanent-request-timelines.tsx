@@ -310,16 +310,18 @@ const Timeline = ({ submission, item, metaEvidence, live }: TimelineProps) => {
       }),
     )
 
+    // No metadata yet means the subgraph has not read the file: null marks
+    // the fields for the IPFS fallback below.
     const evidences = (item.evidences ?? []).map(
       (e): EvidenceLog => ({
         name: 'Evidence',
         timestamp: e.timestamp,
         transactionHash: e.txHash,
-        title: e.metadata?.title,
-        description: e.metadata?.description,
+        title: e.metadata?.title ?? null,
+        description: e.metadata?.description ?? null,
         URI: e.URI,
-        fileURI: e.metadata?.fileURI,
-        fileTypeExtension: e.metadata?.fileTypeExtension,
+        fileURI: e.metadata?.fileURI ?? null,
+        fileTypeExtension: e.metadata?.fileTypeExtension ?? null,
         party: e.party,
       }),
     )
