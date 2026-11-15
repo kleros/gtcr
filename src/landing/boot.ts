@@ -12,7 +12,7 @@ import {
   scopedSeries,
 } from 'pages/dashboard/view'
 import { readRegistryMetadata } from 'utils/registry-metadata'
-import { parseIpfs } from 'utils/ipfs-parse'
+import { ipfsImageUrl } from 'utils/ipfs-parse'
 
 /*
  * Live figures for the standalone landing page (public/landing/landing.js).
@@ -284,12 +284,8 @@ const readLive = async (): Promise<LandingData | null> => {
   }
 }
 
-/** A list logo's URL: IPFS paths through the app's gateway, URLs as they are. */
-const mediaUrl = (uri?: unknown): string | null => {
-  if (typeof uri !== 'string' || !uri.trim()) return null
-  if (/^https?:\/\//i.test(uri)) return uri
-  return /^(\/?ipfs\/|ipfs:\/\/)/i.test(uri) ? parseIpfs(uri) : null
-}
+/** A list logo's URL, on the app's IPFS gateway only (ipfsImageUrl). */
+const mediaUrl = (uri?: unknown): string | null => ipfsImageUrl(uri) ?? null
 
 declare global {
   interface Window {

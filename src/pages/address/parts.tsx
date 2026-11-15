@@ -1,7 +1,7 @@
 import React from 'react'
 import styled, { css } from 'styled-components'
 import { Link } from 'react-router-dom'
-import { parseIpfs } from 'utils/ipfs-parse'
+import { ipfsImageUrl } from 'utils/ipfs-parse'
 import { formatAbsolute } from 'utils/time'
 import { formatSince } from 'pages/item-details/format-since'
 import { CurateIcon, type CurateIconName } from 'components/curate/icons'
@@ -15,11 +15,9 @@ import { Avatar as ListLogo } from 'pages/browse/avatar'
  * headings in display type, and the quiet state for empty panels.
  */
 
-export const mediaUrl = (uri?: string | null): string | null => {
-  if (!uri) return null
-  if (/^https?:\/\//i.test(uri)) return uri
-  return parseIpfs(uri)
-}
+/** A logo, on the IPFS gateway only (ipfsImageUrl says why). */
+export const mediaUrl = (uri?: string | null): string | null =>
+  ipfsImageUrl(uri) ?? null
 
 /* Holds the logo where a layout places it (grid areas, data hooks). */
 const LogoSlot = styled.span`

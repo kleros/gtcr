@@ -1,6 +1,6 @@
 import { NETWORKS_INFO } from 'config/networks'
 import { VERIFIED_LIST_OF_LISTS_ADDRESSES } from 'config/list-of-lists'
-import { parseIpfs } from 'utils/ipfs-parse'
+import { ipfsImageUrl } from 'utils/ipfs-parse'
 import type {
   DashboardActivity,
   DashboardRegistry,
@@ -112,10 +112,9 @@ export const verificationHref = (chainId: number): string | null => {
   return address ? `/tcr/${chainId}/${address}/submit` : null
 }
 
-export const mediaUrl = (uri?: string | null): string | null => {
-  if (!uri) return null
-  return /^https?:\/\//i.test(uri) ? uri : parseIpfs(uri)
-}
+/** A logo, on the IPFS gateway only (ipfsImageUrl says why). */
+export const mediaUrl = (uri?: string | null): string | null =>
+  ipfsImageUrl(uri) ?? null
 
 /* ---------- URL parameters ---------- */
 

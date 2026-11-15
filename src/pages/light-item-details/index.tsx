@@ -40,7 +40,7 @@ import { formatAbsolute } from 'utils/time'
 import { formatSince } from 'pages/item-details/format-since'
 import { STALE_TIME } from 'consts'
 import { isKlerosArbitrator } from 'config/tcr-addresses'
-import { parseIpfs } from 'utils/ipfs-parse'
+import { ipfsImageUrl, parseIpfs } from 'utils/ipfs-parse'
 import { type ItemFile, sanitizeItemFile } from 'utils/item-file-guard'
 import { truncateAtWord } from 'utils/truncate-at-word'
 import { CurateIcon } from 'components/curate/icons'
@@ -413,8 +413,8 @@ const isLinkField = (field: EntryField) =>
 const logoOf = (fields: EntryField[]): string | undefined => {
   const image = fields.find((field) => isImageField(field) && hasValue(field))
   if (!image) return undefined
-  const value = String(image.value)
-  return /^https?:\/\//i.test(value) ? value : parseIpfs(value)
+  // On the IPFS gateway only (ipfsImageUrl says why).
+  return ipfsImageUrl(image.value)
 }
 
 interface ItemDetailsProps {

@@ -4,7 +4,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import useDocumentHead from 'hooks/use-document-head'
 import useNow from 'hooks/use-now'
-import { parseIpfs } from 'utils/ipfs-parse'
+import { ipfsImageUrl } from 'utils/ipfs-parse'
 import { formatAgo } from 'utils/time'
 import { NETWORKS } from 'config/networks'
 import { CurateIcon } from 'components/curate/icons'
@@ -148,11 +148,9 @@ const scopeOptions: SelectMenuOption<string>[] = [
   }).sort((a, b) => Number(Boolean(a.tag)) - Number(Boolean(b.tag))),
 ]
 
-const mediaUrl = (uri?: string | null): string | null => {
-  if (!uri) return null
-  if (/^https?:\/\//i.test(uri)) return uri
-  return parseIpfs(uri)
-}
+/** A logo, on the IPFS gateway only (ipfsImageUrl says why). */
+const mediaUrl = (uri?: string | null): string | null =>
+  ipfsImageUrl(uri) ?? null
 
 const pulse = keyframes`
   0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--status-registered) 55%, transparent); }
