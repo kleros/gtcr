@@ -17,6 +17,7 @@ import {
   Surface,
   Table,
   TableScroller,
+  VisuallyHidden,
 } from './primitives'
 import { CurateIcon } from './icons'
 import { reveal } from './motion/reveal'
@@ -192,6 +193,14 @@ const textOf = (field?: V2Field): string | undefined =>
     ? String(field.value)
     : undefined
 
+/* Values sit in boxes that clip their overflow (for the ellipsis), so a
+   link's focus ring is drawn inside it, as Segment and NavLink draw theirs. */
+const insetFocus = css`
+  a:focus-visible {
+    outline-offset: -2px;
+  }
+`
+
 const Thumb = styled.img<{ $size?: number }>`
   display: block;
   flex: 0 0 auto;
@@ -248,12 +257,14 @@ const WithOutLink = styled.span`
   }
 `
 
+/* At least 24px tall: a target of its own beside the value it stands for. */
 const OutLinkAnchor = styled.a`
   && {
     display: inline-flex;
     flex: 0 0 auto;
     align-items: center;
     gap: 4px;
+    min-height: 24px;
     color: var(--color-primary);
     font-size: var(--fs-small);
     line-height: var(--lh-small);
@@ -405,7 +416,10 @@ const FieldsNotice = ({ entry }: { entry: EntryRow }) =>
     <ProblemNotice problem={entry.problem} />
   ) : null
 
-/** One link stretched over the whole row or card; inner links sit above it. */
+/**
+ * One link stretched over the whole row or card; inner links sit above it.
+ * Its focus ring is drawn inside the edge: a card clips what lies outside.
+ */
 const Overlay = styled(Link).attrs({ 'data-overlay': true })`
   position: absolute;
   inset: 0;
@@ -414,7 +428,7 @@ const Overlay = styled(Link).attrs({ 'data-overlay': true })`
 
   &:focus-visible {
     outline: 2px solid var(--color-primary);
-    outline-offset: 2px;
+    outline-offset: -2px;
   }
 `
 
@@ -536,6 +550,7 @@ const RowTitle = styled.div`
   font-weight: 500;
   text-overflow: ellipsis;
   white-space: nowrap;
+  ${insetFocus}
 `
 
 const RowMeta = styled.div`
@@ -548,6 +563,7 @@ const RowMeta = styled.div`
   font-size: var(--fs-small);
   line-height: var(--lh-small);
   white-space: nowrap;
+  ${insetFocus}
 
   > span {
     display: inline-flex;
@@ -860,6 +876,7 @@ const CellValue = styled.div`
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  ${insetFocus}
 
   a {
     color: var(--color-primary);
@@ -997,8 +1014,15 @@ const EntryTable = ({
                 {labelOf(column)}
               </th>
             ))}
-            {opensLists && <th className="list" aria-label="Open list" />}
-            <th className="open" aria-label="Open" />
+            {/* Headed for screen readers only: the cells hold links. */}
+            {opensLists && (
+              <th className="list">
+                <VisuallyHidden>Open list</VisuallyHidden>
+              </th>
+            )}
+            <th className="open">
+              <VisuallyHidden>Open</VisuallyHidden>
+            </th>
           </tr>
         </thead>
         <tbody>
@@ -1141,6 +1165,7 @@ const CardTitle = styled.div`
   letter-spacing: -0.02em;
   text-overflow: ellipsis;
   white-space: nowrap;
+  ${insetFocus}
 `
 
 /* Each label over its value, so the value (often an address) gets the
@@ -1150,6 +1175,7 @@ const CardFields = styled.dl`
   flex-direction: column;
   gap: 10px;
   margin: 0;
+  ${insetFocus}
 
   > div {
     display: flex;

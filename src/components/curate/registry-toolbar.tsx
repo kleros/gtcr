@@ -40,10 +40,10 @@ const Bar = styled.div`
       'chips chips chips';
   }
 
-  /* Phones: the search keeps the full width, sort and layout share a line
-     (the layout switch keeps its icons only; names stay readable to
-     assistive tech), and the switch follows the filters it belongs with. */
-  @media (max-width: 520px) {
+  /* Phones and narrow tablets: the switch, sort and layout need about 630px
+     on one line, so the search keeps the full width, sort and layout share
+     a line and the switch follows the filters it belongs with. */
+  @media (max-width: 720px) {
     grid-template-columns: minmax(0, 1fr) auto;
     grid-template-areas:
       'search search'
@@ -51,7 +51,11 @@ const Bar = styled.div`
       'chips chips'
       'nsfw nsfw';
     gap: 10px 8px;
+  }
 
+  /* Phones: the layout switch keeps its icons only (names stay readable to
+     assistive tech). */
+  @media (max-width: 520px) {
     [aria-label='Layout'] button {
       gap: 0;
       padding: 0 11px;
@@ -155,7 +159,7 @@ const SwitchField = styled.label`
     color: var(--color-text);
   }
 
-  @media (max-width: 520px) {
+  @media (max-width: 720px) {
     margin-top: -2px;
   }
 `
@@ -165,7 +169,7 @@ const Slot = styled.div<{ $area: 'sort' | 'layout' }>`
   justify-self: end;
   min-width: 0;
 
-  @media (max-width: 520px) {
+  @media (max-width: 720px) {
     justify-self: ${({ $area }) => ($area === 'sort' ? 'start' : 'end')};
   }
 `

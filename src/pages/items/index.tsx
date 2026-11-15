@@ -460,12 +460,13 @@ const AddressLink = styled.a`
   }
 `
 
+/* Underlined at rest: inside a sentence its colour alone does not mark it. */
 const SuccessorLink = styled(Link)`
   color: var(--color-primary);
-  text-decoration: none;
+  text-decoration: underline;
 
   &:hover {
-    text-decoration: underline;
+    color: var(--color-primary-hover);
   }
 `
 

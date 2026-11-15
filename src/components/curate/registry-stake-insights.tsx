@@ -87,7 +87,8 @@ const PanelTop = styled.header`
   gap: 10px 20px;
 `
 
-const PanelTitle = styled.h3`
+/* The first headings under the page's title (its h1), so h2s. */
+const PanelTitle = styled.h2`
   margin: 0;
   color: var(--color-text);
   font-family: var(--font-display);
