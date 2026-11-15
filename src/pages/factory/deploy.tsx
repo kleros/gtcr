@@ -791,14 +791,26 @@ const Deploy = ({
     const batcher = batcherAddress as Address
     // Which stage a failure belongs to, for the stepper.
     let stage: DeployPhase = 'uploading'
+    // A deployment kept from before stays kept (in the draft too) until a
+    // new one is sent: a retry cancelled or failed before the wallet sends
+    // it must not forget the first, which may still go through.
+    const previous = pendingHash ? { hash: pendingHash, predicted } : undefined
+    const restorePrevious = () => {
+      if (!previous) return false
+      setPendingHash(previous.hash)
+      setPredicted(previous.predicted)
+      setStillPending(true)
+      setWaited(true)
+      setFailedAt(undefined)
+      setPhase('mining')
+      return true
+    }
     setFailedAt(undefined)
     setPendingHash(undefined)
     setStillPending(false)
     setWaited(false)
     setMetaEvidencePaths([])
     setPredicted(undefined)
-    // Deploying again gives up the deployment kept from before.
-    if (tcrState.pendingDeploy) keepPending(undefined)
     try {
       setPhase('uploading')
       const txCount = await publicClient.getTransactionCount({
@@ -952,14 +964,17 @@ const Deploy = ({
         setStillPending(true)
         setWaited(true)
       } else {
-        // Reverted on chain, or cancelled: nothing is pending any more.
+        // Reverted on chain, or cancelled: nothing is pending any more. A
+        // retry the wallet refused goes back to the deployment kept before.
         if ((stage as DeployPhase) === 'mining') keepPending(undefined)
+        else if (restorePrevious()) return
         setFailedAt(stage)
         setPhase('idle')
       }
     } catch (err) {
       console.error('Error deploying list:', err)
       errorToast(parseWagmiError(err))
+      if ((stage as DeployPhase) !== 'mining' && restorePrevious()) return
       setFailedAt(stage)
       setPhase('idle')
     }

@@ -469,14 +469,25 @@ const Deploy = ({
     const factory = factoryAddress as Address
     // Which stage a failure belongs to, for the stepper.
     let stage: Phase = 'uploading'
+    // A deployment kept from before stays kept (in the draft too) until a
+    // new one is sent: a retry cancelled or failed before the wallet sends
+    // it must not forget the first, which may still go through.
+    const previousHash = pendingHash
+    const restorePrevious = () => {
+      if (!previousHash) return false
+      setPendingHash(previousHash)
+      setStillPending(true)
+      setWaited(true)
+      setFailedAt(undefined)
+      setPhase('mining')
+      return true
+    }
     setFailure('')
     setFailedAt(undefined)
     setPendingHash(undefined)
     setStillPending(false)
     setWaited(false)
     setMetaEvidencePath(undefined)
-    // Deploying again gives up the deployment kept from before.
-    if (tcrState.pendingDeploy) keepPending(undefined)
     try {
       setPhase('uploading')
       const { ipfsMetaEvidencePath } = await getTcrMetaEvidence(
@@ -546,8 +557,10 @@ const Deploy = ({
         setStillPending(true)
         setWaited(true)
       } else {
-        // Reverted on chain, or cancelled: nothing is pending any more.
+        // Reverted on chain, or cancelled: nothing is pending any more. A
+        // retry the wallet refused goes back to the deployment kept before.
         if ((stage as Phase) === 'mining') keepPending(undefined)
+        else if (restorePrevious()) return
         setFailedAt(stage)
         setPhase('idle')
         setFailure('The transaction did not go through.')
@@ -556,6 +569,7 @@ const Deploy = ({
       console.error('Error deploying list:', err)
       const message = parseWagmiError(err)
       errorToast(message)
+      if ((stage as Phase) !== 'mining' && restorePrevious()) return
       setFailedAt(stage)
       setPhase('idle')
       setFailure(message)
