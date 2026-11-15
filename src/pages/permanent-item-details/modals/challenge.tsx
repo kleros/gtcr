@@ -29,6 +29,7 @@ import {
   nativeText,
   tokenText,
   useActionGate,
+  type ActionGate,
 } from './shell'
 
 const capitalize = (text: string) =>
@@ -77,11 +78,13 @@ const ChallengeModal = ({
   // Per-instance form id: the list page mounts the same modal.
   const formId = useId()
 
-  const [balance, setBalance] = useState(0n)
-  const [allowance, setAllowance] = useState(0n)
+  // Undefined until read: the dialog never states a balance it did not load.
+  const [balance, setBalance] = useState<bigint>()
+  const [allowance, setAllowance] = useState<bigint>()
   const [nativeBalance, setNativeBalance] = useState<bigint>()
   const [multiplierDivisor, setMultiplierDivisor] = useState<bigint>()
   const [checkingToken, setCheckingToken] = useState(false)
+  const [checkFailed, setCheckFailed] = useState(false)
   const [isApproving, setIsApproving] = useState(false)
   const [isChallenging, setIsChallenging] = useState(false)
   const { symbol: tokenSymbol, decimals: tokenDecimals } =
@@ -104,6 +107,7 @@ const ChallengeModal = ({
     if (!account || !publicClient || !tokenAddress || !registryAddress) return
 
     setCheckingToken(true)
+    setCheckFailed(false)
     try {
       const [bal, allow, nativeBal, divisor] = await Promise.all([
         publicClient.readContract({
@@ -131,13 +135,16 @@ const ChallengeModal = ({
       setMultiplierDivisor(BigInt(String(divisor)))
     } catch (err) {
       console.error('Error checking token status:', err)
+      setCheckFailed(true)
     }
     setCheckingToken(false)
   }, [account, publicClient, tokenAddress, registryAddress])
 
+  // The dialog is mounted with the page: read when it opens, so tokens
+  // bought since the page loaded count.
   useEffect(() => {
-    checkTokenStatus()
-  }, [checkTokenStatus])
+    if (visible) checkTokenStatus()
+  }, [visible, checkTokenStatus])
 
   // Reset loading states when the modal unmounts.
   useEffect(
@@ -249,10 +256,31 @@ const ChallengeModal = ({
     if (form instanceof HTMLFormElement) form.requestSubmit()
   }
 
-  const hasEnoughBalance = balance >= challengeStake
-  const hasEnoughAllowance = allowance >= challengeStake
+  const balancesRead =
+    balance !== undefined &&
+    allowance !== undefined &&
+    nativeBalance !== undefined
+  const hasEnoughBalance = balance !== undefined && balance >= challengeStake
+  const hasEnoughAllowance =
+    allowance !== undefined && allowance >= challengeStake
   const hasEnoughNativeBalance =
     nativeBalance !== undefined && nativeBalance >= arbitrationWei
+
+  // While a balance is what blocks, funds bought in another tab or app
+  // count as soon as the person comes back to this one.
+  const shortOfFunds =
+    visible &&
+    gate.ready &&
+    balancesRead &&
+    (!hasEnoughBalance || !hasEnoughNativeBalance)
+  useEffect(() => {
+    if (!shortOfFunds) return
+    const recheck = () => {
+      checkTokenStatus()
+    }
+    window.addEventListener('focus', recheck)
+    return () => window.removeEventListener('focus', recheck)
+  }, [shortOfFunds, checkTokenStatus])
 
   const stakeText = tokenText(challengeStake, tokenDecimals, tokenSymbol)
   const costText = nativeText(arbitrationWei, nativeCurrency)
@@ -269,15 +297,37 @@ const ChallengeModal = ({
     ? gate.blocker
     : checkingToken
       ? 'Checking balances'
-      : !hasEnoughBalance
-        ? `Not enough ${tokenSymbol}: you hold ${tokenText(balance, tokenDecimals, tokenSymbol)}`
-        : !hasEnoughNativeBalance
-          ? `Not enough ${nativeCurrency} for the arbitration cost`
-          : !hasEnoughAllowance
-            ? `Approve ${tokenSymbol} first`
-            : undefined
+      : checkFailed
+        ? `Could not read your ${tokenSymbol} balance`
+        : !balancesRead
+          ? 'Checking balances'
+          : !hasEnoughBalance
+            ? `Not enough ${tokenSymbol}: you hold ${tokenText(balance, tokenDecimals, tokenSymbol)}`
+            : !hasEnoughNativeBalance
+              ? `Not enough ${nativeCurrency} for the arbitration cost`
+              : !hasEnoughAllowance
+                ? `Approve ${tokenSymbol} first`
+                : undefined
+  // A failed read is said as such, never as an empty wallet, with one
+  // button that reads the balances again.
+  const retry: ActionGate | undefined =
+    gate.ready && checkFailed && !checkingToken
+      ? {
+          ready: false,
+          blocker,
+          helper: {
+            label: 'Try again',
+            onClick: () => void checkTokenStatus(),
+          },
+        }
+      : undefined
   const showApprove =
-    gate.ready && !checkingToken && hasEnoughBalance && !hasEnoughAllowance
+    gate.ready &&
+    !checkingToken &&
+    !checkFailed &&
+    balancesRead &&
+    hasEnoughBalance &&
+    !hasEnoughAllowance
 
   return (
     <ModalShell
@@ -366,7 +416,7 @@ const ChallengeModal = ({
               confirmBlocker={blocker}
               loading={isChallenging}
             />
-            <GateHelper gate={gate} caption={false} />
+            <GateHelper gate={retry ?? gate} caption={false} />
           </Stack>
         </DialogColumns>
       ) : (

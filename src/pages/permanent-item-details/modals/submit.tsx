@@ -49,6 +49,7 @@ import {
   nativeText,
   tokenText,
   useActionGate,
+  type ActionGate,
 } from './shell'
 
 /*
@@ -329,10 +330,12 @@ const SubmitModal: React.FC<{
   const { uploadFile } = useAtlasProvider()
   const gate = useActionGate('submit', { needsSignIn: true })
 
-  const [balance, setBalance] = useState(0n)
-  const [allowance, setAllowance] = useState(0n)
+  // Undefined until read: the dialog never states a balance it did not load.
+  const [balance, setBalance] = useState<bigint>()
+  const [allowance, setAllowance] = useState<bigint>()
   const [nativeBalance, setNativeBalance] = useState<bigint>()
   const [checkingToken, setCheckingToken] = useState(false)
+  const [checkFailed, setCheckFailed] = useState(false)
   const [isApproving, setIsApproving] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [fieldsComplete, setFieldsComplete] = useState(false)
@@ -388,6 +391,7 @@ const SubmitModal: React.FC<{
     if (!account || !publicClient || !tokenAddress) return
 
     setCheckingToken(true)
+    setCheckFailed(false)
     try {
       const [bal, allow, nativeBal] = await Promise.all([
         publicClient.readContract({
@@ -409,13 +413,17 @@ const SubmitModal: React.FC<{
       setNativeBalance(nativeBal)
     } catch (err) {
       console.error('Error checking token status:', err)
+      setCheckFailed(true)
     }
     setCheckingToken(false)
   }, [account, publicClient, tokenAddress, tcrAddress])
 
+  // The dialog is mounted with the page: read when it opens, so tokens
+  // bought since the page loaded count.
+  const shown = visible || embedded
   useEffect(() => {
-    checkTokenStatus()
-  }, [checkTokenStatus])
+    if (shown) checkTokenStatus()
+  }, [shown, checkTokenStatus])
 
   // Reset loading states when the modal unmounts.
   useEffect(
@@ -426,8 +434,12 @@ const SubmitModal: React.FC<{
     [],
   )
 
-  const hasEnoughBalance = balance >= depositWei
-  const hasEnoughAllowance = allowance >= depositWei
+  const balancesRead =
+    balance !== undefined &&
+    allowance !== undefined &&
+    nativeBalance !== undefined
+  const hasEnoughBalance = balance !== undefined && balance >= depositWei
+  const hasEnoughAllowance = allowance !== undefined && allowance >= depositWei
   const hasEnoughNativeBalance =
     nativeBalance !== undefined && nativeBalance >= arbitrationWei
 
@@ -438,19 +450,52 @@ const SubmitModal: React.FC<{
       ? 'Loading the arbitration deposit'
       : checkingToken || tokenLoading
         ? 'Checking balances'
-        : decimalsMissing
-          ? `Could not read how many decimals ${tokenSymbol} has; try again later`
-          : stakeError
-            ? stakeError
-            : !fieldsComplete
-              ? 'Fill in every required field'
-              : !hasEnoughBalance
-                ? `Not enough ${tokenSymbol}: you hold ${tokenText(balance, tokenDecimals, tokenSymbol)}`
-                : !hasEnoughNativeBalance
-                  ? `Not enough ${nativeCurrency} for the arbitration deposit`
-                  : !hasEnoughAllowance
-                    ? `Approve ${tokenSymbol} first`
-                    : undefined
+        : checkFailed
+          ? `Could not read your ${tokenSymbol} balance`
+          : !balancesRead
+            ? 'Checking balances'
+            : decimalsMissing
+              ? `Could not read how many decimals ${tokenSymbol} has; try again later`
+              : stakeError
+                ? stakeError
+                : !fieldsComplete
+                  ? 'Fill in every required field'
+                  : !hasEnoughBalance
+                    ? `Not enough ${tokenSymbol}: you hold ${tokenText(balance, tokenDecimals, tokenSymbol)}`
+                    : !hasEnoughNativeBalance
+                      ? `Not enough ${nativeCurrency} for the arbitration deposit`
+                      : !hasEnoughAllowance
+                        ? `Approve ${tokenSymbol} first`
+                        : undefined
+  // A failed read is said as such, never as an empty wallet, with one
+  // button that reads the balances again.
+  const retry: ActionGate | undefined =
+    gate.ready && checkFailed && !checkingToken
+      ? {
+          ready: false,
+          blocker,
+          helper: {
+            label: 'Try again',
+            onClick: () => void checkTokenStatus(),
+          },
+        }
+      : undefined
+
+  // While a balance is what blocks, funds bought in another tab or app
+  // count as soon as the person comes back to this one.
+  const shortOfFunds =
+    shown &&
+    gate.ready &&
+    balancesRead &&
+    (!hasEnoughBalance || !hasEnoughNativeBalance)
+  useEffect(() => {
+    if (!shortOfFunds) return
+    const recheck = () => {
+      checkTokenStatus()
+    }
+    window.addEventListener('focus', recheck)
+    return () => window.removeEventListener('focus', recheck)
+  }, [shortOfFunds, checkTokenStatus])
   // Enter in a one-field form submits it implicitly: it may only go through
   // when the confirm button itself could.
   const submitAllowed = !blocker && !isSubmitting
@@ -606,6 +651,8 @@ const SubmitModal: React.FC<{
   const showApprove =
     gate.ready &&
     !checkingToken &&
+    !checkFailed &&
+    balancesRead &&
     !tokenLoading &&
     !decimalsMissing &&
     !stakeError &&
@@ -743,7 +790,7 @@ const SubmitModal: React.FC<{
           ) : undefined
         }
       />
-      <GateHelper gate={gate} caption={false} />
+      <GateHelper gate={retry ?? gate} caption={false} />
     </Stack>
   )
 
