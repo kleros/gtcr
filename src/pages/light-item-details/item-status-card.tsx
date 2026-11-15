@@ -338,6 +338,13 @@ const ItemStatusCard = ({
     const previous = shownStatus.current
     shownStatus.current = statusCode
     if (previous === undefined || previous === statusCode || !modalOpen) return
+    // The loser funded in its half: the same appeal dialog, for the same
+    // side, now with the winner's deadline. It stays open with what was typed.
+    if (
+      previous === STATUS_CODE.CROWDFUNDING &&
+      statusCode === STATUS_CODE.CROWDFUNDING_WINNER
+    )
+      return
     setModalOpen(false)
     const notice = statusChangeNotice(previous, statusCode)
     if (notice) infoToast(notice)
