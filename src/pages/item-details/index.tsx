@@ -71,7 +71,10 @@ import {
   requestFacts,
   type LightRequest as ClassicRequest,
 } from 'pages/light-item-details/request-facts'
-import { linkedListAddress } from 'pages/light-item-details/linked-list'
+import {
+  linkedListAddress,
+  linkedListField,
+} from 'pages/light-item-details/linked-list'
 import ItemStatusCard from './item-status-card'
 import { formatSince } from './format-since'
 import CrowdfundingCard from './crowdfunding-card'
@@ -517,7 +520,16 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
         : [],
     [columns, decodedData],
   )
-  const primaryField = useMemo(() => titleField(fields), [fields])
+  // A list of lists' entry leads with the list it names: the field its
+  // registry block and its seal read, not whichever identifier comes first
+  // in the entry's own file.
+  const primaryField = useMemo(
+    () =>
+      (metadata?.isTCRofTCRs
+        ? linkedListField(fields, metadata.columns)
+        : undefined) ?? titleField(fields),
+    [fields, metadata],
+  )
   const otherIdentifiers = useMemo(
     () => identifierFields(fields).filter((field) => field !== primaryField),
     [fields, primaryField],

@@ -73,7 +73,7 @@ import ItemStatusCard from './item-status-card'
 import CrowdfundingCard from './crowdfunding-card'
 import { AppealWindowPanel } from 'pages/item-details/appeal-funding'
 import { requestFacts, type LightRequest } from './request-facts'
-import { linkedListAddress } from './linked-list'
+import { linkedListAddress, linkedListField } from './linked-list'
 
 /*
  * Light Curate item page. A breadcrumb, then the hero (the one featured
@@ -588,7 +588,16 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
         : [],
     [decodedItem],
   )
-  const primaryField = useMemo(() => titleField(fields), [fields])
+  // A list of lists' entry leads with the list it names: the field its
+  // registry block and its seal read, not whichever identifier comes first
+  // in the entry's own file.
+  const primaryField = useMemo(
+    () =>
+      (metadata?.isTCRofTCRs
+        ? linkedListField(fields, metadata.columns)
+        : undefined) ?? titleField(fields),
+    [fields, metadata],
+  )
   const otherIdentifiers = useMemo(
     () => identifierFields(fields).filter((field) => field !== primaryField),
     [fields, primaryField],
