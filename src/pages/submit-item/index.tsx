@@ -811,7 +811,8 @@ const SubmitItem = () => {
     retry,
     recheck,
   } = useCheckLightCurate()
-  useTcrNetwork()
+  // The wallet is asked once the list's chain is known (useTcrNetwork).
+  useTcrNetwork(!checking)
 
   // No indexer serves another chain: asking would only fail, and offer a
   // "Try again" that fails the same way.

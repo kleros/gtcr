@@ -90,7 +90,8 @@ const ItemsRouter = () => {
     retry,
     recheck,
   } = useCheckLightCurate()
-  useTcrNetwork()
+  // The wallet is asked once the list's chain is known (useTcrNetwork).
+  useTcrNetwork(!checking)
   const setIsPermanent = useContext(StakeContext)?.setIsPermanent
   const queryClient = useQueryClient()
   const { graphqlBatcher } = useGraphqlBatcher()

@@ -21,8 +21,13 @@ const askedChains = new Set<number>()
  * URL names the page's chain, reads use it, and every write has its own
  * "Switch to <chain>" step. (A wallet client lost on an unsupported chain
  * is looked up again app-wide, in contexts/wallet-context.tsx.)
+ *
+ * `ready`: the page knows the list is on this chain. A link naming another
+ * chain is sent on to the list's own (use-check-light-curate): asking the
+ * wallet before that would move it to the wrong chain, and that chain would
+ * count as asked for the rest of the visit.
  */
-const useTcrNetwork = () => {
+const useTcrNetwork = (ready = true) => {
   const urlChainId = useUrlChainId()
   // The wallet's own chain. useChainId() stays on the last chain the app
   // supports while the wallet sits on one it does not (wagmi only follows
@@ -47,7 +52,7 @@ const useTcrNetwork = () => {
   // once per chain and visit: a wallet already there counts as asked, and a
   // refusal is not met with the same request on the next page.
   useEffect(() => {
-    if (!isConnected || !supported) return
+    if (!isConnected || !supported || !ready) return
     if (isCorrectChain) {
       // Wallet is already on the right chain — mark as attempted
       askedChains.add(targetChainId)
@@ -61,7 +66,7 @@ const useTcrNetwork = () => {
     } catch {
       // User rejected or error — that's fine, show content in read-only
     }
-  }, [isConnected, isCorrectChain, targetChainId, supported])
+  }, [isConnected, isCorrectChain, targetChainId, supported, ready])
 }
 
 export default useTcrNetwork

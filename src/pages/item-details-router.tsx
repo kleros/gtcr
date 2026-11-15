@@ -46,7 +46,6 @@ const ItemDetailsRouter = () => {
     searchParams.get('attachment'),
   )
   useAttachmentPlace(isAttachmentOpen)
-  useTcrNetwork()
   // The entry page stays mounted under the viewer and runs an ?action= link
   // whenever this string changes: opening a file and coming back must not
   // run it again, so the viewer's parameters are left out.
@@ -65,6 +64,8 @@ const ItemDetailsRouter = () => {
     retry,
     recheck,
   } = useCheckLightCurate()
+  // The wallet is asked once the list's chain is known (useTcrNetwork).
+  useTcrNetwork(!checking)
   const setIsPermanent = useContext(StakeContext)?.setIsPermanent
   const queryClient = useQueryClient()
   const { graphqlBatcher } = useGraphqlBatcher()
