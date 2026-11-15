@@ -379,19 +379,9 @@ const useCachedFactory = (
 
   const [tcrState, setTcrState] = useState<TcrState>(resolvedState)
   const [debouncedTcrState] = useDebounce(tcrState, 1000)
-  const [prevNetworkId, setPrevNetworkId] = useState(networkId)
 
-  // Synchronous state reset when chain changes via URL.
-  // This runs during render (before commit), so tcrState is immediately
-  // correct for the new chain — no stale renders.
-  if (networkId && networkId !== prevNetworkId) {
-    setPrevNetworkId(networkId)
-    setTcrState((prev) => ({
-      ...JSON.parse(JSON.stringify(initialWizardState)),
-      transactions: prev.transactions,
-    }))
-  }
-
+  // Each chain mounts its own wizard (RouteReset in the router), so this
+  // state is always that chain's draft: it is never reset in place.
   useEffect(() => {
     if (
       !networkId ||

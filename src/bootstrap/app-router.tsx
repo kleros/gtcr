@@ -1,5 +1,17 @@
-import React, { Suspense, lazy, useEffect } from 'react'
-import { Route, Routes, useLocation, useParams } from 'react-router-dom'
+import React, {
+  Suspense,
+  lazy,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+} from 'react'
+import {
+  Route,
+  Routes,
+  useLocation,
+  useNavigationType,
+  useParams,
+} from 'react-router-dom'
 import ErrorPage from 'pages/error-page'
 import Loading from 'components/loading'
 import usePathValidation from 'hooks/use-path-validation'
@@ -37,10 +49,22 @@ const RouteReset = ({ children }: { children: React.ReactNode }) => {
 
 const AppRouter = () => {
   const { pathname } = useLocation()
+  const navigationType = useNavigationType()
   const { resolved, invalid, failed, retry } = usePathValidation()
 
   useEffect(() => {
     noteNavigation()
+  }, [pathname])
+
+  // A link opens its page at the top: without this the new page kept the
+  // old page's scroll offset (an entry opened from row 30 of a list showed
+  // its history, not its title). Back and Forward are left to the browser,
+  // which puts the reader back where they were. Only the path is watched,
+  // so filters, page numbers, the file viewer and #anchors never jump.
+  const navigationTypeRef = useRef(navigationType)
+  navigationTypeRef.current = navigationType
+  useLayoutEffect(() => {
+    if (navigationTypeRef.current !== 'POP') window.scrollTo(0, 0)
   }, [pathname])
 
   if (!resolved) return <Loading />
@@ -82,10 +106,24 @@ const AppRouter = () => {
             </RouteReset>
           }
         />
-        <Route path="/factory/:chainId" element={<Factory />} />
+        {/* A wizard keeps one draft per chain: another chain in the URL
+            mounts it afresh, so it opens that chain's own draft and never
+            writes one chain's draft under another's key. */}
+        <Route
+          path="/factory/:chainId"
+          element={
+            <RouteReset>
+              <Factory />
+            </RouteReset>
+          }
+        />
         <Route
           path="/factory-permanent/:chainId"
-          element={<PermanentFactory />}
+          element={
+            <RouteReset>
+              <PermanentFactory />
+            </RouteReset>
+          }
         />
         <Route path="/" element={<Dashboard />} />
         <Route path="/browse" element={<Browse />} />
