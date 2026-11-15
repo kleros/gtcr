@@ -176,6 +176,14 @@ const toSeconds = (value: unknown): number => {
 
 /* ---------- Evidence text ---------- */
 
+/** An evidence's own title, inside its quote. */
+const QuoteTitle = styled.span`
+  color: var(--color-text);
+  font-size: var(--fs-body);
+  line-height: 22px;
+  font-weight: 500;
+`
+
 const Clamp = styled.p<{ $clamped: boolean }>`
   ${({ $clamped }) =>
     $clamped &&
@@ -495,6 +503,9 @@ const Timeline = ({ submission, item, metaEvidence, live }: TimelineProps) => {
           const { title, description, fileURI } = file ?? event
           const failed = !!file?.failed
           const role = roleOf(event.party)
+          // The row is titled by the app; the evidence's own title, written
+          // by anyone, goes inside its quote. As the row's title it could
+          // read "Withdrawal started" or "Challenged", like a real event.
           return (
             <TimelineEvent
               key={i}
@@ -507,7 +518,7 @@ const Timeline = ({ submission, item, metaEvidence, live }: TimelineProps) => {
                     ? 'window'
                     : 'neutral'
               }
-              title={title || 'Evidence'}
+              title="Evidence"
               timestamp={timestamp}
               href={href}
               detail={
@@ -517,8 +528,9 @@ const Timeline = ({ submission, item, metaEvidence, live }: TimelineProps) => {
                 </span>
               }
             >
-              {(description || fileURI || failed) && (
+              {(title || description || fileURI || failed) && (
                 <TimelineQuote>
+                  {title && <QuoteTitle>{title}</QuoteTitle>}
                   {description && <EvidenceText text={description} />}
                   {fileURI && <EvidenceFileLink fileURI={fileURI} />}
                   {failed && <EvidenceFileUnavailable uri={event.URI} />}

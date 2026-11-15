@@ -217,7 +217,7 @@ const EvidenceText = ({ text }: { text: string }) => {
   )
 }
 
-/** A justification's own title, when the challenger gave one. */
+/** An evidence's own title (a challenge justification's too), in its quote. */
 const QuoteTitle = styled.span`
   color: var(--color-text);
   font-size: var(--fs-body);
@@ -462,6 +462,9 @@ const RequestTimeline = ({
 
         if (event.name === 'Evidence') {
           const { title } = evidenceMap.get(event.URI) ?? event
+          // The row is titled by the app; the evidence's own title, written
+          // by anyone, goes inside its quote. As the row's title it could
+          // read "Submission accepted" or "Challenged", like a real event.
           return (
             <TimelineEvent
               key={i}
@@ -474,7 +477,7 @@ const RequestTimeline = ({
                     ? 'window'
                     : 'neutral'
               }
-              title={title || 'Evidence'}
+              title="Evidence"
               timestamp={timestamp}
               href={href}
               detail={
@@ -489,7 +492,7 @@ const RequestTimeline = ({
                 </>
               }
             >
-              {evidenceQuote(event)}
+              {evidenceQuote(event, title)}
             </TimelineEvent>
           )
         }
