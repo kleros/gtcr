@@ -1,9 +1,9 @@
 # A file under /assets/ that this release does not have (an old chunk a stale
-# tab asks for after a deploy or a rollback) gets a plain 404. Otherwise the
-# catch-all in netlify.toml answers with index.html and a 200, under the
-# year-long immutable header _headers gives /assets/*, and browsers and
-# Cloudflare keep that HTML in place of the chunk. Rules here run before
-# netlify.toml's, and a rule without "!" never covers a file that exists.
+# tab asks for after a deploy or a rollback) gets a plain 404, not the app's
+# index.html with a 200 from the catch-all in netlify.toml. No cache rule
+# matches it (the year-long one names each real file), so nothing keeps the
+# 404 once the file exists again. Rules here run before netlify.toml's, and
+# a rule without "!" never covers a file that exists.
 /assets/*  /404.html  404
 /agent /llms.txt 200
 /agent.txt /llms.txt 200

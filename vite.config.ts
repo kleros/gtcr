@@ -1,4 +1,5 @@
-import { dirname, resolve } from 'node:path'
+import { existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs'
+import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { defineConfig, loadEnv, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
@@ -31,6 +32,42 @@ const landingIndex = (): Plugin => ({
   },
 })
 
+/*
+ * Vite's hashed build files are cached for a year, by one exact rule per
+ * file written into the build's _headers. A pattern (/assets/*) would also
+ * cover the 404 a missing file gets, since Netlify picks headers by path:
+ * browsers and Cloudflare would keep that 404 for a year, and after a
+ * rollback it would stand in for a file the restored release does have.
+ */
+const immutableAssetHeaders = (): Plugin => {
+  let outDir = resolve(root, 'build')
+  return {
+    name: 'immutable-asset-headers',
+    apply: 'build',
+    configResolved(config) {
+      outDir = resolve(config.root, config.build.outDir)
+    },
+    closeBundle() {
+      const assets = join(outDir, 'assets')
+      if (!existsSync(assets)) return
+      const rules = readdirSync(assets)
+        .filter((file) => !file.endsWith('.map'))
+        .sort()
+        .map(
+          (file) =>
+            `/assets/${file}\n  Cache-Control: public, max-age=31536000, immutable\n`,
+        )
+        .join('\n')
+      // Written from the source each build, so it never doubles up.
+      const base = readFileSync(resolve(root, 'public/_headers'), 'utf8')
+      writeFileSync(
+        join(outDir, '_headers'),
+        `${base.trimEnd()}\n\n# Every build file, by name (vite.config.ts).\n${rules}`,
+      )
+    },
+  }
+}
+
 export default defineConfig(({ mode }) => {
   // Load .env files and map REACT_APP_* vars to process.env.* for legacy compat
   const loadedEnv = loadEnv(mode, process.cwd(), ['REACT_APP_', 'VITE_'])
@@ -41,6 +78,7 @@ export default defineConfig(({ mode }) => {
   return {
     plugins: [
       landingIndex(),
+      immutableAssetHeaders(),
       react(),
       svgr({ include: '**/*.svg' }),
       tsconfigPaths(),
