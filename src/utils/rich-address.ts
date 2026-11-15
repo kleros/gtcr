@@ -341,18 +341,24 @@ export type RichAddress = {
   passedTest: boolean
 }
 
+const hasOwn = (map: object, key: string) =>
+  Object.prototype.hasOwnProperty.call(map, key)
+
 export const parseRichAddress = (crude: string): RichAddress | null => {
-  if (!crude) return null
+  if (typeof crude !== 'string' || !crude) return null
   // if no 2 colons, it's badly formatted
   if (crude.split(':').length !== 3) return null
 
   const [namespaceId, referenceId, address] = crude.split(':')
+  // Own keys only. Values are written by anyone: "__proto__:constructor:x"
+  // or "eip155:toString:x" would otherwise read Object's own members as a
+  // network and crash every page that shows the entry.
   // namespace not found
-  if (!namespacesMap[namespaceId]) return null
+  if (!hasOwn(namespacesMap, namespaceId)) return null
+  // reference not found
+  if (!hasOwn(referencesMap[namespaceId], referenceId)) return null
 
   const reference = referencesMap[namespaceId][referenceId]
-  // reference not found
-  if (!reference) return null
   // correct rich address
   const link = `https://${reference.explorer}/address/${address}`
   const passedTest = namespacesMap[namespaceId].test(address)
