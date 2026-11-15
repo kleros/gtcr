@@ -221,31 +221,36 @@ export const WithdrawalStepper = ({
   }, [])
   const running = stage === 'withdrawing' && !paused
 
+  // One picture read out as its label. The image role sits on a wrapper:
+  // a list may not take it, and the list itself stays out of the
+  // accessibility tree.
   return (
-    <List role="img" aria-label={label}>
-      <Track aria-hidden>
-        <Fill style={{ width: `${(shown ? target : 0) * 100}%` }}>
-          {running && shown && <Head />}
-        </Fill>
-      </Track>
-      {TITLES.map((title, index) => (
-        <Step key={title} aria-hidden>
-          <Node
-            $state={states[index]}
-            $live={running && index === 1}
-            style={{ ['--i' as string]: index }}
-          >
-            {states[index] === 'done' ? (
-              <CurateIcon name="check" size={14} />
-            ) : (
-              index + 1
-            )}
-          </Node>
-          <StepTitle $state={states[index]}>{title}</StepTitle>
-          {notes[index] && <StepNote>{notes[index]}</StepNote>}
-        </Step>
-      ))}
-    </List>
+    <div role="img" aria-label={label}>
+      <List aria-hidden>
+        <Track aria-hidden>
+          <Fill style={{ width: `${(shown ? target : 0) * 100}%` }}>
+            {running && shown && <Head />}
+          </Fill>
+        </Track>
+        {TITLES.map((title, index) => (
+          <Step key={title} aria-hidden>
+            <Node
+              $state={states[index]}
+              $live={running && index === 1}
+              style={{ ['--i' as string]: index }}
+            >
+              {states[index] === 'done' ? (
+                <CurateIcon name="check" size={14} />
+              ) : (
+                index + 1
+              )}
+            </Node>
+            <StepTitle $state={states[index]}>{title}</StepTitle>
+            {notes[index] && <StepNote>{notes[index]}</StepNote>}
+          </Step>
+        ))}
+      </List>
+    </div>
   )
 }
 

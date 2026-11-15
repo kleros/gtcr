@@ -327,7 +327,13 @@ const CrowdfundModal = ({
             key={party}
             type="button"
             $selected={userSelectedSide === party}
-            onClick={() => {
+            onClick={(event) => {
+              // The first pick swaps the dialog's layout, and this button
+              // goes with it: focus moves to the dialog, not to the page.
+              if (side === PARTY.NONE)
+                event.currentTarget
+                  .closest<HTMLElement>('[role="dialog"]')
+                  ?.focus({ preventScroll: true })
               // An amount typed for one side is not meant for the other.
               setUserSelectedSide(party)
               setContributionInput(null)

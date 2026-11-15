@@ -8,7 +8,7 @@ import { useAtlasProvider } from '@kleros/kleros-app'
 import useUrlChainId from 'hooks/use-url-chain-id'
 import { appKitModal } from 'config/wagmi'
 import { NETWORKS_INFO } from 'config/networks'
-import { errorToast, infoToast, successToast } from 'utils/wrap-with-toast'
+import { reportSwitchFailure, signInWithToast } from 'utils/wrap-with-toast'
 import { CurateIcon } from 'components/curate/icons'
 import {
   Button,
@@ -186,6 +186,38 @@ const FOCUSABLE =
 
 const WIDTHS = { md: '600px', lg: '1040px' } as const
 
+/**
+ * Keeps Tab inside the dialog: wraps from the last focusable to the first
+ * and from the first (or the dialog itself) back to the last. Focus that is
+ * outside the dialog comes back in, at the first focusable (the last with
+ * Shift).
+ */
+const trapTab = (
+  dialog: HTMLElement | null,
+  event: Pick<KeyboardEvent, 'key' | 'shiftKey' | 'preventDefault'>,
+) => {
+  if (event.key !== 'Tab' || !dialog) return
+  const nodes = [...dialog.querySelectorAll<HTMLElement>(FOCUSABLE)].filter(
+    (node) => node.getClientRects().length > 0,
+  )
+  if (nodes.length === 0) {
+    event.preventDefault()
+    return
+  }
+  const first = nodes[0]
+  const last = nodes[nodes.length - 1]
+  const active = document.activeElement
+  if (event.shiftKey) {
+    if (active === first || active === dialog || !dialog.contains(active)) {
+      event.preventDefault()
+      last.focus()
+    }
+  } else if (active === last || !dialog.contains(active)) {
+    event.preventDefault()
+    first.focus()
+  }
+}
+
 export const ModalShell = ({
   open,
   title,
@@ -211,32 +243,6 @@ export const ModalShell = ({
   const onCloseRef = useRef(onClose)
   onCloseRef.current = onClose
 
-  // Keep Tab inside the dialog: wrap from the last focusable to the first
-  // and from the first (or the dialog itself) back to the last.
-  const trapTab = (event: React.KeyboardEvent<HTMLDivElement>) => {
-    const dialog = dialogRef.current
-    if (event.key !== 'Tab' || !dialog) return
-    const nodes = [...dialog.querySelectorAll<HTMLElement>(FOCUSABLE)].filter(
-      (node) => node.getClientRects().length > 0,
-    )
-    if (nodes.length === 0) {
-      event.preventDefault()
-      return
-    }
-    const first = nodes[0]
-    const last = nodes[nodes.length - 1]
-    const active = document.activeElement
-    if (event.shiftKey) {
-      if (active === first || active === dialog || !dialog.contains(active)) {
-        event.preventDefault()
-        last.focus()
-      }
-    } else if (active === last || !dialog.contains(active)) {
-      event.preventDefault()
-      first.focus()
-    }
-  }
-
   useEffect(() => {
     if (!open) return
     const previous = document.activeElement as HTMLElement | null
@@ -244,8 +250,18 @@ export const ModalShell = ({
     document.body.style.overflow = 'hidden'
     dialogRef.current?.focus({ preventScroll: true })
     const onKey = (event: KeyboardEvent) => {
-      // Escape in the wallet modal closes that modal, not this dialog.
-      if (event.key === 'Escape' && !appKitModal?.isOpen()) onCloseRef.current()
+      // The wallet modal keeps its own keys while it is open over this
+      // dialog: Escape there closes that modal, and Tab moves inside it.
+      if (appKitModal?.isOpen()) return
+      if (event.key === 'Escape') onCloseRef.current()
+      // Once the wallet modal closes, focus is left on <body>, where the
+      // panel's own key handler never hears Tab: the next Tab would walk
+      // the page behind the scrim. It brings focus back into the dialog.
+      else if (
+        !event.defaultPrevented &&
+        !dialogRef.current?.contains(document.activeElement)
+      )
+        trapTab(dialogRef.current, event)
     }
     window.addEventListener('keydown', onKey)
     return () => {
@@ -270,7 +286,7 @@ export const ModalShell = ({
         aria-labelledby={titleId}
         tabIndex={-1}
         $width={WIDTHS[width]}
-        onKeyDown={trapTab}
+        onKeyDown={(event) => trapTab(dialogRef.current, event)}
       >
         <Head>
           <Titles>
@@ -335,16 +351,10 @@ export const useActionGate = (
   const { switchChain, isPending: switching } = useSwitchChain()
   const { isVerified, isSigningIn, authoriseUser } = useAtlasProvider()
 
-  const signIn = useCallback(() => {
-    infoToast('Signing in…')
-    authoriseUser()
-      .then(() => successToast('Signed in.'))
-      .catch((err: unknown) => {
-        console.error(err)
-        const message = err instanceof Error ? err.message : 'unknown error'
-        errorToast(`Sign-in failed: ${message}`)
-      })
-  }, [authoriseUser])
+  const signIn = useCallback(
+    () => signInWithToast(authoriseUser),
+    [authoriseUser],
+  )
 
   if (!isConnected || !address)
     return {
@@ -364,7 +374,13 @@ export const useActionGate = (
       blocker: `Switch to ${chainName(urlChainId)} to ${verb}`,
       helper: {
         label: `Switch to ${chainName(urlChainId)}`,
-        onClick: () => switchChain({ chainId: urlChainId }),
+        onClick: () =>
+          switchChain(
+            { chainId: urlChainId },
+            {
+              onError: (err) => reportSwitchFailure(err, chainName(urlChainId)),
+            },
+          ),
         loading: switching,
       },
     }

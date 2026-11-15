@@ -705,6 +705,9 @@ const SubmitModal: React.FC<{
               setStakeTouched(true)
               setStakeInput(event.target.value)
             }}
+            // Named on its own: the label around the field also holds the
+            // help line, which the field reads as its description.
+            aria-label={`Token stake in ${tokenSymbol}`}
             aria-invalid={Boolean(stakeError)}
             aria-describedby="stake-help"
           />
