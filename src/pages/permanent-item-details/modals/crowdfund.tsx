@@ -17,6 +17,7 @@ import {
 } from 'utils/permanent-item-status'
 import { wrapWithToast, errorToast } from 'utils/wrap-with-toast'
 import { parseWagmiError } from 'utils/parse-wagmi-error'
+import { normalizeDecimalInput } from 'utils/decimal-input'
 import { wagmiConfig } from 'config/wagmi'
 import {
   Body,
@@ -476,30 +477,35 @@ const CrowdfundModal = ({
                 value={contributionInput ?? formatEther(contribution)}
                 aria-label={`Contribution in ${nativeCurrency}`}
                 onChange={(event) => {
-                  // The field keeps what was typed; the share follows only
-                  // once the text parses, so "0." is not rewritten mid-entry.
-                  // The text is read as wei, never through a float: what is
-                  // still needed, or more, funds the side in full.
+                  // The field keeps what was typed, so "0." is not
+                  // rewritten mid-entry. The text is read as wei, never
+                  // through a float: what is still needed, or more, funds
+                  // the side in full.
                   const text = event.target.value
                   setContributionInput(text)
-                  if (text === '' || amountStillRequired.isZero()) return
+                  if (amountStillRequired.isZero()) return
+                  // Text that is not an amount (an empty field, a negative,
+                  // 1e-3, more than 18 decimals) counts as zero, as typing 0
+                  // does: the confirm waits for an amount it can read and
+                  // never sends the one set before.
+                  let weiAmount = BigNumber.from(0)
                   try {
-                    const weiAmount = parseEther(text)
-                    if (weiAmount.isNegative()) return
-                    setTypedWei(weiAmount)
-                    // The share only drives the slider and the reward
-                    // estimate; the amount sent is the one typed.
-                    setContributionShare(
-                      weiAmount.gte(amountStillRequired)
-                        ? 1
-                        : weiAmount
-                            .mul(MULTIPLIER_DIVISOR)
-                            .div(amountStillRequired)
-                            .toNumber() / MULTIPLIER_DIVISOR,
-                    )
+                    const parsed = parseEther(normalizeDecimalInput(text))
+                    if (!parsed.isNegative()) weiAmount = parsed
                   } catch {
-                    // Partial input is kept as typed until it parses.
+                    // Not an amount: zero until it is one.
                   }
+                  setTypedWei(weiAmount)
+                  // The share only drives the slider and the reward
+                  // estimate; the amount sent is the one typed.
+                  setContributionShare(
+                    weiAmount.gte(amountStillRequired)
+                      ? 1
+                      : weiAmount
+                          .mul(MULTIPLIER_DIVISOR)
+                          .div(amountStillRequired)
+                          .toNumber() / MULTIPLIER_DIVISOR,
+                  )
                 }}
                 onBlur={() => setContributionInput(null)}
               />
