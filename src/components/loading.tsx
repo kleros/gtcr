@@ -26,12 +26,19 @@ const bloom = keyframes`
   50% { opacity: 0.8; transform: scale(1.05); }
 `
 
-const LoadingWrapper = styled.div`
+/*
+ * A page that is loading fills the screen under the app bar, so the footer
+ * waits below the fold: at 64vh it showed on the first frames (alone on a
+ * phone) and then jumped away as the page arrived. Inside a page (`$inline`)
+ * the mark keeps its smaller room.
+ */
+const LoadingWrapper = styled.div<{ $inline?: boolean }>`
   display: grid;
   place-items: center;
   width: 100%;
   height: 100%;
-  min-height: min(64vh, 560px);
+  min-height: ${({ $inline }) =>
+    $inline ? 'min(64vh, 560px)' : 'calc(100vh - var(--app-bar-height, 64px))'};
   padding: 24px 0;
 `
 
@@ -89,8 +96,8 @@ const Unseen = styled.span`
   white-space: nowrap;
 `
 
-const Loading = () => (
-  <LoadingWrapper role="status" aria-live="polite">
+const Loading = ({ inline = false }: { inline?: boolean }) => (
+  <LoadingWrapper $inline={inline} role="status" aria-live="polite">
     <Mark aria-hidden="true">
       <svg viewBox="0 -0.2 36.8 40.4" fill="none">
         <path

@@ -1,4 +1,10 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react'
+import React, {
+  useState,
+  useRef,
+  useEffect,
+  useLayoutEffect,
+  useCallback,
+} from 'react'
 import styled, { css } from 'styled-components'
 import { floatingEntrance, joinClassNames, overlayPanel } from './kit-styles'
 
@@ -17,37 +23,44 @@ const Wrapper = styled.span`
   display: inline-flex;
 `
 
+/* Room kept between a panel and the edge of the viewport. */
+const VIEWPORT_EDGE = 8
+
+/*
+ * Each placement adds --popover-shift to its horizontal anchor: the panel
+ * sets it when it would otherwise cross the edge of the viewport.
+ */
 const getPlacementStyles = (placement: PopoverPlacement) => {
   switch (placement) {
     case 'bottom':
       return css`
         top: 100%;
-        left: 50%;
+        left: calc(50% + var(--popover-shift, 0px));
         margin-top: 8px;
         transform: translateX(-50%);
       `
     case 'bottomLeft':
       return css`
         top: 100%;
-        left: 0;
+        left: var(--popover-shift, 0px);
         margin-top: 8px;
       `
     case 'bottomRight':
       return css`
         top: 100%;
-        right: 0;
+        right: calc(0px - var(--popover-shift, 0px));
         margin-top: 8px;
       `
     case 'topLeft':
       return css`
         bottom: 100%;
-        left: 0;
+        left: var(--popover-shift, 0px);
         margin-bottom: 8px;
       `
     case 'topRight':
       return css`
         bottom: 100%;
-        right: 0;
+        right: calc(0px - var(--popover-shift, 0px));
         margin-bottom: 8px;
       `
     case 'left':
@@ -68,7 +81,7 @@ const getPlacementStyles = (placement: PopoverPlacement) => {
     default:
       return css`
         bottom: 100%;
-        left: 50%;
+        left: calc(50% + var(--popover-shift, 0px));
         margin-bottom: 8px;
         transform: translateX(-50%);
       `
@@ -182,6 +195,38 @@ const Popover: React.FC<PopoverProps> = ({
     },
     [],
   )
+
+  // A panel wider than the room beside its anchor is moved back inside the
+  // viewport: on a phone the account menu (286px, hung from an avatar that
+  // sits 107px from the right edge) started off screen, cutting the first
+  // digit of the balance. Measured from layout values, which the entrance
+  // animation's scale does not touch.
+  useLayoutEffect(() => {
+    const panel = contentRef.current
+    const wrapper = wrapperRef.current
+    if (!visible || !panel || !wrapper) return undefined
+    const centred = placement === 'top' || placement === 'bottom'
+    const fit = () => {
+      panel.style.removeProperty('--popover-shift')
+      const left =
+        wrapper.getBoundingClientRect().left +
+        panel.offsetLeft -
+        (centred ? panel.offsetWidth / 2 : 0)
+      const right = left + panel.offsetWidth
+      const room = document.documentElement.clientWidth - VIEWPORT_EDGE
+      const shift =
+        left < VIEWPORT_EDGE
+          ? VIEWPORT_EDGE - left
+          : right > room
+            ? room - right
+            : 0
+      if (shift)
+        panel.style.setProperty('--popover-shift', `${Math.round(shift)}px`)
+    }
+    fit()
+    window.addEventListener('resize', fit)
+    return () => window.removeEventListener('resize', fit)
+  }, [visible, placement])
 
   // The trigger toggles; clicks inside the panel (a field, a label) do not.
   const handleClick = useCallback(

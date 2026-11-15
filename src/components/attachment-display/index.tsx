@@ -209,7 +209,7 @@ const AttachmentDisplay: React.FC = () => {
       <Suspense
         fallback={
           <LoaderContainer>
-            <Loading />
+            <Loading inline />
           </LoaderContainer>
         }
       >
