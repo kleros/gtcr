@@ -5,7 +5,10 @@ import { useAtlasProvider } from '@kleros/kleros-app'
 import _gtcr from 'assets/abis/LightGeneralizedTCR.json'
 import { LightTCRViewContext } from 'contexts/light-tcr-view-context'
 import EvidenceForm, { type EvidenceFormValues } from 'components/evidence-form'
-import InlineEvidenceComposer from 'components/inline-evidence-composer'
+import InlineEvidenceComposer, {
+  type EvidencePhase,
+} from 'components/inline-evidence-composer'
+import { sendPhaseLabel } from 'components/curate/what-happens-next'
 import { uploadEvidence } from 'utils/upload-evidence'
 import { wrapWithToast, errorToast } from 'utils/wrap-with-toast'
 import { parseWagmiError } from 'utils/parse-wagmi-error'
@@ -43,7 +46,9 @@ const EvidenceModal = ({
   const publicClient = usePublicClient()
   const { data: walletClient } = useWalletClient()
   const { uploadFile } = useAtlasProvider()
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  // Where the piece being sent is: uploading, in the wallet, being mined.
+  const [phase, setPhase] = useState<EvidencePhase>()
+  const isSubmitting = !!phase
   const [formKey, setFormKey] = useState(0)
   const gate = useActionGate({ verb: 'submit evidence' })
 
@@ -53,7 +58,7 @@ const EvidenceModal = ({
     evidenceAttachment,
   }: EvidenceFormValues) => {
     if (!account || !walletClient || !publicClient || !tcrAddress) return
-    setIsSubmitting(true)
+    setPhase('uploading')
     try {
       const ipfsEvidencePath = await uploadEvidence({
         title: title ?? '',
@@ -62,6 +67,7 @@ const EvidenceModal = ({
         uploadFile,
       })
 
+      setPhase('wallet')
       const { request } = await simulateContract(wagmiConfig, {
         address: tcrAddress as `0x${string}`,
         abi: _gtcr,
@@ -71,7 +77,11 @@ const EvidenceModal = ({
       })
 
       const result = await wrapWithToast(
-        () => walletClient.writeContract(request),
+        () =>
+          walletClient.writeContract(request).then((hash) => {
+            setPhase('mining')
+            return hash
+          }),
         publicClient,
       )
 
@@ -82,7 +92,7 @@ const EvidenceModal = ({
       console.error('Error submitting evidence:', err)
       errorToast(parseWagmiError(err))
     }
-    setIsSubmitting(false)
+    setPhase(undefined)
   }
 
   if (inline)
@@ -92,6 +102,7 @@ const EvidenceModal = ({
         formID={EVIDENCE_FORM_ID}
         formKey={formKey}
         isSubmitting={isSubmitting}
+        phase={phase}
         onSubmit={submitEvidence}
       />
     )
@@ -117,7 +128,7 @@ const EvidenceModal = ({
             aria-disabled={disabled}
             title={gate.blocker}
           >
-            {isSubmitting ? 'Waiting for your wallet…' : 'Submit evidence'}
+            {sendPhaseLabel(phase) ?? 'Submit evidence'}
           </Button>
         </>
       }
