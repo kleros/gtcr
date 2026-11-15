@@ -16,9 +16,11 @@ import { capitalize } from '../facts'
 import {
   GateHelper,
   ModalShell,
+  TX_PHASE_LABEL,
   nativeText,
   tokenText,
   useActionGate,
+  type TxPhase,
 } from './shell'
 
 /*
@@ -73,7 +75,8 @@ const WithdrawModal: React.FC<WithdrawModalProps> = ({
   const { address: account } = useAccount()
   const publicClient = usePublicClient()
   const { data: walletClient } = useWalletClient()
-  const [loading, setLoading] = useState(false)
+  const [phase, setPhase] = useState<TxPhase>()
+  const loading = phase !== undefined
   const nativeCurrency = useNativeCurrency()
   const { symbol: tokenSymbol, decimals: tokenDecimals } = useTokenSymbol(
     registry?.token,
@@ -89,7 +92,7 @@ const WithdrawModal: React.FC<WithdrawModalProps> = ({
   const handleStartWithdraw = async () => {
     if (!item || !registry || !walletClient || !publicClient) return
 
-    setLoading(true)
+    setPhase('wallet')
 
     try {
       const { request } = await simulateContract(wagmiConfig, {
@@ -101,7 +104,12 @@ const WithdrawModal: React.FC<WithdrawModalProps> = ({
       })
 
       const result = await wrapWithToast(
-        () => walletClient.writeContract(request),
+        () =>
+          walletClient.writeContract(request).then((hash) => {
+            // Signed: the chain has yet to confirm it.
+            setPhase('mining')
+            return hash
+          }),
         publicClient,
       )
 
@@ -110,7 +118,7 @@ const WithdrawModal: React.FC<WithdrawModalProps> = ({
       console.error('Withdrawal failed:', err)
       errorToast(parseWagmiError(err))
     } finally {
-      setLoading(false)
+      setPhase(undefined)
     }
   }
 
@@ -170,7 +178,7 @@ const WithdrawModal: React.FC<WithdrawModalProps> = ({
             title={blocker}
             onClick={handleStartWithdraw}
           >
-            {loading ? 'Waiting for your wallet…' : 'Start withdrawal'}
+            {phase ? TX_PHASE_LABEL[phase] : 'Start withdrawal'}
           </Button>
           {blocker && (
             <Small $muted role="status">

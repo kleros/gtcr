@@ -482,6 +482,20 @@ export const APPROVE_ABI = parseAbi([
   'function approve(address spender, uint256 amount)',
 ])
 
+/* ---------- Transaction phases ---------- */
+
+/**
+ * Where a transaction stands, for the button that sent it: the wallet
+ * prompt is open (or about to be), then the wallet has returned the hash
+ * and the chain has yet to confirm it.
+ */
+export type TxPhase = 'wallet' | 'mining'
+
+export const TX_PHASE_LABEL: Record<TxPhase, string> = {
+  wallet: 'Confirm in your wallet…',
+  mining: 'Waiting for confirmation…',
+}
+
 /* ---------- Form chrome ---------- */
 
 /** Wraps the shared formik forms so their fields sit on the design tokens. */

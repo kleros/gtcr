@@ -40,12 +40,14 @@ import AppealFundingCard from './crowdfunding-card'
 import { WithdrawalStepper } from './withdrawal-stepper'
 import {
   GateHelper,
+  TX_PHASE_LABEL,
   applyMultiplier,
   formatTokenAmount,
   multiplierPercent,
   nativeText,
   tokenText,
   useActionGate,
+  type TxPhase,
 } from './modals/shell'
 import {
   otherSide,
@@ -338,7 +340,7 @@ const ItemStatusCard = ({
   const chainId = useUrlChainId()
   const nativeCurrency = useNativeCurrency()
   const [withdrawModalOpen, setWithdrawModalOpen] = useState(false)
-  const [executing, setExecuting] = useState(false)
+  const [executePhase, setExecutePhase] = useState<TxPhase>()
   const { symbol: tokenSymbol, decimals: tokenDecimals } = useTokenSymbol(
     registry?.token,
   )
@@ -420,7 +422,7 @@ const ItemStatusCard = ({
 
   const executeWithdrawal = async () => {
     if (!walletClient || !publicClient) return
-    setExecuting(true)
+    setExecutePhase('wallet')
     try {
       const { request } = await simulateContract(wagmiConfig, {
         address: registry.id,
@@ -431,14 +433,19 @@ const ItemStatusCard = ({
       })
 
       await wrapWithToast(
-        () => walletClient.writeContract(request),
+        () =>
+          walletClient.writeContract(request).then((hash) => {
+            // Signed: the chain has yet to confirm it.
+            setExecutePhase('mining')
+            return hash
+          }),
         publicClient,
       )
     } catch (err) {
       console.error('Error executing withdrawal:', err)
       errorToast(parseWagmiError(err))
     }
-    setExecuting(false)
+    setExecutePhase(undefined)
   }
 
   const onAction = () => {
@@ -490,7 +497,8 @@ const ItemStatusCard = ({
         amounts={amounts}
         disabled={Boolean(actionBlocker)}
         blocker={actionBlocker}
-        loading={executing}
+        loading={!!executePhase}
+        loadingLabel={executePhase && TX_PHASE_LABEL[executePhase]}
         block
       />
     )

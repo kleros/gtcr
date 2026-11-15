@@ -76,6 +76,8 @@ interface ItemActionButtonProps {
   /** Why the button is disabled ("Connect a wallet to challenge"). */
   blocker?: string
   loading?: boolean
+  /** What the action waits for while `loading`: the wallet, then the chain. */
+  loadingLabel?: string
   block?: boolean
   /** Lets a page render the button twice (rail and phone bar) with distinct ids. */
   id?: string
@@ -91,6 +93,7 @@ const ItemActionButton = ({
   disabled,
   blocker,
   loading,
+  loadingLabel,
   block,
   id = 'item-action-button',
 }: ItemActionButtonProps) => {
@@ -124,7 +127,7 @@ const ItemActionButton = ({
       onClick={onClick ?? undefined}
     >
       {loading ? (
-        'Waiting for your wallet…'
+        (loadingLabel ?? 'Waiting for your wallet…')
       ) : (
         <>
           <span>{stakeActionLabel({ statusCode, itemName })}</span>

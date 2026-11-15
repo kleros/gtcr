@@ -25,11 +25,13 @@ import {
   MULTIPLIER_DIVISOR,
   PolicyText,
   StepRow,
+  TX_PHASE_LABEL,
   applyMultiplier,
   nativeText,
   tokenText,
   useActionGate,
   type ActionGate,
+  type TxPhase,
 } from './shell'
 
 const capitalize = (text: string) =>
@@ -85,7 +87,7 @@ const ChallengeModal = ({
   const [multiplierDivisor, setMultiplierDivisor] = useState<bigint>()
   const [checkingToken, setCheckingToken] = useState(false)
   const [checkFailed, setCheckFailed] = useState(false)
-  const [isApproving, setIsApproving] = useState(false)
+  const [approvePhase, setApprovePhase] = useState<TxPhase>()
   const [isChallenging, setIsChallenging] = useState(false)
   const { symbol: tokenSymbol, decimals: tokenDecimals } =
     useTokenSymbol(tokenAddress)
@@ -149,7 +151,7 @@ const ChallengeModal = ({
   // Reset loading states when the modal unmounts.
   useEffect(
     () => () => {
-      setIsApproving(false)
+      setApprovePhase(undefined)
       setIsChallenging(false)
     },
     [],
@@ -164,7 +166,7 @@ const ChallengeModal = ({
       !registryAddress
     )
       return
-    setIsApproving(true)
+    setApprovePhase('wallet')
     try {
       const { request } = await simulateContract(wagmiConfig, {
         address: tokenAddress,
@@ -175,7 +177,12 @@ const ChallengeModal = ({
       })
 
       const result = await wrapWithToast(
-        () => walletClient.writeContract(request),
+        () =>
+          walletClient.writeContract(request).then((hash) => {
+            // Signed: the chain has yet to confirm it.
+            setApprovePhase('mining')
+            return hash
+          }),
         publicClient,
       )
 
@@ -189,7 +196,7 @@ const ChallengeModal = ({
       console.error('Error approving token:', err)
       errorToast(parseWagmiError(err))
     }
-    setIsApproving(false)
+    setApprovePhase(undefined)
   }, [
     tokenAddress,
     registryAddress,
@@ -244,11 +251,10 @@ const ChallengeModal = ({
     setIsChallenging(false)
   }
 
-  const close = () => {
-    setIsApproving(false)
-    setIsChallenging(false)
-    onCancel()
-  }
+  // Closing leaves a transaction in flight locked: the dialog stays mounted,
+  // so reopened it cannot send that transaction a second time. The
+  // transaction's own end clears the lock.
+  const close = () => onCancel()
 
   const confirm = () => {
     // useId ids hold colons, so the selector is escaped.
@@ -364,11 +370,11 @@ const ChallengeModal = ({
                   $variant="primary"
                   $size="sm"
                   $block
-                  disabled={isApproving}
+                  disabled={!!approvePhase}
                   onClick={handleApprove}
                 >
-                  {isApproving
-                    ? 'Waiting for your wallet…'
+                  {approvePhase
+                    ? TX_PHASE_LABEL[approvePhase]
                     : `Approve ${stakeText}`}
                 </Button>
               </StepRow>

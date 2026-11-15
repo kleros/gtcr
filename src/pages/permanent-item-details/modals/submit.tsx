@@ -44,12 +44,14 @@ import {
   ModalSkeleton,
   PolicyText,
   StepRow,
+  TX_PHASE_LABEL,
   applyMultiplier,
   multiplierPercent,
   nativeText,
   tokenText,
   useActionGate,
   type ActionGate,
+  type TxPhase,
 } from './shell'
 
 /*
@@ -336,7 +338,7 @@ const SubmitModal: React.FC<{
   const [nativeBalance, setNativeBalance] = useState<bigint>()
   const [checkingToken, setCheckingToken] = useState(false)
   const [checkFailed, setCheckFailed] = useState(false)
-  const [isApproving, setIsApproving] = useState(false)
+  const [approvePhase, setApprovePhase] = useState<TxPhase>()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [fieldsComplete, setFieldsComplete] = useState(false)
   const [stakeInput, setStakeInput] = useState('')
@@ -428,7 +430,7 @@ const SubmitModal: React.FC<{
   // Reset loading states when the modal unmounts.
   useEffect(
     () => () => {
-      setIsApproving(false)
+      setApprovePhase(undefined)
       setIsSubmitting(false)
     },
     [],
@@ -502,7 +504,7 @@ const SubmitModal: React.FC<{
 
   const handleApprove = useCallback(async () => {
     if (!submissionDeposit || !publicClient) return
-    setIsApproving(true)
+    setApprovePhase('wallet')
     try {
       // Simulated on the list's chain; writeContract refuses to send while
       // the wallet is on another one.
@@ -516,7 +518,12 @@ const SubmitModal: React.FC<{
       })
 
       const result = await wrapWithToast(
-        () => writeContract(wagmiConfig, request),
+        () =>
+          writeContract(wagmiConfig, request).then((hash) => {
+            // Signed: the chain has yet to confirm it.
+            setApprovePhase('mining')
+            return hash
+          }),
         publicClient,
       )
 
@@ -530,7 +537,7 @@ const SubmitModal: React.FC<{
       console.error('Error approving token:', err)
       errorToast(parseWagmiError(err))
     }
-    setIsApproving(false)
+    setApprovePhase(undefined)
   }, [
     tokenAddress,
     tcrAddress,
@@ -617,11 +624,10 @@ const SubmitModal: React.FC<{
     ],
   )
 
-  const close = () => {
-    setIsApproving(false)
-    setIsSubmitting(false)
-    onCancel()
-  }
+  // Closing leaves a transaction in flight locked: the dialog stays mounted,
+  // so reopened it cannot send that transaction a second time. The
+  // transaction's own end clears the lock.
+  const close = () => onCancel()
 
   const confirm = () => {
     const form = document.querySelector<HTMLFormElement>(
@@ -728,10 +734,12 @@ const SubmitModal: React.FC<{
             $variant="primary"
             $size="sm"
             $block
-            disabled={isApproving}
+            disabled={!!approvePhase}
             onClick={handleApprove}
           >
-            {isApproving ? 'Waiting for your wallet…' : `Approve ${stakeText}`}
+            {approvePhase
+              ? TX_PHASE_LABEL[approvePhase]
+              : `Approve ${stakeText}`}
           </Button>
         </StepRow>
       )}
