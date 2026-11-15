@@ -31,6 +31,7 @@ import { truncateAtWord } from 'utils/truncate-at-word'
 import { formatDurationLong } from 'utils/time'
 import { getAddressPage } from 'utils/network-utils'
 import { STATUS_CODE } from 'utils/permanent-item-status'
+import { isKlerosArbitrator } from 'config/tcr-addresses'
 import useUrlChainId from 'hooks/use-url-chain-id'
 import useArbitrationCost from 'hooks/arbitration-cost'
 import useTokenSymbol from 'hooks/token-symbol'
@@ -650,8 +651,9 @@ const StakeRegistry = () => {
       checked: !!disputed,
     },
     {
+      // Withdrawn entries count here too: the insights panel's word.
       key: P_FILTER_KEYS.ABSENT,
-      label: withCount('Rejected or removed', chipCount(counts.absent)),
+      label: withCount('Off the list', chipCount(counts.absent)),
       tone: 'off',
       checked: !!absent,
     },
@@ -795,13 +797,15 @@ const StakeRegistry = () => {
             <AddressValue chainId={chainId} address={registry.arbitrator.id} />
             {court && (
               <span title={`Extra data ${arbitratorExtraData}`}>
-                {' · '}Court {court.courtID} · {court.numberOfJurors} jurors
+                {` · Court ${court.courtID} · ${court.numberOfJurors} juror${
+                  court.numberOfJurors === 1 ? '' : 's'
+                }`}
               </span>
             )}
           </>
         ) : undefined,
       hint: court
-        ? `Challenges go to court ${court.courtID}, which draws ${court.numberOfJurors} jurors.`
+        ? `Challenges go to court ${court.courtID}, which draws ${court.numberOfJurors} juror${court.numberOfJurors === 1 ? '' : 's'}.`
         : arbitratorExtraData
           ? `Extra data ${arbitratorExtraData.slice(0, 18)}…`
           : undefined,
@@ -818,12 +822,15 @@ const StakeRegistry = () => {
       hint: 'Can change the periods, the multipliers and the arbitration settings.',
     },
     {
-      label: 'Rejected or removed',
+      label: 'Off the list',
       value: countValue(counts.absent),
       hint: `${capitalizeFirstLetter(itemNamePlural)} no longer on the list: withdrawn, or removed after a challenge.`,
     },
   ]
 
+  // Jurors are named only when the list's arbitrator is this chain's Kleros
+  // court; any other arbitrator is "the arbitrator".
+  const klerosArbitrated = isKlerosArbitrator(chainId, registry?.arbitrator?.id)
   const explainerSteps: ExplainerStep[] = [
     {
       title: 'Stake to list',
@@ -859,11 +866,15 @@ const StakeRegistry = () => {
         challengePercent
           ? `${challengePercent} of its stake`
           : 'a share of its stake'
-      } plus the arbitration cost. If Kleros jurors agree, you take its whole stake and its arbitration deposit, and your own stake comes back.`,
+      } plus the arbitration cost. If ${
+        klerosArbitrated ? 'Kleros jurors agree' : 'the arbitrator agrees'
+      }, you take its whole stake and its arbitration deposit, and your own stake comes back.`,
     },
     {
       title: 'Kept on the list, your stake grows',
-      body: `If the jurors keep your ${itemName}, the challenger's stake is added to yours, so the next challenge costs more (progressive protection).`,
+      body: `If ${
+        klerosArbitrated ? 'the jurors keep' : 'the arbitrator keeps'
+      } your ${itemName}, the challenger's stake is added to yours, so the next challenge costs more (progressive protection).`,
     },
   ]
 

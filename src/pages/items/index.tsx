@@ -25,7 +25,7 @@ import useNativeCurrency from 'hooks/native-currency'
 import { useAttachment } from 'hooks/use-attachment'
 import { WalletContext } from 'contexts/wallet-context'
 import { TCRViewContext } from 'contexts/tcr-view-context'
-import { subgraphUrl } from 'config/tcr-addresses'
+import { isKlerosArbitrator, subgraphUrl } from 'config/tcr-addresses'
 import { replacedListOfLists } from 'config/list-of-lists'
 import { CLASSIC_REGISTRY_ITEMS_QUERY } from 'utils/graphql'
 import { CONTRACT_STATUS, DISPUTE_STATUS, STATUS_CODE } from 'utils/item-status'
@@ -1016,6 +1016,9 @@ const Items = () => {
   ]
 
   const itemWord = midSentence(itemName)
+  // Jurors are named only when the list's arbitrator is this chain's Kleros
+  // court; any other arbitrator is "the arbitrator".
+  const klerosArbitrated = isKlerosArbitrator(chainId, arbitrator)
   const explainerSteps: ExplainerStep[] = [
     {
       title: 'Follow the policy, get your deposit back',
@@ -1030,15 +1033,23 @@ const Items = () => {
       title: 'Spot a mistake, earn a bounty',
       body: `Challenge a submission that breaks the policy ${
         periodText ? `within ${periodText}` : 'during its challenge period'
-      }. If jurors agree, you earn the submitter's ${
+      }. If ${
+        klerosArbitrated ? 'jurors agree' : 'the arbitrator agrees'
+      }, you earn the submitter's ${
         submissionBaseDeposit
           ? `${formatAmount(submissionBaseDeposit, nativeCurrency)} base deposit`
           : 'base deposit'
       } and your ${challengeTotal ?? 'challenge deposit'} comes back.`,
     },
     {
-      title: 'Kleros jurors decide',
-      body: 'They rule on the listing policy. The side they agree with gets its deposit back plus the other side’s, less the arbitration cost.',
+      title: klerosArbitrated
+        ? 'Kleros jurors decide'
+        : 'The arbitrator decides',
+      body: `${
+        klerosArbitrated
+          ? 'They rule on the listing policy.'
+          : 'The list’s arbitrator rules on the listing policy.'
+      } The side they agree with gets its deposit back plus the other side’s, less the arbitration cost.`,
     },
   ]
 

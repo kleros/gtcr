@@ -865,7 +865,7 @@ const Items = () => {
     ? decodeCourt(arbitratorExtraData)
     : undefined
   const courtLabel = court
-    ? `Court ${court.courtId} · ${court.jurors} jurors`
+    ? `Court ${court.courtId} · ${court.jurors} juror${court.jurors === '1' ? '' : 's'}`
     : arbitratorExtraData
       ? truncateMiddle(arbitratorExtraData, 10, 6)
       : undefined
@@ -938,7 +938,9 @@ const Items = () => {
         challengePeriod
           ? `within ${challengePeriod}`
           : 'during its challenge period'
-      }. If jurors agree, you earn the submitter's ${
+      }. If ${
+        isKlerosArbitrator ? 'jurors agree' : 'the arbitrator agrees'
+      }, you earn the submitter's ${
         submissionBase ? `${submissionBase} base deposit` : 'base deposit'
       } and your ${challengeTotal ?? 'challenge deposit'} comes back.`,
     },
@@ -948,7 +950,7 @@ const Items = () => {
         : 'The arbitrator decides',
       body: `${
         court
-          ? `Kleros court ${court.courtId} draws ${court.jurors} jurors.`
+          ? `Kleros court ${court.courtId} draws ${court.jurors} juror${court.jurors === '1' ? '' : 's'}.`
           : isKlerosArbitrator
             ? 'A Kleros court rules on the listing policy.'
             : 'The list’s arbitrator rules on the listing policy.'
