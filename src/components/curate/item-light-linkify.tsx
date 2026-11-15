@@ -15,7 +15,33 @@ import { isSafeNavigationUrl } from 'utils/url-validation'
  */
 
 const URL_PATTERN = /(https?:\/\/[^\s<>"]+|ipfs:\/\/[^\s<>"]+)/g
-const TRAILING = /[.,;:!?'")\]”’]+$/
+const TRAILING = new Set([
+  '.',
+  ',',
+  ';',
+  ':',
+  '!',
+  '?',
+  "'",
+  '"',
+  ')',
+  ']',
+  '”',
+  '’',
+])
+
+/*
+ * How much sentence punctuation ends a URL, counted back from its end in one
+ * pass. A regex anchored at the end (/[.,…]+$/) retries every run of
+ * punctuation from each position: on evidence holding a URL with tens of
+ * thousands of dots (anyone can publish evidence) it froze the entry page
+ * for every visitor.
+ */
+const trailingLength = (text: string): number => {
+  let end = text.length
+  while (end > 0 && TRAILING.has(text[end - 1])) end -= 1
+  return text.length - end
+}
 
 const Link = styled.a`
   color: var(--color-primary);
@@ -81,8 +107,9 @@ export const linkify = (text: string): React.ReactNode[] =>
   text.split(URL_PATTERN).flatMap((part, index): React.ReactNode[] => {
     // split() with a capture group: odd indexes are the matched URLs.
     if (index % 2 === 0) return part ? [part] : []
-    const trail = part.match(TRAILING)?.[0] ?? ''
-    const url = trail ? part.slice(0, -trail.length) : part
+    const cut = trailingLength(part)
+    const trail = part.slice(part.length - cut)
+    const url = part.slice(0, part.length - cut)
     const href = /^ipfs:\/\//i.test(url) ? parseIpfs(url) : url
     if (!isSafeNavigationUrl(href) || /^ipfs:\/\/$/i.test(url)) return [part]
     return [

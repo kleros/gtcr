@@ -9,6 +9,7 @@ import React, {
 import styled from 'styled-components'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
+import { ItemTypes } from '@kleros/gtcr-encoder'
 import { BigNumber, utils as ethersUtils } from 'ethers'
 import localforage from 'localforage'
 import { STALE_TIME } from 'consts'
@@ -24,6 +25,7 @@ import { LIGHT_ITEMS_QUERY } from 'utils/graphql'
 import { searchStrToFilterObjLight, updateLightFilter } from 'utils/filters'
 import { DISPUTE_STATUS, STATUS_CODE } from 'utils/item-status'
 import { parseIpfs } from 'utils/ipfs-parse'
+import { sanitizeItemFile } from 'utils/item-file-guard'
 import { formatDurationLong } from 'utils/time'
 import { getAddressPage } from 'utils/network-utils'
 import { ZERO_ADDRESS, capitalizeFirstLetter } from 'utils/string'
@@ -63,10 +65,11 @@ import {
   RegistryLightSkeleton,
 } from 'components/curate/registry-light-states'
 import { useRegistryLayout } from 'components/curate/registry-shared-layout'
+import { useRegistryVerified } from 'components/curate/registry-shared-verified'
 import {
-  extractRegistryAddress,
-  useRegistryVerified,
-} from 'components/curate/registry-shared-verified'
+  LIST_OF_LISTS_ADDRESS_LABEL,
+  listOfListsEntryAddress,
+} from 'components/curate/verified-rule'
 import {
   readActionLink,
   submitPathFor,
@@ -652,13 +655,14 @@ const Items = () => {
               try {
                 const response = await fetch(parseIpfs(i.data))
                 if (!response.ok) return i
-                const item = await response.json()
+                const item = sanitizeItemFile(await response.json())
+                if (!item) return i
                 const mergedData = item.columns.map((column: Column) => ({
                   label: column.label,
                   description: column.description,
                   type: column.type,
                   isIdentifier: column.isIdentifier,
-                  value: item.values[column.label],
+                  value: item.values[column.label] ?? null,
                 }))
                 const decodedData = mergedData.map(
                   (d: { value?: unknown }) => d.value,
@@ -1042,6 +1046,13 @@ const Items = () => {
   }, [metadata, hasSeerMarkets])
 
   const verifiedEntries = trust.listOfLists ? trust.verifiedSet : undefined
+  // The column a list of lists keeps each list's address in.
+  const listAddressLabel =
+    (metadata?.columns ?? []).find(
+      (column) =>
+        typeof column.type === 'string' &&
+        column.type.toLowerCase() === ItemTypes.GTCR_ADDRESS.toLowerCase(),
+    )?.label ?? LIST_OF_LISTS_ADDRESS_LABEL
   const entries: EntryRow[] = useMemo(() => {
     if (!visibleItems || !tcrAddress) return []
     return visibleItems.map((item) => {
@@ -1085,15 +1096,16 @@ const Items = () => {
               },
             }
           : undefined
-      const firstColumnValue = item.columns[0]?.value
-      const openListTo =
-        isTCRofTCRs && typeof firstColumnValue === 'string'
-          ? `/tcr/${chainId}/${firstColumnValue}`
-          : undefined
-      // On the Kleros list of lists, the lists it vouches for carry the seal.
-      const pointsTo = verifiedEntries
-        ? extractRegistryAddress(null, fields)
+      // A list of lists' row opens, and on the Kleros one carries the seal
+      // of, the list its address field shows: matched by label, as the row
+      // shows it (listOfListsEntryAddress says why nothing else may decide).
+      const listAddress = isTCRofTCRs
+        ? listOfListsEntryAddress(fields, listAddressLabel)
         : null
+      const openListTo = listAddress
+        ? `/tcr/${chainId}/${listAddress}`
+        : undefined
+      const pointsTo = verifiedEntries ? listOfListsEntryAddress(fields) : null
       const verified = !!pointsTo && !!verifiedEntries?.has(pointsTo)
       // An entry whose status is not known yet stays hidden too, so nothing
       // the filter covers shows before its status arrives.
@@ -1122,6 +1134,7 @@ const Items = () => {
     timestamp,
     challengePeriodDuration,
     isTCRofTCRs,
+    listAddressLabel,
     verifiedEntries,
     nsfwFilterOn,
     revealed,

@@ -21,6 +21,7 @@ import {
 } from 'utils/graphql'
 import { STALE_TIME } from 'consts'
 import { parseIpfs } from 'utils/ipfs-parse'
+import { type ItemFile, sanitizeItemFile } from 'utils/item-file-guard'
 import { capitalizeFirstLetter } from 'utils/string'
 import { truncateAtWord } from 'utils/truncate-at-word'
 import { formatAbsolute, formatDurationLong } from 'utils/time'
@@ -397,9 +398,7 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
   const library = useEthersProvider({
     chainId: chainId ?? undefined,
   })
-  const [ipfsItemData, setIpfsItemData] = useState<
-    { values?: Record<string, unknown> } | undefined
-  >()
+  const [ipfsItemData, setIpfsItemData] = useState<ItemFile | undefined>()
   const [ipfsError, setIpfsError] = useState(false)
   const timestamp = useContext(WalletContext)?.timestamp
   const [modalOpen, setModalOpen] = useState(false)
@@ -472,7 +471,11 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
     if (!item || ipfsItemData || ipfsError) return
     fetch(parseIpfs(item.data))
       .then((r) => r.json())
-      .then((r) => setIpfsItemData(r))
+      .then((r) => {
+        const file = sanitizeItemFile(r)
+        if (!file) throw new Error('The entry file is not an entry')
+        return setIpfsItemData(file)
+      })
       .catch((err: unknown) => {
         console.error('Could not get ipfs file', err)
         setIpfsError(true)
@@ -585,10 +588,8 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
     if (!item || !metaEvidence?.metadata?.columns || !ipfsItemData)
       return undefined
 
-    const orderDecodedData = (
-      columns: Column[],
-      values: Record<string, unknown> | undefined,
-    ) => columns.map((column) => values?.[column.label])
+    const orderDecodedData = (columns: Column[], values: ItemFile['values']) =>
+      columns.map((column) => values[column.label] ?? null)
 
     return {
       ...item, // Spread to convert from array to object.

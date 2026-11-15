@@ -4,7 +4,7 @@ import { NETWORKS } from 'config/networks'
 import { subgraphUrl, subgraphUrlPermanent } from 'config/tcr-addresses'
 import { getListOfListsAddresses, isListOfLists } from 'config/list-of-lists'
 import {
-  extractRegistryAddress,
+  listOfListsEntryAddress,
   verifiedSetFrom,
 } from 'components/curate/verified-rule'
 import { readRegistryMetadata } from 'utils/registry-metadata'
@@ -203,7 +203,7 @@ const VERIFIED_ENTRIES = (offset: 0 | '$offset') => `
       where: {
         chainId: { _eq: $chainId }
         registry_id: { _in: $listsOfLists }
-        status: { _eq: "Registered" }
+        status: { _in: ["Registered", "ClearingRequested"] }
       }
     ) {
       id
@@ -211,6 +211,7 @@ const VERIFIED_ENTRIES = (offset: 0 | '$offset') => `
       registry_id
       ${REGISTERED_SINCE}
       props(order_by: { label: asc }) {
+        label
         value
       }
     }
@@ -1218,7 +1219,7 @@ const normalizeEnvio = (payload: any, chainId: number): NormalizedChain => {
 
   const verifiedSince: Record<string, number> = {}
   for (const item of verifiedEntries) {
-    const address = extractRegistryAddress(item.data, item.props)
+    const address = listOfListsEntryAddress(item.props)
     if (!address || isListOfLists(chainId, address)) continue
     const registeredAt = toNumber(item.requests?.[0]?.resolutionTime)
     if (registeredAt > 0)

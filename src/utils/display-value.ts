@@ -17,8 +17,9 @@ export const displayableValue = (
     return value
   if (typeof value === 'bigint') return value.toString()
   try {
-    return JSON.stringify(value) ?? String(value)
+    return JSON.stringify(value) ?? Object.prototype.toString.call(value)
   } catch {
-    return String(value)
+    // Never String(): an object with its own "toString" key makes it throw.
+    return Object.prototype.toString.call(value)
   }
 }

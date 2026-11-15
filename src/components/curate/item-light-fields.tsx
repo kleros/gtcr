@@ -45,12 +45,15 @@ export const AddressLink = ({ address }: { address: string }) => {
 
 export type EntryField = V2Field
 
-const normalizeType = (type?: string) => String(type || '').toLowerCase()
+// A column type or a value from an entry's file may be anything: neither is
+// passed to String() unless it is text, a number or a boolean.
+const normalizeType = (type?: unknown) =>
+  typeof type === 'string' ? type.toLowerCase() : ''
 
-export const hasValue = (field: EntryField): boolean =>
-  field.value !== undefined &&
-  field.value !== null &&
-  String(field.value) !== ''
+export const hasValue = (field: EntryField): boolean => {
+  const value = displayableValue(field.value)
+  return value !== undefined && value !== null && String(value) !== ''
+}
 
 export const isImageField = (field: EntryField) =>
   normalizeType(field.type) === normalizeType(ItemTypes.IMAGE)

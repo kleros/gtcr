@@ -2,6 +2,7 @@ import React from 'react'
 import styled, { css } from 'styled-components'
 import { Link, useNavigate } from 'react-router-dom'
 import { ItemTypes } from '@kleros/gtcr-encoder'
+import { displayableValue } from 'utils/display-value'
 import DisplaySelector from 'components/display-selector'
 import { parseIpfs } from 'utils/ipfs-parse'
 import { isSafeNavigationUrl } from 'utils/url-validation'
@@ -73,7 +74,10 @@ export interface EntryRow {
   problem?: string
 }
 
-const normalizeType = (type?: string) => (type || '').toLowerCase()
+// A column type or a value from an entry's file may be anything: neither is
+// passed to String() unless it is text, a number or a boolean.
+const normalizeType = (type?: unknown) =>
+  typeof type === 'string' ? type.toLowerCase() : ''
 const isImage = (field: V2Field) =>
   normalizeType(field.type) === normalizeType(ItemTypes.IMAGE)
 const isGtcrAddress = (field: V2Field) =>
@@ -86,10 +90,10 @@ const isPlainText = (field: V2Field) =>
   [ItemTypes.TEXT, ItemTypes.LONG_TEXT, 'text', 'long text']
     .map(normalizeType)
     .includes(normalizeType(field.type) || 'text')
-const hasValue = (field: V2Field) =>
-  field.value !== undefined &&
-  field.value !== null &&
-  String(field.value) !== ''
+const hasValue = (field: V2Field) => {
+  const value = displayableValue(field.value)
+  return value !== undefined && value !== null && String(value) !== ''
+}
 
 /**
  * The columns an entry shows in a list: the list's identifiers, at most 4.

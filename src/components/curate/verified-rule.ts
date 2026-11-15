@@ -9,9 +9,11 @@ import type { TrustStatus } from 'pages/dashboard/types'
  * One rule for "Kleros Verified", shared by the dashboard, Browse, the
  * registry pages, the profile and the landing page: a registry is Kleros
  * Verified when it is the chain's Kleros list of lists (the Light one in
- * config/list-of-lists.ts), or a Registered entry of it, and then carries
- * the approval seal (verified-badge.tsx). Every other list is a Community
- * list, the lists only on the retired Classic lists of lists included.
+ * config/list-of-lists.ts), or an entry on it (Registered, or Registered
+ * with a removal request still open: it stays on the list until that
+ * request is executed), and then carries the approval seal
+ * (verified-badge.tsx). Every other list is a Community list, the lists
+ * only on the retired Classic lists of lists included.
  *
  * A chain's set is one small read (the list of lists' Registered entries,
  * a few dozen rows, paged). This module holds no React, so the landing page
@@ -21,10 +23,37 @@ import type { TrustStatus } from 'pages/dashboard/types'
 const ADDRESS = /^0x[a-fA-F0-9]{40}$/
 
 /**
- * The registry address an entry of a list of lists points to: the first
- * address-shaped field of a Light entry, else the address in a Classic
- * entry's RLP data (0xd594 + 20 bytes), else the first address in the data.
- * Lowercase, or null.
+ * The label of the field a Kleros list of lists holds a list's address in:
+ * its only column ("Address", type GTCR address) on every chain.
+ */
+export const LIST_OF_LISTS_ADDRESS_LABEL = 'Address'
+
+/**
+ * The registry a Light entry of a list of lists points to: the value of its
+ * field labelled like the list's GTCR address column, which is the field
+ * its row and its page show (lowercase, or null).
+ *
+ * Nothing else may decide it. A Light entry is a file its submitter writes,
+ * columns included, and the indexer keeps every one of them: an extra
+ * column whose label sorts first, or an address in the file's name, would
+ * otherwise send the seal or the "Open list" link to a list the entry does
+ * not show. An entry the indexer has no fields for points to nothing.
+ */
+export const listOfListsEntryAddress = (
+  fields?: ({ label?: unknown; value?: unknown } | null | undefined)[] | null,
+  label: string = LIST_OF_LISTS_ADDRESS_LABEL,
+): string | null => {
+  const value = fields?.find((field) => field?.label === label)?.value
+  return typeof value === 'string' && ADDRESS.test(value)
+    ? value.toLowerCase()
+    : null
+}
+
+/**
+ * The registry address an entry of a Classic list of lists points to: the
+ * first address-shaped field (a Classic entry's fields are the list's own
+ * columns, in their order), else the address in its RLP data (0xd594 + 20
+ * bytes), else the first address in the data. Lowercase, or null.
  */
 export const extractRegistryAddress = (
   value?: string | null,
@@ -52,7 +81,7 @@ const MAX_PAGES = 20
 /** How long one page may take before the read counts as failed. */
 const PAGE_TIMEOUT_MS = 10_000
 
-/** The list of lists' Registered entries (Light LItem), a page. */
+/** The list of lists' entries that are on it (Light LItem), a page. */
 const VERIFIED_REGISTRIES_QUERY = gql`
   query VerifiedRegistries(
     $chainId: Int!
@@ -66,13 +95,14 @@ const VERIFIED_REGISTRIES_QUERY = gql`
       where: {
         chainId: { _eq: $chainId }
         registry_id: { _in: $listsOfLists }
-        status: { _eq: "Registered" }
+        status: { _in: ["Registered", "ClearingRequested"] }
       }
     ) {
       id
       data
       registry_id
       props(order_by: { label: asc }) {
+        label
         value
       }
     }
@@ -81,7 +111,7 @@ const VERIFIED_REGISTRIES_QUERY = gql`
 
 interface VerifiedEntry {
   data?: string | null
-  props?: { value?: unknown }[] | null
+  props?: { label?: unknown; value?: unknown }[] | null
 }
 
 interface VerifiedRegistriesResult {
@@ -95,7 +125,7 @@ export const verifiedSetFrom = (
 ): Set<string> => {
   const verified = new Set(getListOfListsAddresses(chainId))
   for (const entry of entries) {
-    const address = extractRegistryAddress(entry.data, entry.props)
+    const address = listOfListsEntryAddress(entry.props)
     if (address) verified.add(address)
   }
   return verified

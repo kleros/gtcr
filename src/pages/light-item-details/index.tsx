@@ -40,6 +40,7 @@ import { formatAbsolute } from 'utils/time'
 import { formatSince } from 'pages/item-details/format-since'
 import { STALE_TIME } from 'consts'
 import { parseIpfs } from 'utils/ipfs-parse'
+import { type ItemFile, sanitizeItemFile } from 'utils/item-file-guard'
 import { truncateAtWord } from 'utils/truncate-at-word'
 import { CurateIcon } from 'components/curate/icons'
 import {
@@ -425,9 +426,7 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
   const library = useEthersProvider({
     chainId: chainId ?? undefined,
   })
-  const [ipfsItemData, setIpfsItemData] = useState<
-    Record<string, unknown> | undefined
-  >()
+  const [ipfsItemData, setIpfsItemData] = useState<ItemFile | undefined>()
   const timestamp = useContext(WalletContext)?.timestamp
   const [modalOpen, setModalOpen] = useState<boolean | undefined>()
   const tcrViewContext = useContext(LightTCRViewContext)
@@ -490,8 +489,8 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
           signal: controller.signal,
         })
         if (!r.ok) return
-        const data = await r.json()
-        if (!cancelled) setIpfsItemData(data)
+        const data = sanitizeItemFile(await r.json())
+        if (data && !cancelled) setIpfsItemData(data)
       } catch (err) {
         if (cancelled) return
         console.error('Could not get ipfs file', err)
@@ -545,8 +544,7 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
         errors: [],
         columns,
         decodedData: columns.map(
-          (c: { label: string }) =>
-            (ipfsItemData.values as Record<string, unknown>)?.[c.label],
+          (c: { label: string }) => ipfsItemData.values[c.label] ?? null,
         ),
       }
     }

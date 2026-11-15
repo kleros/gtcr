@@ -42,16 +42,25 @@ const withStrings = (
   return next
 }
 
-const sanitizeColumns = (columns: unknown): Column[] | undefined =>
+/*
+ * A column label as text. Never String() on an object: a JSON object can
+ * carry its own "toString" key (1, say), and String() then throws.
+ */
+const labelText = (label: unknown): string =>
+  typeof label === 'string'
+    ? label
+    : typeof label === 'number' || typeof label === 'boolean'
+      ? String(label)
+      : ''
+
+/** Columns with the shape the app reads (also used for entry files). */
+export const sanitizeColumns = (columns: unknown): Column[] | undefined =>
   Array.isArray(columns)
     ? columns.filter(isRecord).map(
         (column) =>
           ({
             ...column,
-            label:
-              typeof column.label === 'string'
-                ? column.label
-                : String(column.label ?? ''),
+            label: labelText(column.label),
             type:
               typeof column.type === 'string' ? column.type : ItemTypes.TEXT,
             description:
