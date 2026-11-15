@@ -31,11 +31,12 @@ export const MAIN_ID = 'main'
 
 /*
  * A page renders one Page, its main region (only the file viewer and the
- * loading screen have none). The skip link focuses it (tabindex -1:
- * focusable from script, never a Tab stop); it is not a control, so it
- * draws no focus ring.
+ * loading screen have none). The skip link makes it focusable while it
+ * takes focus (app-bar.tsx): focusable for good, Safari and Firefox on macOS
+ * would focus it on every click on a button inside it, and dialogs would
+ * take it for their opener. It is not a control, so it draws no focus ring.
  */
-export const Page = styled.main.attrs({ id: MAIN_ID, tabIndex: -1 })`
+export const Page = styled.main.attrs({ id: MAIN_ID })`
   position: relative;
   z-index: 1;
   width: 100%;

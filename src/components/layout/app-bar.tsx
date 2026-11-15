@@ -238,7 +238,14 @@ const SkipLink = styled.a`
 /** Moves focus to the page's main region, without touching the URL. */
 const skipToContent = (event: React.MouseEvent<HTMLAnchorElement>) => {
   event.preventDefault()
-  document.querySelector<HTMLElement>(`#${MAIN_ID}`)?.focus()
+  const main = document.querySelector<HTMLElement>(`#${MAIN_ID}`)
+  if (!main) return
+  // Focusable for this jump only (primitives.tsx Page says why).
+  main.setAttribute('tabindex', '-1')
+  main.addEventListener('blur', () => main.removeAttribute('tabindex'), {
+    once: true,
+  })
+  main.focus()
 }
 
 /*
