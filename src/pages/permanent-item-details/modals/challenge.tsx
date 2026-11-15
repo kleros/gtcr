@@ -16,6 +16,7 @@ import { wagmiConfig } from 'config/wagmi'
 import { Body, Button, Small, Stack } from 'components/curate/primitives'
 import { WhatHappensNext } from 'components/curate/what-happens-next'
 import {
+  APPROVE_ABI,
   DialogColumns,
   FormBlock,
   GateHelper,
@@ -160,7 +161,7 @@ const ChallengeModal = ({
     try {
       const { request } = await simulateContract(wagmiConfig, {
         address: tokenAddress,
-        abi: erc20Abi,
+        abi: APPROVE_ABI,
         functionName: 'approve',
         args: [registryAddress, challengeStake],
         account,

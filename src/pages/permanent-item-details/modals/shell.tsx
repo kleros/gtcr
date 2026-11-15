@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useId, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import styled, { keyframes } from 'styled-components'
 import { ethers, type BigNumberish } from 'ethers'
+import { parseAbi } from 'viem'
 import { useAccount, useSwitchChain } from 'wagmi'
 import { useAtlasProvider } from '@kleros/kleros-app'
 import useUrlChainId from 'hooks/use-url-chain-id'
@@ -470,6 +471,16 @@ export const applyMultiplier = (
 export const multiplierPercent = (
   multiplier: string | number | null | undefined,
 ): string => `${Number(multiplier ?? 0) / 100}%`
+
+/**
+ * The token's approve(), simulated and sent with no declared return value.
+ * viem's erc20Abi says it returns a bool, and a token whose approve returns
+ * nothing (USDT on Ethereum) then fails the simulation before the wallet
+ * opens. Nothing reads the returned value; the calldata is the same.
+ */
+export const APPROVE_ABI = parseAbi([
+  'function approve(address spender, uint256 amount)',
+])
 
 /* ---------- Form chrome ---------- */
 

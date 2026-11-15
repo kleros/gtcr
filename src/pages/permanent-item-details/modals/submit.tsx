@@ -36,6 +36,7 @@ import {
 } from 'components/curate/primitives'
 import { WhatHappensNext } from 'components/curate/what-happens-next'
 import {
+  APPROVE_ABI,
   DialogColumns,
   FormBlock,
   GateHelper,
@@ -462,7 +463,7 @@ const SubmitModal: React.FC<{
       // the wallet is on another one.
       const { request } = await simulateContract(wagmiConfig, {
         address: tokenAddress as `0x${string}`,
-        abi: erc20Abi,
+        abi: APPROVE_ABI,
         functionName: 'approve',
         args: [tcrAddress as `0x${string}`, depositWei],
         account,
