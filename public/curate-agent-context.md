@@ -39,7 +39,6 @@ list registered on them is not Kleros Verified. Never submit a list to them.
 - `/` dashboard.
 - `/browse` registries by chain, kind and standing.
 - `/guide` human and agent guide.
-- `/pro` creator support, indexing, and frontend package options.
 - `/address/:address` public curator/governor profile.
 - `/tcr/:chainId/:registryAddress` registry page.
 - `/tcr/:chainId/:registryAddress/submit` submit an entry.

@@ -210,7 +210,6 @@ const Footer: React.FC = () => (
       <End>
         <FooterNav aria-label="More from Curate">
           <FooterLink to="/guide">Guide & Skills</FooterLink>
-          <FooterLink to="/pro">Curate Pro</FooterLink>
         </FooterNav>
         <Social aria-label="Kleros Curate community">
           {SOCIAL_NAV.map((item) => (

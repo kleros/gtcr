@@ -15,7 +15,7 @@ import { useLaunchChainId } from './launch-chain'
 /*
  * Primary navigation (DESIGN.md, Surfaces and controls): the selector look,
  * a recessed track whose lit glass thumb slides to the current section.
- * Routes outside the four sections (a profile, Curate Pro) light none.
+ * Routes outside the four sections (a profile) light none.
  */
 const DesktopNav = styled.nav`
   position: relative;

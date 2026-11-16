@@ -6,7 +6,6 @@ Primary entrypoints:
 - Dashboard: https://curate.kleros.io/
 - Browse registries by chain, kind and standing: https://curate.kleros.io/browse
 - Guide & Skills: https://curate.kleros.io/guide
-- Curate Pro: https://curate.kleros.io/pro
 - Agent skill: https://curate.kleros.io/skills/kleros-curate/SKILL.md
 - Context document: https://curate.kleros.io/curate-agent-context.md
 

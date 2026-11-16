@@ -373,7 +373,7 @@ const AppBar = () => {
       if (!nextTcr) return
       saveChainId(chainId)
 
-      // A page with no chain in its address (the guide, Curate Pro) only
+      // A page with no chain in its address (the guide, a profile) only
       // remembers the choice, which its launch links follow: it is not left
       // for that chain's list of lists.
       if (!urlChainId) return
@@ -479,13 +479,6 @@ const AppBar = () => {
         onClick={() => setMobileMenuOpen(false)}
       >
         Guide
-      </MobileMenuLink>
-      <MobileMenuLink
-        to="/pro"
-        $active={location.pathname === '/pro'}
-        onClick={() => setMobileMenuOpen(false)}
-      >
-        Curate Pro
       </MobileMenuLink>
       {account && (
         <MobileMenuLink

@@ -11,7 +11,6 @@ import {
 } from 'pages/factory-permanent/defaults'
 import { CurateIcon } from 'components/curate/icons'
 import {
-  ButtonAnchor,
   ButtonLink,
   Label,
   Page,
@@ -51,9 +50,6 @@ const HOUR = 60 * 60
 
 /* Both kinds' defaults come from their wizards, so the page and a new list agree. */
 const STANDARD_DEFAULTS = LIGHT_WIZARD_DEFAULTS
-
-const CONTACT_HREF =
-  'mailto:contact@kleros.io?subject=Launch%20a%20Curate%20list'
 
 /* ---------- The two kinds ---------- */
 
@@ -650,7 +646,7 @@ const Foot = styled.div`
   }
 `
 
-/* ---------- Classic note, Pro ---------- */
+/* ---------- Classic note ---------- */
 
 const ClassicNote = styled.p`
   display: flex;
@@ -677,44 +673,6 @@ const ClassicNote = styled.p`
   @media (max-width: 720px) {
     padding: 0;
   }
-`
-
-const Pro = styled(Surface)`
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 20px 32px;
-  margin-top: 32px;
-  padding: 20px 24px;
-  ${reveal}
-
-  h2 {
-    margin: 4px 0 2px;
-    color: var(--color-text);
-    font-family: var(--font-display);
-    font-size: 20px;
-    line-height: 24px;
-    font-weight: 500;
-    letter-spacing: -0.02em;
-  }
-
-  p {
-    margin: 0;
-    color: var(--color-muted);
-    font-size: var(--fs-small);
-    line-height: var(--lh-small);
-  }
-
-  @media (max-width: 720px) {
-    grid-template-columns: minmax(0, 1fr);
-    padding: 18px 16px;
-  }
-`
-
-const ProActions = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
 `
 
 /* ---------- One option of the radio group ---------- */
@@ -1084,30 +1042,6 @@ const LaunchListPage = () => {
           <Link to="/guide">Read the guide</Link>
         </span>
       </ClassicNote>
-
-      <Pro
-        as="section"
-        $padding="none"
-        aria-labelledby="launch-pro"
-        style={{ ['--i' as string]: 6 }}
-      >
-        <div>
-          <Label $tone="faint">Assisted route</Label>
-          <h2 id="launch-pro">Curate Pro</h2>
-          <p>
-            Policy drafting and review, a ready API and help with a dedicated
-            front end.
-          </p>
-        </div>
-        <ProActions>
-          <ButtonLink to="/pro" $variant="secondary" $size="sm">
-            See Curate Pro
-          </ButtonLink>
-          <ButtonAnchor href={CONTACT_HREF} $variant="ghost" $size="sm">
-            Email the Kleros team
-          </ButtonAnchor>
-        </ProActions>
-      </Pro>
     </Page>
   )
 }

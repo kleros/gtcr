@@ -7,7 +7,6 @@ Kleros Curate is the verification layer for policy-driven token-curated registri
 - Dashboard: https://curate.kleros.io/
 - Browse registries by chain, kind and standing: https://curate.kleros.io/browse
 - Guide & Skills: https://curate.kleros.io/guide
-- Curate Pro: https://curate.kleros.io/pro
 - Address profiles: https://curate.kleros.io/address/{walletAddress}
 - Registry pages: https://curate.kleros.io/tcr/{chainId}/{registryAddress}
 - Submit an entry: https://curate.kleros.io/tcr/{chainId}/{registryAddress}/submit

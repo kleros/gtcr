@@ -20,7 +20,6 @@ import { noteNavigation, preloadInBackground } from 'utils/background-preload'
 const Dashboard = lazy(() => import('pages/dashboard'))
 const Browse = lazy(() => import('pages/browse'))
 const AddressPage = lazy(() => import('pages/address'))
-const CuratePro = lazy(() => import('pages/curate-pro'))
 const Guide = lazy(() => import('pages/guide'))
 const LaunchList = lazy(() => import('pages/launch-list'))
 const ItemsRouter = lazy(() => import('pages/items-router'))
@@ -130,7 +129,8 @@ const AppRouter = () => {
         <Route path="/launch/:chainId" element={<LaunchList />} />
         <Route path="/guide" element={<Guide />} />
         <Route path="/address/:address" element={<AddressPage />} />
-        <Route path="/pro" element={<CuratePro />} />
+        {/* Curate Pro (pages/curate-pro) is hidden until its offer is
+            ready: /pro shows the not-found page and nothing links it. */}
         <Route path="*" element={<ErrorPage />} />
       </Routes>
     </Suspense>

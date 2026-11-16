@@ -20,7 +20,7 @@ const SAVED_CHAIN_EVENT = 'curate:saved-chain'
 
 /**
  * Remembers a chain for the pages with no chain in their address (the
- * guide, Curate Pro, a profile): the app bar's chip and every launch link
+ * guide, a profile): the app bar's chip and every launch link
  * read it. Whatever reads it through useSavedChainId follows at once, with
  * no navigation needed.
  */
