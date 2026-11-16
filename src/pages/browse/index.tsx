@@ -1839,9 +1839,8 @@ const BrowsePage = () => {
               <FigureLine>
                 <BigFigure>
                   <AnimatedNumber
-                    value={
-                      loading || countsUnknown ? undefined : figures.verified
-                    }
+                    loading={loading}
+                    value={countsUnknown ? undefined : figures.verified}
                   />
                   {!loading && !countsUnknown && (
                     <small>{figures.verified === 1 ? 'list' : 'lists'}</small>
@@ -1916,9 +1915,7 @@ const BrowsePage = () => {
                 <InlineStat key={figure.label}>
                   <Label $tone="faint">{figure.label}</Label>
                   <b>
-                    <AnimatedNumber
-                      value={loading ? undefined : figure.value}
-                    />
+                    <AnimatedNumber loading={loading} value={figure.value} />
                   </b>
                 </InlineStat>
               ))}

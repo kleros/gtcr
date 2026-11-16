@@ -8,6 +8,7 @@ import {
   Small,
   StatusDot,
   Surface,
+  NumberSkeleton,
 } from 'components/curate/primitives'
 import { AnimatedNumber } from 'components/curate/motion/animated-number'
 import {
@@ -176,6 +177,8 @@ export const OpenNow = () => {
               `${integer.format(Math.round(value))}${figure.capped ? '+' : ''}`
             }
           />
+        ) : loading ? (
+          <NumberSkeleton />
         ) : (
           <span aria-hidden>—</span>
         )}

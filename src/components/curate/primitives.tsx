@@ -2138,6 +2138,25 @@ export const SkeletonBlock = styled.div<{ $height?: string; $width?: string }>`
   }
 `
 
+/**
+ * A number that is still loading: a shimmer bar the size of a few digits of
+ * the surrounding text, sitting on its baseline, so a figure loads like the
+ * panels around it. "—" is kept for a figure that is unknown (a read failed).
+ */
+export const NumberSkeleton = ({ width = '2.2em' }: { width?: string }) => (
+  <>
+    <VisuallyHidden>Loading</VisuallyHidden>
+    <InlineShimmer as="span" $width={width} $height="0.72em" aria-hidden />
+  </>
+)
+
+const InlineShimmer = styled(SkeletonBlock)`
+  display: inline-block;
+  height: 0.72em;
+  vertical-align: baseline;
+  border-radius: 0.14em;
+`
+
 const EmptyWrap = styled.div`
   display: flex;
   flex-direction: column;

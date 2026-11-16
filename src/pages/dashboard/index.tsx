@@ -26,6 +26,7 @@ import {
   TableScroller,
   VisuallyHidden,
   truncateMiddle,
+  NumberSkeleton,
 } from 'components/curate/primitives'
 import { OrbitChart } from 'components/curate/orbit-chart'
 import { ActivityWave } from 'components/curate/motion/activity-wave'
@@ -1179,7 +1180,10 @@ const Dashboard = () => {
           <HeadlineFigure>
             <Label $tone="faint">Entries</Label>
             <Big $hero>
-              <Odometer value={figuresUnknown ? undefined : figures?.entries} />
+              <Odometer
+                loading={loading}
+                value={figuresUnknown ? undefined : figures?.entries}
+              />
             </Big>
           </HeadlineFigure>
           <InlineStats>
@@ -1193,6 +1197,7 @@ const Dashboard = () => {
                 <Label $tone="faint">{figure.label}</Label>
                 <b>
                   <AnimatedNumber
+                    loading={loading}
                     value={figuresUnknown ? undefined : figure.value}
                   />
                 </b>
@@ -1290,9 +1295,13 @@ const Dashboard = () => {
                   <i style={{ background: seg.color }} aria-hidden />
                   <span title={seg.label}>{seg.label}</span>
                   <b>
-                    {loading || segmentUnknown(seg.key)
-                      ? '—'
-                      : formatInt(seg.value)}
+                    {loading ? (
+                      <NumberSkeleton />
+                    ) : segmentUnknown(seg.key) ? (
+                      '—'
+                    ) : (
+                      formatInt(seg.value)
+                    )}
                   </b>
                 </li>
               ))}

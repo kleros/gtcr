@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import styled from 'styled-components'
-import { VisuallyHidden } from '../primitives'
+import { NumberSkeleton, VisuallyHidden } from '../primitives'
 
 /*
  * Odometer: each digit rolls on its own column to its value (the Energy
@@ -48,9 +48,18 @@ const Stack = styled.span<{ $digit: number; $delay: number }>`
 
 const formatter = new Intl.NumberFormat('en-US')
 
-export const Odometer = ({ value }: { value?: number }) => {
+/** A shimmer while `loading`, an em dash while otherwise unknown. */
+export const Odometer = ({
+  value,
+  loading = false,
+}: {
+  value?: number
+  loading?: boolean
+}) => {
   const target =
-    value === undefined ? undefined : formatter.format(Math.round(value))
+    value === undefined || loading
+      ? undefined
+      : formatter.format(Math.round(value))
   // Render zeros first, then roll to the value on the next frame.
   const [shown, setShown] = useState<string | undefined>(
     target?.replace(/\d/g, '0'),
@@ -75,6 +84,7 @@ export const Odometer = ({ value }: { value?: number }) => {
     }
   }, [target])
 
+  if (loading) return <NumberSkeleton width="3em" />
   if (target === undefined || shown === undefined) return <>—</>
   if (settled) return <span>{target}</span>
   const chars = shown.split('')

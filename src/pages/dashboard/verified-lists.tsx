@@ -323,11 +323,8 @@ export const VerifiedLists = ({
           <Count>
             <b>
               <AnimatedNumber
-                value={
-                  loading || (failed && lists.length === 0)
-                    ? undefined
-                    : lists.length
-                }
+                loading={loading}
+                value={failed && lists.length === 0 ? undefined : lists.length}
               />
             </b>
             {lists.length === 1 ? 'list' : 'lists'}
