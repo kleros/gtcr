@@ -95,7 +95,6 @@ const Layout = styled.div`
 
 const RailColumn = styled.div`
   min-width: 0;
-  padding-top: 8px;
   ${reveal}
 `
 
@@ -113,7 +112,6 @@ const Hero = styled.header`
   flex-direction: column;
   align-items: flex-start;
   gap: 20px;
-  padding-top: 8px;
 
   > * {
     ${reveal}

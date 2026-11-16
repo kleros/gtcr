@@ -169,11 +169,11 @@ const Hero = styled.section`
   > * {
     ${reveal}
   }
-  padding: 56px 0 8px;
+  /* Starts where every page does: Page's own top padding, nothing more. */
+  padding: 0 0 8px;
   text-align: center;
 
   @media (max-width: 720px) {
-    padding-top: 24px;
     align-items: flex-start;
     text-align: left;
   }

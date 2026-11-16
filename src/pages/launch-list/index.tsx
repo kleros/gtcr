@@ -132,7 +132,6 @@ const Header = styled.header`
   flex-direction: column;
   align-items: center;
   gap: 20px;
-  padding: 16px 0 0;
   text-align: center;
 
   > * {
@@ -142,7 +141,6 @@ const Header = styled.header`
   @media (max-width: 720px) {
     align-items: flex-start;
     gap: 16px;
-    padding-top: 8px;
     text-align: left;
   }
 `
