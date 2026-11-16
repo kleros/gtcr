@@ -12,6 +12,7 @@ import { formatAbsolute, formatAgo } from 'utils/time'
 import { parseRichAddress } from 'utils/rich-address'
 import ChainLogo from 'components/chain-logo'
 import { NETWORKS } from 'config/networks'
+import { getListOfListsAddresses } from 'config/list-of-lists'
 import { CurateIcon } from 'components/curate/icons'
 import {
   Button,
@@ -102,6 +103,7 @@ import {
   summarize,
   trustParam,
   verificationHref,
+  listOfListsHref,
   verifiedShowcase,
   type BrowseSort,
   type TrustMode,
@@ -963,32 +965,59 @@ const VerifyLinks = styled.div`
   border-top: 1px solid var(--glass-border);
 `
 
-const VerifyLink = styled(Link)`
+/* A chain's row: its list of lists (the lists on it), and Submit. */
+const VerifyRow = styled.div`
   display: grid;
   grid-template-columns: 20px minmax(0, 1fr) auto;
-  align-items: center;
+  align-items: stretch;
   gap: 10px;
-  height: 46px;
+  min-height: 46px;
   border-bottom: 1px solid var(--glass-border);
-  color: var(--color-text);
-  font-size: var(--fs-body);
-  font-weight: 500;
-  text-decoration: none;
 
   &:last-child {
     border-bottom: 0;
   }
 
-  > span:last-child {
-    display: inline-flex;
+  > :first-child {
+    align-self: center;
+  }
+
+  > a {
+    display: flex;
     align-items: center;
-    gap: 6px;
-    color: var(--color-primary);
+    gap: 8px;
+    min-width: 0;
+    text-decoration: none;
+  }
+`
+
+const VerifyList = styled(Link)`
+  color: var(--color-text);
+  font-size: var(--fs-body);
+  font-weight: 500;
+
+  > small {
+    color: var(--color-muted);
     font-size: var(--fs-small);
+    font-weight: 400;
+    white-space: nowrap;
+  }
+
+  &:hover > span {
+    color: var(--color-primary);
+  }
+`
+
+const VerifySubmit = styled(Link)`
+  color: var(--color-primary);
+  font-size: var(--fs-small);
+  font-weight: 500;
+
+  > svg {
     transition: transform var(--motion);
   }
 
-  &:hover > span:last-child {
+  &:hover > svg {
     transform: translateX(2px);
   }
 `
@@ -1262,6 +1291,18 @@ const listsLabel = (mode: TrustMode, count: number): string => {
     return one ? `${COMMUNITY_LABEL} list` : COMMUNITY_LISTS_LABEL
   return one ? 'list' : 'lists'
 }
+
+/**
+ * Where to look when a choice finds nothing: the other choice, and All, the
+ * only one with the Kleros lists of lists (countsAsVerifiedList) and the
+ * lists whose standing is unknown. All has nowhere else.
+ */
+const otherTrustModes = (mode: TrustMode): TrustMode[] =>
+  mode === 'verified'
+    ? ['community', 'all']
+    : mode === 'community'
+      ? ['verified', 'all']
+      : []
 
 /** The default first; the seal names what Kleros Verified lists earned. */
 const TRUST_OPTIONS: SegmentOption<TrustMode>[] = [
@@ -1576,33 +1617,28 @@ const BrowsePage = () => {
       ),
     [trusted, chains, trust, kinds, search, sort],
   )
-  // With nothing in this choice, how many match in the other one: a search
-  // for a Community list from Kleros Verified should say where it is. "All"
-  // has no other.
-  const otherTrust: TrustMode | null =
-    trust === 'verified'
-      ? 'community'
-      : trust === 'community'
-        ? 'verified'
-        : null
-  const otherMatches = useMemo(
-    () =>
-      registries.length === 0 && otherTrust
-        ? filterRegistries(trusted, {
-            chains,
-            trust: otherTrust,
-            kinds,
-            search,
-          }).length
-        : 0,
-    [trusted, registries.length, chains, otherTrust, kinds, search],
-  )
+  // With nothing in this choice, where the search does match: a search for
+  // a Community list from Kleros Verified should say where it is, and so
+  // should one for a Kleros list of lists, which only All shows. The other
+  // choice when it holds every match, else All: a Community list named like
+  // the list of lists must not stand in for it.
+  const elsewhere = useMemo(() => {
+    if (registries.length > 0) return null
+    const found = otherTrustModes(trust).map((mode) => ({
+      trust: mode,
+      count: filterRegistries(trusted, { chains, trust: mode, kinds, search })
+        .length,
+    }))
+    const most = Math.max(0, ...found.map((match) => match.count))
+    return most > 0
+      ? (found.find((match) => match.count === most) ?? null)
+      : null
+  }, [trusted, registries.length, chains, trust, kinds, search])
   // "All chains" leaves the testnet out: a search that matches only there
-  // says so and offers it, in this choice first, else in the other one.
+  // says so and offers it, in this choice first, else in the others.
   const testnetHint = useMemo(() => {
-    if (registries.length > 0 || otherMatches > 0 || chains.length > 0)
-      return null
-    for (const mode of otherTrust ? [trust, otherTrust] : [trust]) {
+    if (registries.length > 0 || elsewhere || chains.length > 0) return null
+    for (const mode of [trust, ...otherTrustModes(trust)]) {
       const count = filterRegistries(trusted, {
         chains: TESTNET_CHAIN_IDS,
         trust: mode,
@@ -1615,10 +1651,9 @@ const BrowsePage = () => {
   }, [
     trusted,
     registries.length,
-    otherMatches,
+    elsewhere,
     chains.length,
     trust,
-    otherTrust,
     kinds,
     search,
   ])
@@ -1629,7 +1664,7 @@ const BrowsePage = () => {
     !!mainnets.data &&
     chains.length === 0 &&
     registries.length === 0 &&
-    otherMatches === 0
+    !elsewhere
   useEffect(() => {
     if (nothingOnMainnets) setTestnetAsked(true)
   }, [nothingOnMainnets])
@@ -2021,7 +2056,7 @@ const BrowsePage = () => {
                 }
               />
             </Surface>
-          ) : registries.length === 0 && otherTrust && otherMatches > 0 ? (
+          ) : registries.length === 0 && elsewhere ? (
             <Surface $padding="none">
               <EmptyState
                 icon="filter"
@@ -2031,11 +2066,14 @@ const BrowsePage = () => {
                     type="button"
                     $size="sm"
                     onClick={() =>
-                      setParam({ trust: trustParam(otherTrust), page: null })
+                      setParam({
+                        trust: trustParam(elsewhere.trust),
+                        page: null,
+                      })
                     }
                   >
-                    Show {formatInt(otherMatches)}{' '}
-                    {listsLabel(otherTrust, otherMatches)}
+                    Show {formatInt(elsewhere.count)}{' '}
+                    {listsLabel(elsewhere.trust, elsewhere.count)}
                   </Button>
                 }
               />
@@ -2331,20 +2369,38 @@ const BrowsePage = () => {
             </Small>
             <VerifyLinks>
               {verificationChains.map((chainId) => {
-                const href = verificationHref(chainId)
-                return href ? (
-                  <VerifyLink
-                    key={chainId}
-                    to={href}
-                    aria-label={`Submit a list to the Kleros list of lists on ${chainName(chainId)}`}
-                  >
+                const submit = verificationHref(chainId)
+                const list = listOfListsHref(chainId)
+                if (!submit || !list) return null
+                const name = chainName(chainId)
+                // The lists it accepted, once the load has it (the list of
+                // lists is a list of the load like any other).
+                const lists = registryByKey.get(
+                  listKey(chainId, getListOfListsAddresses(chainId)[0] ?? ''),
+                )
+                const count = lists ? entryCount(lists) : undefined
+                const counted =
+                  count === undefined
+                    ? ''
+                    : `${formatInt(count)} ${count === 1 ? 'list' : 'lists'}`
+                return (
+                  <VerifyRow key={chainId}>
                     <RailChain chainId={chainId} size={20} />
-                    <span>{chainName(chainId)}</span>
-                    <span>
+                    <VerifyList
+                      to={list}
+                      aria-label={`The Kleros list of lists on ${name}${counted ? `: ${counted}` : ''}`}
+                    >
+                      <span>{name}</span>
+                      {counted && <small>{counted}</small>}
+                    </VerifyList>
+                    <VerifySubmit
+                      to={submit}
+                      aria-label={`Submit a list to the Kleros list of lists on ${name}`}
+                    >
                       Submit <ArrowIcon size={14} />
-                    </span>
-                  </VerifyLink>
-                ) : null
+                    </VerifySubmit>
+                  </VerifyRow>
+                )
               })}
             </VerifyLinks>
           </Surface>

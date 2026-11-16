@@ -1,6 +1,7 @@
 import { NETWORKS_INFO } from 'config/networks'
 import { VERIFIED_LIST_OF_LISTS_ADDRESSES } from 'config/list-of-lists'
 import { ipfsImageUrl } from 'utils/ipfs-parse'
+import { countsAsVerifiedList } from 'components/curate/verified-rule'
 import type {
   DashboardActivity,
   DashboardRegistry,
@@ -22,7 +23,8 @@ import {
  * Which lists the explorer shows: the Kleros Verified ones (the default),
  * the Community ones (every other list), or all of them. A list whose
  * standing is not known yet ("unknown": its chain's lists of lists did not
- * answer) shows only under All.
+ * answer) shows only under All, and so do the Kleros lists of lists, which
+ * grant the badge rather than earn it (countsAsVerifiedList).
  */
 export type TrustMode = 'verified' | 'community' | 'all'
 export type BrowseSort =
@@ -105,11 +107,17 @@ export const registryHref = (registry: DashboardRegistry): string =>
 
 /** Submission form of the chain's Light Kleros list of lists, or null. */
 export const verificationHref = (chainId: number): string | null => {
+  const list = listOfListsHref(chainId)
+  return list ? `${list}/submit` : null
+}
+
+/** The chain's Kleros list of lists itself: the lists it accepted. */
+export const listOfListsHref = (chainId: number): string | null => {
   const address =
     VERIFIED_LIST_OF_LISTS_ADDRESSES[
       chainId as keyof typeof VERIFIED_LIST_OF_LISTS_ADDRESSES
     ]
-  return address ? `/tcr/${chainId}/${address}/submit` : null
+  return address ? `/tcr/${chainId}/${address}` : null
 }
 
 /** A logo, on the IPFS gateway only (ipfsImageUrl says why). */
@@ -247,7 +255,7 @@ export const filterRegistries = (
   const needle = filters.search.trim().toLowerCase()
   return registries.filter((registry) => {
     if (!inScope(filters.chains, registry.chainId)) return false
-    if (filters.trust === 'verified' && registry.trustStatus !== 'verified')
+    if (filters.trust === 'verified' && !countsAsVerifiedList(registry))
       return false
     if (filters.trust === 'community' && registry.trustStatus !== 'unverified')
       return false
@@ -320,8 +328,7 @@ export const summarize = (
     inScope(chains, registry.chainId),
   )
   return {
-    verified: scoped.filter((registry) => registry.trustStatus === 'verified')
-      .length,
+    verified: scoped.filter(countsAsVerifiedList).length,
     community: scoped.filter(
       (registry) => registry.trustStatus === 'unverified',
     ).length,
@@ -346,8 +353,7 @@ export const verifiedShowcase = (
   rankRegistries(
     registries.filter(
       (registry) =>
-        registry.trustStatus === 'verified' &&
-        inScope(chains, registry.chainId),
+        countsAsVerifiedList(registry) && inScope(chains, registry.chainId),
     ),
     'activity',
   ).slice(0, count)

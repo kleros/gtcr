@@ -13,6 +13,7 @@ import {
 } from 'pages/dashboard/view'
 import { readRegistryMetadata } from 'utils/registry-metadata'
 import { ipfsImageUrl } from 'utils/ipfs-parse'
+import { countsAsVerifiedList } from 'components/curate/verified-rule'
 
 /*
  * Live figures for the standalone landing page (public/landing/landing.js).
@@ -22,8 +23,9 @@ import { ipfsImageUrl } from 'utils/ipfs-parse'
  * Ethereum and Gnosis) and the same figures (scopedFigures, scopedSeries,
  * scopedBounties), so both pages show the same numbers:
  *   - Kleros Verified by the one rule (components/curate/verified-rule.ts):
- *     the chain's Kleros list of lists and the lists registered on it;
- *     the load stamps each list with it.
+ *     the lists registered on the chain's Kleros list of lists (the list of
+ *     lists itself grants the badge and is not counted among them); the
+ *     load stamps each list with it.
  *   - Challenges per day on the day each challenge was made, including
  *     challenges to requests made before the window.
  * The Kleros Verified lists themselves come along (name, logo, chain), each
@@ -199,9 +201,7 @@ const readLive = async (): Promise<LandingData | null> => {
     chains.includes(registry.chainId),
   )
   const figures = scopedFigures(data, chains)
-  const verified = registries.filter(
-    (registry) => registry.trustStatus === 'verified',
-  )
+  const verified = registries.filter(countsAsVerifiedList)
 
   const verifiedLists = await withMetadata(
     verified

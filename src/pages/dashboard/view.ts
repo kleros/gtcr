@@ -2,6 +2,7 @@ import { NETWORKS_INFO } from 'config/networks'
 import { getNativeCurrency } from 'config/chains'
 import type { StatusTone } from 'components/curate/primitives'
 import { formatAgo } from 'utils/time'
+import { countsAsVerifiedList } from 'components/curate/verified-rule'
 import type {
   DashboardActivity,
   DashboardData,
@@ -160,7 +161,7 @@ export const scopedFigures = (
     }
   return {
     registries: scoped.length,
-    verified: scoped.filter((r) => r.trustStatus === 'verified').length,
+    verified: scoped.filter(countsAsVerifiedList).length,
     entries: scoped.reduce((sum, r) => sum + entryCount(r), 0),
     // Stake Curate has no requests (its counter is listed items).
     requestsOpen: scoped
@@ -322,14 +323,14 @@ export const scopedWins = (
 }
 
 /**
- * Kleros Verified lists, newest to earn the badge first; the lists of
- * lists (which grant it, so have no date) last, by entries.
+ * Kleros Verified lists, newest to earn the badge first (the lists of
+ * lists, which grant it, are not among them: countsAsVerifiedList).
  */
 export const newestVerified = (
   registries: DashboardRegistry[],
 ): DashboardRegistry[] =>
   registries
-    .filter((registry) => registry.trustStatus === 'verified')
+    .filter(countsAsVerifiedList)
     .sort(
       (a, b) =>
         (b.verifiedAt ?? 0) - (a.verifiedAt ?? 0) ||

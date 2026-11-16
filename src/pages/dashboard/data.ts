@@ -5,6 +5,7 @@ import { NETWORKS } from 'config/networks'
 import { subgraphUrl, subgraphUrlPermanent } from 'config/tcr-addresses'
 import { getListOfListsAddresses, isListOfLists } from 'config/list-of-lists'
 import {
+  countsAsVerifiedList,
   listOfListsEntryAddress,
   verifiedSetFrom,
 } from 'components/curate/verified-rule'
@@ -1863,8 +1864,7 @@ const buildMetrics = (
   users: DashboardUser[],
 ): DashboardMetrics => ({
   registries: registries.length,
-  verifiedRegistries: registries.filter((r) => r.trustStatus === 'verified')
-    .length,
+  verifiedRegistries: registries.filter(countsAsVerifiedList).length,
   curatedItems: registries.reduce(
     (sum, registry) => sum + entryCount(registry),
     0,

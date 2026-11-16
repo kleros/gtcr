@@ -16,7 +16,6 @@ import {
   VERIFIED_LISTS_LABEL,
   VerifiedBadge,
 } from 'components/curate/verified-badge'
-import { isListOfLists } from 'config/list-of-lists'
 import { formatDate } from 'utils/time'
 import type { DashboardRegistry } from './types'
 import { chainInfo, entryCount, registryHref } from './view'
@@ -29,11 +28,11 @@ import { Avatar as ListLogo } from 'pages/browse/avatar'
  * are in the page's scope, and a strip of them, newest to earn the badge
  * first: logo, name, chain and when it earned the badge (its registration
  * on the chain's Kleros list of lists), each leading to its list. The lists
- * of lists themselves grant the badge, read "List of lists" and close the
- * strip. The Most active table below ranks by open requests, so the two
- * never mirror. The last tile leads to every Verified list in Browse. On
- * wide screens the strip shows as many as fit on one row; on phones it
- * scrolls sideways.
+ * of lists themselves grant the badge rather than earn it, so they are not
+ * among them (countsAsVerifiedList). The Most active table below ranks by
+ * open requests, so the two never mirror. The last tile leads to every
+ * Verified list in Browse. On wide screens the strip shows as many as fit
+ * on one row; on phones it scrolls sideways.
  */
 
 /** Tiles read for the strip (wide screens show the ones that fit). */
@@ -384,9 +383,7 @@ export const VerifiedLists = ({
                   <VisuallyHidden>
                     {chainInfo(registry.chainId)?.name},{' '}
                   </VisuallyHidden>
-                  {isListOfLists(registry.chainId, registry.address) ? (
-                    'List of lists'
-                  ) : registry.verifiedAt ? (
+                  {registry.verifiedAt ? (
                     <time
                       dateTime={new Date(
                         registry.verifiedAt * 1000,

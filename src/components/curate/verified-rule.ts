@@ -2,7 +2,7 @@ import type { QueryClient } from '@tanstack/react-query'
 import { gql } from 'graphql-request'
 import { request } from 'utils/indexer-request'
 import { subgraphUrl } from 'config/tcr-addresses'
-import { getListOfListsAddresses } from 'config/list-of-lists'
+import { getListOfListsAddresses, isListOfLists } from 'config/list-of-lists'
 import type { TrustStatus } from 'pages/dashboard/types'
 
 /*
@@ -211,6 +211,22 @@ export const withVerified = <
       ? registry
       : { ...registry, trustStatus }
   })
+
+/**
+ * Whether a registry is one of the Kleros Verified lists that pages list and
+ * count: Verified by the rule, the lists of lists themselves aside. They
+ * grant the badge and carry it on their own pages and rows, but counting
+ * them with the lists they accepted counts the verifier among its verdicts
+ * (13 "Kleros Verified lists" where Kleros vouched for 11). Browse shows
+ * them under All and links them from its "Get Kleros Verified" panel.
+ */
+export const countsAsVerifiedList = (registry: {
+  chainId: number
+  address: string
+  trustStatus: TrustStatus
+}): boolean =>
+  registry.trustStatus === 'verified' &&
+  !isListOfLists(registry.chainId, registry.address)
 
 /**
  * The sets for several chains, read outside React. A chain whose read fails

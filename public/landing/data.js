@@ -1,11 +1,12 @@
 // A frozen snapshot of public Curate data (on-chain, Ethereum and Gnosis
-// mainnets), read on 14 Nov 2026 through src/landing/boot.ts. The landing
+// mainnets), read on 16 Nov 2026 through src/landing/boot.ts. The landing
 // page draws it at once, then swaps in the live figures when the indexers
 // answer; while it shows this object it labels each figure with
 // `snapshotAt` or the series' window, never "now".
-// figures: verified and community split the lists by the shared Kleros
-// Verified rule (components/curate/verified-rule.ts: the chain's Kleros
-// list of lists and the lists registered on it); unchallenged counts
+// figures: verified counts the lists registered on the chain's Kleros list
+// of lists and community every list off it, by the shared Kleros Verified
+// rule (components/curate/verified-rule.ts; the lists of lists themselves
+// grant the badge and are in neither count); unchallenged counts
 // unresolved requests nobody has challenged, openForVerification those
 // still inside their challenge period (absent when the periods could not
 // be read).
@@ -27,18 +28,18 @@
 // window.CURATE_LANDING_LIVE (minus `live`); never edit single figures by
 // hand.
 window.CURATE_LANDING_DATA = {
-  snapshotAt: '2026-11-14T08:59:20.866Z',
+  snapshotAt: '2026-11-16T10:26:54.090Z',
   scope: 'Ethereum and Gnosis',
   figures: {
     registries: 238,
-    verified: 13,
+    verified: 11,
     community: 225,
-    entries: 32347,
-    requestsOpen: 51,
-    unchallenged: 44,
+    entries: 32392,
+    requestsOpen: 77,
+    unchallenged: 73,
     unchallengedCapped: false,
-    openForVerification: 44,
-    inCourt: 7,
+    openForVerification: 73,
+    inCourt: 4,
     curators30d: 15,
   },
   verifiedLists: [
@@ -48,8 +49,17 @@ window.CURATE_LANDING_DATA = {
       kind: 'light',
       title: 'Address Tags',
       logo: '/ipfs/QmP1hU1LaheHVGxcSJWg5sC3g25vs5snam3qP1bVVAa7mT/address-tag-2-1.png',
-      entries: 9355,
-      open: 35,
+      entries: 9375,
+      open: 41,
+    },
+    {
+      chainId: 100,
+      address: '0x957a53a994860be4750810131d9c876b2f52d6e1',
+      kind: 'light',
+      title: 'Ledger Contract Domain Name registry v2',
+      logo: '/ipfs/QmNNSDkpyDX1wB4NNFdAzaHsJihpvgNVV89zCH8FH9CVAz/ledger-white.png',
+      entries: 8435,
+      open: 16,
     },
     {
       chainId: 100,
@@ -58,16 +68,16 @@ window.CURATE_LANDING_DATA = {
       title: 'Kleros Tokens',
       logo: '/ipfs/QmZ5VC8FHMjs92yQEn9dnJottspM5JUbJUkPtno1hPPYks/t2cr-logo.974d9285.png',
       entries: 7237,
-      open: 13,
+      open: 10,
     },
     {
       chainId: 100,
-      address: '0x957a53a994860be4750810131d9c876b2f52d6e1',
+      address: '0x5aaf9e23a11440f8c1ad6d2e2e5109c7e52cc672',
       kind: 'light',
-      title: 'Ledger Contract Domain Name registry v2',
-      logo: '/ipfs/QmNNSDkpyDX1wB4NNFdAzaHsJihpvgNVV89zCH8FH9CVAz/ledger-white.png',
-      entries: 8421,
-      open: 3,
+      title: 'Seer Markets',
+      logo: '/ipfs/QmckmpMuWGiGHCzbYgPqLPcCvLDj4YDPRZB63p7VaAjrbB/seer-logo-2-.png',
+      entries: 364,
+      open: 10,
     },
     {
       chainId: 100,
@@ -76,15 +86,6 @@ window.CURATE_LANDING_DATA = {
       title: 'Address Tags Query (ATQ) Registry',
       logo: '/ipfs/QmStzoYeV9nfJSms47TLo9f5t1fVrxjvvRf9GspCduXhE4/kleros-symbol.png',
       entries: 366,
-      open: 0,
-    },
-    {
-      chainId: 100,
-      address: '0x5aaf9e23a11440f8c1ad6d2e2e5109c7e52cc672',
-      kind: 'light',
-      title: 'Seer Markets',
-      logo: '/ipfs/QmckmpMuWGiGHCzbYgPqLPcCvLDj4YDPRZB63p7VaAjrbB/seer-logo-2-.png',
-      entries: 353,
       open: 0,
     },
     {
@@ -106,15 +107,6 @@ window.CURATE_LANDING_DATA = {
       open: 0,
     },
     {
-      chainId: 100,
-      address: '0x2418d887d0d0fe03b793a6af4321fa488226a0b5',
-      kind: 'light',
-      title: 'Gnosis Verified Registries',
-      logo: '/ipfs/QmZa8NwrV4E7A8EvRy53YmpAmvZyJ2Bx4o8Jb7CEkyQa16',
-      entries: 7,
-      open: 0,
-    },
-    {
       chainId: 1,
       address: '0xda03509bb770061a61615ad8fc8e1858520ebd86',
       kind: 'light',
@@ -129,15 +121,6 @@ window.CURATE_LANDING_DATA = {
       kind: 'light',
       title: 'Seer Markets',
       logo: '/ipfs/QmUXJ5yGg5PxzyaaokZzZJpiPsCGzJ98pgusYoCzuDmopo/seer-logo-1x1.png',
-      entries: 4,
-      open: 0,
-    },
-    {
-      chainId: 1,
-      address: '0x2acf59a420ca888f46d46974f62570f8a38cd4da',
-      kind: 'light',
-      title: 'Verified Registries',
-      logo: '/ipfs/QmZa8NwrV4E7A8EvRy53YmpAmvZyJ2Bx4o8Jb7CEkyQa16',
       entries: 4,
       open: 0,
     },
@@ -161,16 +144,6 @@ window.CURATE_LANDING_DATA = {
     },
   ],
   series30d: [
-    {
-      day: 1792108800,
-      requests: 46,
-      challenges: 0,
-    },
-    {
-      day: 1792195200,
-      requests: 28,
-      challenges: 0,
-    },
     {
       day: 1792281600,
       requests: 25,
@@ -308,13 +281,23 @@ window.CURATE_LANDING_DATA = {
     },
     {
       day: 1794614400,
-      requests: 15,
+      requests: 26,
+      challenges: 0,
+    },
+    {
+      day: 1794700800,
+      requests: 8,
+      challenges: 0,
+    },
+    {
+      day: 1794787200,
+      requests: 26,
       challenges: 0,
     },
   ],
   bounties: {
-    won: 694,
-    rulings: 918,
+    won: 695,
+    rulings: 921,
     capped: false,
     coins: [
       {
@@ -347,9 +330,9 @@ window.CURATE_LANDING_DATA = {
         chain: 'Gnosis',
         stake: false,
         symbol: 'xDAI',
-        amount: '31,710.1',
-        value: 31710.1,
-        won: 575,
+        amount: '31,740.1',
+        value: 31740.1,
+        won: 576,
         days: [
           18834, 18841, 19013, 19029, 19032, 19032, 19041, 19043, 19048, 19049,
           19112, 19116, 19126, 19130, 19130, 19130, 19131, 19135, 19136, 19137,
@@ -408,7 +391,7 @@ window.CURATE_LANDING_DATA = {
           20694, 20700, 20706, 20706, 20713, 20713, 20713, 20715, 20716, 20717,
           20720, 20727, 20727, 20732, 20734, 20734, 20740, 20743, 20746, 20751,
           20751, 20754, 20757, 20758, 20763, 20763, 20763, 20763, 20763, 20763,
-          20763, 20768, 20768, 20770, 20770,
+          20763, 20768, 20768, 20770, 20770, 20772,
         ],
       },
       {
