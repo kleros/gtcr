@@ -1,7 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react'
 import styled from 'styled-components'
+import { Link } from 'react-router-dom'
 import useDocumentHead from 'hooks/use-document-head'
 import { NETWORKS } from 'config/networks'
+import { listOfListsHref } from 'pages/browse/view'
 import useDisplayedChainId from './use-displayed-chain-id'
 import { CurateIcon } from 'components/curate/icons'
 import { VERIFIED_LABEL, VerifiedBadge } from 'components/curate/verified-badge'
@@ -627,9 +629,16 @@ const Guide = () => {
             </Prose>
             <Aside label={VERIFIED_LABEL}>
               Every new list starts as a Community list. Submit it to the Kleros
-              list of lists on its chain: once it is registered there, it
-              carries the <VerifiedBadge size={16} decorative />{' '}
-              {VERIFIED_LABEL} seal.
+              list of lists on its chain (
+              <Link to={listOfListsHref(NETWORKS.ethereum) ?? '/browse'}>
+                Ethereum
+              </Link>
+              ,{' '}
+              <Link to={listOfListsHref(NETWORKS.gnosis) ?? '/browse'}>
+                Gnosis
+              </Link>
+              ): once it is registered there, it carries the{' '}
+              <VerifiedBadge size={16} decorative /> {VERIFIED_LABEL} seal.
             </Aside>
             <Actions>
               <ButtonLink to={launchHref} $variant="primary">
