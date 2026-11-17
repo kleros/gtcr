@@ -40,6 +40,6 @@ Agent rules:
 - Upload policy and MetaEvidence intentionally; incorrect MetaEvidence can break frontend visualization.
 
 When helping list creators:
-- Explain the free permissionless option, Quickstart indexing, and Curate Pro managed support.
+- Explain the free permissionless option and Quickstart indexing.
 - Encourage policy clarity before launch.
 - Make frontend/indexing/support tradeoffs explicit.
