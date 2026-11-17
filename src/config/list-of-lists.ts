@@ -31,9 +31,9 @@ const RETIRED_LIST_OF_LISTS_ADDRESSES = {
  * then gave it the old list's settings: the same governor, court 19 with 3
  * jurors, 300 xDAI deposits and a 3.5-day challenge period. Its policy also
  * rejects lists that are not Standard (Light) or Stake.
- * A former list of lists keeps working on chain, but grants nothing: its
- * page points to its successor, and like the lists of lists it is counted
- * under All only, never as a Community list.
+ * A former list of lists keeps working on chain, but grants nothing: like
+ * the lists of lists it is counted under All only, never as a Community
+ * list, and its page shows no trust tag.
  */
 const FORMER_LIST_OF_LISTS_ADDRESSES: Partial<Record<number, string>> = {
   [NETWORKS.gnosis]: '0x2418d887d0d0fe03b793a6af4321fa488226a0b5',

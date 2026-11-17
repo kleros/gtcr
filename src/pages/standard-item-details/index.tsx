@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useContext, useMemo } from 'react'
-import FormerListOfListsNotice from 'components/curate/former-list-of-lists'
 import { ethers, type BigNumber } from 'ethers'
 import { ItemTypes } from '@kleros/gtcr-encoder'
 import styled from 'styled-components'
@@ -833,7 +832,6 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
         <span aria-hidden>/</span>
         <span aria-current="page">{entryName}</span>
       </Crumbs>
-      <FormerListOfListsNotice chainId={chainId} address={tcrAddress} />
 
       <Hero
         $featured

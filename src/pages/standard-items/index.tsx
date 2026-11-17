@@ -6,7 +6,6 @@ import React, {
   useRef,
   useState,
 } from 'react'
-import FormerListOfListsNotice from 'components/curate/former-list-of-lists'
 import { succeededListOfLists } from 'config/list-of-lists'
 import styled from 'styled-components'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
@@ -1318,7 +1317,6 @@ const Items = () => {
 
   return (
     <Page>
-      <FormerListOfListsNotice chainId={chainId} address={tcrAddress} />
       <RegistryHeader
         title={tcrTitle}
         description={
@@ -1330,7 +1328,7 @@ const Items = () => {
         chainId={chainId ?? undefined}
         address={tcrAddress}
         // A former list of lists is neither Verified nor a Community list:
-        // its notice says what it is.
+        // it carries no trust tag.
         verified={
           succeededListOfLists(chainId, tcrAddress) ? undefined : trust.verified
         }

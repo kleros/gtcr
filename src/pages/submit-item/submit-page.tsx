@@ -107,8 +107,6 @@ export interface SubmitPageProps {
   /** A quiet fact under it on narrow screens ("Challenge period · 3 days"),
    *  where the panel that shows the window sits below the form. */
   ledeMeta?: string
-  /** A warning under the lede, e.g. a list that no longer does its job. */
-  notice?: React.ReactNode
   columns?: Column[]
   initialValues?: unknown[]
   disabledFields?: boolean[]
@@ -762,10 +760,9 @@ const PageHeader = ({
   itemName,
   lede,
   ledeMeta,
-  notice,
 }: Pick<
   SubmitPageProps,
-  'registryPath' | 'registryTitle' | 'itemName' | 'lede' | 'ledeMeta' | 'notice'
+  'registryPath' | 'registryTitle' | 'itemName' | 'lede' | 'ledeMeta'
 >) => {
   const article = getArticleFor(itemName)
   return (
@@ -803,14 +800,13 @@ const PageHeader = ({
           {ledeMeta}
         </LedeMeta>
       )}
-      {notice && <div style={{ ['--i' as string]: 2 }}>{notice}</div>}
     </Header>
   )
 }
 
 type HeaderProps = Pick<
   SubmitPageProps,
-  'registryPath' | 'registryTitle' | 'itemName' | 'lede' | 'ledeMeta' | 'notice'
+  'registryPath' | 'registryTitle' | 'itemName' | 'lede' | 'ledeMeta'
 >
 
 const LoadingWorkspace = (props: HeaderProps) => (
