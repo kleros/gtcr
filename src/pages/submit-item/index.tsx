@@ -8,14 +8,9 @@ import React, {
 } from 'react'
 import type { BigNumber } from 'ethers'
 import { useIsFetching, useQuery, useQueryClient } from '@tanstack/react-query'
-import {
-  Link,
-  Navigate,
-  useLocation,
-  useNavigate,
-  useParams,
-} from 'react-router-dom'
+import { Navigate, useLocation, useNavigate, useParams } from 'react-router-dom'
 import ErrorPage from 'pages/error-page'
+import ClassicRetired from 'pages/classic-retired'
 import {
   LIST_FILE_FAILED,
   LIST_LOAD_FAILED,
@@ -30,14 +25,12 @@ import useNativeCurrency from 'hooks/native-currency'
 import useNativeBalance from 'hooks/use-native-balance'
 import useTokenSymbol from 'hooks/token-symbol'
 import { useEthersProvider } from 'hooks/ethers-adapters'
-import { TCRViewContext, TCRViewProvider } from 'contexts/tcr-view-context'
 import {
   LightTCRViewContext,
   LightTCRViewProvider,
 } from 'contexts/light-tcr-view-context'
 import { useGraphqlBatcher } from 'contexts/graphql-batcher'
 import { getChainById } from 'config/chains'
-import { replacedListOfLists } from 'config/list-of-lists'
 import { isKlerosArbitrator } from 'config/tcr-addresses'
 import { PERMANENT_REGISTRY_QUERY } from 'utils/graphql'
 import { parseIpfs } from 'utils/ipfs-parse'
@@ -74,7 +67,8 @@ const openSubmitted = (
 
 /*
  * /tcr/:chainId/:tcrAddress/submit. The registry kind decides the data
- * source and the contract call (classic, light or Stake Curate); the page
+ * source and the contract call (Light or Stake Curate; a Classic list shows
+ * that Classic is retired, pages/classic-retired); the page
  * itself is shared. The checks, providers and error states are the ones the
  * previous page had.
  */
@@ -119,10 +113,9 @@ const balanceBlocker = (
       )} ${currency})`
     : ''
 
-/* ---------- Classic and light Curate: one native deposit ---------- */
+/* ---------- Light Curate: one native deposit ---------- */
 
 const DepositSubmitPage = ({
-  kind,
   tcrAddress,
   metaEvidence,
   submissionDeposit,
@@ -132,7 +125,6 @@ const DepositSubmitPage = ({
   challengePeriodDuration,
   arbitrator,
 }: {
-  kind: 'light' | 'classic'
   tcrAddress: string
   metaEvidence?: MetaEvidence
   submissionDeposit?: BigNumber
@@ -161,7 +153,6 @@ const DepositSubmitPage = ({
     [navigate, registryPath],
   )
   const { submit, phase, submitting } = useDepositSubmit({
-    kind,
     tcrAddress,
     submissionDeposit,
     onDone,
@@ -277,20 +268,6 @@ const DepositSubmitPage = ({
     },
   }
 
-  // A retired Kleros list of lists still takes entries, but they earn no
-  // Kleros Verified badge: point to the list of lists that replaced it.
-  const replacement = replacedListOfLists(chainId, tcrAddress)
-  const notice = replacement ? (
-    <>
-      Kleros no longer uses this list of lists, so a list registered here is not
-      Kleros Verified. To get the badge, submit it to{' '}
-      <Link to={`/tcr/${chainId}/${replacement}/submit`}>
-        the current list of lists
-      </Link>
-      .
-    </>
-  ) : undefined
-
   const lowBalance = submissionDeposit
     ? balanceBlocker(
         balance,
@@ -333,14 +310,10 @@ const DepositSubmitPage = ({
             ? `Challenge period · ${formatDurationLong(seconds)}`
             : 'No challenge period'
       }
-      notice={notice}
       columns={columns}
       initialValues={linkValues}
       disabledFields={NO_DISABLED_FIELDS}
-      wholeNumbers={kind === 'classic'}
-      duplicateCheck={
-        kind === 'light' ? { kind: 'light', tcrAddress } : undefined
-      }
+      duplicateCheck={{ kind: 'light', tcrAddress }}
       policyURI={policyURI}
       terms={terms}
       ready={ready}
@@ -381,46 +354,6 @@ const ListPartFailed = ({
   />
 )
 
-const ClassicSubmitPage = () => {
-  const { tcrAddress } = useParams<{ tcrAddress: string }>()
-  const registryPath = useRegistryPath()
-  const tcrViewContext = useContext(TCRViewContext)
-  const tcrError = tcrViewContext?.tcrError
-
-  if (tcrViewContext?.metaEvidenceFailed || tcrViewContext?.paramsFailed)
-    return (
-      <ListPartFailed
-        fileFailed={tcrViewContext.metaEvidenceFailed}
-        onRetry={
-          tcrViewContext.metaEvidenceFailed
-            ? tcrViewContext.retryMetaEvidence
-            : tcrViewContext.retryParams
-        }
-      />
-    )
-  if (typeof tcrError === 'string')
-    return <ErrorPage code="400" message={tcrError} />
-  if (!tcrAddress) return <SubmitPageSkeleton />
-  if (isConnectedList(tcrViewContext?.metaEvidence))
-    return <Navigate to={`${registryPath}?action=submit`} replace />
-
-  return (
-    <DepositSubmitPage
-      kind="classic"
-      tcrAddress={tcrAddress}
-      metaEvidence={tcrViewContext?.metaEvidence}
-      submissionDeposit={tcrViewContext?.submissionDeposit}
-      submissionBaseDeposit={tcrViewContext?.submissionBaseDeposit}
-      submissionChallengeBaseDeposit={
-        tcrViewContext?.submissionChallengeBaseDeposit
-      }
-      arbitrationCost={tcrViewContext?.arbitrationCost}
-      challengePeriodDuration={tcrViewContext?.challengePeriodDuration}
-      arbitrator={tcrViewContext?.arbitrator}
-    />
-  )
-}
-
 const LightSubmitPage = () => {
   const { tcrAddress } = useParams<{ tcrAddress: string }>()
   const registryPath = useRegistryPath()
@@ -446,7 +379,6 @@ const LightSubmitPage = () => {
 
   return (
     <DepositSubmitPage
-      kind="light"
       tcrAddress={tcrAddress}
       metaEvidence={tcrViewContext?.metaEvidence}
       submissionDeposit={tcrViewContext?.submissionDeposit}
@@ -845,13 +777,7 @@ const SubmitItem = () => {
     )
 
   if (isClassicCurate)
-    return (
-      <Suspense fallback={<SubmitPageSkeleton />}>
-        <TCRViewProvider tcrAddress={tcrAddress}>
-          <ClassicSubmitPage />
-        </TCRViewProvider>
-      </Suspense>
-    )
+    return <ClassicRetired chainId={chainId} tcrAddress={tcrAddress} />
 
   if (isLightCurate)
     return (

@@ -187,7 +187,7 @@ const CrowdfundModal = ({
   const gate = useActionGate('fund an appeal')
 
   // The component stays mounted while the dialog is closed, so it is reset
-  // on closing and every opening starts afresh, as on Light and Classic: a
+  // on closing and every opening starts afresh, as on Light: a
   // side picked earlier may be fully funded by then (with the picker hidden,
   // the other side could not be chosen), and an amount typed was a share of
   // what was still needed at the time.
@@ -488,7 +488,7 @@ const CrowdfundModal = ({
                 min={0}
                 max={stillNeededNumber}
                 step={0.01}
-                // The exact amount, as on Light and Classic: rounded, the
+                // The exact amount, as on Light: rounded, the
                 // figure typed back would fall short of funding the side.
                 value={contributionInput ?? formatEther(contribution)}
                 aria-label={`Contribution in ${nativeCurrency}`}

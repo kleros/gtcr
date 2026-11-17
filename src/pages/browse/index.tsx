@@ -1741,7 +1741,7 @@ const BrowsePage = () => {
         const registry = registryByKey.get(
           listKey(activity.chainId, activity.registryAddress),
         )
-        return activity.itemID && registry && registry.kind !== 'classic'
+        return activity.itemID && registry
           ? [
               {
                 chainId: activity.chainId,

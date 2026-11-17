@@ -27,7 +27,7 @@ import { CountUpText, isPlainCount } from './registry-shared-count'
  * headline figure with the live counts and the list's terms beside it, the
  * share of entries registered as a ring when the page passes both counts, and
  * the one action with its exact deposit and what happens to it (a deposit on
- * Light and Classic, a locked stake on Stake). Parameters slide open as a
+ * Light, a locked stake on Stake). Parameters slide open as a
  * drawer; the per-list explainer waits in a pill.
  */
 

@@ -1,5 +1,4 @@
 import React, { useContext, useEffect, useMemo, Suspense, lazy } from 'react'
-import { TCRViewProvider } from 'contexts/tcr-view-context'
 import { LightTCRViewProvider } from 'contexts/light-tcr-view-context'
 import { useParams, useSearchParams } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
@@ -11,14 +10,12 @@ import { useAttachmentPlace } from 'hooks/use-attachment'
 import { usePolicyHistory } from 'hooks/use-policy-history'
 import Loading from 'components/loading'
 import ErrorPage from 'pages/error-page'
+import ClassicRetired from 'pages/classic-retired'
 import AttachmentDisplay from 'components/attachment-display'
 import { StakeContext } from 'contexts/stake-context'
 import { useGraphqlBatcher } from 'contexts/graphql-batcher'
 import { getChainById } from 'config/chains'
-import {
-  LIGHT_ITEM_DETAILS_QUERY,
-  CLASSIC_ITEM_DETAILS_QUERY,
-} from 'utils/graphql'
+import { LIGHT_ITEM_DETAILS_QUERY } from 'utils/graphql'
 import { getAllowedAttachmentUrl } from 'utils/url-validation'
 
 /** The viewer's parameters (see useAttachment), not the entry page's. */
@@ -28,7 +25,6 @@ const PermanentItemDetails = lazy(
   () => import('./permanent-item-details/index'),
 )
 const LightItemDetails = lazy(() => import('./light-item-details/index'))
-const ItemDetails = lazy(() => import('./item-details/index'))
 
 const ItemDetailsRouter = () => {
   const { tcrAddress, itemID } = useParams<{
@@ -95,17 +91,6 @@ const ItemDetailsRouter = () => {
         }),
       staleTime: STALE_TIME,
     })
-    queryClient.prefetchQuery({
-      queryKey: ['classicItemDetails', compoundId],
-      queryFn: () =>
-        graphqlBatcher.fetch({
-          id: crypto.randomUUID(),
-          document: CLASSIC_ITEM_DETAILS_QUERY,
-          variables: { id: compoundId },
-          chainId,
-        }),
-      staleTime: STALE_TIME,
-    })
   }, [chainId, tcrAddress, itemID, queryClient, graphqlBatcher])
 
   if (!chainId)
@@ -157,13 +142,7 @@ const ItemDetailsRouter = () => {
       </Suspense>,
     )
   if (isClassicCurate)
-    return withViewer(
-      <Suspense fallback={<Loading />}>
-        <TCRViewProvider tcrAddress={tcrAddress}>
-          <ItemDetails search={search} itemID={itemID} />
-        </TCRViewProvider>
-      </Suspense>,
-    )
+    return <ClassicRetired chainId={chainId} tcrAddress={tcrAddress} />
   if (isPermanentCurate)
     return withViewer(
       <Suspense fallback={<Loading />}>

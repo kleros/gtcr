@@ -14,9 +14,9 @@ export const VERIFIED_LIST_OF_LISTS_ADDRESSES = {
  * The Classic lists of lists Kleros used before it moved to the Light ones
  * above (the app's homepages switched on 11 Aug 2026). The lists it still
  * vouches for were registered again on the new ones; the rest were not, and
- * had been idle for a year or more. The contracts still take submissions, so
- * being registered on one makes no list Kleros Verified, and their pages
- * send submitters to the new list of lists.
+ * had been idle for a year or more. Being registered on one makes no list
+ * Kleros Verified; like every Classic list they show the retired page
+ * (pages/classic-retired), which points to the new list of lists.
  */
 const RETIRED_LIST_OF_LISTS_ADDRESSES = {
   [NETWORKS.ethereum]: '0xba0304273a54dfec1fc7f4bccbf4b15519aecf15',

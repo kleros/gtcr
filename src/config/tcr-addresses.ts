@@ -21,21 +21,10 @@ export const defaultEvidenceDisplayUriPermanent: ChainMap<string> = {
   '11155111': '/ipfs/QmbNJRDrrd5r9cHeApTP7pZaM7jgacDFMLED5Lj1RJMn79/index.html',
 } as const
 
-export const gtcrViewAddresses: ChainMap<string> = {
-  '1': '0xe75a12f40da77d285c08a44f499e597bc5085658',
-  '100': '0x27BC296DC0b8a6c3cD39326aE9EC14604e96f7BF',
-  '11155111': '0x20E1D44c64Ec03ECe12133743bEc7019f3aAe373',
-} as const
-
 export const lightGtcrViewAddresses: ChainMap<string> = {
   '1': '0xe82a69e939e1aB6Dc1868262cfe444F70098cCC8',
   '100': '0xB32e38B08FcC7b7610490f764b0F9bFd754dCE53',
   '11155111': '0x87f58F0dCF3c99BA2F3eB0604e5c335893e2EAf9',
-} as const
-
-export const batchWithdrawAddresses: ChainMap<string> = {
-  '1': '0x38aa214dc986d0bab53e5861071f3d5a56066b4d',
-  '11155111': '0xb01C9DE0e9dE0a6cAb6df586484707b7078De684',
 } as const
 
 export const lightBatchWithdrawAddresses: ChainMap<string> = {
@@ -207,18 +196,13 @@ export const subgraphUrlPermanent: ChainMap<string> = {
  */
 export const registryFactories: Record<
   number,
-  { kind: 'light' | 'classic'; address: string; startBlock: number }[]
+  { kind: 'light'; address: string; startBlock: number }[]
 > = {
   1: [
     {
       kind: 'light',
       address: '0xb9dDC813AcAF3fD7aBC4C16735A09Bc1C0EE0054',
       startBlock: 13810085,
-    },
-    {
-      kind: 'classic',
-      address: '0xe9dd523600b74b8ef0af164687079a6c437f9cd5',
-      startBlock: 10247117,
     },
   ],
   100: [
@@ -227,22 +211,12 @@ export const registryFactories: Record<
       address: '0x08e58Bc26CFB0d346bABD253A1799866F269805a',
       startBlock: 19592773,
     },
-    {
-      kind: 'classic',
-      address: '0x794Cee5a6e1501b633eC13b8c1e327d9860FE039',
-      startBlock: 16969180,
-    },
   ],
   11155111: [
     {
       kind: 'light',
       address: '0x3FB8314C628E9afE7677946D3E23443Ce748Ac17',
       startBlock: 4048287,
-    },
-    {
-      kind: 'classic',
-      address: '0xcB4B48d2A7a44247A00048963F169d2b4Ab045a6',
-      startBlock: 4048282,
     },
   ],
 }

@@ -14,7 +14,7 @@ import {
 
 /*
  * An entry's life in a Stake Curate list, drawn in the same hand as the
- * Light and Classic lifecycle: the stake goes in and stays locked while the
+ * Light lifecycle: the stake goes in and stays locked while the
  * entry is listed; a challenge can come at any time, also while the
  * submitter is withdrawing (its own edge); jurors either remove the entry,
  * and the challenger takes its whole stake, or keep it, and the challenge

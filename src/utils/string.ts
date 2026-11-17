@@ -9,8 +9,6 @@ export const shortenAddress = (address: string): string =>
   `${address.slice(0, 6)}...${address.slice(-4)}`
 
 export const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
-export const ZERO_BYTES32 =
-  '0x0000000000000000000000000000000000000000000000000000000000000000'
 
 export const LOREM_IPSUM = `Natus ipsam unde et accusamus. Autem et laboriosam non harum voluptas necessitatibus commodi. Enim suscipit cumque aut voluptas quibusdam soluta quis. Velit modi dolores voluptate pariatur. Eligendi veniam aut esse. Aut nam itaque repellendus explicabo dolores.
 

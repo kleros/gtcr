@@ -32,7 +32,6 @@ const CHAINS = {
     rpcs: [`https://eth-mainnet.g.alchemy.com/v2/${KEY}`],
     factories: [
       ['0xb9dDC813AcAF3fD7aBC4C16735A09Bc1C0EE0054', 13810085],
-      ['0xe9dd523600b74b8ef0af164687079a6c437f9cd5', 10247117],
     ],
   },
   100: {
@@ -42,7 +41,6 @@ const CHAINS = {
     ],
     factories: [
       ['0x08e58Bc26CFB0d346bABD253A1799866F269805a', 19592773],
-      ['0x794Cee5a6e1501b633eC13b8c1e327d9860FE039', 16969180],
     ],
   },
   11155111: {
@@ -52,7 +50,6 @@ const CHAINS = {
     ],
     factories: [
       ['0x3FB8314C628E9afE7677946D3E23443Ce748Ac17', 4048287],
-      ['0xcB4B48d2A7a44247A00048963F169d2b4Ab045a6', 4048282],
     ],
   },
 }

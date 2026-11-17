@@ -6,7 +6,7 @@ import {
   SUBGRAPH_RULING,
 } from 'utils/item-status'
 import { formatAbsolute, formatAgo, formatDate } from 'utils/time'
-import { formatSince } from 'pages/item-details/format-since'
+import { formatSince } from 'utils/format-since'
 import { CurateIcon } from 'components/curate/icons'
 import { Chip, Label } from 'components/curate/primitives'
 import { AnimatedNumber } from 'components/curate/motion/animated-number'

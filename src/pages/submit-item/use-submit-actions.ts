@@ -11,9 +11,7 @@ import {
   type Abi,
   type TransactionReceipt,
 } from 'viem'
-import { gtcrEncode } from '@kleros/gtcr-encoder'
 import { useAtlasProvider } from '@kleros/kleros-app'
-import { abi as _classicGtcr } from '@kleros/tcr/build/contracts/GeneralizedTCR.json'
 import _lightGtcr from 'assets/abis/LightGeneralizedTCR.json'
 import _permanentGtcr from 'assets/abis/PermanentGTCR.json'
 import { wagmiConfig } from 'config/wagmi'
@@ -22,7 +20,7 @@ import { JSON_UPLOAD_ROLE } from 'utils/atlas-roles'
 import { confirmStored } from 'utils/confirm-stored'
 import { errorToast, wrapWithToast } from 'utils/wrap-with-toast'
 import { parseWagmiError } from 'utils/parse-wagmi-error'
-import { encoderValues, type SubmissionValues } from './form'
+import { type SubmissionValues } from './form'
 import { useTxChainId } from './use-wallet-gate'
 import { useRefreshOnFocus } from './use-refresh-on-focus'
 
@@ -66,8 +64,7 @@ export const itemIdFromReceipt = (
  * write → receipt, with the same toasts and the same notification
  * subscription. Two safeguards on top: every call is simulated on the URL's
  * chain and sent with wagmi's writeContract for that chain, which refuses to
- * send while the wallet is elsewhere; and Classic boolean columns are
- * encoded as booleans (the encoder reads the string "false" as true).
+ * send while the wallet is elsewhere.
  */
 
 /** 'mining': the wallet signed and sent; the receipt is awaited. */
@@ -85,14 +82,12 @@ export type SubmitHandler = (
   setFieldValue: SetFieldValue,
 ) => Promise<void>
 
-/** Light and classic Curate: one native deposit (base + arbitration cost) with `addItem`. */
+/** Light Curate: one native deposit (base + arbitration cost) with `addItem`. */
 export const useDepositSubmit = ({
-  kind,
   tcrAddress,
   submissionDeposit,
   onDone,
 }: {
-  kind: 'light' | 'classic'
   tcrAddress: string
   submissionDeposit?: ethers.BigNumber
   /** Called with the new entry's ID once the submission is confirmed. */
@@ -118,49 +113,28 @@ export const useDepositSubmit = ({
         const value = BigInt(submissionDeposit.toString())
         const address = tcrAddress as `0x${string}`
 
-        let itemID: `0x${string}`
-        let send: () => Promise<`0x${string}`>
-        if (kind === 'light') {
-          const itemFile = new File(
-            [JSON.stringify({ columns, values: resolvedValues })],
-            'item.json',
-            { type: 'application/json' },
-          )
-          const ipfsEvidencePath = await uploadFile(itemFile, JSON_UPLOAD_ROLE)
-          if (!ipfsEvidencePath)
-            throw new Error('Failed to upload item metadata to IPFS.')
-          // The entry is this file: make sure it can be read before paying.
-          await confirmStored(ipfsEvidencePath)
-          itemID = keccak256(encodePacked(['string'], [ipfsEvidencePath]))
-          setPhase('wallet')
-          const { request } = await simulateContract(wagmiConfig, {
-            address,
-            abi: _lightGtcr,
-            functionName: 'addItem',
-            args: [ipfsEvidencePath],
-            value,
-            account,
-            chainId,
-          })
-          send = () => writeContract(wagmiConfig, request)
-        } else {
-          const encodedParams = gtcrEncode({
-            columns,
-            values: encoderValues(columns, resolvedValues),
-          })
-          itemID = keccak256(encodedParams as `0x${string}`)
-          setPhase('wallet')
-          const { request } = await simulateContract(wagmiConfig, {
-            address,
-            abi: _classicGtcr,
-            functionName: 'addItem',
-            args: [encodedParams],
-            value,
-            account,
-            chainId,
-          })
-          send = () => writeContract(wagmiConfig, request)
-        }
+        const itemFile = new File(
+          [JSON.stringify({ columns, values: resolvedValues })],
+          'item.json',
+          { type: 'application/json' },
+        )
+        const ipfsEvidencePath = await uploadFile(itemFile, JSON_UPLOAD_ROLE)
+        if (!ipfsEvidencePath)
+          throw new Error('Failed to upload item metadata to IPFS.')
+        // The entry is this file: make sure it can be read before paying.
+        await confirmStored(ipfsEvidencePath)
+        const itemID = keccak256(encodePacked(['string'], [ipfsEvidencePath]))
+        setPhase('wallet')
+        const { request } = await simulateContract(wagmiConfig, {
+          address,
+          abi: _lightGtcr,
+          functionName: 'addItem',
+          args: [ipfsEvidencePath],
+          value,
+          account,
+          chainId,
+        })
+        const send = () => writeContract(wagmiConfig, request)
 
         const result = await wrapWithToast(async () => {
           const hash = await send()
@@ -171,11 +145,8 @@ export const useDepositSubmit = ({
 
         if (result.status) {
           onDone(
-            itemIdFromReceipt(
-              result.result,
-              address,
-              (kind === 'light' ? _lightGtcr : _classicGtcr) as Abi,
-            ) ?? itemID,
+            itemIdFromReceipt(result.result, address, _lightGtcr as Abi) ??
+              itemID,
           )
           resetForm({})
         }
@@ -188,7 +159,6 @@ export const useDepositSubmit = ({
     [
       account,
       chainId,
-      kind,
       onDone,
       publicClient,
       submissionDeposit,

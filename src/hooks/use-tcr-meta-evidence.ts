@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { fetchMetaEvidence } from './tcr-view'
+import { fetchMetaEvidence } from './fetch-meta-evidence'
 import { parseIpfs } from 'utils/ipfs-parse'
 import { sanitizeMetaEvidence } from 'utils/meta-evidence-guard'
 

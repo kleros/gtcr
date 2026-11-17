@@ -45,7 +45,7 @@ declare global {
     rounds: SubgraphRound[]
   }
 
-  /** Subgraph item data (light/classic TCR) */
+  /** Subgraph item data (Light TCR) */
   interface SubgraphItem {
     ID?: string
     id?: string
@@ -181,25 +181,11 @@ declare global {
 // @kleros/gtcr-encoder
 declare module '@kleros/gtcr-encoder' {
   export const ItemTypes: Record<string, string>
-  export function gtcrDecode(args: {
-    columns: Column[]
-    values: string
-  }): unknown[]
-  export function gtcrEncode(args: {
-    columns: Column[]
-    values: Record<string, unknown> | unknown[]
-  }): string
   export function searchableFields(columns: Column[]): number[]
   export const typeDefaultValues: Record<string, string | number | boolean>
 }
 
 // @kleros/tcr contract ABIs
-declare module '@kleros/tcr/build/contracts/GeneralizedTCR.json' {
-  export const abi: readonly Record<string, unknown>[]
-}
-declare module '@kleros/tcr/build/contracts/GeneralizedTCRView.json' {
-  export const abi: readonly Record<string, unknown>[]
-}
 declare module '@kleros/tcr/build/contracts/BatchWithdraw.json' {
   export const abi: readonly Record<string, unknown>[]
 }

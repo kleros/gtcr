@@ -3,7 +3,7 @@ import { getRpcUrls } from 'config/rpc'
 import snapshotFile from 'config/registry-creation-snapshot.json'
 
 /*
- * Real creation times for Light and Classic lists: the block timestamp of the
+ * Real creation times for Light lists: the block timestamp of the
  * factory's NewGTCR(address) event. The indexers do not store it (the old
  * code used each list's first request, which is why "newest lists" sorted by
  * first activity). Results are immutable, so they ship with the app:

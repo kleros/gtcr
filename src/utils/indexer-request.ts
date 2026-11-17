@@ -9,7 +9,7 @@ import { subgraphUrl } from 'config/tcr-addresses'
 /*
  * Reads from the indexers, sent together where the indexer allows it.
  *
- * The hosted Envio indexer (Light and Classic lists, every chain behind one
+ * The hosted Envio indexer (Light lists, every chain behind one
  * URL) counts HTTP requests against a per-minute limit for the whole app:
  * the plan's query rate, 250 a minute when this was written (it says so in
  * the x-ratelimit-* headers of its answers). It also takes several queries

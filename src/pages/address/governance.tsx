@@ -338,10 +338,7 @@ const editableParams = (registry: GovernedRegistry): ParamConfig[] => {
       label: 'Challenge period (days)',
       kind: 'seconds',
       positive: true,
-      functionName:
-        registry.kind === 'light'
-          ? 'changeChallengePeriodDuration'
-          : 'changeTimeToChallenge',
+      functionName: 'changeChallengePeriodDuration',
     },
     ...appealStakes,
     {
@@ -351,17 +348,13 @@ const editableParams = (registry: GovernedRegistry): ParamConfig[] => {
       functionName: 'changeConnectedTCR',
       hint: "The list that holds badges for this list's entries. Use the zero address to disconnect it.",
     },
-    ...(registry.kind === 'light'
-      ? [
-          {
-            key: 'relayerContract' as ParamKey,
-            label: 'Relayer contract address',
-            kind: 'address' as ParamKind,
-            functionName: 'changeRelayerContract',
-            hint: 'A relayer can add and remove entries directly, with no deposit and no challenge period. Keep the zero address unless you run one.',
-          },
-        ]
-      : []),
+    {
+      key: 'relayerContract' as ParamKey,
+      label: 'Relayer contract address',
+      kind: 'address' as ParamKind,
+      functionName: 'changeRelayerContract',
+      hint: 'A relayer can add and remove entries directly, with no deposit and no challenge period. Keep the zero address unless you run one.',
+    },
     governor,
   ]
 }
@@ -414,7 +407,7 @@ export interface CurrentMetaEvidence {
    * the ConnectedTCRSet event, so it comes from the indexer.
    */
   connectedTCR?: string
-  /** The arbitrator new requests use (Light and Classic). */
+  /** The arbitrator new requests use (Light). */
   arbitrator?: string
   /** Its extra data: the court and the number of jurors. */
   arbitratorExtraData?: string
@@ -666,17 +659,6 @@ const LIGHT_META_EVIDENCE = `
   }
 `
 
-const CLASSIC_META_EVIDENCE = `
-  query GovernanceClassicMetaEvidence($id: String!) {
-    registry: Registry_by_pk(id: $id) {
-      registrationMetaEvidence { uri }
-      clearingMetaEvidence { uri }
-      connectedTCR
-      metaEvidenceCount
-    }
-  }
-`
-
 const STAKE_SETTING = `
   query GovernanceStakeSetting($id: ID!) {
     setting: arbitrationSetting(id: $id) {
@@ -692,10 +674,9 @@ const STAKE_SETTING = `
  * starting from values that may be stale. The indexer's MetaEvidence counts
  * only if it is at the chain's change count: Light emits two MetaEvidence
  * logs per settings entry (metaEvidenceUpdates is the number of entries),
- * Classic two at deployment and two per update, and the Stake subgraph keys
- * each settings entry by its index. Otherwise the result is `behind`, or
- * `unreadable` when the indexer did not answer: only the saves that send
- * MetaEvidence need it (a Classic arbitrator change does not).
+ * and the Stake subgraph keys each settings entry by its index. Otherwise
+ * the result is `behind`, or `unreadable` when the indexer did not answer:
+ * the saves refuse until it is current, since each sends MetaEvidence.
  */
 const fetchCurrentMetaEvidence = async (
   registry: GovernedRegistry,
@@ -734,17 +715,11 @@ const fetchCurrentMetaEvidence = async (
           connectedTCR?: string
           metaEvidenceCount?: string | number
         }
-      }>(
-        url,
-        registry.kind === 'light' ? LIGHT_META_EVIDENCE : CLASSIC_META_EVIDENCE,
-        { id },
-      ).catch(() => undefined)
+      }>(url, LIGHT_META_EVIDENCE, { id }).catch(() => undefined)
     : undefined
   const indexed = answer?.registry
   if (!indexed) return { ...chain, unreadable: true }
-  const expected =
-    registry.kind === 'light' ? 2 * chain.changes : 2 * (chain.changes + 1)
-  const current = Number(indexed.metaEvidenceCount) === expected
+  const current = Number(indexed.metaEvidenceCount) === 2 * chain.changes
   return {
     ...chain,
     registration: current
@@ -1295,9 +1270,8 @@ const ArbitrationGovernanceField = ({
       arbitrator.toLowerCase() !== currentArbitrator.toLowerCase()) ||
     (extraData !== undefined &&
       extraData.toLowerCase() !== currentExtraData.toLowerCase()) ||
-    ((usesPair || usesSingle) &&
-      toStoredUri(meta.registration) !==
-        toStoredUri(current?.registration ?? '')) ||
+    toStoredUri(meta.registration) !==
+      toStoredUri(current?.registration ?? '') ||
     (usesPair &&
       toStoredUri(meta.clearing) !== toStoredUri(current?.clearing ?? ''))
   // Every save sends values the governor did not touch along with the ones
@@ -1308,9 +1282,9 @@ const ArbitrationGovernanceField = ({
       ? currentError
         ? CURRENT_UNREADABLE
         : 'Reading the current settings…'
-      : (usesPair || usesSingle) && current.unreadable
+      : current.unreadable
         ? META_EVIDENCE_UNREADABLE
-        : (usesPair || usesSingle) && current.behind
+        : current.behind
           ? INDEXER_BEHIND
           : registry.kind !== 'permanent' && !isAddress(arbitrator)
             ? 'Enter a valid arbitrator address'
@@ -1355,7 +1329,6 @@ const ArbitrationGovernanceField = ({
         if (!code || code === '0x')
           return `There is no contract at ${arbitrator} on ${chainName(registry.chainId)}, so it cannot arbitrate.`
       }
-      if (!usesPair && !usesSingle) return undefined
       return checkMetaEvidence({
         registration,
         clearing: usesPair ? clearing : undefined,
@@ -1376,16 +1349,11 @@ const ArbitrationGovernanceField = ({
       errorToast(problem)
       return
     }
-    const functionName =
-      registry.kind === 'classic'
-        ? 'changeArbitrator'
-        : 'changeArbitrationParams'
+    const functionName = 'changeArbitrationParams'
     const args =
-      registry.kind === 'classic'
-        ? [arbitrator, extraData]
-        : registry.kind === 'light'
-          ? [arbitrator, extraData, registration, clearing]
-          : [extraData, registration]
+      registry.kind === 'light'
+        ? [arbitrator, extraData, registration, clearing]
+        : [extraData, registration]
     if (await send(functionName, args)) {
       // Light and Stake add a settings entry: one more MetaEvidence change.
       const changes = (current.changes ?? 0) + 1
@@ -1397,11 +1365,9 @@ const ArbitrationGovernanceField = ({
           arbitratorExtraData: extraData,
           ...(usesSingle ? { metaEvidenceURI: registration } : {}),
         },
-        ...(usesPair
-          ? { metaEvidence: { registration, clearing, changes } }
-          : usesSingle
-            ? { metaEvidence: { registration, changes } }
-            : {}),
+        metaEvidence: usesPair
+          ? { registration, clearing, changes }
+          : { registration, changes },
       })
       if (!alive.current) return
       meta.reset()
@@ -1429,11 +1395,9 @@ const ArbitrationGovernanceField = ({
             : 'Arbitrator and court'}
         </FieldLabel>
         <Small $muted>
-          {registry.kind === 'classic'
-            ? 'Choosing a court rewrites the arbitrator extra data.'
-            : registry.kind === 'light'
-              ? 'Light Curate changes the court together with both MetaEvidence files. They start on the live files: keep them to change only the court, or upload new ones (same columns) to change the policy too.'
-              : 'Stake Curate changes the court together with its MetaEvidence. It starts on the live file: keep it to change only the court.'}
+          {registry.kind === 'light'
+            ? 'Light Curate changes the court together with both MetaEvidence files. They start on the live files: keep them to change only the court, or upload new ones (same columns) to change the policy too.'
+            : 'Stake Curate changes the court together with its MetaEvidence. It starts on the live file: keep it to change only the court.'}
         </Small>
       </div>
       <Controls>
@@ -1546,135 +1510,6 @@ const ArbitrationGovernanceField = ({
               {inputError}
             </FieldNote>
           )}
-        </Stack>
-        <Button
-          type="button"
-          $variant="primary"
-          disabled={Boolean(blocker) || locked}
-          title={blocker}
-          onClick={save}
-        >
-          {checking ? 'Checking…' : pending ? 'Saving…' : 'Save'}
-        </Button>
-      </Controls>
-    </Field>
-  )
-}
-
-/* ---------- MetaEvidence of a Classic list ---------- */
-
-const MetaEvidencePairField = ({
-  registry,
-  current,
-  currentError,
-  refreshing,
-  gate,
-  onSaved,
-  onOutdated,
-}: {
-  registry: GovernedRegistry
-  current: CurrentMetaEvidence | undefined
-  currentError?: boolean
-  /** The live settings are being read again after a change. */
-  refreshing?: boolean
-  gate: SaveGate
-  /** Records the save; resolves once the live settings are read again. */
-  onSaved: (written: Written) => Promise<unknown>
-  /** The chain changed since `current` was read: read it again. */
-  onOutdated: () => void
-}) => {
-  const { walletClient, pending, send } = useGovernanceWrite(registry)
-  const alive = useAlive()
-  const meta = useMetaEvidenceDraft(current)
-  const [checking, setChecking] = useState(false)
-  const changed =
-    toStoredUri(meta.registration) !==
-      toStoredUri(current?.registration ?? '') ||
-    toStoredUri(meta.clearing) !== toStoredUri(current?.clearing ?? '')
-  // Both files are sent together: one left as it was must be the live one.
-  const blocker =
-    gate.blocker ??
-    (!walletClient
-      ? 'Wallet not ready'
-      : !current || refreshing
-        ? currentError
-          ? CURRENT_UNREADABLE
-          : 'Reading the current MetaEvidence…'
-        : current.unreadable
-          ? META_EVIDENCE_UNREADABLE
-          : current.behind
-            ? INDEXER_BEHIND
-            : changed
-              ? undefined
-              : 'No change')
-  // As in ArbitrationGovernanceField: no edit starts from older values.
-  const locked =
-    Boolean(gate.blocker) || pending || checking || !current || refreshing
-
-  const save = async () => {
-    if (blocker || !current) return
-    const registration = toStoredUri(meta.registration)
-    const clearing = toStoredUri(meta.clearing)
-    setChecking(true)
-    let outdated = false
-    const problem = await (async () => {
-      if (changedSince(current, await readChainArbitration(registry))) {
-        outdated = true
-        return SETTINGS_CHANGED
-      }
-      return checkMetaEvidence({ registration, clearing, current })
-    })().catch(() => 'The MetaEvidence check failed. Try again.')
-    if (!alive.current) return
-    setChecking(false)
-    if (outdated) {
-      // Both files go back to the live ones, read again now: an edit kept
-      // would hold the other file on its older value.
-      meta.reset()
-      onOutdated()
-    }
-    if (problem) {
-      errorToast(problem)
-      return
-    }
-    if (await send('changeMetaEvidence', [registration, clearing])) {
-      // changeMetaEvidence adds one to metaEvidenceUpdates. The files keep
-      // the saved values until the live ones are read again.
-      await onSaved({
-        metaEvidence: {
-          registration,
-          clearing,
-          changes: (current.changes ?? 0) + 1,
-        },
-      })
-      if (!alive.current) return
-      meta.reset()
-    }
-  }
-
-  return (
-    <Field>
-      <div>
-        <FieldLabel as="div">MetaEvidence</FieldLabel>
-        <Small $muted>
-          Two files: jurors read the registration file on submissions and the
-          clearing file on removals. To change the policy, upload both with the
-          new policy and the same columns.
-        </Small>
-      </div>
-      <Controls>
-        <Stack $gap={8}>
-          <MetaEvidenceInput
-            label="Registration MetaEvidence"
-            value={meta.registration}
-            disabled={locked}
-            onChange={meta.setRegistration}
-          />
-          <MetaEvidenceInput
-            label="Clearing MetaEvidence"
-            value={meta.clearing}
-            disabled={locked}
-            onChange={meta.setClearing}
-          />
         </Stack>
         <Button
           type="button"
@@ -2022,20 +1857,6 @@ const GovernanceDialog = ({
           onOutdated={readSettingsAgain}
         />
       </div>
-      {registry.kind === 'classic' && (
-        <div>
-          <Label>Policy</Label>
-          <MetaEvidencePairField
-            registry={registry}
-            current={liveSettings}
-            currentError={metaEvidenceError}
-            refreshing={rereads > 0}
-            gate={gate}
-            onSaved={savedSettings}
-            onOutdated={readSettingsAgain}
-          />
-        </div>
-      )}
       <div>
         <Label>Registry parameters</Label>
         {editableParams(registry).map((config) => (

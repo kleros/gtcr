@@ -49,7 +49,7 @@ const Paperclip = () => (
 
 /**
  * "View attached file" button rendered next to an evidence entry. Shared
- * between classic/light (`request-timelines.tsx`) and permanent
+ * between Light (`request-timelines.tsx`) and Stake
  * (`permanent-request-timelines.tsx`). Opens the in-app attachment viewer.
  */
 const EvidenceFileLink: React.FC<{ fileURI: string }> = ({ fileURI }) => {

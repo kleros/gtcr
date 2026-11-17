@@ -27,9 +27,6 @@ export const LIST_FILE_FAILED =
 export const LIST_SETTINGS_FAILED =
   "The list's deposits and periods could not be read from the chain. Try again in a moment."
 
-export const LIST_LINK_TIP =
-  'Check the address, and that the chain in the URL is the one the list lives on.'
-
 /** An entry sent a moment ago that the indexer has not picked up yet. */
 export const ENTRY_INDEXING_TITLE = 'Your entry is on chain'
 export const ENTRY_INDEXING_MESSAGE =

@@ -54,8 +54,8 @@ const CONTRACT_ERROR_MESSAGES = new Map<string, string>([
 const RELOAD = 'Reload the page to see where it stands.'
 
 /**
- * The sentences Light and Classic lists (LightGeneralizedTCR,
- * GeneralizedTCR) revert with, said for the person at the screen. A reason
+ * The sentences Light lists (LightGeneralizedTCR) revert with, said for
+ * the person at the screen. A reason
  * that is not listed is shown as the contract wrote it.
  */
 const REVERT_REASON_MESSAGES = new Map<string, string>([
@@ -160,8 +160,8 @@ const NAMES = {
  * What went wrong, in one sentence a person can act on. viem's errors carry
  * a headline (shortMessage) and then lines of context ("Contract Call:",
  * "Request Arguments:", "Status: 429"): those lines are never the answer.
- * In order: a Stake list's custom error, the sentence a Light or Classic
- * list reverted with, the wallet and network failures people really meet,
+ * In order: a Stake list's custom error, the sentence a Light list
+ * reverted with, the wallet and network failures people really meet,
  * then viem's headline.
  */
 export const parseWagmiError = (error: unknown): string => {

@@ -61,7 +61,7 @@ import { PolicyButton } from '../policy-button'
  * Atlas, then addItem is sent with the deposit.
  */
 
-/* ---------- Flow scaffold (also used by the Classic and Stake submit flows) ---------- */
+/* ---------- Flow scaffold (also used by submit-connect) ---------- */
 
 const Flow = styled.div`
   display: flex;
@@ -373,10 +373,10 @@ type SubmissionFormValues = Record<string, string | File>
  * some values by name directly. Each column is keyed by its position; the
  * values go back under their labels before anything is uploaded.
  */
-export const fieldName = (index: number) => `column${index}`
+const fieldName = (index: number) => `column${index}`
 
 /** The form's values under their column labels, as the submission reads them. */
-export const valuesByLabel = (
+const valuesByLabel = (
   columns: Column[],
   values: SubmissionFormValues,
 ): SubmissionFormValues =>
@@ -388,7 +388,7 @@ export const valuesByLabel = (
  * The address format checks under each column's key. They read and report
  * by label, so each column is checked on its own.
  */
-export const addressErrorsByKey = (
+const addressErrorsByKey = (
   columns: Column[],
   values: SubmissionFormValues,
 ): Record<string, string> =>
@@ -404,7 +404,7 @@ export const addressErrorsByKey = (
 type RegistryExistsCheck = (tcrAddress: string) => Promise<boolean>
 
 /** A list address the indexer could not check (the submit page's words). */
-export const ADDRESS_CHECK_FAILED =
+const ADDRESS_CHECK_FAILED =
   'Could not check this address right now. Try again.'
 
 type SubmissionStage = 'field' | 'policy' | 'preview'
@@ -433,7 +433,6 @@ interface SubmissionFormOuterProps {
       shouldValidate?: boolean,
     ) => void,
   ) => void
-  deployedWithFactory: RegistryExistsCheck
   deployedWithLightFactory: RegistryExistsCheck
   deployedWithPermanentFactory: RegistryExistsCheck
   onFieldsComplete?: (complete: boolean) => void
@@ -611,12 +610,7 @@ const SubmissionForm = withFormik<
   },
   validate: async (
     values,
-    {
-      columns,
-      deployedWithFactory,
-      deployedWithLightFactory,
-      deployedWithPermanentFactory,
-    },
+    { columns, deployedWithLightFactory, deployedWithPermanentFactory },
   ) => {
     const errors = (
       await Promise.all(
@@ -639,8 +633,7 @@ const SubmissionForm = withFormik<
                 isEmpty: !value,
                 wasDeployedWithFactory:
                   !!value &&
-                  ((await deployedWithFactory(address)) ||
-                    (await deployedWithLightFactory(address)) ||
+                  ((await deployedWithLightFactory(address)) ||
                     (await deployedWithPermanentFactory(address))),
                 checkFailed: false,
                 name,
@@ -732,11 +725,8 @@ const SubmitModal: React.FC<{
   const publicClient = usePublicClient()
   const { uploadFile } = useAtlasProvider()
   const listContext = useContext(LightTCRViewContext)
-  const {
-    deployedWithFactory,
-    deployedWithLightFactory,
-    deployedWithPermanentFactory,
-  } = useFactory()
+  const { deployedWithLightFactory, deployedWithPermanentFactory } =
+    useFactory()
 
   const { fileURI, metadata } = metaEvidence || {}
   const { itemName, columns, tcrTitle } = metadata || {}
@@ -1009,7 +999,6 @@ const SubmitModal: React.FC<{
         disabledFields={disabledFields ?? []}
         fileURI={fileURI}
         tcrAddress={tcrAddress}
-        deployedWithFactory={deployedWithFactory}
         deployedWithLightFactory={deployedWithLightFactory}
         deployedWithPermanentFactory={deployedWithPermanentFactory}
         onFieldsComplete={setFieldsComplete}

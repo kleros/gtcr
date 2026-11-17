@@ -10,7 +10,7 @@ import styled from 'styled-components'
  * It steps aside (slides down, leaves the tab order and the accessibility
  * tree) while the action card, the evidence composer or the app footer is
  * on screen, so it never repeats the card's button or covers the footer.
- * Shared by the Light, Classic and Stake item pages.
+ * Shared by the Light and Stake item pages.
  */
 
 const WATCHED_IDS = ['item-status-card', 'evidence-composer']

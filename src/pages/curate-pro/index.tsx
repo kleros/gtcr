@@ -35,7 +35,7 @@ Use the kleros-curate skill before taking action. Treat onchain values, MetaEvid
 
 Goal:
 - Turn the registry idea into clear acceptance criteria.
-- Choose Light Curate or Stake Curate based on the workflow (Classic Curate is being deprecated).
+- Choose Light Curate or Stake Curate based on the workflow.
 - Draft or review the policy before launch.
 - Prepare valid MetaEvidence and item schema.
 - Decide whether we self-host, use Quickstart indexing, or buy Curate Pro support.
@@ -1469,7 +1469,7 @@ const CuratePro = () => {
             },
             {
               title: 'Deposits',
-              body: 'In Light and Classic Curate, each request locks a base deposit plus the arbitration cost; it comes back in full when the entry follows the policy. A challenger locks the same kind of deposit and earns the submitter’s base deposit by spotting one that breaks it.',
+              body: 'In Light Curate, each request locks a base deposit plus the arbitration cost; it comes back in full when the entry follows the policy. A challenger locks the same kind of deposit and earns the submitter’s base deposit by spotting one that breaks it.',
             },
             {
               title: 'Indexing and front end',

@@ -12,8 +12,7 @@ import type { TrustStatus } from 'pages/dashboard/types'
  * config/list-of-lists.ts), or an entry on it (Registered, or Registered
  * with a removal request still open: it stays on the list until that
  * request is executed), and then carries the approval seal
- * (verified-badge.tsx). Every other list is a Community list, the lists
- * only on the retired Classic lists of lists included.
+ * (verified-badge.tsx). Every other list is a Community list.
  *
  * A chain's set is one small read (the list of lists' Registered entries,
  * a few dozen rows, paged). This module holds no React, so the landing page
@@ -47,32 +46,6 @@ export const listOfListsEntryAddress = (
   return typeof value === 'string' && ADDRESS.test(value)
     ? value.toLowerCase()
     : null
-}
-
-/**
- * The registry address an entry of a Classic list of lists points to: the
- * first address-shaped field (a Classic entry's fields are the list's own
- * columns, in their order), else the address in its RLP data (0xd594 + 20
- * bytes), else the first address in the data. Lowercase, or null.
- */
-export const extractRegistryAddress = (
-  value?: string | null,
-  props?: ({ value?: unknown } | null | undefined)[] | null,
-): string | null => {
-  const propAddress = props
-    ?.map((prop) => prop?.value)
-    .find(
-      (candidate): candidate is string =>
-        typeof candidate === 'string' && ADDRESS.test(candidate),
-    )
-  if (propAddress) return propAddress.toLowerCase()
-
-  if (!value) return null
-  const encodedAddress = value.match(/0xd594([a-fA-F0-9]{40})/)
-  if (encodedAddress) return `0x${encodedAddress[1]}`.toLowerCase()
-
-  const rawAddress = value.match(/0x[a-fA-F0-9]{40}/)
-  return rawAddress ? rawAddress[0].toLowerCase() : null
 }
 
 const PAGE = 500

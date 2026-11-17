@@ -14,8 +14,8 @@ export const fetchMetaEvidence = async (
   tcr: string,
   networkId: number,
 ): Promise<FetchMetaEvidenceResult | null> => {
-  // The address travels as a variable, never as query text (tcr-view.ts
-  // says why).
+  // The address travels as a variable, never as query text
+  // (fetch-meta-evidence.ts says why).
   const query = {
     query: `query LightRegistryMetaEvidence($id: String!) {
       lregistry:LRegistry_by_pk(id: $id) {

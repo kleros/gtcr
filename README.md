@@ -19,7 +19,7 @@
 
 ## Environment Variables
 
-The build reads only the `REACT_APP_` variables listed in `.env.example`. The app does not render without `REACT_APP_REOWN_PROJECT_ID`, and it shows no Light or Classic list without the Envio indexer URLs. Without `REACT_APP_ALCHEMY_API_KEY` it uses public RPC endpoints.
+The build reads only the `REACT_APP_` variables listed in `.env.example`. The app does not render without `REACT_APP_REOWN_PROJECT_ID`, and it shows no Light list without the Envio indexer URLs. Without `REACT_APP_ALCHEMY_API_KEY` it uses public RPC endpoints.
 
 ## Before a Release
 

@@ -6,7 +6,7 @@ import { request } from 'utils/indexer-request'
 const { getAddress } = ethers.utils
 
 /**
- * The answer's data. Light and Classic lists come from the Envio indexer,
+ * The answer's data. Light lists come from the Envio indexer,
  * whose requests count against a limit the whole app shares: those reads go
  * through the batcher, like every other. A read that gets no answer throws,
  * so it is never taken for "not deployed here".
@@ -72,14 +72,6 @@ const useFactory = () => {
       tcrAddress,
     )
 
-  const deployedWithFactory = (tcrAddress: string) =>
-    checkRegistryExists(
-      GTCR_SUBGRAPH_URL,
-      '{ registry:Registry_by_pk(id: "$address") { id } }',
-      'registry',
-      tcrAddress,
-    )
-
   const deployedWithPermanentFactory = (tcrAddress: string) =>
     checkRegistryExists(
       PGTCR_SUBGRAPH_URL,
@@ -90,7 +82,6 @@ const useFactory = () => {
 
   return {
     deployedWithLightFactory,
-    deployedWithFactory,
     deployedWithPermanentFactory,
   }
 }

@@ -38,7 +38,7 @@ export const chainInfo = (chainId: number) =>
   NETWORKS_INFO[chainId as keyof typeof NETWORKS_INFO]
 
 export const kindLabel = (kind: RegistryKind): string =>
-  kind === 'light' ? 'Light' : kind === 'permanent' ? 'Stake' : 'Classic'
+  kind === 'light' ? 'Light' : 'Stake'
 
 export const registryHref = (registry: DashboardRegistry) =>
   `/tcr/${registry.chainId}/${registry.address}`
@@ -47,9 +47,7 @@ export const validTrust = (value: string | null): TrustFilter =>
   value === 'verified' || value === 'unverified' ? value : 'all'
 
 export const validKind = (value: string | null): KindFilter =>
-  value === 'classic' || value === 'light' || value === 'permanent'
-    ? value
-    : 'all'
+  value === 'light' || value === 'permanent' ? value : 'all'
 
 export const validSort = (value: string | null): RegistrySort =>
   value === 'activity' || value === 'items' || value === 'recent'
@@ -62,8 +60,8 @@ export const validChain = (value: string | null): ChainFilter =>
 /**
  * Every entry a list holds, the figure its registry page shows. Light
  * lists count settled entries in `itemCount` and the ones with an open
- * request in `pendingCount`; Classic (`numberOfItems`) and Stake (submitted,
- * absent and disputed) already count every entry in `itemCount`.
+ * request in `pendingCount`; Stake (submitted, absent and disputed) already
+ * counts every entry in `itemCount`.
  */
 export const entryCount = (registry: DashboardRegistry): number =>
   registry.kind === 'light'
@@ -71,7 +69,7 @@ export const entryCount = (registry: DashboardRegistry): number =>
     : registry.itemCount
 
 /*
- * Challenge windows. A Light or Classic request can be challenged while
+ * Challenge windows. A Light request can be challenged while
  * now <= submissionTime + its list's challengePeriodDuration (the
  * contracts' own check, against the list's current period); past that it
  * only waits to be executed. Periods are read on chain (data.ts).
@@ -238,7 +236,7 @@ export const scopedRulings = (
  * The bounties challengers have won, all time, in a scope of chains (the
  * dashboard's: "All chains" is Ethereum and Gnosis; one chain; Sepolia on
  * its own). One entry per coin, never added across coins: each chain's own
- * coin (Light and Classic lists: the requester's base deposit of every
+ * coin (Light lists: the requester's base deposit of every
  * dispute the challenger won) and each Stake token (the entry's stake).
  * Coins are ordered by chain (scope order), the chain's coin before its
  * Stake tokens; coins nobody won are left out.
@@ -396,12 +394,7 @@ export const scopedSeries = (
 
 const signalScore = (registry: DashboardRegistry): number => {
   const trust = registry.trustStatus === 'verified' ? 100000 : 0
-  const kind =
-    registry.kind === 'light'
-      ? 16000
-      : registry.kind === 'classic'
-        ? 12000
-        : 7000
+  const kind = registry.kind === 'light' ? 16000 : 7000
   const recent = registry.lastActivityAt
     ? Math.min(6000, registry.lastActivityAt / 1000000)
     : 0
@@ -492,7 +485,7 @@ export interface DashboardCard {
   /** An identifier set in mono after the detail, e.g. "#1040". */
   detailId?: string
   tone: StatusTone
-  /** Submission or removal request (Light and Classic). */
+  /** Submission or removal request (Light). */
   request?: 'submission' | 'removal'
   /** The request's base deposit in wei: what a winning challenger takes. */
   deposit?: string

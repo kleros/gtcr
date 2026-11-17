@@ -1,11 +1,11 @@
 import React, { useContext, useEffect, Suspense, lazy } from 'react'
-import { TCRViewProvider } from 'contexts/tcr-view-context'
 import { LightTCRViewProvider } from 'contexts/light-tcr-view-context'
 import { useParams, useSearchParams } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { STALE_TIME } from 'consts'
 import Loading from 'components/loading'
 import ErrorPage from 'pages/error-page'
+import ClassicRetired from 'pages/classic-retired'
 import AttachmentDisplay from 'components/attachment-display'
 import useTcrNetwork from 'hooks/use-tcr-network'
 import useCheckLightCurate from 'hooks/use-check-light-curate'
@@ -15,15 +15,13 @@ import { usePolicyHistory } from 'hooks/use-policy-history'
 import { StakeContext } from 'contexts/stake-context'
 import { useGraphqlBatcher } from 'contexts/graphql-batcher'
 import { getChainById } from 'config/chains'
-import { LIGHT_ITEMS_QUERY, CLASSIC_REGISTRY_ITEMS_QUERY } from 'utils/graphql'
+import { LIGHT_ITEMS_QUERY } from 'utils/graphql'
 import { searchStrToFilterObjLight } from 'utils/filters'
 import { getAllowedAttachmentUrl } from 'utils/url-validation'
 
 const LIGHT_ITEMS_PER_PAGE = 40
-const CLASSIC_MAX_ENTITIES = 1000
 
 const LightItems = lazy(() => import('./light-items/index'))
-const Items = lazy(() => import('./items/index'))
 const PermanentItems = lazy(() => import('./permanent-items/index'))
 
 function computeItemsWhere(queryOptions: Record<string, any>, addr: string) {
@@ -135,24 +133,6 @@ const ItemsRouter = () => {
         }),
       staleTime: STALE_TIME,
     })
-
-    const classicVars = {
-      offset: (page - 1) * LIGHT_ITEMS_PER_PAGE,
-      limit: CLASSIC_MAX_ENTITIES,
-      order_by: [{ latestRequestSubmissionTime: orderDirection }],
-      where,
-    }
-    queryClient.prefetchQuery({
-      queryKey: ['classicItems', classicVars],
-      queryFn: () =>
-        graphqlBatcher.fetch({
-          id: crypto.randomUUID(),
-          document: CLASSIC_REGISTRY_ITEMS_QUERY,
-          variables: classicVars,
-          chainId,
-        }),
-      staleTime: STALE_TIME,
-    })
   }, [chainId, tcrAddress, queryClient, graphqlBatcher])
 
   if (!chainId)
@@ -203,13 +183,7 @@ const ItemsRouter = () => {
       </Suspense>,
     )
   if (isClassicCurate)
-    return withViewer(
-      <Suspense fallback={<Loading />}>
-        <TCRViewProvider tcrAddress={tcrAddress}>
-          <Items />
-        </TCRViewProvider>
-      </Suspense>,
-    )
+    return <ClassicRetired chainId={chainId} tcrAddress={tcrAddress} />
   if (isPermanentCurate)
     return withViewer(
       <Suspense fallback={<Loading />}>

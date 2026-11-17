@@ -14,7 +14,6 @@ import toOrdinal from 'utils/ordinal'
 import EvidenceFileLink, {
   EvidenceFileUnavailable,
 } from 'components/evidence-file-link'
-import ClassicEvidenceModal from 'pages/item-details/modals/evidence'
 import LightEvidenceModal from 'pages/light-item-details/modals/evidence'
 import { klerosAddresses } from 'config/tcr-addresses'
 import { CurateIcon } from 'components/curate/icons'
@@ -44,7 +43,7 @@ import {
  * a glowing vertical timeline of its submission, evidence, rulings, appeals
  * and resolution with absolute UTC dates and the court case linked; then the
  * inline evidence composer, folded to one row, while a request is open.
- * Shared by the Light and Classic item pages. The case link sits on the
+ * Used by the Light item page. The case link sits on the
  * event that opened the dispute (the challenge), never on the submission.
  */
 
@@ -371,7 +370,7 @@ const RequestTimeline = ({
     return undefined
   }
   // Where the case link goes: the challenge event when the indexer has it;
-  // otherwise (Classic) the challenger's first evidence, which is filed with
+  // otherwise the challenger's first evidence, which is filed with
   // the challenge; the submission row only when neither exists.
   const hasChallengeEvent = logs.some((event) => event.name === 'Challenge')
   const caseEvidenceIndex = hasChallengeEvent
@@ -752,7 +751,6 @@ export const scrollToEvidenceComposer = () => openEvidenceComposer()
 interface RequestTimelinesProps {
   item: SubgraphItem
   requests?: TimelineRequest[]
-  kind: 'classic' | 'light'
   metaEvidence?: MetaEvidence
   /**
    * The page already links the latest request's court case (the hero's
@@ -764,12 +762,9 @@ interface RequestTimelinesProps {
 const RequestTimelines = ({
   item,
   requests,
-  kind,
   metaEvidence,
   caseInHero = false,
 }: RequestTimelinesProps) => {
-  const EvidenceComposer =
-    kind === 'classic' ? ClassicEvidenceModal : LightEvidenceModal
   const [openPanels, setOpenPanels] = useState<Record<number, boolean>>({
     0: true,
   })
@@ -819,7 +814,7 @@ const RequestTimelines = ({
       </div>
       {pending && (
         <EvidenceComposerCollapse.Provider value>
-          <EvidenceComposer
+          <LightEvidenceModal
             item={item}
             inline
             composerId={EVIDENCE_COMPOSER_ID}

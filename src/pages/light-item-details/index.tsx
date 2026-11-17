@@ -40,7 +40,7 @@ import {
   itemToStatusCode,
 } from 'utils/item-status'
 import { formatAbsolute } from 'utils/time'
-import { formatSince } from 'pages/item-details/format-since'
+import { formatSince } from 'utils/format-since'
 import { STALE_TIME } from 'consts'
 import { isKlerosArbitrator } from 'config/tcr-addresses'
 import { ipfsImageUrl, parseIpfs } from 'utils/ipfs-parse'
@@ -71,7 +71,7 @@ import {
 import { StickyActionBarSpacer } from 'components/curate/item-light-action-bar'
 import ItemStatusCard from './item-status-card'
 import CrowdfundingCard from './crowdfunding-card'
-import { AppealWindowPanel } from 'pages/item-details/appeal-funding'
+import { AppealWindowPanel } from 'pages/light-item-details/appeal-funding'
 import { requestFacts, type LightRequest } from './request-facts'
 import { linkedListAddress, linkedListField } from './linked-list'
 
@@ -516,7 +516,7 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
   const decodedItem = useMemo(() => {
     if (!item) return undefined
     // The fields card offers the reward withdrawal once the latest request
-    // is resolved; like the Classic page, the entry says whether it is.
+    // is resolved; the entry says whether it is.
     const resolved = !!item.requests?.[0]?.resolved
 
     // Happy path: subgraph already decoded the item into props. Derive columns
@@ -975,7 +975,6 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
               item?.requests &&
               item.requests.map((r: TimelineRequest) => ({ ...r }))
             }
-            kind="light"
             metaEvidence={metaEvidence}
             caseInHero={!!facts?.inCourt && !!facts.disputeID}
           />

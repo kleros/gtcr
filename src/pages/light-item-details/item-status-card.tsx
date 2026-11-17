@@ -48,7 +48,7 @@ import { StickyActionBar } from 'components/curate/item-light-action-bar'
 import { AddressLink } from 'components/curate/item-light-fields'
 import { formatAmount, formatEther } from 'components/curate/item-light-format'
 import ItemActionModal from './item-action-modal'
-import { appealFunding } from 'pages/item-details/appeal-funding'
+import { appealFunding } from 'pages/light-item-details/appeal-funding'
 import {
   fundedAlone,
   requestFacts,
@@ -197,27 +197,6 @@ const Rows = styled.dl`
     text-decoration: underline;
   }
 `
-
-interface RulingProps {
-  currentRuling: string | null
-}
-
-/** The current ruling as a sentence. Kept for the Classic item page. */
-export const Ruling = ({ currentRuling }: RulingProps) => {
-  if (currentRuling == null)
-    return <SkeletonBlock $height="18px" $width="160px" />
-
-  switch (currentRuling) {
-    case 'None':
-      return <>Jurors refused to rule.</>
-    case 'Accept':
-      return <>Jurors ruled for the requester.</>
-    case 'Reject':
-      return <>Jurors ruled for the challenger.</>
-    default:
-      throw new Error(`Unhandled ruling ${currentRuling}`)
-  }
-}
 
 /** What the amount is made of: the list's deposit and the court's fee. */
 const AmountSplit = ({

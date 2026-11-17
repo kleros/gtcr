@@ -80,7 +80,7 @@ export const SUBMIT_STEPS: GuideStep[] = [
   },
   {
     title: 'Get listed and your deposit back',
-    body: 'In a Light or Classic list, once the challenge period ends with no challenge, anyone can execute the request: the entry is listed and your whole deposit comes back. In a Stake list your stake stays with the entry, growing with every failed challenge, until you withdraw it.',
+    body: 'In a Light list, once the challenge period ends with no challenge, anyone can execute the request: the entry is listed and your whole deposit comes back. In a Stake list your stake stays with the entry, growing with every failed challenge, until you withdraw it.',
     see: ['stake-curate'],
   },
 ]
@@ -260,7 +260,7 @@ const RULING_FINAL =
 /* Labels and details as the app writes them (components/curate/entry-status). */
 export const LEGEND: { group: string; items: LegendItem[] }[] = [
   {
-    group: 'Light and Classic Curate',
+    group: 'Light Curate',
     items: [
       {
         tone: 'window',
@@ -431,7 +431,7 @@ if (import.meta.env.DEV)
   })
 
 /*
- * Stake Curate against Light and Classic, only where the drawing cannot say
+ * Stake Curate against Light, only where the drawing cannot say
  * it. Checked against the PermanentGTCR contract: addItem takes the token
  * stake (at least submissionMinDeposit) and the arbitration cost, held as the
  * entry's arbitration deposit; challengeItem takes challengeStakeMultiplier
@@ -440,22 +440,22 @@ if (import.meta.env.DEV)
  */
 export const STAKE_COMPARE: {
   aspect: string
-  classic: string
+  light: string
   stake: string
 }[] = [
   {
     aspect: 'You put in',
-    classic: 'A base deposit + the arbitration cost',
+    light: 'A base deposit + the arbitration cost',
     stake: 'A stake in the list’s token + an arbitration deposit',
   },
   {
     aspect: 'To challenge',
-    classic: 'A challenge deposit + the arbitration cost',
+    light: 'A challenge deposit + the arbitration cost',
     stake: 'A share of the entry’s stake + the arbitration cost',
   },
   {
     aspect: 'A failed challenge',
-    classic: 'Its deposit goes to the requester, minus one arbitration cost',
+    light: 'Its deposit goes to the requester, minus one arbitration cost',
     stake: 'Its stake joins the entry’s stake',
   },
 ]
@@ -474,7 +474,7 @@ export const STAKE_ROLES: { role: string; line: string }[] = [
 
 /** The cases the drawing leaves out (PermanentGTCR rule()). */
 export const STAKE_EDGE_CASES =
-  'An entry jurors keep while it is withdrawing is withdrawn at the ruling. If jurors refuse to rule, each side gets its stake back and half the arbitration deposit, and the entry leaves the list. Appeals work as in Light and Classic.'
+  'An entry jurors keep while it is withdrawing is withdrawn at the ruling. If jurors refuse to rule, each side gets its stake back and half the arbitration deposit, and the entry leaves the list. Appeals work as in Light.'
 
 export const DECISIONS: { term: string; definition: string }[] = [
   {
@@ -570,7 +570,7 @@ export const GLOSSARY: {
   {
     term: 'Deposit',
     definition:
-      'In Light and Classic lists, a base deposit set by the list plus the arbitration cost. Held, not spent: it comes back when your request goes through. Stake lists hold a stake instead.',
+      'In Light lists, a base deposit set by the list plus the arbitration cost. Held, not spent: it comes back when your request goes through. Stake lists hold a stake instead.',
     see: ['submitting', 'stake-curate'],
   },
   {
@@ -597,11 +597,6 @@ export const GLOSSARY: {
   {
     term: 'Light Curate',
     definition: 'Only an IPFS reference is stored on chain, so costs stay low.',
-  },
-  {
-    term: 'Classic Curate',
-    definition:
-      'The original kind of list, which stores entry data on chain. It is being deprecated: existing Classic lists keep working, and new lists use Light Curate.',
   },
   {
     term: 'Stake Curate',

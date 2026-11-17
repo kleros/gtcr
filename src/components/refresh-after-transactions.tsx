@@ -12,10 +12,8 @@ import { onTxConfirmed } from 'utils/tx-events'
  */
 const REFRESHED = new Set([
   'lightItemDetails',
-  'classicItemDetails',
   'permanentItemDetails',
   'lightItems',
-  'classicItems',
   'permanentItems',
   'permanentRegistry',
   'permanentRegistrySummary',

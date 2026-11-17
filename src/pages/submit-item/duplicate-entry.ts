@@ -9,8 +9,7 @@ import { subgraphUrl, subgraphUrlPermanent } from 'config/tcr-addresses'
  * token's or a list's address). Most lists' policies reject a duplicate, so
  * its deposit would likely go to a challenger, and nothing else stops it: a
  * Light entry is named by where its data is stored, which a new upload
- * changes, and a Stake entry the same way. (A Classic entry is named by its
- * data, and the contract refuses an identical one before anything is sent.)
+ * changes, and a Stake entry the same way.
  *
  * Entries are looked up by the first identifier; the others are compared
  * here. A list with several identifiers can hold the same first one more
@@ -124,7 +123,7 @@ const STAKE_DUPLICATE_FULL = `
   }
 `
 
-/** Statuses of a Light or Classic entry that is on the list or on its way. */
+/** Statuses of a Light entry that is on the list or on its way. */
 const LIGHT_LIVE = ['Registered', 'RegistrationRequested', 'ClearingRequested']
 
 // ILIKE reads % and _ as wildcards: escaped, the value only matches itself.

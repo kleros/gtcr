@@ -145,7 +145,7 @@ const winnerFunding = (
   passedDetail: 'appeal closing',
 })
 
-/** Light and Classic Curate (utils/item-status.ts). */
+/** Light Curate (utils/item-status.ts). */
 export const lightEntryStatus = (
   item: SubgraphItem | undefined,
   timestamp: BigNumber | null | undefined,

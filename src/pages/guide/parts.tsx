@@ -891,7 +891,7 @@ export const CompareTable = ({
 }: {
   caption: string
   columns: [string, string]
-  rows: { aspect: string; classic: string; stake: string }[]
+  rows: { aspect: string; light: string; stake: string }[]
 }) => (
   <CompareGrid>
     <VisuallyHidden as="caption">{caption}</VisuallyHidden>
@@ -916,7 +916,7 @@ export const CompareTable = ({
       {rows.map((row) => (
         <tr key={row.aspect}>
           <th scope="row">{row.aspect}</th>
-          <td data-label={columns[0]}>{row.classic}</td>
+          <td data-label={columns[0]}>{row.light}</td>
           <td data-label={columns[1]}>{row.stake}</td>
         </tr>
       ))}

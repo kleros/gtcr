@@ -9,8 +9,7 @@ import type { RegistryKind } from 'pages/dashboard/types'
  * load reads two text fields per entry (and turns files into "IPFS file"),
  * so the picture is read here, for the handful of entries on screen. Light
  * entries carry their fields on the Curate indexer, Stake entries on their
- * subgraph; Classic entries keep theirs encoded in the item data, so they
- * show their list's logo instead.
+ * subgraph.
  */
 
 export interface EntryRef {

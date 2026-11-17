@@ -6,7 +6,7 @@ import { CurateIcon } from 'components/curate/icons'
 import { Chip, Label } from 'components/curate/primitives'
 import { AnimatedNumber } from 'components/curate/motion/animated-number'
 import { WindowRing } from 'components/curate/item-light-window-ring'
-import { formatSince } from 'pages/item-details/format-since'
+import { formatSince } from 'utils/format-since'
 import {
   capitalize,
   otherSide,

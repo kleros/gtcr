@@ -9,12 +9,8 @@ import { ItemTypes } from '@kleros/gtcr-encoder'
 import useUrlChainId from 'hooks/use-url-chain-id'
 import useNativeCurrency from 'hooks/native-currency'
 import { useAttachment } from 'hooks/use-attachment'
-import { TCRViewContext } from 'contexts/tcr-view-context'
 import { LightTCRViewContext } from 'contexts/light-tcr-view-context'
-import {
-  batchWithdrawAddresses,
-  lightBatchWithdrawAddresses,
-} from 'config/tcr-addresses'
+import { lightBatchWithdrawAddresses } from 'config/tcr-addresses'
 import { wrapWithToast, errorToast } from 'utils/wrap-with-toast'
 import { parseWagmiError } from 'utils/parse-wagmi-error'
 import { wagmiConfig } from 'config/wagmi'
@@ -55,8 +51,8 @@ import {
  * type, separated by hairlines, less any the page already shows in full.
  * For a list of lists it also shows the linked registry's identity, its
  * policy and a link to it.
- * Classic lists keep the fee-reward withdrawal here. Shared by the Light,
- * Classic and Stake item pages and by the factory previews.
+ * Light lists keep the fee-reward withdrawal here. Shared by the Light and
+ * Stake item pages.
  */
 
 /* A divider under it only when fields follow; when only the actions do,
@@ -235,11 +231,11 @@ interface ItemDetailsCardProps {
    */
   exclude?: EntryField[]
   /**
-   * The kind of list, which picks the batch withdrawer for rewards: Classic
-   * and Light lists each have their own (their getters differ), and Stake
-   * lists settle rewards elsewhere, so they get no button here.
+   * The kind of list: Light lists withdraw rewards through their batch
+   * withdrawer; Stake lists settle rewards elsewhere, so they get no button
+   * here.
    */
-  kind?: 'classic' | 'light' | 'stake'
+  kind?: 'light' | 'stake'
 }
 
 const ItemDetailsCard = ({
@@ -250,15 +246,14 @@ const ItemDetailsCard = ({
   itemMetaEvidence,
   registryAddress,
   exclude,
-  kind = 'classic',
+  kind = 'light',
 }: ItemDetailsCardProps) => {
   const { address: account } = useAccount()
   const publicClient = usePublicClient()
-  // Light pages provide the Light view context, Classic pages the Classic
-  // one: each has the view contract that answers availableRewards for it.
-  const classicView = useContext(TCRViewContext)
+  // Light pages provide the Light view context: its view contract answers
+  // availableRewards.
   const lightView = useContext(LightTCRViewContext)
-  const tcrViewContext = (kind === 'light' ? lightView : classicView) as
+  const tcrViewContext = (kind === 'light' ? lightView : undefined) as
     | {
         gtcrView?: {
           availableRewards: (...args: unknown[]) => Promise<BigNumber>
@@ -268,10 +263,10 @@ const ItemDetailsCard = ({
     | undefined
   const [availableRewards, setAvailableRewards] = useState<BigNumber>()
   const [withdrawing, setWithdrawing] = useState<SendPhase>()
-  // batchRequestWithdraw walks the requests from the first one, and both list
-  // contracts revert a withdrawal from a request that is still open (Light:
-  // one under dispute). While the latest request is open the walk stops
-  // before it (_count is where the walk ends); the view's availableRewards
+  // batchRequestWithdraw walks the requests from the first one, and the list
+  // contract reverts a withdrawal from a request still under dispute. While
+  // the latest request is open the walk stops before it (_count is where the
+  // walk ends); the view's availableRewards
   // counts the same resolved requests. 0 walks them all, as before.
   const withdrawCount = item?.resolved
     ? 0
@@ -283,9 +278,7 @@ const ItemDetailsCard = ({
   const BATCH_WITHDRAW_ADDRESS =
     !urlChainId || kind === 'stake'
       ? undefined
-      : kind === 'light'
-        ? lightBatchWithdrawAddresses[urlChainId]
-        : batchWithdrawAddresses[urlChainId]
+      : lightBatchWithdrawAddresses[urlChainId]
   const nativeCurrency = useNativeCurrency()
   const openAttachment = useAttachment()
 

@@ -15,6 +15,9 @@ import { defaultTcrAddresses, subgraphUrl } from 'config/tcr-addresses'
 const LEGACY_PATH = /^\/tcr\/(0x[0-9a-fA-F]{40})(\/.*)?$/
 
 /* One indexer serves every chain, so the list's own record names its chain. */
+// Classic lists are asked too (Registry): old links without a chain are
+// mostly from the Classic era, and once the chain is known they land on the
+// retired page (pages/classic-retired) rather than "invalid".
 const LEGACY_LIST_CHAIN = gql`
   query LegacyListChain($id: String!) {
     lregistry: LRegistry_by_pk(id: $id) {

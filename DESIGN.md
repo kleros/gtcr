@@ -299,12 +299,12 @@ way (dashboard, Browse, registry pages, the profile, the landing page).
   lists are submitted). A list is on it while its entry is Registered, or Registered with a removal
   request still open (it stays until that request is executed); the entry's "Address" field alone
   says which list it is (`listOfListsEntryAddress`), never another field or the file name. The
-  older Classic lists of lists are retired (`RETIRED_LIST_OF_LISTS_ADDRESSES`,
-  `replacedListOfLists`): they grant nothing, and their pages point to the current one. A Kleros
-  Verified list carries the approval **seal**, the Kleros icosahedron cut as a gem in the edge hues
-  with a check on its front face. Its explanation names what the list of lists' policy rejects
-  (offensive, malformed and obviously insecure lists) and claims no more: the seal is not a
-  security review.
+  old Classic lists of lists grant nothing (`RETIRED_LIST_OF_LISTS_ADDRESSES`,
+  `replacedListOfLists`): like every Classic list they show the retired page, which points to the
+  current one. A Kleros Verified list carries the approval **seal**, the Kleros icosahedron cut
+  as a gem in the edge hues with a check on its front face. Its explanation names what the list
+  of lists' policy rejects (offensive, malformed and obviously insecure lists) and claims no more:
+  the seal is not a security review.
 - **Community**: every list that is not Kleros Verified. Every Curate list, Verified
   or not, is launched by anyone and kept by its own submitters and challengers; that registration
   is the only difference. A plain name, never a warning (no amber, no shield, no "unverified").
@@ -332,13 +332,12 @@ way (dashboard, Browse, registry pages, the profile, the landing page).
   indexer has no challenge period). When the windows cannot be read, no window is claimed.
 - One 30-day window for every "30 days" figure: the chart's 30 UTC days (today so far included,
   drawn dashed). Active curators and their requests and challenges use the same start. Requests
-  count on the day they were made; challenges on the day they were made (Light `challengeTime`,
-  Classic: the creation of the request's second round, which the challenge opens; Stake: the
-  challenge), whenever the request was made. The landing page reads the same load.
+  count on the day they were made; challenges on the day they were made (Light `challengeTime`;
+  Stake: the challenge), whenever the request was made. The landing page reads the same load.
 - Disputes, rulings and bounties won are all time, never windowed: the rulings ledger pages through
   every resolved dispute, and a figure reads "n+" if it stops at its page cap. A bounty is what a
   challenger the court ruled for takes on top of their own deposit back: the requester's base
-  deposit (Light and Classic) or the entry's stake (Stake Curate). Amounts stay per coin, never
+  deposit (Light) or the entry's stake (Stake Curate). Amounts stay per coin, never
   added across coins.
 - A count is never the length of a capped list: it comes from its own query, and reads "n+" when
   that query hits its cap.

@@ -109,18 +109,6 @@ const LREGISTRY_FIELDS = `
   }
 `
 
-const REGISTRY_FIELDS = `
-  id
-  chainId
-  numberOfItems
-  registrationMetaEvidence {
-    uri
-  }
-  requests(limit: 1, order_by: [{ submissionTime: asc }]) {
-    submissionTime
-  }
-`
-
 const REQUEST_FIELDS = `
   id
   chainId
@@ -149,12 +137,6 @@ const LIGHT_ITEM_PREVIEW = `
   }
 `
 
-const CLASSIC_ITEM = `
-  item {
-    itemID
-  }
-`
-
 /*
  * When an entry of a list of lists was registered: its latest accepted
  * registration request (a Registered entry has no later one). For the
@@ -174,19 +156,15 @@ const REGISTERED_SINCE = `
   }
 `
 
-/** The cards of chosen requests, by request id (Light and Classic). */
+/** The cards of chosen Light requests, by request id. */
 const ENVIO_REQUEST_CARDS_QUERY = gql`
-  query EnvioRequestCards($lightIds: [String!]!, $classicIds: [String!]!) {
+  query EnvioRequestCards($lightIds: [String!]!) {
     light: LRequest(where: { id: { _in: $lightIds } }) {
       ${REQUEST_FIELDS}
       registry {
         title
       }
       ${LIGHT_ITEM_PREVIEW}
-    }
-    classic: Request(where: { id: { _in: $classicIds } }) {
-      ${REQUEST_FIELDS}
-      ${CLASSIC_ITEM}
     }
   }
 `
@@ -242,24 +220,7 @@ const ENVIO_DASHBOARD_QUERY = gql`
     ) {
       ${LREGISTRY_FIELDS}
     }
-    registries: Registry(
-      limit: ${REGISTRY_PAGE_SIZE}
-      where: { chainId: { _eq: $chainId } }
-      order_by: [{ numberOfItems: desc }, { id: asc }]
-    ) {
-      ${REGISTRY_FIELDS}
-    }
     lightRequests: LRequest(
-      limit: 360
-      where: { chainId: { _eq: $chainId }, submissionTime: { _gte: $since } }
-      order_by: [{ submissionTime: desc }]
-    ) {
-      id
-      registry_id
-      disputed
-      submissionTime
-    }
-    classicRequests: Request(
       limit: 360
       where: { chainId: { _eq: $chainId }, submissionTime: { _gte: $since } }
       order_by: [{ submissionTime: desc }]
@@ -281,14 +242,6 @@ const ENVIO_DASHBOARD_QUERY = gql`
       }
       ${LIGHT_ITEM_PREVIEW}
     }
-    latestClassic: Request(
-      limit: ${LATEST_LIMIT}
-      where: { chainId: { _eq: $chainId } }
-      order_by: [{ submissionTime: desc }]
-    ) {
-      ${REQUEST_FIELDS}
-      ${CLASSIC_ITEM}
-    }
     unchallengedLight: LRequest(
       limit: ${UNCHALLENGED_CARD_LIMIT}
       where: {
@@ -303,18 +256,6 @@ const ENVIO_DASHBOARD_QUERY = gql`
         title
       }
       ${LIGHT_ITEM_PREVIEW}
-    }
-    unchallengedClassic: Request(
-      limit: ${UNCHALLENGED_CARD_LIMIT}
-      where: {
-        chainId: { _eq: $chainId }
-        resolved: { _eq: false }
-        disputed: { _eq: false }
-      }
-      order_by: [{ submissionTime: desc }]
-    ) {
-      ${REQUEST_FIELDS}
-      ${CLASSIC_ITEM}
     }
     decidedLight: LRequest(
       limit: ${DECIDED_CARD_LIMIT}
@@ -332,30 +273,7 @@ const ENVIO_DASHBOARD_QUERY = gql`
       }
       ${LIGHT_ITEM_PREVIEW}
     }
-    decidedClassic: Request(
-      limit: ${DECIDED_CARD_LIMIT}
-      where: {
-        chainId: { _eq: $chainId }
-        disputed: { _eq: true }
-        resolved: { _eq: true }
-      }
-      order_by: [{ resolutionTime: desc }, { id: asc }]
-    ) {
-      ${REQUEST_FIELDS}
-      ${CLASSIC_ITEM}
-    }
     openLightRequests: LRequest(
-      limit: ${OPEN_REQUEST_LIMIT}
-      where: { chainId: { _eq: $chainId }, resolved: { _eq: false } }
-      order_by: [{ submissionTime: desc }, { id: asc }]
-    ) {
-      id
-      registry_id
-      disputed
-      submissionTime
-      deposit
-    }
-    openClassicRequests: Request(
       limit: ${OPEN_REQUEST_LIMIT}
       where: { chainId: { _eq: $chainId }, resolved: { _eq: false } }
       order_by: [{ submissionTime: desc }, { id: asc }]
@@ -382,18 +300,6 @@ const ENVIO_DASHBOARD_QUERY = gql`
       }
       ${LIGHT_ITEM_PREVIEW}
     }
-    openClassicDisputes: Request(
-      limit: ${OPEN_DISPUTE_LIMIT}
-      where: {
-        chainId: { _eq: $chainId }
-        disputed: { _eq: true }
-        resolved: { _eq: false }
-      }
-      order_by: [{ submissionTime: desc }]
-    ) {
-      ${REQUEST_FIELDS}
-      ${CLASSIC_ITEM}
-    }
     ${VERIFIED_ENTRIES(0)}
   }
 `
@@ -412,19 +318,6 @@ const ENVIO_LREGISTRY_PAGE_QUERY = gql`
   }
 `
 
-const ENVIO_REGISTRY_PAGE_QUERY = gql`
-  query EnvioRegistryPage($chainId: Int!, $offset: Int!) {
-    registries: Registry(
-      limit: ${REGISTRY_PAGE_SIZE}
-      offset: $offset
-      where: { chainId: { _eq: $chainId } }
-      order_by: [{ numberOfItems: desc }, { id: asc }]
-    ) {
-      ${REGISTRY_FIELDS}
-    }
-  }
-`
-
 /*
  * The all-time ledger of rulings: every resolved dispute, a page at a time
  * until a short page. Only the fields the counts and the bounties need; the
@@ -433,24 +326,6 @@ const ENVIO_REGISTRY_PAGE_QUERY = gql`
 const ENVIO_RULINGS_PAGE_QUERY = gql`
   query EnvioRulingsPage($chainId: Int!, $offset: Int!) {
     light: LRequest(
-      limit: ${RULINGS_PAGE_SIZE}
-      offset: $offset
-      where: {
-        chainId: { _eq: $chainId }
-        disputed: { _eq: true }
-        resolved: { _eq: true }
-      }
-      order_by: [{ resolutionTime: desc }, { id: asc }]
-    ) {
-      id
-      registry_id
-      requestType
-      deposit
-      challenger
-      disputeOutcome
-      resolutionTime
-    }
-    classic: Request(
       limit: ${RULINGS_PAGE_SIZE}
       offset: $offset
       where: {
@@ -640,11 +515,9 @@ const PERMANENT_DASHBOARD_QUERY = gql`
 /*
  * A page of the 30-day activity: the requests made in the window (by
  * submission time) and the challenges made in it (by challenge time,
- * whenever the request was made). A Light request carries its
- * challengeTime. A Classic one does not: its second round is created by the
- * challenge (round 0 at submission, later rounds on appeal), so that
- * round's creationTime is the challenge's. The landing page counts the
- * same rows (src/landing/boot.ts reads this load).
+ * whenever the request was made); a Light request carries its
+ * challengeTime. The landing page counts the same rows (src/landing/boot.ts
+ * reads this load).
  */
 const ENVIO_CURATOR_PAGE_QUERY = gql`
   query EnvioCuratorPage(
@@ -654,17 +527,6 @@ const ENVIO_CURATOR_PAGE_QUERY = gql`
     $offset: Int!
   ) {
     lightRequests: LRequest(
-      limit: $limit
-      offset: $offset
-      where: { chainId: { _eq: $chainId }, submissionTime: { _gte: $since } }
-      order_by: [{ submissionTime: desc }, { id: asc }]
-    ) {
-      id
-      requestType
-      requester
-      submissionTime
-    }
-    classicRequests: Request(
       limit: $limit
       offset: $offset
       where: { chainId: { _eq: $chainId }, submissionTime: { _gte: $since } }
@@ -691,38 +553,8 @@ const ENVIO_CURATOR_PAGE_QUERY = gql`
       disputeOutcome
       challengeTime
     }
-    classicChallenges: Request(
-      limit: $limit
-      offset: $offset
-      where: {
-        chainId: { _eq: $chainId }
-        disputed: { _eq: true }
-        rounds: { creationTime: { _gte: $since } }
-      }
-      order_by: [{ id: asc }]
-    ) {
-      id
-      challenger
-      resolved
-      disputeOutcome
-      rounds(order_by: [{ creationTime: asc }], limit: 2) {
-        creationTime
-      }
-    }
   }
 `
-
-/**
- * When a Light or Classic request was challenged (see
- * ENVIO_CURATOR_PAGE_QUERY), or 0 when it was not.
- */
-const challengeTimeOf = (row: {
-  challengeTime?: string | number | null
-  rounds?: { creationTime?: string | number | null }[] | null
-}): number =>
-  row.challengeTime !== undefined
-    ? toNumber(row.challengeTime)
-    : toNumber(row.rounds?.[1]?.creationTime)
 
 /** The 30-day window's Stake submissions and challenges, a page of each. */
 const PERMANENT_CURATOR_PAGE_QUERY = gql`
@@ -754,7 +586,7 @@ const PERMANENT_CURATOR_PAGE_QUERY = gql`
   }
 `
 
-/** A classic/light request row as the dashboard queries select it. */
+/** A Light request row as the dashboard queries select it. */
 interface DashboardRequestRow {
   id?: string
   registry_id?: string
@@ -1266,32 +1098,9 @@ const normalizeEnvio = (payload: any, chainId: number): NormalizedChain => {
     })
   }
 
-  for (const registry of payload.registries ?? []) {
-    const address = normalizeAddress(registry.id)
-    registries.push({
-      id: `classic-${chainId}-${address}`,
-      address,
-      chainId,
-      kind: 'classic',
-      title: registryTitle(address, null, 'classic'),
-      metadataURI: registry.registrationMetaEvidence?.uri,
-      itemCount: toNumber(registry.numberOfItems),
-      activeCount: 0,
-      pendingCount: 0,
-      disputeCount: 0,
-      // Envio does not expose registry deployment time. The first request is
-      // the closest indexed creation signal available for legacy registries.
-      createdAt: toNumber(registry.requests?.[0]?.submissionTime),
-      lastActivityAt: 0,
-      trustStatus: verifiedAddresses.has(address) ? 'verified' : 'unverified',
-    })
-  }
-
   const registryByAddress = new Map(registries.map((r) => [r.address, r]))
-  for (const requestEntity of [
-    ...(payload.lightRequests ?? []),
-    ...(payload.classicRequests ?? []),
-  ] as DashboardRequestRow[]) {
+  for (const requestEntity of (payload.lightRequests ??
+    []) as DashboardRequestRow[]) {
     const registry = registryByAddress.get(
       normalizeAddress(requestEntity.registry_id),
     )
@@ -1304,25 +1113,13 @@ const normalizeEnvio = (payload: any, chainId: number): NormalizedChain => {
     if (requestEntity.disputed) registry.disputeCount += 1
   }
 
-  const toActivities = (light: string, classic: string) => [
-    ...(payload[light] ?? []).map((row: DashboardRequestRow) =>
+  const toActivities = (light: string) =>
+    (payload[light] ?? []).map((row: DashboardRequestRow) =>
       requestToActivity(row, 'light'),
-    ),
-    ...(payload[classic] ?? []).map((row: DashboardRequestRow) =>
-      requestToActivity(row, 'classic'),
-    ),
-  ]
+    )
 
-  const openRequestRows = [
-    ...(payload.openLightRequests ?? []).map((row: DashboardRequestRow) => ({
-      ...row,
-      kind: 'light',
-    })),
-    ...(payload.openClassicRequests ?? []).map((row: DashboardRequestRow) => ({
-      ...row,
-      kind: 'classic',
-    })),
-  ] as (DashboardRequestRow & { kind: 'light' | 'classic' })[]
+  const openRequestRows = (payload.openLightRequests ??
+    []) as DashboardRequestRow[]
   const openRequestsByRegistry = new Map<string, number>()
   for (const row of openRequestRows) {
     const address = normalizeAddress(row.registry_id)
@@ -1332,8 +1129,7 @@ const normalizeEnvio = (payload: any, chainId: number): NormalizedChain => {
     )
   }
   const openRequestsCapped =
-    (payload.openLightRequests ?? []).length >= OPEN_REQUEST_LIMIT ||
-    (payload.openClassicRequests ?? []).length >= OPEN_REQUEST_LIMIT
+    (payload.openLightRequests ?? []).length >= OPEN_REQUEST_LIMIT
 
   // Requests open per list = its unresolved requests right now (the
   // per-list status counters drift on some deployments).
@@ -1344,11 +1140,11 @@ const normalizeEnvio = (payload: any, chainId: number): NormalizedChain => {
       registry.activeCount = open
     }
 
-  const decided = toActivities('decidedLight', 'decidedClassic')
+  const decided = toActivities('decidedLight')
   return {
     registries,
-    activities: toActivities('latestLight', 'latestClassic'),
-    unchallenged: toActivities('unchallengedLight', 'unchallengedClassic'),
+    activities: toActivities('latestLight'),
+    unchallenged: toActivities('unchallengedLight'),
     unchallengedCount: openRequestRows.filter((row) => !row.disputed).length,
     unchallengedCapped: openRequestsCapped,
     unchallengedRows: openRequestRows
@@ -1358,13 +1154,11 @@ const normalizeEnvio = (payload: any, chainId: number): NormalizedChain => {
         registry: normalizeAddress(row.registry_id),
         submittedAt: toNumber(row.submissionTime),
         deposit: String(row.deposit ?? '0'),
-        kind: row.kind,
       })),
     decided,
-    openDisputes: toActivities('openLightDisputes', 'openClassicDisputes'),
+    openDisputes: toActivities('openLightDisputes'),
     openDisputesCapped:
-      (payload.openLightDisputes ?? []).length >= OPEN_DISPUTE_LIMIT ||
-      (payload.openClassicDisputes ?? []).length >= OPEN_DISPUTE_LIMIT,
+      (payload.openLightDisputes ?? []).length >= OPEN_DISPUTE_LIMIT,
     verifiedRegistryAddresses: [...verifiedAddresses],
     verifiedSince,
   }
@@ -1524,10 +1318,7 @@ const normalizeEnvioLeaderboardPage = (
 ): Map<string, DashboardUser> => {
   const users = new Map<string, DashboardUser>()
 
-  for (const requestEntity of [
-    ...(payload.lightRequests ?? []),
-    ...(payload.classicRequests ?? []),
-  ]) {
+  for (const requestEntity of payload.lightRequests ?? []) {
     const timestamp = toNumber(requestEntity.submissionTime)
     const field =
       requestEntity.requestType === 'ClearingRequested'
@@ -1536,13 +1327,9 @@ const normalizeEnvioLeaderboardPage = (
     accumulateUser(users, chainId, requestEntity.requester, field, timestamp)
   }
 
-  // Challenges on the day each was made (an appeal round in the window does
-  // not make an older Classic challenge new).
-  for (const challenge of [
-    ...(payload.lightChallenges ?? []),
-    ...(payload.classicChallenges ?? []),
-  ]) {
-    const challengedAt = challengeTimeOf(challenge)
+  // Challenges on the day each was made.
+  for (const challenge of payload.lightChallenges ?? []) {
+    const challengedAt = toNumber(challenge.challengeTime)
     if (challengedAt < since) continue
     accumulateUser(
       users,
@@ -1636,10 +1423,7 @@ const envioPageEvents = (
   since: number,
 ): ActivityEvent[] => {
   const events: ActivityEvent[] = []
-  for (const requestEntity of [
-    ...(payload.lightRequests ?? []),
-    ...(payload.classicRequests ?? []),
-  ]) {
+  for (const requestEntity of payload.lightRequests ?? []) {
     const at = toNumber(requestEntity.submissionTime)
     if (at)
       events.push({
@@ -1651,11 +1435,8 @@ const envioPageEvents = (
             : 'submissions',
       })
   }
-  for (const challenge of [
-    ...(payload.lightChallenges ?? []),
-    ...(payload.classicChallenges ?? []),
-  ]) {
-    const at = challengeTimeOf(challenge)
+  for (const challenge of payload.lightChallenges ?? []) {
+    const at = toNumber(challenge.challengeTime)
     if (at >= since) events.push({ at, chainId, kind: 'challenges' })
   }
   return events
@@ -1694,12 +1475,7 @@ const buildSeries = (
   return days
 }
 
-const ENVIO_CURATOR_KEYS = [
-  'lightRequests',
-  'classicRequests',
-  'lightChallenges',
-  'classicChallenges',
-]
+const ENVIO_CURATOR_KEYS = ['lightRequests', 'lightChallenges']
 const PERMANENT_CURATOR_KEYS = ['submissions', 'challenges']
 
 /**
@@ -1913,7 +1689,7 @@ const safeRequest = async <T>(
 }
 
 /**
- * The first page of each registry kind, and of the lists of lists' entries,
+ * The first page of the Light lists, and of the lists of lists' entries,
  * comes with the dashboard query; when one is full, read on until a short
  * page, so no list drops out of the totals or loses its Kleros Verified mark.
  */
@@ -1933,13 +1709,6 @@ const readRemainingRegistries = async (
     {
       keys: ['lregistries'],
       query: ENVIO_LREGISTRY_PAGE_QUERY,
-      size: REGISTRY_PAGE_SIZE,
-      maxPages: REGISTRY_MAX_PAGES,
-      variables: {},
-    },
-    {
-      keys: ['registries'],
-      query: ENVIO_REGISTRY_PAGE_QUERY,
       size: REGISTRY_PAGE_SIZE,
       maxPages: REGISTRY_MAX_PAGES,
       variables: {},
@@ -1977,7 +1746,7 @@ const readRemainingRegistries = async (
 
 /* ---------- Rulings: the all-time ledger ---------- */
 
-/** A Light or Classic resolved dispute as the ledger reads it. */
+/** A Light resolved dispute as the ledger reads it. */
 interface LedgerRequestRow {
   id: string
   registry_id?: string
@@ -1999,16 +1768,12 @@ interface LedgerChallengeRow {
   registry?: { id?: string; token?: string } | null
 }
 
-const requestRuling = (
-  row: LedgerRequestRow,
-  chainId: number,
-  kind: 'light' | 'classic',
-): RulingRow => {
+const requestRuling = (row: LedgerRequestRow, chainId: number): RulingRow => {
   const challengerWon = row.disputeOutcome === 'Reject'
   return {
-    id: `${kind}-${row.id}`,
+    id: `light-${row.id}`,
     chainId,
-    kind,
+    kind: 'light',
     registry: normalizeAddress(row.registry_id),
     itemID: row.id.split('@')[0] || undefined,
     resolvedAt: toNumber(row.resolutionTime),
@@ -2063,7 +1828,7 @@ type LedgerPart = {
 } | null
 
 /**
- * One chain's ledger: every Light, Classic and Stake dispute the court has
+ * One chain's ledger: every Light and Stake dispute the court has
  * closed, newest first, read page by page to the end. An indexer that is not
  * configured has no rows. A page that fails keeps what was read before it,
  * as a lower bound (`capped`) on a chain marked `failed`; null only when
@@ -2079,7 +1844,6 @@ const readRulings = async (
     for (let page = 0; page < RULINGS_MAX_PAGES; page += 1) {
       const payload = await safeRequest<{
         light?: LedgerRequestRow[]
-        classic?: LedgerRequestRow[]
       }>(url, ENVIO_RULINGS_PAGE_QUERY, {
         chainId,
         offset: page * RULINGS_PAGE_SIZE,
@@ -2089,17 +1853,11 @@ const readRulings = async (
           ? null
           : { rows: [...rows.values()], capped: true, failed: true }
       const light = payload.light ?? []
-      const classic = payload.classic ?? []
       // A ruling landing between two pages shifts the rest by one: the
       // repeat is dropped by id, nothing is skipped.
       for (const row of light)
-        rows.set(`light-${row.id}`, requestRuling(row, chainId, 'light'))
-      for (const row of classic)
-        rows.set(`classic-${row.id}`, requestRuling(row, chainId, 'classic'))
-      if (
-        light.length < RULINGS_PAGE_SIZE &&
-        classic.length < RULINGS_PAGE_SIZE
-      )
+        rows.set(`light-${row.id}`, requestRuling(row, chainId))
+      if (light.length < RULINGS_PAGE_SIZE)
         return { rows: [...rows.values()], capped: false, failed: false }
     }
     return { rows: [...rows.values()], capped: true, failed: false }
@@ -2150,32 +1908,21 @@ export const loadRulingCards = async (
   const cards = await Promise.all(
     chains.flatMap((chainId) => {
       const onChain = rows.filter((row) => row.chainId === chainId)
-      const requestIds = (kind: 'light' | 'classic') =>
-        onChain
-          .filter((row) => row.kind === kind)
-          .map((row) => row.id.slice(kind.length + 1))
-      const lightIds = requestIds('light')
-      const classicIds = requestIds('classic')
+      const lightIds = onChain
+        .filter((row) => row.kind === 'light')
+        .map((row) => row.id.slice('light-'.length))
       const stakePrefix = `permanent-challenge-${chainId}-`
       const stakeIds = onChain
         .filter((row) => row.kind === 'permanent')
         .map((row) => row.id.slice(stakePrefix.length))
       return [
-        lightIds.length + classicIds.length > 0
+        lightIds.length > 0
           ? safeRequest<any>(subgraphUrl[chainId], ENVIO_REQUEST_CARDS_QUERY, {
               lightIds,
-              classicIds,
             }).then((payload): DashboardActivity[] =>
-              payload
-                ? [
-                    ...(payload.light ?? []).map((row: DashboardRequestRow) =>
-                      requestToActivity(row, 'light'),
-                    ),
-                    ...(payload.classic ?? []).map((row: DashboardRequestRow) =>
-                      requestToActivity(row, 'classic'),
-                    ),
-                  ]
-                : [],
+              (payload?.light ?? []).map((row: DashboardRequestRow) =>
+                requestToActivity(row, 'light'),
+              ),
             )
           : Promise.resolve([]),
         stakeIds.length > 0
@@ -2312,24 +2059,17 @@ const readChainWindows = async (
     subgraphUrl[chainId],
     ENVIO_REQUEST_CARDS_QUERY,
     {
-      lightIds: soonest
-        .filter((row) => row.kind === 'light')
-        .map((row) => row.id),
-      classicIds: soonest
-        .filter((row) => row.kind === 'classic')
-        .map((row) => row.id),
+      lightIds: soonest.map((row) => row.id),
     },
   )
   if (!payload) return { periods }
   const cards = new Map<string, DashboardActivity>()
   for (const row of (payload.light ?? []) as DashboardRequestRow[])
-    cards.set(`light-${row.id}`, requestToActivity(row, 'light'))
-  for (const row of (payload.classic ?? []) as DashboardRequestRow[])
-    cards.set(`classic-${row.id}`, requestToActivity(row, 'classic'))
+    cards.set(String(row.id), requestToActivity(row, 'light'))
   return {
     periods,
     closingSoon: soonest
-      .map((row) => cards.get(`${row.kind}-${row.id}`))
+      .map((row) => cards.get(row.id))
       .filter((card): card is DashboardActivity => !!card),
   }
 }
@@ -2413,7 +2153,7 @@ export const loadDashboardData = async ({
   const envioResults = await Promise.all(
     chains.map(async (chainId) => {
       const url = subgraphUrl[chainId]
-      // Not configured: no Light or Classic lists here, not a failure.
+      // Not configured: no Light lists here, not a failure.
       if (!url) return null
       const payload = await safeRequest<any>(url, ENVIO_DASHBOARD_QUERY, {
         chainId,

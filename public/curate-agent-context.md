@@ -22,9 +22,10 @@ references/verify-your-list.md).
 - Gnosis: `0x2418d887d0d0fe03b793a6af4321fa488226a0b5`
 - Sepolia: `0xd965ce430afe0423ff19a5eb08f7c5722efabcaf`
 
-The older Classic lists of lists (Ethereum Mainnet `0xba0304273a54dfec1fc7f4bccbf4b15519aecf15`,
-Gnosis `0x2442d40b0aecad0298c2724a97f2f1bbdf2c2615`) are retired: they still take submissions, but a
-list registered on them is not Kleros Verified. Never submit a list to them.
+Classic Curate (GeneralizedTCR) is retired: the app shows no Classic list, including the old Classic
+lists of lists (Ethereum Mainnet `0xba0304273a54dfec1fc7f4bccbf4b15519aecf15`, Gnosis
+`0x2442d40b0aecad0298c2724a97f2f1bbdf2c2615`). Never submit to a Classic list; a list registered on
+those is not Kleros Verified.
 
 ## Required Agent Behavior
 

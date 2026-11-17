@@ -990,7 +990,7 @@ const StakeRegistry = () => {
         onPrimary={openSubmit}
         policyURI={policyURI}
         onOpenPolicy={policyURI ? openPolicy : undefined}
-        // The policy history reads Light and Classic events only; on a
+        // The policy history reads Light events only; on a
         // Stake list it would shimmer and then show nothing.
         policyUpdated={false}
         stats={stats}

@@ -134,9 +134,8 @@ export const activeChains = (
     .sort((a, b) => b.stats.activity - a.stats.activity)
 
 export const kindLabel = (kind: RegistryKind): string => {
-  if (kind === 'light') return 'Light'
   if (kind === 'permanent') return 'Stake'
-  return 'Classic'
+  return 'Light'
 }
 
 const integer = new Intl.NumberFormat('en-US')

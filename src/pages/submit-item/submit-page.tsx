@@ -61,7 +61,7 @@ export type { ConfirmGate }
 
 /** Everything the panel prints, computed from the registry's data. */
 export interface SubmitTerms {
-  /** The big figure: the total (classic, light) or the stake (Stake Curate). */
+  /** The big figure: the total (Light) or the stake (Stake Curate). */
   headline?: Amount
   /** A second asset sent with it (Stake Curate's arbitration deposit). */
   extra?: { label: string; amount?: Amount }
@@ -107,16 +107,9 @@ export interface SubmitPageProps {
   /** A quiet fact under it on narrow screens ("Challenge period · 3 days"),
    *  where the panel that shows the window sits below the form. */
   ledeMeta?: string
-  /** A warning under the lede, shown before anything is filled in. */
-  notice?: React.ReactNode
   columns?: Column[]
   initialValues?: unknown[]
   disabledFields?: boolean[]
-  /**
-   * A Classic list encodes number and Twitter user columns as int256, so
-   * they take whole numbers only; Light and Stake lists store the text.
-   */
-  wholeNumbers?: boolean
   policyURI?: string | null
   terms: SubmitTerms
   /** Columns and deposit are known; until then the workspace is a skeleton. */
@@ -128,7 +121,7 @@ export interface SubmitPageProps {
   onSubmit: SubmitHandler
   /**
    * Warn when an entry with the same identifiers is already on the list
-   * (Light and Stake; a Classic contract refuses an identical entry itself).
+   * (Light and Stake).
    */
   duplicateCheck?: DuplicateCheck
 }
@@ -767,10 +760,9 @@ const PageHeader = ({
   itemName,
   lede,
   ledeMeta,
-  notice,
 }: Pick<
   SubmitPageProps,
-  'registryPath' | 'registryTitle' | 'itemName' | 'lede' | 'ledeMeta' | 'notice'
+  'registryPath' | 'registryTitle' | 'itemName' | 'lede' | 'ledeMeta'
 >) => {
   const article = getArticleFor(itemName)
   return (
@@ -808,18 +800,13 @@ const PageHeader = ({
           {ledeMeta}
         </LedeMeta>
       )}
-      {notice && (
-        <Notice tone="contested" role="status">
-          {notice}
-        </Notice>
-      )}
     </Header>
   )
 }
 
 type HeaderProps = Pick<
   SubmitPageProps,
-  'registryPath' | 'registryTitle' | 'itemName' | 'lede' | 'ledeMeta' | 'notice'
+  'registryPath' | 'registryTitle' | 'itemName' | 'lede' | 'ledeMeta'
 >
 
 const LoadingWorkspace = (props: HeaderProps) => (
@@ -869,7 +856,6 @@ const Workspace = ({
   const {
     initialValues,
     disabledFields,
-    wholeNumbers,
     factoryChecks,
     onSubmit,
     gate,
@@ -893,8 +879,7 @@ const Workspace = ({
     // Validation runs the list-creator subgraph checks for GTCR address
     // columns, so it waits for blur and submit instead of every keystroke.
     validateOnChange: false,
-    validate: (values) =>
-      validateSubmission(columns, values, factoryChecks, wholeNumbers),
+    validate: (values) => validateSubmission(columns, values, factoryChecks),
     onSubmit: (values, helpers) => {
       // Enter in a field submits the form too: the gate still applies.
       if (gate.blocker || submitting) return undefined
@@ -1050,7 +1035,6 @@ const Workspace = ({
                       error={formik.errors[column.label]}
                       showError={!!formik.touched[column.label]}
                       disabled={submitting || !!disabledFields?.[index]}
-                      wholeNumber={wholeNumbers}
                       onChange={(value) =>
                         formik.setFieldValue(fieldPath(column.label), value)
                       }

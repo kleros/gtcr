@@ -100,7 +100,7 @@ export const VERIFICATION_CHAIN_IDS = Object.keys(
 ).map(Number)
 
 export const kindLabel = (kind: RegistryKind): string =>
-  kind === 'light' ? 'Light' : kind === 'permanent' ? 'Stake' : 'Classic'
+  kind === 'light' ? 'Light' : 'Stake'
 
 export const registryHref = (registry: DashboardRegistry): string =>
   `/tcr/${registry.chainId}/${registry.address}`
@@ -149,11 +149,10 @@ export const trustParam = (mode: TrustMode): string | null =>
   mode === 'verified' ? null : mode
 
 const isKind = (value: string): value is RegistryKind =>
-  value === 'classic' || value === 'light' || value === 'permanent'
+  value === 'light' || value === 'permanent'
 
 export const KIND_OPTIONS: { value: RegistryKind; label: string }[] = [
   { value: 'light', label: 'Light' },
-  { value: 'classic', label: 'Classic' },
   { value: 'permanent', label: 'Stake' },
 ]
 
@@ -166,8 +165,8 @@ export const parseKinds = (value: string | null): RegistryKind[] => [
  * Every entry a registry holds, whatever its status, so the figure matches
  * the registry page's own "Entries". Light lists report registered and absent
  * entries in `itemCount` and their entries with an open request in
- * `pendingCount`; Classic (`numberOfItems`) and Stake (submitted plus absent)
- * already count every entry in `itemCount`.
+ * `pendingCount`; Stake lists (submitted plus absent) already count every
+ * entry in `itemCount`.
  */
 export const entryCount = (registry: DashboardRegistry): number =>
   registry.kind === 'light'
@@ -175,8 +174,8 @@ export const entryCount = (registry: DashboardRegistry): number =>
     : registry.itemCount
 
 /**
- * What a registry's `pendingCount` counts: open requests for Light and
- * Classic lists, but the entries currently listed for Stake lists (the
+ * What a registry's `pendingCount` counts: open requests for Light lists,
+ * but the entries currently listed for Stake lists (the
  * subgraph's numberOfSubmitted), which are not requests.
  */
 export const pendingLabel = (kind: RegistryKind): string =>

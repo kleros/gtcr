@@ -2,7 +2,7 @@ import { ethers } from 'ethers'
 import { getRpcUrls } from 'config/rpc'
 
 /*
- * Each Light and Classic list's challenge period, read from the chain: the
+ * Each Light list's challenge period, read from the chain: the
  * indexers do not store it. A request can be challenged while
  * now - submissionTime <= challengePeriodDuration (the contracts' own check,
  * against the list's current period); past that it only awaits execution.

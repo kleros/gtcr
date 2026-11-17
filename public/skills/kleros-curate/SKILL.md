@@ -48,6 +48,10 @@ that submits the wrong deposit amount will have its transaction revert. Always r
   type. Working with Scout always requires both `references/scout-registries.md` (Scout-specific context)
   and `references/light-curate.md` (LGTCR contract operations).
 
+Classic Curate (`GeneralizedTCR`, the original flavor) is retired: the Curate app no longer shows Classic
+lists. Never submit to, challenge on, or register a Classic list; a Classic list on a list of lists is not a
+reason to act on it.
+
 ## Non-negotiables
 
 These rules apply across all Curate flavors. They are always in context; reference files may not repeat them.

@@ -67,7 +67,7 @@ import {
   missingEntryPollMs,
 } from '../error-page/copy'
 import ItemStatusCard from './item-status-card'
-import { formatSince } from 'pages/item-details/format-since'
+import { formatSince } from 'utils/format-since'
 import { StakeWindowPanel } from './item-window'
 import { PolicySince, policyInForceSince } from './policy-since'
 import { multiplierPercent, nativeText, tokenText } from './modals/shell'

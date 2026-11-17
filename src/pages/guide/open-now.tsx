@@ -25,8 +25,8 @@ import { useInView } from './hooks'
  * The one live figure in the guide: how many requests are open for
  * verification right now, the dashboard's own count. It reads the
  * dashboard's query (same key, so a visit to either page fills the other)
- * and only once the strip scrolls into view. The count is Light and Classic
- * requests nobody has challenged whose challenge period is still running,
+ * and only once the strip scrolls into view. The count is Light requests
+ * nobody has challenged whose challenge period is still running,
  * on every mainnet ("All chains"). If any chain or any challenge period
  * failed to load, it shows no number rather than a partial one.
  */
@@ -195,7 +195,7 @@ export const OpenNow = () => {
             ? 'The count did not load; the dashboard lists them.'
             : 'Requests nobody has challenged, still in their challenge period.'}
         </Small>
-        <Small $faint>Light and Classic · {SCOPE}</Small>
+        <Small $faint>Light · {SCOPE}</Small>
       </Words>
       <ButtonLink to="/" $variant="secondary" $size="sm">
         Open the dashboard

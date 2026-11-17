@@ -3,7 +3,7 @@ import styled, { keyframes } from 'styled-components'
 import { formatAbsolute } from 'utils/time'
 import { POLICY_RECENT_THRESHOLD_DAYS } from 'utils/format-updated-ago'
 import { StatusDot } from 'components/curate/primitives'
-import { daysSince, formatSince } from 'pages/item-details/format-since'
+import { daysSince, formatSince } from 'utils/format-since'
 import { toNum } from './facts'
 
 /*

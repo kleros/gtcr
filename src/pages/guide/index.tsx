@@ -452,7 +452,7 @@ const Guide = () => {
               caption={
                 <>
                   <Label $tone="faint">One request</Label>
-                  <span>In a Light or Classic list.</span>
+                  <span>In a Light list.</span>
                 </>
               }
             />
@@ -518,7 +518,7 @@ const Guide = () => {
           >
             <Steps steps={SUBMIT_STEPS} />
             <Costs
-              label="What you send, and what comes back · Light and Classic"
+              label="What you send, and what comes back · Light"
               rows={COSTS}
               note={COSTS_NOTE}
             />
@@ -532,10 +532,10 @@ const Guide = () => {
             heading="Spot a mistake, earn the bounty"
           >
             <Prose>
-              In a Light or Classic list anyone can challenge a request while
-              its challenge period runs. If jurors agree, you get your deposit
-              back plus the requester’s, minus one arbitration cost. In a Stake
-              list you can challenge at any time, for the entry’s whole stake.{' '}
+              In a Light list anyone can challenge a request while its challenge
+              period runs. If jurors agree, you get your deposit back plus the
+              requester’s, minus one arbitration cost. In a Stake list you can
+              challenge at any time, for the entry’s whole stake.{' '}
               <SeeLinks ids={['stake-curate']} />
             </Prose>
             <OpenNow />
@@ -545,9 +545,9 @@ const Guide = () => {
           <GuideSection id="disputes" heading="Jurors rule, anyone can appeal">
             <Prose>
               A challenge opens a dispute in the Kleros court the list names.
-              Its governor can change the court. In a Light or Classic list the
-              change applies to later requests; in a Stake list, to existing
-              entries once a cooldown has passed.
+              Its governor can change the court. In a Light list the change
+              applies to later requests; in a Stake list, to existing entries
+              once a cooldown has passed.
             </Prose>
             <Steps steps={DISPUTE_STEPS} />
             <AppealWindow />
@@ -562,13 +562,13 @@ const Guide = () => {
               There is no reward pool: every bounty is the other side’s deposit.
             </Prose>
             <OutcomeTable
-              title="What happens to what you put in · Light and Classic"
+              title="What happens to what you put in · Light"
               roles={OUTCOMES}
             />
             <Prose $quiet>
               In a Light list, appeal returns are claimed on the entry once the
-              ruling is final; in a Classic list too, on Ethereum and Sepolia.
-              In a Stake list a Kleros bot sends them to backers.
+              ruling is final. In a Stake list a Kleros bot sends them to
+              backers.
             </Prose>
           </GuideSection>
 
@@ -605,8 +605,8 @@ const Guide = () => {
               />
             </StakePanel>
             <CompareTable
-              caption="Light and Classic Curate compared with Stake Curate"
-              columns={['Light and Classic', 'Stake Curate']}
+              caption="Light Curate compared with Stake Curate"
+              columns={['Light Curate', 'Stake Curate']}
               rows={STAKE_COMPARE}
             />
             <Prose $quiet>
@@ -617,7 +617,6 @@ const Guide = () => {
           <GuideSection id="launching" heading="Policy, schema, parameters">
             <Prose>
               Anyone can deploy a list on Light Curate or on Stake Curate.
-              Classic Curate is being deprecated.
             </Prose>
             <DefinitionGrid label="What you decide" items={DECISIONS} />
             <Prose $quiet>

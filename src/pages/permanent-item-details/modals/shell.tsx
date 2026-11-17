@@ -329,8 +329,8 @@ export interface ActionGate {
   blocker?: string
   /**
    * The one button that clears the blocker. Connect and Sign in are the next
-   * step, so primary; a network switch is secondary (as in the Classic and
-   * Light dialogs).
+   * step, so primary; a network switch is secondary (as in the Light
+   * dialogs).
    */
   helper?: {
     label: string

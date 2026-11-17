@@ -21,7 +21,6 @@ export type SubmissionErrors = Record<string, string>
 export type RegistryExistsCheck = (tcrAddress: string) => Promise<boolean>
 
 export interface FactoryChecks {
-  deployedWithFactory: RegistryExistsCheck
   deployedWithLightFactory: RegistryExistsCheck
   deployedWithPermanentFactory: RegistryExistsCheck
 }
@@ -99,24 +98,6 @@ export const missingRequired = (
   ).length
 
 /**
- * The values gtcrEncode gets for a Classic list. The encoder reads a boolean
- * column by truthiness, so the form's "false" (a string) would go on chain
- * as true; boolean columns get real booleans instead.
- */
-export const encoderValues = (
-  columns: Column[],
-  values: Record<string, unknown>,
-): Record<string, unknown> => {
-  const next: Record<string, unknown> = { ...values }
-  // Exactly what the switch and the review show as "Yes": "True" from a link
-  // reads as No there, so it must not go on chain as true.
-  for (const column of columns)
-    if (column.type === ItemTypes.BOOLEAN)
-      next[column.label] = String(values[column.label]) === 'true'
-  return next
-}
-
-/**
  * Blank rich addresses that only carry a chain ("eip155:1:") are sent as
  * empty, links as validated (without surrounding spaces) and numbers with
  * a dot for decimals: "0,5" goes on chain as "0.5".
@@ -144,7 +125,7 @@ const isEvmAddress = (value: string): boolean => namespaces[0].test(value)
  * The submit dialogs' address format checks, run for the whole form. Each
  * address input checks its own value too, but Formik runs a field's check only
  * while the field is on screen and the review step unmounts them: without this
- * a malformed address would be sent (stored as 0x0…12ab on a Classic list).
+ * a malformed address would be sent.
  * Like those inputs, an empty address does not pass, unless the list marks
  * the column optional.
  */
@@ -199,24 +180,6 @@ export const withWebScheme = (value: string): string => {
   return `https://${text.replace(/^\/+/, '')}`
 }
 
-const MAX_INT256 = 2n ** 255n - 1n
-const MIN_INT256 = -(2n ** 255n)
-
-/**
- * What gtcrEncode takes for a Classic number or Twitter user column: bn.js
- * reads it with every space removed, as digits with an optional leading
- * minus, and the encoder refuses anything outside an int256. "1.5", "1,000"
- * or "abc" make it throw, and a lone "-" would go on chain as 2^256.
- */
-export const integerProblem = (value: string): string | undefined => {
-  const digits = value.replace(/\s+/g, '')
-  if (!/^-?\d+$/.test(digits)) return 'Enter a whole number, like 42.'
-  const number = BigInt(digits)
-  if (number > MAX_INT256 || number < MIN_INT256)
-    return 'This number is too large for the list to store.'
-  return undefined
-}
-
 /**
  * A plain decimal number: "18", "-3", "0.5", ".5", or "0,5" as typed on a
  * keypad with a comma for decimals ("1,000" stays refused: thousand or one?).
@@ -228,8 +191,6 @@ export const validateSubmission = async (
   columns: Column[],
   values: SubmissionValues,
   checks: FactoryChecks,
-  /** Number columns go on chain as integers (Classic lists encode them). */
-  wholeNumbers = false,
 ): Promise<SubmissionErrors> => {
   const errors: SubmissionErrors = {}
 
@@ -240,16 +201,9 @@ export const validateSubmission = async (
       continue
     }
     if (typeof value !== 'string' || isEmptyField(column, value)) continue
-    if (
-      wholeNumbers &&
-      (column.type === ItemTypes.NUMBER ||
-        column.type === ItemTypes.TWITTER_USER_ID)
-    ) {
-      const problem = integerProblem(value)
-      if (problem) errors[column.label] = problem
-    } else if (column.type === ItemTypes.NUMBER && !isPlainNumber(value))
-      // Light and Stake lists store the text as typed: "eighteen" would go
-      // into a number column and invite a challenge.
+    if (column.type === ItemTypes.NUMBER && !isPlainNumber(value))
+      // Lists store the text as typed: "eighteen" would go into a number
+      // column and invite a challenge.
       errors[column.label] = isAmbiguousComma(value)
         ? AMBIGUOUS_COMMA
         : 'Enter a number, like 18 or 0.5. A dot or a comma works for decimals.'
@@ -270,7 +224,7 @@ export const validateSubmission = async (
   }
 
   // A list address must have been deployed by one of the list creators
-  // (classic, light or permanent): the same check the submit modals run.
+  // (Light or Stake): the same check the submit modals run.
   await Promise.all(
     columns
       .filter(
@@ -284,7 +238,6 @@ export const validateSubmission = async (
         const address = values[column.label] as string
         try {
           const deployed =
-            (await checks.deployedWithFactory(address)) ||
             (await checks.deployedWithLightFactory(address)) ||
             (await checks.deployedWithPermanentFactory(address))
           if (!deployed)

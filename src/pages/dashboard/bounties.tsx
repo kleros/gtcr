@@ -11,7 +11,7 @@ import { chainInfo, type BountyCoin, type scopedBounties } from './view'
  * Bounties won (round 2, items 14 and 15): what challengers have taken, all
  * time, in the page's chain scope. A challenger who spots an entry that
  * breaks its list's rules and wins in court gets their own deposit back and
- * takes the requester's deposit (Light, Classic) or the entry's stake
+ * takes the requester's deposit (Light) or the entry's stake
  * (Stake). One figure per coin, never added across coins; under each, the
  * chain and how many bounties it paid; then how many different challengers
  * won them. The ring is the share of every ruling the court has issued that

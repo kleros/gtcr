@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react'
 import styled, { css, keyframes } from 'styled-components'
-import { Link, useParams, useSearchParams } from 'react-router-dom'
+import { useParams, useSearchParams } from 'react-router-dom'
 import useDocumentHead from 'hooks/use-document-head'
 import { NETWORKS, NETWORKS_INFO, getNativeCurrency } from 'config/networks'
 import { formatDuration, formatDurationLong } from 'utils/time'
@@ -35,8 +35,7 @@ import { LIGHT_WIZARD_DEFAULTS } from 'pages/factory/defaults'
  * can change, an entry's life drawn to scale under the default periods (one
  * time axis for both cards), and one advantage and one trade-off. The
  * court, and so the arbitration fee and the number of jurors, is the
- * creator's pick in the factory: this page shows no figure for it. Then a
- * note that Classic lists can no longer be created, and the assisted route.
+ * creator's pick in the factory: this page shows no figure for it.
  */
 
 const SUPPORTED_CHAINS: number[] = [
@@ -644,35 +643,6 @@ const Foot = styled.div`
   }
 `
 
-/* ---------- Classic note ---------- */
-
-const ClassicNote = styled.p`
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  margin: 24px 0 0;
-  padding: 0 4px;
-  color: var(--color-muted);
-  font-size: var(--fs-small);
-  line-height: var(--lh-small);
-  ${reveal}
-
-  svg {
-    flex: 0 0 auto;
-    margin-top: 1px;
-    color: var(--color-faint);
-  }
-
-  a {
-    font-weight: 500;
-    white-space: nowrap;
-  }
-
-  @media (max-width: 720px) {
-    padding: 0;
-  }
-`
-
 /* ---------- One option of the radio group ---------- */
 
 const prefersReducedMotion = () =>
@@ -828,7 +798,7 @@ const LaunchListPage = () => {
 
   useDocumentHead(
     'Launch a list | Kleros Curate',
-    'Create a Kleros Curate list: a Light list, where a submitter’s deposit comes back after the challenge period, or a Stake list, where the stake stays locked while the entry is listed and a challenger can earn it at any time. Classic lists can no longer be created.',
+    'Create a Kleros Curate list: a Light list, where a submitter’s deposit comes back after the challenge period, or a Stake list, where the stake stays locked while the entry is listed and a challenger can earn it at any time.',
   )
 
   return (
@@ -1032,14 +1002,6 @@ const LaunchListPage = () => {
           </Points>
         </Choice>
       </Choices>
-
-      <ClassicNote style={{ ['--i' as string]: 5 }}>
-        <CurateIcon name="help" size={16} />
-        <span>
-          Classic lists can no longer be created; existing ones keep working.{' '}
-          <Link to="/guide">Read the guide</Link>
-        </span>
-      </ClassicNote>
     </Page>
   )
 }
