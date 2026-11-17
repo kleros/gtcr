@@ -993,7 +993,8 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
             />
           )}
           <Explainer
-            id="item-standard-how-entries-are-judged"
+            // The old name: readers keep the open state saved under it.
+            id="item-light-how-entries-are-judged"
             eyebrow="How this entry is judged"
             heading="A deposit you get back, a bounty for spotting mistakes."
             steps={[

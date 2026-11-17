@@ -1346,7 +1346,8 @@ const Items = () => {
         registeredCount={counts?.registered}
         totalCount={counts?.total}
         parameters={parameters}
-        explainerId={`registry-standard-${tcrAddress.toLowerCase()}`}
+        // Keyed under the kind's old name, so readers keep their open state.
+        explainerId={`registry-light-${tcrAddress.toLowerCase()}`}
         explainerHeading="A deposit you get back, a bounty for spotting mistakes."
         explainerSteps={explainerSteps}
         loading={!metadata || (!counters && itemsQuery.isFetching)}
