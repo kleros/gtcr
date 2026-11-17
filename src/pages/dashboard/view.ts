@@ -8,7 +8,6 @@ import type {
   DashboardData,
   DashboardDay,
   DashboardRegistry,
-  RegistryKind,
   RulingRow,
   UnchallengedRow,
 } from './types'
@@ -34,9 +33,6 @@ export const scopeChains = (chain: ChainFilter): number[] =>
 
 export const chainInfo = (chainId: number) =>
   NETWORKS_INFO[chainId as keyof typeof NETWORKS_INFO]
-
-export const kindLabel = (kind: RegistryKind): string =>
-  kind === 'light' ? 'Light' : 'Stake'
 
 export const registryHref = (registry: DashboardRegistry) =>
   `/tcr/${registry.chainId}/${registry.address}`

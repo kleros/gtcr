@@ -71,6 +71,7 @@ import {
 } from 'utils/wrap-with-toast'
 import { normalizeAddress, shortAddress } from 'pages/dashboard/data'
 import { VerifiedBadge } from 'components/curate/verified-badge'
+import { KindTag } from 'components/curate/stake-tag'
 import {
   SUPPORTED_CHAIN_IDS,
   abiForKind,
@@ -78,7 +79,7 @@ import {
   type GovernanceParams,
   type GovernedRegistry,
 } from './data'
-import { formatInt, kindLabel } from './view'
+import { formatInt } from './view'
 import { Avatar as ListLogo } from 'pages/browse/avatar'
 
 /*
@@ -2212,13 +2213,11 @@ export const GovernancePanel = ({
                     {registry.trustStatus === 'verified' && (
                       <VerifiedBadge size={16} />
                     )}
+                    <KindTag kind={registry.kind} />
                   </TitleLine>
                   <Row $gap={6} $wrap>
                     <ChainChip chainId={registry.chainId} size="sm" />
-                    <small>
-                      {kindLabel(registry.kind)} ·{' '}
-                      {truncateMiddle(registry.address)}
-                    </small>
+                    <small>{truncateMiddle(registry.address)}</small>
                     {editable && (
                       <Chip>
                         <StatusDot $tone="registered" aria-hidden /> You govern

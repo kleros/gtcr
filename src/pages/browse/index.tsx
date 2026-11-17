@@ -17,7 +17,6 @@ import { CurateIcon } from 'components/curate/icons'
 import {
   Button,
   ChainChip,
-  Chip,
   EmptyState,
   Label,
   Page,
@@ -67,6 +66,7 @@ import {
   VERIFIED_LISTS_LABEL,
   VerifiedBadge,
 } from 'components/curate/verified-badge'
+import { KindTag } from 'components/curate/stake-tag'
 import {
   useVerifiedSets,
   withVerified,
@@ -86,7 +86,6 @@ import {
   filterRegistries,
   hasAddressTitle,
   inScope,
-  kindLabel,
   openRequests,
   parseChains,
   parseKinds,
@@ -2151,13 +2150,12 @@ const BrowsePage = () => {
                                   {registry.title}
                                 </TableName>
                                 <ListSeal registry={registry} />
+                                <KindTag kind={registry.kind} />
                               </NameLine>
                               <SubLine>
-                                {kindLabel(registry.kind)}
                                 {/* With the Created column the chain rides here. */}
                                 {showCreated &&
-                                  ` · ${chainName(registry.chainId)}`}
-                                {' · '}
+                                  `${chainName(registry.chainId)} · `}
                                 <code>{truncateMiddle(registry.address)}</code>
                               </SubLine>
                             </div>
@@ -2216,16 +2214,13 @@ const BrowsePage = () => {
                         <NameLine>
                           <Name>{registry.title}</Name>
                           <ListSeal registry={registry} />
+                          <KindTag kind={registry.kind} />
                         </NameLine>
-                        <SubLine>
-                          {kindLabel(registry.kind)}
-                          {created && (
-                            <>
-                              {' · '}
-                              <CreatedOn timestamp={created} />
-                            </>
-                          )}
-                        </SubLine>
+                        {created && (
+                          <SubLine>
+                            <CreatedOn timestamp={created} />
+                          </SubLine>
+                        )}
                       </span>
                     </CardTop>
                     {blurb ? (
@@ -2233,7 +2228,7 @@ const BrowsePage = () => {
                     ) : (
                       !hasAddressTitle(registry) && (
                         <CardDescription>
-                          {kindLabel(registry.kind)} registry at{' '}
+                          List at{' '}
                           <code>{truncateMiddle(registry.address)}</code>
                         </CardDescription>
                       )
@@ -2284,9 +2279,9 @@ const BrowsePage = () => {
                       <NameLine>
                         <Name>{registry.title}</Name>
                         <ListSeal registry={registry} />
+                        <KindTag kind={registry.kind} />
                       </NameLine>
                       <RowMeta>
-                        <Chip>{kindLabel(registry.kind)}</Chip>
                         <ChainChip chainId={registry.chainId} size="sm" />
                         {created && <CreatedOn timestamp={created} />}
                         {/* No blurb when the title already is the address. */}

@@ -1325,7 +1325,7 @@ const Items = () => {
         address={tcrAddress}
         verified={trust.verified}
         listOfLists={trust.listOfLists}
-        kindLabel="Light Curate"
+        kind="light"
         itemName={itemName}
         primaryLabel={`Submit ${itemName}`}
         primaryAmount={

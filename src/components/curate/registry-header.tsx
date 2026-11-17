@@ -9,7 +9,6 @@ import {
   Button,
   ButtonAnchor,
   ChainChip,
-  Chip,
   Label,
   SkeletonBlock,
   Surface,
@@ -17,6 +16,7 @@ import {
 } from './primitives'
 import { CurateIcon } from './icons'
 import { TrustTag } from './verified-badge'
+import { KindTag } from './stake-tag'
 import { Explainer, type ExplainerStep } from './explainer'
 import { RingGauge } from './motion/ring-gauge'
 import { reveal } from './motion/reveal'
@@ -447,8 +447,8 @@ const StatValue = ({ value }: { value?: React.ReactNode }) =>
   )
 
 /** What happens to the primary button's amount, per kind. */
-const depositNoteFor = (kindLabel: string, itemName: string) =>
-  /stake/i.test(kindLabel)
+const depositNoteFor = (kind: 'light' | 'permanent', itemName: string) =>
+  kind === 'permanent'
     ? `Locked, not spent: it stays locked while your ${itemName} is listed and comes back when you withdraw, unless a challenge succeeds.`
     : `A deposit, not a fee: it comes back when your ${itemName} follows the list’s policy.`
 
@@ -460,7 +460,7 @@ export const RegistryHeader = ({
   address,
   verified,
   listOfLists = false,
-  kindLabel,
+  kind,
   itemName,
   primaryLabel,
   primaryAmount,
@@ -493,7 +493,8 @@ export const RegistryHeader = ({
   verified?: boolean
   /** The registry is the chain's Kleros list of lists. */
   listOfLists?: boolean
-  kindLabel: string
+  /** A Stake list carries the Stake tag; a standard list carries none. */
+  kind: 'light' | 'permanent'
   itemName: string
   primaryLabel: string
   /** The exact amount the button sends; also listed in Parameters. */
@@ -564,7 +565,7 @@ export const RegistryHeader = ({
             </Title>
             <Chips>
               {chainId && <ChainChip chainId={chainId} />}
-              <Chip>{kindLabel}</Chip>
+              <KindTag kind={kind} size="md" />
               {verified !== undefined && (
                 <TrustSlot>
                   <TrustTag verified={verified} listOfLists={listOfLists} />
@@ -582,7 +583,7 @@ export const RegistryHeader = ({
             {primaryLabel}
             {primaryAmount && <Amount>· {primaryAmount}</Amount>}
           </Button>
-          <Note>{depositNote ?? depositNoteFor(kindLabel, itemName)}</Note>
+          <Note>{depositNote ?? depositNoteFor(kind, itemName)}</Note>
         </Action>
       </Top>
 

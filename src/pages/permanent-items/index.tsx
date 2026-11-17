@@ -97,7 +97,6 @@ import { LIST_LOAD_FAILED } from '../error-page/copy'
 
 const NSFW_FILTER_KEY = 'NSFW_FILTER_KEY'
 const ITEMS_PER_PAGE = 40
-const KIND_LABEL = 'Stake Curate'
 /** How long the MetaEvidence file may take before its read is tried again. */
 const COLUMNS_TIMEOUT_MS = 20_000
 
@@ -978,7 +977,7 @@ const StakeRegistry = () => {
         address={tcrAddress}
         verified={trust.verified}
         listOfLists={trust.listOfLists}
-        kindLabel={KIND_LABEL}
+        kind="permanent"
         itemName={itemName}
         primaryLabel={`Submit ${itemName}`}
         primaryAmount={primaryAmount}

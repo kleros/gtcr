@@ -1,6 +1,5 @@
 import type { EntryStatusView } from 'components/curate/entry-status'
 import { ZERO_ADDRESS } from 'pages/dashboard/data'
-import type { RegistryKind } from 'pages/dashboard/types'
 import {
   SUPPORTED_CHAIN_IDS,
   type AddressStats,
@@ -132,11 +131,6 @@ export const activeChains = (
     .map(([chainId, stats]) => ({ chainId: Number(chainId), stats }))
     .filter(({ stats }) => stats.activity > 0 || stats.governedLists > 0)
     .sort((a, b) => b.stats.activity - a.stats.activity)
-
-export const kindLabel = (kind: RegistryKind): string => {
-  if (kind === 'permanent') return 'Stake'
-  return 'Light'
-}
 
 const integer = new Intl.NumberFormat('en-US')
 export const formatInt = (value: number): string =>

@@ -34,6 +34,7 @@ import { Odometer } from 'components/curate/motion/odometer'
 import { AnimatedNumber } from 'components/curate/motion/animated-number'
 import { reveal } from 'components/curate/motion/reveal'
 import { VerifiedBadge } from 'components/curate/verified-badge'
+import { KindTag } from 'components/curate/stake-tag'
 import { getNativeCurrency } from 'config/chains'
 import {
   completeChallengeWindows,
@@ -71,7 +72,6 @@ import {
   chainInfo,
   entryCount,
   formatUnits,
-  kindLabel,
   registryHref,
   newestVerified,
   rulingCard,
@@ -1396,6 +1396,7 @@ const Dashboard = () => {
                             {registry.trustStatus === 'verified' && (
                               <VerifiedBadge size={16} />
                             )}
+                            <KindTag kind={registry.kind} />
                           </NameLine>
                           <RowMeta>
                             <span
@@ -1407,7 +1408,6 @@ const Dashboard = () => {
                                 {chainInfo(registry.chainId)?.name}
                               </VisuallyHidden>
                             </span>
-                            <Small $muted>{kindLabel(registry.kind)}</Small>
                           </RowMeta>
                         </div>
                       </RegistryCell>
