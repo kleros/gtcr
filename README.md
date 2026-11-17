@@ -19,7 +19,7 @@
 
 ## Environment Variables
 
-The build reads only the `REACT_APP_` variables listed in `.env.example`. The app does not render without `REACT_APP_REOWN_PROJECT_ID`, and it shows no Standard list without the Envio indexer URLs. Without `REACT_APP_ALCHEMY_API_KEY` it uses public RPC endpoints.
+The build reads only the `REACT_APP_` variables listed in `.env.example`. The app does not render without `REACT_APP_REOWN_PROJECT_ID`, and it shows no Standard list without the Envio indexer URLs. Without `REACT_APP_ALCHEMY_API_KEY` it uses public RPC endpoints. The optional `REACT_APP_SUBGRAPH_KLEROS_DISPLAY_*_ENDPOINT` variables point at the Kleros Display subgraphs (The Graph), as on Scout, for court details; without them those details read from the court contract only.
 
 ## Before a Release
 

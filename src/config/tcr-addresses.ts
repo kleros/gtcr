@@ -190,6 +190,21 @@ export const subgraphUrlPermanent: ChainMap<string> = {
 } as const
 
 /**
+ * The Kleros Display subgraphs (The Graph): Kleros Court v1 as an index, the
+ * same source Scout reads — disputes, courts, rounds, drawn jurors and their
+ * votes. The URLs carry a The Graph API key (restrict it to the app's
+ * domains in The Graph Studio) and are named as in Scout. Optional: without
+ * one, a chain's court details read from the contract only. Live period
+ * timings always come from the contract (hooks/use-dispute-timeline.ts), as
+ * an index trails the chain.
+ */
+export const klerosDisplayUrl: ChainMap<string> = {
+  '1': process.env.REACT_APP_SUBGRAPH_KLEROS_DISPLAY_MAINNET_ENDPOINT,
+  '100': process.env.REACT_APP_SUBGRAPH_KLEROS_DISPLAY_GNOSIS_ENDPOINT,
+  '11155111': process.env.REACT_APP_SUBGRAPH_KLEROS_DISPLAY_SEPOLIA_ENDPOINT,
+} as const
+
+/**
  * Every Standard factory the Curate indexer tracks, with the block it was deployed at.
  * Each list they create emits NewGTCR(address), whose block is the list's
  * creation time. Source: kleros/gtcr-subgraph networks.json.

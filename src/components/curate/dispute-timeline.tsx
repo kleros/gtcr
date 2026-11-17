@@ -2,6 +2,7 @@ import React from 'react'
 import styled, { css } from 'styled-components'
 import { Label, Small, Surface } from 'components/curate/primitives'
 import useDisputeTimeline from 'hooks/use-dispute-timeline'
+import useCourtName from 'hooks/use-court-name'
 import { formatAbsolute, formatDuration, windowProgress } from 'utils/time'
 import {
   expectedRuling,
@@ -271,6 +272,8 @@ const DisputeTimeline = ({
     arbitrable,
     disputeID,
   })
+  // Hooks run before the early return; the name needs the court's number.
+  const courtName = useCourtName(chainId, dispute?.court)
   if (!dispute) return null
 
   const steps = timelineSteps(dispute, now)
@@ -281,8 +284,12 @@ const DisputeTimeline = ({
       <Head>
         <Label $tone="faint">Dispute timeline</Label>
         <Small $muted>
-          Case {dispute.disputeID} · round {dispute.round} · {dispute.jurors}{' '}
-          juror{dispute.jurors === 1 ? '' : 's'}
+          Case {dispute.disputeID}
+          {courtName
+            ? ` · ${/court$/i.test(courtName) ? courtName : `${courtName} court`}`
+            : ''}{' '}
+          · round {dispute.round} · {dispute.jurors} juror
+          {dispute.jurors === 1 ? '' : 's'}
         </Small>
       </Head>
       <Steps>
