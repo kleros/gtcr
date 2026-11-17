@@ -11,9 +11,9 @@ import { onTxConfirmed } from 'utils/tx-events'
  * reloads when it is next shown.
  */
 const REFRESHED = new Set([
-  'lightItemDetails',
+  'standardItemDetails',
   'permanentItemDetails',
-  'lightItems',
+  'standardItems',
   'permanentItems',
   'permanentRegistry',
   'permanentRegistrySummary',

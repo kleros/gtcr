@@ -82,7 +82,7 @@ export type SubmitHandler = (
   setFieldValue: SetFieldValue,
 ) => Promise<void>
 
-/** Light Curate: one native deposit (base + arbitration cost) with `addItem`. */
+/** Standard Curate: one native deposit (base + arbitration cost) with `addItem`. */
 export const useDepositSubmit = ({
   tcrAddress,
   submissionDeposit,

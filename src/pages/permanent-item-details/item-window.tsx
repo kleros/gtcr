@@ -5,7 +5,7 @@ import { formatAbsolute, formatDate } from 'utils/time'
 import { CurateIcon } from 'components/curate/icons'
 import { Chip, Label } from 'components/curate/primitives'
 import { AnimatedNumber } from 'components/curate/motion/animated-number'
-import { WindowRing } from 'components/curate/item-light-window-ring'
+import { WindowRing } from 'components/curate/item-standard-window-ring'
 import { formatSince } from 'utils/format-since'
 import {
   capitalize,

@@ -1,19 +1,19 @@
 import React, { createContext, useMemo } from 'react'
-import useLightTcrView from 'hooks/light-tcr-view'
+import useStandardTcrView from 'hooks/standard-tcr-view'
 
-export type LightTCRViewContextValue = ReturnType<typeof useLightTcrView>
+export type StandardTCRViewContextValue = ReturnType<typeof useStandardTcrView>
 
-const LightTCRViewContext = createContext<LightTCRViewContextValue | undefined>(
-  undefined,
-)
-const LightTCRViewProvider = ({
+const StandardTCRViewContext = createContext<
+  StandardTCRViewContextValue | undefined
+>(undefined)
+const StandardTCRViewProvider = ({
   children,
   tcrAddress,
 }: {
   children: React.ReactNode
   tcrAddress: string
 }) => {
-  const ctx = useLightTcrView(tcrAddress)
+  const ctx = useStandardTcrView(tcrAddress)
   const value = useMemo(
     () => ctx,
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -35,10 +35,10 @@ const LightTCRViewProvider = ({
     ],
   )
   return (
-    <LightTCRViewContext.Provider value={value}>
+    <StandardTCRViewContext.Provider value={value}>
       {children}
-    </LightTCRViewContext.Provider>
+    </StandardTCRViewContext.Provider>
   )
 }
 
-export { LightTCRViewContext, LightTCRViewProvider }
+export { StandardTCRViewContext, StandardTCRViewProvider }

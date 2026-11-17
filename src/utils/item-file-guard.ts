@@ -2,7 +2,7 @@ import { displayableValue } from './display-value'
 import { sanitizeColumns } from './meta-evidence-guard'
 
 /*
- * A Light or Stake entry is a file its submitter writes, read back from IPFS
+ * A Standard or Stake entry is a file its submitter writes, read back from IPFS
  * when the indexer has no fields for it. Whatever is in it reaches the list
  * and entry pages of every visitor, so it gets the shape the app reads
  * before anything else touches it: columns as in a MetaEvidence (a label

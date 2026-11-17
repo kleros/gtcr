@@ -13,7 +13,7 @@ import {
 } from 'components/curate/primitives'
 import { CurateIcon } from 'components/curate/icons'
 import { VerifiedBadge } from 'components/curate/verified-badge'
-import { formatEther } from 'components/curate/item-light-format'
+import { formatEther } from 'components/curate/item-standard-format'
 import { reveal } from 'components/curate/motion/reveal'
 import { getNativeCurrency } from 'config/chains'
 import { parseRichAddress } from 'utils/rich-address'

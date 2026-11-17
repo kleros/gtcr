@@ -5,7 +5,7 @@ import {
   SUBGRAPH_RULING,
 } from 'utils/item-status'
 import { klerosAddresses } from 'config/tcr-addresses'
-import { toSeconds } from 'components/curate/item-light-format'
+import { toSeconds } from 'components/curate/item-standard-format'
 
 /*
  * Everything the hero and the action card derive from the latest request:
@@ -13,7 +13,7 @@ import { toSeconds } from 'components/curate/item-light-format'
  * link. One place, so both blocks always describe the same request.
  */
 
-export interface LightRequest extends SubgraphRequest {
+export interface StandardRequest extends SubgraphRequest {
   requestType?: string
   deposit?: BigNumber | string
   disputeID: string
@@ -63,7 +63,7 @@ export const requestFacts = ({
   chainId,
 }: {
   item: SubgraphItem
-  request: LightRequest
+  request: StandardRequest
   statusCode: number
   challengePeriodDuration: BigNumber
   chainId?: number | null
@@ -178,7 +178,7 @@ export const statusChangeNotice = (
  * side that paid, and the other side's backers are reimbursed.
  */
 export const fundedAlone = (
-  request: LightRequest | undefined,
+  request: StandardRequest | undefined,
   requesterName: string,
 ): string | undefined => {
   const round = request?.rounds?.[0]

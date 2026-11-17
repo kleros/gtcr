@@ -29,11 +29,11 @@ import RequestTimelines, {
   type TimelineRequest,
 } from 'components/request-timelines'
 import PolicyUpdatedBadge from 'components/policy-updated-badge'
-import { LightTCRViewContext } from 'contexts/light-tcr-view-context'
+import { StandardTCRViewContext } from 'contexts/standard-tcr-view-context'
 import { WalletContext } from 'contexts/wallet-context'
 import { useGraphqlBatcher } from 'contexts/graphql-batcher'
 import { capitalizeFirstLetter } from 'utils/string'
-import { LIGHT_ITEM_DETAILS_QUERY } from 'utils/graphql'
+import { STANDARD_ITEM_DETAILS_QUERY } from 'utils/graphql'
 import {
   CONTRACT_STATUS,
   hasPendingRequest,
@@ -54,7 +54,10 @@ import {
   SkeletonBlock,
   Surface,
 } from 'components/curate/primitives'
-import { EntryStatus, lightEntryStatus } from 'components/curate/entry-status'
+import {
+  EntryStatus,
+  standardEntryStatus,
+} from 'components/curate/entry-status'
 import { Explainer } from 'components/curate/explainer'
 import { EvidenceClosed } from 'components/inline-evidence-composer'
 import { AnimatedNumber } from 'components/curate/motion/animated-number'
@@ -67,16 +70,16 @@ import {
   isImageField,
   titleField,
   type EntryField,
-} from 'components/curate/item-light-fields'
-import { StickyActionBarSpacer } from 'components/curate/item-light-action-bar'
+} from 'components/curate/item-standard-fields'
+import { StickyActionBarSpacer } from 'components/curate/item-standard-action-bar'
 import ItemStatusCard from './item-status-card'
 import CrowdfundingCard from './crowdfunding-card'
-import { AppealWindowPanel } from 'pages/light-item-details/appeal-funding'
-import { requestFacts, type LightRequest } from './request-facts'
+import { AppealWindowPanel } from 'pages/standard-item-details/appeal-funding'
+import { requestFacts, type StandardRequest } from './request-facts'
 import { linkedListAddress, linkedListField } from './linked-list'
 
 /*
- * Light Curate item page. A breadcrumb, then the hero (the one featured
+ * Standard Curate item page. A breadcrumb, then the hero (the one featured
  * panel): the entry's identifiers set large with its status, and on the
  * right whatever clock is running (challenge window, appeal period, the
  * court case, or the date it settled). Under it, two columns: the fields
@@ -440,7 +443,7 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
   // The actions column stays reachable on short windows (useStickyTop).
   const railRef = useStickyTop(24)
   const [modalOpen, setModalOpen] = useState<boolean | undefined>()
-  const tcrViewContext = useContext(LightTCRViewContext)
+  const tcrViewContext = useContext(StandardTCRViewContext)
   const tcrError = tcrViewContext?.tcrError
   const metaEvidence = tcrViewContext?.metaEvidence
   const challengePeriodDuration = tcrViewContext?.challengePeriodDuration
@@ -454,11 +457,11 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
   const compoundId = `${itemID}@${tcrAddress?.toLowerCase()}`
   const { graphqlBatcher } = useGraphqlBatcher()
   const detailsViewQuery = useQuery({
-    queryKey: ['lightItemDetails', compoundId],
+    queryKey: ['standardItemDetails', compoundId],
     queryFn: () =>
       graphqlBatcher.fetch({
         id: crypto.randomUUID(),
-        document: LIGHT_ITEM_DETAILS_QUERY,
+        document: STANDARD_ITEM_DETAILS_QUERY,
         variables: { id: compoundId },
         chainId: chainId!,
       }),
@@ -574,7 +577,7 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
   const { tcrTitle, itemName } = metadata || {}
 
   const view = useMemo(
-    () => lightEntryStatus(item, timestamp, challengePeriodDuration),
+    () => standardEntryStatus(item, timestamp, challengePeriodDuration),
     [item, timestamp, challengePeriodDuration],
   )
 
@@ -672,7 +675,7 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
   // The key holds the dispute and its round count, so an appeal that opens a
   // new round reads the new fee; a failed read is retried, and the dialog
   // offers another try instead of loading forever.
-  const latestRequest = item?.requests?.[0] as LightRequest | undefined
+  const latestRequest = item?.requests?.[0] as StandardRequest | undefined
   const appealCostApplies =
     !!library && !!latestRequest?.disputed && !latestRequest.resolved
   const appealCostQuery = useQuery({
@@ -784,7 +787,7 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
 
   const entryName = itemName ? capitalizeFirstLetter(itemName) : 'Entry'
   const registryHref = `/tcr/${chainId}/${tcrAddress}`
-  const request = item?.requests?.[0] as LightRequest | undefined
+  const request = item?.requests?.[0] as StandardRequest | undefined
   const statusCode =
     item && timestamp && challengePeriodDuration
       ? itemToStatusCode(item, timestamp, challengePeriodDuration)
@@ -966,7 +969,7 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
             itemMetaEvidence={itemMetaEvidence}
             registryAddress={itemAddress}
             exclude={heroFields}
-            kind="light"
+            kind="standard"
           />
           {/* Spread the `requests` parameter to convert elements from array to an object */}
           <RequestTimelines
@@ -990,7 +993,7 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
             />
           )}
           <Explainer
-            id="item-light-how-entries-are-judged"
+            id="item-standard-how-entries-are-judged"
             eyebrow="How this entry is judged"
             heading="A deposit you get back, a bounty for spotting mistakes."
             steps={[

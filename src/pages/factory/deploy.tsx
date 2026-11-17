@@ -22,9 +22,9 @@ import { parseIpfs } from 'utils/ipfs-parse'
 import { wagmiConfig } from 'config/wagmi'
 import { NETWORKS_INFO, getExplorerUrl } from 'config/networks'
 import useUrlChainId from 'hooks/use-url-chain-id'
-import useLightTcrView from 'hooks/light-tcr-view'
+import useStandardTcrView from 'hooks/standard-tcr-view'
 import useNativeCurrency from 'hooks/native-currency'
-import SubmitModal from '../light-item-details/modals/submit'
+import SubmitModal from '../standard-item-details/modals/submit'
 import {
   defaultEvidenceDisplayUri,
   defaultTcrAddresses,
@@ -713,7 +713,7 @@ const Deploy = ({
     metaEvidence,
     challengePeriodDuration,
     arbitrator: listOfListsArbitrator,
-  } = useLightTcrView(defaultTCRAddress ?? '')
+  } = useStandardTcrView(defaultTCRAddress ?? '')
   const { uploadFile } = useAtlasProvider()
   const gate = useWalletGate({ verb: 'deploy', needsChain: true })
 

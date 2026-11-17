@@ -3,8 +3,8 @@ import DisplaySelector from './display-selector'
 import { ItemTypes } from '@kleros/gtcr-encoder'
 import { Button } from 'components/ui'
 import useNavigateAndScrollTop from 'hooks/navigate-and-scroll-top'
-import { StyledItemCol } from './light-tcr-card-content'
-import { Container } from './light-item-card-content'
+import { StyledItemCol } from './standard-tcr-card-content'
+import { Container } from './standard-item-card-content'
 
 type ItemColumn = Column & { value?: string | number | boolean | null }
 

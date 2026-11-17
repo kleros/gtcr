@@ -11,8 +11,8 @@ Kleros Curate is the verification layer for policy-driven token-curated registri
 - Registry pages: https://curate.kleros.io/tcr/{chainId}/{registryAddress}
 - Submit an entry: https://curate.kleros.io/tcr/{chainId}/{registryAddress}/submit
 - Item detail pages: https://curate.kleros.io/tcr/{chainId}/{registryAddress}/{itemID}
-- Launch a list (choose Light or Stake): https://curate.kleros.io/launch/{chainId}
-- Light factory: https://curate.kleros.io/factory/{chainId}
+- Launch a list (choose Standard or Stake): https://curate.kleros.io/launch/{chainId}
+- Standard factory: https://curate.kleros.io/factory/{chainId}
 - Stake factory: https://curate.kleros.io/factory-permanent/{chainId}
 
 ## Agent Skill
@@ -25,9 +25,9 @@ Agents working with Curate should load the kleros-curate skill before submitting
 
 ## Supported Registry Flavors
 
-- Light Curate: LightGeneralizedTCR, optimistic challenge window, native deposits. New lists are created with the Light factory.
+- Standard Curate (called Light Curate in the Kleros docs): LightGeneralizedTCR, optimistic challenge window, native deposits. New lists are created with the Standard factory.
 - Stake Curate: PermanentGTCR, ERC20 stake model, Goldsky-backed indexed data.
-- Scout: Gnosis Light Curate overlay for token lists, address tags, contract domain names, and CDN mappings.
+- Scout: Gnosis Standard Curate overlay for token lists, address tags, contract domain names, and CDN mappings.
 
 ## Non-Negotiables For Agents
 

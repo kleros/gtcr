@@ -295,7 +295,7 @@ uses it too; the hooks are in `registry-shared-verified.ts`), and every page app
 way (dashboard, Browse, registry pages, the profile, the landing page).
 
 - **Kleros Verified**: the chain's Kleros list of lists, or a list on it. The list of lists is the
-  chain's Light one (`VERIFIED_LIST_OF_LISTS_ADDRESSES` in `config/list-of-lists.ts`, where new
+  chain's Standard one (`VERIFIED_LIST_OF_LISTS_ADDRESSES` in `config/list-of-lists.ts`, where new
   lists are submitted). A list is on it while its entry is Registered, or Registered with a removal
   request still open (it stays until that request is executed); the entry's "Address" field alone
   says which list it is (`listOfListsEntryAddress`), never another field or the file name. The
@@ -332,16 +332,16 @@ way (dashboard, Browse, registry pages, the profile, the landing page).
   indexer has no challenge period). When the windows cannot be read, no window is claimed.
 - One 30-day window for every "30 days" figure: the chart's 30 UTC days (today so far included,
   drawn dashed). Active curators and their requests and challenges use the same start. Requests
-  count on the day they were made; challenges on the day they were made (Light `challengeTime`;
+  count on the day they were made; challenges on the day they were made (Standard `challengeTime`;
   Stake: the challenge), whenever the request was made. The landing page reads the same load.
 - Disputes, rulings and bounties won are all time, never windowed: the rulings ledger pages through
   every resolved dispute, and a figure reads "n+" if it stops at its page cap. A bounty is what a
   challenger the court ruled for takes on top of their own deposit back: the requester's base
-  deposit (Light) or the entry's stake (Stake Curate). Amounts stay per coin, never
+  deposit (Standard) or the entry's stake (Stake Curate). Amounts stay per coin, never
   added across coins.
 - A count is never the length of a capped list: it comes from its own query, and reads "n+" when
   that query hits its cap.
-- "Entries" is every entry a list holds, the figure its registry page shows (Light: settled entries
+- "Entries" is every entry a list holds, the figure its registry page shows (Standard: settled entries
   plus those with an open request).
 - Stake Curate has no requests; its listed count is never shown as "open requests". Its status
   counters drift (some go negative): the total is their raw sum and "listed" is submitted +

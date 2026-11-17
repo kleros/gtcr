@@ -8,7 +8,7 @@ import type { TrustStatus } from 'pages/dashboard/types'
 /*
  * One rule for "Kleros Verified", shared by the dashboard, Browse, the
  * registry pages, the profile and the landing page: a registry is Kleros
- * Verified when it is the chain's Kleros list of lists (the Light one in
+ * Verified when it is the chain's Kleros list of lists (the Standard one in
  * config/list-of-lists.ts), or an entry on it (Registered, or Registered
  * with a removal request still open: it stays on the list until that
  * request is executed), and then carries the approval seal
@@ -29,11 +29,11 @@ const ADDRESS = /^0x[a-fA-F0-9]{40}$/
 export const LIST_OF_LISTS_ADDRESS_LABEL = 'Address'
 
 /**
- * The registry a Light entry of a list of lists points to: the value of its
+ * The registry a Standard entry of a list of lists points to: the value of its
  * field labelled like the list's GTCR address column, which is the field
  * its row and its page show (lowercase, or null).
  *
- * Nothing else may decide it. A Light entry is a file its submitter writes,
+ * Nothing else may decide it. A Standard entry is a file its submitter writes,
  * columns included, and the indexer keeps every one of them: an extra
  * column whose label sorts first, or an address in the file's name, would
  * otherwise send the seal or the "Open list" link to a list the entry does
@@ -55,14 +55,14 @@ const MAX_PAGES = 20
 /** How long one page may take before the read counts as failed. */
 const PAGE_TIMEOUT_MS = 10_000
 
-/** The list of lists' entries that are on it (Light LItem), a page. */
+/** The list of lists' entries that are on it (Standard LItem), a page. */
 const VERIFIED_REGISTRIES_QUERY = gql`
   query VerifiedRegistries(
     $chainId: Int!
     $listsOfLists: [String!]!
     $offset: Int!
   ) {
-    verifiedLight: LItem(
+    verifiedStandard: LItem(
       limit: ${PAGE}
       offset: $offset
       order_by: [{ id: asc }]
@@ -103,7 +103,7 @@ interface VerifiedEntry {
 }
 
 interface VerifiedRegistriesResult {
-  verifiedLight?: VerifiedEntry[] | null
+  verifiedStandard?: VerifiedEntry[] | null
 }
 
 /** The registries the list of lists vouches for, plus the list itself. */
@@ -160,9 +160,9 @@ export const fetchVerifiedRegistries = async (
       listsOfLists,
       offset: page * PAGE,
     })
-    const light = result.verifiedLight ?? []
-    entries.push(...light)
-    if (light.length < PAGE) break
+    const standard = result.verifiedStandard ?? []
+    entries.push(...standard)
+    if (standard.length < PAGE) break
   }
   const verified = verifiedSetFrom(chainId, entries)
   const controller = new AbortController()

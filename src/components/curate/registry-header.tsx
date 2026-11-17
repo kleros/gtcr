@@ -27,7 +27,7 @@ import { CountUpText, isPlainCount } from './registry-shared-count'
  * headline figure with the live counts and the list's terms beside it, the
  * share of entries registered as a ring when the page passes both counts, and
  * the one action with its exact deposit and what happens to it (a deposit on
- * Light, a locked stake on Stake). Parameters slide open as a
+ * Standard, a locked stake on Stake). Parameters slide open as a
  * drawer; the per-list explainer waits in a pill.
  */
 
@@ -458,7 +458,7 @@ const StatValue = ({ value }: { value?: React.ReactNode }) =>
   )
 
 /** What happens to the primary button's amount, per kind. */
-const depositNoteFor = (kind: 'light' | 'permanent', itemName: string) =>
+const depositNoteFor = (kind: 'standard' | 'permanent', itemName: string) =>
   kind === 'permanent'
     ? `Locked, not spent: it stays locked while your ${itemName} is listed and comes back when you withdraw, unless a challenge succeeds.`
     : `A deposit, not a fee: it comes back when your ${itemName} follows the list’s policy.`
@@ -505,7 +505,7 @@ export const RegistryHeader = ({
   /** The registry is the chain's Kleros list of lists. */
   listOfLists?: boolean
   /** A Stake list carries the Stake tag; a standard list carries none. */
-  kind: 'light' | 'permanent'
+  kind: 'standard' | 'permanent'
   itemName: string
   primaryLabel: string
   /** The exact amount the button sends; also listed in Parameters. */

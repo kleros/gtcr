@@ -1,7 +1,7 @@
 import { NETWORKS } from './networks'
 
 /**
- * The Kleros lists of lists on Light Curate, where new lists are submitted
+ * The Kleros lists of lists on Standard Curate, where new lists are submitted
  * for the Kleros Verified badge. They alone grant it.
  */
 export const VERIFIED_LIST_OF_LISTS_ADDRESSES = {
@@ -11,7 +11,7 @@ export const VERIFIED_LIST_OF_LISTS_ADDRESSES = {
 } as const
 
 /**
- * The Classic lists of lists Kleros used before it moved to the Light ones
+ * The Classic lists of lists Kleros used before it moved to the Standard ones
  * above (the app's homepages switched on 11 Aug 2026). The lists it still
  * vouches for were registered again on the new ones; the rest were not, and
  * had been idle for a year or more. Being registered on one makes no list

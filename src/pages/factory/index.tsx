@@ -9,7 +9,7 @@ import _GTCRFactory from 'assets/abis/LightGTCRFactory.json'
 import { useWeb3Context } from 'hooks/use-web3-context'
 import useUrlChainId from 'hooks/use-url-chain-id'
 import useDocumentHead from 'hooks/use-document-head'
-import { fetchLightMetaEvidence } from 'hooks/light-tcr-view'
+import { fetchStandardMetaEvidence } from 'hooks/standard-tcr-view'
 import { parseIpfs } from 'utils/ipfs-parse'
 import { version } from '../../../package.json'
 import {
@@ -63,10 +63,10 @@ import {
   relSchema,
   tcrSchemaFor,
 } from './schemas'
-import { LIGHT_WIZARD_DEFAULTS } from './defaults'
+import { STANDARD_WIZARD_DEFAULTS } from './defaults'
 
 /*
- * /factory/:chainId, the Light Curate list wizard: the page's
+ * /factory/:chainId, the Standard Curate list wizard: the page's
  * statement, one explainer, a horizontal stepper, the current step in one
  * panel with its action bar (Next submits the step's form, so its schema
  * runs) beside a live preview of what each side will pay, then the lists
@@ -160,7 +160,7 @@ export interface StepProps extends CachedFactory {
   postSubmit: () => void
 }
 
-export const LIGHT_FACTORY_STEPS = [
+export const STANDARD_FACTORY_STEPS = [
   {
     title: 'List',
     description: 'Name, logo and policy',
@@ -192,12 +192,12 @@ export const formIds = [
   'deployTCRForm',
 ]
 
-type LightFactoryVisualStep = FactoryWizardStep & {
+type StandardFactoryVisualStep = FactoryWizardStep & {
   kind: 'tcr' | 'item' | 'rel' | 'deploy'
   section?: FactorySection
 }
 
-const LIGHT_FACTORY_VISUAL_STEPS: LightFactoryVisualStep[] = [
+const STANDARD_FACTORY_VISUAL_STEPS: StandardFactoryVisualStep[] = [
   {
     title: 'Name',
     componentStep: 1,
@@ -246,7 +246,10 @@ const LIGHT_FACTORY_VISUAL_STEPS: LightFactoryVisualStep[] = [
 ]
 
 /** Whether a step's stored values still pass its own Next. */
-const stepValid = (step: LightFactoryVisualStep, state: TcrState): boolean => {
+const stepValid = (
+  step: StandardFactoryVisualStep,
+  state: TcrState,
+): boolean => {
   switch (step.kind) {
     case 'tcr':
       return tcrSchemaFor(step.section).isValidSync(state)
@@ -290,13 +293,13 @@ const useCachedFactory = (
   const initialWizardState = {
     tcrTitle: '',
     tcrDescription: '',
-    submissionBaseDeposit: LIGHT_WIZARD_DEFAULTS.submissionBaseDeposit,
-    removalBaseDeposit: LIGHT_WIZARD_DEFAULTS.removalBaseDeposit,
+    submissionBaseDeposit: STANDARD_WIZARD_DEFAULTS.submissionBaseDeposit,
+    removalBaseDeposit: STANDARD_WIZARD_DEFAULTS.removalBaseDeposit,
     submissionChallengeBaseDeposit: 0,
     removalChallengeBaseDeposit: 0.05,
     arbitratorAddress: defaultArbitrator || '',
     governorAddress: account || defaultGovernor || '',
-    challengePeriodDuration: LIGHT_WIZARD_DEFAULTS.challengePeriodDuration,
+    challengePeriodDuration: STANDARD_WIZARD_DEFAULTS.challengePeriodDuration,
     itemName: 'item',
     itemNamePlural: 'items',
     requireRemovalEvidence: true,
@@ -639,7 +642,7 @@ const DeploymentRow = ({
   const { data, isLoading } = useQuery({
     queryKey: ['factoryDeployment', chainId, address.toLowerCase()],
     queryFn: async () => {
-      const found = await fetchLightMetaEvidence(address, chainId)
+      const found = await fetchStandardMetaEvidence(address, chainId)
       if (!found) return null
       const response = await fetch(parseIpfs(found.metaEvidenceURI))
       return (await response.json()) as MetaEvidence
@@ -717,11 +720,11 @@ const FactoryPage = () => {
   const isStepValid = useCallback(
     (step: FactoryWizardStep, index: number) =>
       !tcrState ||
-      stepValid(LIGHT_FACTORY_VISUAL_STEPS[index] ?? step, tcrState),
+      stepValid(STANDARD_FACTORY_VISUAL_STEPS[index] ?? step, tcrState),
     [tcrState],
   )
   const wizard = useFactoryWizard({
-    steps: LIGHT_FACTORY_VISUAL_STEPS,
+    steps: STANDARD_FACTORY_VISUAL_STEPS,
     draft: tcrState,
     setDraft: cachedFactory?.setTcrState,
     resetDraft: cachedFactory?.resetTcrState,
@@ -730,7 +733,7 @@ const FactoryPage = () => {
   })
 
   const transactions = tcrState?.transactions
-  const currentVisualStep = LIGHT_FACTORY_VISUAL_STEPS[wizard.index]
+  const currentVisualStep = STANDARD_FACTORY_VISUAL_STEPS[wizard.index]
   const chainName = factoryChainId
     ? (NETWORKS_INFO[factoryChainId as keyof typeof NETWORKS_INFO]?.name ??
       `chain ${factoryChainId}`)
@@ -739,8 +742,8 @@ const FactoryPage = () => {
     factoryChainId !== undefined && !!defaultArbitratorAddresses[factoryChainId]
 
   useDocumentHead(
-    factoryDocumentTitle('Light'),
-    'Create a Light Kleros Curate list: name it, set the deposits and the court, define the item fields and deploy it with one transaction.',
+    factoryDocumentTitle('Standard'),
+    'Create a Standard Kleros Curate list: name it, set the deposits and the court, define the item fields and deploy it with one transaction.',
   )
 
   const factoryInterface = useMemo(
@@ -807,7 +810,7 @@ const FactoryPage = () => {
               <ChainChip chainId={factoryChainId} size="sm" />
             )}
           </Row>
-          <Statement>Create a Light list</Statement>
+          <Statement>Create a Standard list</Statement>
           <Lede>
             A submitter’s deposit is locked only during the challenge period;
             the draft is saved in this browser as you type.
@@ -816,9 +819,9 @@ const FactoryPage = () => {
         <div style={{ ['--i' as string]: 1 }}>
           <SegmentedControl
             ariaLabel="List type"
-            value="light"
+            value="standard"
             options={[
-              { value: 'light', label: 'Light' },
+              { value: 'standard', label: 'Standard' },
               { value: 'permanent', label: 'Stake' },
             ]}
             onChange={(value) => {
@@ -873,7 +876,7 @@ const FactoryPage = () => {
           ) : (
             <FactoryWizardGrid aria-busy>
               <Row $gap={16} $justify="space-between">
-                {LIGHT_FACTORY_STEPS.map((group) => (
+                {STANDARD_FACTORY_STEPS.map((group) => (
                   <SkeletonBlock
                     key={group.title}
                     $height="36px"
@@ -960,12 +963,15 @@ const FactoryPage = () => {
       <Section $gap="lg">
         <FactoryWizardGrid>
           <Lift style={{ ['--i' as string]: 3 }}>
-            <FactoryStepTimeline groups={LIGHT_FACTORY_STEPS} wizard={wizard} />
+            <FactoryStepTimeline
+              groups={STANDARD_FACTORY_STEPS}
+              wizard={wizard}
+            />
           </Lift>
           <FactorySplit>
             <FactoryStepPanel
               wizard={wizard}
-              groups={LIGHT_FACTORY_STEPS}
+              groups={STANDARD_FACTORY_STEPS}
               formId={currentFormId}
               style={{ ['--i' as string]: 4 }}
             >

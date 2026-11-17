@@ -11,7 +11,7 @@ import {
   SUBGRAPH_RULING,
   CONTRACT_STATUS,
 } from 'utils/item-status'
-import { LightTCRViewContext } from 'contexts/light-tcr-view-context'
+import { StandardTCRViewContext } from 'contexts/standard-tcr-view-context'
 import useRequiredFees from 'hooks/required-fees'
 import useNativeCurrency from 'hooks/native-currency'
 import useNow from 'hooks/use-now'
@@ -37,10 +37,16 @@ import {
   type ReceiptLine,
   type SendPhase,
 } from 'components/curate/what-happens-next'
-import { Dialog, DialogColumns } from 'components/curate/item-light-dialog'
-import { gatedConfirm, useActionGate } from 'components/curate/item-light-gate'
-import { formatAmount, formatEther } from 'components/curate/item-light-format'
-import { Notice } from 'components/curate/item-light-notice'
+import { Dialog, DialogColumns } from 'components/curate/item-standard-dialog'
+import {
+  gatedConfirm,
+  useActionGate,
+} from 'components/curate/item-standard-gate'
+import {
+  formatAmount,
+  formatEther,
+} from 'components/curate/item-standard-format'
+import { Notice } from 'components/curate/item-standard-notice'
 import { PolicyButton } from '../policy-button'
 import { typedAmountWei } from '../typed-amount'
 
@@ -122,7 +128,7 @@ const CrowdfundModal = ({
     loserStakeMultiplier,
     MULTIPLIER_DIVISOR,
     tcrAddress,
-  } = useContext(LightTCRViewContext) || {}
+  } = useContext(StandardTCRViewContext) || {}
 
   const [contributionShare, setContributionShare] = useState(1)
   const [amountText, setAmountText] = useState<string>()

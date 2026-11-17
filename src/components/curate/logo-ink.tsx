@@ -32,7 +32,7 @@ const contrast = (a: number, b: number) =>
 // The tile as painted on a row: raised glass over the surface. Dark and
 // Kleros land within a hair of each other, light is its own.
 const DARK_TILE = luminance(23, 28, 40)
-const LIGHT_TILE = luminance(241, 244, 250)
+const STANDARD_TILE = luminance(241, 244, 250)
 
 /** Under this contrast (WCAG's 3:1 for graphics) ink is lost on the tile. */
 const LOST = 3
@@ -70,7 +70,7 @@ export const sampleInk = (image: HTMLImageElement): Ink => {
           pixels[index + 2],
         )
         if (contrast(value, DARK_TILE) < LOST) lostOnDark += alpha
-        if (contrast(value, LIGHT_TILE) < LOST) lostOnLight += alpha
+        if (contrast(value, STANDARD_TILE) < LOST) lostOnLight += alpha
       }
       const seeThrough = 1 - covered / (SAMPLE * SAMPLE)
       if (covered > 0 && seeThrough >= 0.15)

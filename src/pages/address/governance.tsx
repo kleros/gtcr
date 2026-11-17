@@ -397,7 +397,7 @@ interface MetaEvidenceFile {
  * arbitrator, extra data and change count are read from the chain when the
  * dialog opens. The MetaEvidence URIs exist only in event logs, so they come
  * from the indexer, checked against that count: the save that changes the
- * court also sends the MetaEvidence (Light and Stake), and a file the indexer
+ * court also sends the MetaEvidence (Standard and Stake), and a file the indexer
  * has not caught up with would quietly undo the last policy change.
  */
 export interface CurrentMetaEvidence {
@@ -408,7 +408,7 @@ export interface CurrentMetaEvidence {
    * the ConnectedTCRSet event, so it comes from the indexer.
    */
   connectedTCR?: string
-  /** The arbitrator new requests use (Light). */
+  /** The arbitrator new requests use (Standard). */
   arbitrator?: string
   /** Its extra data: the court and the number of jurors. */
   arbitratorExtraData?: string
@@ -582,7 +582,7 @@ interface ChainArbitration {
 
 /**
  * What the chain holds now: the arbitrator and extra data new requests use,
- * and how many times the MetaEvidence has changed. Light's getters return
+ * and how many times the MetaEvidence has changed. Standard's getters return
  * the latest settings; a Stake list's latest entry is found by reading its
  * entries in turn.
  */
@@ -649,8 +649,8 @@ const readIndexer = async <T,>(
   }
 }
 
-const LIGHT_META_EVIDENCE = `
-  query GovernanceLightMetaEvidence($id: String!) {
+const STANDARD_META_EVIDENCE = `
+  query GovernanceStandardMetaEvidence($id: String!) {
     registry: LRegistry_by_pk(id: $id) {
       registrationMetaEvidence { uri }
       clearingMetaEvidence { uri }
@@ -673,7 +673,7 @@ const STAKE_SETTING = `
  * The live arbitration settings of a list. The chain values come first; it
  * throws when they can't be read, so the dialogs refuse to save instead of
  * starting from values that may be stale. The indexer's MetaEvidence counts
- * only if it is at the chain's change count: Light emits two MetaEvidence
+ * only if it is at the chain's change count: Standard emits two MetaEvidence
  * logs per settings entry (metaEvidenceUpdates is the number of entries),
  * and the Stake subgraph keys each settings entry by its index. Otherwise
  * the result is `behind`, or `unreadable` when the indexer did not answer:
@@ -716,7 +716,7 @@ const fetchCurrentMetaEvidence = async (
           connectedTCR?: string
           metaEvidenceCount?: string | number
         }
-      }>(url, LIGHT_META_EVIDENCE, { id }).catch(() => undefined)
+      }>(url, STANDARD_META_EVIDENCE, { id }).catch(() => undefined)
     : undefined
   const indexed = answer?.registry
   if (!indexed) return { ...chain, unreadable: true }
@@ -1258,7 +1258,7 @@ const ArbitrationGovernanceField = ({
   const [checking, setChecking] = useState(false)
   const ids = useId()
 
-  const usesPair = registry.kind === 'light'
+  const usesPair = registry.kind === 'standard'
   const usesSingle = registry.kind === 'permanent'
   const jurorCount = parseJurors(jurors)
   const courtNumber = /^\d+$/.test(courtID) ? Number(courtID) : undefined
@@ -1276,7 +1276,7 @@ const ArbitrationGovernanceField = ({
     (usesPair &&
       toStoredUri(meta.clearing) !== toStoredUri(current?.clearing ?? ''))
   // Every save sends values the governor did not touch along with the ones
-  // they did (Light and Stake send the court and the MetaEvidence together):
+  // they did (Standard and Stake send the court and the MetaEvidence together):
   // without the live values, refuse rather than send stale ones back.
   const inputError =
     !current || refreshing
@@ -1352,11 +1352,11 @@ const ArbitrationGovernanceField = ({
     }
     const functionName = 'changeArbitrationParams'
     const args =
-      registry.kind === 'light'
+      registry.kind === 'standard'
         ? [arbitrator, extraData, registration, clearing]
         : [extraData, registration]
     if (await send(functionName, args)) {
-      // Light and Stake add a settings entry: one more MetaEvidence change.
+      // Standard and Stake add a settings entry: one more MetaEvidence change.
       const changes = (current.changes ?? 0) + 1
       // The fields keep the saved values until the live settings are read
       // again: un-edited sooner, they would show the ones from before.
@@ -1396,8 +1396,8 @@ const ArbitrationGovernanceField = ({
             : 'Arbitrator and court'}
         </FieldLabel>
         <Small $muted>
-          {registry.kind === 'light'
-            ? 'Light Curate changes the court together with both MetaEvidence files. They start on the live files: keep them to change only the court, or upload new ones (same columns) to change the policy too.'
+          {registry.kind === 'standard'
+            ? 'Standard Curate changes the court together with both MetaEvidence files. They start on the live files: keep them to change only the court, or upload new ones (same columns) to change the policy too.'
             : 'Stake Curate changes the court together with its MetaEvidence. It starts on the live file: keep it to change only the court.'}
         </Small>
       </div>

@@ -21,7 +21,7 @@ import { wrapWithToast, errorToast } from 'utils/wrap-with-toast'
 import { parseWagmiError } from 'utils/parse-wagmi-error'
 import { wagmiConfig } from 'config/wagmi'
 import { isKlerosArbitrator } from 'config/tcr-addresses'
-import { LightTCRViewContext } from 'contexts/light-tcr-view-context'
+import { StandardTCRViewContext } from 'contexts/standard-tcr-view-context'
 import { CurateIcon } from 'components/curate/icons'
 import {
   Body,
@@ -41,20 +41,23 @@ import {
   type ReceiptLine,
   type SendPhase,
 } from 'components/curate/what-happens-next'
-import { Dialog } from 'components/curate/item-light-dialog'
-import { FieldError } from 'components/curate/item-light-notice'
+import { Dialog } from 'components/curate/item-standard-dialog'
+import { FieldError } from 'components/curate/item-standard-notice'
 import { useTxChainId } from 'pages/submit-item/use-wallet-gate'
 import { itemIdFromReceipt } from 'pages/submit-item/use-submit-actions'
-import { gatedConfirm, useActionGate } from 'components/curate/item-light-gate'
+import {
+  gatedConfirm,
+  useActionGate,
+} from 'components/curate/item-standard-gate'
 import {
   formatAmount,
   formatEther,
   groupThousands,
-} from 'components/curate/item-light-format'
+} from 'components/curate/item-standard-format'
 import { PolicyButton } from '../policy-button'
 
 /*
- * Submit an entry to a Light Curate list in three steps: fill in the fields,
+ * Submit an entry to a Standard Curate list in three steps: fill in the fields,
  * read the policy, review and confirm. The confirm step is the "What happens
  * next" panel with the exact deposit, its breakdown and the challenge period
  * (DESIGN.md: money and time are always legible). The upload goes through
@@ -433,7 +436,7 @@ interface SubmissionFormOuterProps {
       shouldValidate?: boolean,
     ) => void,
   ) => void
-  deployedWithLightFactory: RegistryExistsCheck
+  deployedWithStandardFactory: RegistryExistsCheck
   deployedWithPermanentFactory: RegistryExistsCheck
   onFieldsComplete?: (complete: boolean) => void
   style?: React.CSSProperties
@@ -610,7 +613,7 @@ const SubmissionForm = withFormik<
   },
   validate: async (
     values,
-    { columns, deployedWithLightFactory, deployedWithPermanentFactory },
+    { columns, deployedWithStandardFactory, deployedWithPermanentFactory },
   ) => {
     const errors = (
       await Promise.all(
@@ -633,7 +636,7 @@ const SubmissionForm = withFormik<
                 isEmpty: !value,
                 wasDeployedWithFactory:
                   !!value &&
-                  ((await deployedWithLightFactory(address)) ||
+                  ((await deployedWithStandardFactory(address)) ||
                     (await deployedWithPermanentFactory(address))),
                 checkFailed: false,
                 name,
@@ -724,8 +727,8 @@ const SubmitModal: React.FC<{
   const chainId = useTxChainId()
   const publicClient = usePublicClient()
   const { uploadFile } = useAtlasProvider()
-  const listContext = useContext(LightTCRViewContext)
-  const { deployedWithLightFactory, deployedWithPermanentFactory } =
+  const listContext = useContext(StandardTCRViewContext)
+  const { deployedWithStandardFactory, deployedWithPermanentFactory } =
     useFactory()
 
   const { fileURI, metadata } = metaEvidence || {}
@@ -999,7 +1002,7 @@ const SubmitModal: React.FC<{
         disabledFields={disabledFields ?? []}
         fileURI={fileURI}
         tcrAddress={tcrAddress}
-        deployedWithLightFactory={deployedWithLightFactory}
+        deployedWithStandardFactory={deployedWithStandardFactory}
         deployedWithPermanentFactory={deployedWithPermanentFactory}
         onFieldsComplete={setFieldsComplete}
         klerosDecides={klerosDecides}

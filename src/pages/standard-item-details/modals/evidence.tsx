@@ -3,7 +3,7 @@ import { useAccount, usePublicClient, useWalletClient } from 'wagmi'
 import { simulateContract } from '@wagmi/core'
 import { useAtlasProvider } from '@kleros/kleros-app'
 import _gtcr from 'assets/abis/LightGeneralizedTCR.json'
-import { LightTCRViewContext } from 'contexts/light-tcr-view-context'
+import { StandardTCRViewContext } from 'contexts/standard-tcr-view-context'
 import EvidenceForm, { type EvidenceFormValues } from 'components/evidence-form'
 import InlineEvidenceComposer, {
   type EvidencePhase,
@@ -14,8 +14,8 @@ import { wrapWithToast, errorToast } from 'utils/wrap-with-toast'
 import { parseWagmiError } from 'utils/parse-wagmi-error'
 import { wagmiConfig } from 'config/wagmi'
 import { Body, Button, Small, Stack } from 'components/curate/primitives'
-import { Dialog } from 'components/curate/item-light-dialog'
-import { useActionGate } from 'components/curate/item-light-gate'
+import { Dialog } from 'components/curate/item-standard-dialog'
+import { useActionGate } from 'components/curate/item-standard-gate'
 
 /*
  * Submit evidence on an entry: inline at the end of the history while a
@@ -41,7 +41,7 @@ const EvidenceModal = ({
   visible,
   onCancel,
 }: EvidenceModalProps) => {
-  const tcrAddress = useContext(LightTCRViewContext)?.tcrAddress
+  const tcrAddress = useContext(StandardTCRViewContext)?.tcrAddress
   const { address: account } = useAccount()
   const publicClient = usePublicClient()
   const { data: walletClient } = useWalletClient()

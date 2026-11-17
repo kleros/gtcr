@@ -6,7 +6,7 @@ import { type Address } from 'viem'
 import { useAtlasProvider } from '@kleros/kleros-app'
 import _gtcr from 'assets/abis/LightGeneralizedTCR.json'
 import { CONTRACT_STATUS } from 'utils/item-status'
-import { LightTCRViewContext } from 'contexts/light-tcr-view-context'
+import { StandardTCRViewContext } from 'contexts/standard-tcr-view-context'
 import EvidenceForm, { type EvidenceFormValues } from 'components/evidence-form'
 import { uploadEvidence } from 'utils/upload-evidence'
 import useNativeCurrency from 'hooks/native-currency'
@@ -26,12 +26,18 @@ import {
   type ReceiptLine,
   type SendPhase,
 } from 'components/curate/what-happens-next'
-import { Dialog, DialogColumns } from 'components/curate/item-light-dialog'
-import { gatedConfirm, useActionGate } from 'components/curate/item-light-gate'
-import { formatAmount, sumAmounts } from 'components/curate/item-light-format'
+import { Dialog, DialogColumns } from 'components/curate/item-standard-dialog'
+import {
+  gatedConfirm,
+  useActionGate,
+} from 'components/curate/item-standard-gate'
+import {
+  formatAmount,
+  sumAmounts,
+} from 'components/curate/item-standard-format'
 import { useChallengeCost } from '../challenge-cost'
 import { PolicyButton } from '../policy-button'
-import { requestFacts, type LightRequest } from '../request-facts'
+import { requestFacts, type StandardRequest } from '../request-facts'
 
 /*
  * Challenge a submission or a removal request (DESIGN.md: before any
@@ -101,7 +107,7 @@ const ChallengeModal = ({
   visible,
   onCancel,
 }: ChallengeModalProps) => {
-  const tcrView = useContext(LightTCRViewContext)
+  const tcrView = useContext(StandardTCRViewContext)
   const tcrAddress = tcrView?.tcrAddress
   const { address: account } = useAccount()
   const publicClient = usePublicClient()
@@ -124,14 +130,14 @@ const ChallengeModal = ({
     arbitrationCost,
     total: challengeDeposit,
   } = useChallengeCost({
-    request: item.requests?.[0] as LightRequest | undefined,
+    request: item.requests?.[0] as StandardRequest | undefined,
     isRemoval,
     list: tcrView,
   })
   const requesterDeposit = (
     item.requests?.[0] as { deposit?: string } | undefined
   )?.deposit
-  const latestRequest = item.requests?.[0] as LightRequest | undefined
+  const latestRequest = item.requests?.[0] as StandardRequest | undefined
   // When the window this challenge must land in closes, as the entry's
   // ring shows it (the ring is under the dialog).
   const windowEnd =

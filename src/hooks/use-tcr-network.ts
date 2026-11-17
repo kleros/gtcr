@@ -23,7 +23,7 @@ const askedChains = new Set<number>()
  * is looked up again app-wide, in contexts/wallet-context.tsx.)
  *
  * `ready`: the page knows the list is on this chain. A link naming another
- * chain is sent on to the list's own (use-check-light-curate): asking the
+ * chain is sent on to the list's own (use-check-standard-curate): asking the
  * wallet before that would move it to the wrong chain, and that chain would
  * count as asked for the rest of the visit.
  */

@@ -16,7 +16,7 @@ import {
   LIST_LOAD_FAILED,
   LIST_SETTINGS_FAILED,
 } from 'pages/error-page/copy'
-import useCheckLightCurate from 'hooks/use-check-light-curate'
+import useCheckStandardCurate from 'hooks/use-check-standard-curate'
 import useTcrNetwork from 'hooks/use-tcr-network'
 import useUrlChainId from 'hooks/use-url-chain-id'
 import useArbitrationCost from 'hooks/arbitration-cost'
@@ -26,9 +26,9 @@ import useNativeBalance from 'hooks/use-native-balance'
 import useTokenSymbol from 'hooks/token-symbol'
 import { useEthersProvider } from 'hooks/ethers-adapters'
 import {
-  LightTCRViewContext,
-  LightTCRViewProvider,
-} from 'contexts/light-tcr-view-context'
+  StandardTCRViewContext,
+  StandardTCRViewProvider,
+} from 'contexts/standard-tcr-view-context'
 import { useGraphqlBatcher } from 'contexts/graphql-batcher'
 import { getChainById } from 'config/chains'
 import { isKlerosArbitrator } from 'config/tcr-addresses'
@@ -67,7 +67,7 @@ const openSubmitted = (
 
 /*
  * /tcr/:chainId/:tcrAddress/submit. The registry kind decides the data
- * source and the contract call (Light or Stake Curate; a Classic list shows
+ * source and the contract call (Standard or Stake Curate; a Classic list shows
  * that Classic is retired, pages/classic-retired); the page
  * itself is shared. The checks, providers and error states are the ones the
  * previous page had.
@@ -113,7 +113,7 @@ const balanceBlocker = (
       )} ${currency})`
     : ''
 
-/* ---------- Light Curate: one native deposit ---------- */
+/* ---------- Standard Curate: one native deposit ---------- */
 
 const DepositSubmitPage = ({
   tcrAddress,
@@ -313,7 +313,7 @@ const DepositSubmitPage = ({
       columns={columns}
       initialValues={linkValues}
       disabledFields={NO_DISABLED_FIELDS}
-      duplicateCheck={{ kind: 'light', tcrAddress }}
+      duplicateCheck={{ kind: 'standard', tcrAddress }}
       policyURI={policyURI}
       terms={terms}
       ready={ready}
@@ -354,10 +354,10 @@ const ListPartFailed = ({
   />
 )
 
-const LightSubmitPage = () => {
+const StandardSubmitPage = () => {
   const { tcrAddress } = useParams<{ tcrAddress: string }>()
   const registryPath = useRegistryPath()
-  const tcrViewContext = useContext(LightTCRViewContext)
+  const tcrViewContext = useContext(StandardTCRViewContext)
   const tcrError = tcrViewContext?.tcrError
 
   if (tcrViewContext?.metaEvidenceFailed || tcrViewContext?.paramsFailed)
@@ -735,14 +735,14 @@ const SubmitItem = () => {
   const { tcrAddress } = useParams<{ tcrAddress: string }>()
   const chainId = useUrlChainId()
   const {
-    isLightCurate,
+    isStandardCurate,
     isClassicCurate,
     isPermanentCurate,
     checking,
     error,
     retry,
     recheck,
-  } = useCheckLightCurate()
+  } = useCheckStandardCurate()
   // The wallet is asked once the list's chain is known (useTcrNetwork).
   useTcrNetwork(!checking)
 
@@ -779,12 +779,12 @@ const SubmitItem = () => {
   if (isClassicCurate)
     return <ClassicRetired chainId={chainId} tcrAddress={tcrAddress} />
 
-  if (isLightCurate)
+  if (isStandardCurate)
     return (
       <Suspense fallback={<SubmitPageSkeleton />}>
-        <LightTCRViewProvider tcrAddress={tcrAddress}>
-          <LightSubmitPage />
-        </LightTCRViewProvider>
+        <StandardTCRViewProvider tcrAddress={tcrAddress}>
+          <StandardSubmitPage />
+        </StandardTCRViewProvider>
       </Suspense>
     )
 

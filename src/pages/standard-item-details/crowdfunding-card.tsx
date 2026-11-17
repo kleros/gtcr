@@ -8,7 +8,7 @@ import {
   itemToStatusCode,
   STATUS_CODE,
 } from 'utils/item-status'
-import { LightTCRViewContext } from 'contexts/light-tcr-view-context'
+import { StandardTCRViewContext } from 'contexts/standard-tcr-view-context'
 import useRequiredFees from 'hooks/required-fees'
 import useNativeCurrency from 'hooks/native-currency'
 import {
@@ -18,7 +18,10 @@ import {
   Stack,
   Surface,
 } from 'components/curate/primitives'
-import { formatAmount, formatEther } from 'components/curate/item-light-format'
+import {
+  formatAmount,
+  formatEther,
+} from 'components/curate/item-standard-format'
 
 /*
  * Appeal funding: for each side, how much of its appeal fee is raised. The
@@ -173,7 +176,7 @@ const CrowdfundingCard = ({
     winnerStakeMultiplier,
     loserStakeMultiplier,
     MULTIPLIER_DIVISOR,
-  } = useContext(LightTCRViewContext) || {}
+  } = useContext(StandardTCRViewContext) || {}
   const nativeCurrency = useNativeCurrency()
 
   const requesterFees = useRequiredFees({

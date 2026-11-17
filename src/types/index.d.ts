@@ -45,7 +45,7 @@ declare global {
     rounds: SubgraphRound[]
   }
 
-  /** Subgraph item data (Light TCR) */
+  /** Subgraph item data (Standard TCR) */
   interface SubgraphItem {
     ID?: string
     id?: string

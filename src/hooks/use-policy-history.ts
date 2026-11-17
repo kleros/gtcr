@@ -64,7 +64,7 @@ const setCachedEntry = (
 /**
  * Returns the registration-policy history for a registry.
  *
- * @param registryAddress - The TCR / LightTCR / PermanentTCR address.
+ * @param registryAddress - The TCR / StandardTCR / PermanentTCR address.
  * @param chainId - Chain ID of the registry.
  * @param mode
  *   - `'full'` (default): every policy ever. Used by the Previous Policies

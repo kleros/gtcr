@@ -4,7 +4,7 @@ import styled, { keyframes } from 'styled-components'
 import { appKitModal } from 'config/wagmi'
 import { IconButton, Label } from './primitives'
 import { CurateIcon } from './icons'
-import { trapTab } from './item-light-focus-trap'
+import { trapTab } from './item-standard-focus-trap'
 
 /*
  * Dialog for the item pages and their flows: a near-opaque panel over a

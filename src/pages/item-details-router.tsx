@@ -1,10 +1,10 @@
 import React, { useContext, useEffect, useMemo, Suspense, lazy } from 'react'
-import { LightTCRViewProvider } from 'contexts/light-tcr-view-context'
+import { StandardTCRViewProvider } from 'contexts/standard-tcr-view-context'
 import { useParams, useSearchParams } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { STALE_TIME } from 'consts'
 import useTcrNetwork from 'hooks/use-tcr-network'
-import useCheckLightCurate from 'hooks/use-check-light-curate'
+import useCheckStandardCurate from 'hooks/use-check-standard-curate'
 import useUrlChainId from 'hooks/use-url-chain-id'
 import { useAttachmentPlace } from 'hooks/use-attachment'
 import { usePolicyHistory } from 'hooks/use-policy-history'
@@ -15,7 +15,7 @@ import AttachmentDisplay from 'components/attachment-display'
 import { StakeContext } from 'contexts/stake-context'
 import { useGraphqlBatcher } from 'contexts/graphql-batcher'
 import { getChainById } from 'config/chains'
-import { LIGHT_ITEM_DETAILS_QUERY } from 'utils/graphql'
+import { STANDARD_ITEM_DETAILS_QUERY } from 'utils/graphql'
 import { getAllowedAttachmentUrl } from 'utils/url-validation'
 
 /** The viewer's parameters (see useAttachment), not the entry page's. */
@@ -24,7 +24,7 @@ const VIEWER_PARAMS = ['attachment', 'isPolicy', 'policyTx']
 const PermanentItemDetails = lazy(
   () => import('./permanent-item-details/index'),
 )
-const LightItemDetails = lazy(() => import('./light-item-details/index'))
+const StandardItemDetails = lazy(() => import('./standard-item-details/index'))
 
 const ItemDetailsRouter = () => {
   const { tcrAddress, itemID } = useParams<{
@@ -52,14 +52,14 @@ const ItemDetailsRouter = () => {
     return query ? `?${query}` : ''
   }, [searchParams])
   const {
-    isLightCurate,
+    isStandardCurate,
     isClassicCurate,
     isPermanentCurate,
     checking,
     error,
     retry,
     recheck,
-  } = useCheckLightCurate()
+  } = useCheckStandardCurate()
   // The wallet is asked once the list's chain is known (useTcrNetwork).
   useTcrNetwork(!checking)
   const setIsPermanent = useContext(StakeContext)?.setIsPermanent
@@ -81,11 +81,11 @@ const ItemDetailsRouter = () => {
     const compoundId = `${itemID}@${tcrAddress.toLowerCase()}`
 
     queryClient.prefetchQuery({
-      queryKey: ['lightItemDetails', compoundId],
+      queryKey: ['standardItemDetails', compoundId],
       queryFn: () =>
         graphqlBatcher.fetch({
           id: crypto.randomUUID(),
-          document: LIGHT_ITEM_DETAILS_QUERY,
+          document: STANDARD_ITEM_DETAILS_QUERY,
           variables: { id: compoundId },
           chainId,
         }),
@@ -133,12 +133,12 @@ const ItemDetailsRouter = () => {
       />,
     )
 
-  if (isLightCurate)
+  if (isStandardCurate)
     return withViewer(
       <Suspense fallback={<Loading />}>
-        <LightTCRViewProvider tcrAddress={tcrAddress}>
-          <LightItemDetails search={search} itemID={itemID} />
-        </LightTCRViewProvider>
+        <StandardTCRViewProvider tcrAddress={tcrAddress}>
+          <StandardItemDetails search={search} itemID={itemID} />
+        </StandardTCRViewProvider>
       </Suspense>,
     )
   if (isClassicCurate)

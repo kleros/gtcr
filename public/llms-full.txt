@@ -14,8 +14,8 @@ Registry routes:
 - Submit an entry: https://curate.kleros.io/tcr/{chainId}/{registryAddress}/submit
 - Item: https://curate.kleros.io/tcr/{chainId}/{registryAddress}/{itemID}
 - Address profile: https://curate.kleros.io/address/{walletAddress}
-- Launch a list (choose Light or Stake): https://curate.kleros.io/launch/{chainId}
-- Light factory: https://curate.kleros.io/factory/{chainId}
+- Launch a list (choose Standard or Stake): https://curate.kleros.io/launch/{chainId}
+- Standard factory: https://curate.kleros.io/factory/{chainId}
 - Stake factory: https://curate.kleros.io/factory-permanent/{chainId}
 
 Supported chains:

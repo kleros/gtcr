@@ -5,7 +5,7 @@ import {
   VERIFIED_EXPLANATION,
   VERIFIED_LABEL,
 } from 'components/curate/verified-badge'
-import { STATUS_CODE as LIGHT_STATUS } from 'utils/item-status'
+import { STATUS_CODE as STANDARD_STATUS } from 'utils/item-status'
 import { STATUS_CODE as STAKE_STATUS } from 'utils/permanent-item-status'
 
 /*
@@ -23,7 +23,8 @@ export const DOCS = {
   curate: 'https://docs.kleros.io/products/curate',
   stakeCurate: 'https://docs.kleros.io/products/stake-curate',
   tutorial: 'https://docs.kleros.io/tutorials/curate-tutorial',
-  lightCurate: 'https://docs.kleros.io/developers/products/curate/light-curate',
+  standardCurate:
+    'https://docs.kleros.io/developers/products/curate/light-curate',
   appeals: 'https://docs.kleros.io/court/appeals',
   howItWorks: 'https://docs.kleros.io/court/how-it-works',
   courts: 'https://docs.kleros.io/court/court-hierarchy',
@@ -80,7 +81,7 @@ export const SUBMIT_STEPS: GuideStep[] = [
   },
   {
     title: 'Get listed and your deposit back',
-    body: 'In a Light list, once the challenge period ends with no challenge, anyone can execute the request: the entry is listed and your whole deposit comes back. In a Stake list your stake stays with the entry, growing with every failed challenge, until you withdraw it.',
+    body: 'In a Standard list, once the challenge period ends with no challenge, anyone can execute the request: the entry is listed and your whole deposit comes back. In a Stake list your stake stays with the entry, growing with every failed challenge, until you withdraw it.',
     see: ['stake-curate'],
   },
 ]
@@ -260,81 +261,84 @@ const RULING_FINAL =
 /* Labels and details as the app writes them (components/curate/entry-status). */
 export const LEGEND: { group: string; items: LegendItem[] }[] = [
   {
-    group: 'Light Curate',
+    group: 'Standard Curate',
     items: [
       {
         tone: 'window',
         label: 'Submitted',
         detail: 'time left to challenge',
         meaning: 'A new entry inside its challenge period.',
-        codes: [LIGHT_STATUS.SUBMITTED],
+        codes: [STANDARD_STATUS.SUBMITTED],
       },
       {
         tone: 'window',
         label: 'Removal requested',
         detail: 'time left to challenge',
         meaning: 'Still listed until the removal is executed.',
-        codes: [LIGHT_STATUS.REMOVAL_REQUESTED],
+        codes: [STANDARD_STATUS.REMOVAL_REQUESTED],
       },
       {
         tone: 'neutral',
         label: 'Ready to execute',
         detail: 'unchallenged submission / removal',
         meaning: 'Nobody challenged; anyone can execute the request.',
-        codes: [LIGHT_STATUS.PENDING_SUBMISSION, LIGHT_STATUS.PENDING_REMOVAL],
+        codes: [
+          STANDARD_STATUS.PENDING_SUBMISSION,
+          STANDARD_STATUS.PENDING_REMOVAL,
+        ],
       },
       {
         tone: 'contested',
         label: 'Challenged',
         detail: 'jurors deciding',
         meaning: 'A dispute is open in Kleros Court.',
-        codes: [LIGHT_STATUS.CHALLENGED],
+        codes: [STANDARD_STATUS.CHALLENGED],
       },
       {
         tone: 'contested',
         label: 'Appeal open',
         detail: 'time left to fund',
         meaning: APPEAL_OPEN,
-        codes: [LIGHT_STATUS.CROWDFUNDING],
+        codes: [STANDARD_STATUS.CROWDFUNDING],
       },
       {
         tone: 'contested',
         label: 'Appeal · winner funding',
         detail: 'time left',
         meaning: WINNER_FUNDING,
-        codes: [LIGHT_STATUS.CROWDFUNDING_WINNER],
+        codes: [STANDARD_STATUS.CROWDFUNDING_WINNER],
       },
       {
         tone: 'contested',
         label: 'Ruling stands',
         detail: 'loser did not fund',
         meaning: RULING_STANDS,
-        codes: [LIGHT_STATUS.WAITING_ENFORCEMENT],
+        codes: [STANDARD_STATUS.WAITING_ENFORCEMENT],
       },
       {
         tone: 'contested',
         label: 'Ruling final',
         detail: 'awaiting enforcement',
         meaning: RULING_FINAL,
-        codes: [LIGHT_STATUS.WAITING_ARBITRATOR],
+        codes: [STANDARD_STATUS.WAITING_ARBITRATOR],
       },
       {
         tone: 'registered',
         label: 'Registered',
         meaning: 'On the list.',
-        codes: [LIGHT_STATUS.REGISTERED],
+        codes: [STANDARD_STATUS.REGISTERED],
       },
       {
         tone: 'off',
         label: 'Rejected',
         meaning: 'A submission that lost its dispute.',
-        codes: [LIGHT_STATUS.REJECTED],
+        codes: [STANDARD_STATUS.REJECTED],
       },
       {
         tone: 'off',
         label: 'Removed',
         meaning: 'A removal that was executed or won its dispute.',
-        codes: [LIGHT_STATUS.REMOVED],
+        codes: [STANDARD_STATUS.REMOVED],
       },
     ],
   },
@@ -421,7 +425,7 @@ export const LEGEND: { group: string; items: LegendItem[] }[] = [
 
 // A status code added to the app without a legend row shows up in development.
 if (import.meta.env.DEV)
-  [LIGHT_STATUS, STAKE_STATUS].forEach((codes, index) => {
+  [STANDARD_STATUS, STAKE_STATUS].forEach((codes, index) => {
     const covered = new Set(LEGEND[index].items.flatMap((item) => item.codes))
     const missing = Object.values(codes).filter((code) => !covered.has(code))
     if (missing.length > 0)
@@ -431,7 +435,7 @@ if (import.meta.env.DEV)
   })
 
 /*
- * Stake Curate against Light, only where the drawing cannot say
+ * Stake Curate against Standard, only where the drawing cannot say
  * it. Checked against the PermanentGTCR contract: addItem takes the token
  * stake (at least submissionMinDeposit) and the arbitration cost, held as the
  * entry's arbitration deposit; challengeItem takes challengeStakeMultiplier
@@ -440,22 +444,22 @@ if (import.meta.env.DEV)
  */
 export const STAKE_COMPARE: {
   aspect: string
-  light: string
+  standard: string
   stake: string
 }[] = [
   {
     aspect: 'You put in',
-    light: 'A base deposit + the arbitration cost',
+    standard: 'A base deposit + the arbitration cost',
     stake: 'A stake in the list’s token + an arbitration deposit',
   },
   {
     aspect: 'To challenge',
-    light: 'A challenge deposit + the arbitration cost',
+    standard: 'A challenge deposit + the arbitration cost',
     stake: 'A share of the entry’s stake + the arbitration cost',
   },
   {
     aspect: 'A failed challenge',
-    light: 'Its deposit goes to the requester, minus one arbitration cost',
+    standard: 'Its deposit goes to the requester, minus one arbitration cost',
     stake: 'Its stake joins the entry’s stake',
   },
 ]
@@ -474,7 +478,7 @@ export const STAKE_ROLES: { role: string; line: string }[] = [
 
 /** The cases the drawing leaves out (PermanentGTCR rule()). */
 export const STAKE_EDGE_CASES =
-  'An entry jurors keep while it is withdrawing is withdrawn at the ruling. If jurors refuse to rule, each side gets its stake back and half the arbitration deposit, and the entry leaves the list. Appeals work as in Light.'
+  'An entry jurors keep while it is withdrawing is withdrawn at the ruling. If jurors refuse to rule, each side gets its stake back and half the arbitration deposit, and the entry leaves the list. Appeals work as in Standard.'
 
 export const DECISIONS: { term: string; definition: string }[] = [
   {
@@ -505,7 +509,7 @@ export const DECISIONS: { term: string; definition: string }[] = [
   {
     term: 'Governor',
     definition:
-      'The address that can later change deposits, periods, the court and the policy. A Light list’s governor can also replace the arbitrator; a Stake list’s arbitrator and token never change.',
+      'The address that can later change deposits, periods, the court and the policy. A Standard list’s governor can also replace the arbitrator; a Stake list’s arbitrator and token never change.',
   },
 ]
 
@@ -570,7 +574,7 @@ export const GLOSSARY: {
   {
     term: 'Deposit',
     definition:
-      'In Light lists, a base deposit set by the list plus the arbitration cost. Held, not spent: it comes back when your request goes through. Stake lists hold a stake instead.',
+      'In Standard lists, a base deposit set by the list plus the arbitration cost. Held, not spent: it comes back when your request goes through. Stake lists hold a stake instead.',
     see: ['submitting', 'stake-curate'],
   },
   {
@@ -595,7 +599,7 @@ export const GLOSSARY: {
       'What belongs on the list; jurors apply it before the court’s own policy.',
   },
   {
-    term: 'Light Curate',
+    term: 'Standard Curate',
     definition: 'Only an IPFS reference is stored on chain, so costs stay low.',
   },
   {
@@ -610,7 +614,7 @@ export const SOURCES: { href: string; label: string }[] = [
   { href: DOCS.curate, label: 'Curate: how it works' },
   { href: DOCS.tutorial, label: 'Curate tutorial' },
   { href: DOCS.stakeCurate, label: 'Stake Curate' },
-  { href: DOCS.lightCurate, label: 'Light Curate for developers' },
+  { href: DOCS.standardCurate, label: 'Standard Curate for developers' },
   { href: DOCS.howItWorks, label: 'How Kleros Court works' },
   { href: DOCS.appeals, label: 'Appeals' },
   { href: DOCS.courts, label: 'Courts and parameters' },

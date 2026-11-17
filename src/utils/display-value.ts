@@ -1,6 +1,6 @@
 /*
  * A field value as React can render it. Entry values come from files anyone
- * can write (a Light or Stake entry is its IPFS file); one that is not text,
+ * can write (a Standard or Stake entry is its IPFS file); one that is not text,
  * a number or a boolean (an object in a hand-made file) would otherwise
  * reach React as a child and take the whole list or entry page down for
  * every visitor, so it is shown as its JSON text instead.

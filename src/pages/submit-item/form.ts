@@ -21,7 +21,7 @@ export type SubmissionErrors = Record<string, string>
 export type RegistryExistsCheck = (tcrAddress: string) => Promise<boolean>
 
 export interface FactoryChecks {
-  deployedWithLightFactory: RegistryExistsCheck
+  deployedWithStandardFactory: RegistryExistsCheck
   deployedWithPermanentFactory: RegistryExistsCheck
 }
 
@@ -224,7 +224,7 @@ export const validateSubmission = async (
   }
 
   // A list address must have been deployed by one of the list creators
-  // (Light or Stake): the same check the submit modals run.
+  // (Standard or Stake): the same check the submit modals run.
   await Promise.all(
     columns
       .filter(
@@ -238,7 +238,7 @@ export const validateSubmission = async (
         const address = values[column.label] as string
         try {
           const deployed =
-            (await checks.deployedWithLightFactory(address)) ||
+            (await checks.deployedWithStandardFactory(address)) ||
             (await checks.deployedWithPermanentFactory(address))
           if (!deployed)
             errors[column.label] =

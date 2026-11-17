@@ -19,7 +19,7 @@ import { PERMANENT_ITEMS_QUERY, PERMANENT_REGISTRY_QUERY } from 'utils/graphql'
 import {
   P_FILTER_KEYS,
   searchStrToFilterObjPermanent,
-  updateLightFilter,
+  updateStandardFilter,
 } from 'utils/filters'
 import { parseIpfs } from 'utils/ipfs-parse'
 import { sanitizeMetaEvidence } from 'utils/meta-evidence-guard'
@@ -637,7 +637,7 @@ const StakeRegistry = () => {
     [baseColumns, stakeColumn],
   )
 
-  // The chips carry their counts, as the Light page's do, once the counts
+  // The chips carry their counts, as the Standard page's do, once the counts
   // are settled and trusted (undefined otherwise).
   const chipCount = (value?: number) => (countsReady ? value : undefined)
   const chips: FilterChip[] = [
@@ -664,7 +664,7 @@ const StakeRegistry = () => {
 
   const setFilter = (filter: string, checked: boolean) =>
     navigate({
-      search: updateLightFilter({ prevQuery: search, filter, checked }),
+      search: updateStandardFilter({ prevQuery: search, filter, checked }),
     })
 
   const setPage = (nextPage: number) => {
@@ -989,7 +989,7 @@ const StakeRegistry = () => {
         onPrimary={openSubmit}
         policyURI={policyURI}
         onOpenPolicy={policyURI ? openPolicy : undefined}
-        // The policy history reads Light events only; on a
+        // The policy history reads Standard events only; on a
         // Stake list it would shimmer and then show nothing.
         policyUpdated={false}
         stats={stats}

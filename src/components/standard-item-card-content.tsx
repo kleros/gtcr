@@ -23,17 +23,17 @@ export const StyledItemCol = styled.div`
 
 type ItemColumn = Column & { value?: string | number | boolean | null }
 
-interface LightItemCardContentProps {
+interface StandardItemCardContentProps {
   item: SubgraphItem
   chainId: string | number
   tcrAddress: string
 }
 
-const LightItemCardContent = ({
+const StandardItemCardContent = ({
   item,
   chainId,
   tcrAddress,
-}: LightItemCardContentProps) => {
+}: StandardItemCardContentProps) => {
   const { getLinkProps } = useNavigateAndScrollTop()
   const columns = item.columns as ItemColumn[]
   const tcrData = item.tcrData as { ID: string; mergedData: ItemColumn[] }
@@ -81,4 +81,4 @@ const LightItemCardContent = ({
   )
 }
 
-export default React.memo(LightItemCardContent)
+export default React.memo(StandardItemCardContent)

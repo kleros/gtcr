@@ -1,4 +1,4 @@
-export type RegistryKind = 'light' | 'permanent'
+export type RegistryKind = 'standard' | 'permanent'
 export type TrustStatus = 'verified' | 'unverified' | 'unknown'
 
 export interface DashboardRegistry {
@@ -48,7 +48,7 @@ export interface DashboardActivity {
   outcome?: 'kept' | 'registered' | 'removed' | 'rejected' | 'no-ruling'
   disputeID?: string
   /**
-   * The request's base deposit in wei (Light): what a winning
+   * The request's base deposit in wei (Standard): what a winning
    * challenger takes, on top of getting their own deposit back.
    */
   deposit?: string
@@ -62,7 +62,7 @@ export interface DashboardActivity {
  * all-time ledger reads it: every resolved dispute, paged to the end.
  */
 export interface RulingRow {
-  /** The id of its card (DashboardActivity.id), e.g. "light-<request id>". */
+  /** The id of its card (DashboardActivity.id), e.g. "standard-<request id>". */
   id: string
   chainId: number
   kind: RegistryKind
@@ -79,7 +79,7 @@ export interface RulingRow {
   challenger?: string
   /**
    * What the winning challenger took, on top of their own deposit back, in
-   * the coin's smallest unit: the request's base deposit (Light) or
+   * the coin's smallest unit: the request's base deposit (Standard) or
    * the entry's stake (Stake). "0" when the challenger did not win.
    */
   bounty: string
@@ -93,7 +93,7 @@ export interface TokenInfo {
   decimals: number
 }
 
-/** An unresolved Light request nobody has challenged. */
+/** An unresolved Standard request nobody has challenged. */
 export interface UnchallengedRow {
   id: string
   /** List address, lowercase. */
@@ -155,7 +155,7 @@ export interface DashboardData {
   /** Chains where a query failed or timed out: their figures are partial. */
   failedChains: number[]
   /**
-   * Chains whose lists did not load (the Light or the Stake
+   * Chains whose lists did not load (the Standard or the Stake
    * read): their lists and entry counts are missing, not zero.
    */
   listFailedChains?: number[]

@@ -42,7 +42,7 @@ import {
   Stack,
   Surface,
 } from 'components/curate/primitives'
-import { Notice } from 'components/curate/item-light-notice'
+import { Notice } from 'components/curate/item-standard-notice'
 import { EntryStatus, stakeEntryStatus } from 'components/curate/entry-status'
 import { Explainer } from 'components/curate/explainer'
 import { AnimatedNumber } from 'components/curate/motion/animated-number'
@@ -54,8 +54,8 @@ import {
   isImageField,
   titleField,
   type EntryField,
-} from 'components/curate/item-light-fields'
-import { StickyActionBarSpacer } from 'components/curate/item-light-action-bar'
+} from 'components/curate/item-standard-fields'
+import { StickyActionBarSpacer } from 'components/curate/item-standard-action-bar'
 import ErrorPage from '../error-page'
 import {
   ENTRY_LINK_TIP,
@@ -81,7 +81,7 @@ import {
 } from './facts'
 
 /*
- * Stake Curate item page, on the Light item composition. A breadcrumb, then
+ * Stake Curate item page, on the Standard item composition. A breadcrumb, then
  * the hero (the one featured panel): the entry's identifiers set large with
  * its status, and on the right whatever clock is running (submission
  * period, withdrawal period, appeal period, the court case, or the date it
@@ -694,7 +694,7 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
       : 'Kleros Curate'
   const truncatedSeoTitle = truncateAtWord(fullSeoTitle, 160)
 
-  // The status as the page labels it, as on Light entries. Accepted only
+  // The status as the page labels it, as on Standard entries. Accepted only
   // means nobody challenged it in time, and it stays challengeable: the
   // description claims no verification.
   const fullSeoMetaDescription =

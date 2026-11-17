@@ -18,7 +18,7 @@ import {
   atlasUploadProblem,
   formatLimit,
 } from 'utils/upload-restrictions'
-import { FieldError, FieldLabel } from 'components/curate/item-light-notice'
+import { FieldError, FieldLabel } from 'components/curate/item-standard-notice'
 
 /*
  * Evidence form (ERC-1497): a title (when detailed), a description and an

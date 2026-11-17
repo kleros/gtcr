@@ -1,12 +1,12 @@
 import React from 'react'
 import { STATUS_CODE, SUBGRAPH_RULING } from 'utils/item-status'
-import { WindowRing } from 'components/curate/item-light-window-ring'
-import { WindowPanel } from 'pages/light-item-details/item-window'
+import { WindowRing } from 'components/curate/item-standard-window-ring'
+import { WindowPanel } from 'pages/standard-item-details/item-window'
 import {
   capitalize,
-  type LightRequest,
+  type StandardRequest,
   type RequestFacts,
-} from 'pages/light-item-details/request-facts'
+} from 'pages/standard-item-details/request-facts'
 
 /*
  * Who still has to fund the appeal, read from the latest round. Once one
@@ -26,7 +26,7 @@ export interface AppealFunding {
 }
 
 export const appealFunding = (
-  request: LightRequest | undefined,
+  request: StandardRequest | undefined,
   facts: RequestFacts,
   statusCode: number,
 ): AppealFunding | undefined => {
@@ -50,7 +50,7 @@ export const appealFunding = (
 }
 
 /**
- * The hero's clock for Light entries, with the appeal ring
+ * The hero's clock for Standard entries, with the appeal ring
  * pointed at the side that still has to fund.
  */
 export const AppealWindowPanel = ({
@@ -61,7 +61,7 @@ export const AppealWindowPanel = ({
   now,
 }: {
   item: SubgraphItem
-  request: LightRequest
+  request: StandardRequest
   statusCode: number
   facts: RequestFacts
   now: number

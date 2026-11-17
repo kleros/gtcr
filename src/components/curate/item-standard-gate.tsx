@@ -10,7 +10,7 @@ import { NETWORKS_INFO } from 'config/networks'
 import { reportSwitchFailure } from 'utils/wrap-with-toast'
 import { useWalletGate, type GateFix } from 'pages/submit-item/use-wallet-gate'
 import { Button } from './primitives'
-import { formatAmount } from './item-light-format'
+import { formatAmount } from './item-standard-format'
 
 /*
  * Why an action is blocked, in plain words, and the control that unblocks

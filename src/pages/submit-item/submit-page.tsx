@@ -22,7 +22,7 @@ import {
   truncateMiddle,
 } from 'components/curate/primitives'
 import { ColumnField, useObjectUrl } from './fields'
-import { Notice } from 'components/curate/item-light-notice'
+import { Notice } from 'components/curate/item-standard-notice'
 import { useDuplicateEntry, type DuplicateCheck } from './duplicate-entry'
 import {
   buildInitialValues,
@@ -61,7 +61,7 @@ export type { ConfirmGate }
 
 /** Everything the panel prints, computed from the registry's data. */
 export interface SubmitTerms {
-  /** The big figure: the total (Light) or the stake (Stake Curate). */
+  /** The big figure: the total (Standard) or the stake (Stake Curate). */
   headline?: Amount
   /** A second asset sent with it (Stake Curate's arbitration deposit). */
   extra?: { label: string; amount?: Amount }
@@ -121,7 +121,7 @@ export interface SubmitPageProps {
   onSubmit: SubmitHandler
   /**
    * Warn when an entry with the same identifiers is already on the list
-   * (Light and Stake).
+   * (Standard and Stake).
    */
   duplicateCheck?: DuplicateCheck
 }

@@ -81,7 +81,7 @@ import { stakeProblem } from './format'
  * sub-steps, the current step in one panel with its action bar (Next submits
  * the step's form, so its schema runs) beside a live preview of what a
  * submitter and a challenger lock, then the lists deployed from this
- * browser. The wizard itself is shared with the Light factory
+ * browser. The wizard itself is shared with the Standard factory
  * (useFactoryWizard): every step up to the furthest one reached stays open
  * from the stepper and the tabs until an earlier step stops validating, and
  * an Edit from the review offers "Back to review" once the step validates.
@@ -630,11 +630,12 @@ const FactoryPermanentPage = () => {
             ariaLabel="List type"
             value="permanent"
             options={[
-              { value: 'light', label: 'Light' },
+              { value: 'standard', label: 'Standard' },
               { value: 'permanent', label: 'Stake' },
             ]}
             onChange={(next) => {
-              if (next === 'light') navigate(`/factory/${factoryChainId ?? ''}`)
+              if (next === 'standard')
+                navigate(`/factory/${factoryChainId ?? ''}`)
             }}
           />
         </div>

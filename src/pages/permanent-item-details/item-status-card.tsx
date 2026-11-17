@@ -29,7 +29,7 @@ import {
   Surface,
 } from 'components/curate/primitives'
 import { EntryStatus, stakeEntryStatus } from 'components/curate/entry-status'
-import { StickyActionBar } from 'components/curate/item-light-action-bar'
+import { StickyActionBar } from 'components/curate/item-standard-action-bar'
 import { CountUpText } from 'components/curate/registry-shared-count'
 import ItemActionButton from 'components/permanent-item-action-button'
 import { scrollToEvidenceComposer } from 'components/permanent-request-timelines'

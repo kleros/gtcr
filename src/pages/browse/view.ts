@@ -94,18 +94,18 @@ const scopeName = (chainId: number): string =>
 export const scopeText = (chains: number[]): string =>
   listFormat.format(scopeChainIds(chains).map(scopeName))
 
-/** Chains with a Light Kleros list of lists, where new lists are submitted. */
+/** Chains with a Standard Kleros list of lists, where new lists are submitted. */
 export const VERIFICATION_CHAIN_IDS = Object.keys(
   VERIFIED_LIST_OF_LISTS_ADDRESSES,
 ).map(Number)
 
 export const kindLabel = (kind: RegistryKind): string =>
-  kind === 'light' ? 'Light' : 'Stake'
+  kind === 'standard' ? 'Standard' : 'Stake'
 
 export const registryHref = (registry: DashboardRegistry): string =>
   `/tcr/${registry.chainId}/${registry.address}`
 
-/** Submission form of the chain's Light Kleros list of lists, or null. */
+/** Submission form of the chain's Standard Kleros list of lists, or null. */
 export const verificationHref = (chainId: number): string | null => {
   const list = listOfListsHref(chainId)
   return list ? `${list}/submit` : null
@@ -149,32 +149,40 @@ export const trustParam = (mode: TrustMode): string | null =>
   mode === 'verified' ? null : mode
 
 const isKind = (value: string): value is RegistryKind =>
-  value === 'light' || value === 'permanent'
+  value === 'standard' || value === 'permanent'
 
 export const KIND_OPTIONS: { value: RegistryKind; label: string }[] = [
-  { value: 'light', label: 'Light' },
+  { value: 'standard', label: 'Standard' },
   { value: 'permanent', label: 'Stake' },
 ]
 
-/** `kind` is a comma-separated list of registry types; none means every type. */
+/**
+ * `kind` is a comma-separated list of registry types; none means every type.
+ * Standard lists were called Light until Nov 2026: old links say `light`.
+ */
 export const parseKinds = (value: string | null): RegistryKind[] => [
-  ...new Set((value ?? '').split(',').filter(isKind)),
+  ...new Set(
+    (value ?? '')
+      .split(',')
+      .map((kind) => (kind === 'light' ? 'standard' : kind))
+      .filter(isKind),
+  ),
 ]
 
 /**
  * Every entry a registry holds, whatever its status, so the figure matches
- * the registry page's own "Entries". Light lists report registered and absent
+ * the registry page's own "Entries". Standard lists report registered and absent
  * entries in `itemCount` and their entries with an open request in
  * `pendingCount`; Stake lists (submitted plus absent) already count every
  * entry in `itemCount`.
  */
 export const entryCount = (registry: DashboardRegistry): number =>
-  registry.kind === 'light'
+  registry.kind === 'standard'
     ? registry.itemCount + registry.pendingCount
     : registry.itemCount
 
 /**
- * What a registry's `pendingCount` counts: open requests for Light lists,
+ * What a registry's `pendingCount` counts: open requests for Standard lists,
  * but the entries currently listed for Stake lists (the
  * subgraph's numberOfSubmitted), which are not requests.
  */

@@ -1,7 +1,7 @@
 import { gql } from 'graphql-request'
 
-const LIGHT_ITEMS_QUERY = gql`
-  query lightItemsQuery(
+const STANDARD_ITEMS_QUERY = gql`
+  query standardItemsQuery(
     $offset: Int
     $limit: Int
     $order_by: [LItem_order_by!]
@@ -56,4 +56,4 @@ const LIGHT_ITEMS_QUERY = gql`
   }
 `
 
-export default LIGHT_ITEMS_QUERY
+export default STANDARD_ITEMS_QUERY

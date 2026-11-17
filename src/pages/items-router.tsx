@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, Suspense, lazy } from 'react'
-import { LightTCRViewProvider } from 'contexts/light-tcr-view-context'
+import { StandardTCRViewProvider } from 'contexts/standard-tcr-view-context'
 import { useParams, useSearchParams } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { STALE_TIME } from 'consts'
@@ -8,20 +8,20 @@ import ErrorPage from 'pages/error-page'
 import ClassicRetired from 'pages/classic-retired'
 import AttachmentDisplay from 'components/attachment-display'
 import useTcrNetwork from 'hooks/use-tcr-network'
-import useCheckLightCurate from 'hooks/use-check-light-curate'
+import useCheckStandardCurate from 'hooks/use-check-standard-curate'
 import useUrlChainId from 'hooks/use-url-chain-id'
 import { useAttachmentPlace } from 'hooks/use-attachment'
 import { usePolicyHistory } from 'hooks/use-policy-history'
 import { StakeContext } from 'contexts/stake-context'
 import { useGraphqlBatcher } from 'contexts/graphql-batcher'
 import { getChainById } from 'config/chains'
-import { LIGHT_ITEMS_QUERY } from 'utils/graphql'
-import { searchStrToFilterObjLight } from 'utils/filters'
+import { STANDARD_ITEMS_QUERY } from 'utils/graphql'
+import { searchStrToFilterObjStandard } from 'utils/filters'
 import { getAllowedAttachmentUrl } from 'utils/url-validation'
 
-const LIGHT_ITEMS_PER_PAGE = 40
+const STANDARD_ITEMS_PER_PAGE = 40
 
-const LightItems = lazy(() => import('./light-items/index'))
+const StandardItems = lazy(() => import('./standard-items/index'))
 const PermanentItems = lazy(() => import('./permanent-items/index'))
 
 function computeItemsWhere(queryOptions: Record<string, any>, addr: string) {
@@ -80,14 +80,14 @@ const ItemsRouter = () => {
   )
   useAttachmentPlace(isAttachmentOpen)
   const {
-    isLightCurate,
+    isStandardCurate,
     isClassicCurate,
     isPermanentCurate,
     checking,
     error,
     retry,
     recheck,
-  } = useCheckLightCurate()
+  } = useCheckStandardCurate()
   // The wallet is asked once the list's chain is known (useTcrNetwork).
   useTcrNetwork(!checking)
   const setIsPermanent = useContext(StakeContext)?.setIsPermanent
@@ -110,25 +110,25 @@ const ItemsRouter = () => {
     if (!chainId || !tcrAddress) return
     const addr = tcrAddress.toLowerCase()
     const search = window.location.search || ''
-    const queryOptions = searchStrToFilterObjLight(search)
+    const queryOptions = searchStrToFilterObjStandard(search)
     const orderDirection = queryOptions.oldestFirst ? 'asc' : 'desc'
     const page = Number(queryOptions.page) || 1
     const where = computeItemsWhere(queryOptions, addr)
 
-    const lightVars = {
-      offset: (page - 1) * LIGHT_ITEMS_PER_PAGE,
-      limit: LIGHT_ITEMS_PER_PAGE,
+    const standardVars = {
+      offset: (page - 1) * STANDARD_ITEMS_PER_PAGE,
+      limit: STANDARD_ITEMS_PER_PAGE,
       order_by: [{ latestRequestSubmissionTime: orderDirection }],
       where,
       registryId: addr,
     }
     queryClient.prefetchQuery({
-      queryKey: ['lightItems', lightVars],
+      queryKey: ['standardItems', standardVars],
       queryFn: () =>
         graphqlBatcher.fetch({
           id: crypto.randomUUID(),
-          document: LIGHT_ITEMS_QUERY,
-          variables: lightVars,
+          document: STANDARD_ITEMS_QUERY,
+          variables: standardVars,
           chainId,
         }),
       staleTime: STALE_TIME,
@@ -174,12 +174,12 @@ const ItemsRouter = () => {
       />,
     )
 
-  if (isLightCurate)
+  if (isStandardCurate)
     return withViewer(
       <Suspense fallback={<Loading />}>
-        <LightTCRViewProvider tcrAddress={tcrAddress}>
-          <LightItems />
-        </LightTCRViewProvider>
+        <StandardTCRViewProvider tcrAddress={tcrAddress}>
+          <StandardItems />
+        </StandardTCRViewProvider>
       </Suspense>,
     )
   if (isClassicCurate)

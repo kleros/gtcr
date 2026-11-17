@@ -1051,7 +1051,7 @@ export type ToggleOption<T extends string> = {
 
 /**
  * Toggle group: several independent on/off choices in one recessed track,
- * e.g. the registry types (Light, Stake). Each pressed option sits
+ * e.g. the registry types (Standard, Stake). Each pressed option sits
  * on its own lit thumb, the same thumb SegmentedControl slides. Buttons with
  * aria-pressed, each its own tab stop; Space or Enter flips one. `value`
  * holds the pressed options and onChange gets them back in option order.
@@ -1062,7 +1062,7 @@ export type ToggleOption<T extends string> = {
  *     value={kinds}
  *     onChange={setKinds}
  *     options={[
- *       { value: 'light', label: 'Light' },
+ *       { value: 'standard', label: 'Standard' },
  *       { value: 'stake', label: 'Stake' },
  *     ]}
  *   />

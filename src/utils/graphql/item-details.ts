@@ -1,7 +1,7 @@
 import { gql } from 'graphql-request'
 
-const LIGHT_ITEM_DETAILS_QUERY = gql`
-  query lightItemDetailsQuery($id: String!) {
+const STANDARD_ITEM_DETAILS_QUERY = gql`
+  query standardItemDetailsQuery($id: String!) {
     litem: LItem_by_pk(id: $id) {
       data
       itemID
@@ -64,4 +64,4 @@ const LIGHT_ITEM_DETAILS_QUERY = gql`
   }
 `
 
-export default LIGHT_ITEM_DETAILS_QUERY
+export default STANDARD_ITEM_DETAILS_QUERY

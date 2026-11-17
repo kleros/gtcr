@@ -21,13 +21,13 @@ export const defaultEvidenceDisplayUriPermanent: ChainMap<string> = {
   '11155111': '/ipfs/QmbNJRDrrd5r9cHeApTP7pZaM7jgacDFMLED5Lj1RJMn79/index.html',
 } as const
 
-export const lightGtcrViewAddresses: ChainMap<string> = {
+export const standardGtcrViewAddresses: ChainMap<string> = {
   '1': '0xe82a69e939e1aB6Dc1868262cfe444F70098cCC8',
   '100': '0xB32e38B08FcC7b7610490f764b0F9bFd754dCE53',
   '11155111': '0x87f58F0dCF3c99BA2F3eB0604e5c335893e2EAf9',
 } as const
 
-export const lightBatchWithdrawAddresses: ChainMap<string> = {
+export const standardBatchWithdrawAddresses: ChainMap<string> = {
   '1': '0x5C6363cFA9462Ae11e22d2A5A0eb15dbB8719E4A',
   '100': '0x36B00c87553330E4351ED0CB287ed3917c12a197',
   '11155111': '0x43458fa7b40Fd7Bb32cC3a2b95186F91A95Ef0c8',
@@ -190,7 +190,7 @@ export const subgraphUrlPermanent: ChainMap<string> = {
 } as const
 
 /**
- * Every Light factory the Curate indexer tracks, with the block it was deployed at.
+ * Every Standard factory the Curate indexer tracks, with the block it was deployed at.
  * Each list they create emits NewGTCR(address), whose block is the list's
  * creation time. Source: kleros/gtcr-subgraph networks.json.
  */

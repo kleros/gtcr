@@ -77,7 +77,7 @@ export interface LandingVerifiedList {
   logo?: string
   /** Every entry the list holds (its registry page's figure). */
   entries: number
-  /** Unresolved requests (Light; 0 on Stake lists). */
+  /** Unresolved requests (Standard; 0 on Stake lists). */
   open: number
 }
 

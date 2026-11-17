@@ -9,7 +9,7 @@ import {
  * labelled like the list's own first GTCR address column ("Address" when
  * the list names none). Its row on the list page opens that list and the
  * seal reads the same field (listOfListsEntryAddress says why nothing else
- * may decide): a Light entry is a file that names its own columns, so its
+ * may decide): a Standard entry is a file that names its own columns, so its
  * first field can be another address. Lowercase, or undefined.
  */
 /** The label of the list's own first GTCR address column ("Address"). */

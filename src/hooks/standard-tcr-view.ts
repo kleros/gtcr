@@ -6,18 +6,18 @@ import { ethers, BigNumber } from 'ethers'
 import _gtcr from '../assets/abis/LightGeneralizedTCR.json'
 import _GTCRView from '../assets/abis/LightGeneralizedTCRView.json'
 import { WalletContext } from '../contexts/wallet-context'
-import { lightGtcrViewAddresses, subgraphUrl } from 'config/tcr-addresses'
+import { standardGtcrViewAddresses, subgraphUrl } from 'config/tcr-addresses'
 import { fetchMetaEvidenceFile } from 'utils/meta-evidence-guard'
 import { request } from 'utils/indexer-request'
 
-export const fetchLightMetaEvidence = async (
+export const fetchStandardMetaEvidence = async (
   tcr: string,
   networkId: number,
 ): Promise<FetchMetaEvidenceResult | null> => {
   // The address travels as a variable, never as query text
   // (fetch-meta-evidence.ts says why).
   const query = {
-    query: `query LightRegistryMetaEvidence($id: String!) {
+    query: `query StandardRegistryMetaEvidence($id: String!) {
       lregistry:LRegistry_by_pk(id: $id) {
         registrationMetaEvidence {
           uri
@@ -45,7 +45,7 @@ export const fetchLightMetaEvidence = async (
     : null
 }
 
-const useLightTcrView = (tcrAddress: string) => {
+const useStandardTcrView = (tcrAddress: string) => {
   const [error, setError] = useState<string | false>(false)
 
   const latestBlock = useContext(WalletContext)?.latestBlock
@@ -55,7 +55,7 @@ const useLightTcrView = (tcrAddress: string) => {
   const networkId = urlChainId ?? undefined
   const library = useEthersProvider({ chainId: networkId })
 
-  const arbitrableTCRViewAddr = lightGtcrViewAddresses[networkId!]
+  const arbitrableTCRViewAddr = standardGtcrViewAddresses[networkId!]
 
   const gtcrView = useMemo(() => {
     if (!library || !arbitrableTCRViewAddr || !networkId) return
@@ -81,9 +81,12 @@ const useLightTcrView = (tcrAddress: string) => {
 
   // Cached for 1 day (meta evidence rarely changes but is not immutable).
   const metaEvidenceQuery = useQuery({
-    queryKey: ['metaEvidence', 'light', tcrAddress, networkId],
+    queryKey: ['metaEvidence', 'standard', tcrAddress, networkId],
     queryFn: async () => {
-      const fetchedData = await fetchLightMetaEvidence(tcrAddress, networkId!)
+      const fetchedData = await fetchStandardMetaEvidence(
+        tcrAddress,
+        networkId!,
+      )
       if (!fetchedData) return null
       // Written by whoever governs the list and rendered on every page of
       // it: a title that is an object took the list and its entries down.
@@ -102,7 +105,7 @@ const useLightTcrView = (tcrAddress: string) => {
 
   // On-chain TCR params (deposits, costs) — cached, rarely changes.
   const arbitrableQuery = useQuery({
-    queryKey: ['arbitrableTCRData', 'light', tcrAddress, networkId],
+    queryKey: ['arbitrableTCRData', 'standard', tcrAddress, networkId],
     queryFn: async () => {
       const data = (await gtcrView!.fetchArbitrable(
         tcrAddress,
@@ -176,4 +179,4 @@ const useLightTcrView = (tcrAddress: string) => {
   }
 }
 
-export default useLightTcrView
+export default useStandardTcrView

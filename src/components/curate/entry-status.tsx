@@ -9,9 +9,9 @@ import {
   windowProgress,
 } from 'utils/time'
 import {
-  STATUS_CODE as LIGHT_STATUS,
+  STATUS_CODE as STANDARD_STATUS,
   SUBGRAPH_RULING,
-  itemToStatusCode as lightStatusCode,
+  itemToStatusCode as standardStatusCode,
 } from 'utils/item-status'
 import {
   STATUS_CODE as STAKE_STATUS,
@@ -145,14 +145,14 @@ const winnerFunding = (
   passedDetail: 'appeal closing',
 })
 
-/** Light Curate (utils/item-status.ts). */
-export const lightEntryStatus = (
+/** Standard Curate (utils/item-status.ts). */
+export const standardEntryStatus = (
   item: SubgraphItem | undefined,
   timestamp: BigNumber | null | undefined,
   challengePeriodDuration: BigNumber | null | undefined,
 ): EntryStatusView | undefined => {
   if (!item || !timestamp || !challengePeriodDuration) return undefined
-  const code = lightStatusCode(item, timestamp, challengePeriodDuration)
+  const code = standardStatusCode(item, timestamp, challengePeriodDuration)
   if (code === undefined) return undefined
   const request = item.requests?.[0] as
     | { submissionTime?: string; rounds?: AppealRound[] }
@@ -162,9 +162,9 @@ export const lightEntryStatus = (
   const windowEnd = submissionTime + challengePeriodDuration.toNumber()
 
   switch (code) {
-    case LIGHT_STATUS.REGISTERED:
+    case STANDARD_STATUS.REGISTERED:
       return { code, tone: 'registered', label: 'Registered' }
-    case LIGHT_STATUS.SUBMITTED:
+    case STANDARD_STATUS.SUBMITTED:
       return {
         code,
         tone: 'window',
@@ -174,7 +174,7 @@ export const lightEntryStatus = (
         deadlineVerb: 'to challenge',
         passedDetail: 'window closed',
       }
-    case LIGHT_STATUS.REMOVAL_REQUESTED:
+    case STANDARD_STATUS.REMOVAL_REQUESTED:
       return {
         code,
         tone: 'window',
@@ -184,50 +184,50 @@ export const lightEntryStatus = (
         deadlineVerb: 'to challenge',
         passedDetail: 'window closed',
       }
-    case LIGHT_STATUS.PENDING_SUBMISSION:
+    case STANDARD_STATUS.PENDING_SUBMISSION:
       return {
         code,
         tone: 'neutral',
         label: 'Ready to execute',
         detail: 'unchallenged submission',
       }
-    case LIGHT_STATUS.PENDING_REMOVAL:
+    case STANDARD_STATUS.PENDING_REMOVAL:
       return {
         code,
         tone: 'neutral',
         label: 'Ready to execute',
         detail: 'unchallenged removal',
       }
-    case LIGHT_STATUS.CHALLENGED:
+    case STANDARD_STATUS.CHALLENGED:
       return {
         code,
         tone: 'contested',
         label: 'Challenged',
         detail: 'jurors deciding',
       }
-    case LIGHT_STATUS.CROWDFUNDING:
+    case STANDARD_STATUS.CROWDFUNDING:
       return appealOpen(code, timestamp.toNumber(), round)
-    case LIGHT_STATUS.CROWDFUNDING_WINNER:
+    case STANDARD_STATUS.CROWDFUNDING_WINNER:
       return winnerFunding(code, round)
     // The loser's half can end with nothing funded (WAITING_ENFORCEMENT: the
     // ruling stands) before the period ends (WAITING_ARBITRATOR: it is final).
-    case LIGHT_STATUS.WAITING_ARBITRATOR:
+    case STANDARD_STATUS.WAITING_ARBITRATOR:
       return {
         code,
         tone: 'contested',
         label: 'Ruling final',
         detail: 'awaiting enforcement',
       }
-    case LIGHT_STATUS.WAITING_ENFORCEMENT:
+    case STANDARD_STATUS.WAITING_ENFORCEMENT:
       return {
         code,
         tone: 'contested',
         label: 'Ruling stands',
         detail: 'loser did not fund',
       }
-    case LIGHT_STATUS.REJECTED:
+    case STANDARD_STATUS.REJECTED:
       return { code, tone: 'off', label: 'Rejected' }
-    case LIGHT_STATUS.REMOVED:
+    case STANDARD_STATUS.REMOVED:
       return { code, tone: 'off', label: 'Removed' }
     default:
       return undefined

@@ -3,9 +3,9 @@ import { request } from 'utils/indexer-request'
 
 /**
  * The MetaEvidence of any list an entry names (a list of lists' row, a
- * badge): Light, Stake, or a Classic list still referenced by a Light one.
+ * badge): Standard, Stake, or a Classic list still referenced by a Standard one.
  * Classic lists have no page of their own any more (pages/classic-retired),
- * but a Light list of lists can still hold one, and its row is named from
+ * but a Standard list of lists can still hold one, and its row is named from
  * this file. Nothing else of a Classic list is read.
  */
 export const fetchMetaEvidence = async (
@@ -50,7 +50,7 @@ export const fetchMetaEvidence = async (
   // its skeleton (and a list-of-lists row without its name) until a reload.
   // Thrown, React Query retries it.
 
-  // 1. Envio first (fast): Light lists, and Classic ones a Light list still
+  // 1. Envio first (fast): Standard lists, and Classic ones a Standard list still
   // names. It travels with the page's other indexer reads
   // (utils/indexer-request.ts): a list of lists asks this once per row.
   const envioData = await request(

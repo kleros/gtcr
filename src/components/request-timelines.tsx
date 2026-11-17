@@ -14,7 +14,7 @@ import toOrdinal from 'utils/ordinal'
 import EvidenceFileLink, {
   EvidenceFileUnavailable,
 } from 'components/evidence-file-link'
-import LightEvidenceModal from 'pages/light-item-details/modals/evidence'
+import StandardEvidenceModal from 'pages/standard-item-details/modals/evidence'
 import { klerosAddresses } from 'config/tcr-addresses'
 import { CurateIcon } from 'components/curate/icons'
 import {
@@ -29,10 +29,10 @@ import {
   Timeline,
   TimelineEvent,
   TimelineQuote,
-} from 'components/curate/item-light-timeline'
-import { AddressLink } from 'components/curate/item-light-fields'
-import { toSeconds } from 'components/curate/item-light-format'
-import { linkify } from 'components/curate/item-light-linkify'
+} from 'components/curate/item-standard-timeline'
+import { AddressLink } from 'components/curate/item-standard-fields'
+import { toSeconds } from 'components/curate/item-standard-format'
+import { linkify } from 'components/curate/item-standard-linkify'
 import {
   EvidenceComposerCollapse,
   openEvidenceComposer,
@@ -43,7 +43,7 @@ import {
  * a glowing vertical timeline of its submission, evidence, rulings, appeals
  * and resolution with absolute UTC dates and the court case linked; then the
  * inline evidence composer, folded to one row, while a request is open.
- * Used by the Light item page. The case link sits on the
+ * Used by the Standard item page. The case link sits on the
  * event that opened the dispute (the challenge), never on the submission.
  */
 
@@ -78,7 +78,7 @@ export interface TimelineRequest extends SubgraphRequest {
   rounds: TimelineRound[]
   disputeID?: string
   arbitrator?: string
-  /** Light only: when the request was challenged, and the transaction. */
+  /** Standard only: when the request was challenged, and the transaction. */
   challengeTime?: string | null
   txHashChallenge?: string | null
 }
@@ -285,7 +285,7 @@ const RequestTimeline = ({
       }),
     )
 
-    // The challenge itself (Light only). Its justification is the evidence
+    // The challenge itself (Standard only). Its justification is the evidence
     // filed in the same transaction: matched on the hash, never the time,
     // so a separate evidence mined in the same block stays its own row.
     const challengeTx = request.txHashChallenge?.toLowerCase()
@@ -814,7 +814,7 @@ const RequestTimelines = ({
       </div>
       {pending && (
         <EvidenceComposerCollapse.Provider value>
-          <LightEvidenceModal
+          <StandardEvidenceModal
             item={item}
             inline
             composerId={EVIDENCE_COMPOSER_ID}

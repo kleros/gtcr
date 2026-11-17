@@ -1,6 +1,6 @@
 ---
 name: kleros-curate
-description: "Interact with Kleros Curate registries across Ethereum Mainnet, Gnosis Chain, and Sepolia. Use when the user mentions Curate, Light Curate/LightGeneralizedTCR/LGTCR, Stake Curate/PermanentGTCR/PGTCR, Scout, token-curated registry/TCR, token lists, address/CDN tags, Goldsky, MetaEvidence, Verify Your List, or Curate calls such as addItem, removeItem, challengeItem, challengeRequest, and fundAppeal. Covers registry discovery and queries; policy/schema inspection; submissions, removals, challenges, evidence, appeals, rewards, execution; factory deployment; and frontend verification on all three networks. Also trigger for registry/list operations paired with Kleros, arbitrator, dispute, juror, or PNK context, and whenever the user names or tests kleros-curate. Do NOT use for non-Kleros registries or generic IPFS uploads without Curate context; route standalone uploads to kleros-ipfs-upload."
+description: "Interact with Kleros Curate registries across Ethereum Mainnet, Gnosis Chain, and Sepolia. Use when the user mentions Curate, Standard Curate/Light Curate/LightGeneralizedTCR/LGTCR, Stake Curate/PermanentGTCR/PGTCR, Scout, token-curated registry/TCR, token lists, address/CDN tags, Goldsky, MetaEvidence, Verify Your List, or Curate calls such as addItem, removeItem, challengeItem, challengeRequest, and fundAppeal. Covers registry discovery and queries; policy/schema inspection; submissions, removals, challenges, evidence, appeals, rewards, execution; factory deployment; and frontend verification on all three networks. Also trigger for registry/list operations paired with Kleros, arbitrator, dispute, juror, or PNK context, and whenever the user names or tests kleros-curate. Do NOT use for non-Kleros registries or generic IPFS uploads without Curate context; route standalone uploads to kleros-ipfs-upload."
 ---
 
 # Kleros Curate
@@ -38,7 +38,7 @@ that submits the wrong deposit amount will have its transaction revert. Always r
 
 **Three contract flavors:**
 
-- **Light Curate (LGTCR)** — `LightGeneralizedTCR`: optimistic challenge window, native-token deposits, the most
+- **Standard Curate (LGTCR)** — `LightGeneralizedTCR` (called Light Curate in the Kleros docs and older interfaces): optimistic challenge window, native-token deposits, the most
   widely deployed flavor. Used by the majority of Curate registries across Ethereum, Gnosis, and Sepolia.
 - **Stake Curate (PGTCR)** — `PermanentGTCR`: permanent ERC20 stake (not returned on item removal),
   Goldsky subgraph as primary data source, different status model (Submitted / Reincluded / Disputed / Absent
@@ -74,31 +74,31 @@ These rules apply across all Curate flavors. They are always in context; referen
 
 - Mentions "Verify Your List", list verification, list-of-lists, frontend visibility, or making a deployed
   registry discoverable
-  → **Verification target is Light Curate (LGTCR)** on all three supported networks
+  → **Verification target is Standard Curate (LGTCR)** on all three supported networks
   → Read `references/verify-your-list.md` AND `references/light-curate.md`; do not ask the generic flavor
   question for the verification target. Detect the flavor of the registry being listed separately only when
   the live verification policy makes it relevant.
 
 - Mentions "Scout", "token list", "address tags", "CDN"
-  → **Scout** (overlay on Light Curate — LGTCR contracts on Gnosis)
+  → **Scout** (overlay on Standard Curate — LGTCR contracts on Gnosis)
   → Read `references/scout-registries.md` AND `references/light-curate.md` (both required; Scout adds context on top of LGTCR operations)
 
 - Mentions "PGTCR", "Stake Curate", "PermanentGTCR", "Goldsky"
   → **Stake Curate (PGTCR)**
   → Read `references/stake-curate.md`
 
-- Mentions "Curate", "LGTCR", "LightGeneralizedTCR", "Light Curate", "addItem", "registry", or no flavor hint
-  → **Light Curate (LGTCR)** (also the default)
+- Mentions "Curate", "LGTCR", "LightGeneralizedTCR", "Standard Curate", "Light Curate", "addItem", "registry", or no flavor hint
+  → **Standard Curate (LGTCR)** (also the default)
   → Read `references/light-curate.md`
 
 **Step 2 — Ambiguous ("Curate" with no flavor hint)**
 
-- **Interactive session**: ask one question — "Which Curate flavor? Light Curate (optimistic challenge window, native-token deposits), Stake Curate (permanent ERC20 stake, Goldsky subgraph), or Scout (4 Gnosis registries for contract/token tagging)?"
+- **Interactive session**: ask one question — "Which Curate flavor? Standard Curate (optimistic challenge window, native-token deposits), Stake Curate (permanent ERC20 stake, Goldsky subgraph), or Scout (4 Gnosis registries for contract/token tagging)?"
 
-- **One-shot / non-interactive**: default to Light Curate, then progressively correct:
+- **One-shot / non-interactive**: default to Standard Curate, then progressively correct:
   - If user provides a contract address: check if it matches one of the 4 known Scout registry addresses → load Scout overlay (read `references/scout-registries.md` AND `references/light-curate.md`)
   - If contract introspection reveals PGTCR hallmarks → pivot to Stake Curate (read `references/stake-curate.md` for hallmark calls)
-  - Otherwise: proceed as Light Curate
+  - Otherwise: proceed as Standard Curate
 
 **Step 3 — Contract-type verification (if address provided)**
 
@@ -160,7 +160,7 @@ See the flavor reference file for hallmark calls — SKILL.md does not embed fun
   registry for users.
 - List-of-lists submission is not mandatory, but it is highly recommended for public registries. Skip it only
   when the list is intentionally stealth/private.
-- On Ethereum Mainnet, Gnosis Chain, and Sepolia, the canonical verification registries are Light Curate.
+- On Ethereum Mainnet, Gnosis Chain, and Sepolia, the canonical verification registries are Standard Curate.
   Use `references/verify-your-list.md` for the chain-specific addresses and verification safeguards, then
   follow the standard LGTCR submission workflow. The registry being listed may be another Curate flavor if
   the live verification policy permits it.
@@ -171,7 +171,7 @@ These 9 files are loaded on demand — only when needed for the current task. Th
 to the right file for each operation. Loading an unnecessary reference file wastes context.
 
 **`references/light-curate.md`**
-Light Curate (LightGeneralizedTCR) operations end-to-end: minimum inputs to ask the user, registry
+Standard Curate (LightGeneralizedTCR) operations end-to-end: minimum inputs to ask the user, registry
 discovery via `eth_getCode` and hallmark reads, MetaEvidence retrieval, item.json construction, submit
 item, challenge / remove item, submit evidence, fund an appeal, deploy a new registry via factory.
 Read this file for any LGTCR contract interaction — and always alongside `references/scout-registries.md`

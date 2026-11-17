@@ -40,7 +40,7 @@ const ClassicRetired = ({
       message={
         replacement
           ? 'This was Kleros’ list of lists on Classic Curate. Lists now go to the current one, and only the lists registered there are Kleros Verified.'
-          : 'This is a Classic Curate list. Curate now runs Light and Stake lists only; this list, its entries and their history stay on chain.'
+          : 'This is a Classic Curate list. Curate now runs Standard and Stake lists only; this list, its entries and their history stay on chain.'
       }
       tip={
         <ExplorerLink

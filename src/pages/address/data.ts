@@ -8,7 +8,7 @@ import {
   erc20Abi,
   type Abi,
 } from 'viem'
-import lightAbi from 'assets/abis/LightGeneralizedTCR.json'
+import standardAbi from 'assets/abis/LightGeneralizedTCR.json'
 import permanentAbi from 'assets/abis/PermanentGTCR.json'
 import { NETWORKS, NETWORKS_INFO } from 'config/networks'
 import { subgraphUrl, subgraphUrlPermanent } from 'config/tcr-addresses'
@@ -42,7 +42,7 @@ const PAGE_BATCH = 4
 const ENVIO_MAX_PAGES = 20
 const PERMANENT_MAX_PAGES = 6
 /**
- * Light requests read per chain at most (Stake Curate: 6,000).
+ * Standard requests read per chain at most (Stake Curate: 6,000).
  * The figures count every request read; a chain that reaches the ceiling is
  * reported in cappedChains and its figures are lower bounds.
  */
@@ -69,7 +69,7 @@ const ENVIO_PROFILE_QUERY = gql`
     $limit: Int!
     $offset: Int!
   ) {
-    lightRequests: LRequest(
+    standardRequests: LRequest(
       limit: $limit
       offset: $offset
       where: {
@@ -466,7 +466,7 @@ const permanentChallengeToActivity = (
 
 export const abiForKind = (kind: RegistryKind): Abi => {
   if (kind === 'permanent') return permanentAbi as Abi
-  return lightAbi as Abi
+  return standardAbi as Abi
 }
 
 const callParam = async (
@@ -548,7 +548,7 @@ const readGovernanceParams = async (
   registry: DashboardRegistry,
 ): Promise<GovernanceParams> => {
   const common = ['governor', 'arbitrator'] as const
-  const light = [
+  const standard = [
     'arbitratorExtraData',
     'challengePeriodDuration',
     'submissionBaseDeposit',
@@ -575,7 +575,7 @@ const readGovernanceParams = async (
   const names =
     registry.kind === 'permanent'
       ? [...common, ...permanent]
-      : [...common, ...light]
+      : [...common, ...standard]
   const entries = await Promise.all(
     names.map(async (name) => [name, await readParam(registry, name)] as const),
   )
@@ -776,7 +776,7 @@ export const fetchAddressProfileData = async (
   // being reported as unhandled while the profile queries are still running.
   indexPromise.catch(() => undefined)
 
-  const envioKeys = ['lightRequests']
+  const envioKeys = ['standardRequests']
   const permanentKeys = ['submissions', 'challenges']
   const [envioResults, permanentResults] = await Promise.all([
     Promise.all(
@@ -827,8 +827,8 @@ export const fetchAddressProfileData = async (
   for (const { chainId, rows, cut } of envioResults) {
     if (!chainBreakdown[chainId]) chainBreakdown[chainId] = emptyStats()
     if (cut && !isZero) capped.add(chainId)
-    for (const requestEntity of rows.lightRequests) {
-      const parsed = requestToActivity(requestEntity, 'light', address)
+    for (const requestEntity of rows.standardRequests) {
+      const parsed = requestToActivity(requestEntity, 'standard', address)
       if (!parsed) continue
       const { activity, stats } = parsed
       activities.push(activity)

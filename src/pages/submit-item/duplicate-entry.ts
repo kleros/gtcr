@@ -8,7 +8,7 @@ import { subgraphUrl, subgraphUrlPermanent } from 'config/tcr-addresses'
  * keep a list's identifier columns, in their order, as key0…key4 (key0: a
  * token's or a list's address). Most lists' policies reject a duplicate, so
  * its deposit would likely go to a challenger, and nothing else stops it: a
- * Light entry is named by where its data is stored, which a new upload
+ * Standard entry is named by where its data is stored, which a new upload
  * changes, and a Stake entry the same way.
  *
  * Entries are looked up by the first identifier; the others are compared
@@ -26,7 +26,7 @@ export interface DuplicateEntry {
 }
 
 export type DuplicateCheck = {
-  kind: 'light' | 'stake'
+  kind: 'standard' | 'stake'
   tcrAddress: string
 }
 
@@ -41,7 +41,7 @@ interface Found {
 /** The identifiers the indexers keep: key0 to key4. */
 const MAX_KEYS = 5
 
-const LIGHT_KEYS = `
+const STANDARD_KEYS = `
       itemID
       status
       key0
@@ -51,9 +51,9 @@ const LIGHT_KEYS = `
       key4
 `
 
-const LIGHT_DUPLICATE = `
-  query SubmitDuplicateLight($where: LItem_bool_exp!) {
-    duplicates: LItem(limit: 3, where: $where) {${LIGHT_KEYS}    }
+const STANDARD_DUPLICATE = `
+  query SubmitDuplicateStandard($where: LItem_bool_exp!) {
+    duplicates: LItem(limit: 3, where: $where) {${STANDARD_KEYS}    }
   }
 `
 
@@ -62,13 +62,13 @@ const LIGHT_DUPLICATE = `
  * same request: a list can hold its first identifier hundreds of times (one
  * contract under many domains), so the three rows above rarely hold it.
  */
-const LIGHT_DUPLICATE_FULL = `
-  query SubmitDuplicateLightFull(
+const STANDARD_DUPLICATE_FULL = `
+  query SubmitDuplicateStandardFull(
     $where: LItem_bool_exp!
     $whereAll: LItem_bool_exp!
   ) {
-    duplicates: LItem(limit: 3, where: $where) {${LIGHT_KEYS}    }
-    full: LItem(limit: 1, where: $whereAll) {${LIGHT_KEYS}    }
+    duplicates: LItem(limit: 3, where: $where) {${STANDARD_KEYS}    }
+    full: LItem(limit: 1, where: $whereAll) {${STANDARD_KEYS}    }
   }
 `
 
@@ -97,7 +97,7 @@ const STAKE_DUPLICATE = `
   }
 `
 
-/** As LIGHT_DUPLICATE_FULL: the entry matching every identifier too. */
+/** As STANDARD_DUPLICATE_FULL: the entry matching every identifier too. */
 const STAKE_DUPLICATE_FULL = `
   query SubmitDuplicateStakeFull(
     $registry: String!
@@ -123,8 +123,12 @@ const STAKE_DUPLICATE_FULL = `
   }
 `
 
-/** Statuses of a Light entry that is on the list or on its way. */
-const LIGHT_LIVE = ['Registered', 'RegistrationRequested', 'ClearingRequested']
+/** Statuses of a Standard entry that is on the list or on its way. */
+const STANDARD_LIVE = [
+  'Registered',
+  'RegistrationRequested',
+  'ClearingRequested',
+]
 
 // ILIKE reads % and _ as wildcards: escaped, the value only matches itself.
 const exactLike = (value: string) => value.replace(/[\\%_]/g, (c) => `\\${c}`)
@@ -208,11 +212,11 @@ export const useDuplicateEntry = ({
         ...full,
         ...rest.filter((entry) => !full.some((f) => f.itemID === entry.itemID)),
       ]
-      if (check!.kind === 'light') {
+      if (check!.kind === 'standard') {
         type Row = Keys & { itemID: string; status: string }
         const where = {
           registry_id: { _eq: registry },
-          status: { _in: LIGHT_LIVE },
+          status: { _in: STANDARD_LIVE },
           key0: { _ilike: exactLike(typed) },
         }
         // An empty identifier is stored as empty or not at all.
@@ -220,7 +224,7 @@ export const useDuplicateEntry = ({
           value ? { _ilike: exactLike(value) } : { _in: [''] as string[] }
         const result = await request<{ duplicates: Row[]; full?: Row[] }>({
           url: url!,
-          document: comparable ? LIGHT_DUPLICATE_FULL : LIGHT_DUPLICATE,
+          document: comparable ? STANDARD_DUPLICATE_FULL : STANDARD_DUPLICATE,
           variables: comparable
             ? {
                 where,

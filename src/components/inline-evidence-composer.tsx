@@ -7,7 +7,7 @@ import {
   Surface,
   VisuallyHidden,
 } from 'components/curate/primitives'
-import { useActionGate } from 'components/curate/item-light-gate'
+import { useActionGate } from 'components/curate/item-standard-gate'
 
 /*
  * "Add evidence" on an entry page, always open under the history: one

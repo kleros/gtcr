@@ -11,7 +11,7 @@ import {
   STATUS_CODE,
   SUBGRAPH_RULING,
 } from 'utils/item-status'
-import { LightTCRViewContext } from 'contexts/light-tcr-view-context'
+import { StandardTCRViewContext } from 'contexts/standard-tcr-view-context'
 import useNativeCurrency from 'hooks/native-currency'
 import useUrlChainId from 'hooks/use-url-chain-id'
 import useNow from 'hooks/use-now'
@@ -36,24 +36,30 @@ import {
   Stack,
   Surface,
 } from 'components/curate/primitives'
-import { EntryStatus, lightEntryStatus } from 'components/curate/entry-status'
-import { useActionGate } from 'components/curate/item-light-gate'
+import {
+  EntryStatus,
+  standardEntryStatus,
+} from 'components/curate/entry-status'
+import { useActionGate } from 'components/curate/item-standard-gate'
 import {
   sendPhaseLabel,
   type SendPhase,
 } from 'components/curate/what-happens-next'
-import { Notice } from 'components/curate/item-light-notice'
+import { Notice } from 'components/curate/item-standard-notice'
 import { LIST_SETTINGS_FAILED } from 'pages/error-page/copy'
-import { StickyActionBar } from 'components/curate/item-light-action-bar'
-import { AddressLink } from 'components/curate/item-light-fields'
-import { formatAmount, formatEther } from 'components/curate/item-light-format'
+import { StickyActionBar } from 'components/curate/item-standard-action-bar'
+import { AddressLink } from 'components/curate/item-standard-fields'
+import {
+  formatAmount,
+  formatEther,
+} from 'components/curate/item-standard-format'
 import ItemActionModal from './item-action-modal'
-import { appealFunding } from 'pages/light-item-details/appeal-funding'
+import { appealFunding } from 'pages/standard-item-details/appeal-funding'
 import {
   fundedAlone,
   requestFacts,
   statusChangeNotice,
-  type LightRequest,
+  type StandardRequest,
 } from './request-facts'
 import { useChallengeCost } from './challenge-cost'
 
@@ -250,7 +256,7 @@ const AmountSplit = ({
 interface ItemStatusCardProps {
   item: SubgraphItem
   timestamp?: BigNumber
-  request: LightRequest
+  request: StandardRequest
   modalOpen?: boolean
   setModalOpen: (open: boolean) => void
   appealCost?: BigNumber
@@ -273,7 +279,7 @@ const ItemStatusCard = ({
   const { address: account } = useAccount()
   const publicClient = usePublicClient()
   const { data: walletClient } = useWalletClient()
-  const tcrView = useContext(LightTCRViewContext)
+  const tcrView = useContext(StandardTCRViewContext)
   const {
     metaEvidence,
     challengePeriodDuration,
@@ -303,7 +309,7 @@ const ItemStatusCard = ({
     [item, timestamp, challengePeriodDuration],
   )
   const view = useMemo(
-    () => lightEntryStatus(item, timestamp, challengePeriodDuration),
+    () => standardEntryStatus(item, timestamp, challengePeriodDuration),
     [item, timestamp, challengePeriodDuration],
   )
 

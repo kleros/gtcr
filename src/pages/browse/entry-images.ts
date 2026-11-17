@@ -7,7 +7,7 @@ import type { RegistryKind } from 'pages/dashboard/types'
 /*
  * The image field of the entries in Browse's activity rail. The dashboard
  * load reads two text fields per entry (and turns files into "IPFS file"),
- * so the picture is read here, for the handful of entries on screen. Light
+ * so the picture is read here, for the handful of entries on screen. Standard
  * entries carry their fields on the Curate indexer, Stake entries on their
  * subgraph.
  */
@@ -25,7 +25,7 @@ export const entryKey = (entry: {
   itemID: string
 }): string => `${entry.itemID}@${entry.registryAddress}`.toLowerCase()
 
-const LIGHT_ENTRY_IMAGES = gql`
+const STANDARD_ENTRY_IMAGES = gql`
   query BrowseEntryImages($ids: [String!]!, $chainId: Int!, $image: String!) {
     LItem(where: { id: { _in: $ids }, chainId: { _eq: $chainId } }) {
       id
@@ -80,12 +80,12 @@ export const fetchEntryImages = async (
   entries: EntryRef[],
 ): Promise<Record<string, string>> => {
   const images: Record<string, string> = {}
-  const light = group(entries, 'light').map(async ([chainId, ids]) => {
+  const standard = group(entries, 'standard').map(async ([chainId, ids]) => {
     const url = subgraphUrl[chainId]
     if (!url) return
     const data = await request<{
       LItem: { id: string; props: Prop[] }[]
-    }>(url, LIGHT_ENTRY_IMAGES, { ids, chainId, image: ItemTypes.IMAGE })
+    }>(url, STANDARD_ENTRY_IMAGES, { ids, chainId, image: ItemTypes.IMAGE })
     for (const item of data.LItem) {
       const image = firstImage(
         item.props.map((prop) => ({ value: prop.value })),
@@ -107,6 +107,6 @@ export const fetchEntryImages = async (
     }
   })
   // One chain failing leaves its entries on their list's logo.
-  await Promise.allSettled([...light, ...stake])
+  await Promise.allSettled([...standard, ...stake])
   return images
 }

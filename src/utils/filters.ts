@@ -14,9 +14,9 @@ export const FILTER_KEYS = {
 }
 
 /** @deprecated Use FILTER_KEYS instead */
-export const LIGHT_FILTER_KEYS = FILTER_KEYS
+export const STANDARD_FILTER_KEYS = FILTER_KEYS
 
-export const filterLabelLight = {
+export const filterLabelStandard = {
   [FILTER_KEYS.ABSENT]: 'Rejected/Removed',
   [FILTER_KEYS.REGISTERED]: 'Registered',
   [FILTER_KEYS.SUBMITTED]: 'Submitted',
@@ -69,7 +69,7 @@ export const DEFAULT_FILTERS = {
 }
 
 /** @deprecated Use DEFAULT_FILTERS instead */
-export const DEFAULT_FILTERS_LIGHT = DEFAULT_FILTERS
+export const DEFAULT_FILTERS_STANDARD = DEFAULT_FILTERS
 
 export const P_FILTER_KEYS = {
   ABSENT: 'absent',
@@ -114,7 +114,7 @@ const parseSearchToFilters = (
   return { ...defaults, ...parsed }
 }
 
-export const searchStrToFilterObjLight = (
+export const searchStrToFilterObjStandard = (
   search: string,
 ): Record<string, string | boolean> => {
   const filters = parseSearchToFilters(
@@ -212,7 +212,7 @@ export const queryOptionsToFilterArray = (
   ]
 }
 
-export const updateLightFilter = ({
+export const updateStandardFilter = ({
   prevQuery: search,
   filter,
   checked,

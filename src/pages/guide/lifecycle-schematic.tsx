@@ -15,7 +15,7 @@ import {
 } from './schematic-kit'
 
 /*
- * The Curate lifecycle for Light lists, drawn as it happens: a
+ * The Curate lifecycle for Standard lists, drawn as it happens: a
  * request opens a challenge period; unchallenged it is executed, challenged it
  * goes to jurors, then an appeal period that loops into a bigger round when
  * both sides are funded, then a final ruling. Nodes and arrows draw in order,
@@ -103,7 +103,7 @@ const NARROW_RUNS = runs(
 const GLOW = 'lifecycle-token-glow'
 
 const SUMMARY =
-  'How a request moves through a Light Curate list. A request, with its deposit, opens a challenge period set by the list. If nobody challenges, it is executed: the entry is registered or removed and the deposit comes back in full. If someone challenges, a dispute goes to Kleros jurors, who vote on the list’s policy, followed by an appeal period. If both sides fund an appeal, a new round starts with twice the jurors plus one; otherwise the ruling is final and the winner takes both deposits minus one arbitration cost.'
+  'How a request moves through a Standard Curate list. A request, with its deposit, opens a challenge period set by the list. If nobody challenges, it is executed: the entry is registered or removed and the deposit comes back in full. If someone challenges, a dispute goes to Kleros jurors, who vote on the list’s policy, followed by an appeal period. If both sides fund an appeal, a new round starts with twice the jurors plus one; otherwise the ruling is final and the winner takes both deposits minus one arbitration cost.'
 
 const WideMap = ({ armed }: { armed: boolean }) => (
   <Svg

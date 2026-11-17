@@ -12,7 +12,7 @@ import {
 } from 'components/curate/primitives'
 
 /*
- * What both list factories (Light and Stake) share: the wizard's state
+ * What both list factories (Standard and Stake) share: the wizard's state
  * (`useFactoryWizard`: where it is, how far it got, Start over, the return to
  * the review), the copy of the steps they have in common, a horizontal
  * stepper whose progress slides as the wizard advances, and the step panel
@@ -97,7 +97,7 @@ export const FACTORY_COPY = {
 } as const
 
 /** The browser tab title of a factory: "Create a Stake list | Kleros Curate". */
-export const factoryDocumentTitle = (kind: 'Light' | 'Stake') =>
+export const factoryDocumentTitle = (kind: 'Standard' | 'Stake') =>
   `Create a ${kind} list | Kleros Curate`
 
 /* ---------- Wizard state ---------- */

@@ -9,8 +9,8 @@ import { ItemTypes } from '@kleros/gtcr-encoder'
 import useUrlChainId from 'hooks/use-url-chain-id'
 import useNativeCurrency from 'hooks/native-currency'
 import { useAttachment } from 'hooks/use-attachment'
-import { LightTCRViewContext } from 'contexts/light-tcr-view-context'
-import { lightBatchWithdrawAddresses } from 'config/tcr-addresses'
+import { StandardTCRViewContext } from 'contexts/standard-tcr-view-context'
+import { standardBatchWithdrawAddresses } from 'config/tcr-addresses'
 import { wrapWithToast, errorToast } from 'utils/wrap-with-toast'
 import { parseWagmiError } from 'utils/parse-wagmi-error'
 import { wagmiConfig } from 'config/wagmi'
@@ -37,10 +37,10 @@ import {
 import {
   EntryFields,
   type EntryField,
-} from 'components/curate/item-light-fields'
-import { Notice } from 'components/curate/item-light-notice'
-import { formatAmount } from 'components/curate/item-light-format'
-import { useActionGate } from 'components/curate/item-light-gate'
+} from 'components/curate/item-standard-fields'
+import { Notice } from 'components/curate/item-standard-notice'
+import { formatAmount } from 'components/curate/item-standard-format'
+import { useActionGate } from 'components/curate/item-standard-gate'
 import {
   sendPhaseLabel,
   type SendPhase,
@@ -51,7 +51,7 @@ import {
  * type, separated by hairlines, less any the page already shows in full.
  * For a list of lists it also shows the linked registry's identity, its
  * policy and a link to it.
- * Light lists keep the fee-reward withdrawal here. Shared by the Light and
+ * Standard lists keep the fee-reward withdrawal here. Shared by the Standard and
  * Stake item pages.
  */
 
@@ -221,7 +221,7 @@ interface ItemDetailsCardProps {
   /**
    * On a list of lists, the list the entry points to, which the page read
    * `itemMetaEvidence` for: the field the seal reads, never simply the
-   * entry's first field (a Light entry's file orders its own columns).
+   * entry's first field (a Standard entry's file orders its own columns).
    */
   registryAddress?: string
   disabled?: boolean
@@ -231,11 +231,11 @@ interface ItemDetailsCardProps {
    */
   exclude?: EntryField[]
   /**
-   * The kind of list: Light lists withdraw rewards through their batch
+   * The kind of list: Standard lists withdraw rewards through their batch
    * withdrawer; Stake lists settle rewards elsewhere, so they get no button
    * here.
    */
-  kind?: 'light' | 'stake'
+  kind?: 'standard' | 'stake'
 }
 
 const ItemDetailsCard = ({
@@ -246,14 +246,14 @@ const ItemDetailsCard = ({
   itemMetaEvidence,
   registryAddress,
   exclude,
-  kind = 'light',
+  kind = 'standard',
 }: ItemDetailsCardProps) => {
   const { address: account } = useAccount()
   const publicClient = usePublicClient()
-  // Light pages provide the Light view context: its view contract answers
+  // Standard pages provide the Standard view context: its view contract answers
   // availableRewards.
-  const lightView = useContext(LightTCRViewContext)
-  const tcrViewContext = (kind === 'light' ? lightView : undefined) as
+  const standardView = useContext(StandardTCRViewContext)
+  const tcrViewContext = (kind === 'standard' ? standardView : undefined) as
     | {
         gtcrView?: {
           availableRewards: (...args: unknown[]) => Promise<BigNumber>
@@ -278,7 +278,7 @@ const ItemDetailsCard = ({
   const BATCH_WITHDRAW_ADDRESS =
     !urlChainId || kind === 'stake'
       ? undefined
-      : lightBatchWithdrawAddresses[urlChainId]
+      : standardBatchWithdrawAddresses[urlChainId]
   const nativeCurrency = useNativeCurrency()
   const openAttachment = useAttachment()
 

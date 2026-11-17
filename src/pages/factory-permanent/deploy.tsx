@@ -24,7 +24,7 @@ import {
   defaultTcrAddresses,
   pgtcrFactoryAddresses,
 } from 'config/tcr-addresses'
-import useLightTcrView from 'hooks/light-tcr-view'
+import useStandardTcrView from 'hooks/standard-tcr-view'
 import useNativeCurrency from 'hooks/native-currency'
 import useTokenSymbol from 'hooks/token-symbol'
 import { CurateIcon } from 'components/curate/icons'
@@ -375,7 +375,7 @@ const Deploy = ({
     targetChainId === undefined
       ? undefined
       : defaultEvidenceDisplayUriPermanent[targetChainId]
-  const { metaEvidence, submissionDeposit } = useLightTcrView(
+  const { metaEvidence, submissionDeposit } = useStandardTcrView(
     defaultTCRAddress ?? '',
   )
   const chainName =
@@ -688,7 +688,7 @@ const Deploy = ({
     !!account &&
     !!tcrState.governorAddress &&
     tcrState.governorAddress.toLowerCase() === account.toLowerCase()
-  // Days and hours, as the Light review and the preview read them; the
+  // Days and hours, as the Standard review and the preview read them; the
   // hours typed in the wizard on hover.
   const hours = (value: number | string) => {
     const seconds = hoursToSeconds(value)
@@ -1133,7 +1133,7 @@ const Deploy = ({
             )}
             {targetChainId !== undefined && defaultTCRAddress && (
               // Its submit page, with the new list's address as the first
-              // value (a list of lists' column), as the Light deploy's form.
+              // value (a list of lists' column), as the Standard deploy's form.
               <ButtonLink
                 to={
                   deployedAddress

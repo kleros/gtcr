@@ -3,7 +3,7 @@ import { parseIpfs } from 'utils/ipfs-parse'
 /*
  * Before a deposit is sent, the file it points to is read back.
  *
- * A Light or Stake entry is its file: the list stores only the IPFS path.
+ * A Standard or Stake entry is its file: the list stores only the IPFS path.
  * An entry whose file cannot be read shows no fields, to curators and to
  * jurors alike, and invites a challenge; the same goes for an evidence file
  * nobody can open. So the JSON just uploaded is fetched from the gateway

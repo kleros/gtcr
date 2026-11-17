@@ -20,8 +20,8 @@ const recordChainId = (data?: ExistenceAnswer): number | undefined => {
   return Number.isSafeInteger(chainId) && chainId > 0 ? chainId : undefined
 }
 
-const useCheckLightCurate = (): {
-  isLightCurate: boolean
+const useCheckStandardCurate = (): {
+  isStandardCurate: boolean
   isClassicCurate: boolean
   isPermanentCurate: boolean
   checking: boolean
@@ -90,7 +90,7 @@ const useCheckLightCurate = (): {
     hash,
   ])
 
-  const isLightCurate = !!data?.lregistry
+  const isStandardCurate = !!data?.lregistry
   const isClassicCurate = !!data?.registry
 
   // Only check Goldsky (permanent) after Envio responds with no match.
@@ -100,7 +100,7 @@ const useCheckLightCurate = (): {
   // data): only a check with no answer at all is an error.
   const envioFailed = !!queryError && !data
   const envioFoundNothing =
-    !loading && !envioFailed && !isLightCurate && !isClassicCurate
+    !loading && !envioFailed && !isStandardCurate && !isClassicCurate
   // Stake lists read nothing from Envio, so they are also looked for when it
   // failed: they still open while it refuses (its rate limit is shared by
   // every visitor).
@@ -113,7 +113,7 @@ const useCheckLightCurate = (): {
   } = useCheckPermanentList(tcrAddress ?? null, chainId, askStake)
 
   return {
-    isLightCurate,
+    isStandardCurate,
     isClassicCurate,
     isPermanentCurate: isPermanentList,
     checking:
@@ -136,4 +136,4 @@ const useCheckLightCurate = (): {
   }
 }
 
-export default useCheckLightCurate
+export default useCheckStandardCurate

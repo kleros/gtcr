@@ -4,7 +4,7 @@ import type { ListLayout } from 'hooks/use-stored-layout'
 import { Body, Grid, SkeletonBlock, Stack, Surface, Title } from './primitives'
 
 /*
- * The Light registry list's two stand-ins for rows: a skeleton shaped like
+ * The Standard registry list's two stand-ins for rows: a skeleton shaped like
  * the layout it replaces (table, rows or cards), so nothing jumps when the
  * entries land, and an empty state (a soft halo behind three fanned tiles
  * that drift, one title, at most one line, one action) whose copy and
@@ -93,7 +93,11 @@ const CardSkeleton = styled(SkeletonBlock)`
 const TABLE_WIDTHS = ['72%', '86%', '64%', '58%', '70%']
 const ROW_WIDTHS = ['38%', '52%', '30%', '46%', '34%', '58%', '42%', '48%']
 
-export const RegistryLightSkeleton = ({ layout }: { layout: ListLayout }) => {
+export const RegistryStandardSkeleton = ({
+  layout,
+}: {
+  layout: ListLayout
+}) => {
   if (layout === 'cards')
     return (
       <Grid $min={260} aria-hidden>
@@ -243,7 +247,7 @@ const TILES = [
   { x: '34px', r: '10deg', d: '-4s' },
 ]
 
-export const RegistryLightEmpty = ({
+export const RegistryStandardEmpty = ({
   title,
   line,
   action,

@@ -65,6 +65,6 @@ export const KindTag = ({
   kind,
   size,
 }: {
-  kind: 'light' | 'permanent'
+  kind: 'standard' | 'permanent'
   size?: 'sm' | 'md'
 }) => (kind === 'permanent' ? <StakeTag size={size} /> : null)

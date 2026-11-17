@@ -10,12 +10,12 @@ import { formatSince } from 'utils/format-since'
 import { CurateIcon } from 'components/curate/icons'
 import { Chip, Label } from 'components/curate/primitives'
 import { AnimatedNumber } from 'components/curate/motion/animated-number'
-import { WindowRing } from 'components/curate/item-light-window-ring'
-import { toSeconds } from 'components/curate/item-light-format'
+import { WindowRing } from 'components/curate/item-standard-window-ring'
+import { toSeconds } from 'components/curate/item-standard-format'
 import {
   capitalize,
   fundedAlone,
-  type LightRequest,
+  type StandardRequest,
   type RequestFacts,
 } from './request-facts'
 
@@ -233,7 +233,7 @@ const CourtEvidence = ({
   submissionTime,
   now,
 }: {
-  request: LightRequest
+  request: StandardRequest
   requesterName: string
   submissionTime: number
   now: number
@@ -407,7 +407,7 @@ export const WindowPanel = ({
   now,
 }: {
   item: SubgraphItem
-  request: LightRequest
+  request: StandardRequest
   statusCode: number
   facts: RequestFacts
   now: number
@@ -543,7 +543,7 @@ export const WindowPanel = ({
   }
 
   // Settled: registered, rejected or removed.
-  const requests = (item.requests ?? []) as LightRequest[]
+  const requests = (item.requests ?? []) as StandardRequest[]
   const registered = statusCode === STATUS_CODE.REGISTERED
   const deciding = registered
     ? (requests.find(

@@ -7,7 +7,7 @@ import { truncateMiddle } from './primitives'
 
 /*
  * An address on the Stake item page: middle-truncated mono with the full
- * value on hover, an explorer link and a copy action (the Light item page's
+ * value on hover, an explorer link and a copy action (the Standard item page's
  * address link, plus copy). Used for submitters, challengers, arbitrators
  * and evidence authors.
  */

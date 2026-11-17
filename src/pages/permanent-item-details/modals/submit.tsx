@@ -101,7 +101,7 @@ interface SubmissionFormOuterProps {
       shouldValidate?: boolean,
     ) => void,
   ) => void
-  deployedWithLightFactory: RegistryExistsCheck
+  deployedWithStandardFactory: RegistryExistsCheck
   deployedWithPermanentFactory: RegistryExistsCheck
   onFieldsComplete?: (complete: boolean) => void
   style?: React.CSSProperties
@@ -194,7 +194,7 @@ const SubmissionForm = withFormik<
   },
   validate: async (
     values,
-    { columns, deployedWithLightFactory, deployedWithPermanentFactory },
+    { columns, deployedWithStandardFactory, deployedWithPermanentFactory },
   ) => {
     const errors = (
       await Promise.all(
@@ -213,7 +213,7 @@ const SubmissionForm = withFormik<
               isEmpty: !value,
               wasDeployedWithFactory:
                 !!value &&
-                ((await deployedWithLightFactory(address)) ||
+                ((await deployedWithStandardFactory(address)) ||
                   (await deployedWithPermanentFactory(address))),
               name,
             }
@@ -318,7 +318,7 @@ const SubmitModal: React.FC<{
   } = props
 
   const nativeCurrency = useNativeCurrency()
-  const { deployedWithLightFactory, deployedWithPermanentFactory } =
+  const { deployedWithStandardFactory, deployedWithPermanentFactory } =
     useFactory()
   const { address: account } = useAccount()
   const chainId = useTxChainId()
@@ -688,7 +688,7 @@ const SubmitModal: React.FC<{
           postSubmit={postSubmit}
           initialValues={initialValues}
           disabledFields={disabledFields ?? []}
-          deployedWithLightFactory={deployedWithLightFactory}
+          deployedWithStandardFactory={deployedWithStandardFactory}
           deployedWithPermanentFactory={deployedWithPermanentFactory}
           onFieldsComplete={setFieldsComplete}
         />

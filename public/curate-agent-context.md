@@ -44,5 +44,5 @@ those is not Kleros Verified.
 - `/tcr/:chainId/:registryAddress` registry page.
 - `/tcr/:chainId/:registryAddress/submit` submit an entry.
 - `/tcr/:chainId/:registryAddress/:itemID` item page.
-- `/launch/:chainId` launch a list: choose Light or Stake.
-- `/factory/:chainId` (Light) and `/factory-permanent/:chainId` (Stake) registry creation flows.
+- `/launch/:chainId` launch a list: choose Standard or Stake.
+- `/factory/:chainId` (Standard) and `/factory-permanent/:chainId` (Stake) registry creation flows.

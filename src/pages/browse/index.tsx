@@ -1733,7 +1733,7 @@ const BrowsePage = () => {
   const shownRows = visible.map(complete)
   const shownShowcase = showcase.map(complete)
 
-  // The entries in the rail with their own image field (Light and Stake).
+  // The entries in the rail with their own image field (Standard and Stake).
   const entryRefs = useMemo(
     () =>
       latest.flatMap((activity): EntryRef[] => {
@@ -1766,7 +1766,7 @@ const BrowsePage = () => {
   })
 
   // Where a list can be put forward for verification: the chains in scope
-  // with a Light Kleros list of lists, where new lists are submitted.
+  // with a Standard Kleros list of lists, where new lists are submitted.
   const scopedVerification = scopeChainIds(chains).filter((chainId) =>
     VERIFICATION_CHAIN_IDS.includes(chainId),
   )

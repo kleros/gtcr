@@ -19,10 +19,13 @@ import useDocumentHead from 'hooks/use-document-head'
 import useNativeCurrency from 'hooks/native-currency'
 import { useAttachment } from 'hooks/use-attachment'
 import { WalletContext } from 'contexts/wallet-context'
-import { LightTCRViewContext } from 'contexts/light-tcr-view-context'
+import { StandardTCRViewContext } from 'contexts/standard-tcr-view-context'
 import { useGraphqlBatcher } from 'contexts/graphql-batcher'
-import { LIGHT_ITEMS_QUERY } from 'utils/graphql'
-import { searchStrToFilterObjLight, updateLightFilter } from 'utils/filters'
+import { STANDARD_ITEMS_QUERY } from 'utils/graphql'
+import {
+  searchStrToFilterObjStandard,
+  updateStandardFilter,
+} from 'utils/filters'
 import { DISPUTE_STATUS, STATUS_CODE } from 'utils/item-status'
 import { parseIpfs } from 'utils/ipfs-parse'
 import { sanitizeItemFile } from 'utils/item-file-guard'
@@ -59,12 +62,12 @@ import {
   tableColumns,
   type EntryRow,
 } from 'components/curate/entry-list'
-import { lightEntryStatus } from 'components/curate/entry-status'
+import { standardEntryStatus } from 'components/curate/entry-status'
 import type { ExplainerStep } from 'components/curate/explainer'
 import {
-  RegistryLightEmpty,
-  RegistryLightSkeleton,
-} from 'components/curate/registry-light-states'
+  RegistryStandardEmpty,
+  RegistryStandardSkeleton,
+} from 'components/curate/registry-standard-states'
 import { useRegistryLayout } from 'components/curate/registry-shared-layout'
 import { useRegistryVerified } from 'components/curate/registry-shared-verified'
 import {
@@ -85,11 +88,11 @@ import {
   LIST_LOAD_FAILED,
   LIST_SETTINGS_FAILED,
 } from '../error-page/copy'
-import SubmitModal from '../light-item-details/modals/submit'
-import SubmitConnectModal from '../light-item-details/modals/submit-connect'
+import SubmitModal from '../standard-item-details/modals/submit'
+import SubmitConnectModal from '../standard-item-details/modals/submit-connect'
 
 /*
- * Light Curate registry page (/tcr/:chainId/:tcrAddress): the header panel
+ * Standard Curate registry page (/tcr/:chainId/:tcrAddress): the header panel
  * (identity, the one action with its exact deposit, the counts and the share
  * registered as a ring), the toolbar (URL filters with each status's count),
  * then the entries in the remembered layout, each with its status and time
@@ -146,8 +149,8 @@ interface RawRequest {
   rounds: RawRound[]
 }
 
-/** A light item exactly as the subgraph returns it, before decoding. */
-interface RawLightItem {
+/** A standard item exactly as the subgraph returns it, before decoding. */
+interface RawStandardItem {
   status: string
   data: string
   requests: RawRequest[]
@@ -167,9 +170,9 @@ interface RegistryCounters {
   numberOfChallengedClearing: string
 }
 
-interface LightItemsResult {
+interface StandardItemsResult {
   lregistry?: RegistryCounters | null
-  litems?: RawLightItem[]
+  litems?: RawStandardItem[]
 }
 
 interface SeerMarket {
@@ -330,7 +333,7 @@ const Items = () => {
   const { tcrAddress } = useParams()
   const chainId = useUrlChainId()
   const timestamp = useContext(WalletContext)?.timestamp
-  const tcrViewContext = useContext(LightTCRViewContext)
+  const tcrViewContext = useContext(StandardTCRViewContext)
   const metaEvidence = tcrViewContext?.metaEvidence
   const challengePeriodDuration = tcrViewContext?.challengePeriodDuration
   const tcrError = tcrViewContext?.tcrError
@@ -387,7 +390,7 @@ const Items = () => {
   ) as Record<string, SeerMarket | undefined>
   const { graphqlBatcher } = useGraphqlBatcher()
 
-  const queryOptions = searchStrToFilterObjLight(search)
+  const queryOptions = searchStrToFilterObjStandard(search)
   const {
     oldestFirst,
     page,
@@ -486,11 +489,11 @@ const Items = () => {
   )
 
   const itemsQuery = useQuery({
-    queryKey: ['lightItems', queryVariables],
-    queryFn: (): Promise<LightItemsResult> =>
+    queryKey: ['standardItems', queryVariables],
+    queryFn: (): Promise<StandardItemsResult> =>
       graphqlBatcher.fetch({
         id: crypto.randomUUID(),
-        document: LIGHT_ITEMS_QUERY,
+        document: STANDARD_ITEMS_QUERY,
         variables: queryVariables,
         chainId: chainId!,
       }),
@@ -585,15 +588,15 @@ const Items = () => {
     // if the user paginated/filtered before it resolved.
     let stale = false
 
-    const addDecodedFields = (items: RawLightItem[]) =>
-      items.map((item: RawLightItem) => ({
+    const addDecodedFields = (items: RawStandardItem[]) =>
+      items.map((item: RawStandardItem) => ({
         ...item,
         decodedData: item.props?.map(({ value }) => value) || [],
         mergedData: item.props || [],
       }))
 
-    const transformItems = (items: RawLightItem[]) =>
-      items.map((item: RawLightItem) => {
+    const transformItems = (items: RawStandardItem[]) =>
+      items.map((item: RawStandardItem) => {
         const {
           disputed,
           disputeID,
@@ -1025,7 +1028,7 @@ const Items = () => {
 
   const setFilter = (filter: string, checked: boolean) =>
     navigate({
-      search: updateLightFilter({ prevQuery: search, filter, checked }),
+      search: updateStandardFilter({ prevQuery: search, filter, checked }),
     })
 
   // The pager sits at the foot of the list: a new page starts at its top.
@@ -1071,7 +1074,7 @@ const Items = () => {
     if (!visibleItems || !tcrAddress) return []
     return visibleItems.map((item) => {
       const id = String(item.tcrData.itemID ?? item.tcrData.ID ?? '')
-      const status = lightEntryStatus(
+      const status = standardEntryStatus(
         item.tcrData,
         timestamp,
         challengePeriodDuration,
@@ -1325,7 +1328,7 @@ const Items = () => {
         address={tcrAddress}
         verified={trust.verified}
         listOfLists={trust.listOfLists}
-        kind="light"
+        kind="standard"
         itemName={itemName}
         primaryLabel={`Submit ${itemName}`}
         primaryAmount={
@@ -1343,7 +1346,7 @@ const Items = () => {
         registeredCount={counts?.registered}
         totalCount={counts?.total}
         parameters={parameters}
-        explainerId={`registry-light-${tcrAddress.toLowerCase()}`}
+        explainerId={`registry-standard-${tcrAddress.toLowerCase()}`}
         explainerHeading="A deposit you get back, a bounty for spotting mistakes."
         explainerSteps={explainerSteps}
         loading={!metadata || (!counters && itemsQuery.isFetching)}
@@ -1382,9 +1385,9 @@ const Items = () => {
         data-refreshing={refreshing && !listLoading}
       >
         {listLoading ? (
-          <RegistryLightSkeleton layout={layout} />
+          <RegistryStandardSkeleton layout={layout} />
         ) : entries.length === 0 ? (
-          <RegistryLightEmpty
+          <RegistryStandardEmpty
             title={emptyView.title}
             line={emptyView.line}
             action={emptyView.action}

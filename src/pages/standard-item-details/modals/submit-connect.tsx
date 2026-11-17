@@ -33,10 +33,13 @@ import {
   type SendPhase,
 } from 'components/curate/what-happens-next'
 import Select from 'components/ui/Select'
-import { Dialog } from 'components/curate/item-light-dialog'
-import { gatedConfirm, useActionGate } from 'components/curate/item-light-gate'
-import { FieldLabel, Notice } from 'components/curate/item-light-notice'
-import { formatAmount } from 'components/curate/item-light-format'
+import { Dialog } from 'components/curate/item-standard-dialog'
+import {
+  gatedConfirm,
+  useActionGate,
+} from 'components/curate/item-standard-gate'
+import { FieldLabel, Notice } from 'components/curate/item-standard-notice'
+import { formatAmount } from 'components/curate/item-standard-format'
 import { SubmissionFlowScaffold, SubmissionNavigation } from './submit'
 
 /*
@@ -157,7 +160,7 @@ const SubmitConnectModal = (props: SubmitConnectModalProps) => {
   }>({
     queryKey: [
       'fetchArbitrable',
-      'light',
+      'standard',
       'breakdown',
       relTCRAddress?.toLowerCase(),
     ],

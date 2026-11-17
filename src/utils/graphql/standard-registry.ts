@@ -1,7 +1,7 @@
 import { gql } from 'graphql-request'
 
-const LIGHT_REGISTRY_QUERY = gql`
-  query lightRegistryQuery($lowerCaseTCRAddress: String!) {
+const STANDARD_REGISTRY_QUERY = gql`
+  query standardRegistryQuery($lowerCaseTCRAddress: String!) {
     lregistry: LRegistry_by_pk(id: $lowerCaseTCRAddress) {
       numberOfAbsent
       numberOfRegistered
@@ -13,4 +13,4 @@ const LIGHT_REGISTRY_QUERY = gql`
   }
 `
 
-export default LIGHT_REGISTRY_QUERY
+export default STANDARD_REGISTRY_QUERY

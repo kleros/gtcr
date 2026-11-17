@@ -4,7 +4,7 @@ import { simulateContract } from '@wagmi/core'
 import { type Address } from 'viem'
 import { useAtlasProvider } from '@kleros/kleros-app'
 import _gtcr from 'assets/abis/LightGeneralizedTCR.json'
-import { LightTCRViewContext } from 'contexts/light-tcr-view-context'
+import { StandardTCRViewContext } from 'contexts/standard-tcr-view-context'
 import EvidenceForm, { type EvidenceFormValues } from 'components/evidence-form'
 import { uploadEvidence } from 'utils/upload-evidence'
 import useNativeCurrency from 'hooks/native-currency'
@@ -23,9 +23,12 @@ import {
   type ReceiptLine,
   type SendPhase,
 } from 'components/curate/what-happens-next'
-import { Dialog, DialogColumns } from 'components/curate/item-light-dialog'
-import { gatedConfirm, useActionGate } from 'components/curate/item-light-gate'
-import { formatAmount } from 'components/curate/item-light-format'
+import { Dialog, DialogColumns } from 'components/curate/item-standard-dialog'
+import {
+  gatedConfirm,
+  useActionGate,
+} from 'components/curate/item-standard-gate'
+import { formatAmount } from 'components/curate/item-standard-format'
 import { PolicyButton } from '../policy-button'
 
 /*
@@ -64,7 +67,7 @@ const RemoveModal = ({
     metaEvidence,
     challengePeriodDuration,
     arbitrator,
-  } = useContext(LightTCRViewContext) || {}
+  } = useContext(StandardTCRViewContext) || {}
   const nativeCurrency = useNativeCurrency()
   const { uploadFile } = useAtlasProvider()
   const chainId = useUrlChainId()

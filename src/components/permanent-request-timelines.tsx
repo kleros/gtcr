@@ -7,7 +7,7 @@ import EvidenceFileLink, {
   EvidenceFileUnavailable,
 } from 'components/evidence-file-link'
 import { AddressLink } from 'components/curate/item-stake-address'
-import { linkify } from 'components/curate/item-light-linkify'
+import { linkify } from 'components/curate/item-standard-linkify'
 import { CONTRACT_STATUS, SUBGRAPH_RULING } from 'utils/permanent-item-status'
 import { capitalizeFirstLetter } from 'utils/string'
 import { getTxPage } from 'utils/network-utils'
@@ -30,10 +30,10 @@ import {
   Timeline as EventList,
   TimelineEvent,
   TimelineQuote,
-} from 'components/curate/item-light-timeline'
+} from 'components/curate/item-standard-timeline'
 
 /*
- * History of a Stake Curate item, on the Light item's composition: one
+ * History of a Stake Curate item, on the Standard item's composition: one
  * panel, one group per submission (newest first, the latest open), each a
  * glowing vertical timeline of every event the subgraph recorded
  * (submission, evidence, challenge, rulings, appeals, withdrawal) with
