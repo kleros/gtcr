@@ -71,7 +71,7 @@ const useSeerMarketsData = (
       }
     }
 
-    fetchSeerData()
+    void fetchSeerData()
   }, [chainId, tcrAddress, items])
 
   return seerMarketsData
