@@ -3,7 +3,11 @@ import type { QueryFunctionContext } from '@tanstack/react-query'
 import { request } from 'utils/indexer-request'
 import { NETWORKS } from 'config/networks'
 import { subgraphUrl, subgraphUrlPermanent } from 'config/tcr-addresses'
-import { getListOfListsAddresses, isListOfLists } from 'config/list-of-lists'
+import {
+  getListOfListsAddresses,
+  getListOfListsHistory,
+  isListOfLists,
+} from 'config/list-of-lists'
 import {
   countsAsVerifiedList,
   listOfListsEntryAddress,
@@ -1045,16 +1049,30 @@ interface NormalizedChain {
 
 const normalizeEnvio = (payload: any, chainId: number): NormalizedChain => {
   // The shared Kleros Verified rule (components/curate/verified-rule.ts):
-  // the chain's Kleros list of lists and the lists registered on it. A list
-  // holds the badge since its registration there; the list of lists grants
-  // it, so has no date.
-  const verifiedEntries = payload.verifiedStandard ?? []
-  const verifiedAddresses = verifiedSetFrom(chainId, verifiedEntries)
+  // the chain's Kleros list of lists and the lists registered on it. The
+  // entries read cover former lists of lists too (getListOfListsHistory),
+  // for dates only: a list holds the badge since its first registration on
+  // either, so moving lists of lists keeps every list's date. Only the
+  // current list's entries decide who is Verified. The list of lists grants
+  // the badge, so has no date.
+  const entries: any[] = payload.verifiedStandard ?? []
+  const current = new Set(getListOfListsAddresses(chainId))
+  const verifiedAddresses = verifiedSetFrom(
+    chainId,
+    entries.filter((item) =>
+      current.has(String(item.registry_id ?? '').toLowerCase()),
+    ),
+  )
 
   const verifiedSince: Record<string, number> = {}
-  for (const item of verifiedEntries) {
+  for (const item of entries) {
     const address = listOfListsEntryAddress(item.props)
-    if (!address || isListOfLists(chainId, address)) continue
+    if (
+      !address ||
+      isListOfLists(chainId, address) ||
+      !verifiedAddresses.has(address)
+    )
+      continue
     const registeredAt = toNumber(item.requests?.[0]?.resolutionTime)
     if (registeredAt > 0)
       verifiedSince[address] = Math.min(
@@ -1698,7 +1716,7 @@ const readRemainingRegistries = async (
   chainId: number,
   onFail: () => void = () => undefined,
 ) => {
-  const listsOfLists = getListOfListsAddresses(chainId)
+  const listsOfLists = getListOfListsHistory(chainId)
   const pages: {
     keys: string[]
     query: string
@@ -2158,7 +2176,7 @@ export const loadDashboardData = async ({
       const payload = await safeRequest<any>(url, ENVIO_DASHBOARD_QUERY, {
         chainId,
         since,
-        listsOfLists: getListOfListsAddresses(chainId),
+        listsOfLists: getListOfListsHistory(chainId),
       })
       if (!payload) listsMissing(chainId)
       return payload

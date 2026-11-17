@@ -1,7 +1,10 @@
 import { NETWORKS_INFO } from 'config/networks'
 import { VERIFIED_LIST_OF_LISTS_ADDRESSES } from 'config/list-of-lists'
 import { ipfsImageUrl } from 'utils/ipfs-parse'
-import { countsAsVerifiedList } from 'components/curate/verified-rule'
+import {
+  countsAsCommunityList,
+  countsAsVerifiedList,
+} from 'components/curate/verified-rule'
 import type {
   DashboardActivity,
   DashboardRegistry,
@@ -264,7 +267,7 @@ export const filterRegistries = (
     if (!inScope(filters.chains, registry.chainId)) return false
     if (filters.trust === 'verified' && !countsAsVerifiedList(registry))
       return false
-    if (filters.trust === 'community' && registry.trustStatus !== 'unverified')
+    if (filters.trust === 'community' && !countsAsCommunityList(registry))
       return false
     if (filters.kinds.length > 0 && !filters.kinds.includes(registry.kind))
       return false
@@ -338,9 +341,7 @@ export const summarize = (
   )
   return {
     verified: scoped.filter(countsAsVerifiedList).length,
-    community: scoped.filter(
-      (registry) => registry.trustStatus === 'unverified',
-    ).length,
+    community: scoped.filter(countsAsCommunityList).length,
     entries: scoped.reduce((sum, registry) => sum + entryCount(registry), 0),
     openRequests: scoped.reduce(
       (sum, registry) => sum + openRequests(registry),

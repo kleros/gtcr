@@ -3,9 +3,14 @@ export type validChains = '1' | '100' | '11155111' | 1 | 100 | 11155111
 /** Chain-keyed lookup — accepts both numeric and string chain IDs. */
 type ChainMap<T> = Readonly<Record<number | string, T | undefined>>
 
+/**
+ * Each chain's Kleros list of lists (config/list-of-lists.ts): where the
+ * list wizards offer to submit a new list, and the list a chain switch
+ * lands on.
+ */
 export const defaultTcrAddresses: ChainMap<string> = {
   '1': '0x2acf59a420ca888f46d46974f62570f8a38cd4da',
-  '100': '0x2418D887d0d0Fe03b793A6aF4321fa488226A0b5',
+  '100': '0x5f688a4bac5e2787ef1d9de325831e537ee4cffa',
   '11155111': '0xD965Ce430afE0423Ff19A5eb08F7C5722EFabCaF',
 } as const
 

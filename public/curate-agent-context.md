@@ -19,8 +19,13 @@ entry of it. New lists are submitted with `LightGeneralizedTCR.addItem(string)` 
 references/verify-your-list.md).
 
 - Ethereum Mainnet: `0x2acf59a420ca888f46d46974f62570f8a38cd4da`
-- Gnosis: `0x2418d887d0d0fe03b793a6af4321fa488226a0b5`
+- Gnosis: `0x5f688a4bac5e2787ef1d9de325831e537ee4cffa`
 - Sepolia: `0xd965ce430afe0423ff19a5eb08f7c5722efabcaf`
+
+The previous Gnosis list of lists, `0x2418d887d0d0fe03b793a6af4321fa488226a0b5`
+(Standard), was replaced on 17 Nov 2026 with the same settings and a policy that
+also rejects lists that are not Standard (Light) or Stake. It still works on
+chain, but a list registered on it is not Kleros Verified: never submit to it.
 
 Classic Curate (GeneralizedTCR) is retired: the app shows no Classic list, including the old Classic
 lists of lists (Ethereum Mainnet `0xba0304273a54dfec1fc7f4bccbf4b15519aecf15`, Gnosis

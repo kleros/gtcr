@@ -6,6 +6,7 @@ import React, {
   useMemo,
   useState,
 } from 'react'
+import FormerListOfListsNotice from 'components/curate/former-list-of-lists'
 import type { BigNumber } from 'ethers'
 import { useIsFetching, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Navigate, useLocation, useNavigate, useParams } from 'react-router-dom'
@@ -309,6 +310,13 @@ const DepositSubmitPage = ({
           : seconds > 0
             ? `Challenge period · ${formatDurationLong(seconds)}`
             : 'No challenge period'
+      }
+      notice={
+        <FormerListOfListsNotice
+          chainId={chainId}
+          address={tcrAddress}
+          submit
+        />
       }
       columns={columns}
       initialValues={linkValues}

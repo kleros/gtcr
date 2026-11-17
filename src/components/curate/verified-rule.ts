@@ -2,7 +2,11 @@ import type { QueryClient } from '@tanstack/react-query'
 import { gql } from 'graphql-request'
 import { request } from 'utils/indexer-request'
 import { subgraphUrl } from 'config/tcr-addresses'
-import { getListOfListsAddresses, isListOfLists } from 'config/list-of-lists'
+import {
+  getListOfListsAddresses,
+  isListOfLists,
+  succeededListOfLists,
+} from 'config/list-of-lists'
 import type { TrustStatus } from 'pages/dashboard/types'
 
 /*
@@ -230,6 +234,20 @@ export const countsAsVerifiedList = (registry: {
 }): boolean =>
   registry.trustStatus === 'verified' &&
   !isListOfLists(registry.chainId, registry.address)
+
+/**
+ * Whether a registry is a Community list that pages list and count: not
+ * Kleros Verified, and not a former Kleros list of lists, which grants
+ * nothing any more but is Kleros' own, so it sits under All only, as the
+ * lists of lists do.
+ */
+export const countsAsCommunityList = (registry: {
+  chainId: number
+  address: string
+  trustStatus: TrustStatus
+}): boolean =>
+  registry.trustStatus === 'unverified' &&
+  !succeededListOfLists(registry.chainId, registry.address)
 
 /**
  * The sets for several chains, read outside React. A chain whose read fails

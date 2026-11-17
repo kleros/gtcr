@@ -13,7 +13,10 @@ import {
 } from 'pages/dashboard/view'
 import { readRegistryMetadata } from 'utils/registry-metadata'
 import { ipfsImageUrl } from 'utils/ipfs-parse'
-import { countsAsVerifiedList } from 'components/curate/verified-rule'
+import {
+  countsAsCommunityList,
+  countsAsVerifiedList,
+} from 'components/curate/verified-rule'
 
 /*
  * Live figures for the standalone landing page (public/landing/landing.js).
@@ -243,9 +246,7 @@ const readLive = async (): Promise<LandingData | null> => {
     figures: {
       registries: figures.registries,
       verified: figures.verified,
-      community: registries.filter(
-        (registry) => registry.trustStatus === 'unverified',
-      ).length,
+      community: registries.filter(countsAsCommunityList).length,
       entries: figures.entries,
       requestsOpen: figures.requestsOpen,
       unchallenged: figures.unchallenged,
