@@ -74,6 +74,7 @@ import {
 import { StickyActionBarSpacer } from 'components/curate/item-standard-action-bar'
 import ItemStatusCard from './item-status-card'
 import CrowdfundingCard from './crowdfunding-card'
+import DisputeTimeline from 'components/curate/dispute-timeline'
 import { AppealWindowPanel } from 'pages/standard-item-details/appeal-funding'
 import { requestFacts, type StandardRequest } from './request-facts'
 import { linkedListAddress, linkedListField } from './linked-list'
@@ -1039,6 +1040,16 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
             timestamp={timestamp}
             appealCost={appealCost}
           />
+          {/* While the case is open: its periods and how long it should take. */}
+          {facts?.hasDispute && (facts.inCourt || facts.appealable) && (
+            <DisputeTimeline
+              chainId={chainId}
+              arbitrator={request?.arbitrator}
+              arbitrable={tcrAddress}
+              disputeID={facts.disputeID}
+              now={now}
+            />
+          )}
         </Rail>
       </Columns>
       <StickyActionBarSpacer />

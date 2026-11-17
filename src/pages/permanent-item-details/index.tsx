@@ -69,6 +69,7 @@ import {
 import ItemStatusCard from './item-status-card'
 import { formatSince } from 'utils/format-since'
 import { StakeWindowPanel } from './item-window'
+import DisputeTimeline from 'components/curate/dispute-timeline'
 import { PolicySince, policyInForceSince } from './policy-since'
 import { multiplierPercent, nativeText, tokenText } from './modals/shell'
 import { entrySetting } from './arbitration-setting'
@@ -1082,6 +1083,16 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
             submitter={submitter}
             policyURI={policyURI}
           />
+          {/* While the case is open: its periods and how long it should take. */}
+          {facts?.hasDispute && facts.underDispute && (
+            <DisputeTimeline
+              chainId={chainId}
+              arbitrator={registry?.arbitrator.id}
+              arbitrable={tcrAddress}
+              disputeID={facts.disputeID}
+              now={now}
+            />
+          )}
         </Rail>
       </Columns>
       <StickyActionBarSpacer aria-hidden />
