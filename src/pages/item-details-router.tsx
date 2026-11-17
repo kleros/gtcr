@@ -142,7 +142,9 @@ const ItemDetailsRouter = () => {
       </Suspense>,
     )
   if (isClassicCurate)
-    return <ClassicRetired chainId={chainId} tcrAddress={tcrAddress} />
+    return withViewer(
+      <ClassicRetired chainId={chainId} tcrAddress={tcrAddress} />,
+    )
   if (isPermanentCurate)
     return withViewer(
       <Suspense fallback={<Loading />}>

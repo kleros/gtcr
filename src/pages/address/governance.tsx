@@ -349,9 +349,9 @@ const editableParams = (registry: GovernedRegistry): ParamConfig[] => {
       hint: "The list that holds badges for this list's entries. Use the zero address to disconnect it.",
     },
     {
-      key: 'relayerContract' as ParamKey,
+      key: 'relayerContract',
       label: 'Relayer contract address',
-      kind: 'address' as ParamKind,
+      kind: 'address',
       functionName: 'changeRelayerContract',
       hint: 'A relayer can add and remove entries directly, with no deposit and no challenge period. Keep the zero address unless you run one.',
     },

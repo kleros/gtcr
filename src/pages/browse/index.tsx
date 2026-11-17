@@ -12,7 +12,7 @@ import { formatAbsolute, formatAgo } from 'utils/time'
 import { parseRichAddress } from 'utils/rich-address'
 import ChainLogo from 'components/chain-logo'
 import { NETWORKS } from 'config/networks'
-import { getListOfListsAddresses } from 'config/list-of-lists'
+import { countsAsVerifiedList } from 'components/curate/verified-rule'
 import { CurateIcon } from 'components/curate/icons'
 import {
   Button,
@@ -2370,12 +2370,19 @@ const BrowsePage = () => {
                 const list = listOfListsHref(chainId)
                 if (!submit || !list) return null
                 const name = chainName(chainId)
-                // The lists it accepted, once the load has it (the list of
-                // lists is a list of the load like any other).
-                const lists = registryByKey.get(
-                  listKey(chainId, getListOfListsAddresses(chainId)[0] ?? ''),
+                // The Kleros Verified lists on that chain: the Verified tab's
+                // own count, once the chain's lists and its set are in (a
+                // list of lists' entry count would add rejected entries).
+                const onChain = trusted.filter(
+                  (registry) => registry.chainId === chainId,
                 )
-                const count = lists ? entryCount(lists) : undefined
+                const count =
+                  onChain.length > 0 &&
+                  onChain.every(
+                    (registry) => registry.trustStatus !== 'unknown',
+                  )
+                    ? onChain.filter(countsAsVerifiedList).length
+                    : undefined
                 const counted =
                   count === undefined
                     ? ''

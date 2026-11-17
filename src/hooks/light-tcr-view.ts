@@ -10,7 +10,7 @@ import { lightGtcrViewAddresses, subgraphUrl } from 'config/tcr-addresses'
 import { fetchMetaEvidenceFile } from 'utils/meta-evidence-guard'
 import { request } from 'utils/indexer-request'
 
-export const fetchMetaEvidence = async (
+export const fetchLightMetaEvidence = async (
   tcr: string,
   networkId: number,
 ): Promise<FetchMetaEvidenceResult | null> => {
@@ -83,7 +83,7 @@ const useLightTcrView = (tcrAddress: string) => {
   const metaEvidenceQuery = useQuery({
     queryKey: ['metaEvidence', 'light', tcrAddress, networkId],
     queryFn: async () => {
-      const fetchedData = await fetchMetaEvidence(tcrAddress, networkId!)
+      const fetchedData = await fetchLightMetaEvidence(tcrAddress, networkId!)
       if (!fetchedData) return null
       // Written by whoever governs the list and rendered on every page of
       // it: a title that is an object took the list and its entries down.

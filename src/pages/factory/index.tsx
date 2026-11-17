@@ -9,7 +9,7 @@ import _GTCRFactory from 'assets/abis/LightGTCRFactory.json'
 import { useWeb3Context } from 'hooks/use-web3-context'
 import useUrlChainId from 'hooks/use-url-chain-id'
 import useDocumentHead from 'hooks/use-document-head'
-import { fetchMetaEvidence } from 'hooks/light-tcr-view'
+import { fetchLightMetaEvidence } from 'hooks/light-tcr-view'
 import { parseIpfs } from 'utils/ipfs-parse'
 import { version } from '../../../package.json'
 import {
@@ -639,7 +639,7 @@ const DeploymentRow = ({
   const { data, isLoading } = useQuery({
     queryKey: ['factoryDeployment', chainId, address.toLowerCase()],
     queryFn: async () => {
-      const found = await fetchMetaEvidence(address, chainId)
+      const found = await fetchLightMetaEvidence(address, chainId)
       if (!found) return null
       const response = await fetch(parseIpfs(found.metaEvidenceURI))
       return (await response.json()) as MetaEvidence

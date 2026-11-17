@@ -12,7 +12,8 @@ import type { TrustStatus } from 'pages/dashboard/types'
  * config/list-of-lists.ts), or an entry on it (Registered, or Registered
  * with a removal request still open: it stays on the list until that
  * request is executed), and then carries the approval seal
- * (verified-badge.tsx). Every other list is a Community list.
+ * (verified-badge.tsx); a retired Classic list on it is not. Every other
+ * list is a Community list.
  *
  * A chain's set is one small read (the list of lists' Registered entries,
  * a few dozen rows, paged). This module holds no React, so the landing page
@@ -82,6 +83,20 @@ const VERIFIED_REGISTRIES_QUERY = gql`
   }
 `
 
+/*
+ * Which of the addresses the lists of lists hold are Classic lists. Classic
+ * is retired (pages/classic-retired): a Classic list still registered on a
+ * list of lists carries no seal, as no page counts it among the Kleros
+ * Verified lists.
+ */
+const CLASSIC_AMONG_QUERY = gql`
+  query ClassicAmong($ids: [String!]!) {
+    classic: Registry(where: { id: { _in: $ids } }) {
+      id
+    }
+  }
+`
+
 interface VerifiedEntry {
   data?: string | null
   props?: { label?: unknown; value?: unknown }[] | null
@@ -124,7 +139,8 @@ const readPage = async (
 }
 
 /**
- * Every Kleros Verified registry on a chain, lowercase. Throws when the
+ * Every Kleros Verified registry on a chain, lowercase (Classic lists left
+ * out). Throws when the
  * indexer fails, times out or pages past MAX_PAGES, so no page shows a trust
  * mark it cannot back.
  */
@@ -148,7 +164,21 @@ export const fetchVerifiedRegistries = async (
     entries.push(...light)
     if (light.length < PAGE) break
   }
-  return [...verifiedSetFrom(chainId, entries)]
+  const verified = verifiedSetFrom(chainId, entries)
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), PAGE_TIMEOUT_MS)
+  try {
+    const { classic } = await request<{ classic?: { id: string }[] | null }>({
+      url,
+      document: CLASSIC_AMONG_QUERY,
+      variables: { ids: [...verified] },
+      signal: controller.signal,
+    })
+    for (const { id } of classic ?? []) verified.delete(id.toLowerCase())
+  } finally {
+    clearTimeout(timer)
+  }
+  return [...verified]
 }
 
 /** The shared query for one chain's set (registry pages, Browse, profile). */

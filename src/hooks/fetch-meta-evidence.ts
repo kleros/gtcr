@@ -58,16 +58,16 @@ export const fetchMetaEvidence = async (
     envioQuery.query,
     envioQuery.variables,
   )
-  if (envioData?.registry)
-    return {
-      metaEvidenceURI: envioData.registry.registrationMetaEvidence.uri,
-      connectedTCR: envioData.registry.connectedTCR,
-    }
-  if (envioData?.lregistry)
-    return {
-      metaEvidenceURI: envioData.lregistry.registrationMetaEvidence.uri,
-      connectedTCR: envioData.lregistry.connectedTCR,
-    }
+  // A registry the indexer holds without its MetaEvidence yet has none to
+  // show: null, not a TypeError React Query would retry for ever.
+  const indexed = envioData?.registry ?? envioData?.lregistry
+  if (indexed)
+    return indexed.registrationMetaEvidence?.uri
+      ? {
+          metaEvidenceURI: indexed.registrationMetaEvidence.uri,
+          connectedTCR: indexed.connectedTCR,
+        }
+      : null
 
   // 2. Only try Goldsky if Envio didn't find it (rare — permanent TCRs).
   const permanentUrl = subgraphUrlPermanent[networkId]

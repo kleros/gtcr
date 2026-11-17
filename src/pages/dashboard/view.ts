@@ -13,11 +13,9 @@ import type {
   UnchallengedRow,
 } from './types'
 
-/* Pure view helpers for the dashboard: filters, sorts and board mapping. */
+/* Pure view helpers for the dashboard: scopes, figures and board mapping. */
 
 export type ChainFilter = 'all' | number
-export type TrustFilter = 'all' | 'verified' | 'unverified'
-export type KindFilter = 'all' | RegistryKind
 export type RegistrySort = 'signal' | 'activity' | 'items' | 'recent'
 
 export const SUPPORTED_CHAIN_IDS = Object.values(NETWORKS_INFO).map((info) =>
@@ -42,17 +40,6 @@ export const kindLabel = (kind: RegistryKind): string =>
 
 export const registryHref = (registry: DashboardRegistry) =>
   `/tcr/${registry.chainId}/${registry.address}`
-
-export const validTrust = (value: string | null): TrustFilter =>
-  value === 'verified' || value === 'unverified' ? value : 'all'
-
-export const validKind = (value: string | null): KindFilter =>
-  value === 'light' || value === 'permanent' ? value : 'all'
-
-export const validSort = (value: string | null): RegistrySort =>
-  value === 'activity' || value === 'items' || value === 'recent'
-    ? value
-    : 'signal'
 
 export const validChain = (value: string | null): ChainFilter =>
   value && SUPPORTED_CHAIN_IDS.includes(Number(value)) ? Number(value) : 'all'
@@ -432,39 +419,6 @@ export const sortRegistries = (
       )
     return signalScore(b) - signalScore(a)
   })
-
-const includes = (needle: string, values: Array<string | number | undefined>) =>
-  !needle ||
-  values.some(
-    (value) =>
-      value !== undefined && String(value).toLowerCase().includes(needle),
-  )
-
-export const filterRegistries = (
-  registries: DashboardRegistry[],
-  filters: {
-    chain: ChainFilter
-    trust: TrustFilter
-    kind: KindFilter
-    search: string
-  },
-): DashboardRegistry[] => {
-  const needle = filters.search.trim().toLowerCase()
-  return registries.filter((registry) => {
-    if (filters.chain !== 'all' && registry.chainId !== filters.chain)
-      return false
-    if (filters.trust !== 'all' && registry.trustStatus !== filters.trust)
-      return false
-    if (filters.kind !== 'all' && registry.kind !== filters.kind) return false
-    return includes(needle, [
-      registry.title,
-      registry.description,
-      registry.address,
-      kindLabel(registry.kind),
-      chainInfo(registry.chainId)?.name,
-    ])
-  })
-}
 
 /** One row of the Happening now board. */
 export interface DashboardCard {

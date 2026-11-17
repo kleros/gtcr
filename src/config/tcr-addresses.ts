@@ -190,31 +190,28 @@ export const subgraphUrlPermanent: ChainMap<string> = {
 } as const
 
 /**
- * Every factory the Curate indexers track, with the block it was deployed at.
+ * Every Light factory the Curate indexer tracks, with the block it was deployed at.
  * Each list they create emits NewGTCR(address), whose block is the list's
  * creation time. Source: kleros/gtcr-subgraph networks.json.
  */
 export const registryFactories: Record<
   number,
-  { kind: 'light'; address: string; startBlock: number }[]
+  { address: string; startBlock: number }[]
 > = {
   1: [
     {
-      kind: 'light',
       address: '0xb9dDC813AcAF3fD7aBC4C16735A09Bc1C0EE0054',
       startBlock: 13810085,
     },
   ],
   100: [
     {
-      kind: 'light',
       address: '0x08e58Bc26CFB0d346bABD253A1799866F269805a',
       startBlock: 19592773,
     },
   ],
   11155111: [
     {
-      kind: 'light',
       address: '0x3FB8314C628E9afE7677946D3E23443Ce748Ac17',
       startBlock: 4048287,
     },
