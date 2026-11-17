@@ -285,10 +285,8 @@ const DisputeTimeline = ({
         <Label $tone="faint">Dispute timeline</Label>
         <Small $muted>
           Case {dispute.disputeID}
-          {courtName
-            ? ` · ${/court$/i.test(courtName) ? courtName : `${courtName} court`}`
-            : ''}{' '}
-          · round {dispute.round} · {dispute.jurors} juror
+          {courtName ? ` · ${courtName}` : ''} · round {dispute.round} ·{' '}
+          {dispute.jurors} juror
           {dispute.jurors === 1 ? '' : 's'}
         </Small>
       </Head>
