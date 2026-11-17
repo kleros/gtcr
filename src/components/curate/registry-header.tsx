@@ -285,6 +285,17 @@ const RingBlock = styled.figure`
   gap: 16px;
   margin: 0;
 
+  /*
+   * The gauge's arc is painted from 10% to 78% of its box (the gap is at the
+   * bottom), so a box aligned on the row's bottom draws the ring well above
+   * the figures beside it. Hanging the box 26px lower puts the painted ring's
+   * middle on the middle of the label and value lines; the hanging part is
+   * the empty gap, inside the row's padding.
+   */
+  > figure {
+    margin-bottom: -26px;
+  }
+
   figcaption {
     display: flex;
     flex-direction: column;
