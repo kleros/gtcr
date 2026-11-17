@@ -17,7 +17,7 @@ import styled from 'styled-components'
  *   <StakeTag size="md" />  a list's own header: the chip row's 24px
  */
 
-export const STAKE_TAG_TITLE =
+const STAKE_TAG_TITLE =
   'Stake list: an entry’s stake stays locked while it is listed, and a successful challenge takes it.'
 
 const Box = styled.span<{ $size: 'sm' | 'md' }>`

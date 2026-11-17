@@ -46,7 +46,9 @@ const STANDARD_ITEM_DETAILS_QUERY = gql`
             fileTypeExtension
           }
         }
-        rounds(order_by: { creationTime: desc }) {
+        # A challenge in the submission's block ties round 0 and round 1 on
+        # creationTime; their ids (…-0, …-1) break the tie.
+        rounds(order_by: [{ creationTime: desc }, { id: desc }]) {
           appealed
           appealPeriodStart
           appealPeriodEnd

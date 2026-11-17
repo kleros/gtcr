@@ -619,11 +619,23 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
   const capitalizeFirst = (s: string | undefined) =>
     s ? s.charAt(0).toUpperCase() + s.slice(1) : ''
 
-  // The tab names the entry itself (its heading), then its list.
+  // If this is a TCR in a TCR of TCRs, fetch its metadata via cached hook:
+  // the list its field labelled like the list's GTCR address column names,
+  // the one the seal reads, never just the file's first field.
+  const itemAddress = metadata?.isTCRofTCRs
+    ? linkedListAddress(fields, metadata.columns)
+    : undefined
+  const itemMetaQuery = useTcrMetaEvidence(itemAddress, chainId ?? undefined)
+  // The tab names the entry itself as its heading does: an entry of a list
+  // of lists by the list it points to, once that list's file is in.
+  const linkedTitle =
+    itemMetaQuery.data?.metadata?.tcrTitle ||
+    itemMetaQuery.data?.metadata?.title
   const seoName =
-    primaryField && hasValue(primaryField)
+    linkedTitle ||
+    (primaryField && hasValue(primaryField)
       ? String(primaryField.value)
-      : capitalizeFirst(itemName) || 'Entry'
+      : capitalizeFirst(itemName) || 'Entry')
   const fullSeoTitle =
     decodedItem && metadata
       ? `${seoName} · ${tcrTitle} | Kleros Curate`
@@ -641,13 +653,6 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
     160,
   )
 
-  // If this is a TCR in a TCR of TCRs, fetch its metadata via cached hook:
-  // the list its field labelled like the list's GTCR address column names,
-  // the one the seal reads, never just the file's first field.
-  const itemAddress = metadata?.isTCRofTCRs
-    ? linkedListAddress(fields, metadata.columns)
-    : undefined
-  const itemMetaQuery = useTcrMetaEvidence(itemAddress, chainId ?? undefined)
   const itemMetaEvidence = useMemo(() => {
     if (itemMetaQuery.error) return { error: itemMetaQuery.error }
     if (itemMetaQuery.data) return { file: itemMetaQuery.data }

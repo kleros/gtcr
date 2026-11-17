@@ -273,6 +273,8 @@ export const filterRegistries = (
       registry.description,
       registry.address,
       kindLabel(registry.kind),
+      // Standard lists were called Light: the old name still finds them.
+      registry.kind === 'standard' ? 'Light' : undefined,
       chainInfo(registry.chainId)?.name,
     ])
   })

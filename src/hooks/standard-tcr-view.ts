@@ -113,7 +113,10 @@ const useStandardTcrView = (tcrAddress: string) => {
       return { ...data, tcrAddress }
     },
     enabled: !!gtcrView && !!tcrAddress,
-    staleTime: Infinity,
+    // A governor can change deposits and the court can change its cost while
+    // a page is open: read again after five minutes, so a dialog opened
+    // later quotes what the contract will ask for.
+    staleTime: 5 * 60_000,
   })
 
   const arbitrableTCRData = arbitrableQuery.data

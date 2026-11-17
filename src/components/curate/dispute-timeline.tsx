@@ -231,7 +231,11 @@ const StepRow = ({ step, now }: { step: TimelineStep; now: number }) => {
               />
             </Progress>
             <Detail $muted title={formatAbsolute(step.end)}>
-              {step.estimated ? 'Around ' : 'Ends by '}
+              {step.estimated
+                ? 'Around '
+                : step.key === 'evidence'
+                  ? 'Can end from '
+                  : 'Ends by '}
               {shortDate(step.end)}
               {length ? ` · lasts ${lengthWord(step)}${length}` : ''}
             </Detail>

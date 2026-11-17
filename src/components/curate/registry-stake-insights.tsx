@@ -1012,15 +1012,14 @@ const Tally = styled.dl`
     min-width: 0;
   }
 
+  /* Labels wrap rather than cut off: "Withdrawal ready" in a narrow card. */
   dt {
     flex: 1 1 auto;
     min-width: 0;
-    overflow: hidden;
     color: var(--color-muted);
     font-size: var(--fs-small);
     line-height: var(--lh-small);
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    overflow-wrap: break-word;
   }
 
   dd {

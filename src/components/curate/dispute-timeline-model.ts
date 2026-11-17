@@ -11,7 +11,8 @@
  * evidence period has no minimum and moves on once its jurors are drawn
  * (KlerosLiquid.passPeriod), so its length is only an estimate.
  *
- * So the current period's deadline is exact (its start plus its length) and
+ * So the current period's deadline is read, not guessed (its start plus its
+ * length: the latest it ends, or for a first round's evidence the earliest) and
  * every later date is an estimate chained from it: the shortest the dispute
  * can take, assuming nobody appeals.
  */
@@ -152,14 +153,17 @@ export const timelineSteps = (
 
 const describe = (
   period: number,
-  { hiddenVotes, round, jurors, appealable }: CourtDispute,
+  { hiddenVotes, round, jurors, drawn, appealable }: CourtDispute,
 ): Pick<TimelineStep, 'key' | 'title' | 'detail'> => {
   switch (period) {
     case COURT_PERIOD.EVIDENCE:
       return {
         key: 'evidence',
         title: 'Evidence',
-        detail: `${plural(jurors, 'juror')} ${jurors === 1 ? 'is' : 'are'} drawn. Both sides add evidence.`,
+        detail:
+          drawn >= jurors
+            ? `${plural(jurors, 'juror')} drawn. Both sides add evidence.`
+            : `Drawing ${plural(jurors, 'juror')} (${drawn} so far). Both sides add evidence.`,
       }
     case COURT_PERIOD.COMMIT:
       return {
