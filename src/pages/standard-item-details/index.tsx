@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useContext, useMemo } from 'react'
 import { ethers, type BigNumber } from 'ethers'
-import { ItemTypes } from '@kleros/gtcr-encoder'
 import styled from 'styled-components'
 import { useParams, Link, useLocation } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
@@ -24,7 +23,6 @@ import {
   justSubmitted,
   missingEntryPollMs,
 } from '../error-page/copy'
-import ItemDetailsCard from 'components/item-details-card'
 import RequestTimelines, {
   type TimelineRequest,
 } from 'components/request-timelines'
@@ -43,7 +41,7 @@ import { formatAbsolute } from 'utils/time'
 import { formatSince } from 'utils/format-since'
 import { STALE_TIME } from 'consts'
 import { isKlerosArbitrator } from 'config/tcr-addresses'
-import { ipfsImageUrl, parseIpfs } from 'utils/ipfs-parse'
+import { parseIpfs } from 'utils/ipfs-parse'
 import { type ItemFile, sanitizeItemFile } from 'utils/item-file-guard'
 import { truncateAtWord } from 'utils/truncate-at-word'
 import { CurateIcon } from 'components/curate/icons'
@@ -62,31 +60,41 @@ import { Explainer } from 'components/curate/explainer'
 import { EvidenceClosed } from 'components/inline-evidence-composer'
 import { AnimatedNumber } from 'components/curate/motion/animated-number'
 import { reveal } from 'components/curate/motion/reveal'
+import { buttonReset } from 'styles/button-reset'
 import {
   AddressLink,
   FieldValue,
   hasValue,
-  identifierFields,
-  isImageField,
   titleField,
   type EntryField,
 } from 'components/curate/item-standard-fields'
 import { StickyActionBarSpacer } from 'components/curate/item-standard-action-bar'
 import ItemStatusCard from './item-status-card'
 import CrowdfundingCard from './crowdfunding-card'
-import DisputeTimeline from 'components/curate/dispute-timeline'
+import { ItemSubmissionPanel } from 'components/curate/item-submission-panel'
+import { heroImage } from 'components/curate/item-media-band'
+import { ItemEvidenceBand } from 'components/curate/item-evidence-band'
+import { DisputeCasePanel } from 'components/curate/dispute-case-panel'
 import { AppealWindowPanel } from 'pages/standard-item-details/appeal-funding'
-import { requestFacts, type StandardRequest } from './request-facts'
+import {
+  caseState,
+  evidenceSummary,
+  requestFacts,
+  type StandardRequest,
+} from './request-facts'
 import { linkedListAddress, linkedListField } from './linked-list'
 
 /*
- * Standard Curate item page. A breadcrumb, then the hero (the one featured
- * panel): the entry's identifiers set large with its status, and on the
- * right whatever clock is running (challenge window, appeal period, the
- * court case, or the date it settled). Under it, two columns: the fields
- * and the history on the left, the sticky action card on the right (a
- * bottom bar on phones). Every figure comes from the subgraph, the list
- * contract and the clock.
+ * Standard Curate item page, one layout in three states (settled, in its
+ * challenge window, in court). A breadcrumb, then the hero (the one
+ * featured panel): the entry named large with its status and a short facts
+ * strip, and on the right the page's one clock — the challenge window, the
+ * appeal period, the court period, or the date it settled. While a case is
+ * live, one full-width panel holds it: where it stands, its periods, its
+ * jury and its two actions. Then two columns: the submission (every field
+ * of the entry, with its pictures and files) and the history on the left,
+ * the sticky action card on the right (a bottom bar on phones). Every
+ * figure comes from the subgraph, the list contract and the clock.
  */
 
 const Crumbs = styled.nav`
@@ -197,8 +205,23 @@ const Identity = styled.div`
   min-width: 0;
 `
 
-/* The entry's picture, on its own tile; a plate when its ink is lost. */
+/* The entry's picture, on its own tile; a plate when its ink is lost. It
+   opens full size: the submission panel leaves this one out of its media
+   band, so the tile is the only copy of it on the page. */
+const LogoOpen = styled.button`
+  ${buttonReset}
+  display: block;
+  flex: 0 0 auto;
+  border-radius: 16px;
+  cursor: zoom-in;
+
+  @media (max-width: 720px) {
+    border-radius: 12px;
+  }
+`
+
 const Logo = styled(PlatedImg)`
+  display: block;
   flex: 0 0 auto;
   width: 64px;
   height: 64px;
@@ -237,36 +260,6 @@ const Title = styled.h1<{ $size: 'lg' | 'md' | 'sm' }>`
   }
 `
 
-const KeyRow = styled.dl`
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px 28px;
-  margin: 0;
-
-  div {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    min-width: 0;
-    max-width: 100%;
-  }
-
-  dt {
-    color: var(--color-faint);
-    font-size: 12px;
-    line-height: 16px;
-  }
-
-  dd {
-    margin: 0;
-    min-width: 0;
-    color: var(--color-text);
-    font-size: var(--fs-body);
-    line-height: var(--lh-body);
-    overflow-wrap: anywhere;
-  }
-`
-
 const StatusRow = styled.div`
   display: flex;
   flex-wrap: wrap;
@@ -299,6 +292,17 @@ const Stats = styled.dl`
   }
 `
 
+/* Full width under the hero: a live case is one region of the page, never
+   a card in the rail. */
+const CaseRegion = styled.div`
+  margin-top: 24px;
+  ${reveal}
+`
+
+/* The same two tracks in every state, so the submission keeps one measure:
+   while jurors decide the rail is empty (the case panel above holds the
+   state and the actions) and the column simply stays unfilled, rather than
+   the fields stretching across the whole page. */
 const Columns = styled.div`
   display: grid;
   grid-template-columns: minmax(0, 1fr) 360px;
@@ -335,6 +339,10 @@ const Main = styled.div`
 
   > :nth-child(4) {
     --i: 6;
+  }
+
+  > :nth-child(5) {
+    --i: 7;
   }
 `
 
@@ -400,34 +408,6 @@ export const PolicyLink: React.FC<{ href: string }> = ({ href }) => {
 const titleSize = (text: string): 'lg' | 'md' | 'sm' =>
   text.length > 90 ? 'sm' : text.length > 44 ? 'md' : 'lg'
 
-/*
- * Identifiers the hero shows in full, so the Details panel can leave them
- * out. Links are set untruncated in the hero; long text and files keep
- * their compact form there, so they stay in the panel too.
- */
-const HERO_FULL_TYPES = new Set(
-  [
-    ItemTypes.TEXT,
-    ItemTypes.ADDRESS,
-    ItemTypes.RICH_ADDRESS,
-    ItemTypes.GTCR_ADDRESS,
-    ItemTypes.NUMBER,
-    ItemTypes.BOOLEAN,
-    ItemTypes.LINK,
-  ].map((type) => String(type).toLowerCase()),
-)
-const isLinkField = (field: EntryField) =>
-  String(field.type || '').toLowerCase() ===
-  String(ItemTypes.LINK).toLowerCase()
-
-/** A logo or picture among the fields, shown next to the title. */
-const logoOf = (fields: EntryField[]): string | undefined => {
-  const image = fields.find((field) => isImageField(field) && hasValue(field))
-  if (!image) return undefined
-  // On the IPFS gateway only (ipfsImageUrl says why).
-  return ipfsImageUrl(image.value)
-}
-
 interface ItemDetailsProps {
   itemID: string
   search?: string
@@ -441,6 +421,8 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
   })
   const [ipfsItemData, setIpfsItemData] = useState<ItemFile | undefined>()
   const timestamp = useContext(WalletContext)?.timestamp
+  // The hero's picture opens in the in-app viewer.
+  const openAttachment = useAttachment()
   // The actions column stays reachable on short windows (useStickyTop).
   const railRef = useStickyTop(24)
   const [modalOpen, setModalOpen] = useState<boolean | undefined>()
@@ -602,20 +584,6 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
         : undefined) ?? titleField(fields),
     [fields, metadata],
   )
-  const otherIdentifiers = useMemo(
-    () => identifierFields(fields).filter((field) => field !== primaryField),
-    [fields, primaryField],
-  )
-  const heroFields = useMemo(
-    () => [
-      ...(primaryField ? [primaryField] : []),
-      ...otherIdentifiers.filter((field) =>
-        HERO_FULL_TYPES.has(String(field.type || '').toLowerCase()),
-      ),
-    ],
-    [primaryField, otherIdentifiers],
-  )
-
   const capitalizeFirst = (s: string | undefined) =>
     s ? s.charAt(0).toUpperCase() + s.slice(1) : ''
 
@@ -808,7 +776,38 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
           chainId,
         })
       : undefined
-  const logo = logoOf(fields)
+  // Where the case stands in the page's own words, for the case panel: the
+  // court names the period, the page knows what it means for this entry.
+  const caseWords =
+    item && request && facts && statusCode !== undefined
+      ? caseState(request, facts, statusCode)
+      : undefined
+  // The contracts take evidence only while the latest request is open.
+  const canAddEvidence = !!item && hasPendingRequest(item.status)
+  const evidence =
+    request && facts
+      ? evidenceSummary(request, facts.requesterName, facts.submissionTime)
+      : undefined
+  // In court there is nothing to act on and nothing to fund, so the rail
+  // holds nothing: the case panel above has the state and both actions.
+  const showRail = !facts?.inCourt
+  const statusCard = (
+    <ItemStatusCard
+      item={decodedItem}
+      timestamp={timestamp}
+      request={item?.requests && { ...item.requests[0] }}
+      modalOpen={modalOpen}
+      setModalOpen={setModalOpen}
+      appealCost={appealCost}
+      appealCostFailed={appealCostFailed}
+      retryAppealCost={() => void appealCostQuery.refetch()}
+      dark
+    />
+  )
+  // The hero's tile: the entry's first picture the gateway can serve. The
+  // submission panel leaves that field out of its band and its rows, so the
+  // picture is drawn once.
+  const logo = heroImage(fields)
   const titleText =
     primaryField && hasValue(primaryField)
       ? String(primaryField.value)
@@ -845,7 +844,15 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
             {chainId && <ChainChip chainId={chainId} size="sm" />}
           </Eyebrow>
           <Identity>
-            {logo && <Logo src={logo} alt="" />}
+            {logo && (
+              <LogoOpen
+                type="button"
+                aria-label={`Open ${logo.field.label || 'picture'} full size`}
+                onClick={() => openAttachment(logo.url)}
+              >
+                <Logo src={logo.url} alt="" />
+              </LogoOpen>
+            )}
             {loading ? (
               <SkeletonBlock $height="40px" $width="min(420px, 100%)" />
             ) : (
@@ -858,18 +865,6 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
               </Title>
             )}
           </Identity>
-          {otherIdentifiers.length > 0 && (
-            <KeyRow>
-              {otherIdentifiers.map((field, index) => (
-                <div key={`${field.label}-${index}`}>
-                  <dt>{field.label}</dt>
-                  <dd>
-                    <FieldValue field={field} detailed={isLinkField(field)} />
-                  </dd>
-                </div>
-              ))}
-            </KeyRow>
-          )}
           <StatusRow>
             {view ? (
               <EntryStatus
@@ -938,18 +933,6 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
                   </dd>
                 </div>
               )}
-              {/* The latest request, like every stat here; while jurors
-                    decide the court panel leads with the same count. */}
-              {!facts.inCourt && (
-                <div>
-                  <Label as="dt" $tone="faint">
-                    Evidence
-                  </Label>
-                  <dd>
-                    <AnimatedNumber value={facts.evidenceCount} />
-                  </dd>
-                </div>
-              )}
               <div>
                 <Label as="dt" $tone="faint">
                   Requests
@@ -965,18 +948,49 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
         </HeroStats>
       </Hero>
 
+      {/* One region for a live case: where it stands, its periods, its jury
+          and its two actions (the design review's point 6.2). */}
+      {request && facts?.hasDispute && (facts.inCourt || facts.appealable) && (
+        <CaseRegion style={{ ['--i' as string]: 2 }}>
+          <DisputeCasePanel
+            chainId={chainId}
+            arbitrator={request.arbitrator}
+            arbitrable={tcrAddress}
+            disputeID={facts.disputeID}
+            disputeHref={facts.disputeHref}
+            disputeHost={facts.disputeHost}
+            requesterName={facts.requesterName}
+            heading={caseWords?.heading ?? 'In court'}
+            awaitingCourt={caseWords?.awaitingCourt ?? true}
+            summary={caseWords?.summary}
+            ruling={caseWords?.ruling}
+            rulingLabel={caseWords?.rulingLabel}
+            canAddEvidence={canAddEvidence}
+            holdsPageActions={!!facts.inCourt}
+            now={now}
+          />
+        </CaseRegion>
+      )}
+
       <Columns>
         <Main>
-          <ItemDetailsCard
-            columns={decodedItem?.columns}
+          <ItemSubmissionPanel
+            fields={fields}
+            heading={primaryField}
+            skip={logo?.field}
             item={decodedItem}
-            title="Details"
+            itemID={item?.itemID}
+            errors={decodedItem?.errors}
             loading={loading}
-            itemMetaEvidence={itemMetaEvidence}
+            linkedRegistry={itemMetaEvidence}
             registryAddress={itemAddress}
-            exclude={heroFields}
             kind="standard"
           />
+          {/* Where evidence lives: its count and who filed, right above the
+              history and the composer (the design review's point 6.1). */}
+          {evidence && evidence.total > 0 && (
+            <ItemEvidenceBand evidence={evidence} now={now} />
+          )}
           {/* Spread the `requests` parameter to convert elements from array to an object */}
           <RequestTimelines
             item={item}
@@ -985,11 +999,16 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
               item.requests.map((r: TimelineRequest) => ({ ...r }))
             }
             metaEvidence={metaEvidence}
-            caseInHero={!!facts?.inCourt && !!facts.disputeID}
+            // The case panel carries the case link while one is live.
+            caseInHero={
+              !!facts?.hasDispute &&
+              (facts.inCourt || facts.appealable) &&
+              !!facts.disputeID
+            }
           />
           {/* The contracts take evidence only while the latest request is
               open; otherwise the section stays, saying when it opens. */}
-          {item && !hasPendingRequest(item.status) && (
+          {item && !canAddEvidence && (
             <EvidenceClosed
               reason={
                 item.status === CONTRACT_STATUS.REGISTERED
@@ -1027,35 +1046,21 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
           />
         </Main>
 
-        <Rail ref={railRef} aria-label="Actions">
-          <ItemStatusCard
-            item={decodedItem}
-            timestamp={timestamp}
-            request={item?.requests && { ...item.requests[0] }}
-            modalOpen={modalOpen}
-            setModalOpen={setModalOpen}
-            appealCost={appealCost}
-            appealCostFailed={appealCostFailed}
-            retryAppealCost={() => void appealCostQuery.refetch()}
-            dark
-          />
-          {/* Appeal funding is only rendered if the item has an appealable dispute. */}
-          <CrowdfundingCard
-            item={decodedItem}
-            timestamp={timestamp}
-            appealCost={appealCost}
-          />
-          {/* While the case is open: its periods and how long it should take. */}
-          {facts?.hasDispute && (facts.inCourt || facts.appealable) && (
-            <DisputeTimeline
-              chainId={chainId}
-              arbitrator={request?.arbitrator}
-              arbitrable={tcrAddress}
-              disputeID={facts.disputeID}
-              now={now}
+        {/* While jurors decide the card itself is gone; it still mounts, for
+            the phone bar and the dialogs the URL can open. */}
+        {showRail ? (
+          <Rail ref={railRef} aria-label="Actions">
+            {statusCard}
+            {/* Appeal funding is only rendered if the item has an appealable dispute. */}
+            <CrowdfundingCard
+              item={decodedItem}
+              timestamp={timestamp}
+              appealCost={appealCost}
             />
-          )}
-        </Rail>
+          </Rail>
+        ) : (
+          statusCard
+        )}
       </Columns>
       <StickyActionBarSpacer />
     </Page>

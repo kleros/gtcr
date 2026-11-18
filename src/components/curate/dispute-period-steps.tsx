@@ -1,49 +1,43 @@
 import React from 'react'
 import styled, { css } from 'styled-components'
-import { Label, Small, Surface } from 'components/curate/primitives'
-import useDisputeTimeline from 'hooks/use-dispute-timeline'
-import useCourtName from 'hooks/use-court-name'
+import { Label, Small } from 'components/curate/primitives'
 import { formatAbsolute, formatDuration, windowProgress } from 'utils/time'
 import {
   expectedRuling,
   timelineSteps,
+  type CourtDispute,
   type TimelineStep,
 } from './dispute-timeline-model'
 
 /*
- * Dispute timeline (rail card on Standard and Stake entry pages): where a
- * Kleros Court case stands and how long it should take. Each period of the
- * current round with its length; the current one with its deadline, the
- * time left and a progress line; later ones with dates estimated from that
- * deadline; then the ruling, expected when the appeal period ends if nobody
- * appeals. Read from the arbitrator itself (use-dispute-timeline.ts), so it
- * shows the live round. Renders nothing while loading, for an arbitrator
- * other than Kleros, or if the read fails: the court case stays one click
- * away in the hero and the status card.
+ * The periods of the current round, laid out in time: a band, not a panel
+ * (DESIGN.md: no panel inside a panel — space and a hairline separate it
+ * from its neighbours). Each period with its length, the current one with
+ * its deadline, the time left and a progress line, later ones with dates
+ * estimated from that deadline, then the ruling. Horizontal on a wide
+ * screen, so the spine reads as a timeline; stacked on a phone.
+ *
+ * The wording is the honest one: commit and vote close early once every
+ * juror has acted, a first round's evidence period lasts *at least* its
+ * length, and an estimate never claims the minute.
  */
-
-const Card = styled(Surface)`
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-`
 
 const Head = styled.div`
   display: flex;
-  flex-direction: column;
-  gap: 4px;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 16px;
 `
 
-const Steps = styled.ol`
-  display: flex;
-  flex-direction: column;
-  margin: 0;
-  padding: 0;
-  list-style: none;
+/* Stacked: one period per row, the rail running down between the dots. */
+const stackedSpine = css`
+  grid-auto-flow: row;
+  grid-auto-columns: auto;
+  gap: 0;
 `
 
-const Step = styled.li<{ $state: TimelineStep['state'] }>`
-  position: relative;
+const stackedStep = (state: TimelineStep['state']) => css`
   display: grid;
   grid-template-columns: 14px minmax(0, 1fr);
   gap: 0 12px;
@@ -53,29 +47,77 @@ const Step = styled.li<{ $state: TimelineStep['state'] }>`
     padding-bottom: 0;
   }
 
+  &:not(:last-child)::before {
+    top: 16px;
+    right: auto;
+    bottom: 0;
+    left: 6px;
+    width: 0;
+    height: auto;
+    border-top: 0;
+    border-left: 2px
+      ${state === 'done'
+        ? 'solid var(--status-contested)'
+        : 'dashed var(--color-border-strong)'};
+  }
+
+  > span:first-child {
+    margin-top: 3px;
+  }
+`
+
+const Spine = styled.ol<{ $stacked: boolean }>`
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  gap: 0 18px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  ${({ $stacked }) => $stacked && stackedSpine}
+
+  @media (max-width: 760px) {
+    ${stackedSpine}
+  }
+`
+
+const Step = styled.li<{ $state: TimelineStep['state']; $stacked: boolean }>`
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+
   /* The rail between dots: solid behind what is done, dashed ahead. */
   &:not(:last-child)::before {
     content: '';
     position: absolute;
-    top: 16px;
-    bottom: 0;
-    left: 6px;
-    width: 0;
-    border-left: 2px
+    top: 6px;
+    left: 22px;
+    right: -18px;
+    height: 0;
+    border-top: 2px
       ${({ $state }) =>
         $state === 'done'
           ? 'solid var(--status-contested)'
           : 'dashed var(--color-border-strong)'};
     opacity: ${({ $state }) => ($state === 'done' ? 0.55 : 1)};
   }
+
+  ${({ $stacked, $state }) => $stacked && stackedStep($state)}
+
+  @media (max-width: 760px) {
+    ${({ $state }) => stackedStep($state)}
+  }
 `
 
 const Dot = styled.span<{ $state: TimelineStep['state'] }>`
   position: relative;
   z-index: 1;
+  flex: 0 0 auto;
   width: 14px;
   height: 14px;
-  margin-top: 3px;
   border-radius: 50%;
   box-sizing: border-box;
 
@@ -106,9 +148,9 @@ const Body = styled.div`
 
 const TitleRow = styled.div`
   display: flex;
+  flex-wrap: wrap;
   align-items: baseline;
-  justify-content: space-between;
-  gap: 8px;
+  gap: 4px 8px;
 `
 
 const Title = styled.span<{ $state: TimelineStep['state'] }>`
@@ -151,8 +193,6 @@ const Progress = styled.span`
 
 const Note = styled.p`
   margin: 0;
-  padding-top: 14px;
-  border-top: 1px solid var(--glass-border);
   color: var(--color-faint);
   font-size: var(--fs-small);
   line-height: var(--lh-small);
@@ -193,7 +233,15 @@ const lengthWord = (step: TimelineStep): string =>
         ? 'at least '
         : ''
 
-const StepRow = ({ step, now }: { step: TimelineStep; now: number }) => {
+const StepRow = ({
+  step,
+  now,
+  stacked,
+}: {
+  step: TimelineStep
+  now: number
+  stacked: boolean
+}) => {
   const length = step.duration ? formatDuration(step.duration) : undefined
   let when: React.ReactNode = null
   if (step.state === 'done') when = 'Done'
@@ -214,6 +262,7 @@ const StepRow = ({ step, now }: { step: TimelineStep; now: number }) => {
   return (
     <Step
       $state={step.state}
+      $stacked={stacked}
       aria-current={step.state === 'now' ? 'step' : undefined}
     >
       <Dot $state={step.state} aria-hidden />
@@ -251,58 +300,47 @@ const StepRow = ({ step, now }: { step: TimelineStep; now: number }) => {
   )
 }
 
-const DisputeTimeline = ({
-  chainId,
-  arbitrator,
-  arbitrable,
-  disputeID,
-  now,
-}: {
-  chainId?: number | null
-  arbitrator?: string | null
-  /** The list's contract: a case raised by another contract is not shown. */
-  arbitrable?: string | null
-  /** The case number; the card shows only while the case is open. */
-  disputeID?: string | null
-  now: number
-}) => {
-  const { data: dispute } = useDisputeTimeline({
-    chainId,
-    arbitrator,
-    arbitrable,
-    disputeID,
-  })
-  // Hooks run before the early return; the name needs the court's number.
-  const courtName = useCourtName(chainId, dispute?.court)
-  if (!dispute) return null
+const Band = styled.section`
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+`
 
+/** The current round's periods, in order, with the live one marked. */
+export const DisputePeriodSteps = ({
+  dispute,
+  now,
+  /** A narrow column (the rail card) stacks whatever the window's width. */
+  stacked = false,
+}: {
+  dispute: CourtDispute
+  now: number
+  stacked?: boolean
+}) => {
   const steps = timelineSteps(dispute, now)
   const expected = expectedRuling(steps)
 
   return (
-    <Card as="section" aria-label="Dispute timeline">
+    <Band aria-label={`Round ${dispute.round} periods`}>
       <Head>
-        <Label $tone="faint">Dispute timeline</Label>
-        <Small $muted>
-          Case {dispute.disputeID}
-          {courtName ? ` · ${courtName}` : ''} · round {dispute.round} ·{' '}
-          {dispute.jurors} juror
+        <Label $tone="faint">
+          Round {dispute.round} · {dispute.jurors} juror
           {dispute.jurors === 1 ? '' : 's'}
-        </Small>
+        </Label>
+        {expected !== undefined && (
+          <Note>
+            Dates after the current period are estimates: each period moves on
+            when the court updates it.
+          </Note>
+        )}
       </Head>
-      <Steps>
+      <Spine $stacked={stacked}>
         {steps.map((step) => (
-          <StepRow key={step.key} step={step} now={now} />
+          <StepRow key={step.key} step={step} now={now} stacked={stacked} />
         ))}
-      </Steps>
-      {expected !== undefined && (
-        <Note>
-          Dates after the current period are estimates: each period moves on
-          when the court updates it.
-        </Note>
-      )}
-    </Card>
+      </Spine>
+    </Band>
   )
 }
 
-export default DisputeTimeline
+export default DisputePeriodSteps

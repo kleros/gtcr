@@ -2,12 +2,14 @@ import type { Address } from 'viem'
 import type { BigNumber } from 'ethers'
 import { klerosAddresses } from 'config/tcr-addresses'
 import { getAddressPage } from 'utils/network-utils'
+import { formatAbsolute } from 'utils/time'
 import {
   CONTRACT_STATUS,
   STATUS_CODE,
   SUBGRAPH_RULING,
   itemToStatusCode,
 } from 'utils/permanent-item-status'
+import type { EvidenceSummary } from 'components/curate/item-evidence-band'
 import type { WithdrawalStage } from './withdrawal-stepper'
 
 /*
@@ -135,6 +137,22 @@ export const stakeStatusCode = (
 /** Kept for callers that want a full sentence. */
 export const rulingSentence = (ruling: string | null | undefined): string =>
   `${rulingLine(ruling)}.`
+
+/** "For the challenger": the ruling as a value under a label. */
+export const rulingShort = (
+  ruling: string | null | undefined,
+): string | undefined => {
+  switch (ruling) {
+    case SUBGRAPH_RULING.NONE:
+      return 'Refused to rule'
+    case SUBGRAPH_RULING.ACCEPT:
+      return 'For the submitter'
+    case SUBGRAPH_RULING.REJECT:
+      return 'For the challenger'
+    default:
+      return undefined
+  }
+}
 
 export interface StakeFacts {
   offList: boolean
@@ -299,6 +317,121 @@ export const stakeFacts = ({
       : 0,
     courtHref,
     courtHost,
+  }
+}
+
+/**
+ * The submission's evidence as the band above the history draws it: how many
+ * pieces, who filed them, and when each one landed. The window is the
+ * submission the entry is on now, so the figures and the time axis describe
+ * the same scope; evidence filed on an earlier submission belongs to that
+ * submission's own group in the history.
+ */
+export const stakeEvidenceSummary = (
+  item: StakeItem,
+  facts: StakeFacts,
+): EvidenceSummary => {
+  const since = facts.submissionStart
+  const evidences = (item.evidences ?? []).filter(
+    (evidence) => toNum(evidence.timestamp) >= since,
+  )
+  const submitter = item.submitter?.toLowerCase()
+  const challenger = facts.challenge?.challenger?.toLowerCase()
+  const sideOf = (party?: string): number => {
+    const address = party?.toLowerCase()
+    if (address && address === submitter) return 0
+    if (address && address === challenger) return 1
+    return 2
+  }
+  const counts = [0, 0, 0]
+  for (const evidence of evidences) counts[sideOf(evidence.party)] += 1
+  const labels = ['Submitter', 'Challenger', 'Others']
+  // Only the sides that filed something, so the key never names an empty
+  // category; the pieces follow the same order.
+  const kept = counts
+    .map((value, side) => ({ side, value }))
+    .filter((entry) => entry.value > 0)
+  const column = new Map(kept.map((entry, index) => [entry.side, index]))
+
+  const pieces = evidences
+    .map((evidence) => ({
+      at: toNum(evidence.timestamp),
+      side: column.get(sideOf(evidence.party)) ?? 0,
+    }))
+    .filter((piece) => piece.at > 0)
+    .sort((a, b) => a.at - b.at)
+
+  return {
+    total: evidences.length,
+    sides: kept.map((entry) => ({
+      label: labels[entry.side],
+      value: entry.value,
+    })),
+    pieces,
+    last: pieces.length > 0 ? pieces[pieces.length - 1].at : undefined,
+    since,
+  }
+}
+
+/** Where the case stands, in the page's words, for the case panel. */
+export interface StakeCaseState {
+  /** Used as the heading when the court itself cannot be read. */
+  heading: string
+  /**
+   * The entry is waiting on the court, so the court's own word for its
+   * current period leads the case panel. False once the jurors have ruled
+   * and the list has settled what happens: the court's appeal period can
+   * still be running then, and it is no longer what is happening here.
+   */
+  awaitingCourt: boolean
+  /**
+   * What it means for this entry, where the court cannot know it (a side
+   * that alone funded an appeal wins whatever the jurors ruled). Left out
+   * where the court's own sentence about the period says it better.
+   */
+  summary?: string
+  /** The ruling in words, once the jurors have given one. */
+  ruling?: string
+  rulingLabel?: string
+}
+
+export const stakeCaseState = (
+  facts: StakeFacts,
+  statusCode: number,
+  now: number,
+): StakeCaseState => {
+  const { round, appealable, fundedSide, appealEnd, loserName } = facts
+  const ruled = toNum(round?.rulingTime) > 0
+  const ruling = ruled ? rulingShort(round?.ruling) : undefined
+  const rulingLabel = appealable ? 'Current ruling' : 'Ruling'
+
+  if (statusCode === STATUS_CODE.DISPUTED)
+    return { heading: 'Jurors are deciding', awaitingCourt: true }
+  if (statusCode === STATUS_CODE.WAITING_ARBITRATOR) {
+    // Before the period is over, the loser's half passed with nothing
+    // funded: the ruling stands. After it, the ruling is final and waits to
+    // be enforced — unless one side funded alone, which decides it instead
+    // (rule() gives the ruling to the only side that paid).
+    const stands = now < appealEnd
+    return {
+      heading: stands ? 'Ruling stands' : 'Ruling final',
+      awaitingCourt: false,
+      summary: stands
+        ? // The date is not when the ruling becomes true — the heading says
+          // it already is — but the first moment it can be enforced.
+          `The ${loserName} did not fund the appeal, so the ruling stands; it can be enforced from ${formatAbsolute(appealEnd)}.`
+        : fundedSide
+          ? `The ${fundedSide} funded the appeal alone, so the ${fundedSide} wins when the ruling is enforced.`
+          : undefined,
+      ruling,
+      rulingLabel,
+    }
+  }
+  return {
+    heading: 'Open for appeal',
+    awaitingCourt: true,
+    ruling,
+    rulingLabel,
   }
 }
 

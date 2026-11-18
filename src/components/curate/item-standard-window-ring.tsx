@@ -4,28 +4,49 @@ import { formatAbsolute, formatDuration, windowProgress } from 'utils/time'
 import { Label } from './primitives'
 
 /*
- * The item page's countdown ring. The whole circle is one window (the
- * challenge window, or an appeal period); it opens and closes at 12 o'clock
- * and runs clockwise. The lit arc is the time still left: a conic gradient
- * that starts on "now" (the head, its hottest point and the only part that
- * glows) and cools toward the close. Ticks mark days (or hours) and light up
- * where time is still left; an optional marker shows a deadline inside the
- * window (the loser's half of an appeal), with the rest of the period after
- * it drawn dim. The figure in the middle is the time left to the deadline
- * that matters, in Geist with tabular figures.
+ * The item page's countdown ring: a 270° open arc with the gap at the
+ * bottom, the geometry of the motion kit's RingGauge, so the app has one
+ * ring language. The arc's left end is where the window opened and its
+ * right end — a fixed, labelled point — is where it closes. The lit part is
+ * the time still left: it runs from the head (now, the only part that
+ * glows) to that close, so it visibly shortens as the head converges on the
+ * finish, and the crown of ticks it covers goes out behind it.
+ *
+ * So everything lit here is time still left, the crown included — the
+ * opposite side from the kit's RingGauge, where the arc is a value filling
+ * up and the crown lights behind the head as that value grows. The two read
+ * opposite because they measure opposite things (a remainder, not a
+ * progress), and each is lit on one side only: a countdown that dimmed as
+ * its arc shrank on one side and brightened on the other would be the kind
+ * of double encoding point 5 asked us to remove.
+ *
+ * Round 2 of the design review: the old ring was a closed circle whose open
+ * and close were the same point at 12 o'clock, so there was no zero to read
+ * the remainder against, and its day/hour ticks were a scale nobody could
+ * decode. Both ends now carry their own absolute UTC, the label above the
+ * dial names the window and nothing else, and the window's length is one
+ * caption line, so no second duration competes with the figure in the
+ * middle (the time left to the deadline that matters).
  */
 
 const C = 120
-const R = 86
-const W = 14
-const DAY = 86400
-const HOUR = 3600
+const R = 88
+const W = 16
+const START = -135
+const SWEEP = 270
+const TICKS = 54
 
-/** A point on a circle of radius r around the centre, at a share of a turn. */
-const point = (share: number, r: number) => ({
-  x: C + r * Math.sin(share * 2 * Math.PI),
-  y: C - r * Math.cos(share * 2 * Math.PI),
-})
+/** A point at `deg` from 12 o'clock, clockwise, on a circle of radius r. */
+const polar = (r: number, deg: number) => {
+  const a = (deg * Math.PI) / 180
+  return { x: C + r * Math.sin(a), y: C - r * Math.cos(a) }
+}
+
+const arcPath = (r: number, a0: number, a1: number) => {
+  const from = polar(r, a0)
+  const to = polar(r, a1)
+  return `M${from.x} ${from.y}A${r} ${r} 0 ${a1 - a0 > 180 ? 1 : 0} 1 ${to.x} ${to.y}`
+}
 
 const easeOutExpo = (t: number) => (t >= 1 ? 1 : 1 - 2 ** (-10 * t))
 const reducedMotion = () =>
@@ -38,26 +59,28 @@ const urgentPulse = keyframes`
   50% { opacity: 0.2; transform: scale(1.35); }
 `
 
-const Wrap = styled.figure`
+/* The dial's size lives here, so the end labels under the arc line up with
+   the arc's own ends instead of the column's edges. */
+const Wrap = styled.figure<{ $size: number }>`
+  --dial: ${({ $size }) => $size}px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 14px;
+  gap: 10px;
   margin: 0;
   min-width: 0;
+
+  @media (max-width: 720px) {
+    --dial: ${({ $size }) => Math.round($size * 0.86)}px;
+  }
 `
 
-const Dial = styled.div<{ $size: number }>`
-  --dial: ${({ $size }) => $size}px;
+const Dial = styled.div`
   --p: 0;
   position: relative;
   width: var(--dial);
   max-width: 100%;
   aspect-ratio: 1;
-
-  @media (max-width: 720px) {
-    --dial: ${({ $size }) => Math.round($size * 0.86)}px;
-  }
 
   svg {
     position: absolute;
@@ -68,31 +91,26 @@ const Dial = styled.div<{ $size: number }>`
     overflow: visible;
   }
 
-  /* The time left, as a conic gradient masked to the ring: its colour
-     follows the arc from the head (now) to the close. */
+  /* The time left, as a conic gradient masked to the ring: it starts on the
+     head (now) and cools toward the close. */
   .arc {
     position: absolute;
     inset: 0;
     border-radius: 50%;
     -webkit-mask: radial-gradient(
       closest-side,
-      transparent 65.4%,
-      var(--color-text) 65.85%,
-      var(--color-text) 77.5%,
-      transparent 77.95%
+      transparent 66.2%,
+      var(--color-text) 66.7%,
+      var(--color-text) 79.6%,
+      transparent 80%
     );
     mask: radial-gradient(
       closest-side,
-      transparent 65.4%,
-      var(--color-text) 65.85%,
-      var(--color-text) 77.5%,
-      transparent 77.95%
+      transparent 66.2%,
+      var(--color-text) 66.7%,
+      var(--color-text) 79.6%,
+      transparent 80%
     );
-  }
-
-  .turn {
-    transform-box: view-box;
-    transform-origin: 50% 50%;
   }
 
   .caps {
@@ -121,9 +139,10 @@ const Dial = styled.div<{ $size: number }>`
   }
 `
 
+/* The figure sits in the dial, above the arc's open bottom. */
 const Center = styled.div`
   position: absolute;
-  inset: 0;
+  inset: 0 0 18%;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -134,7 +153,7 @@ const Center = styled.div`
 `
 
 const Figure = styled.span<{ $long?: boolean }>`
-  max-width: 64%;
+  max-width: 68%;
   color: var(--color-text);
   font-family: var(--font-figure);
   font-size: calc(var(--dial) * ${({ $long }) => ($long ? 0.14 : 0.17)});
@@ -156,7 +175,7 @@ const Figure = styled.span<{ $long?: boolean }>`
 `
 
 const Verb = styled.span`
-  max-width: 62%;
+  max-width: 64%;
   color: var(--color-muted);
   font-size: 12px;
   line-height: 15px;
@@ -172,100 +191,69 @@ const Caption = styled.figcaption`
   flex-direction: column;
   align-items: center;
   gap: 8px;
-  width: 100%;
-  text-align: center;
+  width: var(--dial);
+  max-width: 100%;
 `
 
-const Key = styled.ul`
+/* The two ends of the arc, under the ends themselves: where the window
+   opened on the left, where it closes on the right. */
+const Ends = styled.div`
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 16px;
+  width: 100%;
+`
+
+const End = styled.div<{ $side: 'left' | 'right' }>`
   display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 4px 16px;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  text-align: ${({ $side }) => $side};
+
+  span {
+    color: var(--color-faint);
+    font-size: 11px;
+    line-height: 14px;
+  }
+
+  b {
+    color: var(--color-text);
+    font-family: var(--font-figure);
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+  }
+`
+
+/* What the ring measures over: the window's own length, and the deadline
+   inside it when there is one. Never a second countdown. */
+const Notes = styled.ul`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  width: 100%;
   margin: 0;
-  padding: 0;
+  padding-top: 8px;
+  border-top: 1px solid var(--glass-border);
   list-style: none;
+  text-align: center;
 
   li {
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    color: var(--color-muted);
-    font-size: 12px;
-    line-height: 16px;
-  }
-`
-
-const ArcSwatch = styled.i`
-  width: 16px;
-  height: 5px;
-  border-radius: var(--radius-pill);
-`
-
-const TickSwatch = styled.i`
-  width: 1.5px;
-  height: 9px;
-  border-radius: 1px;
-  background: var(--color-muted);
-`
-
-const NowSwatch = styled.i`
-  position: relative;
-  width: 9px;
-  height: 9px;
-  border-radius: var(--radius-pill);
-
-  &::after {
-    content: '';
-    position: absolute;
-    inset: 3px;
-    border-radius: inherit;
-    background: var(--color-text);
-  }
-
-  body[data-theme='light'] &::after {
-    background: var(--color-surface);
-  }
-`
-
-const Ends = styled.dl`
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-  margin: 0;
-  border-top: 1px solid var(--glass-border);
-  text-align: left;
-
-  div {
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: 12px;
-    padding: 9px 0 0;
-  }
-
-  dt {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    color: var(--color-muted);
-    font-size: 12px;
-    line-height: 16px;
-  }
-
-  dd {
-    margin: 0;
-    color: var(--color-text);
-    font-family: var(--font-figure);
-    font-size: 13px;
-    line-height: 18px;
-    font-weight: 500;
-    white-space: nowrap;
-    font-variant-numeric: tabular-nums;
+    color: var(--color-faint);
+    font-size: 11px;
+    line-height: 15px;
   }
 `
 
 const Pip = styled.i`
   display: inline-block;
+  flex: 0 0 auto;
   width: 7px;
   height: 7px;
   border: 1.5px solid var(--color-text);
@@ -285,7 +273,7 @@ const NowCore = styled.circle`
 /** "2d 23h", "4h 12m", "12m 05s", "45s". */
 export const formatCountdown = (seconds: number): string => {
   const s = Math.max(0, Math.floor(seconds))
-  if (s >= HOUR) return formatDuration(s)
+  if (s >= 3600) return formatDuration(s)
   const m = Math.floor(s / 60)
   const rest = s % 60
   if (m > 0) return `${m}m ${String(rest).padStart(2, '0')}s`
@@ -327,7 +315,7 @@ export interface WindowEnd {
   label: string
   /** Unix seconds. */
   at: number
-  /** Drawn as the marker dot on the ring. */
+  /** Drawn as the marker dot on the arc instead of one of its two ends. */
   marker?: boolean
 }
 
@@ -357,10 +345,11 @@ export const WindowRing = ({
   tone = 'window',
   verb,
   passedLabel = 'Closed',
+  noun = 'window',
   ends,
   size = 196,
 }: {
-  /** What the circle is, e.g. "Challenge window". Names the measure. */
+  /** What the arc is, e.g. "Challenge period". Names the measure. */
   title: string
   /** Unix seconds: the window opens and closes. */
   start: number
@@ -372,7 +361,13 @@ export const WindowRing = ({
   /** Under the figure: "left to challenge". */
   verb: string
   passedLabel?: string
-  /** The dates under the ring (default: opened, closes); one may be the marker. */
+  /** What this stretch of time is called: "3d window", "window over". */
+  noun?: string
+  /**
+   * What the arc's ends are called. A `marker` entry is drawn on the arc at
+   * its own time instead; of the rest the last names the close and, when
+   * there are two, the first names the opening (default: "Opened").
+   */
   ends?: WindowEnd[]
   size?: number
 }) => {
@@ -394,7 +389,8 @@ export const WindowRing = ({
   const urgent = !passed && toDeadline > 0 && toDeadline < 0.1
 
   // Draw in once the ring is on screen: one tween drives --p, which grows
-  // the arc from the head to the close and moves the end cap with it.
+  // the lit arc from the head toward the close and lights the ticks it
+  // covers.
   useEffect(() => {
     const node = dialRef.current
     if (!node) return
@@ -435,49 +431,48 @@ export const WindowRing = ({
     }
   }, [])
 
-  // Ticks: one per day, or per hour when the window is shorter than 2 days.
-  const unit = duration >= 2 * DAY ? DAY : duration >= 3 * HOUR ? HOUR : 0
-  const count = unit ? Math.floor(duration / unit) : 0
-  const stride = Math.max(1, Math.ceil(count / 48))
-  const ticks: number[] = []
-  for (let i = stride; i * unit < duration; i += stride)
-    ticks.push((i * unit) / duration)
-
   const colors = palette(tone)
-  const nowDeg = elapsed * 360
-  const litDeg = toDeadline * 360
-  const leftDeg = remaining * 360
+  const headDeg = START + elapsed * SWEEP
+  const litDeg = toDeadline * SWEEP
+  const leftDeg = remaining * SWEEP
   const arcBackground = hasRest
-    ? `conic-gradient(from ${nowDeg}deg, ${colors.head} 0deg, ${colors.mid} calc(var(--p) * ${litDeg * 0.45}deg), ${colors.tail} calc(var(--p) * ${litDeg}deg), ${colors.rest} calc(var(--p) * ${litDeg}deg), ${colors.rest} calc(var(--p) * ${leftDeg}deg), transparent 0)`
-    : `conic-gradient(from ${nowDeg}deg, ${colors.head} 0deg, ${colors.mid} calc(var(--p) * ${litDeg * 0.45}deg), ${colors.tail} calc(var(--p) * ${litDeg}deg), transparent 0)`
+    ? `conic-gradient(from ${headDeg}deg, ${colors.head} 0deg, ${colors.mid} calc(var(--p) * ${litDeg * 0.45}deg), ${colors.tail} calc(var(--p) * ${litDeg}deg), ${colors.rest} calc(var(--p) * ${litDeg}deg), ${colors.rest} calc(var(--p) * ${leftDeg}deg), transparent 0)`
+    : `conic-gradient(from ${headDeg}deg, ${colors.head} 0deg, ${colors.mid} calc(var(--p) * ${litDeg * 0.45}deg), ${colors.tail} calc(var(--p) * ${litDeg}deg), transparent 0)`
+
   const marker = ends?.find((entry) => entry.marker)
   const markerShare = marker ? windowProgress(start, end, marker.at) : undefined
   const markerPoint =
-    markerShare === undefined ? undefined : point(markerShare, R)
+    markerShare === undefined
+      ? undefined
+      : polar(R, START + markerShare * SWEEP)
+  const named = (ends ?? []).filter((entry) => !entry.marker)
+  const opened: WindowEnd =
+    named.length > 1 ? named[0] : { label: 'Opened', at: start }
+  const closes: WindowEnd =
+    named.length > 0
+      ? named[named.length - 1]
+      : { label: passed ? passedLabel : 'Closes', at: end }
+
+  const head = polar(R, headDeg)
+  const close = polar(R, START + SWEEP)
   const figure = passed ? passedLabel : formatCountdown(left)
-  const top = point(0, R)
 
   const label = passed
     ? `${title}: ${passedLabel}, closed ${formatAbsolute(target)}`
     : target < end
       ? `${title}: ${formatCountdown(left)} ${verb}, by ${formatAbsolute(
           target,
-        )}; the ${title.toLowerCase()} closes ${formatAbsolute(end)}`
-      : `${title}: ${formatCountdown(left)} ${verb}, closes ${formatAbsolute(
-          end,
-        )}`
+        )}; the ${title.toLowerCase()} opened ${formatAbsolute(
+          start,
+        )} and closes ${formatAbsolute(end)}`
+      : `${title}: ${formatCountdown(left)} ${verb}; opened ${formatAbsolute(
+          start,
+        )}, closes ${formatAbsolute(end)}`
 
   return (
-    <Wrap role="group" aria-label={label}>
-      <Label $tone="muted">
-        {title} · {formatDuration(duration)}
-      </Label>
-      <Dial
-        ref={dialRef}
-        $size={size}
-        title={formatAbsolute(target)}
-        data-urgent={urgent}
-      >
+    <Wrap role="group" aria-label={label} $size={size}>
+      <Label $tone="muted">{title}</Label>
+      <Dial ref={dialRef} title={formatAbsolute(target)} data-urgent={urgent}>
         <svg viewBox={`0 0 ${C * 2} ${C * 2}`} aria-hidden>
           <defs>
             <radialGradient id={`wr-dome-${id}`} cx="50%" cy="32%" r="60%">
@@ -490,60 +485,79 @@ export const WindowRing = ({
                 style={{ stopColor: colors.base, stopOpacity: 0 }}
               />
             </radialGradient>
+            <filter
+              id={`wr-ticks-${id}`}
+              x="-20%"
+              y="-20%"
+              width="140%"
+              height="140%"
+            >
+              <feGaussianBlur stdDeviation="1.4" result="b" />
+              <feMerge>
+                <feMergeNode in="b" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
           </defs>
-          <circle cx={C} cy={C} r={70} fill={`url(#wr-dome-${id})`} />
-          <circle
-            cx={C}
-            cy={C}
-            r={70}
+          <circle cx={C} cy={C} r={72} fill={`url(#wr-dome-${id})`} />
+          <path
+            d={arcPath(74, START, START + SWEEP)}
             fill="none"
             stroke="var(--glass-border)"
             strokeWidth="1"
             strokeDasharray="1 4"
             strokeLinecap="round"
           />
-          {/* The track: the elapsed part of the window shows through. */}
-          <circle
-            cx={C}
-            cy={C}
-            r={R}
+          {/* The track: the window, open to close. What time has spent shows
+              through it. */}
+          <path
+            d={arcPath(R, START, START + SWEEP)}
             fill="none"
             stroke="var(--color-raised)"
             strokeWidth={W}
+            strokeLinecap="round"
           />
-          {ticks.map((share) => {
-            const a = point(share, 100)
-            const b = point(share, 108)
-            const ahead = share - elapsed
-            return (
-              <line
-                key={share}
-                x1={a.x}
-                y1={a.y}
-                x2={b.x}
-                y2={b.y}
-                strokeWidth="1.6"
-                strokeLinecap="round"
-                style={{
-                  stroke: 'var(--color-muted)',
-                  opacity:
-                    ahead < 0
-                      ? 0.28
-                      : `clamp(0.28, calc((var(--p) * ${remaining} - ${ahead}) * 60 + 1), 0.95)`,
-                }}
-              />
-            )
-          })}
-          {/* 12 o'clock: where the window opens and closes. */}
+          {/* The finish: the one mark that carries meaning, and the only
+              one drawn in the text colour. It never moves. */}
           <line
-            x1={C}
-            y1={C - 98}
-            x2={C}
-            y2={C - 111}
+            x1={polar(98, START + SWEEP).x}
+            y1={polar(98, START + SWEEP).y}
+            x2={polar(116, START + SWEEP).x}
+            y2={polar(116, START + SWEEP).y}
             strokeWidth="2.4"
             strokeLinecap="round"
             style={{ stroke: 'var(--color-text)' }}
           />
+          {/* The crown: every tick ahead of the head is time still left, and
+              goes out as the head passes it — lit on the remaining side,
+              like the arc, and never the spent one. No unit is claimed. */}
+          <g filter={`url(#wr-ticks-${id})`} stroke="var(--color-faint)">
+            {Array.from({ length: TICKS }, (_, index) => {
+              // The last one would sit under the finish mark.
+              if (index === TICKS - 1) return null
+              const share = index / (TICKS - 1)
+              const deg = START + share * SWEEP
+              const long = index % 6 === 0
+              const from = polar(long ? 103 : 106, deg)
+              const to = polar(113, deg)
+              return (
+                <line
+                  key={index}
+                  x1={from.x}
+                  y1={from.y}
+                  x2={to.x}
+                  y2={to.y}
+                  strokeWidth={long ? 1.6 : 1.1}
+                  style={{
+                    opacity:
+                      share < elapsed
+                        ? 0.16
+                        : `clamp(0.16, calc((${elapsed} + var(--p) * ${remaining} - ${share}) * 45 + 1), 1)`,
+                  }}
+                />
+              )
+            })}
+          </g>
         </svg>
         <div className="arc" style={{ background: arcBackground }} />
         <svg viewBox={`0 0 ${C * 2} ${C * 2}`} aria-hidden>
@@ -563,56 +577,21 @@ export const WindowRing = ({
               />
             </radialGradient>
           </defs>
-          {remaining > 0 && (
-            <g className="caps">
-              {/* The close: where what is left ends (a round cap). */}
-              <g
-                className="turn"
-                style={{
-                  transform: `rotate(calc(${nowDeg}deg + var(--p) * ${leftDeg}deg))`,
-                }}
-              >
-                <circle
-                  cx={top.x}
-                  cy={top.y}
-                  r={W / 2}
-                  style={{ fill: hasRest ? colors.rest : colors.tail }}
-                />
-              </g>
-              {markerPoint && (
-                <circle
-                  cx={markerPoint.x}
-                  cy={markerPoint.y}
-                  r="6"
-                  strokeWidth="2.2"
-                  style={{
-                    fill: 'var(--color-surface)',
-                    stroke: 'var(--color-text)',
-                  }}
-                />
-              )}
-              {/* Now: the head, the only part that glows. */}
-              <g className="turn" style={{ transform: `rotate(${nowDeg}deg)` }}>
-                {!passed && (
-                  <circle
-                    className="bloom"
-                    cx={top.x}
-                    cy={top.y}
-                    r={30}
-                    fill={`url(#wr-bloom-${id})`}
-                  />
-                )}
-                <circle
-                  cx={top.x}
-                  cy={top.y}
-                  r={W / 2}
-                  style={{ fill: colors.head }}
-                />
-                <NowCore cx={top.x} cy={top.y} r={3.2} />
-              </g>
-            </g>
-          )}
-          {remaining <= 0 && markerPoint && (
+          {/* The close never moves: it is the finish the remainder is read
+              against. */}
+          <circle
+            cx={close.x}
+            cy={close.y}
+            r={W / 2}
+            style={{
+              fill: passed
+                ? colors.tail
+                : hasRest
+                  ? colors.rest
+                  : 'var(--color-raised)',
+            }}
+          />
+          {markerPoint && (
             <circle
               cx={markerPoint.x}
               cy={markerPoint.y}
@@ -624,56 +603,59 @@ export const WindowRing = ({
               }}
             />
           )}
+          {remaining > 0 && (
+            <g className="caps">
+              {/* Now: the head, the only part that glows. */}
+              {!passed && (
+                <circle
+                  className="bloom"
+                  cx={head.x}
+                  cy={head.y}
+                  r={30}
+                  fill={`url(#wr-bloom-${id})`}
+                />
+              )}
+              <circle
+                cx={head.x}
+                cy={head.y}
+                r={W / 2}
+                style={{ fill: colors.head }}
+              />
+              <NowCore cx={head.x} cy={head.y} r={3.2} />
+            </g>
+          )}
         </svg>
         <Center>
           <Figure $long={figure.length >= 7}>
             <CountdownText text={figure} />
           </Figure>
-          <Verb>{passed ? 'window over' : verb}</Verb>
+          <Verb>{passed ? `${noun} over` : verb}</Verb>
         </Center>
       </Dial>
       <Caption>
-        <Key aria-hidden>
-          <li>
-            <ArcSwatch
-              style={{
-                background: `linear-gradient(90deg, ${colors.head}, ${colors.mid}, ${colors.tail})`,
-              }}
-            />
-            {marker && !passed ? 'Until the deadline' : 'Time left'}
-          </li>
-          {marker && hasRest ? (
-            <li>
-              <ArcSwatch style={{ background: colors.rest }} />
-              Rest of the period
-            </li>
-          ) : null}
-          {unit ? (
-            <li>
-              <TickSwatch />1 {unit === DAY ? 'day' : 'hour'}
-            </li>
-          ) : null}
-          <li>
-            <NowSwatch style={{ background: colors.head }} />
-            Now
-          </li>
-        </Key>
         <Ends>
-          {(
-            ends ?? [
-              { label: 'Opened', at: start },
-              { label: 'Closes', at: end },
-            ]
-          ).map((entry) => (
-            <div key={entry.label}>
-              <dt>
-                {entry.marker && <Pip aria-hidden />}
-                {entry.label}
-              </dt>
-              <dd title={formatAbsolute(entry.at)}>{formatShort(entry.at)}</dd>
-            </div>
-          ))}
+          <End $side="left">
+            <span>{opened.label}</span>
+            <b title={formatAbsolute(opened.at)}>{formatShort(opened.at)}</b>
+          </End>
+          <End $side="right">
+            <span>{closes.label}</span>
+            <b title={formatAbsolute(closes.at)}>{formatShort(closes.at)}</b>
+          </End>
         </Ends>
+        <Notes>
+          {marker && (
+            <li>
+              <Pip aria-hidden />
+              <span title={formatAbsolute(marker.at)}>
+                {marker.label} {formatShort(marker.at)}
+              </span>
+            </li>
+          )}
+          <li>
+            {formatDuration(duration)} {noun}
+          </li>
+        </Notes>
       </Caption>
     </Wrap>
   )

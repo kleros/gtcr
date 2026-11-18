@@ -29,7 +29,6 @@ import { scrollToEvidenceComposer } from 'components/request-timelines'
 import { CurateIcon } from 'components/curate/icons'
 import {
   Button,
-  ButtonAnchor,
   Label,
   SkeletonBlock,
   Small,
@@ -46,6 +45,7 @@ import {
   type SendPhase,
 } from 'components/curate/what-happens-next'
 import { Notice } from 'components/curate/item-standard-notice'
+import { DisclosurePill } from 'components/curate/item-disclosure-pill'
 import { LIST_SETTINGS_FAILED } from 'pages/error-page/copy'
 import { StickyActionBar } from 'components/curate/item-standard-action-bar'
 import { AddressLink } from 'components/curate/item-standard-fields'
@@ -56,7 +56,6 @@ import {
 import ItemActionModal from './item-action-modal'
 import { appealFunding } from 'pages/standard-item-details/appeal-funding'
 import {
-  fundedAlone,
   requestFacts,
   statusChangeNotice,
   type StandardRequest,
@@ -64,11 +63,16 @@ import {
 import { useChallengeCost } from './challenge-cost'
 
 /*
- * The action card (right rail; a bottom bar on phones). It leads with the
- * one thing to do now and its exact amount, split into deposit and
- * arbitration cost, then what a successful challenge wins and the court
- * case. While jurors decide, it asks for evidence instead of showing a dead
- * button.
+ * The action card (right rail; a bottom bar on phones). While a challenge
+ * is open it leads with the bounty — the money a correct challenger takes —
+ * and the cost follows as the guard that keeps careless challenges out,
+ * with the base deposit and arbitration split one pill away (the design
+ * review's point 4: the card used to shout the cost and whisper the
+ * reward). Otherwise it leads with the one thing to do now and its exact
+ * amount. While jurors decide it renders no card at all: the case panel
+ * holds the state and both of its actions, and the phone bar keeps its one
+ * control — the panel carries the id that bar steps aside for, so the two
+ * never offer the same button at once.
  */
 
 const Card = styled(Surface)`
@@ -227,29 +231,76 @@ const AmountSplit = ({
         currency,
       )}, arbitration cost ${formatAmount(cost, currency)}`}
     >
+      {/* Two categories, so two viz colours: a chart never borrows the
+          accent or a status role (DESIGN.md). */}
       <SplitBar aria-hidden>
         {baseValue > 0 && (
-          <span
-            style={{ flexGrow: baseValue, background: 'var(--color-primary)' }}
-          />
+          <span style={{ flexGrow: baseValue, background: 'var(--viz-1)' }} />
         )}
         {costValue > 0 && (
-          <span
-            style={{ flexGrow: costValue, background: 'var(--color-muted)' }}
-          />
+          <span style={{ flexGrow: costValue, background: 'var(--viz-2)' }} />
         )}
       </SplitBar>
       <SplitLegend aria-hidden>
         <li>
-          <i style={{ background: 'var(--color-primary)' }} />
+          <i style={{ background: 'var(--viz-1)' }} />
           {baseLabel} <b>{formatEther(base)}</b>
         </li>
         <li>
-          <i style={{ background: 'var(--color-muted)' }} />
+          <i style={{ background: 'var(--viz-2)' }} />
           Arbitration <b>{formatEther(cost)}</b>
         </li>
       </SplitLegend>
     </div>
+  )
+}
+
+/**
+ * The amount's total and its breakdown, one click away: DESIGN.md asks for
+ * both before anything is signed, the design review asked for neither to be
+ * the headline. The dialog that sends the transaction carries the full
+ * receipt again.
+ */
+const DepositBreakdown = ({
+  total,
+  base,
+  cost,
+  baseLabel,
+  currency,
+  returns,
+}: {
+  total?: BigNumberish
+  base?: BigNumberish
+  cost?: BigNumberish
+  baseLabel: string
+  currency: string
+  /** When the deposit comes back, in the page's words. */
+  returns: string
+}) => {
+  const [open, setOpen] = useState(false)
+  if (total === undefined || base === undefined || cost === undefined)
+    return null
+  return (
+    <Stack $gap={10}>
+      <DisclosurePill
+        icon="layers"
+        open={open}
+        onToggle={() => setOpen((shown) => !shown)}
+      >
+        What the {formatAmount(total, currency)} is made of
+      </DisclosurePill>
+      {open && (
+        <Stack $gap={8}>
+          <AmountSplit
+            base={base}
+            cost={cost}
+            baseLabel={baseLabel}
+            currency={currency}
+          />
+          <Small $muted>{returns}</Small>
+        </Stack>
+      )}
+    </Stack>
   )
 }
 
@@ -515,11 +566,6 @@ const ItemStatusCard = ({
   // Once one side is fully funded, the clock is the other side's (the loser
   // can be funded before its half is over).
   const funding = appealFunding(request, facts, statusCode)
-  // After the period, a side that alone funded the appeal wins.
-  const aloneWinner =
-    statusCode === STATUS_CODE.WAITING_ARBITRATOR && !resolved
-      ? fundedAlone(request, requesterName)
-      : undefined
   const prompt = isPending
     ? `The window closed ${formatAgo(windowEnd, now)} with no challenge. Anyone can execute it; the deposit returns to the ${requesterName}.`
     : funding
@@ -588,127 +634,115 @@ const ItemStatusCard = ({
     ) : null
 
   // The subgraph stores the request's base deposit: what a successful
-  // challenger nets (the requester also loses the arbitration cost they
-  // paid). Shown while a challenge is possible or under way.
-  const challengeBounty =
-    !resolved &&
-    request.deposit !== undefined &&
-    (inWindow || !!request.disputed)
+  // challenger takes on top of their own deposit back (DESIGN.md's bounty).
+  // It is the reason to challenge, so while a challenge is open it leads the
+  // card and the cost becomes the guard behind it.
+  const bounty =
+    inWindow && !resolved && request.deposit !== undefined
       ? request.deposit
       : undefined
+  // One sentence under the figure: what the bounty is made of and the cost
+  // that guards it (DESIGN.md allows one, and the Label above already says
+  // the figure is what a winning challenge takes).
+  const bountyLine = amountLabel
+    ? `The ${requesterName}’s deposit and your own back; challenging costs ${amountLabel}, so a careless challenge is not free.`
+    : `The ${requesterName}’s deposit and your own back, if jurors agree the request breaks the listing policy.`
+  const depositReturns = inWindow
+    ? `Your deposit comes back in full if jurors agree with you. If they do not, it pays the arbitration and the ${requesterName} keeps the rest.`
+    : 'It comes back in full once the request goes through unchallenged, or if jurors agree with you.'
+  // The case panel below the hero carries the case and the ruling while one
+  // is live; the card repeats neither.
+  const caseInPanel = hasDispute && (inCourt || appealable)
 
   return (
     <>
-      <Card
-        id="item-status-card"
-        $padding="standard"
-        role="region"
-        aria-label="What you can do"
-      >
-        {inCourt ? (
+      {/* While jurors decide there is nothing to do here: the case panel
+          holds the state and both of its actions, and takes the id the
+          phone bar steps aside for. */}
+      {!inCourt && (
+        <Card
+          id="item-status-card"
+          $padding="standard"
+          role="region"
+          aria-label="What you can do"
+        >
           <Head>
-            {/* The status is the hero's (and the bar's on phones); the card
-                only asks for the action. */}
-            <Prompt>
-              {statusCode === STATUS_CODE.CHALLENGED
-                ? 'Know something the jurors should? Add it before they vote.'
-                : statusCode === STATUS_CODE.WAITING_ARBITRATOR
-                  ? aloneWinner
-                    ? `The ${aloneWinner} funded the appeal alone, so the ${aloneWinner} wins when the ruling is enforced.`
-                    : 'The ruling is final and waits to be enforced.'
-                  : 'The losing side did not fund its appeal, so the ruling stands.'}
-            </Prompt>
-            {statusCode === STATUS_CODE.CHALLENGED && (
-              <Stack $gap={8}>
-                <Button
-                  type="button"
-                  $variant="primary"
-                  $block
-                  onClick={scrollToEvidenceComposer}
-                >
-                  <CurateIcon name="policy" size={16} />
-                  Add evidence
-                </Button>
-                {disputeHref && (
-                  <ButtonAnchor
-                    $variant="secondary"
-                    $block
-                    href={disputeHref}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    Follow case {disputeID} in court
-                    <CurateIcon name="external" size={14} />
-                  </ButtonAnchor>
-                )}
-              </Stack>
-            )}
-          </Head>
-        ) : (
-          <Head>
-            {heading && <Label $tone="faint">{heading}</Label>}
-            {buttonAmount ? (
+            {bounty !== undefined ? (
               <>
-                <Amount title={amountLabel}>
-                  {formatEther(buttonAmount)}
+                <Label $tone="faint">Win if your challenge succeeds</Label>
+                <Amount title={formatAmount(bounty, nativeCurrency)}>
+                  {formatEther(bounty)}
                   <small>{nativeCurrency}</small>
                 </Amount>
-                <AmountSplit
+                <Prompt>{bountyLine}</Prompt>
+                <DepositBreakdown
+                  total={buttonAmount}
                   base={amountBase}
-                  cost={inWindow ? challenge.arbitrationCost : arbitrationCost}
+                  cost={challenge.arbitrationCost}
                   baseLabel="Base deposit"
                   currency={nativeCurrency}
+                  returns={depositReturns}
                 />
               </>
             ) : (
-              prompt && <Prompt>{prompt}</Prompt>
+              <>
+                {heading && <Label $tone="faint">{heading}</Label>}
+                {buttonAmount ? (
+                  <>
+                    <Amount title={amountLabel}>
+                      {formatEther(buttonAmount)}
+                      <small>{nativeCurrency}</small>
+                    </Amount>
+                    <DepositBreakdown
+                      total={buttonAmount}
+                      base={amountBase}
+                      cost={
+                        inWindow ? challenge.arbitrationCost : arbitrationCost
+                      }
+                      baseLabel="Base deposit"
+                      currency={nativeCurrency}
+                      returns={depositReturns}
+                    />
+                  </>
+                ) : (
+                  prompt && <Prompt>{prompt}</Prompt>
+                )}
+              </>
             )}
           </Head>
-        )}
 
-        {action && (
-          <Stack $gap={8}>
-            {action}
-            {isPending && executeGate.controls && (
-              <Stack $gap={8}>{executeGate.controls}</Stack>
-            )}
-            {isPending && executeGate.blocker && (
-              <Small $muted role="status">
-                {executeGate.blocker}
-              </Small>
-            )}
-          </Stack>
-        )}
+          {action && (
+            <Stack $gap={8}>
+              {action}
+              {isPending && executeGate.controls && (
+                <Stack $gap={8}>{executeGate.controls}</Stack>
+              )}
+              {isPending && executeGate.blocker && (
+                <Small $muted role="status">
+                  {executeGate.blocker}
+                </Small>
+              )}
+            </Stack>
+          )}
 
-        <Rows>
-          {challengeBounty !== undefined && (
-            <div>
-              <dt
-                title={`The ${requesterName}'s base deposit. A successful challenger also gets their own deposit back.`}
-              >
-                A successful challenger wins
-              </dt>
-              <dd>{formatAmount(challengeBounty, nativeCurrency)}</dd>
-            </div>
-          )}
-          {(statusCode === STATUS_CODE.REGISTERED || isResubmit) && (
-            <div>
-              <dt>Challenge period once sent</dt>
-              <dd
-                title={formatDurationLong(challengePeriodDuration.toNumber())}
-              >
-                {formatDuration(challengePeriodDuration.toNumber())}
-              </dd>
-            </div>
-          )}
-          {showRuling && (
-            <div>
-              <dt>{appealable ? 'Current ruling' : 'Ruling'}</dt>
-              <dd>{rulingText}</dd>
-            </div>
-          )}
-          {hasDispute &&
-            !(statusCode === STATUS_CODE.CHALLENGED && disputeHref) && (
+          <Rows>
+            {(statusCode === STATUS_CODE.REGISTERED || isResubmit) && (
+              <div>
+                <dt>Challenge period once sent</dt>
+                <dd
+                  title={formatDurationLong(challengePeriodDuration.toNumber())}
+                >
+                  {formatDuration(challengePeriodDuration.toNumber())}
+                </dd>
+              </div>
+            )}
+            {showRuling && !caseInPanel && (
+              <div>
+                <dt>Ruling</dt>
+                <dd>{rulingText}</dd>
+              </div>
+            )}
+            {hasDispute && !caseInPanel && (
               <div>
                 <dt>Court case</dt>
                 <dd>
@@ -731,8 +765,9 @@ const ItemStatusCard = ({
                 </dd>
               </div>
             )}
-        </Rows>
-      </Card>
+          </Rows>
+        </Card>
+      )}
 
       <StickyActionBar
         status={
