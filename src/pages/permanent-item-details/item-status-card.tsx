@@ -18,10 +18,8 @@ import { STATUS_CODE } from 'utils/permanent-item-status'
 import { wrapWithToast, errorToast } from 'utils/wrap-with-toast'
 import { parseWagmiError } from 'utils/parse-wagmi-error'
 import { wagmiConfig } from 'config/wagmi'
-import { CurateIcon } from 'components/curate/icons'
 import {
   Button,
-  ButtonAnchor,
   Label,
   SkeletonBlock,
   Small,
@@ -29,11 +27,11 @@ import {
   Surface,
 } from 'components/curate/primitives'
 import { EntryStatus, stakeEntryStatus } from 'components/curate/entry-status'
+import { DisclosurePill } from 'components/curate/item-disclosure-pill'
 import { StickyActionBar } from 'components/curate/item-standard-action-bar'
 import { CountUpText } from 'components/curate/registry-shared-count'
 import ItemActionButton from 'components/permanent-item-action-button'
 import { scrollToEvidenceComposer } from 'components/permanent-request-timelines'
-import { AddressLink } from 'components/curate/item-stake-address'
 import ItemActionModal from './item-action-modal'
 import WithdrawModal from './modals/withdraw'
 import AppealFundingCard from './crowdfunding-card'
@@ -51,7 +49,6 @@ import {
 } from './modals/shell'
 import {
   otherSide,
-  rulingLine,
   stakeFacts,
   stakeStatusCode,
   toNum,
@@ -63,15 +60,21 @@ export type { StakeChallenge, StakeItem, StakeRegistry } from './facts'
 export { rulingSentence } from './facts'
 
 /*
- * The right rail of the Stake item page. The action card leads with what
- * is at stake as one large figure in the list's token, how much of it a
- * challenger must match, the one action with its exact amounts in both
- * assets, then the facts behind it. Under it, the withdrawal as a
- * three-node stepper and, while an appeal is open, the funding of each
- * side. While jurors decide it asks for evidence instead of showing a dead
- * button. On phones the shared sticky bar repeats the one action while this
- * card is off screen and steps aside while it is on screen, so each control
- * shows once; the bar's copy has its own id.
+ * The right rail of the Stake item page. While the entry can be challenged
+ * the card leads with the bounty — the stake a correct challenger takes —
+ * and what a challenge costs follows as the guard that keeps careless
+ * challenges out, with the stake to match and the arbitration cost one pill
+ * away (the design review's point 4: the card used to lead with the stake
+ * the submitter has at risk and the share a challenger must put up).
+ * Otherwise it leads with the one thing to do now and its exact amount.
+ * Under it, the withdrawal as a three-node stepper and, while an appeal is
+ * open, the funding of each side. While jurors decide it renders no action
+ * card at all: the case panel above holds the state and both of its
+ * actions, and takes the id the phone bar steps aside for, so the bar's one
+ * control never doubles the panel's. On phones the
+ * shared sticky bar repeats the one action while this card is off screen
+ * and steps aside while it is on screen, so each control shows once; the
+ * bar's copy has its own id.
  */
 
 const Card = styled(Surface)`
@@ -143,9 +146,10 @@ const ShareFill = styled.span`
   position: absolute;
   inset: 0 auto 0 0;
   border-radius: var(--radius-pill);
-  background: var(--status-contested);
-  box-shadow: 0 0 12px
-    color-mix(in srgb, var(--status-contested) 55%, transparent);
+  /* A chart category, so a viz colour: never the accent, never a status
+     role (DESIGN.md). */
+  background: var(--viz-1);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--viz-1) 55%, transparent);
   transition:
     width 900ms var(--ease-out),
     min-width 900ms var(--ease-out);
@@ -177,7 +181,7 @@ const ShareLegend = styled.ul`
     width: 7px;
     height: 7px;
     border-radius: var(--radius-pill);
-    background: var(--status-contested);
+    background: var(--viz-1);
   }
 
   b {
@@ -297,6 +301,75 @@ const ChallengerShare = ({
   )
 }
 
+/**
+ * What a challenge costs and when it comes back, one pill away: DESIGN.md
+ * asks for the total and the breakdown before anything is signed, and the
+ * design review asked for neither to be the headline (the challenge dialog
+ * carries the full receipt again). A Stake challenge is priced in two
+ * assets, so the breakdown stays per coin — amounts are never added across
+ * coins — and the one chart compares like with like: the stake the
+ * challenger matches against the stake already on the entry.
+ */
+const ChallengeCost = ({
+  share,
+  stakeText,
+  percentText,
+  entryStakeText,
+  costText,
+  itemName,
+}: {
+  share: number
+  /** What the challenger must stake, in the list's token. */
+  stakeText: string
+  percentText: string
+  entryStakeText: string
+  /** The arbitration cost, in the chain's currency. */
+  costText?: string
+  itemName: string
+}) => {
+  const [open, setOpen] = useState(false)
+  return (
+    <Stack $gap={10}>
+      <DisclosurePill
+        icon="layers"
+        open={open}
+        onToggle={() => setOpen((shown) => !shown)}
+      >
+        What a challenge costs
+      </DisclosurePill>
+      {open && (
+        <Stack $gap={10}>
+          <ChallengerShare
+            share={share}
+            amountText={stakeText}
+            percentText={percentText}
+            verb="stakes"
+            stakeText={entryStakeText}
+          />
+          <Rows>
+            <div>
+              <dt>Stake to match</dt>
+              <dd>{stakeText}</dd>
+            </div>
+            {costText && (
+              <div>
+                <dt>Arbitration cost</dt>
+                <dd>{costText}</dd>
+              </div>
+            )}
+          </Rows>
+          <Small $muted>
+            Your stake comes back if jurors agree with you, along with the{' '}
+            {itemName}’s stake and its arbitration deposit, which repays what
+            you paid the court. If they do not, your stake is added to the{' '}
+            {itemName}’s and the arbitration cost is not returned.
+          </Small>
+        </Stack>
+      )}
+    </Stack>
+  )
+}
+
 interface ItemStatusCardProps {
   item?: StakeItem
   registry?: StakeRegistry
@@ -370,9 +443,6 @@ const ItemStatusCard = ({
     isWithdrawable,
     withdrawalStage,
     challenge,
-    round,
-    disputeID,
-    hasDispute,
     appealHalf,
     appealEnd,
     appealable,
@@ -382,8 +452,6 @@ const ItemStatusCard = ({
     inCourt,
     loserName,
     winnerName,
-    courtHref,
-    courtHost,
     challengedAt,
   } = facts
   const itemName = metaEvidence?.metadata?.itemName || 'item'
@@ -505,54 +573,49 @@ const ItemStatusCard = ({
 
   /* ---------- The figure ---------- */
 
-  const figureLabel = offList
-    ? 'Stake to resubmit'
-    : directAction
-      ? 'Returns to the submitter'
-      : 'Stake at risk'
+  // While the entry can be challenged the figure is the bounty: the stake a
+  // challenger the jurors agree with takes, on top of their own stake back
+  // (DESIGN.md's bounty for a Stake list). It is the reason to challenge,
+  // so it leads and the cost becomes the guard behind it.
+  const figureLabel = challengeable
+    ? 'Win if your challenge succeeds'
+    : offList
+      ? 'Stake to resubmit'
+      : directAction
+        ? 'Returns to the submitter'
+        : 'Stake at risk'
   const figureAmount = offList ? minStake : item.stake
+  // Under the bounty the sentence says what the figure is, so the line that
+  // names the entry's arbitration deposit would only crowd it.
   const figureSub = offList
     ? costText
       ? `Minimum, plus ${costText} arbitration deposit`
       : 'Minimum stake'
-    : depositText
-      ? `Plus ${depositText} arbitration deposit`
-      : undefined
+    : challengeable || !depositText
+      ? undefined
+      : `Plus ${depositText} arbitration deposit`
 
   // The loser can be fully funded before the half: then the winner's clock
   // runs, as in the second half.
   const loserFunded = fundedSide === loserName
-  const prompt = appealable
-    ? refusedToRule
-      ? fundedSide
-        ? `Jurors refused to rule. The ${fundedSide} funded an appeal; the ${otherSide(fundedSide)} has ${formatDuration(appealEnd - now)} to fund too, or loses.`
-        : `Jurors refused to rule. If one side fully funds an appeal by ${formatAbsolute(appealEnd)}, the other must fund too or loses.`
-      : statusCode === STATUS_CODE.CROWDFUNDING && !loserFunded
-        ? `The ${loserName} has ${formatDuration(appealHalf - now)} to fund an appeal, or the ruling stands.`
-        : `The ${loserName} funded the appeal. The ${winnerName} has ${formatDuration(appealEnd - now)} to fund too, or loses.`
-    : statusCode === STATUS_CODE.DISPUTED
-      ? 'Jurors read the evidence before they vote. If you know something they should, add it now.'
-      : statusCode === STATUS_CODE.WAITING_ARBITRATOR
-        ? fundedSide && now >= appealEnd
-          ? `${rulingLine(round?.ruling)}. The ${fundedSide} funded the appeal alone, so the ${fundedSide} wins when the ruling is enforced.`
-          : `${rulingLine(round?.ruling)}. Nothing to sign until the ruling is enforced.`
-        : undefined
-
-  const courtLink =
-    disputeID && courtHref ? (
-      <a
-        href={courtHref}
-        target="_blank"
-        rel="noopener noreferrer"
-        title={`Case ${disputeID}${courtHost ? ` on ${courtHost}` : ''}`}
-      >
-        Case {disputeID}
-        <CurateIcon name="external" size={12} />
-      </a>
-    ) : disputeID ? (
-      <>Case {disputeID}</>
-    ) : null
-  const courtAsButton = statusCode === STATUS_CODE.DISPUTED && !!courtHref
+  // In court there is no card and nothing to sign: the case panel above
+  // says where the case stands.
+  const prompt = challengeable
+    ? // One sentence under the figure: what the bounty is made of and the
+      // cost that guards it (DESIGN.md allows one, and the Label above
+      // already says the figure is what a winning challenge takes).
+      `The ${itemName}’s stake and your own back; challenging costs ${challengerText}${
+        challengeCostText ? ` plus ${challengeCostText}` : ''
+      }, so a careless challenge is not free.`
+    : appealable
+      ? refusedToRule
+        ? fundedSide
+          ? `Jurors refused to rule. The ${fundedSide} funded an appeal; the ${otherSide(fundedSide)} has ${formatDuration(appealEnd - now)} to fund too, or loses.`
+          : `Jurors refused to rule. If one side fully funds an appeal by ${formatAbsolute(appealEnd)}, the other must fund too or loses.`
+        : statusCode === STATUS_CODE.CROWDFUNDING && !loserFunded
+          ? `The ${loserName} has ${formatDuration(appealHalf - now)} to fund an appeal, or the ruling stands.`
+          : `The ${loserName} funded the appeal. The ${winnerName} has ${formatDuration(appealEnd - now)} to fund too, or loses.`
+      : undefined
 
   const submissionPeriod = toNum(registry.submissionPeriod)
 
@@ -640,147 +703,87 @@ const ItemStatusCard = ({
 
   return (
     <>
-      <Card
-        id="item-status-card"
-        $padding="standard"
-        role="region"
-        aria-label="What you can do"
-      >
-        {inCourt && view && <EntryStatus status={view} now={now} />}
-        <Head>
-          <Label $tone="faint">{figureLabel}</Label>
-          <Amount title={tokenText(figureAmount, tokenDecimals, tokenSymbol)}>
-            <CountUpText
-              value={formatTokenAmount(figureAmount, tokenDecimals)}
-            />
-            <small>{tokenSymbol}</small>
-          </Amount>
-          {figureSub && <Sub>{figureSub}</Sub>}
-          {!offList && !directAction && stakeWei > 0n && (
-            <ChallengerShare
-              share={challengerShare}
-              amountText={tokenText(
-                stakedByChallenger,
-                tokenDecimals,
-                tokenSymbol,
-              )}
-              percentText={
-                underDispute && challenge?.challengerStake
-                  ? `${Math.round(challengerShare * 100)}%`
-                  : multiplierPercent(multiplier)
-              }
-              verb={underDispute ? 'staked' : 'stakes'}
-              stakeText={stakeText}
-            />
-          )}
-        </Head>
-
-        {prompt && <Prompt>{prompt}</Prompt>}
-
-        {statusCode === STATUS_CODE.DISPUTED ? (
-          <Stack $gap={8}>
-            <Button
-              type="button"
-              $variant="primary"
-              $block
-              onClick={scrollToEvidenceComposer}
-            >
-              <CurateIcon name="policy" size={16} />
-              Add evidence
-            </Button>
-            {courtHref && (
-              <ButtonAnchor
-                $variant="secondary"
-                $block
-                href={courtHref}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                Follow case {disputeID} in court
-                <CurateIcon name="external" size={14} />
-              </ButtonAnchor>
-            )}
-          </Stack>
-        ) : (
-          !inCourt && (
-            <Stack $gap={8}>
-              {actionButton()}
-              {directAction && <GateHelper gate={executeGate} />}
-            </Stack>
-          )
-        )}
-
-        {(challengeable || underDispute || offList) && (
-          <Rows>
-            {challengeable && challengeCostText && (
-              <div>
-                <dt>Arbitration cost</dt>
-                <dd>{challengeCostText}</dd>
-              </div>
-            )}
-            {/* What a challenger nets: the arbitration deposit they also
-                receive only repays the arbitration cost they paid. */}
-            {(challengeable || underDispute) && (
-              <div>
-                <dt
-                  title={`The ${itemName}'s stake. They also get their own stake back, and the arbitration deposit repays their court fee.`}
-                >
-                  A successful challenger wins
-                </dt>
-                <dd>{stakeText}</dd>
-              </div>
-            )}
-            {offList && (
-              <>
-                <div>
-                  <dt>Submission period</dt>
-                  <dd
-                    title={
-                      submissionPeriod
-                        ? formatDurationLong(submissionPeriod)
-                        : 'Accepted at once'
+      {/* While jurors decide there is nothing to do here: the case panel
+          above holds the state and both of its actions, and takes the id
+          the phone bar steps aside for. */}
+      {!inCourt && (
+        <Card
+          id="item-status-card"
+          $padding="standard"
+          role="region"
+          aria-label="What you can do"
+        >
+          <Head>
+            <Label $tone="faint">{figureLabel}</Label>
+            <Amount title={tokenText(figureAmount, tokenDecimals, tokenSymbol)}>
+              <CountUpText
+                value={formatTokenAmount(figureAmount, tokenDecimals)}
+              />
+              <small>{tokenSymbol}</small>
+            </Amount>
+            {figureSub && <Sub>{figureSub}</Sub>}
+            {prompt && <Prompt>{prompt}</Prompt>}
+            {challengeable
+              ? stakeWei > 0n && (
+                  <ChallengeCost
+                    share={challengerShare}
+                    stakeText={challengerText}
+                    percentText={multiplierPercent(multiplier)}
+                    entryStakeText={stakeText}
+                    costText={challengeCostText}
+                    itemName={itemName}
+                  />
+                )
+              : !offList &&
+                !directAction &&
+                stakeWei > 0n && (
+                  <ChallengerShare
+                    share={challengerShare}
+                    amountText={tokenText(
+                      stakedByChallenger,
+                      tokenDecimals,
+                      tokenSymbol,
+                    )}
+                    percentText={
+                      challenge?.challengerStake
+                        ? `${Math.round(challengerShare * 100)}%`
+                        : multiplierPercent(multiplier)
                     }
-                  >
-                    {submissionPeriod
-                      ? formatDuration(submissionPeriod)
-                      : 'None'}
-                  </dd>
-                </div>
-                {periodShort && (
-                  <div>
-                    <dt>Withdrawing period</dt>
-                    <dd title={periodLong}>{periodShort}</dd>
-                  </div>
+                    verb="staked"
+                    stakeText={stakeText}
+                  />
                 )}
-              </>
-            )}
-            {/* A past dispute is told by the hero and the history; these
-                rows are for the one running now. */}
-            {hasDispute &&
-              round &&
-              (appealable || statusCode === STATUS_CODE.WAITING_ARBITRATOR) && (
-                <div>
-                  <dt>{appealable ? 'Current ruling' : 'Ruling'}</dt>
-                  <dd>{rulingLine(round.ruling)}</dd>
-                </div>
-              )}
-            {hasDispute && courtLink && !courtAsButton && underDispute && (
+          </Head>
+
+          <Stack $gap={8}>
+            {actionButton()}
+            {directAction && <GateHelper gate={executeGate} />}
+          </Stack>
+
+          {offList && (
+            <Rows>
               <div>
-                <dt>Court case</dt>
-                <dd>{courtLink}</dd>
-              </div>
-            )}
-            {hasDispute && underDispute && (
-              <div>
-                <dt>Arbitrator</dt>
-                <dd>
-                  <AddressLink address={registry.arbitrator.id} />
+                <dt>Submission period</dt>
+                <dd
+                  title={
+                    submissionPeriod
+                      ? formatDurationLong(submissionPeriod)
+                      : 'Accepted at once'
+                  }
+                >
+                  {submissionPeriod ? formatDuration(submissionPeriod) : 'None'}
                 </dd>
               </div>
-            )}
-          </Rows>
-        )}
-      </Card>
+              {periodShort && (
+                <div>
+                  <dt>Withdrawing period</dt>
+                  <dd title={periodLong}>{periodShort}</dd>
+                </div>
+              )}
+            </Rows>
+          )}
+        </Card>
+      )}
 
       {appealable && (
         <AppealFundingCard

@@ -22,13 +22,13 @@ import {
   PERMANENT_REGISTRY_QUERY,
 } from 'utils/graphql'
 import { STALE_TIME } from 'consts'
-import { ipfsImageUrl, parseIpfs } from 'utils/ipfs-parse'
+import { parseIpfs } from 'utils/ipfs-parse'
 import { type ItemFile, sanitizeItemFile } from 'utils/item-file-guard'
 import { sanitizeMetaEvidence } from 'utils/meta-evidence-guard'
 import { capitalizeFirstLetter } from 'utils/string'
+import { CONTRACT_STATUS } from 'utils/permanent-item-status'
 import { truncateAtWord } from 'utils/truncate-at-word'
 import { formatAbsolute, formatDurationLong } from 'utils/time'
-import ItemDetailsCard from 'components/item-details-card'
 import RequestTimelines from 'components/permanent-request-timelines'
 import { AddressLink } from 'components/curate/item-stake-address'
 import { CurateIcon } from 'components/curate/icons'
@@ -37,21 +37,17 @@ import {
   ChainChip,
   Label,
   Page,
-  Row,
   SkeletonBlock,
-  Stack,
   Surface,
 } from 'components/curate/primitives'
-import { Notice } from 'components/curate/item-standard-notice'
 import { EntryStatus, stakeEntryStatus } from 'components/curate/entry-status'
 import { Explainer } from 'components/curate/explainer'
 import { AnimatedNumber } from 'components/curate/motion/animated-number'
 import { reveal } from 'components/curate/motion/reveal'
+import { buttonReset } from 'styles/button-reset'
 import {
   FieldValue,
   hasValue,
-  identifierFields,
-  isImageField,
   titleField,
   type EntryField,
 } from 'components/curate/item-standard-fields'
@@ -69,11 +65,16 @@ import {
 import ItemStatusCard from './item-status-card'
 import { formatSince } from 'utils/format-since'
 import { StakeWindowPanel } from './item-window'
-import DisputeTimeline from 'components/curate/dispute-timeline'
+import { ItemSubmissionPanel } from 'components/curate/item-submission-panel'
+import { heroImage } from 'components/curate/item-media-band'
+import { ItemEvidenceBand } from 'components/curate/item-evidence-band'
+import { DisputeCasePanel } from 'components/curate/dispute-case-panel'
 import { PolicySince, policyInForceSince } from './policy-since'
 import { multiplierPercent, nativeText, tokenText } from './modals/shell'
 import { entrySetting } from './arbitration-setting'
 import {
+  stakeCaseState,
+  stakeEvidenceSummary,
   stakeFacts,
   stakeStatusCode,
   toNum,
@@ -82,14 +83,18 @@ import {
 } from './facts'
 
 /*
- * Stake Curate item page, on the Standard item composition. A breadcrumb, then
- * the hero (the one featured panel): the entry's identifiers set large with
- * its status, and on the right whatever clock is running (submission
- * period, withdrawal period, appeal period, the court case, or the date it
- * settled). Under it, two columns: the fields and the history on the left;
- * on the right the action card led by the stake at risk, the withdrawal
- * stepper and the appeal funding (a bottom bar on phones). Every figure
- * comes from the subgraph, the list contract and the clock.
+ * Stake Curate item page, one layout in three states (listed, in its
+ * submission or withdrawal period, in court), on the Standard item
+ * composition. A breadcrumb, then the hero (the one featured panel): the
+ * entry named large with its status and a short facts strip, and on the
+ * right the page's one clock — the submission period, the withdrawal
+ * period, the appeal period, the court period, or the date it settled.
+ * While a case is live, one full-width panel holds it: where it stands, its
+ * periods, its jury and its two actions. Then two columns: the submission
+ * (every field of the entry, with its pictures and files) and the history
+ * on the left; on the right the action card, the withdrawal stepper and the
+ * appeal funding (a bottom bar on phones). Every figure comes from the
+ * subgraph, the list contract and the clock.
  */
 
 const Crumbs = styled.nav`
@@ -199,8 +204,23 @@ const Identity = styled.div`
   min-width: 0;
 `
 
-/* The entry's picture, on its own tile; a plate when its ink is lost. */
+/* The entry's picture, on its own tile; a plate when its ink is lost. It
+   opens full size: the submission panel leaves this one out of its media
+   band, so the tile is the only copy of it on the page. */
+const LogoOpen = styled.button`
+  ${buttonReset}
+  display: block;
+  flex: 0 0 auto;
+  border-radius: 16px;
+  cursor: zoom-in;
+
+  @media (max-width: 720px) {
+    border-radius: 12px;
+  }
+`
+
 const Logo = styled(PlatedImg)`
+  display: block;
   flex: 0 0 auto;
   width: 64px;
   height: 64px;
@@ -239,36 +259,6 @@ const Title = styled.h1<{ $size: 'lg' | 'md' | 'sm' }>`
   }
 `
 
-const KeyRow = styled.dl`
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px 28px;
-  margin: 0;
-
-  div {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    min-width: 0;
-    max-width: 100%;
-  }
-
-  dt {
-    color: var(--color-faint);
-    font-size: 12px;
-    line-height: 16px;
-  }
-
-  dd {
-    margin: 0;
-    min-width: 0;
-    color: var(--color-text);
-    font-size: var(--fs-body);
-    line-height: var(--lh-body);
-    overflow-wrap: anywhere;
-  }
-`
-
 const StatusRow = styled.div`
   display: flex;
   flex-wrap: wrap;
@@ -299,6 +289,13 @@ const Stats = styled.dl`
     font-weight: 500;
     font-variant-numeric: tabular-nums;
   }
+`
+
+/* Full width under the hero: a live case is one region of the page, never
+   a card in the rail. */
+const CaseRegion = styled.div`
+  margin-top: 24px;
+  ${reveal}
 `
 
 const Columns = styled.div`
@@ -362,17 +359,6 @@ const Rail = styled.aside`
   }
 `
 
-/* The Fields card's title, set as the card sets it. */
-const FieldsTitle = styled.h2`
-  margin: 0;
-  color: var(--color-text);
-  font-family: var(--font-display);
-  font-size: 22px;
-  line-height: 28px;
-  font-weight: 500;
-  letter-spacing: -0.02em;
-`
-
 const PolicyButton = styled.button`
   display: inline-flex;
   align-items: center;
@@ -403,14 +389,6 @@ const META_EVIDENCE_TIMEOUT_MS = 20_000
 /** The size the title is set at, so long identifiers stay readable. */
 const titleSize = (text: string): 'lg' | 'md' | 'sm' =>
   text.length > 90 ? 'sm' : text.length > 44 ? 'md' : 'lg'
-
-/** A logo or picture among the fields, shown next to the title. */
-const logoOf = (fields: EntryField[]): string | undefined => {
-  const image = fields.find((field) => isImageField(field) && hasValue(field))
-  if (!image) return undefined
-  // On the IPFS gateway only (ipfsImageUrl says why).
-  return ipfsImageUrl(image.value)
-}
 
 interface ItemDetailsProps {
   itemID: string
@@ -679,10 +657,6 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
     [columns, decodedData],
   )
   const primaryField = useMemo(() => titleField(fields), [fields])
-  const otherIdentifiers = useMemo(
-    () => identifierFields(fields).filter((field) => field !== primaryField),
-    [fields, primaryField],
-  )
 
   // The tab names the entry itself (its heading), then its list.
   const seoName =
@@ -802,7 +776,10 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
         )
       : listSettings,
   )
-  const logo = logoOf(fields)
+  // The hero's tile: the entry's first picture the gateway can serve. The
+  // submission panel leaves that field out of its band and its rows, so the
+  // picture is drawn once.
+  const logo = heroImage(fields)
   const titleText =
     primaryField && hasValue(primaryField)
       ? String(primaryField.value)
@@ -818,23 +795,30 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
     !!challenge?.challenger &&
     facts.hasDispute &&
     toNum(challenge.createdAt) >= facts.submissionStart
-  const evidenceCount = facts
-    ? (item?.evidences ?? []).filter(
-        (evidence) => toNum(evidence.timestamp) >= facts.submissionStart,
-      ).length
-    : 0
+  // Where the case stands in the page's own words, for the case panel: the
+  // court names the period, the page knows what it means for this entry.
+  const caseWords =
+    facts && statusCode !== null
+      ? stakeCaseState(facts, statusCode, now)
+      : undefined
+  // The evidence on the submission the entry is on now, for the band above
+  // the history.
+  const evidence = item && facts ? stakeEvidenceSummary(item, facts) : undefined
+  // The contract takes evidence on any entry that is not Absent, as the
+  // history's composer does.
+  const canAddEvidence = !!item && item.status !== CONTRACT_STATUS.ABSENT
 
-  // The fields card shows why the fields cannot be read.
-  const cardItem = fieldsUnavailable
-    ? {
-        ...(item as StakeItem),
-        errors: [
+  // Why the fields cannot be read, said in the submission panel itself: one
+  // region holds the entry's fields, whether or not they came through.
+  const submissionErrors = metaEvidenceFailed
+    ? ["The list's field names could not be loaded from IPFS."]
+    : fieldsUnavailable
+      ? [
           ipfsError
             ? `The ${name}'s data could not be loaded from IPFS.`
             : `This list's metadata declares no fields, so the ${name} cannot be displayed.`,
-        ],
-      }
-    : decodedItem
+        ]
+      : (decodedItem?.errors ?? [])
 
   const minStake = registry?.submissionMinDeposit
   const explainerSteps = [
@@ -896,7 +880,15 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
             {chainId && <ChainChip chainId={chainId} size="sm" />}
           </Eyebrow>
           <Identity>
-            {logo && <Logo src={logo} alt="" />}
+            {logo && (
+              <LogoOpen
+                type="button"
+                aria-label={`Open ${logo.field.label || 'picture'} full size`}
+                onClick={() => openAttachment(logo.url)}
+              >
+                <Logo src={logo.url} alt="" />
+              </LogoOpen>
+            )}
             {loading && !fieldsUnavailable && !metaEvidenceFailed ? (
               <SkeletonBlock $height="40px" $width="min(420px, 100%)" />
             ) : (
@@ -909,21 +901,15 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
               </Title>
             )}
           </Identity>
-          {otherIdentifiers.length > 0 && (
-            <KeyRow>
-              {otherIdentifiers.map((field, index) => (
-                <div key={`${field.label}-${index}`}>
-                  <dt>{field.label}</dt>
-                  <dd>
-                    <FieldValue field={field} />
-                  </dd>
-                </div>
-              ))}
-            </KeyRow>
-          )}
           <StatusRow>
             {entryStatus ? (
-              <EntryStatus status={entryStatus} now={now} />
+              // The ring beside it already draws whatever window is
+              // running, so the chip keeps its dot, its label and the
+              // countdown, and leaves the track to the ring.
+              <EntryStatus
+                status={{ ...entryStatus, windowStart: undefined }}
+                now={now}
+              />
             ) : (
               <SkeletonBlock $height="18px" $width="220px" />
             )}
@@ -946,9 +932,9 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
         <HeroSide>
           {item && facts && statusCode !== null ? (
             <StakeWindowPanel
-              item={item}
               facts={facts}
               statusCode={statusCode}
+              arbitrator={registry?.arbitrator?.id}
               now={now}
             />
           ) : (
@@ -996,17 +982,6 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
                   </dd>
                 </div>
               )}
-              {/* While jurors decide the court panel leads with the same count. */}
-              {!facts.inCourt && (
-                <div>
-                  <Label as="dt" $tone="faint">
-                    Evidence
-                  </Label>
-                  <dd>
-                    <AnimatedNumber value={evidenceCount} />
-                  </dd>
-                </div>
-              )}
               <div>
                 <Label as="dt" $tone="faint">
                   Submissions
@@ -1026,37 +1001,61 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
         </HeroStats>
       </Hero>
 
+      {/* One region for a live case: where it stands, its periods, its jury
+          and its two actions (the design review's point 6.2). */}
+      {facts?.hasDispute && facts.underDispute && (
+        <CaseRegion style={{ ['--i' as string]: 2 }}>
+          <DisputeCasePanel
+            chainId={chainId}
+            arbitrator={registry?.arbitrator?.id}
+            arbitrable={tcrAddress}
+            disputeID={facts.disputeID}
+            disputeHref={facts.courtHref}
+            disputeHost={facts.courtHost}
+            requesterName="submitter"
+            heading={caseWords?.heading ?? 'In court'}
+            awaitingCourt={caseWords?.awaitingCourt ?? true}
+            summary={caseWords?.summary}
+            ruling={caseWords?.ruling}
+            rulingLabel={caseWords?.rulingLabel}
+            canAddEvidence={canAddEvidence}
+            holdsPageActions={!!facts.inCourt}
+            now={now}
+          />
+        </CaseRegion>
+      )}
+
       <Columns>
         <Main>
-          {metaEvidenceFailed ? (
-            // The card's own notice, with a way to read the file again.
-            <Surface id="item-details-card" $padding="standard">
-              <Stack $gap={10}>
-                <FieldsTitle>Fields</FieldsTitle>
-                <Notice tone="contested" role="alert">
-                  The list&apos;s field names could not be loaded from IPFS.
-                </Notice>
-                <Row>
-                  <Button
-                    type="button"
-                    $variant="secondary"
-                    $size="sm"
-                    disabled={metaEvidenceQuery.isFetching}
-                    onClick={() => void metaEvidenceQuery.refetch()}
-                  >
-                    {metaEvidenceQuery.isFetching ? 'Loading…' : 'Try again'}
-                  </Button>
-                </Row>
-              </Stack>
-            </Surface>
-          ) : (
-            <ItemDetailsCard
-              columns={columns ?? metadata?.columns}
-              item={cardItem}
-              title="Fields"
-              loading={Boolean(loading) && !fieldsUnavailable}
-              kind="stake"
-            />
+          <ItemSubmissionPanel
+            fields={fields}
+            heading={primaryField}
+            skip={logo?.field}
+            item={decodedItem ?? item}
+            itemID={item?.itemID}
+            errors={submissionErrors}
+            loading={
+              Boolean(loading) && !fieldsUnavailable && !metaEvidenceFailed
+            }
+            retry={
+              metaEvidenceFailed ? (
+                <Button
+                  type="button"
+                  $variant="secondary"
+                  $size="sm"
+                  disabled={metaEvidenceQuery.isFetching}
+                  onClick={() => void metaEvidenceQuery.refetch()}
+                >
+                  {metaEvidenceQuery.isFetching ? 'Loading…' : 'Try again'}
+                </Button>
+              ) : undefined
+            }
+            kind="stake"
+          />
+          {/* Where evidence lives: its count and who filed, right above the
+              history and the composer (the design review's point 6.1). */}
+          {evidence && evidence.total > 0 && (
+            <ItemEvidenceBand evidence={evidence} noun="submission" now={now} />
           )}
           <RequestTimelines item={item} metaEvidence={metaEvidence} />
           <Explainer
@@ -1083,16 +1082,6 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
             submitter={submitter}
             policyURI={policyURI}
           />
-          {/* While the case is open: its periods and how long it should take. */}
-          {facts?.hasDispute && facts.underDispute && (
-            <DisputeTimeline
-              chainId={chainId}
-              arbitrator={registry?.arbitrator.id}
-              arbitrable={tcrAddress}
-              disputeID={facts.disputeID}
-              now={now}
-            />
-          )}
         </Rail>
       </Columns>
       <StickyActionBarSpacer aria-hidden />

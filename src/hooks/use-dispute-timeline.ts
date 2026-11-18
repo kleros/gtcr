@@ -25,23 +25,36 @@ const multicall = new ethers.utils.Interface([
   'function aggregate((address target, bytes callData)[] calls) view returns (uint256 blockNumber, bytes[] returnData)',
 ])
 
-const call = async (
+/**
+ * Several reads of one contract in a single eth_call (Multicall3), decoded
+ * in the order they were asked for. Shared with the jury read, which asks
+ * the same arbitrator for one call per vote.
+ */
+export const aggregateCalls = async (
   provider: ethers.providers.Provider,
-  arbitrator: string,
+  target: string,
+  iface: ethers.utils.Interface,
   calls: [string, unknown[]][],
 ): Promise<ethers.utils.Result[]> => {
   const data = multicall.encodeFunctionData('aggregate', [
     calls.map(([name, args]) => ({
-      target: arbitrator,
-      callData: kleros.encodeFunctionData(name, args),
+      target,
+      callData: iface.encodeFunctionData(name, args),
     })),
   ])
   const raw = await provider.call({ to: MULTICALL3, data })
   const [, results] = multicall.decodeFunctionResult('aggregate', raw)
   return (results as string[]).map((result, index) =>
-    kleros.decodeFunctionResult(calls[index][0], result),
+    iface.decodeFunctionResult(calls[index][0], result),
   )
 }
+
+const call = (
+  provider: ethers.providers.Provider,
+  arbitrator: string,
+  calls: [string, unknown[]][],
+): Promise<ethers.utils.Result[]> =>
+  aggregateCalls(provider, arbitrator, kleros, calls)
 
 const last = (values: ethers.BigNumber[]): number =>
   values.length > 0 ? values[values.length - 1].toNumber() : 0

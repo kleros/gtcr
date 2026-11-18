@@ -74,7 +74,7 @@ const isMonoField = (field: EntryField) => {
 }
 
 /** Identifier fields with a value, images excluded (they are not a title). */
-export const identifierFields = (fields: EntryField[]): EntryField[] =>
+const identifierFields = (fields: EntryField[]): EntryField[] =>
   fields.filter(
     (field) => field.isIdentifier && hasValue(field) && !isImageField(field),
   )

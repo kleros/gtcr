@@ -219,3 +219,126 @@ export const expectedRuling = (steps: TimelineStep[]): number | undefined => {
   const ruling = steps[steps.length - 1]
   return ruling?.state === 'next' ? ruling.start : undefined
 }
+
+/** The period running now, as the item page's one clock reads it. */
+export interface CurrentPeriod {
+  key: TimelineStep['key']
+  /** What the period is, in the page's words ("Jurors are voting"). */
+  title: string
+  /** The name the clock takes ("Vote period"). */
+  measure: string
+  /** Unix seconds: when this period started. */
+  start: number
+  /** The latest it ends; undefined when it has no deadline to show. */
+  end?: number
+  /** `end` is the court's length, which this period can beat. */
+  estimated: boolean
+  /** Under the countdown: "left for jurors to vote". */
+  verb: string
+  /**
+   * What `end` is called on a clock. An evidence period's length is the
+   * earliest it can end (it also waits for every juror to be drawn); commit
+   * and vote can close early, so theirs is the latest.
+   */
+  closeLabel: string
+  /** One sentence: what happens next. */
+  next: string
+}
+
+/**
+ * Where the case stands now and, when it has a deadline, until when. An
+ * appeal round's evidence period that can already move on has no deadline:
+ * the caller then says what it waits for instead of drawing a clock with no
+ * finish.
+ */
+export const currentPeriod = (dispute: CourtDispute): CurrentPeriod => {
+  const { period, periodStart, times, hiddenVotes, round, jurors, drawn } =
+    dispute
+  const length = (p: number) => times[p] ?? 0
+  const base = (key: TimelineStep['key'], end?: number, estimated = false) => ({
+    key,
+    start: periodStart,
+    end,
+    estimated,
+  })
+
+  if (period >= COURT_PERIOD.EXECUTION)
+    return {
+      ...base('ruling'),
+      title: dispute.ruled ? 'Ruling applied' : 'Ruling final',
+      measure: 'Ruling',
+      verb: '',
+      closeLabel: 'Ends',
+      next: dispute.ruled
+        ? 'The court has given its ruling and the list applies it.'
+        : 'The court executes the ruling, then the list applies it.',
+    }
+
+  if (period === COURT_PERIOD.EVIDENCE) {
+    // An appeal round's evidence has no minimum: once its jurors are all
+    // drawn it can move on now, so it has no deadline to show.
+    const ready = round > 1 && drawn >= jurors
+    return {
+      ...base(
+        'evidence',
+        ready ? undefined : periodStart + length(COURT_PERIOD.EVIDENCE),
+        round > 1,
+      ),
+      title: 'Evidence',
+      measure: 'Evidence period',
+      verb: 'before jurors can vote',
+      closeLabel: 'Can end from',
+      next:
+        drawn >= jurors
+          ? `${jurors} juror${jurors === 1 ? '' : 's'} drawn. Both sides add evidence before they ${hiddenVotes ? 'commit' : 'vote'}.`
+          : `Jurors are being drawn (${drawn} of ${jurors}). Both sides add evidence.`,
+    }
+  }
+
+  if (period === COURT_PERIOD.COMMIT)
+    return {
+      ...base('commit', periodStart + length(COURT_PERIOD.COMMIT)),
+      title: 'Jurors are committing',
+      measure: 'Commit period',
+      verb: 'left for jurors to commit',
+      closeLabel: 'Ends by',
+      next: 'Jurors seal their votes, then reveal them.',
+    }
+
+  if (period === COURT_PERIOD.VOTE)
+    return {
+      ...base('vote', periodStart + length(COURT_PERIOD.VOTE)),
+      title: hiddenVotes ? 'Jurors are revealing' : 'Jurors are voting',
+      measure: hiddenVotes ? 'Reveal period' : 'Vote period',
+      verb: hiddenVotes
+        ? 'left for jurors to reveal'
+        : 'left for jurors to vote',
+      closeLabel: 'Ends by',
+      next: 'Once the votes are in, the ruling opens for appeal.',
+    }
+
+  return {
+    ...base('appeal', periodStart + length(COURT_PERIOD.APPEAL)),
+    title: 'Open for appeal',
+    measure: 'Appeal period',
+    verb: 'left to appeal',
+    closeLabel: 'Closes',
+    next: dispute.appealable
+      ? `Either side can fund an appeal. If both do, round ${round + 1} starts with ${2 * jurors + 1} jurors.`
+      : 'This is the court’s largest jury: the ruling cannot be appealed.',
+  }
+}
+
+/**
+ * A vote as the page names it. The arbitrator numbers the choices; what
+ * each means comes from the request, so a Curate vote reads by the side it
+ * is for and never as a bare number.
+ */
+export const choiceLabel = (choice: number, requesterName: string): string =>
+  choice === 0
+    ? 'Refused to rule'
+    : choice === 1
+      ? `For the ${requesterName}`
+      : choice === 2
+        ? 'For the challenger'
+        : `Choice ${choice}`

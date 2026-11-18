@@ -1,16 +1,21 @@
-import React, { useEffect, useState } from 'react'
-import styled, { keyframes } from 'styled-components'
+import React from 'react'
+import styled from 'styled-components'
+import { useParams } from 'react-router-dom'
+import useUrlChainId from 'hooks/use-url-chain-id'
+import useDisputeTimeline from 'hooks/use-dispute-timeline'
 import {
   CONTRACT_STATUS,
   STATUS_CODE,
   SUBGRAPH_RULING,
 } from 'utils/item-status'
-import { formatAbsolute, formatAgo, formatDate } from 'utils/time'
+import { formatAbsolute, formatDate } from 'utils/time'
 import { formatSince } from 'utils/format-since'
-import { CurateIcon } from 'components/curate/icons'
-import { Chip, Label } from 'components/curate/primitives'
-import { AnimatedNumber } from 'components/curate/motion/animated-number'
+import { Label } from 'components/curate/primitives'
 import { WindowRing } from 'components/curate/item-standard-window-ring'
+import {
+  COURT_PERIOD,
+  currentPeriod,
+} from 'components/curate/dispute-timeline-model'
 import { toSeconds } from 'components/curate/item-standard-format'
 import {
   capitalize,
@@ -20,11 +25,13 @@ import {
 } from './request-facts'
 
 /*
- * The right side of the item hero: whatever clock is running. A ring for
- * the challenge window or the appeal period; while jurors decide, the
- * evidence on the request (how much, from which side, and when it was
- * filed); a calm date once the entry is settled. Every figure comes from
- * the latest request and the clock.
+ * The right side of the item hero: the page's one clock, whichever window
+ * is running. The same ring in every state — the challenge window, the
+ * appeal period, and (since the design review) the court period the case is
+ * in, read from the arbitrator — then a calm block for a period with no
+ * deadline to show and for a settled entry. One clock, one slot, one
+ * vocabulary; the case's own state, its periods and its jury belong to the
+ * case panel below the hero.
  */
 
 const Calm = styled.div`
@@ -47,347 +54,24 @@ const Big = styled.span`
   font-variant-numeric: tabular-nums;
 `
 
+/** A state, not a figure: the words the court uses for where it stands. */
+const State = styled.span`
+  display: block;
+  color: var(--color-text);
+  font-family: var(--font-display);
+  font-size: clamp(24px, 1vw + 16px, 30px);
+  line-height: 1.1;
+  font-weight: 500;
+  letter-spacing: -0.03em;
+  text-wrap: balance;
+`
+
 const Line = styled.p`
   margin: 0;
   color: var(--color-muted);
   font-size: var(--fs-small);
   line-height: var(--lh-small);
 `
-
-const Court = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  height: 100%;
-  min-height: 220px;
-`
-
-const CourtTop = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px 12px;
-`
-
-const CaseChip = styled(Chip)`
-  color: var(--color-text);
-  text-decoration: none;
-  font-variant-numeric: tabular-nums;
-  transition:
-    border-color var(--motion),
-    color var(--motion);
-
-  &[href]:hover {
-    border-color: var(--color-border-strong);
-    color: var(--color-primary);
-  }
-`
-
-const Lead = styled.div`
-  display: flex;
-  align-items: flex-end;
-  gap: 12px;
-`
-
-const LeadCaption = styled.span`
-  padding-bottom: 2px;
-  color: var(--color-muted);
-  font-size: var(--fs-small);
-  line-height: var(--lh-small);
-`
-
-const LeadFigure = styled.span`
-  color: var(--color-text);
-  font-family: var(--font-figure);
-  font-size: 56px;
-  line-height: 0.9;
-  font-weight: 500;
-  letter-spacing: -0.045em;
-  font-variant-numeric: tabular-nums;
-`
-
-const Bar = styled.div`
-  display: flex;
-  gap: 3px;
-  height: 10px;
-
-  span {
-    min-width: 6px;
-    border-radius: var(--radius-pill);
-    transition: flex-grow 900ms var(--ease-out);
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    span {
-      transition: none;
-    }
-  }
-`
-
-const Legend = styled.ul`
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px 14px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-
-  li {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    color: var(--color-muted);
-    font-size: 12px;
-    line-height: 16px;
-  }
-
-  i {
-    width: 7px;
-    height: 7px;
-    border-radius: var(--radius-pill);
-  }
-
-  b {
-    color: var(--color-text);
-    font-family: var(--font-figure);
-    font-weight: 500;
-    font-variant-numeric: tabular-nums;
-  }
-`
-
-const dotIn = keyframes`
-  from { opacity: 0; transform: translateX(-50%) scale(0.4); }
-`
-
-/* Evidence over time: one dot per piece, placed by when it was filed;
-   pieces filed close together stack, so bursts read as columns. */
-const Strip = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-top: auto;
-  padding-top: 14px;
-  border-top: 1px solid var(--glass-border);
-`
-
-const Axis = styled.div`
-  position: relative;
-  margin: 0 5px;
-
-  &::before {
-    content: '';
-    position: absolute;
-    inset: auto 0 4px;
-    height: 2px;
-    border-radius: var(--radius-pill);
-    background: var(--color-raised);
-    box-shadow: inset 0 0 0 1px var(--glass-border);
-  }
-
-  i {
-    position: absolute;
-    width: 10px;
-    height: 10px;
-    border: 2px solid var(--color-surface);
-    border-radius: var(--radius-pill);
-    transform: translateX(-50%);
-    animation: ${dotIn} 420ms var(--ease-out) both;
-    animation-delay: calc(300ms + var(--i, 0) * 40ms);
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    i {
-      animation: none;
-    }
-  }
-`
-
-const AxisEnds = styled.div`
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  color: var(--color-faint);
-  font-size: 12px;
-  line-height: 16px;
-`
-
-interface EvidenceRecord {
-  party?: string
-  timestamp?: string | number
-}
-
-const SIDE_COLOR = {
-  requester: 'var(--status-window)',
-  challenger: 'var(--status-contested)',
-  others: 'var(--color-faint)',
-} as const
-
-/**
- * While jurors decide: the evidence on this request, led by its count, split
- * by who filed it, and placed on a time axis from the request to now.
- */
-const CourtEvidence = ({
-  request,
-  requesterName,
-  submissionTime,
-  now,
-}: {
-  request: StandardRequest
-  requesterName: string
-  submissionTime: number
-  now: number
-}) => {
-  const evidences = (request.evidenceGroup?.evidences ?? []) as EvidenceRecord[]
-  // Grow the split bar from nothing on the first frame.
-  const [shown, setShown] = useState(false)
-  useEffect(() => {
-    const frame = requestAnimationFrame(() => setShown(true))
-    return () => cancelAnimationFrame(frame)
-  }, [])
-
-  const requester = request.requester?.toLowerCase()
-  const challenger = request.challenger?.toLowerCase()
-  const sideOf = (party?: string): keyof typeof SIDE_COLOR => {
-    const address = party?.toLowerCase()
-    if (address && address === requester) return 'requester'
-    if (address && address === challenger) return 'challenger'
-    return 'others'
-  }
-  const counts = { requester: 0, challenger: 0, others: 0 }
-  for (const evidence of evidences) counts[sideOf(evidence.party)] += 1
-  const sides = [
-    {
-      key: 'requester' as const,
-      label: capitalize(requesterName),
-      value: counts.requester,
-    },
-    {
-      key: 'challenger' as const,
-      label: 'Challenger',
-      value: counts.challenger,
-    },
-    { key: 'others' as const, label: 'Others', value: counts.others },
-  ].filter((side) => side.value > 0)
-
-  const span = Math.max(1, now - submissionTime)
-  const dated = evidences
-    .map((evidence) => ({
-      side: sideOf(evidence.party),
-      at: toSeconds(evidence.timestamp),
-    }))
-    .filter((evidence) => evidence.at > 0)
-    .sort((a, b) => a.at - b.at)
-  const last = dated.length > 0 ? dated[dated.length - 1].at : undefined
-  // Place each dot; one that would overlap a neighbour stacks above it.
-  const LANES = 7
-  const placed: { x: number; lane: number }[] = []
-  for (const evidence of dated) {
-    const x = Math.min(
-      100,
-      Math.max(0, ((evidence.at - submissionTime) / span) * 100),
-    )
-    let lane = 0
-    while (
-      lane < LANES - 1 &&
-      placed.some((dot) => dot.lane === lane && Math.abs(dot.x - x) < 4)
-    )
-      lane += 1
-    placed.push({ x, lane })
-  }
-  const lanes = placed.reduce((most, dot) => Math.max(most, dot.lane + 1), 1)
-
-  return (
-    <>
-      <Lead>
-        <LeadFigure>
-          <AnimatedNumber value={evidences.length} />
-        </LeadFigure>
-        <LeadCaption>
-          {evidences.length === 0
-            ? 'no evidence filed on this request yet'
-            : `${evidences.length === 1 ? 'piece' : 'pieces'} of evidence on this request`}
-          {last ? (
-            <>
-              <br />
-              <span title={formatAbsolute(last)}>
-                last filed {formatAgo(last, now)}
-              </span>
-            </>
-          ) : null}
-        </LeadCaption>
-      </Lead>
-      {sides.length > 0 && (
-        <div
-          role="img"
-          aria-label={`Evidence on this request by who filed it: ${sides
-            .map((side) => `${side.label} ${side.value}`)
-            .join(', ')}`}
-        >
-          <Bar aria-hidden>
-            {sides.map((side) => (
-              <span
-                key={side.key}
-                style={{
-                  flexGrow: shown ? side.value : 0.0001,
-                  background: SIDE_COLOR[side.key],
-                }}
-              />
-            ))}
-          </Bar>
-          <Legend aria-hidden style={{ marginTop: 10 }}>
-            {sides.map((side) => (
-              <li key={side.key}>
-                <i style={{ background: SIDE_COLOR[side.key] }} />
-                {side.label} <b>{side.value}</b>
-              </li>
-            ))}
-          </Legend>
-        </div>
-      )}
-      {dated.length > 0 && (
-        <Strip
-          role="img"
-          aria-label={`Evidence filed over time, from ${formatDate(
-            submissionTime,
-          )} to now: first ${formatAbsolute(dated[0].at)}, last ${formatAbsolute(
-            dated[dated.length - 1].at,
-          )}`}
-        >
-          <Label $tone="faint">Filed over time</Label>
-          <Axis aria-hidden style={{ height: 12 + lanes * 9 }}>
-            {dated.map((evidence, index) => (
-              <i
-                key={`${evidence.at}-${index}`}
-                title={`${
-                  evidence.side === 'requester'
-                    ? capitalize(requesterName)
-                    : evidence.side === 'challenger'
-                      ? 'Challenger'
-                      : 'Others'
-                } · ${formatAbsolute(evidence.at)}`}
-                style={
-                  {
-                    left: `${placed[index].x}%`,
-                    bottom: placed[index].lane * 9,
-                    background: SIDE_COLOR[evidence.side],
-                    '--i': index,
-                  } as React.CSSProperties
-                }
-              />
-            ))}
-          </Axis>
-          <AxisEnds aria-hidden>
-            <span title={formatAbsolute(submissionTime)}>
-              {formatDate(submissionTime)}
-            </span>
-            <span>Now</span>
-          </AxisEnds>
-        </Strip>
-      )}
-    </>
-  )
-}
 
 const rulingLine = (ruling: string | null, requesterName: string) =>
   ruling === SUBGRAPH_RULING.ACCEPT
@@ -412,6 +96,17 @@ export const WindowPanel = ({
   facts: RequestFacts
   now: number
 }) => {
+  const { tcrAddress } = useParams<{ tcrAddress: string }>()
+  const chainId = useUrlChainId()
+  // The court's own period, for the clock while jurors are at work. The
+  // case panel reads the same query, so the two never disagree.
+  const { data: dispute } = useDisputeTimeline({
+    chainId,
+    arbitrator: request.arbitrator,
+    arbitrable: tcrAddress,
+    disputeID: facts.disputeID,
+    enabled: facts.inCourt,
+  })
   const {
     requesterName,
     loserName,
@@ -479,46 +174,57 @@ export const WindowPanel = ({
 
   if (facts.inCourt) {
     const challenged = statusCode === STATUS_CODE.CHALLENGED
+    const period = dispute ? currentPeriod(dispute) : undefined
+    // The clock follows the court only while the entry waits for the
+    // jurors: once this request has its ruling, the court's own appeal
+    // period can still be running, which is no longer what is happening
+    // here (the loser did not fund in its half, so the ruling stands). A
+    // period with a deadline is the clock; an appeal round's evidence
+    // period that can move on now has none, and neither has execution.
+    if (
+      challenged &&
+      dispute &&
+      period?.end !== undefined &&
+      dispute.period < COURT_PERIOD.EXECUTION
+    )
+      return (
+        <WindowRing
+          title={period.measure}
+          start={period.start}
+          end={period.end}
+          now={now}
+          tone="contested"
+          verb={period.verb}
+          passedLabel="Over"
+          noun="period"
+          ends={[
+            { label: 'Started', at: period.start },
+            {
+              label: now > period.end ? 'Over' : period.closeLabel,
+              at: period.end,
+            },
+          ]}
+        />
+      )
+
     const aloneWinner =
       statusCode === STATUS_CODE.WAITING_ARBITRATOR
         ? fundedAlone(request, requesterName)
         : undefined
+    // The period over: final. Earlier, the loser's half over with nothing
+    // funded: the ruling stands.
+    const state = challenged
+      ? 'Jurors deciding'
+      : statusCode === STATUS_CODE.WAITING_ARBITRATOR
+        ? 'Ruling final'
+        : 'Ruling stands'
     return (
-      <Court>
-        <CourtTop>
-          {/* The period over: final. Earlier, the loser's half over with
-              nothing funded: the ruling stands. */}
-          <Label $tone="muted">
-            {challenged
-              ? 'Jurors deciding'
-              : statusCode === STATUS_CODE.WAITING_ARBITRATOR
-                ? 'Ruling final'
-                : 'Ruling stands'}
-          </Label>
-          {facts.disputeID &&
-            (facts.disputeHref ? (
-              <CaseChip
-                as="a"
-                href={facts.disputeHref}
-                target="_blank"
-                rel="noopener noreferrer"
-                title={`Open case ${facts.disputeID} on ${facts.disputeHost}`}
-              >
-                Case {facts.disputeID}
-                <CurateIcon name="external" size={12} />
-              </CaseChip>
-            ) : (
-              <CaseChip>Case {facts.disputeID}</CaseChip>
-            ))}
-        </CourtTop>
-        <CourtEvidence
-          request={request}
-          requesterName={requesterName}
-          submissionTime={submissionTime}
-          now={now}
-        />
-        {/* The hero states the fact; the action card asks for the action. */}
-        {!challenged && (
+      <Calm>
+        <Label $tone="faint">In court</Label>
+        <State>{(challenged ? period?.title : undefined) ?? state}</State>
+        {challenged ? (
+          period && <Line>{period.next}</Line>
+        ) : (
           <Line>
             {rulingLine(currentRuling, requesterName)}
             {statusCode === STATUS_CODE.WAITING_ARBITRATOR ? (
@@ -538,7 +244,7 @@ export const WindowPanel = ({
             )}
           </Line>
         )}
-      </Court>
+      </Calm>
     )
   }
 

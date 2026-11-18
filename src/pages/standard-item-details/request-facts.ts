@@ -6,6 +6,7 @@ import {
 } from 'utils/item-status'
 import { klerosAddresses } from 'config/tcr-addresses'
 import { toSeconds } from 'components/curate/item-standard-format'
+import type { EvidenceSummary } from 'components/curate/item-evidence-band'
 
 /*
  * Everything the hero and the action card derive from the latest request:
@@ -52,7 +53,6 @@ export interface RequestFacts {
   /** The case on the Kleros court site, when the arbitrator is Kleros. */
   disputeHref?: string
   disputeHost?: string
-  evidenceCount: number
 }
 
 export const requestFacts = ({
@@ -120,7 +120,137 @@ export const requestFacts = ({
     disputeID: hasDispute ? String(request.disputeID) : undefined,
     disputeHref,
     disputeHost: disputeHref ? new URL(disputeHref).host : undefined,
-    evidenceCount: request.evidenceGroup?.evidences?.length ?? 0,
+  }
+}
+
+/** Where the case stands, in the page's words, for the case panel. */
+export interface CaseState {
+  /** Used as the heading when the court itself cannot be read. */
+  heading: string
+  /**
+   * The request is waiting on the court, so the court's own word for its
+   * current period leads the case panel. False once the request has its
+   * ruling state: the court's appeal period can still be running then, and
+   * it is no longer what is happening to this entry.
+   */
+  awaitingCourt: boolean
+  /**
+   * What it means for this entry, when the court cannot know it (a side
+   * that alone funded an appeal wins whatever the jurors ruled). Left out
+   * where the court's own sentence about the period says it better.
+   */
+  summary?: string
+  /** The ruling in words, once the jurors have given one. */
+  ruling?: string
+  rulingLabel?: string
+}
+
+export const caseState = (
+  request: StandardRequest,
+  facts: RequestFacts,
+  statusCode: number,
+): CaseState => {
+  // Once resolved the outcome can differ from the jurors' last ruling: a
+  // side that alone funded the last appeal wins (rule() in the list
+  // contract). The request records that final outcome.
+  const decided = request.resolved
+    ? (request.disputeOutcome ?? facts.currentRuling)
+    : facts.currentRuling
+  const ruling =
+    statusCode === STATUS_CODE.CHALLENGED
+      ? undefined
+      : decided === SUBGRAPH_RULING.ACCEPT
+        ? `For the ${facts.requesterName}`
+        : decided === SUBGRAPH_RULING.REJECT
+          ? 'For the challenger'
+          : decided === SUBGRAPH_RULING.NONE
+            ? 'Refused to rule'
+            : undefined
+  const rulingLabel = facts.appealable ? 'Current ruling' : 'Ruling'
+
+  if (statusCode === STATUS_CODE.CHALLENGED)
+    return { heading: 'Jurors are deciding', awaitingCourt: true }
+  if (statusCode === STATUS_CODE.WAITING_ARBITRATOR) {
+    const alone = request.resolved
+      ? undefined
+      : fundedAlone(request, facts.requesterName)
+    return {
+      heading: 'Ruling final',
+      awaitingCourt: false,
+      summary: alone
+        ? `The ${alone} funded the appeal alone, so the ${alone} wins when the ruling is enforced.`
+        : undefined,
+      ruling,
+      rulingLabel,
+    }
+  }
+  if (statusCode === STATUS_CODE.WAITING_ENFORCEMENT)
+    return {
+      heading: 'Ruling stands',
+      awaitingCourt: false,
+      summary: 'The losing side did not fund its appeal, so the ruling stands.',
+      ruling,
+      rulingLabel,
+    }
+  return {
+    heading: 'Open for appeal',
+    awaitingCourt: true,
+    ruling,
+    rulingLabel,
+  }
+}
+
+interface EvidenceRecord {
+  party?: string
+  timestamp?: string | number
+}
+
+/**
+ * The request's evidence as the band above the history draws it: how many
+ * pieces, who filed them, and when each one landed. The window is the
+ * request itself, so the figures and the time axis describe the same scope.
+ */
+export const evidenceSummary = (
+  request: StandardRequest,
+  requesterName: string,
+  submissionTime: number,
+): EvidenceSummary => {
+  const evidences = (request.evidenceGroup?.evidences ?? []) as EvidenceRecord[]
+  const requester = request.requester?.toLowerCase()
+  const challenger = request.challenger?.toLowerCase()
+  const sideOf = (party?: string): number => {
+    const address = party?.toLowerCase()
+    if (address && address === requester) return 0
+    if (address && address === challenger) return 1
+    return 2
+  }
+  const counts = [0, 0, 0]
+  for (const evidence of evidences) counts[sideOf(evidence.party)] += 1
+  const labels = [capitalize(requesterName), 'Challenger', 'Others']
+  // Only the sides that filed something, so the key never names an empty
+  // category; the pieces follow the same order.
+  const kept = counts
+    .map((value, side) => ({ side, value }))
+    .filter((entry) => entry.value > 0)
+  const column = new Map(kept.map((entry, index) => [entry.side, index]))
+
+  const pieces = evidences
+    .map((evidence) => ({
+      at: toSeconds(evidence.timestamp),
+      side: column.get(sideOf(evidence.party)) ?? 0,
+    }))
+    .filter((piece) => piece.at > 0)
+    .sort((a, b) => a.at - b.at)
+
+  return {
+    total: evidences.length,
+    sides: kept.map((entry) => ({
+      label: labels[entry.side],
+      value: entry.value,
+    })),
+    pieces,
+    last: pieces.length > 0 ? pieces[pieces.length - 1].at : undefined,
+    since: submissionTime,
   }
 }
 
