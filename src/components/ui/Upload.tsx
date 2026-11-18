@@ -2,6 +2,7 @@ import React, { useState, useRef, useCallback } from 'react'
 import styled, { css } from 'styled-components'
 import { KitIcon } from './kit-icons'
 import {
+  edgeTransition,
   ghostIconButton,
   joinClassNames,
   kitRadius,
@@ -9,17 +10,34 @@ import {
   motionOk,
   ringSpinner,
 } from './kit-styles'
+import {
+  DROP_HINT,
+  DROP_REPLACE,
+  FileDropVeil,
+  fileDropEdge,
+  useFileDrop,
+} from 'components/file-drop'
 
 const Wrapper = styled.div`
+  position: relative;
   display: block;
   margin: 8px 0;
 `
 
 /*
- * Drop target, v2: a raised well with a dashed hairline; on hover the line
- * turns blue, the fill takes a faint blue tint and the icon lifts.
+ * The card a file is picked or dropped on: a raised well with a dashed
+ * hairline; on hover the line turns blue, the fill takes a faint blue tint
+ * and the icon lifts. A file held over it lights the edge instead
+ * (`fileDropEdge`), in the same language as the submit page's columns and
+ * the evidence form. One file at a time, as every field here holds one.
  */
-const PictureCard = styled.button<{ $disabled?: boolean }>`
+const PictureCard = styled.button<{
+  $disabled?: boolean
+  $over?: boolean
+  $refusing?: boolean
+}>`
+  --edge-angle: 210deg;
+  position: relative;
   display: inline-flex;
   flex-direction: column;
   align-items: center;
@@ -36,7 +54,9 @@ const PictureCard = styled.button<{ $disabled?: boolean }>`
   font-size: var(--fs-body);
   line-height: var(--lh-body);
   cursor: ${({ $disabled }) => ($disabled ? 'not-allowed' : 'pointer')};
-  transition: ${kitTransition('border-color', 'color', 'background')};
+  transition:
+    ${kitTransition('border-color', 'color', 'background', 'box-shadow')},
+    ${edgeTransition};
 
   > svg {
     transition: transform var(--dur-control) var(--ease-spring);
@@ -63,6 +83,8 @@ const PictureCard = styled.button<{ $disabled?: boolean }>`
     css`
       opacity: 0.55;
     `}
+
+  ${fileDropEdge}
 `
 
 const TextTrigger = styled.span<{ $disabled?: boolean }>`
@@ -103,6 +125,14 @@ const FileItem = styled.div<{ $status?: string }>`
       border-color: color-mix(in srgb, var(--color-danger) 55%, transparent);
       color: var(--color-danger);
     `}
+`
+
+/** A dropped file the field cannot take, in the words the picker uses. */
+const DropProblem = styled.div`
+  margin-top: 8px;
+  color: var(--color-danger);
+  font-size: var(--fs-small);
+  line-height: var(--lh-small);
 `
 
 const FileIcon = styled.span`
@@ -245,6 +275,7 @@ const Upload: React.FC<UploadProps> = ({
   disabled = false,
 }) => {
   const [fileList, setFileList] = useState<UploadFile[]>([])
+  const [dropProblem, setDropProblem] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
   const isPictureCard = listType === 'picture-card'
 
@@ -323,25 +354,45 @@ const Upload: React.FC<UploadProps> = ({
     [customRequest, triggerChange],
   )
 
-  const handleInputChange = useCallback(
-    async (e: React.ChangeEvent<HTMLInputElement>) => {
-      const files = [...(e.target.files || [])]
-      for (const file of files) {
-        if (beforeUpload)
-          try {
-            const result = await beforeUpload(file)
-            if (result === false) continue
-          } catch {
-            continue
-          }
+  /*
+   * The one way in. A file dropped on the card goes through the caller's
+   * beforeUpload and the same processFile as one chosen with the picker, so
+   * the type and size rules, the toasts they raise and the field they write
+   * are identical however the file arrived.
+   */
+  const admit = useCallback(
+    async (file: File) => {
+      if (beforeUpload)
+        try {
+          if ((await beforeUpload(file)) === false) return
+        } catch {
+          return
+        }
 
-        processFile(file)
-      }
-      // Reset the input so the same file can be selected again
-      if (inputRef.current) inputRef.current.value = ''
+      processFile(file)
     },
     [beforeUpload, processFile],
   )
+
+  const handleInputChange = useCallback(
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      setDropProblem('')
+      const files = [...(e.target.files || [])]
+      for (const file of files) await admit(file)
+      // Reset the input so the same file can be selected again
+      if (inputRef.current) inputRef.current.value = ''
+    },
+    [admit],
+  )
+
+  const drop = useFileDrop<HTMLDivElement>({
+    blocked: disabled ? 'This upload is off right now.' : '',
+    onFile: (file) => {
+      setDropProblem('')
+      void admit(file)
+    },
+    onRefuse: setDropProblem,
+  })
 
   const handleTriggerClick = useCallback(() => {
     if (disabled) return
@@ -408,6 +459,8 @@ const Upload: React.FC<UploadProps> = ({
       type="button"
       className="ui-upload-picture-card"
       $disabled={disabled}
+      $over={drop.over}
+      $refusing={!!drop.refusal}
       disabled={disabled}
       onClick={handleTriggerClick}
     >
@@ -431,7 +484,13 @@ const Upload: React.FC<UploadProps> = ({
         disabled && 'ui-upload-disabled',
         className,
       )}
+      {...drop.handlers}
     >
+      {drop.over && (
+        <FileDropVeil $refusing={!!drop.refusal}>
+          {drop.refusal || (fileList.length > 0 ? DROP_REPLACE : DROP_HINT)}
+        </FileDropVeil>
+      )}
       <HiddenInput
         ref={inputRef}
         type="file"
@@ -444,6 +503,7 @@ const Upload: React.FC<UploadProps> = ({
       {isPictureCard && renderFileList()}
       {trigger}
       {!isPictureCard && renderFileList()}
+      {dropProblem && <DropProblem role="alert">{dropProblem}</DropProblem>}
     </Wrapper>
   )
 }

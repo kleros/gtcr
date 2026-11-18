@@ -10,6 +10,14 @@ import { parseIpfs } from 'utils/ipfs-parse'
 import { normalizeDecimalInput } from 'utils/decimal-input'
 import { reportSwitchFailure, signInWithToast } from 'utils/wrap-with-toast'
 import { CurateIcon } from 'components/curate/icons'
+import {
+  DROP_HINT,
+  DROP_REPLACE,
+  FileDropVeil,
+  fileDropEdge,
+  useFileDrop,
+} from 'components/file-drop'
+import { edgeTransition, kitTransition } from 'components/ui/kit-styles'
 import KitSelect from 'components/ui/Select'
 import Switch from 'components/ui/Switch'
 import { reveal } from 'components/curate/motion/reveal'
@@ -772,7 +780,13 @@ export const useWalletGate = ({
 
 /* ---------- Upload ---------- */
 
-const UploadRow = styled.div<{ $empty: boolean }>`
+const UploadRow = styled.div<{
+  $empty: boolean
+  $over?: boolean
+  $refusing?: boolean
+}>`
+  --edge-angle: 210deg;
+  position: relative;
   display: grid;
   grid-template-columns: 56px minmax(0, 1fr) auto;
   align-items: center;
@@ -783,7 +797,9 @@ const UploadRow = styled.div<{ $empty: boolean }>`
       $empty ? 'var(--color-border-strong)' : 'var(--glass-border)'};
   border-radius: var(--radius);
   background: var(--color-raised);
-  transition: border-color var(--motion);
+  transition:
+    ${kitTransition('border-color', 'background', 'box-shadow')},
+    ${edgeTransition};
 
   &:hover {
     border-color: var(--color-border-strong);
@@ -800,6 +816,8 @@ const UploadRow = styled.div<{ $empty: boolean }>`
       grid-column: 1 / -1;
     }
   }
+
+  ${fileDropEdge}
 `
 
 const Thumb = styled.span`
@@ -910,6 +928,22 @@ export const UploadField = ({
     if (!problem) onPick(file)
   }
 
+  /*
+   * A file dropped on the row goes through `pick`: the caller's own rule,
+   * the same message when it fails and the same upload when it passes. While
+   * the wallet or Atlas sign-in blocks, or an upload is in flight, the row
+   * says so during the drag rather than taking a file it cannot send.
+   */
+  const drop = useFileDrop<HTMLDivElement>({
+    blocked: gate.blocker
+      ? `Connect first to upload ${what}.`
+      : uploading
+        ? 'An upload is already going.'
+        : '',
+    onFile: pick,
+    onRefuse: setRejection,
+  })
+
   return (
     <FormField
       id={id}
@@ -920,7 +954,18 @@ export const UploadField = ({
     >
       {(a11y) => (
         <>
-          <UploadRow $empty={!uri} aria-invalid={invalid || undefined}>
+          <UploadRow
+            $empty={!uri}
+            $over={drop.over}
+            $refusing={!!drop.refusal}
+            aria-invalid={invalid || undefined}
+            {...drop.handlers}
+          >
+            {drop.over && (
+              <FileDropVeil $refusing={!!drop.refusal}>
+                {drop.refusal || (uri ? DROP_REPLACE : DROP_HINT)}
+              </FileDropVeil>
+            )}
             <Thumb aria-hidden={kind === 'pdf' || undefined}>
               {kind === 'image' ? (
                 <SafeImage

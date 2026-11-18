@@ -15,6 +15,14 @@ import { normalizeDecimalInput } from 'utils/decimal-input'
 import { reportSwitchFailure, signInWithToast } from 'utils/wrap-with-toast'
 import { plainDecimal } from 'pages/factory-permanent/format'
 import { CurateIcon } from 'components/curate/icons'
+import {
+  DROP_HINT,
+  DROP_REPLACE,
+  FileDropVeil,
+  fileDropEdge,
+  useFileDrop,
+} from 'components/file-drop'
+import { edgeTransition, kitTransition } from 'components/ui/kit-styles'
 import KitSelect from 'components/ui/Select'
 import Switch from 'components/ui/Switch'
 import { reveal } from 'components/curate/motion/reveal'
@@ -381,7 +389,13 @@ const SwitchText = styled.span`
   font-weight: 500;
 `
 
-const UploadRow = styled.div<{ $empty: boolean }>`
+const UploadRow = styled.div<{
+  $empty: boolean
+  $over?: boolean
+  $refusing?: boolean
+}>`
+  --edge-angle: 210deg;
+  position: relative;
   display: grid;
   grid-template-columns: 56px minmax(0, 1fr) auto;
   align-items: center;
@@ -392,7 +406,9 @@ const UploadRow = styled.div<{ $empty: boolean }>`
       $empty ? 'var(--color-border-strong)' : 'var(--glass-border)'};
   border-radius: var(--radius);
   background: var(--color-raised);
-  transition: border-color var(--motion);
+  transition:
+    ${kitTransition('border-color', 'background', 'box-shadow')},
+    ${edgeTransition};
 
   &:hover {
     border-color: var(--color-border-strong);
@@ -409,6 +425,8 @@ const UploadRow = styled.div<{ $empty: boolean }>`
       grid-column: 1 / -1;
     }
   }
+
+  ${fileDropEdge}
 `
 
 const Thumb = styled.span`
@@ -927,6 +945,7 @@ export const UploadField = ({
         toast.error(problem)
         return
       }
+      setRejection('')
       setUploading(true)
       try {
         // Atlas takes logos as PNG only: anything else is redrawn first.
@@ -946,6 +965,27 @@ export const UploadField = ({
     [kind, onChange, role, uploadFile],
   )
 
+  /*
+   * A file dropped on the row goes through `pick`: the same type and size
+   * rules, the same toast and the same upload as the button's file picker.
+   * While the wallet or Atlas sign-in blocks, or an upload is in flight, the
+   * row says so during the drag instead of taking a file it cannot send.
+   */
+  const drop = useFileDrop<HTMLDivElement>({
+    blocked: gate.blocker
+      ? `Connect first to upload ${what}.`
+      : uploading
+        ? 'An upload is already going.'
+        : '',
+    onFile: (file) => {
+      void pick(file)
+    },
+    onRefuse: (problem) => {
+      setRejection(problem)
+      toast.error(problem)
+    },
+  })
+
   return (
     <FormField
       id={id}
@@ -956,7 +996,18 @@ export const UploadField = ({
     >
       {(a11y) => (
         <>
-          <UploadRow $empty={!uri} aria-invalid={invalid || undefined}>
+          <UploadRow
+            $empty={!uri}
+            $over={drop.over}
+            $refusing={!!drop.refusal}
+            aria-invalid={invalid || undefined}
+            {...drop.handlers}
+          >
+            {drop.over && (
+              <FileDropVeil $refusing={!!drop.refusal}>
+                {drop.refusal || (uri ? DROP_REPLACE : DROP_HINT)}
+              </FileDropVeil>
+            )}
             {kind === 'image' ? (
               <Thumb>
                 <SafeImage

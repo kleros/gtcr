@@ -10,6 +10,12 @@ import {
   type Reference,
 } from 'utils/rich-address'
 import { Button } from 'components/curate/primitives'
+import {
+  DROP_HINT,
+  DROP_REPLACE,
+  FileDropWell,
+  useFileDrop,
+} from 'components/file-drop'
 import Select from 'components/ui/Select'
 import Switch from 'components/ui/Switch'
 import { formatFileSize } from './amounts'
@@ -455,32 +461,6 @@ const SwitchRow = styled.label`
   cursor: pointer;
 `
 
-const DropZone = styled.div<{ $invalid?: boolean; $over?: boolean }>`
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  min-height: 88px;
-  padding: 16px;
-  border: 1px dashed
-    ${({ $invalid, $over }) =>
-      $invalid
-        ? 'var(--color-danger)'
-        : $over
-          ? 'var(--color-primary)'
-          : 'var(--color-border-strong)'};
-  border-radius: var(--radius);
-  background: ${({ $over }) =>
-    $over ? 'var(--color-primary-soft)' : 'var(--color-raised)'};
-  transition:
-    border-color var(--motion),
-    background var(--motion);
-
-  @media (max-width: 520px) {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-`
-
 const Thumb = styled.div`
   display: inline-flex;
   align-items: center;
@@ -602,6 +582,7 @@ const UploadField = ({
   column,
   value,
   disabled,
+  submitting,
   invalid,
   describedBy,
   onCommit,
@@ -611,6 +592,7 @@ const UploadField = ({
   column: Column
   value: FieldValue | undefined
   disabled?: boolean
+  submitting?: boolean
   invalid: boolean
   describedBy?: string
   onCommit: (value: FieldValue) => void
@@ -618,7 +600,6 @@ const UploadField = ({
 }) => {
   const inputRef = useRef<HTMLInputElement>(null)
   const [rejection, setRejection] = useState('')
-  const [over, setOver] = useState(false)
   // Atlas stores entry files under these roles and refuses other types.
   const { roleRestrictions } = useAtlasProvider()
   const isImage = column.type === ItemTypes.IMAGE
@@ -659,24 +640,31 @@ const UploadField = ({
     if (inputRef.current) inputRef.current.value = ''
   }
 
+  // A dropped file takes the same two steps a refused pick does: the field
+  // is marked touched and the message shows under it.
+  const drop = useFileDrop<HTMLDivElement>({
+    // Why, not just that: the entry is on its way, or this column is fixed
+    // for this flow and cannot be changed here.
+    blocked: submitting
+      ? 'The entry is being sent.'
+      : disabled
+        ? 'This column cannot be changed here.'
+        : '',
+    onFile: pick,
+    onRefuse: (problem) => {
+      setRejection(problem)
+      onBlur()
+    },
+  })
+
   return (
     <>
-      <DropZone
+      <FileDropWell
         $invalid={invalid || !!rejection}
-        $over={over}
-        onDragOver={(event) => {
-          if (disabled) return
-          event.preventDefault()
-          setOver(true)
-        }}
-        onDragLeave={() => setOver(false)}
-        onDrop={(event) => {
-          event.preventDefault()
-          setOver(false)
-          if (disabled) return
-          const dropped = event.dataTransfer.files?.[0]
-          if (dropped) pick(dropped)
-        }}
+        $over={drop.over}
+        $refusing={!!drop.refusal}
+        $disabled={disabled}
+        {...drop.handlers}
       >
         <Thumb>
           {image ? (
@@ -686,7 +674,12 @@ const UploadField = ({
           )}
         </Thumb>
         <DropText>
-          {file ? (
+          {drop.over ? (
+            <>
+              {drop.refusal || (hasValue ? DROP_REPLACE : DROP_HINT)}
+              <span>{hint}</span>
+            </>
+          ) : file ? (
             <>
               {file.name}
               <span>{formatFileSize(file.size)} · uploads when you submit</span>
@@ -748,10 +741,11 @@ const UploadField = ({
           aria-describedby={describedBy}
           onChange={(event) => {
             const picked = event.target.files?.[0]
+            event.target.value = ''
             if (picked) pick(picked)
           }}
         />
-      </DropZone>
+      </FileDropWell>
       {rejection && (
         <ErrorText role="alert">
           <MarkIcon state="error" />
@@ -865,6 +859,11 @@ export interface ColumnFieldProps {
   /** Errors show once the field was touched (or the form was submitted). */
   showError: boolean
   disabled?: boolean
+  /**
+   * The entry is being sent. It is part of `disabled`; apart from it, an
+   * upload can say which of the two blockers is holding a dropped file.
+   */
+  submitting?: boolean
   onChange: (value: FieldValue) => void
   onBlur: () => void
   /**
@@ -880,6 +879,7 @@ export const ColumnField = ({
   error,
   showError,
   disabled,
+  submitting,
   onChange,
   onBlur,
   onCommit,
@@ -973,6 +973,7 @@ export const ColumnField = ({
         column={column}
         value={value}
         disabled={disabled}
+        submitting={submitting}
         invalid={invalid}
         describedBy={describedBy}
         onCommit={onCommit}

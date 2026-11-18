@@ -24,6 +24,14 @@ import EnsureAuth from 'components/ensure-auth'
 import Select from 'components/ui/Select'
 import { CurateIcon } from 'components/curate/icons'
 import {
+  DROP_HINT,
+  DROP_REPLACE,
+  FileDropVeil,
+  fileDropEdge,
+  useFileDrop,
+} from 'components/file-drop'
+import { edgeTransition, kitTransition } from 'components/ui/kit-styles'
+import {
   Button,
   ButtonAnchor,
   ButtonLink,
@@ -1075,15 +1083,28 @@ const useAlive = () => {
 
 /* ---------- MetaEvidence input ---------- */
 
-const UriRow = styled.div`
+const UriRow = styled.div<{ $over?: boolean; $refusing?: boolean }>`
+  --edge-angle: 210deg;
+  position: relative;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 8px;
   align-items: center;
+  /* Transparent at rest: the hairline only appears under a dragged file,
+     and the row keeps its measure in every state. */
+  padding: 4px;
+  margin: -4px;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  transition:
+    ${kitTransition('border-color', 'background', 'box-shadow')},
+    ${edgeTransition};
 
   @media (max-width: 520px) {
     grid-template-columns: 1fr;
   }
+
+  ${fileDropEdge}
 `
 
 const MetaEvidenceInput = ({
@@ -1110,6 +1131,7 @@ const MetaEvidenceInput = ({
       errorToast('Upload a MetaEvidence JSON file.')
       return
     }
+
     setUploading(true)
     try {
       const uri = await uploadFile(file, JSON_UPLOAD_ROLE)
@@ -1123,12 +1145,35 @@ const MetaEvidenceInput = ({
     }
   }
 
+  /*
+   * A file dropped on the row goes through the same `upload`: the same JSON
+   * rule, the same toast when it fails and the same Atlas upload when it
+   * passes. Dragged text still lands in the field, since only drags that
+   * carry files are claimed.
+   */
+  const drop = useFileDrop<HTMLDivElement>({
+    blocked: disabled
+      ? 'This field is locked.'
+      : uploading
+        ? 'An upload is already going.'
+        : '',
+    onFile: (file) => {
+      void upload(file)
+    },
+    onRefuse: errorToast,
+  })
+
   return (
     <Stack $gap={4}>
       <Label as="label" htmlFor={id}>
         {label}
       </Label>
-      <UriRow>
+      <UriRow $over={drop.over} $refusing={!!drop.refusal} {...drop.handlers}>
+        {drop.over && (
+          <FileDropVeil $refusing={!!drop.refusal}>
+            {drop.refusal || (value ? DROP_REPLACE : DROP_HINT)}
+          </FileDropVeil>
+        )}
         <TextInput
           id={id}
           value={value}
