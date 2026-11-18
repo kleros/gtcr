@@ -473,13 +473,6 @@ const AppBar = () => {
       >
         Launch a list
       </MobileMenuLink>
-      <MobileMenuLink
-        to="/guide"
-        $active={location.pathname === '/guide'}
-        onClick={() => setMobileMenuOpen(false)}
-      >
-        Guide
-      </MobileMenuLink>
       {account && (
         <MobileMenuLink
           to={`/address/${account}`}

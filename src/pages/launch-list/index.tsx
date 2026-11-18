@@ -16,6 +16,7 @@ import {
   VisuallyHidden,
 } from 'components/curate/primitives'
 import { litThumb, recessTrack } from 'components/ui/kit-styles'
+import { CurateIcon } from 'components/curate/icons'
 import { reveal } from 'components/curate/motion/reveal'
 import { ChainSwitch } from './chain-switch'
 import { DepositFate, type FateSpec } from './deposit-fate'
@@ -33,10 +34,11 @@ import { STANDARD_WIZARD_DEFAULTS } from 'pages/factory/defaults'
  * One question decides between them — does the money come back? — so each
  * card is one vertical read of that question: what is put up and what the
  * kind is for, the verdict, the same drawing with one difference in it (see
- * ./deposit-fate), one sentence, and the starting fees in the chain's
- * currency. No period is quoted anywhere: the challenge window, the court
- * and the number of jurors are all the creator's to set in the factory, and
- * the Guide route carries both lifecycles in full.
+ * ./deposit-fate), two lines that say when the money moves and what the kind
+ * costs you, and the fees in the chain's currency. No period is quoted
+ * anywhere: the challenge window, the court and the number of jurors are all
+ * the creator's to set in the factory, and the Guide route carries both
+ * lifecycles in full.
  */
 
 const SUPPORTED_CHAINS: number[] = [
@@ -419,19 +421,49 @@ const Drawing = styled.div`
   margin: 18px 0 0;
 `
 
-/* The one sentence a card is allowed beyond its drawing. */
-const Note = styled.p`
+/*
+ * The two lines a card is allowed beyond its drawing: what the money does,
+ * then what the kind costs you. One of each, so neither kind is sold.
+ */
+const Points = styled.ul`
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
   margin: 18px 0 0;
-  color: var(--color-muted);
+  padding: 0;
+  list-style: none;
+`
+
+const Point = styled.li<{ $con?: boolean }>`
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr);
+  gap: 10px;
+  color: ${({ $con }) => ($con ? 'var(--color-muted)' : 'var(--color-text)')};
   font-size: var(--fs-body);
   line-height: var(--lh-body);
   text-wrap: pretty;
+
+  svg {
+    margin-top: 1px;
+    color: ${({ $con }) =>
+      $con ? 'var(--color-faint)' : 'var(--color-primary)'};
+  }
 `
 
+const MinusIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
+    <path
+      d="M7 12h10"
+      stroke="currentColor"
+      strokeWidth="1.85"
+      strokeLinecap="round"
+    />
+  </svg>
+)
+
 /*
- * What it costs to start, quietly: the figures the factory pre-fills, in the
- * currency they are paid in. The creator changes them in the next step, so
- * they are starting values and never a price.
+ * What it costs, quietly: the figures the factory pre-fills, in the currency
+ * they are paid in. The creator changes every one of them in the next step.
  */
 const Fees = styled.p`
   display: flex;
@@ -677,7 +709,7 @@ const LaunchListPage = () => {
         <Choice
           kind="standard"
           family="Standard Curate"
-          summary="The submitter’s deposit comes back in full once the entry is registered; a registered entry can still be removed later through a removal request."
+          summary="The submitter’s deposit comes back in full once the challenge window closes with nobody challenging; once registered, an entry can only be contested through a removal request."
           checked={kind === 'standard'}
           onChoose={choose}
           chainId={chainId}
@@ -696,24 +728,40 @@ const LaunchListPage = () => {
             <DepositFate spec={STANDARD_FATE} delay={700} />
           </Drawing>
 
-          <Note>A registered entry can still be removed later.</Note>
+          <Points aria-label="What this kind means">
+            <Point>
+              <CurateIcon name="check" size={18} />
+              <span>
+                <VisuallyHidden>How the money moves: </VisuallyHidden>
+                The deposit comes back in full once the challenge window closes
+                with nobody challenging.
+              </span>
+            </Point>
+            <Point $con>
+              <MinusIcon />
+              <span>
+                <VisuallyHidden>Trade-off: </VisuallyHidden>
+                Once registered, an entry can only be contested through a
+                removal request.
+              </span>
+            </Point>
+          </Points>
 
           <Fees>
-            <span>Starting fees in {symbol}</span>
+            <span>Fees in {symbol}</span>
             <span>
               submit <b>{STANDARD_DEFAULTS.submissionBaseDeposit}</b>
             </span>
             <span>
               removal <b>{STANDARD_DEFAULTS.removalBaseDeposit}</b>
             </span>
-            <span>plus the court’s fee</span>
           </Fees>
         </Choice>
 
         <Choice
           kind="stake"
           family="Stake Curate"
-          summary="The submitter’s stake stays locked for as long as the entry is listed, so anyone can challenge it at any time; win a challenge and the challenger’s stake joins your entry’s."
+          summary="The submitter’s stake stays locked until they withdraw it, so anyone can challenge the entry at any time and take the stake; a failed challenge adds the challenger’s stake to the entry’s."
           checked={kind === 'stake'}
           onChoose={choose}
           chainId={chainId}
@@ -732,22 +780,32 @@ const LaunchListPage = () => {
             <DepositFate spec={STAKE_FATE} delay={780} />
           </Drawing>
 
-          <Note>
-            Win a challenge and the challenger’s stake joins your entry’s.
-          </Note>
+          <Points aria-label="What this kind means">
+            <Point>
+              <CurateIcon name="check" size={18} />
+              <span>
+                <VisuallyHidden>What you gain: </VisuallyHidden>A failed
+                challenge adds the challenger’s stake to the entry’s.
+              </span>
+            </Point>
+            <Point $con>
+              <MinusIcon />
+              <span>
+                <VisuallyHidden>How the money moves: </VisuallyHidden>
+                The stake stays locked until the submitter withdraws it, and a
+                challenger can take it at any time until then.
+              </span>
+            </Point>
+          </Points>
 
           <Fees>
-            {stakeToken ? (
-              <>
-                <span>Starting stake in {stakeToken}</span>
-                <span>
-                  minimum <b>{STAKE_DEFAULTS.submissionMinDeposit}</b>
-                </span>
-              </>
-            ) : (
-              <span>Stake in any ERC-20</span>
+            <span>Stake in any ERC-20</span>
+            {/* The wizard pre-fills a token only where the chain has one. */}
+            {stakeToken && (
+              <span>
+                <b>{STAKE_DEFAULTS.submissionMinDeposit}</b> {stakeToken}
+              </span>
             )}
-            <span>plus the court’s fee in {symbol}</span>
           </Fees>
         </Choice>
       </Choices>

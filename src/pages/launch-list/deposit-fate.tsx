@@ -8,9 +8,10 @@ import { useInView } from './use-in-view'
  * then it is registered or accepted — so the hairline is cut between them and
  * carries the break glyph: no length here may be read as a duration, because
  * the challenge window is the list creator's to set in the factory. Over the
- * steps runs the money band in `--viz-3`, the one chart hue no status role
- * takes (money is a quantity, not a state), while the nodes keep the app's
- * status colours: blue submitted, green registered or accepted.
+ * steps runs the money band in `--viz-2`, a chart hue no status role takes
+ * (money is a quantity, not a state), while the nodes keep the app's status
+ * colours: blue submitted, green registered or accepted. The purple it used
+ * to draw read as a third state in a drawing whose nodes are states.
  * Both cards draw the same two steps at the same size; the only difference is
  * what the band does in the second one — an empty trough once the deposit has
  * gone back, or the same solid band running off the faded edge because the
@@ -271,7 +272,7 @@ export const DepositFate = ({
             d={bar(left, stepAEnd)}
             pathLength={1}
             fill="none"
-            stroke="var(--viz-3)"
+            stroke="var(--viz-2)"
             strokeWidth={BAND_WIDTH}
             strokeLinecap="round"
             style={timing(STEP_A.from, STEP_A.to - STEP_A.from, BAND_LAG)}
@@ -289,7 +290,7 @@ export const DepositFate = ({
               mask={`url(#${maskId})`}
               pathLength={1}
               fill="none"
-              stroke="var(--viz-3)"
+              stroke="var(--viz-2)"
               strokeWidth={BAND_WIDTH}
               strokeLinecap="round"
               style={timing(STEP_B.from, STEP_B.to - STEP_B.from, BAND_LAG)}
@@ -304,7 +305,7 @@ export const DepositFate = ({
               rx={radius}
               mask={`url(#${maskId})`}
               fill="none"
-              stroke="var(--viz-3)"
+              stroke="var(--viz-2)"
               strokeWidth={1}
               strokeOpacity={0.65}
               style={timing(STEP_B.from, 0, BAND_LAG)}
