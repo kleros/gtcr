@@ -19,6 +19,18 @@ import {
   formatLimit,
 } from 'utils/upload-restrictions'
 import { FieldError, FieldLabel } from 'components/curate/item-standard-notice'
+import {
+  DROP_HINT,
+  DROP_REPLACE,
+  FileDropVeil,
+  FileDropWell,
+  useFileDrop,
+} from 'components/file-drop'
+import {
+  edgeTransition,
+  flatFill,
+  litEdgeBackground,
+} from 'components/ui/kit-styles'
 
 /*
  * Evidence form (ERC-1497): a title (when detailed), a description and an
@@ -78,16 +90,6 @@ const Textarea = styled.textarea`
   }
 `
 
-const Attachment = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 10px 12px;
-  border: 1px solid var(--glass-border);
-  border-radius: var(--radius);
-  background: var(--color-raised);
-`
-
 const Preview = styled.img`
   width: 40px;
   height: 40px;
@@ -112,13 +114,13 @@ const FileIcon = styled.span`
 const FileMeta = styled.div`
   display: flex;
   flex-direction: column;
+  gap: 2px;
   flex: 1;
   min-width: 0;
+  overflow-wrap: anywhere;
 
-  > * {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+  @media (max-width: 520px) {
+    align-self: stretch;
   }
 `
 
@@ -175,7 +177,12 @@ const HiddenLabel = styled.label`
 
 /* One box for the whole message. Its ring is the focus indicator for the
    two text fields inside it, which draw none of their own. */
-const Box = styled.div<{ $invalid: boolean }>`
+const Box = styled.div<{
+  $invalid: boolean
+  $over?: boolean
+  $refusing?: boolean
+}>`
+  --edge-angle: 210deg;
   position: relative;
   display: flex;
   flex-direction: column;
@@ -189,7 +196,8 @@ const Box = styled.div<{ $invalid: boolean }>`
   box-shadow: inset 0 1px 0 var(--glass-highlight);
   transition:
     border-color var(--motion),
-    box-shadow var(--motion);
+    box-shadow var(--motion),
+    ${edgeTransition};
 
   &:hover {
     border-color: var(--color-border-strong);
@@ -210,6 +218,34 @@ const Box = styled.div<{ $invalid: boolean }>`
         0 0 0 4px var(--color-primary-soft);
     }
   }
+
+  ${({ $refusing }) =>
+    $refusing &&
+    css`
+      &&& {
+        border-color: var(--color-danger);
+        background: var(--color-danger-soft);
+        box-shadow: inset 0 1px 0 var(--glass-highlight);
+      }
+    `}
+
+  ${({ $over, $refusing }) =>
+    $over &&
+    !$refusing &&
+    css`
+      &&& {
+        --edge-angle: 570deg;
+        border-color: transparent;
+        background: ${litEdgeBackground(
+          flatFill(
+            'color-mix(in srgb, var(--color-primary) 6%, var(--color-raised))',
+          ),
+        )};
+        box-shadow:
+          inset 0 1px 0 var(--glass-highlight),
+          0 0 0 4px color-mix(in srgb, var(--edge-2) 12%, transparent);
+      }
+    `}
 
   @media (prefers-reduced-motion: reduce) {
     transition: none;
@@ -304,9 +340,14 @@ const Attach = styled.button`
     background var(--motion),
     color var(--motion);
 
-  &:hover {
+  &:hover:not(:disabled) {
     background: var(--color-surface);
     color: var(--color-text);
+  }
+
+  &:disabled {
+    color: var(--color-faint);
+    cursor: not-allowed;
   }
 
   span {
@@ -355,6 +396,13 @@ const FileChip = styled.span`
     width: 26px;
     height: 26px;
     flex: 0 0 auto;
+  }
+
+  button:disabled,
+  button:disabled:hover {
+    background: transparent;
+    color: var(--color-faint);
+    cursor: not-allowed;
   }
 `
 
@@ -412,7 +460,7 @@ export interface EvidenceFormValues {
 interface EvidenceFormOuterProps {
   formID: string
   detailed?: boolean
-  onSubmit: (values: EvidenceFormValues) => void
+  onSubmit: (values: EvidenceFormValues) => void | Promise<unknown>
   /** "fields" (labelled, for dialogs) or "composer" (one message box). */
   variant?: 'fields' | 'composer'
   /** The composer's action, on the right of its toolbar. */
@@ -424,6 +472,13 @@ interface EvidenceFormOuterProps {
    * wallet step the toolbar button names comes first.
    */
   blocked?: boolean
+  /**
+   * While true the attachment cannot be changed: a piece is being sent and
+   * its files are already going up. A send made through this form is known
+   * without it (formik's own flag, below), so this is for a caller whose
+   * piece goes out some other way.
+   */
+  busy?: boolean
 }
 
 type EvidenceFormProps = EvidenceFormOuterProps &
@@ -436,11 +491,13 @@ const EvidenceForm = ({
   actions,
   onDraftChange,
   blocked,
+  busy,
   handleSubmit,
   setFieldValue,
   values,
   errors,
   submitCount,
+  isSubmitting,
 }: EvidenceFormProps) => {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [fileError, setFileError] = useState<string | null>(null)
@@ -455,6 +512,13 @@ const EvidenceForm = ({
   const countId = useId()
   const file = values.evidenceAttachment as File | undefined
   const drafted = !!(values.title || values.description || file)
+  /*
+   * The attachment is frozen while the piece goes out, however it was
+   * started: the caller may say so (the composer, which knows its phase),
+   * and a submit through this form says so by itself, so a dialog shows the
+   * file that is being uploaded rather than a newer one dropped over it.
+   */
+  const sending = !!busy || isSubmitting
 
   // The limit is said while typing, not only once submit is pressed.
   const length = values.description?.length ?? 0
@@ -473,11 +537,8 @@ const EvidenceForm = ({
   // Defer the actual IPFS upload to submit time. The parent's confirm button
   // is the EnsureAuth/SIWE gate; if we uploaded here the request would race
   // the sign-in flow and fail before the user is verified.
-  const onPick = useCallback(
-    (event: React.ChangeEvent<HTMLInputElement>) => {
-      const picked = event.currentTarget.files?.[0]
-      event.currentTarget.value = ''
-      if (!picked) return
+  const pick = useCallback(
+    (picked: File) => {
       const problem = evidenceLimit
         ? atlasUploadProblem(picked, Roles.Evidence, roleRestrictions)
         : picked.size / 1024 / 1024 >= MAX_FILE_MB
@@ -492,6 +553,23 @@ const EvidenceForm = ({
     },
     [setFieldValue, evidenceLimit, roleRestrictions],
   )
+
+  const onPick = useCallback(
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      const picked = event.currentTarget.files?.[0]
+      event.currentTarget.value = ''
+      if (picked) pick(picked)
+    },
+    [pick],
+  )
+
+  // A dropped file takes the same path as a chosen one, and a refusal lands
+  // in the same message under the form.
+  const drop = useFileDrop<HTMLDivElement>({
+    blocked: sending ? 'This piece is being sent.' : '',
+    onFile: pick,
+    onRefuse: setFileError,
+  })
 
   useEffect(() => {
     if (!file) {
@@ -535,7 +613,12 @@ const EvidenceForm = ({
 
     return (
       <form id={formID} onSubmit={onFormSubmit} noValidate>
-        <Box $invalid={shown.length > 0}>
+        <Box
+          $invalid={shown.length > 0}
+          $over={drop.over}
+          $refusing={!!drop.refusal}
+          {...drop.handlers}
+        >
           {detailed && (
             <Field name="title">
               {({
@@ -600,6 +683,7 @@ const EvidenceForm = ({
                 <small>{formatSize(file.size)}</small>
                 <IconButton
                   type="button"
+                  disabled={sending}
                   aria-label={`Remove ${file.name}`}
                   onClick={() => setFieldValue('evidenceAttachment', undefined)}
                 >
@@ -607,7 +691,11 @@ const EvidenceForm = ({
                 </IconButton>
               </FileChip>
             ) : (
-              <Attach type="button" onClick={() => inputRef.current?.click()}>
+              <Attach
+                type="button"
+                disabled={sending}
+                onClick={() => inputRef.current?.click()}
+              >
                 <PaperclipIcon />
                 Attach a file
                 <span>
@@ -619,6 +707,12 @@ const EvidenceForm = ({
             {actions && <ToolbarEnd>{actions}</ToolbarEnd>}
           </Toolbar>
           {fileInput}
+          {drop.over && (
+            <FileDropVeil $refusing={!!drop.refusal}>
+              <PaperclipIcon />
+              {drop.refusal || (file ? DROP_REPLACE : DROP_HINT)}
+            </FileDropVeil>
+          )}
         </Box>
         {shown.length > 0 && (
           <Errors id={errorsId} role="alert">
@@ -690,40 +784,58 @@ const EvidenceForm = ({
         </Field>
         <FieldBlock>
           <FieldLabel htmlFor={`${formID}-file`}>Attachment</FieldLabel>
-          {file ? (
-            <Attachment>
-              {previewUrl && file.type.includes('image') ? (
-                <Preview src={previewUrl} alt="" />
-              ) : (
-                <FileIcon aria-hidden>
+          <FileDropWell
+            $over={drop.over}
+            $refusing={!!drop.refusal}
+            $disabled={sending}
+            {...drop.handlers}
+          >
+            {file && previewUrl && file.type.includes('image') ? (
+              <Preview src={previewUrl} alt="" />
+            ) : (
+              <FileIcon aria-hidden>
+                {file ? (
                   <CurateIcon name="policy" size={16} />
-                </FileIcon>
-              )}
-              <FileMeta>
-                <Data title={file.name}>{file.name}</Data>
-                <Small $muted>{formatSize(file.size)}</Small>
-              </FileMeta>
-              <IconButton
-                type="button"
-                aria-label="Remove attachment"
-                onClick={() => setFieldValue('evidenceAttachment', undefined)}
-              >
-                <CurateIcon name="close" size={14} />
-              </IconButton>
-            </Attachment>
-          ) : (
+                ) : (
+                  <PaperclipIcon />
+                )}
+              </FileIcon>
+            )}
+            <FileMeta>
+              <Data title={file?.name}>
+                {drop.over
+                  ? drop.refusal || (file ? DROP_REPLACE : DROP_HINT)
+                  : (file?.name ?? 'Drop a file here or choose one')}
+              </Data>
+              <Small $muted>
+                {file ? formatSize(file.size) : `Optional, up to ${sizeLabel}.`}
+              </Small>
+            </FileMeta>
             <PickRow>
               <Button
                 type="button"
                 $variant="secondary"
                 $size="sm"
+                disabled={sending}
+                aria-label={file ? 'Replace the attachment' : undefined}
                 onClick={() => inputRef.current?.click()}
               >
-                Attach a file
+                {file ? 'Replace' : 'Attach a file'}
               </Button>
-              <Small $muted>Optional, up to {sizeLabel}.</Small>
+              {file && (
+                <Button
+                  type="button"
+                  $variant="ghost"
+                  $size="sm"
+                  disabled={sending}
+                  aria-label="Remove the attachment"
+                  onClick={() => setFieldValue('evidenceAttachment', undefined)}
+                >
+                  Remove
+                </Button>
+              )}
             </PickRow>
-          )}
+          </FileDropWell>
           {fileInput}
           {fileError && <FieldError role="alert">{fileError}</FieldError>}
         </FieldBlock>
@@ -758,7 +870,15 @@ const validationSchema = ({ detailed }: { detailed?: boolean }) =>
 
 export default withFormik<EvidenceFormOuterProps, EvidenceFormValues>({
   validationSchema,
-  handleSubmit: (values, { props: { onSubmit } }) => {
-    onSubmit(values)
+  /*
+   * Hand formik the caller's promise, so isSubmitting is set for exactly as
+   * long as the piece is going out. A handler that returns nothing is done
+   * when it returns, and formik leaves the flag set unless it is told.
+   */
+  handleSubmit: (values, { props: { onSubmit }, setSubmitting }) => {
+    const sent = onSubmit(values)
+    if (sent instanceof Promise) return sent
+    setSubmitting(false)
+    return undefined
   },
 })(EvidenceForm)

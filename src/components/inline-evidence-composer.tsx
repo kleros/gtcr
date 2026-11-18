@@ -115,7 +115,7 @@ interface InlineEvidenceComposerProps {
   isSubmitting?: boolean
   /** While submitting: what the button says is happening. */
   phase?: EvidencePhase
-  onSubmit: (values: EvidenceFormValues) => void
+  onSubmit: (values: EvidenceFormValues) => void | Promise<unknown>
 }
 
 const InlineEvidenceComposer = ({
@@ -196,16 +196,19 @@ const InlineEvidenceComposer = ({
       <Title id={`${id}-title`}>Add evidence</Title>
       <EvidenceForm
         key={formKey}
-        onSubmit={(values) => {
+        onSubmit={(values) =>
           // The parent checks the account, not the network or the sign-in.
-          if (gate.ready && !isSubmitting) onSubmit(values)
-        }}
+          gate.ready && !isSubmitting ? onSubmit(values) : undefined
+        }
         formID={formID}
         detailed
         variant="composer"
         actions={action}
         onDraftChange={setDrafted}
         blocked={disabled}
+        // While a piece is being sent its files are already going up, so
+        // the attachment is frozen rather than swapped under "Uploading…".
+        busy={!!isSubmitting}
       />
       {/* The button names the wallet step; this says it for screen readers,
           and in words when no single button clears it. While a piece is
