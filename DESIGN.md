@@ -280,8 +280,7 @@ Focus everywhere is a 2px `primary` outline, 2px out (inset inside clipping trac
 - `ActivityWave`: one series as a glowing area above a baseline with a live head at the newest
   point, a second series mirrored below as bars on its own labelled scale; scanner reveal; hover
   tooltip.
-- `reveal` (staggered entrance); `OrbitChart` in `components/curate/orbit-chart.tsx` (multi-segment
-  ring on crisp halos, no blur). Curves are monotone cubic, so they never overshoot the data.
+- `reveal` (staggered entrance). Curves are monotone cubic, so they never overshoot the data.
 - Easing `cubic-bezier(0.16, 1, 0.3, 1)` for entrances, `(0.2, 0.8, 0.2, 1)` for state changes,
   springs for indicators. All respect `prefers-reduced-motion`.
 

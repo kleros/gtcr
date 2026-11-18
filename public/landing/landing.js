@@ -314,7 +314,8 @@
 
   /*
    * Chain marks on a plate of their hue (as components/chain-logo.tsx), and
-   * each chain's data hue (as the dashboard: Gnosis viz-1, Ethereum viz-2).
+   * each chain's data hue (Gnosis viz-1, Ethereum viz-2), which this page
+   * keeps for its own chain figures.
    */
   const CHAIN_MARKS = {
     1: {
