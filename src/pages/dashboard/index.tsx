@@ -6,7 +6,6 @@ import useDocumentHead from 'hooks/use-document-head'
 import useNow from 'hooks/use-now'
 import { ipfsImageUrl } from 'utils/ipfs-parse'
 import { formatAgo } from 'utils/time'
-import { NETWORKS } from 'config/networks'
 import { CurateIcon } from 'components/curate/icons'
 import { useLaunchChainId } from 'components/layout/launch-chain'
 import ChainLogo from 'components/chain-logo'
@@ -26,9 +25,7 @@ import {
   TableScroller,
   VisuallyHidden,
   truncateMiddle,
-  NumberSkeleton,
 } from 'components/curate/primitives'
-import { OrbitChart } from 'components/curate/orbit-chart'
 import { ActivityWave } from 'components/curate/motion/activity-wave'
 import { Odometer } from 'components/curate/motion/odometer'
 import { AnimatedNumber } from 'components/curate/motion/animated-number'
@@ -50,12 +47,11 @@ import {
   isLiveLoad,
 } from './query'
 import { useSavedLoadsReady } from './saved-load'
-import {
-  HappeningNow,
-  type OpenListChip,
-  type RulingsView,
-} from './happening-now'
-import { BountiesBody, BountiesRing } from './bounties'
+import { Disputes, type RulingsView } from './happening-now'
+import { OpenForVerification } from './open-for-verification'
+import type { OpenListChip } from './board-rows'
+import { SectionHead, SectionTitle } from './section'
+import { VerificationRecord } from './bounties'
 import { VerifiedLists } from './verified-lists'
 import type {
   DashboardActivity,
@@ -75,7 +71,7 @@ import {
   registryHref,
   newestVerified,
   rulingCard,
-  scopedBounties,
+  scopedChallengeRecord,
   scopedFigures,
   scopedRulings,
   scopedSeries,
@@ -89,9 +85,19 @@ import {
 import { Avatar as ListLogo } from 'pages/browse/avatar'
 
 /*
- * Dashboard: a short statement, the entries per chain as the data hero, one
- * strip of live figures, what is open or in court right now, and the most
- * active registries and curators. Every figure comes from the indexers.
+ * Dashboard: a short statement, one strip of live figures over the 30-day
+ * wave, then the money anyone can go and claim (Open for verification), the
+ * Kleros Verified lists, what is in court, how the lists have held up, and
+ * the most active registries and curators. Every figure comes from the
+ * indexers or the chain.
+ *
+ * Each section that owns a file heads itself and holds its own skeletons
+ * (open-for-verification.tsx, bounties.tsx), so no heading waits on a load.
+ *
+ * Round 2, item 7: the "Entries by chain" ring is gone. On several chains
+ * it drew two segments whose leader the hero's own Entries figure already
+ * implied; on one chain it turned into "Entries by list" and repeated the
+ * Most active table's entries column. Nobody could act on either.
  */
 
 const integer = new Intl.NumberFormat('en-US')
@@ -106,23 +112,6 @@ const plural = (value: number, one: string, many: string) =>
 /** Rulings the Disputes box shows first, and how many more each "show more" adds. */
 const RULINGS_FIRST = 4
 const RULINGS_STEP = 8
-
-/*
- * Categorical colours, fixed per entity: chains always wear the same hue,
- * lists take them in rank order. None is a status colour (amber stays
- * "contested", green "registered").
- */
-const CHAIN_COLOR: Record<number, string> = {
-  [NETWORKS.gnosis]: 'var(--viz-1)',
-  [NETWORKS.ethereum]: 'var(--viz-2)',
-  [NETWORKS.sepolia]: 'var(--viz-3)',
-}
-const LIST_PALETTE = [
-  'var(--viz-1)',
-  'var(--viz-2)',
-  'var(--viz-3)',
-  'var(--viz-4)',
-]
 
 /**
  * The page's chain scopes: "All chains" (every mainnet; a testnet is never
@@ -378,127 +367,7 @@ const Big = styled.span<{ $hero?: boolean }>`
   font-variant-numeric: tabular-nums;
 `
 
-/*
- * Entries by chain, then Bounties won across the other two thirds. Below
- * 1180px a third is too narrow for the ring and its legend: the two stack.
- */
-const Gauges = styled.div`
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
-  gap: 16px;
-  margin-top: 16px;
-
-  @media (max-width: 1180px) {
-    grid-template-columns: 1fr;
-  }
-`
-
-const GaugeCard = styled(Surface)<{ $stack?: boolean }>`
-  display: flex;
-  align-items: center;
-  gap: 20px;
-  padding: 20px 22px;
-  ${reveal}
-
-  /* On phones the breakdown's legend gets the full width under its ring. */
-  @media (max-width: 520px) {
-    ${({ $stack }) =>
-      $stack
-        ? 'flex-direction: column; align-items: stretch; > figure { align-self: center; }'
-        : ''}
-  }
-
-  /* Each card is a section of its own: its title is an h2 (no h2 comes
-     before it on the page), set small. */
-  h2 {
-    margin: 0 0 6px;
-    color: var(--color-text);
-    font-family: var(--font-display);
-    font-size: 20px;
-    line-height: 24px;
-    font-weight: 500;
-    letter-spacing: -0.02em;
-  }
-`
-
-const Legend = styled.ul`
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  max-width: 400px;
-  margin: 10px 0 0;
-  padding: 0;
-  list-style: none;
-
-  li {
-    display: grid;
-    grid-template-columns: 8px minmax(0, 1fr) auto;
-    align-items: baseline;
-    column-gap: 8px;
-    color: var(--color-muted);
-    font-size: var(--fs-small);
-    line-height: var(--lh-small);
-  }
-
-  i {
-    flex: 0 0 8px;
-    width: 8px;
-    height: 8px;
-    border-radius: var(--radius-pill);
-    transform: translateY(-1px);
-  }
-
-  /* Two lines before the cut, so endings that tell lists apart stay. */
-  span {
-    display: -webkit-box;
-    overflow: hidden;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow-wrap: anywhere;
-  }
-
-  b {
-    color: var(--color-muted);
-    font-family: var(--font-figure);
-    font-weight: 400;
-    font-variant-numeric: tabular-nums;
-    text-align: right;
-  }
-`
-
 /* ---------- Sections ---------- */
-
-const SectionHead = styled.div`
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 16px;
-  margin: 80px 0 20px;
-`
-
-const SectionTitle = styled.h2`
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin: 0;
-  color: var(--color-text);
-  font-family: var(--font-display);
-  font-size: 30px;
-  line-height: 34px;
-  font-weight: 500;
-  letter-spacing: -0.03em;
-`
-
-const BoardSkeleton = styled.div`
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px;
-
-  @media (max-width: 900px) {
-    grid-template-columns: 1fr;
-  }
-`
 
 const Split = styled.div`
   display: grid;
@@ -919,9 +788,13 @@ const Dashboard = () => {
         : undefined,
   }
 
-  /** Bounties won, all time, per coin, in the page's scope. */
-  const bounties = useMemo(
-    () => (data ? scopedBounties(data, chains) : undefined),
+  /**
+   * How the lists have held up, all time, in the page's scope: how rarely a
+   * request is challenged at all, how the court ruled when one was, and the
+   * bounties the challengers took.
+   */
+  const record = useMemo(
+    () => (data ? scopedChallengeRecord(data, chains) : undefined),
     [data, chains],
   )
 
@@ -937,53 +810,6 @@ const Dashboard = () => {
     0,
   )
   const seriesChallenges = series.reduce((sum, d) => sum + d.challenges, 0)
-
-  /**
-   * The breakdown ring: across several chains it splits entries by chain;
-   * on one chain it splits them by list (top four, then the rest).
-   */
-  const breakdown = useMemo(() => {
-    if (chains.length > 1)
-      return {
-        title: 'Entries by chain',
-        segments: chains.map((chainId) => ({
-          key: String(chainId),
-          label: chainInfo(chainId)?.name ?? String(chainId),
-          color: CHAIN_COLOR[chainId] ?? 'var(--viz-4)',
-          value: scoped
-            .filter((r) => r.chainId === chainId)
-            .reduce((sum, r) => sum + entryCount(r), 0),
-        })),
-      }
-    const ranked = [...scoped].sort((a, b) => entryCount(b) - entryCount(a))
-    const top = ranked.slice(0, 4)
-    // Two lists with one name are told apart by their address.
-    const named = (title: string) =>
-      top.filter((other) => other.title === title).length > 1
-    const segments = top.map((r, index) => ({
-      key: r.id,
-      label: named(r.title)
-        ? `${r.title} · ${truncateMiddle(r.address)}`
-        : r.title,
-      color: LIST_PALETTE[index],
-      value: entryCount(r),
-    }))
-    const rest = ranked.slice(4).reduce((sum, r) => sum + entryCount(r), 0)
-    return {
-      title: 'Entries by list',
-      segments: rest
-        ? [
-            ...segments,
-            {
-              key: 'rest',
-              label: `${ranked.length - 4} other lists`,
-              color: 'var(--color-faint)',
-              value: rest,
-            },
-          ]
-        : segments,
-    }
-  }, [chains, scoped])
 
   const topRegistries = useMemo(
     () => sortRegistries(scoped, 'activity').slice(0, 8),
@@ -1057,23 +883,6 @@ const Dashboard = () => {
     .map((id) => chainInfo(id)?.name ?? String(id))
     .join(' and ')
   const unanswered = figuresUnknown && scoped.length === 0
-  // A chain whose lists did not load has no count in the breakdown.
-  const segmentUnknown = (key: string) =>
-    figuresUnknown &&
-    (chains.length === 1 || listsMissing.includes(Number(key)))
-
-  const breakdownTotal = breakdown.segments.reduce(
-    (sum, seg) => sum + seg.value,
-    0,
-  )
-  // The centre names the biggest list by name ("other lists" is not one).
-  const leader = [...breakdown.segments]
-    .filter((seg) => seg.key !== 'rest' && seg.value > 0)
-    .sort((a, b) => b.value - a.value)[0]
-  const leading =
-    !figuresUnknown && breakdownTotal && leader
-      ? { label: leader.label, share: leader.value / breakdownTotal }
-      : undefined
 
   const testnet = chain !== 'all' && TESTNET_CHAIN_IDS.includes(chain)
   // Chains in this scope whose indexer did not answer: their figures are missing.
@@ -1252,67 +1061,24 @@ const Dashboard = () => {
         )}
       </Featured>
 
-      <Gauges>
-        <GaugeCard $padding="none" $stack style={{ ['--i' as string]: 5 }}>
-          {loading ? (
-            <SkeletonBlock
-              $width="148px"
-              $height="148px"
-              style={{ borderRadius: '50%' }}
-            />
-          ) : (
-            <OrbitChart
-              key={chains.join('-')}
-              // Shares of a total that misses a chain's lists would mislead:
-              // no arcs until they load.
-              segments={figuresUnknown ? [] : breakdown.segments}
-              total={leading ? `${Math.round(leading.share * 100)}%` : '—'}
-              caption={
-                leading
-                  ? `in ${leading.label}`
-                  : figuresUnknown
-                    ? 'did not load'
-                    : 'No entries'
-              }
-              ariaLabel={
-                figuresUnknown
-                  ? `${breakdown.title}: the ${missingNames} lists did not load`
-                  : `${breakdown.title}: ${breakdown.segments
-                      .map(
-                        (seg) =>
-                          `${seg.label} ${formatInt(seg.value)} (${breakdownTotal ? Math.round((seg.value / breakdownTotal) * 100) : 0}%)`,
-                      )
-                      .join(', ')}`
-              }
-              size={168}
-            />
-          )}
-          <div style={{ minWidth: 0, flex: 1 }}>
-            <h2>{breakdown.title}</h2>
-            <Legend aria-label={breakdown.title}>
-              {breakdown.segments.map((seg) => (
-                <li key={seg.key}>
-                  <i style={{ background: seg.color }} aria-hidden />
-                  <span title={seg.label}>{seg.label}</span>
-                  <b>
-                    {loading ? (
-                      <NumberSkeleton />
-                    ) : segmentUnknown(seg.key) ? (
-                      '—'
-                    ) : (
-                      formatInt(seg.value)
-                    )}
-                  </b>
-                </li>
-              ))}
-            </Legend>
-          </div>
-        </GaugeCard>
-        <GaugeCard $padding="none" $stack style={{ ['--i' as string]: 6 }}>
-          <BountiesRing bounties={bounties} ringKey={`b-${chains.join('-')}`} />
-          <BountiesBody bounties={bounties} />
-        </GaugeCard>
-      </Gauges>
+      {/*
+        The live money, in the slot the two share-of-total rings held. The
+        band heads itself and holds its own skeletons, so the page's biggest
+        moment keeps its heading from the first paint.
+      */}
+      <OpenForVerification
+        open={board.open}
+        openLists={board.openLists}
+        figures={figures}
+        now={now}
+        checking={checkingWindows}
+        unloaded={partialNames || undefined}
+        stakeHref={
+          scoped.some((registry) => registry.kind === 'permanent')
+            ? browseHref('trust=all&kind=permanent')
+            : undefined
+        }
+      />
 
       <VerifiedLists
         lists={verifiedLists}
@@ -1326,27 +1092,27 @@ const Dashboard = () => {
         <SectionTitle>Happening now</SectionTitle>
       </SectionHead>
       {loading || !figures ? (
-        <BoardSkeleton>
-          <SkeletonBlock $height="380px" />
-          <SkeletonBlock $height="380px" />
-        </BoardSkeleton>
+        <SkeletonBlock $height="380px" />
       ) : (
-        <HappeningNow
-          open={board.open}
+        <Disputes
           live={board.live}
           rulings={rulings}
           figures={figures}
-          openLists={board.openLists}
           now={now}
-          checking={checkingWindows}
           unloaded={partialNames || undefined}
-          stakeHref={
-            scoped.some((registry) => registry.kind === 'permanent')
-              ? browseHref('trust=all&kind=permanent')
-              : undefined
-          }
         />
       )}
+
+      {/*
+        All time, under its own heading: it used to share "Happening now"
+        with the live disputes while its own label read "All time".
+      */}
+      <VerificationRecord
+        record={record}
+        // Entries now, against challenges all time: a chain whose lists did
+        // not load leaves the comparison off rather than low.
+        entries={figuresUnknown ? undefined : figures?.entries}
+      />
 
       <SectionHead>
         <SectionTitle>Most active</SectionTitle>

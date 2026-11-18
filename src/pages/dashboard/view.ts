@@ -288,6 +288,37 @@ export const scopedBounties = (data: DashboardData, chains: number[]) => {
 }
 
 /**
+ * What the lists' verification record adds up to in a scope of chains: the
+ * bounties above, plus how often anyone has disputed a request at all.
+ *
+ * Windows, said once: entries are what the lists hold today, while
+ * challenges and rulings are all time and never windowed. `challenged` is
+ * every request someone disputed — the disputes the court has closed (the
+ * ledger) plus the ones open right now — counted on `loaded` chains alone,
+ * so one chain's open disputes are never added to another chain's missing
+ * ledger. It reads as a lower bound ("n+") when `challengedPartial`.
+ */
+export const scopedChallengeRecord = (
+  data: DashboardData,
+  chains: number[],
+) => {
+  const bounties = scopedBounties(data, chains)
+  const openDisputes = data.openDisputes.filter((activity) =>
+    bounties.loaded.includes(activity.chainId),
+  ).length
+  return {
+    ...bounties,
+    /** Requests anyone has disputed, all time: the rulings plus the open disputes. */
+    challenged: bounties.rulings + openDisputes,
+    /** A ledger capped, an open-dispute read at its limit, or a chain missing. */
+    challengedPartial:
+      bounties.capped ||
+      bounties.loaded.some((chainId) => !!data.openDisputesCapped?.[chainId]) ||
+      bounties.missing.length > 0,
+  }
+}
+
+/**
  * Bounties won per challenger (lowercase address), all time, in a scope of
  * chains: how many of their challenges the court ruled for them.
  */
