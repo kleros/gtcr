@@ -5,6 +5,7 @@ import { BigNumber } from 'ethers'
 import { STALE_TIME } from 'consts'
 import { useGraphqlBatcher } from 'contexts/graphql-batcher'
 import { stakeEntryStatus } from './entry-status'
+import { entryName } from './registry-entry-name'
 import type { StatusTone } from './primitives'
 import type { V2Field } from './v2'
 
@@ -143,34 +144,6 @@ const num = (value: unknown): number => {
   return Number.isFinite(n) ? n : 0
 }
 
-const isTextType = (type?: string) =>
-  !type || ['text', 'long text', 'address', 'rich address'].includes(type)
-
-const isNamingType = (type?: string) =>
-  !type || !['image', 'file', 'boolean', 'link'].includes(type)
-
-/**
- * The entry's name, as the table's first column shows it: its first
- * identifying field (a bare number keeps its label, "Agent number 1143"),
- * else its first text field.
- */
-const entryName = (item: SummaryItem): string | undefined => {
-  const props = (item.metadata?.props ?? []).filter(
-    (prop) =>
-      prop.value !== undefined &&
-      prop.value !== null &&
-      typeof prop.value !== 'object' &&
-      String(prop.value).trim() !== '',
-  )
-  const pick =
-    props.find(
-      (prop) => prop.isIdentifier && isNamingType(prop.type?.toLowerCase()),
-    ) ?? props.find((prop) => isTextType(prop.type?.toLowerCase()))
-  if (!pick) return undefined
-  const value = String(pick.value).trim()
-  return /^\d+$/.test(value) && pick.label ? `${pick.label} ${value}` : value
-}
-
 const bucketOf = (status: string): StakeBucket =>
   status === 'Disputed'
     ? 'disputed'
@@ -265,7 +238,7 @@ const summarize = (
 
     return {
       id: item.itemID,
-      name: entryName(item),
+      name: entryName(item.metadata?.props),
       tone: status?.tone ?? (bucket === 'absent' ? 'off' : undefined),
       statusCode: status?.code,
       statusLabel: status?.label,

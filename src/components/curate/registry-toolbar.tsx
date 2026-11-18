@@ -1,12 +1,13 @@
 import React, { useId, useLayoutEffect, useRef, useState } from 'react'
 import styled from 'styled-components'
-import { LAYOUT_OPTIONS, type ListLayout } from 'hooks/use-stored-layout'
+import type { ListLayout } from 'hooks/use-stored-layout'
 import Switch from 'components/ui/Switch'
 import {
   SearchField,
   SegmentedControl,
   StatusDot,
   ToggleGroup,
+  type SegmentOption,
   type StatusTone,
 } from './primitives'
 import { CurateIcon } from './icons'
@@ -17,7 +18,8 @@ import { CurateIcon } from './icons'
  * sliding segmented controls, and the status filters under them as one
  * ToggleGroup (multi-select; each pressed status sits on its own lit thumb,
  * led by its status dot). Where the track is wider than the column it
- * scrolls sideways under a fade.
+ * scrolls sideways under a fade. Which layouts the track offers is the
+ * page's to say (`layoutOptions`): the registry pages dropped Rows.
  */
 
 const integer = new Intl.NumberFormat('en-US')
@@ -209,7 +211,7 @@ export const scrollToToolbar = (toolbar: HTMLElement | null) => {
   })
 }
 
-export const RegistryToolbar = ({
+export function RegistryToolbar<L extends ListLayout>({
   search,
   onSearch,
   placeholder,
@@ -219,6 +221,7 @@ export const RegistryToolbar = ({
   onSortChange,
   layout,
   onLayoutChange,
+  layoutOptions,
   nsfwFilter,
   onNsfwChange,
   shown,
@@ -231,15 +234,17 @@ export const RegistryToolbar = ({
   onChipChange: (key: string, checked: boolean) => void
   sort: 'newest' | 'oldest'
   onSortChange: (sort: 'newest' | 'oldest') => void
-  layout: ListLayout
-  onLayoutChange: (layout: ListLayout) => void
+  layout: L
+  onLayoutChange: (layout: L) => void
+  /** The layouts this page offers, in the order the track shows them. */
+  layoutOptions: SegmentOption<L>[]
   nsfwFilter: boolean
   onNsfwChange: (checked: boolean) => void
   /** Entries shown; undefined while the list or its counts load. */
   shown?: number
   /** Entries the filters cover; undefined while unknown. */
   total?: number
-}) => {
+}) {
   const nsfwLabelId = useId()
   const [rail, railOverflows] = useOverflow()
   // Nothing is counted until both figures are known: a loading list never
@@ -283,11 +288,11 @@ export const RegistryToolbar = ({
         />
       </Slot>
       <Slot $area="layout">
-        <SegmentedControl
+        <SegmentedControl<L>
           ariaLabel="Layout"
           value={layout}
           onChange={onLayoutChange}
-          options={LAYOUT_OPTIONS}
+          options={layoutOptions}
         />
       </Slot>
       <RailScroller ref={rail} data-overflow={railOverflows ? '' : undefined}>

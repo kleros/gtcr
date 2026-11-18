@@ -65,11 +65,8 @@ import {
   Button,
   Data,
   EmptyState,
-  Grid,
   Page,
-  SkeletonBlock,
   Small,
-  Stack,
   Surface,
   truncateMiddle,
 } from 'components/curate/primitives'
@@ -77,7 +74,11 @@ import { CurateIcon } from 'components/curate/icons'
 import { useStakeSummary } from 'components/curate/registry-stake-summary'
 import type { StakeLane } from 'components/curate/registry-stake-summary'
 import { StakeInsights } from 'components/curate/registry-stake-insights'
-import { useRegistryLayout } from 'components/curate/registry-shared-layout'
+import { RegistryListSkeleton } from 'components/curate/registry-standard-states'
+import {
+  REGISTRY_LAYOUT_OPTIONS,
+  useRegistryLayout,
+} from 'components/curate/registry-shared-layout'
 import { useRegistryVerified } from 'components/curate/registry-shared-verified'
 import {
   listSearchFrom,
@@ -1023,6 +1024,7 @@ const StakeRegistry = () => {
           }
           layout={layout}
           onLayoutChange={setLayout}
+          layoutOptions={REGISTRY_LAYOUT_OPTIONS}
           nsfwFilter={nsfwFilterOn}
           onNsfwChange={toggleNsfwFilter}
           shown={countUnknown ? undefined : entries.length}
@@ -1044,19 +1046,7 @@ const StakeRegistry = () => {
         aria-busy={itemsLoading}
       >
         {itemsLoading ? (
-          layout === 'cards' ? (
-            <Grid $min={260}>
-              {Array.from({ length: 6 }).map((_, index) => (
-                <SkeletonBlock key={index} $height="180px" />
-              ))}
-            </Grid>
-          ) : (
-            <Stack $gap={8}>
-              {Array.from({ length: 6 }).map((_, index) => (
-                <SkeletonBlock key={index} $height="56px" />
-              ))}
-            </Stack>
-          )
+          <RegistryListSkeleton layout={layout} />
         ) : itemsQuery.isError && !itemsQuery.data ? (
           <Surface $padding="none">
             <EmptyState

@@ -1,4 +1,10 @@
-import React, { useMemo } from 'react'
+import React, {
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 import styled, { css } from 'styled-components'
 import { inkPlate, PlatedImg } from 'components/curate/logo-ink'
 import { Link, useNavigate } from 'react-router-dom'
@@ -7,7 +13,7 @@ import { displayableValue } from 'utils/display-value'
 import DisplaySelector from 'components/display-selector'
 import { parseIpfs } from 'utils/ipfs-parse'
 import { isSafeNavigationUrl } from 'utils/url-validation'
-import type { ListLayout } from 'hooks/use-stored-layout'
+import { edgeTransition, litEdgeBackground } from 'components/ui/kit-styles'
 import {
   Button,
   EmptyState,
@@ -17,7 +23,6 @@ import {
   StatusDot,
   Surface,
   Table,
-  TableScroller,
   VisuallyHidden,
 } from './primitives'
 import { CurateIcon } from './icons'
@@ -25,17 +30,20 @@ import { reveal } from './motion/reveal'
 import type { V2Field } from './v2'
 import { V2FieldDisplay } from './v2'
 import { EntryStatus, type EntryStatusView } from './entry-status'
+import type { RegistryLayout } from './registry-shared-layout'
 import { VerifiedBadge } from './verified-badge'
 
 /*
- * Entries of a registry in the user's chosen layout: rows (YMax suggestion
- * rows: identity left, status and time left right), a refined table (the
- * identifying column, then the status, so the time left is always in view),
- * or cards with the image field as a cover. Fields render by type through
- * DisplaySelector; the status is a dot, a label, the time left and, while a
- * window runs, a track of that window with now and the deadline on it. Rows
- * and cards are one big link with the field links lifted above it, so
- * nothing nests.
+ * Entries of a registry in the user's chosen layout: a table on its own
+ * glass panel (the identifying column, then the status, so the time left is
+ * always in view; its heading row sticks under the app bar while the table
+ * fits, and once it is too wide the identifying column pins instead while
+ * the rest scrolls sideways), or cards with
+ * the image field as a cover and the house lit edge on hover. Fields render
+ * by type through DisplaySelector; the status is a dot, a label, the time
+ * left and, while a window runs, a track of that window with now and the
+ * deadline on it. A card is one big link with the field links lifted above
+ * it, so nothing nests.
  */
 
 /** A page elsewhere that a value stands for, opened in a new tab. */
@@ -88,6 +96,8 @@ const isBareAddress = (field: V2Field) =>
   [ItemTypes.ADDRESS, ItemTypes.RICH_ADDRESS]
     .map(normalizeType)
     .includes(normalizeType(field.type))
+const isNumber = (field: V2Field) =>
+  normalizeType(field.type) === normalizeType(ItemTypes.NUMBER)
 const isPlainText = (field: V2Field) =>
   [ItemTypes.TEXT, ItemTypes.LONG_TEXT, 'text', 'long text']
     .map(normalizeType)
@@ -149,7 +159,7 @@ const splitColumns = (columns: V2Field[]) => {
 /**
  * The table's first column: the list's own first one, unless that is a bare
  * address and one of the list's text identifiers names the entry (a token's
- * name, a contract's tag), which then leads, as in rows and cards. Any other
+ * name, a contract's tag), which then leads, as in the cards. Any other
  * first column (a link, a number, a list) stays, as a text column after it
  * may hold a hash or a key, and so do columns a page adds (a Seer market's
  * question, a Stake entry's stake).
@@ -474,170 +484,8 @@ const OpenList = styled(Link)`
   }
 `
 
-/* ---------- Rows ---------- */
-
-const RowList = styled.ul`
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-`
-
-const RowItem = styled.li<{ $thumb: boolean }>`
-  position: relative;
-  display: grid;
-  grid-template-columns: ${({ $thumb }) =>
-    $thumb ? '44px minmax(0, 1fr) auto auto' : 'minmax(0, 1fr) auto auto'};
-  align-items: center;
-  gap: 16px;
-  min-height: 72px;
-  padding: 14px 16px 14px ${({ $thumb }) => ($thumb ? '14px' : '20px')};
-  border: 1px solid var(--glass-border);
-  border-radius: 12px;
-  background: var(--color-raised);
-  box-shadow: inset 0 1px 0 var(--glass-highlight);
-  transition:
-    transform var(--motion),
-    border-color var(--motion),
-    box-shadow var(--motion);
-  ${reveal}
-  /* The entrance must not hold its last frame, or it pins the transform and
-     the hover lift never shows. */
-  animation-fill-mode: backwards;
-  ${lifted}
-
-  &:hover {
-    transform: translateY(-1px);
-    border-color: var(--color-border-strong);
-    box-shadow:
-      inset 0 1px 0 var(--glass-highlight),
-      var(--shadow-card-hover);
-  }
-
-  &:hover [data-chevron] {
-    color: var(--color-text);
-    border-color: var(--color-border-strong);
-    transform: translateX(2px);
-  }
-
-  @media (max-width: 720px) {
-    grid-template-columns: ${({ $thumb }) =>
-      $thumb ? '44px minmax(0, 1fr)' : 'minmax(0, 1fr)'};
-    gap: 12px 14px;
-    padding: 14px;
-
-    > [data-side] {
-      grid-column: ${({ $thumb }) => ($thumb ? '2' : '1')} / -1;
-    }
-
-    > [data-chevron] {
-      display: none;
-    }
-  }
-`
-
-const RowText = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  min-width: 0;
-`
-
-const RowTitle = styled.div`
-  overflow: hidden;
-  color: var(--color-text);
-  font-size: 15px;
-  line-height: 22px;
-  font-weight: 500;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  ${insetFocus}
-`
-
-const RowMeta = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 6px 10px;
-  min-width: 0;
-  overflow: hidden;
-  color: var(--color-muted);
-  font-size: var(--fs-small);
-  line-height: var(--lh-small);
-  white-space: nowrap;
-  ${insetFocus}
-
-  > span {
-    display: inline-flex;
-    align-items: center;
-    min-width: 0;
-    max-width: 280px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  > span > * {
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  > span + span::before {
-    content: '·';
-    margin-right: 10px;
-    color: var(--color-faint);
-  }
-
-  @media (max-width: 720px) {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0;
-
-    /* Stacked, each line is its own 24px tap target. */
-    > span {
-      max-width: 100%;
-      min-height: 24px;
-    }
-
-    a {
-      display: inline-flex;
-      align-items: center;
-      min-height: 24px;
-    }
-
-    > span + span::before {
-      content: none;
-    }
-  }
-`
-
-const RowSide = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 12px;
-  min-width: 0;
-
-  @media (max-width: 720px) {
-    justify-content: space-between;
-  }
-`
-
-/* A fixed slot so every row's status and hairline line up. */
-const StatusBox = styled.div`
-  width: 248px;
-  min-width: 0;
-
-  > span {
-    width: 100%;
-  }
-
-  @media (max-width: 720px) {
-    width: auto;
-    flex: 1 1 auto;
-  }
-`
-
+/* The open affordance a card carries in its footer: it slides and lights
+   when the card does. */
 const Chevron = styled.span`
   display: inline-flex;
   align-items: center;
@@ -657,94 +505,6 @@ const Chevron = styled.span`
   }
 `
 
-const EntryRows = ({
-  entries,
-  columns,
-  now,
-  itemName,
-}: {
-  entries: EntryRow[]
-  columns: V2Field[]
-  now: number
-  itemName: string
-}) => {
-  const { title, meta } = splitColumns(columns)
-  // The avatar is the entry's own image field, wherever it sits in the schema.
-  const listHasImages = entries.some((entry) =>
-    entry.fields.some((field) => isImage(field) && hasValue(field)),
-  )
-  return (
-    <RowList>
-      {entries.map((entry, index) => {
-        const titleField = title ? fieldFor(entry, title) : undefined
-        const image = entry.fields.find(
-          (field) => isImage(field) && hasValue(field),
-        )
-        const name = textOf(titleField)
-        return (
-          <RowItem
-            key={entry.id}
-            $thumb={listHasImages}
-            style={{ ['--i' as string]: Math.min(index, 12) }}
-          >
-            <Overlay
-              to={entry.href}
-              aria-label={openLabel(entry, itemName, name)}
-            />
-            {listHasImages &&
-              (image && !entry.hidden ? (
-                <Thumb
-                  $size={44}
-                  src={parseIpfs(String(image.value))}
-                  alt=""
-                  loading="lazy"
-                />
-              ) : (
-                <ThumbSlot aria-hidden />
-              ))}
-            {entry.hidden || entry.problem ? (
-              <FieldsNotice entry={entry} />
-            ) : (
-              <RowText>
-                <RowTitle>
-                  <TitleValue
-                    entry={entry}
-                    field={titleField}
-                    link={outLinkFor(entry, title)}
-                  />
-                </RowTitle>
-                {meta.length > 0 && (
-                  <RowMeta>
-                    {meta.map((column) => (
-                      <span key={column.label} title={column.label}>
-                        <FieldValue
-                          field={fieldFor(entry, column)}
-                          link={outLinkFor(entry, column)}
-                        />
-                      </span>
-                    ))}
-                  </RowMeta>
-                )}
-              </RowText>
-            )}
-            <RowSide data-side>
-              <StatusBox>
-                <StatusSlot entry={entry} now={now} />
-              </StatusBox>
-              {entry.openListTo && (
-                <OpenList to={entry.openListTo}>Open list</OpenList>
-              )}
-            </RowSide>
-            <Chevron data-chevron aria-hidden>
-              <CurateIcon name="chevron-down" size={14} />
-            </Chevron>
-          </RowItem>
-        )
-      })}
-    </RowList>
-  )
-}
-
 /* ---------- Table ---------- */
 
 /* Column widths: the identifying column keeps room for a chain label and a
@@ -758,13 +518,135 @@ const FIELD_WIDTH = 170
 const LIST_WIDTH = 124
 const OPEN_WIDTH = 52
 
+/* The table's own panel: the surface, the hairline, the 1px top highlight
+   and the card shadow every other surface on the page carries. */
+const TableShell = styled.div`
+  position: relative;
+  width: 100%;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow:
+    inset 0 1px 0 var(--glass-highlight),
+    var(--shadow-card);
+`
+
+const TableBox = styled.div`
+  width: 100%;
+  border-radius: inherit;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+
+  /* A table that fits must not be a scrollport, or its heading row cannot
+     stick against the page: overflow-x auto makes overflow-y compute to
+     auto, and this box never scrolls down. The consequence is deliberate
+     and not a bug to "fix": a table too wide for its column keeps the
+     scroller, so its heading travels with the table rather than parking
+     under the app bar, and the pinned identifying column is what carries
+     the reader instead. Both behaviours at once would mean a second
+     heading element outside the scroller, mirroring every column width. */
+  &[data-fits] {
+    overflow-x: visible;
+  }
+`
+
+/**
+ * Whether the table fits its column, and whether it has been scrolled
+ * sideways. While it fits, the heading row sticks under the app bar; once it
+ * does not, the identifying column pins instead and lights its edge as soon
+ * as something has scrolled under it.
+ */
+const useTableFit = (minWidth: number) => {
+  const box = useRef<HTMLDivElement>(null)
+  const [fits, setFits] = useState(true)
+  const [scrolled, setScrolled] = useState(false)
+  useLayoutEffect(() => {
+    const node = box.current
+    if (!node) return undefined
+    const measure = () => setFits(node.clientWidth >= minWidth)
+    measure()
+    if (typeof ResizeObserver === 'undefined') return undefined
+    const observer = new ResizeObserver(measure)
+    observer.observe(node)
+    return () => observer.disconnect()
+  }, [minWidth])
+  // One rAF-coalesced listener: hundreds of rows must not pay for a scroll.
+  useEffect(() => {
+    const node = box.current
+    if (!node) return undefined
+    let frame = 0
+    const onScroll = () => {
+      if (frame) return
+      frame = requestAnimationFrame(() => {
+        frame = 0
+        setScrolled(node.scrollLeft > 0)
+      })
+    }
+    node.addEventListener('scroll', onScroll, { passive: true })
+    return () => {
+      node.removeEventListener('scroll', onScroll)
+      if (frame) cancelAnimationFrame(frame)
+    }
+  }, [])
+  return { box, fits, scrolled }
+}
+
 const EntryTableEl = styled(Table)`
   /* Fixed layout: field columns share the room, so Status always fits. */
   table-layout: fixed;
 
-  thead th {
+  /* Doubled, so they beat the table primitive's own declarations: sticky
+     cells need separated borders, and separating them is what carries the
+     heading's hairline with it as the rows pass under. */
+  && {
+    border-collapse: separate;
+    border-spacing: 0;
+  }
+
+  && thead th {
+    /* On glass the rows cannot show through: the raised tint and a top
+       sheen over the panel's own surface. Parking it under the app bar is
+       the next rule's job, since only one of the two scrollports can
+       carry it. */
+    z-index: 2;
     overflow: hidden;
     text-overflow: ellipsis;
+    background:
+      linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--glass-highlight) 40%, transparent),
+        transparent 70%
+      ),
+      linear-gradient(var(--color-raised), var(--color-raised)),
+      var(--color-surface);
+  }
+
+  /*
+   * The heading parks under the app bar only where the table fits, and the
+   * page is what scrolls. Inside the sideways scroller the box is the
+   * nearest scrollport and never scrolls down, so the same offset would
+   * push the heading down over the first rows instead of pinning it: there
+   * it keeps the primitive's own top of 0 and travels with the table.
+   */
+  [data-fits] > && thead th {
+    top: var(--app-bar-height);
+  }
+
+  /* The panel's corners stay round: no cell paints over them. */
+  thead th:first-child {
+    border-top-left-radius: var(--radius-lg);
+  }
+
+  thead th:last-child {
+    border-top-right-radius: var(--radius-lg);
+  }
+
+  tbody tr:last-child td:first-child {
+    border-bottom-left-radius: var(--radius-lg);
+  }
+
+  tbody tr:last-child td:last-child {
+    border-bottom-right-radius: var(--radius-lg);
   }
 
   tbody td {
@@ -784,7 +666,7 @@ const EntryTableEl = styled(Table)`
   }
 
   /* One identifying column and nothing else: it takes the spare room, so
-     the status sits at the right beside the open chevron, as in Rows. */
+     the status sits at the right beside the open chevron. */
   @media (min-width: 721px) {
     th.lead.solo {
       width: auto;
@@ -841,13 +723,57 @@ const EntryTableEl = styled(Table)`
     font-weight: 500;
   }
 
+  /* Amounts and counts line up down their column. */
   tbody td {
-    transition: background var(--motion);
+    font-variant-numeric: tabular-nums;
+    transition:
+      background var(--motion),
+      box-shadow var(--motion);
+  }
+
+  /* Hover lights the row's leading edge, as the controls light theirs; the
+     raised tint behind it comes from the table itself. */
+  tbody tr[data-href]:hover td:first-child {
+    box-shadow:
+      inset 2px 0 0 var(--edge-2),
+      inset 14px 0 20px -16px var(--edge-2);
   }
 
   tbody tr[data-href]:hover td:last-child a {
     color: var(--color-text);
     transform: translateX(2px);
+  }
+
+  /* Sideways: the identifying column stays put over the panel's surface, so
+     the columns passing under it never show through, and draws its edge
+     once something has. */
+  @media (min-width: 721px) {
+    &[data-pinned] thead th:first-child,
+    &[data-pinned] tbody td:first-child {
+      position: sticky;
+      left: 0;
+      border-right: 1px solid transparent;
+    }
+
+    &[data-pinned] tbody td:first-child {
+      z-index: 1;
+      background: var(--color-surface);
+    }
+
+    &[data-pinned] thead th:first-child {
+      z-index: 3;
+    }
+
+    &[data-pinned] tbody tr[data-href]:hover td:first-child {
+      background:
+        linear-gradient(var(--color-raised), var(--color-raised)),
+        var(--color-surface);
+    }
+
+    &[data-pinned][data-scrolled] thead th:first-child,
+    &[data-pinned][data-scrolled] tbody td:first-child {
+      border-right-color: var(--glass-border);
+    }
   }
 
   td.open {
@@ -870,6 +796,16 @@ const EntryTableEl = styled(Table)`
 
   td.open svg {
     transform: rotate(-90deg);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    tbody td {
+      transition: none;
+    }
+
+    tbody tr[data-href]:hover td:last-child a {
+      transform: none;
+    }
   }
 `
 
@@ -912,6 +848,7 @@ const EntryTable = ({
 }) => {
   const navigate = useNavigate()
   const labelOf = useColumnLabels(columns)
+
   // Each row's open link carries its entry's name, so a links list tells
   // the rows apart (a hidden entry stays generic).
   const { title } = splitColumns(columns)
@@ -930,7 +867,7 @@ const EntryTable = ({
     (column) => column !== lead && !(thumbs && isImage(column)),
   )
   // Lists of lists open the registry each entry points to from a column of
-  // its own, beside the entry's chevron, as rows and cards offer it.
+  // its own, beside the entry's chevron, as the cards offer it.
   const opensLists = entries.some((entry) => !!entry.openListTo)
   const minWidth =
     (lead
@@ -942,6 +879,7 @@ const EntryTable = ({
     others.length * FIELD_WIDTH +
     (opensLists ? LIST_WIDTH : 0) +
     OPEN_WIDTH
+  const { box, fits, scrolled } = useTableFit(minWidth)
   // A hidden or unreadable entry's notice goes in the field cells it blanks
   // out; only a list with no other field puts it in the identifying cell.
   const noticeInLead = !!lead && others.length === 0
@@ -954,7 +892,7 @@ const EntryTable = ({
     .filter(Boolean)
     .join(' ')
   const cell = (entry: EntryRow, column: V2Field) => (
-    <td key={column.label}>
+    <td key={column.label} className={isNumber(column) ? 'num' : undefined}>
       <CellValue>
         <FieldValue
           field={fieldFor(entry, column)}
@@ -1002,113 +940,160 @@ const EntryTable = ({
     )
   }
   return (
-    <TableScroller>
-      <EntryTableEl style={{ minWidth }}>
-        <thead>
-          <tr>
-            {lead && (
-              <th className={leadClass} title={labelOf(lead)}>
-                {labelOf(lead)}
+    <TableShell>
+      <TableBox ref={box} data-fits={fits ? '' : undefined}>
+        <EntryTableEl
+          style={{ minWidth }}
+          data-pinned={fits ? undefined : ''}
+          data-scrolled={scrolled ? '' : undefined}
+        >
+          <thead>
+            <tr>
+              {lead && (
+                <th className={leadClass} title={labelOf(lead)}>
+                  {labelOf(lead)}
+                </th>
+              )}
+              <th className="status">Status</th>
+              {others.map((column) => (
+                <th
+                  key={column.label}
+                  className={isNumber(column) ? 'num' : undefined}
+                  title={labelOf(column)}
+                >
+                  {labelOf(column)}
+                </th>
+              ))}
+              {/* Headed for screen readers only: the cells hold links. */}
+              {opensLists && (
+                <th className="list">
+                  <VisuallyHidden>Open list</VisuallyHidden>
+                </th>
+              )}
+              <th className="open">
+                <VisuallyHidden>Open</VisuallyHidden>
               </th>
-            )}
-            <th className="status">Status</th>
-            {others.map((column) => (
-              <th key={column.label} title={labelOf(column)}>
-                {labelOf(column)}
-              </th>
-            ))}
-            {/* Headed for screen readers only: the cells hold links. */}
-            {opensLists && (
-              <th className="list">
-                <VisuallyHidden>Open list</VisuallyHidden>
-              </th>
-            )}
-            <th className="open">
-              <VisuallyHidden>Open</VisuallyHidden>
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {entries.map((entry, index) => {
-            const name = title ? textOf(fieldFor(entry, title)) : undefined
-            const blank = entry.hidden || !!entry.problem
-            return (
-              <tr
-                key={entry.id}
-                data-href={entry.href}
-                style={{ ['--i' as string]: Math.min(index, 12) }}
-                onClick={(event) => {
-                  if ((event.target as HTMLElement).closest('a, button')) return
-                  navigate(entry.href)
-                }}
-              >
-                {leadCell(entry, blank)}
-                <td className="status">
-                  <StatusSlot entry={entry} now={now} />
-                </td>
-                {blank
-                  ? others.length > 0 && (
-                      <td colSpan={others.length}>
-                        {!noticeInLead && <FieldsNotice entry={entry} />}
-                      </td>
-                    )
-                  : others.map((column) => cell(entry, column))}
-                {opensLists && (
-                  <td className="list">
-                    {entry.openListTo && (
-                      <OpenList to={entry.openListTo}>Open list</OpenList>
-                    )}
+            </tr>
+          </thead>
+          <tbody>
+            {entries.map((entry, index) => {
+              const name = title ? textOf(fieldFor(entry, title)) : undefined
+              const blank = entry.hidden || !!entry.problem
+              return (
+                <tr
+                  key={entry.id}
+                  data-href={entry.href}
+                  style={{ ['--i' as string]: Math.min(index, 12) }}
+                  onClick={(event) => {
+                    if ((event.target as HTMLElement).closest('a, button'))
+                      return
+                    navigate(entry.href)
+                  }}
+                >
+                  {leadCell(entry, blank)}
+                  <td className="status">
+                    <StatusSlot entry={entry} now={now} />
                   </td>
-                )}
-                <td className="open">
-                  <Link
-                    to={entry.href}
-                    aria-label={openLabel(entry, itemName, name)}
-                  >
-                    <CurateIcon name="chevron-down" size={14} />
-                  </Link>
-                </td>
-              </tr>
-            )
-          })}
-        </tbody>
-      </EntryTableEl>
-    </TableScroller>
+                  {blank
+                    ? others.length > 0 && (
+                        <td colSpan={others.length}>
+                          {!noticeInLead && <FieldsNotice entry={entry} />}
+                        </td>
+                      )
+                    : others.map((column) => cell(entry, column))}
+                  {opensLists && (
+                    <td className="list">
+                      {entry.openListTo && (
+                        <OpenList to={entry.openListTo}>Open list</OpenList>
+                      )}
+                    </td>
+                  )}
+                  <td className="open">
+                    <Link
+                      to={entry.href}
+                      aria-label={openLabel(entry, itemName, name)}
+                    >
+                      <CurateIcon name="chevron-down" size={14} />
+                    </Link>
+                  </td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </EntryTableEl>
+      </TableBox>
+    </TableShell>
   )
 }
 
 /* ---------- Cards ---------- */
 
 const Card = styled.article`
+  /* Declared here, so the edge survives a browser without @property. */
+  --edge-angle: 210deg;
   position: relative;
   display: flex;
   flex-direction: column;
   min-width: 0;
   overflow: hidden;
-  border: 1px solid var(--glass-border);
+  /* The hairline is drawn in the border box, so hover can swap it for the
+     app's lit edge without the card moving. */
+  border: 1px solid transparent;
   border-radius: var(--radius-lg);
-  background: var(--color-surface);
+  background:
+    linear-gradient(var(--color-surface), var(--color-surface)) padding-box,
+    linear-gradient(var(--glass-border), var(--glass-border)) border-box;
   box-shadow:
     inset 0 1px 0 var(--glass-highlight),
     var(--shadow-card);
   transition:
     transform var(--motion),
-    border-color var(--motion),
-    box-shadow var(--motion);
+    box-shadow var(--motion),
+    ${edgeTransition};
   ${reveal}
   animation-fill-mode: backwards;
   ${lifted}
 
-  &:hover {
+  /* Hover and keyboard focus: the lit edge sweeps round, as it does on the
+     primary action, and the card lifts. */
+  &:hover,
+  &:focus-within {
+    --edge-angle: 570deg;
     transform: translateY(-2px);
-    border-color: var(--color-border-strong);
+    background: ${litEdgeBackground(
+      'linear-gradient(var(--color-surface), var(--color-surface))',
+    )};
     box-shadow:
       inset 0 1px 0 var(--glass-highlight),
       var(--shadow-card-hover);
   }
 
-  &:hover [data-cover] img:last-child {
+  &:hover [data-cover] img:last-child,
+  &:focus-within [data-cover] img:last-child {
     transform: scale(1.04);
+  }
+
+  &:hover [data-chevron],
+  &:focus-within [data-chevron] {
+    color: var(--color-text);
+    border-color: var(--color-border-strong);
+    transform: translateX(2px);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+
+    &:hover,
+    &:focus-within {
+      transform: none;
+    }
+
+    &:hover [data-cover] img:last-child,
+    &:focus-within [data-cover] img:last-child,
+    &:hover [data-chevron],
+    &:focus-within [data-chevron] {
+      transform: none;
+    }
   }
 `
 
@@ -1206,6 +1191,7 @@ const CardFields = styled.dl`
     color: var(--color-text);
     font-size: var(--fs-small);
     line-height: var(--lh-small);
+    font-variant-numeric: tabular-nums;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
@@ -1219,6 +1205,18 @@ const CardFooter = styled.div`
   margin-top: 16px;
   padding: 14px 18px 16px;
   border-top: 1px solid var(--glass-border);
+
+  /* The status gives way first: the way out stays whole. */
+  > :first-child {
+    min-width: 0;
+  }
+`
+
+const CardWays = styled.div`
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 10px;
 `
 
 const EntryCards = ({
@@ -1238,7 +1236,7 @@ const EntryCards = ({
     entry.fields.some((field) => isImage(field) && hasValue(field)),
   )
   return (
-    <Grid $min={260}>
+    <Grid $min={300}>
       {entries.map((entry, index) => {
         const image = entry.fields.find(
           (field) => isImage(field) && hasValue(field),
@@ -1298,9 +1296,14 @@ const EntryCards = ({
             </CardBody>
             <CardFooter>
               <StatusSlot entry={entry} now={now} />
-              {entry.openListTo && (
-                <OpenList to={entry.openListTo}>Open list</OpenList>
-              )}
+              <CardWays>
+                {entry.openListTo && (
+                  <OpenList to={entry.openListTo}>Open list</OpenList>
+                )}
+                <Chevron data-chevron aria-hidden>
+                  <CurateIcon name="chevron-down" size={14} />
+                </Chevron>
+              </CardWays>
             </CardFooter>
           </Card>
         )
@@ -1329,7 +1332,7 @@ export const EntryList = ({
   emptyTitle,
   emptyLine = 'Change the filters or search, or be the first to submit.',
 }: {
-  layout: ListLayout
+  layout: RegistryLayout
   entries: EntryRow[]
   columns: V2Field[]
   now: number
@@ -1364,15 +1367,6 @@ export const EntryList = ({
   if (layout === 'cards')
     return (
       <EntryCards
-        entries={entries}
-        columns={columns}
-        now={now}
-        itemName={itemName}
-      />
-    )
-  if (layout === 'rows')
-    return (
-      <EntryRows
         entries={entries}
         columns={columns}
         now={now}
