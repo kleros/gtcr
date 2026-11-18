@@ -66,10 +66,16 @@ import {
 import { standardEntryStatus } from 'components/curate/entry-status'
 import type { ExplainerStep } from 'components/curate/explainer'
 import {
+  RegistryListSkeleton,
   RegistryStandardEmpty,
-  RegistryStandardSkeleton,
 } from 'components/curate/registry-standard-states'
-import { useRegistryLayout } from 'components/curate/registry-shared-layout'
+import { StandardInsights } from 'components/curate/registry-standard-insights'
+import { useStandardSummary } from 'components/curate/registry-standard-summary'
+import type { StandardLane } from 'components/curate/registry-standard-summary'
+import {
+  REGISTRY_LAYOUT_OPTIONS,
+  useRegistryLayout,
+} from 'components/curate/registry-shared-layout'
 import { useRegistryVerified } from 'components/curate/registry-shared-verified'
 import {
   LIST_OF_LISTS_ADDRESS_LABEL,
@@ -95,11 +101,12 @@ import SubmitConnectModal from '../standard-item-details/modals/submit-connect'
 /*
  * Standard Curate registry page (/tcr/:chainId/:tcrAddress): the header panel
  * (identity, the one action with its exact deposit, the counts and the share
- * registered as a ring), the toolbar (URL filters with each status's count),
- * then the entries in the remembered layout, each with its status and time
- * left. Nothing else sits between the header and the entries. A page or
- * filter change keeps the current rows and counts (dimmed) until the next
- * page lands, so nothing flashes or counts up again.
+ * registered as a ring), the three drawings (listing history, where the
+ * entries stand, challenges), the toolbar (URL filters with each status's
+ * count), then the entries in the remembered layout, each with its status
+ * and time left. A page or filter change keeps the current rows and counts
+ * (dimmed) until the next page lands, so nothing flashes or counts up
+ * again.
  */
 
 export const NSFW_FILTER_KEY = 'NSFW_FILTER_KEY'
@@ -578,6 +585,23 @@ const Items = () => {
     counts,
   ])
 
+  // The latest entries' request history and every challenge on the list,
+  // for the drawings. They are a read of their own: the list's own pages
+  // hold one page of entries and the counters hold no history.
+  const {
+    summary,
+    loading: summaryLoading,
+    failed: summaryFailed,
+  } = useStandardSummary({
+    chainId,
+    registryId: tcrAddress,
+    timestamp,
+    challengePeriodDuration,
+  })
+  // The one summary the drawings and the header's "In court" both read: a
+  // failed read is no summary at all, never a stale figure.
+  const liveSummary = summaryFailed ? undefined : summary
+
   // A failed refetch keeps the rows already on screen (react-query keeps
   // its data): only a read with nothing to show fails the page.
   const listFailed = !!itemsQuery.error && !itemsQuery.data
@@ -891,13 +915,32 @@ const Items = () => {
       : undefined
   const rejectedOrRemoved = counts ? integer.format(counts.absent) : undefined
 
+  /*
+   * "In court" is the disputes open on this list right now, counted from the
+   * list's own challenges (DESIGN.md, Data rules: the per-list counters
+   * drift and are not trusted for it), so the header and the Challenges
+   * panel print one figure from one source. It reads "n+" when that read
+   * stopped at its page cap, and waits for the read rather than flashing a
+   * counter it would then correct; a failed read leaves the counter, the
+   * only figure left.
+   */
+  const inCourtStat = liveSummary
+    ? `${integer.format(liveSummary.challenges.inCourt)}${
+        liveSummary.challenges.capped && liveSummary.challenges.inCourt > 0
+          ? '+'
+          : ''
+      }`
+    : summaryLoading
+      ? undefined
+      : counts && integer.format(counts.inCourt)
+
   const stats: RegistryStat[] = [
     { label: 'Entries', value: counts && integer.format(counts.total) },
     {
       label: 'Open requests',
       value: counts && integer.format(counts.openRequests),
     },
-    { label: 'In court', value: counts && integer.format(counts.inCourt) },
+    { label: 'In court', value: inCourtStat },
   ]
 
   const parameters: RegistryParameter[] = [
@@ -1158,6 +1201,18 @@ const Items = () => {
     revealed,
   ])
 
+  // The drawings never name an entry the list itself hides, and open the
+  // entry they belong to, as a row does.
+  const laneHidden = (lane: StandardLane) =>
+    nsfwFilterOn &&
+    !revealed.has(lane.id) &&
+    (lane.statusCode === undefined || HIDDEN_STATUS_CODES.has(lane.statusCode))
+
+  const openLane = (lane: StandardLane) => {
+    if (chainId && tcrAddress)
+      navigate(`/tcr/${chainId}/${tcrAddress}/${lane.id}`)
+  }
+
   /* ---------- Error states ---------- */
 
   if (!tcrAddress)
@@ -1358,6 +1413,19 @@ const Items = () => {
         loading={!metadata || (!counters && itemsQuery.isFetching)}
       />
 
+      <StandardInsights
+        summary={liveSummary}
+        // The lanes' heads carry each entry's status: the drawings wait for
+        // the chain's clock and the challenge period, as the rows do.
+        loading={summaryLoading || !timestamp || !challengePeriodDuration}
+        now={now}
+        itemName={itemName}
+        itemNamePlural={itemNamePlural}
+        counts={counts}
+        isHidden={laneHidden}
+        onOpen={openLane}
+      />
+
       <Toolbar ref={toolbarRef} style={{ ['--i' as string]: 1 }}>
         <RegistryToolbar
           search={itemSearch}
@@ -1369,6 +1437,7 @@ const Items = () => {
           onSortChange={(sort) => setFilter('oldestFirst', sort === 'oldest')}
           layout={layout}
           onLayoutChange={setLayout}
+          layoutOptions={REGISTRY_LAYOUT_OPTIONS}
           nsfwFilter={nsfwFilterOn}
           onNsfwChange={toggleNSFWFilter}
           // Unknown (not "0 of 0") until the list and its counts are in.
@@ -1391,7 +1460,7 @@ const Items = () => {
         data-refreshing={refreshing && !listLoading}
       >
         {listLoading ? (
-          <RegistryStandardSkeleton layout={layout} />
+          <RegistryListSkeleton layout={layout} />
         ) : entries.length === 0 ? (
           <RegistryStandardEmpty
             title={emptyView.title}
