@@ -35,3 +35,6 @@ yarn-error.log*
 
 # Local Netlify folder
 .netlify
+
+# Claude Code session folder (worktrees, local launch config)
+.claude/
