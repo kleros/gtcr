@@ -1,13 +1,10 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import styled, { css, keyframes } from 'styled-components'
-import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import useDocumentHead from 'hooks/use-document-head'
 import useNow from 'hooks/use-now'
-import useStoredLayout, {
-  LAYOUT_OPTIONS,
-  type ListLayout,
-} from 'hooks/use-stored-layout'
+import useStoredLayout from 'hooks/use-stored-layout'
 import { formatAbsolute, formatAgo } from 'utils/time'
 import { parseRichAddress } from 'utils/rich-address'
 import ChainLogo from 'components/chain-logo'
@@ -27,8 +24,6 @@ import {
   Small,
   StatusDot,
   Surface,
-  Table,
-  TableScroller,
   ToggleGroup,
   truncateMiddle,
   type SegmentOption,
@@ -73,6 +68,12 @@ import {
 } from 'components/curate/registry-shared-verified'
 import { Avatar } from './avatar'
 import { entryKey, fetchEntryImages, type EntryRef } from './entry-images'
+import {
+  BROWSE_LAYOUT_OPTIONS,
+  browseLayout,
+  layoutFromView,
+  type BrowseLayout,
+} from './layout'
 import { useCompletedRegistries, useNamedRegistries } from './metadata'
 import {
   KIND_OPTIONS,
@@ -113,7 +114,7 @@ import {
  * compact title, one panel of figures for the chosen chain scope, then the
  * explorer: which lists (Kleros Verified, Community or all) with what that
  * means, one toolbar row (search, type, sort, layout), the registries as
- * rows, cards or a table, and pagination. Kleros Verified lists carry the
+ * rows or cards, and pagination. Kleros Verified lists carry the
  * seal wherever they appear; Community lists carry no mark. The rail holds
  * the way to earn the badge and the latest requests. The chain is chosen in
  * the app bar through ?chain. Every figure is read from the data.
@@ -132,7 +133,7 @@ const dateParts = new Intl.DateTimeFormat('en-US', {
 /**
  * "7 Sep 2026" (UTC), day first with the three-letter month. Not
  * utils/time formatDate: its en-GB format writes September as "Sept", which
- * breaks the three-letter rhythm of the Created column.
+ * breaks the three-letter rhythm of the created date.
  */
 const formatDay = (timestamp: number): string => {
   const parts = Object.fromEntries(
@@ -608,20 +609,13 @@ const Meta = styled.span`
   margin-top: 6px;
 `
 
-/** Why a search matched: the description, else the address. */
-const Blurb = styled.span`
+/** A card's line under the name: when the lists are ranked by age, the date. */
+const SubLine = styled.span`
   ${ellipsis}
-  flex: 1 1 auto;
   min-width: 0;
-  margin-left: 4px;
-  color: var(--color-muted);
-  font-size: var(--fs-small);
-  line-height: var(--lh-small);
-
-  code {
-    font-family: var(--font-mono);
-    font-size: 12px;
-  }
+  color: var(--color-faint);
+  font-size: 12px;
+  line-height: 16px;
 `
 
 const Created = styled.span`
@@ -629,27 +623,6 @@ const Created = styled.span`
   font-size: 12px;
   line-height: 16px;
   white-space: nowrap;
-`
-
-/**
- * Rows: the chips, then the description (or the address) on the same line.
- * At phone width the chips alone fill the line, so the description leaves
- * (cards still show it) and a long chip line wraps instead of overflowing.
- */
-const RowMeta = styled(Meta)`
-  flex-wrap: nowrap;
-
-  > :not(${Blurb}) {
-    flex: 0 0 auto;
-  }
-
-  @media (max-width: 760px) {
-    flex-wrap: wrap;
-
-    ${Blurb} {
-      display: none;
-    }
-  }
 `
 
 /* ---------- Rows ---------- */
@@ -860,52 +833,6 @@ const CardSide = styled.span`
   b[data-zero='true'] {
     color: var(--color-faint);
   }
-`
-
-/* ---------- Table ---------- */
-
-const TableName = styled(Link)`
-  ${ellipsis}
-  color: var(--color-text);
-  font-weight: 500;
-  text-decoration: none;
-
-  &:hover {
-    color: var(--color-primary);
-  }
-`
-
-/** The registry column takes the free width and lets its text ellipsize. */
-const RegistryCell = styled.td`
-  width: 100%;
-  max-width: 0;
-`
-
-const IdentityCell = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  min-width: 0;
-`
-
-const SubLine = styled.span`
-  ${ellipsis}
-  min-width: 0;
-  color: var(--color-faint);
-  font-size: 12px;
-  line-height: 16px;
-
-  code {
-    font-family: var(--font-mono);
-    font-size: 12px;
-  }
-`
-
-const CourtCell = styled.span`
-  display: inline-flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 8px;
 `
 
 /* ---------- Footer ---------- */
@@ -1260,17 +1187,6 @@ const STAKE_PENDING_TITLE =
 const pendingTitle = (registry: DashboardRegistry) =>
   registry.kind === 'permanent' ? STAKE_PENDING_TITLE : undefined
 
-/** The table's Open requests cell: Stake lists have none, so a dash. */
-const OpenRequestsCell = ({ registry }: { registry: DashboardRegistry }) =>
-  registry.kind === 'permanent' ? (
-    <Small $faint title="Stake lists have no requests">
-      <span aria-hidden>—</span>
-      <VisuallyHidden>None, Stake lists have no requests</VisuallyHidden>
-    </Small>
-  ) : (
-    <>{formatInt(registry.pendingCount)}</>
-  )
-
 const conjunction = new Intl.ListFormat('en-GB', {
   style: 'long',
   type: 'conjunction',
@@ -1338,31 +1254,6 @@ const showcaseFigure = (registry: DashboardRegistry): string => {
   }
   const open = openRequests(registry)
   return `${formatInt(open)} open ${open === 1 ? 'request' : 'requests'}`
-}
-
-/**
- * Below this width the table cannot fit its columns (the shared Table is at
- * least 640px wide), so rows stand in for it without changing the stored
- * choice, and the switch stops offering it.
- */
-const NARROW_QUERY = '(max-width: 720px)'
-
-/** True while the viewport is too narrow for the table; follows resizes. */
-const useNarrow = (): boolean => {
-  const [narrow, setNarrow] = useState(
-    () =>
-      typeof window.matchMedia === 'function' &&
-      window.matchMedia(NARROW_QUERY).matches,
-  )
-  useEffect(() => {
-    if (typeof window.matchMedia !== 'function') return undefined
-    const media = window.matchMedia(NARROW_QUERY)
-    const onChange = () => setNarrow(media.matches)
-    onChange()
-    media.addEventListener('change', onChange)
-    return () => media.removeEventListener('change', onChange)
-  }, [])
-  return narrow
 }
 
 const prefersReducedMotion = () =>
@@ -1463,7 +1354,6 @@ const BrowsePage = () => {
     'Browse registries | Kleros Curate',
     'Browse Kleros Verified and Community Curate lists on Ethereum and Gnosis, and on the Sepolia testnet.',
   )
-  const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const chainParam = searchParams.get('chain')
   const chains = useMemo(() => parseChains(chainParam), [chainParam])
@@ -1474,16 +1364,7 @@ const BrowsePage = () => {
   const search = searchParams.get('q') || ''
   const requestedPage = parsePage(searchParams.get('page'))
   const [layout, setLayout] = useStoredLayout('browse', 'rows')
-  // A phone shows rows for a stored table choice and keeps the choice.
-  const narrow = useNarrow()
-  const shown = narrow && layout === 'table' ? 'rows' : layout
-  const layoutOptions = useMemo(
-    () =>
-      narrow
-        ? LAYOUT_OPTIONS.filter((option) => option.value !== 'table')
-        : LAYOUT_OPTIONS,
-    [narrow],
-  )
+  const shown = browseLayout(layout)
   const now = useNow(30_000)
 
   // A load saved by an earlier page load is looked up first (saved-load.ts).
@@ -1575,13 +1456,20 @@ const BrowsePage = () => {
     setSearchParams(next, { replace: true })
   }, [filterKey, searchParams, setSearchParams])
 
-  // Old links carried the layout in the URL (?view=list or ?view=cards). The
-  // layout is now remembered per device, so adopt it once and drop the param.
+  // A table remembered from before it was dropped is rewritten once, so the
+  // stored choice and the control agree instead of being coerced for ever.
+  useEffect(() => {
+    if (layout !== shown) setLayout(shown)
+  }, [layout, shown, setLayout])
+
+  // Old links carried the layout in the URL (?view=list or ?view=cards, and
+  // ?view=table, which now opens rows). The layout is remembered per device,
+  // so adopt it once and drop the param.
   useEffect(() => {
     const view = searchParams.get('view')
     if (view === null) return
-    if (view === 'list') setLayout('rows')
-    else if (view === 'cards') setLayout('cards')
+    const fromLink = layoutFromView(view)
+    if (fromLink) setLayout(fromLink)
     const next = new URLSearchParams(searchParams)
     next.delete('view')
     setSearchParams(next, { replace: true })
@@ -1773,7 +1661,6 @@ const BrowsePage = () => {
   const verificationChains =
     scopedVerification.length > 0 ? scopedVerification : VERIFICATION_CHAIN_IDS
   const scope = scopeText(chains)
-  const showCreated = sort === 'recent-creation'
 
   const loading =
     query.isLoading || (!data && !query.isError) || verifiedSets.pending
@@ -1991,12 +1878,12 @@ const BrowsePage = () => {
               }
               options={SORT_OPTIONS}
             />
-            <SegmentedControl<ListLayout>
+            <SegmentedControl<BrowseLayout>
               className="browse-layout"
               ariaLabel="Layout"
               value={shown}
               onChange={setLayout}
-              options={layoutOptions.map((option) => ({
+              options={BROWSE_LAYOUT_OPTIONS.map((option) => ({
                 value: option.value,
                 label: option.label,
                 icon: option.icon,
@@ -2117,86 +2004,6 @@ const BrowsePage = () => {
                 Change the search, the chain or a filter.
               </EmptyState>
             </Surface>
-          ) : shown === 'table' ? (
-            <TableScroller>
-              <Table>
-                <thead>
-                  <tr>
-                    <th>Registry</th>
-                    {showCreated ? <th>Created</th> : <th>Chain</th>}
-                    <th className="num">Entries</th>
-                    <th className="num">Open requests</th>
-                    <th className="num">In court</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {shownRows.map((registry) => {
-                    const created = shownCreation(registry, sort)
-                    return (
-                      <tr
-                        key={registry.id}
-                        data-href={registryHref(registry)}
-                        onClick={() => navigate(registryHref(registry))}
-                      >
-                        <RegistryCell>
-                          <IdentityCell>
-                            <RegistryLogo registry={registry} size={34} />
-                            <div style={{ minWidth: 0 }}>
-                              <NameLine>
-                                <TableName
-                                  to={registryHref(registry)}
-                                  onClick={(event) => event.stopPropagation()}
-                                >
-                                  {registry.title}
-                                </TableName>
-                                <ListSeal registry={registry} />
-                                <KindTag kind={registry.kind} />
-                              </NameLine>
-                              <SubLine>
-                                {/* With the Created column the chain rides here. */}
-                                {showCreated &&
-                                  `${chainName(registry.chainId)} · `}
-                                <code>{truncateMiddle(registry.address)}</code>
-                              </SubLine>
-                            </div>
-                          </IdentityCell>
-                        </RegistryCell>
-                        {showCreated ? (
-                          <td>
-                            {created ? (
-                              <Small
-                                $muted
-                                title={formatAbsolute(created)}
-                                style={{ whiteSpace: 'nowrap' }}
-                              >
-                                {formatDay(created)}
-                              </Small>
-                            ) : (
-                              <Small $faint>—</Small>
-                            )}
-                          </td>
-                        ) : (
-                          <td>
-                            <ChainChip chainId={registry.chainId} size="sm" />
-                          </td>
-                        )}
-                        <td className="num">
-                          {formatInt(entryCount(registry))}
-                        </td>
-                        <td className="num">
-                          <OpenRequestsCell registry={registry} />
-                        </td>
-                        <td className="num">
-                          <CourtCell>
-                            <CourtValue count={registry.disputeCount} />
-                          </CourtCell>
-                        </td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </Table>
-            </TableScroller>
           ) : shown === 'cards' ? (
             <CardGrid>
               {shownRows.map((registry, index) => {
@@ -2266,7 +2073,6 @@ const BrowsePage = () => {
             <List>
               {shownRows.map((registry, index) => {
                 const created = shownCreation(registry, sort)
-                const blurb = registryBlurb(registry)
                 return (
                   <RowLink
                     key={registry.id}
@@ -2281,20 +2087,13 @@ const BrowsePage = () => {
                         <ListSeal registry={registry} />
                         <KindTag kind={registry.kind} />
                       </NameLine>
-                      <RowMeta>
+                      <Meta>
                         <ChainChip chainId={registry.chainId} size="sm" />
+                        {/* The date belongs to the chosen sort, so it comes
+                            after the chain, which is the list's identity
+                            whatever the order. */}
                         {created && <CreatedOn timestamp={created} />}
-                        {/* No blurb when the title already is the address. */}
-                        {blurb ? (
-                          <Blurb>{blurb}</Blurb>
-                        ) : (
-                          !hasAddressTitle(registry) && (
-                            <Blurb>
-                              <code>{truncateMiddle(registry.address)}</code>
-                            </Blurb>
-                          )
-                        )}
-                      </RowMeta>
+                      </Meta>
                     </RowId>
                     <RowStat $area="entries">
                       <StatValue $large $zero={entryCount(registry) === 0}>
