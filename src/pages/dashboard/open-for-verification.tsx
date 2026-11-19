@@ -640,7 +640,9 @@ export const OpenForVerification = ({
 
   // No bounty up for grabs, nothing drawn (round 10: "when bounties up for
   // grab are 0, just hide everything"): the board below says what is on.
-  if (figures && (total === 0 || (known && !money))) return null
+  // Unless requests failed to load: then none is not known, and the strip
+  // stays to say which did not load.
+  if (figures && !unloaded && (total === 0 || (known && !money))) return null
 
   return (
     <Strip
