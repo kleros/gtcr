@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import styled, { keyframes } from 'styled-components'
-import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import useDocumentHead from 'hooks/use-document-head'
 import useNow from 'hooks/use-now'
@@ -16,8 +16,6 @@ import {
   Label,
   Page,
   SegmentedControl,
-  SelectMenu,
-  type SelectMenuOption,
   SkeletonBlock,
   Small,
   Surface,
@@ -35,6 +33,7 @@ import { KindTag } from 'components/curate/stake-tag'
 import { getNativeCurrency } from 'config/chains'
 import {
   completeChallengeWindows,
+  fetchActivityHistory,
   fetchDashboardData,
   fetchTestnetDashboardData,
   loadRulingCards,
@@ -62,8 +61,6 @@ import type {
   RulingRow,
 } from './types'
 import {
-  MAINNET_CHAIN_IDS,
-  SUPPORTED_CHAIN_IDS,
   TESTNET_CHAIN_IDS,
   buildBoard,
   scopeChains,
@@ -78,9 +75,10 @@ import {
   scopedRulings,
   scopedSeries,
   scopedWins,
+  historySeries,
+  type ChartRange,
   sortRegistries,
   toAmount,
-  validChain,
   windowsPending,
   type ChainFilter,
   type DashboardCard,
@@ -126,10 +124,6 @@ import { Avatar as ListLogo } from 'pages/browse/avatar'
  */
 
 const integer = new Intl.NumberFormat('en-US')
-const listFormat = new Intl.ListFormat('en', {
-  style: 'long',
-  type: 'conjunction',
-})
 const formatInt = (value: number) => integer.format(Math.round(value))
 const plural = (value: number, one: string, many: string) =>
   `${formatInt(value)} ${value === 1 ? one : many}`
@@ -156,30 +150,31 @@ const RULINGS_FIRST_QUIET = 12
 const RULINGS_FIRST_STACKED = 4
 const RULINGS_FIRST_STACKED_QUIET = 8
 
-/**
- * The page's chain scopes: "All chains" (every mainnet; a testnet is never
- * part of it), then each chain, the testnet last and tagged.
- */
-const scopeOptions: SelectMenuOption<string>[] = [
-  {
-    value: 'all',
-    label: 'All chains',
-    hint: listFormat.format(
-      MAINNET_CHAIN_IDS.map((id) => chainInfo(id)?.name ?? String(id)),
-    ),
-    icon: 'chain',
-  },
-  ...SUPPORTED_CHAIN_IDS.map((chainId) => {
-    const testnet = TESTNET_CHAIN_IDS.includes(chainId)
-    return {
-      value: String(chainId),
-      label: chainInfo(chainId)?.name ?? String(chainId),
-      icon: <ChainLogo chainId={chainId} size={18} />,
-      tag: testnet ? 'testnet' : undefined,
-      divider: testnet,
-    }
-  }).sort((a, b) => Number(Boolean(a.tag)) - Number(Boolean(b.tag))),
+/** The chart's ranges, as the switch over it names them (round 7). */
+const RANGE_OPTIONS: { value: ChartRange; label: string }[] = [
+  { value: '30d', label: '30D' },
+  { value: '6m', label: '6M' },
+  { value: '1y', label: '1Y' },
+  { value: '5y', label: '5Y' },
+  { value: 'all', label: 'All' },
 ]
+
+/** What each range's chart counts, over its legend. */
+const RANGE_LEGEND: Record<ChartRange, string> = {
+  '30d': 'Per day · last 30 days',
+  '6m': 'Per week · last 6 months',
+  '1y': 'Per week · last year',
+  '5y': 'Per month · last 5 years',
+  all: 'Per month · all time',
+}
+
+const RANGE_WORDS: Record<ChartRange, string> = {
+  '30d': 'per day over the last 30 days, today so far included',
+  '6m': 'per week over the last 6 months, this week so far included',
+  '1y': 'per week over the last year, this week so far included',
+  '5y': 'per month over the last 5 years, this month so far included',
+  all: 'per month since the first, this month so far included',
+}
 
 /** A logo, on the IPFS gateway only (ipfsImageUrl says why). */
 const mediaUrl = (uri?: string | null): string | null =>
@@ -310,30 +305,13 @@ const Featured = styled(Surface)`
   }
 `
 
+/* The chart's range switch, at the panel's top right (round 7: the chain
+   switch it replaced is hidden; the page is always every mainnet). */
 const ScopeBar = styled.div`
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  flex-wrap: wrap;
-  gap: 12px;
-  margin-bottom: 22px;
-  padding-bottom: 18px;
-  border-bottom: 1px solid var(--glass-border);
-
-  /* Phones: the four chains do not fit a segmented track; a menu does. */
-  .scope-narrow {
-    display: none;
-  }
-
-  @media (max-width: 560px) {
-    .scope-wide {
-      display: none;
-    }
-
-    .scope-narrow {
-      display: inline-flex;
-    }
-  }
+  margin-bottom: 18px;
 `
 
 const FeaturedTop = styled.div`
@@ -700,8 +678,11 @@ const Dashboard = () => {
     'Browse Kleros Curate registries, follow entries in a challenge window or in court, and earn by challenging entries that break a list policy.',
   )
   const navigate = useNavigate()
-  const [searchParams, setSearchParams] = useSearchParams()
-  const chain: ChainFilter = validChain(searchParams.get('chain'))
+  // Always every mainnet (round 7: "just leave all chain and hide the
+  // possibility of browsing per chain for now"). The scopes stay wired
+  // through the page, so the chain switch can come back.
+  const chain: ChainFilter = 'all'
+  const [range, setRange] = useState<ChartRange>('30d')
   const now = useNow(30_000)
   const launchChain = useLaunchChainId()
   // The board's one-column width (happening-now.tsx STACKED).
@@ -755,18 +736,16 @@ const Dashboard = () => {
   })
   const checkingWindows = windowsMissing && windowsRetry.isFetching
 
-  const setChain = (value: string) => {
-    const next = new URLSearchParams(searchParams)
-    if (value === 'all') next.delete('chain')
-    else next.set('chain', value)
-    setSearchParams(next, { replace: true })
-  }
-
   const chains = useMemo(() => scopeChains(chain), [chain])
-  // What "All chains" covers, named under the switch: "Ethereum and Gnosis".
-  const scopeName = listFormat.format(
-    chains.map((chainId) => chainInfo(chainId)?.name ?? String(chainId)),
-  )
+  // The whole history, read after the page's own load (data.ts
+  // fetchActivityHistory): Top curators all time, and the chart's 6M to All.
+  const history = useQuery({
+    queryKey: ['dashboardHistory', chains.join(',')],
+    queryFn: () => fetchActivityHistory(chains),
+    enabled: !!data,
+    staleTime: 30 * 60_000,
+    retry: 2,
+  })
   // Links to Browse keep the page's scope. "All chains" is Browse's own
   // default, no `chain` parameter (DESIGN.md, Data rules): spelled out as
   // ?chain=1,100 it read as a custom choice of two chains there.
@@ -972,11 +951,6 @@ const Dashboard = () => {
     () => (data ? scopedSeries(data, chains) : []),
     [data, chains],
   )
-  const seriesRequests = series.reduce(
-    (sum, d) => sum + d.submissions + d.removals,
-    0,
-  )
-  const seriesChallenges = series.reduce((sum, d) => sum + d.challenges, 0)
 
   const topRegistries = useMemo(
     () => sortRegistries(scoped, 'activity').slice(0, 8),
@@ -984,9 +958,9 @@ const Dashboard = () => {
   )
 
   /*
-   * Top curators in scope, ranked by what their row shows: requests made
-   * plus challenges made over the 30 days. Their bounties won are all
-   * time, from the rulings ledger, like every other case on the page.
+   * Top curators, all time (round 7), ranked by what their row shows:
+   * requests made plus challenges made, from the whole history. Their
+   * bounties won are all time too, from the rulings ledger.
    */
   const wins = useMemo(
     () => (data ? scopedWins(data, chains) : new Map<string, number>()),
@@ -995,7 +969,7 @@ const Dashboard = () => {
   const winsKnown = !!data && chains.every((chainId) => data.rulings?.[chainId])
   const curators = useMemo(
     () =>
-      (data?.users ?? [])
+      (history.data?.users ?? [])
         .map((user) => {
           let requests = 0
           let challenges = 0
@@ -1021,20 +995,36 @@ const Dashboard = () => {
             b.lastActiveAt - a.lastActiveAt,
         )
         .slice(0, 6),
-    [data, chains, wins],
+    [history.data, chains, wins],
   )
 
+  // The chart: the load's own 30 days, or the history in weeks or months.
+  const chart = useMemo(() => {
+    if (range === '30d')
+      return {
+        starts: series.map((d) => d.day),
+        up: series.map((d) => d.submissions + d.removals),
+        down: series.map((d) => d.challenges),
+        unit: 'day' as const,
+      }
+    if (!history.data) return undefined
+    return historySeries(history.data.events, range, now)
+  }, [range, series, history.data, now])
   const chartLabels = useMemo(
     () =>
-      series.map((d) =>
-        new Intl.DateTimeFormat('en-GB', {
-          day: 'numeric',
-          month: 'short',
-          timeZone: 'UTC',
-        }).format(new Date(d.day * 1000)),
+      (chart?.starts ?? []).map((start) =>
+        new Intl.DateTimeFormat(
+          'en-GB',
+          chart?.unit === 'month'
+            ? { month: 'short', year: '2-digit', timeZone: 'UTC' }
+            : { day: 'numeric', month: 'short', timeZone: 'UTC' },
+        ).format(new Date(start * 1000)),
       ),
-    [series],
+    [chart],
   )
+  const chartRequests = chart?.up.reduce((sum, value) => sum + value, 0) ?? 0
+  const chartChallenges =
+    chart?.down.reduce((sum, value) => sum + value, 0) ?? 0
 
   /*
    * Chains in this scope whose lists did not load (an indexer refused or
@@ -1051,7 +1041,6 @@ const Dashboard = () => {
     .join(' and ')
   const unanswered = figuresUnknown && scoped.length === 0
 
-  const testnet = chain !== 'all' && TESTNET_CHAIN_IDS.includes(chain)
   // Chains in this scope whose indexer did not answer: their figures are missing.
   const partialChains = (data?.failedChains ?? []).filter((id) =>
     chains.includes(id),
@@ -1128,28 +1117,12 @@ const Dashboard = () => {
         style={{ ['--i' as string]: 4 }}
       >
         <ScopeBar>
-          <Label $tone="faint" style={{ marginRight: 'auto' }}>
-            {chain === 'all' ? scopeName : testnet ? 'Test network' : ''}
-          </Label>
-          <SegmentedControl
-            className="scope-wide"
-            ariaLabel="Chains"
-            value={chain === 'all' ? 'all' : String(chain)}
-            onChange={setChain}
-            options={scopeOptions.map(({ value, label, tag }) => ({
-              value,
-              label,
-              tag,
-            }))}
-          />
-          <SelectMenu
-            className="scope-narrow"
-            label="Chains"
-            hideLabel
-            align="end"
-            value={chain === 'all' ? 'all' : String(chain)}
-            onChange={setChain}
-            options={scopeOptions}
+          <SegmentedControl<ChartRange>
+            ariaLabel="Chart range"
+            size="sm"
+            value={range}
+            onChange={setRange}
+            options={RANGE_OPTIONS}
           />
         </ScopeBar>
         <FeaturedTop>
@@ -1182,7 +1155,7 @@ const Dashboard = () => {
           </InlineStats>
           <SeriesLegend aria-label="Chart series">
             <li>
-              <Label $tone="faint">Per day · last 30 days</Label>
+              <Label $tone="faint">{RANGE_LEGEND[range]}</Label>
             </li>
             <li style={{ color: 'var(--color-primary)' }}>
               <i style={{ background: 'var(--color-primary)' }} aria-hidden />
@@ -1197,27 +1170,31 @@ const Dashboard = () => {
             </li>
           </SeriesLegend>
         </FeaturedTop>
-        {loading ? (
-          <SkeletonBlock $height="240px" />
-        ) : seriesRequests + seriesChallenges === 0 ? (
+        {loading || !chart ? (
+          history.isError && range !== '30d' ? (
+            <ChartEmpty>The history did not load</ChartEmpty>
+          ) : (
+            <SkeletonBlock $height="240px" />
+          )
+        ) : chartRequests + chartChallenges === 0 ? (
           <ChartEmpty>
             {partialNames
               ? `${partialNames} requests did not load`
-              : 'No requests in the last 30 days'}
+              : 'No requests in this range'}
           </ChartEmpty>
         ) : (
           <ActivityWave
-            key={chains.join('-')}
+            key={`${chains.join('-')}-${range}`}
             height={260}
             labels={chartLabels}
-            up={series.map((d) => d.submissions + d.removals)}
-            down={series.map((d) => d.challenges)}
+            up={chart.up}
+            down={chart.down}
             upLabel="Requests"
             downLabel="Challenges"
             partialLast
-            ariaLabel={`Requests and challenges per day over the last 30 days, today so far included: ${formatInt(
-              seriesRequests,
-            )} requests, ${formatInt(seriesChallenges)} challenges`}
+            ariaLabel={`Requests and challenges ${RANGE_WORDS[range]}: ${formatInt(
+              chartRequests,
+            )} requests, ${formatInt(chartChallenges)} challenges`}
           />
         )}
         {data?.seriesTruncated && (
@@ -1249,16 +1226,6 @@ const Dashboard = () => {
           figuresUnknown || figures?.classicCapped
             ? undefined
             : figures?.entriesAllTime
-        }
-        classic={
-          figures && figures.classicLists > 0
-            ? {
-                lists: figures.classicLists,
-                entries: figures.classicEntries,
-                bounties: record?.classicBounties ?? 0,
-                capped: figures.classicCapped,
-              }
-            : undefined
         }
       />
 
@@ -1393,7 +1360,7 @@ const Dashboard = () => {
 
         <CuratorsPanel $padding="standard" aria-label="Top curators">
           <CuratorsHead>
-            <Label $tone="faint">Top curators · 30 days</Label>
+            <Label $tone="faint">Top curators · all time</Label>
             {!loading && curators.length > 0 && (
               <Label
                 $tone="faint"
@@ -1403,14 +1370,12 @@ const Dashboard = () => {
               </Label>
             )}
           </CuratorsHead>
-          {loading ? (
+          {loading || (history.isPending && !history.isError) ? (
             <SkeletonBlock $height="260px" style={{ marginTop: 16 }} />
+          ) : history.isError ? (
+            <EmptyNote>The curation history did not load.</EmptyNote>
           ) : curators.length === 0 ? (
-            <EmptyNote>
-              {partialNames
-                ? `${partialNames} curator activity did not load.`
-                : 'No curator activity in the last 30 days.'}
-            </EmptyNote>
+            <EmptyNote>No curator activity yet.</EmptyNote>
           ) : (
             <CuratorList>
               {curators.map((row, index) => (

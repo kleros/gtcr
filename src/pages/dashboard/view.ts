@@ -772,3 +772,97 @@ export const buildBoard = (
     }))
   return { open, openLists, windowsKnown, live }
 }
+
+/* ---------- The chart's long ranges (round 7) ---------- */
+
+/**
+ * The chart's ranges: 30D is the load's own per-day series; the longer ones
+ * bucket the whole history (data.ts fetchActivityHistory), by week for
+ * 6M and 1Y and by month for 5Y and All.
+ */
+export type ChartRange = '30d' | '6m' | '1y' | '5y' | 'all'
+
+export interface RangeSeries {
+  /** Each bucket's start, in seconds, oldest first. */
+  starts: number[]
+  /** Requests (submissions and removal requests) per bucket. */
+  up: number[]
+  /** Challenges per bucket. */
+  down: number[]
+  unit: 'week' | 'month'
+}
+
+const WEEK = 7 * 86_400
+
+/** The UTC Monday that starts the week holding `at` (seconds). */
+const weekStart = (at: number) => {
+  const day = Math.floor(at / 86_400) * 86_400
+  const weekday = (new Date(day * 1000).getUTCDay() + 6) % 7
+  return day - weekday * 86_400
+}
+
+/** The month index (years × 12 + month) of `at`, in UTC. */
+const monthIndex = (at: number) => {
+  const date = new Date(at * 1000)
+  return date.getUTCFullYear() * 12 + date.getUTCMonth()
+}
+
+const monthStart = (index: number) =>
+  Date.UTC(Math.floor(index / 12), index % 12, 1) / 1000
+
+/**
+ * The history in buckets for one long range, the current bucket last (and
+ * partial: the chart draws it dashed). All runs from the month of the
+ * first event; a history with none has no buckets.
+ */
+export const historySeries = (
+  events: { at: number; kind: 'submissions' | 'removals' | 'challenges' }[],
+  range: Exclude<ChartRange, '30d'>,
+  now: number,
+): RangeSeries => {
+  if (range === '6m' || range === '1y') {
+    const count = range === '6m' ? 26 : 52
+    const last = weekStart(now)
+    const first = last - (count - 1) * WEEK
+    const up = Array.from({ length: count }, () => 0)
+    const down = Array.from({ length: count }, () => 0)
+    for (const event of events) {
+      const index = Math.floor((event.at - first) / WEEK)
+      if (index < 0 || index >= count) continue
+      if (event.kind === 'challenges') down[index] += 1
+      else up[index] += 1
+    }
+    return {
+      starts: Array.from({ length: count }, (_, i) => first + i * WEEK),
+      up,
+      down,
+      unit: 'week',
+    }
+  }
+  const last = monthIndex(now)
+  const earliest = events.reduce(
+    (min, event) => (event.at > 0 ? Math.min(min, event.at) : min),
+    Infinity,
+  )
+  const first =
+    range === '5y'
+      ? last - 59
+      : Number.isFinite(earliest)
+        ? Math.min(last, monthIndex(earliest))
+        : last
+  const count = last - first + 1
+  const up = Array.from({ length: count }, () => 0)
+  const down = Array.from({ length: count }, () => 0)
+  for (const event of events) {
+    const index = monthIndex(event.at) - first
+    if (index < 0 || index >= count) continue
+    if (event.kind === 'challenges') down[index] += 1
+    else up[index] += 1
+  }
+  return {
+    starts: Array.from({ length: count }, (_, i) => monthStart(first + i)),
+    up,
+    down,
+    unit: 'month',
+  }
+}

@@ -342,7 +342,9 @@ const StakeRegistry = () => {
   // The pager sits at the foot of the list: a new page starts at its top.
   const toolbarRef = useRef<HTMLDivElement>(null)
   const trust = useRegistryVerified(chainId, tcrAddress)
-  const [nsfwFilterOn, setNsfwFilterOn] = useState(true)
+  // Sensitive entries show unless the reader hides them (round 7); their
+  // choice is kept and restored below.
+  const [nsfwFilterOn, setNsfwFilterOn] = useState(false)
   // The search box lives in the URL (?q=), so Back from an entry, a reload
   // or a shared link keeps it. Typing replaces the history entry: Back
   // leaves the list instead of undoing keystrokes. It filters the page on
@@ -391,7 +393,8 @@ const StakeRegistry = () => {
     return { registry: registryId, ...history, status_in: statuses }
   }, [absent, registered, disputed, disputedBefore, registryId])
 
-  // How many entries have ever been challenged: the status menu's count.
+  // How many entries have ever been challenged: the list's size under the
+  // status menu's "Previously disputed" (which shows no count).
   const disputedBeforeQuery = useQuery({
     queryKey: ['permanentDisputedBefore', chainId, registryId],
     queryFn: (): Promise<{ items?: { id: string }[] }> =>
@@ -406,9 +409,6 @@ const StakeRegistry = () => {
     staleTime: STALE_TIME,
   })
   const disputedBeforeCount = disputedBeforeQuery.data?.items?.length
-  const disputedBeforeCapped =
-    disputedBeforeCount !== undefined &&
-    disputedBeforeCount >= DISPUTED_BEFORE_LIMIT
 
   const itemsVariables = useMemo(
     () => ({
@@ -745,8 +745,7 @@ const StakeRegistry = () => {
       key: P_FILTER_KEYS.DISPUTED_BEFORE,
       label: 'Previously disputed',
       hint: 'Every entry that has been challenged, whatever its status now',
-      count: disputedBeforeCount,
-      countCapped: disputedBeforeCapped,
+      led: true,
       divider: true,
       checked: !!disputedBefore,
     },

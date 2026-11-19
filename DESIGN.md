@@ -198,9 +198,7 @@ others are named by their label and icon (`THEME_MODES` in `contexts/theme-conte
 `primary-on-soft` (primary mixed 70% with text) is the text color on `primary-soft` fills and
 featured tints. The viz set passes the categorical checks (lightness band, chroma, CVD and normal
 separation, 3:1 on the surface) in each theme; lists take the hues in rank order, "other" is
-`text-faint`. The one exception is the dashboard's open requests by list, one quantity split by
-list rather than categories compared: every named run is full `status-window`, parted by the
-bar's gaps and numbered in the legend, and the rest is one `text-faint` run.
+`text-faint`.
 
 **The viz set keys chart series, and nothing else.** A drawing with one series takes `viz-1` or
 `viz-2`; `viz-3` and `viz-4` exist for a chart with three or four real categories and are never
@@ -388,19 +386,15 @@ Focus everywhere is a 2px `primary` outline, 2px out (inset inside clipping trac
   back), so the optional bloom head that rides the leading cap can never leave it. Nothing paints
   before it is armed; reduced motion and print show the final state; forced colours draw it in
   `CanvasText` (a run drawn transparent, an empty stretch of lane, stays empty). It is used for the
-  launch page's Open to challenge lane, the jury's tally, the dashboard's open requests by list and
-  the Stake card's challenger share, and nowhere is a bar reinvented. The factory Previews' money
+  launch page's Open to challenge lane, the jury's tally and the Stake card's challenger share, and nowhere is a bar reinvented. The factory Previews' money
   bars, Marino's, keep their hatch for the arbitration part but use the flat accent, never the
-  aurora (which read pastel on Light and purple on Kleros). Round 6 ("more cool") gives the bar a
-  look, on trial until the owner picks one (`?bars=flat|glass|neon|segments`, kept in the
-  browser): flat; glass (a top sheen, a darker lip, a glow in the run's own hue, one light sweeping
-  across once drawn); neon (a bright core in a halo, a slow light flowing along); segments (an LED
-  row, one lit pill per unit where the runs are small whole counts, such as a jury's votes). A bar
-  of several hues glows in a neutral light, never one side's. Every look keeps the 10px, the runs,
-  the gaps and the reveal.
+  aurora (which read pastel on Light and purple on Kleros). The bar is an LED row (round 7: the
+  owner picked it from the four looks round 6 put on trial): lit 7px segments 3px apart with a
+  soft glow in the run's own hue; where the runs are small whole counts (a jury's votes) each unit
+  is its own lit pill. A bar of several hues glows in a neutral light, never one side's.
 - **The launch drawing** (`pages/launch-list/deposit-fate.tsx`) is the base lifecycle's lanes
   without its steps, durations or axis break. Lane 1, Open to challenge, is a `LaneBar` with its
-  bloom head: a Standard bar stops part-way across (0.32 of the lane, not a measurement), a Stake
+  bloom head: a Standard bar stops part-way across (0.38 of the lane, not a measurement), a Stake
   bar runs the full width. Lane 2, the money, is a 2px `muted` hairline from a 7px dot to a 9px
   `registered` node with a 3.5px 22% halo, set under the bar's end cap and named under it by the
   event that releases the money ("Registered" / "Withdrawn"); the coin follows the lane's name in
@@ -522,7 +516,7 @@ way (dashboard, Browse, registry pages, the profile, the landing page).
   address for them and the feed filters them out (`scopedRulings`). The share of disputes that went
   to the challenger, and the dispute count it states, are the Standard and Stake rulings only, the
   same count as the Disputes panel's, so "show more" can always reach it; the self-sustaining
-  panel's Classic line names exactly what Classic adds (lists, entries, bounties). A reading of
+  panel states no Classic line (round 7). A reading of
   that share ("mostly well founded") is claimed only on at least 30 rulings. Two figures stay
   Standard and Stake only: a curator's own bounties won, which has to match their profile page,
   and the Kleros Verified count, whose tiles are links.
@@ -576,15 +570,14 @@ way (dashboard, Browse, registry pages, the profile, the landing page).
 
 ## Dashboard
 
-- **Open for verification** sits under Happening now with no box and no bar (round 6), centred
-  on the page: under its title, two large figures side by side, parted by a hairline, the count
-  open now ("open now, in their challenge window") and the bounties, dollars first with the coin
-  smaller under them, labelled "Bounties up for grabs" in the accent, the one invitation on the
-  strip. Under the pair, centred and wrapping, the lists holding those requests, each as its own
-  figure: the count, then the list's logo and name, a link to its open requests; past the top
-  four, the rest as "N in M other lists". With nothing open the count says how many requests only
-  wait to be executed, and the Stake lists that stay open take the lists' line, or one link to
-  them.
+- **Open for verification** sits under Happening now with no box (round 6), centred on the page:
+  under its title, two large figures side by side, parted by a hairline, the count open now and
+  the bounties, dollars first with the coin smaller under them, labelled "Bounties up for grabs" in
+  the accent. Under the pair, labelled "Lists with bounties up for grabs" (round 7), the lists
+  holding those requests as tiles of one width in a centred row (raised glass, 14px radius): the
+  list's logo and name over its count of open requests, a link to them; past the top four, the
+  rest as one tile. With nothing open the count says how many requests only wait to be executed,
+  and the Stake lists that stay open take the tiles, or one link to them.
 - **Whole rows only.** A board column never cuts a card and never scrolls inside the page. The two
   columns share a cap snapped to the submissions' whole rows, the one nearest 760px (776px, six
   rows, on / at 1440). The submissions draw the rows that fit whole, counted over the chrome they
@@ -598,8 +591,16 @@ way (dashboard, Browse, registry pages, the profile, the landing page).
   not drawn and the Disputes panel takes the width, two rows to a line, its first page even so no
   cell is blank; an odd last row spans the line. Phones stack.
 - Tooltip triggers are their own text's width, so a bubble opens over what it explains.
+- **The chart** (round 7) shows every mainnet: the dashboard's chain switch is hidden for now and
+  the page is always "All chains", unnamed. Its switch is the range, `30D · 6M · 1Y · 5Y · All`:
+  30D per day from the page's own load; 6M and 1Y per week, 5Y and All per month, from the whole
+  history (Standard requests and challenges, Stake submissions and challenges; Classic left out),
+  read in pages after the page's own load, three at a time, and retried as a whole if a chain
+  fails, never drawn with a hole. The current bucket is drawn dashed.
+- **Top curators are all time** (round 7), ranked by requests plus challenges from that same
+  history, with their bounties won all time.
 - **Self-sustaining mechanism.** Each ring carries a tooltip built from the same counts as the
-  sentence. The sentence sits under the money at a 68ch measure, beside the tiles when there are
+  sentence. No line names the Classic lists (round 7). The sentence sits under the money at a 68ch measure, beside the tiles when there are
   one or two coins. Two or three coins take one equal column each across the money column, a lone
   coin is never stretched, and four or more auto-fit; between 901 and 1099px the rings are 140px so
   three coins fit on one line, and at 900px and below the rings take half the width each, centred.
@@ -613,8 +614,8 @@ way (dashboard, Browse, registry pages, the profile, the landing page).
   strip, then Full details directly under it. Right, 360px: the one clock (never boxed), the action
   under it (amount, sentence, button), drawn bare as part of the featured panel, not as a card in
   it. In court there is no action there: the case panel holds the actions. The thing to do is on
-  the first screen at 1440x900 in every state. Above 1000px the right column is sticky under the
-  app bar inside the hero. The action card never repeats the ruling or the case while the case
+  the first screen at 1440x900 in every state. Nothing on the right of an entry floats (round 7):
+  the hero's right column and the history's rail scroll with the page. The action card never repeats the ruling or the case while the case
   panel or the court record states them, and a settled clock line says how the case ended, not
   which case ("decided by jurors"): the case is named once, in the court record.
 - **The facts strip** (`components/curate/item-hero-facts.tsx`), shared by Standard and Stake:
@@ -681,7 +682,9 @@ way (dashboard, Browse, registry pages, the profile, the landing page).
 - **Status** is one dropdown on the toolbar's first line (round 6), "Status · All", one choice at
   a time: each status led by its dot, its count at the right; under a hairline, "Previously
   disputed", every entry that has been to court whatever its status now (Standard: any request
-  disputed; Stake: any challenge), counted from an id-only read ("1,000+" past its limit). On a
+  disputed; Stake: any challenge), led by a multicolour LED (a conic of the four status hues) and
+  carrying no count (round 7); an id-only read sizes the list under it. Sensitive entries show by
+  default (round 7); the reader's "Hide sensitive content" choice is kept. On a
   Stake list "Listed" counts and filters every entry on the list (submitted + disputed, the
   header's and Browse's "Listed"); "Disputed now" is the part a challenge is running on, "Off the
   list" the rest. The toolbar is one line on desktop: search, status, the sensitive-content switch,

@@ -26,7 +26,7 @@ import { CurateIcon } from './icons'
  * each status led by its dot and followed by its count; under a hairline,
  * "Previously disputed", every entry that has been to court whatever its
  * status now, a way into the list's history rather than a status of its
- * own. Seven choices with their counts read better in a menu than in a rail
+ * own, led by a multicolour LED and carrying no count (round 7). Seven choices with their counts read better in a menu than in a rail
  * that scrolled on phones, and combining statuses was rarely what anyone
  * wanted.
  */
@@ -133,6 +133,30 @@ const ChipDot = styled(StatusDot)`
   margin: 0 2px 0 1px;
 `
 
+/*
+ * "Previously disputed" has no single status, so its dot is every status
+ * at once (round 7: "a multicolor led"): a conic of the four status hues
+ * with a white core, haloed like a status dot. It carries no count.
+ */
+const MultiLed = styled.span`
+  display: inline-block;
+  flex: 0 0 auto;
+  width: 8px;
+  height: 8px;
+  margin: 0 2px 0 1px;
+  border-radius: var(--radius-pill);
+  background:
+    radial-gradient(circle, rgba(255, 255, 255, 0.85) 0 18%, transparent 46%),
+    conic-gradient(
+      var(--status-registered),
+      var(--status-window),
+      var(--status-contested),
+      var(--status-off),
+      var(--status-registered)
+    );
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-text) 14%, transparent);
+`
+
 /** One choice in the status menu. */
 export interface FilterChip {
   key: string
@@ -147,6 +171,8 @@ export interface FilterChip {
   hint?: string
   /** Starts a new group under a hairline. */
   divider?: boolean
+  /** Led by the multicolour LED (a choice across every status). */
+  led?: boolean
 }
 
 /**
@@ -219,7 +245,11 @@ export function RegistryToolbar<L extends ListLayout>({
       label: chip.label,
       hint: chip.hint,
       divider: chip.divider,
-      icon: chip.tone ? <ChipDot $tone={chip.tone} aria-hidden /> : undefined,
+      icon: chip.led ? (
+        <MultiLed aria-hidden />
+      ) : chip.tone ? (
+        <ChipDot $tone={chip.tone} aria-hidden />
+      ) : undefined,
       count:
         chip.count !== undefined && Number.isFinite(chip.count)
           ? `${integer.format(chip.count)}${chip.countCapped ? '+' : ''}`

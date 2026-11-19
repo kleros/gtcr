@@ -1507,7 +1507,7 @@ const normalizePermanentLeaderboardPage = (
   return users
 }
 
-interface ActivityEvent {
+export interface ActivityEvent {
   at: number
   chainId: number
   kind: 'submissions' | 'removals' | 'challenges'
@@ -1698,6 +1698,158 @@ const fetchCuratorLeaderboard = async (
   }
 }
 
+/** Pages read per chain and indexer when the whole history is asked for. */
+const HISTORY_MAX_PAGES = 80
+/**
+ * History pages read at once per chain and indexer: few, since the browser
+ * opens six connections per host and the page's own reads share them.
+ */
+const HISTORY_CONCURRENCY = 3
+/** A history page may wait behind the page's own reads: a longer timeout. */
+const HISTORY_TIMEOUT_MS = 30_000
+
+/**
+ * The curator rows of an indexer, every page of them, `concurrency` pages at
+ * a time until a batch holds a page that is not full (every later page is
+ * then empty). Rows are kept once per id, as readCuratorPages keeps them.
+ */
+const readAllCuratorPages = async (
+  fetchPage: (
+    page: number,
+  ) => Promise<Record<string, any[] | undefined> | null>,
+  keys: string[],
+): Promise<{
+  payload: Record<string, any[]>
+  failed: boolean
+  truncated: boolean
+}> => {
+  const payload: Record<string, any[]> = Object.fromEntries(
+    keys.map((key) => [key, []]),
+  )
+  const seen = new Set<string>()
+  for (let first = 0; first < HISTORY_MAX_PAGES; first += HISTORY_CONCURRENCY) {
+    const pages = await Promise.all(
+      Array.from(
+        { length: Math.min(HISTORY_CONCURRENCY, HISTORY_MAX_PAGES - first) },
+        (_, index) => fetchPage(first + index),
+      ),
+    )
+    let done = false
+    for (const next of pages) {
+      if (!next) return { payload, failed: true, truncated: false }
+      for (const key of keys)
+        for (const row of next[key] ?? []) {
+          const id = `${key}:${row?.id}`
+          if (row?.id !== undefined && seen.has(id)) continue
+          seen.add(id)
+          payload[key].push(row)
+        }
+      const full = keys.some(
+        (key) => (next[key]?.length ?? 0) >= LEADERBOARD_PAGE_SIZE,
+      )
+      if (!full) done = true
+    }
+    if (done) return { payload, failed: false, truncated: false }
+  }
+  return { payload, failed: false, truncated: true }
+}
+
+/** Every request and challenge on the Standard and Stake lists, all time. */
+export interface ActivityHistory {
+  /** Every curator, all time, per chain (the 30-day load's shape). */
+  users: DashboardUser[]
+  /** One event per request and per challenge, for the chart's long ranges. */
+  events: ActivityEvent[]
+  /** Chains whose history did not load in full. */
+  failed: number[]
+  /** A history longer than the pages allowed: its oldest part is missing. */
+  truncated: boolean
+}
+
+/**
+ * The whole history (round 7: Top curators "always all time", and the
+ * chart's 6M / 1Y / 5Y / All ranges). The same rows the 30-day load reads,
+ * from the start: the Standard lists' requests and challenges, and the
+ * Stake lists' submissions and challenges. The retired Classic lists stay
+ * out, as everywhere but the bounties and the entries ever curated (round 4:
+ * "only for this"). It is read after the dashboard's own load, in pages read
+ * a few at a time, and kept by the caller's query cache.
+ */
+export const fetchActivityHistory = async (
+  chains: number[],
+): Promise<ActivityHistory> => {
+  const reads = await Promise.all(
+    chains.flatMap((chainId) => {
+      const envioUrl = subgraphUrl[chainId]
+      const stakeUrl = subgraphUrlPermanent[chainId]
+      return [
+        envioUrl
+          ? readAllCuratorPages(
+              (page) =>
+                safeRequest<any>(
+                  envioUrl,
+                  ENVIO_CURATOR_PAGE_QUERY,
+                  {
+                    chainId,
+                    since: 0,
+                    limit: LEADERBOARD_PAGE_SIZE,
+                    offset: page * LEADERBOARD_PAGE_SIZE,
+                  },
+                  HISTORY_TIMEOUT_MS,
+                ),
+              ENVIO_CURATOR_KEYS,
+            ).then((read) => ({
+              ...read,
+              chainId,
+              users: normalizeEnvioLeaderboardPage(read.payload, chainId, 0),
+              events: envioPageEvents(read.payload, chainId, 0),
+            }))
+          : null,
+        stakeUrl
+          ? readAllCuratorPages(
+              (page) =>
+                safeRequest<any>(
+                  stakeUrl,
+                  PERMANENT_CURATOR_PAGE_QUERY,
+                  {
+                    since: '0',
+                    first: LEADERBOARD_PAGE_SIZE,
+                    skip: page * LEADERBOARD_PAGE_SIZE,
+                  },
+                  HISTORY_TIMEOUT_MS,
+                ),
+              PERMANENT_CURATOR_KEYS,
+            ).then((read) => ({
+              ...read,
+              chainId,
+              users: normalizePermanentLeaderboardPage(
+                read.payload,
+                chainId,
+                0,
+              ),
+              events: permanentPageEvents(read.payload, 0, chainId),
+            }))
+          : null,
+      ]
+    }),
+  )
+  const valid = reads.filter(
+    (read): read is NonNullable<(typeof reads)[number]> => read !== null,
+  )
+  // A history with a hole would draw a false dip and rank curators short:
+  // the read fails as a whole, and the caller's query retries it.
+  if (valid.some((read) => read.failed))
+    throw new Error('The curation history did not load in full')
+  return {
+    users: mergeUsers(valid.map((read) => read.users)),
+    events: valid.flatMap((read) => read.events),
+    failed: [
+      ...new Set(valid.filter((read) => read.failed).map((r) => r.chainId)),
+    ],
+    truncated: valid.some((read) => read.truncated),
+  }
+}
+
 const dedupeRegistries = (
   registries: DashboardRegistry[],
 ): DashboardRegistry[] => {
@@ -1762,13 +1914,11 @@ const safeRequest = async <T>(
   url: string | undefined,
   query: string,
   variables: Record<string, unknown> = {},
+  timeout = DASHBOARD_QUERY_TIMEOUT_MS,
 ): Promise<T | null> => {
   if (!url) return null
   const controller = new AbortController()
-  const timer = window.setTimeout(
-    () => controller.abort(),
-    DASHBOARD_QUERY_TIMEOUT_MS,
-  )
+  const timer = window.setTimeout(() => controller.abort(), timeout)
   try {
     return await request<T>({
       url,

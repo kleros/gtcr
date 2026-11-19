@@ -667,46 +667,6 @@ const heldUpSentence = (
     : `${share.charAt(0).toUpperCase()}${share.slice(1)}${reading}.`
 }
 
-/** The retired Classic lists' share of these figures, named in one line. */
-export interface ClassicHistory {
-  lists: number
-  entries: number
-  /**
-   * Their wins that carried an amount: counted in the coins' bounties, and
-   * never a row (view.ts, scopedBounties.classicBounties).
-   */
-  bounties: number
-  /** The Classic read came back full: its entries are a lower bound. */
-  capped: boolean
-}
-
-/**
- * The retired Classic lists, in one faint line: the entries ever curated
- * and the bounties are the only figures on the page that count them (round
- * 4, "only for this"), and this is the one place that is said; the court's
- * share leaves them out, and its own words name the lists it is taken on.
- * It is built from the load alone — no date, no hardcoded total — and it
- * drops the parts the scope has none of.
- */
-const classicLine = (classic?: ClassicHistory): string | undefined => {
-  if (!classic || classic.lists === 0) return undefined
-  // Lists that hold nothing and paid no bounty move no figure on this
-  // page, so naming them would explain nothing (Sepolia's two).
-  if (classic.entries === 0 && classic.bounties === 0) return undefined
-  const plus = classic.capped ? '+' : ''
-  const parts = [
-    `${formatInt(classic.lists)}${plus} ${classic.lists === 1 ? 'list' : 'lists'}`,
-    `${formatInt(classic.entries)}${plus} ${classic.entries === 1 ? 'entry' : 'entries'}`,
-  ]
-  if (classic.bounties > 0)
-    parts.push(
-      `${formatInt(classic.bounties)} ${classic.bounties === 1 ? 'bounty' : 'bounties'}`,
-    )
-  const last = parts.pop()
-  const what = classic.bounties > 0 ? 'entries and bounties' : 'entries'
-  return `The ${what} include the retired Classic lists: ${parts.join(', ')} and ${last}, none with a page in this app.`
-}
-
 /**
  * The self-sustaining mechanism: how much of everything they have ever held
  * nobody disputed, how the court ruled when somebody did, and what the
@@ -716,7 +676,6 @@ const classicLine = (classic?: ClassicHistory): string | undefined => {
 export const VerificationRecord = ({
   record,
   entries,
-  classic,
   prices,
   pricesSettled,
 }: {
@@ -730,8 +689,6 @@ export const VerificationRecord = ({
    * rather than drawn short.
    */
   entries?: number
-  /** What of these figures the retired Classic lists account for. */
-  classic?: ClassicHistory
   /**
    * Dollars per whole coin, keyed by `BountyCoin.key` (use-usd-prices.ts). A
    * coin missing from it, and every coin once the prices never arrive, leads
@@ -782,7 +739,6 @@ export const VerificationRecord = ({
   const sentence = record
     ? heldUpSentence(record, entries, never, wonShare, plus)
     : undefined
-  const classicNote = classicLine(classic)
   // Several Stake tokens in scope: say once that they are not one total.
   const stakeCoins = record?.coins.filter((coin) => coin.stake).length ?? 0
   const ringKey = record ? `${record.loaded.join('-')}-${record.rulings}` : ''
@@ -790,16 +746,11 @@ export const VerificationRecord = ({
   // One or two tiles leave the column's width to the words beside them.
   const beside = coinCount > 0 && coinCount <= 2 ? coinCount : undefined
   const words =
-    record && (sentence || classicNote || missing) ? (
+    record && (sentence || missing) ? (
       <Words data-words="">
         {sentence && (
           <Small $muted as="p">
             {sentence}
-          </Small>
-        )}
-        {classicNote && (
-          <Small $faint as="p">
-            {classicNote}
           </Small>
         )}
         {missing && (

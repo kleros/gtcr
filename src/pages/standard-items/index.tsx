@@ -377,7 +377,9 @@ const Items = () => {
   const [submissionFormOpen, setSubmissionFormOpen] = useState<
     boolean | undefined
   >()
-  const [nsfwFilterOn, setNSFWFilter] = useState(true)
+  // Sensitive entries show unless the reader hides them (round 7); their
+  // choice is kept and restored below.
+  const [nsfwFilterOn, setNSFWFilter] = useState(false)
   // The search box lives in the URL (?q=), so Back from an entry, a reload
   // or a shared link keeps it. Typing replaces the history entry: Back
   // leaves the list instead of undoing keystrokes.
@@ -575,8 +577,8 @@ const Items = () => {
     }
   }, [counters])
 
-  // How many entries have been to court at least once: the status menu's
-  // "Previously disputed" count, and the list's size under that choice.
+  // How many entries have been to court at least once: the list's size
+  // under the status menu's "Previously disputed" (which shows no count).
   const disputedBeforeQuery = useQuery({
     queryKey: ['standardDisputedBefore', chainId, tcrAddress?.toLowerCase()],
     queryFn: (): Promise<{ litems?: { itemID: string }[] }> =>
@@ -593,9 +595,6 @@ const Items = () => {
     staleTime: STALE_TIME,
   })
   const disputedBeforeCount = disputedBeforeQuery.data?.litems?.length
-  const disputedBeforeCapped =
-    disputedBeforeCount !== undefined &&
-    disputedBeforeCount >= DISPUTED_BEFORE_LIMIT
 
   /** Entries the current filters cover: all of them, or the selected sum. */
   const itemCount = useMemo(() => {
@@ -1147,8 +1146,7 @@ const Items = () => {
       key: FILTER_KEYS.DISPUTED_BEFORE,
       label: 'Previously disputed',
       hint: 'Every entry that has been to court, whatever its status now',
-      count: disputedBeforeCount,
-      countCapped: disputedBeforeCapped,
+      led: true,
       divider: true,
       checked: !!disputedBefore,
     },

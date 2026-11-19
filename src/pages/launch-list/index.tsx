@@ -71,12 +71,14 @@ const isKind = (value: string | null): value is Kind =>
 
 /**
  * Where the Standard deposit comes back, as a share of a lane with no axis:
- * about where the original lifecycle put registration (31% of its lane at
- * 1440). Not a measurement. A short bar beside the Stake card's full one is
- * what makes "one-time" visible; the dashed removal band at the lane's end
- * is as long, since a removal request runs on the same challenge period.
+ * a little past where the original lifecycle put registration (31% of its
+ * lane at 1440), so the gap before the removal band stays short (round 7:
+ * "make the gap in the standard list a bit smaller"). Not a measurement. A
+ * short bar beside the Stake card's full one is what makes "one-time"
+ * visible; the dashed removal band at the lane's end is as long, since a
+ * removal request runs on the same challenge period.
  */
-const RETURNED_AT = 0.32
+const RETURNED_AT = 0.38
 
 const STANDARD_FATE: FateSpec = {
   lane: 'Deposit locked',

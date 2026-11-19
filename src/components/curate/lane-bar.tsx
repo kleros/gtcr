@@ -10,9 +10,9 @@ import styled, { css, keyframes } from 'styled-components'
  * tally (components/curate/dispute-jury.tsx), where each side's votes are a
  * run of their own. Every round before this one reinvented the bar (a pastel,
  * a lit groove, a glowing band, a hairline) and each read worse than the
- * base, so the look is fixed here and nowhere else: a 10px solid run with
- * round caps, in a flat hue, with no track behind it, no gradient and no
- * glow.
+ * base, so the look is fixed here and nowhere else: a 10px row of lit
+ * segments with round ends, in a flat hue with a soft glow of its own, and
+ * no track behind it (round 7's pick, see below).
  *
  * It draws once, left to right, at a constant speed per full width, so a
  * short bar finishes sooner than a long one and two bars on a page stay in
@@ -114,41 +114,12 @@ export type LaneBarProps = {
 }
 
 /*
- * Round 6 ("the bar style should be more cool"): the bar's look, chosen
- * from the page's address (?bars=flat|glass|neon|segments) and kept in this
- * browser, so the owner can compare the candidates on the real pages before
- * one is kept. Every look keeps the bar's 10px, its runs, its gaps and its
- * reveal; only the paint changes.
- *  - flat: round 5's solid run (the base's band).
- *  - glass: the app's lit-glass idiom on the run: a top sheen, a darker lip,
- *    a soft glow in the run's own hue, and one light sweeping across once
- *    it has drawn.
- *  - neon: a bright core in a strong halo, with a slow light flowing along.
- *  - segments: an LED row; where the runs are small whole counts (a jury's
- *    votes) each unit is its own lit pill.
+ * The bar is an LED row (round 7: the owner picked "segments" of the four
+ * looks round 6 put on trial): a run is lit 7px segments 3px apart, with a
+ * soft glow in its own hue; where the runs are small whole counts (a jury's
+ * votes) each unit is its own lit pill, so a tally is counted at a glance.
+ * A bar of several hues glows in a neutral light, never one side's.
  */
-export type BarLook = 'flat' | 'glass' | 'neon' | 'segments'
-const LOOKS: BarLook[] = ['flat', 'glass', 'neon', 'segments']
-const LOOK_KEY = 'curatevision-bars'
-const DEFAULT_LOOK: BarLook = 'glass'
-
-const readLook = (): BarLook => {
-  if (typeof window === 'undefined') return DEFAULT_LOOK
-  const asked = new URLSearchParams(window.location.search).get('bars')
-  try {
-    if (asked && (LOOKS as string[]).includes(asked)) {
-      window.localStorage.setItem(LOOK_KEY, asked)
-      return asked as BarLook
-    }
-    const kept = window.localStorage.getItem(LOOK_KEY)
-    if (kept && (LOOKS as string[]).includes(kept)) return kept as BarLook
-  } catch {
-    // Storage blocked: the address alone decides.
-    if (asked && (LOOKS as string[]).includes(asked)) return asked as BarLook
-  }
-  return DEFAULT_LOOK
-}
-
 /** Whole counts small enough to draw one pill per unit (a jury's seats). */
 const UNIT_LIMIT = 60
 
@@ -174,12 +145,6 @@ const travel = keyframes`
 const vanish = keyframes`
   from { opacity: 1; transform: translateX(0); }
   to { opacity: 0; transform: translateX(0); }
-`
-
-/* A light crossing the drawn bar: once for glass, slowly on for neon. */
-const sheen = keyframes`
-  from { transform: translateX(-100%); }
-  to { transform: translateX(100%); }
 `
 
 /*
@@ -220,7 +185,7 @@ const Run = styled.span`
   }
 `
 
-/* One unit of a run (segments look, small whole counts): a lit pill. */
+/* One unit of a run (small whole counts): a lit pill. */
 const Unit = styled.i`
   flex: 1 1 0;
   min-width: 3px;
@@ -229,102 +194,25 @@ const Unit = styled.i`
   background: var(--hue);
 `
 
-/* The light that crosses the drawn bar (glass, neon), clipped to the runs. */
-const Sheen = styled.span`
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  opacity: 0;
-  background: linear-gradient(
-    100deg,
-    transparent 0 38%,
-    rgba(255, 255, 255, 0.6) 50%,
-    transparent 62%
-  );
-  mix-blend-mode: overlay;
-`
-
-/* The looks' paint (see BarLook). The glow is a filter on the mask, so it
-   reaches past the clip the reveal needs. */
-const looks = css`
-  &[data-look='glass'] {
-    ${Mask} {
-      filter: drop-shadow(
-          0 0 5px color-mix(in srgb, var(--glow) 70%, transparent)
-        )
-        drop-shadow(0 2px 9px color-mix(in srgb, var(--glow) 35%, transparent));
-    }
-
-    ${Run}, ${Unit} {
-      background: linear-gradient(
-        180deg,
-        color-mix(in srgb, var(--hue), #fff 48%) 0%,
-        var(--hue) 52%,
-        color-mix(in srgb, var(--hue), #000 22%) 100%
-      );
-      box-shadow:
-        inset 0 1px 0 rgba(255, 255, 255, 0.4),
-        inset 0 -1px 0 rgba(0, 0, 0, 0.18);
-    }
+/* The LED paint. The glow is a filter on the mask, so it reaches past the
+   clip the reveal needs. */
+const led = css`
+  ${Mask} {
+    filter: drop-shadow(
+      0 0 4px color-mix(in srgb, var(--glow) 60%, transparent)
+    );
   }
 
-  &[data-look='neon'] {
-    ${Mask} {
-      filter: drop-shadow(0 0 3px var(--glow))
-        drop-shadow(0 0 10px color-mix(in srgb, var(--glow) 75%, transparent));
-    }
-
-    ${Run}, ${Unit} {
-      background: linear-gradient(
-        90deg,
-        color-mix(in srgb, var(--hue), #fff 8%),
-        color-mix(in srgb, var(--hue), #fff 42%)
-      );
-      box-shadow:
-        inset 0 0 0 1px color-mix(in srgb, var(--hue), #fff 60%),
-        inset 0 0 5px rgba(255, 255, 255, 0.45);
-    }
+  ${Run}:not([data-units]):not([data-empty]) {
+    background: repeating-linear-gradient(
+      90deg,
+      var(--hue) 0 7px,
+      transparent 7px 10px
+    );
   }
 
-  &[data-look='segments'] {
-    ${Mask} {
-      filter: drop-shadow(
-        0 0 4px color-mix(in srgb, var(--glow) 60%, transparent)
-      );
-    }
-
-    ${Run}:not([data-units]) {
-      background: repeating-linear-gradient(
-        90deg,
-        var(--hue) 0 7px,
-        transparent 7px 10px
-      );
-    }
-
-    ${Run}[data-units] {
-      background: none;
-    }
-  }
-
-  &[data-look='glass']
-    ${Run}[data-empty],
-    &[data-look='neon']
-    ${Run}[data-empty],
-    &[data-look='segments']
-    ${Run}[data-empty] {
+  ${Run}[data-units] {
     background: none;
-    box-shadow: none;
-  }
-
-  @media (prefers-reduced-motion: no-preference) {
-    &[data-armed][data-look='glass'] ${Sheen} {
-      animation: ${sheen} 900ms ease-in-out calc(var(--d) + var(--t) + 120ms) 1
-        both;
-    }
-
-    &[data-armed][data-look='neon'] ${Sheen} {
-      animation: ${sheen} 2600ms ease-in-out calc(var(--d) + var(--t)) infinite;
-    }
   }
 `
 
@@ -393,7 +281,7 @@ const Root = styled.span`
   -webkit-print-color-adjust: exact;
   print-color-adjust: exact;
 
-  ${looks}
+  ${led}
 
   /* Armed is the final state; the sweep below is added only for motion. */
   &[data-armed] ${Mask} {
@@ -475,7 +363,6 @@ export const LaneBar = ({
     LANE_BAR,
     shown.length * LANE_BAR + Math.max(0, shown.length - 1) * LANE_GAP,
   )
-  const [look] = React.useState(readLook)
   // The glow takes the bar's hue where it has one; a bar of several hues (a
   // jury's two sides) glows in a neutral light rather than one side's.
   const hues = [
@@ -491,7 +378,6 @@ export const LaneBar = ({
   // votes); a bar that is one span of time (the launch lanes) is an LED row.
   const total = shown.reduce((sum, run) => sum + run.weight, 0)
   const units =
-    look === 'segments' &&
     shown.every((run) => Number.isInteger(run.weight)) &&
     total >= 2 &&
     total <= UNIT_LIMIT
@@ -509,7 +395,6 @@ export const LaneBar = ({
       aria-hidden
       className={className}
       data-armed={armed ? '' : undefined}
-      data-look={look}
       style={style}
     >
       <Mask>
@@ -537,7 +422,6 @@ export const LaneBar = ({
             )
           })}
         </Runs>
-        {(look === 'glass' || look === 'neon') && <Sheen />}
       </Mask>
       {head && shown.length > 0 && (
         <HeadClip>

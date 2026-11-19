@@ -42,10 +42,10 @@ import { chainInfo, type DashboardCard } from './view'
  * the page, two large figures side by side, parted by a hairline: the count
  * open now, and the bounties, "up for grabs" (round 6: say these are live
  * now and make people want them), dollars first with the coin smaller under
- * them. Under the pair, centred and wrapping, the lists holding those
- * requests, each as its own figure: the count, then the list's logo and
- * name, a link to its open requests. Most first; past the top four, the rest
- * as one "N in M other lists".
+ * them. Under the pair, labelled "Lists with bounties up for grabs" (round
+ * 7), the lists holding those requests as tiles of one width in a centred
+ * row: the list's logo and name over its count of open requests, a link to
+ * them. Most first; past the top four, the rest as one tile.
  *
  * The collateral leads in dollars where a Chainlink feed on the coin's own
  * chain answers (prices.ts), with the exact coin amount and its chain under
@@ -281,88 +281,111 @@ const Place = styled.span`
 `
 
 /*
- * Where they are: one figure per list, centred and wrapping, no bar and no
- * box. The count leads in the figure face, the list's logo and name follow.
+ * Where the bounties are (round 7: "mention that the registries shown with
+ * the numbers are the ones with bounties up for grabs … make it more
+ * elegant, maybe boxed"): a label, then one tile per list, all the same
+ * width, centred as a row and wrapping as one. A tile is the list's logo
+ * and name over its count of open requests, and links to them.
  */
 const Lists = styled.ul`
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 230px));
   justify-content: center;
-  gap: 10px 36px;
-  max-width: 100%;
+  gap: 10px;
+  width: 100%;
   margin: 0;
   padding: 0;
   list-style: none;
 
   @media (max-width: 720px) {
-    gap: 10px 22px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 `
 
-const ListItem = styled.li`
-  display: inline-flex;
-  align-items: center;
+const tile = css`
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
   gap: 10px;
+  height: 100%;
   min-width: 0;
-  max-width: 100%;
-`
-
-const ListCount = styled.b`
-  color: var(--color-text);
-  font-family: var(--font-figure);
-  font-size: 24px;
-  line-height: 28px;
-  font-weight: 500;
-  letter-spacing: -0.02em;
-  font-variant-numeric: tabular-nums;
-`
-
-const listName = css`
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
-  max-width: 34ch;
-  color: var(--color-muted);
-  font-size: 15px;
-  line-height: 22px;
+  padding: 14px 16px;
+  border: 1px solid var(--glass-border);
+  border-radius: 14px;
+  background: var(--color-raised);
+  box-shadow: inset 0 1px 0 var(--glass-highlight);
+  color: inherit;
+  text-align: left;
   text-decoration: none;
-
-  span {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  &:hover {
-    color: var(--color-primary);
-  }
+  transition:
+    border-color var(--motion),
+    translate var(--motion);
 
   &:focus-visible {
     outline: 2px solid var(--color-primary);
     outline-offset: 2px;
-    border-radius: 4px;
   }
 `
 
-const ListName = styled(Link)`
-  ${listName}
-`
-
-const Others = styled.span`
-  ${listName}
+const TileLink = styled(Link)`
+  ${tile}
 
   &:hover {
-    color: var(--color-muted);
+    border-color: var(--color-border-strong);
+    translate: 0 -2px;
+  }
+
+  &:hover [data-name] {
+    color: var(--color-primary);
   }
 `
 
-const OthersLink = styled(Link)`
-  ${listName}
+const TileStatic = styled.div`
+  ${tile}
 `
 
-/* The faint line over the Stake lists when nothing else is open. */
+const TileName = styled.span`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-width: 0;
+  color: var(--color-muted);
+  font-size: 14px;
+  line-height: 20px;
+  transition: color var(--motion);
+
+  > span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+`
+
+const TileCount = styled.span`
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  color: var(--color-text);
+  font-family: var(--font-figure);
+  font-size: 26px;
+  line-height: 28px;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+
+  small {
+    color: var(--color-faint);
+    font-family: var(--font-body);
+    font-size: 13px;
+    font-weight: 400;
+    letter-spacing: 0;
+  }
+`
+
+/* What the tiles are, centred over them. */
 const ListsLabel = styled.span`
+  margin-bottom: -8px;
   color: var(--color-faint);
   font-size: 13px;
   line-height: 18px;
@@ -475,36 +498,56 @@ const whereOf = (lists: OpenListChip[]): Where[] => {
   return shown.filter((entry) => entry.count > 0)
 }
 
-/** The lists' line: each list's count, then its logo and name. */
+/** The lists' tiles: each list's logo and name over its count. */
 const WhereLine = ({
   where,
   label,
+  unit,
   restHref,
 }: {
   where: Where[]
   label: string
+  /** What the count counts, after it: "open", "open to challenge". */
+  unit: string
   restHref?: string
 }) => (
   <Lists aria-label={label}>
-    {where.map((entry) => (
-      <ListItem key={entry.key}>
-        <ListCount>{formatInt(entry.count)}</ListCount>
-        {entry.list ? (
-          <ListName to={entry.list.href} title={entry.list.title}>
-            <ListLogo uri={entry.list.logo} seed={entry.list.key} size={20} />
-            <span>{entry.list.title}</span>
-          </ListName>
-        ) : restHref ? (
-          <OthersLink to={restHref}>
-            <span>in {formatInt(entry.lists ?? 0)} other lists</span>
-          </OthersLink>
-        ) : (
-          <Others>
-            <span>in {formatInt(entry.lists ?? 0)} other lists</span>
-          </Others>
-        )}
-      </ListItem>
-    ))}
+    {where.map((entry) => {
+      const body = (
+        <>
+          <TileName data-name="">
+            {entry.list ? (
+              <>
+                <ListLogo
+                  uri={entry.list.logo}
+                  seed={entry.list.key}
+                  size={22}
+                />
+                <span>{entry.list.title}</span>
+              </>
+            ) : (
+              <span>{formatInt(entry.lists ?? 0)} other lists</span>
+            )}
+          </TileName>
+          <TileCount>
+            {formatInt(entry.count)}
+            <small>{unit}</small>
+          </TileCount>
+        </>
+      )
+      const href = entry.list?.href ?? restHref
+      return (
+        <li key={entry.key}>
+          {href ? (
+            <TileLink to={href} title={entry.list?.title}>
+              {body}
+            </TileLink>
+          ) : (
+            <TileStatic>{body}</TileStatic>
+          )}
+        </li>
+      )
+    })}
   </Lists>
 )
 
@@ -727,10 +770,14 @@ export const OpenForVerification = ({
       )}
 
       {where.length > 0 && (
-        <WhereLine
-          where={where}
-          label="Where those requests are, by list, most first"
-        />
+        <>
+          <ListsLabel>Lists with bounties up for grabs</ListsLabel>
+          <WhereLine
+            where={where}
+            unit="open"
+            label="Lists with bounties up for grabs, most open requests first"
+          />
+        </>
       )}
 
       {stakeWhere.length > 0 && (
@@ -738,6 +785,7 @@ export const OpenForVerification = ({
           <ListsLabel>Always open to challenge on Stake lists</ListsLabel>
           <WhereLine
             where={stakeWhere}
+            unit="to challenge"
             label="Entries anyone can challenge now on the Stake lists, by list, most first"
             restHref={stakeHref}
           />

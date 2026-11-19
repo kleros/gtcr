@@ -14,7 +14,6 @@ import _gtcr from 'assets/abis/PermanentGTCR.json'
 import useUrlChainId from 'hooks/use-url-chain-id'
 import useDocumentHead from 'hooks/use-document-head'
 import useNow from 'hooks/use-now'
-import useStickyTop from 'hooks/use-sticky-top'
 import useNativeCurrency from 'hooks/native-currency'
 import useTokenSymbol from 'hooks/token-symbol'
 import useArbitrationCost from 'hooks/arbitration-cost'
@@ -182,9 +181,8 @@ const Crumbs = styled.nav`
 
    The action sits under the clock so the thing to do, with its amount, is
    on the first screen at 1440x900 in every state (round 4's full details
-   had pushed the card in the rail below the fold). The right column keeps
-   pace with the reader down a field list longer than itself (sticky inside
-   the hero), as the rail the card used to sit in did.
+   had pushed the card in the rail below the fold). The right column scrolls
+   with the hero (round 7); past it, the bottom bar carries the action.
 
    At 1000px and below both columns dissolve (display: contents) and one
    order sets the sequence: identity, clock, facts, picture, full details,
@@ -217,13 +215,10 @@ const HeroLeft = styled.div`
 
 /* Its 32px top padding is HeroMain's, so the clock's label lines up with
    the eyebrow. 24px at the sides leaves the action its 312px measure, the
-   width it had as a card in the rail. Sticky under the app bar, within the
-   hero: it moves only while the left column still runs on beside it, and
-   stops at the hero's foot. A sticky box taller than the window keeps its
-   top in view, which is the clock and the action, not the picture. */
+   width it had as a card in the rail. It scrolls with the hero (round 7:
+   the sticky column read as floating); once the action is off screen the
+   bottom bar carries it (item-standard-action-bar.tsx). */
 const HeroAside = styled.div`
-  position: sticky;
-  top: calc(var(--app-bar-height) + 24px);
   display: flex;
   flex-direction: column;
   gap: 28px;
@@ -438,13 +433,11 @@ const RecordSlot = styled.div`
   }
 `
 
-/* Sticky under the app bar. Its first panel stretches to the height
+/* Beside the history; it scrolls with the page (round 7: nothing on the
+   right of an entry floats). Its first panel stretches to the height
    useLevelRow asks of it (--level-rail). */
 const Rail = styled.aside`
-  position: sticky;
-  /* Under the app bar while it fits; taller than the window, high enough
-     that its actions stay in view (useStickyTop sets --stick). */
-  top: var(--stick, calc(var(--app-bar-height) + 24px));
+  align-self: flex-start;
   display: flex;
   flex: 0 0 360px;
   flex-direction: column;
@@ -580,20 +573,13 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
   const [ipfsItemData, setIpfsItemData] = useState<ItemFile | undefined>()
   const [ipfsError, setIpfsError] = useState(false)
   const timestamp = useContext(WalletContext)?.timestamp
-  // The rail (withdrawal, appeal funding) stays reachable on short windows
-  // (useStickyTop).
-  const railRef = useStickyTop(24)
   // The two places the status card draws itself: its action under the
   // hero's clock, its withdrawal and appeal funding in the rail.
   const [actionSlot, setActionSlot] = useState<HTMLDivElement | null>(null)
   const [railSlot, setRailSlot] = useState<HTMLElement | null>(null)
-  const railSlotRef = useCallback(
-    (element: HTMLElement | null) => {
-      railRef(element)
-      setRailSlot(element)
-    },
-    [railRef],
-  )
+  const railSlotRef = useCallback((element: HTMLElement | null) => {
+    setRailSlot(element)
+  }, [])
   const [modalOpen, setModalOpen] = useState(false)
   const { graphqlBatcher } = useGraphqlBatcher()
   const now = useNow()
