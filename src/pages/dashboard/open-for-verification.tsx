@@ -56,12 +56,9 @@ import { chainInfo, type DashboardCard } from './view'
  * swaps it for dollars under the reader; a price that answers later fades in.
  * The tooltip on the label names the feeds and how old their answers are.
  *
- * With nothing open the count says so and how many requests only wait to be
- * executed, and the Stake lists, which never close to challenge, take the
- * lists' line: each with the entries anyone can challenge on it right now
- * (listed, not in court); with none to name, one link to Browse's Stake
- * lists. The board below then drops its empty submissions column
- * (happening-now.tsx).
+ * With no bounty up for grabs (nothing open, or no deposit behind what is
+ * open) the strip is not drawn at all (round 10); the board below says what
+ * is on, and drops its empty submissions column (happening-now.tsx).
  *
  * The strip owns its own loading state: the title and the labels are there
  * from the first paint, with the figures as skeletons, so no heading waits on
@@ -640,6 +637,10 @@ export const OpenForVerification = ({
   const stakeWhere = nothing ? whereOf(stakeLists ?? []) : []
   const stake = nothing && stakeWhere.length === 0 && !!stakeHref
   const pastWindow = figures && known ? figures.pastWindow : 0
+
+  // No bounty up for grabs, nothing drawn (round 10: "when bounties up for
+  // grab are 0, just hide everything"): the board below says what is on.
+  if (figures && (total === 0 || (known && !money))) return null
 
   return (
     <Strip

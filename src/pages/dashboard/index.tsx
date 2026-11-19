@@ -1180,7 +1180,6 @@ const Dashboard = () => {
                 { label: 'Registries', value: figures?.registries },
                 { label: 'Open requests', value: figures?.requestsOpen },
                 { label: 'In court now', value: figures?.inCourt },
-                { label: 'Curators · 30 days', value: figures?.curators },
               ].map((figure) => (
                 <InlineStat key={figure.label}>
                   <Label $tone="faint">{figure.label}</Label>

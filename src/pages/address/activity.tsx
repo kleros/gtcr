@@ -12,12 +12,13 @@ import {
   SegmentedControl,
   SkeletonBlock,
   Small,
-  StatusDot,
   Surface,
   truncateMiddle,
 } from 'components/curate/primitives'
 import { EntryStatus } from 'components/curate/entry-status'
 import { reveal } from 'components/curate/motion/reveal'
+import { LaneBar } from 'components/curate/lane-bar'
+import { CuratorMedal } from 'components/curate/curator-medal'
 import { Pagination } from 'components/ui'
 import Tooltip from 'components/ui/Tooltip'
 import type { AddressBadge, ProfileActivity } from './data'
@@ -526,35 +527,61 @@ const RailHead = styled.div`
   }
 `
 
-const BadgeRow = styled.div`
+/*
+ * One badge (round 10: "the badge section is SO BASIC"): its medal, then
+ * its name and its rule, then how far it is (an LED bar and the figure)
+ * or, earned, a lit check. Hairlines part the badges, as rows elsewhere.
+ */
+const BadgeRow = styled.div<{ $earned?: boolean }>`
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 6px 12px;
+  grid-template-columns: 52px minmax(0, 1fr) auto;
+  grid-template-areas:
+    'medal name figure'
+    'medal measure measure';
   align-items: center;
-  padding: 12px 0;
+  gap: 4px 14px;
+  padding: 14px 0;
   border-top: 1px solid var(--glass-border);
 
   &:first-of-type {
     border-top: 0;
-    padding-top: 0;
+    padding-top: 2px;
   }
 
   &:last-child {
     padding-bottom: 0;
   }
 
+  > [data-medal] {
+    grid-area: medal;
+    align-self: start;
+  }
+
+  > [data-name] {
+    grid-area: name;
+    min-width: 0;
+  }
+
+  > [data-figure] {
+    grid-area: figure;
+  }
+
+  > [data-measure] {
+    grid-area: measure;
+    min-width: 0;
+  }
+
   strong {
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    color: var(--color-text);
-    font-size: var(--fs-body);
-    line-height: var(--lh-body);
+    color: ${({ $earned }) =>
+      $earned ? 'var(--color-text)' : 'var(--color-muted)'};
+    font-family: var(--font-display);
+    font-size: 17px;
+    line-height: 22px;
     font-weight: 500;
-  }
-
-  > :nth-child(3) {
-    grid-column: 1 / -1;
+    letter-spacing: -0.01em;
   }
 `
 
@@ -564,11 +591,19 @@ const BadgeFigure = styled.span`
   font-size: 15px;
   font-weight: 500;
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 
   small {
     color: var(--color-faint);
     font-size: 12px;
   }
+`
+
+/* How many of the badges are earned, beside the card's title. */
+const EarnedCount = styled.span`
+  color: var(--color-muted);
+  font-size: var(--fs-small);
+  font-variant-numeric: tabular-nums;
 `
 
 /* The juror badge's name carries its explanation (what counts, the Classic
@@ -607,14 +642,26 @@ const JurorMeasure = styled.div`
   gap: 8px;
 `
 
+/* An earned badge's mark: a lit check and the word, in the registered
+   green's place on the status scale. */
 const Earned = styled.span`
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
+  padding: 3px 10px 3px 7px;
+  border: 1px solid
+    color-mix(in srgb, var(--status-registered) 40%, transparent);
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--status-registered) 12%, transparent);
   color: var(--color-text);
-  font-size: var(--fs-small);
-  line-height: var(--lh-small);
+  font-size: 12px;
+  line-height: 16px;
   font-weight: 500;
+  white-space: nowrap;
+
+  svg {
+    color: var(--status-registered);
+  }
 `
 
 const ShareRow = styled.div`
@@ -775,9 +822,14 @@ const JurorRow = ({ juror }: { juror: JurorBadgeView }) => {
   ]
     .filter(Boolean)
     .join(' · ')
+  // A record, not a goal: lit once the address has sat on a Curate jury.
+  const earned = ready && juror.seats > 0
   return (
-    <BadgeRow>
-      <div style={{ minWidth: 0 }}>
+    <BadgeRow $earned={earned}>
+      <span data-medal="">
+        <CuratorMedal kind="juror" earned={earned} size={52} />
+      </span>
+      <div data-name="">
         <Tooltip title={<TipText>{jurorTip(juror)}</TipText>}>
           <TipTarget tabIndex={0}>
             <strong>
@@ -794,30 +846,43 @@ const JurorRow = ({ juror }: { juror: JurorBadgeView }) => {
             : 'Seats drawn in Curate disputes'}
         </Small>
       </div>
-      {juror.state === 'loading' ? (
-        <SkeletonBlock $width="32px" $height="20px" aria-hidden />
-      ) : !ready ? (
-        <Unavailable title="The court index did not answer; try again later">
-          unavailable
-        </Unavailable>
-      ) : (
-        <BadgeFigure
-          aria-label={`${lower ? 'At least ' : ''}${plural(juror.seats, 'seat', 'seats')}`}
-        >
-          {formatInt(juror.seats)}
-          {lower && '+'}
-          <small> {juror.seats === 1 ? 'seat' : 'seats'}</small>
-        </BadgeFigure>
-      )}
+      <span data-figure="">
+        {juror.state === 'loading' ? (
+          <SkeletonBlock $width="32px" $height="20px" aria-hidden />
+        ) : !ready ? (
+          <Unavailable title="The court index did not answer; try again later">
+            unavailable
+          </Unavailable>
+        ) : (
+          <BadgeFigure
+            aria-label={`${lower ? 'At least ' : ''}${plural(juror.seats, 'seat', 'seats')}`}
+          >
+            {formatInt(juror.seats)}
+            {lower && '+'}
+            <small> {juror.seats === 1 ? 'seat' : 'seats'}</small>
+          </BadgeFigure>
+        )}
+      </span>
       {ready && (juror.seats > 0 || caption) && (
-        <JurorMeasure>
+        <JurorMeasure data-measure="">
           {juror.seats > 0 && juror.votes !== undefined && (
-            <Rail
-              $value={juror.votes / juror.seats}
-              $tone="neutral"
+            <span
               role="img"
               aria-label={`${formatInt(juror.votes)} of ${plural(juror.seats, 'seat', 'seats')} voted`}
-            />
+            >
+              <LaneBar
+                runs={[
+                  {
+                    key: 'voted',
+                    weight: Math.max(juror.votes, 0) / juror.seats,
+                    hue: 'var(--edge-2)',
+                  },
+                ]}
+                extent={juror.votes / juror.seats}
+                armed
+                delay={200}
+              />
+            </span>
           )}
           {caption && (
             <Small $faint style={{ display: 'block' }}>
@@ -847,50 +912,77 @@ export const BadgesCard = ({
   /** "All chains" or the chain the badges count. */
   scope: string
   style?: React.CSSProperties
-}) => (
-  <RailCard $padding="compact" aria-label="Badges" style={style}>
-    <RailHead>
-      <h3>Badges</h3>
-      <Label $tone="faint">{scope}</Label>
-    </RailHead>
-    {badges?.map((badge) => (
-      <BadgeRow key={badge.id}>
-        <div style={{ minWidth: 0 }}>
-          <strong>{badge.label}</strong>
-          <Small $faint style={{ display: 'block' }}>
-            {badge.description}
-          </Small>
-        </div>
-        {/* Progress only while unearned: a capped "100 / 100" would read
-            as a count and contradict the figures. */}
-        {badge.earned ? (
-          <Earned>
-            <StatusDot $tone="registered" aria-hidden />
-            Earned
-          </Earned>
-        ) : (
-          <BadgeFigure aria-label={`${badge.progress} of ${badge.goal}`}>
-            {formatInt(badge.progress)}
-            <small> / {formatInt(badge.goal)}</small>
-          </BadgeFigure>
-        )}
-        <Rail
-          $value={
-            badge.earned ? 1 : badge.goal ? badge.progress / badge.goal : 0
-          }
-          $tone={badge.earned ? 'registered' : 'window'}
-          role="img"
-          aria-label={
-            badge.earned
-              ? `${badge.label}: earned`
-              : `${badge.label}: ${badge.progress} of ${badge.goal}`
-          }
-        />
-      </BadgeRow>
-    ))}
-    {juror && <JurorRow juror={juror} />}
-  </RailCard>
-)
+}) => {
+  const jurorEarned = juror?.state === 'ready' && juror.seats > 0
+  const total = (badges?.length ?? 0) + (juror ? 1 : 0)
+  const earned =
+    (badges?.filter((badge) => badge.earned).length ?? 0) +
+    (jurorEarned ? 1 : 0)
+  return (
+    <RailCard $padding="compact" aria-label="Badges" style={style}>
+      <RailHead>
+        <h3>Badges</h3>
+        <EarnedCount>
+          {formatInt(earned)} of {formatInt(total)} earned · {scope}
+        </EarnedCount>
+      </RailHead>
+      {badges?.map((badge) => {
+        const share = badge.earned
+          ? 1
+          : badge.goal
+            ? badge.progress / badge.goal
+            : 0
+        return (
+          <BadgeRow key={badge.id} $earned={badge.earned}>
+            <span data-medal="">
+              <CuratorMedal
+                kind={badge.id}
+                earned={badge.earned}
+                progress={share}
+                size={52}
+              />
+            </span>
+            <div data-name="">
+              <strong>{badge.label}</strong>
+              <Small $faint style={{ display: 'block' }}>
+                {badge.description}
+              </Small>
+            </div>
+            <span data-figure="">
+              {/* Progress only while unearned: a capped "100 / 100" would
+                  read as a count and contradict the figures. */}
+              {badge.earned ? (
+                <Earned>
+                  <CurateIcon name="check" size={12} />
+                  Earned
+                </Earned>
+              ) : (
+                <BadgeFigure aria-label={`${badge.progress} of ${badge.goal}`}>
+                  {formatInt(badge.progress)}
+                  <small> / {formatInt(badge.goal)}</small>
+                </BadgeFigure>
+              )}
+            </span>
+            {!badge.earned && (
+              <span
+                data-measure=""
+                role="img"
+                aria-label={`${badge.label}: ${badge.progress} of ${badge.goal}`}
+              >
+                {share > 0 ? (
+                  <LaneBar extent={share} armed delay={200} />
+                ) : (
+                  <Small $faint>Not started</Small>
+                )}
+              </span>
+            )}
+          </BadgeRow>
+        )
+      })}
+      {juror && <JurorRow juror={juror} />}
+    </RailCard>
+  )
+}
 
 /* ---------- Section ---------- */
 
@@ -912,6 +1004,7 @@ export const ActivitySection = ({
   filter,
   onFilter,
   page,
+  pageSize = PAGE_SIZE,
   onPage,
   layout,
   onLayout,
@@ -934,6 +1027,8 @@ export const ActivitySection = ({
   filter: ActivityFilter
   onFilter: (value: ActivityFilter) => void
   page: number
+  /** Actions to a page: fewer on a phone. */
+  pageSize?: number
   onPage: (page: number) => void
   layout: ActivityLayout
   onLayout: (layout: ActivityLayout) => void
@@ -1121,16 +1216,16 @@ export const ActivitySection = ({
               {/* The list is cut by time, so a cut list holds exactly the
                   most recent ones of every kind. */}
               <Small $muted>
-                {formatInt((page - 1) * PAGE_SIZE + 1)}–
-                {formatInt(Math.min(page * PAGE_SIZE, shown.length))} of{' '}
+                {formatInt((page - 1) * pageSize + 1)}–
+                {formatInt(Math.min(page * pageSize, shown.length))} of{' '}
                 {truncated ? 'the ' : ''}
                 {formatInt(shown.length)}{' '}
                 {truncated ? `most recent ${filterLabel}` : filterLabel}
               </Small>
-              {shown.length > PAGE_SIZE && (
+              {shown.length > pageSize && (
                 <Pagination
                   current={page}
-                  pageSize={PAGE_SIZE}
+                  pageSize={pageSize}
                   total={shown.length}
                   onChange={goToPage}
                 />

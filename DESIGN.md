@@ -574,7 +574,8 @@ way (dashboard, Browse, registry pages, the profile, the landing page).
 
 ## Dashboard
 
-- **Open for verification** sits under Happening now with no box (round 6), centred on the page:
+- **Open for verification** is not drawn at all when there is no bounty up for grabs (round 10).
+  It sits under Happening now with no box (round 6), centred on the page:
   under its title, two large figures side by side, parted by a hairline, the count open now and
   the bounties, dollars first with the coin smaller under them, labelled "Bounties up for grabs" in
   the accent. Under the pair, labelled "Lists with bounties up for grabs" (round 7), the lists
@@ -682,6 +683,9 @@ way (dashboard, Browse, registry pages, the profile, the landing page).
 
 ## Lists
 
+- On phones (520px and below) the header's figure band is centred (round 10): the open requests,
+  the stats in two centred columns with an odd last one across both, and the two gauges side by
+  side, each over its caption.
 - Two gauges sit at the right end of the figures row: the share registered (Standard) or listed
   (Stake) now, and "Challenges off the list", drawn on every list whose challenges were read. With
   none resolved it is an empty ring holding "—" (never "0%") and reads "No challenges yet", or
@@ -721,6 +725,18 @@ way (dashboard, Browse, registry pages, the profile, the landing page).
   after it in faint mono, shown whole or not at all; else the first identifier, an address short in
   mono with its network; else the first value that is not a picture. The list name, with its seal,
   is the second line; every identifying field is in the row's tooltip.
+- **Medals** (round 10, `components/curate/curator-medal.tsx`): each badge is a medal cut in the
+  Kleros Verified seal's language, a faceted gem of the primary glass tinted by the edge hues, a
+  gradient rim, a top sheen and a soft edge-2 glow, its glyph cut in `cta-ink`. Each has its own
+  outline and glyph: Librarian a hexagon and books (100+ submissions), Sheriff a shield and a star
+  (100+ challenges), Maintainer an octagon and a broom (20+ removal requests), Juror on Curate a
+  round milled seal and the scales (a seat in a Curate dispute). Unearned, the medal is recessed
+  glass with a faint glyph inside a progress ring in `status-window`.
+- **Earned badges lead the profile**: under the address, each medal (44px) with its name, its rule
+  on hover and focus. The Badges card lists them all, each a row of its medal, name and rule, then
+  an LED bar of the way there and the figure, or, earned, a lit "Earned" check; its head counts
+  how many are earned. The juror row's bar is the share of seats voted, in `edge-2`.
+- On phones the Activity shows 8 actions to a page (20 elsewhere).
 - **Quiet addresses.** An address with no action in scope gets no row of zeros and no boxed empty
   state. A juror's figures row leads with Juror on Curate (seats, disputes drawn in, voted, still
   voting above 0); a governor with no action gets no figures row, only identity and one muted line

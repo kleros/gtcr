@@ -7,6 +7,7 @@ import { isAddress } from 'viem'
 import useDocumentHead from 'hooks/use-document-head'
 import useNow from 'hooks/use-now'
 import useStoredLayout from 'hooks/use-stored-layout'
+import { useMediaQuery } from 'pages/guide/hooks'
 import {
   Page,
   VisuallyHidden,
@@ -52,6 +53,7 @@ import {
 } from 'components/curate/registry-shared-verified'
 import {
   PAGE_SIZE,
+  PHONE_PAGE_SIZE,
   activeChains,
   activityLayout,
   filterActivities,
@@ -260,11 +262,15 @@ const AddressPage = () => {
     () => filterActivities(activities, filter),
     [activities, filter],
   )
-  const pageCount = Math.max(1, Math.ceil(shown.length / PAGE_SIZE))
+  // Shorter pages on a phone (round 10: the default list was too long to
+  // scroll past to the badges and the rest).
+  const phone = useMediaQuery('(max-width: 720px)')
+  const pageSize = phone ? PHONE_PAGE_SIZE : PAGE_SIZE
+  const pageCount = Math.max(1, Math.ceil(shown.length / pageSize))
   const currentPage = Math.min(page, pageCount)
   const visible = shown.slice(
-    (currentPage - 1) * PAGE_SIZE,
-    currentPage * PAGE_SIZE,
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize,
   )
 
   const stats: AddressStats | undefined = data
@@ -365,6 +371,7 @@ const AddressPage = () => {
     filter,
     onFilter: setFilter,
     page: currentPage,
+    pageSize,
     onPage: setPage,
     layout,
     onLayout: setLayout,
@@ -415,6 +422,7 @@ const AddressPage = () => {
         capped={capped}
         roles={roles}
         juror={juror}
+        badges={badges}
         now={now}
       />
 

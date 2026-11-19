@@ -17,6 +17,8 @@ import { JURY_SEAT_LIMIT, type CurateJury } from './jury'
  */
 
 export const PAGE_SIZE = 20
+/** Actions to a page on a phone, where twenty ran several screens long. */
+export const PHONE_PAGE_SIZE = 8
 
 export type ActivityFilter =
   | 'all'

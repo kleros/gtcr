@@ -28,6 +28,7 @@ import {
   PROFILE_LIMIT,
   SUPPORTED_CHAIN_IDS,
   chainName,
+  type AddressBadge,
   type AddressStats,
   type ProfileActivity,
 } from './data'
@@ -43,6 +44,7 @@ import {
   type Scope,
 } from './view'
 import { QuietState, When } from './parts'
+import { CuratorMedal, MEDAL_NAMES } from 'components/curate/curator-medal'
 import { ActivityChart } from './activity-chart'
 import { ChallengeRing } from './challenge-ring'
 
@@ -184,6 +186,52 @@ const AddressTitle = styled.h1`
     .short {
       display: inline;
     }
+  }
+`
+
+/*
+ * The badges the address has earned, on top of the profile beside who it is
+ * (round 10: "when achieved they are displayed in the profile page on
+ * top"): its medals in a row, each named with its rule on hover and focus.
+ * Unearned badges are only in the Badges card below.
+ */
+const Medals = styled.ul`
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 20px;
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+`
+
+/* A medal and its name, the name in the display face beside it. */
+const MedalTarget = styled.span`
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  border-radius: 12px;
+  color: var(--color-text);
+  font-family: var(--font-display);
+  font-size: 15px;
+  line-height: 20px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+
+  &:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+  }
+`
+
+const MedalTip = styled.span`
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+
+  b {
+    font-weight: 600;
   }
 `
 
@@ -653,6 +701,7 @@ export const ProfilePanel = ({
   capped,
   roles,
   juror,
+  badges,
   now,
 }: {
   address: string
@@ -700,6 +749,8 @@ export const ProfilePanel = ({
   roles?: string[]
   /** The juror record in the scope; it leads the figures when no action does. */
   juror: JurorBadgeView
+  /** The goal badges in the scope; the earned ones lead the profile. */
+  badges?: AddressBadge[]
   now: number
 }) => {
   const narrow = useNarrow()
@@ -935,6 +986,48 @@ export const ProfilePanel = ({
                 ))}
               </AddressTools>
             </AddressLine>
+            {(() => {
+              const earned = [
+                ...(badges ?? [])
+                  .filter((badge) => badge.earned)
+                  .map((badge) => ({
+                    kind: badge.id,
+                    rule: badge.description,
+                  })),
+                ...(juror.state === 'ready' && juror.seats > 0
+                  ? [
+                      {
+                        kind: 'juror' as const,
+                        rule: `${formatInt(juror.seats)} ${juror.seats === 1 ? 'seat' : 'seats'} in Curate disputes`,
+                      },
+                    ]
+                  : []),
+              ]
+              return earned.length > 0 ? (
+                <Medals aria-label="Badges earned">
+                  {earned.map((medal) => (
+                    <li key={medal.kind}>
+                      <Tooltip
+                        title={
+                          <MedalTip>
+                            <b>{MEDAL_NAMES[medal.kind]}</b>
+                            <span>{medal.rule}</span>
+                          </MedalTip>
+                        }
+                      >
+                        <MedalTarget
+                          tabIndex={0}
+                          aria-label={`${MEDAL_NAMES[medal.kind]}: ${medal.rule}`}
+                        >
+                          <CuratorMedal kind={medal.kind} earned size={44} />
+                          {MEDAL_NAMES[medal.kind]}
+                        </MedalTarget>
+                      </Tooltip>
+                    </li>
+                  ))}
+                </Medals>
+              ) : null
+            })()}
             {covered && (
               <IdentityMeta>
                 <span>

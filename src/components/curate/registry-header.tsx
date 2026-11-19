@@ -282,6 +282,13 @@ const Figures = styled.div`
       padding-bottom: 32px;
     }
   }
+
+  /* Phones (round 10): the band is centred, the headline, the stats and the
+     gauges each on the page's middle, rather than left with a gap beside. */
+  @media (max-width: 520px) {
+    justify-content: center;
+    text-align: center;
+  }
 `
 
 const Headline = styled.div`
@@ -289,6 +296,11 @@ const Headline = styled.div`
   flex-direction: column;
   gap: 10px;
   min-width: 0;
+
+  @media (max-width: 520px) {
+    align-items: center;
+    width: 100%;
+  }
 `
 
 const Big = styled.span`
@@ -370,7 +382,17 @@ const InlineStats = styled.dl`
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     width: 100%;
+    margin: 0;
     gap: 16px 20px;
+
+    div {
+      align-items: center;
+    }
+
+    /* An odd last stat (the challenge period) takes the row, centred. */
+    div:last-child:nth-child(odd) {
+      grid-column: 1 / -1;
+    }
 
     dd {
       font-size: 16px;
@@ -404,6 +426,19 @@ const Gauges = styled.div`
 
   @media (max-width: 640px) {
     gap: 20px 24px;
+  }
+
+  /* Phones: the two gauges side by side, each centred over its caption. */
+  @media (max-width: 520px) {
+    &,
+    &[data-wrapped] {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+      align-items: start;
+      justify-items: center;
+      width: 100%;
+      gap: 20px 12px;
+    }
   }
 `
 
@@ -461,6 +496,22 @@ const RingBlock = styled.figure`
     flex-direction: column;
     gap: 6px;
     margin-bottom: 5px;
+  }
+
+  @media (max-width: 520px) {
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+
+    > figure {
+      margin-bottom: -18px;
+    }
+
+    figcaption {
+      align-items: center;
+      margin-bottom: 0;
+      text-wrap: balance;
+    }
   }
 
   b {
