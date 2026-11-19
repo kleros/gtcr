@@ -1,7 +1,7 @@
 import React, { useContext, useEffect, useMemo, useRef, useState } from 'react'
 import styled from 'styled-components'
 import type { Address } from 'viem'
-import type { BigNumber, BigNumberish } from 'ethers'
+import type { BigNumber } from 'ethers'
 import { useAccount, usePublicClient, useWalletClient } from 'wagmi'
 import { simulateContract } from '@wagmi/core'
 import _gtcr from 'assets/abis/LightGeneralizedTCR.json'
@@ -45,7 +45,6 @@ import {
   type SendPhase,
 } from 'components/curate/what-happens-next'
 import { Notice } from 'components/curate/item-standard-notice'
-import { DisclosurePill } from 'components/curate/item-disclosure-pill'
 import { LIST_SETTINGS_FAILED } from 'pages/error-page/copy'
 import { StickyActionBar } from 'components/curate/item-standard-action-bar'
 import { AddressLink } from 'components/curate/item-standard-fields'
@@ -65,14 +64,17 @@ import { useChallengeCost } from './challenge-cost'
 /*
  * The action card (right rail; a bottom bar on phones). While a challenge
  * is open it leads with the bounty — the money a correct challenger takes —
- * and the cost follows as the guard that keeps careless challenges out,
- * with the base deposit and arbitration split one pill away (the design
- * review's point 4: the card used to shout the cost and whisper the
- * reward). Otherwise it leads with the one thing to do now and its exact
- * amount. While jurors decide it renders no card at all: the case panel
- * holds the state and both of its actions, and the phone bar keeps its one
- * control — the panel carries the id that bar steps aside for, so the two
- * never offer the same button at once.
+ * and one sentence says that winning it takes a deposit of your own and
+ * when that deposit comes back (round 3 of the design review: the card used
+ * to name the cost a second time in words and to unfold its base and
+ * arbitration split, which the dialog that sends the transaction carries
+ * anyway, where DESIGN.md asks for it). Otherwise it leads with the one
+ * thing to do now, its exact amount and one sentence that names the
+ * challenge period in words, so no row below repeats that duration. While
+ * jurors decide it renders no card at all: the case panel holds the state
+ * and both of its actions, and the phone bar keeps its one control — the
+ * panel carries the id that bar steps aside for, so the two never offer the
+ * same button at once.
  */
 
 const Card = styled(Surface)`
@@ -113,48 +115,6 @@ const Prompt = styled.p`
   color: var(--color-muted);
   font-size: var(--fs-body);
   line-height: var(--lh-body);
-`
-
-const SplitBar = styled.div`
-  display: flex;
-  gap: 3px;
-  height: 6px;
-
-  span {
-    min-width: 4px;
-    border-radius: var(--radius-pill);
-  }
-`
-
-const SplitLegend = styled.ul`
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  gap: 4px 12px;
-  margin: 8px 0 0;
-  padding: 0;
-  list-style: none;
-
-  li {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    color: var(--color-muted);
-    font-size: 12px;
-    line-height: 16px;
-  }
-
-  i {
-    width: 7px;
-    height: 7px;
-    border-radius: var(--radius-pill);
-  }
-
-  b {
-    color: var(--color-text);
-    font-weight: 500;
-    font-variant-numeric: tabular-nums;
-  }
 `
 
 const Rows = styled.dl`
@@ -208,102 +168,6 @@ const Rows = styled.dl`
   }
 `
 
-/** What the amount is made of: the list's deposit and the court's fee. */
-const AmountSplit = ({
-  base,
-  cost,
-  baseLabel,
-  currency,
-}: {
-  base?: BigNumberish
-  cost?: BigNumberish
-  baseLabel: string
-  currency: string
-}) => {
-  if (base === undefined || cost === undefined) return null
-  const baseValue = Number(formatEther(base))
-  const costValue = Number(formatEther(cost))
-  return (
-    <div
-      role="img"
-      aria-label={`Split of the amount: ${baseLabel} ${formatAmount(
-        base,
-        currency,
-      )}, arbitration cost ${formatAmount(cost, currency)}`}
-    >
-      {/* Two categories, so two viz colours: a chart never borrows the
-          accent or a status role (DESIGN.md). */}
-      <SplitBar aria-hidden>
-        {baseValue > 0 && (
-          <span style={{ flexGrow: baseValue, background: 'var(--viz-1)' }} />
-        )}
-        {costValue > 0 && (
-          <span style={{ flexGrow: costValue, background: 'var(--viz-2)' }} />
-        )}
-      </SplitBar>
-      <SplitLegend aria-hidden>
-        <li>
-          <i style={{ background: 'var(--viz-1)' }} />
-          {baseLabel} <b>{formatEther(base)}</b>
-        </li>
-        <li>
-          <i style={{ background: 'var(--viz-2)' }} />
-          Arbitration <b>{formatEther(cost)}</b>
-        </li>
-      </SplitLegend>
-    </div>
-  )
-}
-
-/**
- * The amount's total and its breakdown, one click away: DESIGN.md asks for
- * both before anything is signed, the design review asked for neither to be
- * the headline. The dialog that sends the transaction carries the full
- * receipt again.
- */
-const DepositBreakdown = ({
-  total,
-  base,
-  cost,
-  baseLabel,
-  currency,
-  returns,
-}: {
-  total?: BigNumberish
-  base?: BigNumberish
-  cost?: BigNumberish
-  baseLabel: string
-  currency: string
-  /** When the deposit comes back, in the page's words. */
-  returns: string
-}) => {
-  const [open, setOpen] = useState(false)
-  if (total === undefined || base === undefined || cost === undefined)
-    return null
-  return (
-    <Stack $gap={10}>
-      <DisclosurePill
-        icon="layers"
-        open={open}
-        onToggle={() => setOpen((shown) => !shown)}
-      >
-        What the {formatAmount(total, currency)} is made of
-      </DisclosurePill>
-      {open && (
-        <Stack $gap={8}>
-          <AmountSplit
-            base={base}
-            cost={cost}
-            baseLabel={baseLabel}
-            currency={currency}
-          />
-          <Small $muted>{returns}</Small>
-        </Stack>
-      )}
-    </Stack>
-  )
-}
-
 interface ItemStatusCardProps {
   item: SubgraphItem
   timestamp?: BigNumber
@@ -337,9 +201,6 @@ const ItemStatusCard = ({
     tcrAddress,
     submissionDeposit,
     removalDeposit,
-    submissionBaseDeposit,
-    removalBaseDeposit,
-    arbitrationCost,
     gtcrView,
   } = tcrView || {}
   const urlChainId = useUrlChainId()
@@ -485,7 +346,6 @@ const ItemStatusCard = ({
   const { resolved } = request
 
   const challengeCost = inWindow ? challenge.total : undefined
-  const challengeBase = challenge.base
   const isResubmit =
     statusCode === STATUS_CODE.REJECTED || statusCode === STATUS_CODE.REMOVED
   const buttonAmount = inWindow
@@ -494,13 +354,6 @@ const ItemStatusCard = ({
       ? removalDeposit
       : isResubmit
         ? submissionDeposit
-        : undefined
-  const amountBase = inWindow
-    ? challengeBase
-    : statusCode === STATUS_CODE.REGISTERED
-      ? removalBaseDeposit
-      : isResubmit
-        ? submissionBaseDeposit
         : undefined
   const amountLabel = buttonAmount
     ? formatAmount(buttonAmount, nativeCurrency)
@@ -562,6 +415,13 @@ const ItemStatusCard = ({
           : appealable
             ? 'Fund the appeal'
             : undefined
+
+  // The challenge period in words, for the sentence that stands where the
+  // breakdown pill used to: the row that repeated the same duration below
+  // the button is gone, so the card states it once.
+  const challengePeriodText = formatDurationLong(
+    challengePeriodDuration.toNumber(),
+  )
 
   // Once one side is fully funded, the clock is the other side's (the loser
   // can be funded before its half is over).
@@ -636,23 +496,32 @@ const ItemStatusCard = ({
   // The subgraph stores the request's base deposit: what a successful
   // challenger takes on top of their own deposit back (DESIGN.md's bounty).
   // It is the reason to challenge, so while a challenge is open it leads the
-  // card and the cost becomes the guard behind it.
+  // card. The exact cost of challenging is on the button below and in the
+  // dialog that sends the transaction, not behind the figure.
   const bounty =
     inWindow && !resolved && request.deposit !== undefined
       ? request.deposit
       : undefined
-  // One sentence under the figure: what the bounty is made of and the cost
-  // that guards it (DESIGN.md allows one, and the Label above already says
-  // the figure is what a winning challenge takes).
-  const bountyLine = amountLabel
-    ? `The ${requesterName}’s deposit and your own back; challenging costs ${amountLabel}, so a careless challenge is not free.`
-    : `The ${requesterName}’s deposit and your own back, if jurors agree the request breaks the listing policy.`
-  const depositReturns = inWindow
-    ? `Your deposit comes back in full if jurors agree with you. If they do not, it pays the arbitration and the ${requesterName} keeps the rest.`
-    : 'It comes back in full once the request goes through unchallenged, or if jurors agree with you.'
+  // One sentence under the figure (DESIGN.md allows one, and the Label above
+  // already says the figure is what a winning challenge takes): what winning
+  // the bounty takes, and what comes back. The exact cost is on the button
+  // below, so the sentence does not name the same figure again.
+  const bountyLine =
+    'Winning it takes a deposit of your own, so only a challenge you believe in is worth filing; if jurors agree with you, that deposit comes back in full and the bounty is yours on top.'
+  // The same sentence for the states that have no bounty to lead with: what
+  // the figure backs, and when it comes back, with the period in words.
+  const depositLine = inWindow
+    ? `A challenge has to be backed by a deposit; it comes back in full if jurors agree with you, and if they do not it pays the arbitration and the ${requesterName} keeps the rest.`
+    : statusCode === STATUS_CODE.REGISTERED || isResubmit
+      ? `${isResubmit ? 'A resubmission' : 'A removal request'} has to be backed by a deposit; it comes back in full once the challenge period of ${challengePeriodText} ends and the request is executed, or when jurors agree with you.`
+      : undefined
   // The case panel below the hero carries the case and the ruling while one
   // is live; the card repeats neither.
   const caseInPanel = hasDispute && (inCourt || appealable)
+  // Both rows are about a dispute, so an entry that was never challenged has
+  // none of them. Rows carries the hairline that separates it from the
+  // button, so an empty list would leave that line floating on its own.
+  const hasRows = !caseInPanel && (showRuling || hasDispute)
 
   return (
     <>
@@ -675,35 +544,18 @@ const ItemStatusCard = ({
                   <small>{nativeCurrency}</small>
                 </Amount>
                 <Prompt>{bountyLine}</Prompt>
-                <DepositBreakdown
-                  total={buttonAmount}
-                  base={amountBase}
-                  cost={challenge.arbitrationCost}
-                  baseLabel="Base deposit"
-                  currency={nativeCurrency}
-                  returns={depositReturns}
-                />
               </>
             ) : (
               <>
                 {heading && <Label $tone="faint">{heading}</Label>}
-                {buttonAmount ? (
-                  <>
-                    <Amount title={amountLabel}>
-                      {formatEther(buttonAmount)}
-                      <small>{nativeCurrency}</small>
-                    </Amount>
-                    <DepositBreakdown
-                      total={buttonAmount}
-                      base={amountBase}
-                      cost={
-                        inWindow ? challenge.arbitrationCost : arbitrationCost
-                      }
-                      baseLabel="Base deposit"
-                      currency={nativeCurrency}
-                      returns={depositReturns}
-                    />
-                  </>
+                {buttonAmount && (
+                  <Amount title={amountLabel}>
+                    {formatEther(buttonAmount)}
+                    <small>{nativeCurrency}</small>
+                  </Amount>
+                )}
+                {depositLine ? (
+                  <Prompt>{depositLine}</Prompt>
                 ) : (
                   prompt && <Prompt>{prompt}</Prompt>
                 )}
@@ -725,47 +577,39 @@ const ItemStatusCard = ({
             </Stack>
           )}
 
-          <Rows>
-            {(statusCode === STATUS_CODE.REGISTERED || isResubmit) && (
-              <div>
-                <dt>Challenge period once sent</dt>
-                <dd
-                  title={formatDurationLong(challengePeriodDuration.toNumber())}
-                >
-                  {formatDuration(challengePeriodDuration.toNumber())}
-                </dd>
-              </div>
-            )}
-            {showRuling && !caseInPanel && (
-              <div>
-                <dt>Ruling</dt>
-                <dd>{rulingText}</dd>
-              </div>
-            )}
-            {hasDispute && !caseInPanel && (
-              <div>
-                <dt>Court case</dt>
-                <dd>
-                  {disputeHref ? (
-                    <a
-                      href={disputeHref}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      title={`Case ${disputeID} on ${disputeHost}`}
-                    >
-                      Case {disputeID}
-                      <CurateIcon name="external" size={12} />
-                    </a>
-                  ) : (
-                    <>
-                      #{disputeID} at{' '}
-                      <AddressLink address={request.arbitrator} />
-                    </>
-                  )}
-                </dd>
-              </div>
-            )}
-          </Rows>
+          {hasRows && (
+            <Rows>
+              {showRuling && (
+                <div>
+                  <dt>Ruling</dt>
+                  <dd>{rulingText}</dd>
+                </div>
+              )}
+              {hasDispute && (
+                <div>
+                  <dt>Court case</dt>
+                  <dd>
+                    {disputeHref ? (
+                      <a
+                        href={disputeHref}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        title={`Case ${disputeID} on ${disputeHost}`}
+                      >
+                        Case {disputeID}
+                        <CurateIcon name="external" size={12} />
+                      </a>
+                    ) : (
+                      <>
+                        #{disputeID} at{' '}
+                        <AddressLink address={request.arbitrator} />
+                      </>
+                    )}
+                  </dd>
+                </div>
+              )}
+            </Rows>
+          )}
         </Card>
       )}
 

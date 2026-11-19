@@ -8,8 +8,10 @@ import { CurateIcon, type CurateIconName } from './icons'
  * an explainer collapses into a pill, and every control composes the kit's
  * helpers rather than being drawn again).
  *
- * One control, so the deposit breakdown on the Standard card, the challenge
- * cost on the Stake card and the jury band all read and behave alike.
+ * One control, so the jury band and anything that unfolds a detail later
+ * read and behave alike (round 3 of the design review took the deposit
+ * breakdown off both entry cards; the dialogs that send the transaction
+ * carry it instead).
  */
 
 const Pill = styled.button`

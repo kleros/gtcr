@@ -27,7 +27,6 @@ import {
   Surface,
 } from 'components/curate/primitives'
 import { EntryStatus, stakeEntryStatus } from 'components/curate/entry-status'
-import { DisclosurePill } from 'components/curate/item-disclosure-pill'
 import { StickyActionBar } from 'components/curate/item-standard-action-bar'
 import { CountUpText } from 'components/curate/registry-shared-count'
 import ItemActionButton from 'components/permanent-item-action-button'
@@ -62,19 +61,20 @@ export { rulingSentence } from './facts'
 /*
  * The right rail of the Stake item page. While the entry can be challenged
  * the card leads with the bounty — the stake a correct challenger takes —
- * and what a challenge costs follows as the guard that keeps careless
- * challenges out, with the stake to match and the arbitration cost one pill
- * away (the design review's point 4: the card used to lead with the stake
- * the submitter has at risk and the share a challenger must put up).
- * Otherwise it leads with the one thing to do now and its exact amount.
- * Under it, the withdrawal as a three-node stepper and, while an appeal is
- * open, the funding of each side. While jurors decide it renders no action
- * card at all: the case panel above holds the state and both of its
- * actions, and takes the id the phone bar steps aside for, so the bar's one
- * control never doubles the panel's. On phones the
- * shared sticky bar repeats the one action while this card is off screen
- * and steps aside while it is on screen, so each control shows once; the
- * bar's copy has its own id.
+ * and one sentence says what a challenge puts up and what comes back (round
+ * 3 of the design review: the card used to name the cost a second time in
+ * words and to unfold a stake-and-arbitration breakdown, which the
+ * challenge dialog carries anyway, before anything is signed). Otherwise it
+ * leads with the one thing to do now and its exact amount; off the list the
+ * sentence says the stake stays locked and names the withdrawing period in
+ * words, so no row below repeats it. Under it, the withdrawal as a
+ * three-node stepper and, while an appeal is open, the funding of each
+ * side. While jurors decide it renders no action card at all: the case
+ * panel above holds the state and both of its actions, and takes the id the
+ * phone bar steps aside for, so the bar's one control never doubles the
+ * panel's. On phones the shared sticky bar repeats the one action while
+ * this card is off screen and steps aside while it is on screen, so each
+ * control shows once; the bar's copy has its own id.
  */
 
 const Card = styled(Surface)`
@@ -301,75 +301,6 @@ const ChallengerShare = ({
   )
 }
 
-/**
- * What a challenge costs and when it comes back, one pill away: DESIGN.md
- * asks for the total and the breakdown before anything is signed, and the
- * design review asked for neither to be the headline (the challenge dialog
- * carries the full receipt again). A Stake challenge is priced in two
- * assets, so the breakdown stays per coin — amounts are never added across
- * coins — and the one chart compares like with like: the stake the
- * challenger matches against the stake already on the entry.
- */
-const ChallengeCost = ({
-  share,
-  stakeText,
-  percentText,
-  entryStakeText,
-  costText,
-  itemName,
-}: {
-  share: number
-  /** What the challenger must stake, in the list's token. */
-  stakeText: string
-  percentText: string
-  entryStakeText: string
-  /** The arbitration cost, in the chain's currency. */
-  costText?: string
-  itemName: string
-}) => {
-  const [open, setOpen] = useState(false)
-  return (
-    <Stack $gap={10}>
-      <DisclosurePill
-        icon="layers"
-        open={open}
-        onToggle={() => setOpen((shown) => !shown)}
-      >
-        What a challenge costs
-      </DisclosurePill>
-      {open && (
-        <Stack $gap={10}>
-          <ChallengerShare
-            share={share}
-            amountText={stakeText}
-            percentText={percentText}
-            verb="stakes"
-            stakeText={entryStakeText}
-          />
-          <Rows>
-            <div>
-              <dt>Stake to match</dt>
-              <dd>{stakeText}</dd>
-            </div>
-            {costText && (
-              <div>
-                <dt>Arbitration cost</dt>
-                <dd>{costText}</dd>
-              </div>
-            )}
-          </Rows>
-          <Small $muted>
-            Your stake comes back if jurors agree with you, along with the{' '}
-            {itemName}’s stake and its arbitration deposit, which repays what
-            you paid the court. If they do not, your stake is added to the{' '}
-            {itemName}’s and the arbitration cost is not returned.
-          </Small>
-        </Stack>
-      )}
-    </Stack>
-  )
-}
-
 interface ItemStatusCardProps {
   item?: StakeItem
   registry?: StakeRegistry
@@ -576,7 +507,8 @@ const ItemStatusCard = ({
   // While the entry can be challenged the figure is the bounty: the stake a
   // challenger the jurors agree with takes, on top of their own stake back
   // (DESIGN.md's bounty for a Stake list). It is the reason to challenge,
-  // so it leads and the cost becomes the guard behind it.
+  // so it leads the card. The exact amounts a challenge costs are on the
+  // button below and in the challenge dialog, not behind the figure.
   const figureLabel = challengeable
     ? 'Win if your challenge succeeds'
     : offList
@@ -598,15 +530,21 @@ const ItemStatusCard = ({
   // The loser can be fully funded before the half: then the winner's clock
   // runs, as in the second half.
   const loserFunded = fundedSide === loserName
+  // A Stake list has no removal requests, so the stake behind a
+  // resubmission is not refunded by a period running out: it stays locked
+  // while the entry is listed. The withdrawing period is named here in
+  // words, so the row that repeated it below is gone.
+  const lockedLine = withdrawingPeriod
+    ? `This stake stays locked while the ${itemName} is listed; it comes back when the submitter withdraws it and the withdrawing period of ${formatDurationLong(withdrawingPeriod)} ends.`
+    : `This stake stays locked while the ${itemName} is listed; it comes back when the submitter withdraws it.`
   // In court there is no card and nothing to sign: the case panel above
   // says where the case stands.
   const prompt = challengeable
-    ? // One sentence under the figure: what the bounty is made of and the
-      // cost that guards it (DESIGN.md allows one, and the Label above
-      // already says the figure is what a winning challenge takes).
-      `The ${itemName}’s stake and your own back; challenging costs ${challengerText}${
-        challengeCostText ? ` plus ${challengeCostText}` : ''
-      }, so a careless challenge is not free.`
+    ? // One sentence under the figure (DESIGN.md allows one, and the Label
+      // above already says the figure is what a winning challenge takes):
+      // what a challenge puts up, and what winning returns. The exact
+      // amounts are on the button below, so the sentence leaves them out.
+      `Winning it takes a stake of your own and the arbitration cost, so only a challenge you believe in is worth filing; if jurors agree with you, both come back and the ${itemName}’s stake is yours on top.`
     : appealable
       ? refusedToRule
         ? fundedSide
@@ -615,7 +553,9 @@ const ItemStatusCard = ({
         : statusCode === STATUS_CODE.CROWDFUNDING && !loserFunded
           ? `The ${loserName} has ${formatDuration(appealHalf - now)} to fund an appeal, or the ruling stands.`
           : `The ${loserName} funded the appeal. The ${winnerName} has ${formatDuration(appealEnd - now)} to fund too, or loses.`
-      : undefined
+      : offList
+        ? lockedLine
+        : undefined
 
   const submissionPeriod = toNum(registry.submissionPeriod)
 
@@ -723,36 +663,26 @@ const ItemStatusCard = ({
             </Amount>
             {figureSub && <Sub>{figureSub}</Sub>}
             {prompt && <Prompt>{prompt}</Prompt>}
-            {challengeable
-              ? stakeWei > 0n && (
-                  <ChallengeCost
-                    share={challengerShare}
-                    stakeText={challengerText}
-                    percentText={multiplierPercent(multiplier)}
-                    entryStakeText={stakeText}
-                    costText={challengeCostText}
-                    itemName={itemName}
-                  />
-                )
-              : !offList &&
-                !directAction &&
-                stakeWei > 0n && (
-                  <ChallengerShare
-                    share={challengerShare}
-                    amountText={tokenText(
-                      stakedByChallenger,
-                      tokenDecimals,
-                      tokenSymbol,
-                    )}
-                    percentText={
-                      challenge?.challengerStake
-                        ? `${Math.round(challengerShare * 100)}%`
-                        : multiplierPercent(multiplier)
-                    }
-                    verb="staked"
-                    stakeText={stakeText}
-                  />
+            {/* Nothing is drawn while the entry can be challenged: the
+                bounty, the sentence and the button carry it, and round 3 of
+                the design review took the breakdown off the card. */}
+            {!challengeable && !offList && !directAction && stakeWei > 0n && (
+              <ChallengerShare
+                share={challengerShare}
+                amountText={tokenText(
+                  stakedByChallenger,
+                  tokenDecimals,
+                  tokenSymbol,
                 )}
+                percentText={
+                  challenge?.challengerStake
+                    ? `${Math.round(challengerShare * 100)}%`
+                    : multiplierPercent(multiplier)
+                }
+                verb="staked"
+                stakeText={stakeText}
+              />
+            )}
           </Head>
 
           <Stack $gap={8}>
@@ -774,12 +704,6 @@ const ItemStatusCard = ({
                   {submissionPeriod ? formatDuration(submissionPeriod) : 'None'}
                 </dd>
               </div>
-              {periodShort && (
-                <div>
-                  <dt>Withdrawing period</dt>
-                  <dd title={periodLong}>{periodShort}</dd>
-                </div>
-              )}
             </Rows>
           )}
         </Card>
