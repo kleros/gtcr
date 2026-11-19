@@ -984,6 +984,7 @@ const Submissions = ({
    */
   const shownKey = shown.map((card) => card.id).join(' ')
   const holds = useRef({ tried: 0, lowered: false })
+  const askedRef = useRef('')
   holds.current = { tried: tried.length, lowered: !!current?.lowered }
   useEffect(() => {
     const list = rowsRef.current
@@ -1001,7 +1002,14 @@ const Submissions = ({
         rows.length < holds.current.tried &&
         !holds.current.lowered &&
         end + gap + last.offsetHeight <= room + 1
-      if (cut || roomForNext) setRecheck((n) => n + 1)
+      if (!cut && !roomForNext) return
+      // The room is estimated from the last row's height, and the row left
+      // out can be taller: a fresh measure then keeps the same count. Asking
+      // again for the same rows at the same sizes would measure forever.
+      const asked = `${shownKey}|${rows.length}|${room}|${end}`
+      if (askedRef.current === asked) return
+      askedRef.current = asked
+      setRecheck((n) => n + 1)
     })
     observer.observe(list)
     for (const row of list.children) observer.observe(row)
@@ -1249,6 +1257,7 @@ const DisputesPanel = ({
   // Still right once drawn? Read at the rows' own height, as measured.
   const drawnKey = drawn.map((card) => card.id).join(' ')
   const handed = useRef(0)
+  const askedRef = useRef('')
   handed.current = rulings.cards.length
   useEffect(() => {
     const list = rulingsRef.current
@@ -1265,7 +1274,13 @@ const DisputesPanel = ({
       if (!last) return
       const cut = rows.length > 1 && end > room + 1
       const roomForNext = rows.length < handed.current && end + next <= room + 1
-      if (cut || roomForNext) setRecheck((n) => n + 1)
+      if (!cut && !roomForNext) return
+      // As in the Submissions column: one fresh measure per set of rows and
+      // sizes, since the ruling left out can be taller than the last one.
+      const asked = `${drawnKey}|${rows.length}|${room}|${end}`
+      if (askedRef.current === asked) return
+      askedRef.current = asked
+      setRecheck((n) => n + 1)
     })
     observer.observe(list)
     for (const row of list.children) observer.observe(row)
