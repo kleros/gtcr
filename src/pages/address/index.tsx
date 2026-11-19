@@ -64,6 +64,7 @@ import {
   parseScope,
   parseTab,
   profileRoles,
+  searchActivities,
   type ActivityFilter,
   type ProfileTab,
 } from './view'
@@ -118,6 +119,8 @@ const AddressPage = () => {
   // In the URL with the filter and the scope, so Back from an entry, a
   // reload or a shared link opens the same page of the activity.
   const page = parsePage(searchParams.get('page'))
+  // The activity search, in the URL too (round 11).
+  const search = searchParams.get('q') ?? ''
   const tab = parseTab(searchParams.get('tab'))
   const [storedLayout, setLayout] = useStoredLayout('address', 'rows')
   const layout = activityLayout(storedLayout)
@@ -229,6 +232,7 @@ const AddressPage = () => {
   const setScope = (value: string) => setParam('chain', value, 'all')
   const setPage = (value: number) => setParam('page', String(value), '1')
   const setTab = (value: ProfileTab) => setParam('tab', value, 'activity')
+  const setQuery = (value: string) => setParam('q', value, '')
 
   // The profile's per-chain figures with the governed lists added once the
   // scan settles, so a chain the address only governs on gets its chip.
@@ -258,9 +262,14 @@ const AddressPage = () => {
       ),
     [data, scope],
   )
+  // The search narrows every kind, so the filter's counts count matches.
+  const searched = useMemo(
+    () => searchActivities(activities, search),
+    [activities, search],
+  )
   const shown = useMemo(
-    () => filterActivities(activities, filter),
-    [activities, filter],
+    () => filterActivities(searched, filter),
+    [searched, filter],
   )
   // Shorter pages on a phone (round 10: the default list was too long to
   // scroll past to the badges and the rest).
@@ -336,7 +345,7 @@ const AddressPage = () => {
       ? `${roles && roles.length > 0 ? `${roles.join(' · ')} ` : ''}${truncateMiddle(address)} | Kleros Curate`
       : undefined,
     validAddress
-      ? `Submissions, removals, challenges and governed lists of ${address} across Kleros Curate registries.`
+      ? `Submissions, removals, challenges and governed lists of ${address} across Kleros Curate lists.`
       : undefined,
   )
   // The activity renders while it loads and once it has data; a profile that
@@ -366,10 +375,13 @@ const AddressPage = () => {
     address,
     loading,
     activities,
+    searched,
     shown,
     visible,
     filter,
     onFilter: setFilter,
+    query: search,
+    onQuery: setQuery,
     page: currentPage,
     pageSize,
     onPage: setPage,

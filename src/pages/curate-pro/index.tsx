@@ -29,12 +29,12 @@ import useInView from './use-in-view'
  * (empty track). Then the creator prompt for agents and a collapsed explainer.
  */
 
-const CREATOR_PROMPT = `You are helping me launch a production Kleros Curate registry.
+const CREATOR_PROMPT = `You are helping me launch a production Kleros Curate list.
 
 Use the kleros-curate skill before taking action. Treat onchain values, MetaEvidence, policy files, deposits, challenge windows, and court parameters as live data that must be read, not guessed.
 
 Goal:
-- Turn the registry idea into clear acceptance criteria.
+- Turn the list idea into clear acceptance criteria.
 - Choose Standard Curate or Stake Curate based on the workflow.
 - Draft or review the policy before launch.
 - Prepare valid MetaEvidence and item schema.
@@ -57,7 +57,7 @@ type LayerKey = 'registry' | 'frontend' | 'indexing' | 'policy'
 
 /** The pieces around the contracts that someone has to build and run. */
 const LAYERS: { key: LayerKey; label: string }[] = [
-  { key: 'registry', label: 'Registry' },
+  { key: 'registry', label: 'List' },
   { key: 'frontend', label: 'Frontend' },
   { key: 'indexing', label: 'Indexing' },
   { key: 'policy', label: 'Policy' },
@@ -114,7 +114,7 @@ const TIERS: Tier[] = [
       registry: {
         owner: 'you',
         label: 'Deploy yourself',
-        text: 'Deploy a registry yourself; no permission needed.',
+        text: 'Deploy a list yourself; no permission needed.',
       },
       frontend: {
         owner: 'you',
@@ -132,7 +132,7 @@ const TIERS: Tier[] = [
         text: 'Write, publish, and maintain the policy; monitoring and operations are yours too.',
       },
     },
-    action: { kind: 'launch', label: 'Create a registry', icon: 'factory' },
+    action: { kind: 'launch', label: 'Create a list', icon: 'factory' },
   },
   {
     name: 'Quickstart',
@@ -143,7 +143,7 @@ const TIERS: Tier[] = [
       registry: {
         owner: 'you',
         label: 'Deploy yourself',
-        text: 'Deploy a registry yourself; no permission needed.',
+        text: 'Deploy a list yourself; no permission needed.',
       },
       frontend: {
         owner: 'you',
@@ -177,7 +177,7 @@ const TIERS: Tier[] = [
       registry: {
         owner: 'supports',
         label: 'Help with parameters',
-        text: 'Launch with help on registry parameters.',
+        text: 'Launch with help on list parameters.',
       },
       frontend: {
         owner: 'supports',
@@ -1405,7 +1405,7 @@ const LayerMatrix = () => {
 const CuratePro = () => {
   useDocumentHead(
     'Curate Pro | Kleros Curate',
-    'Launch a Kleros Curate registry with permissionless contracts, Quickstart indexing, or supported policy and frontend delivery.',
+    'Launch a Kleros Curate list with permissionless contracts, Quickstart indexing, or supported policy and frontend delivery.',
   )
 
   const [copyState, setCopyState] = useState<CopyState>('idle')
@@ -1446,7 +1446,7 @@ const CuratePro = () => {
           {usd(lowestPrice)} to {usd(highestPrice)} a month
         </HeroPill>
         <Headline style={{ ['--i' as string]: 1 }}>
-          Launch a registry <em>without building the whole stack.</em>
+          Launch a list <em>without building the whole stack.</em>
         </Headline>
         <Lede style={{ ['--i' as string]: 2 }}>
           The same open-source, permissionless protocol on every path; the paid
@@ -1460,7 +1460,7 @@ const CuratePro = () => {
         <Explainer
           id="curate-pro-production-registry"
           eyebrow="Before you launch"
-          heading="What a production registry needs"
+          heading="What a production list needs"
           intro="Every path runs the same contracts; what changes is who runs the pieces around them."
           steps={[
             {

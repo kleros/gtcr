@@ -9,6 +9,7 @@ import {
   Data,
   Label,
   Rail,
+  SearchField,
   SegmentedControl,
   SkeletonBlock,
   Small,
@@ -136,11 +137,14 @@ const ActivityHead = styled(SectionHead)`
   min-height: 38px;
 `
 
-/* The kind filter on the left, the layout (icons only, as on Browse) at the
-   right end. The filter's track scrolls on a phone, so the two share a line
-   at every width. */
+/* The kind filter on the left, the search in the middle, the layout (icons
+   only, as on Browse) at the right end. Where the three do not fit on one
+   line the search takes the next one with the layout; on a phone the
+   filter's track scrolls beside the layout and the search fills the line
+   under them. */
 const Toolbar = styled.div`
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
@@ -150,7 +154,97 @@ const Toolbar = styled.div`
   > :last-child {
     flex: 0 0 auto;
   }
+
+  @media (max-width: 720px) {
+    > ${FilterTabsSlot} {
+      flex: 1 1 0;
+    }
+  }
 `
+
+/* The activity search (round 11): Browse's pill, at the tracks' 38px. */
+const Search = styled(SearchField)`
+  flex: 1 1 220px;
+  min-width: 0;
+  height: 38px;
+  padding: 0 6px 0 14px;
+  border-radius: var(--radius-pill);
+
+  input {
+    width: 0;
+    font-size: var(--fs-small);
+  }
+
+  &:has(input:disabled) {
+    opacity: 0.6;
+  }
+
+  @media (max-width: 720px) {
+    order: 1;
+    flex-basis: 100%;
+  }
+`
+
+const ClearSearch = styled.button`
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--color-faint);
+  cursor: pointer;
+  transition:
+    background var(--motion),
+    color var(--motion);
+
+  &:hover {
+    background: var(--color-surface);
+    color: var(--color-text);
+  }
+`
+
+const ActivitySearch = ({
+  value,
+  disabled,
+  onChange,
+}: {
+  value: string
+  disabled: boolean
+  onChange: (value: string) => void
+}) => (
+  <Search>
+    <CurateIcon name="search" size={16} />
+    <input
+      aria-label="Search activity"
+      placeholder="Search entry, list or address"
+      autoComplete="off"
+      spellCheck={false}
+      enterKeyHint="search"
+      disabled={disabled}
+      value={value}
+      onChange={(event) => onChange(event.currentTarget.value)}
+      onKeyDown={(event) => {
+        if (event.key === 'Escape' && value) {
+          event.preventDefault()
+          onChange('')
+        }
+      }}
+    />
+    {value && (
+      <ClearSearch
+        type="button"
+        aria-label="Clear search"
+        onClick={() => onChange('')}
+      >
+        <CurateIcon name="close" size={14} />
+      </ClearSearch>
+    )}
+  </Search>
+)
 
 /** One link stretched over the whole row or card; inner links sit above it. */
 const Overlay = styled(Link)`
@@ -999,10 +1093,13 @@ export const ActivitySection = ({
   address,
   loading,
   activities,
+  searched,
   shown,
   visible,
   filter,
   onFilter,
+  query,
+  onQuery,
   page,
   pageSize = PAGE_SIZE,
   onPage,
@@ -1020,12 +1117,17 @@ export const ActivitySection = ({
   loading: boolean
   /** Listed actions in the scope. */
   activities: ProfileActivity[]
+  /** Those the search matches, every kind: what the filter counts. */
+  searched: ProfileActivity[]
   /** Actions the filter shows. */
   shown: ProfileActivity[]
   /** The current page of them. */
   visible: ProfileActivity[]
   filter: ActivityFilter
   onFilter: (value: ActivityFilter) => void
+  /** The activity search, as typed. */
+  query: string
+  onQuery: (value: string) => void
   page: number
   /** Actions to a page: fewer on a phone. */
   pageSize?: number
@@ -1063,12 +1165,15 @@ export const ActivitySection = ({
     : (Object.fromEntries(
         FILTERS.map((option) => [
           option.value,
-          filterCount(activities, option.value),
+          filterCount(searched, option.value),
         ]),
       ) as Record<ActivityFilter, number>)
   const shares = registryShares(activities)
   const showRail = !loading && activities.length > 0
   const filterLabel = FILTER_NOUN[filter]
+  const term = query.trim()
+  // What the footer and the empty state call the search: “uniswap”.
+  const quoted = `\u201C${term}\u201D`
   // A chain chip on every row only helps when the rows span chains; on one
   // chain the identity bar (or the scope control) already names it.
   const oneChain =
@@ -1086,19 +1191,46 @@ export const ActivitySection = ({
     </RowList>
   ) : shown.length === 0 ? (
     <Surface $padding="none">
-      <QuietState
-        icon="activity"
-        title={
-          activities.length === 0
-            ? 'No activity indexed'
-            : `No ${filterLabel} here`
-        }
-        action={
-          activities.length === 0 ? (
+      {activities.length === 0 ? (
+        <QuietState
+          icon="activity"
+          title="No activity indexed"
+          action={
             <ButtonLink to="/browse" $variant="secondary" $size="sm">
-              Browse registries
+              Browse lists
             </ButtonLink>
-          ) : (
+          }
+        >
+          {`This address has not submitted, removed or challenged an entry on ${chainList}.`}
+        </QuietState>
+      ) : term && searched.length === 0 ? (
+        <QuietState
+          icon="search"
+          title={`Nothing matches ${quoted}`}
+          action={
+            <Button
+              type="button"
+              $variant="secondary"
+              $size="sm"
+              onClick={() => onQuery('')}
+            >
+              Clear search
+            </Button>
+          }
+        >
+          {truncated
+            ? `The search reads the ${formatInt(activities.length)} most recent actions: entries, lists, addresses, cases and chains.`
+            : 'The search reads entries, lists, addresses, cases and chains.'}
+        </QuietState>
+      ) : (
+        <QuietState
+          icon="activity"
+          title={
+            term
+              ? `No ${filterLabel} match ${quoted}`
+              : `No ${filterLabel} here`
+          }
+          action={
             <Button
               type="button"
               $variant="secondary"
@@ -1107,13 +1239,13 @@ export const ActivitySection = ({
             >
               Show all actions
             </Button>
-          )
-        }
-      >
-        {activities.length === 0
-          ? `This address has not submitted, removed or challenged an entry on ${chainList}.`
-          : 'Its other actions are one filter away.'}
-      </QuietState>
+          }
+        >
+          {term
+            ? `${plural(searched.length, 'action', 'actions')} of other kinds ${searched.length === 1 ? 'matches' : 'match'} it.`
+            : 'Its other actions are one filter away.'}
+        </QuietState>
+      )}
     </Surface>
   ) : layout === 'cards' ? (
     <CardGrid>
@@ -1201,6 +1333,13 @@ export const ActivitySection = ({
         <div style={{ minWidth: 0 }}>
           <Toolbar style={{ ['--i' as string]: 1 }}>
             <FilterTabs value={filter} counts={counts} onChange={onFilter} />
+            {(loading || activities.length > 0) && (
+              <ActivitySearch
+                value={query}
+                disabled={loading}
+                onChange={onQuery}
+              />
+            )}
             <SegmentedControl<ActivityLayout>
               ariaLabel="Layout"
               size="sm"
@@ -1221,6 +1360,7 @@ export const ActivitySection = ({
                 {truncated ? 'the ' : ''}
                 {formatInt(shown.length)}{' '}
                 {truncated ? `most recent ${filterLabel}` : filterLabel}
+                {term && ` matching ${quoted}`}
               </Small>
               {shown.length > pageSize && (
                 <Pagination

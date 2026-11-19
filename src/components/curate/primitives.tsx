@@ -1058,7 +1058,7 @@ export type ToggleOption<T extends string> = {
  * For one choice out of several, use SegmentedControl instead.
  *
  *   <ToggleGroup
- *     ariaLabel="Registry type"
+ *     ariaLabel="List type"
  *     value={kinds}
  *     onChange={setKinds}
  *     options={[

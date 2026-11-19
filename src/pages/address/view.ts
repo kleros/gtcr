@@ -95,6 +95,58 @@ export const filterCount = (
   filter: ActivityFilter,
 ): number => filterActivities(activities, filter).length
 
+/* ---------- Search ---------- */
+
+/*
+ * The activity search (round 11). It runs in the browser over the actions
+ * already read, so it reads everything a row shows or names: the entry's
+ * name and every identifying field, the list's title and address, the entry
+ * ID, the action's status ("Challenged · case 12"), the other party and the
+ * chain. Each action's text is built once and kept beside it.
+ */
+const haystacks = new WeakMap<ProfileActivity, string>()
+
+const activityHaystack = (activity: ProfileActivity): string => {
+  const cached = haystacks.get(activity)
+  if (cached !== undefined) return cached
+  const text = [
+    activity.entry?.text,
+    activity.entry?.list,
+    activity.entry?.value,
+    activity.entry?.network,
+    ...(activity.entryFields ?? []),
+    activity.registryTitle,
+    activity.registryAddress,
+    activity.itemID,
+    activity.status,
+    activity.disputeID && `case ${activity.disputeID}`,
+    activity.actor,
+    activity.secondaryActor,
+    chainName(activity.chainId),
+  ]
+    .filter(Boolean)
+    .join('\n')
+    .toLowerCase()
+  haystacks.set(activity, text)
+  return text
+}
+
+/** The query's words, lowercased: an action matches when it holds them all. */
+const searchTerms = (query: string): string[] =>
+  query.trim().toLowerCase().split(/\s+/).filter(Boolean)
+
+export const searchActivities = (
+  activities: ProfileActivity[],
+  query: string,
+): ProfileActivity[] => {
+  const terms = searchTerms(query)
+  if (terms.length === 0) return activities
+  return activities.filter((activity) => {
+    const haystack = activityHaystack(activity)
+    return terms.every((term) => haystack.includes(term))
+  })
+}
+
 /**
  * What the request behind an action is up to, from the state the data layer
  * carries: nothing when it says nothing, "pending" while the request is

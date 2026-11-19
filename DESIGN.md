@@ -1,7 +1,7 @@
 ---
 version: alpha
 name: CurateVision
-description: Design system for CurateVision, a modern front end for Kleros Curate registries. v2, built on roobinium's glow stage (the YMax dashboard), 2026-10-19; round 2 (full bleed, the "Lit edge" controls) the same day.
+description: Design system for CurateVision, a modern front end for Kleros Curate lists. v2, built on roobinium's glow stage (the YMax dashboard), 2026-10-19; round 2 (full bleed, the "Lit edge" controls) the same day.
 colors:
   primary: "#3D7BFF"
   primary-fill: "#2962FF"
@@ -438,6 +438,15 @@ Focus everywhere is a 2px `primary` outline, 2px out (inset inside clipping trac
 
 # Naming
 
+## List, not registry (round 11)
+
+The app says "list" for what the contracts and other tools call a registry or TCR: in every
+heading, label, button, empty state, document title and meta description. The guide's glossary is
+the one place the other word appears, to say it means the same thing. Code keeps its names
+(`registry`, `RegistryLogo`, the indexer's `Registry` entity), and so does the agent skill, which
+works on the contracts. A list the indexer has no title for is "List 0x12ab…cdef" (Stake: "Stake
+list 0x12ab…cdef").
+
 ## Verified and Community
 
 A list's standing has two names. The words come from `components/curate/verified-badge.tsx` and
@@ -574,6 +583,11 @@ way (dashboard, Browse, registry pages, the profile, the landing page).
 
 ## Dashboard
 
+- **The title** (round 11) names both ways in, one clause to a line, the second in `primary`:
+  "Obtain your verification, / or earn by keeping lists clean." It is a sentence, not a slogan, so
+  it is set at clamp(38px, 3.4vw + 14px, 64px) rather than `--fs-hero`, each clause balanced on a
+  phone. The lede under it, at most 54ch and balanced: "Curate verifies anything, at scale. It's
+  built so good actors win: they get verified, or they get the bounty if they spot wrong entries."
 - **Open for verification** is not drawn at all when there is no bounty up for grabs (round 10).
   It sits under Happening now with no box (round 6), centred on the page:
   under its title, two large figures side by side, parted by a hairline, the count open now and
@@ -737,6 +751,15 @@ way (dashboard, Browse, registry pages, the profile, the landing page).
   an LED bar of the way there and the figure, or, earned, a lit "Earned" check; its head counts
   how many are earned. The juror row's bar is the share of seats voted, in `edge-2`.
 - On phones the Activity shows 8 actions to a page (20 elsewhere).
+- **Activity search** (round 11): Browse's pill search between the kind filter and the layout
+  control, 38px like their tracks; on its own line under them where the three do not fit, and
+  always on a phone. It runs in the browser over the actions already read; every word must match,
+  in the entry's name and identifying fields, the list's title and address, the entry ID, the
+  status with its case number, the other party or the chain. `?q=` keeps it beside the filter; a
+  new query starts again at page 1; Escape or the clear button empties it. The filter's counts
+  count matches and the footer adds 'matching "…"'. With no match one quiet state offers Clear
+  search (on a cut list it says the search reads the most recent actions only); with matches of
+  another kind only, it says how many and offers Show all actions.
 - **Quiet addresses.** An address with no action in scope gets no row of zeros and no boxed empty
   state. A juror's figures row leads with Juror on Curate (seats, disputes drawn in, voted, still
   voting above 0); a governor with no action gets no figures row, only identity and one muted line

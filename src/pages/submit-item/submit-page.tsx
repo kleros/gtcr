@@ -771,11 +771,11 @@ const PageHeader = ({
       <Crumbs aria-label="Breadcrumb" style={{ ['--i' as string]: 0 }}>
         <ol>
           <li>
-            <Link to="/browse">Registries</Link>
+            <Link to="/browse">Lists</Link>
           </li>
           <li>
             <Chevron />
-            <Link to={registryPath}>{registryTitle ?? 'Registry'}</Link>
+            <Link to={registryPath}>{registryTitle ?? 'List'}</Link>
           </li>
           <li aria-current="page">
             <Chevron />

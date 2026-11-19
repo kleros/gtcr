@@ -1099,7 +1099,7 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
         <Crumbs aria-label="Breadcrumb">
           <Link to={registryHref}>
             <CurateIcon name="registry" size={14} />
-            {tcrTitle || 'Registry'}
+            {tcrTitle || 'List'}
           </Link>
           <span aria-hidden>/</span>
           <span aria-current="page">{Name}</span>

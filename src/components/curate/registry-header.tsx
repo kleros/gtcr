@@ -876,7 +876,7 @@ export const RegistryHeader = ({
       $padding="none"
       role="region"
       aria-busy={loading}
-      aria-label={title ?? 'Registry'}
+      aria-label={title ?? 'List'}
     >
       <Top>
         <Identity>
@@ -885,9 +885,7 @@ export const RegistryHeader = ({
             src={logoURI ? parseIpfs(logoURI) : null}
           />
           <IdText>
-            <Title>
-              {title ?? (loading ? 'Loading registry…' : 'Registry')}
-            </Title>
+            <Title>{title ?? (loading ? 'Loading list…' : 'List')}</Title>
             <Chips>
               {chainId && <ChainChip chainId={chainId} />}
               <KindTag kind={kind} size="md" />

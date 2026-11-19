@@ -438,7 +438,7 @@ const AppBar = () => {
         : ''
     : String(displayedChainId ?? '')
 
-  const chainMenuLabel = isBrowse ? 'Filter registries by chain' : 'Chain'
+  const chainMenuLabel = isBrowse ? 'Filter lists by chain' : 'Chain'
 
   const account =
     web3Context.active && web3Context.account ? web3Context.account : null

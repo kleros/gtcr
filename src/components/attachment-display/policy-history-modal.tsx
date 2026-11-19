@@ -237,7 +237,7 @@ const PolicyHistoryModal: React.FC<PolicyHistoryModalProps> = ({ onClose }) => {
           </EmptyState>
         ) : null}
         {!isLoading && !isError && history.length === 0 ? (
-          <EmptyState>No policy history found for this registry.</EmptyState>
+          <EmptyState>No policy history found for this list.</EmptyState>
         ) : null}
         {history.map((entry) => {
           const { endDate } = entry

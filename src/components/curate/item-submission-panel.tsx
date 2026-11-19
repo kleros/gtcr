@@ -370,7 +370,7 @@ export const ItemSubmissionPanel = ({
                   )}
                   {linkedHref && (
                     <ButtonLink to={linkedHref} $variant="secondary" $size="sm">
-                      Open registry
+                      Open list
                       <CurateIcon name="external" size={14} />
                     </ButtonLink>
                   )}

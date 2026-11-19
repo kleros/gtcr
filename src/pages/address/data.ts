@@ -368,7 +368,7 @@ const registryTitle = (
 ) => {
   if (title && title.trim() && title.trim() !== '-') return title.trim()
   if (kind === 'permanent') return `Stake list ${shortAddress(address)}`
-  return `Registry ${shortAddress(address)}`
+  return `List ${shortAddress(address)}`
 }
 
 const safeRequest = async <T>(

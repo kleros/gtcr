@@ -1212,10 +1212,10 @@ const TitleSeal = styled(VerifiedBadge)`
 
 /**
  * A list's name in the rail. A list known only by its address shows the
- * address, whole and in mono ("0x0391…ad67"), not "Registry 0x0391…".
+ * address, whole and in mono ("0x0391…ad67"), not "List 0x0391…".
  */
 const ListName = ({ title, address }: { title: string; address: string }) =>
-  /^(Stake list|Registry) 0x/i.test(title) ? (
+  /^(Stake list|List) 0x/i.test(title) ? (
     <code title={address}>{truncateMiddle(address)}</code>
   ) : (
     <span>{title}</span>
@@ -1411,7 +1411,7 @@ const FreshnessPill = ({
 
 const BrowsePage = () => {
   useDocumentHead(
-    'Browse registries | Kleros Curate',
+    'Browse lists | Kleros Curate',
     'Browse Kleros Verified and Community Curate lists on Ethereum and Gnosis, and on the Sepolia testnet.',
   )
   const [searchParams, setSearchParams] = useSearchParams()
@@ -1748,7 +1748,7 @@ const BrowsePage = () => {
     <Page>
       <Header>
         <div style={{ ['--i' as string]: 0 }}>
-          <Title>Registries</Title>
+          <Title>Lists</Title>
           <Lede>Every Curate list on {scope}.</Lede>
         </div>
         <FreshnessPill
@@ -1766,7 +1766,7 @@ const BrowsePage = () => {
         style={{ ['--i' as string]: 2 }}
       >
         <VisuallyHidden as="h2" id="browse-figures-title">
-          Registry figures for {scope}
+          List figures for {scope}
         </VisuallyHidden>
         {failed ? (
           <FigureBox $padding="none" style={{ gridColumn: '1 / -1' }}>
@@ -1893,7 +1893,7 @@ const BrowsePage = () => {
           style={{ ['--i' as string]: 3 }}
         >
           <VisuallyHidden as="h2" id="browse-explorer-title">
-            Registry list
+            All lists
           </VisuallyHidden>
           <StandingBar>
             <SegmentedControl<TrustMode>
@@ -1912,7 +1912,7 @@ const BrowsePage = () => {
             <Search>
               <CurateIcon name="search" size={16} />
               <input
-                aria-label="Search registries"
+                aria-label="Search lists"
                 placeholder="Search name, address or chain"
                 value={search}
                 onChange={(event) =>
@@ -1934,7 +1934,7 @@ const BrowsePage = () => {
             </Search>
             <ToggleGroup<RegistryKind>
               className="browse-kind"
-              ariaLabel="Registry type"
+              ariaLabel="List type"
               value={kinds}
               onChange={(value) =>
                 setParam({ kind: value.join(',') || null, page: null })
@@ -1982,7 +1982,7 @@ const BrowsePage = () => {
             <Surface $padding="none">
               <EmptyState
                 icon="registry"
-                title="Registries could not be loaded"
+                title="Lists could not be loaded"
                 action={
                   <Button
                     type="button"
@@ -2065,7 +2065,7 @@ const BrowsePage = () => {
             <Surface $padding="none">
               <EmptyState
                 icon="filter"
-                title="No registries match"
+                title="No lists match"
                 action={
                   <Button
                     type="button"

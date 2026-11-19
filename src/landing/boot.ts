@@ -163,8 +163,8 @@ const withinBudget = <T>(promise: Promise<T>, ms: number) =>
     new Promise<null>((resolve) => setTimeout(() => resolve(null), ms)),
   ])
 
-/** "Registry 0x12ab...cdef": the indexer had no title for the list. */
-const FALLBACK_TITLE = /^(permanent )?registry 0x[0-9a-f]{4}/i
+/** "List 0x12ab…cdef": the indexer had no title for the list. */
+const FALLBACK_TITLE = /^(stake )?list 0x[0-9a-f]{4}/i
 
 /** Names and logos the indexer lacks, from each list's MetaEvidence. */
 const withMetadata = async (

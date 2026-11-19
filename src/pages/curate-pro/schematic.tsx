@@ -80,7 +80,7 @@ const Node = ({
 
 export const ProductionStackSchematic = () => (
   <svg viewBox="0 0 320 284" xmlns="http://www.w3.org/2000/svg" role="img">
-    <title>What a production registry is made of</title>
+    <title>What a production list is made of</title>
     <defs>
       <marker
         id="curate-pro-arrow"
@@ -143,7 +143,7 @@ export const ProductionStackSchematic = () => (
       y={34}
       width={132}
       height={56}
-      title="Registry contract"
+      title="List contract"
       detail="Deposits · window"
       strong
     />

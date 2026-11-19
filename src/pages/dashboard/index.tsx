@@ -286,16 +286,31 @@ const PillState = styled.span`
   gap: 10px;
 `
 
+/*
+ * Round 11: the title names both ways in, one per line, the second in the
+ * accent. It is a sentence now, not a slogan, so it is set smaller than
+ * --fs-hero (84px would wrap it to five lines) and each clause wraps on its
+ * own, balanced, on a phone.
+ */
 const Headline = styled(HeroStatement)`
-  max-width: 14ch;
+  max-width: 24ch;
+  font-size: clamp(38px, 3.4vw + 14px, 64px);
+  line-height: 1.02;
+
+  > span,
+  > em {
+    display: block;
+    text-wrap: balance;
+  }
 `
 
 const Lede = styled.p`
   margin: 0;
-  max-width: 46ch;
+  max-width: 54ch;
   color: var(--color-muted);
   font-size: 18px;
   line-height: 28px;
+  text-wrap: balance;
 `
 
 const Actions = styled.div`
@@ -714,7 +729,7 @@ const RegistryLogo = ({ registry }: { registry: DashboardRegistry }) => (
 const Dashboard = () => {
   useDocumentHead(
     'Kleros Curate',
-    'Browse Kleros Curate registries, follow entries in a challenge window or in court, and earn by challenging entries that break a list policy.',
+    'Browse Kleros Curate lists, follow entries in a challenge window or in court, and earn by challenging entries that break a list policy.',
   )
   const navigate = useNavigate()
   // Always every mainnet (round 7: "just leave all chain and hide the
@@ -1142,15 +1157,16 @@ const Dashboard = () => {
           {data && partialChains.length === 0 && updated}
         </LivePill>
         <Headline style={{ ['--i' as string]: 1 }}>
-          Lists anyone can challenge. <em>Settled by Kleros.</em>
+          <span>Obtain your verification,</span>{' '}
+          <em>or earn by keeping lists clean.</em>
         </Headline>
         <Lede style={{ ['--i' as string]: 2 }}>
-          Challenge a submission that breaks its list’s policy and earn its
-          bounty if jurors agree.
+          Curate verifies anything, at scale. It’s built so good actors win:
+          they get verified, or they get the bounty if they spot wrong entries.
         </Lede>
         <Actions style={{ ['--i' as string]: 3 }}>
           <ButtonLink to={browseHref()} $variant="primary">
-            Explore registries
+            Explore lists
           </ButtonLink>
           <ButtonLink to={`/launch/${launchChain}`} $variant="secondary">
             Launch a list
@@ -1177,7 +1193,7 @@ const Dashboard = () => {
             </HeadlineFigure>
             <InlineStats>
               {[
-                { label: 'Registries', value: figures?.registries },
+                { label: 'Lists', value: figures?.registries },
                 { label: 'Open requests', value: figures?.requestsOpen },
                 { label: 'In court now', value: figures?.inCourt },
               ].map((figure) => (
@@ -1391,7 +1407,7 @@ const Dashboard = () => {
       <SectionHead>
         <SectionTitle>Most active</SectionTitle>
         <SeeAll to={browseHref('trust=all&sort=activity')}>
-          All registries <CurateIcon name="submit" size={13} />
+          All lists <CurateIcon name="submit" size={13} />
         </SeeAll>
       </SectionHead>
       {loading ? (
@@ -1401,7 +1417,7 @@ const Dashboard = () => {
           <ActiveTable>
             <thead>
               <tr>
-                <th>Registry</th>
+                <th>List</th>
                 <th>Chain</th>
                 <th className="num">Entries</th>
                 <th className="num">Open</th>
