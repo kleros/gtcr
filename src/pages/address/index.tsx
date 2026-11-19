@@ -52,6 +52,7 @@ import {
   withVerified,
 } from 'components/curate/registry-shared-verified'
 import {
+  DEFAULT_PROFILE_RANGE,
   PAGE_SIZE,
   PHONE_PAGE_SIZE,
   activeChains,
@@ -69,6 +70,7 @@ import {
   type ProfileTab,
 } from './view'
 import { ProfilePanel } from './profile'
+import { parseRange, type ChartRange } from 'pages/dashboard/view'
 import { ActivitySection } from './activity'
 import { SectionHead } from './parts'
 
@@ -121,6 +123,8 @@ const AddressPage = () => {
   const page = parsePage(searchParams.get('page'))
   // The activity search, in the URL too (round 11).
   const search = searchParams.get('q') ?? ''
+  // The chart's range (round 13), the dashboard's four; 3Y unwritten.
+  const range = parseRange(searchParams.get('range'), DEFAULT_PROFILE_RANGE)
   const tab = parseTab(searchParams.get('tab'))
   const [storedLayout, setLayout] = useStoredLayout('address', 'rows')
   const layout = activityLayout(storedLayout)
@@ -224,8 +228,9 @@ const AddressPage = () => {
     if (value === fallback) next.delete(key)
     else next.set(key, value)
     // Another filter or scope starts again from the first page; a tab keeps
-    // the page and the filter, so switching back finds the list as it was.
-    if (key !== 'page' && key !== 'tab') next.delete('page')
+    // the page and the filter, so switching back finds the list as it was,
+    // and the chart's range is not the list's.
+    if (key !== 'page' && key !== 'tab' && key !== 'range') next.delete('page')
     setSearchParams(next, { replace: true })
   }
   const setFilter = (value: ActivityFilter) => setParam('show', value, 'all')
@@ -233,6 +238,8 @@ const AddressPage = () => {
   const setPage = (value: number) => setParam('page', String(value), '1')
   const setTab = (value: ProfileTab) => setParam('tab', value, 'activity')
   const setQuery = (value: string) => setParam('q', value, '')
+  const setRange = (value: ChartRange) =>
+    setParam('range', value, DEFAULT_PROFILE_RANGE)
 
   // The profile's per-chain figures with the governed lists added once the
   // scan settles, so a chain the address only governs on gets its chip.
@@ -435,6 +442,8 @@ const AddressPage = () => {
         roles={roles}
         juror={juror}
         badges={badges}
+        range={range}
+        onRange={setRange}
         now={now}
       />
 

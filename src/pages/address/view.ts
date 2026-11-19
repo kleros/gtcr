@@ -1,6 +1,7 @@
 import type { EntryStatusView } from 'components/curate/entry-status'
 import { LAYOUT_OPTIONS, type ListLayout } from 'hooks/use-stored-layout'
 import { ZERO_ADDRESS } from 'pages/dashboard/data'
+import type { ChartRange } from 'pages/dashboard/view'
 import {
   SUPPORTED_CHAIN_IDS,
   chainName,
@@ -384,13 +385,6 @@ const monthStart = (t: number) => {
   const date = new Date(t * 1000)
   return Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), 1) / 1000
 }
-const nextStart = (start: number, unit: BucketUnit) => {
-  if (unit === 'hour') return start + HOUR
-  if (unit === 'day') return start + DAY
-  if (unit === 'week') return start + 7 * DAY
-  const date = new Date(start * 1000)
-  return Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + 1, 1) / 1000
-}
 const bucketOf = (t: number, unit: BucketUnit) =>
   unit === 'hour'
     ? Math.floor(t / HOUR) * HOUR
@@ -450,50 +444,73 @@ export const bucketAxisLabel = (start: number, unit: BucketUnit): string => {
 }
 
 /**
- * The listed actions counted per bucket, up to now. The bucket grows with the
- * span the actions cover (day up to three months, then week, then month) so
- * the chart stays readable. When the list is complete, the window starts at
- * least two weeks back: days before the first action are true zeros. When it
- * is only the most recent slice, the list was cut inside the bucket holding
- * its oldest action, so the window starts at the next bucket: nothing missing
- * is drawn, neither as a zero nor as a short count. Only when that would
- * leave fewer than two buckets is the cut bucket kept, marked as partial.
+ * The profile chart's windows (round 13: "the selector of 30D, 6M … just
+ * identical to the dashboard timeframes"): the dashboard's own, bucket for
+ * bucket. 30 days by day, 6 months and a year by week, 3 years by month,
+ * each ending in the bucket that holds now.
  */
-export const activityBuckets = (
+const RANGE_WINDOWS: Record<ChartRange, { unit: BucketUnit; count: number }> = {
+  '30d': { unit: 'day', count: 30 },
+  '6m': { unit: 'week', count: 26 },
+  '1y': { unit: 'week', count: 52 },
+  '3y': { unit: 'month', count: 36 },
+}
+
+/** A profile opens on the longest range: it is a record, not a live feed. */
+export const DEFAULT_PROFILE_RANGE: ChartRange = '3y'
+
+const previousStart = (start: number, unit: BucketUnit) => {
+  if (unit === 'hour') return start - HOUR
+  if (unit === 'day') return start - DAY
+  if (unit === 'week') return start - 7 * DAY
+  const date = new Date(start * 1000)
+  return Date.UTC(date.getUTCFullYear(), date.getUTCMonth() - 1, 1) / 1000
+}
+
+/**
+ * The listed actions counted per bucket over a range. Undefined when the
+ * address has no dated action at all; zeros when it has some, none in the
+ * range. When the list is only the most recent slice and was cut inside the
+ * range, the window starts at the bucket after the cut: nothing missing is
+ * drawn, neither as a zero nor as a short count (`cut` says so). Only when
+ * that would leave fewer than two buckets is the cut bucket kept, marked as
+ * partial.
+ */
+export const rangeBuckets = (
   activities: ProfileActivity[],
+  range: ChartRange,
   now: number,
   complete: boolean,
-): ActivityBuckets | undefined => {
+): (ActivityBuckets & { cut: boolean }) | undefined => {
   const stamped = activities.filter(
     (activity) => activity.timestamp > 0 && activity.timestamp <= now,
   )
   if (stamped.length === 0) return undefined
-  const oldest = Math.min(...stamped.map((activity) => activity.timestamp))
-  let from = dayStart(oldest)
-  if (complete) from = Math.min(from, dayStart(now) - 13 * DAY)
-  const spanDays = (dayStart(now) - from) / DAY + 1
-  const unit: BucketUnit =
-    !complete && spanDays <= 3
-      ? 'hour'
-      : spanDays <= 92
-        ? 'day'
-        : spanDays <= 7 * 104
-          ? 'week'
-          : 'month'
+  const { unit, count } = RANGE_WINDOWS[range]
 
-  const starts: number[] = []
-  const last = bucketOf(now, unit)
+  let starts: number[] = []
   for (
-    let start = bucketOf(unit === 'hour' ? oldest : from, unit);
-    start <= last;
-    start = nextStart(start, unit)
+    let start = bucketOf(now, unit);
+    starts.length < count;
+    start = previousStart(start, unit)
   )
-    starts.push(start)
-  let partialFrom: number | undefined
-  if (!complete)
-    if (starts.length > 2) starts.shift()
-    else partialFrom = oldest
+    starts.unshift(start)
 
+  let partialFrom: number | undefined
+  let cut = false
+  if (!complete) {
+    const oldest = Math.min(...stamped.map((activity) => activity.timestamp))
+    const cutAt = bucketOf(oldest, unit)
+    if (cutAt >= starts[0]) {
+      cut = true
+      const after = starts.filter((start) => start > cutAt)
+      if (after.length >= 2) starts = after
+      else {
+        starts = starts.filter((start) => start >= cutAt)
+        partialFrom = oldest
+      }
+    }
+  }
   if (starts.length < 2) return undefined
 
   const position = new Map(starts.map((start, index) => [start, index]))
@@ -510,9 +527,7 @@ export const activityBuckets = (
   if (partialFrom !== undefined) {
     const at = new Date(partialFrom * 1000)
     labels[0] = `${labels[0]} · listed from ${
-      unit === 'hour' || unit === 'day'
-        ? clockLabel.format(at)
-        : hourLabel.format(at)
+      unit === 'day' ? clockLabel.format(at) : hourLabel.format(at)
     } UTC`
   }
 
@@ -524,6 +539,7 @@ export const activityBuckets = (
     requests,
     challenges,
     partialFrom,
+    cut,
   }
 }
 

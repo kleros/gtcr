@@ -568,10 +568,11 @@ way (dashboard, Browse, registry pages, the profile, the landing page).
   "unavailable", never 0.
 - **The share card** (`public/og-image.png`, 1200×630, the og:image and twitter:image of
   `index.html` and `landing/index.html`) is a headless-Chrome screenshot of
-  `scripts/og-image.html` (the command is in its header): the landing headline ("Lists anyone can
-  challenge. Settled by Kleros.") and its og:description on the dark stage with the aurora and the
-  Curate mark, no grid or dot pattern. When the tagline changes, the card is rendered again and
-  both `og:image:alt` strings change with it.
+  `scripts/og-image.html` (the command is in its header): since round 13 the dashboard's title
+  ("Obtain your verification, / or earn by keeping lists clean.", the second clause in the accent)
+  and its lede, on the dark stage with the aurora and the Curate mark, no grid or dot pattern.
+  When the title changes, the card is rendered again and both `og:image:alt` strings change with
+  it. The landing page's own headline and tags are its own.
 - The landing's Bounties won card shows the figures with no "All time" stamp and no explanatory
   sentence, as on the dashboard; its months run to the snapshot's month. Its coins include the
   Classic lists' bounties like the live figures; its "n of m rulings went to the challenger" line
@@ -774,6 +775,14 @@ way (dashboard, Browse, registry pages, the profile, the landing page).
   drawn in, seats voted, still voting) and its tooltip on a dotted underline under the name, not a
   help icon, which pushed the tag under the name.
 - On phones the Activity shows 8 actions to a page (20 elsewhere).
+- **The chart's range** (round 13): the dashboard's switch, the same four options from one list
+  (`RANGE_OPTIONS` in `pages/dashboard/view.ts`) and the same buckets: 30D by day, 6M and 1Y by
+  week, 3Y by month, each ending in the bucket that holds now, with the dashboard's legend ("Per
+  week · last year") over the series. It sits at the right of the chart's head and sets the chart
+  only: the figures, the challenge record and the badges stay all-time. A profile opens on 3Y (a
+  record, not a live feed), kept in `?range=` when another is picked. A range with no action
+  keeps the chart's height and says so; a list cut inside the range starts at the bucket after
+  the cut and names the dates it covers.
 - **Activity search** (round 11): Browse's pill search between the kind filter and the layout
   control, 38px like their tracks; on its own line under them where the three do not fit, and
   always on a phone. It runs in the browser over the actions already read; every word must match,

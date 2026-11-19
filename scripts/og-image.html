@@ -13,9 +13,10 @@
   render it online; the time budget lets them arrive before the shot. Look
   at the PNG afterwards: a face that did not load falls back silently.
 
-  The words are the landing page's (landing/index.html): its headline and
-  its og:description. The stage is the app's: the dark theme's colours and
-  aurora (DESIGN.md), and no grid or dot pattern behind anything.
+  The words are the dashboard's (round 13): its title, one clause to a line
+  with the second in the accent, and its lede. The stage is the app's: the
+  dark theme's colours and aurora (DESIGN.md), and no grid or dot pattern
+  behind anything.
 -->
 <html lang="en">
   <head>
@@ -118,21 +119,22 @@
       .copy {
         position: absolute;
         left: 76px;
-        top: 166px;
+        top: 178px;
         width: 680px;
       }
 
       h1 {
         font-family: 'Urbanist', sans-serif;
-        font-size: 84px;
+        font-size: 60px;
         font-weight: 500;
-        line-height: 78px;
-        letter-spacing: -0.045em;
+        line-height: 60px;
+        letter-spacing: -0.04em;
       }
 
       h1 span,
       h1 em {
         display: block;
+        text-wrap: balance;
       }
 
       h1 em {
@@ -141,10 +143,11 @@
       }
 
       p {
-        margin-top: 30px;
+        margin-top: 28px;
         color: var(--text-muted);
-        font-size: 25px;
-        line-height: 34.5px;
+        font-size: 23px;
+        line-height: 32px;
+        text-wrap: balance;
       }
 
       .site {
@@ -214,14 +217,12 @@
 
     <div class="copy">
       <h1>
-        <span>Lists anyone</span>
-        <span>can challenge.</span>
-        <em>Settled by Kleros.</em>
+        <span>Obtain your verification,</span>
+        <em>or earn by keeping lists clean.</em>
       </h1>
       <p>
-        Submit an entry that follows a list’s rules and your<br />
-        deposit comes back. Spot one that breaks them,<br />
-        challenge it and earn the bounty.
+        Curate verifies anything, at scale. Built to let good actors win:
+        they get verified, or they get the bounty if they spot wrong entries.
       </p>
     </div>
 

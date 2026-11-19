@@ -784,6 +784,34 @@ export const buildBoard = (
  */
 export type ChartRange = '30d' | '6m' | '1y' | '3y'
 
+/**
+ * The chart ranges, as the switch over a chart names them (round 7), on the
+ * dashboard and, since round 13, on a profile: one list, so the two read
+ * alike.
+ */
+export const RANGE_OPTIONS: { value: ChartRange; label: string }[] = [
+  { value: '30d', label: '30D' },
+  { value: '6m', label: '6M' },
+  { value: '1y', label: '1Y' },
+  { value: '3y', label: '3Y' },
+]
+
+/** What each range's chart counts, over its legend. */
+export const RANGE_LEGEND: Record<ChartRange, string> = {
+  '30d': 'Per day · last 30 days',
+  '6m': 'Per week · last 6 months',
+  '1y': 'Per week · last year',
+  '3y': 'Per month · last 3 years',
+}
+
+export const parseRange = (
+  value: string | null,
+  fallback: ChartRange,
+): ChartRange =>
+  RANGE_OPTIONS.some((option) => option.value === value)
+    ? (value as ChartRange)
+    : fallback
+
 export interface RangeSeries {
   /** Each bucket's start, in seconds, oldest first. */
   starts: number[]

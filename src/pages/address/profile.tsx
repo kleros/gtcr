@@ -33,7 +33,7 @@ import {
   type ProfileActivity,
 } from './data'
 import {
-  activityBuckets,
+  rangeBuckets,
   chainNames,
   challengeRecord,
   coverage,
@@ -46,6 +46,11 @@ import {
 import { QuietState, When } from './parts'
 import { CuratorMedal, MEDAL_NAMES } from 'components/curate/curator-medal'
 import { badgeLevel, type BadgeLevel } from './levels'
+import {
+  RANGE_LEGEND,
+  RANGE_OPTIONS,
+  type ChartRange,
+} from 'pages/dashboard/view'
 import { ActivityChart } from './activity-chart'
 import { ChallengeRing } from './challenge-ring'
 
@@ -522,6 +527,21 @@ const QuietLine = styled.p`
   line-height: var(--lh-small);
 `
 
+/* A range with no action: the dashboard's empty chart, at the profile
+   chart's own height (220px and its axis), so switching ranges never moves
+   the page. */
+const RangeEmpty = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 240px;
+  border-top: 1px solid var(--glass-border);
+  color: var(--color-muted);
+  font-size: var(--fs-small);
+  line-height: var(--lh-small);
+  text-align: center;
+`
+
 /* ---------- Chart and gauge ---------- */
 
 const Body = styled.div<{ $gauge: boolean }>`
@@ -555,8 +575,24 @@ const ChartHead = styled.div`
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
+  gap: 10px 16px;
+`
+
+/* The label and the series, on one line where they fit. */
+const ChartLegend = styled.div`
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
   gap: 8px 20px;
 `
+
+/** The range in words, for "No … in the last 30 days." */
+const RANGE_SPAN_WORDS: Record<ChartRange, string> = {
+  '30d': 'last 30 days',
+  '6m': 'last 6 months',
+  '1y': 'last year',
+  '3y': 'last 3 years',
+}
 
 const Legend = styled.ul`
   display: flex;
@@ -744,6 +780,8 @@ export const ProfilePanel = ({
   roles,
   juror,
   badges,
+  range,
+  onRange,
   now,
 }: {
   address: string
@@ -793,6 +831,9 @@ export const ProfilePanel = ({
   juror: JurorBadgeView
   /** The goal badges in the scope; the earned ones lead the profile. */
   badges?: AddressBadge[]
+  /** The chart's range (round 13): the dashboard's four. */
+  range: ChartRange
+  onRange: (value: ChartRange) => void
   now: number
 }) => {
   const narrow = useNarrow()
@@ -810,7 +851,11 @@ export const ProfilePanel = ({
           : [NETWORKS.ethereum, NETWORKS.gnosis],
       )
   const covered = coverage(activities)
-  const buckets = activityBuckets(activities, now, complete)
+  const buckets = rangeBuckets(activities, range, now, complete)
+  const rangeTotal = buckets
+    ? buckets.requests.reduce((sum, v) => sum + v, 0) +
+      buckets.challenges.reduce((sum, v) => sum + v, 0)
+    : 0
   const record = stats ? challengeRecord(stats) : undefined
   const showGauge = !loading && !error && (record?.total ?? 0) > 0
   const isCapped = !loading && capped.length > 0
@@ -1223,43 +1268,62 @@ export const ProfilePanel = ({
               <ChartBlock>
                 {(bodyLoading || buckets) && (
                   <ChartHead>
-                    <Label $tone="faint">
-                      {buckets
-                        ? `Actions per ${unit} · ${rangeLabel(
-                            buckets.starts[0],
-                            now,
-                          )}`
-                        : 'Actions over time'}
-                    </Label>
+                    {/* The dashboard's chart head (round 13): what it
+                        counts and the series on the left, the range on the
+                        right. A list cut inside the range names the dates
+                        it does cover instead. */}
+                    <ChartLegend>
+                      <Label $tone="faint">
+                        {buckets
+                          ? buckets.cut
+                            ? `Per ${unit} · ${rangeLabel(buckets.starts[0], now)}`
+                            : RANGE_LEGEND[range]
+                          : 'Actions over time'}
+                      </Label>
+                      {buckets && (
+                        <Legend aria-label="Chart series">
+                          <li style={{ color: 'var(--color-primary)' }}>
+                            <i
+                              style={{ background: 'var(--color-primary)' }}
+                              aria-hidden
+                            />
+                            <span style={{ color: 'var(--color-muted)' }}>
+                              Submissions and removals
+                            </span>
+                          </li>
+                          <li style={{ color: 'var(--status-contested)' }}>
+                            <i
+                              style={{ background: 'var(--status-contested)' }}
+                              aria-hidden
+                            />
+                            <span style={{ color: 'var(--color-muted)' }}>
+                              Challenges
+                            </span>
+                          </li>
+                        </Legend>
+                      )}
+                    </ChartLegend>
                     {buckets && (
-                      <Legend aria-label="Chart series">
-                        <li style={{ color: 'var(--color-primary)' }}>
-                          <i
-                            style={{ background: 'var(--color-primary)' }}
-                            aria-hidden
-                          />
-                          <span style={{ color: 'var(--color-muted)' }}>
-                            Submissions and removals
-                          </span>
-                        </li>
-                        <li style={{ color: 'var(--status-contested)' }}>
-                          <i
-                            style={{ background: 'var(--status-contested)' }}
-                            aria-hidden
-                          />
-                          <span style={{ color: 'var(--color-muted)' }}>
-                            Challenges
-                          </span>
-                        </li>
-                      </Legend>
+                      <SegmentedControl<ChartRange>
+                        ariaLabel="Chart range"
+                        size="sm"
+                        value={range}
+                        onChange={onRange}
+                        options={RANGE_OPTIONS}
+                      />
                     )}
                   </ChartHead>
                 )}
                 {bodyLoading ? (
                   <SkeletonBlock $height="252px" />
+                ) : buckets && rangeTotal === 0 ? (
+                  <RangeEmpty role="status">
+                    No submission, removal or challenge in the{' '}
+                    {RANGE_SPAN_WORDS[range]}
+                  </RangeEmpty>
                 ) : buckets ? (
                   <ActivityChart
-                    key={`${scope}-${buckets.unit}-${buckets.starts.length}`}
+                    key={`${scope}-${range}-${buckets.starts.length}`}
                     height={220}
                     labels={buckets.labels}
                     axisLabels={buckets.axisLabels}

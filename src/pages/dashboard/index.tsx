@@ -78,6 +78,8 @@ import {
   scopedWins,
   historySeries,
   curatorsSince,
+  RANGE_LEGEND,
+  RANGE_OPTIONS,
   rangeStart,
   type ChartRange,
   sortRegistries,
@@ -152,22 +154,6 @@ const RULINGS_FIRST_QUIET = 12
  */
 const RULINGS_FIRST_STACKED = 4
 const RULINGS_FIRST_STACKED_QUIET = 8
-
-/** The chart's ranges, as the switch over it names them (round 7). */
-const RANGE_OPTIONS: { value: ChartRange; label: string }[] = [
-  { value: '30d', label: '30D' },
-  { value: '6m', label: '6M' },
-  { value: '1y', label: '1Y' },
-  { value: '3y', label: '3Y' },
-]
-
-/** What each range's chart counts, over its legend. */
-const RANGE_LEGEND: Record<ChartRange, string> = {
-  '30d': 'Per day · last 30 days',
-  '6m': 'Per week · last 6 months',
-  '1y': 'Per week · last year',
-  '3y': 'Per month · last 3 years',
-}
 
 const RANGE_WORDS: Record<ChartRange, string> = {
   '30d': 'per day over the last 30 days, today so far included',
