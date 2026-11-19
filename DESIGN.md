@@ -351,10 +351,39 @@ way (dashboard, Browse, registry pages, the profile, the landing page).
   challenger the court ruled for takes on top of their own deposit back: the requester's base
   deposit (Standard) or the entry's stake (Stake Curate). Amounts stay per coin, never
   added across coins.
+- **Dollars are an aside on a coin figure, and never a total.** Amounts stay per coin in every
+  unit, dollars included: nothing on the site adds across coins, because a total would merge a
+  one-hour feed with a 24-hour one into a number whose age it could not state, and the total would
+  then read as the figure while the measured amounts became decoration. Where a coin's dollar value
+  can be read from a Chainlink feed on that coin's own chain it is shown beside the amount as an
+  approximation (`≈`), a step below the coin symbol in weight, with the feed and the age of its
+  answer named in the tooltip the figure already carries. A price that cannot be read, or whose
+  answer is older than its feed's heartbeat, is not shown at all — no "$—", no error line and no
+  skeleton, since a skeleton promises a number this one is allowed never to arrive at — so the
+  figure reads exactly as it did before dollars existed. Exactly two figures carry one: the
+  bounties challengers have won, and the collateral behind the requests open for verification.
+  Never a figure somebody is about to sign for (an entry page, a launch or stake deposit, a board
+  or ruling row): there the coin amount is the obligation, and a converted number beside it is not
+  what the wallet will ask for. Never on a testnet, where the coin is not the coin. The prices are
+  read on chain, in their own query — never inside the saved load, which is repainted up to a day
+  later.
+- The all-time ledger pages the **retired Classic lists'** resolved disputes too (2020-2022): they
+  are the protocol's history, so they count in the rulings, the bounties and the challenger figures.
+  They are never a row, a card or a link — a Classic list has no page in this app — so the query
+  reads no list address for them and the feed filters them out (`scopedRulings`). The Disputes
+  panel's tally is the ledger's total, like the self-sustaining panel's, and its footer names how
+  many of them no row can show. Two figures stay Standard and Stake only: a curator's own bounties
+  won, which has to match their profile page, and the Kleros Verified count, whose tiles are links.
+  Classic's share is read live from the same indexer (it still holds `Registry` and `Request`):
+  retiring the interface de-indexed nothing, so no snapshot or hardcoded number is involved.
 - A count is never the length of a capped list: it comes from its own query, and reads "n+" when
   that query hits its cap.
 - "Entries" is every entry a list holds, the figure its registry page shows (Standard: settled entries
-  plus those with an open request).
+  plus those with an open request). Two scopes, and the page says which: the dashboard's live strip
+  counts the Standard and Stake lists it can show, beside a Registries count of those same lists;
+  the self-sustaining panel's denominator is every entry ever curated, the retired Classic lists'
+  included, and the panel names that inclusion in one line. A Classic entry total that came back a
+  full page is a lower bound, so the share built on it is left out rather than drawn short.
 - Stake Curate has no requests; its listed count is never shown as "open requests". Its status
   counters drift (some go negative): the total is their raw sum and "listed" is submitted +
   disputed; the registry page counts its entries directly when it can.

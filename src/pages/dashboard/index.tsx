@@ -47,6 +47,7 @@ import {
   isLiveLoad,
 } from './query'
 import { useSavedLoadsReady } from './saved-load'
+import { useUsdPrices } from './use-usd-prices'
 import { LiveBoard, type RulingsView } from './happening-now'
 import { OpenForVerification } from './open-for-verification'
 import type { OpenListChip } from './board-rows'
@@ -86,23 +87,33 @@ import { Avatar as ListLogo } from 'pages/browse/avatar'
 
 /*
  * Dashboard: a short statement, one strip of live figures over the 30-day
- * wave, then the self-sustaining mechanism, the money anyone can go and claim
- * (Open for verification), what is happening now in two columns beside each
- * other, the Kleros Verified lists, and the most active registries and
- * curators. Every figure comes from the indexers or the chain.
+ * wave, then the self-sustaining mechanism, what is happening now — the
+ * money anyone can go and claim, then two columns beside each other — the
+ * Kleros Verified lists, and the most active registries and curators. Every
+ * figure comes from the indexers or the chain.
  *
- * Round 3 set that order. The 30-day chart and the record of how the lists
- * sustains itself are the two boxes a reader meets first, because they say
- * whether any of this works; then the three figures of what is open for
- * verification, and under them the board those figures belong to — the
+ * Round 3 set that order and round 4 closed it up. The 30-day chart and the
+ * record of how the lists sustain themselves are the two boxes a reader
+ * meets first, because they say whether any of this works. Then one section,
+ * "Happening now": the figures of what is open for verification
+ * (open-for-verification.tsx), and under them the board they belong to — the
  * submissions on one side, the disputes and the rulings on the other
- * (happening-now.tsx). Nothing sits between the strip and the board it
- * heads, so the Kleros Verified strip follows them rather than splitting
- * them.
+ * (happening-now.tsx). Those figures had a section and a 30px heading of
+ * their own until round 4, which read as dropped between two boxes they
+ * belong to neither of; they describe the submissions column, so they sit
+ * on top of it.
  *
  * Each section that owns a file heads itself and holds its own skeletons
  * (open-for-verification.tsx, happening-now.tsx, bounties.tsx), so no
  * heading waits on a load.
+ *
+ * Round 4 also gave two of those figures — the bounties challengers have won,
+ * and the collateral behind the requests open for verification — what they are
+ * worth in dollars, read from a Chainlink feed on each coin's own chain
+ * (prices.ts) in a query of its own, never in the load the page saves. They
+ * are the only two on the site that carry a dollar value: a figure somebody is
+ * about to sign for keeps its coin alone, and nothing adds dollars across
+ * coins (DESIGN.md, Data rules).
  *
  * Round 2, item 7: the "Entries by chain" ring is gone. On several chains
  * it drew two segments whose leader the hero's own Entries figure already
@@ -386,14 +397,13 @@ const Big = styled.span<{ $hero?: boolean }>`
 /* ---------- Sections ---------- */
 
 /*
- * "Happening now" heads the two-column board, which in turn belongs to the
- * figures strip right above it: 80px of air there would break the three
- * apart, so this heading keeps 32px.
+ * The two columns of the "Happening now" board. The section opens at the full
+ * 80px its heading carries (section.ts), and what holds the three parts
+ * together is the strip between them: the figures of what is open for
+ * verification sit 16px above these columns (open-for-verification.tsx's
+ * Band), so the heading, the figures and the rows those figures count read as
+ * one block.
  */
-const LiveHead = styled(SectionHead)`
-  margin-top: 32px;
-`
-
 const Split = styled.div`
   display: grid;
   grid-template-columns: minmax(0, 1fr) 360px;
@@ -747,10 +757,40 @@ const Dashboard = () => {
     }
   }, [data, now, chains, lists])
 
+  /**
+   * The self-sustaining mechanism, all time, in the page's scope: how rarely a
+   * request is challenged at all, how the court ruled when one was, and the
+   * bounties the challengers took. It is read here, above the rulings view,
+   * because the Disputes panel's "Rulings" tally is this same ledger total:
+   * one page, one all-time ruling count (DESIGN.md principle 1).
+   */
+  const record = useMemo(
+    () => (data ? scopedChallengeRecord(data, chains) : undefined),
+    [data, chains],
+  )
+
+  /*
+   * What those bounties and the collateral in the strip are worth in dollars,
+   * from a Chainlink feed on each coin's own chain. Its own query, never part
+   * of the load: the load is saved to IndexedDB and repainted on the next
+   * visit, and a price repainted a day later would be a figure stating
+   * something nobody read. Two figures on the page take it, and the two coin
+   * lists it covers are the only coins it asks about; a coin it cannot price
+   * shows its amount alone.
+   */
+  const usdPrices = useUsdPrices({
+    chains,
+    coins: record?.coins,
+    deposits: figures?.inWindowDeposits,
+  })
+
   /*
    * Rulings, all time: the ledger orders every one of them; the rows shown
    * take the entry's identifiers from the cards the load read, and "show
-   * more" reads the cards of the next ones.
+   * more" reads the cards of the next ones. The rows are the ones a reader
+   * can open — scopedRulings leaves the retired Classic lists' rulings out,
+   * since they have no page — so the tally beside them is the ledger's own
+   * count and the difference is named in the panel's footer.
    */
   const rulingsFirst =
     board.live.length === 0 ? RULINGS_FIRST_QUIET : RULINGS_FIRST
@@ -761,6 +801,12 @@ const Dashboard = () => {
     [data, chains],
   )
   const shownRows = rulingRows.slice(0, rulingsShown)
+  /*
+   * Rulings the figures count and no row can show: the retired Classic
+   * lists'. The difference between the ledger's total and the feed, named
+   * in the Disputes footer and under the self-sustaining panel.
+   */
+  const classicRulings = Math.max(0, (record?.rulings ?? 0) - rulingRows.length)
   const [extraCards, setExtraCards] = useState<
     Record<string, DashboardActivity>
   >({})
@@ -802,7 +848,11 @@ const Dashboard = () => {
     pending: new Set(
       rulingCards.isFetching ? missingRows.map((row) => row.id) : [],
     ),
-    total: rulingRows.length,
+    // The ledger's own total, the retired Classic lists included: the panel
+    // above states the same figure. "Show more" stays driven by the rows
+    // that can be built (onMore below), never by this.
+    total: record?.rulings ?? 0,
+    unlisted: classicRulings,
     capped: chains.some((chainId) => data?.rulingsCapped?.[chainId]),
     partial: !!data && chains.some((chainId) => !data.rulings?.[chainId]),
     onMore:
@@ -814,16 +864,6 @@ const Dashboard = () => {
         ? () => setRulingsShown(rulingsFirst)
         : undefined,
   }
-
-  /**
-   * The self-sustaining mechanism, all time, in the page's scope: how rarely a
-   * request is challenged at all, how the court ruled when one was, and the
-   * bounties the challengers took.
-   */
-  const record = useMemo(
-    () => (data ? scopedChallengeRecord(data, chains) : undefined),
-    [data, chains],
-  )
 
   /** The Kleros Verified lists in scope, newest to earn the badge first. */
   const verifiedLists = useMemo(() => newestVerified(scoped), [scoped])
@@ -1095,32 +1135,49 @@ const Dashboard = () => {
       */}
       <VerificationRecord
         record={record}
-        // Entries now, against challenges all time: a chain whose lists did
-        // not load leaves the comparison off rather than low.
-        entries={figuresUnknown ? undefined : figures?.entries}
+        prices={usdPrices}
+        /*
+         * Every entry these lists have ever held, against challenges all
+         * time: the retired Classic lists count here, where the figures are
+         * the protocol's history, and not in the hero strip above, which is
+         * labelled live and stands beside a count of the lists Browse can
+         * open. A chain whose lists did not load, or a Classic read that
+         * came back a full page, leaves the comparison off rather than low.
+         */
+        entries={
+          figuresUnknown || figures?.classicCapped
+            ? undefined
+            : figures?.entriesAllTime
+        }
+        classic={
+          figures && figures.classicLists > 0
+            ? {
+                lists: figures.classicLists,
+                entries: figures.classicEntries,
+                rulings: classicRulings,
+                capped: figures.classicCapped,
+              }
+            : undefined
+        }
       />
 
+      <SectionHead>
+        <SectionTitle>Happening now</SectionTitle>
+      </SectionHead>
       {/*
-        Three figures, then the board they belong to. The strip heads itself
-        and holds its own skeletons, so its heading is there from the first
-        paint; the requests it counts are the submissions column below.
+        The section's figure row, between its heading and its two columns
+        (round 4): the two figures of what is open for verification, right
+        above the submissions column whose rows they count. It heads itself
+        and holds its own skeletons, so its title is there from the first
+        paint.
       */}
       <OpenForVerification
         open={board.open}
         figures={figures}
-        now={now}
+        prices={usdPrices}
         checking={checkingWindows}
         unloaded={partialNames || undefined}
       />
-
-      {/*
-        The board's own heading, close to the strip above it rather than at
-        the full 80px: the strip, this line and the two columns are one
-        band of the page, not three sections.
-      */}
-      <LiveHead>
-        <SectionTitle>Happening now</SectionTitle>
-      </LiveHead>
       <LiveBoard
         open={board.open}
         openLists={board.openLists}

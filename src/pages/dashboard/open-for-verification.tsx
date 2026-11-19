@@ -12,29 +12,50 @@ import { CurateIcon } from 'components/curate/icons'
 import Tooltip from 'components/ui/Tooltip'
 import { Odometer } from 'components/curate/motion/odometer'
 import { reveal } from 'components/curate/motion/reveal'
-import { formatAbsolute, formatTimeLeft } from 'utils/time'
-import { SectionHead, SectionTitle } from './section'
-import { coinParts, formatInt, type HappeningFigures } from './board-rows'
+import { getNativeCurrency } from 'config/chains'
+import {
+  coinParts,
+  formatInt,
+  formatUsd,
+  usdOf,
+  UsdValue,
+  type HappeningFigures,
+} from './board-rows'
+import { coinKey, priceSource, type UsdPrice } from './prices'
 import { chainInfo, type DashboardCard } from './view'
 
 /*
- * Open for verification (round 3): three figures and nothing else. How many
- * requests nobody has challenged are inside their challenge window, how much
- * collateral stands behind them (one figure per chain coin, never added
- * across coins, DESIGN.md Data rules), and how long the soonest window has
- * left. Each of those requests is collateralised, and whoever shows one
- * breaks its list's rules takes that collateral.
+ * Open for verification: two figures, inside "Happening now" (round 4). How
+ * many requests nobody has challenged are inside their challenge window,
+ * and how much collateral stands behind them (one figure per chain coin,
+ * never added across coins, DESIGN.md Data rules). Each of those requests
+ * is collateralised, and whoever shows one breaks its list's rules takes
+ * that collateral.
  *
- * Round 2 made this a hero band with the requests themselves listed under
- * the figures; that is what round 3 undoes. The rows now lead the
- * submissions column of the board below (happening-now.tsx), where they sit
- * beside the disputes, so this is a strip the reader passes through rather
- * than the page's centre of gravity: compact padding, panel-head figure
- * sizes, and 16px of air before the board it introduces.
+ * Round 3 gave this a section of its own — a 30px heading over three
+ * figures, between the self-sustaining panel and the board — and it read as
+ * dropped into the page, because the figures belong to neither of them.
+ * Round 4 folds it into the board's own section: it is now the figure row
+ * directly under "Happening now" and directly over the two columns, which
+ * is where the submissions column it counts begins. So the strip heads
+ * itself the way the two panels below it do (a label-sized title and its
+ * status dot), not with a section title of its own.
+ *
+ * Round 4 also drops the "Next window closes" figure. A countdown to one
+ * anonymous request was the one figure here nobody could act on: the rows
+ * below carry their own deadlines, each next to the request it belongs to.
+ *
+ * Each coin amount carries what it is worth in dollars, when that can be read
+ * from a Chainlink feed on the coin's own chain (prices.ts): this figure and
+ * the bounties won are the only two on the site that do. The dollars are an
+ * aside on the amount, never the amount — and when no price can be read, or
+ * the feed's answer is past its heartbeat, the line is simply the coin figure,
+ * which is what it was before. The tooltip on the label names the feeds and
+ * how old their answers are.
  *
  * Why it matters to the reader lives in the tooltips, not in the strip.
  *
- * The strip owns its own loading state: the heading, the status dot and the
+ * The strip owns its own loading state: the title, the status dot and the
  * figures' labels are there from the first paint, with the figures as
  * skeletons inside it, so no heading waits on a load. When the challenge
  * periods could not be read, no window is claimed: the strip counts the
@@ -49,12 +70,40 @@ const breathe = keyframes`
 `
 
 /*
- * The strip leads straight into the board it introduces, so it keeps only
- * enough air to read as its own box. The 48px that used to separate this
- * section from what follows now sits under the board (happening-now.tsx).
+ * The strip leads straight into the board's two columns, which are its own
+ * section's rows: 16px, the gap the board's grid itself uses, so the three
+ * boxes read as one band under the heading they share.
  */
-const Section = styled.section`
+const Band = styled(Surface)`
+  ${reveal}
   margin-bottom: 16px;
+`
+
+/* The strip's own head, on the two panels' pattern (happening-now.tsx). */
+const StripHead = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px 16px;
+  padding: 0 0 12px;
+`
+
+const TitleRow = styled.div`
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+`
+
+const StripTitle = styled.h3`
+  margin: 0;
+  color: var(--color-text);
+  font-family: var(--font-label);
+  font-size: var(--fs-label);
+  line-height: var(--lh-label);
+  font-weight: 500;
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
 `
 
 const HeadNote = styled.div`
@@ -62,7 +111,6 @@ const HeadNote = styled.div`
   flex-direction: column;
   align-items: flex-end;
   gap: 4px;
-  padding-bottom: 4px;
 
   @media (max-width: 720px) {
     align-items: flex-start;
@@ -91,11 +139,7 @@ const Checking = styled(Small).attrs({ $muted: true })`
   }
 `
 
-const Band = styled(Surface)`
-  ${reveal}
-`
-
-/* One tight band: how many, how much collateral, how long is left. */
+/* One tight band: how many, and how much collateral. */
 const Lead = styled.div`
   display: flex;
   flex-wrap: wrap;
@@ -185,17 +229,6 @@ const CoinPlace = styled.span`
   white-space: nowrap;
 `
 
-/* The soonest deadline: relative, absolute UTC on hover. */
-const Soon = styled.span`
-  color: var(--color-text);
-  font-family: var(--font-figure);
-  font-size: 20px;
-  line-height: 24px;
-  font-weight: 500;
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-`
-
 /** A figure or label that carries a tooltip: focusable, so it reads on tab. */
 const TipTarget = styled.span`
   display: inline-flex;
@@ -221,25 +254,40 @@ const COUNT_TIP =
 const COLLATERAL_TIP =
   'Each request’s collateral is the bounty for whoever challenges it and wins. Amounts stay in each chain’s own coin and are never added together.'
 
+/**
+ * The same sentence, plus where the dollar asides came from: which feed
+ * answered for each coin and how old that answer is. Provenance lives in the
+ * tooltip on this page, so the figure line stays a figure line.
+ */
+const collateralTip = (sources: string[]): string =>
+  sources.length === 0
+    ? COLLATERAL_TIP
+    : `${COLLATERAL_TIP} The dollar values are approximate, from ${sources.join('; ')}.`
+
 const chainName = (chainId: number) =>
   chainInfo(chainId)?.name ?? `Chain ${chainId}`
 
 export const OpenForVerification = ({
   open,
   figures,
-  now,
+  prices,
   checking,
   unloaded,
 }: {
   /**
-   * The requests the strip counts, closing soonest first when the windows
-   * are known: the strip reads the soonest deadline off them. The rows
-   * themselves are the submissions column of the board below.
+   * The requests the strip counts: the rows themselves are the submissions
+   * column of the board below, which carries each one's own deadline.
    */
   open: DashboardCard[]
   /** Undefined while the load is still running: the strip shows skeletons. */
   figures?: HappeningFigures
-  now: number
+  /**
+   * Dollars per whole coin, keyed by coin (use-usd-prices.ts). A coin missing
+   * from it, and every coin while the prices have not arrived or never do,
+   * shows its amount alone. A price that has passed its feed's heartbeat
+   * leaves that map, so the aside goes rather than ages.
+   */
+  prices?: Record<string, UsdPrice>
   /** The challenge windows are being read again. */
   checking: boolean
   /**
@@ -257,23 +305,37 @@ export const OpenForVerification = ({
     : 0
   const coins = Object.entries(figures?.inWindowDeposits ?? {})
     .filter(([, wei]) => wei > 0n)
-    .map(([chainId, wei]) => ({
-      chainId: Number(chainId),
-      ...coinParts(wei, Number(chainId)),
-    }))
-  // The soonest window to close, from the requests themselves: buildBoard
-  // hands them over in closing order whenever the windows are known.
-  const nextClose = known
-    ? open.find((card) => card.windowEnd !== undefined)?.windowEnd
-    : undefined
+    .map(([chainId, wei]) => {
+      const id = Number(chainId)
+      // The coin's own key, built by the one rule that keys them (prices.ts):
+      // re-keying a coin by hand is how its data comes back empty.
+      const price = prices?.[coinKey(id)]
+      return {
+        chainId: id,
+        ...coinParts(wei, id),
+        price,
+        usd: price
+          ? formatUsd(usdOf(wei, getNativeCurrency(id).decimals, price.usd))
+          : undefined,
+      }
+    })
+  // Only the coins that actually show a dollar value explain themselves.
+  const sources = coins
+    .filter((coin) => coin.usd && coin.price)
+    .map((coin) => priceSource(coin.price as UsdPrice))
 
   return (
-    <Section aria-labelledby={titleId}>
-      <SectionHead>
-        <SectionTitle id={titleId}>
+    <Band
+      as="section"
+      aria-labelledby={titleId}
+      $padding="compact"
+      style={{ ['--i' as string]: 6 }}
+    >
+      <StripHead>
+        <TitleRow>
           <StatusDot $tone="window" aria-hidden />
-          Open for verification
-        </SectionTitle>
+          <StripTitle id={titleId}>Open for verification</StripTitle>
+        </TitleRow>
         <HeadNote>
           {figures && (
             <Label $tone="faint">
@@ -285,86 +347,66 @@ export const OpenForVerification = ({
             <Checking role="status">Checking challenge periods…</Checking>
           )}
         </HeadNote>
-      </SectionHead>
+      </StripHead>
 
-      <Band $padding="compact" style={{ ['--i' as string]: 6 }}>
-        {!figures ? (
-          <Lead>
+      {!figures ? (
+        <Lead>
+          <Figure>
+            <Label $tone="faint">Open now</Label>
+            <SkeletonBlock $height="28px" $width="96px" />
+          </Figure>
+          <Figure>
+            <Label $tone="faint">Bounties</Label>
+            <SkeletonBlock $height="28px" $width="200px" />
+          </Figure>
+        </Lead>
+      ) : (
+        <Lead>
+          <Figure>
+            <Label $tone="faint">{known ? 'Open now' : 'Not challenged'}</Label>
+            <Tooltip title={<TipText>{COUNT_TIP}</TipText>}>
+              <Count
+                tabIndex={0}
+                role="img"
+                aria-label={`${formatInt(total)}${plus ? ' or more' : ''} ${
+                  known
+                    ? 'requests in their challenge window now'
+                    : 'unresolved requests nobody has challenged'
+                }`}
+              >
+                <Odometer value={total} />
+                {plus}
+              </Count>
+            </Tooltip>
+          </Figure>
+          {known && coins.length > 0 && (
             <Figure>
-              <Label $tone="faint">Open now</Label>
-              <SkeletonBlock $height="28px" $width="96px" />
-            </Figure>
-            <Figure>
-              <Label $tone="faint">Bounties</Label>
-              <SkeletonBlock $height="28px" $width="200px" />
-            </Figure>
-            <Figure>
-              <Label $tone="faint">Next window closes</Label>
-              <SkeletonBlock $height="28px" $width="110px" />
-            </Figure>
-          </Lead>
-        ) : (
-          <Lead>
-            <Figure>
-              <Label $tone="faint">
-                {known ? 'Open now' : 'Not challenged'}
-              </Label>
-              <Tooltip title={<TipText>{COUNT_TIP}</TipText>}>
-                <Count
-                  tabIndex={0}
-                  role="img"
-                  aria-label={`${formatInt(total)}${plus ? ' or more' : ''} ${
-                    known
-                      ? 'requests in their challenge window now'
-                      : 'unresolved requests nobody has challenged'
-                  }`}
-                >
-                  <Odometer value={total} />
-                  {plus}
-                </Count>
+              <Tooltip title={<TipText>{collateralTip(sources)}</TipText>}>
+                <TipTarget tabIndex={0}>
+                  <Label $tone="faint">Bounties</Label>
+                </TipTarget>
               </Tooltip>
+              <Coins aria-label="Collateral behind the requests open now, one figure per chain coin">
+                {coins.map((coin) => (
+                  <Coin key={coin.chainId}>
+                    <b>
+                      <CurateIcon name="bounty" size={16} />
+                      {coin.amount}
+                      {plus}
+                      <small>{coin.symbol}</small>
+                      {coin.usd && <UsdValue value={coin.usd} bound={plus} />}
+                    </b>
+                    <CoinPlace>
+                      <ChainLogo chainId={coin.chainId} size={14} />
+                      {chainName(coin.chainId)}
+                    </CoinPlace>
+                  </Coin>
+                ))}
+              </Coins>
             </Figure>
-            {known && coins.length > 0 && (
-              <Figure>
-                <Tooltip title={<TipText>{COLLATERAL_TIP}</TipText>}>
-                  <TipTarget tabIndex={0}>
-                    <Label $tone="faint">Bounties</Label>
-                  </TipTarget>
-                </Tooltip>
-                <Coins aria-label="Collateral behind the requests open now, one figure per chain coin">
-                  {coins.map((coin) => (
-                    <Coin key={coin.chainId}>
-                      <b>
-                        <CurateIcon name="bounty" size={16} />
-                        {coin.amount}
-                        {plus}
-                        <small>{coin.symbol}</small>
-                      </b>
-                      <CoinPlace>
-                        <ChainLogo chainId={coin.chainId} size={14} />
-                        {chainName(coin.chainId)}
-                      </CoinPlace>
-                    </Coin>
-                  ))}
-                </Coins>
-              </Figure>
-            )}
-            {nextClose !== undefined && (
-              <Figure>
-                <Label $tone="faint">Next window closes</Label>
-                <Soon>
-                  <time
-                    dateTime={new Date(nextClose * 1000).toISOString()}
-                    title={formatAbsolute(nextClose)}
-                  >
-                    {formatTimeLeft(nextClose, now)}
-                  </time>
-                </Soon>
-              </Figure>
-            )}
-          </Lead>
-        )}
-      </Band>
-    </Section>
+          )}
+        </Lead>
+      )}
+    </Band>
   )
 }

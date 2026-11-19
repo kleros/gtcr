@@ -1,4 +1,13 @@
 export type RegistryKind = 'standard' | 'permanent'
+/**
+ * What a ruling was issued on. The two kinds of list the app shows, plus
+ * the retired Classic lists, which the all-time ledger still counts: their
+ * 2020-2022 disputes are part of the protocol's history, so they belong in
+ * the all-time figures, and they have no page in this app, so a Classic
+ * ruling is never a row, a card or a link (view.ts: scopedRulings filters
+ * them out of the feed, and the query reads no list address for them).
+ */
+export type RulingKind = RegistryKind | 'classic'
 export type TrustStatus = 'verified' | 'unverified' | 'unknown'
 
 export interface DashboardRegistry {
@@ -65,8 +74,8 @@ export interface RulingRow {
   /** The id of its card (DashboardActivity.id), e.g. "standard-<request id>". */
   id: string
   chainId: number
-  kind: RegistryKind
-  /** List address, lowercase. */
+  kind: RulingKind
+  /** List address, lowercase; empty on a Classic row, which has no page. */
   registry: string
   itemID?: string
   /** Unix seconds. */
@@ -210,6 +219,17 @@ export interface DashboardData {
   rulings: Record<number, RulingRow[]>
   /** Per chain: the ledger stopped at its page limit (counts are lower bounds). */
   rulingsCapped: Record<number, boolean>
+  /**
+   * Per chain, the retired Classic lists' entry history: how many lists and
+   * how many entries they hold, summed from their `numberOfItems` and
+   * nothing else (no address is read, so no Classic list can become a row).
+   * `capped` when that read came back a full page, which makes the entries a
+   * lower bound. A chain is absent when its main query did not load.
+   */
+  classicEntries: Record<
+    number,
+    { lists: number; entries: number; capped: boolean }
+  >
   /** Stake bounty tokens by "<chainId>:<token address>". */
   tokens: Record<string, TokenInfo>
   /** Every dispute open right now (disputed and not yet resolved). */

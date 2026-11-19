@@ -7,9 +7,10 @@ import styled from 'styled-components'
  * (open-for-verification.tsx) heads itself the same way, without importing
  * the page back.
  *
- * The 80px is what separates one section from the next. A heading that
- * belongs to the box above it rather than to a new section overrides that
- * margin where it is used (index.tsx's LiveHead), never here.
+ * The 80px is what separates one section from the next, and every heading on
+ * the dashboard now takes it whole. A strip that belongs under a heading
+ * rather than above one closes its own gap instead, with a margin of its own
+ * (open-for-verification.tsx's Band), so no caller overrides this one.
  */
 
 export const SectionHead = styled.div`

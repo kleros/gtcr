@@ -228,6 +228,16 @@ const ENVIO_DASHBOARD_QUERY = gql`
     ) {
       ${LREGISTRY_FIELDS}
     }
+    # The retired Classic lists, for the all-time entry total alone: one
+    # field, summed, and no id — so nothing here can become a list, a row
+    # or a link (the app has no Classic page). Every other figure on the
+    # dashboard counts the Standard and Stake lists it can show.
+    classicRegistries: Registry(
+      limit: ${REGISTRY_PAGE_SIZE}
+      where: { chainId: { _eq: $chainId } }
+    ) {
+      numberOfItems
+    }
     standardRequests: LRequest(
       limit: 360
       where: { chainId: { _eq: $chainId }, submissionTime: { _gte: $since } }
@@ -330,6 +340,15 @@ const ENVIO_LREGISTRY_PAGE_QUERY = gql`
  * The all-time ledger of rulings: every resolved dispute, a page at a time
  * until a short page. Only the fields the counts and the bounties need; the
  * cards with the entries' identifiers load separately (loadRulingCards).
+ *
+ * Both kinds of list the indexer holds, because the figures built on this
+ * are the protocol's history: the Standard lists (`LRequest`) and the
+ * retired Classic ones (`Request`), whose disputes ran 2020-2022. Retiring
+ * the Classic interface de-indexed nothing — it only stopped selecting this
+ * field — so the history comes back for no extra request: both pages ride
+ * one query per chain. The Classic page deliberately reads no `registry_id`
+ * and no identifiers: those rulings are counted, never listed, because a
+ * Classic list has no page in this app to link a row to.
  */
 const ENVIO_RULINGS_PAGE_QUERY = gql`
   query EnvioRulingsPage($chainId: Int!, $offset: Int!) {
@@ -345,6 +364,23 @@ const ENVIO_RULINGS_PAGE_QUERY = gql`
     ) {
       id
       registry_id
+      requestType
+      deposit
+      challenger
+      disputeOutcome
+      resolutionTime
+    }
+    classic: Request(
+      limit: ${RULINGS_PAGE_SIZE}
+      offset: $offset
+      where: {
+        chainId: { _eq: $chainId }
+        disputed: { _eq: true }
+        resolved: { _eq: true }
+      }
+      order_by: [{ resolutionTime: desc }, { id: asc }]
+    ) {
+      id
       requestType
       deposit
       challenger
@@ -1049,6 +1085,13 @@ interface NormalizedChain {
    * earned the badge (its earliest registration on a list of lists).
    */
   verifiedSince?: Record<string, number>
+  /**
+   * Envio only: the retired Classic lists' entry history on this chain,
+   * summed from `numberOfItems` and nothing else. It never becomes a
+   * registry (nothing in `registries` is Classic): the all-time entry
+   * figure adds it, every figure about lists the app can show does not.
+   */
+  classicHistory?: { lists: number; entries: number; capped: boolean }
 }
 
 const normalizeEnvio = (payload: any, chainId: number): NormalizedChain => {
@@ -1162,6 +1205,24 @@ const normalizeEnvio = (payload: any, chainId: number): NormalizedChain => {
       registry.activeCount = open
     }
 
+  /*
+   * The retired Classic lists, as a sum and nothing else: how many lists
+   * and how many entries they hold. A full page makes it a lower bound
+   * (`capped`), which is the one case the share built on it is suppressed
+   * rather than drawn short (bounties.tsx).
+   */
+  const classicRows = (payload.classicRegistries ?? []) as {
+    numberOfItems?: string | number
+  }[]
+  const classicHistory = {
+    lists: classicRows.length,
+    entries: classicRows.reduce(
+      (sum, registry) => sum + toNumber(registry.numberOfItems),
+      0,
+    ),
+    capped: classicRows.length >= REGISTRY_PAGE_SIZE,
+  }
+
   const decided = toActivities('decidedStandard')
   return {
     registries,
@@ -1183,6 +1244,7 @@ const normalizeEnvio = (payload: any, chainId: number): NormalizedChain => {
       (payload.openStandardDisputes ?? []).length >= OPEN_DISPUTE_LIMIT,
     verifiedRegistryAddresses: [...verifiedAddresses],
     verifiedSince,
+    classicHistory,
   }
 }
 
@@ -1804,14 +1866,26 @@ interface LedgerChallengeRow {
   registry?: { id?: string; token?: string } | null
 }
 
-const requestRuling = (row: LedgerRequestRow, chainId: number): RulingRow => {
+/**
+ * One resolved dispute: a Standard request, or one on a retired Classic
+ * list. A Classic ruling is counted and never shown, so it carries no list
+ * address and no entry id — the query selects neither, and this is the
+ * second half of that: nothing downstream could build a link out of one
+ * even if it reached a feed (view.ts: scopedRulings filters them out).
+ */
+const requestRuling = (
+  row: LedgerRequestRow,
+  chainId: number,
+  kind: 'standard' | 'classic',
+): RulingRow => {
   const challengerWon = row.disputeOutcome === 'Reject'
+  const classic = kind === 'classic'
   return {
-    id: `standard-${row.id}`,
+    id: `${kind}-${row.id}`,
     chainId,
-    kind: 'standard',
-    registry: normalizeAddress(row.registry_id),
-    itemID: row.id.split('@')[0] || undefined,
+    kind,
+    registry: classic ? '' : normalizeAddress(row.registry_id),
+    itemID: classic ? undefined : row.id.split('@')[0] || undefined,
     resolvedAt: toNumber(row.resolutionTime),
     outcome:
       disputeOutcomeOf({ ...row, disputed: true, resolved: true }) ??
@@ -1869,10 +1943,10 @@ type LedgerPart = {
 } | null
 
 /**
- * One chain's ledger: every Standard and Stake dispute the court has
- * closed, newest first, read page by page to the end. An indexer that is not
- * configured has no rows. A page that fails keeps what was read before it,
- * as a lower bound (`capped`) on a chain marked `failed`; null only when
+ * One chain's ledger: every Standard, Classic and Stake dispute the court
+ * has closed, newest first, read page by page to the end. An indexer that is
+ * not configured has no rows. A page that fails keeps what was read before
+ * it, as a lower bound (`capped`) on a chain marked `failed`; null only when
  * neither indexer gave a single page.
  */
 const readRulings = async (
@@ -1885,6 +1959,7 @@ const readRulings = async (
     for (let page = 0; page < RULINGS_MAX_PAGES; page += 1) {
       const payload = await safeRequest<{
         standard?: LedgerRequestRow[]
+        classic?: LedgerRequestRow[]
       }>(url, ENVIO_RULINGS_PAGE_QUERY, {
         chainId,
         offset: page * RULINGS_PAGE_SIZE,
@@ -1894,11 +1969,20 @@ const readRulings = async (
           ? null
           : { rows: [...rows.values()], capped: true, failed: true }
       const standard = payload.standard ?? []
+      const classic = payload.classic ?? []
       // A ruling landing between two pages shifts the rest by one: the
-      // repeat is dropped by id, nothing is skipped.
+      // repeat is dropped by its prefixed id, nothing is skipped.
       for (const row of standard)
-        rows.set(`standard-${row.id}`, requestRuling(row, chainId))
-      if (standard.length < RULINGS_PAGE_SIZE)
+        rows.set(`standard-${row.id}`, requestRuling(row, chainId, 'standard'))
+      for (const row of classic)
+        rows.set(`classic-${row.id}`, requestRuling(row, chainId, 'classic'))
+      // Both lists page on the same offset in one query, so the loop may
+      // only stop when BOTH pages are short: stopping on the shorter one
+      // would silently truncate the other.
+      if (
+        standard.length < RULINGS_PAGE_SIZE &&
+        classic.length < RULINGS_PAGE_SIZE
+      )
         return { rows: [...rows.values()], capped: false, failed: false }
     }
     return { rows: [...rows.values()], capped: true, failed: false }
@@ -2310,6 +2394,7 @@ export const loadDashboardData = async ({
   const openDisputesCapped: DashboardData['openDisputesCapped'] = {}
   const rulings: DashboardData['rulings'] = {}
   const rulingsCapped: DashboardData['rulingsCapped'] = {}
+  const classicEntries: DashboardData['classicEntries'] = {}
   chains.forEach((chainId, index) => {
     const envio = envioResults[index]
     const permanent = permanentResults[index]
@@ -2319,6 +2404,7 @@ export const loadDashboardData = async ({
     }
     openDisputesCapped[chainId] =
       !!envio?.openDisputesCapped || !!permanent?.openDisputesCapped
+    if (envio?.classicHistory) classicEntries[chainId] = envio.classicHistory
     const ledger = ledgers[index]
     if (!ledger) return
     rulings[chainId] = ledger.rows
@@ -2371,6 +2457,7 @@ export const loadDashboardData = async ({
     decided: newestFirst(allResults.flatMap((result) => result.decided)),
     rulings,
     rulingsCapped,
+    classicEntries,
     tokens,
     openDisputes,
     openDisputesCapped,

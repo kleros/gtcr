@@ -18,7 +18,7 @@ import {
   formatTimeLeft,
   windowProgress,
 } from 'utils/time'
-import type { DashboardCard } from './view'
+import { formatUnits, type DashboardCard } from './view'
 import { Avatar as ListLogo } from 'pages/browse/avatar'
 
 /*
@@ -29,7 +29,9 @@ import { Avatar as ListLogo } from 'pages/browse/avatar'
  * helpers and the figures interface are read wider than the rows are: the
  * figures strip above the board (open-for-verification.tsx) and the
  * verification record (bounties.tsx) take their amounts from here too, so
- * every figure on the page is grouped and rounded the same way.
+ * every figure on the page is grouped and rounded the same way. The dollar
+ * aside those two figures carry is formatted here for the same reason: one
+ * rule for both, and none for any other figure on the page.
  */
 
 const integer = new Intl.NumberFormat('en-US')
@@ -52,6 +54,73 @@ export const formatCoin = (wei: bigint | string, chainId: number): string => {
   const { amount, symbol } = coinParts(wei, chainId)
   return `${amount} ${symbol}`
 }
+
+const usdWhole = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 })
+const usdCents = new Intl.NumberFormat('en-US', {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+})
+
+/**
+ * A coin amount in dollars, from a price per whole coin (prices.ts). The
+ * amount goes through the page's own unit conversion, so the dollar figure is
+ * built from the same number the coin figure beside it shows.
+ */
+export const usdOf = (
+  amount: bigint,
+  decimals: number,
+  usdPerCoin: number,
+): number =>
+  Number(formatUnits(amount, decimals, 6).replace(/,/g, '')) * usdPerCoin
+
+/**
+ * "$4,709", "$12.34": cents below a hundred dollars, none above it, where a
+ * cent is noise beside a four-figure sum. Nothing at all under half a cent:
+ * the dollar value is an optional aside, and one that would print "$0.00"
+ * says less than the coin figure it sits beside already does.
+ */
+export const formatUsd = (value: number): string | undefined => {
+  if (!Number.isFinite(value) || value < 0.005) return undefined
+  return `$${value >= 100 ? usdWhole.format(value) : usdCents.format(value)}`
+}
+
+/**
+ * The dollar value on a figure line: derived, so it carries the approximation
+ * sign and sits a step below the coin symbol beside it. Never the figure
+ * itself — the coin amount is the measurement.
+ */
+const UsdAside = styled.small`
+  color: var(--color-faint);
+  font-family: var(--font-figure);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+`
+
+/**
+ * "≈ $4,709" beside a coin amount. The sign is for the eye and the word for a
+ * screen reader, so neither is told the dollar figure is exact, and the "+" a
+ * capped count carries is carried here too: a lower bound in coins is a lower
+ * bound in dollars.
+ */
+export const UsdValue = ({
+  value,
+  bound,
+}: {
+  /** The formatted dollars, from formatUsd. */
+  value: string
+  /** "+" when the amount it converts is itself a lower bound. */
+  bound?: string
+}) => (
+  <UsdAside>
+    <VisuallyHidden>about </VisuallyHidden>
+    <span aria-hidden="true">≈ </span>
+    {value}
+    {bound}
+  </UsdAside>
+)
 
 const shortKey = (value: string) =>
   value.length > 14 ? `${value.slice(0, 6)}…${value.slice(-4)}` : value

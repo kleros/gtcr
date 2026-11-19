@@ -154,10 +154,40 @@ export const scopedFigures = (
         inWindowDeposits[chainId] =
           (inWindowDeposits[chainId] ?? 0n) + toAmount(row.deposit)
     }
+  /*
+   * The retired Classic lists' entry history in scope, summed from their
+   * own figures (data.classicEntries) and never from a registry row: no
+   * Classic list is in `data.registries`, so none can be browsed, linked or
+   * counted among the lists this app shows.
+   */
+  let classicLists = 0
+  let classicEntries = 0
+  let classicCapped = false
+  for (const chainId of chains) {
+    const classic = data.classicEntries?.[chainId]
+    if (!classic) continue
+    classicLists += classic.lists
+    classicEntries += classic.entries
+    classicCapped ||= classic.capped
+  }
+  const entries = scoped.reduce((sum, r) => sum + entryCount(r), 0)
   return {
     registries: scoped.length,
     verified: scoped.filter(countsAsVerifiedList).length,
-    entries: scoped.reduce((sum, r) => sum + entryCount(r), 0),
+    /** Entries the lists this app shows hold today: the live figure. */
+    entries,
+    /**
+     * Every entry ever curated in scope: the above plus the retired Classic
+     * lists' own total. The all-time panel's denominator, never the live
+     * strip's figure, which stands beside a count of the lists Browse can
+     * show.
+     */
+    entriesAllTime: entries + classicEntries,
+    /** How many retired Classic lists that total is of, and their entries. */
+    classicLists,
+    classicEntries,
+    /** The Classic read came back a full page: `entriesAllTime` is a floor. */
+    classicCapped,
     // Stake Curate has no requests (its counter is listed items).
     requestsOpen: scoped
       .filter((r) => r.kind !== 'permanent')
@@ -234,13 +264,26 @@ export interface BountyCoin {
   paid: number
 }
 
-/** Every resolved dispute in a scope of chains, newest first. */
+/**
+ * The resolved disputes a reader can open, in a scope of chains, newest
+ * first: this is the FEED, the only source of the rulings a row, a card or
+ * a link is built from (rulingCard below, the Disputes panel, the cards
+ * "show more" reads). The counts are not this: they come from
+ * scopedChallengeRecord, over the whole ledger.
+ *
+ * So a ruling on a retired Classic list is filtered out here. It is part of
+ * the protocol's history and counts in every all-time figure, but the app
+ * has no Classic page, so a row pointing at one could only lead nowhere.
+ * There is deliberately no second export returning the unfiltered ledger:
+ * the next reader cannot pick the wrong one.
+ */
 export const scopedRulings = (
   data: DashboardData,
   chains: number[],
 ): RulingRow[] =>
   chains
     .flatMap((chainId) => data.rulings?.[chainId] ?? [])
+    .filter((row) => row.kind !== 'classic')
     .sort((a, b) => b.resolvedAt - a.resolvedAt || a.id.localeCompare(b.id))
 
 /**
@@ -372,6 +415,13 @@ export const scopedChallengeRecord = (
 /**
  * Bounties won per challenger (lowercase address), all time, in a scope of
  * chains: how many of their challenges the court ruled for them.
+ *
+ * The retired Classic lists are left out, unlike the panel's own figures: a
+ * figure attached to a PERSON has to match what their own profile page says
+ * about them, and that page reads a load with no Classic in it. The
+ * panel's figures describe the protocol's history, which is a different
+ * question. Only two addresses span the two eras, so nothing visible
+ * changes — which is the point.
  */
 export const scopedWins = (
   data: DashboardData,
@@ -380,7 +430,7 @@ export const scopedWins = (
   const wins = new Map<string, number>()
   for (const chainId of chains)
     for (const row of data.rulings?.[chainId] ?? [])
-      if (row.challengerWon && row.challenger)
+      if (row.kind !== 'classic' && row.challengerWon && row.challenger)
         wins.set(row.challenger, (wins.get(row.challenger) ?? 0) + 1)
   return wins
 }

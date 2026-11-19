@@ -40,6 +40,13 @@ import { Avatar as ListLogo } from 'pages/browse/avatar'
  * issued, all time, newest first and quieter. A ruling for the challenger
  * shows the bounty they won.
  *
+ * The Disputes panel's "Rulings" tally is the ledger's own total (round 4),
+ * the same figure the self-sustaining panel states — not the number of rows
+ * this column can build. The two differ by the rulings on the retired
+ * Classic lists, which count in the protocol's history and have no page to
+ * open, so the footer names them rather than leaving the reader with a
+ * tally the list cannot reach.
+ *
  * Round 2 gave the open requests a full-width band of their own and left
  * the disputes alone on this board; round 3 puts them back beside each
  * other, because a reader comparing what can still be challenged with what
@@ -601,8 +608,19 @@ export interface RulingsView {
   cards: DashboardCard[]
   /** Rows whose entry identifiers are still loading. */
   pending: Set<string>
-  /** Every ruling the court has issued in scope (a refusal included). */
+  /**
+   * Every ruling the court has issued in scope (a refusal included), the
+   * retired Classic lists' included: the same figure the self-sustaining
+   * panel states, so one page never carries two all-time ruling counts.
+   * The rows shown are `cards`, and only `cards.length` drives "show more".
+   */
   total: number
+  /**
+   * How many of `total` can never become a row: the rulings on retired
+   * Classic lists, which have no page in this app. The footer names them,
+   * because they are the difference between the tally and the list.
+   */
+  unlisted: number
   /** The ledger stopped at its page limit: total is a lower bound. */
   capped: boolean
   /** The ledger did not load on some chain in scope. */
@@ -946,7 +964,7 @@ const DisputesPanel = ({
               ))}
             </RulingList>
           )}
-          {(rulings.onMore || rulings.onFewer) && (
+          {(rulings.onMore || rulings.onFewer || rulings.unlisted > 0) && (
             <RulingsFooter>
               {rulings.onMore && (
                 <More type="button" onClick={rulings.onMore}>
@@ -957,6 +975,12 @@ const DisputesPanel = ({
                 <More type="button" onClick={rulings.onFewer}>
                   Show fewer
                 </More>
+              )}
+              {rulings.unlisted > 0 && (
+                <Small $faint>
+                  {formatInt(rulings.unlisted)} on retired Classic lists have no
+                  page
+                </Small>
               )}
               <Small $faint role="status">
                 {formatInt(rulings.cards.length)} of {rulingsTotal}
