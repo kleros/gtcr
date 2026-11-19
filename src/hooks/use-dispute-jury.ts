@@ -85,7 +85,12 @@ export interface JuryRound {
 export interface DisputeJury {
   /** Newest round first. */
   rounds: JuryRound[]
+  /** Ruled, or in the execution period: no seat or vote changes any more. */
+  settled: boolean
 }
+
+/** KlerosLiquid's execution period: the votes are counted and final. */
+const EXECUTION_PERIOD = 4
 
 export const fetchDisputeJury = async (
   provider: ethers.providers.Provider,
@@ -107,6 +112,8 @@ export const fetchDisputeJury = async (
     throw new Error(`No dispute ${disputeID} on this arbitrator`)
   const latest = votesLengths.length - 1
   const drawsInRound = (dispute.drawsInRound as ethers.BigNumber).toNumber()
+  const settled =
+    Boolean(dispute.ruled) || Number(dispute.period) >= EXECUTION_PERIOD
 
   // The rounds asked for, or the latest ones; newest first, and skipping
   // any too large to read seat by seat (a General court round can seat
@@ -120,7 +127,7 @@ export const fetchDisputeJury = async (
   )
     .filter((round) => round.slots > 0 && round.slots <= MAX_SLOTS)
     .reverse()
-  if (wanted.length === 0) return { rounds: [] }
+  if (wanted.length === 0) return { rounds: [], settled }
 
   const calls: [string, unknown[]][] = []
   for (const round of wanted) {
@@ -192,7 +199,7 @@ export const fetchDisputeJury = async (
     }
   })
 
-  return { rounds: juryRounds }
+  return { rounds: juryRounds, settled }
 }
 
 /**
@@ -224,9 +231,11 @@ const juryQuery = (
     disputeID !== undefined &&
     disputeID !== null,
   // A vote lands in minutes, not seconds; the timeline refreshes at the
-  // same pace, so the two never disagree by more than one period.
+  // same pace, so the two never disagree by more than one period. A ruled
+  // case's jury no longer changes, so it is not read again.
   staleTime: 60_000,
-  refetchInterval: 120_000,
+  refetchInterval: (query: { state: { data?: DisputeJury } }) =>
+    query.state.data?.settled ? false : 120_000,
   retry: 1,
 })
 
