@@ -1270,10 +1270,16 @@ const Dashboard = () => {
               )} requests, ${formatInt(chartChallenges)} challenges`}
             />
           )}
-          {data?.seriesTruncated && (
+          {range === '30d' && data?.seriesTruncated && (
             <Small $faint>
               Some chains had more requests than this view loads; their earliest
               days may be undercounted.
+            </Small>
+          )}
+          {range !== '30d' && history.data?.truncated && (
+            <Small $faint>
+              Some chains had more requests than this view loads; their earliest{' '}
+              {range === '3y' ? 'months' : 'weeks'} may be undercounted.
             </Small>
           )}
         </FeaturedMain>
