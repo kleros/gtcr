@@ -6,6 +6,10 @@ import styled from 'styled-components'
  * lives here rather than in index.tsx so a section that owns its own file
  * (open-for-verification.tsx) heads itself the same way, without importing
  * the page back.
+ *
+ * The 80px is what separates one section from the next. A heading that
+ * belongs to the box above it rather than to a new section overrides that
+ * margin where it is used (index.tsx's LiveHead), never here.
  */
 
 export const SectionHead = styled.div`

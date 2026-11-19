@@ -47,12 +47,19 @@ const monthYear = new Intl.DateTimeFormat('en-GB', {
   timeZone: 'UTC',
 })
 
+/*
+ * The strip has no section head of its own, so it has no margin of its own
+ * either: the air above it is the 48px the live board carries under itself
+ * (happening-now.tsx), which is the section break here. A margin here would
+ * not add to that one — adjacent margins collapse in the page's block flow,
+ * and the larger wins — so it would only be a number that reads as air the
+ * page never shows.
+ */
 const Band = styled(Surface)`
   display: grid;
   grid-template-columns: 188px minmax(0, 1fr);
   align-items: center;
   gap: 20px 28px;
-  margin-top: 16px;
   padding: 20px 22px;
   ${reveal}
 
@@ -312,7 +319,7 @@ export const VerifiedLists = ({
       as="section"
       $padding="none"
       aria-labelledby={titleId}
-      style={{ ['--i' as string]: 8 }}
+      style={{ ['--i' as string]: 9 }}
     >
       <VisuallyHidden as="h2" id={titleId}>
         {VERIFIED_LISTS_LABEL}

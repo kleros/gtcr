@@ -1,5 +1,5 @@
 import React, { useId } from 'react'
-import styled, { keyframes } from 'styled-components'
+import styled from 'styled-components'
 import ChainLogo from 'components/chain-logo'
 import {
   Label,
@@ -7,7 +7,6 @@ import {
   Small,
   Surface,
 } from 'components/curate/primitives'
-import { recessTrack } from 'components/ui/kit-styles'
 import Tooltip from 'components/ui/Tooltip'
 import { AnimatedNumber } from 'components/curate/motion/animated-number'
 import { RingGauge } from 'components/curate/motion/ring-gauge'
@@ -16,31 +15,46 @@ import { SectionHead, SectionTitle } from './section'
 import { chainInfo, type BountyCoin, type scopedChallengeRecord } from './view'
 
 /*
- * How the lists have held up (round 2, items 7 and 14): what the lists' own
- * history says, all time, in the page's chain scope. It heads itself rather
- * than sitting under "Happening now": nothing in it is live.
+ * How the lists have held up (round 3): one wide card, back to the
+ * proportions of the version before it — the rings on the left at full
+ * size, the money to their right, one sentence across the foot.
  *
- * Three facts, in the order they matter, and in that order of weight:
+ * Two rings, two shares of different wholes — the entries the lists hold
+ * today, and the disputes the court has closed all time. They are drawn in
+ * the same hues on purpose: two readings of one question, not two
+ * categories to tell apart (DESIGN.md keeps --viz-1..4 for categories), so
+ * each caption names the whole its share is of.
  *
- *  1. The lists hold a great many entries.
- *  2. Only a small share of them has ever been disputed — the bar draws
- *     that share to scale, the one proportion in the panel that is a
- *     proportion of something the reader can see.
- *  3. When somebody did dispute one, the court mostly agreed: the short arc
- *     and the figure pair beside it, of the disputes the court has closed.
+ *  1. Nobody disputed these entries. Its denominator is every entry the
+ *     lists hold, in any status, and `challenged` counts disputed requests,
+ *     of which one entry can collect two (its registration and later its
+ *     removal) — so the share is a floor on the truth. Where the challenge
+ *     ledger is itself a lower bound the two biases oppose and no bound
+ *     holds, so the ring is not drawn at all rather than drawn as "at most".
+ *  2. Of the disputes the court has closed, this share went to the
+ *     challenger: the reading the owner asked for, that a challenge here is
+ *     usually well founded rather than noise.
+ *
+ * Both percentages are rounded from their two counts, and each ring is
+ * handed the rounded figure rather than the raw ratio, so the count-up ends
+ * on the number the sentence states and the two can never disagree.
  *
  * Then the bounties those challengers took, one figure per coin, never
- * added across coins.
+ * added across coins — a Stake list pays in its own token, which is the
+ * list's choice and can differ list to list, so the tile names the token
+ * and identifies it by the contract it was read from. The count under an
+ * amount is how many bounties that amount is the sum of, so the two answer
+ * the same question; a ruling that went to the challenger with no deposit
+ * recorded is named in the tooltip rather than padding the count. A token
+ * whose decimals never answered leaves the tile its count and says why
+ * there is no amount, instead of an em dash where a figure should be.
  *
- * Two measures, two windows, said on the labels: entries are what the lists
- * hold today; challenges and rulings are all time and never windowed. A
- * figure reads "n+" when its query stopped at its page cap, and where that
- * happens the rarity is stated as a bound rather than as a rate, since the
- * true number of challenges can only be higher. A chain whose ledger did
- * not load is named rather than counted as zero.
- *
- * The reader's "why this matters" lines live in the tooltips; the panel
- * itself is figures and labels (DESIGN.md: data first, words last).
+ * Windows are carried by the figures themselves rather than by a chip over
+ * the panel (round 3: four "all time" stamps read as boilerplate). The
+ * captions and the sentence say what each share measures; entries are what
+ * the lists hold today, disputes and bounties are all time and never
+ * windowed. A figure reads "n+" when its query stopped at its page cap, and
+ * a chain whose ledger did not load is named rather than counted as zero.
  */
 
 type ChallengeRecord = ReturnType<typeof scopedChallengeRecord>
@@ -51,13 +65,18 @@ const amountFormat = new Intl.NumberFormat('en-US', {
   maximumFractionDigits: 4,
 })
 
-/** A share, never rounded to a flattering "0%": under a tenth reads "<0.1%". */
-const sharePercent = (share: number): string => {
-  const percent = share * 100
-  if (percent === 0) return '0%'
-  if (percent < 0.1) return '<0.1%'
-  return `${percent.toFixed(percent < 10 ? 1 : 0)}%`
-}
+/**
+ * A share as a whole percent. Rounded, not floored: 579 of 762 is 75.98%,
+ * and flooring it would state 75% for a figure whose nearer whole is 76 —
+ * a point of understatement is no more honest than a point of flattery.
+ *
+ * Taken from the two counts rather than from their ratio, because the ratio
+ * is not exact in binary. The ring is handed this figure over 100, not the
+ * raw ratio, so its own rounding lands on the same number the sentence
+ * prints.
+ */
+const sharePercent = (part: number, whole: number): number =>
+  Math.round((Math.min(Math.max(part, 0), whole) * 100) / whole)
 
 const Panel = styled(Surface)`
   display: flex;
@@ -66,19 +85,32 @@ const Panel = styled(Surface)`
   ${reveal}
 `
 
-/* The rarity, the panel's lead: two figures over one proportional bar. */
-const Rarity = styled.div`
+/* The rings and the money, side by side; stacked once that is too narrow. */
+const Body = styled.div`
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 24px 32px;
+
+  @media (max-width: 900px) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+`
+
+/* Two rings at full size; one per row when both no longer fit. */
+const Gauges = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 24px 32px;
+`
+
+/* The money column. Its tiles carry their own hairlines: no panel in a panel. */
+const Money = styled.div`
   display: flex;
   flex-direction: column;
   gap: 12px;
-`
-
-const RarityHead = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 12px 32px;
+  min-width: 0;
 `
 
 const Figure = styled.div`
@@ -86,126 +118,6 @@ const Figure = styled.div`
   flex-direction: column;
   gap: 8px;
   min-width: 0;
-`
-
-/* The denominator reads from the right, over the end of the bar it measures. */
-const FigureEnd = styled(Figure)`
-  align-items: flex-end;
-  text-align: right;
-
-  @media (max-width: 560px) {
-    align-items: flex-start;
-    text-align: left;
-  }
-`
-
-const Big = styled.span`
-  display: inline-flex;
-  align-items: baseline;
-  color: var(--color-text);
-  font-family: var(--font-figure);
-  font-size: clamp(34px, 1.4vw + 22px, 44px);
-  line-height: 0.95;
-  font-weight: 500;
-  letter-spacing: -0.04em;
-  font-variant-numeric: tabular-nums;
-
-  &:focus-visible {
-    outline: 2px solid var(--color-primary);
-    outline-offset: 4px;
-    border-radius: 4px;
-  }
-`
-
-/* The entries the lists hold: the bar's whole length, in figures. */
-const Held = styled.span`
-  display: inline-flex;
-  align-items: baseline;
-  color: var(--color-text);
-  font-family: var(--font-figure);
-  font-size: clamp(22px, 0.8vw + 14px, 28px);
-  line-height: 1;
-  font-weight: 500;
-  letter-spacing: -0.03em;
-  font-variant-numeric: tabular-nums;
-
-  &:focus-visible {
-    outline: 2px solid var(--color-primary);
-    outline-offset: 4px;
-    border-radius: 4px;
-  }
-`
-
-const grow = keyframes`
-  from { transform: scaleX(0); }
-  to { transform: scaleX(1); }
-`
-
-/*
- * One bar: its full length is the entries the lists hold today, the lit
- * slice the requests anyone has ever challenged. A slice too thin to see
- * still keeps 3px, so a tiny share reads as tiny rather than as nothing;
- * the figures above it and the label under it carry the exact numbers.
- */
-const Bar = styled.div`
-  position: relative;
-  height: 14px;
-  border-radius: var(--radius-pill);
-  ${recessTrack}
-  overflow: hidden;
-
-  > i {
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    left: 0;
-    border-radius: var(--radius-pill);
-    background: linear-gradient(
-      90deg,
-      color-mix(in srgb, var(--viz-3) 45%, transparent),
-      var(--viz-3)
-    );
-    box-shadow: 0 0 16px -2px color-mix(in srgb, var(--viz-3) 70%, transparent);
-    transform-origin: left center;
-    animation: ${grow} 900ms var(--ease-out) both;
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    > i {
-      animation: none;
-    }
-  }
-`
-
-/* The court's record: a short arc and its figures, under a hairline. */
-const Court = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 14px 22px;
-  padding-top: 18px;
-  border-top: 1px solid var(--glass-border);
-`
-
-/** "18 of 24 rulings", the won figure leading. */
-const Pair = styled.span`
-  display: inline-flex;
-  align-items: baseline;
-  flex-wrap: wrap;
-  gap: 0 8px;
-  color: var(--color-muted);
-  font-family: var(--font-figure);
-  font-size: var(--fs-small);
-  line-height: var(--lh-small);
-  font-variant-numeric: tabular-nums;
-
-  b {
-    color: var(--color-text);
-    font-size: 28px;
-    line-height: 1;
-    font-weight: 500;
-    letter-spacing: -0.03em;
-  }
 `
 
 /** A label that carries a tooltip: focusable, so it reads on tab. */
@@ -226,39 +138,16 @@ const TipText = styled.span`
   text-wrap: balance;
 `
 
-/* The bounties, under their own hairline. */
-const Bounties = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  padding-top: 18px;
-  border-top: 1px solid var(--glass-border);
-`
-
-/* Phones: one coin per row, the amount on the left, where and how many on the right. */
+/* Phones: one coin per row, its lines stacked, hairlines between them. */
 const phoneCoins = `
   @media (max-width: 520px) {
     grid-template-columns: minmax(0, 1fr);
     gap: 0;
 
     > li {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) auto;
-      align-items: center;
-      column-gap: 12px;
-      row-gap: 2px;
       padding: 10px 0;
       border-left: 0;
       border-top: 1px solid var(--glass-border);
-    }
-
-    > li > b {
-      grid-row: span 2;
-      margin: 0;
-    }
-
-    > li > span {
-      justify-self: end;
     }
   }
 `
@@ -329,55 +218,133 @@ const WonCount = styled.span`
   font-variant-numeric: tabular-nums;
 `
 
+/* Which token a Stake list pays in: an address, so Geist Mono. */
+const CoinToken = styled.span`
+  min-width: 0;
+  overflow: hidden;
+  color: var(--color-faint);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 16px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+`
+
 /** "Ethereum and Gnosis" */
 const chainNames = (chains: number[]) =>
   chains
     .map((chainId) => chainInfo(chainId)?.name ?? `Chain ${chainId}`)
     .join(' and ')
 
+const shortToken = (token: string) => `${token.slice(0, 6)}…${token.slice(-4)}`
+
 const coinPlace = (coin: BountyCoin) => {
   const chain = chainInfo(coin.chainId)?.name ?? `Chain ${coin.chainId}`
-  return coin.token ? `Stake · ${chain}` : chain
+  return coin.stake ? `Stake · ${chain}` : chain
 }
 
 /**
- * What the challenged figure means for the reader: challenges are rare next
- * to what the lists hold. Only claimed with the entries to compare it to,
- * and only while the challenge count is not itself a lower bound — a capped
- * ledger or a chain that did not answer leaves the true count higher than
- * the figure, so no rate is claimed from it.
+ * The coin's symbol, when the token answered with one. A token that only
+ * answered its decimals is named by its address in the line below instead:
+ * the figure never carries an address as if it were a name.
  */
-const challengedTip = (
+const coinSymbol = (coin: BountyCoin): string =>
+  coin.token && coin.symbol === shortToken(coin.token) ? '' : coin.symbol
+
+/** True while the tile can lead with an amount: decimals read, and something paid. */
+const amountKnown = (coin: BountyCoin) =>
+  coin.decimals !== undefined && coin.paid > 0
+
+/** Why a tile shows a count and no amount. Never an em dash on its own. */
+const withheldReason = (coin: BountyCoin): string =>
+  coin.decimals === undefined
+    ? 'amount not shown: the token did not answer'
+    : `amount not shown: no deposit was recorded for ${coin.won === 1 ? 'it' : 'them'}`
+
+/**
+ * What a tile cannot fit: the exact total, which token a Stake list pays in
+ * (by the contract it was read from), and any ruling that went to the
+ * challenger with no deposit recorded — named rather than folded into the
+ * count beside the amount.
+ */
+const coinTip = (coin: BountyCoin, plus: string): string => {
+  const parts: string[] = []
+  if (amountKnown(coin) && coin.display)
+    parts.push(
+      plus ? `${coin.display} or more in all.` : `${coin.display} in all.`,
+    )
+  if (coin.stake)
+    parts.push(
+      coin.token
+        ? `Paid in this list's own token, read from its contract: ${coin.token}.`
+        : "Paid in the list's own token, which did not load, so this amount is kept apart from the chain's coin.",
+    )
+  const unrecorded = coin.won - coin.paid
+  if (amountKnown(coin) && unrecorded > 0)
+    parts.push(
+      unrecorded === 1
+        ? 'One further ruling went to the challenger with no deposit recorded, so the amount does not cover it.'
+        : `${formatInt(unrecorded)} further rulings went to the challenger with no deposit recorded, so the amount does not cover them.`,
+    )
+  return parts.join(' ')
+}
+
+/** What a bounty is, and over what window: the figures' own explanation. */
+const bountiesTip = (record: ChallengeRecord, plus: string): string =>
+  record.winners > 0
+    ? `Every bounty challengers have taken, all time: paid to ${formatInt(record.winners)}${plus} ${record.winners === 1 ? 'challenger' : 'different challengers'}, each on top of their own deposit back.`
+    : "What a challenger takes when the court rules for them, all time: the requester's base deposit (Standard) or the entry's stake (Stake), on top of their own deposit back."
+
+/**
+ * The panel's one sentence (DESIGN.md: one sentence under a title at most),
+ * built from the same figures as the rings, so the words and the drawings
+ * cannot disagree. It names the sample the court's share rests on, and the
+ * reading after the colon is printed only where the figures bear it out:
+ * "rare" needs the entries to outnumber the disputes twice over, "well
+ * founded" needs more than half of the closed disputes to have gone to the
+ * challenger.
+ */
+const heldUpSentence = (
   record: ChallengeRecord,
   entries: number | undefined,
+  /** The two shares the rings draw, or undefined where one is not drawn. */
+  never: number | undefined,
+  won: number | undefined,
   plus: string,
-): string => {
-  if (record.challenged === 0)
-    return 'No request here has been disputed yet. Anyone may challenge one while its challenge window is open.'
-  const count = `${formatInt(record.challenged)}${plus}`
-  if (entries === undefined || record.challengedPartial)
-    return `Every request anyone has disputed, all time: ${count}, in court now or already ruled on.`
-  const both = `${count} all time, including the ones still in court, against ${formatInt(entries)} entries held today.`
-  // "Rare" is only said where the figures bear it out.
-  return entries > record.challenged * 2
-    ? `Challenges are rare next to what the lists hold: ${both} Most of what these lists hold has never been disputed.`
-    : `Every request anyone has disputed: ${both}`
+): string | undefined => {
+  // A ledger that did not load says nothing here: the line under the panel
+  // names the chain instead.
+  if (record.rulings === 0 && record.missing.length > 0) return undefined
+  const held =
+    never !== undefined && entries !== undefined
+      ? `Nobody has disputed ${never}% of the ${formatInt(entries)} entries these lists hold`
+      : undefined
+  if (won === undefined)
+    return held
+      ? `${held}, and no dispute has been ruled on yet.`
+      : 'No dispute has been ruled on yet.'
+  const sample = `the ${formatInt(record.rulings)}${plus} disputes the court has closed`
+  const share = `${won}% went to the challenger`
+  const rare =
+    never !== undefined &&
+    entries !== undefined &&
+    entries > record.challenged * 2
+  const reading =
+    record.won * 2 > record.rulings
+      ? rare
+        ? ': challenges are rare, and mostly well founded'
+        : ': most challenges are well founded'
+      : ''
+  return held
+    ? `${held}, and of ${sample}, ${share}${reading}.`
+    : `Of ${sample}, ${share}${reading}.`
 }
 
-/** What the entries figure is for: the bar's whole length. */
-const ENTRIES_TIP =
-  'Every entry these lists hold right now. Each one went through a challenge window in which anyone could have disputed it.'
-
-/** What the arc means for the reader, without over-claiming it. */
-const rulingsTip = (record: ChallengeRecord): string =>
-  record.won * 2 > record.rulings
-    ? 'Most rulings so far have gone to the challenger: when someone shows an entry breaks the rules, jurors tend to agree. Each case is still decided on its own evidence.'
-    : 'Jurors settle each dispute on its own evidence. A ruling for the challenger pays them the bounty; one for the requester leaves the entry as it stands.'
-
 /**
- * How the lists have held up: how rarely anything is challenged, how the
- * court ruled when it was, and what the challengers took. The section heads
- * itself and owns its loading state, so the heading never pops in.
+ * How the lists have held up: how much of what they hold nobody has ever
+ * disputed, how the court ruled when somebody did, and what the challengers
+ * took. The section heads itself and owns its loading state, so the heading
+ * never pops in.
  */
 export const VerificationRecord = ({
   record,
@@ -391,230 +358,198 @@ export const VerificationRecord = ({
   const titleId = useId()
 
   const plus = record?.capped ? '+' : ''
-  const challengedPlus = record?.challengedPartial ? '+' : ''
   const missing =
     record && record.missing.length > 0 ? chainNames(record.missing) : undefined
-  // A chain whose ledger did not load: the arc covers the others, by name.
+  // A chain whose ledger did not load: the ring covers the others, by name.
   const partial = !!missing && !!record && record.loaded.length > 0
   const where = partial && record ? ` on ${chainNames(record.loaded)}` : ''
   const unknown = !!record && record.rulings === 0 && !!missing
 
-  // Entries now against challenges all time: two measures, both named.
-  const share =
-    record && entries !== undefined && entries > 0
-      ? Math.min(1, record.challenged / entries)
-      : undefined
-  // Floored, never rounded up: a rarity claim is never better than the data.
-  const ratio =
-    record && entries !== undefined && record.challenged > 0
-      ? Math.floor(entries / record.challenged)
-      : undefined
-  /** The bar's own label: both measures, both windows, the exact figures. */
-  const barLabel =
-    record && entries !== undefined && share !== undefined
-      ? `Requests ever challenged, all time, against the entries the lists hold today: ${formatInt(record.challenged)}${challengedPlus ? ' or more' : ''} of ${formatInt(entries)}, ${sharePercent(share)} of them`
-      : undefined
   /*
-   * The rate under the bar. While the challenge count is a lower bound (a
-   * capped ledger, a chain that did not answer) the true rate can only be
-   * higher, so the line reads as a bound instead of as a rate.
+   * The share nobody has ever disputed, against every entry the lists hold.
+   * Left out entirely when the entries are unknown or the challenge count is
+   * itself a lower bound: a capped ledger understates the challenges, which
+   * overstates this share, and no honest bound survives that.
    */
-  const rate =
-    share === undefined || !record || record.challenged === 0
-      ? undefined
-      : ratio !== undefined && ratio >= 2
-        ? record.challengedPartial
-          ? `1 per ${formatInt(ratio)} entries held today or fewer`
-          : `1 per ${formatInt(ratio)} entries held today`
-        : record.challengedPartial
-          ? `at least ${sharePercent(share)} of the entries held today`
-          : `${sharePercent(share)} of the entries held today`
+  const never =
+    record && entries !== undefined && entries > 0 && !record.challengedPartial
+      ? sharePercent(entries - Math.min(entries, record.challenged), entries)
+      : undefined
+  const wonShare =
+    record && record.rulings > 0
+      ? sharePercent(record.won, record.rulings)
+      : undefined
+  const sentence = record
+    ? heldUpSentence(record, entries, never, wonShare, plus)
+    : undefined
+  // Several Stake tokens in scope: say once that they are not one total.
+  const stakeCoins = record?.coins.filter((coin) => coin.stake).length ?? 0
+  const ringKey = record ? `${record.loaded.join('-')}-${record.rulings}` : ''
 
   return (
     <section aria-labelledby={titleId}>
       <SectionHead>
         <SectionTitle id={titleId}>How the lists have held up</SectionTitle>
-        <Label $tone="faint">Challenges and rulings · all time</Label>
       </SectionHead>
 
-      <Panel $padding="standard" style={{ ['--i' as string]: 0 }}>
-        <Rarity>
-          <RarityHead>
-            <Figure>
-              <Label $tone="faint">Ever challenged · all time</Label>
-              {record ? (
-                <Tooltip
-                  title={
-                    <TipText>
-                      {challengedTip(record, entries, challengedPlus)}
-                    </TipText>
-                  }
-                >
-                  <Big
-                    tabIndex={0}
-                    role="img"
-                    aria-label={`${formatInt(record.challenged)}${challengedPlus ? ' or more' : ''} requests ever challenged, all time`}
-                  >
-                    <AnimatedNumber value={record.challenged} />
-                    {challengedPlus}
-                  </Big>
-                </Tooltip>
-              ) : (
-                <SkeletonBlock $height="40px" $width="140px" />
-              )}
-            </Figure>
-            <FigureEnd>
-              <Label $tone="faint">Entries held today</Label>
-              {entries !== undefined ? (
-                <Tooltip title={<TipText>{ENTRIES_TIP}</TipText>}>
-                  <Held
-                    tabIndex={0}
-                    role="img"
-                    aria-label={`${formatInt(entries)} entries held today`}
-                  >
-                    <AnimatedNumber value={entries} />
-                  </Held>
-                </Tooltip>
-              ) : record ? (
-                <Held role="img" aria-label="Entries held today: not known">
-                  —
-                </Held>
-              ) : (
-                <SkeletonBlock $height="28px" $width="110px" />
-              )}
-            </FigureEnd>
-          </RarityHead>
-          {/* No bar without the entries to draw the challenges against: a
-              chain whose lists did not load leaves the comparison out. */}
-          {barLabel !== undefined && share !== undefined ? (
-            <Bar role="img" aria-label={barLabel}>
-              {/* Nothing challenged draws nothing; a thin slice keeps 3px. */}
-              <i
-                style={{
-                  width:
-                    share === 0 ? 0 : `max(3px, ${(share * 100).toFixed(2)}%)`,
-                }}
-              />
-            </Bar>
-          ) : (
-            !record && <SkeletonBlock $height="14px" />
-          )}
-          {rate && <Small $muted>{rate}</Small>}
-        </Rarity>
+      {/* Second box on the page, straight after the 30-day chart (--i: 4). */}
+      <Panel $padding="standard" style={{ ['--i' as string]: 5 }}>
+        <Body>
+          <Gauges>
+            {!record ? (
+              <>
+                <SkeletonBlock
+                  $height="168px"
+                  $width="168px"
+                  style={{ borderRadius: 'var(--radius-pill)' }}
+                />
+                <SkeletonBlock
+                  $height="168px"
+                  $width="168px"
+                  style={{ borderRadius: 'var(--radius-pill)' }}
+                />
+              </>
+            ) : (
+              <>
+                {never !== undefined && entries !== undefined && (
+                  <RingGauge
+                    key={`never-${ringKey}-${entries}`}
+                    size={168}
+                    ratio={never / 100}
+                    from="var(--edge-3)"
+                    to="var(--edge-2)"
+                    caption="of entries never disputed"
+                    label={`Nobody has disputed ${never}% of the ${formatInt(entries)} entries these lists hold, against ${formatInt(record.challenged)} requests anyone has disputed, all time.`}
+                  />
+                )}
+                {wonShare !== undefined ? (
+                  <RingGauge
+                    key={`won-${ringKey}`}
+                    size={168}
+                    ratio={wonShare / 100}
+                    from="var(--edge-3)"
+                    to="var(--edge-2)"
+                    caption="of disputes went to the challenger"
+                    label={`The court sided with the challenger in ${formatInt(record.won)}${plus} of ${formatInt(record.rulings)}${plus} rulings${where}, all time.`}
+                  />
+                ) : (
+                  <Figure>
+                    <Label $tone="faint">Disputes the court has closed</Label>
+                    <Small $muted>
+                      {unknown ? 'The rulings did not load' : 'None yet'}
+                    </Small>
+                  </Figure>
+                )}
+              </>
+            )}
+          </Gauges>
 
-        <Court>
-          {!record ? (
-            <>
-              <SkeletonBlock
-                $height="104px"
-                $width="104px"
-                style={{ borderRadius: 'var(--radius-pill)' }}
-              />
-              <Figure>
-                <Label $tone="faint">Sided with the challenger</Label>
-                <SkeletonBlock $height="28px" $width="160px" />
-              </Figure>
-            </>
-          ) : record.rulings > 0 ? (
-            <>
-              <RingGauge
-                key={`${record.loaded.join('-')}-${record.rulings}`}
-                size={104}
-                ratio={record.won / record.rulings}
-                from="var(--edge-3)"
-                to="var(--edge-2)"
-                label={`The court sided with the challenger in ${formatInt(record.won)}${plus} of ${formatInt(record.rulings)}${plus} rulings${where}, all time.`}
-              />
-              <Figure>
-                <Tooltip title={<TipText>{rulingsTip(record)}</TipText>}>
-                  <TipTarget tabIndex={0}>
-                    <Label $tone="faint">Sided with the challenger</Label>
-                  </TipTarget>
-                </Tooltip>
-                <Pair>
-                  <b>
-                    {formatInt(record.won)}
-                    {plus}
-                  </b>
-                  of {formatInt(record.rulings)}
-                  {plus} rulings{where}
-                </Pair>
-              </Figure>
-            </>
-          ) : (
-            <Figure>
-              <Label $tone="faint">Sided with the challenger</Label>
-              <Small $muted>
-                {unknown
-                  ? 'The rulings did not load'
-                  : 'No dispute has been ruled on yet'}
-              </Small>
-            </Figure>
-          )}
-        </Court>
-
-        {!record ? (
-          <Bounties>
-            <Label $tone="faint">Bounties won · all time</Label>
-            <SkeletonBlock $height="58px" />
-          </Bounties>
-        ) : (
-          !unknown && (
-            <Bounties>
-              {record.winners > 0 ? (
-                <Tooltip
-                  title={
-                    <TipText>
-                      {`Paid to ${formatInt(record.winners)}${plus} ${record.winners === 1 ? 'challenger' : 'different challengers'}, each on top of their own deposit back.`}
-                    </TipText>
-                  }
-                >
-                  <TipTarget tabIndex={0}>
-                    <Label $tone="faint">Bounties won · all time</Label>
-                  </TipTarget>
-                </Tooltip>
-              ) : (
-                <Label $tone="faint">Bounties won · all time</Label>
-              )}
-              {record.coins.length === 0 ? (
-                <Small $muted as="p" style={{ margin: 0 }}>
-                  {record.rulings
-                    ? record.rulings === 1 && !plus
-                      ? 'No bounty yet: the one ruling did not go to a challenger.'
-                      : `No bounty yet: none of the ${formatInt(record.rulings)}${plus} rulings went to a challenger.`
-                    : 'No dispute has been ruled on yet.'}
-                </Small>
-              ) : (
-                <Coins aria-label="Bounties won, all time, per coin">
-                  {record.coins.map((coin, index) => (
-                    <Coin key={coin.key} style={{ ['--i' as string]: index }}>
-                      <b>
-                        {coin.value !== undefined ? (
-                          <span>
-                            <AnimatedNumber
-                              value={coin.value}
-                              format={(value) => amountFormat.format(value)}
-                            />
-                          </span>
+          <Money>
+            {!record ? (
+              <>
+                <Label $tone="faint">Bounties won</Label>
+                <SkeletonBlock $height="58px" />
+              </>
+            ) : (
+              !unknown && (
+                <>
+                  <Tooltip
+                    title={<TipText>{bountiesTip(record, plus)}</TipText>}
+                  >
+                    <TipTarget tabIndex={0}>
+                      <Label $tone="faint">Bounties won</Label>
+                    </TipTarget>
+                  </Tooltip>
+                  {record.coins.length === 0 ? (
+                    <Small $muted as="p" style={{ margin: 0 }}>
+                      {record.rulings
+                        ? record.rulings === 1 && !plus
+                          ? 'No bounty yet: the one ruling did not go to a challenger.'
+                          : `No bounty yet: none of the ${formatInt(record.rulings)}${plus} rulings went to a challenger.`
+                        : 'No dispute has been ruled on yet.'}
+                    </Small>
+                  ) : (
+                    <Coins aria-label="Bounties won per coin, all time">
+                      {record.coins.map((coin, index) => {
+                        const tip = coinTip(coin, plus)
+                        /* The count the amount is made of, or why there is
+                           no amount: one line, whichever it is. */
+                        const under = amountKnown(coin) ? (
+                          <WonCount>
+                            {formatInt(coin.paid)}
+                            {plus} {coin.paid === 1 ? 'bounty' : 'bounties'}
+                          </WonCount>
                         ) : (
-                          <span aria-hidden>—</span>
-                        )}
-                        <small>{coin.symbol}</small>
-                      </b>
-                      <CoinMeta title={coin.display}>
-                        <ChainLogo chainId={coin.chainId} size={14} />
-                        <span>{coinPlace(coin)}</span>
-                      </CoinMeta>
-                      <WonCount>
-                        {formatInt(coin.won)}
-                        {plus} {coin.won === 1 ? 'bounty' : 'bounties'}
-                      </WonCount>
-                    </Coin>
-                  ))}
-                </Coins>
-              )}
-            </Bounties>
-          )
+                          <Small $faint>{withheldReason(coin)}</Small>
+                        )
+                        return (
+                          <Coin
+                            key={coin.key}
+                            style={{ ['--i' as string]: index }}
+                          >
+                            <b>
+                              {amountKnown(coin) ? (
+                                <>
+                                  <span>
+                                    <AnimatedNumber
+                                      value={coin.value ?? 0}
+                                      format={(value) =>
+                                        amountFormat.format(value)
+                                      }
+                                    />
+                                    {plus}
+                                  </span>
+                                  {coinSymbol(coin) && (
+                                    <small>{coinSymbol(coin)}</small>
+                                  )}
+                                </>
+                              ) : (
+                                <>
+                                  <span>
+                                    <AnimatedNumber value={coin.won} />
+                                    {plus}
+                                  </span>
+                                  <small>
+                                    {coin.won === 1 ? 'bounty' : 'bounties'}
+                                  </small>
+                                </>
+                              )}
+                            </b>
+                            <CoinMeta>
+                              <ChainLogo chainId={coin.chainId} size={14} />
+                              <span>{coinPlace(coin)}</span>
+                            </CoinMeta>
+                            {tip ? (
+                              <Tooltip title={<TipText>{tip}</TipText>}>
+                                <TipTarget tabIndex={0}>{under}</TipTarget>
+                              </Tooltip>
+                            ) : (
+                              under
+                            )}
+                            {coin.token && (
+                              <CoinToken>{shortToken(coin.token)}</CoinToken>
+                            )}
+                          </Coin>
+                        )
+                      })}
+                    </Coins>
+                  )}
+                  {stakeCoins > 1 && (
+                    <Small $faint as="p" style={{ margin: 0 }}>
+                      Stake bounties are paid in each list&apos;s own token and
+                      are never added together.
+                    </Small>
+                  )}
+                </>
+              )
+            )}
+          </Money>
+        </Body>
+
+        {sentence && (
+          <Small $muted as="p" style={{ margin: 0 }}>
+            {sentence}
+          </Small>
         )}
 
         {missing && (

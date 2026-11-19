@@ -51,7 +51,12 @@ const DAY = 86_400
 
 /** One coin challengers have won bounties in (never added across coins). */
 export interface LandingBountyCoin {
-  /** "<chainId>:native" or "<chainId>:<token address>", as scopedBounties keys it. */
+  /**
+   * "<chainId>:native", "<chainId>:<token address>", or
+   * "<chainId>:token-unknown" for a Stake list whose token did not load, as
+   * scopedBounties keys it. The day ledger below is keyed the same way, so
+   * the two must be built from one rule (see the loop that fills it).
+   */
   key: string
   chainId: number
   /** "Ethereum", "Gnosis". */
@@ -63,7 +68,11 @@ export interface LandingBountyCoin {
   amount?: string
   /** The same in whole coins, for the count-up. */
   value?: number
-  /** Winning challenges paid in this coin. */
+  /**
+   * Winning challenges that carried an amount: what `amount` is the sum of.
+   * A ruling the challenger won whose deposit the indexer never recorded is
+   * not counted here, so the count and the amount answer one question.
+   */
   won: number
   /** The UTC day (unix seconds / 86400) of each of those rulings, oldest first. */
   days: number[]
@@ -228,12 +237,20 @@ const readLive = async (): Promise<LandingData | null> => {
     registries,
   )
 
-  // The day of each winning ruling, per coin, for the ledger drawing.
+  /*
+   * The day of each winning ruling, per coin, for the ledger drawing. The key
+   * is built by scopedBounties' rule and must stay built by it: a Standard row
+   * means the chain's own coin, a Stake row its list's token, and a Stake row
+   * whose token did not load its own "token-unknown" coin — never the chain's,
+   * which would add an ERC-20 amount into an ETH total. Key it any other way
+   * and a coin's days come back empty and its ledger draws nothing.
+   */
   const days = new Map<string, number[]>()
   for (const chainId of chains)
     for (const row of data.rulings[chainId] ?? []) {
       if (!row.challengerWon) continue
-      const key = `${chainId}:${row.token ?? 'native'}`
+      const stake = row.kind === 'permanent'
+      const key = `${chainId}:${stake ? (row.token ?? 'token-unknown') : 'native'}`
       const list = days.get(key) ?? []
       list.push(Math.floor(row.resolvedAt / DAY))
       days.set(key, list)
@@ -271,14 +288,14 @@ const readLive = async (): Promise<LandingData | null> => {
         key: coin.key,
         chainId: coin.chainId,
         chain: chainInfo(coin.chainId)?.name ?? `Chain ${coin.chainId}`,
-        stake: !!coin.token,
+        stake: coin.stake,
         symbol: coin.symbol,
         amount:
           coin.decimals === undefined
             ? undefined
             : formatUnits(coin.amount, coin.decimals),
         value: coin.value,
-        won: coin.won,
+        won: coin.paid,
         days: (days.get(coin.key) ?? []).sort((a, b) => a - b),
       })),
     },

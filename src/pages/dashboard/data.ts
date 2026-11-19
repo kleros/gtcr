@@ -45,7 +45,11 @@ const DASHBOARD_QUERY_TIMEOUT_MS = 10_000
  * running when the budget ends fills in on the next refresh.
  */
 const METADATA_BUDGET_MS = 6_000
-/** How long a load waits for the symbols of Stake bounty tokens. */
+/**
+ * How long a load waits for the symbols of Stake bounty tokens. Each token
+ * has the whole budget to itself: the ones that answer are kept whatever
+ * the others do.
+ */
 const TOKEN_BUDGET_MS = 5_000
 /** How long the challenge-period reads may take before they count as unknown. */
 const CHALLENGE_WINDOWS_BUDGET_MS = 7_000
@@ -1764,6 +1768,20 @@ const readRemainingRegistries = async (
 
 /* ---------- Rulings: the all-time ledger ---------- */
 
+/**
+ * An address the indexer actually recorded, lowercase. An empty field and
+ * the zero address both mean "not recorded": the activity and curator paths
+ * already read the zero address that way (accumulateUser, the `isChallenge`
+ * check), and the ledger reads it the same, so a non-address never counts as
+ * a challenger or as a token.
+ */
+const recordedAddress = (
+  value: string | undefined | null,
+): string | undefined => {
+  const address = normalizeAddress(value)
+  return address && address !== ZERO_ADDRESS ? address : undefined
+}
+
 /** A Standard resolved dispute as the ledger reads it. */
 interface LedgerRequestRow {
   id: string
@@ -1799,7 +1817,9 @@ const requestRuling = (row: LedgerRequestRow, chainId: number): RulingRow => {
       disputeOutcomeOf({ ...row, disputed: true, resolved: true }) ??
       'no-ruling',
     challengerWon,
-    challenger: normalizeAddress(row.challenger) || undefined,
+    // The ruling still went to the challenger when the indexer recorded no
+    // challenger: only the count of different challengers leaves them out.
+    challenger: recordedAddress(row.challenger),
     // A winning challenger gets their own payment back plus the
     // requester's base deposit (the arbitration cost paid the court).
     bounty: challengerWon ? String(row.deposit ?? '0') : '0',
@@ -1825,11 +1845,14 @@ const challengeRuling = (
           ? 'removed'
           : 'no-ruling',
     challengerWon,
-    challenger: normalizeAddress(row.challenger) || undefined,
+    challenger: recordedAddress(row.challenger),
     // Stake Curate: a successful challenger recovers their deposit and
     // earns the entry's entire stake.
     bounty: challengerWon ? String(row.itemStake ?? '0') : '0',
-    token: normalizeAddress(row.registry?.token) || undefined,
+    // The list's own ERC-20. Absent means the subgraph did not give it, not
+    // the chain's coin: a Stake stake is never paid in the chain's coin, so
+    // the amount stays in a coin of its own (scopedBounties).
+    token: recordedAddress(row.registry?.token),
   }
 }
 
@@ -2311,11 +2334,9 @@ export const loadDashboardData = async ({
           chainId: row.chainId,
           token: row.token,
         })
-  const tokens =
-    (await withBudget(
-      readTokens([...bountyTokens.values()]),
-      TOKEN_BUDGET_MS,
-    )) ?? {}
+  // The budget is per token, so one slow node no longer takes every other
+  // symbol down with it; a token that misses it has its amount withheld.
+  const tokens = await readTokens([...bountyTokens.values()], TOKEN_BUDGET_MS)
 
   const { users, series, seriesByChain, seriesTruncated } = leaderboard
 

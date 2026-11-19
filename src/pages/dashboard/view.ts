@@ -93,6 +93,19 @@ export const windowsPending = (data: DashboardData, chainId: number): boolean =>
   (!chainWindowsKnown(data, chainId) || !data.closingSoon?.[chainId])
 
 /**
+ * An indexer amount in the coin's smallest unit: a request's deposit or a
+ * ledger bounty, both built the same way (data.ts). Anything that is not a
+ * plain integer string counts as no amount, in either place: the field is
+ * the indexer's, and a decimal or an exponent (a JS number of 1000 xDAI
+ * stringifies to "1e+21") would throw inside the page's memo and take the
+ * whole dashboard down rather than leave one figure short.
+ */
+const toAmount = (value: string | undefined | null): bigint => {
+  const text = (value ?? '').trim()
+  return /^\d+$/.test(text) ? BigInt(text) : 0n
+}
+
+/**
  * Every figure the dashboard (and the landing page) shows for a scope of
  * chains, from one load of the data: one definition for both pages.
  * `now` (unix seconds) places unchallenged requests in their windows.
@@ -118,7 +131,8 @@ export const scopedFigures = (
    * (anyone can challenge and win the deposit) or past it (nobody can
    * challenge any more; they only wait to be executed). Only when every one
    * of them could be placed: otherwise the windows are unknown. The
-   * deposits of the open ones are summed per chain (each in its own coin).
+   * deposits of the open ones are summed per chain (each in its own coin),
+   * with a deposit the indexer sent unreadably counting as none (toAmount).
    */
   const windowsKnown = chains.every((chainId) =>
     chainWindowsKnown(data, chainId),
@@ -138,7 +152,7 @@ export const scopedFigures = (
       pastWindow += rows.length - open.length
       for (const { row } of open)
         inWindowDeposits[chainId] =
-          (inWindowDeposits[chainId] ?? 0n) + BigInt(row.deposit || '0')
+          (inWindowDeposits[chainId] ?? 0n) + toAmount(row.deposit)
     }
   return {
     registries: scoped.length,
@@ -187,12 +201,20 @@ export const formatUnits = (
 
 /** One coin bounties were paid in, in a scope of chains. */
 export interface BountyCoin {
-  /** "<chainId>:native" or "<chainId>:<token address>". */
+  /**
+   * "<chainId>:native", "<chainId>:<token address>", or
+   * "<chainId>:token-unknown" for a Stake list whose token did not load.
+   */
   key: string
   chainId: number
-  /** Stake lists' ERC-20, lowercase; absent for the chain's own coin. */
+  /** A Stake list's own ERC-20, rather than the chain's coin. */
+  stake: boolean
+  /** That ERC-20, lowercase; absent for the chain's coin and when it did not load. */
   token?: string
-  /** "xDAI", "ETH", "sDAI"; the short token address when its symbol did not load. */
+  /**
+   * "xDAI", "ETH", "sDAI"; the short token address when the symbol did not
+   * load, and empty when nothing names the coin at all.
+   */
   symbol: string
   /** Unknown when a token's decimals did not load: show the count, not an amount. */
   decimals?: number
@@ -204,6 +226,12 @@ export interface BountyCoin {
   display?: string
   /** Winning challenges paid in this coin. */
   won: number
+  /**
+   * How many of those carried an amount: what `amount` is the sum of. Lower
+   * than `won` when the indexer recorded no deposit for a ruling, so the
+   * count a tile shows beside an amount answers the same question as it.
+   */
+  paid: number
 }
 
 /** Every resolved dispute in a scope of chains, newest first. */
@@ -223,6 +251,11 @@ export const scopedRulings = (
  * dispute the challenger won) and each Stake token (the entry's stake).
  * Coins are ordered by chain (scope order), the chain's coin before its
  * Stake tokens; coins nobody won are left out.
+ *
+ * A Stake bounty is paid in its list's own token, so a Stake row whose token
+ * did not come through the subgraph gets a coin of its own rather than being
+ * folded into the chain's coin (which would add an ERC-20 amount into the
+ * chain's ETH or xDAI figure and count it as one more of its bounties).
  *
  *  - won: winning challenges (rulings for the challenger), all coins
  *  - winners: how many different challengers won them
@@ -244,25 +277,39 @@ export const scopedBounties = (data: DashboardData, chains: number[]) => {
       if (!row.challengerWon) continue
       won += 1
       if (row.challenger) winners.add(row.challenger)
-      const key = `${chainId}:${row.token ?? 'native'}`
+      /*
+       * Which coin this bounty is in: a Standard bounty is the chain's own
+       * coin, a Stake bounty its list's token, and a Stake row whose token
+       * did not load a coin of its own rather than the chain's. Keyed by the
+       * row's own chain, the same one data.tokens is keyed by.
+       */
+      const stake = row.kind === 'permanent'
+      const key = `${row.chainId}:${stake ? (row.token ?? 'token-unknown') : 'native'}`
       const coin = coins.get(key) ?? {
         key,
-        chainId,
-        token: row.token,
+        chainId: row.chainId,
+        stake,
+        token: stake ? row.token : undefined,
         symbol: '',
         amount: 0n,
         won: 0,
+        paid: 0,
       }
-      coin.amount += BigInt(row.bounty || '0')
+      const amount = toAmount(row.bounty)
+      coin.amount += amount
       coin.won += 1
+      if (amount > 0n) coin.paid += 1
       coins.set(key, coin)
     }
   for (const coin of coins.values()) {
-    const info = coin.token
-      ? data.tokens?.[coin.key]
+    const info = coin.stake
+      ? coin.token
+        ? data.tokens?.[coin.key]
+        : undefined
       : getNativeCurrency(coin.chainId)
     coin.symbol =
-      info?.symbol ?? `${coin.token?.slice(0, 6)}…${coin.token?.slice(-4)}`
+      info?.symbol ??
+      (coin.token ? `${coin.token.slice(0, 6)}…${coin.token.slice(-4)}` : '')
     coin.decimals = info?.decimals
     if (coin.decimals !== undefined) {
       coin.display = `${formatUnits(coin.amount, coin.decimals)} ${coin.symbol}`
@@ -272,11 +319,15 @@ export const scopedBounties = (data: DashboardData, chains: number[]) => {
     }
   }
   const order = (coin: BountyCoin) =>
-    chains.indexOf(coin.chainId) * 2 + (coin.token ? 1 : 0)
+    chains.indexOf(coin.chainId) * 2 + (coin.stake ? 1 : 0)
   return {
+    // Within a chain's Stake tokens: the named ones first, then the one
+    // whose token did not load (it can say least about itself).
     coins: [...coins.values()].sort(
       (a, b) =>
-        order(a) - order(b) || (a.token ?? '').localeCompare(b.token ?? ''),
+        order(a) - order(b) ||
+        Number(!a.token) - Number(!b.token) ||
+        (a.token ?? '').localeCompare(b.token ?? ''),
     ),
     won,
     winners: winners.size,

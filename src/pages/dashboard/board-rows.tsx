@@ -22,10 +22,14 @@ import type { DashboardCard } from './view'
 import { Avatar as ListLogo } from 'pages/browse/avatar'
 
 /*
- * The row kit the dashboard's two boards share: the open requests in their
- * challenge window (open-for-verification.tsx) and the disputes and rulings
- * (happening-now.tsx). It lives in one place so the two cannot drift apart
- * when either board is recomposed.
+ * The row kit the dashboard's live board shares across its two columns: the
+ * open requests in their challenge window on one side, the disputes and the
+ * rulings on the other (both in happening-now.tsx). It lives in one place so
+ * the columns cannot drift apart when either is recomposed. Its figure
+ * helpers and the figures interface are read wider than the rows are: the
+ * figures strip above the board (open-for-verification.tsx) and the
+ * verification record (bounties.tsx) take their amounts from here too, so
+ * every figure on the page is grouped and rounded the same way.
  */
 
 const integer = new Intl.NumberFormat('en-US')
@@ -233,7 +237,15 @@ const Bounty = styled.span`
   }
 `
 
-/* Request kind · elapsed share of the window · time left to challenge. */
+/*
+ * Request kind · what is left of the window · time left to challenge.
+ *
+ * The rail draws the time REMAINING, not the time used, so it starts full
+ * and is eaten from its right-hand end as the deadline comes: a window with
+ * minutes left reads as nearly empty rather than nearly full. The entry
+ * status track (components/curate/entry-status.tsx) reads the same way, and
+ * these two are the only places the app draws a challenge window as a bar.
+ */
 const WindowLine = styled.div`
   display: grid;
   grid-template-columns: auto minmax(32px, 1fr) auto;
@@ -384,7 +396,7 @@ export const OpenRow = ({
         >
           <Small $muted>{removal ? 'Removal' : 'Submission'}</Small>
           <WindowRail
-            $value={windowProgress(windowStart, windowEnd, now)}
+            $value={1 - windowProgress(windowStart, windowEnd, now)}
             role="presentation"
           />
           <Small>{formatTimeLeft(windowEnd, now)}</Small>

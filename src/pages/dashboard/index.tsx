@@ -47,7 +47,7 @@ import {
   isLiveLoad,
 } from './query'
 import { useSavedLoadsReady } from './saved-load'
-import { Disputes, type RulingsView } from './happening-now'
+import { LiveBoard, type RulingsView } from './happening-now'
 import { OpenForVerification } from './open-for-verification'
 import type { OpenListChip } from './board-rows'
 import { SectionHead, SectionTitle } from './section'
@@ -86,13 +86,23 @@ import { Avatar as ListLogo } from 'pages/browse/avatar'
 
 /*
  * Dashboard: a short statement, one strip of live figures over the 30-day
- * wave, then the money anyone can go and claim (Open for verification), the
- * Kleros Verified lists, what is in court, how the lists have held up, and
- * the most active registries and curators. Every figure comes from the
- * indexers or the chain.
+ * wave, then how the lists have held up, the money anyone can go and claim
+ * (Open for verification), what is happening now in two columns beside each
+ * other, the Kleros Verified lists, and the most active registries and
+ * curators. Every figure comes from the indexers or the chain.
+ *
+ * Round 3 set that order. The 30-day chart and the record of how the lists
+ * have held up are the two boxes a reader meets first, because they say
+ * whether any of this works; then the three figures of what is open for
+ * verification, and under them the board those figures belong to — the
+ * submissions on one side, the disputes and the rulings on the other
+ * (happening-now.tsx). Nothing sits between the strip and the board it
+ * heads, so the Kleros Verified strip follows them rather than splitting
+ * them.
  *
  * Each section that owns a file heads itself and holds its own skeletons
- * (open-for-verification.tsx, bounties.tsx), so no heading waits on a load.
+ * (open-for-verification.tsx, happening-now.tsx, bounties.tsx), so no
+ * heading waits on a load.
  *
  * Round 2, item 7: the "Entries by chain" ring is gone. On several chains
  * it drew two segments whose leader the hero's own Entries figure already
@@ -112,6 +122,12 @@ const plural = (value: number, one: string, many: string) =>
 /** Rulings the Disputes box shows first, and how many more each "show more" adds. */
 const RULINGS_FIRST = 4
 const RULINGS_STEP = 8
+/**
+ * With nothing in court, the rulings are the whole right column: a longer
+ * first page fills the height the submissions column sets with rows, as far
+ * as the scope has rulings to fill it with (happening-now.tsx).
+ */
+const RULINGS_FIRST_QUIET = 8
 
 /**
  * The page's chain scopes: "All chains" (every mainnet; a testnet is never
@@ -368,6 +384,15 @@ const Big = styled.span<{ $hero?: boolean }>`
 `
 
 /* ---------- Sections ---------- */
+
+/*
+ * "Happening now" heads the two-column board, which in turn belongs to the
+ * figures strip right above it: 80px of air there would break the three
+ * apart, so this heading keeps 32px.
+ */
+const LiveHead = styled(SectionHead)`
+  margin-top: 32px;
+`
 
 const Split = styled.div`
   display: grid;
@@ -727,8 +752,10 @@ const Dashboard = () => {
    * take the entry's identifiers from the cards the load read, and "show
    * more" reads the cards of the next ones.
    */
-  const [rulingsShown, setRulingsShown] = useState(RULINGS_FIRST)
-  useEffect(() => setRulingsShown(RULINGS_FIRST), [chain])
+  const rulingsFirst =
+    board.live.length === 0 ? RULINGS_FIRST_QUIET : RULINGS_FIRST
+  const [rulingsShown, setRulingsShown] = useState(rulingsFirst)
+  useEffect(() => setRulingsShown(rulingsFirst), [chain, rulingsFirst])
   const rulingRows = useMemo(
     () => (data ? scopedRulings(data, chains) : []),
     [data, chains],
@@ -783,8 +810,8 @@ const Dashboard = () => {
         ? () => setRulingsShown((shown) => shown + RULINGS_STEP)
         : undefined,
     onFewer:
-      rulingsShown > RULINGS_FIRST && rulingRows.length > RULINGS_FIRST
-        ? () => setRulingsShown(RULINGS_FIRST)
+      rulingsShown > rulingsFirst && rulingRows.length > rulingsFirst
+        ? () => setRulingsShown(rulingsFirst)
         : undefined,
   }
 
@@ -1062,16 +1089,45 @@ const Dashboard = () => {
       </Featured>
 
       {/*
-        The live money, in the slot the two share-of-total rings held. The
-        band heads itself and holds its own skeletons, so the page's biggest
-        moment keeps its heading from the first paint.
+        The second box, directly under the chart: whether any of this works
+        at all, all time, under its own heading. It used to share "Happening
+        now" with the live disputes while its own label read "All time".
+      */}
+      <VerificationRecord
+        record={record}
+        // Entries now, against challenges all time: a chain whose lists did
+        // not load leaves the comparison off rather than low.
+        entries={figuresUnknown ? undefined : figures?.entries}
+      />
+
+      {/*
+        Three figures, then the board they belong to. The strip heads itself
+        and holds its own skeletons, so its heading is there from the first
+        paint; the requests it counts are the submissions column below.
       */}
       <OpenForVerification
         open={board.open}
-        openLists={board.openLists}
         figures={figures}
         now={now}
         checking={checkingWindows}
+        unloaded={partialNames || undefined}
+      />
+
+      {/*
+        The board's own heading, close to the strip above it rather than at
+        the full 80px: the strip, this line and the two columns are one
+        band of the page, not three sections.
+      */}
+      <LiveHead>
+        <SectionTitle>Happening now</SectionTitle>
+      </LiveHead>
+      <LiveBoard
+        open={board.open}
+        openLists={board.openLists}
+        live={board.live}
+        rulings={rulings}
+        figures={figures}
+        now={now}
         unloaded={partialNames || undefined}
         stakeHref={
           scoped.some((registry) => registry.kind === 'permanent')
@@ -1086,32 +1142,6 @@ const Dashboard = () => {
         browseHref={browseHref('trust=verified')}
         scopeKey={chains.join('-')}
         failed={partialChains.length > 0}
-      />
-
-      <SectionHead>
-        <SectionTitle>Happening now</SectionTitle>
-      </SectionHead>
-      {loading || !figures ? (
-        <SkeletonBlock $height="380px" />
-      ) : (
-        <Disputes
-          live={board.live}
-          rulings={rulings}
-          figures={figures}
-          now={now}
-          unloaded={partialNames || undefined}
-        />
-      )}
-
-      {/*
-        All time, under its own heading: it used to share "Happening now"
-        with the live disputes while its own label read "All time".
-      */}
-      <VerificationRecord
-        record={record}
-        // Entries now, against challenges all time: a chain whose lists did
-        // not load leaves the comparison off rather than low.
-        entries={figuresUnknown ? undefined : figures?.entries}
       />
 
       <SectionHead>

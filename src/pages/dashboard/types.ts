@@ -75,7 +75,11 @@ export interface RulingRow {
   outcome: NonNullable<DashboardActivity['outcome']>
   /** The ruling went to the challenger (disputeOutcome "Reject"). */
   challengerWon: boolean
-  /** Who challenged, lowercase. */
+  /**
+   * Who challenged, lowercase. Absent when the indexer recorded no
+   * challenger (an empty field or the zero address), which says nothing
+   * about who won: only the count of different challengers leaves it out.
+   */
   challenger?: string
   /**
    * What the winning challenger took, on top of their own deposit back, in
@@ -83,7 +87,12 @@ export interface RulingRow {
    * the entry's stake (Stake). "0" when the challenger did not win.
    */
   bounty: string
-  /** Stake lists: the ERC-20 the bounty is paid in, lowercase. Absent: the chain's coin. */
+  /**
+   * Stake lists: the ERC-20 the bounty is paid in, lowercase. A Standard row
+   * never sets it and means the chain's own coin; a Stake row always means a
+   * token, so absent there means the token was not read — never the chain's
+   * coin (scopedBounties keeps that amount in a coin of its own).
+   */
   token?: string
 }
 
