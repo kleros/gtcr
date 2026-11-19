@@ -923,7 +923,8 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
     facts?.hasDispute &&
     (facts.inCourt || facts.appealable) &&
     !request.resolved &&
-    request.deposit !== undefined
+    request.deposit !== undefined &&
+    !ethers.BigNumber.from(request.deposit).isZero()
       ? {
           figure: groupThousands(formatEther(request.deposit)),
           symbol: nativeCurrency,

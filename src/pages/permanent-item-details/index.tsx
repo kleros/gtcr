@@ -1176,7 +1176,9 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
                   // stake, which a challenger the jurors agree with takes
                   // (DESIGN.md's bounty). The action card that leads with it
                   // is not drawn in court.
-                  facts.underDispute && tokenSymbol
+                  facts.underDispute &&
+                  tokenSymbol &&
+                  BigInt(String(item.stake || 0)) > 0n
                     ? {
                         figure: formatTokenAmount(item.stake, tokenDecimals),
                         symbol: tokenSymbol,

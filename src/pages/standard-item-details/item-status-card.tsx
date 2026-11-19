@@ -517,9 +517,12 @@ const ItemStatusCard = ({
   // card. The exact cost of challenging is on the button below and in the
   // dialog that sends the transaction, not behind the figure. Until the
   // request's deposit is read there is no figure to lead with, and the card
-  // falls back to the cost of challenging.
+  // falls back to the cost of challenging. A list whose base deposit is 0
+  // has no bounty either: "Earn 0 xDAI" is not a reason to challenge.
+  const noBounty =
+    request.deposit !== undefined && BigNumber.from(request.deposit).isZero()
   const bounty =
-    inWindow && !resolved && request.deposit !== undefined
+    inWindow && !resolved && request.deposit !== undefined && !noBounty
       ? request.deposit
       : undefined
   /*
@@ -551,8 +554,8 @@ const ItemStatusCard = ({
     : 'the arbitrator agrees'
   const opening =
     statusCode === STATUS_CODE.REMOVAL_REQUESTED
-      ? `Does this ${itemName} still follow the policy? Challenge the removal and win the bounty.`
-      : 'Found something that breaks the policy? Challenge it and win the bounty.'
+      ? `Does this ${itemName} still follow the policy? Challenge the removal${noBounty ? '.' : ' and win the bounty.'}`
+      : `Found something that breaks the policy? Challenge it${noBounty ? '.' : ' and win the bounty.'}`
   const challengeTotal =
     bounty !== undefined && challengeCost !== undefined
       ? formatAmount(BigNumber.from(bounty).add(challengeCost), nativeCurrency)
@@ -562,7 +565,9 @@ const ItemStatusCard = ({
   const bountyLine =
     challengeTotal && challengeCost !== undefined
       ? `${opening} A ${unbroken(formatAmount(challengeCost, nativeCurrency))} deposit keeps challenges serious; if ${decider}, you get ${unbroken(challengeTotal)}.`
-      : `${opening} A deposit of your own keeps challenges serious; if ${decider}, it comes back with the bounty.`
+      : noBounty
+        ? `${opening} ${challengeCost !== undefined ? `A ${unbroken(formatAmount(challengeCost, nativeCurrency))} deposit` : 'A deposit of your own'} keeps challenges serious; if ${decider}, it comes back.`
+        : `${opening} A deposit of your own keeps challenges serious; if ${decider}, it comes back with the bounty.`
   // The sentence for the states that have no bounty to lead with: what the
   // figure backs, and when it comes back, with the period in words. A
   // challenge whose bounty the indexer did not record leads with its cost

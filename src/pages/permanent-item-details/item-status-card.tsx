@@ -717,14 +717,16 @@ const ItemStatusCard = ({
             aria-label="What you can do"
           >
             <Head>
-              {challengeable ? (
+              {/* A stake of 0 is no bounty to lead with ("Earn 0 sDAI"):
+                  the sentence and the button carry the challenge. */}
+              {challengeable && stakeWei > 0n ? (
                 <BountyFigure
                   amount={formatTokenAmount(item.stake, tokenDecimals)}
                   symbol={tokenSymbol}
                   title={stakeText}
                   countUp
                 />
-              ) : (
+              ) : challengeable ? null : (
                 // Only a bounty is drawn large (round 9): any other state
                 // says its amount in one muted line.
                 <Sub>
