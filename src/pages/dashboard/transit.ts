@@ -1,7 +1,7 @@
 import { gql } from 'graphql-request'
 import { request } from 'utils/indexer-request'
 import { subgraphUrl, subgraphUrlPermanent } from 'config/tcr-addresses'
-import { coinKey, readUsdPrices, type PricedCoin } from './prices'
+import { coinKey, readUsdPrices } from './prices'
 import { keptRead } from './saved-load'
 import { readTokens } from './tokens'
 import type { DashboardData, TokenInfo } from './types'
@@ -24,10 +24,12 @@ import { TESTNET_CHAIN_IDS, toAmount } from './view'
  *     challenges when this was written).
  * Dollars are at today's prices (round 15: "calculate always at today's
  * price"), read on chain like the dashboard's other dollar figures
- * (prices.ts): an amount with no current price fails the read, so no total
- * leaves a coin out. It is shown in the dashboard's Self-sustaining
- * mechanism and on the landing page, the only totals across coins with the
- * bounties (DESIGN.md, Data rules).
+ * (prices.ts). A chain's own coin with no current price fails the total
+ * (it is most of it); a Stake list's ERC-20 with no price or no decimals is
+ * left out of it, since anyone can open a Stake list on any token. It is
+ * shown in the dashboard's Self-sustaining mechanism and on the landing
+ * page, the only totals across coins with the bounties (DESIGN.md, Data
+ * rules).
  *
  * The coin totals are kept across page loads (saved-load.ts keptRead) and
  * priced again on every read, so the dollars stay at today's prices while
@@ -267,8 +269,10 @@ export const bountyTotals = (data: DashboardData, chains: number[]) => {
 
 /**
  * Coin totals in dollars at today's prices. A token's decimals come from
- * the load when it has them, else they are read. Throws when any coin with
- * an amount has no current price.
+ * the load when it has them, else they are read. A token with no decimals
+ * or no current price is left out (Stake lists take any ERC-20); a chain's
+ * own coin with no current price throws, since leaving it out would make
+ * the total meaningless.
  */
 export const totalInDollars = async (
   coins: CoinTotal[],
@@ -281,16 +285,27 @@ export const totalInDollars = async (
     ...known,
     ...(unread.length > 0 ? await readTokens(unread, TOKEN_BUDGET_MS) : {}),
   }
-  const priced: PricedCoin[] = coins.map((coin) => {
+  const priced = coins.flatMap((coin) => {
     const key = coinKey(coin.chainId, coin.token)
     const decimals = coin.token ? tokens[key]?.decimals : 18
-    if (decimals === undefined) throw new Error(`No decimals for ${key}`)
-    return { key, chainId: coin.chainId, token: coin.token, decimals }
+    if (decimals === undefined) return []
+    return [
+      {
+        key,
+        chainId: coin.chainId,
+        token: coin.token,
+        decimals,
+        amount: coin.amount,
+      },
+    ]
   })
   const prices = await readUsdPrices(priced)
-  return priced.reduce((sum, coin, index) => {
+  return priced.reduce((sum, coin) => {
     const usd = prices[coin.key]?.usd
-    if (usd === undefined) throw new Error(`No dollar price for ${coin.key}`)
-    return sum + (Number(coins[index].amount) / 10 ** coin.decimals) * usd
+    if (usd === undefined) {
+      if (!coin.token) throw new Error(`No dollar price for ${coin.key}`)
+      return sum
+    }
+    return sum + (Number(coin.amount) / 10 ** coin.decimals) * usd
   }, 0)
 }

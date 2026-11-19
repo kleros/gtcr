@@ -5,6 +5,7 @@ import {
   totalInDollars,
   type Transit,
 } from 'pages/dashboard/transit'
+import { scopedBounties } from 'pages/dashboard/view'
 
 /*
  * The landing page's two dollar figures, all time, at today's prices
@@ -30,22 +31,49 @@ export interface LandingMoney {
 
 export { readTransit }
 
-/** The two figures; throws when an amount cannot be priced. */
+type BountyFigure = Pick<
+  LandingMoney,
+  'bounties' | 'bountiesPaid' | 'bountiesCapped'
+>
+type TransitFigure = Pick<LandingMoney, 'transit' | 'requests'>
+
+/**
+ * The two figures, each on its own: one that cannot be read or priced is
+ * left out (the caller keeps the snapshot's), and never takes the other
+ * down with it.
+ */
 export const landingMoney = async (
   data: DashboardData,
   chains: number[],
-  transit: Transit,
-): Promise<LandingMoney> => {
-  const bounties = bountyTotals(data, chains)
-  const [bountyDollars, transitDollars] = await Promise.all([
-    totalInDollars(Object.values(bounties.totals), data.tokens),
-    totalInDollars(Object.values(transit.totals), data.tokens),
+  transit: Promise<Transit>,
+): Promise<Partial<LandingMoney>> => {
+  const bountyFigure = async (): Promise<BountyFigure> => {
+    // A chain whose rulings ledger did not load would leave its bounties out.
+    if (scopedBounties(data, chains).missing.length > 0)
+      throw new Error('A rulings ledger did not load')
+    const bounties = bountyTotals(data, chains)
+    return {
+      bounties: await totalInDollars(
+        Object.values(bounties.totals),
+        data.tokens,
+      ),
+      bountiesPaid: bounties.paid,
+      bountiesCapped: chains.some((chainId) => data.rulingsCapped?.[chainId]),
+    }
+  }
+  const transitFigure = async (): Promise<TransitFigure> => {
+    const read = await transit
+    return {
+      transit: await totalInDollars(Object.values(read.totals), data.tokens),
+      requests: read.requests,
+    }
+  }
+  const [bounties, transitTotal] = await Promise.allSettled([
+    bountyFigure(),
+    transitFigure(),
   ])
   return {
-    bounties: bountyDollars,
-    bountiesPaid: bounties.paid,
-    bountiesCapped: chains.some((chainId) => data.rulingsCapped?.[chainId]),
-    transit: transitDollars,
-    requests: transit.requests,
+    ...(bounties.status === 'fulfilled' ? bounties.value : {}),
+    ...(transitTotal.status === 'fulfilled' ? transitTotal.value : {}),
   }
 }
