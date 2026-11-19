@@ -144,33 +144,39 @@ export const fetchDisputeJury = async (
     const seats = results.slice(cursor, cursor + round.slots)
     cursor += round.slots
 
-    // One row per juror, in the order they were first drawn.
+    // One row per juror, in the order they were first drawn. A juror's
+    // seats are cast one call at a time, so they can stand apart: seats that
+    // differ in state or choice are rows of their own (the same address,
+    // each with its weight), never folded into whatever the first seat says.
     const jurors: JuryJuror[] = []
     const byAddress = new Map<string, JuryJuror>()
     seats.forEach((seat, voteID) => {
       const account = String(seat.account)
       if (account === ethers.constants.AddressZero) return
-      const existing = byAddress.get(account.toLowerCase())
+      const commit = String(seat.commit)
+      const voted = Boolean(seat.voted)
+      const state: JurorState = voted
+        ? 'revealed'
+        : commit === NO_COMMIT
+          ? 'pending'
+          : 'committed'
+      const choice = voted
+        ? (seat.choice as ethers.BigNumber).toNumber()
+        : undefined
+      const key = `${account.toLowerCase()}:${state}:${choice ?? ''}`
+      const existing = byAddress.get(key)
       if (existing) {
         existing.voteIDs.push(voteID)
         return
       }
-      const commit = String(seat.commit)
-      const voted = Boolean(seat.voted)
       const juror: JuryJuror = {
         address: account,
         voteIDs: [voteID],
-        state: voted
-          ? 'revealed'
-          : commit === NO_COMMIT
-            ? 'pending'
-            : 'committed',
-        choice: voted
-          ? (seat.choice as ethers.BigNumber).toNumber()
-          : undefined,
+        state,
+        choice,
         commit: commit === NO_COMMIT ? undefined : commit,
       }
-      byAddress.set(account.toLowerCase(), juror)
+      byAddress.set(key, juror)
       jurors.push(juror)
     })
 

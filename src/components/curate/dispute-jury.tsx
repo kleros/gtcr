@@ -900,7 +900,7 @@ const RoundBlock = ({
       <Jurors>
         {round.jurors.map((juror) => (
           <JurorRow
-            key={juror.address}
+            key={`${juror.address}-${juror.voteIDs[0]}`}
             juror={juror}
             requesterName={requesterName}
             justification={justificationOf(juror, texts)}
