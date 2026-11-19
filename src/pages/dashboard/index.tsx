@@ -171,21 +171,6 @@ const RANGE_SPAN: Record<ChartRange, string> = {
   '3y': 'last 3 years',
 }
 
-/** "$3.21M": the transit figure, three significant figures. */
-const compactUsdFormat = new Intl.NumberFormat('en-US', {
-  style: 'currency',
-  currency: 'USD',
-  notation: 'compact',
-  maximumSignificantDigits: 3,
-})
-const compactUsd = (value: number) => compactUsdFormat.format(value)
-/** The same, whole dollars, for its tooltip. */
-const wholeUsd = new Intl.NumberFormat('en-US', {
-  style: 'currency',
-  currency: 'USD',
-  maximumFractionDigits: 0,
-})
-
 /** Curators beside the chart: few, so the panel keeps the chart's height. */
 const TOP_CURATORS = 5
 
@@ -415,15 +400,6 @@ const HeadlineFigure = styled.div`
   display: flex;
   flex-direction: column;
   gap: 8px;
-`
-
-/* The two big figures side by side (round 15): the entries the lists hold,
-   and the money that has passed through them. */
-const Headlines = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  gap: 20px 56px;
 `
 
 const InlineStats = styled.div`
@@ -814,9 +790,10 @@ const Dashboard = () => {
     retry: 2,
   })
   // Everything paid in to a list, all time, at today's prices (round 15:
-  // "this number can be smashed also somewhere in the dashboard"). Its own
-  // query, after the main load: never in the saved load, whose prices
-  // would be repainted a day old (use-usd-prices.ts).
+  // "this number can be smashed also somewhere in the dashboard"; round 19:
+  // in the Self-sustaining mechanism). Its own query, after the main load:
+  // never in the saved load, whose prices would be repainted a day old
+  // (use-usd-prices.ts).
   const transit = useQuery({
     queryKey: ['dashboardTransit', chains.join(',')],
     queryFn: async () => {
@@ -1212,38 +1189,15 @@ const Dashboard = () => {
       >
         <FeaturedMain>
           <FeaturedTop>
-            <Headlines>
-              <HeadlineFigure>
-                <Label $tone="faint">Entries</Label>
-                <Big $hero>
-                  <Odometer
-                    loading={loading}
-                    value={figuresUnknown ? undefined : figures?.entries}
-                  />
-                </Big>
-              </HeadlineFigure>
-              {/* Round 15: what has passed through the contracts, beside the
-                entries at the same size. A read that fails draws nothing,
-                never "$—" (DESIGN.md, Data rules). */}
-              {!transit.isError && (
-                <HeadlineFigure
-                  title={
-                    transit.data
-                      ? `${wholeUsd.format(transit.data.usd)} in deposits, challenges and appeals on every list, all time, at today's prices`
-                      : undefined
-                  }
-                >
-                  <Label $tone="faint">Passed through Curate</Label>
-                  <Big $hero>
-                    <AnimatedNumber
-                      loading={loading || transit.isPending}
-                      value={transit.data?.usd}
-                      format={compactUsd}
-                    />
-                  </Big>
-                </HeadlineFigure>
-              )}
-            </Headlines>
+            <HeadlineFigure>
+              <Label $tone="faint">Entries</Label>
+              <Big $hero>
+                <Odometer
+                  loading={loading}
+                  value={figuresUnknown ? undefined : figures?.entries}
+                />
+              </Big>
+            </HeadlineFigure>
             <InlineStats>
               {[
                 { label: 'Lists', value: figures?.registries },
@@ -1401,6 +1355,8 @@ const Dashboard = () => {
         record={record}
         prices={usdPrices}
         pricesSettled={pricesSettled}
+        transit={transit.data?.usd}
+        transitFailed={transit.isError}
         /*
          * Every entry ever curated, against challenges all time: the
          * retired Classic lists count here, where the figures are

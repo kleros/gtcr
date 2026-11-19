@@ -529,10 +529,10 @@ way (dashboard, Browse, registry pages, the profile, the landing page).
   the stakes, challenge stakes and appeal funding (the court fee a Stake challenger sends is not
   indexed). It is valued at today's on-chain prices, the same feeds as the figures above, in its
   own query, never in the saved load; an amount with no current price fails the read, and nothing
-  is drawn. It is shown as "Passed through Curate" beside Entries in the dashboard's first box, at
-  the same size, and on the landing page. The bounties won are the other total, on both pages
-  (round 16, the Self-sustaining panel below). Every other money figure keeps the per-coin rule
-  above.
+  is drawn. It is shown as "Passed through Curate" in the dashboard's Self-sustaining mechanism
+  (round 19; it sat beside Entries in rounds 15 to 18) and on the landing page. The bounties won
+  are the other total, on both pages (round 16, the Self-sustaining panel below). Every other money
+  figure keeps the per-coin rule above.
 - The all-time ledger pages the **retired Classic lists'** resolved disputes too (2020-2022): they
   are the protocol's history, so they count in the bounties (counts and amounts) and in the entries
   ever curated, where the first ring's disputed requests count them too (round 4: "when counting
@@ -602,9 +602,6 @@ way (dashboard, Browse, registry pages, the profile, the landing page).
 
 ## Dashboard
 
-- **Passed through Curate** (round 15) sits beside Entries in the first box, at the hero size: the
-  two big figures side by side, the three small ones under them; stacked on a phone. Its tooltip
-  gives the whole dollars and what they count.
 - **The title** (round 11) names both ways in, one clause to a line, the second in `primary`:
   "Obtain your verification, / or earn by keeping lists clean." It is a sentence, not a slogan, so
   it is set at clamp(38px, 3.4vw + 14px, 64px) rather than `--fs-hero`, each clause balanced on a
@@ -644,16 +641,21 @@ way (dashboard, Browse, registry pages, the profile, the landing page).
   requests plus challenges over it, with their bounties won all time; five of them, filling the
   column beside a 240px chart. The chart's head is one row right above it: what it counts and its
   legend on the left, the range switch on the right (round 9), under the figures.
-- **Self-sustaining mechanism** (rounds 16 to 18): no box ("in a box is cringe"), like the Open for
-  verification band: the title centred, then one centred group: the two rings together (round 18:
-  "not a big fan of separating the gauges"), the bounties behind a hairline, and the sentence
-  centred under it at a 68ch measure. On a phone the bounties lead and the two rings share the line
-  under them. Each ring carries a tooltip built from the same counts as the sentence. No line names
-  the Classic lists (round 7). **Bounties won** is one figure in dollars at today's prices, compact
-  ("$73.5K"), with no count of bounties; the line under it names what it adds up ("In ETH, xDAI and
-  sDAI on Ethereum and Gnosis, at today's prices") and its tooltip gives each coin's amount and
-  dollars. Where any coin has no current price, or a token's decimals never answered, there is no
-  honest total: the coins' own amounts are listed on one line instead.
+- **Self-sustaining mechanism** (rounds 16 to 19): no box ("in a box is cringe"), like the Open for
+  verification band, and no sentence under it (round 19). The title centred, then one centred
+  group: the two rings together (round 18: "not a big fan of separating the gauges"), then behind a
+  hairline the two amounts side by side, Passed through Curate on the left and Bounties won on the
+  right (round 19), centred on the rings' height. Each amount is a one-line label with a help icon
+  over its figure, no subtitle; the icon opens a quiet tooltip (`Tooltip quiet`: one line of muted
+  12px text on frosted glass, a soft shadow, up to 400px) with one short line: "Deposits,
+  challenges and appeals, all time." and "In ETH, xDAI and other ERC-20 tokens on Ethereum and
+  Gnosis." (round 19: "make it light and the text really minimal"). On a phone the two amounts
+  lead, side by side, and the two rings share the line under them. Each ring carries a tooltip
+  built from its own counts. No line names the Classic lists (round 7). Bounties won is one figure
+  in dollars at today's prices, compact ("$73.3K"), with no count of bounties. Where any coin has
+  no current price, or a token's decimals never answered, there is no honest total: the coins' own
+  amounts are listed on one line instead. A chain whose rulings did not load is named under the
+  row.
 - Top curators sit beside the chart (round 7), in the same panel behind a hairline, 320px wide
   (260px below 1100px), each with an LED bar of their activity against the top curator's
   (requests in the accent, challenges in `contested`) and their counts on one line; below 900px

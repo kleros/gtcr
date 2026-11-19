@@ -2,6 +2,7 @@ import React, { useId } from 'react'
 import styled from 'styled-components'
 import { Label, SkeletonBlock, Small } from 'components/curate/primitives'
 import Tooltip from 'components/ui/Tooltip'
+import { CurateIcon } from 'components/curate/icons'
 import { AnimatedNumber } from 'components/curate/motion/animated-number'
 import { RingGauge } from 'components/curate/motion/ring-gauge'
 import { reveal } from 'components/curate/motion/reveal'
@@ -173,10 +174,13 @@ const Rings = styled.div`
   }
 `
 
+/* The two amounts side by side, like the rings (round 19): same shape, so
+   their labels and figures are level, centred on the rings' height. */
 const MoneyCell = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 24px 40px;
   min-width: 0;
   padding-left: clamp(28px, 4vw, 64px);
   border-left: 1px solid var(--glass-border);
@@ -187,6 +191,11 @@ const MoneyCell = styled.div`
 
   @media (max-width: 720px) {
     order: 0;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    justify-items: center;
+    gap: 8px;
+    width: 100%;
     padding-left: 0;
     border-left: 0;
   }
@@ -220,7 +229,7 @@ const Total = styled.div`
   align-items: center;
   gap: 10px;
   min-width: 0;
-  max-width: 100%;
+  max-width: 260px;
   text-align: center;
 
   > * {
@@ -231,7 +240,7 @@ const Total = styled.div`
 const TotalFigure = styled.span`
   color: var(--color-text);
   font-family: var(--font-figure);
-  font-size: clamp(44px, 2.4vw + 22px, 64px);
+  font-size: clamp(36px, 2vw + 20px, 56px);
   line-height: 1;
   font-weight: 500;
   letter-spacing: -0.04em;
@@ -293,6 +302,43 @@ const TipText = styled.span`
   text-wrap: balance;
 `
 
+/* A label on one line, its help icon beside it. */
+const LabelRow = styled.span`
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+
+  svg {
+    color: var(--color-faint);
+  }
+`
+
+/**
+ * An amount's label with a help icon whose tooltip says what the amount
+ * counts (round 19: no subtitle under the figures). Without help text, the
+ * label alone.
+ */
+const LabelHelp = ({
+  help,
+  children,
+}: {
+  help: string
+  children: React.ReactNode
+}) =>
+  help ? (
+    <Tooltip quiet title={help}>
+      <TipTarget tabIndex={0} aria-label={`${children}: ${help}`}>
+        <LabelRow>
+          <Label $tone="faint">{children}</Label>
+          <CurateIcon name="help" size={13} />
+        </LabelRow>
+      </TipTarget>
+    </Tooltip>
+  ) : (
+    <Label $tone="faint">{children}</Label>
+  )
+
 /** "Ethereum and Gnosis" */
 const chainNames = (chains: number[]) =>
   chains
@@ -345,13 +391,22 @@ const bountyTotal = (
   }
 }
 
-/** "In ETH, xDAI and sDAI on Ethereum and Gnosis" */
+/**
+ * "In ETH, xDAI and other ERC-20 tokens on Ethereum and Gnosis." (round 19):
+ * the chains' own coins by name, a Stake list's token as what it is.
+ */
 const paidIn = (coins: BountyCoin[]) => {
-  const symbols = [
-    ...new Set(coins.map((coin) => coinSymbol(coin) || 'a list token')),
+  const names = [
+    ...new Set(
+      coins
+        .filter((coin) => !coin.stake)
+        .map((coin) => coinSymbol(coin) || "the chain's coin"),
+    ),
   ]
+  if (coins.some((coin) => coin.stake))
+    names.push(names.length > 0 ? 'other ERC-20 tokens' : 'ERC-20 tokens')
   const chains = [...new Set(coins.map((coin) => coin.chainId))]
-  return `In ${list.format(symbols)} on ${chainNames(chains)}`
+  return `In ${list.format(names)} on ${chainNames(chains)}.`
 }
 
 /** "$73.3K" */
@@ -361,12 +416,6 @@ const compactUsd = new Intl.NumberFormat('en-US', {
   notation: 'compact',
   maximumSignificantDigits: 3,
 })
-
-/** What a bounty is, and over what window: the figures' own explanation. */
-const bountiesTip = (record: ChallengeRecord, plus: string): string =>
-  record.winners > 0
-    ? `Every bounty challengers have taken, all time: paid to ${formatInt(record.winners)}${plus} ${record.winners === 1 ? 'challenger' : 'different challengers'}, each on top of their own deposit back.`
-    : "What a challenger takes when the court rules for them, all time: the requester's base deposit (Standard) or the entry's stake (Stake), on top of their own deposit back."
 
 /**
  * Why the first ring is good news for the reader, from the two counts it is
@@ -412,48 +461,6 @@ const wonTip = (record: ChallengeRecord, plus: string): string =>
     : 'Jurors settle each dispute on its own evidence. A ruling for the challenger pays them the bounty; one for the requester leaves the entry as it stands.'
 
 /**
- * The panel's one sentence (DESIGN.md: one sentence under a title at most),
- * built from the same figures as the rings, so the words and the drawings
- * cannot disagree. It names the sample the court's share rests on, and the
- * reading after the colon is printed only where the figures bear it out:
- * "rare" needs the entries to outnumber the disputes twice over, "well
- * founded" needs more than half of at least READING_SAMPLE closed disputes
- * to have gone to the challenger. Below that sample the sentence ends at the
- * figures.
- */
-const heldUpSentence = (
-  record: ChallengeRecord,
-  entries: number | undefined,
-  /** The two shares the rings draw, or undefined where one is not drawn. */
-  never: number | undefined,
-  won: number | undefined,
-  plus: string,
-): string | undefined => {
-  // A ledger that did not load says nothing here: the line under the panel
-  // names the chain instead.
-  if (record.rulings === 0 && record.missing.length > 0) return undefined
-  const held =
-    never !== undefined && entries !== undefined
-      ? `Nobody has disputed ${never}% of the ${formatInt(entries)} entries ever curated`
-      : undefined
-  if (won === undefined) {
-    const none = `no dispute${onListed(record)} has been ruled on yet`
-    return held
-      ? `${held}, and ${none}.`
-      : `${none.charAt(0).toUpperCase()}${none.slice(1)}.`
-  }
-  const share = `${won}% of the ${formatInt(record.listedRulings)}${plus} disputes${onListed(record)} went to the challenger`
-  // The reading, in the owner's words (round 9), only where the rulings
-  // bear it out (challengersRight).
-  const reading = challengersRight(record)
-    ? ': when challenges happen, they are often right'
-    : ''
-  return held
-    ? `${held}, and ${share}${reading}.`
-    : `${share.charAt(0).toUpperCase()}${share.slice(1)}${reading}.`
-}
-
-/**
  * The self-sustaining mechanism: how much of everything they have ever held
  * nobody disputed, how the court ruled when somebody did, and what the
  * challengers took. The section heads itself and owns its loading state, so
@@ -464,6 +471,8 @@ export const VerificationRecord = ({
   entries,
   prices,
   pricesSettled,
+  transit,
+  transitFailed,
 }: {
   /** Undefined while the load is still running. */
   record?: ChallengeRecord
@@ -484,6 +493,13 @@ export const VerificationRecord = ({
   prices?: Record<string, UsdPrice>
   /** False while the first price read is held for: the tiles stay skeletons. */
   pricesSettled: boolean
+  /**
+   * What has passed through Curate, in dollars (transit.ts; round 19: in
+   * this section). Undefined while it reads.
+   */
+  transit?: number
+  /** The read failed: the figure is not drawn, never "$—". */
+  transitFailed: boolean
 }) => {
   const titleId = useId()
   /*
@@ -522,20 +538,14 @@ export const VerificationRecord = ({
     record && record.listedRulings > 0
       ? sharePercent(record.listedWon, record.listedRulings)
       : undefined
-  const sentence = record
-    ? heldUpSentence(record, entries, never, wonShare, plus)
-    : undefined
   const ringKey = record ? `${record.loaded.join('-')}-${record.rulings}` : ''
   const coins = record && !unknown ? record.coins : []
   const total = pricesSettled ? bountyTotal(coins, prices) : undefined
+  // Round 19: no sentence under the row; only a chain whose rulings did not
+  // load is still named.
   const words =
-    record && (sentence || missing) ? (
+    record && missing ? (
       <Words data-words="">
-        {sentence && (
-          <Small $muted as="p">
-            {sentence}
-          </Small>
-        )}
         {missing && (
           <Small $faint as="p">
             {`The rulings on ${missing} did not load: ${record.missing.length > 1 ? 'their' : 'its'} bounties are not counted here.`}
@@ -559,51 +569,33 @@ export const VerificationRecord = ({
   ) : !pricesSettled ? (
     <SkeletonBlock $height="64px" $width="220px" />
   ) : total ? (
-    <>
-      <Tooltip
-        title={
-          <TipText>
-            {`${total.parts
-              .map(
-                ({ coin, dollars }) =>
-                  `${coin.display}${plus} (${formatUsd(dollars ?? 0)})`,
-              )
-              .join(
-                ', ',
-              )}, each at today's price from its chain's Chainlink feed.`}
-          </TipText>
-        }
-      >
-        <TipTarget tabIndex={0}>
-          <TotalFigure
-            aria-label={`${formatUsd(total.dollars)}${plus ? ' or more' : ''} in bounties`}
-          >
-            <AnimatedNumber
-              value={total.dollars}
-              format={(value) => compactUsd.format(value)}
-            />
-            {plus}
-          </TotalFigure>
-        </TipTarget>
-      </Tooltip>
-      <Small $muted>
-        {paidIn(coins.filter(amountKnown))}, at today’s prices
-      </Small>
-    </>
+    <TotalFigure
+      aria-label={`${formatUsd(total.dollars)}${plus ? ' or more' : ''} in bounties`}
+    >
+      <AnimatedNumber
+        value={total.dollars}
+        format={(value) => compactUsd.format(value)}
+      />
+      {plus}
+    </TotalFigure>
   ) : (
-    <>
-      <CoinLine>
-        {coins
-          .map((coin) =>
-            amountKnown(coin) && coin.display
-              ? `${coin.display}${plus}`
-              : `${formatInt(coin.won)}${plus} in a token that did not answer`,
-          )
-          .join(' · ')}
-      </CoinLine>
-      <Small $muted>{paidIn(coins)}</Small>
-    </>
+    <CoinLine>
+      {coins
+        .map((coin) =>
+          amountKnown(coin) && coin.display
+            ? `${coin.display}${plus}`
+            : `${formatInt(coin.won)}${plus} in a token that did not answer`,
+        )
+        .join(' · ')}
+    </CoinLine>
   )
+
+  // What each amount counts, one short line in a quiet tooltip beside its
+  // label (round 19: "a tooltip next to … so there is no subtitle", "make
+  // it light and the text really minimal").
+  const bountiesHelp =
+    record && coins.length > 0 ? paidIn(coins.filter(amountKnown)) : ''
+  const transitHelp = 'Deposits, challenges and appeals, all time.'
 
   const ring = (key: 'never' | 'won') =>
     !record ? (
@@ -661,22 +653,33 @@ export const VerificationRecord = ({
             {left}
             {ring('won')}
           </Rings>
-          {!unknown && (
+          {(!unknown || !transitFailed) && (
             <MoneyCell>
-              <Total>
-                {record ? (
-                  <Tooltip
-                    title={<TipText>{bountiesTip(record, plus)}</TipText>}
-                  >
-                    <TipTarget tabIndex={0}>
-                      <Label $tone="faint">Bounties won</Label>
-                    </TipTarget>
-                  </Tooltip>
-                ) : (
-                  <Label $tone="faint">Bounties won</Label>
-                )}
-                {bounties}
-              </Total>
+              {!transitFailed && (
+                <Total>
+                  <LabelHelp help={transitHelp}>
+                    Passed through Curate
+                  </LabelHelp>
+                  {transit === undefined ? (
+                    <SkeletonBlock $height="56px" $width="200px" />
+                  ) : (
+                    <TotalFigure
+                      aria-label={`${formatUsd(transit)} passed through Curate`}
+                    >
+                      <AnimatedNumber
+                        value={transit}
+                        format={(value) => compactUsd.format(value)}
+                      />
+                    </TotalFigure>
+                  )}
+                </Total>
+              )}
+              {!unknown && (
+                <Total>
+                  <LabelHelp help={bountiesHelp}>Bounties won</LabelHelp>
+                  {bounties}
+                </Total>
+              )}
             </MoneyCell>
           )}
         </Row>

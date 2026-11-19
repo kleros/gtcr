@@ -32,7 +32,7 @@ const tipIn = keyframes`
  */
 const VIEWPORT_EDGE = 8
 const GAP = 8
-const TooltipBubble = styled.div`
+const TooltipBubble = styled.div<{ $quiet?: boolean }>`
   position: fixed;
   z-index: 1070;
   width: max-content;
@@ -50,6 +50,29 @@ const TooltipBubble = styled.div`
   pointer-events: none;
   animation: ${tipIn} 160ms var(--ease-out) both;
 
+  /*
+   * Quiet (round 19: "make it light and the text really minimal"): a short
+   * line on frosted glass, no inner highlight and a soft shadow, in the
+   * muted text colour, for a figure's one-line explanation.
+   */
+  ${({ $quiet }) =>
+    $quiet &&
+    `
+    max-width: min(400px, calc(100vw - 16px));
+    padding: 6px 12px;
+    border-color: color-mix(in srgb, var(--glass-border) 70%, transparent);
+    border-radius: 12px;
+    text-wrap: balance;
+    background: color-mix(in srgb, var(--color-surface) 72%, transparent);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+    box-shadow: 0 8px 24px -12px rgba(0, 0, 0, 0.45);
+    color: var(--color-muted);
+    font-size: 12px;
+    line-height: 16px;
+    text-align: center;
+  `}
+
   @media (prefers-reduced-motion: reduce) {
     animation: none;
   }
@@ -61,6 +84,8 @@ interface TooltipProps {
   children?: React.ReactNode
   mouseEnterDelay?: number
   mouseLeaveDelay?: number
+  /** A lighter tip for one short line (see the bubble's quiet style). */
+  quiet?: boolean
 }
 
 const getPositionStyle = (
@@ -114,6 +139,7 @@ const Tooltip: React.FC<TooltipProps> = ({
   children,
   mouseEnterDelay = 0.1,
   mouseLeaveDelay = 0.1,
+  quiet = false,
 }) => {
   const [visible, setVisible] = useState(false)
   const [posStyle, setPosStyle] = useState<React.CSSProperties>({})
@@ -203,6 +229,7 @@ const Tooltip: React.FC<TooltipProps> = ({
             id={tipId}
             role="tooltip"
             className="ui-tooltip"
+            $quiet={quiet}
             style={{
               ...posStyle,
               left: (Number(posStyle.left) || 0) + shift,
