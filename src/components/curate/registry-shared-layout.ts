@@ -9,10 +9,10 @@ import type { SegmentOption } from './primitives'
  * The registry pages' layout vocabulary. Rows were dropped at the design
  * review: the table and the cards carry the glass, the lit edges and the
  * reveals the rows had, so a third stacked layout only repeated them. Browse
- * narrows the same hook its own way (pages/browse/layout.ts) and the address
- * pages still offer all three, so the narrowing lives here rather than in
- * the shared hook, and the options are derived from it so Table and Cards
- * keep the same labels and glyphs everywhere.
+ * and the address page narrow the same hook their own way, to cards and rows
+ * (pages/browse/layout.ts, pages/address/view.ts), so the narrowing lives
+ * here rather than in the shared hook, and the options are derived from it
+ * so Table and Cards keep the same labels and glyphs everywhere.
  */
 
 export type RegistryLayout = Exclude<ListLayout, 'rows'>

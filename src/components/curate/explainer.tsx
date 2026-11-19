@@ -240,7 +240,9 @@ const Node = styled.span`
   border: 1px solid color-mix(in srgb, var(--color-primary) 55%, transparent);
   border-radius: var(--radius-pill);
   background: var(--color-primary-soft);
-  color: var(--color-primary);
+  /* The accent mixed toward the text: the plain accent on its soft fill
+     stopped short of 4.5:1 in Dark and Light for a 12px figure. */
+  color: var(--color-primary-on-soft);
   box-shadow: 0 0 14px -2px
     color-mix(in srgb, var(--color-primary) 70%, transparent);
   font-size: 12px;

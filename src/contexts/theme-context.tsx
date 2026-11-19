@@ -67,6 +67,14 @@ interface Palette {
   warningSoft: string
   danger: string
   dangerSoft: string
+  /**
+   * The card's resting shadow (--shadow-card). It must be one valid
+   * <shadow>: it ends comma-separated box-shadow lists (a panel's top
+   * highlight, a live dispute's edge, a chosen card's halo), so a theme
+   * with no card shadow uses the no-op `0 0 #0000`. `none` is not a shadow
+   * in a list and would void the whole declaration, dropping every layer
+   * before it as well.
+   */
   shadow: string
   shadowHover: string
   overlayShadow: string
@@ -208,7 +216,7 @@ const dark: Palette = {
   warningSoft: 'rgba(245, 176, 74, 0.14)',
   danger: '#ff6b7a',
   dangerSoft: 'rgba(255, 107, 122, 0.14)',
-  shadow: 'none',
+  shadow: '0 0 #0000',
   shadowHover: '0 12px 40px rgba(0, 0, 0, 0.35)',
   overlayShadow: '0 24px 80px rgba(0, 0, 0, 0.6)',
   glass: 'rgba(255, 255, 255, 0.03)',
@@ -269,7 +277,7 @@ const kleros: Palette = {
   warningSoft: 'rgba(255, 196, 107, 0.14)',
   danger: '#ff5a78',
   dangerSoft: 'rgba(255, 90, 120, 0.14)',
-  shadow: 'none',
+  shadow: '0 0 #0000',
   shadowHover: '0 12px 40px rgba(0, 0, 0, 0.4)',
   overlayShadow: '0 24px 80px rgba(0, 0, 0, 0.6)',
   glass: 'rgba(255, 255, 255, 0.035)',

@@ -169,24 +169,49 @@ const Ellipsis = styled.span`
  * The jump: a page pill you type in, in the track and next to the ellipsis
  * that stands for the pages it reaches, so the control that gets to page 137
  * is the same size and in the same place as the ones that get to 136 and 138.
+ * The same pill as a page: 32px tall, fully round, at least 32px wide and
+ * exactly as wide as the last page's chip, because a hidden copy of that
+ * number with a page's padding sizes the slot the field fills (237 makes
+ * both 44px), so typing never moves the track. Its surface fill and inner
+ * hairline are what say it takes a number. The field carries no type
+ * attribute: the global input[type="text"] rule (theme) would force the
+ * field radius on it.
  * It writes once — on Enter, or on leaving it — never per keystroke, because
  * every caller puts the page in the URL and two of them push a history entry
  * and refetch for each write.
  */
+const JumpSlot = styled.span`
+  position: relative;
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  height: 32px;
+  padding: 0 10px;
+  ${figureData}
+  font-size: var(--fs-small);
+
+  > span {
+    visibility: hidden;
+  }
+`
+
 const JumpField = styled.input`
   ${pageButtonBase}
-  flex: 0 0 auto;
-  width: 46px;
-  height: 32px;
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
   border: 0;
+  background: var(--color-surface);
+  /* The field's hairline, inside the pill: a chip you type in, not a page. */
+  box-shadow: inset 0 0 0 1px var(--color-border);
+  color: var(--color-text);
   text-align: center;
 
   &::placeholder {
     color: var(--color-faint);
-  }
-
-  &:hover {
-    color: var(--color-text);
   }
 
   &:focus-visible {
@@ -411,34 +436,36 @@ const Pagination: React.FC<PaginationProps> = ({
                     …
                   </Ellipsis>
                   {page === lastGap && (
-                    <JumpField
-                      id={jumpId}
-                      type="text"
-                      inputMode="numeric"
-                      enterKeyHint="go"
-                      autoComplete="off"
-                      value={draft}
-                      placeholder="#"
-                      title={`Go to page, 1 to ${totalPages}`}
-                      aria-label={`Go to page, 1 to ${totalPages}`}
-                      onChange={(e) =>
-                        setDraft(
-                          e.target.value
-                            .replace(/\D+/g, '')
-                            .slice(0, String(totalPages).length),
-                        )
-                      }
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault()
-                          commitJump()
-                        } else if (e.key === 'Escape') setDraft('')
-                      }}
-                      // Leaving a typed number behind still takes the reader
-                      // there; focus stays on the field, which the list scroll
-                      // moves out of view but does not steal.
-                      onBlur={() => draft && commitJump()}
-                    />
+                    <JumpSlot>
+                      <span aria-hidden>{totalPages}</span>
+                      <JumpField
+                        id={jumpId}
+                        inputMode="numeric"
+                        enterKeyHint="go"
+                        autoComplete="off"
+                        value={draft}
+                        placeholder="#"
+                        title={`Go to page, 1 to ${totalPages}`}
+                        aria-label={`Go to page, 1 to ${totalPages}`}
+                        onChange={(e) =>
+                          setDraft(
+                            e.target.value
+                              .replace(/\D+/g, '')
+                              .slice(0, String(totalPages).length),
+                          )
+                        }
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault()
+                            commitJump()
+                          } else if (e.key === 'Escape') setDraft('')
+                        }}
+                        // Leaving a typed number behind still takes the reader
+                        // there; focus stays on the field, which the list scroll
+                        // moves out of view but does not steal.
+                        onBlur={() => draft && commitJump()}
+                      />
+                    </JumpSlot>
                   )}
                 </React.Fragment>
               )

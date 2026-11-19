@@ -234,11 +234,26 @@ export const useFileDrop = <T extends HTMLElement = HTMLElement>({
   }
 }
 
+/*
+ * The inside of a zone while a file is held over it: the zone's own raised
+ * tint with a touch of the accent, laid on the surface so that it is
+ * opaque. The lit edge is a conic gradient painted under the whole border
+ * box, and the raised tint is translucent in the dark and Kleros themes
+ * (4.5% and 5% white), so on its own it let the blue, cyan and purple wash
+ * through the entire zone instead of lighting only its 1px edge. On the
+ * light theme the raised tint is already opaque and nothing changes.
+ */
+const DROP_TINT =
+  'color-mix(in srgb, var(--color-primary) 6%, var(--color-raised))'
+const dropFill = `${flatFill(DROP_TINT)} padding-box, ${flatFill(
+  'var(--color-surface)',
+)}`
+
 /**
  * What a drop zone wears while a file is held over it: the lit conic edge
- * with an edge-2 halo, or a status hairline over a faint tint when the drag
- * cannot be taken. The border stays 1px in every state, so nothing shifts
- * under the cursor.
+ * with an edge-2 halo around an opaque fill, or a status hairline over a
+ * faint tint when the drag cannot be taken. The border stays 1px in every
+ * state, so nothing shifts under the cursor.
  *
  * Shared, so the wells here and the upload rows that are not wells (the two
  * list factories, the governor's MetaEvidence field, the picture card) light
@@ -265,11 +280,10 @@ export const fileDropEdge = css<{ $over?: boolean; $refusing?: boolean }>`
         --edge-angle: 570deg;
         border-style: solid;
         border-color: transparent;
-        background: ${litEdgeBackground(
-          flatFill(
-            'color-mix(in srgb, var(--color-primary) 6%, var(--color-raised))',
-          ),
-        )};
+        /* litEdgeBackground clips its fill to the padding box; the
+           surface under the tint is clipped there too, so only the 1px
+           edge shows the conic layer. */
+        background: ${litEdgeBackground(dropFill)};
         box-shadow: 0 0 0 4px color-mix(in srgb, var(--edge-2) 12%, transparent);
       }
     `}
@@ -319,12 +333,21 @@ export const FileDropWell = styled.div<{
 
 /**
  * What a box that is not itself a well says while a file is held over it
- * (the evidence composer's message box). It never takes the pointer, so
- * hit-testing, the fields under it and the drag events all carry on.
+ * (the evidence composer's message box, the upload rows of the factories,
+ * the governor's MetaEvidence field and the picture card). It never takes
+ * the pointer, so hit-testing, the fields under it and the drag events all
+ * carry on.
  *
- * The accent wash is the "will be taken" half of the message: while the
- * drag is refused the box under it is already wearing the status colour,
- * and the wash follows it rather than mixing the accent into it.
+ * It is opaque, inside the box's 1px edge: the message is the one thing the
+ * box says while the file is held. A see-through veil let the row's own
+ * text show under the message (an upload row's "PNG, SVG, WebP or JPEG ·
+ * under 2 MB" ran into "Connect wallet to upload the logo."), and in the
+ * dark and Kleros themes it let the lit edge's conic wash through the whole
+ * box. The fields come back, untouched, the moment the drag ends.
+ *
+ * The accent wash is the "will be taken" half of the message. A refused
+ * drag swaps it for the danger tint the box's refusing edge state wears,
+ * never the accent mixed into the status colour.
  */
 export const FileDropVeil = styled.div.attrs({ 'aria-hidden': true })<{
   $refusing?: boolean
@@ -337,11 +360,13 @@ export const FileDropVeil = styled.div.attrs({ 'aria-hidden': true })<{
   gap: 8px;
   place-content: center;
   place-items: center;
+  padding: 0 16px;
   border-radius: inherit;
   background: ${({ $refusing }) =>
-    $refusing
-      ? 'color-mix(in srgb, var(--color-danger) 7%, transparent)'
-      : 'color-mix(in srgb, var(--color-primary) 7%, transparent)'};
+    `${flatFill(
+      $refusing ? 'var(--color-danger-soft)' : DROP_TINT,
+    )}, ${flatFill('var(--color-surface)')}`};
+  text-align: center;
   color: var(--color-text);
   font-size: var(--fs-small);
   line-height: var(--lh-small);

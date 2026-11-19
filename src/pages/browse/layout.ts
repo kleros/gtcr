@@ -4,9 +4,10 @@ import { LAYOUT_OPTIONS, type ListLayout } from 'hooks/use-stored-layout'
  * Browse's layout vocabulary. The table was dropped at the design review:
  * the rows carry every figure it held (entries, open requests or listed, in
  * court, the chain), and a row of names reads faster than a grid of cells.
- * The registry and address pages still offer it, so the narrowing lives
- * here instead of in the shared hook, and the options are derived from it so
- * Cards and Rows keep the same labels and glyphs as those pages.
+ * The registry pages still offer it (the address page narrows it away too,
+ * in pages/address/view.ts), so the narrowing lives here instead of in the
+ * shared hook, and the options are derived from it so Cards and Rows keep
+ * the same labels and glyphs as those pages.
  */
 
 export type BrowseLayout = Exclude<ListLayout, 'table'>

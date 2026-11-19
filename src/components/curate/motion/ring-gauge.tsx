@@ -192,7 +192,10 @@ export const RingGauge = ({
       const from = p
       const t0 = performance.now()
       const step = (now: number) => {
-        const t = Math.min(1, (now - t0) / 1400)
+        // A frame's timestamp can be earlier than t0 (it is the frame's
+        // start, not the callback's), and easeOutExpo below 0 is negative:
+        // clamped, so the count-up never paints a share under its start.
+        const t = Math.min(1, Math.max(0, (now - t0) / 1400))
         setP(from + (clamped - from) * easeOutExpo(t))
         if (t < 1) frame = requestAnimationFrame(step)
       }

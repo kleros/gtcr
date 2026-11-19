@@ -1,13 +1,30 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
+import { Link } from 'react-router-dom'
 import styled, { keyframes } from 'styled-components'
 import { CurateIcon } from './icons'
+import { truncateMiddle } from './primitives'
 
 /*
- * Chrome: one address as data. Middle-truncated mono that opens the chain
- * explorer, with a copy action beside it. The explorer arrow and the copy
- * button unfold on hover or keyboard focus (always shown on touch screens)
- * and take no room until then, so dense cells stay quiet and legible while
- * the full value is one click away.
+ * Chrome: one address as data. Every address is middle-truncated Geist Mono
+ * with a copy action beside it, and where it leads says what it is:
+ *
+ * - A person (submitter, challenger, evidence author, juror, governor) is a
+ *   CuratorAddress. It opens their Curate profile and carries no arrow,
+ *   because it stays in the app.
+ * - A contract or a field's value is a ChromeAddress. It opens the chain
+ *   explorer and carries the arrow, because the arrow means the link leaves
+ *   the app.
+ *
+ * The explorer arrow and the copy button show on hover or keyboard focus
+ * (copy is always shown on touch screens). In a ChromeAddress they take no
+ * room until then, so dense cells stay quiet and legible while the full
+ * value is one click away; nothing sits after an address in such a cell, so
+ * nothing moves when they unfold. A CuratorAddress keeps its copy button's
+ * room and only fades it in. A person's address sits in running text and in
+ * rows that wrap ("by 0x… · case 898", the hero's By and Challenged by),
+ * where a control that grew on hover pushed the words after it along, and
+ * near a row's edge wrapped the next value away from the cursor and back,
+ * over and over.
  */
 
 const pop = keyframes`
@@ -131,6 +148,12 @@ const CopyButton = styled.button`
     opacity: 1;
   }
 
+  /* A reserved copy keeps its 24px at rest and is revealed by opacity alone,
+     so the text after the address never moves (see CuratorAddress). */
+  &[data-reserve] {
+    width: 24px;
+  }
+
   &:hover {
     color: var(--color-text);
     background: var(--color-raised);
@@ -149,15 +172,50 @@ const CopyButton = styled.button`
   }
 
   /* Touch screens have no hover: copy is always there, except in a dense
-     table cell, where the address keeps the room (the entry page has it). */
+     table cell, where the address keeps the room (the entry page has it).
+     A copy that has just reported stays, and the round variant always does. */
   @media (hover: none) {
     width: 24px;
     opacity: 1;
 
-    td &:not([data-state='copied']):not([data-state='failed']) {
+    td &[data-state='idle']:not([data-variant='round']) {
       width: 0;
       opacity: 0;
     }
+  }
+
+  /*
+   * The round variant stands on its own (the profile's heading cluster, next
+   * to the chain marks), so it is always shown, at the 28px of those marks,
+   * on the same glass. It comes after the reveal rules and is one class
+   * stronger than them, so a hovered AddressWrap around it cannot shrink it
+   * back to 24px. Its colours are set only while idle, so the copied and
+   * failed colours (and the pop) still win.
+   */
+  &&[data-variant='round'] {
+    width: 28px;
+    height: 28px;
+    margin: 0;
+    opacity: 1;
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-pill);
+    background: var(--glass);
+    transition:
+      opacity var(--motion),
+      color var(--motion),
+      border-color var(--motion);
+  }
+
+  &&[data-variant='round'][data-state='idle'] {
+    color: var(--color-muted);
+  }
+
+  &&[data-variant='round']:hover {
+    border-color: var(--color-border-strong);
+  }
+
+  &&[data-variant='round'][data-state='idle']:hover {
+    color: var(--color-text);
   }
 `
 
@@ -173,13 +231,30 @@ export const Unseen = styled.span`
 
 type CopyState = 'idle' | 'copied' | 'failed'
 
-/** Copies a value and reports it for 1.6s (icon, label and a live region). */
+export type CopyVariant = 'inline' | 'round'
+
+/**
+ * Copies a value and reports it for 1.6s (icon, label and a live region).
+ *
+ * `inline` (the default) sits beside an address inside an AddressWrap and
+ * unfolds on hover or focus. `round` is a 28px glass circle that is always
+ * shown, for a value that stands alone, such as the profile's own address.
+ */
 export const CopyValue = ({
   value,
   label = 'Copy address',
+  variant = 'inline',
+  reserve = false,
 }: {
   value: string
   label?: string
+  variant?: CopyVariant
+  /**
+   * Inline only: keep the button's 24px while it is hidden and reveal it by
+   * opacity alone, for an address with text or values after it that must
+   * not move on hover. A dense table cell leaves it off.
+   */
+  reserve?: boolean
 }) => {
   const [state, setState] = useState<CopyState>('idle')
   const timer = useRef<number>()
@@ -214,6 +289,8 @@ export const CopyValue = ({
       type="button"
       onClick={copy}
       data-state={state}
+      data-variant={variant}
+      data-reserve={reserve || undefined}
       aria-label={shown}
       title={shown}
     >
@@ -271,6 +348,83 @@ export const ChromeAddress = ({
         </Anchor>
       )}
       <CopyValue value={copyValue ?? address} />
+    </AddressWrap>
+  )
+}
+
+/*
+ * A person's address opens their page on Curate, so its link is a router
+ * Link. It takes the data size and colour of the entry page's figures and
+ * gains the accent and an underline on hover. The 24px minimum height is the
+ * smallest target WCAG 2.2 allows, and it keeps the copy button's row steady.
+ */
+const ProfileLink = styled(Link)<{ $fixed?: boolean }>`
+  && {
+    display: inline-flex;
+    align-items: center;
+    flex: ${({ $fixed }) => ($fixed ? '0 0 auto' : '0 1 auto')};
+    min-width: 0;
+    min-height: 24px;
+    color: var(--color-text);
+    font-family: var(--font-mono);
+    font-size: var(--fs-data);
+    line-height: var(--lh-data);
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: color var(--motion);
+  }
+
+  > span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  &&:hover {
+    color: var(--color-primary);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+`
+
+/**
+ * A person's address: middle-truncated mono that opens their Curate profile
+ * (no arrow, as it stays in the app), with the copy action beside it. It is
+ * the one control for a submitter, a challenger, an evidence author, a juror
+ * or a governor; the entry pages and both history timelines reach it through
+ * the `AddressLink` exports of item-standard-fields and item-stake-address.
+ * A contract never takes it (its Curate profile would be empty): the
+ * arbitrator is a ChromeAddress, through item-standard-fields'
+ * ExplorerAddressLink.
+ *
+ * Its copy keeps its room at rest and fades in on hover or focus, because a
+ * person's address is followed by other words: a case number in the
+ * history, the next value in the hero's wrapping row, a vote count.
+ */
+export const CuratorAddress = ({
+  address,
+  label,
+}: {
+  /** The full address: the profile it opens and what copy copies. */
+  address: string
+  /** Replaces the truncated address, e.g. "You". */
+  label?: string
+}) => {
+  const shown = label ?? truncateMiddle(address, 6, 4)
+  // As in ChromeAddress: a value already this short is never cut again, so
+  // the tail that tells two addresses apart always stays on screen.
+  const fixed = shown.length <= 16
+  return (
+    <AddressWrap>
+      <ProfileLink
+        to={`/address/${address.toLowerCase()}`}
+        title={`${address} · Curate profile`}
+        $fixed={fixed}
+      >
+        <span>{shown}</span>
+      </ProfileLink>
+      <CopyValue value={address} reserve />
     </AddressWrap>
   )
 }

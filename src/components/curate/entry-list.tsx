@@ -484,6 +484,20 @@ const OpenList = styled(Link)`
   }
 `
 
+/*
+ * The hover neon on a row or a card's open control: the accent, the colour
+ * every link and focus ring already carries, rather than a hue of its own.
+ * The owner liked the neon and asked for it in a colour the page already
+ * uses (round 3); the lit edge round a hovered card keeps the house's edge
+ * hues, because that edge is the control idiom every action shares.
+ */
+const neonGlow = css`
+  color: var(--color-primary);
+  border-color: color-mix(in srgb, var(--color-primary) 55%, transparent);
+  box-shadow: 0 0 14px -3px
+    color-mix(in srgb, var(--color-primary) 70%, transparent);
+`
+
 /* The open affordance a card carries in its footer: it slides and lights
    when the card does. */
 const Chevron = styled.span`
@@ -498,6 +512,7 @@ const Chevron = styled.span`
   transition:
     color var(--motion),
     border-color var(--motion),
+    box-shadow var(--motion),
     transform var(--motion);
 
   svg {
@@ -731,16 +746,17 @@ const EntryTableEl = styled(Table)`
       box-shadow var(--motion);
   }
 
-  /* Hover lights the row's leading edge, as the controls light theirs; the
-     raised tint behind it comes from the table itself. */
+  /* Hover lights the row's leading edge in the accent, and the open
+     chevron at its other end with it; the raised tint behind the row comes
+     from the table itself. */
   tbody tr[data-href]:hover td:first-child {
     box-shadow:
-      inset 2px 0 0 var(--edge-2),
-      inset 14px 0 20px -16px var(--edge-2);
+      inset 2px 0 0 var(--color-primary),
+      inset 14px 0 20px -16px var(--color-primary);
   }
 
   tbody tr[data-href]:hover td:last-child a {
-    color: var(--color-text);
+    ${neonGlow}
     transform: translateX(2px);
   }
 
@@ -787,10 +803,13 @@ const EntryTableEl = styled(Table)`
     justify-content: center;
     width: 28px;
     height: 28px;
+    border: 1px solid transparent;
     border-radius: var(--radius-pill);
     color: var(--color-faint);
     transition:
       color var(--motion),
+      border-color var(--motion),
+      box-shadow var(--motion),
       transform var(--motion);
   }
 
@@ -1075,8 +1094,7 @@ const Card = styled.article`
 
   &:hover [data-chevron],
   &:focus-within [data-chevron] {
-    color: var(--color-text);
-    border-color: var(--color-border-strong);
+    ${neonGlow}
     transform: translateX(2px);
   }
 
@@ -1132,6 +1150,26 @@ const CoverEmpty = styled.div`
   height: 156px;
   border-bottom: 1px solid var(--glass-border);
   background: var(--color-raised);
+`
+
+/* A hidden entry's card: the cover's wash runs down to the footer with the
+   notice and its reveal centred in it, so the card reads as veiled rather
+   than as an empty band over an empty body. */
+const Veil = styled.div`
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  justify-content: center;
+  min-height: 156px;
+  padding: 24px 18px;
+  background: var(--color-raised);
+
+  [data-hidden-notice] {
+    flex-direction: column;
+    justify-content: center;
+    gap: 14px;
+    text-align: center;
+  }
 `
 
 const CardBody = styled.div`
@@ -1206,6 +1244,11 @@ const CardFooter = styled.div`
   padding: 14px 18px 16px;
   border-top: 1px solid var(--glass-border);
 
+  /* Straight under the veil, whose wash ends at the footer's hairline. */
+  ${Veil} + & {
+    margin-top: 0;
+  }
+
   /* The status gives way first: the way out stays whole. */
   > :first-child {
     min-width: 0;
@@ -1235,8 +1278,12 @@ const EntryCards = ({
   const listHasImages = entries.some((entry) =>
     entry.fields.some((field) => isImage(field) && hasValue(field)),
   )
+  // Four cards across at 1440 and 1280, as on the base: 4 x 272 + 3 x 16 =
+  // 1136 fits the 1168px column at 1280 with room for a classic scrollbar
+  // (about 17px). A list with pictures asks 12px more, so just under those
+  // widths its covers keep three wider cards to a row.
   return (
-    <Grid $min={300}>
+    <Grid $min={listHasImages ? 272 : 260}>
       {entries.map((entry, index) => {
         const image = entry.fields.find(
           (field) => isImage(field) && hasValue(field),
@@ -1253,47 +1300,55 @@ const EntryCards = ({
               to={entry.href}
               aria-label={openLabel(entry, itemName, name)}
             />
-            {listHasImages &&
-              (src && !entry.hidden ? (
+            {entry.hidden ? (
+              <Veil>
+                <HiddenNotice entry={entry} />
+              </Veil>
+            ) : (
+              listHasImages &&
+              (src ? (
                 <Cover data-cover>
                   <img src={src} alt="" aria-hidden loading="lazy" />
                   <img src={src} alt={image?.label || ''} loading="lazy" />
                 </Cover>
               ) : (
                 <CoverEmpty aria-hidden />
-              ))}
-            <CardBody>
-              {entry.hidden || entry.problem ? (
-                <FieldsNotice entry={entry} />
-              ) : (
-                <>
-                  <CardTitle>
-                    <TitleValue
-                      entry={entry}
-                      field={titleField}
-                      link={outLinkFor(entry, title)}
-                    />
-                  </CardTitle>
-                  {meta.length > 0 && (
-                    <CardFields>
-                      {meta.slice(0, 3).map((column) => (
-                        <div key={column.label}>
-                          <dt title={labelOf(column)}>
-                            <Label $tone="faint">{labelOf(column)}</Label>
-                          </dt>
-                          <dd>
-                            <FieldValue
-                              field={fieldFor(entry, column)}
-                              link={outLinkFor(entry, column)}
-                            />
-                          </dd>
-                        </div>
-                      ))}
-                    </CardFields>
-                  )}
-                </>
-              )}
-            </CardBody>
+              ))
+            )}
+            {!entry.hidden && (
+              <CardBody>
+                {entry.problem ? (
+                  <FieldsNotice entry={entry} />
+                ) : (
+                  <>
+                    <CardTitle>
+                      <TitleValue
+                        entry={entry}
+                        field={titleField}
+                        link={outLinkFor(entry, title)}
+                      />
+                    </CardTitle>
+                    {meta.length > 0 && (
+                      <CardFields>
+                        {meta.slice(0, 3).map((column) => (
+                          <div key={column.label}>
+                            <dt title={labelOf(column)}>
+                              <Label $tone="faint">{labelOf(column)}</Label>
+                            </dt>
+                            <dd>
+                              <FieldValue
+                                field={fieldFor(entry, column)}
+                                link={outLinkFor(entry, column)}
+                              />
+                            </dd>
+                          </div>
+                        ))}
+                      </CardFields>
+                    )}
+                  </>
+                )}
+              </CardBody>
+            )}
             <CardFooter>
               <StatusSlot entry={entry} now={now} />
               <CardWays>
