@@ -925,7 +925,9 @@ const Submissions = ({
   // Webfonts change the rows' height: measure once more when they are in.
   useEffect(() => {
     let live = true
-    document.fonts?.ready.then(() => live && setFontsReady(true))
+    document.fonts?.ready
+      .then(() => live && setFontsReady(true))
+      .catch(() => undefined)
     return () => {
       live = false
     }
@@ -1221,7 +1223,9 @@ const DisputesPanel = ({
 
   useEffect(() => {
     let active = true
-    document.fonts?.ready.then(() => active && setFontsReady(true))
+    document.fonts?.ready
+      .then(() => active && setFontsReady(true))
+      .catch(() => undefined)
     return () => {
       active = false
     }
