@@ -1,4 +1,12 @@
-import React, { useEffect, useId, useMemo, useRef, useState } from 'react'
+import React, {
+  useContext,
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 import { createPortal } from 'react-dom'
 import styled, { keyframes } from 'styled-components'
 import { Link } from 'react-router-dom'
@@ -22,6 +30,7 @@ import {
 import { useAtlasProvider } from '@kleros/kleros-app'
 import EnsureAuth from 'components/ensure-auth'
 import Select from 'components/ui/Select'
+import Tooltip from 'components/ui/Tooltip'
 import { CurateIcon } from 'components/curate/icons'
 import {
   DROP_HINT,
@@ -41,6 +50,8 @@ import {
   IconButton,
   Label,
   Row,
+  SegmentedControl,
+  type SegmentOption,
   SkeletonBlock,
   Small,
   Stack,
@@ -78,6 +89,7 @@ import {
   wrapWithToast,
 } from 'utils/wrap-with-toast'
 import { normalizeAddress, shortAddress } from 'pages/dashboard/data'
+import { entryCount } from 'pages/dashboard/view'
 import { VerifiedBadge } from 'components/curate/verified-badge'
 import { KindTag } from 'components/curate/stake-tag'
 import {
@@ -92,9 +104,11 @@ import { Avatar as ListLogo } from 'pages/browse/avatar'
 
 /*
  * Governed lists: the registries whose governor is the profile address, and
- * the dialog the governor uses to change one parameter at a time. Every
- * write is simulated first, then sent through the wallet with a toast; the
- * contract calls, Atlas upload and court lookup are the same as before.
+ * the dialog the governor uses to change one parameter at a time. The same
+ * dialog opens from the list's own page (ListGovernanceDialog, mounted by
+ * components/curate/list-governance.tsx). Every write is simulated first,
+ * then sent through the wallet with a toast; the contract calls, Atlas
+ * upload and court lookup are the same as before.
  */
 
 /* ---------- Parameter plumbing ---------- */
@@ -110,12 +124,25 @@ import { Avatar as ListLogo } from 'pages/browse/avatar'
 type ParamKind = 'wei' | 'token' | 'seconds' | 'multiplier' | 'address'
 type ParamKey = keyof GovernanceParams
 
+/**
+ * The dialog's sections after Court, which holds the arbitration field: one
+ * screen each, so the dialog never grows past the window.
+ */
+type ParamGroup = 'deposits' | 'timing' | 'advanced'
+
 interface ParamConfig {
   key: ParamKey
   label: string
   kind: ParamKind
   functionName: string
-  hint?: string
+  group: ParamGroup
+  /** What the parameter does, one sentence, behind the label's "?". */
+  help: string
+  /**
+   * A line kept in view under the field. Only for what cannot be undone,
+   * which nobody should have to hover to find out.
+   */
+  note?: string
   /** A period that must stay above zero (0 would skip a protection window). */
   positive?: boolean
 }
@@ -239,8 +266,14 @@ const describeParsed = (parsed: Parsed, kind: ParamKind) => {
   return undefined
 }
 
-const APPEAL_HINT =
-  'Appeal stakes are a percent of the appeal cost that each side adds on top when funding an appeal. The winner of the dispute takes the stakes.'
+/*
+ * The help lines are the factories' (factory/tcr-params.tsx and
+ * factory-permanent/tcr-params.tsx), so a parameter is explained the same
+ * way when a list is launched and when it is changed. The appeal stakes say
+ * what the factories' shared note says, one field at a time.
+ */
+const APPEAL_FUNDS =
+  "Whoever funded the side that wins in the end shares both sides' stakes."
 
 const editableParams = (registry: GovernedRegistry): ParamConfig[] => {
   const permanentTokenLabel =
@@ -253,19 +286,24 @@ const editableParams = (registry: GovernedRegistry): ParamConfig[] => {
       label: 'Appeal stake, side that won (%)',
       kind: 'multiplier',
       functionName: 'changeWinnerStakeMultiplier',
-      hint: APPEAL_HINT,
+      group: 'timing',
+      help: `What the side that won the last round adds to the juror fees to appeal, as a percent of those fees. ${APPEAL_FUNDS}`,
     },
     {
       key: 'loserStakeMultiplier',
       label: 'Appeal stake, side that lost (%)',
       kind: 'multiplier',
       functionName: 'changeLoserStakeMultiplier',
+      group: 'timing',
+      help: `What the side that lost the last round adds to the juror fees to appeal, as a percent of those fees. ${APPEAL_FUNDS}`,
     },
     {
       key: 'sharedStakeMultiplier',
       label: 'Appeal stake, no winner (%)',
       kind: 'multiplier',
       functionName: 'changeSharedStakeMultiplier',
+      group: 'timing',
+      help: `What each side adds to the juror fees to appeal when the last round had no winner, as a percent of those fees. ${APPEAL_FUNDS}`,
     },
   ]
   const governor: ParamConfig = {
@@ -273,7 +311,9 @@ const editableParams = (registry: GovernedRegistry): ParamConfig[] => {
     label: 'Governor address',
     kind: 'address',
     functionName: 'changeGovernor',
-    hint: 'Hands every setting of this list to another address. After it is mined, this wallet can no longer change anything.',
+    group: 'advanced',
+    help: 'Hands every setting of this list, the court and the policy included, to another address.',
+    note: 'After it is mined, this wallet can no longer change anything.',
   }
 
   if (registry.kind === 'permanent')
@@ -283,7 +323,16 @@ const editableParams = (registry: GovernedRegistry): ParamConfig[] => {
         label: `Minimum stake (${permanentTokenLabel})`,
         kind: 'token',
         functionName: 'changeSubmissionMinDeposit',
-        hint: "The least a submitter must lock to list an entry, in the list's stake token.",
+        group: 'deposits',
+        help: 'The least a submitter can stake. A successful challenger takes it.',
+      },
+      {
+        key: 'challengeStakeMultiplier',
+        label: "Challenger stake (% of the entry's stake)",
+        kind: 'multiplier',
+        functionName: 'changeChallengeStakeMultiplier',
+        group: 'deposits',
+        help: "A share of the entry's stake. Back to the challenger on a win; added to the entry's stake on a loss.",
       },
       {
         key: 'submissionPeriod',
@@ -291,12 +340,16 @@ const editableParams = (registry: GovernedRegistry): ParamConfig[] => {
         kind: 'seconds',
         positive: true,
         functionName: 'changeSubmissionPeriod',
+        group: 'timing',
+        help: 'Unchallenged this long, a new entry counts as accepted.',
       },
       {
         key: 'reinclusionPeriod',
         label: 'Reinclusion period (days)',
         kind: 'seconds',
         functionName: 'changeReinclusionPeriod',
+        group: 'timing',
+        help: 'Unchallenged this long after the jurors kept it, an entry counts as accepted again.',
       },
       {
         key: 'withdrawingPeriod',
@@ -304,13 +357,8 @@ const editableParams = (registry: GovernedRegistry): ParamConfig[] => {
         kind: 'seconds',
         positive: true,
         functionName: 'changeWithdrawingPeriod',
-        hint: 'How long a withdrawing entry stays open to challenge before its stake can be taken back.',
-      },
-      {
-        key: 'challengeStakeMultiplier',
-        label: "Challenger stake (% of the entry's stake)",
-        kind: 'multiplier',
-        functionName: 'changeChallengeStakeMultiplier',
+        group: 'timing',
+        help: 'How long a withdrawing entry stays open to challenge before its stake can be taken back.',
       },
       ...appealStakes,
       governor,
@@ -323,24 +371,32 @@ const editableParams = (registry: GovernedRegistry): ParamConfig[] => {
       label: `Submission deposit (${symbol})`,
       kind: 'wei',
       functionName: 'changeSubmissionBaseDeposit',
+      group: 'deposits',
+      help: 'Locked by a submitter, paid to a winning challenger.',
     },
     {
       key: 'submissionChallengeBaseDeposit',
       label: `Challenge deposit, submissions (${symbol})`,
       kind: 'wei',
       functionName: 'changeSubmissionChallengeBaseDeposit',
+      group: 'deposits',
+      help: 'Paid to the submitter if a challenge fails; usually 0.',
     },
     {
       key: 'removalBaseDeposit',
       label: `Removal deposit (${symbol})`,
       kind: 'wei',
       functionName: 'changeRemovalBaseDeposit',
+      group: 'deposits',
+      help: 'Locked to remove an entry, paid to a winning challenger.',
     },
     {
       key: 'removalChallengeBaseDeposit',
       label: `Challenge deposit, removals (${symbol})`,
       kind: 'wei',
       functionName: 'changeRemovalChallengeBaseDeposit',
+      group: 'deposits',
+      help: 'Paid to the requester if a removal challenge fails.',
     },
     {
       key: 'challengePeriodDuration',
@@ -348,6 +404,8 @@ const editableParams = (registry: GovernedRegistry): ParamConfig[] => {
       kind: 'seconds',
       positive: true,
       functionName: 'changeChallengePeriodDuration',
+      group: 'timing',
+      help: 'How long a request can be challenged before it is accepted.',
     },
     ...appealStakes,
     {
@@ -355,14 +413,16 @@ const editableParams = (registry: GovernedRegistry): ParamConfig[] => {
       label: 'Badges list (connected TCR) address',
       kind: 'address',
       functionName: 'changeConnectedTCR',
-      hint: "The list that holds badges for this list's entries. Use the zero address to disconnect it.",
+      group: 'advanced',
+      help: "The list that holds badges for this list's entries. Use the zero address to disconnect it.",
     },
     {
       key: 'relayerContract',
       label: 'Relayer contract address',
       kind: 'address',
       functionName: 'changeRelayerContract',
-      hint: 'A relayer can add and remove entries directly, with no deposit and no challenge period. Keep the zero address unless you run one.',
+      group: 'advanced',
+      help: 'A relayer can add and remove entries directly, with no deposit and no challenge period. Keep the zero address unless you run one.',
     },
     governor,
   ]
@@ -770,14 +830,28 @@ const sheetIn = keyframes`
   from { transform: translateY(100%); }
 `
 
+/*
+ * The dialog fits the window: it is a column capped at the window's height
+ * (less the layer's gutters), whose head stays put (the title, the close
+ * button, what stops a save and the sections) while only the body scrolls.
+ * Round 5 measured the old one at about 2,000px on a 900px window: the
+ * layer scrolled the whole dialog, so the title and the close button left
+ * the screen and mid-scroll nothing said which list or section was open.
+ * The layer keeps its own scroll only as a fallback.
+ *
+ * It hangs from a fixed top, not the middle: the sections differ in height,
+ * and a centred dialog moved its own section control under the pointer at
+ * every switch. Only the bottom edge moves now.
+ */
 const Layer = styled.div`
+  --layer-top: clamp(32px, 8vh, 96px);
   position: fixed;
   inset: 0;
   z-index: 1000;
   display: flex;
   align-items: flex-start;
   justify-content: center;
-  padding: 48px 16px;
+  padding: var(--layer-top) 16px 32px;
   overflow-y: auto;
 
   @media (max-width: 720px) {
@@ -804,8 +878,14 @@ const Backdrop = styled.div`
 
 const Dialog = styled.div`
   position: relative;
+  display: flex;
+  flex-direction: column;
   width: 100%;
   max-width: 760px;
+  /* vh first, for a browser without dynamic viewport units. */
+  max-height: calc(100vh - var(--layer-top) - 32px);
+  max-height: calc(100dvh - var(--layer-top) - 32px);
+  overflow: hidden;
   border: 1px solid var(--glass-border);
   border-radius: 24px;
   background: var(--color-surface);
@@ -815,10 +895,15 @@ const Dialog = styled.div`
   outline: none;
   animation: ${dialogIn} 420ms cubic-bezier(0.16, 1, 0.3, 1) both;
 
+  /* A sheet from the bottom edge, short of the top so the page behind
+     still shows (and closes it); dvh follows the phone's own bars. Its
+     height is fixed, so its head (the sections) stays put whichever
+     section is open. */
   @media (max-width: 720px) {
     max-width: none;
-    max-height: 92vh;
-    overflow-y: auto;
+    height: 92vh;
+    height: 92dvh;
+    max-height: none;
     border-radius: 24px 24px 0 0;
     animation: ${sheetIn} 420ms cubic-bezier(0.16, 1, 0.3, 1) both;
   }
@@ -828,13 +913,32 @@ const Dialog = styled.div`
   }
 `
 
+/* The section control keeps its own width: stretched across the head, its
+   recessed track was half empty to the right of the last option. The title
+   row and the gate lines still span the head. */
 const DialogHead = styled.div`
+  flex: none;
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
+  flex-direction: column;
+  gap: 12px;
   padding: 20px 24px 16px;
   border-bottom: 1px solid var(--glass-border);
+
+  > [role='radiogroup'] {
+    align-self: flex-start;
+    max-width: 100%;
+  }
+
+  @media (max-width: 720px) {
+    padding: 16px 16px 12px;
+  }
+`
+
+const TitleRow = styled.div`
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
 
   h3 {
     font-family: var(--font-display);
@@ -842,17 +946,35 @@ const DialogHead = styled.div`
     line-height: 28px;
     font-weight: 500;
     letter-spacing: -0.02em;
+    overflow-wrap: anywhere;
+  }
+
+  > :first-child {
+    flex: 1 1 auto;
+    min-width: 0;
+    padding-top: 3px;
+  }
+
+  @media (max-width: 720px) {
+    h3 {
+      font-size: 20px;
+      line-height: 26px;
+    }
   }
 `
 
 const DialogBody = styled.div`
+  flex: 1 1 auto;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   gap: 20px;
   padding: 20px 24px 24px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 
   @media (max-width: 720px) {
-    padding: 16px;
+    padding: 16px 16px calc(16px + env(safe-area-inset-bottom));
   }
 `
 
@@ -860,27 +982,197 @@ const DialogBody = styled.div`
 const FOCUSABLE =
   'a[href], button, input, select, textarea, [tabindex]:not([tabindex="-1"])'
 
+/* ---------- Help behind a "?" ---------- */
+
+/**
+ * False inside a hidden section. A tooltip open when its section hid (the
+ * pointer resting on a Save while the arrow keys switch sections) gets no
+ * pointer leave, so the tooltips there start again, closed, at each switch.
+ */
+const SectionOpen = React.createContext(true)
+
+/** True on a screen without hover (touch), where a tooltip never opens. */
+const useHoverless = () => {
+  const [hoverless, setHoverless] = useState(
+    () =>
+      typeof window !== 'undefined' &&
+      Boolean(window.matchMedia?.('(hover: none)').matches),
+  )
+  useEffect(() => {
+    const query = window.matchMedia?.('(hover: none)')
+    if (!query) return undefined
+    const update = () => setHoverless(query.matches)
+    query.addEventListener?.('change', update)
+    return () => query.removeEventListener?.('change', update)
+  }, [])
+  return hoverless
+}
+
+const LabelLine = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+`
+
+const HelpButton = styled.button`
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--color-faint);
+  cursor: help;
+  transition: color var(--motion);
+
+  &:hover,
+  &[aria-expanded='true'] {
+    color: var(--color-text);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+  }
+`
+
+const HelpNote = styled(Small)`
+  display: block;
+  margin-top: 4px;
+  color: var(--color-muted);
+`
+
+/**
+ * A label with what it means one "?" away. With a pointer the shared
+ * Tooltip shows it on hover or focus (portalled above the dialog, so the
+ * scrolling body never clips it); on a touch screen, where a tooltip never
+ * opens, the same button opens the same words under the label. The help
+ * lives here, not in muted paragraphs under each field, so the dialog stays
+ * short enough to read at a glance.
+ */
+const Labelled = ({
+  about,
+  help,
+  children,
+}: {
+  /** What the help is about, for the button's name ("About …"). */
+  about: string
+  help?: string
+  /** The label itself. */
+  children: React.ReactNode
+}) => {
+  const hoverless = useHoverless()
+  const shown = useContext(SectionOpen)
+  const [open, setOpen] = useState(false)
+  const noteId = useId()
+  if (!help) return <div>{children}</div>
+  const button = (
+    <HelpButton
+      type="button"
+      aria-label={`About ${about}`}
+      aria-expanded={hoverless ? open : undefined}
+      aria-controls={hoverless && open ? noteId : undefined}
+      onClick={hoverless ? () => setOpen((value) => !value) : undefined}
+    >
+      <CurateIcon name="help" size={14} />
+    </HelpButton>
+  )
+  return (
+    <div>
+      <LabelLine>
+        {children}
+        {hoverless ? (
+          button
+        ) : (
+          <Tooltip key={String(shown)} title={help} placement="top">
+            {button}
+          </Tooltip>
+        )}
+      </LabelLine>
+      {hoverless && open && <HelpNote id={noteId}>{help}</HelpNote>}
+    </div>
+  )
+}
+
+/**
+ * A button that says why it cannot be pressed. A disabled button takes no
+ * focus and, in some browsers, no hover, so its reason (a native title
+ * before round 5) went unseen: this one stays focusable with aria-disabled,
+ * ignores the press, and shows the reason in the shared Tooltip.
+ */
+const ReasonedButton = ({
+  reason,
+  off,
+  onClick,
+  children,
+  ...rest
+}: {
+  /** Why it cannot be pressed now; shown on hover and focus. */
+  reason?: string
+  /** Pressing does nothing (a reason, a save running, fields locked). */
+  off: boolean
+  onClick?: () => void
+  children: React.ReactNode
+  $variant?: 'primary' | 'secondary' | 'danger'
+  $size?: 'sm' | 'md'
+}) => {
+  const shown = useContext(SectionOpen)
+  return (
+    <Tooltip key={String(shown)} title={off ? reason : undefined}>
+      <Button
+        type="button"
+        aria-disabled={off || undefined}
+        onClick={off ? undefined : onClick}
+        {...rest}
+      >
+        {children}
+      </Button>
+    </Tooltip>
+  )
+}
+
 const DialogShell = ({
   title,
+  titleHelp,
+  head,
+  page,
   onClose,
   children,
 }: {
-  title: React.ReactNode
+  title: string
+  /** What the dialog does, behind the "?" beside its title. */
+  titleHelp?: string
+  /** Pinned under the title: what stops a save, then the sections. */
+  head?: React.ReactNode
+  /** The open section: a new one starts at the top of the body. */
+  page?: string
   onClose: () => void
   children: React.ReactNode
 }) => {
   const titleId = useId()
   const dialogRef = useRef<HTMLDivElement>(null)
+  const bodyRef = useRef<HTMLDivElement>(null)
   // The latest close handler, so the mount effect never re-runs (and never
   // steals focus from a field) when the panel re-renders behind the dialog.
   const onCloseRef = useRef(onClose)
   onCloseRef.current = onClose
 
+  useLayoutEffect(() => {
+    if (bodyRef.current) bodyRef.current.scrollTop = 0
+  }, [page])
+
   useEffect(() => {
     const previous = document.activeElement as HTMLElement | null
     const overflow = document.body.style.overflow
     document.body.style.overflow = 'hidden'
-    dialogRef.current?.focus()
+    // Without preventScroll the focus scrolled the layer 76px on open, and
+    // the title and close button started half off the screen.
+    dialogRef.current?.focus({ preventScroll: true })
     const onKey = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         onCloseRef.current()
@@ -888,11 +1180,17 @@ const DialogShell = ({
       }
       // Keep Tab inside the dialog: wrap from the last field to the first
       // and back, and pull focus in if it ever lands on the page behind.
+      // Fields in a hidden section have no box, and never count as the
+      // first or the last.
       const dialog = dialogRef.current
       if (event.key !== 'Tab' || !dialog) return
       const focusable = [
         ...dialog.querySelectorAll<HTMLElement>(FOCUSABLE),
-      ].filter((element) => !element.hasAttribute('disabled'))
+      ].filter(
+        (element) =>
+          !element.hasAttribute('disabled') &&
+          element.getClientRects().length > 0,
+      )
       if (focusable.length === 0) {
         event.preventDefault()
         dialog.focus()
@@ -931,12 +1229,17 @@ const DialogShell = ({
         tabIndex={-1}
       >
         <DialogHead>
-          <Subheading id={titleId}>{title}</Subheading>
-          <IconButton type="button" aria-label="Close" onClick={onClose}>
-            <CurateIcon name="close" size={16} />
-          </IconButton>
+          <TitleRow>
+            <Labelled about="this dialog" help={titleHelp}>
+              <Subheading id={titleId}>{title}</Subheading>
+            </Labelled>
+            <IconButton type="button" aria-label="Close" onClick={onClose}>
+              <CurateIcon name="close" size={16} />
+            </IconButton>
+          </TitleRow>
+          {head}
         </DialogHead>
-        <DialogBody>{children}</DialogBody>
+        <DialogBody ref={bodyRef}>{children}</DialogBody>
       </Dialog>
     </Layer>,
     document.body,
@@ -952,6 +1255,42 @@ const Field = styled.div`
   padding: 16px 0;
   border-top: 1px solid var(--glass-border);
 `
+
+const SectionBox = styled.div`
+  display: flex;
+  flex-direction: column;
+
+  &[hidden] {
+    display: none;
+  }
+
+  > ${Field}:first-child {
+    padding-top: 0;
+    border-top: 0;
+  }
+
+  > ${Field}:last-child {
+    padding-bottom: 0;
+  }
+`
+
+/**
+ * One section of the dialog. It is hidden, never unmounted, while another
+ * is open: each field keeps its typed value (and an armed governor
+ * transfer) in its own state, and a look at another section must not
+ * throw that away. Its first field needs no hairline above it.
+ */
+const Section = ({
+  open,
+  children,
+}: {
+  open: boolean
+  children: React.ReactNode
+}) => (
+  <SectionBox hidden={!open}>
+    <SectionOpen.Provider value={open}>{children}</SectionOpen.Provider>
+  </SectionBox>
+)
 
 const FieldLabel = styled.label`
   color: var(--color-text);
@@ -1012,6 +1351,20 @@ const GateRow = styled.div`
   border: 1px solid var(--glass-border);
   border-radius: 14px;
   background: var(--color-raised);
+`
+
+/*
+ * What stops a save, pinned in the head so every section shows it: one
+ * line with its fix beside it, never a box (the head is no panel of its
+ * own).
+ */
+const GateLine = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  min-height: 32px;
 `
 
 /** What stops a save right now, if anything. */
@@ -1118,7 +1471,8 @@ const MetaEvidenceInput = ({
   disabled?: boolean
   onChange: (value: string) => void
 }) => {
-  const { uploadFile } = useAtlasProvider()
+  const { uploadFile, isVerified } = useAtlasProvider()
+  const { isConnected } = useAccount()
   const [uploading, setUploading] = useState(false)
   const id = useId()
 
@@ -1149,14 +1503,21 @@ const MetaEvidenceInput = ({
    * A file dropped on the row goes through the same `upload`: the same JSON
    * rule, the same toast when it fails and the same Atlas upload when it
    * passes. Dragged text still lands in the field, since only drags that
-   * carry files are claimed.
+   * carry files are claimed. The drop meets the gate the Upload button sits
+   * behind (EnsureAuth: a connected wallet, then the Atlas sign-in), so a
+   * governor who has not signed in is told so while the file is held,
+   * instead of a generic failure after it is dropped.
    */
   const drop = useFileDrop<HTMLDivElement>({
     blocked: disabled
       ? 'This field is locked.'
-      : uploading
-        ? 'An upload is already going.'
-        : '',
+      : !isConnected
+        ? 'Connect first to upload the MetaEvidence file.'
+        : !isVerified
+          ? 'Sign in first to upload the MetaEvidence file.'
+          : uploading
+            ? 'An upload is already going.'
+            : '',
     onFile: (file) => {
       void upload(file)
     },
@@ -1434,18 +1795,20 @@ const ArbitrationGovernanceField = ({
 
   return (
     <Field>
-      <div>
+      <Labelled
+        about="the court and the MetaEvidence"
+        help={
+          registry.kind === 'standard'
+            ? 'Standard Curate changes the court together with both MetaEvidence files. They start on the live files: keep them to change only the court, or upload new ones (same columns) to change the policy too.'
+            : 'Stake Curate changes the court together with its MetaEvidence. It starts on the live file: keep it to change only the court.'
+        }
+      >
         <FieldLabel as="div">
           {registry.kind === 'permanent'
             ? 'Court and MetaEvidence'
             : 'Arbitrator and court'}
         </FieldLabel>
-        <Small $muted>
-          {registry.kind === 'standard'
-            ? 'Standard Curate changes the court together with both MetaEvidence files. They start on the live files: keep them to change only the court, or upload new ones (same columns) to change the policy too.'
-            : 'Stake Curate changes the court together with its MetaEvidence. It starts on the live file: keep it to change only the court.'}
-        </Small>
-      </div>
+      </Labelled>
       <Controls>
         <Stack $gap={8}>
           {registry.kind !== 'permanent' && (
@@ -1463,13 +1826,25 @@ const ArbitrationGovernanceField = ({
           )}
           <TwoUp>
             <Stack $gap={4}>
-              <Label
-                as="label"
-                id={`${ids}-court-label`}
-                htmlFor={`${ids}-court`}
+              {/* The court's purpose sits behind its "?"; the fee per juror
+                  stays in view below, since it is money. */}
+              <Labelled
+                about={selectedCourt?.label ?? 'the court'}
+                help={
+                  selectedCourt
+                    ? selectedCourt.summary ||
+                      `${selectedCourt.label} handles disputes sent to this court.`
+                    : undefined
+                }
               >
-                Court
-              </Label>
+                <Label
+                  as="label"
+                  id={`${ids}-court-label`}
+                  htmlFor={`${ids}-court`}
+                >
+                  Court
+                </Label>
+              </Labelled>
               <CourtSelect
                 id={`${ids}-court`}
                 aria-labelledby={`${ids}-court-label`}
@@ -1512,8 +1887,6 @@ const ArbitrationGovernanceField = ({
           </TwoUp>
           {selectedCourt && (
             <Small $muted>
-              {selectedCourt.summary ||
-                `${selectedCourt.label} handles disputes sent to this court.`}{' '}
               Fee per juror:{' '}
               <Data $weight={500}>
                 {feePerJuror ? `${feePerJuror} ${symbol}` : 'unavailable'}
@@ -1557,15 +1930,14 @@ const ArbitrationGovernanceField = ({
             </FieldNote>
           )}
         </Stack>
-        <Button
-          type="button"
+        <ReasonedButton
           $variant="primary"
-          disabled={Boolean(blocker) || locked}
-          title={blocker}
+          off={Boolean(blocker || locked)}
+          reason={blocker}
           onClick={save}
         >
           {checking ? 'Checking…' : pending ? 'Saving…' : 'Save'}
-        </Button>
+        </ReasonedButton>
       </Controls>
     </Field>
   )
@@ -1660,7 +2032,9 @@ const GovernanceField = ({
 
   return (
     <Field>
-      <FieldLabel htmlFor={inputId}>{config.label}</FieldLabel>
+      <Labelled about={config.label} help={config.help}>
+        <FieldLabel htmlFor={inputId}>{config.label}</FieldLabel>
+      </Labelled>
       <Controls>
         <Stack $gap={6}>
           <TextInput
@@ -1698,22 +2072,29 @@ const GovernanceField = ({
             </GateRow>
           )}
         </Stack>
-        <Button
-          type="button"
+        <ReasonedButton
           $variant={armed ? 'danger' : 'primary'}
-          disabled={Boolean(blocker) || locked}
-          title={blocker}
+          off={Boolean(blocker) || locked}
+          reason={blocker}
           onClick={save}
         >
           {pending ? 'Saving…' : armed ? 'Confirm transfer' : 'Save'}
-        </Button>
+        </ReasonedButton>
       </Controls>
-      {config.hint && <Small $muted>{config.hint}</Small>}
+      {config.note && <Small $muted>{config.note}</Small>}
     </Field>
   )
 }
 
 /* ---------- Update dialog ---------- */
+
+/**
+ * The dialog's sections, in order: the court (with the MetaEvidence it is
+ * saved with), the money, the clocks, and the rest. Stake calls the money
+ * section "Stake", its own word for what a submitter locks.
+ */
+type GovernanceSection = 'court' | ParamGroup
+const PARAM_GROUPS: ParamGroup[] = ['deposits', 'timing', 'advanced']
 
 const GovernanceDialog = ({
   registry,
@@ -1733,6 +2114,7 @@ const GovernanceDialog = ({
   onClose: () => void
 }) => {
   const queryClient = useQueryClient()
+  const [section, setSection] = useState<GovernanceSection>('court')
   const { chainId: walletChainId, isConnected } = useAccount()
   const { switchChain, isPending: switching } = useSwitchChain()
   const wrongChain = editable && walletChainId !== registry.chainId
@@ -1859,40 +2241,62 @@ const GovernanceDialog = ({
       tokenDecimals.data === undefined ? undefined : Number(tokenDecimals.data),
   }
 
+  const params = editableParams(registry)
+  const sections: SegmentOption<GovernanceSection>[] = [
+    { value: 'court', label: 'Court' },
+    {
+      value: 'deposits',
+      label: registry.kind === 'permanent' ? 'Stake' : 'Deposits',
+    },
+    { value: 'timing', label: 'Timing & appeals' },
+    { value: 'advanced', label: 'Advanced' },
+  ]
+
   return (
-    <DialogShell title={`Update ${registry.title}`} onClose={onClose}>
-      <Small $muted>
-        Changes are sent one parameter at a time. Each is simulated before the
-        wallet asks you to sign, so a change that would revert is caught before
-        you pay gas.
-      </Small>
-      {gate.blocker && (
-        <GateRow>
-          <Small $muted role="status">
-            {gate.blocker}
-          </Small>
-          {gate.helper && (
-            <Button
-              type="button"
-              $variant="secondary"
-              $size="sm"
-              disabled={gate.helper.loading}
-              onClick={gate.helper.onClick}
-            >
-              {gate.helper.loading ? 'Waiting…' : gate.helper.label}
-            </Button>
+    <DialogShell
+      title={`Update ${registry.title}`}
+      titleHelp="Changes are sent one parameter at a time. Each is simulated before the wallet asks you to sign, so a change that would revert is caught before you pay gas."
+      page={section}
+      onClose={onClose}
+      head={
+        <>
+          {gate.blocker && (
+            <GateLine>
+              <Small $muted role="status">
+                {gate.blocker}
+              </Small>
+              {gate.helper && (
+                <Button
+                  type="button"
+                  $variant="secondary"
+                  $size="sm"
+                  disabled={gate.helper.loading}
+                  onClick={gate.helper.onClick}
+                >
+                  {gate.helper.loading ? 'Waiting…' : gate.helper.label}
+                </Button>
+              )}
+            </GateLine>
           )}
-        </GateRow>
-      )}
-      {!gate.blocker && walletClientFailed && !walletClient && (
-        <GateRow>
-          <Small $muted role="status">
-            Wallet not ready: reconnect it or reload the page to save changes.
-          </Small>
-        </GateRow>
-      )}
-      <div>
-        <Label>Arbitration and court</Label>
+          {!gate.blocker && walletClientFailed && !walletClient && (
+            <GateLine>
+              <Small $muted role="status">
+                Wallet not ready: reconnect it or reload the page to save
+                changes.
+              </Small>
+            </GateLine>
+          )}
+          <SegmentedControl<GovernanceSection>
+            ariaLabel="Settings section"
+            size="sm"
+            value={section}
+            onChange={setSection}
+            options={sections}
+          />
+        </>
+      }
+    >
+      <Section open={section === 'court'}>
         <ArbitrationGovernanceField
           registry={registry}
           current={liveSettings}
@@ -1902,21 +2306,66 @@ const GovernanceDialog = ({
           onSaved={savedSettings}
           onOutdated={readSettingsAgain}
         />
-      </div>
-      <div>
-        <Label>Registry parameters</Label>
-        {editableParams(registry).map((config) => (
-          <GovernanceField
-            key={`${registry.id}-${config.key}`}
-            registry={withIndexedParams}
-            config={config}
-            context={context}
-            gate={gate}
-            onSaved={saved}
-          />
-        ))}
-      </div>
+      </Section>
+      {PARAM_GROUPS.map((group) => (
+        <Section key={group} open={section === group}>
+          {params
+            .filter((config) => config.group === group)
+            .map((config) => (
+              <GovernanceField
+                key={`${registry.id}-${config.key}`}
+                registry={withIndexedParams}
+                config={config}
+                context={context}
+                gate={gate}
+                onSaved={saved}
+              />
+            ))}
+        </Section>
+      ))}
     </DialogShell>
+  )
+}
+
+/**
+ * The update dialog for one list, opened from the list's own page
+ * (components/curate/list-governance.tsx), with what its saves wrote laid
+ * over the list until the next read. Only the connected governor can save;
+ * anyone else (a wallet that changed since the button showed) sees the
+ * dialog's gate. A governor transfer ends this wallet's say over the list,
+ * so it closes the dialog.
+ */
+export const ListGovernanceDialog = ({
+  registry,
+  onSaved,
+  onClose,
+}: {
+  /** The list with its governor and parameters, read for its page. */
+  registry: GovernedRegistry
+  /** A save went through: read the list again. */
+  onSaved?: () => void
+  onClose: () => void
+}) => {
+  const { address } = useAccount()
+  const connected = normalizeAddress(address)
+  const [written, setWritten] = useState<Written>()
+  const shown = withWritten(registry, written)
+  return (
+    <GovernanceDialog
+      registry={shown}
+      editable={!!connected && connected === normalizeAddress(shown.governor)}
+      profileAddress={connected}
+      written={written}
+      onWritten={(next) => {
+        setWritten((previous) => mergeWritten(previous, next))
+        onSaved?.()
+        if (next.params?.governor) {
+          successToast(`${registry.title} has a new governor.`)
+          onClose()
+        }
+      }}
+      onClose={onClose}
+    />
   )
 }
 
@@ -2041,10 +2490,14 @@ const RegistryTitle = styled(Link)`
   }
 `
 
+/* Fixed columns for the figures, so Entries and Created line up down the
+   list whatever the width of each row's court: 52px holds the ENTRIES label
+   and six figures, 84px the longest date ("30 Sept 2023"), and the court
+   keeps the rest. */
 const Facts = styled.dl`
   display: grid;
-  grid-template-columns: minmax(0, 1.6fr) auto auto;
-  gap: 4px 24px;
+  grid-template-columns: minmax(0, 1fr) 52px 84px;
+  gap: 4px 20px;
   margin: 0;
   min-width: 0;
 
@@ -2066,8 +2519,17 @@ const Facts = styled.dl`
     white-space: nowrap;
   }
 
+  /* The court ("xDai Curation (Hidden Voting) · ID 19 · 3 jurors") wraps to
+     a second line where its column narrows, rather than losing its end. */
+  div:first-child dd {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    white-space: normal;
+  }
+
   @media (max-width: 560px) {
-    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-columns: 52px minmax(0, 1fr);
 
     div:first-child {
       grid-column: 1 / -1;
@@ -2134,6 +2596,15 @@ const GovHead = styled.div`
   }
 `
 
+/* Under the profile's tabs, which name the section: the one line that says
+   what these lists are, then the rows. */
+const GovIntro = styled.p`
+  margin: 0 0 16px;
+  color: var(--color-muted);
+  font-size: var(--fs-small);
+  line-height: var(--lh-small);
+`
+
 /** The creation date, a placeholder while it is read, or a dash. */
 const CreatedValue = ({
   time,
@@ -2155,12 +2626,18 @@ export const GovernancePanel = ({
   profileAddress,
   loading,
   isZero = false,
+  embedded = false,
 }: {
   registries: GovernedRegistry[]
   profileAddress: string
   loading?: boolean
   /** The zero address: its lists can no longer change parameters. */
   isZero?: boolean
+  /**
+   * Under the profile's tabs, which name the section and count its lists:
+   * no heading of its own, only the line that says what the lists are.
+   */
+  embedded?: boolean
 }) => {
   const { address: connectedAddress, isConnected } = useAccount()
   // What this page's saves wrote, by list (see Written). The rows and the
@@ -2216,21 +2693,26 @@ export const GovernancePanel = ({
           `${registry.chainId}:${registry.address.toLowerCase()}`,
         ) ?? (registry.createdAtExact ? registry.createdAt : undefined))
 
+  const intro =
+    isZero && registries.length > 0
+      ? 'Lists whose governor is the zero address: nobody can change their parameters any more.'
+      : 'Lists whose governor is this address. Only the governor wallet can change their deposits, periods, court and policy.'
+
   return (
     <section aria-label="Governed lists">
-      <GovHead>
-        <h2>
-          Governed lists
-          {!loading && registries.length > 0 && (
-            <small>{formatInt(registries.length)}</small>
-          )}
-        </h2>
-        <p>
-          {isZero && registries.length > 0
-            ? 'Lists whose governor is the zero address: nobody can change their parameters any more.'
-            : 'Lists whose governor is this address. Only the governor wallet can change their deposits, periods, court and policy.'}
-        </p>
-      </GovHead>
+      {embedded ? (
+        <GovIntro>{intro}</GovIntro>
+      ) : (
+        <GovHead>
+          <h2>
+            Governed lists
+            {!loading && registries.length > 0 && (
+              <small>{formatInt(registries.length)}</small>
+            )}
+          </h2>
+          <p>{intro}</p>
+        </GovHead>
+      )}
 
       {loading ? (
         <GovList aria-busy="true">
@@ -2284,7 +2766,9 @@ export const GovernancePanel = ({
                     <Label as="dt" $tone="faint">
                       Entries
                     </Label>
-                    <dd>{formatInt(registry.itemCount)}</dd>
+                    {/* Every entry, open requests included: the list
+                        page's and Browse's Entries. */}
+                    <dd>{formatInt(entryCount(registry))}</dd>
                   </div>
                   <div>
                     <Label as="dt" $tone="faint">
@@ -2307,24 +2791,25 @@ export const GovernancePanel = ({
                       Governance renounced
                     </Chip>
                   ) : editable ? (
+                    // The list page's button says the same, so the
+                    // governor meets one name in both places.
                     <Button
                       type="button"
                       $variant="primary"
                       $size="sm"
                       onClick={() => setSelected(registry)}
                     >
-                      Update parameters
+                      Update list parameters
                     </Button>
                   ) : isConnected ? (
-                    <Button
-                      type="button"
+                    <ReasonedButton
                       $variant="secondary"
                       $size="sm"
-                      disabled
-                      title="Connect the governor wallet to update this list"
+                      off
+                      reason="Connect the governor wallet to update this list"
                     >
                       Only the governor can update
-                    </Button>
+                    </ReasonedButton>
                   ) : (
                     <Button
                       type="button"

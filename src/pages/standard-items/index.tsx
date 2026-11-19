@@ -18,6 +18,7 @@ import useUrlChainId from 'hooks/use-url-chain-id'
 import useNow from 'hooks/use-now'
 import useDocumentHead from 'hooks/use-document-head'
 import useNativeCurrency from 'hooks/native-currency'
+import useCourtName from 'hooks/use-court-name'
 import { useAttachment } from 'hooks/use-attachment'
 import { WalletContext } from 'contexts/wallet-context'
 import { StandardTCRViewContext } from 'contexts/standard-tcr-view-context'
@@ -47,8 +48,11 @@ import {
   truncateMiddle,
 } from 'components/curate/primitives'
 import { CurateIcon } from 'components/curate/icons'
+import { CuratorAddress } from 'components/curate/chrome-address'
+import { ListGovernance } from 'components/curate/list-governance'
 import { reveal } from 'components/curate/motion/reveal'
 import {
+  courtPhrase,
   RegistryHeader,
   type RegistryParameter,
   type RegistryStat,
@@ -101,9 +105,10 @@ import SubmitConnectModal from '../standard-item-details/modals/submit-connect'
 
 /*
  * Standard Curate registry page (/tcr/:chainId/:tcrAddress): the header panel
- * (identity, the one action with its exact deposit, the counts, and two
- * gauges — the share of entries registered, and what the challenges did to
- * them), the toolbar (URL filters with each status's count), then the entries
+ * (identity, the one action with its exact deposit, under it "Update list
+ * parameters" for the list's governor alone, the counts, and two gauges —
+ * the share of entries registered, and what the challenges did to them),
+ * the toolbar (URL filters with each status's count), then the entries
  * in the remembered layout, each with its status and time left. A page or
  * filter change keeps the current rows and counts (dimmed) until the next
  * page lands, so nothing flashes or counts up again.
@@ -275,7 +280,8 @@ const itemMatchesSearch = (item: RegistryItem, rawSearch: string): boolean => {
   return text.includes(query)
 }
 
-/* An explorer link: a 24px target, and it says it opens a new tab. */
+/* A contract's explorer link (the arbitrator): a 24px target, and it says
+   it opens a new tab. */
 const AddressLink = styled.a`
   display: inline-flex;
   align-items: center;
@@ -869,12 +875,12 @@ const Items = () => {
         rel="noopener noreferrer"
         title={address}
       >
-        {truncateMiddle(address, 8, 6)}
+        {truncateMiddle(address, 6, 4)}
         <CurateIcon name="external" size={14} aria-hidden />
         <SrOnly> (opens in a new tab)</SrOnly>
       </AddressLink>
     ) : (
-      <span title={address}>{truncateMiddle(address, 8, 6)}</span>
+      <span title={address}>{truncateMiddle(address, 6, 4)}</span>
     )
   }
 
@@ -890,8 +896,19 @@ const Items = () => {
   const court = isKlerosArbitrator
     ? decodeCourt(arbitratorExtraData)
     : undefined
+  // The court by its name ("xDai Curation"), as the factory and the dispute
+  // panel name it; its number only while the name loads or if it cannot be
+  // read.
+  const courtName = useCourtName(
+    chainId,
+    court ? Number(court.courtId) : undefined,
+  )
+  const courtTitle = court ? (courtName ?? `Court ${court.courtId}`) : undefined
+  const jurorsLabel = court
+    ? `${court.jurors} juror${court.jurors === '1' ? '' : 's'}`
+    : undefined
   const courtLabel = court
-    ? `Court ${court.courtId} · ${court.jurors} juror${court.jurors === '1' ? '' : 's'}`
+    ? `${courtTitle} · ${jurorsLabel}`
     : arbitratorExtraData
       ? truncateMiddle(arbitratorExtraData, 10, 6)
       : undefined
@@ -970,7 +987,12 @@ const Items = () => {
     { label: 'Arbitration cost', value: depositValue(arbitrationCost) },
     { label: 'Court', value: courtLabel },
     { label: 'Arbitrator', value: addressValue(arbitrator) },
-    { label: 'Governor', value: addressValue(governor) },
+    // The governor is a person (or their multisig): their Curate profile,
+    // where the lists they govern are, not the explorer.
+    {
+      label: 'Governor',
+      value: governor ? <CuratorAddress address={governor} /> : undefined,
+    },
     {
       label: 'Rejected or removed',
       value: rejectedOrRemoved,
@@ -1009,7 +1031,9 @@ const Items = () => {
         : 'The arbitrator decides',
       body: `${
         court
-          ? `Kleros court ${court.courtId} draws ${court.jurors} juror${court.jurors === '1' ? '' : 's'}.`
+          ? courtName
+            ? `The Kleros ${courtPhrase(courtName)} draws ${jurorsLabel}.`
+            : `Kleros court ${court.courtId} draws ${jurorsLabel}.`
           : isKlerosArbitrator
             ? 'A Kleros court rules on the listing policy.'
             : 'The list’s arbitrator rules on the listing policy.'
@@ -1408,6 +1432,7 @@ const Items = () => {
           liveSummary && {
             offList: liveSummary.challenges.offList,
             onList: liveSummary.challenges.onList,
+            inCourt: liveSummary.challenges.inCourt,
             scope: liveSummary.challenges.capped
               ? `the newest ${integer.format(CHALLENGE_CAP)} challenges`
               : undefined,
@@ -1419,6 +1444,26 @@ const Items = () => {
         explainerHeading="A deposit you get back, a bounty for spotting mistakes."
         explainerSteps={explainerSteps}
         loading={!metadata || (!counters && itemsQuery.isFetching)}
+        // The governor the context reads on the list's own chain, so a
+        // governor whose wallet is on another chain still sees the control.
+        // It waits for the list's file as well: the control takes the list's
+        // name and logo when it first reads the parameters, and keeps them.
+        governance={
+          chainId ? (
+            <ListGovernance
+              chainId={chainId}
+              address={tcrAddress}
+              kind="standard"
+              title={tcrTitle}
+              logoURI={logoURI}
+              governor={metaEvidence ? governor : undefined}
+              onSaved={() => {
+                void tcrViewContext?.retryParams()
+                void tcrViewContext?.retryMetaEvidence()
+              }}
+            />
+          ) : undefined
+        }
       />
 
       <Toolbar ref={toolbarRef} style={{ ['--i' as string]: 1 }}>

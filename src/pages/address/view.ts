@@ -1,15 +1,19 @@
 import type { EntryStatusView } from 'components/curate/entry-status'
+import { LAYOUT_OPTIONS, type ListLayout } from 'hooks/use-stored-layout'
 import { ZERO_ADDRESS } from 'pages/dashboard/data'
 import {
   SUPPORTED_CHAIN_IDS,
+  chainName,
   type AddressStats,
   type ProfileActivity,
 } from './data'
+import { JURY_SEAT_LIMIT, type CurateJury } from './jury'
 
 /*
- * Pure helpers for the curator profile: which actions a filter shows, the
- * status each action is rendered with, the window the data covers and the
- * chains the address is active on. Everything derives from the data layer.
+ * Pure helpers for the curator profile: the tab and the layout it opens on,
+ * which actions a filter shows, the status each action is rendered with, the
+ * window the data covers, the chains the address is active on and the juror
+ * badge for a scope. Everything derives from the data layer.
  */
 
 export const PAGE_SIZE = 20
@@ -33,6 +37,38 @@ export const parseFilter = (value: string | null): ActivityFilter =>
   FILTERS.some((filter) => filter.value === value)
     ? (value as ActivityFilter)
     : 'all'
+
+/* ---------- Tabs and layout ---------- */
+
+/**
+ * The two halves of a profile, picked from one tab control (?tab=): what the
+ * address did, and the lists it governs. Activity is the default and is
+ * never written to the URL.
+ */
+export type ProfileTab = 'activity' | 'governed'
+
+export const parseTab = (value: string | null): ProfileTab =>
+  value === 'governed' ? 'governed' : 'activity'
+
+/*
+ * The activity's layouts. The table was dropped at the round 5 review: the
+ * rows carry every column it held (the action, the entry, its list, the
+ * other party, the time) and the rail stays beside them, where the table
+ * pushed it below. The narrowing lives here, as Browse's does, so the shared
+ * hook keeps the table for the registry pages.
+ */
+export type ActivityLayout = Exclude<ListLayout, 'table'>
+
+/** Every way into the layout passes through here, so none can pick the table. */
+export const activityLayout = (layout: ListLayout): ActivityLayout =>
+  layout === 'table' ? 'rows' : layout
+
+/** Cards and Rows with the shared labels and glyphs, as icons only. */
+export const ACTIVITY_LAYOUT_OPTIONS = LAYOUT_OPTIONS.flatMap((option) =>
+  option.value === 'table'
+    ? []
+    : [{ ...option, value: activityLayout(option.value), hideLabel: true }],
+)
 
 /** The activity page in the URL (?page=), 1 when absent or not a number. */
 export const parsePage = (value: string | null): number =>
@@ -132,6 +168,14 @@ export const activeChains = (
     .filter(({ stats }) => stats.activity > 0 || stats.governedLists > 0)
     .sort((a, b) => b.stats.activity - a.stats.activity)
 
+/** "Ethereum", "Ethereum and Gnosis", "Ethereum, Gnosis and Sepolia". */
+const chainListFormat = new Intl.ListFormat('en', {
+  style: 'long',
+  type: 'conjunction',
+})
+export const chainNames = (chainIds: number[]): string =>
+  chainListFormat.format(chainIds.map(chainName))
+
 const integer = new Intl.NumberFormat('en-US')
 export const formatInt = (value: number): string =>
   integer.format(Math.round(value))
@@ -150,6 +194,104 @@ export const parseScope = (value: string | null): Scope => {
 
 export const inScope = (scope: Scope, chainId: number): boolean =>
   scope === 'all' || scope === chainId
+
+/* ---------- Juror on Curate ---------- */
+
+/**
+ * The juror badge for a scope: the chains in it added up. It is a record,
+ * not a goal, so it carries no progress; and it claims only what was read:
+ * a chain that was not read is named, never counted as zero.
+ */
+export interface JurorBadgeView {
+  state: 'loading' | 'ready' | 'unavailable'
+  /** Seats held in disputes over Curate lists. */
+  seats: number
+  /** The disputes those seats sit in. */
+  cases: number
+  /** Seats voted in; undefined when some chain's votes could not be read. */
+  votes?: number
+  /** Seats in a round still collecting votes, not voted yet. */
+  voting: number
+  /** Chains in the scope that could not be read: the figures are lower bounds. */
+  unread: number[]
+  /** Chains in the scope whose seats ran past the read's cap. */
+  capped: number[]
+  /** Chains in the scope with seats whose votes could not be read. */
+  votesUnread: number[]
+}
+
+export const jurorBadge = (
+  jury: CurateJury | undefined,
+  scope: Scope,
+  pending: boolean,
+): JurorBadgeView => {
+  const view: JurorBadgeView = {
+    state: pending ? 'loading' : 'unavailable',
+    seats: 0,
+    cases: 0,
+    votes: 0,
+    voting: 0,
+    unread: [],
+    capped: [],
+    votesUnread: [],
+  }
+  if (!jury) return view
+  const chains = SUPPORTED_CHAIN_IDS.filter((chainId) =>
+    inScope(scope, chainId),
+  )
+  for (const chainId of chains) {
+    const chain = jury.chains[chainId]
+    if (!chain) {
+      view.unread.push(chainId)
+      continue
+    }
+    view.seats += chain.seats
+    view.cases += chain.cases
+    view.voting += chain.voting
+    if (chain.capped) view.capped.push(chainId)
+    if (chain.votes === undefined) view.votesUnread.push(chainId)
+    else if (view.votes !== undefined) view.votes += chain.votes
+  }
+  if (view.votesUnread.length > 0) view.votes = undefined
+  // Nothing in the scope was read: no figure at all, never a 0.
+  view.state = view.unread.length === chains.length ? 'unavailable' : 'ready'
+  return view
+}
+
+/**
+ * What the juror figures count, in one sentence, and the one limit no
+ * caption names (a chain whose seats ran past the read's cap); a chain not
+ * read and votes not read are said beside the figures.
+ */
+export const jurorTip = (juror: JurorBadgeView): string =>
+  [
+    'Seats and votes as a Kleros juror in Curate disputes, Classic lists included.',
+    juror.capped.length > 0 &&
+      `On ${chainNames(juror.capped)} the read stops at ${formatInt(JURY_SEAT_LIMIT)} seats.`,
+  ]
+    .filter(Boolean)
+    .join(' ')
+
+/* ---------- Roles ---------- */
+
+/**
+ * What an address is on Curate, in a fixed order, for the profile's
+ * eyebrow: a curator acted on a list (submitted, removed or challenged), a
+ * governor governs one, a juror was drawn in a Curate dispute. Empty when
+ * none is known.
+ */
+export const profileRoles = ({
+  acted,
+  governs,
+  judges,
+}: {
+  acted: boolean
+  governs: boolean
+  judges: boolean
+}): string[] =>
+  [acted && 'Curator', governs && 'Governor', judges && 'Juror'].filter(
+    (role): role is string => Boolean(role),
+  )
 
 /* ---------- Activity over time ---------- */
 

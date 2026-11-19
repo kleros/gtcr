@@ -38,12 +38,14 @@ import useTokenSymbol from 'hooks/token-symbol'
 import useNativeCurrency from 'hooks/native-currency'
 import useDocumentHead from 'hooks/use-document-head'
 import useNow from 'hooks/use-now'
+import useCourtName from 'hooks/use-court-name'
 import { useAttachment } from 'hooks/use-attachment'
 import { useEthersProvider } from 'hooks/ethers-adapters'
 import ETHAmount from 'components/eth-amount'
 import TokenAmount from 'components/token-amount'
 import { Pagination } from 'components/ui'
 import {
+  courtPhrase,
   RegistryHeader,
   type RegistryParameter,
   type RegistryStat,
@@ -69,8 +71,11 @@ import {
   Small,
   Surface,
   truncateMiddle,
+  VisuallyHidden,
 } from 'components/curate/primitives'
 import { CurateIcon } from 'components/curate/icons'
+import { CuratorAddress } from 'components/curate/chrome-address'
+import { ListGovernance } from 'components/curate/list-governance'
 import {
   SUMMARY_CAP,
   useStakeSummary,
@@ -92,9 +97,9 @@ import { LIST_LOAD_FAILED } from '../error-page/copy'
  * Stake Curate registry page. The registry is read first (its periods and
  * multipliers are needed to derive statuses), then the items for the current
  * filters and page, and a summary of every entry for the counts and the
- * challenge figures. The UI is RegistryHeader (identity, action, figures,
- * the two gauges, parameters, explainer), RegistryToolbar, EntryList and
- * Pagination.
+ * challenge figures. The UI is RegistryHeader (identity, action, "Update
+ * list parameters" for the list's governor alone, figures, the two gauges,
+ * parameters, explainer), RegistryToolbar, EntryList and Pagination.
  */
 
 const NSFW_FILTER_KEY = 'NSFW_FILTER_KEY'
@@ -219,9 +224,20 @@ const TermsLink = styled.a`
   }
 `
 
+/* A contract's explorer link (the arbitrator), as on a Standard list: a
+   24px target with its arrow, and it says it opens a new tab. */
 const ExplorerLink = styled.a`
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 24px;
   color: var(--color-primary);
   text-decoration: none;
+
+  svg {
+    flex: 0 0 auto;
+    opacity: 0.8;
+  }
 
   &:hover {
     text-decoration: underline;
@@ -280,6 +296,16 @@ const withTermsLink = (
   return <>{parts}</>
 }
 
+/* The court and its jury after the arbitrator's address break only at the
+   dots between them, so a narrow column never leaves "jurors" alone. Each
+   is a box of its own rather than unbreakable text, so a court name longer
+   than the column still wraps inside it instead of running out. */
+const Unbroken = styled.span`
+  display: inline-block;
+  max-width: 100%;
+`
+
+/** A contract's address (the arbitrator): it opens the chain's explorer. */
 const AddressValue = ({
   chainId,
   address,
@@ -295,7 +321,9 @@ const AddressValue = ({
       rel="noopener noreferrer"
       title={address}
     >
-      {truncateMiddle(address, 8, 6)}
+      {truncateMiddle(address, 6, 4)}
+      <CurateIcon name="external" size={14} />
+      <VisuallyHidden> (opens in a new tab)</VisuallyHidden>
     </ExplorerLink>
   )
 }
@@ -349,11 +377,13 @@ const StakeRegistry = () => {
   })
   const registry = registryQuery.data?.registry as SubgraphRegistry | undefined
 
+  // "Listed" filters to every entry on the list, the disputed ones
+  // included (see onListCount below); "Disputed" narrows to those alone.
   const itemsWhere = useMemo(() => {
     const statuses: string[] = []
     if (absent) statuses.push('Absent')
-    if (registered) statuses.push('Submitted', 'Reincluded')
-    if (disputed) statuses.push('Disputed')
+    if (registered) statuses.push('Submitted', 'Reincluded', 'Disputed')
+    else if (disputed) statuses.push('Disputed')
     if (statuses.length === 0) return { registry: registryId }
     return { registry: registryId, status_in: statuses }
   }, [absent, registered, disputed, registryId])
@@ -510,8 +540,9 @@ const StakeRegistry = () => {
   // How many entries are on the list: a Stake entry is listed from the
   // moment it was submitted and stays listed while a challenge runs, so the
   // figure under the word "listed" is submitted plus disputed — the measure
-  // Browse and the dashboard print for the same list. The status chips
-  // below give each entry one status, so they keep the narrower buckets.
+  // Browse and the dashboard print for the same list, and the one the
+  // "Listed" chip below counts and filters to. The "Disputed" chip is the
+  // part of it a challenge is running on; "Off the list" is the rest.
   const onListCount =
     counts.listed !== undefined && counts.disputed !== undefined
       ? counts.listed + counts.disputed
@@ -522,13 +553,14 @@ const StakeRegistry = () => {
   const items: StakeItem[] = useMemo(() => pageItems ?? [], [pageItems])
 
   // Entries matching the status filters, from the counts above; undefined
-  // when a bucket it needs is unknown.
+  // when a bucket it needs is unknown. "Listed" already holds the disputed
+  // entries, so with it on the "Disputed" chip adds nothing more.
   const filteredCount = useMemo((): number | undefined => {
     if (!absent && !registered && !disputed) return counts.total
     const parts = [
       absent ? counts.absent : 0,
       registered ? counts.listed : 0,
-      disputed ? counts.disputed : 0,
+      registered || disputed ? counts.disputed : 0,
     ]
     if (parts.some((part) => part === undefined)) return undefined
     return parts.reduce<number>((sum, part) => sum + (part ?? 0), 0)
@@ -654,11 +686,12 @@ const StakeRegistry = () => {
   const chipCount = (value?: number) => (countsReady ? value : undefined)
   const chips: FilterChip[] = [
     {
-      // Listed and disputed entries are both on the list, so this chip
-      // says which of the two it filters to rather than taking the word
-      // "listed" and its own narrower count.
+      // Every entry on the list, the disputed ones included: the same
+      // "Listed" figure the header and Browse print, so the word means one
+      // thing on the page. One short word, so the three chips fit a
+      // phone's row without scrolling, as they did on the base.
       key: P_FILTER_KEYS.REGISTERED,
-      label: withCount('Listed, no challenge', chipCount(counts.listed)),
+      label: withCount('Listed', chipCount(onListCount)),
       tone: 'registered',
       checked: !!registered,
     },
@@ -728,6 +761,21 @@ const StakeRegistry = () => {
       return undefined
     }
   }, [arbitratorExtraData])
+  // Jurors are named only when the list's arbitrator is this chain's Kleros
+  // court; any other arbitrator is "the arbitrator", and its court ids are
+  // not Kleros courts, so only a Kleros court is looked up by name.
+  const klerosArbitrated = isKlerosArbitrator(chainId, registry?.arbitrator?.id)
+  // The court by its name ("xDai Curation"), as the factory and the dispute
+  // panel name it; its number only while the name loads or if it cannot be
+  // read.
+  const courtName = useCourtName(
+    chainId,
+    klerosArbitrated ? court?.courtID : undefined,
+  )
+  const courtTitle = court ? (courtName ?? `Court ${court.courtID}`) : undefined
+  const jurorsLabel = court
+    ? `${court.numberOfJurors} juror${court.numberOfJurors === 1 ? '' : 's'}`
+    : undefined
 
   // RegistryHeader prints '—' (or a skeleton) for an undefined value.
   const countValue = (value?: number) =>
@@ -818,28 +866,31 @@ const StakeRegistry = () => {
             <AddressValue chainId={chainId} address={registry.arbitrator.id} />
             {court && (
               <span title={`Extra data ${arbitratorExtraData}`}>
-                {` · Court ${court.courtID} · ${court.numberOfJurors} juror${
-                  court.numberOfJurors === 1 ? '' : 's'
-                }`}
+                {' · '}
+                <Unbroken>{courtTitle}</Unbroken>
+                {' · '}
+                <Unbroken>{jurorsLabel}</Unbroken>
               </span>
             )}
           </>
         ) : undefined,
       hint: court
-        ? `Challenges go to court ${court.courtID}, which draws ${court.numberOfJurors} juror${court.numberOfJurors === 1 ? '' : 's'}.`
+        ? `Challenges go to ${
+            courtName
+              ? `the Kleros ${courtPhrase(courtName)}`
+              : `court ${court.courtID}`
+          }, which draws ${jurorsLabel}.`
         : arbitratorExtraData
           ? `Extra data ${arbitratorExtraData.slice(0, 18)}…`
           : undefined,
     },
     {
+      // The governor is a person (or their multisig): their Curate profile,
+      // where the lists they govern are, not the explorer.
       label: 'Governor',
-      value:
-        chainId && contractQuery.data?.governor ? (
-          <AddressValue
-            chainId={chainId}
-            address={contractQuery.data.governor}
-          />
-        ) : undefined,
+      value: contractQuery.data?.governor ? (
+        <CuratorAddress address={contractQuery.data.governor} />
+      ) : undefined,
       hint: 'Can change the periods, the multipliers and the arbitration settings.',
     },
     {
@@ -849,9 +900,6 @@ const StakeRegistry = () => {
     },
   ]
 
-  // Jurors are named only when the list's arbitrator is this chain's Kleros
-  // court; any other arbitrator is "the arbitrator".
-  const klerosArbitrated = isKlerosArbitrator(chainId, registry?.arbitrator?.id)
   const explainerSteps: ExplainerStep[] = [
     {
       title: 'Stake to list',
@@ -1011,6 +1059,7 @@ const StakeRegistry = () => {
             : {
                 offList: summary.challenges.removed,
                 onList: summary.challenges.kept,
+                inCourt: summary.challenges.open,
                 scope: summary.partial
                   ? `the latest ${formatInt(SUMMARY_CAP)} entries`
                   : undefined,
@@ -1021,6 +1070,28 @@ const StakeRegistry = () => {
         explainerHeading="A stake backs every entry. Spot a bad one and it is yours."
         explainerSteps={explainerSteps}
         loading={loading || summaryLoading}
+        // The governor read on chain through the list's own chain (the
+        // contract query above), so a governor whose wallet is on another
+        // chain still sees the control. It waits for the indexed list too:
+        // the control reads the parameters with the list's token, live
+        // MetaEvidence and court settings, and keeps what it read with.
+        governance={
+          <ListGovernance
+            chainId={chainId}
+            address={tcrAddress}
+            kind="permanent"
+            title={title}
+            logoURI={metadata?.logoURI}
+            token={registry?.token}
+            metaEvidenceURI={metaEvidenceURI}
+            arbitratorExtraData={arbitratorExtraData}
+            governor={registry ? contractQuery.data?.governor : undefined}
+            onSaved={() => {
+              void contractQuery.refetch()
+              void registryQuery.refetch()
+            }}
+          />
+        }
       />
 
       <div ref={toolbarRef}>

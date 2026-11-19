@@ -1,8 +1,6 @@
 import React, { useLayoutEffect, useRef } from 'react'
 import styled, { css } from 'styled-components'
-import { Link, useNavigate } from 'react-router-dom'
-import type { ListLayout } from 'hooks/use-stored-layout'
-import { LAYOUT_OPTIONS } from 'hooks/use-stored-layout'
+import { Link } from 'react-router-dom'
 import { CurateIcon } from 'components/curate/icons'
 import {
   Button,
@@ -16,24 +14,28 @@ import {
   Small,
   StatusDot,
   Surface,
-  Table,
-  TableScroller,
   truncateMiddle,
 } from 'components/curate/primitives'
 import { EntryStatus } from 'components/curate/entry-status'
 import { reveal } from 'components/curate/motion/reveal'
 import { Pagination } from 'components/ui'
+import Tooltip from 'components/ui/Tooltip'
 import type { AddressBadge, ProfileActivity } from './data'
 import {
+  ACTIVITY_LAYOUT_OPTIONS,
   FILTERS,
   PAGE_SIZE,
   activityStatus,
+  chainNames,
   filterCount,
   formatInt,
+  jurorTip,
   otherParty,
   registryHref,
   registryShares,
   type ActivityFilter,
+  type ActivityLayout,
+  type JurorBadgeView,
 } from './view'
 import {
   ListTitle,
@@ -46,10 +48,12 @@ import {
 } from './parts'
 
 /*
- * The address's actions as YMax-style rows (or the remembered table / cards),
- * filtered by kind through the URL, twenty to a page; beside them its badge
- * progress and the lists its listed actions touch. Rows open the entry; the
- * registry and the other party keep their own links.
+ * The address's actions as YMax-style rows (or the remembered cards),
+ * filtered by kind through the URL, twenty to a page; beside them its badges
+ * and the lists its listed actions touch. Each row leads with the entry the
+ * action was about (its name, from its identifying fields) and names its list
+ * under it. Rows open the entry; the registry and the other party keep their
+ * own links.
  */
 
 /* ---------- Filter tabs with counts ---------- */
@@ -87,6 +91,7 @@ const FilterTabs = ({
   }, [value, counts])
   return (
     <FilterTabsSlot ref={slot}>
+      {/* Small, under the profile's tabs (md): two levels of choice. */}
       <SegmentedControl<ActivityFilter>
         // Counts widen the labels inside a track that may not resize (it
         // scrolls on phones), so the thumb is placed afresh when they change.
@@ -96,6 +101,7 @@ const FilterTabs = ({
             : 'loading'
         }
         ariaLabel="Show"
+        size="sm"
         value={value}
         onChange={onChange}
         options={FILTERS.map((option) => ({
@@ -110,12 +116,11 @@ const FilterTabs = ({
 
 /* ---------- Layout ---------- */
 
-/** The list with its rail beside it; the table is too wide for a rail, so it
- * takes the full width and the rail drops below it. */
-const Split = styled.div<{ $rail: boolean; $stack: boolean }>`
+/** The list with its rail beside it; under 1100px the rail drops below. */
+const Split = styled.div<{ $rail: boolean }>`
   display: grid;
-  grid-template-columns: ${({ $rail, $stack }) =>
-    $rail && !$stack ? 'minmax(0, 1fr) 340px' : 'minmax(0, 1fr)'};
+  grid-template-columns: ${({ $rail }) =>
+    $rail ? 'minmax(0, 1fr) 340px' : 'minmax(0, 1fr)'};
   gap: 20px;
   align-items: start;
 
@@ -124,14 +129,26 @@ const Split = styled.div<{ $rail: boolean; $stack: boolean }>`
   }
 `
 
+/* The tab track's 38px: when the governance scan settles and this title
+   gives way to the profile's tabs (index.tsx), the list below stays put. */
+const ActivityHead = styled(SectionHead)`
+  min-height: 38px;
+`
+
+/* The kind filter on the left, the layout (icons only, as on Browse) at the
+   right end. The filter's track scrolls on a phone, so the two share a line
+   at every width. */
 const Toolbar = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  flex-wrap: wrap;
   gap: 12px;
   margin-bottom: 14px;
   ${reveal}
+
+  > :last-child {
+    flex: 0 0 auto;
+  }
 `
 
 /** One link stretched over the whole row or card; inner links sit above it. */
@@ -267,10 +284,71 @@ const RowText = styled.div`
   gap: 2px;
   min-width: 0;
 
-  /* 24px tall: the smallest target WCAG 2.2 allows (2.5.8). */
+  /* A row without an entry name leads with its list. 24px tall: the
+     smallest target WCAG 2.2 allows (2.5.8). */
   > [data-title] > a {
     font-size: 15px;
     line-height: 24px;
+  }
+`
+
+/*
+ * The entry's name: plain text, as the row's own link already opens the
+ * entry. An address names it in mono, with its network after it; an address
+ * that is a list the app knows leads with the list's title, the address
+ * after it, small and faint. The overlay
+ * link sits above it and takes the hover, so the full identifying fields are
+ * that link's title, not this line's.
+ *
+ * A list's line wraps in a one-line box: the address, never cut, stays
+ * beside the title when both fit and drops to the clipped second line when
+ * they do not (a phone row), so it is whole or absent, never cut mid-value.
+ * The title alone ellipsizes when it is wider than the row.
+ */
+const EntryLine = styled.span`
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--color-text);
+  font-size: 15px;
+  line-height: 22px;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  [data-mono] {
+    font-family: var(--font-mono);
+    font-size: 14px;
+  }
+
+  small {
+    color: var(--color-faint);
+    font-size: 13px;
+    font-weight: 400;
+  }
+
+  small [data-mono] {
+    font-size: 12px;
+  }
+
+  &[data-list] {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    height: 22px;
+
+    > [data-name] {
+      flex: 0 1 auto;
+      min-width: 0;
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    > small {
+      flex: none;
+      padding-left: 0.3em;
+    }
   }
 `
 
@@ -280,10 +358,29 @@ const RowMeta = styled.div`
   gap: 8px;
   min-width: 0;
   color: var(--color-faint);
-  font-family: var(--font-mono);
   font-size: 12px;
   line-height: 16px;
   white-space: nowrap;
+
+  /* The list, under the entry's name: a step down, muted. */
+  > [data-title] {
+    flex: 0 1 auto;
+  }
+
+  > [data-title] > a {
+    color: var(--color-muted);
+    font-size: 13px;
+    line-height: 24px;
+  }
+
+  > [data-title] > a:hover {
+    color: var(--color-primary);
+  }
+`
+
+/* The entry ID, where no field names the entry. */
+const EntryHash = styled.span`
+  font-family: var(--font-mono);
 `
 
 const RowSide = styled.div`
@@ -347,12 +444,13 @@ const CardGrid = styled.ul`
   list-style: none;
 `
 
+/* No minimum height: the grid already gives the cards of a row one height,
+   and a phone's single column lets each hug its content. */
 const CardItem = styled.li`
   position: relative;
   display: flex;
   flex-direction: column;
   gap: 14px;
-  min-height: 176px;
   padding: 16px;
   border: 1px solid var(--glass-border);
   border-radius: 16px;
@@ -383,21 +481,6 @@ const CardFoot = styled.div`
   line-height: var(--lh-small);
 `
 
-/* ---------- Table ---------- */
-
-const TableName = styled.div`
-  min-width: 0;
-  max-width: 300px;
-
-  small {
-    display: block;
-    color: var(--color-faint);
-    font-family: var(--font-mono);
-    font-size: 12px;
-    line-height: 16px;
-  }
-`
-
 /* ---------- Footer ---------- */
 
 const ListFoot = styled.div`
@@ -412,12 +495,9 @@ const ListFoot = styled.div`
 
 /* ---------- Rail ---------- */
 
-const RailStack = styled.div<{ $row: boolean }>`
+const RailStack = styled.div`
   display: grid;
-  grid-template-columns: ${({ $row }) =>
-    $row
-      ? 'repeat(auto-fit, minmax(min(100%, 320px), 1fr))'
-      : 'minmax(0, 1fr)'};
+  grid-template-columns: minmax(0, 1fr);
   gap: 16px;
   align-items: start;
 `
@@ -491,6 +571,42 @@ const BadgeFigure = styled.span`
   }
 `
 
+/* The juror badge's name carries its explanation (what counts, the Classic
+   lists, a capped read) in the shared tooltip; the glyph says one is there. */
+const TipTarget = styled.span`
+  display: inline-flex;
+  align-items: center;
+  border-radius: 4px;
+
+  svg {
+    color: var(--color-faint);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 3px;
+  }
+`
+
+/* Balanced lines: a two-line tip never leaves one word on its own line. */
+const TipText = styled.span`
+  display: block;
+  text-wrap: balance;
+`
+
+/** A figure that could not be read: said in words, never shown as 0. */
+const Unavailable = styled.span`
+  color: var(--color-muted);
+  font-size: var(--fs-small);
+  line-height: var(--lh-small);
+`
+
+const JurorMeasure = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+`
+
 const Earned = styled.span`
   display: inline-flex;
   align-items: center;
@@ -527,7 +643,70 @@ const ShareRow = styled.div`
 /* ---------- Pieces ---------- */
 
 const EntryId = ({ itemID }: { itemID?: string }) =>
-  itemID ? <span title={itemID}>{truncateMiddle(itemID, 8, 6)}</span> : null
+  itemID ? (
+    <EntryHash title={itemID}>{truncateMiddle(itemID, 8, 6)}</EntryHash>
+  ) : null
+
+/**
+ * The two lines of a row or card: the entry's name over its list (with the
+ * chain when the rows span chains); or, when no field names the entry, the
+ * list over the entry ID, as before names were read.
+ */
+const ActionText = ({
+  activity,
+  oneChain,
+}: {
+  activity: ProfileActivity
+  oneChain: boolean
+}) => {
+  const { entry } = activity
+  const list = (
+    <ListTitle
+      to={registryHref(activity)}
+      verified={activity.registryVerified}
+      sealSize={entry ? 14 : 16}
+    >
+      {activity.registryTitle}
+    </ListTitle>
+  )
+  const chain = !oneChain && <ChainChip chainId={activity.chainId} size="sm" />
+  if (!entry)
+    return (
+      <RowText data-text>
+        {list}
+        <RowMeta data-meta>
+          <EntryId itemID={activity.itemID} />
+          {chain}
+        </RowMeta>
+      </RowText>
+    )
+  return (
+    <RowText data-text>
+      <EntryLine data-list={entry.list ? '' : undefined}>
+        {entry.list ? (
+          // A list of lists' entry is a list: its title, the address beside.
+          <>
+            <span data-name>{entry.list}</span>
+            <small>
+              {'· '}
+              <span data-mono>{entry.text}</span>
+              {entry.network && ` · ${entry.network}`}
+            </small>
+          </>
+        ) : entry.address ? (
+          <span data-mono>{entry.text}</span>
+        ) : (
+          entry.text
+        )}
+        {entry.network && !entry.list && <small> · {entry.network}</small>}
+      </EntryLine>
+      <RowMeta data-meta>
+        {list}
+        {chain}
+      </RowMeta>
+    </RowText>
+  )
+}
 
 const PartyLine = ({
   activity,
@@ -548,23 +727,170 @@ const PartyLine = ({
   )
 }
 
-/** Click anywhere on a table row opens the entry; inner links keep their own target. */
-const openUnlessLink = (
-  event: React.MouseEvent<HTMLElement>,
-  open: () => void,
-) => {
-  if ((event.target as HTMLElement).closest('a, button')) return
-  open()
-}
+/**
+ * Every identifying field of the entry, one "Label: value" per line: the
+ * name in the row is cut to an ellipsis or a shortened address, and this is
+ * where it reads in full. On the overlay link, the element the pointer hits.
+ */
+const entryTitle = (activity: ProfileActivity) =>
+  activity.entryFields?.join('\n')
 
 const entryLabel = (activity: ProfileActivity) =>
-  activity.itemID
-    ? `Open entry ${truncateMiddle(activity.itemID, 8, 6)} in ${activity.registryTitle}`
-    : `Open ${activity.registryTitle}`
+  activity.entry
+    ? `Open ${activity.entry.list ?? activity.entry.text} in ${activity.registryTitle}`
+    : activity.itemID
+      ? `Open entry ${truncateMiddle(activity.itemID, 8, 6)} in ${activity.registryTitle}`
+      : `Open ${activity.registryTitle}`
 
 const prefersReducedMotion = () =>
   typeof window !== 'undefined' &&
   !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+
+/* ---------- Badges ---------- */
+
+const plural = (count: number, one: string, many: string) =>
+  `${formatInt(count)} ${count === 1 ? one : many}`
+
+/**
+ * The juror badge: a record, not a goal, so it has no target and no
+ * "Earned". The figure is the seats; the rail is the share of them voted in.
+ * A seat in a round still collecting votes is neither voted nor missed, and
+ * says so. Only what was read is shown: a chain that did not answer makes
+ * the figure a lower bound and is named, votes that could not be read leave
+ * no rail, and nothing read at all is "unavailable", never 0.
+ */
+const JurorRow = ({ juror }: { juror: JurorBadgeView }) => {
+  const ready = juror.state === 'ready'
+  const lower = juror.unread.length > 0 || juror.capped.length > 0
+  const unreadNote =
+    juror.unread.length > 0 ? `${chainNames(juror.unread)} not read` : ''
+  const caption = [
+    juror.votes !== undefined
+      ? juror.seats > 0 && `${formatInt(juror.votes)} voted`
+      : `Votes on ${chainNames(juror.votesUnread)} couldn’t be read`,
+    juror.votes !== undefined &&
+      juror.voting > 0 &&
+      `${formatInt(juror.voting)} still voting`,
+    unreadNote,
+  ]
+    .filter(Boolean)
+    .join(' · ')
+  return (
+    <BadgeRow>
+      <div style={{ minWidth: 0 }}>
+        <Tooltip title={<TipText>{jurorTip(juror)}</TipText>}>
+          <TipTarget tabIndex={0}>
+            <strong>
+              Juror on Curate
+              <CurateIcon name="help" size={13} />
+            </strong>
+          </TipTarget>
+        </Tooltip>
+        {/* By role, so it never reads as the profile's own Disputes figure,
+            which counts the disputes the address was a party to. */}
+        <Small $faint style={{ display: 'block' }}>
+          {ready && juror.cases > 0
+            ? `Drawn in ${plural(juror.cases, 'dispute', 'disputes')}`
+            : 'Seats drawn in Curate disputes'}
+        </Small>
+      </div>
+      {juror.state === 'loading' ? (
+        <SkeletonBlock $width="32px" $height="20px" aria-hidden />
+      ) : !ready ? (
+        <Unavailable title="The court index did not answer; try again later">
+          unavailable
+        </Unavailable>
+      ) : (
+        <BadgeFigure
+          aria-label={`${lower ? 'At least ' : ''}${plural(juror.seats, 'seat', 'seats')}`}
+        >
+          {formatInt(juror.seats)}
+          {lower && '+'}
+          <small> {juror.seats === 1 ? 'seat' : 'seats'}</small>
+        </BadgeFigure>
+      )}
+      {ready && (juror.seats > 0 || caption) && (
+        <JurorMeasure>
+          {juror.seats > 0 && juror.votes !== undefined && (
+            <Rail
+              $value={juror.votes / juror.seats}
+              $tone="neutral"
+              role="img"
+              aria-label={`${formatInt(juror.votes)} of ${plural(juror.seats, 'seat', 'seats')} voted`}
+            />
+          )}
+          {caption && (
+            <Small $faint style={{ display: 'block' }}>
+              {caption}
+            </Small>
+          )}
+        </JurorMeasure>
+      )}
+    </BadgeRow>
+  )
+}
+
+/**
+ * The Badges card, beside the activity: the goal badges (Librarian,
+ * Sheriff, Maintainer) as progress, then the juror record. An address with
+ * no action has no activity and no card: its juror record leads the
+ * profile panel's figures instead (profile.tsx).
+ */
+export const BadgesCard = ({
+  badges,
+  juror,
+  scope,
+  style,
+}: {
+  badges?: AddressBadge[]
+  juror?: JurorBadgeView
+  /** "All chains" or the chain the badges count. */
+  scope: string
+  style?: React.CSSProperties
+}) => (
+  <RailCard $padding="compact" aria-label="Badges" style={style}>
+    <RailHead>
+      <h3>Badges</h3>
+      <Label $tone="faint">{scope}</Label>
+    </RailHead>
+    {badges?.map((badge) => (
+      <BadgeRow key={badge.id}>
+        <div style={{ minWidth: 0 }}>
+          <strong>{badge.label}</strong>
+          <Small $faint style={{ display: 'block' }}>
+            {badge.description}
+          </Small>
+        </div>
+        {/* Progress only while unearned: a capped "100 / 100" would read
+            as a count and contradict the figures. */}
+        {badge.earned ? (
+          <Earned>
+            <StatusDot $tone="registered" aria-hidden />
+            Earned
+          </Earned>
+        ) : (
+          <BadgeFigure aria-label={`${badge.progress} of ${badge.goal}`}>
+            {formatInt(badge.progress)}
+            <small> / {formatInt(badge.goal)}</small>
+          </BadgeFigure>
+        )}
+        <Rail
+          $value={
+            badge.earned ? 1 : badge.goal ? badge.progress / badge.goal : 0
+          }
+          $tone={badge.earned ? 'registered' : 'window'}
+          role="img"
+          aria-label={
+            badge.earned
+              ? `${badge.label}: earned`
+              : `${badge.label}: ${badge.progress} of ${badge.goal}`
+          }
+        />
+      </BadgeRow>
+    ))}
+    {juror && <JurorRow juror={juror} />}
+  </RailCard>
+)
 
 /* ---------- Section ---------- */
 
@@ -590,10 +916,12 @@ export const ActivitySection = ({
   layout,
   onLayout,
   badges,
+  juror,
   badgeScope,
   truncated,
   chainList,
   now,
+  embedded = false,
 }: {
   address: string
   loading: boolean
@@ -607,9 +935,11 @@ export const ActivitySection = ({
   onFilter: (value: ActivityFilter) => void
   page: number
   onPage: (page: number) => void
-  layout: ListLayout
-  onLayout: (layout: ListLayout) => void
+  layout: ActivityLayout
+  onLayout: (layout: ActivityLayout) => void
   badges?: AddressBadge[]
+  /** The juror record in the scope, read apart from the profile. */
+  juror?: JurorBadgeView
   /** "All chains" or the chain the badges count. */
   badgeScope: string
   /** True when the list stops at its limit (older actions not listed). */
@@ -617,8 +947,12 @@ export const ActivitySection = ({
   /** "Ethereum, Gnosis, Sepolia" for the empty state. */
   chainList: string
   now: number
+  /**
+   * Under the profile's tabs, which name the section: no heading of its own
+   * (the open tab's name is the section's hidden h2).
+   */
+  embedded?: boolean
 }) => {
-  const navigate = useNavigate()
   // A new page starts at the top of the list, not at the pager just used
   // (the rows change under it, the viewport stayed at the bottom).
   const sectionRef = useRef<HTMLElement>(null)
@@ -686,82 +1020,6 @@ export const ActivitySection = ({
           : 'Its other actions are one filter away.'}
       </QuietState>
     </Surface>
-  ) : layout === 'table' ? (
-    <TableScroller>
-      <Table>
-        <thead>
-          <tr>
-            <th>Action</th>
-            <th>Registry</th>
-            <th>Entry</th>
-            {!oneChain && <th>Chain</th>}
-            <th>Other party</th>
-            <th className="num">When</th>
-            <th aria-label="Open" />
-          </tr>
-        </thead>
-        <tbody>
-          {visible.map((activity) => {
-            const party = otherParty(activity, address)
-            return (
-              <tr
-                key={activity.id}
-                data-href={activity.href}
-                onClick={(event) =>
-                  openUnlessLink(event, () => navigate(activity.href))
-                }
-              >
-                <td>
-                  <EntryStatus status={activityStatus(activity)} now={now} />
-                </td>
-                <td>
-                  <TableName>
-                    <ListTitle
-                      to={registryHref(activity)}
-                      verified={activity.registryVerified}
-                    >
-                      {activity.registryTitle}
-                    </ListTitle>
-                    <small>{truncateMiddle(activity.registryAddress)}</small>
-                  </TableName>
-                </td>
-                <td style={{ whiteSpace: 'nowrap' }}>
-                  {activity.itemID ? (
-                    <Data $mono $weight={400} title={activity.itemID}>
-                      {truncateMiddle(activity.itemID, 8, 6)}
-                    </Data>
-                  ) : (
-                    <Small $faint>—</Small>
-                  )}
-                </td>
-                {!oneChain && (
-                  <td>
-                    <ChainChip chainId={activity.chainId} size="sm" />
-                  </td>
-                )}
-                <td>
-                  {party ? (
-                    <PartyLink to={`/address/${party}`} title={party}>
-                      {truncateMiddle(party)}
-                    </PartyLink>
-                  ) : (
-                    <Small $faint>—</Small>
-                  )}
-                </td>
-                <td className="num" style={{ whiteSpace: 'nowrap' }}>
-                  <When timestamp={activity.timestamp} now={now} />
-                </td>
-                <td className="num">
-                  <Link to={activity.href} aria-label={entryLabel(activity)}>
-                    <CurateIcon name="external" size={14} />
-                  </Link>
-                </td>
-              </tr>
-            )
-          })}
-        </tbody>
-      </Table>
-    </TableScroller>
   ) : layout === 'cards' ? (
     <CardGrid>
       {visible.map((activity, index) => (
@@ -773,6 +1031,7 @@ export const ActivitySection = ({
             to={activity.href}
             data-overlay
             aria-label={entryLabel(activity)}
+            title={entryTitle(activity)}
           />
           <CardTop>
             <RegistryLogo
@@ -780,24 +1039,9 @@ export const ActivitySection = ({
               seed={activity.registryAddress}
               size={36}
             />
-            <RowText>
-              <ListTitle
-                to={registryHref(activity)}
-                verified={activity.registryVerified}
-              >
-                {activity.registryTitle}
-              </ListTitle>
-              <RowMeta>
-                <EntryId itemID={activity.itemID} />
-              </RowMeta>
-            </RowText>
+            <ActionText activity={activity} oneChain={oneChain} />
           </CardTop>
           <EntryStatus status={activityStatus(activity)} now={now} />
-          {!oneChain && (
-            <div>
-              <ChainChip chainId={activity.chainId} size="sm" />
-            </div>
-          )}
           <CardFoot>
             <When timestamp={activity.timestamp} now={now} />
             <PartyLine activity={activity} address={address} />
@@ -816,24 +1060,14 @@ export const ActivitySection = ({
             to={activity.href}
             data-overlay
             aria-label={entryLabel(activity)}
+            title={entryTitle(activity)}
           />
           <RegistryLogo
             uri={activity.registryLogo}
             seed={activity.registryAddress}
             data-logo
           />
-          <RowText data-text>
-            <ListTitle
-              to={registryHref(activity)}
-              verified={activity.registryVerified}
-            >
-              {activity.registryTitle}
-            </ListTitle>
-            <RowMeta data-meta>
-              <EntryId itemID={activity.itemID} />
-              {!oneChain && <ChainChip chainId={activity.chainId} size="sm" />}
-            </RowMeta>
-          </RowText>
+          <ActionText activity={activity} oneChain={oneChain} />
           <div data-status>
             <EntryStatus status={activityStatus(activity)} now={now} />
           </div>
@@ -851,31 +1085,34 @@ export const ActivitySection = ({
 
   return (
     <section aria-label="Activity" ref={sectionRef}>
-      <SectionHead>
-        <SectionTitle>
-          Activity
-          {/* A cut list says so here, beside the filter counts it feeds,
-              which then count only these. */}
-          {!loading && activities.length > 0 && (
-            <small>
-              {truncated
-                ? `Latest ${formatInt(activities.length)}`
-                : formatInt(activities.length)}
-            </small>
-          )}
-        </SectionTitle>
-        <SegmentedControl
-          ariaLabel="Layout"
-          value={layout}
-          onChange={onLayout}
-          options={LAYOUT_OPTIONS}
-        />
-      </SectionHead>
+      {!embedded && (
+        <ActivityHead>
+          <SectionTitle>
+            Activity
+            {/* A cut list says so here, beside the filter counts it feeds,
+                which then count only these. */}
+            {!loading && activities.length > 0 && (
+              <small>
+                {truncated
+                  ? `Latest ${formatInt(activities.length)}`
+                  : formatInt(activities.length)}
+              </small>
+            )}
+          </SectionTitle>
+        </ActivityHead>
+      )}
 
-      <Split $rail={showRail} $stack={layout === 'table'}>
+      <Split $rail={showRail}>
         <div style={{ minWidth: 0 }}>
           <Toolbar style={{ ['--i' as string]: 1 }}>
             <FilterTabs value={filter} counts={counts} onChange={onFilter} />
+            <SegmentedControl<ActivityLayout>
+              ariaLabel="Layout"
+              size="sm"
+              value={layout}
+              onChange={onLayout}
+              options={ACTIVITY_LAYOUT_OPTIONS}
+            />
           </Toolbar>
           {/* Keyed so a new filter or page replays the staggered entrance. */}
           <div key={`${filter}-${page}-${layout}`}>{list}</div>
@@ -903,59 +1140,14 @@ export const ActivitySection = ({
         </div>
 
         {showRail && (
-          <RailStack $row={layout === 'table'}>
+          <RailStack>
             {badges && (
-              <RailCard
-                $padding="compact"
-                aria-label="Badges"
+              <BadgesCard
+                badges={badges}
+                juror={juror}
+                scope={badgeScope}
                 style={{ ['--i' as string]: 2 }}
-              >
-                <RailHead>
-                  <h3>Badges</h3>
-                  <Label $tone="faint">{badgeScope}</Label>
-                </RailHead>
-                {badges.map((badge) => (
-                  <BadgeRow key={badge.id}>
-                    <div style={{ minWidth: 0 }}>
-                      <strong>{badge.label}</strong>
-                      <Small $faint style={{ display: 'block' }}>
-                        {badge.description}
-                      </Small>
-                    </div>
-                    {/* Progress only while unearned: a capped "100 / 100"
-                        would read as a count and contradict the figures. */}
-                    {badge.earned ? (
-                      <Earned>
-                        <StatusDot $tone="registered" aria-hidden />
-                        Earned
-                      </Earned>
-                    ) : (
-                      <BadgeFigure
-                        aria-label={`${badge.progress} of ${badge.goal}`}
-                      >
-                        {formatInt(badge.progress)}
-                        <small> / {formatInt(badge.goal)}</small>
-                      </BadgeFigure>
-                    )}
-                    <Rail
-                      $value={
-                        badge.earned
-                          ? 1
-                          : badge.goal
-                            ? badge.progress / badge.goal
-                            : 0
-                      }
-                      $tone={badge.earned ? 'registered' : 'window'}
-                      role="img"
-                      aria-label={
-                        badge.earned
-                          ? `${badge.label}: earned`
-                          : `${badge.label}: ${badge.progress} of ${badge.goal}`
-                      }
-                    />
-                  </BadgeRow>
-                ))}
-              </RailCard>
+              />
             )}
 
             {shares.length > 0 && (

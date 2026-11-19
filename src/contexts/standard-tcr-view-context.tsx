@@ -14,6 +14,10 @@ const StandardTCRViewProvider = ({
   tcrAddress: string
 }) => {
   const ctx = useStandardTcrView(tcrAddress)
+  // Memoized on the fields readers use, by hand. The governor is one of
+  // them on its own account: the list page shows its governor a control
+  // and hides it once a transfer is read, which must not depend on a
+  // refetch happening to rebuild the deposits too.
   const value = useMemo(
     () => ctx,
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -32,6 +36,7 @@ const StandardTCRViewProvider = ({
       ctx.connectedTCRAddr,
       ctx.metaEvidenceFailed,
       ctx.paramsFailed,
+      ctx.governor,
     ],
   )
   return (
