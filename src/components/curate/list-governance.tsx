@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useAccount } from 'wagmi'
 import Tooltip from 'components/ui/Tooltip'
 import { errorToast } from 'utils/wrap-with-toast'
+import { hasCodeQuery } from 'utils/safe-transaction'
 import type { DashboardRegistry, RegistryKind } from 'pages/dashboard/types'
 import { CurateIcon } from './icons'
 import { Button } from './primitives'
@@ -25,6 +26,12 @@ import { Button } from './primitives'
  * lands. After a governor transfer, the page's next read of the governor no
  * longer matches, and the button goes; so it does when the live read here
  * already names someone else.
+ *
+ * A list governed by a contract (most often a Safe) shows the button to
+ * any connected wallet: a Safe's owners never connect as the Safe. The
+ * dialog then builds the change the same way and hands it over as a Safe
+ * Transaction Builder file or calldata, signed in the Safe; its settings
+ * are read on the click, not ahead, since most visitors never press it.
  *
  * The dialog and the governance reads are loaded on demand: the profile's
  * governance module is large, and nobody but a governor needs it here.
@@ -98,6 +105,15 @@ export const ListGovernance = ({
   const [open, setOpen] = useState(false)
   const isGovernor =
     isConnected && !!account && !!governor && lower(account) === lower(governor)
+  // A governor that is a contract (most often a Safe): its owners never
+  // connect as it, so any connected wallet may prepare a change for it to
+  // sign. One getCode on the list's chain, read once a wallet is connected.
+  const contractGovernor = useQuery({
+    ...hasCodeQuery(chainId, governor),
+    enabled:
+      isConnected && !isGovernor && hasCodeQuery(chainId, governor).enabled,
+  }).data
+  const exporting = !isGovernor && isConnected && contractGovernor === true
 
   // The dashboard's shape for a list (its id format too), which the
   // governance reads and the dialog take; the counts play no part there.
@@ -141,12 +157,12 @@ export const ListGovernance = ({
 
   // Fetch the dialog's code ahead of the click too.
   useEffect(() => {
-    if (isGovernor) void import('pages/address/governance')
-  }, [isGovernor])
+    if (isGovernor || exporting) void import('pages/address/governance')
+  }, [isGovernor, exporting])
 
   const transferred =
-    !!settings.data?.governor && settings.data.governor !== lower(account)
-  if (!isGovernor || transferred) return null
+    !!settings.data?.governor && settings.data.governor !== lower(governor)
+  if ((!isGovernor && !exporting) || transferred) return null
 
   const waiting = !settings.data && settings.isFetching
   const openDialog = async () => {
@@ -165,9 +181,15 @@ export const ListGovernance = ({
   return (
     <Wrap>
       <Tooltip
-        title={`You govern this list: change its ${
-          kind === 'permanent' ? 'stake' : 'deposits'
-        }, periods, court and policy.`}
+        title={
+          exporting
+            ? `This list is governed by a Safe: prepare a change to its ${
+                kind === 'permanent' ? 'stake' : 'deposits'
+              }, periods, court or policy here, then sign it in the Safe.`
+            : `You govern this list: change its ${
+                kind === 'permanent' ? 'stake' : 'deposits'
+              }, periods, court and policy.`
+        }
       >
         <Button
           type="button"
