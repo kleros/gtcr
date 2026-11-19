@@ -227,7 +227,7 @@ const End = styled.div<{ $side: 'left' | 'right' }>`
     line-height: 16px;
     font-weight: 500;
     font-variant-numeric: tabular-nums;
-    white-space: nowrap;
+    white-space: pre;
   }
 `
 
@@ -312,9 +312,31 @@ const shortDate = new Intl.DateTimeFormat('en-GB', {
   hour12: false,
 })
 
-/** "21 Oct, 19:49 UTC" */
-const formatShort = (timestamp: number): string =>
-  `${shortDate.format(new Date(timestamp * 1000))} UTC`
+const yearDate = new Intl.DateTimeFormat('en-GB', {
+  day: 'numeric',
+  month: 'short',
+  year: 'numeric',
+  timeZone: 'UTC',
+})
+const clockTime = new Intl.DateTimeFormat('en-GB', {
+  hour: '2-digit',
+  minute: '2-digit',
+  timeZone: 'UTC',
+  hour12: false,
+})
+
+/**
+ * "21 Oct, 19:49 UTC". Outside the current year the year is named, and the
+ * time goes on a line of its own ("21 Oct 2025" / "19:49 UTC"): the date
+ * and its UTC no longer fit the caption's half on one line. Where the text
+ * flows (a note) the break reads as a space.
+ */
+const formatShort = (timestamp: number): string => {
+  const date = new Date(timestamp * 1000)
+  return date.getUTCFullYear() === new Date().getUTCFullYear()
+    ? `${shortDate.format(date)} UTC`
+    : `${yearDate.format(date)}\n${clockTime.format(date)} UTC`
+}
 
 export interface WindowEnd {
   /** "Closes", "Challenger funds by" */
