@@ -155,33 +155,52 @@ export const searchActivities = (
  * from this address's side (Accept favors the requester, Reject the
  * challenger, None is no ruling).
  */
-const activityDetail = (activity: ProfileActivity): string | undefined => {
+/*
+ * How the user's action ended, which is what a profile row's dot shows (round
+ * 20, after Fortunato's review: an always-grey dot read as a dead LED beside
+ * the list pages, where a dot is always lit). The word stays the action
+ * ("Submitted", "Challenged"); the dot and the detail say where it stands,
+ * in the list pages' colours: blue while open, amber in court, green when it
+ * went the user's way, red when it did not, grey only when not known.
+ */
+type ActivityOutcome = {
+  tone: EntryStatusView['tone']
+  detail?: string
+}
+
+const activityOutcome = (activity: ProfileActivity): ActivityOutcome => {
   if (activity.disputed) {
-    if (activity.resolved === false) return 'in court'
-    if (activity.resolved !== true) return undefined
+    if (activity.resolved === false)
+      return { tone: 'contested', detail: 'in court' }
+    if (activity.resolved !== true) return { tone: 'neutral' }
     const outcome = activity.disputeOutcome
-    if (outcome === 'None') return 'no ruling'
-    if (outcome !== 'Accept' && outcome !== 'Reject') return 'dispute resolved'
+    if (outcome === 'None') return { tone: 'neutral', detail: 'no ruling' }
+    if (outcome !== 'Accept' && outcome !== 'Reject')
+      return { tone: 'neutral', detail: 'dispute resolved' }
     const requesterWon = outcome === 'Accept'
     const won = activity.kind === 'challenge' ? !requesterWon : requesterWon
-    return won ? 'dispute won' : 'dispute lost'
+    return won
+      ? { tone: 'registered', detail: 'dispute won' }
+      : { tone: 'off', detail: 'dispute lost' }
   }
-  if (activity.resolved === false) return 'pending'
-  return undefined
+  if (activity.resolved === false) return { tone: 'window', detail: 'open' }
+  // Executed with no challenge: the request went through as asked.
+  if (activity.resolved === true && activity.kind !== 'challenge')
+    return {
+      tone: 'registered',
+      detail: activity.kind === 'removal' ? 'removed' : 'accepted',
+    }
+  return { tone: 'neutral' }
 }
 
 /**
- * Dot and label for an action. Actions are events, not entry states, so the
- * dot stays grey; it turns amber only while the request's dispute is still
- * open. The label is the data layer's own wording ("Submitted",
- * "Challenged · case 12").
+ * Dot and label for an action: the label is the data layer's own wording
+ * ("Submitted", "Challenged · case 12"), the dot and detail how it ended.
  */
-export const activityStatus = (activity: ProfileActivity): EntryStatusView => ({
-  tone:
-    activity.disputed && activity.resolved === false ? 'contested' : 'neutral',
-  label: activity.status,
-  detail: activityDetail(activity),
-})
+export const activityStatus = (activity: ProfileActivity): EntryStatusView => {
+  const { tone, detail } = activityOutcome(activity)
+  return { tone, label: activity.status, detail }
+}
 
 /** The counterparty of an action, if the data names one. */
 export const otherParty = (
