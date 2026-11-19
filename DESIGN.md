@@ -467,7 +467,8 @@ way (dashboard, Browse, registry pages, the profile, the landing page).
   a verified list's name, small feeds and rails 12 to 14px, with no tooltip; Community rows carry
   no mark. On a list of lists, the entries it vouches for carry the seal too. Browse picks Kleros
   Verified (the default), Community or All above its toolbar, with the choice's meaning in one
-  line beside it.
+  line beside it. Its figures above are three boxes in a row (round 8): Kleros Verified with its
+  count and logos on the lit rim, Community lists, then the entries and open requests.
 - Kleros Verified is shown as a count with its lists, each leading to its list (the dashboard's
   tiles, newest to earn the badge first with the month of its earliest registration on its chain's
   list of lists, the lists of lists themselves last as "List of lists"; Browse's logos with their
@@ -592,23 +593,25 @@ way (dashboard, Browse, registry pages, the profile, the landing page).
   cell is blank; an odd last row spans the line. Phones stack.
 - Tooltip triggers are their own text's width, so a bubble opens over what it explains.
 - **The chart** (round 7) shows every mainnet: the dashboard's chain switch is hidden for now and
-  the page is always "All chains", unnamed. Its switch is the range, `30D · 6M · 1Y · 5Y · All`:
-  30D per day from the page's own load; 6M and 1Y per week, 5Y and All per month, from the whole
-  history (Standard requests and challenges, Stake submissions and challenges; Classic left out),
+  the page is always "All chains", unnamed. Its switch is the range, `30D · 6M · 1Y · 3Y` (round
+  8: three years is the longest, which starts after a company wallet's bulk submissions of 2023
+  without singling out any address): 30D per day from the page's own load; 6M and 1Y per week, 3Y
+  per month, from the whole history (Standard requests and challenges, Stake submissions and challenges; Classic left out),
   read in pages after the page's own load, three at a time, and retried as a whole if a chain
   fails, never drawn with a hole. The current bucket is drawn dashed.
-- **Top curators are all time** (round 7), ranked by requests plus challenges from that same
-  history, with their bounties won all time.
+- **Top curators follow the chart's range** (round 8: the date filter is for both), ranked by
+  requests plus challenges over it, with their bounties won all time; four of them, so the panel
+  keeps the chart's height.
 - **Self-sustaining mechanism.** Each ring carries a tooltip built from the same counts as the
   sentence. No line names the Classic lists (round 7). The sentence sits under the money at a 68ch measure, beside the tiles when there are
   one or two coins. Two or three coins take one equal column each across the money column, a lone
   coin is never stretched, and four or more auto-fit; between 901 and 1099px the rings are 140px so
   three coins fit on one line, and at 900px and below the rings take half the width each, centred.
   Tiles' lines stay level (subgrid). A Stake tile says "Any ERC-20, set per list".
-- Top curators sit beside the chart (round 7, on trial), in the same panel behind a hairline,
-  320px wide, each with an LED bar of their activity against the top curator's (requests in the
-  accent, challenges in `contested`); below 1240px they stack under the chart. Most active takes
-  the page's width.
+- Top curators sit beside the chart (round 7), in the same panel behind a hairline, 320px wide
+  (260px below 1100px), each with an LED bar of their activity against the top curator's
+  (requests in the accent, challenges in `contested`) and their counts on one line; below 900px
+  they stack under the chart. Most active takes the page's width.
 
 ## Entry page
 

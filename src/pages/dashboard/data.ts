@@ -1511,6 +1511,8 @@ export interface ActivityEvent {
   at: number
   chainId: number
   kind: 'submissions' | 'removals' | 'challenges'
+  /** Who made it (lowercase): the requester, submitter or challenger. */
+  who?: string
 }
 
 const envioPageEvents = (
@@ -1529,11 +1531,18 @@ const envioPageEvents = (
           requestEntity.requestType === 'ClearingRequested'
             ? 'removals'
             : 'submissions',
+        who: String(requestEntity.requester ?? '').toLowerCase(),
       })
   }
   for (const challenge of payload.standardChallenges ?? []) {
     const at = toNumber(challenge.challengeTime)
-    if (at >= since) events.push({ at, chainId, kind: 'challenges' })
+    if (at >= since)
+      events.push({
+        at,
+        chainId,
+        kind: 'challenges',
+        who: String(challenge.challenger ?? '').toLowerCase(),
+      })
   }
   return events
 }
@@ -1544,13 +1553,21 @@ const permanentPageEvents = (
   chainId: number,
 ): ActivityEvent[] => [
   ...(payload.submissions ?? [])
-    .map((submission: any) => toNumber(submission.createdAt))
-    .filter((at: number) => at >= since)
-    .map((at: number) => ({ at, chainId, kind: 'submissions' as const })),
+    .map((submission: any) => ({
+      at: toNumber(submission.createdAt),
+      chainId,
+      kind: 'submissions' as const,
+      who: String(submission.submitter ?? '').toLowerCase(),
+    }))
+    .filter((event: ActivityEvent) => event.at >= since),
   ...(payload.challenges ?? [])
-    .map((challenge: any) => toNumber(challenge.createdAt))
-    .filter((at: number) => at >= since)
-    .map((at: number) => ({ at, chainId, kind: 'challenges' as const })),
+    .map((challenge: any) => ({
+      at: toNumber(challenge.createdAt),
+      chainId,
+      kind: 'challenges' as const,
+      who: String(challenge.challenger ?? '').toLowerCase(),
+    }))
+    .filter((event: ActivityEvent) => event.at >= since),
 ]
 
 /** Buckets events into the window's 30 UTC days, oldest first. */
@@ -1767,8 +1784,8 @@ export interface ActivityHistory {
 }
 
 /**
- * The whole history (round 7: Top curators "always all time", and the
- * chart's 6M / 1Y / 5Y / All ranges). The same rows the 30-day load reads,
+ * The whole history (the chart's 6M / 1Y / 3Y ranges and Top curators over
+ * the same range, round 8; the events carry who made them). The same rows the 30-day load reads,
  * from the start: the Standard lists' requests and challenges, and the
  * Stake lists' submissions and challenges. The retired Classic lists stay
  * out, as everywhere but the bounties and the entries ever curated (round 4:

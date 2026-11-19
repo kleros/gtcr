@@ -77,6 +77,8 @@ import {
   scopedSeries,
   scopedWins,
   historySeries,
+  curatorsSince,
+  rangeStart,
   type ChartRange,
   sortRegistries,
   toAmount,
@@ -156,8 +158,7 @@ const RANGE_OPTIONS: { value: ChartRange; label: string }[] = [
   { value: '30d', label: '30D' },
   { value: '6m', label: '6M' },
   { value: '1y', label: '1Y' },
-  { value: '5y', label: '5Y' },
-  { value: 'all', label: 'All' },
+  { value: '3y', label: '3Y' },
 ]
 
 /** What each range's chart counts, over its legend. */
@@ -165,17 +166,26 @@ const RANGE_LEGEND: Record<ChartRange, string> = {
   '30d': 'Per day · last 30 days',
   '6m': 'Per week · last 6 months',
   '1y': 'Per week · last year',
-  '5y': 'Per month · last 5 years',
-  all: 'Per month · all time',
+  '3y': 'Per month · last 3 years',
 }
 
 const RANGE_WORDS: Record<ChartRange, string> = {
   '30d': 'per day over the last 30 days, today so far included',
   '6m': 'per week over the last 6 months, this week so far included',
   '1y': 'per week over the last year, this week so far included',
-  '5y': 'per month over the last 5 years, this month so far included',
-  all: 'per month since the first, this month so far included',
+  '3y': 'per month over the last 3 years, this month so far included',
 }
+
+/** Top curators' window, as their label names it (round 8: the range's). */
+const RANGE_SPAN: Record<ChartRange, string> = {
+  '30d': 'last 30 days',
+  '6m': 'last 6 months',
+  '1y': 'last year',
+  '3y': 'last 3 years',
+}
+
+/** Curators beside the chart: few, so the panel keeps the chart's height. */
+const TOP_CURATORS = 4
 
 /** A logo, on the IPFS gateway only (ipfsImageUrl says why). */
 const mediaUrl = (uri?: string | null): string | null =>
@@ -299,8 +309,9 @@ const Actions = styled.div`
 /*
  * Round 7, on trial ("the top curators could go next to the initial chart
  * … on the right"): the panel holds the figures and the chart, and beside
- * them, behind a hairline, Top curators all time, each with an LED bar of
- * their activity against the top curator's. Below 1240px they stack.
+ * them, behind a hairline, the top four curators over the chart's range,
+ * each with an LED bar of their activity against the top curator's, so the
+ * panel keeps the chart's height (round 8). Below 900px they stack.
  */
 const Featured = styled(Surface)`
   display: grid;
@@ -309,7 +320,11 @@ const Featured = styled(Surface)`
   padding: 28px 28px 20px;
   ${reveal}
 
-  @media (max-width: 1240px) {
+  @media (max-width: 1100px) {
+    grid-template-columns: minmax(0, 1fr) 260px;
+  }
+
+  @media (max-width: 900px) {
     grid-template-columns: minmax(0, 1fr);
   }
 
@@ -326,11 +341,25 @@ const CuratorsAside = styled.section`
   display: flex;
   flex-direction: column;
   min-width: 0;
+
+  /* A curator's counts stay on one line under the bar. */
+  a [data-counts] {
+    overflow: hidden;
+    font-size: 12px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
   margin-left: 28px;
   padding-left: 24px;
   border-left: 1px solid var(--glass-border);
 
-  @media (max-width: 1240px) {
+  @media (max-width: 1100px) {
+    margin-left: 20px;
+    padding-left: 18px;
+  }
+
+  @media (max-width: 900px) {
     margin: 20px 0 0;
     padding: 20px 0 0;
     border-left: 0;
@@ -965,45 +994,49 @@ const Dashboard = () => {
   )
 
   /*
-   * Top curators, all time (round 7), ranked by what their row shows:
-   * requests made plus challenges made, from the whole history. Their
-   * bounties won are all time too, from the rulings ledger.
+   * Top curators over the chart's range (round 8: the date filter is for
+   * both), ranked by what their row shows: requests made plus challenges
+   * made. Their bounties won are all time, from the rulings ledger.
    */
   const wins = useMemo(
     () => (data ? scopedWins(data, chains) : new Map<string, number>()),
     [data, chains],
   )
   const winsKnown = !!data && chains.every((chainId) => data.rulings?.[chainId])
-  const curators = useMemo(
-    () =>
-      (history.data?.users ?? [])
-        .map((user) => {
-          let requests = 0
-          let challenges = 0
-          let lastActiveAt = 0
-          for (const [id, stats] of Object.entries(user.chains)) {
-            if (!chains.includes(Number(id))) continue
-            requests += stats.submissions + stats.removals
-            challenges += stats.challenges
-            lastActiveAt = Math.max(lastActiveAt, stats.lastActiveAt)
-          }
-          return {
-            address: user.address,
-            requests,
-            challenges,
-            won: wins.get(user.address.toLowerCase()) ?? 0,
-            lastActiveAt,
-          }
-        })
-        .filter((row) => row.requests + row.challenges > 0)
-        .sort(
-          (a, b) =>
-            b.requests + b.challenges - (a.requests + a.challenges) ||
-            b.lastActiveAt - a.lastActiveAt,
-        )
-        .slice(0, 6),
-    [history.data, chains, wins],
-  )
+  const curators = useMemo(() => {
+    // The chart's range (round 8): 30 days from the page's own load, the
+    // longer ranges from the history, from the first bucket's start.
+    const rows =
+      range === '30d'
+        ? (data?.users ?? []).map((user) => {
+            let requests = 0
+            let challenges = 0
+            let lastActiveAt = 0
+            for (const [id, stats] of Object.entries(user.chains)) {
+              if (!chains.includes(Number(id))) continue
+              requests += stats.submissions + stats.removals
+              challenges += stats.challenges
+              lastActiveAt = Math.max(lastActiveAt, stats.lastActiveAt)
+            }
+            return { address: user.address, requests, challenges, lastActiveAt }
+          })
+        : history.data
+          ? curatorsSince(history.data.events, rangeStart(range, now), chains)
+          : []
+    return rows
+      .map((row) => ({
+        ...row,
+        won: wins.get(row.address.toLowerCase()) ?? 0,
+      }))
+      .filter((row) => row.requests + row.challenges > 0)
+      .sort(
+        (a, b) =>
+          b.requests + b.challenges - (a.requests + a.challenges) ||
+          b.lastActiveAt - a.lastActiveAt,
+      )
+      .slice(0, TOP_CURATORS)
+  }, [range, data, history.data, chains, wins, now])
+  const curatorsPending = range !== '30d' && !history.data
   // The top curator's activity: every curator's bar is measured against it.
   const curatorScale = Math.max(
     1,
@@ -1219,7 +1252,7 @@ const Dashboard = () => {
         </FeaturedMain>
         <CuratorsAside aria-label="Top curators">
           <CuratorsHead>
-            <Label $tone="faint">Top curators · all time</Label>
+            <Label $tone="faint">Top curators · {RANGE_SPAN[range]}</Label>
             {!loading && curators.length > 0 && (
               <Label
                 $tone="faint"
@@ -1229,12 +1262,12 @@ const Dashboard = () => {
               </Label>
             )}
           </CuratorsHead>
-          {loading || (history.isPending && !history.isError) ? (
+          {loading || (curatorsPending && !history.isError) ? (
             <SkeletonBlock $height="260px" style={{ marginTop: 16 }} />
-          ) : history.isError ? (
+          ) : curatorsPending && history.isError ? (
             <EmptyNote>The curation history did not load.</EmptyNote>
           ) : curators.length === 0 ? (
-            <EmptyNote>No curator activity yet.</EmptyNote>
+            <EmptyNote>No curator activity in this range.</EmptyNote>
           ) : (
             <CuratorList>
               {curators.map((row, index) => (
@@ -1263,7 +1296,7 @@ const Dashboard = () => {
                         delay={200 + index * 90}
                       />
                     </CuratorBar>
-                    <Small $muted>
+                    <Small $muted data-counts="" style={{ display: 'block' }}>
                       {plural(row.requests, 'request', 'requests')} ·{' '}
                       {plural(row.challenges, 'challenge', 'challenges')}
                     </Small>

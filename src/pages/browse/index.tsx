@@ -254,21 +254,44 @@ const Pulse = styled.i`
  * the badge, never as a share of every list. The other counts follow as a
  * strip split by hairlines. Every figure appears once.
  */
-const FiguresPanel = styled(Surface)`
+/*
+ * The figures as three boxes in a row (round 8: "separate the first on the
+ * left in a box 'Kleros Verified', then another 'Community', then the
+ * rest"): Kleros Verified with its count and logos, on the page's lit rim;
+ * Community lists; and the entries and open requests together. Below
+ * 1100px Kleros Verified takes a row of its own; on phones they stack.
+ */
+const FiguresRow = styled.section`
   display: grid;
-  grid-template-columns: minmax(300px, auto) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1.5fr) minmax(0, 0.6fr) minmax(0, 1.1fr);
   align-items: stretch;
-  gap: 24px 40px;
+  gap: 16px;
   margin-top: 28px;
-  padding: 24px 28px;
   ${reveal}
 
   @media (max-width: 1100px) {
-    grid-template-columns: minmax(0, 1fr);
+    grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+
+    > :first-of-type {
+      grid-column: 1 / -1;
+    }
   }
 
   @media (max-width: 720px) {
-    gap: 18px;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+  }
+`
+
+const FigureBox = styled(Surface)`
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 14px;
+  min-width: 0;
+  padding: 22px 26px;
+
+  @media (max-width: 720px) {
     padding: 18px 16px;
   }
 `
@@ -412,12 +435,8 @@ const TipFigure = styled.span`
 /** The other counts as a strip, split by hairlines; it takes the free width. */
 const InlineStats = styled.div`
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-
-  @media (max-width: 1100px) {
-    padding-top: 18px;
-    border-top: 1px solid var(--glass-border);
-  }
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  height: 100%;
 `
 
 /* Label on top, figure at the bottom: the figures share a baseline even when
@@ -432,10 +451,16 @@ const InlineStat = styled.div`
   padding: 0 24px;
   border-left: 1px solid var(--glass-border);
 
+  /* In its own box, the first figure starts at the box's edge. */
+  &:first-child {
+    padding-left: 0;
+    border-left: 0;
+  }
+
   b {
     ${displayFigure}
-    font-size: 28px;
-    line-height: 30px;
+    font-size: 36px;
+    line-height: 40px;
   }
 
   /* The marked cell: open requests are the live work on these lists, so the
@@ -446,17 +471,12 @@ const InlineStat = styled.div`
     align-items: center;
     gap: 10px;
     color: var(--status-window);
-    font-size: 34px;
-    line-height: 36px;
+    font-size: 40px;
+    line-height: 42px;
   }
 
   @media (max-width: 1100px) {
     min-height: 0;
-
-    &:first-child {
-      padding-left: 0;
-      border-left: 0;
-    }
   }
 
   @media (max-width: 720px) {
@@ -1721,10 +1741,7 @@ const BrowsePage = () => {
         />
       </Header>
 
-      <FiguresPanel
-        as="section"
-        $featured
-        $padding="none"
+      <FiguresRow
         aria-labelledby="browse-figures-title"
         style={{ ['--i' as string]: 2 }}
       >
@@ -1732,107 +1749,122 @@ const BrowsePage = () => {
           Registry figures for {scope}
         </VisuallyHidden>
         {failed ? (
-          <Small $muted style={{ gridColumn: '1 / -1' }}>
-            No figures until the indexers answer.
-          </Small>
+          <FigureBox $padding="none" style={{ gridColumn: '1 / -1' }}>
+            <Small $muted>No figures until the indexers answer.</Small>
+          </FigureBox>
         ) : (
           <>
-            <VerifiedFigure>
-              <FigureHead>
-                <VerifiedBadge size={18} decorative />
-                <Label $tone="faint">{VERIFIED_LABEL}</Label>
-              </FigureHead>
-              <FigureLine>
-                <BigFigure>
-                  <AnimatedNumber
-                    loading={loading}
-                    value={countsUnknown ? undefined : figures.verified}
-                  />
-                  {!loading && !countsUnknown && (
-                    <small>{figures.verified === 1 ? 'list' : 'lists'}</small>
-                  )}
-                </BigFigure>
-                {!loading && shownShowcase.length > 0 && (
-                  <Showcase>
-                    <LogoRow
-                      aria-label={`${VERIFIED_LISTS_LABEL}, most open requests first`}
-                    >
-                      {shownShowcase.map((registry) => (
-                        <li key={registry.id}>
-                          <Tooltip
-                            title={
-                              <>
-                                <TipName>{registry.title}</TipName>
-                                <TipFigure>
-                                  {showcaseFigure(registry)}
-                                </TipFigure>
-                              </>
-                            }
-                          >
-                            <LogoLink
-                              to={registryHref(registry)}
-                              aria-label={registry.title}
-                            >
-                              <Avatar
-                                uri={registry.logoURI}
-                                seed={registry.address}
-                                size={32}
-                              />
-                            </LogoLink>
-                          </Tooltip>
-                        </li>
-                      ))}
-                      {!countsUnknown &&
-                        figures.verified > shownShowcase.length && (
-                          <li>
-                            <MoreLists>
-                              +
-                              {formatInt(
-                                figures.verified - shownShowcase.length,
-                              )}
-                              <VisuallyHidden> more</VisuallyHidden>
-                            </MoreLists>
-                          </li>
-                        )}
-                    </LogoRow>
-                    <ShowcaseNote aria-hidden>
-                      Most open requests first
-                    </ShowcaseNote>
-                  </Showcase>
-                )}
-              </FigureLine>
-            </VerifiedFigure>
-            <InlineStats>
-              {[
-                {
-                  label: COMMUNITY_LISTS_LABEL,
-                  value: countsUnknown ? undefined : figures.community,
-                },
-                {
-                  label: 'Entries',
-                  value: listsMissing.length > 0 ? undefined : figures.entries,
-                },
-                {
-                  label: 'Open requests',
-                  value:
-                    listsMissing.length > 0 ? undefined : figures.openRequests,
-                  accent: true,
-                },
-              ].map((figure) => (
-                <InlineStat key={figure.label}>
-                  <Label $tone="faint">{figure.label}</Label>
-                  <b data-accent={figure.accent || undefined}>
-                    {figure.accent && !!figure.value && (
-                      <StatusDot $tone="window" aria-hidden />
+            <FigureBox $featured $padding="none">
+              <VerifiedFigure>
+                <FigureHead>
+                  <VerifiedBadge size={18} decorative />
+                  <Label $tone="faint">{VERIFIED_LABEL}</Label>
+                </FigureHead>
+                <FigureLine>
+                  <BigFigure>
+                    <AnimatedNumber
+                      loading={loading}
+                      value={countsUnknown ? undefined : figures.verified}
+                    />
+                    {!loading && !countsUnknown && (
+                      <small>{figures.verified === 1 ? 'list' : 'lists'}</small>
                     )}
-                    <AnimatedNumber loading={loading} value={figure.value} />
-                  </b>
-                </InlineStat>
-              ))}
-            </InlineStats>
+                  </BigFigure>
+                  {!loading && shownShowcase.length > 0 && (
+                    <Showcase>
+                      <LogoRow
+                        aria-label={`${VERIFIED_LISTS_LABEL}, most open requests first`}
+                      >
+                        {shownShowcase.map((registry) => (
+                          <li key={registry.id}>
+                            <Tooltip
+                              title={
+                                <>
+                                  <TipName>{registry.title}</TipName>
+                                  <TipFigure>
+                                    {showcaseFigure(registry)}
+                                  </TipFigure>
+                                </>
+                              }
+                            >
+                              <LogoLink
+                                to={registryHref(registry)}
+                                aria-label={registry.title}
+                              >
+                                <Avatar
+                                  uri={registry.logoURI}
+                                  seed={registry.address}
+                                  size={32}
+                                />
+                              </LogoLink>
+                            </Tooltip>
+                          </li>
+                        ))}
+                        {!countsUnknown &&
+                          figures.verified > shownShowcase.length && (
+                            <li>
+                              <MoreLists>
+                                +
+                                {formatInt(
+                                  figures.verified - shownShowcase.length,
+                                )}
+                                <VisuallyHidden> more</VisuallyHidden>
+                              </MoreLists>
+                            </li>
+                          )}
+                      </LogoRow>
+                      <ShowcaseNote aria-hidden>
+                        Most open requests first
+                      </ShowcaseNote>
+                    </Showcase>
+                  )}
+                </FigureLine>
+              </VerifiedFigure>
+            </FigureBox>
+            <FigureBox $padding="none">
+              <Label $tone="faint">{COMMUNITY_LISTS_LABEL}</Label>
+              <BigFigure>
+                <AnimatedNumber
+                  loading={loading}
+                  value={countsUnknown ? undefined : figures.community}
+                />
+                {!loading && !countsUnknown && (
+                  <small>{figures.community === 1 ? 'list' : 'lists'}</small>
+                )}
+              </BigFigure>
+            </FigureBox>
+            <FigureBox $padding="none">
+              <InlineStats>
+                {[
+                  {
+                    label: 'Entries',
+                    value:
+                      listsMissing.length > 0 ? undefined : figures.entries,
+                  },
+                  {
+                    label: 'Open requests',
+                    value:
+                      listsMissing.length > 0
+                        ? undefined
+                        : figures.openRequests,
+                    accent: true,
+                  },
+                ].map((figure) => (
+                  <InlineStat key={figure.label}>
+                    <Label $tone="faint">{figure.label}</Label>
+                    <b data-accent={figure.accent || undefined}>
+                      {figure.accent && !!figure.value && (
+                        <StatusDot $tone="window" aria-hidden />
+                      )}
+                      <AnimatedNumber loading={loading} value={figure.value} />
+                    </b>
+                  </InlineStat>
+                ))}
+              </InlineStats>
+            </FigureBox>
           </>
         )}
-      </FiguresPanel>
+      </FiguresRow>
 
       <Split>
         <Explorer

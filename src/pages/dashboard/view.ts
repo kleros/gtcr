@@ -777,10 +777,12 @@ export const buildBoard = (
 
 /**
  * The chart's ranges: 30D is the load's own per-day series; the longer ones
- * bucket the whole history (data.ts fetchActivityHistory), by week for
- * 6M and 1Y and by month for 5Y and All.
+ * bucket the whole history (data.ts fetchActivityHistory), by week for 6M
+ * and 1Y and by month for 3Y. Three years is the longest (round 8): it
+ * starts after a company wallet's bulk submissions of 2023, which no
+ * curator ranking should carry, without singling out any address.
  */
-export type ChartRange = '30d' | '6m' | '1y' | '5y' | 'all'
+export type ChartRange = '30d' | '6m' | '1y' | '3y'
 
 export interface RangeSeries {
   /** Each bucket's start, in seconds, oldest first. */
@@ -812,8 +814,7 @@ const monthStart = (index: number) =>
 
 /**
  * The history in buckets for one long range, the current bucket last (and
- * partial: the chart draws it dashed). All runs from the month of the
- * first event; a history with none has no buckets.
+ * partial: the chart draws it dashed).
  */
 export const historySeries = (
   events: { at: number; kind: 'submissions' | 'removals' | 'challenges' }[],
@@ -840,17 +841,8 @@ export const historySeries = (
     }
   }
   const last = monthIndex(now)
-  const earliest = events.reduce(
-    (min, event) => (event.at > 0 ? Math.min(min, event.at) : min),
-    Infinity,
-  )
-  const first =
-    range === '5y'
-      ? last - 59
-      : Number.isFinite(earliest)
-        ? Math.min(last, monthIndex(earliest))
-        : last
-  const count = last - first + 1
+  const count = 36
+  const first = last - (count - 1)
   const up = Array.from({ length: count }, () => 0)
   const down = Array.from({ length: count }, () => 0)
   for (const event of events) {
@@ -865,4 +857,47 @@ export const historySeries = (
     down,
     unit: 'month',
   }
+}
+
+/** Where a long range's first bucket starts, in seconds. */
+export const rangeStart = (
+  range: Exclude<ChartRange, '30d'>,
+  now: number,
+): number => historySeries([], range, now).starts[0] ?? now
+
+/** A curator's figures over a range, from the history's events. */
+export interface RangeCurator {
+  address: string
+  requests: number
+  challenges: number
+  lastActiveAt: number
+}
+
+/** Every curator's requests and challenges since `since`, on `chains`. */
+export const curatorsSince = (
+  events: {
+    at: number
+    chainId: number
+    kind: 'submissions' | 'removals' | 'challenges'
+    who?: string
+  }[],
+  since: number,
+  chains: number[],
+): RangeCurator[] => {
+  const byAddress = new Map<string, RangeCurator>()
+  for (const event of events) {
+    if (!event.who || event.at < since || !chains.includes(event.chainId))
+      continue
+    const row = byAddress.get(event.who) ?? {
+      address: event.who,
+      requests: 0,
+      challenges: 0,
+      lastActiveAt: 0,
+    }
+    if (event.kind === 'challenges') row.challenges += 1
+    else row.requests += 1
+    row.lastActiveAt = Math.max(row.lastActiveAt, event.at)
+    byAddress.set(event.who, row)
+  }
+  return [...byAddress.values()]
 }
