@@ -25,6 +25,9 @@ export const readHasCode = async (
   const client = getPublicClient(wagmiConfig, { chainId })
   if (!client) throw new Error(`No client for chain ${chainId}`)
   const code = await client.getCode({ address: address as `0x${string}` })
+  // An EIP-7702 delegated account (0xef0100 + address) is still a wallet
+  // that signs and mines its own transactions, not a Safe.
+  if (code && /^0xef0100/i.test(code)) return false
   return Boolean(code && code !== '0x')
 }
 
