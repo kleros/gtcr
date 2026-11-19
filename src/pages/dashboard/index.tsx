@@ -46,6 +46,7 @@ import {
   TESTNET_DASHBOARD_QUERY_KEY,
   isLiveLoad,
 } from './query'
+import { useMediaQuery } from 'pages/guide/hooks'
 import { useSavedLoadsReady } from './saved-load'
 import { useUsdPrices } from './use-usd-prices'
 import { LiveBoard, type RulingsView } from './happening-now'
@@ -78,6 +79,7 @@ import {
   scopedSeries,
   scopedWins,
   sortRegistries,
+  toAmount,
   validChain,
   windowsPending,
   type ChainFilter,
@@ -110,12 +112,14 @@ import { Avatar as ListLogo } from 'pages/browse/avatar'
  * Round 4 also gave two of those figures — the bounties challengers have won,
  * and the collateral behind the requests open for verification — what they are
  * worth in dollars, read from a Chainlink feed on each coin's own chain
- * (prices.ts) in a query of its own, never in the load the page saves. They
- * are the only two on the site that carry a dollar value: a figure somebody is
- * about to sign for keeps its coin alone, and nothing adds dollars across
- * coins (DESIGN.md, Data rules).
+ * (prices.ts) in a query of its own, never in the load the page saves. Round
+ * 5 puts those dollars first: where a feed answers they lead the figure and
+ * the exact coin amount sits under them, and where no price can be read the
+ * coin amount is the figure, as before. They are the only two on the site
+ * that carry a dollar value: a figure somebody is about to sign for keeps its
+ * coin alone, and nothing adds dollars across coins (DESIGN.md, Data rules).
  *
- * Round 2, item 7: the "Entries by chain" ring is gone. On several chains
+ * Round 1, item 7: the "Entries by chain" ring is gone. On several chains
  * it drew two segments whose leader the hero's own Entries figure already
  * implied; on one chain it turned into "Entries by list" and repeated the
  * Most active table's entries column. Nobody could act on either.
@@ -130,15 +134,27 @@ const formatInt = (value: number) => integer.format(Math.round(value))
 const plural = (value: number, one: string, many: string) =>
   `${formatInt(value)} ${value === 1 ? one : many}`
 
-/** Rulings the Disputes box shows first, and how many more each "show more" adds. */
-const RULINGS_FIRST = 4
+/**
+ * Rulings the Disputes box is handed first, and how many more each "show
+ * more" adds. Beside the submissions it draws the whole rows that fit the
+ * height they set (happening-now.tsx), so it is handed more than ever fit:
+ * four fit under three rows in court at 1440, about eight with none. Alone
+ * on the board (nothing open) the first page is these too, two to a line.
+ */
+const RULINGS_FIRST = 8
 const RULINGS_STEP = 8
 /**
  * With nothing in court, the rulings are the whole right column: a longer
  * first page fills the height the submissions column sets with rows, as far
  * as the scope has rulings to fill it with (happening-now.tsx).
  */
-const RULINGS_FIRST_QUIET = 8
+const RULINGS_FIRST_QUIET = 12
+/**
+ * In one column (below 900px) every ruling handed in is drawn, so the first
+ * page is the short one it was: 4 under rows in court, 8 with none.
+ */
+const RULINGS_FIRST_STACKED = 4
+const RULINGS_FIRST_STACKED_QUIET = 8
 
 /**
  * The page's chain scopes: "All chains" (every mainnet; a testnet is never
@@ -404,14 +420,56 @@ const Big = styled.span<{ $hero?: boolean }>`
  * Band), so the heading, the figures and the rows those figures count read as
  * one block.
  */
+/*
+ * Most active beside Top curators. Both stretch to the row, so the two end
+ * level (round 5: the curators ended 30px above the table, a stray gap at
+ * the end of the page): the shorter side shares the difference among its
+ * rows (CuratorList; ActiveTable's rows, which a table spreads on its own).
+ */
+/*
+ * One column up to 1240px: below that the table beside a 360px panel is
+ * narrower than its own columns, and its In court column hid behind a
+ * sideways scroll (1150px: a 734px table in a 660px frame).
+ */
 const Split = styled.div`
   display: grid;
   grid-template-columns: minmax(0, 1fr) 360px;
   gap: 20px;
-  align-items: start;
+  align-items: stretch;
 
-  @media (max-width: 1100px) {
+  @media (max-width: 1240px) {
     grid-template-columns: 1fr;
+  }
+`
+
+/* The table's frame takes the row's height; the table fills it. */
+const ActiveFrame = styled(TableScroller)`
+  @media (min-width: 1241px) {
+    > table {
+      height: 100%;
+    }
+  }
+`
+
+const CuratorsPanel = styled(Surface)`
+  display: flex;
+  flex-direction: column;
+`
+
+/*
+ * The curators' rows share what the panel has beyond their own height, each
+ * at most 88px tall: a short list keeps its rows near their size and leaves
+ * the rest under them rather than spread rows apart.
+ */
+const CuratorList = styled.div`
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  margin-top: 8px;
+
+  > a {
+    flex: 1 0 auto;
+    max-height: 88px;
   }
 `
 
@@ -610,7 +668,14 @@ const withRegistry = (
   }
 }
 
-/** "30 xDAI": what the challenger won on a ruling, when they won. */
+/**
+ * "30 xDAI": what the challenger won on a ruling, when they won. The ledger's
+ * amount goes through the same guard as every other indexer amount (toAmount:
+ * a malformed one is no amount rather than a crash in this render), and a
+ * win that paid nothing has no label: a list that asks no base deposit, or a
+ * Stake entry with no stake, leaves no bounty to take, so the row shows only
+ * the ruling and its age rather than "0 xDAI".
+ */
 const bountyLabel = (
   row: RulingRow,
   tokens: DashboardData['tokens'],
@@ -620,7 +685,9 @@ const bountyLabel = (
     ? tokens[`${row.chainId}:${row.token}`]
     : getNativeCurrency(row.chainId)
   if (!coin) return undefined
-  return `${formatUnits(BigInt(row.bounty || '0'), coin.decimals)} ${coin.symbol}`
+  const amount = toAmount(row.bounty)
+  if (amount === 0n) return undefined
+  return `${formatUnits(amount, coin.decimals)} ${coin.symbol}`
 }
 
 const RegistryLogo = ({ registry }: { registry: DashboardRegistry }) => (
@@ -637,6 +704,8 @@ const Dashboard = () => {
   const chain: ChainFilter = validChain(searchParams.get('chain'))
   const now = useNow(30_000)
   const launchChain = useLaunchChainId()
+  // The board's one-column width (happening-now.tsx STACKED).
+  const stackedBoard = useMediaQuery('(max-width: 900px)')
 
   // Every scope is either the mainnets ("All chains" or one of them) or the
   // Sepolia testnet alone: the testnet is its own load, read only when chosen.
@@ -711,6 +780,33 @@ const Dashboard = () => {
     () => (data?.registries ?? []).filter((r) => chains.includes(r.chainId)),
     [data, chains],
   )
+  // Browse's Stake lists in scope, when there are any: they never close to
+  // challenge, so the strip and the board point there when nothing else is
+  // open.
+  const stakeHref = scoped.some((registry) => registry.kind === 'permanent')
+    ? browseHref('trust=all&kind=permanent')
+    : undefined
+  // Those lists by the entries anyone can challenge on them right now: listed
+  // (submitted or in court, the subgraph's own sum) less the ones in court.
+  // Most first, each to its own page: the strip's bar when nothing else is
+  // open.
+  const stakeLists = useMemo(
+    () =>
+      scoped
+        .filter((registry) => registry.kind === 'permanent')
+        .map(
+          (registry): OpenListChip => ({
+            key: `${registry.chainId}:${registry.address}`,
+            title: registry.title || truncateMiddle(registry.address),
+            logo: mediaUrl(registry.logoURI),
+            count: Math.max(0, registry.pendingCount - registry.disputeCount),
+            href: registryHref(registry),
+          }),
+        )
+        .filter((list) => list.count > 0)
+        .sort((a, b) => b.count - a.count),
+    [scoped],
+  )
 
   /** Every figure on the page describes the same scope. */
   const figures = useMemo(
@@ -760,9 +856,10 @@ const Dashboard = () => {
   /**
    * The self-sustaining mechanism, all time, in the page's scope: how rarely a
    * request is challenged at all, how the court ruled when one was, and the
-   * bounties the challengers took. It is read here, above the rulings view,
-   * because the Disputes panel's "Rulings" tally is this same ledger total:
-   * one page, one all-time ruling count (DESIGN.md principle 1).
+   * bounties the challengers took. The entries ever curated and the bounties
+   * count the retired Classic lists too (round 4: "only for this"), and the
+   * panel's own line names them; the court's share is taken on the rulings
+   * the Disputes panel below can list, so the two read the same count.
    */
   const record = useMemo(
     () => (data ? scopedChallengeRecord(data, chains) : undefined),
@@ -776,9 +873,11 @@ const Dashboard = () => {
    * visit, and a price repainted a day later would be a figure stating
    * something nobody read. Two figures on the page take it, and the two coin
    * lists it covers are the only coins it asks about; a coin it cannot price
-   * shows its amount alone.
+   * leads with its amount. `pricesSettled` holds those two figures as
+   * skeletons for the first read (at most a moment), so a figure that is
+   * about to lead with dollars never paints its coin amount large first.
    */
-  const usdPrices = useUsdPrices({
+  const { prices: usdPrices, settled: pricesSettled } = useUsdPrices({
     chains,
     coins: record?.coins,
     deposits: figures?.inWindowDeposits,
@@ -789,24 +888,26 @@ const Dashboard = () => {
    * take the entry's identifiers from the cards the load read, and "show
    * more" reads the cards of the next ones. The rows are the ones a reader
    * can open — scopedRulings leaves the retired Classic lists' rulings out,
-   * since they have no page — so the tally beside them is the ledger's own
-   * count and the difference is named in the panel's footer.
+   * since they have no page — and the Disputes tally counts exactly those,
+   * so "show more" can always reach the number beside it.
    */
-  const rulingsFirst =
-    board.live.length === 0 ? RULINGS_FIRST_QUIET : RULINGS_FIRST
+  const quiet = board.live.length === 0
+  const rulingsFirst = stackedBoard
+    ? quiet
+      ? RULINGS_FIRST_STACKED_QUIET
+      : RULINGS_FIRST_STACKED
+    : quiet
+      ? RULINGS_FIRST_QUIET
+      : RULINGS_FIRST
   const [rulingsShown, setRulingsShown] = useState(rulingsFirst)
+  // Past the first page: the reader asked for more, and the caps come off.
+  const rulingsExpanded = rulingsShown > rulingsFirst
   useEffect(() => setRulingsShown(rulingsFirst), [chain, rulingsFirst])
   const rulingRows = useMemo(
     () => (data ? scopedRulings(data, chains) : []),
     [data, chains],
   )
   const shownRows = rulingRows.slice(0, rulingsShown)
-  /*
-   * Rulings the figures count and no row can show: the retired Classic
-   * lists'. The difference between the ledger's total and the feed, named
-   * in the Disputes footer and under the self-sustaining panel.
-   */
-  const classicRulings = Math.max(0, (record?.rulings ?? 0) - rulingRows.length)
   const [extraCards, setExtraCards] = useState<
     Record<string, DashboardActivity>
   >({})
@@ -848,21 +949,20 @@ const Dashboard = () => {
     pending: new Set(
       rulingCards.isFetching ? missingRows.map((row) => row.id) : [],
     ),
-    // The ledger's own total, the retired Classic lists included: the panel
-    // above states the same figure. "Show more" stays driven by the rows
-    // that can be built (onMore below), never by this.
-    total: record?.rulings ?? 0,
-    unlisted: classicRulings,
+    // The rulings this panel can list (Standard and Stake), round 4's "only
+    // for this": Classic counts in the self-sustaining bounties and entries
+    // alone, so the tally here is a number "show more" can reach, and the
+    // same count the court's share there is taken on.
+    total: rulingRows.length,
     capped: chains.some((chainId) => data?.rulingsCapped?.[chainId]),
     partial: !!data && chains.some((chainId) => !data.rulings?.[chainId]),
+    // Until expanded, "show more" stays available: the column may draw fewer
+    // rows than it was handed, and expanding draws every one of them.
     onMore:
-      rulingsShown < rulingRows.length
+      !rulingsExpanded || rulingsShown < rulingRows.length
         ? () => setRulingsShown((shown) => shown + RULINGS_STEP)
         : undefined,
-    onFewer:
-      rulingsShown > rulingsFirst && rulingRows.length > rulingsFirst
-        ? () => setRulingsShown(rulingsFirst)
-        : undefined,
+    onFewer: rulingsExpanded ? () => setRulingsShown(rulingsFirst) : undefined,
   }
 
   /** The Kleros Verified lists in scope, newest to earn the badge first. */
@@ -1136,9 +1236,10 @@ const Dashboard = () => {
       <VerificationRecord
         record={record}
         prices={usdPrices}
+        pricesSettled={pricesSettled}
         /*
-         * Every entry these lists have ever held, against challenges all
-         * time: the retired Classic lists count here, where the figures are
+         * Every entry ever curated, against challenges all time: the
+         * retired Classic lists count here, where the figures are
          * the protocol's history, and not in the hero strip above, which is
          * labelled live and stands beside a count of the lists Browse can
          * open. A chain whose lists did not load, or a Classic read that
@@ -1154,7 +1255,7 @@ const Dashboard = () => {
             ? {
                 lists: figures.classicLists,
                 entries: figures.classicEntries,
-                rulings: classicRulings,
+                bounties: record?.classicBounties ?? 0,
                 capped: figures.classicCapped,
               }
             : undefined
@@ -1166,17 +1267,22 @@ const Dashboard = () => {
       </SectionHead>
       {/*
         The section's figure row, between its heading and its two columns
-        (round 4): the two figures of what is open for verification, right
-        above the submissions column whose rows they count. It heads itself
+        (round 4): what is open for verification, its bounties and the lists
+        holding it (round 5), right above the submissions column whose rows
+        they count. It heads itself
         and holds its own skeletons, so its title is there from the first
         paint.
       */}
       <OpenForVerification
         open={board.open}
+        openLists={board.openLists}
         figures={figures}
         prices={usdPrices}
+        pricesSettled={pricesSettled}
         checking={checkingWindows}
         unloaded={partialNames || undefined}
+        stakeHref={stakeHref}
+        stakeLists={stakeLists}
       />
       <LiveBoard
         open={board.open}
@@ -1186,11 +1292,7 @@ const Dashboard = () => {
         figures={figures}
         now={now}
         unloaded={partialNames || undefined}
-        stakeHref={
-          scoped.some((registry) => registry.kind === 'permanent')
-            ? browseHref('trust=all&kind=permanent')
-            : undefined
-        }
+        stakeHref={stakeHref}
       />
 
       <VerifiedLists
@@ -1211,7 +1313,7 @@ const Dashboard = () => {
         {loading ? (
           <SkeletonBlock $height="420px" />
         ) : (
-          <TableScroller>
+          <ActiveFrame>
             <ActiveTable>
               <thead>
                 <tr>
@@ -1286,10 +1388,10 @@ const Dashboard = () => {
                 )}
               </tbody>
             </ActiveTable>
-          </TableScroller>
+          </ActiveFrame>
         )}
 
-        <Surface $padding="standard" aria-label="Top curators">
+        <CuratorsPanel $padding="standard" aria-label="Top curators">
           <CuratorsHead>
             <Label $tone="faint">Top curators · 30 days</Label>
             {!loading && curators.length > 0 && (
@@ -1310,7 +1412,7 @@ const Dashboard = () => {
                 : 'No curator activity in the last 30 days.'}
             </EmptyNote>
           ) : (
-            <div style={{ marginTop: 8 }}>
+            <CuratorList>
               {curators.map((row, index) => (
                 <CuratorRow key={row.address} to={`/address/${row.address}`}>
                   <Rank>{String(index + 1).padStart(2, '0')}</Rank>
@@ -1334,9 +1436,9 @@ const Dashboard = () => {
                   </Won>
                 </CuratorRow>
               ))}
-            </div>
+            </CuratorList>
           )}
-        </Surface>
+        </CuratorsPanel>
       </Split>
     </Page>
   )

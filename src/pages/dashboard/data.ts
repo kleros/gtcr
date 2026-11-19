@@ -819,12 +819,24 @@ export const buildActivityHref = (
     ? `/tcr/${chainId}/${registryAddress}/${itemID}`
     : `/tcr/${chainId}/${registryAddress}`
 
+/*
+ * A preview value longer than a row can show is cut, which keeps the saved
+ * load small. A bare hex value is the exception, up to a 64-byte key (130
+ * characters with its 0x): the row shortens it from both ends, like an
+ * address (board-rows.tsx, readableIdentifier), and that needs its real
+ * tail. Cut here, a 48-byte BLS key reached the row ending in "..." and was
+ * printed raw and clipped at its end, the one identifier on the board that
+ * did not read like the others.
+ */
+const WHOLE_HEX = /^(0x)?[0-9a-f]{1,128}$/i
+
 const cleanPreviewValue = (value: unknown): string => {
   const text = String(value ?? '').trim()
   if (!text) return ''
   if (text.startsWith('/ipfs/') || text.startsWith('ipfs://'))
     return 'IPFS file'
-  if (text.length > 92) return `${text.slice(0, 89)}...`
+  if (text.length > 92 && !WHOLE_HEX.test(text))
+    return `${text.slice(0, 89)}...`
   return text
 }
 

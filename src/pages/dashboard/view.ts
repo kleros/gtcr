@@ -98,9 +98,11 @@ export const windowsPending = (data: DashboardData, chainId: number): boolean =>
  * plain integer string counts as no amount, in either place: the field is
  * the indexer's, and a decimal or an exponent (a JS number of 1000 xDAI
  * stringifies to "1e+21") would throw inside the page's memo and take the
- * whole dashboard down rather than leave one figure short.
+ * whole dashboard down rather than leave one figure short. Exported for the
+ * one other place that reads a ledger bounty, the ruling row's label
+ * (index.tsx), which renders it and so would crash in the same way.
  */
-const toAmount = (value: string | undefined | null): bigint => {
+export const toAmount = (value: string | undefined | null): bigint => {
   const text = (value ?? '').trim()
   return /^\d+$/.test(text) ? BigInt(text) : 0n
 }
@@ -174,7 +176,10 @@ export const scopedFigures = (
   return {
     registries: scoped.length,
     verified: scoped.filter(countsAsVerifiedList).length,
-    /** Entries the lists this app shows hold today: the live figure. */
+    /**
+     * Entries the lists this app shows have ever held (settled on or off the
+     * list) plus those with an open request: the live figure.
+     */
     entries,
     /**
      * Every entry ever curated in scope: the above plus the retired Classic
@@ -272,8 +277,9 @@ export interface BountyCoin {
  * scopedChallengeRecord, over the whole ledger.
  *
  * So a ruling on a retired Classic list is filtered out here. It is part of
- * the protocol's history and counts in every all-time figure, but the app
- * has no Classic page, so a row pointing at one could only lead nowhere.
+ * the protocol's history and counts in the bounties and the disputed
+ * requests (scopedBounties, scopedChallengeRecord), but the app has no
+ * Classic page, so a row pointing at one could only lead nowhere.
  * There is deliberately no second export returning the unfiltered ledger:
  * the next reader cannot pick the wrong one.
  */
@@ -303,6 +309,15 @@ export const scopedRulings = (
  *  - won: winning challenges (rulings for the challenger), all coins
  *  - winners: how many different challengers won them
  *  - rulings: every dispute the court closed (a ruling or a refusal)
+ *  - listedRulings, listedWon: the same two on the Standard and Stake lists
+ *    alone, the ones the Disputes panel can list. The share of disputes that
+ *    went to the challenger is taken from these: round 4 counts the retired
+ *    Classic lists in the bounties and the all-time entries "only", so a
+ *    dispute share beside the panel's own ruling count reads the same 762
+ *    rather than the ledger's 923.
+ *  - classicBounties: the Classic wins that carried an amount, the share of
+ *    the coins' counts (`paid`) the Classic lists account for, which the
+ *    panel names in its Classic line
  *  - capped: some ledger stopped at its page limit: counts are lower bounds
  *  - loaded: chains whose ledger loaded (the figures cover these)
  *  - missing: chains whose ledger did not load (their bounties are absent)
@@ -314,11 +329,18 @@ export const scopedBounties = (data: DashboardData, chains: number[]) => {
   const winners = new Set<string>()
   let won = 0
   let rulings = 0
+  let listedRulings = 0
+  let listedWon = 0
+  let classicBounties = 0
   for (const chainId of chains)
     for (const row of data.rulings?.[chainId] ?? []) {
+      const classic = row.kind === 'classic'
       rulings += 1
+      if (!classic) listedRulings += 1
       if (!row.challengerWon) continue
       won += 1
+      if (!classic) listedWon += 1
+      else if (toAmount(row.bounty) > 0n) classicBounties += 1
       if (row.challenger) winners.add(row.challenger)
       /*
        * Which coin this bounty is in: a Standard bounty is the chain's own
@@ -375,6 +397,9 @@ export const scopedBounties = (data: DashboardData, chains: number[]) => {
     won,
     winners: winners.size,
     rulings,
+    listedRulings,
+    listedWon,
+    classicBounties,
     capped: chains.some((chainId) => data.rulingsCapped?.[chainId]),
     loaded: chains.filter((chainId) => !!data.rulings?.[chainId]),
     missing: chains.filter((chainId) => !data.rulings?.[chainId]),
@@ -385,12 +410,15 @@ export const scopedBounties = (data: DashboardData, chains: number[]) => {
  * What the lists' verification record adds up to in a scope of chains: the
  * bounties above, plus how often anyone has disputed a request at all.
  *
- * Windows, said once: entries are what the lists hold today, while
- * challenges and rulings are all time and never windowed. `challenged` is
+ * Windows, said once: entries are every entry the lists have ever held,
+ * while challenges and rulings are all time and never windowed. `challenged` is
  * every request someone disputed — the disputes the court has closed (the
  * ledger) plus the ones open right now — counted on `loaded` chains alone,
  * so one chain's open disputes are never added to another chain's missing
- * ledger. It reads as a lower bound ("n+") when `challengedPartial`.
+ * ledger. It reads as a lower bound ("n+") when `challengedPartial`. It
+ * counts the retired Classic lists' disputes, because the entries it is set
+ * against count their entries (every entry ever curated); the share of
+ * disputes that went to the challenger does not (listedRulings above).
  */
 export const scopedChallengeRecord = (
   data: DashboardData,

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { getNativeCurrency } from 'config/chains'
 import {
   coinKey,
@@ -21,10 +21,22 @@ import type { BountyCoin } from './view'
  * lives, so nothing else can disagree about its age.
  *
  * It asks only for the coins actually on screen, and only while there is at
- * least one of them. The key is the chain scope rather than the coin list,
- * because the coin set shuffles on every refresh of the load and keying on it
- * would re-read the feeds each time; the current list is passed through the
- * query function instead.
+ * least one of them. The key is the chain scope plus the coins' own keys,
+ * sorted: the load hands the coins back in a different order on a refresh,
+ * and sorting their keys means only a coin arriving or leaving changes the
+ * key, so a refresh does not re-read the feeds while a new coin (a Stake
+ * token the first read did not know) gets its price at once instead of at
+ * the next five-minute tick. The prices already held stay on screen while
+ * the new key reads (keepPreviousData), so a coin appearing does not blink
+ * the others' dollars out.
+ *
+ * The dollars lead the figure they convert (DESIGN.md, Data rules), so the
+ * caller also has to know when to stop waiting for them, or the figure would
+ * paint the coin amount large and swap it for dollars a second later, under
+ * the reader. `settled` says that: true once the first read has answered or
+ * failed, when no coin needs a price, or PRICE_HOLD_MS after the read began,
+ * whichever comes first. Until then the caller holds its money figures as
+ * skeletons; a price that answers after the hold fades in on its own.
  *
  * What it hands back is not quite what the chain answered: a price that has
  * passed its own `staleAfter` is taken out, so what the caller holds is only
@@ -33,6 +45,13 @@ import type { BountyCoin } from './view'
  */
 
 const PRICES_REFRESH_MS = 5 * 60_000
+
+/**
+ * How long the money figures wait for a first price before they lead with
+ * the coin instead. A cap, not a delay: a cached or quick read settles the
+ * moment it answers.
+ */
+const PRICE_HOLD_MS = 1_500
 
 const nowSeconds = () => Math.floor(Date.now() / 1000)
 
@@ -48,7 +67,12 @@ export const useUsdPrices = ({
   coins?: BountyCoin[]
   /** The in-window collateral per chain, in wei: the chains' own coins. */
   deposits?: Record<number, bigint>
-}): Record<string, UsdPrice> | undefined => {
+}): {
+  /** The prices still current, by coin key; undefined until a read answers. */
+  prices: Record<string, UsdPrice> | undefined
+  /** The figures may paint: the read answered, failed, or ran out its hold. */
+  settled: boolean
+} => {
   const wanted = useMemo<PricedCoin[]>(() => {
     const list: PricedCoin[] = []
     for (const [chainId, wei] of Object.entries(deposits ?? {})) {
@@ -75,10 +99,20 @@ export const useUsdPrices = ({
     return list
   }, [coins, deposits])
 
+  const enabled = wanted.length > 0
+  const scope = chains.join(',')
   const query = useQuery({
-    queryKey: ['curateUsdPrices', chains.join(',')],
+    queryKey: [
+      'curateUsdPrices',
+      scope,
+      wanted
+        .map((coin) => coin.key)
+        .sort()
+        .join(','),
+    ],
     queryFn: () => readUsdPrices(wanted),
-    enabled: wanted.length > 0,
+    enabled,
+    placeholderData: keepPreviousData,
     staleTime: PRICES_REFRESH_MS,
     refetchInterval: PRICES_REFRESH_MS,
     /*
@@ -92,6 +126,16 @@ export const useUsdPrices = ({
     refetchOnWindowFocus: true,
     retry: 1,
   })
+
+  // The hold: restarted whenever there is a new scope to price, or the first
+  // coin needing a price turns up.
+  const [timedOut, setTimedOut] = useState(false)
+  useEffect(() => {
+    setTimedOut(false)
+    if (!enabled) return undefined
+    const timer = setTimeout(() => setTimedOut(true), PRICE_HOLD_MS)
+    return () => clearTimeout(timer)
+  }, [enabled, scope])
 
   /*
    * The prices still current, judged against the clock rather than against
@@ -128,5 +172,9 @@ export const useUsdPrices = ({
     return () => clearTimeout(timer)
   }, [current])
 
-  return current
+  return {
+    prices: current,
+    settled:
+      !enabled || query.data !== undefined || query.isFetched || timedOut,
+  }
 }

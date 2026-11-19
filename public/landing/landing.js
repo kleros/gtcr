@@ -463,8 +463,8 @@
       setText(
         'source',
         live
-          ? `Figures: public Curate data on ${scope || 'Ethereum and Gnosis'}, read live from the indexers at ${stamp}. Bounties: every dispute challengers have won, all time.`
-          : `Figures: public Curate data on ${scope || 'Ethereum and Gnosis'}, snapshot of ${stamp}. Bounties: every dispute challengers have won, all time to that day. The app shows them live.`,
+          ? `Figures: public Curate data on ${scope || 'Ethereum and Gnosis'}, read live from the indexers at ${stamp}. Bounties: every dispute challengers have won, all time, including the retired Classic lists.`
+          : `Figures: public Curate data on ${scope || 'Ethereum and Gnosis'}, snapshot of ${stamp}. Bounties: every dispute challengers have won, all time to that day, including the retired Classic lists. The app shows them live.`,
       )
     }
 
@@ -777,22 +777,27 @@
           Array.isArray(coin.days) &&
           coin.days.some((day) => Number.isFinite(day)),
       )
+      // No "All time" stamp on the card (round 5): the months on its axis
+      // run to the snapshot's month, which dates it.
       const plus = reward.capped ? '+' : ''
-      setText(
-        'bountyWhen',
-        live || !hasSnapshot
-          ? 'All time'
-          : `All time to ${dayFormat.format(snapshotAt)}`,
-      )
-      // Every ruling, all time: how many went to the challenger.
+      // Every ruling on the Standard and Stake lists, all time: how many
+      // went to the challenger. The retired Classic lists' rulings are left
+      // out of this share, as on the dashboard (round 4: Classic counts in
+      // the bounties, "only for this"), and the line names the lists it is
+      // taken on whenever it left some out, since the coins under it count
+      // Classic bounties too and would otherwise add up past it.
       const rulingsLine = $('[data-bounty-rulings]', bounty)
       if (rulingsLine) {
         rulingsLine.hidden = reward.rulings === 0
         const won = doc.createElement('b')
         won.textContent = `${integer.format(reward.won)}${plus}`
+        const where =
+          isCount(reward.classicRulings) && reward.classicRulings > 0
+            ? ' on the Standard and Stake lists'
+            : ''
         rulingsLine.replaceChildren(
           won,
-          ` of ${integer.format(reward.rulings)}${plus} ${reward.rulings === 1 ? 'ruling' : 'rulings'} went to the challenger`,
+          ` of ${integer.format(reward.rulings)}${plus} ${reward.rulings === 1 ? 'ruling' : 'rulings'}${where} went to the challenger`,
         )
       }
       const list = $('[data-bounty-coins]', bounty)

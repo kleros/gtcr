@@ -29,9 +29,10 @@ import { Avatar as ListLogo } from 'pages/browse/avatar'
  * helpers and the figures interface are read wider than the rows are: the
  * figures strip above the board (open-for-verification.tsx) and the
  * verification record (bounties.tsx) take their amounts from here too, so
- * every figure on the page is grouped and rounded the same way. The dollar
- * aside those two figures carry is formatted here for the same reason: one
- * rule for both, and none for any other figure on the page.
+ * every figure on the page is grouped and rounded the same way. Those two
+ * are the only figures that carry dollars, and the dollars-first figure they
+ * share is built here for the same reason: one rule for both places, so they
+ * cannot drift, and none for any other figure on the page.
  */
 
 const integer = new Intl.NumberFormat('en-US')
@@ -76,8 +77,8 @@ export const usdOf = (
 /**
  * "$4,709", "$12.34": cents below a hundred dollars, none above it, where a
  * cent is noise beside a four-figure sum. Nothing at all under half a cent:
- * the dollar value is an optional aside, and one that would print "$0.00"
- * says less than the coin figure it sits beside already does.
+ * a dollar figure that would print "$0.00" says less than the coin amount it
+ * stands for, so the coin leads instead.
  */
 export const formatUsd = (value: number): string | undefined => {
   if (!Number.isFinite(value) || value < 0.005) return undefined
@@ -85,42 +86,87 @@ export const formatUsd = (value: number): string | undefined => {
 }
 
 /**
- * The dollar value on a figure line: derived, so it carries the approximation
- * sign and sits a step below the coin symbol beside it. Never the figure
- * itself — the coin amount is the measurement.
+ * The format a dollar count-up uses on its way to `final`: whole dollars or
+ * cents by the figure it ends on, not by where it is, so the digits do not
+ * change shape mid-count, and never empty (formatUsd is, under half a cent,
+ * which every count-up passes through at its start).
  */
-const UsdAside = styled.small`
-  color: var(--color-faint);
+export const usdFormatFor =
+  (final: number) =>
+  (value: number): string =>
+    `$${final >= 100 ? usdWhole.format(value) : usdCents.format(value)}`
+
+/*
+ * Dollars first (round 5: "put the dollars first, smaller the crypto"). Where
+ * a feed on the coin's own chain answers, the dollars are the figure, at the
+ * size of the place they lead, and the exact coin amount sits under them in
+ * CoinAmount. The approximation sign stays on the figure, smaller and muted,
+ * so the dollars are never read as exact; the word is there for a screen
+ * reader, and a capped count's "+" rides on the dollars too, since a lower
+ * bound in coins is a lower bound in dollars. Where no price can be read the
+ * coin amount is the figure, exactly as before dollars existed, and nothing
+ * dollar-shaped is drawn. The parent sets the lead's size; this only shapes
+ * the sign.
+ */
+const UsdShape = styled.span`
+  display: inline-flex;
+  align-items: baseline;
+  white-space: nowrap;
+
+  > [data-approx] {
+    align-self: center;
+    margin-right: 0.12em;
+    color: var(--color-muted);
+    font-size: 0.6em;
+    font-weight: 400;
+    letter-spacing: 0;
+  }
+`
+
+export const UsdLead = ({
+  value,
+  bound,
+}: {
+  /** The dollars, formatted or counting up (AnimatedNumber with usdFormatFor). */
+  value: React.ReactNode
+  /** "+" when the amount it converts is itself a lower bound. */
+  bound?: string
+}) => (
+  <UsdShape>
+    <VisuallyHidden>about </VisuallyHidden>
+    <span data-approx="" aria-hidden="true">
+      ≈
+    </span>
+    {value}
+    {bound}
+  </UsdShape>
+)
+
+/**
+ * The exact coin amount under a dollar lead: full precision, at body size and
+ * muted, so it reads as the measurement the dollars were made from rather
+ * than as a second headline. `small` carries the symbol.
+ */
+export const CoinAmount = styled.span`
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  min-width: 0;
+  color: var(--color-muted);
   font-family: var(--font-figure);
-  font-size: 13px;
+  font-size: 14px;
+  line-height: 20px;
   font-weight: 500;
   letter-spacing: 0;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
-`
 
-/**
- * "≈ $4,709" beside a coin amount. The sign is for the eye and the word for a
- * screen reader, so neither is told the dollar figure is exact, and the "+" a
- * capped count carries is carried here too: a lower bound in coins is a lower
- * bound in dollars.
- */
-export const UsdValue = ({
-  value,
-  bound,
-}: {
-  /** The formatted dollars, from formatUsd. */
-  value: string
-  /** "+" when the amount it converts is itself a lower bound. */
-  bound?: string
-}) => (
-  <UsdAside>
-    <VisuallyHidden>about </VisuallyHidden>
-    <span aria-hidden="true">≈ </span>
-    {value}
-    {bound}
-  </UsdAside>
-)
+  small {
+    color: var(--color-muted);
+    font-size: 13px;
+    font-weight: 400;
+  }
+`
 
 const shortKey = (value: string) =>
   value.length > 14 ? `${value.slice(0, 6)}…${value.slice(-4)}` : value
@@ -128,6 +174,11 @@ const shortKey = (value: string) =>
 /**
  * CAIP-10 values read as "0x94bA…8a2f" on "Robinhood Chain"; a bare hex key
  * is shortened like an address; anything else passes through.
+ *
+ * A long hex key cut upstream (a saved load painted from before data.ts
+ * stopped cutting them, ending "…48e4ce3270...") shows its head alone: its
+ * real tail was lost, and a tail taken from the cut would be a value the
+ * entry never had.
  */
 export const readableIdentifier = (
   value: string,
@@ -135,6 +186,8 @@ export const readableIdentifier = (
   const rich = parseRichAddress(value)
   if (rich)
     return { text: shortKey(rich.address), network: rich.reference.name }
+  const cut = value.match(/^((?:0x)?[0-9a-f]{32,})(?:\.\.\.|…)$/i)
+  if (cut) return { text: `${cut[1].slice(0, 6)}…` }
   return { text: /^(0x)?[0-9a-f]{32,}$/i.test(value) ? shortKey(value) : value }
 }
 
@@ -344,9 +397,59 @@ export const Meta = styled.div`
   }
 `
 
-/* The window rail sits on a raised row: give its track some contrast. */
+/*
+ * The window rail sits on a raised row: give its track some contrast. The
+ * rows are sorted closing soonest first, so most rails keep a few percent of
+ * their track, and a bare sliver that thin read as an empty groove rather
+ * than a live bar. So the end of what is left carries a lit bead, the ring
+ * gauges' head in miniature: even a 3% window reads as a light on its track.
+ * The bead overhangs the 6px track, so the track stops clipping (the fill is
+ * rounded on its own and needs no clip). Unclipped, the fill's own glow
+ * would spill onto the row's words above and below, so the fill drops it
+ * and the bead alone carries the light. A window that has closed while the
+ * page is open (the next refresh drops its row) has no bead: nothing live
+ * is left to light.
+ */
 const WindowRail = styled(Rail)`
+  overflow: visible;
   background: color-mix(in srgb, var(--color-text) 9%, transparent);
+
+  &::after {
+    box-shadow: none;
+  }
+
+  &::before {
+    display: ${({ $value }) => ($value > 0 ? 'block' : 'none')};
+    content: '';
+    position: absolute;
+    z-index: 1;
+    top: 50%;
+    left: clamp(
+      4px,
+      ${({ $value }) => Math.round(Math.min(1, Math.max(0, $value)) * 100)}%,
+      calc(100% - 4px)
+    );
+    width: 8px;
+    height: 8px;
+    margin: -4px 0 0 -4px;
+    border-radius: 50%;
+    background: radial-gradient(
+      circle,
+      color-mix(in srgb, var(--status-window), #fff 70%) 0 30%,
+      var(--status-window) 75%
+    );
+    box-shadow:
+      0 0 0 2px color-mix(in srgb, var(--status-window) 22%, transparent),
+      0 0 10px 1px color-mix(in srgb, var(--status-window) 70%, transparent);
+    transition: left 400ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    &::before,
+    &::after {
+      transition: none;
+    }
+  }
 `
 
 export const Empty = styled.div`

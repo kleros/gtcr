@@ -10,6 +10,7 @@ import {
   scopedBounties,
   scopedFigures,
   scopedSeries,
+  toAmount,
 } from 'pages/dashboard/view'
 import { readRegistryMetadata } from 'utils/registry-metadata'
 import { ipfsImageUrl } from 'utils/ipfs-parse'
@@ -70,11 +71,16 @@ export interface LandingBountyCoin {
   value?: number
   /**
    * Winning challenges that carried an amount: what `amount` is the sum of.
-   * A ruling the challenger won whose deposit the indexer never recorded is
-   * not counted here, so the count and the amount answer one question.
+   * A win that carried none (a list whose base deposit was 0, or a deposit
+   * the indexer never recorded) is not counted here, so the count and the
+   * amount answer one question.
    */
   won: number
-  /** The UTC day (unix seconds / 86400) of each of those rulings, oldest first. */
+  /**
+   * The UTC day (unix seconds / 86400) of each of those rulings, oldest
+   * first: one per ruling `won` counts, so the per-month bars add up to the
+   * count printed beside them.
+   */
   days: number[]
 }
 
@@ -119,8 +125,25 @@ export interface LandingData {
   series30d: { day: number; requests: number; challenges: number }[]
   /** Bounties won by challengers, all time (the dashboard's "Bounties won"). */
   bounties: {
+    /**
+     * Of `rulings`, those that went to the challenger: the card's "n of m
+     * rulings went to the challenger", the dashboard's second ring.
+     */
     won: number
+    /**
+     * Every dispute the court has closed on the Standard and Stake lists,
+     * all time: the dashboard's Disputes count. The retired Classic lists'
+     * rulings are left out of this share, as on the dashboard (round 4:
+     * Classic counts in the bounties and the entries, "only for this"); the
+     * coins below include their bounties.
+     */
     rulings: number
+    /**
+     * The Classic rulings left out of `rulings`: when there are any, the
+     * card names the lists its share is taken on, so the coins' counts
+     * (which include Classic bounties) are not read against it.
+     */
+    classicRulings: number
     /** A rulings ledger stopped at its page limit: every count is a lower bound. */
     capped: boolean
     coins: LandingBountyCoin[]
@@ -244,11 +267,16 @@ const readLive = async (): Promise<LandingData | null> => {
    * whose token did not load its own "token-unknown" coin — never the chain's,
    * which would add an ERC-20 amount into an ETH total. Key it any other way
    * and a coin's days come back empty and its ledger draws nothing.
+   *
+   * Only the wins that carried an amount get a day, the ones scopedBounties
+   * counts as `paid`: that is the count the page prints beside the bars
+   * (`won` below), and a win that carried none would otherwise draw a bar
+   * the count leaves out.
    */
   const days = new Map<string, number[]>()
   for (const chainId of chains)
     for (const row of data.rulings[chainId] ?? []) {
-      if (!row.challengerWon) continue
+      if (!row.challengerWon || toAmount(row.bounty) === 0n) continue
       const stake = row.kind === 'permanent'
       const key = `${chainId}:${stake ? (row.token ?? 'token-unknown') : 'native'}`
       const list = days.get(key) ?? []
@@ -281,8 +309,11 @@ const readLive = async (): Promise<LandingData | null> => {
       challenges: day.challenges,
     })),
     bounties: {
-      won: bounties.won,
-      rulings: bounties.rulings,
+      // The share's two counts leave the Classic lists out; the coins keep
+      // their bounties (scopedBounties).
+      won: bounties.listedWon,
+      rulings: bounties.listedRulings,
+      classicRulings: bounties.rulings - bounties.listedRulings,
       capped: bounties.capped,
       coins: bounties.coins.map((coin) => ({
         key: coin.key,
