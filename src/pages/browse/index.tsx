@@ -26,6 +26,7 @@ import {
   Surface,
   ToggleGroup,
   truncateMiddle,
+  type SegmentOption,
   type StatusTone,
 } from 'components/curate/primitives'
 import { AnimatedNumber } from 'components/curate/motion/animated-number'
@@ -91,6 +92,7 @@ import {
   parseKinds,
   parsePage,
   parseSort,
+  parseTrust,
   pendingLabel,
   registryBlurb,
   registryHref,
@@ -531,6 +533,30 @@ const Toolbar = styled.div`
 /* ---------- Which lists ---------- */
 
 /* Its own line above the toolbar, with a line saying what the choice means. */
+const StandingBar = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 18px;
+  margin-bottom: 12px;
+`
+
+const StandingNote = styled.p`
+  flex: 1 1 280px;
+  min-width: 0;
+  margin: 0;
+  color: var(--color-muted);
+  font-size: var(--fs-small);
+  line-height: var(--lh-small);
+  text-wrap: pretty;
+
+  > span[role='img'],
+  > span[aria-hidden] {
+    margin: 0 2px;
+    vertical-align: -3px;
+  }
+`
+
 const Search = styled(SearchField)`
   flex: 1 1 170px;
   height: 38px;
@@ -827,99 +853,6 @@ const CardSide = styled.span`
   b[data-zero='true'] {
     color: var(--color-faint);
   }
-`
-
-/* ---------- Groups (round 7 trial) ---------- */
-
-/*
- * Round 7, on trial ("the kleros verified, community lists should be in
- * separate boxes … test it and in case we will restore"): the lists in two
- * boxes, Kleros Verified first, then Community, each with its heading, its
- * count and the line that says what it is, in place of the Verified /
- * Community / All switch. Inside a box the rows give up their own frame
- * and are parted by hairlines, so no box sits inside a box; cards keep
- * theirs on the box's padding.
- */
-const Group = styled(Surface)`
-  ${reveal}
-  overflow: hidden;
-
-  & + & {
-    margin-top: 20px;
-  }
-
-  ${List} {
-    gap: 0;
-  }
-
-  ${RowLink} {
-    border: 0;
-    border-radius: 0;
-    background: transparent;
-    box-shadow: none;
-  }
-
-  ${RowLink} + ${RowLink} {
-    border-top: 1px solid var(--glass-border);
-  }
-
-  ${RowLink}:hover {
-    background: var(--color-raised);
-    translate: none;
-  }
-
-  ${CardGrid} {
-    padding: 16px;
-  }
-`
-
-const GroupHead = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 4px 12px;
-  padding: 18px 20px 16px;
-  border-bottom: 1px solid var(--glass-border);
-
-  h3 {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    margin: 0;
-    color: var(--color-text);
-    font-family: var(--font-display);
-    font-size: 22px;
-    line-height: 28px;
-    font-weight: 500;
-    letter-spacing: -0.02em;
-  }
-
-  h3 small {
-    color: var(--color-faint);
-    font-family: var(--font-figure);
-    font-size: 15px;
-    letter-spacing: 0;
-    font-variant-numeric: tabular-nums;
-  }
-
-  p {
-    flex: 1 1 100%;
-    margin: 0;
-    color: var(--color-muted);
-    font-size: var(--fs-small);
-    line-height: var(--lh-small);
-  }
-`
-
-const GroupEmpty = styled.p`
-  margin: 0;
-  padding: 20px;
-  color: var(--color-muted);
-  font-size: var(--fs-small);
-`
-
-const GroupFoot = styled.div`
-  padding: 0 20px 16px;
 `
 
 /* ---------- Footer ---------- */
@@ -1306,6 +1239,17 @@ const otherTrustModes = (mode: TrustMode): TrustMode[] =>
       ? ['verified', 'all']
       : []
 
+/** The default first; the seal names what Kleros Verified lists earned. */
+const TRUST_OPTIONS: SegmentOption<TrustMode>[] = [
+  {
+    value: 'verified',
+    label: VERIFIED_LABEL,
+    icon: <VerifiedBadge size={15} decorative />,
+  },
+  { value: 'community', label: COMMUNITY_LABEL },
+  { value: 'all', label: 'All' },
+]
+
 /** What the chosen lists are, in one line. */
 const standingNote = (mode: TrustMode): React.ReactNode =>
   mode === 'verified' ? (
@@ -1433,9 +1377,7 @@ const BrowsePage = () => {
   const [searchParams, setSearchParams] = useSearchParams()
   const chainParam = searchParams.get('chain')
   const chains = useMemo(() => parseChains(chainParam), [chainParam])
-  // Round 7 trial: both groups at once, each in its own box, so the list
-  // reads every list and the boxes part them (see Group).
-  const trust: TrustMode = 'all'
+  const trust = parseTrust(searchParams.get('trust'))
   const kindParam = searchParams.get('kind')
   const kinds = useMemo(() => parseKinds(kindParam), [kindParam])
   const sort = parseSort(searchParams.get('sort'))
@@ -1633,22 +1575,9 @@ const BrowsePage = () => {
   useEffect(() => {
     if (nothingOnMainnets) setTestnetAsked(true)
   }, [nothingOnMainnets])
-  // The two boxes: Kleros Verified, the figure the panel above counts (the
-  // lists of lists aside: the rail's "Get Kleros Verified" links them), and
-  // Community, which holds every other list, those whose standing is not
-  // known yet included. Verified lists are few and shown whole; Community
-  // is paged.
-  const verifiedRows = useMemo(
-    () => registries.filter(countsAsVerifiedList),
-    [registries],
-  )
-  const communityRows = useMemo(
-    () => registries.filter((registry) => registry.trustStatus !== 'verified'),
-    [registries],
-  )
-  const pageCount = Math.max(1, Math.ceil(communityRows.length / PAGE_SIZE))
+  const pageCount = Math.max(1, Math.ceil(registries.length / PAGE_SIZE))
   const currentPage = Math.min(requestedPage, pageCount)
-  const visible = communityRows.slice(
+  const visible = registries.slice(
     (currentPage - 1) * PAGE_SIZE,
     currentPage * PAGE_SIZE,
   )
@@ -1706,10 +1635,9 @@ const BrowsePage = () => {
         registryByKey.get(listKey(activity.chainId, activity.registryAddress)),
       )
       .filter((registry): registry is DashboardRegistry => !!registry)
-    return [...new Set([...verifiedRows, ...visible, ...rail, ...showcase])]
-  }, [verifiedRows, visible, latest, registryByKey, showcase])
+    return [...new Set([...visible, ...rail, ...showcase])]
+  }, [visible, latest, registryByKey, showcase])
   const complete = useCompletedRegistries(onScreen)
-  const shownVerified = verifiedRows.map(complete)
   const shownRows = visible.map(complete)
   const shownShowcase = showcase.map(complete)
 
@@ -1775,125 +1703,6 @@ const BrowsePage = () => {
         : 'connecting'
   const clearFilters = () =>
     setParam({ q: null, trust: null, kind: null, chain: null, page: null })
-
-  // One group's lists, as the layout asks: cards or rows.
-  const renderRegistries = (rows: DashboardRegistry[]) =>
-    shown === 'cards' ? (
-      <CardGrid>
-        {rows.map((registry, index) => {
-          const created = shownCreation(registry, sort)
-          const blurb = registryBlurb(registry)
-          return (
-            <CardLink
-              key={registry.id}
-              to={registryHref(registry)}
-              style={{ ['--i' as string]: Math.min(index, 12) }}
-            >
-              <CardTop>
-                <RegistryLogo registry={registry} size={40} />
-                <span style={{ minWidth: 0 }}>
-                  <NameLine>
-                    <Name>{registry.title}</Name>
-                    <ListSeal registry={registry} />
-                    <KindTag kind={registry.kind} />
-                  </NameLine>
-                  {created && (
-                    <SubLine>
-                      <CreatedOn timestamp={created} />
-                    </SubLine>
-                  )}
-                </span>
-              </CardTop>
-              {blurb ? (
-                <CardDescription>{blurb}</CardDescription>
-              ) : (
-                !hasAddressTitle(registry) && (
-                  <CardDescription>
-                    List at <code>{truncateMiddle(registry.address)}</code>
-                  </CardDescription>
-                )
-              )}
-              <Meta style={{ marginTop: 0 }}>
-                <ChainChip chainId={registry.chainId} size="sm" />
-              </Meta>
-              <CardStats>
-                <span>
-                  <StatValue $large $zero={entryCount(registry) === 0}>
-                    {formatInt(entryCount(registry))}
-                  </StatValue>
-                  <StatLabel>Entries</StatLabel>
-                </span>
-                <CardSide>
-                  <span title={pendingTitle(registry)}>
-                    <b data-zero={registry.pendingCount === 0}>
-                      {formatInt(registry.pendingCount)}
-                    </b>
-                    {pendingLabel(registry.kind)}
-                  </span>
-                  <span>
-                    <b data-zero={registry.disputeCount === 0}>
-                      <CourtValue count={registry.disputeCount} />
-                    </b>
-                    In court
-                  </span>
-                </CardSide>
-              </CardStats>
-            </CardLink>
-          )
-        })}
-      </CardGrid>
-    ) : (
-      <List>
-        {rows.map((registry, index) => {
-          const created = shownCreation(registry, sort)
-          return (
-            <RowLink
-              key={registry.id}
-              to={registryHref(registry)}
-              title={`${registry.title} · ${registry.address}`}
-              style={{ ['--i' as string]: Math.min(index, 12) }}
-            >
-              <RegistryLogo registry={registry} />
-              <RowId>
-                <NameLine>
-                  <Name>{registry.title}</Name>
-                  <ListSeal registry={registry} />
-                  <KindTag kind={registry.kind} />
-                </NameLine>
-                <Meta>
-                  <ChainChip chainId={registry.chainId} size="sm" />
-                  {/* The date belongs to the chosen sort, so it comes
-                            after the chain, which is the list's identity
-                            whatever the order. */}
-                  {created && <CreatedOn timestamp={created} />}
-                </Meta>
-              </RowId>
-              <RowStat $area="entries">
-                <StatValue $large $zero={entryCount(registry) === 0}>
-                  {formatInt(entryCount(registry))}
-                </StatValue>
-                <StatLabel>Entries</StatLabel>
-              </RowStat>
-              <RowStat $area="open" title={pendingTitle(registry)}>
-                <StatValue $zero={registry.pendingCount === 0}>
-                  {formatInt(registry.pendingCount)}
-                </StatValue>
-                <StatLabel>{pendingLabel(registry.kind)}</StatLabel>
-              </RowStat>
-              <RowStat $area="court">
-                <StatValue $zero={registry.disputeCount === 0}>
-                  <CourtValue count={registry.disputeCount} />
-                </StatValue>
-                <StatLabel>In court</StatLabel>
-              </RowStat>
-              <Go data-go aria-hidden>
-                <ArrowIcon />
-              </Go>
-            </RowLink>
-          )
-        })}
-      </List>
-    )
 
   return (
     <Page>
@@ -2034,6 +1843,19 @@ const BrowsePage = () => {
           <VisuallyHidden as="h2" id="browse-explorer-title">
             Registry list
           </VisuallyHidden>
+          <StandingBar>
+            <SegmentedControl<TrustMode>
+              ariaLabel="Which lists"
+              value={trust}
+              onChange={(value) =>
+                setParam({ trust: trustParam(value), page: null })
+              }
+              options={TRUST_OPTIONS}
+            />
+            <StandingNote aria-live="polite">
+              {standingNote(trust)}
+            </StandingNote>
+          </StandingBar>
           <Toolbar>
             <Search>
               <CurateIcon name="search" size={16} />
@@ -2206,71 +2028,143 @@ const BrowsePage = () => {
                 Change the search, the chain or a filter.
               </EmptyState>
             </Surface>
+          ) : shown === 'cards' ? (
+            <CardGrid>
+              {shownRows.map((registry, index) => {
+                const created = shownCreation(registry, sort)
+                const blurb = registryBlurb(registry)
+                return (
+                  <CardLink
+                    key={registry.id}
+                    to={registryHref(registry)}
+                    style={{ ['--i' as string]: Math.min(index, 12) }}
+                  >
+                    <CardTop>
+                      <RegistryLogo registry={registry} size={40} />
+                      <span style={{ minWidth: 0 }}>
+                        <NameLine>
+                          <Name>{registry.title}</Name>
+                          <ListSeal registry={registry} />
+                          <KindTag kind={registry.kind} />
+                        </NameLine>
+                        {created && (
+                          <SubLine>
+                            <CreatedOn timestamp={created} />
+                          </SubLine>
+                        )}
+                      </span>
+                    </CardTop>
+                    {blurb ? (
+                      <CardDescription>{blurb}</CardDescription>
+                    ) : (
+                      !hasAddressTitle(registry) && (
+                        <CardDescription>
+                          List at{' '}
+                          <code>{truncateMiddle(registry.address)}</code>
+                        </CardDescription>
+                      )
+                    )}
+                    <Meta style={{ marginTop: 0 }}>
+                      <ChainChip chainId={registry.chainId} size="sm" />
+                    </Meta>
+                    <CardStats>
+                      <span>
+                        <StatValue $large $zero={entryCount(registry) === 0}>
+                          {formatInt(entryCount(registry))}
+                        </StatValue>
+                        <StatLabel>Entries</StatLabel>
+                      </span>
+                      <CardSide>
+                        <span title={pendingTitle(registry)}>
+                          <b data-zero={registry.pendingCount === 0}>
+                            {formatInt(registry.pendingCount)}
+                          </b>
+                          {pendingLabel(registry.kind)}
+                        </span>
+                        <span>
+                          <b data-zero={registry.disputeCount === 0}>
+                            <CourtValue count={registry.disputeCount} />
+                          </b>
+                          In court
+                        </span>
+                      </CardSide>
+                    </CardStats>
+                  </CardLink>
+                )
+              })}
+            </CardGrid>
           ) : (
-            <>
-              <Group
-                as="section"
-                $padding="none"
-                aria-labelledby="browse-verified-title"
-              >
-                <GroupHead>
-                  <h3 id="browse-verified-title">
-                    <VerifiedBadge size={20} decorative />
-                    {VERIFIED_LABEL}
-                    <small>{formatInt(verifiedRows.length)}</small>
-                  </h3>
-                  <p>{standingNote('verified')}</p>
-                </GroupHead>
-                {shownVerified.length > 0 ? (
-                  renderRegistries(shownVerified)
-                ) : (
-                  <GroupEmpty>No {listsLabel('verified', 2)} match.</GroupEmpty>
-                )}
-              </Group>
-              <Group
-                as="section"
-                $padding="none"
-                aria-labelledby="browse-community-title"
-              >
-                <GroupHead>
-                  <h3 id="browse-community-title">
-                    {COMMUNITY_LISTS_LABEL}
-                    <small>{formatInt(communityRows.length)}</small>
-                  </h3>
-                  <p>{standingNote('community')}</p>
-                </GroupHead>
-                {shownRows.length > 0 ? (
-                  renderRegistries(shownRows)
-                ) : (
-                  <GroupEmpty>
-                    No {listsLabel('community', 2)} match.
-                  </GroupEmpty>
-                )}
-                {communityRows.length > PAGE_SIZE && (
-                  <GroupFoot>
-                    <Footer>
-                      <Small $muted>
-                        {formatInt((currentPage - 1) * PAGE_SIZE + 1)}–
-                        {formatInt(
-                          Math.min(
-                            currentPage * PAGE_SIZE,
-                            communityRows.length,
-                          ),
-                        )}{' '}
-                        of {formatInt(communityRows.length)}{' '}
-                        {listsLabel('community', communityRows.length)}
-                      </Small>
-                      <Pagination
-                        current={currentPage}
-                        pageSize={PAGE_SIZE}
-                        total={communityRows.length}
-                        onChange={goToPage}
-                      />
-                    </Footer>
-                  </GroupFoot>
-                )}
-              </Group>
-            </>
+            <List>
+              {shownRows.map((registry, index) => {
+                const created = shownCreation(registry, sort)
+                return (
+                  <RowLink
+                    key={registry.id}
+                    to={registryHref(registry)}
+                    title={`${registry.title} · ${registry.address}`}
+                    style={{ ['--i' as string]: Math.min(index, 12) }}
+                  >
+                    <RegistryLogo registry={registry} />
+                    <RowId>
+                      <NameLine>
+                        <Name>{registry.title}</Name>
+                        <ListSeal registry={registry} />
+                        <KindTag kind={registry.kind} />
+                      </NameLine>
+                      <Meta>
+                        <ChainChip chainId={registry.chainId} size="sm" />
+                        {/* The date belongs to the chosen sort, so it comes
+                            after the chain, which is the list's identity
+                            whatever the order. */}
+                        {created && <CreatedOn timestamp={created} />}
+                      </Meta>
+                    </RowId>
+                    <RowStat $area="entries">
+                      <StatValue $large $zero={entryCount(registry) === 0}>
+                        {formatInt(entryCount(registry))}
+                      </StatValue>
+                      <StatLabel>Entries</StatLabel>
+                    </RowStat>
+                    <RowStat $area="open" title={pendingTitle(registry)}>
+                      <StatValue $zero={registry.pendingCount === 0}>
+                        {formatInt(registry.pendingCount)}
+                      </StatValue>
+                      <StatLabel>{pendingLabel(registry.kind)}</StatLabel>
+                    </RowStat>
+                    <RowStat $area="court">
+                      <StatValue $zero={registry.disputeCount === 0}>
+                        <CourtValue count={registry.disputeCount} />
+                      </StatValue>
+                      <StatLabel>In court</StatLabel>
+                    </RowStat>
+                    <Go data-go aria-hidden>
+                      <ArrowIcon />
+                    </Go>
+                  </RowLink>
+                )
+              })}
+            </List>
+          )}
+
+          {!loading && !failed && registries.length > 0 && (
+            <Footer>
+              <Small $muted>
+                {formatInt((currentPage - 1) * PAGE_SIZE + 1)}–
+                {formatInt(
+                  Math.min(currentPage * PAGE_SIZE, registries.length),
+                )}{' '}
+                of {formatInt(registries.length)}{' '}
+                {listsLabel(trust, registries.length)}
+              </Small>
+              {registries.length > PAGE_SIZE && (
+                <Pagination
+                  current={currentPage}
+                  pageSize={PAGE_SIZE}
+                  total={registries.length}
+                  onChange={goToPage}
+                />
+              )}
+            </Footer>
           )}
         </Explorer>
 
