@@ -767,6 +767,26 @@ const StakeRegistry = () => {
       }),
     })
 
+  // The menu shows one status, the first checked; an old link may carry
+  // several. The link is narrowed to that one, so the list agrees with it.
+  const checkedStatuses = chips.filter((chip) => chip.checked)
+  const shownStatus =
+    checkedStatuses.length > 1 ? checkedStatuses[0].key : undefined
+  const statusKeys = chips.map((chip) => chip.key).join(',')
+  useEffect(() => {
+    if (!shownStatus) return
+    navigate(
+      {
+        search: selectStatusFilter({
+          prevQuery: search,
+          keys: statusKeys.split(','),
+          value: shownStatus,
+        }),
+      },
+      { replace: true },
+    )
+  }, [shownStatus, statusKeys, search, navigate])
+
   const setFilter = (filter: string, checked: boolean) =>
     navigate({
       search: updateStandardFilter({ prevQuery: search, filter, checked }),
