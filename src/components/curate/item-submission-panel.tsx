@@ -112,11 +112,12 @@ const Flow = styled.div<{ $beside: boolean }>`
       @media ${HERO_LEAD_BESIDE} {
         > [data-hero-picture] {
           float: left;
-          /* Never so wide that the rows beside it drop under
+          /* Round 8 trial: a portrait plate on the left, the rows stacked
+             beside it. Never so wide that the rows beside it drop under
              HERO_LEAD_ROW_MIN: a value column narrower than that clipped
              a chain chip and broke addresses mid-word near the
              threshold. */
-          width: min(420px, 52%, 100% - ${HERO_LEAD_ROW_MIN}px);
+          width: min(220px, 40%, 100% - ${HERO_LEAD_ROW_MIN}px);
           /* 12px, and the rows' own 12px inset, set them 24px off the
              plate, as a row's label is off its value. */
           margin: 0 12px ${HERO_LEAD_GAP}px 0;
@@ -124,6 +125,12 @@ const Flow = styled.div<{ $beside: boolean }>`
 
         > [data-hero-picture] + * {
           margin-top: 0;
+        }
+
+        /* Portrait: taller than wide, so the rows beside it read as a
+           column next to the picture. */
+        > [data-hero-picture] button {
+          height: 260px;
         }
 
         /* The rows' 12px bleed is moved from each row to the list: a row

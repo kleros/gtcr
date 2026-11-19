@@ -287,8 +287,6 @@ export type HeroPictureSide = 'aside' | 'details'
  */
 export const HERO_PICTURE_MARK = { 'data-hero-picture': '' }
 
-const HERO_PICTURE_SELECTOR = '[data-hero-picture]'
-
 /**
  * Spread on the full details' flow (what follows the region's name: the
  * lead plate when it is there, the files, the linked list and the field
@@ -296,148 +294,35 @@ const HERO_PICTURE_SELECTOR = '[data-hero-picture]'
  */
 export const HERO_FLOW_MARK = { 'data-hero-flow': '' }
 
-const HERO_FLOW_SELECTOR = '[data-hero-flow]'
-
-/* How much less empty glass the other place must leave before the picture
-   moves, in pixels of height across the narrower column: a few pixels
-   either way is not worth a jump. */
-const HERO_PICTURE_SLACK = 12
-
 /**
- * Which hero column takes the entry's one picture: the place that leaves
- * the least empty glass. Under the clock is its first place, beside the
- * field list it belongs to; but an action card beside an entry of two
- * fields can already stand taller than the left column, and a picture
- * there doubled the block of empty glass at the hero's bottom-left (the
- * round-5 review measured 284px by 870px on a decided entry). There it
- * opens the full details instead, with the first field rows beside it.
- *
- * Empty glass is the height by which one column falls short of the other,
- * times that column's width: a strip under the action in the 360px column
- * reads as air, the same height across the 870px left column as a
- * half-empty box. Both columns are measured as they would stand without
- * the picture, and each place is charged what the picture adds there:
- * under the clock, the plate and the gap above it; in the details, beside
- * the rows, only the part of the plate that runs past them (all of it,
- * with its gap, where the details are too narrow for the two side by side,
- * HERO_LEAD_BESIDE). The rows' height at the details' full width is noted
- * while the picture is under the clock and reused while it sits beside
- * them (narrowed, they wrap a little), so the two places are always
- * weighed with the same figures and the picture cannot chase itself from
- * one to the other. Where the hero stacks the page's own order places it,
- * under the facts, so the answer is then always the clock's column.
+ * Which hero column takes the entry's one picture. Round 8, on trial ("if
+ * present in the item page, the image should still be on the left in a
+ * sort of vertical organization"): always the left, opening the full
+ * details as a portrait plate with the field rows stacked beside it
+ * (Flow), wherever the hero has two columns. Where the hero stacks, the
+ * page's own order places it, under the facts, which is the clock's
+ * column's answer. (Before the trial the picture went to whichever column
+ * left the least empty glass; `git revert` of this trial restores it.)
  */
 export const useHeroPictureSide = (
-  left: HTMLElement | null,
-  aside: HTMLElement | null,
+  _left: HTMLElement | null,
+  _aside: HTMLElement | null,
   active: boolean,
 ): HeroPictureSide => {
-  const [side, setSide] = useState<HeroPictureSide>('aside')
-
+  const [stacked, setStacked] = useState(
+    () =>
+      typeof window !== 'undefined' &&
+      !!window.matchMedia?.(HERO_STACKED).matches,
+  )
   useEffect(() => {
-    if (
-      !active ||
-      !left ||
-      !aside ||
-      typeof ResizeObserver === 'undefined' ||
-      typeof window.matchMedia !== 'function'
-    )
-      return undefined
-    const stacked = window.matchMedia(HERO_STACKED)
-    const beside = window.matchMedia(HERO_LEAD_BESIDE)
-    // The flow's height at its full width, by that width, noted while the
-    // picture is not in it.
-    const flowHeights = new Map<number, number>()
-    const measure = () => {
-      if (stacked.matches) {
-        setSide('aside')
-        return
-      }
-      const picture = (left.querySelector(HERO_PICTURE_SELECTOR) ??
-        aside.querySelector(HERO_PICTURE_SELECTOR)) as HTMLElement | null
-      // Absent while the details have nothing for the plate to stand
-      // beside and the plate is not in them either.
-      const flow = left.querySelector(HERO_FLOW_SELECTOR) as HTMLElement | null
-      if (!picture) return
-      const plate = picture.offsetHeight
-      const inDetails = !!flow && flow.contains(picture)
-      // What would run beside the plate: the flow's own content.
-      const hasContent = !!flow && flow.children.length > (inDetails ? 1 : 0)
-      const sideBySide = beside.matches && hasContent
-      // The flow's content at full width, noted while the plate is not in
-      // it. Beside the plate and with no note for this width (the page was
-      // resized meanwhile), its narrowed height stands in: a few pixels
-      // high at worst.
-      const flowWidth = flow ? Math.round(flow.clientWidth) : 0
-      if (flow && !inDetails) flowHeights.set(flowWidth, flow.offsetHeight)
-      const content =
-        flow && sideBySide
-          ? (flowHeights.get(flowWidth) ??
-            Math.max(
-              0,
-              ...[...flow.children]
-                .filter((child) => child !== picture)
-                .map(
-                  (child) =>
-                    child.getBoundingClientRect().bottom -
-                    flow.getBoundingClientRect().top,
-                ),
-            ))
-          : 0
-      // What the picture adds in each place: under the clock, the plate
-      // and the column's gap above it; in the details, beside the rows,
-      // the part of the plate (and the gap under it) that runs past them,
-      // and otherwise the plate and the gap that parts it from the rest
-      // (or, alone, from the region's name).
-      const asideShare =
-        plate + (parseFloat(getComputedStyle(aside).rowGap) || 0)
-      const detailsShare = sideBySide
-        ? Math.max(0, plate + HERO_LEAD_GAP - content)
-        : plate + HERO_LEAD_GAP
-      // Each column as it would stand without the picture. In the details
-      // beside the rows, what it adds now includes the rows' narrowing.
-      const leftBase =
-        left.offsetHeight -
-        (!inDetails
-          ? 0
-          : flow && sideBySide
-            ? flow.offsetHeight - content
-            : plate + HERO_LEAD_GAP)
-      const asideBase = aside.offsetHeight - (inDetails ? 0 : asideShare)
-      const leftWidth = left.offsetWidth
-      const asideWidth = aside.offsetWidth
-      // The empty glass two column heights leave: the shorter column's
-      // shortfall across its own width.
-      const emptyGlass = (leftHeight: number, asideHeight: number) =>
-        leftHeight >= asideHeight
-          ? (leftHeight - asideHeight) * asideWidth
-          : (asideHeight - leftHeight) * leftWidth
-      const glass: Record<HeroPictureSide, number> = {
-        aside: emptyGlass(leftBase, asideBase + asideShare),
-        details: emptyGlass(leftBase + detailsShare, asideBase),
-      }
-      const slack = HERO_PICTURE_SLACK * Math.min(leftWidth, asideWidth)
-      setSide((current) => {
-        const other = current === 'aside' ? 'details' : 'aside'
-        return glass[other] + slack < glass[current] ? other : current
-      })
-    }
-    // Both columns change height as the entry, the clock and the action
-    // card arrive, and with the page's width; the observer's first report
-    // is the first measurement.
-    const observer = new ResizeObserver(measure)
-    observer.observe(left)
-    observer.observe(aside)
-    stacked.addEventListener('change', measure)
-    beside.addEventListener('change', measure)
-    return () => {
-      observer.disconnect()
-      stacked.removeEventListener('change', measure)
-      beside.removeEventListener('change', measure)
-    }
-  }, [left, aside, active])
-
-  return active ? side : 'aside'
+    if (typeof window.matchMedia !== 'function') return undefined
+    const query = window.matchMedia(HERO_STACKED)
+    const change = () => setStacked(query.matches)
+    change()
+    query.addEventListener('change', change)
+    return () => query.removeEventListener('change', change)
+  }, [])
+  return active && !stacked ? 'details' : 'aside'
 }
 
 /**

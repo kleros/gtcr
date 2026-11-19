@@ -626,14 +626,12 @@ way (dashboard, Browse, registry pages, the profile, the landing page).
 - **The facts strip** (`components/curate/item-hero-facts.tsx`), shared by Standard and Stake:
   date, Bounty (only while a case is live, per coin), By, Challenged by, and the item ID, one
   copy-on-click control in Geist Mono that reports the copy in place without moving the row.
-- **Pictures are not always present.** Exactly one is drawn once, as a plate 168px tall, wherever
-  it leaves the least empty glass: under the clock and the action, or opening Full details. In Full
-  details from 1180px it sits on the left, min(420px, 52%, column − 360px) wide, with the field rows
-  running beside it, each narrowing beside the plate and taking the full width once past its foot.
-  With nothing beside it, or below 1180px, it takes the column's full width, the picture contained
-  on the quiet fill. Each place is charged only what the picture adds there. Two or more pictures
-  stay in the Full details band, two or more per row (140px minimum). None: nothing is drawn or
-  reserved. Where the hero stacks, a lone plate takes the column's full width, 168-240px tall.
+- **Pictures are not always present.** Exactly one is drawn once, on the left (round 8, on
+  trial): it opens Full details as a portrait plate (220px wide, 260px tall, the picture contained
+  on the quiet fill) with the field rows stacked beside it from 1180px, and above them, the
+  column's full width, between 1001 and 1179px. Two or more pictures stay in the Full details band,
+  two or more per row (140px minimum). None: nothing is drawn or reserved. Where the hero stacks,
+  a lone plate takes the column's full width, 168-240px tall, under the facts.
 - **At 1000px and below** the columns dissolve into one order: identity, clock, facts, picture,
   full details, then the action under an inset hairline.
 - **The action stays in reach.** A frosted bar carries the status and the one action
