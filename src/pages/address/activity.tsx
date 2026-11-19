@@ -303,7 +303,9 @@ const RowList = styled.ul`
 const RowItem = styled.li`
   position: relative;
   display: grid;
-  grid-template-columns: 40px minmax(0, 1fr) minmax(0, 1.15fr) 168px 16px;
+  /* The entry's name leads: it takes the larger share, the status keeps
+     room for its line and the other party. */
+  grid-template-columns: 40px minmax(0, 1.5fr) minmax(176px, 1fr) 168px 16px;
   align-items: center;
   gap: 14px;
   min-height: 72px;
