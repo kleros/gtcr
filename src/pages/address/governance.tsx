@@ -1,4 +1,5 @@
 import React, {
+  createContext,
   useContext,
   useEffect,
   useId,
@@ -10,7 +11,7 @@ import React, {
 import { createPortal } from 'react-dom'
 import styled, { keyframes } from 'styled-components'
 import { Link } from 'react-router-dom'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQueries, useQuery, useQueryClient } from '@tanstack/react-query'
 import { getPublicClient, readContracts, simulateContract } from '@wagmi/core'
 import {
   useAccount,
@@ -83,7 +84,16 @@ import {
   normalizeDecimalInput,
 } from 'utils/decimal-input'
 import {
+  callData,
+  downloadJson,
+  hasCodeQuery,
+  readSafeOwners,
+  safeTransactionBuilderJson,
+  type ContractCall,
+} from 'utils/safe-transaction'
+import {
   errorToast,
+  infoToast,
   reportSwitchFailure,
   successToast,
   wrapWithToast,
@@ -1382,24 +1392,122 @@ const FieldNote = styled(Small)<{ $error?: boolean }>`
 `
 
 /**
- * Simulates the call from the connected wallet, sends it with a toast, and
- * turns a revert or a refused signature into a message instead of failing
- * silently. Resolves true once the transaction is mined and succeeded.
+ * How a save leaves the dialog:
+ * - send: the connected wallet is the governor and signs it.
+ * - propose: the connected wallet is the governor and a contract (a Safe
+ *   opened through WalletConnect): the wallet answers with a Safe proposal,
+ *   never a mined transaction, so nothing waits for one.
+ * - export: the governor is a contract (a Safe) and the connected wallet is
+ *   someone else, perhaps one of its owners: the change is built and checked
+ *   the same way, then downloaded for the Safe's Transaction Builder or
+ *   copied as calldata, and signed in the Safe.
+ */
+export type WriteMode = 'send' | 'propose' | 'export'
+/** Export only: the Transaction Builder file, or the raw calldata. */
+type ExportVia = 'download' | 'copy'
+
+const WriteModeContext = createContext<WriteMode>('send')
+
+const PROPOSED =
+  'Proposed in the Safe: confirm it there. The list changes once the Safe executes it.'
+
+/** The governance call a field saves, as both paths build it. */
+const governanceCall = (
+  registry: GovernedRegistry,
+  functionName: string,
+  args: unknown[],
+): ContractCall => ({
+  chainId: registry.chainId,
+  address: registry.address as `0x${string}`,
+  abi: abiForKind(registry.kind) as ContractCall['abi'],
+  functionName,
+  args,
+})
+
+/** Hands a built call to the Safe's owners: a file, or the calldata. */
+const exportCall = async (
+  registry: GovernedRegistry,
+  call: ContractCall,
+  via: ExportVia,
+) => {
+  if (via === 'copy') {
+    if (!navigator.clipboard)
+      throw new Error(
+        'The calldata could not be copied. Download the Safe file instead.',
+      )
+    await navigator.clipboard
+      .writeText(`to: ${call.address}\nvalue: 0\ndata: ${callData(call)}`)
+      .catch(() => {
+        throw new Error(
+          'The calldata could not be copied. Download the Safe file instead.',
+        )
+      })
+    successToast(
+      `Calldata copied. In the Safe, start a transaction to ${shortAddress(call.address)} with value 0 and this data; its owners sign it there.`,
+    )
+    return
+  }
+  downloadJson(
+    `${registry.title.replace(/[^\w-]+/g, '-').toLowerCase()}-${call.functionName}.json`,
+    safeTransactionBuilderJson({
+      call,
+      safe: registry.governor ?? '',
+      name: `${registry.title}: ${call.functionName}`,
+      description: `${call.functionName} on ${registry.address} (${chainName(registry.chainId)}), prepared in Curate.`,
+    }),
+  )
+  successToast(
+    "Safe file downloaded. In the Safe, open Apps, then Transaction Builder, and drop the file in; the Safe's owners sign it there.",
+  )
+}
+
+/**
+ * Simulates the call (from the connected wallet, or from the governor when
+ * exporting), then sends it with a toast, proposes it to the Safe, or
+ * exports it; a revert or a refused signature becomes a message instead of
+ * failing silently. Resolves true only once a sent transaction is mined and
+ * succeeded: a proposal or an export has changed nothing yet.
  */
 const useGovernanceWrite = (registry: GovernedRegistry) => {
+  const mode = useContext(WriteModeContext)
+  const queryClient = useQueryClient()
   const { data: walletClient } = useWalletClient()
   const [pending, setPending] = useState(false)
-  const send = async (functionName: string, args: unknown[]) => {
-    if (!walletClient) return false
+  const ready = mode === 'export' || !!walletClient
+  const send = async (
+    functionName: string,
+    args: unknown[],
+    via: ExportVia = 'download',
+  ) => {
+    if (!ready) return false
     setPending(true)
     try {
-      const { request } = await simulateContract(wagmiConfig, {
-        chainId: registry.chainId,
-        address: registry.address as `0x${string}`,
-        abi: abiForKind(registry.kind),
-        functionName,
-        args,
-      } as any)
+      const call = governanceCall(registry, functionName, args)
+      if (mode === 'export') {
+        // Simulated from the governor itself: a change the Safe could not
+        // make is caught before its owners are asked to sign.
+        await simulateContract(wagmiConfig, {
+          ...call,
+          account: registry.governor as `0x${string}`,
+        } as any)
+        await exportCall(registry, call, via)
+        return false
+      }
+      if (!walletClient) return false
+      const { request } = await simulateContract(wagmiConfig, call as any)
+      // A wallet that is a contract (a Safe through WalletConnect) answers
+      // with the hash of a proposal, which is never mined: waiting for it
+      // would hang, then fail. Read here, so a mode still loading can't lie.
+      const isContract = await queryClient
+        .fetchQuery(
+          hasCodeQuery(registry.chainId, walletClient.account.address),
+        )
+        .catch(() => mode === 'propose')
+      if (isContract) {
+        await walletClient.writeContract(request)
+        infoToast(PROPOSED)
+        return false
+      }
       const publicClient = getPublicClient(wagmiConfig, {
         chainId: registry.chainId,
       })
@@ -1416,7 +1524,77 @@ const useGovernanceWrite = (registry: GovernedRegistry) => {
       setPending(false)
     }
   }
-  return { walletClient, pending, send }
+  return { ready, mode, pending, send }
+}
+
+/**
+ * The save control: one Save that signs (Propose for a Safe connected as
+ * the wallet), or, for a contract governor the wallet is not, the two ways
+ * to hand the change to the Safe.
+ */
+const SaveActions = ({
+  off,
+  reason,
+  checking,
+  pending,
+  armed,
+  onSave,
+}: {
+  off: boolean
+  reason?: string
+  checking?: boolean
+  pending: boolean
+  /** A governor transfer waiting for its second click. */
+  armed?: boolean
+  onSave: (via?: ExportVia) => void
+}) => {
+  const mode = useContext(WriteModeContext)
+  const variant = armed ? 'danger' : 'primary'
+  if (mode !== 'export')
+    return (
+      <ReasonedButton
+        $variant={variant}
+        off={off}
+        reason={reason}
+        onClick={() => onSave()}
+      >
+        {checking
+          ? 'Checking…'
+          : pending
+            ? 'Saving…'
+            : armed
+              ? 'Confirm transfer'
+              : mode === 'propose'
+                ? 'Propose'
+                : 'Save'}
+      </ReasonedButton>
+    )
+  return (
+    <Stack $gap={6}>
+      <ReasonedButton
+        $variant={variant}
+        off={off}
+        reason={reason}
+        onClick={() => onSave('download')}
+      >
+        {checking
+          ? 'Checking…'
+          : pending
+            ? 'Preparing…'
+            : armed
+              ? 'Confirm: download'
+              : 'Download Safe file'}
+      </ReasonedButton>
+      <ReasonedButton
+        $variant="secondary"
+        off={off}
+        reason={reason}
+        onClick={() => onSave('copy')}
+      >
+        Copy calldata
+      </ReasonedButton>
+    </Stack>
+  )
 }
 
 /**
@@ -1616,7 +1794,7 @@ const ArbitrationGovernanceField = ({
   /** The chain changed since `current` was read: read it again. */
   onOutdated: () => void
 }) => {
-  const { walletClient, pending, send } = useGovernanceWrite(registry)
+  const { ready, pending, send } = useGovernanceWrite(registry)
   const alive = useAlive()
   const chainProvider = useEthersProvider({ chainId: registry.chainId })
   const knownKleros = klerosAddresses[registry.chainId]
@@ -1702,7 +1880,7 @@ const ArbitrationGovernanceField = ({
                 : undefined
   const blocker =
     gate.blocker ??
-    (!walletClient
+    (!ready
       ? 'Wallet not ready'
       : (inputError ?? (changed ? undefined : 'No change')))
   // The inputs wait for the live settings, and for each read after a
@@ -1710,7 +1888,7 @@ const ArbitrationGovernanceField = ({
   const locked =
     Boolean(gate.blocker) || pending || checking || !current || refreshing
 
-  const save = async () => {
+  const save = async (via?: ExportVia) => {
     if (blocker || !extraData || !current) return
     const arbitratorChanged =
       registry.kind !== 'permanent' &&
@@ -1761,7 +1939,7 @@ const ArbitrationGovernanceField = ({
       registry.kind === 'standard'
         ? [arbitrator, extraData, registration, clearing]
         : [extraData, registration]
-    if (await send(functionName, args)) {
+    if (await send(functionName, args, via)) {
       // Standard and Stake add a settings entry: one more MetaEvidence change.
       const changes = (current.changes ?? 0) + 1
       // The fields keep the saved values until the live settings are read
@@ -1930,14 +2108,13 @@ const ArbitrationGovernanceField = ({
             </FieldNote>
           )}
         </Stack>
-        <ReasonedButton
-          $variant="primary"
+        <SaveActions
           off={Boolean(blocker || locked)}
           reason={blocker}
-          onClick={save}
-        >
-          {checking ? 'Checking…' : pending ? 'Saving…' : 'Save'}
-        </ReasonedButton>
+          checking={checking}
+          pending={pending}
+          onSave={(via) => void save(via)}
+        />
       </Controls>
     </Field>
   )
@@ -1958,7 +2135,7 @@ const GovernanceField = ({
   gate: SaveGate
   onSaved: (written: Written) => void
 }) => {
-  const { walletClient, pending, send } = useGovernanceWrite(registry)
+  const { ready, mode, pending, send } = useGovernanceWrite(registry)
   const inputId = useId()
   const noteId = useId()
   const current = registry.params?.[config.key]
@@ -1995,13 +2172,13 @@ const GovernanceField = ({
   const unchanged = isUnchanged(parsed, current, config.kind)
   const blocker =
     gate.blocker ??
-    (!walletClient
+    (!ready
       ? 'Wallet not ready'
       : (inputError ?? (unchanged ? 'No change' : undefined)))
   const locked = Boolean(gate.blocker) || pending
   const description = describeParsed(parsed, config.kind)
 
-  const save = async () => {
+  const save = async (via?: ExportVia) => {
     if (blocker || parsed.error !== undefined) return
     if (isGovernor && !armed) {
       setArmed(true)
@@ -2012,7 +2189,7 @@ const GovernanceField = ({
         .catch(() => setGovernorHasCode(undefined))
       return
     }
-    if (await send(config.functionName, [parsed.value])) {
+    if (await send(config.functionName, [parsed.value], via)) {
       setEdited(false)
       setArmed(false)
       onSaved({
@@ -2065,21 +2242,23 @@ const GovernanceField = ({
                 <Data $mono style={{ overflowWrap: 'anywhere' }}>
                   {String(parsed.value)}
                 </Data>
-                . After it is mined, only that address can change the list.
+                .{' '}
+                {mode === 'send'
+                  ? 'After it is mined, only that address can change the list.'
+                  : 'Once the Safe executes it, only that address can change the list.'}
                 {governorHasCode === false &&
                   ` There is no contract at that address on ${chainName(registry.chainId)}: fine for a personal wallet, but a Safe must exist on ${chainName(registry.chainId)} itself.`}
               </Small>
             </GateRow>
           )}
         </Stack>
-        <ReasonedButton
-          $variant={armed ? 'danger' : 'primary'}
+        <SaveActions
           off={Boolean(blocker) || locked}
           reason={blocker}
-          onClick={save}
-        >
-          {pending ? 'Saving…' : armed ? 'Confirm transfer' : 'Save'}
-        </ReasonedButton>
+          pending={pending}
+          armed={armed}
+          onSave={(via) => void save(via)}
+        />
       </Controls>
       {config.note && <Small $muted>{config.note}</Small>}
     </Field>
@@ -2098,7 +2277,7 @@ const PARAM_GROUPS: ParamGroup[] = ['deposits', 'timing', 'advanced']
 
 const GovernanceDialog = ({
   registry,
-  editable,
+  mode,
   profileAddress,
   written,
   onWritten,
@@ -2106,7 +2285,8 @@ const GovernanceDialog = ({
 }: {
   /** The list, with this page's saved params already laid over it. */
   registry: GovernedRegistry
-  editable: boolean
+  /** How a save leaves (see WriteMode); undefined: nothing can be saved. */
+  mode?: WriteMode
   profileAddress: string
   /** What this page's saves wrote to the list (see Written). */
   written?: Written
@@ -2115,10 +2295,34 @@ const GovernanceDialog = ({
 }) => {
   const queryClient = useQueryClient()
   const [section, setSection] = useState<GovernanceSection>('court')
-  const { chainId: walletChainId, isConnected } = useAccount()
+  const { address: account, chainId: walletChainId, isConnected } = useAccount()
   const { switchChain, isPending: switching } = useSwitchChain()
-  const wrongChain = editable && walletChainId !== registry.chainId
-  const gate: SaveGate = !editable
+  const exporting = mode === 'export'
+  // An export signs nothing here: the wallet's chain does not matter.
+  const wrongChain = !!mode && !exporting && walletChainId !== registry.chainId
+  // Exporting: whether the wallet is one of the Safe's owners, to say who
+  // signs next. Undefined while read, or when the governor is no Safe.
+  const owners = useQuery({
+    queryKey: ['safeOwners', registry.chainId, registry.governor],
+    queryFn: () =>
+      readSafeOwners(registry.chainId, registry.governor ?? '').then(
+        (list) => list ?? null,
+      ),
+    enabled: exporting && !!registry.governor,
+    staleTime: 60_000,
+  })
+  const safeNote = !exporting
+    ? undefined
+    : `${registry.title} is governed by ${
+        owners.data ? 'a Safe' : 'a contract'
+      } (${shortAddress(registry.governor ?? '')}), so no wallet signs here. Prepare a change, then download it for the Safe's Transaction Builder or copy its calldata. ${
+        !owners.data
+          ? "The contract's signers approve it there."
+          : owners.data.includes(normalizeAddress(account))
+            ? 'You are one of its owners: sign it in the Safe, and the other owners confirm it.'
+            : 'This wallet is not one of its owners: pass the change to one who is.'
+      }`
+  const gate: SaveGate = !mode
     ? { blocker: 'Only the governor wallet can save changes' }
     : wrongChain
       ? {
@@ -2255,7 +2459,11 @@ const GovernanceDialog = ({
   return (
     <DialogShell
       title={`Update ${registry.title}`}
-      titleHelp="Changes are sent one parameter at a time. Each is simulated before the wallet asks you to sign, so a change that would revert is caught before you pay gas."
+      titleHelp={
+        exporting
+          ? "Changes are prepared one parameter at a time. Each is simulated as the governor before you download it, so a change that would revert is caught before the Safe's owners sign it."
+          : 'Changes are sent one parameter at a time. Each is simulated before the wallet asks you to sign, so a change that would revert is caught before you pay gas.'
+      }
       page={section}
       onClose={onClose}
       head={
@@ -2278,14 +2486,24 @@ const GovernanceDialog = ({
               )}
             </GateLine>
           )}
-          {!gate.blocker && walletClientFailed && !walletClient && (
+          {safeNote && (
             <GateLine>
               <Small $muted role="status">
-                Wallet not ready: reconnect it or reload the page to save
-                changes.
+                {safeNote}
               </Small>
             </GateLine>
           )}
+          {!gate.blocker &&
+            !exporting &&
+            walletClientFailed &&
+            !walletClient && (
+              <GateLine>
+                <Small $muted role="status">
+                  Wallet not ready: reconnect it or reload the page to save
+                  changes.
+                </Small>
+              </GateLine>
+            )}
           <SegmentedControl<GovernanceSection>
             ariaLabel="Settings section"
             size="sm"
@@ -2296,44 +2514,63 @@ const GovernanceDialog = ({
         </>
       }
     >
-      <Section open={section === 'court'}>
-        <ArbitrationGovernanceField
-          registry={registry}
-          current={liveSettings}
-          currentError={metaEvidenceError}
-          refreshing={rereads > 0}
-          gate={gate}
-          onSaved={savedSettings}
-          onOutdated={readSettingsAgain}
-        />
-      </Section>
-      {PARAM_GROUPS.map((group) => (
-        <Section key={group} open={section === group}>
-          {params
-            .filter((config) => config.group === group)
-            .map((config) => (
-              <GovernanceField
-                key={`${registry.id}-${config.key}`}
-                registry={withIndexedParams}
-                config={config}
-                context={context}
-                gate={gate}
-                onSaved={saved}
-              />
-            ))}
+      <WriteModeContext.Provider value={mode ?? 'send'}>
+        <Section open={section === 'court'}>
+          <ArbitrationGovernanceField
+            registry={registry}
+            current={liveSettings}
+            currentError={metaEvidenceError}
+            refreshing={rereads > 0}
+            gate={gate}
+            onSaved={savedSettings}
+            onOutdated={readSettingsAgain}
+          />
         </Section>
-      ))}
+        {PARAM_GROUPS.map((group) => (
+          <Section key={group} open={section === group}>
+            {params
+              .filter((config) => config.group === group)
+              .map((config) => (
+                <GovernanceField
+                  key={`${registry.id}-${config.key}`}
+                  registry={withIndexedParams}
+                  config={config}
+                  context={context}
+                  gate={gate}
+                  onSaved={saved}
+                />
+              ))}
+          </Section>
+        ))}
+      </WriteModeContext.Provider>
     </DialogShell>
   )
 }
 
 /**
+ * How the connected wallet can save to a list: as its governor (a Safe
+ * connected as the wallet proposes), by export when the governor is a
+ * contract it is not, or not at all.
+ */
+const writeModeFor = (
+  connected: string,
+  governor: string | undefined,
+  contractGovernor: boolean | undefined,
+): WriteMode | undefined => {
+  const target = normalizeAddress(governor)
+  if (!connected || !target || target === zeroAddress) return undefined
+  if (connected === target) return contractGovernor ? 'propose' : 'send'
+  return contractGovernor ? 'export' : undefined
+}
+
+/**
  * The update dialog for one list, opened from the list's own page
  * (components/curate/list-governance.tsx), with what its saves wrote laid
- * over the list until the next read. Only the connected governor can save;
- * anyone else (a wallet that changed since the button showed) sees the
- * dialog's gate. A governor transfer ends this wallet's say over the list,
- * so it closes the dialog.
+ * over the list until the next read. The connected governor saves; when
+ * the governor is a contract (a Safe), any connected wallet prepares a
+ * change for it instead; anyone else (a wallet that changed since the
+ * button showed) sees the dialog's gate. A governor transfer ends this
+ * wallet's say over the list, so it closes the dialog.
  */
 export const ListGovernanceDialog = ({
   registry,
@@ -2350,10 +2587,13 @@ export const ListGovernanceDialog = ({
   const connected = normalizeAddress(address)
   const [written, setWritten] = useState<Written>()
   const shown = withWritten(registry, written)
+  const contractGovernor = useQuery(
+    hasCodeQuery(shown.chainId, shown.governor),
+  ).data
   return (
     <GovernanceDialog
       registry={shown}
-      editable={!!connected && connected === normalizeAddress(shown.governor)}
+      mode={writeModeFor(connected, shown.governor, contractGovernor)}
       profileAddress={connected}
       written={written}
       onWritten={(next) => {
@@ -2794,9 +3034,32 @@ export const GovernancePanel = ({
     }
   }
   const connected = normalizeAddress(connectedAddress)
-  const isOwner = isConnected && connected === profileAddress
-  const selectedEditable =
-    isOwner && normalizeAddress(selected?.governor) === connected
+  // Whether this address is a contract (most often a Safe) on each chain it
+  // governs lists on: a getCode per chain, from the chain's RPC. Its owners
+  // never connect as it, so any connected wallet prepares changes for it.
+  const governedChains = useMemo(
+    () => [...new Set(registries.map((registry) => registry.chainId))],
+    [registries],
+  )
+  const contractOn = useQueries({
+    queries: governedChains.map((chainId) => {
+      const query = hasCodeQuery(chainId, profileAddress)
+      return { ...query, enabled: query.enabled && !isZero }
+    }),
+  })
+  const isContractOn = (chainId: number) =>
+    contractOn[governedChains.indexOf(chainId)]?.data
+  const anyContract = contractOn.some((query) => query.data)
+  // How the connected wallet saves to a list this address still governs.
+  const modeFor = (registry: GovernedRegistry) =>
+    isConnected && normalizeAddress(registry.governor) === profileAddress
+      ? writeModeFor(
+          connected,
+          registry.governor,
+          isContractOn(registry.chainId),
+        )
+      : undefined
+  const selectedMode = selected ? modeFor(selected) : undefined
 
   // A list's creation is the factory's NewGTCR block time (cached once read;
   // the same query as Browse), never its first request: until the time is
@@ -2816,7 +3079,9 @@ export const GovernancePanel = ({
   const intro =
     isZero && registries.length > 0
       ? 'Lists whose governor is the zero address: nobody can change their parameters any more.'
-      : 'Lists whose governor is this address. Only the governor wallet can change their deposits, periods, court and policy.'
+      : anyContract
+        ? "Lists whose governor is this address, a Safe or another contract. Any connected wallet can prepare a change to their deposits, periods, court and policy; the Safe's owners sign it there."
+        : 'Lists whose governor is this address. Only the governor wallet can change their deposits, periods, court and policy.'
 
   const layoutControl =
     onLayout && !loading && registries.length > 0 ? (
@@ -2852,8 +3117,9 @@ export const GovernancePanel = ({
       </GovName>
     )
   }
-  const controls = (registry: GovernedRegistry, editable: boolean) => {
+  const controls = (registry: GovernedRegistry, mode?: WriteMode) => {
     const href = `/tcr/${registry.chainId}/${registry.address}`
+    const editable = mode === 'send' || mode === 'propose'
     return (
       <>
         {isZero ? (
@@ -2874,6 +3140,19 @@ export const GovernancePanel = ({
           >
             Update list parameters
           </Button>
+        ) : mode === 'export' ? (
+          // A Safe's owners never connect as the Safe: they prepare the
+          // change here and sign it in the Safe.
+          <Tooltip title="The governor is a Safe: prepare a change here, then sign it in the Safe.">
+            <Button
+              type="button"
+              $variant="secondary"
+              $size="sm"
+              onClick={() => setSelected(registry)}
+            >
+              Update list parameters
+            </Button>
+          </Tooltip>
         ) : isConnected ? (
           <ReasonedButton
             $variant="secondary"
@@ -2930,8 +3209,8 @@ export const GovernancePanel = ({
       ) : layout === 'cards' ? (
         <GovGrid key="cards">
           {shown.map((registry) => {
-            const editable =
-              isOwner && normalizeAddress(registry.governor) === connected
+            const mode = modeFor(registry)
+            const editable = mode === 'send' || mode === 'propose'
             return (
               <GovCard key={registry.id}>
                 <CardTop>
@@ -2969,7 +3248,7 @@ export const GovernancePanel = ({
                     </dd>
                   </div>
                 </CardStats>
-                <CardActions>{controls(registry, editable)}</CardActions>
+                <CardActions>{controls(registry, mode)}</CardActions>
               </GovCard>
             )
           })}
@@ -2977,8 +3256,8 @@ export const GovernancePanel = ({
       ) : (
         <GovList key="rows">
           {shown.map((registry) => {
-            const editable =
-              isOwner && normalizeAddress(registry.governor) === connected
+            const mode = modeFor(registry)
+            const editable = mode === 'send' || mode === 'propose'
             return (
               <GovRow key={registry.id}>
                 <ListLogo
@@ -3016,7 +3295,7 @@ export const GovernancePanel = ({
                     </dd>
                   </div>
                 </Facts>
-                <GovActions>{controls(registry, editable)}</GovActions>
+                <GovActions>{controls(registry, mode)}</GovActions>
               </GovRow>
             )
           })}
@@ -3026,7 +3305,7 @@ export const GovernancePanel = ({
       {selected && (
         <GovernanceDialog
           registry={selected}
-          editable={selectedEditable}
+          mode={selectedMode}
           profileAddress={profileAddress}
           written={written[selected.id]}
           onWritten={(next) => recordWritten(selected, next)}
