@@ -36,7 +36,10 @@ export interface BadgeLevel {
   count: number
   /** The count the next level asks for; undefined at the top level. */
   next?: number
-  /** How far the count is toward the next level, 0 to 1; 1 at the top. */
+  /**
+   * How far the count is from this level's threshold toward the next one,
+   * 0 to 1 (level 0 runs from zero); 1 at the top.
+   */
   share: number
 }
 
@@ -44,10 +47,14 @@ export const badgeLevel = (kind: MedalKind, count: number): BadgeLevel => {
   const ladder = LEVELS[kind]
   const level = ladder.filter((step) => count >= step).length
   const next = ladder[level]
+  const floor = level > 0 ? ladder[level - 1] : 0
   return {
     level,
     count,
     next,
-    share: next === undefined ? 1 : Math.min(1, Math.max(0, count / next)),
+    share:
+      next === undefined
+        ? 1
+        : Math.min(1, Math.max(0, (count - floor) / (next - floor))),
   }
 }
