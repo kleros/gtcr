@@ -2426,3 +2426,12 @@ main,
 [data-paused] .btn--bar::after {
   animation-play-state: paused;
 }
+
+/* The narrowest phones: a tighter gap keeps the three activity labels
+   ("Challenges", "In court now", "Active curators") inside their columns. */
+@media (max-width: 360px) {
+  .stats {
+    grid-template-columns: repeat(3, auto);
+    column-gap: 14px;
+  }
+}
