@@ -186,13 +186,16 @@ const Verb = styled.span`
   }
 `
 
+/* Wider than the dial by 80px, so each end's date and its "UTC" fit on one
+   line (round 5: at the dial's own width "15 Nov, 17:11" wrapped and left
+   "UTC" alone on a second line). The labels reach about 40px past the
+   dial's edges, which the arc's own ends, inset about 44px, never show. */
 const Caption = styled.figcaption`
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 8px;
-  width: var(--dial);
-  max-width: 100%;
+  width: min(100%, calc(var(--dial) + 80px));
 `
 
 /* The two ends of the arc, under the ends themselves: where the window
@@ -224,11 +227,14 @@ const End = styled.div<{ $side: 'left' | 'right' }>`
     line-height: 16px;
     font-weight: 500;
     font-variant-numeric: tabular-nums;
+    white-space: nowrap;
   }
 `
 
 /* What the ring measures over: the window's own length, and the deadline
-   inside it when there is one. Never a second countdown. */
+   inside it when there is one. Never a second countdown. The list's own
+   inline padding is cleared, or the browser's 40px pushes the centred line
+   20px right of the dial's centre. */
 const Notes = styled.ul`
   display: flex;
   flex-direction: column;
@@ -236,7 +242,7 @@ const Notes = styled.ul`
   gap: 2px;
   width: 100%;
   margin: 0;
-  padding-top: 8px;
+  padding: 8px 0 0;
   border-top: 1px solid var(--glass-border);
   list-style: none;
   text-align: center;
@@ -370,9 +376,10 @@ export const WindowRing = ({
    */
   ends?: WindowEnd[]
   /**
-   * The dial's diameter. The default suits the entry pages' 320px column
-   * (round 3: it came down from 196 so the hero's two columns end nearer
-   * each other). Below about 176 the `Ends` grid under the arc wraps.
+   * The dial's diameter. The default suits the entry pages' right-hand
+   * column, 312px inside its padding (round 3: it came down from 196 so the
+   * hero's two columns end nearer each other). The caption under it is 80px
+   * wider, which keeps each end's date on one line down to a 158px dial.
    */
   size?: number
 }) => {

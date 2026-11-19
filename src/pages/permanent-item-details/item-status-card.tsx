@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
-import styled from 'styled-components'
+import { createPortal } from 'react-dom'
+import styled, { css } from 'styled-components'
 import type { BigNumber } from 'ethers'
 import { useAccount, usePublicClient, useWalletClient } from 'wagmi'
 import { simulateContract } from '@wagmi/core'
@@ -18,6 +19,7 @@ import { STATUS_CODE } from 'utils/permanent-item-status'
 import { wrapWithToast, errorToast } from 'utils/wrap-with-toast'
 import { parseWagmiError } from 'utils/parse-wagmi-error'
 import { wagmiConfig } from 'config/wagmi'
+import { isKlerosArbitrator } from 'config/tcr-addresses'
 import {
   Button,
   Label,
@@ -28,7 +30,9 @@ import {
 } from 'components/curate/primitives'
 import { EntryStatus, stakeEntryStatus } from 'components/curate/entry-status'
 import { StickyActionBar } from 'components/curate/item-standard-action-bar'
+import { LaneBar } from 'components/curate/lane-bar'
 import { CountUpText } from 'components/curate/registry-shared-count'
+import { BountyFigure } from 'components/curate/item-bounty-figure'
 import ItemActionButton from 'components/permanent-item-action-button'
 import { scrollToEvidenceComposer } from 'components/permanent-request-timelines'
 import ItemActionModal from './item-action-modal'
@@ -59,12 +63,20 @@ export type { StakeChallenge, StakeItem, StakeRegistry } from './facts'
 export { rulingSentence } from './facts'
 
 /*
- * The right rail of the Stake item page. While the entry can be challenged
- * the card leads with the bounty — the stake a correct challenger takes —
- * and one sentence says what a challenge puts up and what comes back (round
- * 3 of the design review: the card used to name the cost a second time in
- * words and to unfold a stake-and-arbitration breakdown, which the
- * challenge dialog carries anyway, before anything is signed). Otherwise it
+ * The status card of the Stake item page, which draws itself in two places:
+ * its action in the hero, under the clock, as part of that panel rather
+ * than a panel inside it (round 5: in the rail under the hero it had fallen
+ * below the fold at 1440x900), and the withdrawal and the appeal funding in
+ * the rail beside the history. While the entry can be challenged the card
+ * leads with the bounty — the stake a correct challenger takes — as one
+ * line, "Earn 9 sDAI", the verb as big as the amount, the same lead as the
+ * Standard card's (rounds 4 and 5 of the design review; round 4 had only
+ * reached the Standard card). Two short sentences then say what a challenge
+ * is for, what filing it puts up and what winning returns in all, per coin.
+ * An arbitration cost of zero is no cost: neither the button nor the
+ * sentence names it. The stake-and-arbitration breakdown is the challenge dialog's,
+ * before anything is signed (round 3: the card used to name the cost a
+ * second time in words and to unfold that breakdown). Otherwise it
  * leads with the one thing to do now and its exact amount; off the list the
  * sentence says the stake stays locked and names the withdrawing period in
  * words, so no row below repeats it. Under it, the withdrawal as a
@@ -77,10 +89,23 @@ export { rulingSentence } from './facts'
  * control shows once; the bar's copy has its own id.
  */
 
-const Card = styled(Surface)`
+/* `$bare` when it is drawn inside the hero: no border, fill, shadow or
+   padding of its own, because a panel inside a panel is a stack
+   (DESIGN.md). */
+const Card = styled(Surface)<{ $bare?: boolean }>`
   display: flex;
   flex-direction: column;
   gap: 18px;
+
+  ${({ $bare }) =>
+    $bare &&
+    css`
+      padding: 0;
+      border: 0;
+      border-radius: 0;
+      background: none;
+      box-shadow: none;
+    `}
 `
 
 const Head = styled.div`
@@ -127,36 +152,13 @@ const Prompt = styled.p`
   line-height: var(--lh-body);
 `
 
-/* The stake at risk as the whole track; the fill is the challenger's share. */
-const ShareTrack = styled.div`
-  position: relative;
-  height: 8px;
+/*
+ * The challenger's share of the stake at risk, drawn with the one bar
+ * (LaneBar): a run in the chart's first hue as long as the share, with no
+ * track behind it; the legend under it names the share and the stake.
+ */
+const ShareBar = styled.div`
   margin-top: 4px;
-  overflow: hidden;
-  border-radius: var(--radius-pill);
-  background: repeating-linear-gradient(
-    135deg,
-    var(--color-raised) 0 3px,
-    transparent 3px 7px
-  );
-  box-shadow: inset 0 0 0 1px var(--glass-border);
-`
-
-const ShareFill = styled.span`
-  position: absolute;
-  inset: 0 auto 0 0;
-  border-radius: var(--radius-pill);
-  /* A chart category, so a viz colour: never the accent, never a status
-     role (DESIGN.md). */
-  background: var(--viz-1);
-  box-shadow: 0 0 12px color-mix(in srgb, var(--viz-1) 55%, transparent);
-  transition:
-    width 900ms var(--ease-out),
-    min-width 900ms var(--ease-out);
-
-  @media (prefers-reduced-motion: reduce) {
-    transition: none;
-  }
 `
 
 const ShareLegend = styled.ul`
@@ -276,20 +278,25 @@ const ChallengerShare = ({
     const frame = requestAnimationFrame(() => setShown(true))
     return () => cancelAnimationFrame(frame)
   }, [])
-  const width = Math.round(Math.min(1, Math.max(0, share)) * 100)
   return (
     <div
       role="img"
       aria-label={`A challenger ${verb} ${amountText}, ${percentText} of the ${stakeText} at stake`}
     >
-      <ShareTrack aria-hidden>
-        <ShareFill
-          style={{
-            width: shown ? `${width}%` : '0%',
-            minWidth: shown && width > 0 ? 8 : 0,
-          }}
+      <ShareBar aria-hidden>
+        <LaneBar
+          // No share, no run: nothing is drawn rather than a lone dot.
+          runs={[
+            {
+              key: 'challenger',
+              weight: share > 0 ? 1 : 0,
+              hue: 'var(--viz-1)',
+            },
+          ]}
+          extent={Math.min(1, Math.max(0, share))}
+          armed={shown}
         />
-      </ShareTrack>
+      </ShareBar>
       <ShareLegend aria-hidden>
         <li>
           <i />
@@ -320,7 +327,22 @@ interface ItemStatusCardProps {
   submitter?: string
   /** The policy this entry is judged by. */
   policyURI?: string
+  /**
+   * The hero's slot the action card draws itself into, bare. Until the slot
+   * has mounted (null) nothing is drawn, so the card never flashes in place
+   * first; without one (undefined) it renders where it is mounted, as a
+   * panel. The phone bar and the dialogs always render where it is mounted.
+   */
+  heroSlot?: HTMLElement | null
+  /** The same, for the withdrawal and the appeal funding panels. */
+  railSlot?: HTMLElement | null
 }
+
+/** Into its slot when it has one, in place when it has none. */
+const placeIn = (
+  slot: HTMLElement | null | undefined,
+  node: React.ReactNode,
+) => (slot === undefined ? node : slot ? createPortal(node, slot) : null)
 
 const ItemStatusCard = ({
   item,
@@ -336,6 +358,8 @@ const ItemStatusCard = ({
   challengeArbitrationCost,
   submitter: submitterProp,
   policyURI,
+  heroSlot,
+  railSlot,
 }: ItemStatusCardProps) => {
   const { address: account } = useAccount()
   const publicClient = usePublicClient()
@@ -355,13 +379,21 @@ const ItemStatusCard = ({
       ? stakeStatusCode(item, timestamp, registry)
       : undefined
 
+  const bare = heroSlot !== undefined
+
   if (!item || !timestamp || !registry || statusCode === undefined)
-    return (
-      <Card $padding="standard" aria-busy="true" aria-label="Loading status">
+    return placeIn(
+      heroSlot,
+      <Card
+        $padding="standard"
+        $bare={bare}
+        aria-busy="true"
+        aria-label="Loading status"
+      >
         <SkeletonBlock $height="16px" $width="50%" />
         <SkeletonBlock $height="44px" $width="60%" />
         <SkeletonBlock $height="44px" />
-      </Card>
+      </Card>,
     )
 
   const view = stakeEntryStatus(item, timestamp, registry)
@@ -395,18 +427,27 @@ const ItemStatusCard = ({
   const stakeText = tokenText(item.stake, tokenDecimals, tokenSymbol)
   const minStake = registry.submissionMinDeposit ?? 0
   const minStakeText = tokenText(minStake, tokenDecimals, tokenSymbol)
-  const depositText = item.arbitrationDeposit
-    ? nativeText(item.arbitrationDeposit, nativeCurrency)
-    : undefined
+  // The chain's coin in words, left out where it shows as nothing: an
+  // arbitrator that charges nothing, or a few gwei below the precision the
+  // card shows, made the button read "0.025 sDAI + 0 xDAI" and the sentence
+  // speak of an arbitration cost that is not there. The dialog that signs
+  // the challenge still states the exact amount. The entry's deposit is
+  // undefined while unknown, so a total is stated only once it is read,
+  // and in the token alone when the deposit shows as nothing.
+  const shownNative = (amount: BigNumber | string | null | undefined) =>
+    amount === undefined ||
+    amount === null ||
+    formatTokenAmount(String(amount), 18, 5) === '0'
+      ? undefined
+      : nativeText(String(amount), nativeCurrency)
+  const depositKnown =
+    item.arbitrationDeposit !== undefined && item.arbitrationDeposit !== null
+  const depositText = shownNative(item.arbitrationDeposit)
   const multiplier = registry.challengeStakeMultiplier
   const challengerStake = applyMultiplier(item.stake, multiplier)
   const challengerText = tokenText(challengerStake, tokenDecimals, tokenSymbol)
-  const costText = arbitrationCost
-    ? nativeText(arbitrationCost, nativeCurrency)
-    : undefined
-  const challengeCostText = challengeArbitrationCost
-    ? nativeText(challengeArbitrationCost, nativeCurrency)
-    : undefined
+  const costText = shownNative(arbitrationCost)
+  const challengeCostText = shownNative(challengeArbitrationCost)
   // While disputed the challenger's stake is on record; before, it is the
   // list's share of the entry's stake.
   const stakedByChallenger =
@@ -507,18 +548,18 @@ const ItemStatusCard = ({
   // While the entry can be challenged the figure is the bounty: the stake a
   // challenger the jurors agree with takes, on top of their own stake back
   // (DESIGN.md's bounty for a Stake list). It is the reason to challenge,
-  // so it leads the card. The exact amounts a challenge costs are on the
-  // button below and in the challenge dialog, not behind the figure.
-  const figureLabel = challengeable
-    ? 'Win if your challenge succeeds'
-    : offList
-      ? 'Stake to resubmit'
-      : directAction
-        ? 'Returns to the submitter'
-        : 'Stake at risk'
+  // so it leads the card as "Earn 9 sDAI" (BountyFigure) and needs no label.
+  // The exact amounts a challenge costs are on the button below and in the
+  // challenge dialog, not behind the figure. Every other state labels its
+  // figure.
+  const figureLabel = offList
+    ? 'Stake to resubmit'
+    : directAction
+      ? 'Returns to the submitter'
+      : 'Stake at risk'
   const figureAmount = offList ? minStake : item.stake
-  // Under the bounty the sentence says what the figure is, so the line that
-  // names the entry's arbitration deposit would only crowd it.
+  // Under the bounty the sentence names the entry's arbitration deposit in
+  // the total a win returns, so a line of its own would say it twice.
   const figureSub = offList
     ? costText
       ? `Minimum, plus ${costText} arbitration deposit`
@@ -537,14 +578,57 @@ const ItemStatusCard = ({
   const lockedLine = withdrawingPeriod
     ? `This stake stays locked while the ${itemName} is listed; it comes back when the submitter withdraws it and the withdrawing period of ${formatDurationLong(withdrawingPeriod)} ends.`
     : `This stake stays locked while the ${itemName} is listed; it comes back when the submitter withdraws it.`
+  /*
+   * Under the bounty, the Standard card's shape (round 4, "straight to the
+   * point"): what a challenge is for, then the deposit filing it puts up
+   * and why (so nobody files a frivolous one, asked for in rounds 3 and 4),
+   * and what a win returns in all, with the real figures, about 150
+   * characters (the sentence it replaces ran to 337, eight lines of the
+   * 312px column). The
+   * total is what PermanentGTCR.rule() pays a winning challenger: the
+   * entry's stake and their own stake back in the list's token, and the
+   * entry's arbitration deposit in the chain's coin. The arbitration cost
+   * the challenger pays is spent on the case and does not come back, so it
+   * is in what filing takes and not in the total. Two coins, so each figure
+   * names both and adds neither (DESIGN.md: amounts stay per coin), the way
+   * the button prices the challenge; a coin whose amount is zero is left
+   * out of both. Jurors are named only where the arbitrator is Kleros.
+   */
+  const decider = isKlerosArbitrator(chainId, registry.arbitrator?.id)
+    ? 'jurors agree'
+    : 'the arbitrator agrees'
+  const staked = challengerStake > 0n
+  const filing = [staked ? challengerText : undefined, challengeCostText]
+    .filter(Boolean)
+    .join(' + ')
+  const winToken = tokenText(
+    stakeWei + challengerStake,
+    tokenDecimals,
+    tokenSymbol,
+  )
+  const winTotal = !depositKnown
+    ? undefined
+    : depositText
+      ? `${winToken} + ${depositText}`
+      : winToken
+  // A figure never parts from its coin across a line break, nor a sum of
+  // two coins from itself ("4.5 sDAI + 7.2 xDAI" is one run).
+  const unbroken = (text: string) => text.replace(/ /g, '\u00A0')
+  const winClause = winTotal
+    ? `if ${decider}, you get ${unbroken(winTotal)}.`
+    : ''
+  const bountyLine = [
+    'Found something that breaks the policy? Challenge it and win the bounty.',
+    filing
+      ? `A ${unbroken(filing)} deposit keeps challenges serious${winClause ? `; ${winClause}` : '.'}`
+      : winClause.charAt(0).toUpperCase() + winClause.slice(1),
+  ]
+    .filter(Boolean)
+    .join(' ')
   // In court there is no card and nothing to sign: the case panel above
   // says where the case stands.
   const prompt = challengeable
-    ? // One sentence under the figure (DESIGN.md allows one, and the Label
-      // above already says the figure is what a winning challenge takes):
-      // what a challenge puts up, and what winning returns. The exact
-      // amounts are on the button below, so the sentence leaves them out.
-      `Winning it takes a stake of your own and the arbitration cost, so only a challenge you believe in is worth filing; if jurors agree with you, both come back and the ${itemName}’s stake is yours on top.`
+    ? bountyLine
     : appealable
       ? refusedToRule
         ? fundedSide
@@ -646,137 +730,161 @@ const ItemStatusCard = ({
       {/* While jurors decide there is nothing to do here: the case panel
           above holds the state and both of its actions, and takes the id
           the phone bar steps aside for. */}
-      {!inCourt && (
-        <Card
-          id="item-status-card"
-          $padding="standard"
-          role="region"
-          aria-label="What you can do"
-        >
-          <Head>
-            <Label $tone="faint">{figureLabel}</Label>
-            <Amount title={tokenText(figureAmount, tokenDecimals, tokenSymbol)}>
-              <CountUpText
-                value={formatTokenAmount(figureAmount, tokenDecimals)}
-              />
-              <small>{tokenSymbol}</small>
-            </Amount>
-            {figureSub && <Sub>{figureSub}</Sub>}
-            {prompt && <Prompt>{prompt}</Prompt>}
-            {/* Nothing is drawn while the entry can be challenged: the
+      {!inCourt &&
+        placeIn(
+          heroSlot,
+          <Card
+            id="item-status-card"
+            $padding="standard"
+            $bare={bare}
+            role="region"
+            aria-label="What you can do"
+          >
+            <Head>
+              {challengeable ? (
+                <BountyFigure
+                  amount={formatTokenAmount(item.stake, tokenDecimals)}
+                  symbol={tokenSymbol}
+                  title={stakeText}
+                  countUp
+                />
+              ) : (
+                <>
+                  <Label $tone="faint">{figureLabel}</Label>
+                  <Amount
+                    title={tokenText(figureAmount, tokenDecimals, tokenSymbol)}
+                  >
+                    <CountUpText
+                      value={formatTokenAmount(figureAmount, tokenDecimals)}
+                    />
+                    <small>{tokenSymbol}</small>
+                  </Amount>
+                </>
+              )}
+              {figureSub && <Sub>{figureSub}</Sub>}
+              {prompt && <Prompt>{prompt}</Prompt>}
+              {/* Nothing is drawn while the entry can be challenged: the
                 bounty, the sentence and the button carry it, and round 3 of
                 the design review took the breakdown off the card. */}
-            {!challengeable && !offList && !directAction && stakeWei > 0n && (
-              <ChallengerShare
-                share={challengerShare}
-                amountText={tokenText(
-                  stakedByChallenger,
-                  tokenDecimals,
-                  tokenSymbol,
-                )}
-                percentText={
-                  challenge?.challengerStake
-                    ? `${Math.round(challengerShare * 100)}%`
-                    : multiplierPercent(multiplier)
-                }
-                verb="staked"
-                stakeText={stakeText}
-              />
+              {!challengeable && !offList && !directAction && stakeWei > 0n && (
+                <ChallengerShare
+                  share={challengerShare}
+                  amountText={tokenText(
+                    stakedByChallenger,
+                    tokenDecimals,
+                    tokenSymbol,
+                  )}
+                  percentText={
+                    challenge?.challengerStake
+                      ? `${Math.round(challengerShare * 100)}%`
+                      : multiplierPercent(multiplier)
+                  }
+                  verb="staked"
+                  stakeText={stakeText}
+                />
+              )}
+            </Head>
+
+            <Stack $gap={8}>
+              {actionButton()}
+              {directAction && <GateHelper gate={executeGate} />}
+            </Stack>
+
+            {offList && (
+              <Rows>
+                <div>
+                  <dt>Submission period</dt>
+                  <dd
+                    title={
+                      submissionPeriod
+                        ? formatDurationLong(submissionPeriod)
+                        : 'Accepted at once'
+                    }
+                  >
+                    {submissionPeriod
+                      ? formatDuration(submissionPeriod)
+                      : 'None'}
+                  </dd>
+                </div>
+              </Rows>
             )}
-          </Head>
+          </Card>,
+        )}
 
-          <Stack $gap={8}>
-            {actionButton()}
-            {directAction && <GateHelper gate={executeGate} />}
-          </Stack>
+      {placeIn(
+        railSlot,
+        <>
+          {appealable && (
+            <AppealFundingCard
+              item={item}
+              registry={registry}
+              timestamp={timestamp}
+              appealCost={appealCost}
+            />
+          )}
 
-          {offList && (
-            <Rows>
-              <div>
-                <dt>Submission period</dt>
-                <dd
+          {showWithdrawal && (
+            <Card
+              $padding="standard"
+              role="region"
+              aria-label="Withdrawal"
+              style={{ gap: 20 }}
+            >
+              <WithdrawalTop>
+                <Label $tone="faint">Withdrawal</Label>
+                <WithdrawalState
                   title={
-                    submissionPeriod
-                      ? formatDurationLong(submissionPeriod)
-                      : 'Accepted at once'
+                    withdrawalStage === 'withdrawing' && !paused
+                      ? `Executable from ${formatAbsolute(withdrawReadyAt)}`
+                      : undefined
                   }
                 >
-                  {submissionPeriod ? formatDuration(submissionPeriod) : 'None'}
-                </dd>
-              </div>
-            </Rows>
+                  {withdrawalState}
+                </WithdrawalState>
+              </WithdrawalTop>
+              <WithdrawalStepper
+                stage={withdrawalStage}
+                elapsed={elapsed}
+                paused={paused}
+                label={withdrawalLabel}
+                notes={[
+                  withdrawalStage === 'listed' ? (
+                    'Submitter only'
+                  ) : withdrawingAt ? (
+                    <span title={formatAbsolute(withdrawingAt)}>
+                      {formatDate(withdrawingAt)}
+                    </span>
+                  ) : undefined,
+                  paused
+                    ? `Paused at ${Math.round(elapsed * 100)}%`
+                    : withdrawalStage === 'withdrawing' && periodShort
+                      ? `${Math.round(elapsed * 100)}% of ${periodShort}`
+                      : periodShort,
+                  withdrawalStage === 'ready' ? (
+                    <span title={formatAbsolute(withdrawReadyAt)}>
+                      since {formatDate(withdrawReadyAt)}
+                    </span>
+                  ) : withdrawalStage === 'withdrawn' && facts.endedAt ? (
+                    <span title={formatAbsolute(facts.endedAt)}>
+                      {formatDate(facts.endedAt)}
+                    </span>
+                  ) : (
+                    'Anyone'
+                  ),
+                ]}
+              />
+              <Small $muted>{withdrawalLine}</Small>
+              {withdrawButton}
+            </Card>
           )}
-        </Card>
-      )}
-
-      {appealable && (
-        <AppealFundingCard
-          item={item}
-          registry={registry}
-          timestamp={timestamp}
-          appealCost={appealCost}
-        />
-      )}
-
-      {showWithdrawal && (
-        <Card
-          $padding="standard"
-          role="region"
-          aria-label="Withdrawal"
-          style={{ gap: 20 }}
-        >
-          <WithdrawalTop>
-            <Label $tone="faint">Withdrawal</Label>
-            <WithdrawalState
-              title={
-                withdrawalStage === 'withdrawing' && !paused
-                  ? `Executable from ${formatAbsolute(withdrawReadyAt)}`
-                  : undefined
-              }
-            >
-              {withdrawalState}
-            </WithdrawalState>
-          </WithdrawalTop>
-          <WithdrawalStepper
-            stage={withdrawalStage}
-            elapsed={elapsed}
-            paused={paused}
-            label={withdrawalLabel}
-            notes={[
-              withdrawalStage === 'listed' ? (
-                'Submitter only'
-              ) : withdrawingAt ? (
-                <span title={formatAbsolute(withdrawingAt)}>
-                  {formatDate(withdrawingAt)}
-                </span>
-              ) : undefined,
-              paused
-                ? `Paused at ${Math.round(elapsed * 100)}%`
-                : withdrawalStage === 'withdrawing' && periodShort
-                  ? `${Math.round(elapsed * 100)}% of ${periodShort}`
-                  : periodShort,
-              withdrawalStage === 'ready' ? (
-                <span title={formatAbsolute(withdrawReadyAt)}>
-                  since {formatDate(withdrawReadyAt)}
-                </span>
-              ) : withdrawalStage === 'withdrawn' && facts.endedAt ? (
-                <span title={formatAbsolute(facts.endedAt)}>
-                  {formatDate(facts.endedAt)}
-                </span>
-              ) : (
-                'Anyone'
-              ),
-            ]}
-          />
-          <Small $muted>{withdrawalLine}</Small>
-          {withdrawButton}
-        </Card>
+        </>,
       )}
 
       {view && (
         <StickyActionBar
           status={<EntryStatus status={view} now={now} />}
           action={barAction}
+          evidence={statusCode === STATUS_CODE.DISPUTED}
         />
       )}
 

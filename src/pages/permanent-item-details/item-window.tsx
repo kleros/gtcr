@@ -5,7 +5,6 @@ import useUrlChainId from 'hooks/use-url-chain-id'
 import useDisputeTimeline from 'hooks/use-dispute-timeline'
 import { STATUS_CODE } from 'utils/permanent-item-status'
 import { formatAbsolute, formatDate } from 'utils/time'
-import { CurateIcon } from 'components/curate/icons'
 import { Label } from 'components/curate/primitives'
 import { WindowRing } from 'components/curate/item-standard-window-ring'
 import {
@@ -33,17 +32,14 @@ import {
  * panel below the hero.
  */
 
+/* Top-aligned at its own height, so its label lines up with the hero's
+   eyebrow beside it. It used to be centred in a forced 220px, which left
+   the date floating half-way down the column (round 5). */
 const Calm = styled.div`
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 10px;
-  height: 100%;
-  min-height: 220px;
-
-  @media (max-width: 1000px) {
-    min-height: 0;
-  }
 `
 
 const Big = styled.span`
@@ -75,21 +71,6 @@ const Line = styled.p`
   color: var(--color-muted);
   font-size: var(--fs-small);
   line-height: var(--lh-small);
-`
-
-/* The court case in a calm line, as a link to it. */
-const CaseLink = styled.a`
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  color: var(--color-primary);
-  font-weight: 500;
-  text-decoration: none;
-  white-space: nowrap;
-
-  &:hover {
-    text-decoration: underline;
-  }
 `
 
 export const StakeWindowPanel = ({
@@ -261,7 +242,9 @@ export const StakeWindowPanel = ({
         <Label $tone="faint">In court</Label>
         <State>{(deciding ? current?.title : undefined) ?? state}</State>
         {deciding ? (
-          current && <Line>{current.next}</Line>
+          // The evidence period has no line (round 3 deleted "N jurors
+          // drawn. Both sides add evidence…"): its title says it all.
+          current?.next && <Line>{current.next}</Line>
         ) : (
           <Line>
             {rulingLine(round?.ruling)}
@@ -284,23 +267,10 @@ export const StakeWindowPanel = ({
     )
   }
 
-  // Nothing runs: accepted, ready to execute, or off the list.
-  const caseRef =
-    facts.hasDispute && facts.disputeID ? (
-      facts.courtHref ? (
-        <CaseLink
-          href={facts.courtHref}
-          target="_blank"
-          rel="noopener noreferrer"
-          title={`Open case ${facts.disputeID}${facts.courtHost ? ` on ${facts.courtHost}` : ''}`}
-        >
-          case {facts.disputeID}
-          <CurateIcon name="external" size={11} />
-        </CaseLink>
-      ) : (
-        <>case {facts.disputeID}</>
-      )
-    ) : null
+  // Nothing runs: accepted, ready to execute, or off the list. A settled
+  // case is named once, in the court record under the hero (every settled
+  // challenge is in it), so these lines say how it ended and not which.
+  const hadCase = facts.hasDispute && !!facts.disputeID
   let title: string
   let since = 0
   let line: React.ReactNode
@@ -316,17 +286,12 @@ export const StakeWindowPanel = ({
       // A ruling that keeps an entry with a pending withdrawal completes the
       // withdrawal in the same transaction.
       line =
-        caseRef &&
+        hadCase &&
         challenge?.disputeOutcome === 'Accept' &&
         !!challenge.resolutionTx &&
-        challenge.resolutionTx === facts.submission?.finishedTx ? (
-          <>
-            kept by jurors in {caseRef}, then withdrawn as the submitter had
-            asked
-          </>
-        ) : (
-          'withdrawn by the submitter, stake and deposit returned'
-        )
+        challenge.resolutionTx === facts.submission?.finishedTx
+          ? 'kept by jurors, then withdrawn as the submitter had asked'
+          : 'withdrawn by the submitter, stake and deposit returned'
       break
     case STATUS_CODE.REMOVED:
     case STATUS_CODE.REJECTED: {
@@ -334,21 +299,13 @@ export const StakeWindowPanel = ({
       since = toNum(challenge?.resolutionTime) || facts.endedAt
       const verb = statusCode === STATUS_CODE.REMOVED ? 'removed' : 'rejected'
       const outcome = challenge?.disputeOutcome
-      line = caseRef ? (
-        outcome === 'None' ? (
-          <>jurors refused to rule in {caseRef}</>
-        ) : outcome ? (
-          <>
-            {verb} by jurors in {caseRef}
-          </>
-        ) : (
-          <>
-            {verb} after {caseRef}
-          </>
-        )
-      ) : (
-        'off the list'
-      )
+      line = hadCase
+        ? outcome === 'None'
+          ? 'jurors refused to rule'
+          : outcome
+            ? `${verb} by jurors`
+            : `${verb} after a court case`
+        : 'off the list'
       break
     }
     default: {
@@ -358,15 +315,13 @@ export const StakeWindowPanel = ({
       const kept =
         reincluded && challenge?.disputeOutcome === 'Accept' && facts.hasDispute
       line =
-        kept && caseRef ? (
-          <>kept by jurors in {caseRef}</>
-        ) : reincluded ? (
-          'reincluded after a ruling'
-        ) : period > 0 ? (
-          'accepted with no challenge'
-        ) : (
-          'this list accepts entries at once'
-        )
+        kept && hadCase
+          ? 'kept by jurors'
+          : reincluded
+            ? 'reincluded after a ruling'
+            : period > 0
+              ? 'accepted with no challenge'
+              : 'this list accepts entries at once'
     }
   }
 

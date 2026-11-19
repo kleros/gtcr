@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react'
-import styled from 'styled-components'
+import React from 'react'
+import styled, { css } from 'styled-components'
 import useUrlChainId from 'hooks/use-url-chain-id'
 import { useAttachment } from 'hooks/use-attachment'
 import { parseIpfs } from 'utils/ipfs-parse'
@@ -8,13 +8,9 @@ import {
   Body,
   Button,
   ButtonLink,
-  Data,
-  IconButton,
   Row,
   SkeletonBlock,
-  Small,
   Label,
-  truncateMiddle,
 } from './primitives'
 import {
   EntryFields,
@@ -22,7 +18,17 @@ import {
   type EntryField,
 } from './item-standard-fields'
 import { Notice } from './item-standard-notice'
-import { ImagePlate, ItemMediaBand, entryMedia } from './item-media-band'
+import {
+  HERO_FLOW_MARK,
+  HERO_LEAD_BESIDE,
+  HERO_LEAD_GAP,
+  HERO_LEAD_ROW_MIN,
+  HERO_PICTURE_MARK,
+  ImagePlate,
+  ItemMediaBand,
+  entryMedia,
+  heroPicture,
+} from './item-media-band'
 import { ItemRewardWithdrawal } from './item-reward-withdrawal'
 
 /*
@@ -32,23 +38,32 @@ import { ItemRewardWithdrawal } from './item-reward-withdrawal'
  * depended on the field's type, so the same list's fields landed in
  * different boxes).
  *
- * Round 4 folds it into the entry page's hero, under the facts strip, so
- * the entry and what it says are one box. It is therefore a region and not
- * a panel: an inset hairline and space, exactly like the facts strip above
- * it, because a panel inside a panel is a stack (DESIGN.md).
+ * Round 4 folds it into the entry page's hero, and round 5 has it trail
+ * straight under the facts strip, in the hero's left column, so the entry
+ * and what it says are one box with no band between them. It is therefore
+ * a region and not a panel: an inset hairline and space, exactly like the
+ * facts strip above it, because a panel inside a panel is a stack
+ * (DESIGN.md).
  *
  * Bands, in reading order: the entry's files (and its pictures, when it has
  * more than one, which need the whole measure), then what only the linked
  * list of a list-of-lists entry can say about itself, then every field —
- * identifiers included — beside the entry's one picture, then what this
- * account can claim from the entry's appeals. Nothing is reserved for a
- * field the entry does not have.
+ * identifiers included — across the column, then what this account can
+ * claim from the entry's appeals. Nothing is reserved for a field or a
+ * picture the entry does not have.
  *
  * The region is field-complete, so what the hero lifts out is here as well
  * (round 3: a box named "Full details" that was missing the two things the
- * page leads with). The picture is drawn once, here, on a captioned plate
- * under the hero's clock; the title reads here as a labelled row under its
- * own column name, which is what the hero's display line cannot say.
+ * page leads with), with one exception: an entry's one picture is placed
+ * by the page itself (`heroPicture`), in whichever hero column it leaves
+ * the least empty glass in. Under the clock it is not drawn again here;
+ * beside an action card that already stands taller than this region, the
+ * page asks for it here (`leadsWithPicture`) and it opens the region, where
+ * two or more pictures would have stood, with the first rows beside it.
+ * The title reads here as a
+ * labelled row under its own column name, which is what the hero's display
+ * line cannot say. The entry's ID is in the facts strip above, next to
+ * "By".
  */
 
 /* A region of the hero, not a box of its own: one inset hairline, the same
@@ -61,52 +76,73 @@ const Region = styled.div`
   border-top: 1px solid var(--glass-border);
 `
 
-/* The fields keep a reading measure instead of stretching the hero's whole
-   width, and the entry's one picture sits in the right-hand track, under
-   the clock above it. The track is declared whether or not there is a
-   picture, so the field measure never changes and an entry without one
-   shows no hole. */
-const FieldsRow = styled.div`
-  display: grid;
-  grid-template-columns: minmax(0, 880px) 248px;
-  gap: 24px 32px;
-  align-items: start;
-
-  @media (max-width: 1000px) {
-    grid-template-columns: minmax(0, 1fr);
-  }
-`
-
-const FieldsCell = styled.div`
-  grid-column: 1;
-  min-width: 0;
-`
-
-/* Explicitly placed, so the picture holds the right-hand track even when
-   the entry has no rows to put beside it. Stacked, it leads the fields
-   rather than following a few hundred pixels of them. */
-const Picture = styled.div`
-  grid-column: 2;
-  min-width: 0;
-
-  @media (max-width: 1000px) {
-    grid-column: 1;
-    order: -1;
-  }
-`
-
-const Head = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px 16px;
-`
-
 /* The region's name is a label, not a display line: inside the hero a
    second 22px heading is what made this read as a second box. */
 const RegionName = styled(Label)`
   margin: 0;
+`
+
+/*
+ * Everything under the region's name that the lead plate can stand beside:
+ * the files, the linked list and the field rows, with the region's own
+ * space between them. The lead plate opens it.
+ *
+ * Wide enough (HERO_LEAD_BESIDE), the plate sits on the left, up to 420px,
+ * and what follows runs beside it in the rest of the measure: each field
+ * row is a grid, a formatting context of its own, so beside the plate it
+ * narrows to the room left and, once past the plate's foot, takes the full
+ * measure again (the list is set as blocks for that; as a flex column it
+ * would narrow as a whole). The round-5 audit found a 420px plate alone at
+ * the top of the details with an empty block of about 377 by 196 beside
+ * it. With nothing to run beside it, or too narrow for both, the plate
+ * takes the measure's whole width above the rest, the picture contained on
+ * its quiet fill, so no hole is left beside it either way. A flow root, so
+ * the region holds the plate's whole height when the rows end first.
+ */
+const Flow = styled.div<{ $beside: boolean }>`
+  display: flow-root;
+
+  > * + * {
+    margin-top: ${HERO_LEAD_GAP}px;
+  }
+
+  ${({ $beside }) =>
+    $beside &&
+    css`
+      @media ${HERO_LEAD_BESIDE} {
+        > [data-hero-picture] {
+          float: left;
+          /* Never so wide that the rows beside it drop under
+             HERO_LEAD_ROW_MIN: a value column narrower than that clipped
+             a chain chip and broke addresses mid-word near the
+             threshold. */
+          width: min(420px, 52%, 100% - ${HERO_LEAD_ROW_MIN}px);
+          /* 12px, and the rows' own 12px inset, set them 24px off the
+             plate, as a row's label is off its value. */
+          margin: 0 12px ${HERO_LEAD_GAP}px 0;
+        }
+
+        > [data-hero-picture] + * {
+          margin-top: 0;
+        }
+
+        /* The rows' 12px bleed is moved from each row to the list: a row
+           beside the float is fitted into the room it leaves and lost its
+           negative right margin, so it ended 12px short of the rows past
+           the plate's foot. Now every row ends on the same line. */
+        > dl {
+          display: block;
+          /* Sides only: the space above stays the flow's own. */
+          margin-right: -12px;
+          margin-left: -12px;
+        }
+
+        > dl > div {
+          margin-right: 0;
+          margin-left: 0;
+        }
+      }
+    `}
 `
 
 /*
@@ -132,40 +168,6 @@ const RegistryBlock = styled.div<{ $divided: boolean }>`
   `}
 `
 
-const CopyId = ({ id }: { id: string }) => {
-  const [copied, setCopied] = useState(false)
-  useEffect(() => {
-    if (!copied) return
-    const timer = window.setTimeout(() => setCopied(false), 1500)
-    return () => window.clearTimeout(timer)
-  }, [copied])
-  return (
-    <Row $gap={4} title={id}>
-      <Small $muted>ID</Small>
-      <Data $mono $muted>
-        {truncateMiddle(id, 8, 6)}
-      </Data>
-      <IconButton
-        type="button"
-        aria-label="Copy item ID"
-        onClick={() => {
-          navigator.clipboard
-            ?.writeText(id)
-            .then(() => setCopied(true))
-            .catch(() => setCopied(false))
-        }}
-      >
-        <CurateIcon name={copied ? 'check' : 'copy'} size={14} />
-      </IconButton>
-      {copied && (
-        <Small $muted role="status">
-          Copied
-        </Small>
-      )}
-    </Row>
-  )
-}
-
 /** What the item pages resolve for a linked registry's meta evidence. */
 export interface LinkedRegistryState {
   file?: MetaEvidence
@@ -175,22 +177,22 @@ export interface LinkedRegistryState {
 export const ItemSubmissionPanel = ({
   fields,
   item,
-  itemID,
   errors = [],
   retry,
   loading = false,
   linkedRegistry,
   registryAddress,
   kind = 'standard',
+  leadsWithPicture = false,
 }: {
   /**
-   * Every field of the entry, with its value. Nothing is held back: the
-   * picture draws here and nowhere else, and the title the hero sets large
-   * keeps its labelled row, so the region is the whole submission.
+   * Every field of the entry, with its value. Only an entry's one picture
+   * is held back, since the page places it (under the hero's clock, or here
+   * with `leadsWithPicture`); the title the hero sets large keeps its labelled row,
+   * so the region is the whole submission.
    */
   fields: EntryField[]
   item?: SubgraphItem
-  itemID?: string
   /** Why the entry's own file could not be read. */
   errors?: string[]
   /** Offered with those notices: a way to read the file that failed again. */
@@ -208,6 +210,12 @@ export const ItemSubmissionPanel = ({
    * rewards elsewhere, so they get no claim.
    */
   kind?: 'standard' | 'stake'
+  /**
+   * Draw the entry's one picture here, first, ahead of the files and the
+   * rows: the page asks for it when the clock's column already stands
+   * taller than this region (useHeroPictureSide).
+   */
+  leadsWithPicture?: boolean
 }) => {
   const urlChainId = useUrlChainId()
   const openAttachment = useAttachment()
@@ -226,11 +234,12 @@ export const ItemSubmissionPanel = ({
   const linkedExtras = !!(tcrDescription || fileURI || linkedHref)
 
   const found = entryMedia(fields)
-  // One picture is the common case: it goes beside the fields, on the
-  // plate under the hero's clock, and the band is left with the files. Two
-  // or more stay in the band, which has the whole measure for them — in a
-  // 248px track a gallery would stack into a column of its own.
-  const rail = found.images.length === 1 ? found.images[0] : undefined
+  // One picture is the common case: the page places it (under the hero's
+  // clock, or first in here with leadsWithPicture), and the band is left
+  // with the files. Two or more stay in the band, which has the column's whole
+  // measure for them — in the hero's right-hand column a gallery would
+  // stack into a column of its own.
+  const single = heroPicture(fields)
   // Only the fields a picture or a file plate draws stay out of the rows
   // below. The title field is not one of them: the hero sets it large
   // without saying which column it is, so it reads here as a labelled row
@@ -249,6 +258,18 @@ export const ItemSubmissionPanel = ({
 
   const claim =
     kind === 'standard' ? <ItemRewardWithdrawal item={item} /> : null
+
+  // The picture this region opens with, when the page asks for it here.
+  const lead = leadsWithPicture ? single : undefined
+  const bandMedia = single ? { images: [], files: found.files } : found
+  const linkedBlock = !!linkedMetadata && linkedExtras
+  // Whether anything follows the lead plate to run beside it: with
+  // nothing, it takes the measure's whole width.
+  const besideContent =
+    bandMedia.images.length > 0 ||
+    bandMedia.files.length > 0 ||
+    linkedBlock ||
+    rows.length > 0
 
   if (!loading && item && errors.length > 0)
     return (
@@ -278,12 +299,9 @@ export const ItemSubmissionPanel = ({
 
   return (
     <Region id="item-submission" aria-label="Full details">
-      <Head>
-        <RegionName as="h2" $tone="faint">
-          Full details
-        </RegionName>
-        {itemID && <CopyId id={itemID} />}
-      </Head>
+      <RegionName as="h2" $tone="faint">
+        Full details
+      </RegionName>
       {!!linkedError && (
         <Notice tone="contested" role="alert">
           Malformed submission: the linked registry could not be read (
@@ -295,50 +313,50 @@ export const ItemSubmissionPanel = ({
           This entry does not pass the validation checks. Review it carefully.
         </Notice>
       )}
-      <ItemMediaBand
-        media={rail ? { images: [], files: found.files } : found}
-      />
-      {/* Only what the title above leaves unsaid about that list. */}
-      {linkedMetadata && linkedExtras && (
-        <RegistryBlock $divided={rows.length > 0}>
-          {tcrDescription && <Body $muted>{tcrDescription}</Body>}
-          {(fileURI || linkedHref) && (
-            <Row $gap={8} $wrap>
-              {fileURI && (
-                <Button
-                  type="button"
-                  $variant="ghost"
-                  $size="sm"
-                  aria-label={`${tcrTitle || 'Linked list'} listing policy`}
-                  onClick={() => openAttachment(parseIpfs(fileURI), true)}
-                >
-                  <CurateIcon name="policy" size={14} />
-                  Its policy
-                </Button>
+      {/* Marked so the page can measure what would run beside the plate.
+          With nothing in it, it is not drawn, so it adds no gap. */}
+      {(lead || besideContent) && (
+        <Flow {...HERO_FLOW_MARK} $beside={!!lead && besideContent}>
+          {lead && (
+            // Marked so the page can measure it wherever it stands.
+            <div {...HERO_PICTURE_MARK}>
+              <ImagePlate image={lead} layout="lead" />
+            </div>
+          )}
+          <ItemMediaBand media={bandMedia} />
+          {/* Only what the title above leaves unsaid about that list. */}
+          {linkedBlock && (
+            <RegistryBlock $divided={rows.length > 0}>
+              {tcrDescription && <Body $muted>{tcrDescription}</Body>}
+              {(fileURI || linkedHref) && (
+                <Row $gap={8} $wrap>
+                  {fileURI && (
+                    <Button
+                      type="button"
+                      $variant="ghost"
+                      $size="sm"
+                      aria-label={`${tcrTitle || 'Linked list'} listing policy`}
+                      onClick={() => openAttachment(parseIpfs(fileURI), true)}
+                    >
+                      <CurateIcon name="policy" size={14} />
+                      Its policy
+                    </Button>
+                  )}
+                  {linkedHref && (
+                    <ButtonLink to={linkedHref} $variant="secondary" $size="sm">
+                      Open registry
+                      <CurateIcon name="external" size={14} />
+                    </ButtonLink>
+                  )}
+                </Row>
               )}
-              {linkedHref && (
-                <ButtonLink to={linkedHref} $variant="secondary" $size="sm">
-                  Open registry
-                  <CurateIcon name="external" size={14} />
-                </ButtonLink>
-              )}
-            </Row>
+            </RegistryBlock>
           )}
-        </RegistryBlock>
-      )}
-      {(rows.length > 0 || rail) && (
-        <FieldsRow>
-          {rows.length > 0 && (
-            <FieldsCell>
-              <EntryFields fields={rows} />
-            </FieldsCell>
-          )}
-          {rail && (
-            <Picture>
-              <ImagePlate image={rail} layout="rail" />
-            </Picture>
-          )}
-        </FieldsRow>
+          {/* Across the column, with no track kept for a picture: the hero's
+            left column (about 800px at 1440) is already a reading measure.
+            Beside the lead plate, its first rows take the room it leaves. */}
+          {rows.length > 0 && <EntryFields fields={rows} />}
+        </Flow>
       )}
       {claim}
     </Region>

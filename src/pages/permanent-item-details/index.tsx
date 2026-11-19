@@ -1,4 +1,10 @@
-import React, { useState, useEffect, useContext, useMemo } from 'react'
+import React, {
+  useState,
+  useEffect,
+  useContext,
+  useMemo,
+  useCallback,
+} from 'react'
 import styled from 'styled-components'
 import { useParams, Link, useLocation } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
@@ -21,15 +27,15 @@ import {
   PERMANENT_REGISTRY_QUERY,
 } from 'utils/graphql'
 import { STALE_TIME } from 'consts'
+import { isKlerosArbitrator } from 'config/tcr-addresses'
 import { parseIpfs } from 'utils/ipfs-parse'
 import { type ItemFile, sanitizeItemFile } from 'utils/item-file-guard'
 import { sanitizeMetaEvidence } from 'utils/meta-evidence-guard'
 import { capitalizeFirstLetter } from 'utils/string'
 import { CONTRACT_STATUS } from 'utils/permanent-item-status'
 import { truncateAtWord } from 'utils/truncate-at-word'
-import { formatAbsolute, formatDurationLong } from 'utils/time'
+import { formatDurationLong } from 'utils/time'
 import RequestTimelines from 'components/permanent-request-timelines'
-import { AddressLink } from 'components/curate/item-stake-address'
 import { CurateIcon } from 'components/curate/icons'
 import {
   Button,
@@ -60,9 +66,15 @@ import {
   missingEntryPollMs,
 } from '../error-page/copy'
 import ItemStatusCard from './item-status-card'
-import { formatSince } from 'utils/format-since'
 import { StakeWindowPanel } from './item-window'
 import { ItemSubmissionPanel } from 'components/curate/item-submission-panel'
+import { HeroFacts } from 'components/curate/item-hero-facts'
+import {
+  HERO_PICTURE_MARK,
+  ImagePlate,
+  heroPicture,
+  useHeroPictureSide,
+} from 'components/curate/item-media-band'
 import SeerExtraDetails from 'components/custom-registries/seer/seer-item-details'
 import { isSeerRegistry } from 'components/custom-registries/seer/is-seer-registry'
 import { DisputeCasePanel } from 'components/curate/dispute-case-panel'
@@ -71,7 +83,12 @@ import {
   type DisputeRecord,
 } from 'components/curate/dispute-record-panel'
 import { PolicySince, policyInForceSince } from './policy-since'
-import { multiplierPercent, nativeText, tokenText } from './modals/shell'
+import {
+  formatTokenAmount,
+  multiplierPercent,
+  nativeText,
+  tokenText,
+} from './modals/shell'
 import { entrySetting } from './arbitration-setting'
 import {
   rulingShort,
@@ -88,21 +105,25 @@ import {
  * Stake Curate item page, one layout in three states (listed, in its
  * submission or withdrawal period, in court), on the Standard item
  * composition. A top line — where the entry sits, and at its right end the
- * policy it is judged by — then the hero (the one featured panel): the
- * entry named large with its status and a short facts strip, and on the
- * right the page's one clock — the submission period, the withdrawal
- * period, the appeal period, the court period, or the date it settled; then,
- * across the bottom of the same box, the entry's full details — every field
- * it has, with its one picture beside them (round 4: the details were a
- * second box below). While a case is live, one full-width panel holds it:
- * where it stands, its periods, its jury and its actions. Then two columns:
- * the history on the left; on the right the action card, the withdrawal
- * stepper and the appeal funding (a bottom bar on phones). A case the court
- * has already
- * decided is not live: it sits quietly at the top of the left column as a
- * record of what the jurors did, and an entry challenged more than once
- * keeps one record box with a tab per case. Every figure comes from the
- * subgraph, the list contract and the clock.
+ * policy it is judged by — then the hero (the one featured panel), in two
+ * columns. On the left, one flow: the entry named large with its status,
+ * the facts strip (when, by whom, the item ID), and straight under it the
+ * entry's full details — every field it has (round 4: the details were a
+ * second box below). On the right, the page's one clock — the submission
+ * period, the withdrawal period, the appeal period, the court period, or
+ * the date it settled — then the one thing to do now, with its amount and
+ * its button, and then the entry's picture when it has exactly one and the
+ * left column runs on beside it (otherwise the picture opens the full
+ * details, so neither column ends far above the other). While a case is
+ * live, one full-width panel holds it: where it stands, its periods, its
+ * jury and its actions. Then the history, with a rail beside it for the
+ * withdrawal stepper and the appeal funding while either has something to
+ * show. At 1000px and below the fixed bottom bar carries the action. A
+ * case the court has already decided is not live: it sits quietly at the
+ * top of the history column as a record of what the jurors did, and an
+ * entry challenged more than once keeps one record box with a tab per
+ * case. Every figure comes from the subgraph, the list contract and the
+ * clock.
  */
 
 /* The page's top line: where the entry sits, and at its right end the
@@ -145,48 +166,85 @@ const Crumbs = styled.nav`
   }
 `
 
-/* Desktop: identity and stats on the left, the clock on the right, and the
-   entry's own fields across the full width underneath — round 4: "full
-   details" was a box below the hero, and it belongs in the main one. When
-   it stacks, the clock comes straight after the identity.
+/* Two independent columns (round 5 of the design review). The left is one
+   flow: identity, facts strip, full details, each straight under the last.
+   The right is the clock and the action under it. They share no rows, so
+   however tall the clock and the action stand, they can no longer push
+   empty space under the facts strip: in round 4 a grid row shared with the
+   clock opened a 114px band there, and its hairlines drew a box round the
+   clock. The right column draws no line of its own.
 
-   The clock on the right fixes the height of the first two rows, so they
-   share more room than their content needs. The identity row is sized to
-   its content and the stats row takes the rest, which puts that slack
-   under the stats instead of between the status line and them (round 3:
-   the gap in between read as a hole). The fields row is independent of
-   both, and the clock's column ends at its hairline in a T: a field list
-   is taller than a clock, so a column spanning it would be glass beside
-   nothing. */
+   The entry's one picture goes where it leaves the least empty glass
+   (useHeroPictureSide): under the action beside a long field list, or
+   first in the full details beside a tall action card. Fixed under the
+   clock, it left a block of empty glass about 870px wide and 284px tall at
+   the bottom-left of a decided entry with two fields.
+
+   The action sits under the clock so the thing to do, with its amount, is
+   on the first screen at 1440x900 in every state (round 4's full details
+   had pushed the card in the rail below the fold). The right column keeps
+   pace with the reader down a field list longer than itself (sticky inside
+   the hero), as the rail the card used to sit in did.
+
+   At 1000px and below both columns dissolve (display: contents) and one
+   order sets the sequence: identity, clock, facts, picture, full details,
+   then the action, so the time pressure is near the top and the picture
+   leads the details it belongs to. The fixed bottom bar carries the action
+   there until the hero's own copy of it scrolls into view. */
 const Hero = styled(Surface)`
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 320px;
-  grid-template-rows: auto 1fr auto;
-  grid-template-areas:
-    'main side'
-    'stats side'
-    'fields fields';
+  grid-template-columns: minmax(0, 1fr) 360px;
+  align-items: start;
   margin-top: 20px;
   ${reveal}
 
   @media (max-width: 1000px) {
-    grid-template-columns: 1fr;
-    grid-template-rows: auto;
-    grid-template-areas:
-      'main'
-      'side'
-      'stats'
-      'fields';
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+  }
+`
+
+const HeroLeft = styled.div`
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+
+  @media (max-width: 1000px) {
+    display: contents;
+  }
+`
+
+/* Its 32px top padding is HeroMain's, so the clock's label lines up with
+   the eyebrow. 24px at the sides leaves the action its 312px measure, the
+   width it had as a card in the rail. Sticky under the app bar, within the
+   hero: it moves only while the left column still runs on beside it, and
+   stops at the hero's foot. A sticky box taller than the window keeps its
+   top in view, which is the clock and the action, not the picture. */
+const HeroAside = styled.div`
+  position: sticky;
+  top: calc(var(--app-bar-height) + 24px);
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  min-width: 0;
+  padding: 32px 24px 28px;
+
+  @media (max-width: 1000px) {
+    display: contents;
   }
 `
 
 const HeroMain = styled.div`
-  grid-area: main;
   display: flex;
   flex-direction: column;
   gap: 18px;
   min-width: 0;
   padding: 32px 36px 20px;
+
+  @media (max-width: 1000px) {
+    order: 1;
+  }
 
   @media (max-width: 720px) {
     padding: 22px 18px 18px;
@@ -194,11 +252,11 @@ const HeroMain = styled.div`
 `
 
 const HeroStats = styled.div`
-  grid-area: stats;
   min-width: 0;
-  padding: 0 36px 28px;
+  padding: 0 36px 20px;
 
   @media (max-width: 1000px) {
+    order: 3;
     padding-top: 4px;
   }
 
@@ -208,32 +266,73 @@ const HeroStats = styled.div`
 `
 
 const HeroSide = styled.div`
-  grid-area: side;
   min-width: 0;
-  padding: 28px 28px 24px;
-  border-left: 1px solid var(--glass-border);
 
   @media (max-width: 1000px) {
-    border-top: 1px solid var(--glass-border);
-    border-left: 0;
+    order: 2;
+    padding: 4px 36px 24px;
   }
 
   @media (max-width: 720px) {
-    padding: 22px 18px 20px;
+    padding: 4px 18px 20px;
   }
 `
 
-/* The third row, under both columns: the entry's own fields, every one of
-   them, with the picture beside them. It draws its own inset hairline the
-   way the stats above it do — not a panel, so nothing is stacked inside
-   the one featured box. */
+/* The entry's one picture, under the clock and the action, when it leaves
+   less empty glass here than first in the full details. Stacked, its order
+   puts it between the facts and the full details wherever the wide layout
+   placed it. */
+const HeroPicture = styled.div`
+  min-width: 0;
+
+  @media (max-width: 1000px) {
+    order: 4;
+    padding: 0 36px 24px;
+  }
+
+  @media (max-width: 720px) {
+    padding: 0 18px 20px;
+  }
+`
+
+/* The entry's own fields, every one of them, straight under the facts
+   strip. It draws its own inset hairline the way the facts strip does —
+   not a panel, so nothing is stacked inside the one featured box. */
 const HeroFields = styled.div`
-  grid-area: fields;
   min-width: 0;
   padding: 0 36px 28px;
 
+  @media (max-width: 1000px) {
+    order: 5;
+  }
+
   @media (max-width: 720px) {
     padding: 0 18px 22px;
+  }
+`
+
+/* Where the action card renders itself (ItemStatusCard portals into it),
+   bare, as part of the hero rather than a panel inside it. Empty while
+   there is nothing to do (in court, the case panel holds the actions), and
+   then it takes no room. Stacked, it closes the hero under an inset
+   hairline, after the full details. */
+const HeroAction = styled.div`
+  min-width: 0;
+
+  &:empty {
+    display: none;
+  }
+
+  @media (max-width: 1000px) {
+    order: 6;
+    margin: 0 36px 28px;
+    padding-top: 24px;
+    border-top: 1px solid var(--glass-border);
+  }
+
+  @media (max-width: 720px) {
+    margin: 0 18px 22px;
+    padding-top: 20px;
   }
 `
 
@@ -273,31 +372,6 @@ const StatusRow = styled.div`
   gap: 10px 16px;
 `
 
-const Stats = styled.dl`
-  display: flex;
-  flex-wrap: wrap;
-  gap: 16px 40px;
-  margin: 0;
-  padding-top: 20px;
-  border-top: 1px solid var(--glass-border);
-
-  div {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    min-width: 0;
-  }
-
-  dd {
-    margin: 0;
-    color: var(--color-text);
-    font-size: 18px;
-    line-height: 22px;
-    font-weight: 500;
-    font-variant-numeric: tabular-nums;
-  }
-`
-
 /* Full width under the hero: a live case is one region of the page, never
    a card in the rail. */
 const CaseRegion = styled.div`
@@ -305,26 +379,27 @@ const CaseRegion = styled.div`
   ${reveal}
 `
 
+/* The history across the page, with a right-hand rail only while it holds
+   something: the withdrawal stepper while the entry is listed (or once it
+   is withdrawn) and the appeal funding while an appeal is open. The action
+   card is in the hero now, so a rail kept in every state would stand empty
+   beside the history for an entry off the list. A flex row, so an empty
+   rail (:empty, display none) takes no room and the history widens. */
 const Columns = styled.div`
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 360px;
+  display: flex;
+  align-items: flex-start;
   gap: 24px;
-  align-items: start;
   margin-top: 24px;
 
-  /* One column where the hero itself stacks, so the rail keeps sticking at
-     every width that still has two columns (round 4: the entry's fields
-     made the hero several hundred pixels taller, and the action card under
-     it now starts below the fold — sticky is what brings it back on the
-     first scroll). Under 721px the fixed bottom bar carries the action
-     instead; between the two the card is reached by scrolling to it. */
   @media (max-width: 1000px) {
-    grid-template-columns: 1fr;
+    flex-direction: column;
+    align-items: stretch;
   }
 `
 
 const Main = styled.div`
   display: flex;
+  flex: 1 1 0;
   flex-direction: column;
   gap: 24px;
   min-width: 0;
@@ -350,27 +425,115 @@ const Main = styled.div`
   }
 `
 
-/* Sticky under the app bar. */
+/* The court record, as the history column's first box. It stretches to
+   the height useLevelRow asks of it (--level-record), so its foot meets the
+   rail panel's beside it. */
+const RecordSlot = styled.div`
+  display: flex;
+  flex-direction: column;
+  min-height: var(--level-record, 0);
+
+  > * {
+    flex: 1 0 auto;
+  }
+`
+
+/* Sticky under the app bar. Its first panel stretches to the height
+   useLevelRow asks of it (--level-rail). */
 const Rail = styled.aside`
   position: sticky;
   /* Under the app bar while it fits; taller than the window, high enough
      that its actions stay in view (useStickyTop sets --stick). */
   top: var(--stick, calc(var(--app-bar-height) + 24px));
   display: flex;
+  flex: 0 0 360px;
   flex-direction: column;
   gap: 16px;
   min-width: 0;
+
+  &:empty {
+    display: none;
+  }
 
   > * {
     ${reveal}
     --i: 2;
   }
 
+  > :first-child {
+    min-height: var(--level-rail, 0);
+  }
+
   @media (max-width: 1000px) {
     position: static;
+    flex: none;
     order: -1;
   }
 `
+
+/* Above this width the rail sits beside the history; below, it stacks. */
+const ROW_STACKED = '(max-width: 1000px)'
+
+/* How far apart the two boxes' resting heights may be and still be made
+   to end level. Further apart, one of them is open (the jury under the
+   record) or simply holds more, and stretching the other would leave it
+   half empty. */
+const LEVEL_MAX = 64
+
+/**
+ * The court record and the rail's first panel (the withdrawal, or the
+ * appeal funding) open the row under the hero side by side, from the same
+ * top. Their heights come from different content, so they ended a few
+ * pixels apart (the audit measured 206 against 216). This stretches the
+ * shorter of the two to the taller's resting height when the two nearly
+ * match, and leaves both alone when they are far apart or stacked. Each is
+ * measured at its own height, with the stretch taken off first, so the
+ * answer never feeds on itself.
+ */
+const useLevelRow = (
+  row: HTMLElement | null,
+  record: HTMLElement | null,
+  rail: HTMLElement | null,
+) => {
+  useEffect(() => {
+    if (
+      !row ||
+      !record ||
+      !rail ||
+      typeof ResizeObserver === 'undefined' ||
+      typeof window.matchMedia !== 'function'
+    )
+      return undefined
+    const stacked = window.matchMedia(ROW_STACKED)
+    const clear = () => {
+      row.style.removeProperty('--level-record')
+      row.style.removeProperty('--level-rail')
+    }
+    const measure = () => {
+      clear()
+      const panel = rail.firstElementChild as HTMLElement | null
+      if (stacked.matches || !panel) return
+      const recordHeight = record.offsetHeight
+      const panelHeight = panel.offsetHeight
+      const apart = Math.abs(recordHeight - panelHeight)
+      if (apart === 0 || apart > LEVEL_MAX) return
+      if (recordHeight < panelHeight)
+        row.style.setProperty('--level-record', `${panelHeight}px`)
+      else row.style.setProperty('--level-rail', `${recordHeight}px`)
+    }
+    // Either box changes height as its content arrives or opens, and the
+    // rail's first panel can change (the appeal funding comes and goes).
+    const observer = new ResizeObserver(measure)
+    observer.observe(record)
+    observer.observe(rail)
+    stacked.addEventListener('change', measure)
+    return () => {
+      observer.disconnect()
+      stacked.removeEventListener('change', measure)
+      clear()
+    }
+  }, [row, record, rail])
+}
 
 const PolicyButton = styled.button`
   display: inline-flex;
@@ -417,8 +580,20 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
   const [ipfsItemData, setIpfsItemData] = useState<ItemFile | undefined>()
   const [ipfsError, setIpfsError] = useState(false)
   const timestamp = useContext(WalletContext)?.timestamp
-  // The actions column stays reachable on short windows (useStickyTop).
+  // The rail (withdrawal, appeal funding) stays reachable on short windows
+  // (useStickyTop).
   const railRef = useStickyTop(24)
+  // The two places the status card draws itself: its action under the
+  // hero's clock, its withdrawal and appeal funding in the rail.
+  const [actionSlot, setActionSlot] = useState<HTMLDivElement | null>(null)
+  const [railSlot, setRailSlot] = useState<HTMLElement | null>(null)
+  const railSlotRef = useCallback(
+    (element: HTMLElement | null) => {
+      railRef(element)
+      setRailSlot(element)
+    },
+    [railRef],
+  )
   const [modalOpen, setModalOpen] = useState(false)
   const { graphqlBatcher } = useGraphqlBatcher()
   const now = useNow()
@@ -670,6 +845,18 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
     [columns, decodedData],
   )
   const primaryField = useMemo(() => titleField(fields), [fields])
+  // The entry's one picture; none when it has none, or several (those stay
+  // in the full details' band). It goes where it leaves the least empty
+  // glass in the hero: under the clock, or first in the full details.
+  const picture = useMemo(() => heroPicture(fields), [fields])
+  const [heroLeft, setHeroLeft] = useState<HTMLDivElement | null>(null)
+  const [heroAside, setHeroAside] = useState<HTMLDivElement | null>(null)
+  const pictureSide = useHeroPictureSide(heroLeft, heroAside, !!picture)
+  // The row under the hero, and the court record that opens it, so the
+  // record and the rail's first panel can end level (useLevelRow).
+  const [historyRow, setHistoryRow] = useState<HTMLDivElement | null>(null)
+  const [recordSlot, setRecordSlot] = useState<HTMLDivElement | null>(null)
+  useLevelRow(historyRow, recordSlot, railSlot)
 
   // The tab names the entry itself (its heading), then its list.
   const seoName =
@@ -872,26 +1059,41 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
       : (decodedItem?.errors ?? [])
 
   const minStake = registry?.submissionMinDeposit
+  // An arbitration cost that shows as nothing (none, or a few gwei below
+  // the precision shown) is not named as a cost: "plus 0 xDAI for
+  // arbitration" read as a fee that is not there.
+  const showsAsNothing = (amount: BigNumber) =>
+    formatTokenAmount(amount.toString(), 18, 5) === '0'
+  const submitCost = arbitrationCost.arbitrationCost
+  const challengeFree =
+    !!challengeCost.arbitrationCost &&
+    showsAsNothing(challengeCost.arbitrationCost)
+  // Only Kleros has jurors to name.
+  const klerosDecides = isKlerosArbitrator(chainId, registry?.arbitrator?.id)
   const explainerSteps = [
     {
       title: 'A stake backs every entry',
       body: registry
         ? `At least ${tokenText(minStake ?? 0, tokenDecimals, tokenSymbol)} in the list's token${
-            arbitrationCost.arbitrationCost
-              ? ` plus ${nativeText(arbitrationCost.arbitrationCost, nativeCurrency)} for arbitration`
-              : ' plus an arbitration deposit'
+            !submitCost
+              ? ' plus an arbitration deposit'
+              : showsAsNothing(submitCost)
+                ? ''
+                : ` plus ${nativeText(submitCost, nativeCurrency)} for arbitration`
           }. It backs the ${name} while listed and comes back when the submitter withdraws.`
         : `A token stake and an arbitration deposit back the ${name} while listed, and come back when the submitter withdraws.`,
     },
     {
       title: 'Spot a mistake, earn the stake',
       body: registry
-        ? `Challenge a ${name} that breaks the policy, at any time, with ${multiplierPercent(registry.challengeStakeMultiplier)} of its stake plus the arbitration cost. If jurors agree, you take its stake and arbitration deposit and your stake comes back; if not, your stake is added to the ${name}'s. ${
+        ? `Challenge a ${name} that breaks the policy, at any time, with ${multiplierPercent(registry.challengeStakeMultiplier)} of its stake${
+            challengeFree ? '' : ' plus the arbitration cost'
+          }. If ${klerosDecides ? 'jurors agree' : 'the arbitrator agrees'}, you take its stake and arbitration deposit and your stake comes back; if not, your stake is added to the ${name}'s. ${
             toNum(registry.submissionPeriod) > 0
               ? `Pending for ${formatDurationLong(toNum(registry.submissionPeriod))}, then accepted.`
               : `Accepted at once: this list has no submission period.`
           }`
-        : `Challenge a ${name} that breaks the policy, at any time, with a share of its stake. If jurors agree, you take its stake and your stake comes back; if not, your stake is added to the ${name}'s.`,
+        : `Challenge a ${name} that breaks the policy, at any time, with a share of its stake. If ${klerosDecides ? 'jurors agree' : 'the arbitrator agrees'}, you take its stake and your stake comes back; if not, your stake is added to the ${name}'s.`,
     },
     {
       title: 'Withdraw to get the stake back',
@@ -936,126 +1138,132 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
 
       <Hero
         as="section"
+        // The floating action bar waits for the reader to reach its end.
+        data-entry-hero
         $featured
         $padding="none"
         aria-label={`${Name} overview`}
         style={{ ['--i' as string]: 1 }}
       >
-        <HeroMain>
-          <Eyebrow>
-            <Label $tone="faint">
-              {metadata ? Name : 'Stake Curate entry'}
-            </Label>
-            {chainId && <ChainChip chainId={chainId} size="sm" />}
-          </Eyebrow>
-          {loading && !fieldsUnavailable && !metaEvidenceFailed ? (
-            <SkeletonBlock $height="40px" $width="min(420px, 100%)" />
-          ) : (
-            <Title $size={titleSize(titleText)}>
-              {primaryField ? (
-                <FieldValue field={primaryField} detailed />
+        <HeroLeft ref={setHeroLeft}>
+          <HeroMain>
+            <Eyebrow>
+              <Label $tone="faint">
+                {metadata ? Name : 'Stake Curate entry'}
+              </Label>
+              {chainId && <ChainChip chainId={chainId} size="sm" />}
+            </Eyebrow>
+            {loading && !fieldsUnavailable && !metaEvidenceFailed ? (
+              <SkeletonBlock $height="40px" $width="min(420px, 100%)" />
+            ) : (
+              <Title $size={titleSize(titleText)}>
+                {primaryField ? (
+                  <FieldValue field={primaryField} detailed />
+                ) : (
+                  heading
+                )}
+              </Title>
+            )}
+            <StatusRow>
+              {entryStatus ? (
+                // The ring beside it already draws whatever window is
+                // running, so the chip keeps its dot, its label and the
+                // countdown, and leaves the track to the ring.
+                <EntryStatus
+                  status={{ ...entryStatus, windowStart: undefined }}
+                  now={now}
+                />
               ) : (
-                heading
+                <SkeletonBlock $height="18px" $width="220px" />
               )}
-            </Title>
-          )}
-          <StatusRow>
-            {entryStatus ? (
-              // The ring beside it already draws whatever window is
-              // running, so the chip keeps its dot, its label and the
-              // countdown, and leaves the track to the ring.
-              <EntryStatus
-                status={{ ...entryStatus, windowStart: undefined }}
+            </StatusRow>
+          </HeroMain>
+          <HeroStats>
+            {item && facts ? (
+              <HeroFacts
+                when={{
+                  label: facts.reincluded ? 'Reincluded' : 'Submitted',
+                  at: facts.includedAt,
+                }}
+                bounty={
+                  // While a case is live, what it is over: the entry's
+                  // stake, which a challenger the jurors agree with takes
+                  // (DESIGN.md's bounty). The action card that leads with it
+                  // is not drawn in court.
+                  facts.underDispute && tokenSymbol
+                    ? {
+                        figure: formatTokenAmount(item.stake, tokenDecimals),
+                        symbol: tokenSymbol,
+                        // Only Kleros has jurors to name.
+                        title: `${tokenText(item.stake, tokenDecimals, tokenSymbol)}: what the challenger takes if ${
+                          isKlerosArbitrator(chainId, registry?.arbitrator?.id)
+                            ? 'jurors agree'
+                            : 'the arbitrator agrees'
+                        } with them, on top of their own stake back`,
+                      }
+                    : undefined
+                }
+                by={submitter}
+                challengedBy={
+                  challengeInSubmission ? challenge?.challenger : undefined
+                }
+                itemID={item.itemID}
                 now={now}
               />
             ) : (
-              <SkeletonBlock $height="18px" $width="220px" />
+              <SkeletonBlock $height="44px" />
             )}
-          </StatusRow>
-        </HeroMain>
-        <HeroSide>
-          {item && facts && statusCode !== null ? (
-            <StakeWindowPanel
-              facts={facts}
-              statusCode={statusCode}
-              arbitrator={registry?.arbitrator?.id}
-              now={now}
+          </HeroStats>
+          <HeroFields>
+            <ItemSubmissionPanel
+              fields={fields}
+              item={decodedItem ?? item}
+              errors={submissionErrors}
+              loading={
+                Boolean(loading) && !fieldsUnavailable && !metaEvidenceFailed
+              }
+              retry={
+                metaEvidenceFailed ? (
+                  <Button
+                    type="button"
+                    $variant="secondary"
+                    $size="sm"
+                    disabled={metaEvidenceQuery.isFetching}
+                    onClick={() => void metaEvidenceQuery.refetch()}
+                  >
+                    {metaEvidenceQuery.isFetching ? 'Loading…' : 'Try again'}
+                  </Button>
+                ) : undefined
+              }
+              kind="stake"
+              leadsWithPicture={pictureSide === 'details'}
             />
-          ) : (
-            <SkeletonBlock
-              $height="216px"
-              $width="216px"
-              style={{ margin: '0 auto', borderRadius: '50%' }}
-            />
+          </HeroFields>
+        </HeroLeft>
+        <HeroAside ref={setHeroAside}>
+          <HeroSide>
+            {item && facts && statusCode !== null ? (
+              <StakeWindowPanel
+                facts={facts}
+                statusCode={statusCode}
+                arbitrator={registry?.arbitrator?.id}
+                now={now}
+              />
+            ) : (
+              <SkeletonBlock
+                $height="216px"
+                $width="216px"
+                style={{ margin: '0 auto', borderRadius: '50%' }}
+              />
+            )}
+          </HeroSide>
+          <HeroAction ref={setActionSlot} />
+          {picture && pictureSide === 'aside' && (
+            <HeroPicture {...HERO_PICTURE_MARK}>
+              <ImagePlate image={picture} layout="rail" />
+            </HeroPicture>
           )}
-        </HeroSide>
-        <HeroStats>
-          {item && facts ? (
-            <Stats>
-              <div>
-                <Label as="dt" $tone="faint">
-                  {facts.reincluded ? 'Reincluded' : 'Submitted'}
-                </Label>
-                <dd
-                  title={
-                    facts.includedAt
-                      ? formatAbsolute(facts.includedAt)
-                      : undefined
-                  }
-                >
-                  {facts.includedAt ? formatSince(facts.includedAt, now) : '—'}
-                </dd>
-              </div>
-              {submitter && (
-                <div>
-                  <Label as="dt" $tone="faint">
-                    By
-                  </Label>
-                  <dd>
-                    <AddressLink address={submitter} />
-                  </dd>
-                </div>
-              )}
-              {challengeInSubmission && challenge && (
-                <div>
-                  <Label as="dt" $tone="faint">
-                    Challenged by
-                  </Label>
-                  <dd>
-                    <AddressLink address={challenge.challenger} />
-                  </dd>
-                </div>
-              )}
-            </Stats>
-          ) : (
-            <SkeletonBlock $height="44px" />
-          )}
-        </HeroStats>
-        <HeroFields>
-          <ItemSubmissionPanel
-            fields={fields}
-            item={decodedItem ?? item}
-            itemID={item?.itemID}
-            errors={submissionErrors}
-            loading={
-              Boolean(loading) && !fieldsUnavailable && !metaEvidenceFailed
-            }
-            retry={
-              metaEvidenceFailed ? (
-                <Button
-                  type="button"
-                  $variant="secondary"
-                  $size="sm"
-                  disabled={metaEvidenceQuery.isFetching}
-                  onClick={() => void metaEvidenceQuery.refetch()}
-                >
-                  {metaEvidenceQuery.isFetching ? 'Loading…' : 'Try again'}
-                </Button>
-              ) : undefined
-            }
-            kind="stake"
-          />
-        </HeroFields>
+        </HeroAside>
       </Hero>
 
       {/* One region for a live case: where it stands, its periods, its jury
@@ -1086,21 +1294,24 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
           </CaseRegion>
         )}
 
-      <Columns>
+      <Columns ref={setHistoryRow}>
         <Main>
           {/* The record of what the court decided, collapsed: no clock, no
               period spine. It keeps the entry's actions, since the status
-              card is not rendered while the entry waits on the court. */}
+              card is not rendered while the entry waits on the court. Its
+              foot meets the rail panel's beside it (useLevelRow). */}
           {decidedDisputes.length > 0 && (
-            <DisputeRecordPanel
-              chainId={chainId}
-              arbitrable={tcrAddress}
-              disputes={decidedDisputes}
-              canAddEvidence={canAddEvidence}
-              holdsPageActions={
-                !!facts?.inCourt && caseWords?.awaitingCourt === false
-              }
-            />
+            <RecordSlot ref={setRecordSlot}>
+              <DisputeRecordPanel
+                chainId={chainId}
+                arbitrable={tcrAddress}
+                disputes={decidedDisputes}
+                canAddEvidence={canAddEvidence}
+                holdsPageActions={
+                  !!facts?.inCourt && caseWords?.awaitingCourt === false
+                }
+              />
+            </RecordSlot>
           )}
           {/* Seer markets: what the entry's own fields cannot say, read
               from the market's own contract. A bordered box of its own, so
@@ -1125,24 +1336,30 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
           />
         </Main>
 
-        <Rail ref={railRef} aria-label="Actions">
-          <ItemStatusCard
-            item={decodedItem ?? item}
-            registry={registry}
-            timestamp={timestamp}
-            modalOpen={modalOpen}
-            metaEvidence={metaEvidence}
-            setModalOpen={setModalOpen}
-            appealCost={appealCostQuery.data}
-            appealCostFailed={appealCostFailed}
-            onRetryAppealCost={() => void appealCostQuery.refetch()}
-            arbitrationCost={arbitrationCost.arbitrationCost}
-            challengeArbitrationCost={challengeCost.arbitrationCost}
-            submitter={submitter}
-            policyURI={policyURI}
-          />
-        </Rail>
+        {/* The status card draws the withdrawal and the appeal funding in
+            here; with neither, the rail takes no room. */}
+        <Rail ref={railSlotRef} aria-label="Withdrawal and appeal funding" />
       </Columns>
+      {/* The status card draws its action in the hero, under the clock, and
+          its other panels in the rail (portals into both); mounted here it
+          keeps the phone bar and the dialogs out of either layout. */}
+      <ItemStatusCard
+        item={decodedItem ?? item}
+        registry={registry}
+        timestamp={timestamp}
+        modalOpen={modalOpen}
+        metaEvidence={metaEvidence}
+        setModalOpen={setModalOpen}
+        appealCost={appealCostQuery.data}
+        appealCostFailed={appealCostFailed}
+        onRetryAppealCost={() => void appealCostQuery.refetch()}
+        arbitrationCost={arbitrationCost.arbitrationCost}
+        challengeArbitrationCost={challengeCost.arbitrationCost}
+        submitter={submitter}
+        policyURI={policyURI}
+        heroSlot={actionSlot}
+        railSlot={railSlot}
+      />
       <StickyActionBarSpacer aria-hidden />
     </Page>
   )

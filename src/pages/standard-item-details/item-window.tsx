@@ -34,13 +34,14 @@ import {
  * case panel below the hero.
  */
 
+/* Top-aligned at its own height, so its label lines up with the hero's
+   eyebrow beside it. It used to be centred in a forced 220px, which left
+   the date floating half-way down the column (round 5). */
 const Calm = styled.div`
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 10px;
-  height: 100%;
-  min-height: 220px;
 `
 
 const Big = styled.span`
@@ -223,7 +224,9 @@ export const WindowPanel = ({
         <Label $tone="faint">In court</Label>
         <State>{(challenged ? period?.title : undefined) ?? state}</State>
         {challenged ? (
-          period && <Line>{period.next}</Line>
+          // The evidence period has no line (round 3 deleted "N jurors
+          // drawn. Both sides add evidence…"): its title says it all.
+          period?.next && <Line>{period.next}</Line>
         ) : (
           <Line>
             {rulingLine(currentRuling, requesterName)}
@@ -275,8 +278,10 @@ export const WindowPanel = ({
       </Big>
       <Line>
         {since ? `${sinceLine(since, now)} · ` : ''}
+        {/* The case itself is named once, in the court record under the
+            hero, which every decided case is in. */}
         {decidedInCourt
-          ? `decided by jurors in case ${deciding.disputeID}`
+          ? 'decided by jurors'
           : registered
             ? 'accepted with no challenge'
             : 'executed with no challenge'}
