@@ -355,7 +355,9 @@ const LogoLink = styled(Link)`
 
   &:hover {
     transform: translateY(-2px);
-    filter: drop-shadow(0 6px 10px rgb(0 0 0 / 0.22));
+    filter: drop-shadow(
+      0 6px 10px color-mix(in srgb, var(--stage) 55%, transparent)
+    );
   }
 
   &:focus-visible {
@@ -436,6 +438,18 @@ const InlineStat = styled.div`
     line-height: 30px;
   }
 
+  /* The marked cell: open requests are the live work on these lists, so the
+     figure takes the status role for an open window, a size up, behind a
+     haloed dot. The dot is what keeps a blue figure from reading as a link. */
+  b[data-accent] {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--status-window);
+    font-size: 34px;
+    line-height: 36px;
+  }
+
   @media (max-width: 1100px) {
     min-height: 0;
 
@@ -451,6 +465,12 @@ const InlineStat = styled.div`
     b {
       font-size: 20px;
       line-height: 24px;
+    }
+
+    b[data-accent] {
+      gap: 8px;
+      font-size: 24px;
+      line-height: 28px;
     }
   }
 `
@@ -1796,11 +1816,15 @@ const BrowsePage = () => {
                   label: 'Open requests',
                   value:
                     listsMissing.length > 0 ? undefined : figures.openRequests,
+                  accent: true,
                 },
               ].map((figure) => (
                 <InlineStat key={figure.label}>
                   <Label $tone="faint">{figure.label}</Label>
-                  <b>
+                  <b data-accent={figure.accent || undefined}>
+                    {figure.accent && !!figure.value && (
+                      <StatusDot $tone="window" aria-hidden />
+                    )}
                     <AnimatedNumber loading={loading} value={figure.value} />
                   </b>
                 </InlineStat>

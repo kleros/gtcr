@@ -11,6 +11,7 @@ import {
   ChainChip,
   Label,
   SkeletonBlock,
+  StatusDot,
   Surface,
   truncateMiddle,
 } from './primitives'
@@ -24,11 +25,15 @@ import { CountUpText, isPlainCount } from './registry-shared-count'
 
 /*
  * Registry header, a portfolio panel (YMax): identity first, then the
- * headline figure with the live counts and the list's terms beside it, the
- * share of entries registered as a ring when the page passes both counts, and
- * the one action with its exact deposit and what happens to it (a deposit on
- * Standard, a locked stake on Stake). Parameters slide open as a
- * drawer; the per-list explainer waits in a pill.
+ * headline figure with the live counts and the list's terms beside it, and at
+ * the right end of that row the list's two gauges — the share of its entries
+ * on the list, and beside it the share of its resolved challenges that took
+ * an entry off — each drawn only when the page passes the counts for it. One
+ * inline stat can be marked as the list's live work (open requests): it reads
+ * in the window blue behind a haloed dot, so it carries the status colour
+ * rather than the look of a link. Then the one action with its exact deposit
+ * and what happens to it (a deposit on Standard, a locked stake on Stake).
+ * Parameters slide open as a drawer; the per-list explainer waits in a pill.
  */
 
 const integer = new Intl.NumberFormat('en-US')
@@ -267,6 +272,18 @@ const InlineStats = styled.dl`
     font-variant-numeric: tabular-nums;
   }
 
+  /* The one stat the page marks. The blue is the status role for an open
+     window, which is what an open request is; the dot and its halo are what
+     keep a blue figure from reading as a link. */
+  dd[data-accent] {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--status-window);
+    font-size: 24px;
+    line-height: 28px;
+  }
+
   @media (max-width: 520px) {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -276,6 +293,23 @@ const InlineStats = styled.dl`
     dd {
       font-size: 16px;
     }
+
+    dd[data-accent] {
+      font-size: 20px;
+    }
+  }
+`
+
+/* The gauges wrap as one block at the end of the figure row, so a narrow
+   page breaks the row before them rather than between them. */
+const Gauges = styled.div`
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 28px;
+
+  @media (max-width: 640px) {
+    gap: 20px 24px;
   }
 `
 
@@ -442,10 +476,24 @@ export interface RegistryParameter {
 export interface RegistryStat {
   label: string
   value?: React.ReactNode
+  /**
+   * Marks this stat as the list's live work: drawn in the window blue with a
+   * haloed dot. One stat at most, or the row is a page of blue figures and
+   * nothing stands out.
+   */
+  tone?: 'window'
 }
 
 const isMissing = (value?: React.ReactNode) =>
   value === undefined || value === null || value === ''
+
+/** A count worth a status dot: "84" yes, "0" and "—" no. */
+const isLiveCount = (value?: React.ReactNode) =>
+  isPlainCount(value) && Number(value.replace(/,/g, '')) > 0
+
+/** A figure from a capped read is a lower bound: it reads "n+". */
+const lowerBound = (value: number, capped?: boolean) =>
+  `${integer.format(value)}${capped && value > 0 ? '+' : ''}`
 
 /** Plain counts climb; anything else (durations, amounts, nodes) stays put. */
 const StatValue = ({ value }: { value?: React.ReactNode }) =>
@@ -473,6 +521,7 @@ export const RegistryHeader = ({
   listOfLists = false,
   kind,
   itemName,
+  itemNamePlural,
   primaryLabel,
   primaryAmount,
   depositNote,
@@ -489,6 +538,8 @@ export const RegistryHeader = ({
   loading,
   registeredCount,
   totalCount,
+  registeredLabel = 'Registered now',
+  challenges,
 }: {
   title?: string
   description?: string
@@ -507,6 +558,8 @@ export const RegistryHeader = ({
   /** A Stake list carries the Stake tag; a standard list carries none. */
   kind: 'standard' | 'permanent'
   itemName: string
+  /** The list's own plural, where its metadata gives one ("entries"). */
+  itemNamePlural?: string
   primaryLabel: string
   /** The exact amount the button sends; also listed in Parameters. */
   primaryAmount?: React.ReactNode
@@ -531,6 +584,20 @@ export const RegistryHeader = ({
   registeredCount?: number
   /** Every entry the registered share is taken from. */
   totalCount?: number
+  /** Names the first gauge: a Stake list lists, it does not register. */
+  registeredLabel?: string
+  /**
+   * What the challenges on this list did to its entries, as the second
+   * gauge: the share of the resolved ones that took an entry off. `scope`
+   * names what they were counted from when that read was capped, and is
+   * what makes the figures read "n+".
+   */
+  challenges?: {
+    offList: number
+    onList: number
+    /** The phrase after "of": "the newest 1,000 challenges". */
+    scope?: string
+  }
 }) => {
   const [paramsOpen, setParamsOpen] = useState(false)
   const explorer = chainId
@@ -555,6 +622,15 @@ export const RegistryHeader = ({
   const registeredShare = showRing
     ? Math.min(1, Math.max(0, registeredCount / totalCount))
     : 0
+  // The challenges gauge waits for a resolved challenge: a ring of nothing
+  // says nothing. In court is not in it — it is one of the stats above.
+  const offList = challenges?.offList ?? 0
+  const resolved = offList + (challenges?.onList ?? 0)
+  const challengeScope = challenges?.scope
+  const capped = !!challengeScope
+  const challengeNote = challengeScope
+    ? `Counted from ${challengeScope}.`
+    : undefined
 
   return (
     <Shell
@@ -622,30 +698,65 @@ export const RegistryHeader = ({
                 <dt>
                   <Label $tone="faint">{stat.label}</Label>
                 </dt>
-                <dd>
+                <dd data-accent={stat.tone === 'window' || undefined}>
+                  {stat.tone === 'window' && isLiveCount(stat.value) && (
+                    <StatusDot $tone="window" aria-hidden />
+                  )}
                   <StatValue value={stat.value} />
                 </dd>
               </div>
             ))}
           </InlineStats>
         )}
-        {showRing && (
-          <RingBlock>
-            <RingGauge
-              size={96}
-              ratio={registeredShare}
-              from="color-mix(in srgb, var(--status-registered) 35%, var(--color-raised))"
-              to="var(--status-registered)"
-              label={`Registered now: ${integer.format(registeredCount)} of ${integer.format(totalCount)} entries`}
-            />
-            <figcaption>
-              <Label $tone="faint">Registered now</Label>
-              <b>
-                {integer.format(registeredCount)} of{' '}
-                {integer.format(totalCount)}
-              </b>
-            </figcaption>
-          </RingBlock>
+        {(showRing || resolved > 0) && (
+          <Gauges>
+            {showRing && (
+              <RingBlock>
+                <RingGauge
+                  size={96}
+                  ratio={registeredShare}
+                  from="color-mix(in srgb, var(--status-registered) 35%, var(--color-raised))"
+                  to="var(--status-registered)"
+                  label={`${registeredLabel}: ${integer.format(registeredCount)} of ${integer.format(totalCount)} entries`}
+                />
+                <figcaption>
+                  <Label $tone="faint">{registeredLabel}</Label>
+                  <b>
+                    {integer.format(registeredCount)} of{' '}
+                    {integer.format(totalCount)}
+                  </b>
+                </figcaption>
+              </RingBlock>
+            )}
+            {resolved > 0 && (
+              <RingBlock title={challengeNote}>
+                <RingGauge
+                  size={96}
+                  ratio={offList / resolved}
+                  from="var(--status-contested)"
+                  to="var(--status-off)"
+                  label={`Challenges that took ${itemNamePlural ?? `${itemName}s`} off the list: ${lowerBound(
+                    offList,
+                    capped,
+                  )} of ${lowerBound(resolved, capped)} resolved${
+                    challengeScope ? `, of ${challengeScope}` : ''
+                  }`}
+                />
+                <figcaption>
+                  {/*
+                   * The caption says challenges, not just the outcome: the
+                   * toolbar below carries an "Off the list" chip counting
+                   * entries, and the two figures must not read as one.
+                   */}
+                  <Label $tone="faint">Challenges off the list</Label>
+                  <b>
+                    {lowerBound(offList, capped)} of{' '}
+                    {lowerBound(resolved, capped)} resolved
+                  </b>
+                </figcaption>
+              </RingBlock>
+            )}
+          </Gauges>
         )}
       </Figures>
 

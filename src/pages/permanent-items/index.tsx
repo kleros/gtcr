@@ -71,9 +71,10 @@ import {
   truncateMiddle,
 } from 'components/curate/primitives'
 import { CurateIcon } from 'components/curate/icons'
-import { useStakeSummary } from 'components/curate/registry-stake-summary'
-import type { StakeLane } from 'components/curate/registry-stake-summary'
-import { StakeInsights } from 'components/curate/registry-stake-insights'
+import {
+  SUMMARY_CAP,
+  useStakeSummary,
+} from 'components/curate/registry-stake-summary'
 import { RegistryListSkeleton } from 'components/curate/registry-standard-states'
 import {
   REGISTRY_LAYOUT_OPTIONS,
@@ -91,9 +92,9 @@ import { LIST_LOAD_FAILED } from '../error-page/copy'
  * Stake Curate registry page. The registry is read first (its periods and
  * multipliers are needed to derive statuses), then the items for the current
  * filters and page, and a summary of every entry for the counts and the
- * drawings. The UI is RegistryHeader (identity, action, figures, parameters,
- * explainer), the three drawings (listing history, where the entries stand,
- * challenges), RegistryToolbar, EntryList and Pagination.
+ * challenge figures. The UI is RegistryHeader (identity, action, figures,
+ * the two gauges, parameters, explainer), RegistryToolbar, EntryList and
+ * Pagination.
  */
 
 const NSFW_FILTER_KEY = 'NSFW_FILTER_KEY'
@@ -460,12 +461,12 @@ const StakeRegistry = () => {
     localforage.setItem(NSFW_FILTER_KEY, checked)
   }, [])
 
-  // Every entry of the list, for exact counts and the drawings.
+  // Every entry of the list, for exact counts and the challenge figures.
   const {
     summary,
     loading: summaryLoading,
     failed: summaryFailed,
-  } = useStakeSummary({ chainId, registryId, registry, timestamp })
+  } = useStakeSummary({ chainId, registryId })
   const fullSummary = summary && !summary.partial ? summary : undefined
 
   // The counts the page shows; undefined means unknown, shown as '—'. With
@@ -505,6 +506,16 @@ const StakeRegistry = () => {
   // Hold the figures back while the summary loads, so a drifted counter
   // never flashes before the real count.
   const countsReady = !!registry && !summaryLoading
+
+  // How many entries are on the list: a Stake entry is listed from the
+  // moment it was submitted and stays listed while a challenge runs, so the
+  // figure under the word "listed" is submitted plus disputed — the measure
+  // Browse and the dashboard print for the same list. The status chips
+  // below give each entry one status, so they keep the narrower buckets.
+  const onListCount =
+    counts.listed !== undefined && counts.disputed !== undefined
+      ? counts.listed + counts.disputed
+      : undefined
 
   // The batcher resolves failed requests to {}, so guard the items field.
   const pageItems = itemsQuery.data?.items as StakeItem[] | undefined
@@ -643,8 +654,11 @@ const StakeRegistry = () => {
   const chipCount = (value?: number) => (countsReady ? value : undefined)
   const chips: FilterChip[] = [
     {
+      // Listed and disputed entries are both on the list, so this chip
+      // says which of the two it filters to rather than taking the word
+      // "listed" and its own narrower count.
       key: P_FILTER_KEYS.REGISTERED,
-      label: withCount('Listed', chipCount(counts.listed)),
+      label: withCount('Listed, no challenge', chipCount(counts.listed)),
       tone: 'registered',
       checked: !!registered,
     },
@@ -655,7 +669,8 @@ const StakeRegistry = () => {
       checked: !!disputed,
     },
     {
-      // Withdrawn entries count here too: the insights panel's word.
+      // Withdrawn entries count here too, so the chip reads "Off the list"
+      // rather than "Removed".
       key: P_FILTER_KEYS.ABSENT,
       label: withCount('Off the list', chipCount(counts.absent)),
       tone: 'off',
@@ -720,7 +735,7 @@ const StakeRegistry = () => {
 
   const stats: RegistryStat[] = [
     { label: 'Entries', value: countValue(counts.total) },
-    { label: 'Listed', value: countValue(counts.listed) },
+    { label: 'Listed', value: countValue(onListCount) },
     { label: 'Disputed', value: countValue(counts.disputed) },
     // Summed from every entry, so only with the whole list; the slot holds
     // its place while the summary and the token's decimals load.
@@ -884,19 +899,6 @@ const StakeRegistry = () => {
     },
   ]
 
-  // The drawings never name an entry the list itself hides.
-  const laneHidden = (lane: StakeLane) =>
-    nsfwFilterOn &&
-    !revealed.has(lane.id) &&
-    (lane.statusCode === undefined
-      ? lane.tone === 'off'
-      : HIDDEN_STATUSES.has(lane.statusCode))
-
-  const openLane = (lane: StakeLane) => {
-    if (chainId && tcrAddress)
-      navigate(`/tcr/${chainId}/${tcrAddress}/${lane.id}`)
-  }
-
   if (!chainId || !tcrAddress)
     return (
       <ErrorPage
@@ -980,6 +982,7 @@ const StakeRegistry = () => {
         listOfLists={trust.listOfLists}
         kind="permanent"
         itemName={itemName}
+        itemNamePlural={itemNamePlural}
         primaryLabel={`Submit ${itemName}`}
         primaryAmount={primaryAmount}
         depositNote={
@@ -994,21 +997,30 @@ const StakeRegistry = () => {
         // Stake list it would shimmer and then show nothing.
         policyUpdated={false}
         stats={stats}
+        // The same figure the "Listed" stat above carries, as the list's
+        // first gauge: a Stake entry is listed from the moment it was
+        // submitted, so the word is "listed", never "registered".
+        registeredCount={countsReady ? onListCount : undefined}
+        totalCount={countsReady ? counts.total : undefined}
+        registeredLabel="Listed now"
+        // The second gauge: what the challenges did to the entries read. A
+        // capped read is a lower bound, and says what it was counted from.
+        challenges={
+          summaryFailed || !summary
+            ? undefined
+            : {
+                offList: summary.challenges.removed,
+                onList: summary.challenges.kept,
+                scope: summary.partial
+                  ? `the latest ${formatInt(SUMMARY_CAP)} entries`
+                  : undefined,
+              }
+        }
         parameters={parameters}
         explainerId={`registry-stake-${tcrAddress.toLowerCase()}`}
         explainerHeading="A stake backs every entry. Spot a bad one and it is yours."
         explainerSteps={explainerSteps}
         loading={loading || summaryLoading}
-      />
-
-      <StakeInsights
-        summary={summaryFailed ? undefined : summary}
-        loading={loading || summaryLoading}
-        now={now}
-        itemName={itemName}
-        itemNamePlural={itemNamePlural}
-        isHidden={laneHidden}
-        onOpen={openLane}
       />
 
       <div ref={toolbarRef}>
