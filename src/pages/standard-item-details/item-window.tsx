@@ -185,10 +185,16 @@ export const WindowPanel = ({
     // here (the loser did not fund in its half, so the ruling stands). A
     // period with a deadline is the clock; an appeal round's evidence
     // period that can move on now has none, and neither has execution.
+    // Past its end the period has not moved on: the court has not drawn
+    // or passed it yet (a court that draws no jurors never does). A ring
+    // saying "Over" for days would contradict the case panel, so the quiet
+    // state below says what the case waits for instead.
+    const overdue = period?.end !== undefined && now > period.end
     if (
       challenged &&
       dispute &&
       period?.end !== undefined &&
+      !overdue &&
       dispute.period < COURT_PERIOD.EXECUTION
     )
       return (
@@ -227,9 +233,18 @@ export const WindowPanel = ({
         <Label $tone="faint">In court</Label>
         <State>{(challenged ? period?.title : undefined) ?? state}</State>
         {challenged ? (
-          // The evidence period has no line (round 3 deleted "N jurors
-          // drawn. Both sides add evidence…"): its title says it all.
-          period?.next && <Line>{period.next}</Line>
+          overdue && period?.end !== undefined ? (
+            <Line>
+              Waiting for the court ·{' '}
+              <span title={formatAbsolute(period.end)}>
+                {period.measure.toLowerCase()} over {formatDate(period.end)}
+              </span>
+            </Line>
+          ) : (
+            // The evidence period has no line (round 3 deleted "N jurors
+            // drawn. Both sides add evidence…"): its title says it all.
+            period?.next && <Line>{period.next}</Line>
+          )
         ) : (
           <Line>
             {rulingLine(currentRuling, requesterName)}
