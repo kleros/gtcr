@@ -1,0 +1,244 @@
+import { gql } from 'graphql-request'
+import { request } from 'utils/indexer-request'
+import { subgraphUrl, subgraphUrlPermanent } from 'config/tcr-addresses'
+import { coinKey, readUsdPrices, type PricedCoin } from './prices'
+import { readTokens } from './tokens'
+import type { DashboardData, TokenInfo } from './types'
+import { toAmount } from './view'
+
+/*
+ * What has passed through the Curate contracts, all time (round 15: "add
+ * the appeals costs and challenge deposits to the count and put a label …
+ * 'transiting value' … it passed from our contracts but not permanent"):
+ * every amount paid in to a list, which the contracts hand back or pay out
+ * and never keep.
+ *   - Standard and Classic lists: both sides of every round of every
+ *     request, submissions and removal requests alike. Round 0 holds the
+ *     requester's deposit and, when challenged, the challenger's (each a
+ *     base deposit and the arbitration cost); later rounds hold the appeal
+ *     funding of both sides.
+ *   - Stake lists: each submission's stake and arbitration deposit, each
+ *     challenge's stake, and the appeal funding of both sides. The court fee
+ *     a Stake challenger sends is not indexed, so it is left out (seven
+ *     challenges when this was written).
+ * Dollars are at today's prices (round 15: "calculate always at today's
+ * price"), read on chain like the dashboard's other dollar figures
+ * (prices.ts): an amount with no current price fails the read, so no total
+ * leaves a coin out. It is shown on the dashboard's first box and on the
+ * landing page, the only totals across coins (DESIGN.md, Data rules).
+ */
+
+const PAGE = 1000
+/** Pages asked at once; the Envio ones go out as one batched request. */
+const WAVE = 6
+/** Far past today's ~33 pages a chain: past it the read is not trusted. */
+const MAX_PAGES = 200
+const TOKEN_BUDGET_MS = 4000
+
+/** One coin's total, in its smallest unit. */
+export interface CoinTotal {
+  chainId: number
+  /** A Stake list's ERC-20, lowercase; absent for the chain's own coin. */
+  token?: string
+  amount: bigint
+}
+
+export interface Transit {
+  /** Every coin's total, keyed by coinKey. */
+  totals: Record<string, CoinTotal>
+  /** Requests (submissions and removal requests) and Stake submissions. */
+  requests: number
+}
+
+const requestRounds = (entity: 'LRequest' | 'Request') => gql`
+  query TransitRequests($chainId: Int!, $offset: Int!) {
+    rows: ${entity}(
+      limit: ${PAGE}
+      offset: $offset
+      where: { chainId: { _eq: $chainId } }
+      order_by: { id: asc }
+    ) {
+      rounds {
+        amountPaidRequester
+        amountPaidChallenger
+      }
+    }
+  }
+`
+
+const STANDARD_ROUNDS = requestRounds('LRequest')
+const CLASSIC_ROUNDS = requestRounds('Request')
+
+const STAKE_SUBMISSIONS = gql`
+  query TransitStakeSubmissions($skip: Int!) {
+    rows: submissions(first: ${PAGE}, skip: $skip, orderBy: id) {
+      initialStake
+      arbitrationDeposit
+      item {
+        registry {
+          token
+        }
+      }
+    }
+  }
+`
+
+const STAKE_CHALLENGES = gql`
+  query TransitStakeChallenges($skip: Int!) {
+    rows: challenges(first: ${PAGE}, skip: $skip, orderBy: id) {
+      challengerStake
+      rounds {
+        amountPaidRequester
+        amountPaidChallenger
+      }
+      item {
+        registry {
+          token
+        }
+      }
+    }
+  }
+`
+
+type Rounds = { amountPaidRequester: string; amountPaidChallenger: string }[]
+type Token = { item: { registry: { token: string } | null } | null }
+
+/** Every page of a read, a wave at a time, until one comes back short. */
+const pageAll = async <T>(read: (page: number) => Promise<T[]>) => {
+  const rows: T[] = []
+  for (let first = 0; first < MAX_PAGES; first += WAVE) {
+    const pages = await Promise.all(
+      Array.from({ length: WAVE }, (_, index) => read(first + index)),
+    )
+    for (const page of pages) rows.push(...page)
+    if (pages.some((page) => page.length < PAGE)) return rows
+  }
+  throw new Error('The transit read ran past its page limit')
+}
+
+const paid = (rounds: Rounds) =>
+  rounds.reduce(
+    (sum, round) =>
+      sum +
+      toAmount(round.amountPaidRequester) +
+      toAmount(round.amountPaidChallenger),
+    0n,
+  )
+
+const listToken = (row: Token) => {
+  const token = row.item?.registry?.token?.toLowerCase()
+  if (!token) throw new Error('A Stake row without its list token')
+  return token
+}
+
+/** Adds an amount to its coin's total. */
+const add = (
+  totals: Record<string, CoinTotal>,
+  chainId: number,
+  amount: bigint,
+  token?: string,
+) => {
+  if (amount <= 0n) return
+  const key = coinKey(chainId, token)
+  const total = totals[key] ?? { chainId, token, amount: 0n }
+  total.amount += amount
+  totals[key] = total
+}
+
+const chainTransit = async (chainId: number, totals: Transit['totals']) => {
+  const envio = subgraphUrl[chainId]
+  if (!envio) throw new Error(`No Standard indexer for chain ${chainId}`)
+  const stake = subgraphUrlPermanent[chainId]
+  const requests = (document: typeof STANDARD_ROUNDS) =>
+    pageAll((page) =>
+      request<{ rows: { rounds: Rounds }[] }>(envio, document, {
+        chainId,
+        offset: page * PAGE,
+      }).then((answer) => answer.rows),
+    )
+  const stakeRows = <T>(document: typeof STAKE_SUBMISSIONS) =>
+    stake
+      ? pageAll((page) =>
+          request<{ rows: T[] }>(stake, document, { skip: page * PAGE }).then(
+            (answer) => answer.rows,
+          ),
+        )
+      : Promise.resolve([] as T[])
+  const [standard, classic, submissions, challenges] = await Promise.all([
+    requests(STANDARD_ROUNDS),
+    requests(CLASSIC_ROUNDS),
+    stakeRows<
+      Token & { initialStake: string; arbitrationDeposit: string | null }
+    >(STAKE_SUBMISSIONS),
+    stakeRows<Token & { challengerStake: string; rounds: Rounds }>(
+      STAKE_CHALLENGES,
+    ),
+  ])
+  for (const row of [...standard, ...classic])
+    add(totals, chainId, paid(row.rounds))
+  for (const row of submissions) {
+    add(totals, chainId, toAmount(row.initialStake), listToken(row))
+    add(totals, chainId, toAmount(row.arbitrationDeposit))
+  }
+  for (const row of challenges) {
+    add(totals, chainId, toAmount(row.challengerStake), listToken(row))
+    add(totals, chainId, paid(row.rounds))
+  }
+  return standard.length + classic.length + submissions.length
+}
+
+/** Every chain's totals; throws if any chain's read fails. */
+export const readTransit = async (chains: number[]): Promise<Transit> => {
+  const totals: Transit['totals'] = {}
+  const counts = await Promise.all(
+    chains.map((chainId) => chainTransit(chainId, totals)),
+  )
+  return { totals, requests: counts.reduce((sum, count) => sum + count, 0) }
+}
+
+/** The bounties challengers have won, per coin, from the rulings ledger. */
+export const bountyTotals = (data: DashboardData, chains: number[]) => {
+  const totals: Record<string, CoinTotal> = {}
+  let paidOut = 0
+  for (const chainId of chains)
+    for (const row of data.rulings?.[chainId] ?? []) {
+      const amount = toAmount(row.bounty)
+      if (!row.challengerWon || amount === 0n) continue
+      const stake = row.kind === 'permanent'
+      if (stake && !row.token)
+        throw new Error('A Stake bounty without its list token')
+      add(totals, chainId, amount, stake ? row.token?.toLowerCase() : undefined)
+      paidOut += 1
+    }
+  return { totals, paid: paidOut }
+}
+
+/**
+ * Coin totals in dollars at today's prices. A token's decimals come from
+ * the load when it has them, else they are read. Throws when any coin with
+ * an amount has no current price.
+ */
+export const totalInDollars = async (
+  coins: CoinTotal[],
+  known: Record<string, TokenInfo> = {},
+): Promise<number> => {
+  const unread = coins.filter(
+    (coin) => coin.token && !known[coinKey(coin.chainId, coin.token)],
+  ) as { chainId: number; token: string }[]
+  const tokens = {
+    ...known,
+    ...(unread.length > 0 ? await readTokens(unread, TOKEN_BUDGET_MS) : {}),
+  }
+  const priced: PricedCoin[] = coins.map((coin) => {
+    const key = coinKey(coin.chainId, coin.token)
+    const decimals = coin.token ? tokens[key]?.decimals : 18
+    if (decimals === undefined) throw new Error(`No decimals for ${key}`)
+    return { key, chainId: coin.chainId, token: coin.token, decimals }
+  })
+  const prices = await readUsdPrices(priced)
+  return priced.reduce((sum, coin, index) => {
+    const usd = prices[coin.key]?.usd
+    if (usd === undefined) throw new Error(`No dollar price for ${coin.key}`)
+    return sum + (Number(coins[index].amount) / 10 ** coin.decimals) * usd
+  }, 0)
+}

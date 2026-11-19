@@ -49,6 +49,7 @@ import {
 import { useMediaQuery } from 'pages/guide/hooks'
 import { useSavedLoadsReady } from './saved-load'
 import { useUsdPrices } from './use-usd-prices'
+import { readTransit, totalInDollars } from './transit'
 import { LiveBoard, type RulingsView } from './happening-now'
 import { OpenForVerification } from './open-for-verification'
 import type { OpenListChip } from './board-rows'
@@ -169,6 +170,21 @@ const RANGE_SPAN: Record<ChartRange, string> = {
   '1y': 'last year',
   '3y': 'last 3 years',
 }
+
+/** "$3.21M": the transit figure, three significant figures. */
+const compactUsdFormat = new Intl.NumberFormat('en-US', {
+  style: 'currency',
+  currency: 'USD',
+  notation: 'compact',
+  maximumSignificantDigits: 3,
+})
+const compactUsd = (value: number) => compactUsdFormat.format(value)
+/** The same, whole dollars, for its tooltip. */
+const wholeUsd = new Intl.NumberFormat('en-US', {
+  style: 'currency',
+  currency: 'USD',
+  maximumFractionDigits: 0,
+})
 
 /** Curators beside the chart: few, so the panel keeps the chart's height. */
 const TOP_CURATORS = 5
@@ -399,6 +415,15 @@ const HeadlineFigure = styled.div`
   display: flex;
   flex-direction: column;
   gap: 8px;
+`
+
+/* The two big figures side by side (round 15): the entries the lists hold,
+   and the money that has passed through them. */
+const Headlines = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 20px 56px;
 `
 
 const InlineStats = styled.div`
@@ -786,6 +811,23 @@ const Dashboard = () => {
     staleTime: 30 * 60_000,
     retry: 2,
   })
+  // Everything paid in to a list, all time, at today's prices (round 15:
+  // "this number can be smashed also somewhere in the dashboard"). Its own
+  // query, after the main load: never in the saved load, whose prices
+  // would be repainted a day old (use-usd-prices.ts).
+  const transit = useQuery({
+    queryKey: ['dashboardTransit', chains.join(',')],
+    queryFn: async () => {
+      const read = await readTransit(chains)
+      return {
+        usd: await totalInDollars(Object.values(read.totals), data?.tokens),
+        requests: read.requests,
+      }
+    },
+    enabled: !!data,
+    staleTime: 10 * 60_000,
+    retry: 1,
+  })
   // Links to Browse keep the page's scope. "All chains" is Browse's own
   // default, no `chain` parameter (DESIGN.md, Data rules): spelled out as
   // ?chain=1,100 it read as a custom choice of two chains there.
@@ -1168,15 +1210,38 @@ const Dashboard = () => {
       >
         <FeaturedMain>
           <FeaturedTop>
-            <HeadlineFigure>
-              <Label $tone="faint">Entries</Label>
-              <Big $hero>
-                <Odometer
-                  loading={loading}
-                  value={figuresUnknown ? undefined : figures?.entries}
-                />
-              </Big>
-            </HeadlineFigure>
+            <Headlines>
+              <HeadlineFigure>
+                <Label $tone="faint">Entries</Label>
+                <Big $hero>
+                  <Odometer
+                    loading={loading}
+                    value={figuresUnknown ? undefined : figures?.entries}
+                  />
+                </Big>
+              </HeadlineFigure>
+              {/* Round 15: what has passed through the contracts, beside the
+                entries at the same size. A read that fails draws nothing,
+                never "$—" (DESIGN.md, Data rules). */}
+              {!transit.isError && (
+                <HeadlineFigure
+                  title={
+                    transit.data
+                      ? `${wholeUsd.format(transit.data.usd)} in deposits, challenges and appeals on every list, all time, at today's prices`
+                      : undefined
+                  }
+                >
+                  <Label $tone="faint">Passed through Curate</Label>
+                  <Big $hero>
+                    <AnimatedNumber
+                      loading={loading || transit.isPending}
+                      value={transit.data?.usd}
+                      format={compactUsd}
+                    />
+                  </Big>
+                </HeadlineFigure>
+              )}
+            </Headlines>
             <InlineStats>
               {[
                 { label: 'Lists', value: figures?.registries },

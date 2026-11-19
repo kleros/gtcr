@@ -513,21 +513,25 @@ way (dashboard, Browse, registry pages, the profile, the landing page).
   money figures wait at most 1.5s for the first price read, as skeletons, so the lead never swaps
   from coin to dollars under the reader; a later answer fades in. The feed and the age of its
   answer are in the tooltip the figure already carries. The one rule lives in
-  `pages/dashboard/board-rows.tsx` (`UsdLead`, `CoinAmount`, `usdFormatFor`). Exactly two figures
-  carry dollars: the bounties challengers have won, and the collateral behind the requests open for
-  verification. Never a figure somebody is about to sign for (an entry page, a launch or stake
-  deposit, a board or ruling row): there the coin amount is the obligation. A token that never
-  answered a symbol is unitised by its shortened contract in Geist Mono, never left bare. The
-  prices are read on chain in their own query, never inside the saved load, which is repainted up
-  to a day later.
-- **The landing page is the one exception** (round 14, owner: "remove the reference to crypto at
-  all in the landing"): it shows dollars only, as two totals across coins, each amount valued at
-  the time it was paid rather than at today's price (a 2020 deposit of 1 ETH counts what ETH was
-  worth that month). ETH uses its month's average price (`src/landing/eth-usd-monthly.ts`, built by
-  `scripts/eth-usd-monthly.mjs` from Coinbase's public daily closes, a month past the table at
-  today's on-chain price); xDAI counts as one dollar (bridged DAI); a Stake token counts at today's
-  on-chain price. An amount nothing can price fails the read and the dated snapshot stays. The
-  app keeps the per-coin rule above.
+  `pages/dashboard/board-rows.tsx` (`UsdLead`, `CoinAmount`, `usdFormatFor`). Exactly two per-coin
+  figures carry dollars: the bounties challengers have won, and the collateral behind the requests
+  open for verification (the one total across coins is below). Never a figure somebody is about to
+  sign for (an entry page, a launch or stake deposit, a board or ruling row): there the coin amount
+  is the obligation. A token that never answered a symbol is unitised by its shortened contract in
+  Geist Mono, never left bare. The prices are read on chain in their own query, never inside the
+  saved load, which is repainted up to a day later.
+- **One total across coins: what has passed through Curate** (rounds 14 and 15, owner: "remove
+  the reference to crypto at all in the landing", "calculate always at today's price", "add the
+  appeals costs and challenge deposits … it passed from our contracts but not permanent", "smashed
+  also somewhere in the dashboard"). `pages/dashboard/transit.ts` adds every amount paid in to a
+  list, all time: both sides of every round of every request (Standard and Classic: the
+  requester's and the challenger's deposits, then appeal funding), and on Stake lists the stakes,
+  challenge stakes and appeal funding (the court fee a Stake challenger sends is not indexed). It is
+  valued at today's on-chain prices, the same feeds as the figures above, in its own query, never
+  in the saved load; an amount with no current price fails the read, and nothing is drawn. It is
+  shown as "Passed through Curate" beside Entries in the dashboard's first box, at the same size,
+  and on the landing page, which also totals the bounties won in dollars (it names no coin). Every
+  other money figure keeps the per-coin rule above.
 - The all-time ledger pages the **retired Classic lists'** resolved disputes too (2020-2022): they
   are the protocol's history, so they count in the bounties (counts and amounts) and in the entries
   ever curated, where the first ring's disputed requests count them too (round 4: "when counting
@@ -581,23 +585,25 @@ way (dashboard, Browse, registry pages, the profile, the landing page).
   and its lede, on the dark stage with the aurora and the Curate mark, no grid or dot pattern.
   When the title changes, the card is rendered again and both `og:image:alt` strings change with
   it. The landing page carries the same title since round 14.
-- **The landing page** (round 14) carries the dashboard's title, and no word or mark of a coin or
-  a chain: no ETH, xDAI or sDAI, no Ethereum or Gnosis, no "on-chain", no chain logos on the
+- **The landing page** (rounds 14 and 15) carries the dashboard's title, and no word or mark of a
+  coin or a chain: no ETH, xDAI or sDAI, no Ethereum or Gnosis, no "on-chain", no chain logos on the
   Kleros Verified tiles, and no chart. Beside the copy, one card with two figures in dollars, all
-  time (`src/landing/money.ts`): **Bounties won**, by challengers (every winning ruling that
-  carried an amount, the Classic lists included), and **Locked in deposits**, by submitters (every
-  submission's deposit: on Standard and Classic lists the first round's requester payment, base
-  deposit plus arbitration cost, what the wallet sent; on Stake lists the stake and the
-  arbitration deposit), each with its count under it and one line on how they are valued; compact
-  with three significant figures ("$2.22M"), the exact dollars in the title. The Activity band
-  below keeps its four figures over 30 days, spread across the band's width.
-  `public/landing/data.js` is a full read of `window.CURATE_LANDING_LIVE`, taken only from a load
-  where every chain answered; while it shows, the money figures say "to" its day.
+  time, at today's prices (`src/landing/money.ts`): **Bounties won**, by challengers (every winning
+  ruling that carried an amount, the Classic lists included), and **Passed through Curate**
+  (deposits, challenges and appeals, as above), each with its count under it ("696 bounties",
+  "33,667 requests") and one line on the prices; compact with three significant figures ("$2.73M"),
+  the exact dollars in the title. The Activity band below keeps its four figures over 30 days,
+  spread across the band's width. `public/landing/data.js` is a full read of
+  `window.CURATE_LANDING_LIVE`, taken only from a load where every chain answered; while it shows,
+  the money figures say "to" its day and "at prices of" it.
 
 # Pages (round 5)
 
 ## Dashboard
 
+- **Passed through Curate** (round 15) sits beside Entries in the first box, at the hero size: the
+  two big figures side by side, the three small ones under them; stacked on a phone. Its tooltip
+  gives the whole dollars and what they count.
 - **The title** (round 11) names both ways in, one clause to a line, the second in `primary`:
   "Obtain your verification, / or earn by keeping lists clean." It is a sentence, not a slogan, so
   it is set at clamp(38px, 3.4vw + 14px, 64px) rather than `--fs-hero`, each clause balanced on a

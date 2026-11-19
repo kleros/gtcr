@@ -10,7 +10,7 @@ import {
   scopedSeries,
 } from 'pages/dashboard/view'
 import { readRegistryMetadata } from 'utils/registry-metadata'
-import { landingMoney, readDeposits, type LandingMoney } from './money'
+import { landingMoney, readTransit, type LandingMoney } from './money'
 import { ipfsImageUrl } from 'utils/ipfs-parse'
 import {
   countsAsCommunityList,
@@ -86,9 +86,9 @@ export interface LandingData {
   verifiedLists: LandingVerifiedList[]
   series30d: { day: number; requests: number; challenges: number }[]
   /**
-   * The two dollar figures (round 14, money.ts): bounties challengers have
-   * won and deposits submitters have locked, all time, each amount valued
-   * at its own time.
+   * The two dollar figures (rounds 14 and 15, money.ts): bounties
+   * challengers have won and everything paid in to a list, all time, at
+   * today's prices.
    */
   money: LandingMoney
 }
@@ -140,10 +140,10 @@ const LANDING_LOAD = 'landing'
 
 const readLive = async (): Promise<LandingData | null> => {
   const chains = MAINNET_CHAIN_IDS
-  // Every submission's deposit, all time: read beside the dashboard load,
-  // which it does not need.
-  const deposits = readDeposits(chains)
-  deposits.catch(() => undefined)
+  // Everything paid in to a list, all time: read beside the dashboard
+  // load, which it does not need.
+  const transit = readTransit(chains)
+  transit.catch(() => undefined)
   // All chains (no testnet), no list metadata for every list (the page
   // needs counts), the challenge periods to place open requests.
   // The same read the app's dashboard makes (with list metadata on top): a
@@ -171,7 +171,7 @@ const readLive = async (): Promise<LandingData | null> => {
   if (series.length < 2 || data.registries.length === 0) return null
   // A chain whose rulings ledger did not load would leave its bounties out.
   if (scopedBounties(data, chains).missing.length > 0) return null
-  const money = await landingMoney(data, chains, await deposits)
+  const money = await landingMoney(data, chains, await transit)
 
   // Kleros Verified as the load stamped it (the shared rule).
   const registries = data.registries.filter((registry) =>

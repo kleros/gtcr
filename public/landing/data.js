@@ -19,19 +19,18 @@
 // challenge time; Stake: the challenge), each of which opened a dispute in
 // Kleros Court. The app's dashboard counts the same way. The page shows
 // their 30-day sums (round 14 dropped the chart).
-// money (round 14, src/landing/money.ts): bounties = what challengers have
-// won, all time, the retired Classic lists included, bountiesPaid the
-// winning rulings that carried an amount; deposits = what submitters have
-// locked to submit an entry, all time (Standard and Classic: the first
-// round's requester payment; Stake: stake and arbitration deposit),
-// submissions their count. Every amount is in dollars at the time it was
-// paid (ETH at its month's average price, xDAI as one dollar, a Stake
-// token at the day's price).
+// money (rounds 14 and 15, src/landing/money.ts and
+// src/pages/dashboard/transit.ts): bounties = what challengers have won,
+// all time, the retired Classic lists included, bountiesPaid the winning
+// rulings that carried an amount; transit = everything paid in to a list,
+// all time (both sides of every round of every request, and on Stake lists
+// the stakes, challenge stakes and appeal funding), requests the requests
+// and Stake submissions. Dollars at the prices of the read's day.
 // Refresh by replacing the whole object with a new read of
 // window.CURATE_LANDING_LIVE (minus `live`); never edit single figures by
 // hand.
 window.CURATE_LANDING_DATA = {
-  snapshotAt: '2026-11-19T13:39:08.425Z',
+  snapshotAt: '2026-11-19T14:01:16.843Z',
   figures: {
     registries: 181,
     verified: 10,
@@ -289,10 +288,10 @@ window.CURATE_LANDING_DATA = {
     },
   ],
   money: {
-    bounties: 44651.26045986466,
+    bounties: 73271.02472581259,
     bountiesPaid: 696,
     bountiesCapped: false,
-    deposits: 2223977.0706623187,
-    submissions: 32569,
+    transit: 2731663.0567040727,
+    requests: 33667,
   },
 }

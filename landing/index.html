@@ -246,9 +246,10 @@
           </div>
         </div>
 
-        <!-- Round 14: the money on Curate, all time, in dollars only: what
-             challengers have won and what submitters have locked
-             (src/landing/money.ts says how each amount is valued). -->
+        <!-- Rounds 14 and 15: the money on Curate, all time, in dollars only
+             at today's prices: what challengers have won, and everything
+             that has passed through the contracts (deposits, challenges and
+             appeals; pages/dashboard/transit.ts says what each counts). -->
         <section
           class="money"
           aria-label="Money on Curate, all time"
@@ -264,14 +265,14 @@
             </p>
           </div>
           <div class="money-row">
-            <h2 class="label">Locked in deposits</h2>
-            <p class="money-figure" data-money-fig="deposits">—</p>
-            <p class="money-note" data-money-note="deposits">
-              by submitters, all time
+            <h2 class="label">Passed through Curate</h2>
+            <p class="money-figure" data-money-fig="transit">—</p>
+            <p class="money-note" data-money-note="transit">
+              deposits, challenges and appeals, all time
             </p>
           </div>
-          <p class="money-basis">
-            In dollars at the time each was paid.
+          <p class="money-basis" data-money-basis>
+            In dollars at today’s prices.
           </p>
         </section>
       </section>

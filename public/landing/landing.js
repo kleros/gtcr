@@ -2,7 +2,7 @@
  * Kleros Curate landing: the theme switch (shared with the app), the
  * figures (the dated snapshot in data.js at once, then the live ones from
  * src/landing/boot.ts), scroll reveals, the two dollar figures (bounties
- * won, deposits locked) and the dispute flow schematic. Plain DOM, no
+ * won, value passed through Curate) and the dispute flow schematic. Plain DOM, no
  * dependencies. Without data the figures stay as dashes and the panel says
  * so. Reduced motion renders every drawing in its final state.
  */
@@ -415,8 +415,8 @@
       setText(
         'source',
         live
-          ? `Figures: public Curate data, read live at ${stamp}. Bounties and deposits: all time, the retired Classic lists included, each in dollars at the time it was paid.`
-          : `Figures: public Curate data, snapshot of ${stamp}. Bounties and deposits: all time to that day, the retired Classic lists included, each in dollars at the time it was paid. The app shows them live.`,
+          ? `Figures: public Curate data, read live at ${stamp}. Bounties and value passed through: all time, the retired Classic lists included, in dollars at today's prices.`
+          : `Figures: public Curate data, snapshot of ${stamp}. Bounties and value passed through: all time to that day, the retired Classic lists included, in dollars at that day's prices. The app shows them live.`,
       )
     }
 
@@ -684,8 +684,8 @@
 
     /* ---------- Money: bounties won and deposits locked, in dollars ---------- */
 
-    // Round 14: two figures, all time, in dollars only (src/landing/money.ts
-    // values each amount at the time it was paid); no coin, chain or chart.
+    // Rounds 14 and 15: two figures, all time, in dollars only at today's
+    // prices (src/landing/money.ts); no coin, chain or chart.
     const moneyBox = $('[data-money]')
     if (moneyBox) {
       const money = data?.money ?? {}
@@ -715,14 +715,21 @@
           unit: (n) => (n === 1 ? 'bounty' : 'bounties'),
         },
         {
-          key: 'deposits',
-          value: money.deposits,
-          count: money.submissions,
+          key: 'transit',
+          value: money.transit,
+          count: money.requests,
           plus: '',
-          who: 'by submitters',
-          unit: (n) => (n === 1 ? 'submission' : 'submissions'),
+          who: 'deposits, challenges and appeals',
+          unit: (n) => (n === 1 ? 'request' : 'requests'),
         },
       ]
+      // A snapshot's dollars are at its own day's prices.
+      const basis = $('[data-money-basis]', moneyBox)
+      if (basis)
+        basis.textContent =
+          live || !hasSnapshot
+            ? 'In dollars at today’s prices.'
+            : `In dollars at prices of ${dayYearFormat.format(snapshotAt)}.`
       let shown = 0
       for (const row of rows) {
         const figure = $(`[data-money-fig="${row.key}"]`, moneyBox)
