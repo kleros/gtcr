@@ -233,10 +233,13 @@ const EvidenceText = ({ text }: { text: string }) => {
 
 /** An evidence's own title (a challenge justification's too), in its quote. */
 const QuoteTitle = styled.span`
+  /* The text's own measure, so a long title wraps with the text under it. */
+  max-width: 68ch;
   color: var(--color-text);
   font-size: var(--fs-body);
   line-height: 22px;
   font-weight: 500;
+  overflow-wrap: anywhere;
 `
 
 const rulingSentence = (ruling: string, isRegistration: boolean): string => {

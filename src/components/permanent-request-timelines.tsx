@@ -190,10 +190,13 @@ const toSeconds = (value: unknown): number => {
 
 /** An evidence's own title, inside its quote. */
 const QuoteTitle = styled.span`
+  /* The text's own measure, so a long title wraps with the text under it. */
+  max-width: 68ch;
   color: var(--color-text);
   font-size: var(--fs-body);
   line-height: 22px;
   font-weight: 500;
+  overflow-wrap: anywhere;
 `
 
 const Clamp = styled.p<{ $clamped: boolean }>`
