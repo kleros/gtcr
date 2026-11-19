@@ -520,6 +520,14 @@ way (dashboard, Browse, registry pages, the profile, the landing page).
   answered a symbol is unitised by its shortened contract in Geist Mono, never left bare. The
   prices are read on chain in their own query, never inside the saved load, which is repainted up
   to a day later.
+- **The landing page is the one exception** (round 14, owner: "remove the reference to crypto at
+  all in the landing"): it shows dollars only, as two totals across coins, each amount valued at
+  the time it was paid rather than at today's price (a 2020 deposit of 1 ETH counts what ETH was
+  worth that month). ETH uses its month's average price (`src/landing/eth-usd-monthly.ts`, built by
+  `scripts/eth-usd-monthly.mjs` from Coinbase's public daily closes, a month past the table at
+  today's on-chain price); xDAI counts as one dollar (bridged DAI); a Stake token counts at today's
+  on-chain price. An amount nothing can price fails the read and the dated snapshot stays. The
+  app keeps the per-coin rule above.
 - The all-time ledger pages the **retired Classic lists'** resolved disputes too (2020-2022): they
   are the protocol's history, so they count in the bounties (counts and amounts) and in the entries
   ever curated, where the first ring's disputed requests count them too (round 4: "when counting
@@ -572,13 +580,19 @@ way (dashboard, Browse, registry pages, the profile, the landing page).
   ("Obtain your verification, / or earn by keeping lists clean.", the second clause in the accent)
   and its lede, on the dark stage with the aurora and the Curate mark, no grid or dot pattern.
   When the title changes, the card is rendered again and both `og:image:alt` strings change with
-  it. The landing page's own headline and tags are its own.
-- The landing's Bounties won card shows the figures with no "All time" stamp and no explanatory
-  sentence, as on the dashboard; its months run to the snapshot's month. Its coins include the
-  Classic lists' bounties like the live figures; its "n of m rulings went to the challenger" line
-  counts the Standard and Stake rulings, and names them whenever Classic ones were left out.
+  it. The landing page carries the same title since round 14.
+- **The landing page** (round 14) carries the dashboard's title, and no word or mark of a coin or
+  a chain: no ETH, xDAI or sDAI, no Ethereum or Gnosis, no "on-chain", no chain logos on the
+  Kleros Verified tiles, and no chart. Beside the copy, one card with two figures in dollars, all
+  time (`src/landing/money.ts`): **Bounties won**, by challengers (every winning ruling that
+  carried an amount, the Classic lists included), and **Locked in deposits**, by submitters (every
+  submission's deposit: on Standard and Classic lists the first round's requester payment, base
+  deposit plus arbitration cost, what the wallet sent; on Stake lists the stake and the
+  arbitration deposit), each with its count under it and one line on how they are valued; compact
+  with three significant figures ("$2.22M"), the exact dollars in the title. The Activity band
+  below keeps its four figures over 30 days, spread across the band's width.
   `public/landing/data.js` is a full read of `window.CURATE_LANDING_LIVE`, taken only from a load
-  where every chain answered.
+  where every chain answered; while it shows, the money figures say "to" its day.
 
 # Pages (round 5)
 
