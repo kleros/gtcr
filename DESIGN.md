@@ -364,6 +364,10 @@ Focus everywhere is a 2px `primary` outline, 2px out (inset inside clipping trac
   whatever chain the wallet is on (`components/curate/list-governance.tsx`). Whether the wallet
   governs is checked against the governor the page reads through the list's own chain. It opens
   the profile's dialog, which offers the switch to the list's chain before anything is signed.
+  When the governor is a contract (a Safe, most Kleros lists), any connected wallet sees the button:
+  the dialog simulates each change as the governor and hands it over as a Safe Transaction Builder
+  file or as calldata, for the Safe's owners to sign there (`utils/safe-transaction.ts`). A Safe
+  connected as the wallet proposes the change, and the dialog says to confirm it in the Safe.
   Nothing is drawn while the governor or the list data the dialog reads with is loading, so it
   never appears and then vanishes; everyone else sees nothing, and it goes as soon as a read names
   another governor. The profile's governed rows use the same label.
@@ -528,8 +532,11 @@ way (dashboard, Browse, registry pages, the profile, the landing page).
   Classic: the requester's and the challenger's deposits, then appeal funding), and on Stake lists
   the stakes, challenge stakes and appeal funding (the court fee a Stake challenger sends is not
   indexed). It is valued at today's on-chain prices, the same feeds as the figures above, in its
-  own query, never in the saved load; an amount with no current price fails the read, and nothing
-  is drawn. It is shown as "Passed through Curate" in the dashboard's Self-sustaining mechanism
+  own query; the per-coin totals are kept an hour (`keptRead` in saved-load.ts) and priced again on
+  every read. An ERC-20 with no price or no decimals is left out; the chain's own coin with no price
+  fails the read, and nothing is drawn. On the landing, a money figure that cannot be read falls
+  back to the snapshot's alone. The history behind the chart's 6M to 3Y and Top curators reaches
+  back three years and is kept 30 minutes. It is shown as "Passed through Curate" in the dashboard's Self-sustaining mechanism
   (round 19; it sat beside Entries in rounds 15 to 18) and on the landing page. The bounties won
   are the other total, on both pages (round 16, the Self-sustaining panel below). Every other money
   figure keeps the per-coin rule above.
@@ -782,7 +789,9 @@ way (dashboard, Browse, registry pages, the profile, the landing page).
   rest of each ladder comes from the indexers' own counts (Standard lists on Ethereum and Gnosis,
   the court index's seats in Curate disputes, read 2026-11-19), so a level is about as hard on
   every badge: of those who did the thing once, about half or more reach level 2, a quarter to two
-  fifths level 3, one in six level 4, one in twelve to twenty level 5.
+  fifths level 3, one in six level 4, one in twelve to twenty level 5. "All chains" counts the
+  mainnets only (Sepolia shows its own counts when picked). A badge's bar runs from its level's
+  threshold to the next.
 
   | Level | 1 | 2 | 3 | 4 | 5 |
   |---|---|---|---|---|---|
