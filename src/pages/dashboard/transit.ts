@@ -2,9 +2,10 @@ import { gql } from 'graphql-request'
 import { request } from 'utils/indexer-request'
 import { subgraphUrl, subgraphUrlPermanent } from 'config/tcr-addresses'
 import { coinKey, readUsdPrices, type PricedCoin } from './prices'
+import { keptRead } from './saved-load'
 import { readTokens } from './tokens'
 import type { DashboardData, TokenInfo } from './types'
-import { toAmount } from './view'
+import { TESTNET_CHAIN_IDS, toAmount } from './view'
 
 /*
  * What has passed through the Curate contracts, all time (round 15: "add
@@ -24,8 +25,13 @@ import { toAmount } from './view'
  * Dollars are at today's prices (round 15: "calculate always at today's
  * price"), read on chain like the dashboard's other dollar figures
  * (prices.ts): an amount with no current price fails the read, so no total
- * leaves a coin out. It is shown on the dashboard's first box and on the
- * landing page, the only totals across coins (DESIGN.md, Data rules).
+ * leaves a coin out. It is shown in the dashboard's Self-sustaining
+ * mechanism and on the landing page, the only totals across coins with the
+ * bounties (DESIGN.md, Data rules).
+ *
+ * The coin totals are kept across page loads (saved-load.ts keptRead) and
+ * priced again on every read, so the dollars stay at today's prices while
+ * the pages are walked at most once an hour. Testnets are never read.
  */
 
 const PAGE = 1000
@@ -34,6 +40,8 @@ const WAVE = 6
 /** Far past today's ~33 pages a chain: past it the read is not trusted. */
 const MAX_PAGES = 200
 const TOKEN_BUDGET_MS = 4000
+/** How long the coin totals are kept across page loads. */
+const TRANSIT_KEPT_MS = 60 * 60_000
 
 /** One coin's total, in its smallest unit. */
 export interface CoinTotal {
@@ -107,8 +115,12 @@ type Token = { item: { registry: { token: string } | null } | null }
 const pageAll = async <T>(read: (page: number) => Promise<T[]>) => {
   const rows: T[] = []
   for (let first = 0; first < MAX_PAGES; first += WAVE) {
+    // A page that fails is asked once more on its own: retrying the whole
+    // read would walk every page again on the shared limit.
     const pages = await Promise.all(
-      Array.from({ length: WAVE }, (_, index) => read(first + index)),
+      Array.from({ length: WAVE }, (_, index) =>
+        read(first + index).catch(() => read(first + index)),
+      ),
     )
     for (const page of pages) rows.push(...page)
     if (pages.some((page) => page.length < PAGE)) return rows
@@ -188,12 +200,52 @@ const chainTransit = async (chainId: number, totals: Transit['totals']) => {
 }
 
 /** Every chain's totals; throws if any chain's read fails. */
-export const readTransit = async (chains: number[]): Promise<Transit> => {
+const fetchTransit = async (chains: number[]): Promise<Transit> => {
   const totals: Transit['totals'] = {}
   const counts = await Promise.all(
     chains.map((chainId) => chainTransit(chainId, totals)),
   )
   return { totals, requests: counts.reduce((sum, count) => sum + count, 0) }
+}
+
+/** Transit as it is kept: amounts as decimal strings (no bigint stored). */
+interface KeptTransit {
+  totals: Record<string, Omit<CoinTotal, 'amount'> & { amount: string }>
+  requests: number
+}
+
+/**
+ * Every mainnet chain's totals, kept across page loads for an hour and
+ * shared by the dashboard and the landing page. Testnets are left out:
+ * their coins have no price. Throws if any chain's read fails.
+ */
+export const readTransit = async (chains: number[]): Promise<Transit> => {
+  const mainnets = chains.filter((id) => !TESTNET_CHAIN_IDS.includes(id))
+  const kept = await keptRead<KeptTransit>(
+    `transit:${mainnets.join(',')}`,
+    TRANSIT_KEPT_MS,
+    async () => {
+      const read = await fetchTransit(mainnets)
+      return {
+        requests: read.requests,
+        totals: Object.fromEntries(
+          Object.entries(read.totals).map(([key, total]) => [
+            key,
+            { ...total, amount: total.amount.toString() },
+          ]),
+        ),
+      }
+    },
+  )
+  return {
+    requests: kept.requests,
+    totals: Object.fromEntries(
+      Object.entries(kept.totals).map(([key, total]) => [
+        key,
+        { ...total, amount: BigInt(total.amount) },
+      ]),
+    ),
+  }
 }
 
 /** The bounties challengers have won, per coin, from the rulings ledger. */

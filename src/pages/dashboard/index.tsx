@@ -34,7 +34,7 @@ import { KindTag } from 'components/curate/stake-tag'
 import { getNativeCurrency } from 'config/chains'
 import {
   completeChallengeWindows,
-  fetchActivityHistory,
+  readActivityHistory,
   fetchDashboardData,
   fetchTestnetDashboardData,
   loadRulingCards,
@@ -780,20 +780,25 @@ const Dashboard = () => {
   const checkingWindows = windowsMissing && windowsRetry.isFetching
 
   const chains = useMemo(() => scopeChains(chain), [chain])
-  // The whole history, read after the page's own load (data.ts
-  // fetchActivityHistory): Top curators all time, and the chart's 6M to All.
+  // The history since the 3Y range's start, read after the page's own load
+  // and kept across page loads (data.ts readActivityHistory): Top curators
+  // and the chart over 6M, 1Y and 3Y. Not retried as a whole: each failed
+  // page was already asked twice, and a retry would walk every page again
+  // on the indexer's shared limit.
   const history = useQuery({
     queryKey: ['dashboardHistory', chains.join(',')],
-    queryFn: () => fetchActivityHistory(chains),
+    queryFn: () => readActivityHistory(chains),
     enabled: !!data,
     staleTime: 30 * 60_000,
-    retry: 2,
+    retry: false,
   })
   // Everything paid in to a list, all time, at today's prices (round 15:
   // "this number can be smashed also somewhere in the dashboard"; round 19:
   // in the Self-sustaining mechanism). Its own query, after the main load:
   // never in the saved load, whose prices would be repainted a day old
-  // (use-usd-prices.ts).
+  // (use-usd-prices.ts). The coin totals are kept across page loads
+  // (transit.ts readTransit) and priced again on every read. Never on a
+  // testnet, whose coins have no price.
   const transit = useQuery({
     queryKey: ['dashboardTransit', chains.join(',')],
     queryFn: async () => {
@@ -803,9 +808,9 @@ const Dashboard = () => {
         requests: read.requests,
       }
     },
-    enabled: !!data,
+    enabled: !!data && !testnetScope,
     staleTime: 10 * 60_000,
-    retry: 1,
+    retry: false,
   })
   // Links to Browse keep the page's scope. "All chains" is Browse's own
   // default, no `chain` parameter (DESIGN.md, Data rules): spelled out as
@@ -1362,7 +1367,7 @@ const Dashboard = () => {
         prices={usdPrices}
         pricesSettled={pricesSettled}
         transit={transit.data?.usd}
-        transitFailed={transit.isError}
+        transitFailed={testnetScope || transit.isError}
         /*
          * Every entry ever curated, against challenges all time: the
          * retired Classic lists count here, where the figures are

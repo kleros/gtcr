@@ -32,7 +32,14 @@ import {
   TrustStatus,
   UnchallengedRow,
 } from './types'
-import { entryCount, openWindows, rowsPlaced, windowsPending } from './view'
+import {
+  entryCount,
+  openWindows,
+  rangeStart,
+  rowsPlaced,
+  windowsPending,
+} from './view'
+import { keptRead } from './saved-load'
 import { readChallengePeriods } from './challenge-windows'
 import { readTokens } from './tokens'
 
@@ -1722,6 +1729,12 @@ const HISTORY_MAX_PAGES = 80
  * opens six connections per host and the page's own reads share them.
  */
 const HISTORY_CONCURRENCY = 3
+/**
+ * On the Envio indexer the pages read at once go out as one batched request
+ * (utils/indexer-request.ts) on one connection: more at once means fewer
+ * requests on its shared limit, and the 6M view waits less on a cold load.
+ */
+const HISTORY_ENVIO_CONCURRENCY = 6
 /** A history page may wait behind the page's own reads: a longer timeout. */
 const HISTORY_TIMEOUT_MS = 30_000
 
@@ -1735,6 +1748,7 @@ const readAllCuratorPages = async (
     page: number,
   ) => Promise<Record<string, any[] | undefined> | null>,
   keys: string[],
+  concurrency = HISTORY_CONCURRENCY,
 ): Promise<{
   payload: Record<string, any[]>
   failed: boolean
@@ -1744,11 +1758,14 @@ const readAllCuratorPages = async (
     keys.map((key) => [key, []]),
   )
   const seen = new Set<string>()
-  for (let first = 0; first < HISTORY_MAX_PAGES; first += HISTORY_CONCURRENCY) {
+  for (let first = 0; first < HISTORY_MAX_PAGES; first += concurrency) {
     const pages = await Promise.all(
       Array.from(
-        { length: Math.min(HISTORY_CONCURRENCY, HISTORY_MAX_PAGES - first) },
-        (_, index) => fetchPage(first + index),
+        { length: Math.min(concurrency, HISTORY_MAX_PAGES - first) },
+        // A page that fails is asked once more on its own: retrying the
+        // whole read would walk every page again on the shared limit.
+        async (_, index) =>
+          (await fetchPage(first + index)) ?? fetchPage(first + index),
       ),
     )
     let done = false
@@ -1771,10 +1788,10 @@ const readAllCuratorPages = async (
   return { payload, failed: false, truncated: true }
 }
 
-/** Every request and challenge on the Standard and Stake lists, all time. */
+/** Every request and challenge on the Standard and Stake lists, since a time. */
 export interface ActivityHistory {
-  /** Every curator, all time, per chain (the 30-day load's shape). */
-  users: DashboardUser[]
+  /** Where the history starts, in seconds. */
+  since: number
   /** One event per request and per challenge, for the chart's long ranges. */
   events: ActivityEvent[]
   /** Chains whose history did not load in full. */
@@ -1784,16 +1801,17 @@ export interface ActivityHistory {
 }
 
 /**
- * The whole history (the chart's 6M / 1Y / 3Y ranges and Top curators over
- * the same range, round 8; the events carry who made them). The same rows the 30-day load reads,
- * from the start: the Standard lists' requests and challenges, and the
- * Stake lists' submissions and challenges. The retired Classic lists stay
- * out, as everywhere but the bounties and the entries ever curated (round 4:
- * "only for this"). It is read after the dashboard's own load, in pages read
- * a few at a time, and kept by the caller's query cache.
+ * The history behind the chart's 6M / 1Y / 3Y ranges and Top curators over
+ * the same range (round 8; the events carry who made them), from `since`.
+ * The same rows the 30-day load reads: the Standard lists' requests and
+ * challenges, and the Stake lists' submissions and challenges. The retired
+ * Classic lists stay out, as everywhere but the bounties and the entries
+ * ever curated (round 4: "only for this"). It is read after the dashboard's
+ * own load, in pages read a few at a time.
  */
 export const fetchActivityHistory = async (
   chains: number[],
+  since: number,
 ): Promise<ActivityHistory> => {
   const reads = await Promise.all(
     chains.flatMap((chainId) => {
@@ -1808,18 +1826,18 @@ export const fetchActivityHistory = async (
                   ENVIO_CURATOR_PAGE_QUERY,
                   {
                     chainId,
-                    since: 0,
+                    since,
                     limit: LEADERBOARD_PAGE_SIZE,
                     offset: page * LEADERBOARD_PAGE_SIZE,
                   },
                   HISTORY_TIMEOUT_MS,
                 ),
               ENVIO_CURATOR_KEYS,
+              HISTORY_ENVIO_CONCURRENCY,
             ).then((read) => ({
               ...read,
               chainId,
-              users: normalizeEnvioLeaderboardPage(read.payload, chainId, 0),
-              events: envioPageEvents(read.payload, chainId, 0),
+              events: envioPageEvents(read.payload, chainId, since),
             }))
           : null,
         stakeUrl
@@ -1829,7 +1847,7 @@ export const fetchActivityHistory = async (
                   stakeUrl,
                   PERMANENT_CURATOR_PAGE_QUERY,
                   {
-                    since: '0',
+                    since: String(since),
                     first: LEADERBOARD_PAGE_SIZE,
                     skip: page * LEADERBOARD_PAGE_SIZE,
                   },
@@ -1839,12 +1857,7 @@ export const fetchActivityHistory = async (
             ).then((read) => ({
               ...read,
               chainId,
-              users: normalizePermanentLeaderboardPage(
-                read.payload,
-                chainId,
-                0,
-              ),
-              events: permanentPageEvents(read.payload, 0, chainId),
+              events: permanentPageEvents(read.payload, since, chainId),
             }))
           : null,
       ]
@@ -1854,11 +1867,11 @@ export const fetchActivityHistory = async (
     (read): read is NonNullable<(typeof reads)[number]> => read !== null,
   )
   // A history with a hole would draw a false dip and rank curators short:
-  // the read fails as a whole, and the caller's query retries it.
+  // the read fails as a whole (each failed page was already asked twice).
   if (valid.some((read) => read.failed))
     throw new Error('The curation history did not load in full')
   return {
-    users: mergeUsers(valid.map((read) => read.users)),
+    since,
     events: valid.flatMap((read) => read.events),
     failed: [
       ...new Set(valid.filter((read) => read.failed).map((r) => r.chainId)),
@@ -1866,6 +1879,25 @@ export const fetchActivityHistory = async (
     truncated: valid.some((read) => read.truncated),
   }
 }
+
+/** How long a history read is kept across page loads (saved-load.ts). */
+const HISTORY_KEPT_MS = 30 * 60_000
+
+/**
+ * The history from the start of the longest range the chart offers (3Y):
+ * nothing on the page reads further back. Kept across page loads and shared
+ * with any other page that asks (saved-load.ts keptRead): a reload does not
+ * walk it again.
+ */
+export const readActivityHistory = (
+  chains: number[],
+): Promise<ActivityHistory> =>
+  keptRead(`history:${chains.join(',')}`, HISTORY_KEPT_MS, () =>
+    fetchActivityHistory(
+      chains,
+      rangeStart('3y', Math.floor(Date.now() / 1000)),
+    ),
+  )
 
 const dedupeRegistries = (
   registries: DashboardRegistry[],
