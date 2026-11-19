@@ -65,18 +65,28 @@ const isKind = (value: string | null): value is Kind =>
 
 /* ---------- The one difference, drawn the same way twice ---------- */
 
+/**
+ * How much of the lane the Standard deposit is inside. A share of a lane with
+ * no axis, no tick and no figure on it: it says “part of an entry’s life, and
+ * then it is over”, which is the whole claim, and the empty rest of the lane
+ * is what makes that claim visible at all.
+ */
+const RETURNED_AT = 0.58
+
 const STANDARD_FATE: FateSpec = {
-  fate: 'returned',
-  milestone: 'Registered',
+  fill: RETURNED_AT,
+  event: 'Registered',
+  verdict: 'Back in full',
   description:
-    'The submitter’s deposit at each step of an entry’s life, drawn as two steps and not to scale: held from submission, then returned in full once the entry is registered.',
+    'The submitter’s deposit over an entry’s life, drawn by event and not to scale: locked when the entry is submitted, back in full once the entry is registered, and the rest of the entry’s life standing clear of it.',
 }
 
 const STAKE_FATE: FateSpec = {
-  fate: 'locked',
-  milestone: 'Accepted',
+  fill: 'full',
+  event: 'Until you withdraw',
+  verdict: 'Still locked',
   description:
-    'The submitter’s stake at each step of an entry’s life, drawn as two steps and not to scale: locked from submission, and still locked for as long as the entry stays listed.',
+    'The submitter’s stake over an entry’s life, drawn by event and not to scale: locked when the entry is submitted and still locked for the whole of the entry’s life, with no event at which it comes back — only the submitter’s own withdrawal.',
 }
 
 /* ---------- Header ---------- */

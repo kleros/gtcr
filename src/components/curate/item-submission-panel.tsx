@@ -1,12 +1,8 @@
 import React, { useEffect, useState } from 'react'
 import styled from 'styled-components'
-import { useParams } from 'react-router-dom'
 import useUrlChainId from 'hooks/use-url-chain-id'
 import { useAttachment } from 'hooks/use-attachment'
 import { parseIpfs } from 'utils/ipfs-parse'
-import { cssImageUrl } from 'utils/url-validation'
-import SeerExtraDetails from 'components/custom-registries/seer/seer-item-details'
-import { isSeerRegistry } from 'components/custom-registries/seer/is-seer-registry'
 import { CurateIcon } from './icons'
 import {
   Body,
@@ -17,9 +13,7 @@ import {
   Row,
   SkeletonBlock,
   Small,
-  Stack,
-  Subheading,
-  Surface,
+  Label,
   truncateMiddle,
 } from './primitives'
 import {
@@ -28,7 +22,7 @@ import {
   type EntryField,
 } from './item-standard-fields'
 import { Notice } from './item-standard-notice'
-import { ItemMediaBand, entryMedia } from './item-media-band'
+import { ImagePlate, ItemMediaBand, entryMedia } from './item-media-band'
 import { ItemRewardWithdrawal } from './item-reward-withdrawal'
 
 /*
@@ -38,23 +32,67 @@ import { ItemRewardWithdrawal } from './item-reward-withdrawal'
  * depended on the field's type, so the same list's fields landed in
  * different boxes).
  *
- * One panel, bands separated by space and hairlines: every picture and file
- * the entry has, then every field — identifiers included — then the list an
- * entry of a list of lists points to, then what this account can claim from
- * the entry's appeals. Nothing is reserved for a field the entry does not
- * have.
+ * Round 4 folds it into the entry page's hero, under the facts strip, so
+ * the entry and what it says are one box. It is therefore a region and not
+ * a panel: an inset hairline and space, exactly like the facts strip above
+ * it, because a panel inside a panel is a stack (DESIGN.md).
  *
- * The box is field-complete, so what the hero lifts out is here as well
+ * Bands, in reading order: the entry's files (and its pictures, when it has
+ * more than one, which need the whole measure), then what only the linked
+ * list of a list-of-lists entry can say about itself, then every field —
+ * identifiers included — beside the entry's one picture, then what this
+ * account can claim from the entry's appeals. Nothing is reserved for a
+ * field the entry does not have.
+ *
+ * The region is field-complete, so what the hero lifts out is here as well
  * (round 3: a box named "Full details" that was missing the two things the
- * page leads with). The hero's tile and the band draw the same picture, and
- * the title reads here as a labelled row under its own column name, which
- * is what the hero's display line cannot say.
+ * page leads with). The picture is drawn once, here, on a captioned plate
+ * under the hero's clock; the title reads here as a labelled row under its
+ * own column name, which is what the hero's display line cannot say.
  */
 
-const Panel = styled(Surface)`
+/* A region of the hero, not a box of its own: one inset hairline, the same
+   the facts strip above it draws, and space between the bands. */
+const Region = styled.div`
   display: flex;
   flex-direction: column;
   gap: 16px;
+  padding-top: 20px;
+  border-top: 1px solid var(--glass-border);
+`
+
+/* The fields keep a reading measure instead of stretching the hero's whole
+   width, and the entry's one picture sits in the right-hand track, under
+   the clock above it. The track is declared whether or not there is a
+   picture, so the field measure never changes and an entry without one
+   shows no hole. */
+const FieldsRow = styled.div`
+  display: grid;
+  grid-template-columns: minmax(0, 880px) 248px;
+  gap: 24px 32px;
+  align-items: start;
+
+  @media (max-width: 1000px) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+`
+
+const FieldsCell = styled.div`
+  grid-column: 1;
+  min-width: 0;
+`
+
+/* Explicitly placed, so the picture holds the right-hand track even when
+   the entry has no rows to put beside it. Stacked, it leads the fields
+   rather than following a few hundred pixels of them. */
+const Picture = styled.div`
+  grid-column: 2;
+  min-width: 0;
+
+  @media (max-width: 1000px) {
+    grid-column: 1;
+    order: -1;
+  }
 `
 
 const Head = styled.div`
@@ -65,55 +103,33 @@ const Head = styled.div`
   gap: 8px 16px;
 `
 
-const PanelName = styled.h2`
+/* The region's name is a label, not a display line: inside the hero a
+   second 22px heading is what made this read as a second box. */
+const RegionName = styled(Label)`
   margin: 0;
-  color: var(--color-text);
-  font-family: var(--font-display);
-  font-size: 22px;
-  line-height: 28px;
-  font-weight: 500;
-  letter-spacing: -0.02em;
 `
 
-/* A divider under it only when fields follow; when only the actions do,
-   their own top border is the one line. */
+/*
+ * What the hero's title cannot say about the list a list-of-lists entry
+ * points to: the list's own description, and the two ways into it. The
+ * logo, the name and the address are not drawn again here — the title
+ * above sets all three at display size, and since round 4 folded this
+ * region into the same box they would read as a stutter 120px apart.
+ *
+ * A divider under it only when fields follow; when only the claim does,
+ * its own top border is the one line.
+ */
 const RegistryBlock = styled.div<{ $divided: boolean }>`
-  display: grid;
-  grid-template-columns: 64px minmax(0, 1fr);
-  gap: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
   ${({ $divided }) =>
     $divided &&
     `
     padding-bottom: 16px;
-    border-bottom: 1px solid var(--color-border);
+    border-bottom: 1px solid var(--glass-border);
   `}
-
-  @media (max-width: 520px) {
-    grid-template-columns: 1fr;
-  }
-`
-
-const LogoButton = styled.button<{ $image?: string }>`
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 64px;
-  height: 64px;
-  padding: 0;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius);
-  background: ${({ $image }) => {
-    const image = cssImageUrl($image)
-    return image ? `${image} center / contain no-repeat` : 'none'
-  }};
-  background-color: var(--color-raised);
-  color: var(--color-faint);
-  cursor: ${({ $image }) => ($image ? 'pointer' : 'default')};
-  overflow: hidden;
-
-  &:hover {
-    border-color: var(--color-border-strong);
-  }
 `
 
 const CopyId = ({ id }: { id: string }) => {
@@ -169,8 +185,8 @@ export const ItemSubmissionPanel = ({
 }: {
   /**
    * Every field of the entry, with its value. Nothing is held back: the
-   * picture and the title the page's hero lifts out keep their plate and
-   * their row here, so the box is the whole submission.
+   * picture draws here and nowhere else, and the title the hero sets large
+   * keeps its labelled row, so the region is the whole submission.
    */
   fields: EntryField[]
   item?: SubgraphItem
@@ -193,29 +209,40 @@ export const ItemSubmissionPanel = ({
    */
   kind?: 'standard' | 'stake'
 }) => {
-  const { tcrAddress } = useParams()
   const urlChainId = useUrlChainId()
   const openAttachment = useAttachment()
 
   const { file: linkedFile, error: linkedError } = linkedRegistry || {}
   const { metadata: linkedMetadata, fileURI } = linkedFile || {}
-  const { tcrTitle, tcrDescription, logoURI } = linkedMetadata || {}
+  const { tcrTitle, tcrDescription } = linkedMetadata || {}
   const linkedErrorMessage =
     linkedError instanceof Error ? linkedError.message : String(linkedError)
   const linkedAddress = linkedMetadata ? registryAddress : undefined
-  const logo = logoURI ? parseIpfs(logoURI) : undefined
+  const linkedHref =
+    linkedAddress && urlChainId
+      ? `/tcr/${urlChainId}/${linkedAddress}`
+      : undefined
+  // The block is drawn only when it holds something the title does not.
+  const linkedExtras = !!(tcrDescription || fileURI || linkedHref)
 
   const found = entryMedia(fields)
-  // Only the fields the band draws itself stay out of the rows below. The
-  // title field is not one of them: the hero sets it large without saying
-  // which column it is, so it reads here as a labelled row as well.
+  // One picture is the common case: it goes beside the fields, on the
+  // plate under the hero's clock, and the band is left with the files. Two
+  // or more stay in the band, which has the whole measure for them — in a
+  // 248px track a gallery would stack into a column of its own.
+  const rail = found.images.length === 1 ? found.images[0] : undefined
+  // Only the fields a picture or a file plate draws stay out of the rows
+  // below. The title field is not one of them: the hero sets it large
+  // without saying which column it is, so it reads here as a labelled row
+  // as well.
   const drawn = new Set<EntryField>([
     ...found.images.map((image) => image.field),
     ...found.files.map((file) => file.field),
   ])
   const rows = fields.filter((field) => {
     if (drawn.has(field)) return false
-    // The linked registry's block stands for its address field.
+    // The hero's title already draws the list that field names — mark,
+    // name and address — so the field itself does not read again here.
     if (linkedMetadata && isGtcrAddressField(field)) return false
     return true
   })
@@ -225,8 +252,10 @@ export const ItemSubmissionPanel = ({
 
   if (!loading && item && errors.length > 0)
     return (
-      <Panel id="item-submission" $padding="standard">
-        <PanelName>Full details</PanelName>
+      <Region id="item-submission">
+        <RegionName as="h2" $tone="faint">
+          Full details
+        </RegionName>
         {errors.map((error, index) => (
           <Notice key={index} tone="contested" role="alert">
             {error}
@@ -234,23 +263,25 @@ export const ItemSubmissionPanel = ({
         ))}
         {retry && <Row>{retry}</Row>}
         {claim}
-      </Panel>
+      </Region>
     )
 
   if (loading)
     return (
-      <Panel id="item-submission" $padding="standard" aria-busy="true">
+      <Region id="item-submission" aria-busy="true">
         <SkeletonBlock $height="18px" $width="40%" />
         <SkeletonBlock $height="20px" />
         <SkeletonBlock $height="20px" $width="70%" />
         <SkeletonBlock $height="20px" $width="55%" />
-      </Panel>
+      </Region>
     )
 
   return (
-    <Panel id="item-submission" $padding="standard" aria-label="Full details">
+    <Region id="item-submission" aria-label="Full details">
       <Head>
-        <PanelName>Full details</PanelName>
+        <RegionName as="h2" $tone="faint">
+          Full details
+        </RegionName>
         {itemID && <CopyId id={itemID} />}
       </Head>
       {!!linkedError && (
@@ -264,72 +295,53 @@ export const ItemSubmissionPanel = ({
           This entry does not pass the validation checks. Review it carefully.
         </Notice>
       )}
-      <ItemMediaBand media={found} />
-      {linkedMetadata && (
+      <ItemMediaBand
+        media={rail ? { images: [], files: found.files } : found}
+      />
+      {/* Only what the title above leaves unsaid about that list. */}
+      {linkedMetadata && linkedExtras && (
         <RegistryBlock $divided={rows.length > 0}>
-          <LogoButton
-            type="button"
-            $image={logo}
-            disabled={!logo}
-            aria-label="Open registry logo"
-            onClick={() => logo && openAttachment(logo)}
-          >
-            {!logo && <CurateIcon name="registry" size={24} />}
-          </LogoButton>
-          <Stack $gap={6}>
-            <Subheading>{tcrTitle}</Subheading>
-            {/* The address field stays out of the rows below (this block
-                stands for it), so its address shows here. */}
-            {linkedAddress && (
-              <Data $mono $muted title={linkedAddress}>
-                {truncateMiddle(linkedAddress, 8, 6)}
-              </Data>
-            )}
-            {tcrDescription && <Body $muted>{tcrDescription}</Body>}
-            {(fileURI || (linkedAddress && urlChainId)) && (
-              <Row $gap={8} $wrap>
-                {fileURI && (
-                  <Button
-                    type="button"
-                    $variant="ghost"
-                    $size="sm"
-                    aria-label={`${tcrTitle || 'Linked list'} listing policy`}
-                    onClick={() => openAttachment(parseIpfs(fileURI), true)}
-                  >
-                    <CurateIcon name="policy" size={14} />
-                    Its policy
-                  </Button>
-                )}
-                {linkedAddress && urlChainId && (
-                  <ButtonLink
-                    to={`/tcr/${urlChainId}/${linkedAddress}`}
-                    $variant="secondary"
-                    $size="sm"
-                  >
-                    Open registry
-                    <CurateIcon name="external" size={14} />
-                  </ButtonLink>
-                )}
-              </Row>
-            )}
-          </Stack>
+          {tcrDescription && <Body $muted>{tcrDescription}</Body>}
+          {(fileURI || linkedHref) && (
+            <Row $gap={8} $wrap>
+              {fileURI && (
+                <Button
+                  type="button"
+                  $variant="ghost"
+                  $size="sm"
+                  aria-label={`${tcrTitle || 'Linked list'} listing policy`}
+                  onClick={() => openAttachment(parseIpfs(fileURI), true)}
+                >
+                  <CurateIcon name="policy" size={14} />
+                  Its policy
+                </Button>
+              )}
+              {linkedHref && (
+                <ButtonLink to={linkedHref} $variant="secondary" $size="sm">
+                  Open registry
+                  <CurateIcon name="external" size={14} />
+                </ButtonLink>
+              )}
+            </Row>
+          )}
         </RegistryBlock>
       )}
-      {rows.length > 0 && <EntryFields fields={rows} />}
-      {tcrAddress !== undefined &&
-        urlChainId !== null &&
-        isSeerRegistry(tcrAddress, urlChainId) &&
-        item &&
-        typeof item.decodedData?.[0] === 'string' &&
-        typeof item.decodedData?.[1] === 'string' && (
-          <SeerExtraDetails
-            chainId={urlChainId}
-            contractAddress={item.decodedData[0]}
-            imagesIpfsHash={item.decodedData[1]}
-          />
-        )}
+      {(rows.length > 0 || rail) && (
+        <FieldsRow>
+          {rows.length > 0 && (
+            <FieldsCell>
+              <EntryFields fields={rows} />
+            </FieldsCell>
+          )}
+          {rail && (
+            <Picture>
+              <ImagePlate image={rail} layout="rail" />
+            </Picture>
+          )}
+        </FieldsRow>
+      )}
       {claim}
-    </Panel>
+    </Region>
   )
 }
 

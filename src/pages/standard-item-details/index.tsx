@@ -8,7 +8,6 @@ import useUrlChainId from 'hooks/use-url-chain-id'
 import useDocumentHead from 'hooks/use-document-head'
 import useNow from 'hooks/use-now'
 import useStickyTop from 'hooks/use-sticky-top'
-import { inkPlate, PlatedImg } from 'components/curate/logo-ink'
 import { useEthersProvider } from 'hooks/ethers-adapters'
 import useTcrMetaEvidence from 'hooks/use-tcr-meta-evidence'
 import { useAttachment } from 'hooks/use-attachment'
@@ -59,7 +58,6 @@ import {
 import { Explainer } from 'components/curate/explainer'
 import { EvidenceClosed } from 'components/inline-evidence-composer'
 import { reveal } from 'components/curate/motion/reveal'
-import { buttonReset } from 'styles/button-reset'
 import {
   AddressLink,
   FieldValue,
@@ -71,7 +69,8 @@ import { StickyActionBarSpacer } from 'components/curate/item-standard-action-ba
 import ItemStatusCard from './item-status-card'
 import CrowdfundingCard from './crowdfunding-card'
 import { ItemSubmissionPanel } from 'components/curate/item-submission-panel'
-import { heroImage } from 'components/curate/item-media-band'
+import SeerExtraDetails from 'components/custom-registries/seer/seer-item-details'
+import { isSeerRegistry } from 'components/custom-registries/seer/is-seer-registry'
 import { DisputeCasePanel } from 'components/curate/dispute-case-panel'
 import {
   DisputeRecordPanel,
@@ -93,11 +92,13 @@ import { linkedListAddress, linkedListField } from './linked-list'
  * its right end the policy it is judged by — then the hero (the one
  * featured panel): the entry named large with its status and a short facts
  * strip, and on the right the page's one clock — the challenge window, the
- * appeal period, the court period, or the date it settled. While a case is
- * live, one full-width panel holds it: where it stands, its periods, its
- * jury and its actions. Then two columns: the full details (every field of
- * the entry, with its pictures and files) and the history on the left, the
- * sticky action card on the right (a bottom bar on phones). A case the
+ * appeal period, the court period, or the date it settled; then, across the
+ * bottom of the same box, the entry's full details — every field it has,
+ * with its one picture beside them (round 4: the details were a second box
+ * below). While a case is live, one full-width panel holds it: where it
+ * stands, its periods, its jury and its actions. Then two columns: the
+ * history on the left, the sticky action card on the right (a bottom bar
+ * on phones). A case the
  * court has already decided is not live: it sits quietly at the top of the
  * left column as a record of what the jurors did. Every figure comes from
  * the subgraph, the list contract and the clock.
@@ -143,22 +144,28 @@ const Crumbs = styled.nav`
   }
 `
 
-/* Desktop: identity and stats on the left, the clock on the right. When it
-   stacks, the clock comes straight after the identity so the time pressure
-   is on screen on load, ahead of the stats.
+/* Desktop: identity and stats on the left, the clock on the right, and the
+   entry's own fields across the full width underneath — round 4: "full
+   details" was a box below the hero, and it belongs in the main one. When
+   it stacks, the clock comes straight after the identity so the time
+   pressure is on screen on load, ahead of the stats.
 
-   The clock on the right fixes the hero's height, so the two rows on the
-   left share more room than their content needs. The identity row is
-   sized to its content and the stats row takes the rest, which puts that
-   slack under the stats instead of between the status line and them
-   (round 3: the gap in between read as a hole). */
+   The clock on the right fixes the height of the first two rows, so they
+   share more room than their content needs. The identity row is sized to
+   its content and the stats row takes the rest, which puts that slack
+   under the stats instead of between the status line and them (round 3:
+   the gap in between read as a hole). The fields row is independent of
+   both, and the clock's column ends at its hairline in a T: a field list
+   is taller than a clock, so a column spanning it would be glass beside
+   nothing. */
 const Hero = styled(Surface)`
   display: grid;
   grid-template-columns: minmax(0, 1fr) 320px;
-  grid-template-rows: auto 1fr;
+  grid-template-rows: auto 1fr auto;
   grid-template-areas:
     'main side'
-    'stats side';
+    'stats side'
+    'fields fields';
   margin-top: 20px;
   ${reveal}
 
@@ -168,7 +175,8 @@ const Hero = styled(Surface)`
     grid-template-areas:
       'main'
       'side'
-      'stats';
+      'stats'
+      'fields';
   }
 `
 
@@ -215,51 +223,25 @@ const HeroSide = styled.div`
   }
 `
 
+/* The third row, under both columns: the entry's own fields, every one of
+   them, with the picture beside them. It draws its own inset hairline the
+   way the stats above it do — not a panel, so nothing is stacked inside
+   the one featured box. */
+const HeroFields = styled.div`
+  grid-area: fields;
+  min-width: 0;
+  padding: 0 36px 28px;
+
+  @media (max-width: 720px) {
+    padding: 0 18px 22px;
+  }
+`
+
 const Eyebrow = styled.div`
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 8px 12px;
-`
-
-const Identity = styled.div`
-  display: flex;
-  align-items: flex-start;
-  gap: 18px;
-  min-width: 0;
-`
-
-/* The entry's picture, on its own tile; a plate when its ink is lost. It
-   opens full size, and the full-details panel below shows the same picture
-   on a captioned plate under its field's name. */
-const LogoOpen = styled.button`
-  ${buttonReset}
-  display: block;
-  flex: 0 0 auto;
-  border-radius: 16px;
-  cursor: zoom-in;
-
-  @media (max-width: 720px) {
-    border-radius: 12px;
-  }
-`
-
-const Logo = styled(PlatedImg)`
-  display: block;
-  flex: 0 0 auto;
-  width: 64px;
-  height: 64px;
-  border: 1px solid var(--glass-border);
-  border-radius: 16px;
-  background: var(--color-raised);
-  object-fit: contain;
-  ${inkPlate}
-
-  @media (max-width: 720px) {
-    width: 48px;
-    height: 48px;
-    border-radius: 12px;
-  }
 `
 
 const Title = styled.h1<{ $size: 'lg' | 'md' | 'sm' }>`
@@ -335,7 +317,13 @@ const Columns = styled.div`
   align-items: start;
   margin-top: 24px;
 
-  @media (max-width: 1100px) {
+  /* One column where the hero itself stacks, so the rail keeps sticking at
+     every width that still has two columns (round 4: the entry's fields
+     made the hero several hundred pixels taller, and the action card under
+     it now starts below the fold — sticky is what brings it back on the
+     first scroll). Under 721px the fixed bottom bar carries the action
+     instead; between the two the card is reached by scrolling to it. */
+  @media (max-width: 1000px) {
     grid-template-columns: 1fr;
   }
 `
@@ -387,7 +375,7 @@ const Rail = styled.aside`
     --i: 2;
   }
 
-  @media (max-width: 1100px) {
+  @media (max-width: 1000px) {
     position: static;
     order: -1;
   }
@@ -446,8 +434,6 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
   })
   const [ipfsItemData, setIpfsItemData] = useState<ItemFile | undefined>()
   const timestamp = useContext(WalletContext)?.timestamp
-  // The hero's picture opens in the in-app viewer.
-  const openAttachment = useAttachment()
   // The actions column stays reachable on short windows (useStickyTop).
   const railRef = useStickyTop(24)
   const [modalOpen, setModalOpen] = useState<boolean | undefined>()
@@ -872,10 +858,6 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
       dark
     />
   )
-  // The hero's tile: the entry's first picture the gateway can serve. The
-  // full-details panel below repeats it on a captioned plate, so the box
-  // that promises every field is not missing what the page leads with.
-  const logo = heroImage(fields)
   const titleText =
     primaryField && hasValue(primaryField)
       ? String(primaryField.value)
@@ -908,6 +890,7 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
       </TopRow>
 
       <Hero
+        as="section"
         $featured
         $padding="none"
         aria-label={`${entryName} overview`}
@@ -918,28 +901,17 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
             <Label $tone="faint">{entryName}</Label>
             {chainId && <ChainChip chainId={chainId} size="sm" />}
           </Eyebrow>
-          <Identity>
-            {logo && (
-              <LogoOpen
-                type="button"
-                aria-label={`Open ${logo.field.label || 'picture'} full size`}
-                onClick={() => openAttachment(logo.url)}
-              >
-                <Logo src={logo.url} alt="" />
-              </LogoOpen>
-            )}
-            {loading ? (
-              <SkeletonBlock $height="40px" $width="min(420px, 100%)" />
-            ) : (
-              <Title $size={titleSize(titleText)}>
-                {primaryField ? (
-                  <FieldValue field={primaryField} detailed />
-                ) : (
-                  entryName
-                )}
-              </Title>
-            )}
-          </Identity>
+          {loading ? (
+            <SkeletonBlock $height="40px" $width="min(420px, 100%)" />
+          ) : (
+            <Title $size={titleSize(titleText)}>
+              {primaryField ? (
+                <FieldValue field={primaryField} detailed />
+              ) : (
+                entryName
+              )}
+            </Title>
+          )}
           <StatusRow>
             {view ? (
               <EntryStatus
@@ -1010,6 +982,18 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
             <SkeletonBlock $height="44px" />
           )}
         </HeroStats>
+        <HeroFields>
+          <ItemSubmissionPanel
+            fields={fields}
+            item={decodedItem}
+            itemID={item?.itemID}
+            errors={decodedItem?.errors}
+            loading={loading}
+            linkedRegistry={itemMetaEvidence}
+            registryAddress={itemAddress}
+            kind="standard"
+          />
+        </HeroFields>
       </Hero>
 
       {/* One region for a live case: where it stands, its periods, its jury
@@ -1057,16 +1041,20 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
               }
             />
           )}
-          <ItemSubmissionPanel
-            fields={fields}
-            item={decodedItem}
-            itemID={item?.itemID}
-            errors={decodedItem?.errors}
-            loading={loading}
-            linkedRegistry={itemMetaEvidence}
-            registryAddress={itemAddress}
-            kind="standard"
-          />
+          {/* Seer markets: what the entry's own fields cannot say, read
+              from the market's own contract. A bordered box of its own, so
+              it stands in this column rather than inside the hero. */}
+          {tcrAddress !== undefined &&
+            chainId !== null &&
+            isSeerRegistry(tcrAddress, chainId) &&
+            typeof decodedData?.[0] === 'string' &&
+            typeof decodedData?.[1] === 'string' && (
+              <SeerExtraDetails
+                chainId={chainId}
+                contractAddress={decodedData[0]}
+                imagesIpfsHash={decodedData[1]}
+              />
+            )}
           {/* Spread the `requests` parameter to convert elements from array to an object */}
           <RequestTimelines
             item={item}

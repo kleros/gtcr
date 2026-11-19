@@ -2,10 +2,15 @@ import React, { useEffect, useState } from 'react'
 import styled from 'styled-components'
 
 /*
- * On phones the item page's action card becomes a sticky bottom bar: the
- * status on top, the one action (with its amount) full width under it.
- * A frosted surface so the page reads through as it scrolls. Hidden above
- * 720px, where the right rail holds the action card.
+ * Wherever the item page is one column, its action card becomes a sticky
+ * bottom bar: the status on top, the one action (with its amount) full width
+ * under it. A frosted surface so the page reads through as it scrolls.
+ *
+ * It appears at the width the page stops having a right rail to hold the
+ * card — 1000px, the same breakpoint the hero and the columns stack at.
+ * Round 4 folded the entry's fields into the hero, which made the hero
+ * several hundred pixels taller, so between 721 and 1000px the card was a
+ * screen of scrolling away with nothing holding it in reach.
  *
  * It steps aside (slides down, leaves the tab order and the accessibility
  * tree) while the action card, the evidence composer or the app footer is
@@ -21,7 +26,7 @@ const hasObserver = () =>
 const Bar = styled.div<{ $hidden: boolean }>`
   display: none;
 
-  @media (max-width: 720px) {
+  @media (max-width: 1000px) {
     position: fixed;
     right: 0;
     bottom: 0;
@@ -51,7 +56,7 @@ const Bar = styled.div<{ $hidden: boolean }>`
       visibility 0s linear ${({ $hidden }) => ($hidden ? '180ms' : '0s')};
   }
 
-  @media (max-width: 720px) and (prefers-reduced-motion: reduce) {
+  @media (max-width: 1000px) and (prefers-reduced-motion: reduce) {
     transition: none;
   }
 `
@@ -147,7 +152,7 @@ export const StickyActionBar = ({
 const Spacer = styled.div`
   display: none;
 
-  @media (max-width: 720px) {
+  @media (max-width: 1000px) {
     display: block;
     height: calc(120px + env(safe-area-inset-bottom));
   }

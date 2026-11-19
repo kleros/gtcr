@@ -19,7 +19,15 @@ import { hasValue, isImageField, type EntryField } from './item-standard-fields'
  * for itself, and opens full size in the in-app viewer. Pictures are read
  * through the IPFS gateway (ipfsImageUrl says why); a field whose value is
  * not on it keeps its row in the fields below instead of a plate here.
+ *
+ * A single picture is the common case and the entry page draws it on its
+ * own: it takes the `rail` plate beside the field list, under the hero's
+ * clock, so the band renders only the files. Two or more keep the band and
+ * its full measure, because a gallery cannot live in a 248px track.
  */
+
+/** The shapes a picture can take: inside the band, or beside the fields. */
+export type PlateLayout = 'one' | 'few' | 'many' | 'rail'
 
 const Band = styled.div`
   display: flex;
@@ -47,7 +55,10 @@ const Plates = styled.div<{ $layout: 'one' | 'few' | 'many' }>`
         `}
 `
 
-const Plate = styled.figure<{ $layout: 'one' | 'few' | 'many' }>`
+/* The rail plate is as wide as the hero's right-hand track, so it sits
+   under the clock and the field list keeps its measure whether or not the
+   entry has a picture. It narrows to the column when the hero stacks. */
+const Plate = styled.figure<{ $layout: PlateLayout }>`
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -62,18 +73,37 @@ const Plate = styled.figure<{ $layout: 'one' | 'few' | 'many' }>`
     scroll-snap-align: start;
   `}
 
+  ${({ $layout }) =>
+    $layout === 'rail' &&
+    `
+    width: 248px;
+    max-width: 100%;
+
+    /* Once the fields stack, the plate takes the column: 248px inside a
+       320px phone column leaves a ragged edge beside rows that run the
+       whole way across. */
+    @media (max-width: 560px) {
+      width: 100%;
+    }
+  `}
+
   figcaption {
     min-width: 0;
     overflow-wrap: anywhere;
   }
 `
 
-const Open = styled.button<{ $tall: boolean }>`
+const Open = styled.button<{ $layout: PlateLayout }>`
   ${buttonReset}
   position: relative;
   display: block;
   width: 100%;
-  height: ${({ $tall }) => ($tall ? 'clamp(180px, 26vw, 300px)' : '150px')};
+  height: ${({ $layout }) =>
+    $layout === 'one'
+      ? 'clamp(180px, 26vw, 300px)'
+      : $layout === 'rail'
+        ? '168px'
+        : '150px'};
   overflow: hidden;
   border: 1px solid var(--glass-border);
   border-radius: var(--radius);
@@ -184,20 +214,16 @@ export const entryMedia = (fields: EntryField[]): EntryMedia => {
 }
 
 /**
- * The picture a page leads with: the entry's first one the gateway can
- * serve. The band keeps its plate as well: the tile is the page's lead,
- * the plate is the same picture under its field's name, where the full
- * details account for every field.
+ * One picture under its field's name, opening full size on click. The
+ * entry page renders it itself for the `rail` layout; the band renders the
+ * rest.
  */
-export const heroImage = (fields: EntryField[]): MediaImage | undefined =>
-  entryMedia(fields).images[0]
-
-const ImagePlate = ({
+export const ImagePlate = ({
   image,
   layout,
 }: {
   image: MediaImage
-  layout: 'one' | 'few' | 'many'
+  layout: PlateLayout
 }) => {
   const [broken, setBroken] = useState(false)
   const openAttachment = useAttachment()
@@ -207,7 +233,7 @@ const ImagePlate = ({
     <Plate $layout={layout}>
       <Open
         type="button"
-        $tall={layout === 'one'}
+        $layout={layout}
         aria-label={`Open ${name} full size`}
         onClick={() => openAttachment(image.url)}
       >

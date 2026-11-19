@@ -1,7 +1,8 @@
 import React, { useState } from 'react'
-import styled from 'styled-components'
+import styled, { keyframes } from 'styled-components'
 import ReactBlockies from 'react-blockies'
 import { Popover } from 'components/ui'
+import { recessTrack } from 'components/ui/kit-styles'
 import useDisputeJury, {
   MAX_SLOTS,
   type JuryJuror,
@@ -200,24 +201,67 @@ const DetailList = styled.dl`
   }
 `
 
-/* The tally: one bar per choice, categories from the viz set (a chart never
-   borrows a status colour). */
+/* The tally: one segment per choice, categories from the viz set (a chart
+   never borrows a status colour, except the refusal below, which is not a
+   side). It is drawn only once a vote has been revealed, so a track that is
+   empty or full can never be read as a result nobody has reached yet. */
 const Tally = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
   padding-top: 10px;
   border-top: 1px solid var(--glass-border);
 `
 
+const wipe = keyframes`
+  from { clip-path: inset(0 100% 0 0); }
+  to { clip-path: inset(0 0 0 0); }
+`
+
+/*
+ * The bar is cut in the material the rest of the app draws a quantity in
+ * (round 4 of the design review): the segments sit inside a recessed track
+ * instead of floating on the panel, and each one is lit — its hue graded
+ * along its length with a soft glow around it, as the window track and the
+ * progress rails are — so the tally reads as light in a groove rather than
+ * as the flat pastel blocks it was.
+ *
+ * The groove is drawn at its full width from the first frame, because it is
+ * what makes the proportions readable, and only the lit segments are
+ * revealed: one wipe across the whole row, the way the rest of the app draws
+ * a quantity in. Scaling each segment on its own staggered delay, which this
+ * did before, tore the bar into detached chunks — a segment scales inside
+ * its own flex slot, so the second one appeared at its own left edge while
+ * the first was still short of reaching it, and a hole stood open in the
+ * middle of the bar for the first third of every reveal.
+ */
 const TallyBar = styled.div`
+  height: 12px;
+  padding: 2px;
+  border-radius: var(--radius-pill);
+  ${recessTrack}
+`
+
+const TallyFill = styled.div`
   display: flex;
   gap: 3px;
-  height: 8px;
+  height: 100%;
+  animation: ${wipe} 620ms var(--ease-out) both;
 
   span {
-    min-width: 5px;
+    /* One vote among many is still a vote, so it keeps a visible width. */
+    min-width: 6px;
     border-radius: var(--radius-pill);
+    background: linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--hue) 45%, transparent),
+      var(--hue)
+    );
+    box-shadow: 0 0 12px color-mix(in srgb, var(--hue) 50%, transparent);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
   }
 `
 
@@ -232,16 +276,23 @@ const TallyKey = styled.ul`
   li {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
+    gap: 7px;
     color: var(--color-muted);
     font-size: 12px;
     line-height: 16px;
   }
 
+  /* The key's dot is a chip of the same lit material, not a flat swatch. */
   i {
     width: 8px;
     height: 8px;
     border-radius: var(--radius-pill);
+    background: linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--hue) 55%, transparent),
+      var(--hue)
+    );
+    box-shadow: 0 0 8px color-mix(in srgb, var(--hue) 55%, transparent);
   }
 
   b {
@@ -444,17 +495,22 @@ const RoundBlock = ({
           }`}
         >
           <TallyBar aria-hidden>
-            {choices.map((entry) => (
-              <span
-                key={entry.choice}
-                style={{ flexGrow: entry.count, background: entry.color }}
-              />
-            ))}
+            <TallyFill>
+              {choices.map((entry) => (
+                <span
+                  key={entry.choice}
+                  style={{
+                    flexGrow: entry.count,
+                    ['--hue' as string]: entry.color,
+                  }}
+                />
+              ))}
+            </TallyFill>
           </TallyBar>
           <TallyKey aria-hidden>
             {choices.map((entry) => (
               <li key={entry.choice}>
-                <i style={{ background: entry.color }} />
+                <i style={{ ['--hue' as string]: entry.color }} />
                 {entry.label} <b>{entry.count}</b>
               </li>
             ))}

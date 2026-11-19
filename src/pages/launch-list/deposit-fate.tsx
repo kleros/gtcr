@@ -1,55 +1,61 @@
-import React, { useEffect, useId, useRef, useState } from 'react'
-import styled, { keyframes } from 'styled-components'
+import React, { useEffect, useRef, useState } from 'react'
+import styled, { css, keyframes } from 'styled-components'
 import { useInView } from './use-in-view'
 
 /*
- * One fact per card: what happens to the submitter's money across an entry's
- * life. The drawing is two steps and not a timeline — the entry is submitted,
- * then it is registered or accepted — so the hairline is cut between them and
- * carries the break glyph: no length here may be read as a duration, because
- * the challenge window is the list creator's to set in the factory. Over the
- * steps runs the money band in `--viz-2`, a chart hue no status role takes
- * (money is a quantity, not a state), while the nodes keep the app's status
- * colours: blue submitted, green registered or accepted. The purple it used
- * to draw read as a third state in a drawing whose nodes are states.
- * Both cards draw the same two steps at the same size; the only difference is
- * what the band does in the second one — an empty trough once the deposit has
- * gone back, or the same solid band running off the faded edge because the
- * stake stays. It draws once, when it comes into view.
+ * One fact per card: how much of an entry's life the submitter's money spends
+ * inside it. The lane is the entry's life, a track lit a step above the card
+ * so that the part the money never reaches is still something the eye can
+ * see, fading out at its right edge because neither kind of list has an end
+ * anyone can draw. The glowing band inside it is the money — `--viz-2`, a
+ * chart hue no status role takes, because money is a quantity and not a
+ * state. A lit head runs the band's length once and goes out, so the extent
+ * reads as travel rather than as a shape.
+ *
+ * Both cards draw the same lane at the same size, and the difference between
+ * them is extent, which is the one thing a bar says well without words: the
+ * Standard band stops part-way, at the green node that releases it, with the
+ * rest of the lane standing visibly empty beside it as the reference the eye
+ * needs; the Stake band runs the whole lane and dissolves into the fade with
+ * no node at all, because there is no event at which a stake comes back. Each
+ * end carries two short lines, the event over what the money does, so a card
+ * reads left to right as one sentence.
+ *
+ * Nothing here is a measurement. The lane carries no axis, no tick and no
+ * figure, its own end is faded out rather than drawn, and the caption says as
+ * much: how long any of this takes is the list creator's to set in the
+ * factory, not ours to quote. The two dots are events, not marks on a scale.
+ * It draws once, when it comes into view.
  */
 
 export type FateSpec = {
-  /** What the band does in the second step: it has gone back, or it stays. */
-  fate: 'returned' | 'locked'
-  /** The state the entry reaches, the second step's node. */
-  milestone: string
-  /** What the drawing measures and over what window, for screen readers. */
+  /**
+   * How much of the lane the money is inside: a share of it, or 'full' — the
+   * whole lane, dissolving into the fade, with no node and no end.
+   */
+  fill: number | 'full'
+  /** What ends the money's stay, the first line at the lane's right end. */
+  event: string
+  /** What the money does there, the second line under the event. */
+  verdict: string
+  /** What the drawing shows and over what window, for screen readers. */
   description: string
 }
 
-const PAD = 8
-/** Half the gap that breaks the hairline between the two steps. */
-const BREAK = 7
-const SPEED = 620 // ms the whole reveal takes
-const BAND_LAG = 90 // ms the money trails the step it runs over
-/** The share of the right edge the second step fades out over. */
-const FADE = 0.14
+const LANE = 14
+/** Half the lane's height: the round cap the band's end sits in. */
+const CAP = LANE / 2
+/** Where the lane starts to fade: no one can draw the end of an entry's life. */
+const FADE_FROM = '86%'
+/** Where a band with no end puts its head out, just inside the fade. */
+const HEAD_OUT = '84%'
+const SPEED = 620 // ms the band takes to run its length
+const LAG = 80 // ms the money trails the node it leaves
+const GONE = 380 // ms the head takes to go out once it has arrived
 
-const BAND_Y = 15
-const BAND_WIDTH = 14
-const AXIS_Y = 45
-const LABEL_Y = 65
-const HEIGHT = 76
-
-/* Reveal order, in fractions of SPEED: the first step, then the second. */
-const STEP_A = { from: 0, to: 0.44 }
-const STEP_B = { from: 0.52, to: 1 }
-
-const LABEL = { weight: 500, size: 12.5 }
-
-const draw = keyframes`
-  from { stroke-dashoffset: 1; }
-  to { stroke-dashoffset: 0; }
+const FADE = css`
+  -webkit-mask-image: linear-gradient(to right, #000 ${FADE_FROM}, transparent);
+  mask-image: linear-gradient(to right, #000 ${FADE_FROM}, transparent);
 `
 
 const pop = keyframes`
@@ -57,79 +63,210 @@ const pop = keyframes`
   to { opacity: 1; transform: none; }
 `
 
-const fade = keyframes`
-  from { opacity: 0; transform: translateY(3px); }
-  to { opacity: 1; transform: none; }
+/* Opacity alone: the end labels are placed with a transform of their own. */
+const appear = keyframes`
+  from { opacity: 0; }
+  to { opacity: 1; }
 `
 
-const Canvas = styled.div`
-  position: relative;
-  width: 100%;
-  height: ${HEIGHT}px;
+const travel = keyframes`
+  from { left: 0; opacity: 1; }
+  to { left: var(--stop); opacity: 1; }
+`
+
+const goOut = keyframes`
+  from { opacity: 1; }
+  to { opacity: 0; }
+`
+
+const Figure = styled.figure`
+  margin: 0;
   min-width: 0;
 `
 
-const Svg = styled.svg`
-  /* Out of flow: its measured width must never widen the card. */
+const Lane = styled.div`
+  position: relative;
+  height: ${LANE}px;
+`
+
+/*
+ * The entry's life: a track raised a step off the card and ringed with a
+ * hairline, going at the right edge. Not the recessed control track: that one
+ * is 32% black over a card already near black, so in the dark theme the empty
+ * remainder of the Standard lane sank out of sight and the band read as a bar
+ * that simply stopped. This is the lift the withdrawal stepper's track uses,
+ * which reads as a step up in the dark and as a soft grey strip in the light.
+ */
+const Track = styled.span`
   position: absolute;
   inset: 0;
-  display: block;
-  width: 100%;
-  height: ${HEIGHT}px;
+  border-radius: var(--radius-pill);
+  background: var(--color-raised);
+  box-shadow: inset 0 0 0 1px var(--glass-border);
+  ${FADE}
+`
 
-  /* Nothing shows before the sweep; each piece reads --d (delay) and --t. */
-  .draw {
-    stroke-dasharray: 1;
-    stroke-dashoffset: 1;
+/* The money. Grows from the left under the node that locks it. */
+const Band = styled.span<{ $open?: boolean }>`
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: var(--to);
+  border-radius: var(--radius-pill);
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--viz-2) 45%, transparent),
+    var(--viz-2)
+  );
+  box-shadow: 0 0 12px color-mix(in srgb, var(--viz-2) 50%, transparent);
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform ${SPEED}ms var(--ease-out) var(--d-band, 0ms);
+
+  /* A band that ends at an event keeps its end; one with none dissolves. */
+  ${({ $open }) => $open && FADE}
+
+  [data-drawn='true'] & {
+    transform: none;
   }
 
-  .pop,
-  .fade {
-    opacity: 0;
-  }
-
-  .pop {
-    transform-box: fill-box;
-    transform-origin: center;
-  }
-
-  &[data-armed] {
-    .draw {
-      animation: ${draw} var(--t, 600ms) linear var(--d, 0ms) both;
-    }
-
-    .pop {
-      animation: ${pop} 460ms var(--ease-out) var(--d, 0ms) both;
-    }
-
-    .fade {
-      animation: ${fade} 420ms var(--ease-out) var(--d, 0ms) both;
-    }
-  }
-
-  text {
-    font-family: var(--font-sans);
-    fill: var(--color-text);
-    font-size: ${LABEL.size}px;
-    font-weight: ${LABEL.weight};
-  }
-
-  /* Final state for print and reduced motion: no sweep. */
   @media print, (prefers-reduced-motion: reduce) {
-    .draw,
-    &[data-armed] .draw {
-      stroke-dashoffset: 0;
-      animation: none;
-    }
+    transform: none;
+    transition: none;
+  }
+`
 
-    .pop,
-    .fade,
-    &[data-armed] .pop,
-    &[data-armed] .fade {
-      opacity: 1;
+/* The light at the band's leading edge, which runs its length and goes out. */
+const Head = styled.i`
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 6px;
+  height: 6px;
+  margin-left: -3px;
+  border-radius: var(--radius-pill);
+  background: var(--color-text);
+  box-shadow:
+    0 0 0 3px color-mix(in srgb, var(--viz-2) 45%, transparent),
+    0 0 14px var(--viz-2);
+  transform: translateY(-50%);
+  opacity: 0;
+
+  body[data-theme='light'] & {
+    background: var(--color-surface);
+  }
+
+  [data-drawn='true'] & {
+    animation:
+      ${travel} ${SPEED}ms var(--ease-out) var(--d-band, 0ms) forwards,
+      ${goOut} ${GONE}ms ease-out var(--d-end, 0ms) forwards;
+  }
+
+  @media print, (prefers-reduced-motion: reduce) {
+    display: none;
+  }
+`
+
+/*
+ * A moment the money moves: a haloed status dot in the lane, in the role the
+ * moment actually has — blue because the challenge window is open at
+ * submission, green because registration is the event that releases a
+ * deposit. A stake has no such moment, so the Stake lane carries one dot.
+ * Each lands when the money reaches it: the first as the band sets off, the
+ * second under the head that has just arrived.
+ */
+const Node = styled.span<{ $tone: 'window' | 'registered' }>`
+  position: absolute;
+  top: ${(LANE - 10) / 2}px;
+  width: 10px;
+  height: 10px;
+  margin-left: -5px;
+  border-radius: var(--radius-pill);
+  background: var(--status-${({ $tone }) => $tone});
+  box-shadow:
+    0 0 0 3px var(--status-${({ $tone }) => $tone}-soft),
+    0 0 12px
+      color-mix(in srgb, var(--status-${({ $tone }) => $tone}) 55%, transparent);
+  opacity: 0;
+
+  &[data-at='end'] {
+    --d-node: var(--d-end, 0ms);
+  }
+
+  [data-drawn='true'] & {
+    animation: ${pop} 460ms var(--ease-spring) var(--d-node, 0ms) both;
+  }
+
+  @media print, (prefers-reduced-motion: reduce) {
+    opacity: 1;
+
+    [data-drawn='true'] & {
       animation: none;
     }
   }
+`
+
+const Ends = styled.div`
+  position: relative;
+  height: 33px;
+  margin-top: 9px;
+`
+
+/*
+ * The two ends in words, each anchored to the band: the left at its start,
+ * the right at wherever it stops, so the words and the extent say the same
+ * thing. They arrive with the moment they name.
+ */
+const End = styled.div`
+  position: absolute;
+  top: 0;
+  white-space: nowrap;
+  opacity: 0;
+
+  &[data-side='start'] {
+    left: 0;
+    --d-label: var(--d-node, 0ms);
+  }
+
+  &[data-side='end'] {
+    left: var(--to);
+    transform: translateX(-100%);
+    text-align: right;
+    --d-label: var(--d-end, 0ms);
+  }
+
+  [data-drawn='true'] & {
+    animation: ${appear} 420ms var(--ease-out) var(--d-label, 0ms) both;
+  }
+
+  @media print, (prefers-reduced-motion: reduce) {
+    opacity: 1;
+
+    [data-drawn='true'] & {
+      animation: none;
+    }
+  }
+`
+
+const Moment = styled.div`
+  color: var(--color-text);
+  font-size: 12.5px;
+  line-height: 17px;
+  font-weight: 500;
+`
+
+const Money = styled.div`
+  color: var(--color-muted);
+  font-size: 12px;
+  line-height: 16px;
+`
+
+/* What the drawing measures, which is nothing: it is ordered, not scaled. */
+const Caption = styled.figcaption`
+  margin-top: 4px;
+  color: var(--color-faint);
+  font-size: 12px;
+  line-height: 16px;
+  text-align: right;
 `
 
 export const DepositFate = ({
@@ -137,28 +274,14 @@ export const DepositFate = ({
   delay = 700,
 }: {
   spec: FateSpec
-  /** ms before the sweep, counted from mount, so the card lands first. */
+  /** ms before the draw, counted from mount, so the card lands first. */
   delay?: number
 }) => {
-  const id = useId().replace(/:/g, '')
-  const [ref, inView] = useInView<HTMLDivElement>(0.35)
-  const [width, setWidth] = useState(0)
+  const [ref, inView] = useInView<HTMLElement>(0.35)
   const mountedAt = useRef(performance.now())
   const [start, setStart] = useState<number>()
 
-  useEffect(() => {
-    const node = ref.current
-    if (!node) return
-    setWidth(Math.round(node.getBoundingClientRect().width))
-    if (typeof ResizeObserver === 'undefined') return
-    const observer = new ResizeObserver(([entry]) =>
-      setWidth(Math.round(entry.contentRect.width)),
-    )
-    observer.observe(node)
-    return () => observer.disconnect()
-  }, [ref])
-
-  // Arm the sweep once in view; if that is right after mount, still let the
+  // Arm the draw once in view; if that is right after mount, still let the
   // card land first.
   useEffect(() => {
     if (!inView || start !== undefined) return
@@ -170,180 +293,54 @@ export const DepositFate = ({
     )
   }, [inView, start, delay])
 
+  const open = spec.fill === 'full'
+  const to = open ? '100%' : `${+((spec.fill as number) * 100).toFixed(2)}%`
+  // The head stops in the band's end cap, or just inside the fade when the
+  // band has no end to stop at.
+  const stop = open ? HEAD_OUT : `calc(${to} - ${CAP}px)`
   const base = start ?? 0
-  /** Timing for a piece that starts at `from` and runs for `length`. */
-  const timing = (from: number, length = 0, lag = 0) =>
-    ({
-      '--d': `${Math.round(base + lag + from * SPEED)}ms`,
-      '--t': `${Math.max(1, Math.round(length * SPEED))}ms`,
-    }) as React.CSSProperties
-
-  const left = PAD
-  const right = width - PAD
-  const middle = width / 2
-  const stepAEnd = middle - BREAK
-  const stepBStart = middle + BREAK
-
-  /** The money band: a pill from `from` to `to`, caps inside those ends. */
-  const radius = BAND_WIDTH / 2
-  const bar = (from: number, to: number) =>
-    `M${from + radius} ${BAND_Y} H${Math.max(from + radius, to - radius)}`
-
-  const nodes = [
-    { x: left, label: 'Submitted', tone: 'window', step: STEP_A },
-    { x: stepBStart, label: spec.milestone, tone: 'registered', step: STEP_B },
-  ]
-  const maskId = `fate-fade-${id}`
 
   return (
-    <Canvas ref={ref}>
-      {width > 0 && (
-        <Svg
-          viewBox={`0 0 ${width} ${HEIGHT}`}
-          role="img"
-          aria-label={spec.description}
-          data-armed={start !== undefined ? '' : undefined}
-        >
-          <defs>
-            <linearGradient id={`${maskId}-ramp`} x1="0" y1="0" x2="1" y2="0">
-              <stop offset={1 - FADE} stopColor="#fff" />
-              <stop offset="1" stopColor="#fff" stopOpacity={0} />
-            </linearGradient>
-            <mask
-              id={maskId}
-              maskUnits="userSpaceOnUse"
-              x={0}
-              y={0}
-              width={width}
-              height={HEIGHT}
-            >
-              <rect
-                x={0}
-                y={0}
-                width={width}
-                height={HEIGHT}
-                fill={`url(#${maskId}-ramp)`}
-              />
-            </mask>
-          </defs>
+    <Figure
+      ref={ref}
+      role="img"
+      aria-label={spec.description}
+      data-drawn={start !== undefined}
+      style={
+        {
+          '--to': to,
+          '--stop': stop,
+          '--d-node': `${base}ms`,
+          '--d-band': `${base + LAG}ms`,
+          '--d-end': `${base + LAG + SPEED}ms`,
+        } as React.CSSProperties
+      }
+    >
+      <Lane aria-hidden>
+        <Track />
+        <Band $open={open} />
+        <Head />
+        {/* Submission, where the money goes in: the same in both cards. */}
+        <Node $tone="window" style={{ left: `${CAP}px` }} />
+        {/* The release, which only a deposit has. */}
+        {!open && (
+          <Node $tone="registered" data-at="end" style={{ left: stop }} />
+        )}
+      </Lane>
 
-          {/* Step one: submitted, and under review. */}
-          <path
-            className="draw"
-            d={`M${left} ${AXIS_Y} H${stepAEnd}`}
-            pathLength={1}
-            fill="none"
-            stroke="var(--color-border)"
-            strokeWidth={1}
-            style={timing(STEP_A.from, STEP_A.to - STEP_A.from)}
-          />
+      <Ends aria-hidden>
+        <End data-side="start">
+          <Moment>You submit</Moment>
+          <Money>Locked</Money>
+        </End>
+        <End data-side="end">
+          <Moment>{spec.event}</Moment>
+          <Money>{spec.verdict}</Money>
+        </End>
+      </Ends>
 
-          {/*
-           * The break: two steps, never a span of time. Whatever happens
-           * between them takes as long as the list's creator decided, so the
-           * drawing refuses to measure it.
-           */}
-          <path
-            className="fade"
-            d={`M${middle - 6} ${AXIS_Y + 6} L${middle - 2} ${AXIS_Y - 6} M${
-              middle + 2
-            } ${AXIS_Y + 6} L${middle + 6} ${AXIS_Y - 6}`}
-            fill="none"
-            stroke="var(--color-border-strong)"
-            strokeWidth={1}
-            style={timing(STEP_A.to)}
-          />
-
-          {/* Step two, running off the faded edge: the entry's life goes on. */}
-          <path
-            className="draw"
-            d={`M${stepBStart} ${AXIS_Y} H${right}`}
-            mask={`url(#${maskId})`}
-            pathLength={1}
-            fill="none"
-            stroke="var(--color-border)"
-            strokeWidth={1}
-            style={timing(STEP_B.from, STEP_B.to - STEP_B.from)}
-          />
-
-          {/* The money, held from submission: the same in both cards. */}
-          <path
-            className="draw"
-            d={bar(left, stepAEnd)}
-            pathLength={1}
-            fill="none"
-            stroke="var(--viz-2)"
-            strokeWidth={BAND_WIDTH}
-            strokeLinecap="round"
-            style={timing(STEP_A.from, STEP_A.to - STEP_A.from, BAND_LAG)}
-          />
-
-          {/*
-           * Step two is the whole difference between the two cards, drawn at
-           * the same size either way: the band still there and running off
-           * the edge, or the same band's trough standing empty.
-           */}
-          {spec.fate === 'locked' ? (
-            <path
-              className="draw"
-              d={bar(stepBStart, right)}
-              mask={`url(#${maskId})`}
-              pathLength={1}
-              fill="none"
-              stroke="var(--viz-2)"
-              strokeWidth={BAND_WIDTH}
-              strokeLinecap="round"
-              style={timing(STEP_B.from, STEP_B.to - STEP_B.from, BAND_LAG)}
-            />
-          ) : (
-            <rect
-              className="fade"
-              x={stepBStart}
-              y={BAND_Y - radius}
-              width={Math.max(0, right - stepBStart)}
-              height={BAND_WIDTH}
-              rx={radius}
-              mask={`url(#${maskId})`}
-              fill="none"
-              stroke="var(--viz-2)"
-              strokeWidth={1}
-              strokeOpacity={0.65}
-              style={timing(STEP_B.from, 0, BAND_LAG)}
-            />
-          )}
-
-          {/* The two steps: a haloed status dot and its name. */}
-          {nodes.map((node) => (
-            <React.Fragment key={node.label}>
-              <g className="pop" style={timing(node.step.from, 0, BAND_LAG)}>
-                <circle
-                  cx={node.x}
-                  cy={AXIS_Y}
-                  r={8}
-                  fill={`var(--status-${node.tone})`}
-                  fillOpacity={0.22}
-                />
-                <circle
-                  cx={node.x}
-                  cy={AXIS_Y}
-                  r={4.5}
-                  fill={`var(--status-${node.tone})`}
-                />
-              </g>
-              <text
-                className="fade"
-                x={node.x - 4}
-                y={LABEL_Y}
-                textAnchor="start"
-                style={timing(node.step.from, 0, BAND_LAG)}
-              >
-                {node.label}
-              </text>
-            </React.Fragment>
-          ))}
-        </Svg>
-      )}
-    </Canvas>
+      <Caption aria-hidden>By event, not to scale</Caption>
+    </Figure>
   )
 }
 
