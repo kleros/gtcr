@@ -391,7 +391,13 @@ Focus everywhere is a 2px `primary` outline, 2px out (inset inside clipping trac
   launch page's Open to challenge lane, the jury's tally, the dashboard's open requests by list and
   the Stake card's challenger share, and nowhere is a bar reinvented. The factory Previews' money
   bars, Marino's, keep their hatch for the arbitration part but use the flat accent, never the
-  aurora (which read pastel on Light and purple on Kleros).
+  aurora (which read pastel on Light and purple on Kleros). Round 6 ("more cool") gives the bar a
+  look, on trial until the owner picks one (`?bars=flat|glass|neon|segments`, kept in the
+  browser): flat; glass (a top sheen, a darker lip, a glow in the run's own hue, one light sweeping
+  across once drawn); neon (a bright core in a halo, a slow light flowing along); segments (an LED
+  row, one lit pill per unit where the runs are small whole counts, such as a jury's votes). A bar
+  of several hues glows in a neutral light, never one side's. Every look keeps the 10px, the runs,
+  the gaps and the reveal.
 - **The launch drawing** (`pages/launch-list/deposit-fate.tsx`) is the base lifecycle's lanes
   without its steps, durations or axis break. Lane 1, Open to challenge, is a `LaneBar` with its
   bloom head: a Standard bar stops part-way across (0.32 of the lane, not a measurement), a Stake
@@ -570,17 +576,15 @@ way (dashboard, Browse, registry pages, the profile, the landing page).
 
 ## Dashboard
 
-- **Open for verification** sits under Happening now as one row of data across the band: the
-  count (Open now, with "in their challenge window" said there once), the bounties (dollars first,
-  the coin amount smaller under it, per coin, never summed), and the lists holding the open
-  requests as one `LaneBar` across the rest of the row, most first. The top four lists are named
-  runs, all in full `status-window` (tints of the accent read pastel on Light), parted by the bar's
-  gaps; the rest is one faint run. A legend under the bar numbers the runs left to right, names
-  each list (a link to its open requests) and its count, wrapping. Labels, figures and lines share
-  rows (subgrid). Below 900px the two figures sit side by side and the lists take the full width
-  under them. With nothing open the count says how many requests only wait to be executed, and the
-  bar becomes the Stake lists in scope by the entries anyone can challenge now; with no such list
-  the strip is one line.
+- **Open for verification** sits under Happening now with no box and no bar (round 6), centred
+  on the page: under its title, two large figures side by side, parted by a hairline, the count
+  open now ("open now, in their challenge window") and the bounties, dollars first with the coin
+  smaller under them, labelled "Bounties up for grabs" in the accent, the one invitation on the
+  strip. Under the pair, centred and wrapping, the lists holding those requests, each as its own
+  figure: the count, then the list's logo and name, a link to its open requests; past the top
+  four, the rest as "N in M other lists". With nothing open the count says how many requests only
+  wait to be executed, and the Stake lists that stay open take the lists' line, or one link to
+  them.
 - **Whole rows only.** A board column never cuts a card and never scrolls inside the page. The two
   columns share a cap snapped to the submissions' whole rows, the one nearest 760px (776px, six
   rows, on / at 1440). The submissions draw the rows that fit whole, counted over the chrome they
@@ -674,9 +678,14 @@ way (dashboard, Browse, registry pages, the profile, the landing page).
   across it, never hugging the left.
 - Open requests come first, larger and in the window blue, and the block is gone at 0; Entries
   follows.
-- On a Stake list the "Listed" chip counts and filters every entry on the list (submitted +
-  disputed, the header's and Browse's "Listed"); "Disputed" is the part a challenge is running on,
-  "Off the list" the rest.
+- **Status** is one dropdown on the toolbar's first line (round 6), "Status · All", one choice at
+  a time: each status led by its dot, its count at the right; under a hairline, "Previously
+  disputed", every entry that has been to court whatever its status now (Standard: any request
+  disputed; Stake: any challenge), counted from an id-only read ("1,000+" past its limit). On a
+  Stake list "Listed" counts and filters every entry on the list (submitted + disputed, the
+  header's and Browse's "Listed"); "Disputed now" is the part a challenge is running on, "Off the
+  list" the rest. The toolbar is one line on desktop: search, status, the sensitive-content switch,
+  sort, layout.
 - Pagination's jump field is a page pill (pill radius, surface fill, inner hairline), as wide as
   the last page's chip and at least 32px, right of the last ellipsis.
 
@@ -705,6 +714,10 @@ way (dashboard, Browse, registry pages, the profile, the landing page).
   title name the address's roles across all chains ("Curator · Juror", "Governor"), or "Address"
   with none, and wait as a skeleton until the profile, the governance scan and the jury read have
   settled, so nothing shows and then relayouts.
+- **Governed lists as cards** (round 6): the profile's one Cards/Rows choice, shared with
+  Activity, applies to the governed lists too. A card is Browse's shape: logo, name, seal and kind;
+  chain and address; the court on its own lines; Entries large and the creation date at its foot;
+  the governor's controls under them. Three across at 1440.
 - **Governed rows.** Entries is the list's whole total, the same as the list header and Browse;
   the facts sit in fixed figure columns so they align down the list, and the court wraps to a second
   line rather than losing its end.

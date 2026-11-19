@@ -1,5 +1,5 @@
 import React from 'react'
-import styled, { keyframes } from 'styled-components'
+import styled, { css, keyframes } from 'styled-components'
 
 /*
  * LaneBar: the one bar the app draws. It is the "Open to challenge" lane of
@@ -113,6 +113,45 @@ export type LaneBarProps = {
   className?: string
 }
 
+/*
+ * Round 6 ("the bar style should be more cool"): the bar's look, chosen
+ * from the page's address (?bars=flat|glass|neon|segments) and kept in this
+ * browser, so the owner can compare the candidates on the real pages before
+ * one is kept. Every look keeps the bar's 10px, its runs, its gaps and its
+ * reveal; only the paint changes.
+ *  - flat: round 5's solid run (the base's band).
+ *  - glass: the app's lit-glass idiom on the run: a top sheen, a darker lip,
+ *    a soft glow in the run's own hue, and one light sweeping across once
+ *    it has drawn.
+ *  - neon: a bright core in a strong halo, with a slow light flowing along.
+ *  - segments: an LED row; where the runs are small whole counts (a jury's
+ *    votes) each unit is its own lit pill.
+ */
+export type BarLook = 'flat' | 'glass' | 'neon' | 'segments'
+const LOOKS: BarLook[] = ['flat', 'glass', 'neon', 'segments']
+const LOOK_KEY = 'curatevision-bars'
+const DEFAULT_LOOK: BarLook = 'glass'
+
+const readLook = (): BarLook => {
+  if (typeof window === 'undefined') return DEFAULT_LOOK
+  const asked = new URLSearchParams(window.location.search).get('bars')
+  try {
+    if (asked && (LOOKS as string[]).includes(asked)) {
+      window.localStorage.setItem(LOOK_KEY, asked)
+      return asked as BarLook
+    }
+    const kept = window.localStorage.getItem(LOOK_KEY)
+    if (kept && (LOOKS as string[]).includes(kept)) return kept as BarLook
+  } catch {
+    // Storage blocked: the address alone decides.
+    if (asked && (LOOKS as string[]).includes(asked)) return asked as BarLook
+  }
+  return DEFAULT_LOOK
+}
+
+/** Whole counts small enough to draw one pill per unit (a jury's seats). */
+const UNIT_LIMIT = 60
+
 const WINDOW: LaneRun[] = [
   { key: 'window', weight: 1, hue: 'var(--status-window)' },
 ]
@@ -137,6 +176,12 @@ const vanish = keyframes`
   to { opacity: 0; transform: translateX(0); }
 `
 
+/* A light crossing the drawn bar: once for glass, slowly on for neon. */
+const sheen = keyframes`
+  from { transform: translateX(-100%); }
+  to { transform: translateX(100%); }
+`
+
 /*
  * The window the runs show through: the bar's own box, round at both ends,
  * clipping what it holds. It slides in from one bar's length to the left of
@@ -146,6 +191,7 @@ const vanish = keyframes`
  * exactly on the first run's own cap. Before arming nothing in it paints.
  */
 const Mask = styled.span`
+  position: relative;
   display: block;
   height: 100%;
   overflow: hidden;
@@ -160,12 +206,126 @@ const Runs = styled.span`
 `
 
 const Run = styled.span`
-  display: block;
+  display: flex;
+  gap: 3px;
   flex: 1 1 0;
   min-width: ${LANE_BAR}px;
   height: 100%;
   border-radius: var(--radius-pill);
   background: var(--hue);
+
+  &[data-empty] {
+    background: none;
+    box-shadow: none;
+  }
+`
+
+/* One unit of a run (segments look, small whole counts): a lit pill. */
+const Unit = styled.i`
+  flex: 1 1 0;
+  min-width: 3px;
+  height: 100%;
+  border-radius: 3px;
+  background: var(--hue);
+`
+
+/* The light that crosses the drawn bar (glass, neon), clipped to the runs. */
+const Sheen = styled.span`
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  background: linear-gradient(
+    100deg,
+    transparent 0 38%,
+    rgba(255, 255, 255, 0.6) 50%,
+    transparent 62%
+  );
+  mix-blend-mode: overlay;
+`
+
+/* The looks' paint (see BarLook). The glow is a filter on the mask, so it
+   reaches past the clip the reveal needs. */
+const looks = css`
+  &[data-look='glass'] {
+    ${Mask} {
+      filter: drop-shadow(
+          0 0 5px color-mix(in srgb, var(--glow) 70%, transparent)
+        )
+        drop-shadow(0 2px 9px color-mix(in srgb, var(--glow) 35%, transparent));
+    }
+
+    ${Run}, ${Unit} {
+      background: linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--hue), #fff 48%) 0%,
+        var(--hue) 52%,
+        color-mix(in srgb, var(--hue), #000 22%) 100%
+      );
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.4),
+        inset 0 -1px 0 rgba(0, 0, 0, 0.18);
+    }
+  }
+
+  &[data-look='neon'] {
+    ${Mask} {
+      filter: drop-shadow(0 0 3px var(--glow))
+        drop-shadow(0 0 10px color-mix(in srgb, var(--glow) 75%, transparent));
+    }
+
+    ${Run}, ${Unit} {
+      background: linear-gradient(
+        90deg,
+        color-mix(in srgb, var(--hue), #fff 8%),
+        color-mix(in srgb, var(--hue), #fff 42%)
+      );
+      box-shadow:
+        inset 0 0 0 1px color-mix(in srgb, var(--hue), #fff 60%),
+        inset 0 0 5px rgba(255, 255, 255, 0.45);
+    }
+  }
+
+  &[data-look='segments'] {
+    ${Mask} {
+      filter: drop-shadow(
+        0 0 4px color-mix(in srgb, var(--glow) 60%, transparent)
+      );
+    }
+
+    ${Run}:not([data-units]) {
+      background: repeating-linear-gradient(
+        90deg,
+        var(--hue) 0 7px,
+        transparent 7px 10px
+      );
+    }
+
+    ${Run}[data-units] {
+      background: none;
+    }
+  }
+
+  &[data-look='glass']
+    ${Run}[data-empty],
+    &[data-look='neon']
+    ${Run}[data-empty],
+    &[data-look='segments']
+    ${Run}[data-empty] {
+    background: none;
+    box-shadow: none;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    &[data-armed][data-look='glass'] ${Sheen} {
+      animation: ${sheen} 900ms ease-in-out calc(var(--d) + var(--t) + 120ms) 1
+        both;
+    }
+
+    &[data-armed][data-look='neon'] ${Sheen} {
+      animation: ${sheen} 2600ms ease-in-out calc(var(--d) + var(--t)) infinite;
+    }
+  }
 `
 
 /*
@@ -232,6 +392,8 @@ const Root = styled.span`
   height: ${LANE_BAR}px;
   -webkit-print-color-adjust: exact;
   print-color-adjust: exact;
+
+  ${looks}
 
   /* Armed is the final state; the sweep below is added only for motion. */
   &[data-armed] ${Mask} {
@@ -313,12 +475,33 @@ export const LaneBar = ({
     LANE_BAR,
     shown.length * LANE_BAR + Math.max(0, shown.length - 1) * LANE_GAP,
   )
+  const [look] = React.useState(readLook)
+  // The glow takes the bar's hue where it has one; a bar of several hues (a
+  // jury's two sides) glows in a neutral light rather than one side's.
+  const hues = [
+    ...new Set(
+      shown.filter((run) => run.hue !== 'transparent').map((run) => run.hue),
+    ),
+  ]
+  const glow =
+    hues.length === 1
+      ? hues[0]
+      : 'color-mix(in srgb, var(--color-text) 45%, transparent)'
+  // One pill per unit where the runs are small whole counts (a jury's
+  // votes); a bar that is one span of time (the launch lanes) is an LED row.
+  const total = shown.reduce((sum, run) => sum + run.weight, 0)
+  const units =
+    look === 'segments' &&
+    shown.every((run) => Number.isInteger(run.weight)) &&
+    total >= 2 &&
+    total <= UNIT_LIMIT
   const style = {
     width: `${shareOf(extent) * 100}%`,
     minWidth: `${floor}px`,
     '--d': `${Math.max(0, Math.round(finite(delay, 0)))}ms`,
     '--t': `${laneDuration(extent, speed)}ms`,
     '--head': shown[shown.length - 1]?.hue ?? 'var(--status-window)',
+    '--glow': glow,
   } as React.CSSProperties
 
   return (
@@ -326,23 +509,35 @@ export const LaneBar = ({
       aria-hidden
       className={className}
       data-armed={armed ? '' : undefined}
+      data-look={look}
       style={style}
     >
       <Mask>
         <Runs>
-          {shown.map((run) => (
-            <Run
-              key={run.key}
-              data-empty={run.hue === 'transparent' ? '' : undefined}
-              style={
-                {
-                  flexGrow: run.weight / largest,
-                  '--hue': run.hue,
-                } as React.CSSProperties
-              }
-            />
-          ))}
+          {shown.map((run) => {
+            const empty = run.hue === 'transparent'
+            const drawUnits = units && !empty
+            return (
+              <Run
+                key={run.key}
+                data-empty={empty ? '' : undefined}
+                data-units={drawUnits ? '' : undefined}
+                style={
+                  {
+                    flexGrow: run.weight / largest,
+                    '--hue': run.hue,
+                  } as React.CSSProperties
+                }
+              >
+                {drawUnits &&
+                  Array.from({ length: run.weight }, (_, index) => (
+                    <Unit key={index} />
+                  ))}
+              </Run>
+            )
+          })}
         </Runs>
+        {(look === 'glass' || look === 'neon') && <Sheen />}
       </Mask>
       {head && shown.length > 0 && (
         <HeadClip>
