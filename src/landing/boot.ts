@@ -141,7 +141,9 @@ const LANDING_LOAD = 'landing'
 const readLive = async (): Promise<LandingData | null> => {
   const chains = MAINNET_CHAIN_IDS
   // Everything paid in to a list, all time: read beside the dashboard
-  // load, which it does not need.
+  // load, which it does not need. Its coin totals are kept across page
+  // loads and shared with the app's dashboard (transit.ts readTransit), so
+  // a visit within the hour reads storage, not the indexer.
   const transit = readTransit(chains)
   transit.catch(() => undefined)
   // All chains (no testnet), no list metadata for every list (the page
