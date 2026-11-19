@@ -669,7 +669,9 @@ export const OpenForVerification = ({
             <FigureSkeleton width="170px" />
           </Figure>
         </Pair>
-      ) : (
+      ) : unloaded && total === 0 ? null : (
+        // Nothing loaded and some requests failed: a 0 here would be a
+        // wrong number, so the note above stands alone.
         <Pair>
           <Figure>
             {total > 0 ? (

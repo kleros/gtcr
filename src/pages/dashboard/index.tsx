@@ -816,7 +816,9 @@ const Dashboard = () => {
     },
     enabled: !!data && !testnetScope,
     staleTime: 10 * 60_000,
-    retry: false,
+    // The coin totals are kept (readTransit), so a retry reads prices again,
+    // not the indexer's pages.
+    retry: 1,
   })
   // Links to Browse keep the page's scope. "All chains" is Browse's own
   // default, no `chain` parameter (DESIGN.md, Data rules): spelled out as
