@@ -644,16 +644,16 @@ way (dashboard, Browse, registry pages, the profile, the landing page).
   requests plus challenges over it, with their bounties won all time; five of them, filling the
   column beside a 240px chart. The chart's head is one row right above it: what it counts and its
   legend on the left, the range switch on the right (round 9), under the figures.
-- **Self-sustaining mechanism** (rounds 16 and 17): no box ("in a box is cringe"), like the Open
-  for verification band: the title centred, then one symmetric row, a ring, the bounties, a ring,
-  parted by hairlines, and the sentence centred under it at a 68ch measure. On a phone the bounties
-  lead and the two rings share the line under them, a hairline between. Each ring carries a tooltip
-  built from the same counts as the sentence. No line names the Classic lists (round 7). **Bounties
-  won** is one figure in dollars at today's prices, compact ("$73.5K"), with no count of bounties;
-  the line under it names what it adds up ("In ETH, xDAI and sDAI on Ethereum and Gnosis, at
-  today's prices") and its tooltip gives each coin's amount and dollars. Where any coin has no
-  current price, or a token's decimals never answered, there is no honest total: the coins' own
-  amounts are listed on one line instead.
+- **Self-sustaining mechanism** (rounds 16 to 18): no box ("in a box is cringe"), like the Open for
+  verification band: the title centred, then one centred group: the two rings together (round 18:
+  "not a big fan of separating the gauges"), the bounties behind a hairline, and the sentence
+  centred under it at a 68ch measure. On a phone the bounties lead and the two rings share the line
+  under them. Each ring carries a tooltip built from the same counts as the sentence. No line names
+  the Classic lists (round 7). **Bounties won** is one figure in dollars at today's prices, compact
+  ("$73.5K"), with no count of bounties; the line under it names what it adds up ("In ETH, xDAI and
+  sDAI on Ethereum and Gnosis, at today's prices") and its tooltip gives each coin's amount and
+  dollars. Where any coin has no current price, or a token's decimals never answered, there is no
+  honest total: the coins' own amounts are listed on one line instead.
 - Top curators sit beside the chart (round 7), in the same panel behind a hairline, 320px wide
   (260px below 1100px), each with an LED bar of their activity against the top curator's
   (requests in the accent, challenges in `contested`) and their counts on one line; below 900px

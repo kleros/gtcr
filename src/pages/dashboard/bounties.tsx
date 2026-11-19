@@ -64,10 +64,10 @@ import { chainInfo, type BountyCoin, type scopedChallengeRecord } from './view'
  * and swaps it for dollars under the reader.
  *
  * No box (round 17: "in a box is cringe"): like the Open for verification
- * band, the section sits on the stage, its title centred, and its row is
- * symmetric: a ring, the bounties, a ring, parted by hairlines, the
- * sentence centred under them. On a phone the bounties lead and the two
- * rings share the line under them.
+ * band, the section sits on the stage, its title centred: the two rings
+ * together, the bounties behind a hairline (round 18), the sentence
+ * centred under them. On a phone the bounties lead and the two rings share
+ * the line under them.
  *
  * Windows are carried by the figures themselves rather than by a chip over
  * the panel (round 3: four "all time" stamps read as boilerplate). The
@@ -116,10 +116,9 @@ const CentredHead = styled(SectionHead)`
 const COMPACT_RINGS = '(min-width: 901px) and (max-width: 1099px)'
 
 /*
- * A ring, the bounties, a ring: one centred row, each cell parted from the
- * next by a hairline as the Open for verification figures are. On a phone
- * the bounties take the first line and the rings share the second, each
- * half the width.
+ * The two rings together, then the bounties behind a hairline, as one
+ * centred group (round 18: "not a big fan of separating the gauges"). On a
+ * phone the bounties lead and the rings share the line under them.
  */
 const Row = styled.div`
   display: flex;
@@ -128,55 +127,68 @@ const Row = styled.div`
   max-width: 100%;
 
   @media (max-width: 720px) {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    grid-template-areas:
-      'money money'
-      'left right';
-    row-gap: 28px;
+    flex-direction: column;
+    align-items: center;
+    gap: 28px;
   }
 `
 
-const Cell = styled.div`
+const Rings = styled.div`
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 24px 32px;
   min-width: 0;
-  padding: 0 clamp(28px, 4vw, 72px);
 
-  & + & {
-    border-left: 1px solid var(--glass-border);
+  &:not(:last-child) {
+    padding-right: clamp(28px, 4vw, 64px);
   }
 
   @media ${COMPACT_RINGS} {
-    padding: 0 24px;
+    gap: 16px;
+
+    &:not(:last-child) {
+      padding-right: 24px;
+    }
   }
 
   @media (max-width: 720px) {
-    padding: 0 8px;
+    order: 1;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    width: 100%;
 
-    &[data-cell='left'] {
-      grid-area: left;
-      border-left: 0;
+    &:not(:last-child) {
+      padding-right: 0;
     }
 
-    &[data-cell='money'] {
-      grid-area: money;
-      border-left: 0;
-    }
-
-    &[data-cell='right'] {
-      grid-area: right;
+    /* The rings' tooltip wrappers centre in their half. */
+    > .ui-tooltip-trigger {
+      display: flex;
+      justify-content: center;
+      width: 100%;
+      min-width: 0;
     }
   }
+`
 
-  /* The rings' tooltip wrappers centre in their cell. */
-  > .ui-tooltip-trigger {
-    display: flex;
-    justify-content: center;
-    width: 100%;
-    min-width: 0;
+const MoneyCell = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  padding-left: clamp(28px, 4vw, 64px);
+  border-left: 1px solid var(--glass-border);
+
+  @media ${COMPACT_RINGS} {
+    padding-left: 24px;
+  }
+
+  @media (max-width: 720px) {
+    order: 0;
+    padding-left: 0;
+    border-left: 0;
   }
 `
 
@@ -645,9 +657,12 @@ export const VerificationRecord = ({
       {/* Second section on the page, straight after the chart (--i: 4). */}
       <Stage style={{ ['--i' as string]: 5 }}>
         <Row>
-          {left && <Cell data-cell="left">{left}</Cell>}
+          <Rings>
+            {left}
+            {ring('won')}
+          </Rings>
           {!unknown && (
-            <Cell data-cell="money">
+            <MoneyCell>
               <Total>
                 {record ? (
                   <Tooltip
@@ -662,9 +677,8 @@ export const VerificationRecord = ({
                 )}
                 {bounties}
               </Total>
-            </Cell>
+            </MoneyCell>
           )}
-          <Cell data-cell="right">{ring('won')}</Cell>
         </Row>
         {words}
       </Stage>
