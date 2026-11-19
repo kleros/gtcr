@@ -24,10 +24,11 @@ import { COURT_PERIOD, currentPeriod } from './dispute-timeline-model'
  * the case number). One panel, three bands separated by hairlines, no panel
  * inside a panel:
  *
- *   1. that a dispute is running right now, under a pulsing light and over
- *      a thicker amber edge (round 3: a quiet "In court" eyebrow read like
- *      every other label), what it means for this entry, the case's own
- *      facts and the actions;
+ *   1. that a dispute is running right now, under a pulsing light and a
+ *      louder label, in a panel lit amber at its edge (round 3: a quiet
+ *      "In court" eyebrow read like every other label, so it should be
+ *      catchy), what it means for this entry, the case's own facts and the
+ *      actions;
  *   2. the periods of the current round;
  *   3. the jury, collapsed into a pill.
  *
@@ -62,15 +63,34 @@ const Panel = styled(Surface)<{ $live?: boolean }>`
     border-top: 1px solid var(--glass-border);
   }
 
-  /* A 2px amber lip clipped to the panel's radius, over the kit's own 1px
-     highlight: the contested status role, drawn as an edge and never as a
-     fill. */
+  /*
+   * A case running right now is lit in the contested status role, as an
+   * edge and a light, never as a fill: an amber border at 45%, a 2px amber
+   * lip clipped to the panel's radius over the kit's own 1px highlight, a
+   * 3px soft halo around the panel (the launch page's chosen card does the
+   * same in the edge hue) and an amber light pooled in the top-left corner,
+   * under the pulsing dot. The list ends in --shadow-card, which every
+   * theme keeps a valid shadow (theme-context.tsx), so none of it drops.
+   */
   ${({ $live }) =>
     $live &&
     css`
+      border-color: color-mix(
+        in srgb,
+        var(--status-contested) 45%,
+        var(--glass-border)
+      );
+      background:
+        radial-gradient(
+          120% 160px at 0 0,
+          color-mix(in srgb, var(--status-contested) 9%, transparent),
+          transparent 70%
+        ),
+        var(--color-surface);
       box-shadow:
         inset 0 2px 0 var(--status-contested),
         inset 0 1px 0 var(--glass-highlight),
+        0 0 0 3px color-mix(in srgb, var(--status-contested) 12%, transparent),
         var(--shadow-card);
     `}
 
@@ -83,14 +103,17 @@ const Panel = styled(Surface)<{ $live?: boolean }>`
 
 const pulse = keyframes`
   0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--status-contested) 55%, transparent); }
-  70% { box-shadow: 0 0 0 7px transparent; }
+  70% { box-shadow: 0 0 0 9px transparent; }
   100% { box-shadow: 0 0 0 0 transparent; }
 `
 
-/* The light on a case being decided right now: the contested role's halo,
-   breathing on the kit's entrance curve. Nothing in the app blinks, so this
-   does not either, and reduced motion parks it on the dot's own halo. */
+/* The light on a case being decided right now: a 10px dot in the contested
+   role, its halo breathing on the kit's entrance curve. Nothing in the app
+   blinks, so this does not either, and reduced motion parks it on the dot's
+   own static halo. */
 const Pulse = styled(StatusDot)`
+  width: 10px;
+  height: 10px;
   animation: ${pulse} 2.4s var(--ease-out) infinite;
 
   @media (prefers-reduced-motion: reduce) {
@@ -101,7 +124,16 @@ const Pulse = styled(StatusDot)`
 const LiveLine = styled.span`
   display: inline-flex;
   align-items: center;
-  gap: 9px;
+  gap: 10px;
+`
+
+/* ONGOING DISPUTE: a step above every other eyebrow (12px, 600), in the
+   text colour, since status words never take a status hue (the dot does). */
+const LiveLabel = styled(Label)`
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
 `
 
 const Lead = styled.div`
@@ -143,10 +175,24 @@ const Next = styled.p`
   line-height: var(--lh-body);
 `
 
+/* On a phone the actions stack full width, aligned to the panel's edges,
+   as the base branch's in-court card had them: wrapped at their own widths
+   they read as three ragged pills. */
 const Actions = styled.div`
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
+
+  @media (max-width: 720px) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    width: 100%;
+
+    > * {
+      width: 100%;
+      justify-content: center;
+    }
+  }
 `
 
 const Facts = styled.dl`
@@ -261,16 +307,10 @@ export const DisputeCasePanel = ({
   if (!disputeID) return null
 
   const period = dispute ? currentPeriod(dispute) : undefined
-  /*
-   * The court's name for its own period leads while the entry waits on it,
-   * except during the evidence period: "Evidence" over "3 jurors drawn…"
-   * named the court's paperwork instead of what is happening to this entry,
-   * and the period band below says the same thing anyway (round 3 of the
-   * design review). The page's own heading leads there.
-   */
-  const title =
-    (awaitingCourt && period?.key !== 'evidence' ? period?.title : undefined) ??
-    heading
+  // The court's word for its own period leads while the entry waits on it
+  // ("Jurors are voting"); the page's own heading leads once the list has
+  // its ruling, or without the court read.
+  const title = (awaitingCourt ? period?.title : undefined) ?? heading
   // Jurors are still deciding, so the dispute is running now. Without the
   // court read the page's own word for it decides.
   const live =
@@ -295,7 +335,7 @@ export const DisputeCasePanel = ({
               <LiveLine>
                 <Pulse $tone="contested" aria-hidden />
                 {/* Label uppercases and tracks it: ONGOING DISPUTE. */}
-                <Label $tone="text">Ongoing dispute</Label>
+                <LiveLabel $tone="text">Ongoing dispute</LiveLabel>
               </LiveLine>
             ) : (
               <Label $tone="faint">In court</Label>
@@ -303,7 +343,9 @@ export const DisputeCasePanel = ({
             <Heading>{title}</Heading>
             {summary && <Next>{summary}</Next>}
           </Words>
-          <Actions>
+          {/* The page's actions while in court: the entry's floating bar
+              stays away while they are in view (item-standard-action-bar). */}
+          <Actions data-entry-action>
             {canAddEvidence && (
               <Button
                 type="button"
@@ -357,6 +399,8 @@ export const DisputeCasePanel = ({
         disputeID={disputeID}
         requesterName={requesterName}
         rounds={dispute?.roundSlots}
+        period={dispute?.period}
+        hiddenVotes={dispute?.hiddenVotes}
       />
     </Panel>
   )

@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import styled from 'styled-components'
+import styled, { css } from 'styled-components'
 import useDisputeTimeline from 'hooks/use-dispute-timeline'
 import useCourtName from 'hooks/use-court-name'
 import {
@@ -87,10 +87,28 @@ const Top = styled.div`
   gap: 12px 24px;
 `
 
-const Actions = styled.div`
+/* Holding the page's actions, they stack full width on a phone, as the
+   live panel's do: wrapped at their own widths they read as ragged pills.
+   The case link alone stays on the eyebrow's line. */
+const Actions = styled.div<{ $stack: boolean }>`
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
+
+  @media (max-width: 720px) {
+    ${({ $stack }) =>
+      $stack &&
+      css`
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        width: 100%;
+
+        > * {
+          width: 100%;
+          justify-content: center;
+        }
+      `}
+  }
 `
 
 /* The case track hugs its options: a recess pill, not a full-width bar. */
@@ -188,7 +206,7 @@ export const DisputeRecordPanel = ({
       <Lead>
         <Top>
           <Label $tone="faint">Court record</Label>
-          <Actions>
+          <Actions $stack={holdsPageActions}>
             {/* The entry's own actions, only where this panel is the block
                 that holds them: anywhere else the status card has them
                 already, and a second "Add evidence" would just double it. */}
@@ -271,6 +289,8 @@ export const DisputeRecordPanel = ({
         disputeID={record.disputeID}
         requesterName={record.requesterName}
         rounds={dispute?.roundSlots}
+        period={dispute?.period}
+        hiddenVotes={dispute?.hiddenVotes}
       />
     </Panel>
   )
