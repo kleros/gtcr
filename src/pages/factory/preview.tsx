@@ -282,11 +282,27 @@ const Outcomes = styled.ul`
     color: var(--color-primary);
   }
 
+  li[data-con] svg {
+    color: var(--color-faint);
+  }
+
   b {
     color: var(--color-text);
     font-weight: 500;
   }
 `
+
+/** The mark for an outcome that can cost the submitter: a faint dash. */
+const MinusIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
+    <path
+      d="M7 12h10"
+      stroke="currentColor"
+      strokeWidth="1.85"
+      strokeLinecap="round"
+    />
+  </svg>
+)
 
 /* ---------- Challenge period timeline ---------- */
 
@@ -759,8 +775,8 @@ export const LivePreview = ({
               <b>Unchallenged:</b> back in full
             </span>
           </li>
-          <li>
-            <CurateIcon name="check" size={18} />
+          <li data-con>
+            <MinusIcon />
             <span>
               <b>Challenged:</b> the winner gets the loser’s base deposit
             </span>
