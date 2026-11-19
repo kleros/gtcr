@@ -169,6 +169,8 @@ others are named by their label and icon (`THEME_MODES` in `contexts/theme-conte
   floats, insets or turns into a pill. Content keeps `--page-max-width` (1344px) and
   `--horizontal-padding` (min(4.69vw, 56px); 16px on phones), so widths match the old frame at 1440.
 - Nothing on a page paints its own full-bleed background or grid.
+- **Footer.** The app bar carries no guide link: the footer's does, and it reads "Guide & Skills",
+  since the guide also holds the skill for agent builders (an explainer may link it in context).
 
 # Colors
 
@@ -196,7 +198,9 @@ others are named by their label and icon (`THEME_MODES` in `contexts/theme-conte
 `primary-on-soft` (primary mixed 70% with text) is the text color on `primary-soft` fills and
 featured tints. The viz set passes the categorical checks (lightness band, chroma, CVD and normal
 separation, 3:1 on the surface) in each theme; lists take the hues in rank order, "other" is
-`text-faint`.
+`text-faint`. The one exception is the dashboard's open requests by list, one quantity split by
+list rather than categories compared: every named run is full `status-window`, parted by the
+bar's gaps and numbered in the legend, and the rest is one `text-faint` run.
 
 **The viz set keys chart series, and nothing else.** A drawing with one series takes `viz-1` or
 `viz-2`; `viz-3` and `viz-4` exist for a chart with three or four real categories and are never
@@ -229,7 +233,21 @@ open, amber contested, red off the list, grey neutral; always a haloed dot plus 
 - Panels: `surface`, `lg` radius, 1px border, a 1px top highlight. One **featured** panel per page
   carries the iridescent rim (aurora hues and a touch of amber) and a single comet of light that
   travels the rim on load.
-- Rows: 56px table rows, or full-width rounded list rows that lift on hover. Chips are pills.
+- `--shadow-card` (the theme's `shadow`) is always one valid `<shadow>`: it ends comma-separated
+  box-shadow lists (a panel's top highlight, the live dispute's edge, the launch page's chosen
+  card). A theme with no card shadow sets the no-op `0 0 #0000`, never `none`, which would void the
+  whole list (it did in Dark and Kleros until round 5).
+- Rows: 56px table rows. A hovered row lights its leading edge and its open chevron in `primary`,
+  the accent every link and focus ring already carries, never a hue of its own. Entry cards lay out
+  from a 260px minimum (four across at 1440) for text fields, and 272px when the page's entries
+  have pictures (four across at 1440 and at 1280, as on the base), whose cover fills the width. A
+  hidden ("potentially offensive") entry's card is veiled down to its footer, with the notice
+  centred in it, never an empty band over an empty body. A hovered card keeps the house lit edge
+  (`edge-1/2/3`) and lights its chevron in `primary`. Chips are pills.
+- Bullets in a box are one glyph everywhere, the factory Previews included: the check
+  (`CurateIcon name="check"`), never a dot, a dash or a minus, whatever the line says.
+- A figure never parts from its unit across a line break, nor a sum of two coins from itself ("4.5
+  sDAI + 7.2 xDAI", "under 2 MB"): composed sentences join them with non-breaking spaces.
 
 ## Controls: "Lit edge" (round 2)
 
@@ -281,6 +299,77 @@ chip shows only that mark and its chevron.
 
 Focus everywhere is a 2px `primary` outline, 2px out (inset inside clipping tracks).
 
+## Addresses (round 5)
+
+- **A person is never a contract, and a contract is never a person.** A person's address (a
+  submitter, a challenger, a juror, a list's governor) is a `CuratorAddress`
+  (`components/curate/chrome-address.tsx`): Geist Mono, cut 6…4, it opens that address's Curate
+  profile, with no arrow, and a copy button beside it that keeps its 24px at rest so hover never
+  shifts the row. Standard and Stake draw it the same way (`AddressLink` re-exports it). A contract
+  (a list, an arbitrator) opens the chain's explorer with its ↗ and a copy button: `ChromeAddress`,
+  or `ExplorerAddressLink` on an entry page. A contract's Curate profile would be empty.
+- A list's own address in its header opens the list on the explorer. Its ↗ shows at rest, because
+  alone in the identity row it has to read as a link; hover and keyboard focus brighten the address
+  to `text` and the arrow to `primary`. The footer carries no separate "Contract" link.
+- An explorer link says where it goes to a screen reader: hidden text around the visible address
+  ("List contract 0x66260c…4c59f2 on the explorer (opens in a new tab)"), so the accessible name
+  still contains what is seen. A copy-on-click identifier (an entry's item ID) is named by its
+  visible short value first, then the action ("0x0100cc…2b6263, copy item ID"); the full value is
+  the title, and the copy report is a live region beside the control, never inside its name.
+- In a Parameters drawer the Governor is a person (`CuratorAddress`) and the Arbitrator a contract
+  (an explorer link with ↗), both cut 6…4. A contract link followed by more facts
+  (" · xDai Curation · 5 jurors") breaks only at the dots: each fact is its own inline box.
+- Courts are named by name ("xDai Curation (Hidden Voting) · 3 jurors"), read from the chain's
+  Kleros Display indexer and only for the chain's Kleros arbitrator; the number ("Court 19") shows
+  only while the name loads or if it cannot be read. In a sentence, `courtPhrase` builds it: "the
+  Kleros xDai Curation court (Hidden Voting)".
+- A profile reaches the explorer through one cluster of equal 28px round controls beside the
+  address: copy (`CopyValue variant="round"`), then one chain plate per chain the address acted on,
+  each opening that chain's explorer, named in its tooltip. Never named pills of different lengths.
+  An arrow badge on hover or focus says the link leaves the app (touch always shows it). With no
+  actions the plates are Ethereum and Gnosis; Sepolia only when the address acted there, with a
+  dashed ring.
+
+## Drop zones and upload rows
+
+- A file held over a drop zone lights its 1px edge with the conic `edge-1/2/3` and an `edge-2` halo
+  around an opaque fill (the zone's raised tint with 6% `primary`, laid on `surface`): the raised
+  tint alone is translucent in Dark and Kleros and let the conic wash through the zone. A box that
+  is not a well shows an opaque veil inside its edge carrying only the message ("Drop to attach",
+  or the blocker in the gate's own words, "Connect wallet to upload the logo"), so the box's own
+  text never shows through.
+- Upload rows (both factories, the governor's MetaEvidence field) name their action group with
+  `data-upload-actions`, never `:last-child` (the hidden file input comes after it); on phones that
+  group takes a line of its own. A gate is said once: when its own control (Connect wallet, Sign
+  in, Switch to …) is in the row, no gate line is drawn under it (the words stay as a visually
+  hidden status, so a gate that moves on is announced), and a refused drag says the same words.
+
+## Dialogs that edit a list
+
+- A dialog never grows past the window: a column capped at the window's height (`100dvh` less the
+  layer's gutters), hung from a fixed top so switching sections only moves its bottom edge. The
+  head stays pinned (the title, a "?" with what the dialog does, the close button, what stops a
+  save with its fix, such as "Switch to Gnosis", and the sections); only the body scrolls. On phones
+  it is a bottom sheet of fixed height (92dvh). The section control keeps its own width.
+- The governor's dialog (`pages/address/governance.tsx`) has four sections in a small
+  SegmentedControl: Court, Deposits (Stake Curate: Stake), Timing & appeals, Advanced. A closed
+  section is hidden, never unmounted, so typed values and an armed governor transfer survive a look
+  elsewhere; a newly opened one starts at the top of the body.
+- What a parameter means sits behind a "?" beside its label (the shared Tooltip; under the label on
+  a touch screen), in the factories' own words. Only what cannot be undone stays in view under a
+  field (the governor transfer), with the figures that confirm what will be signed ("3 days 12
+  hours (302,400 s)", "Stored as 10,000 basis points") and money ("Fee per juror").
+- A control that cannot be pressed stays focusable with `aria-disabled` and says why in the shared
+  Tooltip, never in a native `title`.
+- **Update list parameters.** A list's governor, once their wallet is connected, sees this
+  secondary block button (layers icon) under the list's main action, on both list kinds and
+  whatever chain the wallet is on (`components/curate/list-governance.tsx`). Whether the wallet
+  governs is checked against the governor the page reads through the list's own chain. It opens
+  the profile's dialog, which offers the switch to the list's chain before anything is signed.
+  Nothing is drawn while the governor or the list data the dialog reads with is loading, so it
+  never appears and then vanishes; everyone else sees nothing, and it goes as soon as a read names
+  another governor. The profile's governed rows use the same label.
+
 # Motion kit (`src/components/curate/motion`)
 
 - `Odometer`: digits roll on their own columns, then settle into plain text.
@@ -291,9 +380,59 @@ Focus everywhere is a 2px `primary` outline, 2px out (inset inside clipping trac
   point, a second series mirrored below as bars on its own labelled scale; scanner reveal; hover
   tooltip.
 - `reveal` (staggered entrance). Curves are monotone cubic, so they never overshoot the data.
-- A live dispute's panel carries a haloed `contested` dot that pulses on the 2.4s curve, under an
-  `ONGOING DISPUTE` label and a 2px `contested` top edge. It is the one pulsing thing in the app,
-  it marks a state that is genuinely running, and reduced motion parks it as a static halo.
+- **`LaneBar` is the one bar** (`components/curate/lane-bar.tsx`), lifted from the base's list
+  lifecycle: a 10px solid run with round caps in a flat hue (`status-window` by default), with no
+  track, no gradient and no glow. Several runs sit 4px apart, each at least 10px. It draws once,
+  left to right, at a constant speed per full width (`laneDuration`), so two bars on a page stay in
+  step; one edge reveals every run, by transforms only (a mask sliding in while the runs slide
+  back), so the optional bloom head that rides the leading cap can never leave it. Nothing paints
+  before it is armed; reduced motion and print show the final state; forced colours draw it in
+  `CanvasText` (a run drawn transparent, an empty stretch of lane, stays empty). It is used for the
+  launch page's Open to challenge lane, the jury's tally, the dashboard's open requests by list and
+  the Stake card's challenger share, and nowhere is a bar reinvented. The factory Previews' money
+  bars, Marino's, keep their hatch for the arbitration part but use the flat accent, never the
+  aurora (which read pastel on Light and purple on Kleros).
+- **The launch drawing** (`pages/launch-list/deposit-fate.tsx`) is the base lifecycle's lanes
+  without its steps, durations or axis break. Lane 1, Open to challenge, is a `LaneBar` with its
+  bloom head: a Standard bar stops part-way across (0.32 of the lane, not a measurement), a Stake
+  bar runs the full width. Lane 2, the money, is a 2px `muted` hairline from a 7px dot to a 9px
+  `registered` node with a 3.5px 22% halo, set under the bar's end cap and named under it by the
+  event that releases the money ("Registered" / "Withdrawn"); the coin follows the lane's name in
+  its head row ("Deposit locked · in xDAI", "Stake locked · in any ERC-20"). On Standard, lane 1
+  goes on as the base's did: at its far end a dashed capsule the bar's thickness
+  (`status-window-soft` fill, 1.25px dashed `status-window` outline), labelled "Removal request",
+  for the window a removal request opens, only if someone makes one; it fades in after the bar has
+  drawn. Lane 2 runs 130ms behind the bar at the bar's speed, so the node lands as its line reaches
+  it. The drawing is one image to assistive technology: its aria-label says it is ordered by event,
+  not to scale, and names the lanes, the removal band and the coin.
+- A live dispute's panel carries a 10px haloed `contested` dot that pulses on the 2.4s curve, under
+  an `ONGOING DISPUTE` label (12px, weight 600, `text`), in a panel lit in the contested role:
+  border at 45%, a 2px `contested` top lip, a 3px soft halo and an amber light pooled from the
+  top-left. It is the one pulsing thing in the app, it marks a state that is genuinely running, and
+  reduced motion parks it as a static halo. On phones (720px and below) its actions stack full
+  width.
+- Every countdown drains from the right: the time left is the bright run from the track's left
+  end, the time used faint behind it, and a dot marks the end being eaten (EntryStatus's track; the
+  dispute period band uses the same in `contested`; the dashboard's rails carry a lit bead there,
+  which goes out at zero). Nothing fills from the left as time passes.
+- **The jury tally** (`components/curate/dispute-jury.tsx`) is a `LaneBar` and leads its round.
+  The submitter's run in `viz-1` and the challenger's in `viz-2` each start from their own end. A
+  refusal (or any other choice) is a neutral run beside the leading side's run, and the seats with
+  no revealed vote keep their share as empty lane towards the trailing side, so a side at 0 never
+  has ink at its end; with no side leading, the neutral run sits in the middle with the empty seats
+  on either side. What lies between the sides is captioned under the middle of that stretch, kept
+  inside the bar ("1 not cast", "2 still to reveal", "1 refused to rule", "Tied"), never centred
+  across the whole bar. Both sides' counts stand at the bar's ends, even at 0, the leading side's
+  in `text`; no rule above it. A juror whose vote is public is a filled 8px dot in their side's
+  hue; a vote not public yet (committed or not cast) is a hollow 8px ring in `faint`, like the empty
+  seat in the bar, never a side's hue or a status colour (`status-window` is the same blue as
+  `viz-1`). The jury's pill says "The jury · 3 seats" ("2 of 3 seats drawn" only while the court
+  is still drawing); a lone round has no head of its own, and a round among several reads "Round 3
+  · 15 seats".
+- **The dispute period band** is each step's name and dates, with no explaining sentence: the
+  current step adds only its figures ("2 of 3 committed"), an appeal that cannot be made says
+  "Cannot be appealed", and a final ruling reads "Final". It stacks at 900px and below, so a step's
+  date is never split.
 - Easing `cubic-bezier(0.16, 1, 0.3, 1)` for entrances, `(0.2, 0.8, 0.2, 1)` for state changes,
   springs for indicators. All respect `prefers-reduced-motion`.
 
@@ -351,29 +490,36 @@ way (dashboard, Browse, registry pages, the profile, the landing page).
   challenger the court ruled for takes on top of their own deposit back: the requester's base
   deposit (Standard) or the entry's stake (Stake Curate). Amounts stay per coin, never
   added across coins.
-- **Dollars are an aside on a coin figure, and never a total.** Amounts stay per coin in every
-  unit, dollars included: nothing on the site adds across coins, because a total would merge a
-  one-hour feed with a 24-hour one into a number whose age it could not state, and the total would
-  then read as the figure while the measured amounts became decoration. Where a coin's dollar value
-  can be read from a Chainlink feed on that coin's own chain it is shown beside the amount as an
-  approximation (`≈`), a step below the coin symbol in weight, with the feed and the age of its
-  answer named in the tooltip the figure already carries. A price that cannot be read, or whose
-  answer is older than its feed's heartbeat, is not shown at all — no "$—", no error line and no
-  skeleton, since a skeleton promises a number this one is allowed never to arrive at — so the
-  figure reads exactly as it did before dollars existed. Exactly two figures carry one: the
-  bounties challengers have won, and the collateral behind the requests open for verification.
-  Never a figure somebody is about to sign for (an entry page, a launch or stake deposit, a board
-  or ruling row): there the coin amount is the obligation, and a converted number beside it is not
-  what the wallet will ask for. Never on a testnet, where the coin is not the coin. The prices are
-  read on chain, in their own query — never inside the saved load, which is repainted up to a day
-  later.
+- **Dollars lead a coin figure where a price can be read, and are never a total.** Amounts stay
+  per coin in every unit, dollars included: nothing on the site adds across coins, because a total
+  would merge a one-hour feed with a 24-hour one into a number whose age it could not state. Where
+  a Chainlink feed on the coin's own chain answers, the dollars are the figure, at the figure's own
+  size and marked `≈` (smaller, muted; "about" for a screen reader), and the exact coin amount sits
+  under them at body size, muted (round 5: "put the dollars first, smaller the crypto"). When no
+  current price can be read (no feed, an answer past its heartbeat, a testnet), nothing
+  dollar-shaped is drawn, no "$—", no error line, no placeholder: the coin amount is the figure. The
+  money figures wait at most 1.5s for the first price read, as skeletons, so the lead never swaps
+  from coin to dollars under the reader; a later answer fades in. The feed and the age of its
+  answer are in the tooltip the figure already carries. The one rule lives in
+  `pages/dashboard/board-rows.tsx` (`UsdLead`, `CoinAmount`, `usdFormatFor`). Exactly two figures
+  carry dollars: the bounties challengers have won, and the collateral behind the requests open for
+  verification. Never a figure somebody is about to sign for (an entry page, a launch or stake
+  deposit, a board or ruling row): there the coin amount is the obligation. A token that never
+  answered a symbol is unitised by its shortened contract in Geist Mono, never left bare. The
+  prices are read on chain in their own query, never inside the saved load, which is repainted up
+  to a day later.
 - The all-time ledger pages the **retired Classic lists'** resolved disputes too (2020-2022): they
-  are the protocol's history, so they count in the rulings, the bounties and the challenger figures.
-  They are never a row, a card or a link — a Classic list has no page in this app — so the query
-  reads no list address for them and the feed filters them out (`scopedRulings`). The Disputes
-  panel's tally is the ledger's total, like the self-sustaining panel's, and its footer names how
-  many of them no row can show. Two figures stay Standard and Stake only: a curator's own bounties
-  won, which has to match their profile page, and the Kleros Verified count, whose tiles are links.
+  are the protocol's history, so they count in the bounties (counts and amounts) and in the entries
+  ever curated, where the first ring's disputed requests count them too (round 4: "when counting
+  the bounties and historically the all time verified items… only for this"). They are never a
+  row, a card or a link — a Classic list has no page in this app — so the query reads no list
+  address for them and the feed filters them out (`scopedRulings`). The share of disputes that went
+  to the challenger, and the dispute count it states, are the Standard and Stake rulings only, the
+  same count as the Disputes panel's, so "show more" can always reach it; the self-sustaining
+  panel's Classic line names exactly what Classic adds (lists, entries, bounties). A reading of
+  that share ("mostly well founded") is claimed only on at least 30 rulings. Two figures stay
+  Standard and Stake only: a curator's own bounties won, which has to match their profile page,
+  and the Kleros Verified count, whose tiles are links.
   Classic's share is read live from the same indexer (it still holds `Registry` and `Request`):
   retiring the interface de-indexed nothing, so no snapshot or hardcoded number is involved.
 - A count is never the length of a capped list: it comes from its own query, and reads "n+" when
@@ -391,6 +537,177 @@ way (dashboard, Browse, registry pages, the profile, the landing page).
   parameter). Sepolia is a test network: listed apart in the chain menu under a hairline with a
   "testnet" tag, picked on its own, never part of "All chains". The word "Mainnets" is not used.
 - List creation time is the factory's `NewGTCR` block time (cached), not the first request.
+- **Juror justifications** come from Kleros Court's public store (kleros/court-functions
+  `get-justifications`, the read court.kleros.io makes; `REACT_APP_COURT_FUNCTIONS_URL`, default
+  `https://kleros-api.netlify.app`). They are read only for disputes Kleros arbitrates and shown
+  only once the chain shows that juror's vote revealed, as a quote under the juror's row, clamped
+  to three lines with "Read all" only when the clamp hides text. A failed read shows nothing.
+- **Juror on Curate** (the profile badge) counts the seats (Kleros Display draws, one per vote
+  slot) in disputes whose arbitrable is a Curate list: Standard, Stake and the retired Classic
+  lists, the same population as the dashboard's dispute ledger, never a court filter; the tooltip
+  says Classic is included. Votes come from the court contract (`getVote`, the `voted` flag only,
+  never the choice). A seat in the latest round of a dispute still collecting votes is "still
+  voting", never missed. It is a record, not a goal: the seats, the disputes drawn in and the votes,
+  as figures, with no target. Its line names the role ("Drawn in 181 disputes"), so it is never read
+  as the profile's own Disputes figure (disputes the address was a party to), and its tooltip is
+  one sentence ("Seats and votes as a Kleros juror in Curate disputes, Classic lists included."). A
+  chain that did not answer makes the figure "n+" and is named; nothing read at all is
+  "unavailable", never 0.
+- **The share card** (`public/og-image.png`, 1200×630, the og:image and twitter:image of
+  `index.html` and `landing/index.html`) is a headless-Chrome screenshot of
+  `scripts/og-image.html` (the command is in its header): the landing headline ("Lists anyone can
+  challenge. Settled by Kleros.") and its og:description on the dark stage with the aurora and the
+  Curate mark, no grid or dot pattern. When the tagline changes, the card is rendered again and
+  both `og:image:alt` strings change with it.
+- The landing's Bounties won card shows the figures with no "All time" stamp and no explanatory
+  sentence, as on the dashboard; its months run to the snapshot's month. Its coins include the
+  Classic lists' bounties like the live figures; its "n of m rulings went to the challenger" line
+  counts the Standard and Stake rulings, and names them whenever Classic ones were left out.
+  `public/landing/data.js` is a full read of `window.CURATE_LANDING_LIVE`, taken only from a load
+  where every chain answered.
+
+# Pages (round 5)
+
+## Dashboard
+
+- **Open for verification** sits under Happening now as one row of data across the band: the
+  count (Open now, with "in their challenge window" said there once), the bounties (dollars first,
+  the coin amount smaller under it, per coin, never summed), and the lists holding the open
+  requests as one `LaneBar` across the rest of the row, most first. The top four lists are named
+  runs, all in full `status-window` (tints of the accent read pastel on Light), parted by the bar's
+  gaps; the rest is one faint run. A legend under the bar numbers the runs left to right, names
+  each list (a link to its open requests) and its count, wrapping. Labels, figures and lines share
+  rows (subgrid). Below 900px the two figures sit side by side and the lists take the full width
+  under them. With nothing open the count says how many requests only wait to be executed, and the
+  bar becomes the Stake lists in scope by the entries anyone can challenge now; with no such list
+  the strip is one line.
+- **Whole rows only.** A board column never cuts a card and never scrolls inside the page. The two
+  columns share a cap snapped to the submissions' whole rows, the one nearest 760px (776px, six
+  rows, on / at 1440). The submissions draw the rows that fit whole, counted over the chrome they
+  finally draw under them ("+n more", or "All n by list" when every loaded row fits), and count
+  again when their room or rows change size; the rulings beside them draw only whole rows too.
+  Below 900px the submissions show their first 6 rows.
+- **Expanding lifts the cap.** Once the reader expands either column the page grows. The other
+  column fills the new height with whole rows while it has rows, and once it has none it keeps its
+  own height and rides beside the long column (sticky under the app bar), never a hollow box.
+- **Nothing open, no empty box.** With nothing open and nothing failed, the submissions column is
+  not drawn and the Disputes panel takes the width, two rows to a line, its first page even so no
+  cell is blank; an odd last row spans the line. Phones stack.
+- Tooltip triggers are their own text's width, so a bubble opens over what it explains.
+- **Self-sustaining mechanism.** Each ring carries a tooltip built from the same counts as the
+  sentence. The sentence sits under the money at a 68ch measure, beside the tiles when there are
+  one or two coins. Two or three coins take one equal column each across the money column, a lone
+  coin is never stretched, and four or more auto-fit; between 901 and 1099px the rings are 140px so
+  three coins fit on one line, and at 900px and below the rings take half the width each, centred.
+  Tiles' lines stay level (subgrid). A Stake tile says "Any ERC-20, set per list".
+- Most active and Top curators sit side by side above 1240px and end level; at 1240px and below
+  they stack, where the table beside the panel would scroll sideways.
+
+## Entry page
+
+- **The hero is two independent columns.** Left, one flow: eyebrow, title and status, the facts
+  strip, then Full details directly under it. Right, 360px: the one clock (never boxed), the action
+  under it (amount, sentence, button), drawn bare as part of the featured panel, not as a card in
+  it. In court there is no action there: the case panel holds the actions. The thing to do is on
+  the first screen at 1440x900 in every state. Above 1000px the right column is sticky under the
+  app bar inside the hero. The action card never repeats the ruling or the case while the case
+  panel or the court record states them, and a settled clock line says how the case ended, not
+  which case ("decided by jurors"): the case is named once, in the court record.
+- **The facts strip** (`components/curate/item-hero-facts.tsx`), shared by Standard and Stake:
+  date, Bounty (only while a case is live, per coin), By, Challenged by, and the item ID, one
+  copy-on-click control in Geist Mono that reports the copy in place without moving the row.
+- **Pictures are not always present.** Exactly one is drawn once, as a plate 168px tall, wherever
+  it leaves the least empty glass: under the clock and the action, or opening Full details. In Full
+  details from 1180px it sits on the left, min(420px, 52%, column − 360px) wide, with the field rows
+  running beside it, each narrowing beside the plate and taking the full width once past its foot.
+  With nothing beside it, or below 1180px, it takes the column's full width, the picture contained
+  on the quiet fill. Each place is charged only what the picture adds there. Two or more pictures
+  stay in the Full details band, two or more per row (140px minimum). None: nothing is drawn or
+  reserved. Where the hero stacks, a lone plate takes the column's full width, 168-240px tall.
+- **At 1000px and below** the columns dissolve into one order: identity, clock, facts, picture,
+  full details, then the action under an inset hairline.
+- **The action stays in reach.** A frosted bar carries the status and the one action
+  (`components/curate/item-standard-action-bar.tsx`): on phones and wherever the hero stacks, a
+  bottom bar with the action full width; wider, a slim bar floating 16px above the bottom edge, at
+  most 680px, the status left and the action at its natural width right. It shows only while the
+  card's own action (its button, or the case panel's action group, marked `data-entry-action`) is
+  not at least half on screen, counting what sits under the sticky app bar as off screen; it stays
+  away while the evidence composer is on screen when its action is "Add evidence", and, wide,
+  until the reader has reached the hero's end, so it never floats over the hero's fields. At the
+  end of the page it rides 12px above the footer at every width (a 64px reserve at the page's end
+  gives the taller bottom bar its room), so the action is in reach even at the very end of a short
+  page. Until the card has mounted it stays away. With no action, the wide bar is not drawn.
+- **The challenge lead.** While an entry can be challenged, the card leads with one line, "Earn
+  30 xDAI": the verb left of the amount at the same size (Urbanist), the amount in Geist with
+  tabular figures, the coin small and muted, the line stepping down (56/44/36/30px) as the amount
+  grows (`components/curate/item-bounty-figure.tsx`, both kinds). Under it about 150 characters
+  (175 for Stake's two coins), two sentences: "Found something that breaks the policy? Challenge it
+  and win the bounty. A {cost} deposit keeps challenges serious; if jurors agree, you get
+  {total}." Stake's total is what `PermanentGTCR.rule()` pays, per coin and never summed. A
+  native-coin amount that rounds to 0 at the precision shown is left out of the button, the phone
+  bar and the sentence. A removal request's sentence opens from the defender's side. Jurors are
+  named only where the arbitrator is Kleros; otherwise the copy says "the arbitrator".
+- **The history spans the page.** A rail sits beside it only while it holds a panel (appeal
+  funding; Stake's withdrawal); an empty rail takes no room. On Stake, the court record and the
+  rail's first panel end level when their resting heights are within 64px; further apart (the jury
+  open) each keeps its own height.
+- The countdown ring's caption is the dial plus 80px wide, so each end's date and its UTC stay on
+  one line; its footnote is centred on the dial. A settled entry's date block is top-aligned with
+  the eyebrow.
+
+## Launch page
+
+- A launch card reads top to bottom: family and name, one "For …" eyebrow, the 28px verdict on the
+  money, the two-lane drawing, two check-glyph lines, then a foot that holds the radio pill on both
+  cards at all times. Choosing only adds the primary button beside the pill (on phones, on a line
+  of its own), so on desktop choosing shifts nothing. Each element says the fate once: the verdict
+  states it, the drawing names the events, the lines explain them. No figures and no minimums.
+
+## Lists
+
+- Two gauges sit at the right end of the figures row: the share registered (Standard) or listed
+  (Stake) now, and "Challenges off the list", drawn on every list whose challenges were read. With
+  none resolved it is an empty ring holding "—" (never "0%") and reads "No challenges yet", or
+  "None resolved yet" when some are in court (a capped read says "None in the latest 1,000
+  entries"). Once any challenge exists, a muted line under its figure reads "{kept} kept · {in
+  court} in court". Wrapped onto a line of their own (laptop and tablet widths) the gauges spread
+  across it, never hugging the left.
+- Open requests come first, larger and in the window blue, and the block is gone at 0; Entries
+  follows.
+- On a Stake list the "Listed" chip counts and filters every entry on the list (submitted +
+  disputed, the header's and Browse's "Listed"); "Disputed" is the part a challenge is running on,
+  "Off the list" the rest.
+- Pagination's jump field is a page pill (pill radius, surface fill, inner hairline), as wide as
+  the last page's chip and at least 32px, right of the last ellipsis.
+
+## Curator profile
+
+- **Section tabs.** An address with both actions and governed lists gets real tabs
+  (`components/curate/section-tabs.tsx`), not a SegmentedControl: "Activity N | Governed lists
+  N" in Urbanist at the section-title size (30px, 26px on phones), each count small and faint; the
+  open tab in `text` over a 2px `primary` underline that slides on the thumb spring (none under
+  reduced motion), the others `muted`; no track, a hairline under the row; ARIA tabs with
+  Left/Right/Home/End. `?tab=governed` (Activity is the default and is never written); a tab is
+  hidden, never unmounted. The Activity count is omitted when the list is cut at 120. The kind
+  filter below stays the smaller SegmentedControl, with the layout control at its right end.
+- **No table on the profile.** Its layouts are cards and rows; a stored "table" reads as rows.
+- **A row leads with the entry, not the list**: up to two text identifiers in label order (the
+  indexer keeps no column order); an address that is a list the registry index knows (a list of
+  lists' entry, looked up on its own chain only) leads with that list's title, the short address
+  after it in faint mono, shown whole or not at all; else the first identifier, an address short in
+  mono with its network; else the first value that is not a picture. The list name, with its seal,
+  is the second line; every identifying field is in the row's tooltip.
+- **Quiet addresses.** An address with no action in scope gets no row of zeros and no boxed empty
+  state. A juror's figures row leads with Juror on Curate (seats, disputes drawn in, voted, still
+  voting above 0); a governor with no action gets no figures row, only identity and one muted line
+  (the Governed lists heading carries the count). The muted line says there is no submission,
+  removal or challenge in scope and names what could not be read. The eyebrow and the document
+  title name the address's roles across all chains ("Curator · Juror", "Governor"), or "Address"
+  with none, and wait as a skeleton until the profile, the governance scan and the jury read have
+  settled, so nothing shows and then relayouts.
+- **Governed rows.** Entries is the list's whole total, the same as the list header and Browse;
+  the facts sit in fixed figure columns so they align down the list, and the court wraps to a second
+  line rather than losing its end.
 
 # Do's and Don'ts
 
