@@ -99,7 +99,7 @@ import {
   type GovernanceParams,
   type GovernedRegistry,
 } from './data'
-import { formatInt } from './view'
+import { ACTIVITY_LAYOUT_OPTIONS, formatInt, type ActivityLayout } from './view'
 import { Avatar as ListLogo } from 'pages/browse/avatar'
 
 /*
@@ -2548,6 +2548,121 @@ const GovActions = styled.div`
   }
 `
 
+/*
+ * Cards (round 6: "the card view also for governed lists"): the Browse
+ * card's shape, with the governor's controls at its foot. Three across at
+ * 1440, so six lists make two full rows.
+ */
+const GovGrid = styled.ul`
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+`
+
+const GovCard = styled.li`
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+  padding: 18px;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-raised);
+  box-shadow: inset 0 1px 0 var(--glass-highlight);
+  transition:
+    border-color 180ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    box-shadow 180ms cubic-bezier(0.2, 0.8, 0.2, 1);
+
+  &:hover {
+    border-color: var(--color-border-strong);
+    box-shadow:
+      inset 0 1px 0 var(--glass-highlight),
+      var(--shadow-card-hover);
+  }
+`
+
+const CardTop = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+`
+
+/* The court under the name, on its own lines: a card has the room. */
+const CardCourt = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  color: var(--color-text);
+  font-size: var(--fs-small);
+  line-height: var(--lh-small);
+`
+
+/* Entries large on the left, the creation date on the right, as on Browse. */
+const CardStats = styled.dl`
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  margin: auto 0 0;
+  padding-top: 14px;
+  border-top: 1px solid var(--glass-border);
+
+  div {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+  }
+
+  div + div {
+    align-items: flex-end;
+  }
+
+  dd {
+    margin: 0;
+    color: var(--color-text);
+    font-size: var(--fs-small);
+    line-height: var(--lh-small);
+    font-variant-numeric: tabular-nums;
+  }
+
+  dd[data-big] {
+    font-family: var(--font-figure);
+    font-size: 28px;
+    line-height: 30px;
+    font-weight: 500;
+    letter-spacing: -0.03em;
+  }
+`
+
+const CardActions = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+
+  > :first-child {
+    flex: 1 1 auto;
+  }
+`
+
+/* The intro line and the layout control (icons only, as on Activity). */
+const GovToolbar = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 24px;
+  margin: 0 0 16px;
+
+  > p {
+    margin: 0;
+  }
+`
+
 const GovHead = styled.div`
   display: flex;
   align-items: flex-end;
@@ -2627,10 +2742,15 @@ export const GovernancePanel = ({
   loading,
   isZero = false,
   embedded = false,
+  layout = 'rows',
+  onLayout,
 }: {
   registries: GovernedRegistry[]
   profileAddress: string
   loading?: boolean
+  /** Cards or rows: the profile's one layout, shared with its Activity. */
+  layout?: ActivityLayout
+  onLayout?: (layout: ActivityLayout) => void
   /** The zero address: its lists can no longer change parameters. */
   isZero?: boolean
   /**
@@ -2698,10 +2818,95 @@ export const GovernancePanel = ({
       ? 'Lists whose governor is the zero address: nobody can change their parameters any more.'
       : 'Lists whose governor is this address. Only the governor wallet can change their deposits, periods, court and policy.'
 
+  const layoutControl =
+    onLayout && !loading && registries.length > 0 ? (
+      <SegmentedControl<ActivityLayout>
+        ariaLabel="Layout"
+        size="sm"
+        value={layout}
+        onChange={onLayout}
+        options={ACTIVITY_LAYOUT_OPTIONS}
+      />
+    ) : null
+
+  // What every layout shows of a list: who it is, and what its governor can
+  // do with it.
+  const identity = (registry: GovernedRegistry, editable: boolean) => {
+    const href = `/tcr/${registry.chainId}/${registry.address}`
+    return (
+      <GovName>
+        <TitleLine>
+          <RegistryTitle to={href}>{registry.title}</RegistryTitle>
+          {registry.trustStatus === 'verified' && <VerifiedBadge size={16} />}
+          <KindTag kind={registry.kind} />
+        </TitleLine>
+        <Row $gap={6} $wrap>
+          <ChainChip chainId={registry.chainId} size="sm" />
+          <small>{truncateMiddle(registry.address)}</small>
+          {editable && (
+            <Chip>
+              <StatusDot $tone="registered" aria-hidden /> You govern this list
+            </Chip>
+          )}
+        </Row>
+      </GovName>
+    )
+  }
+  const controls = (registry: GovernedRegistry, editable: boolean) => {
+    const href = `/tcr/${registry.chainId}/${registry.address}`
+    return (
+      <>
+        {isZero ? (
+          // Nobody holds the zero address's key: there is no update to
+          // offer, only the list to open.
+          <Chip title="The governor is the zero address, so these parameters can no longer change">
+            <StatusDot $tone="neutral" aria-hidden />
+            Governance renounced
+          </Chip>
+        ) : editable ? (
+          // The list page's button says the same, so the governor meets
+          // one name in both places.
+          <Button
+            type="button"
+            $variant="primary"
+            $size="sm"
+            onClick={() => setSelected(registry)}
+          >
+            Update list parameters
+          </Button>
+        ) : isConnected ? (
+          <ReasonedButton
+            $variant="secondary"
+            $size="sm"
+            off
+            reason="Connect the governor wallet to update this list"
+          >
+            Only the governor can update
+          </ReasonedButton>
+        ) : (
+          <Button
+            type="button"
+            $variant="secondary"
+            $size="sm"
+            onClick={() => appKitModal?.open({ view: 'Connect' })}
+          >
+            Connect wallet to update
+          </Button>
+        )}
+        <ButtonLink to={href} $variant="ghost" $size="sm">
+          Open list
+        </ButtonLink>
+      </>
+    )
+  }
+
   return (
     <section aria-label="Governed lists">
       {embedded ? (
-        <GovIntro>{intro}</GovIntro>
+        <GovToolbar>
+          <GovIntro>{intro}</GovIntro>
+          {layoutControl}
+        </GovToolbar>
       ) : (
         <GovHead>
           <h2>
@@ -2710,6 +2915,7 @@ export const GovernancePanel = ({
               <small>{formatInt(registries.length)}</small>
             )}
           </h2>
+          {layoutControl}
           <p>{intro}</p>
         </GovHead>
       )}
@@ -2721,12 +2927,58 @@ export const GovernancePanel = ({
           </Small>
           <SkeletonBlock $height="76px" style={{ borderRadius: 14 }} />
         </GovList>
-      ) : (
-        <GovList>
+      ) : layout === 'cards' ? (
+        <GovGrid key="cards">
           {shown.map((registry) => {
             const editable =
               isOwner && normalizeAddress(registry.governor) === connected
-            const href = `/tcr/${registry.chainId}/${registry.address}`
+            return (
+              <GovCard key={registry.id}>
+                <CardTop>
+                  <ListLogo
+                    uri={registry.logoURI}
+                    seed={registry.address}
+                    size={40}
+                  />
+                  {identity(registry, editable)}
+                </CardTop>
+                <CardCourt>
+                  <Label $tone="faint">Court</Label>
+                  <span>
+                    <CourtDisplay registry={registry} />
+                  </span>
+                </CardCourt>
+                <CardStats>
+                  <div>
+                    <Label as="dt" $tone="faint">
+                      Entries
+                    </Label>
+                    {/* Every entry, open requests included: the list
+                        page's and Browse's Entries. */}
+                    <dd data-big>{formatInt(entryCount(registry))}</dd>
+                  </div>
+                  <div>
+                    <Label as="dt" $tone="faint">
+                      Created
+                    </Label>
+                    <dd>
+                      <CreatedValue
+                        time={createdAt(registry)}
+                        pending={creation.isPending}
+                      />
+                    </dd>
+                  </div>
+                </CardStats>
+                <CardActions>{controls(registry, editable)}</CardActions>
+              </GovCard>
+            )
+          })}
+        </GovGrid>
+      ) : (
+        <GovList key="rows">
+          {shown.map((registry) => {
+            const editable =
+              isOwner && normalizeAddress(registry.governor) === connected
             return (
               <GovRow key={registry.id}>
                 <ListLogo
@@ -2734,25 +2986,7 @@ export const GovernancePanel = ({
                   seed={registry.address}
                   size={40}
                 />
-                <GovName>
-                  <TitleLine>
-                    <RegistryTitle to={href}>{registry.title}</RegistryTitle>
-                    {registry.trustStatus === 'verified' && (
-                      <VerifiedBadge size={16} />
-                    )}
-                    <KindTag kind={registry.kind} />
-                  </TitleLine>
-                  <Row $gap={6} $wrap>
-                    <ChainChip chainId={registry.chainId} size="sm" />
-                    <small>{truncateMiddle(registry.address)}</small>
-                    {editable && (
-                      <Chip>
-                        <StatusDot $tone="registered" aria-hidden /> You govern
-                        this list
-                      </Chip>
-                    )}
-                  </Row>
-                </GovName>
+                {identity(registry, editable)}
                 <Facts>
                   <div>
                     <Label as="dt" $tone="faint">
@@ -2782,48 +3016,7 @@ export const GovernancePanel = ({
                     </dd>
                   </div>
                 </Facts>
-                <GovActions>
-                  {isZero ? (
-                    // Nobody holds the zero address's key: there is no
-                    // update to offer, only the list to open.
-                    <Chip title="The governor is the zero address, so these parameters can no longer change">
-                      <StatusDot $tone="neutral" aria-hidden />
-                      Governance renounced
-                    </Chip>
-                  ) : editable ? (
-                    // The list page's button says the same, so the
-                    // governor meets one name in both places.
-                    <Button
-                      type="button"
-                      $variant="primary"
-                      $size="sm"
-                      onClick={() => setSelected(registry)}
-                    >
-                      Update list parameters
-                    </Button>
-                  ) : isConnected ? (
-                    <ReasonedButton
-                      $variant="secondary"
-                      $size="sm"
-                      off
-                      reason="Connect the governor wallet to update this list"
-                    >
-                      Only the governor can update
-                    </ReasonedButton>
-                  ) : (
-                    <Button
-                      type="button"
-                      $variant="secondary"
-                      $size="sm"
-                      onClick={() => appKitModal?.open({ view: 'Connect' })}
-                    >
-                      Connect wallet to update
-                    </Button>
-                  )}
-                  <ButtonLink to={href} $variant="ghost" $size="sm">
-                    Open list
-                  </ButtonLink>
-                </GovActions>
+                <GovActions>{controls(registry, editable)}</GovActions>
               </GovRow>
             )
           })}

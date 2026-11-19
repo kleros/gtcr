@@ -484,6 +484,8 @@ const AddressPage = () => {
             profileAddress={address}
             loading={governedPending}
             isZero={isZero}
+            layout={layout}
+            onLayout={setLayout}
           />
         </Governed>
       )}
