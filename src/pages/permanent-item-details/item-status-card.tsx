@@ -31,7 +31,6 @@ import {
 import { EntryStatus, stakeEntryStatus } from 'components/curate/entry-status'
 import { StickyActionBar } from 'components/curate/item-standard-action-bar'
 import { LaneBar } from 'components/curate/lane-bar'
-import { CountUpText } from 'components/curate/registry-shared-count'
 import { BountyFigure } from 'components/curate/item-bounty-figure'
 import ItemActionButton from 'components/permanent-item-action-button'
 import { scrollToEvidenceComposer } from 'components/permanent-request-timelines'
@@ -112,29 +111,6 @@ const Head = styled.div`
   display: flex;
   flex-direction: column;
   gap: 10px;
-`
-
-const Amount = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 4px 8px;
-  color: var(--color-text);
-  font-family: var(--font-figure);
-  font-size: 44px;
-  line-height: 1;
-  font-weight: 500;
-  letter-spacing: -0.04em;
-  font-variant-numeric: tabular-nums;
-  overflow-wrap: anywhere;
-
-  small {
-    color: var(--color-muted);
-    font-family: var(--font-sans);
-    font-size: 15px;
-    font-weight: 500;
-    letter-spacing: 0;
-  }
 `
 
 const Sub = styled.span`
@@ -749,19 +725,15 @@ const ItemStatusCard = ({
                   countUp
                 />
               ) : (
-                <>
-                  <Label $tone="faint">{figureLabel}</Label>
-                  <Amount
-                    title={tokenText(figureAmount, tokenDecimals, tokenSymbol)}
-                  >
-                    <CountUpText
-                      value={formatTokenAmount(figureAmount, tokenDecimals)}
-                    />
-                    <small>{tokenSymbol}</small>
-                  </Amount>
-                </>
+                // Only a bounty is drawn large (round 9): any other state
+                // says its amount in one muted line.
+                <Sub>
+                  {figureLabel}:{' '}
+                  {tokenText(figureAmount, tokenDecimals, tokenSymbol)}
+                  {figureSub ? ` · ${figureSub}` : ''}
+                </Sub>
               )}
-              {figureSub && <Sub>{figureSub}</Sub>}
+              {challengeable && figureSub && <Sub>{figureSub}</Sub>}
               {prompt && <Prompt>{prompt}</Prompt>}
               {/* Nothing is drawn while the entry can be challenged: the
                 bounty, the sentence and the button carry it, and round 3 of

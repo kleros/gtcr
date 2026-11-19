@@ -44,15 +44,18 @@ const Calm = styled.div`
   gap: 10px;
 `
 
+/* A settled entry's date: a plain figure, a size above the body (round 9:
+   at display size it was "too mammoth" for a date nobody acts on). */
 const Big = styled.span`
   display: block;
   color: var(--color-text);
   font-family: var(--font-figure);
-  font-size: clamp(36px, 2vw + 20px, 48px);
-  line-height: 1;
+  font-size: 24px;
+  line-height: 30px;
   font-weight: 500;
-  letter-spacing: -0.04em;
+  letter-spacing: -0.02em;
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 `
 
 /** A state, not a figure: the words the court uses for where it stands. */

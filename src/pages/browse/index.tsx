@@ -283,13 +283,33 @@ const FiguresRow = styled.section`
   }
 `
 
-const FigureBox = styled(Surface)`
+const FigureBox = styled(Surface)<{ $silver?: boolean }>`
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   gap: 14px;
   min-width: 0;
   padding: 22px 26px;
+
+  /* Community (round 9): a lit edge too, in a neutral silver light rather
+     than Kleros's own blue, violet and amber, which stay the Verified box's,
+     so the two read apart and Kleros's colours keep their meaning. */
+  ${({ $silver }) =>
+    $silver &&
+    css`
+      border-color: transparent;
+      border-width: 1.5px;
+      background:
+        linear-gradient(var(--color-surface), var(--color-surface)) padding-box,
+        linear-gradient(
+            120deg,
+            color-mix(in srgb, var(--color-text) 46%, transparent),
+            color-mix(in srgb, var(--color-text) 8%, transparent) 40%,
+            color-mix(in srgb, var(--color-text) 30%, transparent) 72%,
+            color-mix(in srgb, var(--color-text) 10%, transparent)
+          )
+          border-box;
+    `}
 
   @media (max-width: 720px) {
     padding: 18px 16px;
@@ -1758,7 +1778,7 @@ const BrowsePage = () => {
               <VerifiedFigure>
                 <FigureHead>
                   <VerifiedBadge size={18} decorative />
-                  <Label $tone="faint">{VERIFIED_LABEL}</Label>
+                  <Label $tone="faint">{VERIFIED_LISTS_LABEL}</Label>
                 </FigureHead>
                 <FigureLine>
                   <BigFigure>
@@ -1821,7 +1841,7 @@ const BrowsePage = () => {
                 </FigureLine>
               </VerifiedFigure>
             </FigureBox>
-            <FigureBox $padding="none">
+            <FigureBox $padding="none" $silver>
               <Label $tone="faint">{COMMUNITY_LISTS_LABEL}</Label>
               <BigFigure>
                 <AnimatedNumber

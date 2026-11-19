@@ -185,7 +185,7 @@ const RANGE_SPAN: Record<ChartRange, string> = {
 }
 
 /** Curators beside the chart: few, so the panel keeps the chart's height. */
-const TOP_CURATORS = 4
+const TOP_CURATORS = 5
 
 /** A logo, on the IPFS gateway only (ipfsImageUrl says why). */
 const mediaUrl = (uri?: string | null): string | null =>
@@ -373,13 +373,16 @@ const CuratorBar = styled.span`
   margin: 8px 0 6px;
 `
 
-/* The chart's range switch, at the panel's top right (round 7: the chain
-   switch it replaced is hidden; the page is always every mainnet). */
+/* The chart's head (round 9): its legend on the left, the range switch on
+   the right (round 7: the chain switch it replaced is hidden; the page is
+   always every mainnet), right above the chart it sets. */
 const ScopeBar = styled.div`
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  justify-content: flex-end;
-  margin-bottom: 18px;
+  justify-content: space-between;
+  gap: 10px 16px;
+  margin-bottom: 8px;
 `
 
 const FeaturedTop = styled.div`
@@ -1162,15 +1165,6 @@ const Dashboard = () => {
         style={{ ['--i' as string]: 4 }}
       >
         <FeaturedMain>
-          <ScopeBar>
-            <SegmentedControl<ChartRange>
-              ariaLabel="Chart range"
-              size="sm"
-              value={range}
-              onChange={setRange}
-              options={RANGE_OPTIONS}
-            />
-          </ScopeBar>
           <FeaturedTop>
             <HeadlineFigure>
               <Label $tone="faint">Entries</Label>
@@ -1199,6 +1193,10 @@ const Dashboard = () => {
                 </InlineStat>
               ))}
             </InlineStats>
+          </FeaturedTop>
+          {/* The chart's own head: what it counts, and the range that sets
+              it (and Top curators beside it). */}
+          <ScopeBar>
             <SeriesLegend aria-label="Chart series">
               <li>
                 <Label $tone="faint">{RANGE_LEGEND[range]}</Label>
@@ -1215,7 +1213,14 @@ const Dashboard = () => {
                 <span style={{ color: 'var(--color-muted)' }}>Challenges</span>
               </li>
             </SeriesLegend>
-          </FeaturedTop>
+            <SegmentedControl<ChartRange>
+              ariaLabel="Chart range"
+              size="sm"
+              value={range}
+              onChange={setRange}
+              options={RANGE_OPTIONS}
+            />
+          </ScopeBar>
           {loading || !chart ? (
             history.isError && range !== '30d' ? (
               <ChartEmpty>The history did not load</ChartEmpty>
@@ -1231,7 +1236,7 @@ const Dashboard = () => {
           ) : (
             <ActivityWave
               key={`${chains.join('-')}-${range}`}
-              height={260}
+              height={240}
               labels={chartLabels}
               up={chart.up}
               down={chart.down}

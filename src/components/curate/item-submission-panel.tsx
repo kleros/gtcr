@@ -25,6 +25,7 @@ import {
   HERO_LEAD_ROW_MIN,
   HERO_PICTURE_MARK,
   ImagePlate,
+  PlateThumbs,
   ItemMediaBand,
   entryMedia,
   heroPicture,
@@ -128,8 +129,9 @@ const Flow = styled.div<{ $beside: boolean }>`
         }
 
         /* Portrait: taller than wide, so the rows beside it read as a
-           column next to the picture. */
-        > [data-hero-picture] button {
+           column next to the picture (the first plate; the small ones
+           under it keep their own height). */
+        > [data-hero-picture] > figure > button {
           height: 260px;
         }
 
@@ -266,9 +268,15 @@ export const ItemSubmissionPanel = ({
   const claim =
     kind === 'standard' ? <ItemRewardWithdrawal item={item} /> : null
 
-  // The picture this region opens with, when the page asks for it here.
-  const lead = leadsWithPicture ? single : undefined
-  const bandMedia = single ? { images: [], files: found.files } : found
+  // The picture this region opens with: the page's one picture when it asks
+  // for it here, or, with two or more, always (round 9): the first as the
+  // portrait plate on the left, the others as small plates under it, the
+  // field rows beside them, as the one picture stands.
+  const gallery = found.images.length >= 2 ? found.images : undefined
+  const lead = gallery ? gallery[0] : leadsWithPicture ? single : undefined
+  const extras = gallery ? gallery.slice(1) : []
+  const bandMedia =
+    single || gallery ? { images: [], files: found.files } : found
   const linkedBlock = !!linkedMetadata && linkedExtras
   // Whether anything follows the lead plate to run beside it: with
   // nothing, it takes the measure's whole width.
@@ -328,6 +336,17 @@ export const ItemSubmissionPanel = ({
             // Marked so the page can measure it wherever it stands.
             <div {...HERO_PICTURE_MARK}>
               <ImagePlate image={lead} layout="lead" />
+              {extras.length > 0 && (
+                <PlateThumbs>
+                  {extras.map((image, index) => (
+                    <ImagePlate
+                      key={`${image.field.label ?? 'picture'}-${index}`}
+                      image={image}
+                      layout="thumb"
+                    />
+                  ))}
+                </PlateThumbs>
+              )}
             </div>
           )}
           <ItemMediaBand media={bandMedia} />

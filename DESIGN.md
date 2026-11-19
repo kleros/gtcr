@@ -467,8 +467,10 @@ way (dashboard, Browse, registry pages, the profile, the landing page).
   a verified list's name, small feeds and rails 12 to 14px, with no tooltip; Community rows carry
   no mark. On a list of lists, the entries it vouches for carry the seal too. Browse picks Kleros
   Verified (the default), Community or All above its toolbar, with the choice's meaning in one
-  line beside it. Its figures above are three boxes in a row (round 8): Kleros Verified with its
-  count and logos on the lit rim, Community lists, then the entries and open requests.
+  line beside it. Its figures above are three boxes in a row (round 8): "Kleros Verified lists"
+  with its count and logos on the lit rim, Community lists on a lit edge of neutral silver light
+  (round 9: Kleros's own blue, violet and amber stay the Verified box's), then the entries and
+  open requests.
 - Kleros Verified is shown as a count with its lists, each leading to its list (the dashboard's
   tiles, newest to earn the badge first with the month of its earliest registration on its chain's
   list of lists, the lists of lists themselves last as "List of lists"; Browse's logos with their
@@ -518,7 +520,8 @@ way (dashboard, Browse, registry pages, the profile, the landing page).
   to the challenger, and the dispute count it states, are the Standard and Stake rulings only, the
   same count as the Disputes panel's, so "show more" can always reach it; the self-sustaining
   panel states no Classic line (round 7). A reading of
-  that share ("mostly well founded") is claimed only on at least 30 rulings. Two figures stay
+  that share ("when challenges happen, they are often right", round 9's words) is claimed only on
+  at least 30 rulings. Two figures stay
   Standard and Stake only: a curator's own bounties won, which has to match their profile page,
   and the Kleros Verified count, whose tiles are links.
   Classic's share is read live from the same indexer (it still holds `Registry` and `Request`):
@@ -600,8 +603,9 @@ way (dashboard, Browse, registry pages, the profile, the landing page).
   read in pages after the page's own load, three at a time, and retried as a whole if a chain
   fails, never drawn with a hole. The current bucket is drawn dashed.
 - **Top curators follow the chart's range** (round 8: the date filter is for both), ranked by
-  requests plus challenges over it, with their bounties won all time; four of them, so the panel
-  keeps the chart's height.
+  requests plus challenges over it, with their bounties won all time; five of them, filling the
+  column beside a 240px chart. The chart's head is one row right above it: what it counts and its
+  legend on the left, the range switch on the right (round 9), under the figures.
 - **Self-sustaining mechanism.** Each ring carries a tooltip built from the same counts as the
   sentence. No line names the Classic lists (round 7). The sentence sits under the money at a 68ch measure, beside the tiles when there are
   one or two coins. Two or three coins take one equal column each across the money column, a lone
@@ -629,8 +633,9 @@ way (dashboard, Browse, registry pages, the profile, the landing page).
 - **Pictures are not always present.** Exactly one is drawn once, on the left (round 8, on
   trial): it opens Full details as a portrait plate (220px wide, 260px tall, the picture contained
   on the quiet fill) with the field rows stacked beside it from 1180px, and above them, the
-  column's full width, between 1001 and 1179px. Two or more pictures stay in the Full details band,
-  two or more per row (140px minimum). None: nothing is drawn or reserved. Where the hero stacks,
+  column's full width, between 1001 and 1179px. Two or more (round 9) take the same place: the
+  first as the portrait plate, the others as small 96px plates under it, as many to a row as fit,
+  each opening full size. None: nothing is drawn or reserved. Where the hero stacks,
   a lone plate takes the column's full width, 168-240px tall, under the facts.
 - **At 1000px and below** the columns dissolve into one order: identity, clock, facts, picture,
   full details, then the action under an inset hairline.
@@ -645,6 +650,10 @@ way (dashboard, Browse, registry pages, the profile, the landing page).
   end of the page it rides 12px above the footer at every width (a 64px reserve at the page's end
   gives the taller bottom bar its room), so the action is in reach even at the very end of a short
   page. Until the card has mounted it stays away. With no action, the wide bar is not drawn.
+- **Only a bounty is drawn large** (round 9: "that huge only when it is earn"). Any other action
+  (remove, resubmit, execute, fund an appeal) is its sentence and its button, which carries the
+  amount; on Stake the amount sits in one muted line. A settled entry's date is a plain 24px
+  figure, not a display size.
 - **The challenge lead.** While an entry can be challenged, the card leads with one line, "Earn
   30 xDAI": the verb left of the amount at the same size (Urbanist), the amount in Geist with
   tabular figures, the coin small and muted, the line stepping down (56/44/36/30px) as the amount

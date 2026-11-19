@@ -651,16 +651,10 @@ const heldUpSentence = (
       : `${none.charAt(0).toUpperCase()}${none.slice(1)}.`
   }
   const share = `${won}% of the ${formatInt(record.listedRulings)}${plus} disputes${onListed(record)} went to the challenger`
-  // Both sides of "rare" count the Classic lists: entries ever curated,
-  // against every request ever disputed.
-  const rare =
-    never !== undefined &&
-    entries !== undefined &&
-    entries > record.challenged * 2
+  // The reading, in the owner's words (round 9), only where the rulings
+  // bear it out (challengersRight).
   const reading = challengersRight(record)
-    ? rare
-      ? ': challenges are rare, and mostly well founded'
-      : ': most challenges are well founded'
+    ? ': when challenges happen, they are often right'
     : ''
   return held
     ? `${held}, and ${share}${reading}.`

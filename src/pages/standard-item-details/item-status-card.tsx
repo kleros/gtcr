@@ -31,7 +31,6 @@ import { scrollToEvidenceComposer } from 'components/request-timelines'
 import { CurateIcon } from 'components/curate/icons'
 import {
   Button,
-  Label,
   SkeletonBlock,
   Small,
   Stack,
@@ -112,27 +111,6 @@ const Head = styled.div`
   display: flex;
   flex-direction: column;
   gap: 10px;
-`
-
-const Amount = styled.div`
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-  color: var(--color-text);
-  font-family: var(--font-figure);
-  font-size: 44px;
-  line-height: 1;
-  font-weight: 500;
-  letter-spacing: -0.04em;
-  font-variant-numeric: tabular-nums;
-
-  small {
-    color: var(--color-muted);
-    font-family: var(--font-sans);
-    font-size: 15px;
-    font-weight: 500;
-    letter-spacing: 0;
-  }
 `
 
 const Prompt = styled.p`
@@ -456,20 +434,6 @@ const ItemStatusCard = ({
         ? 'For the challenger'
         : 'Refused to rule'
 
-  const heading = inWindow
-    ? statusCode === STATUS_CODE.SUBMITTED
-      ? `Challenge this ${itemName}`
-      : 'Challenge this removal'
-    : statusCode === STATUS_CODE.REGISTERED
-      ? `Remove this ${itemName}`
-      : isResubmit
-        ? `Resubmit this ${itemName}`
-        : isPending
-          ? 'Execute the request'
-          : appealable
-            ? 'Fund the appeal'
-            : undefined
-
   // The challenge period in words, for the sentence that stands where the
   // breakdown pill used to: the row that repeated the same duration below
   // the button is gone, so the card states it once.
@@ -645,13 +609,10 @@ const ItemStatusCard = ({
                 </>
               ) : (
                 <>
-                  {heading && <Label $tone="faint">{heading}</Label>}
-                  {buttonAmount && (
-                    <Amount title={amountLabel}>
-                      {formatEther(buttonAmount)}
-                      <small>{nativeCurrency}</small>
-                    </Amount>
-                  )}
+                  {/* Only a bounty is drawn large (round 9: "it should be
+                      that huge only when it is earn"): any other action is
+                      its sentence and its button, which carries the
+                      amount. */}
                   {depositLine ? (
                     <Prompt>{depositLine}</Prompt>
                   ) : (

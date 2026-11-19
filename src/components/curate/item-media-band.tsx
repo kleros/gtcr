@@ -40,7 +40,7 @@ import { hasValue, isImageField, type EntryField } from './item-standard-fields'
  * (`rail`), or opening the full details (`lead`, as wide as the room the
  * details give it).
  */
-export type PlateLayout = 'one' | 'few' | 'many' | 'rail' | 'lead'
+export type PlateLayout = 'one' | 'few' | 'many' | 'rail' | 'lead' | 'thumb'
 
 /* The width at which the hero stacks into one column, set in the pages. */
 const HERO_STACKED = '(max-width: 1000px)'
@@ -129,9 +129,21 @@ const Plate = styled.figure<{ $layout: PlateLayout }>`
   `}
 
   ${({ $layout }) =>
-    $layout === 'lead' &&
+    ($layout === 'lead' || $layout === 'thumb') &&
     `
     width: 100%;
+  `}
+
+  ${({ $layout }) =>
+    $layout === 'thumb' &&
+    `
+    gap: 4px;
+
+    figcaption {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
   `}
 
   figcaption {
@@ -150,7 +162,9 @@ const Open = styled.button<{ $layout: PlateLayout }>`
       ? 'clamp(180px, 26vw, 300px)'
       : $layout === 'rail' || $layout === 'lead'
         ? '168px'
-        : '150px'};
+        : $layout === 'thumb'
+          ? '96px'
+          : '150px'};
 
   ${({ $layout }) =>
     $layout === 'rail' &&
@@ -366,6 +380,18 @@ export const ImagePlate = ({
     </Plate>
   )
 }
+
+/*
+ * The pictures after the first, under it in the left column (round 9:
+ * "how you will handle this when an entry has multiple pics"): small
+ * plates, as many to a row as fit, each opening full size.
+ */
+export const PlateThumbs = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: 8px;
+  margin-top: 12px;
+`
 
 /** The entry's pictures and files; nothing at all when it has neither. */
 export const ItemMediaBand = ({ media }: { media: EntryMedia }) => {
