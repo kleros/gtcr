@@ -809,10 +809,14 @@ const UploadRow = styled.div<{
     border-color: var(--color-danger);
   }
 
+  /* Phones: the actions take a line of their own under the picture and
+     the meta. They are named, not taken as the last child: the hidden file
+     input comes after them, so ":last-child" put the buttons in the 48px
+     picture column, where "Connect wallet" spilled out of the card. */
   @media (max-width: 520px) {
     grid-template-columns: 48px minmax(0, 1fr);
 
-    > :last-child {
+    > [data-upload-actions] {
       grid-column: 1 / -1;
     }
   }
@@ -900,7 +904,11 @@ export const UploadField = ({
   id: string
   label: React.ReactNode
   help?: React.ReactNode
-  /** The acceptance rule ("PNG, SVG, WebP or JPEG · under 2 MB"). */
+  /**
+   * The acceptance rule ("PNG, SVG, WebP or JPEG · under 2 MB"). A limit is
+   * held together here (the word before its figure, the figure, the unit), so
+   * a narrow row breaks the line at the middot, never inside the limit.
+   */
   hint: string
   kind: 'image' | 'pdf'
   accept: string
@@ -921,6 +929,10 @@ export const UploadField = ({
   const invalid = !!showError && !!error
   const uri = value ? parseIpfs(value) : ''
   const noun = what.replace(/^the /, '')
+  const rule = hint.replace(
+    /(\S+) (\d[\d.,]*) (?=[KMG]?B\b)/g,
+    '$1\u00A0$2\u00A0',
+  )
 
   const pick = (file: File) => {
     const problem = reject(file)
@@ -932,11 +944,14 @@ export const UploadField = ({
    * A file dropped on the row goes through `pick`: the caller's own rule,
    * the same message when it fails and the same upload when it passes. While
    * the wallet or Atlas sign-in blocks, or an upload is in flight, the row
-   * says so during the drag rather than taking a file it cannot send.
+   * says so during the drag rather than taking a file it cannot send, in
+   * the gate's own words, exactly as the gate gives them: "Connect wallet to
+   * upload the logo" without a wallet, "Sign in to upload the logo" with one
+   * that has not signed in.
    */
   const drop = useFileDrop<HTMLDivElement>({
     blocked: gate.blocker
-      ? `Connect first to upload ${what}.`
+      ? gate.blocker
       : uploading
         ? 'An upload is already going.'
         : '',
@@ -1004,10 +1019,21 @@ export const UploadField = ({
                   </Data>
                 </TextLink>
               ) : (
-                <Small $faint>{hint}</Small>
+                <Small $faint>{rule}</Small>
               )}
             </UploadMeta>
-            <Row $gap={8} $justify="flex-end">
+            {/*
+             * Blocked, the row holds the blocker's own control ("Connect
+             * wallet", "Sign in"), which says the gate once; the group's
+             * name gives a screen reader the whole of it.
+             */}
+            <Row
+              data-upload-actions
+              role={gate.blocker ? 'group' : undefined}
+              aria-label={gate.blocker}
+              $gap={8}
+              $justify="flex-end"
+            >
               {gate.blocker ? (
                 gate.control
               ) : (
@@ -1043,11 +1069,20 @@ export const UploadField = ({
               }}
             />
           </UploadRow>
-          {gate.blocker && (
-            <Small $muted role="status">
-              {gate.blocker}
-            </Small>
-          )}
+          {/*
+           * The gate in words, shown only where no control in the row says
+           * it. With the control there it stays a live region for screen
+           * readers, so a gate that moves on (connect, then sign in) is still
+           * announced.
+           */}
+          {gate.blocker &&
+            (gate.control ? (
+              <VisuallyHidden role="status">{gate.blocker}</VisuallyHidden>
+            ) : (
+              <Small $muted role="status">
+                {gate.blocker}
+              </Small>
+            ))}
           {rejection && <ErrorText role="alert">{rejection}</ErrorText>}
         </>
       )}

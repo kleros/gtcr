@@ -2,7 +2,7 @@ import React, { useEffect, useRef } from 'react'
 import styled, { css, keyframes } from 'styled-components'
 import { useParams, useSearchParams } from 'react-router-dom'
 import useDocumentHead from 'hooks/use-document-head'
-import { NETWORKS, NETWORKS_INFO } from 'config/networks'
+import { NETWORKS, NETWORKS_INFO, getNativeCurrency } from 'config/networks'
 import { warmFactory, warmPermanentFactory } from 'bootstrap/app-router'
 import {
   ButtonLink,
@@ -27,13 +27,17 @@ import { DepositFate, type FateSpec } from './deposit-fate'
  * switch.
  *
  * One question decides between them — does the money come back? — so each
- * card is one vertical read of that question: what is put up and what the
- * kind is for, the verdict, the same drawing with one difference in it (see
- * ./deposit-fate), and two lines that say when the money moves and what the
- * kind costs you. No figure and no period is quoted anywhere: the deposits,
- * the challenge window, the court and the number of jurors are all the
- * creator's to set in the factory, and the Guide route carries both
- * lifecycles in full.
+ * card is one vertical read of that question, top to bottom: the kind's
+ * name, what it is for, the verdict on the money, the same two-lane drawing
+ * with one difference in it (see ./deposit-fate), two lines on how the money
+ * moves and what to know before choosing, and the foot that holds the
+ * choice. Each says one thing: the verdict is the money's fate, the drawing
+ * names the events (on Standard, the removal request that can open a
+ * registered entry to a challenge again, drawn dashed), the lines explain
+ * them. The coin is named, after the name of the drawing's money lane, but
+ * no figure and no period is quoted anywhere: the deposits, the challenge
+ * window, the court and the number of jurors are all the creator's to set
+ * in the factory, and the Guide route carries both lifecycles in full.
  */
 
 const SUPPORTED_CHAINS: number[] = [
@@ -66,27 +70,29 @@ const isKind = (value: string | null): value is Kind =>
 /* ---------- The one difference, drawn the same way twice ---------- */
 
 /**
- * How much of the lane the Standard deposit is inside. A share of a lane with
- * no axis, no tick and no figure on it: it says “part of an entry’s life, and
- * then it is over”, which is the whole claim, and the empty rest of the lane
- * is what makes that claim visible at all.
+ * Where the Standard deposit comes back, as a share of a lane with no axis:
+ * about where the original lifecycle put registration (31% of its lane at
+ * 1440). Not a measurement. A short bar beside the Stake card's full one is
+ * what makes "one-time" visible; the dashed removal band at the lane's end
+ * is as long, since a removal request runs on the same challenge period.
  */
-const RETURNED_AT = 0.58
+const RETURNED_AT = 0.32
 
 const STANDARD_FATE: FateSpec = {
-  fill: RETURNED_AT,
+  lane: 'Deposit locked',
+  release: RETURNED_AT,
   event: 'Registered',
-  verdict: 'Back in full',
+  removal: 'Removal request',
   description:
-    'The submitter’s deposit over an entry’s life, drawn by event and not to scale: locked when the entry is submitted, back in full once the entry is registered, and the rest of the entry’s life standing clear of it.',
+    'Drawn by event, not to scale. An entry is open to challenge from submission until it is registered; the deposit is locked for that time and comes back in full at registration. Once registered, it is open to challenge again only during a removal request, drawn dashed at the end, and only if someone makes one.',
 }
 
 const STAKE_FATE: FateSpec = {
-  fill: 'full',
-  event: 'Until you withdraw',
-  verdict: 'Still locked',
+  lane: 'Stake locked',
+  release: 'end',
+  event: 'Withdrawn',
   description:
-    'The submitter’s stake over an entry’s life, drawn by event and not to scale: locked when the entry is submitted and still locked for the whole of the entry’s life, with no event at which it comes back — only the submitter’s own withdrawal.',
+    'Drawn by event, not to scale. An entry is open to challenge for as long as it is listed; the stake is locked for all of that time and comes back only when the submitter withdraws it.',
 }
 
 /* ---------- Header ---------- */
@@ -136,7 +142,13 @@ const Lede = styled.p`
 
 /* ---------- The choice: two equal cards in one radio group ---------- */
 
-/* The cards' rows, shared through subgrid so the two cards line up. */
+/*
+ * The cards' rows, shared through subgrid so the two cards line up: one per
+ * in-flow child of a card, in order the head, the eyebrow (Lead), the
+ * verdict (Outcome), the drawing, the two lines (Points) and the foot. The
+ * screen-reader summary is out of flow and takes none. Add or remove a child
+ * and this must change with it, or the rows of the two cards drift apart.
+ */
 const CARD_ROWS = 6
 
 const Choices = styled.div`
@@ -312,11 +324,14 @@ const Option = styled(Surface)`
     opacity: 0.8;
   }
 
-  /* Chosen: the rim stays, light pools behind the pill and under the card. */
+  /*
+   * Chosen: the rim stays, and light pools in the foot's corner, behind the
+   * pill and the button it brings, and under the card.
+   */
   &[data-checked] {
     background:
       radial-gradient(
-        90% 55% at 100% 0%,
+        90% 55% at 0% 100%,
         color-mix(in srgb, var(--edge-2) 8%, transparent),
         transparent 70%
       ),
@@ -365,11 +380,9 @@ const Option = styled(Surface)`
   }
 `
 
+/* The kind's family and name; the choice itself sits at the card's foot. */
 const CardHead = styled.div`
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
+  min-width: 0;
 `
 
 const CardTitle = styled.h2`
@@ -383,27 +396,12 @@ const CardTitle = styled.h2`
 `
 
 /*
- * The card's eyebrow row: on the left what the drawing measures and over
- * what window, on the right what the kind is best for (the docs' "Best
- * for"). The same two slots in both cards, so the pair reads as a pair.
+ * What the kind is for (the docs' "Best for"), as the card's one eyebrow.
+ * The visible "For" carries the meaning, so nothing is hidden for screen
+ * readers, and a single label cannot pile into a second one on a phone.
  */
 const Lead = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 4px 16px;
   margin: 26px 0 0;
-
-  span:last-child {
-    text-align: right;
-  }
-
-  @media (max-width: 560px) {
-    span:last-child {
-      text-align: left;
-    }
-  }
 `
 
 /* The verdict on the money, in the display face. */
@@ -420,12 +418,14 @@ const Outcome = styled.p`
 
 /* Separated by space alone: a figure in a card is not a box in a box. */
 const Drawing = styled.div`
-  margin: 18px 0 0;
+  margin: 20px 0 0;
 `
 
 /*
  * The two lines a card is allowed beyond its drawing: what the money does,
- * then what the kind costs you. One of each, so neither kind is sold.
+ * then the one thing about the kind a reader should know before choosing it.
+ * Every line on the page takes the same check, so the pair reads as two
+ * facts rather than as a score; the list's aria-label names the pair.
  */
 const Points = styled.ul`
   display: flex;
@@ -436,32 +436,20 @@ const Points = styled.ul`
   list-style: none;
 `
 
-const Point = styled.li<{ $con?: boolean }>`
+const Point = styled.li`
   display: grid;
   grid-template-columns: 18px minmax(0, 1fr);
   gap: 10px;
-  color: ${({ $con }) => ($con ? 'var(--color-muted)' : 'var(--color-text)')};
+  color: var(--color-text);
   font-size: var(--fs-body);
   line-height: var(--lh-body);
   text-wrap: pretty;
 
   svg {
     margin-top: 1px;
-    color: ${({ $con }) =>
-      $con ? 'var(--color-faint)' : 'var(--color-primary)'};
+    color: var(--color-primary);
   }
 `
-
-const MinusIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
-    <path
-      d="M7 12h10"
-      stroke="currentColor"
-      strokeWidth="1.85"
-      strokeLinecap="round"
-    />
-  </svg>
-)
 
 const ArrowIcon = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
@@ -475,29 +463,55 @@ const ArrowIcon = () => (
   </svg>
 )
 
-/* ---------- The chosen card's foot: continue to its factory ---------- */
+/* ---------- The card's foot: the choice, then its factory ---------- */
 
 const footIn = keyframes`
   from { opacity: 0; transform: translateY(6px); }
   to { opacity: 1; transform: none; }
 `
 
-/* In the card's own flow: nothing floats over the page. */
+/*
+ * In the card's own flow, on both cards at all times: the radio sits where
+ * reading ends, so an unchosen card has no empty block under its lines.
+ * Choosing one adds its button. Where the button fits beside the pill, the
+ * foot is as tall as that button from the start, so nothing moves when it
+ * arrives. On a phone (see Go) it takes its own row under the pill instead,
+ * so there the foot reserves nothing, which would only float the pill in an
+ * empty band and let it jump when chosen: the chosen card grows by the
+ * button's row, below where the reader tapped, and is scrolled until the
+ * button shows.
+ */
 const Foot = styled.div`
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  /* The button's 44px, plus the padding and hairline above it. */
+  min-height: calc(44px + 21px);
   margin: 24px 0 0;
   padding-top: 20px;
   border-top: 1px solid var(--glass-border);
   /* Brought into view on a pick: some room under the button. */
   scroll-margin-bottom: 32px;
+
+  @media (max-width: 560px) {
+    min-height: 0;
+  }
+`
+
+/* The way on, which only the chosen card offers. */
+const Go = styled.div`
   animation: ${footIn} 360ms var(--ease-out) both;
 
   @media (prefers-reduced-motion: reduce) {
     animation: none;
   }
 
+  /* On a phone the button takes its own full-width row under the pill. */
   @media (max-width: 560px) {
+    flex: 1 1 100%;
+
     > * {
       width: 100%;
     }
@@ -553,8 +567,9 @@ const Choice = ({
     onChoose(kind)
   }
 
-  // The button that goes on opens at the card's foot, under the fold when
-  // the card is chosen from its head: bring it into view.
+  // The button that goes on opens in the card's foot, which can be under the
+  // fold when the card is chosen by a click higher up, and which on a phone
+  // grows a row for it under the pill: bring it into view.
   useEffect(() => {
     if (!checked || !picked.current) return
     picked.current = false
@@ -586,10 +601,12 @@ const Choice = ({
       style={{ ['--i' as string]: index }}
     >
       <CardHead>
-        <div>
-          <Label $tone="faint">{family}</Label>
-          <CardTitle id={titleId}>{name}</CardTitle>
-        </div>
+        <Label $tone="faint">{family}</Label>
+        <CardTitle id={titleId}>{name}</CardTitle>
+      </CardHead>
+      <VisuallyHidden id={summaryId}>{summary}</VisuallyHidden>
+      {children}
+      <Foot ref={footRef}>
         <Pick>
           <input
             type="radio"
@@ -605,22 +622,20 @@ const Choice = ({
             {checked ? 'Selected' : 'Choose'}
           </span>
         </Pick>
-      </CardHead>
-      <VisuallyHidden id={summaryId}>{summary}</VisuallyHidden>
-      {children}
-      {checked && (
-        <Foot ref={footRef}>
-          <ButtonLink
-            to={href(chainId)}
-            $variant="primary"
-            onMouseEnter={() => preload()}
-            onFocus={() => preload()}
-          >
-            Create a {name}
-            <ArrowIcon />
-          </ButtonLink>
-        </Foot>
-      )}
+        {checked && (
+          <Go>
+            <ButtonLink
+              to={href(chainId)}
+              $variant="primary"
+              onMouseEnter={() => preload()}
+              onFocus={() => preload()}
+            >
+              Create a {name}
+              <ArrowIcon />
+            </ButtonLink>
+          </Go>
+        )}
+      </Foot>
     </Option>
   )
 }
@@ -635,6 +650,9 @@ const LaunchListPage = () => {
     : NETWORKS.gnosis
   const chain = NETWORKS_INFO[chainId as keyof typeof NETWORKS_INFO]
   const chainName = chain?.name ?? `chain ${chainId}`
+  // The Standard deposit is in the chain's own coin: xDAI on Gnosis, ETH on
+  // Ethereum and Sepolia. No figure goes with it (see the header comment).
+  const coin = `in ${getNativeCurrency(chainId).symbol}`
 
   // The chosen kind lives in the URL; nothing is chosen until someone picks.
   const [searchParams, setSearchParams] = useSearchParams()
@@ -686,31 +704,25 @@ const LaunchListPage = () => {
           index={3}
         >
           <Lead>
-            <Label $tone="faint">Deposit over an entry’s life</Label>
-            <Label $tone="faint">
-              <VisuallyHidden>Best for: </VisuallyHidden>
-              One-time verification
-            </Label>
+            <Label $tone="muted">For one-time verification</Label>
           </Lead>
           <Outcome>Returned in full</Outcome>
 
           <Drawing>
-            <DepositFate spec={STANDARD_FATE} delay={700} />
+            <DepositFate spec={STANDARD_FATE} coin={coin} delay={700} />
           </Drawing>
 
           <Points aria-label="What this kind means">
             <Point>
               <CurateIcon name="check" size={18} />
               <span>
-                <VisuallyHidden>How the money moves: </VisuallyHidden>
                 The deposit comes back in full once the challenge window closes
                 with nobody challenging.
               </span>
             </Point>
-            <Point $con>
-              <MinusIcon />
+            <Point>
+              <CurateIcon name="check" size={18} />
               <span>
-                <VisuallyHidden>Trade-off: </VisuallyHidden>
                 Once registered, an entry can only be contested through a
                 removal request.
               </span>
@@ -728,25 +740,18 @@ const LaunchListPage = () => {
           index={4}
         >
           <Lead>
-            <Label $tone="faint">
-              Stake over an entry’s life, in any ERC-20
-            </Label>
-            <Label $tone="faint">
-              <VisuallyHidden>Best for: </VisuallyHidden>
-              Continuous compliance
-            </Label>
+            <Label $tone="muted">For continuous compliance</Label>
           </Lead>
           <Outcome>Locked while listed</Outcome>
 
           <Drawing>
-            <DepositFate spec={STAKE_FATE} delay={780} />
+            <DepositFate spec={STAKE_FATE} coin="in any ERC-20" delay={780} />
           </Drawing>
 
           <Points aria-label="What this kind means">
-            <Point $con>
-              <MinusIcon />
+            <Point>
+              <CurateIcon name="check" size={18} />
               <span>
-                <VisuallyHidden>How the money moves: </VisuallyHidden>
                 The stake stays locked until the submitter withdraws it, and a
                 challenger can take it at any time until then.
               </span>
@@ -754,8 +759,7 @@ const LaunchListPage = () => {
             <Point>
               <CurateIcon name="check" size={18} />
               <span>
-                <VisuallyHidden>What you gain: </VisuallyHidden>A failed
-                challenge adds the challenger’s stake to the entry’s.
+                A failed challenge adds the challenger’s stake to the entry’s.
               </span>
             </Point>
           </Points>

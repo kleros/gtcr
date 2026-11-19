@@ -1,288 +1,369 @@
 import React, { useEffect, useRef, useState } from 'react'
-import styled, { css, keyframes } from 'styled-components'
+import styled, { keyframes } from 'styled-components'
+import { Label } from 'components/curate/primitives'
+import { LANE_BAR, LaneBar, laneDuration } from 'components/curate/lane-bar'
 import { useInView } from './use-in-view'
 
 /*
- * One fact per card: how much of an entry's life the submitter's money spends
- * inside it. The lane is the entry's life, a track lit a step above the card
- * so that the part the money never reaches is still something the eye can
- * see, fading out at its right edge because neither kind of list has an end
- * anyone can draw. The glowing band inside it is the money — `--viz-2`, a
- * chart hue no status role takes, because money is a quantity and not a
- * state. A lit head runs the band's length once and goes out, so the extent
- * reads as travel rather than as a shape.
+ * Two of the original lifecycle's three lanes, without its steps: the base
+ * branch's drawing (lifecycle.tsx) with its Status lane, its durations and
+ * its axis break taken out, which is what the owner asked for in round 4
+ * ("the old bars … without all the steps").
  *
- * Both cards draw the same lane at the same size, and the difference between
- * them is extent, which is the one thing a bar says well without words: the
- * Standard band stops part-way, at the green node that releases it, with the
- * rest of the lane standing visibly empty beside it as the reference the eye
- * needs; the Stake band runs the whole lane and dissolves into the fade with
- * no node at all, because there is no event at which a stake comes back. Each
- * end carries two short lines, the event over what the money does, so a card
- * reads left to right as one sentence.
+ * The first lane is Open to challenge: the 10px bar (LaneBar), drawn left to
+ * right once with a light riding its end. The second is the money: a hairline
+ * in the muted ink from a small dot where the deposit or stake goes in to a
+ * haloed registered-green node where it comes back, set exactly under the
+ * bar's end and named with the event that releases it. The two cards differ
+ * in one thing, read at a glance: a Standard bar stops part of the way
+ * across, because anyone can challenge only until the entry is registered and
+ * the deposit comes back then; a Stake bar runs the width, because the stake
+ * stays in, and open to a challenger, until the submitter withdraws it.
  *
- * Nothing here is a measurement. The lane carries no axis, no tick and no
- * figure, its own end is faded out rather than drawn, and the caption says as
- * much: how long any of this takes is the list creator's to set in the
- * factory, not ours to quote. The two dots are events, not marks on a scale.
- * It draws once, when it comes into view.
+ * A Standard lane goes on past its bar the way the base's did: at its far end
+ * a dashed, outlined band the bar's thickness and length (the base's optional
+ * run: a 1.25px 3/3 dashed window-blue outline round a soft window fill),
+ * named above it, for the removal request that can open the entry to a
+ * challenge again, on the same challenge period, but only if someone asks.
+ * Dashed is the base's word for "only if someone acts". The money lane does
+ * not follow it: a removal request is backed by the requester's deposit, not
+ * the submitter's, which came back at registration.
+ *
+ * Nothing here is a measurement. There is no axis, no tick and no figure on
+ * either lane: the periods are the list creator's to set in the factory, and
+ * no one can say how long an entry lives. The drawing is ordered by event,
+ * not scaled; its aria-label says so, and names the coin.
+ *
+ * It draws once, when it comes into view, on the base's timeline: the bar
+ * first, the money lane 130ms behind it at the same speed, so the node lands
+ * as the line reaches it, just under where the bar's light goes out. The
+ * removal band fades in, as the base's did, when a sweep at the bar's speed
+ * would reach its left end, after the bar has drawn. No mark paints before
+ * the drawing is armed, the dot where the money goes in and the band
+ * included; only the lanes' names and the coin, which are text, show at
+ * once. With reduced motion it appears in its final state once armed; in
+ * print it is always in its final state.
  */
 
 export type FateSpec = {
+  /** The money lane's name: what is locked. */
+  lane: string
   /**
-   * How much of the lane the money is inside: a share of it, or 'full' — the
-   * whole lane, dissolving into the fade, with no node and no end.
+   * Where along the lanes the money comes back and the window closes: a
+   * share of the width, or 'end' for the whole of it.
    */
-  fill: number | 'full'
-  /** What ends the money's stay, the first line at the lane's right end. */
+  release: number | 'end'
+  /** The event that releases the money, named under its node. */
   event: string
-  /** What the money does there, the second line under the event. */
-  verdict: string
-  /** What the drawing shows and over what window, for screen readers. */
+  /**
+   * A window that opens again only if someone acts, drawn dashed at the far
+   * end of the Open to challenge lane and as long as the bar, named above it
+   * in at most two words ("Removal request"). Leave it out where the bar
+   * runs the width.
+   */
+  removal?: string
+  /**
+   * What the drawing shows, in words, for screen readers, the removal
+   * window included. The money lane's name and the coin are added after it
+   * ("Deposit locked in xDAI."), so it need not repeat them.
+   */
   description: string
 }
 
-const LANE = 14
-/** Half the lane's height: the round cap the band's end sits in. */
-const CAP = LANE / 2
-/** Where the lane starts to fade: no one can draw the end of an entry's life. */
-const FADE_FROM = '86%'
-/** Where a band with no end puts its head out, just inside the fade. */
-const HEAD_OUT = '84%'
-const SPEED = 620 // ms the band takes to run its length
-const LAG = 80 // ms the money trails the node it leaves
-const GONE = 380 // ms the head takes to go out once it has arrived
+/** ms between the bar and the money lane: the base's LANE_LAG. */
+const LANE_LAG = 130
+/** ms a node takes to arrive: the base's pop. */
+const POP = 460
+/** ms a label takes to settle in: the base's fade. */
+const FADE = 420
 
-const FADE = css`
-  -webkit-mask-image: linear-gradient(to right, #000 ${FADE_FROM}, transparent);
-  mask-image: linear-gradient(to right, #000 ${FADE_FROM}, transparent);
-`
+const CAP = LANE_BAR / 2
+const START = 7 // the dot where the money goes in: the base's r3.5
+const NODE = 9 // the release node's core: the base's r4.5
+const HALO = 3.5 // the node's halo past its core: the base's r8
 
 const pop = keyframes`
   from { opacity: 0; transform: scale(0.4); }
   to { opacity: 1; transform: none; }
 `
 
-/* Opacity alone: the end labels are placed with a transform of their own. */
-const appear = keyframes`
-  from { opacity: 0; }
-  to { opacity: 1; }
+const fade = keyframes`
+  from { opacity: 0; transform: translateY(3px); }
+  to { opacity: 1; transform: none; }
 `
 
-const travel = keyframes`
-  from { left: 0; opacity: 1; }
-  to { left: var(--stop); opacity: 1; }
-`
-
-const goOut = keyframes`
-  from { opacity: 1; }
-  to { opacity: 0; }
-`
-
-const Figure = styled.figure`
-  margin: 0;
-  min-width: 0;
+const grow = keyframes`
+  from { transform: scaleX(0); }
+  to { transform: none; }
 `
 
 const Lane = styled.div`
-  position: relative;
-  height: ${LANE}px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
 `
 
 /*
- * The entry's life: a track raised a step off the card and ringed with a
- * hairline, going at the right edge. Not the recessed control track: that one
- * is 32% black over a card already near black, so in the dark theme the empty
- * remainder of the Standard lane sank out of sight and the band read as a bar
- * that simply stopped. This is the lift the withdrawal stepper's track uses,
- * which reads as a step up in the dark and as a soft grey strip in the light.
+ * A lane's name, then what it needs beside it: on the money lane the coin,
+ * right after the name ("Deposit locked · in xDAI"), never justified to the
+ * card's far edge, where it floated over empty lane.
  */
-const Track = styled.span`
-  position: absolute;
-  inset: 0;
-  border-radius: var(--radius-pill);
-  background: var(--color-raised);
-  box-shadow: inset 0 0 0 1px var(--glass-border);
-  ${FADE}
+const LaneHead = styled.div`
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  min-height: 16px;
+  min-width: 0;
 `
 
-/* The money. Grows from the left under the node that locks it. */
-const Band = styled.span<{ $open?: boolean }>`
-  position: absolute;
-  inset: 0 auto 0 0;
-  width: var(--to);
-  border-radius: var(--radius-pill);
-  background: linear-gradient(
-    90deg,
-    color-mix(in srgb, var(--viz-2) 45%, transparent),
-    var(--viz-2)
-  );
-  box-shadow: 0 0 12px color-mix(in srgb, var(--viz-2) 50%, transparent);
-  transform: scaleX(0);
-  transform-origin: left center;
-  transition: transform ${SPEED}ms var(--ease-out) var(--d-band, 0ms);
+/*
+ * The coin the money is in, in sentence case after the lane's name so that
+ * "xDAI" keeps its spelling, which the uppercase label would lose. The middot
+ * that joins them is its own.
+ */
+const Coin = styled.span`
+  color: var(--color-faint);
+  font-size: var(--fs-meta);
+  line-height: 16px;
+  white-space: nowrap;
 
-  /* A band that ends at an event keeps its end; one with none dissolves. */
-  ${({ $open }) => $open && FADE}
-
-  [data-drawn='true'] & {
-    transform: none;
-  }
-
-  @media print, (prefers-reduced-motion: reduce) {
-    transform: none;
-    transition: none;
-  }
-`
-
-/* The light at the band's leading edge, which runs its length and goes out. */
-const Head = styled.i`
-  position: absolute;
-  top: 50%;
-  left: 0;
-  width: 6px;
-  height: 6px;
-  margin-left: -3px;
-  border-radius: var(--radius-pill);
-  background: var(--color-text);
-  box-shadow:
-    0 0 0 3px color-mix(in srgb, var(--viz-2) 45%, transparent),
-    0 0 14px var(--viz-2);
-  transform: translateY(-50%);
-  opacity: 0;
-
-  body[data-theme='light'] & {
-    background: var(--color-surface);
-  }
-
-  [data-drawn='true'] & {
-    animation:
-      ${travel} ${SPEED}ms var(--ease-out) var(--d-band, 0ms) forwards,
-      ${goOut} ${GONE}ms ease-out var(--d-end, 0ms) forwards;
-  }
-
-  @media print, (prefers-reduced-motion: reduce) {
-    display: none;
+  &::before {
+    content: '·';
+    margin-right: 6px;
   }
 `
 
 /*
- * A moment the money moves: a haloed status dot in the lane, in the role the
- * moment actually has — blue because the challenge window is open at
- * submission, green because registration is the event that releases a
- * deposit. A stake has no such moment, so the Stake lane carries one dot.
- * Each lands when the money reaches it: the first as the band sets off, the
- * second under the head that has just arrived.
+ * The removal window's name, over its band: as wide as the band and pushed
+ * to the lane's end, so it starts where the band starts; where the band is
+ * narrower than the words, it grows to the left and keeps its right edge on
+ * the lane's, inside the card.
  */
-const Node = styled.span<{ $tone: 'window' | 'registered' }>`
-  position: absolute;
-  top: ${(LANE - 10) / 2}px;
-  width: 10px;
-  height: 10px;
-  margin-left: -5px;
-  border-radius: var(--radius-pill);
-  background: var(--status-${({ $tone }) => $tone});
-  box-shadow:
-    0 0 0 3px var(--status-${({ $tone }) => $tone}-soft),
-    0 0 12px
-      color-mix(in srgb, var(--status-${({ $tone }) => $tone}) 55%, transparent);
-  opacity: 0;
-
-  &[data-at='end'] {
-    --d-node: var(--d-end, 0ms);
-  }
-
-  [data-drawn='true'] & {
-    animation: ${pop} 460ms var(--ease-spring) var(--d-node, 0ms) both;
-  }
-
-  @media print, (prefers-reduced-motion: reduce) {
-    opacity: 1;
-
-    [data-drawn='true'] & {
-      animation: none;
-    }
-  }
-`
-
-const Ends = styled.div`
-  position: relative;
-  height: 33px;
-  margin-top: 9px;
-`
-
-/*
- * The two ends in words, each anchored to the band: the left at its start,
- * the right at wherever it stops, so the words and the extent say the same
- * thing. They arrive with the moment they name.
- */
-const End = styled.div`
-  position: absolute;
-  top: 0;
+const BandName = styled.span`
+  flex: 0 0 auto;
+  min-width: max-content;
+  margin-left: auto;
+  color: var(--color-muted);
+  font-size: var(--fs-meta);
+  line-height: 16px;
   white-space: nowrap;
   opacity: 0;
+`
 
-  &[data-side='start'] {
-    left: 0;
-    --d-label: var(--d-node, 0ms);
+/* The Open to challenge lane: the bar, and the removal band at its end. */
+const BarLane = styled.div`
+  position: relative;
+`
+
+/*
+ * The removal window: the base's optional run, a capsule of the bar's
+ * thickness outlined in a 1.25px 3/3 dash of the window blue round its soft
+ * fill, the stroke centred on the edge as the base's rect drew it. It sits at
+ * the lane's far end, as long as the bar, because a removal request runs on
+ * the same challenge period as a submission.
+ */
+const Band = styled.svg`
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: block;
+  height: ${LANE_BAR}px;
+  overflow: visible;
+  opacity: 0;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+
+  rect {
+    fill: var(--status-window-soft);
+    stroke: var(--status-window);
+    stroke-width: 1.25px;
+    stroke-dasharray: 3 3;
+  }
+`
+
+/* The money lane, as tall as the bar above so the two read as a pair. */
+const Track = styled.div`
+  position: relative;
+  height: ${LANE_BAR}px;
+`
+
+/*
+ * The money while it is locked: a 2px hairline in the muted ink, round
+ * capped, from the centre of the dot where it goes in to the centre of the
+ * node where it comes back, which covers its end. It grows from its left end
+ * on a linear clock, like the bar above it; a horizontal scale cannot be seen
+ * to squash a 1px cap, which on the 10px bar it would.
+ */
+const Line = styled.i`
+  position: absolute;
+  top: 50%;
+  left: ${CAP}px;
+  width: calc(var(--at) - ${LANE_BAR}px);
+  height: 2px;
+  margin-top: -1px;
+  border-radius: var(--radius-pill);
+  background: var(--color-muted);
+  transform-origin: left center;
+  transform: scaleX(0);
+`
+
+/* Where the money goes in, under the bar's first cap. */
+const Start = styled.i`
+  position: absolute;
+  top: 50%;
+  left: ${CAP}px;
+  width: ${START}px;
+  height: ${START}px;
+  border-radius: 50%;
+  background: var(--color-muted);
+  translate: -50% -50%;
+  opacity: 0;
+`
+
+/*
+ * Where the money comes back: the registered green, haloed the way every
+ * status dot in the app is haloed, centred under the bar's last cap, so the
+ * one event the card is about is the one thing on the lane in a status
+ * colour, and it sits where the window closes.
+ */
+const Node = styled.i`
+  position: absolute;
+  top: 50%;
+  left: calc(var(--at) - ${CAP}px);
+  width: ${NODE}px;
+  height: ${NODE}px;
+  border-radius: 50%;
+  background: var(--status-registered);
+  box-shadow: 0 0 0 ${HALO}px
+    color-mix(in srgb, var(--status-registered) 22%, transparent);
+  translate: -50% -50%;
+  opacity: 0;
+`
+
+/*
+ * The event's name, under its node: centred on it, or, at the lanes' end,
+ * hung back from the edge so it stays inside the card.
+ */
+const Events = styled.div`
+  position: relative;
+  height: 16px;
+  margin-top: 6px;
+`
+
+const Event = styled.span<{ $end: boolean }>`
+  position: absolute;
+  top: 0;
+  ${({ $end }) =>
+    $end ? 'right: 0;' : `left: calc(var(--at) - ${CAP}px); translate: -50% 0;`}
+  color: var(--color-muted);
+  font-size: var(--fs-meta);
+  line-height: 16px;
+  white-space: nowrap;
+  opacity: 0;
+`
+
+const Figure = styled.figure`
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin: 0;
+  min-width: 0;
+
+  /* Armed is the final state; the timeline below is added only for motion. */
+  &[data-armed] ${Line} {
+    transform: none;
   }
 
-  &[data-side='end'] {
-    left: var(--to);
-    transform: translateX(-100%);
-    text-align: right;
-    --d-label: var(--d-end, 0ms);
-  }
-
-  [data-drawn='true'] & {
-    animation: ${appear} 420ms var(--ease-out) var(--d-label, 0ms) both;
-  }
-
-  @media print, (prefers-reduced-motion: reduce) {
+  &[data-armed]
+    ${Start},
+    &[data-armed]
+    ${Node},
+    &[data-armed]
+    ${Event},
+    &[data-armed]
+    ${Band},
+    &[data-armed]
+    ${BandName} {
     opacity: 1;
+  }
 
-    [data-drawn='true'] & {
+  @media (prefers-reduced-motion: no-preference) {
+    &[data-armed] ${Line} {
+      animation: ${grow} var(--t) linear var(--d-line) both;
+    }
+
+    &[data-armed] ${Start} {
+      animation: ${pop} ${POP}ms var(--ease-out) var(--d-line) both;
+    }
+
+    &[data-armed] ${Node} {
+      animation: ${pop} ${POP}ms var(--ease-out) var(--d-node) both;
+    }
+
+    &[data-armed] ${Event} {
+      animation: ${fade} ${FADE}ms var(--ease-out) var(--d-node) both;
+    }
+
+    &[data-armed] ${Band}, &[data-armed] ${BandName} {
+      animation: ${fade} ${FADE}ms var(--ease-out) var(--d-band) both;
+    }
+  }
+
+  @media print {
+    ${Line} {
+      transform: none;
+      animation: none;
+    }
+
+    ${Start}, ${Node}, ${Event}, ${Band}, ${BandName} {
+      opacity: 1;
       animation: none;
     }
   }
-`
 
-const Moment = styled.div`
-  color: var(--color-text);
-  font-size: 12.5px;
-  line-height: 17px;
-  font-weight: 500;
-`
+  /* Forced colours would paint the hairline and its dots in the page colour
+     and drop the halo, leaving the bar above with nothing under it: keep
+     them ink, as LaneBar keeps its runs, and the removal band an ink dash
+     round the page colour. */
+  @media (forced-colors: active) {
+    ${Line}, ${Start}, ${Node} {
+      forced-color-adjust: none;
+      background: CanvasText;
+    }
 
-const Money = styled.div`
-  color: var(--color-muted);
-  font-size: 12px;
-  line-height: 16px;
-`
+    ${Node} {
+      box-shadow: none;
+    }
 
-/* What the drawing measures, which is nothing: it is ordered, not scaled. */
-const Caption = styled.figcaption`
-  margin-top: 4px;
-  color: var(--color-faint);
-  font-size: 12px;
-  line-height: 16px;
-  text-align: right;
+    ${Band} {
+      forced-color-adjust: none;
+    }
+
+    ${Band} rect {
+      fill: Canvas;
+      stroke: CanvasText;
+    }
+  }
 `
 
 export const DepositFate = ({
   spec,
+  coin,
   delay = 700,
 }: {
   spec: FateSpec
-  /** ms before the draw, counted from mount, so the card lands first. */
+  /** The coin the money is in, as the lane says it ("in xDAI"). */
+  coin: string
+  /** ms before the drawing, counted from mount, so the card lands first. */
   delay?: number
 }) => {
   const [ref, inView] = useInView<HTMLElement>(0.35)
   const mountedAt = useRef(performance.now())
   const [start, setStart] = useState<number>()
 
-  // Arm the draw once in view; if that is right after mount, still let the
-  // card land first.
+  // Arm once in view; if that is right after mount, still let the card land
+  // first (the base's arming, unchanged).
   useEffect(() => {
     if (!inView || start !== undefined) return
     setStart(
@@ -293,53 +374,77 @@ export const DepositFate = ({
     )
   }, [inView, start, delay])
 
-  const open = spec.fill === 'full'
-  const to = open ? '100%' : `${+((spec.fill as number) * 100).toFixed(2)}%`
-  // The head stops in the band's end cap, or just inside the fade when the
-  // band has no end to stop at.
-  const stop = open ? HEAD_OUT : `calc(${to} - ${CAP}px)`
+  const end = spec.release === 'end'
+  const extent = spec.release === 'end' ? 1 : spec.release
+  // The money lane runs at the bar's speed, so its node lands as the line
+  // reaches it: the duration is the bar's own, not worked out again.
+  const sweep = laneDuration(extent)
   const base = start ?? 0
+  // The removal band, where there is one: as long as the bar, at the lane's
+  // end, arriving when a sweep at the bar's speed would reach its left end
+  // (the base's timing for its dashed run), after the bar has drawn.
+  const band = !end && spec.removal ? extent : 0
+  const style = {
+    '--at': `${extent * 100}%`,
+    '--t': `${sweep}ms`,
+    '--d-line': `${base + LANE_LAG}ms`,
+    '--d-node': `${base + LANE_LAG + sweep}ms`,
+    '--d-band': `${base + laneDuration(1 - band)}ms`,
+  } as React.CSSProperties
+
+  // The figure is one image to assistive technology, so its children are
+  // never read: everything the drawing says in text goes into its name, the
+  // removal window in the description and the coin, which the lane's head
+  // row shows after its name, at the end.
+  const label = `${spec.description} ${spec.lane} ${coin}.`
 
   return (
     <Figure
       ref={ref}
       role="img"
-      aria-label={spec.description}
-      data-drawn={start !== undefined}
-      style={
-        {
-          '--to': to,
-          '--stop': stop,
-          '--d-node': `${base}ms`,
-          '--d-band': `${base + LAG}ms`,
-          '--d-end': `${base + LAG + SPEED}ms`,
-        } as React.CSSProperties
-      }
+      aria-label={label}
+      data-armed={start !== undefined ? '' : undefined}
+      style={style}
     >
-      <Lane aria-hidden>
-        <Track />
-        <Band $open={open} />
-        <Head />
-        {/* Submission, where the money goes in: the same in both cards. */}
-        <Node $tone="window" style={{ left: `${CAP}px` }} />
-        {/* The release, which only a deposit has. */}
-        {!open && (
-          <Node $tone="registered" data-at="end" style={{ left: stop }} />
-        )}
+      <Lane>
+        <LaneHead>
+          <Label $tone="faint">Open to challenge</Label>
+          {band > 0 && (
+            <BandName style={{ width: `${band * 100}%` }}>
+              {spec.removal}
+            </BandName>
+          )}
+        </LaneHead>
+        <BarLane>
+          <LaneBar
+            extent={extent}
+            armed={start !== undefined}
+            delay={base}
+            head
+          />
+          {band > 0 && (
+            <Band style={{ width: `${band * 100}%` }} aria-hidden>
+              <rect width="100%" height={LANE_BAR} rx={CAP} />
+            </Band>
+          )}
+        </BarLane>
       </Lane>
-
-      <Ends aria-hidden>
-        <End data-side="start">
-          <Moment>You submit</Moment>
-          <Money>Locked</Money>
-        </End>
-        <End data-side="end">
-          <Moment>{spec.event}</Moment>
-          <Money>{spec.verdict}</Money>
-        </End>
-      </Ends>
-
-      <Caption aria-hidden>By event, not to scale</Caption>
+      <Lane>
+        <LaneHead>
+          <Label $tone="faint">{spec.lane}</Label>
+          <Coin>{coin}</Coin>
+        </LaneHead>
+        <div>
+          <Track>
+            <Line />
+            <Start />
+            <Node />
+          </Track>
+          <Events>
+            <Event $end={end}>{spec.event}</Event>
+          </Events>
+        </div>
+      </Lane>
     </Figure>
   )
 }

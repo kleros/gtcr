@@ -13,7 +13,6 @@ import {
   Label,
   SegmentedControl,
   SkeletonBlock,
-  StatusDot,
   Surface,
   truncateMiddle,
 } from 'components/curate/primitives'
@@ -198,7 +197,9 @@ const hatch = `repeating-linear-gradient(
   color-mix(in srgb, var(--color-primary) 16%, transparent) 2px 5px
 )`
 
-const baseFill = 'linear-gradient(90deg, var(--aurora-b), var(--color-primary))'
+/* The one accent, flat: the aurora is the stage's light, never chrome
+   (it read pastel on Light and purple on Kleros). */
+const baseFill = 'var(--color-primary)'
 
 const Bar = styled.div`
   display: flex;
@@ -253,6 +254,12 @@ const Breakdown = styled.span`
   }
 `
 
+/*
+ * What becomes of the money, one line per outcome, on the launch page's
+ * bullet: every list in a box takes the same check, in an 18px column 10px
+ * from its line, whatever the outcome; the bold lead words name it. The line
+ * is as tall as the glyph, so the check sits on the first line's middle.
+ */
 const Outcomes = styled.ul`
   display: flex;
   flex-direction: column;
@@ -262,12 +269,17 @@ const Outcomes = styled.ul`
   list-style: none;
 
   li {
-    display: flex;
-    align-items: center;
+    display: grid;
+    grid-template-columns: 18px minmax(0, 1fr);
     gap: 10px;
     color: var(--color-muted);
     font-size: 12px;
-    line-height: 16px;
+    line-height: 18px;
+    text-wrap: pretty;
+  }
+
+  svg {
+    color: var(--color-primary);
   }
 
   b {
@@ -742,13 +754,13 @@ export const LivePreview = ({
         ))}
         <Outcomes>
           <li>
-            <StatusDot $tone="registered" aria-hidden />
+            <CurateIcon name="check" size={18} />
             <span>
               <b>Unchallenged:</b> back in full
             </span>
           </li>
           <li>
-            <StatusDot $tone="contested" aria-hidden />
+            <CurateIcon name="check" size={18} />
             <span>
               <b>Challenged:</b> the winner gets the loser’s base deposit
             </span>

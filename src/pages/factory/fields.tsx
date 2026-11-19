@@ -418,10 +418,14 @@ const UploadRow = styled.div<{
     border-color: var(--color-danger);
   }
 
+  /* Phones: the actions take a line of their own under the picture and
+     the meta. They are named, not taken as the last child: the hidden file
+     input comes after them, so ":last-child" put the buttons in the 48px
+     picture column, where "Connect wallet" spilled out of the card. */
   @media (max-width: 520px) {
     grid-template-columns: 48px minmax(0, 1fr);
 
-    > :last-child {
+    > [data-upload-actions] {
       grid-column: 1 / -1;
     }
   }
@@ -884,12 +888,12 @@ const rejectUpload = (file: File, kind: 'image' | 'pdf'): string => {
   if (kind === 'image') {
     if (!IMAGE_TYPES.has(file.type)) return 'Please use PNG, webp, jpeg or SVG.'
     if (file.size / 1024 / 1024 >= IMAGE_MAX_MB)
-      return `Image must be smaller than ${IMAGE_MAX_MB}MB.`
+      return `Image must be smaller than ${IMAGE_MAX_MB}\u00A0MB.`
     return ''
   }
   if (file.type !== 'application/pdf') return 'Please upload file as PDF.'
   if (file.size / 1024 / 1024 >= PDF_MAX_MB)
-    return `File must be smaller than ${PDF_MAX_MB}MB.`
+    return `File must be smaller than ${PDF_MAX_MB}\u00A0MB.`
   return ''
 }
 
@@ -969,11 +973,14 @@ export const UploadField = ({
    * A file dropped on the row goes through `pick`: the same type and size
    * rules, the same toast and the same upload as the button's file picker.
    * While the wallet or Atlas sign-in blocks, or an upload is in flight, the
-   * row says so during the drag instead of taking a file it cannot send.
+   * row says so during the drag instead of taking a file it cannot send, in
+   * the gate's own words, exactly as the gate gives them: "Connect wallet to
+   * upload the logo" without a wallet, "Sign in to upload the logo" with one
+   * that has not signed in.
    */
   const drop = useFileDrop<HTMLDivElement>({
     blocked: gate.blocker
-      ? `Connect first to upload ${what}.`
+      ? gate.blocker
       : uploading
         ? 'An upload is already going.'
         : '',
@@ -1051,18 +1058,33 @@ export const UploadField = ({
                 )
               ) : (
                 <Small $faint>
+                  {/*
+                   * The limit holds together ("under 2 MB"), so a narrow row
+                   * breaks the line at the middot, never inside the limit.
+                   */}
                   {kind === 'image'
-                    ? `PNG, SVG, WebP or JPEG · under ${IMAGE_MAX_MB} MB`
-                    : `PDF · under ${PDF_MAX_MB} MB`}
+                    ? `PNG, SVG, WebP or JPEG · under\u00A0${IMAGE_MAX_MB}\u00A0MB`
+                    : `PDF · under\u00A0${PDF_MAX_MB}\u00A0MB`}
                 </Small>
               )}
             </UploadMeta>
+            {/*
+             * Blocked, the row holds the blocker's own control ("Connect
+             * wallet", "Sign in"), which says the gate once; the group's
+             * name gives a screen reader the whole of it.
+             */}
             {gate.blocker ? (
-              <Row $gap={8} $justify="flex-end">
+              <Row
+                data-upload-actions
+                role="group"
+                aria-label={gate.blocker}
+                $gap={8}
+                $justify="flex-end"
+              >
                 {gate.control}
               </Row>
             ) : (
-              <Row $gap={6} $justify="flex-end" $wrap>
+              <Row data-upload-actions $gap={6} $justify="flex-end" $wrap>
                 {uri && (
                   <Button
                     type="button"
@@ -1107,11 +1129,20 @@ export const UploadField = ({
               }}
             />
           </UploadRow>
-          {gate.blocker && (
-            <Small $muted role="status">
-              {gate.blocker}
-            </Small>
-          )}
+          {/*
+           * The gate in words, shown only where no control in the row says
+           * it. With the control there it stays a live region for screen
+           * readers, so a gate that moves on (connect, then sign in) is still
+           * announced.
+           */}
+          {gate.blocker &&
+            (gate.control ? (
+              <VisuallyHidden role="status">{gate.blocker}</VisuallyHidden>
+            ) : (
+              <Small $muted role="status">
+                {gate.blocker}
+              </Small>
+            ))}
           {uploading && (
             <Small $muted role="status">
               Uploading to IPFS…
