@@ -615,8 +615,9 @@ way (dashboard, Browse, registry pages, the profile, the landing page).
   phone. The lede under it, at most 54ch and balanced: "Curate verifies anything, at scale. Built
   to let good actors win: they get verified, or they get the bounty if they spot wrong entries."
 - **Open for verification** is not drawn at all when there is no bounty up for grabs (round 10).
-  It sits under Happening now with no box (round 6), centred on the page:
-  under its title, two large figures side by side, parted by a hairline, the count open now and
+  It opens the board's section with no box (round 6), centred on the page. There is no "Happening
+  now" heading (Fortunato, after round 19): its own title is the section's, a 30px section title
+  centred like the Self-sustaining mechanism's, with the blue live LED beside it. Under its title, two large figures side by side, parted by a hairline, the count open now and
   the bounties, dollars first with the coin smaller under them, labelled "Bounties up for grabs" in
   the accent. Under the pair, labelled "Lists with bounties up for grabs" (round 7), the lists
   holding those requests as tiles of one width in a centred row (raised glass, 14px radius): the

@@ -471,6 +471,12 @@ const Big = styled.span<{ $hero?: boolean }>`
  * Band), so the heading, the figures and the rows those figures count read as
  * one block.
  */
+/* The 80px a section heading carries (section.ts), for the board's section,
+   whose title is the Open for verification band's own. */
+const BoardOpening = styled.div`
+  margin-top: 80px;
+`
+
 /* Most active takes the page's width (round 7 trial: Top curators moved
    beside the chart). */
 const ActiveFrame = styled(TableScroller)``
@@ -1383,17 +1389,15 @@ const Dashboard = () => {
         }
       />
 
-      <SectionHead>
-        <SectionTitle>Happening now</SectionTitle>
-      </SectionHead>
       {/*
-        The section's figure row, between its heading and its two columns
-        (round 4): what is open for verification, its bounties and the lists
-        holding it (round 5), right above the submissions column whose rows
-        they count. It heads itself
-        and holds its own skeletons, so its title is there from the first
-        paint.
+        No "Happening now" heading (Fortunato, after round 19): the section
+        opens on what is open for verification, its bounties and the lists
+        holding it, under its own 30px title with the live LED, right above
+        the submissions column whose rows they count. It holds its own
+        skeletons, so its title is there from the first paint. The section's
+        80px opening stays when the band hides itself (no bounties).
       */}
+      <BoardOpening />
       <OpenForVerification
         open={board.open}
         openLists={board.openLists}

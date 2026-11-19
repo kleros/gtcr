@@ -22,6 +22,7 @@ import {
   type OpenListChip,
 } from './board-rows'
 import { coinKey, priceSource, type UsdPrice } from './prices'
+import { SectionTitle } from './section'
 import { chainInfo, type DashboardCard } from './view'
 
 /*
@@ -125,18 +126,16 @@ const StripHead = styled.div`
 const TitleRow = styled.div`
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
 `
 
-const StripTitle = styled.h3`
-  margin: 0;
-  color: var(--color-muted);
-  font-family: var(--font-label);
-  font-size: var(--fs-label);
-  line-height: var(--lh-label);
-  font-weight: 500;
-  letter-spacing: var(--tracking-label);
-  text-transform: uppercase;
+/* The section's title, as the dashboard's other titles (section.ts). */
+const StripTitle = styled(SectionTitle)``
+
+/* The live LED beside the title, sized to it. */
+const LiveDot = styled(StatusDot)`
+  width: 10px;
+  height: 10px;
 `
 
 /*
@@ -652,7 +651,7 @@ export const OpenForVerification = ({
     >
       <StripHead>
         <TitleRow>
-          <StatusDot $tone="window" aria-hidden />
+          <LiveDot $tone="window" aria-hidden />
           <StripTitle id={titleId}>Open for verification</StripTitle>
         </TitleRow>
         {unloaded && <Small $muted>{unloaded} requests did not load</Small>}
