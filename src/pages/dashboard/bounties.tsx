@@ -1,6 +1,5 @@
 import React, { useId } from 'react'
-import styled, { css } from 'styled-components'
-import ChainLogo from 'components/chain-logo'
+import styled from 'styled-components'
 import {
   Label,
   SkeletonBlock,
@@ -13,8 +12,8 @@ import { RingGauge } from 'components/curate/motion/ring-gauge'
 import { reveal } from 'components/curate/motion/reveal'
 import { useMediaQuery } from 'pages/guide/hooks'
 import { SectionHead, SectionTitle } from './section'
-import { CoinAmount, formatUsd, usdFormatFor, UsdLead } from './board-rows'
-import { priceSource, type UsdPrice } from './prices'
+import { formatUsd } from './board-rows'
+import type { UsdPrice } from './prices'
 import { chainInfo, type BountyCoin, type scopedChallengeRecord } from './view'
 
 /*
@@ -57,27 +56,18 @@ import { chainInfo, type BountyCoin, type scopedChallengeRecord } from './view'
  * the round-3 rebuild had dropped); like the sentence, it claims a reading
  * only where the figures bear it out.
  *
- * Then the bounties those challengers took, one figure per coin, never
- * added across coins, the Classic lists' included — a Stake list pays in an ERC-20 of its own choosing,
- * which can differ list to list, so a Stake tile says so in a line of its
- * own ("Any ERC-20, set per list", the owner's words) and its tooltip names
- * the contract the token was read from. The count under an amount is how
- * many bounties that amount is the sum of, so the two answer the same
- * question; a ruling that went to the challenger and paid nothing (a list
- * that asked no base deposit, an entry that carried no stake) is named in
- * the tooltip rather than padding the count. A token whose decimals never
- * answered leaves the tile its count and says why there is no amount,
- * instead of an em dash where a figure should be.
- *
- * Dollars lead each amount where they can be read from a Chainlink feed on
- * the coin's own chain (prices.ts), with the exact coin amount under them,
- * and the tooltip names the feed and how old its answer is: these tiles and
- * the collateral in the strip below are the only two figures on the site
- * that carry dollars, there is no dollar total across coins, and a coin
- * whose price cannot be read leads with its amount, which is what every tile
- * showed before. The tiles wait for the first price read (at most a moment,
- * use-usd-prices.ts), so a tile never paints its coin large and then swaps
- * it for dollars under the reader.
+ * Then the bounties those challengers took, as one figure in dollars at
+ * today's prices (round 16: "simplify and put the total bounties … and
+ * mention over several ETH and other tokens on mainnet and gnosis"), the
+ * Classic lists' included, with no count of bounties. The line under it
+ * names the coins and chains it adds up, and its tooltip gives each coin's
+ * amount and dollars. Every price comes from a Chainlink feed on the coin's
+ * own chain (prices.ts); where one cannot be read, or a token's decimals
+ * never answered, there is no honest total, so the coins' own amounts are
+ * listed on one line instead. The figure waits for the first price read
+ * (at most a moment, use-usd-prices.ts), so it never paints a coin amount
+ * and swaps it for dollars under the reader. The rings and the figure sit
+ * on one centred row, the sentence centred under them.
  *
  * Windows are carried by the figures themselves rather than by a chip over
  * the panel (round 3: four "all time" stamps read as boilerplate). The
@@ -91,9 +81,6 @@ type ChallengeRecord = ReturnType<typeof scopedChallengeRecord>
 
 const integer = new Intl.NumberFormat('en-US')
 const formatInt = (value: number) => integer.format(value)
-const amountFormat = new Intl.NumberFormat('en-US', {
-  maximumFractionDigits: 4,
-})
 
 /**
  * A share as a whole percent. Rounded, not floored: 579 of 762 is 75.98%,
@@ -121,19 +108,26 @@ const Panel = styled(Surface)`
  */
 const COMPACT_RINGS = '(min-width: 901px) and (max-width: 1099px)'
 
-/* The rings and the money, side by side; stacked once that is too narrow. */
+/*
+ * The two rings and the bounties, one centred row (round 16: "align center
+ * of the number and the 2 gauges"); the figure goes under the rings where
+ * the row does not hold them, still centred.
+ */
 const Body = styled.div`
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 24px 32px;
+  justify-content: center;
+  gap: 24px 64px;
 
   @media ${COMPACT_RINGS} {
-    column-gap: 24px;
+    column-gap: 40px;
   }
 
   @media (max-width: 900px) {
-    grid-template-columns: minmax(0, 1fr);
+    > :first-child {
+      width: 100%;
+    }
   }
 `
 
@@ -196,70 +190,54 @@ const RingSkeleton = styled(SkeletonBlock)`
   border-radius: var(--radius-pill);
 `
 
-/*
- * Where one or two tiles leave room for the words beside them: the widths at
- * which the money column is wide enough for that many tiles (about 175px
- * each) and a 280px measure of words. One tile fits from 1080px, and in the
- * one-column layout between 721 and 900px; two only from 1280px.
- */
-const BESIDE_ONE =
-  '(min-width: 1080px), (min-width: 721px) and (max-width: 900px)'
-const BESIDE_TWO = '(min-width: 1280px)'
-
-/*
- * The money column: its label, the tiles, and the panel's words under them,
- * at a reading measure. With one or two coins the tiles leave most of the
- * column's width, so the words move up beside them instead of under them
- * (round 5: a lone tile stretched across the whole column left it ~70%
- * empty), and each tile takes only the width it needs. The tiles carry
- * their own hairlines: no panel in a panel.
- */
-const Money = styled.div<{ $beside?: number }>`
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  align-content: start;
-  gap: 12px 40px;
+/* The bounties: the label, the dollars, and the coins they add up. */
+const Total = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
   min-width: 0;
-
-  /* A tooltip opens over its own label, not over the middle of the column. */
-  > .ui-tooltip-trigger {
-    justify-self: start;
-  }
-
-  ${({ $beside }) =>
-    !!$beside &&
-    css`
-      @media ${$beside === 1 ? BESIDE_ONE : BESIDE_TWO} {
-        grid-template-columns: max-content minmax(0, 1fr);
-
-        > :first-child {
-          grid-column: 1 / -1;
-        }
-
-        > ul {
-          grid-template-columns: repeat(${$beside}, minmax(150px, max-content));
-        }
-
-        > [data-words] {
-          grid-column: 2;
-          grid-row: 2;
-          padding-left: 14px;
-          border-left: 1px solid var(--glass-border);
-        }
-      }
-    `}
+  max-width: 100%;
+  text-align: center;
 `
 
-/* The panel's sentence and its notes: one reading measure, never a full row. */
+const TotalFigure = styled.span`
+  color: var(--color-text);
+  font-family: var(--font-figure);
+  font-size: clamp(44px, 2.4vw + 22px, 64px);
+  line-height: 1;
+  font-weight: 500;
+  letter-spacing: -0.04em;
+  font-variant-numeric: tabular-nums;
+`
+
+/* The coins' own amounts, when there is no honest dollar total. */
+const CoinLine = styled.span`
+  color: var(--color-text);
+  font-family: var(--font-figure);
+  font-size: 22px;
+  line-height: 30px;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  text-wrap: balance;
+`
+
+/* The panel's sentence and its notes, centred under the row at a reading
+   measure. */
 const Words = styled.div`
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: 8px;
   max-width: 68ch;
   min-width: 0;
+  margin: 28px auto 0;
+  text-align: center;
 
   > p {
     margin: 0;
+    text-wrap: balance;
   }
 `
 
@@ -288,182 +266,6 @@ const TipText = styled.span`
   text-wrap: balance;
 `
 
-/*
- * Phones: one coin per row, two-sided as on the base branch — the lead and
- * the coin amount under it on the left, the chain and the count on the
- * right — with hairlines between coins. A Stake note or a reason takes the
- * row's full width under them.
- */
-const phoneCoins = css`
-  @media (max-width: 520px) {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 0;
-
-    > li {
-      grid-row: auto;
-      grid-template-rows: none;
-      grid-template-columns: minmax(0, 1fr) auto;
-      align-items: baseline;
-      gap: 2px 12px;
-      padding: 10px 0;
-      border-left: 0;
-      border-top: 1px solid var(--glass-border);
-
-      > [data-slot='lead'] {
-        grid-area: 1 / 1;
-        margin-bottom: 0;
-      }
-
-      > [data-slot='amount'] {
-        grid-area: 2 / 1;
-      }
-
-      > [data-slot='meta'] {
-        grid-area: 1 / 2;
-        justify-self: end;
-      }
-
-      > [data-slot='count'] {
-        grid-area: 2 / 2;
-        justify-self: end;
-      }
-
-      > [data-slot='note'] {
-        grid-area: 3 / 1 / auto / -1;
-      }
-    }
-  }
-`
-
-/*
- * The tiles. Two or three coins take one equal column each across the money
- * column (round 5: auto-fill left an empty fourth track beside three tiles
- * at 1440, about 200px of blank panel, and broke them 2 + 1 at 1024 with the
- * third alone beside an empty cell). A lone coin keeps auto-fill, so it holds
- * a tile's width instead of stretching across the column; four or more
- * auto-fit, as many to a line as hold a tile. Money sets exactly one column
- * per coin where the words sit beside one or two tiles.
- */
-const Coins = styled.ul<{ $count: number }>`
-  display: grid;
-  grid-template-columns: ${({ $count }) =>
-    $count === 1
-      ? 'repeat(auto-fill, minmax(172px, 1fr))'
-      : $count <= 3
-        ? `repeat(${$count}, minmax(0, 1fr))`
-        : 'repeat(auto-fit, minmax(172px, 1fr))'};
-  column-gap: 24px;
-  row-gap: 4px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  ${phoneCoins}
-`
-
-/*
- * One coin. A subgrid of the tiles' five rows — lead, coin amount, chain,
- * count, note — so a priced tile and an unpriced one beside it keep their
- * lines level: a line a tile does not have leaves its row empty rather than
- * pulling the next line up. Each line is placed by its slot for the same
- * reason. Without subgrid the tiles only top-align, and nothing breaks.
- */
-const Coin = styled.li`
-  display: grid;
-  grid-row: span 5;
-  grid-template-rows: subgrid;
-  align-content: start;
-  min-width: 0;
-  padding: 0 0 10px 14px;
-  border-left: 1px solid var(--glass-border);
-  ${reveal}
-
-  > [data-slot='lead'] {
-    grid-row: 1;
-    margin-bottom: 4px;
-  }
-
-  > [data-slot='amount'] {
-    grid-row: 2;
-  }
-
-  > [data-slot='meta'] {
-    grid-row: 3;
-  }
-
-  > [data-slot='count'] {
-    grid-row: 4;
-  }
-
-  > [data-slot='note'] {
-    grid-row: 5;
-  }
-`
-
-/*
- * A coin's lead: the dollars where a price was read, the amount where not.
- * Keyed by which it is, so a price that answers after the hold fades in as a
- * new figure instead of the digits jumping from coin to dollars.
- */
-const Lead = styled.span`
-  display: flex;
-  align-items: baseline;
-  flex-wrap: wrap;
-  gap: 0 6px;
-  min-width: 0;
-  color: var(--color-text);
-  font-family: var(--font-figure);
-  font-size: clamp(22px, 0.8vw + 14px, 28px);
-  line-height: 1.1;
-  font-weight: 500;
-  letter-spacing: -0.03em;
-  font-variant-numeric: tabular-nums;
-  ${reveal}
-
-  small {
-    color: var(--color-muted);
-    font-size: 14px;
-    font-weight: 500;
-    letter-spacing: 0;
-  }
-`
-
-const Slot = styled.span`
-  display: block;
-  min-width: 0;
-`
-
-const CoinMeta = styled.span`
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  min-width: 0;
-  color: var(--color-muted);
-  font-size: var(--fs-small);
-  line-height: var(--lh-small);
-  white-space: nowrap;
-
-  > span {
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-`
-
-const WonCount = styled.span`
-  color: var(--color-faint);
-  font-family: var(--font-figure);
-  font-size: 12px;
-  line-height: 16px;
-  font-variant-numeric: tabular-nums;
-`
-
-/* The note row: a Stake tile's token line, or why a tile has no amount. */
-const Note = styled.span`
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-`
-
 /** "Ethereum and Gnosis" */
 const chainNames = (chains: number[]) =>
   chains
@@ -471,11 +273,6 @@ const chainNames = (chains: number[]) =>
     .join(' and ')
 
 const shortToken = (token: string) => `${token.slice(0, 6)}…${token.slice(-4)}`
-
-const coinPlace = (coin: BountyCoin) => {
-  const chain = chainInfo(coin.chainId)?.name ?? `Chain ${coin.chainId}`
-  return coin.stake ? `Stake · ${chain}` : chain
-}
 
 /**
  * The coin's symbol, when the token answered with one. A token that only
@@ -485,90 +282,58 @@ const coinPlace = (coin: BountyCoin) => {
 const coinSymbol = (coin: BountyCoin): string =>
   coin.token && coin.symbol === shortToken(coin.token) ? '' : coin.symbol
 
-/* A unit that is a contract, not a name: the token that never answered a
-   symbol. An address, so Geist Mono, at the size of the symbol it stands
-   in for, so the figure is never left without a unit. */
-const ContractUnit = styled.small`
-  font-family: var(--font-mono);
-  letter-spacing: 0;
-`
-
-/** The figure's unit: the symbol, or else the token's shortened contract. */
-const coinUnit = (coin: BountyCoin, symbol: string) =>
-  symbol ? (
-    <small>{symbol}</small>
-  ) : coin.token ? (
-    <ContractUnit title={coin.token}>{shortToken(coin.token)}</ContractUnit>
-  ) : null
-
 /** True while the tile can lead with an amount: decimals read, and something paid. */
 const amountKnown = (coin: BountyCoin) =>
   coin.decimals !== undefined && coin.paid > 0
 
-/**
- * Why a tile shows a count and no amount. Never an em dash on its own. The
- * ledger's bounty is a required field (the requester's deposit, or the
- * entry's stake), so a zero is a list that asked no base deposit or an
- * entry that carried no stake: there was no bounty, not a missing record.
- */
-const withheldReason = (coin: BountyCoin): string => {
-  if (coin.decimals === undefined)
-    return 'amount not shown: the token did not answer'
-  const one = coin.won === 1
-  if (coin.stake)
-    return `no bounty: ${one ? 'the entry' : 'the entries'} carried no stake`
-  return `no bounty: ${one ? 'its list' : 'their lists'} asked no base deposit`
-}
-
-/** The lead's word when a tile has no amount: what its count counts. */
-const countWord = (coin: BountyCoin): string =>
-  coin.decimals !== undefined
-    ? coin.won === 1
-      ? 'challenge won'
-      : 'challenges won'
-    : coin.won === 1
-      ? 'bounty'
-      : 'bounties'
+/** Several names in a sentence: "ETH, xDAI and sDAI". */
+const list = new Intl.ListFormat('en-GB', { type: 'conjunction' })
 
 /**
- * What a tile cannot fit: the exact total, where its dollars were read from
- * and how old that answer is, which token a Stake list pays in (by the
- * contract it was read from), and any ruling that went to the challenger and
- * paid nothing — named rather than folded into the count beside the amount.
+ * The bounties in dollars at today's prices, and each coin's part, or
+ * undefined when there is no honest total: a coin whose decimals never
+ * answered, or one with no current price.
  */
-const coinTip = (
-  coin: BountyCoin,
-  plus: string,
-  /** The dollars the tile leads with, and the feed they came from. */
-  usd?: string,
-  price?: UsdPrice,
-): string => {
-  const parts: string[] = []
-  if (amountKnown(coin) && coin.display)
-    parts.push(
-      plus ? `${coin.display} or more in all.` : `${coin.display} in all.`,
-    )
-  if (usd && price)
-    parts.push(
-      `About ${usd}${plus ? ' or more' : ''} at today’s price, from ${priceSource(price)}.`,
-    )
-  if (coin.stake)
-    parts.push(
-      coin.token
-        ? `Paid in ${coinSymbol(coin) || 'this token'}, the token these Stake lists chose (contract ${coin.token}). Each Stake list sets its own ERC-20; another token gets a tile of its own and is never added to this one.`
-        : "Paid in the list's own token, which did not load, so this amount is kept apart from the chain's coin.",
-    )
-  const unpaid = coin.won - coin.paid
-  if (amountKnown(coin) && unpaid > 0)
-    parts.push(
-      `${unpaid === 1 ? 'One further ruling' : `${formatInt(unpaid)} further rulings`} went to the challenger on ${
-        coin.stake
-          ? 'entries with no stake'
-          : 'lists that asked no base deposit'
-      }, so there was no bounty to add.`,
-    )
-  return parts.join(' ')
+const bountyTotal = (
+  coins: BountyCoin[],
+  prices?: Record<string, UsdPrice>,
+) => {
+  if (coins.some((coin) => coin.decimals === undefined)) return undefined
+  const paid = coins.filter(amountKnown)
+  if (paid.length === 0) return undefined
+  const parts = paid.map((coin) => {
+    const usd = prices?.[coin.key]?.usd
+    return {
+      coin,
+      dollars:
+        usd !== undefined && coin.value !== undefined
+          ? coin.value * usd
+          : undefined,
+    }
+  })
+  if (parts.some((part) => part.dollars === undefined)) return undefined
+  return {
+    dollars: parts.reduce((sum, part) => sum + (part.dollars ?? 0), 0),
+    parts,
+  }
 }
+
+/** "In ETH, xDAI and sDAI on Ethereum and Gnosis" */
+const paidIn = (coins: BountyCoin[]) => {
+  const symbols = [
+    ...new Set(coins.map((coin) => coinSymbol(coin) || 'a list token')),
+  ]
+  const chains = [...new Set(coins.map((coin) => coin.chainId))]
+  return `In ${list.format(symbols)} on ${chainNames(chains)}`
+}
+
+/** "$73.3K" */
+const compactUsd = new Intl.NumberFormat('en-US', {
+  style: 'currency',
+  currency: 'USD',
+  notation: 'compact',
+  maximumSignificantDigits: 3,
+})
 
 /** What a bounty is, and over what window: the figures' own explanation. */
 const bountiesTip = (record: ChallengeRecord, plus: string): string =>
@@ -733,12 +498,9 @@ export const VerificationRecord = ({
   const sentence = record
     ? heldUpSentence(record, entries, never, wonShare, plus)
     : undefined
-  // Several Stake tokens in scope: say once that they are not one total.
-  const stakeCoins = record?.coins.filter((coin) => coin.stake).length ?? 0
   const ringKey = record ? `${record.loaded.join('-')}-${record.rulings}` : ''
-  const coinCount = record && !unknown ? record.coins.length : 0
-  // One or two tiles leave the column's width to the words beside them.
-  const beside = coinCount > 0 && coinCount <= 2 ? coinCount : undefined
+  const coins = record && !unknown ? record.coins : []
+  const total = pricesSettled ? bountyTotal(coins, prices) : undefined
   const words =
     record && (sentence || missing) ? (
       <Words data-words="">
@@ -754,6 +516,67 @@ export const VerificationRecord = ({
         )}
       </Words>
     ) : null
+
+  // The bounties: a skeleton while the load or the first price read runs,
+  // then the dollars, or the coins' own amounts where no total is honest.
+  const bounties = !record ? (
+    <SkeletonBlock $height="64px" $width="220px" />
+  ) : unknown ? null : coins.length === 0 ? (
+    <Small $muted as="p" style={{ margin: 0 }}>
+      {record.rulings
+        ? record.rulings === 1 && !plus
+          ? 'No bounty yet: the one ruling did not go to a challenger.'
+          : `No bounty yet: none of the ${formatInt(record.rulings)}${plus} rulings went to a challenger.`
+        : 'No dispute has been ruled on yet.'}
+    </Small>
+  ) : !pricesSettled ? (
+    <SkeletonBlock $height="64px" $width="220px" />
+  ) : total ? (
+    <>
+      <Tooltip
+        title={
+          <TipText>
+            {`${total.parts
+              .map(
+                ({ coin, dollars }) =>
+                  `${coin.display}${plus} (${formatUsd(dollars ?? 0)})`,
+              )
+              .join(
+                ', ',
+              )}, each at today's price from its chain's Chainlink feed.`}
+          </TipText>
+        }
+      >
+        <TipTarget tabIndex={0}>
+          <TotalFigure
+            aria-label={`${formatUsd(total.dollars)}${plus ? ' or more' : ''} in bounties`}
+          >
+            <AnimatedNumber
+              value={total.dollars}
+              format={(value) => compactUsd.format(value)}
+            />
+            {plus}
+          </TotalFigure>
+        </TipTarget>
+      </Tooltip>
+      <Small $muted>
+        {paidIn(coins.filter(amountKnown))}, at today’s prices
+      </Small>
+    </>
+  ) : (
+    <>
+      <CoinLine>
+        {coins
+          .map((coin) =>
+            amountKnown(coin) && coin.display
+              ? `${coin.display}${plus}`
+              : `${formatInt(coin.won)}${plus} in a token that did not answer`,
+          )
+          .join(' · ')}
+      </CoinLine>
+      <Small $muted>{paidIn(coins)}</Small>
+    </>
+  )
 
   return (
     <section aria-labelledby={titleId}>
@@ -815,156 +638,22 @@ export const VerificationRecord = ({
             )}
           </Gauges>
 
-          <Money $beside={beside}>
-            {!record ? (
-              <>
+          {!unknown && (
+            <Total>
+              {record ? (
+                <Tooltip title={<TipText>{bountiesTip(record, plus)}</TipText>}>
+                  <TipTarget tabIndex={0}>
+                    <Label $tone="faint">Bounties won</Label>
+                  </TipTarget>
+                </Tooltip>
+              ) : (
                 <Label $tone="faint">Bounties won</Label>
-                <SkeletonBlock $height="104px" />
-              </>
-            ) : (
-              <>
-                {!unknown && (
-                  <Tooltip
-                    title={<TipText>{bountiesTip(record, plus)}</TipText>}
-                  >
-                    <TipTarget tabIndex={0}>
-                      <Label $tone="faint">Bounties won</Label>
-                    </TipTarget>
-                  </Tooltip>
-                )}
-                {unknown ? null : record.coins.length === 0 ? (
-                  <Small $muted as="p" style={{ margin: 0 }}>
-                    {record.rulings
-                      ? record.rulings === 1 && !plus
-                        ? 'No bounty yet: the one ruling did not go to a challenger.'
-                        : `No bounty yet: none of the ${formatInt(record.rulings)}${plus} rulings went to a challenger.`
-                      : 'No dispute has been ruled on yet.'}
-                  </Small>
-                ) : !pricesSettled ? (
-                  <SkeletonBlock
-                    $height="104px"
-                    $width={`${coinCount * 190}px`}
-                    style={{ maxWidth: '100%' }}
-                  />
-                ) : (
-                  <Coins
-                    $count={record.coins.length}
-                    aria-label="Bounties won per coin, all time"
-                  >
-                    {record.coins.map((coin, index) => {
-                      /* The amount in dollars, when a feed answered for this
-                         coin and there is an amount to convert. */
-                      const price = amountKnown(coin)
-                        ? prices?.[coin.key]
-                        : undefined
-                      const dollars =
-                        price && coin.value !== undefined
-                          ? coin.value * price.usd
-                          : undefined
-                      const usd =
-                        dollars !== undefined ? formatUsd(dollars) : undefined
-                      const tip = coinTip(coin, plus, usd, price)
-                      const symbol = coinSymbol(coin)
-                      const count = amountKnown(coin) ? (
-                        <WonCount>
-                          {formatInt(coin.paid)}
-                          {plus} {coin.paid === 1 ? 'bounty' : 'bounties'}
-                        </WonCount>
-                      ) : (
-                        <Small $faint>{withheldReason(coin)}</Small>
-                      )
-                      const withTip = tip ? (
-                        <Tooltip title={<TipText>{tip}</TipText>}>
-                          <TipTarget tabIndex={0}>{count}</TipTarget>
-                        </Tooltip>
-                      ) : (
-                        count
-                      )
-                      return (
-                        <Coin
-                          key={coin.key}
-                          style={{ ['--i' as string]: index }}
-                        >
-                          <Lead
-                            data-slot="lead"
-                            key={usd ? 'usd' : 'coin'}
-                            style={{ ['--i' as string]: 0 }}
-                          >
-                            {usd && dollars !== undefined ? (
-                              <UsdLead
-                                value={
-                                  <AnimatedNumber
-                                    value={dollars}
-                                    format={usdFormatFor(dollars)}
-                                  />
-                                }
-                                bound={plus}
-                              />
-                            ) : amountKnown(coin) ? (
-                              <>
-                                <span>
-                                  <AnimatedNumber
-                                    value={coin.value ?? 0}
-                                    format={(value) =>
-                                      amountFormat.format(value)
-                                    }
-                                  />
-                                  {plus}
-                                </span>
-                                {coinUnit(coin, symbol)}
-                              </>
-                            ) : (
-                              <>
-                                <span>
-                                  <AnimatedNumber value={coin.won} />
-                                  {plus}
-                                </span>
-                                <small>{countWord(coin)}</small>
-                              </>
-                            )}
-                          </Lead>
-                          {usd && (
-                            <Slot data-slot="amount">
-                              <CoinAmount>
-                                {amountFormat.format(coin.value ?? 0)}
-                                {plus}
-                                {coinUnit(coin, symbol)}
-                              </CoinAmount>
-                            </Slot>
-                          )}
-                          <Slot data-slot="meta">
-                            <CoinMeta>
-                              <ChainLogo chainId={coin.chainId} size={14} />
-                              <span>{coinPlace(coin)}</span>
-                            </CoinMeta>
-                          </Slot>
-                          {amountKnown(coin) && (
-                            <Slot data-slot="count">{withTip}</Slot>
-                          )}
-                          {(coin.stake || !amountKnown(coin)) && (
-                            <Note data-slot="note">
-                              {coin.stake && (
-                                <Small $faint>Any ERC-20, set per list</Small>
-                              )}
-                              {!amountKnown(coin) && withTip}
-                            </Note>
-                          )}
-                        </Coin>
-                      )
-                    })}
-                  </Coins>
-                )}
-                {stakeCoins > 1 && pricesSettled && (
-                  <Small $faint as="p" style={{ margin: 0 }}>
-                    Stake bounties are paid in each list&apos;s own token and
-                    are never added together.
-                  </Small>
-                )}
-                {words}
-              </>
-            )}
-          </Money>
+              )}
+              {bounties}
+            </Total>
+          )}
         </Body>
+        {words}
       </Panel>
     </section>
   )

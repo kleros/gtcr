@@ -747,7 +747,9 @@ const Dashboard = () => {
   // possibility of browsing per chain for now"). The scopes stay wired
   // through the page, so the chain switch can come back.
   const chain: ChainFilter = 'all'
-  const [range, setRange] = useState<ChartRange>('30d')
+  // The chart opens on six months (round 16: "the standard timeframe
+  // should be 6m"); 30 days is one click away.
+  const [range, setRange] = useState<ChartRange>('6m')
   const now = useNow(30_000)
   const launchChain = useLaunchChainId()
   // The board's one-column width (happening-now.tsx STACKED).

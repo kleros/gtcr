@@ -513,25 +513,26 @@ way (dashboard, Browse, registry pages, the profile, the landing page).
   money figures wait at most 1.5s for the first price read, as skeletons, so the lead never swaps
   from coin to dollars under the reader; a later answer fades in. The feed and the age of its
   answer are in the tooltip the figure already carries. The one rule lives in
-  `pages/dashboard/board-rows.tsx` (`UsdLead`, `CoinAmount`, `usdFormatFor`). Exactly two per-coin
-  figures carry dollars: the bounties challengers have won, and the collateral behind the requests
-  open for verification (the one total across coins is below). Never a figure somebody is about to
+  `pages/dashboard/board-rows.tsx` (`UsdLead`, `CoinAmount`, `usdFormatFor`). Per coin, only the
+  collateral behind the requests open for verification carries dollars; the bounties and what has
+  passed through Curate are totals across coins (below). Never a figure somebody is about to
   sign for (an entry page, a launch or stake deposit, a board or ruling row): there the coin amount
   is the obligation. A token that never answered a symbol is unitised by its shortened contract in
   Geist Mono, never left bare. The prices are read on chain in their own query, never inside the
   saved load, which is repainted up to a day later.
-- **One total across coins: what has passed through Curate** (rounds 14 and 15, owner: "remove
-  the reference to crypto at all in the landing", "calculate always at today's price", "add the
-  appeals costs and challenge deposits … it passed from our contracts but not permanent", "smashed
-  also somewhere in the dashboard"). `pages/dashboard/transit.ts` adds every amount paid in to a
-  list, all time: both sides of every round of every request (Standard and Classic: the
-  requester's and the challenger's deposits, then appeal funding), and on Stake lists the stakes,
-  challenge stakes and appeal funding (the court fee a Stake challenger sends is not indexed). It is
-  valued at today's on-chain prices, the same feeds as the figures above, in its own query, never
-  in the saved load; an amount with no current price fails the read, and nothing is drawn. It is
-  shown as "Passed through Curate" beside Entries in the dashboard's first box, at the same size,
-  and on the landing page, which also totals the bounties won in dollars (it names no coin). Every
-  other money figure keeps the per-coin rule above.
+- **Two totals across coins: what has passed through Curate, and the bounties** (rounds 14 to 16,
+  owner: "remove the reference to crypto at all in the landing", "calculate always at today's
+  price", "add the appeals costs and challenge deposits … it passed from our contracts but not
+  permanent", "smashed also somewhere in the dashboard"). `pages/dashboard/transit.ts` adds every
+  amount paid in to a list, all time: both sides of every round of every request (Standard and
+  Classic: the requester's and the challenger's deposits, then appeal funding), and on Stake lists
+  the stakes, challenge stakes and appeal funding (the court fee a Stake challenger sends is not
+  indexed). It is valued at today's on-chain prices, the same feeds as the figures above, in its
+  own query, never in the saved load; an amount with no current price fails the read, and nothing
+  is drawn. It is shown as "Passed through Curate" beside Entries in the dashboard's first box, at
+  the same size, and on the landing page. The bounties won are the other total, on both pages
+  (round 16, the Self-sustaining panel below). Every other money figure keeps the per-coin rule
+  above.
 - The all-time ledger pages the **retired Classic lists'** resolved disputes too (2020-2022): they
   are the protocol's history, so they count in the bounties (counts and amounts) and in the entries
   ever curated, where the first ring's disputed requests count them too (round 4: "when counting
@@ -637,17 +638,20 @@ way (dashboard, Browse, registry pages, the profile, the landing page).
   without singling out any address): 30D per day from the page's own load; 6M and 1Y per week, 3Y
   per month, from the whole history (Standard requests and challenges, Stake submissions and challenges; Classic left out),
   read in pages after the page's own load, three at a time, and retried as a whole if a chain
-  fails, never drawn with a hole. The current bucket is drawn dashed.
+  fails, never drawn with a hole. The current bucket is drawn dashed. It opens on 6M (round 16:
+  "the standard timeframe should be 6m"), so the page's first chart waits for the history read.
 - **Top curators follow the chart's range** (round 8: the date filter is for both), ranked by
   requests plus challenges over it, with their bounties won all time; five of them, filling the
   column beside a 240px chart. The chart's head is one row right above it: what it counts and its
   legend on the left, the range switch on the right (round 9), under the figures.
-- **Self-sustaining mechanism.** Each ring carries a tooltip built from the same counts as the
-  sentence. No line names the Classic lists (round 7). The sentence sits under the money at a 68ch measure, beside the tiles when there are
-  one or two coins. Two or three coins take one equal column each across the money column, a lone
-  coin is never stretched, and four or more auto-fit; between 901 and 1099px the rings are 140px so
-  three coins fit on one line, and at 900px and below the rings take half the width each, centred.
-  Tiles' lines stay level (subgrid). A Stake tile says "Any ERC-20, set per list".
+- **Self-sustaining mechanism** (round 16): one centred row, the two rings and the bounties, the
+  sentence centred under it at a 68ch measure; on a phone the rings side by side and the bounties
+  under them. Each ring carries a tooltip built from the same counts as the sentence. No line names
+  the Classic lists (round 7). **Bounties won** is one figure in dollars at today's prices, compact
+  ("$73.5K"), with no count of bounties; the line under it names what it adds up ("In ETH, xDAI and
+  sDAI on Ethereum and Gnosis, at today's prices") and its tooltip gives each coin's amount and
+  dollars. Where any coin has no current price, or a token's decimals never answered, there is no
+  honest total: the coins' own amounts are listed on one line instead.
 - Top curators sit beside the chart (round 7), in the same panel behind a hairline, 320px wide
   (260px below 1100px), each with an LED bar of their activity against the top curator's
   (requests in the accent, challenges in `contested`) and their counts on one line; below 900px
