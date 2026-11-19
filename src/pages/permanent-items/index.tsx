@@ -163,7 +163,10 @@ const formatInt = (value: number) => integer.format(value)
  */
 const isCount = (value: number) => Number.isFinite(value) && value >= 0
 
-/** The "Previously disputed" count reads at most this many ids. */
+/**
+ * The "Previously disputed" count reads at most this many ids; a read that
+ * fills it is a lower bound ("1,000+") and the pages run on past it.
+ */
 const DISPUTED_BEFORE_LIMIT = 1000
 
 const itemFields = (item: StakeItem): V2Field[] =>
@@ -394,7 +397,8 @@ const StakeRegistry = () => {
   }, [absent, registered, disputed, disputedBefore, registryId])
 
   // How many entries have ever been challenged: the list's size under the
-  // status menu's "Previously disputed" (which shows no count).
+  // status menu's "Previously disputed" (which shows no count), read only
+  // while that choice is on.
   const disputedBeforeQuery = useQuery({
     queryKey: ['permanentDisputedBefore', chainId, registryId],
     queryFn: (): Promise<{ items?: { id: string }[] }> =>
@@ -405,10 +409,14 @@ const StakeRegistry = () => {
         chainId: chainId!,
         isPermanent: true,
       }),
-    enabled: !!chainId && !!registryId,
+    enabled: !!chainId && !!registryId && !!disputedBefore,
     staleTime: STALE_TIME,
   })
   const disputedBeforeCount = disputedBeforeQuery.data?.items?.length
+  const disputedBeforeCapped =
+    !!disputedBefore &&
+    disputedBeforeCount !== undefined &&
+    disputedBeforeCount >= DISPUTED_BEFORE_LIMIT
 
   const itemsVariables = useMemo(
     () => ({
@@ -1029,25 +1037,35 @@ const StakeRegistry = () => {
   const pageStart = pageStartIndex + 1
   // A page past the end of the list: it came back empty.
   const outOfRange = !itemsLoading && pageLength === 0 && currentPage > 1
-  // A full page with an unknown total: at least this many, maybe more.
+  // A full page with an unknown or capped total: at least this many, maybe
+  // more.
   const fullPageFloor =
-    itemCount === undefined && pageLength === ITEMS_PER_PAGE
-      ? pageStartIndex + ITEMS_PER_PAGE
+    (itemCount === undefined || disputedBeforeCapped) &&
+    pageLength === ITEMS_PER_PAGE
+      ? Math.max(itemCount ?? 0, pageStartIndex + ITEMS_PER_PAGE)
       : undefined
-  const footerTotal = itemCount ?? fullPageFloor
+  const footerTotal = fullPageFloor ?? itemCount
   const pageEnd = Math.min(currentPage * ITEMS_PER_PAGE, footerTotal ?? 0)
+  // The "Previously disputed" count still on its way: no total yet.
+  const countLoading = !!disputedBefore && disputedBeforeQuery.isLoading
   const showFooter =
     !itemsLoading &&
+    !countLoading &&
     !outOfRange &&
     footerTotal !== undefined &&
     footerTotal > 0 &&
     pageStart <= footerTotal
   const toolbarTotal =
-    itemCount ?? (outOfRange ? 0 : pageStartIndex + items.length)
+    fullPageFloor ??
+    itemCount ??
+    (outOfRange ? 0 : pageStartIndex + items.length)
   // The search box's count stays blank (never "0 of 0") until the page and
   // the counts are in, and when the page did not load.
   const countUnknown =
-    itemsLoading || !countsReady || (itemsQuery.isError && !itemsQuery.data)
+    itemsLoading ||
+    !countsReady ||
+    (itemsQuery.isError && !itemsQuery.data) ||
+    countLoading
   // No filter and no search, yet nothing on the first page: an empty list.
   const anyFilter = !!(absent || registered || disputed || disputedBefore)
   const listEmpty = !anyFilter && !itemSearch.trim()
@@ -1159,6 +1177,7 @@ const StakeRegistry = () => {
           onNsfwChange={toggleNsfwFilter}
           shown={countUnknown ? undefined : entries.length}
           total={countUnknown ? undefined : toolbarTotal}
+          totalCapped={fullPageFloor !== undefined}
         />
       </div>
 
@@ -1252,10 +1271,15 @@ const StakeRegistry = () => {
               <Pagination
                 current={currentPage}
                 pageSize={ITEMS_PER_PAGE}
-                // An unknown total offers one more page; an empty one
-                // leads back to page 1.
+                // An unknown total offers one more page (a capped one, once
+                // the pages reach it); an empty one leads back to page 1.
                 total={
-                  fullPageFloor !== undefined ? fullPageFloor + 1 : footerTotal
+                  fullPageFloor !== undefined
+                    ? Math.max(
+                        fullPageFloor,
+                        pageStartIndex + ITEMS_PER_PAGE + 1,
+                      )
+                    : footerTotal
                 }
                 onChange={setPage}
               />

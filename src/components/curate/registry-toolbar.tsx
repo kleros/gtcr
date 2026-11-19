@@ -213,6 +213,7 @@ export function RegistryToolbar<L extends ListLayout>({
   onNsfwChange,
   shown,
   total,
+  totalCapped,
 }: {
   search: string
   onSearch: (value: string) => void
@@ -233,6 +234,8 @@ export function RegistryToolbar<L extends ListLayout>({
   shown?: number
   /** Entries the filters cover; undefined while unknown. */
   total?: number
+  /** The total is a lower bound (a capped read): it reads "1,000+". */
+  totalCapped?: boolean
 }) {
   const nsfwLabelId = useId()
   // One choice at a time: the first checked key (an old link may carry
@@ -273,7 +276,10 @@ export function RegistryToolbar<L extends ListLayout>({
           aria-live="polite"
           title={counted ? 'Shown of total' : undefined}
         >
-          {counted && `${integer.format(shown)} of ${integer.format(total)}`}
+          {counted &&
+            `${integer.format(shown)} of ${integer.format(total)}${
+              totalCapped ? '+' : ''
+            }`}
         </Count>
       </Search>
       <StatusSlot>

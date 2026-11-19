@@ -119,7 +119,10 @@ import SubmitConnectModal from '../standard-item-details/modals/submit-connect'
 
 export const NSFW_FILTER_KEY = 'NSFW_FILTER_KEY'
 export const ITEMS_PER_PAGE = 40
-/** The "Previously disputed" count reads at most this many ids. */
+/**
+ * The "Previously disputed" count reads at most this many ids; a read that
+ * fills it is a lower bound ("1,000+") and the pages run on past it.
+ */
 const DISPUTED_BEFORE_LIMIT = 1000
 /** Whole-list search results shown at once (the indexer's keyword match). */
 const SEARCH_LIMIT = 100
@@ -578,7 +581,8 @@ const Items = () => {
   }, [counters])
 
   // How many entries have been to court at least once: the list's size
-  // under the status menu's "Previously disputed" (which shows no count).
+  // under the status menu's "Previously disputed" (which shows no count),
+  // read only while that choice is on.
   const disputedBeforeQuery = useQuery({
     queryKey: ['standardDisputedBefore', chainId, tcrAddress?.toLowerCase()],
     queryFn: (): Promise<{ litems?: { itemID: string }[] }> =>
@@ -591,15 +595,22 @@ const Items = () => {
         },
         chainId: chainId!,
       }),
-    enabled: !!chainId && !!tcrAddress,
+    enabled: !!chainId && !!tcrAddress && !!disputedBefore,
     staleTime: STALE_TIME,
   })
   const disputedBeforeCount = disputedBeforeQuery.data?.litems?.length
+  const disputedBeforeCapped =
+    !!disputedBefore &&
+    disputedBeforeCount !== undefined &&
+    disputedBeforeCount >= DISPUTED_BEFORE_LIMIT
 
-  /** Entries the current filters cover: all of them, or the selected sum. */
-  const itemCount = useMemo(() => {
-    if (disputedBefore) return disputedBeforeCount ?? 0
-    if (!counts) return 0
+  /**
+   * Entries the current filters cover: all of them, or the selected sum;
+   * undefined while unknown (never 0 for a count still loading).
+   */
+  const itemCount = useMemo((): number | undefined => {
+    if (disputedBefore) return disputedBeforeCount
+    if (!counts) return undefined
     const hasAnyFilter =
       absent ||
       registered ||
@@ -1354,14 +1365,28 @@ const Items = () => {
     !visibleItems ||
     !timestamp ||
     !challengePeriodDuration
-  // A whole-list search answers in one go: no pages while it is shown.
-  const showPagination = itemCount > ITEMS_PER_PAGE && !wholeListSearch
   const pageNumber = Number(page) || 1
   const pageItemCount = items?.length ?? 0
+  // A total unknown (its read failed) or capped is a lower bound: what the
+  // pages so far prove, and a full page offers one more, as on Stake. While
+  // the count is still loading there are no pages yet.
+  const countLoading = !!disputedBefore && disputedBeforeQuery.isLoading
+  const countIsFloor = itemCount === undefined || disputedBeforeCapped
+  const pageReach = (pageNumber - 1) * ITEMS_PER_PAGE + pageItemCount
+  const pagerTotal = countLoading
+    ? 0
+    : countIsFloor
+      ? Math.max(
+          itemCount ?? 0,
+          pageReach + (pageItemCount === ITEMS_PER_PAGE ? 1 : 0),
+        )
+      : itemCount
+  // A whole-list search answers in one go: no pages while it is shown.
+  const showPagination = pagerTotal > ITEMS_PER_PAGE && !wholeListSearch
   const searching = itemSearch.trim() !== ''
   // Until a term settles (or for a single character) the search filters
   // the page already loaded.
-  const pageScopedSearch = itemCount > ITEMS_PER_PAGE && !wholeListSearch
+  const pageScopedSearch = pagerTotal > ITEMS_PER_PAGE && !wholeListSearch
   const searchCapped = wholeListSearch && pageItemCount >= SEARCH_LIMIT
   const filtersActive = !!(
     disputedBefore ||
@@ -1372,7 +1397,8 @@ const Items = () => {
     challengedSubmissions ||
     challengedRemovals
   )
-  const pageCount = Math.ceil(itemCount / ITEMS_PER_PAGE)
+  // The last page, when the total is exact.
+  const pageCount = countIsFloor ? 0 : Math.ceil(itemCount / ITEMS_PER_PAGE)
   const plural = capitalizeFirstLetter(itemNamePlural)
 
   // Why the list is empty decides what it says and offers.
@@ -1548,10 +1574,11 @@ const Items = () => {
               ? undefined
               : searching && !wholeListSearch
                 ? pageItemCount
-                : counts
-                  ? itemCount
-                  : undefined
+                : disputedBeforeCapped
+                  ? Math.max(itemCount ?? 0, pageReach)
+                  : itemCount
           }
+          totalCapped={disputedBeforeCapped && !(searching && !wholeListSearch)}
         />
       </Toolbar>
 
@@ -1589,7 +1616,7 @@ const Items = () => {
         {showPagination && (
           <Footer style={{ ['--i' as string]: 2 }}>
             <Pagination
-              total={itemCount}
+              total={pagerTotal}
               current={pageNumber}
               pageSize={ITEMS_PER_PAGE}
               onChange={goToPage}
