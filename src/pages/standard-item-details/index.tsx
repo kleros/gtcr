@@ -33,6 +33,7 @@ import { capitalizeFirstLetter } from 'utils/string'
 import { STANDARD_ITEM_DETAILS_QUERY } from 'utils/graphql'
 import {
   CONTRACT_STATUS,
+  STATUS_CODE,
   hasPendingRequest,
   itemToStatusCode,
 } from 'utils/item-status'
@@ -89,6 +90,7 @@ import { AppealWindowPanel } from 'pages/standard-item-details/appeal-funding'
 import {
   caseState,
   courtLink,
+  fundedAlone,
   requestFacts,
   rulingShort,
   type StandardRequest,
@@ -883,12 +885,20 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
         (!!past.resolved ||
           (index === 0 && caseWords?.awaitingCourt === false)),
     )
-    .map((past) => {
+    .map((past, index) => {
       const requesterName =
         past.requestType === CONTRACT_STATUS.REGISTRATION_REQUESTED
           ? 'submitter'
           : 'requester'
       const court = courtLink(chainId, past.arbitrator, past.disputeID)
+      // The appeal period over with one side alone funded: rule() gives
+      // that side the case whatever the jurors ruled, as the hero says.
+      const alone =
+        index === 0 &&
+        !past.resolved &&
+        statusCode === STATUS_CODE.WAITING_ARBITRATOR
+          ? fundedAlone(past, requesterName)
+          : undefined
       return {
         disputeID: String(past.disputeID),
         arbitrator: past.arbitrator,
@@ -899,12 +909,14 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
         // "Refused to rule", so before that only the jurors' own ruling
         // can be shown — as caseState reads it, so the hero and the
         // record never give the same case two different rulings.
-        ruling: rulingShort(
-          past.resolved
-            ? (past.disputeOutcome ?? past.rounds?.[0]?.ruling)
-            : past.rounds?.[0]?.ruling,
-          requesterName,
-        ),
+        ruling: alone
+          ? `For the ${alone}`
+          : rulingShort(
+              past.resolved
+                ? (past.disputeOutcome ?? past.rounds?.[0]?.ruling)
+                : past.rounds?.[0]?.ruling,
+              requesterName,
+            ),
         href: court?.href,
         host: court?.host,
       }

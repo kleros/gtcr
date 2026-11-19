@@ -31,7 +31,7 @@ import { parseIpfs } from 'utils/ipfs-parse'
 import { type ItemFile, sanitizeItemFile } from 'utils/item-file-guard'
 import { sanitizeMetaEvidence } from 'utils/meta-evidence-guard'
 import { capitalizeFirstLetter } from 'utils/string'
-import { CONTRACT_STATUS } from 'utils/permanent-item-status'
+import { CONTRACT_STATUS, STATUS_CODE } from 'utils/permanent-item-status'
 import { truncateAtWord } from 'utils/truncate-at-word'
 import { formatDurationLong } from 'utils/time'
 import RequestTimelines from 'components/permanent-request-timelines'
@@ -1004,7 +1004,7 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
         toNum(past.resolutionTime) > 0 ||
         (index === 0 && caseWords?.awaitingCourt === false),
     )
-    .map((past) => {
+    .map((past, index) => {
       const court = stakeCourtLink(
         chainId,
         registry?.arbitrator?.id,
@@ -1012,6 +1012,16 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
       )
       const round = past.rounds?.[0]
       const settled = toNum(past.resolutionTime) > 0
+      // The appeal period over with one side alone funded: rule() gives
+      // that side the case whatever the jurors ruled, as the hero says.
+      const alone =
+        index === 0 &&
+        !settled &&
+        statusCode === STATUS_CODE.WAITING_ARBITRATOR &&
+        facts &&
+        now >= facts.appealEnd
+          ? facts.fundedSide
+          : undefined
       return {
         disputeID: String(past.disputeID),
         arbitrator: registry?.arbitrator?.id,
@@ -1022,11 +1032,13 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
         // "Refused to rule", so the ruling is the jurors' own and only
         // once the court has given one — as stakeCaseState reads it, so
         // the hero and the record never disagree about the same case.
-        ruling: settled
-          ? rulingShort(past.disputeOutcome ?? round?.ruling)
-          : toNum(round?.rulingTime) > 0
-            ? rulingShort(round?.ruling)
-            : undefined,
+        ruling: alone
+          ? `For the ${alone}`
+          : settled
+            ? rulingShort(past.disputeOutcome ?? round?.ruling)
+            : toNum(round?.rulingTime) > 0
+              ? rulingShort(round?.ruling)
+              : undefined,
         href: court?.href,
         host: court?.host,
       }
