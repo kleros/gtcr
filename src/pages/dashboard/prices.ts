@@ -12,15 +12,13 @@ import { TESTNET_CHAIN_IDS } from './view'
  * learns a visitor's address for the sake of a secondary label, and the price
  * comes from the same chain the amount lives on.
  *
- * Only two figures on the dashboard carry a dollar value (DESIGN.md, Data
- * rules): the collateral behind the requests open for verification, and the
- * bounties challengers have won. A figure somebody is about to sign for never
- * carries one — the coin amount is the obligation, and a converted number
- * beside it is not what the wallet will ask for. There is no dollar total
- * across coins either: a total would merge Ethereum's one-hour feed with
- * Gnosis's 24-hour feed into one number whose age nothing on screen could
- * state, and the moment a total exists it becomes the headline and the
- * measured per-coin figures become decoration.
+ * Per coin, only the collateral behind the requests open for verification
+ * carries a dollar value (DESIGN.md, Data rules). A figure somebody is about
+ * to sign for never carries one — the coin amount is the obligation, and a
+ * converted number beside it is not what the wallet will ask for. Two figures
+ * are totals across coins, at today's prices (rounds 14 to 16): the bounties
+ * challengers have won and what has passed through Curate (transit.ts,
+ * totalInDollars). Every other figure stays per coin.
  *
  * A price nobody can read is simply absent from the map: the caller then
  * renders the coin figure alone, exactly as the page did before any of this
