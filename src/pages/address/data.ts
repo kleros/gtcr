@@ -29,6 +29,7 @@ import {
   DashboardRegistry,
   RegistryKind,
 } from 'pages/dashboard/types'
+import { TESTNET_CHAIN_IDS } from 'pages/dashboard/view'
 import {
   readVerifiedSets,
   withVerified,
@@ -1160,11 +1161,19 @@ export const fetchAddressProfileData = async (
       entry.list = list.title
   }
 
+  // "All chains" badges count the mainnets only: a testnet's submissions
+  // and challenges are practice, never a level (its own scope still shows
+  // its badges, from its own figures).
+  const mainnetTotals = emptyStats()
+  for (const [chainId, chainStats] of Object.entries(chainBreakdown))
+    if (!TESTNET_CHAIN_IDS.includes(Number(chainId)))
+      addStats(mainnetTotals, chainStats)
+
   return {
     address,
     generatedAt: Date.now(),
     stats: totals,
-    badges: buildBadges(totals),
+    badges: buildBadges(mainnetTotals),
     activities: listed,
     disputes: disputes.slice(0, DISPUTE_LIMIT),
     chainBreakdown,

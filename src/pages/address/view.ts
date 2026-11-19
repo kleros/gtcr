@@ -1,7 +1,7 @@
 import type { EntryStatusView } from 'components/curate/entry-status'
 import { LAYOUT_OPTIONS, type ListLayout } from 'hooks/use-stored-layout'
 import { ZERO_ADDRESS } from 'pages/dashboard/data'
-import type { ChartRange } from 'pages/dashboard/view'
+import { TESTNET_CHAIN_IDS, type ChartRange } from 'pages/dashboard/view'
 import {
   SUPPORTED_CHAIN_IDS,
   chainName,
@@ -253,7 +253,8 @@ export const inScope = (scope: Scope, chainId: number): boolean =>
 /* ---------- Juror on Curate ---------- */
 
 /**
- * The juror badge for a scope: the chains in it added up. It is a record,
+ * The juror badge for a scope: the chains in it added up ("All chains" is
+ * the mainnets, no testnet). It is a record,
  * not a goal, so it carries no progress; and it claims only what was read:
  * a chain that was not read is named, never counted as zero.
  */
@@ -291,8 +292,12 @@ export const jurorBadge = (
     votesUnread: [],
   }
   if (!jury) return view
-  const chains = SUPPORTED_CHAIN_IDS.filter((chainId) =>
-    inScope(scope, chainId),
+  // "All chains" leaves the testnet out: Sepolia seats are practice and
+  // never count toward the badge; a Sepolia scope still shows its own.
+  const chains = SUPPORTED_CHAIN_IDS.filter(
+    (chainId) =>
+      inScope(scope, chainId) &&
+      !(scope === 'all' && TESTNET_CHAIN_IDS.includes(chainId)),
   )
   for (const chainId of chains) {
     const chain = jury.chains[chainId]
