@@ -33,6 +33,7 @@ import {
   readVerifiedSets,
   withVerified,
 } from 'components/curate/registry-shared-verified'
+import { badgeLevel, type BadgeLevel } from './levels'
 
 const PROFILE_QUERY_TIMEOUT_MS = 10_000
 /** Rows per indexer page; both indexers serve up to 1,000. */
@@ -182,13 +183,15 @@ const STAKE_ENTRY_NAMES_QUERY = gql`
   }
 `
 
-export interface AddressBadge {
+export interface AddressBadge extends BadgeLevel {
   id: 'librarian' | 'sheriff' | 'maintainer'
   label: string
-  description: string
+  /** What the badge counts, plural ("submissions"). */
+  unit: string
+  /** Singular of `unit`. */
+  one: string
+  /** Level 1 or above. */
   earned: boolean
-  progress: number
-  goal: number
 }
 
 export interface AddressStats {
@@ -983,32 +986,24 @@ const readEntryNames = async (activities: ProfileActivity[]) => {
   }
 }
 
-export const buildBadges = (stats: AddressStats): AddressBadge[] => [
-  {
-    id: 'librarian',
-    label: 'Librarian',
-    description: '100+ submissions',
-    earned: stats.submissions >= 100,
-    progress: Math.min(stats.submissions, 100),
-    goal: 100,
-  },
-  {
-    id: 'sheriff',
-    label: 'Sheriff',
-    description: '100+ challenges',
-    earned: stats.challenges >= 100,
-    progress: Math.min(stats.challenges, 100),
-    goal: 100,
-  },
-  {
-    id: 'maintainer',
-    label: 'Maintainer',
-    description: '20+ removals',
-    earned: stats.removals >= 20,
-    progress: Math.min(stats.removals, 20),
-    goal: 20,
-  },
-]
+/** The goal badges and their levels (levels.ts) for a scope's figures. */
+export const buildBadges = (stats: AddressStats): AddressBadge[] =>
+  (
+    [
+      [
+        'librarian',
+        'Librarian',
+        stats.submissions,
+        'submissions',
+        'submission',
+      ],
+      ['sheriff', 'Sheriff', stats.challenges, 'challenges', 'challenge'],
+      ['maintainer', 'Maintainer', stats.removals, 'removals', 'removal'],
+    ] as const
+  ).map(([id, label, count, unit, one]) => {
+    const level = badgeLevel(id, count)
+    return { id, label, unit, one, earned: level.level > 0, ...level }
+  })
 
 export const fetchAddressProfileData = async (
   rawAddress: string,
@@ -1138,10 +1133,7 @@ export const fetchAddressProfileData = async (
     if (registry.logoURI) activity.registryLogo = registry.logoURI
     if (registry.trustStatus === 'verified') activity.registryVerified = true
     // Stake Curate requests carry no title; the index has the list's own.
-    if (
-      registry.title &&
-      /^(Stake list|Registry) 0x/.test(activity.registryTitle)
-    )
+    if (registry.title && /^(Stake list|List) 0x/.test(activity.registryTitle))
       activity.registryTitle = registry.title
   }
 
@@ -1164,7 +1156,7 @@ export const fetchAddressProfileData = async (
       entry.chainId === undefined ? activity.chainId : entry.chainId
     if (chainId === null) continue
     const list = index.get(`${chainId}:${key}`)
-    if (list?.title && !/^(Stake list|Registry) 0x/.test(list.title))
+    if (list?.title && !/^(Stake list|List) 0x/.test(list.title))
       entry.list = list.title
   }
 

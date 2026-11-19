@@ -22,6 +22,11 @@ import styled from 'styled-components'
  * badge on its way reads as the badge, dimmed, with how far there is to
  * go. Nothing here is a button; the medal is named by its caller (role img
  * with a label) or hidden when its name is written beside it.
+ *
+ * Earned, a medal carries its level (round 12, pages/address/levels.ts) on
+ * a small pip at its lower right: the numeral in the figure face on the same
+ * primary glass with a lit rim, set in pixels, not in the medal's units, so
+ * it reads the same at every size.
  */
 
 export type MedalKind = 'librarian' | 'sheriff' | 'maintainer' | 'juror'
@@ -100,6 +105,40 @@ export const MEDAL_NAMES: Record<MedalKind, string> = {
 const tint = (hue: 1 | 2 | 3, share: number, glass: 'top' | 'bottom') =>
   `color-mix(in srgb, var(--edge-${hue}) ${share}%, var(--cta-${glass}))`
 
+/* The medal's box, so the level pip can sit on its corner. */
+const Frame = styled.span`
+  position: relative;
+  display: inline-block;
+  flex: 0 0 auto;
+  vertical-align: middle;
+`
+
+const LevelPip = styled.span`
+  position: absolute;
+  right: -3px;
+  bottom: -3px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 19px;
+  height: 19px;
+  padding: 0 4px;
+  border: 1px solid color-mix(in srgb, var(--edge-2) 70%, transparent);
+  border-radius: var(--radius-pill);
+  background: linear-gradient(180deg, var(--cta-top), var(--cta-bottom));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.28),
+    0 0 0 2px var(--color-raised),
+    0 0 8px color-mix(in srgb, var(--edge-2) 40%, transparent);
+  color: var(--cta-ink);
+  font-family: var(--font-figure);
+  font-size: 11px;
+  line-height: 1;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+`
+
 const Svg = styled.svg<{ $earned: boolean }>`
   display: block;
   flex: 0 0 auto;
@@ -117,6 +156,7 @@ export const CuratorMedal = ({
   kind,
   earned,
   progress = 0,
+  level,
   size = 56,
   label,
   className,
@@ -125,6 +165,8 @@ export const CuratorMedal = ({
   earned: boolean
   /** 0 to 1, for the ring round an unearned medal. */
   progress?: number
+  /** Drawn on a pip at the lower right when the medal is earned. */
+  level?: number
   size?: number
   /** Names the medal for assistive tech; without it the medal is hidden. */
   label?: string
@@ -138,189 +180,209 @@ export const CuratorMedal = ({
   const ring = 2 * Math.PI * 29.5
 
   return (
-    <Svg
-      viewBox="0 0 64 64"
-      width={size}
-      height={size}
-      $earned={earned}
+    <Frame
       className={className}
+      style={{ width: size, height: size }}
       {...(label
         ? { role: 'img', 'aria-label': label }
         : { 'aria-hidden': true })}
     >
-      <defs>
-        <linearGradient id={`${id}-glass`} x1="0" y1="0" x2="0" y2="1">
-          <stop
-            offset="0"
-            stopColor={earned ? tint(1, 34, 'top') : 'var(--color-raised)'}
-          />
-          <stop
-            offset="0.55"
-            stopColor={earned ? tint(3, 22, 'bottom') : 'var(--color-surface)'}
-          />
-          <stop
-            offset="1"
-            stopColor={earned ? tint(2, 30, 'bottom') : 'var(--color-surface)'}
-          />
-        </linearGradient>
-        <linearGradient id={`${id}-face`} x1="0" y1="0" x2="1" y2="1">
-          <stop
-            offset="0"
-            stopColor={earned ? tint(2, 26, 'top') : 'var(--color-surface)'}
-          />
-          <stop
-            offset="1"
-            stopColor={earned ? tint(1, 18, 'bottom') : 'var(--color-surface)'}
-          />
-        </linearGradient>
-        <linearGradient id={`${id}-rim`} x1="0" y1="0" x2="1" y2="1">
-          <stop
-            offset="0"
-            stopColor={earned ? 'var(--edge-1)' : 'var(--color-border-strong)'}
-          />
-          <stop
-            offset="0.5"
-            stopColor={earned ? 'var(--edge-2)' : 'var(--color-border-strong)'}
-          />
-          <stop
-            offset="1"
-            stopColor={earned ? 'var(--edge-3)' : 'var(--color-border-strong)'}
-          />
-        </linearGradient>
-        <linearGradient id={`${id}-sheen`} x1="0" y1="0" x2="0" y2="1">
-          <stop
-            offset="0"
-            stopColor="#fff"
-            stopOpacity={earned ? 0.32 : 0.06}
-          />
-          <stop offset="0.5" stopColor="#fff" stopOpacity="0" />
-        </linearGradient>
-      </defs>
+      <Svg
+        viewBox="0 0 64 64"
+        width={size}
+        height={size}
+        $earned={earned}
+        aria-hidden
+      >
+        <defs>
+          <linearGradient id={`${id}-glass`} x1="0" y1="0" x2="0" y2="1">
+            <stop
+              offset="0"
+              stopColor={earned ? tint(1, 34, 'top') : 'var(--color-raised)'}
+            />
+            <stop
+              offset="0.55"
+              stopColor={
+                earned ? tint(3, 22, 'bottom') : 'var(--color-surface)'
+              }
+            />
+            <stop
+              offset="1"
+              stopColor={
+                earned ? tint(2, 30, 'bottom') : 'var(--color-surface)'
+              }
+            />
+          </linearGradient>
+          <linearGradient id={`${id}-face`} x1="0" y1="0" x2="1" y2="1">
+            <stop
+              offset="0"
+              stopColor={earned ? tint(2, 26, 'top') : 'var(--color-surface)'}
+            />
+            <stop
+              offset="1"
+              stopColor={
+                earned ? tint(1, 18, 'bottom') : 'var(--color-surface)'
+              }
+            />
+          </linearGradient>
+          <linearGradient id={`${id}-rim`} x1="0" y1="0" x2="1" y2="1">
+            <stop
+              offset="0"
+              stopColor={
+                earned ? 'var(--edge-1)' : 'var(--color-border-strong)'
+              }
+            />
+            <stop
+              offset="0.5"
+              stopColor={
+                earned ? 'var(--edge-2)' : 'var(--color-border-strong)'
+              }
+            />
+            <stop
+              offset="1"
+              stopColor={
+                earned ? 'var(--edge-3)' : 'var(--color-border-strong)'
+              }
+            />
+          </linearGradient>
+          <linearGradient id={`${id}-sheen`} x1="0" y1="0" x2="0" y2="1">
+            <stop
+              offset="0"
+              stopColor="#fff"
+              stopOpacity={earned ? 0.32 : 0.06}
+            />
+            <stop offset="0.5" stopColor="#fff" stopOpacity="0" />
+          </linearGradient>
+        </defs>
 
-      {/* The progress ring round an unearned medal: the track, then the share. */}
-      {!earned && (
-        <g>
-          <circle
-            cx={C}
-            cy={C}
-            r="29.5"
-            fill="none"
-            stroke="var(--color-border)"
-            strokeWidth="2"
-          />
-          {share > 0 && (
+        {/* The progress ring round an unearned medal: the track, then the share. */}
+        {!earned && (
+          <g>
             <circle
               cx={C}
               cy={C}
               r="29.5"
               fill="none"
-              stroke="var(--status-window)"
+              stroke="var(--color-border)"
               strokeWidth="2"
-              strokeLinecap="round"
-              strokeDasharray={`${(ring * share).toFixed(2)} ${ring.toFixed(2)}`}
-              transform={`rotate(-90 ${C} ${C})`}
             />
-          )}
-        </g>
-      )}
-
-      {round ? (
-        <>
-          <circle
-            cx={C}
-            cy={C}
-            r="23"
-            fill={`url(#${id}-glass)`}
-            stroke={`url(#${id}-rim)`}
-            strokeWidth="1.4"
-          />
-          <circle
-            cx={C}
-            cy={C}
-            r="17.5"
-            fill={`url(#${id}-face)`}
-            stroke="#fff"
-            strokeOpacity={earned ? 0.22 : 0.06}
-            strokeWidth="0.8"
-          />
-          {/* The seal's milled edge: short ticks round the rim. */}
-          <g
-            stroke="#fff"
-            strokeOpacity={earned ? 0.28 : 0.08}
-            strokeWidth="0.9"
-            strokeLinecap="round"
-          >
-            {Array.from({ length: 24 }, (_, index) => {
-              const angle = (index * Math.PI) / 12
-              const x1 = C + 19.5 * Math.cos(angle)
-              const y1 = C + 19.5 * Math.sin(angle)
-              const x2 = C + 21.4 * Math.cos(angle)
-              const y2 = C + 21.4 * Math.sin(angle)
-              return (
-                <line
-                  key={index}
-                  x1={x1.toFixed(2)}
-                  y1={y1.toFixed(2)}
-                  x2={x2.toFixed(2)}
-                  y2={y2.toFixed(2)}
-                />
-              )
-            })}
+            {share > 0 && (
+              <circle
+                cx={C}
+                cy={C}
+                r="29.5"
+                fill="none"
+                stroke="var(--status-window)"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeDasharray={`${(ring * share).toFixed(2)} ${ring.toFixed(2)}`}
+                transform={`rotate(-90 ${C} ${C})`}
+              />
+            )}
           </g>
-          <circle cx={C} cy={C} r="23" fill={`url(#${id}-sheen)`} />
-        </>
-      ) : (
-        outline &&
-        face && (
+        )}
+
+        {round ? (
           <>
-            <path
-              d={pathOf(outline)}
+            <circle
+              cx={C}
+              cy={C}
+              r="23"
               fill={`url(#${id}-glass)`}
               stroke={`url(#${id}-rim)`}
               strokeWidth="1.4"
-              strokeLinejoin="round"
             />
-            {/* The bevel: each corner to the face's, white facet lines. */}
-            <g
-              stroke="#fff"
-              strokeOpacity={earned ? 0.2 : 0.06}
-              strokeWidth="0.7"
-            >
-              {outline.map((point, index) => (
-                <line
-                  key={index}
-                  x1={point[0]}
-                  y1={point[1]}
-                  x2={face[index][0]}
-                  y2={face[index][1]}
-                />
-              ))}
-            </g>
-            <path
-              d={pathOf(face)}
+            <circle
+              cx={C}
+              cy={C}
+              r="17.5"
               fill={`url(#${id}-face)`}
               stroke="#fff"
-              strokeOpacity={earned ? 0.24 : 0.06}
+              strokeOpacity={earned ? 0.22 : 0.06}
               strokeWidth="0.8"
-              strokeLinejoin="round"
             />
-            <path d={pathOf(outline)} fill={`url(#${id}-sheen)`} />
+            {/* The seal's milled edge: short ticks round the rim. */}
+            <g
+              stroke="#fff"
+              strokeOpacity={earned ? 0.28 : 0.08}
+              strokeWidth="0.9"
+              strokeLinecap="round"
+            >
+              {Array.from({ length: 24 }, (_, index) => {
+                const angle = (index * Math.PI) / 12
+                const x1 = C + 19.5 * Math.cos(angle)
+                const y1 = C + 19.5 * Math.sin(angle)
+                const x2 = C + 21.4 * Math.cos(angle)
+                const y2 = C + 21.4 * Math.sin(angle)
+                return (
+                  <line
+                    key={index}
+                    x1={x1.toFixed(2)}
+                    y1={y1.toFixed(2)}
+                    x2={x2.toFixed(2)}
+                    y2={y2.toFixed(2)}
+                  />
+                )
+              })}
+            </g>
+            <circle cx={C} cy={C} r="23" fill={`url(#${id}-sheen)`} />
           </>
-        )
-      )}
+        ) : (
+          outline &&
+          face && (
+            <>
+              <path
+                d={pathOf(outline)}
+                fill={`url(#${id}-glass)`}
+                stroke={`url(#${id}-rim)`}
+                strokeWidth="1.4"
+                strokeLinejoin="round"
+              />
+              {/* The bevel: each corner to the face's, white facet lines. */}
+              <g
+                stroke="#fff"
+                strokeOpacity={earned ? 0.2 : 0.06}
+                strokeWidth="0.7"
+              >
+                {outline.map((point, index) => (
+                  <line
+                    key={index}
+                    x1={point[0]}
+                    y1={point[1]}
+                    x2={face[index][0]}
+                    y2={face[index][1]}
+                  />
+                ))}
+              </g>
+              <path
+                d={pathOf(face)}
+                fill={`url(#${id}-face)`}
+                stroke="#fff"
+                strokeOpacity={earned ? 0.24 : 0.06}
+                strokeWidth="0.8"
+                strokeLinejoin="round"
+              />
+              <path d={pathOf(outline)} fill={`url(#${id}-sheen)`} />
+            </>
+          )
+        )}
 
-      {/* The glyph, cut into the face. */}
-      <g transform={`translate(${C - 12} ${C - 12})`}>
-        <path
-          d={GLYPHS[kind]}
-          fill="none"
-          stroke={earned ? 'var(--cta-ink)' : 'var(--color-faint)'}
-          strokeWidth="1.6"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-      </g>
-    </Svg>
+        {/* The glyph, cut into the face. */}
+        <g transform={`translate(${C - 12} ${C - 12})`}>
+          <path
+            d={GLYPHS[kind]}
+            fill="none"
+            stroke={earned ? 'var(--cta-ink)' : 'var(--color-faint)'}
+            strokeWidth="1.6"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </g>
+      </Svg>
+      {earned && level !== undefined && level > 0 && (
+        <LevelPip>{level}</LevelPip>
+      )}
+    </Frame>
   )
 }
 

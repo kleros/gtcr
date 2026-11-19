@@ -45,6 +45,7 @@ import {
 } from './view'
 import { QuietState, When } from './parts'
 import { CuratorMedal, MEDAL_NAMES } from 'components/curate/curator-medal'
+import { badgeLevel, type BadgeLevel } from './levels'
 import { ActivityChart } from './activity-chart'
 import { ChallengeRing } from './challenge-ring'
 
@@ -189,6 +190,14 @@ const AddressTitle = styled.h1`
   }
 `
 
+/** A medal's tooltip line: the count, then the next level or the top. */
+const levelRule = (level: BadgeLevel, one: string, many: string) =>
+  `${formatInt(level.count)} ${level.count === 1 ? one : many} · ${
+    level.next === undefined
+      ? 'top level'
+      : `level ${level.level + 1} at ${formatInt(level.next)}`
+  }`
+
 /*
  * The badges the address has earned, on top of the profile beside who it is
  * (round 10: "when achieved they are displayed in the profile page on
@@ -203,13 +212,18 @@ const Medals = styled.ul`
   margin: 4px 0 0;
   padding: 0;
   list-style: none;
+
+  @media (max-width: 520px) {
+    gap: 10px 14px;
+  }
 `
 
-/* A medal and its name, the name in the display face beside it. */
+/* A medal and its name, the name in the display face beside it and its
+   level under the name (round 12). */
 const MedalTarget = styled.span`
   display: inline-flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   border-radius: 12px;
   color: var(--color-text);
   font-family: var(--font-display);
@@ -218,6 +232,34 @@ const MedalTarget = styled.span`
   font-weight: 500;
   letter-spacing: -0.01em;
   white-space: nowrap;
+
+  > span:last-child {
+    display: flex;
+    flex-direction: column;
+  }
+
+  small {
+    color: var(--color-muted);
+    font-family: var(--font-sans);
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 400;
+    letter-spacing: 0;
+  }
+
+  /* On a phone the medals stand alone, level on each, so four fit on one
+     line beside the avatar; the name and level stay in the label and the
+     tooltip, and the Badges card below names them all. */
+  @media (max-width: 520px) {
+    > span:last-child {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+      white-space: nowrap;
+    }
+  }
 
   &:focus-visible {
     outline: 2px solid var(--color-primary);
@@ -992,13 +1034,19 @@ export const ProfilePanel = ({
                   .filter((badge) => badge.earned)
                   .map((badge) => ({
                     kind: badge.id,
-                    rule: badge.description,
+                    level: badge.level,
+                    rule: levelRule(badge, badge.one, badge.unit),
                   })),
                 ...(juror.state === 'ready' && juror.seats > 0
                   ? [
                       {
                         kind: 'juror' as const,
-                        rule: `${formatInt(juror.seats)} ${juror.seats === 1 ? 'seat' : 'seats'} in Curate disputes`,
+                        level: badgeLevel('juror', juror.seats).level,
+                        rule: levelRule(
+                          badgeLevel('juror', juror.seats),
+                          'seat in Curate disputes',
+                          'seats in Curate disputes',
+                        ),
                       },
                     ]
                   : []),
@@ -1010,17 +1058,27 @@ export const ProfilePanel = ({
                       <Tooltip
                         title={
                           <MedalTip>
-                            <b>{MEDAL_NAMES[medal.kind]}</b>
+                            <b>
+                              {MEDAL_NAMES[medal.kind]} · Level {medal.level}
+                            </b>
                             <span>{medal.rule}</span>
                           </MedalTip>
                         }
                       >
                         <MedalTarget
                           tabIndex={0}
-                          aria-label={`${MEDAL_NAMES[medal.kind]}: ${medal.rule}`}
+                          aria-label={`${MEDAL_NAMES[medal.kind]}, level ${medal.level}: ${medal.rule}`}
                         >
-                          <CuratorMedal kind={medal.kind} earned size={44} />
-                          {MEDAL_NAMES[medal.kind]}
+                          <CuratorMedal
+                            kind={medal.kind}
+                            earned
+                            level={medal.level}
+                            size={44}
+                          />
+                          <span>
+                            {MEDAL_NAMES[medal.kind]}
+                            <small>Level {medal.level}</small>
+                          </span>
                         </MedalTarget>
                       </Tooltip>
                     </li>

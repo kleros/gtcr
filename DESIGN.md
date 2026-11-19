@@ -586,8 +586,8 @@ way (dashboard, Browse, registry pages, the profile, the landing page).
 - **The title** (round 11) names both ways in, one clause to a line, the second in `primary`:
   "Obtain your verification, / or earn by keeping lists clean." It is a sentence, not a slogan, so
   it is set at clamp(38px, 3.4vw + 14px, 64px) rather than `--fs-hero`, each clause balanced on a
-  phone. The lede under it, at most 54ch and balanced: "Curate verifies anything, at scale. It's
-  built so good actors win: they get verified, or they get the bounty if they spot wrong entries."
+  phone. The lede under it, at most 54ch and balanced: "Curate verifies anything, at scale. Built
+  to let good actors win: they get verified, or they get the bounty if they spot wrong entries."
 - **Open for verification** is not drawn at all when there is no bounty up for grabs (round 10).
   It sits under Happening now with no box (round 6), centred on the page:
   under its title, two large figures side by side, parted by a hairline, the count open now and
@@ -742,14 +742,37 @@ way (dashboard, Browse, registry pages, the profile, the landing page).
 - **Medals** (round 10, `components/curate/curator-medal.tsx`): each badge is a medal cut in the
   Kleros Verified seal's language, a faceted gem of the primary glass tinted by the edge hues, a
   gradient rim, a top sheen and a soft edge-2 glow, its glyph cut in `cta-ink`. Each has its own
-  outline and glyph: Librarian a hexagon and books (100+ submissions), Sheriff a shield and a star
-  (100+ challenges), Maintainer an octagon and a broom (20+ removal requests), Juror on Curate a
-  round milled seal and the scales (a seat in a Curate dispute). Unearned, the medal is recessed
-  glass with a faint glyph inside a progress ring in `status-window`.
-- **Earned badges lead the profile**: under the address, each medal (44px) with its name, its rule
-  on hover and focus. The Badges card lists them all, each a row of its medal, name and rule, then
-  an LED bar of the way there and the figure, or, earned, a lit "Earned" check; its head counts
-  how many are earned. The juror row's bar is the share of seats voted, in `edge-2`.
+  outline and glyph: Librarian a hexagon and books (submissions), Sheriff a shield and a star
+  (challenges), Maintainer an octagon and a broom (removal requests), Juror on Curate a round
+  milled seal and the scales (seats in Curate disputes). Unearned, the medal is recessed glass
+  with a faint glyph inside a progress ring in `status-window`. Earned, it carries its level on a
+  19px pip at its lower right: the numeral in the figure face on the primary glass, lit rim, set
+  in pixels so it reads the same at every size.
+- **Levels** (round 12, `pages/address/levels.ts`): five per badge, earned from level 1. The
+  owner fixed level 2 for two of them (Librarian at 5 submissions, Sheriff at 2 challenges); the
+  rest of each ladder comes from the indexers' own counts (Standard lists on Ethereum and Gnosis,
+  the court index's seats in Curate disputes, read 2026-11-19), so a level is about as hard on
+  every badge: of those who did the thing once, about half or more reach level 2, a quarter to two
+  fifths level 3, one in six level 4, one in twelve to twenty level 5.
+
+  | Level | 1 | 2 | 3 | 4 | 5 |
+  |---|---|---|---|---|---|
+  | Librarian (submissions) | 1 | 5 | 25 | 100 | 500 |
+  | Sheriff (challenges) | 1 | 2 | 5 | 20 | 50 |
+  | Maintainer (removal requests) | 1 | 2 | 10 | 25 | 100 |
+  | Juror on Curate (seats) | 1 | 5 | 10 | 25 | 100 |
+
+- **Earned badges lead the profile**: under the address, each earned medal (44px) with its name
+  and "Level N" under it, the count and the next level on hover and focus. On phones (520px and
+  below) the medals stand alone with their pips, so four fit on one line beside the avatar; the
+  names stay in the labels and the tooltips.
+- **The Badges card** lists all four the same way: the medal with its level, the name with a
+  "Level N" tag in the accent, what the next level asks for ("Level 3 at 25 submissions"), then
+  an LED bar of the count against it and the figure ("23 / 25"); at the top level, "Top level ·
+  500+ submissions", the count alone and a full bar; at level 0, "Not started". Its head counts
+  how many are earned. The juror row is the same by seats, with the record under its bar (disputes
+  drawn in, seats voted, still voting) and its tooltip on a dotted underline under the name, not a
+  help icon, which pushed the tag under the name.
 - On phones the Activity shows 8 actions to a page (20 elsewhere).
 - **Activity search** (round 11): Browse's pill search between the kind filter and the layout
   control, 38px like their tracks; on its own line under them where the three do not fit, and

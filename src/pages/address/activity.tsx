@@ -19,7 +19,7 @@ import {
 import { EntryStatus } from 'components/curate/entry-status'
 import { reveal } from 'components/curate/motion/reveal'
 import { LaneBar } from 'components/curate/lane-bar'
-import { CuratorMedal } from 'components/curate/curator-medal'
+import { CuratorMedal, type MedalKind } from 'components/curate/curator-medal'
 import { Pagination } from 'components/ui'
 import Tooltip from 'components/ui/Tooltip'
 import type { AddressBadge, ProfileActivity } from './data'
@@ -48,6 +48,7 @@ import {
   SectionTitle,
   When,
 } from './parts'
+import { LEVELS, TOP_LEVEL, badgeLevel, type BadgeLevel } from './levels'
 
 /*
  * The address's actions as YMax-style rows (or the remembered cards),
@@ -677,6 +678,13 @@ const BadgeRow = styled.div<{ $earned?: boolean }>`
     font-weight: 500;
     letter-spacing: -0.01em;
   }
+
+  strong[data-tip] {
+    text-decoration: underline dotted
+      color-mix(in srgb, var(--color-text) 40%, transparent);
+    text-decoration-thickness: 1.5px;
+    text-underline-offset: 5px;
+  }
 `
 
 const BadgeFigure = styled.span`
@@ -730,32 +738,37 @@ const Unavailable = styled.span`
   line-height: var(--lh-small);
 `
 
-const JurorMeasure = styled.div`
+/* The bar to the next level, and the juror's record under it. */
+const Measure = styled.div`
   display: flex;
   flex-direction: column;
   gap: 8px;
 `
 
-/* An earned badge's mark: a lit check and the word, in the registered
-   green's place on the status scale. */
-const Earned = styled.span`
+/* The name and its level tag on one line, the tag wrapping under a long
+   name rather than pushing the figure out. */
+const NameLine = styled.span`
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+`
+
+/* "Level 2": the badge's level beside its name, in the accent, the one hue
+   the page spends on what is earned. */
+const LevelTag = styled.span`
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 3px 10px 3px 7px;
-  border: 1px solid
-    color-mix(in srgb, var(--status-registered) 40%, transparent);
+  height: 20px;
+  padding: 0 8px;
+  border: 1px solid color-mix(in srgb, var(--color-primary) 45%, transparent);
   border-radius: var(--radius-pill);
-  background: color-mix(in srgb, var(--status-registered) 12%, transparent);
+  background: var(--color-primary-soft);
   color: var(--color-text);
   font-size: 12px;
   line-height: 16px;
   font-weight: 500;
   white-space: nowrap;
-
-  svg {
-    color: var(--status-registered);
-  }
 `
 
 const ShareRow = styled.div`
@@ -893,107 +906,193 @@ const plural = (count: number, one: string, many: string) =>
   `${formatInt(count)} ${count === 1 ? one : many}`
 
 /**
- * The juror badge: a record, not a goal, so it has no target and no
- * "Earned". The figure is the seats; the rail is the share of them voted in.
- * A seat in a round still collecting votes is neither voted nor missed, and
- * says so. Only what was read is shown: a chain that did not answer makes
- * the figure a lower bound and is named, votes that could not be read leave
- * no rail, and nothing read at all is "unavailable", never 0.
+ * Where a badge stands, for the line under its name: what the next level
+ * asks for, or that the top one is reached.
  */
-const JurorRow = ({ juror }: { juror: JurorBadgeView }) => {
-  const ready = juror.state === 'ready'
-  const lower = juror.unread.length > 0 || juror.capped.length > 0
-  const unreadNote =
-    juror.unread.length > 0 ? `${chainNames(juror.unread)} not read` : ''
-  const caption = [
-    juror.votes !== undefined
-      ? juror.seats > 0 && `${formatInt(juror.votes)} voted`
-      : `Votes on ${chainNames(juror.votesUnread)} couldn’t be read`,
-    juror.votes !== undefined &&
-      juror.voting > 0 &&
-      `${formatInt(juror.voting)} still voting`,
-    unreadNote,
-  ]
-    .filter(Boolean)
-    .join(' · ')
-  // A record, not a goal: lit once the address has sat on a Curate jury.
-  const earned = ready && juror.seats > 0
+const levelLine = (
+  kind: MedalKind,
+  level: BadgeLevel,
+  one: string,
+  many: string,
+) =>
+  level.next === undefined
+    ? `Top level · ${formatInt(LEVELS[kind][TOP_LEVEL - 1])}+ ${many}`
+    : `Level ${level.level + 1} at ${plural(level.next, one, many)}`
+
+/**
+ * One badge (round 10; levels, round 12): its medal with the level on it,
+ * the name with a "Level N" tag, what the next level asks for, then the
+ * count against it as an LED bar and "7 / 25"; at the top level, the count
+ * alone and a full bar. Hairlines part the badges, as rows elsewhere.
+ */
+const LevelRow = ({
+  kind,
+  name,
+  level,
+  one,
+  many,
+  tip,
+  note,
+  figure,
+  measured = true,
+  caption,
+}: {
+  kind: MedalKind
+  name: string
+  level: BadgeLevel
+  one: string
+  many: string
+  /** A tooltip on the name, when the figure needs explaining. */
+  tip?: string
+  /** Replaces the level line (a figure not read yet). */
+  note?: string
+  /** Replaces the count (loading, unavailable, a lower bound). */
+  figure?: React.ReactNode
+  /** False when there is no count to draw a bar for. */
+  measured?: boolean
+  /** A faint line under the bar. */
+  caption?: string
+}) => {
+  const earned = level.level > 0
+  const top = level.next === undefined
+  // A name with a tooltip is underlined in dots, not given a help icon: the
+  // icon pushed the level tag under a long name.
+  const title = <strong data-tip={tip ? '' : undefined}>{name}</strong>
+  const bar =
+    measured &&
+    (level.count > 0 ? (
+      <span
+        role="img"
+        aria-label={
+          top
+            ? `${name}: top level`
+            : `${name}: ${formatInt(level.count)} of ${formatInt(level.next ?? 0)} to level ${level.level + 1}`
+        }
+      >
+        <LaneBar extent={level.share} armed delay={200} />
+      </span>
+    ) : (
+      <Small $faint>Not started</Small>
+    ))
   return (
     <BadgeRow $earned={earned}>
       <span data-medal="">
-        <CuratorMedal kind="juror" earned={earned} size={52} />
+        <CuratorMedal
+          kind={kind}
+          earned={earned}
+          level={level.level}
+          progress={level.share}
+          size={52}
+        />
       </span>
       <div data-name="">
-        <Tooltip title={<TipText>{jurorTip(juror)}</TipText>}>
-          <TipTarget tabIndex={0}>
-            <strong>
-              Juror on Curate
-              <CurateIcon name="help" size={13} />
-            </strong>
-          </TipTarget>
-        </Tooltip>
-        {/* By role, so it never reads as the profile's own Disputes figure,
-            which counts the disputes the address was a party to. */}
+        <NameLine>
+          {tip ? (
+            <Tooltip title={<TipText>{tip}</TipText>}>
+              <TipTarget tabIndex={0}>{title}</TipTarget>
+            </Tooltip>
+          ) : (
+            title
+          )}
+          {earned && <LevelTag>Level {level.level}</LevelTag>}
+        </NameLine>
         <Small $faint style={{ display: 'block' }}>
-          {ready && juror.cases > 0
-            ? `Drawn in ${plural(juror.cases, 'dispute', 'disputes')}`
-            : 'Seats drawn in Curate disputes'}
+          {note ?? levelLine(kind, level, one, many)}
         </Small>
       </div>
       <span data-figure="">
-        {juror.state === 'loading' ? (
-          <SkeletonBlock $width="32px" $height="20px" aria-hidden />
-        ) : !ready ? (
-          <Unavailable title="The court index did not answer; try again later">
-            unavailable
-          </Unavailable>
-        ) : (
+        {figure ?? (
           <BadgeFigure
-            aria-label={`${lower ? 'At least ' : ''}${plural(juror.seats, 'seat', 'seats')}`}
+            aria-label={
+              top
+                ? plural(level.count, one, many)
+                : `${formatInt(level.count)} of ${plural(level.next ?? 0, one, many)}`
+            }
           >
-            {formatInt(juror.seats)}
-            {lower && '+'}
-            <small> {juror.seats === 1 ? 'seat' : 'seats'}</small>
+            {formatInt(level.count)}
+            {!top && <small> / {formatInt(level.next ?? 0)}</small>}
           </BadgeFigure>
         )}
       </span>
-      {ready && (juror.seats > 0 || caption) && (
-        <JurorMeasure data-measure="">
-          {juror.seats > 0 && juror.votes !== undefined && (
-            <span
-              role="img"
-              aria-label={`${formatInt(juror.votes)} of ${plural(juror.seats, 'seat', 'seats')} voted`}
-            >
-              <LaneBar
-                runs={[
-                  {
-                    key: 'voted',
-                    weight: Math.max(juror.votes, 0) / juror.seats,
-                    hue: 'var(--edge-2)',
-                  },
-                ]}
-                extent={juror.votes / juror.seats}
-                armed
-                delay={200}
-              />
-            </span>
-          )}
+      {(bar || caption) && (
+        <Measure data-measure="">
+          {bar}
           {caption && (
             <Small $faint style={{ display: 'block' }}>
               {caption}
             </Small>
           )}
-        </JurorMeasure>
+        </Measure>
       )}
     </BadgeRow>
   )
 }
 
 /**
- * The Badges card, beside the activity: the goal badges (Librarian,
- * Sheriff, Maintainer) as progress, then the juror record. An address with
- * no action has no activity and no card: its juror record leads the
- * profile panel's figures instead (profile.tsx).
+ * The juror badge: levels by seats in Curate disputes (levels.ts), with the
+ * record under the bar: the disputes drawn in, the seats voted, those still
+ * voting. Only what was read is shown: a chain that did not answer makes the
+ * seats a lower bound ("+") and is named, votes that could not be read are
+ * said so, and nothing read at all is "unavailable", never 0.
+ */
+const JurorRow = ({ juror }: { juror: JurorBadgeView }) => {
+  const ready = juror.state === 'ready'
+  const lower = juror.unread.length > 0 || juror.capped.length > 0
+  const level = badgeLevel('juror', ready ? juror.seats : 0)
+  const top = level.next === undefined
+  // By role, so it never reads as the profile's own Disputes figure, which
+  // counts the disputes the address was a party to.
+  const caption = ready
+    ? [
+        juror.cases > 0 &&
+          `Drawn in ${plural(juror.cases, 'dispute', 'disputes')}`,
+        juror.votes !== undefined
+          ? juror.seats > 0 && `${formatInt(juror.votes)} voted`
+          : `Votes on ${chainNames(juror.votesUnread)} couldn’t be read`,
+        juror.votes !== undefined &&
+          juror.voting > 0 &&
+          `${formatInt(juror.voting)} still voting`,
+        juror.unread.length > 0 && `${chainNames(juror.unread)} not read`,
+      ]
+        .filter(Boolean)
+        .join(' · ')
+    : undefined
+  return (
+    <LevelRow
+      kind="juror"
+      name="Juror on Curate"
+      level={level}
+      one="seat"
+      many="seats"
+      tip={jurorTip(juror)}
+      note={ready ? undefined : 'Seats drawn in Curate disputes'}
+      measured={ready}
+      caption={caption || undefined}
+      figure={
+        juror.state === 'loading' ? (
+          <SkeletonBlock $width="32px" $height="20px" aria-hidden />
+        ) : !ready ? (
+          <Unavailable title="The court index did not answer; try again later">
+            unavailable
+          </Unavailable>
+        ) : lower ? (
+          <BadgeFigure
+            aria-label={`At least ${plural(juror.seats, 'seat', 'seats')}`}
+          >
+            {formatInt(juror.seats)}+
+            {!top && <small> / {formatInt(level.next ?? 0)}</small>}
+          </BadgeFigure>
+        ) : undefined
+      }
+    />
+  )
+}
+
+/**
+ * The Badges card, beside the activity: Librarian, Sheriff and Maintainer,
+ * then the juror record, each at its level. An address with no action has
+ * no activity and no card: its juror record leads the profile panel's
+ * figures instead (profile.tsx).
  */
 export const BadgesCard = ({
   badges,
@@ -1020,59 +1119,16 @@ export const BadgesCard = ({
           {formatInt(earned)} of {formatInt(total)} earned · {scope}
         </EarnedCount>
       </RailHead>
-      {badges?.map((badge) => {
-        const share = badge.earned
-          ? 1
-          : badge.goal
-            ? badge.progress / badge.goal
-            : 0
-        return (
-          <BadgeRow key={badge.id} $earned={badge.earned}>
-            <span data-medal="">
-              <CuratorMedal
-                kind={badge.id}
-                earned={badge.earned}
-                progress={share}
-                size={52}
-              />
-            </span>
-            <div data-name="">
-              <strong>{badge.label}</strong>
-              <Small $faint style={{ display: 'block' }}>
-                {badge.description}
-              </Small>
-            </div>
-            <span data-figure="">
-              {/* Progress only while unearned: a capped "100 / 100" would
-                  read as a count and contradict the figures. */}
-              {badge.earned ? (
-                <Earned>
-                  <CurateIcon name="check" size={12} />
-                  Earned
-                </Earned>
-              ) : (
-                <BadgeFigure aria-label={`${badge.progress} of ${badge.goal}`}>
-                  {formatInt(badge.progress)}
-                  <small> / {formatInt(badge.goal)}</small>
-                </BadgeFigure>
-              )}
-            </span>
-            {!badge.earned && (
-              <span
-                data-measure=""
-                role="img"
-                aria-label={`${badge.label}: ${badge.progress} of ${badge.goal}`}
-              >
-                {share > 0 ? (
-                  <LaneBar extent={share} armed delay={200} />
-                ) : (
-                  <Small $faint>Not started</Small>
-                )}
-              </span>
-            )}
-          </BadgeRow>
-        )
-      })}
+      {badges?.map((badge) => (
+        <LevelRow
+          key={badge.id}
+          kind={badge.id}
+          name={badge.label}
+          level={badge}
+          one={badge.one}
+          many={badge.unit}
+        />
+      ))}
       {juror && <JurorRow juror={juror} />}
     </RailCard>
   )

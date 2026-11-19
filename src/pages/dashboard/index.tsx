@@ -1161,8 +1161,8 @@ const Dashboard = () => {
           <em>or earn by keeping lists clean.</em>
         </Headline>
         <Lede style={{ ['--i' as string]: 2 }}>
-          Curate verifies anything, at scale. It’s built so good actors win:
-          they get verified, or they get the bounty if they spot wrong entries.
+          Curate verifies anything, at scale. Built to let good actors win: they
+          get verified, or they get the bounty if they spot wrong entries.
         </Lede>
         <Actions style={{ ['--i' as string]: 3 }}>
           <ButtonLink to={browseHref()} $variant="primary">
