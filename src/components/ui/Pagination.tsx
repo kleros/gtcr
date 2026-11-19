@@ -176,9 +176,9 @@ const Ellipsis = styled.span`
  * hairline are what say it takes a number. The field carries no type
  * attribute: the global input[type="text"] rule (theme) would force the
  * field radius on it.
- * It writes once — on Enter, or on leaving it — never per keystroke, because
- * every caller puts the page in the URL and two of them push a history entry
- * and refetch for each write.
+ * It writes once — on Enter, or on leaving it for anything but another pager
+ * control — never per keystroke, because every caller puts the page in the
+ * URL and two of them push a history entry and refetch for each write.
  */
 const JumpSlot = styled.span`
   position: relative;
@@ -348,6 +348,32 @@ const Pagination: React.FC<PaginationProps> = ({
     setDraft('')
     if (!Number.isNaN(page) && page !== current) goTo(page)
   }, [draft, current, goTo])
+  /*
+   * Leaving the field for one of the pager's own controls (a click, a tap
+   * or Tab) hands the move to that control: the draft is dropped rather
+   * than committed, or the two would navigate twice from a stale page.
+   * Safari does not focus a clicked button, so a press inside the pager is
+   * noted on its way down, before the field blurs.
+   */
+  const pressInPager = useRef(false)
+  const notePress = useCallback(() => {
+    pressInPager.current = true
+    const release = () => {
+      pressInPager.current = false
+      window.removeEventListener('pointerup', release)
+      window.removeEventListener('pointercancel', release)
+    }
+    window.addEventListener('pointerup', release)
+    window.addEventListener('pointercancel', release)
+  }, [])
+  const onJumpBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    if (!draft) return
+    const to = e.relatedTarget
+    const pager = e.currentTarget.closest('.ui-pagination')
+    if (pressInPager.current || (to instanceof Node && pager?.contains(to)))
+      setDraft('')
+    else commitJump()
+  }
 
   // Place the thumb under the current page. It slides only when the page
   // changes; a resize, late fonts or a switch between the full and compact
@@ -399,6 +425,7 @@ const Pagination: React.FC<PaginationProps> = ({
       style={style}
       className={joinClassNames('ui-pagination', className)}
       aria-label="Pagination"
+      onPointerDown={notePress}
     >
       <Pager className="ui-pagination-pager">
         <NavButton
@@ -461,9 +488,10 @@ const Pagination: React.FC<PaginationProps> = ({
                           } else if (e.key === 'Escape') setDraft('')
                         }}
                         // Leaving a typed number behind still takes the reader
-                        // there; focus stays on the field, which the list scroll
+                        // there, unless they left for another pager control;
+                        // focus stays on the field, which the list scroll
                         // moves out of view but does not steal.
-                        onBlur={() => draft && commitJump()}
+                        onBlur={onJumpBlur}
                       />
                     </JumpSlot>
                   )}
