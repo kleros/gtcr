@@ -70,9 +70,7 @@ interface Palette {
   shadow: string
   shadowHover: string
   overlayShadow: string
-  glow: string
   /** Second, fainter hue at the rim of the bloom (iridescent trace). */
-  glowRim: string
   /** Translucent card fill, its hairline and its top highlight. */
   glass: string
   glassBorder: string
@@ -150,8 +148,6 @@ const light: Palette = {
   shadowHover:
     '0 2px 6px rgba(16, 24, 40, 0.08), 0 16px 40px rgba(16, 24, 40, 0.08)',
   overlayShadow: '0 20px 60px rgba(16, 24, 40, 0.16)',
-  glow: 'rgba(47, 107, 255, 0.08)',
-  glowRim: 'rgba(124, 92, 255, 0.05)',
   glass: '#ffffff',
   glassBorder: 'rgba(16, 24, 40, 0.08)',
   glassHighlight: 'rgba(255, 255, 255, 1)',
@@ -215,8 +211,6 @@ const dark: Palette = {
   shadow: 'none',
   shadowHover: '0 12px 40px rgba(0, 0, 0, 0.35)',
   overlayShadow: '0 24px 80px rgba(0, 0, 0, 0.6)',
-  glow: 'rgba(61, 123, 255, 0.16)',
-  glowRim: 'rgba(120, 90, 255, 0.10)',
   glass: 'rgba(255, 255, 255, 0.03)',
   glassBorder: 'rgba(255, 255, 255, 0.07)',
   glassHighlight: 'rgba(255, 255, 255, 0.06)',
@@ -278,8 +272,6 @@ const kleros: Palette = {
   shadow: 'none',
   shadowHover: '0 12px 40px rgba(0, 0, 0, 0.4)',
   overlayShadow: '0 24px 80px rgba(0, 0, 0, 0.6)',
-  glow: 'rgba(144, 19, 254, 0.18)',
-  glowRim: 'rgba(108, 197, 255, 0.10)',
   glass: 'rgba(255, 255, 255, 0.035)',
   glassBorder: 'rgba(255, 255, 255, 0.1)',
   glassHighlight: 'rgba(255, 255, 255, 0.1)',
@@ -433,8 +425,6 @@ const buildTheme = (p: Palette) => ({
   curateDangerSoft: p.dangerSoft,
   curateShadow: p.shadow,
   curateShadowHover: p.shadowHover,
-  curateGlowA: p.glow,
-  curateGlowB: p.glowRim,
   glass: p.glass,
   glassBorder: p.glassBorder,
   glassHighlight: p.glassHighlight,

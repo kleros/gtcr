@@ -332,7 +332,7 @@ export const RingGauge = ({
               fill={`url(#bloom-${id})`}
             />
             <circle cx={hx} cy={hy} r={(mini ? 10 : W) / 2} fill={to} />
-            <circle cx={hx} cy={hy} r={3.5} fill="#ffffff" />
+            <circle cx={hx} cy={hy} r={3.5} fill="var(--bead-on)" />
           </>
         )}
       </svg>

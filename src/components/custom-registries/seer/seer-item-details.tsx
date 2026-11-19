@@ -113,7 +113,7 @@ const OutcomeName = styled.span`
 `
 
 const ErrorMessage = styled.p`
-  color: ${({ theme }) => (theme.name === 'dark' ? theme.errorColor : 'red')};
+  color: var(--color-danger);
   font-size: 14px;
 `
 

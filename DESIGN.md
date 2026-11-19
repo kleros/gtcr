@@ -195,8 +195,18 @@ others are named by their label and icon (`THEME_MODES` in `contexts/theme-conte
 
 `primary-on-soft` (primary mixed 70% with text) is the text color on `primary-soft` fills and
 featured tints. The viz set passes the categorical checks (lightness band, chroma, CVD and normal
-separation, 3:1 on the surface) in each theme; chains keep one hue each (Gnosis 1, Ethereum 2,
-Sepolia 3), lists take them in rank order, "other" is `text-faint`.
+separation, 3:1 on the surface) in each theme; lists take the hues in rank order, "other" is
+`text-faint`.
+
+**The viz set keys chart series, and nothing else.** A drawing with one series takes `viz-1` or
+`viz-2`; `viz-3` and `viz-4` exist for a chart with three or four real categories and are never
+borrowed for a single series, for a diagram or for chrome. Round 3 found three drawings that had
+borrowed `viz-3`, a pastel purple, for exactly that: a money band, a share bar and the first swatch
+of a two-colour tally. Where a quantity needs a hue of its own — money is a quantity, not a state,
+so the status roles are wrong for it — it takes `viz-2`.
+
+Chain **marks** carry each chain's own brand hue on a tinted plate (`components/chain-logo.tsx`,
+where the contrast work is done); the viz set does not key chains.
 
 Every text pair clears WCAG 2.2 AA (4.5:1), measured. Status roles: green registered, blue window
 open, amber contested, red off the list, grey neutral; always a haloed dot plus a text label.
@@ -281,6 +291,9 @@ Focus everywhere is a 2px `primary` outline, 2px out (inset inside clipping trac
   point, a second series mirrored below as bars on its own labelled scale; scanner reveal; hover
   tooltip.
 - `reveal` (staggered entrance). Curves are monotone cubic, so they never overshoot the data.
+- A live dispute's panel carries a haloed `contested` dot that pulses on the 2.4s curve, under an
+  `ONGOING DISPUTE` label and a 2px `contested` top edge. It is the one pulsing thing in the app,
+  it marks a state that is genuinely running, and reduced motion parks it as a static halo.
 - Easing `cubic-bezier(0.16, 1, 0.3, 1)` for entrances, `(0.2, 0.8, 0.2, 1)` for state changes,
   springs for indicators. All respect `prefers-reduced-motion`.
 
@@ -353,7 +366,10 @@ way (dashboard, Browse, registry pages, the profile, the landing page).
 # Do's and Don'ts
 
 - Do lead with a number or a visual; do label every drawing with its measure and window.
-- Do show deposits as total and breakdown in the chain's currency, and say when they come back.
+- Do show deposits as total and say when they come back. The breakdown — base deposit against
+  arbitration — belongs in the dialog that signs the transaction, where the money is actually
+  committed, not on the page behind it: on the card it crowded out the thing a reader came for
+  (the bounty), and said twice what the button already says once.
 - Don't stack panels inside panels; separate with space and hairlines.
 - Don't use grids as backgrounds, emoji, exclamation marks, hype words, thin editorial type,
   decorative charts, or icon-in-a-colored-square tiles.

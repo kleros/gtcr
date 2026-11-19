@@ -132,7 +132,7 @@ export const Surface = styled.div<{
           from var(--cv-comet),
           transparent 0deg 290deg,
           color-mix(in srgb, var(--color-primary) 80%, transparent) 340deg,
-          white 354deg,
+          var(--sweep-head) 354deg,
           transparent 360deg
         );
         -webkit-mask:
