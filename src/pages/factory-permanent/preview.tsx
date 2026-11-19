@@ -535,6 +535,22 @@ const Periods = styled.dl`
     font-variant-numeric: tabular-nums;
     white-space: nowrap;
   }
+
+  /* A small phone has no room for three labels side by side: one row
+     each, the label on the left and its duration on the right. */
+  @media (max-width: 400px) {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 6px;
+
+    div {
+      flex-direction: row;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 0;
+      border-left: 0;
+    }
+  }
 `
 
 /** Axis steps in hours: the smallest that leaves at most four cuts. */
