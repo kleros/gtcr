@@ -1409,7 +1409,7 @@ type ExportVia = 'download' | 'copy'
 const WriteModeContext = createContext<WriteMode>('send')
 
 const PROPOSED =
-  'Proposed in the Safe: confirm it there. The list changes once the Safe executes it.'
+  'Sent from your smart wallet. If it needs more signatures, confirm it there; the list changes once it executes.'
 
 /** The governance call a field saves, as both paths build it. */
 const governanceCall = (
@@ -1443,7 +1443,7 @@ const exportCall = async (
         )
       })
     successToast(
-      `Calldata copied. In the Safe, start a transaction to ${shortAddress(call.address)} with value 0 and this data; its owners sign it there.`,
+      `Calldata copied. In the Safe on ${chainName(call.chainId)}, start a transaction to ${shortAddress(call.address)} with value 0 and this data; its owners sign it there.`,
     )
     return
   }
@@ -1457,7 +1457,7 @@ const exportCall = async (
     }),
   )
   successToast(
-    "Safe file downloaded. In the Safe, open Apps, then Transaction Builder, and drop the file in; the Safe's owners sign it there.",
+    `Safe file downloaded. Open the Safe on ${chainName(call.chainId)}, then Apps, then Transaction Builder, and drop the file in; the Safe's owners sign it there. It carries today's values: execute it before any other change to this list.`,
   )
 }
 
@@ -1502,7 +1502,13 @@ const useGovernanceWrite = (registry: GovernedRegistry) => {
         .fetchQuery(
           hasCodeQuery(registry.chainId, walletClient.account.address),
         )
-        .catch(() => mode === 'propose')
+        .catch(() => {
+          // Unknown: a Safe's proposal would wait for a receipt that never
+          // comes, an EOA's send would show no progress. Ask again instead.
+          throw new Error(
+            'Could not check the connected wallet. Try again in a moment.',
+          )
+        })
       if (isContract) {
         await walletClient.writeContract(request)
         infoToast(PROPOSED)
@@ -2315,7 +2321,7 @@ const GovernanceDialog = ({
     ? undefined
     : `${registry.title} is governed by ${
         owners.data ? 'a Safe' : 'a contract'
-      } (${shortAddress(registry.governor ?? '')}), so no wallet signs here. Prepare a change, then download it for the Safe's Transaction Builder or copy its calldata. ${
+      } (${shortAddress(registry.governor ?? '')}) on ${chainName(registry.chainId)}, so no wallet signs here. Prepare a change, then download it for the Safe's Transaction Builder or copy its calldata. ${
         !owners.data
           ? "The contract's signers approve it there."
           : owners.data.includes(normalizeAddress(account))

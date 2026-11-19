@@ -183,9 +183,9 @@ export const ListGovernance = ({
       <Tooltip
         title={
           exporting
-            ? `This list is governed by a Safe: prepare a change to its ${
+            ? `This list is governed by a Safe or another contract: prepare a change to its ${
                 kind === 'permanent' ? 'stake' : 'deposits'
-              }, periods, court or policy here, then sign it in the Safe.`
+              }, periods, court or policy here, then sign it there.`
             : `You govern this list: change its ${
                 kind === 'permanent' ? 'stake' : 'deposits'
               }, periods, court and policy.`

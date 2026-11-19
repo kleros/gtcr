@@ -1,5 +1,12 @@
 import { getPublicClient, readContract } from '@wagmi/core'
-import { encodeFunctionData, getAddress, isAddress, type Abi } from 'viem'
+import {
+  encodeFunctionData,
+  getAddress,
+  isAddress,
+  keccak256,
+  stringToBytes,
+  type Abi,
+} from 'viem'
 import { wagmiConfig } from 'config/wagmi'
 
 /*
@@ -74,9 +81,45 @@ export const callData = (call: ContractCall): `0x${string}` =>
     args: call.args,
   } as any)
 
+/*
+ * The Transaction Builder's checksum (safe-react-apps, apps/tx-builder,
+ * src/lib/checksum.ts): keys sorted, undefined as null, the batch's name
+ * left out, then keccak256 of the text. Without it every import warns that
+ * the file changed since it was saved, which teaches owners to ignore the
+ * one warning that means it was tampered with.
+ */
+const serializeForChecksum = (json: unknown): string => {
+  const replacer = (_: string, value: unknown) =>
+    value === undefined ? null : value
+  if (Array.isArray(json))
+    return `[${json.map((item) => serializeForChecksum(item)).join(',')}]`
+  if (typeof json === 'object' && json !== null) {
+    const record = json as Record<string, unknown>
+    const keys = Object.keys(record).sort()
+    let text = `{${JSON.stringify(keys, replacer)}`
+    for (const key of keys) text += `${serializeForChecksum(record[key])},`
+    return `${text}}`
+  }
+  return `${JSON.stringify(json, replacer)}`
+}
+
+const withChecksum = <T extends { meta: Record<string, unknown> }>(
+  batch: T,
+): T => ({
+  ...batch,
+  meta: {
+    ...batch.meta,
+    checksum: keccak256(
+      stringToBytes(
+        serializeForChecksum({ ...batch, meta: { ...batch.meta, name: null } }),
+      ),
+    ),
+  },
+})
+
 /**
  * A Safe Transaction Builder batch with one call: the file its "drag and
- * drop" import takes.
+ * drop" import takes, checksummed as the Builder's own downloads are.
  */
 export const safeTransactionBuilderJson = ({
   call,
@@ -91,26 +134,27 @@ export const safeTransactionBuilderJson = ({
   name: string
   description: string
   createdAt?: number
-}) => ({
-  version: '1.0',
-  chainId: String(call.chainId),
-  createdAt,
-  meta: {
-    name,
-    description,
-    txBuilderVersion: '1.16.5',
-    createdFromSafeAddress: getAddress(safe),
-  },
-  transactions: [
-    {
-      to: getAddress(call.address),
-      value: '0',
-      data: callData(call),
-      contractMethod: null,
-      contractInputsValues: null,
+}) =>
+  withChecksum({
+    version: '1.0',
+    chainId: String(call.chainId),
+    createdAt,
+    meta: {
+      name,
+      description,
+      txBuilderVersion: '1.16.5',
+      createdFromSafeAddress: getAddress(safe),
     },
-  ],
-})
+    transactions: [
+      {
+        to: getAddress(call.address),
+        value: '0',
+        data: callData(call),
+        contractMethod: null,
+        contractInputsValues: null,
+      },
+    ],
+  })
 
 /** Saves a value as a JSON file through the browser's download. */
 export const downloadJson = (filename: string, value: unknown) => {
