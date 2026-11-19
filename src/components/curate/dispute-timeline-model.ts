@@ -38,6 +38,11 @@ export interface CourtDispute {
   hiddenVotes: boolean
   /** 1 for the first round. */
   round: number
+  /**
+   * Vote slots in each round, oldest first (getDispute.votesLengths): what
+   * the jury band's round tabs are built from. The last entry is `jurors`.
+   */
+  roundSlots: number[]
   /** Jurors in the current round. */
   jurors: number
   /** Jurors drawn so far in the current round. */

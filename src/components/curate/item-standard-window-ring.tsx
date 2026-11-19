@@ -347,7 +347,7 @@ export const WindowRing = ({
   passedLabel = 'Closed',
   noun = 'window',
   ends,
-  size = 196,
+  size = 184,
 }: {
   /** What the arc is, e.g. "Challenge period". Names the measure. */
   title: string
@@ -369,6 +369,11 @@ export const WindowRing = ({
    * there are two, the first names the opening (default: "Opened").
    */
   ends?: WindowEnd[]
+  /**
+   * The dial's diameter. The default suits the entry pages' 320px column
+   * (round 3: it came down from 196 so the hero's two columns end nearer
+   * each other). Below about 176 the `Ends` grid under the arc wraps.
+   */
   size?: number
 }) => {
   const id = useId().replace(/:/g, '')

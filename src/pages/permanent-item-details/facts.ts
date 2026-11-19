@@ -9,7 +9,6 @@ import {
   SUBGRAPH_RULING,
   itemToStatusCode,
 } from 'utils/permanent-item-status'
-import type { EvidenceSummary } from 'components/curate/item-evidence-band'
 import type { WithdrawalStage } from './withdrawal-stepper'
 
 /*
@@ -203,6 +202,31 @@ export interface StakeFacts {
   courtHost?: string
 }
 
+/**
+ * The case page for one of the entry's challenges: the Kleros court when
+ * Kleros arbitrates it, the arbitrator's own page otherwise. One place, so
+ * the hero, the case panel and the record of decided cases link the same
+ * way.
+ */
+export const stakeCourtLink = (
+  chainId: number | null | undefined,
+  arbitrator: string | undefined,
+  disputeID: string | undefined,
+): { href: string; host?: string } | undefined => {
+  if (!disputeID || !arbitrator) return undefined
+  const kleros = chainId ? klerosAddresses[chainId] : undefined
+  const isKleros =
+    !!kleros && kleros.arbitrator.toLowerCase() === arbitrator.toLowerCase()
+  const href = isKleros
+    ? kleros.uiURL.replace(':disputeID', disputeID.toString())
+    : getAddressPage({ networkId: chainId ?? 0, address: arbitrator })
+  try {
+    return { href, host: new URL(href).host }
+  } catch {
+    return { href }
+  }
+}
+
 export const stakeFacts = ({
   item,
   registry,
@@ -261,22 +285,7 @@ export const stakeFacts = ({
       : undefined
   const submission = item.submissions?.[0]
 
-  const arbitrator = registry.arbitrator.id
-  const kleros = chainId ? klerosAddresses[chainId] : undefined
-  const isKleros =
-    !!kleros && kleros.arbitrator.toLowerCase() === arbitrator.toLowerCase()
-  const courtHref =
-    disputeID && isKleros
-      ? kleros.uiURL.replace(':disputeID', disputeID.toString())
-      : disputeID
-        ? getAddressPage({ networkId: chainId ?? 0, address: arbitrator })
-        : undefined
-  let courtHost: string | undefined
-  try {
-    courtHost = courtHref ? new URL(courtHref).host : undefined
-  } catch {
-    courtHost = undefined
-  }
+  const court = stakeCourtLink(chainId, registry.arbitrator.id, disputeID)
 
   return {
     offList,
@@ -293,7 +302,10 @@ export const stakeFacts = ({
     challenge,
     round,
     disputeID,
-    hasDispute: !!challenge && Number(disputeID ?? 0) !== 0,
+    // A challenge always has a case, and the arbitrator numbers its first
+    // one 0: the challenge is what says there is a dispute, never the
+    // number (request-facts.ts says the same on the Standard side).
+    hasDispute: !!challenge,
     appealStart,
     appealEnd,
     appealHalf: appealStart + (appealEnd - appealStart) / 2,
@@ -315,61 +327,8 @@ export const stakeFacts = ({
     endedAt: offList
       ? toNum(submission?.finishedAt) || toNum(challenge?.resolutionTime)
       : 0,
-    courtHref,
-    courtHost,
-  }
-}
-
-/**
- * The submission's evidence as the band above the history draws it: how many
- * pieces, who filed them, and when each one landed. The window is the
- * submission the entry is on now, so the figures and the time axis describe
- * the same scope; evidence filed on an earlier submission belongs to that
- * submission's own group in the history.
- */
-export const stakeEvidenceSummary = (
-  item: StakeItem,
-  facts: StakeFacts,
-): EvidenceSummary => {
-  const since = facts.submissionStart
-  const evidences = (item.evidences ?? []).filter(
-    (evidence) => toNum(evidence.timestamp) >= since,
-  )
-  const submitter = item.submitter?.toLowerCase()
-  const challenger = facts.challenge?.challenger?.toLowerCase()
-  const sideOf = (party?: string): number => {
-    const address = party?.toLowerCase()
-    if (address && address === submitter) return 0
-    if (address && address === challenger) return 1
-    return 2
-  }
-  const counts = [0, 0, 0]
-  for (const evidence of evidences) counts[sideOf(evidence.party)] += 1
-  const labels = ['Submitter', 'Challenger', 'Others']
-  // Only the sides that filed something, so the key never names an empty
-  // category; the pieces follow the same order.
-  const kept = counts
-    .map((value, side) => ({ side, value }))
-    .filter((entry) => entry.value > 0)
-  const column = new Map(kept.map((entry, index) => [entry.side, index]))
-
-  const pieces = evidences
-    .map((evidence) => ({
-      at: toNum(evidence.timestamp),
-      side: column.get(sideOf(evidence.party)) ?? 0,
-    }))
-    .filter((piece) => piece.at > 0)
-    .sort((a, b) => a.at - b.at)
-
-  return {
-    total: evidences.length,
-    sides: kept.map((entry) => ({
-      label: labels[entry.side],
-      value: entry.value,
-    })),
-    pieces,
-    last: pieces.length > 0 ? pieces[pieces.length - 1].at : undefined,
-    since,
+    courtHref: court?.href,
+    courtHost: court?.host,
   }
 }
 

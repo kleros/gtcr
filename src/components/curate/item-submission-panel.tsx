@@ -12,7 +12,6 @@ import {
   Body,
   Button,
   ButtonLink,
-  Chip,
   Data,
   IconButton,
   Row,
@@ -33,18 +32,23 @@ import { ItemMediaBand, entryMedia } from './item-media-band'
 import { ItemRewardWithdrawal } from './item-reward-withdrawal'
 
 /*
- * The entry's submission, all of it, in one place (the design review's
+ * The entry's full details, all of it, in one place (the design review's
  * point 3: the fields used to be split between a page-long header of
  * identifiers and a separate "Details" box, and the cut between them
  * depended on the field's type, so the same list's fields landed in
  * different boxes).
  *
- * One panel, bands separated by space and hairlines: the pictures and files
- * the entry actually has (less the one the hero's tile already shows), then
- * every field — identifiers included — less the one the page sets as its
- * heading, then the list an entry of a list of lists points to, then what
- * this account can claim from the entry's appeals. Nothing is reserved for
- * a field the entry does not have.
+ * One panel, bands separated by space and hairlines: every picture and file
+ * the entry has, then every field — identifiers included — then the list an
+ * entry of a list of lists points to, then what this account can claim from
+ * the entry's appeals. Nothing is reserved for a field the entry does not
+ * have.
+ *
+ * The box is field-complete, so what the hero lifts out is here as well
+ * (round 3: a box named "Full details" that was missing the two things the
+ * page leads with). The hero's tile and the band draw the same picture, and
+ * the title reads here as a labelled row under its own column name, which
+ * is what the hero's display line cannot say.
  */
 
 const Panel = styled(Surface)`
@@ -62,9 +66,6 @@ const Head = styled.div`
 `
 
 const PanelName = styled.h2`
-  display: flex;
-  align-items: center;
-  gap: 10px;
   margin: 0;
   color: var(--color-text);
   font-family: var(--font-display);
@@ -157,8 +158,6 @@ export interface LinkedRegistryState {
 
 export const ItemSubmissionPanel = ({
   fields,
-  heading: headingField,
-  skip,
   item,
   itemID,
   errors = [],
@@ -168,15 +167,12 @@ export const ItemSubmissionPanel = ({
   registryAddress,
   kind = 'standard',
 }: {
-  /** Every field of the entry, with its value. */
-  fields: EntryField[]
-  /** The field the page sets as its heading: it is the title, not a row. */
-  heading?: EntryField
   /**
-   * The picture field the page draws in its hero (`heroImage`): it keeps no
-   * plate in the band and no row of its own, so it appears once.
+   * Every field of the entry, with its value. Nothing is held back: the
+   * picture and the title the page's hero lifts out keep their plate and
+   * their row here, so the box is the whole submission.
    */
-  skip?: EntryField
+  fields: EntryField[]
   item?: SubgraphItem
   itemID?: string
   /** Why the entry's own file could not be read. */
@@ -210,20 +206,13 @@ export const ItemSubmissionPanel = ({
   const logo = logoURI ? parseIpfs(logoURI) : undefined
 
   const found = entryMedia(fields)
+  // Only the fields the band draws itself stay out of the rows below. The
+  // title field is not one of them: the hero sets it large without saying
+  // which column it is, so it reads here as a labelled row as well.
   const drawn = new Set<EntryField>([
-    ...(headingField ? [headingField] : []),
     ...found.images.map((image) => image.field),
     ...found.files.map((file) => file.field),
   ])
-  // The page's hero already shows one picture on its tile: the band leaves
-  // it out, so the same image is never drawn twice (and a one-picture entry
-  // gets no band at all).
-  const media = skip
-    ? {
-        ...found,
-        images: found.images.filter((image) => image.field !== skip),
-      }
-    : found
   const rows = fields.filter((field) => {
     if (drawn.has(field)) return false
     // The linked registry's block stands for its address field.
@@ -237,7 +226,7 @@ export const ItemSubmissionPanel = ({
   if (!loading && item && errors.length > 0)
     return (
       <Panel id="item-submission" $padding="standard">
-        <PanelName>Submission</PanelName>
+        <PanelName>Full details</PanelName>
         {errors.map((error, index) => (
           <Notice key={index} tone="contested" role="alert">
             {error}
@@ -259,12 +248,9 @@ export const ItemSubmissionPanel = ({
     )
 
   return (
-    <Panel id="item-submission" $padding="standard" aria-label="Submission">
+    <Panel id="item-submission" $padding="standard" aria-label="Full details">
       <Head>
-        <PanelName>
-          Submission
-          {rows.length > 0 && <Chip>{rows.length}</Chip>}
-        </PanelName>
+        <PanelName>Full details</PanelName>
         {itemID && <CopyId id={itemID} />}
       </Head>
       {!!linkedError && (
@@ -278,7 +264,7 @@ export const ItemSubmissionPanel = ({
           This entry does not pass the validation checks. Review it carefully.
         </Notice>
       )}
-      <ItemMediaBand media={media} />
+      <ItemMediaBand media={found} />
       {linkedMetadata && (
         <RegistryBlock $divided={rows.length > 0}>
           <LogoButton

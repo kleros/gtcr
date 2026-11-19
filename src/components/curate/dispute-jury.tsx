@@ -3,6 +3,7 @@ import styled from 'styled-components'
 import ReactBlockies from 'react-blockies'
 import { Popover } from 'components/ui'
 import useDisputeJury, {
+  MAX_SLOTS,
   type JuryJuror,
   type JuryRound,
 } from 'hooks/use-dispute-jury'
@@ -12,6 +13,8 @@ import { CurateIcon } from './icons'
 import {
   Data,
   Label,
+  SegmentedControl,
+  SkeletonBlock,
   StatusDot,
   truncateMiddle,
   type StatusTone,
@@ -20,10 +23,17 @@ import { choiceLabel } from './dispute-timeline-model'
 import { DisclosurePill } from './item-disclosure-pill'
 
 /*
- * Who is judging the case, inside the case panel: the jurors the court drew
- * for each round, where each one is, and which way the ones who revealed
- * voted. Secondary depth, so it stays collapsed behind a pill until it is
- * asked for (DESIGN.md: data first, explainers collapse into a pill).
+ * Who is judging the case, inside the case panel and inside the record of a
+ * case already decided: the jurors the court drew for a round, where each
+ * one is, and which way the ones who revealed voted. Secondary depth, so it
+ * stays collapsed behind a pill until it is asked for (DESIGN.md: data
+ * first, explainers collapse into a pill).
+ *
+ * A dispute that was appealed has run several rounds, each with its own
+ * jury. They are tabbed rather than stacked (round 3 of the design review),
+ * one round read at a time: a round costs one call per seat, so the reader
+ * pays for the round they are looking at and nothing else. A dispute that
+ * was never appealed has one round and therefore no tab control at all.
  *
  * Nothing is shown that the chain has not published. A juror who has not
  * revealed reads as committed or still to vote, never as a vote: before the
@@ -51,6 +61,12 @@ const Round = styled.div`
   display: flex;
   flex-direction: column;
   gap: 10px;
+`
+
+/* The round track hugs its options: a recess pill, not a full-width bar. */
+const Tabs = styled.div`
+  display: flex;
+  min-width: 0;
 `
 
 const RoundHead = styled.div`
@@ -258,8 +274,19 @@ const STATE: Record<JuryJuror['state'], { tone: StatusTone; label: string }> = {
   revealed: { tone: 'registered', label: 'Revealed' },
 }
 
-/** The chart colours, in choice order: refuse, then each side. */
-const VIZ = ['var(--viz-3)', 'var(--viz-1)', 'var(--viz-2)', 'var(--viz-4)']
+/*
+ * The chart colours, in choice order. Choice 0 is a refusal to arbitrate,
+ * which is not a side, so it reads in the neutral role and the two real
+ * sides take the first two chart hues, as every other drawing in the app
+ * does. Before this, a refusal took --viz-3 and put a purple on the first
+ * swatch of a two-colour chart.
+ */
+const VIZ = [
+  'var(--status-neutral)',
+  'var(--viz-1)',
+  'var(--viz-2)',
+  'var(--viz-3)',
+]
 
 const JurorRow = ({
   juror,
@@ -444,53 +471,108 @@ const RoundBlock = ({
 }
 
 /**
- * The case's jury, collapsed into a pill. Renders nothing when the jury
- * cannot be read (another arbitrator, no answer, a round too large to read
- * seat by seat): the panel around it still says where the case stands.
+ * The jury of one dispute, collapsed into a pill: its rounds as tabs when it
+ * was appealed, and the chosen round's jurors, their votes and the tally.
+ *
+ * Renders nothing when there is no round to show and no round to name
+ * (another arbitrator, no answer): the panel around it still says where the
+ * case stands.
  */
-export const DisputeJury = ({
+export const JuryRounds = ({
   chainId,
   arbitrator,
   disputeID,
   requesterName,
+  rounds,
 }: {
   chainId?: number | null
   arbitrator?: string | null
   disputeID?: string | null
   /** "submitter" or "requester": what a vote for that side is called. */
   requesterName: string
+  /**
+   * Vote slots per round, oldest first (CourtDispute.roundSlots). More than
+   * one round gives the band its tabs; without the value the read's own
+   * default is shown (the live round and the one appealed from).
+   */
+  rounds?: number[]
 }) => {
   const [open, setOpen] = useState(false)
-  const { data: jury } = useDisputeJury({ chainId, arbitrator, disputeID })
-  if (!jury || jury.rounds.length === 0) return null
+  const [picked, setPicked] = useState<number>()
+  const tabbed = !!rounds && rounds.length > 1
+  // The newest round is where the case is, so that is the one the band
+  // opens on; a tab reads its own round and caches it.
+  const appeal = tabbed
+    ? Math.min(picked ?? rounds!.length - 1, rounds!.length - 1)
+    : undefined
+  const {
+    data: jury,
+    isFetching,
+    isError,
+  } = useDisputeJury({
+    chainId,
+    arbitrator,
+    disputeID,
+    appeals: appeal === undefined ? undefined : [appeal],
+  })
+  const shown = jury?.rounds ?? []
+  if (!tabbed && shown.length === 0) return null
 
-  // The pill counts the live round's seats, as the Fact above it does
-  // (dispute.jurors is the round's vote slots): a juror drawn for several
-  // seats would otherwise make the two figures disagree. The distinct
-  // addresses are named separately when they are fewer.
-  const live = jury.rounds[0]
-  const seats =
-    live.drawn < live.slots
-      ? `${live.drawn} of ${live.slots} seats drawn`
-      : `${live.slots} seat${live.slots === 1 ? '' : 's'} drawn`
-  const addresses = live.jurors.length
+  // With tabs the band shows the chosen round alone; without them, whatever
+  // the read returned. A round with no rows says why only where the chain
+  // has said why: too large to go through seat by seat, or a read that did
+  // not come back.
+  const picks = tabbed
+    ? shown.filter((round) => round.appeal === appeal)
+    : shown
+  const slots = tabbed ? rounds![appeal!] : undefined
+  const live = picks[0] ?? shown[0]
+  // Collapsed, the pill says what the jury is: how many rounds there were
+  // when there were several, and otherwise how much of the one round's
+  // bench has been drawn. The distinct addresses are named separately when
+  // they are fewer than the seats (a juror can hold several seats).
+  const addresses = live?.jurors.length ?? 0
+  const seats = tabbed
+    ? `${rounds!.length} rounds`
+    : live
+      ? `${
+          live.drawn < live.slots
+            ? `${live.drawn} of ${live.slots} seats drawn`
+            : `${live.slots} seat${live.slots === 1 ? '' : 's'} drawn`
+        }${
+          addresses > 0 && addresses !== live.drawn
+            ? ` · ${addresses} address${addresses === 1 ? '' : 'es'}`
+            : ''
+        }`
+      : `${slots} seat${slots === 1 ? '' : 's'}`
 
   return (
     <Band aria-label="The jury">
       <DisclosurePill
         icon="user"
         open={open}
-        onToggle={() => setOpen((shown) => !shown)}
+        onToggle={() => setOpen((shownNow) => !shownNow)}
         controls={`jury-${disputeID}`}
       >
         The jury · {seats}
-        {addresses > 0 && addresses !== live.drawn
-          ? ` · ${addresses} address${addresses === 1 ? '' : 'es'}`
-          : ''}
       </DisclosurePill>
       {open && (
         <Rounds id={`jury-${disputeID}`}>
-          {jury.rounds.map((round) => (
+          {tabbed && (
+            <Tabs>
+              <SegmentedControl
+                size="sm"
+                ariaLabel="Round"
+                value={`r${appeal}`}
+                options={rounds!.map((_, index) => ({
+                  value: `r${index}`,
+                  label: `Round ${index + 1}`,
+                }))}
+                onChange={(value) => setPicked(Number(value.slice(1)))}
+              />
+            </Tabs>
+          )}
+          {picks.map((round) => (
             <RoundBlock
               key={round.appeal}
               round={round}
@@ -498,6 +580,16 @@ export const DisputeJury = ({
               requesterName={requesterName}
             />
           ))}
+          {picks.length === 0 &&
+            (isFetching ? (
+              <SkeletonBlock $height="96px" />
+            ) : slots !== undefined && slots > MAX_SLOTS ? (
+              <Seats>
+                This round seats {slots} jurors: too many to read seat by seat.
+              </Seats>
+            ) : isError ? (
+              <Seats>This round’s jury could not be read from the court.</Seats>
+            ) : null)}
           <Honest>
             Jurors’ addresses, their votes and the commitments that seal them
             come from the court contract. Court v1 does not publish the
@@ -509,4 +601,4 @@ export const DisputeJury = ({
   )
 }
 
-export default DisputeJury
+export default JuryRounds

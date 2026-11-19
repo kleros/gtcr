@@ -96,6 +96,9 @@ export const fetchCourtDispute = async (
     times,
     hiddenVotes: Boolean(settings.hiddenVotes),
     round: Math.max(1, votesLengths.length),
+    // Every round's size, not only the live one's: the jury band tabs
+    // through the rounds and this read already decoded them all.
+    roundSlots: votesLengths.map((v) => v.toNumber()),
     jurors: last(votesLengths),
     drawn: (dispute.drawsInRound as ethers.BigNumber).toNumber(),
     committed: (dispute.commitsInRound as ethers.BigNumber).toNumber(),

@@ -6,7 +6,6 @@ import {
 } from 'utils/item-status'
 import { klerosAddresses } from 'config/tcr-addresses'
 import { toSeconds } from 'components/curate/item-standard-format'
-import type { EvidenceSummary } from 'components/curate/item-evidence-band'
 
 /*
  * Everything the hero and the action card derive from the latest request:
@@ -27,7 +26,6 @@ export interface StandardRequest extends SubgraphRequest {
    */
   disputeOutcome?: string | null
   resolutionTime?: string | null
-  evidenceGroup?: { evidences?: unknown[] }
 }
 
 export interface RequestFacts {
@@ -55,6 +53,46 @@ export interface RequestFacts {
   disputeHost?: string
 }
 
+/**
+ * The case on the Kleros court site, for any of the entry's requests: a
+ * request made with another arbitrator has no court page to open. One
+ * place, so the hero, the case panel and the record of past cases all link
+ * the same way.
+ */
+export const courtLink = (
+  chainId: number | null | undefined,
+  arbitrator: string | undefined,
+  disputeID: string | number | undefined,
+): { href: string; host?: string } | undefined => {
+  const { arbitrator: kleros, uiURL } =
+    (chainId && klerosAddresses[chainId as keyof typeof klerosAddresses]) || {}
+  if (
+    !uiURL ||
+    !arbitrator ||
+    kleros?.toLowerCase() !== arbitrator.toLowerCase()
+  )
+    return undefined
+  const href = uiURL.replace(':disputeID', String(disputeID))
+  try {
+    return { href, host: new URL(href).host }
+  } catch {
+    return { href }
+  }
+}
+
+/** "For the challenger": a ruling as a value under a label. */
+export const rulingShort = (
+  ruling: string | null | undefined,
+  requesterName: string,
+): string | undefined =>
+  ruling === SUBGRAPH_RULING.ACCEPT
+    ? `For the ${requesterName}`
+    : ruling === SUBGRAPH_RULING.REJECT
+      ? 'For the challenger'
+      : ruling === SUBGRAPH_RULING.NONE
+        ? 'Refused to rule'
+        : undefined
+
 export const requestFacts = ({
   item,
   request,
@@ -79,17 +117,12 @@ export const requestFacts = ({
   const requesterName = isRegistration ? 'submitter' : 'requester'
   const requesterWins = currentRuling === SUBGRAPH_RULING.ACCEPT
 
-  const { arbitrator: klerosArbitrator, uiURL } =
-    (chainId && klerosAddresses[chainId as keyof typeof klerosAddresses]) || {}
   // A disputed request always has a case, and the arbitrator numbers its
   // first one 0.
   const hasDispute = !!request.disputed
-  const disputeHref =
-    hasDispute &&
-    uiURL &&
-    klerosArbitrator?.toLowerCase() === request.arbitrator?.toLowerCase()
-      ? uiURL.replace(':disputeID', String(request.disputeID))
-      : undefined
+  const court = hasDispute
+    ? courtLink(chainId, request.arbitrator, request.disputeID)
+    : undefined
 
   return {
     isRegistration,
@@ -118,8 +151,8 @@ export const requestFacts = ({
       statusCode === STATUS_CODE.WAITING_ENFORCEMENT,
     hasDispute,
     disputeID: hasDispute ? String(request.disputeID) : undefined,
-    disputeHref,
-    disputeHost: disputeHref ? new URL(disputeHref).host : undefined,
+    disputeHref: court?.href,
+    disputeHost: court?.host,
   }
 }
 
@@ -159,13 +192,7 @@ export const caseState = (
   const ruling =
     statusCode === STATUS_CODE.CHALLENGED
       ? undefined
-      : decided === SUBGRAPH_RULING.ACCEPT
-        ? `For the ${facts.requesterName}`
-        : decided === SUBGRAPH_RULING.REJECT
-          ? 'For the challenger'
-          : decided === SUBGRAPH_RULING.NONE
-            ? 'Refused to rule'
-            : undefined
+      : rulingShort(decided, facts.requesterName)
   const rulingLabel = facts.appealable ? 'Current ruling' : 'Ruling'
 
   if (statusCode === STATUS_CODE.CHALLENGED)
@@ -197,60 +224,6 @@ export const caseState = (
     awaitingCourt: true,
     ruling,
     rulingLabel,
-  }
-}
-
-interface EvidenceRecord {
-  party?: string
-  timestamp?: string | number
-}
-
-/**
- * The request's evidence as the band above the history draws it: how many
- * pieces, who filed them, and when each one landed. The window is the
- * request itself, so the figures and the time axis describe the same scope.
- */
-export const evidenceSummary = (
-  request: StandardRequest,
-  requesterName: string,
-  submissionTime: number,
-): EvidenceSummary => {
-  const evidences = (request.evidenceGroup?.evidences ?? []) as EvidenceRecord[]
-  const requester = request.requester?.toLowerCase()
-  const challenger = request.challenger?.toLowerCase()
-  const sideOf = (party?: string): number => {
-    const address = party?.toLowerCase()
-    if (address && address === requester) return 0
-    if (address && address === challenger) return 1
-    return 2
-  }
-  const counts = [0, 0, 0]
-  for (const evidence of evidences) counts[sideOf(evidence.party)] += 1
-  const labels = [capitalize(requesterName), 'Challenger', 'Others']
-  // Only the sides that filed something, so the key never names an empty
-  // category; the pieces follow the same order.
-  const kept = counts
-    .map((value, side) => ({ side, value }))
-    .filter((entry) => entry.value > 0)
-  const column = new Map(kept.map((entry, index) => [entry.side, index]))
-
-  const pieces = evidences
-    .map((evidence) => ({
-      at: toSeconds(evidence.timestamp),
-      side: column.get(sideOf(evidence.party)) ?? 0,
-    }))
-    .filter((piece) => piece.at > 0)
-    .sort((a, b) => a.at - b.at)
-
-  return {
-    total: evidences.length,
-    sides: kept.map((entry) => ({
-      label: labels[entry.side],
-      value: entry.value,
-    })),
-    pieces,
-    last: pieces.length > 0 ? pieces[pieces.length - 1].at : undefined,
-    since: submissionTime,
   }
 }
 

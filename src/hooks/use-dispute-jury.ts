@@ -1,4 +1,5 @@
-import { useQuery } from '@tanstack/react-query'
+import { useMemo } from 'react'
+import { useQueries, useQuery } from '@tanstack/react-query'
 import { ethers } from 'ethers'
 import { useEthersProvider } from 'hooks/ethers-adapters'
 import { isKlerosArbitrator } from 'config/tcr-addresses'
@@ -34,10 +35,22 @@ const KLEROS_LIQUID_ABI = [
 ]
 const kleros = new ethers.utils.Interface(KLEROS_LIQUID_ABI)
 
-/** A round larger than this is not read: it would be one call per seat. */
-const MAX_SLOTS = 64
-/** The rounds worth showing: the live one and the one appealed from. */
+/**
+ * A round larger than this is not read: it would be one call per seat. The
+ * jury band says so in place of the rows, so it reads the same limit.
+ */
+export const MAX_SLOTS = 64
+/** The rounds read when no round is asked for: the live one and the one
+    appealed from. */
 const MAX_ROUNDS = 2
+/**
+ * How many of an entry's disputes the evidence badges ask about. A Stake
+ * entry can be challenged again and again, and every dispute costs one
+ * multicall of one getVote per seat, so only the first few the caller
+ * lists are read (newest first); a juror of an older one gets no badge,
+ * which is honest.
+ */
+const MAX_DISPUTES = 4
 
 const NO_COMMIT =
   '0x0000000000000000000000000000000000000000000000000000000000000000'
@@ -78,6 +91,8 @@ export const fetchDisputeJury = async (
   provider: ethers.providers.Provider,
   arbitrator: string,
   disputeID: string,
+  /** The round indexes to read (0 for the first); the latest two by default. */
+  appeals?: number[],
 ): Promise<DisputeJury> => {
   const [dispute, rounds] = await aggregateCalls(provider, arbitrator, kleros, [
     ['disputes', [disputeID]],
@@ -93,11 +108,16 @@ export const fetchDisputeJury = async (
   const latest = votesLengths.length - 1
   const drawsInRound = (dispute.drawsInRound as ethers.BigNumber).toNumber()
 
-  // The latest rounds, newest first, skipping any too large to read seat by
-  // seat (a General court round can seat dozens).
-  const wanted = votesLengths
-    .map((slots, appeal) => ({ appeal, slots }))
-    .slice(-MAX_ROUNDS)
+  // The rounds asked for, or the latest ones; newest first, and skipping
+  // any too large to read seat by seat (a General court round can seat
+  // dozens). Asking for one round at a time is what lets the round tabs
+  // cost one multicall each and cache on their own.
+  const all = votesLengths.map((slots, appeal) => ({ appeal, slots }))
+  const wanted = (
+    appeals
+      ? all.filter((round) => appeals.includes(round.appeal))
+      : all.slice(-MAX_ROUNDS)
+  )
     .filter((round) => round.slots > 0 && round.slots <= MAX_SLOTS)
     .reverse()
   if (wanted.length === 0) return { rounds: [] }
@@ -176,6 +196,41 @@ export const fetchDisputeJury = async (
 }
 
 /**
+ * The read itself, so the hook below and the badges' `useDisputeJurors`
+ * share one cache entry per dispute and round selection.
+ */
+const juryQuery = (
+  provider: ethers.providers.Provider | undefined,
+  chainId: number | null | undefined,
+  arbitrator: string | null | undefined,
+  disputeID: string | null | undefined,
+  appeals: number[] | undefined,
+  enabled: boolean,
+) => ({
+  queryKey: [
+    'disputeJury',
+    chainId,
+    arbitrator?.toLowerCase(),
+    disputeID,
+    appeals,
+  ],
+  queryFn: () => fetchDisputeJury(provider!, arbitrator!, disputeID!, appeals),
+  enabled:
+    enabled &&
+    !!chainId &&
+    !!arbitrator &&
+    isKlerosArbitrator(chainId, arbitrator) &&
+    !!provider &&
+    disputeID !== undefined &&
+    disputeID !== null,
+  // A vote lands in minutes, not seconds; the timeline refreshes at the
+  // same pace, so the two never disagree by more than one period.
+  staleTime: 60_000,
+  refetchInterval: 120_000,
+  retry: 1,
+})
+
+/**
  * The dispute's jury, or undefined while loading, when the arbitrator is
  * not Kleros, or when the read failed: the panel then shows nothing extra,
  * never an error. It is depth, not the page's information.
@@ -184,31 +239,67 @@ const useDisputeJury = ({
   chainId,
   arbitrator,
   disputeID,
+  appeals,
   enabled = true,
 }: {
   chainId?: number | null
   arbitrator?: string | null
   disputeID?: string | null
+  /** Read exactly these rounds (0 for the first) instead of the latest two. */
+  appeals?: number[]
   enabled?: boolean
 }) => {
   const provider = useEthersProvider({ chainId: chainId ?? undefined })
-  const isKleros =
-    !!chainId && !!arbitrator && isKlerosArbitrator(chainId, arbitrator)
-  return useQuery({
-    queryKey: ['disputeJury', chainId, arbitrator?.toLowerCase(), disputeID],
-    queryFn: () => fetchDisputeJury(provider!, arbitrator!, disputeID!),
-    enabled:
-      enabled &&
-      isKleros &&
-      !!provider &&
-      disputeID !== undefined &&
-      disputeID !== null,
-    // A vote lands in minutes, not seconds; the timeline refreshes at the
-    // same pace, so the two never disagree by more than one period.
-    staleTime: 60_000,
-    refetchInterval: 120_000,
-    retry: 1,
+  return useQuery(
+    juryQuery(provider, chainId, arbitrator, disputeID, appeals, enabled),
+  )
+}
+
+/**
+ * The addresses the court drew as jurors on these disputes, lowercased, for
+ * the badge on a piece of evidence. A dispute that was never appealed is
+ * the same read its jury band makes, so the history shares that cache
+ * entry; a band tabbing through an appealed dispute's rounds asks for its
+ * one round separately. An address missing from the set gets no badge
+ * rather than a wrong one.
+ */
+export const useDisputeJurors = ({
+  chainId,
+  arbitrator,
+  disputeIDs,
+}: {
+  chainId?: number | null
+  arbitrator?: string | null
+  disputeIDs: (string | null | undefined)[]
+}): Set<string> => {
+  const provider = useEthersProvider({ chainId: chainId ?? undefined })
+  // Every id the caller gave is a case: the caller knows which requests or
+  // challenges have one, and the arbitrator numbers its first dispute 0, so
+  // the number itself says nothing about whether there is a case to read.
+  const ids = disputeIDs
+    .filter((id): id is string => !!id)
+    .slice(0, MAX_DISPUTES)
+  const results = useQueries({
+    queries: ids.map((id) =>
+      juryQuery(provider, chainId, arbitrator, id, undefined, true),
+    ),
   })
+  const stamp = results
+    .map((result, index) => `${ids[index]}:${result.dataUpdatedAt}`)
+    .join(',')
+  return useMemo(
+    () =>
+      new Set(
+        results.flatMap((result) =>
+          (result.data?.rounds ?? []).flatMap((round) =>
+            round.jurors.map((juror) => juror.address.toLowerCase()),
+          ),
+        ),
+      ),
+    // The addresses change only when one of the reads does.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [stamp],
+  )
 }
 
 export default useDisputeJury

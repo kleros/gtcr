@@ -42,7 +42,6 @@ import {
 } from 'components/curate/primitives'
 import { EntryStatus, stakeEntryStatus } from 'components/curate/entry-status'
 import { Explainer } from 'components/curate/explainer'
-import { AnimatedNumber } from 'components/curate/motion/animated-number'
 import { reveal } from 'components/curate/motion/reveal'
 import { buttonReset } from 'styles/button-reset'
 import {
@@ -67,14 +66,18 @@ import { formatSince } from 'utils/format-since'
 import { StakeWindowPanel } from './item-window'
 import { ItemSubmissionPanel } from 'components/curate/item-submission-panel'
 import { heroImage } from 'components/curate/item-media-band'
-import { ItemEvidenceBand } from 'components/curate/item-evidence-band'
 import { DisputeCasePanel } from 'components/curate/dispute-case-panel'
+import {
+  DisputeRecordPanel,
+  type DisputeRecord,
+} from 'components/curate/dispute-record-panel'
 import { PolicySince, policyInForceSince } from './policy-since'
 import { multiplierPercent, nativeText, tokenText } from './modals/shell'
 import { entrySetting } from './arbitration-setting'
 import {
+  rulingShort,
   stakeCaseState,
-  stakeEvidenceSummary,
+  stakeCourtLink,
   stakeFacts,
   stakeStatusCode,
   toNum,
@@ -85,17 +88,34 @@ import {
 /*
  * Stake Curate item page, one layout in three states (listed, in its
  * submission or withdrawal period, in court), on the Standard item
- * composition. A breadcrumb, then the hero (the one featured panel): the
+ * composition. A top line — where the entry sits, and at its right end the
+ * policy it is judged by — then the hero (the one featured panel): the
  * entry named large with its status and a short facts strip, and on the
  * right the page's one clock — the submission period, the withdrawal
  * period, the appeal period, the court period, or the date it settled.
  * While a case is live, one full-width panel holds it: where it stands, its
- * periods, its jury and its two actions. Then two columns: the submission
+ * periods, its jury and its actions. Then two columns: the full details
  * (every field of the entry, with its pictures and files) and the history
  * on the left; on the right the action card, the withdrawal stepper and the
- * appeal funding (a bottom bar on phones). Every figure comes from the
+ * appeal funding (a bottom bar on phones). A case the court has already
+ * decided is not live: it sits quietly at the top of the left column as a
+ * record of what the jurors did, and an entry challenged more than once
+ * keeps one record box with a tab per case. Every figure comes from the
  * subgraph, the list contract and the clock.
  */
+
+/* The page's top line: where the entry sits, and at its right end the
+   policy it is judged by (round 3: the policy used to sit on the status
+   line, in the middle of the hero). The entrance fires on this row, so the
+   crumb and the pill arrive together. */
+const TopRow = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  ${reveal}
+`
 
 const Crumbs = styled.nav`
   display: flex;
@@ -105,7 +125,6 @@ const Crumbs = styled.nav`
   color: var(--color-faint);
   font-size: var(--fs-small);
   line-height: var(--lh-small);
-  ${reveal}
 
   a {
     display: inline-flex;
@@ -126,11 +145,17 @@ const Crumbs = styled.nav`
 `
 
 /* Desktop: identity and stats on the left, the clock on the right. When it
-   stacks, the clock comes straight after the identity. */
+   stacks, the clock comes straight after the identity.
+
+   The clock on the right fixes the hero's height, so the two rows on the
+   left share more room than their content needs. The identity row is
+   sized to its content and the stats row takes the rest, which puts that
+   slack under the stats instead of between the status line and them
+   (round 3: the gap in between read as a hole). */
 const Hero = styled(Surface)`
   display: grid;
   grid-template-columns: minmax(0, 1fr) 320px;
-  grid-template-rows: 1fr auto;
+  grid-template-rows: auto 1fr;
   grid-template-areas:
     'main side'
     'stats side';
@@ -205,8 +230,8 @@ const Identity = styled.div`
 `
 
 /* The entry's picture, on its own tile; a plate when its ink is lost. It
-   opens full size: the submission panel leaves this one out of its media
-   band, so the tile is the only copy of it on the page. */
+   opens full size, and the full-details panel below shows the same picture
+   on a captioned plate under its field's name. */
 const LogoOpen = styled.button`
   ${buttonReset}
   display: block;
@@ -777,8 +802,8 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
       : listSettings,
   )
   // The hero's tile: the entry's first picture the gateway can serve. The
-  // submission panel leaves that field out of its band and its rows, so the
-  // picture is drawn once.
+  // full-details panel below repeats it on a captioned plate, so the box
+  // that promises every field is not missing what the page leads with.
   const logo = heroImage(fields)
   const titleText =
     primaryField && hasValue(primaryField)
@@ -801,15 +826,57 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
     facts && statusCode !== null
       ? stakeCaseState(facts, statusCode, now)
       : undefined
-  // The evidence on the submission the entry is on now, for the band above
-  // the history.
-  const evidence = item && facts ? stakeEvidenceSummary(item, facts) : undefined
   // The contract takes evidence on any entry that is not Absent, as the
   // history's composer does.
   const canAddEvidence = !!item && item.status !== CONTRACT_STATUS.ABSENT
+  /*
+   * The cases the court has already decided, newest first as the history
+   * numbers them. An entry here can be challenged again and again, so
+   * several are literally possible. An appeal being funded is not over —
+   * money is being raised and the rail's funding card is live — so only a
+   * challenge whose ruling already stands, or one long settled, is a
+   * record.
+   *
+   * Every challenge is a case, so there is no case number to test: the
+   * arbitrator numbers its first dispute 0, and that case is as real as
+   * any other.
+   */
+  const decidedDisputes: DisputeRecord[] = (item?.challenges ?? [])
+    .filter(
+      (past, index) =>
+        toNum(past.resolutionTime) > 0 ||
+        (index === 0 && caseWords?.awaitingCourt === false),
+    )
+    .map((past) => {
+      const court = stakeCourtLink(
+        chainId,
+        registry?.arbitrator?.id,
+        past.disputeID,
+      )
+      const round = past.rounds?.[0]
+      const settled = toNum(past.resolutionTime) > 0
+      return {
+        disputeID: String(past.disputeID),
+        arbitrator: registry?.arbitrator?.id,
+        requesterName: 'submitter',
+        // Once settled the outcome can differ from the jurors' last
+        // ruling: a side that alone funded the last appeal wins. Until
+        // then the challenge still records 'None', which would read as
+        // "Refused to rule", so the ruling is the jurors' own and only
+        // once the court has given one — as stakeCaseState reads it, so
+        // the hero and the record never disagree about the same case.
+        ruling: settled
+          ? rulingShort(past.disputeOutcome ?? round?.ruling)
+          : toNum(round?.rulingTime) > 0
+            ? rulingShort(round?.ruling)
+            : undefined,
+        href: court?.href,
+        host: court?.host,
+      }
+    })
 
-  // Why the fields cannot be read, said in the submission panel itself: one
-  // region holds the entry's fields, whether or not they came through.
+  // Why the fields cannot be read, said in the full-details panel itself:
+  // one region holds the entry's fields, whether or not they came through.
   const submissionErrors = metaEvidenceFailed
     ? ["The list's field names could not be loaded from IPFS."]
     : fieldsUnavailable
@@ -856,14 +923,32 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
 
   return (
     <Page>
-      <Crumbs aria-label="Breadcrumb">
-        <Link to={registryHref}>
-          <CurateIcon name="registry" size={14} />
-          {tcrTitle || 'Registry'}
-        </Link>
-        <span aria-hidden>/</span>
-        <span aria-current="page">{Name}</span>
-      </Crumbs>
+      <TopRow>
+        <Crumbs aria-label="Breadcrumb">
+          <Link to={registryHref}>
+            <CurateIcon name="registry" size={14} />
+            {tcrTitle || 'Registry'}
+          </Link>
+          <span aria-hidden>/</span>
+          <span aria-current="page">{Name}</span>
+        </Crumbs>
+        {/* Outside the breadcrumb: the policy is what the entry is judged
+            by, not a place on the way to it. */}
+        {policyURI && (
+          <PolicyButton
+            type="button"
+            onClick={() => openAttachment(parseIpfs(policyURI), true)}
+          >
+            <CurateIcon name="policy" size={14} />
+            Listing policy
+            <PolicySince
+              since={policySince}
+              loading={settingsQuery.isLoading}
+              now={now}
+            />
+          </PolicyButton>
+        )}
+      </TopRow>
 
       <Hero
         as="section"
@@ -912,20 +997,6 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
               />
             ) : (
               <SkeletonBlock $height="18px" $width="220px" />
-            )}
-            {policyURI && (
-              <PolicyButton
-                type="button"
-                onClick={() => openAttachment(parseIpfs(policyURI), true)}
-              >
-                <CurateIcon name="policy" size={14} />
-                Listing policy
-                <PolicySince
-                  since={policySince}
-                  loading={settingsQuery.isLoading}
-                  now={now}
-                />
-              </PolicyButton>
             )}
           </StatusRow>
         </HeroMain>
@@ -982,18 +1053,6 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
                   </dd>
                 </div>
               )}
-              <div>
-                <Label as="dt" $tone="faint">
-                  Submissions
-                </Label>
-                <dd>
-                  {item.submissions ? (
-                    <AnimatedNumber value={item.submissions.length} />
-                  ) : (
-                    '—'
-                  )}
-                </dd>
-              </div>
             </Stats>
           ) : (
             <SkeletonBlock $height="44px" />
@@ -1002,35 +1061,51 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
       </Hero>
 
       {/* One region for a live case: where it stands, its periods, its jury
-          and its two actions (the design review's point 6.2). */}
-      {facts?.hasDispute && facts.underDispute && (
-        <CaseRegion style={{ ['--i' as string]: 2 }}>
-          <DisputeCasePanel
-            chainId={chainId}
-            arbitrator={registry?.arbitrator?.id}
-            arbitrable={tcrAddress}
-            disputeID={facts.disputeID}
-            disputeHref={facts.courtHref}
-            disputeHost={facts.courtHost}
-            requesterName="submitter"
-            heading={caseWords?.heading ?? 'In court'}
-            awaitingCourt={caseWords?.awaitingCourt ?? true}
-            summary={caseWords?.summary}
-            ruling={caseWords?.ruling}
-            rulingLabel={caseWords?.rulingLabel}
-            canAddEvidence={canAddEvidence}
-            holdsPageActions={!!facts.inCourt}
-            now={now}
-          />
-        </CaseRegion>
-      )}
+          and its actions (the design review's point 6.2). Only while the
+          court is still deciding or an appeal is being funded — once the
+          ruling stands, the record box below says so instead. */}
+      {facts?.hasDispute &&
+        facts.underDispute &&
+        (caseWords?.awaitingCourt ?? true) && (
+          <CaseRegion style={{ ['--i' as string]: 2 }}>
+            <DisputeCasePanel
+              chainId={chainId}
+              arbitrator={registry?.arbitrator?.id}
+              arbitrable={tcrAddress}
+              disputeID={facts.disputeID}
+              disputeHref={facts.courtHref}
+              disputeHost={facts.courtHost}
+              requesterName="submitter"
+              heading={caseWords?.heading ?? 'In court'}
+              awaitingCourt={caseWords?.awaitingCourt ?? true}
+              summary={caseWords?.summary}
+              ruling={caseWords?.ruling}
+              rulingLabel={caseWords?.rulingLabel}
+              canAddEvidence={canAddEvidence}
+              holdsPageActions={!!facts.inCourt}
+              now={now}
+            />
+          </CaseRegion>
+        )}
 
       <Columns>
         <Main>
+          {/* The record of what the court decided, collapsed: no clock, no
+              period spine. It keeps the entry's actions, since the status
+              card is not rendered while the entry waits on the court. */}
+          {decidedDisputes.length > 0 && (
+            <DisputeRecordPanel
+              chainId={chainId}
+              arbitrable={tcrAddress}
+              disputes={decidedDisputes}
+              canAddEvidence={canAddEvidence}
+              holdsPageActions={
+                !!facts?.inCourt && caseWords?.awaitingCourt === false
+              }
+            />
+          )}
           <ItemSubmissionPanel
             fields={fields}
-            heading={primaryField}
-            skip={logo?.field}
             item={decodedItem ?? item}
             itemID={item?.itemID}
             errors={submissionErrors}
@@ -1052,11 +1127,6 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
             }
             kind="stake"
           />
-          {/* Where evidence lives: its count and who filed, right above the
-              history and the composer (the design review's point 6.1). */}
-          {evidence && evidence.total > 0 && (
-            <ItemEvidenceBand evidence={evidence} noun="submission" now={now} />
-          )}
           <RequestTimelines item={item} metaEvidence={metaEvidence} />
           <Explainer
             id="stake-curate-item"

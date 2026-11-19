@@ -1,18 +1,22 @@
 import React from 'react'
-import styled from 'styled-components'
-import { openEvidenceComposer } from 'components/inline-evidence-composer'
+import styled, { css, keyframes } from 'styled-components'
+import {
+  openEvidenceComposer,
+  scrollToEvidenceHistory,
+} from 'components/inline-evidence-composer'
 import useDisputeTimeline from 'hooks/use-dispute-timeline'
 import useCourtName from 'hooks/use-court-name'
 import {
   Button,
   ButtonAnchor,
   Label,
+  StatusDot,
   Surface,
 } from 'components/curate/primitives'
 import { CurateIcon } from './icons'
 import { DisputePeriodSteps } from './dispute-period-steps'
-import { DisputeJury } from './dispute-jury'
-import { currentPeriod } from './dispute-timeline-model'
+import { JuryRounds } from './dispute-jury'
+import { COURT_PERIOD, currentPeriod } from './dispute-timeline-model'
 
 /*
  * The live case, in one region (the design review's point 6.2: it used to
@@ -20,8 +24,10 @@ import { currentPeriod } from './dispute-timeline-model'
  * the case number). One panel, three bands separated by hairlines, no panel
  * inside a panel:
  *
- *   1. where the case stands, in the court's own words, with what happens
- *      next, the case's facts and the two actions;
+ *   1. that a dispute is running right now, under a pulsing light and over
+ *      a thicker amber edge (round 3: a quiet "In court" eyebrow read like
+ *      every other label), what it means for this entry, the case's own
+ *      facts and the actions;
  *   2. the periods of the current round;
  *   3. the jury, collapsed into a pill.
  *
@@ -29,6 +35,9 @@ import { currentPeriod } from './dispute-timeline-model'
  * arbitrator other than Kleros, or a read that failed) band 1 still says
  * where the case stands from what the page already knows, so the region
  * never depends on the chain answering.
+ *
+ * The round and the jury size are not repeated here: the period band's head
+ * states both, and the loud status line takes the room instead.
  */
 
 /*
@@ -36,11 +45,12 @@ import { currentPeriod } from './dispute-timeline-model'
  * that holds the entry's actions (WATCHED_IDS in item-standard-action-bar.tsx)
  * so its own button never doubles that block's. In court the status card is
  * gone and this panel is that block, so it takes the id then — and only then,
- * since the card keeps it in every other state.
+ * since the card keeps it in every other state. Once the ruling stands the
+ * record panel holds it, for the same reason.
  */
-const PAGE_ACTIONS_ID = 'item-status-card'
+export const PAGE_ACTIONS_ID = 'item-status-card'
 
-const Panel = styled(Surface)`
+const Panel = styled(Surface)<{ $live?: boolean }>`
   display: flex;
   flex-direction: column;
 
@@ -52,11 +62,46 @@ const Panel = styled(Surface)`
     border-top: 1px solid var(--glass-border);
   }
 
+  /* A 2px amber lip clipped to the panel's radius, over the kit's own 1px
+     highlight: the contested status role, drawn as an edge and never as a
+     fill. */
+  ${({ $live }) =>
+    $live &&
+    css`
+      box-shadow:
+        inset 0 2px 0 var(--status-contested),
+        inset 0 1px 0 var(--glass-highlight),
+        var(--shadow-card);
+    `}
+
   @media (max-width: 720px) {
     > * {
       padding: 18px;
     }
   }
+`
+
+const pulse = keyframes`
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--status-contested) 55%, transparent); }
+  70% { box-shadow: 0 0 0 7px transparent; }
+  100% { box-shadow: 0 0 0 0 transparent; }
+`
+
+/* The light on a case being decided right now: the contested role's halo,
+   breathing on the kit's entrance curve. Nothing in the app blinks, so this
+   does not either, and reduced motion parks it on the dot's own halo. */
+const Pulse = styled(StatusDot)`
+  animation: ${pulse} 2.4s var(--ease-out) infinite;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+`
+
+const LiveLine = styled.span`
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
 `
 
 const Lead = styled.div`
@@ -192,7 +237,7 @@ export const DisputeCasePanel = ({
    * still be running after the list has settled what happens to this entry.
    */
   awaitingCourt?: boolean
-  /** What it means for this entry; the court's own sentence when absent. */
+  /** What it means for this entry; nothing when the page has nothing to add. */
   summary?: string
   /** "For the submitter", "Refused to rule"… when the jurors have ruled. */
   ruling?: string
@@ -216,23 +261,47 @@ export const DisputeCasePanel = ({
   if (!disputeID) return null
 
   const period = dispute ? currentPeriod(dispute) : undefined
-  const next = summary ?? period?.next
+  /*
+   * The court's name for its own period leads while the entry waits on it,
+   * except during the evidence period: "Evidence" over "3 jurors drawn…"
+   * named the court's paperwork instead of what is happening to this entry,
+   * and the period band below says the same thing anyway (round 3 of the
+   * design review). The page's own heading leads there.
+   */
+  const title =
+    (awaitingCourt && period?.key !== 'evidence' ? period?.title : undefined) ??
+    heading
+  // Jurors are still deciding, so the dispute is running now. Without the
+  // court read the page's own word for it decides.
+  const live =
+    awaitingCourt &&
+    !dispute?.ruled &&
+    (dispute?.period ?? 0) < COURT_PERIOD.EXECUTION
 
   return (
     <Panel
       as="section"
       id={holdsPageActions ? PAGE_ACTIONS_ID : undefined}
       $padding="none"
-      aria-label={`Case ${disputeID} in court`}
+      $live={live}
+      aria-label={
+        live ? `Ongoing dispute ${disputeID}` : `Case ${disputeID} in court`
+      }
     >
       <Lead>
         <Top>
           <Words>
-            <Label $tone="faint">In court</Label>
-            <Heading>
-              {(awaitingCourt ? period?.title : undefined) ?? heading}
-            </Heading>
-            {next && <Next>{next}</Next>}
+            {live ? (
+              <LiveLine>
+                <Pulse $tone="contested" aria-hidden />
+                {/* Label uppercases and tracks it: ONGOING DISPUTE. */}
+                <Label $tone="text">Ongoing dispute</Label>
+              </LiveLine>
+            ) : (
+              <Label $tone="faint">In court</Label>
+            )}
+            <Heading>{title}</Heading>
+            {summary && <Next>{summary}</Next>}
           </Words>
           <Actions>
             {canAddEvidence && (
@@ -245,6 +314,16 @@ export const DisputeCasePanel = ({
                 Add evidence
               </Button>
             )}
+            {/* Beside filing a piece: the pieces already filed, in the
+                history, with its newest group open. */}
+            <Button
+              type="button"
+              $variant="secondary"
+              onClick={scrollToEvidenceHistory}
+            >
+              <CurateIcon name="list" size={16} />
+              Read evidence
+            </Button>
             {disputeHref && (
               <ButtonAnchor
                 $variant="secondary"
@@ -268,23 +347,16 @@ export const DisputeCasePanel = ({
               a court site to open, the number is a fact like the others. */}
           {!disputeHref && <Fact label="Case">{disputeID}</Fact>}
           {courtName && <Fact label="Court">{courtName}</Fact>}
-          {dispute && (
-            <>
-              <Fact label="Round">{dispute.round}</Fact>
-              <Fact label="Jury">
-                {dispute.jurors} juror{dispute.jurors === 1 ? '' : 's'}
-              </Fact>
-            </>
-          )}
           {ruling && <Fact label={rulingLabel}>{ruling}</Fact>}
         </Facts>
       </Lead>
       {dispute && <DisputePeriodSteps dispute={dispute} now={now} />}
-      <DisputeJury
+      <JuryRounds
         chainId={chainId}
         arbitrator={arbitrator}
         disputeID={disputeID}
         requesterName={requesterName}
+        rounds={dispute?.roundSlots}
       />
     </Panel>
   )

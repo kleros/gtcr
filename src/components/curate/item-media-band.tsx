@@ -10,10 +10,10 @@ import { hasValue, isImageField, type EntryField } from './item-standard-fields'
 
 /*
  * The entry's pictures and files, given a place of their own at the top of
- * the submission panel. Entries differ wildly — a token has a logo, an
+ * the full-details panel. Entries differ wildly — a token has a logo, an
  * address tag has nothing — so the band reserves no room: with nothing to
- * show it does not render, one picture gets a wide plate, a handful get
- * equal plates, and a long set becomes a strip you can scroll.
+ * show it does not render, one picture gets a plate the width of a picture,
+ * a handful get equal plates, and a long set becomes a strip you can scroll.
  *
  * Every plate says which field it is, so a picture is never left to speak
  * for itself, and opens full size in the in-app viewer. Pictures are read
@@ -27,13 +27,17 @@ const Band = styled.div`
   gap: 14px;
 `
 
+/* One picture takes a plate the size of a picture, not the panel's whole
+   measure: most entries have a single logo, and across 800px of column an
+   `object-fit: contain` logo is mostly empty glass. It still opens full
+   size on click. */
 const Plates = styled.div<{ $layout: 'one' | 'few' | 'many' }>`
   display: ${({ $layout }) => ($layout === 'many' ? 'flex' : 'grid')};
   gap: 12px;
 
   ${({ $layout }) =>
     $layout === 'one'
-      ? 'grid-template-columns: minmax(0, 1fr);'
+      ? 'grid-template-columns: minmax(0, 360px);'
       : $layout === 'few'
         ? 'grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));'
         : `
@@ -181,8 +185,9 @@ export const entryMedia = (fields: EntryField[]): EntryMedia => {
 
 /**
  * The picture a page leads with: the entry's first one the gateway can
- * serve. The panel takes it as `skip` so the same image is never both the
- * hero's tile and a plate in the band.
+ * serve. The band keeps its plate as well: the tile is the page's lead,
+ * the plate is the same picture under its field's name, where the full
+ * details account for every field.
  */
 export const heroImage = (fields: EntryField[]): MediaImage | undefined =>
   entryMedia(fields).images[0]
@@ -240,8 +245,8 @@ export const ItemMediaBand = ({ media }: { media: EntryMedia }) => {
             ? {
                 tabIndex: 0,
                 role: 'group',
-                // The figure counts what the strip holds, which is not
-                // always the entry's total: the hero keeps one picture.
+                // The strip holds every picture the entry has, so the
+                // figure is its total.
                 'aria-label': `${images.length} pictures in this strip`,
               }
             : {})}
