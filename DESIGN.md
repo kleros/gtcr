@@ -605,8 +605,10 @@ way (dashboard, Browse, registry pages, the profile, the landing page).
   coin is never stretched, and four or more auto-fit; between 901 and 1099px the rings are 140px so
   three coins fit on one line, and at 900px and below the rings take half the width each, centred.
   Tiles' lines stay level (subgrid). A Stake tile says "Any ERC-20, set per list".
-- Most active and Top curators sit side by side above 1240px and end level; at 1240px and below
-  they stack, where the table beside the panel would scroll sideways.
+- Top curators sit beside the chart (round 7, on trial), in the same panel behind a hairline,
+  320px wide, each with an LED bar of their activity against the top curator's (requests in the
+  accent, challenges in `contested`); below 1240px they stack under the chart. Most active takes
+  the page's width.
 
 ## Entry page
 

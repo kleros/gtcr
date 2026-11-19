@@ -25,6 +25,7 @@ import {
   truncateMiddle,
 } from 'components/curate/primitives'
 import { ActivityWave } from 'components/curate/motion/activity-wave'
+import { LaneBar } from 'components/curate/lane-bar'
 import { Odometer } from 'components/curate/motion/odometer'
 import { AnimatedNumber } from 'components/curate/motion/animated-number'
 import { reveal } from 'components/curate/motion/reveal'
@@ -295,14 +296,52 @@ const Actions = styled.div`
   margin-top: 6px;
 `
 
+/*
+ * Round 7, on trial ("the top curators could go next to the initial chart
+ * … on the right"): the panel holds the figures and the chart, and beside
+ * them, behind a hairline, Top curators all time, each with an LED bar of
+ * their activity against the top curator's. Below 1240px they stack.
+ */
 const Featured = styled(Surface)`
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
   margin-top: 64px;
   padding: 28px 28px 20px;
   ${reveal}
 
+  @media (max-width: 1240px) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
   @media (max-width: 720px) {
     padding: 20px 16px 16px;
   }
+`
+
+const FeaturedMain = styled.div`
+  min-width: 0;
+`
+
+const CuratorsAside = styled.section`
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  margin-left: 28px;
+  padding-left: 24px;
+  border-left: 1px solid var(--glass-border);
+
+  @media (max-width: 1240px) {
+    margin: 20px 0 0;
+    padding: 20px 0 0;
+    border-left: 0;
+    border-top: 1px solid var(--glass-border);
+  }
+`
+
+/* A curator's bar, under the address. */
+const CuratorBar = styled.span`
+  display: block;
+  margin: 8px 0 6px;
 `
 
 /* The chart's range switch, at the panel's top right (round 7: the chain
@@ -398,41 +437,9 @@ const Big = styled.span<{ $hero?: boolean }>`
  * Band), so the heading, the figures and the rows those figures count read as
  * one block.
  */
-/*
- * Most active beside Top curators. Both stretch to the row, so the two end
- * level (round 5: the curators ended 30px above the table, a stray gap at
- * the end of the page): the shorter side shares the difference among its
- * rows (CuratorList; ActiveTable's rows, which a table spreads on its own).
- */
-/*
- * One column up to 1240px: below that the table beside a 360px panel is
- * narrower than its own columns, and its In court column hid behind a
- * sideways scroll (1150px: a 734px table in a 660px frame).
- */
-const Split = styled.div`
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 360px;
-  gap: 20px;
-  align-items: stretch;
-
-  @media (max-width: 1240px) {
-    grid-template-columns: 1fr;
-  }
-`
-
-/* The table's frame takes the row's height; the table fills it. */
-const ActiveFrame = styled(TableScroller)`
-  @media (min-width: 1241px) {
-    > table {
-      height: 100%;
-    }
-  }
-`
-
-const CuratorsPanel = styled(Surface)`
-  display: flex;
-  flex-direction: column;
-`
+/* Most active takes the page's width (round 7 trial: Top curators moved
+   beside the chart). */
+const ActiveFrame = styled(TableScroller)``
 
 /*
  * The curators' rows share what the panel has beyond their own height, each
@@ -997,6 +1004,11 @@ const Dashboard = () => {
         .slice(0, 6),
     [history.data, chains, wins],
   )
+  // The top curator's activity: every curator's bar is measured against it.
+  const curatorScale = Math.max(
+    1,
+    ...curators.map((row) => row.requests + row.challenges),
+  )
 
   // The chart: the load's own 30 days, or the history in weeks or months.
   const chart = useMemo(() => {
@@ -1116,93 +1128,162 @@ const Dashboard = () => {
         aria-label="Live figures"
         style={{ ['--i' as string]: 4 }}
       >
-        <ScopeBar>
-          <SegmentedControl<ChartRange>
-            ariaLabel="Chart range"
-            size="sm"
-            value={range}
-            onChange={setRange}
-            options={RANGE_OPTIONS}
-          />
-        </ScopeBar>
-        <FeaturedTop>
-          <HeadlineFigure>
-            <Label $tone="faint">Entries</Label>
-            <Big $hero>
-              <Odometer
-                loading={loading}
-                value={figuresUnknown ? undefined : figures?.entries}
-              />
-            </Big>
-          </HeadlineFigure>
-          <InlineStats>
-            {[
-              { label: 'Registries', value: figures?.registries },
-              { label: 'Open requests', value: figures?.requestsOpen },
-              { label: 'In court now', value: figures?.inCourt },
-              { label: 'Curators · 30 days', value: figures?.curators },
-            ].map((figure) => (
-              <InlineStat key={figure.label}>
-                <Label $tone="faint">{figure.label}</Label>
-                <b>
-                  <AnimatedNumber
-                    loading={loading}
-                    value={figuresUnknown ? undefined : figure.value}
-                  />
-                </b>
-              </InlineStat>
-            ))}
-          </InlineStats>
-          <SeriesLegend aria-label="Chart series">
-            <li>
-              <Label $tone="faint">{RANGE_LEGEND[range]}</Label>
-            </li>
-            <li style={{ color: 'var(--color-primary)' }}>
-              <i style={{ background: 'var(--color-primary)' }} aria-hidden />
-              <span style={{ color: 'var(--color-muted)' }}>Requests</span>
-            </li>
-            <li style={{ color: 'var(--status-contested)' }}>
-              <i
-                style={{ background: 'var(--status-contested)' }}
-                aria-hidden
-              />
-              <span style={{ color: 'var(--color-muted)' }}>Challenges</span>
-            </li>
-          </SeriesLegend>
-        </FeaturedTop>
-        {loading || !chart ? (
-          history.isError && range !== '30d' ? (
-            <ChartEmpty>The history did not load</ChartEmpty>
+        <FeaturedMain>
+          <ScopeBar>
+            <SegmentedControl<ChartRange>
+              ariaLabel="Chart range"
+              size="sm"
+              value={range}
+              onChange={setRange}
+              options={RANGE_OPTIONS}
+            />
+          </ScopeBar>
+          <FeaturedTop>
+            <HeadlineFigure>
+              <Label $tone="faint">Entries</Label>
+              <Big $hero>
+                <Odometer
+                  loading={loading}
+                  value={figuresUnknown ? undefined : figures?.entries}
+                />
+              </Big>
+            </HeadlineFigure>
+            <InlineStats>
+              {[
+                { label: 'Registries', value: figures?.registries },
+                { label: 'Open requests', value: figures?.requestsOpen },
+                { label: 'In court now', value: figures?.inCourt },
+                { label: 'Curators · 30 days', value: figures?.curators },
+              ].map((figure) => (
+                <InlineStat key={figure.label}>
+                  <Label $tone="faint">{figure.label}</Label>
+                  <b>
+                    <AnimatedNumber
+                      loading={loading}
+                      value={figuresUnknown ? undefined : figure.value}
+                    />
+                  </b>
+                </InlineStat>
+              ))}
+            </InlineStats>
+            <SeriesLegend aria-label="Chart series">
+              <li>
+                <Label $tone="faint">{RANGE_LEGEND[range]}</Label>
+              </li>
+              <li style={{ color: 'var(--color-primary)' }}>
+                <i style={{ background: 'var(--color-primary)' }} aria-hidden />
+                <span style={{ color: 'var(--color-muted)' }}>Requests</span>
+              </li>
+              <li style={{ color: 'var(--status-contested)' }}>
+                <i
+                  style={{ background: 'var(--status-contested)' }}
+                  aria-hidden
+                />
+                <span style={{ color: 'var(--color-muted)' }}>Challenges</span>
+              </li>
+            </SeriesLegend>
+          </FeaturedTop>
+          {loading || !chart ? (
+            history.isError && range !== '30d' ? (
+              <ChartEmpty>The history did not load</ChartEmpty>
+            ) : (
+              <SkeletonBlock $height="240px" />
+            )
+          ) : chartRequests + chartChallenges === 0 ? (
+            <ChartEmpty>
+              {partialNames
+                ? `${partialNames} requests did not load`
+                : 'No requests in this range'}
+            </ChartEmpty>
           ) : (
-            <SkeletonBlock $height="240px" />
-          )
-        ) : chartRequests + chartChallenges === 0 ? (
-          <ChartEmpty>
-            {partialNames
-              ? `${partialNames} requests did not load`
-              : 'No requests in this range'}
-          </ChartEmpty>
-        ) : (
-          <ActivityWave
-            key={`${chains.join('-')}-${range}`}
-            height={260}
-            labels={chartLabels}
-            up={chart.up}
-            down={chart.down}
-            upLabel="Requests"
-            downLabel="Challenges"
-            partialLast
-            ariaLabel={`Requests and challenges ${RANGE_WORDS[range]}: ${formatInt(
-              chartRequests,
-            )} requests, ${formatInt(chartChallenges)} challenges`}
-          />
-        )}
-        {data?.seriesTruncated && (
-          <Small $faint>
-            Some chains had more requests than this view loads; their earliest
-            days may be undercounted.
-          </Small>
-        )}
+            <ActivityWave
+              key={`${chains.join('-')}-${range}`}
+              height={260}
+              labels={chartLabels}
+              up={chart.up}
+              down={chart.down}
+              upLabel="Requests"
+              downLabel="Challenges"
+              partialLast
+              ariaLabel={`Requests and challenges ${RANGE_WORDS[range]}: ${formatInt(
+                chartRequests,
+              )} requests, ${formatInt(chartChallenges)} challenges`}
+            />
+          )}
+          {data?.seriesTruncated && (
+            <Small $faint>
+              Some chains had more requests than this view loads; their earliest
+              days may be undercounted.
+            </Small>
+          )}
+        </FeaturedMain>
+        <CuratorsAside aria-label="Top curators">
+          <CuratorsHead>
+            <Label $tone="faint">Top curators · all time</Label>
+            {!loading && curators.length > 0 && (
+              <Label
+                $tone="faint"
+                title="Bounties won: challenges the court ruled for them, all time"
+              >
+                Won · all time
+              </Label>
+            )}
+          </CuratorsHead>
+          {loading || (history.isPending && !history.isError) ? (
+            <SkeletonBlock $height="260px" style={{ marginTop: 16 }} />
+          ) : history.isError ? (
+            <EmptyNote>The curation history did not load.</EmptyNote>
+          ) : curators.length === 0 ? (
+            <EmptyNote>No curator activity yet.</EmptyNote>
+          ) : (
+            <CuratorList>
+              {curators.map((row, index) => (
+                <CuratorRow key={row.address} to={`/address/${row.address}`}>
+                  <Rank>{String(index + 1).padStart(2, '0')}</Rank>
+                  <span style={{ minWidth: 0 }}>
+                    <strong>{truncateMiddle(row.address)}</strong>
+                    {/* Their activity against the top curator's, as
+                          the one bar: requests, then challenges. */}
+                    <CuratorBar>
+                      <LaneBar
+                        runs={[
+                          {
+                            key: 'requests',
+                            weight: row.requests / curatorScale,
+                            hue: 'var(--color-primary)',
+                          },
+                          {
+                            key: 'challenges',
+                            weight: row.challenges / curatorScale,
+                            hue: 'var(--status-contested)',
+                          },
+                        ]}
+                        extent={(row.requests + row.challenges) / curatorScale}
+                        armed
+                        delay={200 + index * 90}
+                      />
+                    </CuratorBar>
+                    <Small $muted>
+                      {plural(row.requests, 'request', 'requests')} ·{' '}
+                      {plural(row.challenges, 'challenge', 'challenges')}
+                    </Small>
+                  </span>
+                  <Won
+                    title={`${plural(row.won, 'bounty', 'bounties')} won, all time`}
+                    data-none={row.won === 0 ? '' : undefined}
+                  >
+                    <CurateIcon name="bounty" size={13} />
+                    {winsKnown ? formatInt(row.won) : '—'}
+                    <VisuallyHidden>
+                      {' '}
+                      {row.won === 1 ? 'bounty' : 'bounties'} won, all time
+                    </VisuallyHidden>
+                  </Won>
+                </CuratorRow>
+              ))}
+            </CuratorList>
+          )}
+        </CuratorsAside>
       </Featured>
 
       {/*
@@ -1276,135 +1357,86 @@ const Dashboard = () => {
           All registries <CurateIcon name="submit" size={13} />
         </SeeAll>
       </SectionHead>
-      <Split>
-        {loading ? (
-          <SkeletonBlock $height="420px" />
-        ) : (
-          <ActiveFrame>
-            <ActiveTable>
-              <thead>
-                <tr>
-                  <th>Registry</th>
-                  <th>Chain</th>
-                  <th className="num">Entries</th>
-                  <th className="num">Open</th>
-                  <th className="num">In court</th>
+      {loading ? (
+        <SkeletonBlock $height="420px" />
+      ) : (
+        <ActiveFrame>
+          <ActiveTable>
+            <thead>
+              <tr>
+                <th>Registry</th>
+                <th>Chain</th>
+                <th className="num">Entries</th>
+                <th className="num">Open</th>
+                <th className="num">In court</th>
+              </tr>
+            </thead>
+            <tbody>
+              {topRegistries.map((registry) => (
+                <tr
+                  key={registry.id}
+                  data-href={registryHref(registry)}
+                  onClick={(event) => {
+                    // A click on the name is its link's alone (Cmd or
+                    // Ctrl+click opens a tab): the row does not navigate too.
+                    if ((event.target as HTMLElement).closest('a, button'))
+                      return
+                    navigate(registryHref(registry))
+                  }}
+                >
+                  <td>
+                    <RegistryCell>
+                      <RegistryLogo registry={registry} />
+                      <div style={{ minWidth: 0 }}>
+                        <NameLine>
+                          <RegistryName
+                            to={registryHref(registry)}
+                            title={registry.title}
+                          >
+                            {registry.title}
+                          </RegistryName>
+                          {registry.trustStatus === 'verified' && (
+                            <VerifiedBadge size={16} />
+                          )}
+                          <KindTag kind={registry.kind} />
+                        </NameLine>
+                        <RowMeta>
+                          <span
+                            className="phone-only"
+                            title={chainInfo(registry.chainId)?.name}
+                          >
+                            <ChainLogo chainId={registry.chainId} size={14} />
+                            <VisuallyHidden>
+                              {chainInfo(registry.chainId)?.name}
+                            </VisuallyHidden>
+                          </span>
+                        </RowMeta>
+                      </div>
+                    </RegistryCell>
+                  </td>
+                  <td>
+                    <ChainChip chainId={registry.chainId} size="sm" />
+                  </td>
+                  <td className="num">{formatInt(entryCount(registry))}</td>
+                  <td className="num">
+                    {registry.kind === 'permanent'
+                      ? '—'
+                      : formatInt(registry.pendingCount)}
+                  </td>
+                  <td className="num">{formatInt(registry.disputeCount)}</td>
                 </tr>
-              </thead>
-              <tbody>
-                {topRegistries.map((registry) => (
-                  <tr
-                    key={registry.id}
-                    data-href={registryHref(registry)}
-                    onClick={(event) => {
-                      // A click on the name is its link's alone (Cmd or
-                      // Ctrl+click opens a tab): the row does not navigate too.
-                      if ((event.target as HTMLElement).closest('a, button'))
-                        return
-                      navigate(registryHref(registry))
-                    }}
-                  >
-                    <td>
-                      <RegistryCell>
-                        <RegistryLogo registry={registry} />
-                        <div style={{ minWidth: 0 }}>
-                          <NameLine>
-                            <RegistryName
-                              to={registryHref(registry)}
-                              title={registry.title}
-                            >
-                              {registry.title}
-                            </RegistryName>
-                            {registry.trustStatus === 'verified' && (
-                              <VerifiedBadge size={16} />
-                            )}
-                            <KindTag kind={registry.kind} />
-                          </NameLine>
-                          <RowMeta>
-                            <span
-                              className="phone-only"
-                              title={chainInfo(registry.chainId)?.name}
-                            >
-                              <ChainLogo chainId={registry.chainId} size={14} />
-                              <VisuallyHidden>
-                                {chainInfo(registry.chainId)?.name}
-                              </VisuallyHidden>
-                            </span>
-                          </RowMeta>
-                        </div>
-                      </RegistryCell>
-                    </td>
-                    <td>
-                      <ChainChip chainId={registry.chainId} size="sm" />
-                    </td>
-                    <td className="num">{formatInt(entryCount(registry))}</td>
-                    <td className="num">
-                      {registry.kind === 'permanent'
-                        ? '—'
-                        : formatInt(registry.pendingCount)}
-                    </td>
-                    <td className="num">{formatInt(registry.disputeCount)}</td>
-                  </tr>
-                ))}
-                {figuresUnknown && (
-                  <tr>
-                    <td colSpan={5}>
-                      <Small $muted>{missingNames} lists did not load</Small>
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </ActiveTable>
-          </ActiveFrame>
-        )}
-
-        <CuratorsPanel $padding="standard" aria-label="Top curators">
-          <CuratorsHead>
-            <Label $tone="faint">Top curators · all time</Label>
-            {!loading && curators.length > 0 && (
-              <Label
-                $tone="faint"
-                title="Bounties won: challenges the court ruled for them, all time"
-              >
-                Won · all time
-              </Label>
-            )}
-          </CuratorsHead>
-          {loading || (history.isPending && !history.isError) ? (
-            <SkeletonBlock $height="260px" style={{ marginTop: 16 }} />
-          ) : history.isError ? (
-            <EmptyNote>The curation history did not load.</EmptyNote>
-          ) : curators.length === 0 ? (
-            <EmptyNote>No curator activity yet.</EmptyNote>
-          ) : (
-            <CuratorList>
-              {curators.map((row, index) => (
-                <CuratorRow key={row.address} to={`/address/${row.address}`}>
-                  <Rank>{String(index + 1).padStart(2, '0')}</Rank>
-                  <span style={{ minWidth: 0 }}>
-                    <strong>{truncateMiddle(row.address)}</strong>
-                    <Small $muted>
-                      {plural(row.requests, 'request', 'requests')} ·{' '}
-                      {plural(row.challenges, 'challenge', 'challenges')}
-                    </Small>
-                  </span>
-                  <Won
-                    title={`${plural(row.won, 'bounty', 'bounties')} won, all time`}
-                    data-none={row.won === 0 ? '' : undefined}
-                  >
-                    <CurateIcon name="bounty" size={13} />
-                    {winsKnown ? formatInt(row.won) : '—'}
-                    <VisuallyHidden>
-                      {' '}
-                      {row.won === 1 ? 'bounty' : 'bounties'} won, all time
-                    </VisuallyHidden>
-                  </Won>
-                </CuratorRow>
               ))}
-            </CuratorList>
-          )}
-        </CuratorsPanel>
-      </Split>
+              {figuresUnknown && (
+                <tr>
+                  <td colSpan={5}>
+                    <Small $muted>{missingNames} lists did not load</Small>
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </ActiveTable>
+        </ActiveFrame>
+      )}
     </Page>
   )
 }
