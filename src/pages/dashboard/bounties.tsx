@@ -15,7 +15,7 @@ import { SectionHead, SectionTitle } from './section'
 import { chainInfo, type BountyCoin, type scopedChallengeRecord } from './view'
 
 /*
- * How the lists have held up (round 3): one wide card, back to the
+ * The self-sustaining mechanism (round 3): one wide card, back to the
  * proportions of the version before it — the rings on the left at full
  * size, the money to their right, one sentence across the foot.
  *
@@ -341,7 +341,7 @@ const heldUpSentence = (
 }
 
 /**
- * How the lists have held up: how much of what they hold nobody has ever
+ * The self-sustaining mechanism: how much of what they hold nobody has ever
  * disputed, how the court ruled when somebody did, and what the challengers
  * took. The section heads itself and owns its loading state, so the heading
  * never pops in.
@@ -389,7 +389,7 @@ export const VerificationRecord = ({
   return (
     <section aria-labelledby={titleId}>
       <SectionHead>
-        <SectionTitle id={titleId}>How the lists have held up</SectionTitle>
+        <SectionTitle id={titleId}>Self-sustaining mechanism</SectionTitle>
       </SectionHead>
 
       {/* Second box on the page, straight after the 30-day chart (--i: 4). */}

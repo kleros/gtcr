@@ -86,13 +86,13 @@ import { Avatar as ListLogo } from 'pages/browse/avatar'
 
 /*
  * Dashboard: a short statement, one strip of live figures over the 30-day
- * wave, then how the lists have held up, the money anyone can go and claim
+ * wave, then the self-sustaining mechanism, the money anyone can go and claim
  * (Open for verification), what is happening now in two columns beside each
  * other, the Kleros Verified lists, and the most active registries and
  * curators. Every figure comes from the indexers or the chain.
  *
  * Round 3 set that order. The 30-day chart and the record of how the lists
- * have held up are the two boxes a reader meets first, because they say
+ * sustains itself are the two boxes a reader meets first, because they say
  * whether any of this works; then the three figures of what is open for
  * verification, and under them the board those figures belong to — the
  * submissions on one side, the disputes and the rulings on the other
@@ -816,7 +816,7 @@ const Dashboard = () => {
   }
 
   /**
-   * How the lists have held up, all time, in the page's scope: how rarely a
+   * The self-sustaining mechanism, all time, in the page's scope: how rarely a
    * request is challenged at all, how the court ruled when one was, and the
    * bounties the challengers took.
    */
@@ -965,7 +965,7 @@ const Dashboard = () => {
           {data && partialChains.length === 0 && updated}
         </LivePill>
         <Headline style={{ ['--i' as string]: 1 }}>
-          Lists anyone can challenge. <em>Settled by jurors.</em>
+          Lists anyone can challenge. <em>Settled by Kleros.</em>
         </Headline>
         <Lede style={{ ['--i' as string]: 2 }}>
           Challenge a submission that breaks its list’s policy and earn its

@@ -2,12 +2,8 @@ import React, { useEffect, useRef } from 'react'
 import styled, { css, keyframes } from 'styled-components'
 import { useParams, useSearchParams } from 'react-router-dom'
 import useDocumentHead from 'hooks/use-document-head'
-import { NETWORKS, NETWORKS_INFO, getNativeCurrency } from 'config/networks'
+import { NETWORKS, NETWORKS_INFO } from 'config/networks'
 import { warmFactory, warmPermanentFactory } from 'bootstrap/app-router'
-import {
-  WIZARD_DEFAULTS as STAKE_DEFAULTS,
-  defaultStakeToken,
-} from 'pages/factory-permanent/defaults'
 import {
   ButtonLink,
   Label,
@@ -20,7 +16,6 @@ import { CurateIcon } from 'components/curate/icons'
 import { reveal } from 'components/curate/motion/reveal'
 import { ChainSwitch } from './chain-switch'
 import { DepositFate, type FateSpec } from './deposit-fate'
-import { STANDARD_WIZARD_DEFAULTS } from 'pages/factory/defaults'
 
 /*
  * Launch a list (route /launch/:chainId): a choice between the two list
@@ -34,10 +29,10 @@ import { STANDARD_WIZARD_DEFAULTS } from 'pages/factory/defaults'
  * One question decides between them — does the money come back? — so each
  * card is one vertical read of that question: what is put up and what the
  * kind is for, the verdict, the same drawing with one difference in it (see
- * ./deposit-fate), two lines that say when the money moves and what the kind
- * costs you, and the fees in the chain's currency. No period is quoted
- * anywhere: the challenge window, the court and the number of jurors are all
- * the creator's to set in the factory, and the Guide route carries both
+ * ./deposit-fate), and two lines that say when the money moves and what the
+ * kind costs you. No figure and no period is quoted anywhere: the deposits,
+ * the challenge window, the court and the number of jurors are all the
+ * creator's to set in the factory, and the Guide route carries both
  * lifecycles in full.
  */
 
@@ -47,9 +42,6 @@ const SUPPORTED_CHAINS: number[] = [
   NETWORKS.sepolia,
 ]
 const TESTNETS: number[] = [NETWORKS.sepolia]
-
-/* Both kinds' defaults come from their wizards, so the page and a new list agree. */
-const STANDARD_DEFAULTS = STANDARD_WIZARD_DEFAULTS
 
 /* ---------- The two kinds ---------- */
 
@@ -135,7 +127,7 @@ const Lede = styled.p`
 /* ---------- The choice: two equal cards in one radio group ---------- */
 
 /* The cards' rows, shared through subgrid so the two cards line up. */
-const CARD_ROWS = 7
+const CARD_ROWS = 6
 
 const Choices = styled.div`
   display: grid;
@@ -461,36 +453,6 @@ const MinusIcon = () => (
   </svg>
 )
 
-/*
- * What it costs, quietly: the figures the factory pre-fills, in the currency
- * they are paid in. The creator changes every one of them in the next step.
- */
-const Fees = styled.p`
-  display: flex;
-  flex-wrap: wrap;
-  gap: 2px 10px;
-  margin: 16px 0 0;
-  padding-top: 14px;
-  border-top: 1px solid var(--glass-border);
-  color: var(--color-faint);
-  font-size: var(--fs-meta);
-  line-height: 18px;
-
-  span + span::before {
-    content: '·';
-    margin-right: 8px;
-    color: var(--color-border-strong);
-  }
-
-  b {
-    color: var(--color-muted);
-    font-family: var(--font-figure);
-    font-weight: 500;
-    font-variant-numeric: tabular-nums;
-    white-space: nowrap;
-  }
-`
-
 const ArrowIcon = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
     <path
@@ -663,8 +625,6 @@ const LaunchListPage = () => {
     : NETWORKS.gnosis
   const chain = NETWORKS_INFO[chainId as keyof typeof NETWORKS_INFO]
   const chainName = chain?.name ?? `chain ${chainId}`
-  const symbol = getNativeCurrency(chainId).symbol
-  const stakeToken = defaultStakeToken[chainId]?.label
 
   // The chosen kind lives in the URL; nothing is chosen until someone picks.
   const [searchParams, setSearchParams] = useSearchParams()
@@ -746,16 +706,6 @@ const LaunchListPage = () => {
               </span>
             </Point>
           </Points>
-
-          <Fees>
-            <span>Fees in {symbol}</span>
-            <span>
-              submit <b>{STANDARD_DEFAULTS.submissionBaseDeposit}</b>
-            </span>
-            <span>
-              removal <b>{STANDARD_DEFAULTS.removalBaseDeposit}</b>
-            </span>
-          </Fees>
         </Choice>
 
         <Choice
@@ -768,7 +718,9 @@ const LaunchListPage = () => {
           index={4}
         >
           <Lead>
-            <Label $tone="faint">Stake over an entry’s life</Label>
+            <Label $tone="faint">
+              Stake over an entry’s life, in any ERC-20
+            </Label>
             <Label $tone="faint">
               <VisuallyHidden>Best for: </VisuallyHidden>
               Continuous compliance
@@ -781,13 +733,6 @@ const LaunchListPage = () => {
           </Drawing>
 
           <Points aria-label="What this kind means">
-            <Point>
-              <CurateIcon name="check" size={18} />
-              <span>
-                <VisuallyHidden>What you gain: </VisuallyHidden>A failed
-                challenge adds the challenger’s stake to the entry’s.
-              </span>
-            </Point>
             <Point $con>
               <MinusIcon />
               <span>
@@ -796,17 +741,14 @@ const LaunchListPage = () => {
                 challenger can take it at any time until then.
               </span>
             </Point>
-          </Points>
-
-          <Fees>
-            <span>Stake in any ERC-20</span>
-            {/* The wizard pre-fills a token only where the chain has one. */}
-            {stakeToken && (
+            <Point>
+              <CurateIcon name="check" size={18} />
               <span>
-                <b>{STAKE_DEFAULTS.submissionMinDeposit}</b> {stakeToken}
+                <VisuallyHidden>What you gain: </VisuallyHidden>A failed
+                challenge adds the challenger’s stake to the entry’s.
               </span>
-            )}
-          </Fees>
+            </Point>
+          </Points>
         </Choice>
       </Choices>
     </Page>

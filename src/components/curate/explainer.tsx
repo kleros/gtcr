@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import styled, { css, keyframes } from 'styled-components'
+import { CurateIcon } from './icons'
 import { Label, Surface } from './primitives'
 import { reveal } from './motion/reveal'
 
@@ -66,6 +67,50 @@ const Top = styled.div`
   display: flex;
   flex-direction: column;
   gap: 6px;
+`
+
+/*
+ * The panel's own top line: the heading block, and at its right end the
+ * control that shuts it. The footer's text link is where a reader never
+ * looked for one — below a panel tall enough to push it off the screen — so
+ * the × is here, in the corner every other dismissible thing puts it, and
+ * Escape works from anywhere inside.
+ */
+const TopRow = styled.div`
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+`
+
+const CloseButton = styled.button`
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  margin: -4px -4px 0 0;
+  border: 1px solid transparent;
+  border-radius: var(--radius-pill);
+  background: none;
+  color: var(--color-muted);
+  cursor: pointer;
+  transition:
+    color var(--motion),
+    border-color var(--motion),
+    background var(--motion);
+
+  &:hover {
+    border-color: var(--color-border-strong);
+    background: var(--color-raised);
+    color: var(--color-text);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+  }
 `
 
 const Heading = styled.h2`
@@ -231,22 +276,6 @@ const Footer = styled.div`
   gap: 12px 18px;
 `
 
-const TextButton = styled.button`
-  padding: 0;
-  border: 0;
-  background: none;
-  color: var(--color-muted);
-  font-size: var(--fs-small);
-  line-height: var(--lh-small);
-  font-weight: 500;
-  cursor: pointer;
-  transition: color var(--motion);
-
-  &:hover {
-    color: var(--color-text);
-  }
-`
-
 const Schematic = styled.div`
   color: var(--color-muted);
 
@@ -344,6 +373,12 @@ export const Explainer = ({
     toggled.current = true
     setHidden(next)
   }
+  // Escape shuts it the way Escape shuts everything else that opens.
+  const onKeyDown = (event: React.KeyboardEvent) => {
+    if (event.key !== 'Escape' || hidden) return
+    event.stopPropagation()
+    toggle(true)
+  }
 
   if (hidden)
     return (
@@ -361,13 +396,23 @@ export const Explainer = ({
 
   const content = (
     <>
-      <Top>
-        {eyebrow && <Label $tone="faint">{eyebrow}</Label>}
-        <Heading ref={headingRef} tabIndex={-1}>
-          {heading}
-        </Heading>
-        {intro && <Intro>{intro}</Intro>}
-      </Top>
+      <TopRow>
+        <Top>
+          {eyebrow && <Label $tone="faint">{eyebrow}</Label>}
+          <Heading ref={headingRef} tabIndex={-1}>
+            {heading}
+          </Heading>
+          {intro && <Intro>{intro}</Intro>}
+        </Top>
+        <CloseButton
+          type="button"
+          aria-expanded
+          aria-label={`Close ${(eyebrow ?? 'how it works').toLowerCase()}`}
+          onClick={() => toggle(true)}
+        >
+          <CurateIcon name="close" size={16} />
+        </CloseButton>
+      </TopRow>
       <Body $withSchematic={!!schematic}>
         <Steps $count={steps.length}>
           {steps.map((step, index) => (
@@ -380,19 +425,21 @@ export const Explainer = ({
         </Steps>
         {schematic && <Schematic aria-hidden>{schematic}</Schematic>}
       </Body>
-      <Footer>
-        {footer}
-        <TextButton type="button" onClick={() => toggle(true)}>
-          Close
-        </TextButton>
-      </Footer>
+      {footer && <Footer>{footer}</Footer>}
     </>
   )
 
   return embedded ? (
-    <Embedded aria-label={heading}>{content}</Embedded>
+    <Embedded aria-label={heading} onKeyDown={onKeyDown}>
+      {content}
+    </Embedded>
   ) : (
-    <Shell as="section" $padding="standard" aria-label={heading}>
+    <Shell
+      as="section"
+      $padding="standard"
+      aria-label={heading}
+      onKeyDown={onKeyDown}
+    >
       {content}
     </Shell>
   )

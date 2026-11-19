@@ -221,6 +221,9 @@ const Headline = styled.div`
 `
 
 const Big = styled.span`
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
   color: var(--color-text);
   font-family: var(--font-figure);
   font-size: clamp(48px, 2.6vw + 26px, 64px);
@@ -228,6 +231,14 @@ const Big = styled.span`
   font-weight: 500;
   letter-spacing: -0.045em;
   font-variant-numeric: tabular-nums;
+
+  /* The window role, the same one the inline stats mark, at headline size:
+     the open requests are the list's live work and what a challenger came
+     for, so they lead. The haloed dot is what keeps a blue figure from
+     reading as a link. */
+  &[data-accent] {
+    color: var(--status-window);
+  }
 `
 
 /* A count the indexer did not return: a quiet word, not a display-size dash. */
@@ -686,7 +697,10 @@ export const RegistryHeader = ({
               </Unknown>
             )
           ) : (
-            <Big>
+            <Big data-accent={headline?.tone === 'window' || undefined}>
+              {headline?.tone === 'window' && isLiveCount(headline.value) && (
+                <StatusDot $tone="window" aria-hidden />
+              )}
               <StatValue value={headline?.value} />
             </Big>
           )}

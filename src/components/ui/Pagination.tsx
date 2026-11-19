@@ -10,8 +10,6 @@ import React, {
 import styled, { css } from 'styled-components'
 import { KitIcon } from './kit-icons'
 import {
-  fieldFocus,
-  fieldSurface,
   figureData,
   joinClassNames,
   kitTransition,
@@ -66,37 +64,6 @@ const PageTrack = styled.div`
   padding: 3px;
   border-radius: var(--radius-pill);
   ${recessTrack}
-`
-
-/*
- * The jump sits beside the pager, and on a phone takes its own row so the
- * track keeps its single line.
- */
-const JumpRow = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 8px;
-
-  @media ${COMPACT_QUERY} {
-    flex-basis: 100%;
-  }
-`
-
-const JumpLabel = styled.label`
-  color: var(--color-faint);
-  font-size: var(--fs-label);
-  line-height: var(--lh-label);
-  font-weight: 500;
-  letter-spacing: var(--tracking-label);
-  text-transform: uppercase;
-  white-space: nowrap;
-`
-
-const JumpHint = styled.span`
-  color: var(--color-faint);
-  ${figureData}
-  font-size: var(--fs-small);
-  white-space: nowrap;
 `
 
 /* The lit thumb under the current page; it slides when the page changes. */
@@ -198,15 +165,20 @@ const Ellipsis = styled.span`
   ${figureData}
 `
 
-/* The number someone types. Pages are figures: Geist tabular, never mono. */
+/*
+ * The jump: a page pill you type in, in the track and next to the ellipsis
+ * that stands for the pages it reaches, so the control that gets to page 137
+ * is the same size and in the same place as the ones that get to 136 and 138.
+ * It writes once — on Enter, or on leaving it — never per keystroke, because
+ * every caller puts the page in the URL and two of them push a history entry
+ * and refetch for each write.
+ */
 const JumpField = styled.input`
-  ${fieldSurface}
-  width: 60px;
-  height: 38px;
-  padding: 0;
-  border-radius: var(--radius-pill);
-  ${figureData}
-  font-size: var(--fs-small);
+  ${pageButtonBase}
+  flex: 0 0 auto;
+  width: 46px;
+  height: 32px;
+  border: 0;
   text-align: center;
 
   &::placeholder {
@@ -214,29 +186,14 @@ const JumpField = styled.input`
   }
 
   &:hover {
-    border-color: var(--color-border-strong);
+    color: var(--color-text);
   }
 
   &:focus-visible {
-    ${fieldFocus}
+    outline: 2px solid var(--color-primary);
+    outline-offset: -2px;
   }
 `
-
-/* The quiet secondary look, so a phone keyboard has something to press. */
-const JumpGo = styled.button`
-  ${pageButtonBase}
-  flex: 0 0 auto;
-  height: 38px;
-  padding: 0 14px;
-  border-color: var(--glass-border);
-
-  &:hover:not(:disabled) {
-    color: var(--color-text);
-    border-color: var(--color-border-strong);
-    background: var(--color-raised);
-  }
-`
-
 /*
  * First, last, the current page and `siblings` pages either side of it,
  * with an ellipsis wherever pages are skipped.
@@ -353,6 +310,13 @@ const Pagination: React.FC<PaginationProps> = ({
    * 9999 land on the first and last page rather than being refused.
    */
   const jumpId = useId()
+  /*
+   * The field sits by the last ellipsis, between the skipped pages and the
+   * last one. A window near the end has only a left ellipsis, so it goes
+   * there instead; with no ellipsis at all every page is on screen and there
+   * is nothing to jump to.
+   */
+  const lastGap = [...pages].reverse().find((page) => typeof page === 'string')
   const [draft, setDraft] = useState('')
   const commitJump = useCallback(() => {
     const page = Number.parseInt(draft, 10)
@@ -442,13 +406,41 @@ const Pagination: React.FC<PaginationProps> = ({
           {pages.map((page, idx) => {
             if (typeof page === 'string')
               return (
-                <Ellipsis
-                  key={page + idx}
-                  className="ui-pagination-ellipsis"
-                  aria-hidden
-                >
-                  …
-                </Ellipsis>
+                <React.Fragment key={page + idx}>
+                  <Ellipsis className="ui-pagination-ellipsis" aria-hidden>
+                    …
+                  </Ellipsis>
+                  {page === lastGap && (
+                    <JumpField
+                      id={jumpId}
+                      type="text"
+                      inputMode="numeric"
+                      enterKeyHint="go"
+                      autoComplete="off"
+                      value={draft}
+                      placeholder="#"
+                      title={`Go to page, 1 to ${totalPages}`}
+                      aria-label={`Go to page, 1 to ${totalPages}`}
+                      onChange={(e) =>
+                        setDraft(
+                          e.target.value
+                            .replace(/\D+/g, '')
+                            .slice(0, String(totalPages).length),
+                        )
+                      }
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault()
+                          commitJump()
+                        } else if (e.key === 'Escape') setDraft('')
+                      }}
+                      // Leaving a typed number behind still takes the reader
+                      // there; focus stays on the field, which the list scroll
+                      // moves out of view but does not steal.
+                      onBlur={() => draft && commitJump()}
+                    />
+                  )}
+                </React.Fragment>
               )
 
             return (
@@ -488,44 +480,6 @@ const Pagination: React.FC<PaginationProps> = ({
           )}
         </NavButton>
       </Pager>
-
-      {isWindowed(totalPages, siblings) && (
-        <JumpRow className="ui-pagination-jump">
-          <JumpLabel htmlFor={jumpId}>Go to page</JumpLabel>
-          <JumpField
-            id={jumpId}
-            type="text"
-            inputMode="numeric"
-            enterKeyHint="go"
-            autoComplete="off"
-            value={draft}
-            placeholder={String(current)}
-            aria-label={`Go to page, 1 to ${totalPages}`}
-            aria-describedby={`${jumpId}-of`}
-            onChange={(e) =>
-              setDraft(
-                e.target.value
-                  .replace(/\D+/g, '')
-                  .slice(0, String(totalPages).length),
-              )
-            }
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault()
-                commitJump()
-              } else if (e.key === 'Escape') setDraft('')
-            }}
-            // Leaving a typed number behind should still take the reader
-            // there; focus stays on the field, which the list scroll moves
-            // out of view but does not steal.
-            onBlur={() => draft && commitJump()}
-          />
-          <JumpHint id={`${jumpId}-of`}>of {totalPages}</JumpHint>
-          <JumpGo type="button" disabled={!draft} onClick={commitJump}>
-            Go
-          </JumpGo>
-        </JumpRow>
-      )}
     </Wrapper>
   )
 }

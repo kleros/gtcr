@@ -928,17 +928,28 @@ const Items = () => {
       ? undefined
       : counts && integer.format(counts.inCourt)
 
-  const stats: RegistryStat[] = [
-    { label: 'Entries', value: counts && integer.format(counts.total) },
-    {
-      // The list's live work, and what most readers came for: the one stat
-      // the header draws in the window blue.
-      label: 'Open requests',
-      value: counts && integer.format(counts.openRequests),
-      tone: 'window',
-    },
-    { label: 'In court', value: inCourtStat },
-  ]
+  /*
+   * The list's live work leads, because it is what a reader can act on: the
+   * open requests are the headline figure, in the window blue, and the total
+   * the list holds follows. A list with nothing open has no live work to
+   * lead with, so that figure is not printed at all and the total takes the
+   * headline back. While the counts are still loading the slot is kept, so
+   * the headline does not change identity under the reader.
+   */
+  const openRequests = counts?.openRequests
+  const leadWithOpen = !counts || openRequests !== 0
+  const entriesStat: RegistryStat = {
+    label: 'Entries',
+    value: counts && integer.format(counts.total),
+  }
+  const openStat: RegistryStat = {
+    label: 'Open requests',
+    value: counts && integer.format(counts.openRequests),
+    tone: 'window',
+  }
+  const stats: RegistryStat[] = leadWithOpen
+    ? [openStat, entriesStat, { label: 'In court', value: inCourtStat }]
+    : [entriesStat, { label: 'In court', value: inCourtStat }]
 
   const parameters: RegistryParameter[] = [
     {

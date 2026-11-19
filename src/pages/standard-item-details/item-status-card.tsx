@@ -1,7 +1,7 @@
 import React, { useContext, useEffect, useMemo, useRef, useState } from 'react'
 import styled from 'styled-components'
 import type { Address } from 'viem'
-import type { BigNumber } from 'ethers'
+import { BigNumber } from 'ethers'
 import { useAccount, usePublicClient, useWalletClient } from 'wagmi'
 import { simulateContract } from '@wagmi/core'
 import _gtcr from 'assets/abis/LightGeneralizedTCR.json'
@@ -89,13 +89,13 @@ const Head = styled.div`
   gap: 10px;
 `
 
-const Amount = styled.div`
+const Amount = styled.div<{ $lead?: boolean }>`
   display: flex;
   align-items: baseline;
   gap: 8px;
   color: var(--color-text);
   font-family: var(--font-figure);
-  font-size: 44px;
+  font-size: ${({ $lead }) => ($lead ? '56px' : '44px')};
   line-height: 1;
   font-weight: 500;
   letter-spacing: -0.04em;
@@ -502,12 +502,22 @@ const ItemStatusCard = ({
     inWindow && !resolved && request.deposit !== undefined
       ? request.deposit
       : undefined
-  // One sentence under the figure (DESIGN.md allows one, and the Label above
-  // already says the figure is what a winning challenge takes): what winning
-  // the bounty takes, and what comes back. The exact cost is on the button
-  // below, so the sentence does not name the same figure again.
-  const bountyLine =
-    'Winning it takes a deposit of your own, so only a challenge you believe in is worth filing; if jurors agree with you, that deposit comes back in full and the bounty is yours on top.'
+  /*
+   * Under the figure: why anyone would do this, in the order it happens.
+   * Filing takes a deposit, which is what keeps frivolous challenges off the
+   * list; win and both come back together, so the sentence ends on the one
+   * number a challenger actually wants — the bounty plus their own deposit
+   * back. That total is only stated where both halves are known.
+   */
+  const challengeTotal =
+    bounty !== undefined && challengeCost !== undefined
+      ? formatAmount(BigNumber.from(bounty).add(challengeCost), nativeCurrency)
+      : undefined
+  const bountyLine = `Found something that breaks this list's policy? Challenge the ${itemName} and the bounty is yours if jurors agree. Filing takes a deposit of your own, so a challenge nobody believes in costs something${
+    challengeTotal
+      ? `; win, and your deposit comes back with the bounty on top — ${challengeTotal} in all.`
+      : '; win, and your deposit comes back with the bounty on top.'
+  }`
   // The same sentence for the states that have no bounty to lead with: what
   // the figure backs, and when it comes back, with the period in words.
   const depositLine = inWindow
@@ -538,8 +548,8 @@ const ItemStatusCard = ({
           <Head>
             {bounty !== undefined ? (
               <>
-                <Label $tone="faint">Win if your challenge succeeds</Label>
-                <Amount title={formatAmount(bounty, nativeCurrency)}>
+                <Label $tone="faint">Earn</Label>
+                <Amount $lead title={formatAmount(bounty, nativeCurrency)}>
                   {formatEther(bounty)}
                   <small>{nativeCurrency}</small>
                 </Amount>
