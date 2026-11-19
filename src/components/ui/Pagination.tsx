@@ -356,7 +356,11 @@ const Pagination: React.FC<PaginationProps> = ({
    * noted on its way down, before the field blurs.
    */
   const pressInPager = useRef(false)
-  const notePress = useCallback(() => {
+  const notePress = useCallback((event: React.PointerEvent) => {
+    // Only a press on one of the pager's controls takes the move; one on the
+    // gaps between them (the ellipsis, the padding) still lets the draft go.
+    const target = event.target as Element | null
+    if (!target?.closest?.('button, a')) return
     pressInPager.current = true
     const release = () => {
       pressInPager.current = false

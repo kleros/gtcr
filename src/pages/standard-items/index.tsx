@@ -1598,7 +1598,12 @@ const Items = () => {
                   ? Math.max(itemCount ?? 0, pageReach)
                   : itemCount
           }
-          totalCapped={disputedBeforeCapped && !(searching && !wholeListSearch)}
+          totalCapped={
+            // A short page past the cap ends the list: that total is exact.
+            disputedBeforeCapped &&
+            pageItemCount === ITEMS_PER_PAGE &&
+            !(searching && !wholeListSearch)
+          }
         />
       </Toolbar>
 
