@@ -16,9 +16,11 @@ import _gtcr from 'assets/abis/PermanentGTCR.json'
 import { WalletContext } from 'contexts/wallet-context'
 import { useGraphqlBatcher } from 'contexts/graphql-batcher'
 import { PERMANENT_ITEMS_QUERY, PERMANENT_REGISTRY_QUERY } from 'utils/graphql'
+import { PERMANENT_DISPUTED_BEFORE_QUERY } from 'utils/graphql/permanent-items'
 import {
   P_FILTER_KEYS,
   searchStrToFilterObjPermanent,
+  selectStatusFilter,
   updateStandardFilter,
 } from 'utils/filters'
 import { parseIpfs } from 'utils/ipfs-parse'
@@ -161,11 +163,8 @@ const formatInt = (value: number) => integer.format(value)
  */
 const isCount = (value: number) => Number.isFinite(value) && value >= 0
 
-/** Each status filter chip with its count, while the count is known. */
-const withCount = (label: string, count?: number) =>
-  count !== undefined && Number.isFinite(count)
-    ? `${label} ${formatInt(count)}`
-    : label
+/** The "Previously disputed" count reads at most this many ids. */
+const DISPUTED_BEFORE_LIMIT = 1000
 
 const itemFields = (item: StakeItem): V2Field[] =>
   item.metadata?.props ?? item.props ?? []
@@ -357,7 +356,8 @@ const StakeRegistry = () => {
   const [revealed, setRevealed] = useState<Set<string>>(() => new Set())
 
   const queryOptions = searchStrToFilterObjPermanent(search)
-  const { oldestFirst, page, absent, registered, disputed } = queryOptions
+  const { oldestFirst, page, absent, registered, disputed, disputedBefore } =
+    queryOptions
   const currentPage = Number(page) || 1
   const registryId = tcrAddress?.toLowerCase()
 
@@ -379,14 +379,36 @@ const StakeRegistry = () => {
 
   // "Listed" filters to every entry on the list, the disputed ones
   // included (see onListCount below); "Disputed" narrows to those alone.
+  // "Previously disputed" is every entry ever challenged (each challenge is
+  // a dispute), whatever its status now.
   const itemsWhere = useMemo(() => {
     const statuses: string[] = []
     if (absent) statuses.push('Absent')
     if (registered) statuses.push('Submitted', 'Reincluded', 'Disputed')
     else if (disputed) statuses.push('Disputed')
-    if (statuses.length === 0) return { registry: registryId }
-    return { registry: registryId, status_in: statuses }
-  }, [absent, registered, disputed, registryId])
+    const history = disputedBefore ? { challenges_: { id_not: null } } : {}
+    if (statuses.length === 0) return { registry: registryId, ...history }
+    return { registry: registryId, ...history, status_in: statuses }
+  }, [absent, registered, disputed, disputedBefore, registryId])
+
+  // How many entries have ever been challenged: the status menu's count.
+  const disputedBeforeQuery = useQuery({
+    queryKey: ['permanentDisputedBefore', chainId, registryId],
+    queryFn: (): Promise<{ items?: { id: string }[] }> =>
+      graphqlBatcher.fetch({
+        id: crypto.randomUUID(),
+        document: PERMANENT_DISPUTED_BEFORE_QUERY,
+        variables: { registry: registryId, first: DISPUTED_BEFORE_LIMIT },
+        chainId: chainId!,
+        isPermanent: true,
+      }),
+    enabled: !!chainId && !!registryId,
+    staleTime: STALE_TIME,
+  })
+  const disputedBeforeCount = disputedBeforeQuery.data?.items?.length
+  const disputedBeforeCapped =
+    disputedBeforeCount !== undefined &&
+    disputedBeforeCount >= DISPUTED_BEFORE_LIMIT
 
   const itemsVariables = useMemo(
     () => ({
@@ -556,6 +578,7 @@ const StakeRegistry = () => {
   // when a bucket it needs is unknown. "Listed" already holds the disputed
   // entries, so with it on the "Disputed" chip adds nothing more.
   const filteredCount = useMemo((): number | undefined => {
+    if (disputedBefore) return disputedBeforeCount
     if (!absent && !registered && !disputed) return counts.total
     const parts = [
       absent ? counts.absent : 0,
@@ -564,7 +587,14 @@ const StakeRegistry = () => {
     ]
     if (parts.some((part) => part === undefined)) return undefined
     return parts.reduce<number>((sum, part) => sum + (part ?? 0), 0)
-  }, [absent, registered, disputed, counts])
+  }, [
+    absent,
+    registered,
+    disputed,
+    counts,
+    disputedBefore,
+    disputedBeforeCount,
+  ])
 
   // How many entries match, undefined when unknown. A short page is the last
   // one, so it gives the exact total; a full page proves at least that many.
@@ -681,35 +711,54 @@ const StakeRegistry = () => {
     [baseColumns, stakeColumn],
   )
 
-  // The chips carry their counts, as the Standard page's do, once the counts
-  // are settled and trusted (undefined otherwise).
+  // The status menu (round 6) carries the counts, as the Standard page's
+  // does, once they are settled and trusted (undefined otherwise).
   const chipCount = (value?: number) => (countsReady ? value : undefined)
   const chips: FilterChip[] = [
     {
       // Every entry on the list, the disputed ones included: the same
       // "Listed" figure the header and Browse print, so the word means one
-      // thing on the page. One short word, so the three chips fit a
-      // phone's row without scrolling, as they did on the base.
+      // thing on the page.
       key: P_FILTER_KEYS.REGISTERED,
-      label: withCount('Listed', chipCount(onListCount)),
+      label: 'Listed',
+      count: chipCount(onListCount),
       tone: 'registered',
       checked: !!registered,
     },
     {
       key: P_FILTER_KEYS.DISPUTED,
-      label: withCount('Disputed', chipCount(counts.disputed)),
+      label: 'Disputed now',
+      count: chipCount(counts.disputed),
       tone: 'contested',
       checked: !!disputed,
     },
     {
-      // Withdrawn entries count here too, so the chip reads "Off the list"
+      // Withdrawn entries count here too, so it reads "Off the list"
       // rather than "Removed".
       key: P_FILTER_KEYS.ABSENT,
-      label: withCount('Off the list', chipCount(counts.absent)),
+      label: 'Off the list',
+      count: chipCount(counts.absent),
       tone: 'off',
       checked: !!absent,
     },
+    {
+      key: P_FILTER_KEYS.DISPUTED_BEFORE,
+      label: 'Previously disputed',
+      hint: 'Every entry that has been challenged, whatever its status now',
+      count: disputedBeforeCount,
+      countCapped: disputedBeforeCapped,
+      divider: true,
+      checked: !!disputedBefore,
+    },
   ]
+  const setStatus = (value: string) =>
+    navigate({
+      search: selectStatusFilter({
+        prevQuery: search,
+        keys: chips.map((chip) => chip.key),
+        value,
+      }),
+    })
 
   const setFilter = (filter: string, checked: boolean) =>
     navigate({
@@ -1001,19 +1050,18 @@ const StakeRegistry = () => {
   const countUnknown =
     itemsLoading || !countsReady || (itemsQuery.isError && !itemsQuery.data)
   // No filter and no search, yet nothing on the first page: an empty list.
-  const listEmpty = !absent && !registered && !disputed && !itemSearch.trim()
+  const anyFilter = !!(absent || registered || disputed || disputedBefore)
+  const listEmpty = !anyFilter && !itemSearch.trim()
   const noun = (count: number) => (count === 1 ? itemName : itemNamePlural)
   const outOfRangeLine =
     itemCount === undefined
       ? 'This page is past the end of the list.'
       : itemCount === 0
-        ? `No ${itemNamePlural} match${
-            absent || registered || disputed ? ' these filters' : ' yet'
-          }.`
-        : absent || registered || disputed
+        ? `No ${itemNamePlural} match${anyFilter ? ' this status' : ' yet'}.`
+        : anyFilter
           ? `${formatInt(itemCount)} ${noun(itemCount)} ${
               itemCount === 1 ? 'matches' : 'match'
-            } these filters, all on earlier pages.`
+            } this status, all on earlier pages.`
           : `This list has ${formatInt(itemCount)} ${noun(itemCount)}, all on earlier pages.`
 
   return (
@@ -1100,7 +1148,7 @@ const StakeRegistry = () => {
           onSearch={setItemSearch}
           placeholder={`Search ${itemNamePlural}`}
           chips={chips}
-          onChipChange={setFilter}
+          onStatusChange={setStatus}
           sort={oldestFirst ? 'oldest' : 'newest'}
           onSortChange={(sort) =>
             setFilter(P_FILTER_KEYS.OLDEST_FIRST, sort === 'oldest')

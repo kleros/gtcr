@@ -11,6 +11,8 @@ export const FILTER_KEYS = {
   MY_CHALLENGES: 'myChallenges',
   OLDEST_FIRST: 'oldestFirst',
   PAGE: 'page',
+  /** Every entry that has been to court at least once, whatever it is now. */
+  DISPUTED_BEFORE: 'disputedBefore',
 }
 
 /** @deprecated Use FILTER_KEYS instead */
@@ -66,6 +68,7 @@ export const DEFAULT_FILTERS = {
   [FILTER_KEYS.MY_CHALLENGES]: false,
   [FILTER_KEYS.OLDEST_FIRST]: false,
   [FILTER_KEYS.PAGE]: '1',
+  [FILTER_KEYS.DISPUTED_BEFORE]: false,
 }
 
 /** @deprecated Use DEFAULT_FILTERS instead */
@@ -77,6 +80,8 @@ export const P_FILTER_KEYS = {
   DISPUTED: 'disputed',
   OLDEST_FIRST: 'oldestFirst',
   PAGE: 'page',
+  /** Every entry that has been challenged at least once, whatever it is now. */
+  DISPUTED_BEFORE: 'disputedBefore',
 }
 
 export const filterLabelPermanent = {
@@ -92,6 +97,7 @@ export const DEFAULT_FILTERS_PERMANENT = {
   [P_FILTER_KEYS.DISPUTED]: false,
   [FILTER_KEYS.OLDEST_FIRST]: false,
   [FILTER_KEYS.PAGE]: '1',
+  [P_FILTER_KEYS.DISPUTED_BEFORE]: false,
 }
 
 /**
@@ -133,6 +139,7 @@ export const searchStrToFilterObjStandard = (
     absent,
     oldestFirst,
     page,
+    disputedBefore,
   } = filters
 
   let countField = 'all'
@@ -155,6 +162,7 @@ export const searchStrToFilterObjStandard = (
     oldestFirst,
     page,
     countField,
+    disputedBefore,
   }
 }
 
@@ -166,14 +174,23 @@ export const searchStrToFilterObjPermanent = (
     DEFAULT_FILTERS_PERMANENT,
     P_FILTER_KEYS.PAGE,
   )
-  const { absent, registered, disputed, oldestFirst, page } = filters
+  const { absent, registered, disputed, oldestFirst, page, disputedBefore } =
+    filters
 
   let countField = 'all'
   if (registered) countField = 'numberOfSubmitted'
   else if (absent) countField = 'numberOfAbsent'
   else if (disputed) countField = 'numberOfDisputed'
 
-  return { registered, disputed, absent, oldestFirst, page, countField }
+  return {
+    registered,
+    disputed,
+    absent,
+    oldestFirst,
+    page,
+    countField,
+    disputedBefore,
+  }
 }
 
 export const queryOptionsToFilterArray = (
@@ -230,6 +247,28 @@ export const updateStandardFilter = ({
   // Reset to page 1 when filters change
   params.set(FILTER_KEYS.PAGE, '1')
 
+  return `?${params.toString()}`
+}
+
+/**
+ * The list page's one status choice (round 6: a dropdown, "All" first): the
+ * chosen key alone in the URL, every other status key cleared, back to the
+ * first page. "all" clears them all.
+ */
+export const selectStatusFilter = ({
+  prevQuery: search,
+  keys,
+  value,
+}: {
+  prevQuery: string
+  /** Every status key the page's menu offers. */
+  keys: string[]
+  value: string
+}): string => {
+  const params = new URLSearchParams(search)
+  for (const key of keys) params.delete(key)
+  if (value !== 'all') params.set(value, 'true')
+  params.set(FILTER_KEYS.PAGE, '1')
   return `?${params.toString()}`
 }
 

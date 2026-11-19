@@ -57,3 +57,23 @@ const STANDARD_ITEMS_QUERY = gql`
 `
 
 export default STANDARD_ITEMS_QUERY
+
+/**
+ * The entries of a list that have been to court at least once, whatever
+ * their status now (round 6, "previously disputed"): their ids only, for
+ * the status menu's count. The indexer has no aggregate, so the count is
+ * the length of this read, a lower bound when it reaches the limit.
+ */
+export const STANDARD_DISPUTED_BEFORE_QUERY = gql`
+  query standardDisputedBeforeQuery($registryId: String!, $limit: Int!) {
+    litems: LItem(
+      limit: $limit
+      where: {
+        registry_id: { _eq: $registryId }
+        requests: { disputed: { _eq: true } }
+      }
+    ) {
+      itemID
+    }
+  }
+`

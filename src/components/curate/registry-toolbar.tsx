@@ -1,35 +1,42 @@
-import React, { useId, useLayoutEffect, useRef, useState } from 'react'
+import React, { useId } from 'react'
 import styled from 'styled-components'
 import type { ListLayout } from 'hooks/use-stored-layout'
 import Switch from 'components/ui/Switch'
 import {
   SearchField,
   SegmentedControl,
+  SelectMenu,
   StatusDot,
-  ToggleGroup,
   type SegmentOption,
+  type SelectMenuOption,
   type StatusTone,
 } from './primitives'
 import { CurateIcon } from './icons'
 
 /*
- * Registry toolbar: search (with the shown/total count at its end), the
- * sensitive-content switch (the app's lit Switch), sort and layout as
- * sliding segmented controls, and the status filters under them as one
- * ToggleGroup (multi-select; each pressed status sits on its own lit thumb,
- * led by its status dot). Where the track is wider than the column it
- * scrolls sideways under a fade. Which layouts the track offers is the
- * page's to say (`layoutOptions`): the registry pages dropped Rows.
+ * Registry toolbar, on one line on desktop: search (with the shown/total
+ * count at its end), the status menu, the sensitive-content switch (the
+ * app's lit Switch), and sort and layout as sliding segmented controls.
+ * Which layouts the track offers is the page's to say (`layoutOptions`): the
+ * registry pages dropped Rows.
+ *
+ * Round 6 ("display it more elegantly in a dropdown menu, starting from
+ * 'All'"): the status filters were a row of multi-select chips on a line of
+ * their own. They are one SelectMenu, "Status · All", one choice at a time,
+ * each status led by its dot and followed by its count; under a hairline,
+ * "Previously disputed", every entry that has been to court whatever its
+ * status now, a way into the list's history rather than a status of its
+ * own. Seven choices with their counts read better in a menu than in a rail
+ * that scrolled on phones, and combining statuses was rarely what anyone
+ * wanted.
  */
 
 const integer = new Intl.NumberFormat('en-US')
 
 const Bar = styled.div`
   display: grid;
-  grid-template-columns: minmax(220px, 360px) minmax(0, 1fr) auto auto auto;
-  grid-template-areas:
-    'search . nsfw sort layout'
-    'chips chips chips chips chips';
+  grid-template-columns: minmax(220px, 360px) auto minmax(0, 1fr) auto auto auto;
+  grid-template-areas: 'search status . nsfw sort layout';
   align-items: center;
   gap: 12px 10px;
   margin: 20px 0 16px;
@@ -37,21 +44,18 @@ const Bar = styled.div`
   @media (max-width: 1100px) {
     grid-template-columns: minmax(0, 1fr) auto auto;
     grid-template-areas:
-      'search search search'
-      'nsfw sort layout'
-      'chips chips chips';
+      'search status status'
+      'nsfw sort layout';
   }
 
-  /* Phones and narrow tablets: the switch, sort and layout need about 630px
-     on one line, so the search keeps the full width, sort and layout share
-     a line and the switch follows the filters it belongs with. */
+  /* Phones and narrow tablets: the search keeps the full width, the status
+     menu and sort share a line, then the switch and the layout. */
   @media (max-width: 720px) {
     grid-template-columns: minmax(0, 1fr) auto;
     grid-template-areas:
       'search search'
-      'sort layout'
-      'chips chips'
-      'nsfw nsfw';
+      'status sort'
+      'nsfw layout';
     gap: 10px 8px;
   }
 
@@ -81,63 +85,11 @@ const Count = styled.span`
   white-space: nowrap;
 `
 
-const RailScroller = styled.div`
-  grid-area: chips;
+const StatusSlot = styled.div`
+  grid-area: status;
+  justify-self: start;
   min-width: 0;
-  /* Room above and below so the thumbs' glow is not clipped. */
-  margin: -6px 0;
-  padding: 6px 0;
-  overflow-x: auto;
-  scrollbar-width: none;
-
-  &::-webkit-scrollbar {
-    display: none;
-  }
-
-  /* The track keeps its natural width; this box scrolls it instead. */
-  > [role='group'] {
-    max-width: none;
-    overflow: visible;
-  }
-
-  /* Only when the track is wider than the column (measured): one
-     swipeable line, the far edge faded so it reads as more. */
-  &[data-overflow] {
-    mask-image: linear-gradient(
-      90deg,
-      var(--color-text) calc(100% - 40px),
-      transparent
-    );
-    -webkit-mask-image: linear-gradient(
-      90deg,
-      var(--color-text) calc(100% - 40px),
-      transparent
-    );
-
-    > [role='group'] {
-      margin-right: 40px;
-    }
-  }
 `
-
-/** Whether the status track is wider than its column (it then scrolls under a fade). */
-const useOverflow = () => {
-  const box = useRef<HTMLDivElement>(null)
-  const [overflow, setOverflow] = useState(false)
-  useLayoutEffect(() => {
-    const node = box.current
-    const track = node?.firstElementChild as HTMLElement | null
-    if (!node || !track) return undefined
-    const measure = () => setOverflow(track.offsetWidth > node.clientWidth)
-    measure()
-    if (typeof ResizeObserver === 'undefined') return undefined
-    const observer = new ResizeObserver(measure)
-    observer.observe(node)
-    observer.observe(track)
-    return () => observer.disconnect()
-  }, [])
-  return [box, overflow] as const
-}
 
 /* The sensitive-content switch: the app's lit Switch, named by its label. */
 const SwitchField = styled.label`
@@ -176,16 +128,25 @@ const Slot = styled.div<{ $area: 'sort' | 'layout' }>`
   }
 `
 
-/* A status dot inside a toggle, with room for its halo. */
+/* A status dot in the menu, with room for its halo. */
 const ChipDot = styled(StatusDot)`
   margin: 0 2px 0 1px;
 `
 
+/** One choice in the status menu. */
 export interface FilterChip {
   key: string
   label: string
   tone?: StatusTone
   checked: boolean
+  /** Its count, shown at the option's right end once known. */
+  count?: number
+  /** "1,000+" style: the count is a lower bound. */
+  countCapped?: boolean
+  /** A muted line under the label. */
+  hint?: string
+  /** Starts a new group under a hairline. */
+  divider?: boolean
 }
 
 /**
@@ -216,7 +177,7 @@ export function RegistryToolbar<L extends ListLayout>({
   onSearch,
   placeholder,
   chips,
-  onChipChange,
+  onStatusChange,
   sort,
   onSortChange,
   layout,
@@ -230,8 +191,10 @@ export function RegistryToolbar<L extends ListLayout>({
   search: string
   onSearch: (value: string) => void
   placeholder: string
+  /** The status menu's choices after "All", in order. */
   chips: FilterChip[]
-  onChipChange: (key: string, checked: boolean) => void
+  /** A choice from the status menu: a chip's key, or "all". */
+  onStatusChange: (key: string) => void
   sort: 'newest' | 'oldest'
   onSortChange: (sort: 'newest' | 'oldest') => void
   layout: L
@@ -246,7 +209,23 @@ export function RegistryToolbar<L extends ListLayout>({
   total?: number
 }) {
   const nsfwLabelId = useId()
-  const [rail, railOverflows] = useOverflow()
+  // One choice at a time: the first checked key (an old link may carry
+  // several), or All.
+  const status = chips.find((chip) => chip.checked)?.key ?? 'all'
+  const statusOptions: SelectMenuOption<string>[] = [
+    { value: 'all', label: 'All' },
+    ...chips.map((chip) => ({
+      value: chip.key,
+      label: chip.label,
+      hint: chip.hint,
+      divider: chip.divider,
+      icon: chip.tone ? <ChipDot $tone={chip.tone} aria-hidden /> : undefined,
+      count:
+        chip.count !== undefined && Number.isFinite(chip.count)
+          ? `${integer.format(chip.count)}${chip.countCapped ? '+' : ''}`
+          : undefined,
+    })),
+  ]
   // Nothing is counted until both figures are known: a loading list never
   // reads (or announces) "0 of 0".
   const counted = shown !== undefined && total !== undefined
@@ -267,6 +246,15 @@ export function RegistryToolbar<L extends ListLayout>({
           {counted && `${integer.format(shown)} of ${integer.format(total)}`}
         </Count>
       </Search>
+      <StatusSlot>
+        <SelectMenu<string>
+          label="Status"
+          value={status}
+          options={statusOptions}
+          onChange={onStatusChange}
+          menuWidth={300}
+        />
+      </StatusSlot>
       <SwitchField>
         <Switch
           size="small"
@@ -295,26 +283,6 @@ export function RegistryToolbar<L extends ListLayout>({
           options={layoutOptions}
         />
       </Slot>
-      <RailScroller ref={rail} data-overflow={railOverflows ? '' : undefined}>
-        <ToggleGroup<string>
-          ariaLabel="Status filters"
-          value={chips.filter((chip) => chip.checked).map((chip) => chip.key)}
-          onChange={(pressed) => {
-            // One press flips one status: find it and report just that one.
-            const flipped = chips.find(
-              (chip) => pressed.includes(chip.key) !== chip.checked,
-            )
-            if (flipped) onChipChange(flipped.key, !flipped.checked)
-          }}
-          options={chips.map((chip) => ({
-            value: chip.key,
-            label: chip.label,
-            icon: chip.tone ? (
-              <ChipDot $tone={chip.tone} aria-hidden />
-            ) : undefined,
-          }))}
-        />
-      </RailScroller>
     </Bar>
   )
 }

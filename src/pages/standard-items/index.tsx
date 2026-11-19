@@ -24,8 +24,11 @@ import { WalletContext } from 'contexts/wallet-context'
 import { StandardTCRViewContext } from 'contexts/standard-tcr-view-context'
 import { useGraphqlBatcher } from 'contexts/graphql-batcher'
 import { STANDARD_ITEMS_QUERY } from 'utils/graphql'
+import { STANDARD_DISPUTED_BEFORE_QUERY } from 'utils/graphql/standard-items'
 import {
+  FILTER_KEYS,
   searchStrToFilterObjStandard,
+  selectStatusFilter,
   updateStandardFilter,
 } from 'utils/filters'
 import { DISPUTE_STATUS, STATUS_CODE } from 'utils/item-status'
@@ -116,6 +119,8 @@ import SubmitConnectModal from '../standard-item-details/modals/submit-connect'
 
 export const NSFW_FILTER_KEY = 'NSFW_FILTER_KEY'
 export const ITEMS_PER_PAGE = 40
+/** The "Previously disputed" count reads at most this many ids. */
+const DISPUTED_BEFORE_LIMIT = 1000
 /** Whole-list search results shown at once (the indexer's keyword match). */
 const SEARCH_LIMIT = 100
 
@@ -414,6 +419,7 @@ const Items = () => {
     removalRequested,
     challengedSubmissions,
     challengedRemovals,
+    disputedBefore,
   } = queryOptions
   const orderDirection = oldestFirst ? 'asc' : 'desc'
 
@@ -444,23 +450,32 @@ const Items = () => {
         disputed: { _eq: true },
       })
 
+    // "Previously disputed": any of the entry's requests went to court,
+    // whatever its status now.
+    const history = disputedBefore
+      ? { requests: { disputed: { _eq: true } } }
+      : {}
+
     // No filters selected - return all items
     if (conditions.length === 0)
-      return { registry_id: { _eq: tcrAddress?.toLowerCase() } }
+      return { registry_id: { _eq: tcrAddress?.toLowerCase() }, ...history }
 
     // Single filter - no need for _or
     if (conditions.length === 1)
       return {
         registry_id: { _eq: tcrAddress?.toLowerCase() },
+        ...history,
         ...conditions[0],
       }
 
     // Multiple filters - use _or clause
     return {
       registry_id: { _eq: tcrAddress?.toLowerCase() },
+      ...history,
       _or: conditions,
     }
   }, [
+    disputedBefore,
     absent,
     challengedRemovals,
     challengedSubmissions,
@@ -560,8 +575,31 @@ const Items = () => {
     }
   }, [counters])
 
+  // How many entries have been to court at least once: the status menu's
+  // "Previously disputed" count, and the list's size under that choice.
+  const disputedBeforeQuery = useQuery({
+    queryKey: ['standardDisputedBefore', chainId, tcrAddress?.toLowerCase()],
+    queryFn: (): Promise<{ litems?: { itemID: string }[] }> =>
+      graphqlBatcher.fetch({
+        id: crypto.randomUUID(),
+        document: STANDARD_DISPUTED_BEFORE_QUERY,
+        variables: {
+          registryId: tcrAddress?.toLowerCase(),
+          limit: DISPUTED_BEFORE_LIMIT,
+        },
+        chainId: chainId!,
+      }),
+    enabled: !!chainId && !!tcrAddress,
+    staleTime: STALE_TIME,
+  })
+  const disputedBeforeCount = disputedBeforeQuery.data?.litems?.length
+  const disputedBeforeCapped =
+    disputedBeforeCount !== undefined &&
+    disputedBeforeCount >= DISPUTED_BEFORE_LIMIT
+
   /** Entries the current filters cover: all of them, or the selected sum. */
   const itemCount = useMemo(() => {
+    if (disputedBefore) return disputedBeforeCount ?? 0
     if (!counts) return 0
     const hasAnyFilter =
       absent ||
@@ -589,6 +627,8 @@ const Items = () => {
     challengedSubmissions,
     challengedRemovals,
     counts,
+    disputedBefore,
+    disputedBeforeCount,
   ])
 
   // Every challenge raised on the list, for the header's court and challenge
@@ -1056,51 +1096,71 @@ const Items = () => {
       ? `/tcr/${chainId}/${connectedTCRAddr}`
       : undefined
 
-  // Each chip carries its status's live count from the registry counters.
-  const withCount = (label: string, count?: number) =>
-    count !== undefined && Number.isFinite(count)
-      ? `${label} ${integer.format(count)}`
-      : label
-  // Listed first, then the open requests, then the challenged ones; the
-  // rejected and removed close the rail.
+  // The status menu (round 6): All, then each status with its dot and its
+  // live count from the registry counters, listed first, then the open
+  // requests, then the challenged ones, the rejected and removed last; and
+  // under a hairline, every entry that has been to court.
   const chips: FilterChip[] = [
     {
       key: 'registered',
-      label: withCount('Registered', counts?.registered),
+      label: 'Registered',
+      count: counts?.registered,
       tone: 'registered',
       checked: !!registered,
     },
     {
       key: 'submitted',
-      label: withCount('Submitted', counts?.submitted),
+      label: 'Submitted',
+      count: counts?.submitted,
       tone: 'window',
       checked: !!submitted,
     },
     {
       key: 'removalRequested',
-      label: withCount('Removal requested', counts?.removalRequested),
+      label: 'Removal requested',
+      count: counts?.removalRequested,
       tone: 'window',
       checked: !!removalRequested,
     },
     {
       key: 'challengedSubmissions',
-      label: withCount('Challenged submissions', counts?.challengedSubmissions),
+      label: 'Challenged submissions',
+      count: counts?.challengedSubmissions,
       tone: 'contested',
       checked: !!challengedSubmissions,
     },
     {
       key: 'challengedRemovals',
-      label: withCount('Challenged removals', counts?.challengedRemovals),
+      label: 'Challenged removals',
+      count: counts?.challengedRemovals,
       tone: 'contested',
       checked: !!challengedRemovals,
     },
     {
       key: 'absent',
-      label: withCount('Rejected or removed', counts?.absent),
+      label: 'Rejected or removed',
+      count: counts?.absent,
       tone: 'off',
       checked: !!absent,
     },
+    {
+      key: FILTER_KEYS.DISPUTED_BEFORE,
+      label: 'Previously disputed',
+      hint: 'Every entry that has been to court, whatever its status now',
+      count: disputedBeforeCount,
+      countCapped: disputedBeforeCapped,
+      divider: true,
+      checked: !!disputedBefore,
+    },
   ]
+  const setStatus = (value: string) =>
+    navigate({
+      search: selectStatusFilter({
+        prevQuery: search,
+        keys: chips.map((chip) => chip.key),
+        value,
+      }),
+    })
 
   const setFilter = (filter: string, checked: boolean) =>
     navigate({
@@ -1306,6 +1366,7 @@ const Items = () => {
   const pageScopedSearch = itemCount > ITEMS_PER_PAGE && !wholeListSearch
   const searchCapped = wholeListSearch && pageItemCount >= SEARCH_LIMIT
   const filtersActive = !!(
+    disputedBefore ||
     absent ||
     registered ||
     submitted ||
@@ -1360,7 +1421,9 @@ const Items = () => {
     if (filtersActive)
       return {
         title: `No ${itemNamePlural} match`,
-        line: `No ${itemName} has these statuses right now.`,
+        line: disputedBefore
+          ? `No ${itemName} on this list has been to court.`
+          : `No ${itemName} has this status right now.`,
         action: (
           <GhostButton
             type="button"
@@ -1472,7 +1535,7 @@ const Items = () => {
           onSearch={setItemSearch}
           placeholder={`Search ${itemNamePlural}`}
           chips={chips}
-          onChipChange={setFilter}
+          onStatusChange={setStatus}
           sort={oldestFirst ? 'oldest' : 'newest'}
           onSortChange={(sort) => setFilter('oldestFirst', sort === 'oldest')}
           layout={layout}

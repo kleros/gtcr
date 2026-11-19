@@ -1183,6 +1183,8 @@ export type SelectMenuOption<T extends string> = {
   /** Draw a hairline above this option to start a new group. */
   divider?: boolean
   disabled?: boolean
+  /** A figure at the option's right end, before the check: its count. */
+  count?: string
 }
 
 export type SelectMenuProps<T extends string> = {
@@ -1429,6 +1431,16 @@ const MenuCheck = styled.span`
   flex: 0 0 auto;
   width: 16px;
   color: var(--color-primary);
+`
+
+/* An option's count: faint tabular figures at the row's right end. */
+const MenuCount = styled.span`
+  flex: 0 0 auto;
+  margin-left: auto;
+  color: var(--color-faint);
+  font-family: var(--font-figure);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
 `
 
 type MenuPlace = {
@@ -1789,6 +1801,7 @@ export function SelectMenu<T extends string>({
                       <MenuOptionHint>{option.hint}</MenuOptionHint>
                     )}
                   </MenuOptionText>
+                  {option.count && <MenuCount>{option.count}</MenuCount>}
                   <MenuCheck aria-hidden>
                     {index === selectedIndex && (
                       <CurateIcon name="check" size={16} />
