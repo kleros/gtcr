@@ -86,7 +86,7 @@ const STANDARD_FATE: FateSpec = {
   event: 'Registered',
   removal: 'Removal request',
   description:
-    'Drawn by event, not to scale. An entry is open to challenge from submission until it is registered; the deposit is locked for that time and comes back in full at registration. Once registered, it is open to challenge again only during a removal request, drawn dashed at the end, and only if someone makes one.',
+    'Drawn by event, not to scale. An entry is open to challenge from submission until it is registered; the deposit is locked for that time and, if nobody challenges, comes back in full at registration. Once registered, it is open to challenge again only during a removal request, drawn dashed at the end, and only if someone makes one.',
 }
 
 const STAKE_FATE: FateSpec = {
@@ -674,7 +674,7 @@ const LaunchListPage = () => {
 
   useDocumentHead(
     'Launch a list | Kleros Curate',
-    'Create a Kleros Curate list: a Standard list, where a submitter’s deposit comes back in full once the entry is registered, or a Stake list, where the stake stays locked while the entry is listed and a challenger can earn it at any time.',
+    'Create a Kleros Curate list: a Standard list, where a submitter’s deposit comes back in full once the entry is registered unchallenged, or a Stake list, where the stake stays locked while the entry is listed and a challenger can earn it at any time.',
   )
 
   return (
@@ -708,7 +708,7 @@ const LaunchListPage = () => {
           <Lead>
             <Label $tone="muted">For one-time verification</Label>
           </Lead>
-          <Outcome>Returned in full</Outcome>
+          <Outcome>Returned if unchallenged</Outcome>
 
           <Drawing>
             <DepositFate spec={STANDARD_FATE} coin={coin} delay={700} />
