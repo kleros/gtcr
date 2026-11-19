@@ -472,6 +472,7 @@ const Timeline = ({ submission, item, metaEvidence, live }: TimelineProps) => {
     chainId: networkId,
     arbitrator: item.registry?.arbitrator?.id,
     disputeIDs: (item.challenges ?? []).map((c) => c.disputeID),
+    arbitrable: item.registry?.id,
   })
 
   if (!item || !submission || !logs) return <SkeletonBlock $height="80px" />

@@ -287,6 +287,7 @@ export const DisputeRecordPanel = ({
         chainId={chainId}
         arbitrator={record.arbitrator}
         disputeID={record.disputeID}
+        arbitrable={arbitrable}
         requesterName={record.requesterName}
         rounds={dispute?.roundSlots}
         period={dispute?.period}

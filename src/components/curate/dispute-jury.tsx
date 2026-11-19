@@ -928,10 +928,13 @@ export const JuryRounds = ({
   rounds,
   period,
   hiddenVotes,
+  arbitrable,
 }: {
   chainId?: number | null
   arbitrator?: string | null
   disputeID?: string | null
+  /** The list the case must belong to; another contract's shows no jury. */
+  arbitrable?: string | null
   /** "submitter" or "requester": what a vote for that side is called. */
   requesterName: string
   /**
@@ -966,6 +969,7 @@ export const JuryRounds = ({
     arbitrator,
     disputeID,
     appeals: appeal === undefined ? undefined : [appeal],
+    arbitrable,
   })
   const shown = jury?.rounds ?? []
   if (!tabbed && shown.length === 0) return null

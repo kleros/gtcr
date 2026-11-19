@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react'
 import styled from 'styled-components'
+import { useParams } from 'react-router-dom'
 import useUrlChainId from 'hooks/use-url-chain-id'
 import useUnindexedEvidence from 'hooks/use-unindexed-evidence'
 import { useDisputeJurors } from 'hooks/use-dispute-jury'
@@ -262,6 +263,7 @@ const RequestTimeline = ({
   hideCase = false,
 }: TimelineProps) => {
   const networkId = useUrlChainId()
+  const { tcrAddress } = useParams<{ tcrAddress: string }>()
   const disputeCase = useCaseLink(request)
   const caseLink = hideCase ? undefined : disputeCase
 
@@ -372,6 +374,7 @@ const RequestTimeline = ({
     chainId: networkId,
     arbitrator: request.arbitrator,
     disputeIDs: [request.disputed ? request.disputeID : undefined],
+    arbitrable: tcrAddress,
   })
 
   if (!item || !request || !logs) return <SkeletonBlock $height="80px" />

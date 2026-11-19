@@ -98,6 +98,8 @@ export const fetchDisputeJury = async (
   disputeID: string,
   /** The round indexes to read (0 for the first); the latest two by default. */
   appeals?: number[],
+  /** The list the case must belong to; another contract's case reads as none. */
+  arbitrable?: string | null,
 ): Promise<DisputeJury> => {
   const [dispute, rounds] = await aggregateCalls(provider, arbitrator, kleros, [
     ['disputes', [disputeID]],
@@ -110,6 +112,13 @@ export const fetchDisputeJury = async (
   // rather than reverting.
   if (votesLengths.length === 0)
     throw new Error(`No dispute ${disputeID} on this arbitrator`)
+  // Another contract's case is not this entry's: no jury, and no reason
+  // to read it again (fetchCourtDispute makes the same check).
+  if (
+    arbitrable &&
+    String(dispute.arbitrated).toLowerCase() !== arbitrable.toLowerCase()
+  )
+    return { rounds: [], settled: true }
   const latest = votesLengths.length - 1
   const drawsInRound = (dispute.drawsInRound as ethers.BigNumber).toNumber()
   const settled =
@@ -219,6 +228,7 @@ const juryQuery = (
   disputeID: string | null | undefined,
   appeals: number[] | undefined,
   enabled: boolean,
+  arbitrable: string | null | undefined,
 ) => ({
   queryKey: [
     'disputeJury',
@@ -226,8 +236,10 @@ const juryQuery = (
     arbitrator?.toLowerCase(),
     disputeID,
     appeals,
+    arbitrable?.toLowerCase(),
   ],
-  queryFn: () => fetchDisputeJury(provider!, arbitrator!, disputeID!, appeals),
+  queryFn: () =>
+    fetchDisputeJury(provider!, arbitrator!, disputeID!, appeals, arbitrable),
   enabled:
     enabled &&
     !!chainId &&
@@ -256,17 +268,28 @@ const useDisputeJury = ({
   disputeID,
   appeals,
   enabled = true,
+  arbitrable,
 }: {
   chainId?: number | null
   arbitrator?: string | null
   disputeID?: string | null
+  /** The list the case must belong to; another contract's shows no jury. */
+  arbitrable?: string | null
   /** Read exactly these rounds (0 for the first) instead of the latest two. */
   appeals?: number[]
   enabled?: boolean
 }) => {
   const provider = useEthersProvider({ chainId: chainId ?? undefined })
   return useQuery(
-    juryQuery(provider, chainId, arbitrator, disputeID, appeals, enabled),
+    juryQuery(
+      provider,
+      chainId,
+      arbitrator,
+      disputeID,
+      appeals,
+      enabled,
+      arbitrable,
+    ),
   )
 }
 
@@ -282,10 +305,13 @@ export const useDisputeJurors = ({
   chainId,
   arbitrator,
   disputeIDs,
+  arbitrable,
 }: {
   chainId?: number | null
   arbitrator?: string | null
   disputeIDs: (string | null | undefined)[]
+  /** The list the cases must belong to, as the jury band reads them. */
+  arbitrable?: string | null
 }): Set<string> => {
   const provider = useEthersProvider({ chainId: chainId ?? undefined })
   // Every id the caller gave is a case: the caller knows which requests or
@@ -296,7 +322,7 @@ export const useDisputeJurors = ({
     .slice(0, MAX_DISPUTES)
   const results = useQueries({
     queries: ids.map((id) =>
-      juryQuery(provider, chainId, arbitrator, id, undefined, true),
+      juryQuery(provider, chainId, arbitrator, id, undefined, true, arbitrable),
     ),
   })
   const stamp = results
