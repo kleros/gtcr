@@ -201,9 +201,7 @@ export const openRequests = (registry: DashboardRegistry): number =>
 
 /** A list whose title is only its address (the indexer had no name for it). */
 export const hasAddressTitle = (registry: DashboardRegistry): boolean =>
-  /^(Stake list|Registry) 0x[0-9a-f]{4}(\.\.\.|…)[0-9a-f]{4}$/i.test(
-    registry.title,
-  )
+  /^(Stake list|List) 0x[0-9a-f]{4}(\.\.\.|…)[0-9a-f]{4}$/i.test(registry.title)
 
 /**
  * The description a row or card may show, or null: placeholders such as "-"

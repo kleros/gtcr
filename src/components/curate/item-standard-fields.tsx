@@ -7,33 +7,36 @@ import { getAddressPage } from 'utils/network-utils'
 import { displayableValue } from 'utils/display-value'
 import { V2FieldDisplay, type V2Field } from './v2'
 import { Data, Small, truncateMiddle } from './primitives'
+import { ChromeAddress } from './chrome-address'
 
-/** Middle-truncated address in mono, linking to the chain explorer. */
-const Anchor = styled.a`
-  color: var(--color-text);
-  font-family: var(--font-mono);
-  font-size: var(--fs-data);
-  line-height: var(--lh-data);
-  font-weight: 500;
-  text-decoration: none;
+/*
+ * A person on a Standard entry (the hero's By and Challenged by, and the
+ * history's parties) is the app's one person control, CuratorAddress: it
+ * opens their Curate profile, with copy beside it. The name is kept so the
+ * entry page and the history timeline switched over without being edited.
+ * It is for people only. A contract has an empty Curate profile, so a
+ * contract takes ExplorerAddressLink below.
+ */
+export { CuratorAddress as AddressLink } from './chrome-address'
 
-  &:hover {
-    color: var(--color-primary);
-    text-decoration: underline;
-  }
-`
-
-export const AddressLink = ({ address }: { address: string }) => {
+/*
+ * A contract on a Standard entry, which today means the arbitrator. The
+ * action card names it ("#123 at 0x…") when a case has no court page to
+ * link to, because the arbitrator is not Kleros or the chain has no court
+ * site. It is a ChromeAddress: it opens the chain explorer in a new tab and
+ * carries the arrow that says so, with copy beside it. Without a chain in
+ * the URL there is no explorer to open, so it is plain text with copy.
+ */
+export const ExplorerAddressLink = ({ address }: { address: string }) => {
   const chainId = useUrlChainId()
   return (
-    <Anchor
-      href={getAddressPage({ networkId: chainId ?? 0, address })}
-      target="_blank"
-      rel="noopener noreferrer"
-      title={address}
-    >
-      {truncateMiddle(address, 6, 4)}
-    </Anchor>
+    <ChromeAddress
+      address={address}
+      display={truncateMiddle(address, 6, 4)}
+      href={
+        chainId ? getAddressPage({ networkId: chainId, address }) : undefined
+      }
+    />
   )
 }
 
@@ -74,7 +77,7 @@ const isMonoField = (field: EntryField) => {
 }
 
 /** Identifier fields with a value, images excluded (they are not a title). */
-export const identifierFields = (fields: EntryField[]): EntryField[] =>
+const identifierFields = (fields: EntryField[]): EntryField[] =>
   fields.filter(
     (field) => field.isIdentifier && hasValue(field) && !isImageField(field),
   )

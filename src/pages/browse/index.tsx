@@ -1,13 +1,10 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import styled, { css, keyframes } from 'styled-components'
-import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import useDocumentHead from 'hooks/use-document-head'
 import useNow from 'hooks/use-now'
-import useStoredLayout, {
-  LAYOUT_OPTIONS,
-  type ListLayout,
-} from 'hooks/use-stored-layout'
+import useStoredLayout from 'hooks/use-stored-layout'
 import { formatAbsolute, formatAgo } from 'utils/time'
 import { parseRichAddress } from 'utils/rich-address'
 import ChainLogo from 'components/chain-logo'
@@ -27,8 +24,6 @@ import {
   Small,
   StatusDot,
   Surface,
-  Table,
-  TableScroller,
   ToggleGroup,
   truncateMiddle,
   type SegmentOption,
@@ -73,6 +68,12 @@ import {
 } from 'components/curate/registry-shared-verified'
 import { Avatar } from './avatar'
 import { entryKey, fetchEntryImages, type EntryRef } from './entry-images'
+import {
+  BROWSE_LAYOUT_OPTIONS,
+  browseLayout,
+  layoutFromView,
+  type BrowseLayout,
+} from './layout'
 import { useCompletedRegistries, useNamedRegistries } from './metadata'
 import {
   KIND_OPTIONS,
@@ -113,7 +114,7 @@ import {
  * compact title, one panel of figures for the chosen chain scope, then the
  * explorer: which lists (Kleros Verified, Community or all) with what that
  * means, one toolbar row (search, type, sort, layout), the registries as
- * rows, cards or a table, and pagination. Kleros Verified lists carry the
+ * rows or cards, and pagination. Kleros Verified lists carry the
  * seal wherever they appear; Community lists carry no mark. The rail holds
  * the way to earn the badge and the latest requests. The chain is chosen in
  * the app bar through ?chain. Every figure is read from the data.
@@ -132,7 +133,7 @@ const dateParts = new Intl.DateTimeFormat('en-US', {
 /**
  * "7 Sep 2026" (UTC), day first with the three-letter month. Not
  * utils/time formatDate: its en-GB format writes September as "Sept", which
- * breaks the three-letter rhythm of the Created column.
+ * breaks the three-letter rhythm of the created date.
  */
 const formatDay = (timestamp: number): string => {
   const parts = Object.fromEntries(
@@ -253,21 +254,64 @@ const Pulse = styled.i`
  * the badge, never as a share of every list. The other counts follow as a
  * strip split by hairlines. Every figure appears once.
  */
-const FiguresPanel = styled(Surface)`
+/*
+ * The figures as three boxes in a row (round 8: "separate the first on the
+ * left in a box 'Kleros Verified', then another 'Community', then the
+ * rest"): Kleros Verified with its count and logos, on the page's lit rim;
+ * Community lists; and the entries and open requests together. Below
+ * 1100px Kleros Verified takes a row of its own; on phones they stack.
+ */
+const FiguresRow = styled.section`
   display: grid;
-  grid-template-columns: minmax(300px, auto) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1.5fr) minmax(0, 0.6fr) minmax(0, 1.1fr);
   align-items: stretch;
-  gap: 24px 40px;
+  gap: 16px;
   margin-top: 28px;
-  padding: 24px 28px;
   ${reveal}
 
   @media (max-width: 1100px) {
-    grid-template-columns: minmax(0, 1fr);
+    grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+
+    > :first-of-type {
+      grid-column: 1 / -1;
+    }
   }
 
   @media (max-width: 720px) {
-    gap: 18px;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+  }
+`
+
+const FigureBox = styled(Surface)<{ $silver?: boolean }>`
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 14px;
+  min-width: 0;
+  padding: 22px 26px;
+
+  /* Community (round 9): a lit edge too, in a neutral silver light rather
+     than Kleros's own blue, violet and amber, which stay the Verified box's,
+     so the two read apart and Kleros's colours keep their meaning. */
+  ${({ $silver }) =>
+    $silver &&
+    css`
+      border-color: transparent;
+      border-width: 1.5px;
+      background:
+        linear-gradient(var(--color-surface), var(--color-surface)) padding-box,
+        linear-gradient(
+            120deg,
+            color-mix(in srgb, var(--color-text) 46%, transparent),
+            color-mix(in srgb, var(--color-text) 8%, transparent) 40%,
+            color-mix(in srgb, var(--color-text) 30%, transparent) 72%,
+            color-mix(in srgb, var(--color-text) 10%, transparent)
+          )
+          border-box;
+    `}
+
+  @media (max-width: 720px) {
     padding: 18px 16px;
   }
 `
@@ -354,7 +398,9 @@ const LogoLink = styled(Link)`
 
   &:hover {
     transform: translateY(-2px);
-    filter: drop-shadow(0 6px 10px rgb(0 0 0 / 0.22));
+    filter: drop-shadow(
+      0 6px 10px color-mix(in srgb, var(--stage) 55%, transparent)
+    );
   }
 
   &:focus-visible {
@@ -409,12 +455,8 @@ const TipFigure = styled.span`
 /** The other counts as a strip, split by hairlines; it takes the free width. */
 const InlineStats = styled.div`
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-
-  @media (max-width: 1100px) {
-    padding-top: 18px;
-    border-top: 1px solid var(--glass-border);
-  }
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  height: 100%;
 `
 
 /* Label on top, figure at the bottom: the figures share a baseline even when
@@ -429,19 +471,32 @@ const InlineStat = styled.div`
   padding: 0 24px;
   border-left: 1px solid var(--glass-border);
 
+  /* In its own box, the first figure starts at the box's edge. */
+  &:first-child {
+    padding-left: 0;
+    border-left: 0;
+  }
+
   b {
     ${displayFigure}
-    font-size: 28px;
-    line-height: 30px;
+    font-size: 36px;
+    line-height: 40px;
+  }
+
+  /* The marked cell: open requests are the live work on these lists, so the
+     figure takes the status role for an open window, a size up, behind a
+     haloed dot. The dot is what keeps a blue figure from reading as a link. */
+  b[data-accent] {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--status-window);
+    font-size: 40px;
+    line-height: 42px;
   }
 
   @media (max-width: 1100px) {
     min-height: 0;
-
-    &:first-child {
-      padding-left: 0;
-      border-left: 0;
-    }
   }
 
   @media (max-width: 720px) {
@@ -450,6 +505,12 @@ const InlineStat = styled.div`
     b {
       font-size: 20px;
       line-height: 24px;
+    }
+
+    b[data-accent] {
+      gap: 8px;
+      font-size: 24px;
+      line-height: 28px;
     }
   }
 `
@@ -608,20 +669,13 @@ const Meta = styled.span`
   margin-top: 6px;
 `
 
-/** Why a search matched: the description, else the address. */
-const Blurb = styled.span`
+/** A card's line under the name: when the lists are ranked by age, the date. */
+const SubLine = styled.span`
   ${ellipsis}
-  flex: 1 1 auto;
   min-width: 0;
-  margin-left: 4px;
-  color: var(--color-muted);
-  font-size: var(--fs-small);
-  line-height: var(--lh-small);
-
-  code {
-    font-family: var(--font-mono);
-    font-size: 12px;
-  }
+  color: var(--color-faint);
+  font-size: 12px;
+  line-height: 16px;
 `
 
 const Created = styled.span`
@@ -629,27 +683,6 @@ const Created = styled.span`
   font-size: 12px;
   line-height: 16px;
   white-space: nowrap;
-`
-
-/**
- * Rows: the chips, then the description (or the address) on the same line.
- * At phone width the chips alone fill the line, so the description leaves
- * (cards still show it) and a long chip line wraps instead of overflowing.
- */
-const RowMeta = styled(Meta)`
-  flex-wrap: nowrap;
-
-  > :not(${Blurb}) {
-    flex: 0 0 auto;
-  }
-
-  @media (max-width: 760px) {
-    flex-wrap: wrap;
-
-    ${Blurb} {
-      display: none;
-    }
-  }
 `
 
 /* ---------- Rows ---------- */
@@ -860,52 +893,6 @@ const CardSide = styled.span`
   b[data-zero='true'] {
     color: var(--color-faint);
   }
-`
-
-/* ---------- Table ---------- */
-
-const TableName = styled(Link)`
-  ${ellipsis}
-  color: var(--color-text);
-  font-weight: 500;
-  text-decoration: none;
-
-  &:hover {
-    color: var(--color-primary);
-  }
-`
-
-/** The registry column takes the free width and lets its text ellipsize. */
-const RegistryCell = styled.td`
-  width: 100%;
-  max-width: 0;
-`
-
-const IdentityCell = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  min-width: 0;
-`
-
-const SubLine = styled.span`
-  ${ellipsis}
-  min-width: 0;
-  color: var(--color-faint);
-  font-size: 12px;
-  line-height: 16px;
-
-  code {
-    font-family: var(--font-mono);
-    font-size: 12px;
-  }
-`
-
-const CourtCell = styled.span`
-  display: inline-flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 8px;
 `
 
 /* ---------- Footer ---------- */
@@ -1225,10 +1212,10 @@ const TitleSeal = styled(VerifiedBadge)`
 
 /**
  * A list's name in the rail. A list known only by its address shows the
- * address, whole and in mono ("0x0391…ad67"), not "Registry 0x0391…".
+ * address, whole and in mono ("0x0391…ad67"), not "List 0x0391…".
  */
 const ListName = ({ title, address }: { title: string; address: string }) =>
-  /^(Stake list|Registry) 0x/i.test(title) ? (
+  /^(Stake list|List) 0x/i.test(title) ? (
     <code title={address}>{truncateMiddle(address)}</code>
   ) : (
     <span>{title}</span>
@@ -1259,17 +1246,6 @@ const STAKE_PENDING_TITLE =
 /** Open requests, or for Stake lists the entries currently listed. */
 const pendingTitle = (registry: DashboardRegistry) =>
   registry.kind === 'permanent' ? STAKE_PENDING_TITLE : undefined
-
-/** The table's Open requests cell: Stake lists have none, so a dash. */
-const OpenRequestsCell = ({ registry }: { registry: DashboardRegistry }) =>
-  registry.kind === 'permanent' ? (
-    <Small $faint title="Stake lists have no requests">
-      <span aria-hidden>—</span>
-      <VisuallyHidden>None, Stake lists have no requests</VisuallyHidden>
-    </Small>
-  ) : (
-    <>{formatInt(registry.pendingCount)}</>
-  )
 
 const conjunction = new Intl.ListFormat('en-GB', {
   style: 'long',
@@ -1338,31 +1314,6 @@ const showcaseFigure = (registry: DashboardRegistry): string => {
   }
   const open = openRequests(registry)
   return `${formatInt(open)} open ${open === 1 ? 'request' : 'requests'}`
-}
-
-/**
- * Below this width the table cannot fit its columns (the shared Table is at
- * least 640px wide), so rows stand in for it without changing the stored
- * choice, and the switch stops offering it.
- */
-const NARROW_QUERY = '(max-width: 720px)'
-
-/** True while the viewport is too narrow for the table; follows resizes. */
-const useNarrow = (): boolean => {
-  const [narrow, setNarrow] = useState(
-    () =>
-      typeof window.matchMedia === 'function' &&
-      window.matchMedia(NARROW_QUERY).matches,
-  )
-  useEffect(() => {
-    if (typeof window.matchMedia !== 'function') return undefined
-    const media = window.matchMedia(NARROW_QUERY)
-    const onChange = () => setNarrow(media.matches)
-    onChange()
-    media.addEventListener('change', onChange)
-    return () => media.removeEventListener('change', onChange)
-  }, [])
-  return narrow
 }
 
 const prefersReducedMotion = () =>
@@ -1460,10 +1411,9 @@ const FreshnessPill = ({
 
 const BrowsePage = () => {
   useDocumentHead(
-    'Browse registries | Kleros Curate',
+    'Browse lists | Kleros Curate',
     'Browse Kleros Verified and Community Curate lists on Ethereum and Gnosis, and on the Sepolia testnet.',
   )
-  const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const chainParam = searchParams.get('chain')
   const chains = useMemo(() => parseChains(chainParam), [chainParam])
@@ -1474,16 +1424,7 @@ const BrowsePage = () => {
   const search = searchParams.get('q') || ''
   const requestedPage = parsePage(searchParams.get('page'))
   const [layout, setLayout] = useStoredLayout('browse', 'rows')
-  // A phone shows rows for a stored table choice and keeps the choice.
-  const narrow = useNarrow()
-  const shown = narrow && layout === 'table' ? 'rows' : layout
-  const layoutOptions = useMemo(
-    () =>
-      narrow
-        ? LAYOUT_OPTIONS.filter((option) => option.value !== 'table')
-        : LAYOUT_OPTIONS,
-    [narrow],
-  )
+  const shown = browseLayout(layout)
   const now = useNow(30_000)
 
   // A load saved by an earlier page load is looked up first (saved-load.ts).
@@ -1575,13 +1516,20 @@ const BrowsePage = () => {
     setSearchParams(next, { replace: true })
   }, [filterKey, searchParams, setSearchParams])
 
-  // Old links carried the layout in the URL (?view=list or ?view=cards). The
-  // layout is now remembered per device, so adopt it once and drop the param.
+  // A table remembered from before it was dropped is rewritten once, so the
+  // stored choice and the control agree instead of being coerced for ever.
+  useEffect(() => {
+    if (layout !== shown) setLayout(shown)
+  }, [layout, shown, setLayout])
+
+  // Old links carried the layout in the URL (?view=list or ?view=cards, and
+  // ?view=table, which now opens rows). The layout is remembered per device,
+  // so adopt it once and drop the param.
   useEffect(() => {
     const view = searchParams.get('view')
     if (view === null) return
-    if (view === 'list') setLayout('rows')
-    else if (view === 'cards') setLayout('cards')
+    const fromLink = layoutFromView(view)
+    if (fromLink) setLayout(fromLink)
     const next = new URLSearchParams(searchParams)
     next.delete('view')
     setSearchParams(next, { replace: true })
@@ -1773,7 +1721,6 @@ const BrowsePage = () => {
   const verificationChains =
     scopedVerification.length > 0 ? scopedVerification : VERIFICATION_CHAIN_IDS
   const scope = scopeText(chains)
-  const showCreated = sort === 'recent-creation'
 
   const loading =
     query.isLoading || (!data && !query.isError) || verifiedSets.pending
@@ -1801,7 +1748,7 @@ const BrowsePage = () => {
     <Page>
       <Header>
         <div style={{ ['--i' as string]: 0 }}>
-          <Title>Registries</Title>
+          <Title>Lists</Title>
           <Lede>Every Curate list on {scope}.</Lede>
         </div>
         <FreshnessPill
@@ -1814,114 +1761,130 @@ const BrowsePage = () => {
         />
       </Header>
 
-      <FiguresPanel
-        as="section"
-        $featured
-        $padding="none"
+      <FiguresRow
         aria-labelledby="browse-figures-title"
         style={{ ['--i' as string]: 2 }}
       >
         <VisuallyHidden as="h2" id="browse-figures-title">
-          Registry figures for {scope}
+          List figures for {scope}
         </VisuallyHidden>
         {failed ? (
-          <Small $muted style={{ gridColumn: '1 / -1' }}>
-            No figures until the indexers answer.
-          </Small>
+          <FigureBox $padding="none" style={{ gridColumn: '1 / -1' }}>
+            <Small $muted>No figures until the indexers answer.</Small>
+          </FigureBox>
         ) : (
           <>
-            <VerifiedFigure>
-              <FigureHead>
-                <VerifiedBadge size={18} decorative />
-                <Label $tone="faint">{VERIFIED_LABEL}</Label>
-              </FigureHead>
-              <FigureLine>
-                <BigFigure>
-                  <AnimatedNumber
-                    loading={loading}
-                    value={countsUnknown ? undefined : figures.verified}
-                  />
-                  {!loading && !countsUnknown && (
-                    <small>{figures.verified === 1 ? 'list' : 'lists'}</small>
-                  )}
-                </BigFigure>
-                {!loading && shownShowcase.length > 0 && (
-                  <Showcase>
-                    <LogoRow
-                      aria-label={`${VERIFIED_LISTS_LABEL}, most open requests first`}
-                    >
-                      {shownShowcase.map((registry) => (
-                        <li key={registry.id}>
-                          <Tooltip
-                            title={
-                              <>
-                                <TipName>{registry.title}</TipName>
-                                <TipFigure>
-                                  {showcaseFigure(registry)}
-                                </TipFigure>
-                              </>
-                            }
-                          >
-                            <LogoLink
-                              to={registryHref(registry)}
-                              aria-label={registry.title}
+            <FigureBox $featured $padding="none">
+              <VerifiedFigure>
+                <FigureHead>
+                  <VerifiedBadge size={18} decorative />
+                  <Label $tone="faint">{VERIFIED_LISTS_LABEL}</Label>
+                </FigureHead>
+                <FigureLine>
+                  <BigFigure>
+                    <AnimatedNumber
+                      loading={loading}
+                      value={countsUnknown ? undefined : figures.verified}
+                    />
+                    {!loading && !countsUnknown && (
+                      <small>{figures.verified === 1 ? 'list' : 'lists'}</small>
+                    )}
+                  </BigFigure>
+                  {!loading && shownShowcase.length > 0 && (
+                    <Showcase>
+                      <LogoRow
+                        aria-label={`${VERIFIED_LISTS_LABEL}, most open requests first`}
+                      >
+                        {shownShowcase.map((registry) => (
+                          <li key={registry.id}>
+                            <Tooltip
+                              title={
+                                <>
+                                  <TipName>{registry.title}</TipName>
+                                  <TipFigure>
+                                    {showcaseFigure(registry)}
+                                  </TipFigure>
+                                </>
+                              }
                             >
-                              <Avatar
-                                uri={registry.logoURI}
-                                seed={registry.address}
-                                size={32}
-                              />
-                            </LogoLink>
-                          </Tooltip>
-                        </li>
-                      ))}
-                      {!countsUnknown &&
-                        figures.verified > shownShowcase.length && (
-                          <li>
-                            <MoreLists>
-                              +
-                              {formatInt(
-                                figures.verified - shownShowcase.length,
-                              )}
-                              <VisuallyHidden> more</VisuallyHidden>
-                            </MoreLists>
+                              <LogoLink
+                                to={registryHref(registry)}
+                                aria-label={registry.title}
+                              >
+                                <Avatar
+                                  uri={registry.logoURI}
+                                  seed={registry.address}
+                                  size={32}
+                                />
+                              </LogoLink>
+                            </Tooltip>
                           </li>
-                        )}
-                    </LogoRow>
-                    <ShowcaseNote aria-hidden>
-                      Most open requests first
-                    </ShowcaseNote>
-                  </Showcase>
+                        ))}
+                        {!countsUnknown &&
+                          figures.verified > shownShowcase.length && (
+                            <li>
+                              <MoreLists>
+                                +
+                                {formatInt(
+                                  figures.verified - shownShowcase.length,
+                                )}
+                                <VisuallyHidden> more</VisuallyHidden>
+                              </MoreLists>
+                            </li>
+                          )}
+                      </LogoRow>
+                      <ShowcaseNote aria-hidden>
+                        Most open requests first
+                      </ShowcaseNote>
+                    </Showcase>
+                  )}
+                </FigureLine>
+              </VerifiedFigure>
+            </FigureBox>
+            <FigureBox $padding="none" $silver>
+              <Label $tone="faint">{COMMUNITY_LISTS_LABEL}</Label>
+              <BigFigure>
+                <AnimatedNumber
+                  loading={loading}
+                  value={countsUnknown ? undefined : figures.community}
+                />
+                {!loading && !countsUnknown && (
+                  <small>{figures.community === 1 ? 'list' : 'lists'}</small>
                 )}
-              </FigureLine>
-            </VerifiedFigure>
-            <InlineStats>
-              {[
-                {
-                  label: COMMUNITY_LISTS_LABEL,
-                  value: countsUnknown ? undefined : figures.community,
-                },
-                {
-                  label: 'Entries',
-                  value: listsMissing.length > 0 ? undefined : figures.entries,
-                },
-                {
-                  label: 'Open requests',
-                  value:
-                    listsMissing.length > 0 ? undefined : figures.openRequests,
-                },
-              ].map((figure) => (
-                <InlineStat key={figure.label}>
-                  <Label $tone="faint">{figure.label}</Label>
-                  <b>
-                    <AnimatedNumber loading={loading} value={figure.value} />
-                  </b>
-                </InlineStat>
-              ))}
-            </InlineStats>
+              </BigFigure>
+            </FigureBox>
+            <FigureBox $padding="none">
+              <InlineStats>
+                {[
+                  {
+                    label: 'Entries',
+                    value:
+                      listsMissing.length > 0 ? undefined : figures.entries,
+                  },
+                  {
+                    label: 'Open requests',
+                    value:
+                      listsMissing.length > 0
+                        ? undefined
+                        : figures.openRequests,
+                    accent: true,
+                  },
+                ].map((figure) => (
+                  <InlineStat key={figure.label}>
+                    <Label $tone="faint">{figure.label}</Label>
+                    <b data-accent={figure.accent || undefined}>
+                      {figure.accent && !!figure.value && (
+                        <StatusDot $tone="window" aria-hidden />
+                      )}
+                      <AnimatedNumber loading={loading} value={figure.value} />
+                    </b>
+                  </InlineStat>
+                ))}
+              </InlineStats>
+            </FigureBox>
           </>
         )}
-      </FiguresPanel>
+      </FiguresRow>
 
       <Split>
         <Explorer
@@ -1930,7 +1893,7 @@ const BrowsePage = () => {
           style={{ ['--i' as string]: 3 }}
         >
           <VisuallyHidden as="h2" id="browse-explorer-title">
-            Registry list
+            All lists
           </VisuallyHidden>
           <StandingBar>
             <SegmentedControl<TrustMode>
@@ -1949,7 +1912,7 @@ const BrowsePage = () => {
             <Search>
               <CurateIcon name="search" size={16} />
               <input
-                aria-label="Search registries"
+                aria-label="Search lists"
                 placeholder="Search name, address or chain"
                 value={search}
                 onChange={(event) =>
@@ -1971,7 +1934,7 @@ const BrowsePage = () => {
             </Search>
             <ToggleGroup<RegistryKind>
               className="browse-kind"
-              ariaLabel="Registry type"
+              ariaLabel="List type"
               value={kinds}
               onChange={(value) =>
                 setParam({ kind: value.join(',') || null, page: null })
@@ -1991,12 +1954,12 @@ const BrowsePage = () => {
               }
               options={SORT_OPTIONS}
             />
-            <SegmentedControl<ListLayout>
+            <SegmentedControl<BrowseLayout>
               className="browse-layout"
               ariaLabel="Layout"
               value={shown}
               onChange={setLayout}
-              options={layoutOptions.map((option) => ({
+              options={BROWSE_LAYOUT_OPTIONS.map((option) => ({
                 value: option.value,
                 label: option.label,
                 icon: option.icon,
@@ -2019,7 +1982,7 @@ const BrowsePage = () => {
             <Surface $padding="none">
               <EmptyState
                 icon="registry"
-                title="Registries could not be loaded"
+                title="Lists could not be loaded"
                 action={
                   <Button
                     type="button"
@@ -2102,7 +2065,7 @@ const BrowsePage = () => {
             <Surface $padding="none">
               <EmptyState
                 icon="filter"
-                title="No registries match"
+                title="No lists match"
                 action={
                   <Button
                     type="button"
@@ -2117,86 +2080,6 @@ const BrowsePage = () => {
                 Change the search, the chain or a filter.
               </EmptyState>
             </Surface>
-          ) : shown === 'table' ? (
-            <TableScroller>
-              <Table>
-                <thead>
-                  <tr>
-                    <th>Registry</th>
-                    {showCreated ? <th>Created</th> : <th>Chain</th>}
-                    <th className="num">Entries</th>
-                    <th className="num">Open requests</th>
-                    <th className="num">In court</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {shownRows.map((registry) => {
-                    const created = shownCreation(registry, sort)
-                    return (
-                      <tr
-                        key={registry.id}
-                        data-href={registryHref(registry)}
-                        onClick={() => navigate(registryHref(registry))}
-                      >
-                        <RegistryCell>
-                          <IdentityCell>
-                            <RegistryLogo registry={registry} size={34} />
-                            <div style={{ minWidth: 0 }}>
-                              <NameLine>
-                                <TableName
-                                  to={registryHref(registry)}
-                                  onClick={(event) => event.stopPropagation()}
-                                >
-                                  {registry.title}
-                                </TableName>
-                                <ListSeal registry={registry} />
-                                <KindTag kind={registry.kind} />
-                              </NameLine>
-                              <SubLine>
-                                {/* With the Created column the chain rides here. */}
-                                {showCreated &&
-                                  `${chainName(registry.chainId)} · `}
-                                <code>{truncateMiddle(registry.address)}</code>
-                              </SubLine>
-                            </div>
-                          </IdentityCell>
-                        </RegistryCell>
-                        {showCreated ? (
-                          <td>
-                            {created ? (
-                              <Small
-                                $muted
-                                title={formatAbsolute(created)}
-                                style={{ whiteSpace: 'nowrap' }}
-                              >
-                                {formatDay(created)}
-                              </Small>
-                            ) : (
-                              <Small $faint>—</Small>
-                            )}
-                          </td>
-                        ) : (
-                          <td>
-                            <ChainChip chainId={registry.chainId} size="sm" />
-                          </td>
-                        )}
-                        <td className="num">
-                          {formatInt(entryCount(registry))}
-                        </td>
-                        <td className="num">
-                          <OpenRequestsCell registry={registry} />
-                        </td>
-                        <td className="num">
-                          <CourtCell>
-                            <CourtValue count={registry.disputeCount} />
-                          </CourtCell>
-                        </td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </Table>
-            </TableScroller>
           ) : shown === 'cards' ? (
             <CardGrid>
               {shownRows.map((registry, index) => {
@@ -2266,7 +2149,6 @@ const BrowsePage = () => {
             <List>
               {shownRows.map((registry, index) => {
                 const created = shownCreation(registry, sort)
-                const blurb = registryBlurb(registry)
                 return (
                   <RowLink
                     key={registry.id}
@@ -2281,20 +2163,13 @@ const BrowsePage = () => {
                         <ListSeal registry={registry} />
                         <KindTag kind={registry.kind} />
                       </NameLine>
-                      <RowMeta>
+                      <Meta>
                         <ChainChip chainId={registry.chainId} size="sm" />
+                        {/* The date belongs to the chosen sort, so it comes
+                            after the chain, which is the list's identity
+                            whatever the order. */}
                         {created && <CreatedOn timestamp={created} />}
-                        {/* No blurb when the title already is the address. */}
-                        {blurb ? (
-                          <Blurb>{blurb}</Blurb>
-                        ) : (
-                          !hasAddressTitle(registry) && (
-                            <Blurb>
-                              <code>{truncateMiddle(registry.address)}</code>
-                            </Blurb>
-                          )
-                        )}
-                      </RowMeta>
+                      </Meta>
                     </RowId>
                     <RowStat $area="entries">
                       <StatValue $large $zero={entryCount(registry) === 0}>

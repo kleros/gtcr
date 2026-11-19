@@ -1,18 +1,25 @@
 import type { EntryStatusView } from 'components/curate/entry-status'
+import { LAYOUT_OPTIONS, type ListLayout } from 'hooks/use-stored-layout'
 import { ZERO_ADDRESS } from 'pages/dashboard/data'
+import { TESTNET_CHAIN_IDS, type ChartRange } from 'pages/dashboard/view'
 import {
   SUPPORTED_CHAIN_IDS,
+  chainName,
   type AddressStats,
   type ProfileActivity,
 } from './data'
+import { JURY_SEAT_LIMIT, type CurateJury } from './jury'
 
 /*
- * Pure helpers for the curator profile: which actions a filter shows, the
- * status each action is rendered with, the window the data covers and the
- * chains the address is active on. Everything derives from the data layer.
+ * Pure helpers for the curator profile: the tab and the layout it opens on,
+ * which actions a filter shows, the status each action is rendered with, the
+ * window the data covers, the chains the address is active on and the juror
+ * badge for a scope. Everything derives from the data layer.
  */
 
 export const PAGE_SIZE = 20
+/** Actions to a page on a phone, where twenty ran several screens long. */
+export const PHONE_PAGE_SIZE = 8
 
 export type ActivityFilter =
   | 'all'
@@ -33,6 +40,38 @@ export const parseFilter = (value: string | null): ActivityFilter =>
   FILTERS.some((filter) => filter.value === value)
     ? (value as ActivityFilter)
     : 'all'
+
+/* ---------- Tabs and layout ---------- */
+
+/**
+ * The two halves of a profile, picked from one tab control (?tab=): what the
+ * address did, and the lists it governs. Activity is the default and is
+ * never written to the URL.
+ */
+export type ProfileTab = 'activity' | 'governed'
+
+export const parseTab = (value: string | null): ProfileTab =>
+  value === 'governed' ? 'governed' : 'activity'
+
+/*
+ * The activity's layouts. The table was dropped at the round 5 review: the
+ * rows carry every column it held (the action, the entry, its list, the
+ * other party, the time) and the rail stays beside them, where the table
+ * pushed it below. The narrowing lives here, as Browse's does, so the shared
+ * hook keeps the table for the registry pages.
+ */
+export type ActivityLayout = Exclude<ListLayout, 'table'>
+
+/** Every way into the layout passes through here, so none can pick the table. */
+export const activityLayout = (layout: ListLayout): ActivityLayout =>
+  layout === 'table' ? 'rows' : layout
+
+/** Cards and Rows with the shared labels and glyphs, as icons only. */
+export const ACTIVITY_LAYOUT_OPTIONS = LAYOUT_OPTIONS.flatMap((option) =>
+  option.value === 'table'
+    ? []
+    : [{ ...option, value: activityLayout(option.value), hideLabel: true }],
+)
 
 /** The activity page in the URL (?page=), 1 when absent or not a number. */
 export const parsePage = (value: string | null): number =>
@@ -57,6 +96,58 @@ export const filterCount = (
   filter: ActivityFilter,
 ): number => filterActivities(activities, filter).length
 
+/* ---------- Search ---------- */
+
+/*
+ * The activity search (round 11). It runs in the browser over the actions
+ * already read, so it reads everything a row shows or names: the entry's
+ * name and every identifying field, the list's title and address, the entry
+ * ID, the action's status ("Challenged · case 12"), the other party and the
+ * chain. Each action's text is built once and kept beside it.
+ */
+const haystacks = new WeakMap<ProfileActivity, string>()
+
+const activityHaystack = (activity: ProfileActivity): string => {
+  const cached = haystacks.get(activity)
+  if (cached !== undefined) return cached
+  const text = [
+    activity.entry?.text,
+    activity.entry?.list,
+    activity.entry?.value,
+    activity.entry?.network,
+    ...(activity.entryFields ?? []),
+    activity.registryTitle,
+    activity.registryAddress,
+    activity.itemID,
+    activity.status,
+    activity.disputeID && `case ${activity.disputeID}`,
+    activity.actor,
+    activity.secondaryActor,
+    chainName(activity.chainId),
+  ]
+    .filter(Boolean)
+    .join('\n')
+    .toLowerCase()
+  haystacks.set(activity, text)
+  return text
+}
+
+/** The query's words, lowercased: an action matches when it holds them all. */
+const searchTerms = (query: string): string[] =>
+  query.trim().toLowerCase().split(/\s+/).filter(Boolean)
+
+export const searchActivities = (
+  activities: ProfileActivity[],
+  query: string,
+): ProfileActivity[] => {
+  const terms = searchTerms(query)
+  if (terms.length === 0) return activities
+  return activities.filter((activity) => {
+    const haystack = activityHaystack(activity)
+    return terms.every((term) => haystack.includes(term))
+  })
+}
+
 /**
  * What the request behind an action is up to, from the state the data layer
  * carries: nothing when it says nothing, "pending" while the request is
@@ -64,33 +155,52 @@ export const filterCount = (
  * from this address's side (Accept favors the requester, Reject the
  * challenger, None is no ruling).
  */
-const activityDetail = (activity: ProfileActivity): string | undefined => {
+/*
+ * How the user's action ended, which is what a profile row's dot shows (round
+ * 20, after Fortunato's review: an always-grey dot read as a dead LED beside
+ * the list pages, where a dot is always lit). The word stays the action
+ * ("Submitted", "Challenged"); the dot and the detail say where it stands,
+ * in the list pages' colours: blue while open, amber in court, green when it
+ * went the user's way, red when it did not, grey only when not known.
+ */
+type ActivityOutcome = {
+  tone: EntryStatusView['tone']
+  detail?: string
+}
+
+const activityOutcome = (activity: ProfileActivity): ActivityOutcome => {
   if (activity.disputed) {
-    if (activity.resolved === false) return 'in court'
-    if (activity.resolved !== true) return undefined
+    if (activity.resolved === false)
+      return { tone: 'contested', detail: 'in court' }
+    if (activity.resolved !== true) return { tone: 'neutral' }
     const outcome = activity.disputeOutcome
-    if (outcome === 'None') return 'no ruling'
-    if (outcome !== 'Accept' && outcome !== 'Reject') return 'dispute resolved'
+    if (outcome === 'None') return { tone: 'neutral', detail: 'no ruling' }
+    if (outcome !== 'Accept' && outcome !== 'Reject')
+      return { tone: 'neutral', detail: 'dispute resolved' }
     const requesterWon = outcome === 'Accept'
     const won = activity.kind === 'challenge' ? !requesterWon : requesterWon
-    return won ? 'dispute won' : 'dispute lost'
+    return won
+      ? { tone: 'registered', detail: 'dispute won' }
+      : { tone: 'off', detail: 'dispute lost' }
   }
-  if (activity.resolved === false) return 'pending'
-  return undefined
+  if (activity.resolved === false) return { tone: 'window', detail: 'open' }
+  // Executed with no challenge: the request went through as asked.
+  if (activity.resolved === true && activity.kind !== 'challenge')
+    return {
+      tone: 'registered',
+      detail: activity.kind === 'removal' ? 'removed' : 'accepted',
+    }
+  return { tone: 'neutral' }
 }
 
 /**
- * Dot and label for an action. Actions are events, not entry states, so the
- * dot stays grey; it turns amber only while the request's dispute is still
- * open. The label is the data layer's own wording ("Submitted",
- * "Challenged · case 12").
+ * Dot and label for an action: the label is the data layer's own wording
+ * ("Submitted", "Challenged · case 12"), the dot and detail how it ended.
  */
-export const activityStatus = (activity: ProfileActivity): EntryStatusView => ({
-  tone:
-    activity.disputed && activity.resolved === false ? 'contested' : 'neutral',
-  label: activity.status,
-  detail: activityDetail(activity),
-})
+export const activityStatus = (activity: ProfileActivity): EntryStatusView => {
+  const { tone, detail } = activityOutcome(activity)
+  return { tone, label: activity.status, detail }
+}
 
 /** The counterparty of an action, if the data names one. */
 export const otherParty = (
@@ -132,6 +242,14 @@ export const activeChains = (
     .filter(({ stats }) => stats.activity > 0 || stats.governedLists > 0)
     .sort((a, b) => b.stats.activity - a.stats.activity)
 
+/** "Ethereum", "Ethereum and Gnosis", "Ethereum, Gnosis and Sepolia". */
+const chainListFormat = new Intl.ListFormat('en', {
+  style: 'long',
+  type: 'conjunction',
+})
+export const chainNames = (chainIds: number[]): string =>
+  chainListFormat.format(chainIds.map(chainName))
+
 const integer = new Intl.NumberFormat('en-US')
 export const formatInt = (value: number): string =>
   integer.format(Math.round(value))
@@ -150,6 +268,109 @@ export const parseScope = (value: string | null): Scope => {
 
 export const inScope = (scope: Scope, chainId: number): boolean =>
   scope === 'all' || scope === chainId
+
+/* ---------- Juror on Curate ---------- */
+
+/**
+ * The juror badge for a scope: the chains in it added up ("All chains" is
+ * the mainnets, no testnet). It is a record,
+ * not a goal, so it carries no progress; and it claims only what was read:
+ * a chain that was not read is named, never counted as zero.
+ */
+export interface JurorBadgeView {
+  state: 'loading' | 'ready' | 'unavailable'
+  /** Seats held in disputes over Curate lists. */
+  seats: number
+  /** The disputes those seats sit in. */
+  cases: number
+  /** Seats voted in; undefined when some chain's votes could not be read. */
+  votes?: number
+  /** Seats in a round still collecting votes, not voted yet. */
+  voting: number
+  /** Chains in the scope that could not be read: the figures are lower bounds. */
+  unread: number[]
+  /** Chains in the scope whose seats ran past the read's cap. */
+  capped: number[]
+  /** Chains in the scope with seats whose votes could not be read. */
+  votesUnread: number[]
+}
+
+export const jurorBadge = (
+  jury: CurateJury | undefined,
+  scope: Scope,
+  pending: boolean,
+): JurorBadgeView => {
+  const view: JurorBadgeView = {
+    state: pending ? 'loading' : 'unavailable',
+    seats: 0,
+    cases: 0,
+    votes: 0,
+    voting: 0,
+    unread: [],
+    capped: [],
+    votesUnread: [],
+  }
+  if (!jury) return view
+  // "All chains" leaves the testnet out: Sepolia seats are practice and
+  // never count toward the badge; a Sepolia scope still shows its own.
+  const chains = SUPPORTED_CHAIN_IDS.filter(
+    (chainId) =>
+      inScope(scope, chainId) &&
+      !(scope === 'all' && TESTNET_CHAIN_IDS.includes(chainId)),
+  )
+  for (const chainId of chains) {
+    const chain = jury.chains[chainId]
+    if (!chain) {
+      view.unread.push(chainId)
+      continue
+    }
+    view.seats += chain.seats
+    view.cases += chain.cases
+    view.voting += chain.voting
+    if (chain.capped) view.capped.push(chainId)
+    if (chain.votes === undefined) view.votesUnread.push(chainId)
+    else if (view.votes !== undefined) view.votes += chain.votes
+  }
+  if (view.votesUnread.length > 0) view.votes = undefined
+  // Nothing in the scope was read: no figure at all, never a 0.
+  view.state = view.unread.length === chains.length ? 'unavailable' : 'ready'
+  return view
+}
+
+/**
+ * What the juror figures count, in one sentence, and the one limit no
+ * caption names (a chain whose seats ran past the read's cap); a chain not
+ * read and votes not read are said beside the figures.
+ */
+export const jurorTip = (juror: JurorBadgeView): string =>
+  [
+    'Seats and votes as a Kleros juror in Curate disputes, Classic lists included.',
+    juror.capped.length > 0 &&
+      `On ${chainNames(juror.capped)} the read stops at ${formatInt(JURY_SEAT_LIMIT)} seats.`,
+  ]
+    .filter(Boolean)
+    .join(' ')
+
+/* ---------- Roles ---------- */
+
+/**
+ * What an address is on Curate, in a fixed order, for the profile's
+ * eyebrow: a curator acted on a list (submitted, removed or challenged), a
+ * governor governs one, a juror was drawn in a Curate dispute. Empty when
+ * none is known.
+ */
+export const profileRoles = ({
+  acted,
+  governs,
+  judges,
+}: {
+  acted: boolean
+  governs: boolean
+  judges: boolean
+}): string[] =>
+  [acted && 'Curator', governs && 'Governor', judges && 'Juror'].filter(
+    (role): role is string => Boolean(role),
+  )
 
 /* ---------- Activity over time ---------- */
 
@@ -187,13 +408,6 @@ const weekStart = (t: number) => {
 const monthStart = (t: number) => {
   const date = new Date(t * 1000)
   return Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), 1) / 1000
-}
-const nextStart = (start: number, unit: BucketUnit) => {
-  if (unit === 'hour') return start + HOUR
-  if (unit === 'day') return start + DAY
-  if (unit === 'week') return start + 7 * DAY
-  const date = new Date(start * 1000)
-  return Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + 1, 1) / 1000
 }
 const bucketOf = (t: number, unit: BucketUnit) =>
   unit === 'hour'
@@ -254,50 +468,73 @@ export const bucketAxisLabel = (start: number, unit: BucketUnit): string => {
 }
 
 /**
- * The listed actions counted per bucket, up to now. The bucket grows with the
- * span the actions cover (day up to three months, then week, then month) so
- * the chart stays readable. When the list is complete, the window starts at
- * least two weeks back: days before the first action are true zeros. When it
- * is only the most recent slice, the list was cut inside the bucket holding
- * its oldest action, so the window starts at the next bucket: nothing missing
- * is drawn, neither as a zero nor as a short count. Only when that would
- * leave fewer than two buckets is the cut bucket kept, marked as partial.
+ * The profile chart's windows (round 13: "the selector of 30D, 6M … just
+ * identical to the dashboard timeframes"): the dashboard's own, bucket for
+ * bucket. 30 days by day, 6 months and a year by week, 3 years by month,
+ * each ending in the bucket that holds now.
  */
-export const activityBuckets = (
+const RANGE_WINDOWS: Record<ChartRange, { unit: BucketUnit; count: number }> = {
+  '30d': { unit: 'day', count: 30 },
+  '6m': { unit: 'week', count: 26 },
+  '1y': { unit: 'week', count: 52 },
+  '3y': { unit: 'month', count: 36 },
+}
+
+/** A profile opens on the longest range: it is a record, not a live feed. */
+export const DEFAULT_PROFILE_RANGE: ChartRange = '3y'
+
+const previousStart = (start: number, unit: BucketUnit) => {
+  if (unit === 'hour') return start - HOUR
+  if (unit === 'day') return start - DAY
+  if (unit === 'week') return start - 7 * DAY
+  const date = new Date(start * 1000)
+  return Date.UTC(date.getUTCFullYear(), date.getUTCMonth() - 1, 1) / 1000
+}
+
+/**
+ * The listed actions counted per bucket over a range. Undefined when the
+ * address has no dated action at all; zeros when it has some, none in the
+ * range. When the list is only the most recent slice and was cut inside the
+ * range, the window starts at the bucket after the cut: nothing missing is
+ * drawn, neither as a zero nor as a short count (`cut` says so). Only when
+ * that would leave fewer than two buckets is the cut bucket kept, marked as
+ * partial.
+ */
+export const rangeBuckets = (
   activities: ProfileActivity[],
+  range: ChartRange,
   now: number,
   complete: boolean,
-): ActivityBuckets | undefined => {
+): (ActivityBuckets & { cut: boolean }) | undefined => {
   const stamped = activities.filter(
     (activity) => activity.timestamp > 0 && activity.timestamp <= now,
   )
   if (stamped.length === 0) return undefined
-  const oldest = Math.min(...stamped.map((activity) => activity.timestamp))
-  let from = dayStart(oldest)
-  if (complete) from = Math.min(from, dayStart(now) - 13 * DAY)
-  const spanDays = (dayStart(now) - from) / DAY + 1
-  const unit: BucketUnit =
-    !complete && spanDays <= 3
-      ? 'hour'
-      : spanDays <= 92
-        ? 'day'
-        : spanDays <= 7 * 104
-          ? 'week'
-          : 'month'
+  const { unit, count } = RANGE_WINDOWS[range]
 
-  const starts: number[] = []
-  const last = bucketOf(now, unit)
+  let starts: number[] = []
   for (
-    let start = bucketOf(unit === 'hour' ? oldest : from, unit);
-    start <= last;
-    start = nextStart(start, unit)
+    let start = bucketOf(now, unit);
+    starts.length < count;
+    start = previousStart(start, unit)
   )
-    starts.push(start)
-  let partialFrom: number | undefined
-  if (!complete)
-    if (starts.length > 2) starts.shift()
-    else partialFrom = oldest
+    starts.unshift(start)
 
+  let partialFrom: number | undefined
+  let cut = false
+  if (!complete) {
+    const oldest = Math.min(...stamped.map((activity) => activity.timestamp))
+    const cutAt = bucketOf(oldest, unit)
+    if (cutAt >= starts[0]) {
+      cut = true
+      const after = starts.filter((start) => start > cutAt)
+      if (after.length >= 2) starts = after
+      else {
+        starts = starts.filter((start) => start >= cutAt)
+        partialFrom = oldest
+      }
+    }
+  }
   if (starts.length < 2) return undefined
 
   const position = new Map(starts.map((start, index) => [start, index]))
@@ -314,9 +551,7 @@ export const activityBuckets = (
   if (partialFrom !== undefined) {
     const at = new Date(partialFrom * 1000)
     labels[0] = `${labels[0]} · listed from ${
-      unit === 'hour' || unit === 'day'
-        ? clockLabel.format(at)
-        : hourLabel.format(at)
+      unit === 'day' ? clockLabel.format(at) : hourLabel.format(at)
     } UTC`
   }
 
@@ -328,6 +563,7 @@ export const activityBuckets = (
     requests,
     challenges,
     partialFrom,
+    cut,
   }
 }
 

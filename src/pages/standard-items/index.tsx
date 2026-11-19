@@ -18,13 +18,17 @@ import useUrlChainId from 'hooks/use-url-chain-id'
 import useNow from 'hooks/use-now'
 import useDocumentHead from 'hooks/use-document-head'
 import useNativeCurrency from 'hooks/native-currency'
+import useCourtName from 'hooks/use-court-name'
 import { useAttachment } from 'hooks/use-attachment'
 import { WalletContext } from 'contexts/wallet-context'
 import { StandardTCRViewContext } from 'contexts/standard-tcr-view-context'
 import { useGraphqlBatcher } from 'contexts/graphql-batcher'
 import { STANDARD_ITEMS_QUERY } from 'utils/graphql'
+import { STANDARD_DISPUTED_BEFORE_QUERY } from 'utils/graphql/standard-items'
 import {
+  FILTER_KEYS,
   searchStrToFilterObjStandard,
+  selectStatusFilter,
   updateStandardFilter,
 } from 'utils/filters'
 import { DISPUTE_STATUS, STATUS_CODE } from 'utils/item-status'
@@ -47,8 +51,11 @@ import {
   truncateMiddle,
 } from 'components/curate/primitives'
 import { CurateIcon } from 'components/curate/icons'
+import { CuratorAddress } from 'components/curate/chrome-address'
+import { ListGovernance } from 'components/curate/list-governance'
 import { reveal } from 'components/curate/motion/reveal'
 import {
+  courtPhrase,
   RegistryHeader,
   type RegistryParameter,
   type RegistryStat,
@@ -66,10 +73,17 @@ import {
 import { standardEntryStatus } from 'components/curate/entry-status'
 import type { ExplainerStep } from 'components/curate/explainer'
 import {
+  RegistryListSkeleton,
   RegistryStandardEmpty,
-  RegistryStandardSkeleton,
 } from 'components/curate/registry-standard-states'
-import { useRegistryLayout } from 'components/curate/registry-shared-layout'
+import {
+  CHALLENGE_CAP,
+  useStandardSummary,
+} from 'components/curate/registry-standard-summary'
+import {
+  REGISTRY_LAYOUT_OPTIONS,
+  useRegistryLayout,
+} from 'components/curate/registry-shared-layout'
 import { useRegistryVerified } from 'components/curate/registry-shared-verified'
 import {
   LIST_OF_LISTS_ADDRESS_LABEL,
@@ -94,16 +108,22 @@ import SubmitConnectModal from '../standard-item-details/modals/submit-connect'
 
 /*
  * Standard Curate registry page (/tcr/:chainId/:tcrAddress): the header panel
- * (identity, the one action with its exact deposit, the counts and the share
- * registered as a ring), the toolbar (URL filters with each status's count),
- * then the entries in the remembered layout, each with its status and time
- * left. Nothing else sits between the header and the entries. A page or
+ * (identity, the one action with its exact deposit, under it "Update list
+ * parameters" for the list's governor alone, the counts, and two gauges —
+ * the share of entries registered, and what the challenges did to them),
+ * the toolbar (URL filters with each status's count), then the entries
+ * in the remembered layout, each with its status and time left. A page or
  * filter change keeps the current rows and counts (dimmed) until the next
  * page lands, so nothing flashes or counts up again.
  */
 
 export const NSFW_FILTER_KEY = 'NSFW_FILTER_KEY'
 export const ITEMS_PER_PAGE = 40
+/**
+ * The "Previously disputed" count reads at most this many ids; a read that
+ * fills it is a lower bound ("1,000+") and the pages run on past it.
+ */
+const DISPUTED_BEFORE_LIMIT = 1000
 /** Whole-list search results shown at once (the indexer's keyword match). */
 const SEARCH_LIMIT = 100
 
@@ -268,7 +288,8 @@ const itemMatchesSearch = (item: RegistryItem, rawSearch: string): boolean => {
   return text.includes(query)
 }
 
-/* An explorer link: a 24px target, and it says it opens a new tab. */
+/* A contract's explorer link (the arbitrator): a 24px target, and it says
+   it opens a new tab. */
 const AddressLink = styled.a`
   display: inline-flex;
   align-items: center;
@@ -359,7 +380,9 @@ const Items = () => {
   const [submissionFormOpen, setSubmissionFormOpen] = useState<
     boolean | undefined
   >()
-  const [nsfwFilterOn, setNSFWFilter] = useState(true)
+  // Sensitive entries show unless the reader hides them (round 7); their
+  // choice is kept and restored below.
+  const [nsfwFilterOn, setNSFWFilter] = useState(false)
   // The search box lives in the URL (?q=), so Back from an entry, a reload
   // or a shared link keeps it. Typing replaces the history entry: Back
   // leaves the list instead of undoing keystrokes.
@@ -401,6 +424,7 @@ const Items = () => {
     removalRequested,
     challengedSubmissions,
     challengedRemovals,
+    disputedBefore,
   } = queryOptions
   const orderDirection = oldestFirst ? 'asc' : 'desc'
 
@@ -431,23 +455,32 @@ const Items = () => {
         disputed: { _eq: true },
       })
 
+    // "Previously disputed": any of the entry's requests went to court,
+    // whatever its status now.
+    const history = disputedBefore
+      ? { requests: { disputed: { _eq: true } } }
+      : {}
+
     // No filters selected - return all items
     if (conditions.length === 0)
-      return { registry_id: { _eq: tcrAddress?.toLowerCase() } }
+      return { registry_id: { _eq: tcrAddress?.toLowerCase() }, ...history }
 
     // Single filter - no need for _or
     if (conditions.length === 1)
       return {
         registry_id: { _eq: tcrAddress?.toLowerCase() },
+        ...history,
         ...conditions[0],
       }
 
     // Multiple filters - use _or clause
     return {
       registry_id: { _eq: tcrAddress?.toLowerCase() },
+      ...history,
       _or: conditions,
     }
   }, [
+    disputedBefore,
     absent,
     challengedRemovals,
     challengedSubmissions,
@@ -547,9 +580,37 @@ const Items = () => {
     }
   }, [counters])
 
-  /** Entries the current filters cover: all of them, or the selected sum. */
-  const itemCount = useMemo(() => {
-    if (!counts) return 0
+  // How many entries have been to court at least once: the list's size
+  // under the status menu's "Previously disputed" (which shows no count),
+  // read only while that choice is on.
+  const disputedBeforeQuery = useQuery({
+    queryKey: ['standardDisputedBefore', chainId, tcrAddress?.toLowerCase()],
+    queryFn: (): Promise<{ litems?: { itemID: string }[] }> =>
+      graphqlBatcher.fetch({
+        id: crypto.randomUUID(),
+        document: STANDARD_DISPUTED_BEFORE_QUERY,
+        variables: {
+          registryId: tcrAddress?.toLowerCase(),
+          limit: DISPUTED_BEFORE_LIMIT,
+        },
+        chainId: chainId!,
+      }),
+    enabled: !!chainId && !!tcrAddress && !!disputedBefore,
+    staleTime: STALE_TIME,
+  })
+  const disputedBeforeCount = disputedBeforeQuery.data?.litems?.length
+  const disputedBeforeCapped =
+    !!disputedBefore &&
+    disputedBeforeCount !== undefined &&
+    disputedBeforeCount >= DISPUTED_BEFORE_LIMIT
+
+  /**
+   * Entries the current filters cover: all of them, or the selected sum;
+   * undefined while unknown (never 0 for a count still loading).
+   */
+  const itemCount = useMemo((): number | undefined => {
+    if (disputedBefore) return disputedBeforeCount
+    if (!counts) return undefined
     const hasAnyFilter =
       absent ||
       registered ||
@@ -576,7 +637,20 @@ const Items = () => {
     challengedSubmissions,
     challengedRemovals,
     counts,
+    disputedBefore,
+    disputedBeforeCount,
   ])
+
+  // Every challenge raised on the list, for the header's court and challenge
+  // figures. It is a read of its own: the counters hold no challenges.
+  const {
+    summary,
+    loading: summaryLoading,
+    failed: summaryFailed,
+  } = useStandardSummary({ chainId, registryId: tcrAddress })
+  // The one summary the header's gauge and its "In court" both read: a
+  // failed read is no summary at all, never a stale figure.
+  const liveSummary = summaryFailed ? undefined : summary
 
   // A failed refetch keeps the rows already on screen (react-query keeps
   // its data): only a read with nothing to show fails the page.
@@ -851,12 +925,12 @@ const Items = () => {
         rel="noopener noreferrer"
         title={address}
       >
-        {truncateMiddle(address, 8, 6)}
+        {truncateMiddle(address, 6, 4)}
         <CurateIcon name="external" size={14} aria-hidden />
         <SrOnly> (opens in a new tab)</SrOnly>
       </AddressLink>
     ) : (
-      <span title={address}>{truncateMiddle(address, 8, 6)}</span>
+      <span title={address}>{truncateMiddle(address, 6, 4)}</span>
     )
   }
 
@@ -872,8 +946,19 @@ const Items = () => {
   const court = isKlerosArbitrator
     ? decodeCourt(arbitratorExtraData)
     : undefined
+  // The court by its name ("xDai Curation"), as the factory and the dispute
+  // panel name it; its number only while the name loads or if it cannot be
+  // read.
+  const courtName = useCourtName(
+    chainId,
+    court ? Number(court.courtId) : undefined,
+  )
+  const courtTitle = court ? (courtName ?? `Court ${court.courtId}`) : undefined
+  const jurorsLabel = court
+    ? `${court.jurors} juror${court.jurors === '1' ? '' : 's'}`
+    : undefined
   const courtLabel = court
-    ? `Court ${court.courtId} · ${court.jurors} juror${court.jurors === '1' ? '' : 's'}`
+    ? `${courtTitle} · ${jurorsLabel}`
     : arbitratorExtraData
       ? truncateMiddle(arbitratorExtraData, 10, 6)
       : undefined
@@ -891,14 +976,47 @@ const Items = () => {
       : undefined
   const rejectedOrRemoved = counts ? integer.format(counts.absent) : undefined
 
-  const stats: RegistryStat[] = [
-    { label: 'Entries', value: counts && integer.format(counts.total) },
-    {
-      label: 'Open requests',
-      value: counts && integer.format(counts.openRequests),
-    },
-    { label: 'In court', value: counts && integer.format(counts.inCourt) },
-  ]
+  /*
+   * "In court" is the disputes open on this list right now, counted from the
+   * list's own challenges (DESIGN.md, Data rules: the per-list counters
+   * drift and are not trusted for it), so this stat and the gauge beside it
+   * print one figure from one source. It reads "n+" when that read
+   * stopped at its page cap, and waits for the read rather than flashing a
+   * counter it would then correct; a failed read leaves the counter, the
+   * only figure left.
+   */
+  const inCourtStat = liveSummary
+    ? `${integer.format(liveSummary.challenges.inCourt)}${
+        liveSummary.challenges.capped && liveSummary.challenges.inCourt > 0
+          ? '+'
+          : ''
+      }`
+    : summaryLoading
+      ? undefined
+      : counts && integer.format(counts.inCourt)
+
+  /*
+   * The list's live work leads, because it is what a reader can act on: the
+   * open requests are the headline figure, in the window blue, and the total
+   * the list holds follows. A list with nothing open has no live work to
+   * lead with, so that figure is not printed at all and the total takes the
+   * headline back. While the counts are still loading the slot is kept, so
+   * the headline does not change identity under the reader.
+   */
+  const openRequests = counts?.openRequests
+  const leadWithOpen = !counts || openRequests !== 0
+  const entriesStat: RegistryStat = {
+    label: 'Entries',
+    value: counts && integer.format(counts.total),
+  }
+  const openStat: RegistryStat = {
+    label: 'Open requests',
+    value: counts && integer.format(counts.openRequests),
+    tone: 'window',
+  }
+  const stats: RegistryStat[] = leadWithOpen
+    ? [openStat, entriesStat, { label: 'In court', value: inCourtStat }]
+    : [entriesStat, { label: 'In court', value: inCourtStat }]
 
   const parameters: RegistryParameter[] = [
     {
@@ -919,7 +1037,12 @@ const Items = () => {
     { label: 'Arbitration cost', value: depositValue(arbitrationCost) },
     { label: 'Court', value: courtLabel },
     { label: 'Arbitrator', value: addressValue(arbitrator) },
-    { label: 'Governor', value: addressValue(governor) },
+    // The governor is a person (or their multisig): their Curate profile,
+    // where the lists they govern are, not the explorer.
+    {
+      label: 'Governor',
+      value: governor ? <CuratorAddress address={governor} /> : undefined,
+    },
     {
       label: 'Rejected or removed',
       value: rejectedOrRemoved,
@@ -958,7 +1081,9 @@ const Items = () => {
         : 'The arbitrator decides',
       body: `${
         court
-          ? `Kleros court ${court.courtId} draws ${court.jurors} juror${court.jurors === '1' ? '' : 's'}.`
+          ? courtName
+            ? `The Kleros ${courtPhrase(courtName)} draws ${jurorsLabel}.`
+            : `Kleros court ${court.courtId} draws ${jurorsLabel}.`
           : isKlerosArbitrator
             ? 'A Kleros court rules on the listing policy.'
             : 'The list’s arbitrator rules on the listing policy.'
@@ -981,51 +1106,90 @@ const Items = () => {
       ? `/tcr/${chainId}/${connectedTCRAddr}`
       : undefined
 
-  // Each chip carries its status's live count from the registry counters.
-  const withCount = (label: string, count?: number) =>
-    count !== undefined && Number.isFinite(count)
-      ? `${label} ${integer.format(count)}`
-      : label
-  // Listed first, then the open requests, then the challenged ones; the
-  // rejected and removed close the rail.
+  // The status menu (round 6): All, then each status with its dot and its
+  // live count from the registry counters, listed first, then the open
+  // requests, then the challenged ones, the rejected and removed last; and
+  // under a hairline, every entry that has been to court.
   const chips: FilterChip[] = [
     {
       key: 'registered',
-      label: withCount('Registered', counts?.registered),
+      label: 'Registered',
+      count: counts?.registered,
       tone: 'registered',
       checked: !!registered,
     },
     {
       key: 'submitted',
-      label: withCount('Submitted', counts?.submitted),
+      label: 'Submitted',
+      count: counts?.submitted,
       tone: 'window',
       checked: !!submitted,
     },
     {
       key: 'removalRequested',
-      label: withCount('Removal requested', counts?.removalRequested),
+      label: 'Removal requested',
+      count: counts?.removalRequested,
       tone: 'window',
       checked: !!removalRequested,
     },
     {
       key: 'challengedSubmissions',
-      label: withCount('Challenged submissions', counts?.challengedSubmissions),
+      label: 'Challenged submissions',
+      count: counts?.challengedSubmissions,
       tone: 'contested',
       checked: !!challengedSubmissions,
     },
     {
       key: 'challengedRemovals',
-      label: withCount('Challenged removals', counts?.challengedRemovals),
+      label: 'Challenged removals',
+      count: counts?.challengedRemovals,
       tone: 'contested',
       checked: !!challengedRemovals,
     },
     {
       key: 'absent',
-      label: withCount('Rejected or removed', counts?.absent),
+      label: 'Rejected or removed',
+      count: counts?.absent,
       tone: 'off',
       checked: !!absent,
     },
+    {
+      key: FILTER_KEYS.DISPUTED_BEFORE,
+      label: 'Previously disputed',
+      hint: 'Every entry that has been to court, whatever its status now',
+      led: true,
+      divider: true,
+      checked: !!disputedBefore,
+    },
   ]
+  const setStatus = (value: string) =>
+    navigate({
+      search: selectStatusFilter({
+        prevQuery: search,
+        keys: chips.map((chip) => chip.key),
+        value,
+      }),
+    })
+
+  // The menu shows one status, the first checked; an old link may carry
+  // several. The link is narrowed to that one, so the list agrees with it.
+  const checkedStatuses = chips.filter((chip) => chip.checked)
+  const shownStatus =
+    checkedStatuses.length > 1 ? checkedStatuses[0].key : undefined
+  const statusKeys = chips.map((chip) => chip.key).join(',')
+  useEffect(() => {
+    if (!shownStatus) return
+    navigate(
+      {
+        search: selectStatusFilter({
+          prevQuery: search,
+          keys: statusKeys.split(','),
+          value: shownStatus,
+        }),
+      },
+      { replace: true },
+    )
+  }, [shownStatus, statusKeys, search, navigate])
 
   const setFilter = (filter: string, checked: boolean) =>
     navigate({
@@ -1221,16 +1385,31 @@ const Items = () => {
     !visibleItems ||
     !timestamp ||
     !challengePeriodDuration
-  // A whole-list search answers in one go: no pages while it is shown.
-  const showPagination = itemCount > ITEMS_PER_PAGE && !wholeListSearch
   const pageNumber = Number(page) || 1
   const pageItemCount = items?.length ?? 0
+  // A total unknown (its read failed) or capped is a lower bound: what the
+  // pages so far prove, and a full page offers one more, as on Stake. While
+  // the count is still loading there are no pages yet.
+  const countLoading = !!disputedBefore && disputedBeforeQuery.isLoading
+  const countIsFloor = itemCount === undefined || disputedBeforeCapped
+  const pageReach = (pageNumber - 1) * ITEMS_PER_PAGE + pageItemCount
+  const pagerTotal = countLoading
+    ? 0
+    : countIsFloor
+      ? Math.max(
+          itemCount ?? 0,
+          pageReach + (pageItemCount === ITEMS_PER_PAGE ? 1 : 0),
+        )
+      : itemCount
+  // A whole-list search answers in one go: no pages while it is shown.
+  const showPagination = pagerTotal > ITEMS_PER_PAGE && !wholeListSearch
   const searching = itemSearch.trim() !== ''
   // Until a term settles (or for a single character) the search filters
   // the page already loaded.
-  const pageScopedSearch = itemCount > ITEMS_PER_PAGE && !wholeListSearch
+  const pageScopedSearch = pagerTotal > ITEMS_PER_PAGE && !wholeListSearch
   const searchCapped = wholeListSearch && pageItemCount >= SEARCH_LIMIT
   const filtersActive = !!(
+    disputedBefore ||
     absent ||
     registered ||
     submitted ||
@@ -1238,7 +1417,8 @@ const Items = () => {
     challengedSubmissions ||
     challengedRemovals
   )
-  const pageCount = Math.ceil(itemCount / ITEMS_PER_PAGE)
+  // The last page, when the total is exact.
+  const pageCount = countIsFloor ? 0 : Math.ceil(itemCount / ITEMS_PER_PAGE)
   const plural = capitalizeFirstLetter(itemNamePlural)
 
   // Why the list is empty decides what it says and offers.
@@ -1285,7 +1465,9 @@ const Items = () => {
     if (filtersActive)
       return {
         title: `No ${itemNamePlural} match`,
-        line: `No ${itemName} has these statuses right now.`,
+        line: disputedBefore
+          ? `No ${itemName} on this list has been to court.`
+          : `No ${itemName} has this status right now.`,
         action: (
           <GhostButton
             type="button"
@@ -1335,6 +1517,7 @@ const Items = () => {
         listOfLists={trust.listOfLists}
         kind="standard"
         itemName={itemName}
+        itemNamePlural={itemNamePlural}
         primaryLabel={`Submit ${itemName}`}
         primaryAmount={
           submissionDeposit ? (
@@ -1350,12 +1533,44 @@ const Items = () => {
         stats={stats}
         registeredCount={counts?.registered}
         totalCount={counts?.total}
+        // The challenges gauge reads the same tally "In court" above it does,
+        // and carries the cap that tally is read under.
+        challenges={
+          liveSummary && {
+            offList: liveSummary.challenges.offList,
+            onList: liveSummary.challenges.onList,
+            inCourt: liveSummary.challenges.inCourt,
+            scope: liveSummary.challenges.capped
+              ? `the newest ${integer.format(CHALLENGE_CAP)} challenges`
+              : undefined,
+          }
+        }
         parameters={parameters}
         // Keyed under the kind's old name, so readers keep their open state.
         explainerId={`registry-light-${tcrAddress.toLowerCase()}`}
         explainerHeading="A deposit you get back, a bounty for spotting mistakes."
         explainerSteps={explainerSteps}
         loading={!metadata || (!counters && itemsQuery.isFetching)}
+        // The governor the context reads on the list's own chain, so a
+        // governor whose wallet is on another chain still sees the control.
+        // It waits for the list's file as well: the control takes the list's
+        // name and logo when it first reads the parameters, and keeps them.
+        governance={
+          chainId ? (
+            <ListGovernance
+              chainId={chainId}
+              address={tcrAddress}
+              kind="standard"
+              title={tcrTitle}
+              logoURI={logoURI}
+              governor={metaEvidence ? governor : undefined}
+              onSaved={() => {
+                void tcrViewContext?.retryParams()
+                void tcrViewContext?.retryMetaEvidence()
+              }}
+            />
+          ) : undefined
+        }
       />
 
       <Toolbar ref={toolbarRef} style={{ ['--i' as string]: 1 }}>
@@ -1364,11 +1579,12 @@ const Items = () => {
           onSearch={setItemSearch}
           placeholder={`Search ${itemNamePlural}`}
           chips={chips}
-          onChipChange={setFilter}
+          onStatusChange={setStatus}
           sort={oldestFirst ? 'oldest' : 'newest'}
           onSortChange={(sort) => setFilter('oldestFirst', sort === 'oldest')}
           layout={layout}
           onLayoutChange={setLayout}
+          layoutOptions={REGISTRY_LAYOUT_OPTIONS}
           nsfwFilter={nsfwFilterOn}
           onNsfwChange={toggleNSFWFilter}
           // Unknown (not "0 of 0") until the list and its counts are in.
@@ -1378,9 +1594,15 @@ const Items = () => {
               ? undefined
               : searching && !wholeListSearch
                 ? pageItemCount
-                : counts
-                  ? itemCount
-                  : undefined
+                : disputedBeforeCapped
+                  ? Math.max(itemCount ?? 0, pageReach)
+                  : itemCount
+          }
+          totalCapped={
+            // A short page past the cap ends the list: that total is exact.
+            disputedBeforeCapped &&
+            pageItemCount === ITEMS_PER_PAGE &&
+            !(searching && !wholeListSearch)
           }
         />
       </Toolbar>
@@ -1391,7 +1613,7 @@ const Items = () => {
         data-refreshing={refreshing && !listLoading}
       >
         {listLoading ? (
-          <RegistryStandardSkeleton layout={layout} />
+          <RegistryListSkeleton layout={layout} />
         ) : entries.length === 0 ? (
           <RegistryStandardEmpty
             title={emptyView.title}
@@ -1419,7 +1641,7 @@ const Items = () => {
         {showPagination && (
           <Footer style={{ ['--i' as string]: 2 }}>
             <Pagination
-              total={itemCount}
+              total={pagerTotal}
               current={pageNumber}
               pageSize={ITEMS_PER_PAGE}
               onChange={goToPage}

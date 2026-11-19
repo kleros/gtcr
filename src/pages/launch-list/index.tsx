@@ -3,13 +3,7 @@ import styled, { css, keyframes } from 'styled-components'
 import { useParams, useSearchParams } from 'react-router-dom'
 import useDocumentHead from 'hooks/use-document-head'
 import { NETWORKS, NETWORKS_INFO, getNativeCurrency } from 'config/networks'
-import { formatDuration, formatDurationLong } from 'utils/time'
 import { warmFactory, warmPermanentFactory } from 'bootstrap/app-router'
-import {
-  WIZARD_DEFAULTS as STAKE_DEFAULTS,
-  defaultStakeToken,
-} from 'pages/factory-permanent/defaults'
-import { CurateIcon } from 'components/curate/icons'
 import {
   ButtonLink,
   Label,
@@ -18,10 +12,10 @@ import {
   VisuallyHidden,
 } from 'components/curate/primitives'
 import { litThumb, recessTrack } from 'components/ui/kit-styles'
+import { CurateIcon } from 'components/curate/icons'
 import { reveal } from 'components/curate/motion/reveal'
 import { ChainSwitch } from './chain-switch'
-import { Lifecycle, axisScale, type LifecycleSpec } from './lifecycle'
-import { STANDARD_WIZARD_DEFAULTS } from 'pages/factory/defaults'
+import { DepositFate, type FateSpec } from './deposit-fate'
 
 /*
  * Launch a list (route /launch/:chainId): a choice between the two list
@@ -30,12 +24,20 @@ import { STANDARD_WIZARD_DEFAULTS } from 'pages/factory/defaults'
  * radio group and neither is chosen at first: the rim previews on hover and
  * focus and stays on the chosen card, whose foot then offers its factory.
  * The choice lives in `?kind=`, so it survives the back button and a chain
- * switch. Each card leads with what the two sides get (the submitter's
- * money back, the challenger's bounty), then the wizard defaults the creator
- * can change, an entry's life drawn to scale under the default periods (one
- * time axis for both cards), and one advantage and one trade-off. The
- * court, and so the arbitration fee and the number of jurors, is the
- * creator's pick in the factory: this page shows no figure for it.
+ * switch.
+ *
+ * One question decides between them — does the money come back? — so each
+ * card is one vertical read of that question, top to bottom: the kind's
+ * name, what it is for, the verdict on the money, the same two-lane drawing
+ * with one difference in it (see ./deposit-fate), two lines on how the money
+ * moves and what to know before choosing, and the foot that holds the
+ * choice. Each says one thing: the verdict is the money's fate, the drawing
+ * names the events (on Standard, the removal request that can open a
+ * registered entry to a challenge again, drawn dashed), the lines explain
+ * them. The coin is named, after the name of the drawing's money lane, but
+ * no figure and no period is quoted anywhere: the deposits, the challenge
+ * window, the court and the number of jurors are all the creator's to set
+ * in the factory, and the Guide route carries both lifecycles in full.
  */
 
 const SUPPORTED_CHAINS: number[] = [
@@ -44,11 +46,6 @@ const SUPPORTED_CHAINS: number[] = [
   NETWORKS.sepolia,
 ]
 const TESTNETS: number[] = [NETWORKS.sepolia]
-
-const HOUR = 60 * 60
-
-/* Both kinds' defaults come from their wizards, so the page and a new list agree. */
-const STANDARD_DEFAULTS = STANDARD_WIZARD_DEFAULTS
 
 /* ---------- The two kinds ---------- */
 
@@ -70,59 +67,35 @@ type Kind = keyof typeof KINDS
 const isKind = (value: string | null): value is Kind =>
   value === 'standard' || value === 'stake'
 
-/* ---------- Lifecycles, on one shared scale ---------- */
+/* ---------- The one difference, drawn the same way twice ---------- */
 
-const challengePeriod = STANDARD_DEFAULTS.challengePeriodDuration * HOUR
-const submissionPeriod = STAKE_DEFAULTS.submissionPeriodDuration * HOUR
-const withdrawingPeriod = STAKE_DEFAULTS.withdrawingPeriodDuration * HOUR
+/**
+ * Where the Standard deposit comes back, as a share of a lane with no axis:
+ * a little past where the original lifecycle put registration (31% of its
+ * lane at 1440), so the gap before the removal band stays short (round 7:
+ * "make the gap in the standard list a bit smaller"). Not a measurement. A
+ * short bar beside the Stake card's full one is what makes "one-time"
+ * visible; the dashed removal band at the lane's end is as long, since a
+ * removal request runs on the same challenge period.
+ */
+const RETURNED_AT = 0.38
 
-const STANDARD_LIFE: LifecycleSpec = {
-  phases: [
-    {
-      label: 'Submitted',
-      tone: 'window',
-      duration: challengePeriod,
-      challengeable: true,
-    },
-    { label: 'Registered', tone: 'registered' },
-    {
-      label: 'Removal requested',
-      tone: 'window',
-      duration: challengePeriod,
-      optional: true,
-      note: ['if someone requests it', 'if requested'],
-      challengeable: true,
-    },
-  ],
-  endLabel: 'Removed',
-  funds: { lane: 'Deposit locked', until: 0, label: 'Back in full' },
-  description: `Standard list, default periods: an entry can be challenged during its ${formatDurationLong(challengePeriod)} challenge period, while its deposit is locked. If nobody challenges, it is registered and the deposit is back in full. Once registered, it can be challenged again only if someone requests its removal, during another ${formatDurationLong(challengePeriod)} period, after which it is removed.`,
+const STANDARD_FATE: FateSpec = {
+  lane: 'Deposit locked',
+  release: RETURNED_AT,
+  event: 'Registered',
+  removal: 'Removal request',
+  description:
+    'Drawn by event, not to scale. An entry is open to challenge from submission until it is registered; the deposit is locked for that time and, if nobody challenges, comes back in full at registration. Once registered, it is open to challenge again only during a removal request, drawn dashed at the end, and only if someone makes one.',
 }
 
-const STAKE_LIFE: LifecycleSpec = {
-  phases: [
-    {
-      label: 'Pending',
-      tone: 'window',
-      duration: submissionPeriod,
-      challengeable: true,
-    },
-    { label: 'Accepted', tone: 'registered', challengeable: true },
-    {
-      label: 'Withdrawing',
-      tone: 'neutral',
-      duration: withdrawingPeriod,
-      optional: true,
-      note: ['if the submitter withdraws', 'if withdrawn'],
-      challengeable: true,
-    },
-  ],
-  endLabel: 'Withdrawn',
-  funds: { lane: 'Stake locked', until: 2, label: 'Stake back' },
-  description: `Stake list, default periods: an entry is pending for its ${formatDurationLong(submissionPeriod)} submission period, then accepted. It can be challenged at any time until it is withdrawn, and its stake stays locked for that whole time. If the submitter withdraws, the stake comes back after a ${formatDurationLong(withdrawingPeriod)} withdrawing period.`,
+const STAKE_FATE: FateSpec = {
+  lane: 'Stake locked',
+  release: 'end',
+  event: 'Withdrawn',
+  description:
+    'Drawn by event, not to scale. An entry is open to challenge for as long as it is listed; the stake is locked for all of that time and comes back only when the submitter withdraws it.',
 }
-
-const SCALE = axisScale([STANDARD_LIFE, STAKE_LIFE])
 
 /* ---------- Header ---------- */
 
@@ -171,7 +144,13 @@ const Lede = styled.p`
 
 /* ---------- The choice: two equal cards in one radio group ---------- */
 
-/* The cards' rows, shared through subgrid so the two cards line up. */
+/*
+ * The cards' rows, shared through subgrid so the two cards line up: one per
+ * in-flow child of a card, in order the head, the eyebrow (Lead), the
+ * verdict (Outcome), the drawing, the two lines (Points) and the foot. The
+ * screen-reader summary is out of flow and takes none. Add or remove a child
+ * and this must change with it, or the rows of the two cards drift apart.
+ */
 const CARD_ROWS = 6
 
 const Choices = styled.div`
@@ -316,7 +295,7 @@ const Option = styled(Surface)`
       from var(--cv-comet),
       transparent 0deg 290deg,
       color-mix(in srgb, var(--edge-2) 80%, transparent) 340deg,
-      white 354deg,
+      var(--sweep-head) 354deg,
       transparent 360deg
     );
     ${ringMask}
@@ -347,11 +326,14 @@ const Option = styled(Surface)`
     opacity: 0.8;
   }
 
-  /* Chosen: the rim stays, light pools behind the pill and under the card. */
+  /*
+   * Chosen: the rim stays, and light pools in the foot's corner, behind the
+   * pill and the button it brings, and under the card.
+   */
   &[data-checked] {
     background:
       radial-gradient(
-        90% 55% at 100% 0%,
+        90% 55% at 0% 100%,
         color-mix(in srgb, var(--edge-2) 8%, transparent),
         transparent 70%
       ),
@@ -400,11 +382,9 @@ const Option = styled(Surface)`
   }
 `
 
+/* The kind's family and name; the choice itself sits at the card's foot. */
 const CardHead = styled.div`
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
+  min-width: 0;
 `
 
 const CardTitle = styled.h2`
@@ -418,176 +398,58 @@ const CardTitle = styled.h2`
 `
 
 /*
- * The card's lead: what each side gets. The submitter's deposit comes back
- * (green, as on the drawing's funds lane); a challenger who shows the entry
- * breaks the rules earns a bounty (amber, the contested tone). Side by side
- * in a wide card, stacked in a narrow one: two cards between 961 and 1180px,
- * or a phone. (Media queries: the styled-components 5 parser drops
- * container queries.)
+ * What the kind is for (the docs' "Best for"), as the card's one eyebrow.
+ * The visible "For" carries the meaning, so nothing is hidden for screen
+ * readers, and a single label cannot pile into a second one on a phone.
  */
-const narrowCard = (rules: ReturnType<typeof css>) => css`
-  @media (min-width: 961px) and (max-width: 1180px), (max-width: 560px) {
-    ${rules}
-  }
+const Lead = styled.div`
+  margin: 26px 0 0;
 `
 
-const Sides = styled.dl`
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  margin: 28px 0 0;
-
-  ${narrowCard(css`
-    grid-template-columns: minmax(0, 1fr);
-  `)}
-`
-
-const Side = styled.div<{ $tone: 'registered' | 'contested' }>`
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  min-width: 0;
-  padding-right: 24px;
-
-  & + & {
-    padding: 0 0 0 24px;
-    border-left: 1px solid var(--glass-border);
-  }
-
-  dt {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  dt i {
-    width: 8px;
-    height: 8px;
-    border-radius: var(--radius-pill);
-    background: ${({ $tone }) => `var(--status-${$tone})`};
-    box-shadow: 0 0 0 3px ${({ $tone }) => `var(--status-${$tone}-soft)`};
-  }
-
-  dd {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    margin: 0;
-  }
-
-  ${narrowCard(css`
-    padding-right: 0;
-
-    & + & {
-      margin-top: 18px;
-      padding: 18px 0 0;
-      border-top: 1px solid var(--glass-border);
-      border-left: 0;
-    }
-  `)}
-`
-
-/* The side's outcome, in the display face; durations in the figure face. */
-const Outcome = styled.span`
+/* The verdict on the money, in the display face. */
+const Outcome = styled.p`
+  margin: 8px 0 0;
   color: var(--color-text);
   font-family: var(--font-display);
-  font-size: 24px;
-  line-height: 28px;
+  font-size: 28px;
+  line-height: 32px;
   font-weight: 500;
-  letter-spacing: -0.025em;
+  letter-spacing: -0.028em;
   text-wrap: balance;
-
-  b {
-    font-family: var(--font-figure);
-    font-weight: 500;
-    font-variant-numeric: tabular-nums;
-    letter-spacing: -0.02em;
-    white-space: nowrap;
-  }
 `
 
-const Condition = styled.span`
-  color: var(--color-muted);
-  font-size: var(--fs-small);
-  line-height: var(--lh-small);
-`
-
-/* The wizard defaults behind the card, all of them the creator's to change. */
-const Defaults = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  margin: 26px 0 0;
-  padding-top: 20px;
-  border-top: 1px solid var(--glass-border);
-
-  dl {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px 28px;
-    margin: 0;
-  }
-
-  dl > div {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    min-width: 0;
-  }
-
-  dt {
-    color: var(--color-muted);
-    font-size: 12px;
-    line-height: 16px;
-  }
-
-  dd {
-    margin: 0;
-    color: var(--color-text);
-    font-family: var(--font-figure);
-    font-size: 15px;
-    line-height: 20px;
-    font-weight: 500;
-    font-variant-numeric: tabular-nums;
-    white-space: nowrap;
-  }
-
-  dd small {
-    margin-left: 4px;
-    color: var(--color-muted);
-    font-family: var(--font-sans);
-    font-size: 12px;
-    font-weight: 400;
-  }
-`
-
+/* Separated by space alone: a figure in a card is not a box in a box. */
 const Drawing = styled.div`
-  margin: 22px 0 0;
-  padding: 22px 0 20px;
-  border-top: 1px solid var(--glass-border);
-  border-bottom: 1px solid var(--glass-border);
+  margin: 20px 0 0;
 `
 
+/*
+ * The two lines a card is allowed beyond its drawing: what the money does,
+ * then the one thing about the kind a reader should know before choosing it.
+ * Every line on the page takes the same check, so the pair reads as two
+ * facts rather than as a score; the list's aria-label names the pair.
+ */
 const Points = styled.ul`
   display: flex;
   flex-direction: column;
   gap: 12px;
-  margin: 22px 0 0;
+  margin: 18px 0 0;
   padding: 0;
   list-style: none;
 `
 
-const Point = styled.li<{ $con?: boolean }>`
+const Point = styled.li`
   display: grid;
   grid-template-columns: 18px minmax(0, 1fr);
   gap: 10px;
-  color: ${({ $con }) => ($con ? 'var(--color-muted)' : 'var(--color-text)')};
+  color: var(--color-text);
   font-size: var(--fs-body);
   line-height: var(--lh-body);
+  text-wrap: pretty;
 
   svg {
     margin-top: 1px;
-    color: ${({ $con }) =>
-      $con ? 'var(--color-faint)' : 'var(--color-primary)'};
+    color: var(--color-primary);
   }
 `
 
@@ -603,40 +465,55 @@ const ArrowIcon = () => (
   </svg>
 )
 
-const MinusIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
-    <path
-      d="M7 12h10"
-      stroke="currentColor"
-      strokeWidth="1.85"
-      strokeLinecap="round"
-    />
-  </svg>
-)
-
-/* ---------- The chosen card's foot: continue to its factory ---------- */
+/* ---------- The card's foot: the choice, then its factory ---------- */
 
 const footIn = keyframes`
   from { opacity: 0; transform: translateY(6px); }
   to { opacity: 1; transform: none; }
 `
 
-/* In the card's own flow: nothing floats over the page. */
+/*
+ * In the card's own flow, on both cards at all times: the radio sits where
+ * reading ends, so an unchosen card has no empty block under its lines.
+ * Choosing one adds its button. Where the button fits beside the pill, the
+ * foot is as tall as that button from the start, so nothing moves when it
+ * arrives. On a phone (see Go) it takes its own row under the pill instead,
+ * so there the foot reserves nothing, which would only float the pill in an
+ * empty band and let it jump when chosen: the chosen card grows by the
+ * button's row, below where the reader tapped, and is scrolled until the
+ * button shows.
+ */
 const Foot = styled.div`
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  /* The button's 44px, plus the padding and hairline above it. */
+  min-height: calc(44px + 21px);
   margin: 24px 0 0;
   padding-top: 20px;
   border-top: 1px solid var(--glass-border);
   /* Brought into view on a pick: some room under the button. */
   scroll-margin-bottom: 32px;
+
+  @media (max-width: 560px) {
+    min-height: 0;
+  }
+`
+
+/* The way on, which only the chosen card offers. */
+const Go = styled.div`
   animation: ${footIn} 360ms var(--ease-out) both;
 
   @media (prefers-reduced-motion: reduce) {
     animation: none;
   }
 
+  /* On a phone the button takes its own full-width row under the pill. */
   @media (max-width: 560px) {
+    flex: 1 1 100%;
+
     > * {
       width: 100%;
     }
@@ -692,8 +569,9 @@ const Choice = ({
     onChoose(kind)
   }
 
-  // The button that goes on opens at the card's foot, under the fold when
-  // the card is chosen from its head: bring it into view.
+  // The button that goes on opens in the card's foot, which can be under the
+  // fold when the card is chosen by a click higher up, and which on a phone
+  // grows a row for it under the pill: bring it into view.
   useEffect(() => {
     if (!checked || !picked.current) return
     picked.current = false
@@ -725,10 +603,12 @@ const Choice = ({
       style={{ ['--i' as string]: index }}
     >
       <CardHead>
-        <div>
-          <Label $tone="faint">{family}</Label>
-          <CardTitle id={titleId}>{name}</CardTitle>
-        </div>
+        <Label $tone="faint">{family}</Label>
+        <CardTitle id={titleId}>{name}</CardTitle>
+      </CardHead>
+      <VisuallyHidden id={summaryId}>{summary}</VisuallyHidden>
+      {children}
+      <Foot ref={footRef}>
         <Pick>
           <input
             type="radio"
@@ -744,22 +624,20 @@ const Choice = ({
             {checked ? 'Selected' : 'Choose'}
           </span>
         </Pick>
-      </CardHead>
-      <VisuallyHidden id={summaryId}>{summary}</VisuallyHidden>
-      {children}
-      {checked && (
-        <Foot ref={footRef}>
-          <ButtonLink
-            to={href(chainId)}
-            $variant="primary"
-            onMouseEnter={() => preload()}
-            onFocus={() => preload()}
-          >
-            Create a {name}
-            <ArrowIcon />
-          </ButtonLink>
-        </Foot>
-      )}
+        {checked && (
+          <Go>
+            <ButtonLink
+              to={href(chainId)}
+              $variant="primary"
+              onMouseEnter={() => preload()}
+              onFocus={() => preload()}
+            >
+              Create a {name}
+              <ArrowIcon />
+            </ButtonLink>
+          </Go>
+        )}
+      </Foot>
     </Option>
   )
 }
@@ -774,8 +652,9 @@ const LaunchListPage = () => {
     : NETWORKS.gnosis
   const chain = NETWORKS_INFO[chainId as keyof typeof NETWORKS_INFO]
   const chainName = chain?.name ?? `chain ${chainId}`
-  const symbol = getNativeCurrency(chainId).symbol
-  const stakeToken = defaultStakeToken[chainId]?.label
+  // The Standard deposit is in the chain's own coin: xDAI on Gnosis, ETH on
+  // Ethereum and Sepolia. No figure goes with it (see the header comment).
+  const coin = `in ${getNativeCurrency(chainId).symbol}`
 
   // The chosen kind lives in the URL; nothing is chosen until someone picks.
   const [searchParams, setSearchParams] = useSearchParams()
@@ -793,12 +672,9 @@ const LaunchListPage = () => {
     )
   }
 
-  const period = formatDuration(challengePeriod)
-  const withdrawing = formatDuration(withdrawingPeriod)
-
   useDocumentHead(
     'Launch a list | Kleros Curate',
-    'Create a Kleros Curate list: a Standard list, where a submitter’s deposit comes back after the challenge period, or a Stake list, where the stake stays locked while the entry is listed and a challenger can earn it at any time.',
+    'Create a Kleros Curate list: a Standard list, where a submitter’s deposit comes back in full once the entry is registered unchallenged, or a Stake list, where the stake stays locked while the entry is listed and a challenger can earn it at any time.',
   )
 
   return (
@@ -823,84 +699,32 @@ const LaunchListPage = () => {
         <Choice
           kind="standard"
           family="Standard Curate"
-          summary={`If nobody challenges the entry, the submitter's deposit, in ${symbol}, comes back in full after the ${formatDurationLong(challengePeriod)} challenge period; a challenger who shows within that period that it breaks the rules earns its base deposit.`}
+          summary="The submitter’s deposit comes back in full once the challenge window closes with nobody challenging; once registered, an entry can only be contested through a removal request."
           checked={kind === 'standard'}
           onChoose={choose}
           chainId={chainId}
           index={3}
         >
-          <Sides>
-            <Side $tone="registered">
-              <Label as="dt" $tone="faint">
-                <i aria-hidden />
-                Submitter
-              </Label>
-              <dd>
-                <Outcome>
-                  Back in <b>{period}</b>
-                </Outcome>
-                <Condition>
-                  The whole deposit, if nobody challenges the entry
-                </Condition>
-              </dd>
-            </Side>
-            <Side $tone="contested">
-              <Label as="dt" $tone="faint">
-                <i aria-hidden />
-                Challenger
-              </Label>
-              <dd>
-                <Outcome>Earns the base deposit</Outcome>
-                <Condition>
-                  For showing, within those {period}, that the entry breaks the
-                  rules
-                </Condition>
-              </dd>
-            </Side>
-          </Sides>
-
-          <Defaults>
-            <Label $tone="faint">Defaults · you set them</Label>
-            <dl>
-              <div>
-                <dt>Base deposit</dt>
-                <dd>
-                  {STANDARD_DEFAULTS.submissionBaseDeposit}
-                  <small>{symbol}</small>
-                </dd>
-              </div>
-              <div>
-                <dt>Removal deposit</dt>
-                <dd>
-                  {STANDARD_DEFAULTS.removalBaseDeposit}
-                  <small>{symbol}</small>
-                </dd>
-              </div>
-              <div>
-                <dt>Arbitration</dt>
-                <dd>
-                  Court’s fee<small>in {symbol}</small>
-                </dd>
-              </div>
-            </dl>
-          </Defaults>
+          <Lead>
+            <Label $tone="muted">For one-time verification</Label>
+          </Lead>
+          <Outcome>Returned if unchallenged</Outcome>
 
           <Drawing>
-            <Lifecycle spec={STANDARD_LIFE} scale={SCALE} delay={700} />
+            <DepositFate spec={STANDARD_FATE} coin={coin} delay={700} />
           </Drawing>
 
-          <Points aria-label="Trade-offs">
+          <Points aria-label="What this kind means">
             <Point>
               <CurateIcon name="check" size={18} />
               <span>
-                <VisuallyHidden>Advantage: </VisuallyHidden>
-                Only a hash goes on-chain; entry data lives on IPFS.
+                The deposit comes back in full once the challenge window closes
+                with nobody challenging.
               </span>
             </Point>
-            <Point $con>
-              <MinusIcon />
+            <Point>
+              <CurateIcon name="check" size={18} />
               <span>
-                <VisuallyHidden>Trade-off: </VisuallyHidden>
                 Once registered, an entry can only be contested through a
                 removal request.
               </span>
@@ -911,92 +735,33 @@ const LaunchListPage = () => {
         <Choice
           kind="stake"
           family="Stake Curate"
-          summary={`The submitter's stake stays locked while the entry is listed and comes back ${formatDurationLong(withdrawingPeriod)} after withdrawing; a challenger who shows at any time that the entry breaks the rules earns the whole stake.`}
+          summary="The submitter’s stake stays locked until they withdraw it, so anyone can challenge the entry at any time and take the stake; a failed challenge adds the challenger’s stake to the entry’s."
           checked={kind === 'stake'}
           onChoose={choose}
           chainId={chainId}
           index={4}
         >
-          <Sides>
-            <Side $tone="registered">
-              <Label as="dt" $tone="faint">
-                <i aria-hidden />
-                Submitter
-              </Label>
-              <dd>
-                <Outcome>Back on withdrawal</Outcome>
-                <Condition>
-                  Locked while listed, returned {withdrawing} after you withdraw
-                </Condition>
-              </dd>
-            </Side>
-            <Side $tone="contested">
-              <Label as="dt" $tone="faint">
-                <i aria-hidden />
-                Challenger
-              </Label>
-              <dd>
-                <Outcome>Earns the whole stake</Outcome>
-                <Condition>
-                  For showing, at any time, that the entry breaks the rules
-                </Condition>
-              </dd>
-            </Side>
-          </Sides>
-
-          <Defaults>
-            <Label $tone="faint">Defaults · you set them</Label>
-            <dl>
-              <div>
-                {stakeToken ? (
-                  <>
-                    <dt>Minimum stake</dt>
-                    <dd>
-                      {STAKE_DEFAULTS.submissionMinDeposit}
-                      <small>{stakeToken}</small>
-                    </dd>
-                  </>
-                ) : (
-                  <>
-                    <dt>Stake token</dt>
-                    <dd>Any ERC-20</dd>
-                  </>
-                )}
-              </div>
-              <div>
-                <dt>Challenger stake</dt>
-                <dd>
-                  {STAKE_DEFAULTS.challengeStakeMultiplier}%
-                  <small>of the entry’s</small>
-                </dd>
-              </div>
-              <div>
-                <dt>Arbitration</dt>
-                <dd>
-                  Court’s fee<small>in {symbol}</small>
-                </dd>
-              </div>
-            </dl>
-          </Defaults>
+          <Lead>
+            <Label $tone="muted">For continuous compliance</Label>
+          </Lead>
+          <Outcome>Locked while listed</Outcome>
 
           <Drawing>
-            <Lifecycle spec={STAKE_LIFE} scale={SCALE} delay={780} />
+            <DepositFate spec={STAKE_FATE} coin="in any ERC-20" delay={780} />
           </Drawing>
 
-          <Points aria-label="Trade-offs">
+          <Points aria-label="What this kind means">
             <Point>
               <CurateIcon name="check" size={18} />
               <span>
-                <VisuallyHidden>Advantage: </VisuallyHidden>A failed challenge
-                adds the challenger’s stake to the entry’s.
+                The stake stays locked until the submitter withdraws it, and a
+                challenger can take it at any time until then.
               </span>
             </Point>
-            <Point $con>
-              <MinusIcon />
+            <Point>
+              <CurateIcon name="check" size={18} />
               <span>
-                <VisuallyHidden>Trade-off: </VisuallyHidden>
-                Submitters approve and lock a token, and get it back only by
-                withdrawing.
+                A failed challenge adds the challenger’s stake to the entry’s.
               </span>
             </Point>
           </Points>

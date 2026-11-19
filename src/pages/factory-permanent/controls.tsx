@@ -10,6 +10,14 @@ import { parseIpfs } from 'utils/ipfs-parse'
 import { normalizeDecimalInput } from 'utils/decimal-input'
 import { reportSwitchFailure, signInWithToast } from 'utils/wrap-with-toast'
 import { CurateIcon } from 'components/curate/icons'
+import {
+  DROP_HINT,
+  DROP_REPLACE,
+  FileDropVeil,
+  fileDropEdge,
+  useFileDrop,
+} from 'components/file-drop'
+import { edgeTransition, kitTransition } from 'components/ui/kit-styles'
 import KitSelect from 'components/ui/Select'
 import Switch from 'components/ui/Switch'
 import { reveal } from 'components/curate/motion/reveal'
@@ -772,7 +780,13 @@ export const useWalletGate = ({
 
 /* ---------- Upload ---------- */
 
-const UploadRow = styled.div<{ $empty: boolean }>`
+const UploadRow = styled.div<{
+  $empty: boolean
+  $over?: boolean
+  $refusing?: boolean
+}>`
+  --edge-angle: 210deg;
+  position: relative;
   display: grid;
   grid-template-columns: 56px minmax(0, 1fr) auto;
   align-items: center;
@@ -783,7 +797,9 @@ const UploadRow = styled.div<{ $empty: boolean }>`
       $empty ? 'var(--color-border-strong)' : 'var(--glass-border)'};
   border-radius: var(--radius);
   background: var(--color-raised);
-  transition: border-color var(--motion);
+  transition:
+    ${kitTransition('border-color', 'background', 'box-shadow')},
+    ${edgeTransition};
 
   &:hover {
     border-color: var(--color-border-strong);
@@ -793,13 +809,19 @@ const UploadRow = styled.div<{ $empty: boolean }>`
     border-color: var(--color-danger);
   }
 
+  /* Phones: the actions take a line of their own under the picture and
+     the meta. They are named, not taken as the last child: the hidden file
+     input comes after them, so ":last-child" put the buttons in the 48px
+     picture column, where "Connect wallet" spilled out of the card. */
   @media (max-width: 520px) {
     grid-template-columns: 48px minmax(0, 1fr);
 
-    > :last-child {
+    > [data-upload-actions] {
       grid-column: 1 / -1;
     }
   }
+
+  ${fileDropEdge}
 `
 
 const Thumb = styled.span`
@@ -882,7 +904,11 @@ export const UploadField = ({
   id: string
   label: React.ReactNode
   help?: React.ReactNode
-  /** The acceptance rule ("PNG, SVG, WebP or JPEG · under 2 MB"). */
+  /**
+   * The acceptance rule ("PNG, SVG, WebP or JPEG · under 2 MB"). A limit is
+   * held together here (the word before its figure, the figure, the unit), so
+   * a narrow row breaks the line at the middot, never inside the limit.
+   */
   hint: string
   kind: 'image' | 'pdf'
   accept: string
@@ -903,12 +929,35 @@ export const UploadField = ({
   const invalid = !!showError && !!error
   const uri = value ? parseIpfs(value) : ''
   const noun = what.replace(/^the /, '')
+  const rule = hint.replace(
+    /(\S+) (\d[\d.,]*) (?=[KMG]?B\b)/g,
+    '$1\u00A0$2\u00A0',
+  )
 
   const pick = (file: File) => {
     const problem = reject(file)
     setRejection(problem)
     if (!problem) onPick(file)
   }
+
+  /*
+   * A file dropped on the row goes through `pick`: the caller's own rule,
+   * the same message when it fails and the same upload when it passes. While
+   * the wallet or Atlas sign-in blocks, or an upload is in flight, the row
+   * says so during the drag rather than taking a file it cannot send, in
+   * the gate's own words, exactly as the gate gives them: "Connect wallet to
+   * upload the logo" without a wallet, "Sign in to upload the logo" with one
+   * that has not signed in.
+   */
+  const drop = useFileDrop<HTMLDivElement>({
+    blocked: gate.blocker
+      ? gate.blocker
+      : uploading
+        ? 'An upload is already going.'
+        : '',
+    onFile: pick,
+    onRefuse: setRejection,
+  })
 
   return (
     <FormField
@@ -920,7 +969,18 @@ export const UploadField = ({
     >
       {(a11y) => (
         <>
-          <UploadRow $empty={!uri} aria-invalid={invalid || undefined}>
+          <UploadRow
+            $empty={!uri}
+            $over={drop.over}
+            $refusing={!!drop.refusal}
+            aria-invalid={invalid || undefined}
+            {...drop.handlers}
+          >
+            {drop.over && (
+              <FileDropVeil $refusing={!!drop.refusal}>
+                {drop.refusal || (uri ? DROP_REPLACE : DROP_HINT)}
+              </FileDropVeil>
+            )}
             <Thumb aria-hidden={kind === 'pdf' || undefined}>
               {kind === 'image' ? (
                 <SafeImage
@@ -959,10 +1019,21 @@ export const UploadField = ({
                   </Data>
                 </TextLink>
               ) : (
-                <Small $faint>{hint}</Small>
+                <Small $faint>{rule}</Small>
               )}
             </UploadMeta>
-            <Row $gap={8} $justify="flex-end">
+            {/*
+             * Blocked, the row holds the blocker's own control ("Connect
+             * wallet", "Sign in"), which says the gate once; the group's
+             * name gives a screen reader the whole of it.
+             */}
+            <Row
+              data-upload-actions
+              role={gate.blocker ? 'group' : undefined}
+              aria-label={gate.blocker}
+              $gap={8}
+              $justify="flex-end"
+            >
               {gate.blocker ? (
                 gate.control
               ) : (
@@ -998,11 +1069,20 @@ export const UploadField = ({
               }}
             />
           </UploadRow>
-          {gate.blocker && (
-            <Small $muted role="status">
-              {gate.blocker}
-            </Small>
-          )}
+          {/*
+           * The gate in words, shown only where no control in the row says
+           * it. With the control there it stays a live region for screen
+           * readers, so a gate that moves on (connect, then sign in) is still
+           * announced.
+           */}
+          {gate.blocker &&
+            (gate.control ? (
+              <VisuallyHidden role="status">{gate.blocker}</VisuallyHidden>
+            ) : (
+              <Small $muted role="status">
+                {gate.blocker}
+              </Small>
+            ))}
           {rejection && <ErrorText role="alert">{rejection}</ErrorText>}
         </>
       )}

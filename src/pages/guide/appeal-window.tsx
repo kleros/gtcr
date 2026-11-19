@@ -360,7 +360,7 @@ export const AppealWindow = () => {
         </li>
         <li>
           <b>No appeal funded</b>
-          <span>The ruling is final and the registry applies it.</span>
+          <span>The ruling is final and the list applies it.</span>
         </li>
       </Outcomes>
     </Panel>

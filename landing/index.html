@@ -7,14 +7,14 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Kleros Curate · Lists anyone can challenge</title>
+    <title>Kleros Curate · Obtain your verification, or earn by keeping lists clean</title>
     <meta
       name="description"
       content="Kleros Curate runs lists anyone can add to and anyone can challenge. Submit an entry that follows a list's rules and your deposit comes back; spot one that breaks them and earn the bounty. Disputes are settled by Kleros Court jurors."
     />
     <meta
       property="og:title"
-      content="Kleros Curate · Lists anyone can challenge"
+      content="Kleros Curate · Obtain your verification, or earn by keeping lists clean"
     />
     <meta
       property="og:description"
@@ -27,7 +27,7 @@
     <meta property="og:image:height" content="630" />
     <meta
       property="og:image:alt"
-      content="Kleros Curate: lists anyone can challenge, settled by jurors."
+      content="Kleros Curate: obtain your verification, or earn by keeping lists clean."
     />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:image" content="https://curate.kleros.io/og-image.png" />
@@ -217,8 +217,8 @@
             <span>Kleros Curate</span>
           </p>
           <h1 id="hero-title" class="headline" data-reveal style="--i: 1">
-            <span>Lists anyone can challenge.</span>
-            <em>Settled by jurors.</em>
+            <span>Obtain your verification,</span>
+            <em>or earn by keeping lists clean.</em>
           </h1>
           <ul class="incentives" data-reveal style="--i: 2">
             <li>
@@ -232,7 +232,7 @@
           </ul>
           <div class="actions" data-reveal style="--i: 3">
             <a class="btn btn--primary" href="/browse">
-              Explore registries
+              Explore lists
               <svg
                 viewBox="0 0 16 16"
                 width="15"
@@ -246,35 +246,35 @@
           </div>
         </div>
 
-        <!-- Bounties won, all time: one figure per coin, never added across coins. -->
-        <figure
-          class="bounty"
-          aria-labelledby="bounty-title"
-          data-bounty
+        <!-- Rounds 14 and 15: the money on Curate, all time, in dollars only
+             at today's prices: what challengers have won, and everything
+             that has passed through the contracts (deposits, challenges and
+             appeals; pages/dashboard/transit.ts says what each counts). -->
+        <section
+          class="money"
+          aria-label="Money on Curate, all time"
+          data-money
           data-reveal
           style="--i: 4"
         >
-          <div class="bounty-head">
-            <h2 id="bounty-title" class="bounty-title">Bounties won</h2>
-            <span class="label" data-fig="bountyWhen">All time</span>
-            <p class="bounty-rulings" data-bounty-rulings hidden></p>
+          <div class="money-row">
+            <h2 class="label">Bounties won</h2>
+            <p class="money-figure" data-money-fig="bounties">—</p>
+            <p class="money-note" data-money-note="bounties">
+              by challengers, all time
+            </p>
           </div>
-          <ol class="bounty-coins" data-bounty-coins></ol>
-          <div class="bounty-axis" data-bounty-axis aria-hidden="true"></div>
-          <p class="sr-only" aria-live="polite" data-ledger-live></p>
-          <figcaption class="bounty-note">
-            <span
-              >Won by challengers who spotted a mistake, on top of their own
-              deposit back.</span
-            >
-            <span class="bounty-key"
-              ><i aria-hidden="true"></i
-              ><span data-fig="ledgerKey"
-                >Bounties won per month, by ruling date</span
-              ></span
-            >
-          </figcaption>
-        </figure>
+          <div class="money-row">
+            <h2 class="label">Passed through Curate</h2>
+            <p class="money-figure" data-money-fig="transit">—</p>
+            <p class="money-note" data-money-note="transit">
+              deposits, challenges and appeals, all time
+            </p>
+          </div>
+          <p class="money-basis" data-money-basis>
+            In dollars at today’s prices.
+          </p>
+        </section>
       </section>
 
       <section
@@ -290,10 +290,9 @@
               <span class="featured-brand">Activity · </span
               ><span data-fig="window">30 days</span>
             </h2>
-            <span class="chip" data-fig="scope">Ethereum and Gnosis</span>
           </div>
           <div class="featured-meta">
-            <span data-fig="stamp">Public on-chain data</span>
+            <span data-fig="stamp">Public Curate data</span>
             <a class="text-link featured-live" href="/">
               Live figures in the app
               <svg
@@ -330,47 +329,12 @@
               <dd data-count data-fig="curators">—</dd>
             </div>
           </dl>
-          <ul class="legend" aria-hidden="true">
-            <li><span class="label">Per day (UTC)</span></li>
-            <li><i class="legend-line"></i>Requests</li>
-            <li>
-              <i class="legend-blocks"><b></b><b></b></i
-              ><span data-fig="challengeKey">Challenges</span>
-            </li>
-            <li>
-              <i class="legend-avg"></i><span data-fig="average">Average</span>
-            </li>
-          </ul>
         </div>
 
-        <figure class="chart-card" data-chart-card>
-          <figcaption class="sr-only" data-fig="chartTitle">
-            Requests and challenges per day, 30 days
-          </figcaption>
-          <div class="chart" data-chart tabindex="0"></div>
-          <p class="sr-only" aria-live="polite" data-chart-live></p>
-          <!-- The table sits in a clipping box: a bare table spills its rows
-               past the page edge and widens the page on phones. -->
-          <div class="sr-only">
-            <table data-chart-table>
-              <caption data-fig="chartCaption">
-                Requests and challenges made per day, 30 days
-              </caption>
-              <thead>
-                <tr>
-                  <th scope="col">Day (UTC)</th>
-                  <th scope="col">Requests</th>
-                  <th scope="col">Challenges</th>
-                </tr>
-              </thead>
-              <tbody></tbody>
-            </table>
-          </div>
-        </figure>
         <p class="viz-empty" data-empty hidden>
           The figures could not load here. They are live in the app.
         </p>
-        <!-- Phones: the link leaves the top bar and sits under the chart's x-axis. -->
+        <!-- Phones: the link leaves the top bar and sits under the figures. -->
         <a class="text-link featured-live featured-live--foot" href="/">
           Live figures in the app
           <svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true">
@@ -674,7 +638,7 @@
         <nav class="foot-links" aria-label="More">
           <a href="#roles">Who it’s for</a>
           <a href="#disputes">How disputes work</a>
-          <a href="/browse">Explore registries</a>
+          <a href="/browse">Explore lists</a>
           <a href="/launch/100">Launch a list</a>
           <a href="/guide">Guide</a>
           <a href="https://docs.kleros.io/products/curate" rel="noopener"
@@ -708,7 +672,7 @@
         </div>
       </div>
       <p class="foot-source" data-fig="source">
-        Figures come from public on-chain data.
+        Figures come from public Curate data.
       </p>
     </footer>
 

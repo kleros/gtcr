@@ -17,7 +17,9 @@ import { useActionGate } from 'components/curate/item-standard-gate'
  * runs that step and says so. Where the contract takes no evidence for the
  * entry right now, `EvidenceClosed` keeps the section in place with one line
  * saying when it opens. The action card and the phone bar call
- * `openEvidenceComposer()`, which scrolls to the box and focuses it.
+ * `openEvidenceComposer()`, which scrolls to the box and focuses it; the
+ * dispute panels' "Read evidence" calls `scrollToEvidenceHistory()`, which
+ * goes the other way, to the pieces already filed.
  */
 
 /**
@@ -28,9 +30,37 @@ export const EvidenceComposerCollapse = React.createContext(false)
 
 const OPEN_EVENT = 'cv:open-evidence'
 
+const prefersReducedMotion = () =>
+  typeof window !== 'undefined' &&
+  !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+
 /** Scroll to the composer on this page and focus its first field. */
 export const openEvidenceComposer = () => {
   window.dispatchEvent(new Event(OPEN_EVENT))
+}
+
+/**
+ * The history above the composer, where the pieces already filed are. Both
+ * entry pages give their history this id, and links to #request-timelines
+ * rely on it, so it stays as it is.
+ */
+export const EVIDENCE_HISTORY_ID = 'request-timelines'
+
+/**
+ * Scroll to the evidence already filed: the History head, with its newest
+ * request group open. Focus lands first and without its own scroll, so the
+ * smooth scroll below runs undisturbed and a keyboard reader carries on
+ * inside the history (html's scroll-padding-top keeps it clear of the app
+ * bar).
+ */
+export const scrollToEvidenceHistory = () => {
+  const target = document.querySelector<HTMLElement>(`#${EVIDENCE_HISTORY_ID}`)
+  if (!target) return
+  target.focus({ preventScroll: true })
+  target.scrollIntoView({
+    behavior: prefersReducedMotion() ? 'auto' : 'smooth',
+    block: 'start',
+  })
 }
 
 const Shell = styled(Surface)`
@@ -92,10 +122,6 @@ const LockIcon = () => (
   </svg>
 )
 
-const prefersReducedMotion = () =>
-  typeof window !== 'undefined' &&
-  !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
-
 /**
  * Where a piece being sent is: its files going up to IPFS, the wallet
  * asking to sign, or the signed transaction waiting to be mined.
@@ -115,7 +141,7 @@ interface InlineEvidenceComposerProps {
   isSubmitting?: boolean
   /** While submitting: what the button says is happening. */
   phase?: EvidencePhase
-  onSubmit: (values: EvidenceFormValues) => void
+  onSubmit: (values: EvidenceFormValues) => void | Promise<unknown>
 }
 
 const InlineEvidenceComposer = ({
@@ -196,16 +222,19 @@ const InlineEvidenceComposer = ({
       <Title id={`${id}-title`}>Add evidence</Title>
       <EvidenceForm
         key={formKey}
-        onSubmit={(values) => {
+        onSubmit={(values) =>
           // The parent checks the account, not the network or the sign-in.
-          if (gate.ready && !isSubmitting) onSubmit(values)
-        }}
+          gate.ready && !isSubmitting ? onSubmit(values) : undefined
+        }
         formID={formID}
         detailed
         variant="composer"
         actions={action}
         onDraftChange={setDrafted}
         blocked={disabled}
+        // While a piece is being sent its files are already going up, so
+        // the attachment is frozen rather than swapped under "Uploading…".
+        busy={!!isSubmitting}
       />
       {/* The button names the wallet step; this says it for screen readers,
           and in words when no single button clears it. While a piece is

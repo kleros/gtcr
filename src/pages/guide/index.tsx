@@ -713,7 +713,7 @@ const Guide = () => {
             <Actions style={{ marginTop: 8 }}>
               <ButtonLink to="/browse" $variant="primary">
                 <CurateIcon name="registry" size={16} />
-                Browse registries
+                Browse lists
               </ButtonLink>
               <ButtonLink to={launchHref} $variant="secondary">
                 Launch a list

@@ -68,7 +68,7 @@ export interface GuideStep {
 
 export const SUBMIT_STEPS: GuideStep[] = [
   {
-    title: 'Open the registry and read its policy',
+    title: 'Open the list and read its policy',
     body: 'Check your entry against every criterion; jurors decide the unclear cases.',
   },
   {
@@ -101,7 +101,7 @@ export const CHALLENGE_STEPS: GuideStep[] = [
   },
   {
     title: 'Follow the case',
-    body: 'Once the ruling is final the registry applies it and the winner is paid.',
+    body: 'Once the ruling is final the list applies it and the winner is paid.',
   },
 ]
 
@@ -124,7 +124,7 @@ export const DISPUTE_STEPS: GuideStep[] = [
   },
   {
     title: 'Execution',
-    body: 'With no funded appeal the ruling is final; the registry applies it and pays out the deposits.',
+    body: 'With no funded appeal the ruling is final; the list applies it and pays out the deposits.',
   },
 ]
 
@@ -518,7 +518,7 @@ export const AGENT_FILES: { href: string; name: string; about: string }[] = [
     href: SKILL_PATH,
     name: SKILL_PATH,
     about:
-      'The skill: read a registry, build an entry, compute deposits, challenge, appeal, deploy.',
+      'The skill: read a list, build an entry, compute deposits, challenge, appeal, deploy.',
   },
   {
     href: '/curate-agent-context.md',
@@ -551,14 +551,13 @@ export const GLOSSARY: {
   mark?: 'verified'
 }[] = [
   {
-    term: 'Registry',
+    term: 'List',
     definition:
-      'A list kept by a smart contract, also called a TCR (token-curated registry). Its policy, fields and names live in its MetaEvidence, on IPFS.',
+      'A list kept by a smart contract, which other tools call a registry or TCR (token-curated registry). Its policy, fields and names live in its MetaEvidence, on IPFS.',
   },
   {
     term: 'Entry',
-    definition:
-      'One item in a registry; each list names its own: a tag, a token.',
+    definition: 'One item in a list; each list names its own: a tag, a token.',
   },
   {
     term: `${VERIFIED_LABEL} list`,

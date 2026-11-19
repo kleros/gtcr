@@ -1,7 +1,9 @@
 import React, { useMemo, useState } from 'react'
 import styled from 'styled-components'
+import { useParams } from 'react-router-dom'
 import useUrlChainId from 'hooks/use-url-chain-id'
 import useUnindexedEvidence from 'hooks/use-unindexed-evidence'
+import { useDisputeJurors } from 'hooks/use-dispute-jury'
 import {
   CONTRACT_STATUS,
   REQUEST_TYPE_LABEL,
@@ -34,9 +36,14 @@ import { AddressLink } from 'components/curate/item-standard-fields'
 import { toSeconds } from 'components/curate/item-standard-format'
 import { linkify } from 'components/curate/item-standard-linkify'
 import {
+  EVIDENCE_HISTORY_ID,
   EvidenceComposerCollapse,
   openEvidenceComposer,
 } from 'components/inline-evidence-composer'
+import {
+  EvidencePartyBadge,
+  type EvidenceParty,
+} from 'components/curate/evidence-party-badge'
 
 /*
  * An entry's history: one panel, one group per request (newest first), each
@@ -45,6 +52,12 @@ import {
  * inline evidence composer, folded to one row, while a request is open.
  * Used by the Standard item page. The case link sits on the
  * event that opened the dispute (the challenge), never on the submission.
+ *
+ * Each piece of evidence says who filed it with a badge on its own row
+ * (round 3 of the design review), so a reader never has to work out whether
+ * an address was the submitter, the challenger or one of the jurors the
+ * court drew. The history is also where "Read evidence" lands, which is why
+ * its container takes the focus with its id.
  */
 
 /** Round fields the subgraph returns beyond the shared SubgraphRound. */
@@ -137,8 +150,10 @@ const useCaseLink = (request?: TimelineRequest) => {
   const { arbitrator, uiURL } =
     (networkId && klerosAddresses[networkId as keyof typeof klerosAddresses]) ||
     {}
-  const disputed = !!request.disputed && Number(request.disputeID ?? 0) !== 0
-  if (!disputed) return undefined
+  // A disputed request always has a case, and the arbitrator numbers its
+  // first one 0 (request-facts.ts): the request being disputed is what says
+  // there is a case to link, never the number it was given.
+  if (!request.disputed || request.disputeID === undefined) return undefined
   const id = String(request.disputeID)
   const href =
     uiURL && arbitrator?.toLowerCase() === request.arbitrator?.toLowerCase()
@@ -218,10 +233,13 @@ const EvidenceText = ({ text }: { text: string }) => {
 
 /** An evidence's own title (a challenge justification's too), in its quote. */
 const QuoteTitle = styled.span`
+  /* The text's own measure, so a long title wraps with the text under it. */
+  max-width: 68ch;
   color: var(--color-text);
   font-size: var(--fs-body);
   line-height: 22px;
   font-weight: 500;
+  overflow-wrap: anywhere;
 `
 
 const rulingSentence = (ruling: string, isRegistration: boolean): string => {
@@ -248,6 +266,7 @@ const RequestTimeline = ({
   hideCase = false,
 }: TimelineProps) => {
   const networkId = useUrlChainId()
+  const { tcrAddress } = useParams<{ tcrAddress: string }>()
   const disputeCase = useCaseLink(request)
   const caseLink = hideCase ? undefined : disputeCase
 
@@ -351,6 +370,15 @@ const RequestTimeline = ({
     )
     .map((e) => e.URI)
   const evidenceMap = useUnindexedEvidence(unindexedEvidenceURIs)
+  // The jurors drawn on this request's case, for the badge on a piece they
+  // filed. The case panel makes the same read where the dispute was never
+  // appealed, so an open request usually asks for nothing extra.
+  const jurors = useDisputeJurors({
+    chainId: networkId,
+    arbitrator: request.arbitrator,
+    disputeIDs: [request.disputed ? request.disputeID : undefined],
+    arbitrable: tcrAddress,
+  })
 
   if (!item || !request || !logs) return <SkeletonBlock $height="80px" />
 
@@ -362,12 +390,26 @@ const RequestTimeline = ({
     txHash ? getTxPage({ networkId: networkId ?? 0, txHash }) : undefined
   const open = !request.resolved
   const requesterRole = isRegistration ? 'submitter' : 'requester'
-  const roleOf = (party?: string) => {
+  /*
+   * Which party filed something. Only the three the chain names: an address
+   * that is none of them gets no badge at all, since the jury read covers
+   * the rounds it could go through seat by seat and nothing else.
+   */
+  const partyOf = (party?: string): EvidenceParty | undefined => {
     const address = party?.toLowerCase()
     if (!address) return undefined
-    if (address === request.requester?.toLowerCase()) return requesterRole
+    if (address === request.requester?.toLowerCase()) return 'requester'
     if (address === request.challenger?.toLowerCase()) return 'challenger'
-    return undefined
+    return jurors.has(address) ? 'juror' : undefined
+  }
+  /** The same, as the word the row's marker takes its tone from. */
+  const roleOf = (party?: string) => {
+    const side = partyOf(party)
+    return side === 'requester'
+      ? requesterRole
+      : side === 'challenger'
+        ? 'challenger'
+        : undefined
   }
   // Where the case link goes: the challenge event when the indexer has it;
   // otherwise the challenger's first evidence, which is filed with
@@ -476,14 +518,21 @@ const RequestTimeline = ({
                     ? 'window'
                     : 'neutral'
               }
-              title="Evidence"
+              title={
+                <>
+                  Evidence
+                  <EvidencePartyBadge
+                    party={partyOf(event.party)}
+                    requesterLabel={capitalizeFirstLetter(requesterRole)}
+                  />
+                </>
+              }
               timestamp={timestamp}
               href={href}
               detail={
                 <>
                   <span>
                     by <AddressLink address={event.party} />
-                    {roleOf(event.party) ? ` · ${roleOf(event.party)}` : ''}
                   </span>
                   {caseLink && i === caseEvidenceIndex && (
                     <CaseLink id={caseLink.id} href={caseLink.href} />
@@ -774,7 +823,7 @@ const RequestTimelines = ({
 
   if (!item)
     return (
-      <Surface id="request-timelines" $padding="standard" aria-busy="true">
+      <Surface id={EVIDENCE_HISTORY_ID} $padding="standard" aria-busy="true">
         <SkeletonBlock $height="120px" />
       </Surface>
     )
@@ -783,8 +832,11 @@ const RequestTimelines = ({
 
   return (
     <>
+      {/* "Read evidence" lands here and leaves the focus on it, so a
+          keyboard reader carries on inside the history. */}
       <div
-        id="request-timelines"
+        id={EVIDENCE_HISTORY_ID}
+        tabIndex={-1}
         style={{ display: 'flex', flexDirection: 'column', gap: 14 }}
       >
         <HistoryHead>

@@ -1,4 +1,13 @@
 export type RegistryKind = 'standard' | 'permanent'
+/**
+ * What a ruling was issued on. The two kinds of list the app shows, plus
+ * the retired Classic lists, which the all-time ledger still counts: their
+ * 2020-2022 disputes are part of the protocol's history, so they belong in
+ * the all-time figures, and they have no page in this app, so a Classic
+ * ruling is never a row, a card or a link (view.ts: scopedRulings filters
+ * them out of the feed, and the query reads no list address for them).
+ */
+export type RulingKind = RegistryKind | 'classic'
 export type TrustStatus = 'verified' | 'unverified' | 'unknown'
 
 export interface DashboardRegistry {
@@ -65,8 +74,8 @@ export interface RulingRow {
   /** The id of its card (DashboardActivity.id), e.g. "standard-<request id>". */
   id: string
   chainId: number
-  kind: RegistryKind
-  /** List address, lowercase. */
+  kind: RulingKind
+  /** List address, lowercase; empty on a Classic row, which has no page. */
   registry: string
   itemID?: string
   /** Unix seconds. */
@@ -75,7 +84,11 @@ export interface RulingRow {
   outcome: NonNullable<DashboardActivity['outcome']>
   /** The ruling went to the challenger (disputeOutcome "Reject"). */
   challengerWon: boolean
-  /** Who challenged, lowercase. */
+  /**
+   * Who challenged, lowercase. Absent when the indexer recorded no
+   * challenger (an empty field or the zero address), which says nothing
+   * about who won: only the count of different challengers leaves it out.
+   */
   challenger?: string
   /**
    * What the winning challenger took, on top of their own deposit back, in
@@ -83,7 +96,12 @@ export interface RulingRow {
    * the entry's stake (Stake). "0" when the challenger did not win.
    */
   bounty: string
-  /** Stake lists: the ERC-20 the bounty is paid in, lowercase. Absent: the chain's coin. */
+  /**
+   * Stake lists: the ERC-20 the bounty is paid in, lowercase. A Standard row
+   * never sets it and means the chain's own coin; a Stake row always means a
+   * token, so absent there means the token was not read — never the chain's
+   * coin (scopedBounties keeps that amount in a coin of its own).
+   */
   token?: string
 }
 
@@ -201,6 +219,17 @@ export interface DashboardData {
   rulings: Record<number, RulingRow[]>
   /** Per chain: the ledger stopped at its page limit (counts are lower bounds). */
   rulingsCapped: Record<number, boolean>
+  /**
+   * Per chain, the retired Classic lists' entry history: how many lists and
+   * how many entries they hold, summed from their `numberOfItems` and
+   * nothing else (no address is read, so no Classic list can become a row).
+   * `capped` when that read came back a full page, which makes the entries a
+   * lower bound. A chain is absent when its main query did not load.
+   */
+  classicEntries: Record<
+    number,
+    { lists: number; entries: number; capped: boolean }
+  >
   /** Stake bounty tokens by "<chainId>:<token address>". */
   tokens: Record<string, TokenInfo>
   /** Every dispute open right now (disputed and not yet resolved). */

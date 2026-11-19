@@ -8,7 +8,7 @@ const StyledSocialMediaSvg = styled.svg`
 
   path,
   rect {
-    fill: white;
+    fill: currentColor;
   }
 `
 export default {

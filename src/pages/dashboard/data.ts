@@ -32,7 +32,14 @@ import {
   TrustStatus,
   UnchallengedRow,
 } from './types'
-import { entryCount, openWindows, rowsPlaced, windowsPending } from './view'
+import {
+  entryCount,
+  openWindows,
+  rangeStart,
+  rowsPlaced,
+  windowsPending,
+} from './view'
+import { keptRead } from './saved-load'
 import { readChallengePeriods } from './challenge-windows'
 import { readTokens } from './tokens'
 
@@ -45,7 +52,11 @@ const DASHBOARD_QUERY_TIMEOUT_MS = 10_000
  * running when the budget ends fills in on the next refresh.
  */
 const METADATA_BUDGET_MS = 6_000
-/** How long a load waits for the symbols of Stake bounty tokens. */
+/**
+ * How long a load waits for the symbols of Stake bounty tokens. Each token
+ * has the whole budget to itself: the ones that answer are kept whatever
+ * the others do.
+ */
 const TOKEN_BUDGET_MS = 5_000
 /** How long the challenge-period reads may take before they count as unknown. */
 const CHALLENGE_WINDOWS_BUDGET_MS = 7_000
@@ -224,6 +235,16 @@ const ENVIO_DASHBOARD_QUERY = gql`
     ) {
       ${LREGISTRY_FIELDS}
     }
+    # The retired Classic lists, for the all-time entry total alone: one
+    # field, summed, and no id — so nothing here can become a list, a row
+    # or a link (the app has no Classic page). Every other figure on the
+    # dashboard counts the Standard and Stake lists it can show.
+    classicRegistries: Registry(
+      limit: ${REGISTRY_PAGE_SIZE}
+      where: { chainId: { _eq: $chainId } }
+    ) {
+      numberOfItems
+    }
     standardRequests: LRequest(
       limit: 360
       where: { chainId: { _eq: $chainId }, submissionTime: { _gte: $since } }
@@ -326,6 +347,15 @@ const ENVIO_LREGISTRY_PAGE_QUERY = gql`
  * The all-time ledger of rulings: every resolved dispute, a page at a time
  * until a short page. Only the fields the counts and the bounties need; the
  * cards with the entries' identifiers load separately (loadRulingCards).
+ *
+ * Both kinds of list the indexer holds, because the figures built on this
+ * are the protocol's history: the Standard lists (`LRequest`) and the
+ * retired Classic ones (`Request`), whose disputes ran 2020-2022. Retiring
+ * the Classic interface de-indexed nothing — it only stopped selecting this
+ * field — so the history comes back for no extra request: both pages ride
+ * one query per chain. The Classic page deliberately reads no `registry_id`
+ * and no identifiers: those rulings are counted, never listed, because a
+ * Classic list has no page in this app to link a row to.
  */
 const ENVIO_RULINGS_PAGE_QUERY = gql`
   query EnvioRulingsPage($chainId: Int!, $offset: Int!) {
@@ -341,6 +371,23 @@ const ENVIO_RULINGS_PAGE_QUERY = gql`
     ) {
       id
       registry_id
+      requestType
+      deposit
+      challenger
+      disputeOutcome
+      resolutionTime
+    }
+    classic: Request(
+      limit: ${RULINGS_PAGE_SIZE}
+      offset: $offset
+      where: {
+        chainId: { _eq: $chainId }
+        disputed: { _eq: true }
+        resolved: { _eq: true }
+      }
+      order_by: [{ resolutionTime: desc }, { id: asc }]
+    ) {
+      id
       requestType
       deposit
       challenger
@@ -682,7 +729,7 @@ const registryTitle = (
 ): string => {
   if (title && title.trim() && title.trim() !== '-') return title.trim()
   if (kind === 'permanent') return `Stake list ${shortAddress(address)}`
-  return `Registry ${shortAddress(address)}`
+  return `List ${shortAddress(address)}`
 }
 
 const isFallbackRegistryTitle = (registry: DashboardRegistry): boolean =>
@@ -779,12 +826,24 @@ export const buildActivityHref = (
     ? `/tcr/${chainId}/${registryAddress}/${itemID}`
     : `/tcr/${chainId}/${registryAddress}`
 
+/*
+ * A preview value longer than a row can show is cut, which keeps the saved
+ * load small. A bare hex value is the exception, up to a 64-byte key (130
+ * characters with its 0x): the row shortens it from both ends, like an
+ * address (board-rows.tsx, readableIdentifier), and that needs its real
+ * tail. Cut here, a 48-byte BLS key reached the row ending in "..." and was
+ * printed raw and clipped at its end, the one identifier on the board that
+ * did not read like the others.
+ */
+const WHOLE_HEX = /^(0x)?[0-9a-f]{1,128}$/i
+
 const cleanPreviewValue = (value: unknown): string => {
   const text = String(value ?? '').trim()
   if (!text) return ''
   if (text.startsWith('/ipfs/') || text.startsWith('ipfs://'))
     return 'IPFS file'
-  if (text.length > 92) return `${text.slice(0, 89)}...`
+  if (text.length > 92 && !WHOLE_HEX.test(text))
+    return `${text.slice(0, 89)}...`
   return text
 }
 
@@ -1045,6 +1104,13 @@ interface NormalizedChain {
    * earned the badge (its earliest registration on a list of lists).
    */
   verifiedSince?: Record<string, number>
+  /**
+   * Envio only: the retired Classic lists' entry history on this chain,
+   * summed from `numberOfItems` and nothing else. It never becomes a
+   * registry (nothing in `registries` is Classic): the all-time entry
+   * figure adds it, every figure about lists the app can show does not.
+   */
+  classicHistory?: { lists: number; entries: number; capped: boolean }
 }
 
 const normalizeEnvio = (payload: any, chainId: number): NormalizedChain => {
@@ -1158,6 +1224,24 @@ const normalizeEnvio = (payload: any, chainId: number): NormalizedChain => {
       registry.activeCount = open
     }
 
+  /*
+   * The retired Classic lists, as a sum and nothing else: how many lists
+   * and how many entries they hold. A full page makes it a lower bound
+   * (`capped`), which is the one case the share built on it is suppressed
+   * rather than drawn short (bounties.tsx).
+   */
+  const classicRows = (payload.classicRegistries ?? []) as {
+    numberOfItems?: string | number
+  }[]
+  const classicHistory = {
+    lists: classicRows.length,
+    entries: classicRows.reduce(
+      (sum, registry) => sum + toNumber(registry.numberOfItems),
+      0,
+    ),
+    capped: classicRows.length >= REGISTRY_PAGE_SIZE,
+  }
+
   const decided = toActivities('decidedStandard')
   return {
     registries,
@@ -1179,6 +1263,7 @@ const normalizeEnvio = (payload: any, chainId: number): NormalizedChain => {
       (payload.openStandardDisputes ?? []).length >= OPEN_DISPUTE_LIMIT,
     verifiedRegistryAddresses: [...verifiedAddresses],
     verifiedSince,
+    classicHistory,
   }
 }
 
@@ -1429,10 +1514,12 @@ const normalizePermanentLeaderboardPage = (
   return users
 }
 
-interface ActivityEvent {
+export interface ActivityEvent {
   at: number
   chainId: number
   kind: 'submissions' | 'removals' | 'challenges'
+  /** Who made it (lowercase): the requester, submitter or challenger. */
+  who?: string
 }
 
 const envioPageEvents = (
@@ -1451,11 +1538,18 @@ const envioPageEvents = (
           requestEntity.requestType === 'ClearingRequested'
             ? 'removals'
             : 'submissions',
+        who: String(requestEntity.requester ?? '').toLowerCase(),
       })
   }
   for (const challenge of payload.standardChallenges ?? []) {
     const at = toNumber(challenge.challengeTime)
-    if (at >= since) events.push({ at, chainId, kind: 'challenges' })
+    if (at >= since)
+      events.push({
+        at,
+        chainId,
+        kind: 'challenges',
+        who: String(challenge.challenger ?? '').toLowerCase(),
+      })
   }
   return events
 }
@@ -1466,13 +1560,21 @@ const permanentPageEvents = (
   chainId: number,
 ): ActivityEvent[] => [
   ...(payload.submissions ?? [])
-    .map((submission: any) => toNumber(submission.createdAt))
-    .filter((at: number) => at >= since)
-    .map((at: number) => ({ at, chainId, kind: 'submissions' as const })),
+    .map((submission: any) => ({
+      at: toNumber(submission.createdAt),
+      chainId,
+      kind: 'submissions' as const,
+      who: String(submission.submitter ?? '').toLowerCase(),
+    }))
+    .filter((event: ActivityEvent) => event.at >= since),
   ...(payload.challenges ?? [])
-    .map((challenge: any) => toNumber(challenge.createdAt))
-    .filter((at: number) => at >= since)
-    .map((at: number) => ({ at, chainId, kind: 'challenges' as const })),
+    .map((challenge: any) => ({
+      at: toNumber(challenge.createdAt),
+      chainId,
+      kind: 'challenges' as const,
+      who: String(challenge.challenger ?? '').toLowerCase(),
+    }))
+    .filter((event: ActivityEvent) => event.at >= since),
 ]
 
 /** Buckets events into the window's 30 UTC days, oldest first. */
@@ -1620,6 +1722,183 @@ const fetchCuratorLeaderboard = async (
   }
 }
 
+/** Pages read per chain and indexer when the whole history is asked for. */
+const HISTORY_MAX_PAGES = 80
+/**
+ * History pages read at once per chain and indexer: few, since the browser
+ * opens six connections per host and the page's own reads share them.
+ */
+const HISTORY_CONCURRENCY = 3
+/**
+ * On the Envio indexer the pages read at once go out as one batched request
+ * (utils/indexer-request.ts) on one connection: more at once means fewer
+ * requests on its shared limit, and the 6M view waits less on a cold load.
+ */
+const HISTORY_ENVIO_CONCURRENCY = 6
+/** A history page may wait behind the page's own reads: a longer timeout. */
+const HISTORY_TIMEOUT_MS = 30_000
+
+/**
+ * The curator rows of an indexer, every page of them, `concurrency` pages at
+ * a time until a batch holds a page that is not full (every later page is
+ * then empty). Rows are kept once per id, as readCuratorPages keeps them.
+ */
+const readAllCuratorPages = async (
+  fetchPage: (
+    page: number,
+  ) => Promise<Record<string, any[] | undefined> | null>,
+  keys: string[],
+  concurrency = HISTORY_CONCURRENCY,
+): Promise<{
+  payload: Record<string, any[]>
+  failed: boolean
+  truncated: boolean
+}> => {
+  const payload: Record<string, any[]> = Object.fromEntries(
+    keys.map((key) => [key, []]),
+  )
+  const seen = new Set<string>()
+  for (let first = 0; first < HISTORY_MAX_PAGES; first += concurrency) {
+    const pages = await Promise.all(
+      Array.from(
+        { length: Math.min(concurrency, HISTORY_MAX_PAGES - first) },
+        // A page that fails is asked once more on its own: retrying the
+        // whole read would walk every page again on the shared limit.
+        async (_, index) =>
+          (await fetchPage(first + index)) ?? fetchPage(first + index),
+      ),
+    )
+    let done = false
+    for (const next of pages) {
+      if (!next) return { payload, failed: true, truncated: false }
+      for (const key of keys)
+        for (const row of next[key] ?? []) {
+          const id = `${key}:${row?.id}`
+          if (row?.id !== undefined && seen.has(id)) continue
+          seen.add(id)
+          payload[key].push(row)
+        }
+      const full = keys.some(
+        (key) => (next[key]?.length ?? 0) >= LEADERBOARD_PAGE_SIZE,
+      )
+      if (!full) done = true
+    }
+    if (done) return { payload, failed: false, truncated: false }
+  }
+  return { payload, failed: false, truncated: true }
+}
+
+/** Every request and challenge on the Standard and Stake lists, since a time. */
+export interface ActivityHistory {
+  /** Where the history starts, in seconds. */
+  since: number
+  /** One event per request and per challenge, for the chart's long ranges. */
+  events: ActivityEvent[]
+  /** Chains whose history did not load in full. */
+  failed: number[]
+  /** A history longer than the pages allowed: its oldest part is missing. */
+  truncated: boolean
+}
+
+/**
+ * The history behind the chart's 6M / 1Y / 3Y ranges and Top curators over
+ * the same range (round 8; the events carry who made them), from `since`.
+ * The same rows the 30-day load reads: the Standard lists' requests and
+ * challenges, and the Stake lists' submissions and challenges. The retired
+ * Classic lists stay out, as everywhere but the bounties and the entries
+ * ever curated (round 4: "only for this"). It is read after the dashboard's
+ * own load, in pages read a few at a time.
+ */
+export const fetchActivityHistory = async (
+  chains: number[],
+  since: number,
+): Promise<ActivityHistory> => {
+  const reads = await Promise.all(
+    chains.flatMap((chainId) => {
+      const envioUrl = subgraphUrl[chainId]
+      const stakeUrl = subgraphUrlPermanent[chainId]
+      return [
+        envioUrl
+          ? readAllCuratorPages(
+              (page) =>
+                safeRequest<any>(
+                  envioUrl,
+                  ENVIO_CURATOR_PAGE_QUERY,
+                  {
+                    chainId,
+                    since,
+                    limit: LEADERBOARD_PAGE_SIZE,
+                    offset: page * LEADERBOARD_PAGE_SIZE,
+                  },
+                  HISTORY_TIMEOUT_MS,
+                ),
+              ENVIO_CURATOR_KEYS,
+              HISTORY_ENVIO_CONCURRENCY,
+            ).then((read) => ({
+              ...read,
+              chainId,
+              events: envioPageEvents(read.payload, chainId, since),
+            }))
+          : null,
+        stakeUrl
+          ? readAllCuratorPages(
+              (page) =>
+                safeRequest<any>(
+                  stakeUrl,
+                  PERMANENT_CURATOR_PAGE_QUERY,
+                  {
+                    since: String(since),
+                    first: LEADERBOARD_PAGE_SIZE,
+                    skip: page * LEADERBOARD_PAGE_SIZE,
+                  },
+                  HISTORY_TIMEOUT_MS,
+                ),
+              PERMANENT_CURATOR_KEYS,
+            ).then((read) => ({
+              ...read,
+              chainId,
+              events: permanentPageEvents(read.payload, since, chainId),
+            }))
+          : null,
+      ]
+    }),
+  )
+  const valid = reads.filter(
+    (read): read is NonNullable<(typeof reads)[number]> => read !== null,
+  )
+  // A history with a hole would draw a false dip and rank curators short:
+  // the read fails as a whole (each failed page was already asked twice).
+  if (valid.some((read) => read.failed))
+    throw new Error('The curation history did not load in full')
+  return {
+    since,
+    events: valid.flatMap((read) => read.events),
+    failed: [
+      ...new Set(valid.filter((read) => read.failed).map((r) => r.chainId)),
+    ],
+    truncated: valid.some((read) => read.truncated),
+  }
+}
+
+/** How long a history read is kept across page loads (saved-load.ts). */
+const HISTORY_KEPT_MS = 30 * 60_000
+
+/**
+ * The history from the start of the longest range the chart offers (3Y):
+ * nothing on the page reads further back. Kept across page loads and shared
+ * with any other page that asks (saved-load.ts keptRead): a reload does not
+ * walk it again.
+ */
+export const readActivityHistory = (
+  chains: number[],
+): Promise<ActivityHistory> =>
+  keptRead(`history:${chains.join(',')}`, HISTORY_KEPT_MS, () =>
+    fetchActivityHistory(
+      chains,
+      rangeStart('3y', Math.floor(Date.now() / 1000)),
+    ),
+  )
+
 const dedupeRegistries = (
   registries: DashboardRegistry[],
 ): DashboardRegistry[] => {
@@ -1684,13 +1963,11 @@ const safeRequest = async <T>(
   url: string | undefined,
   query: string,
   variables: Record<string, unknown> = {},
+  timeout = DASHBOARD_QUERY_TIMEOUT_MS,
 ): Promise<T | null> => {
   if (!url) return null
   const controller = new AbortController()
-  const timer = window.setTimeout(
-    () => controller.abort(),
-    DASHBOARD_QUERY_TIMEOUT_MS,
-  )
+  const timer = window.setTimeout(() => controller.abort(), timeout)
   try {
     return await request<T>({
       url,
@@ -1764,6 +2041,20 @@ const readRemainingRegistries = async (
 
 /* ---------- Rulings: the all-time ledger ---------- */
 
+/**
+ * An address the indexer actually recorded, lowercase. An empty field and
+ * the zero address both mean "not recorded": the activity and curator paths
+ * already read the zero address that way (accumulateUser, the `isChallenge`
+ * check), and the ledger reads it the same, so a non-address never counts as
+ * a challenger or as a token.
+ */
+const recordedAddress = (
+  value: string | undefined | null,
+): string | undefined => {
+  const address = normalizeAddress(value)
+  return address && address !== ZERO_ADDRESS ? address : undefined
+}
+
 /** A Standard resolved dispute as the ledger reads it. */
 interface LedgerRequestRow {
   id: string
@@ -1786,20 +2077,34 @@ interface LedgerChallengeRow {
   registry?: { id?: string; token?: string } | null
 }
 
-const requestRuling = (row: LedgerRequestRow, chainId: number): RulingRow => {
+/**
+ * One resolved dispute: a Standard request, or one on a retired Classic
+ * list. A Classic ruling is counted and never shown, so it carries no list
+ * address and no entry id — the query selects neither, and this is the
+ * second half of that: nothing downstream could build a link out of one
+ * even if it reached a feed (view.ts: scopedRulings filters them out).
+ */
+const requestRuling = (
+  row: LedgerRequestRow,
+  chainId: number,
+  kind: 'standard' | 'classic',
+): RulingRow => {
   const challengerWon = row.disputeOutcome === 'Reject'
+  const classic = kind === 'classic'
   return {
-    id: `standard-${row.id}`,
+    id: `${kind}-${row.id}`,
     chainId,
-    kind: 'standard',
-    registry: normalizeAddress(row.registry_id),
-    itemID: row.id.split('@')[0] || undefined,
+    kind,
+    registry: classic ? '' : normalizeAddress(row.registry_id),
+    itemID: classic ? undefined : row.id.split('@')[0] || undefined,
     resolvedAt: toNumber(row.resolutionTime),
     outcome:
       disputeOutcomeOf({ ...row, disputed: true, resolved: true }) ??
       'no-ruling',
     challengerWon,
-    challenger: normalizeAddress(row.challenger) || undefined,
+    // The ruling still went to the challenger when the indexer recorded no
+    // challenger: only the count of different challengers leaves them out.
+    challenger: recordedAddress(row.challenger),
     // A winning challenger gets their own payment back plus the
     // requester's base deposit (the arbitration cost paid the court).
     bounty: challengerWon ? String(row.deposit ?? '0') : '0',
@@ -1825,11 +2130,14 @@ const challengeRuling = (
           ? 'removed'
           : 'no-ruling',
     challengerWon,
-    challenger: normalizeAddress(row.challenger) || undefined,
+    challenger: recordedAddress(row.challenger),
     // Stake Curate: a successful challenger recovers their deposit and
     // earns the entry's entire stake.
     bounty: challengerWon ? String(row.itemStake ?? '0') : '0',
-    token: normalizeAddress(row.registry?.token) || undefined,
+    // The list's own ERC-20. Absent means the subgraph did not give it, not
+    // the chain's coin: a Stake stake is never paid in the chain's coin, so
+    // the amount stays in a coin of its own (scopedBounties).
+    token: recordedAddress(row.registry?.token),
   }
 }
 
@@ -1846,10 +2154,10 @@ type LedgerPart = {
 } | null
 
 /**
- * One chain's ledger: every Standard and Stake dispute the court has
- * closed, newest first, read page by page to the end. An indexer that is not
- * configured has no rows. A page that fails keeps what was read before it,
- * as a lower bound (`capped`) on a chain marked `failed`; null only when
+ * One chain's ledger: every Standard, Classic and Stake dispute the court
+ * has closed, newest first, read page by page to the end. An indexer that is
+ * not configured has no rows. A page that fails keeps what was read before
+ * it, as a lower bound (`capped`) on a chain marked `failed`; null only when
  * neither indexer gave a single page.
  */
 const readRulings = async (
@@ -1862,6 +2170,7 @@ const readRulings = async (
     for (let page = 0; page < RULINGS_MAX_PAGES; page += 1) {
       const payload = await safeRequest<{
         standard?: LedgerRequestRow[]
+        classic?: LedgerRequestRow[]
       }>(url, ENVIO_RULINGS_PAGE_QUERY, {
         chainId,
         offset: page * RULINGS_PAGE_SIZE,
@@ -1871,11 +2180,20 @@ const readRulings = async (
           ? null
           : { rows: [...rows.values()], capped: true, failed: true }
       const standard = payload.standard ?? []
+      const classic = payload.classic ?? []
       // A ruling landing between two pages shifts the rest by one: the
-      // repeat is dropped by id, nothing is skipped.
+      // repeat is dropped by its prefixed id, nothing is skipped.
       for (const row of standard)
-        rows.set(`standard-${row.id}`, requestRuling(row, chainId))
-      if (standard.length < RULINGS_PAGE_SIZE)
+        rows.set(`standard-${row.id}`, requestRuling(row, chainId, 'standard'))
+      for (const row of classic)
+        rows.set(`classic-${row.id}`, requestRuling(row, chainId, 'classic'))
+      // Both lists page on the same offset in one query, so the loop may
+      // only stop when BOTH pages are short: stopping on the shorter one
+      // would silently truncate the other.
+      if (
+        standard.length < RULINGS_PAGE_SIZE &&
+        classic.length < RULINGS_PAGE_SIZE
+      )
         return { rows: [...rows.values()], capped: false, failed: false }
     }
     return { rows: [...rows.values()], capped: true, failed: false }
@@ -2287,6 +2605,7 @@ export const loadDashboardData = async ({
   const openDisputesCapped: DashboardData['openDisputesCapped'] = {}
   const rulings: DashboardData['rulings'] = {}
   const rulingsCapped: DashboardData['rulingsCapped'] = {}
+  const classicEntries: DashboardData['classicEntries'] = {}
   chains.forEach((chainId, index) => {
     const envio = envioResults[index]
     const permanent = permanentResults[index]
@@ -2296,6 +2615,7 @@ export const loadDashboardData = async ({
     }
     openDisputesCapped[chainId] =
       !!envio?.openDisputesCapped || !!permanent?.openDisputesCapped
+    if (envio?.classicHistory) classicEntries[chainId] = envio.classicHistory
     const ledger = ledgers[index]
     if (!ledger) return
     rulings[chainId] = ledger.rows
@@ -2311,11 +2631,9 @@ export const loadDashboardData = async ({
           chainId: row.chainId,
           token: row.token,
         })
-  const tokens =
-    (await withBudget(
-      readTokens([...bountyTokens.values()]),
-      TOKEN_BUDGET_MS,
-    )) ?? {}
+  // The budget is per token, so one slow node no longer takes every other
+  // symbol down with it; a token that misses it has its amount withheld.
+  const tokens = await readTokens([...bountyTokens.values()], TOKEN_BUDGET_MS)
 
   const { users, series, seriesByChain, seriesTruncated } = leaderboard
 
@@ -2350,6 +2668,7 @@ export const loadDashboardData = async ({
     decided: newestFirst(allResults.flatMap((result) => result.decided)),
     rulings,
     rulingsCapped,
+    classicEntries,
     tokens,
     openDisputes,
     openDisputesCapped,

@@ -71,6 +71,15 @@ export const kitTransition = (...properties: string[]) =>
  * a browser without @property would otherwise drop the whole background.
  */
 
+/**
+ * A flat colour as a fill for the lit edge below. Only the last of several
+ * background layers may carry a colour, so a bare one as the fill makes the
+ * whole declaration invalid and the edge never paints: a tint goes in as a
+ * one-colour gradient, which is an image.
+ */
+export const flatFill = (color: string): string =>
+  `linear-gradient(${color}, ${color})`
+
 /** A fill inside the lit 1px edge (the element needs a transparent 1px border). */
 export const litEdgeBackground = (fill: string): string =>
   `${fill} padding-box, conic-gradient(from var(--edge-angle), var(--edge-1), var(--edge-2) 25%, var(--edge-3) 50%, color-mix(in srgb, var(--edge-1) 35%, transparent) 75%, var(--edge-1)) border-box`

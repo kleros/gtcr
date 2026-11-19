@@ -22,12 +22,15 @@ import {
  * Entry status: a dot with a halo in the status role, a plain label, and the
  * time left wherever the entry appears. When the status runs on a window
  * (challenge window, appeal period, Stake submission period) a track under
- * the label draws that window from the moment it opened (left end) to the
- * moment it closes (right end): the glowing dot is now, the bright stretch
- * after it is the time left, which the text counts down, and a tick marks the
- * deadline. In an appeal with a decisive ruling the loser's half ends first,
- * so its tick sits halfway along the period. Deadline and start come from the
- * same request data the status is derived from.
+ * the label draws the time left as a bar that stands full at the track's left
+ * end when the window opens and is eaten from its right-hand end as the
+ * window runs: the glowing dot is the end being eaten, the faint stretch
+ * behind it is the time already used, and the text counts the bar down. A
+ * full bar reaches the deadline tick, and the track's right end is the close
+ * of the whole period. In an appeal with a decisive ruling the loser's half
+ * ends first, so the deadline tick sits halfway along the period and the
+ * stretch past it stays bare. Deadline and start come from the same request
+ * data the status is derived from.
  */
 
 export interface EntryStatusView {
@@ -388,9 +391,11 @@ const pop = keyframes`
 `
 
 /*
- * The window as a track: used time faint, time left bright up to the
- * deadline tick, anything after the deadline (the winner's half of an
- * appeal) bare. The dot is now; the closing tick ends the track.
+ * The window as a depleting bar: the time left bright from the track's left
+ * end, the time already used faint behind it, and anything past the deadline
+ * (the winner's half of an appeal) bare. The dot is the end being eaten and
+ * travels leftwards; the deadline tick is where a full bar reaches, and the
+ * closing tick ends the track.
  */
 const Track = styled.span<{ $tone: StatusTone }>`
   --tone: var(--status-${({ $tone }) => $tone});
@@ -424,7 +429,6 @@ const Track = styled.span<{ $tone: StatusTone }>`
   }
 
   i[data-part='used'] {
-    left: 0;
     background: color-mix(in srgb, var(--tone) 32%, transparent);
   }
 
@@ -497,6 +501,8 @@ export const EntryStatus = ({
   const running = progress !== undefined && now < deadline
   const span = end - start
   const deadlineAt = span > 0 ? (deadline - start) / span : 1
+  // The bar's own length: the share of the track the time left still covers.
+  const remaining = Math.max(0, deadlineAt - (progress ?? 0))
   const left = deadline - now
   const passed = deadline <= now
   const deadlineText = status.deadline
@@ -526,19 +532,19 @@ export const EntryStatus = ({
             deadline - start,
           )} window${deadlineText ? `; ${deadlineText}` : ''}`}
         >
-          <i data-part="used" style={{ width: pct(progress ?? 0) }} />
+          <i data-part="left" style={{ left: 0, width: pct(remaining) }} />
           <i
-            data-part="left"
+            data-part="used"
             style={{
-              left: pct(progress ?? 0),
-              width: pct(Math.max(0, deadlineAt - (progress ?? 0))),
+              left: pct(remaining),
+              width: pct(Math.max(0, deadlineAt - remaining)),
             }}
           />
           {deadlineAt < 1 && (
             <b data-tick="deadline" style={{ left: pct(deadlineAt) }} />
           )}
           <b data-tick={deadlineAt < 1 ? 'end' : 'deadline'} data-end />
-          <em style={{ left: pct(progress ?? 0) }} />
+          <em style={{ left: pct(remaining) }} />
         </Track>
       )}
     </Wrap>

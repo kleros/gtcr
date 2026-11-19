@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useLayoutEffect, useRef, useState } from 'react'
 import styled, { css, keyframes } from 'styled-components'
 import { Link } from 'react-router-dom'
 import { parseIpfs } from 'utils/ipfs-parse'
@@ -11,24 +11,37 @@ import {
   ChainChip,
   Label,
   SkeletonBlock,
+  StatusDot,
   Surface,
   truncateMiddle,
+  VisuallyHidden,
 } from './primitives'
 import { CurateIcon } from './icons'
 import { TrustTag } from './verified-badge'
 import { KindTag } from './stake-tag'
+import { AddressWrap, CopyValue } from './chrome-address'
 import { Explainer, type ExplainerStep } from './explainer'
 import { RingGauge } from './motion/ring-gauge'
 import { reveal } from './motion/reveal'
 import { CountUpText, isPlainCount } from './registry-shared-count'
 
 /*
- * Registry header, a portfolio panel (YMax): identity first, then the
- * headline figure with the live counts and the list's terms beside it, the
- * share of entries registered as a ring when the page passes both counts, and
- * the one action with its exact deposit and what happens to it (a deposit on
- * Standard, a locked stake on Stake). Parameters slide open as a
- * drawer; the per-list explainer waits in a pill.
+ * Registry header, a portfolio panel (YMax): identity first, with the list's
+ * own address as an explorer link (its arrow shown at rest, copy beside it),
+ * then the headline figure with the live counts and the list's terms beside
+ * it, and at the right end of that row the list's two gauges — the share of
+ * its entries on the list, and beside it the share of its resolved
+ * challenges that took an entry off, with the ones that kept an entry and
+ * the ones still in court under it. Each is drawn once the page passes its
+ * counts; the challenges gauge is drawn on every list whose challenges were
+ * read, an empty ring when none has been resolved yet. One inline stat can
+ * be marked as the list's live work (open requests): it reads in the window
+ * blue behind a haloed dot, so it carries the status colour rather than the
+ * look of a link. Then the one action with its exact deposit and what
+ * happens to it (a deposit on Standard, a locked stake on Stake), and under
+ * it the slot for a control only the list's governor sees (`governance`):
+ * the page passes it, and it draws nothing for anyone else. Parameters
+ * slide open as a drawer; the per-list explainer waits in a pill.
  */
 
 const integer = new Intl.NumberFormat('en-US')
@@ -158,6 +171,59 @@ const Address = styled.span`
   line-height: 24px;
 `
 
+/*
+ * The list's own address opens it on the chain's explorer. Its arrow is
+ * shown at rest, unlike the arrow of an address in a dense cell, because
+ * this one stands alone in the identity row and has to read as a link at a
+ * glance; hover and keyboard focus both brighten the address and nudge the
+ * arrow out, the way it leaves the app. The copy beside it keeps its room
+ * and fades in, so the chips never reflow under the pointer. A screen
+ * reader hears what the hex is and that it opens a new tab, from hidden
+ * text around the visible address, so the name still holds what is seen.
+ */
+const ContractLink = styled.a`
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 24px;
+  padding: 0 4px;
+  color: var(--color-muted);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 24px;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: color var(--motion);
+
+  svg {
+    flex: 0 0 auto;
+    opacity: 0.7;
+    transition:
+      opacity var(--motion),
+      color var(--motion),
+      transform 240ms var(--ease-out);
+  }
+
+  &:hover,
+  &:focus-visible {
+    color: var(--color-text);
+  }
+
+  &:hover svg,
+  &:focus-visible svg {
+    opacity: 1;
+    color: var(--color-primary);
+    transform: translate(1px, -1px);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    &:hover svg,
+    &:focus-visible svg {
+      transform: none;
+    }
+  }
+`
+
 const Description = styled.div`
   max-width: 72ch;
   color: var(--color-muted);
@@ -193,7 +259,9 @@ const Note = styled.span`
 `
 
 /* Every figure sits on the band's bottom line: the headline, the inline
-   stats and the ring's caption share one row of labels and one of values. */
+   stats and the ring's caption share one row of labels and one of values.
+   The challenges' split hangs below that line, so the band keeps room under
+   it rather than letting it touch the footer's hairline. */
 const Figures = styled.div`
   display: flex;
   flex-wrap: wrap;
@@ -202,9 +270,24 @@ const Figures = styled.div`
   padding: 24px 28px;
   border-top: 1px solid var(--glass-border);
 
+  &[data-split] {
+    padding-bottom: 36px;
+  }
+
   @media (max-width: 860px) {
     padding: 20px 18px;
     gap: 20px 32px;
+
+    &[data-split] {
+      padding-bottom: 32px;
+    }
+  }
+
+  /* Phones (round 10): the band is centred, the headline, the stats and the
+     gauges each on the page's middle, rather than left with a gap beside. */
+  @media (max-width: 520px) {
+    justify-content: center;
+    text-align: center;
   }
 `
 
@@ -213,9 +296,17 @@ const Headline = styled.div`
   flex-direction: column;
   gap: 10px;
   min-width: 0;
+
+  @media (max-width: 520px) {
+    align-items: center;
+    width: 100%;
+  }
 `
 
 const Big = styled.span`
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
   color: var(--color-text);
   font-family: var(--font-figure);
   font-size: clamp(48px, 2.6vw + 26px, 64px);
@@ -223,6 +314,14 @@ const Big = styled.span`
   font-weight: 500;
   letter-spacing: -0.045em;
   font-variant-numeric: tabular-nums;
+
+  /* The window role, the same one the inline stats mark, at headline size:
+     the open requests are the list's live work and what a challenger came
+     for, so they lead. The haloed dot is what keeps a blue figure from
+     reading as a link. */
+  &[data-accent] {
+    color: var(--status-window);
+  }
 `
 
 /* A count the indexer did not return: a quiet word, not a display-size dash. */
@@ -267,17 +366,113 @@ const InlineStats = styled.dl`
     font-variant-numeric: tabular-nums;
   }
 
+  /* The one stat the page marks. The blue is the status role for an open
+     window, which is what an open request is; the dot and its halo are what
+     keep a blue figure from reading as a link. */
+  dd[data-accent] {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--status-window);
+    font-size: 24px;
+    line-height: 28px;
+  }
+
   @media (max-width: 520px) {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     width: 100%;
+    margin: 0;
     gap: 16px 20px;
+
+    div {
+      align-items: center;
+    }
+
+    /* An odd last stat (the challenge period) takes the row, centred. */
+    div:last-child:nth-child(odd) {
+      grid-column: 1 / -1;
+    }
 
     dd {
       font-size: 16px;
     }
+
+    dd[data-accent] {
+      font-size: 20px;
+    }
   }
 `
+
+/*
+ * The gauges wrap as one block at the end of the figure row, so a narrow
+ * page breaks the row before them rather than between them. On the row's
+ * line they take its spare room and sit at its right end. Once they have
+ * wrapped onto a line of their own (a laptop or tablet width), they spread
+ * across it, the first ring under the headline and the second at the right
+ * edge, rather than hugging the left and leaving half the band empty.
+ */
+const Gauges = styled.div`
+  display: flex;
+  flex: 1 1 auto;
+  align-items: flex-end;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 28px;
+
+  &[data-wrapped] {
+    justify-content: space-between;
+  }
+
+  @media (max-width: 640px) {
+    gap: 20px 24px;
+  }
+
+  /* Phones: the two gauges side by side, each centred over its caption. */
+  @media (max-width: 520px) {
+    &,
+    &[data-wrapped] {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+      align-items: start;
+      justify-items: center;
+      width: 100%;
+      gap: 20px 12px;
+    }
+  }
+`
+
+/*
+ * Whether the gauges sit on a line of their own under the figures. It is
+ * read from the layout because where the row breaks depends on the figures'
+ * own widths (the counts, the period, a Stake list's locked stake), not on
+ * the viewport. Only the gauges' justify-content follows it, and that never
+ * moves the break, so the reading cannot flip back and forth.
+ */
+const useGaugesWrapped = () => {
+  const row = useRef<HTMLDivElement>(null)
+  const [wrapped, setWrapped] = useState(false)
+  useLayoutEffect(() => {
+    const node = row.current
+    if (!node || typeof ResizeObserver === 'undefined') return undefined
+    const measure = () => {
+      const gauges = node.querySelector('[data-gauges]')
+      const first = node.firstElementChild
+      setWrapped(
+        !!gauges &&
+          !!first &&
+          gauges !== first &&
+          gauges.getBoundingClientRect().top >=
+            first.getBoundingClientRect().bottom - 1,
+      )
+    }
+    measure()
+    const observer = new ResizeObserver(measure)
+    observer.observe(node)
+    return () => observer.disconnect()
+  }, [])
+  return [row, wrapped] as const
+}
 
 const RingBlock = styled.figure`
   display: flex;
@@ -303,6 +498,22 @@ const RingBlock = styled.figure`
     margin-bottom: 5px;
   }
 
+  @media (max-width: 520px) {
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+
+    > figure {
+      margin-bottom: -18px;
+    }
+
+    figcaption {
+      align-items: center;
+      margin-bottom: 0;
+      text-wrap: balance;
+    }
+  }
+
   b {
     color: var(--color-text);
     font-size: 15px;
@@ -311,6 +522,21 @@ const RingBlock = styled.figure`
     font-variant-numeric: tabular-nums;
     white-space: nowrap;
   }
+`
+
+/*
+ * The two outcomes the challenges ring does not draw: the ones that kept
+ * the entry and the ones still in court. Muted, under the figure, and hung
+ * below the caption into the row's padding (as the ring hangs below its own
+ * box), so the figure above it stays on the row's one line of values.
+ */
+const Split = styled.span`
+  margin-bottom: -22px;
+  color: var(--color-muted);
+  font-size: 12px;
+  line-height: 16px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 `
 
 const Footer = styled.div`
@@ -352,10 +578,6 @@ const quiet = css`
 `
 
 const QuietButton = styled.button`
-  ${quiet}
-`
-
-const QuietAnchor = styled.a`
   ${quiet}
 `
 
@@ -442,10 +664,24 @@ export interface RegistryParameter {
 export interface RegistryStat {
   label: string
   value?: React.ReactNode
+  /**
+   * Marks this stat as the list's live work: drawn in the window blue with a
+   * haloed dot. One stat at most, or the row is a page of blue figures and
+   * nothing stands out.
+   */
+  tone?: 'window'
 }
 
 const isMissing = (value?: React.ReactNode) =>
   value === undefined || value === null || value === ''
+
+/** A count worth a status dot: "84" yes, "0" and "—" no. */
+const isLiveCount = (value?: React.ReactNode) =>
+  isPlainCount(value) && Number(value.replace(/,/g, '')) > 0
+
+/** A figure from a capped read is a lower bound: it reads "n+". */
+const lowerBound = (value: number, capped?: boolean) =>
+  `${integer.format(value)}${capped && value > 0 ? '+' : ''}`
 
 /** Plain counts climb; anything else (durations, amounts, nodes) stays put. */
 const StatValue = ({ value }: { value?: React.ReactNode }) =>
@@ -456,6 +692,20 @@ const StatValue = ({ value }: { value?: React.ReactNode }) =>
   ) : (
     <>{value}</>
   )
+
+/**
+ * A Kleros court's name as a phrase, for the explainer and the Parameters
+ * hints of both list kinds: "xDai Curation" reads "xDai Curation court", a
+ * name that already says it ("General Court") is left as it is, and a
+ * trailing qualifier stays after the word: "xDai Curation court (Hidden
+ * Voting)".
+ */
+export const courtPhrase = (name: string): string => {
+  const match = name.match(/^(.*?)\s*(\([^)]*\))$/)
+  const base = match ? match[1] : name
+  const qualifier = match ? ` ${match[2]}` : ''
+  return `${/court$/i.test(base) ? base : `${base} court`}${qualifier}`
+}
 
 /** What happens to the primary button's amount, per kind. */
 const depositNoteFor = (kind: 'standard' | 'permanent', itemName: string) =>
@@ -473,6 +723,7 @@ export const RegistryHeader = ({
   listOfLists = false,
   kind,
   itemName,
+  itemNamePlural,
   primaryLabel,
   primaryAmount,
   depositNote,
@@ -489,6 +740,9 @@ export const RegistryHeader = ({
   loading,
   registeredCount,
   totalCount,
+  registeredLabel = 'Registered now',
+  challenges,
+  governance,
 }: {
   title?: string
   description?: string
@@ -507,6 +761,8 @@ export const RegistryHeader = ({
   /** A Stake list carries the Stake tag; a standard list carries none. */
   kind: 'standard' | 'permanent'
   itemName: string
+  /** The list's own plural, where its metadata gives one ("entries"). */
+  itemNamePlural?: string
   primaryLabel: string
   /** The exact amount the button sends; also listed in Parameters. */
   primaryAmount?: React.ReactNode
@@ -531,8 +787,33 @@ export const RegistryHeader = ({
   registeredCount?: number
   /** Every entry the registered share is taken from. */
   totalCount?: number
+  /** Names the first gauge: a Stake list lists, it does not register. */
+  registeredLabel?: string
+  /**
+   * What the challenges on this list did to its entries, as the second
+   * gauge: the share of the resolved ones that took an entry off, with the
+   * ones that kept it and the ones still in court under it. Passed once the
+   * challenges are read, even when there are none: the gauge is then an
+   * honest empty ring. `scope` names what they were counted from when that
+   * read was capped, and is what makes the figures read "n+".
+   */
+  challenges?: {
+    offList: number
+    onList: number
+    /** Challenges not resolved yet: their disputes are still open. */
+    inCourt?: number
+    /** The phrase after "of": "the newest 1,000 challenges". */
+    scope?: string
+  }
+  /**
+   * A control only the list's governor sees, under the action and its note
+   * (components/curate/list-governance.tsx); it renders nothing for anyone
+   * else, so the column keeps its height for everyone who is not.
+   */
+  governance?: React.ReactNode
 }) => {
   const [paramsOpen, setParamsOpen] = useState(false)
+  const [figuresRef, gaugesWrapped] = useGaugesWrapped()
   const explorer = chainId
     ? getAddressPage({ networkId: chainId, address })
     : null
@@ -555,6 +836,39 @@ export const RegistryHeader = ({
   const registeredShare = showRing
     ? Math.min(1, Math.max(0, registeredCount / totalCount))
     : 0
+  // The challenges gauge is drawn on every list whose challenges were read,
+  // the owner's "for all lists": a list where none has been resolved shows
+  // an empty ring and says so, rather than leaving the green gauge alone as
+  // if this one did not apply. The ring is the share of the resolved ones
+  // that took an entry off; the line under it names the other two outcomes
+  // so the count of challenges is whole: the ones that kept the entry, and
+  // the ones still in court, which no ring share can include yet.
+  const showChallenges = challenges !== undefined
+  const offList = challenges?.offList ?? 0
+  const kept = challenges?.onList ?? 0
+  const inCourt = challenges?.inCourt ?? 0
+  const resolved = offList + kept
+  const raised = resolved + inCourt
+  const challengeScope = challenges?.scope
+  const capped = !!challengeScope
+  const challengeNote = challengeScope
+    ? `Counted from ${challengeScope}.`
+    : undefined
+  // A capped read cannot say "none" of the whole list, only of what it read.
+  const challengeFigure =
+    resolved > 0
+      ? `${lowerBound(offList, capped)} of ${lowerBound(resolved, capped)} resolved`
+      : raised > 0
+        ? capped
+          ? `None resolved in ${challengeScope}`
+          : 'None resolved yet'
+        : capped
+          ? `None in ${challengeScope}`
+          : 'No challenges yet'
+  const challengeSplit =
+    raised > 0
+      ? `${lowerBound(kept, capped)} kept · ${lowerBound(inCourt, capped)} in court`
+      : undefined
 
   return (
     <Shell
@@ -562,7 +876,7 @@ export const RegistryHeader = ({
       $padding="none"
       role="region"
       aria-busy={loading}
-      aria-label={title ?? 'Registry'}
+      aria-label={title ?? 'List'}
     >
       <Top>
         <Identity>
@@ -571,9 +885,7 @@ export const RegistryHeader = ({
             src={logoURI ? parseIpfs(logoURI) : null}
           />
           <IdText>
-            <Title>
-              {title ?? (loading ? 'Loading registry…' : 'Registry')}
-            </Title>
+            <Title>{title ?? (loading ? 'Loading list…' : 'List')}</Title>
             <Chips>
               {chainId && <ChainChip chainId={chainId} />}
               <KindTag kind={kind} size="md" />
@@ -582,7 +894,33 @@ export const RegistryHeader = ({
                   <TrustTag verified={verified} listOfLists={listOfLists} />
                 </TrustSlot>
               )}
-              <Address title={address}>{truncateMiddle(address, 8, 6)}</Address>
+              {explorer ? (
+                <AddressWrap>
+                  <ContractLink
+                    href={explorer}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    title={`${address} · open in explorer`}
+                  >
+                    <VisuallyHidden>List contract </VisuallyHidden>
+                    {truncateMiddle(address, 8, 6)}
+                    <CurateIcon name="external" size={12} />
+                    <VisuallyHidden>
+                      {' '}
+                      on the explorer (opens in a new tab)
+                    </VisuallyHidden>
+                  </ContractLink>
+                  <CopyValue
+                    value={address}
+                    label="Copy list address"
+                    reserve
+                  />
+                </AddressWrap>
+              ) : (
+                <Address title={address}>
+                  {truncateMiddle(address, 8, 6)}
+                </Address>
+              )}
             </Chips>
             {description && <Description>{description}</Description>}
           </IdText>
@@ -595,10 +933,11 @@ export const RegistryHeader = ({
             {primaryAmount && <Amount>· {primaryAmount}</Amount>}
           </Button>
           <Note>{depositNote ?? depositNoteFor(kind, itemName)}</Note>
+          {governance}
         </Action>
       </Top>
 
-      <Figures>
+      <Figures ref={figuresRef} data-split={challengeSplit ? '' : undefined}>
         <Headline>
           <Label $tone="faint">{headline?.label ?? 'Entries'}</Label>
           {isMissing(headline?.value) ? (
@@ -610,7 +949,10 @@ export const RegistryHeader = ({
               </Unknown>
             )
           ) : (
-            <Big>
+            <Big data-accent={headline?.tone === 'window' || undefined}>
+              {headline?.tone === 'window' && isLiveCount(headline.value) && (
+                <StatusDot $tone="window" aria-hidden />
+              )}
               <StatValue value={headline?.value} />
             </Big>
           )}
@@ -622,30 +964,63 @@ export const RegistryHeader = ({
                 <dt>
                   <Label $tone="faint">{stat.label}</Label>
                 </dt>
-                <dd>
+                <dd data-accent={stat.tone === 'window' || undefined}>
+                  {stat.tone === 'window' && isLiveCount(stat.value) && (
+                    <StatusDot $tone="window" aria-hidden />
+                  )}
                   <StatValue value={stat.value} />
                 </dd>
               </div>
             ))}
           </InlineStats>
         )}
-        {showRing && (
-          <RingBlock>
-            <RingGauge
-              size={96}
-              ratio={registeredShare}
-              from="color-mix(in srgb, var(--status-registered) 35%, var(--color-raised))"
-              to="var(--status-registered)"
-              label={`Registered now: ${integer.format(registeredCount)} of ${integer.format(totalCount)} entries`}
-            />
-            <figcaption>
-              <Label $tone="faint">Registered now</Label>
-              <b>
-                {integer.format(registeredCount)} of{' '}
-                {integer.format(totalCount)}
-              </b>
-            </figcaption>
-          </RingBlock>
+        {(showRing || showChallenges) && (
+          <Gauges data-gauges data-wrapped={gaugesWrapped || undefined}>
+            {showRing && (
+              <RingBlock>
+                <RingGauge
+                  size={96}
+                  ratio={registeredShare}
+                  from="color-mix(in srgb, var(--status-registered) 35%, var(--color-raised))"
+                  to="var(--status-registered)"
+                  label={`${registeredLabel}: ${integer.format(registeredCount)} of ${integer.format(totalCount)} entries`}
+                />
+                <figcaption>
+                  <Label $tone="faint">{registeredLabel}</Label>
+                  <b>
+                    {integer.format(registeredCount)} of{' '}
+                    {integer.format(totalCount)}
+                  </b>
+                </figcaption>
+              </RingBlock>
+            )}
+            {showChallenges && (
+              <RingBlock title={challengeNote}>
+                <RingGauge
+                  size={96}
+                  ratio={resolved > 0 ? offList / resolved : 0}
+                  // No share of nothing: an empty ring holds a dash, the
+                  // house mark for a figure there is none of, never "0%".
+                  value={resolved > 0 ? undefined : '—'}
+                  from="var(--status-contested)"
+                  to="var(--status-off)"
+                  label={`Challenges that took ${itemNamePlural ?? `${itemName}s`} off the list: ${challengeFigure}${
+                    challengeSplit ? `, ${challengeSplit}` : ''
+                  }${challengeScope ? `, of ${challengeScope}` : ''}`}
+                />
+                <figcaption>
+                  {/*
+                   * The caption says challenges, not just the outcome: the
+                   * toolbar below carries an "Off the list" chip counting
+                   * entries, and the two figures must not read as one.
+                   */}
+                  <Label $tone="faint">Challenges off the list</Label>
+                  <b>{challengeFigure}</b>
+                  {challengeSplit && <Split>{challengeSplit}</Split>}
+                </figcaption>
+              </RingBlock>
+            )}
+          </Gauges>
         )}
       </Figures>
 
@@ -666,16 +1041,6 @@ export const RegistryHeader = ({
             Listing policy
             {policyUpdated && <PolicyUpdatedBadge registryAddress={address} />}
           </QuietButton>
-        )}
-        {explorer && (
-          <QuietAnchor
-            href={explorer}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <CurateIcon name="external" size={14} />
-            Contract
-          </QuietAnchor>
         )}
         {badgesListTo && (
           <QuietLink to={badgesListTo}>

@@ -1,0 +1,260 @@
+<!doctype html>
+<!--
+  The share card: public/og-image.png (1200x630), the og:image and
+  twitter:image of index.html and landing/index.html. This file is its
+  source; the PNG is a screenshot of it. After an edit, from the repo root:
+
+    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \
+      --headless --hide-scrollbars --force-device-scale-factor=1 \
+      --window-size=1200,630 --virtual-time-budget=8000 \
+      --screenshot=public/og-image.png scripts/og-image.html
+
+  The fonts come from Google Fonts (the app's three faces, nothing else), so
+  render it online; the time budget lets them arrive before the shot. Look
+  at the PNG afterwards: a face that did not load falls back silently.
+
+  The words are the dashboard's (round 13): its title, one clause to a line
+  with the second in the accent, and its lede. The stage is the app's: the
+  dark theme's colours and aurora (DESIGN.md), and no grid or dot pattern
+  behind anything.
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Kleros Curate share card</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Urbanist:wght@500&family=Geist:wght@400;500&family=Geist+Mono:wght@400&display=block"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --stage: #02040b;
+        --text: #f4f6fb;
+        --text-muted: #a1abc0;
+        --text-faint: #7a849e;
+        --primary: #3d7bff;
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+      }
+
+      html,
+      body {
+        width: 1200px;
+        height: 630px;
+        overflow: hidden;
+      }
+
+      body {
+        position: relative;
+        background: var(--stage);
+        color: var(--text);
+        font-family: 'Geist', sans-serif;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      /*
+       * The aurora, as the app paints it behind the top of a page: an
+       * aurora-a pool at the top left, an aurora-b pool at the top right,
+       * and a faint aurora-c pool under the mark. A plain glow, nothing
+       * patterned over it.
+       */
+      .aurora {
+        position: absolute;
+        inset: 0;
+        background:
+          radial-gradient(
+            ellipse 560px 330px at 110px -30px,
+            rgba(27, 47, 255, 0.5),
+            rgba(27, 47, 255, 0.24) 38%,
+            rgba(27, 47, 255, 0.07) 72%,
+            transparent 100%
+          ),
+          radial-gradient(
+            ellipse 540px 340px at 1060px -40px,
+            rgba(10, 124, 255, 0.42),
+            rgba(10, 124, 255, 0.18) 45%,
+            rgba(10, 124, 255, 0.04) 78%,
+            transparent 100%
+          ),
+          radial-gradient(
+            ellipse 380px 150px at 930px 670px,
+            rgba(91, 43, 255, 0.13),
+            transparent 100%
+          ),
+          radial-gradient(
+            circle 330px at 940px 318px,
+            rgba(42, 74, 255, 0.17),
+            rgba(42, 74, 255, 0.07) 55%,
+            transparent 100%
+          );
+      }
+
+      .brand {
+        position: absolute;
+        left: 77px;
+        top: 66px;
+        display: flex;
+        align-items: center;
+        gap: 9px;
+      }
+
+      .brand svg {
+        display: block;
+        width: 36px;
+        height: 41px;
+      }
+
+      .brand span {
+        font-size: 22px;
+        font-weight: 400;
+        line-height: 1;
+        letter-spacing: 0.21em;
+      }
+
+      .copy {
+        position: absolute;
+        left: 76px;
+        top: 178px;
+        width: 680px;
+      }
+
+      h1 {
+        font-family: 'Urbanist', sans-serif;
+        font-size: 60px;
+        font-weight: 500;
+        line-height: 60px;
+        letter-spacing: -0.04em;
+      }
+
+      h1 span,
+      h1 em {
+        display: block;
+        text-wrap: balance;
+      }
+
+      h1 em {
+        font-style: normal;
+        color: var(--primary);
+      }
+
+      p {
+        margin-top: 28px;
+        color: var(--text-muted);
+        font-size: 23px;
+        line-height: 32px;
+        text-wrap: balance;
+      }
+
+      .site {
+        position: absolute;
+        left: 76px;
+        top: 545px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        color: var(--text-faint);
+        font-family: 'Geist Mono', monospace;
+        font-size: 20px;
+        line-height: 24px;
+      }
+
+      /* A haloed dot, as the app marks a live figure. */
+      .site i {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--primary);
+        box-shadow:
+          0 0 0 4px rgba(61, 123, 255, 0.16),
+          0 0 14px rgba(61, 123, 255, 0.7);
+      }
+
+      /*
+       * The Curate mark at about 10x (the favicon's paths, unthickened): a
+       * navy hexagon lit from the middle, and the white ring, ticks and
+       * icosahedron with a soft glow round them.
+       */
+      .mark {
+        position: absolute;
+        left: 768px;
+        top: 120px;
+        width: 346px;
+        height: 396px;
+      }
+
+      .mark svg {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        overflow: visible;
+      }
+
+      .mark .lines {
+        filter: drop-shadow(0 0 3px rgba(170, 196, 255, 0.35))
+          drop-shadow(0 0 24px rgba(61, 123, 255, 0.3));
+      }
+    </style>
+  </head>
+  <body>
+    <div class="aurora" aria-hidden="true"></div>
+
+    <div class="brand">
+      <svg viewBox="0.832 -0.06 35.055 40.12" aria-hidden="true">
+        <path
+          fill="#f4f6fb"
+          fill-rule="evenodd"
+          d="M35.1962 30.5049L19.0499 39.8152C18.6226 40.0616 18.0962 40.0616 17.6689 39.8152L1.52256 30.5049C1.09526 30.2585 0.832031 29.8031 0.832031 29.3103V10.6897C0.832031 10.1969 1.09526 9.74153 1.52256 9.49514L17.6689 0.184793C18.0962 -0.0615975 18.6226 -0.0615975 19.0499 0.184793L35.1962 9.49514C35.6235 9.74153 35.8868 10.1969 35.8868 10.6897V29.3103C35.8868 29.8031 35.6235 30.2585 35.1962 30.5049ZM6.8216 26.6078L2.21308 29.267V10.6897L2.23804 10.6753L6.80026 13.4251L6.90781 13.2467L2.44429 10.5563L18.3123 1.40645L18.3123 6.63718L18.5207 6.63718L18.5207 1.4723L34.4112 10.6352L29.7383 13.3319L29.8424 13.5124L34.5057 10.8212V29.1742L29.8622 26.4545L29.757 26.6342L34.4151 29.3626L18.5596 38.5052L18.5596 33.1215H18.3512L18.3513 38.616L2.38397 29.4089L6.92572 26.7882L6.8216 26.6078ZM24.2135 11.8845L13.8635 11.4274L7.81959 18.8649L12.0858 28.8314L22.4921 29.4898L28.4038 21.083L24.2135 11.8845ZM15.0741 28.5395L20.5563 27.1265L21.5211 28.9466L15.0741 28.5395ZM21.6488 26.6504L26.4476 23.125L22.6023 28.4881L21.6488 26.6504ZM12.6892 27.7547L12.5319 21.5521L19.0322 26.1295L12.6892 27.7547ZM11.4924 26.5255L8.50119 19.5763L11.3679 20.1748L11.4924 26.5255ZM21.7145 25.2051L22.8836 16.6813L27.3132 21.114L21.7145 25.2051ZM13.9305 20.0233L21.4147 16.7987L20.329 24.9019L13.9305 20.0233ZM8.68697 18.5365L12.9542 13.2229L11.5399 19.1325L8.68697 18.5365ZM23.2456 15.1402L24.1777 13.2533L26.715 18.6179L23.2456 15.1402ZM13.3107 17.9829L14.5671 12.6432L20.5482 15.1828L13.3107 17.9829ZM21.9495 14.2741L16.9242 12.1064L23.0164 12.3503L21.9495 14.2741Z"
+        />
+      </svg>
+      <span>CURATE</span>
+    </div>
+
+    <div class="copy">
+      <h1>
+        <span>Obtain your verification,</span>
+        <em>or earn by keeping lists clean.</em>
+      </h1>
+      <p>
+        Curate verifies anything, at scale. Built to let good actors win:
+        they get verified, or they get the bounty if they spot wrong entries.
+      </p>
+    </div>
+
+    <div class="site"><i aria-hidden="true"></i>curate.kleros.io</div>
+
+    <div class="mark" aria-hidden="true">
+      <svg viewBox="0.832 -0.06 35.055 40.12">
+        <defs>
+          <radialGradient
+            id="hex-light"
+            cx="18.36"
+            cy="20"
+            r="19"
+            gradientUnits="userSpaceOnUse"
+          >
+            <stop offset="0" stop-color="#12275f" />
+            <stop offset="0.5" stop-color="#0d1c4c" />
+            <stop offset="1" stop-color="#07102e" />
+          </radialGradient>
+        </defs>
+        <path
+          fill="url(#hex-light)"
+          d="M35.1962 30.5049L19.0499 39.8152C18.6226 40.0616 18.0962 40.0616 17.6689 39.8152L1.52256 30.5049C1.09526 30.2585 0.832031 29.8031 0.832031 29.3103V10.6897C0.832031 10.1969 1.09526 9.74153 1.52256 9.49514L17.6689 0.184793C18.0962 -0.0615975 18.6226 -0.0615975 19.0499 0.184793L35.1962 9.49514C35.6235 9.74153 35.8868 10.1969 35.8868 10.6897V29.3103C35.8868 29.8031 35.6235 30.2585 35.1962 30.5049Z"
+        />
+      </svg>
+      <svg class="lines" viewBox="0.832 -0.06 35.055 40.12">
+        <path
+          fill="#f4f6fb"
+          fill-rule="evenodd"
+          d="M35.1962 30.5049L19.0499 39.8152C18.6226 40.0616 18.0962 40.0616 17.6689 39.8152L1.52256 30.5049C1.09526 30.2585 0.832031 29.8031 0.832031 29.3103V10.6897C0.832031 10.1969 1.09526 9.74153 1.52256 9.49514L17.6689 0.184793C18.0962 -0.0615975 18.6226 -0.0615975 19.0499 0.184793L35.1962 9.49514C35.6235 9.74153 35.8868 10.1969 35.8868 10.6897V29.3103C35.8868 29.8031 35.6235 30.2585 35.1962 30.5049ZM6.8216 26.6078L2.21308 29.267V10.6897L2.23804 10.6753L6.80026 13.4251L6.90781 13.2467L2.44429 10.5563L18.3123 1.40645L18.3123 6.63718L18.5207 6.63718L18.5207 1.4723L34.4112 10.6352L29.7383 13.3319L29.8424 13.5124L34.5057 10.8212V29.1742L29.8622 26.4545L29.757 26.6342L34.4151 29.3626L18.5596 38.5052L18.5596 33.1215H18.3512L18.3513 38.616L2.38397 29.4089L6.92572 26.7882L6.8216 26.6078ZM24.2135 11.8845L13.8635 11.4274L7.81959 18.8649L12.0858 28.8314L22.4921 29.4898L28.4038 21.083L24.2135 11.8845ZM15.0741 28.5395L20.5563 27.1265L21.5211 28.9466L15.0741 28.5395ZM21.6488 26.6504L26.4476 23.125L22.6023 28.4881L21.6488 26.6504ZM12.6892 27.7547L12.5319 21.5521L19.0322 26.1295L12.6892 27.7547ZM11.4924 26.5255L8.50119 19.5763L11.3679 20.1748L11.4924 26.5255ZM21.7145 25.2051L22.8836 16.6813L27.3132 21.114L21.7145 25.2051ZM13.9305 20.0233L21.4147 16.7987L20.329 24.9019L13.9305 20.0233ZM8.68697 18.5365L12.9542 13.2229L11.5399 19.1325L8.68697 18.5365ZM23.2456 15.1402L24.1777 13.2533L26.715 18.6179L23.2456 15.1402ZM13.3107 17.9829L14.5671 12.6432L20.5482 15.1828L13.3107 17.9829ZM21.9495 14.2741L16.9242 12.1064L23.0164 12.3503L21.9495 14.2741Z"
+        />
+      </svg>
+    </div>
+  </body>
+</html>

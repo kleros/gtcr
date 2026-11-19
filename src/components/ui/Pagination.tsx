@@ -2,6 +2,7 @@ import React, {
   useState,
   useCallback,
   useEffect,
+  useId,
   useLayoutEffect,
   useMemo,
   useRef,
@@ -9,8 +10,6 @@ import React, {
 import styled, { css } from 'styled-components'
 import { KitIcon } from './kit-icons'
 import {
-  fieldFocus,
-  fieldSurface,
   figureData,
   joinClassNames,
   kitTransition,
@@ -26,7 +25,14 @@ import {
  * SegmentedControl uses, sliding from page to page with the same stretchy
  * spring; previous and next are round quiet buttons either side. The pager
  * always stays on one line: under 480px it keeps only the first, current
- * and last pages (with ellipses), and the size changer takes its own row.
+ * and last pages, with an ellipsis wherever pages are skipped.
+ *
+ * Skipping pages is what makes the track alone a trap: with 237 pages the
+ * only reachable ones are the first, the last and the current page's
+ * neighbours, so page 137 is 136 taps away. Wherever the track skips, a
+ * "Go to page" field takes a number and jumps there. It writes once, on
+ * Enter, Go or blur, never on a keystroke: every caller carries the page in
+ * the URL, and two of them push a history entry and refetch for each write.
  */
 const COMPACT_QUERY = '(max-width: 479px)'
 
@@ -58,14 +64,6 @@ const PageTrack = styled.div`
   padding: 3px;
   border-radius: var(--radius-pill);
   ${recessTrack}
-`
-
-const SizeRow = styled.div`
-  display: flex;
-
-  @media ${COMPACT_QUERY} {
-    flex-basis: 100%;
-  }
 `
 
 /* The lit thumb under the current page; it slides when the page changes. */
@@ -167,56 +165,74 @@ const Ellipsis = styled.span`
   ${figureData}
 `
 
-const SizeChanger = styled.select`
-  ${fieldSurface}
-  height: 36px;
-  padding: 0 12px;
-  border-radius: var(--radius-pill);
-  font-size: var(--fs-small);
-  line-height: var(--lh-small);
-  cursor: pointer;
-
-  &:hover {
-    border-color: var(--color-border-strong);
-  }
-
-  &:focus-visible {
-    ${fieldFocus}
-  }
-`
-
-const SimplePagination = styled.div`
+/*
+ * The jump: a page pill you type in, in the track and next to the ellipsis
+ * that stands for the pages it reaches, so the control that gets to page 137
+ * is the same size and in the same place as the ones that get to 136 and 138.
+ * The same pill as a page: 32px tall, fully round, at least 32px wide and
+ * exactly as wide as the last page's chip, because a hidden copy of that
+ * number with a page's padding sizes the slot the field fills (237 makes
+ * both 44px), so typing never moves the track. Its surface fill and inner
+ * hairline are what say it takes a number. The field carries no type
+ * attribute: the global input[type="text"] rule (theme) would force the
+ * field radius on it.
+ * It writes once — on Enter, or on leaving it for anything but another pager
+ * control — never per keystroke, because every caller puts the page in the
+ * URL and two of them push a history entry and refetch for each write.
+ */
+const JumpSlot = styled.span`
+  position: relative;
   display: inline-flex;
+  flex: 0 0 auto;
   align-items: center;
-  gap: 8px;
-  color: var(--color-muted);
+  justify-content: center;
+  min-width: 32px;
+  height: 32px;
+  padding: 0 10px;
   ${figureData}
+  font-size: var(--fs-small);
+
+  > span {
+    visibility: hidden;
+  }
 `
 
-const SimpleInput = styled.input`
-  ${fieldSurface}
-  width: 52px;
-  height: 36px;
-  padding: 0;
-  border-radius: var(--radius-pill);
-  ${figureData}
+const JumpField = styled.input`
+  ${pageButtonBase}
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: var(--color-surface);
+  /* The field's hairline, inside the pill: a chip you type in, not a page. */
+  box-shadow: inset 0 0 0 1px var(--color-border);
+  color: var(--color-text);
   text-align: center;
 
+  &::placeholder {
+    color: var(--color-faint);
+  }
+
   &:focus-visible {
-    ${fieldFocus}
+    outline: 2px solid var(--color-primary);
+    outline-offset: -2px;
   }
 `
-
 /*
  * First, last, the current page and `siblings` pages either side of it,
  * with an ellipsis wherever pages are skipped.
  */
+/** True while the track has to skip pages, which is when a jump earns its place. */
+const isWindowed = (total: number, siblings: number): boolean =>
+  total > 5 + 2 * siblings
+
 const getPageNumbers = (
   current: number,
   total: number,
   siblings = 1,
 ): (number | string)[] => {
-  if (total <= 5 + 2 * siblings)
+  if (!isWindowed(total, siblings))
     return Array.from({ length: total }, (_, i) => i + 1)
 
   const pages: (number | string)[] = []
@@ -259,9 +275,6 @@ interface PaginationProps {
   current?: number
   pageSize?: number
   onChange?: (page: number, pageSize: number) => void
-  showSizeChanger?: boolean
-  pageSizeOptions?: string[]
-  onShowSizeChange?: (current: number, size: number) => void
   itemRender?: (
     page: number,
     type: string,
@@ -270,7 +283,6 @@ interface PaginationProps {
   style?: React.CSSProperties
   className?: string
   defaultCurrent?: number
-  simple?: boolean
 }
 
 const Pagination: React.FC<PaginationProps> = ({
@@ -278,19 +290,13 @@ const Pagination: React.FC<PaginationProps> = ({
   current: controlledCurrent,
   pageSize: controlledPageSize,
   onChange,
-  showSizeChanger = false,
-  pageSizeOptions = ['10', '20', '50', '100'],
-  onShowSizeChange,
   itemRender,
   style,
   className,
   defaultCurrent = 1,
-  simple = false,
 }) => {
   const [internalCurrent, setInternalCurrent] = useState(defaultCurrent)
-  const [internalPageSize, setInternalPageSize] = useState(
-    controlledPageSize || 10,
-  )
+  const [internalPageSize] = useState(controlledPageSize || 10)
 
   const isControlled = controlledCurrent !== undefined
   const current = isControlled ? controlledCurrent : internalCurrent
@@ -307,19 +313,6 @@ const Pagination: React.FC<PaginationProps> = ({
     [totalPages, isControlled, onChange, pageSize],
   )
 
-  const handleSizeChange = useCallback(
-    (e: React.ChangeEvent<HTMLSelectElement>) => {
-      const newSize = Number(e.target.value)
-      setInternalPageSize(newSize)
-      const newTotal = Math.max(1, Math.ceil(total / newSize))
-      const newCurrent = Math.min(current, newTotal)
-      if (!isControlled) setInternalCurrent(newCurrent)
-      if (onShowSizeChange) onShowSizeChange(newCurrent, newSize)
-      if (onChange) onChange(newCurrent, newSize)
-    },
-    [total, current, isControlled, onShowSizeChange, onChange],
-  )
-
   const renderItem = useCallback(
     (page: number, type: string, originalElement: React.ReactNode) => {
       if (itemRender) return itemRender(page, type, originalElement)
@@ -329,10 +322,62 @@ const Pagination: React.FC<PaginationProps> = ({
   )
 
   const compact = useCompact()
+  const siblings = compact ? 0 : 1
   const pages = useMemo(
-    () => getPageNumbers(current, totalPages, compact ? 0 : 1),
-    [current, totalPages, compact],
+    () => getPageNumbers(current, totalPages, siblings),
+    [current, totalPages, siblings],
   )
+
+  /*
+   * The jump's draft, which is not the page: it is committed once, by Enter,
+   * by Go or by leaving the field, and cleared afterwards so the placeholder
+   * goes back to showing where the reader actually is. goTo clamps, so 0 and
+   * 9999 land on the first and last page rather than being refused.
+   */
+  const jumpId = useId()
+  /*
+   * The field sits by the last ellipsis, between the skipped pages and the
+   * last one. A window near the end has only a left ellipsis, so it goes
+   * there instead; with no ellipsis at all every page is on screen and there
+   * is nothing to jump to.
+   */
+  const lastGap = [...pages].reverse().find((page) => typeof page === 'string')
+  const [draft, setDraft] = useState('')
+  const commitJump = useCallback(() => {
+    const page = Number.parseInt(draft, 10)
+    setDraft('')
+    if (!Number.isNaN(page) && page !== current) goTo(page)
+  }, [draft, current, goTo])
+  /*
+   * Leaving the field for one of the pager's own controls (a click, a tap
+   * or Tab) hands the move to that control: the draft is dropped rather
+   * than committed, or the two would navigate twice from a stale page.
+   * Safari does not focus a clicked button, so a press inside the pager is
+   * noted on its way down, before the field blurs.
+   */
+  const pressInPager = useRef(false)
+  const notePress = useCallback((event: React.PointerEvent) => {
+    // Only a press on one of the pager's controls takes the move; one on the
+    // gaps between them (the ellipsis, the padding) still lets the draft go.
+    const target = event.target as Element | null
+    if (!target?.closest?.('button, a')) return
+    pressInPager.current = true
+    const release = () => {
+      pressInPager.current = false
+      window.removeEventListener('pointerup', release)
+      window.removeEventListener('pointercancel', release)
+    }
+    window.addEventListener('pointerup', release)
+    window.addEventListener('pointercancel', release)
+  }, [])
+  const onJumpBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    if (!draft) return
+    const to = e.relatedTarget
+    const pager = e.currentTarget.closest('.ui-pagination')
+    if (pressInPager.current || (to instanceof Node && pager?.contains(to)))
+      setDraft('')
+    else commitJump()
+  }
 
   // Place the thumb under the current page. It slides only when the page
   // changes; a resize, late fonts or a switch between the full and compact
@@ -367,66 +412,24 @@ const Pagination: React.FC<PaginationProps> = ({
   }, [])
   const placedPage = useRef(current)
   useLayoutEffect(() => {
-    if (simple) return
     const moved = placedPage.current !== current
     placedPage.current = current
     measureThumb(!moved)
-  }, [current, totalPages, compact, simple, measureThumb])
+  }, [current, totalPages, compact, measureThumb])
   useEffect(() => {
     const track = trackRef.current
-    if (simple || !track || typeof ResizeObserver === 'undefined')
-      return undefined
+    if (!track || typeof ResizeObserver === 'undefined') return undefined
     const observer = new ResizeObserver(() => measureThumb(true))
     observer.observe(track)
     return () => observer.disconnect()
-  }, [simple, measureThumb])
-
-  if (simple)
-    return (
-      <SimplePagination
-        style={style}
-        className={joinClassNames(
-          'ui-pagination',
-          'ui-pagination-simple',
-          className,
-        )}
-      >
-        <NavButton
-          type="button"
-          className="ui-pagination-prev"
-          disabled={current <= 1}
-          onClick={() => goTo(current - 1)}
-          aria-label="Previous page"
-        >
-          <KitIcon name="chevron-left" size={14} />
-        </NavButton>
-        <SimpleInput
-          value={current}
-          aria-label="Page"
-          onChange={(e) => {
-            const val = Number.parseInt(e.target.value, 10)
-            if (!Number.isNaN(val)) goTo(val)
-          }}
-        />
-        <span>/</span>
-        <span>{totalPages}</span>
-        <NavButton
-          type="button"
-          className="ui-pagination-next"
-          disabled={current >= totalPages}
-          onClick={() => goTo(current + 1)}
-          aria-label="Next page"
-        >
-          <KitIcon name="chevron-right" size={14} />
-        </NavButton>
-      </SimplePagination>
-    )
+  }, [measureThumb])
 
   return (
     <Wrapper
       style={style}
       className={joinClassNames('ui-pagination', className)}
       aria-label="Pagination"
+      onPointerDown={notePress}
     >
       <Pager className="ui-pagination-pager">
         <NavButton
@@ -459,13 +462,44 @@ const Pagination: React.FC<PaginationProps> = ({
           {pages.map((page, idx) => {
             if (typeof page === 'string')
               return (
-                <Ellipsis
-                  key={page + idx}
-                  className="ui-pagination-ellipsis"
-                  aria-hidden
-                >
-                  …
-                </Ellipsis>
+                <React.Fragment key={page + idx}>
+                  <Ellipsis className="ui-pagination-ellipsis" aria-hidden>
+                    …
+                  </Ellipsis>
+                  {page === lastGap && (
+                    <JumpSlot>
+                      <span aria-hidden>{totalPages}</span>
+                      <JumpField
+                        id={jumpId}
+                        inputMode="numeric"
+                        enterKeyHint="go"
+                        autoComplete="off"
+                        value={draft}
+                        placeholder="#"
+                        title={`Go to page, 1 to ${totalPages}`}
+                        aria-label={`Go to page, 1 to ${totalPages}`}
+                        onChange={(e) =>
+                          setDraft(
+                            e.target.value
+                              .replace(/\D+/g, '')
+                              .slice(0, String(totalPages).length),
+                          )
+                        }
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault()
+                            commitJump()
+                          } else if (e.key === 'Escape') setDraft('')
+                        }}
+                        // Leaving a typed number behind still takes the reader
+                        // there, unless they left for another pager control;
+                        // focus stays on the field, which the list scroll
+                        // moves out of view but does not steal.
+                        onBlur={onJumpBlur}
+                      />
+                    </JumpSlot>
+                  )}
+                </React.Fragment>
               )
 
             return (
@@ -505,23 +539,6 @@ const Pagination: React.FC<PaginationProps> = ({
           )}
         </NavButton>
       </Pager>
-
-      {showSizeChanger && (
-        <SizeRow>
-          <SizeChanger
-            className="ui-pagination-size"
-            value={pageSize}
-            onChange={handleSizeChange}
-            aria-label="Items per page"
-          >
-            {pageSizeOptions.map((opt) => (
-              <option key={opt} value={opt}>
-                {opt} / page
-              </option>
-            ))}
-          </SizeChanger>
-        </SizeRow>
-      )}
     </Wrapper>
   )
 }

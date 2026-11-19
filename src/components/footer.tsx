@@ -209,6 +209,8 @@ const Footer: React.FC = () => (
       </Brand>
       <End>
         <FooterNav aria-label="More from Curate">
+          {/* The footer is the one way into the guide, which also holds the
+              skill for agent builders: the label names both. */}
           <FooterLink to="/guide">Guide & Skills</FooterLink>
         </FooterNav>
         <Social aria-label="Kleros Curate community">

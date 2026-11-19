@@ -3,6 +3,7 @@ import styled from 'styled-components'
 import useNow from 'hooks/use-now'
 import useUrlChainId from 'hooks/use-url-chain-id'
 import useUnindexedEvidence from 'hooks/use-unindexed-evidence'
+import { useDisputeJurors } from 'hooks/use-dispute-jury'
 import EvidenceFileLink, {
   EvidenceFileUnavailable,
 } from 'components/evidence-file-link'
@@ -16,9 +17,14 @@ import PermanentEvidenceModal from 'pages/permanent-item-details/modals/evidence
 import toOrdinal from 'utils/ordinal'
 import { CurateIcon } from 'components/curate/icons'
 import {
+  EVIDENCE_HISTORY_ID,
   EvidenceClosed,
   openEvidenceComposer,
 } from 'components/inline-evidence-composer'
+import {
+  EvidencePartyBadge,
+  type EvidenceParty,
+} from 'components/curate/evidence-party-badge'
 import {
   SkeletonBlock,
   Small,
@@ -40,6 +46,12 @@ import {
  * absolute UTC dates linked to their transactions; then the evidence
  * composer, always open while the item is on the list (the contract takes
  * evidence on any item that is not Absent) and a one-line note otherwise.
+ *
+ * Each piece of evidence says who filed it with a badge on its own row
+ * (round 3 of the design review), so a reader never has to work out whether
+ * an address was the submitter, a challenger or one of the jurors the court
+ * drew. The history is also where "Read evidence" lands, which is why its
+ * container takes the focus with its id.
  */
 
 /**
@@ -178,10 +190,13 @@ const toSeconds = (value: unknown): number => {
 
 /** An evidence's own title, inside its quote. */
 const QuoteTitle = styled.span`
+  /* The text's own measure, so a long title wraps with the text under it. */
+  max-width: 68ch;
   color: var(--color-text);
   font-size: var(--fs-body);
   line-height: 22px;
   font-weight: 500;
+  overflow-wrap: anywhere;
 `
 
 const Clamp = styled.p<{ $clamped: boolean }>`
@@ -452,6 +467,16 @@ const Timeline = ({ submission, item, metaEvidence, live }: TimelineProps) => {
     )
     .map((e) => e.URI)
   const evidenceMap = useUnindexedEvidence(unindexedEvidenceURIs)
+  // The jurors drawn on the entry's cases, for the badge on a piece they
+  // filed. An entry here can be challenged again and again, so only the
+  // newest cases are read (useDisputeJurors caps them) and a juror of an
+  // older one simply gets no badge.
+  const jurors = useDisputeJurors({
+    chainId: networkId,
+    arbitrator: item.registry?.arbitrator?.id,
+    disputeIDs: (item.challenges ?? []).map((c) => c.disputeID),
+    arbitrable: item.registry?.id,
+  })
 
   if (!item || !submission || !logs) return <SkeletonBlock $height="80px" />
 
@@ -467,12 +492,26 @@ const Timeline = ({ submission, item, metaEvidence, live }: TimelineProps) => {
       .map((c) => c.challenger?.toLowerCase())
       .filter((address): address is string => !!address),
   )
-  const roleOf = (party?: string) => {
+  /*
+   * Which party filed something. Only the three the chain names: an address
+   * that is none of them gets no badge at all, since the jury read covers
+   * the cases and rounds it could go through seat by seat and nothing else.
+   */
+  const partyOf = (party?: string): EvidenceParty | undefined => {
     const address = party?.toLowerCase()
     if (!address) return undefined
-    if (address === submitter) return 'submitter'
+    if (address === submitter) return 'requester'
     if (challengers.has(address)) return 'challenger'
-    return undefined
+    return jurors.has(address) ? 'juror' : undefined
+  }
+  /** The same, as the word the row's marker takes its tone from. */
+  const roleOf = (party?: string) => {
+    const side = partyOf(party)
+    return side === 'requester'
+      ? 'submitter'
+      : side === 'challenger'
+        ? 'challenger'
+        : undefined
   }
   const submissionBy = submission.submitter ?? item.submitter
 
@@ -518,13 +557,20 @@ const Timeline = ({ submission, item, metaEvidence, live }: TimelineProps) => {
                     ? 'window'
                     : 'neutral'
               }
-              title="Evidence"
+              title={
+                <>
+                  Evidence
+                  <EvidencePartyBadge
+                    party={partyOf(event.party)}
+                    requesterLabel="Submitter"
+                  />
+                </>
+              }
               timestamp={timestamp}
               href={href}
               detail={
                 <span>
                   by <AddressLink address={event.party} />
-                  {role ? ` · ${role}` : ''}
                 </span>
               }
             >
@@ -566,10 +612,9 @@ const Timeline = ({ submission, item, metaEvidence, live }: TimelineProps) => {
           const next = event.ongoing
             ? 'a new round of jurors decides'
             : 'a new round of jurors decided'
-          const caseText =
-            event.disputeID && Number(event.disputeID) !== 0
-              ? `Case ${event.disputeID} · `
-              : ''
+          // Case 0 is a case: the arbitrator numbers its first dispute 0,
+          // so only a missing id leaves the case unnamed.
+          const caseText = event.disputeID ? `Case ${event.disputeID} · ` : ''
           return (
             <TimelineEvent
               key={i}
@@ -652,9 +697,7 @@ const Timeline = ({ submission, item, metaEvidence, live }: TimelineProps) => {
                 event.challenger ? (
                   <span>
                     by <AddressLink address={event.challenger} />
-                    {event.disputeID && Number(event.disputeID) !== 0
-                      ? ` · case ${event.disputeID}`
-                      : ''}
+                    {event.disputeID ? ` · case ${event.disputeID}` : ''}
                   </span>
                 ) : undefined
               }
@@ -843,7 +886,7 @@ const RequestTimelines = ({ item, metaEvidence }: RequestTimelinesProps) => {
     return (
       <Surface
         $padding="standard"
-        id="request-timelines"
+        id={EVIDENCE_HISTORY_ID}
         aria-busy="true"
         aria-label="Loading history"
       >
@@ -870,8 +913,11 @@ const RequestTimelines = ({ item, metaEvidence }: RequestTimelinesProps) => {
 
   return (
     <>
+      {/* "Read evidence" lands here and leaves the focus on it, so a
+          keyboard reader carries on inside the history. */}
       <div
-        id="request-timelines"
+        id={EVIDENCE_HISTORY_ID}
+        tabIndex={-1}
         style={{ display: 'flex', flexDirection: 'column', gap: 14 }}
       >
         <HistoryHead>

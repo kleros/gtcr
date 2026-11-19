@@ -8,8 +8,11 @@ const isLayout = (value: unknown): value is ListLayout =>
   value === 'table' || value === 'cards' || value === 'rows'
 
 /**
- * User-selectable list layout (DESIGN.md: table, cards or rows), remembered per
- * list key in localStorage.
+ * User-selectable list layout, remembered per list key in localStorage. The
+ * hook knows all three (table, cards, rows); each page offers its own pair
+ * and narrows a stored value it dropped: the registry pages table and cards
+ * (components/curate/registry-shared-layout.ts), Browse and the address page
+ * cards and rows (pages/browse/layout.ts, pages/address/view.ts).
  */
 const useStoredLayout = (key: string, fallback: ListLayout = 'table') => {
   const [layout, setLayoutState] = useState<ListLayout>(() => {

@@ -996,11 +996,6 @@ main,
   font-weight: 500;
 }
 
-/* No bounty data: the card goes and the copy takes the hero. */
-.hero--solo {
-  grid-template-columns: minmax(0, 1fr);
-}
-
 .actions {
   display: flex;
   flex-wrap: wrap;
@@ -1008,13 +1003,20 @@ main,
   margin-top: 4px;
 }
 
-/* ---------- Bounties won: one figure per coin, and the ledger of every bounty ---------- */
+/* ---------- Money: bounties won and deposits locked (round 14) ---------- */
 
-.bounty {
-  --coin-col: 172px;
+/*
+ * Two figures, all time, in dollars only (round 14: no coin, no chain, no
+ * chart): what challengers have won and what submitters have locked in
+ * deposits, each over its count, then one line on how they are valued.
+ */
+.money {
   position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
   min-width: 0;
-  padding: 22px 24px 18px;
+  padding: 22px 28px 18px;
   border: 1px solid var(--glass-border);
   border-radius: var(--radius-xl);
   background: color-mix(in srgb, var(--color-surface) 78%, transparent);
@@ -1025,328 +1027,43 @@ main,
   backdrop-filter: blur(14px);
 }
 
-.bounty-head {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 4px 16px;
-  flex-wrap: wrap;
-  padding-bottom: 6px;
-}
-
-.bounty-rulings {
-  flex-basis: 100%;
-  color: var(--color-muted);
-  font-size: 13px;
-  line-height: 18px;
-}
-
-.bounty-rulings b {
-  color: var(--color-text);
-  font-family: var(--font-figure);
-  font-weight: 500;
-  font-variant-numeric: tabular-nums;
-}
-
-.bounty-title {
-  color: var(--color-text);
-  font-family: var(--font-display);
-  font-size: 22px;
-  line-height: 28px;
-  font-weight: 500;
-  letter-spacing: -0.02em;
-}
-
-.bounty-coins {
+.money-row {
   display: flex;
   flex-direction: column;
+  gap: 8px;
+  padding: 18px 0;
 }
 
-.coin {
-  display: grid;
-  grid-template-columns: var(--coin-col) minmax(0, 1fr);
-  align-items: center;
-  gap: 16px;
-  padding: 12px 0;
+.money-row:first-child {
+  padding-top: 4px;
 }
 
-.coin + .coin {
+.money-row + .money-row {
   border-top: 1px solid var(--glass-border);
 }
 
-.coin-figure {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-  min-width: 0;
-}
-
-.coin-amount {
-  display: flex;
-  align-items: baseline;
-  flex-wrap: wrap;
-  gap: 0 6px;
+.money-figure {
   color: var(--color-text);
   font-family: var(--font-figure);
-  font-size: 28px;
-  line-height: 1.05;
+  font-size: clamp(44px, 4.2vw, 64px);
+  line-height: 1;
   font-weight: 500;
-  letter-spacing: -0.03em;
+  letter-spacing: -0.04em;
   font-variant-numeric: tabular-nums;
 }
 
-.coin-amount small {
+.money-note {
   color: var(--color-muted);
   font-size: 14px;
-  font-weight: 500;
-  letter-spacing: 0;
+  line-height: 20px;
 }
 
-.coin-meta {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  min-width: 0;
-  color: var(--color-muted);
-  font-size: 13px;
-  line-height: 18px;
-  white-space: nowrap;
-}
-
-.coin-meta > span {
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.coin-won {
-  color: var(--color-faint);
-  font-family: var(--font-figure);
-  font-variant-numeric: tabular-nums;
-}
-
-/* A chain's mark on a small plate of its own hue (as components/chain-logo.tsx). */
-.chain-mark {
-  --plate-tint: 22%;
-  --plate-ring: 40%;
-  position: relative;
-  display: inline-grid;
-  place-items: center;
-  flex: 0 0 auto;
-  width: 16px;
-  height: 16px;
-  overflow: hidden;
-  border-radius: var(--radius-pill);
-  background-color: var(--color-surface);
-  box-shadow:
-    inset 0 1px 0 var(--glass-highlight),
-    inset 0 0 0 1px
-      color-mix(in srgb, var(--chain-hue) var(--plate-ring), transparent),
-    inset 0 0 0 16px
-      color-mix(
-        in srgb,
-        var(--chain-hue) var(--plate-tint),
-        var(--color-surface)
-      );
-}
-
-[data-theme='light'] .chain-mark {
-  --plate-tint: 9%;
-  --plate-ring: 30%;
-}
-
-.chain-mark svg {
-  width: 12px;
-  height: 12px;
-}
-
-.chain-mark--gnosis {
-  --chain-hue: #3e6957;
-}
-
-.chain-mark--ethereum {
-  --chain-hue: #627eea;
-}
-
-/* The owl is a dark green: drawn in a lighter tint of it on the dark themes. */
-:root:not([data-theme='light']) .chain-mark--gnosis path {
-  fill: #8cc4a8;
-}
-
-/* The ledger: bounties won per month, one bar per month on a time axis
-   and a count scale shared by every coin, in the chain's data hue. The
-   scanner reveals it left to right. */
-.ledger {
-  --ledger-hue: var(--viz-1);
-  position: relative;
-  min-width: 0;
-  height: 52px;
-  border-radius: 4px;
-  outline-offset: 4px;
-  touch-action: pan-y;
-}
-
-.ledger svg {
-  display: block;
-  overflow: visible;
-}
-
-/* A soft light under the bars, in their hue. */
-.ledger .ledger-bars {
-  filter: drop-shadow(
-    0 0 3px color-mix(in srgb, var(--ledger-hue) 55%, transparent)
-  );
-}
-
-[data-theme='light'] .ledger .ledger-bars {
-  filter: none;
-}
-
-.ledger .ledger-bars rect {
-  fill: var(--ledger-hue);
-  transition: opacity 140ms ease;
-}
-
-.ledger[data-hovering] .ledger-bars rect:not(.on) {
-  opacity: 0.5;
-}
-
-.ledger .ledger-focus {
-  fill: var(--color-text);
-  opacity: 0;
-}
-
-.ledger[data-hovering] .ledger-focus {
-  opacity: 0.07;
-}
-
-.ledger .ledger-base {
-  stroke: var(--color-border-strong);
-  stroke-width: 1;
-}
-
-.ledger .ledger-scan {
-  stroke: var(--sweep-head);
-  stroke-width: 2;
-  opacity: 0;
-}
-
-.ledger-tip {
-  position: absolute;
-  top: 0;
-  left: 0;
-  z-index: 3;
-  min-width: 176px;
-  padding: 9px 12px;
-  border: 1px solid var(--color-border-strong);
-  border-radius: 10px;
-  background: var(--color-surface);
-  box-shadow: var(--shadow-overlay);
-  pointer-events: none;
-  opacity: 0;
-  transition:
-    opacity 140ms ease,
-    transform 160ms var(--ease-out);
-  font-size: 12px;
-}
-
-.ledger-tip[data-on] {
-  opacity: 1;
-}
-
-.ledger-tip b {
-  display: block;
-  margin-bottom: 6px;
-  padding-bottom: 6px;
-  border-bottom: 1px solid var(--glass-border);
-  color: var(--color-text);
-  font-size: 13px;
-  font-weight: 500;
-}
-
-.ledger-tip div {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  color: var(--color-muted);
-}
-
-.ledger-tip i {
-  display: inline-block;
-  width: 6px;
-  height: 6px;
-  margin-right: 6px;
-  border-radius: var(--radius-pill);
-}
-
-.ledger-tip span:last-child {
-  color: var(--color-text);
-  font-weight: 500;
-  font-variant-numeric: tabular-nums;
-}
-
-.bounty-axis {
-  position: relative;
-  height: 18px;
-  margin: 2px 0 0 calc(var(--coin-col) + 16px);
-}
-
-.bounty-axis span {
-  position: absolute;
-  top: 0;
-  transform: translateX(-50%);
-  color: var(--color-faint);
-  font-size: 11px;
-  line-height: 16px;
-  font-variant-numeric: tabular-nums;
-}
-
-.bounty-axis span::before {
-  content: '';
-  position: absolute;
-  left: 50%;
-  top: -5px;
-  width: 1px;
-  height: 4px;
-  background: var(--color-border-strong);
-}
-
-.bounty-note {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  gap: 6px 16px;
-  margin-top: 12px;
+.money-basis {
   padding-top: 12px;
   border-top: 1px solid var(--glass-border);
-  color: var(--color-muted);
-  font-size: 13px;
-  line-height: 18px;
-}
-
-.bounty-key {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
   color: var(--color-faint);
   font-size: 12px;
-}
-
-/* Three bars of a month each, as the ledger draws them. */
-.bounty-key i {
-  flex: 0 0 auto;
-  width: 11px;
-  height: 12px;
-  background:
-    linear-gradient(var(--viz-1), var(--viz-1)) 0 100% / 3px 5px no-repeat,
-    linear-gradient(var(--viz-1), var(--viz-1)) 4px 100% / 3px 12px no-repeat,
-    linear-gradient(var(--viz-1), var(--viz-1)) 8px 100% / 3px 8px no-repeat;
-}
-
-.bounty-empty {
-  padding: 14px 0 4px;
-  color: var(--color-muted);
-  font-size: 14px;
+  line-height: 16px;
 }
 
 /* ---------- Featured panel: the one iridescent rim on the page ---------- */
@@ -1357,15 +1074,7 @@ main,
   padding: 22px 28px 20px;
   border: 1.5px solid transparent;
   border-radius: var(--radius-xl);
-  /* The chart's head is the light source: a soft wash centred on it (set
-     from landing.js), clipped by the rim rather than by the chart's box. */
   background:
-    radial-gradient(
-        360px 220px at var(--hx, -999px) var(--hy, -999px),
-        color-mix(in srgb, var(--color-primary) 9%, transparent),
-        transparent 70%
-      )
-      padding-box,
     linear-gradient(var(--color-surface), var(--color-surface)) padding-box,
     linear-gradient(
         120deg,
@@ -1439,20 +1148,6 @@ main,
   gap: 12px;
 }
 
-.chip {
-  display: inline-flex;
-  align-items: center;
-  height: 24px;
-  padding: 0 10px;
-  border: 1px solid var(--glass-border);
-  border-radius: var(--radius-pill);
-  background: var(--glass);
-  color: var(--color-muted);
-  font-size: 12px;
-  font-weight: 500;
-  white-space: nowrap;
-}
-
 .featured-meta {
   display: flex;
   align-items: center;
@@ -1495,11 +1190,14 @@ main,
   font-size: 13px;
 }
 
+/* With no chart beside them (round 14), the three figures share the rest of
+   the line, spread evenly, so the band has no empty half. */
 .stats {
   display: flex;
+  flex: 1 1 auto;
   flex-wrap: wrap;
+  justify-content: space-around;
   gap: 16px 40px;
-  margin-right: auto;
   padding-bottom: 28px;
 }
 
@@ -1513,58 +1211,11 @@ main,
 .stats dd {
   color: var(--color-text);
   font-family: var(--font-figure);
-  font-size: 22px;
-  line-height: 26px;
+  font-size: 32px;
+  line-height: 36px;
   font-weight: 500;
   letter-spacing: -0.02em;
   font-variant-numeric: tabular-nums;
-}
-
-/* The chart's key, stacked at the right of the figures row. */
-.legend {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 6px;
-  padding-bottom: 2px;
-}
-
-.legend li {
-  white-space: nowrap;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  color: var(--color-muted);
-  font-size: 13px;
-}
-
-.legend-line {
-  width: 14px;
-  height: 2px;
-  border-radius: 2px;
-  background: var(--color-primary);
-  box-shadow: 0 0 8px var(--color-primary);
-}
-
-.legend-avg {
-  width: 14px;
-  height: 0;
-  border-top: 1px dashed var(--color-border-strong);
-}
-
-.legend-blocks {
-  display: inline-flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  width: 14px;
-}
-
-.legend-blocks b {
-  width: 5px;
-  height: 4px;
-  border-radius: 1px;
-  background: var(--status-contested);
 }
 
 /* Odometer: digits roll on their own columns (Geist has tabular figures). */
@@ -1606,205 +1257,8 @@ main,
   color: var(--color-muted);
 }
 
-.featured[data-empty-state] .chart-card,
 .featured[data-empty-state] .featured-top {
   display: none;
-}
-
-/* ---------- Line chart ---------- */
-
-.chart-card {
-  position: relative;
-  min-width: 0;
-  padding: 12px 0 6px;
-}
-
-.chart {
-  position: relative;
-  outline-offset: 6px;
-  border-radius: var(--radius);
-  /* A horizontal drag reads the days; a vertical swipe still scrolls. */
-  touch-action: pan-y;
-}
-
-.chart svg {
-  display: block;
-  width: 100%;
-  overflow: visible;
-}
-
-.chart .axis {
-  fill: var(--color-faint);
-  font-family: var(--font-sans);
-  font-size: 11px;
-  font-variant-numeric: tabular-nums;
-}
-
-.chart .axis-x {
-  fill: var(--color-faint);
-  font-family: var(--font-sans);
-  font-size: 11px;
-}
-
-.chart .baseline {
-  stroke: var(--color-border-strong);
-  stroke-width: 1;
-}
-
-/* The average line: the same stroke as its legend swatch. */
-.chart .guide {
-  stroke: var(--color-border-strong);
-  stroke-width: 1;
-  stroke-dasharray: 3 5;
-}
-
-.chart .guide-label {
-  /* Muted, not faint: the newest day's glow can sit behind it. */
-  fill: var(--color-muted);
-  font-family: var(--font-sans);
-  font-size: 11px;
-  font-variant-numeric: tabular-nums;
-}
-
-.chart .axis--challenges {
-  fill: var(--status-contested);
-}
-
-/* One group per day; each block grows down from the baseline. */
-.chart .bar rect {
-  fill: var(--status-contested);
-  transform-box: fill-box;
-  transform-origin: top;
-  transform: scaleY(0);
-  opacity: 0;
-  transition:
-    transform 520ms var(--ease-out),
-    opacity 300ms ease;
-}
-
-.chart .bar.on rect {
-  transform: none;
-  opacity: 1;
-}
-
-.chart .cross {
-  stroke: var(--color-border-strong);
-  stroke-width: 1;
-  opacity: 0;
-  transition: opacity 120ms ease;
-}
-
-.chart .hover-dot {
-  fill: var(--color-surface);
-  stroke: var(--color-primary);
-  stroke-width: 2.5;
-  opacity: 0;
-  transition: opacity 120ms ease;
-  filter: drop-shadow(0 0 6px var(--color-primary));
-}
-
-.chart[data-hovering] .cross,
-.chart[data-hovering] .hover-dot {
-  opacity: 1;
-}
-
-.chart .head-core {
-  fill: var(--color-surface);
-  stroke: var(--color-primary);
-  stroke-width: 2.5;
-}
-
-.chart .head-halo {
-  fill: none;
-  stroke: var(--color-primary);
-  stroke-width: 1.5;
-  transform-box: fill-box;
-  transform-origin: center;
-  opacity: 0;
-}
-
-.chart .head-halo.ping {
-  animation: ping 1200ms var(--ease-out) 1;
-}
-
-@keyframes ping {
-  from {
-    transform: scale(1);
-    opacity: 0.7;
-  }
-  to {
-    transform: scale(4.5);
-    opacity: 0;
-  }
-}
-
-.chart .x-on {
-  fill: var(--color-text);
-}
-
-.chart-tip {
-  position: absolute;
-  top: 0;
-  left: 0;
-  z-index: 2;
-  min-width: 168px;
-  padding: 10px 12px;
-  border: 1px solid var(--color-border-strong);
-  border-radius: 10px;
-  background: var(--color-surface);
-  box-shadow: var(--shadow-overlay);
-  pointer-events: none;
-  opacity: 0;
-  transition:
-    opacity 140ms ease,
-    transform 160ms var(--ease-out);
-  font-size: 12px;
-}
-
-.chart[data-hovering] .chart-tip {
-  opacity: 1;
-}
-
-.chart-tip b {
-  display: block;
-  margin-bottom: 6px;
-  padding-bottom: 6px;
-  border-bottom: 1px solid var(--glass-border);
-  color: var(--color-text);
-  font-size: 13px;
-  font-weight: 500;
-}
-
-.chart-tip b small {
-  color: var(--color-faint);
-  font-size: 11px;
-  font-weight: 400;
-}
-
-.chart-tip div {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  color: var(--color-muted);
-}
-
-.chart-tip div + div {
-  margin-top: 4px;
-}
-
-.chart-tip i {
-  display: inline-block;
-  width: 6px;
-  height: 6px;
-  margin-right: 6px;
-  border-radius: var(--radius-pill);
-}
-
-.chart-tip span:last-child {
-  color: var(--color-text);
-  font-weight: 500;
-  font-variant-numeric: tabular-nums;
 }
 
 /* ---------- Sections ---------- */
@@ -2653,8 +2107,7 @@ main,
 /* ---------- Responsive ---------- */
 
 @media (max-width: 1080px) {
-  /* One column: the bounty card runs the full width, so the ledger gets
-     the room. */
+  /* One column: the money card runs the full width under the copy. */
   .hero {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -2664,6 +2117,15 @@ main,
   /* As the app: a 16px gutter on phones and small tablets. */
   :root {
     --hpad: 16px;
+  }
+
+  .money {
+    padding: 18px 16px 14px;
+    border-radius: var(--radius-lg);
+  }
+
+  .money-figure {
+    font-size: 44px;
   }
 
   .nav {
@@ -2792,37 +2254,18 @@ main,
     flex: 1 1 auto;
   }
 
-  /* The bounty card: each coin's figure over its own full-width ledger. */
-  .bounty {
-    padding: 18px 16px 14px;
-    border-radius: var(--radius-lg);
-  }
+  
+  
 
-  .coin {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 10px;
-  }
+  
 
-  .coin-figure {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    align-items: baseline;
-    gap: 2px 12px;
-  }
+  
 
-  .coin-amount {
-    grid-row: span 2;
-    font-size: 26px;
-  }
+  
 
-  .coin-meta,
-  .coin-won {
-    justify-self: end;
-  }
+  
 
-  .bounty-axis {
-    margin-left: 0;
-  }
+  
 
   .featured {
     padding: 18px 16px 16px;
@@ -2833,8 +2276,8 @@ main,
     padding-top: 18px;
   }
 
-  /* One line of scope (window + chip), one short stamp; the app link
-     moves under the chart's x-axis. */
+  /* One line of scope, one short stamp; the app link moves under the
+     figures. */
   .featured-bar {
     gap: 8px;
     padding-bottom: 14px;
@@ -2868,15 +2311,9 @@ main,
     font-size: 20px;
   }
 
-  .legend {
-    flex-direction: row;
-    flex-wrap: wrap;
-    gap: 6px 16px;
-  }
+  
 
-  .legend li:first-child {
-    flex-basis: 100%;
-  }
+  
 
   .role-list {
     padding: 4px;
@@ -2970,12 +2407,9 @@ main,
   .odo-stack,
   .seg-thumb,
   .flow-wires .wire,
-  .chart .bar rect,
   .window-rail span,
   .role,
   .vtile,
-  .ledger .ledger-bars rect,
-  .ledger-tip,
   .btn {
     transition: none !important;
   }
@@ -2991,4 +2425,13 @@ main,
 [data-paused] .aurora > *,
 [data-paused] .btn--bar::after {
   animation-play-state: paused;
+}
+
+/* The narrowest phones: a tighter gap keeps the three activity labels
+   ("Challenges", "In court now", "Active curators") inside their columns. */
+@media (max-width: 360px) {
+  .stats {
+    grid-template-columns: repeat(3, auto);
+    column-gap: 14px;
+  }
 }

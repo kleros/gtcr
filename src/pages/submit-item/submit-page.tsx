@@ -21,6 +21,7 @@ import {
   Surface,
   truncateMiddle,
 } from 'components/curate/primitives'
+import { useFileDropGuard } from 'components/file-drop'
 import { ColumnField, useObjectUrl } from './fields'
 import { Notice } from 'components/curate/item-standard-notice'
 import { useDuplicateEntry, type DuplicateCheck } from './duplicate-entry'
@@ -770,11 +771,11 @@ const PageHeader = ({
       <Crumbs aria-label="Breadcrumb" style={{ ['--i' as string]: 0 }}>
         <ol>
           <li>
-            <Link to="/browse">Registries</Link>
+            <Link to="/browse">Lists</Link>
           </li>
           <li>
             <Chevron />
-            <Link to={registryPath}>{registryTitle ?? 'Registry'}</Link>
+            <Link to={registryPath}>{registryTitle ?? 'List'}</Link>
           </li>
           <li aria-current="page">
             <Chevron />
@@ -958,25 +959,9 @@ const Workspace = ({
   }
 
   // A file dropped just outside a drop zone would make the browser open it
-  // in place of the page. The zones take theirs (they prevent the default
-  // first); anywhere else a dragged file cannot be dropped.
-  useEffect(() => {
-    const refuse = (event: DragEvent) => {
-      if (
-        event.defaultPrevented ||
-        !event.dataTransfer?.types.includes('Files')
-      )
-        return
-      event.preventDefault()
-      if (event.type === 'dragover') event.dataTransfer.dropEffect = 'none'
-    }
-    window.addEventListener('dragover', refuse)
-    window.addEventListener('drop', refuse)
-    return () => {
-      window.removeEventListener('dragover', refuse)
-      window.removeEventListener('drop', refuse)
-    }
-  }, [])
+  // in place of the page. Held here as well as by the zones themselves, so
+  // a list with no image or file column is covered too.
+  useFileDropGuard()
 
   const action = (
     <ConfirmAction
@@ -1035,6 +1020,7 @@ const Workspace = ({
                       error={formik.errors[column.label]}
                       showError={!!formik.touched[column.label]}
                       disabled={submitting || !!disabledFields?.[index]}
+                      submitting={submitting}
                       onChange={(value) =>
                         formik.setFieldValue(fieldPath(column.label), value)
                       }

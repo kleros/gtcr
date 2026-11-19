@@ -26,7 +26,6 @@ export interface StandardRequest extends SubgraphRequest {
    */
   disputeOutcome?: string | null
   resolutionTime?: string | null
-  evidenceGroup?: { evidences?: unknown[] }
 }
 
 export interface RequestFacts {
@@ -52,8 +51,47 @@ export interface RequestFacts {
   /** The case on the Kleros court site, when the arbitrator is Kleros. */
   disputeHref?: string
   disputeHost?: string
-  evidenceCount: number
 }
+
+/**
+ * The case on the Kleros court site, for any of the entry's requests: a
+ * request made with another arbitrator has no court page to open. One
+ * place, so the hero, the case panel and the record of past cases all link
+ * the same way.
+ */
+export const courtLink = (
+  chainId: number | null | undefined,
+  arbitrator: string | undefined,
+  disputeID: string | number | undefined,
+): { href: string; host?: string } | undefined => {
+  const { arbitrator: kleros, uiURL } =
+    (chainId && klerosAddresses[chainId as keyof typeof klerosAddresses]) || {}
+  if (
+    !uiURL ||
+    !arbitrator ||
+    kleros?.toLowerCase() !== arbitrator.toLowerCase()
+  )
+    return undefined
+  const href = uiURL.replace(':disputeID', String(disputeID))
+  try {
+    return { href, host: new URL(href).host }
+  } catch {
+    return { href }
+  }
+}
+
+/** "For the challenger": a ruling as a value under a label. */
+export const rulingShort = (
+  ruling: string | null | undefined,
+  requesterName: string,
+): string | undefined =>
+  ruling === SUBGRAPH_RULING.ACCEPT
+    ? `For the ${requesterName}`
+    : ruling === SUBGRAPH_RULING.REJECT
+      ? 'For the challenger'
+      : ruling === SUBGRAPH_RULING.NONE
+        ? 'Refused to rule'
+        : undefined
 
 export const requestFacts = ({
   item,
@@ -79,17 +117,12 @@ export const requestFacts = ({
   const requesterName = isRegistration ? 'submitter' : 'requester'
   const requesterWins = currentRuling === SUBGRAPH_RULING.ACCEPT
 
-  const { arbitrator: klerosArbitrator, uiURL } =
-    (chainId && klerosAddresses[chainId as keyof typeof klerosAddresses]) || {}
   // A disputed request always has a case, and the arbitrator numbers its
   // first one 0.
   const hasDispute = !!request.disputed
-  const disputeHref =
-    hasDispute &&
-    uiURL &&
-    klerosArbitrator?.toLowerCase() === request.arbitrator?.toLowerCase()
-      ? uiURL.replace(':disputeID', String(request.disputeID))
-      : undefined
+  const court = hasDispute
+    ? courtLink(chainId, request.arbitrator, request.disputeID)
+    : undefined
 
   return {
     isRegistration,
@@ -118,9 +151,79 @@ export const requestFacts = ({
       statusCode === STATUS_CODE.WAITING_ENFORCEMENT,
     hasDispute,
     disputeID: hasDispute ? String(request.disputeID) : undefined,
-    disputeHref,
-    disputeHost: disputeHref ? new URL(disputeHref).host : undefined,
-    evidenceCount: request.evidenceGroup?.evidences?.length ?? 0,
+    disputeHref: court?.href,
+    disputeHost: court?.host,
+  }
+}
+
+/** Where the case stands, in the page's words, for the case panel. */
+export interface CaseState {
+  /** Used as the heading when the court itself cannot be read. */
+  heading: string
+  /**
+   * The request is waiting on the court, so the court's own word for its
+   * current period leads the case panel. False once the request has its
+   * ruling state: the court's appeal period can still be running then, and
+   * it is no longer what is happening to this entry.
+   */
+  awaitingCourt: boolean
+  /**
+   * What it means for this entry, when the court cannot know it (a side
+   * that alone funded an appeal wins whatever the jurors ruled). Left out
+   * where the court's own sentence about the period says it better.
+   */
+  summary?: string
+  /** The ruling in words, once the jurors have given one. */
+  ruling?: string
+  rulingLabel?: string
+}
+
+export const caseState = (
+  request: StandardRequest,
+  facts: RequestFacts,
+  statusCode: number,
+): CaseState => {
+  // Once resolved the outcome can differ from the jurors' last ruling: a
+  // side that alone funded the last appeal wins (rule() in the list
+  // contract). The request records that final outcome.
+  const decided = request.resolved
+    ? (request.disputeOutcome ?? facts.currentRuling)
+    : facts.currentRuling
+  const ruling =
+    statusCode === STATUS_CODE.CHALLENGED
+      ? undefined
+      : rulingShort(decided, facts.requesterName)
+  const rulingLabel = facts.appealable ? 'Current ruling' : 'Ruling'
+
+  if (statusCode === STATUS_CODE.CHALLENGED)
+    return { heading: 'Jurors are deciding', awaitingCourt: true }
+  if (statusCode === STATUS_CODE.WAITING_ARBITRATOR) {
+    const alone = request.resolved
+      ? undefined
+      : fundedAlone(request, facts.requesterName)
+    return {
+      heading: 'Ruling final',
+      awaitingCourt: false,
+      summary: alone
+        ? `The ${alone} funded the appeal alone, so the ${alone} wins when the ruling is enforced.`
+        : undefined,
+      ruling,
+      rulingLabel,
+    }
+  }
+  if (statusCode === STATUS_CODE.WAITING_ENFORCEMENT)
+    return {
+      heading: 'Ruling stands',
+      awaitingCourt: false,
+      summary: 'The losing side did not fund its appeal, so the ruling stands.',
+      ruling,
+      rulingLabel,
+    }
+  return {
+    heading: 'Open for appeal',
+    awaitingCourt: true,
+    ruling,
+    rulingLabel,
   }
 }
 

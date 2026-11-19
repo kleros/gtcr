@@ -16,9 +16,11 @@ import _gtcr from 'assets/abis/PermanentGTCR.json'
 import { WalletContext } from 'contexts/wallet-context'
 import { useGraphqlBatcher } from 'contexts/graphql-batcher'
 import { PERMANENT_ITEMS_QUERY, PERMANENT_REGISTRY_QUERY } from 'utils/graphql'
+import { PERMANENT_DISPUTED_BEFORE_QUERY } from 'utils/graphql/permanent-items'
 import {
   P_FILTER_KEYS,
   searchStrToFilterObjPermanent,
+  selectStatusFilter,
   updateStandardFilter,
 } from 'utils/filters'
 import { parseIpfs } from 'utils/ipfs-parse'
@@ -38,12 +40,14 @@ import useTokenSymbol from 'hooks/token-symbol'
 import useNativeCurrency from 'hooks/native-currency'
 import useDocumentHead from 'hooks/use-document-head'
 import useNow from 'hooks/use-now'
+import useCourtName from 'hooks/use-court-name'
 import { useAttachment } from 'hooks/use-attachment'
 import { useEthersProvider } from 'hooks/ethers-adapters'
 import ETHAmount from 'components/eth-amount'
 import TokenAmount from 'components/token-amount'
 import { Pagination } from 'components/ui'
 import {
+  courtPhrase,
   RegistryHeader,
   type RegistryParameter,
   type RegistryStat,
@@ -65,19 +69,24 @@ import {
   Button,
   Data,
   EmptyState,
-  Grid,
   Page,
-  SkeletonBlock,
   Small,
-  Stack,
   Surface,
   truncateMiddle,
+  VisuallyHidden,
 } from 'components/curate/primitives'
 import { CurateIcon } from 'components/curate/icons'
-import { useStakeSummary } from 'components/curate/registry-stake-summary'
-import type { StakeLane } from 'components/curate/registry-stake-summary'
-import { StakeInsights } from 'components/curate/registry-stake-insights'
-import { useRegistryLayout } from 'components/curate/registry-shared-layout'
+import { CuratorAddress } from 'components/curate/chrome-address'
+import { ListGovernance } from 'components/curate/list-governance'
+import {
+  SUMMARY_CAP,
+  useStakeSummary,
+} from 'components/curate/registry-stake-summary'
+import { RegistryListSkeleton } from 'components/curate/registry-standard-states'
+import {
+  REGISTRY_LAYOUT_OPTIONS,
+  useRegistryLayout,
+} from 'components/curate/registry-shared-layout'
 import { useRegistryVerified } from 'components/curate/registry-shared-verified'
 import {
   listSearchFrom,
@@ -90,9 +99,9 @@ import { LIST_LOAD_FAILED } from '../error-page/copy'
  * Stake Curate registry page. The registry is read first (its periods and
  * multipliers are needed to derive statuses), then the items for the current
  * filters and page, and a summary of every entry for the counts and the
- * drawings. The UI is RegistryHeader (identity, action, figures, parameters,
- * explainer), the three drawings (listing history, where the entries stand,
- * challenges), RegistryToolbar, EntryList and Pagination.
+ * challenge figures. The UI is RegistryHeader (identity, action, "Update
+ * list parameters" for the list's governor alone, figures, the two gauges,
+ * parameters, explainer), RegistryToolbar, EntryList and Pagination.
  */
 
 const NSFW_FILTER_KEY = 'NSFW_FILTER_KEY'
@@ -154,11 +163,11 @@ const formatInt = (value: number) => integer.format(value)
  */
 const isCount = (value: number) => Number.isFinite(value) && value >= 0
 
-/** Each status filter chip with its count, while the count is known. */
-const withCount = (label: string, count?: number) =>
-  count !== undefined && Number.isFinite(count)
-    ? `${label} ${formatInt(count)}`
-    : label
+/**
+ * The "Previously disputed" count reads at most this many ids; a read that
+ * fills it is a lower bound ("1,000+") and the pages run on past it.
+ */
+const DISPUTED_BEFORE_LIMIT = 1000
 
 const itemFields = (item: StakeItem): V2Field[] =>
   item.metadata?.props ?? item.props ?? []
@@ -217,9 +226,20 @@ const TermsLink = styled.a`
   }
 `
 
+/* A contract's explorer link (the arbitrator), as on a Standard list: a
+   24px target with its arrow, and it says it opens a new tab. */
 const ExplorerLink = styled.a`
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 24px;
   color: var(--color-primary);
   text-decoration: none;
+
+  svg {
+    flex: 0 0 auto;
+    opacity: 0.8;
+  }
 
   &:hover {
     text-decoration: underline;
@@ -278,6 +298,16 @@ const withTermsLink = (
   return <>{parts}</>
 }
 
+/* The court and its jury after the arbitrator's address break only at the
+   dots between them, so a narrow column never leaves "jurors" alone. Each
+   is a box of its own rather than unbreakable text, so a court name longer
+   than the column still wraps inside it instead of running out. */
+const Unbroken = styled.span`
+  display: inline-block;
+  max-width: 100%;
+`
+
+/** A contract's address (the arbitrator): it opens the chain's explorer. */
 const AddressValue = ({
   chainId,
   address,
@@ -293,7 +323,9 @@ const AddressValue = ({
       rel="noopener noreferrer"
       title={address}
     >
-      {truncateMiddle(address, 8, 6)}
+      {truncateMiddle(address, 6, 4)}
+      <CurateIcon name="external" size={14} />
+      <VisuallyHidden> (opens in a new tab)</VisuallyHidden>
     </ExplorerLink>
   )
 }
@@ -313,7 +345,9 @@ const StakeRegistry = () => {
   // The pager sits at the foot of the list: a new page starts at its top.
   const toolbarRef = useRef<HTMLDivElement>(null)
   const trust = useRegistryVerified(chainId, tcrAddress)
-  const [nsfwFilterOn, setNsfwFilterOn] = useState(true)
+  // Sensitive entries show unless the reader hides them (round 7); their
+  // choice is kept and restored below.
+  const [nsfwFilterOn, setNsfwFilterOn] = useState(false)
   // The search box lives in the URL (?q=), so Back from an entry, a reload
   // or a shared link keeps it. Typing replaces the history entry: Back
   // leaves the list instead of undoing keystrokes. It filters the page on
@@ -327,7 +361,8 @@ const StakeRegistry = () => {
   const [revealed, setRevealed] = useState<Set<string>>(() => new Set())
 
   const queryOptions = searchStrToFilterObjPermanent(search)
-  const { oldestFirst, page, absent, registered, disputed } = queryOptions
+  const { oldestFirst, page, absent, registered, disputed, disputedBefore } =
+    queryOptions
   const currentPage = Number(page) || 1
   const registryId = tcrAddress?.toLowerCase()
 
@@ -347,14 +382,41 @@ const StakeRegistry = () => {
   })
   const registry = registryQuery.data?.registry as SubgraphRegistry | undefined
 
+  // "Listed" filters to every entry on the list, the disputed ones
+  // included (see onListCount below); "Disputed" narrows to those alone.
+  // "Previously disputed" is every entry ever challenged (each challenge is
+  // a dispute), whatever its status now.
   const itemsWhere = useMemo(() => {
     const statuses: string[] = []
     if (absent) statuses.push('Absent')
-    if (registered) statuses.push('Submitted', 'Reincluded')
-    if (disputed) statuses.push('Disputed')
-    if (statuses.length === 0) return { registry: registryId }
-    return { registry: registryId, status_in: statuses }
-  }, [absent, registered, disputed, registryId])
+    if (registered) statuses.push('Submitted', 'Reincluded', 'Disputed')
+    else if (disputed) statuses.push('Disputed')
+    const history = disputedBefore ? { challenges_: { id_not: null } } : {}
+    if (statuses.length === 0) return { registry: registryId, ...history }
+    return { registry: registryId, ...history, status_in: statuses }
+  }, [absent, registered, disputed, disputedBefore, registryId])
+
+  // How many entries have ever been challenged: the list's size under the
+  // status menu's "Previously disputed" (which shows no count), read only
+  // while that choice is on.
+  const disputedBeforeQuery = useQuery({
+    queryKey: ['permanentDisputedBefore', chainId, registryId],
+    queryFn: (): Promise<{ items?: { id: string }[] }> =>
+      graphqlBatcher.fetch({
+        id: crypto.randomUUID(),
+        document: PERMANENT_DISPUTED_BEFORE_QUERY,
+        variables: { registry: registryId, first: DISPUTED_BEFORE_LIMIT },
+        chainId: chainId!,
+        isPermanent: true,
+      }),
+    enabled: !!chainId && !!registryId && !!disputedBefore,
+    staleTime: STALE_TIME,
+  })
+  const disputedBeforeCount = disputedBeforeQuery.data?.items?.length
+  const disputedBeforeCapped =
+    !!disputedBefore &&
+    disputedBeforeCount !== undefined &&
+    disputedBeforeCount >= DISPUTED_BEFORE_LIMIT
 
   const itemsVariables = useMemo(
     () => ({
@@ -459,12 +521,12 @@ const StakeRegistry = () => {
     localforage.setItem(NSFW_FILTER_KEY, checked)
   }, [])
 
-  // Every entry of the list, for exact counts and the drawings.
+  // Every entry of the list, for exact counts and the challenge figures.
   const {
     summary,
     loading: summaryLoading,
     failed: summaryFailed,
-  } = useStakeSummary({ chainId, registryId, registry, timestamp })
+  } = useStakeSummary({ chainId, registryId })
   const fullSummary = summary && !summary.partial ? summary : undefined
 
   // The counts the page shows; undefined means unknown, shown as '—'. With
@@ -505,22 +567,42 @@ const StakeRegistry = () => {
   // never flashes before the real count.
   const countsReady = !!registry && !summaryLoading
 
+  // How many entries are on the list: a Stake entry is listed from the
+  // moment it was submitted and stays listed while a challenge runs, so the
+  // figure under the word "listed" is submitted plus disputed — the measure
+  // Browse and the dashboard print for the same list, and the one the
+  // "Listed" chip below counts and filters to. The "Disputed" chip is the
+  // part of it a challenge is running on; "Off the list" is the rest.
+  const onListCount =
+    counts.listed !== undefined && counts.disputed !== undefined
+      ? counts.listed + counts.disputed
+      : undefined
+
   // The batcher resolves failed requests to {}, so guard the items field.
   const pageItems = itemsQuery.data?.items as StakeItem[] | undefined
   const items: StakeItem[] = useMemo(() => pageItems ?? [], [pageItems])
 
   // Entries matching the status filters, from the counts above; undefined
-  // when a bucket it needs is unknown.
+  // when a bucket it needs is unknown. "Listed" already holds the disputed
+  // entries, so with it on the "Disputed" chip adds nothing more.
   const filteredCount = useMemo((): number | undefined => {
+    if (disputedBefore) return disputedBeforeCount
     if (!absent && !registered && !disputed) return counts.total
     const parts = [
       absent ? counts.absent : 0,
       registered ? counts.listed : 0,
-      disputed ? counts.disputed : 0,
+      registered || disputed ? counts.disputed : 0,
     ]
     if (parts.some((part) => part === undefined)) return undefined
     return parts.reduce<number>((sum, part) => sum + (part ?? 0), 0)
-  }, [absent, registered, disputed, counts])
+  }, [
+    absent,
+    registered,
+    disputed,
+    counts,
+    disputedBefore,
+    disputedBeforeCount,
+  ])
 
   // How many entries match, undefined when unknown. A short page is the last
   // one, so it gives the exact total; a full page proves at least that many.
@@ -637,30 +719,73 @@ const StakeRegistry = () => {
     [baseColumns, stakeColumn],
   )
 
-  // The chips carry their counts, as the Standard page's do, once the counts
-  // are settled and trusted (undefined otherwise).
+  // The status menu (round 6) carries the counts, as the Standard page's
+  // does, once they are settled and trusted (undefined otherwise).
   const chipCount = (value?: number) => (countsReady ? value : undefined)
   const chips: FilterChip[] = [
     {
+      // Every entry on the list, the disputed ones included: the same
+      // "Listed" figure the header and Browse print, so the word means one
+      // thing on the page.
       key: P_FILTER_KEYS.REGISTERED,
-      label: withCount('Listed', chipCount(counts.listed)),
+      label: 'Listed',
+      count: chipCount(onListCount),
       tone: 'registered',
       checked: !!registered,
     },
     {
       key: P_FILTER_KEYS.DISPUTED,
-      label: withCount('Disputed', chipCount(counts.disputed)),
+      label: 'Disputed now',
+      count: chipCount(counts.disputed),
       tone: 'contested',
       checked: !!disputed,
     },
     {
-      // Withdrawn entries count here too: the insights panel's word.
+      // Withdrawn entries count here too, so it reads "Off the list"
+      // rather than "Removed".
       key: P_FILTER_KEYS.ABSENT,
-      label: withCount('Off the list', chipCount(counts.absent)),
+      label: 'Off the list',
+      count: chipCount(counts.absent),
       tone: 'off',
       checked: !!absent,
     },
+    {
+      key: P_FILTER_KEYS.DISPUTED_BEFORE,
+      label: 'Previously disputed',
+      hint: 'Every entry that has been challenged, whatever its status now',
+      led: true,
+      divider: true,
+      checked: !!disputedBefore,
+    },
   ]
+  const setStatus = (value: string) =>
+    navigate({
+      search: selectStatusFilter({
+        prevQuery: search,
+        keys: chips.map((chip) => chip.key),
+        value,
+      }),
+    })
+
+  // The menu shows one status, the first checked; an old link may carry
+  // several. The link is narrowed to that one, so the list agrees with it.
+  const checkedStatuses = chips.filter((chip) => chip.checked)
+  const shownStatus =
+    checkedStatuses.length > 1 ? checkedStatuses[0].key : undefined
+  const statusKeys = chips.map((chip) => chip.key).join(',')
+  useEffect(() => {
+    if (!shownStatus) return
+    navigate(
+      {
+        search: selectStatusFilter({
+          prevQuery: search,
+          keys: statusKeys.split(','),
+          value: shownStatus,
+        }),
+      },
+      { replace: true },
+    )
+  }, [shownStatus, statusKeys, search, navigate])
 
   const setFilter = (filter: string, checked: boolean) =>
     navigate({
@@ -712,6 +837,21 @@ const StakeRegistry = () => {
       return undefined
     }
   }, [arbitratorExtraData])
+  // Jurors are named only when the list's arbitrator is this chain's Kleros
+  // court; any other arbitrator is "the arbitrator", and its court ids are
+  // not Kleros courts, so only a Kleros court is looked up by name.
+  const klerosArbitrated = isKlerosArbitrator(chainId, registry?.arbitrator?.id)
+  // The court by its name ("xDai Curation"), as the factory and the dispute
+  // panel name it; its number only while the name loads or if it cannot be
+  // read.
+  const courtName = useCourtName(
+    chainId,
+    klerosArbitrated ? court?.courtID : undefined,
+  )
+  const courtTitle = court ? (courtName ?? `Court ${court.courtID}`) : undefined
+  const jurorsLabel = court
+    ? `${court.numberOfJurors} juror${court.numberOfJurors === 1 ? '' : 's'}`
+    : undefined
 
   // RegistryHeader prints '—' (or a skeleton) for an undefined value.
   const countValue = (value?: number) =>
@@ -719,7 +859,7 @@ const StakeRegistry = () => {
 
   const stats: RegistryStat[] = [
     { label: 'Entries', value: countValue(counts.total) },
-    { label: 'Listed', value: countValue(counts.listed) },
+    { label: 'Listed', value: countValue(onListCount) },
     { label: 'Disputed', value: countValue(counts.disputed) },
     // Summed from every entry, so only with the whole list; the slot holds
     // its place while the summary and the token's decimals load.
@@ -802,28 +942,31 @@ const StakeRegistry = () => {
             <AddressValue chainId={chainId} address={registry.arbitrator.id} />
             {court && (
               <span title={`Extra data ${arbitratorExtraData}`}>
-                {` · Court ${court.courtID} · ${court.numberOfJurors} juror${
-                  court.numberOfJurors === 1 ? '' : 's'
-                }`}
+                {' · '}
+                <Unbroken>{courtTitle}</Unbroken>
+                {' · '}
+                <Unbroken>{jurorsLabel}</Unbroken>
               </span>
             )}
           </>
         ) : undefined,
       hint: court
-        ? `Challenges go to court ${court.courtID}, which draws ${court.numberOfJurors} juror${court.numberOfJurors === 1 ? '' : 's'}.`
+        ? `Challenges go to ${
+            courtName
+              ? `the Kleros ${courtPhrase(courtName)}`
+              : `court ${court.courtID}`
+          }, which draws ${jurorsLabel}.`
         : arbitratorExtraData
           ? `Extra data ${arbitratorExtraData.slice(0, 18)}…`
           : undefined,
     },
     {
+      // The governor is a person (or their multisig): their Curate profile,
+      // where the lists they govern are, not the explorer.
       label: 'Governor',
-      value:
-        chainId && contractQuery.data?.governor ? (
-          <AddressValue
-            chainId={chainId}
-            address={contractQuery.data.governor}
-          />
-        ) : undefined,
+      value: contractQuery.data?.governor ? (
+        <CuratorAddress address={contractQuery.data.governor} />
+      ) : undefined,
       hint: 'Can change the periods, the multipliers and the arbitration settings.',
     },
     {
@@ -833,9 +976,6 @@ const StakeRegistry = () => {
     },
   ]
 
-  // Jurors are named only when the list's arbitrator is this chain's Kleros
-  // court; any other arbitrator is "the arbitrator".
-  const klerosArbitrated = isKlerosArbitrator(chainId, registry?.arbitrator?.id)
   const explainerSteps: ExplainerStep[] = [
     {
       title: 'Stake to list',
@@ -883,19 +1023,6 @@ const StakeRegistry = () => {
     },
   ]
 
-  // The drawings never name an entry the list itself hides.
-  const laneHidden = (lane: StakeLane) =>
-    nsfwFilterOn &&
-    !revealed.has(lane.id) &&
-    (lane.statusCode === undefined
-      ? lane.tone === 'off'
-      : HIDDEN_STATUSES.has(lane.statusCode))
-
-  const openLane = (lane: StakeLane) => {
-    if (chainId && tcrAddress)
-      navigate(`/tcr/${chainId}/${tcrAddress}/${lane.id}`)
-  }
-
   if (!chainId || !tcrAddress)
     return (
       <ErrorPage
@@ -930,39 +1057,48 @@ const StakeRegistry = () => {
   const pageStart = pageStartIndex + 1
   // A page past the end of the list: it came back empty.
   const outOfRange = !itemsLoading && pageLength === 0 && currentPage > 1
-  // A full page with an unknown total: at least this many, maybe more.
+  // A full page with an unknown or capped total: at least this many, maybe
+  // more.
   const fullPageFloor =
-    itemCount === undefined && pageLength === ITEMS_PER_PAGE
-      ? pageStartIndex + ITEMS_PER_PAGE
+    (itemCount === undefined || disputedBeforeCapped) &&
+    pageLength === ITEMS_PER_PAGE
+      ? Math.max(itemCount ?? 0, pageStartIndex + ITEMS_PER_PAGE)
       : undefined
-  const footerTotal = itemCount ?? fullPageFloor
+  const footerTotal = fullPageFloor ?? itemCount
   const pageEnd = Math.min(currentPage * ITEMS_PER_PAGE, footerTotal ?? 0)
+  // The "Previously disputed" count still on its way: no total yet.
+  const countLoading = !!disputedBefore && disputedBeforeQuery.isLoading
   const showFooter =
     !itemsLoading &&
+    !countLoading &&
     !outOfRange &&
     footerTotal !== undefined &&
     footerTotal > 0 &&
     pageStart <= footerTotal
   const toolbarTotal =
-    itemCount ?? (outOfRange ? 0 : pageStartIndex + items.length)
+    fullPageFloor ??
+    itemCount ??
+    (outOfRange ? 0 : pageStartIndex + items.length)
   // The search box's count stays blank (never "0 of 0") until the page and
   // the counts are in, and when the page did not load.
   const countUnknown =
-    itemsLoading || !countsReady || (itemsQuery.isError && !itemsQuery.data)
+    itemsLoading ||
+    !countsReady ||
+    (itemsQuery.isError && !itemsQuery.data) ||
+    countLoading
   // No filter and no search, yet nothing on the first page: an empty list.
-  const listEmpty = !absent && !registered && !disputed && !itemSearch.trim()
+  const anyFilter = !!(absent || registered || disputed || disputedBefore)
+  const listEmpty = !anyFilter && !itemSearch.trim()
   const noun = (count: number) => (count === 1 ? itemName : itemNamePlural)
   const outOfRangeLine =
     itemCount === undefined
       ? 'This page is past the end of the list.'
       : itemCount === 0
-        ? `No ${itemNamePlural} match${
-            absent || registered || disputed ? ' these filters' : ' yet'
-          }.`
-        : absent || registered || disputed
+        ? `No ${itemNamePlural} match${anyFilter ? ' this status' : ' yet'}.`
+        : anyFilter
           ? `${formatInt(itemCount)} ${noun(itemCount)} ${
               itemCount === 1 ? 'matches' : 'match'
-            } these filters, all on earlier pages.`
+            } this status, all on earlier pages.`
           : `This list has ${formatInt(itemCount)} ${noun(itemCount)}, all on earlier pages.`
 
   return (
@@ -979,6 +1115,7 @@ const StakeRegistry = () => {
         listOfLists={trust.listOfLists}
         kind="permanent"
         itemName={itemName}
+        itemNamePlural={itemNamePlural}
         primaryLabel={`Submit ${itemName}`}
         primaryAmount={primaryAmount}
         depositNote={
@@ -993,21 +1130,53 @@ const StakeRegistry = () => {
         // Stake list it would shimmer and then show nothing.
         policyUpdated={false}
         stats={stats}
+        // The same figure the "Listed" stat above carries, as the list's
+        // first gauge: a Stake entry is listed from the moment it was
+        // submitted, so the word is "listed", never "registered".
+        registeredCount={countsReady ? onListCount : undefined}
+        totalCount={countsReady ? counts.total : undefined}
+        registeredLabel="Listed now"
+        // The second gauge: what the challenges did to the entries read. A
+        // capped read is a lower bound, and says what it was counted from.
+        challenges={
+          summaryFailed || !summary
+            ? undefined
+            : {
+                offList: summary.challenges.removed,
+                onList: summary.challenges.kept,
+                inCourt: summary.challenges.open,
+                scope: summary.partial
+                  ? `the latest ${formatInt(SUMMARY_CAP)} entries`
+                  : undefined,
+              }
+        }
         parameters={parameters}
         explainerId={`registry-stake-${tcrAddress.toLowerCase()}`}
         explainerHeading="A stake backs every entry. Spot a bad one and it is yours."
         explainerSteps={explainerSteps}
         loading={loading || summaryLoading}
-      />
-
-      <StakeInsights
-        summary={summaryFailed ? undefined : summary}
-        loading={loading || summaryLoading}
-        now={now}
-        itemName={itemName}
-        itemNamePlural={itemNamePlural}
-        isHidden={laneHidden}
-        onOpen={openLane}
+        // The governor read on chain through the list's own chain (the
+        // contract query above), so a governor whose wallet is on another
+        // chain still sees the control. It waits for the indexed list too:
+        // the control reads the parameters with the list's token, live
+        // MetaEvidence and court settings, and keeps what it read with.
+        governance={
+          <ListGovernance
+            chainId={chainId}
+            address={tcrAddress}
+            kind="permanent"
+            title={title}
+            logoURI={metadata?.logoURI}
+            token={registry?.token}
+            metaEvidenceURI={metaEvidenceURI}
+            arbitratorExtraData={arbitratorExtraData}
+            governor={registry ? contractQuery.data?.governor : undefined}
+            onSaved={() => {
+              void contractQuery.refetch()
+              void registryQuery.refetch()
+            }}
+          />
+        }
       />
 
       <div ref={toolbarRef}>
@@ -1016,17 +1185,19 @@ const StakeRegistry = () => {
           onSearch={setItemSearch}
           placeholder={`Search ${itemNamePlural}`}
           chips={chips}
-          onChipChange={setFilter}
+          onStatusChange={setStatus}
           sort={oldestFirst ? 'oldest' : 'newest'}
           onSortChange={(sort) =>
             setFilter(P_FILTER_KEYS.OLDEST_FIRST, sort === 'oldest')
           }
           layout={layout}
           onLayoutChange={setLayout}
+          layoutOptions={REGISTRY_LAYOUT_OPTIONS}
           nsfwFilter={nsfwFilterOn}
           onNsfwChange={toggleNsfwFilter}
           shown={countUnknown ? undefined : entries.length}
           total={countUnknown ? undefined : toolbarTotal}
+          totalCapped={fullPageFloor !== undefined}
         />
       </div>
 
@@ -1044,19 +1215,7 @@ const StakeRegistry = () => {
         aria-busy={itemsLoading}
       >
         {itemsLoading ? (
-          layout === 'cards' ? (
-            <Grid $min={260}>
-              {Array.from({ length: 6 }).map((_, index) => (
-                <SkeletonBlock key={index} $height="180px" />
-              ))}
-            </Grid>
-          ) : (
-            <Stack $gap={8}>
-              {Array.from({ length: 6 }).map((_, index) => (
-                <SkeletonBlock key={index} $height="56px" />
-              ))}
-            </Stack>
-          )
+          <RegistryListSkeleton layout={layout} />
         ) : itemsQuery.isError && !itemsQuery.data ? (
           <Surface $padding="none">
             <EmptyState
@@ -1132,10 +1291,15 @@ const StakeRegistry = () => {
               <Pagination
                 current={currentPage}
                 pageSize={ITEMS_PER_PAGE}
-                // An unknown total offers one more page; an empty one
-                // leads back to page 1.
+                // An unknown total offers one more page (a capped one, once
+                // the pages reach it); an empty one leads back to page 1.
                 total={
-                  fullPageFloor !== undefined ? fullPageFloor + 1 : footerTotal
+                  fullPageFloor !== undefined
+                    ? Math.max(
+                        fullPageFloor,
+                        pageStartIndex + ITEMS_PER_PAGE + 1,
+                      )
+                    : footerTotal
                 }
                 onChange={setPage}
               />

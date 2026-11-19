@@ -4,14 +4,12 @@ import { readSavedLoad, saveLoad } from 'pages/dashboard/saved-load'
 import type { DashboardRegistry } from 'pages/dashboard/types'
 import {
   MAINNET_CHAIN_IDS,
-  chainInfo,
   entryCount,
-  formatUnits,
-  scopedBounties,
   scopedFigures,
   scopedSeries,
 } from 'pages/dashboard/view'
 import { readRegistryMetadata } from 'utils/registry-metadata'
+import { landingMoney, readTransit, type LandingMoney } from './money'
 import { ipfsImageUrl } from 'utils/ipfs-parse'
 import {
   countsAsCommunityList,
@@ -23,8 +21,9 @@ import {
  * The page draws the dated snapshot in public/landing/data.js at once and
  * swaps in this promise's figures when it answers. It is the app's
  * dashboard load (loadDashboardData) with the same scope ("All chains":
- * Ethereum and Gnosis) and the same figures (scopedFigures, scopedSeries,
- * scopedBounties), so both pages show the same numbers:
+ * Ethereum and Gnosis) and the same figures (scopedFigures, scopedSeries),
+ * so both pages show the same numbers, plus the landing's own two dollar
+ * figures (money.ts, round 14):
  *   - Kleros Verified by the one rule (components/curate/verified-rule.ts):
  *     the lists registered on the chain's Kleros list of lists (the list of
  *     lists itself grants the badge and is not counted among them); the
@@ -46,28 +45,12 @@ import {
 const LIVE_BUDGET_MS = 14000
 /** List logos and names: a short wait; a list without one shows a glyph. */
 const METADATA_BUDGET_MS = 4000
-
-const DAY = 86_400
-
-/** One coin challengers have won bounties in (never added across coins). */
-export interface LandingBountyCoin {
-  /** "<chainId>:native" or "<chainId>:<token address>", as scopedBounties keys it. */
-  key: string
-  chainId: number
-  /** "Ethereum", "Gnosis". */
-  chain: string
-  /** Paid in a Stake list's token (the entry's stake), not the chain's coin. */
-  stake: boolean
-  symbol: string
-  /** "30,690.1" (at most 4 decimals); absent when the token's decimals did not load. */
-  amount?: string
-  /** The same in whole coins, for the count-up. */
-  value?: number
-  /** Winning challenges paid in this coin. */
-  won: number
-  /** The UTC day (unix seconds / 86400) of each of those rulings, oldest first. */
-  days: number[]
-}
+/**
+ * The dollar figures wait at most this long from the start of the read,
+ * inside LIVE_BUDGET_MS: past it they keep the snapshot's, and the other
+ * figures still go live.
+ */
+const MONEY_BUDGET_MS = LIVE_BUDGET_MS - 1000
 
 /** A Kleros Verified list, as the landing shows it. */
 export interface LandingVerifiedList {
@@ -88,7 +71,6 @@ export interface LandingVerifiedList {
 export interface LandingData {
   live: true
   snapshotAt: string
-  scope: string
   figures: {
     registries: number
     /** Kleros Verified lists, by the shared rule. */
@@ -108,21 +90,14 @@ export interface LandingData {
   /** Most open requests first, then most entries. */
   verifiedLists: LandingVerifiedList[]
   series30d: { day: number; requests: number; challenges: number }[]
-  /** Bounties won by challengers, all time (the dashboard's "Bounties won"). */
-  bounties: {
-    won: number
-    rulings: number
-    /** A rulings ledger stopped at its page limit: every count is a lower bound. */
-    capped: boolean
-    coins: LandingBountyCoin[]
-  }
+  /**
+   * The two dollar figures (rounds 14 and 15, money.ts): bounties
+   * challengers have won and everything paid in to a list, all time, at
+   * today's prices. A figure that could not be read live is the
+   * snapshot's.
+   */
+  money: Partial<LandingMoney>
 }
-
-const scopeName = (chains: number[]) =>
-  chains
-    .map((chainId) => chainInfo(chainId)?.name)
-    .filter(Boolean)
-    .join(' and ')
 
 /** Resolves to null once `ms` has passed. */
 const withinBudget = <T>(promise: Promise<T>, ms: number) =>
@@ -131,8 +106,8 @@ const withinBudget = <T>(promise: Promise<T>, ms: number) =>
     new Promise<null>((resolve) => setTimeout(() => resolve(null), ms)),
   ])
 
-/** "Registry 0x12ab...cdef": the indexer had no title for the list. */
-const FALLBACK_TITLE = /^(permanent )?registry 0x[0-9a-f]{4}/i
+/** "List 0x12ab…cdef": the indexer had no title for the list. */
+const FALLBACK_TITLE = /^(stake )?list 0x[0-9a-f]{4}/i
 
 /** Names and logos the indexer lacks, from each list's MetaEvidence. */
 const withMetadata = async (
@@ -169,8 +144,44 @@ const withMetadata = async (
 /** This page's own load (no list metadata), kept apart from the app's. */
 const LANDING_LOAD = 'landing'
 
+/**
+ * The live dollar figures, with the snapshot's (public/landing/data.js) in
+ * place of one that did not come back.
+ */
+const withSnapshotMoney = (
+  live: Partial<LandingMoney>,
+): Partial<LandingMoney> & { dated: string[] } => {
+  const snapshot = window.CURATE_LANDING_DATA?.money ?? {}
+  return {
+    // The figures taken from the snapshot keep its date and its day's
+    // prices on the page (landing.js), though the rest of it is live.
+    dated: [
+      ...(live.bounties === undefined ? ['bounties'] : []),
+      ...(live.transit === undefined ? ['transit'] : []),
+    ],
+    ...(live.bounties === undefined
+      ? {
+          bounties: snapshot.bounties,
+          bountiesPaid: snapshot.bountiesPaid,
+          bountiesCapped: snapshot.bountiesCapped,
+        }
+      : {}),
+    ...(live.transit === undefined
+      ? { transit: snapshot.transit, requests: snapshot.requests }
+      : {}),
+    ...live,
+  }
+}
+
 const readLive = async (): Promise<LandingData | null> => {
+  const started = Date.now()
   const chains = MAINNET_CHAIN_IDS
+  // Everything paid in to a list, all time: read beside the dashboard
+  // load, which it does not need. Its coin totals are kept across page
+  // loads and shared with the app's dashboard (transit.ts readTransit), so
+  // a visit within the hour reads storage, not the indexer.
+  const transit = readTransit(chains)
+  transit.catch(() => undefined)
   // All chains (no testnet), no list metadata for every list (the page
   // needs counts), the challenge periods to place open requests.
   // The same read the app's dashboard makes (with list metadata on top): a
@@ -196,8 +207,13 @@ const readLive = async (): Promise<LandingData | null> => {
   if (data.failedChains.length > 0 || data.seriesTruncated) return null
   const series = scopedSeries(data, chains)
   if (series.length < 2 || data.registries.length === 0) return null
-  const bounties = scopedBounties(data, chains)
-  if (bounties.missing.length > 0) return null
+  // The dollar figures, each on its own (money.ts): one that cannot be read
+  // or priced in time keeps the snapshot's, and the other figures still go
+  // live. Read beside the list metadata below.
+  const moneyRead = withinBudget(
+    landingMoney(data, chains, transit),
+    Math.max(0, started + MONEY_BUDGET_MS - Date.now()),
+  )
 
   // Kleros Verified as the load stamped it (the shared rule).
   const registries = data.registries.filter((registry) =>
@@ -228,21 +244,11 @@ const readLive = async (): Promise<LandingData | null> => {
     registries,
   )
 
-  // The day of each winning ruling, per coin, for the ledger drawing.
-  const days = new Map<string, number[]>()
-  for (const chainId of chains)
-    for (const row of data.rulings[chainId] ?? []) {
-      if (!row.challengerWon) continue
-      const key = `${chainId}:${row.token ?? 'native'}`
-      const list = days.get(key) ?? []
-      list.push(Math.floor(row.resolvedAt / DAY))
-      days.set(key, list)
-    }
+  const money = withSnapshotMoney((await moneyRead) ?? {})
 
   return {
     live: true,
     snapshotAt: new Date(data.generatedAt).toISOString(),
-    scope: scopeName(chains),
     figures: {
       registries: figures.registries,
       verified: figures.verified,
@@ -263,25 +269,7 @@ const readLive = async (): Promise<LandingData | null> => {
       requests: day.submissions + day.removals,
       challenges: day.challenges,
     })),
-    bounties: {
-      won: bounties.won,
-      rulings: bounties.rulings,
-      capped: bounties.capped,
-      coins: bounties.coins.map((coin) => ({
-        key: coin.key,
-        chainId: coin.chainId,
-        chain: chainInfo(coin.chainId)?.name ?? `Chain ${coin.chainId}`,
-        stake: !!coin.token,
-        symbol: coin.symbol,
-        amount:
-          coin.decimals === undefined
-            ? undefined
-            : formatUnits(coin.amount, coin.decimals),
-        value: coin.value,
-        won: coin.won,
-        days: (days.get(coin.key) ?? []).sort((a, b) => a - b),
-      })),
-    },
+    money,
   }
 }
 
@@ -291,6 +279,8 @@ const mediaUrl = (uri?: unknown): string | null => ipfsImageUrl(uri) ?? null
 declare global {
   interface Window {
     CURATE_LANDING_LIVE?: Promise<LandingData | null>
+    /** The dated snapshot (public/landing/data.js); only its money is read. */
+    CURATE_LANDING_DATA?: { money?: Partial<LandingMoney> }
     /** Resolves a logo path for the page (the snapshot's logos too). */
     CURATE_LANDING_MEDIA?: (uri?: unknown) => string | null
   }

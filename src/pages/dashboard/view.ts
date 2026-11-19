@@ -93,6 +93,21 @@ export const windowsPending = (data: DashboardData, chainId: number): boolean =>
   (!chainWindowsKnown(data, chainId) || !data.closingSoon?.[chainId])
 
 /**
+ * An indexer amount in the coin's smallest unit: a request's deposit or a
+ * ledger bounty, both built the same way (data.ts). Anything that is not a
+ * plain integer string counts as no amount, in either place: the field is
+ * the indexer's, and a decimal or an exponent (a JS number of 1000 xDAI
+ * stringifies to "1e+21") would throw inside the page's memo and take the
+ * whole dashboard down rather than leave one figure short. Exported for the
+ * one other place that reads a ledger bounty, the ruling row's label
+ * (index.tsx), which renders it and so would crash in the same way.
+ */
+export const toAmount = (value: string | undefined | null): bigint => {
+  const text = (value ?? '').trim()
+  return /^\d+$/.test(text) ? BigInt(text) : 0n
+}
+
+/**
  * Every figure the dashboard (and the landing page) shows for a scope of
  * chains, from one load of the data: one definition for both pages.
  * `now` (unix seconds) places unchallenged requests in their windows.
@@ -118,7 +133,8 @@ export const scopedFigures = (
    * (anyone can challenge and win the deposit) or past it (nobody can
    * challenge any more; they only wait to be executed). Only when every one
    * of them could be placed: otherwise the windows are unknown. The
-   * deposits of the open ones are summed per chain (each in its own coin).
+   * deposits of the open ones are summed per chain (each in its own coin),
+   * with a deposit the indexer sent unreadably counting as none (toAmount).
    */
   const windowsKnown = chains.every((chainId) =>
     chainWindowsKnown(data, chainId),
@@ -138,12 +154,45 @@ export const scopedFigures = (
       pastWindow += rows.length - open.length
       for (const { row } of open)
         inWindowDeposits[chainId] =
-          (inWindowDeposits[chainId] ?? 0n) + BigInt(row.deposit || '0')
+          (inWindowDeposits[chainId] ?? 0n) + toAmount(row.deposit)
     }
+  /*
+   * The retired Classic lists' entry history in scope, summed from their
+   * own figures (data.classicEntries) and never from a registry row: no
+   * Classic list is in `data.registries`, so none can be browsed, linked or
+   * counted among the lists this app shows.
+   */
+  let classicLists = 0
+  let classicEntries = 0
+  let classicCapped = false
+  for (const chainId of chains) {
+    const classic = data.classicEntries?.[chainId]
+    if (!classic) continue
+    classicLists += classic.lists
+    classicEntries += classic.entries
+    classicCapped ||= classic.capped
+  }
+  const entries = scoped.reduce((sum, r) => sum + entryCount(r), 0)
   return {
     registries: scoped.length,
     verified: scoped.filter(countsAsVerifiedList).length,
-    entries: scoped.reduce((sum, r) => sum + entryCount(r), 0),
+    /**
+     * Entries the lists this app shows have ever held (settled on or off the
+     * list) plus those with an open request: the live figure.
+     */
+    entries,
+    /**
+     * Every entry ever curated in scope: the above plus the retired Classic
+     * lists' own total. The all-time panel's denominator, never the live
+     * strip's figure, which stands beside a count of the lists Browse can
+     * show.
+     */
+    entriesAllTime: entries + classicEntries,
+    /** How many retired Classic lists that total is of, and their entries. */
+    classicLists,
+    classicEntries,
+    /** The Classic read came back a full page: `entriesAllTime` is a floor. */
+    classicCapped,
     // Stake Curate has no requests (its counter is listed items).
     requestsOpen: scoped
       .filter((r) => r.kind !== 'permanent')
@@ -187,12 +236,20 @@ export const formatUnits = (
 
 /** One coin bounties were paid in, in a scope of chains. */
 export interface BountyCoin {
-  /** "<chainId>:native" or "<chainId>:<token address>". */
+  /**
+   * "<chainId>:native", "<chainId>:<token address>", or
+   * "<chainId>:token-unknown" for a Stake list whose token did not load.
+   */
   key: string
   chainId: number
-  /** Stake lists' ERC-20, lowercase; absent for the chain's own coin. */
+  /** A Stake list's own ERC-20, rather than the chain's coin. */
+  stake: boolean
+  /** That ERC-20, lowercase; absent for the chain's coin and when it did not load. */
   token?: string
-  /** "xDAI", "ETH", "sDAI"; the short token address when its symbol did not load. */
+  /**
+   * "xDAI", "ETH", "sDAI"; the short token address when the symbol did not
+   * load, and empty when nothing names the coin at all.
+   */
   symbol: string
   /** Unknown when a token's decimals did not load: show the count, not an amount. */
   decimals?: number
@@ -204,15 +261,35 @@ export interface BountyCoin {
   display?: string
   /** Winning challenges paid in this coin. */
   won: number
+  /**
+   * How many of those carried an amount: what `amount` is the sum of. Lower
+   * than `won` when the indexer recorded no deposit for a ruling, so the
+   * count a tile shows beside an amount answers the same question as it.
+   */
+  paid: number
 }
 
-/** Every resolved dispute in a scope of chains, newest first. */
+/**
+ * The resolved disputes a reader can open, in a scope of chains, newest
+ * first: this is the FEED, the only source of the rulings a row, a card or
+ * a link is built from (rulingCard below, the Disputes panel, the cards
+ * "show more" reads). The counts are not this: they come from
+ * scopedChallengeRecord, over the whole ledger.
+ *
+ * So a ruling on a retired Classic list is filtered out here. It is part of
+ * the protocol's history and counts in the bounties and the disputed
+ * requests (scopedBounties, scopedChallengeRecord), but the app has no
+ * Classic page, so a row pointing at one could only lead nowhere.
+ * There is deliberately no second export returning the unfiltered ledger:
+ * the next reader cannot pick the wrong one.
+ */
 export const scopedRulings = (
   data: DashboardData,
   chains: number[],
 ): RulingRow[] =>
   chains
     .flatMap((chainId) => data.rulings?.[chainId] ?? [])
+    .filter((row) => row.kind !== 'classic')
     .sort((a, b) => b.resolvedAt - a.resolvedAt || a.id.localeCompare(b.id))
 
 /**
@@ -224,9 +301,23 @@ export const scopedRulings = (
  * Coins are ordered by chain (scope order), the chain's coin before its
  * Stake tokens; coins nobody won are left out.
  *
+ * A Stake bounty is paid in its list's own token, so a Stake row whose token
+ * did not come through the subgraph gets a coin of its own rather than being
+ * folded into the chain's coin (which would add an ERC-20 amount into the
+ * chain's ETH or xDAI figure and count it as one more of its bounties).
+ *
  *  - won: winning challenges (rulings for the challenger), all coins
  *  - winners: how many different challengers won them
  *  - rulings: every dispute the court closed (a ruling or a refusal)
+ *  - listedRulings, listedWon: the same two on the Standard and Stake lists
+ *    alone, the ones the Disputes panel can list. The share of disputes that
+ *    went to the challenger is taken from these: round 4 counts the retired
+ *    Classic lists in the bounties and the all-time entries "only", so a
+ *    dispute share beside the panel's own ruling count reads the same 762
+ *    rather than the ledger's 923.
+ *  - classicBounties: the Classic wins that carried an amount, the share of
+ *    the coins' counts (`paid`) the Classic lists account for, which the
+ *    panel names in its Classic line
  *  - capped: some ledger stopped at its page limit: counts are lower bounds
  *  - loaded: chains whose ledger loaded (the figures cover these)
  *  - missing: chains whose ledger did not load (their bounties are absent)
@@ -238,31 +329,52 @@ export const scopedBounties = (data: DashboardData, chains: number[]) => {
   const winners = new Set<string>()
   let won = 0
   let rulings = 0
+  let listedRulings = 0
+  let listedWon = 0
+  let classicBounties = 0
   for (const chainId of chains)
     for (const row of data.rulings?.[chainId] ?? []) {
+      const classic = row.kind === 'classic'
       rulings += 1
+      if (!classic) listedRulings += 1
       if (!row.challengerWon) continue
       won += 1
+      if (!classic) listedWon += 1
+      else if (toAmount(row.bounty) > 0n) classicBounties += 1
       if (row.challenger) winners.add(row.challenger)
-      const key = `${chainId}:${row.token ?? 'native'}`
+      /*
+       * Which coin this bounty is in: a Standard bounty is the chain's own
+       * coin, a Stake bounty its list's token, and a Stake row whose token
+       * did not load a coin of its own rather than the chain's. Keyed by the
+       * row's own chain, the same one data.tokens is keyed by.
+       */
+      const stake = row.kind === 'permanent'
+      const key = `${row.chainId}:${stake ? (row.token ?? 'token-unknown') : 'native'}`
       const coin = coins.get(key) ?? {
         key,
-        chainId,
-        token: row.token,
+        chainId: row.chainId,
+        stake,
+        token: stake ? row.token : undefined,
         symbol: '',
         amount: 0n,
         won: 0,
+        paid: 0,
       }
-      coin.amount += BigInt(row.bounty || '0')
+      const amount = toAmount(row.bounty)
+      coin.amount += amount
       coin.won += 1
+      if (amount > 0n) coin.paid += 1
       coins.set(key, coin)
     }
   for (const coin of coins.values()) {
-    const info = coin.token
-      ? data.tokens?.[coin.key]
+    const info = coin.stake
+      ? coin.token
+        ? data.tokens?.[coin.key]
+        : undefined
       : getNativeCurrency(coin.chainId)
     coin.symbol =
-      info?.symbol ?? `${coin.token?.slice(0, 6)}…${coin.token?.slice(-4)}`
+      info?.symbol ??
+      (coin.token ? `${coin.token.slice(0, 6)}…${coin.token.slice(-4)}` : '')
     coin.decimals = info?.decimals
     if (coin.decimals !== undefined) {
       coin.display = `${formatUnits(coin.amount, coin.decimals)} ${coin.symbol}`
@@ -272,15 +384,22 @@ export const scopedBounties = (data: DashboardData, chains: number[]) => {
     }
   }
   const order = (coin: BountyCoin) =>
-    chains.indexOf(coin.chainId) * 2 + (coin.token ? 1 : 0)
+    chains.indexOf(coin.chainId) * 2 + (coin.stake ? 1 : 0)
   return {
+    // Within a chain's Stake tokens: the named ones first, then the one
+    // whose token did not load (it can say least about itself).
     coins: [...coins.values()].sort(
       (a, b) =>
-        order(a) - order(b) || (a.token ?? '').localeCompare(b.token ?? ''),
+        order(a) - order(b) ||
+        Number(!a.token) - Number(!b.token) ||
+        (a.token ?? '').localeCompare(b.token ?? ''),
     ),
     won,
     winners: winners.size,
     rulings,
+    listedRulings,
+    listedWon,
+    classicBounties,
     capped: chains.some((chainId) => data.rulingsCapped?.[chainId]),
     loaded: chains.filter((chainId) => !!data.rulings?.[chainId]),
     missing: chains.filter((chainId) => !data.rulings?.[chainId]),
@@ -288,8 +407,49 @@ export const scopedBounties = (data: DashboardData, chains: number[]) => {
 }
 
 /**
+ * What the lists' verification record adds up to in a scope of chains: the
+ * bounties above, plus how often anyone has disputed a request at all.
+ *
+ * Windows, said once: entries are every entry the lists have ever held,
+ * while challenges and rulings are all time and never windowed. `challenged` is
+ * every request someone disputed — the disputes the court has closed (the
+ * ledger) plus the ones open right now — counted on `loaded` chains alone,
+ * so one chain's open disputes are never added to another chain's missing
+ * ledger. It reads as a lower bound ("n+") when `challengedPartial`. It
+ * counts the retired Classic lists' disputes, because the entries it is set
+ * against count their entries (every entry ever curated); the share of
+ * disputes that went to the challenger does not (listedRulings above).
+ */
+export const scopedChallengeRecord = (
+  data: DashboardData,
+  chains: number[],
+) => {
+  const bounties = scopedBounties(data, chains)
+  const openDisputes = data.openDisputes.filter((activity) =>
+    bounties.loaded.includes(activity.chainId),
+  ).length
+  return {
+    ...bounties,
+    /** Requests anyone has disputed, all time: the rulings plus the open disputes. */
+    challenged: bounties.rulings + openDisputes,
+    /** A ledger capped, an open-dispute read at its limit, or a chain missing. */
+    challengedPartial:
+      bounties.capped ||
+      bounties.loaded.some((chainId) => !!data.openDisputesCapped?.[chainId]) ||
+      bounties.missing.length > 0,
+  }
+}
+
+/**
  * Bounties won per challenger (lowercase address), all time, in a scope of
  * chains: how many of their challenges the court ruled for them.
+ *
+ * The retired Classic lists are left out, unlike the panel's own figures: a
+ * figure attached to a PERSON has to match what their own profile page says
+ * about them, and that page reads a load with no Classic in it. The
+ * panel's figures describe the protocol's history, which is a different
+ * question. Only two addresses span the two eras, so nothing visible
+ * changes — which is the point.
  */
 export const scopedWins = (
   data: DashboardData,
@@ -298,7 +458,7 @@ export const scopedWins = (
   const wins = new Map<string, number>()
   for (const chainId of chains)
     for (const row of data.rulings?.[chainId] ?? [])
-      if (row.challengerWon && row.challenger)
+      if (row.kind !== 'classic' && row.challengerWon && row.challenger)
         wins.set(row.challenger, (wins.get(row.challenger) ?? 0) + 1)
   return wins
 }
@@ -611,4 +771,161 @@ export const buildBoard = (
       detailId: activity.disputeID ? `#${activity.disputeID}` : undefined,
     }))
   return { open, openLists, windowsKnown, live }
+}
+
+/* ---------- The chart's long ranges (round 7) ---------- */
+
+/**
+ * The chart's ranges: 30D is the load's own per-day series; the longer ones
+ * bucket the whole history (data.ts fetchActivityHistory), by week for 6M
+ * and 1Y and by month for 3Y. Three years is the longest (round 8): it
+ * starts after a company wallet's bulk submissions of 2023, which no
+ * curator ranking should carry, without singling out any address.
+ */
+export type ChartRange = '30d' | '6m' | '1y' | '3y'
+
+/**
+ * The chart ranges, as the switch over a chart names them (round 7), on the
+ * dashboard and, since round 13, on a profile: one list, so the two read
+ * alike.
+ */
+export const RANGE_OPTIONS: { value: ChartRange; label: string }[] = [
+  { value: '30d', label: '30D' },
+  { value: '6m', label: '6M' },
+  { value: '1y', label: '1Y' },
+  { value: '3y', label: '3Y' },
+]
+
+/** What each range's chart counts, over its legend. */
+export const RANGE_LEGEND: Record<ChartRange, string> = {
+  '30d': 'Per day · last 30 days',
+  '6m': 'Per week · last 6 months',
+  '1y': 'Per week · last year',
+  '3y': 'Per month · last 3 years',
+}
+
+export const parseRange = (
+  value: string | null,
+  fallback: ChartRange,
+): ChartRange =>
+  RANGE_OPTIONS.some((option) => option.value === value)
+    ? (value as ChartRange)
+    : fallback
+
+export interface RangeSeries {
+  /** Each bucket's start, in seconds, oldest first. */
+  starts: number[]
+  /** Requests (submissions and removal requests) per bucket. */
+  up: number[]
+  /** Challenges per bucket. */
+  down: number[]
+  unit: 'week' | 'month'
+}
+
+const WEEK = 7 * 86_400
+
+/** The UTC Monday that starts the week holding `at` (seconds). */
+const weekStart = (at: number) => {
+  const day = Math.floor(at / 86_400) * 86_400
+  const weekday = (new Date(day * 1000).getUTCDay() + 6) % 7
+  return day - weekday * 86_400
+}
+
+/** The month index (years × 12 + month) of `at`, in UTC. */
+const monthIndex = (at: number) => {
+  const date = new Date(at * 1000)
+  return date.getUTCFullYear() * 12 + date.getUTCMonth()
+}
+
+const monthStart = (index: number) =>
+  Date.UTC(Math.floor(index / 12), index % 12, 1) / 1000
+
+/**
+ * The history in buckets for one long range, the current bucket last (and
+ * partial: the chart draws it dashed).
+ */
+export const historySeries = (
+  events: { at: number; kind: 'submissions' | 'removals' | 'challenges' }[],
+  range: Exclude<ChartRange, '30d'>,
+  now: number,
+): RangeSeries => {
+  if (range === '6m' || range === '1y') {
+    const count = range === '6m' ? 26 : 52
+    const last = weekStart(now)
+    const first = last - (count - 1) * WEEK
+    const up = Array.from({ length: count }, () => 0)
+    const down = Array.from({ length: count }, () => 0)
+    for (const event of events) {
+      const index = Math.floor((event.at - first) / WEEK)
+      if (index < 0 || index >= count) continue
+      if (event.kind === 'challenges') down[index] += 1
+      else up[index] += 1
+    }
+    return {
+      starts: Array.from({ length: count }, (_, i) => first + i * WEEK),
+      up,
+      down,
+      unit: 'week',
+    }
+  }
+  const last = monthIndex(now)
+  const count = 36
+  const first = last - (count - 1)
+  const up = Array.from({ length: count }, () => 0)
+  const down = Array.from({ length: count }, () => 0)
+  for (const event of events) {
+    const index = monthIndex(event.at) - first
+    if (index < 0 || index >= count) continue
+    if (event.kind === 'challenges') down[index] += 1
+    else up[index] += 1
+  }
+  return {
+    starts: Array.from({ length: count }, (_, i) => monthStart(first + i)),
+    up,
+    down,
+    unit: 'month',
+  }
+}
+
+/** Where a long range's first bucket starts, in seconds. */
+export const rangeStart = (
+  range: Exclude<ChartRange, '30d'>,
+  now: number,
+): number => historySeries([], range, now).starts[0] ?? now
+
+/** A curator's figures over a range, from the history's events. */
+export interface RangeCurator {
+  address: string
+  requests: number
+  challenges: number
+  lastActiveAt: number
+}
+
+/** Every curator's requests and challenges since `since`, on `chains`. */
+export const curatorsSince = (
+  events: {
+    at: number
+    chainId: number
+    kind: 'submissions' | 'removals' | 'challenges'
+    who?: string
+  }[],
+  since: number,
+  chains: number[],
+): RangeCurator[] => {
+  const byAddress = new Map<string, RangeCurator>()
+  for (const event of events) {
+    if (!event.who || event.at < since || !chains.includes(event.chainId))
+      continue
+    const row = byAddress.get(event.who) ?? {
+      address: event.who,
+      requests: 0,
+      challenges: 0,
+      lastActiveAt: 0,
+    }
+    if (event.kind === 'challenges') row.challenges += 1
+    else row.requests += 1
+    row.lastActiveAt = Math.max(row.lastActiveAt, event.at)
+    byAddress.set(event.who, row)
+  }
+  return [...byAddress.values()]
 }

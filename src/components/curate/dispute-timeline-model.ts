@@ -38,6 +38,11 @@ export interface CourtDispute {
   hiddenVotes: boolean
   /** 1 for the first round. */
   round: number
+  /**
+   * Vote slots in each round, oldest first (getDispute.votesLengths): what
+   * the jury band's round tabs are built from. The last entry is `jurors`.
+   */
+  roundSlots: number[]
   /** Jurors in the current round. */
   jurors: number
   /** Jurors drawn so far in the current round. */
@@ -60,7 +65,17 @@ export type StepState = 'done' | 'now' | 'next'
 export interface TimelineStep {
   key: 'evidence' | 'commit' | 'vote' | 'appeal' | 'ruling'
   title: string
-  detail: string
+  /**
+   * A fact about the period the band cannot show otherwise, and only that:
+   * an appeal period that cannot be appealed says so. No step explains what
+   * it is for (round 3 of the design review deleted "3 jurors drawn. Both
+   * sides add evidence." and round 5's re-audit the same kind of sentence on
+   * every later step: "Jurors seal their votes.", "Either side can fund an
+   * appeal…", "If nobody appeals, the ruling is final…"). Its name and its
+   * dates say it; the jury's pill counts the seats drawn, and the current
+   * period's figures are in `overdue` or `early`.
+   */
+  detail?: string
   state: StepState
   /** The court's length of the period (none for the ruling). */
   duration?: number
@@ -72,12 +87,13 @@ export interface TimelineStep {
   estimated: boolean
   /** The current period ran past its length: why it has not moved on. */
   overdue?: string
-  /** The current period can close before its deadline. */
+  /**
+   * Where the current period stands, in figures ("2 of 3 committed"): what
+   * lets commit and vote close before their deadline, and an appeal round's
+   * evidence move on.
+   */
   early?: string
 }
-
-const plural = (count: number, word: string) =>
-  `${count} ${word}${count === 1 ? '' : 's'}`
 
 /** The steps of the current round, then the ruling. */
 export const timelineSteps = (
@@ -133,17 +149,13 @@ export const timelineSteps = (
     }
   })
 
+  // The ruling has its name and its date, or "Final" once it is
+  // (dispute-period-steps.tsx): what the list then does with it is the
+  // page's to say, not the spine's.
   const final = period >= COURT_PERIOD.EXECUTION
   steps.push({
     key: 'ruling',
     title: 'Ruling',
-    detail: final
-      ? dispute.ruled
-        ? 'Final. The list applies it.'
-        : 'Final once the court executes it; then the list applies it.'
-      : dispute.appealable
-        ? 'If nobody appeals, the ruling is final and the list applies it.'
-        : 'Final when the appeal period ends; then the list applies it.',
     state: final ? 'now' : 'next',
     start: final ? periodStart : cursor,
     estimated: !final,
@@ -151,66 +163,55 @@ export const timelineSteps = (
   return steps
 }
 
+/* A period's name, and for an appeal that cannot be had, that fact alone. */
 const describe = (
   period: number,
-  { hiddenVotes, round, jurors, drawn, appealable }: CourtDispute,
+  { hiddenVotes, appealable }: CourtDispute,
 ): Pick<TimelineStep, 'key' | 'title' | 'detail'> => {
   switch (period) {
     case COURT_PERIOD.EVIDENCE:
-      return {
-        key: 'evidence',
-        title: 'Evidence',
-        detail:
-          drawn >= jurors
-            ? `${plural(jurors, 'juror')} drawn. Both sides add evidence.`
-            : `Drawing ${plural(jurors, 'juror')} (${drawn} so far). Both sides add evidence.`,
-      }
+      return { key: 'evidence', title: 'Evidence' }
     case COURT_PERIOD.COMMIT:
-      return {
-        key: 'commit',
-        title: 'Commit',
-        detail: 'Jurors seal their votes.',
-      }
+      return { key: 'commit', title: 'Commit' }
     case COURT_PERIOD.VOTE:
-      return hiddenVotes
-        ? { key: 'vote', title: 'Reveal', detail: 'Jurors reveal their votes.' }
-        : { key: 'vote', title: 'Vote', detail: 'Jurors vote.' }
+      return { key: 'vote', title: hiddenVotes ? 'Reveal' : 'Vote' }
     default:
-      return {
-        key: 'appeal',
-        title: 'Appeal',
-        detail: appealable
-          ? `Either side can fund an appeal. If both do, round ${round + 1} starts with ${plural(2 * jurors + 1, 'juror')}.`
-          : 'This is the court’s largest jury: the ruling cannot be appealed.',
-      }
+      // The General court's largest jury: appealCost is unpayable.
+      return appealable
+        ? { key: 'appeal', title: 'Appeal' }
+        : { key: 'appeal', title: 'Appeal', detail: 'Cannot be appealed' }
   }
 }
 
-/** Why a period past its length has not moved on yet. */
+/*
+ * Why a period past its length has not moved on yet. The step's own time
+ * already reads "Over", so a first round still drawing says how far the
+ * draw has got, and any other says when it moves.
+ */
 const overdueReason = (dispute: CourtDispute): string =>
   dispute.period === COURT_PERIOD.EVIDENCE && dispute.drawn < dispute.jurors
-    ? `Waiting for jurors to be drawn (${dispute.drawn} of ${dispute.jurors}).`
-    : 'Over: it moves on at the next court update.'
+    ? `${dispute.drawn} of ${dispute.jurors} jurors drawn`
+    : 'Moves on at the next court update'
 
-/** Why the current period may close before its deadline. */
+/*
+ * Where the current period stands, in figures: what it needs before it can
+ * move on early. Its deadline line already says "Ends by … · lasts up to",
+ * so the figures need no sentence around them. A juror who did not commit
+ * cannot reveal, so a reveal counts against the committed votes then.
+ */
 const earlyReason = (dispute: CourtDispute): string | undefined => {
   const { period, round, drawn, jurors, committed, voted, hiddenVotes } =
     dispute
   if (period === COURT_PERIOD.EVIDENCE && round > 1)
     return drawn >= jurors
-      ? 'An appeal round with all its jurors drawn: it can move on now.'
-      : `An appeal round: it can move on once all jurors are drawn (${drawn} of ${jurors}).`
+      ? `All ${jurors} jurors drawn · can move on now`
+      : `${drawn} of ${jurors} jurors drawn`
   if (period === COURT_PERIOD.COMMIT)
-    return committed >= jurors
-      ? 'Every juror has committed: it can close early.'
-      : `${committed} of ${jurors} committed. It can close early once all have.`
-  if (period === COURT_PERIOD.VOTE) {
-    if (voted >= jurors) return 'Every juror has voted: it can close early.'
-    // A juror who did not commit cannot reveal: the period runs its course.
-    if (hiddenVotes && committed < jurors)
-      return `${voted} of ${committed} committed votes revealed. It runs to its deadline: not every juror committed.`
-    return `${voted} of ${jurors} ${hiddenVotes ? 'revealed' : 'voted'}. It can close early once all have.`
-  }
+    return `${committed} of ${jurors} committed`
+  if (period === COURT_PERIOD.VOTE)
+    return hiddenVotes && committed < jurors
+      ? `${voted} of ${committed} committed votes revealed`
+      : `${voted} of ${jurors} ${hiddenVotes ? 'revealed' : 'voted'}`
   return undefined
 }
 
@@ -219,3 +220,127 @@ export const expectedRuling = (steps: TimelineStep[]): number | undefined => {
   const ruling = steps[steps.length - 1]
   return ruling?.state === 'next' ? ruling.start : undefined
 }
+
+/** The period running now, as the item page's one clock reads it. */
+export interface CurrentPeriod {
+  key: TimelineStep['key']
+  /** What the period is, in the page's words ("Jurors are voting"). */
+  title: string
+  /** The name the clock takes ("Vote period"). */
+  measure: string
+  /** Unix seconds: when this period started. */
+  start: number
+  /** The latest it ends; undefined when it has no deadline to show. */
+  end?: number
+  /** `end` is the court's length, which this period can beat. */
+  estimated: boolean
+  /** Under the countdown: "left for jurors to vote". */
+  verb: string
+  /**
+   * What `end` is called on a clock. An evidence period's length is the
+   * earliest it can end (it also waits for every juror to be drawn); commit
+   * and vote can close early, so theirs is the latest.
+   */
+  closeLabel: string
+  /**
+   * One line for the page's quiet state, where there is a fact to add: the
+   * ruling being applied, or an appeal that cannot be had. No period
+   * explains itself: round 3 of the design review deleted "3 jurors drawn.
+   * Both sides add evidence before they commit." and round 5's re-audit the
+   * same kind of sentence on commit, vote and appeal ("Jurors seal their
+   * votes…", "Either side can fund an appeal…"); the title and the clock
+   * say it. A caller prints it only when it is there.
+   */
+  next?: string
+}
+
+/**
+ * Where the case stands now and, when it has a deadline, until when. An
+ * appeal round's evidence period that can already move on has no deadline:
+ * the caller then says what it waits for instead of drawing a clock with no
+ * finish.
+ */
+export const currentPeriod = (dispute: CourtDispute): CurrentPeriod => {
+  const { period, periodStart, times, hiddenVotes, round, jurors, drawn } =
+    dispute
+  const length = (p: number) => times[p] ?? 0
+  const base = (key: TimelineStep['key'], end?: number, estimated = false) => ({
+    key,
+    start: periodStart,
+    end,
+    estimated,
+  })
+
+  if (period >= COURT_PERIOD.EXECUTION)
+    return {
+      ...base('ruling'),
+      title: dispute.ruled ? 'Ruling applied' : 'Ruling final',
+      measure: 'Ruling',
+      verb: '',
+      closeLabel: 'Ends',
+      next: dispute.ruled
+        ? 'The court has given its ruling and the list applies it.'
+        : 'The court executes the ruling, then the list applies it.',
+    }
+
+  if (period === COURT_PERIOD.EVIDENCE) {
+    // An appeal round's evidence has no minimum: once its jurors are all
+    // drawn it can move on now, so it has no deadline to show.
+    const ready = round > 1 && drawn >= jurors
+    return {
+      ...base(
+        'evidence',
+        ready ? undefined : periodStart + length(COURT_PERIOD.EVIDENCE),
+        round > 1,
+      ),
+      title: 'Jurors are deciding',
+      measure: 'Evidence period',
+      verb: 'before jurors can vote',
+      closeLabel: 'Can end from',
+    }
+  }
+
+  if (period === COURT_PERIOD.COMMIT)
+    return {
+      ...base('commit', periodStart + length(COURT_PERIOD.COMMIT)),
+      title: 'Jurors are committing',
+      measure: 'Commit period',
+      verb: 'left for jurors to commit',
+      closeLabel: 'Ends by',
+    }
+
+  if (period === COURT_PERIOD.VOTE)
+    return {
+      ...base('vote', periodStart + length(COURT_PERIOD.VOTE)),
+      title: hiddenVotes ? 'Jurors are revealing' : 'Jurors are voting',
+      measure: hiddenVotes ? 'Reveal period' : 'Vote period',
+      verb: hiddenVotes
+        ? 'left for jurors to reveal'
+        : 'left for jurors to vote',
+      closeLabel: 'Ends by',
+    }
+
+  return {
+    ...base('appeal', periodStart + length(COURT_PERIOD.APPEAL)),
+    title: 'Open for appeal',
+    measure: 'Appeal period',
+    verb: 'left to appeal',
+    closeLabel: 'Closes',
+    // The General court's largest jury: appealCost is unpayable.
+    next: dispute.appealable ? undefined : 'Cannot be appealed',
+  }
+}
+
+/**
+ * A vote as the page names it. The arbitrator numbers the choices; what
+ * each means comes from the request, so a Curate vote reads by the side it
+ * is for and never as a bare number.
+ */
+export const choiceLabel = (choice: number, requesterName: string): string =>
+  choice === 0
+    ? 'Refused to rule'
+    : choice === 1
+      ? `For the ${requesterName}`
+      : choice === 2
+        ? 'For the challenger'
+        : `Choice ${choice}`

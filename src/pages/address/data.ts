@@ -14,6 +14,7 @@ import { NETWORKS, NETWORKS_INFO } from 'config/networks'
 import { subgraphUrl, subgraphUrlPermanent } from 'config/tcr-addresses'
 import { wagmiConfig } from 'config/wagmi'
 import { readStakeArbitrationParams } from 'utils/stake-arbitration-params'
+import { parseRichAddress } from 'utils/rich-address'
 import {
   buildActivityHref,
   fetchDashboardData,
@@ -28,10 +29,12 @@ import {
   DashboardRegistry,
   RegistryKind,
 } from 'pages/dashboard/types'
+import { TESTNET_CHAIN_IDS } from 'pages/dashboard/view'
 import {
   readVerifiedSets,
   withVerified,
 } from 'components/curate/registry-shared-verified'
+import { badgeLevel, type BadgeLevel } from './levels'
 
 const PROFILE_QUERY_TIMEOUT_MS = 10_000
 /** Rows per indexer page; both indexers serve up to 1,000. */
@@ -145,13 +148,51 @@ const PERMANENT_PROFILE_QUERY = gql`
   }
 `
 
-export interface AddressBadge {
+/*
+ * The entries behind the listed actions, read once the actions are known:
+ * their identifying fields name each row. Asked for 120 entries at most per
+ * chain (one query each), never inside the paged queries above, which would
+ * carry every field of up to 20,000 requests.
+ */
+const ENTRY_NAMES_QUERY = gql`
+  query EntryNames($ids: [String!]!, $chainId: Int!) {
+    LItem(where: { id: { _in: $ids }, chainId: { _eq: $chainId } }) {
+      id
+      props {
+        label
+        value
+        isIdentifier
+        itemType
+      }
+    }
+  }
+`
+
+const STAKE_ENTRY_NAMES_QUERY = gql`
+  query StakeEntryNames($ids: [ID!]!) {
+    items(first: 1000, where: { id_in: $ids }) {
+      id
+      metadata {
+        props {
+          label
+          value
+          isIdentifier
+          type
+        }
+      }
+    }
+  }
+`
+
+export interface AddressBadge extends BadgeLevel {
   id: 'librarian' | 'sheriff' | 'maintainer'
   label: string
-  description: string
+  /** What the badge counts, plural ("submissions"). */
+  unit: string
+  /** Singular of `unit`. */
+  one: string
+  /** Level 1 or above. */
   earned: boolean
-  progress: number
-  goal: number
 }
 
 export interface AddressStats {
@@ -206,7 +247,38 @@ export interface GovernedRegistry extends DashboardRegistry {
  * profile derives the status dot from these fields, never from the action
  * kind alone, so the dot only claims what the data knows.
  */
+/**
+ * What names an entry in a row: a text value ("Binance · Hot Wallet 34"), or
+ * an address shown short, with the network a rich address lives on.
+ */
+export interface EntryName {
+  text: string
+  /** The name is an address: set in mono, the full value in `fields`. */
+  address?: boolean
+  /** The whole address `text` shortens, when the name is one. */
+  value?: string
+  /** The network of a rich address ("Polygon Mainnet"). */
+  network?: string
+  /**
+   * The EVM chain a rich address names (eip155); null for a rich address on
+   * any other network. Absent for a plain address, which lives on the
+   * entry's own chain.
+   */
+  chainId?: number | null
+  /**
+   * The title of the list that address is, when the registry index knows
+   * it: an entry of a list of lists (Verified Registries) is itself a list.
+   */
+  list?: string
+}
+
 export interface ProfileActivity extends DashboardActivity {
+  /** Standard (including requests) or Stake: which indexer holds the entry. */
+  registryKind?: RegistryKind
+  /** The entry's name, once its fields are read; absent when they were not. */
+  entry?: EntryName
+  /** Every identifying field as "Label: value", for the row's tooltip. */
+  entryFields?: string[]
   /** The request was challenged and sent to court. */
   disputed?: boolean
   /** The request executed or the court ruled; false while it is pending. */
@@ -300,7 +372,7 @@ const registryTitle = (
 ) => {
   if (title && title.trim() && title.trim() !== '-') return title.trim()
   if (kind === 'permanent') return `Stake list ${shortAddress(address)}`
-  return `Registry ${shortAddress(address)}`
+  return `List ${shortAddress(address)}`
 }
 
 const safeRequest = async <T>(
@@ -395,6 +467,7 @@ const requestToActivity = (
         requestEntity.registry?.title,
         kind,
       ),
+      registryKind: kind,
       itemID,
       actor: requester,
       secondaryActor: challenger,
@@ -427,6 +500,7 @@ const permanentSubmissionToActivity = (
     chainId,
     registryAddress,
     registryTitle: registryTitle(registryAddress, null, 'permanent'),
+    registryKind: 'permanent',
     itemID: submission.item?.itemID,
     actor: normalizeAddress(submission.submitter),
     kind: 'submission',
@@ -450,6 +524,7 @@ const permanentChallengeToActivity = (
     chainId,
     registryAddress,
     registryTitle: registryTitle(registryAddress, null, 'permanent'),
+    registryKind: 'permanent',
     itemID: challenge.item?.itemID,
     actor: normalizeAddress(challenge.challenger),
     kind: 'challenge',
@@ -666,6 +741,25 @@ export const fetchGovernedRegistries = async (
 }
 
 /**
+ * One list's governance, read for its own page: its governor and every
+ * parameter the update dialog edits, from the chain, exactly as the scan
+ * above reads each list it finds. It throws when the governor itself could
+ * not be read, so a dialog never opens on a list it knows nothing about.
+ */
+export const readListGovernance = async (
+  registry: DashboardRegistry,
+): Promise<GovernedRegistry> => {
+  const params = await readGovernanceParams(registry)
+  if (params.governor === undefined)
+    throw new Error(`The governor of ${registry.address} could not be read`)
+  return {
+    ...registry,
+    governor: normalizeAddress(params.governor),
+    params,
+  }
+}
+
+/**
  * Reads an indexer page by page until a page comes back short. The first page
  * is read alone; after that, pages are read PAGE_BATCH at a time. Rows are
  * kept once per id, so a row that shifts across a page boundary while the
@@ -726,32 +820,191 @@ const unconfigured = (keys: string[]) => ({
   failed: false,
 })
 
-export const buildBadges = (stats: AddressStats): AddressBadge[] => [
-  {
-    id: 'librarian',
-    label: 'Librarian',
-    description: '100+ submissions',
-    earned: stats.submissions >= 100,
-    progress: Math.min(stats.submissions, 100),
-    goal: 100,
-  },
-  {
-    id: 'sheriff',
-    label: 'Sheriff',
-    description: '100+ challenges',
-    earned: stats.challenges >= 100,
-    progress: Math.min(stats.challenges, 100),
-    goal: 100,
-  },
-  {
-    id: 'maintainer',
-    label: 'Maintainer',
-    description: '20+ removals',
-    earned: stats.removals >= 20,
-    progress: Math.min(stats.removals, 20),
-    goal: 20,
-  },
-]
+/* ---------- Entry names ---------- */
+
+interface EntryProp {
+  label: string
+  value: string
+  type: string
+  identifier: boolean
+}
+
+/** Field types that cannot name an entry in a line of text. */
+const PICTURE_TYPES = new Set(['image', 'file'])
+const TEXT_TYPES = new Set(['text', 'long text'])
+
+const oneLine = (value: unknown): string =>
+  typeof value === 'string' ? value.replace(/\s+/g, ' ').trim() : ''
+
+const isIpfs = (value: string) =>
+  value.startsWith('/ipfs/') || value.startsWith('ipfs://')
+
+const shortValue = (value: string) =>
+  value.length > 11 ? `${value.slice(0, 6)}…${value.slice(-4)}` : value
+
+const byLabel = (a: EntryProp, b: EntryProp) =>
+  a.label.localeCompare(b.label, 'en')
+
+/**
+ * The entry's name, a name before an address as on the list page (which
+ * leads with its first text column): up to two of its text identifiers, in
+ * label order ("Nakamoto Games · BalanceVault"), since the indexer returns
+ * an entry's fields in no column order, so the pair can lead with another
+ * identifier than the list page does; else its first identifier,
+ * an address shown short with its network; else the first value that is not
+ * a picture. Never an image or a file: on some lists the only picture is a
+ * proof screenshot, which names nothing.
+ */
+const nameEntry = (
+  props: EntryProp[],
+): { entry?: EntryName; fields?: string[] } => {
+  const usable = props.filter(
+    (prop) =>
+      prop.value && !PICTURE_TYPES.has(prop.type) && !isIpfs(prop.value),
+  )
+  const identifiers = usable.filter((prop) => prop.identifier)
+  const fields =
+    identifiers.length > 0
+      ? identifiers.map((prop) => `${prop.label}: ${prop.value}`)
+      : undefined
+  const texts = identifiers
+    .filter((prop) => TEXT_TYPES.has(prop.type))
+    .sort(byLabel)
+  if (texts.length > 0)
+    return {
+      entry: {
+        text: texts
+          .slice(0, 2)
+          .map((prop) => prop.value)
+          .join(' · '),
+      },
+      fields,
+    }
+  const [first] = identifiers.length > 0 ? identifiers : usable
+  if (!first) return {}
+  if (first.type === 'rich address') {
+    const rich = parseRichAddress(first.value)
+    // A network this app does not know still names the address itself.
+    const address = rich?.address ?? first.value.split(':').pop() ?? ''
+    if (address)
+      return {
+        entry: {
+          text: shortValue(address),
+          address: true,
+          value: address,
+          network: rich?.reference.name,
+          chainId:
+            rich?.reference.namespaceId === 'eip155'
+              ? Number(rich.reference.id)
+              : null,
+        },
+        fields,
+      }
+  }
+  if (first.type === 'address' || /^0x[0-9a-fA-F]{40}$/.test(first.value))
+    return {
+      entry: {
+        text: shortValue(first.value),
+        address: true,
+        value: first.value,
+      },
+      fields,
+    }
+  return { entry: { text: first.value }, fields }
+}
+
+const entryKey = (chainId: number, itemID: string, registry: string) =>
+  `${chainId}:${itemID.toLowerCase()}@${registry}`
+
+/**
+ * Names the listed actions' entries in place: one query per chain and list
+ * kind, at most 120 entries in all. A read that fails leaves those rows
+ * nameless (they show the entry ID, as before) and never fails the profile.
+ */
+const readEntryNames = async (activities: ProfileActivity[]) => {
+  const groups = new Map<string, ProfileActivity[]>()
+  for (const activity of activities) {
+    if (!activity.itemID) continue
+    const key = `${activity.registryKind ?? 'standard'}:${activity.chainId}`
+    groups.set(key, [...(groups.get(key) ?? []), activity])
+  }
+  const names = new Map<string, EntryProp[]>()
+  await Promise.all(
+    [...groups.entries()].map(async ([key, group]) => {
+      const [kind, chain] = key.split(':')
+      const chainId = Number(chain)
+      const ids = [
+        ...new Set(
+          group.map(
+            (activity) =>
+              `${activity.itemID!.toLowerCase()}@${activity.registryAddress}`,
+          ),
+        ),
+      ]
+      if (kind === 'permanent') {
+        const result = await safeRequest<{
+          items?: {
+            id: string
+            metadata?: { props?: any[] | null } | null
+          }[]
+        }>(subgraphUrlPermanent[chainId], STAKE_ENTRY_NAMES_QUERY, { ids })
+        for (const item of result?.items ?? [])
+          names.set(
+            `${chainId}:${item.id.toLowerCase()}`,
+            (item.metadata?.props ?? []).map((prop) => ({
+              label: oneLine(prop?.label),
+              value: oneLine(prop?.value),
+              type: String(prop?.type ?? ''),
+              identifier: Boolean(prop?.isIdentifier),
+            })),
+          )
+        return
+      }
+      const result = await safeRequest<{
+        LItem?: { id: string; props?: any[] | null }[]
+      }>(subgraphUrl[chainId], ENTRY_NAMES_QUERY, { ids, chainId })
+      for (const item of result?.LItem ?? [])
+        names.set(
+          `${chainId}:${item.id.toLowerCase()}`,
+          (item.props ?? []).map((prop) => ({
+            label: oneLine(prop?.label),
+            value: oneLine(prop?.value),
+            type: String(prop?.itemType ?? ''),
+            identifier: Boolean(prop?.isIdentifier),
+          })),
+        )
+    }),
+  )
+  for (const activity of activities) {
+    if (!activity.itemID) continue
+    const props = names.get(
+      entryKey(activity.chainId, activity.itemID, activity.registryAddress),
+    )
+    if (!props) continue
+    const { entry, fields } = nameEntry(props)
+    if (entry) activity.entry = entry
+    if (fields) activity.entryFields = fields
+  }
+}
+
+/** The goal badges and their levels (levels.ts) for a scope's figures. */
+export const buildBadges = (stats: AddressStats): AddressBadge[] =>
+  (
+    [
+      [
+        'librarian',
+        'Librarian',
+        stats.submissions,
+        'submissions',
+        'submission',
+      ],
+      ['sheriff', 'Sheriff', stats.challenges, 'challenges', 'challenge'],
+      ['maintainer', 'Maintainer', stats.removals, 'removals', 'removal'],
+    ] as const
+  ).map(([id, label, count, unit, one]) => {
+    const level = badgeLevel(id, count)
+    return { id, label, unit, one, earned: level.level > 0, ...level }
+  })
 
 export const fetchAddressProfileData = async (
   rawAddress: string,
@@ -881,22 +1134,47 @@ export const fetchAddressProfileData = async (
     if (registry.logoURI) activity.registryLogo = registry.logoURI
     if (registry.trustStatus === 'verified') activity.registryVerified = true
     // Stake Curate requests carry no title; the index has the list's own.
-    if (
-      registry.title &&
-      /^(Stake list|Registry) 0x/.test(activity.registryTitle)
-    )
+    if (registry.title && /^(Stake list|List) 0x/.test(activity.registryTitle))
       activity.registryTitle = registry.title
   }
 
   activities.sort((a, b) => b.timestamp - a.timestamp)
   disputes.sort((a, b) => b.timestamp - a.timestamp)
+  const listed = activities.slice(0, ACTIVITY_LIMIT)
+  // The rows lead with the entry, so its name arrives with them: no row
+  // changes its first line after it has painted.
+  await readEntryNames(listed)
+  // An entry named by an address that is a list the index knows (a list of
+  // lists' entry) leads with that list's title, from the same index: no
+  // read of its own. A plain address is looked up on the entry's own chain,
+  // a rich one on the chain it names, never on another: the same address
+  // can be a different contract (or nothing) elsewhere.
+  for (const activity of listed) {
+    const { entry } = activity
+    if (!entry?.address || !entry.value) continue
+    const key = normalizeAddress(entry.value)
+    const chainId =
+      entry.chainId === undefined ? activity.chainId : entry.chainId
+    if (chainId === null) continue
+    const list = index.get(`${chainId}:${key}`)
+    if (list?.title && !/^(Stake list|List) 0x/.test(list.title))
+      entry.list = list.title
+  }
+
+  // "All chains" badges count the mainnets only: a testnet's submissions
+  // and challenges are practice, never a level (its own scope still shows
+  // its badges, from its own figures).
+  const mainnetTotals = emptyStats()
+  for (const [chainId, chainStats] of Object.entries(chainBreakdown))
+    if (!TESTNET_CHAIN_IDS.includes(Number(chainId)))
+      addStats(mainnetTotals, chainStats)
 
   return {
     address,
     generatedAt: Date.now(),
     stats: totals,
-    badges: buildBadges(totals),
-    activities: activities.slice(0, ACTIVITY_LIMIT),
+    badges: buildBadges(mainnetTotals),
+    activities: listed,
     disputes: disputes.slice(0, DISPUTE_LIMIT),
     chainBreakdown,
     cappedChains: [...capped],

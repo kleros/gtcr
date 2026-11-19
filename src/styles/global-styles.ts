@@ -143,8 +143,6 @@ const GlobalStyle = createGlobalStyle`
     --shadow-card: ${({ theme }) => theme.cardShadow};
     --shadow-card-hover: ${({ theme }) => theme.curateShadowHover};
     --shadow-overlay: ${({ theme }) => theme.modalShadow};
-    --glow: ${({ theme }) => theme.curateGlowA};
-    --glow-rim: ${({ theme }) => theme.curateGlowB};
     --glass: ${({ theme }) => theme.glass};
     --stage: ${({ theme }) => theme.stage};
     --aurora-a: ${({ theme }) => theme.auroraA};
@@ -181,11 +179,6 @@ const GlobalStyle = createGlobalStyle`
     --bead-off: ${({ theme }) => theme.beadOff};
     --popover: ${({ theme }) => theme.popover};
     --hover-fill: ${({ theme }) => theme.hoverFill};
-    --grid-line: ${({ theme }) =>
-      theme.name === 'light'
-        ? 'rgba(16, 24, 40, 0.045)'
-        : 'rgba(255, 255, 255, 0.035)'};
-
     /* Status roles: one meaning each (DESIGN.md, Colors) */
     --status-registered: var(--color-success);
     --status-registered-soft: var(--color-success-soft);
@@ -208,8 +201,6 @@ const GlobalStyle = createGlobalStyle`
     --v2-faint: var(--color-faint);
     --v2-stroke: var(--color-border);
     --v2-stroke-strong: var(--color-border-strong);
-    --v2-purple: var(--color-indigo);
-    --v2-purple-soft: var(--color-indigo-soft);
     --v2-blue: var(--color-primary);
     --v2-blue-hover: var(--color-primary-hover);
     --v2-blue-soft: var(--color-primary-soft);
@@ -231,7 +222,6 @@ const GlobalStyle = createGlobalStyle`
     --curate-muted: var(--color-muted);
     --curate-faint: var(--color-faint);
     --curate-live: var(--color-primary);
-    --curate-violet: var(--color-indigo);
     --curate-success: var(--color-success);
     --curate-warning: var(--color-warning);
     --curate-danger: var(--color-danger);

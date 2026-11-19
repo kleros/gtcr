@@ -55,6 +55,75 @@ export const saveLoad = (name: string, data: DashboardData | undefined) => {
     .catch(() => undefined)
 }
 
+/*
+ * The long reads beside the load (the curation history, what has passed
+ * through Curate) walk every page of their rows, about twenty indexer
+ * requests between them, and change slowly: they are kept the same way, by
+ * the build that wrote them and for `maxAgeMs`, under their own names. The
+ * dashboard and the landing page read them through here, so either page's
+ * read serves the other, and two callers on one page share one read.
+ */
+
+const KEPT_PREFIX = 'curate:dashboard-kept:'
+
+interface Kept<T> {
+  build?: string
+  at?: number
+  value?: T
+}
+
+const keptReads = new Map<string, Promise<unknown>>()
+
+const readKept = async <T>(
+  name: string,
+  maxAgeMs: number,
+): Promise<T | undefined> => {
+  try {
+    const saved = await Promise.race([
+      localforage.getItem<Kept<T>>(KEPT_PREFIX + name),
+      new Promise<null>((resolve) =>
+        setTimeout(() => resolve(null), SEED_TIMEOUT_MS),
+      ),
+    ])
+    if (saved?.build !== BUILD_ID || typeof saved.at !== 'number')
+      return undefined
+    if (Date.now() - saved.at > maxAgeMs) return undefined
+    return saved.value
+  } catch {
+    return undefined
+  }
+}
+
+/**
+ * `read`'s answer, from storage while it is younger than `maxAgeMs`, else
+ * read and kept. The value is stored as it is, so it holds no bigint
+ * (storage other than IndexedDB keeps JSON).
+ */
+export const keptRead = <T>(
+  name: string,
+  maxAgeMs: number,
+  read: () => Promise<T>,
+): Promise<T> => {
+  const running = keptReads.get(name) as Promise<T> | undefined
+  if (running) return running
+  const next = (async () => {
+    const saved = await readKept<T>(name, maxAgeMs)
+    if (saved !== undefined) return saved
+    const value = await read()
+    // Storage full or blocked: the read is simply not kept.
+    void localforage
+      .setItem<Kept<T>>(KEPT_PREFIX + name, {
+        build: BUILD_ID,
+        at: Date.now(),
+        value,
+      })
+      .catch(() => undefined)
+    return value
+  })().finally(() => keptReads.delete(name))
+  keptReads.set(name, next)
+  return next
+}
+
 const SAVED_KEYS = [DASHBOARD_QUERY_KEY, TESTNET_DASHBOARD_QUERY_KEY]
 
 let seeding: Promise<void> | undefined

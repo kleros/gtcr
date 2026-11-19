@@ -1,14 +1,16 @@
 import React from 'react'
 import styled, { keyframes } from 'styled-components'
-import type { ListLayout } from 'hooks/use-stored-layout'
-import { Body, Grid, SkeletonBlock, Stack, Surface, Title } from './primitives'
+import { Body, Grid, SkeletonBlock, Surface, Title } from './primitives'
+import type { RegistryLayout } from './registry-shared-layout'
 
 /*
- * The Standard registry list's two stand-ins for rows: a skeleton shaped like
- * the layout it replaces (table, rows or cards), so nothing jumps when the
- * entries land, and an empty state (a soft halo behind three fanned tiles
- * that drift, one title, at most one line, one action) whose copy and
- * action the page picks from why the list is empty.
+ * The registry lists' two stand-ins for rows: a skeleton shaped like the
+ * layout it replaces (the table on its glass panel, or the cards), so
+ * nothing jumps when the entries land, and an empty state (a soft halo
+ * behind three fanned tiles that drift, one title, at most one line, one
+ * action) whose copy and action the page picks from why the list is empty.
+ * Both registry pages use the skeleton, so their lists load into the shapes
+ * they will render in.
  */
 
 /* ---------- Skeleton ---------- */
@@ -18,7 +20,9 @@ const TableSkeleton = styled.div`
   border: 1px solid var(--glass-border);
   border-radius: var(--radius-lg);
   background: var(--color-surface);
-  box-shadow: inset 0 1px 0 var(--glass-highlight);
+  box-shadow:
+    inset 0 1px 0 var(--glass-highlight),
+    var(--shadow-card);
 
   > div {
     display: grid;
@@ -30,8 +34,17 @@ const TableSkeleton = styled.div`
     border-bottom: 1px solid var(--glass-border);
   }
 
+  /* The heading band, on the same glass the real one sticks on. */
   > div:first-child {
     height: 44px;
+    background:
+      linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--glass-highlight) 40%, transparent),
+        transparent 70%
+      ),
+      linear-gradient(var(--color-raised), var(--color-raised)),
+      var(--color-surface);
   }
 
   > div:last-child {
@@ -50,78 +63,24 @@ const TableSkeleton = styled.div`
   }
 `
 
-/* A row's outline with its parts: name and meta on the left, the status and
-   its countdown on the right, as the real row lays them out. */
-const RowSkeleton = styled.div`
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(120px, 200px);
-  align-items: center;
-  gap: 24px;
-  min-height: 76px;
-  padding: 16px 20px;
-  border: 1px solid var(--glass-border);
-  border-radius: var(--radius);
-  background: var(--color-surface);
-  box-shadow: inset 0 1px 0 var(--glass-highlight);
-
-  > div {
-    display: flex;
-    flex-direction: column;
-    gap: 9px;
-    min-width: 0;
-  }
-
-  > div:last-child {
-    align-items: flex-end;
-  }
-
-  @media (max-width: 720px) {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 12px;
-    padding: 14px;
-
-    > div:last-child {
-      align-items: flex-start;
-    }
-  }
-`
-
 const CardSkeleton = styled(SkeletonBlock)`
   border-radius: var(--radius-lg);
 `
 
 const TABLE_WIDTHS = ['72%', '86%', '64%', '58%', '70%']
-const ROW_WIDTHS = ['38%', '52%', '30%', '46%', '34%', '58%', '42%', '48%']
 
-export const RegistryStandardSkeleton = ({
+export const RegistryListSkeleton = ({
   layout,
 }: {
-  layout: ListLayout
+  layout: RegistryLayout
 }) => {
   if (layout === 'cards')
     return (
-      <Grid $min={260} aria-hidden>
+      <Grid $min={300} aria-hidden>
         {Array.from({ length: 6 }).map((_, index) => (
           <CardSkeleton key={index} $height="265px" />
         ))}
       </Grid>
-    )
-  if (layout === 'rows')
-    return (
-      <Stack $gap={8} aria-hidden>
-        {ROW_WIDTHS.map((width, index) => (
-          <RowSkeleton key={index}>
-            <div>
-              <SkeletonBlock $width={width} $height="14px" />
-              <SkeletonBlock $width="24%" $height="10px" />
-            </div>
-            <div>
-              <SkeletonBlock $width="76%" $height="12px" />
-              <SkeletonBlock $width="100%" $height="4px" />
-            </div>
-          </RowSkeleton>
-        ))}
-      </Stack>
     )
   return (
     <TableSkeleton aria-hidden>

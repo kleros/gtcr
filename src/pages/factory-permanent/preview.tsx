@@ -14,7 +14,6 @@ import {
   Chip,
   Label,
   SkeletonBlock,
-  StatusDot,
   Surface,
   truncateMiddle,
 } from 'components/curate/primitives'
@@ -248,7 +247,9 @@ const Bar = styled.div`
   }
 `
 
-const solid = 'linear-gradient(90deg, var(--aurora-b), var(--color-primary))'
+/* The one accent, flat: the aurora is the stage's light, never chrome
+   (it read pastel on Light and purple on Kleros). */
+const solid = 'var(--color-primary)'
 
 const hatch = `repeating-linear-gradient(
   -45deg,
@@ -300,6 +301,12 @@ const Legend = styled.span`
   }
 `
 
+/*
+ * What becomes of the money, one line per outcome, on the launch page's
+ * bullet: every list in a box takes the same check, in an 18px column 10px
+ * from its line, whatever the outcome; the bold lead words name it. The line
+ * is as tall as the glyph, so the check sits on the first line's middle.
+ */
 const Outcomes = styled.ul`
   display: flex;
   flex-direction: column;
@@ -309,12 +316,21 @@ const Outcomes = styled.ul`
   list-style: none;
 
   li {
-    display: flex;
-    align-items: center;
+    display: grid;
+    grid-template-columns: 18px minmax(0, 1fr);
     gap: 10px;
     color: var(--color-muted);
     font-size: 12px;
-    line-height: 16px;
+    line-height: 18px;
+    text-wrap: pretty;
+  }
+
+  svg {
+    color: var(--color-primary);
+  }
+
+  li[data-con] svg {
+    color: var(--color-faint);
   }
 
   b {
@@ -322,6 +338,18 @@ const Outcomes = styled.ul`
     font-weight: 500;
   }
 `
+
+/** The mark for an outcome that can cost the submitter: a faint dash. */
+const MinusIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
+    <path
+      d="M7 12h10"
+      stroke="currentColor"
+      strokeWidth="1.85"
+      strokeLinecap="round"
+    />
+  </svg>
+)
 
 /* ---------- Timing ---------- */
 
@@ -506,6 +534,22 @@ const Periods = styled.dl`
     font-weight: 500;
     font-variant-numeric: tabular-nums;
     white-space: nowrap;
+  }
+
+  /* A small phone has no room for three labels side by side: one row
+     each, the label on the left and its duration on the right. */
+  @media (max-width: 400px) {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 6px;
+
+    div {
+      flex-direction: row;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 0;
+      border-left: 0;
+    }
   }
 `
 
@@ -872,22 +916,23 @@ export const StakePreview = ({
 
         <Outcomes>
           <li>
-            <StatusDot $tone="registered" aria-hidden />
+            <CurateIcon name="check" size={18} />
             <span>
               <b>Unchallenged:</b> both come back after a withdrawal
             </span>
           </li>
           <li>
-            <StatusDot $tone="contested" aria-hidden />
+            <CurateIcon name="check" size={18} />
             <span>
               <b>Challenge fails:</b>{' '}
+              {/* "(to 0.075 sDAI" holds together at a line's end. */}
               {grownText && percent !== null
-                ? `the stake grows by ${percent}% (to ${grownText} ${unit} from the minimum)`
+                ? `the stake grows by ${percent}% (to\u00A0${grownText}\u00A0${unit} from the minimum)`
                 : 'the challenger stake joins the entry'}
             </span>
           </li>
-          <li>
-            <StatusDot $tone="off" aria-hidden />
+          <li data-con>
+            <MinusIcon />
             <span>
               <b>Challenge wins:</b> the challenger takes the stake and the
               deposit

@@ -2,6 +2,7 @@ import type { Address } from 'viem'
 import type { BigNumber } from 'ethers'
 import { klerosAddresses } from 'config/tcr-addresses'
 import { getAddressPage } from 'utils/network-utils'
+import { formatAbsolute } from 'utils/time'
 import {
   CONTRACT_STATUS,
   STATUS_CODE,
@@ -136,6 +137,22 @@ export const stakeStatusCode = (
 export const rulingSentence = (ruling: string | null | undefined): string =>
   `${rulingLine(ruling)}.`
 
+/** "For the challenger": the ruling as a value under a label. */
+export const rulingShort = (
+  ruling: string | null | undefined,
+): string | undefined => {
+  switch (ruling) {
+    case SUBGRAPH_RULING.NONE:
+      return 'Refused to rule'
+    case SUBGRAPH_RULING.ACCEPT:
+      return 'For the submitter'
+    case SUBGRAPH_RULING.REJECT:
+      return 'For the challenger'
+    default:
+      return undefined
+  }
+}
+
 export interface StakeFacts {
   offList: boolean
   includedAt: number
@@ -183,6 +200,31 @@ export interface StakeFacts {
   endedAt: number
   courtHref?: string
   courtHost?: string
+}
+
+/**
+ * The case page for one of the entry's challenges: the Kleros court when
+ * Kleros arbitrates it, the arbitrator's own page otherwise. One place, so
+ * the hero, the case panel and the record of decided cases link the same
+ * way.
+ */
+export const stakeCourtLink = (
+  chainId: number | null | undefined,
+  arbitrator: string | undefined,
+  disputeID: string | undefined,
+): { href: string; host?: string } | undefined => {
+  if (!disputeID || !arbitrator) return undefined
+  const kleros = chainId ? klerosAddresses[chainId] : undefined
+  const isKleros =
+    !!kleros && kleros.arbitrator.toLowerCase() === arbitrator.toLowerCase()
+  const href = isKleros
+    ? kleros.uiURL.replace(':disputeID', disputeID.toString())
+    : getAddressPage({ networkId: chainId ?? 0, address: arbitrator })
+  try {
+    return { href, host: new URL(href).host }
+  } catch {
+    return { href }
+  }
 }
 
 export const stakeFacts = ({
@@ -243,22 +285,7 @@ export const stakeFacts = ({
       : undefined
   const submission = item.submissions?.[0]
 
-  const arbitrator = registry.arbitrator.id
-  const kleros = chainId ? klerosAddresses[chainId] : undefined
-  const isKleros =
-    !!kleros && kleros.arbitrator.toLowerCase() === arbitrator.toLowerCase()
-  const courtHref =
-    disputeID && isKleros
-      ? kleros.uiURL.replace(':disputeID', disputeID.toString())
-      : disputeID
-        ? getAddressPage({ networkId: chainId ?? 0, address: arbitrator })
-        : undefined
-  let courtHost: string | undefined
-  try {
-    courtHost = courtHref ? new URL(courtHref).host : undefined
-  } catch {
-    courtHost = undefined
-  }
+  const court = stakeCourtLink(chainId, registry.arbitrator.id, disputeID)
 
   return {
     offList,
@@ -275,7 +302,10 @@ export const stakeFacts = ({
     challenge,
     round,
     disputeID,
-    hasDispute: !!challenge && Number(disputeID ?? 0) !== 0,
+    // A challenge always has a case, and the arbitrator numbers its first
+    // one 0: the challenge is what says there is a dispute, never the
+    // number (request-facts.ts says the same on the Standard side).
+    hasDispute: !!challenge,
     appealStart,
     appealEnd,
     appealHalf: appealStart + (appealEnd - appealStart) / 2,
@@ -297,8 +327,70 @@ export const stakeFacts = ({
     endedAt: offList
       ? toNum(submission?.finishedAt) || toNum(challenge?.resolutionTime)
       : 0,
-    courtHref,
-    courtHost,
+    courtHref: court?.href,
+    courtHost: court?.host,
+  }
+}
+
+/** Where the case stands, in the page's words, for the case panel. */
+export interface StakeCaseState {
+  /** Used as the heading when the court itself cannot be read. */
+  heading: string
+  /**
+   * The entry is waiting on the court, so the court's own word for its
+   * current period leads the case panel. False once the jurors have ruled
+   * and the list has settled what happens: the court's appeal period can
+   * still be running then, and it is no longer what is happening here.
+   */
+  awaitingCourt: boolean
+  /**
+   * What it means for this entry, where the court cannot know it (a side
+   * that alone funded an appeal wins whatever the jurors ruled). Left out
+   * where the court's own sentence about the period says it better.
+   */
+  summary?: string
+  /** The ruling in words, once the jurors have given one. */
+  ruling?: string
+  rulingLabel?: string
+}
+
+export const stakeCaseState = (
+  facts: StakeFacts,
+  statusCode: number,
+  now: number,
+): StakeCaseState => {
+  const { round, appealable, fundedSide, appealEnd, loserName } = facts
+  const ruled = toNum(round?.rulingTime) > 0
+  const ruling = ruled ? rulingShort(round?.ruling) : undefined
+  const rulingLabel = appealable ? 'Current ruling' : 'Ruling'
+
+  if (statusCode === STATUS_CODE.DISPUTED)
+    return { heading: 'Jurors are deciding', awaitingCourt: true }
+  if (statusCode === STATUS_CODE.WAITING_ARBITRATOR) {
+    // Before the period is over, the loser's half passed with nothing
+    // funded: the ruling stands. After it, the ruling is final and waits to
+    // be enforced — unless one side funded alone, which decides it instead
+    // (rule() gives the ruling to the only side that paid).
+    const stands = now < appealEnd
+    return {
+      heading: stands ? 'Ruling stands' : 'Ruling final',
+      awaitingCourt: false,
+      summary: stands
+        ? // The date is not when the ruling becomes true — the heading says
+          // it already is — but the first moment it can be enforced.
+          `The ${loserName} did not fund the appeal, so the ruling stands; it can be enforced from ${formatAbsolute(appealEnd)}.`
+        : fundedSide
+          ? `The ${fundedSide} funded the appeal alone, so the ${fundedSide} wins when the ruling is enforced.`
+          : undefined,
+      ruling,
+      rulingLabel,
+    }
+  }
+  return {
+    heading: 'Open for appeal',
+    awaitingCourt: true,
+    ruling,
+    rulingLabel,
   }
 }
 

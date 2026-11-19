@@ -15,7 +15,7 @@ import { useLaunchChainId } from './launch-chain'
 /*
  * Primary navigation (DESIGN.md, Surfaces and controls): the selector look,
  * a recessed track whose lit glass thumb slides to the current section.
- * Routes outside the four sections (a profile) light none.
+ * Routes outside the three sections (the guide, a profile) light none.
  */
 const DesktopNav = styled.nav`
   position: relative;
@@ -97,9 +97,7 @@ const AppMenu = () => {
         ? 'browse'
         : pathname.startsWith('/launch') || pathname.startsWith('/factory')
           ? 'launch'
-          : pathname === '/guide'
-            ? 'guide'
-            : null
+          : null
 
   const measure = useCallback((instant: boolean) => {
     const current = nav.current?.querySelector<HTMLElement>(
@@ -152,9 +150,6 @@ const AppMenu = () => {
         onMouseEnter={warmFactory}
       >
         Launch a list
-      </NavLink>
-      <NavLink to="/guide" aria-current={current('guide')}>
-        Guide
       </NavLink>
     </DesktopNav>
   )
