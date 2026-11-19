@@ -1,7 +1,7 @@
 import { gql } from 'graphql-request'
 import { request } from 'utils/indexer-request'
 import { subgraphUrl, subgraphUrlPermanent } from 'config/tcr-addresses'
-import { coinKey, readUsdPrices } from './prices'
+import { coinKey, hasPricePath, readUsdPrices } from './prices'
 import { keptRead } from './saved-load'
 import { readTokens } from './tokens'
 import type { DashboardData, TokenInfo } from './types'
@@ -270,9 +270,9 @@ export const bountyTotals = (data: DashboardData, chains: number[]) => {
 /**
  * Coin totals in dollars at today's prices. A token's decimals come from
  * the load when it has them, else they are read. A token with no decimals
- * or no current price is left out (Stake lists take any ERC-20); a chain's
- * own coin with no current price throws, since leaving it out would make
- * the total meaningless.
+ * or no way to a price is left out (Stake lists take any ERC-20); a chain's
+ * own coin, or a token that has a feed or a priced vault, with no current
+ * price throws: leaving it out would show part of the total as the whole.
  */
 export const totalInDollars = async (
   coins: CoinTotal[],
@@ -303,7 +303,8 @@ export const totalInDollars = async (
   return priced.reduce((sum, coin) => {
     const usd = prices[coin.key]?.usd
     if (usd === undefined) {
-      if (!coin.token) throw new Error(`No dollar price for ${coin.key}`)
+      if (!coin.token || hasPricePath(coin.key))
+        throw new Error(`No dollar price for ${coin.key}`)
       return sum
     }
     return sum + (Number(coin.amount) / 10 ** coin.decimals) * usd

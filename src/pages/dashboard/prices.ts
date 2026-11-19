@@ -119,6 +119,18 @@ const FEEDS: Record<string, Feed> = {
   },
 }
 
+/*
+ * The vaults whose share price may be read, checked by address like the
+ * feeds above, each with the asset it must answer. Any other token is never
+ * asked: a token anyone can deploy could claim to be a vault over WXDAI and
+ * give itself a dollar price.
+ */
+const VAULTS: Record<string, string> = {
+  // sDAI, the Gnosis Stake lists' token (tokens.ts), over WXDAI.
+  [`${NETWORKS.gnosis}:0xaf204776c7245bf4147c2612bf6e5972ee483701`]:
+    '0xe91d153e0b41518a2ce8dd3d7944fa863463a97d',
+}
+
 const multicall = new ethers.utils.Interface([
   'function aggregate3((address target, bool allowFailure, bytes callData)[] calls) payable returns ((bool success, bytes returnData)[] returnData)',
 ])
@@ -138,6 +150,15 @@ const ASSET_CALL = vault.encodeFunctionData('asset')
  * changes, so this is kept for the session — the price itself never is.
  */
 const vaultAssets = new Map<string, string | null>()
+
+/**
+ * Whether a coin has a way to a price here: its own feed, or a vault over an
+ * asset with one. A total may leave out a coin with none (any ERC-20 a Stake
+ * list takes) but not one whose price failed this time: that would be a
+ * smaller number shown as the whole.
+ */
+export const hasPricePath = (key: string): boolean =>
+  !!FEEDS[key] || !!VAULTS[key]
 
 /** The key view.ts gives a coin: "<chainId>:native" or "<chainId>:<token>". */
 export const coinKey = (chainId: number, token?: string): string =>
@@ -359,7 +380,7 @@ const readChain = async (
     }
     // Only a token can be a vault over something else; the chain's own coin
     // either has a feed above or has no price.
-    if (!coin.token) continue
+    if (!coin.token || !VAULTS[coin.key]) continue
     const asset = vaultAssets.get(coin.key)
     if (asset === undefined) {
       probes.push(coin)
@@ -432,7 +453,10 @@ const readChain = async (
   const found: { coin: PricedCoin; feed: Feed }[] = []
   probes.forEach((coin, index) => {
     const row = answers[addresses.length + index]
-    const asset = row ? decodeAddress(row) : null
+    const answered = row ? decodeAddress(row) : null
+    // Only the asset the allowlist names for this vault.
+    const asset =
+      answered && answered.toLowerCase() === VAULTS[coin.key] ? answered : null
     const feed = asset ? FEEDS[coinKey(chainId, asset)] : undefined
     vaultAssets.set(coin.key, feed && asset ? asset : null)
     if (feed) found.push({ coin, feed })
