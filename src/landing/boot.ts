@@ -150,9 +150,15 @@ const LANDING_LOAD = 'landing'
  */
 const withSnapshotMoney = (
   live: Partial<LandingMoney>,
-): Partial<LandingMoney> => {
+): Partial<LandingMoney> & { dated: string[] } => {
   const snapshot = window.CURATE_LANDING_DATA?.money ?? {}
   return {
+    // The figures taken from the snapshot keep its date and its day's
+    // prices on the page (landing.js), though the rest of it is live.
+    dated: [
+      ...(live.bounties === undefined ? ['bounties'] : []),
+      ...(live.transit === undefined ? ['transit'] : []),
+    ],
     ...(live.bounties === undefined
       ? {
           bounties: snapshot.bounties,

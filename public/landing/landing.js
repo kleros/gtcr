@@ -700,11 +700,14 @@
         currency: 'USD',
         maximumFractionDigits: 0,
       })
-      const when = live
-        ? 'all time'
-        : hasSnapshot
-          ? `to ${dayYearFormat.format(snapshotAt)}`
-          : 'all time'
+      // A figure the live read could not give is the snapshot's: it keeps
+      // the snapshot's date and prices (src/landing/boot.ts, dated).
+      const dated = Array.isArray(money.dated) ? money.dated : []
+      const isLive = (key) => live && !dated.includes(key)
+      const whenFor = (key) =>
+        isLive(key) || !hasSnapshot
+          ? 'all time'
+          : `to ${dayYearFormat.format(snapshotAt)}`
       const rows = [
         {
           key: 'bounties',
@@ -726,10 +729,13 @@
       // A snapshot's dollars are at its own day's prices.
       const basis = $('[data-money-basis]', moneyBox)
       if (basis)
-        basis.textContent =
-          live || !hasSnapshot
-            ? 'In dollars at today’s prices.'
-            : `In dollars at prices of ${dayYearFormat.format(snapshotAt)}.`
+        basis.textContent = !hasSnapshot
+          ? 'In dollars at today’s prices.'
+          : !live || dated.length === rows.length
+            ? `In dollars at prices of ${dayYearFormat.format(snapshotAt)}.`
+            : dated.length > 0
+              ? `In dollars at today’s prices; a figure dated ${dayYearFormat.format(snapshotAt)} is at that day’s prices.`
+              : 'In dollars at today’s prices.'
       let shown = 0
       for (const row of rows) {
         const figure = $(`[data-money-fig="${row.key}"]`, moneyBox)
@@ -741,8 +747,8 @@
         shown += 1
         if (note)
           note.textContent = isCount(row.count)
-            ? `${row.who}, ${when} · ${integer.format(row.count)}${row.plus} ${row.unit(row.count)}`
-            : `${row.who}, ${when}`
+            ? `${row.who}, ${whenFor(row.key)} · ${integer.format(row.count)}${row.plus} ${row.unit(row.count)}`
+            : `${row.who}, ${whenFor(row.key)}`
         const text = (value) => `${dollars.format(value)}${row.plus}`
         figure.title = `${exact.format(row.value)}${row.plus}`
         figure.textContent = text(row.value)
