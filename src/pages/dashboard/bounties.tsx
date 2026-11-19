@@ -1,11 +1,6 @@
 import React, { useId } from 'react'
 import styled from 'styled-components'
-import {
-  Label,
-  SkeletonBlock,
-  Small,
-  Surface,
-} from 'components/curate/primitives'
+import { Label, SkeletonBlock, Small } from 'components/curate/primitives'
 import Tooltip from 'components/ui/Tooltip'
 import { AnimatedNumber } from 'components/curate/motion/animated-number'
 import { RingGauge } from 'components/curate/motion/ring-gauge'
@@ -66,8 +61,13 @@ import { chainInfo, type BountyCoin, type scopedChallengeRecord } from './view'
  * never answered, there is no honest total, so the coins' own amounts are
  * listed on one line instead. The figure waits for the first price read
  * (at most a moment, use-usd-prices.ts), so it never paints a coin amount
- * and swaps it for dollars under the reader. The rings and the figure sit
- * on one centred row, the sentence centred under them.
+ * and swaps it for dollars under the reader.
+ *
+ * No box (round 17: "in a box is cringe"): like the Open for verification
+ * band, the section sits on the stage, its title centred, and its row is
+ * symmetric: a ring, the bounties, a ring, parted by hairlines, the
+ * sentence centred under them. On a phone the bounties lead and the two
+ * rings share the line under them.
  *
  * Windows are carried by the figures themselves rather than by a chip over
  * the panel (round 3: four "all time" stamps read as boilerplate). The
@@ -95,8 +95,15 @@ const formatInt = (value: number) => integer.format(value)
 const sharePercent = (part: number, whole: number): number =>
   Math.round((Math.min(Math.max(part, 0), whole) * 100) / whole)
 
-const Panel = styled(Surface)`
+/* The section on the stage, no surface (round 17). */
+const Stage = styled.div`
   ${reveal}
+`
+
+/* The section's heading, centred over its centred row. */
+const CentredHead = styled(SectionHead)`
+  justify-content: center;
+  text-align: center;
 `
 
 /*
@@ -109,63 +116,67 @@ const Panel = styled(Surface)`
 const COMPACT_RINGS = '(min-width: 901px) and (max-width: 1099px)'
 
 /*
- * The two rings and the bounties, one centred row (round 16: "align center
- * of the number and the 2 gauges"); the figure goes under the rings where
- * the row does not hold them, still centred.
+ * A ring, the bounties, a ring: one centred row, each cell parted from the
+ * next by a hairline as the Open for verification figures are. On a phone
+ * the bounties take the first line and the rings share the second, each
+ * half the width.
  */
-const Body = styled.div`
+const Row = styled.div`
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
   justify-content: center;
-  gap: 24px 64px;
+  align-items: stretch;
+  max-width: 100%;
 
-  @media ${COMPACT_RINGS} {
-    column-gap: 40px;
-  }
-
-  @media (max-width: 900px) {
-    > :first-child {
-      width: 100%;
-    }
+  @media (max-width: 720px) {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-areas:
+      'money money'
+      'left right';
+    row-gap: 28px;
   }
 `
 
-/*
- * Two rings at full size, side by side. Once the money goes under them (900px
- * and below) each takes half the width and is centred in it (on a phone the
- * ring scales down to fit), rather than sitting left-aligned with the rest of
- * the row empty beside them. The tooltip wrapper is the item there, so it is
- * what centres.
- */
-const Gauges = styled.div`
+const Cell = styled.div`
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   align-items: center;
-  gap: 24px 32px;
+  justify-content: center;
+  min-width: 0;
+  padding: 0 clamp(28px, 4vw, 72px);
 
-  @media ${COMPACT_RINGS} {
-    gap: 16px 20px;
+  & + & {
+    border-left: 1px solid var(--glass-border);
   }
 
-  @media (max-width: 900px) {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    justify-items: center;
-    gap: 16px;
+  @media ${COMPACT_RINGS} {
+    padding: 0 24px;
+  }
 
-    > .ui-tooltip-trigger {
-      display: flex;
-      justify-content: center;
-      width: 100%;
-      min-width: 0;
+  @media (max-width: 720px) {
+    padding: 0 8px;
+
+    &[data-cell='left'] {
+      grid-area: left;
+      border-left: 0;
+    }
+
+    &[data-cell='money'] {
+      grid-area: money;
+      border-left: 0;
+    }
+
+    &[data-cell='right'] {
+      grid-area: right;
     }
   }
 
-  /* The narrowest phones: the rings take the gap's room, so each keeps the
-     width its caption is set for. */
-  @media (max-width: 380px) {
-    gap: 4px;
+  /* The rings' tooltip wrappers centre in their cell. */
+  > .ui-tooltip-trigger {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+    min-width: 0;
   }
 `
 
@@ -199,6 +210,10 @@ const Total = styled.div`
   min-width: 0;
   max-width: 100%;
   text-align: center;
+
+  > * {
+    text-wrap: balance;
+  }
 `
 
 const TotalFigure = styled.span`
@@ -578,83 +593,81 @@ export const VerificationRecord = ({
     </>
   )
 
+  const ring = (key: 'never' | 'won') =>
+    !record ? (
+      <RingSkeleton $height="0px" $width={`${ringSize}px`} />
+    ) : key === 'never' ? (
+      never !== undefined && entries !== undefined ? (
+        <Tooltip title={<TipText>{neverTip(never, entries)}</TipText>}>
+          <RingTip tabIndex={0}>
+            <RingGauge
+              key={`never-${ringKey}-${entries}`}
+              size={ringSize}
+              ratio={never / 100}
+              from="var(--edge-3)"
+              to="var(--edge-2)"
+              caption="of entries never disputed"
+              label={`Nobody has disputed ${never}% of the ${formatInt(entries)} entries ever curated, against ${formatInt(record.challenged)} requests anyone has disputed, all time.`}
+            />
+          </RingTip>
+        </Tooltip>
+      ) : null
+    ) : wonShare !== undefined ? (
+      <Tooltip title={<TipText>{wonTip(record, plus)}</TipText>}>
+        <RingTip tabIndex={0}>
+          <RingGauge
+            key={`won-${ringKey}`}
+            size={ringSize}
+            ratio={wonShare / 100}
+            from="var(--edge-3)"
+            to="var(--edge-2)"
+            caption="of disputes went to the challenger"
+            label={`The court sided with the challenger in ${formatInt(record.listedWon)}${plus} of ${formatInt(record.listedRulings)}${plus} rulings${onListed(record)}${where}, all time.`}
+          />
+        </RingTip>
+      </Tooltip>
+    ) : (
+      <Figure>
+        <Label $tone="faint">Disputes the court has closed</Label>
+        <Small $muted>
+          {unknown ? 'The rulings did not load' : 'None yet'}
+        </Small>
+      </Figure>
+    )
+  const left = ring('never')
+
   return (
     <section aria-labelledby={titleId}>
-      <SectionHead>
+      <CentredHead>
         <SectionTitle id={titleId}>Self-sustaining mechanism</SectionTitle>
-      </SectionHead>
+      </CentredHead>
 
-      {/* Second box on the page, straight after the 30-day chart (--i: 4). */}
-      <Panel $padding="standard" style={{ ['--i' as string]: 5 }}>
-        <Body>
-          <Gauges>
-            {!record ? (
-              <>
-                <RingSkeleton $height="0px" $width={`${ringSize}px`} />
-                <RingSkeleton $height="0px" $width={`${ringSize}px`} />
-              </>
-            ) : (
-              <>
-                {never !== undefined && entries !== undefined && (
+      {/* Second section on the page, straight after the chart (--i: 4). */}
+      <Stage style={{ ['--i' as string]: 5 }}>
+        <Row>
+          {left && <Cell data-cell="left">{left}</Cell>}
+          {!unknown && (
+            <Cell data-cell="money">
+              <Total>
+                {record ? (
                   <Tooltip
-                    title={<TipText>{neverTip(never, entries)}</TipText>}
+                    title={<TipText>{bountiesTip(record, plus)}</TipText>}
                   >
-                    <RingTip tabIndex={0}>
-                      <RingGauge
-                        key={`never-${ringKey}-${entries}`}
-                        size={ringSize}
-                        ratio={never / 100}
-                        from="var(--edge-3)"
-                        to="var(--edge-2)"
-                        caption="of entries never disputed"
-                        label={`Nobody has disputed ${never}% of the ${formatInt(entries)} entries ever curated, against ${formatInt(record.challenged)} requests anyone has disputed, all time.`}
-                      />
-                    </RingTip>
-                  </Tooltip>
-                )}
-                {wonShare !== undefined ? (
-                  <Tooltip title={<TipText>{wonTip(record, plus)}</TipText>}>
-                    <RingTip tabIndex={0}>
-                      <RingGauge
-                        key={`won-${ringKey}`}
-                        size={ringSize}
-                        ratio={wonShare / 100}
-                        from="var(--edge-3)"
-                        to="var(--edge-2)"
-                        caption="of disputes went to the challenger"
-                        label={`The court sided with the challenger in ${formatInt(record.listedWon)}${plus} of ${formatInt(record.listedRulings)}${plus} rulings${onListed(record)}${where}, all time.`}
-                      />
-                    </RingTip>
+                    <TipTarget tabIndex={0}>
+                      <Label $tone="faint">Bounties won</Label>
+                    </TipTarget>
                   </Tooltip>
                 ) : (
-                  <Figure>
-                    <Label $tone="faint">Disputes the court has closed</Label>
-                    <Small $muted>
-                      {unknown ? 'The rulings did not load' : 'None yet'}
-                    </Small>
-                  </Figure>
+                  <Label $tone="faint">Bounties won</Label>
                 )}
-              </>
-            )}
-          </Gauges>
-
-          {!unknown && (
-            <Total>
-              {record ? (
-                <Tooltip title={<TipText>{bountiesTip(record, plus)}</TipText>}>
-                  <TipTarget tabIndex={0}>
-                    <Label $tone="faint">Bounties won</Label>
-                  </TipTarget>
-                </Tooltip>
-              ) : (
-                <Label $tone="faint">Bounties won</Label>
-              )}
-              {bounties}
-            </Total>
+                {bounties}
+              </Total>
+            </Cell>
           )}
-        </Body>
+          <Cell data-cell="right">{ring('won')}</Cell>
+        </Row>
         {words}
-      </Panel>
+      </Stage>
     </section>
   )
 }
