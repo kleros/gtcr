@@ -13,11 +13,10 @@ import type { UsdPrice } from './prices'
 import { chainInfo, type BountyCoin, type scopedChallengeRecord } from './view'
 
 /*
- * The self-sustaining mechanism (round 3): one wide card, back to the
- * proportions of the version before it — the rings on the left at full
- * size, the money to their right, and the panel's one sentence under the
- * money (round 5: across the whole foot it ran to 193 characters on one
- * line; under the tiles it keeps a reading measure).
+ * The self-sustaining mechanism: two rings under their title. The money
+ * this file also draws (what passed through Curate, the bounties won) sits
+ * in the dashboard's hero since 20 Nov 2026 (HeroMoney), beside the
+ * headline's "earn".
  *
  * Two rings, two shares of different wholes — every entry ever curated,
  * and the disputes the court has closed on the Standard and Stake lists, all
@@ -65,10 +64,8 @@ import { chainInfo, type BountyCoin, type scopedChallengeRecord } from './view'
  * and swaps it for dollars under the reader.
  *
  * No box (round 17: "in a box is cringe"): like the Open for verification
- * band, the section sits on the stage, its title centred: the two rings
- * together, the bounties behind a hairline (round 18), the sentence
- * centred under them. On a phone the bounties lead and the two rings share
- * the line under them.
+ * band, the section sits on the stage, its title centred over the two
+ * rings (round 18); on a phone the rings share one line.
  *
  * Windows are carried by the figures themselves rather than by a chip over
  * the panel (round 3: four "all time" stamps read as boilerplate). The
@@ -108,18 +105,9 @@ const CentredHead = styled(SectionHead)`
 `
 
 /*
- * Where the rings are drawn smaller beside the money (DESIGN.md: three coins
- * on one line). Between the one-column width and 1100px the column beside
- * two full-size rings is too narrow for three tiles, which broke 2 + 1 and
- * left the third tile alone beside an empty cell; at 140px (a phone's size)
- * the three fit on one line from 901px.
- */
-const COMPACT_RINGS = '(min-width: 901px) and (max-width: 1099px)'
-
-/*
- * The two rings together, then the bounties behind a hairline, as one
- * centred group (round 18: "not a big fan of separating the gauges"). On a
- * phone the bounties lead and the rings share the line under them.
+ * The two rings together, centred (round 18: "not a big fan of separating
+ * the gauges"); on a phone they share one line. The money that stood beside
+ * them is in the hero now (HeroMoney).
  */
 const Row = styled.div`
   display: flex;
@@ -141,28 +129,11 @@ const Rings = styled.div`
   gap: 24px 32px;
   min-width: 0;
 
-  &:not(:last-child) {
-    padding-right: clamp(28px, 4vw, 64px);
-  }
-
-  @media ${COMPACT_RINGS} {
-    gap: 16px;
-
-    &:not(:last-child) {
-      padding-right: 24px;
-    }
-  }
-
   @media (max-width: 720px) {
-    order: 1;
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 8px;
     width: 100%;
-
-    &:not(:last-child) {
-      padding-right: 0;
-    }
 
     /* The rings' tooltip wrappers centre in their half. */
     > .ui-tooltip-trigger {
@@ -171,33 +142,6 @@ const Rings = styled.div`
       width: 100%;
       min-width: 0;
     }
-  }
-`
-
-/* The two amounts side by side, like the rings (round 19): same shape, so
-   their labels and figures are level, centred on the rings' height. */
-const MoneyCell = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 24px 40px;
-  min-width: 0;
-  padding-left: clamp(28px, 4vw, 64px);
-  border-left: 1px solid var(--glass-border);
-
-  @media ${COMPACT_RINGS} {
-    padding-left: 24px;
-  }
-
-  @media (max-width: 720px) {
-    order: 0;
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    justify-items: center;
-    gap: 8px;
-    width: 100%;
-    padding-left: 0;
-    border-left: 0;
   }
 `
 
@@ -222,21 +166,6 @@ const RingSkeleton = styled(SkeletonBlock)`
   border-radius: var(--radius-pill);
 `
 
-/* The bounties: the label, the dollars, and the coins they add up. */
-const Total = styled.div`
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
-  min-width: 0;
-  max-width: 260px;
-  text-align: center;
-
-  > * {
-    text-wrap: balance;
-  }
-`
-
 const TotalFigure = styled.span`
   color: var(--color-text);
   font-family: var(--font-figure);
@@ -257,24 +186,6 @@ const CoinLine = styled.span`
   letter-spacing: -0.02em;
   font-variant-numeric: tabular-nums;
   text-wrap: balance;
-`
-
-/* The panel's sentence and its notes, centred under the row at a reading
-   measure. */
-const Words = styled.div`
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  max-width: 68ch;
-  min-width: 0;
-  margin: 28px auto 0;
-  text-align: center;
-
-  > p {
-    margin: 0;
-    text-wrap: balance;
-  }
 `
 
 const Figure = styled.div`
@@ -460,15 +371,60 @@ const wonTip = (record: ChallengeRecord, plus: string): string =>
     ? `When someone does challenge, they are usually right: jurors sided with the challenger in ${formatInt(record.listedWon)}${plus} of ${formatInt(record.listedRulings)}${plus} disputes${onListed(record)}. A challenge here is a finding, not noise, and finding one pays the bounty.`
     : 'Jurors settle each dispute on its own evidence. A ruling for the challenger pays them the bounty; one for the requester leaves the entry as it stands.'
 
-/**
- * The self-sustaining mechanism: how much of everything they have ever held
- * nobody disputed, how the court ruled when somebody did, and what the
- * challengers took. The section heads itself and owns its loading state, so
- * the heading never pops in.
+/*
+ * The money, in dollars at today's prices: what has passed through Curate
+ * and the bounties challengers won (the paragraphs above say how each is
+ * read). Fortunato moved it into the dashboard's hero, beside the headline
+ * whose "earn" it backs; the rings stay in the Self-sustaining mechanism.
+ * One figure under another, behind a hairline; side by side once the hero
+ * stacks (index.tsx: HeroMoney).
  */
-export const VerificationRecord = ({
+const MoneyStack = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  min-width: 0;
+
+  /* A hairline between the two figures, as between the rings and them. */
+  > [data-money] + [data-money] {
+    padding-top: 24px;
+    border-top: 1px solid var(--glass-border);
+  }
+
+  @media (max-width: 900px) {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px 24px;
+
+    > [data-money] + [data-money] {
+      padding-top: 0;
+      border-top: 0;
+    }
+
+    /* The note about a chain that did not load spans both columns. */
+    > p {
+      grid-column: 1 / -1;
+    }
+
+    /* Two labels side by side on a phone: "Passed through Curate" wraps
+       rather than running into "Bounties won". */
+    ${LabelRow} {
+      white-space: normal;
+    }
+  }
+`
+
+/* One amount: its label, then the dollars; left-aligned, as the hero is. */
+const MoneyTotal = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  min-width: 0;
+`
+
+export const HeroMoney = ({
   record,
-  entries,
   prices,
   pricesSettled,
   transit,
@@ -477,88 +433,32 @@ export const VerificationRecord = ({
   /** Undefined while the load is still running. */
   record?: ChallengeRecord
   /**
-   * Every entry ever curated, the retired Classic lists' included (view.ts:
-   * scopedFigures.entriesAllTime) — the all-time figure,
-   * not the hero's live one. Undefined when a chain's lists are missing, or
-   * when the Classic read capped: then the share built on it is left out
-   * rather than drawn short.
-   */
-  entries?: number
-  /**
    * Dollars per whole coin, keyed by `BountyCoin.key` (use-usd-prices.ts). A
    * coin missing from it, and every coin once the prices never arrive, leads
    * with its amount. A price that has passed its feed's heartbeat leaves
    * that map, so the dollars go rather than age.
    */
   prices?: Record<string, UsdPrice>
-  /** False while the first price read is held for: the tiles stay skeletons. */
+  /** False while the first price read is held for: the figures stay skeletons. */
   pricesSettled: boolean
-  /**
-   * What has passed through Curate, in dollars (transit.ts; round 19: in
-   * this section). Undefined while it reads.
-   */
+  /** What has passed through Curate, in dollars (transit.ts). Undefined while it reads. */
   transit?: number
   /** The read failed: the figure is not drawn, never "$—". */
   transitFailed: boolean
 }) => {
-  const titleId = useId()
-  /*
-   * Side by side on a phone each ring has about 130 to 150px. It scales down
-   * to fit on its own, but its figure and caption are sized from `size`, so
-   * it is drawn at a phone's size there: the caption's last line then clears
-   * the arc even at 360px. Between 901 and 1099px it takes the same size, so
-   * the three coins beside it fit on one line (COMPACT_RINGS).
-   */
-  const phone = useMediaQuery('(max-width: 520px)')
-  const compact = useMediaQuery(COMPACT_RINGS)
-  const ringSize = phone || compact ? 140 : 168
-
   const plus = record?.capped ? '+' : ''
   const missing =
     record && record.missing.length > 0 ? chainNames(record.missing) : undefined
-  // A chain whose ledger did not load: the ring covers the others, by name.
-  const partial = !!missing && !!record && record.loaded.length > 0
-  const where = partial && record ? ` on ${chainNames(record.loaded)}` : ''
   const unknown = !!record && record.rulings === 0 && !!missing
 
-  /*
-   * The share nobody has ever disputed, against every entry these lists have
-   * ever held (the retired Classic ones included: see the `entries` prop).
-   * Left out entirely when the entries are unknown or the challenge count is
-   * itself a lower bound: a capped ledger understates the challenges, which
-   * overstates this share, and no honest bound survives that.
-   */
-  const never =
-    record && entries !== undefined && entries > 0 && !record.challengedPartial
-      ? sharePercent(entries - Math.min(entries, record.challenged), entries)
-      : undefined
-  // The court's share, on the Standard and Stake lists alone (view.ts:
-  // listedRulings): the Disputes panel's own count, Classic left out.
-  const wonShare =
-    record && record.listedRulings > 0
-      ? sharePercent(record.listedWon, record.listedRulings)
-      : undefined
-  const ringKey = record ? `${record.loaded.join('-')}-${record.rulings}` : ''
   const coins = record && !unknown ? record.coins : []
   const total = pricesSettled ? bountyTotal(coins, prices) : undefined
-  // Round 19: no sentence under the row; only a chain whose rulings did not
-  // load is still named.
-  const words =
-    record && missing ? (
-      <Words data-words="">
-        {missing && (
-          <Small $faint as="p">
-            {`The rulings on ${missing} did not load: ${record.missing.length > 1 ? 'their' : 'its'} bounties are not counted here.`}
-          </Small>
-        )}
-      </Words>
-    ) : null
 
   // The bounties: a skeleton while the load or the first price read runs,
   // then the dollars, or the coins' own amounts where no total is honest.
   const bounties = !record ? (
-    <SkeletonBlock $height="64px" $width="220px" />
-  ) : unknown ? null : coins.length === 0 ? (
+    <SkeletonBlock $height="56px" $width="200px" />
+  ) : coins.length === 0 ? (
     <Small $muted as="p" style={{ margin: 0 }}>
       {record.rulings
         ? record.rulings === 1 && !plus
@@ -567,7 +467,7 @@ export const VerificationRecord = ({
         : 'No dispute has been ruled on yet.'}
     </Small>
   ) : !pricesSettled ? (
-    <SkeletonBlock $height="64px" $width="220px" />
+    <SkeletonBlock $height="56px" $width="200px" />
   ) : total ? (
     <TotalFigure
       aria-label={`${formatUsd(total.dollars)}${plus ? ' or more' : ''} in bounties`}
@@ -597,6 +497,97 @@ export const VerificationRecord = ({
     record && coins.length > 0 ? paidIn(coins.filter(amountKnown)) : ''
   const transitHelp = 'Deposits, challenges and appeals, all time.'
 
+  return (
+    <MoneyStack>
+      {!transitFailed && (
+        <MoneyTotal data-money="">
+          <LabelHelp help={transitHelp}>Passed through Curate</LabelHelp>
+          {transit === undefined ? (
+            <SkeletonBlock $height="56px" $width="200px" />
+          ) : (
+            <TotalFigure
+              aria-label={`${formatUsd(transit)} passed through Curate`}
+            >
+              <AnimatedNumber
+                value={transit}
+                format={(value) => compactUsd.format(value)}
+              />
+            </TotalFigure>
+          )}
+        </MoneyTotal>
+      )}
+      {!unknown && (
+        <MoneyTotal data-money="">
+          <LabelHelp help={bountiesHelp}>Bounties won</LabelHelp>
+          {bounties}
+        </MoneyTotal>
+      )}
+      {/* Round 19: only a chain whose rulings did not load is named. */}
+      {record && missing && (
+        <Small $faint as="p" style={{ margin: 0 }}>
+          {`The rulings on ${missing} did not load: ${record.missing.length > 1 ? 'their' : 'its'} bounties are not counted here.`}
+        </Small>
+      )}
+    </MoneyStack>
+  )
+}
+
+/**
+ * The self-sustaining mechanism: how much of everything they have ever held
+ * nobody disputed, and how the court ruled when somebody did. The section
+ * heads itself and owns its loading state, so the heading never pops in.
+ */
+export const VerificationRecord = ({
+  record,
+  entries,
+}: {
+  /** Undefined while the load is still running. */
+  record?: ChallengeRecord
+  /**
+   * Every entry ever curated, the retired Classic lists' included (view.ts:
+   * scopedFigures.entriesAllTime) — the all-time figure,
+   * not the hero's live one. Undefined when a chain's lists are missing, or
+   * when the Classic read capped: then the share built on it is left out
+   * rather than drawn short.
+   */
+  entries?: number
+}) => {
+  const titleId = useId()
+  /*
+   * Side by side on a phone each ring has about 130 to 150px. It scales down
+   * to fit on its own, but its figure and caption are sized from `size`, so
+   * it is drawn at a phone's size there: the caption's last line then clears
+   * the arc even at 360px.
+   */
+  const phone = useMediaQuery('(max-width: 520px)')
+  const ringSize = phone ? 140 : 168
+
+  const plus = record?.capped ? '+' : ''
+  const missing =
+    record && record.missing.length > 0 ? chainNames(record.missing) : undefined
+  // A chain whose ledger did not load: the ring covers the others, by name.
+  const partial = !!missing && !!record && record.loaded.length > 0
+  const where = partial && record ? ` on ${chainNames(record.loaded)}` : ''
+  const unknown = !!record && record.rulings === 0 && !!missing
+
+  /*
+   * The share nobody has ever disputed, against every entry these lists have
+   * ever held (the retired Classic ones included: see the `entries` prop).
+   * Left out entirely when the entries are unknown or the challenge count is
+   * itself a lower bound: a capped ledger understates the challenges, which
+   * overstates this share, and no honest bound survives that.
+   */
+  const never =
+    record && entries !== undefined && entries > 0 && !record.challengedPartial
+      ? sharePercent(entries - Math.min(entries, record.challenged), entries)
+      : undefined
+  // The court's share, on the Standard and Stake lists alone (view.ts:
+  // listedRulings): the Disputes panel's own count, Classic left out.
+  const wonShare =
+    record && record.listedRulings > 0
+      ? sharePercent(record.listedWon, record.listedRulings)
+      : undefined
+  const ringKey = record ? `${record.loaded.join('-')}-${record.rulings}` : ''
   const ring = (key: 'never' | 'won') =>
     !record ? (
       <RingSkeleton $height="0px" $width={`${ringSize}px`} />
@@ -653,37 +644,7 @@ export const VerificationRecord = ({
             {left}
             {ring('won')}
           </Rings>
-          {(!unknown || !transitFailed) && (
-            <MoneyCell>
-              {!transitFailed && (
-                <Total>
-                  <LabelHelp help={transitHelp}>
-                    Passed through Curate
-                  </LabelHelp>
-                  {transit === undefined ? (
-                    <SkeletonBlock $height="56px" $width="200px" />
-                  ) : (
-                    <TotalFigure
-                      aria-label={`${formatUsd(transit)} passed through Curate`}
-                    >
-                      <AnimatedNumber
-                        value={transit}
-                        format={(value) => compactUsd.format(value)}
-                      />
-                    </TotalFigure>
-                  )}
-                </Total>
-              )}
-              {!unknown && (
-                <Total>
-                  <LabelHelp help={bountiesHelp}>Bounties won</LabelHelp>
-                  {bounties}
-                </Total>
-              )}
-            </MoneyCell>
-          )}
         </Row>
-        {words}
       </Stage>
     </section>
   )

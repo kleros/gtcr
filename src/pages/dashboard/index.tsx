@@ -29,6 +29,7 @@ import { LaneBar } from 'components/curate/lane-bar'
 import { Odometer } from 'components/curate/motion/odometer'
 import { AnimatedNumber } from 'components/curate/motion/animated-number'
 import { reveal } from 'components/curate/motion/reveal'
+import RotatingWord from 'components/curate/rotating-word'
 import { VerifiedBadge } from 'components/curate/verified-badge'
 import { KindTag } from 'components/curate/stake-tag'
 import { getNativeCurrency } from 'config/chains'
@@ -54,7 +55,7 @@ import { LiveBoard, type RulingsView } from './happening-now'
 import { OpenForVerification } from './open-for-verification'
 import type { OpenListChip } from './board-rows'
 import { SectionHead, SectionTitle } from './section'
-import { VerificationRecord } from './bounties'
+import { HeroMoney, VerificationRecord } from './bounties'
 import { VerifiedLists } from './verified-lists'
 import type {
   DashboardActivity,
@@ -186,22 +187,51 @@ const pulse = keyframes`
 
 /* ---------- Hero (YMax composition) ---------- */
 
+/*
+ * Left-aligned since the headline's first line ends in a word that changes
+ * (Fortunato, 20 Nov: centred, the whole line slid sideways at each word).
+ * The money sits on the right, beside the "earn" it backs; under 900px it
+ * moves below the buttons, its two figures side by side.
+ */
 const Hero = styled.section`
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 40px clamp(40px, 6vw, 96px);
+  /* Starts where every page does: Page's own top padding, nothing more. */
+  padding: 0 0 8px;
+
+  @media (max-width: 900px) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+`
+
+const HeroMain = styled.div`
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: flex-start;
   gap: 22px;
+  min-width: 0;
 
   > * {
     ${reveal}
   }
-  /* Starts where every page does: Page's own top padding, nothing more. */
-  padding: 0 0 8px;
-  text-align: center;
+`
 
-  @media (max-width: 720px) {
-    align-items: flex-start;
-    text-align: left;
+const HeroAside = styled.div`
+  min-width: 0;
+  ${reveal}
+
+  /* Nothing to show (a testnet whose rulings did not load): no column. */
+  &:empty {
+    display: none;
+  }
+
+  /* Wide enough for the figures, never for a long note: a note wraps
+     rather than squeezing the headline. */
+  @media (min-width: 901px) {
+    min-width: 220px;
+    max-width: 300px;
   }
 `
 
@@ -274,22 +304,43 @@ const PillState = styled.span`
 `
 
 /*
- * Round 11: the title names both ways in, one per line, the second in the
- * accent. It is a sentence now, not a slogan, so it is set smaller than
- * --fs-hero (84px would wrap it to five lines) and each clause wraps on its
- * own, balanced, on a phone.
+ * Round 11: the title names both ways in, one per line. Since 20 Nov 2026
+ * the first runs through examples of what can be verified (RotatingWord,
+ * HERO_WORDS) and rests on "anything"; the accent marks that word and
+ * "earn". It is a sentence, not a slogan, so it is set smaller than
+ * --fs-hero (84px would wrap it to five lines); the second clause wraps on
+ * its own, balanced, on a phone.
  */
 const Headline = styled(HeroStatement)`
   max-width: 24ch;
-  font-size: clamp(38px, 3.4vw + 14px, 64px);
+  font-size: clamp(34px, 3.4vw + 14px, 64px);
   line-height: 1.02;
 
-  > span,
-  > em {
+  /* Each clause on its own line. The first never wraps, so the changing
+     word cannot push the second line down. */
+  > [data-line] {
     display: block;
     text-wrap: balance;
   }
+
+  > [data-line='first'] {
+    white-space: nowrap;
+  }
 `
+
+/*
+ * The examples the headline runs through, once: the kinds of entry the
+ * largest lists hold first, then a wider one, resting on "anything".
+ */
+const HERO_WORDS = [
+  'tokens',
+  'contracts',
+  'domains',
+  'addresses',
+  'markets',
+  'documents',
+  'anything',
+] as const
 
 const Lede = styled.p`
   margin: 0;
@@ -303,7 +354,7 @@ const Lede = styled.p`
 const Actions = styled.div`
   display: flex;
   flex-wrap: wrap;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 10px;
   margin-top: 6px;
 `
@@ -1143,55 +1194,79 @@ const Dashboard = () => {
   return (
     <Page>
       <Hero>
-        <LivePill
-          style={{ ['--i' as string]: 0 }}
-          data-partial={partial ? '' : undefined}
-          data-down={unanswered ? '' : undefined}
-          data-stale={
-            data && !live && partialChains.length === 0 ? '' : undefined
-          }
-        >
-          <i aria-hidden />
-          {/* Only the state is announced: the age after it changes every
+        <HeroMain>
+          <LivePill
+            style={{ ['--i' as string]: 0 }}
+            data-partial={partial ? '' : undefined}
+            data-down={unanswered ? '' : undefined}
+            data-stale={
+              data && !live && partialChains.length === 0 ? '' : undefined
+            }
+          >
+            <i aria-hidden />
+            {/* Only the state is announced: the age after it changes every
               minute, and a live region would read it out each time. */}
-          <PillState role="status">
-            {!unanswered && (
-              <b>
-                {partial
-                  ? 'Partial'
-                  : !data || live
-                    ? 'Live'
-                    : query.isFetching
-                      ? 'Refreshing'
-                      : 'Not live'}
-              </b>
-            )}
-            {!data
-              ? 'Connecting to the indexers'
-              : unanswered
-                ? 'Indexers not answering'
-                : partial
-                  ? `Some ${partialNames} data did not load; figures may be incomplete`
-                  : null}
-          </PillState>
-          {data && partialChains.length === 0 && updated}
-        </LivePill>
-        <Headline style={{ ['--i' as string]: 1 }}>
-          <span>Obtain your verification,</span>{' '}
-          <em>or earn by keeping lists clean.</em>
-        </Headline>
-        <Lede style={{ ['--i' as string]: 2 }}>
-          Curate verifies anything, at scale. Built to let good actors win: they
-          get verified, or they get the bounty if they spot wrong entries.
-        </Lede>
-        <Actions style={{ ['--i' as string]: 3 }}>
-          <ButtonLink to={browseHref()} $variant="primary">
-            Explore lists
-          </ButtonLink>
-          <ButtonLink to={`/launch/${launchChain}`} $variant="secondary">
-            Launch a list
-          </ButtonLink>
-        </Actions>
+            <PillState role="status">
+              {!unanswered && (
+                <b>
+                  {partial
+                    ? 'Partial'
+                    : !data || live
+                      ? 'Live'
+                      : query.isFetching
+                        ? 'Refreshing'
+                        : 'Not live'}
+                </b>
+              )}
+              {!data
+                ? 'Connecting to the indexers'
+                : unanswered
+                  ? 'Indexers not answering'
+                  : partial
+                    ? `Some ${partialNames} data did not load; figures may be incomplete`
+                    : null}
+            </PillState>
+            {data && partialChains.length === 0 && updated}
+          </LivePill>
+          <Headline style={{ ['--i' as string]: 1 }}>
+            {/* Read once, whole: the changing word is for the eye only. */}
+            <VisuallyHidden>
+              Verify tokens, contracts, domains and more, or earn by keeping
+              lists clean.
+            </VisuallyHidden>
+            <span aria-hidden data-line="first">
+              Verify{' '}
+              <em>
+                <RotatingWord words={HERO_WORDS} suffix="," />
+              </em>
+            </span>{' '}
+            <span aria-hidden data-line="second">
+              or <em>earn</em> by keeping lists clean.
+            </span>
+          </Headline>
+          <Lede style={{ ['--i' as string]: 2 }}>
+            Curate verifies anything, at scale. Built to let good actors win:
+            they get verified, or they get the bounty if they spot wrong
+            entries.
+          </Lede>
+          <Actions style={{ ['--i' as string]: 3 }}>
+            <ButtonLink to={browseHref()} $variant="primary">
+              Explore lists
+            </ButtonLink>
+            <ButtonLink to={`/launch/${launchChain}`} $variant="secondary">
+              Launch a list
+            </ButtonLink>
+          </Actions>
+        </HeroMain>
+        <HeroAside style={{ ['--i' as string]: 4 }}>
+          <HeroMoney
+            record={record}
+            prices={usdPrices}
+            pricesSettled={pricesSettled}
+            transit={transit.data?.usd}
+            transitFailed={testnetScope || transit.isError}
+          />
+        </HeroAside>
       </Hero>
 
       <Featured
@@ -1372,10 +1447,6 @@ const Dashboard = () => {
       */}
       <VerificationRecord
         record={record}
-        prices={usdPrices}
-        pricesSettled={pricesSettled}
-        transit={transit.data?.usd}
-        transitFailed={testnetScope || transit.isError}
         /*
          * Every entry ever curated, against challenges all time: the
          * retired Classic lists count here, where the figures are
