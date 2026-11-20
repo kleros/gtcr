@@ -190,8 +190,10 @@ const pulse = keyframes`
 /*
  * Left-aligned since the headline's first line ends in a word that changes
  * (Fortunato, 20 Nov: centred, the whole line slid sideways at each word).
- * The money sits on the right, beside the "earn" it backs; under 900px it
- * moves below the buttons, its two figures side by side.
+ * The money sits on the right, beside the "earn" it backs; at 820px and
+ * under (a portrait tablet, a phone) it moves below the buttons, its two
+ * figures side by side. A phone held sideways (844 to 932px) keeps both
+ * columns, so the figures stay in view.
  */
 const Hero = styled.section`
   display: grid;
@@ -201,7 +203,7 @@ const Hero = styled.section`
   /* Starts where every page does: Page's own top padding, nothing more. */
   padding: 0 0 8px;
 
-  @media (max-width: 900px) {
+  @media (max-width: 820px) {
     grid-template-columns: minmax(0, 1fr);
   }
 `
@@ -229,7 +231,7 @@ const HeroAside = styled.div`
 
   /* Wide enough for the figures, never for a long note: a note wraps
      rather than squeezing the headline. */
-  @media (min-width: 901px) {
+  @media (min-width: 821px) {
     min-width: 220px;
     max-width: 300px;
   }

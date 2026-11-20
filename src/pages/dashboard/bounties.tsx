@@ -199,6 +199,8 @@ const Figure = styled.div`
 const TipTarget = styled.span`
   display: inline-flex;
   align-items: center;
+  /* A tap target of at least 24px (WCAG 2.5.8), not the label's 16px. */
+  min-height: 24px;
 
   &:focus-visible {
     outline: 2px solid var(--color-primary);
@@ -377,7 +379,7 @@ const wonTip = (record: ChallengeRecord, plus: string): string =>
  * read). Fortunato moved it into the dashboard's hero, beside the headline
  * whose "earn" it backs; the rings stay in the Self-sustaining mechanism.
  * One figure under another, behind a hairline; side by side once the hero
- * stacks (index.tsx: HeroMoney).
+ * stacks at 820px (index.tsx: Hero).
  */
 const MoneyStack = styled.div`
   display: flex;
@@ -391,9 +393,12 @@ const MoneyStack = styled.div`
     border-top: 1px solid var(--glass-border);
   }
 
-  @media (max-width: 900px) {
+  @media (max-width: 820px) {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    /* "Passed through Curate" takes two lines on most phones, "Bounties
+       won" one: the figures line up, not the labels. */
+    align-items: end;
     gap: 16px 24px;
 
     > [data-money] + [data-money] {
