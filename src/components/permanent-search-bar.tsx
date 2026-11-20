@@ -9,10 +9,10 @@ import DisplaySelector from './display-selector'
 
 // Status colors for permanent items based on contract status
 const STATUS_COLOR_MAP: Record<string, string> = {
-  Absent: 'red',
-  Submitted: 'blue',
-  Reincluded: 'green',
-  Disputed: 'orange',
+  Absent: 'var(--status-off)',
+  Submitted: 'var(--status-window)',
+  Reincluded: 'var(--status-registered)',
+  Disputed: 'var(--status-contested)',
 }
 
 const Container = styled.div`

@@ -3,9 +3,14 @@ export type validChains = '1' | '100' | '11155111' | 1 | 100 | 11155111
 /** Chain-keyed lookup — accepts both numeric and string chain IDs. */
 type ChainMap<T> = Readonly<Record<number | string, T | undefined>>
 
+/**
+ * Each chain's Kleros list of lists (config/list-of-lists.ts): where the
+ * list wizards offer to submit a new list, and the list a chain switch
+ * lands on.
+ */
 export const defaultTcrAddresses: ChainMap<string> = {
   '1': '0x2acf59a420ca888f46d46974f62570f8a38cd4da',
-  '100': '0x2418D887d0d0Fe03b793A6aF4321fa488226A0b5',
+  '100': '0x5f688a4bac5e2787ef1d9de325831e537ee4cffa',
   '11155111': '0xD965Ce430afE0423Ff19A5eb08F7C5722EFabCaF',
 } as const
 
@@ -21,24 +26,13 @@ export const defaultEvidenceDisplayUriPermanent: ChainMap<string> = {
   '11155111': '/ipfs/QmbNJRDrrd5r9cHeApTP7pZaM7jgacDFMLED5Lj1RJMn79/index.html',
 } as const
 
-export const gtcrViewAddresses: ChainMap<string> = {
-  '1': '0xe75a12f40da77d285c08a44f499e597bc5085658',
-  '100': '0x27BC296DC0b8a6c3cD39326aE9EC14604e96f7BF',
-  '11155111': '0x20E1D44c64Ec03ECe12133743bEc7019f3aAe373',
-} as const
-
-export const lightGtcrViewAddresses: ChainMap<string> = {
+export const standardGtcrViewAddresses: ChainMap<string> = {
   '1': '0xe82a69e939e1aB6Dc1868262cfe444F70098cCC8',
   '100': '0xB32e38B08FcC7b7610490f764b0F9bFd754dCE53',
   '11155111': '0x87f58F0dCF3c99BA2F3eB0604e5c335893e2EAf9',
 } as const
 
-export const batchWithdrawAddresses: ChainMap<string> = {
-  '1': '0x38aa214dc986d0bab53e5861071f3d5a56066b4d',
-  '11155111': '0xb01C9DE0e9dE0a6cAb6df586484707b7078De684',
-} as const
-
-export const lightBatchWithdrawAddresses: ChainMap<string> = {
+export const standardBatchWithdrawAddresses: ChainMap<string> = {
   '1': '0x5C6363cFA9462Ae11e22d2A5A0eb15dbB8719E4A',
   '100': '0x36B00c87553330E4351ED0CB287ed3917c12a197',
   '11155111': '0x43458fa7b40Fd7Bb32cC3a2b95186F91A95Ef0c8',
@@ -56,7 +50,16 @@ export const pgtcrFactoryAddresses: ChainMap<string> = {
   '11155111': '0x22a57cd65092da41c5c1dffad03594fffc28ce20',
 } as const
 
-export const defaultGovernor: ChainMap<{ address: string; label: string }> = {
+/**
+ * A new list's governor when no wallet is connected. A `placeholder` is an
+ * outside wallet that only stands in for the creator's own: it is never
+ * filled in or deployed, the connected wallet takes its place.
+ */
+export const defaultGovernor: ChainMap<{
+  address: string
+  label: string
+  placeholder?: boolean
+}> = {
   '1': {
     address: '0x3a7edc1eb16cb454e4964ec51642f7d7b35b5292',
     label: 'Kleros Governor',
@@ -65,13 +68,28 @@ export const defaultGovernor: ChainMap<{ address: string; label: string }> = {
     label:
       'This is an EOA governor (you probably want to use your own address)',
     address: '0xdC8C1a8CB38F27C188a43CE0eBBC8e42e393D0d3',
+    placeholder: true,
   },
   '11155111': {
     label:
       'This is an EOA governor (you probably want to use your own address)',
     address: '0xdC8C1a8CB38F27C188a43CE0eBBC8e42e393D0d3',
+    placeholder: true,
   },
 } as const
+
+/** Whether a governor value still needs the creator's wallet: empty or the chain's placeholder. */
+export const governorNeedsWallet = (
+  value: string | undefined,
+  chainId: number | undefined,
+): boolean => {
+  if (!value) return true
+  const fallback = chainId !== undefined ? defaultGovernor[chainId] : undefined
+  return (
+    !!fallback?.placeholder &&
+    value.toLowerCase() === fallback.address.toLowerCase()
+  )
+}
 
 export const defaultArbitrator: ChainMap<{ label: string; address: string }> = {
   '1': {
@@ -109,6 +127,14 @@ export const defaultArbitratorExtraData: ChainMap<{
   },
 } as const
 
+/*
+ * Court case links name their chain: the same dispute number exists on every
+ * chain, and Court opens a link without one on the visitor's connected (or
+ * last used, else Ethereum) chain, so a Gnosis case would show Ethereum's
+ * dispute of that number. `requiredChainId` is the parameter Court has always
+ * read for this (its newer builds rewrite it to their /<chain>/cases/<id>
+ * paths).
+ */
 export const klerosAddresses: ChainMap<{
   arbitrator: string
   policy: string
@@ -117,19 +143,33 @@ export const klerosAddresses: ChainMap<{
   '1': {
     arbitrator: '0x988b3a538b618c7a603e1c11ab82cd16dbe28069',
     policy: '0xCf1f07713d5193FaE5c1653C9f61953D048BECe4',
-    uiURL: 'https://court.kleros.io/cases/:disputeID',
+    uiURL: 'https://court.kleros.io/cases/:disputeID?requiredChainId=1',
   },
   '100': {
     arbitrator: '0x9C1dA9A04925bDfDedf0f6421bC7EEa8305F9002',
     policy: '0x9d494768936b6bDaabc46733b8D53A937A6c6D7e',
-    uiURL: 'https://court.kleros.io/cases/:disputeID',
+    uiURL: 'https://court.kleros.io/cases/:disputeID?requiredChainId=100',
   },
   '11155111': {
     arbitrator: '0x90992fb4e15ce0c59aeffb376460fda4ee19c879',
     policy: '0x88Fb25D399310c07d35cB9091b8346d8b1893aa5',
-    uiURL: 'https://court.kleros.io/cases/:disputeID',
+    uiURL: 'https://court.kleros.io/cases/:disputeID?requiredChainId=11155111',
   },
 } as const
+
+/**
+ * Whether `address` is this chain's Kleros arbitrator. Courts, jurors and
+ * "Kleros jurors decide" only describe a list whose arbitrator is Kleros:
+ * any ERC-792 contract can be a list's arbitrator.
+ */
+export const isKlerosArbitrator = (
+  chainId: number | string | null | undefined,
+  address: string | null | undefined,
+): boolean => {
+  if (chainId === null || chainId === undefined || !address) return false
+  const kleros = klerosAddresses[chainId]?.arbitrator
+  return !!kleros && kleros.toLowerCase() === address.toLowerCase()
+}
 
 export const txBatcherAddresses: ChainMap<string> = {
   '1': '0x82458d1c812d7c930bb3229c9e159cbabd9aa8cb',
@@ -153,3 +193,47 @@ export const subgraphUrlPermanent: ChainMap<string> = {
   '100': process.env.REACT_APP_SUBGRAPH_GNOSIS_PERMANENT,
   '11155111': process.env.REACT_APP_SUBGRAPH_SEPOLIA_PERMANENT,
 } as const
+
+/**
+ * The Kleros Display subgraphs (The Graph): Kleros Court v1 as an index, the
+ * same source Scout reads — disputes, courts, rounds, drawn jurors and their
+ * votes. The URLs carry a The Graph API key (restrict it to the app's
+ * domains in The Graph Studio) and are named as in Scout. Optional: without
+ * one, a chain's court details read from the contract only. Live period
+ * timings always come from the contract (hooks/use-dispute-timeline.ts), as
+ * an index trails the chain.
+ */
+export const klerosDisplayUrl: ChainMap<string> = {
+  '1': process.env.REACT_APP_SUBGRAPH_KLEROS_DISPLAY_MAINNET_ENDPOINT,
+  '100': process.env.REACT_APP_SUBGRAPH_KLEROS_DISPLAY_GNOSIS_ENDPOINT,
+  '11155111': process.env.REACT_APP_SUBGRAPH_KLEROS_DISPLAY_SEPOLIA_ENDPOINT,
+} as const
+
+/**
+ * Every Standard factory the Curate indexer tracks, with the block it was deployed at.
+ * Each list they create emits NewGTCR(address), whose block is the list's
+ * creation time. Source: kleros/gtcr-subgraph networks.json.
+ */
+export const registryFactories: Record<
+  number,
+  { address: string; startBlock: number }[]
+> = {
+  1: [
+    {
+      address: '0xb9dDC813AcAF3fD7aBC4C16735A09Bc1C0EE0054',
+      startBlock: 13810085,
+    },
+  ],
+  100: [
+    {
+      address: '0x08e58Bc26CFB0d346bABD253A1799866F269805a',
+      startBlock: 19592773,
+    },
+  ],
+  11155111: [
+    {
+      address: '0x3FB8314C628E9afE7677946D3E23443Ce748Ac17',
+      startBlock: 4048287,
+    },
+  ],
+}

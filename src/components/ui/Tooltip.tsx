@@ -1,6 +1,14 @@
-import React, { useState, useRef, useCallback, useEffect } from 'react'
+import React, {
+  useState,
+  useRef,
+  useCallback,
+  useEffect,
+  useId,
+  useLayoutEffect,
+} from 'react'
 import { createPortal } from 'react-dom'
-import styled, { css, DefaultTheme } from 'styled-components'
+import styled, { keyframes } from 'styled-components'
+import { kitRadius, kitType } from './kit-styles'
 
 type Placement = 'top' | 'bottom' | 'left' | 'right'
 
@@ -10,78 +18,64 @@ const Wrapper = styled.span`
   vertical-align: middle;
 `
 
-const getArrowStyles = (placement: Placement, theme: DefaultTheme) => {
-  const bg =
-    theme.tooltipBg ||
-    (theme.name === 'dark' ? theme.elevatedBackground : theme.secondaryColor)
-  const border =
-    theme.tooltipBorder ||
-    (theme.name === 'dark' ? theme.borderColor : theme.secondaryColor)
+const tipIn = keyframes`
+  from { opacity: 0; scale: 0.96; }
+  to { opacity: 1; scale: 1; }
+`
 
-  switch (placement) {
-    case 'bottom':
-      return css`
-        top: -4px;
-        left: 50%;
-        transform: translateX(-50%) rotate(45deg);
-        border-top: 1px solid ${border};
-        border-left: 1px solid ${border};
-        background: ${bg};
-      `
-    case 'left':
-      return css`
-        top: 50%;
-        right: -4px;
-        transform: translateY(-50%) rotate(45deg);
-        border-top: 1px solid ${border};
-        border-right: 1px solid ${border};
-        background: ${bg};
-      `
-    case 'right':
-      return css`
-        top: 50%;
-        left: -4px;
-        transform: translateY(-50%) rotate(45deg);
-        border-bottom: 1px solid ${border};
-        border-left: 1px solid ${border};
-        background: ${bg};
-      `
-    case 'top':
-    default:
-      return css`
-        bottom: -4px;
-        left: 50%;
-        transform: translateX(-50%) rotate(45deg);
-        border-bottom: 1px solid ${border};
-        border-right: 1px solid ${border};
-        background: ${bg};
-      `
-  }
-}
-
-const TooltipBubble = styled.div`
+/*
+ * Tip: a small solid raised surface with a hairline, radius 10, no arrow.
+ * It fades and grows in with the individual scale property, so it composes
+ * with the inline placement transform. The trigger is described by the tip
+ * while it shows, Escape dismisses it, and it never leaves the viewport
+ * sideways (8px margin).
+ */
+const VIEWPORT_EDGE = 8
+const GAP = 8
+const TooltipBubble = styled.div<{ $quiet?: boolean }>`
   position: fixed;
   z-index: 1070;
   width: max-content;
-  max-width: 250px;
-  padding: 6px 8px;
-  font-size: 12px;
-  line-height: 1.5;
-  border-radius: 6px;
+  max-width: 280px;
+  padding: 7px 11px;
+  border: 1px solid var(--glass-border);
+  border-radius: ${kitRadius.control};
+  background: var(--color-surface);
+  box-shadow:
+    inset 0 1px 0 var(--glass-highlight),
+    var(--shadow-overlay);
+  color: var(--color-text);
+  font-size: ${kitType.meta};
+  line-height: ${kitType.metaLine};
   pointer-events: none;
+  animation: ${tipIn} 160ms var(--ease-out) both;
 
-  background: ${({ theme }) => theme.tooltipBg};
-  color: ${({ theme }) => theme.tooltipText};
-  border: 1px solid ${({ theme }) => theme.tooltipBorder};
-  box-shadow: ${({ theme }) =>
-    `0 2px 8px ${theme.tooltipShadow || theme.shadowColor}`};
-`
+  /*
+   * Quiet (round 19: "make it light and the text really minimal"): a short
+   * line on frosted glass, no inner highlight and a soft shadow, in the
+   * muted text colour, for a figure's one-line explanation.
+   */
+  ${({ $quiet }) =>
+    $quiet &&
+    `
+    max-width: min(400px, calc(100vw - 16px));
+    padding: 6px 12px;
+    border-color: color-mix(in srgb, var(--glass-border) 70%, transparent);
+    border-radius: 12px;
+    text-wrap: balance;
+    background: color-mix(in srgb, var(--color-surface) 72%, transparent);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+    box-shadow: 0 8px 24px -12px rgba(0, 0, 0, 0.45);
+    color: var(--color-muted);
+    font-size: 12px;
+    line-height: 16px;
+    text-align: center;
+  `}
 
-const TooltipArrow = styled.span<{ $placement: Placement }>`
-  position: absolute;
-  width: 8px;
-  height: 8px;
-  ${({ $placement, theme }) => getArrowStyles($placement, theme)}
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
 `
 
 interface TooltipProps {
@@ -90,6 +84,8 @@ interface TooltipProps {
   children?: React.ReactNode
   mouseEnterDelay?: number
   mouseLeaveDelay?: number
+  /** A lighter tip for one short line (see the bubble's quiet style). */
+  quiet?: boolean
 }
 
 const getPositionStyle = (
@@ -97,12 +93,6 @@ const getPositionStyle = (
   rect: DOMRect,
 ): React.CSSProperties => {
   switch (placement) {
-    case 'top':
-      return {
-        top: rect.top,
-        left: rect.left + rect.width / 2,
-        transform: 'translate(-50%, -100%) translateY(-8px)',
-      }
     case 'bottom':
       return {
         top: rect.bottom,
@@ -121,7 +111,26 @@ const getPositionStyle = (
         left: rect.right,
         transform: 'translate(0, -50%) translateX(8px)',
       }
+    case 'top':
+    default:
+      return {
+        top: rect.top,
+        left: rect.left + rect.width / 2,
+        transform: 'translate(-50%, -100%) translateY(-8px)',
+      }
   }
+}
+
+/** Where the bubble's left edge lands for a placement, before clamping. */
+const leftEdge = (
+  style: React.CSSProperties,
+  placement: Placement,
+  width: number,
+) => {
+  const left = Number(style.left) || 0
+  if (placement === 'left') return left - width - GAP
+  if (placement === 'right') return left + GAP
+  return left - width / 2
 }
 
 const Tooltip: React.FC<TooltipProps> = ({
@@ -130,10 +139,14 @@ const Tooltip: React.FC<TooltipProps> = ({
   children,
   mouseEnterDelay = 0.1,
   mouseLeaveDelay = 0.1,
+  quiet = false,
 }) => {
   const [visible, setVisible] = useState(false)
   const [posStyle, setPosStyle] = useState<React.CSSProperties>({})
+  const [shift, setShift] = useState(0)
+  const tipId = useId()
   const wrapperRef = useRef<HTMLSpanElement>(null)
+  const bubbleRef = useRef<HTMLDivElement>(null)
   const enterTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const leaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -141,7 +154,28 @@ const Tooltip: React.FC<TooltipProps> = ({
     if (!wrapperRef.current) return
     const rect = wrapperRef.current.getBoundingClientRect()
     setPosStyle(getPositionStyle(placement, rect))
+    setShift(0)
   }, [placement])
+
+  // Once the bubble has a width, slide it back inside the viewport.
+  useLayoutEffect(() => {
+    const bubble = bubbleRef.current
+    if (!visible || !bubble) return
+    const width = bubble.offsetWidth
+    const left = leftEdge(posStyle, placement, width)
+    const max = window.innerWidth - width - VIEWPORT_EDGE
+    setShift(Math.max(VIEWPORT_EDGE, Math.min(left, max)) - left)
+  }, [visible, posStyle, placement])
+
+  // Escape dismisses the tip without moving focus (WCAG 1.4.13).
+  useEffect(() => {
+    if (!visible) return undefined
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setVisible(false)
+    }
+    document.addEventListener('keydown', onKeyDown, true)
+    return () => document.removeEventListener('keydown', onKeyDown, true)
+  }, [visible])
 
   const handleEnter = useCallback(() => {
     if (leaveTimer.current) clearTimeout(leaveTimer.current)
@@ -168,17 +202,39 @@ const Tooltip: React.FC<TooltipProps> = ({
 
   if (!title) return <>{children}</>
 
+  const child =
+    visible && React.isValidElement<{ 'aria-describedby'?: string }>(children)
+      ? React.cloneElement(children, {
+          'aria-describedby':
+            [children.props['aria-describedby'], tipId]
+              .filter(Boolean)
+              .join(' ') || undefined,
+        })
+      : children
+
   return (
     <Wrapper
       ref={wrapperRef}
+      className="ui-tooltip-trigger"
       onMouseEnter={handleEnter}
       onMouseLeave={handleLeave}
+      onFocus={handleEnter}
+      onBlur={handleLeave}
     >
-      {children}
+      {child}
       {visible &&
         createPortal(
-          <TooltipBubble style={posStyle}>
-            <TooltipArrow $placement={placement} />
+          <TooltipBubble
+            ref={bubbleRef}
+            id={tipId}
+            role="tooltip"
+            className="ui-tooltip"
+            $quiet={quiet}
+            style={{
+              ...posStyle,
+              left: (Number(posStyle.left) || 0) + shift,
+            }}
+          >
             {title}
           </TooltipBubble>,
           document.body,

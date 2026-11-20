@@ -1,41 +1,48 @@
 import React from 'react'
 import styled from 'styled-components'
+import { joinClassNames } from './kit-styles'
 
+/* Page shell: content sits on the page background (the body paints the bloom). */
 const LayoutWrapper = styled.div`
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  background: ${({ theme }) => theme.bodyBackground};
+  background: transparent;
 `
 
 const ContentWrapper = styled.div`
   flex: 1;
+  min-width: 0;
 `
 
+/* Header, footer and sider sit on the frame: transparent, split by hairlines. */
 const HeaderWrapper = styled.div`
-  background: ${({ theme }) => theme.navbarBackground};
-  padding: 0 24px;
-  height: 64px;
   display: flex;
   align-items: center;
-  color: ${({ theme }) => theme.textInverted || '#fff'};
   flex-shrink: 0;
+  height: var(--app-bar-height);
+  padding: 0 var(--horizontal-padding);
+  border-bottom: 1px solid var(--glass-border);
+  background: transparent;
+  color: var(--color-text);
 `
 
 const FooterWrapper = styled.div`
-  background: ${({ theme }) => theme.footerBackground};
-  padding: 24px 50px;
-  text-align: center;
-  color: ${({ theme }) => theme.textInverted || '#fff'};
   flex-shrink: 0;
+  padding: 24px var(--horizontal-padding);
+  border-top: 1px solid var(--glass-border);
+  color: var(--color-muted);
+  font-size: var(--fs-small);
+  line-height: var(--lh-small);
+  text-align: center;
 `
 
 const SiderWrapper = styled.div<{ $width?: string }>`
-  width: ${({ $width }) => $width || '200px'};
-  background: ${({ theme }) => theme.componentBackground};
   flex-shrink: 0;
-  border-right: 1px solid ${({ theme }) => theme.borderColor};
+  width: ${({ $width }) => $width || '240px'};
   overflow: auto;
+  border-right: 1px solid var(--glass-border);
+  background: transparent;
 `
 
 interface LayoutChildProps {
@@ -60,7 +67,7 @@ interface LayoutComponent {
 const Layout: LayoutComponent = ({ style, className, children }) => (
   <LayoutWrapper
     style={style}
-    className={`ui-layout${className ? ` ${className}` : ''}`}
+    className={joinClassNames('ui-layout', className)}
   >
     {children}
   </LayoutWrapper>
@@ -73,7 +80,7 @@ const Content: React.FC<LayoutChildProps> = ({
 }) => (
   <ContentWrapper
     style={style}
-    className={`ui-layout-content${className ? ` ${className}` : ''}`}
+    className={joinClassNames('ui-layout-content', className)}
   >
     {children}
   </ContentWrapper>
@@ -84,7 +91,7 @@ Content.displayName = 'Layout.Content'
 const Header: React.FC<LayoutChildProps> = ({ style, className, children }) => (
   <HeaderWrapper
     style={style}
-    className={`ui-layout-header${className ? ` ${className}` : ''}`}
+    className={joinClassNames('ui-layout-header', className)}
   >
     {children}
   </HeaderWrapper>
@@ -95,7 +102,7 @@ Header.displayName = 'Layout.Header'
 const Footer: React.FC<LayoutChildProps> = ({ style, className, children }) => (
   <FooterWrapper
     style={style}
-    className={`ui-layout-footer${className ? ` ${className}` : ''}`}
+    className={joinClassNames('ui-layout-footer', className)}
   >
     {children}
   </FooterWrapper>
@@ -107,7 +114,7 @@ const Sider: React.FC<SiderProps> = ({ style, className, children, width }) => (
   <SiderWrapper
     $width={typeof width === 'number' ? `${width}px` : width}
     style={style}
-    className={`ui-layout-sider${className ? ` ${className}` : ''}`}
+    className={joinClassNames('ui-layout-sider', className)}
   >
     {children}
   </SiderWrapper>

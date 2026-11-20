@@ -1,0 +1,185 @@
+import { useState, useMemo, useContext } from 'react'
+import { useQuery } from '@tanstack/react-query'
+import { useEthersProvider } from 'hooks/ethers-adapters'
+import useUrlChainId from 'hooks/use-url-chain-id'
+import { ethers, BigNumber } from 'ethers'
+import _gtcr from '../assets/abis/LightGeneralizedTCR.json'
+import _GTCRView from '../assets/abis/LightGeneralizedTCRView.json'
+import { WalletContext } from '../contexts/wallet-context'
+import { standardGtcrViewAddresses, subgraphUrl } from 'config/tcr-addresses'
+import { fetchMetaEvidenceFile } from 'utils/meta-evidence-guard'
+import { request } from 'utils/indexer-request'
+
+export const fetchStandardMetaEvidence = async (
+  tcr: string,
+  networkId: number,
+): Promise<FetchMetaEvidenceResult | null> => {
+  // The address travels as a variable, never as query text
+  // (fetch-meta-evidence.ts says why).
+  const query = {
+    query: `query StandardRegistryMetaEvidence($id: String!) {
+      lregistry:LRegistry_by_pk(id: $id) {
+        registrationMetaEvidence {
+          uri
+        }
+        connectedTCR
+      }
+    }`,
+    variables: { id: tcr.toLowerCase() },
+  }
+
+  // A failed read is thrown, not turned into "no metadata": the query that
+  // asks would keep that answer for a day and leave the page on its
+  // skeleton. Thrown, React Query retries it. It travels with the page's
+  // other indexer reads (utils/indexer-request.ts).
+  const data = await request(
+    subgraphUrl[networkId]!,
+    query.query,
+    query.variables,
+  )
+  return data?.lregistry?.registrationMetaEvidence?.uri
+    ? {
+        metaEvidenceURI: data.lregistry.registrationMetaEvidence.uri,
+        connectedTCR: data.lregistry.connectedTCR,
+      }
+    : null
+}
+
+const useStandardTcrView = (tcrAddress: string) => {
+  const [error, setError] = useState<string | false>(false)
+
+  const latestBlock = useContext(WalletContext)?.latestBlock
+
+  // Use the URL chain for provider & lookups (not the wagmi/wallet chain).
+  const urlChainId = useUrlChainId()
+  const networkId = urlChainId ?? undefined
+  const library = useEthersProvider({ chainId: networkId })
+
+  const arbitrableTCRViewAddr = standardGtcrViewAddresses[networkId!]
+
+  const gtcrView = useMemo(() => {
+    if (!library || !arbitrableTCRViewAddr || !networkId) return
+    try {
+      return new ethers.Contract(arbitrableTCRViewAddr, _GTCRView, library)
+    } catch (err) {
+      console.error('Error instantiating gtcr view contract', err)
+      setError('Error instantiating view contract')
+    }
+  }, [arbitrableTCRViewAddr, library, networkId])
+
+  const gtcr = useMemo(() => {
+    if (!library || !tcrAddress || !networkId) return
+
+    try {
+      ethers.utils.getAddress(tcrAddress) // Test if address is valid
+      return new ethers.Contract(tcrAddress, _gtcr, library)
+    } catch (err) {
+      console.error('Error instantiating gtcr contract', err)
+      setError('Error setting up this TCR')
+    }
+  }, [library, networkId, tcrAddress])
+
+  // Cached for 1 day (meta evidence rarely changes but is not immutable).
+  const metaEvidenceQuery = useQuery({
+    queryKey: ['metaEvidence', 'standard', tcrAddress, networkId],
+    queryFn: async () => {
+      const fetchedData = await fetchStandardMetaEvidence(
+        tcrAddress,
+        networkId!,
+      )
+      if (!fetchedData) return null
+      // Written by whoever governs the list and rendered on every page of
+      // it: a title that is an object took the list and its entries down.
+      const file = await fetchMetaEvidenceFile(fetchedData.metaEvidenceURI)
+      return {
+        metaEvidence: { ...file, address: tcrAddress } as MetaEvidence,
+        connectedTCR: fetchedData.connectedTCR,
+      }
+    },
+    enabled: !!tcrAddress && !!networkId,
+    staleTime: 24 * 60 * 60 * 1000, // 1 day
+  })
+
+  const metaEvidence = metaEvidenceQuery.data?.metaEvidence
+  const connectedTCRAddr = metaEvidenceQuery.data?.connectedTCR
+
+  // On-chain TCR params (deposits, costs) — cached, rarely changes.
+  const arbitrableQuery = useQuery({
+    queryKey: ['arbitrableTCRData', 'standard', tcrAddress, networkId],
+    queryFn: async () => {
+      const data = (await gtcrView!.fetchArbitrable(
+        tcrAddress,
+      )) as ArbitrableTCRData
+      return { ...data, tcrAddress }
+    },
+    enabled: !!gtcrView && !!tcrAddress,
+    // A governor can change deposits and the court can change its cost while
+    // a page is open: read again after five minutes, so a dialog opened
+    // later quotes what the contract will ask for.
+    staleTime: 5 * 60_000,
+  })
+
+  const arbitrableTCRData = arbitrableQuery.data
+
+  // Derive deposits from arbitrable data (pure computation, no network).
+  const deposits = useMemo<{
+    arbitrationCost?: BigNumber
+    submissionDeposit?: BigNumber
+    submissionChallengeDeposit?: BigNumber
+    removalDeposit?: BigNumber
+    removalChallengeDeposit?: BigNumber
+  }>(() => {
+    if (!arbitrableTCRData) return {}
+
+    try {
+      const {
+        submissionBaseDeposit,
+        removalBaseDeposit,
+        submissionChallengeBaseDeposit,
+        removalChallengeBaseDeposit,
+        arbitrationCost: cost,
+      } = arbitrableTCRData
+
+      return {
+        arbitrationCost: cost,
+        submissionDeposit: submissionBaseDeposit.add(cost),
+        removalDeposit: removalBaseDeposit.add(cost),
+        submissionChallengeDeposit: submissionChallengeBaseDeposit.add(cost),
+        removalChallengeDeposit: removalChallengeBaseDeposit.add(cost),
+      }
+    } catch (err) {
+      console.error('Error computing arbitration cost:', err)
+      return {}
+    }
+  }, [arbitrableTCRData])
+
+  return {
+    gtcr,
+    metaEvidence,
+    // A file that failed with nothing to show: a failed background refetch
+    // keeps the page on the file it already has.
+    tcrError:
+      error ||
+      (metaEvidenceQuery.isError && !metaEvidenceQuery.data
+        ? 'Error fetching meta evidence'
+        : false),
+    /** The list's file did not load (the gateway or the indexer failed). */
+    metaEvidenceFailed: metaEvidenceQuery.isError && !metaEvidenceQuery.data,
+    retryMetaEvidence: metaEvidenceQuery.refetch,
+    /** The list's deposits and periods could not be read from the chain. */
+    paramsFailed: arbitrableQuery.isError && !arbitrableQuery.data,
+    retryParams: arbitrableQuery.refetch,
+    arbitrationCost: deposits.arbitrationCost,
+    submissionDeposit: deposits.submissionDeposit,
+    submissionChallengeDeposit: deposits.submissionChallengeDeposit,
+    removalDeposit: deposits.removalDeposit,
+    removalChallengeDeposit: deposits.removalChallengeDeposit,
+    tcrAddress,
+    gtcrView,
+    latestBlock,
+    connectedTCRAddr,
+    ...arbitrableTCRData,
+  }
+}
+
+export default useStandardTcrView

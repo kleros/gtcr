@@ -1,6 +1,6 @@
 import React, { useContext, useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
 import styled from 'styled-components'
-import { MAX_WIDTH_CONTENT } from 'styles/small-screen-style'
 import { BrowserRouter } from 'react-router-dom'
 import { WagmiProvider } from 'wagmi'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -13,9 +13,12 @@ import { StakeProvider } from 'contexts/stake-context'
 import { ThemeProvider, ThemeContext } from 'contexts/theme-context'
 import SmartContractWalletWarning from 'components/smart-contract-wallet-warning'
 import AppBar from 'components/layout/app-bar'
+import RefreshAfterTransactions from 'components/refresh-after-transactions'
+import WalletNetworkFollowsPage from 'components/wallet-network-follows-page'
+import Stage from 'components/layout/stage'
 import AppRouter from './app-router'
 import ErrorPage from 'pages/error-page'
-import { wagmiConfig } from 'config/wagmi'
+import { appKitModal, wagmiConfig } from 'config/wagmi'
 import { GraphqlBatcherProvider } from 'contexts/graphql-batcher'
 import AtlasProvider from 'contexts/atlas-provider'
 import { ToastContainer } from 'react-toastify'
@@ -32,14 +35,35 @@ const queryClient = new QueryClient({
   },
 })
 
+/*
+ * Toasts are rendered on <body>, outside #root. #root is a stacking layer of
+ * its own (global styles) and every dialog is portalled to <body> above it,
+ * so a toast left inside #root was painted under any open dialog: what a
+ * dialog has to say while it works (confirm in your wallet, sent, failed,
+ * and every error) went unseen. On <body> they also stay clickable while a
+ * modal marks #root inert.
+ */
 const ThemedToastContainer = () => {
   const themeContext = useContext(ThemeContext)
-  return (
+  return createPortal(
     <ToastContainer
       position="top-center"
       theme={themeContext?.isDarkMode ? 'dark' : 'light'}
-    />
+    />,
+    document.body,
   )
+}
+
+/*
+ * The wallet modal follows the app's theme. Left alone it is always dark:
+ * a black sheet over the Light theme's pale page.
+ */
+const WalletModalTheme = () => {
+  const isDarkMode = useContext(ThemeContext)?.isDarkMode
+  useEffect(() => {
+    appKitModal?.setThemeMode(isDarkMode ? 'dark' : 'light')
+  }, [isDarkMode])
+  return null
 }
 
 const StyledClickaway = styled.div<{ isMenuClosed: boolean }>`
@@ -53,14 +77,20 @@ const StyledClickaway = styled.div<{ isMenuClosed: boolean }>`
     properties.isMenuClosed ? 'none' : 'auto'};
 `
 
+/*
+ * Full bleed (round 2): the app runs edge to edge on the stage colour, with
+ * the aurora as a soft glow behind the top of the page (Stage). No frame, no
+ * corner or side borders. Horizontal overflow is clipped here, not scrolled.
+ */
 const StyledLayout = styled(Layout)`
+  position: relative;
+  z-index: 1;
   min-height: 100vh !important;
-  background: ${({ theme }) => theme.bodyBackground} !important;
-  overflow-x: hidden;
+  background: transparent !important;
+  overflow-x: clip;
 `
 
 const ContentContainer = styled.div`
-  max-width: ${MAX_WIDTH_CONTENT};
   margin: 0 auto;
   width: 100%;
   flex: 1;
@@ -69,21 +99,17 @@ const ContentContainer = styled.div`
 const App = () => {
   const [isMenuClosed, setIsMenuClosed] = useState(true)
 
-  // this useEffect redirects the URL to a correct one in case Court sent you to an incorrect URL using old ?chainId= syntax
+  // Court used to link to entries as /tcr/<list>/<entry>?chainId=<id>: send
+  // that one shape on to /tcr/<id>/<list>/<entry>. Any other URL that
+  // happens to carry ?chainId= is left alone (cutting it up by position
+  // crashed the app or sent it to a broken address).
   useEffect(() => {
-    const url = window.location.href
-    let tcrAddress, itemId, chainId
-
-    if (url.includes('?chainId=')) {
-      tcrAddress = url.split('/')[4]
-      itemId = url.split('/')[5].split('?')[0]
-      chainId = url.split('=')[1]
-      const redirectUrl = url.replace(
-        `/tcr/${tcrAddress}/${itemId}?chainId=${chainId}`,
-        `/tcr/${chainId}/${tcrAddress}/${itemId}`,
-      )
-      window.location.replace(redirectUrl)
-    }
+    const legacy = /^\/tcr\/(0x[0-9a-fA-F]{40})\/(0x[0-9a-fA-F]{64})\/?$/.exec(
+      window.location.pathname,
+    )
+    const chainId = new URLSearchParams(window.location.search).get('chainId')
+    if (legacy && chainId && /^\d+$/.test(chainId))
+      window.location.replace(`/tcr/${chainId}/${legacy[1]}/${legacy[2]}`)
   }, [])
 
   return (
@@ -109,6 +135,7 @@ const App = () => {
                 >
                   <WalletProvider>
                     <StakeProvider>
+                      <Stage />
                       <StyledLayout>
                         <SmartContractWalletWarning />
                         <AppBar />
@@ -127,6 +154,9 @@ const App = () => {
                       </StyledLayout>
                     </StakeProvider>
                     <ThemedToastContainer />
+                    <WalletModalTheme />
+                    <RefreshAfterTransactions />
+                    <WalletNetworkFollowsPage />
                   </WalletProvider>
                 </ErrorBoundary>
               </BrowserRouter>

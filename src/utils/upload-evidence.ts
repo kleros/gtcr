@@ -1,5 +1,6 @@
 import { Roles } from '@kleros/kleros-app'
 import { JSON_UPLOAD_ROLE } from 'utils/atlas-roles'
+import { confirmStored } from 'utils/confirm-stored'
 
 type UploadFile = (file: File, role: Roles) => Promise<string | null>
 
@@ -49,5 +50,7 @@ export const uploadEvidence = async ({
   )
   const ipfsPath = await uploadFile(evidenceFile, JSON_UPLOAD_ROLE)
   if (!ipfsPath) throw new Error('Failed to upload evidence to IPFS.')
+  // Jurors read this file: make sure it can be read before it is sent.
+  await confirmStored(ipfsPath)
   return ipfsPath
 }

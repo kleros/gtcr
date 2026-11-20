@@ -1,6 +1,16 @@
 import { useState, useEffect } from 'react'
 import { isSeerRegistry } from 'components/custom-registries/seer/is-seer-registry'
 
+const MARKETS_QUERY = `
+  query SeerMarkets($ids: [ID!]) {
+    markets(where: { id_in: $ids }) {
+      id
+      marketName
+      outcomes
+    }
+  }
+`
+
 const useSeerMarketsData = (
   chainId: string | number,
   tcrAddress: string,
@@ -14,7 +24,9 @@ const useSeerMarketsData = (
 
     const fetchSeerData = async () => {
       const contractAddresses = items
-        .map((item) => (item?.decodedData?.[1] as string)?.toLowerCase())
+        .map((item) => item?.decodedData?.[1])
+        .filter((value): value is string => typeof value === 'string')
+        .map((value) => value.toLowerCase())
         .filter(Boolean)
       if (contractAddresses.length === 0) return
 
@@ -26,21 +38,16 @@ const useSeerMarketsData = (
         else if (chain === '100')
           subgraphUrl = process.env.REACT_APP_SEER_SUBGRAPH_GNOSIS ?? ''
         if (!subgraphUrl) return
-        const query = `
-          {
-            markets(where: {id_in: [${contractAddresses
-              .map((addr) => `"${addr}"`)
-              .join(',')}]}) {
-              id
-              marketName
-              outcomes
-            }
-          }
-        `
+        // The addresses are the entries' own text, sent as a variable: glued
+        // into the query, one entry holding a quote broke the read for
+        // every market on the list.
         const response = await fetch(subgraphUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ query }),
+          body: JSON.stringify({
+            query: MARKETS_QUERY,
+            variables: { ids: contractAddresses },
+          }),
         })
         if (!response.ok) throw new Error('Seer subgraph query failed')
         const data = await response.json()
@@ -64,7 +71,7 @@ const useSeerMarketsData = (
       }
     }
 
-    fetchSeerData()
+    void fetchSeerData()
   }, [chainId, tcrAddress, items])
 
   return seerMarketsData

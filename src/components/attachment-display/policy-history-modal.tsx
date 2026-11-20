@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react'
 import styled, { DefaultTheme } from 'styled-components'
-import { useParams, useSearchParams } from 'react-router-dom'
+import { useLocation, useParams, useSearchParams } from 'react-router-dom'
 import { Modal, Skeleton } from 'components/ui'
 import useUrlChainId from 'hooks/use-url-chain-id'
 import { usePolicyHistory } from 'hooks/use-policy-history'
@@ -180,6 +180,8 @@ const PolicyHistoryModal: React.FC<PolicyHistoryModalProps> = ({ onClose }) => {
   const { tcrAddress } = useParams<{ tcrAddress: string }>()
   const chainId = useUrlChainId()
   const [searchParams, setSearchParams] = useSearchParams()
+  // Kept on each switch of policy, so Return still steps back to the page.
+  const { state } = useLocation()
 
   const currentPolicyTx = searchParams.get('policyTx')
   const currentAttachmentUrl = searchParams.get('attachment')
@@ -205,7 +207,7 @@ const PolicyHistoryModal: React.FC<PolicyHistoryModalProps> = ({ onClose }) => {
         newParams.set('isPolicy', 'true')
         return newParams
       },
-      { replace: true },
+      { replace: true, state },
     )
     onClose()
   }
@@ -235,7 +237,7 @@ const PolicyHistoryModal: React.FC<PolicyHistoryModalProps> = ({ onClose }) => {
           </EmptyState>
         ) : null}
         {!isLoading && !isError && history.length === 0 ? (
-          <EmptyState>No policy history found for this registry.</EmptyState>
+          <EmptyState>No policy history found for this list.</EmptyState>
         ) : null}
         {history.map((entry) => {
           const { endDate } = entry

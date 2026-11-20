@@ -1,36 +1,90 @@
 import React, { useState, useRef, useCallback } from 'react'
 import styled, { css } from 'styled-components'
+import { KitIcon } from './kit-icons'
+import {
+  edgeTransition,
+  ghostIconButton,
+  joinClassNames,
+  kitRadius,
+  kitTransition,
+  motionOk,
+  ringSpinner,
+} from './kit-styles'
+import {
+  DROP_HINT,
+  DROP_REPLACE,
+  FileDropVeil,
+  fileDropEdge,
+  useFileDrop,
+} from 'components/file-drop'
 
 const Wrapper = styled.div`
+  position: relative;
   display: block;
   margin: 8px 0;
 `
 
-const PictureCard = styled.div<{ $disabled?: boolean }>`
+/*
+ * The card a file is picked or dropped on: a raised well with a dashed
+ * hairline; on hover the line turns blue, the fill takes a faint blue tint
+ * and the icon lifts. A file held over it lights the edge instead
+ * (`fileDropEdge`), in the same language as the submit page's columns and
+ * the evidence form. One file at a time, as every field here holds one.
+ */
+const PictureCard = styled.button<{
+  $disabled?: boolean
+  $over?: boolean
+  $refusing?: boolean
+}>`
+  --edge-angle: 210deg;
+  position: relative;
   display: inline-flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  width: 100%;
-  min-height: 104px;
-  border: 1px dashed ${({ theme }) => theme.borderColor};
-  border-radius: 4px;
-  background: ${({ theme }) => theme.elevatedBackground};
-  cursor: ${({ $disabled }) => ($disabled ? 'not-allowed' : 'pointer')};
-  transition: border-color 0.3s;
-  color: ${({ theme }) => theme.textSecondary};
-  flex-direction: column;
-  font-size: 14px;
   gap: 8px;
+  width: 100%;
+  min-height: 112px;
+  padding: 16px;
+  border: 1px dashed var(--color-border-strong);
+  border-radius: ${kitRadius.well};
+  background: var(--color-raised);
+  color: var(--color-muted);
+  font-family: var(--font-sans);
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
+  cursor: ${({ $disabled }) => ($disabled ? 'not-allowed' : 'pointer')};
+  transition:
+    ${kitTransition('border-color', 'color', 'background', 'box-shadow')},
+    ${edgeTransition};
 
-  &:hover:not([disabled]) {
-    border-color: ${({ theme }) => theme.primaryColor};
+  > svg {
+    transition: transform var(--dur-control) var(--ease-spring);
   }
+
+  &:hover:not(:disabled) {
+    border-color: color-mix(in srgb, var(--color-primary) 65%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--color-primary) 6%,
+      var(--color-raised)
+    );
+    color: var(--color-text);
+  }
+
+  ${motionOk(css`
+    &:hover:not(:disabled) > svg {
+      transform: translateY(-2px);
+    }
+  `)}
 
   ${({ $disabled }) =>
     $disabled &&
     css`
-      opacity: 0.65;
+      opacity: 0.55;
     `}
+
+  ${fileDropEdge}
 `
 
 const TextTrigger = styled.span<{ $disabled?: boolean }>`
@@ -39,7 +93,7 @@ const TextTrigger = styled.span<{ $disabled?: boolean }>`
   ${({ $disabled }) =>
     $disabled &&
     css`
-      opacity: 0.65;
+      opacity: 0.55;
     `}
 `
 
@@ -54,35 +108,61 @@ const FileListWrapper = styled.div`
 const FileItem = styled.div<{ $status?: string }>`
   display: flex;
   align-items: center;
-  padding: 4px 8px;
-  margin-bottom: 4px;
-  border-radius: 4px;
-  font-size: 13px;
-  color: ${({ theme }) => theme.textPrimary};
-  background: ${({ theme }) => theme.elevatedBackground};
-  transition: background 0.2s;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 8px 0 14px;
+  margin-bottom: 6px;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius);
+  background: var(--color-raised);
+  color: var(--color-text);
+  font-size: var(--fs-small);
+  line-height: var(--lh-small);
 
-  ${({ $status, theme }) =>
+  ${({ $status }) =>
     $status === 'error' &&
     css`
-      color: ${theme.errorColor};
+      border-color: color-mix(in srgb, var(--color-danger) 55%, transparent);
+      color: var(--color-danger);
     `}
+`
+
+/** A dropped file the field cannot take, in the words the picker uses. */
+const DropProblem = styled.div`
+  margin-top: 8px;
+  color: var(--color-danger);
+  font-size: var(--fs-small);
+  line-height: var(--lh-small);
+`
+
+const FileIcon = styled.span`
+  display: inline-flex;
+  flex: 0 0 auto;
+  color: var(--color-faint);
 `
 
 const FileName = styled.span`
   flex: 1;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 `
 
-const RemoveBtn = styled.span`
-  margin-left: 8px;
-  cursor: pointer;
-  color: ${({ theme }) => theme.textSecondary};
-  font-size: 12px;
-  &:hover {
-    color: ${({ theme }) => theme.errorColor};
+const FileSpinner = styled.span`
+  ${ringSpinner}
+  width: 14px;
+  height: 14px;
+  color: var(--color-primary);
+`
+
+const RemoveBtn = styled.button`
+  ${ghostIconButton}
+  width: 24px;
+  height: 24px;
+
+  &:hover:not(:disabled) {
+    color: var(--color-danger);
   }
 `
 
@@ -94,16 +174,16 @@ const PictureCardList = styled.div`
 `
 
 const PictureCardItem = styled.div<{ $status?: string }>`
-  width: 104px;
-  height: 104px;
-  border: 1px solid ${({ theme }) => theme.borderColor};
-  border-radius: 4px;
-  overflow: hidden;
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: ${({ theme }) => theme.componentBackground};
+  width: 112px;
+  height: 112px;
+  overflow: hidden;
+  border: 1px solid var(--glass-border);
+  border-radius: ${kitRadius.well};
+  background: var(--color-raised);
 
   img {
     max-width: 100%;
@@ -118,21 +198,30 @@ const PictureCardItem = styled.div<{ $status?: string }>`
         content: '';
         position: absolute;
         inset: 0;
-        background: rgba(0, 0, 0, 0.3);
+        background: color-mix(in srgb, var(--color-surface) 70%, transparent);
       }
+    `}
+
+  ${({ $status }) =>
+    $status === 'error' &&
+    css`
+      border-color: color-mix(in srgb, var(--color-danger) 55%, transparent);
     `}
 `
 
-const PictureCardRemove = styled.span`
+const PictureCardRemove = styled.button`
+  ${ghostIconButton}
   position: absolute;
-  top: 2px;
+  top: 4px;
   right: 4px;
-  cursor: pointer;
-  color: ${({ theme }) => theme.textSecondary};
-  font-size: 14px;
   z-index: 1;
-  &:hover {
-    color: ${({ theme }) => theme.errorColor};
+  width: 26px;
+  height: 26px;
+  border-color: var(--glass-border);
+  background: var(--color-surface);
+
+  &:hover:not(:disabled) {
+    color: var(--color-danger);
   }
 `
 
@@ -186,7 +275,9 @@ const Upload: React.FC<UploadProps> = ({
   disabled = false,
 }) => {
   const [fileList, setFileList] = useState<UploadFile[]>([])
+  const [dropProblem, setDropProblem] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
+  const isPictureCard = listType === 'picture-card'
 
   const triggerChange = useCallback(
     (file: UploadFile, list: UploadFile[]) => {
@@ -263,25 +354,45 @@ const Upload: React.FC<UploadProps> = ({
     [customRequest, triggerChange],
   )
 
-  const handleInputChange = useCallback(
-    async (e: React.ChangeEvent<HTMLInputElement>) => {
-      const files = [...(e.target.files || [])]
-      for (const file of files) {
-        if (beforeUpload)
-          try {
-            const result = await beforeUpload(file)
-            if (result === false) continue
-          } catch {
-            continue
-          }
+  /*
+   * The one way in. A file dropped on the card goes through the caller's
+   * beforeUpload and the same processFile as one chosen with the picker, so
+   * the type and size rules, the toasts they raise and the field they write
+   * are identical however the file arrived.
+   */
+  const admit = useCallback(
+    async (file: File) => {
+      if (beforeUpload)
+        try {
+          if ((await beforeUpload(file)) === false) return
+        } catch {
+          return
+        }
 
-        processFile(file)
-      }
-      // Reset the input so the same file can be selected again
-      if (inputRef.current) inputRef.current.value = ''
+      processFile(file)
     },
     [beforeUpload, processFile],
   )
+
+  const handleInputChange = useCallback(
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      setDropProblem('')
+      const files = [...(e.target.files || [])]
+      for (const file of files) await admit(file)
+      // Reset the input so the same file can be selected again
+      if (inputRef.current) inputRef.current.value = ''
+    },
+    [admit],
+  )
+
+  const drop = useFileDrop<HTMLDivElement>({
+    blocked: disabled ? 'This upload is off right now.' : '',
+    onFile: (file) => {
+      setDropProblem('')
+      void admit(file)
+    },
+    onRefuse: setDropProblem,
+  })
 
   const handleTriggerClick = useCallback(() => {
     if (disabled) return
@@ -291,18 +402,26 @@ const Upload: React.FC<UploadProps> = ({
   const renderFileList = () => {
     if (!showUploadList || fileList.length === 0) return null
 
-    if (listType === 'picture-card')
+    if (isPictureCard)
       return (
-        <PictureCardList>
+        <PictureCardList className="ui-upload-list ui-upload-list-picture-card">
           {fileList.map((f) => (
-            <PictureCardItem key={f.uid} $status={f.status}>
+            <PictureCardItem
+              key={f.uid}
+              className="ui-upload-list-item"
+              $status={f.status}
+            >
               {f.thumbUrl ? (
                 <img src={f.thumbUrl} alt={f.name} />
               ) : (
                 <FileName>{f.name}</FileName>
               )}
-              <PictureCardRemove onClick={() => removeFile(f.uid)}>
-                &#10005;
+              <PictureCardRemove
+                type="button"
+                onClick={() => removeFile(f.uid)}
+                aria-label={`Remove ${f.name}`}
+              >
+                <KitIcon name="close" size={14} />
               </PictureCardRemove>
             </PictureCardItem>
           ))}
@@ -310,30 +429,68 @@ const Upload: React.FC<UploadProps> = ({
       )
 
     return (
-      <FileListWrapper>
+      <FileListWrapper className="ui-upload-list ui-upload-list-text">
         {fileList.map((f) => (
-          <FileItem key={f.uid} $status={f.status}>
+          <FileItem
+            key={f.uid}
+            className="ui-upload-list-item"
+            $status={f.status}
+          >
+            <FileIcon aria-hidden>
+              <KitIcon name="file" size={14} />
+            </FileIcon>
             <FileName>{f.name}</FileName>
-            <RemoveBtn onClick={() => removeFile(f.uid)}>&#10005;</RemoveBtn>
+            {f.status === 'uploading' && <FileSpinner aria-hidden />}
+            <RemoveBtn
+              type="button"
+              onClick={() => removeFile(f.uid)}
+              aria-label={`Remove ${f.name}`}
+            >
+              <KitIcon name="close" size={14} />
+            </RemoveBtn>
           </FileItem>
         ))}
       </FileListWrapper>
     )
   }
 
-  const trigger =
-    listType === 'picture-card' ? (
-      <PictureCard $disabled={disabled} onClick={handleTriggerClick}>
-        {children || '+'}
-      </PictureCard>
-    ) : (
-      <TextTrigger $disabled={disabled} onClick={handleTriggerClick}>
-        {children}
-      </TextTrigger>
-    )
+  const trigger = isPictureCard ? (
+    <PictureCard
+      type="button"
+      className="ui-upload-picture-card"
+      $disabled={disabled}
+      $over={drop.over}
+      $refusing={!!drop.refusal}
+      disabled={disabled}
+      onClick={handleTriggerClick}
+    >
+      {children || <KitIcon name="upload" size={20} />}
+    </PictureCard>
+  ) : (
+    <TextTrigger
+      className="ui-upload-trigger"
+      $disabled={disabled}
+      onClick={handleTriggerClick}
+    >
+      {children}
+    </TextTrigger>
+  )
 
   return (
-    <Wrapper className={`ui-upload${className ? ` ${className}` : ''}`}>
+    <Wrapper
+      className={joinClassNames(
+        'ui-upload',
+        isPictureCard && 'ui-upload-select-picture-card',
+        disabled && 'ui-upload-disabled',
+        className,
+      )}
+      {...drop.handlers}
+    >
+      {drop.over && (
+        <FileDropVeil $refusing={!!drop.refusal}>
+          {drop.refusal || (fileList.length > 0 ? DROP_REPLACE : DROP_HINT)}
+        </FileDropVeil>
+      )}
       <HiddenInput
         ref={inputRef}
         type="file"
@@ -343,9 +500,10 @@ const Upload: React.FC<UploadProps> = ({
         onChange={handleInputChange}
         disabled={disabled}
       />
-      {listType === 'picture-card' && renderFileList()}
+      {isPictureCard && renderFileList()}
       {trigger}
-      {listType !== 'picture-card' && renderFileList()}
+      {!isPictureCard && renderFileList()}
+      {dropProblem && <DropProblem role="alert">{dropProblem}</DropProblem>}
     </Wrapper>
   )
 }

@@ -1,5 +1,14 @@
 import React from 'react'
-import styled, { css, DefaultTheme } from 'styled-components'
+import styled, { css } from 'styled-components'
+import {
+  figureData,
+  haloDot,
+  joinClassNames,
+  kitType,
+  type Tone,
+  toneColor,
+  toneFor,
+} from './kit-styles'
 
 const Wrapper = styled.span`
   display: inline-flex;
@@ -7,67 +16,57 @@ const Wrapper = styled.span`
   vertical-align: middle;
 `
 
+/* Count bubble: tabular figure on the action fill; dot mode is an 8px glowing dot. */
 const CountBadge = styled.sup<{ $dot?: boolean }>`
   position: absolute;
-  top: -8px;
-  right: -8px;
+  top: -6px;
+  right: -6px;
   z-index: 1;
-  min-width: 20px;
-  height: 20px;
-  padding: 0 6px;
-  font-size: 12px;
-  line-height: 20px;
-  text-align: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border: 2px solid var(--color-bg);
+  border-radius: var(--radius-pill);
+  background: var(--color-primary-fill);
+  box-shadow: 0 0 10px -2px var(--color-primary);
+  color: var(--color-on-primary);
+  font-family: var(--font-figure);
+  font-size: ${kitType.micro};
+  line-height: 1;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
   white-space: nowrap;
-  color: #fff;
-  background: ${({ theme }) => theme.errorColor};
-  border-radius: 10px;
-  box-shadow: 0 0 0 1px ${({ theme }) => theme.componentBackground};
 
   ${({ $dot }) =>
     $dot &&
     css`
+      top: -3px;
+      right: -3px;
       min-width: 8px;
       width: 8px;
       height: 8px;
       padding: 0;
-      border-radius: 50%;
-      top: -4px;
-      right: -4px;
     `}
 `
 
 const StatusWrapper = styled.span`
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  line-height: 1;
+  gap: 8px;
+  min-width: 0;
 `
 
-const STATUS_COLORS: Record<string, keyof DefaultTheme> = {
-  success: 'successColor',
-  processing: 'primaryColor',
-  error: 'errorColor',
-  warning: 'warningColor',
-  default: 'badgeFallbackColor',
-}
-
-const StatusDot = styled.span<{ $color?: string; $status?: string }>`
-  display: inline-block;
-  width: 4px;
-  height: 4px;
-  border-radius: 50%;
-  flex-shrink: 0;
-  background: ${({ $color, $status, theme }) => {
-    if ($color) return $color
-    const key = STATUS_COLORS[$status || ''] || STATUS_COLORS.default
-    return theme[key]
-  }};
+/* 8px status dot with a halo in its own tone; always next to its words. */
+const StatusDot = styled.span<{ $tone: Tone; $raw?: string }>`
+  ${({ $tone, $raw }) => haloDot($raw || toneColor($tone))}
 `
 
 const StatusText = styled.span`
-  color: inherit;
-  font-size: 14px;
+  ${figureData}
+  color: var(--color-text);
 `
 
 interface BadgeProps {
@@ -91,22 +90,42 @@ const Badge: React.FC<BadgeProps> = ({
   style,
   className,
 }) => {
-  // Status mode (no children wrapper)
-  if (status || (text !== undefined && !children))
+  // Status mode: dot plus label, no children wrapper
+  if (status || (text !== undefined && !children)) {
+    const tone = toneFor(color) || toneFor(status) || 'neutral'
+    const raw = color && !toneFor(color) ? color : undefined
     return (
-      <StatusWrapper style={style} className={className}>
-        <StatusDot $status={status} $color={color} />
-        {text && <StatusText>{text}</StatusText>}
+      <StatusWrapper
+        style={style}
+        className={joinClassNames('ui-badge', 'ui-badge-status', className)}
+      >
+        <StatusDot
+          className="ui-badge-status-dot"
+          $tone={tone}
+          $raw={raw}
+          aria-hidden
+        />
+        {text && (
+          <StatusText className="ui-badge-status-text">{text}</StatusText>
+        )}
       </StatusWrapper>
     )
+  }
 
-  // Count/dot mode (wrapping children)
+  // Count or dot mode, wrapping children
   const showBadge = dot || (count !== undefined && count !== 0)
 
   return (
-    <Wrapper style={style} className={className}>
+    <Wrapper style={style} className={joinClassNames('ui-badge', className)}>
       {children}
-      {showBadge && <CountBadge $dot={dot}>{!dot ? count : null}</CountBadge>}
+      {showBadge && (
+        <CountBadge
+          className={dot ? 'ui-badge-count ui-badge-dot' : 'ui-badge-count'}
+          $dot={dot}
+        >
+          {dot ? null : count}
+        </CountBadge>
+      )}
     </Wrapper>
   )
 }

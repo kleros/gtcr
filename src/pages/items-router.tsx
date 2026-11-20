@@ -1,26 +1,27 @@
 import React, { useContext, useEffect, Suspense, lazy } from 'react'
-import { TCRViewProvider } from 'contexts/tcr-view-context'
-import { LightTCRViewProvider } from 'contexts/light-tcr-view-context'
+import { StandardTCRViewProvider } from 'contexts/standard-tcr-view-context'
 import { useParams, useSearchParams } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { STALE_TIME } from 'consts'
 import Loading from 'components/loading'
 import ErrorPage from 'pages/error-page'
+import ClassicRetired from 'pages/classic-retired'
 import AttachmentDisplay from 'components/attachment-display'
 import useTcrNetwork from 'hooks/use-tcr-network'
-import useCheckLightCurate from 'hooks/use-check-light-curate'
+import useCheckStandardCurate from 'hooks/use-check-standard-curate'
 import useUrlChainId from 'hooks/use-url-chain-id'
+import { useAttachmentPlace } from 'hooks/use-attachment'
 import { usePolicyHistory } from 'hooks/use-policy-history'
 import { StakeContext } from 'contexts/stake-context'
 import { useGraphqlBatcher } from 'contexts/graphql-batcher'
-import { LIGHT_ITEMS_QUERY, CLASSIC_REGISTRY_ITEMS_QUERY } from 'utils/graphql'
-import { searchStrToFilterObjLight } from 'utils/filters'
+import { getChainById } from 'config/chains'
+import { STANDARD_ITEMS_QUERY } from 'utils/graphql'
+import { searchStrToFilterObjStandard } from 'utils/filters'
+import { getAllowedAttachmentUrl } from 'utils/url-validation'
 
-const LIGHT_ITEMS_PER_PAGE = 40
-const CLASSIC_MAX_ENTITIES = 1000
+const STANDARD_ITEMS_PER_PAGE = 40
 
-const LightItems = lazy(() => import('./light-items/index'))
-const Items = lazy(() => import('./items/index'))
+const StandardItems = lazy(() => import('./standard-items/index'))
 const PermanentItems = lazy(() => import('./permanent-items/index'))
 
 function computeItemsWhere(queryOptions: Record<string, any>, addr: string) {
@@ -67,20 +68,36 @@ const ItemsRouter = () => {
   const { tcrAddress } = useParams<{
     tcrAddress: string
   }>()
-  const chainId = useUrlChainId()
+  const urlChainId = useUrlChainId()
+  // The URL's chain when Curate runs on it. Any other gets its own page
+  // (below) at once, and nothing is asked for it.
+  const chainId = urlChainId && getChainById(urlChainId) ? urlChainId : null
   const [searchParams] = useSearchParams()
-  const isAttachmentOpen = searchParams.has('attachment')
-  const { isLightCurate, isClassicCurate, isPermanentCurate, checking } =
-    useCheckLightCurate()
-  useTcrNetwork()
-  const stakeContext = useContext(StakeContext)
+  // A file the viewer cannot show (no value, or not on the IPFS gateway)
+  // leaves the list in view.
+  const isAttachmentOpen = !!getAllowedAttachmentUrl(
+    searchParams.get('attachment'),
+  )
+  useAttachmentPlace(isAttachmentOpen)
+  const {
+    isStandardCurate,
+    isClassicCurate,
+    isPermanentCurate,
+    checking,
+    error,
+    retry,
+    recheck,
+  } = useCheckStandardCurate()
+  // The wallet is asked once the list's chain is known (useTcrNetwork).
+  useTcrNetwork(!checking)
+  const setIsPermanent = useContext(StakeContext)?.setIsPermanent
   const queryClient = useQueryClient()
   const { graphqlBatcher } = useGraphqlBatcher()
 
   useEffect(() => {
-    stakeContext?.setIsPermanent(isPermanentCurate)
-    return () => stakeContext?.setIsPermanent(false)
-  }, [isPermanentCurate, stakeContext])
+    setIsPermanent?.(isPermanentCurate)
+    return () => setIsPermanent?.(false)
+  }, [isPermanentCurate, setIsPermanent])
 
   // Prefetch the latest policy timestamp so the "(updated X ago)" badge
   // is warm in cache by the time the banner renders.
@@ -93,90 +110,96 @@ const ItemsRouter = () => {
     if (!chainId || !tcrAddress) return
     const addr = tcrAddress.toLowerCase()
     const search = window.location.search || ''
-    const queryOptions = searchStrToFilterObjLight(search)
+    const queryOptions = searchStrToFilterObjStandard(search)
     const orderDirection = queryOptions.oldestFirst ? 'asc' : 'desc'
     const page = Number(queryOptions.page) || 1
     const where = computeItemsWhere(queryOptions, addr)
 
-    const lightVars = {
-      offset: (page - 1) * LIGHT_ITEMS_PER_PAGE,
-      limit: LIGHT_ITEMS_PER_PAGE,
+    const standardVars = {
+      offset: (page - 1) * STANDARD_ITEMS_PER_PAGE,
+      limit: STANDARD_ITEMS_PER_PAGE,
       order_by: [{ latestRequestSubmissionTime: orderDirection }],
       where,
       registryId: addr,
     }
     queryClient.prefetchQuery({
-      queryKey: ['lightItems', lightVars],
+      queryKey: ['standardItems', standardVars],
       queryFn: () =>
         graphqlBatcher.fetch({
           id: crypto.randomUUID(),
-          document: LIGHT_ITEMS_QUERY,
-          variables: lightVars,
-          chainId,
-        }),
-      staleTime: STALE_TIME,
-    })
-
-    const classicVars = {
-      offset: (page - 1) * LIGHT_ITEMS_PER_PAGE,
-      limit: CLASSIC_MAX_ENTITIES,
-      order_by: [{ latestRequestSubmissionTime: orderDirection }],
-      where,
-    }
-    queryClient.prefetchQuery({
-      queryKey: ['classicItems', classicVars],
-      queryFn: () =>
-        graphqlBatcher.fetch({
-          id: crypto.randomUUID(),
-          document: CLASSIC_REGISTRY_ITEMS_QUERY,
-          variables: classicVars,
+          document: STANDARD_ITEMS_QUERY,
+          variables: standardVars,
           chainId,
         }),
       staleTime: STALE_TIME,
     })
   }, [chainId, tcrAddress, queryClient, graphqlBatcher])
 
-  if (isAttachmentOpen) return <AttachmentDisplay />
-
-  if (checking) return <Loading />
-
-  if (!tcrAddress)
+  if (!chainId)
     return (
       <ErrorPage
         code="404"
-        message="The gods are having trouble finding this list."
+        title="Chain not supported"
+        message="Curate runs on Ethereum, Gnosis and Sepolia."
       />
     )
 
-  if (isLightCurate)
-    return (
-      <Suspense fallback={<Loading />}>
-        <LightTCRViewProvider tcrAddress={tcrAddress}>
-          <LightItems />
-        </LightTCRViewProvider>
-      </Suspense>
-    )
-  if (isClassicCurate)
-    return (
-      <Suspense fallback={<Loading />}>
-        <TCRViewProvider tcrAddress={tcrAddress}>
-          <Items />
-        </TCRViewProvider>
-      </Suspense>
-    )
-  if (isPermanentCurate)
-    return (
-      <Suspense fallback={<Loading />}>
-        <PermanentItems />
-      </Suspense>
+  // The viewer shows in the list's place. What the list shows stays mounted
+  // under it, hidden, so its search, filters and place are there on Return.
+  const withViewer = (list: React.ReactNode) => (
+    <>
+      {isAttachmentOpen && <AttachmentDisplay />}
+      <div hidden={isAttachmentOpen}>{list}</div>
+    </>
+  )
+
+  if (checking) return withViewer(<Loading />)
+
+  if (error)
+    return withViewer(
+      <ErrorPage
+        code="Error"
+        title="This list did not load"
+        message="The indexer did not answer."
+        onRetry={retry}
+      />,
     )
 
-  return (
+  if (!tcrAddress)
+    return withViewer(
+      <ErrorPage
+        code="Error"
+        title="List not found"
+        message="No Curate list answers at this address on this chain."
+      />,
+    )
+
+  if (isStandardCurate)
+    return withViewer(
+      <Suspense fallback={<Loading />}>
+        <StandardTCRViewProvider tcrAddress={tcrAddress}>
+          <StandardItems />
+        </StandardTCRViewProvider>
+      </Suspense>,
+    )
+  if (isClassicCurate)
+    return withViewer(
+      <ClassicRetired chainId={chainId} tcrAddress={tcrAddress} />,
+    )
+  if (isPermanentCurate)
+    return withViewer(
+      <Suspense fallback={<Loading />}>
+        <PermanentItems />
+      </Suspense>,
+    )
+
+  return withViewer(
     <ErrorPage
       code="Error"
-      title="Registry Not Found"
-      message="This registry could not be found on any subgraph. The subgraph endpoint may be down or the registry address may be invalid."
-    />
+      title="List not found"
+      message="No Curate list was found at this address on this chain. A list created in the last few minutes may not be indexed yet: check again in a minute."
+      onRetry={recheck}
+    />,
   )
 }
 

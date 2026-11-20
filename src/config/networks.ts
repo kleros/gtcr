@@ -23,7 +23,6 @@ export const DEFAULT_NETWORK = DEFAULT_CHAIN.id
 export const NETWORKS_INFO = Object.freeze({
   [mainnet.id]: {
     name: mainnet.name,
-    color: '#29b6af',
     chainId: mainnet.id,
     nativeCurrency: mainnet.nativeCurrency,
     rpc: mainnet.rpcUrls?.default?.http ?? [],
@@ -36,7 +35,6 @@ export const NETWORKS_INFO = Object.freeze({
   },
   [gnosis.id]: {
     name: gnosis.name,
-    color: '#E6A817',
     chainId: gnosis.id,
     nativeCurrency: gnosis.nativeCurrency,
     rpc: gnosis.rpcUrls?.default?.http ?? [],
@@ -49,7 +47,6 @@ export const NETWORKS_INFO = Object.freeze({
   },
   [sepolia.id]: {
     name: sepolia.name,
-    color: '#9B59B6',
     chainId: sepolia.id,
     nativeCurrency: sepolia.nativeCurrency,
     rpc: sepolia.rpcUrls?.default?.http ?? [],

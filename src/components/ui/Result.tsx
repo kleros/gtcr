@@ -1,48 +1,89 @@
 import React from 'react'
-import styled, { useTheme } from 'styled-components'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import {
-  faCheckCircle,
-  faExclamationTriangle,
-  faTimesCircle,
-  faInfoCircle,
-} from '@fortawesome/free-solid-svg-icons'
+import styled, { keyframes } from 'styled-components'
+import { KitIcon, type KitIconName } from './kit-icons'
+import { joinClassNames, kitType } from './kit-styles'
 
 type ResultStatus = 'success' | 'error' | 'warning' | 'info'
 
-const statusIcons: Record<ResultStatus, typeof faCheckCircle> = {
-  success: faCheckCircle,
-  error: faTimesCircle,
-  warning: faExclamationTriangle,
-  info: faInfoCircle,
+const STATUS: Record<ResultStatus, { color: string; icon: KitIconName }> = {
+  success: { color: 'var(--color-success)', icon: 'check-circle' },
+  error: { color: 'var(--color-danger)', icon: 'error-circle' },
+  warning: { color: 'var(--color-warning)', icon: 'warning-triangle' },
+  info: { color: 'var(--color-primary)', icon: 'info-circle' },
 }
 
+const rise = keyframes`
+  from { opacity: 0; filter: blur(6px); transform: scale(0.9); }
+  to { opacity: 1; filter: blur(0); transform: scale(1); }
+`
+
+/*
+ * Result, v2: the status glyph standing in a soft halo of its own colour
+ * (no disc, no ring, no tile), a display title, one muted line and the
+ * next action. The glyph fades up out of a blur.
+ */
 const Wrapper = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 40px 24px;
   text-align: center;
-  padding: 48px 32px;
 `
 
 const IconWrapper = styled.div<{ $color: string }>`
-  font-size: 48px;
-  margin-bottom: 24px;
+  position: relative;
+  isolation: isolate;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  margin-bottom: 14px;
   color: ${({ $color }) => $color};
+  filter: drop-shadow(
+    0 0 10px ${({ $color }) => `color-mix(in srgb, ${$color} 45%, transparent)`}
+  );
+  animation: ${rise} 520ms var(--ease-out) both;
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: -18px;
+    z-index: -1;
+    border-radius: var(--radius-pill);
+    background: radial-gradient(
+      closest-side,
+      ${({ $color }) => `color-mix(in srgb, ${$color} 22%, transparent)`},
+      transparent
+    );
+    pointer-events: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
 `
 
 const Title = styled.div`
-  font-size: 24px;
+  color: var(--color-text);
+  font-family: var(--font-display);
+  font-size: ${kitType.titleMd};
+  line-height: ${kitType.titleMdLine};
   font-weight: 500;
-  color: ${({ theme }) => theme.textPrimary || 'rgba(0, 0, 0, 0.85)'};
-  margin-bottom: 8px;
+  letter-spacing: -0.02em;
+  overflow-wrap: anywhere;
 `
 
 const SubTitle = styled.div`
-  font-size: 14px;
-  color: ${({ theme }) => theme.textSecondary || 'rgba(0, 0, 0, 0.45)'};
-  margin-bottom: 24px;
+  max-width: 48ch;
+  margin-top: 8px;
+  color: var(--color-muted);
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
 `
 
 const Extra = styled.div`
-  margin-top: 24px;
+  margin-top: 22px;
 `
 
 interface ResultProps {
@@ -62,26 +103,24 @@ const Result: React.FC<ResultProps> = ({
   subTitle,
   extra,
   icon,
+  className,
   ...rest
 }) => {
-  const theme = useTheme()
-  const statusColors: Record<ResultStatus, string> = {
-    success: theme.successColor,
-    error: theme.errorColor,
-    warning: theme.warningColor,
-    info: theme.infoColor,
-  }
-  const color = statusColors[status] || statusColors.info
-  const statusIcon = statusIcons[status] || statusIcons.info
+  const role = STATUS[status] || STATUS.info
 
   return (
-    <Wrapper {...rest}>
-      <IconWrapper $color={color}>
-        {icon || <FontAwesomeIcon icon={statusIcon} />}
+    <Wrapper
+      className={joinClassNames('ui-result', `ui-result-${status}`, className)}
+      {...rest}
+    >
+      <IconWrapper className="ui-result-icon" $color={role.color}>
+        {icon || <KitIcon name={role.icon} size={32} />}
       </IconWrapper>
-      {title && <Title>{title}</Title>}
-      {subTitle && <SubTitle>{subTitle}</SubTitle>}
-      {extra && <Extra>{extra}</Extra>}
+      {title && <Title className="ui-result-title">{title}</Title>}
+      {subTitle && (
+        <SubTitle className="ui-result-subtitle">{subTitle}</SubTitle>
+      )}
+      {extra && <Extra className="ui-result-extra">{extra}</Extra>}
     </Wrapper>
   )
 }

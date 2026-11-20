@@ -4,12 +4,40 @@
 /index.html
   Cache-Control: no-cache
 
-# Service worker - always revalidate (even though we're unregistering it,
-# this ensures any old cached service-worker.js gets refreshed)
+# Service worker: the kill switch that removes the old Create React App
+# worker (public/service-worker.js). Always revalidate, so the old worker's
+# update check gets this file rather than a cached copy.
 /service-worker.js
   Cache-Control: no-cache
 
-# Static assets with content hashes - cache indefinitely (1 year)
-# These filenames change when content changes, so they're safe to cache
-/static/*
-  Cache-Control: public, max-age=31536000, immutable
+/robots.txt
+  Content-Type: text/plain; charset=utf-8
+  Cache-Control: public, max-age=3600
+
+/llms.txt
+  Content-Type: text/plain; charset=utf-8
+  Cache-Control: public, max-age=3600
+
+/llms-full.txt
+  Content-Type: text/plain; charset=utf-8
+  Cache-Control: public, max-age=3600
+
+/.well-known/llms.txt
+  Content-Type: text/plain; charset=utf-8
+  Cache-Control: public, max-age=3600
+
+/curate-agent-context.md
+  Content-Type: text/markdown; charset=utf-8
+  Cache-Control: public, max-age=3600
+
+/sitemap.xml
+  Content-Type: application/xml; charset=utf-8
+  Cache-Control: public, max-age=3600
+
+/skills/kleros-curate/SKILL.md
+  Content-Type: text/markdown; charset=utf-8
+  Cache-Control: public, max-age=3600
+
+# Vite's build files (/assets/…) are cached for a year by one rule per file,
+# appended to the build's copy of this file by vite.config.ts: a /assets/*
+# rule would also cover the 404 a missing file gets (public/_redirects).

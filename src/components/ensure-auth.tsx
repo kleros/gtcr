@@ -3,7 +3,7 @@ import { Button } from 'components/ui'
 import { useAccount } from 'wagmi'
 import { useAtlasProvider } from '@kleros/kleros-app'
 import { appKitModal } from 'config/wagmi'
-import { infoToast, successToast, errorToast } from 'utils/wrap-with-toast'
+import { signInWithToast } from 'utils/wrap-with-toast'
 
 /**
  * Wraps an action button and shows a "Connect" or "Sign in" button
@@ -18,15 +18,11 @@ const EnsureAuth = ({ children }: EnsureAuthProps) => {
   const { isConnected } = useAccount()
   const { isVerified, isSigningIn, authoriseUser } = useAtlasProvider()
 
-  const handleSignIn = useCallback(() => {
-    infoToast('Signing in...')
-    authoriseUser()
-      .then(() => successToast('Signed in successfully.'))
-      .catch((err) => {
-        console.error(err)
-        errorToast(`Sign-in failed: ${err?.message ?? 'unknown error'}`)
-      })
-  }, [authoriseUser])
+  // A declined signature gets a short note, not a sticky error.
+  const handleSignIn = useCallback(
+    () => signInWithToast(authoriseUser),
+    [authoriseUser],
+  )
 
   if (!isConnected)
     return (

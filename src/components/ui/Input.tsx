@@ -1,150 +1,203 @@
 import React, { useRef, useEffect, useCallback } from 'react'
 import styled, { css } from 'styled-components'
+import { useFormItemControl } from './form-item-context'
+import { KitIcon } from './kit-icons'
+import {
+  fieldFocus,
+  fieldFocusRing,
+  fieldHover,
+  fieldSurface,
+  figureData,
+  ghostIconButton,
+  joinClassNames,
+  kitTransition,
+} from './kit-styles'
+
+/*
+ * Input, v2: a raised field, 44px tall with radius 12 and a hairline; focus
+ * tints the fill, turns the edge blue (2px, 3:1 or better) and lays a soft
+ * halo around it. Addons sit inside the same field, split off by a
+ * hairline, so units read as part of the value.
+ *
+ * The global stylesheet forces surface, border and radius on text inputs and
+ * textareas with !important. The fill, border, radius and ring below are
+ * written at double-class specificity with !important so the field keeps its
+ * own look; every other property stays overridable by styled(Input).
+ */
+const fieldOverrides = css`
+  && {
+    border-color: var(--glass-border) !important;
+    border-radius: var(--radius) !important;
+    background: var(--color-raised) !important;
+    box-shadow: none !important;
+  }
+
+  /* Hover never outranks focus: a focused field keeps its blue edge. */
+  &&:hover:not(:disabled):not(:focus) {
+    border-color: var(--color-border-strong) !important;
+  }
+
+  &&:focus,
+  &&:focus-visible {
+    border-color: var(--color-primary) !important;
+    background: color-mix(
+      in srgb,
+      var(--color-primary) 5%,
+      var(--color-raised)
+    ) !important;
+    box-shadow: ${fieldFocusRing} !important;
+    outline: none;
+  }
+
+  &&:disabled {
+    border-color: var(--glass-border) !important;
+    background: transparent !important;
+  }
+`
 
 const inputBaseStyles = css`
+  ${fieldSurface}
   width: 100%;
-  padding: 4px 11px;
-  font-size: 14px;
-  line-height: 1.5;
-  color: ${({ theme }) => theme.textPrimary};
-  background: ${({ theme }) => theme.componentBackground};
-  border: 1px solid ${({ theme }) => theme.borderColor};
-  border-radius: 4px;
-  outline: none;
-  transition: all 0.3s;
-  box-sizing: border-box;
+  height: 44px;
+  padding: 0 14px;
+  font-family: var(--font-sans);
+  font-size: var(--fs-body-lg);
+  line-height: var(--lh-body-lg);
+  letter-spacing: -0.005em;
 
   &::placeholder {
-    color: ${({ theme }) => theme.textTertiary};
-  }
-
-  &:hover {
-    border-color: ${({ theme }) => theme.primaryColor};
-  }
-
-  &:focus {
-    border-color: ${({ theme }) => theme.primaryColor};
-    box-shadow: 0 0 0 2px ${({ theme }) => theme.focusShadowColor};
+    color: var(--color-faint);
   }
 
   &:disabled {
-    background: ${({ theme }) => theme.elevatedBackground};
-    color: ${({ theme }) => theme.disabledColor};
+    color: var(--color-muted);
     cursor: not-allowed;
   }
+
+  ${fieldOverrides}
 `
 
 const sizeMap: Record<string, ReturnType<typeof css>> = {
   small: css`
-    height: 24px;
-    padding: 0 7px;
-    font-size: 12px;
+    height: 36px;
+    padding: 0 12px;
+    font-size: var(--fs-small);
+    line-height: var(--lh-small);
   `,
   default: css`
-    height: 32px;
+    height: 44px;
   `,
   large: css`
-    height: 40px;
-    padding: 6px 11px;
-    font-size: 16px;
+    height: 48px;
+    font-size: var(--fs-subheading);
+    line-height: var(--lh-subheading);
   `,
 }
 
 const StyledInput = styled.input<{ $size?: string }>`
   ${inputBaseStyles}
-  ${({ $size }) => sizeMap[$size || 'default']}
+  ${({ $size }) => sizeMap[$size || 'default'] || sizeMap.default}
 `
 
 const InputWrapper = styled.span`
+  position: relative;
   display: inline-flex;
   align-items: center;
   width: 100%;
-  position: relative;
+  min-width: 0;
 `
 
+/*
+ * With addons the group is the field: it carries the fill, the hairline and
+ * the focus ring, and the input inside goes transparent.
+ */
 const AddonWrapper = styled.span<{
   $hasAddonBefore?: boolean
   $hasAddonAfter?: boolean
 }>`
+  ${fieldSurface}
   display: inline-flex;
-  align-items: center;
+  align-items: stretch;
   width: 100%;
+  min-width: 0;
+  overflow: hidden;
 
-  & > input {
-    ${({ $hasAddonBefore }) =>
-      $hasAddonBefore &&
-      css`
-        border-top-left-radius: 0;
-        border-bottom-left-radius: 0;
-      `}
-    ${({ $hasAddonAfter }) =>
-      $hasAddonAfter &&
-      css`
-        border-top-right-radius: 0;
-        border-bottom-right-radius: 0;
-      `}
+  &:hover:not(:focus-within) {
+    ${fieldHover}
+  }
+
+  &:focus-within {
+    ${fieldFocus}
+  }
+
+  && .ui-input.ui-input,
+  && .ui-input.ui-input:hover,
+  && .ui-input.ui-input:focus {
+    height: 100%;
+    min-height: 0;
+    border-color: transparent !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
   }
 `
 
-const Addon = styled.span`
-  padding: 0 11px;
-  height: 32px;
+/* Units and symbols: tabular figures, quiet, inside the field. */
+const Addon = styled.span<{ $small?: boolean }>`
   display: inline-flex;
   align-items: center;
-  background: ${({ theme }) => theme.elevatedBackground};
-  border: 1px solid ${({ theme }) => theme.borderColor};
-  color: ${({ theme }) => theme.textPrimary};
-  font-size: 14px;
+  flex: 0 0 auto;
+  height: ${({ $small }) => ($small ? '34px' : '42px')};
+  padding: 0 14px;
+  color: var(--color-faint);
+  ${figureData}
   white-space: nowrap;
 
   &.ui-input-addon-before {
-    border-right: 0;
-    border-radius: 4px 0 0 4px;
+    border-right: 1px solid var(--glass-border);
   }
   &.ui-input-addon-after {
-    border-left: 0;
-    border-radius: 0 4px 4px 0;
+    border-left: 1px solid var(--glass-border);
   }
 `
 
 const PrefixIcon = styled.span`
   position: absolute;
-  left: 11px;
+  left: 14px;
   top: 50%;
-  transform: translateY(-50%);
-  color: ${({ theme }) => theme.textTertiary};
+  z-index: 1;
   display: flex;
   align-items: center;
-  z-index: 1;
+  color: var(--color-faint);
+  transform: translateY(-50%);
+  pointer-events: none;
+  transition: ${kitTransition('color')};
+
+  ${InputWrapper}:focus-within > & {
+    color: var(--color-primary);
+  }
 `
 
 const SuffixIcon = styled.span`
   position: absolute;
-  right: 11px;
+  right: 14px;
   top: 50%;
-  transform: translateY(-50%);
-  color: ${({ theme }) => theme.textTertiary};
+  z-index: 1;
   display: flex;
   align-items: center;
-  z-index: 1;
+  color: var(--color-faint);
+  transform: translateY(-50%);
 `
 
-const ClearButton = styled.span<{ $hasSuffix?: boolean }>`
+const ClearButton = styled.button<{ $hasSuffix?: boolean }>`
+  ${ghostIconButton}
   position: absolute;
-  right: ${({ $hasSuffix }) => ($hasSuffix ? '30px' : '11px')};
+  right: ${({ $hasSuffix }) => ($hasSuffix ? '38px' : '10px')};
   top: 50%;
-  transform: translateY(-50%);
-  cursor: pointer;
-  color: ${({ theme }) => theme.textTertiary};
-  font-size: 12px;
-  display: flex;
-  align-items: center;
   z-index: 1;
-  line-height: 1;
-
-  &:hover {
-    color: ${({ theme }) => theme.textSecondary};
-  }
+  width: 24px;
+  height: 24px;
+  transform: translateY(-50%);
 `
 
 interface InputProps extends Omit<
@@ -213,10 +266,21 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
       onPressEnter,
       onBlur,
       size,
+      'aria-label': ariaLabel,
+      'aria-labelledby': ariaLabelledby,
+      'aria-describedby': ariaDescribedby,
+      'aria-invalid': ariaInvalid,
       ...rest
     },
     ref,
   ) => {
+    const a11y = useFormItemControl({
+      id,
+      'aria-label': ariaLabel,
+      'aria-labelledby': ariaLabelledby,
+      'aria-describedby': ariaDescribedby,
+      'aria-invalid': ariaInvalid,
+    })
     const inputRef = useRef<HTMLInputElement>(null)
     const combinedRef = (ref || inputRef) as React.RefObject<HTMLInputElement>
 
@@ -239,12 +303,14 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
         } as React.ChangeEvent<HTMLInputElement>
         onChange(event)
       }
-    }, [onChange])
+      combinedRef.current?.focus()
+    }, [onChange, combinedRef])
 
     const hasAddon = addonBefore || addonAfter
-    const paddingLeft = prefix ? '30px' : undefined
+    const small = size === 'small'
+    const paddingLeft = prefix ? '40px' : undefined
     const paddingRight =
-      suffix && allowClear ? '52px' : suffix || allowClear ? '30px' : undefined
+      suffix && allowClear ? '66px' : suffix || allowClear ? '40px' : undefined
 
     const inputElement = (
       <StyledInput
@@ -255,59 +321,74 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
         placeholder={placeholder}
         disabled={disabled}
         step={step}
-        id={id}
         onKeyDown={handleKeyDown}
         onBlur={onBlur}
         $size={size}
         style={
-          !hasAddon
-            ? { ...style, paddingLeft, paddingRight }
-            : { paddingLeft, paddingRight }
+          hasAddon
+            ? { paddingLeft, paddingRight }
+            : { ...style, paddingLeft, paddingRight }
         }
-        className={hasAddon ? undefined : className}
+        className={
+          hasAddon ? 'ui-input' : joinClassNames('ui-input', className)
+        }
         {...rest}
+        {...a11y}
       />
+    )
+
+    const field = (
+      <InputWrapper className="ui-input-wrapper">
+        {prefix && (
+          <PrefixIcon className="ui-input-prefix">{prefix}</PrefixIcon>
+        )}
+        {inputElement}
+        {allowClear && value && (
+          <ClearButton
+            type="button"
+            className="ui-input-clear"
+            $hasSuffix={Boolean(suffix)}
+            onClick={handleClear}
+            aria-label="Clear"
+          >
+            <KitIcon name="close" size={14} />
+          </ClearButton>
+        )}
+        {suffix && (
+          <SuffixIcon className="ui-input-suffix">{suffix}</SuffixIcon>
+        )}
+      </InputWrapper>
     )
 
     if (hasAddon)
       return (
         <AddonWrapper
-          $hasAddonBefore={!!addonBefore}
-          $hasAddonAfter={!!addonAfter}
+          $hasAddonBefore={Boolean(addonBefore)}
+          $hasAddonAfter={Boolean(addonAfter)}
           style={style}
-          className={className}
+          className={joinClassNames('ui-input-group', className)}
         >
           {addonBefore && (
-            <Addon className="ui-input-addon-before">{addonBefore}</Addon>
+            <Addon
+              className="ui-input-addon ui-input-addon-before"
+              $small={small}
+            >
+              {addonBefore}
+            </Addon>
           )}
-          <InputWrapper>
-            {prefix && <PrefixIcon>{prefix}</PrefixIcon>}
-            {inputElement}
-            {allowClear && value && (
-              <ClearButton $hasSuffix={!!suffix} onClick={handleClear}>
-                &#x2715;
-              </ClearButton>
-            )}
-            {suffix && <SuffixIcon>{suffix}</SuffixIcon>}
-          </InputWrapper>
+          {field}
           {addonAfter && (
-            <Addon className="ui-input-addon-after">{addonAfter}</Addon>
+            <Addon
+              className="ui-input-addon ui-input-addon-after"
+              $small={small}
+            >
+              {addonAfter}
+            </Addon>
           )}
         </AddonWrapper>
       )
 
-    return (
-      <InputWrapper>
-        {prefix && <PrefixIcon>{prefix}</PrefixIcon>}
-        {inputElement}
-        {allowClear && value && (
-          <ClearButton $hasSuffix={!!suffix} onClick={handleClear}>
-            &#x2715;
-          </ClearButton>
-        )}
-        {suffix && <SuffixIcon>{suffix}</SuffixIcon>}
-      </InputWrapper>
-    )
+    return field
   },
 ) as InputComponent
 
@@ -316,9 +397,10 @@ Input.displayName = 'Input'
 // TextArea sub-component
 const StyledTextArea = styled.textarea<{ $autoSize?: boolean }>`
   ${inputBaseStyles}
-  min-height: 32px;
+  height: auto;
+  min-height: 96px;
+  padding: 12px 14px;
   resize: ${({ $autoSize }) => ($autoSize ? 'none' : 'vertical')};
-  padding: 4px 11px;
 `
 
 const TextArea = React.forwardRef<HTMLTextAreaElement, TextAreaProps>(
@@ -330,22 +412,38 @@ const TextArea = React.forwardRef<HTMLTextAreaElement, TextAreaProps>(
       disabled,
       rows = 4,
       autoSize,
+      autosize,
       style,
       className,
+      id,
+      'aria-label': ariaLabel,
+      'aria-labelledby': ariaLabelledby,
+      'aria-describedby': ariaDescribedby,
+      'aria-invalid': ariaInvalid,
       ...rest
     },
     ref,
   ) => {
+    const a11y = useFormItemControl({
+      id,
+      'aria-label': ariaLabel,
+      'aria-labelledby': ariaLabelledby,
+      'aria-describedby': ariaDescribedby,
+      'aria-invalid': ariaInvalid,
+    })
     const textareaRef = useRef<HTMLTextAreaElement>(null)
     const combinedRef = (ref ||
       textareaRef) as React.RefObject<HTMLTextAreaElement>
+    const grow = autoSize ?? autosize === true
+    const minRows =
+      typeof autosize === 'object' && autosize ? autosize.minRows : undefined
 
     const adjustHeight = useCallback(() => {
       const el = combinedRef.current
-      if (!el || !autoSize) return
+      if (!el || !grow) return
       el.style.height = 'auto'
       el.style.height = `${el.scrollHeight}px`
-    }, [autoSize, combinedRef])
+    }, [grow, combinedRef])
 
     useEffect(() => {
       adjustHeight()
@@ -367,11 +465,12 @@ const TextArea = React.forwardRef<HTMLTextAreaElement, TextAreaProps>(
         onChange={handleChange}
         placeholder={placeholder}
         disabled={disabled}
-        rows={autoSize ? 1 : rows}
-        $autoSize={autoSize}
+        rows={grow ? minRows || 1 : minRows || rows}
+        $autoSize={grow}
         style={style}
-        className={className}
+        className={joinClassNames('ui-input', 'ui-textarea', className)}
         {...rest}
+        {...a11y}
       />
     )
   },
