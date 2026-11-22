@@ -162,7 +162,10 @@ const LogoLink = styled(Link)`
   color: var(--color-text);
   transition: opacity var(--motion);
 
+  /* The logo dims; it never takes the link colour the global a:hover rule
+     would give it (that rule outranks the colour above). */
   &:hover {
+    color: var(--color-text);
     opacity: 0.8;
   }
 

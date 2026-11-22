@@ -2276,16 +2276,14 @@ main,
 }
 
 @media (max-width: 640px) {
+  /* The bar keeps the app bar's 64px here too, so the logo sits where the
+     app's does; anchors clear it by 12px. */
   html {
-    scroll-padding-top: 72px;
+    scroll-padding-top: 76px;
   }
 
   .stage {
     height: 760px;
-  }
-
-  .bar-inner {
-    height: 60px;
   }
 
   .seg--icons {
