@@ -533,14 +533,16 @@ way (dashboard, Browse, registry pages, the profile, the landing page).
   the stakes, challenge stakes and appeal funding (the court fee a Stake challenger sends is not
   indexed). It is valued at today's on-chain prices, the same feeds as the figures above, in its
   own query; the per-coin totals are kept an hour (`keptRead` in saved-load.ts) and priced again on
-  every read. An ERC-20 with no price or no decimals is left out; the chain's own coin with no price
-  fails the read, and nothing is drawn. On the landing, a money figure that cannot be read falls
-  back to the snapshot's alone. The history behind the chart's 6M to 3Y and Top curators reaches
-  back three years and is kept 30 minutes. It is shown as "Passed through Curate" in the dashboard's hero (since 20 Nov 2026; in the
-  Self-sustaining mechanism in round 19, beside Entries in rounds 15 to 18) and on the landing page.
-  The bounties won are the other total, on both pages (round 16; beside it in the hero since 20 Nov
-  2026). Every other money
-  figure keeps the per-coin rule above.
+  every read. A token with no decimals, or with no way to a price (no feed of its own, and not a
+  vault whose share price `prices.ts` reads, which today is sDAI alone), is left out, since Stake
+  lists take any ERC-20. The chain's own coin, or a token with a way to a price, that has no
+  current price fails the read, and nothing is drawn: leaving it out would show part of the total
+  as the whole. On the landing, a money figure that cannot be read falls back to the snapshot's
+  alone. The history behind the chart's 6M to 3Y and Top curators reaches back three years and is
+  kept 30 minutes. That sum is shown as "Passed through Curate" in the dashboard's hero (since 20
+  Nov 2026; in the Self-sustaining mechanism in round 19, beside Entries in rounds 15 to 18) and on
+  the landing page. The bounties won are the other total, on both pages (round 16; beside it in the
+  hero since 20 Nov 2026). Every other money figure keeps the per-coin rule above.
 - The all-time ledger pages the **retired Classic lists'** resolved disputes too (2020-2022): they
   are the protocol's history, so they count in the bounties (counts and amounts) and in the entries
   ever curated, where the first ring's disputed requests count them too (round 4: "when counting
@@ -622,8 +624,10 @@ way (dashboard, Browse, registry pages, the profile, the landing page).
   word and "earn". It is a sentence, not a slogan, so it is set at clamp(34px, 3.4vw + 14px, 64px)
   rather than `--fs-hero`; the first line never wraps (the longest word fits at 320px), and the
   second clause is balanced on a phone. The hero is left-aligned (a centred first line slid
-  sideways at each word), with the two money totals beside it (below the buttons under 900px). The lede under it, at most 54ch and balanced: "Curate verifies anything, at scale. Built
-  to let good actors win: they get verified, or they get the bounty if they spot wrong entries."
+  sideways at each word), with the two money totals beside it; at 820px and under they go below the
+  buttons, so a phone held sideways keeps both columns. The lede under it, at most 54ch and
+  balanced: "Curate verifies anything, at scale. Built to let good actors win: they get verified,
+  or they get the bounty if they spot wrong entries."
 - **Open for verification** is not drawn at all when there is no bounty up for grabs (round 10).
   It opens the board's section with no box (round 6), centred on the page. There is no "Happening
   now" heading (Fortunato, after round 19): its own title is the section's, a 30px section title
@@ -664,15 +668,15 @@ way (dashboard, Browse, registry pages, the profile, the landing page).
   together (round 18: "not a big fan of separating the gauges"); on a phone they share one line.
   Each ring carries a tooltip built from its own counts. No line names the Classic lists (round 7).
 - **The money in the hero** (`HeroMoney`, since 20 Nov 2026; beside the rings in round 19): Passed
-  through Curate, then Bounties won, stacked beside the title, side by side below the buttons under
-  900px. Each amount is a one-line label with a help icon over its figure, no subtitle; the icon
-  opens a quiet tooltip (`Tooltip quiet`: one line of muted 12px text on frosted glass, a soft
-  shadow, up to 400px) with one short line: "Deposits, challenges and appeals, all time." and "In
-  ETH, xDAI and other ERC-20 tokens on Ethereum and Gnosis." (round 19: "make it light and the
-  text really minimal"). Bounties won is one figure in dollars at today's prices, compact
-  ("$73.3K"), with no count of bounties. Where any coin has no current price, or a token's decimals
-  never answered, there is no honest total: the coins' own amounts are listed on one line instead.
-  A chain whose rulings did not load is named under them.
+  through Curate, then Bounties won, stacked beside the title; at 820px and under, side by side
+  below the buttons, their figures level. Each amount is a one-line label with a help icon over its
+  figure, no subtitle; the icon opens a quiet tooltip (`Tooltip quiet`: one line of muted 12px text
+  on frosted glass, a soft shadow, up to 400px) with one short line: "Deposits, challenges and
+  appeals, all time." and "In ETH, xDAI and other ERC-20 tokens on Ethereum and Gnosis." (round 19:
+  "make it light and the text really minimal"). Bounties won is one figure in dollars at today's
+  prices, compact ("$73.3K"), with no count of bounties. Where any coin has no current price, or a
+  token's decimals never answered, there is no honest total: the coins' own amounts are listed on
+  one line instead. A chain whose rulings did not load is named under them.
 - Top curators sit beside the chart (round 7), in the same panel behind a hairline, 320px wide
   (260px below 1100px), each with an LED bar of their activity against the top curator's
   (requests in the accent, challenges in `contested`) and their counts on one line; below 900px
