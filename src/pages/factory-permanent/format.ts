@@ -11,7 +11,17 @@ import { normalizeDecimalInput } from 'utils/decimal-input'
  * sends it), over a divisor of 10 000.
  */
 
-const trimZeros = (text: string) => text.replace(/\.?0+$/, '')
+/** Zeros after the point only: a whole "100" (a 0-decimal token) keeps them. */
+const trimZeros = (text: string) =>
+  text.includes('.') ? text.replace(/\.?0+$/, '') : text
+
+/**
+ * Past this many digits a number is beyond any uint256 amount at any
+ * token's decimals (78 digits, plus at most 255 decimals), and writing it
+ * out would only cost memory: "1e999999999" once built a string too long
+ * for the browser while the Stake step drew it.
+ */
+const MAX_PLAIN_DIGITS = 400
 
 /** "0.0309" from wei, trailing zeros trimmed (same rule as eth-amount). */
 export const formatNative = (wei: BigNumberish): string =>
@@ -75,6 +85,9 @@ export const plainDecimal = (value: unknown): string => {
   const exponent = Number(exponentText)
   const digits = `${whole}${fraction}`
   const point = whole.length + exponent
+  // Stays as typed: the checks refuse it (stakeProblem says why).
+  if (Math.abs(point) > MAX_PLAIN_DIGITS || digits.length > MAX_PLAIN_DIGITS)
+    return text
   const plain =
     point <= 0
       ? `0.${'0'.repeat(-point)}${digits}`
@@ -115,6 +128,9 @@ export const stakeProblem = (
 ): 'invalid' | 'precision' | 'too-large' | null => {
   if (value === '' || value === undefined || value === null) return null
   const plain = plainDecimal(value)
+  // An exponent plainDecimal would not write out: far too large or small.
+  if (/^\d*\.?\d*e[+-]?\d+$/i.test(plain))
+    return /e-/i.test(plain) ? 'precision' : 'too-large'
   if (!/^(\d+\.?\d*|\.\d+)$/.test(plain)) return 'invalid'
   const fraction = plain.split('.')[1] ?? ''
   if (trimZeros(`0.${fraction}`).length - 2 > decimals) return 'precision'

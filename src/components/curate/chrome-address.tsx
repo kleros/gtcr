@@ -285,22 +285,26 @@ export const CopyValue = ({
     state === 'copied' ? 'Copied' : state === 'failed' ? 'Copy failed' : label
 
   return (
-    <CopyButton
-      type="button"
-      onClick={copy}
-      data-state={state}
-      data-variant={variant}
-      data-reserve={reserve || undefined}
-      aria-label={shown}
-      title={shown}
-    >
-      <CurateIcon
-        key={state}
-        name={state === 'copied' ? 'check' : 'copy'}
-        size={13}
-      />
+    <>
+      <CopyButton
+        type="button"
+        onClick={copy}
+        data-state={state}
+        data-variant={variant}
+        data-reserve={reserve || undefined}
+        aria-label={shown}
+        title={shown}
+      >
+        <CurateIcon
+          key={state}
+          name={state === 'copied' ? 'check' : 'copy'}
+          size={13}
+        />
+      </CopyButton>
+      {/* Beside the button, not in it: a button's children are
+          presentational, and WebKit drops a live region there. */}
       <Unseen role="status">{state === 'idle' ? '' : shown}</Unseen>
-    </CopyButton>
+    </>
   )
 }
 
@@ -341,6 +345,8 @@ export const ChromeAddress = ({
         >
           <span>{shown}</span>
           <CurateIcon name="external" size={12} />
+          {/* Where it goes, after what is seen (DESIGN.md, Addresses). */}
+          <Unseen> on the explorer (opens in a new tab)</Unseen>
         </Anchor>
       ) : (
         <Anchor as="span" title={address} $invalid={invalid} $fixed={fixed}>

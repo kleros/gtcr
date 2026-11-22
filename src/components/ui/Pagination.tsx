@@ -344,10 +344,13 @@ const Pagination: React.FC<PaginationProps> = ({
   const lastGap = [...pages].reverse().find((page) => typeof page === 'string')
   const [draft, setDraft] = useState('')
   const commitJump = useCallback(() => {
-    const page = Number.parseInt(draft, 10)
+    const typed = Number.parseInt(draft, 10)
     setDraft('')
-    if (!Number.isNaN(page) && page !== current) goTo(page)
-  }, [draft, current, goTo])
+    if (Number.isNaN(typed)) return
+    // Compared once clamped: "999" on the last page is the page shown.
+    const page = Math.max(1, Math.min(typed, totalPages))
+    if (page !== current) goTo(page)
+  }, [draft, current, goTo, totalPages])
   /*
    * Leaving the field for one of the pager's own controls (a click, a tap
    * or Tab) hands the move to that control: the draft is dropped rather
@@ -459,50 +462,55 @@ const Pagination: React.FC<PaginationProps> = ({
               style={{ left: thumb.left, right: thumb.right }}
             />
           )}
-          {pages.map((page, idx) => {
+          {/* Every item is a direct child keyed by what it is, never by its
+              place: the jump field keeps its node, and so the focus, when a
+              jump moves it to another place or to the other ellipsis. */}
+          {pages.flatMap((page) => {
             if (typeof page === 'string')
-              return (
-                <React.Fragment key={page + idx}>
-                  <Ellipsis className="ui-pagination-ellipsis" aria-hidden>
-                    …
-                  </Ellipsis>
-                  {page === lastGap && (
-                    <JumpSlot>
-                      <span aria-hidden>{totalPages}</span>
-                      <JumpField
-                        id={jumpId}
-                        inputMode="numeric"
-                        enterKeyHint="go"
-                        autoComplete="off"
-                        value={draft}
-                        placeholder="#"
-                        title={`Go to page, 1 to ${totalPages}`}
-                        aria-label={`Go to page, 1 to ${totalPages}`}
-                        onChange={(e) =>
-                          setDraft(
-                            e.target.value
-                              .replace(/\D+/g, '')
-                              .slice(0, String(totalPages).length),
-                          )
-                        }
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            e.preventDefault()
-                            commitJump()
-                          } else if (e.key === 'Escape') setDraft('')
-                        }}
-                        // Leaving a typed number behind still takes the reader
-                        // there, unless they left for another pager control;
-                        // focus stays on the field, which the list scroll
-                        // moves out of view but does not steal.
-                        onBlur={onJumpBlur}
-                      />
-                    </JumpSlot>
-                  )}
-                </React.Fragment>
-              )
+              return [
+                <Ellipsis
+                  key={page}
+                  className="ui-pagination-ellipsis"
+                  aria-hidden
+                >
+                  …
+                </Ellipsis>,
+                page === lastGap && (
+                  <JumpSlot key="jump">
+                    <span aria-hidden>{totalPages}</span>
+                    <JumpField
+                      id={jumpId}
+                      inputMode="numeric"
+                      enterKeyHint="go"
+                      autoComplete="off"
+                      value={draft}
+                      placeholder="#"
+                      title={`Go to page, 1 to ${totalPages}`}
+                      aria-label={`Go to page, 1 to ${totalPages}`}
+                      onChange={(e) =>
+                        setDraft(
+                          e.target.value
+                            .replace(/\D+/g, '')
+                            .slice(0, String(totalPages).length),
+                        )
+                      }
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault()
+                          commitJump()
+                        } else if (e.key === 'Escape') setDraft('')
+                      }}
+                      // Leaving a typed number behind still takes the reader
+                      // there, unless they left for another pager control;
+                      // focus stays on the field, which the list scroll
+                      // moves out of view but does not steal.
+                      onBlur={onJumpBlur}
+                    />
+                  </JumpSlot>
+                ),
+              ]
 
-            return (
+            return [
               <React.Fragment key={page}>
                 {renderItem(
                   page,
@@ -515,13 +523,17 @@ const Pagination: React.FC<PaginationProps> = ({
                     )}
                     aria-current={page === current ? 'page' : undefined}
                     aria-label={`Page ${page}`}
-                    onClick={() => goTo(page)}
+                    // The page shown is not written again (a second history
+                    // entry and a scroll back for nothing).
+                    onClick={() => {
+                      if (page !== current) goTo(page)
+                    }}
                   >
                     {page}
                   </PageButton>,
                 )}
-              </React.Fragment>
-            )
+              </React.Fragment>,
+            ]
           })}
         </PageTrack>
 

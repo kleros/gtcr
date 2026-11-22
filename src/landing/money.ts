@@ -53,9 +53,12 @@ export const landingMoney = async (
       throw new Error('A rulings ledger did not load')
     const bounties = bountyTotals(data, chains)
     return {
+      // As the dashboard's hero (bounties.tsx): a coin that cannot be
+      // priced leaves no honest total, so the snapshot's figure stays.
       bounties: await totalInDollars(
         Object.values(bounties.totals),
         data.tokens,
+        { everyCoin: true },
       ),
       bountiesPaid: bounties.paid,
       bountiesCapped: chains.some((chainId) => data.rulingsCapped?.[chainId]),

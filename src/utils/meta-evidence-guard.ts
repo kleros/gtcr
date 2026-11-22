@@ -68,6 +68,11 @@ export const sanitizeColumns = (columns: unknown): Column[] | undefined =>
               typeof column.description === 'string'
                 ? column.description
                 : undefined,
+            // Read as text while the submit page draws a file field.
+            allowedFileTypes:
+              typeof column.allowedFileTypes === 'string'
+                ? column.allowedFileTypes
+                : undefined,
           }) as Column,
       )
     : undefined

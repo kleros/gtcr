@@ -2,7 +2,8 @@ export const getFormattedPath = (url: string) => {
   // Handle already formatted or prefixed URLs
   if (url.startsWith('/ipfs/')) return url
   if (url.startsWith('ipfs/')) return `/${url}`
-  if (url.startsWith('ipfs://')) return url.replace('ipfs://', '/ipfs/')
+  // The scheme in any case, as ipfsImageUrl takes it ("IPFS://…").
+  if (/^ipfs:\/\//i.test(url)) return url.replace(/^ipfs:\/\//i, '/ipfs/')
 
   // Handle raw IPFS hashes (CIDv0 or CIDv1)
   const ipfsHashPattern = /^[a-zA-Z0-9]{46,59}$/

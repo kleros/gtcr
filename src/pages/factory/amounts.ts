@@ -26,9 +26,11 @@ export const totalDeposit = (
   if (arbitrationCost === null || arbitrationCost === undefined) return null
   try {
     // Read as the deploy reads it: "0,5" is 0.5.
-    return ethers.utils
-      .parseEther(plainDecimal(base ?? '0'))
-      .add(BigNumber.from(arbitrationCost))
+    const baseWei = ethers.utils.parseEther(plainDecimal(base ?? '0'))
+    // A negative base is invalid (the schema refuses it), not a discount
+    // on the arbitration cost.
+    if (baseWei.isNegative()) return null
+    return baseWei.add(BigNumber.from(arbitrationCost))
   } catch {
     return null
   }

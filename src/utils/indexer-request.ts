@@ -95,6 +95,12 @@ const schedule = (url: string, queue: Queue, delay: number) => {
 }
 
 const flush = async (url: string, queue: Queue) => {
+  // A refusal that landed while this batch waited for its window pauses it
+  // too: no request leaves before pausedUntil.
+  if (queue.pausedUntil > Date.now()) {
+    schedule(url, queue, 0)
+    return
+  }
   const batch = queue.items.splice(0, BATCH_MAX)
   if (queue.items.length > 0) schedule(url, queue, 0)
   if (batch.length === 0) return

@@ -47,7 +47,8 @@ const TooltipBubble = styled.div<{ $quiet?: boolean }>`
   color: var(--color-text);
   font-size: ${kitType.meta};
   line-height: ${kitType.metaLine};
-  pointer-events: none;
+  /* The pointer can rest on the tip (WCAG 1.4.13, hoverable): it is a React
+     child of the trigger's wrapper, so moving onto it keeps it open. */
   animation: ${tipIn} 160ms var(--ease-out) both;
 
   /*

@@ -73,18 +73,25 @@ export const itemToStatusCode = (
       return STATUS_CODE.WITHDRAWN
 
     // Differentiate between rejected (never made it past submission) and removed (was accepted then taken off)
-    // If includedAt + submissionPeriod < the time it was challenged, the item passed submission and was
-    // accepted at some point. Compared with now instead, every ruling that outlasts the submission period
-    // would read as a removal.
-    const submissionPeriod = Number(registry?.submissionPeriod || 0)
+    // If includedAt + its period < the time it was challenged, the item passed that period and was
+    // accepted at some point. Compared with now instead, every ruling that outlasts the period
+    // would read as a removal. A ruling for the submitter reincludes the entry and the indexer
+    // resets includedAt to it: from then on the reinclusion period is the one that has to pass.
+    const reincluded = challenges
+      .slice(1)
+      .some((challenge) => challenge.disputeOutcome === SUBGRAPH_RULING.ACCEPT)
+    const period = Number(
+      (reincluded ? registry?.reinclusionPeriod : registry?.submissionPeriod) ||
+        0,
+    )
     const includedAt = Number(item.includedAt || 0)
     const challengedAt = Number(challenges[0]?.createdAt || 0)
-    // Only classify as REMOVED if we have valid includedAt AND submissionPeriod
+    // Only classify as REMOVED if we have valid includedAt AND a period
     // This ensures we don't misclassify when data is missing
     if (
       includedAt > 0 &&
-      submissionPeriod > 0 &&
-      includedAt + submissionPeriod < (challengedAt > 0 ? challengedAt : ts)
+      period > 0 &&
+      includedAt + period < (challengedAt > 0 ? challengedAt : ts)
     )
       return STATUS_CODE.REMOVED
     return STATUS_CODE.REJECTED
@@ -124,6 +131,10 @@ export const itemToStatusCode = (
 
     if (Number(round.appealPeriodEnd) <= ts)
       return STATUS_CODE.WAITING_ARBITRATOR
+
+    // With no ruling there is no loser: either side funds until the end
+    // (PermanentGTCR.fundAppeal has no half cutoff then).
+    if (round.ruling === SUBGRAPH_RULING.NONE) return STATUS_CODE.CROWDFUNDING
 
     // The loser's half ends where the contract's integer division puts it.
     const appealHalfTime = Math.floor(

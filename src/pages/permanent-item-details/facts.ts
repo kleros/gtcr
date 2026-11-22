@@ -308,7 +308,9 @@ export const stakeFacts = ({
     hasDispute: !!challenge,
     appealStart,
     appealEnd,
-    appealHalf: appealStart + (appealEnd - appealStart) / 2,
+    // The contract's cutoff for the loser: (start + end) / 2 in Solidity,
+    // so rounded down, as permanent-item-status.ts and the Standard side do.
+    appealHalf: Math.floor((appealStart + appealEnd) / 2),
     appealable,
     // With no ruling there is no loser: either side funds with the shared
     // multiplier until the period ends, with no half cutoff.

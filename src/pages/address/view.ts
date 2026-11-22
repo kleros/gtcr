@@ -243,7 +243,8 @@ export const activeChains = (
     .sort((a, b) => b.stats.activity - a.stats.activity)
 
 /** "Ethereum", "Ethereum and Gnosis", "Ethereum, Gnosis and Sepolia". */
-const chainListFormat = new Intl.ListFormat('en', {
+// en-GB, as Browse and the dashboard write lists: no serial comma.
+const chainListFormat = new Intl.ListFormat('en-GB', {
   style: 'long',
   type: 'conjunction',
 })

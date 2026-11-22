@@ -138,7 +138,8 @@ const isFullLink = (value: string): boolean => {
 
 /**
  * A link typed without its scheme ("example.org/app") gets "https://"; any
- * other value is returned unchanged for validation to judge.
+ * other value is returned unchanged for validation to judge. A colon before
+ * a digit is a port ("example.org:8080/app"), not a scheme.
  */
 export const withWebScheme = (value: string): string => {
   const text = value.trim()
@@ -146,7 +147,7 @@ export const withWebScheme = (value: string): string => {
     !text ||
     /\s/.test(text) ||
     !text.includes('.') ||
-    /^[a-z][a-z\d+.-]*:/i.test(text)
+    /^[a-z][a-z\d+.-]*:(?!\d)/i.test(text)
   )
     return value
   return `https://${text.replace(/^\/+/, '')}`
@@ -204,10 +205,11 @@ export const validateSubmission = async (
           column.type === ItemTypes.GTCR_ADDRESS &&
           !errors[column.label] &&
           typeof values[column.label] === 'string' &&
-          values[column.label] !== '',
+          // Spaces only is empty here too, as for every rule above.
+          (values[column.label] as string).trim() !== '',
       )
       .map(async (column) => {
-        const address = values[column.label] as string
+        const address = (values[column.label] as string).trim()
         try {
           const deployed =
             (await checks.deployedWithStandardFactory(address)) ||

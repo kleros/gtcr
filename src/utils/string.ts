@@ -62,7 +62,9 @@ export const encodeExtraData = (courtID: number, numberOfJurors: number) =>
 const VOWEL_SOUND_LETTERS = /^[AEFHILMNORSX]/
 // Vowel letters read with a consonant sound ("a user", "a euro", "a one-off").
 const CONSONANT_SOUND_START =
-  /^(u[bcfgklmnprstvz][aeiou]|uni|eu|ewe|one\b|once\b|uk\b)/i
+  // No "n" in the class: "an unusual", "an unofficial"; only "unanimous"
+  // and "unary" start with the "you-n" sound.
+  /^(u[bcfgklmprstvz][aeiou]|unanim|unary|uni|eu|ewe|one\b|once\b|uk\b)/i
 // A silent h ("an hour", "an honest mistake").
 const SILENT_H_START = /^(hour|honest|honou?r|heir)/i
 
@@ -85,5 +87,6 @@ export const SAVED_NETWORK_KEY = 'SAVED_NETWORK_KEY'
 
 export const addPeriod = (input: string = ''): string => {
   if (input.length === 0) return ''
-  return input[input.length - 1] === '.' ? input : `${input}.`
+  // A question or an exclamation already ends its sentence.
+  return /[.?!]$/.test(input) ? input : `${input}.`
 }

@@ -273,10 +273,15 @@ export const bountyTotals = (data: DashboardData, chains: number[]) => {
  * or no way to a price is left out (Stake lists take any ERC-20); a chain's
  * own coin, or a token that has a feed or a priced vault, with no current
  * price throws: leaving it out would show part of the total as the whole.
+ *
+ * `everyCoin` is the bounties' rule (DESIGN.md: where any coin has no
+ * current price, or a token's decimals never answered, there is no honest
+ * total): any coin that cannot be priced throws, none is left out.
  */
 export const totalInDollars = async (
   coins: CoinTotal[],
   known: Record<string, TokenInfo> = {},
+  { everyCoin = false }: { everyCoin?: boolean } = {},
 ): Promise<number> => {
   const unread = coins.filter(
     (coin) => coin.token && !known[coinKey(coin.chainId, coin.token)],
@@ -288,7 +293,10 @@ export const totalInDollars = async (
   const priced = coins.flatMap((coin) => {
     const key = coinKey(coin.chainId, coin.token)
     const decimals = coin.token ? tokens[key]?.decimals : 18
-    if (decimals === undefined) return []
+    if (decimals === undefined) {
+      if (everyCoin) throw new Error(`No decimals for ${key}`)
+      return []
+    }
     return [
       {
         key,
@@ -303,7 +311,7 @@ export const totalInDollars = async (
   return priced.reduce((sum, coin) => {
     const usd = prices[coin.key]?.usd
     if (usd === undefined) {
-      if (!coin.token || hasPricePath(coin.key))
+      if (everyCoin || !coin.token || hasPricePath(coin.key))
         throw new Error(`No dollar price for ${coin.key}`)
       return sum
     }
