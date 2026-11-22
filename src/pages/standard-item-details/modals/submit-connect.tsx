@@ -40,7 +40,7 @@ import {
 } from 'components/curate/item-standard-gate'
 import { FieldLabel, Notice } from 'components/curate/item-standard-notice'
 import { formatAmount } from 'components/curate/item-standard-format'
-import { SubmissionFlowScaffold, SubmissionNavigation } from './submit'
+import { SubmissionFlowScaffold, SubmissionNavigation } from './submission-flow'
 
 /*
  * Enable a badge: connect a badge list to a parent list by submitting the

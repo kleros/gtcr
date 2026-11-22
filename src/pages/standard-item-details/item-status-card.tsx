@@ -47,6 +47,7 @@ import {
 } from 'components/curate/what-happens-next'
 import { Notice } from 'components/curate/item-standard-notice'
 import { LIST_SETTINGS_FAILED } from 'pages/error-page/copy'
+import { useResubmit } from 'pages/submit-item/resubmit'
 import { StickyActionBar } from 'components/curate/item-standard-action-bar'
 import { ExplorerAddressLink } from 'components/curate/item-standard-fields'
 import { BountyFigure } from 'components/curate/item-bounty-figure'
@@ -220,11 +221,11 @@ const ItemStatusCard = ({
     tcrAddress,
     submissionDeposit,
     removalDeposit,
-    gtcrView,
   } = tcrView || {}
   const urlChainId = useUrlChainId()
   const nativeCurrency = useNativeCurrency()
   const now = useNow()
+  const resubmit = useResubmit()
   // A challenge is priced with the settings the request was made with.
   const challenge = useChallengeCost({
     request,
@@ -394,8 +395,12 @@ const ItemStatusCard = ({
 
   const onClick = () => {
     switch (statusCode) {
+      // Off the list: the submit page, its fields filled with the entry's.
       case STATUS_CODE.REJECTED:
-      case STATUS_CODE.REMOVED:
+      case STATUS_CODE.REMOVED: {
+        resubmit(metadata?.columns, item.decodedData)
+        break
+      }
       case STATUS_CODE.REGISTERED:
       case STATUS_CODE.SUBMITTED:
       case STATUS_CODE.REMOVAL_REQUESTED:
@@ -703,11 +708,7 @@ const ItemStatusCard = ({
             fileURI={fileURI || ''}
             isOpen={!!modalOpen}
             onClose={() => setModalOpen(false)}
-            submissionDeposit={submissionDeposit}
-            tcrAddress={tcrAddress}
             metaEvidence={metaEvidence}
-            challengePeriodDuration={challengePeriodDuration}
-            gtcrView={gtcrView}
             appealCost={appealCost}
             appealCostFailed={appealCostFailed}
             retryAppealCost={retryAppealCost}

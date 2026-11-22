@@ -329,7 +329,9 @@ const DepositSubmitPage = ({
 /**
  * A connected (badges) list takes a badge list plus a match file that only
  * its own dialog on the list page builds, never this generic form: the list
- * page opens that dialog for ?action=submit.
+ * page opens that dialog for ?action=submit. A resubmission is the
+ * exception: it carries the entry's own values (its badge list and match
+ * file) and sends them as they are, as the entry page's resubmit always has.
  */
 const isConnectedList = (metaEvidence?: MetaEvidence): boolean =>
   Boolean(metaEvidence?.metadata?.isConnectedTCR)
@@ -357,6 +359,7 @@ const ListPartFailed = ({
 const StandardSubmitPage = () => {
   const { tcrAddress } = useParams<{ tcrAddress: string }>()
   const registryPath = useRegistryPath()
+  const linkValues = useLinkValues()
   const tcrViewContext = useContext(StandardTCRViewContext)
   const tcrError = tcrViewContext?.tcrError
 
@@ -374,7 +377,7 @@ const StandardSubmitPage = () => {
   if (typeof tcrError === 'string')
     return <ErrorPage code="400" message={tcrError} />
   if (!tcrAddress) return <SubmitPageSkeleton />
-  if (isConnectedList(tcrViewContext?.metaEvidence))
+  if (isConnectedList(tcrViewContext?.metaEvidence) && linkValues.length === 0)
     return <Navigate to={`${registryPath}?action=submit`} replace />
 
   return (
@@ -468,6 +471,7 @@ const PermanentSubmitPage = () => {
   const {
     symbol,
     decimals,
+    decimalsRead,
     loading: tokenLoading,
   } = useTokenSymbol(registry?.token)
   const onDone = useCallback(
@@ -667,6 +671,10 @@ const PermanentSubmitPage = () => {
     onClick: () => void stakeCurate.recheck(),
   }
 
+  // Amounts are the token's units: a token whose decimals could not be read
+  // would be shown, and its approval named, on a guessed 18.
+  const decimalsMissing = !tokenLoading && !!registry.token && !decimalsRead
+
   let gate: ConfirmGate = {}
   if (costUnread)
     gate = readingArbitrationCost
@@ -676,6 +684,10 @@ const PermanentSubmitPage = () => {
           fix: { label: 'Try again', onClick: retryArbitrationCost },
         }
   else if (wallet.blocker) gate = { blocker: wallet.blocker, fix: wallet.fix }
+  else if (decimalsMissing)
+    gate = {
+      blocker: `Could not read how many decimals ${symbol} has; try again later`,
+    }
   else if (stakeCurate.checkFailed)
     gate = {
       blocker: `Could not read your ${symbol} balance`,

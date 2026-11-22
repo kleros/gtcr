@@ -647,13 +647,19 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
 
   useEffect(() => {
     if (!item || ipfsItemData || ipfsError) return
-    fetch(parseIpfs(item.data))
+    // A gateway that hangs is a failed read too, as for the MetaEvidence:
+    // the fields say they could not be loaded, and a resubmission stops
+    // waiting for them. Not AbortSignal.timeout: iOS 15 lacks it.
+    const controller = new AbortController()
+    const timer = setTimeout(() => controller.abort(), META_EVIDENCE_TIMEOUT_MS)
+    fetch(parseIpfs(item.data), { signal: controller.signal })
       .then((r) => r.json())
       .then((r) => {
         const file = sanitizeItemFile(r)
         if (!file) throw new Error('The entry file is not an entry')
         return setIpfsItemData(file)
       })
+      .finally(() => clearTimeout(timer))
       .catch((err: unknown) => {
         console.error('Could not get ipfs file', err)
         setIpfsError(true)
@@ -1357,6 +1363,9 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
         challengeArbitrationCost={challengeCost.arbitrationCost}
         submitter={submitter}
         policyURI={policyURI}
+        valuesPending={
+          !!item && !decodedItem && !fieldsUnavailable && !metaEvidenceFailed
+        }
         heroSlot={actionSlot}
         railSlot={railSlot}
       />

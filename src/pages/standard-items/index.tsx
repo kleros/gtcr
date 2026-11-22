@@ -103,7 +103,6 @@ import {
   LIST_LOAD_FAILED,
   LIST_SETTINGS_FAILED,
 } from '../error-page/copy'
-import SubmitModal from '../standard-item-details/modals/submit'
 import SubmitConnectModal from '../standard-item-details/modals/submit-connect'
 
 /*
@@ -396,7 +395,6 @@ const Items = () => {
     const id = window.setTimeout(() => setSearchTerm(itemSearch.trim()), 350)
     return () => window.clearTimeout(id)
   }, [itemSearch])
-  const [queryItemParams, setQueryItemParams] = useState<string[] | undefined>()
   const [revealed, setRevealed] = useState<Set<string>>(() => new Set())
   const [decodedItems, setDecodedItems] = useState<SubgraphItem[] | undefined>(
     undefined,
@@ -865,7 +863,6 @@ const Items = () => {
       navigate(submitPathFor(chainId, tcrAddress, link), { replace: true })
       return
     }
-    setQueryItemParams(link?.values)
     setSubmissionFormOpen(true)
   }, [actionLink, connectedList, chainId, tcrAddress, navigate])
 
@@ -1650,28 +1647,14 @@ const Items = () => {
         )}
       </Entries>
 
-      {metaEvidence && metadata && (
-        <>
-          {isConnectedTCR ? (
-            <SubmitConnectModal
-              visible={submissionFormOpen}
-              onCancel={() => setSubmissionFormOpen(false)}
-              tcrAddress={tcrAddress}
-              gtcrView={gtcrView}
-            />
-          ) : (
-            <SubmitModal
-              visible={submissionFormOpen}
-              onCancel={() => setSubmissionFormOpen(false)}
-              submissionDeposit={submissionDeposit}
-              challengePeriodDuration={challengePeriodDuration}
-              tcrAddress={tcrAddress}
-              metaEvidence={metaEvidence}
-              initialValues={queryItemParams}
-            />
-          )}
-        </>
-      )}
+      {metaEvidence && metadata && isConnectedTCR ? (
+        <SubmitConnectModal
+          visible={submissionFormOpen}
+          onCancel={() => setSubmissionFormOpen(false)}
+          tcrAddress={tcrAddress}
+          gtcrView={gtcrView}
+        />
+      ) : null}
     </Page>
   )
 }

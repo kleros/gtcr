@@ -2,14 +2,14 @@ import React, { useMemo } from 'react'
 import type { BigNumber } from 'ethers'
 import { STATUS_CODE } from 'utils/permanent-item-status'
 import { stakeActionLabel } from 'components/permanent-item-action-button'
-import useOpenResubmitted from 'pages/submit-item/use-open-resubmitted'
+import { ResubmitRedirect } from 'pages/submit-item/resubmit'
 import ChallengeModal from './modals/challenge'
-import SubmitModal from './modals/submit'
 import CrowdfundModal from './modals/crowdfund'
 
 /*
  * Picks the modal behind the item's one action: challenge while listed,
- * resubmit once off the list, fund an appeal while an appeal is open.
+ * fund an appeal while an appeal is open. Off the list, the action is a
+ * resubmission on the submit page (an ?action= link is sent there).
  */
 
 interface ItemActionModalProps {
@@ -22,12 +22,12 @@ interface ItemActionModalProps {
   appealCost?: BigNumber | undefined
   appealCostFailed?: boolean
   onRetryAppealCost?: () => void
-  /** A resubmission's arbitration cost: the newest setting's. */
-  arbitrationCost?: BigNumber | undefined
   /** A challenge's arbitration cost: the setting the contract picks for this entry. */
   challengeArbitrationCost?: BigNumber | undefined
   /** The policy this entry is judged by; the newest one when not given. */
   policyURI?: string
+  /** The entry's values are still being read; a resubmission waits for them. */
+  valuesPending?: boolean
 }
 
 const ItemActionModal = ({
@@ -40,11 +40,10 @@ const ItemActionModal = ({
   appealCost,
   appealCostFailed,
   onRetryAppealCost,
-  arbitrationCost,
   challengeArbitrationCost,
   policyURI: entryPolicyURI,
+  valuesPending = false,
 }: ItemActionModalProps) => {
-  const openResubmitted = useOpenResubmitted()
   const rest = {
     visible: isOpen,
     title: stakeActionLabel({ statusCode, itemName }),
@@ -53,15 +52,6 @@ const ItemActionModal = ({
   const r = useMemo(() => item?.registry, [item])
   const policyURI =
     entryPolicyURI ?? r?.arbitrationSettings?.[0]?.metadata?.policyURI
-  const submitMetadata = metaEvidence?.metadata
-    ? {
-        title: String(
-          metaEvidence.metadata.tcrTitle ?? metaEvidence.metadata.title ?? '',
-        ),
-        itemName: metaEvidence.metadata.itemName ?? '',
-        policyURI: String(metaEvidence.metadata.policyURI ?? ''),
-      }
-    : undefined
 
   switch (statusCode) {
     case STATUS_CODE.ACCEPTED:
@@ -79,19 +69,12 @@ const ItemActionModal = ({
     case STATUS_CODE.REMOVED:
     case STATUS_CODE.WITHDRAWN:
       return (
-        <SubmitModal
-          initialValues={item.decodedData}
-          submissionDeposit={r?.submissionMinDeposit}
-          submissionPeriod={r?.submissionPeriod}
-          arbitrationCost={arbitrationCost}
-          withdrawingPeriod={r?.withdrawingPeriod}
-          challengeStakeMultiplier={r?.challengeStakeMultiplier}
-          tcrAddress={r?.id}
-          tokenAddress={r?.token}
-          metadata={submitMetadata}
-          columns={metaEvidence?.metadata?.columns ?? []}
-          onSubmitted={openResubmitted}
-          {...rest}
+        <ResubmitRedirect
+          open={isOpen}
+          ready={!valuesPending}
+          columns={metaEvidence?.metadata?.columns}
+          values={item.decodedData}
+          onClose={onClose}
         />
       )
     case STATUS_CODE.CROWDFUNDING:

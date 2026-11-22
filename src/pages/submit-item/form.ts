@@ -122,34 +122,6 @@ export const normaliseValues = (
 const isEvmAddress = (value: string): boolean => namespaces[0].test(value)
 
 /**
- * The submit dialogs' address format checks, run for the whole form. Each
- * address input checks its own value too, but Formik runs a field's check only
- * while the field is on screen and the review step unmounts them: without this
- * a malformed address would be sent.
- * Like those inputs, an empty address does not pass, unless the list marks
- * the column optional.
- */
-export const addressFormatErrors = (
-  columns: Column[],
-  values: Record<string, unknown>,
-): SubmissionErrors => {
-  const errors: SubmissionErrors = {}
-  for (const column of columns) {
-    const value = values[column.label]
-    const text = typeof value === 'string' ? value : ''
-    if (!text.trim() && !isRequired(column)) continue
-    if (column.type === ItemTypes.ADDRESS && !isEvmAddress(text))
-      errors[column.label] = 'Invalid format'
-    else if (
-      column.type === ItemTypes.RICH_ADDRESS &&
-      !parseRichAddress(text)?.passedTest
-    )
-      errors[column.label] = 'Invalid format'
-  }
-  return errors
-}
-
-/**
  * A full link: anything the URL parser takes with a scheme (https, ipfs,
  * mailto…), since lists cite more than web pages and the previous dialog took
  * any text. Script and data URLs are refused; pages only make https clickable.

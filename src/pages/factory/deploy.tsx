@@ -24,7 +24,6 @@ import { NETWORKS_INFO, getExplorerUrl } from 'config/networks'
 import useUrlChainId from 'hooks/use-url-chain-id'
 import useStandardTcrView from 'hooks/standard-tcr-view'
 import useNativeCurrency from 'hooks/native-currency'
-import SubmitModal from '../standard-item-details/modals/submit'
 import {
   defaultEvidenceDisplayUri,
   defaultTcrAddresses,
@@ -441,7 +440,6 @@ const Deploy = ({
   const [phase, setPhase] = useState<DeployPhase>(restored ? 'mining' : 'idle')
   const [txSubmitted, setTxSubmitted] = useState<string>()
   const [deployedTCRAddress, setDeployedTCRAddress] = useState<string>()
-  const [submissionFormOpen, setSubmissionFormOpen] = useState(false)
   const [pendingHash, setPendingHash] = useState<Hash | undefined>(
     restored?.hash as Hash | undefined,
   )
@@ -466,14 +464,9 @@ const Deploy = ({
   const defaultTCRAddress = defaultTcrAddresses[chainId]
   const batcherAddress = txBatcherAddresses[chainId]
   const evidenceDisplayInterfaceURI = defaultEvidenceDisplayUri[chainId]
-  const {
-    submissionDeposit,
-    submissionBaseDeposit,
-    arbitrationCost,
-    metaEvidence,
-    challengePeriodDuration,
-    arbitrator: listOfListsArbitrator,
-  } = useStandardTcrView(defaultTCRAddress ?? '')
+  const { submissionDeposit, metaEvidence } = useStandardTcrView(
+    defaultTCRAddress ?? '',
+  )
   const { uploadFile } = useAtlasProvider()
   const gate = useWalletGate({ verb: 'deploy', needsChain: true })
 
@@ -1229,36 +1222,20 @@ const Deploy = ({
               >
                 Open the list
               </ButtonLink>
-              {metaEvidence && submissionDeposit && defaultTCRAddress && (
-                <Button
-                  type="button"
+              {defaultTCRAddress && (
+                // Its submit page, with the new list's address as the first
+                // value (a list of lists' column), as the Stake deploy's.
+                <ButtonLink
+                  to={`/tcr/${chainId}/${defaultTCRAddress}/submit?address=${deployedTCRAddress}`}
                   $variant="secondary"
-                  onClick={() => setSubmissionFormOpen(true)}
                 >
                   Submit it to {listOfListsTitle}
-                </Button>
+                </ButtonLink>
               )}
             </Row>
           </ActionArea>
         )}
       </StepBody>
-      {metaEvidence &&
-        submissionDeposit &&
-        challengePeriodDuration &&
-        defaultTCRAddress && (
-          <SubmitModal
-            initialValues={deployedTCRAddress ? [deployedTCRAddress] : []}
-            visible={!!submissionFormOpen}
-            onCancel={() => setSubmissionFormOpen(false)}
-            submissionDeposit={submissionDeposit}
-            baseDeposit={submissionBaseDeposit}
-            arbitrationCost={arbitrationCost}
-            arbitrator={listOfListsArbitrator}
-            tcrAddress={defaultTCRAddress}
-            metaEvidence={metaEvidence}
-            challengePeriodDuration={challengePeriodDuration}
-          />
-        )}
     </>
   )
 }

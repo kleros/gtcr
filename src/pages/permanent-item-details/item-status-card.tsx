@@ -34,6 +34,7 @@ import { LaneBar } from 'components/curate/lane-bar'
 import { BountyFigure } from 'components/curate/item-bounty-figure'
 import ItemActionButton from 'components/permanent-item-action-button'
 import { scrollToEvidenceComposer } from 'components/permanent-request-timelines'
+import { useResubmit } from 'pages/submit-item/resubmit'
 import ItemActionModal from './item-action-modal'
 import WithdrawModal from './modals/withdraw'
 import AppealFundingCard from './crowdfunding-card'
@@ -304,6 +305,12 @@ interface ItemStatusCardProps {
   /** The policy this entry is judged by. */
   policyURI?: string
   /**
+   * The entry's own values are still being read (a Stake entry's come from
+   * its IPFS file): a resubmission waits for them, so its form opens filled
+   * in instead of empty.
+   */
+  valuesPending?: boolean
+  /**
    * The hero's slot the action card draws itself into, bare. Until the slot
    * has mounted (null) nothing is drawn, so the card never flashes in place
    * first; without one (undefined) it renders where it is mounted, as a
@@ -334,6 +341,7 @@ const ItemStatusCard = ({
   challengeArbitrationCost,
   submitter: submitterProp,
   policyURI,
+  valuesPending = false,
   heroSlot,
   railSlot,
 }: ItemStatusCardProps) => {
@@ -341,6 +349,7 @@ const ItemStatusCard = ({
   const publicClient = usePublicClient()
   const { data: walletClient } = useWalletClient()
   const now = useNow()
+  const resubmit = useResubmit()
   const chainId = useUrlChainId()
   const nativeCurrency = useNativeCurrency()
   const [withdrawModalOpen, setWithdrawModalOpen] = useState(false)
@@ -464,11 +473,18 @@ const ItemStatusCard = ({
     setExecutePhase(undefined)
   }
 
+  // A resubmission waits for the entry's values (the button says so).
+  const readingValues = offList && valuesPending
+
   const onAction = () => {
     switch (statusCode) {
+      // Off the list: the submit page, its fields filled with the entry's.
       case STATUS_CODE.REJECTED:
       case STATUS_CODE.REMOVED:
       case STATUS_CODE.WITHDRAWN:
+        if (!readingValues)
+          resubmit(metaEvidence?.metadata?.columns, item.decodedData)
+        return
       case STATUS_CODE.PENDING:
       case STATUS_CODE.ACCEPTED:
       case STATUS_CODE.CROWDFUNDING:
@@ -513,8 +529,14 @@ const ItemStatusCard = ({
         amounts={amounts}
         disabled={Boolean(actionBlocker)}
         blocker={actionBlocker}
-        loading={!!executePhase}
-        loadingLabel={executePhase && TX_PHASE_LABEL[executePhase]}
+        loading={!!executePhase || readingValues}
+        loadingLabel={
+          executePhase
+            ? TX_PHASE_LABEL[executePhase]
+            : readingValues
+              ? 'Reading the entry…'
+              : undefined
+        }
         block
       />
     )
@@ -873,9 +895,9 @@ const ItemStatusCard = ({
           appealCost={appealCost}
           appealCostFailed={appealCostFailed}
           onRetryAppealCost={onRetryAppealCost}
-          arbitrationCost={arbitrationCost}
           challengeArbitrationCost={challengeArbitrationCost}
           policyURI={policyURI}
+          valuesPending={valuesPending}
         />
       )}
       <WithdrawModal

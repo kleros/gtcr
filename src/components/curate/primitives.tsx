@@ -2138,34 +2138,6 @@ export const EmptyState = ({
   </EmptyWrap>
 )
 
-/* ---------- Key/value ---------- */
-
-export const KeyValueList = styled.dl`
-  display: grid;
-  grid-template-columns: max-content minmax(0, 1fr);
-  gap: 8px 16px;
-  margin: 0;
-
-  dt {
-    color: var(--color-muted);
-    font-family: var(--font-label);
-    font-size: var(--fs-label);
-    line-height: 20px;
-    font-weight: 500;
-    letter-spacing: var(--tracking-label);
-    text-transform: uppercase;
-  }
-
-  dd {
-    margin: 0;
-    min-width: 0;
-    color: var(--color-text);
-    font-size: var(--fs-body);
-    line-height: var(--lh-body);
-    overflow-wrap: anywhere;
-  }
-`
-
 /** Middle-truncated address in mono with a title holding the full value. */
 export const truncateMiddle = (value: string, head = 6, tail = 4): string =>
   value.length > head + tail + 1

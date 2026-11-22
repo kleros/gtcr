@@ -1,17 +1,16 @@
 import React from 'react'
-import type { ethers, BigNumber } from 'ethers'
+import type { BigNumber } from 'ethers'
 import { STATUS_CODE } from 'utils/item-status'
 import { itemActionLabel } from 'components/item-action-button'
-import useOpenResubmitted from 'pages/submit-item/use-open-resubmitted'
+import { ResubmitRedirect } from 'pages/submit-item/resubmit'
 import RemoveModal from './modals/remove'
 import ChallengeModal from './modals/challenge'
-import SubmitModal from './modals/submit'
-import SubmitConnectModal from './modals/submit-connect'
 import CrowdfundModal from './modals/crowdfund'
 
 /*
- * Opens the one modal the entry's status calls for: remove, resubmit,
- * challenge or contribute appeal fees.
+ * Opens the one modal the entry's status calls for: remove, challenge or
+ * contribute appeal fees. A resubmission is the submit page's, with the
+ * entry's own values (an ?action= link is sent there).
  */
 
 interface ItemActionModalProps {
@@ -21,12 +20,7 @@ interface ItemActionModalProps {
   onClose: () => void
   fileURI: string
   item: SubgraphItem
-  isConnectedTCR?: boolean
-  submissionDeposit?: BigNumber | undefined
-  challengePeriodDuration?: BigNumber | undefined
-  tcrAddress?: string
   metaEvidence?: MetaEvidence | undefined
-  gtcrView?: ethers.Contract | undefined
   appealCost?: BigNumber | undefined
   appealCostFailed?: boolean
   retryAppealCost?: () => void
@@ -39,17 +33,11 @@ const ItemActionModal = ({
   onClose,
   fileURI,
   item,
-  isConnectedTCR,
-  submissionDeposit,
-  challengePeriodDuration,
-  tcrAddress,
   metaEvidence,
-  gtcrView,
   appealCost,
   appealCostFailed,
   retryAppealCost,
 }: ItemActionModalProps) => {
-  const openResubmitted = useOpenResubmitted()
   // Common modal properties.
   const rest = {
     visible: isOpen,
@@ -70,22 +58,12 @@ const ItemActionModal = ({
     }
     case STATUS_CODE.REJECTED:
     case STATUS_CODE.REMOVED:
-      return isConnectedTCR ? (
-        <SubmitConnectModal
-          initialValues={item.decodedData?.map(String)}
-          tcrAddress={tcrAddress}
-          gtcrView={gtcrView}
-          {...rest}
-        />
-      ) : (
-        <SubmitModal
-          initialValues={item.decodedData?.map(String)}
-          submissionDeposit={submissionDeposit}
-          tcrAddress={tcrAddress}
-          metaEvidence={metaEvidence}
-          challengePeriodDuration={challengePeriodDuration}
-          onSubmitted={openResubmitted}
-          {...rest}
+      return (
+        <ResubmitRedirect
+          open={isOpen}
+          columns={metaEvidence?.metadata?.columns}
+          values={item.decodedData}
+          onClose={onClose}
         />
       )
     case STATUS_CODE.REMOVAL_REQUESTED:
