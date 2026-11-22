@@ -25,60 +25,6 @@ export const STATUS_CODE = {
   REMOVED: 11,
 }
 
-export const STATUS_TEXT = {
-  [STATUS_CODE.REJECTED]: 'Rejected',
-  [STATUS_CODE.REGISTERED]: 'Registered',
-  [STATUS_CODE.SUBMITTED]: 'Submitted',
-  [STATUS_CODE.REMOVAL_REQUESTED]: 'Removing',
-  [STATUS_CODE.CHALLENGED]: 'Challenged',
-  [STATUS_CODE.CROWDFUNDING]: 'Crowdfunding',
-  [STATUS_CODE.CROWDFUNDING_WINNER]: 'Crowdfunding Winner',
-  [STATUS_CODE.WAITING_ARBITRATOR]: 'Waiting Arbitrator',
-  [STATUS_CODE.PENDING_SUBMISSION]: 'Pending Execution',
-  [STATUS_CODE.PENDING_REMOVAL]: 'Pending Execution',
-  [STATUS_CODE.WAITING_ENFORCEMENT]: 'Waiting enforcement',
-  [STATUS_CODE.REMOVED]: 'Removed',
-}
-
-/**
- * Status colors are the five DESIGN.md roles, as CSS variables so they follow the
- * active theme: registered (green), window open (blue), contested (amber),
- * off the list (red), neutral/final (grey). Never color alone: always with the label.
- */
-export const STATUS_ROLE = {
-  [STATUS_CODE.REJECTED]: 'off',
-  [STATUS_CODE.REGISTERED]: 'registered',
-  [STATUS_CODE.SUBMITTED]: 'window',
-  [STATUS_CODE.REMOVAL_REQUESTED]: 'window',
-  [STATUS_CODE.CHALLENGED]: 'contested',
-  [STATUS_CODE.CROWDFUNDING]: 'contested',
-  [STATUS_CODE.CROWDFUNDING_WINNER]: 'contested',
-  [STATUS_CODE.WAITING_ARBITRATOR]: 'contested',
-  [STATUS_CODE.PENDING_SUBMISSION]: 'neutral',
-  [STATUS_CODE.PENDING_REMOVAL]: 'neutral',
-  [STATUS_CODE.WAITING_ENFORCEMENT]: 'contested',
-  [STATUS_CODE.REMOVED]: 'off',
-} as const
-
-export type StatusRole = (typeof STATUS_ROLE)[keyof typeof STATUS_ROLE]
-
-export const statusRoleColor = (role: StatusRole): string =>
-  `var(--status-${role})`
-
-export const STATUS_COLOR: Record<number, string> = Object.fromEntries(
-  Object.entries(STATUS_ROLE).map(([code, role]) => [
-    Number(code),
-    statusRoleColor(role),
-  ]),
-)
-
-export const SUBGRAPH_STATUS_TO_CODE = {
-  Absent: 0,
-  Registered: 1,
-  RegistrationRequested: 2,
-  ClearingRequested: 3,
-}
-
 export const REQUEST_TYPE_LABEL = {
   [CONTRACT_STATUS.REGISTRATION_REQUESTED]: 'Submission',
   [CONTRACT_STATUS.REMOVAL_REQUESTED]: 'Removal',
@@ -87,75 +33,6 @@ export const REQUEST_TYPE_LABEL = {
 export const hasPendingRequest = (contractStatus: string): boolean =>
   contractStatus === CONTRACT_STATUS.REGISTRATION_REQUESTED ||
   contractStatus === CONTRACT_STATUS.REMOVAL_REQUESTED
-
-export const getResultStatus = ({
-  ruling,
-  requestType,
-}: {
-  ruling: number
-  requestType: string
-}): string => {
-  let status: string
-  if (requestType === CONTRACT_STATUS.REGISTRATION_REQUESTED)
-    switch (ruling) {
-      case PARTY.NONE:
-      case PARTY.CHALLENGER:
-        status = CONTRACT_STATUS.ABSENT
-        break
-      case PARTY.REQUESTER:
-        status = CONTRACT_STATUS.REGISTERED
-        break
-      default:
-        throw new Error('Unhandled ruling')
-    }
-  else
-    switch (ruling) {
-      case PARTY.NONE:
-      case PARTY.CHALLENGER:
-        status = CONTRACT_STATUS.REGISTERED
-        break
-      case PARTY.REQUESTER:
-        status = CONTRACT_STATUS.ABSENT
-        break
-      default:
-        throw new Error('Unhandled ruling')
-    }
-  return status
-}
-
-export const getActionLabel = ({
-  statusCode,
-  itemName = 'item',
-}: {
-  statusCode: number
-  itemName?: string
-}): string => {
-  switch (statusCode) {
-    case STATUS_CODE.REJECTED:
-    case STATUS_CODE.REMOVED:
-      return `Resubmit ${itemName}`
-    case STATUS_CODE.REGISTERED:
-      return `Remove ${itemName}`
-    case STATUS_CODE.SUBMITTED:
-      return 'Challenge submission'
-    case STATUS_CODE.REMOVAL_REQUESTED:
-      return 'Challenge removal'
-    case STATUS_CODE.CROWDFUNDING:
-    case STATUS_CODE.CROWDFUNDING_WINNER:
-      return 'Contribute Fees'
-    case STATUS_CODE.PENDING_SUBMISSION:
-      return 'Execute submission'
-    case STATUS_CODE.PENDING_REMOVAL:
-      return 'Execute removal'
-    case STATUS_CODE.CHALLENGED:
-    case STATUS_CODE.WAITING_ARBITRATOR:
-      return 'Waiting Arbitrator'
-    case STATUS_CODE.WAITING_ENFORCEMENT:
-      return 'Waiting Enforcement'
-    default:
-      throw new Error(`Unhandled status code ${statusCode}`)
-  }
-}
 
 export const itemToStatusCode = (
   item: SubgraphItem,

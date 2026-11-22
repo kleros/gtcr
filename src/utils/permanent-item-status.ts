@@ -23,68 +23,6 @@ export const STATUS_CODE = {
   WITHDRAWN: 9,
 }
 
-export const STATUS_TEXT = {
-  [STATUS_CODE.REJECTED]: 'Rejected',
-  [STATUS_CODE.PENDING]: 'Pending',
-  [STATUS_CODE.ACCEPTED]: 'Accepted',
-  [STATUS_CODE.DISPUTED]: 'Disputed',
-  [STATUS_CODE.CROWDFUNDING]: 'Crowdfunding',
-  [STATUS_CODE.CROWDFUNDING_WINNER]: 'Crowdfunding Winner',
-  [STATUS_CODE.WAITING_ARBITRATOR]: 'Waiting Arbitrator',
-  [STATUS_CODE.PENDING_WITHDRAWAL]: 'Pending Withdrawal',
-  [STATUS_CODE.REMOVED]: 'Removed',
-  [STATUS_CODE.WITHDRAWN]: 'Withdrawn',
-}
-
-/** DESIGN.md status roles for Stake Curate items; see utils/item-status.ts. */
-export const STATUS_ROLE = {
-  [STATUS_CODE.REJECTED]: 'off',
-  [STATUS_CODE.PENDING]: 'window',
-  [STATUS_CODE.ACCEPTED]: 'registered',
-  [STATUS_CODE.DISPUTED]: 'contested',
-  [STATUS_CODE.CROWDFUNDING]: 'contested',
-  [STATUS_CODE.CROWDFUNDING_WINNER]: 'contested',
-  [STATUS_CODE.WAITING_ARBITRATOR]: 'contested',
-  [STATUS_CODE.PENDING_WITHDRAWAL]: 'neutral',
-  [STATUS_CODE.REMOVED]: 'off',
-  [STATUS_CODE.WITHDRAWN]: 'off',
-} as const
-
-export const STATUS_COLOR: Record<number, string> = Object.fromEntries(
-  Object.entries(STATUS_ROLE).map(([code, role]) => [
-    Number(code),
-    `var(--status-${role})`,
-  ]),
-)
-
-export const getActionLabel = ({
-  statusCode,
-  itemName = 'item',
-}: {
-  statusCode: number
-  itemName?: string
-}): string => {
-  switch (statusCode) {
-    case STATUS_CODE.REJECTED:
-    case STATUS_CODE.REMOVED:
-    case STATUS_CODE.WITHDRAWN:
-      return `Resubmit ${itemName}`
-    case STATUS_CODE.PENDING:
-    case STATUS_CODE.ACCEPTED:
-      return `Challenge ${itemName}`
-    case STATUS_CODE.CROWDFUNDING:
-    case STATUS_CODE.CROWDFUNDING_WINNER:
-      return 'Contribute Fees'
-    case STATUS_CODE.DISPUTED:
-    case STATUS_CODE.WAITING_ARBITRATOR:
-      return 'Waiting Arbitrator'
-    case STATUS_CODE.PENDING_WITHDRAWAL:
-      return 'Execute Withdrawal'
-    default:
-      throw new Error(`Unhandled status code ${statusCode}`)
-  }
-}
-
 export const itemToStatusCode = (
   item: SubgraphItem,
   timestamp: BigNumber,

@@ -1,5 +1,4 @@
 import React, { useContext, useState } from 'react'
-import styled from 'styled-components'
 import { useAccount, usePublicClient, useWalletClient } from 'wagmi'
 import { simulateContract } from '@wagmi/core'
 import { type Address } from 'viem'
@@ -45,47 +44,6 @@ import { requestFacts, type StandardRequest } from '../request-facts'
  * repeats the amount). A justification is required; it is uploaded through
  * Atlas and published as the first evidence of the dispute.
  */
-
-/** Loading placeholder inside a dialog. Kept for the pages that import it. */
-export const StyledSpin = () => <SkeletonBlock $height="60px" />
-
-/** Inline balance error under a confirm button. Kept for the pages that import it. */
-export const InsufficientBalanceText = styled.span`
-  display: block;
-  margin-top: 4px;
-  color: var(--color-danger);
-  font-size: var(--fs-small);
-  line-height: var(--lh-small);
-  text-align: center;
-`
-
-/** Dialog with the old modal props (visible, onCancel, title, footer). */
-export const StyledModal = ({
-  visible,
-  onCancel,
-  title,
-  footer,
-  width,
-  children,
-}: {
-  visible?: boolean
-  onCancel?: () => void
-  title?: React.ReactNode
-  footer?: React.ReactNode
-  width?: 'md' | 'lg'
-  children?: React.ReactNode
-  [key: string]: unknown
-}) => (
-  <Dialog
-    open={!!visible}
-    onClose={onCancel ?? (() => undefined)}
-    title={title}
-    footer={footer}
-    width={width}
-  >
-    {children}
-  </Dialog>
-)
 
 const EVIDENCE_FORM_ID = 'challengeEvidenceForm'
 

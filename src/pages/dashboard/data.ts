@@ -9,7 +9,6 @@ import {
   isListOfLists,
 } from 'config/list-of-lists'
 import {
-  countsAsVerifiedList,
   listOfListsEntryAddress,
   verifiedSetFrom,
 } from 'components/curate/verified-rule'
@@ -19,12 +18,10 @@ import {
   fetchRegistryCreationTimes,
   readCachedCreationTimes,
 } from 'utils/registry-creation'
-import { getNativeCurrency } from 'config/chains'
 import {
   DashboardActivity,
   DashboardData,
   DashboardDay,
-  DashboardMetrics,
   DashboardRegistry,
   DashboardUser,
   RegistryKind,
@@ -32,13 +29,7 @@ import {
   TrustStatus,
   UnchallengedRow,
 } from './types'
-import {
-  entryCount,
-  openWindows,
-  rangeStart,
-  rowsPlaced,
-  windowsPending,
-} from './view'
+import { openWindows, rangeStart, rowsPlaced, windowsPending } from './view'
 import { keptRead } from './saved-load'
 import { readChallengePeriods } from './challenge-windows'
 import { readTokens } from './tokens'
@@ -685,42 +676,6 @@ export const normalizeAddress = (address: string | undefined | null): string =>
 
 export const shortAddress = (address: string): string =>
   address ? `${address.slice(0, 6)}...${address.slice(-4)}` : 'Unknown'
-
-export const formatCompact = (value: number): string =>
-  new Intl.NumberFormat('en-US', {
-    notation: 'compact',
-    maximumFractionDigits: value >= 1000 ? 1 : 0,
-  }).format(value)
-
-export const formatAgo = (timestamp?: number): string => {
-  if (!timestamp) return 'No recent activity'
-  const seconds = Math.max(0, Math.floor(Date.now() / 1000) - timestamp)
-  if (seconds < 60) return 'Just now'
-  const minutes = Math.floor(seconds / 60)
-  if (minutes < 60) return `${minutes}m ago`
-  const hours = Math.floor(minutes / 60)
-  if (hours < 24) return `${hours}h ago`
-  const days = Math.floor(hours / 24)
-  if (days < 30) return `${days}d ago`
-  const months = Math.floor(days / 30)
-  return `${months}mo ago`
-}
-
-export const formatWei = (value?: string | null, chainId?: number): string => {
-  if (!value || value === '0') return '0'
-  const symbol = chainId ? getNativeCurrency(chainId).symbol : 'ETH'
-  const wei = BigInt(value)
-  const whole = wei / 10n ** 18n
-  const fractional = (wei % 10n ** 18n) / 10n ** 15n
-  const numeric = Number(whole) + Number(fractional) / 1000
-  const formatted =
-    numeric >= 1000
-      ? formatCompact(numeric)
-      : new Intl.NumberFormat('en-US', {
-          maximumFractionDigits: numeric >= 10 ? 1 : 3,
-        }).format(numeric)
-  return `${formatted} ${symbol}`
-}
 
 const registryTitle = (
   address: string,
@@ -1932,27 +1887,6 @@ const dedupeRegistries = (
   return [...byKey.values()]
 }
 
-const buildMetrics = (
-  registries: DashboardRegistry[],
-  users: DashboardUser[],
-): DashboardMetrics => ({
-  registries: registries.length,
-  verifiedRegistries: registries.filter(countsAsVerifiedList).length,
-  curatedItems: registries.reduce(
-    (sum, registry) => sum + entryCount(registry),
-    0,
-  ),
-  activeVerification: registries.reduce(
-    (sum, registry) => sum + registry.pendingCount,
-    0,
-  ),
-  disputes: registries.reduce(
-    (sum, registry) => sum + registry.disputeCount,
-    0,
-  ),
-  curators: users.length,
-})
-
 /**
  * One indexer query, null when it fails or takes longer than
  * DASHBOARD_QUERY_TIMEOUT_MS (the request is then aborted, so a slow indexer
@@ -2673,7 +2607,6 @@ export const loadDashboardData = async ({
     openDisputes,
     openDisputesCapped,
     users,
-    metrics: buildMetrics(registries, users),
     failedChains: [...failed],
     listFailedChains: [...listsFailed],
   }

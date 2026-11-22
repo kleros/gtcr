@@ -1,5 +1,3 @@
-import { CONTRACT_STATUS } from './item-status'
-
 export const FILTER_KEYS = {
   ABSENT: 'absent',
   REGISTERED: 'registered',
@@ -13,48 +11,6 @@ export const FILTER_KEYS = {
   PAGE: 'page',
   /** Every entry that has been to court at least once, whatever it is now. */
   DISPUTED_BEFORE: 'disputedBefore',
-}
-
-/** @deprecated Use FILTER_KEYS instead */
-export const STANDARD_FILTER_KEYS = FILTER_KEYS
-
-export const filterLabelStandard = {
-  [FILTER_KEYS.ABSENT]: 'Rejected/Removed',
-  [FILTER_KEYS.REGISTERED]: 'Registered',
-  [FILTER_KEYS.SUBMITTED]: 'Submitted',
-  [FILTER_KEYS.REMOVAL_REQUESTED]: 'Removing',
-  [FILTER_KEYS.CHALLENGED_SUBMISSIONS]: 'Challenged Submissions',
-  [FILTER_KEYS.CHALLENGED_REMOVALS]: 'Challenged Removals',
-  [FILTER_KEYS.MY_SUBMISSIONS]: 'My Submissions',
-  [FILTER_KEYS.MY_CHALLENGES]: 'My Challenges',
-  [FILTER_KEYS.OLDEST_FIRST]: 'Oldest First',
-}
-
-export const filterFunctions: Record<
-  string,
-  (account?: string) => (item: SubgraphItem) => boolean
-> = {
-  [FILTER_KEYS.ABSENT]: () => (item: SubgraphItem) => item.status !== 'Absent',
-  [FILTER_KEYS.REGISTERED]: () => (item: SubgraphItem) =>
-    item.status !== 'Registered',
-  [FILTER_KEYS.SUBMITTED]: () => (item: SubgraphItem) =>
-    item.status !== 'RegistrationRequested' || item.disputed,
-  [FILTER_KEYS.REMOVAL_REQUESTED]: () => (item: SubgraphItem) =>
-    item.status !== 'ClearingRequested' || item.disputed,
-  [FILTER_KEYS.CHALLENGED_SUBMISSIONS]: () => (item: SubgraphItem) =>
-    item.status !== 'RegistrationRequested' || !item.disputed,
-  [FILTER_KEYS.CHALLENGED_REMOVALS]: () => (item: SubgraphItem) =>
-    item.status !== 'ClearingRequested' || !item.disputed,
-  [FILTER_KEYS.MY_SUBMISSIONS]: (account?: string) => (item: SubgraphItem) =>
-    !item.requests?.some(
-      (request: SubgraphRequest) =>
-        request.requester?.toLowerCase() === account,
-    ),
-  [FILTER_KEYS.MY_CHALLENGES]: (account?: string) => (item: SubgraphItem) =>
-    !item.requests?.some(
-      (request: SubgraphRequest) =>
-        request.challenger?.toLowerCase() === account,
-    ),
 }
 
 export const DEFAULT_FILTERS = {
@@ -71,9 +27,6 @@ export const DEFAULT_FILTERS = {
   [FILTER_KEYS.DISPUTED_BEFORE]: false,
 }
 
-/** @deprecated Use DEFAULT_FILTERS instead */
-export const DEFAULT_FILTERS_STANDARD = DEFAULT_FILTERS
-
 export const P_FILTER_KEYS = {
   ABSENT: 'absent',
   REGISTERED: 'registered',
@@ -82,13 +35,6 @@ export const P_FILTER_KEYS = {
   PAGE: 'page',
   /** Every entry that has been challenged at least once, whatever it is now. */
   DISPUTED_BEFORE: 'disputedBefore',
-}
-
-export const filterLabelPermanent = {
-  [P_FILTER_KEYS.ABSENT]: 'Rejected/Removed',
-  [P_FILTER_KEYS.REGISTERED]: 'Registered',
-  [P_FILTER_KEYS.DISPUTED]: 'Disputed',
-  [P_FILTER_KEYS.OLDEST_FIRST]: 'Oldest First',
 }
 
 export const DEFAULT_FILTERS_PERMANENT = {
@@ -193,42 +139,6 @@ export const searchStrToFilterObjPermanent = (
   }
 }
 
-export const queryOptionsToFilterArray = (
-  queryOptions: Record<string, boolean | string>,
-  account?: string,
-): (boolean | string | undefined)[] => {
-  const filterObj: Record<string, boolean | string> = {}
-  Object.keys(queryOptions)
-    .filter(
-      (key) => key !== FILTER_KEYS.PAGE && key !== FILTER_KEYS.OLDEST_FIRST,
-    )
-    .forEach((key) => {
-      filterObj[key] = queryOptions[key]
-    })
-
-  const {
-    registered,
-    submitted,
-    removalRequested,
-    challengedSubmissions,
-    challengedRemovals,
-    mySubmissions,
-    myChallenges,
-    absent,
-  } = filterObj
-
-  return [
-    absent,
-    registered,
-    submitted,
-    removalRequested,
-    challengedSubmissions,
-    challengedRemovals,
-    account && mySubmissions,
-    account && myChallenges,
-  ]
-}
-
 export const updateStandardFilter = ({
   prevQuery: search,
   filter,
@@ -270,39 +180,4 @@ export const selectStatusFilter = ({
   if (value !== 'all') params.set(value, 'true')
   params.set(FILTER_KEYS.PAGE, '1')
   return `?${params.toString()}`
-}
-
-export const applyOldActiveItemsFilter = (
-  {
-    submitted,
-    removalRequested,
-    challengedSubmissions,
-    challengedRemovals,
-  }: {
-    submitted: boolean
-    removalRequested: boolean
-    challengedSubmissions: boolean
-    challengedRemovals: boolean
-  },
-  { status, disputed }: { status: string; disputed: boolean },
-): boolean => {
-  switch (status) {
-    case CONTRACT_STATUS.ABSENT:
-    case CONTRACT_STATUS.REGISTERED:
-      return false
-    case CONTRACT_STATUS.REGISTRATION_REQUESTED: {
-      if (disputed) {
-        if (challengedSubmissions) return true
-      } else if (submitted) return true
-      return false
-    }
-    case CONTRACT_STATUS.REMOVAL_REQUESTED: {
-      if (disputed) {
-        if (challengedRemovals) return true
-      } else if (removalRequested) return true
-      return false
-    }
-    default:
-      throw new Error('Unsupported item status')
-  }
 }

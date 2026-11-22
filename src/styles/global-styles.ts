@@ -72,15 +72,6 @@ const GlobalStyle = createGlobalStyle`
     --tracking-tight: -0.03em;
     --tracking-display: -0.045em;
 
-    /* Legacy scale names still read by older pages, mapped onto the new scale */
-    --font-size-page-title: 32px;
-    --font-size-section-title: var(--fs-heading);
-    --font-size-title: var(--fs-subheading);
-    --font-size-large: var(--fs-body-lg);
-    --font-size-base: var(--fs-body);
-    --font-size-small: var(--fs-small);
-    --font-size-xs: 12px;
-
     /* Shape and space */
     --radius-xs: 6px;
     --radius-sm: 8px;
@@ -191,55 +182,6 @@ const GlobalStyle = createGlobalStyle`
     --status-neutral: var(--color-faint);
     --status-neutral-soft: var(--color-raised);
 
-    /* Names older components read; same values as the roles above */
-    --v2-bg: var(--color-bg);
-    --v2-bg-soft: var(--color-surface);
-    --v2-card: var(--color-surface);
-    --v2-soft: var(--color-raised);
-    --v2-text: var(--color-text);
-    --v2-muted: var(--color-muted);
-    --v2-faint: var(--color-faint);
-    --v2-stroke: var(--color-border);
-    --v2-stroke-strong: var(--color-border-strong);
-    --v2-blue: var(--color-primary);
-    --v2-blue-hover: var(--color-primary-hover);
-    --v2-blue-soft: var(--color-primary-soft);
-    --v2-success: var(--color-success);
-    --v2-success-soft: var(--color-success-soft);
-    --v2-warning: var(--color-warning);
-    --v2-warning-soft: var(--color-warning-soft);
-    --v2-error: var(--color-danger);
-    --v2-error-soft: var(--color-danger-soft);
-    --v2-shadow: var(--shadow-card);
-    --v2-shadow-hover: var(--shadow-card-hover);
-    --curate-bg: var(--color-bg);
-    --curate-bg-soft: var(--color-surface);
-    --curate-surface: var(--color-surface);
-    --curate-surface-strong: var(--color-surface);
-    --curate-border: var(--color-border);
-    --curate-border-strong: var(--color-border-strong);
-    --curate-text: var(--color-text);
-    --curate-muted: var(--color-muted);
-    --curate-faint: var(--color-faint);
-    --curate-live: var(--color-primary);
-    --curate-success: var(--color-success);
-    --curate-warning: var(--color-warning);
-    --curate-danger: var(--color-danger);
-    --curate-shadow: var(--shadow-card);
-    --curate-shadow-hover: var(--shadow-card-hover);
-    --curate-panel: var(--color-surface);
-    --curate-card: var(--color-surface);
-    --curate-stat: var(--color-surface);
-    --curate-button: var(--color-primary);
-    --curate-button-soft: var(--color-raised);
-    --curate-chip-bg: var(--color-raised);
-    --curate-field: var(--color-surface);
-    --curate-icon-bg: var(--color-raised);
-    --curate-icon-shadow: none;
-    --curate-under-glow: transparent;
-    --curate-radius: var(--radius);
-    --curate-radius-sm: var(--radius-sm);
-
     /* @kleros/ui-components-library variables, mapped onto the active theme */
     --klerosUIComponentsWhiteBackground: var(--color-surface);
     --klerosUIComponentsLightBackground: var(--color-bg);
@@ -296,11 +238,6 @@ const GlobalStyle = createGlobalStyle`
     body {
       --popover: var(--color-surface);
     }
-  }
-
-  @keyframes curate-sheen {
-    0%, 74% { transform: translateX(-120%); }
-    100% { transform: translateX(120%); }
   }
 
   #root {
@@ -386,12 +323,12 @@ const GlobalStyle = createGlobalStyle`
   input,
   textarea,
   select {
-    color: var(--v2-text);
+    color: var(--color-text);
   }
 
   input::placeholder,
   textarea::placeholder {
-    color: var(--v2-faint);
+    color: var(--color-faint);
   }
 
   /* iOS Safari zooms the page into any field under 16px when it takes focus,
@@ -405,10 +342,6 @@ const GlobalStyle = createGlobalStyle`
     }
   }
 
-  .ant-modal-content,
-  .ant-dropdown,
-  .ant-dropdown-menu,
-  .ant-select-dropdown,
   .Toastify__toast {
     border: 1px solid var(--color-border-strong) !important;
     border-radius: var(--radius) !important;
@@ -416,16 +349,6 @@ const GlobalStyle = createGlobalStyle`
     box-shadow: var(--shadow-overlay) !important;
   }
 
-  .ant-modal-header,
-  .ant-modal-footer {
-    border-color: var(--v2-stroke) !important;
-    background: transparent !important;
-  }
-
-  .ant-input,
-  .ant-input-affix-wrapper,
-  .ant-select-selector,
-  .ant-picker,
   input[type="text"],
   input[type="number"],
   input[type="search"],
@@ -437,21 +360,11 @@ const GlobalStyle = createGlobalStyle`
     box-shadow: none !important;
   }
 
-  .ant-input:hover,
-  .ant-input-affix-wrapper:hover,
-  .ant-select-selector:hover,
-  .ant-picker:hover,
   input[type="text"]:hover,
   input[type="number"]:hover,
   input[type="search"]:hover,
   textarea:hover {
-    border-color: var(--v2-blue) !important;
-  }
-
-  .ant-tag,
-  .ant-badge-status-text {
-    font-family: var(--font-mono) !important;
-    font-weight: 500 !important;
+    border-color: var(--color-primary) !important;
   }
 
   /* Global link styles */
@@ -462,32 +375,6 @@ const GlobalStyle = createGlobalStyle`
   a:hover {
     color: ${({ theme }) => theme.primaryColorHover};
   }
-
-  /* Theme color class overrides for the dark and kleros themes */
-  body:not([data-theme="light"]) {
-    .quaternary-background.theme-background,
-    .quaternary-background .theme-background {
-      background: ${({ theme }) => theme.elevatedBackground} !important;
-    }
-    .quaternary-color.theme-color,
-    .quaternary-color .theme-color {
-      color: ${({ theme }) => theme.textSecondary} !important;
-    }
-    .ternary-color.theme-color,
-    .ternary-color .theme-color {
-      color: ${({ theme }) => theme.textSecondary} !important;
-    }
-    .secondary-color.theme-color,
-    .secondary-color .theme-color {
-      color: ${({ theme }) => theme.textTertiary} !important;
-    }
-    .primary-color.theme-color,
-    .primary-color .theme-color {
-      color: ${({ theme }) => theme.primaryColor} !important;
-    }
-
-  }
-
 
   /*
    * Reduced motion: every animation and transition ends at once, and a loop

@@ -148,15 +148,6 @@ export interface DashboardUser {
   lastActiveAt: number
 }
 
-export interface DashboardMetrics {
-  registries: number
-  verifiedRegistries: number
-  curatedItems: number
-  activeVerification: number
-  disputes: number
-  curators: number
-}
-
 /** One UTC day of request activity (the 30-day window, all chains). */
 export interface DashboardDay {
   /** Unix seconds at 00:00 UTC */
@@ -237,5 +228,4 @@ export interface DashboardData {
   /** Per chain: the open-dispute read hit its row limit. */
   openDisputesCapped: Record<number, boolean>
   users: DashboardUser[]
-  metrics: DashboardMetrics
 }

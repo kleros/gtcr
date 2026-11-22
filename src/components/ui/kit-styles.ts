@@ -42,8 +42,6 @@ export const motionOk = (rules: ReturnType<typeof css>) => css`
   }
 `
 
-export type Tone = 'registered' | 'window' | 'contested' | 'off' | 'neutral'
-
 /** Figures: Geist at 13/18 and 500 with tabular numbers (counts, pages, units). */
 export const figureData = css`
   font-family: var(--font-figure);
@@ -380,49 +378,6 @@ export const skeletonBlock = css`
     animation: none;
   }
 `
-
-/** Small status dot with a soft halo in its own tone. */
-export const haloDot = (color: string) => css`
-  display: inline-block;
-  flex: 0 0 auto;
-  width: 8px;
-  height: 8px;
-  border-radius: var(--radius-pill);
-  background: ${color};
-  box-shadow:
-    0 0 0 3px color-mix(in srgb, ${color} 22%, transparent),
-    0 0 10px color-mix(in srgb, ${color} 45%, transparent);
-`
-
-const TONE_WORDS: Record<string, Tone> = {
-  registered: 'registered',
-  success: 'registered',
-  green: 'registered',
-  window: 'window',
-  processing: 'window',
-  info: 'window',
-  blue: 'window',
-  contested: 'contested',
-  warning: 'contested',
-  orange: 'contested',
-  gold: 'contested',
-  amber: 'contested',
-  yellow: 'contested',
-  off: 'off',
-  error: 'off',
-  danger: 'off',
-  red: 'off',
-  neutral: 'neutral',
-  default: 'neutral',
-  gray: 'neutral',
-  grey: 'neutral',
-}
-
-/** Maps a status word or a legacy color word onto a status role; undefined otherwise. */
-export const toneFor = (value?: string): Tone | undefined =>
-  value ? TONE_WORDS[value.toLowerCase()] : undefined
-
-export const toneColor = (tone: Tone): string => `var(--status-${tone})`
 
 export const joinClassNames = (
   ...parts: (string | false | null | undefined)[]

@@ -1,7 +1,6 @@
 import React from 'react'
 import styled, { css } from 'styled-components'
 import { Link } from 'react-router-dom'
-import { ipfsImageUrl } from 'utils/ipfs-parse'
 import { formatAbsolute } from 'utils/time'
 import { formatSince } from 'utils/format-since'
 import { CurateIcon, type CurateIconName } from 'components/curate/icons'
@@ -14,10 +13,6 @@ import { Avatar as ListLogo } from 'pages/browse/avatar'
  * logo, the relative time with its absolute UTC twin on hover, section
  * headings in display type, and the quiet state for empty panels.
  */
-
-/** A logo, on the IPFS gateway only (ipfsImageUrl says why). */
-export const mediaUrl = (uri?: string | null): string | null =>
-  ipfsImageUrl(uri) ?? null
 
 /* Holds the logo where a layout places it (grid areas, data hooks). */
 const LogoSlot = styled.span`

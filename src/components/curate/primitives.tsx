@@ -169,12 +169,6 @@ export const Surface = styled.div<{
     `}
 `
 
-export const Hairline = styled.hr`
-  margin: 0;
-  border: 0;
-  border-top: 1px solid var(--color-border);
-`
-
 export const Grid = styled.div<{ $min?: number; $gap?: number }>`
   display: grid;
   grid-template-columns: repeat(
@@ -182,17 +176,6 @@ export const Grid = styled.div<{ $min?: number; $gap?: number }>`
     minmax(${({ $min }) => $min ?? 280}px, 1fr)
   );
   gap: ${({ $gap }) => $gap ?? 16}px;
-`
-
-export const SplitGrid = styled.div<{ $rail?: number }>`
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) ${({ $rail }) => $rail ?? 360}px;
-  gap: 24px;
-  align-items: start;
-
-  @media (max-width: 1100px) {
-    grid-template-columns: 1fr;
-  }
 `
 
 /* ---------- Type ---------- */
@@ -1949,25 +1932,6 @@ export const Status = ({
   </StatusWrap>
 )
 
-/** Kept for the registry panels: a status label shown as a chip. */
-export const StatusPill = ({
-  tone,
-  children,
-}: {
-  tone: StatusTone
-  children: React.ReactNode
-}) => (
-  <Chip>
-    <StatusDot $tone={tone} aria-hidden />
-    {children}
-  </Chip>
-)
-
-/** An 8px indicator used next to "live" labels. */
-export const LiveDot = styled(StatusDot).attrs({
-  $tone: 'registered' as StatusTone,
-})``
-
 /** Progress rail; fill color follows the status tone, with a soft glow. */
 export const Rail = styled.div<{ $value: number; $tone?: StatusTone }>`
   position: relative;
@@ -1994,24 +1958,6 @@ export const Rail = styled.div<{ $value: number; $tone?: StatusTone }>`
     transition: width 400ms cubic-bezier(0.2, 0.8, 0.2, 1);
   }
 `
-
-/* ---------- Panels ---------- */
-
-export const PanelHeader = styled.div`
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 16px;
-`
-
-export const PanelTitle = styled(Subheading)`
-  display: flex;
-  align-items: center;
-  gap: 8px;
-`
-
-export const PanelHint = styled(Label)``
 
 /* ---------- Tables ---------- */
 
@@ -2088,29 +2034,6 @@ export const Table = styled.table`
     font-size: var(--fs-body);
     font-weight: 500;
     font-variant-numeric: tabular-nums;
-  }
-`
-
-/* ---------- Rows (comfortable list) ---------- */
-
-export const ListRow = styled(Link)`
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 16px;
-  min-height: 56px;
-  padding: 10px 16px;
-  border-bottom: 1px solid var(--color-border);
-  color: inherit;
-  text-decoration: none;
-  transition: background var(--motion);
-
-  &:last-child {
-    border-bottom: 0;
-  }
-
-  &:hover {
-    background: var(--color-raised);
   }
 `
 

@@ -16,7 +16,7 @@ import { Chip, SkeletonBlock, Small, truncateMiddle } from './primitives'
  * its type, images in a rounded frame that zooms on hover, and registry
  * references (GTCR address fields) as a small registry identity: logo, the
  * title that opens the list, the address (on an entry page, it opens the
- * explorer) and the Stake Curate chip. V2Card is the surface the factory shell builds on.
+ * explorer) and the Stake Curate chip.
  */
 
 export type V2Field = {
@@ -27,36 +27,6 @@ export type V2Field = {
   isIdentifier?: boolean
   allowedFileTypes?: string | string[]
 }
-
-export const V2Card = styled.div<{ $hover?: boolean }>`
-  position: relative;
-  overflow: hidden;
-  border: 1px solid var(--glass-border);
-  border-radius: var(--radius-lg);
-  background: var(--color-surface);
-  box-shadow:
-    inset 0 1px 0 var(--glass-highlight),
-    var(--shadow-card);
-  color: var(--color-text);
-  transition:
-    border-color var(--motion),
-    box-shadow var(--motion),
-    transform var(--motion);
-
-  ${({ $hover }) =>
-    $hover &&
-    css`
-      cursor: pointer;
-
-      &:hover {
-        border-color: var(--color-border-strong);
-        box-shadow:
-          inset 0 1px 0 var(--glass-highlight),
-          var(--shadow-card-hover);
-        transform: translateY(-1px);
-      }
-    `}
-`
 
 const FieldWrap = styled.div<{ $image?: boolean; $inherit?: boolean }>`
   display: inline-flex;

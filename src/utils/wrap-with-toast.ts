@@ -361,9 +361,3 @@ export async function wrapWithToast(
     return { status: false }
   }
 }
-
-export async function catchShortMessage(promise: Promise<unknown>) {
-  return await promise.catch((err) =>
-    toast.error(parseWagmiError(err), ERROR_OPTIONS),
-  )
-}
