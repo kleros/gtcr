@@ -5,16 +5,17 @@ import { CurateIcon } from 'components/curate/icons'
 import { reveal } from 'components/curate/motion/reveal'
 
 /*
- * Layout for the Stake list factory, composed with the shared wizard
- * (v2-factory-shell, which holds the stepper and the step panel): the page
- * head, the transaction stepper of the deploy step and the rows of lists
- * deployed from this browser. Colors, type and radii come only from the
- * tokens; every entrance respects reduced motion.
+ * Layout both list factories (classic and Stake) share, composed with the
+ * shared wizard (v2-factory-shell, which holds the stepper and the step
+ * panel): the page head, the transaction stepper of the deploy step and the
+ * rows of lists deployed from this browser. Each page keeps its own lede.
+ * Colors, type and radii come only from the tokens; every entrance respects
+ * reduced motion.
  */
 
 /* ---------- Page head ---------- */
 
-export const StakeHead = styled.header`
+export const FactoryHead = styled.header`
   display: flex;
   flex-wrap: wrap;
   align-items: flex-end;
@@ -26,22 +27,14 @@ export const StakeHead = styled.header`
   }
 `
 
-export const StakeHeadCopy = styled.div`
+export const FactoryHeadCopy = styled.div`
   display: flex;
   flex-direction: column;
   gap: 14px;
   min-width: 0;
 `
 
-export const StakeLede = styled.p`
-  margin: 0;
-  max-width: 58ch;
-  color: var(--color-muted);
-  font-size: 16px;
-  line-height: 24px;
-`
-
-export const StakeLift = styled.div`
+export const FactoryLift = styled.div`
   ${reveal}
 `
 
@@ -298,7 +291,7 @@ export const TxStep = ({
 
 /* ---------- Deployed lists ---------- */
 
-export const StakeSectionHead = styled.div`
+export const FactorySectionHead = styled.div`
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
@@ -329,13 +322,13 @@ export const StakeSectionHead = styled.div`
   }
 `
 
-export const StakeDeploymentRows = styled.div`
+export const DeploymentRows = styled.div`
   display: flex;
   flex-direction: column;
   gap: 8px;
 `
 
-export const StakeDeploymentLink = styled(Link)`
+export const DeploymentLink = styled(Link)`
   display: grid;
   grid-template-columns: 40px minmax(0, 1fr) auto;
   align-items: center;
@@ -383,7 +376,7 @@ export const StakeDeploymentLink = styled(Link)`
   }
 `
 
-export const StakeDeploymentLogo = styled.span`
+export const DeploymentLogo = styled.span`
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -403,7 +396,7 @@ export const StakeDeploymentLogo = styled.span`
   }
 `
 
-export const StakeOpenHint = styled.span`
+export const OpenHint = styled.span`
   display: inline-flex;
   align-items: center;
   gap: 6px;

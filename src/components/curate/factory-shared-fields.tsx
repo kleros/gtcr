@@ -1,8 +1,11 @@
-import React, { useId, useRef, useState } from 'react'
+import React, { useCallback, useId, useRef, useState } from 'react'
 import styled, { css } from 'styled-components'
 import { useField } from 'formik'
+import { toast } from 'react-toastify'
 import { useAccount, useSwitchChain } from 'wagmi'
-import { useAtlasProvider } from '@kleros/kleros-app'
+import { Roles, useAtlasProvider } from '@kleros/kleros-app'
+import { toPng } from 'utils/image-to-png'
+import { uploadFailure } from 'utils/upload-restrictions'
 import { appKitModal } from 'config/wagmi'
 import { NETWORKS_INFO } from 'config/networks'
 import useUrlChainId from 'hooks/use-url-chain-id'
@@ -32,149 +35,36 @@ import {
 } from 'components/curate/primitives'
 
 /*
- * The Stake wizard's controls: a labelled field with one line of help and
- * the validation message inline, text and amount inputs, a select (the
- * app's glass Select), a lit range slider, a switch (the app's lit Switch),
- * the wallet gate (connect, switch chain, sign in) and the IPFS upload
- * through Atlas. Formik binds through `useField`, so the steps keep their
- * `withFormik` wrappers and schemas.
+ * The form controls both list factories (classic and Stake) build their
+ * steps from: a labelled field with one line of plain help and the
+ * validation message inline, text and amount inputs, a select, a switch, a
+ * range slider with a lit fill, the wallet gate (connect, switch chain, sign
+ * in) and the IPFS upload through Atlas. Formik binding goes through
+ * `useField`, so the steps keep their `withFormik` wrappers and schemas.
  */
 
 /* ---------- Layout ---------- */
 
-/** The step body: each child rises in, staggered, when a step opens. */
-export const StepBody = styled.div<{ $gap?: number }>`
-  display: flex;
-  flex-direction: column;
-  gap: ${({ $gap }) => $gap ?? 24}px;
-
-  > * {
-    ${reveal}
-  }
-
-  > *:nth-child(1) {
-    --i: 0;
-  }
-  > *:nth-child(2) {
-    --i: 1;
-  }
-  > *:nth-child(3) {
-    --i: 2;
-  }
-  > *:nth-child(4) {
-    --i: 3;
-  }
-  > *:nth-child(n + 5) {
-    --i: 4;
-  }
-`
-
-/**
- * Two columns from 720px up. `$alignEnd` lines the inputs up on one row
- * when the help above them wraps to different heights.
- */
-export const FieldGrid = styled.div<{ $columns?: 2 | 3; $alignEnd?: boolean }>`
-  display: grid;
-  grid-template-columns: repeat(
-    ${({ $columns }) => $columns ?? 2},
-    minmax(0, 1fr)
-  );
-  align-items: ${({ $alignEnd }) => ($alignEnd ? 'end' : 'start')};
-  gap: 20px 24px;
-
-  @media (max-width: 720px) {
-    grid-template-columns: minmax(0, 1fr);
-  }
-`
-
-/** Shown only where the sticky preview is not beside the form. */
-export const NarrowOnly = styled.div`
-  display: none;
-
-  @media (max-width: 1080px) {
-    display: block;
-  }
-`
-
-/** A quiet raised block inside a step (no border, no nested panel). */
-export const Note = styled.div`
+const Shell = styled.div`
   display: flex;
   flex-direction: column;
   gap: 8px;
-  padding: 14px 16px;
-  border-radius: var(--radius);
-  background: var(--color-raised);
+  min-width: 0;
 `
 
-const DividerShell = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 12px;
-
-  &::after {
-    content: '';
-    flex: 1;
-    height: 1px;
-    background: var(--glass-border);
-  }
-`
-
-/** Hairline between groups of fields, with an optional small label. */
-export const Divider = ({ label }: { label?: React.ReactNode }) => (
-  <DividerShell role="separator">
-    {label && <Label $tone="faint">{label}</Label>}
-  </DividerShell>
-)
-
-const HeaderShell = styled.div`
+const FieldHead = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 2px;
+  min-width: 0;
 `
 
-const StepTitle = styled.h2`
-  margin: 0;
+const FieldLabel = styled.label`
   color: var(--color-text);
-  font-family: var(--font-display);
-  font-size: clamp(24px, 1vw + 16px, 30px);
-  line-height: 1.12;
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
   font-weight: 500;
-  letter-spacing: -0.03em;
-
-  /* Focused when the step opens (see useFactoryWizard): the app's ring for keyboards only. */
-  &:focus {
-    outline: none;
-  }
-
-  &:focus-visible {
-    outline: 2px solid var(--color-primary);
-    outline-offset: 2px;
-    border-radius: var(--radius-sm);
-  }
 `
-
-const StepLede = styled.p`
-  margin: 0;
-  max-width: 60ch;
-  color: var(--color-muted);
-  font-size: var(--fs-body-lg);
-  line-height: var(--lh-body-lg);
-`
-
-export const StepHeader = ({
-  heading,
-  lede,
-}: {
-  heading: string
-  lede?: React.ReactNode
-}) => (
-  <HeaderShell>
-    <StepTitle tabIndex={-1}>{heading}</StepTitle>
-    {lede && <StepLede>{lede}</StepLede>}
-  </HeaderShell>
-)
-
-/* ---------- Text ---------- */
 
 export const Help = styled.p`
   margin: 0;
@@ -203,46 +93,6 @@ export const ErrorText = styled.p`
     box-shadow: 0 0 0 3px var(--color-danger-soft);
   }
 `
-
-export const TextLink = styled.a`
-  color: var(--color-primary);
-  font-weight: 500;
-  text-decoration: none;
-
-  &:hover {
-    text-decoration: underline;
-  }
-`
-
-/** Text for screen readers only. */
-export const VisuallyHidden = styled.span`
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-  white-space: nowrap;
-`
-
-/**
- * An image from IPFS rendered as <img> (never interpolated into CSS); if it
- * fails to load, the fallback shows instead.
- */
-export const SafeImage = ({
-  src,
-  alt,
-  fallback,
-}: {
-  src?: string
-  alt: string
-  fallback: React.ReactNode
-}) => {
-  const [failed, setFailed] = useState<string>()
-  if (!src || failed === src) return <>{fallback}</>
-  return <img src={src} alt={alt} onError={() => setFailed(src)} />
-}
-
-/* ---------- Inputs ---------- */
 
 export const Input = styled(TextInput)`
   &[aria-invalid='true'] {
@@ -274,6 +124,61 @@ export const AmountInput = styled(Input)`
   font-family: var(--font-figure);
   font-weight: 500;
   font-variant-numeric: tabular-nums;
+`
+
+/**
+ * Two columns from 720px up; fields inside a step sit side by side.
+ * `$alignEnd` lines the inputs up on one row when the help above them wraps
+ * to different heights.
+ */
+export const FieldGrid = styled.div<{ $columns?: 2 | 3; $alignEnd?: boolean }>`
+  display: grid;
+  grid-template-columns: repeat(
+    ${({ $columns }) => $columns ?? 2},
+    minmax(0, 1fr)
+  );
+  align-items: ${({ $alignEnd }) => ($alignEnd ? 'end' : 'start')};
+  gap: 20px 24px;
+
+  @media (max-width: 720px) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+`
+
+/** Shown only where the sticky preview is not beside the form. */
+export const NarrowOnly = styled.div`
+  display: none;
+
+  @media (max-width: 1080px) {
+    display: block;
+  }
+`
+
+/** The step body: each child rises in, staggered, when a step opens. */
+export const StepBody = styled.div<{ $gap?: number }>`
+  display: flex;
+  flex-direction: column;
+  gap: ${({ $gap }) => $gap ?? 24}px;
+
+  > * {
+    ${reveal}
+  }
+
+  > *:nth-child(1) {
+    --i: 0;
+  }
+  > *:nth-child(2) {
+    --i: 1;
+  }
+  > *:nth-child(3) {
+    --i: 2;
+  }
+  > *:nth-child(4) {
+    --i: 3;
+  }
+  > *:nth-child(n + 5) {
+    --i: 4;
+  }
 `
 
 /* The kit's glass Select at the width and type size of the inputs around it. */
@@ -340,6 +245,25 @@ export const Select = ({
     ))}
   </SelectField>
 )
+
+const UnitRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  ${Input} {
+    flex: 1;
+  }
+`
+
+const Unit = styled.span`
+  flex: 0 0 auto;
+  min-width: 32px;
+  color: var(--color-muted);
+  font-size: var(--fs-small);
+  line-height: var(--lh-small);
+  white-space: nowrap;
+`
 
 const thumb = css`
   width: 20px;
@@ -412,7 +336,7 @@ const RangeControl = styled.input`
   }
 `
 
-/** Range slider: the track lights up to the thumb. */
+/** Range slider: the filled part of the track lights up to the thumb. */
 export const RangeInput = (
   props: React.InputHTMLAttributes<HTMLInputElement>,
 ) => {
@@ -444,179 +368,6 @@ export const SliderEnds = styled.div`
   }
 `
 
-/* ---------- Field wrapper ---------- */
-
-const Shell = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  min-width: 0;
-`
-
-const FieldHead = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-`
-
-const FieldLabel = styled.label`
-  color: var(--color-text);
-  font-size: var(--fs-body);
-  line-height: var(--lh-body);
-  font-weight: 500;
-`
-
-export interface FieldA11y {
-  id: string
-  'aria-invalid': true | undefined
-  'aria-describedby': string | undefined
-}
-
-/**
- * Label, help, control and error wired together with ids, so screen readers
- * announce the help and the error with the control.
- */
-export const FormField = ({
-  id,
-  label,
-  help,
-  error,
-  showError,
-  children,
-}: {
-  id: string
-  label: React.ReactNode
-  help?: React.ReactNode
-  error?: string
-  showError?: boolean
-  children: (a11y: FieldA11y) => React.ReactNode
-}) => {
-  const helpId = `${id}-help`
-  const errorId = `${id}-error`
-  const invalid = !!showError && !!error
-  const describedBy =
-    [help ? helpId : '', invalid ? errorId : ''].filter(Boolean).join(' ') ||
-    undefined
-  return (
-    <Shell>
-      <FieldHead>
-        <FieldLabel htmlFor={id}>{label}</FieldLabel>
-        {help && <Help id={helpId}>{help}</Help>}
-      </FieldHead>
-      {children({
-        id,
-        'aria-invalid': invalid || undefined,
-        'aria-describedby': describedBy,
-      })}
-      {invalid && (
-        <ErrorText id={errorId} role="alert">
-          {error}
-        </ErrorText>
-      )}
-    </Shell>
-  )
-}
-
-const UnitRow = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 10px;
-
-  ${Input} {
-    flex: 1;
-  }
-`
-
-const Unit = styled.span`
-  flex: 0 0 auto;
-  min-width: 32px;
-  color: var(--color-muted);
-  font-size: var(--fs-small);
-  line-height: var(--lh-small);
-  white-space: nowrap;
-`
-
-/** A Formik-bound text field, with an optional unit after the input. */
-export const TextField = ({
-  name,
-  label,
-  help,
-  placeholder,
-  unit,
-  mono,
-  numeric,
-  normalize,
-  trailing,
-}: {
-  name: string
-  label: React.ReactNode
-  help?: React.ReactNode
-  placeholder?: string
-  unit?: React.ReactNode
-  /** An address or hex: Geist Mono, and pasted spaces around it dropped. */
-  mono?: boolean
-  numeric?: boolean
-  /** How the text is stored once the field is left (numbers: "0,5" as "0.5"). */
-  normalize?: (text: string) => string
-  /** Extra content under the input. */
-  trailing?: React.ReactNode
-}) => {
-  const id = useId()
-  const [field, meta, helpers] = useField<string | number | undefined>(name)
-  const Control = mono ? MonoInput : Input
-  const value =
-    field.value === undefined || field.value === null ? '' : String(field.value)
-  // Rewritten on leaving the field, never while typing: "1,000" keystroke by
-  // keystroke passes through "1," and must not become 1.
-  const tidy = normalize ?? (numeric ? normalizeDecimalInput : undefined)
-  return (
-    <FormField
-      id={id}
-      label={label}
-      help={help}
-      error={meta.error}
-      showError={meta.touched}
-    >
-      {(a11y) => (
-        <>
-          <UnitRow>
-            <Control
-              {...a11y}
-              type="text"
-              name={field.name}
-              value={value}
-              placeholder={placeholder}
-              inputMode={numeric ? 'decimal' : undefined}
-              spellCheck={mono ? false : undefined}
-              autoCapitalize={mono ? 'none' : undefined}
-              autoComplete="off"
-              onChange={
-                mono
-                  ? (event) => helpers.setValue(event.target.value.trim())
-                  : field.onChange
-              }
-              onBlur={(event) => {
-                field.onBlur(event)
-                // After the blur's own check, so the last one reads the
-                // stored text.
-                if (tidy && typeof field.value === 'string') {
-                  const tidied = tidy(field.value)
-                  if (tidied !== field.value) helpers.setValue(tidied)
-                }
-              }}
-            />
-            {unit && <Unit>{unit}</Unit>}
-          </UnitRow>
-          {trailing}
-        </>
-      )}
-    </FormField>
-  )
-}
-
-/* ---------- Switch ---------- */
-
 const SwitchRow = styled.label`
   display: flex;
   align-items: center;
@@ -635,150 +386,6 @@ const SwitchText = styled.span`
   line-height: var(--lh-body);
   font-weight: 500;
 `
-
-/** The app's lit Switch; a field names it with a label or `aria-label`. */
-export const Toggle = Switch
-
-export const SwitchField = ({
-  id: givenId,
-  label,
-  help,
-  checked,
-  disabled,
-  onChange,
-}: {
-  id?: string
-  label: React.ReactNode
-  help?: React.ReactNode
-  checked: boolean
-  disabled?: boolean
-  onChange: (checked: boolean) => void
-}) => {
-  const generated = useId()
-  const id = givenId ?? generated
-  return (
-    <SwitchRow htmlFor={id}>
-      <SwitchText>
-        {label}
-        {help && <Help>{help}</Help>}
-      </SwitchText>
-      {/* The app's lit Switch (a button), named by this label. */}
-      <Switch
-        id={id}
-        checked={checked}
-        disabled={disabled}
-        onChange={(next) => onChange(next)}
-      />
-    </SwitchRow>
-  )
-}
-
-/* ---------- Wallet and sign-in gate ---------- */
-
-export interface WalletGate {
-  /** The first blocker, if any: connect, switch chain, sign in. */
-  blocker?: string
-  /**
-   * The action that clears the blocker, for a page's primary button: its
-   * label names the action it unblocks ("Connect wallet to deploy").
-   */
-  fix?: { label: string; onClick: () => void; loading?: boolean }
-  /** A small secondary control that clears the blocker, or null. */
-  control: React.ReactNode
-}
-
-/**
- * Connect, then (for anything written on the URL chain) the chain switch,
- * then the Atlas sign-in. Each blocker names the action it blocks:
- * "Connect wallet to deploy", "Switch to Gnosis to deploy", "Sign in to deploy".
- */
-export const useWalletGate = ({
-  verb,
-  needsChain = false,
-}: {
-  verb: string
-  needsChain?: boolean
-}): WalletGate => {
-  // The wallet's own chain: useChainId() stays on the last chain the app
-  // supports while the wallet sits on one it does not.
-  const { isConnected, chainId: walletChainId } = useAccount()
-  const urlChainId = useUrlChainId()
-  const { switchChain, isPending: switching } = useSwitchChain()
-  const { isVerified, isSigningIn, authoriseUser } = useAtlasProvider()
-
-  const chainName = urlChainId
-    ? (NETWORKS_INFO[urlChainId as keyof typeof NETWORKS_INFO]?.name ??
-      `chain ${urlChainId}`)
-    : undefined
-  const wrongChain =
-    needsChain && isConnected && !!urlChainId && walletChainId !== urlChainId
-
-  const connect = () => appKitModal?.open({ view: 'Connect' })
-  // A wallet that does not switch says why (a declined request stays quiet).
-  const switchToUrlChain = () => {
-    if (urlChainId)
-      switchChain(
-        { chainId: urlChainId },
-        { onError: (err) => reportSwitchFailure(err, chainName) },
-      )
-  }
-  const startSignIn = () => signInWithToast(authoriseUser)
-
-  if (!isConnected)
-    return {
-      blocker: `Connect wallet to ${verb}`,
-      fix: { label: `Connect wallet to ${verb}`, onClick: connect },
-      control: (
-        <Button type="button" $variant="secondary" $size="sm" onClick={connect}>
-          <CurateIcon name="wallet" size={14} />
-          Connect wallet
-        </Button>
-      ),
-    }
-  if (wrongChain && urlChainId)
-    return {
-      blocker: `Switch to ${chainName} to ${verb}`,
-      fix: {
-        label: `Switch to ${chainName} to ${verb}`,
-        onClick: switchToUrlChain,
-        loading: switching,
-      },
-      control: (
-        <Button
-          type="button"
-          $variant="secondary"
-          $size="sm"
-          disabled={switching}
-          onClick={switchToUrlChain}
-        >
-          {switching ? 'Waiting…' : `Switch to ${chainName}`}
-        </Button>
-      ),
-    }
-  if (!isVerified)
-    return {
-      blocker: `Sign in to ${verb}`,
-      fix: {
-        label: `Sign in to ${verb}`,
-        onClick: startSignIn,
-        loading: isSigningIn,
-      },
-      control: (
-        <Button
-          type="button"
-          $variant="secondary"
-          $size="sm"
-          disabled={isSigningIn}
-          onClick={startSignIn}
-        >
-          {isSigningIn ? 'Waiting…' : 'Sign in'}
-        </Button>
-      ),
-    }
-  return { control: null }
-}
-
-/* ---------- Upload ---------- */
 
 const UploadRow = styled.div<{
   $empty: boolean
@@ -873,6 +480,423 @@ const HiddenInput = styled.input`
   white-space: nowrap;
 `
 
+/**
+ * An image from IPFS or a list's meta-evidence, rendered as <img> (never
+ * interpolated into CSS); if it fails to load, the fallback shows instead.
+ */
+export const SafeImage = ({
+  src,
+  alt,
+  fallback,
+}: {
+  src?: string
+  alt: string
+  fallback: React.ReactNode
+}) => {
+  const [failed, setFailed] = useState<string>()
+  if (!src || failed === src) return <>{fallback}</>
+  return <img src={src} alt={alt} onError={() => setFailed(src)} />
+}
+
+/** Text for screen readers only (a dash's meaning, an icon's name). */
+export const VisuallyHidden = styled.span`
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+`
+
+export const TextLink = styled.a`
+  color: var(--color-primary);
+  font-weight: 500;
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+`
+
+/** A quiet raised block inside a step (no border, no nested panel). */
+export const Note = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 16px;
+  border-radius: var(--radius);
+  background: var(--color-raised);
+`
+
+/** Hairline between groups of fields, with an optional small label. */
+export const Divider = ({ label }: { label?: React.ReactNode }) => (
+  <DividerShell role="separator">
+    {label && <Label $tone="faint">{label}</Label>}
+  </DividerShell>
+)
+
+const DividerShell = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  &::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--glass-border);
+  }
+`
+
+/* ---------- Step header ---------- */
+
+const HeaderShell = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+`
+
+const StepTitle = styled.h2`
+  margin: 0;
+  color: var(--color-text);
+  font-family: var(--font-display);
+  font-size: clamp(24px, 1vw + 16px, 30px);
+  line-height: 1.12;
+  font-weight: 500;
+  letter-spacing: -0.03em;
+
+  /* Focused when the step opens (see useFactoryWizard): the app's ring for keyboards only. */
+  &:focus {
+    outline: none;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
+  }
+`
+
+const StepLede = styled.p`
+  margin: 0;
+  max-width: 60ch;
+  color: var(--color-muted);
+  font-size: var(--fs-body-lg);
+  line-height: var(--lh-body-lg);
+`
+
+export const StepHeader = ({
+  eyebrow,
+  heading,
+  lede,
+}: {
+  eyebrow?: React.ReactNode
+  heading: string
+  lede?: React.ReactNode
+}) => (
+  <HeaderShell>
+    {eyebrow && <Label $tone="primary">{eyebrow}</Label>}
+    <StepTitle tabIndex={-1}>{heading}</StepTitle>
+    {lede && <StepLede>{lede}</StepLede>}
+  </HeaderShell>
+)
+
+/* ---------- Field wrapper ---------- */
+
+export interface FieldA11y {
+  id: string
+  'aria-invalid': true | undefined
+  'aria-describedby': string | undefined
+}
+
+export const FormField = ({
+  id,
+  label,
+  help,
+  error,
+  showError,
+  children,
+}: {
+  id: string
+  label: React.ReactNode
+  help?: React.ReactNode
+  error?: string
+  showError?: boolean
+  children: (a11y: FieldA11y) => React.ReactNode
+}) => {
+  const helpId = `${id}-help`
+  const errorId = `${id}-error`
+  const invalid = !!showError && !!error
+  const describedBy =
+    [help ? helpId : '', invalid ? errorId : ''].filter(Boolean).join(' ') ||
+    undefined
+  return (
+    <Shell>
+      <FieldHead>
+        <FieldLabel htmlFor={id}>{label}</FieldLabel>
+        {help && <Help id={helpId}>{help}</Help>}
+      </FieldHead>
+      {children({
+        id,
+        'aria-invalid': invalid || undefined,
+        'aria-describedby': describedBy,
+      })}
+      {invalid && (
+        <ErrorText id={errorId} role="alert">
+          {error}
+        </ErrorText>
+      )}
+    </Shell>
+  )
+}
+
+/* ---------- Formik-bound text field ---------- */
+
+export const TextField = ({
+  name,
+  label,
+  help,
+  placeholder,
+  unit,
+  mono,
+  numeric,
+  normalize,
+  trailing,
+}: {
+  name: string
+  label: React.ReactNode
+  help?: React.ReactNode
+  placeholder?: string
+  /** A unit after the input: the currency, "hours", "%". */
+  unit?: React.ReactNode
+  /** An address or hex: Geist Mono, and pasted spaces around it dropped. */
+  mono?: boolean
+  numeric?: boolean
+  /** How the text is stored once the field is left (numbers: "0,5" as "0.5"). */
+  normalize?: (text: string) => string
+  /** Extra content under the input, e.g. the total with the arbitration cost. */
+  trailing?: React.ReactNode
+}) => {
+  const id = useId()
+  const [field, meta, helpers] = useField<string | number | undefined>(name)
+  const Control = mono ? MonoInput : Input
+  const value =
+    field.value === undefined || field.value === null ? '' : String(field.value)
+  // Rewritten on leaving the field, never while typing: "1,000" keystroke by
+  // keystroke passes through "1," and must not become 1.
+  const tidy = normalize ?? (numeric ? normalizeDecimalInput : undefined)
+  return (
+    <FormField
+      id={id}
+      label={label}
+      help={help}
+      error={meta.error}
+      showError={meta.touched}
+    >
+      {(a11y) => (
+        <>
+          <UnitRow>
+            <Control
+              {...a11y}
+              type="text"
+              name={field.name}
+              value={value}
+              placeholder={placeholder}
+              inputMode={numeric ? 'decimal' : undefined}
+              spellCheck={mono ? false : undefined}
+              autoCapitalize={mono ? 'none' : undefined}
+              autoComplete="off"
+              onChange={
+                mono
+                  ? (event) => helpers.setValue(event.target.value.trim())
+                  : field.onChange
+              }
+              onBlur={(event) => {
+                field.onBlur(event)
+                // After the blur's own check, so the last one reads the
+                // stored text.
+                if (tidy && typeof field.value === 'string') {
+                  const tidied = tidy(field.value)
+                  if (tidied !== field.value) helpers.setValue(tidied)
+                }
+              }}
+            />
+            {unit && <Unit>{unit}</Unit>}
+          </UnitRow>
+          {trailing}
+        </>
+      )}
+    </FormField>
+  )
+}
+
+/* ---------- Switch ---------- */
+
+export const SwitchField = ({
+  id: givenId,
+  label,
+  help,
+  checked,
+  disabled,
+  onChange,
+}: {
+  id?: string
+  label: React.ReactNode
+  help?: React.ReactNode
+  checked: boolean
+  disabled?: boolean
+  onChange: (checked: boolean) => void
+}) => {
+  const generated = useId()
+  const id = givenId ?? generated
+  return (
+    <SwitchRow htmlFor={id}>
+      <SwitchText>
+        {label}
+        {help && <Help>{help}</Help>}
+      </SwitchText>
+      {/* The app's lit Switch (a button), named by this label. */}
+      <Switch
+        id={id}
+        checked={checked}
+        disabled={disabled}
+        onChange={(next) => onChange(next)}
+      />
+    </SwitchRow>
+  )
+}
+
+/* ---------- Wallet and sign-in gate ---------- */
+
+export interface WalletGate {
+  /** The first blocker, if any: connect, switch chain, sign in. */
+  blocker?: string
+  /**
+   * The action that clears the blocker, for a page's primary button: its
+   * label names the action it unblocks ("Connect wallet to deploy").
+   */
+  fix?: { label: string; onClick: () => void; loading?: boolean }
+  /** A small secondary control that clears the blocker, or null. */
+  control: React.ReactNode
+}
+
+/**
+ * Connect, then (for anything that writes on the URL chain) the chain
+ * switch, then the Atlas sign-in uploads need. Each blocker names the
+ * action it blocks: "Connect wallet to upload the logo".
+ */
+export const useWalletGate = ({
+  verb,
+  needsChain = false,
+}: {
+  verb: string
+  needsChain?: boolean
+}): WalletGate => {
+  // The wallet's own chain: useChainId() stays on the last chain the app
+  // supports while the wallet sits on one it does not.
+  const { isConnected, chainId: walletChainId } = useAccount()
+  const urlChainId = useUrlChainId()
+  const { switchChain, isPending: switching } = useSwitchChain()
+  const { isVerified, isSigningIn, authoriseUser } = useAtlasProvider()
+
+  const chainName = urlChainId
+    ? (NETWORKS_INFO[urlChainId as keyof typeof NETWORKS_INFO]?.name ??
+      `chain ${urlChainId}`)
+    : undefined
+  const wrongChain =
+    needsChain && isConnected && !!urlChainId && walletChainId !== urlChainId
+
+  const connect = () => appKitModal?.open({ view: 'Connect' })
+  // A wallet that does not switch says why (a declined request stays quiet).
+  const switchToUrlChain = () => {
+    if (urlChainId)
+      switchChain(
+        { chainId: urlChainId },
+        { onError: (err) => reportSwitchFailure(err, chainName) },
+      )
+  }
+  const startSignIn = () => signInWithToast(authoriseUser)
+
+  if (!isConnected)
+    return {
+      blocker: `Connect wallet to ${verb}`,
+      fix: { label: `Connect wallet to ${verb}`, onClick: connect },
+      control: (
+        <Button type="button" $variant="secondary" $size="sm" onClick={connect}>
+          <CurateIcon name="wallet" size={14} />
+          Connect wallet
+        </Button>
+      ),
+    }
+  if (wrongChain && urlChainId)
+    return {
+      blocker: `Switch to ${chainName} to ${verb}`,
+      fix: {
+        label: `Switch to ${chainName} to ${verb}`,
+        onClick: switchToUrlChain,
+        loading: switching,
+      },
+      control: (
+        <Button
+          type="button"
+          $variant="secondary"
+          $size="sm"
+          disabled={switching}
+          onClick={switchToUrlChain}
+        >
+          {switching ? 'Waiting…' : `Switch to ${chainName}`}
+        </Button>
+      ),
+    }
+  if (!isVerified)
+    return {
+      blocker: `Sign in to ${verb}`,
+      fix: {
+        label: `Sign in to ${verb}`,
+        onClick: startSignIn,
+        loading: isSigningIn,
+      },
+      control: (
+        <Button
+          type="button"
+          $variant="secondary"
+          $size="sm"
+          disabled={isSigningIn}
+          onClick={startSignIn}
+        >
+          {isSigningIn ? 'Waiting…' : 'Sign in'}
+        </Button>
+      ),
+    }
+  return { control: null }
+}
+
+/* ---------- IPFS upload through Atlas ---------- */
+
+const IMAGE_TYPES = new Set([
+  'image/png',
+  'image/jpeg',
+  'image/webp',
+  'image/svg+xml',
+])
+const IMAGE_MAX_MB = 2
+const PDF_MAX_MB = 4
+
+/** The type and size rules both factories enforce before uploading. */
+const rejectUpload = (file: File, kind: 'image' | 'pdf'): string => {
+  if (kind === 'image') {
+    if (!IMAGE_TYPES.has(file.type))
+      return 'Use a PNG, SVG, WebP or JPEG image.'
+    if (file.size / 1024 / 1024 >= IMAGE_MAX_MB)
+      return `The image must be smaller than ${IMAGE_MAX_MB}\u00A0MB.`
+    return ''
+  }
+  if (file.type !== 'application/pdf') return 'Upload the file as a PDF.'
+  if (file.size / 1024 / 1024 >= PDF_MAX_MB)
+    return `The file must be smaller than ${PDF_MAX_MB}\u00A0MB.`
+  return ''
+}
+
 /** "/ipfs/Qm…/logo.png" → "Qm…/logo.png", for the mono line under an upload. */
 const shortPath = (value: string): string => {
   const path = value.replace(/^\/?ipfs\//, '').replace(/^ipfs:\/\//, '')
@@ -881,70 +905,71 @@ const shortPath = (value: string): string => {
   return `${truncateMiddle(cid, 6, 4)}${name ? `/${name}` : ''}`
 }
 
-/**
- * One upload: the current file as a thumbnail or a link, its IPFS path, the
- * acceptance rule, and a button that opens the file picker behind the
- * wallet and Atlas sign-in gate (uploads go through Atlas).
- */
 export const UploadField = ({
   id,
   label,
   help,
-  hint,
   kind,
-  accept,
+  role,
   value,
-  uploading,
   error,
   showError,
   what,
-  reject,
-  onPick,
+  previewAlt,
+  onChange,
 }: {
   id: string
   label: React.ReactNode
   help?: React.ReactNode
-  /**
-   * The acceptance rule ("PNG, SVG, WebP or JPEG · under 2 MB"). A limit is
-   * held together here (the word before its figure, the figure, the unit), so
-   * a narrow row breaks the line at the middot, never inside the limit.
-   */
-  hint: string
   kind: 'image' | 'pdf'
-  accept: string
-  /** The IPFS path once uploaded, or an empty string. */
+  role: Roles
+  /** The IPFS URI already uploaded, or an empty string. */
   value: string
-  uploading: boolean
   error?: string
   showError?: boolean
-  /** "the logo", "the policy": used in the blocker and the button. */
+  /** "the logo", "the policy": used in the blockers and the button. */
   what: string
-  /** The problem with a picked file, or '' when it is acceptable. */
-  reject: (file: File) => string
-  onPick: (file: File) => void
+  previewAlt?: string
+  onChange: (uri: string) => void
 }) => {
   const inputRef = useRef<HTMLInputElement>(null)
+  const [uploading, setUploading] = useState(false)
   const [rejection, setRejection] = useState('')
+  const { uploadFile } = useAtlasProvider()
   const gate = useWalletGate({ verb: `upload ${what}` })
   const invalid = !!showError && !!error
   const uri = value ? parseIpfs(value) : ''
   const noun = what.replace(/^the /, '')
-  const rule = hint.replace(
-    /(\S+) (\d[\d.,]*) (?=[KMG]?B\b)/g,
-    '$1\u00A0$2\u00A0',
+
+  const pick = useCallback(
+    async (file: File) => {
+      // A refused file is said once, in the alert under the row.
+      const problem = rejectUpload(file, kind)
+      setRejection(problem)
+      if (problem) return
+      setUploading(true)
+      try {
+        // Atlas takes logos as PNG only: anything else is redrawn first.
+        const prepared = role === Roles.Logo ? await toPng(file) : file
+        const fileURI = await uploadFile(prepared, role)
+        if (!fileURI) throw new Error('Sign in, then pick the file again.')
+        onChange(fileURI)
+        toast.success('File uploaded successfully.')
+      } catch (err) {
+        console.error(err)
+        toast.error(uploadFailure(err))
+      } finally {
+        setUploading(false)
+      }
+    },
+    [kind, onChange, role, uploadFile],
   )
 
-  const pick = (file: File) => {
-    const problem = reject(file)
-    setRejection(problem)
-    if (!problem) onPick(file)
-  }
-
   /*
-   * A file dropped on the row goes through `pick`: the caller's own rule,
-   * the same message when it fails and the same upload when it passes. While
-   * the wallet or Atlas sign-in blocks, or an upload is in flight, the row
-   * says so during the drag rather than taking a file it cannot send, in
+   * A file dropped on the row goes through `pick`: the same type and size
+   * rules, the same message and the same upload as the button's file picker.
+   * While the wallet or Atlas sign-in blocks, or an upload is in flight, the
+   * row says so during the drag instead of taking a file it cannot send, in
    * the gate's own words, exactly as the gate gives them: "Connect wallet to
    * upload the logo" without a wallet, "Sign in to upload the logo" with one
    * that has not signed in.
@@ -955,7 +980,9 @@ export const UploadField = ({
       : uploading
         ? 'An upload is already going.'
         : '',
-    onFile: pick,
+    onFile: (file) => {
+      void pick(file)
+    },
     onRefuse: setRejection,
   })
 
@@ -981,17 +1008,19 @@ export const UploadField = ({
                 {drop.refusal || (uri ? DROP_REPLACE : DROP_HINT)}
               </FileDropVeil>
             )}
-            <Thumb aria-hidden={kind === 'pdf' || undefined}>
-              {kind === 'image' ? (
+            {kind === 'image' ? (
+              <Thumb>
                 <SafeImage
                   src={uri || undefined}
-                  alt="List logo"
+                  alt={previewAlt ?? 'Uploaded image'}
                   fallback={<CurateIcon name="registry" size={20} />}
                 />
-              ) : (
+              </Thumb>
+            ) : (
+              <Thumb aria-hidden>
                 <CurateIcon name="policy" size={20} />
-              )}
-            </Thumb>
+              </Thumb>
+            )}
             <UploadMeta>
               <strong>
                 {uploading
@@ -1009,9 +1038,9 @@ export const UploadField = ({
                   rel="noopener noreferrer"
                   title={value}
                   aria-label={
-                    kind === 'image'
-                      ? 'Open the uploaded logo'
-                      : 'Open the uploaded PDF'
+                    kind === 'pdf'
+                      ? `Open the uploaded ${noun} (PDF)`
+                      : `Open the uploaded ${noun}`
                   }
                 >
                   <Data $mono style={{ color: 'inherit' }}>
@@ -1019,7 +1048,15 @@ export const UploadField = ({
                   </Data>
                 </TextLink>
               ) : (
-                <Small $faint>{rule}</Small>
+                <Small $faint>
+                  {/*
+                   * The limit holds together ("under 2 MB"), so a narrow row
+                   * breaks the line at the middot, never inside the limit.
+                   */}
+                  {kind === 'image'
+                    ? `PNG, SVG, WebP or JPEG · under\u00A0${IMAGE_MAX_MB}\u00A0MB`
+                    : `PDF · under\u00A0${PDF_MAX_MB}\u00A0MB`}
+                </Small>
               )}
             </UploadMeta>
             {/*
@@ -1027,16 +1064,32 @@ export const UploadField = ({
              * wallet", "Sign in"), which says the gate once; the group's
              * name gives a screen reader the whole of it.
              */}
-            <Row
-              data-upload-actions
-              role={gate.blocker ? 'group' : undefined}
-              aria-label={gate.blocker}
-              $gap={8}
-              $justify="flex-end"
-            >
-              {gate.blocker ? (
-                gate.control
-              ) : (
+            {gate.blocker ? (
+              <Row
+                data-upload-actions
+                role="group"
+                aria-label={gate.blocker}
+                $gap={8}
+                $justify="flex-end"
+              >
+                {gate.control}
+              </Row>
+            ) : (
+              <Row data-upload-actions $gap={6} $justify="flex-end" $wrap>
+                {uri && (
+                  <Button
+                    type="button"
+                    $variant="ghost"
+                    $size="sm"
+                    disabled={uploading}
+                    onClick={() => {
+                      setRejection('')
+                      onChange('')
+                    }}
+                  >
+                    Remove
+                  </Button>
+                )}
                 <Button
                   type="button"
                   $variant="secondary"
@@ -1051,20 +1104,24 @@ export const UploadField = ({
                       ? 'Replace'
                       : `Choose ${what}`}
                 </Button>
-              )}
-            </Row>
+              </Row>
+            )}
             <HiddenInput
               ref={inputRef}
               id={a11y.id}
               type="file"
-              accept={accept}
+              accept={kind === 'image' ? [...IMAGE_TYPES].join(',') : '.pdf'}
+              // The field's label points here: while the gate blocks or an
+              // upload is going, clicking it must not open the picker.
               disabled={uploading || !!gate.blocker}
               tabIndex={-1}
               aria-invalid={a11y['aria-invalid']}
               aria-describedby={a11y['aria-describedby']}
               onChange={(event) => {
                 const picked = event.target.files?.[0]
-                if (picked) pick(picked)
+                if (picked) void pick(picked)
+                // Cleared on every pick, so the same file picked again (after
+                // a rejection or a Remove) still fires a change.
                 event.target.value = ''
               }}
             />
@@ -1083,6 +1140,11 @@ export const UploadField = ({
                 {gate.blocker}
               </Small>
             ))}
+          {uploading && (
+            <Small $muted role="status">
+              Uploading to IPFS…
+            </Small>
+          )}
           {rejection && <ErrorText role="alert">{rejection}</ErrorText>}
         </>
       )}

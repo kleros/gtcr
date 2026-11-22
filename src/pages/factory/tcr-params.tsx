@@ -1,5 +1,4 @@
 import React, { useEffect, useState, useCallback, useId } from 'react'
-import styled from 'styled-components'
 import { withFormik, useField, type FormikProps } from 'formik'
 import { useDebounce } from 'use-debounce'
 import { ethers, type BigNumber } from 'ethers'
@@ -16,24 +15,24 @@ import {
   useFailedSubmitFocus,
 } from 'components/curate/v2-factory-shell'
 import { plainDecimal, typedNumber } from 'pages/factory-permanent/format'
-import KlerosParams from './kleros-params'
+import KlerosParams from 'components/curate/factory-shared-kleros'
 import {
+  AmountInput,
   Divider,
   FieldGrid,
   FormField,
-  Input,
   NarrowOnly,
   Note,
   RangeInput,
+  SliderEnds,
   StepBody,
   StepHeader,
   SwitchField,
   TextField,
   TextLink,
   UploadField,
-  formatNative,
-  totalDeposit,
-} from './fields'
+} from 'components/curate/factory-shared-fields'
+import { formatNative, totalDeposit } from './amounts'
 import { tcrSchemaFor, type FactorySection } from './schemas'
 import type { StepProps, TcrState } from '.'
 import useWalletGovernor from './use-wallet-governor'
@@ -62,25 +61,9 @@ const SECTION_COPY: Record<FactorySection, { heading: string; lede: string }> =
     },
   }
 
-export const AmountInput = styled(Input)`
-  flex: 0 0 auto;
-  width: 104px;
-  text-align: right;
-  font-family: var(--font-figure);
-  font-weight: 500;
-  font-variant-numeric: tabular-nums;
-`
-
-export const SliderEnds = styled.div`
-  display: flex;
-  justify-content: space-between;
-  gap: 8px;
-  padding-right: 164px;
-
-  @media (max-width: 520px) {
-    padding-right: 0;
-  }
-`
+/** Under the court controls: who pays the arbitration cost in a classic list. */
+export const COST_NOTE =
+  'Paid up front to open a dispute, refunded to the side that wins.'
 
 const DEPOSIT_MIN = 0
 const DEPOSIT_MAX = 30
@@ -354,7 +337,9 @@ const TCRParams = ({
             previewAlt="List logo"
             onChange={(uri) => {
               setFieldValue('tcrLogo', uri)
-              setFieldTouched('tcrLogo', true)
+              // setFieldValue has validated the new value; touching must not
+              // validate again, as that would check the previous one.
+              setFieldTouched('tcrLogo', true, false)
             }}
           />
         )}
@@ -383,7 +368,9 @@ const TCRParams = ({
             what="the policy"
             onChange={(uri) => {
               setFieldValue('tcrPrimaryDocument', uri)
-              setFieldTouched('tcrPrimaryDocument', true)
+              // setFieldValue has validated the new value; touching must not
+              // validate again, as that would check the previous one.
+              setFieldTouched('tcrPrimaryDocument', true, false)
             }}
           />
         )}
@@ -451,6 +438,7 @@ const TCRParams = ({
               policyAddress={policyAddress}
               setArbitratorExtraData={setArbitratorExtraData}
               library={chainProvider}
+              costNote={COST_NOTE}
             />
           ) : (
             <TextField

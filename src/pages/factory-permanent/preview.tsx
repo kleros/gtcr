@@ -9,7 +9,10 @@ import { parseIpfs } from 'utils/ipfs-parse'
 import { getArticleFor } from 'utils/string'
 import { formatAbsolute, formatDuration, formatDurationLong } from 'utils/time'
 import { CurateIcon } from 'components/curate/icons'
-import { AnimatedNumber } from 'components/curate/motion/animated-number'
+import {
+  AnimatedNumber,
+  amountFormat,
+} from 'components/curate/motion/animated-number'
 import {
   Chip,
   Label,
@@ -17,10 +20,14 @@ import {
   Surface,
   truncateMiddle,
 } from 'components/curate/primitives'
-import { SafeImage, VisuallyHidden } from './controls'
-import { useCourtSummary } from './court'
+import { VisuallyHidden } from 'components/curate/factory-shared-fields'
 import {
-  amountFormat,
+  MinusIcon,
+  Outcomes,
+  PreviewCourtRow,
+  PreviewIdentity,
+} from 'components/curate/factory-shared-preview'
+import {
   effectivePercent,
   formatMaybe,
   formatToken,
@@ -78,75 +85,6 @@ const Tag = styled.span`
     background: var(--color-primary);
     box-shadow: 0 0 0 3px var(--color-primary-soft);
   }
-`
-
-/* ---------- Identity ---------- */
-
-const Identity = styled.div`
-  display: grid;
-  grid-template-columns: 48px minmax(0, 1fr);
-  gap: 14px;
-  align-items: start;
-  padding-bottom: 18px;
-`
-
-const Logo = styled.span`
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 48px;
-  height: 48px;
-  overflow: hidden;
-  border: 1px solid var(--glass-border);
-  border-radius: var(--radius);
-  background: var(--color-raised);
-  color: var(--color-faint);
-
-  img {
-    display: block;
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-  }
-`
-
-const Name = styled.span<{ $empty?: boolean }>`
-  display: block;
-  overflow: hidden;
-  color: ${({ $empty }) =>
-    $empty ? 'var(--color-faint)' : 'var(--color-text)'};
-  font-family: var(--font-display);
-  font-size: 22px;
-  line-height: 26px;
-  font-weight: 500;
-  letter-spacing: -0.02em;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-`
-
-const Description = styled.span<{ $empty?: boolean }>`
-  display: -webkit-box;
-  margin-top: 2px;
-  overflow: hidden;
-  color: ${({ $empty }) =>
-    $empty ? 'var(--color-faint)' : 'var(--color-muted)'};
-  font-size: var(--fs-small);
-  line-height: var(--lh-small);
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-`
-
-/** One quiet line under the description: fields, then the submit label. */
-const Meta = styled.span`
-  display: block;
-  margin-top: 8px;
-  overflow: hidden;
-  color: var(--color-faint);
-  font-size: 13px;
-  line-height: 18px;
-  font-variant-numeric: tabular-nums;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 `
 
 /* ---------- What each side locks ---------- */
@@ -300,56 +238,6 @@ const Legend = styled.span`
     border-radius: var(--radius-pill);
   }
 `
-
-/*
- * What becomes of the money, one line per outcome, on the launch page's
- * bullet: every list in a box takes the same check, in an 18px column 10px
- * from its line, whatever the outcome; the bold lead words name it. The line
- * is as tall as the glyph, so the check sits on the first line's middle.
- */
-const Outcomes = styled.ul`
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin: 16px 0 0;
-  padding: 0;
-  list-style: none;
-
-  li {
-    display: grid;
-    grid-template-columns: 18px minmax(0, 1fr);
-    gap: 10px;
-    color: var(--color-muted);
-    font-size: 12px;
-    line-height: 18px;
-    text-wrap: pretty;
-  }
-
-  svg {
-    color: var(--color-primary);
-  }
-
-  li[data-con] svg {
-    color: var(--color-faint);
-  }
-
-  b {
-    color: var(--color-text);
-    font-weight: 500;
-  }
-`
-
-/** The mark for an outcome that can cost the submitter: a faint dash. */
-const MinusIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
-    <path
-      d="M7 12h10"
-      stroke="currentColor"
-      strokeWidth="1.85"
-      strokeLinecap="round"
-    />
-  </svg>
-)
 
 /* ---------- Timing ---------- */
 
@@ -684,27 +572,6 @@ const SubmissionTimeline = ({
   )
 }
 
-/* ---------- Court ---------- */
-
-const CourtRow = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-
-  strong {
-    min-width: 0;
-    overflow: hidden;
-    color: var(--color-text);
-    font-size: var(--fs-body);
-    line-height: var(--lh-body);
-    font-weight: 500;
-    text-align: right;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-`
-
 /* ---------- A side ---------- */
 
 const AmountFigure = ({ text, unit }: { text: string | null; unit: string }) =>
@@ -746,11 +613,6 @@ export const StakePreview = ({
     decimalsRead,
     loading: loadingSymbol,
   } = useTokenSymbol(tcrState.tokenAddress || undefined)
-  const court = useCourtSummary(
-    chainId,
-    tcrState.arbitratorAddress,
-    tcrState.arbitratorExtraData,
-  )
 
   const symbolKnown = !!tcrState.tokenAddress && symbol !== 'tokens'
   const unit = symbolKnown ? symbol : 'tokens'
@@ -799,25 +661,15 @@ export const StakePreview = ({
         Preview
       </Tag>
 
-      <Identity>
-        <Logo aria-hidden>
-          <SafeImage
-            src={logo || undefined}
-            alt=""
-            fallback={<CurateIcon name="registry" size={20} />}
-          />
-        </Logo>
-        <div style={{ minWidth: 0 }}>
-          <Name $empty={!title}>{title || 'Untitled list'}</Name>
-          <Description $empty={!description}>
-            {description || 'No description yet'}
-          </Description>
-          <Meta>
-            {fieldCount} {fieldCount === 1 ? 'field' : 'fields'}
-            {itemName ? ` · Submit ${article} ${itemName.toLowerCase()}` : ''}
-          </Meta>
-        </div>
-      </Identity>
+      <PreviewIdentity
+        logo={logo}
+        title={title}
+        description={description}
+        meta={[
+          `${fieldCount} ${fieldCount === 1 ? 'field' : 'fields'}`,
+          itemName ? `Submit ${article} ${itemName.toLowerCase()}` : '',
+        ]}
+      />
 
       <Block>
         <BlockHead>
@@ -951,24 +803,11 @@ export const StakePreview = ({
       </Block>
 
       <Block>
-        <CourtRow>
-          <Label $tone="muted">
-            {court.isKleros ? 'Kleros court' : 'Arbitrator'}
-          </Label>
-          <strong
-            title={
-              court.isKleros
-                ? undefined
-                : tcrState.arbitratorAddress || 'No arbitrator set'
-            }
-          >
-            {court.isKleros
-              ? (court.text ?? '—')
-              : tcrState.arbitratorAddress
-                ? truncateMiddle(tcrState.arbitratorAddress, 8, 6)
-                : '—'}
-          </strong>
-        </CourtRow>
+        <PreviewCourtRow
+          chainId={chainId}
+          arbitratorAddress={tcrState.arbitratorAddress}
+          extraData={tcrState.arbitratorExtraData}
+        />
       </Block>
     </Panel>
   )

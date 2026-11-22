@@ -29,13 +29,6 @@ export const DEFAULT_COLUMN: Column = {
   isIdentifier: true,
 }
 
-/** A field added with "Add field": same shape, not an identifier yet. */
-export const NEW_COLUMN: Column = {
-  label: '',
-  description: '',
-  type: ItemTypes.ADDRESS,
-}
-
 /**
  * The ERC-20 the wizard pre-fills as the stake token, per chain. A chain
  * without an entry starts with an empty token address and the list step
@@ -53,19 +46,6 @@ export const defaultStakeToken: Readonly<
 
 /** Bounds of the simple-mode stake slider (a control range, not a default). */
 export const STAKE_SLIDER = { min: 0, max: 30, step: 0.01 } as const
-
-/** Jurors in the first round: odd numbers from 1 to 33. */
-export const JURORS = { min: 1, max: 33, step: 2 } as const
-
-export const LOGO_TYPES = new Set([
-  'image/png',
-  'image/svg+xml',
-  'image/webp',
-  'image/jpeg',
-])
-export const LOGO_MAX_MB = 2
-export const POLICY_TYPE = 'application/pdf'
-export const POLICY_MAX_MB = 4
 
 export const EXAMPLE_POLICY_URL =
   'https://cdn.kleros.link/ipfs/QmUPsjDcKxNv6z6ktnmxkSb4LpqmQ7DT12yG5B73z9uLEy/curated-lists-primary-document.pdf'

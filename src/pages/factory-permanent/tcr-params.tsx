@@ -3,10 +3,7 @@ import styled from 'styled-components'
 import { useField, withFormik, type FormikProps } from 'formik'
 import { useDebounce } from 'use-debounce'
 import { ethers } from 'ethers'
-import { toast } from 'react-toastify'
-import { Roles, useAtlasProvider } from '@kleros/kleros-app'
-import { toPng } from 'utils/image-to-png'
-import { uploadFailure } from 'utils/upload-restrictions'
+import { Roles } from '@kleros/kleros-app'
 import { useEthersProvider } from 'hooks/ethers-adapters'
 import useArbitrationCost from 'hooks/arbitration-cost'
 import useNativeCurrency from 'hooks/native-currency'
@@ -30,7 +27,7 @@ import {
   FACTORY_COPY,
   useFailedSubmitFocus,
 } from 'components/curate/v2-factory-shell'
-import KlerosParams from './kleros-params'
+import KlerosParams from 'components/curate/factory-shared-kleros'
 import {
   AmountInput,
   Divider,
@@ -47,16 +44,8 @@ import {
   TextField,
   TextLink,
   UploadField,
-} from './controls'
-import {
-  EXAMPLE_POLICY_URL,
-  LOGO_MAX_MB,
-  LOGO_TYPES,
-  POLICY_MAX_MB,
-  POLICY_TYPE,
-  STAKE_SLIDER,
-  WIZARD_DEFAULTS,
-} from './defaults'
+} from 'components/curate/factory-shared-fields'
+import { EXAMPLE_POLICY_URL, STAKE_SLIDER, WIZARD_DEFAULTS } from './defaults'
 import {
   formatMaybe,
   enforcedStake as enforcedStakeText,
@@ -114,20 +103,6 @@ const SECTION_COPY: Record<FactorySection, { heading: string; lede: string }> =
       lede: 'The stake stays locked while an entry is listed; a successful challenger takes it.',
     },
   }
-
-const rejectLogo = (file: File): string => {
-  if (!LOGO_TYPES.has(file.type)) return 'Use a PNG, SVG, WebP or JPEG image.'
-  if (file.size / 1024 / 1024 >= LOGO_MAX_MB)
-    return `The image must be smaller than ${LOGO_MAX_MB} MB.`
-  return ''
-}
-
-const rejectPolicy = (file: File): string => {
-  if (file.type !== POLICY_TYPE) return 'Upload the policy as a PDF.'
-  if (file.size / 1024 / 1024 >= POLICY_MAX_MB)
-    return `The file must be smaller than ${POLICY_MAX_MB} MB.`
-  return ''
-}
 
 /* ---------- Token read-out ---------- */
 
@@ -297,16 +272,11 @@ const TCRParams = (props: TCRParamsProps) => {
   } = props
   const ids = useId()
   const nativeCurrency = useNativeCurrency()
-  const { uploadFile } = useAtlasProvider()
   // This form writes its fields back over the wizard's state, so the wallet
   // fills an empty or placeholder governor here as well.
   useWalletGovernor(values.governorAddress, (address) =>
     setFieldValue('governorAddress', address),
   )
-  const [uploading, setUploading] = useState<{
-    tcrLogo?: boolean
-    tcrPrimaryDocument?: boolean
-  }>({})
   const [advancedOptions, setAdvancedOptions] = useState(!!startAdvanced)
   // Next checks the fields under Advanced options too: when one of them
   // fails, the section opens so its error shows, and focus moves to it.
@@ -369,31 +339,6 @@ const TCRParams = (props: TCRParamsProps) => {
       ...fields,
     }))
   }, [values, setTcrState])
-
-  const upload = useCallback(
-    async (
-      field: 'tcrLogo' | 'tcrPrimaryDocument',
-      role: Roles,
-      file: File,
-    ) => {
-      setUploading((previous) => ({ ...previous, [field]: true }))
-      try {
-        // Atlas takes logos as PNG only: anything else is redrawn first.
-        const prepared = role === Roles.Logo ? await toPng(file) : file
-        const fileURI = await uploadFile(prepared, role)
-        if (!fileURI) throw new Error('Sign in, then pick the file again.')
-        setFieldValue(field, fileURI)
-        setFieldTouched(field, true, false)
-        toast.success('File uploaded successfully.')
-      } catch (err) {
-        console.error(err)
-        toast.error(uploadFailure(err))
-      } finally {
-        setUploading((previous) => ({ ...previous, [field]: false }))
-      }
-    },
-    [setFieldTouched, setFieldValue, uploadFile],
-  )
 
   // The typed text is stored as typed (a float would round an 18-decimal
   // amount before it is encoded), a decimal comma as the point: "0,05" is
@@ -480,16 +425,19 @@ const TCRParams = (props: TCRParamsProps) => {
             id={`${ids}-logo`}
             label="List logo"
             help="A square image, ideally with a transparent background."
-            hint={`PNG, SVG, WebP or JPEG · under ${LOGO_MAX_MB} MB`}
             kind="image"
-            accept={[...LOGO_TYPES].join(',')}
+            role={Roles.Logo}
             value={values.tcrLogo}
-            uploading={!!uploading.tcrLogo}
             error={errors.tcrLogo}
             showError={!!touched.tcrLogo}
             what="the logo"
-            reject={rejectLogo}
-            onPick={(file) => upload('tcrLogo', Roles.Logo, file)}
+            previewAlt="List logo"
+            onChange={(uri) => {
+              setFieldValue('tcrLogo', uri)
+              // setFieldValue has validated the new value; touching must not
+              // validate again, as that would check the previous one.
+              setFieldTouched('tcrLogo', true, false)
+            }}
           />
         )}
 
@@ -509,16 +457,18 @@ const TCRParams = (props: TCRParamsProps) => {
                 </TextLink>
               </>
             }
-            hint={`PDF · under ${POLICY_MAX_MB} MB`}
             kind="pdf"
-            accept={POLICY_TYPE}
+            role={Roles.Policy}
             value={values.tcrPrimaryDocument}
-            uploading={!!uploading.tcrPrimaryDocument}
             error={errors.tcrPrimaryDocument}
             showError={!!touched.tcrPrimaryDocument}
             what="the policy"
-            reject={rejectPolicy}
-            onPick={(file) => upload('tcrPrimaryDocument', Roles.Policy, file)}
+            onChange={(uri) => {
+              setFieldValue('tcrPrimaryDocument', uri)
+              // setFieldValue has validated the new value; touching must not
+              // validate again, as that would check the previous one.
+              setFieldTouched('tcrPrimaryDocument', true, false)
+            }}
           />
         )}
 
@@ -617,6 +567,7 @@ const TCRParams = (props: TCRParamsProps) => {
               policyAddress={policyAddress}
               setArbitratorExtraData={setArbitratorExtraData}
               library={chainProvider}
+              costNote="Each submitter deposits it with the entry and each challenger pays it to open a dispute; the winning side ends up with it back."
             />
           ) : (
             <TextField

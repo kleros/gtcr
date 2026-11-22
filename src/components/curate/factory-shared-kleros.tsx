@@ -4,8 +4,15 @@ import { ethers, type BigNumber } from 'ethers'
 import { abi as _IArbitrator } from '@kleros/erc-792/build/contracts/IArbitrator.json'
 import useNativeCurrency from 'hooks/native-currency'
 import useCourtPolicies from 'hooks/use-court-policies'
+import { useEthersProvider } from 'hooks/ethers-adapters'
+import { klerosAddresses } from 'config/tcr-addresses'
+import { encodeExtraData, readExtraData } from 'utils/string'
 import { ARBITRATION_FEE_TOOLTIP } from 'components/arbitration-fee-tooltip'
-import { AnimatedNumber } from 'components/curate/motion/animated-number'
+import {
+  AnimatedNumber,
+  amountFormat,
+} from 'components/curate/motion/animated-number'
+import { formatEther } from 'components/curate/item-standard-format'
 import {
   Label,
   Row,
@@ -13,22 +20,97 @@ import {
   Small,
   Stack,
 } from 'components/curate/primitives'
-import { jurorsProblem } from 'pages/factory/kleros-params'
-import { FieldGrid, FormField, Input, RangeInput, Select } from './controls'
-import { JURORS } from './defaults'
 import {
-  amountFormat,
-  encodeExtraData,
-  formatNative,
-  readExtraData,
-} from './format'
+  FieldGrid,
+  FormField,
+  Input,
+  RangeInput,
+  Select,
+} from 'components/curate/factory-shared-fields'
 
 /*
- * The Kleros side of the arbitrator settings: which court rules on disputes
- * and how many jurors sit in the first round. Both are encoded into the
- * arbitrator extra data; the arbitration cost that encoding sets is read
- * from the arbitrator contract and shown as one figure under the controls.
+ * The Kleros side of both list factories (classic and Stake): which court
+ * rules on disputes and how many jurors sit in the first round, encoded into
+ * the arbitrator extra data, with the arbitration cost that encoding sets
+ * read from the arbitrator contract; and the same court named the same way
+ * in each wizard's preview and deploy review.
  */
+
+const { getAddress } = ethers.utils
+
+/** Jurors in the first round: odd numbers from 1 to 33. */
+export const JURORS = { min: 1, max: 33, step: 2 } as const
+
+/** Why typed jurors cannot be used (the rules the slider snaps to), or ''. */
+export const jurorsProblem = (
+  text: string,
+  min: number = JURORS.min,
+  max: number = JURORS.max,
+): string => {
+  const typed = text.trim()
+  if (!/^\d+$/.test(typed))
+    return `Use an odd number between ${min} and ${max}.`
+  const count = Number(typed)
+  if (count < min || count > max) return `Between ${min} and ${max} jurors.`
+  if (count % 2 === 0) return 'Use an odd number.'
+  return ''
+}
+
+/* ---------- Court summary (preview and review) ---------- */
+
+export type CourtSummary = {
+  isKleros: boolean
+  /** "xDai Curation", "Court 1" while loading; undefined without extra data. */
+  courtName?: string
+  jurors?: number
+  /** "xDai Curation · 3 jurors", or undefined when there is nothing to name. */
+  text?: string
+}
+
+/**
+ * The court a draft list points at: the court's policy name when the
+ * arbitrator is the chain's Kleros arbitrator, "Court N" while the policies
+ * load, and the juror count from the extra data.
+ */
+export const useCourtSummary = (
+  chainId: number | undefined,
+  arbitratorAddress: string | undefined,
+  extraData: string | undefined,
+): CourtSummary => {
+  const library = useEthersProvider({ chainId })
+  const { arbitrator: klerosAddress, policy: policyAddress } =
+    (chainId !== undefined && klerosAddresses[chainId]) || {}
+  let isKleros = false
+  try {
+    isKleros =
+      getAddress(arbitratorAddress ?? '') === getAddress(klerosAddress ?? '')
+  } catch {
+    isKleros = false
+  }
+  const { data: courts = [] } = useCourtPolicies(
+    isKleros ? policyAddress : undefined,
+    library,
+  )
+  const extra = useMemo(
+    () =>
+      extraData && extraData.length >= 130 ? readExtraData(extraData) : null,
+    [extraData],
+  )
+
+  if (!isKleros || !extra) return { isKleros }
+  const courtName =
+    courts.find((court) => court.courtID === extra.courtID)?.name ??
+    `Court ${extra.courtID}`
+  const jurors = extra.numberOfJurors
+  return {
+    isKleros,
+    courtName,
+    jurors,
+    text: `${courtName} · ${jurors} ${jurors === 1 ? 'juror' : 'jurors'}`,
+  }
+}
+
+/* ---------- Court and jurors controls ---------- */
 
 const JurorsInput = styled(Input)`
   flex: 0 0 auto;
@@ -76,6 +158,8 @@ interface KlerosParamsProps {
   setArbitratorExtraData: (val: string) => void
   arbitratorExtraData?: string
   library?: EthersLibrary | null
+  /** One line under the cost on who pays it, in the factory's own terms. */
+  costNote: string
 }
 
 const KlerosParams = ({
@@ -84,10 +168,15 @@ const KlerosParams = ({
   setArbitratorExtraData,
   arbitratorExtraData,
   library,
+  costNote,
 }: KlerosParamsProps) => {
   const ids = useId()
   const nativeCurrency = useNativeCurrency()
-  const [arbitrationCost, setArbitrationCost] = useState<BigNumber | null>(null)
+  // The last cost read, with the extra data it was read for.
+  const [arbitrationCost, setArbitrationCost] = useState<{
+    cost: BigNumber
+    extraData: string
+  } | null>(null)
   const [numberOfJurors, setNumberOfJurors] = useState(3)
   // The jurors as typed, until the box is left or Enter is pressed: each
   // keystroke must not set the court's jurors (clearing "3" to type 5 would
@@ -110,13 +199,19 @@ const KlerosParams = ({
     }
   }, [library, klerosAddress])
 
-  // Load the court and juror count from the arbitrator extra data.
+  // Load the court and juror count from the arbitrator extra data; extra
+  // data that does not decode leaves the controls as they are.
   useEffect(() => {
     const parsed = readExtraData(arbitratorExtraData)
     if (!parsed) return
     setCourtID(parsed.courtID)
     setNumberOfJurors(parsed.numberOfJurors)
   }, [arbitratorExtraData])
+
+  // Another arbitrator or provider: the last figure is not its cost.
+  useEffect(() => {
+    setArbitrationCost(null)
+  }, [arbitrator, library])
 
   // Read the arbitration cost the current settings set.
   useEffect(() => {
@@ -126,7 +221,8 @@ const KlerosParams = ({
       try {
         const cost: BigNumber =
           await arbitrator.arbitrationCost(arbitratorExtraData)
-        if (!cancelled) setArbitrationCost(cost)
+        if (!cancelled)
+          setArbitrationCost({ cost, extraData: arbitratorExtraData })
       } catch (err) {
         console.warn('Failed to read the arbitration cost', err)
         if (!cancelled) setArbitrationCost(null)
@@ -150,8 +246,8 @@ const KlerosParams = ({
   const onNumJurorsChange = useCallback(
     (value: number) => {
       if (Number.isNaN(value)) return
-      let newNumJurors = value > 0 ? value : 1
-      newNumJurors = newNumJurors < 35 ? newNumJurors : 33
+      let newNumJurors = value > 0 ? value : JURORS.min
+      newNumJurors = newNumJurors <= JURORS.max ? newNumJurors : JURORS.max
       if (newNumJurors % 2 === 0) newNumJurors = newNumJurors - 1
       setArbitratorExtraData(encodeExtraData(courtID ?? 0, newNumJurors))
       setNumberOfJurors(newNumJurors)
@@ -165,7 +261,7 @@ const KlerosParams = ({
   // otherwise the box keeps the text and says what to change.
   const commitJurors = () => {
     if (jurorsText === null) return
-    const problem = jurorsProblem(jurorsText, JURORS.min, JURORS.max)
+    const problem = jurorsProblem(jurorsText)
     setJurorsError(problem)
     if (problem) return
     onNumJurorsChange(Number(jurorsText.trim()))
@@ -173,7 +269,10 @@ const KlerosParams = ({
 
   const courtsReady = courts.length > 0 && typeof courtID === 'number'
   const selectedCourt = courts.find((court) => court.courtID === courtID)
-  const cost = arbitrationCost ? formatNative(arbitrationCost) : null
+  const cost = arbitrationCost ? formatEther(arbitrationCost.cost) : null
+  // While the cost of new settings loads, the last figure is not theirs: it
+  // shimmers, then counts up from the last figure to the new one.
+  const costIsCurrent = arbitrationCost?.extraData === arbitratorExtraData
 
   return (
     <Stack $gap={20}>
@@ -252,15 +351,18 @@ const KlerosParams = ({
             {selectedCourt ? ` in ${selectedCourt.name}` : ''}
           </Label>
           <Small $muted title={ARBITRATION_FEE_TOOLTIP}>
-            Each submitter deposits it with the entry and each challenger pays
-            it to open a dispute; the winning side ends up with it back.
+            {costNote}
           </Small>
         </Stack>
         {cost === null ? (
           <SkeletonBlock $height="26px" $width="120px" />
         ) : (
           <CostFigure>
-            <AnimatedNumber value={Number(cost)} format={amountFormat(cost)} />
+            <AnimatedNumber
+              value={Number(cost)}
+              format={amountFormat(cost)}
+              loading={!costIsCurrent}
+            />
             <small>{nativeCurrency}</small>
           </CostFigure>
         )}

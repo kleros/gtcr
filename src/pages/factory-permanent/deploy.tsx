@@ -12,7 +12,7 @@ import { simulateContract } from '@wagmi/core'
 import { Roles, useAtlasProvider } from '@kleros/kleros-app'
 import _GTCRFactory from 'assets/abis/PermanentGTCRFactory.json'
 import { JSON_UPLOAD_ROLE } from 'utils/atlas-roles'
-import { getArticleFor } from 'utils/string'
+import { getArticleFor, readExtraData } from 'utils/string'
 import { wrapWithToast, errorToast, replacementOf } from 'utils/wrap-with-toast'
 import { parseWagmiError } from 'utils/parse-wagmi-error'
 import { parseIpfs } from 'utils/ipfs-parse'
@@ -46,10 +46,15 @@ import {
   TxPill,
   TxStep,
   type TxStatus,
-} from 'components/curate/stake-factory-shell'
+} from 'components/curate/factory-shared-layout'
 import { withNormalizedFileTypes } from 'pages/factory/file-types'
-import { SafeImage, StepBody, StepHeader, useWalletGate } from './controls'
-import { useCourtSummary } from './court'
+import {
+  SafeImage,
+  StepBody,
+  StepHeader,
+  useWalletGate,
+} from 'components/curate/factory-shared-fields'
+import { useCourtSummary } from 'components/curate/factory-shared-kleros'
 import useArbitratorCheck from 'hooks/use-arbitrator-check'
 import {
   effectivePercent,
@@ -60,7 +65,6 @@ import {
   hoursToSeconds,
   parseAmount,
   plainDecimal,
-  readExtraData,
   shareOf,
   stakeProblem,
   stakeProblemText,

@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react'
-import styled, { css, keyframes } from 'styled-components'
+import styled from 'styled-components'
 import {
   parseEther,
   encodeFunctionData,
@@ -32,7 +32,6 @@ import {
   txBatcherAddresses,
 } from 'config/tcr-addresses'
 import { CurateIcon } from 'components/curate/icons'
-import { reveal } from 'components/curate/motion/reveal'
 import {
   Button,
   ButtonLink,
@@ -44,9 +43,22 @@ import {
   StatusDot,
   truncateMiddle,
 } from 'components/curate/primitives'
-import { StepBody, StepHeader, formatNative, useWalletGate } from './fields'
+import {
+  StepBody,
+  StepHeader,
+  useWalletGate,
+} from 'components/curate/factory-shared-fields'
+import { formatNative } from './amounts'
 import { incompleteSteps, listInProse } from './schemas'
-import { useCourtSummary } from './court'
+import { useCourtSummary } from 'components/curate/factory-shared-kleros'
+import {
+  TxData,
+  TxLink,
+  TxList,
+  TxPill,
+  TxStep,
+  type TxStatus,
+} from 'components/curate/factory-shared-layout'
 import { withNormalizedFileTypes } from './file-types'
 import { plainDecimal, typedNumber } from 'pages/factory-permanent/format'
 import useArbitratorCheck from 'hooks/use-arbitrator-check'
@@ -303,10 +315,6 @@ const getTcrMetaEvidence = async (
 
 /* ---------- Layout ---------- */
 
-const spin = keyframes`
-  to { transform: rotate(360deg); }
-`
-
 const Review = styled.dl`
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -385,260 +393,12 @@ const EditButton = styled.button`
   }
 `
 
-type TxStatus = 'upcoming' | 'active' | 'done' | 'failed'
-
-const TxList = styled.ol`
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-`
-
-const TxItem = styled.li<{ $status: TxStatus; $last?: boolean }>`
-  position: relative;
-  display: grid;
-  grid-template-columns: 32px minmax(0, 1fr);
-  gap: 14px;
-  padding-bottom: ${({ $last }) => ($last ? 0 : '22px')};
-  ${reveal}
-
-  /* The connector to the next step fills once this one is done. */
-  &::before,
-  &::after {
-    content: ${({ $last }) => ($last ? 'none' : "''")};
-    position: absolute;
-    top: 36px;
-    bottom: 4px;
-    left: 15px;
-    width: 2px;
-    border-radius: var(--radius-pill);
-  }
-
-  &::before {
-    background: var(--glass-border);
-  }
-
-  &::after {
-    background: linear-gradient(var(--color-primary), var(--aurora-b));
-    box-shadow: 0 0 10px
-      color-mix(in srgb, var(--color-primary) 60%, transparent);
-    transform-origin: top;
-    transform: scaleY(${({ $status }) => ($status === 'done' ? 1 : 0)});
-    transition: transform 700ms var(--ease-out);
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    &::after {
-      transition: none;
-    }
-  }
-`
-
-const txMarker = {
-  upcoming: css`
-    border-color: var(--glass-border);
-    background: var(--color-surface);
-    color: var(--color-faint);
-  `,
-  active: css`
-    border-color: color-mix(in srgb, var(--color-primary) 55%, transparent);
-    background: var(--color-primary-soft);
-    color: var(--color-primary);
-    box-shadow: 0 0 0 5px
-      color-mix(in srgb, var(--color-primary) 10%, transparent);
-  `,
-  done: css`
-    border-color: color-mix(in srgb, var(--color-primary) 60%, transparent);
-    background: var(--color-primary-fill);
-    color: var(--color-on-primary);
-    box-shadow: 0 6px 18px -8px var(--color-primary);
-  `,
-  failed: css`
-    border-color: color-mix(in srgb, var(--color-danger) 60%, transparent);
-    background: var(--color-danger-soft);
-    color: var(--color-danger);
-  `,
-}
-
-const TxMarker = styled.span<{ $status: TxStatus }>`
-  position: relative;
-  z-index: 1;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border: 1px solid;
-  border-radius: var(--radius-pill);
-  font-size: 13px;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-  transition:
-    background 320ms var(--ease-out),
-    border-color 320ms var(--ease-out),
-    box-shadow 320ms var(--ease-out),
-    color 320ms var(--ease-out);
-  ${({ $status }) => txMarker[$status]}
-`
-
-const Spinner = styled.i`
-  width: 14px;
-  height: 14px;
-  border: 2px solid color-mix(in srgb, var(--color-primary) 30%, transparent);
-  border-top-color: var(--color-primary);
-  border-radius: var(--radius-pill);
-  animation: ${spin} 800ms linear infinite;
-
-  @media (prefers-reduced-motion: reduce) {
-    animation-duration: 2400ms;
-  }
-`
-
-const TxBody = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  min-width: 0;
-  padding-top: 5px;
-`
-
-const TxTitle = styled.span<{ $status: TxStatus }>`
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 6px 10px;
-  color: ${({ $status }) =>
-    $status === 'upcoming' ? 'var(--color-muted)' : 'var(--color-text)'};
-  font-size: var(--fs-body-lg);
-  line-height: var(--lh-body-lg);
-  font-weight: 500;
-`
-
-const TxNote = styled.span`
-  color: var(--color-muted);
-  font-size: var(--fs-small);
-  line-height: var(--lh-small);
-`
-
-const TxData = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px 8px;
-  margin-top: 6px;
-`
-
-const HashLink = styled.a`
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  height: 26px;
-  padding: 0 10px;
-  border: 1px solid var(--glass-border);
-  border-radius: var(--radius-pill);
-  background: var(--color-raised);
-  color: var(--color-primary);
-  font-family: var(--font-mono);
-  font-size: 12px;
-  font-variant-numeric: tabular-nums;
-  text-decoration: none;
-  transition:
-    border-color var(--motion),
-    background var(--motion);
-
-  span {
-    color: var(--color-muted);
-    font-family: var(--font-sans);
-  }
-
-  &:hover {
-    border-color: color-mix(in srgb, var(--color-primary) 45%, transparent);
-    background: var(--color-primary-soft);
-  }
-`
-
-const AddressPill = styled.span`
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  height: 26px;
-  padding: 0 10px;
-  border: 1px solid var(--glass-border);
-  border-radius: var(--radius-pill);
-  background: var(--color-raised);
-  color: var(--color-text);
-  font-family: var(--font-mono);
-  font-size: 12px;
-
-  span {
-    color: var(--color-muted);
-    font-family: var(--font-sans);
-  }
-`
-
-const TxTag = styled.span`
-  color: var(--color-faint);
-  font-size: var(--fs-small);
-  font-weight: 400;
-`
-
 const ActionArea = styled.div`
   display: flex;
   flex-direction: column;
   gap: 10px;
   padding-top: 4px;
 `
-
-const TxStep = ({
-  number,
-  status,
-  title,
-  tag,
-  note,
-  last,
-  index,
-  children,
-}: {
-  number: number
-  status: TxStatus
-  title: React.ReactNode
-  tag?: React.ReactNode
-  /** Shown only while the step runs or after it failed. */
-  note?: React.ReactNode
-  last?: boolean
-  index: number
-  children?: React.ReactNode
-}) => (
-  <TxItem
-    $status={status}
-    $last={last}
-    style={{ ['--i' as string]: index }}
-    aria-current={status === 'active' ? 'step' : undefined}
-  >
-    <TxMarker $status={status} aria-hidden>
-      {status === 'done' ? (
-        <CurateIcon name="check" size={15} />
-      ) : status === 'active' ? (
-        <Spinner />
-      ) : status === 'failed' ? (
-        <CurateIcon name="close" size={14} />
-      ) : (
-        number
-      )}
-    </TxMarker>
-    <TxBody>
-      <TxTitle $status={status}>
-        {title}
-        {tag && <TxTag>{tag}</TxTag>}
-      </TxTitle>
-      {note && (status === 'active' || status === 'failed') && (
-        <TxNote>{note}</TxNote>
-      )}
-      {children}
-    </TxBody>
-  </TxItem>
-)
 
 type DeployPhase = 'idle' | 'uploading' | 'wallet' | 'mining' | 'mined'
 
@@ -1263,7 +1023,7 @@ const Deploy = ({
               {metaEvidencePaths.length > 0 && (
                 <TxData>
                   {metaEvidencePaths.map((path, index) => (
-                    <HashLink
+                    <TxLink
                       key={path}
                       href={parseIpfs(path)}
                       target="_blank"
@@ -1276,7 +1036,7 @@ const Deploy = ({
                         6,
                         4,
                       )}
-                    </HashLink>
+                    </TxLink>
                   ))}
                 </TxData>
               )}
@@ -1295,14 +1055,14 @@ const Deploy = ({
             >
               {predicted && (
                 <TxData>
-                  <AddressPill title={predicted.list}>
+                  <TxPill title={predicted.list}>
                     <span>Your list</span>
                     {truncateMiddle(predicted.list, 6, 4)}
-                  </AddressPill>
-                  <AddressPill title={predicted.badges}>
+                  </TxPill>
+                  <TxPill title={predicted.badges}>
                     <span>Badges list</span>
                     {truncateMiddle(predicted.badges, 6, 4)}
-                  </AddressPill>
+                  </TxPill>
                 </TxData>
               )}
             </TxStep>
@@ -1323,7 +1083,7 @@ const Deploy = ({
             >
               {shownHash && explorerTxUrl && (
                 <TxData>
-                  <HashLink
+                  <TxLink
                     href={explorerTxUrl}
                     target="_blank"
                     rel="noopener noreferrer"
@@ -1332,7 +1092,7 @@ const Deploy = ({
                     <span>Transaction</span>
                     {truncateMiddle(shownHash, 8, 6)}
                     <CurateIcon name="external" size={12} />
-                  </HashLink>
+                  </TxLink>
                 </TxData>
               )}
             </TxStep>
@@ -1345,7 +1105,7 @@ const Deploy = ({
               {phase === 'mined' && deployedTCRAddress && (
                 <TxData>
                   {explorerAddressUrl ? (
-                    <HashLink
+                    <TxLink
                       href={explorerAddressUrl}
                       target="_blank"
                       rel="noopener noreferrer"
@@ -1354,12 +1114,12 @@ const Deploy = ({
                       <span>Address</span>
                       {truncateMiddle(deployedTCRAddress, 8, 6)}
                       <CurateIcon name="external" size={12} />
-                    </HashLink>
+                    </TxLink>
                   ) : (
-                    <AddressPill title={deployedTCRAddress}>
+                    <TxPill title={deployedTCRAddress}>
                       <span>Address</span>
                       {truncateMiddle(deployedTCRAddress, 8, 6)}
-                    </AddressPill>
+                    </TxPill>
                   )}
                 </TxData>
               )}

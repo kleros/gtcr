@@ -51,21 +51,20 @@ import {
   useFactoryWizard,
 } from 'components/curate/v2-factory-shell'
 import {
-  StakeDeploymentLink,
-  StakeDeploymentLogo,
-  StakeDeploymentRows,
-  StakeHead,
-  StakeHeadCopy,
-  StakeLede,
-  StakeLift,
-  StakeOpenHint,
-  StakeSectionHead,
-} from 'components/curate/stake-factory-shell'
+  DeploymentLink,
+  DeploymentLogo,
+  DeploymentRows,
+  FactoryHead,
+  FactoryHeadCopy,
+  FactoryLift,
+  OpenHint,
+  FactorySectionHead,
+} from 'components/curate/factory-shared-layout'
 import TCRParams from './tcr-params'
 import ItemParams from './item-params'
 import Deploy from './deploy'
 import { StakePreview } from './preview'
-import { SafeImage } from './controls'
+import { SafeImage } from 'components/curate/factory-shared-fields'
 import { DEFAULT_COLUMN, WIZARD_DEFAULTS, defaultStakeToken } from './defaults'
 import {
   type FactorySection,
@@ -444,6 +443,14 @@ const useCachedFactory = (
 
 /* ---------- Layout ---------- */
 
+const Lede = styled.p`
+  margin: 0;
+  max-width: 58ch;
+  color: var(--color-muted);
+  font-size: 16px;
+  line-height: 24px;
+`
+
 const ChainLinks = styled.div`
   display: flex;
   flex-wrap: wrap;
@@ -474,17 +481,17 @@ const DeploymentRow = ({
   const title = metadata?.tcrTitle ?? metaEvidence?.title
   const logo = metadata?.logoURI ? parseIpfs(metadata.logoURI) : undefined
   return (
-    <StakeDeploymentLink
+    <DeploymentLink
       to={`/tcr/${chainId}/${address}`}
       style={{ ['--i' as string]: Math.min(index, 8) }}
     >
-      <StakeDeploymentLogo aria-hidden>
+      <DeploymentLogo aria-hidden>
         <SafeImage
           src={logo}
           alt=""
           fallback={<CurateIcon name="registry" size={16} />}
         />
-      </StakeDeploymentLogo>
+      </DeploymentLogo>
       <span style={{ minWidth: 0 }}>
         {isLoading ? (
           <SkeletonBlock $height="18px" $width="40%" />
@@ -495,7 +502,7 @@ const DeploymentRow = ({
           {truncateMiddle(address, 10, 8)}
         </Data>
       </span>
-      <StakeOpenHint>
+      <OpenHint>
         Open
         <CurateIcon
           name="chevron-down"
@@ -503,8 +510,8 @@ const DeploymentRow = ({
           style={{ transform: 'rotate(-90deg)' }}
           aria-hidden
         />
-      </StakeOpenHint>
-    </StakeDeploymentLink>
+      </OpenHint>
+    </DeploymentLink>
   )
 }
 
@@ -611,8 +618,8 @@ const FactoryPermanentPage = () => {
 
   const header = (
     <>
-      <StakeHead>
-        <StakeHeadCopy style={{ ['--i' as string]: 0 }}>
+      <FactoryHead>
+        <FactoryHeadCopy style={{ ['--i' as string]: 0 }}>
           <Row $gap={10} $wrap>
             <Label $tone="faint">Launch a list</Label>
             {factoryChainId !== undefined && (
@@ -620,11 +627,11 @@ const FactoryPermanentPage = () => {
             )}
           </Row>
           <Statement>Create a Stake list</Statement>
-          <StakeLede>
+          <Lede>
             Entries keep a token stake locked while listed and can be challenged
             at any time; the draft is saved in this browser as you type.
-          </StakeLede>
-        </StakeHeadCopy>
+          </Lede>
+        </FactoryHeadCopy>
         <div style={{ ['--i' as string]: 1 }}>
           <SegmentedControl
             ariaLabel="List type"
@@ -639,9 +646,9 @@ const FactoryPermanentPage = () => {
             }}
           />
         </div>
-      </StakeHead>
+      </FactoryHead>
       <Section $gap="sm">
-        <StakeLift style={{ ['--i' as string]: 2 }}>
+        <FactoryLift style={{ ['--i' as string]: 2 }}>
           <Explainer
             id="factory-permanent"
             eyebrow="Before you start"
@@ -661,7 +668,7 @@ const FactoryPermanentPage = () => {
               },
             ]}
           />
-        </StakeLift>
+        </FactoryLift>
       </Section>
     </>
   )
@@ -762,9 +769,9 @@ const FactoryPermanentPage = () => {
 
       <Section $gap="lg">
         <FactoryWizardGrid>
-          <StakeLift style={{ ['--i' as string]: 3 }}>
+          <FactoryLift style={{ ['--i' as string]: 3 }}>
             <FactoryStepTimeline groups={STAKE_FACTORY_STEPS} wizard={wizard} />
-          </StakeLift>
+          </FactoryLift>
           <FactorySplit>
             <FactoryStepPanel
               wizard={wizard}
@@ -775,13 +782,13 @@ const FactoryPermanentPage = () => {
               {renderVisualStep()}
             </FactoryStepPanel>
             <FactoryAside aria-label="Preview">
-              <StakeLift style={{ ['--i' as string]: 5 }}>
+              <FactoryLift style={{ ['--i' as string]: 5 }}>
                 <StakePreview
                   tcrState={tcrState}
                   chainId={chainId}
                   currency={nativeCurrency}
                 />
-              </StakeLift>
+              </FactoryLift>
             </FactoryAside>
           </FactorySplit>
         </FactoryWizardGrid>
@@ -789,7 +796,7 @@ const FactoryPermanentPage = () => {
 
       {(previousDeployments.length > 0 || deploymentsFailed) && (
         <section aria-label="Previous deployments">
-          <StakeSectionHead>
+          <FactorySectionHead>
             <h2>
               Your deployments
               {previousDeployments.length > 0 && (
@@ -799,7 +806,7 @@ const FactoryPermanentPage = () => {
             <Small $faint>
               Lists deployed from this browser on {chainName}.
             </Small>
-          </StakeSectionHead>
+          </FactorySectionHead>
           {deploymentsFailed ? (
             <Surface $padding="none">
               <EmptyState
@@ -811,7 +818,7 @@ const FactoryPermanentPage = () => {
               </EmptyState>
             </Surface>
           ) : (
-            <StakeDeploymentRows>
+            <DeploymentRows>
               {previousDeployments.map((address, index) => (
                 <DeploymentRow
                   key={address}
@@ -820,7 +827,7 @@ const FactoryPermanentPage = () => {
                   index={index}
                 />
               ))}
-            </StakeDeploymentRows>
+            </DeploymentRows>
           )}
         </section>
       )}

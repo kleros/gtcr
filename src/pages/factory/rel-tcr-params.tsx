@@ -13,26 +13,27 @@ import { normalizeDecimalInput } from 'utils/decimal-input'
 import { Row, Small, Stack } from 'components/curate/primitives'
 import { useFailedSubmitFocus } from 'components/curate/v2-factory-shell'
 import { plainDecimal } from 'pages/factory-permanent/format'
-import KlerosParams from './kleros-params'
+import KlerosParams from 'components/curate/factory-shared-kleros'
 import {
+  AmountInput,
   Divider,
   FieldGrid,
   FormField,
   RangeInput,
+  SliderEnds,
   StepBody,
   StepHeader,
   SwitchField,
   TextField,
   TextLink,
   UploadField,
-} from './fields'
+} from 'components/curate/factory-shared-fields'
 import {
-  AmountInput,
   AppealStakeNote,
   BaseDepositField,
+  COST_NOTE,
   DepositTotalLine,
   POLICY_EXAMPLE_URL,
-  SliderEnds,
   readsAsAmount,
   sliderDeposit,
 } from './tcr-params'
@@ -213,7 +214,9 @@ const RelTCRParams = ({
             what="the badges policy"
             onChange={(uri) => {
               setFieldValue('relTcrPrimaryDocument', uri)
-              setFieldTouched('relTcrPrimaryDocument', true)
+              // setFieldValue has validated the new value; touching must not
+              // validate again, as that would check the previous one.
+              setFieldTouched('relTcrPrimaryDocument', true, false)
             }}
           />
         )}
@@ -281,6 +284,7 @@ const RelTCRParams = ({
               policyAddress={policyAddress}
               setArbitratorExtraData={setRelArbitratorExtraData}
               library={chainProvider}
+              costNote={COST_NOTE}
             />
           ) : (
             <TextField

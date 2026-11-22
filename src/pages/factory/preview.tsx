@@ -8,22 +8,25 @@ import { parseIpfs } from 'utils/ipfs-parse'
 import { getArticleFor } from 'utils/string'
 import { formatAbsolute, formatDuration, formatDurationLong } from 'utils/time'
 import { CurateIcon } from 'components/curate/icons'
-import { AnimatedNumber } from 'components/curate/motion/animated-number'
+import {
+  AnimatedNumber,
+  amountFormat,
+} from 'components/curate/motion/animated-number'
 import {
   Label,
   SegmentedControl,
   SkeletonBlock,
   Surface,
-  truncateMiddle,
 } from 'components/curate/primitives'
+import { VisuallyHidden } from 'components/curate/factory-shared-fields'
 import {
-  SafeImage,
-  VisuallyHidden,
-  amountFormat,
-  formatNative,
-  totalDeposit,
-} from './fields'
-import { useCourtSummary } from './court'
+  MinusIcon,
+  Outcomes,
+  PreviewCourtRow,
+  PreviewIdentity,
+} from 'components/curate/factory-shared-preview'
+import { groupThousands } from 'components/curate/item-standard-format'
+import { formatNative, totalDeposit } from './amounts'
 import type { TcrState } from '.'
 import { plainDecimal, typedNumber } from 'pages/factory-permanent/format'
 
@@ -76,75 +79,6 @@ const Tag = styled.span`
     background: var(--color-primary);
     box-shadow: 0 0 0 3px var(--color-primary-soft);
   }
-`
-
-/* ---------- Identity ---------- */
-
-const Identity = styled.div`
-  display: grid;
-  grid-template-columns: 48px minmax(0, 1fr);
-  gap: 14px;
-  align-items: start;
-  padding-bottom: 18px;
-`
-
-const Logo = styled.span`
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 48px;
-  height: 48px;
-  overflow: hidden;
-  border: 1px solid var(--glass-border);
-  border-radius: var(--radius);
-  background: var(--color-raised);
-  color: var(--color-faint);
-
-  img {
-    display: block;
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-  }
-`
-
-const Name = styled.span<{ $empty?: boolean }>`
-  display: block;
-  overflow: hidden;
-  color: ${({ $empty }) =>
-    $empty ? 'var(--color-faint)' : 'var(--color-text)'};
-  font-family: var(--font-display);
-  font-size: 22px;
-  line-height: 26px;
-  font-weight: 500;
-  letter-spacing: -0.02em;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-`
-
-const Description = styled.span<{ $empty?: boolean }>`
-  display: -webkit-box;
-  margin-top: 2px;
-  overflow: hidden;
-  color: ${({ $empty }) =>
-    $empty ? 'var(--color-faint)' : 'var(--color-muted)'};
-  font-size: var(--fs-small);
-  line-height: var(--lh-small);
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-`
-
-/** One quiet line under the description: fields, then the submit label. */
-const Meta = styled.span`
-  display: block;
-  margin-top: 8px;
-  overflow: hidden;
-  color: var(--color-faint);
-  font-size: 13px;
-  line-height: 18px;
-  font-variant-numeric: tabular-nums;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 `
 
 /* ---------- Deposits ---------- */
@@ -253,56 +187,6 @@ const Breakdown = styled.span`
     border-radius: var(--radius-pill);
   }
 `
-
-/*
- * What becomes of the money, one line per outcome, on the launch page's
- * bullet: every list in a box takes the same check, in an 18px column 10px
- * from its line, whatever the outcome; the bold lead words name it. The line
- * is as tall as the glyph, so the check sits on the first line's middle.
- */
-const Outcomes = styled.ul`
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin: 16px 0 0;
-  padding: 0;
-  list-style: none;
-
-  li {
-    display: grid;
-    grid-template-columns: 18px minmax(0, 1fr);
-    gap: 10px;
-    color: var(--color-muted);
-    font-size: 12px;
-    line-height: 18px;
-    text-wrap: pretty;
-  }
-
-  svg {
-    color: var(--color-primary);
-  }
-
-  li[data-con] svg {
-    color: var(--color-faint);
-  }
-
-  b {
-    color: var(--color-text);
-    font-weight: 500;
-  }
-`
-
-/** The mark for an outcome that can cost the submitter: a faint dash. */
-const MinusIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
-    <path
-      d="M7 12h10"
-      stroke="currentColor"
-      strokeWidth="1.85"
-      strokeLinecap="round"
-    />
-  </svg>
-)
 
 /* ---------- Challenge period timeline ---------- */
 
@@ -504,27 +388,6 @@ const PeriodTimeline = ({ hours }: { hours: number }) => {
   )
 }
 
-/* ---------- Court ---------- */
-
-const CourtRow = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-
-  strong {
-    min-width: 0;
-    overflow: hidden;
-    color: var(--color-text);
-    font-size: var(--fs-body);
-    line-height: var(--lh-body);
-    font-weight: 500;
-    text-align: right;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-`
-
 /* ---------- Deposit bars ---------- */
 
 type SideFigures = {
@@ -594,7 +457,7 @@ const SideBar = ({
             ? loading
               ? `${side.label}: waiting for the arbitration cost`
               : `${side.label}: the base deposit is not a valid amount`
-            : `${side.label} ${totalText} ${currency}: ${plainDecimal(side.base ?? 0)} base deposit and ${costText} arbitration cost`
+            : `${side.label} ${groupThousands(totalText)} ${currency}: ${groupThousands(plainDecimal(side.base ?? 0))} base deposit and ${costText === null ? '…' : groupThousands(costText)} arbitration cost`
         }
       >
         {baseShare > 0 && (
@@ -607,11 +470,12 @@ const SideBar = ({
       <Breakdown aria-hidden>
         <span>
           <i style={{ background: baseFill }} />
-          {baseValid ? plainDecimal(side.base) : '—'} base deposit
+          {baseValid ? groupThousands(plainDecimal(side.base)) : '—'} base
+          deposit
         </span>
         <span>
           <i style={{ background: hatch }} />
-          {costText ?? '…'} arbitration cost
+          {costText === null ? '…' : groupThousands(costText)} arbitration cost
         </span>
       </Breakdown>
     </Side>
@@ -648,7 +512,6 @@ export const LivePreview = ({
     arbitratorExtraData: extraData,
     library,
   })
-  const court = useCourtSummary(chainId, arbitratorAddress, extraData)
 
   const title = badges
     ? `${tcrState.tcrTitle || 'Your list'} enabled badges`
@@ -717,32 +580,17 @@ export const LivePreview = ({
         {badges ? 'Badges list preview' : 'Preview'}
       </Tag>
 
-      <Identity>
-        <Logo aria-hidden>
-          <SafeImage
-            src={logo || undefined}
-            alt=""
-            fallback={
-              <CurateIcon name={badges ? 'layers' : 'registry'} size={20} />
-            }
-          />
-        </Logo>
-        <div style={{ minWidth: 0 }}>
-          <Name $empty={!title}>{title || 'Untitled list'}</Name>
-          <Description $empty={!description}>
-            {description || 'No description yet'}
-          </Description>
-          <Meta>
-            {[
-              `${fieldCount} ${fieldCount === 1 ? 'field' : 'fields'}`,
-              !badges && tcrState.isTCRofTCRs ? 'list of lists' : '',
-              itemName ? `Submit ${article} ${itemName.toLowerCase()}` : '',
-            ]
-              .filter(Boolean)
-              .join(' · ')}
-          </Meta>
-        </div>
-      </Identity>
+      <PreviewIdentity
+        logo={logo}
+        title={title}
+        description={description}
+        icon={badges ? 'layers' : 'registry'}
+        meta={[
+          `${fieldCount} ${fieldCount === 1 ? 'field' : 'fields'}`,
+          !badges && tcrState.isTCRofTCRs ? 'list of lists' : '',
+          itemName ? `Submit ${article} ${itemName.toLowerCase()}` : '',
+        ]}
+      />
 
       <Block>
         <BlockHead>
@@ -789,24 +637,11 @@ export const LivePreview = ({
       </Block>
 
       <Block>
-        <CourtRow>
-          <Label $tone="muted">
-            {court.isKleros ? 'Kleros court' : 'Arbitrator'}
-          </Label>
-          <strong
-            title={
-              court.isKleros
-                ? undefined
-                : arbitratorAddress || 'No arbitrator set'
-            }
-          >
-            {court.isKleros
-              ? (court.text ?? '—')
-              : arbitratorAddress
-                ? truncateMiddle(arbitratorAddress, 8, 6)
-                : '—'}
-          </strong>
-        </CourtRow>
+        <PreviewCourtRow
+          chainId={chainId}
+          arbitratorAddress={arbitratorAddress}
+          extraData={extraData}
+        />
       </Block>
     </Panel>
   )

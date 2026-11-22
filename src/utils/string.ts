@@ -66,6 +66,24 @@ export const jurorsAndCourtIDFromExtraData = (
   return { courtID, numberOfJurors }
 }
 
+/** The court and juror count in arbitrator extra data, or null if it does not decode. */
+export const readExtraData = (
+  extraData?: string,
+): { courtID: number; numberOfJurors: number } | null => {
+  if (!extraData) return null
+  try {
+    return jurorsAndCourtIDFromExtraData(extraData)
+  } catch {
+    return null
+  }
+}
+
+/** Kleros arbitrator extra data: the court id, then the juror count, 32 bytes each. */
+export const encodeExtraData = (courtID: number, numberOfJurors: number) =>
+  `0x${courtID.toString(16).padStart(64, '0')}${Math.ceil(numberOfJurors)
+    .toString(16)
+    .padStart(64, '0')}`
+
 // Letters whose spoken name starts with a vowel sound ("an NFT", "an SDK").
 const VOWEL_SOUND_LETTERS = /^[AEFHILMNORSX]/
 // Vowel letters read with a consonant sound ("a user", "a euro", "a one-off").

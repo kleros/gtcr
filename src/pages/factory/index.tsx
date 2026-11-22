@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import styled from 'styled-components'
-import { Link, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useDebounce } from 'use-debounce'
 import { ethers } from 'ethers'
@@ -22,7 +22,6 @@ import { NETWORKS_INFO } from 'config/networks'
 import useNativeCurrency from 'hooks/native-currency'
 import { CurateIcon } from 'components/curate/icons'
 import { Explainer } from 'components/curate/explainer'
-import { reveal } from 'components/curate/motion/reveal'
 import {
   ChainChip,
   Chip,
@@ -50,12 +49,22 @@ import {
   factoryDocumentTitle,
   useFactoryWizard,
 } from 'components/curate/v2-factory-shell'
+import {
+  DeploymentLink,
+  DeploymentLogo,
+  DeploymentRows,
+  FactoryHead,
+  FactoryHeadCopy,
+  FactoryLift,
+  FactorySectionHead,
+  OpenHint,
+} from 'components/curate/factory-shared-layout'
 import TCRParams from './tcr-params'
 import ItemParams from './item-params'
 import RelTCRParams from './rel-tcr-params'
 import Deploy from './deploy'
 import { LivePreview } from './preview'
-import { SafeImage } from './fields'
+import { SafeImage } from 'components/curate/factory-shared-fields'
 import {
   type FactorySection,
   itemColumnsProblem,
@@ -488,144 +497,12 @@ const useCachedFactory = (
 
 /* ---------- Layout ---------- */
 
-const Head = styled.header`
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 20px 32px;
-
-  > * {
-    ${reveal}
-  }
-`
-
-const HeadCopy = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  min-width: 0;
-`
-
 const Lede = styled.p`
   margin: 0;
   max-width: 54ch;
   color: var(--color-muted);
   font-size: 16px;
   line-height: 24px;
-`
-
-const Lift = styled.div`
-  ${reveal}
-`
-
-const SectionHead = styled.div`
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 12px;
-  margin: 72px 0 18px;
-
-  h2 {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin: 0;
-    color: var(--color-text);
-    font-family: var(--font-display);
-    font-size: 30px;
-    line-height: 34px;
-    font-weight: 500;
-    letter-spacing: -0.03em;
-  }
-
-  @media (max-width: 720px) {
-    margin-top: 48px;
-  }
-`
-
-const DeploymentRows = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-`
-
-const DeploymentLink = styled(Link)`
-  display: grid;
-  grid-template-columns: 40px minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 14px;
-  min-height: 64px;
-  padding: 12px 16px;
-  border: 1px solid var(--glass-border);
-  border-radius: var(--radius);
-  background: var(--color-surface);
-  color: inherit;
-  text-decoration: none;
-  transition:
-    border-color var(--motion),
-    translate var(--motion),
-    box-shadow var(--motion);
-  ${reveal}
-
-  /* translate, not transform: the entrance animation owns transform. */
-  &:hover {
-    border-color: var(--color-border-strong);
-    box-shadow: var(--shadow-card-hover);
-    translate: 0 -1px;
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    &:hover {
-      translate: none;
-    }
-  }
-
-  &:hover strong {
-    color: var(--color-primary);
-  }
-
-  strong {
-    display: block;
-    overflow: hidden;
-    color: var(--color-text);
-    font-size: var(--fs-body-lg);
-    line-height: var(--lh-body-lg);
-    font-weight: 500;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    transition: color var(--motion);
-  }
-`
-
-const DeploymentLogo = styled.span`
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  overflow: hidden;
-  border: 1px solid var(--glass-border);
-  border-radius: var(--radius-sm);
-  background: var(--color-raised);
-  color: var(--color-faint);
-
-  img {
-    display: block;
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-  }
-`
-
-const OpenHint = styled.span`
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  color: var(--color-muted);
-  font-size: var(--fs-small);
-  font-weight: 500;
 `
 
 /* ---------- Previous deployments ---------- */
@@ -802,8 +679,8 @@ const FactoryPage = () => {
 
   const header = (
     <>
-      <Head>
-        <HeadCopy style={{ ['--i' as string]: 0 }}>
+      <FactoryHead>
+        <FactoryHeadCopy style={{ ['--i' as string]: 0 }}>
           <Row $gap={10} $wrap>
             <Label $tone="faint">Launch a list</Label>
             {factoryChainId !== undefined && (
@@ -815,7 +692,7 @@ const FactoryPage = () => {
             A submitter’s deposit is locked only during the challenge period;
             the draft is saved in this browser as you type.
           </Lede>
-        </HeadCopy>
+        </FactoryHeadCopy>
         <div style={{ ['--i' as string]: 1 }}>
           <SegmentedControl
             ariaLabel="List type"
@@ -830,9 +707,9 @@ const FactoryPage = () => {
             }}
           />
         </div>
-      </Head>
+      </FactoryHead>
       <Section $gap="sm">
-        <Lift style={{ ['--i' as string]: 2 }}>
+        <FactoryLift style={{ ['--i' as string]: 2 }}>
           <Explainer
             id="factory"
             eyebrow="Before you start"
@@ -852,7 +729,7 @@ const FactoryPage = () => {
               },
             ]}
           />
-        </Lift>
+        </FactoryLift>
       </Section>
     </>
   )
@@ -962,12 +839,12 @@ const FactoryPage = () => {
 
       <Section $gap="lg">
         <FactoryWizardGrid>
-          <Lift style={{ ['--i' as string]: 3 }}>
+          <FactoryLift style={{ ['--i' as string]: 3 }}>
             <FactoryStepTimeline
               groups={STANDARD_FACTORY_STEPS}
               wizard={wizard}
             />
-          </Lift>
+          </FactoryLift>
           <FactorySplit>
             <FactoryStepPanel
               wizard={wizard}
@@ -978,7 +855,7 @@ const FactoryPage = () => {
               {renderVisualStep()}
             </FactoryStepPanel>
             <FactoryAside aria-label="Preview">
-              <Lift style={{ ['--i' as string]: 5 }}>
+              <FactoryLift style={{ ['--i' as string]: 5 }}>
                 {tcrState && factoryChainId !== undefined && (
                   <LivePreview
                     tcrState={tcrState}
@@ -987,7 +864,7 @@ const FactoryPage = () => {
                     currency={nativeCurrency}
                   />
                 )}
-              </Lift>
+              </FactoryLift>
             </FactoryAside>
           </FactorySplit>
         </FactoryWizardGrid>
@@ -995,7 +872,7 @@ const FactoryPage = () => {
 
       {previousDeployments.length > 0 && factoryChainId !== undefined && (
         <section aria-label="Previous deployments">
-          <SectionHead>
+          <FactorySectionHead>
             <h2>
               Your deployments
               <Chip>{previousDeployments.length}</Chip>
@@ -1003,7 +880,7 @@ const FactoryPage = () => {
             <Small $faint>
               Lists deployed from this browser on {chainName}.
             </Small>
-          </SectionHead>
+          </FactorySectionHead>
           <DeploymentRows>
             {previousDeployments.map((contractAddress, index) => (
               <DeploymentRow

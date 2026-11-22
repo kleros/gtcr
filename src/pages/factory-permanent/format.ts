@@ -1,5 +1,5 @@
 import { BigNumber, ethers, type BigNumberish } from 'ethers'
-import { jurorsAndCourtIDFromExtraData } from 'utils/string'
+import { groupThousands } from 'components/curate/item-standard-format'
 import { normalizeDecimalInput } from 'utils/decimal-input'
 
 /*
@@ -161,26 +161,9 @@ export const enforcedStake = (
   decimals: number,
 ): string | null => formatToken(parseAmount(value, decimals), decimals)
 
-const grouped = (exact: string) => {
-  const [whole, fraction] = exact.split('.')
-  const withCommas = whole.replace(/\B(?=(\d{3})+(?!\d))/g, ',')
-  return fraction === undefined ? withCommas : `${withCommas}.${fraction}`
-}
-
 /** An exact amount for display: the integer part grouped in thousands. */
 export const groupAmount = (exact: string | null): string | null =>
-  exact === null ? null : grouped(exact)
-
-/** For a count-up: intermediate values at the amount's precision, then the exact string, grouped. */
-export const amountFormat = (exact: string) => {
-  const decimals = Math.min(6, (exact.split('.')[1] ?? '').length)
-  const target = Number(exact)
-  const format = new Intl.NumberFormat('en-US', {
-    minimumFractionDigits: decimals,
-    maximumFractionDigits: decimals,
-  })
-  return (n: number) => (n === target ? grouped(exact) : format.format(n))
-}
+  exact === null ? null : groupThousands(exact)
 
 /** "84 hours", "1 hour". */
 export const formatHours = (hours: number | string): string => {
@@ -196,21 +179,3 @@ export const hoursToSeconds = (hours: unknown): number | null => {
     ? Math.round(parsed * 3600)
     : null
 }
-
-/** The court and juror count encoded in arbitrator extra data, if readable. */
-export const readExtraData = (
-  extraData?: string,
-): { courtID: number; numberOfJurors: number } | null => {
-  if (!extraData) return null
-  try {
-    return jurorsAndCourtIDFromExtraData(extraData)
-  } catch {
-    return null
-  }
-}
-
-/** Builds the Kleros arbitrator extra data: court id then juror count, 32 bytes each. */
-export const encodeExtraData = (courtID: number, numberOfJurors: number) =>
-  `0x${courtID.toString(16).padStart(64, '0')}${Math.ceil(numberOfJurors)
-    .toString(16)
-    .padStart(64, '0')}`
