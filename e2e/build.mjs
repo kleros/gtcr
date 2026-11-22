@@ -17,6 +17,10 @@ const env = {
   ...readEnvFile(resolve(root, 'e2e/e2e.env')),
   // One build id, so nothing a page saves depends on when it was built.
   COMMIT_REF: 'e2e',
+  // The heap Netlify gives the same build (netlify.toml): Node's default
+  // runs out on a CI runner.
+  NODE_OPTIONS:
+    `${process.env.NODE_OPTIONS ?? ''} --max-old-space-size=4096`.trim(),
 }
 
 const run = spawnSync(
