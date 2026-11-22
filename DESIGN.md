@@ -536,9 +536,10 @@ way (dashboard, Browse, registry pages, the profile, the landing page).
   every read. An ERC-20 with no price or no decimals is left out; the chain's own coin with no price
   fails the read, and nothing is drawn. On the landing, a money figure that cannot be read falls
   back to the snapshot's alone. The history behind the chart's 6M to 3Y and Top curators reaches
-  back three years and is kept 30 minutes. It is shown as "Passed through Curate" in the dashboard's Self-sustaining mechanism
-  (round 19; it sat beside Entries in rounds 15 to 18) and on the landing page. The bounties won
-  are the other total, on both pages (round 16, the Self-sustaining panel below). Every other money
+  back three years and is kept 30 minutes. It is shown as "Passed through Curate" in the dashboard's hero (since 20 Nov 2026; in the
+  Self-sustaining mechanism in round 19, beside Entries in rounds 15 to 18) and on the landing page.
+  The bounties won are the other total, on both pages (round 16; beside it in the hero since 20 Nov
+  2026). Every other money
   figure keeps the per-coin rule above.
 - The all-time ledger pages the **retired Classic lists'** resolved disputes too (2020-2022): they
   are the protocol's history, so they count in the bounties (counts and amounts) and in the entries
@@ -588,19 +589,22 @@ way (dashboard, Browse, registry pages, the profile, the landing page).
   "unavailable", never 0.
 - **The share card** (`public/og-image.png`, 1200×630, the og:image and twitter:image of
   `index.html` and `landing/index.html`) is a headless-Chrome screenshot of
-  `scripts/og-image.html` (the command is in its header): since round 13 the dashboard's title
-  ("Obtain your verification, / or earn by keeping lists clean.", the second clause in the accent)
-  and its lede, on the dark stage with the aurora and the Curate mark, no grid or dot pattern.
-  When the title changes, the card is rendered again and both `og:image:alt` strings change with
-  it. The landing page carries the same title since round 14.
+  `scripts/og-image.html` (the command is in its header): the dashboard's title as it rests
+  ("Verify anything, / or earn by keeping lists clean.", "anything" and "earn" in the accent; since
+  22 Nov 2026, before that "Obtain your verification, …") and its lede, on the dark stage with the
+  aurora and the Curate mark, no grid or dot pattern. When the title changes, the card is rendered
+  again and both `og:image:alt` strings change with it, as do the landing page's `<title>` and
+  `og:title`. The landing page carries the same title since round 14.
 - **The landing page** (rounds 14 and 15) carries the dashboard's title, and no word or mark of a
   coin or a chain: no ETH, xDAI or sDAI, no Ethereum or Gnosis, no "on-chain", no chain logos on the
-  Kleros Verified tiles, and no chart. Beside the copy, one card with two figures in dollars, all
-  time, at today's prices (`src/landing/money.ts`): **Bounties won**, by challengers (every winning
-  ruling that carried an amount, the Classic lists included), and **Passed through Curate**
-  (deposits, challenges and appeals, as above), each with its count under it ("696 bounties",
-  "33,667 requests") and one line on the prices; compact with three significant figures ("$2.73M"),
-  the exact dollars in the title. The Activity band below keeps its four figures over 30 days,
+  Kleros Verified tiles, and no chart. Its title runs through the dashboard's words the same way
+  (`landing.js`, as `RotatingWord`), with the same sentence for screen readers. Beside the copy,
+  one card with two figures in dollars, all time, at today's prices (`src/landing/money.ts`), in
+  the dashboard's order: **Passed through Curate** (deposits, challenges and appeals, as above),
+  then **Bounties won**, by challengers (every winning ruling that carried an amount, the Classic
+  lists included), each with its count under it ("33,667 requests", "696 bounties") and one line
+  on the prices; compact with three significant figures ("$2.73M"), the exact dollars in the
+  title. The Activity band below keeps its four figures over 30 days,
   spread across the band's width. `public/landing/data.js` is a full read of
   `window.CURATE_LANDING_LIVE`, taken only from a load where every chain answered; while it shows,
   the money figures say "to" its day and "at prices of" it.
@@ -609,10 +613,16 @@ way (dashboard, Browse, registry pages, the profile, the landing page).
 
 ## Dashboard
 
-- **The title** (round 11) names both ways in, one clause to a line, the second in `primary`:
-  "Obtain your verification, / or earn by keeping lists clean." It is a sentence, not a slogan, so
-  it is set at clamp(38px, 3.4vw + 14px, 64px) rather than `--fs-hero`, each clause balanced on a
-  phone. The lede under it, at most 54ch and balanced: "Curate verifies anything, at scale. Built
+- **The title** (round 11; its first clause since 20 Nov 2026) names both ways in, one clause to a
+  line: "Verify tokens, / or earn by keeping lists clean." The first line's word runs once through
+  tokens, contracts, domains, addresses, markets and documents (1.6 s each) and rests on
+  "anything" (`components/curate/rotating-word.tsx`); it never loops, waits while the tab is
+  hidden, and stays on "tokens" under reduced motion. Screen readers hear one sentence ("Verify
+  tokens, contracts, domains and more, or earn by keeping lists clean."). The accent marks that
+  word and "earn". It is a sentence, not a slogan, so it is set at clamp(34px, 3.4vw + 14px, 64px)
+  rather than `--fs-hero`; the first line never wraps (the longest word fits at 320px), and the
+  second clause is balanced on a phone. The hero is left-aligned (a centred first line slid
+  sideways at each word), with the two money totals beside it (below the buttons under 900px). The lede under it, at most 54ch and balanced: "Curate verifies anything, at scale. Built
   to let good actors win: they get verified, or they get the bounty if they spot wrong entries."
 - **Open for verification** is not drawn at all when there is no bounty up for grabs (round 10).
   It opens the board's section with no box (round 6), centred on the page. There is no "Happening
@@ -650,20 +660,19 @@ way (dashboard, Browse, registry pages, the profile, the landing page).
   column beside a 240px chart. The chart's head is one row right above it: what it counts and its
   legend on the left, the range switch on the right (round 9), under the figures.
 - **Self-sustaining mechanism** (rounds 16 to 19): no box ("in a box is cringe"), like the Open for
-  verification band, and no sentence under it (round 19). The title centred, then one centred
-  group: the two rings together (round 18: "not a big fan of separating the gauges"), then behind a
-  hairline the two amounts side by side, Passed through Curate on the left and Bounties won on the
-  right (round 19), centred on the rings' height. Each amount is a one-line label with a help icon
-  over its figure, no subtitle; the icon opens a quiet tooltip (`Tooltip quiet`: one line of muted
-  12px text on frosted glass, a soft shadow, up to 400px) with one short line: "Deposits,
-  challenges and appeals, all time." and "In ETH, xDAI and other ERC-20 tokens on Ethereum and
-  Gnosis." (round 19: "make it light and the text really minimal"). On a phone the two amounts
-  lead, side by side, and the two rings share the line under them. Each ring carries a tooltip
-  built from its own counts. No line names the Classic lists (round 7). Bounties won is one figure
-  in dollars at today's prices, compact ("$73.3K"), with no count of bounties. Where any coin has
-  no current price, or a token's decimals never answered, there is no honest total: the coins' own
-  amounts are listed on one line instead. A chain whose rulings did not load is named under the
-  row.
+  verification band, and no sentence under it (round 19). The title centred over the two rings
+  together (round 18: "not a big fan of separating the gauges"); on a phone they share one line.
+  Each ring carries a tooltip built from its own counts. No line names the Classic lists (round 7).
+- **The money in the hero** (`HeroMoney`, since 20 Nov 2026; beside the rings in round 19): Passed
+  through Curate, then Bounties won, stacked beside the title, side by side below the buttons under
+  900px. Each amount is a one-line label with a help icon over its figure, no subtitle; the icon
+  opens a quiet tooltip (`Tooltip quiet`: one line of muted 12px text on frosted glass, a soft
+  shadow, up to 400px) with one short line: "Deposits, challenges and appeals, all time." and "In
+  ETH, xDAI and other ERC-20 tokens on Ethereum and Gnosis." (round 19: "make it light and the
+  text really minimal"). Bounties won is one figure in dollars at today's prices, compact
+  ("$73.3K"), with no count of bounties. Where any coin has no current price, or a token's decimals
+  never answered, there is no honest total: the coins' own amounts are listed on one line instead.
+  A chain whose rulings did not load is named under them.
 - Top curators sit beside the chart (round 7), in the same panel behind a hairline, 320px wide
   (260px below 1100px), each with an LED bar of their activity against the top curator's
   (requests in the accent, challenges in `contested`) and their counts on one line; below 900px

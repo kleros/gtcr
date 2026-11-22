@@ -1,5 +1,5 @@
 // A frozen snapshot of public Curate data (Ethereum and Gnosis mainnets),
-// read on 19 Nov 2026 through src/landing/boot.ts. The landing page draws it
+// read on 22 Nov 2026 through src/landing/boot.ts. The landing page draws it
 // at once, then swaps in the live figures when the indexers answer; while it
 // shows this object, a figure that would say "now" says `snapshotAt`
 // instead, and the money figures say "to" that day rather than "all time".
@@ -30,18 +30,18 @@
 // window.CURATE_LANDING_LIVE (minus `live`); never edit single figures by
 // hand.
 window.CURATE_LANDING_DATA = {
-  snapshotAt: '2026-11-19T14:01:16.843Z',
+  snapshotAt: '2026-11-22T10:04:24.316Z',
   figures: {
     registries: 181,
     verified: 10,
     community: 168,
-    entries: 31331,
-    requestsOpen: 174,
-    unchallenged: 170,
+    entries: 31474,
+    requestsOpen: 167,
+    unchallenged: 161,
     unchallengedCapped: false,
-    openForVerification: 170,
-    inCourt: 4,
-    curators30d: 16,
+    openForVerification: 161,
+    inCourt: 6,
+    curators30d: 15,
   },
   verifiedLists: [
     {
@@ -50,8 +50,8 @@ window.CURATE_LANDING_DATA = {
       kind: 'standard',
       title: 'Address Tags',
       logo: '/ipfs/QmP1hU1LaheHVGxcSJWg5sC3g25vs5snam3qP1bVVAa7mT/address-tag-2-1.png',
-      entries: 9467,
-      open: 94,
+      entries: 9556,
+      open: 106,
     },
     {
       chainId: 100,
@@ -59,8 +59,8 @@ window.CURATE_LANDING_DATA = {
       kind: 'standard',
       title: 'Ledger Contract Domain Name registry v2',
       logo: '/ipfs/QmNNSDkpyDX1wB4NNFdAzaHsJihpvgNVV89zCH8FH9CVAz/ledger-white.png',
-      entries: 8489,
-      open: 68,
+      entries: 8540,
+      open: 55,
     },
     {
       chainId: 100,
@@ -68,8 +68,8 @@ window.CURATE_LANDING_DATA = {
       kind: 'standard',
       title: 'Kleros Tokens',
       logo: '/ipfs/QmZ5VC8FHMjs92yQEn9dnJottspM5JUbJUkPtno1hPPYks/t2cr-logo.974d9285.png',
-      entries: 7248,
-      open: 12,
+      entries: 7251,
+      open: 6,
     },
     {
       chainId: 100,
@@ -136,21 +136,6 @@ window.CURATE_LANDING_DATA = {
     },
   ],
   series30d: [
-    {
-      day: 1792540800,
-      requests: 62,
-      challenges: 0,
-    },
-    {
-      day: 1792627200,
-      requests: 20,
-      challenges: 1,
-    },
-    {
-      day: 1792713600,
-      requests: 68,
-      challenges: 1,
-    },
     {
       day: 1792800000,
       requests: 31,
@@ -283,15 +268,30 @@ window.CURATE_LANDING_DATA = {
     },
     {
       day: 1795046400,
-      requests: 18,
+      requests: 32,
+      challenges: 2,
+    },
+    {
+      day: 1795132800,
+      requests: 44,
+      challenges: 0,
+    },
+    {
+      day: 1795219200,
+      requests: 73,
+      challenges: 1,
+    },
+    {
+      day: 1795305600,
+      requests: 12,
       challenges: 0,
     },
   ],
   money: {
-    bounties: 73271.02472581259,
-    bountiesPaid: 696,
+    bounties: 71256.41582121857,
+    bountiesPaid: 697,
     bountiesCapped: false,
-    transit: 2731663.0567040727,
-    requests: 33667,
+    transit: 2694566.419598051,
+    requests: 33810,
   },
 }

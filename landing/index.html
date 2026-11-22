@@ -7,14 +7,14 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Kleros Curate · Obtain your verification, or earn by keeping lists clean</title>
+    <title>Kleros Curate · Verify anything, or earn by keeping lists clean</title>
     <meta
       name="description"
       content="Kleros Curate runs lists anyone can add to and anyone can challenge. Submit an entry that follows a list's rules and your deposit comes back; spot one that breaks them and earn the bounty. Disputes are settled by Kleros Court jurors."
     />
     <meta
       property="og:title"
-      content="Kleros Curate · Obtain your verification, or earn by keeping lists clean"
+      content="Kleros Curate · Verify anything, or earn by keeping lists clean"
     />
     <meta
       property="og:description"
@@ -27,7 +27,7 @@
     <meta property="og:image:height" content="630" />
     <meta
       property="og:image:alt"
-      content="Kleros Curate: obtain your verification, or earn by keeping lists clean."
+      content="Kleros Curate: verify anything, or earn by keeping lists clean."
     />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:image" content="https://curate.kleros.io/og-image.png" />
@@ -216,9 +216,30 @@
             <b>Submit. Challenge. Settle.</b>
             <span>Kleros Curate</span>
           </p>
+          <!-- The dashboard's title: the first line runs once through
+               examples of what can be verified and rests on "anything"
+               (landing.js, as the app's RotatingWord). Screen readers get
+               the whole sentence once; the changing word is for the eye. -->
           <h1 id="hero-title" class="headline" data-reveal style="--i: 1">
-            <span>Obtain your verification,</span>
-            <em>or earn by keeping lists clean.</em>
+            <span class="sr-only"
+              >Verify tokens, contracts, domains and more, or earn by keeping
+              lists clean.</span
+            >
+            <span class="headline-line headline-line--first" aria-hidden="true"
+              >Verify
+              <em
+                ><span
+                  class="rotating-word"
+                  data-rotating-word
+                  data-words="tokens contracts domains addresses markets documents anything"
+                  data-suffix=","
+                  >tokens,</span
+                ></em
+              ></span
+            >
+            <span class="headline-line" aria-hidden="true"
+              >or <em>earn</em> by keeping lists clean.</span
+            >
           </h1>
           <ul class="incentives" data-reveal style="--i: 2">
             <li>
@@ -247,9 +268,10 @@
         </div>
 
         <!-- Rounds 14 and 15: the money on Curate, all time, in dollars only
-             at today's prices: what challengers have won, and everything
-             that has passed through the contracts (deposits, challenges and
-             appeals; pages/dashboard/transit.ts says what each counts). -->
+             at today's prices: everything that has passed through the
+             contracts (deposits, challenges and appeals;
+             pages/dashboard/transit.ts says what each counts), then what
+             challengers have won, in the dashboard's order. -->
         <section
           class="money"
           aria-label="Money on Curate, all time"
@@ -258,17 +280,17 @@
           style="--i: 4"
         >
           <div class="money-row">
-            <h2 class="label">Bounties won</h2>
-            <p class="money-figure" data-money-fig="bounties">—</p>
-            <p class="money-note" data-money-note="bounties">
-              by challengers, all time
-            </p>
-          </div>
-          <div class="money-row">
             <h2 class="label">Passed through Curate</h2>
             <p class="money-figure" data-money-fig="transit">—</p>
             <p class="money-note" data-money-note="transit">
               deposits, challenges and appeals, all time
+            </p>
+          </div>
+          <div class="money-row">
+            <h2 class="label">Bounties won</h2>
+            <p class="money-figure" data-money-fig="bounties">—</p>
+            <p class="money-note" data-money-note="bounties">
+              by challengers, all time
             </p>
           </div>
           <p class="money-basis" data-money-basis>

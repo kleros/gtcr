@@ -1,10 +1,11 @@
 /*
  * Kleros Curate landing: the theme switch (shared with the app), the
  * figures (the dated snapshot in data.js at once, then the live ones from
- * src/landing/boot.ts), scroll reveals, the two dollar figures (bounties
- * won, value passed through Curate) and the dispute flow schematic. Plain DOM, no
- * dependencies. Without data the figures stay as dashes and the panel says
- * so. Reduced motion renders every drawing in its final state.
+ * src/landing/boot.ts), scroll reveals, the headline's changing word, the
+ * two dollar figures (value passed through Curate, bounties won) and the
+ * dispute flow schematic. Plain DOM, no dependencies. Without data the
+ * figures stay as dashes and the panel says so. Reduced motion renders
+ * every drawing in its final state.
  */
 ;(() => {
   const doc = document
@@ -35,6 +36,39 @@
     )
     for (const node of revealables) revealer.observe(node)
   } else for (const node of revealables) node.classList.add('in')
+
+  /* ---------- Headline: the word that runs through examples, once ---------- */
+
+  // As the app's RotatingWord (src/components/curate/rotating-word.tsx):
+  // each word stays 1.6 s, the last one ("anything") stays for good, and it
+  // never loops. It only advances while the page is visible, so a
+  // background tab does not finish it unseen; under reduced motion it keeps
+  // the first word. The word is aria-hidden: the heading's sr-only sentence
+  // is what screen readers hear, once.
+  const rotating = $('[data-rotating-word]')
+  if (rotating) {
+    const words = (rotating.dataset.words || '').split(' ').filter(Boolean)
+    const suffix = rotating.dataset.suffix || ''
+    const last = words.length - 1
+    let index = 0
+    let timer
+    const schedule = () => {
+      globalThis.clearTimeout(timer)
+      if (index >= last || reducedMotion()) return
+      if (doc.visibilityState !== 'visible') return
+      timer = globalThis.setTimeout(() => {
+        index += 1
+        rotating.textContent = `${words[index]}${suffix}`
+        // Only a change animates: the first word paints with the page.
+        rotating.removeAttribute('data-entering')
+        void rotating.offsetWidth
+        rotating.setAttribute('data-entering', '')
+        schedule()
+      }, 1600)
+    }
+    doc.addEventListener('visibilitychange', schedule)
+    schedule()
+  }
 
   const integer = new Intl.NumberFormat('en-US')
   const dayFormat = new Intl.DateTimeFormat('en-GB', {
@@ -682,7 +716,7 @@
       }
     }
 
-    /* ---------- Money: bounties won and deposits locked, in dollars ---------- */
+    /* ---------- Money: passed through Curate and bounties won, in dollars ---------- */
 
     // Rounds 14 and 15: two figures, all time, in dollars only at today's
     // prices (src/landing/money.ts); no coin, chain or chart.
