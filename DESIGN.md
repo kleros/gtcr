@@ -600,9 +600,11 @@ way (dashboard, Browse, registry pages, the profile, the landing page).
 - **The landing page** (rounds 14 and 15) carries the dashboard's title, and no word or mark of a
   coin or a chain: no ETH, xDAI or sDAI, no Ethereum or Gnosis, no "on-chain", no chain logos on the
   Kleros Verified tiles, and no chart. Its title runs through the dashboard's words the same way
-  (`landing.js`, as `RotatingWord`), with the same sentence for screen readers. Beside the copy,
-  one card with two figures in dollars, all time, at today's prices (`src/landing/money.ts`), in
-  the dashboard's order: **Passed through Curate** (deposits, challenges and appeals, as above),
+  (`landing.js`, as `RotatingWord`), with the same sentence for screen readers. Its bar carries the
+  app bar's wordmark (`curate-v2-wordmark.svg`) as the app draws it: 40px tall, dimmed on hover,
+  only the hexagon mark at 600px and under. Beside the copy, one card with two figures in dollars,
+  all time, at today's prices (`src/landing/money.ts`), in the dashboard's order:
+  **Passed through Curate** (deposits, challenges and appeals, as above),
   then **Bounties won**, by challengers (every winning ruling that carried an amount, the Classic
   lists included), each with its count under it ("33,667 requests", "696 bounties") and one line
   on the prices; compact with three significant figures ("$2.73M"), the exact dollars in the

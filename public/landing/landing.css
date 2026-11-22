@@ -543,10 +543,36 @@ main,
   align-items: center;
   justify-self: start;
   color: var(--color-text);
+  transition: opacity var(--motion);
 }
 
 .brand:hover {
   color: var(--color-text);
+  opacity: 0.8;
+}
+
+/* The app bar's wordmark (src/assets/images/curate-v2-wordmark.svg) at the
+   app's size: 40px tall, the size Kleros v2 gives its header logo, a 40px
+   mark and 16px capitals (app-bar.tsx, LogoLink). */
+.brand svg {
+  display: block;
+  flex: 0 0 auto;
+  height: 40px;
+  width: auto;
+}
+
+/* Phones, as the app: only the hexagon mark (the first 36 of 145 units);
+   the eyebrow under the bar names Kleros Curate. */
+@media (max-width: 600px) {
+  .brand {
+    width: 36px;
+    overflow: hidden;
+  }
+
+  .brand svg {
+    width: 145px;
+    max-width: none;
+  }
 }
 
 .nav {
