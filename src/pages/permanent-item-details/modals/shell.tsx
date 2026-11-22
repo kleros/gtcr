@@ -1,6 +1,5 @@
-import React, { useCallback, useEffect, useId, useRef } from 'react'
-import { createPortal } from 'react-dom'
-import styled, { keyframes } from 'styled-components'
+import React, { useCallback } from 'react'
+import styled from 'styled-components'
 import { ethers, type BigNumberish } from 'ethers'
 import { parseAbi } from 'viem'
 import { useAccount, useSwitchChain } from 'wagmi'
@@ -9,11 +8,9 @@ import useUrlChainId from 'hooks/use-url-chain-id'
 import { appKitModal } from 'config/wagmi'
 import { NETWORKS_INFO } from 'config/networks'
 import { reportSwitchFailure, signInWithToast } from 'utils/wrap-with-toast'
-import { CurateIcon } from 'components/curate/icons'
+import { Dialog } from 'components/curate/item-standard-dialog'
 import {
   Button,
-  IconButton,
-  Label,
   SkeletonBlock,
   Small,
   Stack,
@@ -21,209 +18,27 @@ import {
 
 /*
  * Shared pieces of the Stake Curate item modals: the dialog (the item
- * pages' near-opaque panel over a blurred page, the aurora along its top
- * edge, rising in from 96%; a bottom-anchored sheet on phones), the wallet
- * gate that names its blocker, and the exact amount formatting every
- * receipt uses.
+ * pages' own, components/curate/item-standard-dialog), the wallet gate that
+ * names its blocker, and the exact amount formatting every receipt uses.
  */
 
 /* ---------- Dialog ---------- */
 
-const fadeIn = keyframes`
-  from { opacity: 0; }
-  to { opacity: 1; }
-`
-
-const rise = keyframes`
-  from { opacity: 0; transform: translateY(12px) scale(0.96); }
-  to { opacity: 1; transform: none; }
-`
-
-const Scrim = styled.div`
-  position: fixed;
-  inset: 0;
-  z-index: 1000;
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  padding: 56px 16px;
-  overflow-y: auto;
-  /* A solid fill first: a browser without color-mix() (iOS before 16.2,
-     Chrome before 111) drops the next line and keeps this one. */
-  background: var(--stage);
-  background: color-mix(in srgb, var(--stage) 62%, transparent);
-  backdrop-filter: blur(10px) saturate(120%);
-  -webkit-backdrop-filter: blur(10px) saturate(120%);
-  animation: ${fadeIn} 220ms ease-out both;
-
-  @media (max-width: 720px) {
-    padding: 12px 8px 24px;
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    animation: none;
-  }
-`
-
-const Panel = styled.div<{ $width: string }>`
-  position: relative;
-  isolation: isolate;
-  width: 100%;
-  max-width: ${({ $width }) => $width};
-  overflow: clip;
-  border: 1px solid var(--glass-border);
-  border-radius: var(--radius-xl);
-  /* A solid fill first: a browser without color-mix() (iOS before 16.2,
-     Chrome before 111) drops the next line and keeps this one. */
-  background: var(--color-surface);
-  background: color-mix(in srgb, var(--color-surface) 92%, transparent);
-  box-shadow:
-    inset 0 1px 0 var(--glass-highlight),
-    var(--shadow-overlay);
-  color: var(--color-text);
-  outline: none;
-  animation: ${rise} 420ms var(--ease-out) both;
-
-  /* The aurora along the top edge: a lit rim and its glow. */
-  &::before {
-    content: '';
-    position: absolute;
-    inset: 0 0 auto;
-    z-index: -1;
-    height: 180px;
-    background:
-      radial-gradient(
-        60% 120px at 18% 0%,
-        color-mix(in srgb, var(--aurora-b) 34%, transparent),
-        transparent 70%
-      ),
-      radial-gradient(
-        50% 110px at 62% 0%,
-        color-mix(in srgb, var(--aurora-a) 30%, transparent),
-        transparent 72%
-      ),
-      radial-gradient(
-        40% 90px at 92% 0%,
-        color-mix(in srgb, var(--aurora-c) 28%, transparent),
-        transparent 72%
-      );
-    pointer-events: none;
-  }
-
-  &::after {
-    content: '';
-    position: absolute;
-    inset: 0 24px auto;
-    height: 1px;
-    background: linear-gradient(
-      90deg,
-      transparent,
-      var(--aurora-b) 20%,
-      var(--aurora-a) 55%,
-      var(--aurora-c) 82%,
-      transparent
-    );
-    pointer-events: none;
-  }
-
-  @media (max-width: 720px) {
-    border-radius: var(--radius-lg);
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    animation: none;
-  }
-`
-
-const Head = styled.div`
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 26px 28px 18px;
-
-  @media (max-width: 720px) {
-    padding: 20px 18px 14px;
-  }
-`
-
-const Titles = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  min-width: 0;
-`
-
-const DialogTitle = styled.h2`
-  margin: 0;
-  color: var(--color-text);
-  font-family: var(--font-display);
-  font-size: clamp(24px, 1vw + 18px, 30px);
-  line-height: 1.1;
-  font-weight: 500;
-  letter-spacing: -0.03em;
-`
-
-const DialogBody = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  padding: 4px 28px 28px;
-
-  @media (max-width: 720px) {
-    padding: 4px 18px 20px;
-  }
-`
-
 /** Two columns inside a wide dialog: the form, then the receipt. */
-export const DialogColumns = styled.div`
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 380px;
-  gap: 28px;
-  align-items: start;
+export { DialogColumns } from 'components/curate/item-standard-dialog'
 
-  @media (max-width: 900px) {
-    grid-template-columns: 1fr;
-  }
+/* A Stake dialog's blocks stack in one column, 16px apart. */
+const ModalBody = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 `
-
-const FOCUSABLE =
-  'a[href], button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
-
-const WIDTHS = { md: '600px', lg: '1040px' } as const
 
 /**
- * Keeps Tab inside the dialog: wraps from the last focusable to the first
- * and from the first (or the dialog itself) back to the last. Focus that is
- * outside the dialog comes back in, at the first focusable (the last with
- * Shift).
+ * A Stake item dialog: the item pages' own Dialog (Escape, the scrim and
+ * the close button close it, Tab stays inside it, the wallet modal keeps
+ * its own keys), its blocks in one column.
  */
-const trapTab = (
-  dialog: HTMLElement | null,
-  event: Pick<KeyboardEvent, 'key' | 'shiftKey' | 'preventDefault'>,
-) => {
-  if (event.key !== 'Tab' || !dialog) return
-  const nodes = [...dialog.querySelectorAll<HTMLElement>(FOCUSABLE)].filter(
-    (node) => node.getClientRects().length > 0,
-  )
-  if (nodes.length === 0) {
-    event.preventDefault()
-    return
-  }
-  const first = nodes[0]
-  const last = nodes[nodes.length - 1]
-  const active = document.activeElement
-  if (event.shiftKey) {
-    if (active === first || active === dialog || !dialog.contains(active)) {
-      event.preventDefault()
-      last.focus()
-    }
-  } else if (active === last || !dialog.contains(active)) {
-    event.preventDefault()
-    first.focus()
-  }
-}
-
 export const ModalShell = ({
   open,
   title,
@@ -239,76 +54,17 @@ export const ModalShell = ({
   onClose: () => void
   width?: 'md' | 'lg'
   children: React.ReactNode
-}) => {
-  const titleId = useId()
-  const dialogRef = useRef<HTMLDivElement>(null)
-  // Callers pass a new close function on every render (the status card
-  // re-renders each second for its countdown). Read through a ref, it does
-  // not re-run the effect below, which would pull focus out of the field
-  // being typed in.
-  const onCloseRef = useRef(onClose)
-  onCloseRef.current = onClose
-
-  useEffect(() => {
-    if (!open) return
-    const previous = document.activeElement as HTMLElement | null
-    const overflow = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-    dialogRef.current?.focus({ preventScroll: true })
-    const onKey = (event: KeyboardEvent) => {
-      // The wallet modal keeps its own keys while it is open over this
-      // dialog: Escape there closes that modal, and Tab moves inside it.
-      if (appKitModal?.isOpen()) return
-      if (event.key === 'Escape') onCloseRef.current()
-      // Once the wallet modal closes, focus is left on <body>, where the
-      // panel's own key handler never hears Tab: the next Tab would walk
-      // the page behind the scrim. It brings focus back into the dialog.
-      else if (
-        !event.defaultPrevented &&
-        !dialogRef.current?.contains(document.activeElement)
-      )
-        trapTab(dialogRef.current, event)
-    }
-    window.addEventListener('keydown', onKey)
-    return () => {
-      window.removeEventListener('keydown', onKey)
-      document.body.style.overflow = overflow
-      previous?.focus?.()
-    }
-  }, [open])
-
-  if (!open) return null
-
-  return createPortal(
-    <Scrim
-      onMouseDown={(event) => {
-        if (event.target === event.currentTarget) onClose()
-      }}
-    >
-      <Panel
-        ref={dialogRef}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby={titleId}
-        tabIndex={-1}
-        $width={WIDTHS[width]}
-        onKeyDown={(event) => trapTab(dialogRef.current, event)}
-      >
-        <Head>
-          <Titles>
-            {eyebrow && <Label>{eyebrow}</Label>}
-            <DialogTitle id={titleId}>{title}</DialogTitle>
-          </Titles>
-          <IconButton type="button" aria-label="Close" onClick={onClose}>
-            <CurateIcon name="close" size={16} />
-          </IconButton>
-        </Head>
-        <DialogBody>{children}</DialogBody>
-      </Panel>
-    </Scrim>,
-    document.body,
-  )
-}
+}) => (
+  <Dialog
+    open={open}
+    onClose={onClose}
+    title={title}
+    eyebrow={eyebrow}
+    width={width}
+  >
+    <ModalBody>{children}</ModalBody>
+  </Dialog>
+)
 
 /** Skeleton shown while a modal waits for its deposit or metadata. */
 export const ModalSkeleton = () => (

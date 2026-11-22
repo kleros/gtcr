@@ -1184,6 +1184,9 @@ const DialogShell = ({
     // the title and close button started half off the screen.
     dialogRef.current?.focus({ preventScroll: true })
     const onKey = (event: KeyboardEvent) => {
+      // The wallet modal keeps its own keys while it is open over this
+      // dialog: Escape there closes that modal, and Tab moves inside it.
+      if (appKitModal?.isOpen()) return
       if (event.key === 'Escape') {
         onCloseRef.current()
         return

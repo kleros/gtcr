@@ -7,13 +7,7 @@ import React, {
   useState,
 } from 'react'
 import { createPortal } from 'react-dom'
-import { createRoot } from 'react-dom/client'
-import styled, { ThemeProvider as SCThemeProvider } from 'styled-components'
-import {
-  lightTheme,
-  darkTheme,
-  klerosTheme,
-} from '../../contexts/theme-context'
+import styled from 'styled-components'
 import Button from './Button'
 import { KitIcon } from './kit-icons'
 import { ghostIconButton, joinClassNames } from './kit-styles'
@@ -36,8 +30,6 @@ import { ghostIconButton, joinClassNames } from './kit-styles'
  * While a dialog is open the app root is inert, Tab wraps inside the
  * panel, and Escape closes the newest dialog only.
  */
-const ThemeProvider = SCThemeProvider as any
-
 const PHONE_QUERY = '(max-width: 720px)'
 const REDUCED_QUERY = '(prefers-reduced-motion: reduce)'
 /* WAAPI cannot read custom properties: these mirror --ease-* in global-styles. */
@@ -103,8 +95,8 @@ const morphFrames = (from: DOMRect, to: DOMRect): Keyframe[] => {
 /*
  * Open dialogs, oldest first. While any is open the app root is inert, so
  * neither Tab nor a screen reader reaches the page behind; only the newest
- * dialog answers Escape. Portals (this dialog, Modal.confirm, the wallet
- * modal) sit beside the root and stay live.
+ * dialog answers Escape. Portals (this dialog, the wallet modal) sit beside
+ * the root and stay live.
  */
 const openDialogs: object[] = []
 
@@ -450,10 +442,6 @@ const CloseButton = styled.button`
   }
 `
 
-const ConfirmText = styled.div`
-  color: var(--color-muted);
-`
-
 interface ModalProps {
   visible?: boolean
   title?: React.ReactNode
@@ -467,24 +455,9 @@ interface ModalProps {
   children?: React.ReactNode
   centered?: boolean
   destroyOnClose?: boolean
-  /** Internal: Modal.confirm renders an alertdialog. */
-  role?: 'dialog' | 'alertdialog'
 }
 
-interface ConfirmConfig {
-  title?: React.ReactNode
-  content?: React.ReactNode
-  okText?: string
-  cancelText?: string
-  onOk?: () => void
-  onCancel?: () => void
-}
-
-interface ModalComponent extends React.FC<ModalProps> {
-  confirm: (config: ConfirmConfig) => { destroy: () => void }
-}
-
-const Modal: ModalComponent = ({
+const Modal = ({
   visible,
   title,
   footer,
@@ -496,8 +469,7 @@ const Modal: ModalComponent = ({
   className,
   children,
   centered = false,
-  role = 'dialog',
-}) => {
+}: ModalProps) => {
   const overlayRef = useRef<HTMLDivElement>(null)
   const glowRef = useRef<HTMLDivElement>(null)
   const contentRef = useRef<HTMLDivElement>(null)
@@ -678,7 +650,7 @@ const Modal: ModalComponent = ({
         <Glow ref={glowRef} aria-hidden="true" />
         <ModalContent
           ref={contentRef}
-          role={role}
+          role="dialog"
           aria-modal="true"
           aria-labelledby={title ? titleId : undefined}
           tabIndex={-1}
@@ -715,73 +687,6 @@ const Modal: ModalComponent = ({
   )
 
   return createPortal(modalContent, document.body)
-}
-
-// Static confirm method
-Modal.confirm = ({
-  title,
-  content,
-  okText = 'OK',
-  cancelText = 'Cancel',
-  onOk,
-  onCancel,
-}: ConfirmConfig) => {
-  const container = document.createElement('div')
-  document.body.append(container)
-  const root = createRoot(container)
-
-  // Follow the active theme from the body attribute
-  const themeAttr = document.body.getAttribute('data-theme')
-  const theme =
-    themeAttr === 'dark'
-      ? darkTheme
-      : themeAttr === 'kleros'
-        ? klerosTheme
-        : lightTheme
-
-  const destroy = () => {
-    root.unmount()
-    if (container.parentNode) container.remove()
-  }
-
-  const handleOk = () => {
-    onOk && onOk()
-    destroy()
-  }
-
-  const handleCancel = () => {
-    onCancel && onCancel()
-    destroy()
-  }
-
-  const ConfirmDialog = () => (
-    <ThemeProvider theme={theme}>
-      <Modal
-        visible
-        centered
-        role="alertdialog"
-        title={title}
-        width="416px"
-        closable={false}
-        onCancel={handleCancel}
-        className="ui-modal-confirm"
-        footer={
-          <>
-            <Button onClick={handleCancel}>{cancelText}</Button>
-            <Button type="primary" onClick={handleOk}>
-              {okText}
-            </Button>
-          </>
-        }
-      >
-        {content && <ConfirmText>{content}</ConfirmText>}
-      </Modal>
-    </ThemeProvider>
-  )
-
-  root.render(<ConfirmDialog />)
-
-  return { destroy }
 }
 
 export default Modal
