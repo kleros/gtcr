@@ -50,6 +50,9 @@ test.describe('navigation', () => {
   }) => {
     test.skip(isMobile, 'a keyboard feature')
     await page.goto('/browse')
+    // The page's own content first: the route is loaded on demand, and a
+    // main that mounts after the jump takes the focus with it.
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Lists')
     await page.keyboard.press('Tab')
     const skip = page.getByRole('link', { name: 'Skip to content' })
     await expect(skip).toBeFocused()
