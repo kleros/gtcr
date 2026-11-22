@@ -28,6 +28,16 @@ Two snapshots ship with the app and are refreshed by hand:
 - `public/landing/data.js`: the figures the landing page draws before its live read answers. Open `/landing/`, wait until the activity panel reads "Live", run `copy(JSON.stringify(await window.CURATE_LANDING_LIVE, null, 2))` in the browser console and paste the result over the whole object in the file, minus its `live` field. Update the date in the file's header comment; never edit single figures by hand.
 - `src/config/registry-creation-snapshot.json`: when each list was created. Run `node scripts/registry-creation-snapshot.mjs`; it reads `REACT_APP_ALCHEMY_API_KEY` from `.env`.
 
+## Testing
+
+`.github/workflows/tests.yml` runs both suites on every pull request.
+
+- `yarn test`: unit tests for the app's logic (`src/**/*.test.ts`, in Node) and component tests (`src/**/*.test.tsx`, in jsdom with Testing Library), next to the code they cover. They read no `.env` and touch no network. `yarn test:watch` reruns them as you edit, `yarn test:coverage` writes `coverage/`.
+- `yarn test:e2e`: browser tests (`e2e/`, Playwright) against a production build at desktop and phone size. Run `yarn playwright install chromium` once. The build talks to placeholder services (`e2e/e2e.env`), and every request is answered from `e2e/recordings`, so the tests need no keys and never spend the indexers' shared request budget. Each test also fails on a page error, a console error, a request with no recording, or a request to an unknown host. `yarn test:e2e:report` opens the last report. Each run builds the app first (about a minute); keep `yarn test:e2e:serve` running in another terminal and runs reuse it.
+- `yarn test:e2e:record` re-records `e2e/recordings` against the real services named in your `.env`: run it when the app asks the services something new (the tests then fail with "requests with no recording"), and commit the result. It records the whole suite at once, because the browser clock is pinned to the time of the recording, and it keeps no secret: requests are filed under the variable that names their service, never under a URL. While recording, every list in an indexer's answer is cut to 25 rows.
+
+A test that pins a known bug is written as `it.fails(…)` with a `// BUG:` comment: it passes while the bug is there and fails once it is fixed, as a reminder to make it a normal test.
+
 ## Supporting New Field Types
 
 The Generalized TCR clients can learn how to parse and decode data stored onchain by reading what are the field types of each column from the `metadata` object stored on the meta evidence file.
@@ -42,7 +52,7 @@ The evidence display interface code of the Generalized TCR can be found at [http
 
 - `yarn build` - Type check, then create a production build in `build/`.
 - `yarn preview` - Serve the production build.
-- `yarn typecheck` - Type check only.
+- `yarn typecheck` - Type check only (the app, its tests and `e2e/`).
 - `yarn lint` - Lint the sources.
 - `yarn format` - Lint, fix and prettify the sources.
 
