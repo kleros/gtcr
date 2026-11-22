@@ -12,6 +12,8 @@ concurrency:
   group: tests-${{ github.ref }}
   cancel-in-progress: true
 
+# Pinned to Ubuntu 24.04: Playwright 1.56 has no browsers for 26.04,
+# which ubuntu-latest became.
 env:
   # .yarnrc.yml is not committed: install into node_modules, as developers
   # do, rather than Yarn's Plug'n'Play default.
@@ -20,7 +22,7 @@ env:
 jobs:
   checks:
     name: Typecheck, lint, unit and component tests
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
@@ -43,7 +45,7 @@ jobs:
 
   e2e:
     name: Browser tests
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
