@@ -38,7 +38,9 @@ jobs:
           path: ${{ steps.yarn-cache.outputs.dir }}
           key: yarn-${{ runner.os }}-${{ hashFiles('yarn.lock') }}
           restore-keys: yarn-${{ runner.os }}-
-      - run: yarn install --immutable
+      # No package lifecycle scripts: every package that has one also
+      # ships a prebuilt binary or a JavaScript fallback.
+      - run: yarn install --immutable --mode=skip-build
       - run: yarn typecheck
       - run: yarn lint
       - run: yarn test
@@ -60,8 +62,10 @@ jobs:
           path: ${{ steps.yarn-cache.outputs.dir }}
           key: yarn-${{ runner.os }}-${{ hashFiles('yarn.lock') }}
           restore-keys: yarn-${{ runner.os }}-
-      - run: yarn install --immutable
-      - run: yarn playwright install --with-deps chromium
+      # No package lifecycle scripts: every package that has one also
+      # ships a prebuilt binary or a JavaScript fallback.
+      - run: yarn install --immutable --mode=skip-build
+      - run: node node_modules/@playwright/test/cli.js install --with-deps chromium
       # Every request is answered from e2e/recordings: no keys, no .env.
       - run: yarn test:e2e
       - uses: actions/upload-artifact@v4

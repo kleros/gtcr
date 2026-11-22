@@ -23,12 +23,13 @@ const env = {
     `${process.env.NODE_OPTIONS ?? ''} --max-old-space-size=4096`.trim(),
 }
 
+// Vite's own script, run by this Node: no command looked up on PATH.
 const run = spawnSync(
-  'yarn',
+  process.execPath,
   // Errors only: the wallet kit's dependencies print hundreds of harmless
   // Rollup notes about /*#__PURE__*/ comments.
   [
-    'vite',
+    resolve(root, 'node_modules/vite/bin/vite.js'),
     'build',
     '--outDir',
     'build-e2e',

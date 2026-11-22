@@ -95,7 +95,11 @@ const serializeForChecksum = (json: unknown): string => {
     return `[${json.map((item) => serializeForChecksum(item)).join(',')}]`
   if (typeof json === 'object' && json !== null) {
     const record = json as Record<string, unknown>
-    const keys = Object.keys(record).sort()
+    // Code-unit order, as the Builder's own `.sort()`: never localeCompare,
+    // or the checksum would differ from the one the Builder computes.
+    const keys = Object.keys(record).sort((a, b) =>
+      a < b ? -1 : a > b ? 1 : 0,
+    )
     let text = `{${JSON.stringify(keys, replacer)}`
     for (const key of keys) text += `${serializeForChecksum(record[key])},`
     return `${text}}`
