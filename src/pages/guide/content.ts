@@ -19,6 +19,11 @@ export const CONTEXT_URL = 'https://curate.kleros.io/llms-full.txt'
 export const SKILL_PATH = '/skills/kleros-curate/SKILL.md'
 export const AGENT_PROMPT = `Read ${CONTEXT_URL} and follow it before interacting with Kleros Curate.`
 
+/** What the skill lets an agent do: the hero's callout and its file row. */
+const SKILL_DOES =
+  'read a list, build an entry, compute deposits, challenge, appeal, deploy'
+export const SKILL_SUMMARY = `${SKILL_DOES[0].toUpperCase()}${SKILL_DOES.slice(1)}.`
+
 export const DOCS = {
   curate: 'https://docs.kleros.io/products/curate',
   stakeCurate: 'https://docs.kleros.io/products/stake-curate',
@@ -39,8 +44,11 @@ export interface GuideSectionLink {
   label: string
 }
 
+/* The skill comes second, right after the lifecycle it follows: agent
+   builders who come for it should not have to read past every rule. */
 export const SECTIONS: GuideSectionLink[] = [
   { id: 'lifecycle', label: 'The lifecycle' },
+  { id: 'agents', label: 'Agents and skills' },
   { id: 'statuses', label: 'Statuses' },
   { id: 'submitting', label: 'Submitting' },
   { id: 'challenging', label: 'Challenging' },
@@ -48,7 +56,6 @@ export const SECTIONS: GuideSectionLink[] = [
   { id: 'rewards', label: 'Bounties and rewards' },
   { id: 'stake-curate', label: 'Stake Curate' },
   { id: 'launching', label: 'Launching a list' },
-  { id: 'agents', label: 'Agents and skills' },
   { id: 'glossary', label: 'Glossary' },
   { id: 'sources', label: 'Sources' },
 ]
@@ -517,8 +524,7 @@ export const AGENT_FILES: { href: string; name: string; about: string }[] = [
   {
     href: SKILL_PATH,
     name: SKILL_PATH,
-    about:
-      'The skill: read a list, build an entry, compute deposits, challenge, appeal, deploy.',
+    about: `The skill: ${SKILL_DOES}.`,
   },
   {
     href: '/curate-agent-context.md',

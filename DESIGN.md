@@ -861,6 +861,22 @@ way (dashboard, Browse, registry pages, the profile, the landing page).
   the facts sit in fixed figure columns so they align down the list, and the court wraps to a second
   line rather than losing its end.
 
+## Guide
+
+- **Two readers.** The guide teaches people how Curate works and hands builders the skill for
+  their agents (the footer's link reads "Guide & Skills"). The lifecycle stays the one featured
+  panel. The skill is offered in the hero, under the lede (23 Nov 2026: Fortunato and Marino found
+  it lost at the bottom), as a raised row: a spark mark on `primary-soft`, a "For AI agents"
+  label, one line and what the skill does, and one action, "Get the skill", which jumps to its
+  section. It copies nothing itself: the prompt is copied where it is shown.
+- **"Agents and skills" is the second section**, right after the lifecycle whose rules it follows.
+  Cross-references are made by id (`SeeLinks`), never by number, so the sections renumber freely.
+- **The skill is served from `public/skills/kleros-curate/`.** Its references redirect to
+  kleros/kleros-skills (`public/_redirects`), except a copy kept here where upstream is wrong for
+  this app: `verify-your-list.md`, whose Gnosis row upstream still names the list of lists Kleros
+  replaced on 17 Nov 2026. `src/pages/guide/agent-files.test.ts` holds every agent file to the
+  app's list-of-lists config; drop the copy once upstream names the current list.
+
 # Do's and Don'ts
 
 - Do lead with a number or a visual; do label every drawing with its measure and window.

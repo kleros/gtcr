@@ -9,6 +9,7 @@ import { CurateIcon } from 'components/curate/icons'
 import { VERIFIED_LABEL, VerifiedBadge } from 'components/curate/verified-badge'
 import {
   Button,
+  ButtonAnchor,
   ButtonLink,
   ChainChip,
   Label,
@@ -17,7 +18,7 @@ import {
   Surface,
 } from 'components/curate/primitives'
 import { reveal } from 'components/curate/motion/reveal'
-import { TableOfContents } from './table-of-contents'
+import { TableOfContents, useJump } from './table-of-contents'
 import { LifecycleSchematic } from './lifecycle-schematic'
 import { StakeSchematic } from './stake-schematic'
 import { AppealWindow } from './appeal-window'
@@ -40,6 +41,7 @@ import {
   LEGEND,
   OUTCOMES,
   SECTIONS,
+  SKILL_SUMMARY,
   SOURCES,
   STAKE_COMPARE,
   STAKE_EDGE_CASES,
@@ -72,10 +74,13 @@ import {
  * table of contents follows the reader; the lifecycle is the featured drawing
  * and draws itself in; sections open with display headings and read at a 68ch
  * measure. Deposits are told as money that comes back and bounties to earn,
- * both sides at once. Every mechanism follows the public Kleros documentation
- * (and, for Stake Curate, the PermanentGTCR contract). Deposits and periods
- * are never given as figures, because each list and court sets its own; the
- * one figure is the live count of requests open for verification.
+ * both sides at once. The agent skill is offered in the hero and is the
+ * second section, so agent builders find it without reading every rule
+ * first (the footer's link reads "Guide & Skills"). Every mechanism follows
+ * the public Kleros documentation (and, for Stake Curate, the PermanentGTCR
+ * contract). Deposits and periods are never given as figures, because each
+ * list and court sets its own; the one figure is the live count of requests
+ * open for verification.
  */
 
 const COPIED_FOR_MS = 1600
@@ -170,6 +175,63 @@ const Lede = styled.p`
   @media (max-width: 720px) {
     font-size: 16px;
     line-height: 26px;
+  }
+`
+
+/* The skill, offered where agent builders land: one line of what it does
+   and a jump to the section with the prompt and the files. */
+const AgentCallout = styled.div`
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 12px 16px;
+  align-items: center;
+  width: 100%;
+  max-width: 760px;
+  margin-top: 8px;
+  padding: 16px 18px;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius);
+  background: var(--color-raised);
+  box-shadow: inset 0 1px 0 var(--glass-highlight);
+
+  @media (max-width: 600px) {
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: start;
+    padding: 14px 16px;
+
+    > a {
+      grid-column: 2;
+      justify-self: start;
+    }
+  }
+`
+
+const AgentMark = styled.span`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-pill);
+  background: var(--color-primary-soft);
+  box-shadow: inset 0 0 0 1px
+    color-mix(in srgb, var(--color-primary) 30%, transparent);
+  color: var(--color-primary);
+`
+
+const AgentText = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+
+  strong {
+    margin-top: 2px;
+    color: var(--color-text);
+    font-size: 16px;
+    line-height: 24px;
+    font-weight: 500;
+    text-wrap: balance;
   }
 `
 
@@ -351,10 +413,11 @@ const Replay = ({ onReplay, what }: { onReplay: () => void; what: string }) => (
 const Guide = () => {
   useDocumentHead(
     'Guide | Kleros Curate',
-    'How Kleros Curate works: submitting in good faith and getting your deposit back, earning bounties by challenging, disputes and appeals, Stake Curate, launching a list, agent skills and a glossary.',
+    'How Kleros Curate works, and the skill that teaches it to AI agents: submitting in good faith and getting your deposit back, earning bounties by challenging, disputes and appeals, Stake Curate, launching a list and a glossary.',
   )
   const desktop = useMediaQuery(DESKTOP_QUERY)
   const reduced = useReducedMotion()
+  const jump = useJump()
   const [copyState, setCopyState] = useState<'idle' | 'copied' | 'failed'>(
     'idle',
   )
@@ -418,6 +481,24 @@ const Guide = () => {
               How Kleros Curate works: each step, what it costs, what comes back
               and what you can earn.
             </Lede>
+            <AgentCallout style={{ ['--i' as string]: 3 }}>
+              <AgentMark aria-hidden>
+                <CurateIcon name="spark" size={20} />
+              </AgentMark>
+              <AgentText>
+                <Label $tone="primary">For AI agents</Label>
+                <strong>Give your agent the Kleros Curate skill</strong>
+                <Small $muted>{SKILL_SUMMARY}</Small>
+              </AgentText>
+              <ButtonAnchor
+                href="#agents"
+                onClick={(event) => jump(event, 'agents')}
+                $variant="secondary"
+                $size="sm"
+              >
+                Get the skill
+              </ButtonAnchor>
+            </AgentCallout>
           </Hero>
 
           {!desktop && toc('strip')}
@@ -507,6 +588,55 @@ const Guide = () => {
               </div>
             </Facts>
           </LifecyclePanel>
+
+          <GuideSection id="agents" heading="Same rules for agents">
+            <Prose>Give your agent the skill and context below.</Prose>
+            <PromptCard>
+              <div>
+                <Label $tone="faint">Prompt for your agent</Label>
+                <code>{AGENT_PROMPT}</code>
+              </div>
+              <Button
+                type="button"
+                $variant="secondary"
+                $size="sm"
+                onClick={copyPrompt}
+              >
+                <CurateIcon
+                  name={copyState === 'copied' ? 'check' : 'copy'}
+                  size={14}
+                />
+                {copyState === 'copied'
+                  ? 'Copied'
+                  : copyState === 'failed'
+                    ? 'Select and copy'
+                    : 'Copy prompt'}
+              </Button>
+              <VisuallyHidden role="status">
+                {copyState === 'copied'
+                  ? 'Prompt copied'
+                  : copyState === 'failed'
+                    ? 'Copying failed; select the prompt and copy it'
+                    : ''}
+              </VisuallyHidden>
+            </PromptCard>
+            <FileRows>
+              {AGENT_FILES.map((file) => (
+                <FileRow
+                  key={file.href}
+                  href={file.href}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  <span style={{ minWidth: 0 }}>
+                    <strong>{file.name}</strong>
+                    <Small $muted>{file.about}</Small>
+                  </span>
+                  <CurateIcon name="external" size={16} />
+                </FileRow>
+              ))}
+            </FileRows>
+          </GuideSection>
 
           <GuideSection id="statuses" heading="One dot, one label">
             <StatusLegend groups={LEGEND} />
@@ -643,55 +773,6 @@ const Guide = () => {
                 Launch a list
               </ButtonLink>
             </Actions>
-          </GuideSection>
-
-          <GuideSection id="agents" heading="Same rules for agents">
-            <Prose>Give your agent the skill and context below.</Prose>
-            <PromptCard>
-              <div>
-                <Label $tone="faint">Prompt for your agent</Label>
-                <code>{AGENT_PROMPT}</code>
-              </div>
-              <Button
-                type="button"
-                $variant="secondary"
-                $size="sm"
-                onClick={copyPrompt}
-              >
-                <CurateIcon
-                  name={copyState === 'copied' ? 'check' : 'copy'}
-                  size={14}
-                />
-                {copyState === 'copied'
-                  ? 'Copied'
-                  : copyState === 'failed'
-                    ? 'Select and copy'
-                    : 'Copy prompt'}
-              </Button>
-              <VisuallyHidden role="status">
-                {copyState === 'copied'
-                  ? 'Prompt copied'
-                  : copyState === 'failed'
-                    ? 'Copying failed; select the prompt and copy it'
-                    : ''}
-              </VisuallyHidden>
-            </PromptCard>
-            <FileRows>
-              {AGENT_FILES.map((file) => (
-                <FileRow
-                  key={file.href}
-                  href={file.href}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  <span style={{ minWidth: 0 }}>
-                    <strong>{file.name}</strong>
-                    <Small $muted>{file.about}</Small>
-                  </span>
-                  <CurateIcon name="external" size={16} />
-                </FileRow>
-              ))}
-            </FileRows>
           </GuideSection>
 
           <GuideSection id="glossary" heading="Words used here">
