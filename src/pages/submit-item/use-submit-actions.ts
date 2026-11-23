@@ -238,8 +238,8 @@ export const usePermanentSubmit = ({
 
   // While the stake or the arbitration deposit is more than the wallet holds
   // (the page's blocker), the balances are read again each time the page
-  // regains focus: a top-up clears it without a reload, which would empty
-  // the form.
+  // regains focus: a top-up clears it without a reload, which would drop any
+  // file picked for the entry (the draft keeps only text).
   const short =
     (submissionDeposit !== undefined &&
       balance !== undefined &&

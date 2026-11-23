@@ -34,12 +34,15 @@ const readIndexer = async (
  * @param {string} subgraphUrl - The subgraph endpoint URL
  * @param {string} queryTemplate - GraphQL query string (use $address placeholder)
  * @param {string} entityKey - The key to check in the response data
+ * @param {number} chainId - The chain the entity must name, for an indexer
+ *   that serves every chain
  */
 const checkRegistryExists = async (
   subgraphEndpoint: string | undefined,
   queryTemplate: string,
   entityKey: string,
   tcrAddress: string,
+  chainId?: number,
 ): Promise<boolean> => {
   if (!tcrAddress || !subgraphEndpoint) return false
   let checksumAddress: string
@@ -54,7 +57,9 @@ const checkRegistryExists = async (
     queryTemplate.replace('$address', checksumAddress.toLowerCase()),
   )
 
-  return !!data[entityKey]
+  const entity = data[entityKey] as { chainId?: unknown } | null | undefined
+  if (!entity) return false
+  return chainId === undefined || Number(entity.chainId) === chainId
 }
 
 const useFactory = () => {
@@ -64,12 +69,17 @@ const useFactory = () => {
     ? subgraphUrlPermanent[urlChainId]
     : undefined
 
+  // One indexer serves every chain and finds a Standard list by its address
+  // alone, so its record names the chain, which must be this page's: a
+  // Gnosis list is no list on Ethereum. The Stake subgraphs are one per
+  // chain.
   const deployedWithStandardFactory = (tcrAddress: string) =>
     checkRegistryExists(
       GTCR_SUBGRAPH_URL,
-      '{ lregistry:LRegistry_by_pk(id: "$address") { id } }',
+      '{ lregistry:LRegistry_by_pk(id: "$address") { id chainId } }',
       'lregistry',
       tcrAddress,
+      urlChainId ?? undefined,
     )
 
   const deployedWithPermanentFactory = (tcrAddress: string) =>

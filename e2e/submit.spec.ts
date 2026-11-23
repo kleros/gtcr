@@ -42,9 +42,17 @@ test('a malformed address is refused at the field', async ({ page }) => {
   const address = page.getByRole('textbox', { name: 'Contract Address' })
   await address.fill('0x1234')
   await address.blur()
+  // The field's own message, tied to it. The column hints show at all times
+  // and mention a "format", so a looser pattern passed with no check at all.
   await expect(
-    page.getByText(/invalid|not a valid|format/i).first(),
+    page.getByText('Enter a valid address for the selected chain.', {
+      exact: true,
+    }),
   ).toBeVisible()
+  await expect(address).toHaveAttribute('aria-invalid', 'true')
+  await expect(address).toHaveAccessibleDescription(
+    /^Enter a valid address for the selected chain\./,
+  )
 })
 
 test('the cost is shown in full before anything is signed', async ({

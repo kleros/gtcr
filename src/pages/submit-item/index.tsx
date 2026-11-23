@@ -1,11 +1,4 @@
-import React, {
-  Suspense,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-} from 'react'
+import React, { Suspense, useCallback, useContext, useMemo } from 'react'
 import type { BigNumber } from 'ethers'
 import { useIsFetching, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Navigate, useLocation, useNavigate, useParams } from 'react-router-dom'
@@ -33,7 +26,7 @@ import { useGraphqlBatcher } from 'contexts/graphql-batcher'
 import { getChainById } from 'config/chains'
 import { isKlerosArbitrator } from 'config/tcr-addresses'
 import { PERMANENT_REGISTRY_QUERY } from 'utils/graphql'
-import { parseIpfs } from 'utils/ipfs-parse'
+import { fetchMetaEvidenceFile } from 'utils/meta-evidence-guard'
 import { formatDuration, formatDurationLong } from 'utils/time'
 import { linkValueParams } from 'components/curate/registry-shared-action-link'
 import {
@@ -276,7 +269,8 @@ const DepositSubmitPage = ({
         'deposit',
       )
     : ''
-  // A top-up clears the blocker without a reload, which would empty the form.
+  // A top-up clears the blocker without a reload, which would drop any file
+  // picked for the entry (the draft keeps only text).
   useRefreshOnFocus(!!lowBalance && !wallet.blocker, refetchBalance)
   const gate: ConfirmGate = wallet.blocker
     ? { blocker: wallet.blocker, fix: wallet.fix }
@@ -408,8 +402,6 @@ const PermanentSubmitPage = () => {
   const library = useEthersProvider({
     chainId: chainId ? Number(chainId) : undefined,
   })
-  const [columns, setColumns] = useState<Column[]>()
-  const [columnsError, setColumnsError] = useState<string>()
 
   const registryQuery = useQuery({
     queryKey: ['permanentRegistrySubmit', tcrAddress, chainId],
@@ -429,27 +421,19 @@ const PermanentSubmitPage = () => {
   const metadata = arbitrationSettings?.metadata
   const metaEvidenceURI = arbitrationSettings?.metaEvidenceURI
 
-  useEffect(() => {
-    let cancelled = false
-    setColumns(undefined)
-    setColumnsError(undefined)
-
-    if (!metaEvidenceURI) return undefined
-    void (async () => {
-      try {
-        const response = await fetch(parseIpfs(metaEvidenceURI))
-        const file = await response.json()
-        if (!cancelled) setColumns(file?.metadata?.columns || [])
-      } catch (err) {
-        console.error('Error loading permanent registry meta evidence:', err)
-        if (!cancelled) setColumnsError("Could not load this list's fields.")
-      }
-    })()
-
-    return () => {
-      cancelled = true
-    }
-  }, [metaEvidenceURI])
+  // The fields live only in the list's MetaEvidence file, which whoever
+  // deploys the list writes. It is read the way the list and entry pages
+  // read it: a gateway that errors or hangs fails the read, and only
+  // well-typed columns reach the form (a null column or a label that is an
+  // object took the page down). A failed read offers Try again.
+  const columnsQuery = useQuery({
+    queryKey: ['permanentSubmitColumns', metaEvidenceURI],
+    queryFn: async () =>
+      (await fetchMetaEvidenceFile(metaEvidenceURI!)).metadata?.columns ?? [],
+    enabled: !!metaEvidenceURI,
+    staleTime: Infinity,
+  })
+  const columns = columnsQuery.data
 
   const { arbitrationCost, error: arbitrationCostError } = useArbitrationCost({
     address: registry?.arbitrator?.id || '',
@@ -505,14 +489,8 @@ const PermanentSubmitPage = () => {
         message="No Stake list answers at this address on this chain."
       />
     )
-  if (columnsError)
-    return (
-      <ErrorPage
-        code="Error"
-        title="Metadata unavailable"
-        message={columnsError}
-      />
-    )
+  if (columnsQuery.isError && !columns)
+    return <ListPartFailed fileFailed onRetry={columnsQuery.refetch} />
 
   const itemName = metadata?.itemName || 'item'
   const stakeWei =
@@ -686,7 +664,10 @@ const PermanentSubmitPage = () => {
   else if (wallet.blocker) gate = { blocker: wallet.blocker, fix: wallet.fix }
   else if (decimalsMissing)
     gate = {
-      blocker: `Could not read how many decimals ${symbol} has; try again later`,
+      // An unread symbol is "tokens" (hooks/token-symbol): no name to give.
+      blocker: `Could not read how many decimals ${
+        symbol === 'tokens' ? 'the token' : symbol
+      } has; try again later`,
     }
   else if (stakeCurate.checkFailed)
     gate = {

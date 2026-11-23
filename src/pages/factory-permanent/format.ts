@@ -1,5 +1,8 @@
 import { BigNumber, ethers, type BigNumberish } from 'ethers'
-import { groupThousands } from 'components/curate/item-standard-format'
+import {
+  groupThousands,
+  trimZeros,
+} from 'components/curate/item-standard-format'
 import { normalizeDecimalInput } from 'utils/decimal-input'
 
 /*
@@ -10,10 +13,6 @@ import { normalizeDecimalInput } from 'utils/decimal-input'
  * contract's arithmetic: the percent in basis points (as the deploy call
  * sends it), over a divisor of 10 000.
  */
-
-/** Zeros after the point only: a whole "100" (a 0-decimal token) keeps them. */
-const trimZeros = (text: string) =>
-  text.includes('.') ? text.replace(/\.?0+$/, '') : text
 
 /**
  * Past this many digits a number is beyond any uint256 amount at any
@@ -129,9 +128,13 @@ export const stakeProblem = (
   if (value === '' || value === undefined || value === null) return null
   const plain = plainDecimal(value)
   // An exponent plainDecimal would not write out: far too large or small.
-  if (/^\d*\.?\d*e[+-]?\d+$/i.test(plain))
+  // Both patterns take the point together with the digits after it: an
+  // optional point between two runs of digits let a long typed number be
+  // split at every digit before failing, and 100,000 pasted digits held the
+  // Stake step for seconds.
+  if (/^\d*(?:\.\d*)?e[+-]?\d+$/i.test(plain))
     return /e-/i.test(plain) ? 'precision' : 'too-large'
-  if (!/^(\d+\.?\d*|\.\d+)$/.test(plain)) return 'invalid'
+  if (!/^(?:\d+(?:\.\d*)?|\.\d+)$/.test(plain)) return 'invalid'
   const fraction = plain.split('.')[1] ?? ''
   if (trimZeros(`0.${fraction}`).length - 2 > decimals) return 'precision'
   try {

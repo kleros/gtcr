@@ -229,6 +229,51 @@ describe('stakeProblem', () => {
   it('calls an absurd exponent too large instead of throwing', () => {
     expect(stakeProblem('1e999999999', 18)).toBe('too-large')
   })
+
+  // Where a point may sit, read as before the patterns became linear.
+  it.each([
+    ['5.', null],
+    ['+.5', null],
+    ['00.50', null],
+    ['1.e5', null],
+    ['.5e-1', null],
+    ['.', 'invalid'],
+    ['1..5', 'invalid'],
+    ['-.5', 'invalid'],
+    ['1.5.e5', 'invalid'],
+    ['1e', 'invalid'],
+    ['1e+', 'invalid'],
+    ['1 5', 'invalid'],
+    ['x1.5', 'invalid'],
+    ['1.5x', 'invalid'],
+    // No number, but the exponent test has always taken a bare point (the
+    // form's own rules refuse it first).
+    ['.e5', 'too-large'],
+    ['1E400', 'too-large'],
+  ])('%j is %s', (value, problem) => {
+    expect(stakeProblem(value, 18)).toBe(problem)
+  })
+
+  // Regression: the checks retried from every digit of a long run (an
+  // optional point between two runs of digits, /\.?0+$/ in trimZeros), and
+  // 100,000 pasted digits took 15 to 19 s each time the Stake step drew.
+  it('judges a long pasted stake at once', () => {
+    const digits = '1'.repeat(100_000)
+    const timed = (value: string) => {
+      const start = performance.now()
+      const problem = stakeProblem(value, 18)
+      return { problem, ms: performance.now() - start }
+    }
+    for (const [value, problem] of [
+      [`${digits}x`, 'invalid'],
+      [`${digits}e`, 'invalid'],
+      [`0.${'0'.repeat(100_000)}1`, 'precision'],
+    ] as const) {
+      const result = timed(value)
+      expect(result.problem).toBe(problem)
+      expect(result.ms).toBeLessThan(100)
+    }
+  })
 })
 
 describe('stakeProblemText', () => {

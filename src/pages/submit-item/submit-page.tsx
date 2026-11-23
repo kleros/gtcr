@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { useAppKitState } from '@reown/appkit/react'
 import styled, { createGlobalStyle } from 'styled-components'
 import useStickyTop from 'hooks/use-sticky-top'
@@ -25,6 +25,8 @@ import { useFileDropGuard } from 'components/file-drop'
 import { ColumnField, useObjectUrl } from './fields'
 import { Notice } from 'components/curate/item-standard-notice'
 import { useDuplicateEntry, type DuplicateCheck } from './duplicate-entry'
+import { hasEntry } from './draft'
+import { useSubmitDraft } from './use-submit-draft'
 import {
   buildInitialValues,
   fieldPath,
@@ -312,6 +314,40 @@ const Meter = styled.div`
   b {
     color: var(--color-text);
     font-weight: 500;
+  }
+`
+
+/** "Restored the tag you started", on its own line under the label. */
+const DraftNote = styled.p`
+  flex: 1 0 100%;
+  margin: 0;
+  color: var(--color-muted);
+  font-size: var(--fs-small);
+  line-height: var(--lh-small);
+`
+
+/** A quiet text action, like the review's Edit in the list factories. */
+const ClearDraft = styled.button`
+  margin: -4px 0;
+  padding: 4px 8px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-primary);
+  font-size: var(--fs-small);
+  line-height: var(--lh-small);
+  font-weight: 500;
+  cursor: pointer;
+  transition: background var(--motion);
+
+  &:hover:not(:disabled) {
+    background: var(--color-primary-soft);
+  }
+
+  /* While the entry is being sent: still legible, not pressable. */
+  &:disabled {
+    color: var(--color-muted);
+    cursor: not-allowed;
   }
 `
 
@@ -874,9 +910,13 @@ const Workspace = ({
     () => buildInitialValues(columns, initialValues),
     [columns, initialValues],
   )
+  // What was typed here before, if this tab kept it (draft.ts): the form
+  // opens with it.
+  const draft = useSubmitDraft(registryPath, columns, initial)
   const asideRef = useStickyTop(20)
+  const fieldsRef = useRef<HTMLDivElement>(null)
   const formik = useFormik<SubmissionValues>({
-    initialValues: initial,
+    initialValues: draft.restored?.values ?? initial,
     // Validation runs the list-creator subgraph checks for GTCR address
     // columns, so it waits for blur and submit instead of every keystroke.
     validateOnChange: false,
@@ -887,13 +927,42 @@ const Workspace = ({
       return onSubmit(
         normaliseValues(columns, values),
         columns,
-        helpers.resetForm,
+        // Called once the entry is on chain: its draft goes too.
+        (nextState) => {
+          draft.sent()
+          helpers.resetForm(nextState)
+        },
         // The uploads are stored back under their column's label.
         (label, value, shouldValidate) =>
           helpers.setFieldValue(fieldPath(label), value, shouldValidate),
       )
     },
   })
+  const { keep: keepDraft } = draft
+  useEffect(
+    () => keepDraft(formik.values, phase),
+    [formik.values, keepDraft, phase],
+  )
+  const entered = hasEntry(columns, formik.values, initial)
+  // A form that opened with the draft says so until it is cleared or
+  // emptied: text typed after that is not the restored draft.
+  const [draftNoted, setDraftNoted] = useState(!!draft.restored)
+  if (draftNoted && !entered) setDraftNoted(false)
+  // A file is not kept: until one is picked again, the note asks for it.
+  const filesToPick = !!draft.restored?.files.some(
+    (label) => !(formik.values[label] instanceof File),
+  )
+  const clearForm = () => {
+    draft.discard()
+    formik.resetForm({ values: initial })
+    setDraftNoted(false)
+    // The note's button goes with it: focus moves to the first field.
+    fieldsRef.current
+      ?.querySelector<HTMLElement>(
+        'input:not([type="file"]):not(:disabled), textarea:not(:disabled), button:not(:disabled)',
+      )
+      ?.focus()
+  }
 
   const requiredColumns = columns.filter((column) => isRequired(column))
   const missing = missingRequired(columns, formik.values)
@@ -929,10 +998,13 @@ const Workspace = ({
     })
   }
 
-  // What was typed or picked lives only on this page: Cancel and a reload
-  // ask before it is lost. Never while a submission runs, so nothing holds
-  // up the redirect to the new entry.
-  const unsaved = formik.dirty && !submitting
+  // The draft keeps what was typed through a reload or a trip elsewhere in
+  // the app, but never a picked file, and it ends with the tab: so while
+  // anything is entered, leaving the site and Cancel still ask first. Never
+  // while a submission runs, so nothing holds up the redirect to the new
+  // entry. Measured from the page's own starting values, so a restored
+  // draft counts as entered.
+  const unsaved = entered && !submitting
   // A wallet step on a phone opens the wallet app by navigating this tab
   // (WalletConnect): not leaving, and a prompt there would stop it. Read
   // through a ref, so a deep link fired before React re-renders is covered.
@@ -951,11 +1023,17 @@ const Workspace = ({
     return () => window.removeEventListener('beforeunload', warn)
   }, [unsaved])
   const confirmLeave = (event: React.MouseEvent) => {
+    // Opened in another tab or window, the list leaves this page as it is.
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
     if (
       unsaved &&
       !window.confirm('Leave this page? What you entered will be lost.')
-    )
+    ) {
       event.preventDefault()
+      return
+    }
+    // Leaving on purpose lets the draft go with it.
+    draft.discard()
   }
 
   // A file dropped just outside a drop zone would make the browser open it
@@ -1003,6 +1081,20 @@ const Workspace = ({
                     filled={requiredColumns.length - missing}
                   />
                 )}
+                {draftNoted && (
+                  <DraftNote>
+                    {filesToPick
+                      ? `Restored the ${itemName} you started; choose its files again.`
+                      : `Restored the ${itemName} you started.`}{' '}
+                    <ClearDraft
+                      type="button"
+                      disabled={submitting}
+                      onClick={clearForm}
+                    >
+                      Clear form
+                    </ClearDraft>
+                  </DraftNote>
+                )}
               </FormTop>
               <EntryPreview
                 columns={columns}
@@ -1011,7 +1103,7 @@ const Workspace = ({
                 registryTitle={registryTitle}
                 status={terms.status}
               />
-              <Fields>
+              <Fields ref={fieldsRef}>
                 {columns.map((column, index) => (
                   <React.Fragment key={column.label}>
                     <ColumnField
@@ -1047,7 +1139,8 @@ const Workspace = ({
                             ? joinLabels(identifiers.map(({ label }) => label))
                             : column.label
                         } ${DUPLICATE_PHRASE[duplicate.status] ?? 'is already on this list'}: `}
-                        {/* In a new tab: leaving this page would lose the form. */}
+                        {/* In a new tab: the form stays as it is, picked
+                            files included (its draft keeps only text). */}
                         <a
                           href={`${registryPath}/${duplicate.itemID}`}
                           target="_blank"

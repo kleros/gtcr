@@ -72,6 +72,7 @@ import {
   relSchema,
   tcrSchemaFor,
 } from './schemas'
+import { readStoredDraft, writeStoredDraft } from 'utils/stored-draft'
 import { STANDARD_WIZARD_DEFAULTS } from './defaults'
 
 /*
@@ -365,13 +366,11 @@ const useCachedFactory = (
   }
 
   const newInitialState: TcrState = JSON.parse(JSON.stringify(initialState)) // Deep copy.
-  const cached = window.localStorage.getItem(key)
+  // Blocked storage, or a draft that no longer reads, is no draft.
+  const cached = readStoredDraft(key) as Partial<TcrState> | null | undefined
   let resolvedState: TcrState = newInitialState
-  if (cached) {
-    const parsed = JSON.parse(cached) as TcrState
-    if (parsed.arbitratorAddress && parsed.chainId === networkId)
-      resolvedState = parsed
-  }
+  if (cached?.arbitratorAddress && cached.chainId === networkId)
+    resolvedState = cached as TcrState
 
   // We check for the finished flag to reset the form
   // if the user finished his previous deployment.
@@ -407,7 +406,7 @@ const useCachedFactory = (
       !debouncedTcrState.arbitratorAddress
     )
       return
-    window.localStorage.setItem(key, JSON.stringify({ ...debouncedTcrState }))
+    writeStoredDraft(key, { ...debouncedTcrState })
   }, [debouncedTcrState, key, networkId])
 
   // A sent deployment is saved at once, not a second later with the rest of
@@ -418,7 +417,7 @@ const useCachedFactory = (
     if (pendingHash === savedPendingHash.current) return
     savedPendingHash.current = pendingHash
     if (!networkId || !tcrState.arbitratorAddress) return
-    window.localStorage.setItem(key, JSON.stringify({ ...tcrState }))
+    writeStoredDraft(key, { ...tcrState })
     // Only a change of the pending deployment saves here; the effect above
     // saves everything else.
     // eslint-disable-next-line react-hooks/exhaustive-deps

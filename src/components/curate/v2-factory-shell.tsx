@@ -970,10 +970,26 @@ const PreviousButton = styled(Button)<{ $wideOnly?: boolean }>`
 `
 
 /**
+ * True for the second click of a double click (and the third of a triple).
+ * The first click moves the wizard, and the next step's action bar can sit
+ * where this one was (on phones it sticks to the bottom of the screen):
+ * the second click would press the next step's Next, or Previous once Next
+ * is gone, and pass a step the reader never saw. Enter and Space count no
+ * clicks, so the keyboard is never held back.
+ */
+const isRepeatClick = (event: React.MouseEvent) => event.detail > 1
+
+/** Next and "Back to review" submit the step's form: a repeat click does not. */
+const holdRepeatSubmit = (event: React.MouseEvent) => {
+  if (isRepeatClick(event)) event.preventDefault()
+}
+
+/**
  * The open step in one panel: the group's name with its sub-step tabs, the
  * step's form, then the action bar (Start over, Previous, and Next or "Back
  * to review", which submit the step's form so its schema runs first). Start
- * over asks first, in place of the bar.
+ * over asks first, in place of the bar. Each button moves the wizard once
+ * per click, never twice on a double click.
  */
 export const FactoryStepPanel = ({
   wizard,
@@ -1083,7 +1099,9 @@ export const FactoryStepPanel = ({
                   $variant="secondary"
                   $wideOnly={reviewing}
                   disabled={index === 0}
-                  onClick={() => wizard.goToVisualStep(index - 1)}
+                  onClick={(event) => {
+                    if (!isRepeatClick(event)) wizard.goToVisualStep(index - 1)
+                  }}
                 >
                   Previous
                 </PreviousButton>
@@ -1093,6 +1111,7 @@ export const FactoryStepPanel = ({
                     form={formId}
                     $variant="primary"
                     title="Check this step, then return to the review"
+                    onClick={holdRepeatSubmit}
                   >
                     Back to review
                     <CurateIcon name="submit" size={14} />
@@ -1104,6 +1123,7 @@ export const FactoryStepPanel = ({
                       form={formId}
                       $variant="primary"
                       title={upcoming ? `Next: ${upcoming.title}` : undefined}
+                      onClick={holdRepeatSubmit}
                     >
                       Next
                       <CurateIcon name="submit" size={14} />

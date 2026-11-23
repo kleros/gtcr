@@ -1,4 +1,5 @@
 import { ethers, BigNumber, type BigNumberish } from 'ethers'
+import { trimZeros } from 'components/curate/item-standard-format'
 import { plainDecimal } from 'pages/factory-permanent/format'
 
 /*
@@ -15,7 +16,7 @@ export const formatNative = (
     typeof amount === 'number'
       ? amount.toLocaleString('fullwide', { useGrouping: false })
       : String(amount)
-  return ethers.utils.formatEther(integer).replace(/\.?0+$/, '')
+  return trimZeros(ethers.utils.formatEther(integer))
 }
 
 /** base + arbitration cost in wei, or null while either is unknown or invalid. */
