@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react'
-import styled, { keyframes } from 'styled-components'
+import styled from 'styled-components'
 import { Link, useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import useDocumentHead from 'hooks/use-document-head'
@@ -57,6 +57,7 @@ import type { OpenListChip } from './board-rows'
 import { SectionHead, SectionTitle } from './section'
 import { HeroMoney, VerificationRecord } from './bounties'
 import { VerifiedLists } from './verified-lists'
+import { LoadStatePill, loadState } from './live-pill'
 import type {
   DashboardActivity,
   DashboardData,
@@ -179,12 +180,6 @@ const TOP_CURATORS = 5
 const mediaUrl = (uri?: string | null): string | null =>
   ipfsImageUrl(uri) ?? null
 
-const pulse = keyframes`
-  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--status-registered) 55%, transparent); }
-  70% { box-shadow: 0 0 0 8px transparent; }
-  100% { box-shadow: 0 0 0 0 transparent; }
-`
-
 /* ---------- Hero (YMax composition) ---------- */
 
 /*
@@ -235,74 +230,6 @@ const HeroAside = styled.div`
     min-width: 220px;
     max-width: 300px;
   }
-`
-
-const LivePill = styled.span`
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  height: 32px;
-  padding: 0 14px 0 12px;
-  border: 1px solid var(--glass-border);
-  border-radius: var(--radius-pill);
-  background: var(--color-raised);
-  color: var(--color-muted);
-  font-size: 13px;
-  font-weight: 500;
-
-  b {
-    color: var(--color-primary);
-    font-weight: 500;
-  }
-
-  i {
-    width: 7px;
-    height: 7px;
-    border-radius: var(--radius-pill);
-    background: var(--status-registered);
-    animation: ${pulse} 2.4s infinite;
-
-    @media (prefers-reduced-motion: reduce) {
-      animation: none;
-    }
-  }
-
-  /* Some indexer did not answer: the figures are partial, not live. */
-  &[data-partial] {
-    b {
-      color: var(--color-warning);
-    }
-
-    i {
-      background: var(--status-contested);
-      animation: none;
-    }
-  }
-
-  /* No list in scope loaded: the indexers did not answer at all. */
-  &[data-down] i {
-    background: var(--status-off);
-    animation: none;
-  }
-
-  /* An older load (the tab was in the background): shown, not called live. */
-  &[data-stale] {
-    b {
-      color: var(--color-muted);
-    }
-
-    i {
-      background: var(--color-muted);
-      animation: none;
-    }
-  }
-`
-
-/* The pill's state word and what went wrong, spaced as the pill spaces them. */
-const PillState = styled.span`
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
 `
 
 /*
@@ -1186,50 +1113,31 @@ const Dashboard = () => {
     .filter(Boolean)
     .join(' and ')
   // The load refreshes every few minutes while on screen; one older than
-  // that (the tab was in the background) is shown as such, not as live.
-  const live = !!data && isLiveLoad(data.generatedAt, now)
-  const updated = data
-    ? `Updated ${formatAgo(Math.floor(data.generatedAt / 1000), now)}`
-    : ''
-  const partial = partialChains.length > 0 && !unanswered
+  // that (the tab was in the background), or one whose refresh failed, is
+  // shown as such, not as live. Nothing is called live before a load.
+  const pillState = loadState({
+    loaded: !!data,
+    failed: query.isError,
+    unanswered,
+    partial: partialChains.length > 0,
+    live: !!data && isLiveLoad(data.generatedAt, now),
+  })
+  const updated =
+    data && partialChains.length === 0
+      ? `Updated ${formatAgo(Math.floor(data.generatedAt / 1000), now)}`
+      : undefined
 
   return (
     <Page>
       <Hero>
         <HeroMain>
-          <LivePill
+          <LoadStatePill
             style={{ ['--i' as string]: 0 }}
-            data-partial={partial ? '' : undefined}
-            data-down={unanswered ? '' : undefined}
-            data-stale={
-              data && !live && partialChains.length === 0 ? '' : undefined
-            }
-          >
-            <i aria-hidden />
-            {/* Only the state is announced: the age after it changes every
-              minute, and a live region would read it out each time. */}
-            <PillState role="status">
-              {!unanswered && (
-                <b>
-                  {partial
-                    ? 'Partial'
-                    : !data || live
-                      ? 'Live'
-                      : query.isFetching
-                        ? 'Refreshing'
-                        : 'Not live'}
-                </b>
-              )}
-              {!data
-                ? 'Connecting to the indexers'
-                : unanswered
-                  ? 'Indexers not answering'
-                  : partial
-                    ? `Some ${partialNames} data did not load; figures may be incomplete`
-                    : null}
-            </PillState>
-            {data && partialChains.length === 0 && updated}
-          </LivePill>
+            state={pillState}
+            refreshing={query.isFetching}
+            partialNames={partialNames}
+            updated={updated}
+          />
           <Headline style={{ ['--i' as string]: 1 }}>
             {/* Read once, whole: the changing word is for the eye only. */}
             <VisuallyHidden>

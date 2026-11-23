@@ -2,6 +2,7 @@ import React, { useId } from 'react'
 import styled from 'styled-components'
 import type { ListLayout } from 'hooks/use-stored-layout'
 import Switch from 'components/ui/Switch'
+import { useMediaQuery } from 'pages/guide/hooks'
 import {
   SearchField,
   SegmentedControl,
@@ -33,6 +34,9 @@ import { CurateIcon } from './icons'
 
 const integer = new Intl.NumberFormat('en-US')
 
+/** Phones and narrow tablets: the toolbar's three lines (Bar). */
+const NARROW = '(max-width: 720px)'
+
 const Bar = styled.div`
   display: grid;
   grid-template-columns: minmax(220px, 360px) auto minmax(0, 1fr) auto auto auto;
@@ -49,8 +53,10 @@ const Bar = styled.div`
   }
 
   /* Phones and narrow tablets: the search keeps the full width, the status
-     menu and sort share a line, then the switch and the layout. */
-  @media (max-width: 720px) {
+     menu and sort share a line, then the switch and the layout. The switch
+     follows the sort in the page's order there too (RegistryToolbar), so Tab
+     goes line by line. */
+  @media ${NARROW} {
     grid-template-columns: minmax(0, 1fr) auto;
     grid-template-areas:
       'search search'
@@ -113,7 +119,7 @@ const SwitchField = styled.label`
     color: var(--color-text);
   }
 
-  @media (max-width: 720px) {
+  @media ${NARROW} {
     margin-top: -2px;
   }
 `
@@ -123,7 +129,7 @@ const Slot = styled.div<{ $area: 'sort' | 'layout' }>`
   justify-self: end;
   min-width: 0;
 
-  @media (max-width: 720px) {
+  @media ${NARROW} {
     justify-self: ${({ $area }) => ($area === 'sort' ? 'start' : 'end')};
   }
 `
@@ -262,6 +268,23 @@ export function RegistryToolbar<L extends ListLayout>({
   // Nothing is counted until both figures are known: a loading list never
   // reads (or announces) "0 of 0".
   const counted = shown !== undefined && total !== undefined
+  // The grid's areas place the controls; the page's order is what Tab
+  // follows. Wide, the switch sits between the status menu and the sort, as
+  // drawn. Narrow, it starts the last line, after the line holding the status
+  // menu and the sort: it comes after the sort, or Tab would drop to it and
+  // climb back to the sort.
+  const narrow = useMediaQuery(NARROW)
+  const sensitive = (
+    <SwitchField>
+      <Switch
+        size="small"
+        checked={nsfwFilter}
+        onChange={(checked) => onNsfwChange(checked)}
+        aria-labelledby={nsfwLabelId}
+      />
+      <span id={nsfwLabelId}>Hide sensitive content</span>
+    </SwitchField>
+  )
   return (
     <Bar role="region" aria-label="Filters">
       <Search>
@@ -291,15 +314,7 @@ export function RegistryToolbar<L extends ListLayout>({
           menuWidth={300}
         />
       </StatusSlot>
-      <SwitchField>
-        <Switch
-          size="small"
-          checked={nsfwFilter}
-          onChange={(checked) => onNsfwChange(checked)}
-          aria-labelledby={nsfwLabelId}
-        />
-        <span id={nsfwLabelId}>Hide sensitive content</span>
-      </SwitchField>
+      {!narrow && sensitive}
       <Slot $area="sort">
         <SegmentedControl<'newest' | 'oldest'>
           ariaLabel="Sort"
@@ -311,6 +326,7 @@ export function RegistryToolbar<L extends ListLayout>({
           ]}
         />
       </Slot>
+      {narrow && sensitive}
       <Slot $area="layout">
         <SegmentedControl<L>
           ariaLabel="Layout"

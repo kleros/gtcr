@@ -72,6 +72,12 @@ interface ItemActionButtonProps {
   loadingLabel?: string
   block?: boolean
   size?: 'sm' | 'md'
+  /**
+   * The button's id. The card's own button keeps the default, which the
+   * sticky action bar looks for inside the card; the bar's copy of the
+   * action takes another, so the page never holds the id twice.
+   */
+  id?: string
 }
 
 const ItemActionButton = ({
@@ -87,11 +93,12 @@ const ItemActionButton = ({
   loadingLabel,
   block,
   size,
+  id = 'item-action-button',
 }: ItemActionButtonProps) => {
   if ((!statusCode && statusCode !== 0) || !itemName || !itemID)
     return (
       <Button
-        id="item-action-button"
+        id={id}
         type="button"
         $variant={variantOf(type)}
         $block={block}
@@ -127,7 +134,7 @@ const ItemActionButton = ({
   const isDisabled = !!disabled || !!loading
   return (
     <Button
-      id="item-action-button"
+      id={id}
       type="button"
       $variant={variantOf(type)}
       $block={block}

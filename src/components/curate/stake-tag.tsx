@@ -38,7 +38,10 @@ const Box = styled.span<{ $size: 'sm' | 'md' }>`
     display: block;
     transform: skewX(14deg);
     color: color-mix(in srgb, var(--color-indigo) 78%, var(--color-text));
-    font-size: ${({ $size }) => ($size === 'md' ? '11px' : '9.5px')};
+    /* The label size at both sizes (DESIGN.md, Typography: labels are
+       11px); the row size was 9.5px, the smallest text in the app and hard
+       to read on a phone. The boxes keep their heights. */
+    font-size: var(--fs-label);
     font-weight: 700;
     line-height: 1;
     letter-spacing: 0.16em;

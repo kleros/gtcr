@@ -501,7 +501,9 @@ const ItemStatusCard = ({
           {executeGate.fix.label}
         </Button>
       ) : (
+        // The bar's copy of the card's button: an id of its own, as on Stake.
         <ItemActionButton
+          id="item-action-button-mobile"
           statusCode={statusCode}
           itemName={itemName}
           itemID={item.itemID}

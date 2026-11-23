@@ -22,6 +22,7 @@ import { LaneBar } from 'components/curate/lane-bar'
 import { CuratorMedal, type MedalKind } from 'components/curate/curator-medal'
 import { Pagination } from 'components/ui'
 import Tooltip from 'components/ui/Tooltip'
+import { useMediaQuery } from 'pages/guide/hooks'
 import type { AddressBadge, ProfileActivity } from './data'
 import {
   ACTIVITY_LAYOUT_OPTIONS,
@@ -138,6 +139,9 @@ const ActivityHead = styled(SectionHead)`
   min-height: 38px;
 `
 
+/** Where the search takes its own line under the filter and the layout. */
+const NARROW_TOOLBAR = '(max-width: 720px)'
+
 /* The kind filter on the left, the search in the middle, the layout (icons
    only, as on Browse) at the right end. Where the three do not fit on one
    line the search takes the next one with the layout; on a phone the
@@ -152,7 +156,7 @@ const Toolbar = styled.div`
   margin-bottom: 14px;
   ${reveal}
 
-  > :last-child {
+  > .activity-layout {
     flex: 0 0 auto;
   }
 
@@ -180,8 +184,9 @@ const Search = styled(SearchField)`
     opacity: 0.6;
   }
 
+  /* Its own line under the filter and the layout: last in the markup there
+     (NARROW_TOOLBAR), so Tab follows the lines. */
   @media (max-width: 720px) {
-    order: 1;
     flex-basis: 100%;
   }
 `
@@ -1211,6 +1216,7 @@ export const ActivitySection = ({
   // A new page starts at the top of the list, not at the pager just used
   // (the rows change under it, the viewport stayed at the bottom).
   const sectionRef = useRef<HTMLElement>(null)
+  const narrowToolbar = useMediaQuery(NARROW_TOOLBAR)
   const goToPage = (next: number) => {
     onPage(next)
     sectionRef.current?.scrollIntoView({
@@ -1368,6 +1374,10 @@ export const ActivitySection = ({
     </RowList>
   )
 
+  const search = (loading || activities.length > 0) && (
+    <ActivitySearch value={query} disabled={loading} onChange={onQuery} />
+  )
+
   return (
     <section aria-label="Activity" ref={sectionRef}>
       {!embedded && (
@@ -1391,20 +1401,16 @@ export const ActivitySection = ({
         <div style={{ minWidth: 0 }}>
           <Toolbar style={{ ['--i' as string]: 1 }}>
             <FilterTabs value={filter} counts={counts} onChange={onFilter} />
-            {(loading || activities.length > 0) && (
-              <ActivitySearch
-                value={query}
-                disabled={loading}
-                onChange={onQuery}
-              />
-            )}
+            {!narrowToolbar && search}
             <SegmentedControl<ActivityLayout>
+              className="activity-layout"
               ariaLabel="Layout"
               size="sm"
               value={layout}
               onChange={onLayout}
               options={ACTIVITY_LAYOUT_OPTIONS}
             />
+            {narrowToolbar && search}
           </Toolbar>
           {/* Keyed so a new filter or page replays the staggered entrance. */}
           <div key={`${filter}-${page}-${layout}`}>{list}</div>

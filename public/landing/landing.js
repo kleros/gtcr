@@ -76,19 +76,8 @@
     month: 'short',
     timeZone: 'UTC',
   })
-  const longDayFormat = new Intl.DateTimeFormat('en-GB', {
-    weekday: 'short',
-    day: 'numeric',
-    month: 'short',
-    timeZone: 'UTC',
-  })
   const dayYearFormat = new Intl.DateTimeFormat('en-GB', {
     day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-    timeZone: 'UTC',
-  })
-  const monthFormat = new Intl.DateTimeFormat('en-GB', {
     month: 'short',
     year: 'numeric',
     timeZone: 'UTC',

@@ -66,6 +66,7 @@ import {
   useVerifiedSets,
   withVerified,
 } from 'components/curate/registry-shared-verified'
+import { useMediaQuery } from 'pages/guide/hooks'
 import { Avatar } from './avatar'
 import { entryKey, fetchEntryImages, type EntryRef } from './entry-images'
 import {
@@ -554,21 +555,13 @@ const Toolbar = styled.div`
     margin-left: auto;
   }
 
-  /* On a phone the type filter and the layout share a line; sort goes under. */
-  @media (max-width: 600px) {
-    .browse-kind {
-      order: 1;
-    }
-
-    .browse-layout {
-      order: 2;
-    }
-
-    .browse-sort {
-      order: 3;
-    }
-  }
+  /* On a phone the type filter and the layout share a line and sort goes
+     under: the markup puts the layout before the sort there (PHONE_TOOLBAR),
+     so Tab follows the lines, where CSS order would only move the picture. */
 `
+
+/** Where the toolbar's type filter and layout share a line, sort under them. */
+const PHONE_TOOLBAR = '(max-width: 600px)'
 
 /* ---------- Which lists ---------- */
 
@@ -1425,6 +1418,7 @@ const BrowsePage = () => {
   const requestedPage = parsePage(searchParams.get('page'))
   const [layout, setLayout] = useStoredLayout('browse', 'rows')
   const shown = browseLayout(layout)
+  const phoneToolbar = useMediaQuery(PHONE_TOOLBAR)
   const now = useNow(30_000)
 
   // A load saved by an earlier page load is looked up first (saved-load.ts).
@@ -1743,6 +1737,37 @@ const BrowsePage = () => {
         : 'connecting'
   const clearFilters = () =>
     setParam({ q: null, trust: null, kind: null, chain: null, page: null })
+  const sortMenu = (
+    <SelectMenu<BrowseSort>
+      key="sort"
+      className="browse-sort"
+      label="Sort"
+      value={sort}
+      menuWidth={248}
+      onChange={(value) =>
+        setParam({
+          sort: value === 'recent-submission' ? null : value,
+          page: null,
+        })
+      }
+      options={SORT_OPTIONS}
+    />
+  )
+  const layoutControl = (
+    <SegmentedControl<BrowseLayout>
+      key="layout"
+      className="browse-layout"
+      ariaLabel="Layout"
+      value={shown}
+      onChange={setLayout}
+      options={BROWSE_LAYOUT_OPTIONS.map((option) => ({
+        value: option.value,
+        label: option.label,
+        icon: option.icon,
+        hideLabel: true,
+      }))}
+    />
+  )
 
   return (
     <Page>
@@ -1941,31 +1966,11 @@ const BrowsePage = () => {
               }
               options={KIND_OPTIONS}
             />
-            <SelectMenu<BrowseSort>
-              className="browse-sort"
-              label="Sort"
-              value={sort}
-              menuWidth={248}
-              onChange={(value) =>
-                setParam({
-                  sort: value === 'recent-submission' ? null : value,
-                  page: null,
-                })
-              }
-              options={SORT_OPTIONS}
-            />
-            <SegmentedControl<BrowseLayout>
-              className="browse-layout"
-              ariaLabel="Layout"
-              value={shown}
-              onChange={setLayout}
-              options={BROWSE_LAYOUT_OPTIONS.map((option) => ({
-                value: option.value,
-                label: option.label,
-                icon: option.icon,
-                hideLabel: true,
-              }))}
-            />
+            {/* Phones draw the layout beside the type filter and the sort on
+                the line under them: the markup follows, so Tab does too. */}
+            {phoneToolbar
+              ? [layoutControl, sortMenu]
+              : [sortMenu, layoutControl]}
           </Toolbar>
 
           {loading ? (

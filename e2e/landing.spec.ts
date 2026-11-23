@@ -46,7 +46,9 @@ test('under reduced motion the word stays', async ({ page }) => {
   await page.goto('/landing/')
   const word = page.locator('[data-rotating-word]')
   await expect(word).toHaveText('tokens,')
-  await page.waitForTimeout(2500)
+  // Past the word's 1.6 s turn on the page's own clock (support/test.ts
+  // installs it), which fires any turn due instead of waiting one out.
+  await page.clock.runFor(2500)
   await expect(word).toHaveText('tokens,')
 })
 

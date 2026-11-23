@@ -454,7 +454,6 @@ interface ModalProps {
   className?: string
   children?: React.ReactNode
   centered?: boolean
-  destroyOnClose?: boolean
 }
 
 const Modal = ({
@@ -626,8 +625,8 @@ const Modal = ({
     [onCancel],
   )
 
-  // A hidden dialog is never rendered, so `destroyOnClose` and the default
-  // behave the same once the exit animation has run.
+  // A hidden dialog is never rendered: its content unmounts once the exit
+  // animation has run, so it opens again fresh.
   if (!shown) return null
 
   const defaultFooter = (

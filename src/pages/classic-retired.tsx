@@ -10,9 +10,10 @@ import ErrorPage from 'pages/error-page'
  * request left when it was retired (16 Nov 2026) and, on chain, no deposit
  * or appeal reward waiting for anyone, so nothing here needs a button. The
  * contracts and their entries stay on chain; the last interface that could
- * act on them is commit 15b0fd4 (git tag classic-ui-final). The router tells Classic
- * lists apart with one field of the existence check (the indexer's Classic
- * Registry), and reads nothing else of them.
+ * act on them is kleros/gtcr commit 15b0fd4
+ * (https://github.com/kleros/gtcr/commit/15b0fd4ade22ac15d0efe7dfbc102d26f1d001b6).
+ * The router tells Classic lists apart with one field of the existence
+ * check (the indexer's Classic Registry), and reads nothing else of them.
  */
 const ExplorerLink = styled.a`
   color: var(--color-primary);
