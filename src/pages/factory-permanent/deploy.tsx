@@ -13,7 +13,11 @@ import { Roles, useAtlasProvider } from '@kleros/kleros-app'
 import _GTCRFactory from 'assets/abis/PermanentGTCRFactory.json'
 import { JSON_UPLOAD_ROLE } from 'utils/atlas-roles'
 import { getArticleFor, readExtraData } from 'utils/string'
-import { wrapWithToast, errorToast, replacementOf } from 'utils/wrap-with-toast'
+import {
+  wrapWithToast,
+  errorToast,
+  waitForOutcome,
+} from 'utils/wrap-with-toast'
 import { parseWagmiError } from 'utils/parse-wagmi-error'
 import { parseIpfs } from 'utils/ipfs-parse'
 import { formatDurationLong } from 'utils/time'
@@ -538,16 +542,29 @@ const Deploy = ({
         account,
       })
 
-      const result = await wrapWithToast(async () => {
-        const hash = await walletClient.writeContract(request)
-        // Signed: show the hash while the confirmations come in, and keep
-        // it with the draft for a reload in the meantime.
-        stage = 'mining'
-        setPendingHash(hash)
-        setPhase('mining')
-        keepPending({ hash })
-        return hash
-      }, publicClient)
+      const result = await wrapWithToast(
+        async () => {
+          const hash = await walletClient.writeContract(request)
+          // Signed: show the hash while the confirmations come in, and keep
+          // it with the draft for a reload in the meantime.
+          stage = 'mining'
+          setPendingHash(hash)
+          setPhase('mining')
+          keepPending({ hash })
+          return hash
+        },
+        publicClient,
+        {
+          // The page has its own pending step (Check again, Deploy again).
+          waitForLate: false,
+          // Sped up in the wallet: the page and the draft follow the new hash,
+          // which a reload or Check again must wait for.
+          onHash: (next) => {
+            setPendingHash(next)
+            keepPending({ hash: next })
+          },
+        },
+      )
 
       if (result.status && result.result) onMined(result.result)
       // Sent (the callback above moved the stage on), but no receipt, which
@@ -625,15 +642,15 @@ const Deploy = ({
     if (!receiptClient || !pendingHash) return
     setStillPending(false)
     try {
-      const receipt = await receiptClient.waitForTransactionReceipt({
-        hash: pendingHash,
-        confirmations: 2,
-      })
+      const { receipt, replacement } = await waitForOutcome(
+        receiptClient,
+        pendingHash,
+      )
       // viem answers a replaced transaction with its replacement's receipt,
-      // which succeeded: a cancel from the wallet deployed nothing.
-      const cancelled =
-        replacementOf(receipt, pendingHash)?.reason === 'cancelled'
-      if (receipt.status === 'success' && !cancelled) onMined(receipt)
+      // which succeeded: a cancel from the wallet, or another transaction in
+      // its place, deployed nothing. Only a speed-up did.
+      const replaced = !!replacement && replacement.reason !== 'repriced'
+      if (receipt.status === 'success' && !replaced) onMined(receipt)
       else {
         keepPending(undefined)
         setFailedAt('mining')

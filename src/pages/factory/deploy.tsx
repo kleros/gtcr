@@ -15,7 +15,11 @@ import _GTCRFactory from 'assets/abis/LightGTCRFactory.json'
 import { Roles, useAtlasProvider } from '@kleros/kleros-app'
 import { JSON_UPLOAD_ROLE } from 'utils/atlas-roles'
 import { ZERO_ADDRESS, getArticleFor } from 'utils/string'
-import { wrapWithToast, errorToast, replacementOf } from 'utils/wrap-with-toast'
+import {
+  wrapWithToast,
+  errorToast,
+  waitForOutcome,
+} from 'utils/wrap-with-toast'
 import { parseWagmiError } from 'utils/parse-wagmi-error'
 import { formatDurationLong } from 'utils/time'
 import { parseIpfs } from 'utils/ipfs-parse'
@@ -402,7 +406,6 @@ const ActionArea = styled.div`
 type DeployPhase = 'idle' | 'uploading' | 'wallet' | 'mining' | 'mined'
 
 type DeployProps = Omit<StepProps, 'postSubmit'> & {
-  postSubmit?: () => void
   /** Jump back to a visual step by its title ("Name", "Fields"…). */
   onEditStep?: (stepTitle: string) => void
 }
@@ -702,6 +705,20 @@ const Deploy = ({
             return hash
           }),
         publicClient,
+        {
+          // The page has its own pending step (Check again, Deploy again).
+          waitForLate: false,
+          // Sped up in the wallet: the page and the draft follow the new
+          // hash, which a reload or Check again must wait for.
+          onHash: (next) => {
+            setPendingHash(next)
+            keepPending({
+              hash: next,
+              list: parentTCRAddress,
+              badges: relTCRAddress,
+            })
+          },
+        },
       )
 
       if (result.status && result.result)
@@ -805,16 +822,16 @@ const Deploy = ({
     if (!receiptClient || !pendingHash) return
     setStillPending(false)
     try {
-      const receipt = await receiptClient.waitForTransactionReceipt({
-        hash: pendingHash,
-        confirmations: 2,
-      })
+      const { receipt, replacement } = await waitForOutcome(
+        receiptClient,
+        pendingHash,
+      )
       // viem answers a replaced transaction with its replacement's receipt,
-      // which succeeded: a cancel from the wallet deployed nothing, and the
-      // predicted addresses hold no list.
-      const cancelled =
-        replacementOf(receipt, pendingHash)?.reason === 'cancelled'
-      if (receipt.status === 'success' && !cancelled)
+      // which succeeded: a cancel from the wallet, or another transaction in
+      // its place, deployed nothing, and the predicted addresses hold no
+      // list. Only a speed-up did.
+      const replaced = !!replacement && replacement.reason !== 'repriced'
+      if (receipt.status === 'success' && !replaced)
         onMined(receipt, predicted?.list ?? '', predicted?.badges)
       else {
         keepPending(undefined)

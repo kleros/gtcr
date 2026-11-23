@@ -53,6 +53,11 @@ export type WrapWithToastReturnType = {
    * place: it will never be mined, and nothing it would have done happened.
    */
   replaced?: boolean
+  /**
+   * Sent, but no receipt came back even after following it for a while
+   * (LATE_RECEIPT_MS): it may still be mined, so it must not read as failed.
+   */
+  pending?: boolean
 }
 
 export const infoToast = (message: string) => toast.info(message, OPTIONS)
@@ -168,11 +173,13 @@ const report = (id: ReturnType<typeof toast.info>, update: ToastUpdate) => {
  * "Transaction confirmed." (and a submission then opened an entry that never
  * comes). Only a speed-up did what was asked.
  *
- * viem says so through onReplaced only when one confirmation is asked for:
- * with two it finds the replacement at one, waits, and resolves with the
- * replacement's receipt without a word. A receipt for another hash tells it
- * then; an empty transfer to oneself is the wallets' cancel, anything else
- * is taken for a speed-up (the common case).
+ * viem says so, and how (it compares the replacement's target, value and
+ * data with the original's), through onReplaced, but only when it waits for
+ * one confirmation: with two it finds the replacement at one, waits, and
+ * resolves with the replacement's receipt without a word. So waitForOutcome
+ * waits for one first. This is the fallback for a receipt that comes back
+ * for another hash with no word from viem: an empty transfer to oneself is
+ * the wallets' cancel, anything else is taken for a speed-up.
  */
 export const replacementOf = (
   receipt: TransactionReceipt,
@@ -186,6 +193,51 @@ export const replacementOf = (
     reason: toSelf ? 'cancelled' : 'repriced',
     transaction: { hash: receipt.transactionHash },
   }
+}
+
+/**
+ * A sent transaction's receipt after `confirmations` blocks, and whether
+ * the wallet replaced it, and how. One confirmation first, so viem reports a
+ * replacement (above); a cancelled or replaced transaction, or a reverted
+ * one, is final at once. A speed-up is then followed under its new hash,
+ * passed to `onHash` first so a caller that stops waiting knows which
+ * transaction to follow.
+ */
+export const waitForOutcome = async (
+  client: TransactionReceiptClient,
+  hash: Hash,
+  {
+    confirmations = 2,
+    timeout,
+    onHash,
+  }: {
+    confirmations?: number
+    timeout?: number
+    onHash?: (hash: Hash) => void
+  } = {},
+): Promise<{ receipt: TransactionReceipt; replacement?: Replacement }> => {
+  let replacement: Replacement | undefined
+  const mined = await client.waitForTransactionReceipt({
+    hash,
+    confirmations: 1,
+    timeout,
+    onReplaced: (next) => {
+      replacement = next
+    },
+  })
+  replacement ??= replacementOf(mined, hash)
+  if (replacement && replacement.reason !== 'repriced')
+    return { receipt: mined, replacement }
+  // Sped up in the wallet: the same call, under the new hash.
+  if (replacement) onHash?.(replacement.transaction.hash)
+  if (mined.status !== 'success' || confirmations <= 1)
+    return { receipt: mined, replacement }
+  const receipt = await client.waitForTransactionReceipt({
+    hash: replacement?.transaction.hash ?? hash,
+    confirmations,
+    timeout,
+  })
+  return { receipt, replacement }
 }
 
 const replacedUpdate = (
@@ -221,29 +273,24 @@ const LATE_RECEIPT_MS = 15 * 60_000
  * A sent transaction whose receipt did not come back in time (a slow chain,
  * or a node that stopped answering) may still go through: keep following it
  * and turn the toast into its outcome, refreshing the data if it confirms.
+ * Its outcome is the wrapper's, so a dialog stays busy until it is known.
  */
 const followLateReceipt = async (
   publicClient: TransactionReceiptClient,
   id: ReturnType<typeof toast.info>,
   chainId: number | undefined,
   hash: Hash,
-) => {
+): Promise<WrapWithToastReturnType> => {
   try {
-    let replacement: Replacement | undefined
-    const res = await publicClient.waitForTransactionReceipt({
-      hash,
+    const { receipt, replacement } = await waitForOutcome(publicClient, hash, {
       confirmations: 1,
       timeout: LATE_RECEIPT_MS,
-      onReplaced: (next) => {
-        replacement = next
-      },
     })
-    replacement ??= replacementOf(res, hash)
     if (replacement && replacement.reason !== 'repriced') {
       report(id, replacedUpdate(replacement, chainId))
-      return
+      return { status: false, replaced: true }
     }
-    const confirmed = res.status === 'success'
+    const confirmed = receipt.status === 'success'
     report(id, {
       render: withExplorerLink(
         confirmed
@@ -257,9 +304,25 @@ const followLateReceipt = async (
       autoClose: confirmed ? OPTIONS.autoClose : false,
     })
     if (confirmed) emitTxConfirmed()
-  } catch {
+    return { status: confirmed, result: receipt }
+  } catch (err) {
     // Still no answer: the warning and its explorer link stay.
+    console.warn('No receipt yet for', hash, err)
+    return { status: false, pending: true }
   }
+}
+
+export interface WrapWithToastOptions {
+  /**
+   * Whether a late receipt is followed before this returns (the default),
+   * so the page that sent the transaction stays busy until its outcome is
+   * known. A page with its own pending state (the list factories' Check
+   * again and Deploy again) passes false: it gets `pending` at the first
+   * timeout, while the toast goes on following the transaction.
+   */
+  waitForLate?: boolean
+  /** A speed-up's new hash, for a page that keeps the hash it follows. */
+  onHash?: (hash: Hash) => void
 }
 
 /**
@@ -267,11 +330,15 @@ const followLateReceipt = async (
  * sent (with an explorer link), then confirmed or failed. A request the
  * wallet's owner declines closes quietly; it is not an error. A transaction
  * that was sent but whose receipt is late is not reported as failed: only a
- * reverted receipt says that.
+ * reverted receipt says that. It is followed for LATE_RECEIPT_MS more
+ * before this returns (unless `waitForLate` is false), so the page that
+ * sent it stays busy meanwhile and cannot send it twice (a second
+ * fundAppeal would be accepted).
  */
 export async function wrapWithToast(
   contractWrite: () => Promise<Hash>,
   publicClient: TransactionReceiptClient,
+  { waitForLate = true, onHash }: WrapWithToastOptions = {},
 ): Promise<WrapWithToastReturnType> {
   const id = toast.info('Confirm the transaction in your wallet.', {
     ...OPTIONS,
@@ -293,21 +360,20 @@ export async function wrapWithToast(
       isLoading: true,
       autoClose: false,
     })
-    let replacement: Replacement | undefined
-    const res = await publicClient.waitForTransactionReceipt({
+    const { receipt: res, replacement } = await waitForOutcome(
+      publicClient,
       hash,
-      confirmations: 2,
-      onReplaced: (next) => {
-        replacement = next
+      {
+        onHash: (next) => {
+          hash = next
+          onHash?.(next)
+        },
       },
-    })
-    replacement ??= replacementOf(res, hash)
+    )
     if (replacement && replacement.reason !== 'repriced') {
       report(id, replacedUpdate(replacement, chainId))
       return { status: false, replaced: true }
     }
-    // Sped up in the wallet: the same call, under the new hash.
-    if (replacement) hash = replacement.transaction.hash
     const status = res.status === 'success'
 
     if (status) {
@@ -340,6 +406,7 @@ export async function wrapWithToast(
         autoClose: 4000,
       })
     else if (hash) {
+      console.warn('No receipt yet for', hash, err)
       report(id, {
         render: withExplorerLink(
           'Still waiting for this transaction to confirm. It may yet go through.',
@@ -350,14 +417,18 @@ export async function wrapWithToast(
         isLoading: false,
         autoClose: false,
       })
-      void followLateReceipt(publicClient, id, chainId, hash)
-    } else
+      const late = followLateReceipt(publicClient, id, chainId, hash)
+      if (waitForLate) return late
+      return { status: false, pending: true }
+    } else {
+      console.error(err)
       report(id, {
         render: withExplorerLink(parseWagmiError(err), chainId, hash),
         type: 'error',
         isLoading: false,
         autoClose: false,
       })
+    }
     return { status: false }
   }
 }
