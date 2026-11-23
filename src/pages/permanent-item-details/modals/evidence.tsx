@@ -52,6 +52,8 @@ const EvidenceModal = ({
   const [phase, setPhase] = useState<EvidencePhase>()
   const isSubmitting = !!phase
   const [formKey, setFormKey] = useState(0)
+  // Whether the dialog's form has anything in it (EvidenceForm tells).
+  const [drafted, setDrafted] = useState(false)
 
   const submitEvidence = async ({
     title: evidenceTitle,
@@ -109,12 +111,19 @@ const EvidenceModal = ({
     )
 
   const disabled = !gate.ready || isSubmitting
+  // Asked before typed evidence is thrown away: by the dialog's own close
+  // (Escape, the scrim, the close button) and by Cancel alike.
+  const discardWarning =
+    drafted && !isSubmitting
+      ? 'Close this? Your evidence will be lost.'
+      : undefined
 
   return (
     <ModalShell
       open={visible}
       title={title ?? 'Add evidence'}
       onClose={() => onCancel?.()}
+      discardWarning={discardWarning}
     >
       <Stack $gap={14}>
         <Body $muted>Published on-chain with this item, for the jurors.</Body>
@@ -124,10 +133,18 @@ const EvidenceModal = ({
             onSubmit={submitEvidence}
             formID={EVIDENCE_FORM_ID}
             detailed
+            onDraftChange={setDrafted}
           />
         </FormBlock>
         <Row $justify="flex-end" $gap={8} $wrap>
-          <Button type="button" $variant="secondary" onClick={onCancel}>
+          <Button
+            type="button"
+            $variant="secondary"
+            onClick={() => {
+              if (!discardWarning || window.confirm(discardWarning))
+                onCancel?.()
+            }}
+          >
             Cancel
           </Button>
           <Button

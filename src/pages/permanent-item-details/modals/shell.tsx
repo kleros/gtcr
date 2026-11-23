@@ -8,6 +8,7 @@ import useUrlChainId from 'hooks/use-url-chain-id'
 import { appKitModal } from 'config/wagmi'
 import { NETWORKS_INFO } from 'config/networks'
 import { reportSwitchFailure, signInWithToast } from 'utils/wrap-with-toast'
+import { formatAmount } from 'pages/submit-item/amounts'
 import { Dialog } from 'components/curate/item-standard-dialog'
 import {
   Button,
@@ -44,6 +45,7 @@ export const ModalShell = ({
   title,
   eyebrow,
   onClose,
+  discardWarning,
   width = 'md',
   children,
 }: {
@@ -52,12 +54,15 @@ export const ModalShell = ({
   /** Small label above the title, e.g. the entry name. */
   eyebrow?: React.ReactNode
   onClose: () => void
+  /** Asked before closing throws away what was typed (Dialog). */
+  discardWarning?: string
   width?: 'md' | 'lg'
   children: React.ReactNode
 }) => (
   <Dialog
     open={open}
     onClose={onClose}
+    discardWarning={discardWarning}
     title={title}
     eyebrow={eyebrow}
     width={width}
@@ -212,7 +217,12 @@ const trimFraction = (value: string, maxFraction: number): string => {
   return trimmed ? `${whole}.${trimmed}` : whole
 }
 
-/** Exact token amount in display units, at most `maxFraction` decimals, no trailing zeros. */
+/**
+ * A token amount as a figure to lead with: at most `maxFraction` decimals,
+ * cut rather than rounded, no trailing zeros. A small amount can read "0"
+ * (3000 gwei at five decimals), so an amount someone is about to sign for
+ * is stated with exactAmount, tokenText or nativeText instead.
+ */
 export const formatTokenAmount = (
   amount: Amount,
   decimals = 18,
@@ -225,13 +235,21 @@ export const formatTokenAmount = (
         maxFraction,
       )
 
-/** "300 sDAI" */
-export const tokenText = (amount: Amount, decimals: number, symbol: string) =>
-  `${formatTokenAmount(amount, decimals)} ${symbol}`
+/**
+ * An amount in display units with every digit, no trailing zeros
+ * ("0.000003"): the Stake submit page's rule, so what a dialog asks someone
+ * to sign never reads as less than it is.
+ */
+export const exactAmount = (amount: Amount, decimals = 18): string =>
+  amount === null || amount === undefined ? '…' : formatAmount(amount, decimals)
 
-/** "36 xDAI" */
+/** "300 sDAI", exact. */
+export const tokenText = (amount: Amount, decimals: number, symbol: string) =>
+  `${exactAmount(amount, decimals)} ${symbol}`
+
+/** "36 xDAI", exact: an arbitration cost of 3000 gwei is "0.000003 xDAI". */
 export const nativeText = (amount: Amount, currency: string) =>
-  `${formatTokenAmount(amount, 18, 5)} ${currency}`
+  `${exactAmount(amount)} ${currency}`
 
 /** Basis-point multiplier applied to a wei amount; the contract divides by 10 000. */
 export const MULTIPLIER_DIVISOR = 10_000n

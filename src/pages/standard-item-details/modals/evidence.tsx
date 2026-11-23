@@ -50,6 +50,8 @@ const EvidenceModal = ({
   const [phase, setPhase] = useState<EvidencePhase>()
   const isSubmitting = !!phase
   const [formKey, setFormKey] = useState(0)
+  // Whether the dialog's form has anything in it (EvidenceForm tells).
+  const [drafted, setDrafted] = useState(false)
   const gate = useActionGate({ verb: 'submit evidence' })
 
   const submitEvidence = async ({
@@ -108,16 +110,30 @@ const EvidenceModal = ({
     )
 
   const disabled = isSubmitting || !gate.ready
+  // Asked before typed evidence is thrown away: by the dialog's own close
+  // (Escape, the scrim, the close button) and by Cancel alike.
+  const discardWarning =
+    drafted && !isSubmitting
+      ? 'Close this? Your evidence will be lost.'
+      : undefined
 
   return (
     <Dialog
       open={!!visible}
       onClose={onCancel ?? (() => undefined)}
+      discardWarning={discardWarning}
       title="Add evidence"
       footer={
         <>
           {gate.controls}
-          <Button type="button" $variant="secondary" onClick={onCancel}>
+          <Button
+            type="button"
+            $variant="secondary"
+            onClick={() => {
+              if (!discardWarning || window.confirm(discardWarning))
+                onCancel?.()
+            }}
+          >
             Cancel
           </Button>
           <Button
@@ -139,6 +155,7 @@ const EvidenceModal = ({
           onSubmit={submitEvidence}
           formID={EVIDENCE_FORM_ID}
           detailed
+          onDraftChange={setDrafted}
         />
         {gate.blocker && (
           <Small $muted role="status">

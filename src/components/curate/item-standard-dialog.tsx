@@ -180,6 +180,12 @@ const Foot = styled.div`
 export interface DialogProps {
   open: boolean
   onClose: () => void
+  /**
+   * Asked before Escape, the scrim or the close button throws away what was
+   * typed (a justification, evidence): closing then needs a yes. Absent, they
+   * close at once.
+   */
+  discardWarning?: string
   title?: React.ReactNode
   /** Mono eyebrow above the title, e.g. the entry name. */
   eyebrow?: React.ReactNode
@@ -191,6 +197,7 @@ export interface DialogProps {
 export const Dialog = ({
   open,
   onClose,
+  discardWarning,
   title,
   eyebrow,
   width = 'md',
@@ -203,15 +210,18 @@ export const Dialog = ({
   // Pages re-render every second (countdowns) and pass a new onClose each
   // time; read it through a ref so the focus effect runs only when the
   // dialog opens or closes, never while someone is typing.
-  const onCloseRef = useRef(onClose)
-  onCloseRef.current = onClose
+  const closeRef = useRef(onClose)
+  closeRef.current = () => {
+    if (!discardWarning || window.confirm(discardWarning)) onClose()
+  }
+  const close = () => closeRef.current()
 
   useEffect(() => {
     if (!open) return
     const previous = document.activeElement as HTMLElement | null
     const { overflow } = document.body.style
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && !appKitModal?.isOpen()) onCloseRef.current()
+      if (event.key === 'Escape' && !appKitModal?.isOpen()) closeRef.current()
     }
     // The Tab trap only hears keys from inside the panel. Focus that lands
     // on the page behind (Tab from <body> once the wallet modal has closed,
@@ -242,7 +252,7 @@ export const Dialog = ({
   return createPortal(
     <Scrim
       onMouseDown={(event) => {
-        if (event.target === event.currentTarget) onClose()
+        if (event.target === event.currentTarget) close()
       }}
     >
       <Panel
@@ -259,7 +269,7 @@ export const Dialog = ({
             {eyebrow && <Label>{eyebrow}</Label>}
             {title && <Title id={titleId}>{title}</Title>}
           </Titles>
-          <IconButton type="button" aria-label="Close" onClick={onClose}>
+          <IconButton type="button" aria-label="Close" onClick={close}>
             <CurateIcon name="close" size={16} />
           </IconButton>
         </Head>

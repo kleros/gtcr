@@ -95,6 +95,8 @@ const ChallengeModal = ({
   // Where the challenge being sent is: uploading, in the wallet, being mined.
   const [challengePhase, setChallengePhase] = useState<SendPhase>()
   const isChallenging = !!challengePhase
+  // Whether the justification has anything in it (EvidenceForm tells).
+  const [drafted, setDrafted] = useState(false)
   const { symbol: tokenSymbol, decimals: tokenDecimals } =
     useTokenSymbol(tokenAddress)
 
@@ -352,6 +354,11 @@ const ChallengeModal = ({
       title={title ?? `Challenge ${name}`}
       eyebrow={capitalize(name)}
       onClose={close}
+      discardWarning={
+        drafted && !isChallenging
+          ? 'Close this? Your justification will be lost.'
+          : undefined
+      }
       width="lg"
     >
       {arbitrationCost ? (
@@ -365,7 +372,11 @@ const ChallengeModal = ({
               . Your justification is published as evidence.
             </Body>
             <FormBlock>
-              <EvidenceForm onSubmit={challengeRequest} formID={formId} />
+              <EvidenceForm
+                onSubmit={challengeRequest}
+                formID={formId}
+                onDraftChange={setDrafted}
+              />
             </FormBlock>
           </Stack>
 

@@ -227,6 +227,11 @@ const RemoveModal = ({
     <Dialog
       open={!!visible}
       onClose={onCancel}
+      discardWarning={
+        drafted && !isSubmitting
+          ? 'Close this? Your justification will be lost.'
+          : undefined
+      }
       eyebrow={name}
       title="Request the removal"
       width="lg"

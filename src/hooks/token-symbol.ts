@@ -12,9 +12,39 @@ const ERC20_METADATA_ABI = [
 // Older tokens (MKR, SAI) return their symbol as bytes32.
 const BYTES32_SYMBOL_ABI = ['function symbol() view returns (bytes32)']
 
-/** ethers' error for a call that reverted or whose result did not decode. */
-const isCallException = (err: unknown) =>
-  (err as { code?: unknown } | null)?.code === ethers.errors.CALL_EXCEPTION
+/**
+ * A node's words for a call it ran and that failed: a revert ("execution
+ * reverted", Nethermind's "VM execution error"), or code that cannot run
+ * (an old token's invalid opcode). A node that did not run it says
+ * something else: a timeout, a rate limit, an error page.
+ */
+const RAN_AND_FAILED =
+  /revert|vm execution error|invalid opcode|invalid jump|out of gas|stack underflow/i
+
+/** Whether an RPC error, or the node's answer inside it, says the call ran and failed. */
+const saysCallFailed = (value: unknown, depth = 0): boolean => {
+  if (typeof value === 'string') return RAN_AND_FAILED.test(value)
+  if (!value || typeof value !== 'object' || depth > 3) return false
+  const { body, data, error, message } = value as Record<string, unknown>
+  return [body, data, error, message].some((part) =>
+    saysCallFailed(part, depth + 1),
+  )
+}
+
+/**
+ * Whether the token itself answered a failed read: the call ran and failed
+ * (a revert), or returned nothing that decodes (no such function). ethers
+ * reports a node that never answered (offline, timed out, rate-limited,
+ * blocked) as the same CALL_EXCEPTION, with the request's own error inside
+ * it: that one says nothing about the token, so it is not taken as an
+ * answer.
+ */
+const tokenAnswered = (err: unknown): boolean => {
+  if ((err as { code?: unknown } | null)?.code !== ethers.errors.CALL_EXCEPTION)
+    return false
+  const request = (err as { error?: unknown }).error
+  return request === undefined || saysCallFailed(request)
+}
 
 /**
  * The token's symbol, as a string or as bytes32, or undefined when it reads
@@ -32,17 +62,22 @@ const readSymbol = async (
       provider,
     ).symbol()
   } catch (err) {
-    // Any other error is the node failing: the query fails and is retried,
-    // as before, instead of reading as "no symbol".
-    if (!isCallException(err)) throw err
+    // A node that did not answer fails the query, which is retried, instead
+    // of reading as "no symbol".
+    if (!tokenAnswered(err)) throw err
+    let raw: string
     try {
-      symbol = ethers.utils.parseBytes32String(
-        await new ethers.Contract(
-          tokenAddress,
-          BYTES32_SYMBOL_ABI,
-          provider,
-        ).symbol(),
-      )
+      raw = await new ethers.Contract(
+        tokenAddress,
+        BYTES32_SYMBOL_ABI,
+        provider,
+      ).symbol()
+    } catch (bytes32Err) {
+      if (!tokenAnswered(bytes32Err)) throw bytes32Err
+      return undefined
+    }
+    try {
+      symbol = ethers.utils.parseBytes32String(raw)
     } catch {
       return undefined
     }
@@ -55,7 +90,10 @@ const useTokenSymbol = (
 ): {
   symbol: string
   decimals: number
-  /** False while loading, or when decimals() failed and 18 stands in. */
+  /**
+   * False while loading, while no node answers (18 stands in until a read
+   * succeeds), or when the token has no decimals() (18 stands in).
+   */
   decimalsRead: boolean
   loading: boolean
 } => {
@@ -81,9 +119,15 @@ const useTokenSymbol = (
       )
       const [symbol, decimals] = await Promise.all([
         readSymbol(tokenAddress!, library!),
-        token.decimals().catch(() => null),
+        // Only the token's own answer reads as "no decimals" (18 stands in,
+        // flagged unread), and is kept: a node that failed fails the query,
+        // which is retried and read again, never kept as this token's 18.
+        token.decimals().catch((err: unknown) => {
+          if (tokenAnswered(err)) return null
+          throw err
+        }),
       ])
-      // Nothing answered: no token here, or the node failed (retried).
+      // Neither read answered as a token would: no ERC-20 here.
       if (symbol === undefined && decimals === null)
         throw new Error(`No ERC-20 token read at ${tokenAddress}`)
       return {

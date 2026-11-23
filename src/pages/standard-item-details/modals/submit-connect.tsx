@@ -13,7 +13,9 @@ import { JSON_UPLOAD_ROLE } from 'utils/atlas-roles'
 import useNativeCurrency from 'hooks/native-currency'
 import useTcrMetaEvidence from 'hooks/use-tcr-meta-evidence'
 import { wrapWithToast, errorToast } from 'utils/wrap-with-toast'
+import { confirmStored } from 'utils/confirm-stored'
 import { parseWagmiError } from 'utils/parse-wagmi-error'
+import { LIST_FILE_FAILED, LIST_SETTINGS_FAILED } from 'pages/error-page/copy'
 import { wagmiConfig } from 'config/wagmi'
 import { isKlerosArbitrator } from 'config/tcr-addresses'
 import {
@@ -95,6 +97,14 @@ interface SubmitConnectModalProps {
 
 const NONE = 'None'
 
+/** The match file: which parent column each badge column is compared on. */
+interface Match {
+  parentTCR: string
+  connectedTCR?: string
+  badgeTCR: string
+  columns: (number | null)[]
+}
+
 const SubmitConnectModal = (props: SubmitConnectModalProps) => {
   const nativeCurrency = useNativeCurrency()
   const {
@@ -110,7 +120,6 @@ const SubmitConnectModal = (props: SubmitConnectModalProps) => {
   const { uploadFile } = useAtlasProvider()
   const urlChainId = useUrlChainId()
   const networkId = urlChainId ?? undefined
-  const [error, setError] = useState<string>()
 
   // This is the main TCR.
   const [tcrAddr, setTCRAddr] = useState<string>()
@@ -119,18 +128,23 @@ const SubmitConnectModal = (props: SubmitConnectModalProps) => {
   const [badgeTCRAddr, setBadgeTCRAddr] = useState<string>()
   const [debouncedBadgeTCRAddr] = useDebounce(badgeTCRAddr, 300)
 
-  const [match, setMatch] = useState<{
-    parentTCR?: string
-    connectedTCR?: string
-    badgeTCR?: string
-    columns: (number | null)[]
-  }>()
+  const [match, setMatch] = useState<Match>()
 
   // Set initial values, if any.
   useEffect(() => {
     if (!initialValues) return
     setTCRAddr(initialValues[0])
   }, [initialValues])
+
+  // The list page keeps this dialog mounted while it is closed: closing it
+  // clears the form, so the next badge never starts from the last one's
+  // addresses or its match.
+  useEffect(() => {
+    if (visible) return
+    setTCRAddr(initialValues?.[0])
+    setBadgeTCRAddr(undefined)
+    setMatch(undefined)
+  }, [visible, initialValues])
 
   // Fetch MetaEvidence via subgraph (cached for 1 day).
   const validParentAddr =
@@ -140,6 +154,19 @@ const SubmitConnectModal = (props: SubmitConnectModalProps) => {
   const validBadgeAddr =
     debouncedBadgeTCRAddr && isETHAddress(debouncedBadgeTCRAddr)
       ? debouncedBadgeTCRAddr
+      : undefined
+  // The columns picked hold only for the two lists they were picked on, and
+  // only once the typed addresses have settled on those lists: what is
+  // submitted, and its match file, are always the addresses shown.
+  const settled =
+    tcrAddr === debouncedTCRAddr && badgeTCRAddr === debouncedBadgeTCRAddr
+  const currentMatch =
+    settled &&
+    match &&
+    validBadgeAddr &&
+    match.parentTCR === validParentAddr &&
+    match.badgeTCR === validBadgeAddr
+      ? match
       : undefined
 
   const parentMetaQuery = useTcrMetaEvidence(validParentAddr, networkId)
@@ -179,37 +206,36 @@ const SubmitConnectModal = (props: SubmitConnectModalProps) => {
   })
   const relTCRSubmissionDeposit = arbitrableQuery.data?.total
 
-  useEffect(() => {
-    if (arbitrableQuery.error)
-      setError((arbitrableQuery.error as Error).message)
-  }, [arbitrableQuery.error])
-
   const handleChange = useCallback(
     (i: number, j: string | number) => {
-      if (!badgeTCRMetadata || !tcrMetaEvidence) return
-      let newState
-      if (!match)
-        newState = {
-          parentTCR: debouncedTCRAddr,
-          connectedTCR: relTCRAddress,
-          badgeTCR: debouncedBadgeTCRAddr,
-          columns: (badgeTCRMetadata.columns ?? []).map(() => null),
-        }
-      else newState = { ...match }
-
-      if (Number(j) === 0)
-        // User did not select a column (i.e. selected None).
-        newState.columns[i] = null
-      else newState.columns[i] = Number(j) - 1
-      setMatch(newState)
+      if (
+        !badgeTCRMetadata ||
+        !tcrMetaEvidence ||
+        !validParentAddr ||
+        !validBadgeAddr
+      )
+        return
+      // Picks made on other lists start over, and the array is copied, never
+      // changed in place.
+      const columns = currentMatch
+        ? [...currentMatch.columns]
+        : (badgeTCRMetadata.columns ?? []).map(() => null)
+      // "None" (0) leaves the badge column unmatched.
+      columns[i] = Number(j) === 0 ? null : Number(j) - 1
+      setMatch({
+        parentTCR: validParentAddr,
+        connectedTCR: relTCRAddress,
+        badgeTCR: validBadgeAddr,
+        columns,
+      })
     },
     [
       badgeTCRMetadata,
-      debouncedBadgeTCRAddr,
-      debouncedTCRAddr,
-      match,
+      currentMatch,
       relTCRAddress,
       tcrMetaEvidence,
+      validBadgeAddr,
+      validParentAddr,
     ],
   )
 
@@ -221,6 +247,7 @@ const SubmitConnectModal = (props: SubmitConnectModalProps) => {
       !relTCRMetaEvidence ||
       !relTCRAddress ||
       !relTCRSubmissionDeposit ||
+      !currentMatch?.badgeTCR ||
       !account ||
       !walletClient ||
       !publicClient
@@ -228,15 +255,18 @@ const SubmitConnectModal = (props: SubmitConnectModalProps) => {
       return
     setPhase('uploading')
     try {
-      const matchFile = new File([JSON.stringify(match)], 'match-file.json', {
-        type: 'application/json',
-      })
+      const matchFile = new File(
+        [JSON.stringify(currentMatch)],
+        'match-file.json',
+        { type: 'application/json' },
+      )
       const fileURI = await uploadFile(matchFile, JSON_UPLOAD_ROLE)
       if (!fileURI) throw new Error('Failed to upload match file to IPFS.')
       const columns = relTCRMetaEvidence.metadata?.columns ?? []
 
+      // The badge list the match file was made for: checked, not as typed.
       const values = {
-        Address: badgeTCRAddr,
+        Address: currentMatch.badgeTCR,
         'Match File URI': fileURI,
       }
 
@@ -248,6 +278,12 @@ const SubmitConnectModal = (props: SubmitConnectModalProps) => {
       const ipfsEvidencePath = await uploadFile(itemFile, JSON_UPLOAD_ROLE)
       if (!ipfsEvidencePath)
         throw new Error('Failed to upload item metadata to IPFS.')
+      // The entry is its file, and the badge reads its columns from the
+      // match file: both must be readable before the deposit is paid.
+      await Promise.all([
+        confirmStored(fileURI),
+        confirmStored(ipfsEvidencePath),
+      ])
 
       const { request } = await simulateContract(wagmiConfig, {
         address: relTCRAddress as `0x${string}`,
@@ -276,8 +312,7 @@ const SubmitConnectModal = (props: SubmitConnectModalProps) => {
     setPhase(undefined)
   }, [
     account,
-    badgeTCRAddr,
-    match,
+    currentMatch,
     onCancel,
     publicClient,
     relTCRAddress,
@@ -288,8 +323,10 @@ const SubmitConnectModal = (props: SubmitConnectModalProps) => {
   ])
 
   const submitDisabled = useMemo(
-    () => !match || match.columns.filter((col) => col !== null).length === 0,
-    [match],
+    () =>
+      !currentMatch ||
+      currentMatch.columns.filter((col) => col !== null).length === 0,
+    [currentMatch],
   )
 
   const gate = useActionGate({
@@ -298,6 +335,44 @@ const SubmitConnectModal = (props: SubmitConnectModalProps) => {
     amount: relTCRSubmissionDeposit,
     pending: relTCRSubmissionDeposit ? undefined : 'Loading the deposit',
   })
+
+  // A read that failed is said, with a retry, before anything waits on it:
+  // the skeleton below would otherwise stand for ever. A list file the
+  // indexer has no record of is a failed read too.
+  // Only a read with nothing to show fails the dialog: a background refetch
+  // that fails keeps the answer already read, and the form being filled.
+  const settingsFailed = arbitrableQuery.isError && !arbitrableQuery.data
+  const fileFailed =
+    !relMetaQuery.data && (relMetaQuery.isError || relMetaQuery.isSuccess)
+  if (settingsFailed || fileFailed)
+    return (
+      <Dialog
+        open={!!visible}
+        onClose={onCancel}
+        title="Enable a badge"
+        footer={
+          <>
+            <Button type="button" $variant="secondary" onClick={onCancel}>
+              Back
+            </Button>
+            <Button
+              type="button"
+              $variant="primary"
+              onClick={() => {
+                if (settingsFailed) void arbitrableQuery.refetch()
+                if (fileFailed) void relMetaQuery.refetch()
+              }}
+            >
+              Try again
+            </Button>
+          </>
+        }
+      >
+        <Notice tone="contested" role="alert">
+          {settingsFailed ? LIST_SETTINGS_FAILED : LIST_FILE_FAILED}
+        </Notice>
+      </Dialog>
+    )
 
   if (!relTCRMetaEvidence || !relTCRSubmissionDeposit)
     return (
@@ -312,23 +387,6 @@ const SubmitConnectModal = (props: SubmitConnectModalProps) => {
     )
 
   const { fileURI } = relTCRMetaEvidence
-  if (error)
-    return (
-      <Dialog
-        open={!!visible}
-        onClose={onCancel}
-        title="Enable a badge"
-        footer={
-          <Button type="button" $variant="secondary" onClick={onCancel}>
-            Back
-          </Button>
-        }
-      >
-        <Notice tone="contested" role="alert">
-          {error}
-        </Notice>
-      </Dialog>
-    )
 
   const total = formatAmount(relTCRSubmissionDeposit, nativeCurrency)
   const receipt: ReceiptLine[] = arbitrableQuery.data
@@ -439,6 +497,7 @@ const SubmitConnectModal = (props: SubmitConnectModalProps) => {
               <TextInput
                 id="connect-parent-list"
                 placeholder="0x…"
+                value={tcrAddr ?? ''}
                 onChange={(e) => setTCRAddr(e.target.value)}
               />
             )}
@@ -450,6 +509,7 @@ const SubmitConnectModal = (props: SubmitConnectModalProps) => {
             <TextInput
               id="connect-badge-list"
               placeholder="0x…"
+              value={badgeTCRAddr ?? ''}
               onChange={(e) => setBadgeTCRAddr(e.target.value)}
               disabled={!tcrMetaEvidence}
             />
@@ -486,7 +546,9 @@ const SubmitConnectModal = (props: SubmitConnectModalProps) => {
                           aria-describedby={
                             column.isIdentifier ? undefined : `${selectId}-why`
                           }
-                          defaultValue={0}
+                          // What the match holds: "None" again once the
+                          // lists change and the matching starts over.
+                          value={(currentMatch?.columns[i] ?? -1) + 1}
                           disabled={!column.isIdentifier}
                           onChange={(value) => handleChange(i, Number(value))}
                         >

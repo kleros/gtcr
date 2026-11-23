@@ -15,7 +15,7 @@ import {
   Stack,
   Surface,
 } from 'components/curate/primitives'
-import { nativeText, formatTokenAmount } from './modals/shell'
+import { exactAmount, nativeText } from './modals/shell'
 import { stakeStatusCode } from './facts'
 
 /*
@@ -159,7 +159,7 @@ const Side = ({
       <Small $muted>
         {funded
           ? `Fully funded · ${nativeText(required, currency)}`
-          : `${formatTokenAmount(paid.toString(), 18, 5)} of ${nativeText(
+          : `${exactAmount(paid)} of ${nativeText(
               required,
               currency,
             )} raised · backers can win up to ${nativeText(reward, currency)}`}

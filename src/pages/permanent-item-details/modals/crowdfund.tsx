@@ -569,12 +569,12 @@ const CrowdfundModal = ({
               {
                 title: 'Only one side is fully funded',
                 branch: true,
-                body: 'That side wins without a new round, whatever the current ruling. Every contribution to this round, on either side, can be withdrawn after the ruling.',
+                body: 'That side wins without a new round, whatever the current ruling. Every contribution to this round, on either side, comes back after the ruling: a Kleros bot sends it.',
               },
               {
                 title: 'Neither side is fully funded',
                 branch: true,
-                body: 'The current ruling stands. Every contribution to this round can be withdrawn after the ruling.',
+                body: 'The current ruling stands. Every contribution to this round comes back after the ruling: a Kleros bot sends it.',
               },
             ]}
             confirmLabel={`Fund the ${name}`}

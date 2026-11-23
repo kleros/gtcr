@@ -244,6 +244,11 @@ const ChallengeModal = ({
     <Dialog
       open={!!visible}
       onClose={onCancel}
+      discardWarning={
+        drafted && !isSubmitting
+          ? 'Close this? Your justification will be lost.'
+          : undefined
+      }
       eyebrow={name}
       title={isRemoval ? 'Challenge the removal' : 'Challenge the submission'}
       width="lg"

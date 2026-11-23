@@ -412,11 +412,11 @@ const ItemStatusCard = ({
   const stakeText = tokenText(item.stake, tokenDecimals, tokenSymbol)
   const minStake = registry.submissionMinDeposit ?? 0
   const minStakeText = tokenText(minStake, tokenDecimals, tokenSymbol)
-  // The chain's coin in words, left out where it shows as nothing: an
-  // arbitrator that charges nothing, or a few gwei below the precision the
-  // card shows, made the button read "0.025 sDAI + 0 xDAI" and the sentence
-  // speak of an arbitration cost that is not there. The dialog that signs
-  // the challenge still states the exact amount. The entry's deposit is
+  // The chain's coin in words, left out where it is below 0.00001 (what
+  // five decimals show as 0): an arbitrator that charges nothing, or a few
+  // gwei, made the button read "0.025 sDAI + 0 xDAI" and the sentence speak
+  // of an arbitration cost that is not there. The dialog that signs the
+  // challenge still states the exact amount. The entry's deposit is
   // undefined while unknown, so a total is stated only once it is read,
   // and in the token alone when the deposit shows as nothing.
   const shownNative = (amount: BigNumber | string | null | undefined) =>

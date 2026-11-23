@@ -9,6 +9,19 @@ import { reveal } from 'components/curate/motion/reveal'
  * Shown when the connected account is a contract (not an EOA or an EIP-7702
  * delegated EOA): a quiet panel at the top of the frame, a warning dot, one
  * line and a link. Dismissing it is remembered per account.
+ *
+ * What it warns of: a Standard list (LightGeneralizedTCR) pays the chain's
+ * coin with send(), which forwards 2300 gas. Since the Berlin fork that is
+ * too little for a Safe, or most proxy wallets, to receive it; the list has
+ * already cleared the amount and ignores the failure, so a deposit refund,
+ * a ruling's award or an appeal reward is lost, whoever calls the function.
+ * A Stake list (PermanentGTCR) pays through SafeSend: when send() fails it
+ * wraps the coin with the chain's W_NATIVE and transfers that (its stake
+ * token moves as an ERC-20). On Ethereum and Sepolia W_NATIVE is WETH. On
+ * Gnosis it is not WXDAI: the Stake template (0x6b8f…5b73, read from the
+ * factory on 23 Nov 2026) holds 0x4ed2…b404, a Safe whose fallback takes no
+ * value, so the wrap reverts and with it the whole transaction that pays a
+ * contract wallet: its withdrawal, or a ruling that pays it.
  */
 
 const EIP7702_PREFIX = '0xef0100'
@@ -58,13 +71,11 @@ const Copy = styled.p`
   line-height: var(--lh-small);
 
   strong {
-    margin-right: 6px;
     color: var(--color-text);
     font-weight: 500;
   }
 
   a {
-    margin-left: 6px;
     color: var(--color-primary);
     font-weight: 500;
     white-space: nowrap;
@@ -157,9 +168,10 @@ export default function SmartContractWalletWarning() {
       <Panel role="status">
         <StatusDot $tone="contested" aria-hidden />
         <Copy>
-          <strong>Smart contract wallet detected.</strong>
-          Some Curate actions may fail from a contract wallet; use an externally
-          owned account.
+          <strong>Smart contract wallet detected.</strong> Deposits and rewards
+          a Standard list pays to most contract wallets are lost, and on Gnosis
+          a Stake list cannot pay one at all (on Ethereum it pays WETH instead).
+          Use an externally owned account.{' '}
           <a
             href="https://docs.kleros.io/welcome/faq#can-i-use-a-smart-contract-account-to-stake-in-the-court"
             target="_blank"
