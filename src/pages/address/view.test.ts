@@ -610,8 +610,175 @@ describe('rangeBuckets', () => {
     expect(buckets?.starts).toHaveLength(30)
   })
 
-  it('draws nothing when a cut leaves a single bucket', () => {
-    expect(rangeBuckets([action()], '30d', NOW, false)).toBeUndefined()
+  it('keeps the cut bucket, marked partial, when nothing listed falls after it', () => {
+    // A burst five days ago and nothing since: the days after the cut alone
+    // would draw an empty range, and the profile would say "No submission,
+    // removal or challenge in the last 30 days" over those 120 actions.
+    const oldest = TODAY - 5 * DAY + 3600
+    const buckets = rangeBuckets(
+      [action({ timestamp: oldest }), action({ timestamp: oldest + 60 })],
+      '30d',
+      NOW,
+      false,
+    )
+    expect(buckets?.cut).toBe(true)
+    expect(buckets?.starts[0]).toBe(TODAY - 5 * DAY)
+    expect(buckets?.partialFrom).toBe(oldest)
+    expect(buckets?.requests).toEqual([2, 0, 0, 0, 0, 0])
+  })
+
+  /*
+   * The busiest profiles (review F33): a list cut in the bucket that holds
+   * now left a single bucket, so the profile drew no chart, said "No dated
+   * action in this scope." and dropped the range switch with it. The next
+   * finer unit draws the listed span instead, and never reaches before the
+   * oldest listed action unless that bucket is marked partial.
+   */
+  describe('a list cut in the bucket that holds now', () => {
+    const H = 3_600
+    const MONDAY_23 = at('2026-11-23T12:30:00Z')
+    /** `count` actions spread evenly from `from` to `to`, newest first. */
+    const busy = (from: number, to: number, count = 120) =>
+      Array.from({ length: count }, (_, index) =>
+        action({
+          id: `standard-${index}`,
+          timestamp: to - Math.round(((to - from) * index) / (count - 1)),
+        }),
+      )
+    const drawsOnlyListed = (
+      buckets: ReturnType<typeof rangeBuckets>,
+      oldest: number,
+    ) =>
+      buckets !== undefined &&
+      (buckets.starts[0] > oldest ||
+        (buckets.partialFrom === oldest && buckets.starts[1] > oldest))
+
+    it('draws a month cut this month by week, from the week after the cut', () => {
+      const oldest = at('2026-11-03T08:00:00Z')
+      const buckets = rangeBuckets(
+        [
+          action({ timestamp: oldest }),
+          action({ timestamp: at('2026-11-12T08:00:00Z') }),
+          action({ kind: 'challenge', timestamp: NOW - 60 }),
+        ],
+        '3y',
+        NOW,
+        false,
+      )
+      expect(buckets?.unit).toBe('week')
+      expect(buckets?.cut).toBe(true)
+      expect(buckets?.starts).toEqual([
+        at('2026-11-09T00:00:00Z'),
+        at('2026-11-16T00:00:00Z'),
+      ])
+      expect(buckets?.requests).toEqual([1, 0])
+      expect(buckets?.challenges).toEqual([0, 1])
+      expect(buckets?.partialFrom).toBeUndefined()
+      expect(drawsOnlyListed(buckets, oldest)).toBe(true)
+    })
+
+    it.each(['3y', '1y', '6m'] as const)(
+      'draws %s by day when the cut is this week',
+      (range) => {
+        const buckets = rangeBuckets(
+          [
+            action({ timestamp: at('2026-11-18T09:00:00Z') }),
+            action({ timestamp: at('2026-11-20T09:00:00Z') }),
+          ],
+          range,
+          NOW,
+          false,
+        )
+        expect(buckets?.unit).toBe('day')
+        expect(buckets?.starts).toEqual([
+          TODAY - 3 * DAY,
+          TODAY - 2 * DAY,
+          TODAY - DAY,
+          TODAY,
+        ])
+        expect(buckets?.requests).toEqual([0, 1, 0, 0])
+      },
+    )
+
+    it('draws a day cut today by hour', () => {
+      const buckets = rangeBuckets(
+        [
+          action({ timestamp: TODAY + 8.5 * H }),
+          action({ timestamp: NOW - 60 }),
+        ],
+        '30d',
+        NOW,
+        false,
+      )
+      expect(buckets?.unit).toBe('hour')
+      expect(buckets?.axisLabels).toEqual(['09:00', '10:00', '11:00', '12:00'])
+      expect(buckets?.requests).toEqual([0, 0, 1, 0])
+      expect(buckets?.labels.at(-1)).toBe('22 Nov, 12:00 UTC')
+    })
+
+    it('keeps the cut hour, marked partial, rather than draw a single hour', () => {
+      const buckets = rangeBuckets([action()], '30d', NOW, false)
+      expect(buckets?.starts).toEqual([NOW - H, NOW])
+      expect(buckets?.partialFrom).toBe(NOW - H)
+      expect(buckets?.labels[0]).toBe(
+        '22 Nov, 11:00 UTC · listed from 11:00 UTC',
+      )
+      expect(buckets?.requests).toEqual([1, 0])
+    })
+
+    it('returns the hour that holds now alone when every listed action is in it', () => {
+      const buckets = rangeBuckets(
+        [action({ timestamp: NOW + 600 }), action({ timestamp: NOW + 1200 })],
+        '3y',
+        NOW + 1800,
+        false,
+      )
+      expect(buckets?.unit).toBe('hour')
+      expect(buckets?.starts).toEqual([NOW])
+      expect(buckets?.partialFrom).toBe(NOW + 600)
+      expect(buckets?.requests).toEqual([2])
+    })
+
+    // The two curators the review found, as read on 23 Nov 2026: the oldest
+    // and newest of their 120 listed actions, and the 30D and 1Y windows the
+    // live page drew for them.
+    it.each([
+      [
+        '0x03f2…02aa',
+        at('2026-11-09T02:21:40Z'),
+        at('2026-11-23T10:37:25Z'),
+        at('2026-11-10T00:00:00Z'),
+        at('2026-11-16T00:00:00Z'),
+      ],
+      [
+        '0x2088…fef7',
+        at('2026-11-05T21:09:15Z'),
+        at('2026-11-22T18:44:40Z'),
+        at('2026-11-06T00:00:00Z'),
+        at('2026-11-09T00:00:00Z'),
+      ],
+    ])(
+      'draws every range for %s, 3Y by week like 1Y',
+      (_, oldest, newest, dayFrom, weekFrom) => {
+        const activities = busy(oldest, newest)
+        const ranges = Object.fromEntries(
+          (['30d', '6m', '1y', '3y'] as const).map((range) => [
+            range,
+            rangeBuckets(activities, range, MONDAY_23, false),
+          ]),
+        )
+        for (const buckets of Object.values(ranges)) {
+          expect(buckets?.cut).toBe(true)
+          expect(buckets?.starts.length).toBeGreaterThanOrEqual(2)
+          expect(drawsOnlyListed(buckets, oldest)).toBe(true)
+        }
+        expect(ranges['30d']?.starts[0]).toBe(dayFrom)
+        expect(ranges['1y']?.starts[0]).toBe(weekFrom)
+        expect(ranges['3y']?.unit).toBe('week')
+        expect(ranges['3y']?.starts).toEqual(ranges['1y']?.starts)
+        expect(ranges['3y']?.requests).toEqual(ranges['1y']?.requests)
+      },
+    )
   })
 })
 

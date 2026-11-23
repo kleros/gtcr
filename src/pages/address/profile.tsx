@@ -852,6 +852,15 @@ export const ProfilePanel = ({
       )
   const covered = coverage(activities)
   const buckets = rangeBuckets(activities, range, now, complete)
+  // Every listed action in the hour that holds now: one bucket draws no
+  // line, so the chart says so in words and keeps its range switch.
+  const oneBucket = buckets !== undefined && buckets.starts.length < 2
+  // A chain none of whose actions is among the most recent ones listed: its
+  // figures count them, but there is nothing to chart or list.
+  const unlistedOn =
+    !complete && scope !== 'all' && activities.length === 0
+      ? chainName(scope)
+      : undefined
   const rangeTotal = buckets
     ? buckets.requests.reduce((sum, v) => sum + v, 0) +
       buckets.challenges.reduce((sum, v) => sum + v, 0)
@@ -1321,9 +1330,14 @@ export const ProfilePanel = ({
                     No submission, removal or challenge in the{' '}
                     {RANGE_SPAN_WORDS[range]}
                   </RangeEmpty>
+                ) : oneBucket ? (
+                  <RangeEmpty role="status">
+                    Every listed action is from the last hour: too short a span
+                    to chart.
+                  </RangeEmpty>
                 ) : buckets ? (
                   <ActivityChart
-                    key={`${scope}-${range}-${buckets.starts.length}`}
+                    key={`${scope}-${range}-${buckets.unit}-${buckets.starts.length}`}
                     height={220}
                     labels={buckets.labels}
                     axisLabels={buckets.axisLabels}
@@ -1342,7 +1356,9 @@ export const ProfilePanel = ({
                     {isZero
                       ? 'The zero address is the empty placeholder on chain; no one can submit or challenge from it.'
                       : stats && stats.activity > 0
-                        ? 'No dated action in this scope.'
+                        ? unlistedOn
+                          ? `None of the ${formatInt(listed)} most recent actions is on ${unlistedOn}.`
+                          : 'No dated action in this scope.'
                         : `No submission, removal or challenge by this address on ${
                             scope === 'all'
                               ? chainNames(SUPPORTED_CHAIN_IDS)
@@ -1422,6 +1438,7 @@ export const ProfilePanel = ({
               !governedError &&
               ' Some lists’ governor could not be read: the lists governed are a lower bound.'}
             {buckets?.partialFrom !== undefined &&
+              !oneBucket &&
               ` The first ${unit} holds only the listed actions.`}
           </Footnote>
         </>

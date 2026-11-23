@@ -394,8 +394,8 @@ export interface ActivityBuckets {
   challenges: number[]
   /**
    * Set when the first bucket is only partly covered by the listed actions
-   * (the list was cut inside it and no full bucket could replace it): the
-   * time its listed actions start from, unix seconds.
+   * (the list was cut inside it and the buckets after it could not be drawn
+   * alone): the time its listed actions start from, unix seconds.
    */
   partialFrom?: number
 }
@@ -492,14 +492,41 @@ const previousStart = (start: number, unit: BucketUnit) => {
   return Date.UTC(date.getUTCFullYear(), date.getUTCMonth() - 1, 1) / 1000
 }
 
+/** The buckets of a unit from the one holding `from` to the one holding now. */
+const bucketsSince = (from: number, now: number, unit: BucketUnit) => {
+  const first = bucketOf(from, unit)
+  const starts: number[] = []
+  for (
+    let start = bucketOf(now, unit);
+    start >= first;
+    start = previousStart(start, unit)
+  )
+    starts.unshift(start)
+  return starts
+}
+
+/** The next finer unit, for a list cut in the bucket that holds now. */
+const FINER: Partial<Record<BucketUnit, BucketUnit>> = {
+  month: 'week',
+  week: 'day',
+  day: 'hour',
+}
+
 /**
  * The listed actions counted per bucket over a range. Undefined when the
  * address has no dated action at all; zeros when it has some, none in the
  * range. When the list is only the most recent slice and was cut inside the
  * range, the window starts at the bucket after the cut: nothing missing is
- * drawn, neither as a zero nor as a short count (`cut` says so). Only when
- * that would leave fewer than two buckets is the cut bucket kept, marked as
- * partial.
+ * drawn, neither as a zero nor as a short count (`cut` says so). The cut
+ * bucket is kept, marked as partial, when the buckets after it are fewer
+ * than two or hold no listed action, so a range is never drawn empty over
+ * actions it left out.
+ *
+ * On the busiest profiles every listed action can fall in the bucket that
+ * holds now (120 actions this month): no whole bucket of the range's unit is
+ * listed, so the next finer one draws the listed span instead, a month by
+ * weeks, a week by days, a day by hours. Only when even the hour that holds
+ * now holds the cut is that one bucket returned, too short to draw.
  */
 export const rangeBuckets = (
   activities: ProfileActivity[],
@@ -511,7 +538,8 @@ export const rangeBuckets = (
     (activity) => activity.timestamp > 0 && activity.timestamp <= now,
   )
   if (stamped.length === 0) return undefined
-  const { unit, count } = RANGE_WINDOWS[range]
+  const { count } = RANGE_WINDOWS[range]
+  let { unit } = RANGE_WINDOWS[range]
 
   let starts: number[] = []
   for (
@@ -525,18 +553,27 @@ export const rangeBuckets = (
   let cut = false
   if (!complete) {
     const oldest = Math.min(...stamped.map((activity) => activity.timestamp))
+    let finer = FINER[unit]
+    while (finer && bucketOf(oldest, unit) === bucketOf(now, unit)) {
+      unit = finer
+      starts = bucketsSince(oldest, now, unit)
+      finer = FINER[unit]
+    }
     const cutAt = bucketOf(oldest, unit)
     if (cutAt >= starts[0]) {
       cut = true
       const after = starts.filter((start) => start > cutAt)
-      if (after.length >= 2) starts = after
+      if (
+        after.length >= 2 &&
+        stamped.some((activity) => activity.timestamp >= after[0])
+      )
+        starts = after
       else {
         starts = starts.filter((start) => start >= cutAt)
         partialFrom = oldest
       }
     }
   }
-  if (starts.length < 2) return undefined
 
   const position = new Map(starts.map((start, index) => [start, index]))
   const requests = starts.map(() => 0)
@@ -551,8 +588,11 @@ export const rangeBuckets = (
   const labels = starts.map((start) => bucketLabel(start, unit))
   if (partialFrom !== undefined) {
     const at = new Date(partialFrom * 1000)
+    // An hour or a day already names the date: the time alone follows.
     labels[0] = `${labels[0]} · listed from ${
-      unit === 'day' ? clockLabel.format(at) : hourLabel.format(at)
+      unit === 'hour' || unit === 'day'
+        ? clockLabel.format(at)
+        : hourLabel.format(at)
     } UTC`
   }
 

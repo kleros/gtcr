@@ -19,15 +19,7 @@ import {
   useSwitchChain,
   useWalletClient,
 } from 'wagmi'
-import {
-  erc20Abi,
-  formatEther,
-  formatUnits,
-  isAddress,
-  parseEther,
-  parseUnits,
-  zeroAddress,
-} from 'viem'
+import { erc20Abi, formatEther, isAddress, zeroAddress } from 'viem'
 import { useAtlasProvider } from '@kleros/kleros-app'
 import EnsureAuth from 'components/ensure-auth'
 import Select from 'components/ui/Select'
@@ -70,7 +62,7 @@ import {
 import { appKitModal, wagmiConfig } from 'config/wagmi'
 import { useEthersProvider } from 'hooks/ethers-adapters'
 import useCourtPolicies from 'hooks/use-court-policies'
-import { formatDate, formatDurationLong } from 'utils/time'
+import { formatDate } from 'utils/time'
 import { parseWagmiError } from 'utils/parse-wagmi-error'
 import { fetchRegistryCreationTimes } from 'utils/registry-creation'
 import { parseIpfs } from 'utils/ipfs-parse'
@@ -79,14 +71,10 @@ import { readStakeArbitrationParams } from 'utils/stake-arbitration-params'
 import { jurorsAndCourtIDFromExtraData } from 'utils/string'
 import { JSON_UPLOAD_ROLE } from 'utils/atlas-roles'
 import {
-  AMBIGUOUS_COMMA,
-  isAmbiguousComma,
-  normalizeDecimalInput,
-} from 'utils/decimal-input'
-import {
   callData,
   downloadJson,
   hasCodeQuery,
+  readHasCode,
   readSafeOwners,
   safeTransactionBuilderJson,
   type ContractCall,
@@ -109,6 +97,20 @@ import {
   type GovernanceParams,
   type GovernedRegistry,
 } from './data'
+import {
+  arbitrationExtraData,
+  describeParsed,
+  formatParamValue,
+  isUnchanged,
+  markListSettingsStale,
+  newGovernorCodeNote,
+  parseJurors,
+  parseParamValue,
+  type CodeCheck,
+  type ParamConfig,
+  type ParamContext,
+  type ParamGroup,
+} from './governance-params'
 import { ACTIVITY_LAYOUT_OPTIONS, formatInt, type ActivityLayout } from './view'
 import { Avatar as ListLogo } from 'pages/browse/avatar'
 
@@ -123,158 +125,10 @@ import { Avatar as ListLogo } from 'pages/browse/avatar'
 
 /* ---------- Parameter plumbing ---------- */
 
-/*
- * Every value is shown in the unit people think in (the chain's coin, the
- * stake token, days, percent) and written in the unit the contract stores
- * (wei, the token's base units, seconds, basis points). Parsing is strict: no
- * grouping, no exponent, no more decimals than the unit has, and an empty
- * field is never read as 0.
- */
-
-type ParamKind = 'wei' | 'token' | 'seconds' | 'multiplier' | 'address'
-type ParamKey = keyof GovernanceParams
-
-/**
- * The dialog's sections after Court, which holds the arbitration field: one
- * screen each, so the dialog never grows past the window.
- */
-type ParamGroup = 'deposits' | 'timing' | 'advanced'
-
-interface ParamConfig {
-  key: ParamKey
-  label: string
-  kind: ParamKind
-  functionName: string
-  group: ParamGroup
-  /** What the parameter does, one sentence, behind the label's "?". */
-  help: string
-  /**
-   * A line kept in view under the field. Only for what cannot be undone,
-   * which nobody should have to hover to find out.
-   */
-  note?: string
-  /** A period that must stay above zero (0 would skip a protection window). */
-  positive?: boolean
-}
-
-/** What the dialog reads beyond the registry row. */
-interface ParamContext {
-  /** The Stake Curate token's decimals; undefined until read (or unreadable). */
-  tokenDecimals?: number
-}
-
-const DAY_SECONDS = 86_400
-/** MULTIPLIER_DIVISOR is 10000 on every Curate contract, so 100% = 10000. */
-const BPS_PER_PERCENT = 100
-const PLAIN_DECIMAL = /^\d+(\.\d+)?$/
-
-/** A fixed-point string without grouping or exponent, trailing zeros trimmed. */
-const plainDecimal = (value: number, maxDecimals: number) => {
-  const fixed = value.toFixed(maxDecimals)
-  return fixed.includes('.') ? fixed.replace(/\.?0+$/, '') : fixed
-}
-
-const decimalsIn = (text: string) => text.split('.')[1]?.length ?? 0
+/* How a value is shown, read back and checked: governance-params.ts. */
 
 // The shared helper, so Gnosis reads "xDAI" here like everywhere else.
 const nativeSymbol = (chainId: number) => getNativeCurrency(chainId).symbol
-
-const formatParamValue = (
-  value: string | undefined,
-  kind: ParamKind,
-  context: ParamContext,
-): string => {
-  if (value === undefined || value === '') return ''
-  try {
-    if (kind === 'wei') return formatEther(BigInt(value))
-    if (kind === 'token')
-      return context.tokenDecimals === undefined
-        ? ''
-        : formatUnits(BigInt(value), context.tokenDecimals)
-    // Six decimals of a day is under a tenth of a second, so whole seconds
-    // survive the round trip exactly.
-    if (kind === 'seconds') return plainDecimal(Number(value) / DAY_SECONDS, 6)
-    if (kind === 'multiplier')
-      return plainDecimal(Number(value) / BPS_PER_PERCENT, 2)
-  } catch {
-    return value
-  }
-  return value
-}
-
-type Parsed =
-  | { value: bigint | string; error?: undefined }
-  | { value?: undefined; error: string }
-
-const parseParamValue = (
-  raw: string,
-  config: ParamConfig,
-  context: ParamContext,
-): Parsed => {
-  // An amount may use a comma for the decimal point (0,5 reads as 0.5);
-  // "1,000" stays as typed, so the plain-decimal check below refuses it.
-  const text =
-    config.kind === 'address' ? raw.trim() : normalizeDecimalInput(raw)
-  if (config.kind === 'address')
-    return isAddress(text)
-      ? { value: text }
-      : { error: 'Enter a valid address' }
-  if (text === '') return { error: 'Enter a value' }
-  if (!PLAIN_DECIMAL.test(text))
-    return {
-      error: isAmbiguousComma(raw)
-        ? AMBIGUOUS_COMMA
-        : 'Use digits and one dot or comma, like 0.5',
-    }
-  if (config.kind === 'wei') {
-    if (decimalsIn(text) > 18) return { error: 'At most 18 decimals' }
-    return { value: parseEther(text) }
-  }
-  if (config.kind === 'token') {
-    const decimals = context.tokenDecimals
-    if (decimals === undefined)
-      return { error: "The token's decimals could not be read" }
-    if (decimalsIn(text) > decimals)
-      return { error: `At most ${decimals} decimals for this token` }
-    return { value: parseUnits(text, decimals) }
-  }
-  if (config.kind === 'seconds') {
-    const seconds = Math.round(Number(text) * DAY_SECONDS)
-    if (config.positive && seconds <= 0)
-      return { error: 'Must be longer than 0' }
-    return { value: BigInt(seconds) }
-  }
-  if (decimalsIn(text) > 2) return { error: 'At most 2 decimals' }
-  return { value: BigInt(Math.round(Number(text) * BPS_PER_PERCENT)) }
-}
-
-/** True when the typed value equals what the contract holds now. */
-const isUnchanged = (
-  parsed: Parsed,
-  current: string | undefined,
-  kind: ParamKind,
-) => {
-  if (parsed.error !== undefined || current === undefined) return false
-  if (kind === 'address')
-    return String(parsed.value).toLowerCase() === current.toLowerCase()
-  try {
-    return BigInt(current) === parsed.value
-  } catch {
-    return false
-  }
-}
-
-/** The typed value in the stored unit, so nothing is a surprise on chain. */
-const describeParsed = (parsed: Parsed, kind: ParamKind) => {
-  if (parsed.error !== undefined) return undefined
-  if (kind === 'seconds') {
-    const seconds = Number(parsed.value)
-    return `${formatDurationLong(seconds)} (${seconds.toLocaleString('en-US')} s)`
-  }
-  if (kind === 'multiplier')
-    return `Stored as ${Number(parsed.value).toLocaleString('en-US')} basis points (10,000 = 100%)`
-  return undefined
-}
 
 /*
  * The help lines are the factories' (factory/tcr-params.tsx and
@@ -436,21 +290,6 @@ const editableParams = (registry: GovernedRegistry): ParamConfig[] => {
     },
     governor,
   ]
-}
-
-const buildArbitratorExtraData = (courtID: number, jurors: number) =>
-  `0x${courtID.toString(16).padStart(64, '0')}${jurors
-    .toString(16)
-    .padStart(64, '0')}`
-
-/** Juror count as typed: a whole, odd number from 1 to 33. */
-const parseJurors = (text: string): { value?: number; error?: string } => {
-  if (!/^\d+$/.test(text.trim())) return { error: 'Enter a whole number' }
-  const value = Number(text)
-  if (value < 1 || value > 33) return { error: 'Between 1 and 33 jurors' }
-  if (value % 2 === 0)
-    return { error: 'Use an odd number, so votes cannot tie' }
-  return { value }
 }
 
 /* ---------- MetaEvidence checks ---------- */
@@ -1839,6 +1678,9 @@ const ArbitrationGovernanceField = ({
   // The fields follow the live values (they arrive after the dialog opens)
   // until the governor edits one.
   const [settingsEdited, setSettingsEdited] = useState(false)
+  // Whether that edit was to the court or the jurors: until one is, a save
+  // sends the list's extra data back as it is (arbitrationExtraData).
+  const [courtEdited, setCourtEdited] = useState(false)
   useEffect(() => {
     if (settingsEdited) return
     if (currentArbitrator) setArbitrator(currentArbitrator)
@@ -1853,15 +1695,18 @@ const ArbitrationGovernanceField = ({
 
   const usesPair = registry.kind === 'standard'
   const usesSingle = registry.kind === 'permanent'
-  const jurorCount = parseJurors(jurors)
-  const courtNumber = /^\d+$/.test(courtID) ? Number(courtID) : undefined
-  const extraData =
-    courtNumber !== undefined && jurorCount.value !== undefined
-      ? buildArbitratorExtraData(courtNumber, jurorCount.value)
-      : undefined
+  const arbitratorChanged =
+    registry.kind !== 'permanent' &&
+    arbitrator.toLowerCase() !== currentArbitrator.toLowerCase()
+  const { value: extraData, error: courtError } = arbitrationExtraData({
+    current: currentExtraData,
+    courtID,
+    jurors,
+    courtEdited,
+    arbitratorChanged,
+  })
   const changed =
-    (registry.kind !== 'permanent' &&
-      arbitrator.toLowerCase() !== currentArbitrator.toLowerCase()) ||
+    arbitratorChanged ||
     (extraData !== undefined &&
       extraData.toLowerCase() !== currentExtraData.toLowerCase()) ||
     toStoredUri(meta.registration) !==
@@ -1882,11 +1727,7 @@ const ArbitrationGovernanceField = ({
           ? INDEXER_BEHIND
           : registry.kind !== 'permanent' && !isAddress(arbitrator)
             ? 'Enter a valid arbitrator address'
-            : courtNumber === undefined
-              ? 'Choose a court'
-              : jurorCount.error
-                ? `Jurors: ${jurorCount.error}`
-                : undefined
+            : courtError
   const blocker =
     gate.blocker ??
     (!ready
@@ -1899,9 +1740,11 @@ const ArbitrationGovernanceField = ({
 
   const save = async (via?: ExportVia) => {
     if (blocker || !extraData || !current) return
-    const arbitratorChanged =
-      registry.kind !== 'permanent' &&
-      arbitrator.toLowerCase() !== currentArbitrator.toLowerCase()
+    // Left alone, the arbitrator goes back as the chain returned it, like
+    // the extra data.
+    const sentArbitrator = arbitratorChanged
+      ? arbitrator
+      : (current.arbitrator ?? arbitrator)
     const registration = toStoredUri(meta.registration)
     const clearing = toStoredUri(meta.clearing)
     setChecking(true)
@@ -1915,14 +1758,13 @@ const ArbitrationGovernanceField = ({
         return SETTINGS_CHANGED
       }
       // A mistyped arbitrator would mine, and the list could take no
-      // request (every arbitration cost read reverts) until it is fixed.
-      if (arbitratorChanged) {
-        const code = await getPublicClient(wagmiConfig, {
-          chainId: registry.chainId,
-        })?.getCode({ address: arbitrator as `0x${string}` })
-        if (!code || code === '0x')
-          return `There is no contract at ${arbitrator} on ${chainName(registry.chainId)}, so it cannot arbitrate.`
-      }
+      // request (every arbitration cost read reverts) until it is fixed. An
+      // EIP-7702 delegated account is a wallet, not an arbitrator.
+      if (
+        arbitratorChanged &&
+        !(await readHasCode(registry.chainId, arbitrator))
+      )
+        return `There is no contract at ${arbitrator} on ${chainName(registry.chainId)}, so it cannot arbitrate.`
       return checkMetaEvidence({
         registration,
         clearing: usesPair ? clearing : undefined,
@@ -1937,6 +1779,7 @@ const ArbitrationGovernanceField = ({
       // the next save would send them back.
       meta.reset()
       setSettingsEdited(false)
+      setCourtEdited(false)
       onOutdated()
     }
     if (problem) {
@@ -1946,7 +1789,7 @@ const ArbitrationGovernanceField = ({
     const functionName = 'changeArbitrationParams'
     const args =
       registry.kind === 'standard'
-        ? [arbitrator, extraData, registration, clearing]
+        ? [sentArbitrator, extraData, registration, clearing]
         : [extraData, registration]
     if (await send(functionName, args, via)) {
       // Standard and Stake add a settings entry: one more MetaEvidence change.
@@ -1955,7 +1798,9 @@ const ArbitrationGovernanceField = ({
       // again: un-edited sooner, they would show the ones from before.
       await onSaved({
         params: {
-          ...(registry.kind !== 'permanent' ? { arbitrator } : {}),
+          ...(registry.kind !== 'permanent'
+            ? { arbitrator: sentArbitrator }
+            : {}),
           arbitratorExtraData: extraData,
           ...(usesSingle ? { metaEvidenceURI: registration } : {}),
         },
@@ -1966,6 +1811,7 @@ const ArbitrationGovernanceField = ({
       if (!alive.current) return
       meta.reset()
       setSettingsEdited(false)
+      setCourtEdited(false)
     }
   }
 
@@ -2042,6 +1888,7 @@ const ArbitrationGovernanceField = ({
                 }
                 onChange={(value) => {
                   setSettingsEdited(true)
+                  setCourtEdited(true)
                   setCourtID(
                     String(typeof value === 'object' ? value.key : value),
                   )
@@ -2064,11 +1911,16 @@ const ArbitrationGovernanceField = ({
                 disabled={locked}
                 onChange={(event) => {
                   setSettingsEdited(true)
+                  setCourtEdited(true)
                   setJurors(event.currentTarget.value)
                 }}
                 placeholder="Number of jurors"
                 inputMode="numeric"
-                aria-invalid={Boolean(jurorCount.error)}
+                // Only a count being sent can be wrong: the list's own is
+                // sent back as it is, whatever it is.
+                aria-invalid={
+                  courtError !== undefined && Boolean(parseJurors(jurors).error)
+                }
               />
             </Stack>
           </TwoUp>
@@ -2153,8 +2005,9 @@ const GovernanceField = ({
   const [edited, setEdited] = useState(false)
   // A governor transfer takes a second, deliberate click.
   const [armed, setArmed] = useState(false)
-  // Whether the new governor has code on this chain; undefined until read.
-  const [governorHasCode, setGovernorHasCode] = useState<boolean>()
+  // Whether the new governor is a contract on this chain, with the address
+  // it was read for; undefined until read.
+  const [governorCheck, setGovernorCheck] = useState<CodeCheck>()
   // Follow the live value (and late reads such as token decimals) until edited.
   useEffect(() => {
     if (!edited) setValue(initial)
@@ -2191,11 +2044,11 @@ const GovernanceField = ({
     if (blocker || parsed.error !== undefined) return
     if (isGovernor && !armed) {
       setArmed(true)
-      setGovernorHasCode(undefined)
-      getPublicClient(wagmiConfig, { chainId: registry.chainId })
-        ?.getCode({ address: target as `0x${string}` })
-        .then((code) => setGovernorHasCode(Boolean(code && code !== '0x')))
-        .catch(() => setGovernorHasCode(undefined))
+      // readHasCode counts an EIP-7702 delegated account as the wallet it
+      // is, as the rest of the app does once that address governs.
+      readHasCode(registry.chainId, target)
+        .then((contract) => setGovernorCheck({ address: target, contract }))
+        .catch(() => setGovernorCheck({ address: target, contract: null }))
       return
     }
     if (await send(config.functionName, [parsed.value], via)) {
@@ -2255,8 +2108,11 @@ const GovernanceField = ({
                 {mode === 'send'
                   ? 'After it is mined, only that address can change the list.'
                   : 'Once the Safe executes it, only that address can change the list.'}
-                {governorHasCode === false &&
-                  ` There is no contract at that address on ${chainName(registry.chainId)}: fine for a personal wallet, but a Safe must exist on ${chainName(registry.chainId)} itself.`}
+                {newGovernorCodeNote(
+                  governorCheck,
+                  target,
+                  chainName(registry.chainId),
+                )}
               </Small>
             </GateRow>
           )}
@@ -2381,6 +2237,9 @@ const GovernanceDialog = ({
     void queryClient.invalidateQueries({
       queryKey: ['addressProfile', profileAddress],
     })
+    // The list page and the other pages that keep its MetaEvidence for a
+    // day read it again when next shown, not the file from before the save.
+    void markListSettingsStale(queryClient, registry)
     return queryClient.invalidateQueries({
       queryKey: ['governanceMetaEvidence', registry.chainId, registry.address],
     })
