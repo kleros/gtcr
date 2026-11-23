@@ -136,7 +136,8 @@ Principles, in order:
 1. **True data, labelled.** Every figure comes from the indexers or the chain, and every drawing says
    what it measures and over what window. Figures on one page describe the same scope.
 2. **Money and time are legible.** Deposits show total and breakdown before anything is signed;
-   deadlines read both ways (relative, absolute UTC on hover).
+   deadlines read both ways (relative, absolute UTC on hover). An amount someone is about to sign
+   for is exact: every digit, trailing zeros trimmed (3000 gwei reads 0.000003 xDAI, never 0).
 3. **Data first, words last.** One sentence under a title at most; explainers collapse into a pill.
 4. **Smooth.** Motion explains change: reveals, count-ups, rings drawing in, sliding indicators,
    hover lift. Reduced motion turns it off.
@@ -295,7 +296,11 @@ its own control next to the figures. Its "All chains" option carries the Ethereu
 together (`ChainStack`), so the glyph says what it covers; between 901 and 1099px and on phones the
 chip shows only that mark and its chevron.
 
-Focus everywhere is a 2px `primary` outline, 2px out (inset inside clipping tracks).
+Focus everywhere is a 2px `primary` outline, 2px out (inset inside clipping tracks). Tab follows
+what is drawn: where a narrow layout puts controls on other lines than the markup's order, the
+markup follows the narrow order (the list toolbar and the profile's activity at 720px and under,
+Browse's at 600px and under), never CSS `order` alone. Labels are 11px everywhere, the Stake tag
+at row size included.
 
 ## Addresses (round 5)
 
@@ -359,6 +364,9 @@ Focus everywhere is a 2px `primary` outline, 2px out (inset inside clipping trac
   hours (302,400 s)", "Stored as 10,000 basis points") and money ("Fee per juror").
 - A control that cannot be pressed stays focusable with `aria-disabled` and says why in the shared
   Tooltip, never in a native `title`.
+- A save that leaves the arbitrator, the court and the jurors alone sends them back exactly as the
+  chain holds them (`arbitrationExtraData` in `governance-params.ts`), so a policy-only change
+  never rewrites a list's arbitration settings, whatever its arbitrator's extra data looks like.
 - **Update list parameters.** A list's governor, once their wallet is connected, sees this
   secondary block button (layers icon) under the list's main action, on both list kinds and
   whatever chain the wallet is on (`components/curate/list-governance.tsx`). Whether the wallet
@@ -630,6 +638,10 @@ way (dashboard, Browse, registry pages, the profile, the landing page).
   buttons, so a phone held sideways keeps both columns. The lede under it, at most 54ch and
   balanced: "Curate verifies anything, at scale. Built to let good actors win: they get verified,
   or they get the bounty if they spot wrong entries."
+- **The pill over the title** (`pages/dashboard/live-pill.tsx`) says "Live", on a pulsing dot,
+  only of a load it has, recent and read without error: before the first load "Connecting to the
+  indexers" on a still dot; a read that failed with nothing to show "Indexers not answering"; an
+  older load or a failed refresh "Not live" with its age, as Browse's pill does.
 - **Open for verification** is not drawn at all when there is no bounty up for grabs (round 10).
   It opens the board's section with no box (round 6), centred on the page. There is no "Happening
   now" heading (Fortunato, after round 19): its own title is the section's, a 30px section title
@@ -728,8 +740,8 @@ way (dashboard, Browse, registry pages, the profile, the landing page).
   (175 for Stake's two coins), two sentences: "Found something that breaks the policy? Challenge it
   and win the bounty. A {cost} deposit keeps challenges serious; if jurors agree, you get
   {total}." Stake's total is what `PermanentGTCR.rule()` pays, per coin and never summed. A
-  native-coin amount that rounds to 0 at the precision shown is left out of the button, the phone
-  bar and the sentence. A removal request's sentence opens from the defender's side. Jurors are
+  native-coin amount below 0.00001 (what five decimals show as 0) is left out of the button, the
+  phone bar and the sentence; the dialog that signs states it exactly. A removal request's sentence opens from the defender's side. Jurors are
   named only where the arbitrator is Kleros; otherwise the copy says "the arbitrator".
 - **The history spans the page.** A rail sits beside it only while it holds a panel (appeal
   funding; Stake's withdrawal); an empty rail takes no room. On Stake, the court record and the
@@ -738,6 +750,12 @@ way (dashboard, Browse, registry pages, the profile, the landing page).
 - The countdown ring's caption is the dial plus 80px wide, so each end's date and its UTC stay on
   one line; its footnote is centred on the dial. A settled entry's date block is top-aligned with
   the eyebrow.
+- **Dialogs that send something** (challenge, removal, evidence, appeal funding). Escape, the
+  scrim and the close button close them, but once a justification or evidence is typed they ask
+  first ("Close this? Your justification will be lost."); a piece that was sent closes the dialog
+  without asking. A dialog stays busy until its transaction's outcome is known, a late receipt
+  included (followed for up to 15 minutes, `utils/wrap-with-toast.ts`), so nothing can be sent
+  twice; a transaction the wallet cancelled or replaced with another one never reads as confirmed.
 
 ## Launch page
 
@@ -746,6 +764,18 @@ way (dashboard, Browse, registry pages, the profile, the landing page).
   cards at all times. Choosing only adds the primary button beside the pill (on phones, on a line
   of its own), so on desktop choosing shifts nothing. Each element says the fate once: the verdict
   states it, the drawing names the events, the lines explain them. No figures and no minimums.
+
+## Submit page and list wizards
+
+- **The submit page keeps a draft** (`pages/submit-item/draft.ts`): what was typed stays in the
+  tab (per list, and per the values the form starts from, so a resubmission's prefill is never
+  replaced) through a reload, another chain picked in the app bar or a trip elsewhere in the app,
+  until the entry is sent, Cancel is confirmed or the form is cleared. Text only: a picked file is
+  never kept. A form that reopens from a draft says so in one muted line under its label
+  ("Restored the tag you started.", adding "; choose its files again" when a file was not kept),
+  with a quiet "Clear form" text action styled as the factory review's Edit.
+- A wizard's action bar moves one step per click, never two on a double click: the next step's
+  button can sit under the pointer (on phones the bar sticks to the bottom of the screen).
 
 ## Lists
 
@@ -835,7 +865,12 @@ way (dashboard, Browse, registry pages, the profile, the landing page).
   only: the figures, the challenge record and the badges stay all-time. A profile opens on 3Y (a
   record, not a live feed), kept in `?range=` when another is picked. A range with no action
   keeps the chart's height and says so; a list cut inside the range starts at the bucket after
-  the cut and names the dates it covers.
+  the cut and names the dates it covers, keeping the cut bucket (marked partial) when fewer than
+  two buckets follow it or none of them holds a listed action. On the busiest profiles all 120
+  listed actions can fall in the bucket that holds now: the chart then draws the listed span in
+  the next finer unit (a month by weeks, a week by days, a day by hours), so neither the chart
+  nor its switch disappears; only when every listed action is from the last hour does it say so
+  in words. A chain with none of the listed actions says that in its muted line.
 - **Activity search** (round 11): Browse's pill search between the kind filter and the layout
   control, 38px like their tracks; on its own line under them where the three do not fit, and
   always on a phone. It runs in the browser over the actions already read; every word must match,
