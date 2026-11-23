@@ -38,6 +38,13 @@
   Content-Type: text/markdown; charset=utf-8
   Cache-Control: public, max-age=3600
 
+# The skill's other references redirect to kleros/kleros-skills
+# (public/_redirects); this one is served from here, as upstream still names
+# the Gnosis list of lists Kleros replaced on 17 Nov 2026.
+/skills/kleros-curate/references/verify-your-list.md
+  Content-Type: text/markdown; charset=utf-8
+  Cache-Control: public, max-age=3600
+
 # Vite's build files (/assets/…) are cached for a year by one rule per file,
 # appended to the build's copy of this file by vite.config.ts: a /assets/*
 # rule would also cover the 404 a missing file gets (public/_redirects).

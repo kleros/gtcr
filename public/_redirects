@@ -9,5 +9,9 @@
 /agent.txt /llms.txt 200
 /agent-context /curate-agent-context.md 200
 /skills /guide 302
+# The skill's references come from kleros/kleros-skills, except a file kept in
+# public/skills/kleros-curate/references/ (verify-your-list.md: upstream still
+# names the Gnosis list of lists replaced on 17 Nov 2026), which this rule
+# does not cover because it exists.
 /skills/kleros-curate/references/* https://raw.githubusercontent.com/kleros/kleros-skills/master/kleros-curate/references/:splat 302
 /skills/feedback/* https://raw.githubusercontent.com/kleros/kleros-skills/master/feedback/:splat 302
