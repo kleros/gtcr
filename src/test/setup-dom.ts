@@ -6,8 +6,18 @@
  * observed element in view.
  */
 import '@testing-library/jest-dom/vitest'
+import React from 'react'
 import { cleanup } from '@testing-library/react'
 import { afterEach, vi } from 'vitest'
+
+// react-blockies (the account identicon) paints on a canvas, which jsdom
+// only has where the native `canvas` package is built: on some machines,
+// not in CI, which installs without build scripts. It renders as an empty
+// canvas here, so a test sees the same thing everywhere.
+vi.mock('react-blockies', () => ({
+  default: ({ className }: { className?: string }) =>
+    React.createElement('canvas', { className }),
+}))
 
 afterEach(() => {
   cleanup()
