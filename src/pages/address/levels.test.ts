@@ -1,13 +1,18 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import type { MedalKind } from 'components/curate/curator-medal'
+import { PROFILE_LIMIT } from './data'
+import { JURY_SEAT_LIMIT } from './jury'
 import { LEVELS, TOP_LEVEL, badgeLevel } from './levels'
+
+// The wagmi config reads window.location when it loads; nothing here signs.
+vi.mock('config/wagmi', () => ({ wagmiConfig: {} }))
 
 /** DESIGN.md, Curator profile → Levels: the count each level asks for. */
 const TABLE: [MedalKind, number[]][] = [
-  ['librarian', [1, 5, 25, 100, 500]],
-  ['sheriff', [1, 2, 5, 20, 50]],
-  ['maintainer', [1, 2, 10, 25, 100]],
-  ['juror', [1, 5, 10, 25, 100]],
+  ['librarian', [1, 5, 25, 100, 500, 1_000, 2_500, 5_000, 10_000, 25_000]],
+  ['sheriff', [1, 2, 5, 20, 50, 100, 250, 500, 1_000, 2_500]],
+  ['maintainer', [1, 2, 10, 25, 100, 200, 500, 1_000, 2_000, 5_000]],
+  ['juror', [1, 5, 10, 25, 100, 200, 500, 1_000, 2_000, 5_000]],
 ]
 
 const rows = TABLE.flatMap(([kind, thresholds]) =>
@@ -15,6 +20,11 @@ const rows = TABLE.flatMap(([kind, thresholds]) =>
 )
 
 describe('badgeLevel', () => {
+  it('has ten levels', () => {
+    expect(TOP_LEVEL).toBe(10)
+    for (const [kind] of TABLE) expect(LEVELS[kind]).toHaveLength(TOP_LEVEL)
+  })
+
   it.each(rows)(
     '$kind reaches level $level at $threshold',
     ({ kind, level, threshold }) => {
@@ -29,6 +39,25 @@ describe('badgeLevel', () => {
     for (let i = 1; i < steps.length; i += 1)
       expect(steps[i]).toBeGreaterThan(steps[i - 1])
   })
+
+  it.each(TABLE)(
+    '%s asks 2, 5, 10, 20 and 50 times level 5 for levels 6 to 10',
+    (kind) => {
+      const steps = LEVELS[kind]
+      expect(steps.slice(5)).toEqual(
+        [2, 5, 10, 20, 50].map((times) => steps[4] * times),
+      )
+    },
+  )
+
+  it.each(TABLE)(
+    "%s's top level is within what the profile reads on one chain",
+    (kind) => {
+      const top = LEVELS[kind][TOP_LEVEL - 1]
+      if (kind === 'juror') expect(top).toBeLessThanOrEqual(JURY_SEAT_LIMIT)
+      else expect(top).toBeLessThan(PROFILE_LIMIT)
+    },
+  )
 
   it('starts at level 0 with the bar running from zero to level 1', () => {
     expect(badgeLevel('librarian', 0)).toEqual({
@@ -47,6 +76,11 @@ describe('badgeLevel', () => {
     // Exactly on a threshold: the bar of the new level is empty.
     ['maintainer', 10, 3, 25, 0],
     ['juror', 99, 4, 100, 74 / 75],
+    // Past the old top (level 5): the busiest Librarian on 2026-11-24.
+    ['librarian', 6_009, 8, 10_000, 1_009 / 5_000],
+    ['sheriff', 150, 6, 250, 50 / 150],
+    ['maintainer', 500, 7, 1_000, 0],
+    ['juror', 505, 7, 1_000, 5 / 500],
   ] as const)(
     "runs %s's bar from its level's threshold to the next (%i)",
     (kind, count, level, next, share) => {

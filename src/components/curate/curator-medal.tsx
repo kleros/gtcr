@@ -26,7 +26,8 @@ import styled from 'styled-components'
  * Earned, a medal carries its level (round 12, pages/address/levels.ts) on
  * a small pip at its lower right: the numeral in the figure face on the same
  * primary glass with a lit rim, set in pixels, not in the medal's units, so
- * it reads the same at every size.
+ * it reads the same at every size. Level 10's two digits widen it into a
+ * pill.
  */
 
 export type MedalKind = 'librarian' | 'sheriff' | 'maintainer' | 'juror'

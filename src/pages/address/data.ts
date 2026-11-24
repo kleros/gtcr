@@ -41,8 +41,12 @@ const PROFILE_QUERY_TIMEOUT_MS = 10_000
 const PAGE_ROWS = 1000
 /** Pages read at once after the first one came back full. */
 const PAGE_BATCH = 4
-/** Envio takes any offset; The Graph skips at most 5,000 rows. */
-const ENVIO_MAX_PAGES = 20
+/**
+ * Envio takes any offset; The Graph skips at most 5,000 rows. 30 pages
+ * count the Librarian's top level (25,000 submissions, levels.ts) on one
+ * chain; the busiest Librarian had 6,009 submissions (2026-11-24).
+ */
+const ENVIO_MAX_PAGES = 30
 const PERMANENT_MAX_PAGES = 6
 /**
  * Standard requests read per chain at most (Stake Curate: 6,000).
@@ -152,7 +156,7 @@ const PERMANENT_PROFILE_QUERY = gql`
  * The entries behind the listed actions, read once the actions are known:
  * their identifying fields name each row. Asked for 120 entries at most per
  * chain (one query each), never inside the paged queries above, which would
- * carry every field of up to 20,000 requests.
+ * carry every field of up to 30,000 requests.
  */
 const ENTRY_NAMES_QUERY = gql`
   query EntryNames($ids: [String!]!, $chainId: Int!) {

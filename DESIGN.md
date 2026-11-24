@@ -829,22 +829,27 @@ way (dashboard, Browse, registry pages, the profile, the landing page).
   milled seal and the scales (seats in Curate disputes). Unearned, the medal is recessed glass
   with a faint glyph inside a progress ring in `status-window`. Earned, it carries its level on a
   19px pip at its lower right: the numeral in the figure face on the primary glass, lit rim, set
-  in pixels so it reads the same at every size.
-- **Levels** (round 12, `pages/address/levels.ts`): five per badge, earned from level 1. The
-  owner fixed level 2 for two of them (Librarian at 5 submissions, Sheriff at 2 challenges); the
-  rest of each ladder comes from the indexers' own counts (Standard lists on Ethereum and Gnosis,
-  the court index's seats in Curate disputes, read 2026-11-19), so a level is about as hard on
-  every badge: of those who did the thing once, about half or more reach level 2, a quarter to two
-  fifths level 3, one in six level 4, one in twelve to twenty level 5. "All chains" counts the
-  mainnets only (Sepolia shows its own counts when picked). A badge's bar runs from its level's
-  threshold to the next.
+  in pixels so it reads the same at every size; level 10 widens it into a pill.
+- **Levels** (round 12, `pages/address/levels.ts`; ten since the owner's note before launch that
+  some curators had reached the top of five): ten per badge, earned from level 1. The owner fixed
+  level 2 for two of them (Librarian at 5 submissions, Sheriff at 2 challenges); levels 3 to 5
+  come from the indexers' own counts (Standard lists on Ethereum and Gnosis, the court index's
+  seats in Curate disputes, read 2026-11-19), so a level is about as hard on every badge: of those
+  who did the thing once, about half or more reach level 2, a quarter to two fifths level 3, one in
+  six level 4, one in twelve to twenty level 5. Levels 6 to 10 ask for 2, 5, 10, 20 and 50 times
+  level 5, so every badge keeps those proportions and each level asks about twice the one before.
+  Read again on 2026-11-24, one in twenty to fifty reach level 6, and the busiest address on each
+  badge stands at level 6 to 8, where five levels had left 35 badges at the top. The profile reads
+  up to 30,000 Standard requests per chain, so the Librarian's 25,000 can be counted on one chain,
+  and up to 10,000 drawn seats. "All chains" counts the mainnets only (Sepolia shows its own
+  counts when picked). A badge's bar runs from its level's threshold to the next.
 
-  | Level | 1 | 2 | 3 | 4 | 5 |
-  |---|---|---|---|---|---|
-  | Librarian (submissions) | 1 | 5 | 25 | 100 | 500 |
-  | Sheriff (challenges) | 1 | 2 | 5 | 20 | 50 |
-  | Maintainer (removal requests) | 1 | 2 | 10 | 25 | 100 |
-  | Juror on Curate (seats) | 1 | 5 | 10 | 25 | 100 |
+  | Level | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 |
+  |---|---|---|---|---|---|---|---|---|---|---|
+  | Librarian (submissions) | 1 | 5 | 25 | 100 | 500 | 1,000 | 2,500 | 5,000 | 10,000 | 25,000 |
+  | Sheriff (challenges) | 1 | 2 | 5 | 20 | 50 | 100 | 250 | 500 | 1,000 | 2,500 |
+  | Maintainer (removal requests) | 1 | 2 | 10 | 25 | 100 | 200 | 500 | 1,000 | 2,000 | 5,000 |
+  | Juror on Curate (seats) | 1 | 5 | 10 | 25 | 100 | 200 | 500 | 1,000 | 2,000 | 5,000 |
 
 - **Earned badges lead the profile**: under the address, each earned medal (44px) with its name
   and "Level N" under it, the count and the next level on hover and focus. On phones (520px and
@@ -853,7 +858,7 @@ way (dashboard, Browse, registry pages, the profile, the landing page).
 - **The Badges card** lists all four the same way: the medal with its level, the name with a
   "Level N" tag in the accent, what the next level asks for ("Level 3 at 25 submissions"), then
   an LED bar of the count against it and the figure ("23 / 25"); at the top level, "Top level ·
-  500+ submissions", the count alone and a full bar; at level 0, "Not started". Its head counts
+  25,000+ submissions", the count alone and a full bar; at level 0, "Not started". Its head counts
   how many are earned. The juror row is the same by seats, with the record under its bar (disputes
   drawn in, seats voted, still voting) and its tooltip on a dotted underline under the name, not a
   help icon, which pushed the tag under the name.
