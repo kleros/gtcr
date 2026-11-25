@@ -119,10 +119,17 @@ const ROUTE_PRELOADS: { pattern: string; pages: string[] }[] = [
  * are the build's own (route patterns, chunk names, the base path), and are
  * escaped all the same.
  */
+const SCRIPT_ESCAPES: Record<string, string> = {
+  '<': String.raw`\u003C`,
+  '>': String.raw`\u003E`,
+  '/': String.raw`\u002F`,
+  '\u2028': String.raw`\u2028`,
+  '\u2029': String.raw`\u2029`,
+}
 const scriptJson = (value: unknown): string =>
   JSON.stringify(value).replace(
     /[<>/\u2028\u2029]/g,
-    (char) => `\\u${char.charCodeAt(0).toString(16).padStart(4, '0')}`,
+    (char) => SCRIPT_ESCAPES[char],
   )
 
 const routePreload = (origins: string[]): Plugin => {
