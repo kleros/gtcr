@@ -749,6 +749,26 @@ way (dashboard, Browse, registry pages, the profile, the landing page).
   funding; Stake's withdrawal); an empty rail takes no room. On Stake, the court record and the
   rail's first panel end level when their resting heights are within 64px; further apart (the jury
   open) each keeps its own height.
+- **Evidence text** (`components/curate/evidence-text.tsx`, both histories): text that can pass six
+  lines on a phone (over 240 characters or 6 lines) opens at six lines, with "Read all" only when
+  the clamp hides something (measured); shorter text is never clamped, so nothing in it is clipped.
+  A description with Markdown in it renders as CommonMark (`evidence-markdown.tsx`, a 36 KB chunk
+  loaded only then, as a background load: a tab on an older release keeps the page and shows the
+  text plain): no tables, raw HTML reads as the text it is, and indented code, setext headings and
+  link definitions are off, as plain evidence trips them. Headings are bold lines, every line break
+  shows, a bare URL stays whole whatever `*` or `_` its address holds, links keep the plain text's
+  rules (https and ipfs:// only, through the external-link warning), a link whose words are not its
+  address is followed by its host (isolated, so a right-to-left override cannot reverse it), and an
+  image is a link, never loaded. Text past 5,000 characters, 200 lines, 200 of `*` `_` `` ` `` `[`,
+  100 quote or list markers, 8 of them opening one line, or 32 columns of indentation stays plain:
+  such shapes freeze or crash the parser (one line of `- - - …` ran 90 s), and real evidence peaks
+  at 4,459 characters, 59 lines, 30 signs, 16 markers and 14 columns.
+- **The evidence form takes Markdown** (the entry page's composer; the evidence, challenge and
+  removal dialogs). Its placeholder ends "Markdown works." and "Preview" (beside "Attach a file"
+  in the composer, beside the label in a dialog; a toggle, tinted while on) shows the description
+  through the history's own component, clamp and limits included: a sent piece cannot be changed.
+  The field stays mounted while hidden (its undo history, its height); emptying it, or a send
+  refused for the text, goes back to writing, with the caret in the text.
 - The countdown ring's caption is the dial plus 80px wide, so each end's date and its UTC stay on
   one line; its footnote is centred on the dial. A settled entry's date block is top-aligned with
   the eyebrow.

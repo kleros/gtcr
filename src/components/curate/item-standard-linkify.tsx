@@ -46,6 +46,9 @@ const trailingLength = (text: string): number => {
 const Link = styled.a`
   color: var(--color-primary);
   overflow-wrap: anywhere;
+  /* Text around it cannot reorder the address (a U+202E override), and its
+     own text ends any override it holds. */
+  unicode-bidi: isolate;
   text-decoration: underline;
   text-decoration-color: color-mix(in srgb, currentColor 40%, transparent);
   text-underline-offset: 2px;
@@ -56,7 +59,7 @@ const Link = styled.a`
   }
 `
 
-const EvidenceLink = ({
+export const EvidenceLink = ({
   href,
   children,
 }: {
@@ -103,21 +106,45 @@ const EvidenceLink = ({
   )
 }
 
-export const linkify = (text: string): React.ReactNode[] =>
-  text.split(URL_PATTERN).flatMap((part, index): React.ReactNode[] => {
+/**
+ * What a URL written in evidence opens: an ipfs:// URI through the gateway,
+ * a web address only when it is https. Anything else opens nothing.
+ */
+export const evidenceHref = (url: string): string | undefined => {
+  const ipfs = /^ipfs:\/\//i.test(url)
+  if (ipfs && url.length === 'ipfs://'.length) return undefined
+  const href = ipfs ? parseIpfs(url) : url
+  return isSafeNavigationUrl(href) ? href : undefined
+}
+
+/** A URL found in text: as written, and what it opens. */
+export interface UrlPiece {
+  url: string
+  href: string
+}
+
+/** Text cut at each URL that opens something, trailing punctuation left out. */
+export const splitUrls = (text: string): Array<string | UrlPiece> =>
+  text.split(URL_PATTERN).flatMap((part, index): Array<string | UrlPiece> => {
     // split() with a capture group: odd indexes are the matched URLs.
     if (index % 2 === 0) return part ? [part] : []
     const cut = trailingLength(part)
     const trail = part.slice(part.length - cut)
     const url = part.slice(0, part.length - cut)
-    const href = /^ipfs:\/\//i.test(url) ? parseIpfs(url) : url
-    if (!isSafeNavigationUrl(href) || /^ipfs:\/\/$/i.test(url)) return [part]
-    return [
-      <EvidenceLink key={index} href={href}>
-        {url}
-      </EvidenceLink>,
-      ...(trail ? [trail] : []),
-    ]
+    const href = evidenceHref(url)
+    if (!href) return [part]
+    return trail ? [{ url, href }, trail] : [{ url, href }]
   })
+
+export const linkify = (text: string): React.ReactNode[] =>
+  splitUrls(text).map((piece, index) =>
+    typeof piece === 'string' ? (
+      piece
+    ) : (
+      <EvidenceLink key={index} href={piece.href}>
+        {piece.url}
+      </EvidenceLink>
+    ),
+  )
 
 export default linkify

@@ -13,14 +13,22 @@ let navigatedAt = 0
 /** How long after a route change a failed load counts as that navigation's. */
 const NAVIGATION_WINDOW_MS = 10_000
 
+/**
+ * Code a page loads by itself while in view, not for a click (the evidence
+ * Markdown renderer, once a description needs it), counted with the
+ * preloads: in a tab on an older release its failure keeps the page, and a
+ * draft in it, in view. The caller shows something else instead.
+ */
+export const loadInBackground = <T>(load: () => Promise<T>): Promise<T> => {
+  inFlight += 1
+  return load().finally(() => {
+    inFlight -= 1
+  })
+}
+
 /** Loads a page's code ahead of a likely click, quietly. */
 export const preloadInBackground = (load: () => Promise<unknown>): void => {
-  inFlight += 1
-  load()
-    .finally(() => {
-      inFlight -= 1
-    })
-    .catch(() => undefined)
+  loadInBackground(load).catch(() => undefined)
 }
 
 /** Called on every route change. */
