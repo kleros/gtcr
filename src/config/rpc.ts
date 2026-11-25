@@ -1,13 +1,16 @@
 import { fallback, http, type Transport } from 'wagmi'
 import { mainnet, gnosis, sepolia, SUPPORTED_CHAINS } from './chains'
 
-const alchemyApiKey =
+// Optional: without a key every chain falls back to the public RPCs below,
+// so a missing key degrades to slower reads instead of a blank app.
+const alchemyApiKey: string | undefined =
   import.meta.env.REACT_APP_ALCHEMY_API_KEY ||
-  process.env.REACT_APP_ALCHEMY_API_KEY
+  process.env.REACT_APP_ALCHEMY_API_KEY ||
+  undefined
 
-if (!alchemyApiKey)
-  throw new Error(
-    'Alchemy API key is not set in REACT_APP_ALCHEMY_API_KEY environment variable.',
+if (!alchemyApiKey && import.meta.env.DEV)
+  console.warn(
+    'REACT_APP_ALCHEMY_API_KEY is not set: using public RPC endpoints only.',
   )
 
 const alchemyChainSlugs: Record<number, string> = {
@@ -18,7 +21,7 @@ const alchemyChainSlugs: Record<number, string> = {
 
 export const getAlchemyRpcUrl = (chainId: number): string | undefined => {
   const slug = alchemyChainSlugs[chainId]
-  if (!slug) return undefined
+  if (!slug || !alchemyApiKey) return undefined
   return `https://${slug}.g.alchemy.com/v2/${alchemyApiKey}`
 }
 
@@ -55,6 +58,10 @@ const getOrderedRpcEndpoints = (chainId: number): RpcEndpoint[] => {
     ? [...publicEndpoint, ...alchemyEndpoint]
     : [...alchemyEndpoint, ...publicEndpoint]
 }
+
+/** The same endpoints as the transports, in the same order, as bare URLs. */
+export const getRpcUrls = (chainId: number): string[] =>
+  getOrderedRpcEndpoints(chainId).map(({ url }) => url)
 
 export const transports: Record<number, Transport> = Object.fromEntries(
   SUPPORTED_CHAINS.map((chain) => [

@@ -1,114 +1,97 @@
 import React from 'react'
 import styled from 'styled-components'
-import { Modal, Button } from 'components/ui'
-import Icon from 'components/ui/Icon'
+import { Modal } from 'components/ui'
+import { CurateIcon } from 'components/curate/icons'
+import { Button, Label, StatusDot } from 'components/curate/primitives'
 
-const StyledModal = styled(Modal)`
-  & > .ui-modal-content {
-    border-radius: 12px;
-    box-shadow: 0px 6px 36px ${({ theme }) => theme.shadowColor};
-    background: ${({ theme }) => theme.componentBackground};
+/*
+ * Confirmation before leaving for an external site. The destination leads:
+ * its domain as the one large line, then the exact address in mono with the
+ * domain lifted out of it, so a misspelt or look-alike domain is easy to see
+ * before anything opens.
+ */
 
-    & > .ui-modal-body {
-      padding: 24px;
-    }
-
-    & > .ui-modal-close {
-      color: ${({ theme }) => theme.primaryColor};
-    }
-  }
-`
-
-const Header = styled.div`
+const Destination = styled.div`
   display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 16px;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
 `
 
-const WarningIcon = styled(Icon)`
-  font-size: 24px;
-  color: ${({ theme }) => theme.warningColor};
+const Host = styled.div`
+  color: var(--color-text);
+  font-family: var(--font-display);
+  font-size: clamp(24px, 1.2vw + 18px, 30px);
+  line-height: 1.1;
+  font-weight: 500;
+  letter-spacing: -0.03em;
+  overflow-wrap: anywhere;
 `
 
-const Title = styled.h3`
-  color: ${({ theme }) => theme.textPrimary};
-  font-size: 18px;
-  font-weight: 600;
-  margin: 0;
-`
+const Well = styled.code`
+  display: block;
+  padding: 12px 14px;
+  border-radius: var(--radius);
+  background: var(--color-raised);
+  box-shadow: inset 0 0 0 1px var(--glass-border);
+  color: var(--color-muted);
+  font-family: var(--font-mono);
+  font-size: var(--fs-data);
+  line-height: var(--lh-data);
+  overflow-wrap: anywhere;
 
-const Message = styled.p`
-  color: ${({ theme }) => theme.textPrimary};
-  font-size: 14px;
-  line-height: 1.6;
-  margin: 0 0 16px 0;
-`
-
-const UrlContainer = styled.div`
-  background-color: ${({ theme }) => theme.elevatedBackground};
-  border: 1px solid ${({ theme }) => theme.borderColor};
-  border-radius: 8px;
-  padding: 12px;
-  margin: 16px 0;
-  word-break: break-all;
-`
-
-const Url = styled.code`
-  color: ${({ theme }) => theme.primaryColor};
-  font-size: 13px;
-  font-family: monospace;
-`
-
-const SafetyTips = styled.div`
-  color: ${({ theme }) => theme.textPrimary};
-  font-size: 13px;
-  line-height: 1.6;
-  margin-bottom: 8px;
-
-  strong {
-    display: block;
-    margin-bottom: 8px;
+  b {
+    color: var(--color-text);
+    font-weight: 500;
   }
 
-  ul {
-    margin: 0;
-    padding-left: 20px;
+  i {
+    color: var(--color-faint);
+    font-style: normal;
   }
 `
 
-const ButtonContainer = styled.div`
+const Hint = styled.p`
   display: flex;
-  gap: 12px;
+  align-items: baseline;
+  gap: 10px;
+  margin: 18px 0 0;
+  color: var(--color-muted);
+  font-size: var(--fs-small);
+  line-height: var(--lh-small);
+
+  > span:first-child {
+    transform: translateY(-1px);
+  }
+`
+
+const Actions = styled.div`
+  display: flex;
   justify-content: flex-end;
-  margin-top: 24px;
-`
+  flex-wrap: wrap;
+  gap: 8px;
+  width: 100%;
 
-const CancelButton = styled(Button)`
-  background-color: transparent !important;
-  border-color: ${({ theme }) => theme.borderColor} !important;
-  color: ${({ theme }) => theme.textPrimary} !important;
-
-  &:hover,
-  &:focus {
-    background-color: transparent !important;
-    border-color: ${({ theme }) => theme.primaryColor} !important;
-    color: ${({ theme }) => theme.primaryColor} !important;
+  @media (max-width: 480px) {
+    > button {
+      flex: 1 1 auto;
+    }
   }
 `
 
-const ConfirmButton = styled(Button)`
-  background-color: ${({ theme }) => theme.buttonPrimaryBg} !important;
-  border-color: ${({ theme }) => theme.buttonPrimaryBg} !important;
-  color: ${({ theme }) => theme.buttonPrimaryText} !important;
-
-  &:hover,
-  &:focus {
-    background-color: ${({ theme }) => theme.buttonPrimaryHoverBg} !important;
-    border-color: ${({ theme }) => theme.buttonPrimaryHoverBg} !important;
-    color: ${({ theme }) => theme.buttonPrimaryText} !important;
+/** Splits a URL into what the browser will open: scheme, host, the rest. */
+const parts = (url: string) => {
+  try {
+    const parsed = new URL(url.trim())
+    return {
+      scheme: `${parsed.protocol}//`,
+      host: parsed.host,
+      rest: `${parsed.pathname === '/' ? '' : parsed.pathname}${parsed.search}${parsed.hash}`,
+    }
+  } catch {
+    return null
   }
-`
+}
 
 interface ExternalLinkWarningProps {
   visible: boolean
@@ -122,44 +105,60 @@ const ExternalLinkWarning = ({
   url,
   onConfirm,
   onCancel,
-}: ExternalLinkWarningProps) => (
-  <StyledModal
-    visible={visible}
-    footer={null}
-    onCancel={onCancel}
-    width={480}
-    centered
-  >
-    <Header>
-      <WarningIcon type="warning" />
-      <Title>External Link Warning</Title>
-    </Header>
-
-    <Message>
-      You are about to navigate to an external website. Please verify this is a
-      trusted destination before proceeding.
-    </Message>
-
-    <UrlContainer>
-      <Url>{url}</Url>
-    </UrlContainer>
-
-    <SafetyTips>
-      <strong>Safety Tips:</strong>
-      <ul>
-        <li>Verify the domain matches your expected destination</li>
-        <li>Check for suspicious characters or misspellings</li>
-        <li>Only proceed if you trust this website</li>
-      </ul>
-    </SafetyTips>
-
-    <ButtonContainer>
-      <CancelButton onClick={onCancel}>Cancel</CancelButton>
-      <ConfirmButton type="primary" onClick={onConfirm}>
-        Continue to External Site
-      </ConfirmButton>
-    </ButtonContainer>
-  </StyledModal>
-)
+}: ExternalLinkWarningProps) => {
+  const split = parts(url)
+  return (
+    <Modal
+      visible={visible}
+      title="Leaving Kleros Curate"
+      onCancel={onCancel}
+      width={480}
+      centered
+      footer={
+        <Actions>
+          <Button
+            type="button"
+            $variant="secondary"
+            $size="sm"
+            onClick={onCancel}
+          >
+            Stay here
+          </Button>
+          <Button
+            type="button"
+            $variant="primary"
+            $size="sm"
+            onClick={onConfirm}
+          >
+            Open site
+            <CurateIcon name="external" size={14} />
+          </Button>
+        </Actions>
+      }
+    >
+      <Destination>
+        <Label $tone="faint">You are opening</Label>
+        <Host>{split?.host || url}</Host>
+        <Well>
+          {split ? (
+            <>
+              <i>{split.scheme}</i>
+              <b>{split.host}</b>
+              {split.rest}
+            </>
+          ) : (
+            url
+          )}
+        </Well>
+      </Destination>
+      <Hint>
+        <StatusDot $tone="contested" aria-hidden />
+        <span>
+          Check the domain letter by letter and open it only if you trust it.
+        </span>
+      </Hint>
+    </Modal>
+  )
+}
 
 export default ExternalLinkWarning

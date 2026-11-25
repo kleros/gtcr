@@ -3,14 +3,15 @@ import { useLocation } from 'react-router-dom'
 
 /**
  * Extract the chain ID from the current URL path.
- * Matches /tcr/:chainId/..., /factory/:chainId, /factory-permanent/:chainId.
+ * Matches /tcr/:chainId/..., /factory/:chainId, /factory-permanent/:chainId
+ * and /launch/:chainId.
  * @returns {number|null} The chain ID from the URL, or null if not found.
  */
 const useUrlChainId = () => {
   const location = useLocation()
   return useMemo(() => {
     const match = location.pathname.match(
-      /\/(?:tcr|factory(?:-permanent)?)\/(\d+)/,
+      /^\/(?:tcr|factory(?:-permanent)?|launch)\/(\d+)/,
     )
     return match ? Number(match[1]) : null
   }, [location.pathname])

@@ -20,6 +20,11 @@ interface ResolveStashedFilesParams {
  * IPFS under the role appropriate for its column type and persisting the
  * resulting URI back into form state so a retry after a tx failure does
  * not re-upload. Returns the column-keyed map of resolved string values.
+ *
+ * `setFieldValue` gets the column's label. Formik's own would read a label
+ * with a dot or a bracket ("No. of tokens") as a path and store the URI
+ * where the form never reads it, so a form passes a setter that stores it
+ * under the label as one key (see fieldPath in pages/submit-item/form.ts).
  */
 export const resolveStashedFiles = async ({
   columns,

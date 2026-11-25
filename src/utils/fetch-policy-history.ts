@@ -320,7 +320,7 @@ const buildEntries = async (
 }
 
 /**
- * Fetches the registration-policy history for a TCR / LightTCR / PermanentTCR
+ * Fetches the registration-policy history for a TCR / StandardTCR / PermanentTCR
  * registry by reading MetaEvidence events from the chain.
  *
  * @param registryAddress - The registry contract address.

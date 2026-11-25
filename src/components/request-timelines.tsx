@@ -1,20 +1,9 @@
-import React, { useMemo, useState, useEffect } from 'react'
-import styled, { css } from 'styled-components'
-import { smallScreenStyle } from 'styles/small-screen-style'
-import {
-  Timeline as UITimeline,
-  Card,
-  Skeleton,
-  Typography,
-  Divider,
-  Button,
-  Collapse,
-  Row,
-  Col,
-} from 'components/ui'
-import Icon from 'components/ui/Icon'
+import React, { useMemo, useState } from 'react'
+import styled from 'styled-components'
+import { useParams } from 'react-router-dom'
 import useUrlChainId from 'hooks/use-url-chain-id'
-import ETHAddress from 'components/eth-address'
+import useUnindexedEvidence from 'hooks/use-unindexed-evidence'
+import { useDisputeJurors } from 'hooks/use-dispute-jury'
 import {
   CONTRACT_STATUS,
   REQUEST_TYPE_LABEL,
@@ -23,76 +12,55 @@ import {
 } from 'utils/item-status'
 import { capitalizeFirstLetter } from 'utils/string'
 import { getTxPage } from 'utils/network-utils'
-import { parseIpfs } from 'utils/ipfs-parse'
-import EvidenceFileLink from 'components/evidence-file-link'
-import ClassicEvidenceModal from 'pages/item-details/modals/evidence'
-import LightEvidenceModal from 'pages/light-item-details/modals/evidence'
 import toOrdinal from 'utils/ordinal'
+import EvidenceFileLink, {
+  EvidenceFileUnavailable,
+} from 'components/evidence-file-link'
+import StandardEvidenceModal from 'pages/standard-item-details/modals/evidence'
+import { klerosAddresses } from 'config/tcr-addresses'
+import { CurateIcon } from 'components/curate/icons'
+import {
+  Chip,
+  SkeletonBlock,
+  Small,
+  StatusDot,
+  Surface,
+  type StatusTone,
+} from 'components/curate/primitives'
+import {
+  Timeline,
+  TimelineEvent,
+  TimelineQuote,
+} from 'components/curate/item-standard-timeline'
+import { AddressLink } from 'components/curate/item-standard-fields'
+import { toSeconds } from 'components/curate/item-standard-format'
+import { linkify } from 'components/curate/item-standard-linkify'
+import {
+  EVIDENCE_HISTORY_ID,
+  EvidenceComposerCollapse,
+  openEvidenceComposer,
+} from 'components/inline-evidence-composer'
+import {
+  EvidencePartyBadge,
+  type EvidenceParty,
+} from 'components/curate/evidence-party-badge'
 
-const StyledText = styled(Typography.Text)`
-  text-transform: capitalize;
-`
+/*
+ * An entry's history: one panel, one group per request (newest first), each
+ * a glowing vertical timeline of its submission, evidence, rulings, appeals
+ * and resolution with absolute UTC dates and the court case linked; then the
+ * inline evidence composer, folded to one row, while a request is open.
+ * Used by the Standard item page. The case link sits on the
+ * event that opened the dispute (the challenge), never on the submission.
+ *
+ * Each piece of evidence says who filed it with a badge on its own row
+ * (round 3 of the design review), so a reader never has to work out whether
+ * an address was the submitter, the challenger or one of the jurors the
+ * court drew. The history is also where "Read evidence" lands, which is why
+ * its container takes the focus with its id.
+ */
 
-const StyledCard = styled(Card)`
-  cursor: default;
-  background: ${({ theme }) => theme.componentBackground} !important;
-  border-color: ${({ theme }) => theme.evidenceCardBorder} !important;
-
-  & > .ui-card-head {
-    background: ${({ theme }) => theme.cardHeaderGradient} !important;
-    border-color: transparent !important;
-    color: #ffffff !important;
-  }
-
-  & > .ui-card-head .ui-card-head-title {
-    color: #ffffff !important;
-  }
-
-  & > .ui-card-head .ui-card-extra a {
-    color: ${({ theme }) => theme.cardHeaderLinkColor} !important;
-
-    &:hover {
-      color: ${({ theme }) => theme.cardHeaderLinkHoverColor} !important;
-    }
-  }
-
-  & > .ui-card-body {
-    background: ${({ theme }) => theme.componentBackground} !important;
-  }
-
-  .ui-card-meta-description {
-    color: ${({ theme }) => theme.textSecondary} !important;
-
-    a {
-      text-decoration: none;
-
-      &:hover {
-        text-decoration: underline;
-      }
-    }
-  }
-
-  ${smallScreenStyle(
-    () => css`
-      & > .ui-card-head > .ui-card-head-wrapper {
-        flex-wrap: wrap;
-      }
-      & > .ui-card-head > .ui-card-head-wrapper > .ui-card-head-title {
-        white-space: normal;
-      }
-    `,
-  )}
-`
-
-const StyledEvidenceTitle = styled.div`
-  white-space: pre-line;
-  font-weight: 400;
-  color: ${({ theme }) => theme.textPrimary};
-`
-
-const secondTimestamp = (timestamp: string | number | null | undefined) =>
-  ` - ${new Date(new Date(Number(timestamp) * 1000)).toUTCString()}`
-
+/** Round fields the subgraph returns beyond the shared SubgraphRound. */
 interface TimelineRound extends SubgraphRound {
   txHashAppealPossible?: string | null
   appealedAt?: string | null
@@ -112,7 +80,8 @@ interface TimelineEvidenceItem {
   fileTypeExtension: string | null
 }
 
-interface TimelineRequest extends SubgraphRequest {
+/** Request fields the subgraph returns beyond the shared SubgraphRequest. */
+export interface TimelineRequest extends SubgraphRequest {
   requestType: string
   creationTx: string
   resolutionTime?: string | null
@@ -120,6 +89,11 @@ interface TimelineRequest extends SubgraphRequest {
   disputeOutcome?: string | null
   evidenceGroup: { id?: string; evidences: TimelineEvidenceItem[] }
   rounds: TimelineRound[]
+  disputeID?: string
+  arbitrator?: string
+  /** Standard only: when the request was challenged, and the transaction. */
+  challengeTime?: string | null
+  txHashChallenge?: string | null
 }
 
 interface AppealPossibleLog {
@@ -147,6 +121,14 @@ interface EvidenceLog {
   party: string
 }
 
+interface ChallengeLog {
+  name: 'Challenge'
+  timestamp: string
+  transactionHash: string
+  /** The justification filed in the same transaction, shown as its quote. */
+  evidence?: EvidenceLog
+}
+
 interface ResolutionLog {
   name: 'Resolution'
   timestamp?: string | null
@@ -155,27 +137,138 @@ interface ResolutionLog {
 }
 
 type TimelineLog =
+  | ChallengeLog
   | AppealPossibleLog
   | AppealDecisionLog
   | EvidenceLog
   | ResolutionLog
 
-interface EvidenceFile {
-  title?: string | null
-  description?: string | null
-  fileURI?: string | null
-  fileTypeExtension?: string | null
+/** The case on the Kleros court site, when the arbitrator is Kleros. */
+const useCaseLink = (request?: TimelineRequest) => {
+  const networkId = useUrlChainId()
+  if (!request) return undefined
+  const { arbitrator, uiURL } =
+    (networkId && klerosAddresses[networkId as keyof typeof klerosAddresses]) ||
+    {}
+  // A disputed request always has a case, and the arbitrator numbers its
+  // first one 0 (request-facts.ts): the request being disputed is what says
+  // there is a case to link, never the number it was given.
+  if (!request.disputed || request.disputeID === undefined) return undefined
+  const id = String(request.disputeID)
+  const href =
+    uiURL && arbitrator?.toLowerCase() === request.arbitrator?.toLowerCase()
+      ? uiURL.replace(':disputeID', id)
+      : undefined
+  return { id, href }
+}
+
+const CaseLink = ({ id, href }: { id: string; href?: string }) =>
+  href ? (
+    <a href={href} target="_blank" rel="noopener noreferrer">
+      Case {id}
+      <CurateIcon name="external" size={12} />
+    </a>
+  ) : (
+    <span>Case {id}</span>
+  )
+
+const Clamp = styled.p<{ $clamped: boolean }>`
+  ${({ $clamped }) =>
+    $clamped &&
+    `
+    display: -webkit-box;
+    -webkit-line-clamp: 6;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  `}
+`
+
+const MoreButton = styled.button`
+  /* A 24px tap target without moving the line: padding out, margin back. */
+  padding: 3px 0;
+  margin: -3px 0;
+  border: 0;
+  background: none;
+  color: var(--color-primary);
+  font-size: var(--fs-small);
+  line-height: var(--lh-small);
+  font-weight: 500;
+  cursor: pointer;
+
+  &:hover {
+    text-decoration: underline;
+  }
+`
+
+/**
+ * Long evidence opens at six lines; the rest is one click away. URLs are
+ * links; tabbing onto one hidden by the clamp opens the text first.
+ */
+const EvidenceText = ({ text }: { text: string }) => {
+  const long = text.length > 420 || text.split('\n').length > 6
+  const [expanded, setExpanded] = useState(false)
+  const content = useMemo(() => linkify(text), [text])
+  return (
+    <>
+      <Clamp
+        $clamped={long && !expanded}
+        onFocus={() => {
+          if (long) setExpanded(true)
+        }}
+      >
+        {content}
+      </Clamp>
+      {long && (
+        <MoreButton
+          type="button"
+          aria-expanded={expanded}
+          onClick={() => setExpanded((value) => !value)}
+        >
+          {expanded ? 'Show less' : 'Read all'}
+        </MoreButton>
+      )}
+    </>
+  )
+}
+
+/** An evidence's own title (a challenge justification's too), in its quote. */
+const QuoteTitle = styled.span`
+  /* The text's own measure, so a long title wraps with the text under it. */
+  max-width: 68ch;
+  color: var(--color-text);
+  font-size: var(--fs-body);
+  line-height: 22px;
+  font-weight: 500;
+  overflow-wrap: anywhere;
+`
+
+const rulingSentence = (ruling: string, isRegistration: boolean): string => {
+  if (ruling === SUBGRAPH_RULING.NONE) return 'Jurors refused to rule'
+  if (ruling === SUBGRAPH_RULING.ACCEPT)
+    return `Jurors ruled for the ${isRegistration ? 'submitter' : 'requester'}`
+  if (ruling === SUBGRAPH_RULING.REJECT)
+    return 'Jurors ruled for the challenger'
+  return 'Jurors gave an unknown ruling'
 }
 
 interface TimelineProps {
   request: TimelineRequest
   item: SubgraphItem
   metaEvidence?: MetaEvidence
+  /** The page already links this request's case (the hero's chip). */
+  hideCase?: boolean
 }
 
-const Timeline = ({ request, item, metaEvidence }: TimelineProps) => {
+const RequestTimeline = ({
+  request,
+  item,
+  metaEvidence,
+  hideCase = false,
+}: TimelineProps) => {
   const networkId = useUrlChainId()
-  const [evidenceMap, setEvidenceMap] = useState<Record<string, EvidenceFile>>()
+  const { tcrAddress } = useParams<{ tcrAddress: string }>()
+  const disputeCase = useCaseLink(request)
+  const caseLink = hideCase ? undefined : disputeCase
 
   const logs = useMemo(() => {
     if (!request) return null
@@ -197,7 +290,7 @@ const Timeline = ({ request, item, metaEvidence }: TimelineProps) => {
       }))
       .filter((appeal): appeal is AppealDecisionLog => !!appeal.transactionHash)
 
-    const evidences = request.evidenceGroup.evidences.map(
+    const allEvidences = request.evidenceGroup.evidences.map(
       (e): EvidenceLog => ({
         name: 'Evidence',
         timestamp: e.timestamp,
@@ -210,6 +303,29 @@ const Timeline = ({ request, item, metaEvidence }: TimelineProps) => {
         party: e.party,
       }),
     )
+
+    // The challenge itself (Standard only). Its justification is the evidence
+    // filed in the same transaction: matched on the hash, never the time,
+    // so a separate evidence mined in the same block stays its own row.
+    const challengeTx = request.txHashChallenge?.toLowerCase()
+    const justification =
+      challengeTx && request.challengeTime
+        ? allEvidences.find(
+            (e) => e.transactionHash?.toLowerCase() === challengeTx,
+          )
+        : undefined
+    const evidences = justification
+      ? allEvidences.filter((e) => e !== justification)
+      : allEvidences
+    const challenge: ChallengeLog | undefined =
+      request.challengeTime && request.txHashChallenge
+        ? {
+            name: 'Challenge',
+            timestamp: request.challengeTime,
+            transactionHash: request.txHashChallenge,
+            evidence: justification,
+          }
+        : undefined
 
     const resolution: ResolutionLog = {
       name: 'Resolution',
@@ -226,308 +342,538 @@ const Timeline = ({ request, item, metaEvidence }: TimelineProps) => {
       ...evidences,
     ]
 
+    if (challenge) logArray.push(challenge)
+
     if (resolution.transactionHash) logArray.push(resolution)
 
     return logArray.sort((a, b) => Number(a.timestamp) - Number(b.timestamp))
   }, [request])
 
   const requestType = request.requestType
+  const isRegistration = requestType === CONTRACT_STATUS.REGISTRATION_REQUESTED
 
-  // The Graph can fail to index the evidence fields. Load unloaded fields manually
-  useEffect(() => {
-    if (!logs || evidenceMap) return
-    const evidenceManualFetch = async () => {
-      const unindexedEvidenceURIs = logs
-        .filter((e): e is EvidenceLog => e.name === 'Evidence')
-        .filter(
-          (e) =>
-            e.title === null &&
-            e.description === null &&
-            e.fileURI === null &&
-            e.fileTypeExtension === null,
-        )
-        .map((e) => e.URI)
+  // The indexer can miss the evidence fields. Load unindexed files manually.
+  const unindexedEvidenceURIs = (logs ?? [])
+    .flatMap((e): EvidenceLog[] =>
+      e.name === 'Evidence'
+        ? [e]
+        : e.name === 'Challenge' && e.evidence
+          ? [e.evidence]
+          : [],
+    )
+    .filter(
+      (e) =>
+        e.title === null &&
+        e.description === null &&
+        e.fileURI === null &&
+        e.fileTypeExtension === null,
+    )
+    .map((e) => e.URI)
+  const evidenceMap = useUnindexedEvidence(unindexedEvidenceURIs)
+  // The jurors drawn on this request's case, for the badge on a piece they
+  // filed. The case panel makes the same read where the dispute was never
+  // appealed, so an open request usually asks for nothing extra.
+  const jurors = useDisputeJurors({
+    chainId: networkId,
+    arbitrator: request.arbitrator,
+    disputeIDs: [request.disputed ? request.disputeID : undefined],
+    arbitrable: tcrAddress,
+  })
 
-      const evidenceJSONs = await Promise.all(
-        unindexedEvidenceURIs.map(async (uri) => {
-          const file = await (await fetch(parseIpfs(uri))).json()
-          return file
-        }),
-      )
-      const evidenceMapProcess: Record<string, EvidenceFile> = {}
-      unindexedEvidenceURIs.forEach((uri, index) => {
-        evidenceMapProcess[uri] = evidenceJSONs[index]
-      })
-      setEvidenceMap(evidenceMapProcess)
-    }
-    evidenceManualFetch()
-  }, [logs, evidenceMap, setEvidenceMap])
-
-  // Display loading indicator
-  if (!item || !request || !logs) return <Skeleton active />
+  if (!item || !request || !logs) return <SkeletonBlock $height="80px" />
 
   const metadata = metaEvidence?.metadata
-  // Build nodes from request events.
   const itemName = metadata?.itemName
     ? capitalizeFirstLetter(metadata.itemName)
     : 'Item'
-
-  const requestSubmittedNode = (
-    <UITimeline.Item key={1337}>
-      <span>
-        <StyledText>
-          {requestType === 'RegistrationRequested'
-            ? `${itemName} submitted`
-            : 'Removal requested'}
-        </StyledText>
-        <Typography.Text type="secondary">
-          <a
-            href={getTxPage({
-              networkId: networkId ?? 0,
-              txHash: request.creationTx,
-            })}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            {secondTimestamp(request.submissionTime)}
-          </a>
-        </Typography.Text>
-      </span>
-    </UITimeline.Item>
-  )
-
-  const items = logs.map((event, i) => {
-    const { name, transactionHash, timestamp } = event
-    const txPage = getTxPage({
-      networkId: networkId ?? 0,
-      txHash: transactionHash ?? '',
-    })
-
-    if (event.name === 'Evidence') {
-      const { party } = event
-      const { title, description, fileURI } = evidenceMap?.[event.URI]
-        ? evidenceMap[event.URI]
-        : event
-      /* eslint-disable unicorn/new-for-builtins */
-      const submissionTime = (
-        <span>
-          <a href={txPage} target="_blank" rel="noopener noreferrer">
-            {new Date(Number(timestamp) * 1000).toUTCString()}
-          </a>{' '}
-          by <ETHAddress address={party} />
-        </span>
+  const txPage = (txHash?: string | null) =>
+    txHash ? getTxPage({ networkId: networkId ?? 0, txHash }) : undefined
+  const open = !request.resolved
+  const requesterRole = isRegistration ? 'submitter' : 'requester'
+  /*
+   * Which party filed something. Only the three the chain names: an address
+   * that is none of them gets no badge at all, since the jury read covers
+   * the rounds it could go through seat by seat and nothing else.
+   */
+  const partyOf = (party?: string): EvidenceParty | undefined => {
+    const address = party?.toLowerCase()
+    if (!address) return undefined
+    if (address === request.requester?.toLowerCase()) return 'requester'
+    if (address === request.challenger?.toLowerCase()) return 'challenger'
+    return jurors.has(address) ? 'juror' : undefined
+  }
+  /** The same, as the word the row's marker takes its tone from. */
+  const roleOf = (party?: string) => {
+    const side = partyOf(party)
+    return side === 'requester'
+      ? requesterRole
+      : side === 'challenger'
+        ? 'challenger'
+        : undefined
+  }
+  // Where the case link goes: the challenge event when the indexer has it;
+  // otherwise the challenger's first evidence, which is filed with
+  // the challenge; the submission row only when neither exists.
+  const hasChallengeEvent = logs.some((event) => event.name === 'Challenge')
+  const caseEvidenceIndex = hasChallengeEvent
+    ? -1
+    : logs.findIndex(
+        (event) =>
+          event.name === 'Evidence' && roleOf(event.party) === 'challenger',
       )
+  const caseOnSubmission = !hasChallengeEvent && caseEvidenceIndex < 0
+  const evidenceQuote = (evidence: EvidenceLog, heading?: string | null) => {
+    const file = evidenceMap.get(evidence.URI)
+    const { description, fileURI } = file ?? evidence
+    const failed = !!file?.failed
+    return heading || description || fileURI || failed ? (
+      <TimelineQuote>
+        {heading && <QuoteTitle>{heading}</QuoteTitle>}
+        {description && <EvidenceText text={description} />}
+        {fileURI && <EvidenceFileLink fileURI={fileURI} />}
+        {failed && <EvidenceFileUnavailable uri={evidence.URI} />}
+      </TimelineQuote>
+    ) : null
+  }
 
-      /* eslint-enable unicorn/new-for-builtins */
-      return (
-        <UITimeline.Item dot={<Icon type="file-text" />} key={i} color="grey">
-          <StyledCard
-            title={title}
-            extra={fileURI && <EvidenceFileLink fileURI={fileURI} />}
-          >
-            <Card.Meta
-              title={<StyledEvidenceTitle>{description}</StyledEvidenceTitle>}
-              description={submissionTime}
+  return (
+    <Timeline>
+      <TimelineEvent
+        tone="window"
+        title={isRegistration ? `${itemName} submitted` : 'Removal requested'}
+        timestamp={toSeconds(request.submissionTime)}
+        href={txPage(request.creationTx)}
+        current={open && logs.length === 0}
+        detail={
+          request.requester ? (
+            <>
+              <span>
+                by <AddressLink address={request.requester} />
+              </span>
+              {caseLink && caseOnSubmission && (
+                <CaseLink id={caseLink.id} href={caseLink.href} />
+              )}
+            </>
+          ) : undefined
+        }
+      />
+      {logs.map((event, i) => {
+        const timestamp = toSeconds(event.timestamp)
+        const href = txPage(event.transactionHash)
+        const current = open && i === logs.length - 1
+        const index = i + 1
+
+        if (event.name === 'Challenge') {
+          const justification = event.evidence
+          const customTitle =
+            justification &&
+            (evidenceMap.get(justification.URI)?.title ?? justification.title)
+          return (
+            <TimelineEvent
+              key={i}
+              index={index}
+              current={current}
+              tone="contested"
+              title="Challenged"
+              timestamp={timestamp}
+              href={href}
+              detail={
+                <>
+                  {request.challenger && (
+                    <span>
+                      by <AddressLink address={request.challenger} />
+                    </span>
+                  )}
+                  {caseLink && (
+                    <CaseLink id={caseLink.id} href={caseLink.href} />
+                  )}
+                </>
+              }
+            >
+              {justification &&
+                evidenceQuote(
+                  justification,
+                  customTitle !== 'Challenge Justification'
+                    ? customTitle
+                    : undefined,
+                )}
+            </TimelineEvent>
+          )
+        }
+
+        if (event.name === 'Evidence') {
+          const { title } = evidenceMap.get(event.URI) ?? event
+          // The row is titled by the app; the evidence's own title, written
+          // by anyone, goes inside its quote. As the row's title it could
+          // read "Submission accepted" or "Challenged", like a real event.
+          return (
+            <TimelineEvent
+              key={i}
+              index={index}
+              current={current}
+              tone={
+                roleOf(event.party) === 'challenger'
+                  ? 'contested'
+                  : roleOf(event.party)
+                    ? 'window'
+                    : 'neutral'
+              }
+              title={
+                <>
+                  Evidence
+                  <EvidencePartyBadge
+                    party={partyOf(event.party)}
+                    requesterLabel={capitalizeFirstLetter(requesterRole)}
+                  />
+                </>
+              }
+              timestamp={timestamp}
+              href={href}
+              detail={
+                <>
+                  <span>
+                    by <AddressLink address={event.party} />
+                  </span>
+                  {caseLink && i === caseEvidenceIndex && (
+                    <CaseLink id={caseLink.id} href={caseLink.href} />
+                  )}
+                </>
+              }
+            >
+              {evidenceQuote(event, title)}
+            </TimelineEvent>
+          )
+        }
+
+        if (event.name === 'AppealPossible')
+          return (
+            <TimelineEvent
+              key={i}
+              index={index}
+              current={current}
+              tone="contested"
+              title={
+                typeof event.appealableRuling === 'undefined'
+                  ? 'Ruling'
+                  : rulingSentence(event.appealableRuling, isRegistration)
+              }
+              timestamp={timestamp}
+              href={href}
+              detail={
+                <>
+                  <span>Appeal period opened</span>
+                  {caseLink && (
+                    <CaseLink id={caseLink.id} href={caseLink.href} />
+                  )}
+                </>
+              }
             />
-          </StyledCard>
-        </UITimeline.Item>
-      )
-    } else if (event.name === 'AppealPossible') {
-      const appealableRuling = event.appealableRuling
-      if (typeof appealableRuling === 'undefined')
-        return (
-          <UITimeline.Item dot={<Icon type="file-text" />} key={i}>
-            <Skeleton active paragraph={false} title={{ width: '200px' }} />
-          </UITimeline.Item>
-        )
+          )
 
-      return (
-        <UITimeline.Item key={i}>
-          <span>
-            {appealableRuling === SUBGRAPH_RULING.NONE
-              ? 'The arbitrator refused to rule'
-              : appealableRuling === SUBGRAPH_RULING.ACCEPT
-                ? `The arbitrator ruled in favor of the ${
-                    requestType === CONTRACT_STATUS.REGISTRATION_REQUESTED
-                      ? 'submitter'
-                      : 'requester'
-                  }`
-                : appealableRuling === SUBGRAPH_RULING.REJECT
-                  ? 'The arbitrator ruled in favor of the challenger'
-                  : 'The arbitrator gave an unknown ruling'}
-            <Typography.Text type="secondary">
-              <a href={txPage} target="_blank" rel="noopener noreferrer">
-                {secondTimestamp(timestamp)}
-              </a>
-            </Typography.Text>
-          </span>
-        </UITimeline.Item>
-      )
-    } else if (event.name === 'AppealDecision')
-      return (
-        <UITimeline.Item key={i}>
-          Ruling appealed{' '}
-          <Typography.Text type="secondary">
-            <a href={txPage} target="_blank" rel="noopener noreferrer">
-              {secondTimestamp(timestamp)}
-            </a>
-          </Typography.Text>
-        </UITimeline.Item>
-      )
-    else if (event.name === 'Resolution') {
-      let resultMessage, statusColor
-      switch (event.disputeOutcome) {
-        case 'None': {
-          resultMessage =
-            requestType === CONTRACT_STATUS.REGISTRATION_REQUESTED
-              ? 'Submission removed'
-              : 'Removal refused'
-          statusColor =
-            requestType === CONTRACT_STATUS.REGISTRATION_REQUESTED
-              ? 'red'
-              : 'green'
-          break
+        if (event.name === 'AppealDecision')
+          return (
+            <TimelineEvent
+              key={i}
+              index={index}
+              current={current}
+              tone="contested"
+              title="Ruling appealed"
+              timestamp={timestamp}
+              href={href}
+              detail="A new round of jurors decides"
+            />
+          )
+
+        if (event.name === 'Resolution') {
+          let message: string
+          let tone: StatusTone
+          switch (event.disputeOutcome) {
+            case 'None':
+            case 'Reject': {
+              message = isRegistration
+                ? 'Submission rejected'
+                : 'Removal refused'
+              tone = isRegistration ? 'off' : 'registered'
+              break
+            }
+            case 'Accept': {
+              message = isRegistration
+                ? 'Submission accepted'
+                : `${itemName} removed`
+              tone = isRegistration ? 'registered' : 'off'
+              break
+            }
+            default:
+              throw new Error('Unhandled ruling')
+          }
+          const differentAppealableRuling =
+            request.disputed &&
+            request.rounds[0].ruling !== request.disputeOutcome
+
+          return (
+            <TimelineEvent
+              key={i}
+              index={index}
+              tone={tone}
+              title={message}
+              timestamp={timestamp}
+              href={href}
+              detail={
+                differentAppealableRuling
+                  ? 'The winner of the last round did not fund the appeal.'
+                  : undefined
+              }
+            />
+          )
         }
-        case 'Accept': {
-          resultMessage =
-            requestType === CONTRACT_STATUS.REGISTRATION_REQUESTED
-              ? 'Submission accepted'
-              : `${itemName || 'item'} removed.`
 
-          statusColor =
-            requestType === CONTRACT_STATUS.REGISTRATION_REQUESTED
-              ? 'green'
-              : 'red'
-          break
-        }
-        case 'Reject': {
-          resultMessage =
-            requestType === CONTRACT_STATUS.REGISTRATION_REQUESTED
-              ? 'Submission removed'
-              : `Removal refused.`
-
-          statusColor =
-            requestType === CONTRACT_STATUS.REGISTRATION_REQUESTED
-              ? 'red'
-              : 'green'
-          break
-        }
-        default:
-          throw new Error('Unhandled ruling')
-      }
-      const differentAppealableRuling =
-        request.disputed && request.rounds[0].ruling !== request.disputeOutcome
-
-      return (
-        <UITimeline.Item key={i} color={statusColor}>
-          {differentAppealableRuling &&
-            'The winner of the last round did not fund the appeal. '}
-          {resultMessage}
-          <Typography.Text type="secondary">
-            <a href={txPage} target="_blank" rel="noopener noreferrer">
-              {secondTimestamp(timestamp)}
-            </a>
-          </Typography.Text>
-        </UITimeline.Item>
-      )
-    } else throw new Error(`Unhandled event ${name}`)
-  })
-
-  return <UITimeline>{[requestSubmittedNode, ...items]}</UITimeline>
+        return null
+      })}
+    </Timeline>
+  )
 }
 
-const StyledDivider = styled(Divider)`
-  text-transform: capitalize;
+const HistoryHead = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px 16px;
+  margin-top: 16px;
 `
 
-const StyledButton = styled(Button)`
-  text-transform: capitalize;
-  margin: 16px 0;
+const HistoryTitle = styled.h2`
+  margin: 0;
+  color: var(--color-text);
+  font-family: var(--font-display);
+  font-size: 28px;
+  line-height: 32px;
+  font-weight: 500;
+  letter-spacing: -0.03em;
 `
 
-const StyledLoadingCard = styled(Card)`
-  margin-top: 40px;
+const Panel = styled(Surface)`
+  overflow: hidden;
 `
 
-const StyledCollapse = styled(Collapse)`
-  background-color: ${({ theme }) => theme.componentBackground} !important;
-  border: 1px solid ${({ theme }) => theme.borderColor};
-  border-radius: 8px;
+const Group = styled.section`
+  & + & {
+    border-top: 1px solid var(--glass-border);
+  }
 `
+
+const GroupToggle = styled.button`
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 60px;
+  padding: 12px 24px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--motion);
+
+  &:hover {
+    background: var(--color-raised);
+  }
+
+  @media (max-width: 720px) {
+    padding: 12px 16px;
+  }
+`
+
+const GroupMeta = styled.span`
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  min-width: 0;
+`
+
+const Ordinal = styled.span`
+  color: var(--color-text);
+  font-size: var(--fs-body-lg);
+  line-height: var(--lh-body-lg);
+  font-weight: 500;
+`
+
+const GroupState = styled.span`
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--color-muted);
+  font-size: var(--fs-small);
+  line-height: var(--lh-small);
+`
+
+const Chevron = styled.span<{ $open: boolean }>`
+  display: inline-flex;
+  flex: 0 0 auto;
+  color: var(--color-muted);
+  transform: rotate(${({ $open }) => ($open ? 180 : 0)}deg);
+  transition: transform var(--motion);
+`
+
+const GroupBody = styled.div`
+  padding: 8px 24px 28px;
+
+  @media (max-width: 720px) {
+    padding: 8px 16px 22px;
+  }
+`
+
+const requestState = (
+  request: TimelineRequest,
+): { label: string; tone: StatusTone } =>
+  request.resolved
+    ? { label: 'Resolved', tone: 'neutral' }
+    : request.disputed
+      ? { label: 'Disputed', tone: 'contested' }
+      : { label: 'Open', tone: 'window' }
+
+const RequestGroup = ({
+  request,
+  ordinal,
+  open,
+  onToggle,
+  item,
+  metaEvidence,
+  hideCase,
+}: {
+  request: TimelineRequest
+  ordinal: number
+  open: boolean
+  onToggle: () => void
+  item: SubgraphItem
+  metaEvidence?: MetaEvidence
+  hideCase?: boolean
+}) => {
+  const state = requestState(request)
+  const panelId = `request-${ordinal}-timeline`
+  return (
+    <Group aria-label={`${toOrdinal(ordinal)} request`}>
+      <GroupToggle
+        type="button"
+        aria-expanded={open}
+        aria-controls={panelId}
+        onClick={onToggle}
+      >
+        <GroupMeta>
+          <Ordinal>{toOrdinal(ordinal)} request</Ordinal>
+          <Chip>{REQUEST_TYPE_LABEL[request.requestType] ?? 'Request'}</Chip>
+          <GroupState>
+            <StatusDot $tone={state.tone} aria-hidden />
+            {state.label}
+          </GroupState>
+        </GroupMeta>
+        <Chevron $open={open} aria-hidden>
+          <CurateIcon name="chevron-down" size={16} />
+        </Chevron>
+      </GroupToggle>
+      {open && (
+        <GroupBody id={panelId}>
+          <RequestTimeline
+            item={item}
+            request={request}
+            metaEvidence={metaEvidence}
+            hideCase={hideCase}
+          />
+        </GroupBody>
+      )}
+    </Group>
+  )
+}
+
+export const EVIDENCE_COMPOSER_ID = 'evidence-composer'
+
+/**
+ * Opens the evidence composer under the history, then scrolls to it and
+ * focuses its first field (the action card, the phone bar, deep links).
+ */
+export const scrollToEvidenceComposer = () => openEvidenceComposer()
 
 interface RequestTimelinesProps {
-  item?: SubgraphItem
+  item: SubgraphItem
   requests?: TimelineRequest[]
-  kind: 'classic' | 'light'
   metaEvidence?: MetaEvidence
+  /**
+   * The page already links the latest request's court case (the hero's
+   * chip), so its rows leave the link out. Past requests keep theirs.
+   */
+  caseInHero?: boolean
 }
 
 const RequestTimelines = ({
   item,
   requests,
-  kind,
   metaEvidence,
+  caseInHero = false,
 }: RequestTimelinesProps) => {
-  const [evidenceModalOpen, setEvidenceModalOpen] = useState<boolean>()
-  const EvidenceModal =
-    kind === 'classic' ? ClassicEvidenceModal : LightEvidenceModal
+  const [openPanels, setOpenPanels] = useState<Record<number, boolean>>({
+    0: true,
+  })
 
-  const metadata = metaEvidence?.metadata
-  const itemName = metadata?.itemName
+  const { metadata } = metaEvidence || {}
+  const itemName = metadata?.itemName || 'entry'
 
   if (!item)
     return (
-      <>
-        <StyledLoadingCard loading />
-      </>
+      <Surface id={EVIDENCE_HISTORY_ID} $padding="standard" aria-busy="true">
+        <SkeletonBlock $height="120px" />
+      </Surface>
     )
 
+  const pending = hasPendingRequest(item.status)
+
   return (
-    <div id="request-timelines">
-      {!hasPendingRequest(item.status) && (
-        <StyledDivider orientation="left">{`${
-          capitalizeFirstLetter(itemName ?? '') || 'Item'
-        } History`}</StyledDivider>
-      )}
-      {hasPendingRequest(item.status) && (
-        <Row type="flex" align="middle">
-          <Col style={{ flex: 1 }}>
-            <StyledDivider orientation="left">{`${
-              capitalizeFirstLetter(itemName ?? '') || 'Item'
-            } History`}</StyledDivider>
-          </Col>
-          <Col style={{ marginLeft: 12 }}>
-            <StyledButton onClick={() => setEvidenceModalOpen(true)}>
-              Submit Evidence
-            </StyledButton>
-          </Col>
-        </Row>
-      )}
-      {requests && (
-        <StyledCollapse bordered={false} defaultActiveKey={['0']}>
-          {requests.map((request, i) => (
-            <Collapse.Panel
-              header={`${toOrdinal(requests.length - i)} request - ${
-                REQUEST_TYPE_LABEL[request.requestType]
-              }`}
+    <>
+      {/* "Read evidence" lands here and leaves the focus on it, so a
+          keyboard reader carries on inside the history. */}
+      <div
+        id={EVIDENCE_HISTORY_ID}
+        tabIndex={-1}
+        style={{ display: 'flex', flexDirection: 'column', gap: 14 }}
+      >
+        <HistoryHead>
+          <div>
+            <HistoryTitle>History</HistoryTitle>
+            <Small $faint>
+              Every request on this {itemName}, newest first. Times in UTC.
+            </Small>
+          </div>
+        </HistoryHead>
+        <Panel $padding="none">
+          {requests?.map((request, i) => (
+            <RequestGroup
               key={i}
-            >
-              {/* We spread `requests` to convert it from an array to an object. */}
-              <Timeline
-                item={item}
-                request={{ ...request }}
-                metaEvidence={metaEvidence}
-              />
-            </Collapse.Panel>
+              request={request}
+              ordinal={requests.length - i}
+              open={!!openPanels[i]}
+              onToggle={() =>
+                setOpenPanels((state) => ({ ...state, [i]: !state[i] }))
+              }
+              item={item}
+              metaEvidence={metaEvidence}
+              hideCase={caseInHero && i === 0}
+            />
           ))}
-        </StyledCollapse>
+        </Panel>
+      </div>
+      {pending && (
+        <EvidenceComposerCollapse.Provider value>
+          <StandardEvidenceModal
+            item={item}
+            inline
+            composerId={EVIDENCE_COMPOSER_ID}
+          />
+        </EvidenceComposerCollapse.Provider>
       )}
-      <EvidenceModal
-        item={item}
-        visible={evidenceModalOpen}
-        onCancel={() => setEvidenceModalOpen(false)}
-      />
-    </div>
+    </>
   )
 }
 

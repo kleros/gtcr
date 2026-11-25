@@ -1,0 +1,724 @@
+<!doctype html>
+<!--
+  Standalone landing page, a second Vite entry (assets in public/landing/).
+  `yarn vite`, `yarn build` and `vite preview` serve it at /landing/ and /landing.
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Kleros Curate · Verify anything, or earn by keeping lists clean</title>
+    <meta
+      name="description"
+      content="Kleros Curate runs lists anyone can add to and anyone can challenge. Submit an entry that follows a list's rules and your deposit comes back; spot one that breaks them and earn the bounty. Disputes are settled by Kleros Court jurors."
+    />
+    <meta
+      property="og:title"
+      content="Kleros Curate · Verify anything, or earn by keeping lists clean"
+    />
+    <meta
+      property="og:description"
+      content="Submit an entry that follows a list's rules and your deposit comes back. Spot one that breaks them, challenge it and earn the bounty."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://curate.kleros.io/landing/" />
+    <meta property="og:image" content="https://curate.kleros.io/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta
+      property="og:image:alt"
+      content="Kleros Curate: verify anything, or earn by keeping lists clean."
+    />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:image" content="https://curate.kleros.io/og-image.png" />
+    <meta name="theme-color" content="#02040b" />
+    <link rel="canonical" href="https://curate.kleros.io/landing/" />
+    <link rel="icon" href="/favicon.ico" sizes="32x32" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;600&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <script>
+      // Theme before first paint, shared with the app: the same storage key and the
+      // same modes (system | light | dark | kleros). ?cv-theme previews without saving.
+      ;(function () {
+        var mode = 'system'
+        try {
+          var saved = localStorage.getItem('kleros-curate-theme')
+          if (
+            saved === 'light' ||
+            saved === 'dark' ||
+            saved === 'kleros' ||
+            saved === 'system'
+          )
+            mode = saved
+        } catch (e) {}
+        var forced = new URLSearchParams(location.search).get('cv-theme')
+        if (forced === 'light' || forced === 'dark' || forced === 'kleros')
+          mode = forced
+        var dark =
+          window.matchMedia &&
+          window.matchMedia('(prefers-color-scheme: dark)').matches
+        var root = document.documentElement
+        root.setAttribute('data-mode', mode)
+        root.setAttribute(
+          'data-theme',
+          mode === 'system' ? (dark ? 'dark' : 'light') : mode,
+        )
+        root.classList.add('js')
+      })()
+    </script>
+    <link rel="stylesheet" href="/landing/landing.css" />
+  </head>
+  <body>
+    <!-- The aurora: a soft glow behind the top of the page only; it scrolls away. -->
+    <div class="stage" aria-hidden="true">
+      <div class="aurora">
+        <div class="pool-a"></div>
+        <div class="band"></div>
+        <div class="pool-b"></div>
+      </div>
+      <div class="grain"></div>
+    </div>
+
+    <a class="skip" href="#main">Skip to content</a>
+
+    <header class="bar" data-bar>
+      <div class="bar-inner">
+        <a
+          class="brand"
+          href="#main"
+          aria-label="Kleros Curate, back to the top"
+        >
+          <svg
+            viewBox="0 0 145 40"
+            width="145"
+            height="40"
+            fill="none"
+            aria-hidden="true"
+          >
+            <path
+              fill="currentColor"
+              fill-rule="evenodd"
+              clip-rule="evenodd"
+              d="M35.1962 30.5049L19.0499 39.8152C18.6226 40.0616 18.0962 40.0616 17.6689 39.8152L1.5226 30.5049C1.0953 30.2585 0.832 29.8031 0.832 29.3103V10.6897C0.832 10.1969 1.0953 9.7415 1.5226 9.4951L17.6689 0.1848C18.0962 -0.0616 18.6226 -0.0616 19.0499 0.1848L35.1962 9.4951C35.6235 9.7415 35.8868 10.1969 35.8868 10.6897V29.3103C35.8868 29.8031 35.6235 30.2585 35.1962 30.5049ZM6.8216 26.6078L2.2131 29.267V10.6897L2.238 10.6753L6.8003 13.4251L6.9078 13.2467L2.4443 10.5563L18.3123 1.4064L18.3123 6.6372L18.5207 6.6372L18.5207 1.4723L34.4112 10.6352L29.7383 13.3319L29.8424 13.5124L34.5057 10.8212V29.1742L29.8622 26.4545L29.757 26.6342L34.4151 29.3626L18.5596 38.5052L18.5596 33.1215H18.3512L18.3513 38.616L2.384 29.4089L6.9257 26.7882L6.8216 26.6078ZM24.2135 11.8845L13.8635 11.4274L7.8196 18.8649L12.0858 28.8314L22.4921 29.4898L28.4038 21.083L24.2135 11.8845ZM15.0741 28.5395L20.5563 27.1265L21.5211 28.9466L15.0741 28.5395ZM21.6488 26.6504L26.4476 23.125L22.6023 28.4881L21.6488 26.6504ZM12.6892 27.7547L12.5319 21.5521L19.0322 26.1295L12.6892 27.7547ZM11.4924 26.5255L8.5012 19.5763L11.3679 20.1748L11.4924 26.5255ZM21.7145 25.2051L22.8836 16.6813L27.3132 21.114L21.7145 25.2051ZM13.9305 20.0233L21.4147 16.7987L20.329 24.9019L13.9305 20.0233ZM8.687 18.5365L12.9542 13.2229L11.5399 19.1325L8.687 18.5365ZM23.2456 15.1402L24.1777 13.2533L26.715 18.6179L23.2456 15.1402ZM13.3107 17.9829L14.5671 12.6432L20.5482 15.1828L13.3107 17.9829ZM21.9495 14.2741L16.9242 12.1064L23.0164 12.3503L21.9495 14.2741Z"
+            />
+            <path
+              fill="currentColor"
+              fill-rule="evenodd"
+              clip-rule="evenodd"
+              d="M54.3688 23.6756L55.9894 24.7953C54.7519 26.74 53.2786 28.007 50.8919 28.007C46.413 28.007 44.9987 23.8818 44.9987 20.0807C44.9987 13.9519 48.24 12.125 50.7151 12.125C53.1018 12.125 54.4868 13.3626 55.5769 15.3957L53.7795 16.3092C53.1312 15.0717 52.2473 13.9814 50.7445 13.9814C47.6801 13.9814 47.0613 17.694 47.0613 20.0513C47.0613 22.4381 47.6212 26.1507 50.7445 26.1507C52.5419 26.1507 53.4554 25.0604 54.3688 23.6756ZM65.3186 12.3903H63.3444V23.6757C63.3444 25.915 64.8177 28.0071 68.1473 28.0071C71.5359 28.0071 72.9797 25.8267 72.9797 23.7935V12.3903H71.0055V22.8506C71.0055 25.0606 70.4751 26.1507 68 26.1507C65.9669 26.1507 65.3186 25.09 65.3186 22.8506V12.3903ZM83.3401 19.4032H85.9331C87.8484 19.4032 89.1155 18.3129 89.1155 16.5744C89.1155 15.1896 88.2904 14.1583 86.5224 14.1583H83.3401V19.4032ZM81.3659 27.7419V12.3903H86.5813C89.1449 12.3903 91.178 13.5984 91.178 16.5744C91.178 18.4603 89.911 20.3165 88.0547 20.8764L91.8263 27.0936L90.1173 28.125L86.1983 21.1711H83.3401V27.7419H81.3659ZM100.7724 23.5578H106.2235L107.638 28.125L109.5827 27.4178L104.7503 12.3903H102.2162L97.3838 27.4178L99.3285 28.125L100.7724 23.5578ZM103.4833 14.6886L105.6637 21.7899H101.3028L103.4833 14.6886ZM120.2085 27.7419V14.1583H115.9657V12.3903H126.3372V14.1583H122.1827V27.7419H120.2085ZM134.6061 27.7419V12.3903H144.1825V14.1583H136.5802V18.7549H142.8561V20.5228H136.5802V25.974H144.1825V27.7419H134.6061Z"
+            />
+          </svg>
+        </a>
+        <nav class="nav" aria-label="Sections">
+          <a href="#roles">Who it’s for</a>
+          <a href="#disputes">How disputes work</a>
+          <a href="https://docs.kleros.io/products/curate" rel="noopener"
+            >Docs</a
+          >
+        </nav>
+        <div class="bar-end">
+          <div
+            class="seg seg--icons"
+            data-theme-switch
+            role="radiogroup"
+            aria-label="Theme"
+          >
+            <span class="seg-thumb" aria-hidden="true"></span>
+            <button
+              type="button"
+              role="radio"
+              data-mode="system"
+              aria-label="System: matches your device"
+              title="System · matches your device"
+            >
+              <svg
+                viewBox="0 0 16 16"
+                width="15"
+                height="15"
+                aria-hidden="true"
+              >
+                <rect x="2" y="2.5" width="12" height="8.5" rx="1.6" />
+                <path d="M5.5 13.5h5M8 11v2.5" />
+              </svg>
+            </button>
+            <button
+              type="button"
+              role="radio"
+              data-mode="light"
+              aria-label="Light"
+              title="Light"
+            >
+              <svg
+                viewBox="0 0 16 16"
+                width="15"
+                height="15"
+                aria-hidden="true"
+              >
+                <circle cx="8" cy="8" r="3" />
+                <path
+                  d="M8 1.5v1.6M8 12.9v1.6M1.5 8h1.6M12.9 8h1.6M3.4 3.4l1.1 1.1M11.5 11.5l1.1 1.1M3.4 12.6l1.1-1.1M11.5 4.5l1.1-1.1"
+                />
+              </svg>
+            </button>
+            <button
+              type="button"
+              role="radio"
+              data-mode="dark"
+              aria-label="Dark"
+              title="Dark"
+            >
+              <svg
+                viewBox="0 0 16 16"
+                width="15"
+                height="15"
+                aria-hidden="true"
+              >
+                <path
+                  d="M13.2 9.6A5.6 5.6 0 0 1 6.4 2.8a5.6 5.6 0 1 0 6.8 6.8Z"
+                />
+              </svg>
+            </button>
+            <button
+              type="button"
+              role="radio"
+              data-mode="kleros"
+              aria-label="Kleros"
+              title="Kleros"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                width="15"
+                height="15"
+                aria-hidden="true"
+              >
+                <path
+                  stroke-width="1.6"
+                  d="M12 2.5 20.2 7.25v9.5L12 21.5l-8.2-4.75v-9.5Z"
+                />
+                <path stroke-width="1.6" d="M12 7l4.4 7.6H7.6Z" />
+                <path
+                  stroke-width="1.2"
+                  opacity="0.8"
+                  d="M12 7V2.5M12 7l8.2.25M12 7 3.8 7.25M16.4 14.6l3.8-7.35M16.4 14.6l3.8 2.15M16.4 14.6 12 21.5M7.6 14.6 12 21.5M7.6 14.6l-3.8 2.15M7.6 14.6 3.8 7.25"
+                />
+              </svg>
+            </button>
+          </div>
+          <a class="btn btn--primary btn--bar" href="/">
+            Open the app
+            <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
+              <path d="M3.5 8h9M8.5 4l4 4-4 4" />
+            </svg>
+          </a>
+        </div>
+      </div>
+    </header>
+
+    <main id="main">
+      <section class="hero" aria-labelledby="hero-title">
+        <div class="hero-copy">
+          <p class="eyebrow" data-reveal style="--i: 0">
+            <span class="eyebrow-dot" aria-hidden="true"></span>
+            <b>Submit. Challenge. Settle.</b>
+            <span>Kleros Curate</span>
+          </p>
+          <!-- The dashboard's title: the first line runs once through
+               examples of what can be verified and rests on "anything"
+               (landing.js, as the app's RotatingWord). Screen readers get
+               the whole sentence once; the changing word is for the eye. -->
+          <h1 id="hero-title" class="headline" data-reveal style="--i: 1">
+            <span class="sr-only"
+              >Verify tokens, contracts, domains and more, or earn by keeping
+              lists clean.</span
+            >
+            <span class="headline-line headline-line--first" aria-hidden="true"
+              >Verify
+              <em
+                ><span
+                  class="rotating-word"
+                  data-rotating-word
+                  data-words="tokens contracts domains addresses markets documents anything"
+                  data-suffix=","
+                  >tokens,</span
+                ></em
+              ></span
+            >
+            <span class="headline-line" aria-hidden="true"
+              >or <em>earn</em> by keeping lists clean.</span
+            >
+          </h1>
+          <ul class="incentives" data-reveal style="--i: 2">
+            <li>
+              <b>Follow the rules</b>
+              <span>Your entry is listed and your deposit comes back.</span>
+            </li>
+            <li>
+              <b>Spot a mistake</b>
+              <span>Challenge it and earn the bounty if jurors agree.</span>
+            </li>
+          </ul>
+          <div class="actions" data-reveal style="--i: 3">
+            <a class="btn btn--primary" href="/browse">
+              Explore lists
+              <svg
+                viewBox="0 0 16 16"
+                width="15"
+                height="15"
+                aria-hidden="true"
+              >
+                <path d="M3.5 8h9M8.5 4l4 4-4 4" />
+              </svg>
+            </a>
+            <a class="btn btn--secondary" href="/launch/100">Launch a list</a>
+          </div>
+        </div>
+
+        <!-- Rounds 14 and 15: the money on Curate, all time, in dollars only
+             at today's prices: everything that has passed through the
+             contracts (deposits, challenges and appeals;
+             pages/dashboard/transit.ts says what each counts), then what
+             challengers have won, in the dashboard's order. -->
+        <section
+          class="money"
+          aria-label="Money on Curate, all time"
+          data-money
+          data-reveal
+          style="--i: 4"
+        >
+          <div class="money-row">
+            <h2 class="label">Passed through Curate</h2>
+            <p class="money-figure" data-money-fig="transit">—</p>
+            <p class="money-note" data-money-note="transit">
+              deposits, challenges and appeals, all time
+            </p>
+          </div>
+          <div class="money-row">
+            <h2 class="label">Bounties won</h2>
+            <p class="money-figure" data-money-fig="bounties">—</p>
+            <p class="money-note" data-money-note="bounties">
+              by challengers, all time
+            </p>
+          </div>
+          <p class="money-basis" data-money-basis>
+            In dollars at today’s prices.
+          </p>
+        </section>
+      </section>
+
+      <section
+        class="featured"
+        aria-labelledby="featured-title"
+        data-reveal
+        data-featured
+        style="--i: 5"
+      >
+        <div class="featured-bar">
+          <div class="featured-scope">
+            <h2 id="featured-title" class="label">
+              <span class="featured-brand">Activity · </span
+              ><span data-fig="window">30 days</span>
+            </h2>
+          </div>
+          <div class="featured-meta">
+            <span data-fig="stamp">Public Curate data</span>
+            <a class="text-link featured-live" href="/">
+              Live figures in the app
+              <svg
+                viewBox="0 0 16 16"
+                width="13"
+                height="13"
+                aria-hidden="true"
+              >
+                <path d="M5 11l6-6M6 5h5v5" />
+              </svg>
+            </a>
+          </div>
+        </div>
+
+        <div class="featured-top">
+          <div class="kpi">
+            <span class="label">Requests</span>
+            <span class="kpi-figure" data-odometer data-fig="requests">—</span>
+            <span class="kpi-note"
+              >Entries submitted, or asked to be removed</span
+            >
+          </div>
+          <dl class="stats">
+            <div>
+              <dt class="label">Challenges</dt>
+              <dd data-count data-fig="challenged">—</dd>
+            </div>
+            <div>
+              <dt class="label" data-fig="inCourtLabel">In court now</dt>
+              <dd data-count data-fig="inCourt">—</dd>
+            </div>
+            <div>
+              <dt class="label">Active curators</dt>
+              <dd data-count data-fig="curators">—</dd>
+            </div>
+          </dl>
+        </div>
+
+        <p class="viz-empty" data-empty hidden>
+          The figures could not load here. They are live in the app.
+        </p>
+        <!-- Phones: the link leaves the top bar and sits under the figures. -->
+        <a class="text-link featured-live featured-live--foot" href="/">
+          Live figures in the app
+          <svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true">
+            <path d="M5 11l6-6M6 5h5v5" />
+          </svg>
+        </a>
+      </section>
+
+      <section class="roles" id="roles" aria-labelledby="roles-title">
+        <div class="section-head" data-reveal>
+          <h2 id="roles-title" class="section-title">Who it’s for</h2>
+          <p class="section-lede">
+            Three roles, one rule: the list’s policy decides.
+          </p>
+        </div>
+        <ul class="role-list" data-reveal>
+          <li class="role" data-spot>
+            <p class="role-title">
+              <b>Submitters</b> add entries that follow a list’s rules and get
+              their deposit back.
+            </p>
+            <p class="role-figure">
+              <span data-count data-fig="entries">—</span
+              ><small>entries curated</small>
+            </p>
+            <a class="btn btn--quiet btn--sm" href="/browse">Browse lists</a>
+          </li>
+          <li class="role" data-spot>
+            <p class="role-title">
+              <b>Challengers</b> spot entries that break a list’s rules and earn
+              the bounty.
+            </p>
+            <p class="role-figure">
+              <span data-count data-fig="openForVerification">—</span
+              ><small data-fig="openUnit">open for verification</small>
+            </p>
+            <a class="btn btn--quiet btn--sm" href="/">See what’s open</a>
+          </li>
+          <li class="role" data-spot>
+            <p class="role-title">
+              <b>List builders</b> launch a list with its own rules, on Standard or
+              Stake Curate.
+            </p>
+            <p class="role-figure">
+              <span data-count data-fig="community">—</span
+              ><small
+                title="Every list not on the Kleros list of lists. Anyone can launch a Curate list."
+                >Community lists</small
+              >
+            </p>
+            <a class="btn btn--quiet btn--sm" href="/launch/100"
+              >Launch a list</a
+            >
+          </li>
+        </ul>
+
+        <!-- Kleros Verified: the lists that carry the seal, each leading to
+             its list; a count with its lists, never a share of every list. -->
+        <section
+          class="vlists"
+          aria-labelledby="vlists-title"
+          data-verified
+          data-reveal
+          hidden
+        >
+          <div class="vlists-head">
+            <h3 id="vlists-title" class="verified-pill">
+              <svg
+                class="seal"
+                data-seal
+                viewBox="0 0 24 24"
+                width="16"
+                height="16"
+                aria-hidden="true"
+                focusable="false"
+              >
+                <defs>
+                  <linearGradient id="seal-edge" x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0" style="stop-color: var(--edge-1)" />
+                    <stop offset="0.45" style="stop-color: var(--edge-2)" />
+                    <stop offset="0.8" style="stop-color: var(--edge-3)" />
+                    <stop
+                      offset="1"
+                      style="stop-color: var(--edge-3); stop-opacity: 0.55"
+                    />
+                  </linearGradient>
+                  <linearGradient id="seal-sheen" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0" style="stop-color: var(--cta-sheen)" />
+                    <stop
+                      offset="0.58"
+                      style="stop-color: var(--cta-sheen); stop-opacity: 0"
+                    />
+                  </linearGradient>
+                </defs>
+                <path
+                  d="M12 6.4L2.91 6.75L12 1.5Z"
+                  style="
+                    fill: color-mix(in srgb, var(--edge-1) 40%, var(--cta-top));
+                  "
+                />
+                <path
+                  d="M12 6.4L12 1.5L21.09 6.75Z"
+                  style="
+                    fill: color-mix(in srgb, var(--edge-2) 30%, var(--cta-top));
+                  "
+                />
+                <path
+                  d="M7.15 14.8L12 6.4L2.91 6.75Z"
+                  style="
+                    fill: color-mix(in srgb, var(--edge-1) 26%, var(--cta-top));
+                  "
+                />
+                <path
+                  d="M12 6.4L16.85 14.8L21.09 6.75Z"
+                  style="
+                    fill: color-mix(in srgb, var(--edge-2) 20%, var(--cta-top));
+                  "
+                />
+                <path
+                  d="M7.15 14.8L2.91 17.25L2.91 6.75Z"
+                  style="
+                    fill: color-mix(
+                      in srgb,
+                      var(--edge-1) 22%,
+                      var(--cta-bottom)
+                    );
+                  "
+                />
+                <path
+                  d="M16.85 14.8L21.09 6.75L21.09 17.25Z"
+                  style="
+                    fill: color-mix(
+                      in srgb,
+                      var(--edge-2) 26%,
+                      var(--cta-bottom)
+                    );
+                  "
+                />
+                <path
+                  d="M7.15 14.8L12 22.5L2.91 17.25Z"
+                  style="
+                    fill: color-mix(
+                      in srgb,
+                      var(--edge-3) 30%,
+                      var(--cta-bottom)
+                    );
+                  "
+                />
+                <path
+                  d="M16.85 14.8L21.09 17.25L12 22.5Z"
+                  style="
+                    fill: color-mix(
+                      in srgb,
+                      var(--edge-3) 18%,
+                      var(--cta-bottom)
+                    );
+                  "
+                />
+                <path
+                  d="M16.85 14.8L7.15 14.8L12 22.5Z"
+                  style="
+                    fill: color-mix(
+                      in srgb,
+                      var(--edge-3) 22%,
+                      var(--cta-bottom)
+                    );
+                  "
+                />
+                <path
+                  d="M12 6.4L16.85 14.8L7.15 14.8Z"
+                  style="
+                    fill: color-mix(in srgb, var(--edge-2) 10%, var(--cta-top));
+                  "
+                />
+                <path
+                  d="M12 1.5L21.09 6.75L21.09 17.25L12 22.5L2.91 17.25L2.91 6.75Z"
+                  fill="url(#seal-sheen)"
+                />
+                <path
+                  class="seal-wire"
+                  d="M12 6.4L16.85 14.8L7.15 14.8ZM12 6.4L12 1.5M12 6.4L21.09 6.75M12 6.4L2.91 6.75M16.85 14.8L21.09 6.75M16.85 14.8L21.09 17.25M16.85 14.8L12 22.5M7.15 14.8L12 22.5M7.15 14.8L2.91 17.25M7.15 14.8L2.91 6.75"
+                />
+                <path
+                  class="seal-edge"
+                  d="M12 1.5L21.09 6.75L21.09 17.25L12 22.5L2.91 17.25L2.91 6.75Z"
+                  stroke="url(#seal-edge)"
+                />
+                <path
+                  class="seal-keyline"
+                  d="M7.7 12.35L10.65 15.2L16.35 9.25"
+                />
+                <path class="seal-check" d="M7.7 12.35L10.65 15.2L16.35 9.25" />
+              </svg>
+              Kleros Verified
+            </h3>
+            <p class="vlists-count">
+              <span data-count data-fig="verified">—</span
+              ><small data-fig="verifiedUnit">lists</small>
+            </p>
+            <p class="vlists-why">
+              On the Kleros list of lists, whose policy rejects offensive,
+              malformed and obviously insecure lists.
+            </p>
+          </div>
+          <ul
+            class="vlists-strip"
+            data-verified-lists
+            aria-label="Kleros Verified lists, most open requests first"
+          ></ul>
+        </section>
+      </section>
+
+      <section class="disputes" id="disputes" aria-labelledby="disputes-title">
+        <div class="section-head" data-reveal>
+          <h2 id="disputes-title" class="section-title">
+            How disputes are settled
+          </h2>
+          <p class="section-lede">
+            Anyone can check an entry against its list’s rules. A challenge goes
+            to Kleros jurors.
+          </p>
+        </div>
+
+        <div class="flow" data-flow data-reveal>
+          <svg class="flow-wires" data-flow-wires aria-hidden="true"></svg>
+          <ol class="flow-grid">
+            <li class="node" data-node="submit">
+              <span class="label">01</span>
+              <h3 class="node-title">Submit</h3>
+              <p class="node-text">Add an entry with a deposit you get back.</p>
+              <span class="state state--window"><i></i>Submitted</span>
+            </li>
+            <li class="node" data-node="window">
+              <span class="label">02</span>
+              <h3 class="node-title">Open for verification</h3>
+              <p class="node-text">
+                During the challenge period, anyone can check it against the
+                rules.
+              </p>
+              <div class="window-rail" aria-hidden="true"><span></span></div>
+              <span class="state state--window"><i></i>Open to challenge</span>
+            </li>
+            <li class="node node--outcome" data-node="accepted">
+              <span class="label">No challenge</span>
+              <h3 class="node-title">Listed</h3>
+              <p class="node-text">
+                An entry that follows the rules is listed, and its deposit comes
+                back.
+              </p>
+              <span class="state state--registered"><i></i>Registered</span>
+            </li>
+            <li class="node" data-node="court">
+              <span class="label">03 · Challenged</span>
+              <h3 class="node-title">Kleros Court</h3>
+              <p class="node-text">
+                The challenger adds a deposit; jurors rule on the list’s rules.
+                Rulings can be appealed.
+              </p>
+              <span class="state state--contested"><i></i>Jurors deciding</span>
+            </li>
+            <li class="node node--outcome" data-node="ruling">
+              <span class="label">04</span>
+              <h3 class="node-title">Ruling</h3>
+              <p class="node-text">
+                Winners get their deposit back plus the other side’s, less the
+                court fee. For a challenger, that extra is the bounty.
+              </p>
+              <span class="state-pair">
+                <span class="state state--registered"><i></i>Registered</span>
+                <span class="state state--off"><i></i>Rejected</span>
+              </span>
+            </li>
+          </ol>
+          <button class="replay" type="button" data-replay hidden>
+            <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
+              <path d="M2.8 8a5.2 5.2 0 1 0 1.6-3.8M2.6 2.6v2.8h2.8" />
+            </svg>
+            Play again
+          </button>
+        </div>
+        <p class="flow-foot" data-reveal>
+          <b>Stake Curate</b> keeps the stake with the entry, which anyone can
+          challenge at any time: a successful challenger earns the whole stake,
+          and a failed challenge adds to it. The submitter gets the stake back
+          by withdrawing it, after a delay.
+          <a href="https://docs.kleros.io/products/curate" rel="noopener"
+            >Appeals and fees in the docs</a
+          >
+        </p>
+      </section>
+    </main>
+
+    <footer class="foot">
+      <div class="foot-top">
+        <div class="foot-brand">
+          <p class="secured">Secured by Kleros</p>
+          <p class="foot-note">
+            Curate is a Kleros product. Disputes go to Kleros Court.
+          </p>
+        </div>
+        <nav class="foot-links" aria-label="More">
+          <a href="#roles">Who it’s for</a>
+          <a href="#disputes">How disputes work</a>
+          <a href="/browse">Explore lists</a>
+          <a href="/launch/100">Launch a list</a>
+          <a href="/guide">Guide</a>
+          <a href="https://docs.kleros.io/products/curate" rel="noopener"
+            >Documentation</a
+          >
+          <a href="https://court.kleros.io" rel="noopener">Kleros Court</a>
+        </nav>
+        <div class="foot-theme">
+          <span class="label" id="foot-theme-label">Theme</span>
+          <div
+            class="seg"
+            data-theme-switch
+            role="radiogroup"
+            aria-labelledby="foot-theme-label"
+          >
+            <span class="seg-thumb" aria-hidden="true"></span>
+            <button
+              type="button"
+              role="radio"
+              data-mode="system"
+              title="Matches your device"
+            >
+              System
+            </button>
+            <button type="button" role="radio" data-mode="light">Light</button>
+            <button type="button" role="radio" data-mode="dark">Dark</button>
+            <button type="button" role="radio" data-mode="kleros">
+              Kleros
+            </button>
+          </div>
+        </div>
+      </div>
+      <p class="foot-source" data-fig="source">
+        Figures come from public Curate data.
+      </p>
+    </footer>
+
+    <!-- Live figures from the indexers (the dashboard's query and helpers);
+         data.js is the dated snapshot the page draws first and falls back to. -->
+    <script type="module" src="/src/landing/boot.ts"></script>
+    <script src="/landing/data.js"></script>
+    <!-- landing.js reveals the blocks the head script's .js class hides; if
+         it cannot load, the page drops the class and shows them as they are. -->
+    <script
+      src="/landing/landing.js"
+      onerror="document.documentElement.classList.remove('js')"
+    ></script>
+  </body>
+</html>

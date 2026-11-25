@@ -42,11 +42,13 @@ export const namespaces: Namespace[] = [
     id: 'tvm',
     test: (s: string) =>
       /^(0|-1):[a-fA-F0-9]{64}$/.test(s) ||
-      /^[EU][Q|f][A-Za-z0-9_-]{46}$/.test(s),
+      /^[EU][Qf][A-Za-z0-9_-]{46}$/.test(s),
   },
   {
     id: 'stacks',
-    test: (s: string) => /^(SP|ST)[\da-km-zA-HJ-NP-Z]{38}$/.test(s),
+    // c32check: the version and a 24-byte payload, 39 to 41 characters in
+    // all (most are 41).
+    test: (s: string) => /^(SP|ST)[\da-km-zA-HJ-NP-Z]{37,39}$/.test(s),
   },
 ]
 
@@ -341,18 +343,26 @@ export type RichAddress = {
   passedTest: boolean
 }
 
-export const parseRichAddress = (crude: string): RichAddress | null => {
-  if (!crude) return null
-  // if no 2 colons, it's badly formatted
-  if (crude.split(':').length !== 3) return null
+const hasOwn = (map: object, key: string) =>
+  Object.prototype.hasOwnProperty.call(map, key)
 
-  const [namespaceId, referenceId, address] = crude.split(':')
+export const parseRichAddress = (crude: string): RichAddress | null => {
+  if (typeof crude !== 'string' || !crude) return null
+  // "<namespace>:<reference>:<address>". The address is everything after
+  // the second colon: a raw TON address ("0:<64 hex>", which the tvm test
+  // accepts) holds a colon of its own.
+  const [namespaceId, referenceId, ...rest] = crude.split(':')
+  if (rest.length === 0) return null
+  const address = rest.join(':')
+  // Own keys only. Values are written by anyone: "__proto__:constructor:x"
+  // or "eip155:toString:x" would otherwise read Object's own members as a
+  // network and crash every page that shows the entry.
   // namespace not found
-  if (!namespacesMap[namespaceId]) return null
+  if (!hasOwn(namespacesMap, namespaceId)) return null
+  // reference not found
+  if (!hasOwn(referencesMap[namespaceId], referenceId)) return null
 
   const reference = referencesMap[namespaceId][referenceId]
-  // reference not found
-  if (!reference) return null
   // correct rich address
   const link = `https://${reference.explorer}/address/${address}`
   const passedTest = namespacesMap[namespaceId].test(address)

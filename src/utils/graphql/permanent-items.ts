@@ -6,7 +6,6 @@ const PERMANENT_ITEMS_QUERY = gql`
     $first: Int
     $orderDirection: OrderDirection
     $where: Item_filter
-    $registryId: String
   ) {
     items(
       skip: $skip
@@ -36,6 +35,7 @@ const PERMANENT_ITEMS_QUERY = gql`
       submissions(first: 1, orderBy: createdAt, orderDirection: desc) {
         submitter
         finishedTx
+        withdrawingTx
       }
       challenges(first: 1, orderBy: createdAt, orderDirection: desc) {
         disputeID
@@ -61,3 +61,20 @@ const PERMANENT_ITEMS_QUERY = gql`
 `
 
 export default PERMANENT_ITEMS_QUERY
+
+/**
+ * The entries of a Stake list that have been challenged at least once (each
+ * challenge is a dispute), whatever their status now (round 6, "previously
+ * disputed"): their ids only, for the status menu's count; a lower bound
+ * when the read reaches its limit.
+ */
+export const PERMANENT_DISPUTED_BEFORE_QUERY = gql`
+  query permanentDisputedBeforeQuery($registry: String!, $first: Int!) {
+    items(
+      first: $first
+      where: { registry: $registry, challenges_: { id_not: null } }
+    ) {
+      id
+    }
+  }
+`

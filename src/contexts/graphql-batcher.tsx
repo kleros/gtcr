@@ -1,19 +1,25 @@
 import React, { useMemo, createContext, useContext } from 'react'
-import {
-  create,
-  windowedFiniteBatchScheduler,
-  type Batcher,
-} from '@yornaath/batshit'
-import { request, type RequestDocument } from 'graphql-request'
+import type { RequestDocument } from 'graphql-request'
 import { toast } from 'react-toastify'
 import { subgraphUrl, subgraphUrlPermanent } from 'config/tcr-addresses'
+import { request } from 'utils/indexer-request'
+
+/*
+ * The pages' way to the indexers: `graphqlBatcher.fetch(query)`. The
+ * batching itself lives in utils/indexer-request.ts, which sends every Envio
+ * query asked within a few milliseconds as one HTTP request (the indexer's
+ * rate limit counts requests); Stake subgraph queries go out one by one.
+ * This context adds the chain's endpoint and one shared warning when reads
+ * fail.
+ */
 
 interface IGraphqlBatcher {
-  graphqlBatcher: Batcher<any, IQuery>
+  graphqlBatcher: { fetch: (query: IQuery) => Promise<any> }
 }
 
 export interface IQuery {
-  id: string
+  /** Kept for callers; queries are no longer matched by ID. */
+  id?: string
   document: RequestDocument
   variables: Record<string, any>
   isPermanent?: boolean
@@ -31,20 +37,6 @@ const debounceErrorToast = (msg: string) => {
   }, 5000)
 }
 
-const fetchGraphql = async (
-  url: string,
-  document: RequestDocument,
-  variables: Record<string, any>,
-) => {
-  try {
-    return await request(url, document, variables)
-  } catch (err) {
-    console.error('Graph error:', { err })
-    debounceErrorToast('Graph query error: failed to fetch data.')
-    return {}
-  }
-}
-
 const getSubgraphUrl = (
   chainId: number | string,
   isPermanent: boolean,
@@ -55,45 +47,37 @@ const getSubgraphUrl = (
   return url
 }
 
-const fetcher = async (queries: IQuery[]) => {
-  const results = await Promise.all(
-    queries.map(({ document, variables, isPermanent, chainId }) => {
-      const url = getSubgraphUrl(chainId, isPermanent ?? false)
-      return fetchGraphql(url, document, variables)
-    }),
-  )
-
-  return results.map((result, index) => ({
-    id: queries[index].id,
-    result,
-  }))
+// A failed read is an error, not an empty answer: an empty answer would read
+// as "this entry does not exist" and be cached as fresh, so the page could not
+// tell an outage from a missing entry and React Query would not retry it.
+const fetchGraphql = async ({
+  document,
+  variables,
+  isPermanent,
+  chainId,
+}: IQuery) => {
+  try {
+    const url = getSubgraphUrl(chainId, isPermanent ?? false)
+    const data = await request(url, document, variables)
+    // The indexer answers again: drop a warning still waiting to show.
+    clearTimeout(toastTimeout)
+    return data
+  } catch (err) {
+    console.error('Graph error:', { err })
+    debounceErrorToast('Some data did not load. Try again in a moment.')
+    throw err
+  }
 }
+
+const graphqlBatcher = { fetch: fetchGraphql }
 
 export const GraphqlBatcherProvider: React.FC<{
   children?: React.ReactNode
-}> = ({ children }) => {
-  const graphqlBatcher = useMemo(
-    () =>
-      create({
-        fetcher,
-        resolver: (results, query) =>
-          results.find((result) => result.id === query.id)!['result'],
-        scheduler: windowedFiniteBatchScheduler({
-          windowMs: 100,
-          maxBatchSize: 5,
-        }),
-      }),
-    [],
-  )
-
-  return (
-    <Context.Provider
-      value={useMemo(() => ({ graphqlBatcher }), [graphqlBatcher])}
-    >
-      {children}
-    </Context.Provider>
-  )
-}
+}> = ({ children }) => (
+  <Context.Provider value={useMemo(() => ({ graphqlBatcher }), [])}>
+    {children}
+  </Context.Provider>
+)
 
 export const useGraphqlBatcher = () => {
   const context = useContext(Context)

@@ -25,43 +25,6 @@ export const STATUS_CODE = {
   REMOVED: 11,
 }
 
-export const STATUS_TEXT = {
-  [STATUS_CODE.REJECTED]: 'Rejected',
-  [STATUS_CODE.REGISTERED]: 'Registered',
-  [STATUS_CODE.SUBMITTED]: 'Submitted',
-  [STATUS_CODE.REMOVAL_REQUESTED]: 'Removing',
-  [STATUS_CODE.CHALLENGED]: 'Challenged',
-  [STATUS_CODE.CROWDFUNDING]: 'Crowdfunding',
-  [STATUS_CODE.CROWDFUNDING_WINNER]: 'Crowdfunding Winner',
-  [STATUS_CODE.WAITING_ARBITRATOR]: 'Waiting Arbitrator',
-  [STATUS_CODE.PENDING_SUBMISSION]: 'Pending Execution',
-  [STATUS_CODE.PENDING_REMOVAL]: 'Pending Execution',
-  [STATUS_CODE.WAITING_ENFORCEMENT]: 'Waiting enforcement',
-  [STATUS_CODE.REMOVED]: 'Removed',
-}
-
-export const STATUS_COLOR = {
-  [STATUS_CODE.REJECTED]: '#ff4d4f',
-  [STATUS_CODE.REGISTERED]: '#52c41a',
-  [STATUS_CODE.SUBMITTED]: '#4da6ff',
-  [STATUS_CODE.REMOVAL_REQUESTED]: '#ff85c0',
-  [STATUS_CODE.CHALLENGED]: '#fa8c16',
-  [STATUS_CODE.CROWDFUNDING]: '#b37feb',
-  [STATUS_CODE.CROWDFUNDING_WINNER]: '#9d52d6',
-  [STATUS_CODE.WAITING_ARBITRATOR]: '#eb2f96',
-  [STATUS_CODE.PENDING_SUBMISSION]: '#36cfc9',
-  [STATUS_CODE.PENDING_REMOVAL]: '#ff7a45',
-  [STATUS_CODE.WAITING_ENFORCEMENT]: '#faad14',
-  [STATUS_CODE.REMOVED]: '#ff4d4f',
-}
-
-export const SUBGRAPH_STATUS_TO_CODE = {
-  Absent: 0,
-  Registered: 1,
-  RegistrationRequested: 2,
-  ClearingRequested: 3,
-}
-
 export const REQUEST_TYPE_LABEL = {
   [CONTRACT_STATUS.REGISTRATION_REQUESTED]: 'Submission',
   [CONTRACT_STATUS.REMOVAL_REQUESTED]: 'Removal',
@@ -70,75 +33,6 @@ export const REQUEST_TYPE_LABEL = {
 export const hasPendingRequest = (contractStatus: string): boolean =>
   contractStatus === CONTRACT_STATUS.REGISTRATION_REQUESTED ||
   contractStatus === CONTRACT_STATUS.REMOVAL_REQUESTED
-
-export const getResultStatus = ({
-  ruling,
-  requestType,
-}: {
-  ruling: number
-  requestType: string
-}): string => {
-  let status: string
-  if (requestType === CONTRACT_STATUS.REGISTRATION_REQUESTED)
-    switch (ruling) {
-      case PARTY.NONE:
-      case PARTY.CHALLENGER:
-        status = CONTRACT_STATUS.ABSENT
-        break
-      case PARTY.REQUESTER:
-        status = CONTRACT_STATUS.REGISTERED
-        break
-      default:
-        throw new Error('Unhandled ruling')
-    }
-  else
-    switch (ruling) {
-      case PARTY.NONE:
-      case PARTY.CHALLENGER:
-        status = CONTRACT_STATUS.REGISTERED
-        break
-      case PARTY.REQUESTER:
-        status = CONTRACT_STATUS.ABSENT
-        break
-      default:
-        throw new Error('Unhandled ruling')
-    }
-  return status
-}
-
-export const getActionLabel = ({
-  statusCode,
-  itemName = 'item',
-}: {
-  statusCode: number
-  itemName?: string
-}): string => {
-  switch (statusCode) {
-    case STATUS_CODE.REJECTED:
-    case STATUS_CODE.REMOVED:
-      return `Resubmit ${itemName}`
-    case STATUS_CODE.REGISTERED:
-      return `Remove ${itemName}`
-    case STATUS_CODE.SUBMITTED:
-      return 'Challenge submission'
-    case STATUS_CODE.REMOVAL_REQUESTED:
-      return 'Challenge removal'
-    case STATUS_CODE.CROWDFUNDING:
-    case STATUS_CODE.CROWDFUNDING_WINNER:
-      return 'Contribute Fees'
-    case STATUS_CODE.PENDING_SUBMISSION:
-      return 'Execute submission'
-    case STATUS_CODE.PENDING_REMOVAL:
-      return 'Execute removal'
-    case STATUS_CODE.CHALLENGED:
-    case STATUS_CODE.WAITING_ARBITRATOR:
-      return 'Waiting Arbitrator'
-    case STATUS_CODE.WAITING_ENFORCEMENT:
-      return 'Waiting Enforcement'
-    default:
-      throw new Error(`Unhandled status code ${statusCode}`)
-  }
-}
 
 export const itemToStatusCode = (
   item: SubgraphItem,
@@ -187,18 +81,21 @@ export const itemToStatusCode = (
     // appeal period didn't start yet
     return STATUS_CODE.CHALLENGED
 
+  // The contracts take contributions while now < appealPeriodEnd.
   if (round.ruling === SUBGRAPH_RULING.NONE)
-    if (timestamp.lte(round.appealPeriodEnd))
+    if (timestamp.lt(round.appealPeriodEnd))
       // Arbitrator did not rule or refused to rule.
       return STATUS_CODE.CROWDFUNDING
     else return STATUS_CODE.WAITING_ARBITRATOR
 
   // Arbitrator gave a decisive ruling (i.e. Ruled in favor of either the requester or challenger).
-  if (timestamp.gt(round.appealPeriodEnd)) return STATUS_CODE.WAITING_ARBITRATOR
+  if (timestamp.gte(round.appealPeriodEnd))
+    return STATUS_CODE.WAITING_ARBITRATOR
   const appealPeriodDuration =
     Number(round.appealPeriodEnd) - Number(round.appealPeriodStart)
+  // The loser's half ends where the contracts' integer division puts it.
   const appealHalfTime =
-    Number(round.appealPeriodStart) + appealPeriodDuration / 2
+    Number(round.appealPeriodStart) + Math.floor(appealPeriodDuration / 2)
   if (timestamp.lt(appealHalfTime)) return STATUS_CODE.CROWDFUNDING // In first half of appeal period
 
   // If the party that lost the previous round is not fully funded

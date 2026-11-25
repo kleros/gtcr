@@ -1,7 +1,7 @@
 import { gql } from 'graphql-request'
 
-const LIGHT_ITEM_DETAILS_QUERY = gql`
-  query lightItemDetailsQuery($id: String!) {
+const STANDARD_ITEM_DETAILS_QUERY = gql`
+  query standardItemDetailsQuery($id: String!) {
     litem: LItem_by_pk(id: $id) {
       data
       itemID
@@ -29,6 +29,8 @@ const LIGHT_ITEM_DETAILS_QUERY = gql`
         deposit
         disputeOutcome
         resolutionTime
+        challengeTime
+        txHashChallenge
         evidenceGroup {
           id
           evidences(order_by: { number: desc }) {
@@ -44,7 +46,9 @@ const LIGHT_ITEM_DETAILS_QUERY = gql`
             fileTypeExtension
           }
         }
-        rounds(order_by: { creationTime: desc }) {
+        # A challenge in the submission's block ties round 0 and round 1 on
+        # creationTime; their ids (…-0, …-1) break the tie.
+        rounds(order_by: [{ creationTime: desc }, { id: desc }]) {
           appealed
           appealPeriodStart
           appealPeriodEnd
@@ -62,4 +66,4 @@ const LIGHT_ITEM_DETAILS_QUERY = gql`
   }
 `
 
-export default LIGHT_ITEM_DETAILS_QUERY
+export default STANDARD_ITEM_DETAILS_QUERY

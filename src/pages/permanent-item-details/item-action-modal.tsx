@@ -1,28 +1,33 @@
 import React, { useMemo } from 'react'
-import { BigNumber } from 'ethers'
-import { STATUS_CODE, getActionLabel } from 'utils/permanent-item-status'
+import type { BigNumber } from 'ethers'
+import { STATUS_CODE } from 'utils/permanent-item-status'
+import { stakeActionLabel } from 'components/permanent-item-action-button'
+import { ResubmitRedirect } from 'pages/submit-item/resubmit'
 import ChallengeModal from './modals/challenge'
-import SubmitModal from './modals/submit'
 import CrowdfundModal from './modals/crowdfund'
+
+/*
+ * Picks the modal behind the item's one action: challenge while listed,
+ * fund an appeal while an appeal is open. Off the list, the action is a
+ * resubmission on the submit page (an ?action= link is sent there).
+ */
 
 interface ItemActionModalProps {
   statusCode: number
   isOpen: boolean
   itemName: string
   onClose: () => void
-  fileURI?: string
   item: SubgraphItem
   metaEvidence?: MetaEvidence
   appealCost?: BigNumber | undefined
-  arbitrationCost?: BigNumber | undefined
-}
-
-interface SubmitRegistry {
-  id: string
-  token: string
-  submissionMinDeposit: string
-  submissionPeriod: string
-  withdrawingPeriod: string
+  appealCostFailed?: boolean
+  onRetryAppealCost?: () => void
+  /** A challenge's arbitration cost: the setting the contract picks for this entry. */
+  challengeArbitrationCost?: BigNumber | undefined
+  /** The policy this entry is judged by; the newest one when not given. */
+  policyURI?: string
+  /** The entry's values are still being read; a resubmission waits for them. */
+  valuesPending?: boolean
 }
 
 const ItemActionModal = ({
@@ -30,26 +35,23 @@ const ItemActionModal = ({
   isOpen,
   itemName,
   onClose,
-  fileURI,
   item,
   metaEvidence,
   appealCost,
-  arbitrationCost,
+  appealCostFailed,
+  onRetryAppealCost,
+  challengeArbitrationCost,
+  policyURI: entryPolicyURI,
+  valuesPending = false,
 }: ItemActionModalProps) => {
-  // Common button properties.
   const rest = {
     visible: isOpen,
-    title: getActionLabel({ statusCode, itemName }),
+    title: stakeActionLabel({ statusCode, itemName }),
     onCancel: onClose,
   }
-  const r = useMemo(() => item?.registry as SubmitRegistry, [item])
-  const submitMetadata = metaEvidence?.metadata
-    ? {
-        title: String(metaEvidence.metadata.title ?? ''),
-        itemName: metaEvidence.metadata.itemName ?? '',
-        policyURI: String(metaEvidence.metadata.policyURI ?? ''),
-      }
-    : undefined
+  const r = useMemo(() => item?.registry, [item])
+  const policyURI =
+    entryPolicyURI ?? r?.arbitrationSettings?.[0]?.metadata?.policyURI
 
   switch (statusCode) {
     case STATUS_CODE.ACCEPTED:
@@ -58,9 +60,8 @@ const ItemActionModal = ({
         <ChallengeModal
           item={item}
           itemName={itemName}
-          fileURI={fileURI}
-          statusCode={statusCode}
-          arbitrationCost={arbitrationCost}
+          arbitrationCost={challengeArbitrationCost}
+          policyURI={policyURI}
           {...rest}
         />
       )
@@ -68,17 +69,12 @@ const ItemActionModal = ({
     case STATUS_CODE.REMOVED:
     case STATUS_CODE.WITHDRAWN:
       return (
-        <SubmitModal
-          initialValues={item.decodedData}
-          submissionDeposit={r.submissionMinDeposit}
-          submissionPeriod={r.submissionPeriod}
-          arbitrationCost={arbitrationCost}
-          withdrawingPeriod={r.withdrawingPeriod}
-          tcrAddress={r.id}
-          tokenAddress={r.token}
-          metadata={submitMetadata}
-          columns={metaEvidence?.metadata?.columns ?? []}
-          {...rest}
+        <ResubmitRedirect
+          open={isOpen}
+          ready={!valuesPending}
+          columns={metaEvidence?.metadata?.columns}
+          values={item.decodedData}
+          onClose={onClose}
         />
       )
     case STATUS_CODE.CROWDFUNDING:
@@ -87,11 +83,14 @@ const ItemActionModal = ({
         <CrowdfundModal
           statusCode={statusCode}
           item={item}
-          fileURI={fileURI}
+          fileURI={policyURI}
           appealCost={appealCost}
+          appealCostFailed={appealCostFailed}
+          onRetryAppealCost={onRetryAppealCost}
           {...rest}
         />
       )
+    case STATUS_CODE.DISPUTED:
     case STATUS_CODE.WAITING_ARBITRATOR:
     case STATUS_CODE.PENDING_WITHDRAWAL:
       return null

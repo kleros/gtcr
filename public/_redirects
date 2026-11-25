@@ -1,0 +1,17 @@
+# A file under /assets/ that this release does not have (an old chunk a stale
+# tab asks for after a deploy or a rollback) gets a plain 404, not the app's
+# index.html with a 200 from the catch-all in netlify.toml. No cache rule
+# matches it (the year-long one names each real file), so nothing keeps the
+# 404 once the file exists again. Rules here run before netlify.toml's, and
+# a rule without "!" never covers a file that exists.
+/assets/*  /404.html  404
+/agent /llms.txt 200
+/agent.txt /llms.txt 200
+/agent-context /curate-agent-context.md 200
+/skills /guide 302
+# The skill's references come from kleros/kleros-skills, except a file kept in
+# public/skills/kleros-curate/references/ (verify-your-list.md: upstream still
+# names the Gnosis list of lists replaced on 17 Nov 2026), which this rule
+# does not cover because it exists.
+/skills/kleros-curate/references/* https://raw.githubusercontent.com/kleros/kleros-skills/master/kleros-curate/references/:splat 302
+/skills/feedback/* https://raw.githubusercontent.com/kleros/kleros-skills/master/feedback/:splat 302

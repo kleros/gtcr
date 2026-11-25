@@ -1,88 +1,72 @@
 import { useEffect, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { useAccount, useChainId, useSwitchChain } from 'wagmi'
+import { useAccount, useSwitchChain } from 'wagmi'
 import useUrlChainId from 'hooks/use-url-chain-id'
 import { getChainById, DEFAULT_CHAIN } from 'config/chains'
-import { defaultTcrAddresses } from 'config/tcr-addresses'
 
-/** Manages wallet chain switching and URL-based chain navigation. */
-const useTcrNetwork = () => {
-  const navigate = useNavigate()
+/*
+ * The chains the wallet was already asked to move to, for the life of the
+ * page load. List, entry and submit pages remount on every link, so a
+ * per-mount memory asked again on each page after the reader had said no.
+ */
+const askedChains = new Set<number>()
+
+/**
+ * Asks a connected wallet, once per visit, to move to the chain of the page
+ * it opens.
+ *
+ * The page never follows the wallet the other way. It used to: a wallet
+ * that changed network sent every open list, entry and submit page to that
+ * network's list of lists, so a second tab on another chain (or a switch in
+ * the wallet) threw away a half-filled submission or an evidence draft. The
+ * URL names the page's chain, reads use it, and every write has its own
+ * "Switch to <chain>" step. (A wallet client lost on an unsupported chain
+ * is looked up again app-wide, in contexts/wallet-context.tsx.)
+ *
+ * `ready`: the page knows the list is on this chain. A link naming another
+ * chain is sent on to the list's own (use-check-standard-curate): asking the
+ * wallet before that would move it to the wrong chain, and that chain would
+ * count as asked for the rest of the visit.
+ */
+const useTcrNetwork = (ready = true) => {
   const urlChainId = useUrlChainId()
-  const walletChainId = useChainId()
-  const { isConnected } = useAccount()
+  // The wallet's own chain. useChainId() stays on the last chain the app
+  // supports while the wallet sits on one it does not (wagmi only follows
+  // configured chains), so it alone cannot tell whether writes can go out.
+  const { isConnected, chainId: connectedChainId } = useAccount()
   const { switchChain } = useSwitchChain()
 
-  // The chain the URL says we should be on
+  // The chain the URL says we should be on. A chain Curate does not run on
+  // gets its own "Chain not supported" page: nothing to move the wallet to.
+  const supported = !urlChainId || !!getChainById(urlChainId)
   const targetChainId =
     urlChainId && getChainById(urlChainId) ? urlChainId : DEFAULT_CHAIN.id
 
   // Whether the wallet is on the correct chain for write operations
-  const isCorrectChain = walletChainId === targetChainId
+  const isCorrectChain = connectedChainId === targetChainId
 
-  // --- All refs for loop prevention ---
-  // Which targetChainId we already attempted to switch to (never re-arms on URL change)
-  const switchAttemptedForChain = useRef<number | null>(null)
   // Stable ref for switchChain (wagmi's mutate is unstable across renders)
   const switchChainRef = useRef(switchChain)
   switchChainRef.current = switchChain
-  // Track previous wallet chain for detecting actual changes
-  const prevWalletChainRef = useRef(walletChainId)
-  // Debounce timer for navigation on wallet chain change
-  const navTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  // Effect 1: Attempt to switch the wallet to the URL's chain (best-effort).
-  // Uses a ref to track which chain was attempted — never resets on URL change,
-  // only when the target chain actually changes to a NEW value.
+  // Attempt to switch the wallet to the URL's chain (best-effort), at most
+  // once per chain and visit: a wallet already there counts as asked, and a
+  // refusal is not met with the same request on the next page.
   useEffect(() => {
-    if (!isConnected) return
+    if (!isConnected || !supported || !ready) return
     if (isCorrectChain) {
       // Wallet is already on the right chain — mark as attempted
-      switchAttemptedForChain.current = targetChainId
+      askedChains.add(targetChainId)
       return
     }
-    if (switchAttemptedForChain.current === targetChainId) return
+    if (askedChains.has(targetChainId)) return
 
-    switchAttemptedForChain.current = targetChainId
+    askedChains.add(targetChainId)
     try {
       switchChainRef.current({ chainId: targetChainId })
     } catch {
       // User rejected or error — that's fine, show content in read-only
     }
-  }, [isConnected, isCorrectChain, targetChainId])
-
-  // Effect 2: Navigate to the matching TCR when the wallet chain changes.
-  // Debounced to let wagmi's state settle before acting, preventing
-  // rapid-fire navigations from intermediate chain states.
-  useEffect(() => {
-    const prevChain = prevWalletChainRef.current
-    prevWalletChainRef.current = walletChainId
-
-    // Only act on actual changes, not initial render
-    if (prevChain === walletChainId) return
-    // Don't navigate on disconnect
-    if (!isConnected) return
-    // Don't navigate if wallet switched to the URL's chain
-    // (likely from our own switchChain call above)
-    if (walletChainId === targetChainId) return
-
-    // Clear any pending navigation from a previous rapid chain change
-    if (navTimerRef.current) clearTimeout(navTimerRef.current)
-
-    const chainToNavigate = walletChainId
-    navTimerRef.current = setTimeout(() => {
-      navTimerRef.current = null
-      const tcrAddress = defaultTcrAddresses[chainToNavigate]
-      if (tcrAddress) navigate(`/tcr/${chainToNavigate}/${tcrAddress}`)
-    }, 150)
-
-    return () => {
-      if (navTimerRef.current) {
-        clearTimeout(navTimerRef.current)
-        navTimerRef.current = null
-      }
-    }
-  }, [walletChainId, isConnected, targetChainId, navigate])
+  }, [isConnected, isCorrectChain, targetChainId, supported, ready])
 }
 
 export default useTcrNetwork

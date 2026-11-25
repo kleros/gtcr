@@ -1,41 +1,13 @@
 import { ethers, BigNumber } from 'ethers'
 
-const { keccak256, getAddress } = ethers.utils
-
-export const truncateETHAddress = (ethAddr: string): string =>
-  `${ethAddr.slice(0, 5)}...${ethAddr.slice(40)}`
-
-export const shortenAddress = (address: string): string =>
-  `${address.slice(0, 6)}...${address.slice(-4)}`
+const { getAddress } = ethers.utils
 
 export const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
-export const ZERO_BYTES32 =
-  '0x0000000000000000000000000000000000000000000000000000000000000000'
-
-export const LOREM_IPSUM = `Natus ipsam unde et accusamus. Autem et laboriosam non harum voluptas necessitatibus commodi. Enim suscipit cumque aut voluptas quibusdam soluta quis. Velit modi dolores voluptate pariatur. Eligendi veniam aut esse. Aut nam itaque repellendus explicabo dolores.
-
-Voluptates magnam error sequi occaecati facere.`
 
 export const isVowel = (x: string): boolean => /[aeiouAEIOU]/.test(x)
 
 export const capitalizeFirstLetter = (str: string): string =>
   str && str.length > 0 ? str.charAt(0).toUpperCase() + str.slice(1) : str
-
-export const isChecksumAddress = (address: string): boolean => {
-  // Check each case
-  var addressHash = keccak256(address.toLowerCase())
-  for (var i = 0; i < 40; i++)
-    // the nth letter should be uppercase if the nth digit of casemap is 1
-    if (
-      (parseInt(addressHash[i], 16) > 7 &&
-        address[i].toUpperCase() !== address[i]) ||
-      (parseInt(addressHash[i], 16) <= 7 &&
-        address[i].toLowerCase() !== address[i])
-    )
-      return false
-
-  return true
-}
 
 export const isETHAddress = (address: string): boolean => {
   if (!address) return false
@@ -68,17 +40,53 @@ export const jurorsAndCourtIDFromExtraData = (
   return { courtID, numberOfJurors }
 }
 
-export const getArticleFor = (str: string): string =>
-  str && isVowel(str[0]) ? 'an' : 'a'
+/** The court and juror count in arbitrator extra data, or null if it does not decode. */
+export const readExtraData = (
+  extraData?: string,
+): { courtID: number; numberOfJurors: number } | null => {
+  if (!extraData) return null
+  try {
+    return jurorsAndCourtIDFromExtraData(extraData)
+  } catch {
+    return null
+  }
+}
+
+/** Kleros arbitrator extra data: the court id, then the juror count, 32 bytes each. */
+export const encodeExtraData = (courtID: number, numberOfJurors: number) =>
+  `0x${courtID.toString(16).padStart(64, '0')}${Math.ceil(numberOfJurors)
+    .toString(16)
+    .padStart(64, '0')}`
+
+// Letters whose spoken name starts with a vowel sound ("an NFT", "an SDK").
+const VOWEL_SOUND_LETTERS = /^[AEFHILMNORSX]/
+// Vowel letters read with a consonant sound ("a user", "a euro", "a one-off").
+const CONSONANT_SOUND_START =
+  // No "n" in the class: "an unusual", "an unofficial"; only "unanimous"
+  // and "unary" start with the "you-n" sound.
+  /^(u[bcfgklmprstvz][aeiou]|unanim|unary|uni|eu|ewe|one\b|once\b|uk\b)/i
+// A silent h ("an hour", "an honest mistake").
+const SILENT_H_START = /^(hour|honest|honou?r|heir)/i
+
+/**
+ * "a" or "an" for the word that follows, by how it sounds rather than how it
+ * is spelled: a user, a euro, an hour, an NFT, a URL.
+ */
+export const getArticleFor = (str: string): string => {
+  const word = (str || '').trim().split(/[\s-]/)[0] ?? ''
+  if (!word) return 'a'
+  if (/^[A-Z]{2,}\d*$/.test(word))
+    return VOWEL_SOUND_LETTERS.test(word) ? 'an' : 'a'
+  if (/^(8|11|18)/.test(word)) return 'an'
+  if (SILENT_H_START.test(word)) return 'an'
+  if (CONSONANT_SOUND_START.test(word)) return 'a'
+  return isVowel(word[0]) ? 'an' : 'a'
+}
 
 export const SAVED_NETWORK_KEY = 'SAVED_NETWORK_KEY'
 
 export const addPeriod = (input: string = ''): string => {
   if (input.length === 0) return ''
-  return input[input.length - 1] === '.' ? input : `${input}.`
-}
-
-export const hexlify = (number: number | null | undefined): string => {
-  if (!number) return '0x00'
-  else return `0x${Number(number).toString(16)}`
+  // A question or an exclamation already ends its sentence.
+  return /[.?!]$/.test(input) ? input : `${input}.`
 }

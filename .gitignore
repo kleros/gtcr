@@ -35,3 +35,10 @@ yarn-error.log*
 
 # Local Netlify folder
 .netlify
+
+# Tests
+/coverage
+/build-e2e
+/e2e/report
+/e2e/results
+/e2e/record.log

@@ -1,0 +1,232 @@
+import { ItemTypes, typeDefaultValues } from '@kleros/gtcr-encoder'
+import { namespaces, parseRichAddress } from 'utils/rich-address'
+import {
+  AMBIGUOUS_COMMA,
+  isAmbiguousComma,
+  normalizeDecimalInput,
+} from 'utils/decimal-input'
+
+/*
+ * Form plumbing shared by the three registry kinds: the value shape the
+ * encoders and `resolveStashedFiles` expect, the defaults the submit modals
+ * use, and the validation rules (format checks for addresses and links,
+ * plus the "deployed with a list creator" check for GTCR address columns).
+ */
+
+/** A field holds a string, or a File while an upload is stashed. */
+export type FieldValue = string | File
+export type SubmissionValues = Record<string, FieldValue>
+export type SubmissionErrors = Record<string, string>
+
+export type RegistryExistsCheck = (tcrAddress: string) => Promise<boolean>
+
+export interface FactoryChecks {
+  deployedWithStandardFactory: RegistryExistsCheck
+  deployedWithPermanentFactory: RegistryExistsCheck
+}
+
+/**
+ * The Formik path of a column's value. Formik reads a field name as a path,
+ * so setFieldValue("No. of tokens", …) would store {No: {" of tokens": …}},
+ * where nothing reads it. Quoted in brackets, the label is one key, the way
+ * the form reads it.
+ */
+export const fieldPath = (label: string): string =>
+  `["${label.replace(/["\\]/g, '\\$&')}"]`
+
+/**
+ * A column the list does not require: marked optional in its metadata, or
+ * labelled so ("Logo (Optional)"), the only way the list factories let a
+ * creator say it.
+ */
+export const isOptionalColumn = (column: Column): boolean =>
+  !!column.optional || /\(optional\)\s*$/i.test(column.label ?? '')
+
+export const isRequired = (column: Column): boolean =>
+  column.type !== ItemTypes.BOOLEAN && !isOptionalColumn(column)
+
+export const isEmptyValue = (value: FieldValue | undefined): boolean =>
+  value === undefined || (typeof value === 'string' && value.trim() === '')
+
+/**
+ * Column-aware emptiness: a rich address whose chain was picked but whose
+ * address is still blank ("eip155:1:") counts as empty.
+ */
+export const isEmptyField = (
+  column: Column,
+  value: FieldValue | undefined,
+): boolean => {
+  if (isEmptyValue(value)) return true
+  if (column.type === ItemTypes.RICH_ADDRESS && typeof value === 'string') {
+    const parsed = parseRichAddress(value)
+    return !!parsed && parsed.address.trim() === ''
+  }
+  return false
+}
+
+/**
+ * Same defaults as the submit modals. A missing initial value falls back to
+ * the column type's default instead of the string "undefined".
+ */
+export const buildInitialValues = (
+  columns: Column[],
+  initialValues?: unknown[],
+): SubmissionValues => {
+  const values: SubmissionValues = {}
+  for (const [index, column] of columns.entries()) {
+    const provided = initialValues?.[index]
+    // NUMBER and TWITTER_USER_ID default to 0 in the encoder, which would
+    // count as a filled-in required field; they start blank instead.
+    const fallback =
+      column.type === ItemTypes.NUMBER ||
+      column.type === ItemTypes.TWITTER_USER_ID
+        ? ''
+        : (typeDefaultValues[column.type] ?? '')
+    values[column.label] = String(provided ?? fallback)
+  }
+  return values
+}
+
+/** How many required columns are still empty (the modals' "fields complete" rule). */
+export const missingRequired = (
+  columns: Column[],
+  values: SubmissionValues,
+): number =>
+  columns.filter(
+    (column) =>
+      isRequired(column) && isEmptyField(column, values[column.label]),
+  ).length
+
+/**
+ * Blank rich addresses that only carry a chain ("eip155:1:") are sent as
+ * empty, links as validated (without surrounding spaces) and numbers with
+ * a dot for decimals: "0,5" goes on chain as "0.5".
+ */
+export const normaliseValues = (
+  columns: Column[],
+  values: SubmissionValues,
+): SubmissionValues => {
+  const next: SubmissionValues = { ...values }
+  for (const column of columns) {
+    const value = next[column.label]
+    if (typeof value !== 'string') continue
+    if (column.type === ItemTypes.RICH_ADDRESS && isEmptyField(column, value))
+      next[column.label] = ''
+    else if (column.type === ItemTypes.LINK) next[column.label] = value.trim()
+    else if (column.type === ItemTypes.NUMBER)
+      next[column.label] = normalizeDecimalInput(value)
+  }
+  return next
+}
+
+const isEvmAddress = (value: string): boolean => namespaces[0].test(value)
+
+/**
+ * A full link: anything the URL parser takes with a scheme (https, ipfs,
+ * mailto…), since lists cite more than web pages and the previous dialog took
+ * any text. Script and data URLs are refused; pages only make https clickable.
+ */
+const isFullLink = (value: string): boolean => {
+  if (/\s/.test(value)) return false
+  try {
+    const { protocol } = new URL(value)
+    return !['javascript:', 'data:', 'vbscript:'].includes(protocol)
+  } catch {
+    return false
+  }
+}
+
+/**
+ * A link typed without its scheme ("example.org/app") gets "https://"; any
+ * other value is returned unchanged for validation to judge. A colon before
+ * a digit is a port ("example.org:8080/app"), not a scheme.
+ */
+export const withWebScheme = (value: string): string => {
+  const text = value.trim()
+  if (
+    !text ||
+    /\s/.test(text) ||
+    !text.includes('.') ||
+    /^[a-z][a-z\d+.-]*:(?!\d)/i.test(text)
+  )
+    return value
+  return `https://${text.replace(/^\/+/, '')}`
+}
+
+/**
+ * A plain decimal number: "18", "-3", "0.5", ".5", or "0,5" as typed on a
+ * keypad with a comma for decimals ("1,000" stays refused: thousand or one?).
+ */
+const isPlainNumber = (value: string): boolean =>
+  /^-?(\d+(\.\d*)?|\.\d+)$/.test(normalizeDecimalInput(value))
+
+export const validateSubmission = async (
+  columns: Column[],
+  values: SubmissionValues,
+  checks: FactoryChecks,
+): Promise<SubmissionErrors> => {
+  const errors: SubmissionErrors = {}
+
+  for (const column of columns) {
+    const value = values[column.label]
+    if (isRequired(column) && isEmptyField(column, value)) {
+      errors[column.label] = 'Required.'
+      continue
+    }
+    if (typeof value !== 'string' || isEmptyField(column, value)) continue
+    if (column.type === ItemTypes.NUMBER && !isPlainNumber(value))
+      // Lists store the text as typed: "eighteen" would go into a number
+      // column and invite a challenge.
+      errors[column.label] = isAmbiguousComma(value)
+        ? AMBIGUOUS_COMMA
+        : 'Enter a number, like 18 or 0.5. A dot or a comma works for decimals.'
+    if (
+      (column.type === ItemTypes.ADDRESS ||
+        column.type === ItemTypes.GTCR_ADDRESS) &&
+      !isEvmAddress(value)
+    )
+      errors[column.label] =
+        'Enter a valid address: 0x followed by 40 hex characters.'
+    if (
+      column.type === ItemTypes.RICH_ADDRESS &&
+      !parseRichAddress(value)?.passedTest
+    )
+      errors[column.label] = 'Enter a valid address for the selected chain.'
+    if (column.type === ItemTypes.LINK && !isFullLink(value.trim()))
+      errors[column.label] = 'Enter a full link, like https://example.org'
+  }
+
+  // A list address must have been deployed by one of the list creators
+  // (Standard or Stake): the same check the submit modals run.
+  await Promise.all(
+    columns
+      .filter(
+        (column) =>
+          column.type === ItemTypes.GTCR_ADDRESS &&
+          !errors[column.label] &&
+          typeof values[column.label] === 'string' &&
+          // Spaces only is empty here too, as for every rule above.
+          (values[column.label] as string).trim() !== '',
+      )
+      .map(async (column) => {
+        const address = (values[column.label] as string).trim()
+        try {
+          const deployed =
+            (await checks.deployedWithStandardFactory(address)) ||
+            (await checks.deployedWithPermanentFactory(address))
+          if (!deployed)
+            errors[column.label] =
+              'This address was not deployed with the list creator.'
+        } catch (err) {
+          // An indexer that does not answer is not a verdict on the address,
+          // but the submission must wait for one: said at the field, it also
+          // names the button's blocker instead of the button doing nothing.
+          console.error('Error checking the list address:', err)
+          errors[column.label] =
+            'Could not check this address right now. Try again.'
+        }
+      }),
+  )
+
+  return errors
+}

@@ -1,3 +1,5 @@
+import { formatDate } from './time'
+
 interface UpdatedAgo {
   text: string
   days: number
@@ -20,9 +22,13 @@ export function formatUpdatedAgo(startDate: string): UpdatedAgo | null {
   if (days === 1) return { text: 'updated 1 day ago', days }
   if (days < 30) return { text: `updated ${days} days ago`, days }
 
-  const months = Math.floor(days / 30)
-  if (months === 1) return { text: 'updated 1 month ago', days }
-  if (months < 12) return { text: `updated ${months} months ago`, days }
+  // Months under a year: 360 to 364 days are 12 thirty-day months but not
+  // yet a year, so they stay "11 months" (never "0 years").
+  if (days < 365) {
+    const months = Math.min(11, Math.floor(days / 30))
+    if (months === 1) return { text: 'updated 1 month ago', days }
+    return { text: `updated ${months} months ago`, days }
+  }
 
   const years = Math.floor(days / 365)
   if (years === 1) return { text: 'updated 1 year ago', days }
@@ -32,13 +38,11 @@ export function formatUpdatedAgo(startDate: string): UpdatedAgo | null {
 export const POLICY_RECENT_THRESHOLD_DAYS = 7
 
 /**
- * Formats an ISO date as a short "Mmm D, YYYY" string for the policy
- * history modal and past-policy banner.
+ * Formats an ISO date as "22 Oct 2026" for the policy history modal and
+ * past-policy banner: in UTC, as every other date in the app (utils/time),
+ * so a change near midnight falls on the same day as the entry times.
  */
 export function formatPolicyDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  })
+  const ms = Date.parse(iso)
+  return Number.isFinite(ms) ? formatDate(ms / 1000) : '—'
 }

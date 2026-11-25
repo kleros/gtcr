@@ -12,11 +12,31 @@
 ## Get Started
 
 1.  Clone this repo.
-2.  Duplicate `.env.example` and rename it to `.env`. Fill the environment variables.
-3.  Run `nvm use 16`
-4.  Run `yarn` to install dependencies and then `yarn build:theme && yarn start` to start the dev server.
+2.  Use Node 20.19 (`NODE_VERSION` in `netlify.toml`) and run `corepack enable`, so that the Yarn version `package.json` names (`packageManager`) is the one that runs.
+3.  Run `yarn` to install the dependencies.
+4.  Copy `.env.example` to `.env` and fill it in (see below).
+5.  Run `yarn dev` and open http://localhost:3000. The landing page is at http://localhost:3000/landing/.
 
-> Tested on node version 10.
+## Environment Variables
+
+The build reads only the `REACT_APP_` variables listed in `.env.example`. The app does not render without `REACT_APP_REOWN_PROJECT_ID`, and it shows no Standard list without the Envio indexer URLs. Without `REACT_APP_ALCHEMY_API_KEY` it uses public RPC endpoints. The optional `REACT_APP_SUBGRAPH_KLEROS_DISPLAY_*_ENDPOINT` variables point at the Kleros Display subgraphs (The Graph), as on Scout, for court details; without them those details read from the court contract only.
+
+## Before a Release
+
+Two snapshots ship with the app and are refreshed by hand:
+
+- `public/landing/data.js`: the figures the landing page draws before its live read answers. Open `/landing/`, wait until the activity panel reads "Live", run `copy(JSON.stringify(await window.CURATE_LANDING_LIVE, null, 2))` in the browser console and paste the result over the whole object in the file, minus its `live` field. Update the date in the file's header comment; never edit single figures by hand.
+- `src/config/registry-creation-snapshot.json`: when each list was created. Run `node scripts/registry-creation-snapshot.mjs`; it reads `REACT_APP_ALCHEMY_API_KEY` from `.env`.
+
+## Testing
+
+`.github/workflows/tests.yml` runs both suites on every pull request.
+
+- `yarn test`: unit tests for the app's logic (`src/**/*.test.ts`, in Node) and component tests (`src/**/*.test.tsx`, in jsdom with Testing Library), next to the code they cover. They read no `.env` and touch no network. `yarn test:watch` reruns them as you edit, `yarn test:coverage` writes `coverage/`.
+- `yarn test:e2e`: browser tests (`e2e/`, Playwright) against a production build at desktop and phone size. Run `yarn playwright install chromium` once. The build talks to placeholder services (`e2e/e2e.env`), and every request is answered from `e2e/recordings`, so the tests need no keys and never spend the indexers' shared request budget. Each test also fails on a page error, a console error, a request with no recording, or a request to an unknown host. `yarn test:e2e:report` opens the last report. Each run builds the app first (about a minute); keep `yarn test:e2e:serve` running in another terminal and runs reuse it.
+- `yarn test:e2e:record` re-records `e2e/recordings` against the real services named in your `.env`: run it when the app asks the services something new (the tests then fail with "requests with no recording"), and commit the result. It records the whole suite at once, because the browser clock is pinned to the time of the recording, and it keeps no secret: requests are filed under the variable that names their service, never under a URL. While recording, every list in an indexer's answer is cut to 25 rows.
+
+A test that pins a known bug is written as `it.fails(…)` with a `// BUG:` comment: it passes while the bug is there and fails once it is fixed, as a reminder to make it a normal test.
 
 ## Supporting New Field Types
 
@@ -30,17 +50,12 @@ The evidence display interface code of the Generalized TCR can be found at [http
 
 ## Other Scripts
 
-- `yarn format` - Lint, fix and prettify all the project.
-- `yarn run cz` - Run commitizen.
-- `yarn run build` - Create a production build.
+- `yarn build` - Type check, then create a production build in `build/`.
+- `yarn preview` - Serve the production build.
+- `yarn typecheck` - Type check only (the app, its tests and `e2e/`).
+- `yarn lint` - Lint the sources.
+- `yarn format` - Lint, fix and prettify the sources.
 
 ## Netlify Deployment
 
-When setting up the repo for publishing on netlify:
-1. Fill the env variables in netlify.toml;
-2. Set the following environment variables on the site's build config in netlify's dashboard:
-```
-REACT_APP_RPC_URLS
-REACT_APP_FORMATIC_API_KEYS
-REACT_APP_NOTIFICATIONS_API_URL
-```
+`netlify.toml` sets the build command, the Node version and the public variables. Set the other variables from `.env.example` in the site's environment variables on Netlify.
