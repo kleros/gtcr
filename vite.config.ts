@@ -112,6 +112,19 @@ const ROUTE_PRELOADS: { pattern: string; pages: string[] }[] = [
   },
 ]
 
+/*
+ * JSON written into the inline <script> below: `<`, `>` and `/` as \u
+ * escapes, so no value can end the element ("</script>") or open a comment
+ * in it, and U+2028/U+2029 too (line breaks to older parsers). The values
+ * are the build's own (route patterns, chunk names, the base path), and are
+ * escaped all the same.
+ */
+const scriptJson = (value: unknown): string =>
+  JSON.stringify(value).replace(
+    /[<>/\u2028\u2029]/g,
+    (char) => `\\u${char.charCodeAt(0).toString(16).padStart(4, '0')}`,
+  )
+
 const routePreload = (origins: string[]): Plugin => {
   let base = '/'
   return {
@@ -154,7 +167,7 @@ const routePreload = (origins: string[]): Plugin => {
               if (!entry.has(file)) files.add(file)
           return [pattern, [...files].sort(byCodeUnit)]
         })
-        const script = `(function(){var r=${JSON.stringify(table)},p=location.pathname;for(var i=0;i<r.length;i++)if(new RegExp(r[i][0],'i').test(p)){for(var j=0;j<r[i][1].length;j++){var l=document.createElement('link');l.rel='modulepreload';l.crossOrigin='';l.href=${JSON.stringify(base)}+r[i][1][j];document.head.appendChild(l)}break}})()`
+        const script = `(function(){var r=${scriptJson(table)},p=location.pathname;for(var i=0;i<r.length;i++)if(new RegExp(r[i][0],'i').test(p)){for(var j=0;j<r[i][1].length;j++){var l=document.createElement('link');l.rel='modulepreload';l.crossOrigin='';l.href=${scriptJson(base)}+r[i][1][j];document.head.appendChild(l)}break}})()`
         return [
           ...origins.map((href) => ({
             tag: 'link',

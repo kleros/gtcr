@@ -74,6 +74,17 @@ const setByMarkdown = (
 const MEANINGFUL = /[\\`*_[\]&!]/g
 
 /**
+ * Where a URL's closing `*` and `_` begin, counted back from its end in one
+ * pass (as linkify's trailing punctuation is: an anchored `[*_]+$` retries
+ * every run of them).
+ */
+const emphasisTail = (url: string): number => {
+  let end = url.length
+  while (end > 0 && (url[end - 1] === '*' || url[end - 1] === '_')) end -= 1
+  return end
+}
+
+/**
  * The source with each bare URL's Markdown characters escaped, so the URL
  * stays one piece of text: "…/__init__.py" would lose its underscores to
  * bold, and its link would end before them. A `*` or `_` ending the URL is
@@ -92,8 +103,11 @@ const escapeBareUrls = (source: string, kept: Array<[number, number]>) => {
       offset += piece.url.length
       if (kept.some(([from, to]) => start < to && offset > from))
         return piece.url
-      const core = piece.url.replace(/[*_]+$/, '')
-      return core.replace(MEANINGFUL, '\\$&') + piece.url.slice(core.length)
+      const end = emphasisTail(piece.url)
+      return (
+        piece.url.slice(0, end).replace(MEANINGFUL, String.raw`\$&`) +
+        piece.url.slice(end)
+      )
     })
     .join('')
 }
@@ -145,8 +159,9 @@ const walk = (node: MdNode) => {
 // escape.
 function evidenceText(this: { parse(document: string): unknown }) {
   const parse = (document: string) => this.parse(document) as MdNode
-  return (tree: MdNode, file: { value?: unknown }) => {
-    const source = String(file.value ?? '')
+  // The file is react-markdown's VFile: its toString() is the source.
+  return (tree: MdNode, file: { toString(): string }) => {
+    const source = file.toString()
     const escaped = escapeBareUrls(source, setByMarkdown(tree))
     if (escaped !== source) tree.children = parse(escaped).children
     walk(tree)
