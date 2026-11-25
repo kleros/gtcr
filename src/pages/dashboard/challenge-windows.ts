@@ -1,5 +1,6 @@
 import { ethers } from 'ethers'
 import { getRpcUrls } from 'config/rpc'
+import { firstAnswer } from 'utils/first-answer'
 
 /*
  * Each Standard list's challenge period, read from the chain: the
@@ -64,7 +65,6 @@ const readChunk = async (
   chainId: number,
   addresses: string[],
 ): Promise<Map<string, number>> => {
-  const periods = new Map<string, number>()
   const data = multicall.encodeFunctionData('aggregate3', [
     addresses.map((target) => ({
       target,
@@ -72,14 +72,16 @@ const readChunk = async (
       callData: PERIOD_CALL,
     })),
   ])
-  // The app's endpoint order: the next node answers when one fails.
-  for (const url of getRpcUrls(chainId)) {
+  // The app's endpoint order: the next node answers when one fails or
+  // stalls (utils/first-answer.ts).
+  const read = await firstAnswer(getRpcUrls(chainId), async (url) => {
     const result = await ethCall(url, MULTICALL3, data)
-    if (!result) continue
+    if (!result) return null
     try {
       const [rows] = multicall.decodeFunctionResult('aggregate3', result) as [
         { success: boolean; returnData: string }[],
       ]
+      const periods = new Map<string, number>()
       rows.forEach((row, index) => {
         if (!row.success || row.returnData.length < 66) return
         const [period] = registryInterface.decodeFunctionResult(
@@ -91,9 +93,10 @@ const readChunk = async (
       return periods
     } catch {
       // A malformed answer: try the next node.
+      return null
     }
-  }
-  return periods
+  })
+  return read ?? new Map<string, number>()
 }
 
 /**

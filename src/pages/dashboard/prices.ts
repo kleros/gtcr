@@ -1,6 +1,7 @@
 import { ethers } from 'ethers'
 import { NETWORKS } from 'config/networks'
 import { getRpcUrls } from 'config/rpc'
+import { firstAnswer } from 'utils/first-answer'
 import { formatDurationLong } from 'utils/time'
 import { TESTNET_CHAIN_IDS } from './view'
 
@@ -229,7 +230,7 @@ const ethCall = async (
  * One Multicall3 read: the calls' answers in order, with a call that reverted
  * or answered nothing as null. Null for the whole batch when no endpoint
  * answered. Walks the app's own endpoint order, so the next node answers when
- * one fails (challenge-windows.ts).
+ * one fails or stalls (utils/first-answer.ts).
  */
 const aggregate = async (
   chainId: number,
@@ -239,9 +240,9 @@ const aggregate = async (
   const data = multicall.encodeFunctionData('aggregate3', [
     calls.map((call) => ({ ...call, allowFailure: true })),
   ])
-  for (const url of getRpcUrls(chainId)) {
+  return firstAnswer(getRpcUrls(chainId), async (url) => {
     const result = await ethCall(url, MULTICALL3, data)
-    if (!result) continue
+    if (!result) return null
     try {
       const [rows] = multicall.decodeFunctionResult('aggregate3', result) as [
         { success: boolean; returnData: string }[],
@@ -251,9 +252,9 @@ const aggregate = async (
       )
     } catch {
       // A malformed answer: try the next node.
+      return null
     }
-  }
-  return null
+  })
 }
 
 /**

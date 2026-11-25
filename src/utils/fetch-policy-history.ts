@@ -106,7 +106,10 @@ const buildProviders = (chainId: number): providers.JsonRpcProvider[] => {
   if (urls.length === 0)
     throw new Error(`No RPC URL configured for chain ${chainId}`)
 
-  return urls.map((url) => new providers.JsonRpcProvider(url, chainId))
+  // Static: each URL serves one known chain. A plain JsonRpcProvider asks
+  // eth_chainId again before every request, so the backward scan's getLogs
+  // calls, one after another, each cost two round trips.
+  return urls.map((url) => new providers.StaticJsonRpcProvider(url, chainId))
 }
 
 /**
