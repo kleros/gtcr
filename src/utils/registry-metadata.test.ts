@@ -1,5 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { ipfsPath } from './registry-metadata'
+import snapshot from 'config/registry-metadata-snapshot.json'
+import {
+  ipfsPath as scriptIpfsPath,
+  metadataFromFile as scriptMetadataFromFile,
+} from '../../scripts/registry-metadata-snapshot.mjs'
+import { ipfsPath, metadataFromFile } from './registry-metadata'
 
 const CID = 'QmYwAPJzv5CZsnA625s3Xf2nemtYgPpHdWEz79ojWnPbdG'
 const CID_V1 = 'bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi'
@@ -338,5 +343,81 @@ describe('readRegistryMetadata', () => {
     await vi.advanceTimersByTimeAsync(1)
     expect(calls[6].signal?.aborted).toBe(true)
     expect(await Promise.all(reads)).toEqual(new Array(7).fill('failed'))
+  })
+})
+
+describe('the metadata snapshot', () => {
+  const files: [string, unknown][] = [
+    [
+      'the usual keys',
+      { metadata: { tcrTitle: ' T ', tcrDescription: 'D', logoURI: 'L' } },
+    ],
+    [
+      'the plain metadata keys',
+      { metadata: { title: 'A', description: 'B', logo: 'C' } },
+    ],
+    [
+      'the top-level keys of older files',
+      { tcrTitle: 'A', description: 'B', logoURI: 'C' },
+    ],
+    ['a registryTitle', { registryTitle: 'A', tcrDescription: 'B' }],
+    ['a file wrapped in "data"', { data: { metadata: { tcrTitle: 'A' } } }],
+    [
+      'metadata beside "data"',
+      { data: { tcrTitle: 'A' }, metadata: { logo: 'C' } },
+    ],
+    ['"-" and blank text', { metadata: { tcrTitle: '-', title: '   ' } }],
+    ['fields that are not text', { metadata: { tcrTitle: 5, logoURI: [] } }],
+    ['metadata that is text', { metadata: 'Tokens' }],
+    ['null', null],
+    ['an array', [{ metadata: { tcrTitle: 'A' } }]],
+    ['a number', 42],
+  ]
+
+  it.each(files)('is read by the script as the app reads %s', (_, file) => {
+    expect(scriptMetadataFromFile(file)).toEqual(metadataFromFile(file))
+  })
+
+  it.each([
+    `/ipfs/${CID}/meta.json`,
+    `ipfs://${CID}/meta.json`,
+    `https://ipfs.io/ipfs/${CID}/meta.json`,
+    `${CID_V1}/meta.json`,
+    'ipfs://registrationMetaEvidence',
+    '',
+  ])('keys %j as the app looks it up', (uri) => {
+    expect(scriptIpfsPath(uri)).toBe(ipfsPath(uri))
+  })
+
+  it('holds only what a read of the file would give', () => {
+    const entries = Object.entries(
+      snapshot.files as Record<string, Record<string, unknown> | null>,
+    )
+    expect(entries.length).toBeGreaterThan(100)
+    for (const [path, metadata] of entries) {
+      expect(ipfsPath(path)).toBe(path)
+      if (metadata === null) continue
+      for (const [key, value] of Object.entries(metadata)) {
+        expect(['title', 'description', 'logoURI']).toContain(key)
+        expect(typeof value).toBe('string')
+        expect(value).toBe((value as string).trim())
+        expect(value).not.toBe('')
+      }
+      expect(metadata.title).not.toBe('-')
+    }
+  })
+
+  it('answers for the files it holds without asking the gateway', async () => {
+    vi.resetModules()
+    const { readRegistryMetadata } = await import('./registry-metadata')
+    const fetchMock = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
+    const [path, metadata] = Object.entries(
+      snapshot.files as Record<string, { logoURI?: string } | null>,
+    ).find(([, held]) => held?.logoURI)!
+    expect(await readRegistryMetadata(`/ipfs/${path}`)).toEqual(metadata)
+    expect(await readRegistryMetadata(`ipfs://${path}`)).toEqual(metadata)
+    expect(fetchMock).not.toHaveBeenCalled()
+    vi.unstubAllGlobals()
   })
 })

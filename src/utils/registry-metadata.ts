@@ -1,4 +1,5 @@
 import { parseIpfs } from 'utils/ipfs-parse'
+import snapshot from 'config/registry-metadata-snapshot.json'
 
 /*
  * A list's own metadata (title, description, logo), read from its
@@ -11,6 +12,15 @@ import { parseIpfs } from 'utils/ipfs-parse'
  * "ipfs://registrationMetaEvidence" or "/ipfs/dev-…/…json" that are not
  * content addresses; those are never requested, the gateway only answers
  * them with an error.
+ *
+ * The files that existed when this release was built ship with it
+ * (config/registry-metadata-snapshot.json, written by
+ * scripts/registry-metadata-snapshot.mjs): a path is the address of its
+ * content, so they can never go stale. The dashboard load, Browse and the
+ * profiles name and draw every list, and on a first visit that cost a
+ * couple of hundred reads from the gateway, six at a time, before the page
+ * could show its lists. Only files added since (new lists, new policies)
+ * are read.
  */
 
 export interface RegistryMetadata {
@@ -57,8 +67,43 @@ export const ipfsPath = (uri?: string | null): string | null => {
 const text = (value: unknown): string | undefined =>
   typeof value === 'string' && value.trim() ? value.trim() : undefined
 
-/** Results by IPFS path: the content is immutable, so one read is enough. */
-const settled = new Map<string, RegistryMetadata | null>()
+/**
+ * A list's title, description and logo from its MetaEvidence file. The
+ * snapshot script reads files the same way (registry-metadata.test.ts holds
+ * the two to the same answers): a field read here must be read there too,
+ * and the snapshot written again.
+ */
+export const metadataFromFile = (file: any): RegistryMetadata => {
+  const evidence = file?.data ?? file ?? {}
+  const metadata = evidence?.metadata ?? file?.metadata ?? {}
+  const title = text(
+    metadata.tcrTitle ||
+      metadata.title ||
+      evidence.tcrTitle ||
+      evidence.registryTitle,
+  )
+  return {
+    // "-" is what some forms saved for an empty title.
+    title: title && title !== '-' ? title : undefined,
+    description: text(
+      metadata.tcrDescription ||
+        metadata.description ||
+        evidence.tcrDescription ||
+        evidence.description,
+    ),
+    logoURI: text(metadata.logoURI || metadata.logo || evidence.logoURI),
+  }
+}
+
+/**
+ * Results by IPFS path: the content is immutable, so one read is enough,
+ * and the files read before this release are known from the start.
+ */
+const settled = new Map<string, RegistryMetadata | null>(
+  Object.entries(
+    (snapshot as { files: Record<string, RegistryMetadata | null> }).files,
+  ),
+)
 const pending = new Map<string, Promise<RegistryMetadata | null>>()
 /** Failed paths: how many times in a row, and when they may be read again. */
 const failures = new Map<string, { count: number; retryAt: number }>()
@@ -118,25 +163,7 @@ const read = async (path: string): Promise<RegistryMetadata | null> => {
     } catch {
       return null
     }
-    const evidence = file?.data ?? file ?? {}
-    const metadata = evidence?.metadata ?? file?.metadata ?? {}
-    const title = text(
-      metadata.tcrTitle ||
-        metadata.title ||
-        evidence.tcrTitle ||
-        evidence.registryTitle,
-    )
-    return {
-      // "-" is what some forms saved for an empty title.
-      title: title && title !== '-' ? title : undefined,
-      description: text(
-        metadata.tcrDescription ||
-          metadata.description ||
-          evidence.tcrDescription ||
-          evidence.description,
-      ),
-      logoURI: text(metadata.logoURI || metadata.logo || evidence.logoURI),
-    }
+    return metadataFromFile(file)
   } finally {
     clearTimeout(timeout)
   }
