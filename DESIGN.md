@@ -776,6 +776,11 @@ way (dashboard, Browse, registry pages, the profile, the landing page).
   with a quiet "Clear form" text action styled as the factory review's Edit.
 - A wizard's action bar moves one step per click, never two on a double click: the next step's
   button can sit under the pointer (on phones the bar sticks to the bottom of the screen).
+- **Atlas takes 5 uploads a minute per wallet.** Deploying a list again uploads only the files that
+  changed since the last attempt (`utils/upload-once.ts`), so a deploy cancelled in the wallet goes
+  through when sent again at once. An upload refused over the limit says "Uploads are limited to 5
+  a minute per wallet. Wait a minute, then try again." (`isUploadLimit`), never Atlas's own
+  "ThrottlerException".
 
 ## Lists
 

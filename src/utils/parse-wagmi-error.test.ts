@@ -196,6 +196,28 @@ describe('parseWagmiError', () => {
     ])('says the network did not answer for %s', (_, error) => {
       expect(parseWagmiError(error)).toBe(NETWORK_DOWN)
     })
+
+    it.each([
+      // What kleros-app throws for Atlas's 429, word for word.
+      [
+        'as kleros-app throws it',
+        new Error('ThrottlerException: Too Many Requests'),
+      ],
+      [
+        'under another error',
+        {
+          message: 'Failed to upload meta-evidence to IPFS.',
+          cause: new Error('ThrottlerException: Too Many Requests'),
+        },
+      ],
+    ])(
+      'says to wait a minute when Atlas refused an upload over its limit, %s',
+      (_, error) => {
+        expect(parseWagmiError(error)).toBe(
+          'Uploads are limited to 5 a minute per wallet. Wait a minute, then try again.',
+        )
+      },
+    )
   })
 
   describe('the headline', () => {

@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react'
+import React, { useMemo, useRef, useState } from 'react'
 import styled from 'styled-components'
 import {
   parseEther,
@@ -21,6 +21,7 @@ import {
   waitForOutcome,
 } from 'utils/wrap-with-toast'
 import { parseWagmiError } from 'utils/parse-wagmi-error'
+import { uploadOnce } from 'utils/upload-once'
 import { formatDurationLong } from 'utils/time'
 import { parseIpfs } from 'utils/ipfs-parse'
 import { wagmiConfig } from 'config/wagmi'
@@ -471,6 +472,9 @@ const Deploy = ({
     defaultTCRAddress ?? '',
   )
   const { uploadFile } = useAtlasProvider()
+  // The list's files as earlier attempts uploaded them: deploying again
+  // uploads only the ones that changed (uploadOnce).
+  const uploaded = useRef(new Map<string, string>())
   const gate = useWalletGate({ verb: 'deploy', needsChain: true })
 
   const incomplete = useMemo(() => incompleteSteps(tcrState), [tcrState])
@@ -586,7 +590,7 @@ const Deploy = ({
         tcrState,
         parentTCRAddress,
         evidenceDisplayInterfaceURI,
-        uploadFile,
+        (file, role) => uploadOnce(uploadFile, uploaded.current, file, role),
       )
       setMetaEvidencePaths([
         registrationMetaEvidencePath,

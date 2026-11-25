@@ -1,3 +1,5 @@
+import { isUploadLimit, UPLOAD_LIMIT_MESSAGE } from 'utils/upload-restrictions'
+
 type ErrorLike = {
   name?: unknown
   reason?: unknown
@@ -202,6 +204,10 @@ export const parseWagmiError = (error: unknown): string => {
     ) === true
   )
     return 'The network did not answer. Try again in a moment.'
+  // Atlas refused an upload over its limit: the files go up before
+  // anything is signed, so this is what stopped the action.
+  if (findInChain(error, (current) => isUploadLimit(current) || undefined))
+    return UPLOAD_LIMIT_MESSAGE
 
   const headline =
     findInChain(error, (current) => firstLine(current.shortMessage)) ??
