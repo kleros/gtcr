@@ -766,35 +766,41 @@ const Dashboard = () => {
   const checkingWindows = windowsMissing && windowsRetry.isFetching
 
   const chains = useMemo(() => scopeChains(chain), [chain])
-  // The history since the 3Y range's start, read after the page's own load
-  // and kept across page loads (data.ts readActivityHistory): Top curators
-  // and the chart over 6M, 1Y and 3Y. Not retried as a whole: each failed
-  // page was already asked twice, and a retry would walk every page again
-  // on the indexer's shared limit.
+  // The history since the 3Y range's start, kept across page loads (data.ts
+  // readActivityHistory): Top curators and the chart over 6M, 1Y and 3Y,
+  // which the page opens on. It is read alongside the page's own load, not
+  // after it: its pages travel in requests of their own (the indexer's
+  // background lane), so they never hold the load back, and the chart no
+  // longer waits for the two one after the other. Not retried as a whole:
+  // each failed page was already asked twice, and a retry would walk every
+  // page again on the indexer's shared limit.
   const history = useQuery({
     queryKey: ['dashboardHistory', chains.join(',')],
     queryFn: () => readActivityHistory(chains),
-    enabled: !!data,
+    enabled: savedReady,
     staleTime: 30 * 60_000,
     retry: false,
   })
   // Everything paid in to a list, all time, at today's prices (round 15:
   // "this number can be smashed also somewhere in the dashboard"; round 19:
-  // in the Self-sustaining mechanism). Its own query, after the main load:
-  // never in the saved load, whose prices would be repainted a day old
+  // in the Self-sustaining mechanism). Its own query, read alongside the
+  // main load (in the indexer's background lane, as the history): never in
+  // the saved load, whose prices would be repainted a day old
   // (use-usd-prices.ts). The coin totals are kept across page loads
-  // (transit.ts readTransit) and priced again on every read. Never on a
-  // testnet, whose coins have no price.
+  // (transit.ts readTransit) and priced again on every read; a token the
+  // load has not named yet is read by totalInDollars. Never on a testnet,
+  // whose coins have no price.
   const transit = useQuery({
     queryKey: ['dashboardTransit', chains.join(',')],
     queryFn: async () => {
       const read = await readTransit(chains)
+      const known = queryClient.getQueryData<DashboardData>(loadKey)?.tokens
       return {
-        usd: await totalInDollars(Object.values(read.totals), data?.tokens),
+        usd: await totalInDollars(Object.values(read.totals), known),
         requests: read.requests,
       }
     },
-    enabled: !!data && !testnetScope,
+    enabled: savedReady && !testnetScope,
     staleTime: 10 * 60_000,
     // The coin totals are kept (readTransit), so a retry reads prices again,
     // not the indexer's pages.

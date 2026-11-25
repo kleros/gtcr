@@ -39,6 +39,13 @@ import { TESTNET_CHAIN_IDS, toAmount } from './view'
 const PAGE = 1000
 /** Pages asked at once; the Envio ones go out as one batched request. */
 const WAVE = 6
+/**
+ * Stake pages asked at once: one. The Stake indexer takes no batches, so
+ * every page is a request of its own, and its tables are small (under a
+ * page each when this was written): six at a time sent five empty pages
+ * per table, beside the page's own Stake reads.
+ */
+const STAKE_WAVE = 1
 /** Far past today's ~33 pages a chain: past it the read is not trusted. */
 const MAX_PAGES = 200
 const TOKEN_BUDGET_MS = 4000
@@ -114,13 +121,16 @@ type Rounds = { amountPaidRequester: string; amountPaidChallenger: string }[]
 type Token = { item: { registry: { token: string } | null } | null }
 
 /** Every page of a read, a wave at a time, until one comes back short. */
-const pageAll = async <T>(read: (page: number) => Promise<T[]>) => {
+const pageAll = async <T>(
+  read: (page: number) => Promise<T[]>,
+  wave = WAVE,
+) => {
   const rows: T[] = []
-  for (let first = 0; first < MAX_PAGES; first += WAVE) {
+  for (let first = 0; first < MAX_PAGES; first += wave) {
     // A page that fails is asked once more on its own: retrying the whole
     // read would walk every page again on the shared limit.
     const pages = await Promise.all(
-      Array.from({ length: WAVE }, (_, index) =>
+      Array.from({ length: wave }, (_, index) =>
         read(first + index).catch(() => read(first + index)),
       ),
     )
@@ -163,19 +173,28 @@ const chainTransit = async (chainId: number, totals: Transit['totals']) => {
   const envio = subgraphUrl[chainId]
   if (!envio) throw new Error(`No Standard indexer for chain ${chainId}`)
   const stake = subgraphUrlPermanent[chainId]
+  // Read alongside a page's first reads, never in their requests
+  // (utils/indexer-request.ts: the background lane).
   const requests = (document: typeof STANDARD_ROUNDS) =>
     pageAll((page) =>
-      request<{ rows: { rounds: Rounds }[] }>(envio, document, {
-        chainId,
-        offset: page * PAGE,
+      request<{ rows: { rounds: Rounds }[] }>({
+        url: envio,
+        document,
+        variables: { chainId, offset: page * PAGE },
+        lane: 'background',
       }).then((answer) => answer.rows),
     )
   const stakeRows = <T>(document: typeof STAKE_SUBMISSIONS) =>
     stake
-      ? pageAll((page) =>
-          request<{ rows: T[] }>(stake, document, { skip: page * PAGE }).then(
-            (answer) => answer.rows,
-          ),
+      ? pageAll(
+          (page) =>
+            request<{ rows: T[] }>({
+              url: stake,
+              document,
+              variables: { skip: page * PAGE },
+              lane: 'background',
+            }).then((answer) => answer.rows),
+          STAKE_WAVE,
         )
       : Promise.resolve([] as T[])
   const [standard, classic, submissions, challenges] = await Promise.all([

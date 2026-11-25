@@ -65,16 +65,30 @@ const readOf = (document: string): keyof Rows => {
   throw new Error(`unexpected query: ${document}`)
 }
 
+/** A call to request(), in either of its forms. */
+interface Asked {
+  url: string
+  document: string
+  variables: { offset?: number; skip?: number }
+  lane?: string
+}
+
+const askedIn = (args: unknown[]): Asked =>
+  typeof args[0] === 'string'
+    ? {
+        url: args[0],
+        document: args[1] as string,
+        variables: args[2] as Asked['variables'],
+      }
+    : (args[0] as Asked)
+
 /** Both indexers of every chain, served a page of 1,000 rows at a time. */
 const indexers = (
   byChain: Record<number, Rows>,
   fail?: (call: { url: string; read: keyof Rows; first: number }) => boolean,
 ) =>
-  vi.mocked(request).mockImplementation((async (
-    url: string,
-    document: string,
-    variables: { offset?: number; skip?: number },
-  ) => {
+  vi.mocked(request).mockImplementation((async (...args: unknown[]) => {
+    const { url, document, variables } = askedIn(args)
     const chainId = Number(url.split('/').pop())
     const read = readOf(document)
     const standardRead = read === 'standard' || read === 'classic'
@@ -86,13 +100,14 @@ const indexers = (
   }) as never)
 
 const calls = () =>
-  vi.mocked(request).mock.calls.map(([url, document, variables]) => ({
-    url: url as unknown as string,
-    read: readOf(document as unknown as string),
-    first:
-      (variables as { offset?: number; skip?: number }).offset ??
-      (variables as { skip?: number }).skip,
-  }))
+  vi.mocked(request).mock.calls.map((args) => {
+    const { url, document, variables } = askedIn(args)
+    return {
+      url,
+      read: readOf(document),
+      first: variables.offset ?? variables.skip,
+    }
+  })
 
 beforeEach(() => {
   vi.mocked(keptRead).mockImplementation((_name, _maxAgeMs, read) => read())
@@ -171,6 +186,16 @@ describe('readTransit', () => {
     )
   })
 
+  it("walks its pages in the indexer's background lane", async () => {
+    indexers({ [GNOSIS]: { standard: [{ rounds: [round('1')] }] } })
+    await readTransit([GNOSIS])
+    const lanes = vi
+      .mocked(request)
+      .mock.calls.map((args) => askedIn(args).lane)
+    expect(lanes.length).toBeGreaterThan(0)
+    expect(new Set(lanes)).toEqual(new Set(['background']))
+  })
+
   it('reads every page until one comes back short', async () => {
     const standard = Array.from({ length: 6001 }, () => ({
       rounds: [round('2')],
@@ -183,6 +208,23 @@ describe('readTransit', () => {
       .filter(({ read }) => read === 'standard')
       .map(({ first }) => first)
     expect(firsts).toContain(6000)
+  })
+
+  it('reads a Stake table a page at a time: it takes no batches', async () => {
+    const submissions = Array.from({ length: 1500 }, () => ({
+      initialStake: '1',
+      arbitrationDeposit: null,
+      item: listOf(SDAI),
+    }))
+    indexers({ [GNOSIS]: { submissions } })
+    const transit = await readTransit([GNOSIS])
+    expect(transit.totals[`100:${SDAI}`].amount).toBe(1500n)
+    const asked = (read: string) =>
+      calls()
+        .filter((call) => call.read === read)
+        .map(({ first }) => first)
+    expect(asked('submissions')).toEqual([0, 1000])
+    expect(asked('challenges')).toEqual([0])
   })
 
   it('asks a page that failed once more, on its own', async () => {

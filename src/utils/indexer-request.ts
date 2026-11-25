@@ -22,6 +22,12 @@ import { subgraphUrl } from 'config/tcr-addresses'
  * moment (longer each time, up to BACKOFF_MAX_MS) instead of being retried
  * at once by every query on the page: retries spend the same shared limit.
  *
+ * A request is answered once every query in it is, so the long walks a page
+ * shows after its first figures ask in a lane of their own (`lane:
+ * 'background'`) and are batched with each other only: they run alongside
+ * the page's first reads without holding them back. A refusal pauses every
+ * lane of its URL.
+ *
  * Other endpoints (the Stake subgraphs, Seer) do not take arrays; their
  * queries are sent one by one, as graphql-request does.
  */
@@ -36,6 +42,8 @@ interface RequestOptions {
   document: RequestDocument
   variables?: Variables
   signal?: AbortSignal
+  /** 'background': batched with other background reads only (see above). */
+  lane?: 'background'
 }
 
 interface Pending {
@@ -47,12 +55,17 @@ interface Pending {
   reject: (error: unknown) => void
 }
 
-interface Queue {
-  items: Pending[]
-  timer?: number
+/** An indexer URL's pause after a refusal, shared by its lanes. */
+interface Gate {
   /** No request leaves before this time (after a refusal). */
   pausedUntil: number
   backoff: number
+}
+
+interface Queue {
+  items: Pending[]
+  timer?: number
+  gate: Gate
 }
 
 /** The indexer answered, but with an error for this query or this request. */
@@ -71,13 +84,20 @@ const batchingUrls = new Set(
   Object.values(subgraphUrl).filter((url): url is string => !!url),
 )
 
+const gates = new Map<string, Gate>()
 const queues = new Map<string, Queue>()
 
-const queueFor = (url: string): Queue => {
-  let queue = queues.get(url)
+const queueFor = (url: string, lane?: string): Queue => {
+  const key = lane ? `${url}\n${lane}` : url
+  let queue = queues.get(key)
   if (!queue) {
-    queue = { items: [], pausedUntil: 0, backoff: 0 }
-    queues.set(url, queue)
+    let gate = gates.get(url)
+    if (!gate) {
+      gate = { pausedUntil: 0, backoff: 0 }
+      gates.set(url, gate)
+    }
+    queue = { items: [], gate }
+    queues.set(key, queue)
   }
   return queue
 }
@@ -87,7 +107,7 @@ const abortError = () =>
 
 const schedule = (url: string, queue: Queue, delay: number) => {
   if (queue.timer !== undefined) return
-  const wait = Math.max(delay, queue.pausedUntil - Date.now())
+  const wait = Math.max(delay, queue.gate.pausedUntil - Date.now())
   queue.timer = window.setTimeout(() => {
     queue.timer = undefined
     void flush(url, queue)
@@ -97,7 +117,7 @@ const schedule = (url: string, queue: Queue, delay: number) => {
 const flush = async (url: string, queue: Queue) => {
   // A refusal that landed while this batch waited for its window pauses it
   // too: no request leaves before pausedUntil.
-  if (queue.pausedUntil > Date.now()) {
+  if (queue.gate.pausedUntil > Date.now()) {
     schedule(url, queue, 0)
     return
   }
@@ -136,7 +156,7 @@ const flush = async (url: string, queue: Queue) => {
     if (!Array.isArray(answers) || answers.length !== groups.length)
       throw new IndexerError('The indexer answered in an unexpected shape.')
 
-    queue.backoff = 0
+    queue.gate.backoff = 0
     groups.forEach((group, index) => {
       const answer = answers[index] as {
         data?: unknown
@@ -153,11 +173,11 @@ const flush = async (url: string, queue: Queue) => {
   } catch (err) {
     // Refused (rate limit, which browsers report as a failed fetch) or
     // unreachable: hold the next requests back before asking again.
-    queue.backoff = Math.min(
+    queue.gate.backoff = Math.min(
       BACKOFF_MAX_MS,
-      queue.backoff ? queue.backoff * 2 : BACKOFF_START_MS,
+      queue.gate.backoff ? queue.gate.backoff * 2 : BACKOFF_START_MS,
     )
-    queue.pausedUntil = Date.now() + queue.backoff
+    queue.gate.pausedUntil = Date.now() + queue.gate.backoff
     for (const group of groups) for (const item of group) item.reject(err)
   }
 }
@@ -167,6 +187,7 @@ const enqueue = <T>({
   document,
   variables,
   signal,
+  lane,
 }: RequestOptions): Promise<T> =>
   new Promise<T>((resolve, reject) => {
     if (signal?.aborted) {
@@ -177,7 +198,7 @@ const enqueue = <T>({
       typeof document === 'string' || document instanceof String
         ? document.toString()
         : print(document)
-    const queue = queueFor(url)
+    const queue = queueFor(url, lane)
     const item: Pending = {
       key: `${query}\n${JSON.stringify(variables ?? {})}`,
       query,
@@ -197,7 +218,10 @@ const enqueue = <T>({
       { once: true },
     )
     queue.items.push(item)
-    if (queue.items.length >= BATCH_MAX && queue.pausedUntil <= Date.now()) {
+    if (
+      queue.items.length >= BATCH_MAX &&
+      queue.gate.pausedUntil <= Date.now()
+    ) {
       window.clearTimeout(queue.timer)
       queue.timer = undefined
       void flush(url, queue)

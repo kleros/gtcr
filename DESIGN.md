@@ -670,9 +670,11 @@ way (dashboard, Browse, registry pages, the profile, the landing page).
   8: three years is the longest, which starts after a company wallet's bulk submissions of 2023
   without singling out any address): 30D per day from the page's own load; 6M and 1Y per week, 3Y
   per month, from the whole history (Standard requests and challenges, Stake submissions and challenges; Classic left out),
-  read in pages after the page's own load, three at a time, and retried as a whole if a chain
-  fails, never drawn with a hole. The current bucket is drawn dashed. It opens on 6M (round 16:
+  read in pages alongside the page's own load, in requests of their own (the indexer's background
+  lane, so they never hold that load back), each page asked twice before the read fails as a
+  whole: never drawn with a hole. The current bucket is drawn dashed. It opens on 6M (round 16:
   "the standard timeframe should be 6m"), so the page's first chart waits for the history read.
+  What has passed through Curate is read the same way, alongside the load.
 - **Top curators follow the chart's range** (round 8: the date filter is for both), ranked by
   requests plus challenges over it, with their bounties won all time; five of them, filling the
   column beside a 240px chart. The chart's head is one row right above it: what it counts and its

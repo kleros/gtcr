@@ -1680,10 +1680,12 @@ const fetchCuratorLeaderboard = async (
 /** Pages read per chain and indexer when the whole history is asked for. */
 const HISTORY_MAX_PAGES = 80
 /**
- * History pages read at once per chain and indexer: few, since the browser
- * opens six connections per host and the page's own reads share them.
+ * History pages read at once on the Stake indexer: one. It takes no
+ * batches, so each page is a request of its own, its tables are small
+ * (under a page each when this was written), and the page's own Stake
+ * reads go to the same host.
  */
-const HISTORY_CONCURRENCY = 3
+const HISTORY_CONCURRENCY = 1
 /**
  * On the Envio indexer the pages read at once go out as one batched request
  * (utils/indexer-request.ts) on one connection: more at once means fewer
@@ -1786,6 +1788,7 @@ export const fetchActivityHistory = async (
                     offset: page * LEADERBOARD_PAGE_SIZE,
                   },
                   HISTORY_TIMEOUT_MS,
+                  'background',
                 ),
               ENVIO_CURATOR_KEYS,
               HISTORY_ENVIO_CONCURRENCY,
@@ -1807,6 +1810,7 @@ export const fetchActivityHistory = async (
                     skip: page * LEADERBOARD_PAGE_SIZE,
                   },
                   HISTORY_TIMEOUT_MS,
+                  'background',
                 ),
               PERMANENT_CURATOR_KEYS,
             ).then((read) => ({
@@ -1892,12 +1896,14 @@ const dedupeRegistries = (
  * DASHBOARD_QUERY_TIMEOUT_MS (the request is then aborted, so a slow indexer
  * does not keep answering loads nobody waits for). Callers check that the
  * indexer is configured first: an unset URL is "no rows", not a failure.
+ * The history's pages ask in the background lane (utils/indexer-request.ts).
  */
 const safeRequest = async <T>(
   url: string | undefined,
   query: string,
   variables: Record<string, unknown> = {},
   timeout = DASHBOARD_QUERY_TIMEOUT_MS,
+  lane?: 'background',
 ): Promise<T | null> => {
   if (!url) return null
   const controller = new AbortController()
@@ -1908,6 +1914,7 @@ const safeRequest = async <T>(
       document: query,
       variables,
       signal: controller.signal,
+      lane,
     })
   } catch (err) {
     console.warn('Dashboard query failed', err)
