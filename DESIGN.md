@@ -356,7 +356,7 @@ at row size included.
   it is a bottom sheet of fixed height (92dvh). The section control keeps its own width.
 - The governor's dialog (`pages/address/governance.tsx`) has four sections in a small
   SegmentedControl: Court, Deposits (Stake Curate: Stake), Timing & appeals, Advanced. A closed
-  section is hidden, never unmounted, so typed values and an armed governor transfer survive a look
+  section is hidden, never unmounted, so typed values and a change in review survive a look
   elsewhere; a newly opened one starts at the top of the body.
 - What a parameter means sits behind a "?" beside its label (the shared Tooltip; under the label on
   a touch screen), in the factories' own words. Only what cannot be undone stays in view under a
@@ -367,6 +367,36 @@ at row size included.
 - A save that leaves the arbitrator, the court and the jurors alone sends them back exactly as the
   chain holds them (`arbitrationExtraData` in `governance-params.ts`), so a policy-only change
   never rewrites a list's arbitration settings, whatever its arbitrator's extra data looks like.
+  A MetaEvidence file left alone goes back as the very string the list holds (an old `ipfs://`
+  form or a stray space included), so it is never read again and never blocks a court change.
+- **Nothing leaves without its review** (#376). Each field has one button, "Review change": it
+  runs the checks and the simulation, then opens the review under the field
+  (`governance-review.tsx`), the only place the change is sent from: each value before and after,
+  as people read it and as stored ("0.5 xDAI → 1 xDAI", then the wei), what the change does to
+  what is under way as the contracts read it (`paramEffect`, `arbitrationEffect`: a deposit taken
+  when a request is made touches only new ones; the challenge period, the challenge deposits and
+  the appeal stakes reach those already open; a Stake court or policy reaches listed entries after
+  the list's cooldown), and the mode's own actions: Sign in wallet, Propose to the Safe, or
+  Download Safe file and Copy calldata, beside Back. The second click of a double-click, or a click
+  in the first 400 ms, never confirms. A change proposed to a Safe is not proposed again until a
+  value changes.
+- **A new governor is read before its review** (`governor-target.ts`): a Safe is named with its
+  threshold ("2 of its 4 owners"); a list (anything with its own governor and arbitrator) is
+  refused, since it never sends a call; any other contract, and an address it could not read, is
+  allowed with a warning; no code at all says a Safe must exist on that chain itself (two Gnosis
+  lists name the Ethereum Kleros Governor, which has none there). The transfer's confirm is the
+  danger button, "Sign the transfer".
+- **The policy** is the Policy (PDF) row of the court field, the factories' `UploadField`
+  showing the live policy. A new PDF is written into the live files, each copied with only its
+  `fileURI` replaced (never rebuilt from the factory's template), uploaded once and read back,
+  then put in the MetaEvidence fields; Remove (offered only for a new PDF) goes back to the live
+  files. Whatever files are sent, a new one keeps its live file's columns (a column may be added
+  after the last, as Kleros Tokens added "Website"), the registration and clearing files name one
+  policy, and a new policy must be an IPFS path that opens from the gateway.
+- **Another arbitrator.** Courts and fees are Kleros Court's, so a list on another arbitrator (9 of
+  20 Gnosis Stake lists, 7 Standard ones) gets a note naming it instead of the court picker, and
+  its extra data goes back as it is; on Standard the arbitrator field takes only Kleros Court
+  here. The profile's rows say "Arbitrator 0x… (not Kleros Court)".
 - **Update list parameters.** A list's governor, once their wallet is connected, sees this
   secondary block button (layers icon) under the list's main action, on both list kinds and
   whatever chain the wallet is on (`components/curate/list-governance.tsx`). Whether the wallet
@@ -812,7 +842,8 @@ way (dashboard, Browse, registry pages, the profile, the landing page).
   address (two uploads and one contract fewer). The 125 badges lists made before (96 Standard,
   29 Classic) never took a badge, and since the redesign no page showed one. A badges list's page
   reads as a list of lists with no submit button, its note saying badges are retired; the list
-  page links no badges list; governance still offers `changeConnectedTCR`, a contract setting.
+  page links no badges list; governance still offers `changeConnectedTCR`, a contract setting, and
+  says nothing in Curate reads it.
 - The countdown ring's caption is the dial plus 80px wide, so each end's date and its UTC stay on
   one line; its footnote is centred on the dial. A settled entry's date block is top-aligned with
   the eyebrow.
