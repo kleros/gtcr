@@ -84,6 +84,37 @@ const immutableAssetHeaders = (): Plugin => {
  * that matches nothing, only loads as it did without this. The data hosts
  * every page reads first are connected to early too (preconnect).
  */
+/*
+ * Vite 6 resolves a require() call with the "require" export condition,
+ * where Vite 5 used the import ones for this app. A package shipping both
+ * builds, required from CommonJS, then entered the bundle a second time as
+ * its CommonJS build: bn.js's require('buffer') added the polyfill shim's
+ * (an unused second Buffer, ~68 kB on every page), and the Safe Apps
+ * provider the SDK's, with a CommonJS copy of viem (566 kB, loaded in a
+ * Safe). Those requires get the ESM builds the app already imports.
+ */
+const ESM_FOR_REQUIRE: Record<string, string> = {
+  '@safe-global/safe-apps-sdk':
+    'node_modules/@safe-global/safe-apps-sdk/dist/esm/index.js',
+  'vite-plugin-node-polyfills/shims/buffer':
+    'node_modules/vite-plugin-node-polyfills/shims/buffer/dist/index.js',
+}
+
+const requireEsmBuilds = (): Plugin => ({
+  name: 'require-esm-builds',
+  apply: 'build',
+  enforce: 'pre',
+  resolveId(source) {
+    const file = ESM_FOR_REQUIRE[source]
+    if (!file) return null
+    const path = resolve(root, file)
+    // Loud rather than a silent second copy when a dependency moves it.
+    if (!existsSync(path))
+      throw new Error(`require-esm-builds: ${file} is gone; update it.`)
+    return path
+  },
+})
+
 const ROUTE_PRELOADS: { pattern: string; pages: string[] }[] = [
   { pattern: '^/$', pages: ['src/pages/dashboard/index.tsx'] },
   { pattern: '^/browse/?$', pages: ['src/pages/browse/index.tsx'] },
@@ -214,6 +245,7 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins: [
+      requireEsmBuilds(),
       landingIndex(),
       immutableAssetHeaders(),
       routePreload(dataOrigins(loadedEnv)),
@@ -239,6 +271,14 @@ export default defineConfig(({ mode }) => {
     build: {
       outDir: 'build',
       sourcemap: true,
+      // Vite 6's CommonJS plugin defaults to strict requires (Vite 5's
+      // was 'auto'). Strict requires stay require() calls, resolved with
+      // the "require" export condition, so dual packages entered the
+      // bundle twice: bn.js's require('buffer') pulled the polyfill
+      // shim's CommonJS build (a second Buffer on every page) and the Safe
+      // Apps provider the SDK's, with a CommonJS copy of viem (566 kB).
+      // 'auto' bundles CommonJS as Vite 5 did, one copy of each.
+      commonjsOptions: { strictRequires: 'auto' },
       rollupOptions: {
         // The app, and the standalone landing page served at /landing/.
         input: {
