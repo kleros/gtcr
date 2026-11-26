@@ -31,7 +31,7 @@ export const MAX_TITLE_LENGTH = 60
 // text or flip the words around it.
 const INVISIBLE =
   // eslint-disable-next-line no-control-regex
-  /[\u0000-\u001F\u007F-\u009F\u00AD\u034F\u061C\u180E\u200B-\u200F\u202A-\u202E\u2060-\u2069\uFEFF]/g
+  /[\u0000-\u001F\u007F-\u009F\u00AD\u061C\u180E\u200B-\u200F\u202A-\u202E\u2060-\u2069\uFEFF]|\u034F/g
 
 const clean = (value: unknown): string | undefined => {
   if (typeof value !== 'string') return undefined
@@ -78,6 +78,11 @@ export const rulingTitle = (
     ? titles[choice - 1] || undefined
     : undefined
 
+const RULING_CHOICE = new Map<string, number>([
+  [SUBGRAPH_RULING.ACCEPT, 1],
+  [SUBGRAPH_RULING.REJECT, 2],
+])
+
 /**
  * The court's choice number for a ruling as the indexers record it: 1 for
  * the requester's side, 2 for the challenger's. A refusal and an unknown
@@ -85,9 +90,4 @@ export const rulingTitle = (
  */
 export const rulingChoiceOf = (
   ruling: string | null | undefined,
-): number | undefined =>
-  ruling === SUBGRAPH_RULING.ACCEPT
-    ? 1
-    : ruling === SUBGRAPH_RULING.REJECT
-      ? 2
-      : undefined
+): number | undefined => (ruling ? RULING_CHOICE.get(ruling) : undefined)

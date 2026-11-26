@@ -344,12 +344,11 @@ export const choiceLabel = (
   choice: number,
   requesterName: string,
   titles?: RulingTitles,
-): string =>
-  choice === 0
-    ? 'Refused to rule'
-    : (rulingTitle(titles, choice) ??
-      (choice === 1
-        ? `For the ${requesterName}`
-        : choice === 2
-          ? 'For the challenger'
-          : `Choice ${choice}`))
+): string => {
+  if (choice === 0) return 'Refused to rule'
+  const title = rulingTitle(titles, choice)
+  if (title) return title
+  if (choice === 1) return `For the ${requesterName}`
+  if (choice === 2) return 'For the challenger'
+  return `Choice ${choice}`
+}

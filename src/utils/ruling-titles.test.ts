@@ -38,7 +38,7 @@ describe('rulingTitlesOf', () => {
   it('cuts a long title with an ellipsis', () => {
     const long = 'Yes '.repeat(40)
     const [first] = rulingTitlesOf(file([long, 'No']))!
-    expect(first.length).toBe(MAX_TITLE_LENGTH)
+    expect(first).toHaveLength(MAX_TITLE_LENGTH)
     expect(first.endsWith('…')).toBe(true)
   })
 
