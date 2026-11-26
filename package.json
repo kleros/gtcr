@@ -75,7 +75,7 @@
     "@typescript-eslint/eslint-plugin": "^8.56.0",
     "@typescript-eslint/parser": "^8.56.0",
     "@vitejs/plugin-react": "^4.3.4",
-    "@vitest/coverage-v8": "3.2.4",
+    "@vitest/coverage-v8": "4.1.12",
     "eslint": "^8.57.0",
     "eslint-config-prettier": "^9.1.0",
     "eslint-import-resolver-typescript": "^4.4.4",
@@ -93,7 +93,7 @@
     "vite-plugin-node-polyfills": "^0.22.0",
     "vite-plugin-svgr": "^4.2.0",
     "vite-tsconfig-paths": "^4.3.0",
-    "vitest": "4.1.11"
+    "vitest": "4.1.12"
   },
   "commitlint": {
     "extends": [
@@ -148,7 +148,6 @@
     "@ethersproject/wallet": "5.8.0",
     "@ethersproject/web": "5.8.0",
     "@ethersproject/wordlists": "5.8.0",
-    "vitest/vite": "npm:^5.4.21",
-    "vite-node/vite": "npm:^5.4.21"
+    "vitest/vite": "npm:^6.4.5"
   }
 }
