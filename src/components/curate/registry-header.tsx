@@ -1035,7 +1035,9 @@ export const RegistryHeader = ({
           <QuietButton type="button" onClick={onOpenPolicy}>
             <CurateIcon name="policy" size={14} />
             Listing policy
-            {policyUpdated && <PolicyUpdatedBadge registryAddress={address} />}
+            {policyUpdated && (
+              <PolicyUpdatedBadge registryAddress={address} kind={kind} />
+            )}
           </QuietButton>
         )}
         <Explainer

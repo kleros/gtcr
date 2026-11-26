@@ -2,6 +2,7 @@ import React, { useMemo } from 'react'
 import styled, { keyframes } from 'styled-components'
 import useUrlChainId from 'hooks/use-url-chain-id'
 import { usePolicyHistory } from 'hooks/use-policy-history'
+import type { PolicyListKind } from 'utils/fetch-policy-history'
 import {
   formatUpdatedAgo,
   POLICY_RECENT_THRESHOLD_DAYS,
@@ -64,6 +65,8 @@ const LoadingSuffix = styled.span`
 
 interface PolicyUpdatedBadgeProps {
   registryAddress?: string | null
+  /** Standard or Stake: they mark their policy events differently. */
+  kind: PolicyListKind
 }
 
 /**
@@ -74,6 +77,7 @@ interface PolicyUpdatedBadgeProps {
  */
 const PolicyUpdatedBadge: React.FC<PolicyUpdatedBadgeProps> = ({
   registryAddress,
+  kind,
 }) => {
   const chainId = useUrlChainId()
   const {
@@ -83,6 +87,7 @@ const PolicyUpdatedBadge: React.FC<PolicyUpdatedBadgeProps> = ({
   } = usePolicyHistory(
     registryAddress ?? undefined,
     chainId ?? undefined,
+    kind,
     'latest',
   )
 

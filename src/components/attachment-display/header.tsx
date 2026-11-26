@@ -4,6 +4,7 @@ import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import Icon from 'components/ui/Icon'
 import { isOpenedHere } from 'hooks/use-attachment'
 import { buttonReset } from 'styles/button-reset'
+import type { PolicyListKind } from 'utils/fetch-policy-history'
 import PolicyHistoryModal from './policy-history-modal'
 
 const Container = styled.div`
@@ -53,7 +54,7 @@ const HeaderButton = styled.button`
   }
 `
 
-const Header: React.FC = () => {
+const Header: React.FC<{ policyKind?: PolicyListKind }> = ({ policyKind }) => {
   const [searchParams, setSearchParams] = useSearchParams()
   const navigate = useNavigate()
   const { state } = useLocation()
@@ -102,7 +103,10 @@ const Header: React.FC = () => {
         </RightActions>
       </Container>
       {isHistoryOpen && (
-        <PolicyHistoryModal onClose={() => setIsHistoryOpen(false)} />
+        <PolicyHistoryModal
+          policyKind={policyKind}
+          onClose={() => setIsHistoryOpen(false)}
+        />
       )}
     </>
   )

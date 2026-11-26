@@ -4,7 +4,10 @@ import { useLocation, useParams, useSearchParams } from 'react-router-dom'
 import { Modal, Skeleton } from 'components/ui'
 import useUrlChainId from 'hooks/use-url-chain-id'
 import { usePolicyHistory } from 'hooks/use-policy-history'
-import { PolicyHistoryEntry } from 'utils/fetch-policy-history'
+import {
+  PolicyHistoryEntry,
+  type PolicyListKind,
+} from 'utils/fetch-policy-history'
 import { parseIpfs } from 'utils/ipfs-parse'
 import { formatPolicyDate } from 'utils/format-updated-ago'
 import { buttonReset } from 'styles/button-reset'
@@ -174,9 +177,14 @@ const SKELETON_KEYS = ['skeleton-0', 'skeleton-1', 'skeleton-2'] as const
 
 interface PolicyHistoryModalProps {
   onClose: () => void
+  /** The list's kind: the history waits until its page knows it. */
+  policyKind?: PolicyListKind
 }
 
-const PolicyHistoryModal: React.FC<PolicyHistoryModalProps> = ({ onClose }) => {
+const PolicyHistoryModal: React.FC<PolicyHistoryModalProps> = ({
+  onClose,
+  policyKind,
+}) => {
   const { tcrAddress } = useParams<{ tcrAddress: string }>()
   const chainId = useUrlChainId()
   const [searchParams, setSearchParams] = useSearchParams()
@@ -190,7 +198,7 @@ const PolicyHistoryModal: React.FC<PolicyHistoryModalProps> = ({ onClose }) => {
     data: historyData,
     isLoading,
     isError,
-  } = usePolicyHistory(tcrAddress, chainId ?? undefined)
+  } = usePolicyHistory(tcrAddress, chainId ?? undefined, policyKind)
 
   const history = useMemo(() => {
     if (!historyData) return []

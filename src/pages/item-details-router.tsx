@@ -7,7 +7,7 @@ import useTcrNetwork from 'hooks/use-tcr-network'
 import useCheckStandardCurate from 'hooks/use-check-standard-curate'
 import useUrlChainId from 'hooks/use-url-chain-id'
 import { useAttachmentPlace } from 'hooks/use-attachment'
-import { usePolicyHistory } from 'hooks/use-policy-history'
+import { policyKindOf, usePolicyHistory } from 'hooks/use-policy-history'
 import Loading from 'components/loading'
 import ErrorPage from 'pages/error-page'
 import ClassicRetired from 'pages/classic-retired'
@@ -73,7 +73,21 @@ const ItemDetailsRouter = () => {
 
   // Prefetch the latest policy timestamp so the "(updated X ago)" badge
   // on the PolicyLink is warm in cache by the time the banner renders.
-  usePolicyHistory(tcrAddress, chainId ?? undefined, 'latest')
+  // Once the check names the kind: Standard and Stake mark their policy
+  // differently (fetch-policy-history isPolicyLog).
+  const policyKind = policyKindOf({
+    checking,
+    isStandardCurate,
+    isPermanentCurate,
+  })
+  // Only a Standard page shows the badge: on Stake this read (a backward
+  // log scan) would warm nothing.
+  usePolicyHistory(
+    tcrAddress,
+    chainId ?? undefined,
+    policyKind === 'standard' ? policyKind : undefined,
+    'latest',
+  )
 
   // Prefetch detail data in parallel with the existence check.
   useEffect(() => {
@@ -107,7 +121,7 @@ const ItemDetailsRouter = () => {
   // place are there on Return.
   const withViewer = (entry: React.ReactNode) => (
     <>
-      {isAttachmentOpen && <AttachmentDisplay />}
+      {isAttachmentOpen && <AttachmentDisplay policyKind={policyKind} />}
       <div hidden={isAttachmentOpen}>{entry}</div>
     </>
   )
