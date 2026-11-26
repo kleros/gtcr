@@ -398,18 +398,23 @@ describe('stakeCaseState', () => {
   })
 
   it.each([
-    ['Accept', 'For the submitter'],
-    ['Reject', 'For the challenger'],
-    ['None', 'Refused to rule'],
-  ])('is open for appeal on a %s ruling', (ruling, text) => {
-    expect(
-      stateFor({ ...appeal, ruling }, STATUS_CODE.CROWDFUNDING, END - 3000),
-    ).toEqual({
+    ['Accept', 'For the submitter', 1],
+    ['Reject', 'For the challenger', 2],
+    ['None', 'Refused to rule', undefined],
+  ])('is open for appeal on a %s ruling', (ruling, text, rulingChoice) => {
+    const state = stateFor(
+      { ...appeal, ruling },
+      STATUS_CODE.CROWDFUNDING,
+      END - 3000,
+    )
+    expect(state).toEqual({
       heading: 'Open for appeal',
       awaitingCourt: true,
       ruling: text,
+      rulingChoice,
       rulingLabel: 'Current ruling',
     })
+    expect(state.rulingChoice).toBe(rulingChoice)
   })
 
   it('says the ruling stands, and from when it can be enforced, once the loser’s half passed', () => {
@@ -425,6 +430,7 @@ describe('stakeCaseState', () => {
       summary:
         'The submitter did not fund the appeal, so the ruling stands; it can be enforced from 15 Jan 2027, 08:00 UTC.',
       ruling: 'For the challenger',
+      rulingChoice: 2,
       rulingLabel: 'Ruling',
     })
   })
@@ -442,6 +448,7 @@ describe('stakeCaseState', () => {
       summary:
         'The challenger funded the appeal alone, so the challenger wins when the ruling is enforced.',
       ruling: 'For the submitter',
+      rulingChoice: 1,
       rulingLabel: 'Ruling',
     })
   })

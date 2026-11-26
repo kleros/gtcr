@@ -89,6 +89,7 @@ import {
   tokenText,
 } from './modals/shell'
 import { entrySetting } from './arbitration-setting'
+import { rulingChoiceOf } from 'utils/ruling-titles'
 import {
   rulingShort,
   stakeCaseState,
@@ -1018,6 +1019,13 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
       )
       const round = past.rounds?.[0]
       const settled = toNum(past.resolutionTime) > 0
+      // What the record states: the outcome once settled, else the jurors'
+      // own ruling once they have given one.
+      const decided = settled
+        ? (past.disputeOutcome ?? round?.ruling)
+        : toNum(round?.rulingTime) > 0
+          ? round?.ruling
+          : undefined
       // The appeal period over with one side alone funded: rule() gives
       // that side the case whatever the jurors ruled, as the hero says.
       const alone =
@@ -1038,13 +1046,14 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
         // "Refused to rule", so the ruling is the jurors' own and only
         // once the court has given one — as stakeCaseState reads it, so
         // the hero and the record never disagree about the same case.
-        ruling: alone
-          ? `For the ${alone}`
-          : settled
-            ? rulingShort(past.disputeOutcome ?? round?.ruling)
-            : toNum(round?.rulingTime) > 0
-              ? rulingShort(round?.ruling)
-              : undefined,
+        ruling: alone ? `For the ${alone}` : rulingShort(decided),
+        // In the court's words only while it is the jurors' own ruling: an
+        // outcome the list decided (one side funded alone) is not.
+        rulingChoice:
+          !alone && decided === round?.ruling
+            ? rulingChoiceOf(decided)
+            : undefined,
+        metaEvidenceURI: past.arbitrationSetting?.metaEvidenceURI,
         href: court?.href,
         host: court?.host,
       }
@@ -1292,7 +1301,11 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
               awaitingCourt={caseWords?.awaitingCourt ?? true}
               summary={caseWords?.summary}
               ruling={caseWords?.ruling}
+              rulingChoice={caseWords?.rulingChoice}
               rulingLabel={caseWords?.rulingLabel}
+              metaEvidenceURI={
+                latestChallenge?.arbitrationSetting?.metaEvidenceURI
+              }
               canAddEvidence={canAddEvidence}
               holdsPageActions={!!facts.inCourt}
               now={now}

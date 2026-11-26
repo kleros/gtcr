@@ -6,6 +6,8 @@ import {
 } from 'components/inline-evidence-composer'
 import useDisputeTimeline from 'hooks/use-dispute-timeline'
 import useCourtName from 'hooks/use-court-name'
+import useRulingTitles from 'hooks/use-ruling-titles'
+import { rulingTitle } from 'utils/ruling-titles'
 import {
   Button,
   ButtonAnchor,
@@ -259,7 +261,9 @@ export const DisputeCasePanel = ({
   awaitingCourt = true,
   summary,
   ruling,
+  rulingChoice,
   rulingLabel = 'Ruling',
+  metaEvidenceURI,
   canAddEvidence,
   holdsPageActions = false,
   now,
@@ -287,7 +291,14 @@ export const DisputeCasePanel = ({
   summary?: string
   /** "For the submitter", "Refused to rule"… when the jurors have ruled. */
   ruling?: string
+  /**
+   * The court's choice the ruling is (1 or 2), when `ruling` is the court's
+   * own: it then reads in the court's words, as the votes under it do.
+   */
+  rulingChoice?: number
   rulingLabel?: string
+  /** The MetaEvidence the case was raised under: the court's words for its choices. */
+  metaEvidenceURI?: string | null
   /** The contracts take evidence only while the request is open. */
   canAddEvidence: boolean
   /**
@@ -304,6 +315,7 @@ export const DisputeCasePanel = ({
     disputeID,
   })
   const courtName = useCourtName(chainId, dispute?.court)
+  const rulingTitles = useRulingTitles(disputeID ? metaEvidenceURI : undefined)
   if (!disputeID) return null
 
   const period = dispute ? currentPeriod(dispute) : undefined
@@ -389,7 +401,11 @@ export const DisputeCasePanel = ({
               a court site to open, the number is a fact like the others. */}
           {!disputeHref && <Fact label="Case">{disputeID}</Fact>}
           {courtName && <Fact label="Court">{courtName}</Fact>}
-          {ruling && <Fact label={rulingLabel}>{ruling}</Fact>}
+          {ruling && (
+            <Fact label={rulingLabel}>
+              {rulingTitle(rulingTitles, rulingChoice) ?? ruling}
+            </Fact>
+          )}
         </Facts>
       </Lead>
       {dispute && <DisputePeriodSteps dispute={dispute} now={now} />}
@@ -399,6 +415,7 @@ export const DisputeCasePanel = ({
         disputeID={disputeID}
         arbitrable={arbitrable}
         requesterName={requesterName}
+        rulingTitles={rulingTitles}
         rounds={dispute?.roundSlots}
         period={dispute?.period}
         hiddenVotes={dispute?.hiddenVotes}

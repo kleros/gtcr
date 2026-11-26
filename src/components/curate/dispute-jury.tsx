@@ -22,6 +22,7 @@ import {
   truncateMiddle,
 } from './primitives'
 import { COURT_PERIOD, choiceLabel } from './dispute-timeline-model'
+import type { RulingTitles } from 'utils/ruling-titles'
 import { DisclosurePill } from './item-disclosure-pill'
 
 /*
@@ -302,6 +303,13 @@ const Ends = styled.div`
   align-items: baseline;
   justify-content: space-between;
   gap: 4px 16px;
+
+  /* The challenger's end keeps to the bar's right end even when the
+     court's titles are too long to share a line and it wraps. */
+  > :last-child {
+    margin-left: auto;
+    text-align: right;
+  }
 `
 
 const Side = styled.span`
@@ -636,11 +644,14 @@ const justificationOf = (
 const JurorRow = ({
   juror,
   requesterName,
+  titles,
   justification,
   over = false,
 }: {
   juror: JuryJuror
   requesterName: string
+  /** The court's words for the choices, when the dispute's file has them. */
+  titles?: RulingTitles
   /** What the juror wrote with their vote, once it is revealed. */
   justification?: string
   /** The round is over: a vote not revealed by now never will be. */
@@ -651,7 +662,7 @@ const JurorRow = ({
   const vote =
     juror.choice === undefined
       ? undefined
-      : choiceLabel(juror.choice, requesterName)
+      : choiceLabel(juror.choice, requesterName, titles)
   const hue = juror.choice === undefined ? undefined : hueOf(juror.choice)
 
   return (
@@ -739,6 +750,7 @@ const RoundBlock = ({
   arbitrator,
   disputeID,
   requesterName,
+  titles,
   open,
   hiddenVotes,
   several = false,
@@ -748,6 +760,7 @@ const RoundBlock = ({
   arbitrator?: string | null
   disputeID?: string | null
   requesterName: string
+  titles?: RulingTitles
   /**
    * Its votes can still come in: the dispute's latest round, before the
    * appeal period. False once it is over; undefined when the court's period
@@ -781,7 +794,7 @@ const RoundBlock = ({
     .map((value, choice) => ({
       choice,
       count: value,
-      label: choiceLabel(choice, requesterName),
+      label: choiceLabel(choice, requesterName, titles),
     }))
     .filter((entry) => entry.count > 0)
   const leads = (choice: number) =>
@@ -832,7 +845,12 @@ const RoundBlock = ({
     ...neutral.map((entry) =>
       entry.choice === 0
         ? `${entry.value} refused to rule`
-        : `${entry.value} ${choiceLabel(entry.choice, requesterName).toLowerCase()}`,
+        : `${entry.value} ${
+            // The court's own words stay as written; the page's own
+            // fallback ("Choice 3") reads mid-sentence in lower case.
+            titles?.[entry.choice - 1] ||
+            choiceLabel(entry.choice, requesterName).toLowerCase()
+          }`,
     ),
     unrevealed > 0 &&
       (open === false
@@ -873,16 +891,16 @@ const RoundBlock = ({
             .join(', ')}. ${
             tally.tied
               ? 'The votes are tied.'
-              : `Most votes: ${choiceLabel(tally.winning, requesterName)}.`
+              : `Most votes: ${choiceLabel(tally.winning, requesterName, titles)}.`
           }`}
         >
           <Ends aria-hidden>
             <Side data-lead={leads(1) ? '' : undefined}>
               <b>{count(1)}</b>
-              {choiceLabel(1, requesterName)}
+              {choiceLabel(1, requesterName, titles)}
             </Side>
             <Side data-lead={leads(2) ? '' : undefined}>
-              {choiceLabel(2, requesterName)}
+              {choiceLabel(2, requesterName, titles)}
               <b>{count(2)}</b>
             </Side>
           </Ends>
@@ -903,6 +921,7 @@ const RoundBlock = ({
             key={`${juror.address}-${juror.voteIDs[0]}`}
             juror={juror}
             requesterName={requesterName}
+            titles={titles}
             justification={justificationOf(juror, texts)}
             over={open === false}
           />
@@ -925,6 +944,7 @@ export const JuryRounds = ({
   arbitrator,
   disputeID,
   requesterName,
+  rulingTitles,
   rounds,
   period,
   hiddenVotes,
@@ -937,6 +957,12 @@ export const JuryRounds = ({
   arbitrable?: string | null
   /** "submitter" or "requester": what a vote for that side is called. */
   requesterName: string
+  /**
+   * The court's words for the choices, from the MetaEvidence the case was
+   * raised under: a vote then reads as the jurors cast it ("No, Don't Add
+   * It"). Without them, by the side it is for.
+   */
+  rulingTitles?: RulingTitles
   /**
    * Vote slots per round, oldest first (CourtDispute.roundSlots). More than
    * one round gives the band its tabs; without the value the read's own
@@ -1039,6 +1065,7 @@ export const JuryRounds = ({
               arbitrator={arbitrator}
               disputeID={disputeID}
               requesterName={requesterName}
+              titles={rulingTitles}
               open={openRound(round)}
               hiddenVotes={hiddenVotes}
               several={tabbed || picks.length > 1}

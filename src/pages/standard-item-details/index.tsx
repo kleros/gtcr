@@ -96,6 +96,7 @@ import {
   type StandardRequest,
 } from './request-facts'
 import { linkedListAddress, linkedListField } from './linked-list'
+import { rulingChoiceOf } from 'utils/ruling-titles'
 
 /*
  * Standard Curate item page, one layout in three states (settled, in its
@@ -899,6 +900,9 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
         statusCode === STATUS_CODE.WAITING_ARBITRATOR
           ? fundedAlone(past, requesterName)
           : undefined
+      const decided = past.resolved
+        ? (past.disputeOutcome ?? past.rounds?.[0]?.ruling)
+        : past.rounds?.[0]?.ruling
       return {
         disputeID: String(past.disputeID),
         arbitrator: past.arbitrator,
@@ -911,12 +915,14 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
         // record never give the same case two different rulings.
         ruling: alone
           ? `For the ${alone}`
-          : rulingShort(
-              past.resolved
-                ? (past.disputeOutcome ?? past.rounds?.[0]?.ruling)
-                : past.rounds?.[0]?.ruling,
-              requesterName,
-            ),
+          : rulingShort(decided, requesterName),
+        // In the court's words only while it is the jurors' own ruling: an
+        // outcome the list decided (one side funded alone) is not.
+        rulingChoice:
+          !alone && decided === past.rounds?.[0]?.ruling
+            ? rulingChoiceOf(decided)
+            : undefined,
+        metaEvidenceURI: past.metaEvidence?.uri,
         href: court?.href,
         host: court?.host,
       }
@@ -1103,7 +1109,9 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
               awaitingCourt={caseWords?.awaitingCourt ?? true}
               summary={caseWords?.summary}
               ruling={caseWords?.ruling}
+              rulingChoice={caseWords?.rulingChoice}
               rulingLabel={caseWords?.rulingLabel}
+              metaEvidenceURI={request.metaEvidence?.uri}
               canAddEvidence={canAddEvidence}
               holdsPageActions={!!facts.inCourt}
               now={now}

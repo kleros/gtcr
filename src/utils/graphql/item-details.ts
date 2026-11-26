@@ -31,6 +31,11 @@ const STANDARD_ITEM_DETAILS_QUERY = gql`
         resolutionTime
         challengeTime
         txHashChallenge
+        # The file the request was made under: its dispute's choices are
+        # named by its ruling titles.
+        metaEvidence {
+          uri
+        }
         evidenceGroup {
           id
           evidences(order_by: { number: desc }) {
