@@ -374,7 +374,9 @@ at row size included.
   the profile's dialog, which offers the switch to the list's chain before anything is signed.
   When the governor is a contract (a Safe, most Kleros lists), any connected wallet sees the button:
   the dialog simulates each change as the governor and hands it over as a Safe Transaction Builder
-  file or as calldata, for the Safe's owners to sign there (`utils/safe-transaction.ts`). A Safe
+  file or as calldata, for the Safe's owners to sign there (`utils/safe-transaction.ts`). The file
+  names the function and each value, so the Builder shows them rather than hex; it keeps the
+  calldata only for a call whose values the Builder could not encode back to exactly it. A Safe
   connected as the wallet proposes the change, and the dialog says to confirm it in the Safe.
   Nothing is drawn while the governor or the list data the dialog reads with is loading, so it
   never appears and then vanishes; everyone else sees nothing, and it goes as soon as a read names

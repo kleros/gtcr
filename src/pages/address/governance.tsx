@@ -1299,7 +1299,7 @@ const exportCall = async (
     }),
   )
   successToast(
-    `Safe file downloaded. Open the Safe on ${chainName(call.chainId)}, then Apps, then Transaction Builder, and drop the file in; the Safe's owners sign it there. It carries today's values: execute it before any other change to this list.`,
+    `Safe file downloaded. Open the Safe on ${chainName(call.chainId)}, then Apps, then Transaction Builder, and drop the file in: it shows the change by function and values, for the Safe's owners to check and sign there. It carries today's values: execute it before any other change to this list.`,
   )
 }
 

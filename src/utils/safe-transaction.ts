@@ -1,4 +1,5 @@
 import { getPublicClient, readContract } from '@wagmi/core'
+import { ethers } from 'ethers'
 import {
   encodeFunctionData,
   getAddress,
@@ -6,6 +7,7 @@ import {
   keccak256,
   stringToBytes,
   type Abi,
+  type AbiFunction,
 } from 'viem'
 import { wagmiConfig } from 'config/wagmi'
 
@@ -82,6 +84,86 @@ export const callData = (call: ContractCall): `0x${string}` =>
   } as any)
 
 /*
+ * The call spelled out for the Transaction Builder, so an owner reviews the
+ * method and each value instead of hex. The Builder shows a transaction that
+ * has `data` as "Custom hex data"; one without it, by its method and fields,
+ * and encodes those fields again itself (safe-react-apps, apps/tx-builder:
+ * convertToProposedTransactions, encodeToHexData), where a field it cannot
+ * encode becomes empty calldata. So a call is spelled out only when every
+ * value is one the Builder's form takes as is (an address, a whole number,
+ * a boolean, bytes, a string), and when encoding those fields the way the
+ * Builder does gives back exactly the calldata; otherwise the file keeps
+ * the calldata.
+ */
+const fieldText = (type: string, value: unknown): string | undefined => {
+  if (type === 'address')
+    return typeof value === 'string' && isAddress(value, { strict: false })
+      ? getAddress(value)
+      : undefined
+  if (/^u?int\d*$/.test(type))
+    return typeof value === 'bigint' ||
+      (typeof value === 'number' && Number.isSafeInteger(value))
+      ? value.toString(10)
+      : undefined
+  if (type === 'bool')
+    return typeof value === 'boolean' ? String(value) : undefined
+  if (type === 'string') return typeof value === 'string' ? value : undefined
+  if (/^bytes\d*$/.test(type))
+    return typeof value === 'string' && /^0x(?:[\da-f]{2})*$/i.test(value)
+      ? value
+      : undefined
+  return undefined
+}
+
+const spelledOut = (call: ContractCall) => {
+  const fn = call.abi.find(
+    (item): item is AbiFunction =>
+      item.type === 'function' &&
+      item.name === call.functionName &&
+      item.inputs.length === call.args.length,
+  )
+  if (!fn) return undefined
+  const contractInputsValues: Record<string, string> = {}
+  for (const [index, input] of fn.inputs.entries()) {
+    const text = fieldText(input.type, call.args[index])
+    if (!input.name || text === undefined || input.name in contractInputsValues)
+      return undefined
+    contractInputsValues[input.name] = text
+  }
+  const contractMethod = {
+    inputs: fn.inputs.map((input) => ({
+      internalType: input.internalType ?? input.type,
+      name: input.name as string,
+      type: input.type,
+    })),
+    name: fn.name,
+    payable: fn.stateMutability === 'payable',
+  }
+  try {
+    const fields = contractMethod.inputs.map(({ name, type }) =>
+      type === 'bool'
+        ? contractInputsValues[name] === 'true'
+        : contractInputsValues[name],
+    )
+    const again = new ethers.utils.Interface([
+      { type: 'function', stateMutability: 'nonpayable', ...contractMethod },
+    ]).encodeFunctionData(fn.name, fields)
+    if (again.toLowerCase() !== callData(call).toLowerCase()) return undefined
+  } catch {
+    return undefined
+  }
+  return { contractMethod, contractInputsValues }
+}
+
+/** The Builder's fields for a call: spelled out, or else its calldata. */
+const builderCall = (call: ContractCall) => {
+  const spelled = spelledOut(call)
+  return spelled
+    ? { data: null, ...spelled }
+    : { data: callData(call), contractMethod: null, contractInputsValues: null }
+}
+
+/*
  * The Transaction Builder's checksum (safe-react-apps, apps/tx-builder,
  * src/lib/checksum.ts): keys sorted, undefined as null, the batch's name
  * left out, then keccak256 of the text. Without it every import warns that
@@ -153,9 +235,7 @@ export const safeTransactionBuilderJson = ({
       {
         to: getAddress(call.address),
         value: '0',
-        data: callData(call),
-        contractMethod: null,
-        contractInputsValues: null,
+        ...builderCall(call),
       },
     ],
   })
