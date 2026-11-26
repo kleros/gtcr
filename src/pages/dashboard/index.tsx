@@ -52,7 +52,8 @@ import { useSavedLoadsReady } from './saved-load'
 import { useUsdPrices } from './use-usd-prices'
 import { readTransit, totalInDollars } from './transit'
 import { LiveBoard, type RulingsView } from './happening-now'
-import { OpenForVerification } from './open-for-verification'
+import { OPEN_SECTION_ID } from './open-for-verification'
+import { openPool, useUpForGrabs } from './open-bounty'
 import type { OpenListChip } from './board-rows'
 import { SectionHead, SectionTitle } from './section'
 import { HeroMoney, VerificationRecord } from './bounties'
@@ -443,20 +444,6 @@ const Big = styled.span<{ $hero?: boolean }>`
 
 /* ---------- Sections ---------- */
 
-/*
- * The two columns of the "Happening now" board. The section opens at the full
- * 80px its heading carries (section.ts), and what holds the three parts
- * together is the strip between them: the figures of what is open for
- * verification sit 16px above these columns (open-for-verification.tsx's
- * Band), so the heading, the figures and the rows those figures count read as
- * one block.
- */
-/* The 80px a section heading carries (section.ts), for the board's section,
-   whose title is the Open for verification band's own. */
-const BoardOpening = styled.div`
-  margin-top: 80px;
-`
-
 /* Most active takes the page's width (round 7 trial: Top curators moved
    beside the chart). */
 const ActiveFrame = styled(TableScroller)``
@@ -820,33 +807,10 @@ const Dashboard = () => {
     [data, chains],
   )
   // Browse's Stake lists in scope, when there are any: they never close to
-  // challenge, so the strip and the board point there when nothing else is
-  // open.
+  // challenge, so the board's Submissions column points there under its rows.
   const stakeHref = scoped.some((registry) => registry.kind === 'permanent')
     ? browseHref('trust=all&kind=permanent')
     : undefined
-  // Those lists by the entries anyone can challenge on them right now: listed
-  // (submitted or in court, the subgraph's own sum) less the ones in court.
-  // Most first, each to its own page: the strip's bar when nothing else is
-  // open.
-  const stakeLists = useMemo(
-    () =>
-      scoped
-        .filter((registry) => registry.kind === 'permanent')
-        .map(
-          (registry): OpenListChip => ({
-            key: `${registry.chainId}:${registry.address}`,
-            title: registry.title || truncateMiddle(registry.address),
-            logo: mediaUrl(registry.logoURI),
-            count: Math.max(0, registry.pendingCount - registry.disputeCount),
-            href: registryHref(registry),
-          }),
-        )
-        .filter((list) => list.count > 0)
-        .sort((a, b) => b.count - a.count),
-    [scoped],
-  )
-
   /** Every figure on the page describes the same scope. */
   const figures = useMemo(
     () => (data ? scopedFigures(data, chains, now) : undefined),
@@ -906,13 +870,15 @@ const Dashboard = () => {
   )
 
   /*
-   * What those bounties and the collateral in the strip are worth in dollars,
+   * What those bounties and the collateral open now are worth in dollars,
    * from a Chainlink feed on each coin's own chain. Its own query, never part
    * of the load: the load is saved to IndexedDB and repainted on the next
    * visit, and a price repainted a day later would be a figure stating
-   * something nobody read. Two figures on the page take it, and the two coin
-   * lists it covers are the only coins it asks about; a coin it cannot price
-   * leads with its amount. `pricesSettled` holds those two figures as
+   * something nobody read. The bounties won and the collateral open now take
+   * it (the collateral twice: in the Submissions panel's head, and in the
+   * hero's "Up for grabs now"), and the two coin lists it covers are the
+   * only coins it asks about; a coin it cannot price leads with its amount
+   * (the hero's figure waits for it instead). `pricesSettled` holds those as
    * skeletons for the first read (at most a moment), so a figure that is
    * about to lead with dollars never paints its coin amount large first.
    */
@@ -1133,6 +1099,34 @@ const Dashboard = () => {
       ? `Updated ${formatAgo(Math.floor(data.generatedAt / 1000), now)}`
       : undefined
 
+  /*
+   * The hero's third figure, "Up for grabs now" (open-bounty.ts): the
+   * collateral behind the requests open now, in dollars, drawn only from a
+   * whole pool. A chain that did not answer, or whose lists did not load,
+   * leaves it out; so do windows that a second read could not place either.
+   */
+  const windowsFailed =
+    windowsMissing && windowsRetry.isFetched && !windowsRetry.isFetching
+  const pool = useMemo(
+    () =>
+      openPool({
+        deposits: figures?.inWindowDeposits,
+        windowsKnown: !!figures?.windowsKnown,
+        windowsFailed,
+        capped: !!figures?.unchallengedCapped,
+        partial: partialChains.length > 0 || listsMissing.length > 0,
+        prices: usdPrices,
+      }),
+    [
+      figures,
+      windowsFailed,
+      partialChains.length,
+      listsMissing.length,
+      usdPrices,
+    ],
+  )
+  const grabs = useUpForGrabs(pool)
+
   return (
     <Page>
       <Hero>
@@ -1181,6 +1175,8 @@ const Dashboard = () => {
             pricesSettled={pricesSettled}
             transit={transit.data?.usd}
             transitFailed={testnetScope || transit.isError}
+            grabs={grabs}
+            grabsHref={`#${OPEN_SECTION_ID}`}
           />
         </HeroAside>
       </Hero>
@@ -1380,30 +1376,21 @@ const Dashboard = () => {
 
       {/*
         No "Happening now" heading (Fortunato, after round 19): the section
-        opens on what is open for verification, its bounties and the lists
-        holding it, under its own 30px title with the live LED, right above
-        the submissions column whose rows they count. It holds its own
-        skeletons, so its title is there from the first paint. The section's
-        80px opening stays when the band hides itself (no bounties).
+        is titled by what is open for verification, left-aligned like Most
+        active since 26 Nov 2026, over the board whose Submissions panel
+        carries the count, the collateral and the lists as chips. The board
+        draws its heading from the first paint, and none when nothing is open
+        (its 80px opening stays).
       */}
-      <BoardOpening />
-      <OpenForVerification
-        open={board.open}
-        openLists={board.openLists}
-        figures={figures}
-        prices={usdPrices}
-        pricesSettled={pricesSettled}
-        checking={checkingWindows}
-        unloaded={partialNames || undefined}
-        stakeHref={stakeHref}
-        stakeLists={stakeLists}
-      />
       <LiveBoard
         open={board.open}
         openLists={board.openLists}
         live={board.live}
         rulings={rulings}
         figures={figures}
+        prices={usdPrices}
+        pricesSettled={pricesSettled}
+        checking={checkingWindows}
         now={now}
         unloaded={partialNames || undefined}
         stakeHref={stakeHref}

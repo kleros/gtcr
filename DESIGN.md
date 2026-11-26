@@ -528,13 +528,14 @@ way (dashboard, Browse, registry pages, the profile, the landing page).
   from coin to dollars under the reader; a later answer fades in. The feed and the age of its
   answer are in the tooltip the figure already carries. The one rule lives in
   `pages/dashboard/board-rows.tsx` (`UsdLead`, `CoinAmount`, `usdFormatFor`). Per coin, only the
-  collateral behind the requests open for verification carries dollars; the bounties and what has
-  passed through Curate are totals across coins (below). Never a figure somebody is about to
-  sign for (an entry page, a launch or stake deposit, a board or ruling row): there the coin amount
-  is the obligation. A token that never answered a symbol is unitised by its shortened contract in
-  Geist Mono, never left bare. The prices are read on chain in their own query, never inside the
-  saved load, which is repainted up to a day later.
-- **Two totals across coins: what has passed through Curate, and the bounties** (rounds 14 to 16,
+  collateral behind the requests open for verification carries dollars (in the Submissions panel's
+  head, its exact coin amounts in the figure's tooltip); the bounties, what has passed through
+  Curate and, in the hero only, that same collateral are totals across coins (below). Never a
+  figure somebody is about to sign for (an entry page, a launch or stake deposit, a board or ruling
+  row): there the coin amount is the obligation. A token that never answered a symbol is unitised by
+  its shortened contract in Geist Mono, never left bare. The prices are read on chain in their own
+  query, never inside the saved load, which is repainted up to a day later.
+- **Totals across coins: what has passed through Curate, and the bounties** (rounds 14 to 16,
   owner: "remove the reference to crypto at all in the landing", "calculate always at today's
   price", "add the appeals costs and challenge deposits … it passed from our contracts but not
   permanent", "smashed also somewhere in the dashboard"). `pages/dashboard/transit.ts` adds every
@@ -552,7 +553,10 @@ way (dashboard, Browse, registry pages, the profile, the landing page).
   kept 30 minutes. That sum is shown as "Passed through Curate" in the dashboard's hero (since 20
   Nov 2026; in the Self-sustaining mechanism in round 19, beside Entries in rounds 15 to 18) and on
   the landing page. The bounties won are the other total, on both pages (round 16; beside it in the
-  hero since 20 Nov 2026). Every other money figure keeps the per-coin rule above.
+  hero since 20 Nov 2026). The dashboard's hero adds a third under them since 26 Nov 2026: the
+  collateral up for grabs now, drawn only when it is whole (every chain answered, every window
+  placed, every coin priced; see The money in the hero). Every other money figure keeps the
+  per-coin rule above.
 - The all-time ledger pages the **retired Classic lists'** resolved disputes too (2020-2022): they
   are the protocol's history, so they count in the bounties (counts and amounts) and in the entries
   ever curated, where the first ring's disputed requests count them too (round 4: "when counting
@@ -644,28 +648,41 @@ way (dashboard, Browse, registry pages, the profile, the landing page).
   only of a load it has, recent and read without error: before the first load "Connecting to the
   indexers" on a still dot; a read that failed with nothing to show "Indexers not answering"; an
   older load or a failed refresh "Not live" with its age, as Browse's pill does.
-- **Open for verification** is not drawn at all when there is no bounty up for grabs (round 10).
-  It opens the board's section with no box (round 6), centred on the page. There is no "Happening
-  now" heading (Fortunato, after round 19): its own title is the section's, a 30px section title
-  centred like the Self-sustaining mechanism's, with the blue live LED beside it. Under its title, two large figures side by side, parted by a hairline, the count open now and
-  the bounties, dollars first with the coin smaller under them, labelled "Bounties up for grabs" in
-  the accent. Under the pair, labelled "Lists with bounties up for grabs" (round 7), the lists
-  holding those requests as tiles of one width in a centred row (raised glass, 14px radius): the
-  list's logo and name over its count of open requests, a link to them; past the top four, the
-  rest as one tile. With nothing open the count says how many requests only wait to be executed,
-  and the Stake lists that stay open take the tiles, or one link to them.
+- **Open for verification** (`pages/dashboard/open-for-verification.tsx`) titles the board's
+  section; there is no "Happening now" heading (Fortunato, after round 19). Since 26 Nov 2026
+  (option E of the harmony review: the centred strip it replaced was the one part of the page off
+  the column and off its label grammar) it is the page's own section heading, left-aligned like Most
+  active, with the blue window LED beside it and its state lines on its right (a chain whose
+  requests did not load, "Checking challenge periods…"); its anchor `#open-for-verification` is
+  where the hero's "Up for grabs now" figure leads. The figures are in the Submissions panel's head,
+  opposite the Disputes panel's "In court" and "Rulings", the same tally: "Open now" (the count,
+  with a tooltip on what anyone can do about it) and "Up for grabs" (the collateral, dollars first
+  per coin and marked `≈`; the exact coin amounts, their chains and the price feeds are in its
+  tooltip). With windows that could not be read the count is "Unchallenged" and there is no
+  collateral figure; a count only failed requests could explain is "—". Under the head, when two or
+  more lists hold requests, the lists are chips that filter the column (round 7's "lists with
+  bounties up for grabs"): "All n", then each list's logo, name (cut past 16em) and count, most
+  first, past the top four the rest as one chip; pressed, a chip wears the accent's soft fill. They
+  wrap beside the Disputes panel and, at 520px and under, are one row that swipes sideways, its
+  right end fading out. A list's chip shows its rows among those loaded (the requests closing
+  soonest) and counts all of its requests: "+n more" expands them, and "All n in <list>", always
+  drawn under a chosen list, leads to the list's own page; a list none of whose rows are loaded says
+  its requests close later. With nothing open there is no heading and no Submissions column (round
+  10: "when bounties up for grab are 0, just hide everything").
 - **Whole rows only.** A board column never cuts a card and never scrolls inside the page. The two
   columns share a cap snapped to the submissions' whole rows, the one nearest 760px (776px, six
   rows, on / at 1440). The submissions draw the rows that fit whole, counted over the chrome they
-  finally draw under them ("+n more", or "All n by list" when every loaded row fits), and count
-  again when their room or rows change size; the rulings beside them draw only whole rows too.
+  finally draw around them (the list chips over them; "+n more", or "All n by list" when every
+  loaded row fits, "All n in <list>" for one list, under them), and count again when their room
+  or rows change size; the rulings beside them draw only whole rows too.
   Below 900px the submissions show their first 6 rows.
 - **Expanding lifts the cap.** Once the reader expands either column the page grows. The other
   column fills the new height with whole rows while it has rows, and once it has none it keeps its
   own height and rides beside the long column (sticky under the app bar), never a hollow box.
 - **Nothing open, no empty box.** With nothing open and nothing failed, the submissions column is
-  not drawn and the Disputes panel takes the width, two rows to a line, its first page even so no
-  cell is blank; an odd last row spans the line. Phones stack.
+  not drawn, nor the Open for verification heading (the section keeps its 80px opening), and the
+  Disputes panel takes the width, two rows to a line, its first page even so no cell is blank; an
+  odd last row spans the line. Phones stack.
 - Tooltip triggers are their own text's width, so a bubble opens over what it explains.
 - **The chart** (round 7) shows every mainnet: the dashboard's chain switch is hidden for now and
   the page is always "All chains", unnamed. Its switch is the range, `30D · 6M · 1Y · 3Y` (round
@@ -681,8 +698,8 @@ way (dashboard, Browse, registry pages, the profile, the landing page).
   requests plus challenges over it, with their bounties won all time; five of them, filling the
   column beside a 240px chart. The chart's head is one row right above it: what it counts and its
   legend on the left, the range switch on the right (round 9), under the figures.
-- **Self-sustaining mechanism** (rounds 16 to 19): no box ("in a box is cringe"), like the Open for
-  verification band, and no sentence under it (round 19). The title centred over the two rings
+- **Self-sustaining mechanism** (rounds 16 to 19): no box ("in a box is cringe"), and no sentence
+  under it (round 19). The title centred over the two rings
   together (round 18: "not a big fan of separating the gauges"); on a phone they share one line.
   Each ring carries a tooltip built from its own counts. No line names the Classic lists (round 7).
 - **The money in the hero** (`HeroMoney`, since 20 Nov 2026; beside the rings in round 19): Passed
@@ -695,6 +712,25 @@ way (dashboard, Browse, registry pages, the profile, the landing page).
   prices, compact ("$73.3K"), with no count of bounties. Where any coin has no current price, or a
   token's decimals never answered, there is no honest total: the coins' own amounts are listed on
   one line instead. A chain whose rulings did not load is named under them.
+- **Up for grabs now** (`pages/dashboard/open-bounty.ts`, 26 Nov 2026, option H1 of the harmony
+  review): a third figure under Bounties won, in the same format (a one-line label with a help
+  icon over a compact figure; the label led by the blue window LED, its tooltip "Deposits on
+  requests anyone can challenge now."), what is waiting to be won beside what has been. The figure
+  is a link to `#open-for-verification`, its arrow faint until hovered or focused. It is the
+  collateral behind the requests open now, in dollars, added across coins like the hero's totals,
+  and drawn only when whole: every chain answered and its lists loaded, every request placed in
+  its window (or the windows' second read failed: no figure), no read at its page cap, and every
+  coin priced (it waits for a late price rather than drop a coin). It shows from $2,000; a browser
+  that saw it open keeps it open down to $1,500 (localStorage). Rebuilt hourly over the year to 25
+  Nov 2026, the pool sat at or above $2,000 86.5% of the time (median $3.45K) but moves in
+  batches, so a plain cutoff would have come and gone about 2.5 times a week; the $1,500 floor held
+  it 93% of the time and changed it about 0.7 times a week. The choice is made once a visit, in the
+  frame the pool is first whole: the number keeps updating, the figure never vanishes under a
+  reader, and a later read that comes back partial takes it away. While the bounties load, a
+  figure likely to open (the last visit did not close it) holds its place as a skeleton. With
+  three figures the stack's gaps close from 24px to 18px, so it fits beside the title (about 323px
+  against 331px at 1440) and the hero keeps its height; at 820px and under it is a row across both
+  totals, label left and figure right, behind a hairline, so their figures stay level.
 - Top curators sit beside the chart (round 7), in the same panel behind a hairline, 320px wide
   (260px below 1100px), each with an LED bar of their activity against the top curator's
   (requests in the accent, challenges in `contested`) and their counts on one line; below 900px
