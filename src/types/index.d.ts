@@ -185,11 +185,6 @@ declare module '@kleros/gtcr-encoder' {
   export const typeDefaultValues: Record<string, string | number | boolean>
 }
 
-// @kleros/tcr contract ABIs
-declare module '@kleros/tcr/build/contracts/BatchWithdraw.json' {
-  export const abi: readonly Record<string, unknown>[]
-}
-
 // @kleros/erc-792 contract ABIs
 declare module '@kleros/erc-792/build/contracts/IArbitrator.json' {
   export const abi: readonly Record<string, unknown>[]

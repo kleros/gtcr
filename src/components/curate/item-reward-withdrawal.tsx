@@ -3,7 +3,7 @@ import styled from 'styled-components'
 import { useAccount, usePublicClient } from 'wagmi'
 import { simulateContract, writeContract } from '@wagmi/core'
 import { BigNumber } from 'ethers'
-import { abi as _batchWithdraw } from '@kleros/tcr/build/contracts/BatchWithdraw.json'
+import { BatchWithdrawABI } from 'utils/abis/batch-withdraw'
 import useUrlChainId from 'hooks/use-url-chain-id'
 import useNativeCurrency from 'hooks/native-currency'
 import { StandardTCRViewContext } from 'contexts/standard-tcr-view-context'
@@ -138,7 +138,14 @@ export const ItemRewardWithdrawal = ({ item }: { item?: SubgraphItem }) => {
   }, [account, item, view])
 
   const withdraw = useCallback(async () => {
-    if (!view || !batchWithdrawAddress || !urlChainId || !item || !publicClient)
+    if (
+      !view?.tcrAddress ||
+      !account ||
+      !batchWithdrawAddress ||
+      !urlChainId ||
+      !item ||
+      !publicClient
+    )
       return
 
     setWithdrawing('wallet')
@@ -147,9 +154,17 @@ export const ItemRewardWithdrawal = ({ item }: { item?: SubgraphItem }) => {
       // the wallet is on another one (the button's gate asks to switch).
       const { request } = await simulateContract(wagmiConfig, {
         address: batchWithdrawAddress as `0x${string}`,
-        abi: _batchWithdraw,
+        abi: BatchWithdrawABI,
         functionName: 'batchRequestWithdraw',
-        args: [view.tcrAddress, account, item.itemID, 0, withdrawCount, 0, 0],
+        args: [
+          view.tcrAddress as `0x${string}`,
+          account,
+          item.itemID as `0x${string}`,
+          0n,
+          BigInt(withdrawCount),
+          0n,
+          0n,
+        ],
         account,
         chainId: urlChainId,
       })
