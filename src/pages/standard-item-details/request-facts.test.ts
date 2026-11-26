@@ -298,20 +298,25 @@ describe('caseState', () => {
   })
 
   it.each([
-    [STATUS_CODE.CROWDFUNDING, 'Reject', 'For the challenger'],
-    [STATUS_CODE.CROWDFUNDING, 'None', 'Refused to rule'],
-    [STATUS_CODE.CROWDFUNDING_WINNER, 'Accept', 'For the submitter'],
+    [STATUS_CODE.CROWDFUNDING, 'Reject', 'For the challenger', 2],
+    [STATUS_CODE.CROWDFUNDING, 'None', 'Refused to rule', undefined],
+    [STATUS_CODE.CROWDFUNDING_WINNER, 'Accept', 'For the submitter', 1],
   ])(
     'status %d with a %s ruling is open for appeal',
-    (statusCode, ruling, text) => {
-      expect(
-        stateOf(disputed({ rounds: [round({ ruling })] }), statusCode),
-      ).toEqual({
+    (statusCode, ruling, text, rulingChoice) => {
+      const state = stateOf(
+        disputed({ rounds: [round({ ruling })] }),
+        statusCode,
+      )
+      expect(state).toEqual({
         heading: 'Open for appeal',
         awaitingCourt: true,
         ruling: text,
+        rulingChoice,
         rulingLabel: 'Current ruling',
       })
+      // The court's choice, for its own words: a refusal has none.
+      expect(state.rulingChoice).toBe(rulingChoice)
     },
   )
 
@@ -322,6 +327,7 @@ describe('caseState', () => {
       awaitingCourt: false,
       summary: 'The losing side did not fund its appeal, so the ruling stands.',
       ruling: 'For the challenger',
+      rulingChoice: 2,
       rulingLabel: 'Ruling',
     })
   })
@@ -337,7 +343,10 @@ describe('caseState', () => {
       awaitingCourt: false,
       summary:
         'The submitter funded the appeal alone, so the submitter wins when the ruling is enforced.',
+      // Still the jurors' own ruling, so the court's choice: the summary
+      // says what the funding changes.
       ruling: 'For the challenger',
+      rulingChoice: 2,
       rulingLabel: 'Ruling',
     })
   })
@@ -361,6 +370,8 @@ describe('caseState', () => {
     })
     const state = stateOf(request, STATUS_CODE.WAITING_ARBITRATOR)
     expect(state.ruling).toBe('For the submitter')
+    // The list decided it, not the court: not named in the court's words.
+    expect(state.rulingChoice).toBeUndefined()
     // The outcome is recorded: no sentence about who will win.
     expect(state.summary).toBeUndefined()
   })
@@ -371,9 +382,10 @@ describe('caseState', () => {
       disputeOutcome: null,
       rounds: [round({ ruling: 'Reject' })],
     })
-    expect(stateOf(request, STATUS_CODE.WAITING_ENFORCEMENT).ruling).toBe(
-      'For the challenger',
-    )
+    expect(stateOf(request, STATUS_CODE.WAITING_ENFORCEMENT)).toMatchObject({
+      ruling: 'For the challenger',
+      rulingChoice: 2,
+    })
   })
 
   it('names a removal’s side its requester', () => {
@@ -391,6 +403,7 @@ describe('caseState', () => {
       summary:
         'The requester funded the appeal alone, so the requester wins when the ruling is enforced.',
       ruling: 'For the requester',
+      rulingChoice: 1,
     })
   })
 })

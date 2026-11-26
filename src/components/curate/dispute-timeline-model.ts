@@ -17,6 +17,8 @@
  * can take, assuming nobody appeals.
  */
 
+import { rulingTitle, type RulingTitles } from 'utils/ruling-titles'
+
 export const COURT_PERIOD = {
   EVIDENCE: 0,
   COMMIT: 1,
@@ -333,14 +335,20 @@ export const currentPeriod = (dispute: CourtDispute): CurrentPeriod => {
 
 /**
  * A vote as the page names it. The arbitrator numbers the choices; what
- * each means comes from the request, so a Curate vote reads by the side it
- * is for and never as a bare number.
+ * each means comes from the request. With the dispute's MetaEvidence read,
+ * a vote reads as the court shows it to the jurors ("No, Don't Add It");
+ * until then, or for a file without titles, by the side it is for. Never
+ * as a bare number.
  */
-export const choiceLabel = (choice: number, requesterName: string): string =>
-  choice === 0
-    ? 'Refused to rule'
-    : choice === 1
-      ? `For the ${requesterName}`
-      : choice === 2
-        ? 'For the challenger'
-        : `Choice ${choice}`
+export const choiceLabel = (
+  choice: number,
+  requesterName: string,
+  titles?: RulingTitles,
+): string => {
+  if (choice === 0) return 'Refused to rule'
+  const title = rulingTitle(titles, choice)
+  if (title) return title
+  if (choice === 1) return `For the ${requesterName}`
+  if (choice === 2) return 'For the challenger'
+  return `Choice ${choice}`
+}

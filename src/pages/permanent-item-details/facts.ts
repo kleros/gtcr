@@ -3,6 +3,7 @@ import type { BigNumber } from 'ethers'
 import { klerosAddresses } from 'config/tcr-addresses'
 import { getAddressPage } from 'utils/network-utils'
 import { formatAbsolute } from 'utils/time'
+import { rulingChoiceOf } from 'utils/ruling-titles'
 import {
   CONTRACT_STATUS,
   STATUS_CODE,
@@ -31,7 +32,11 @@ export interface StakeChallenge extends SubgraphChallenge {
   creationTx?: string | null
   resolutionTime?: string | null
   resolutionTx?: string | null
-  arbitrationSetting: { arbitratorExtraData: string }
+  arbitrationSetting: {
+    arbitratorExtraData: string
+    /** The MetaEvidence the challenge was raised under: its ruling titles. */
+    metaEvidenceURI?: string | null
+  }
 }
 
 /** A submission row as the item query selects it. */
@@ -353,6 +358,8 @@ export interface StakeCaseState {
   summary?: string
   /** The ruling in words, once the jurors have given one. */
   ruling?: string
+  /** The court's choice `ruling` is (1 or 2): the case panel names it in the court's words. */
+  rulingChoice?: number
   rulingLabel?: string
 }
 
@@ -364,6 +371,7 @@ export const stakeCaseState = (
   const { round, appealable, fundedSide, appealEnd, loserName } = facts
   const ruled = toNum(round?.rulingTime) > 0
   const ruling = ruled ? rulingShort(round?.ruling) : undefined
+  const rulingChoice = ruled ? rulingChoiceOf(round?.ruling) : undefined
   const rulingLabel = appealable ? 'Current ruling' : 'Ruling'
 
   if (statusCode === STATUS_CODE.DISPUTED)
@@ -385,6 +393,7 @@ export const stakeCaseState = (
           ? `The ${fundedSide} funded the appeal alone, so the ${fundedSide} wins when the ruling is enforced.`
           : undefined,
       ruling,
+      rulingChoice,
       rulingLabel,
     }
   }
@@ -392,6 +401,7 @@ export const stakeCaseState = (
     heading: 'Open for appeal',
     awaitingCourt: true,
     ruling,
+    rulingChoice,
     rulingLabel,
   }
 }

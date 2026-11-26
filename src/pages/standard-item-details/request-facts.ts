@@ -6,6 +6,7 @@ import {
 } from 'utils/item-status'
 import { klerosAddresses } from 'config/tcr-addresses'
 import { toSeconds } from 'components/curate/item-standard-format'
+import { rulingChoiceOf } from 'utils/ruling-titles'
 
 /*
  * Everything the hero and the action card derive from the latest request:
@@ -26,6 +27,8 @@ export interface StandardRequest extends SubgraphRequest {
    */
   disputeOutcome?: string | null
   resolutionTime?: string | null
+  /** The MetaEvidence the request was made under (registration or removal). */
+  metaEvidence?: { uri?: string | null } | null
 }
 
 export interface RequestFacts {
@@ -175,6 +178,11 @@ export interface CaseState {
   summary?: string
   /** The ruling in words, once the jurors have given one. */
   ruling?: string
+  /**
+   * The court's choice `ruling` is (1 or 2), set only while it is the
+   * jurors' own ruling: the case panel then names it in the court's words.
+   */
+  rulingChoice?: number
   rulingLabel?: string
 }
 
@@ -193,6 +201,11 @@ export const caseState = (
     statusCode === STATUS_CODE.CHALLENGED
       ? undefined
       : rulingShort(decided, facts.requesterName)
+  // An outcome the list decided (a side funded alone) is not the court's.
+  const rulingChoice =
+    ruling && decided === facts.currentRuling
+      ? rulingChoiceOf(decided)
+      : undefined
   const rulingLabel = facts.appealable ? 'Current ruling' : 'Ruling'
 
   if (statusCode === STATUS_CODE.CHALLENGED)
@@ -208,6 +221,7 @@ export const caseState = (
         ? `The ${alone} funded the appeal alone, so the ${alone} wins when the ruling is enforced.`
         : undefined,
       ruling,
+      rulingChoice,
       rulingLabel,
     }
   }
@@ -217,12 +231,14 @@ export const caseState = (
       awaitingCourt: false,
       summary: 'The losing side did not fund its appeal, so the ruling stands.',
       ruling,
+      rulingChoice,
       rulingLabel,
     }
   return {
     heading: 'Open for appeal',
     awaitingCourt: true,
     ruling,
+    rulingChoice,
     rulingLabel,
   }
 }

@@ -34,6 +34,7 @@ const PERMANENT_ITEM_DETAILS_QUERY = gql`
         disputeOutcome
         arbitrationSetting {
           arbitratorExtraData
+          metaEvidenceURI
         }
         rounds(orderBy: creationTime, orderDirection: desc) {
           appealPeriodStart
