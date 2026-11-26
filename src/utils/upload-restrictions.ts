@@ -72,11 +72,30 @@ export const atlasUploadProblem = (
   return ''
 }
 
+/*
+ * Atlas takes at most 5 uploads a minute from one signed-in wallet, and
+ * refuses the next ones for about a minute with a 429 that kleros-app
+ * throws as a plain Error carrying Atlas's message ("ThrottlerException:
+ * Too Many Requests"), without the status.
+ */
+
+/** Atlas refused an upload over its limit of 5 a minute per wallet. */
+export const isUploadLimit = (error: unknown): boolean => {
+  const message = (error as { message?: unknown } | null | undefined)?.message
+  return typeof message === 'string' && message.includes('ThrottlerException')
+}
+
+/** Said when an action's upload was refused over that limit. */
+export const UPLOAD_LIMIT_MESSAGE =
+  'Uploads are limited to 5 a minute per wallet. Wait a minute, then try again.'
+
 /** The toast for a failed upload, naming the reason when there is one. */
 export const uploadFailure = (error: unknown): string => {
   const { name, message } = (error ?? {}) as { name?: string; message?: string }
   if (name === 'AuthorizationError')
     return 'Your sign-in expired. Sign in again, then pick the file again.'
+  if (isUploadLimit(error))
+    return 'File upload failed: uploads are limited to 5 a minute per wallet. Wait a minute, then pick the file again.'
   if (message === 'Unsupported file type.')
     return 'File upload failed: this file type is not accepted here.'
   const tooBig = message?.match(/max allowed size\s*:\s*([\d.]+)\s*mb/i)

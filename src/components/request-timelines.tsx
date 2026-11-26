@@ -34,7 +34,7 @@ import {
 } from 'components/curate/item-standard-timeline'
 import { AddressLink } from 'components/curate/item-standard-fields'
 import { toSeconds } from 'components/curate/item-standard-format'
-import { linkify } from 'components/curate/item-standard-linkify'
+import EvidenceText from 'components/curate/evidence-text'
 import {
   EVIDENCE_HISTORY_ID,
   EvidenceComposerCollapse,
@@ -171,65 +171,6 @@ const CaseLink = ({ id, href }: { id: string; href?: string }) =>
   ) : (
     <span>Case {id}</span>
   )
-
-const Clamp = styled.p<{ $clamped: boolean }>`
-  ${({ $clamped }) =>
-    $clamped &&
-    `
-    display: -webkit-box;
-    -webkit-line-clamp: 6;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-  `}
-`
-
-const MoreButton = styled.button`
-  /* A 24px tap target without moving the line: padding out, margin back. */
-  padding: 3px 0;
-  margin: -3px 0;
-  border: 0;
-  background: none;
-  color: var(--color-primary);
-  font-size: var(--fs-small);
-  line-height: var(--lh-small);
-  font-weight: 500;
-  cursor: pointer;
-
-  &:hover {
-    text-decoration: underline;
-  }
-`
-
-/**
- * Long evidence opens at six lines; the rest is one click away. URLs are
- * links; tabbing onto one hidden by the clamp opens the text first.
- */
-const EvidenceText = ({ text }: { text: string }) => {
-  const long = text.length > 420 || text.split('\n').length > 6
-  const [expanded, setExpanded] = useState(false)
-  const content = useMemo(() => linkify(text), [text])
-  return (
-    <>
-      <Clamp
-        $clamped={long && !expanded}
-        onFocus={() => {
-          if (long) setExpanded(true)
-        }}
-      >
-        {content}
-      </Clamp>
-      {long && (
-        <MoreButton
-          type="button"
-          aria-expanded={expanded}
-          onClick={() => setExpanded((value) => !value)}
-        >
-          {expanded ? 'Show less' : 'Read all'}
-        </MoreButton>
-      )}
-    </>
-  )
-}
 
 /** An evidence's own title (a challenge justification's too), in its quote. */
 const QuoteTitle = styled.span`

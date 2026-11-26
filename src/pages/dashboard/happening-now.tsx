@@ -3,6 +3,7 @@ import React, {
   useEffect,
   useId,
   useLayoutEffect,
+  useMemo,
   useRef,
   useState,
 } from 'react'
@@ -26,6 +27,7 @@ import { formatAbsolute } from 'utils/time'
 import { formatAgoLong, type DashboardCard } from './view'
 import {
   Avatar,
+  Count,
   Empty,
   Identifier,
   Meta,
@@ -33,18 +35,29 @@ import {
   OpenRow,
   Registry,
   RowTop,
+  Tally,
   formatInt,
+  moreStyles,
   repeatedIds,
   rowBase,
   type HappeningFigures,
   type OpenListChip,
 } from './board-rows'
+import {
+  ListFilter,
+  OpenHead,
+  OpenTally,
+  listEntries,
+} from './open-for-verification'
+import type { UsdPrice } from './prices'
 import { Avatar as ListLogo } from 'pages/browse/avatar'
 
 /*
- * Happening now, as two columns side by side (round 3): the recent
- * submissions on the left — unresolved requests nobody has challenged, the
- * rows the figures strip above counts — and on the right what is in court
+ * Happening now, as two columns side by side (round 3), under the section's
+ * heading, "Open for verification" (open-for-verification.tsx): the recent
+ * submissions on the left — unresolved requests nobody has challenged, with
+ * their count and collateral in the panel's head and their lists as chips
+ * that filter them — and on the right what is in court
  * now, outlined and with a slow pulse, over every ruling the court has
  * issued, all time, newest first and quieter. A ruling for the challenger
  * shows the bounty they won.
@@ -60,8 +73,9 @@ import { Avatar as ListLogo } from 'pages/browse/avatar'
  * Round 2 gave the open requests a full-width band of their own and left
  * the disputes alone on this board; round 3 puts them back beside each
  * other, because a reader comparing what can still be challenged with what
- * is already being argued reads both at once. The strip above keeps the
- * figures (open-for-verification.tsx); this board keeps the rows.
+ * is already being argued reads both at once. Since 26 Nov 2026 each panel
+ * carries its own figures in its head, the submissions' opposite the
+ * disputes', where a strip above the board used to hold them.
  *
  * The one rule the layout has to hold is that neither column may end above
  * the other and leave a band of dead page under it. So: the grid stretches
@@ -114,11 +128,10 @@ import { Avatar as ListLogo } from 'pages/browse/avatar'
  *
  * When nothing at all is open (no request in its window, and nothing failed
  * to load), the submissions column is not drawn: it would be a full-height
- * box around one line saying so, under a strip that already says "Open now
- * 0" (round 3: when one side is empty, the other takes the space). The
- * Disputes panel takes the board's width and lays its rows in two columns,
- * and the lines the submissions column carried (how many wait to be
- * executed, the Stake lists that never close) move into the strip.
+ * box around one line saying so (round 3: when one side is empty, the other
+ * takes the space), and the section has no heading (round 10: with no bounty
+ * up for grabs, hide everything). The Disputes panel takes the board's width
+ * and lays its rows in two columns.
  *
  * Below 900px there is one column: the cap comes off, neither list is a
  * scroller, each panel sizes to its own content, the submissions show their
@@ -267,39 +280,6 @@ const PanelTitle = styled.h3`
   text-transform: uppercase;
 `
 
-const Count = styled.span<{ $quiet?: boolean }>`
-  color: ${({ $quiet }) =>
-    $quiet ? 'var(--color-muted)' : 'var(--color-text)'};
-  font-family: var(--font-figure);
-  font-size: ${({ $quiet }) => ($quiet ? '20px' : '28px')};
-  line-height: 1;
-  font-weight: 500;
-  letter-spacing: var(--tracking-display);
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-`
-
-const Tally = styled.div`
-  display: flex;
-  align-items: flex-end;
-  gap: 18px;
-  flex: 0 0 auto;
-
-  > span {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 6px;
-  }
-
-  /* Phones: the tally wraps under the title and reads from the left. */
-  @media (max-width: 520px) {
-    > span {
-      align-items: flex-start;
-    }
-  }
-`
-
 /*
  * The submissions column's one growing region: it takes whatever height the
  * panel has left over the column's chrome. It never scrolls: it clips, and
@@ -445,6 +425,15 @@ const Footnotes = styled.div`
   flex-direction: column;
   gap: 4px;
   padding-top: 4px;
+`
+
+/* One list's link under its filtered rows: "All 47 in Address Tags". */
+const MoreLink = styled(Link)`
+  ${moreStyles}
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
 `
 
 const StakeLink = styled(Link)`
@@ -800,6 +789,10 @@ const Submissions = ({
   open,
   openLists,
   figures,
+  tally,
+  filter,
+  scopeTotal,
+  scopeNote,
   now,
   stakeHref,
   unloaded,
@@ -810,9 +803,19 @@ const Submissions = ({
   neighbour,
   onCap,
 }: {
+  /** The rows: every open request loaded, or one list's when filtered. */
   open: DashboardCard[]
+  /** The lists those rows' requests are in, for the "All n" links. */
   openLists: OpenListChip[]
   figures?: HappeningFigures
+  /** The head's figures, opposite the title (OpenTally). */
+  tally: React.ReactNode
+  /** The list chips under the head (ListFilter), when two lists hold requests. */
+  filter?: React.ReactNode
+  /** Filtered: the requests the chosen chip counts, loaded or not. */
+  scopeTotal?: number
+  /** Filtered, with none of the chosen list's rows loaded: why. */
+  scopeNote?: string
   now: number
   stakeHref?: string
   unloaded?: string
@@ -836,7 +839,10 @@ const Submissions = ({
 
   const known = !!figures?.windowsKnown
   const total = figures
-    ? Math.max(known ? figures.inWindow : figures.unchallenged, open.length)
+    ? Math.max(
+        scopeTotal ?? (known ? figures.inWindow : figures.unchallenged),
+        open.length,
+      )
     : 0
 
   /*
@@ -1020,6 +1026,23 @@ const Submissions = ({
   // While a count is pending, "+n more" is drawn so the rows are measured
   // over it (see above); it is never painted with the wrong count.
   const canExpand = !expanded && (pending || open.length > shown.length)
+  /*
+   * One list chosen: its own page always closes the column ("All 10 in
+   * Address Tags"), under "+n more" when that is drawn too, since its rows
+   * here are only the ones closing soonest. It is drawn in every pass, so
+   * the rows are always measured over it.
+   */
+  const chosenList =
+    scopeTotal !== undefined && openLists.length === 1
+      ? openLists[0]
+      : undefined
+  // A list's own page under its rows: the chosen one, or the only list
+  // holding requests once every loaded row is drawn and more exist.
+  const listLink =
+    chosenList ??
+    (!canExpand && hidden > 0 && openLists.length === 1
+      ? openLists[0]
+      : undefined)
   const repeated = repeatedIds(shown)
   /*
    * Beside an expanded Disputes column with room left once every loaded row
@@ -1046,12 +1069,14 @@ const Submissions = ({
             <StatusDot $tone="window" aria-hidden />
             <PanelTitle id={titleId}>Recent submissions</PanelTitle>
           </TitleRow>
-          {/* "In their challenge window" is said once, in the strip above. */}
+          {/* "In their challenge window" is said once, in the count's tip. */}
           <Small $faint>
             {known ? 'Closing soonest first' : 'Newest first'}
           </Small>
         </Heading>
+        {tally}
       </PanelHead>
+      {figures && filter}
 
       {!figures ? (
         <SkeletonRows aria-hidden>
@@ -1061,11 +1086,12 @@ const Submissions = ({
         </SkeletonRows>
       ) : shown.length === 0 ? (
         <NoRows>
-          {unloaded
-            ? `${unloaded} requests did not load`
-            : known
-              ? 'No request in its challenge period'
-              : 'No request waiting for a challenge'}
+          {scopeNote ??
+            (unloaded
+              ? `${unloaded} requests did not load`
+              : known
+                ? 'No request in its challenge period'
+                : 'No request waiting for a challenge')}
         </NoRows>
       ) : (
         <Rows
@@ -1094,7 +1120,14 @@ const Submissions = ({
           {plus} more
         </More>
       )}
-      {!canExpand && hidden > 0 && openLists.length > 0 && (
+      {listLink && (
+        <MoreLink to={listLink.href}>
+          All {formatInt(total)}
+          {plus} in {listLink.title}
+          <CurateIcon name="submit" size={12} />
+        </MoreLink>
+      )}
+      {!chosenList && !canExpand && hidden > 0 && openLists.length > 1 && (
         <Lists>
           <Label $tone="faint">
             All {formatInt(total)}
@@ -1483,12 +1516,28 @@ const DisputesPanel = ({
   )
 }
 
+/*
+ * The 80px a section heading carries (section.ts), for the board's section
+ * when it has no heading: nothing is open, so there is no "Open for
+ * verification" to title it.
+ */
+const Opening = styled.div`
+  margin-top: 80px;
+`
+
+/** A row's list, keyed as the chips key theirs (`OpenListChip.key`). */
+const listOf = (card: DashboardCard) =>
+  `${card.chainId}:${card.registryAddress}`
+
 export const LiveBoard = ({
   open,
   openLists,
   live,
   rulings,
   figures,
+  prices,
+  pricesSettled,
+  checking,
   now,
   stakeHref,
   unloaded,
@@ -1501,6 +1550,12 @@ export const LiveBoard = ({
   rulings: RulingsView
   /** Undefined while the load is still running: both columns show skeletons. */
   figures?: HappeningFigures
+  /** Dollars per whole coin, keyed by coin (use-usd-prices.ts). */
+  prices?: Record<string, UsdPrice>
+  /** False while the first price read is held for. */
+  pricesSettled: boolean
+  /** The challenge windows are being read again. */
+  checking: boolean
   now: number
   /** Browse's Stake lists in scope, when there are any. */
   stakeHref?: string
@@ -1510,9 +1565,12 @@ export const LiveBoard = ({
    */
   unloaded?: string
 }) => {
+  const titleId = useId()
   const [openExpanded, setOpenExpanded] = useState(false)
   // The panels' cap, snapped to the submissions' whole rows (Submissions).
   const [cap, setCap] = useState<number>()
+  // The list chip pressed (ListFilter); undefined for every list.
+  const [listKey, setListKey] = useState<string>()
   // Either column expanded: both caps come off, and the page grows. The
   // other column then either fills the new height with whole rows (the
   // submissions, beside more rulings) or rides beside the long list (the
@@ -1520,9 +1578,9 @@ export const LiveBoard = ({
   const rulingsExpanded = !!rulings.onFewer
   const uncapped = openExpanded || rulingsExpanded
   /*
-   * Nothing is open and nothing failed to load: the strip above already
-   * says "Open now 0" and carries the column's two lines, so the column is
-   * not drawn and the disputes take the board's width.
+   * Nothing is open and nothing failed to load (round 10: "when bounties up
+   * for grab are 0, just hide everything"): no heading, no Submissions
+   * column, and the disputes take the board's width.
    */
   const known = !!figures?.windowsKnown
   const nothingOpen =
@@ -1531,44 +1589,111 @@ export const LiveBoard = ({
     open.length === 0 &&
     (known ? figures.inWindow : figures.unchallenged) === 0
   const snapped = nothingOpen ? undefined : cap
+
+  /*
+   * The lists as the column's filter. A chip shows that list's rows among
+   * the ones loaded (the requests closing soonest) and counts all of its
+   * requests, so "+n more" and the link under the rows lead on to the rest.
+   * A list whose last request closed while it was chosen drops out of the
+   * chips, and the column shows every list again.
+   */
+  const entries = useMemo(() => listEntries(openLists), [openLists])
+  // Only chips on screen filter: with one list left there are none, and a
+  // choice they no longer offer (its list's last request closed, the rest
+  // became other lists) is dropped rather than kept for when it returns.
+  const chosen =
+    entries.length > 1
+      ? entries.find((entry) => entry.key === listKey)
+      : undefined
+  useEffect(() => {
+    if (listKey !== undefined && !chosen) setListKey(undefined)
+  }, [listKey, chosen])
+  const scope = useMemo(() => {
+    if (!chosen) return { open, lists: openLists }
+    const lists = chosen.list ? [chosen.list] : (chosen.rest ?? [])
+    const keys = new Set(lists.map((list) => list.key))
+    return {
+      open: open.filter((card) => keys.has(listOf(card))),
+      lists,
+      total: chosen.count,
+      note: `${chosen.list ? 'Its' : 'Their'} requests close later than the ones loaded here`,
+    }
+  }, [chosen, open, openLists])
+  const choose = useCallback((key: string | undefined) => {
+    setListKey(key)
+    setOpenExpanded(false)
+  }, [])
+  const allTotal = figures
+    ? Math.max(known ? figures.inWindow : figures.unchallenged, open.length)
+    : 0
+
   return (
-    <Board
-      $single={nothingOpen}
-      style={
-        snapped
-          ? ({
-              ['--panel-cap' as string]: `${snapped}px`,
-            } as React.CSSProperties)
-          : undefined
-      }
-    >
-      {!nothingOpen && (
-        <Submissions
-          open={open}
-          openLists={openLists}
+    <section aria-labelledby={nothingOpen ? undefined : titleId}>
+      {nothingOpen ? (
+        <Opening />
+      ) : (
+        <OpenHead titleId={titleId} checking={checking} unloaded={unloaded} />
+      )}
+      <Board
+        $single={nothingOpen}
+        style={
+          snapped
+            ? ({
+                ['--panel-cap' as string]: `${snapped}px`,
+              } as React.CSSProperties)
+            : undefined
+        }
+      >
+        {!nothingOpen && (
+          <Submissions
+            open={scope.open}
+            openLists={scope.lists}
+            figures={figures}
+            tally={
+              <OpenTally
+                open={open}
+                figures={figures}
+                prices={prices}
+                pricesSettled={pricesSettled}
+                unloaded={unloaded}
+              />
+            }
+            filter={
+              entries.length > 1 ? (
+                <ListFilter
+                  entries={entries}
+                  total={allTotal}
+                  plus={figures?.unchallengedCapped ? '+' : ''}
+                  chosen={chosen?.key}
+                  onChoose={choose}
+                />
+              ) : undefined
+            }
+            scopeTotal={scope.total}
+            scopeNote={scope.note}
+            now={now}
+            stakeHref={stakeHref}
+            unloaded={unloaded}
+            expanded={openExpanded}
+            onExpand={setOpenExpanded}
+            uncapped={uncapped}
+            fill={rulingsExpanded && !openExpanded}
+            neighbour={`${live.length}|${rulings.cards.length}`}
+            onCap={setCap}
+          />
+        )}
+        <DisputesPanel
+          live={live}
+          rulings={rulings}
           figures={figures}
           now={now}
-          stakeHref={stakeHref}
           unloaded={unloaded}
-          expanded={openExpanded}
-          onExpand={setOpenExpanded}
           uncapped={uncapped}
-          fill={rulingsExpanded && !openExpanded}
-          neighbour={`${live.length}|${rulings.cards.length}`}
-          onCap={setCap}
+          float={openExpanded && !nothingOpen}
+          wide={nothingOpen}
+          cap={snapped}
         />
-      )}
-      <DisputesPanel
-        live={live}
-        rulings={rulings}
-        figures={figures}
-        now={now}
-        unloaded={unloaded}
-        uncapped={uncapped}
-        float={openExpanded && !nothingOpen}
-        wide={nothingOpen}
-        cap={snapped}
-      />
-    </Board>
+      </Board>
+    </section>
   )
 }

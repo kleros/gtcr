@@ -37,7 +37,7 @@ export const getAlchemyRpcUrl = (chainId: number): string | undefined => {
  * 10k-result cap on `getLogs` (see utils/fetch-policy-history.ts) and
  * handles the app's read volume fine — scout already runs entirely on it.
  * Mainnet and Sepolia stay Alchemy-first because public mainnet endpoints
- * reject the wide-range `getLogs` scans used by the badges views.
+ * reject the wide-range `getLogs` scans of the policy history.
  */
 // Only Alchemy is batched: its batch support is known-good, while public
 // endpoints vary — a batching quirk on a primary endpoint would defeat the

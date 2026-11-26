@@ -11,6 +11,9 @@ export interface PolicyHistoryEntry {
 
 export type PolicyFetchMode = 'full' | 'latest'
 
+/** The kinds of list whose policy history this reads ('permanent' is Stake). */
+export type PolicyListKind = 'standard' | 'permanent'
+
 const META_EVIDENCE_TOPIC = utils.id('MetaEvidence(uint256,string)')
 
 /**
@@ -68,10 +71,31 @@ const GET_LOGS_TIMEOUT_MS = 20_000
 const BACKWARD_SCAN_INITIAL_WINDOW = 100_000
 const BACKWARD_SCAN_MAX_ITERATIONS = 30
 
-// Registration policies use odd _metaEvidenceID values (1, 3, 5, ...).
-// Even values are clearing policies — filter those out.
-const isRegistrationLog = (log: providers.Log): boolean =>
-  BigInt(log.topics[1]) % 2n === 1n
+const metaEvidenceId = (log: providers.Log): bigint => BigInt(log.topics[1])
+
+/**
+ * Whether a MetaEvidence event names the list's policy. A Standard list (and
+ * a retired Classic one) emits two per change: `2n` its registration file,
+ * the list's policy, and `2n + 1` its clearing file
+ * (LightGeneralizedTCR.changeArbitrationParams; a dispute reads
+ * `2 × index + requestType`). A Stake list emits one per change, the policy.
+ */
+export const isPolicyLog =
+  (kind: PolicyListKind) =>
+  (log: providers.Log): boolean =>
+    kind === 'permanent' || metaEvidenceId(log) % 2n === 0n
+
+/** Oldest first, by MetaEvidence id: ids only grow, block order aside. */
+const byMetaEvidenceId = (a: providers.Log, b: providers.Log) => {
+  const [x, y] = [metaEvidenceId(a), metaEvidenceId(b)]
+  return x < y ? -1 : x > y ? 1 : 0
+}
+
+/** The list's policy events, oldest first. */
+export const policyLogs = (
+  logs: providers.Log[],
+  kind: PolicyListKind,
+): providers.Log[] => logs.filter(isPolicyLog(kind)).sort(byMetaEvidenceId)
 
 // Validates that `v` is an IPFS pointer `parseIpfs` can resolve. We lean on
 // `getFormattedPath`'s normalizer — if it produces a `/ipfs/...` path, the
@@ -106,7 +130,10 @@ const buildProviders = (chainId: number): providers.JsonRpcProvider[] => {
   if (urls.length === 0)
     throw new Error(`No RPC URL configured for chain ${chainId}`)
 
-  return urls.map((url) => new providers.JsonRpcProvider(url, chainId))
+  // Static: each URL serves one known chain. A plain JsonRpcProvider asks
+  // eth_chainId again before every request, so the backward scan's getLogs
+  // calls, one after another, each cost two round trips.
+  return urls.map((url) => new providers.StaticJsonRpcProvider(url, chainId))
 }
 
 /**
@@ -158,10 +185,11 @@ const fetchAllRegistrationLogs = async (
   address: string,
   fromBlock: number,
   toBlock: number,
+  kind: PolicyListKind,
 ): Promise<providers.Log[]> => {
   try {
     const logs = await getLogsWithFallback(pool, 0, address, fromBlock, toBlock)
-    return logs.filter(isRegistrationLog)
+    return policyLogs(logs, kind)
   } catch (err) {
     console.warn('Single-shot policy scan failed, falling back to chunks:', err)
   }
@@ -188,7 +216,7 @@ const fetchAllRegistrationLogs = async (
     for (const logs of batchResults) allLogs.push(...logs)
   }
 
-  return allLogs.filter(isRegistrationLog)
+  return policyLogs(allLogs, kind)
 }
 
 /**
@@ -201,6 +229,7 @@ const fetchLatestRegistrationLog = async (
   address: string,
   startFloor: number,
   latestBlock: number,
+  kind: PolicyListKind,
 ): Promise<providers.Log[]> => {
   let toBlock = latestBlock
   let windowSize = BACKWARD_SCAN_INITIAL_WINDOW
@@ -209,15 +238,10 @@ const fetchLatestRegistrationLog = async (
     const fromBlock = Math.max(startFloor, toBlock - windowSize + 1)
 
     const logs = await getLogsWithFallback(pool, 0, address, fromBlock, toBlock)
-    const registrationLogs = logs.filter(isRegistrationLog)
+    const found = policyLogs(logs, kind)
 
-    if (registrationLogs.length > 0) {
-      const latest = registrationLogs.reduce(
-        (a, b) => (a.blockNumber > b.blockNumber ? a : b),
-        registrationLogs[0],
-      )
-      return [latest]
-    }
+    // The newest by id: two changes in one transaction share a block.
+    if (found.length > 0) return [found[found.length - 1]]
 
     if (fromBlock <= startFloor) return []
 
@@ -325,6 +349,8 @@ const buildEntries = async (
  *
  * @param registryAddress - The registry contract address.
  * @param chainId - Chain ID used to pick RPC providers.
+ * @param kind - Which events are the policy: on Standard the even ids (the
+ *   registration files), on Stake every one (isPolicyLog).
  * @param mode
  *   - `'full'` (default): scans the entire history, returns every
  *     registration policy the registry has ever had, linked by date ranges.
@@ -336,6 +362,7 @@ const buildEntries = async (
 export const fetchPolicyHistory = async (
   registryAddress: string,
   chainId: number,
+  kind: PolicyListKind,
   mode: PolicyFetchMode = 'full',
 ): Promise<PolicyHistoryEntry[]> => {
   const pool = buildProviders(chainId)
@@ -349,6 +376,7 @@ export const fetchPolicyHistory = async (
           registryAddress,
           startFloor,
           latestBlock,
+          kind,
         )
       : await fetchAllRegistrationLogs(
           pool,
@@ -356,6 +384,7 @@ export const fetchPolicyHistory = async (
           registryAddress,
           startFloor,
           latestBlock,
+          kind,
         )
 
   return buildEntries(pool[0], logs)

@@ -11,7 +11,7 @@ import useTcrNetwork from 'hooks/use-tcr-network'
 import useCheckStandardCurate from 'hooks/use-check-standard-curate'
 import useUrlChainId from 'hooks/use-url-chain-id'
 import { useAttachmentPlace } from 'hooks/use-attachment'
-import { usePolicyHistory } from 'hooks/use-policy-history'
+import { policyKindOf, usePolicyHistory } from 'hooks/use-policy-history'
 import { StakeContext } from 'contexts/stake-context'
 import { useGraphqlBatcher } from 'contexts/graphql-batcher'
 import { getChainById } from 'config/chains'
@@ -101,7 +101,21 @@ const ItemsRouter = () => {
 
   // Prefetch the latest policy timestamp so the "(updated X ago)" badge
   // is warm in cache by the time the banner renders.
-  usePolicyHistory(tcrAddress, chainId ?? undefined, 'latest')
+  // Once the check names the kind: Standard and Stake mark their policy
+  // differently (fetch-policy-history isPolicyLog).
+  const policyKind = policyKindOf({
+    checking,
+    isStandardCurate,
+    isPermanentCurate,
+  })
+  // Only a Standard page shows the badge: on Stake this read (a backward
+  // log scan) would warm nothing.
+  usePolicyHistory(
+    tcrAddress,
+    chainId ?? undefined,
+    policyKind === 'standard' ? policyKind : undefined,
+    'latest',
+  )
 
   // Prefetch items data in parallel with the existence check.
   // This overlaps the items fetch with the registry type check,
@@ -148,7 +162,7 @@ const ItemsRouter = () => {
   // under it, hidden, so its search, filters and place are there on Return.
   const withViewer = (list: React.ReactNode) => (
     <>
-      {isAttachmentOpen && <AttachmentDisplay />}
+      {isAttachmentOpen && <AttachmentDisplay policyKind={policyKind} />}
       <div hidden={isAttachmentOpen}>{list}</div>
     </>
   )

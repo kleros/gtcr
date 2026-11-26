@@ -5,6 +5,7 @@ import {
   atlasUploadProblem,
   describeTypes,
   formatLimit,
+  isUploadLimit,
   uploadFailure,
   type AtlasRole,
 } from './upload-restrictions'
@@ -178,6 +179,15 @@ describe('uploadFailure', () => {
     },
   )
 
+  it('says to wait a minute when Atlas refuses an upload over its limit', () => {
+    // What kleros-app throws for Atlas's 429, word for word.
+    expect(
+      uploadFailure(new Error('ThrottlerException: Too Many Requests')),
+    ).toBe(
+      'File upload failed: uploads are limited to 5 a minute per wallet. Wait a minute, then pick the file again.',
+    )
+  })
+
   it('passes any other reason on', () => {
     expect(uploadFailure(new Error('Network request failed'))).toBe(
       'File upload failed: Network request failed',
@@ -187,5 +197,25 @@ describe('uploadFailure', () => {
   it('says only that it failed when there is no reason', () => {
     for (const error of [undefined, null, {}, new Error(''), 'boom'])
       expect(uploadFailure(error)).toBe('File upload failed.')
+  })
+})
+
+describe('isUploadLimit', () => {
+  it("knows Atlas's refusal over its upload limit", () => {
+    expect(
+      isUploadLimit(new Error('ThrottlerException: Too Many Requests')),
+    ).toBe(true)
+  })
+
+  it('takes nothing else for it', () => {
+    for (const error of [
+      undefined,
+      null,
+      'ThrottlerException',
+      new Error('Too many requests to the RPC'),
+      new Error('Unsupported file type.'),
+      { message: 42 },
+    ])
+      expect(isUploadLimit(error)).toBe(false)
   })
 })

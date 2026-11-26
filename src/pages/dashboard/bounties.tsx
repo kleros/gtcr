@@ -1,6 +1,12 @@
 import React, { useId } from 'react'
 import styled from 'styled-components'
-import { Label, SkeletonBlock, Small } from 'components/curate/primitives'
+import {
+  Label,
+  SkeletonBlock,
+  Small,
+  StatusDot,
+  VisuallyHidden,
+} from 'components/curate/primitives'
 import Tooltip from 'components/ui/Tooltip'
 import { CurateIcon } from 'components/curate/icons'
 import { AnimatedNumber } from 'components/curate/motion/animated-number'
@@ -9,6 +15,7 @@ import { reveal } from 'components/curate/motion/reveal'
 import { useMediaQuery } from 'pages/guide/hooks'
 import { SectionHead, SectionTitle } from './section'
 import { formatUsd } from './board-rows'
+import type { UpForGrabs } from './open-bounty'
 import type { UsdPrice } from './prices'
 import { chainInfo, type BountyCoin, type scopedChallengeRecord } from './view'
 
@@ -63,9 +70,9 @@ import { chainInfo, type BountyCoin, type scopedChallengeRecord } from './view'
  * (at most a moment, use-usd-prices.ts), so it never paints a coin amount
  * and swaps it for dollars under the reader.
  *
- * No box (round 17: "in a box is cringe"): like the Open for verification
- * band, the section sits on the stage, its title centred over the two
- * rings (round 18); on a phone the rings share one line.
+ * No box (round 17: "in a box is cringe"): the section sits on the stage,
+ * its title centred over the two rings (round 18); on a phone the rings
+ * share one line.
  *
  * Windows are carried by the figures themselves rather than by a chip over
  * the panel (round 3: four "all time" stamps read as boilerplate). The
@@ -230,27 +237,36 @@ const LabelRow = styled.span`
 /**
  * An amount's label with a help icon whose tooltip says what the amount
  * counts (round 19: no subtitle under the figures). Without help text, the
- * label alone.
+ * label alone. `live` leads it with the blue window LED: the one figure that
+ * is now, not all time.
  */
 const LabelHelp = ({
   help,
+  live,
   children,
 }: {
   help: string
-  children: React.ReactNode
-}) =>
-  help ? (
+  live?: boolean
+  children: string
+}) => {
+  const dot = live && <StatusDot $tone="window" aria-hidden />
+  return help ? (
     <Tooltip quiet title={help}>
       <TipTarget tabIndex={0} aria-label={`${children}: ${help}`}>
         <LabelRow>
+          {dot}
           <Label $tone="faint">{children}</Label>
           <CurateIcon name="help" size={13} />
         </LabelRow>
       </TipTarget>
     </Tooltip>
   ) : (
-    <Label $tone="faint">{children}</Label>
+    <LabelRow>
+      {dot}
+      <Label $tone="faint">{children}</Label>
+    </LabelRow>
   )
+}
 
 /** "Ethereum and Gnosis" */
 const chainNames = (chains: number[]) =>
@@ -380,6 +396,13 @@ const wonTip = (record: ChallengeRecord, plus: string): string =>
  * whose "earn" it backs; the rings stay in the Self-sustaining mechanism.
  * One figure under another, behind a hairline; side by side once the hero
  * stacks at 820px (index.tsx: Hero).
+ *
+ * Since 26 Nov 2026 a third can follow (open-bounty.ts): what is up for
+ * grabs now, while it is $2,000 or more. With three the gaps close from 24px
+ * to 18px, so the stack (about 323px at 1440) still fits beside the
+ * headline's 331px and the hero keeps its height. At 820px and under the
+ * third is a row of its own across both columns, its label on the left and
+ * its figure on the right, behind a hairline, so the two totals stay level.
  */
 const MoneyStack = styled.div`
   display: flex;
@@ -387,10 +410,20 @@ const MoneyStack = styled.div`
   gap: 24px;
   min-width: 0;
 
-  /* A hairline between the two figures, as between the rings and them. */
+  /* A hairline between the figures, as between the rings and them. */
   > [data-money] + [data-money] {
     padding-top: 24px;
     border-top: 1px solid var(--glass-border);
+  }
+
+  @media (min-width: 821px) {
+    &[data-three] {
+      gap: 18px;
+    }
+
+    &[data-three] > [data-money] + [data-money] {
+      padding-top: 18px;
+    }
   }
 
   @media (max-width: 820px) {
@@ -411,10 +444,65 @@ const MoneyStack = styled.div`
       grid-column: 1 / -1;
     }
 
+    /* What is up for grabs: a row across both, under its hairline. */
+    > [data-money][data-grabs] {
+      grid-column: 1 / -1;
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding-top: 14px;
+      border-top: 1px solid var(--glass-border);
+    }
+
     /* Two labels side by side on a phone: "Passed through Curate" wraps
        rather than running into "Bounties won". */
     ${LabelRow} {
       white-space: normal;
+    }
+  }
+`
+
+/*
+ * What is up for grabs leads down to the requests it stands for: the figure
+ * is a link to the Open for verification section, its arrow faint until
+ * hovered or focused, when it takes the accent.
+ */
+const GrabsLink = styled.a`
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: inherit;
+  text-decoration: none;
+
+  > svg {
+    flex: 0 0 auto;
+    color: var(--color-faint);
+    transition:
+      color var(--motion),
+      translate var(--motion);
+  }
+
+  &:hover > svg,
+  &:focus-visible > svg {
+    color: var(--color-primary);
+    translate: 2px 0;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 4px;
+    border-radius: 6px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    > svg {
+      transition: none;
+    }
+
+    &:hover > svg,
+    &:focus-visible > svg {
+      translate: none;
     }
   }
 `
@@ -434,6 +522,8 @@ export const HeroMoney = ({
   pricesSettled,
   transit,
   transitFailed,
+  grabs,
+  grabsHref,
 }: {
   /** Undefined while the load is still running. */
   record?: ChallengeRecord
@@ -450,6 +540,14 @@ export const HeroMoney = ({
   transit?: number
   /** The read failed: the figure is not drawn, never "$—". */
   transitFailed: boolean
+  /**
+   * The third figure, what is up for grabs now (open-bounty.ts decides):
+   * its dollars when drawn, and whether to hold its place while the hero
+   * loads.
+   */
+  grabs: UpForGrabs
+  /** Where the figure leads: the Open for verification section. */
+  grabsHref: string
 }) => {
   const plus = record?.capped ? '+' : ''
   const missing =
@@ -501,9 +599,22 @@ export const HeroMoney = ({
   const bountiesHelp =
     record && coins.length > 0 ? paidIn(coins.filter(amountKnown)) : ''
   const transitHelp = 'Deposits, challenges and appeals, all time.'
+  const grabsHelp = 'Deposits on requests anyone can challenge now.'
+
+  /*
+   * What is up for grabs now, under the bounties won. While the bounties
+   * still load, or the load they were drawn from is an earlier visit's whose
+   * refresh is still coming, a figure that is likely to open holds its place
+   * as a skeleton, so it moves nothing when it comes (open-bounty.ts:
+   * expected, refreshing).
+   */
+  const loading = !record || !pricesSettled
+  const grabsShown = grabs.usd !== undefined
+  const grabsHeld =
+    !grabsShown && (loading || grabs.refreshing) && grabs.expected
 
   return (
-    <MoneyStack>
+    <MoneyStack data-three={grabsShown || grabsHeld ? '' : undefined}>
       {!transitFailed && (
         <MoneyTotal data-money="">
           <LabelHelp help={transitHelp}>Passed through Curate</LabelHelp>
@@ -525,6 +636,32 @@ export const HeroMoney = ({
         <MoneyTotal data-money="">
           <LabelHelp help={bountiesHelp}>Bounties won</LabelHelp>
           {bounties}
+        </MoneyTotal>
+      )}
+      {grabsShown && grabs.usd !== undefined && (
+        <MoneyTotal data-money="" data-grabs="">
+          <LabelHelp help={grabsHelp} live>
+            Up for grabs now
+          </LabelHelp>
+          <GrabsLink href={grabsHref}>
+            <TotalFigure>
+              <AnimatedNumber
+                value={grabs.usd}
+                format={(value) => compactUsd.format(value)}
+              />
+            </TotalFigure>
+            <VisuallyHidden>
+              {' '}
+              up for grabs now: see the requests open to challenge
+            </VisuallyHidden>
+            <CurateIcon name="submit" size={16} />
+          </GrabsLink>
+        </MoneyTotal>
+      )}
+      {grabsHeld && (
+        <MoneyTotal data-money="" data-grabs="" aria-hidden>
+          <SkeletonBlock $height="16px" $width="130px" />
+          <SkeletonBlock $height="56px" $width="160px" />
         </MoneyTotal>
       )}
       {/* Round 19: only a chain whose rulings did not load is named. */}

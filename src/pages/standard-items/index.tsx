@@ -36,7 +36,7 @@ import { parseIpfs } from 'utils/ipfs-parse'
 import { sanitizeItemFile } from 'utils/item-file-guard'
 import { formatDurationLong } from 'utils/time'
 import { getAddressPage } from 'utils/network-utils'
-import { ZERO_ADDRESS, capitalizeFirstLetter } from 'utils/string'
+import { capitalizeFirstLetter } from 'utils/string'
 import { truncateAtWord } from 'utils/truncate-at-word'
 import { klerosAddresses } from 'config/tcr-addresses'
 import useSeerMarketsData from 'components/custom-registries/seer/use-seer-markets-data'
@@ -103,7 +103,6 @@ import {
   LIST_LOAD_FAILED,
   LIST_SETTINGS_FAILED,
 } from '../error-page/copy'
-import SubmitConnectModal from '../standard-item-details/modals/submit-connect'
 
 /*
  * Standard Curate registry page (/tcr/:chainId/:tcrAddress): the header panel
@@ -207,6 +206,10 @@ interface SeerMarket {
  * columns are named apart from the registry's own, since cells are matched
  * to columns by label.
  */
+/** A badges list's note, where other lists have their submit button. */
+const BADGES_RETIRED =
+  'Badges are retired: this badges list takes no new entries in Curate.'
+
 const SEER_MARKET_LABEL = 'Market name'
 const SEER_OUTCOMES_LABEL = 'Outcomes'
 
@@ -358,8 +361,6 @@ const Items = () => {
   const metaEvidence = tcrViewContext?.metaEvidence
   const challengePeriodDuration = tcrViewContext?.challengePeriodDuration
   const tcrError = tcrViewContext?.tcrError
-  const gtcrView = tcrViewContext?.gtcrView
-  const connectedTCRAddr = tcrViewContext?.connectedTCRAddr
   const submissionDeposit = tcrViewContext?.submissionDeposit
   const submissionBaseDeposit = tcrViewContext?.submissionBaseDeposit
   const submissionChallengeDeposit = tcrViewContext?.submissionChallengeDeposit
@@ -376,9 +377,6 @@ const Items = () => {
   const nativeSymbol = useNativeCurrency()
   const trust = useRegistryVerified(chainId, tcrAddress)
 
-  const [submissionFormOpen, setSubmissionFormOpen] = useState<
-    boolean | undefined
-  >()
   // Sensitive entries show unless the reader hides them (round 7); their
   // choice is kept and restored below.
   const [nsfwFilterOn, setNSFWFilter] = useState(false)
@@ -842,9 +840,9 @@ const Items = () => {
 
   // A ?action= link (someone sent here with the values to submit) opens
   // the full-page submit form with those values in its URL, so the link
-  // still fills the form after a reload. A connected list keeps its own
-  // dialog. It acts when the link itself changes, once the list's metadata
-  // says which kind it is.
+  // still fills the form after a reload. A badges list takes no entries
+  // here: badges are retired. It acts when the link itself changes, once
+  // the list's metadata says which kind it is.
   const actionLink = useMemo(() => {
     const link = readActionLink(search)
     return link ? JSON.stringify(link) : undefined
@@ -859,18 +857,14 @@ const Items = () => {
     if (handledLink.current === actionLink) return
     handledLink.current = actionLink
     const link = JSON.parse(actionLink) as ReturnType<typeof readActionLink>
-    if (!connectedList && chainId && tcrAddress) {
-      navigate(submitPathFor(chainId, tcrAddress, link), { replace: true })
-      return
-    }
-    setSubmissionFormOpen(true)
+    if (connectedList || !chainId || !tcrAddress) return
+    navigate(submitPathFor(chainId, tcrAddress, link), { replace: true })
   }, [actionLink, connectedList, chainId, tcrAddress, navigate])
 
   /* ---------- Derived copy and figures ---------- */
 
   const { metadata, fileURI } = metaEvidence || {}
-  const { isConnectedTCR, isTCRofTCRs, relTcrDisabled, logoURI } =
-    metadata || {}
+  const { isTCRofTCRs, logoURI } = metadata || {}
   const tcrTitle = metadata?.tcrTitle ?? metadata?.title ?? metaEvidence?.title
   const tcrDescription =
     metadata?.tcrDescription ??
@@ -1088,20 +1082,20 @@ const Items = () => {
     },
   ]
 
-  // A connected (badges) list takes a badge list and its match file through
-  // its own dialog, as an ?action= link does; never the generic form.
-  const onPrimary = () => {
-    if (!connectedList && chainId && tcrAddress)
-      navigate(`/tcr/${chainId}/${tcrAddress}/submit`)
-    else setSubmissionFormOpen(true)
-  }
+  // A badges list (every Standard list came with one until 2026-11-26)
+  // takes no new entries: badges are retired, and no page shows a badge.
+  // Until the list's metadata says which it is, there is no button to press
+  // (the header holds its place).
+  const onPrimary =
+    connectedList === false
+      ? () => {
+          if (chainId && tcrAddress)
+            navigate(`/tcr/${chainId}/${tcrAddress}/submit`)
+        }
+      : undefined
   const onOpenPolicy = fileURI
     ? () => openAttachment(parseIpfs(fileURI), true)
     : undefined
-  const badgesListTo =
-    connectedTCRAddr && connectedTCRAddr !== ZERO_ADDRESS && !relTcrDisabled
-      ? `/tcr/${chainId}/${connectedTCRAddr}`
-      : undefined
 
   // The status menu (round 6): All, then each status with its dot and its
   // live count from the registry counters, listed first, then the open
@@ -1476,6 +1470,10 @@ const Items = () => {
           </GhostButton>
         ),
       }
+    // A badges list takes no entries (BADGES_RETIRED, in the header): no
+    // invitation to submit, and no button that could not.
+    if (counts?.total === 0 && !onPrimary)
+      return { title: `No ${itemNamePlural} yet` }
     if (counts?.total === 0)
       return {
         title: `No ${itemNamePlural} yet`,
@@ -1524,9 +1522,10 @@ const Items = () => {
           ) : undefined
         }
         onPrimary={onPrimary}
+        primaryPending={connectedList === undefined}
+        depositNote={connectedList ? BADGES_RETIRED : undefined}
         policyURI={fileURI}
         onOpenPolicy={onOpenPolicy}
-        badgesListTo={badgesListTo}
         stats={stats}
         registeredCount={counts?.registered}
         totalCount={counts?.total}
@@ -1646,15 +1645,6 @@ const Items = () => {
           </Footer>
         )}
       </Entries>
-
-      {metaEvidence && metadata && isConnectedTCR ? (
-        <SubmitConnectModal
-          visible={submissionFormOpen}
-          onCancel={() => setSubmissionFormOpen(false)}
-          tcrAddress={tcrAddress}
-          gtcrView={gtcrView}
-        />
-      ) : null}
     </Page>
   )
 }

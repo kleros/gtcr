@@ -1,6 +1,7 @@
 import { ethers } from 'ethers'
 import { NETWORKS } from 'config/networks'
 import { getRpcUrls } from 'config/rpc'
+import { firstAnswer } from 'utils/first-answer'
 import type { TokenInfo } from './types'
 
 /*
@@ -98,25 +99,23 @@ const decodeSymbol = (result: string): string | undefined => {
 }
 
 /**
- * Symbol and decimals from the first node that answers decimals(). A token
+ * Symbol and decimals from the first node that answers decimals() (the next
+ * node is asked when one fails or stalls: utils/first-answer.ts). A token
  * whose decimals() answers but whose symbol() does not is named by its
  * address; one whose decimals() never answers is not a token the amount can
  * be read from, and reads as null.
  */
-const readToken = async (
-  chainId: number,
-  token: string,
-): Promise<TokenInfo | null> => {
-  for (const url of getRpcUrls(chainId)) {
+const readToken = (chainId: number, token: string): Promise<TokenInfo | null> =>
+  firstAnswer(getRpcUrls(chainId), async (url) => {
     const [symbol, decimals] = await Promise.all([
       ethCall(url, token, erc20.encodeFunctionData('symbol')),
       ethCall(url, token, erc20.encodeFunctionData('decimals')),
     ])
-    if (!decimals) continue
+    if (!decimals) return null
     try {
       // decimals() == 0 is a token, not a failure: the raw result answered.
       const places = Number(erc20.decodeFunctionResult('decimals', decimals)[0])
-      if (!Number.isInteger(places) || places < 0 || places > 36) continue
+      if (!Number.isInteger(places) || places < 0 || places > 36) return null
       return {
         symbol:
           (symbol ? decodeSymbol(symbol) : undefined) ||
@@ -125,10 +124,9 @@ const readToken = async (
       }
     } catch {
       // Not an ERC-20 answer: try the next node.
+      return null
     }
-  }
-  return null
-}
+  })
 
 /**
  * One read per token per session. A read that found nothing is dropped from

@@ -3,6 +3,7 @@ import { ethers } from 'ethers'
 import { type Abi, decodeFunctionData } from 'viem'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import lightGtcrAbi from 'assets/abis/LightGeneralizedTCR.json'
+import permanentAbi from 'assets/abis/PermanentGTCR.json'
 import { wagmiConfig } from 'config/wagmi'
 import {
   type ContractCall,
@@ -156,9 +157,21 @@ describe('safeTransactionBuilderJson', () => {
         {
           to: LIST,
           value: '0',
-          data: callData(CALL),
-          contractMethod: null,
-          contractInputsValues: null,
+          data: null,
+          contractMethod: {
+            inputs: [
+              {
+                internalType: 'uint256',
+                name: '_submissionBaseDeposit',
+                type: 'uint256',
+              },
+            ],
+            name: 'changeSubmissionBaseDeposit',
+            payable: false,
+          },
+          contractInputsValues: {
+            _submissionBaseDeposit: '1000000000000000000',
+          },
         },
       ],
     })
@@ -351,5 +364,130 @@ describe('downloadJson', () => {
     expect(revoke).not.toHaveBeenCalled()
     vi.advanceTimersByTime(1)
     expect(revoke).toHaveBeenCalledWith('blob:curate/1')
+  })
+})
+
+/*
+ * The Transaction Builder's reading of a dropped-in transaction, written apart
+ * from the app's code (safe-react-apps, apps/tx-builder:
+ * convertToProposedTransactions and encodeToHexData, whose web3-eth-abi coder
+ * is ethers'): a transaction with `data` is signed as that data; one without
+ * is encoded again from its fields, a whole number read from its digits and a
+ * boolean from its word, every other value as written.
+ */
+const builderSigns = (transaction: {
+  data: string | null
+  contractMethod: {
+    name: string
+    inputs: { name: string; type: string }[]
+  } | null
+  contractInputsValues: Record<string, string> | null
+}) => {
+  if (transaction.data) return transaction.data
+  const method = transaction.contractMethod!
+  const values = method.inputs.map(({ name, type }) => {
+    const text = transaction.contractInputsValues?.[name] || ''
+    if (/^u?int\d*$/.test(type)) return ethers.BigNumber.from(text.trim())
+    if (type === 'bool')
+      return ['true', '1'].includes(text.trim().toLowerCase())
+    return text
+  })
+  return new ethers.utils.Interface([
+    { type: 'function', stateMutability: 'nonpayable', ...method },
+  ]).encodeFunctionData(method.name, values)
+}
+
+const builderFile = (call: ContractCall) =>
+  downloaded(safeTransactionBuilderJson({ ...BATCH, call })).transactions[0]
+
+describe('what the Transaction Builder shows and signs', () => {
+  const extraData = encodeExtraData(2, 5)
+  const calls: ContractCall[] = [
+    CALL,
+    { ...CALL, functionName: 'changeGovernor', args: [SAFE.toLowerCase()] },
+    {
+      ...CALL,
+      functionName: 'changeArbitrationParams',
+      args: [
+        ARBITRATOR,
+        extraData,
+        `/ipfs/${CID}/reg.json`,
+        `/ipfs/${CID}/clr.json`,
+      ],
+    },
+    { ...CALL, functionName: 'changeSharedStakeMultiplier', args: [10_000n] },
+  ]
+
+  it.each(calls)(
+    'spells $functionName out, and the Builder signs exactly its calldata',
+    (call) => {
+      const transaction = builderFile(call)
+      expect(transaction.data).toBeNull()
+      expect(transaction.contractMethod?.name).toBe(call.functionName)
+      expect(builderSigns(transaction).toLowerCase()).toBe(
+        callData(call).toLowerCase(),
+      )
+    },
+  )
+
+  it('shows each value as the owner should check it', () => {
+    const transaction = builderFile(calls[2])
+    expect(transaction.contractInputsValues).toEqual({
+      _arbitrator: ARBITRATOR,
+      _arbitratorExtraData: extraData,
+      _registrationMetaEvidence: `/ipfs/${CID}/reg.json`,
+      _clearingMetaEvidence: `/ipfs/${CID}/clr.json`,
+    })
+    // An address the call holds in lowercase is shown checksummed.
+    expect(builderFile(calls[1]).contractInputsValues).toEqual({
+      _governor: SAFE,
+    })
+  })
+
+  it("spells a Stake list's change out too", () => {
+    const stake: ContractCall = {
+      ...CALL,
+      abi: permanentAbi as Abi,
+      functionName: 'changeArbitrationParams',
+      args: [extraData, `/ipfs/${CID}/meta.json`],
+    }
+    const transaction = builderFile(stake)
+    expect(transaction.contractMethod?.name).toBe('changeArbitrationParams')
+    expect(builderSigns(transaction).toLowerCase()).toBe(
+      callData(stake).toLowerCase(),
+    )
+  })
+
+  it('keeps the calldata for a call it cannot spell out', () => {
+    const batchAbi = [
+      {
+        type: 'function',
+        name: 'setMany',
+        stateMutability: 'nonpayable',
+        inputs: [{ name: 'values', type: 'uint256[]' }],
+        outputs: [],
+      },
+    ] as const
+    const call: ContractCall = {
+      ...CALL,
+      abi: batchAbi as unknown as Abi,
+      functionName: 'setMany',
+      args: [[1n, 2n]],
+    }
+    const transaction = builderFile(call)
+    expect(transaction).toMatchObject({
+      data: callData(call),
+      contractMethod: null,
+      contractInputsValues: null,
+    })
+    expect(builderSigns(transaction)).toBe(callData(call))
+  })
+
+  it('still passes the Builder’s checksum check, spelled out', () => {
+    expect(
+      builderAccepts(
+        downloaded(safeTransactionBuilderJson({ ...BATCH, call: calls[2] })),
+      ),
+    ).toBe(true)
   })
 })

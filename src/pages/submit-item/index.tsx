@@ -321,11 +321,10 @@ const DepositSubmitPage = ({
 }
 
 /**
- * A connected (badges) list takes a badge list plus a match file that only
- * its own dialog on the list page builds, never this generic form: the list
- * page opens that dialog for ?action=submit. A resubmission is the
- * exception: it carries the entry's own values (its badge list and match
- * file) and sends them as they are, as the entry page's resubmit always has.
+ * A connected (badges) list takes no new entries: badges are retired, so its
+ * submit page leads back to the list, which says so. A resubmission is the
+ * exception: it carries the entry's own values and sends them as they are,
+ * as the entry page's resubmit always has.
  */
 const isConnectedList = (metaEvidence?: MetaEvidence): boolean =>
   Boolean(metaEvidence?.metadata?.isConnectedTCR)
@@ -372,7 +371,7 @@ const StandardSubmitPage = () => {
     return <ErrorPage code="400" message={tcrError} />
   if (!tcrAddress) return <SubmitPageSkeleton />
   if (isConnectedList(tcrViewContext?.metaEvidence) && linkValues.length === 0)
-    return <Navigate to={`${registryPath}?action=submit`} replace />
+    return <Navigate to={registryPath} replace />
 
   return (
     <DepositSubmitPage

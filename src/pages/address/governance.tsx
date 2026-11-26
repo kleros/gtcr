@@ -12,7 +12,12 @@ import { createPortal } from 'react-dom'
 import styled, { keyframes } from 'styled-components'
 import { Link } from 'react-router-dom'
 import { useQueries, useQuery, useQueryClient } from '@tanstack/react-query'
-import { getPublicClient, readContracts, simulateContract } from '@wagmi/core'
+import {
+  getPublicClient,
+  readContract,
+  readContracts,
+  simulateContract,
+} from '@wagmi/core'
 import {
   useAccount,
   useReadContract,
@@ -20,8 +25,9 @@ import {
   useWalletClient,
 } from 'wagmi'
 import { erc20Abi, formatEther, isAddress, zeroAddress } from 'viem'
-import { useAtlasProvider } from '@kleros/kleros-app'
+import { Roles, useAtlasProvider } from '@kleros/kleros-app'
 import EnsureAuth from 'components/ensure-auth'
+import { UploadField } from 'components/curate/factory-shared-fields'
 import Select from 'components/ui/Select'
 import Tooltip from 'components/ui/Tooltip'
 import { CurateIcon } from 'components/curate/icons'
@@ -70,6 +76,9 @@ import { request } from 'utils/indexer-request'
 import { readStakeArbitrationParams } from 'utils/stake-arbitration-params'
 import { jurorsAndCourtIDFromExtraData } from 'utils/string'
 import { JSON_UPLOAD_ROLE } from 'utils/atlas-roles'
+import { confirmStored } from 'utils/confirm-stored'
+import { uploadOnce } from 'utils/upload-once'
+import { uploadFailure } from 'utils/upload-restrictions'
 import {
   callData,
   downloadJson,
@@ -98,19 +107,31 @@ import {
   type GovernedRegistry,
 } from './data'
 import {
+  arbitrationEffect,
   arbitrationExtraData,
+  columnsChange,
   describeParsed,
   formatParamValue,
+  governorTargetNote,
   isUnchanged,
   markListSettingsStale,
-  newGovernorCodeNote,
+  paramEffect,
   parseJurors,
   parseParamValue,
-  type CodeCheck,
+  reviewValue,
   type ParamConfig,
   type ParamContext,
   type ParamGroup,
+  type ReviewValue,
 } from './governance-params'
+import {
+  ReviewPanel,
+  type ChangeReview,
+  type ReviewChoice,
+  type ReviewMode,
+  type ReviewRow,
+} from './governance-review'
+import { readGovernorTarget } from './governor-target'
 import { ACTIVITY_LAYOUT_OPTIONS, formatInt, type ActivityLayout } from './view'
 import { Avatar as ListLogo } from 'pages/browse/avatar'
 
@@ -278,7 +299,7 @@ const editableParams = (registry: GovernedRegistry): ParamConfig[] => {
       kind: 'address',
       functionName: 'changeConnectedTCR',
       group: 'advanced',
-      help: "The list that holds badges for this list's entries. Use the zero address to disconnect it.",
+      help: 'Badges are retired, so Curate no longer reads this setting. The zero address disconnects the list it names.',
     },
     {
       key: 'relayerContract',
@@ -406,10 +427,29 @@ const readMetaEvidence = async (uri: string): Promise<MetaEvidenceFile> => {
   }
 }
 
-const columnsKey = (file: MetaEvidenceFile) =>
-  JSON.stringify(
-    (file.metadata?.columns ?? []).map((column) => [column.label, column.type]),
-  )
+/** The policy a MetaEvidence file names: the PDF jurors judge by. */
+const policyOf = (file: MetaEvidenceFile | undefined) =>
+  typeof file?.fileURI === 'string' ? file.fileURI : undefined
+
+/**
+ * Whether a file opens from the gateway. Only the answer's status is read:
+ * the download stops there, since a policy PDF can be megabytes.
+ */
+const canOpen = async (uri: string): Promise<boolean> => {
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), 15_000)
+  try {
+    const response = await fetch(metaEvidenceUrl(uri), {
+      signal: controller.signal,
+    })
+    return response.ok
+  } catch {
+    return false
+  } finally {
+    clearTimeout(timer)
+    controller.abort()
+  }
+}
 
 /**
  * Whether the file asks jurors to add (or remove) an entry: its title opens
@@ -428,9 +468,26 @@ const asks = (file: MetaEvidenceFile, verb: 'add' | 'remove') => {
   )
 }
 
+type MetaEvidenceRole = 'registration' | 'clearing'
+
+/** What the checks found: a problem, or the policy a save changes. */
+interface MetaEvidenceCheck {
+  problem?: string
+  /** The policy before and after, when the save changes it. */
+  policy?: { before?: string; after: string }
+}
+
+const WEB_META_EVIDENCE =
+  "MetaEvidence must be on IPFS: Curate reads it only through the IPFS gateway, so a web address would break the list. Use Upload JSON, or enter the file's /ipfs/… path."
+
 /**
- * What is wrong with a proposed MetaEvidence change, or undefined when it is
- * fine. Files equal to the live ones are not re-read.
+ * What is wrong with a proposed MetaEvidence change, or the policy it
+ * changes. A file sent back as the list holds it (the save sends that very
+ * string) is not read; each new one is compared with the live file it
+ * replaces, and the policy both end up naming must be one, on IPFS, and
+ * open. Curate shows the registration file's policy and Court gives jurors
+ * of a removal the clearing file's: one list once ran 18 months with the
+ * two apart, and another once took a different list's files.
  */
 const checkMetaEvidence = async ({
   registration,
@@ -441,54 +498,108 @@ const checkMetaEvidence = async ({
   /** Undefined on Stake Curate, which has a single MetaEvidence. */
   clearing?: string
   current: CurrentMetaEvidence
-}): Promise<string | undefined> => {
-  if (!registration.trim()) return 'Enter the MetaEvidence URI'
+}): Promise<MetaEvidenceCheck> => {
+  const refuse = (problem: string): MetaEvidenceCheck => ({ problem })
+  if (!registration.trim()) return refuse('Enter the MetaEvidence URI')
   if (clearing !== undefined) {
-    if (!clearing.trim()) return 'Enter the clearing MetaEvidence URI'
+    if (!clearing.trim()) return refuse('Enter the clearing MetaEvidence URI')
     if (registration.trim() === clearing.trim())
-      return 'The registration and clearing MetaEvidence must be two different files: jurors are asked to add in one and to remove in the other.'
+      return refuse(
+        'The registration and clearing MetaEvidence must be two different files: jurors are asked to add in one and to remove in the other.',
+      )
   }
-  // The values come in stored form (toStoredUri): a web address left now is
-  // not an IPFS file, and no reader could open the list until another save.
-  if ([registration, clearing].some((uri) => uri && isWebAddress(uri)))
-    return "MetaEvidence must be on IPFS: Curate reads it only through the IPFS gateway, so a web address would break the list. Use Upload JSON, or enter the file's /ipfs/… path."
-  const changed = [
-    { uri: registration.trim(), role: 'registration' as const },
-    ...(clearing !== undefined
-      ? [{ uri: clearing.trim(), role: 'clearing' as const }]
-      : []),
-  ].filter(({ uri, role }) => uri !== current[role])
-  if (changed.length === 0) return undefined
+  const sent: Partial<Record<MetaEvidenceRole, string>> = { registration }
+  if (clearing !== undefined) sent.clearing = clearing
+  const roles = Object.keys(sent) as MetaEvidenceRole[]
+  const changed = roles.filter((role) => sent[role] !== current[role])
+  // A new file in stored form (toStoredUri) that is still a web address is
+  // no IPFS file, and no reader could open the list until another save.
+  if (changed.some((role) => isWebAddress(sent[role] ?? '')))
+    return refuse(WEB_META_EVIDENCE)
+  if (changed.length === 0) return {}
 
-  let baseline: MetaEvidenceFile | undefined
-  if (current.registration)
-    try {
-      baseline = await readMetaEvidence(current.registration)
-    } catch {
-      // Without the live file the columns can't be compared: wait rather than
-      // let a column change through while the gateway is slow.
-      return 'The current registration file could not be read, so its columns cannot be compared. Try again in a minute.'
-    }
+  // Each live file is read once, when a check needs it.
+  const live: Partial<Record<MetaEvidenceRole, Promise<MetaEvidenceFile>>> = {}
+  const readLive = (role: MetaEvidenceRole) => {
+    const uri = current[role]
+    if (!uri) return Promise.resolve(undefined)
+    live[role] ??= readMetaEvidence(uri)
+    return live[role]
+  }
 
-  for (const { uri, role } of changed) {
+  const next: Partial<Record<MetaEvidenceRole, MetaEvidenceFile>> = {}
+  for (const role of changed) {
+    const uri = sent[role] as string
     let file: MetaEvidenceFile
     try {
       file = await readMetaEvidence(uri)
     } catch {
-      return `The ${role} MetaEvidence could not be read from ${uri}. Check the URI, or wait for the upload to reach the gateway.`
+      return refuse(
+        `The ${role} MetaEvidence could not be read from ${uri}. Check the URI, or wait for the upload to reach the gateway.`,
+      )
     }
     if (typeof file.fileURI !== 'string' || !file.metadata?.columns)
-      return `The ${role} file is not a Curate MetaEvidence JSON (it needs fileURI and metadata.columns).`
-    if (baseline && columnsKey(file) !== columnsKey(baseline))
-      return `The ${role} file changes the list's columns. Entries already on the list would no longer display, so keep the same columns.`
+      return refuse(
+        `The ${role} file is not a Curate MetaEvidence JSON (it needs fileURI and metadata.columns).`,
+      )
+    let before: MetaEvidenceFile | undefined
+    try {
+      before = await readLive(role)
+    } catch {
+      // Without the live file the columns can't be compared: wait rather
+      // than let a column change through while the gateway is slow.
+      return refuse(
+        `The current ${role} file could not be read, so its columns cannot be compared. Try again in a minute.`,
+      )
+    }
+    if (
+      before &&
+      columnsChange(file.metadata.columns, before.metadata?.columns) ===
+        'changed'
+    )
+      return refuse(
+        `The ${role} file changes the list's columns. Entries already on the list would no longer display, so keep its columns as they are (a new one can only go after the last).`,
+      )
     // The registration file asks about adding, the clearing file about
     // removing; a file that says the opposite was put in the wrong field.
     if (role === 'registration' && asks(file, 'remove') && !asks(file, 'add'))
-      return 'The registration file asks jurors about removing entries. It looks like the clearing file: swap the two.'
+      return refuse(
+        'The registration file asks jurors about removing entries. It looks like the clearing file: swap the two.',
+      )
     if (role === 'clearing' && asks(file, 'add') && !asks(file, 'remove'))
-      return 'The clearing file asks jurors about adding entries, not removing them. It looks like the registration file: swap the two.'
+      return refuse(
+        'The clearing file asks jurors about adding entries, not removing them. It looks like the registration file: swap the two.',
+      )
+    next[role] = file
   }
-  return undefined
+
+  let policies: (string | undefined)[]
+  let before: string | undefined
+  try {
+    policies = await Promise.all(
+      roles.map(async (role) => policyOf(next[role] ?? (await readLive(role)))),
+    )
+    before = policyOf(await readLive('registration'))
+  } catch {
+    return refuse(
+      "The list's current MetaEvidence could not be read, so the policy it names cannot be compared. Try again in a minute.",
+    )
+  }
+  const [policy] = policies
+  if (policies.some((other) => other !== policy))
+    return refuse(
+      'The registration and clearing files name different policies: Curate would show one, and jurors of a removal would judge by the other. Give both the same policy (a new policy PDF uploaded here is written into both).',
+    )
+  if (!policy || policy === before) return {}
+  if (isWebAddress(policy))
+    return refuse(
+      `The policy must be on IPFS (an /ipfs/… path), so it cannot change after jurors have read it; ${policy} is a web address.`,
+    )
+  if (!(await canOpen(policy)))
+    return refuse(
+      `The policy ${policy} could not be opened from the IPFS gateway. Check the file's fileURI, or wait a minute for a new upload to reach the gateway.`,
+    )
+  return { policy: { before, after: policy } }
 }
 
 interface ChainArbitration {
@@ -1128,9 +1239,9 @@ const SectionBox = styled.div`
 
 /**
  * One section of the dialog. It is hidden, never unmounted, while another
- * is open: each field keeps its typed value (and an armed governor
- * transfer) in its own state, and a look at another section must not
- * throw that away. Its first field needs no hairline above it.
+ * is open: each field keeps its typed value (and a change in review) in its
+ * own state, and a look at another section must not throw that away. Its
+ * first field needs no hairline above it.
  */
 const Section = ({
   open,
@@ -1191,18 +1302,6 @@ const HiddenFileInput = styled.input`
   overflow: hidden;
   clip: rect(0 0 0 0);
   white-space: nowrap;
-`
-
-const GateRow = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 8px 16px;
-  padding: 12px 16px;
-  border: 1px solid var(--glass-border);
-  border-radius: 14px;
-  background: var(--color-raised);
 `
 
 /*
@@ -1266,62 +1365,154 @@ const governanceCall = (
   args,
 })
 
-/** Hands a built call to the Safe's owners: a file, or the calldata. */
+const COPY_FAILED =
+  'The calldata could not be copied. Download the Safe file instead.'
+
+/**
+ * Copies text that is still being worked out. A browser lets a page write
+ * the clipboard only on a click, and Safari stops counting the click once a
+ * network read has run in between: a ClipboardItem handed the text as a
+ * promise keeps the click's permission while the read runs (Safari, Chrome,
+ * Firefox 127+). Nothing is copied when the promise fails.
+ */
+const copyWhenReady = async (text: Promise<string>) => {
+  if (
+    typeof ClipboardItem === 'function' &&
+    typeof navigator.clipboard.write === 'function'
+  ) {
+    const blob = text.then((value) => new Blob([value], { type: 'text/plain' }))
+    // Its failure is the caller's to report, from `text`.
+    blob.catch(() => undefined)
+    await navigator.clipboard.write([new ClipboardItem({ 'text/plain': blob })])
+    return
+  }
+  await navigator.clipboard.writeText(await text)
+}
+
+/**
+ * Hands a built call to the Safe's owners: a file, or the calldata. `fresh`
+ * says whether the values it was built from are still the chain's
+ * (useGovernanceWrite); when they are not, nothing is handed over.
+ */
 const exportCall = async (
   registry: GovernedRegistry,
   call: ContractCall,
   via: ExportVia,
-) => {
+  fresh: Promise<boolean>,
+): Promise<'exported' | 'outdated'> => {
   if (via === 'copy') {
-    if (!navigator.clipboard)
-      throw new Error(
-        'The calldata could not be copied. Download the Safe file instead.',
-      )
-    await navigator.clipboard
-      .writeText(`to: ${call.address}\nvalue: 0\ndata: ${callData(call)}`)
-      .catch(() => {
-        throw new Error(
-          'The calldata could not be copied. Download the Safe file instead.',
-        )
-      })
+    if (!navigator.clipboard) {
+      // The check is not waited for: its failure would go unheard.
+      fresh.catch(() => undefined)
+      throw new Error(COPY_FAILED)
+    }
+    // Why the text never came, when it did not: the settings moved, or
+    // they could not be read again.
+    let refusal: unknown
+    const text = fresh.then(
+      (current) => {
+        if (current)
+          return `to: ${call.address}\nvalue: 0\ndata: ${callData(call)}`
+        refusal = 'outdated'
+        throw new Error(SETTINGS_CHANGED)
+      },
+      (err: unknown) => {
+        refusal = err
+        throw err
+      },
+    )
+    try {
+      await copyWhenReady(text)
+    } catch {
+      if (refusal === 'outdated') return 'outdated'
+      throw refusal ?? new Error(COPY_FAILED)
+    }
     successToast(
       `Calldata copied. In the Safe on ${chainName(call.chainId)}, start a transaction to ${shortAddress(call.address)} with value 0 and this data; its owners sign it there.`,
     )
-    return
+    return 'exported'
   }
+  if (!(await fresh)) return 'outdated'
+  // The Builder checks neither the chain nor the Safe a file was made for:
+  // its name and the batch's say both, for an owner of Safes on several
+  // chains at one address.
+  const chain = chainName(call.chainId)
+  const slug = (text: string) => text.replace(/[^\w-]+/g, '-').toLowerCase()
   downloadJson(
-    `${registry.title.replace(/[^\w-]+/g, '-').toLowerCase()}-${call.functionName}.json`,
+    `${slug(registry.title)}-${slug(chain)}-${call.functionName}.json`,
     safeTransactionBuilderJson({
       call,
       safe: registry.governor ?? '',
-      name: `${registry.title}: ${call.functionName}`,
-      description: `${call.functionName} on ${registry.address} (${chainName(registry.chainId)}), prepared in Curate.`,
+      name: `${registry.title} (${chain}): ${call.functionName}`,
+      description: `${call.functionName} on ${registry.address} (${chain}), for the Safe ${registry.governor ?? ''}, prepared in Curate.`,
     }),
   )
   successToast(
-    `Safe file downloaded. Open the Safe on ${chainName(call.chainId)}, then Apps, then Transaction Builder, and drop the file in; the Safe's owners sign it there. It carries today's values: execute it before any other change to this list.`,
+    `Safe file downloaded. Open the Safe on ${chainName(call.chainId)}, then Apps, then Transaction Builder, and drop the file in: it shows the change by function and values, for the Safe's owners to check and sign there. It carries today's values: execute it before any other change to this list.`,
   )
+  return 'exported'
 }
 
 /**
+ * What a save came to: only a mined one changed the list. `outdated`: the
+ * chain changed while the review was open, so nothing left.
+ */
+type WriteOutcome = 'mined' | 'proposed' | 'exported' | 'outdated' | 'none'
+
+/** A review waiting for the governor: how it would leave, and the answer. */
+interface PendingReview {
+  review: ChangeReview
+  as: ReviewMode
+  answer: (choice: ReviewChoice | null) => void
+}
+
+const ALREADY_PROPOSED =
+  'Already proposed to the Safe: confirm it there, or change a value to propose something else.'
+const REVIEW_OPEN = 'Send it or go back from the review below.'
+
+/**
  * Simulates the call (from the connected wallet, or from the governor when
- * exporting), then sends it with a toast, proposes it to the Safe, or
- * exports it; a revert or a refused signature becomes a message instead of
- * failing silently. Resolves true only once a sent transaction is mined and
- * succeeded: a proposal or an export has changed nothing yet.
+ * exporting), shows it for review, then sends it with a toast, proposes it
+ * to the Safe, or exports it, as the governor chooses there; a revert or a
+ * refused signature becomes a message instead of failing silently. A change
+ * that would revert never reaches the review, and nothing leaves without it.
  */
 const useGovernanceWrite = (registry: GovernedRegistry) => {
   const mode = useContext(WriteModeContext)
   const queryClient = useQueryClient()
   const { data: walletClient } = useWalletClient()
   const [pending, setPending] = useState(false)
+  const [asking, setAsking] = useState<PendingReview>()
+  // A review still open when the field goes (the dialog closed) is a Back.
+  const waiting = useRef<(choice: ReviewChoice | null) => void>()
+  useEffect(() => {
+    const open = waiting
+    return () => open.current?.(null)
+  }, [])
+  const ask = (review: ChangeReview, as: ReviewMode) =>
+    new Promise<ReviewChoice | null>((resolve) => {
+      const answer = (choice: ReviewChoice | null) => {
+        waiting.current = undefined
+        setAsking(undefined)
+        resolve(choice)
+      }
+      waiting.current = answer
+      setAsking({ review, as, answer })
+    })
   const ready = mode === 'export' || !!walletClient
   const send = async (
     functionName: string,
     args: unknown[],
-    via: ExportVia = 'download',
-  ) => {
-    if (!ready) return false
+    review: ChangeReview,
+    /**
+     * Whether the values the change was built from are still the chain's,
+     * asked again once the governor has chosen: a review stays open as long
+     * as they like, and a change made meanwhile (another tab, another
+     * signer) would be undone by the values sent back with this one.
+     */
+    stillCurrent?: () => Promise<boolean>,
+  ): Promise<WriteOutcome> => {
+    if (!ready) return 'none'
     setPending(true)
     try {
       const call = governanceCall(registry, functionName, args)
@@ -1332,10 +1523,21 @@ const useGovernanceWrite = (registry: GovernedRegistry) => {
           ...call,
           account: registry.governor as `0x${string}`,
         } as any)
-        await exportCall(registry, call, via)
-        return false
+        setPending(false)
+        const choice = await ask(review, 'export')
+        if (!choice) return 'none'
+        setPending(true)
+        // The check goes in unanswered: a copy has to start on the click,
+        // before the read comes back (copyWhenReady).
+        const exported = await exportCall(
+          registry,
+          call,
+          choice === 'copy' ? 'copy' : 'download',
+          stillCurrent ? stillCurrent() : Promise.resolve(true),
+        )
+        return exported
       }
-      if (!walletClient) return false
+      if (!walletClient) return 'none'
       const { request } = await simulateContract(wagmiConfig, call as any)
       // A wallet that is a contract (a Safe through WalletConnect) answers
       // with the hash of a proposal, which is never mined: waiting for it
@@ -1351,10 +1553,15 @@ const useGovernanceWrite = (registry: GovernedRegistry) => {
             'Could not check the connected wallet. Try again in a moment.',
           )
         })
+      setPending(false)
+      const choice = await ask(review, isContract ? 'propose' : 'send')
+      if (!choice) return 'none'
+      setPending(true)
+      if (stillCurrent && !(await stillCurrent())) return 'outdated'
       if (isContract) {
         await walletClient.writeContract(request)
         infoToast(PROPOSED)
-        return false
+        return 'proposed'
       }
       const publicClient = getPublicClient(wagmiConfig, {
         chainId: registry.chainId,
@@ -1363,85 +1570,67 @@ const useGovernanceWrite = (registry: GovernedRegistry) => {
         () => walletClient.writeContract(request),
         publicClient!,
       )
-      return result.status
+      return result.status ? 'mined' : 'none'
     } catch (err) {
       console.error(err)
       errorToast(parseWagmiError(err))
-      return false
+      return 'none'
     } finally {
       setPending(false)
     }
   }
-  return { ready, mode, pending, send }
+  return { ready, mode, pending, send, asking }
 }
 
+/** The review of a field's change, while it waits for the governor. */
+const PendingReviewPanel = ({ asking }: { asking?: PendingReview }) =>
+  asking ? (
+    <ReviewPanel
+      review={asking.review}
+      mode={asking.as}
+      onChoose={asking.answer}
+      onBack={() => asking.answer(null)}
+    />
+  ) : null
+
 /**
- * The save control: one Save that signs (Propose for a Safe connected as
- * the wallet), or, for a contract governor the wallet is not, the two ways
- * to hand the change to the Safe.
+ * The save control: one button that checks the change and opens its review,
+ * where it is signed, proposed to the Safe, or exported.
  */
 const SaveActions = ({
   off,
   reason,
   checking,
   pending,
-  armed,
-  onSave,
+  reviewing,
+  onReview,
 }: {
   off: boolean
   reason?: string
   checking?: boolean
   pending: boolean
-  /** A governor transfer waiting for its second click. */
-  armed?: boolean
-  onSave: (via?: ExportVia) => void
+  /** Its review is open below. */
+  reviewing?: boolean
+  onReview: () => void
 }) => {
   const mode = useContext(WriteModeContext)
-  const variant = armed ? 'danger' : 'primary'
-  if (mode !== 'export')
-    return (
-      <ReasonedButton
-        $variant={variant}
-        off={off}
-        reason={reason}
-        onClick={() => onSave()}
-      >
-        {checking
-          ? 'Checking…'
-          : pending
-            ? 'Saving…'
-            : armed
-              ? 'Confirm transfer'
-              : mode === 'propose'
-                ? 'Propose'
-                : 'Save'}
-      </ReasonedButton>
-    )
   return (
-    <Stack $gap={6}>
-      <ReasonedButton
-        $variant={variant}
-        off={off}
-        reason={reason}
-        onClick={() => onSave('download')}
-      >
-        {checking
-          ? 'Checking…'
+    <ReasonedButton
+      $variant="primary"
+      off={off}
+      reason={reason}
+      onClick={onReview}
+    >
+      {checking
+        ? 'Checking…'
+        : reviewing
+          ? 'In review'
           : pending
-            ? 'Preparing…'
-            : armed
-              ? 'Confirm: download'
-              : 'Download Safe file'}
-      </ReasonedButton>
-      <ReasonedButton
-        $variant="secondary"
-        off={off}
-        reason={reason}
-        onClick={() => onSave('copy')}
-      >
-        Copy calldata
-      </ReasonedButton>
-    </Stack>
+            ? mode === 'export'
+              ? 'Preparing…'
+              : 'Saving…'
+            : 'Review change'}
+    </ReasonedButton>
   )
 }
 
@@ -1606,6 +1795,8 @@ const useMetaEvidenceDraft = (current: CurrentMetaEvidence | undefined) => {
   return {
     registration,
     clearing,
+    /** The fields hold what the governor put there, not the live files. */
+    edited,
     setRegistration: (value: string) => {
       setEdited(true)
       setRegistration(value)
@@ -1619,6 +1810,28 @@ const useMetaEvidenceDraft = (current: CurrentMetaEvidence | undefined) => {
 }
 
 /* ---------- Arbitration and court ---------- */
+
+/** The policy upload sits in the field's lock like every other control. */
+const PolicyBox = styled.fieldset`
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+`
+
+const LIVE_UNREADABLE =
+  "The list's current MetaEvidence could not be read, so the new policy cannot be written into it. Try again in a minute."
+const SETTINGS_UNREAD =
+  "The list's settings could not be read again before sending, so nothing was sent. Try again in a moment."
+
+/** "court, policy" → "Court and policy": what a review is of. */
+const joinedTitle = (parts: string[]) => {
+  const text =
+    parts.length > 1
+      ? `${parts.slice(0, -1).join(', ')} and ${parts[parts.length - 1]}`
+      : (parts[0] ?? 'arbitration settings')
+  return text.charAt(0).toUpperCase() + text.slice(1)
+}
 
 const ArbitrationGovernanceField = ({
   registry,
@@ -1642,7 +1855,7 @@ const ArbitrationGovernanceField = ({
   /** The chain changed since `current` was read: read it again. */
   onOutdated: () => void
 }) => {
-  const { ready, pending, send } = useGovernanceWrite(registry)
+  const { ready, pending, send, asking } = useGovernanceWrite(registry)
   const alive = useAlive()
   const chainProvider = useEthersProvider({ chainId: registry.chainId })
   const knownKleros = klerosAddresses[registry.chainId]
@@ -1652,12 +1865,11 @@ const ArbitrationGovernanceField = ({
   const [arbitrator, setArbitrator] = useState(
     currentArbitrator || knownKleros?.arbitrator || '',
   )
-  const courtArbitrator =
-    registry.kind === 'permanent' ? knownKleros?.arbitrator : arbitrator
+  // Kleros Court's courts: the only ones its policy registry names.
   const { data: courts = [] } = useCourtPolicies(
     knownKleros?.policy,
     chainProvider ?? null,
-    courtArbitrator,
+    knownKleros?.arbitrator,
   )
   const currentExtraData =
     current?.arbitratorExtraData || registry.params?.arbitratorExtraData || ''
@@ -1691,6 +1903,8 @@ const ArbitrationGovernanceField = ({
   }, [settingsEdited, currentArbitrator, decodedCurrent])
   const meta = useMetaEvidenceDraft(current)
   const [checking, setChecking] = useState(false)
+  // The change last proposed to the Safe: the same one is not queued twice.
+  const [proposed, setProposed] = useState<string>()
   const ids = useId()
 
   const usesPair = registry.kind === 'standard'
@@ -1698,6 +1912,19 @@ const ArbitrationGovernanceField = ({
   const arbitratorChanged =
     registry.kind !== 'permanent' &&
     arbitrator.toLowerCase() !== currentArbitrator.toLowerCase()
+  // The arbitrator the list's disputes go to (fixed at deployment on Stake,
+  // the one typed on Standard). Its courts and fees are read only when it is
+  // Kleros Court: 9 of 20 Gnosis Stake lists and 7 Standard ones use
+  // another, and were shown Kleros courts and fees. Unread, it is taken for
+  // Kleros, as before.
+  const listArbitrator =
+    registry.kind === 'permanent'
+      ? (registry.params?.arbitrator ?? '')
+      : arbitrator
+  const onKleros =
+    !knownKleros ||
+    !listArbitrator ||
+    listArbitrator.toLowerCase() === knownKleros.arbitrator.toLowerCase()
   const { value: extraData, error: courtError } = arbitrationExtraData({
     current: currentExtraData,
     courtID,
@@ -1705,6 +1932,41 @@ const ArbitrationGovernanceField = ({
     courtEdited,
     arbitratorChanged,
   })
+  // A Stake list's cooldown: when its entries already listed take a change.
+  const cooldown = useQuery({
+    queryKey: ['stakeCooldown', registry.chainId, registry.address],
+    queryFn: async () =>
+      Number(
+        await readContract(wagmiConfig, {
+          chainId: registry.chainId,
+          address: registry.address as `0x${string}`,
+          abi: abiForKind('permanent'),
+          functionName: 'arbitrationParamsCooldown',
+        } as any),
+      ),
+    enabled: usesSingle,
+    staleTime: Infinity,
+  })
+
+  // The policy: the live registration file's, a new PDF's once uploaded.
+  const { uploadFile } = useAtlasProvider()
+  const uploads = useRef(new Map<string, string>())
+  const [replacing, setReplacing] = useState(false)
+  const [newPolicy, setNewPolicy] = useState<string>()
+  const livePolicy = useQuery({
+    queryKey: [
+      'governancePolicy',
+      registry.chainId,
+      registry.address,
+      current?.registration ?? '',
+    ],
+    queryFn: async () =>
+      policyOf(await readMetaEvidence(current?.registration ?? '')) ?? null,
+    enabled: !!current?.registration && !current.behind,
+    staleTime: 5 * 60_000,
+    retry: 1,
+  })
+
   const changed =
     arbitratorChanged ||
     (extraData !== undefined &&
@@ -1713,6 +1975,15 @@ const ArbitrationGovernanceField = ({
       toStoredUri(current?.registration ?? '') ||
     (usesPair &&
       toStoredUri(meta.clearing) !== toStoredUri(current?.clearing ?? ''))
+  // What the form would send, to tell a change already proposed.
+  const formKey = [
+    arbitrator,
+    extraData ?? '',
+    toStoredUri(meta.registration),
+    usesPair ? toStoredUri(meta.clearing) : '',
+  ]
+    .join('\n')
+    .toLowerCase()
   // Every save sends values the governor did not touch along with the ones
   // they did (Standard and Stake send the court and the MetaEvidence together):
   // without the live values, refuse rather than send stale ones back.
@@ -1727,71 +1998,346 @@ const ArbitrationGovernanceField = ({
           ? INDEXER_BEHIND
           : registry.kind !== 'permanent' && !isAddress(arbitrator)
             ? 'Enter a valid arbitrator address'
-            : courtError
+            : arbitratorChanged && !onKleros
+              ? `Only Kleros Court (${shortAddress(knownKleros?.arbitrator ?? '')}) can be set as the arbitrator here: Curate cannot write another arbitrator's extra data.`
+              : courtError
+  const reviewing = !!asking
   const blocker =
     gate.blocker ??
     (!ready
       ? 'Wallet not ready'
-      : (inputError ?? (changed ? undefined : 'No change')))
+      : (inputError ??
+        (!changed
+          ? 'No change'
+          : formKey === proposed
+            ? ALREADY_PROPOSED
+            : reviewing
+              ? REVIEW_OPEN
+              : undefined)))
   // The inputs wait for the live settings, and for each read after a
   // change, so no edit starts from the scan's values or from older ones.
   const locked =
-    Boolean(gate.blocker) || pending || checking || !current || refreshing
+    Boolean(gate.blocker) ||
+    pending ||
+    checking ||
+    reviewing ||
+    replacing ||
+    !current ||
+    refreshing
 
-  const save = async (via?: ExportVia) => {
+  /*
+   * A new policy PDF, written into the files the MetaEvidence fields hold:
+   * the live ones, or files of the governor's own (a column added after the
+   * last, say), which are never dropped for the live ones. Each is copied
+   * with only its fileURI replaced (never rebuilt from the factory's
+   * template, which would change other fields), uploaded once (uploadOnce: a
+   * retry spares Atlas's 5 a minute) and read back, then put in the fields.
+   * Nothing is sent until the change is reviewed; Remove puts back what the
+   * fields held before.
+   */
+  // What the fields held before a new policy went into them: null while
+  // they followed the live files.
+  const beforePolicy = useRef<{
+    registration: string
+    clearing: string
+  } | null>(null)
+  // The fields go back to the live files: no new policy, none to restore.
+  const resetFiles = () => {
+    beforePolicy.current = null
+    setNewPolicy(undefined)
+    meta.reset()
+  }
+  const replacePolicy = async (pdf: string) => {
+    if (!pdf) {
+      // Removed: the fields go back to what they held before it.
+      const before = beforePolicy.current
+      if (!before) {
+        resetFiles()
+        return
+      }
+      beforePolicy.current = null
+      setNewPolicy(undefined)
+      meta.setRegistration(before.registration)
+      meta.setClearing(before.clearing)
+      return
+    }
+    const live = current
+    if (!live?.registration || (usesPair && !live.clearing)) {
+      errorToast(LIVE_UNREADABLE)
+      return
+    }
+    if (pdf === livePolicy.data) {
+      infoToast("That is the list's current policy: nothing to replace.")
+      return
+    }
+    // What the fields held before any new policy: a second PDF replaces the
+    // first one, it is not written over it.
+    const held =
+      newPolicy === undefined
+        ? meta.edited
+          ? { registration: meta.registration, clearing: meta.clearing }
+          : null
+        : beforePolicy.current
+    /** The file a field holds, when it is not the live one. */
+    const ownFile = (draft: string | undefined, liveUri: string) => {
+      const stored = toStoredUri(draft ?? '')
+      return stored && stored !== toStoredUri(liveUri) ? stored : undefined
+    }
+    const fieldName = (role: MetaEvidenceRole) =>
+      usesPair ? `${role} MetaEvidence` : 'MetaEvidence'
+    setReplacing(true)
+    // How far it got, for the message if it stops.
+    const at: { step: string; role: MetaEvidenceRole; own: boolean } = {
+      step: 'policy',
+      role: 'registration',
+      own: false,
+    }
+    try {
+      await confirmStored(pdf)
+      const copy = async (
+        role: MetaEvidenceRole,
+        liveUri: string,
+        name: string,
+      ) => {
+        const own = ownFile(held?.[role], liveUri)
+        Object.assign(at, { step: 'read', role, own: own !== undefined })
+        const file = (await readMetaEvidence(own ?? liveUri)) as unknown
+        if (!file || typeof file !== 'object' || Array.isArray(file))
+          throw new Error(`The ${role} file is not a JSON object.`)
+        at.step = 'upload'
+        const path = await uploadOnce(
+          uploadFile,
+          uploads.current,
+          new File([JSON.stringify({ ...file, fileURI: pdf })], name, {
+            type: 'application/json',
+          }),
+          JSON_UPLOAD_ROLE,
+        )
+        if (!path) throw new Error('Sign in, then pick the file again.')
+        at.step = 'stored'
+        await confirmStored(path)
+        return path
+      }
+      const registration = await copy(
+        'registration',
+        live.registration,
+        usesPair ? 'reg-meta-evidence.json' : 'meta-evidence.json',
+      )
+      const clearing =
+        usesPair && live.clearing
+          ? await copy('clearing', live.clearing, 'clr-meta-evidence.json')
+          : undefined
+      if (!alive.current) return
+      if (newPolicy === undefined) beforePolicy.current = held
+      meta.setRegistration(registration)
+      if (clearing) meta.setClearing(clearing)
+      setNewPolicy(pdf)
+      successToast(
+        `The new policy is in the ${usesPair ? 'two MetaEvidence files' : 'MetaEvidence file'}. Review the change to send it.`,
+      )
+    } catch (err) {
+      console.error(err)
+      errorToast(
+        at.step === 'policy'
+          ? 'The new policy could not be read back from IPFS. Try again in a moment.'
+          : at.step === 'read'
+            ? at.own
+              ? `The ${fieldName(at.role)} file in its field could not be read, so the new policy cannot be written into it. Check its URI, or wait a minute for its upload to reach the gateway.`
+              : LIVE_UNREADABLE
+            : at.step === 'stored'
+              ? 'The new MetaEvidence could not be read back from IPFS. Try again in a moment.'
+              : uploadFailure(err),
+      )
+    } finally {
+      if (alive.current) setReplacing(false)
+    }
+  }
+
+  const selectedCourt = courts.find(
+    (court) => String(court.courtID) === courtID,
+  )
+  /** A court and juror count as the review names them, with the bytes. */
+  const courtValue = (data: string): ReviewValue => {
+    if (!onKleros || !data || data === '0x') return { shown: data || '0x' }
+    try {
+      const decoded = jurorsAndCourtIDFromExtraData(data)
+      const name = courts.find(
+        (court) => String(court.courtID) === String(decoded.courtID),
+      )?.label
+      const count = Number(decoded.numberOfJurors)
+      return {
+        shown: `${name ?? 'Court'} · ID ${decoded.courtID} · ${count} ${count === 1 ? 'juror' : 'jurors'}`,
+        stored: data,
+      }
+    } catch {
+      return { shown: data }
+    }
+  }
+
+  /*
+   * The chain changed under the dialog: every field goes back to the live
+   * values, read again now. An edit kept would hold its untouched neighbours
+   * on the older values, and the next save would send them back.
+   */
+  const restartFromLive = () => {
+    resetFiles()
+    setSettingsEdited(false)
+    setCourtEdited(false)
+    onOutdated()
+  }
+
+  const review = async () => {
     if (blocker || !extraData || !current) return
     // Left alone, the arbitrator goes back as the chain returned it, like
     // the extra data.
     const sentArbitrator = arbitratorChanged
       ? arbitrator
       : (current.arbitrator ?? arbitrator)
-    const registration = toStoredUri(meta.registration)
-    const clearing = toStoredUri(meta.clearing)
+    // A file left as the list holds it goes back as that very string (an
+    // old ipfs:// form or a stray space included): rewritten, it would count
+    // as a new file, be read again, and block a court-only change on a list
+    // whose file cannot be read.
+    const asLive = (draft: string, live?: string) =>
+      live !== undefined && toStoredUri(draft) === toStoredUri(live)
+        ? live
+        : toStoredUri(draft)
+    const registration = asLive(meta.registration, current.registration)
+    const clearing = asLive(meta.clearing, current.clearing)
+    const key = formKey
     setChecking(true)
     let outdated = false
-    const problem = await (async () => {
-      // The values this dialog started from must still be the chain's: a
-      // change made since (another tab, another signer of the governor)
-      // would otherwise be undone by the ones it sends back unchanged.
-      if (changedSince(current, await readChainArbitration(registry))) {
-        outdated = true
-        return SETTINGS_CHANGED
-      }
-      // A mistyped arbitrator would mine, and the list could take no
-      // request (every arbitration cost read reverts) until it is fixed. An
-      // EIP-7702 delegated account is a wallet, not an arbitrator.
-      if (
-        arbitratorChanged &&
-        !(await readHasCode(registry.chainId, arbitrator))
+    const check: MetaEvidenceCheck =
+      await (async (): Promise<MetaEvidenceCheck> => {
+        // The values this dialog started from must still be the chain's: a
+        // change made since (another tab, another signer of the governor)
+        // would otherwise be undone by the ones it sends back unchanged.
+        if (changedSince(current, await readChainArbitration(registry))) {
+          outdated = true
+          return { problem: SETTINGS_CHANGED }
+        }
+        // A mistyped arbitrator would mine, and the list could take no
+        // request (every arbitration cost read reverts) until it is fixed. An
+        // EIP-7702 delegated account is a wallet, not an arbitrator.
+        if (
+          arbitratorChanged &&
+          !(await readHasCode(registry.chainId, arbitrator))
+        )
+          return {
+            problem: `There is no contract at ${arbitrator} on ${chainName(registry.chainId)}, so it cannot arbitrate.`,
+          }
+        return checkMetaEvidence({
+          registration,
+          clearing: usesPair ? clearing : undefined,
+          current,
+        })
+      })().catch(
+        (): MetaEvidenceCheck => ({
+          problem: 'The checks before saving failed. Try again.',
+        }),
       )
-        return `There is no contract at ${arbitrator} on ${chainName(registry.chainId)}, so it cannot arbitrate.`
-      return checkMetaEvidence({
-        registration,
-        clearing: usesPair ? clearing : undefined,
-        current,
-      })
-    })().catch(() => 'The checks before saving failed. Try again.')
     if (!alive.current) return
     setChecking(false)
-    if (outdated) {
-      // Every field goes back to the live values, read again now: an edit
-      // kept would hold its untouched neighbours on the older values, and
-      // the next save would send them back.
-      meta.reset()
-      setSettingsEdited(false)
-      setCourtEdited(false)
-      onOutdated()
-    }
-    if (problem) {
-      errorToast(problem)
+    if (outdated) restartFromLive()
+    if (check.problem) {
+      errorToast(check.problem)
       return
     }
+    const courtChanged =
+      extraData.toLowerCase() !== currentExtraData.toLowerCase()
+    const filesChanged =
+      registration !== current.registration ||
+      (usesPair && clearing !== current.clearing)
+    const rows: ReviewRow[] = [
+      ...(registry.kind === 'standard'
+        ? [
+            {
+              label: 'Arbitrator',
+              before: { shown: currentArbitrator },
+              after: { shown: sentArbitrator },
+              same: !arbitratorChanged,
+            },
+          ]
+        : []),
+      {
+        label: onKleros ? 'Court and jurors' : 'Arbitrator extra data',
+        before: courtValue(currentExtraData),
+        after: courtValue(extraData),
+        same: !courtChanged,
+      },
+      ...(check.policy
+        ? [
+            {
+              label: 'Policy',
+              before: check.policy.before
+                ? { shown: check.policy.before }
+                : undefined,
+              after: { shown: check.policy.after },
+            },
+          ]
+        : []),
+      {
+        label: usesPair ? 'Registration MetaEvidence' : 'MetaEvidence',
+        before: current.registration
+          ? { shown: current.registration }
+          : undefined,
+        after: { shown: registration },
+        same: registration === current.registration,
+      },
+      ...(usesPair
+        ? [
+            {
+              label: 'Clearing MetaEvidence',
+              before: current.clearing
+                ? { shown: current.clearing }
+                : undefined,
+              after: { shown: clearing },
+              same: clearing === current.clearing,
+            },
+          ]
+        : []),
+    ]
+    const what = [
+      ...(arbitratorChanged ? ['arbitrator'] : []),
+      ...(courtChanged ? ['court'] : []),
+      ...(check.policy ? ['policy'] : filesChanged ? ['MetaEvidence'] : []),
+    ]
     const functionName = 'changeArbitrationParams'
     const args =
       registry.kind === 'standard'
         ? [sentArbitrator, extraData, registration, clearing]
         : [extraData, registration]
-    if (await send(functionName, args, via)) {
+    // The call sends every value back, the untouched ones too: read once
+    // more when the governor chooses, since the review stays open as long
+    // as they like.
+    const stillCurrent = async () =>
+      !changedSince(
+        current,
+        await readChainArbitration(registry).catch(() => {
+          throw new Error(SETTINGS_UNREAD)
+        }),
+      )
+    const outcome = await send(
+      functionName,
+      args,
+      {
+        title: joinedTitle(what),
+        call: `${functionName} on ${registry.title}`,
+        rows,
+        effect: arbitrationEffect(
+          registry.kind === 'permanent' ? 'permanent' : 'standard',
+          cooldown.data,
+        ),
+      },
+      stillCurrent,
+    )
+    if (!alive.current) return
+    if (outcome === 'outdated') {
+      restartFromLive()
+      errorToast(SETTINGS_CHANGED)
+      return
+    }
+    if (outcome === 'proposed') setProposed(key)
+    if (outcome === 'mined') {
       // Standard and Stake add a settings entry: one more MetaEvidence change.
       const changes = (current.changes ?? 0) + 1
       // The fields keep the saved values until the live settings are read
@@ -1809,15 +2355,12 @@ const ArbitrationGovernanceField = ({
           : { registration, changes },
       })
       if (!alive.current) return
-      meta.reset()
+      resetFiles()
       setSettingsEdited(false)
       setCourtEdited(false)
     }
   }
 
-  const selectedCourt = courts.find(
-    (court) => String(court.courtID) === courtID,
-  )
   const symbol = nativeSymbol(registry.chainId)
   const feePerJuror = selectedCourt?.feeForJuror
     ? Number(formatEther(BigInt(selectedCourt.feeForJuror))).toLocaleString(
@@ -1825,6 +2368,13 @@ const ArbitrationGovernanceField = ({
         { maximumFractionDigits: 6 },
       )
     : null
+  const typedFile = (set: (value: string) => void) => (value: string) => {
+    // Typed or uploaded by hand, the files no longer follow a policy PDF:
+    // the fields are the governor's own, from here on.
+    beforePolicy.current = null
+    setNewPolicy(undefined)
+    set(value)
+  }
 
   return (
     <Field>
@@ -1832,8 +2382,8 @@ const ArbitrationGovernanceField = ({
         about="the court and the MetaEvidence"
         help={
           registry.kind === 'standard'
-            ? 'Standard Curate changes the court together with both MetaEvidence files. They start on the live files: keep them to change only the court, or upload new ones (same columns) to change the policy too.'
-            : 'Stake Curate changes the court together with its MetaEvidence. It starts on the live file: keep it to change only the court.'
+            ? 'Standard Curate changes the court together with both MetaEvidence files. They start on the live files: keep them to change only the court, upload a new policy PDF to have it written into both, or upload new files (keeping the columns; a new one can go after the last). A policy PDF uploaded after new files is written into them.'
+            : 'Stake Curate changes the court together with its MetaEvidence. It starts on the live file: keep it to change only the court, or upload a new policy PDF to have it written into the file (into a new file of yours, if you uploaded one).'
         }
       >
         <FieldLabel as="div">
@@ -1857,80 +2407,103 @@ const ArbitrationGovernanceField = ({
               aria-label="Arbitrator address"
             />
           )}
-          <TwoUp>
-            <Stack $gap={4}>
-              {/* The court's purpose sits behind its "?"; the fee per juror
-                  stays in view below, since it is money. */}
-              <Labelled
-                about={selectedCourt?.label ?? 'the court'}
-                help={
-                  selectedCourt
-                    ? selectedCourt.summary ||
-                      `${selectedCourt.label} handles disputes sent to this court.`
-                    : undefined
-                }
-              >
-                <Label
-                  as="label"
-                  id={`${ids}-court-label`}
-                  htmlFor={`${ids}-court`}
-                >
-                  Court
-                </Label>
-              </Labelled>
-              <CourtSelect
-                id={`${ids}-court`}
-                aria-labelledby={`${ids}-court-label`}
-                value={courtID}
-                disabled={locked || courts.length === 0}
-                placeholder={
-                  courts.length > 0 ? 'Select court' : 'Court list unavailable'
-                }
-                onChange={(value) => {
-                  setSettingsEdited(true)
-                  setCourtEdited(true)
-                  setCourtID(
-                    String(typeof value === 'object' ? value.key : value),
-                  )
-                }}
-              >
-                {courts.map((court) => (
-                  <Select.Option key={court.value} value={String(court.value)}>
-                    {court.label} · ID {court.courtID}
-                  </Select.Option>
-                ))}
-              </CourtSelect>
-            </Stack>
-            <Stack $gap={4}>
-              <Label as="label" htmlFor={`${ids}-jurors`}>
-                Number of jurors
-              </Label>
-              <TextInput
-                id={`${ids}-jurors`}
-                value={jurors}
-                disabled={locked}
-                onChange={(event) => {
-                  setSettingsEdited(true)
-                  setCourtEdited(true)
-                  setJurors(event.currentTarget.value)
-                }}
-                placeholder="Number of jurors"
-                inputMode="numeric"
-                // Only a count being sent can be wrong: the list's own is
-                // sent back as it is, whatever it is.
-                aria-invalid={
-                  courtError !== undefined && Boolean(parseJurors(jurors).error)
-                }
-              />
-            </Stack>
-          </TwoUp>
-          {selectedCourt && (
-            <Small $muted>
-              Fee per juror:{' '}
-              <Data $weight={500}>
-                {feePerJuror ? `${feePerJuror} ${symbol}` : 'unavailable'}
+          {onKleros ? (
+            <>
+              <TwoUp>
+                <Stack $gap={4}>
+                  {/* The court's purpose sits behind its "?"; the fee per juror
+                      stays in view below, since it is money. */}
+                  <Labelled
+                    about={selectedCourt?.label ?? 'the court'}
+                    help={
+                      selectedCourt
+                        ? selectedCourt.summary ||
+                          `${selectedCourt.label} handles disputes sent to this court.`
+                        : undefined
+                    }
+                  >
+                    <Label
+                      as="label"
+                      id={`${ids}-court-label`}
+                      htmlFor={`${ids}-court`}
+                    >
+                      Court
+                    </Label>
+                  </Labelled>
+                  <CourtSelect
+                    id={`${ids}-court`}
+                    aria-labelledby={`${ids}-court-label`}
+                    value={courtID}
+                    disabled={locked || courts.length === 0}
+                    placeholder={
+                      courts.length > 0
+                        ? 'Select court'
+                        : 'Court list unavailable'
+                    }
+                    onChange={(value) => {
+                      setSettingsEdited(true)
+                      setCourtEdited(true)
+                      setCourtID(
+                        String(typeof value === 'object' ? value.key : value),
+                      )
+                    }}
+                  >
+                    {courts.map((court) => (
+                      <Select.Option
+                        key={court.value}
+                        value={String(court.value)}
+                      >
+                        {court.label} · ID {court.courtID}
+                      </Select.Option>
+                    ))}
+                  </CourtSelect>
+                </Stack>
+                <Stack $gap={4}>
+                  <Label as="label" htmlFor={`${ids}-jurors`}>
+                    Number of jurors
+                  </Label>
+                  <TextInput
+                    id={`${ids}-jurors`}
+                    value={jurors}
+                    disabled={locked}
+                    onChange={(event) => {
+                      setSettingsEdited(true)
+                      setCourtEdited(true)
+                      setJurors(event.currentTarget.value)
+                    }}
+                    placeholder="Number of jurors"
+                    inputMode="numeric"
+                    // Only a count being sent can be wrong: the list's own is
+                    // sent back as it is, whatever it is.
+                    aria-invalid={
+                      courtError !== undefined &&
+                      Boolean(parseJurors(jurors).error)
+                    }
+                  />
+                </Stack>
+              </TwoUp>
+              {selectedCourt && (
+                <Small $muted>
+                  Fee per juror:{' '}
+                  <Data $weight={500}>
+                    {feePerJuror ? `${feePerJuror} ${symbol}` : 'unavailable'}
+                  </Data>
+                </Small>
+              )}
+            </>
+          ) : (
+            <FieldNote role="note">
+              {registry.kind === 'permanent'
+                ? "This list's arbitrator"
+                : 'The arbitrator'}
+              ,{' '}
+              <Data $mono style={{ overflowWrap: 'anywhere' }}>
+                {listArbitrator}
               </Data>
-            </Small>
+              , is not Kleros Court on {chainName(registry.chainId)}: Curate
+              cannot read its courts or fees, so its extra data below goes back
+              as it is.
+            </FieldNote>
           )}
           <TextInput
             value={extraData ?? currentExtraData}
@@ -1939,19 +2512,47 @@ const ArbitrationGovernanceField = ({
             aria-label="Arbitrator extra data"
             placeholder="Arbitrator extra data is generated from the court"
           />
+          <PolicyBox disabled={locked}>
+            <UploadField
+              id={`${ids}-policy`}
+              label="Policy (PDF)"
+              help={`The rules entries are judged by. A new PDF is written into the ${
+                usesPair ? 'two MetaEvidence files' : 'MetaEvidence file'
+              } below (the list's own, or new ones you put there), everything else in them kept as it is; nothing changes until the change is reviewed and sent.`}
+              kind="pdf"
+              role={Roles.Policy}
+              value={newPolicy ?? livePolicy.data ?? ''}
+              what="the policy"
+              removable={!!newPolicy}
+              onChange={(uri) => void replacePolicy(uri)}
+            />
+          </PolicyBox>
+          {livePolicy.isError && !newPolicy && (
+            <FieldNote>
+              {
+                "The list's current policy could not be read from its MetaEvidence; a new PDF can still replace it."
+              }
+            </FieldNote>
+          )}
+          {replacing && (
+            <FieldNote role="status">
+              Writing the new policy into the MetaEvidence{' '}
+              {usesPair ? 'files' : 'file'}…
+            </FieldNote>
+          )}
           {usesPair && (
             <TwoUp>
               <MetaEvidenceInput
                 label="Registration MetaEvidence"
                 value={meta.registration}
                 disabled={locked}
-                onChange={meta.setRegistration}
+                onChange={typedFile(meta.setRegistration)}
               />
               <MetaEvidenceInput
                 label="Clearing MetaEvidence"
                 value={meta.clearing}
                 disabled={locked}
-                onChange={meta.setClearing}
+                onChange={typedFile(meta.setClearing)}
               />
             </TwoUp>
           )}
@@ -1960,7 +2561,7 @@ const ArbitrationGovernanceField = ({
               label="MetaEvidence"
               value={meta.registration}
               disabled={locked}
-              onChange={meta.setRegistration}
+              onChange={typedFile(meta.setRegistration)}
             />
           )}
           {inputError && !gate.blocker && (
@@ -1974,9 +2575,11 @@ const ArbitrationGovernanceField = ({
           reason={blocker}
           checking={checking}
           pending={pending}
-          onSave={(via) => void save(via)}
+          reviewing={reviewing}
+          onReview={() => void review()}
         />
       </Controls>
+      <PendingReviewPanel asking={asking} />
     </Field>
   )
 }
@@ -1996,18 +2599,20 @@ const GovernanceField = ({
   gate: SaveGate
   onSaved: (written: Written) => void
 }) => {
-  const { ready, mode, pending, send } = useGovernanceWrite(registry)
+  const { ready, pending, send, asking } = useGovernanceWrite(registry)
+  const alive = useAlive()
   const inputId = useId()
   const noteId = useId()
   const current = registry.params?.[config.key]
   const initial = formatParamValue(current, config.kind, context)
   const [value, setValue] = useState(initial)
   const [edited, setEdited] = useState(false)
-  // A governor transfer takes a second, deliberate click.
-  const [armed, setArmed] = useState(false)
-  // Whether the new governor is a contract on this chain, with the address
-  // it was read for; undefined until read.
-  const [governorCheck, setGovernorCheck] = useState<CodeCheck>()
+  // A new governor is read on the chain before its review.
+  const [checking, setChecking] = useState(false)
+  // A new governor the chain showed to be a list: refused while typed.
+  const [refused, setRefused] = useState<{ address: string; reason: string }>()
+  // The value last proposed to the Safe: the same one is not queued twice.
+  const [proposed, setProposed] = useState<string>()
   // Follow the live value (and late reads such as token decimals) until edited.
   useEffect(() => {
     if (!edited) setValue(initial)
@@ -2016,6 +2621,8 @@ const GovernanceField = ({
   const parsed = parseParamValue(value, config, context)
   const isGovernor = config.key === 'governor'
   const target = isGovernor ? String(parsed.value ?? '').toLowerCase() : ''
+  const valueKey =
+    parsed.error === undefined ? String(parsed.value).toLowerCase() : undefined
   // Contracts that can never send a governance call would freeze the list.
   const inert = [registry.params?.arbitrator, registry.token]
     .filter((address): address is string => Boolean(address))
@@ -2030,30 +2637,69 @@ const GovernanceField = ({
           ? 'The list cannot govern itself: nobody could change it again'
           : inert
             ? "That is the list's arbitrator or token contract, which cannot send governance transactions"
-            : undefined)
+            : refused?.address === target
+              ? refused.reason
+              : undefined)
   const unchanged = isUnchanged(parsed, current, config.kind)
+  const reviewing = !!asking
   const blocker =
     gate.blocker ??
     (!ready
       ? 'Wallet not ready'
-      : (inputError ?? (unchanged ? 'No change' : undefined)))
-  const locked = Boolean(gate.blocker) || pending
+      : (inputError ??
+        (unchanged
+          ? 'No change'
+          : valueKey === proposed
+            ? ALREADY_PROPOSED
+            : reviewing
+              ? REVIEW_OPEN
+              : undefined)))
+  const locked = Boolean(gate.blocker) || pending || checking || reviewing
   const description = describeParsed(parsed, config.kind)
+  const symbol =
+    config.kind === 'wei'
+      ? nativeSymbol(registry.chainId)
+      : config.kind === 'token'
+        ? registry.params?.tokenSymbol
+        : undefined
 
-  const save = async (via?: ExportVia) => {
+  const review = async () => {
     if (blocker || parsed.error !== undefined) return
-    if (isGovernor && !armed) {
-      setArmed(true)
-      // readHasCode counts an EIP-7702 delegated account as the wallet it
-      // is, as the rest of the app does once that address governs.
-      readHasCode(registry.chainId, target)
-        .then((contract) => setGovernorCheck({ address: target, contract }))
-        .catch(() => setGovernorCheck({ address: target, contract: null }))
-      return
+    const after = reviewValue(parsed.value, config.kind, context, symbol)
+    if (!after) return
+    // A new governor is read first: a list is refused, anything else is
+    // named in the review, where the transfer is signed.
+    let caution: string | undefined
+    if (isGovernor) {
+      setChecking(true)
+      const found = await readGovernorTarget(registry.chainId, target)
+      if (!alive.current) return
+      setChecking(false)
+      const verdict = governorTargetNote(found, chainName(registry.chainId))
+      if (verdict.refusal) {
+        setRefused({ address: target, reason: verdict.refusal })
+        return
+      }
+      caution = verdict.note
     }
-    if (await send(config.functionName, [parsed.value], via)) {
+    const outcome = await send(config.functionName, [parsed.value], {
+      title: config.label.replace(/\s*\([^)]*\)$/, ''),
+      call: `${config.functionName} on ${registry.title}`,
+      rows: [
+        {
+          label: config.label,
+          before: reviewValue(current, config.kind, context, symbol),
+          after,
+        },
+      ],
+      effect: paramEffect(config.key),
+      caution,
+      danger: isGovernor,
+    })
+    if (!alive.current) return
+    if (outcome === 'proposed') setProposed(valueKey)
+    if (outcome === 'mined') {
       setEdited(false)
-      setArmed(false)
       onSaved({
         params: { [config.key]: String(parsed.value) } as GovernanceParams,
       })
@@ -2087,7 +2733,6 @@ const GovernanceField = ({
             onChange={(event) => {
               setValue(event.currentTarget.value)
               setEdited(true)
-              setArmed(false)
             }}
           />
           {edited && inputError ? (
@@ -2097,35 +2742,18 @@ const GovernanceField = ({
           ) : description ? (
             <FieldNote id={noteId}>{description}</FieldNote>
           ) : null}
-          {armed && (
-            <GateRow role="alert">
-              <Small>
-                This hands {registry.title} to{' '}
-                <Data $mono style={{ overflowWrap: 'anywhere' }}>
-                  {String(parsed.value)}
-                </Data>
-                .{' '}
-                {mode === 'send'
-                  ? 'After it is mined, only that address can change the list.'
-                  : 'Once the Safe executes it, only that address can change the list.'}
-                {newGovernorCodeNote(
-                  governorCheck,
-                  target,
-                  chainName(registry.chainId),
-                )}
-              </Small>
-            </GateRow>
-          )}
         </Stack>
         <SaveActions
           off={Boolean(blocker) || locked}
           reason={blocker}
+          checking={checking}
           pending={pending}
-          armed={armed}
-          onSave={(via) => void save(via)}
+          reviewing={reviewing}
+          onReview={() => void review()}
         />
       </Controls>
       {config.note && <Small $muted>{config.note}</Small>}
+      <PendingReviewPanel asking={asking} />
     </Field>
   )
 }
@@ -2329,8 +2957,8 @@ const GovernanceDialog = ({
       title={`Update ${registry.title}`}
       titleHelp={
         exporting
-          ? "Changes are prepared one parameter at a time. Each is simulated as the governor before you download it, so a change that would revert is caught before the Safe's owners sign it."
-          : 'Changes are sent one parameter at a time. Each is simulated before the wallet asks you to sign, so a change that would revert is caught before you pay gas.'
+          ? "Changes are prepared one parameter at a time. Each is simulated as the governor, then shown for review before you download it, so a change that would revert is caught before the Safe's owners sign it."
+          : 'Changes are sent one parameter at a time. Each is simulated, then shown for review before the wallet asks you to sign, so a change that would revert is caught before you pay gas.'
       }
       page={section}
       onClose={onClose}
@@ -2488,6 +3116,15 @@ const CourtDisplay = ({ registry }: { registry: GovernedRegistry }) => {
     knownKleros?.policy,
     chainProvider ?? null,
   )
+
+  // Another arbitrator's extra data names none of Kleros Court's courts.
+  const arbitrator = registry.params?.arbitrator
+  if (
+    arbitrator &&
+    knownKleros &&
+    arbitrator.toLowerCase() !== knownKleros.arbitrator.toLowerCase()
+  )
+    return <>Arbitrator {shortAddress(arbitrator)} (not Kleros Court)</>
 
   if (!extraData || extraData === '0x') return <>Unavailable</>
 

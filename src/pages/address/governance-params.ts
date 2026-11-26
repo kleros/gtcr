@@ -170,6 +170,193 @@ export const isUnchanged = (
   }
 }
 
+/* ---------- The review before anything is signed ---------- */
+
+/** The unit a parameter is stored in, named in the review's raw figures. */
+const STORED_UNIT: Record<Exclude<ParamKind, 'address'>, string> = {
+  wei: 'wei',
+  token: 'base units',
+  seconds: 's',
+  multiplier: 'basis points',
+}
+
+/** A value as the review shows it: in people's unit, and as stored. */
+export interface ReviewValue {
+  shown: string
+  /** As the contract stores it, unit named; undefined for an address. */
+  stored?: string
+}
+
+/**
+ * A stored value for the review: the coin or token amount with its symbol,
+ * a period in words, a percent; then the integer the contract keeps. An
+ * address is shown whole. Undefined when there is no value to show.
+ */
+export const reviewValue = (
+  stored: string | bigint | undefined,
+  kind: ParamKind,
+  context: ParamContext,
+  /** The coin's or token's symbol, for 'wei' and 'token'. */
+  symbol?: string,
+): ReviewValue | undefined => {
+  if (stored === undefined || stored === '') return undefined
+  const text = String(stored)
+  if (kind === 'address') return { shown: text }
+  let integer: bigint
+  try {
+    integer = BigInt(text)
+  } catch {
+    return { shown: text }
+  }
+  const raw = `${integer.toLocaleString('en-US')} ${STORED_UNIT[kind]}`
+  if (kind === 'seconds')
+    return { shown: formatDurationLong(Number(integer)), stored: raw }
+  const amount = formatParamValue(text, kind, context)
+  if (kind === 'multiplier') return { shown: `${amount}%`, stored: raw }
+  return {
+    shown: amount === '' ? raw : `${amount}${symbol ? ` ${symbol}` : ''}`,
+    stored: raw,
+  }
+}
+
+/**
+ * What a change does to what is already under way, read from the contracts
+ * (kleros/tcr LightGeneralizedTCR, kleros/pgtcr PermanentGTCR): a setting
+ * read when a request is made touches only new ones, a setting read later
+ * (at a challenge, an appeal, an execution) reaches those already open.
+ */
+export const paramEffect = (key: ParamKey): string => {
+  switch (key) {
+    case 'submissionBaseDeposit':
+      return 'Applies to submissions made from now on; requests already made keep what they paid.'
+    case 'removalBaseDeposit':
+      return 'Applies to removal requests made from now on; requests already made keep what they paid.'
+    case 'submissionChallengeBaseDeposit':
+      return 'Applies to every challenge from now on, including challenges to submissions already waiting.'
+    case 'removalChallengeBaseDeposit':
+      return 'Applies to every challenge from now on, including challenges to removal requests already waiting.'
+    case 'challengePeriodDuration':
+      return 'Applies at once to requests already waiting: a shorter period ends their challenge window and lets those past it be accepted now; a longer one reopens it for any not accepted yet.'
+    case 'winnerStakeMultiplier':
+    case 'loserStakeMultiplier':
+    case 'sharedStakeMultiplier':
+      return 'Applies to appeal funding from now on, including disputes already open.'
+    case 'relayerContract':
+      return 'Once it takes effect, that contract can add and remove entries directly, with no deposit and no challenge period.'
+    case 'connectedTCR':
+      return 'Badges are retired: nothing in Curate reads this setting.'
+    case 'governor':
+      return 'Once it takes effect, only that address can change the list.'
+    case 'submissionMinDeposit':
+      return 'Applies to submissions from now on; entries already listed keep their stake.'
+    case 'challengeStakeMultiplier':
+      return 'Applies to every challenge from now on, including challenges to entries already listed.'
+    case 'submissionPeriod':
+      return 'The contract never reads it: Curate shows a new entry as accepted once it has been listed this long, entries already waiting included.'
+    case 'reinclusionPeriod':
+      return 'The contract never reads it: Curate shows an entry the jurors kept as accepted again once it has been back this long, entries already back included.'
+    case 'withdrawingPeriod':
+      return 'Applies at once to entries already withdrawing: their stake can be taken back, and they can no longer be challenged, once this long has passed since they started.'
+    default:
+      return 'Applies from now on.'
+  }
+}
+
+/** What a court or policy change does, on each kind of list. */
+export const arbitrationEffect = (
+  listKind: 'standard' | 'permanent',
+  /** A Stake list's cooldown, in seconds, once read. */
+  cooldown?: number,
+): string =>
+  listKind === 'standard'
+    ? 'Requests made from then on use the new court and policy; requests already made, and their disputes, keep theirs.'
+    : `New entries use the new court and policy at once. Entries already listed move to them once ${
+        cooldown === undefined
+          ? "the list's cooldown"
+          : cooldown === 0
+            ? 'it takes effect (this list has no cooldown)'
+            : `the list's cooldown (${formatDurationLong(cooldown)})`
+      } has passed since the change; an entry withdrawing keeps the settings of when it started, and disputes already open keep theirs.`
+
+/* ---------- Columns a new MetaEvidence keeps ---------- */
+
+type Column = { label?: unknown; type?: unknown }
+
+const columnPairs = (columns: Column[] | undefined) =>
+  (columns ?? []).map((column) => [String(column.label), String(column.type)])
+
+/**
+ * How a new MetaEvidence file's columns relate to the live ones: the same,
+ * the same with more after them, or changed. List pages pair an entry's
+ * values with the columns by position, so a column added at the end leaves
+ * every entry as it was (the Kleros Tokens list added "Website" so in April
+ * 2025), while one renamed, retyped, moved or removed garbles them all.
+ */
+export const columnsChange = (
+  next: Column[] | undefined,
+  live: Column[] | undefined,
+): 'same' | 'appended' | 'changed' => {
+  const [after, before] = [columnPairs(next), columnPairs(live)]
+  if (after.length < before.length) return 'changed'
+  const kept = before.every(
+    ([label, type], index) =>
+      after[index][0] === label && after[index][1] === type,
+  )
+  if (!kept) return 'changed'
+  return after.length === before.length ? 'same' : 'appended'
+}
+
+/* ---------- The new governor ---------- */
+
+/** What the chain says a new governor is, on the list's chain. */
+export type GovernorTarget =
+  | { kind: 'wallet' }
+  | { kind: 'safe'; threshold: number; owners: number }
+  | { kind: 'list' }
+  | { kind: 'contract' }
+  | { kind: 'unknown' }
+
+/**
+ * What the review says of a new governor, and whether the transfer is
+ * refused. A list (anything with its own governor and arbitrator) never
+ * sends a call, so handing a list to one freezes it; any other contract
+ * that is not a Safe is allowed with a warning, since a governance contract
+ * can act but a token or a registry cannot, and the chain cannot tell them
+ * apart. Two Gnosis lists name the Ethereum Kleros Governor, which has no
+ * code on Gnosis: the wallet note says a Safe must exist on the chain itself.
+ */
+export const governorTargetNote = (
+  target: GovernorTarget,
+  chain: string,
+): { refusal?: string; note: string; warning?: boolean } => {
+  switch (target.kind) {
+    case 'wallet':
+      return {
+        note: `No contract at that address on ${chain}: fine for a personal wallet, but a Safe or another governance contract must exist on ${chain} itself, or nobody can ever change the list again.`,
+      }
+    case 'safe':
+      return {
+        note: `A Safe on ${chain}: ${target.threshold} of its ${target.owners} owners sign each change.`,
+      }
+    case 'list':
+      return {
+        refusal:
+          'That address is a list (it has its own governor and arbitrator), and a list never sends transactions: nobody could change this list again.',
+        note: '',
+      }
+    case 'contract':
+      return {
+        note: `That address is a contract on ${chain}, but not a Safe. Only go on if it is a governance contract that can call this list; a token, a registry or another app's contract cannot, and nobody could ever change the list again.`,
+        warning: true,
+      }
+    default:
+      return {
+        note: `What is at that address on ${chain} could not be checked. Only go on if you are sure it is a wallet or a Safe on ${chain}.`,
+        warning: true,
+      }
+  }
+}
+
 /** The typed value in the stored unit, so nothing is a surprise on chain. */
 export const describeParsed = (parsed: Parsed, kind: ParamKind) => {
   if (parsed.error !== undefined) return undefined
@@ -248,33 +435,6 @@ export const arbitrationExtraData = ({
   if (jurorCount.value === undefined)
     return { error: `Jurors: ${jurorCount.error}` }
   return { value: buildArbitratorExtraData(courtNumber, jurorCount.value) }
-}
-
-/* ---------- The new governor ---------- */
-
-/** What the chain said of an address: a contract, or null if unreadable. */
-export interface CodeCheck {
-  address: string
-  contract: boolean | null
-}
-
-/**
- * What the governor transfer's warning adds about the new governor on the
- * list's chain. A wallet is fine, but a Safe has to exist on that chain
- * itself, or nobody can ever change the list again; when that could not be
- * read, the warning says so, since silence would read as "fine". Nothing
- * for a contract, before the read lands, or from a read of an address the
- * field no longer holds.
- */
-export const newGovernorCodeNote = (
-  check: CodeCheck | undefined,
-  target: string,
-  chain: string,
-): string => {
-  if (!check || check.address !== target || check.contract === true) return ''
-  return check.contract === false
-    ? ` There is no contract at that address on ${chain}: fine for a personal wallet, but a Safe must exist on ${chain} itself.`
-    : ` Whether there is a contract at that address on ${chain} could not be checked: a Safe must exist on ${chain} itself.`
 }
 
 /* ---------- After a save ---------- */

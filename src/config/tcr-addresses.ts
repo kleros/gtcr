@@ -171,12 +171,6 @@ export const isKlerosArbitrator = (
   return !!kleros && kleros.toLowerCase() === address.toLowerCase()
 }
 
-export const txBatcherAddresses: ChainMap<string> = {
-  '1': '0x82458d1c812d7c930bb3229c9e159cbabd9aa8cb',
-  '100': '0xD7572AD1523F3f116258b8d9dDeBA1d5e76235ac',
-  '11155111': '0xb5418fc9b536c52c635b4c3a2978de7165b67318',
-} as const
-
 export const seerAddresses: ChainMap<string> = {
   '1': '0x4a9f8e73b3c4c9d7fa0210b9de457b1c493a3ada',
   '100': '0x5aaf9e23a11440f8c1ad6d2e2e5109c7e52cc672',

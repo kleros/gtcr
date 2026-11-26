@@ -141,7 +141,6 @@ declare global {
   /** Return type of fetchMetaEvidence */
   interface FetchMetaEvidenceResult {
     metaEvidenceURI: string
-    connectedTCR?: string
   }
 
   /**
@@ -183,11 +182,6 @@ declare module '@kleros/gtcr-encoder' {
   export const ItemTypes: Record<string, string>
   export function searchableFields(columns: Column[]): number[]
   export const typeDefaultValues: Record<string, string | number | boolean>
-}
-
-// @kleros/tcr contract ABIs
-declare module '@kleros/tcr/build/contracts/BatchWithdraw.json' {
-  export const abi: readonly Record<string, unknown>[]
 }
 
 // @kleros/erc-792 contract ABIs

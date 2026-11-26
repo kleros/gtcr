@@ -89,6 +89,10 @@ test.describe('theme', () => {
   test('?cv-theme previews a theme without keeping it', async ({ page }) => {
     await page.goto('/?cv-theme=kleros')
     await expect(page.locator('body')).toHaveAttribute('data-theme', 'kleros')
+    // Leave the page once it has started up: leaving it mid-start aborts
+    // the wallet kit's own requests, and the Coinbase SDK logs the aborted
+    // Cross-Origin-Opener-Policy check as an error.
+    await page.waitForLoadState('networkidle')
     await page.goto('/')
     await expect(page.locator('body')).toHaveAttribute('data-theme', 'dark')
   })

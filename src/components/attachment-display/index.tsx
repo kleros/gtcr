@@ -5,6 +5,7 @@ import Icon from 'components/ui/Icon'
 import Loading from 'components/loading'
 import useUrlChainId from 'hooks/use-url-chain-id'
 import { usePolicyHistory } from 'hooks/use-policy-history'
+import type { PolicyListKind } from 'utils/fetch-policy-history'
 import { parseIpfs } from 'utils/ipfs-parse'
 import { getAllowedAttachmentUrl } from 'utils/url-validation'
 import { formatPolicyDate } from 'utils/format-updated-ago'
@@ -141,7 +142,10 @@ const ViewCurrentButton = styled.button`
  *     policy. When present, used to look up the entry in the history to
  *     show start/end dates and expose a "View Current Policy" shortcut.
  */
-const AttachmentDisplay: React.FC = () => {
+const AttachmentDisplay: React.FC<{
+  /** The list's kind, once its page knows it: the policy history waits. */
+  policyKind?: PolicyListKind
+}> = ({ policyKind }) => {
   const [searchParams, setSearchParams] = useSearchParams()
   // Kept on each switch of policy, so Return still steps back to the page.
   const { state } = useLocation()
@@ -158,6 +162,7 @@ const AttachmentDisplay: React.FC = () => {
   const { data: historyData } = usePolicyHistory(
     policyTx ? tcrAddress : undefined,
     chainId ?? undefined,
+    policyKind,
   )
 
   const pastPolicyInfo = useMemo(() => {
@@ -194,14 +199,14 @@ const AttachmentDisplay: React.FC = () => {
   if (!safeUrl)
     return (
       <Container>
-        <Header />
+        <Header policyKind={policyKind} />
         <Unavailable>This file cannot be shown here.</Unavailable>
       </Container>
     )
 
   return (
     <Container>
-      <Header />
+      <Header policyKind={policyKind} />
       {pastPolicyInfo && (
         <PastPolicyBanner>
           <Icon type="warning" />

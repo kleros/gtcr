@@ -167,6 +167,57 @@ describe('batching on the Standard indexer', () => {
   })
 })
 
+describe('the background lane', () => {
+  it("keeps background reads out of a page's first reads' request", async () => {
+    const fetchMock = echoingIndexer()
+    const first = request(STANDARD, QUERY, { first: 1 })
+    const walk = [2, 3].map((first) =>
+      request({
+        url: STANDARD,
+        document: QUERY,
+        variables: { first },
+        lane: 'background',
+      }),
+    )
+    await advance(12)
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+    const batches = [sentIn(fetchMock, 0), sentIn(fetchMock, 1)]
+    expect(batches).toContainEqual([{ query: QUERY, variables: { first: 1 } }])
+    expect(batches).toContainEqual([
+      { query: QUERY, variables: { first: 2 } },
+      { query: QUERY, variables: { first: 3 } },
+    ])
+    expect(await first).toEqual({ echo: { first: 1 } })
+    expect(await Promise.all(walk)).toEqual([
+      { echo: { first: 2 } },
+      { echo: { first: 3 } },
+    ])
+  })
+
+  it('is held back by a refusal on the same indexer', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockRejectedValueOnce(new TypeError('Failed'))
+      .mockResolvedValue(respond([{ data: {} }]))
+    vi.stubGlobal('fetch', fetchMock)
+    void outcome(request(STANDARD, QUERY, { first: 1 }))
+    await advance(12)
+    const walk = outcome(
+      request({
+        url: STANDARD,
+        document: QUERY,
+        variables: { first: 2 },
+        lane: 'background',
+      }),
+    )
+    await advance(999)
+    expect(fetchMock).toHaveBeenCalledOnce()
+    await advance(1)
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+    expect((await walk).error).toBeUndefined()
+  })
+})
+
 describe('errors on the Standard indexer', () => {
   it("rejects only the query the indexer answered with errors, with the indexer's words", async () => {
     stubFetch(() =>

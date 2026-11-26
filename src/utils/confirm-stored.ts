@@ -8,7 +8,9 @@ import { parseIpfs } from 'utils/ipfs-parse'
  * jurors alike, and invites a challenge; the same goes for an evidence file
  * nobody can open. So the JSON just uploaded is fetched from the gateway
  * the app reads from, a few times in case the gateway is a moment behind,
- * and nothing is sent if it never answers.
+ * and nothing is sent if it never answers. Only the answer's status is
+ * read: the download stops there, since a file can be megabytes (a policy
+ * PDF written into a list's MetaEvidence).
  */
 
 const TRIES = 4
@@ -27,6 +29,7 @@ export const confirmStored = async (path: string): Promise<void> => {
       // Not there yet, or the gateway did not answer: try again.
     } finally {
       window.clearTimeout(timer)
+      controller.abort()
     }
     if (attempt < TRIES - 1)
       await new Promise((resolve) => window.setTimeout(resolve, PAUSE_MS))

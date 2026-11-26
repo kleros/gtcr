@@ -27,12 +27,13 @@ import { Avatar as ListLogo } from 'pages/browse/avatar'
  * rulings on the other (both in happening-now.tsx). It lives in one place so
  * the columns cannot drift apart when either is recomposed. Its figure
  * helpers and the figures interface are read wider than the rows are: the
- * figures strip above the board (open-for-verification.tsx) and the
- * verification record (bounties.tsx) take their amounts from here too, so
- * every figure on the page is grouped and rounded the same way. Those two
- * are the only figures that carry dollars, and the dollars-first figure they
- * share is built here for the same reason: one rule for both places, so they
- * cannot drift, and none for any other figure on the page.
+ * figures in the Submissions panel's head (open-for-verification.tsx) and
+ * the verification record (bounties.tsx) take their amounts from here too,
+ * so every figure on the page is grouped and rounded the same way. The
+ * dollars-first figure the panel's head carries is built here for the same
+ * reason, and so are the head's tally and its figures, which the Disputes
+ * panel beside it wears too: one rule for both columns, so they cannot
+ * drift.
  */
 
 const integer = new Intl.NumberFormat('en-US')
@@ -450,6 +451,45 @@ const WindowRail = styled(Rail)`
       transition: none;
     }
   }
+`
+
+/*
+ * A panel head's figures, on its right: each a figure over its label, the
+ * Disputes panel's "In court" and "Rulings", and since 26 Nov 2026 the
+ * Submissions panel's "Open now" and "Up for grabs" opposite them.
+ */
+export const Tally = styled.div`
+  display: flex;
+  align-items: flex-end;
+  gap: 18px;
+  flex: 0 0 auto;
+
+  > span {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 6px;
+  }
+
+  /* Phones: the tally wraps under the title and reads from the left. */
+  @media (max-width: 520px) {
+    > span {
+      align-items: flex-start;
+    }
+  }
+`
+
+/** A tally's figure; `$quiet` for the one that only gives context. */
+export const Count = styled.span<{ $quiet?: boolean }>`
+  color: ${({ $quiet }) =>
+    $quiet ? 'var(--color-muted)' : 'var(--color-text)'};
+  font-family: var(--font-figure);
+  font-size: ${({ $quiet }) => ($quiet ? '20px' : '28px')};
+  line-height: 1;
+  font-weight: 500;
+  letter-spacing: var(--tracking-display);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 `
 
 export const Empty = styled.div`

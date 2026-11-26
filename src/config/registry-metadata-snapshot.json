@@ -1,0 +1,1051 @@
+{
+  "files": {
+    "QmNNDe6WVExE5ATecU5sF3CJ1ySRRphYJz5d6vGUAoeCtM": {
+      "title": "Verified Registries",
+      "description": "This is a registry of registries deployed on Ethereum Mainnet",
+      "logoURI": "/ipfs/QmZa8NwrV4E7A8EvRy53YmpAmvZyJ2Bx4o8Jb7CEkyQa16"
+    },
+    "QmNP8kZuSpX5q2kvtDG6V3De4BkkkCPxHviM24YyhCWRsd": {
+      "title": "30min curation badge",
+      "description": "This Badge is to test Kleros court functioning",
+      "logoURI": "ipfs/Qma4YF43bUqQSm2BaY86iHYSAU1h9qpFBR5iuy76UhmCZ3"
+    },
+    "QmNRNTLcH5FdXLsfstxnF3sStoqf2jSekWRz5aaecxWZNz/rel-reg-meta-evidence.json": {
+      "title": "Vacancy Vault enabled badges",
+      "description": "A List of lists related to Vacancy Vault"
+    },
+    "QmNXTccCBoEtHSgm8EdUFyN6rQPjaYLvasmZAeNMsw6uEu": {
+      "title": "Organic Wine Certification",
+      "description": "This badge proves that the wine to which it belongs to is organic",
+      "logoURI": "ipfs/Qmf8CZZDHA3pXjnsUjZAB115DHooJXGtB11nHossef4f5U"
+    },
+    "QmNi56sazrqpNKU7cR4nGML6Xf7x3zKwkM4YEUgwe3uJvm/reg-meta-evidence.json": {
+      "title": "Certified Organic Products",
+      "description": "A curated registry of products that have been certified as organic by recognized certification bodies",
+      "logoURI": "/ipfs/QmauzB3ryCGaarPGevTEywvBdFozP7tVah9xMjMx3ycSQc/certified-2-.png"
+    },
+    "QmNiBmAuX4AfBEcwSgqTPBATTprDKkEe7eYMceCT3uHYWG/reg-meta-evidence.json": {
+      "title": "TB-Test",
+      "description": "This is a test to understand how the application works.",
+      "logoURI": "/ipfs/QmbzbEpQP5FzKgLdpt8GA9CgkpGoUaMebecefULrUtFaoL/nft.jpeg"
+    },
+    "QmNjseLYdiV1M54wdvcQQrDpCFAviHgc6YPfjoNfnR9FRd/reg-meta-evidence.json": {
+      "title": "Top L2 Chains",
+      "description": "List of L2 blockchains with min. TVL of 100m (anytime)",
+      "logoURI": "/ipfs/QmZxLSoSfRqM59uQyvSMkRqmEWaHAJCjwxVt8qu8ScNmZi/screenshot-2024-08-13-at-22.15.54.png"
+    },
+    "QmNpJkSk16wn5a1PikWdDGAwB5xZH7N5g3YP5pDJAV1DVX/rel-reg-meta-evidence.json": {
+      "title": "Seer Markets enabled badges",
+      "description": "A List of lists related to Seer Markets"
+    },
+    "QmNv1r8iUAPwz3MaHYrnQ2DhXvmnjpWNKV3GhRZNAbbegb/rel-reg-meta-evidence.json": {
+      "title": "Address Tags (v2) - alpha version enabled badges",
+      "description": "A List of lists related to Address Tags (v2) - alpha version"
+    },
+    "QmNwxvV2yn5KHxJpWepSUDApW7PFMRxkyThE1MmW3xx8w6": {
+      "title": "testing badge",
+      "description": "I am testing a new badge of Carlos Masgordon",
+      "logoURI": "ipfs/QmeLBKTWwYfZUkMYdFEzbF81aSsA1HjYCGePJZRhpjVgsa"
+    },
+    "QmP4Ec1UfRv2WfuW1vse8xyf2nkSQYs4TzFgJH9xVnUiTq": {
+      "title": "Verified Agents enabled badges",
+      "description": "A List of lists related to Verified Agents"
+    },
+    "QmP4Q3uair7BLbxyoh39sNURBCekhEFBTtQ6qAxbvKHZHh/rel-reg-meta-evidence.json": {
+      "title": "Registry of unfinished memes enabled badges",
+      "description": "A List of lists related to Registry of unfinished memes"
+    },
+    "QmP5fnmTzVWxSz5nZJsSbS9di6J2v5mtxr49nW8QWR31J4/rel-reg-meta-evidence.json": {
+      "title": "Address Tags enabled badges",
+      "description": "A List of lists related to Address Tags"
+    },
+    "QmPAS3ix16J43KS9T3NeAKcfKFfrFLDoLF1DvaVS83vf99/rel-reg-meta-evidence.json": {
+      "title": "ClaimVerify enabled badges",
+      "description": "A List of lists related to ClaimVerify"
+    },
+    "QmPFTSebSAuLj1jpStW77YwttfdXSaRPfEGoEsudsZtgmH": {
+      "title": "asdsadsadsda",
+      "description": "sdasdasdasdasdasdasda",
+      "logoURI": "/ipfs/QmNSxkKVj5e2ASgyk1cWwk2pGNZtC9ZfZSHzS2Ua8NjWsh"
+    },
+    "QmPHEM8peTuN7ZzcTWHgFR8AmzkWf49GWJcATxyP36Thg6/rel-reg-meta-evidence.json": {
+      "title": "Decentralized Domain Blacklist Registry enabled badges",
+      "description": "A List of lists related to Decentralized Domain Blacklist Registry"
+    },
+    "QmPJPpe1EQZzvBNPaLXDV3cC53WudAYaPZu2rKRJYnSriV/rel-reg-meta-evidence.json": {
+      "title": "Vacancy Vault enabled badges",
+      "description": "A List of lists related to Vacancy Vault"
+    },
+    "QmPL1Wr89wnuBg9xgRsxRC2oeTkAEGr8jSDvdqoZfR7dYo": {
+      "title": "Metamask Snaps - \"Seems Secure\" list",
+      "description": "A list of Metamask Snaps that have passed the basic security and/or audit requirements set out by Metamask",
+      "logoURI": "/ipfs/QmZfTETH5kdvYkmAMW9Ck211on2Ntw2UutYCvQbKm8iBEM/kleros-pnk-logo.png"
+    },
+    "QmPgJpJF8H4s8u1Zfj4eb5YmUgv7G9tkE9LAqwJrL7f6h8/reg-meta-evidence.json": {
+      "title": "Vacancy Vault",
+      "description": "A curated list of job opportunities and employers within the Web 3 ecosystem.",
+      "logoURI": "/ipfs/QmPWFhKXy5xh5A9f5D33Gqvvhtf4XerDApuRVbxrRT18v5/untitled-design-1-1-.png"
+    },
+    "QmPkXWe9Y5adQLvgnXYYcf3EfFwJSbXQp7DioTrWAog36W": {
+      "title": "10 Min Badge - v2",
+      "description": "10 min Badge with updated kleros script for better evidence display",
+      "logoURI": "ipfs/QmULa9j7s6xSvnfDMT2mSGEcJ1yquo17p8hEbjSxinF6XC"
+    },
+    "QmPnPVpxhmJD4JMwAB9unKuW4WXxi2DXs5ftHopmLWvACw/rel-reg-meta-evidence.json": {
+      "title": "Red socks enabled badges",
+      "description": "A List of lists related to Red socks"
+    },
+    "QmPoQuDfyhgDAWLSvRaPi5FCC9zUamMuP7BsHuMuPbJAfK/rel-reg-meta-evidence.json": {
+      "title": "Official Project Registry enabled badges",
+      "description": "A List of lists related to Official Project Registry"
+    },
+    "QmPsB7qwv3U1JoHGhbnG3G5Bgg9GWGJTH9HEMmhcw1RqzF/rel-reg-meta-evidence.json": {
+      "title": "LayerZero Sybil Bounty Program enabled badges",
+      "description": "A List of lists related to LayerZero Sybil Bounty Program"
+    },
+    "QmQ5DoWUrPWRi2dt9VjvMEmrrSsJfMck6gasN9HNLzbuJA/rel-reg-meta-evidence.json": {
+      "title": "Kleros Tokens enabled badges",
+      "description": "A List of lists related to Kleros Tokens"
+    },
+    "QmQ6dTqGZKmYuZxCyoiCcaSXAifgdjBv8JSE6ksfqZhLAE/rel-reg-meta-evidence.json": {
+      "title": "Registry of unfinished memes enabled badges",
+      "description": "A List of lists related to Registry of unfinished memes"
+    },
+    "QmQGi848AYY2xu3zxfjZccLR4B2S2NkspP4HXZP86ynnyV": {
+      "title": "Human Authored Text",
+      "description": "A registry for documents whose submitted wording is written entirely by a human.",
+      "logoURI": "/ipfs/QmWiutS7WWAHbh835Q7VntifzBTnm1B7pn7XJxuHyBDvZC"
+    },
+    "QmQH2Vj2wFN1DT58cGof6PC9GVfnJTS188DEx5KrQef1rj/reg-meta-evidence.json": {
+      "title": "Address Tags",
+      "description": "A list of public name tags, associated with Ethereum mainnet contract addresses",
+      "logoURI": "/ipfs/QmP1hU1LaheHVGxcSJWg5sC3g25vs5snam3qP1bVVAa7mT/address-tag-2-1.png"
+    },
+    "QmQRpm1ipnA6PmogWvkgeR5gkLzDHFKj3pnHHkfipEWs5B/reg-meta-evidence.json": {
+      "title": "ClaimVerify",
+      "description": "ClaimVerify is a decentralized registry designed to empower users by providing a curated list of verified decentralized insurance protocols.",
+      "logoURI": "/ipfs/QmNySRLHBUjVDrPbfPBqjXX7JBRVS9SyWugZbgXjjGF2ei/claimverify-transparent.png"
+    },
+    "QmQXLacudiBSqeKWEia31h2MEWok8BJSfxmWipdNXiwWEx/rel-reg-meta-evidence.json": {
+      "title": "Red socks enabled badges",
+      "description": "A List of lists related to Red socks"
+    },
+    "QmQZmHBXckd6JE64mz7ystghzBkzh4wwmmsGGSFsSVsCkZ/rel-reg-meta-evidence.json": {
+      "title": "Legitimate DOTA 2 Rampages enabled badges",
+      "description": "A List of lists related to Legitimate DOTA 2 Rampages"
+    },
+    "QmQeideTGUE1wocFXJiGJyequq97iLygKS7g7PcrcjjBxd/reg-meta-evidence.json": {
+      "title": "Certified DeSPs",
+      "description": "Certified security providers for DeFi projects",
+      "logoURI": "/ipfs/QmRsYi5YfRZrrLyNrgW2dkBg4J5M1m49XkBpCDkp7bhv4X/logo-cdsp-lowq.png"
+    },
+    "QmQiepNWkyLEVLKibbqCeTzKnQKdzGvj1eptxfy9qVVshS/rel-reg-meta-evidence.json": {
+      "title": "Test PM enabled badges",
+      "description": "A List of lists related to Test PM"
+    },
+    "QmQqGKoNLAzcfzqUBotgA6TmdrbBjhRJ5rGPWGXwAsKW25": {
+      "title": "15 Min badge",
+      "description": "This badge has 15min to be reviewed",
+      "logoURI": "ipfs/QmcCoRKn6UoxzG8JgAND7UifAWy5TokPXCeAAUW1RdGFj9"
+    },
+    "QmQqhozqoDAzz13bCAHQb6r92srehNGEf6JkonSMCJCE3T/rel-reg-meta-evidence.json": {
+      "title": "zkSync Sybil Address List enabled badges",
+      "description": "A List of lists related to zkSync Sybil Address List"
+    },
+    "QmQt9428eApYCFYb8VLVCt9CWQEdMrfD7zKZWpfYTWv77z/reg-meta-evidence.json": {
+      "title": "ClaimVerify",
+      "description": "ClaimVerify is a decentralized registry designed to empower users by providing a curated list of verified decentralized insurance protocols.",
+      "logoURI": "/ipfs/QmSptjPizVCzEjzvYSpMjkRbHGEUEuaR9xGcgasxx6Rs4t/logo-transparent.png"
+    },
+    "QmQxqahHvbrQtGt39vydNStNXWZkjDXnQQ6LPeadetjL9V/rel-reg-meta-evidence.json": {
+      "title": "Registry of unfinished memes enabled badges",
+      "description": "A List of lists related to Registry of unfinished memes"
+    },
+    "QmQyFBC7viC6ZjmaDhwF7sEdoFbDgv1bsgnn1jy5GMzbVA/rel-reg-meta-evidence.json": {
+      "title": "Kleros Tokens enabled badges",
+      "description": "A List of lists related to Kleros Tokens"
+    },
+    "QmR2JiJ385tTNGH9LwRjzCHcZqHx4bPPto2BQCSpBBgypq/kmanr-reg.json": {
+      "title": "Authentic NFT Registry",
+      "description": "A list of authentic NFTs",
+      "logoURI": "/ipfs/QmVVBTtSvdvh6MyJr9XWgfFigvpxw3uG8wEcFTfdujjBai/kmanr.png"
+    },
+    "QmR7v1iLT7qyDUfTB7MyMFwT8nydNJJ89s1rFqNY2oLBNo/reg-meta-evidence.json": {
+      "title": "Consensus Layer Withdrawal Protection",
+      "description": "Ethereum validators using CLWP to set their withdrawal address",
+      "logoURI": "/ipfs/QmXkGcS9Nw7jqaSaZZoKh3UQo8pwE8LWsdoUtjx1zTFLmJ/clwp-100-100-px-.svg"
+    },
+    "QmR8V2CzqWqRntdF3SotkSaaYg2ixng91w2Dd8f33prrRq": {
+      "title": "AI Authored Text",
+      "description": "A registry for documents whose submitted wording is generated entirely by AI.",
+      "logoURI": "/ipfs/QmQHa34R6L22ZqyLHuyJ4Eg3peyhgrJDn4sWPstdesLe6U"
+    },
+    "QmRBF2eaLCGJnt5ax4PRuVAB1aCQ6J4Ewe6UqVhUACPD5G/reg-meta-evidence.json": {
+      "title": "Sports Bets",
+      "description": "A list of a set of questions related to sports bets",
+      "logoURI": "/ipfs/QmRfhJsRDhQVsVSjgPw7CPoG64NnJ3pD54Fsr9d854sQKh/big-bets-mpnotor-sports-2-football-in-middle.png"
+    },
+    "QmRC6PjpzQXvgLj3FByisjjJLtqypz7fwFPMi14i8X3QSU/reg-meta-evidence.json": {
+      "title": "List of Web3 auditors",
+      "description": "A list of known auditors for Web3 projects and firms",
+      "logoURI": "/ipfs/QmYHqBx1PTDNB8zds9TqsM6MeVRRqjSTksmejkEXyZBozD/audit-icon.png"
+    },
+    "QmRPufw3gxM5xMn5Ark6USvYkcoZgoPQosJv3dQ1rzhZkR/reg-meta-evidence.json": {
+      "title": "Legitimate DOTA 2 Rampages",
+      "description": "A list of legitimate DOTA 2 Rampages",
+      "logoURI": "/ipfs/QmeX8GwMe52QrKQ4CeDtPPAx5StzLNpjeNTaGpAtpfoJDg/dota2rampage.png"
+    },
+    "QmRR6nmUUKQZNdyyHwUyYxmBFEENcT71aUSmt8JAkezNyC/rel-reg-meta-evidence.json": {
+      "title": "Address Tags enabled badges",
+      "description": "A List of lists related to Address Tags"
+    },
+    "QmRRH5ht7rNeqzN6ZsoKZzezkXz7qbvcgquxRBsWk4eNmB": {
+      "title": "Authena: Safe Agent Skills",
+      "description": "AI-agent skill versions that someone has staked a deposit on being safe to install. Challenges are judged by GenLayer validators.",
+      "logoURI": "/ipfs/QmbhvviTPgLzfcAxHXoFftzSaTNkbpwaUH6cSAuvEwVLRb"
+    },
+    "QmRTkeaEuSA3h1crh3qG29YFUnc9LintbxWL1ekheKFunQ": {
+      "title": "TEST Agent Ambassadors: Standard v2 enabled badges",
+      "description": "A List of lists related to TEST Agent Ambassadors: Standard v2"
+    },
+    "QmRUZQgN5PyY3c1A5uhxre1Rhz1mGFr8qNi7bmLxBwGzz5": {
+      "title": "5 Star Freelancer Fiverr",
+      "description": "This badge proves that its owner holds a 5 star profile in Fiverr.com with a minimum of 10 reviews.",
+      "logoURI": "ipfs/QmZFPPKLhKWs4SgcAcaffmR9Pz2NGrjSzTUanbcN7Lgw3o"
+    },
+    "QmRV3zXPsh2DePx584GGk4fNdSLgFQGv7hBbEkmpMn8ecc/reg-meta-evidence.json": {
+      "title": "Top L2 Chains",
+      "description": "List of L2 blockchains with min. TVL of $100m (anytime)",
+      "logoURI": "/ipfs/QmZxLSoSfRqM59uQyvSMkRqmEWaHAJCjwxVt8qu8ScNmZi/screenshot-2024-08-13-at-22.15.54.png"
+    },
+    "QmRa9mt3BYxBAtf9oxUgEQrRDJ7Xf1AcoM51UseKwjaUtw/reg-meta-evidence.json": {
+      "title": "Ledger Contract Domain Name registry v2",
+      "description": "A list of contract addresses and the domain names they are meant to be used from .",
+      "logoURI": "/ipfs/QmNNSDkpyDX1wB4NNFdAzaHsJihpvgNVV89zCH8FH9CVAz/ledger-white.png"
+    },
+    "QmRaLgX3XKh8hapDvTWveXQShqHbdnEGv7mmaxE6tC9FE8": {
+      "title": "MEC member",
+      "description": "This badge confirms that you are part of Mujeres en Crypto, one of the largest web3 communities of Spanish-speaking women.",
+      "logoURI": "ipfs/Qmf9N8y4YQPwnqSYEQELdmSw46N5SnjRu5g5t6UepeA3aK"
+    },
+    "QmRoZpyubcacHxpLYrAootVUjKVm5Kd4x9LSeuynBduJkB": {
+      "title": "TEST Agent Ambassadors: Standard v2",
+      "description": "Test list for the Agent Ambassador Program. Nothing here is rewarded.",
+      "logoURI": "/ipfs/QmY3ED2vtNdr8Uvckuwpv3BMvQ72UssbJFSDLGJtEpvBXM"
+    },
+    "QmRpPAfMAHyZwt3oBr7obvrJDFskfpYWRSxjS2HMmzBZqR/reg-meta-evidence.json": {
+      "title": "Decentralized Domain Blacklist Registry",
+      "description": "A list of blacklisted subdomains that should be blocked on blockchain domain name services.",
+      "logoURI": "/ipfs/QmStzoYeV9nfJSms47TLo9f5t1fVrxjvvRf9GspCduXhE4/kleros-symbol.png"
+    },
+    "QmRu8jMwoWRbgNhFZx2iSBZvMq9APDNLtaNAmh7E8SzFof/reg-meta-evidence.json": {
+      "title": "List of self-insurance claims",
+      "description": "List of approved insurance claims",
+      "logoURI": "/ipfs/QmYiQSMXspzCvxufmdtYYJn1rSSgYw35vuMZ8eyog9fKn4/316-png-and-svg-insurance-icons-for-free-download-uihere-insurance-icon-png-512-512.png"
+    },
+    "QmS4LYyx4yAkRdZgschhsqLG8EaXrhQ44buxQUE6GXXQGi/reg-mm.json": {
+      "title": "Test: Registry of Metamask Snaps",
+      "description": "List of verified Metamask Snaps",
+      "logoURI": "/ipfs/QmchdA5tQLAYzximbXBjzSgbjkQFNcpzQjRiCEvRiqfXt6/icon-2-.png"
+    },
+    "QmS6QKHgqx9gigNZxNEHuDAEgX5rSU6WTBQkGMeKaTiVr4/rel-reg-meta-evidence.json": {
+      "title": "Consensus Layer Withdrawal Protection enabled badges",
+      "description": "A List of lists related to Consensus Layer Withdrawal Protection"
+    },
+    "QmS7jaf9RyYcF4jqZrdg52xWuxtmCCuHtyiHLGtACZkhjU": {
+      "title": "Backdrop Build V4 Member",
+      "description": "This badge proves that its holder participated in the Backdrop Build V4 and tested TheBadge's Dapp",
+      "logoURI": "ipfs://QmdaGEMqMwHKxXAqFYhQKcEh4GTjqefdNXHHhNHQLJbCVi"
+    },
+    "QmSFbTqC3qJGTn3SkNfAkYTwsvUasGvRFs1wr9211LmzKw": {
+      "title": "15 min badge",
+      "description": "This badge has 15min to be reviewed",
+      "logoURI": "ipfs/QmcCoRKn6UoxzG8JgAND7UifAWy5TokPXCeAAUW1RdGFj9"
+    },
+    "QmSJgB26Qw7A79iza1cjrdmt7s5fHEKtHA2HFo5kFVpW8e/rel-reg-meta-evidence.json": {
+      "title": "List of known addresses of dApps (test3) enabled badges",
+      "description": "A List of lists related to List of known addresses of dApps (test3)"
+    },
+    "QmSN9SibKdh56top75Rcc4wDX8seqnbRTugh8KENoa9K2Z/reg-meta-evidence.json": {
+      "title": "Kleros Tokens",
+      "description": "A list of tokens on the blockchain",
+      "logoURI": "/ipfs/QmZ5VC8FHMjs92yQEn9dnJottspM5JUbJUkPtno1hPPYks/t2cr-logo.974d9285.png"
+    },
+    "QmSTRqeZMzW4RoNEaNfXQqhG5uv5Yp28bWitovKA8citMu": {
+      "title": "Agent Ambassador Program: Standard",
+      "description": "Kleros-related content generated by AI agents and published on social media, including posts, explainers, infographics, and translations.",
+      "logoURI": "/ipfs/QmWnXQsetfZ4ZpyMELGh8Z3NsULXK74kL9tpzYBoSnuCQy"
+    },
+    "QmSYDkgDJpgAuXEpABS83qLYjC5c6cYLqQTXk5Tqq9Kx7p/reg-meta-evidence.json": {
+      "title": "Decentralized frontend registry",
+      "description": "The curated frontend registry is a list of frontend instances hosted on decentralised file storage which are verified to be trustworthy for users.",
+      "logoURI": "/ipfs/QmSgoRrhmCtRvvxJp44TvSEuFfdmyTzj8xfCJe56B3VwN2/frontend.jpeg"
+    },
+    "QmSgyZTaEykD9xhxBJDwnzHUsApKSjTuobnyBzmhnRN11F/rel-reg-meta-evidence.json": {
+      "title": "Ledger Contract Domain Name registry v2 enabled badges",
+      "description": "A List of lists related to Ledger Contract Domain Name registry v2"
+    },
+    "QmSjgh5yuM3myw54kJZQGP5m1bcqvasYyRTUHXk5nEEjzv/rel-reg-meta-evidence.json": {
+      "title": "Seer Markets enabled badges",
+      "description": "A List of lists related to Seer Markets"
+    },
+    "QmSxn2fgkUKvFuWXj5D9T1fbHK3F5tNF7Mz6NmQKjkWATE/rel-reg-meta-evidence.json": {
+      "title": "Test PM enabled badges",
+      "description": "A List of lists related to Test PM"
+    },
+    "QmSzQXqKxsXH74xoYvYr9Y5PcbbLUfA7fe6FQW6j43RuLs/rel-reg-meta-evidence.json": {
+      "title": "Vacancy Vault enabled badges",
+      "description": "A List of lists related to Vacancy Vault"
+    },
+    "QmT5RijQrAfA9SvvPjkVV5tPWw5ikBMHSyGbaSuybKabg8/rel-reg-meta-evidence.json": {
+      "title": "Contract domain names (max 100) enabled badges",
+      "description": "A List of lists related to Contract domain names (max 100)"
+    },
+    "QmT9A2yvGUFPegqhSqQQZk3YrreRSqGfze5xkFi68fRvK5/reg-meta-evidence.json": {
+      "title": "LayerZero Sybil Address List",
+      "description": "A list of Sybil addresses for LayerZero’s airdrop Sybil bounty program",
+      "logoURI": "/ipfs/QmZn7HGKkkMJnSRWPgL2T2u4FCv2ucKULjFmQUo8G7BqAQ/layerzero-emblem.png"
+    },
+    "QmTANjpp5XfQXCDwCDDpt5vr3ApKfd2rYK4wvwH2urvFJE/rel-reg-meta-evidence.json": {
+      "title": "Certified DeSPs enabled badges",
+      "description": "A List of lists related to Certified DeSPs"
+    },
+    "QmTFjSQaV8vVLFhJPE5CEBph3xiYomA51RXRo3HLecKFv1": {
+      "title": "Fiverr.com Account Owner",
+      "description": "This badge certifies that its owner has a fiverr.com Profile.",
+      "logoURI": "ipfs/QmZFPPKLhKWs4SgcAcaffmR9Pz2NGrjSzTUanbcN7Lgw3o"
+    },
+    "QmTJUSccwRxvncNz3iBf4pMpvWHpnWcxzQ3Fc9zd7jKHad": {
+      "title": "Miembro oficial de MEC",
+      "description": "Este badge certifica que formas parte de una de las comunidades de mujeres de habla hispana más grande del mundo Blockchain.",
+      "logoURI": "ipfs/Qmf9N8y4YQPwnqSYEQELdmSw46N5SnjRu5g5t6UepeA3aK"
+    },
+    "QmTNdmd5hgABaF6GKi8ywKsTC9CWMYtrurBSfP5duachPf": {
+      "title": "Fiverr 5 star freelancer",
+      "description": "This badge proves that its holder its a 5 star freelancer on Fiverr with 10+ reviews",
+      "logoURI": "ipfs/QmZFPPKLhKWs4SgcAcaffmR9Pz2NGrjSzTUanbcN7Lgw3o"
+    },
+    "QmTPcMXKKHYRpYwHoJVTTgeYPWM7EtjcmUkbNwSR5dcGno/rel-reg-meta-evidence.json": {
+      "title": "Addresses of real people/entities enabled badges",
+      "description": "A List of lists related to Addresses of real people/entities"
+    },
+    "QmTS5qxngrzYKZTm4qGaY3XNywfpHrXEhkYBaK1ZDADvp7/reg-meta-evidence.json": {
+      "title": "Solace Claims",
+      "description": "The submitted claims for Solace protocol",
+      "logoURI": "/ipfs/QmYeNGqaKuBMRSC6vyh1QcAEASDZKo6YvyZHw6PMZuJUK2/solace-logo.svg"
+    },
+    "QmTWTonEaz23Brs2BuVvHnsNgZurjWWp5WxhMg63ku1hGJ/reg-meta-evidence.json": {
+      "title": "Official ETH dApp Registry",
+      "description": "A curated registry of Ethereum ecosystem verified dApps for users to explore projects while avoiding the risk of falling for scams.",
+      "logoURI": "/ipfs/QmcHp1gYVd9dHpAA9QqVTerJCgBD5YRqdtyNQRdc5pDazi/logo.png"
+    },
+    "QmTYBAjfbEW3DSgbkFnnqZnrxoWTbcYzPDCm5jhQAu3ZRX/rel-reg-meta-evidence.json": {
+      "title": "Vacancy Vault enabled badges",
+      "description": "A List of lists related to Vacancy Vault"
+    },
+    "QmTangcrN1KPmuZnKqPkiM3VHfxPWNoykipnar4uz4qJsa/reg-meta-evidence.json": {
+      "title": "Red socks",
+      "description": "A list of red socks",
+      "logoURI": "/ipfs/Qmc5GcXUEYoSPNGw3aSPqSueLRAbzaNSbX5BY8wyhYcNY9/image-2-.png"
+    },
+    "QmTkUUoDjRhbbaNFN12JR9L26bgPYeLn6pvyHK7D54ydAx": {
+      "title": "ads enabled badges",
+      "description": "A List of lists related to ads"
+    },
+    "QmTnxcfR8zUhHKVnRpo5nq3JcfhjtLq4ufENQHe7Nt6NoC/rel-reg-meta-evidence.json": {
+      "title": "ClaimVerify enabled badges",
+      "description": "A List of lists related to ClaimVerify"
+    },
+    "QmU3DQHazJKE33By4FPpoM4SQEX2iBZiDa7yS3cwkti31y/reg-meta-evidence.json": {
+      "title": "Vacancy Vault",
+      "description": "A curated list of job opportunities and employers within the Web 3 ecosystem.",
+      "logoURI": "/ipfs/QmS9QZYNWQEXaKeVG9VuU2Lzv3NZSK8kQPsD6gC9PLkSPD/vacancy-vault.png"
+    },
+    "QmU5k6w566xVqLhMrmR7fvLu2N2Em3y7E9JnrDacZrij2w": {
+      "title": "Kleros Testing",
+      "description": "This badge is to properly test kleros integration",
+      "logoURI": "ipfs://QmZ3wX2ST2zYiXekU4LbdRGE7MxNDdN8SQhtvYJhgCQCVc"
+    },
+    "QmUBfgQYcGatMSrJV7AgH6GYXaT7U3E3h318KmG7g9ZerM": {
+      "title": "Verified Agents",
+      "description": "A list where agents are verified and safe to interact with",
+      "logoURI": "/ipfs/QmbM3r3gJMwhVuQJ6WAC2axbDkAGSF2ohE6upYHCmAQf9f"
+    },
+    "QmUHJ41LRFqfVaZ7hwCfpKUtAywF3KAn98hGu7k3UYYezt/rel-reg-meta-evidence.json": {
+      "title": "Seer Markets enabled badges",
+      "description": "A List of lists related to Seer Markets"
+    },
+    "QmURtoCsAeVjxhmS2G91zgaXnMAJvt59qaZ2Ch4xsaWYZM/rel-reg-meta-evidence.json": {
+      "title": "On-chain Ads enabled badges",
+      "description": "A List of lists related to On-chain Ads"
+    },
+    "QmUVKqeA9yekDYz5NjV1PXLZEtwkYpnwRiXSnPWjwzmZ7u/rel-reg-meta-evidence.json": {
+      "title": "List of known addresses of dApps (test) enabled badges",
+      "description": "A List of lists related to List of known addresses of dApps (test)"
+    },
+    "QmUckSA4KQm4x4XR1xWHrTayMWJ5Xtd63QyEqMCWbDiJZu/rel-reg-meta-evidence.json": {
+      "title": "Kleros Tokens enabled badges",
+      "description": "A List of lists related to Kleros Tokens"
+    },
+    "QmUdpeNNebfaSdNa145rk3dqUTfDviWwjnRSFZwKL4uXDP": {
+      "title": "Kleros Tokens",
+      "description": "A list of tokens and their contract address across various blockchains",
+      "logoURI": "/ipfs/QmZ5VC8FHMjs92yQEn9dnJottspM5JUbJUkPtno1hPPYks/t2cr-logo.974d9285.png"
+    },
+    "QmUjz6g6LwkJoe6jcxNWddEDDq8L4XaHLDdQZLyys4BTTy/rel-reg-meta-evidence.json": {
+      "title": "Authentic NFT Collections enabled badges",
+      "description": "A List of lists related to Authentic NFT Collections"
+    },
+    "QmUpVvMYCAvwbxT7Pj1g9eeav8p6rvDoFzEgLa7U77z5gk": {
+      "title": "upwork 5 star freelancer",
+      "description": "this badge proves that I am a 5 start freelancer in upwork",
+      "logoURI": "ipfs/QmStDwvPK3TKCBjeidw2EfaBZhyEq4VZJQoAfaH2TMAcNW"
+    },
+    "QmUpewuPHGDxhzBxpmTbVm7cHnSG9VPQq9xzWX11RaJazA": {
+      "title": "Mercado Libre's Merchant",
+      "description": "This badge proves that its holder has a Merchado Libre's merchant account",
+      "logoURI": "ipfs/QmRFQhjTQHQ7g7rZhvP4gyEX7hKm7sZ3VFfTx35FTURqcc"
+    },
+    "QmV2RBHg8b9kyUm2u7xyTo3rZxs83CARxNLQEHqd56D7hG/rel-reg-meta-evidence.json": {
+      "title": "UFO Sightings enabled badges",
+      "description": "A List of lists related to UFO Sightings"
+    },
+    "QmVArwozvywa2CVUAgBm9JEPPNaKVzAoDM6Qg6coC7wQ8w/rel-reg-meta-evidence.json": {
+      "title": "Address Tags Queries (ATQ) registry v0.2 enabled badges",
+      "description": "A List of lists related to Address Tags Queries (ATQ) registry v0.2"
+    },
+    "QmVAtfoGpbq5QfuTPv7C6GP8iVCmRBPNUXCQ2MPqkLxvkH/reg-meta-evidence.json": {
+      "title": "zkSync Sybil Address List",
+      "description": "A list of sybil address for the zkSync Airdrop.",
+      "logoURI": "/ipfs/QmNyoonLfmXow9FM1FqqNsksHf5zmEp7jwyvfSszKKWwoo/full-logo-zksync-black.png"
+    },
+    "QmVEfuZfZBwSW4Rpn3GCtfiNjhpwaNTZBNArhUiCGox4iD/rel-reg-meta-evidence.json": {
+      "title": "Test PM enabled badges",
+      "description": "A List of lists related to Test PM"
+    },
+    "QmVPPN6qtsqkn7KywWP4pm4P9jka8zE7nRZ3RAivtZUQPg/reg-meta-evidence.json": {
+      "title": "Address Tags",
+      "description": "A list of public name tags, associated with Ethereum mainnet contract addresses.",
+      "logoURI": "/ipfs/QmP1hU1LaheHVGxcSJWg5sC3g25vs5snam3qP1bVVAa7mT/address-tag-2-1.png"
+    },
+    "QmVST3ro19ghyTyPzktt2VgMFJcqGSD96Z2PvrL1LhWhCQ/rel-reg-meta-evidence.json": {
+      "title": "Kleros Tokens enabled badges",
+      "description": "A List of lists related to Kleros Tokens"
+    },
+    "QmVWq8xBuKLLdcF8Zsx16fHWY5bVEo3mXrrzMfNahkBVZd": {
+      "title": "Gnosis Verified Registries",
+      "description": "This is a registry of registries deployed on Gnosis",
+      "logoURI": "/ipfs/QmZa8NwrV4E7A8EvRy53YmpAmvZyJ2Bx4o8Jb7CEkyQa16"
+    },
+    "QmVfCbKV4waNLsqhDs1V6sx8pEb6RmS49zsnTCVuvRKYud/reg-meta-evidence.json": {
+      "title": "Sport Bets Tests",
+      "description": "Testing for bet sports questions",
+      "logoURI": "/ipfs/QmS52pNeomcU99XFQs9BQYdmtmHCkKELxvjfr9jiizMuYD/bets.png"
+    },
+    "QmVggpiCnCiBuVh2ktCpBBXrapHb87eJmVZpPHRrPaVuhr": {
+      "title": "Address Tags Query Registry",
+      "description": "A list of verified modules that can be used to retrieve address tags for ranges of EVM contracts in one go.",
+      "logoURI": "/ipfs/QmStzoYeV9nfJSms47TLo9f5t1fVrxjvvRf9GspCduXhE4/kleros-symbol.png"
+    },
+    "QmViJGBENfxjqzUcM6YYhyMA1p11eRHu3ukAe7C5v7aFWn/reg-meta-evidence.json": {
+      "title": "Vacancy Vault",
+      "description": "A curated list of job opportunities and employers within the Web 3 ecosystem.",
+      "logoURI": "/ipfs/QmS9QZYNWQEXaKeVG9VuU2Lzv3NZSK8kQPsD6gC9PLkSPD/vacancy-vault.png"
+    },
+    "QmVoSTBX6hV4f9HPJ8j5fAVzgWXKhospgRB1Yy2MMRh4n4/rel-reg-meta-evidence.json": {
+      "title": "List of self-insurance claims enabled badges",
+      "description": "A List of lists related to List of self-insurance claims"
+    },
+    "QmVpbC6e2bN7AMngi96ShDAXNig2q2kMzgJGpj9ASstx3X/rel-reg-meta-evidence.json": {
+      "title": "Registry of contract domain names  enabled badges",
+      "description": "A List of lists related to Registry of contract domain names"
+    },
+    "QmW1CT524RGfUzeTFZAvMP7q46yFZ38pAjbfkJFoXmXMYD": {
+      "title": "123 enabled badges",
+      "description": "A List of lists related to 123"
+    },
+    "QmWCQysS9Sy6zwRzrcqZMHqTmi9RBFn4RvJi2qFwCrrxF7/reg-meta-evidence.json": {
+      "title": "The Registry",
+      "description": "A searchable registry of all lists submitted by users.",
+      "logoURI": "/ipfs/QmfPZnPkbCb1gXJdsA4HengMrmD7wyfzfy83dPXxjE7gMd/ufo.png"
+    },
+    "QmWF2ooQLMkAiJMXRR2PVuKkiFGC8M6XmXn5ZbV7RN99JH/rel-reg-meta-evidence.json": {
+      "title": "Top L2 Chains enabled badges",
+      "description": "A List of lists related to Top L2 Chains"
+    },
+    "QmWKpjRJFTuRpRDpeJWH51GTLpdqfe7s8j9ztCAjh5EaaD/rel-reg-meta-evidence.json": {
+      "title": "TB-test 2 enabled badges",
+      "description": "A List of lists related to TB-test 2"
+    },
+    "QmWMoNmxDJdZnGV3yPnBx8RKCJ5CTY883Yxu8QnRxGURQg/reg-meta-evidence.json": {
+      "title": "Upgradeable List",
+      "description": "This list should be upgradeable",
+      "logoURI": "/ipfs/Qmc5GcXUEYoSPNGw3aSPqSueLRAbzaNSbX5BY8wyhYcNY9/image-2-.png"
+    },
+    "QmWQp8JwyGGd6LaMQ5BQvCY5JzHvBUGD7P99tprQm31zyz/rel-reg-meta-evidence.json": {
+      "title": "Solace Claims enabled badges",
+      "description": "A List of lists related to Solace Claims"
+    },
+    "QmWX9dPPe9Stf5QVbxvw2E8kVzRQ75XpEHV3TPYGgSxbED/reg-meta-evidence.json": {
+      "title": "Address Tags (v2) - alpha version",
+      "description": "A list of public name tags associated with contract addresses on various blockchains.",
+      "logoURI": "/ipfs/QmP1hU1LaheHVGxcSJWg5sC3g25vs5snam3qP1bVVAa7mT/address-tag-2-1.png"
+    },
+    "QmWYE8BqVW9zi73sbHw8K6ZvYFbMnsx7yEoqV7pZZFPWsn/metaevidence.json": {
+      "title": "Ledger Contract Domain Name registry v2",
+      "description": "A list of contract addresses and the domain names they are meant to be used from .",
+      "logoURI": "/ipfs/QmNNSDkpyDX1wB4NNFdAzaHsJihpvgNVV89zCH8FH9CVAz/ledger-white.png"
+    },
+    "QmWiJcUhYfNGiTm2Cmqj9oeJHx1dxudV75C8jA265BvLPd/reg-meta-evidence.json": {
+      "title": "Seer Markets",
+      "description": "Registry of verified Seer markets",
+      "logoURI": "/ipfs/QmckmpMuWGiGHCzbYgPqLPcCvLDj4YDPRZB63p7VaAjrbB/seer-logo-2-.png"
+    },
+    "QmWjvUSGnxRi8L44rtY765T248Lu15AE6a5kfX7SCZHJ8u": {
+      "title": "Organic Wine Certification",
+      "description": "This badge certifies that the wine is organic according to the Argentinian jurisdiction.",
+      "logoURI": "ipfs/QmPzp341xqZCKPvXejiKHtmkkphMHD3QB76wPrgQWEeYsY"
+    },
+    "QmWp248VjyPvTA9Ri8XHYkU8wPuiR5ZkqXah3WjmUDnumx/reg-meta-evidence.json": {
+      "title": "Address Tags",
+      "description": "A list of public name tags, associated with Ethereum mainnet contract addresses.",
+      "logoURI": "/ipfs/QmP1hU1LaheHVGxcSJWg5sC3g25vs5snam3qP1bVVAa7mT/address-tag-2-1.png"
+    },
+    "QmX2KFYZvPxXcjGLzVcRBU7UEsofy27DKjKEg8FSr3WEMR": {
+      "title": "Messi fan",
+      "description": "This is the way to show that you are a big fan of Messi.",
+      "logoURI": "ipfs/QmbMo2UU4eyaYrsMtcCdQns6WYe3AAe6urZGj9npCuVoff"
+    },
+    "QmX7r3pRTjpcd88iZPRQULuwKeZRMvSrHqPKwk6tcC1kGX/reg-meta-evidence.json": {
+      "title": "Certified DeSPs",
+      "description": "Certified security providers for DeFi projects",
+      "logoURI": "/ipfs/QmRsYi5YfRZrrLyNrgW2dkBg4J5M1m49XkBpCDkp7bhv4X/logo-cdsp-lowq.png"
+    },
+    "QmX8bc3AbV3bHnF6CGUSU16B6uPfx2JZ38xZHnS7biZFPj/kmancr-reg.json": {
+      "title": "Authentic NFT Collection Registry",
+      "description": "A list of authentic NFT collections",
+      "logoURI": "/ipfs/QmV2vTfULSHwV34y4i9WDYCHy5dyBtfivYyZQKvR6botRq/kmancr.png"
+    },
+    "QmXAy15qvvFUDinUqCi3xMHNmMEXjqD4VQrbbHM8c5d6kg": {
+      "title": "Not again",
+      "description": "No words to test again all this.",
+      "logoURI": "ipfs/QmNxsSNHYyCUjxzTpNvauwqv94W4XKhBycfuqhAMqnqxKr"
+    },
+    "QmXBJ7wyAeo9oUyVcHgYQM7GsTJtrD1H9DBxCEbuWSmrXU": {
+      "title": "WaterLAB - Tier 1 DAO Contributors",
+      "description": "A registry of policy-compliant Tier 1 applications to contribute to the WaterLAB / $WATER Network.",
+      "logoURI": "/ipfs/QmZRHM92kpFsh5nhMfauaWrzphCmytg45gr9dZXm3Fupvi"
+    },
+    "QmXBp3apXE6AQju6LKLtWpSZ6FymbQbhLcCcxnddjSQxSh": {
+      "title": "Mercado Libre's Merchant",
+      "description": "This badge proves that its owner had a Mercado Libre's merchants account",
+      "logoURI": "ipfs/QmRFQhjTQHQ7g7rZhvP4gyEX7hKm7sZ3VFfTx35FTURqcc"
+    },
+    "QmXC5dRVrBJHkFazHVpXrasMGyYKa2dQWd369yC61fSKy9/metaevidence.json": {
+      "title": "Contract-Domain Name Query Registry",
+      "description": "A list of verified modules that can be used to retrieve CDN tags for ranges of EVM contracts in one go.",
+      "logoURI": "/ipfs/QmZfTETH5kdvYkmAMW9Ck211on2Ntw2UutYCvQbKm8iBEM/kleros-pnk-logo.png"
+    },
+    "QmXJKoZPAZVLjZwc3wNo9vV7qniqHtrQPW74RAYpsmkuwM/rel-reg-meta-evidence.json": {
+      "title": "Kleros Tokens enabled badges",
+      "description": "A List of lists related to Kleros Tokens"
+    },
+    "QmXMW2gBMxHbPpJ1eNr8p4exvJyR4NJYR6KBahKA8dkz6L/rel-reg-meta-evidence.json": {
+      "title": "LayerZero Sybil Bounty Program enabled badges",
+      "description": "A List of lists related to LayerZero Sybil Bounty Program"
+    },
+    "QmXMeyiQkatqj9eb3LHKk9ZoDGiEpnFgmKp1uBTUnSfDqA/reg-meta-evidence.json": {
+      "title": "Seer Markets",
+      "description": "Registry of verified Seer markets",
+      "logoURI": "/ipfs/QmUXJ5yGg5PxzyaaokZzZJpiPsCGzJ98pgusYoCzuDmopo/seer-logo-1x1.png"
+    },
+    "QmXTt2QTf3ec5VnPgncZXw1ngkAJfkXmYfdyHrvXxux3mq": {
+      "title": "10min badge",
+      "description": "This badge has 10min to be reviewed",
+      "logoURI": "ipfs/QmWfuQrzMkHoiUahY4F3W98tTepxaxBxgFFmqEpebjcqVV"
+    },
+    "QmXUwmxicaucJnu8Zxu4dGVnwKjh3NjVtGPf4SJJBMZVsY": {
+      "title": "asdsda",
+      "description": "saddsa",
+      "logoURI": "/ipfs/QmX3K34wHN4WwK7hFd7vpHXR5KAjDo6rJ7ESq8VGp9nfAP"
+    },
+    "QmXYkPQDoYAGv8Li1K2hJCmVtsGkEVGTdcr6wxacSkQkBx/rel-reg-meta-evidence.json": {
+      "title": "Certified DeSPs enabled badges",
+      "description": "A List of lists related to Certified DeSPs"
+    },
+    "QmXYz8x9A6xb6rrhKcb1N96KB4vzGhpcF72skLhJ6QSYRD/reg-meta-evidence.json": {
+      "title": "Registry of unfinished memes",
+      "description": "A 'joke' bounty system, where no meme challenge is meant to get onto the list.",
+      "logoURI": "/ipfs/QmWEjbFe7s5vewGAPYJBm1NLfeQLhPLj8Yk1Wwskz26aQa/dogecoin-logo.png"
+    },
+    "QmXZ2fQf9W1Tf4VhjQGRErU23icpEAsRB6ZT75nnwQR3Jm/rel-reg-meta-evidence.json": {
+      "title": "Contract-Domain Name Query Registry enabled badges",
+      "description": "A List of lists related to Contract-Domain Name Query Registry"
+    },
+    "QmXceMqihAAxaGM6Z5fAxNM8us3d8YNkq45qbFwvWMtHn7/rel-reg-meta-evidence.json": {
+      "title": "zkSync Sybil Address List enabled badges",
+      "description": "A List of lists related to zkSync Sybil Address List"
+    },
+    "QmXp3E39KQ5yAk75GaT92DARPdWmi7QNxnwB3yWNAmMvbb/reg-meta-evidence.json": {
+      "title": "Cerberus Audit",
+      "description": "A list of X.com Crypto Scammers",
+      "logoURI": "/ipfs/QmWj2tVor8jJut6NFr6VEE1yCQfC6koWu2Bysk1hzq8CHk/logo-removebg-preview.png"
+    },
+    "QmXtyZA5yzZR4Mrd4kihPXtfH4Ky7tSxL8qVkwARntmmau/rel-reg-meta-evidence.json": {
+      "title": "Best NFTs enabled badges",
+      "description": "A List of lists related to Best NFTs"
+    },
+    "QmXvMFuFeYDe8j2zgKFJDdh1zBLh21LehPEdSiWrVF7ohM/reg-meta-evidence.json": {
+      "title": "On-chain Ads",
+      "description": "A list of smart contract addresses that hold ads in the form of SVG data returned as base64",
+      "logoURI": "/ipfs/QmZLeLmM6ssX8pH1z6MguZt5zCCUJJCQnh4GUzbLsH6wCB/klipartz.com.png"
+    },
+    "QmY591VtRsuZvEXTYVxrvpJuwt9wdWvvYCycAW9HYZgCv1/rel-reg-meta-evidence.json": {
+      "title": "Trustworthy Politicians enabled badges",
+      "description": "A List of lists related to Trustworthy Politicians"
+    },
+    "QmY7sNyJc8KwMcFSeLbpTNut4DZUnshmz1uDdicSVvUEPK/reg-meta-evidence.json": {
+      "title": "Address Tags",
+      "description": "A list of public name tags, associated with Ethereum mainnet contract addresses.",
+      "logoURI": "/ipfs/QmP1hU1LaheHVGxcSJWg5sC3g25vs5snam3qP1bVVAa7mT/address-tag-2-1.png"
+    },
+    "QmYG8vtFEk3GoBfDyc1tSc3Jp4J7BinnRrwwXdojf5mDPW": {
+      "title": "10m Badge",
+      "description": "thsi badge has 10 min to be reviewed",
+      "logoURI": "ipfs://QmWfuQrzMkHoiUahY4F3W98tTepxaxBxgFFmqEpebjcqVV"
+    },
+    "QmYLWxz9JSmwiEV18wkZRfVGTZDGpxUQrTUnw26jzcWPmJ": {
+      "title": "TEST Agent Ambassadors: Standard enabled badges",
+      "description": "A List of lists related to TEST Agent Ambassadors: Standard"
+    },
+    "QmYRWaFVBeGw85avyU5BGrE44fDxwSv7o1Wq7St9Zz7896": {
+      "title": "Original Watch Certificate",
+      "description": "This certificate proves that the RWA watch it belongs to has passed the originality check",
+      "logoURI": "ipfs/QmYnZdEKhJDPoeRFEx8CJCShHFGpbqa3S9STqbxC1E2MEP"
+    },
+    "QmYSMXk55PVhxJrDWnzNMoBYngXyNtdoBQzuviPbBTQySJ/rel-reg-meta-evidence.json": {
+      "title": "Tokens registry (v2) - alpha version enabled badges",
+      "description": "A List of lists related to Tokens registry (v2) - alpha version"
+    },
+    "QmYVcnhRw9fM2dVuZR7G7yfxmquHG71F2KQfmJXB3r9Yho/rel-reg-meta-evidence.json": {
+      "title": "LayerZero Sybil Address List enabled badges",
+      "description": "A List of lists related to LayerZero Sybil Address List"
+    },
+    "QmYXa3mAzyHDoRkfd7Yjn8GHfJWxZ8DwVdjw8xku5CsyU4/rel-reg-meta-evidence.json": {
+      "title": "Top L2 Chains enabled badges",
+      "description": "A List of lists related to Top L2 Chains"
+    },
+    "QmYaLPoeh4BmsQ6iptzbZUC453u5XReLRWok8jqmPhJ7Hx/reg-meta-evidence.json": {
+      "title": "Address Tags",
+      "description": "A list of public name tags, associated with Ethereum mainnet contract addresses.",
+      "logoURI": "/ipfs/QmP1hU1LaheHVGxcSJWg5sC3g25vs5snam3qP1bVVAa7mT/address-tag-2-1.png"
+    },
+    "QmYh5pvt2qQ1CWXUM97C4NdDs8pRcaki2wfEu8i6AfqsHS/rel-reg-meta-evidence.json": {
+      "title": "Eth Mainnet Address Tags enabled badges",
+      "description": "A List of lists related to Eth Mainnet Address Tags"
+    },
+    "QmYkb1pBtKnNcvxYvfRBJcx8S3ZeyyUPFvibRQxZR5JBUR/rel-reg-meta-evidence.json": {
+      "title": "Decentralized frontend registry enabled badges",
+      "description": "A List of lists related to Decentralized frontend registry"
+    },
+    "QmYoeJcwEL6DhaK2PpTgfvioXyJZssbpfCNFyJjbkpaz21/rel-reg-meta-evidence.json": {
+      "title": "Sports Bets enabled badges",
+      "description": "A List of lists related to Sports Bets"
+    },
+    "QmYuxcwMUhfoRSFCyCpc4iba9LEC6TL2mV6JCJWz9Wf7nK/rel-reg-meta-evidence.json": {
+      "title": "Official ETH dApp Registry  enabled badges",
+      "description": "A List of lists related to Official ETH dApp Registry"
+    },
+    "QmYxzaLrNFW4x8LBRemWPyEdhXdA8Ga52iAmcsKDc2R4oN": {
+      "title": "ads",
+      "description": "a",
+      "logoURI": "/ipfs/Qmdty9hUv8CEG9f6NXkFcKHjedpdPgAgnbog1VobKHUjgQ"
+    },
+    "QmZ1vLUgP8rAAwKDaPpQ5oTeKXEyYV7njv1nduXoRjxUAp": {
+      "title": "Address Tags",
+      "description": "A list of public name tags, associated with contract addresses on various blockchains.",
+      "logoURI": "/ipfs/QmP1hU1LaheHVGxcSJWg5sC3g25vs5snam3qP1bVVAa7mT/address-tag-2-1.png"
+    },
+    "QmZ2d9bE7Ffj5XwTCMaWnN2148mhQBtvQ3wXo5ATqCHbBt/rel-reg-meta-evidence.json": {
+      "title": "Certified DeSPs enabled badges",
+      "description": "A List of lists related to Certified DeSPs"
+    },
+    "QmZ9EG4yGt6nGEJuzW5KoCpLR5izaW2Bmibxx5VH3NxWQW/rel-reg-meta-evidence.json": {
+      "title": "PoC NFT blacklist (Classic Curate2) enabled badges",
+      "description": "A List of lists related to PoC NFT blacklist (Classic Curate2)"
+    },
+    "QmZFZUJ1VfebvP44Zaosds37V9YUSoFkHzSVhJzNVngKj8/registerdeprecated.json": {
+      "title": "Registry of contract domain names",
+      "description": "A registry of bundles of contracts addresses that are verified to be accessible through the respective domains names. Built for Ledger Connect.",
+      "logoURI": "/ipfs/QmNNSDkpyDX1wB4NNFdAzaHsJihpvgNVV89zCH8FH9CVAz/ledger-white.png"
+    },
+    "QmZPLV213r3QWLC4UAqbxz8qZ1HuL3MDVFdB4qWPqWv2ht/reg-meta-evidence.json": {
+      "title": "Test PM",
+      "description": "A list of images for markets and outcomes.",
+      "logoURI": "/ipfs/QmWP4CXeKqxBygpwo4aGP3rZK4u3Kd7r3tHH7Bng66Wpwt/new-project-1-.png"
+    },
+    "QmZRq1cSU2WLfLvmhZQdgxaK6WBAWxYvKKjMKFTTFjJ4GT/rel-reg-meta-evidence.json": {
+      "title": "Upgradeable List enabled badges",
+      "description": "A List of lists related to Upgradeable List"
+    },
+    "QmZSsxJs1g9VBHqdwQVaCbRRExUC9MQiJwHJJK3beWZqfs": {
+      "title": "asdsadsadsda enabled badges",
+      "description": "A List of lists related to asdsadsadsda"
+    },
+    "QmZUU5pit9upoNSgw2baw6YHWatUmwAvcgNSKQsKBA75jR/reg-meta-evidence.json": {
+      "title": "TB-test 2",
+      "description": "a new test, this time is not going to be list of lists",
+      "logoURI": "/ipfs/QmXfqESYSDdNDbNvGRm5vsmDxBUSL8pZHVNpTUxGMWU67p/chrismas.jpeg"
+    },
+    "QmZbbjEwnqS51SwRCBo9LjAveubmrWD7zZbJBfYTeJH135/rel-reg-meta-evidence.json": {
+      "title": "Contract domain names (max 10 addresses) enabled badges",
+      "description": "A List of lists related to Contract domain names (max 10 addresses)"
+    },
+    "QmZg6qv6CiLxzbmiLLCrprBMGDAs5hZbWTFrv9tboQFZsY/reg-meta-evidence.json": {
+      "title": "List of known addresses of dApps (test)",
+      "description": "List of known addresses of dApps (test)",
+      "logoURI": "/ipfs/QmQWT6pPMihcD14agjiCfp8qsxoz2TdtvNLjrBqWMHxHkt/xc-luggage-loop-red.png"
+    },
+    "QmZhBSiNw6uUjHkEF6JPuGbg72AD9Z9V2T21xHnLspRXgN/reg-meta-evidence.json": {
+      "title": "Addresses of real people/entities",
+      "description": "A list of blockchain addresses and the real-life people/organizations that each address is controlled by.",
+      "logoURI": "/ipfs/QmUesSZVcYsCisDhEbFzmbxXnsi2C8PsquhePUkcx3jaQR/dall-e-2024-06-10-14.45.09-a-logo-featuring-elements-of-cryptocurrency-and-a-human-figure-that-exudes-wealth.-the-human-figure-should-be-more-life-like-representing-prosperity-.webp"
+    },
+    "QmZjCmvFMmuoLqHPx93NJXkW8KUd7NeKRGMDo2cGJkBkwt/reg-meta-evidence.json": {
+      "title": "Test PM",
+      "description": "A list of images for markets and outcomes",
+      "logoURI": "/ipfs/QmePMs1dWzAyCFXdAi99cSWf7sE7Uv2ba51kGBsiBvgvsc/new-project-3-.png"
+    },
+    "QmZjXQu6jZ4bnwAQ5gcdh3anWRoKhorQW16Puik3EwNf4e/rel-reg-meta-evidence.json": {
+      "title": "Sport Bets Tests enabled badges",
+      "description": "A List of lists related to Sport Bets Tests"
+    },
+    "QmZvJ5GnJVaAjzTzSvBVHihgLMkTDEstN645SBQhTg1Eqm": {
+      "title": "123",
+      "description": "123",
+      "logoURI": "/ipfs/QmX3K34wHN4WwK7hFd7vpHXR5KAjDo6rJ7ESq8VGp9nfAP"
+    },
+    "QmZxMUDh67xbZJiB7gxgU4Te8LAvWLm1TXYwGEq82oS5Q2": {
+      "title": "Gnosis Verified Registries",
+      "description": "This is a registry of registries deployed on Gnosis",
+      "logoURI": "/ipfs/QmZa8NwrV4E7A8EvRy53YmpAmvZyJ2Bx4o8Jb7CEkyQa16"
+    },
+    "Qma1oLG8tgNweiwXUqZ7R3yTRmcqQnwDjkw4nEJErthjgS/rel-reg-meta-evidence.json": {
+      "title": "PoC NFT blacklist enabled badges",
+      "description": "A List of lists related to PoC NFT blacklist"
+    },
+    "Qma3SMeVfvdLDAqQRBDsdZ9AueqDhPDLC8LYMPkmUvMjGH": {
+      "title": "Agent Ambassador Program: High Quality",
+      "description": "In-depth Kleros-related content generated by AI agents and published on social media, including practical guides, original research, and case studies.",
+      "logoURI": "/ipfs/QmUY1ZXPxVTVXszXJPwu4PQpDyBeR83aZG3f4dCo61TreE"
+    },
+    "Qma6TmLQwwLtoTtvztD7CH55Ej35ugL9h8JDc8RYfCpsZa/rel-reg-meta-evidence.json": {
+      "title": "badged list enabled badges",
+      "description": "A List of lists related to  badged list"
+    },
+    "Qma8BD3u7LDxirdEv4CLqgHgRzxaw2NbLep4QwcnjZmkCJ": {
+      "title": "10Min Badge - V2",
+      "description": "10Min Badge updated with updated kleros script for displaying evidence",
+      "logoURI": "ipfs/QmULa9j7s6xSvnfDMT2mSGEcJ1yquo17p8hEbjSxinF6XC"
+    },
+    "Qma995B76jHnQrsUUK3YPsnejyinLizzjegqEHiQ37675k": {
+      "title": "eth rome contributor",
+      "description": "This badge proves that you contributed in eth rome",
+      "logoURI": "ipfs/Qma4MpzXK2WLp9AFtnj411uEYCfYMVFL3pKQSqhU72agHv"
+    },
+    "QmaEjqhziwC3BtwaweibKJCVwRJLzvUHkfVVMPZjat167j/reg-meta-evidence.json": {
+      "title": "Registry of unfinished memes",
+      "description": "An joke job bounty system, where no meme challenge is meant to get onto the list :P",
+      "logoURI": "/ipfs/QmQMQX8oKWP9hAC7VaNYEBa6Q615UA2fbMc3xtrBiiMEsf/download-4-.jpeg"
+    },
+    "QmaGLT1ZXnDfEChnzdcswJpQmoETStUMekyzQUBzF7t5eX/reg_meta_v1.2.json": {
+      "title": "Contract domain names (max 100 addresses)",
+      "description": "A registry of batches of maximum 100 contracts addresses that are accessible through the respective domains names. Built for Ledger Connect.",
+      "logoURI": "/ipfs/Qmcu1TjPRTepEfPXjNN66dcLxwvSL1nZssghNt9xwsnkEg/ledger-black.png"
+    },
+    "QmaJ47DUrrUZn1zwBA97pJPYnGyAskGvnpY3hTegUr6kMk/reg-meta-evidence.json": {
+      "title": "Eth Mainnet Address Tags",
+      "description": "A list of public name tags, associated with Ethereum mainnet contract addresses. Don't submit contract not deployed to ETH mainnet here.",
+      "logoURI": "/ipfs/QmP1hU1LaheHVGxcSJWg5sC3g25vs5snam3qP1bVVAa7mT/address-tag-2-1.png"
+    },
+    "QmaKKptfNNgJy3JqLc23LNvsFeWda4CuwioCwwAj9V5qdQ/reg-meta-evidence.json": {
+      "title": "Santo Sybil followers",
+      "description": "Followers of the hottest cryptoinfluencer",
+      "logoURI": "/ipfs/QmQUmAN139y5ByGYUPvnwLmAUqu9dKF8n1Wc4xje7z9TAy/santo.png"
+    },
+    "QmaaoYtnKEenvdgQcj9oztJ1iTT6KZJWHrSa3tVM6anBWB/rel-reg-meta-evidence.json": {
+      "title": "Santo Sybil followers enabled badges",
+      "description": "A List of lists related to Santo Sybil followers"
+    },
+    "Qmadt8FuZUogEJE8z1uQXeH91T111t1Wi3LVd9oc6ExijA/rel-reg-meta-evidence.json": {
+      "title": "Address Tags Query (ATQ) registry enabled badges",
+      "description": "A List of lists related to Address Tags Query (ATQ) registry"
+    },
+    "QmagCtJYYrrPMTosus4b3fcEuAPVW19pYHkstBuoZLP9c3/rel-reg-meta-evidence.json": {
+      "title": "Test enabled badges",
+      "description": "A List of lists related to Test"
+    },
+    "QmawuTtZhZgGmggDf4EABeW3ZtVkLCzGMrw3pmXpqnJ2uo/reg-meta-evidence.json": {
+      "title": "badged list",
+      "description": "test",
+      "logoURI": "/ipfs/QmU7SU3yXG2i2ssBRGtGwzgJegXLxTvSMACXXUHqBPcfES/tdldw-hu-400x400-1-.png"
+    },
+    "QmbAn7krVFyEMdVzbhbzifgo6BGEjBEN4LVHJocBrzhBCc/rel-reg-meta-evidence.json": {
+      "title": "Address Tags Query (ATQ) Registry enabled badges",
+      "description": "A List of lists related to Address Tags Query (ATQ) Registry"
+    },
+    "QmbBMM9vcWyRdv9NkjVfDsuCtLBSA8p8K4Qz7YoeM2USc9/rel-reg-meta-evidence.json": {
+      "title": "Metamask Snaps - \"Seems Secure\" list enabled badges",
+      "description": "A List of lists related to Metamask Snaps - \"Seems Secure\" list"
+    },
+    "QmbFLNXLj1hUVnKoVbCNbd3uYGj91bCd6q9BovvJLogryi": {
+      "title": "asdsda enabled badges",
+      "description": "A List of lists related to asdsda"
+    },
+    "Qmbet6Fp7dRPLGSsxPgdSYoJKasP9QmDhWgWnnF1eu1GQL/reg-meta-evidence.json": {
+      "title": "Registry of unfinished memes",
+      "description": "A 'joke' bounty system, where no meme challenge is actually meant to get onto the list.",
+      "logoURI": "/ipfs/QmWEjbFe7s5vewGAPYJBm1NLfeQLhPLj8Yk1Wwskz26aQa/dogecoin-logo.png"
+    },
+    "QmbiUZbyXcRB168E6pffoaYbDPTqCcufDQkUzJHKk3Ksnc": {
+      "title": "Certified RWA Building",
+      "description": "This badge proves that the tokenized building (RWA) has passed the certification standards",
+      "logoURI": "ipfs/QmRciQxvhRoQ5KCDdHXA96JPxXPSxzPmJtPEHxxRgCU8Xg"
+    },
+    "QmbmUnRZGnXFnwSCQ3i96QCWQ6EvHhMBVPoCQw2MatEstV/rel-reg-meta-evidence.json": {
+      "title": "Test: Registry of Metamask Snaps enabled badges",
+      "description": "A List of lists related to Test: Registry of Metamask Snaps"
+    },
+    "QmbosPjuiE7vXUc1V3a42jXeigC9GZdHfd84bnZ8bEWhok/rel-reg-meta-evidence.json": {
+      "title": "Certified Organic Products enabled badges",
+      "description": "A List of lists related to Certified Organic Products"
+    },
+    "QmbrGSWGGBNCuaMgG9pXguREhBZSQBytRHLHpVNsS86jw7/rel-reg-meta-evidence.json": {
+      "title": "List of known addresses of dApps (test) enabled badges",
+      "description": "A List of lists related to List of known addresses of dApps (test)"
+    },
+    "Qmbyjjrijk8e5QMFiwxBV8YdtP1TsJSpGUtmvgKSUJQquK/reg-meta-evidence.json": {
+      "title": "ClaimVerify",
+      "description": "ClaimVerify is a decentralized registry designed to enhance transparency and trust in the insurance industry, by providing a verifiable record of insurance claims.",
+      "logoURI": "/ipfs/QmSptjPizVCzEjzvYSpMjkRbHGEUEuaR9xGcgasxx6Rs4t/logo-transparent.png"
+    },
+    "Qmc2ySRLfmhBJwUB1jkMwFpJJxCFoRTCQyhrBihLpGUrzz": {
+      "title": "Milo Beats Spotify",
+      "description": "Spotify Ownershola hola hola hip Badge",
+      "logoURI": "ipfs/Qmbcr1h49SihTC6iU1iEyNrEsBxHpt5HQfhjHi1qkZBjh6"
+    },
+    "Qmc3T3ZCRt4SnW4KBzxPpE8dNY9gays6fkiV7sWpoxwQKH/reg-metaevidence.json": {
+      "title": "Kleros Tokens",
+      "description": "A list of tokens and their contract address across various blockchains",
+      "logoURI": "/ipfs/QmZ5VC8FHMjs92yQEn9dnJottspM5JUbJUkPtno1hPPYks/t2cr-logo.974d9285.png"
+    },
+    "Qmc4wf2DWD5RP1W4FN6KXSCKoC8GunKb4x493RHj7fUaY3/rel-reg-meta-evidence.json": {
+      "title": "TB-Test enabled badges",
+      "description": "A List of lists related to TB-Test"
+    },
+    "QmcGF8Au4Z7QzuwXFF1rzSJyTcKDQpoXUh8h7T8U2ZQkPa": {
+      "title": "Seer Markets",
+      "description": "Registry of verified Seer markets",
+      "logoURI": "/ipfs/QmckmpMuWGiGHCzbYgPqLPcCvLDj4YDPRZB63p7VaAjrbB/seer-logo-2-.png"
+    },
+    "QmcLx3oAeyvbbbuafXQ84MEDmNzdtUWceeYheCqQrdd3DM/reg-meta-evidence.json": {
+      "title": "Worst NFTs",
+      "description": "the worst NFTs",
+      "logoURI": "/ipfs/QmULVLJySB7pPbWmBwvqgYioobki9tTUZszg4jGNgzM1kb/thebest.jpeg"
+    },
+    "QmcNnkzPE1ob9EMfB6rbVwjyyWeuvvsMFMzRbayAZ4KEJh/rel-reg-meta-evidence.json": {
+      "title": "The Registry enabled badges",
+      "description": "A List of lists related to The Registry"
+    },
+    "QmcVBSfci62WmBm2RnAmJP7UZmTZDKoCnb3HFgq7fwCQht/rel-reg-meta-evidence.json": {
+      "title": "Address Tags enabled badges",
+      "description": "A List of lists related to Address Tags"
+    },
+    "QmcXJd9aygocdwSJeKTtDwhHjsoZ2WAHzWPNkvNZSB4r98": {
+      "title": "Barbara",
+      "description": "Artista, Let's start with the look and feel of your badge, so please complete the following form until you are happy with how your badge is going to looks like.",
+      "logoURI": "ipfs/QmNxsSNHYyCUjxzTpNvauwqv94W4XKhBycfuqhAMqnqxKr"
+    },
+    "QmcfoFJBEHgLxyPhL9UxzJ64y5AXeSZrDbt2kz8TTcvVLX/rel-reg-meta-evidence.json": {
+      "title": "Worst NFTs enabled badges",
+      "description": "A List of lists related to Worst NFTs"
+    },
+    "Qmcfr6aikQw5gEZnmXcXyHt9rzEbBQaGdqCRmxnyaartP5/reg-meta-evidence.json": {
+      "title": "Trustworthy Politicians",
+      "description": "This TCR will allow for the evaluation and classification of politicians based on their level of credibility, using objective evidence such as public records, fulfillment of promises, ethical reports, and transparency.",
+      "logoURI": "/ipfs/QmXQTCV6XWNLJCdmJmmoDVD6ZqYKmKa2p5pFfSQhucbeCY/logo.jpg"
+    },
+    "Qmcii66NasPrzGV5hJAXGwBzjWjnBLn7nL2Yx4qi41iaDc": {
+      "title": "Incubator Progam by MEC",
+      "description": "This badge certifies that you participated in the Incubator Program by MEC",
+      "logoURI": "ipfs/QmTcqckCvGMbyTDvzqRJXwvPEo6iQCtYSTN3Xzu9uRSfSJ"
+    },
+    "Qmco49dKWAmDCWr1BrmWxhzRxiLGso6teEwx8orUcJ3gu2": {
+      "title": "A-\"Leo\" Messi fan badge",
+      "description": "This badge certifies that the user is a trully fan of Messi but in ZK",
+      "logoURI": "ipfs/QmVH9JBnK6CyomPyU1SEJg3pK7dhscgzek1Qfm2awLDmfV"
+    },
+    "QmcrFihUyAcANvgA5cKwCgJkgLay5Un3BtZ7t3CAdMj5YR/reg-meta-evidence.json": {
+      "title": "UFO Sightings",
+      "description": "A collection of UFO sightings",
+      "logoURI": "/ipfs/QmfPZnPkbCb1gXJdsA4HengMrmD7wyfzfy83dPXxjE7gMd/ufo.png"
+    },
+    "QmcwyU18GyqDNKLpZghqTz9qZfM3m4zSUYqyY347XKJM6N/reg-meta-evidence.json": {
+      "title": "Tokens registry (v2) - alpha version",
+      "description": "A verified registry of tokens for blockchain explorers, wallets and DEXes.",
+      "logoURI": "/ipfs/QmPFoZGxktSmHPoHdVumZVCsumoaHx3rkv9DYiUgUxYyM7/tdldw-hu-400x400-1-removebg-preview.png"
+    },
+    "Qmd3a3ecg2Y5K22wirYggJzzZc8RsfKansx1WBPZpumhvi/reg-meta-evidence.json": {
+      "title": "Vacancy Vault",
+      "description": "A curated list of job opportunities and employers within the Web 3 ecosystem.",
+      "logoURI": "/ipfs/QmS9QZYNWQEXaKeVG9VuU2Lzv3NZSK8kQPsD6gC9PLkSPD/vacancy-vault.png"
+    },
+    "Qmd4E224xQACCSZPcMDLU63FshtWH64i2a3BoMR9kLFBMP/rel-reg-meta-evidence.json": {
+      "title": "ClaimVerify enabled badges",
+      "description": "A List of lists related to ClaimVerify"
+    },
+    "Qmd5FKa7oF3uofoFA1NtieU2Pm8TAHqQjAEFbkhMfsw6Gm/rel-reg-meta-evidence.json": {
+      "title": "Authentic NFTs enabled badges",
+      "description": "A List of lists related to Authentic NFTs"
+    },
+    "QmdEU2r6ooiEkfxgTeefgyYzMrcv1wcfxe3CtHnmPaTCGX/reg-meta-evidence.json": {
+      "title": "Certified DeSPs",
+      "description": "Certified security providers for DeFi projects",
+      "logoURI": "/ipfs/QmRsYi5YfRZrrLyNrgW2dkBg4J5M1m49XkBpCDkp7bhv4X/logo-cdsp-lowq.png"
+    },
+    "QmdLFrD1eyVB8CyG9tN3LLEjbLXMb8ZeHsWdWhCBMJTNGo/rel-reg-meta-evidence.json": {
+      "title": "Cerberus Audit enabled badges",
+      "description": "A List of lists related to Cerberus Audit"
+    },
+    "QmdNSay2ufK9Ja72rXDd2wzg3Z2W2g4imdNWF2Ve8fscbQ/reg-meta-evidence.json": {
+      "title": "Address Tags",
+      "description": "A list of public name tags, associated with Ethereum mainnet contract addresses.",
+      "logoURI": "/ipfs/QmP1hU1LaheHVGxcSJWg5sC3g25vs5snam3qP1bVVAa7mT/address-tag-2-1.png"
+    },
+    "QmdP6YGw5bjJAhm7LbhCMWn9wx97j4Nj3ynKkgQHzHhpf8/rel-reg-meta-evidence.json": {
+      "title": "Address Tags Query Registry enabled badges",
+      "description": "A List of lists related to Address Tags Query Registry"
+    },
+    "QmdbGDq1Gr8WduHGLpgzxNdvv6hqR8xfE3jmCqwZnCns1u/reg-meta-evidence.json": {
+      "title": "Kleros Tokens",
+      "description": "A list of Tokens living on the blockchain",
+      "logoURI": "/ipfs/QmZ5VC8FHMjs92yQEn9dnJottspM5JUbJUkPtno1hPPYks/t2cr-logo.974d9285.png"
+    },
+    "QmdfCSmRV9r1unxcirqHtTRNUGkCcPX5HQrKQY8Mmnu637/reg-meta-evidence.json": {
+      "title": "Official Project Registry",
+      "description": "A list of projects with Web3 and Web2 information for safe interaction.",
+      "logoURI": "/ipfs/QmVVfsaJApLWqiZZmbba48hShzjaVCvhBM6gH1TSkhP6Un/default-removebg-preview.png"
+    },
+    "Qmdfi9vAvLPpbmyqz23V5jTjvGrLyxaLiMQqQXTdghheta": {
+      "title": "Address Tags Query (ATQ) Registry",
+      "description": "A list of verified modules that can be used to retrieve address tags for ranges of EVM contracts in one go.",
+      "logoURI": "/ipfs/QmStzoYeV9nfJSms47TLo9f5t1fVrxjvvRf9GspCduXhE4/kleros-symbol.png"
+    },
+    "QmdhC13R5vus2K9KzrpXFZhC2uep2JSb3Y43AT75JZxDic": {
+      "title": "Address Tags Query (ATQ) registry",
+      "description": "A list of verified modules for programmatically retrieving large numbers of Address Tags for EVM contracts",
+      "logoURI": "/ipfs/QmchdA5tQLAYzximbXBjzSgbjkQFNcpzQjRiCEvRiqfXt6/icon-2-.png"
+    },
+    "Qmdio8ZfMFUsQ2wQR3EFSCwCfgpNksVXU9imwjdkMaGn87": {
+      "title": "Address Tags Queries (ATQ) registry v0.2",
+      "description": "A list of verified modules that can be used to retrieve address tags for ranges of EVM contracts in one go.",
+      "logoURI": "/ipfs/QmTYC784wxD1ruxydVRbePVJ6fqzUKgKaRtjVodNyfwofw/kleros-logo-white.png"
+    },
+    "QmdtT3gupJnavSrtyB1fp4r9h1GVSNcYGy3WJxR36X5uPz/reg.json": {
+      "title": "Best NFTs",
+      "description": "A list of only the best NFTs",
+      "logoURI": "/ipfs/QmZaUb7QUvYJDtVqDK8mgcLsmTyoTQuAXMYr6A7LLNU4UC/canvas.png"
+    },
+    "QmeBsCJBUuBkeZRpxV18TVqbUFA22yPCYUq48EE56a5Cjq": {
+      "title": "DAO Contributor",
+      "description": "This Badge proves that its holder contributed to the DAO",
+      "logoURI": "ipfs/QmZik3GAVvpPEoJtFdZmx2YH8ipPmKJT7d32yCeGSiJCwS"
+    },
+    "QmeEVJjKLGaPfSniqj5qBCpmbKFNq4VSWk13quwRXQB1qt/reg-meta-evidence.json": {
+      "title": "LayerZero Sybil Bounty Program",
+      "description": "A list of verified Sybil addresses of the LayerZero bountry program",
+      "logoURI": "/ipfs/QmZn7HGKkkMJnSRWPgL2T2u4FCv2ucKULjFmQUo8G7BqAQ/layerzero-emblem.png"
+    },
+    "QmeL2wDHgLAX7S3guGn4YFyRaX8sCufvQQNkBJgEKSZN5n/reg-meta-evidence.json": {
+      "title": "Test PM",
+      "description": "A list of images for markets and outcomes.",
+      "logoURI": "/ipfs/QmSr4WgTPcFbhyzzeYcs8xgXTkYMJwYbsCoSvKvrQ9RoCc/new-project-2-.png"
+    },
+    "QmeMyev8aF2rdgU4jHqs2pxJ5DDy9sB7rs9f6o7u7xzP5N/reg-meta-evidence.json": {
+      "title": "PoC NFT blacklist (Classic Curate2)",
+      "description": "PoC NFT blacklist (Classic Curate)",
+      "logoURI": "/ipfs/Qmf8gAKjQGePxMUv3GYxwEyxAKTkij4zT6GnEHXAqMsKv4/secured-by-galxe-passport2.png"
+    },
+    "QmeQCgeD9RgmVjeNK6pheVkSic94PuVEPZzANkR3BLzCWM": {
+      "title": "Verified Registries",
+      "description": "This is a registry of registries deployed on Ethereum Mainnet",
+      "logoURI": "/ipfs/QmZa8NwrV4E7A8EvRy53YmpAmvZyJ2Bx4o8Jb7CEkyQa16"
+    },
+    "QmeQRYREtuWmu5ABJJqnra9BT9G8vBsGpRhsF8s5JmPZJJ/reg-meta-evidence.json": {
+      "title": "Kleros Tokens",
+      "description": "A list of tokens and their contract addresses across various blockchains.",
+      "logoURI": "/ipfs/QmZ5VC8FHMjs92yQEn9dnJottspM5JUbJUkPtno1hPPYks/t2cr-logo.974d9285.png"
+    },
+    "QmeTazfkmfJCVvm7KjeMtZVHBq2M3ziZPJenYRee1r5iFZ/rel-reg-meta-evidence.json": {
+      "title": "Red socks enabled badges",
+      "description": "A List of lists related to Red socks"
+    },
+    "QmeW932TaZHf46Zk7eJemdvS6v5XYRhSm3wbjD82njHX8r/rel-reg-meta-evidence.json": {
+      "title": "Address Tags enabled badges",
+      "description": "A List of lists related to Address Tags"
+    },
+    "Qmehzc2v3Hvxvg5hiQ8jbpHthVR1mWD7PRfecx4zSGUWjn/reg-meta-evidence.json": {
+      "title": "List of known addresses of dApps (test)",
+      "description": "List of known addresses of dApps (test)",
+      "logoURI": "/ipfs/QmQWT6pPMihcD14agjiCfp8qsxoz2TdtvNLjrBqWMHxHkt/xc-luggage-loop-red.png"
+    },
+    "QmetvvrXybEZS4NuhhNepYfW7u94LefBveo4jNt9vhrf9L/rel-reg-meta-evidence.json": {
+      "title": "List of Web3 auditors enabled badges",
+      "description": "A List of lists related to List of Web3 auditors"
+    },
+    "QmevhcvNEMRDpUjJzspUaEUx3oy7LE71znTxLWupw17BRh/reg-meta-evidence.json": {
+      "title": "PoC NFT blacklist",
+      "description": "A registry to block NFTs on Curate",
+      "logoURI": "/ipfs/QmcGTuJrL72aPZmxa2RQQ6QU9AHWdXR8iDTJpP7zxEskLC/juror-onboarding-badge2.png"
+    },
+    "Qmevki2RhkmkMyQfTjrtuUhF8TBC1B1fbrkLuk96LueLni/reg-meta-evidence.json": {
+      "title": "List of known addresses of dApps (test3)",
+      "description": "List of known addresses of dApps for a security use case.",
+      "logoURI": "/ipfs/QmQWT6pPMihcD14agjiCfp8qsxoz2TdtvNLjrBqWMHxHkt/xc-luggage-loop-red.png"
+    },
+    "QmewBVTnyq3eHu1WSADcRmzeEjNabCwHAFsvy9Tzb1oxNR/reg-meta-evidence.json": {
+      "title": "zkSync Sybil Address List",
+      "description": "A list of sybil address for the zkSync Airdrop",
+      "logoURI": "/ipfs/QmNyoonLfmXow9FM1FqqNsksHf5zmEp7jwyvfSszKKWwoo/full-logo-zksync-black.png"
+    },
+    "Qmf3a4324dtw6v155P7oKNiPb2eXyhKaPjXQ7dSQHfAxjW/rel-reg-meta-evidence.json": {
+      "title": "Address Tags enabled badges",
+      "description": "A List of lists related to Address Tags"
+    },
+    "Qmf3i5xSNrmH9yRC8PaAmkJoYNHitJemDCNQtuSkQNUEXq": {
+      "title": "Udemy's solidity dev course",
+      "description": "This Badge proves that its holder completed a solidity development course on Udemy.",
+      "logoURI": "ipfs/QmdNYVPzXAwTwKvhfuS1JXpA5EwSt2wJutWQZC6Jkdnoug"
+    },
+    "Qmf6nVPNUVxLi8ZWvPoAfPa2xjqKMPbqVYC2wEPZERKjZo/reg-meta-evidence.json": {
+      "title": "LayerZero Sybil Bounty Program",
+      "description": "A list of verified Sybil addresses of the LayerZero bountry program.",
+      "logoURI": "/ipfs/QmZn7HGKkkMJnSRWPgL2T2u4FCv2ucKULjFmQUo8G7BqAQ/layerzero-emblem.png"
+    },
+    "QmfBexVjMv7YvH1z2VhFtc2ATccPZb6cN1HresemFZLog8/rel-reg-meta-evidence.json": {
+      "title": "Address Tags enabled badges",
+      "description": "A List of lists related to Address Tags"
+    },
+    "QmfEC7DPCBeye4ENFkGG4tT7CdQ3B8orsagpFjm8qgieEY/reg-meta-evidence.json": {
+      "title": "Contract domain names (max 10 addresses)",
+      "description": "A registry of batches of maximum 10 contracts addresses that are accessible through the respective domains names. Built for Ledger Connect.",
+      "logoURI": "/ipfs/Qmcu1TjPRTepEfPXjNN66dcLxwvSL1nZssghNt9xwsnkEg/ledger-black.png"
+    },
+    "QmfReB56pUMyQkuYA79aiy1iHPVzapBuEP136AZcWmv5QL/reg-meta-evidence.json": {
+      "title": "Test",
+      "description": "Test",
+      "logoURI": "/ipfs/QmSL9UBiqpfBXbcATKjvahVrFJWGX6YnysMqXeg1qnVDwT/5320f4c8-5933-4add-92d7-e2527dff544d.png"
+    },
+    "bafyreifisvgel7aawtqdc3wgy7bl74ver7td3ztomkgjecewjen4oxrxoe": null
+  }
+}

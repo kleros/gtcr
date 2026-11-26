@@ -356,7 +356,7 @@ at row size included.
   it is a bottom sheet of fixed height (92dvh). The section control keeps its own width.
 - The governor's dialog (`pages/address/governance.tsx`) has four sections in a small
   SegmentedControl: Court, Deposits (Stake Curate: Stake), Timing & appeals, Advanced. A closed
-  section is hidden, never unmounted, so typed values and an armed governor transfer survive a look
+  section is hidden, never unmounted, so typed values and a change in review survive a look
   elsewhere; a newly opened one starts at the top of the body.
 - What a parameter means sits behind a "?" beside its label (the shared Tooltip; under the label on
   a touch screen), in the factories' own words. Only what cannot be undone stays in view under a
@@ -367,6 +367,44 @@ at row size included.
 - A save that leaves the arbitrator, the court and the jurors alone sends them back exactly as the
   chain holds them (`arbitrationExtraData` in `governance-params.ts`), so a policy-only change
   never rewrites a list's arbitration settings, whatever its arbitrator's extra data looks like.
+  A MetaEvidence file left alone goes back as the very string the list holds (an old `ipfs://`
+  form or a stray space included), so it is never read again and never blocks a court change.
+- **Nothing leaves without its review** (#376). Each field has one button, "Review change": it
+  runs the checks and the simulation, then opens the review under the field
+  (`governance-review.tsx`), the only place the change is sent from: each value before and after,
+  as people read it and as stored ("0.5 xDAI → 1 xDAI", then the wei), what the change does to
+  what is under way as the contracts read it (`paramEffect`, `arbitrationEffect`: a deposit taken
+  when a request is made touches only new ones; the challenge period, the challenge deposits and
+  the appeal stakes reach those already open; a Stake court or policy reaches listed entries after
+  the list's cooldown), and the mode's own actions: Sign in wallet, Propose to the Safe, or
+  Download Safe file and Copy calldata, beside Back. The second click of a double-click, or a click
+  in the first 400 ms, never confirms. A change proposed to a Safe is not proposed again until a
+  value changes. The court field's change sends its untouched values back with it, and a review
+  stays open as long as the governor likes: the chain is read again once they choose, and if the
+  settings changed meanwhile nothing leaves (no signature, file or copy) and the form starts again
+  from the live settings. Copy calldata keeps the click's permission through that read (a
+  `ClipboardItem` given the text as a promise: Safari drops a plain copy after a network read).
+- **A new governor is read before its review** (`governor-target.ts`): a Safe is named with its
+  threshold ("2 of its 4 owners"); a list (anything with its own governor and arbitrator) is
+  refused, since it never sends a call; any other contract, and an address it could not read, is
+  allowed with a warning. "Not a Safe" takes the contract's own no (its views revert or return
+  nothing): views the network dropped, or a multicall that failed as a whole, say it could not be
+  checked. No code at all says a Safe must exist on that chain itself (two Gnosis
+  lists name the Ethereum Kleros Governor, which has none there). The transfer's confirm is the
+  danger button, "Sign the transfer".
+- **The policy** is the Policy (PDF) row of the court field, the factories' `UploadField`
+  showing the live policy. A new PDF is written into the files the MetaEvidence fields hold (the
+  live ones, or files of the governor's own, such as one with a column added: never dropped for
+  the live ones), each copied with only its `fileURI` replaced (never rebuilt from the factory's
+  template), uploaded once and read back, then put in the fields; Remove (offered only for a new
+  PDF) puts back what the fields held before it. Whatever files are sent, a new one keeps its live
+  file's columns (a column may be added after the last, as Kleros Tokens added "Website"), the
+  registration and clearing files name one policy, and a new policy must be an IPFS path that
+  opens from the gateway.
+- **Another arbitrator.** Courts and fees are Kleros Court's, so a list on another arbitrator (9 of
+  20 Gnosis Stake lists, 7 Standard ones) gets a note naming it instead of the court picker, and
+  its extra data goes back as it is; on Standard the arbitrator field takes only Kleros Court
+  here. The profile's rows say "Arbitrator 0x… (not Kleros Court)".
 - **Update list parameters.** A list's governor, once their wallet is connected, sees this
   secondary block button (layers icon) under the list's main action, on both list kinds and
   whatever chain the wallet is on (`components/curate/list-governance.tsx`). Whether the wallet
@@ -374,7 +412,9 @@ at row size included.
   the profile's dialog, which offers the switch to the list's chain before anything is signed.
   When the governor is a contract (a Safe, most Kleros lists), any connected wallet sees the button:
   the dialog simulates each change as the governor and hands it over as a Safe Transaction Builder
-  file or as calldata, for the Safe's owners to sign there (`utils/safe-transaction.ts`). A Safe
+  file or as calldata, for the Safe's owners to sign there (`utils/safe-transaction.ts`). The file
+  names the function and each value, so the Builder shows them rather than hex; it keeps the
+  calldata only for a call whose values the Builder could not encode back to exactly it. A Safe
   connected as the wallet proposes the change, and the dialog says to confirm it in the Safe.
   Nothing is drawn while the governor or the list data the dialog reads with is loading, so it
   never appears and then vanishes; everyone else sees nothing, and it goes as soon as a read names
@@ -526,13 +566,14 @@ way (dashboard, Browse, registry pages, the profile, the landing page).
   from coin to dollars under the reader; a later answer fades in. The feed and the age of its
   answer are in the tooltip the figure already carries. The one rule lives in
   `pages/dashboard/board-rows.tsx` (`UsdLead`, `CoinAmount`, `usdFormatFor`). Per coin, only the
-  collateral behind the requests open for verification carries dollars; the bounties and what has
-  passed through Curate are totals across coins (below). Never a figure somebody is about to
-  sign for (an entry page, a launch or stake deposit, a board or ruling row): there the coin amount
-  is the obligation. A token that never answered a symbol is unitised by its shortened contract in
-  Geist Mono, never left bare. The prices are read on chain in their own query, never inside the
-  saved load, which is repainted up to a day later.
-- **Two totals across coins: what has passed through Curate, and the bounties** (rounds 14 to 16,
+  collateral behind the requests open for verification carries dollars (in the Submissions panel's
+  head, its exact coin amounts in the figure's tooltip); the bounties, what has passed through
+  Curate and, in the hero only, that same collateral are totals across coins (below). Never a
+  figure somebody is about to sign for (an entry page, a launch or stake deposit, a board or ruling
+  row): there the coin amount is the obligation. A token that never answered a symbol is unitised by
+  its shortened contract in Geist Mono, never left bare. The prices are read on chain in their own
+  query, never inside the saved load, which is repainted up to a day later.
+- **Totals across coins: what has passed through Curate, and the bounties** (rounds 14 to 16,
   owner: "remove the reference to crypto at all in the landing", "calculate always at today's
   price", "add the appeals costs and challenge deposits … it passed from our contracts but not
   permanent", "smashed also somewhere in the dashboard"). `pages/dashboard/transit.ts` adds every
@@ -550,7 +591,10 @@ way (dashboard, Browse, registry pages, the profile, the landing page).
   kept 30 minutes. That sum is shown as "Passed through Curate" in the dashboard's hero (since 20
   Nov 2026; in the Self-sustaining mechanism in round 19, beside Entries in rounds 15 to 18) and on
   the landing page. The bounties won are the other total, on both pages (round 16; beside it in the
-  hero since 20 Nov 2026). Every other money figure keeps the per-coin rule above.
+  hero since 20 Nov 2026). The dashboard's hero adds a third under them since 26 Nov 2026: the
+  collateral up for grabs now, drawn only when it is whole (every chain answered, every window
+  placed, every coin priced; see The money in the hero). Every other money figure keeps the
+  per-coin rule above.
 - The all-time ledger pages the **retired Classic lists'** resolved disputes too (2020-2022): they
   are the protocol's history, so they count in the bounties (counts and amounts) and in the entries
   ever curated, where the first ring's disputed requests count them too (round 4: "when counting
@@ -642,43 +686,58 @@ way (dashboard, Browse, registry pages, the profile, the landing page).
   only of a load it has, recent and read without error: before the first load "Connecting to the
   indexers" on a still dot; a read that failed with nothing to show "Indexers not answering"; an
   older load or a failed refresh "Not live" with its age, as Browse's pill does.
-- **Open for verification** is not drawn at all when there is no bounty up for grabs (round 10).
-  It opens the board's section with no box (round 6), centred on the page. There is no "Happening
-  now" heading (Fortunato, after round 19): its own title is the section's, a 30px section title
-  centred like the Self-sustaining mechanism's, with the blue live LED beside it. Under its title, two large figures side by side, parted by a hairline, the count open now and
-  the bounties, dollars first with the coin smaller under them, labelled "Bounties up for grabs" in
-  the accent. Under the pair, labelled "Lists with bounties up for grabs" (round 7), the lists
-  holding those requests as tiles of one width in a centred row (raised glass, 14px radius): the
-  list's logo and name over its count of open requests, a link to them; past the top four, the
-  rest as one tile. With nothing open the count says how many requests only wait to be executed,
-  and the Stake lists that stay open take the tiles, or one link to them.
+- **Open for verification** (`pages/dashboard/open-for-verification.tsx`) titles the board's
+  section; there is no "Happening now" heading (Fortunato, after round 19). Since 26 Nov 2026
+  (option E of the harmony review: the centred strip it replaced was the one part of the page off
+  the column and off its label grammar) it is the page's own section heading, left-aligned like Most
+  active, with the blue window LED beside it and its state lines on its right (a chain whose
+  requests did not load, "Checking challenge periods…"); its anchor `#open-for-verification` is
+  where the hero's "Up for grabs now" figure leads. The figures are in the Submissions panel's head,
+  opposite the Disputes panel's "In court" and "Rulings", the same tally: "Open now" (the count,
+  with a tooltip on what anyone can do about it) and "Up for grabs" (the collateral, dollars first
+  per coin and marked `≈`; the exact coin amounts, their chains and the price feeds are in its
+  tooltip). With windows that could not be read the count is "Unchallenged" and there is no
+  collateral figure; a count only failed requests could explain is "—". Under the head, when two or
+  more lists hold requests, the lists are chips that filter the column (round 7's "lists with
+  bounties up for grabs"): "All n", then each list's logo, name (cut past 16em) and count, most
+  first, past the top four the rest as one chip; pressed, a chip wears the accent's soft fill. They
+  wrap beside the Disputes panel and, at 520px and under, are one row that swipes sideways, its
+  right end fading out. A list's chip shows its rows among those loaded (the requests closing
+  soonest) and counts all of its requests: "+n more" expands them, and "All n in <list>", always
+  drawn under a chosen list, leads to the list's own page; a list none of whose rows are loaded says
+  its requests close later. With nothing open there is no heading and no Submissions column (round
+  10: "when bounties up for grab are 0, just hide everything").
 - **Whole rows only.** A board column never cuts a card and never scrolls inside the page. The two
   columns share a cap snapped to the submissions' whole rows, the one nearest 760px (776px, six
   rows, on / at 1440). The submissions draw the rows that fit whole, counted over the chrome they
-  finally draw under them ("+n more", or "All n by list" when every loaded row fits), and count
-  again when their room or rows change size; the rulings beside them draw only whole rows too.
+  finally draw around them (the list chips over them; "+n more", or "All n by list" when every
+  loaded row fits, "All n in <list>" for one list, under them), and count again when their room
+  or rows change size; the rulings beside them draw only whole rows too.
   Below 900px the submissions show their first 6 rows.
 - **Expanding lifts the cap.** Once the reader expands either column the page grows. The other
   column fills the new height with whole rows while it has rows, and once it has none it keeps its
   own height and rides beside the long column (sticky under the app bar), never a hollow box.
 - **Nothing open, no empty box.** With nothing open and nothing failed, the submissions column is
-  not drawn and the Disputes panel takes the width, two rows to a line, its first page even so no
-  cell is blank; an odd last row spans the line. Phones stack.
+  not drawn, nor the Open for verification heading (the section keeps its 80px opening), and the
+  Disputes panel takes the width, two rows to a line, its first page even so no cell is blank; an
+  odd last row spans the line. Phones stack.
 - Tooltip triggers are their own text's width, so a bubble opens over what it explains.
 - **The chart** (round 7) shows every mainnet: the dashboard's chain switch is hidden for now and
   the page is always "All chains", unnamed. Its switch is the range, `30D · 6M · 1Y · 3Y` (round
   8: three years is the longest, which starts after a company wallet's bulk submissions of 2023
   without singling out any address): 30D per day from the page's own load; 6M and 1Y per week, 3Y
   per month, from the whole history (Standard requests and challenges, Stake submissions and challenges; Classic left out),
-  read in pages after the page's own load, three at a time, and retried as a whole if a chain
-  fails, never drawn with a hole. The current bucket is drawn dashed. It opens on 6M (round 16:
+  read in pages alongside the page's own load, in requests of their own (the indexer's background
+  lane, so they never hold that load back), each page asked twice before the read fails as a
+  whole: never drawn with a hole. The current bucket is drawn dashed. It opens on 6M (round 16:
   "the standard timeframe should be 6m"), so the page's first chart waits for the history read.
+  What has passed through Curate is read the same way, alongside the load.
 - **Top curators follow the chart's range** (round 8: the date filter is for both), ranked by
   requests plus challenges over it, with their bounties won all time; five of them, filling the
   column beside a 240px chart. The chart's head is one row right above it: what it counts and its
   legend on the left, the range switch on the right (round 9), under the figures.
-- **Self-sustaining mechanism** (rounds 16 to 19): no box ("in a box is cringe"), like the Open for
-  verification band, and no sentence under it (round 19). The title centred over the two rings
+- **Self-sustaining mechanism** (rounds 16 to 19): no box ("in a box is cringe"), and no sentence
+  under it (round 19). The title centred over the two rings
   together (round 18: "not a big fan of separating the gauges"); on a phone they share one line.
   Each ring carries a tooltip built from its own counts. No line names the Classic lists (round 7).
 - **The money in the hero** (`HeroMoney`, since 20 Nov 2026; beside the rings in round 19): Passed
@@ -691,6 +750,28 @@ way (dashboard, Browse, registry pages, the profile, the landing page).
   prices, compact ("$73.3K"), with no count of bounties. Where any coin has no current price, or a
   token's decimals never answered, there is no honest total: the coins' own amounts are listed on
   one line instead. A chain whose rulings did not load is named under them.
+- **Up for grabs now** (`pages/dashboard/open-bounty.ts`, 26 Nov 2026, option H1 of the harmony
+  review): a third figure under Bounties won, in the same format (a one-line label with a help
+  icon over a compact figure; the label led by the blue window LED, its tooltip "Deposits on
+  requests anyone can challenge now."), what is waiting to be won beside what has been. The figure
+  is a link to `#open-for-verification`, its arrow faint until hovered or focused. It is the
+  collateral behind the requests open now, in dollars, added across coins like the hero's totals,
+  and drawn only when whole: every chain answered and its lists loaded, every request placed in
+  its window (or the windows' second read failed: no figure), no read at its page cap, and every
+  coin priced (it waits for a late price rather than drop a coin). It shows from $2,000; a browser
+  that saw it open keeps it open down to $1,500 (localStorage). Rebuilt hourly over the year to 25
+  Nov 2026, the pool sat at or above $2,000 86.5% of the time (median $3.45K) but moves in
+  batches, so a plain cutoff would have come and gone about 2.5 times a week; the $1,500 floor held
+  it 93% of the time and changed it about 0.7 times a week. The choice is made once a visit, in the
+  frame the pool is first whole: the number keeps updating, the figure never vanishes under a
+  reader, and a later read that comes back partial takes it away. It is read from a live load only
+  (`isLiveLoad`): the load an earlier visit saved (up to a day old, painted at once) waits for its
+  refresh, and a refresh that fails leaves the figure out. While the bounties load, or that
+  refresh is still coming, a figure likely to open (the last visit did not close it) holds its
+  place as a skeleton. With
+  three figures the stack's gaps close from 24px to 18px, so it fits beside the title (about 323px
+  against 331px at 1440) and the hero keeps its height; at 820px and under it is a row across both
+  totals, label left and figure right, behind a hairline, so their figures stay level.
 - Top curators sit beside the chart (round 7), in the same panel behind a hairline, 320px wide
   (260px below 1100px), each with an LED bar of their activity against the top curator's
   (requests in the accent, challenges in `contested`) and their counts on one line; below 900px
@@ -747,6 +828,36 @@ way (dashboard, Browse, registry pages, the profile, the landing page).
   funding; Stake's withdrawal); an empty rail takes no room. On Stake, the court record and the
   rail's first panel end level when their resting heights are within 64px; further apart (the jury
   open) each keeps its own height.
+- **Evidence text** (`components/curate/evidence-text.tsx`, both histories): text that can pass six
+  lines on a phone (over 240 characters or 6 lines) opens at six lines, with "Read all" only when
+  the clamp hides something (measured); shorter text is never clamped, so nothing in it is clipped.
+  A description with Markdown in it renders as CommonMark (`evidence-markdown.tsx`, a 36 KB chunk
+  loaded only then, as a background load: a tab on an older release keeps the page and shows the
+  text plain): no tables, raw HTML reads as the text it is, and indented code, setext headings and
+  link definitions are off, as plain evidence trips them. Headings are bold lines, every line break
+  shows, a bare URL stays whole whatever `*` or `_` its address holds (one that opens nothing, plain
+  http, too: it reads as written), links keep the plain text's
+  rules (https and ipfs:// only, through the external-link warning), a link whose words are not its
+  address is followed by its host (isolated, so a right-to-left override cannot reverse it), and an
+  image is a link, never loaded. Text past 5,000 characters, 200 lines, 200 of `*` `_` `` ` `` `[`,
+  100 quote or list markers, 8 of them opening one line, or 32 columns of indentation stays plain:
+  such shapes freeze or crash the parser (one line of `- - - …` ran 90 s), and real evidence peaks
+  at 4,459 characters, 59 lines, 30 signs, 16 markers and 14 columns.
+- **The evidence form takes Markdown** (the entry page's composer; the evidence, challenge and
+  removal dialogs). Its placeholder ends "Markdown works." and "Preview" (beside "Attach a file"
+  in the composer, beside the label in a dialog; a toggle, tinted while on) shows the description
+  through the history's own component, clamp and limits included: a sent piece cannot be changed.
+  The field stays mounted while hidden (its undo history, its height); emptying it, or a send
+  refused for the text, goes back to writing, with the caret in the text.
+- **Badges are retired** (2026-11-26). A Standard list no longer comes with a badges list: the
+  wizard has no Badges step, and the factory deploys the list alone, its connected list the zero
+  address (two uploads and one contract fewer). The 125 badges lists made before (96 Standard,
+  29 Classic) never took a badge, and since the redesign no page showed one. A badges list's page
+  reads as a list of lists with no submit button, its note saying badges are retired (until the
+  list's metadata says which kind it is, the button's place is held with nothing to press), and
+  its empty list invites no submission; the list
+  page links no badges list; governance still offers `changeConnectedTCR`, a contract setting, and
+  says nothing in Curate reads it.
 - The countdown ring's caption is the dial plus 80px wide, so each end's date and its UTC stay on
   one line; its footnote is centred on the dial. A settled entry's date block is top-aligned with
   the eyebrow.
@@ -776,6 +887,11 @@ way (dashboard, Browse, registry pages, the profile, the landing page).
   with a quiet "Clear form" text action styled as the factory review's Edit.
 - A wizard's action bar moves one step per click, never two on a double click: the next step's
   button can sit under the pointer (on phones the bar sticks to the bottom of the screen).
+- **Atlas takes 5 uploads a minute per wallet.** Deploying a list again uploads only the files that
+  changed since the last attempt (`utils/upload-once.ts`), so a deploy cancelled in the wallet goes
+  through when sent again at once. An upload refused over the limit says "Uploads are limited to 5
+  a minute per wallet. Wait a minute, then try again." (`isUploadLimit`), never Atlas's own
+  "ThrottlerException".
 
 ## Lists
 

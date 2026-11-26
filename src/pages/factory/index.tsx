@@ -61,7 +61,6 @@ import {
 } from 'components/curate/factory-shared-layout'
 import TCRParams from './tcr-params'
 import ItemParams from './item-params'
-import RelTCRParams from './rel-tcr-params'
 import Deploy from './deploy'
 import { LivePreview } from './preview'
 import { SafeImage } from 'components/curate/factory-shared-fields'
@@ -69,7 +68,6 @@ import {
   type FactorySection,
   itemColumnsProblem,
   itemSchema,
-  relSchema,
   tcrSchemaFor,
 } from './schemas'
 import { readStoredDraft, writeStoredDraft } from 'utils/stored-draft'
@@ -117,23 +115,7 @@ export interface TcrState {
   winnerStakeMultiplier: number
   loserStakeMultiplier: number
   isTCRofTCRs: boolean
-  relSubmissionBaseDeposit: number
-  relRemovalBaseDeposit: number
-  relSubmissionChallengeBaseDeposit: number
-  relRemovalChallengeBaseDeposit: number
-  relArbitratorAddress: string
-  relArbitratorExtraData?: string
-  relGovernorAddress: string
-  relChallengePeriodDuration: number
-  relItemName: string
-  relItemNamePlural: string
-  relRequireRemovalEvidence: boolean
-  relTcrPrimaryDocument: string
-  relSharedStakeMultiplier: number
-  relWinnerStakeMultiplier: number
-  relLoserStakeMultiplier: number
   columns: Column[]
-  relColumns: Column[]
   currStep: number
   /** The sub-step the wizard was on, restored after a reload. */
   visualStep?: number
@@ -142,13 +124,12 @@ export interface TcrState {
   chainId?: number
   transactions: Record<string, TransactionInfo>
   finished?: boolean
-  relTcrDisabled?: boolean
   /**
-   * A deployment sent and not yet seen mined: its hash and the addresses it
+   * A deployment sent and not yet seen mined: its hash and the address it
    * creates. A reload while it mines checks it again instead of offering to
    * deploy a second list.
    */
-  pendingDeploy?: { hash: string; list: string; badges: string }
+  pendingDeploy?: { hash: string; list: string }
 }
 
 export interface CachedFactory {
@@ -186,24 +167,15 @@ export const STANDARD_FACTORY_STEPS = [
     subitems: ['Fields', 'Item name'],
   },
   {
-    title: 'Badges',
-    description: 'Optional',
-  },
-  {
     title: 'Deploy',
     description: 'One signature',
   },
 ]
 
-export const formIds = [
-  'tcrParamsForm',
-  'itemParamsForm',
-  'relTCRParamsForm',
-  'deployTCRForm',
-]
+export const formIds = ['tcrParamsForm', 'itemParamsForm', 'deployTCRForm']
 
 type StandardFactoryVisualStep = FactoryWizardStep & {
-  kind: 'tcr' | 'item' | 'rel' | 'deploy'
+  kind: 'tcr' | 'item' | 'deploy'
   section?: FactorySection
 }
 
@@ -251,8 +223,7 @@ const STANDARD_FACTORY_VISUAL_STEPS: StandardFactoryVisualStep[] = [
     kind: 'tcr',
     section: 'custom',
   },
-  { title: 'Badges', componentStep: 3, groupStep: 4, kind: 'rel' },
-  { title: 'Deploy', componentStep: 4, groupStep: 5, kind: 'deploy' },
+  { title: 'Deploy', componentStep: 3, groupStep: 4, kind: 'deploy' },
 ]
 
 /** Whether a step's stored values still pass its own Next. */
@@ -268,8 +239,6 @@ const stepValid = (
         itemSchema.isValidSync(state) &&
         (state.isTCRofTCRs || itemColumnsProblem(state.columns) === null)
       )
-    case 'rel':
-      return state.relTcrDisabled !== false || relSchema.isValidSync(state)
     default:
       return true
   }
@@ -320,41 +289,12 @@ const useCachedFactory = (
     winnerStakeMultiplier: 100,
     loserStakeMultiplier: 200,
     isTCRofTCRs: false,
-    relSubmissionBaseDeposit: 1,
-    relRemovalBaseDeposit: 1,
-    relSubmissionChallengeBaseDeposit: 0,
-    relRemovalChallengeBaseDeposit: 1,
-    relArbitratorAddress: defaultArbitrator || '',
-    relArbitratorExtraData: defaultArbitratorExtraData,
-    relGovernorAddress: account || defaultGovernor || '',
-    relChallengePeriodDuration: 84,
-    relItemName: 'list',
-    relItemNamePlural: 'lists',
-    relRequireRemovalEvidence: true,
-    relTcrPrimaryDocument: '',
-    relSharedStakeMultiplier: 100,
-    relWinnerStakeMultiplier: 100,
-    relLoserStakeMultiplier: 200,
     columns: [
       {
         label: '',
         description: '',
         type: ItemTypes.ADDRESS,
         isIdentifier: true,
-      },
-    ],
-    relColumns: [
-      {
-        label: 'Address',
-        description: 'The Badges list address',
-        type: ItemTypes.GTCR_ADDRESS,
-        isIdentifier: true,
-      },
-      {
-        label: 'Match File URI',
-        description:
-          'The URI to the JSON file for matching columns for each list.',
-        type: ItemTypes.TEXT,
       },
     ],
     currStep: 1,
@@ -380,19 +320,6 @@ const useCachedFactory = (
       ...newInitialState,
       transactions: resolvedState.transactions,
     }
-
-  // The switch, the review and the deployment read one flag, so a draft
-  // always carries it. Without it, a draft is either fresh (badges off) or
-  // from the previous wizard, which deleted the flag once its badges step was
-  // completed: that step required the badges policy, so a draft that holds
-  // one had badges on.
-  resolvedState = {
-    ...resolvedState,
-    relTcrDisabled:
-      typeof resolvedState.relTcrDisabled === 'boolean'
-        ? resolvedState.relTcrDisabled
-        : !resolvedState.relTcrPrimaryDocument,
-  }
 
   const [tcrState, setTcrState] = useState<TcrState>(resolvedState)
   const [debouncedTcrState] = useDebounce(tcrState, 1000)
@@ -430,20 +357,11 @@ const useCachedFactory = (
   // their values back here), so the two never disagree.
   useEffect(() => {
     if (!account) return
-    setTcrState((prev) => {
-      const governor = governorNeedsWallet(prev.governorAddress, networkId)
-      const relGovernor = governorNeedsWallet(
-        prev.relGovernorAddress,
-        networkId,
-      )
-      return governor || relGovernor
-        ? {
-            ...prev,
-            governorAddress: governor ? account : prev.governorAddress,
-            relGovernorAddress: relGovernor ? account : prev.relGovernorAddress,
-          }
-        : prev
-    })
+    setTcrState((prev) =>
+      governorNeedsWallet(prev.governorAddress, networkId)
+        ? { ...prev, governorAddress: account }
+        : prev,
+    )
   }, [account, networkId])
 
   if (!networkId || !tcrState.arbitratorAddress) return null
@@ -564,7 +482,10 @@ const DeploymentRow = ({
   )
 }
 
-/** The parent list address from a deploy receipt: the second NewGTCR event. */
+/**
+ * The list's address from a deploy receipt: the last NewGTCR event (the only
+ * one, or the second in a deployment from before badges were retired).
+ */
 const deployedAddressFromLogs = (
   logs: ethers.providers.Log[],
   factoryInterface: ethers.utils.Interface,
@@ -579,7 +500,7 @@ const deployedAddressFromLogs = (
       // Not a factory event.
     }
 
-  return addresses[1] ?? addresses[0]
+  return addresses[addresses.length - 1]
 }
 
 /* ---------- Page ---------- */
@@ -724,7 +645,7 @@ const FactoryPage = () => {
               },
               {
                 title: 'One transaction',
-                body: 'Deploying sends two batched calls to the factory and costs gas only. Submitters pay deposits later.',
+                body: 'Deploying is one call to the factory and costs gas only. Submitters pay deposits later.',
               },
             ]}
           />
@@ -783,10 +704,6 @@ const FactoryPage = () => {
 
   const currentFormId = formIds[currentVisualStep.componentStep - 1]
   const stepKey = `${factoryChainId}-${wizard.index}-${wizard.resets}`
-  const previewSubject =
-    currentVisualStep.kind === 'rel' && tcrState?.relTcrDisabled === false
-      ? 'badges'
-      : 'list'
 
   const renderVisualStep = () => {
     switch (currentVisualStep.kind) {
@@ -803,15 +720,6 @@ const FactoryPage = () => {
       case 'item':
         return (
           <ItemParams
-            key={stepKey}
-            formId={currentFormId}
-            postSubmit={wizard.advance}
-            {...cachedFactory}
-          />
-        )
-      case 'rel':
-        return (
-          <RelTCRParams
             key={stepKey}
             formId={currentFormId}
             postSubmit={wizard.advance}
@@ -858,7 +766,6 @@ const FactoryPage = () => {
                 {tcrState && factoryChainId !== undefined && (
                   <LivePreview
                     tcrState={tcrState}
-                    subject={previewSubject}
                     chainId={factoryChainId}
                     currency={nativeCurrency}
                   />

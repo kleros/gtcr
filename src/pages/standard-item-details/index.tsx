@@ -475,7 +475,7 @@ export const PolicyLink: React.FC<{ href: string }> = ({ href }) => {
     <PolicyButton type="button" onClick={() => openAttachment(href, true)}>
       <CurateIcon name="policy" size={14} />
       Listing policy
-      <PolicyUpdatedBadge registryAddress={tcrAddress} />
+      <PolicyUpdatedBadge registryAddress={tcrAddress} kind="standard" />
     </PolicyButton>
   )
 }

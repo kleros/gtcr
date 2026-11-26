@@ -38,7 +38,6 @@ const ADDRESS_MAPS = {
   standardBatchWithdrawAddresses: config.standardBatchWithdrawAddresses,
   lgtcrFactoryAddresses: config.lgtcrFactoryAddresses,
   pgtcrFactoryAddresses: config.pgtcrFactoryAddresses,
-  txBatcherAddresses: config.txBatcherAddresses,
 }
 
 describe('every supported chain', () => {

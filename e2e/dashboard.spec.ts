@@ -58,25 +58,78 @@ test('a top curator opens their profile', async ({ page }) => {
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
 })
 
-test('open requests lead to their lists, filtered to what can be challenged', async ({
+const escapeRegExp = (text: string) =>
+  text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+
+test('the board opens under its own heading, its requests counted in their panel', async ({
   page,
 }) => {
   const open = page.getByRole('region', { name: 'Open for verification' })
   await expect(open.getByRole('heading', { level: 2 })).toHaveText(
     'Open for verification',
   )
-  const tile = open
-    .getByRole('list', { name: /^Lists with bounties up for grabs/ })
-    .getByRole('link')
-    .first()
-  await expect(tile).toHaveAttribute(
+  const submissions = open.getByRole('region', { name: 'Recent submissions' })
+  await expect(
+    submissions.getByRole('img', {
+      name: /requests open now, in their challenge window$/,
+    }),
+  ).toBeVisible()
+  await expect(submissions).toContainText('Up for grabs')
+})
+
+test('a list chip filters the open requests and leads on to its list', async ({
+  page,
+}) => {
+  const submissions = page.getByRole('region', { name: 'Recent submissions' })
+  const chips = submissions.getByRole('group', {
+    name: "Show one list's requests",
+  })
+  await expect(chips.getByRole('button').first()).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  )
+  const chip = chips.getByRole('button').nth(1)
+  const title = (await chip.getAttribute('title')) ?? ''
+  expect(title).not.toBe('')
+  await chip.click()
+  await expect(chip).toHaveAttribute('aria-pressed', 'true')
+
+  // Its own page, filtered to what can be challenged, is a click away.
+  const all = submissions.getByRole('link', {
+    name: new RegExp(`^All [\\d,]+\\+? in ${escapeRegExp(title)}`),
+  })
+  await expect(all).toHaveAttribute(
     'href',
     /^\/tcr\/\d+\/0x[0-9a-f]{40}\?submitted=true&removalRequested=true/,
   )
-  await tile.click()
+  // Every row left is that list's: its link is under the list's address.
+  const list = new URL((await all.getAttribute('href')) ?? '', 'http://x')
+    .pathname
+  const rows = submissions
+    .getByRole('list', { name: /^Requests in their challenge window/ })
+    .getByRole('listitem')
+  await expect(rows.first()).toBeVisible()
+  for (const row of await rows.all())
+    await expect(row.getByRole('link')).toHaveAttribute(
+      'href',
+      new RegExp(`^${escapeRegExp(list)}/`),
+    )
+
+  await all.click()
   await expect(
     page.getByRole('combobox', { name: /^Status:/ }),
   ).not.toHaveAccessibleName('Status: All')
+})
+
+test('the hero leaves out what is up for grabs under $2,000', async ({
+  page,
+}) => {
+  // The recording's pool is $720 (24 requests of 30 xDAI): under the gate.
+  await expect(
+    page.locator('[data-money]').filter({ hasText: 'Bounties won' }),
+  ).toContainText(/\$\d/)
+  await expect(page.locator('[data-money]')).toHaveCount(2)
+  await expect(page.getByText('Up for grabs now')).toHaveCount(0)
 })
 
 test('the buttons under the title go to Browse and the launch page', async ({

@@ -22,7 +22,6 @@ const REFRESHED = new Set([
   'arbitrableTCRData',
   'arbitrationCost',
   'policyHistory',
-  'badges',
 ])
 
 const DELAYS_MS = [

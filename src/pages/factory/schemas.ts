@@ -22,8 +22,8 @@ export {
  * its own fields when the user presses Next, and the deploy step re-checks
  * the whole state so nothing can be deployed with an empty title, logo or
  * policy. The field rules and the sections every list has are shared with
- * the Stake factory (factory-shared-schemas); the deposits and the badges
- * step are this factory's own.
+ * the Stake factory (factory-shared-schemas); the deposits are this
+ * factory's own.
  */
 
 export type FactorySection =
@@ -59,26 +59,9 @@ export const fullTcrSchema = yup
 export const tcrSchemaFor = (section?: FactorySection) =>
   section ? yup.object().shape(TCR_FIELDS[section]) : fullTcrSchema
 
-export const relSchema = yup.object().shape({
-  relArbitratorAddress: address('An arbitrator address is required.'),
-  relArbitratorExtraData: extraData,
-  relGovernorAddress: address('A governor address is required.'),
-  relSubmissionBaseDeposit: amount,
-  relRemovalBaseDeposit: amount,
-  relSubmissionChallengeBaseDeposit: amount,
-  relRemovalChallengeBaseDeposit: amount,
-  relChallengePeriodDuration: period(true),
-  relTcrPrimaryDocument: yup
-    .string()
-    .required('Upload the badges listing policy.'),
-  relSharedStakeMultiplier: multiplier,
-  relWinnerStakeMultiplier: multiplier,
-  relLoserStakeMultiplier: multiplier,
-})
-
 /**
  * The steps that are not complete yet, named for the deploy blocker:
- * "Complete the list details and the badges step before deploying".
+ * "Complete the list details and the item fields before deploying".
  */
 export const incompleteSteps = (state: TcrState): string[] => {
   const problems: string[] = []
@@ -88,7 +71,5 @@ export const incompleteSteps = (state: TcrState): string[] => {
     (!state.isTCRofTCRs && itemColumnsProblem(state.columns) !== null)
   )
     problems.push('the item fields')
-  if (state.relTcrDisabled !== true && !relSchema.isValidSync(state))
-    problems.push('the badges step')
   return problems
 }

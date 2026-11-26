@@ -31,6 +31,8 @@ import {
   flatFill,
   litEdgeBackground,
 } from 'components/ui/kit-styles'
+import EvidenceText from 'components/curate/evidence-text'
+import { TimelineQuote } from 'components/curate/item-standard-timeline'
 
 /*
  * Evidence form (ERC-1497): a title (when detailed), a description and an
@@ -42,6 +44,11 @@ import {
  * page's evidence section) is one message box: the title on top, a hairline,
  * the description growing with its text, and a toolbar along the bottom
  * edge with the attachment on the left and the caller's action on the right.
+ *
+ * The description is written in Markdown, and "Preview" shows it as the
+ * history will, with the history's own component: what is sent cannot be
+ * changed. The field stays in the page while the preview shows (its undo
+ * history, its height), out of sight.
  */
 
 // Used until Atlas has said what evidence attachments it takes.
@@ -59,7 +66,13 @@ const FieldBlock = styled.div`
   gap: 6px;
 `
 
-const Textarea = styled.textarea`
+/* Out of sight while the preview shows; the global form styles paint
+   textareas with !important. */
+const hiddenWhilePreviewing = css<{ $hidden?: boolean }>`
+  ${({ $hidden }) => $hidden && 'display: none !important;'}
+`
+
+const Textarea = styled.textarea<{ $hidden?: boolean }>`
   width: 100%;
   min-height: 120px;
   padding: 12px 14px;
@@ -88,6 +101,8 @@ const Textarea = styled.textarea`
     border-color: var(--color-primary) !important;
     box-shadow: 0 0 0 4px var(--color-primary-soft) !important;
   }
+
+  ${hiddenWhilePreviewing}
 `
 
 const Preview = styled.img`
@@ -289,7 +304,7 @@ const Rule = styled.span`
 
 /* Three lines at rest; it grows with the text up to about twelve. The
    global form styles paint every textarea; this one belongs to the box. */
-const BodyField = styled.textarea`
+const BodyField = styled.textarea<{ $hidden?: boolean }>`
   ${bare}
   border: 0 !important;
   border-radius: 0 0 var(--radius-well) var(--radius-well) !important;
@@ -302,6 +317,17 @@ const BodyField = styled.textarea`
   line-height: 22px;
   resize: none;
   overflow-y: auto;
+
+  ${hiddenWhilePreviewing}
+`
+
+/* The description as the history shows it, where the field was: as tall at
+   rest, and scrolling past the same height. */
+const ComposerPreview = styled.div`
+  min-height: 84px;
+  max-height: 300px;
+  overflow-y: auto;
+  padding: 6px 16px 12px;
 `
 
 const Toolbar = styled.div`
@@ -414,6 +440,52 @@ const ToolbarEnd = styled.div`
   min-width: 0;
 `
 
+/* The attachment and the preview, together on the left. */
+const ToolbarStart = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+`
+
+/* A toggle (aria-pressed): its name stays "Preview", its tint says it is on.
+   The fills read on any surface: the composer's raised box and a dialog,
+   whose own background is the surface colour. */
+const PreviewToggle = styled(Attach)`
+  &:hover:not(:disabled) {
+    background: var(--hover-fill);
+  }
+
+  &[aria-pressed='true'],
+  &[aria-pressed='true']:hover {
+    background: var(--color-primary-soft);
+    color: var(--color-primary-on-soft);
+  }
+`
+
+/* In the dialogs, beside the description's label, on the label's line. */
+const LabelRow = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+
+  ${PreviewToggle} {
+    height: 28px;
+    margin: -4px 0;
+    padding: 0 8px;
+  }
+`
+
+const FieldPreview = styled.div`
+  min-height: 120px;
+  padding: 6px 14px 12px;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius);
+  background: var(--color-raised);
+`
+
 const Errors = styled.div`
   display: flex;
   flex-direction: column;
@@ -435,6 +507,24 @@ const PaperclipIcon = () => (
     focusable="false"
   >
     <path d="m20.5 11.5-8.2 8.2a5.3 5.3 0 0 1-7.5-7.5l8.6-8.6a3.5 3.5 0 0 1 5 5l-8.6 8.6a1.8 1.8 0 0 1-2.5-2.5l7.9-7.9" />
+  </svg>
+)
+
+const EyeIcon = () => (
+  <svg
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.8"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden
+    focusable="false"
+  >
+    <path d="M2.5 12s3.5-6.5 9.5-6.5 9.5 6.5 9.5 6.5-3.5 6.5-9.5 6.5S2.5 12 2.5 12Z" />
+    <circle cx="12" cy="12" r="2.8" />
   </svg>
 )
 
@@ -519,6 +609,49 @@ const EvidenceForm = ({
    * file that is being uploaded rather than a newer one dropped over it.
    */
   const sending = !!busy || isSubmitting
+
+  const description = values.description ?? ''
+  const hasText = description.trim() !== ''
+  const [previewing, setPreviewing] = useState(false)
+  const showPreview = previewing && hasText
+  const descriptionRef = useRef<HTMLTextAreaElement>(null)
+  const backToWriting = useRef(false)
+  // An emptied field (a piece just sent) is written in again, not previewed.
+  useEffect(() => {
+    if (!hasText) setPreviewing(false)
+  }, [hasText])
+  // A send refused for the text itself (too long) shows the text again,
+  // where its error points.
+  const descriptionError = errors.description
+  useEffect(() => {
+    if (submitCount > 0 && descriptionError) setPreviewing(false)
+  }, [submitCount, descriptionError])
+  // Leaving the preview puts the caret back in the text, once it shows.
+  useEffect(() => {
+    if (showPreview || !backToWriting.current) return
+    backToWriting.current = false
+    descriptionRef.current?.focus()
+  }, [showPreview])
+  const togglePreview = () => {
+    backToWriting.current = showPreview
+    setPreviewing(!showPreview)
+  }
+  const previewToggle = (
+    <PreviewToggle
+      type="button"
+      aria-pressed={showPreview}
+      disabled={!hasText}
+      onClick={togglePreview}
+    >
+      <EyeIcon />
+      Preview
+    </PreviewToggle>
+  )
+  const preview = showPreview && (
+    <TimelineQuote role="group" aria-label="Preview of the description">
+      <EvidenceText text={description} />
+    </TimelineQuote>
+  )
 
   // The limit is said while typing, not only once submit is pressed.
   const length = values.description?.length ?? 0
@@ -652,6 +785,8 @@ const EvidenceForm = ({
                 </HiddenLabel>
                 <BodyField
                   id={`${formID}-description`}
+                  ref={descriptionRef}
+                  $hidden={showPreview}
                   {...field}
                   value={field.value ?? ''}
                   onChange={(event) => {
@@ -659,7 +794,7 @@ const EvidenceForm = ({
                     fitHeight(event.currentTarget)
                   }}
                   rows={3}
-                  placeholder="What should the jurors know? Point to the listing policy."
+                  placeholder="What should the jurors know? Point to the listing policy. Markdown works."
                   aria-required
                   aria-invalid={submitCount > 0 && !!errors.description}
                   aria-describedby={
@@ -668,41 +803,47 @@ const EvidenceForm = ({
                       .join(' ') || undefined
                   }
                 />
+                {preview && <ComposerPreview>{preview}</ComposerPreview>}
               </>
             )}
           </Field>
           <Toolbar>
-            {file ? (
-              <FileChip title={file.name}>
-                {previewUrl && file.type.includes('image') ? (
-                  <img src={previewUrl} alt="" />
-                ) : (
-                  <PaperclipIcon />
-                )}
-                <span>{file.name}</span>
-                <small>{formatSize(file.size)}</small>
-                <IconButton
+            <ToolbarStart>
+              {file ? (
+                <FileChip title={file.name}>
+                  {previewUrl && file.type.includes('image') ? (
+                    <img src={previewUrl} alt="" />
+                  ) : (
+                    <PaperclipIcon />
+                  )}
+                  <span>{file.name}</span>
+                  <small>{formatSize(file.size)}</small>
+                  <IconButton
+                    type="button"
+                    disabled={sending}
+                    aria-label={`Remove ${file.name}`}
+                    onClick={() =>
+                      setFieldValue('evidenceAttachment', undefined)
+                    }
+                  >
+                    <CurateIcon name="close" size={12} />
+                  </IconButton>
+                </FileChip>
+              ) : (
+                <Attach
                   type="button"
                   disabled={sending}
-                  aria-label={`Remove ${file.name}`}
-                  onClick={() => setFieldValue('evidenceAttachment', undefined)}
+                  onClick={() => inputRef.current?.click()}
                 >
-                  <CurateIcon name="close" size={12} />
-                </IconButton>
-              </FileChip>
-            ) : (
-              <Attach
-                type="button"
-                disabled={sending}
-                onClick={() => inputRef.current?.click()}
-              >
-                <PaperclipIcon />
-                Attach a file
-                <span>
-                  <span aria-hidden>· </span>up to {sizeLabel}
-                </span>
-              </Attach>
-            )}
+                  <PaperclipIcon />
+                  Attach a file
+                  <span>
+                    <span aria-hidden>· </span>up to {sizeLabel}
+                  </span>
+                </Attach>
+              )}
+              {previewToggle}
+            </ToolbarStart>
             {count}
             {actions && <ToolbarEnd>{actions}</ToolbarEnd>}
           </Toolbar>
@@ -761,18 +902,24 @@ const EvidenceForm = ({
             form: { errors: fieldErrors },
           }: FieldProps<string | undefined, EvidenceFormValues>) => (
             <FieldBlock>
-              <FieldLabel htmlFor={`${formID}-description`}>
-                Description <Required>required</Required>
-              </FieldLabel>
+              <LabelRow>
+                <FieldLabel htmlFor={`${formID}-description`}>
+                  Description <Required>required</Required>
+                </FieldLabel>
+                {previewToggle}
+              </LabelRow>
               <Textarea
                 id={`${formID}-description`}
+                ref={descriptionRef}
+                $hidden={showPreview}
                 {...field}
                 value={field.value ?? ''}
                 rows={5}
-                placeholder="What the jurors should know, with references to the listing policy"
+                placeholder="What the jurors should know, with references to the listing policy. Markdown works."
                 aria-invalid={!!fieldErrors.description}
                 aria-describedby={counting ? countId : undefined}
               />
+              {preview && <FieldPreview>{preview}</FieldPreview>}
               {count}
               {fieldErrors.description && (
                 <FieldError role="alert">

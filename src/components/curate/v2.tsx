@@ -278,10 +278,9 @@ const isGtcrAddressField = (field: V2Field) =>
 const isAddress = (value: string) => /^0x[0-9a-f]{40}$/i.test(value)
 
 /**
- * A registry referenced from an entry (a "list of lists" entry, a badges
- * list's badge list): logo, title, address. The title opens the list in
- * Curate on the chain in the URL; on an entry page the address opens the
- * explorer.
+ * A registry referenced from an entry (a "list of lists" entry, say):
+ * logo, title, address. The title opens the list in Curate on the chain in
+ * the URL; on an entry page the address opens the explorer.
  */
 const V2ListReferenceField = ({
   address,

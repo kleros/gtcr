@@ -2,11 +2,15 @@ import { describe, expect, it } from 'vitest'
 // The app's client (react-query keeps its own copy of query-core).
 import { QueryClient } from '@tanstack/react-query'
 import {
+  arbitrationEffect,
   arbitrationExtraData,
   buildArbitratorExtraData,
+  columnsChange,
+  governorTargetNote,
   markListSettingsStale,
-  newGovernorCodeNote,
+  paramEffect,
   parseParamValue,
+  reviewValue,
   type ParamConfig,
 } from './governance-params'
 
@@ -182,52 +186,120 @@ describe('arbitrationExtraData', () => {
   })
 })
 
-describe('newGovernorCodeNote', () => {
-  const target = '0x5afe5afe5afe5afe5afe5afe5afe5afe5afe5afe'
+describe('reviewValue', () => {
+  it('shows an amount with its symbol, and the wei it is stored as', () => {
+    expect(reviewValue('500000000000000000', 'wei', {}, 'xDAI')).toEqual({
+      shown: '0.5 xDAI',
+      stored: '500,000,000,000,000,000 wei',
+    })
+  })
 
-  it('reminds that a Safe must exist on the chain when the address holds no contract', () => {
+  it("shows a token amount in the token's own decimals", () => {
     expect(
-      newGovernorCodeNote(
-        { address: target, contract: false },
-        target,
-        'Gnosis',
-      ),
-    ).toBe(
-      ' There is no contract at that address on Gnosis: fine for a personal wallet, but a Safe must exist on Gnosis itself.',
+      reviewValue(1_500_000n, 'token', { tokenDecimals: 6 }, 'USDC'),
+    ).toEqual({ shown: '1.5 USDC', stored: '1,500,000 base units' })
+  })
+
+  it('shows a period in words and a stake as a percent', () => {
+    expect(reviewValue('302400', 'seconds', {})).toEqual({
+      shown: '3 days 12 hours',
+      stored: '302,400 s',
+    })
+    expect(reviewValue(15_000n, 'multiplier', {})).toEqual({
+      shown: '150%',
+      stored: '15,000 basis points',
+    })
+  })
+
+  it('shows an address whole, and nothing for no value', () => {
+    const address = '0x5afe5afe5afe5afe5afe5afe5afe5afe5afe5afe'
+    expect(reviewValue(address, 'address', {})).toEqual({ shown: address })
+    expect(reviewValue(undefined, 'wei', {})).toBeUndefined()
+    expect(reviewValue('', 'seconds', {})).toBeUndefined()
+  })
+})
+
+describe('what a change does to what is under way', () => {
+  it('says which settings reach requests already made, as the contracts read them', () => {
+    // Read in addItem: only new requests pay it.
+    expect(paramEffect('submissionBaseDeposit')).toMatch(/made from now on/)
+    // Read in challengeRequest and executeRequest: requests waiting too.
+    expect(paramEffect('challengePeriodDuration')).toMatch(/at once/)
+    expect(paramEffect('submissionChallengeBaseDeposit')).toMatch(
+      /already waiting/,
+    )
+    // Read in fundAppeal: disputes already open too.
+    expect(paramEffect('loserStakeMultiplier')).toMatch(/disputes already open/)
+    // Stake's periods: never read on chain.
+    expect(paramEffect('submissionPeriod')).toMatch(/never reads it/)
+    expect(paramEffect('withdrawingPeriod')).toMatch(/already withdrawing/)
+  })
+
+  it('names the cooldown after which a Stake change reaches listed entries', () => {
+    expect(arbitrationEffect('standard')).toMatch(/keep theirs/)
+    expect(arbitrationEffect('permanent', 7 * 86_400)).toMatch(
+      /cooldown \(7 days\)/,
+    )
+    expect(arbitrationEffect('permanent')).toMatch(/the list's cooldown has/)
+    expect(arbitrationEffect('permanent', 0)).toMatch(/no cooldown/)
+  })
+})
+
+describe('columnsChange', () => {
+  const live = [
+    { label: 'Address', type: 'address' },
+    { label: 'Name', type: 'text' },
+  ]
+
+  it('takes the same columns, and new ones after the last', () => {
+    expect(columnsChange(live, live)).toBe('same')
+    expect(
+      columnsChange([...live, { label: 'Website', type: 'link' }], live),
+    ).toBe('appended')
+  })
+
+  it('refuses a column renamed, retyped, moved or removed', () => {
+    expect(
+      columnsChange([live[0], { label: 'Title', type: 'text' }], live),
+    ).toBe('changed')
+    expect(
+      columnsChange([live[0], { label: 'Name', type: 'long text' }], live),
+    ).toBe('changed')
+    expect(columnsChange([live[1], live[0]], live)).toBe('changed')
+    expect(columnsChange([live[0]], live)).toBe('changed')
+  })
+})
+
+describe('governorTargetNote', () => {
+  it('refuses a list: it never sends a transaction', () => {
+    expect(governorTargetNote({ kind: 'list' }, 'Gnosis').refusal).toMatch(
+      /nobody could change this list again/,
     )
   })
 
-  it('says when the address could not be checked, rather than saying nothing', () => {
+  it('names a Safe by its threshold', () => {
     expect(
-      newGovernorCodeNote(
-        { address: target, contract: null },
-        target,
-        'Gnosis',
-      ),
-    ).toBe(
-      ' Whether there is a contract at that address on Gnosis could not be checked: a Safe must exist on Gnosis itself.',
-    )
+      governorTargetNote({ kind: 'safe', threshold: 2, owners: 4 }, 'Gnosis'),
+    ).toEqual({
+      note: 'A Safe on Gnosis: 2 of its 4 owners sign each change.',
+    })
   })
 
-  it('adds nothing for a contract, before the read lands, or from a read of another address', () => {
-    expect(
-      newGovernorCodeNote(
-        { address: target, contract: true },
-        target,
-        'Gnosis',
-      ),
-    ).toBe('')
-    expect(newGovernorCodeNote(undefined, target, 'Gnosis')).toBe('')
-    expect(
-      newGovernorCodeNote(
-        {
-          address: '0x1111111111111111111111111111111111111111',
-          contract: false,
-        },
-        target,
-        'Gnosis',
-      ),
-    ).toBe('')
+  it('warns of a contract that is no Safe, and of an address it could not read', () => {
+    expect(governorTargetNote({ kind: 'contract' }, 'Gnosis')).toMatchObject({
+      warning: true,
+    })
+    expect(governorTargetNote({ kind: 'unknown' }, 'Gnosis')).toMatchObject({
+      warning: true,
+    })
+  })
+
+  it('reminds that a Safe must exist on the chain itself when the address holds no contract', () => {
+    // Two Gnosis lists name the Ethereum Kleros Governor, which has no code
+    // on Gnosis: nobody can change them any more.
+    const { note, refusal } = governorTargetNote({ kind: 'wallet' }, 'Gnosis')
+    expect(refusal).toBeUndefined()
+    expect(note).toMatch(/must exist on Gnosis itself/)
   })
 })
 

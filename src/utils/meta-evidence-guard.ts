@@ -4,10 +4,10 @@ import { parseIpfs } from './ipfs-parse'
 /*
  * A list's MetaEvidence is written by whoever deploys or governs the list,
  * and its title and logo also show on other lists' pages: a list of lists,
- * a badge, an entry that names a list. A field of the wrong type (a title
- * that is an object, say) would reach React as a child and take that whole
- * page down. So string fields that are not strings are dropped, and columns
- * keep the shape the app reads.
+ * an entry that names a list. A field of the wrong type (a title that is an
+ * object, say) would reach React as a child and take that whole page down.
+ * So string fields that are not strings are dropped, and columns keep the
+ * shape the app reads.
  */
 
 const STRING_FIELDS = [

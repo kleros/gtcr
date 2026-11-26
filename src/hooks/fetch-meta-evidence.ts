@@ -2,8 +2,8 @@ import { subgraphUrl, subgraphUrlPermanent } from 'config/tcr-addresses'
 import { request } from 'utils/indexer-request'
 
 /**
- * The MetaEvidence of any list an entry names (a list of lists' row, a
- * badge): Standard, Stake, or a Classic list still referenced by a Standard one.
+ * The MetaEvidence of any list an entry names (a list of lists' row):
+ * Standard, Stake, or a Classic list still referenced by a Standard one.
  * Classic lists have no page of their own any more (pages/classic-retired),
  * but a Standard list of lists can still hold one, and its row is named from
  * this file. Nothing else of a Classic list is read.
@@ -22,13 +22,11 @@ export const fetchMetaEvidence = async (
       registrationMetaEvidence {
         uri
       }
-      connectedTCR
     }
     lregistry:LRegistry_by_pk(id: $id) {
       registrationMetaEvidence {
         uri
       }
-      connectedTCR
     }
   }`,
     variables: { id },
@@ -63,10 +61,7 @@ export const fetchMetaEvidence = async (
   const indexed = envioData?.registry ?? envioData?.lregistry
   if (indexed)
     return indexed.registrationMetaEvidence?.uri
-      ? {
-          metaEvidenceURI: indexed.registrationMetaEvidence.uri,
-          connectedTCR: indexed.connectedTCR,
-        }
+      ? { metaEvidenceURI: indexed.registrationMetaEvidence.uri }
       : null
 
   // 2. Only try Goldsky if Envio didn't find it (rare — permanent TCRs).

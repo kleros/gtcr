@@ -916,6 +916,7 @@ export const UploadField = ({
   showError,
   what,
   previewAlt,
+  removable = true,
   onChange,
 }: {
   id: string
@@ -925,6 +926,11 @@ export const UploadField = ({
   role: Roles
   /** The IPFS URI already uploaded, or an empty string. */
   value: string
+  /**
+   * Whether a file in place can be removed. A list's live policy cannot be
+   * (the governance dialog): only a new one replaces it.
+   */
+  removable?: boolean
   error?: string
   showError?: boolean
   /** "the logo", "the policy": used in the blockers and the button. */
@@ -1076,7 +1082,7 @@ export const UploadField = ({
               </Row>
             ) : (
               <Row data-upload-actions $gap={6} $justify="flex-end" $wrap>
-                {uri && (
+                {uri && removable && (
                   <Button
                     type="button"
                     $variant="ghost"

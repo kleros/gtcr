@@ -4,13 +4,13 @@ import styled from 'styled-components'
  * The dashboard's section heading: a 30px Urbanist title with room above it,
  * and whatever belongs on the right (a link, a window, a state line). It
  * lives here rather than in index.tsx so a section that owns its own file
- * (open-for-verification.tsx) heads itself the same way, without importing
- * the page back.
+ * (open-for-verification.tsx, bounties.tsx) heads itself the same way,
+ * without importing the page back.
  *
  * The 80px is what separates one section from the next, and every heading on
- * the dashboard now takes it whole. A strip that belongs under a heading
- * rather than above one closes its own gap instead, with a margin of its own
- * (open-for-verification.tsx's Band), so no caller overrides this one.
+ * the dashboard takes it whole; a section drawn without its heading keeps the
+ * 80px as a spacer of its own (happening-now.tsx's Opening), so no caller
+ * overrides this one.
  */
 
 export const SectionHead = styled.div`

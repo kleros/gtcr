@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react'
+import React, { useMemo, useRef, useState } from 'react'
 import styled from 'styled-components'
 import {
   parseUnits,
@@ -19,6 +19,7 @@ import {
   waitForOutcome,
 } from 'utils/wrap-with-toast'
 import { parseWagmiError } from 'utils/parse-wagmi-error'
+import { uploadOnce } from 'utils/upload-once'
 import { parseIpfs } from 'utils/ipfs-parse'
 import { formatDurationLong } from 'utils/time'
 import { wagmiConfig } from 'config/wagmi'
@@ -333,6 +334,9 @@ const Deploy = ({
   const targetChainId = tcrState.chainId
   const { address: account } = useAccount()
   const { uploadFile } = useAtlasProvider()
+  // The list's file as an earlier attempt uploaded it: deploying again
+  // uploads it only if it changed (uploadOnce).
+  const uploaded = useRef(new Map<string, string>())
   const publicClient = usePublicClient()
   // The list's own chain, to check a deployment again after a reload, when
   // the wallet may not be back yet or may sit on another chain.
@@ -501,7 +505,7 @@ const Deploy = ({
       const { ipfsMetaEvidencePath } = await getTcrMetaEvidence(
         tcrState,
         evidenceDisplayInterfaceURI,
-        uploadFile,
+        (file, role) => uploadOnce(uploadFile, uploaded.current, file, role),
       )
       setMetaEvidencePath(ipfsMetaEvidencePath)
 

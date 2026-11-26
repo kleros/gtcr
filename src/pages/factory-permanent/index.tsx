@@ -93,7 +93,6 @@ import { stakeProblem } from './format'
 interface TransactionInfo {
   txHash: string
   networkId?: number
-  isConnectedTCR?: boolean
   status?: string
   contractAddress?: string
   [key: string]: unknown

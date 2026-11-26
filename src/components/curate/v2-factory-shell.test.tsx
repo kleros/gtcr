@@ -13,20 +13,20 @@ import {
 
 /*
  * Both list factories move through their steps with this panel. Each step
- * below is a form whose values already pass, as Deposit, Item name and
- * Badges do with their defaults: Next moves on at the first press.
+ * below is a form whose values already pass, as Deposit and Item name do
+ * with their defaults: Next moves on at the first press.
  */
 
 const GROUPS: FactoryStepDescriptor[] = [
   { title: 'List', description: 'Name' },
   { title: 'Item', description: 'Item name' },
-  { title: 'Badges', description: 'Optional' },
+  { title: 'Deposit', description: 'Amounts' },
 ]
 
 const STEPS: FactoryWizardStep[] = [
   { title: 'Name', componentStep: 1, groupStep: 1 },
   { title: 'Item name', componentStep: 2, groupStep: 2 },
-  { title: 'Badges', componentStep: 3, groupStep: 3 },
+  { title: 'Deposit', componentStep: 3, groupStep: 3 },
 ]
 
 const Wizard = () => {
@@ -87,7 +87,7 @@ describe('FactoryStepPanel', () => {
     // Enter or Space on the button: a click with no count.
     next().focus()
     await user.keyboard('{Enter}')
-    expect(await screen.findByRole('heading', { name: 'Badges' })).toBe(step())
+    expect(await screen.findByRole('heading', { name: 'Deposit' })).toBe(step())
   })
 
   it('never goes back two steps on a double click of Previous', async () => {
@@ -95,7 +95,7 @@ describe('FactoryStepPanel', () => {
     fireEvent.click(next(), { detail: 1 })
     await screen.findByRole('heading', { name: 'Item name' })
     fireEvent.click(next(), { detail: 1 })
-    await screen.findByRole('heading', { name: 'Badges' })
+    await screen.findByRole('heading', { name: 'Deposit' })
 
     fireEvent.click(previous(), { detail: 1 })
     expect(step()).toHaveTextContent('Item name')

@@ -1,6 +1,5 @@
 import React, { useLayoutEffect, useRef, useState } from 'react'
 import styled, { css, keyframes } from 'styled-components'
-import { Link } from 'react-router-dom'
 import { parseIpfs } from 'utils/ipfs-parse'
 import PolicyUpdatedBadge from 'components/policy-updated-badge'
 import { inkPlate, useLogoInk } from 'components/curate/logo-ink'
@@ -581,10 +580,6 @@ const QuietButton = styled.button`
   ${quiet}
 `
 
-const QuietLink = styled(Link)`
-  ${quiet}
-`
-
 const ParamsToggle = styled.button`
   ${quiet}
   color: var(--color-text);
@@ -728,10 +723,10 @@ export const RegistryHeader = ({
   primaryAmount,
   depositNote,
   onPrimary,
+  primaryPending = false,
   policyURI,
   onOpenPolicy,
   policyUpdated = true,
-  badgesListTo,
   stats,
   parameters,
   explainerId,
@@ -768,7 +763,14 @@ export const RegistryHeader = ({
   primaryAmount?: React.ReactNode
   /** The line under the button: what happens to the amount. Defaults by kind. */
   depositNote?: React.ReactNode
-  onPrimary: () => void
+  /** None: the list takes no new entries here (a badges list). */
+  onPrimary?: () => void
+  /**
+   * Whether the list takes entries is still being read (a badges list does
+   * not): the button and its note hold their place, with nothing to press,
+   * so a button never shows and then goes.
+   */
+  primaryPending?: boolean
   policyURI?: string | null
   onOpenPolicy?: () => void
   /**
@@ -776,7 +778,6 @@ export const RegistryHeader = ({
    * (Stake lists), so no placeholder appears and then vanishes.
    */
   policyUpdated?: boolean
-  badgesListTo?: string
   stats: RegistryStat[]
   parameters: RegistryParameter[]
   explainerId: string
@@ -927,12 +928,28 @@ export const RegistryHeader = ({
         </Identity>
 
         <Action>
-          <Button type="button" $variant="primary" $block onClick={onPrimary}>
-            <CurateIcon name="submit" size={16} />
-            {primaryLabel}
-            {primaryAmount && <Amount>· {primaryAmount}</Amount>}
-          </Button>
-          <Note>{depositNote ?? depositNoteFor(kind, itemName)}</Note>
+          {primaryPending ? (
+            <>
+              <SkeletonBlock $height="44px" aria-hidden />
+              <SkeletonBlock $height="16px" aria-hidden />
+            </>
+          ) : (
+            <>
+              {onPrimary && (
+                <Button
+                  type="button"
+                  $variant="primary"
+                  $block
+                  onClick={onPrimary}
+                >
+                  <CurateIcon name="submit" size={16} />
+                  {primaryLabel}
+                  {primaryAmount && <Amount>· {primaryAmount}</Amount>}
+                </Button>
+              )}
+              <Note>{depositNote ?? depositNoteFor(kind, itemName)}</Note>
+            </>
+          )}
           {governance}
         </Action>
       </Top>
@@ -1039,14 +1056,10 @@ export const RegistryHeader = ({
           <QuietButton type="button" onClick={onOpenPolicy}>
             <CurateIcon name="policy" size={14} />
             Listing policy
-            {policyUpdated && <PolicyUpdatedBadge registryAddress={address} />}
+            {policyUpdated && (
+              <PolicyUpdatedBadge registryAddress={address} kind={kind} />
+            )}
           </QuietButton>
-        )}
-        {badgesListTo && (
-          <QuietLink to={badgesListTo}>
-            <CurateIcon name="verified" size={14} />
-            Badges list
-          </QuietLink>
         )}
         <Explainer
           embedded
