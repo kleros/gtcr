@@ -1084,12 +1084,15 @@ const Items = () => {
 
   // A badges list (every Standard list came with one until 2026-11-26)
   // takes no new entries: badges are retired, and no page shows a badge.
-  const onPrimary = connectedList
-    ? undefined
-    : () => {
-        if (chainId && tcrAddress)
-          navigate(`/tcr/${chainId}/${tcrAddress}/submit`)
-      }
+  // Until the list's metadata says which it is, there is no button to press
+  // (the header holds its place).
+  const onPrimary =
+    connectedList === false
+      ? () => {
+          if (chainId && tcrAddress)
+            navigate(`/tcr/${chainId}/${tcrAddress}/submit`)
+        }
+      : undefined
   const onOpenPolicy = fileURI
     ? () => openAttachment(parseIpfs(fileURI), true)
     : undefined
@@ -1467,6 +1470,10 @@ const Items = () => {
           </GhostButton>
         ),
       }
+    // A badges list takes no entries (BADGES_RETIRED, in the header): no
+    // invitation to submit, and no button that could not.
+    if (counts?.total === 0 && !onPrimary)
+      return { title: `No ${itemNamePlural} yet` }
     if (counts?.total === 0)
       return {
         title: `No ${itemNamePlural} yet`,
@@ -1515,6 +1522,7 @@ const Items = () => {
           ) : undefined
         }
         onPrimary={onPrimary}
+        primaryPending={connectedList === undefined}
         depositNote={connectedList ? BADGES_RETIRED : undefined}
         policyURI={fileURI}
         onOpenPolicy={onOpenPolicy}

@@ -853,7 +853,9 @@ way (dashboard, Browse, registry pages, the profile, the landing page).
   wizard has no Badges step, and the factory deploys the list alone, its connected list the zero
   address (two uploads and one contract fewer). The 125 badges lists made before (96 Standard,
   29 Classic) never took a badge, and since the redesign no page showed one. A badges list's page
-  reads as a list of lists with no submit button, its note saying badges are retired; the list
+  reads as a list of lists with no submit button, its note saying badges are retired (until the
+  list's metadata says which kind it is, the button's place is held with nothing to press), and
+  its empty list invites no submission; the list
   page links no badges list; governance still offers `changeConnectedTCR`, a contract setting, and
   says nothing in Curate reads it.
 - The countdown ring's caption is the dial plus 80px wide, so each end's date and its UTC stay on

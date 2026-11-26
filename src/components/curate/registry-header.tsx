@@ -723,6 +723,7 @@ export const RegistryHeader = ({
   primaryAmount,
   depositNote,
   onPrimary,
+  primaryPending = false,
   policyURI,
   onOpenPolicy,
   policyUpdated = true,
@@ -764,6 +765,12 @@ export const RegistryHeader = ({
   depositNote?: React.ReactNode
   /** None: the list takes no new entries here (a badges list). */
   onPrimary?: () => void
+  /**
+   * Whether the list takes entries is still being read (a badges list does
+   * not): the button and its note hold their place, with nothing to press,
+   * so a button never shows and then goes.
+   */
+  primaryPending?: boolean
   policyURI?: string | null
   onOpenPolicy?: () => void
   /**
@@ -921,14 +928,28 @@ export const RegistryHeader = ({
         </Identity>
 
         <Action>
-          {onPrimary && (
-            <Button type="button" $variant="primary" $block onClick={onPrimary}>
-              <CurateIcon name="submit" size={16} />
-              {primaryLabel}
-              {primaryAmount && <Amount>· {primaryAmount}</Amount>}
-            </Button>
+          {primaryPending ? (
+            <>
+              <SkeletonBlock $height="44px" aria-hidden />
+              <SkeletonBlock $height="16px" aria-hidden />
+            </>
+          ) : (
+            <>
+              {onPrimary && (
+                <Button
+                  type="button"
+                  $variant="primary"
+                  $block
+                  onClick={onPrimary}
+                >
+                  <CurateIcon name="submit" size={16} />
+                  {primaryLabel}
+                  {primaryAmount && <Amount>· {primaryAmount}</Amount>}
+                </Button>
+              )}
+              <Note>{depositNote ?? depositNoteFor(kind, itemName)}</Note>
+            </>
           )}
-          <Note>{depositNote ?? depositNoteFor(kind, itemName)}</Note>
           {governance}
         </Action>
       </Top>
