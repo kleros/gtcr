@@ -91,27 +91,46 @@ const immutableAssetHeaders = (): Plugin => {
  * its CommonJS build: bn.js's require('buffer') added the polyfill shim's
  * (an unused second Buffer, ~68 kB on every page), and the Safe Apps
  * provider the SDK's, with a CommonJS copy of viem (566 kB, loaded in a
- * Safe). Those requires get the ESM builds the app already imports.
+ * Safe). Those requires get the ESM builds the app already imports: each
+ * resolves as before (node_modules or Yarn's Plug'n'Play, which Netlify
+ * uses), then the package's CommonJS entry is swapped for its ESM sibling.
  */
-const ESM_FOR_REQUIRE: Record<string, string> = {
-  '@safe-global/safe-apps-sdk':
-    'node_modules/@safe-global/safe-apps-sdk/dist/esm/index.js',
-  'vite-plugin-node-polyfills/shims/buffer':
-    'node_modules/vite-plugin-node-polyfills/shims/buffer/dist/index.js',
+const ESM_FOR_REQUIRE: Record<string, { cjs: string; esm: string }> = {
+  '@safe-global/safe-apps-sdk': {
+    cjs: '/dist/cjs/index.js',
+    esm: '/dist/esm/index.js',
+  },
+  'vite-plugin-node-polyfills/shims/buffer': {
+    cjs: '/dist/index.cjs',
+    esm: '/dist/index.js',
+  },
 }
 
 const requireEsmBuilds = (): Plugin => ({
   name: 'require-esm-builds',
   apply: 'build',
   enforce: 'pre',
-  resolveId(source) {
-    const file = ESM_FOR_REQUIRE[source]
-    if (!file) return null
-    const path = resolve(root, file)
-    // Loud rather than a silent second copy when a dependency moves it.
-    if (!existsSync(path))
-      throw new Error(`require-esm-builds: ${file} is gone; update it.`)
-    return path
+  async resolveId(source, importer, options) {
+    const builds = ESM_FOR_REQUIRE[source]
+    const nodeResolve = options.custom?.['node-resolve'] as
+      | { isRequire?: boolean }
+      | undefined
+    if (!builds || !nodeResolve?.isRequire) return null
+    const resolved = await this.resolve(source, importer, {
+      ...options,
+      skipSelf: true,
+    })
+    if (!resolved?.id.endsWith(builds.cjs)) {
+      // A warning, not a failed deploy: the bundle then only grows.
+      this.warn(
+        `${source} no longer resolves to ${builds.cjs} for require(); it may be bundled twice.`,
+      )
+      return resolved
+    }
+    return {
+      ...resolved,
+      id: resolved.id.slice(0, -builds.cjs.length) + builds.esm,
+    }
   },
 })
 
