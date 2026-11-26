@@ -141,7 +141,6 @@ declare global {
   /** Return type of fetchMetaEvidence */
   interface FetchMetaEvidenceResult {
     metaEvidenceURI: string
-    connectedTCR?: string
   }
 
   /**

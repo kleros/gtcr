@@ -6,7 +6,6 @@ import {
   type FactorySection,
   fullTcrSchema,
   incompleteSteps,
-  relSchema,
   tcrSchemaFor,
 } from './schemas'
 
@@ -37,21 +36,6 @@ const listState = (overrides: Partial<TcrState> = {}): TcrState => ({
   winnerStakeMultiplier: 100,
   loserStakeMultiplier: 200,
   isTCRofTCRs: false,
-  relArbitratorAddress: ARBITRATOR,
-  relArbitratorExtraData: EXTRA_DATA,
-  relGovernorAddress: GOVERNOR,
-  relSubmissionBaseDeposit: 0.05,
-  relRemovalBaseDeposit: 0.05,
-  relSubmissionChallengeBaseDeposit: 0,
-  relRemovalChallengeBaseDeposit: 0,
-  relChallengePeriodDuration: 84,
-  relItemName: 'list',
-  relItemNamePlural: 'lists',
-  relRequireRemovalEvidence: true,
-  relTcrPrimaryDocument: '/ipfs/QmBadges/badges.pdf',
-  relSharedStakeMultiplier: 100,
-  relWinnerStakeMultiplier: 100,
-  relLoserStakeMultiplier: 200,
   columns: [
     {
       label: 'Name',
@@ -61,10 +45,8 @@ const listState = (overrides: Partial<TcrState> = {}): TcrState => ({
     },
     { label: 'Logo', description: 'The token logo', type: ItemTypes.IMAGE },
   ],
-  relColumns: [],
   currStep: 0,
   transactions: {},
-  relTcrDisabled: false,
   ...overrides,
 })
 
@@ -144,37 +126,6 @@ describe('tcrSchemaFor', () => {
   })
 })
 
-describe('relSchema', () => {
-  it('takes a complete badges step', async () => {
-    expect(await refusal(relSchema, listState())).toBeNull()
-  })
-
-  it.each([
-    [
-      'its own policy',
-      { relTcrPrimaryDocument: '' },
-      'Upload the badges listing policy.',
-    ],
-    [
-      'a valid arbitrator',
-      { relArbitratorAddress: '0x1234' },
-      'Not a valid address: check it for a typo or a space.',
-    ],
-    [
-      'a challenge period',
-      { relChallengePeriodDuration: 0 },
-      'Must be longer than 0.',
-    ],
-    [
-      'a readable deposit',
-      { relSubmissionBaseDeposit: typed('1,000') },
-      'A comma before three digits could mean thousands: write 2.375 or 2375.',
-    ],
-  ])('needs %s', async (_, overrides, message) => {
-    expect(await refusal(relSchema, listState(overrides))).toBe(message)
-  })
-})
-
 describe('incompleteSteps', () => {
   it('is empty for a list ready to deploy', () => {
     expect(incompleteSteps(listState())).toEqual([])
@@ -246,25 +197,14 @@ describe('incompleteSteps', () => {
     )
   })
 
-  it('checks the badges step unless it is switched off', () => {
-    const state = listState({ relTcrPrimaryDocument: '' })
-    expect(incompleteSteps(state)).toEqual(['the badges step'])
-    expect(incompleteSteps({ ...state, relTcrDisabled: undefined })).toEqual([
-      'the badges step',
-    ])
-    expect(incompleteSteps({ ...state, relTcrDisabled: true })).toEqual([])
-  })
-
   it('names every incomplete step, in the order of the wizard', () => {
     const state = listState({
       tcrTitle: '',
       columns: [],
-      relGovernorAddress: '',
     })
     expect(incompleteSteps(state)).toEqual([
       'the list details',
       'the item fields',
-      'the badges step',
     ])
   })
 })

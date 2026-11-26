@@ -33,7 +33,6 @@ const StandardTCRViewProvider = ({
       ctx.tcrAddress,
       ctx.gtcrView,
       ctx.latestBlock,
-      ctx.connectedTCRAddr,
       ctx.metaEvidenceFailed,
       ctx.paramsFailed,
       ctx.governor,

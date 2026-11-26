@@ -99,7 +99,7 @@ const ADVANCED_FIELDS = new Set([
   'loserStakeMultiplier',
 ])
 
-/* ---------- Shared with the badges step ---------- */
+/* ---------- Deposit totals ---------- */
 
 /**
  * The total under a simple deposit slider, for widths where the live
@@ -228,13 +228,8 @@ const TCRParams = ({
         setAdvancedOptions(true)
     },
   })
-  // This form writes every wizard field back, the badges list's governor
-  // included, so it fills both.
   useWalletGovernor(values.governorAddress, (address) =>
     setFieldValue('governorAddress', address),
-  )
-  useWalletGovernor(values.relGovernorAddress, (address) =>
-    setFieldValue('relGovernorAddress', address),
   )
   // The typed text while the amount box has focus; the stored value otherwise.
   const [depositDraft, setDepositDraft] = useState<string | null>(null)

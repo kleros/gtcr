@@ -22,7 +22,6 @@ export const fetchStandardMetaEvidence = async (
         registrationMetaEvidence {
           uri
         }
-        connectedTCR
       }
     }`,
     variables: { id: tcr.toLowerCase() },
@@ -38,10 +37,7 @@ export const fetchStandardMetaEvidence = async (
     query.variables,
   )
   return data?.lregistry?.registrationMetaEvidence?.uri
-    ? {
-        metaEvidenceURI: data.lregistry.registrationMetaEvidence.uri,
-        connectedTCR: data.lregistry.connectedTCR,
-      }
+    ? { metaEvidenceURI: data.lregistry.registrationMetaEvidence.uri }
     : null
 }
 
@@ -93,7 +89,6 @@ const useStandardTcrView = (tcrAddress: string) => {
       const file = await fetchMetaEvidenceFile(fetchedData.metaEvidenceURI)
       return {
         metaEvidence: { ...file, address: tcrAddress } as MetaEvidence,
-        connectedTCR: fetchedData.connectedTCR,
       }
     },
     enabled: !!tcrAddress && !!networkId,
@@ -101,7 +96,6 @@ const useStandardTcrView = (tcrAddress: string) => {
   })
 
   const metaEvidence = metaEvidenceQuery.data?.metaEvidence
-  const connectedTCRAddr = metaEvidenceQuery.data?.connectedTCR
 
   // On-chain TCR params (deposits, costs) — cached, rarely changes.
   const arbitrableQuery = useQuery({
@@ -177,7 +171,6 @@ const useStandardTcrView = (tcrAddress: string) => {
     tcrAddress,
     gtcrView,
     latestBlock,
-    connectedTCRAddr,
     ...arbitrableTCRData,
   }
 }

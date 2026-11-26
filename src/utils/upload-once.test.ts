@@ -36,7 +36,7 @@ describe('uploadOnce', () => {
     expect(uploadFile).toHaveBeenCalledTimes(1)
   })
 
-  it('uploads a file whose text changed (a badges file naming another list address)', async () => {
+  it('uploads a file whose text changed since', async () => {
     const uploadFile = atlas()
     const known = new Map<string, string>()
 

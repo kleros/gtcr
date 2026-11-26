@@ -13,8 +13,8 @@ import { fileTypesProblem } from 'pages/factory/file-types'
  * rules (addresses, extra data, amounts, periods, multipliers) as the deploy
  * will read the values, the list sections every list has (name,
  * description, logo, policy, item name) and the entry fields' rules. Each
- * factory's own schemas add its own sections (deposits and badges; the
- * stake token and the stake) and its deploy checks.
+ * factory's own schemas add its own sections (the deposits; the stake token
+ * and the stake) and its deploy checks.
  */
 
 // The deploy encodes addresses with viem, which refuses what isAddress

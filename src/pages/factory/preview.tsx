@@ -484,78 +484,51 @@ const SideBar = ({
 
 /* ---------- The panel ---------- */
 
-type Subject = 'list' | 'badges'
-
 export const LivePreview = ({
   tcrState,
-  subject,
   chainId,
   currency,
 }: {
   tcrState: TcrState
-  /** The badges list while its step is open and it is switched on. */
-  subject: Subject
   chainId: number
   currency: string
 }) => {
   const [request, setRequest] = useState<'submission' | 'removal'>('submission')
   const library = useEthersProvider({ chainId })
-  const badges = subject === 'badges'
-  const arbitratorAddress = badges
-    ? tcrState.relArbitratorAddress
-    : tcrState.arbitratorAddress
-  const extraData = badges
-    ? tcrState.relArbitratorExtraData
-    : tcrState.arbitratorExtraData
+  const { arbitratorAddress, arbitratorExtraData: extraData } = tcrState
   const { arbitrationCost } = useArbitrationCost({
     address: arbitratorAddress,
     arbitratorExtraData: extraData,
     library,
   })
 
-  const title = badges
-    ? `${tcrState.tcrTitle || 'Your list'} enabled badges`
-    : tcrState.tcrTitle
-  const description = badges
-    ? `A list of lists related to ${tcrState.tcrTitle || 'your list'}`
-    : tcrState.tcrDescription
-  const logo = !badges && tcrState.tcrLogo ? parseIpfs(tcrState.tcrLogo) : ''
-  const itemName = badges ? tcrState.relItemName : tcrState.itemName
-  const fieldCount = badges
-    ? tcrState.relColumns.length
-    : tcrState.isTCRofTCRs
-      ? 1
-      : tcrState.columns.length
+  const title = tcrState.tcrTitle
+  const description = tcrState.tcrDescription
+  const logo = tcrState.tcrLogo ? parseIpfs(tcrState.tcrLogo) : ''
+  const itemName = tcrState.itemName
+  const fieldCount = tcrState.isTCRofTCRs ? 1 : tcrState.columns.length
   const article = getArticleFor(itemName)
 
   const sides: SideFigures[] =
     request === 'submission'
       ? [
           {
-            label: badges ? 'Badge submitter sends' : 'Submitter sends',
-            base: badges
-              ? tcrState.relSubmissionBaseDeposit
-              : tcrState.submissionBaseDeposit,
+            label: 'Submitter sends',
+            base: tcrState.submissionBaseDeposit,
           },
           {
             label: 'Challenger sends',
-            base: badges
-              ? tcrState.relSubmissionChallengeBaseDeposit
-              : tcrState.submissionChallengeBaseDeposit,
+            base: tcrState.submissionChallengeBaseDeposit,
           },
         ]
       : [
           {
             label: 'Removal requester sends',
-            base: badges
-              ? tcrState.relRemovalBaseDeposit
-              : tcrState.removalBaseDeposit,
+            base: tcrState.removalBaseDeposit,
           },
           {
             label: 'Challenger sends',
-            base: badges
-              ? tcrState.relRemovalChallengeBaseDeposit
-              : tcrState.removalChallengeBaseDeposit,
+            base: tcrState.removalChallengeBaseDeposit,
           },
         ]
   const cost = toNumber(arbitrationCost ?? null) ?? 0
@@ -567,27 +540,23 @@ export const LivePreview = ({
     0,
   )
 
-  const hours = typedNumber(
-    badges
-      ? tcrState.relChallengePeriodDuration
-      : tcrState.challengePeriodDuration,
-  )
+  const hours = typedNumber(tcrState.challengePeriodDuration)
 
   return (
     <Panel $featured $padding="none">
       <Tag>
         <i aria-hidden />
-        {badges ? 'Badges list preview' : 'Preview'}
+        Preview
       </Tag>
 
       <PreviewIdentity
         logo={logo}
         title={title}
         description={description}
-        icon={badges ? 'layers' : 'registry'}
+        icon="registry"
         meta={[
           `${fieldCount} ${fieldCount === 1 ? 'field' : 'fields'}`,
-          !badges && tcrState.isTCRofTCRs ? 'list of lists' : '',
+          tcrState.isTCRofTCRs ? 'list of lists' : '',
           itemName ? `Submit ${article} ${itemName.toLowerCase()}` : '',
         ]}
       />

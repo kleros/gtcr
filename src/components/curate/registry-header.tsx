@@ -1,6 +1,5 @@
 import React, { useLayoutEffect, useRef, useState } from 'react'
 import styled, { css, keyframes } from 'styled-components'
-import { Link } from 'react-router-dom'
 import { parseIpfs } from 'utils/ipfs-parse'
 import PolicyUpdatedBadge from 'components/policy-updated-badge'
 import { inkPlate, useLogoInk } from 'components/curate/logo-ink'
@@ -581,10 +580,6 @@ const QuietButton = styled.button`
   ${quiet}
 `
 
-const QuietLink = styled(Link)`
-  ${quiet}
-`
-
 const ParamsToggle = styled.button`
   ${quiet}
   color: var(--color-text);
@@ -731,7 +726,6 @@ export const RegistryHeader = ({
   policyURI,
   onOpenPolicy,
   policyUpdated = true,
-  badgesListTo,
   stats,
   parameters,
   explainerId,
@@ -768,7 +762,8 @@ export const RegistryHeader = ({
   primaryAmount?: React.ReactNode
   /** The line under the button: what happens to the amount. Defaults by kind. */
   depositNote?: React.ReactNode
-  onPrimary: () => void
+  /** None: the list takes no new entries here (a badges list). */
+  onPrimary?: () => void
   policyURI?: string | null
   onOpenPolicy?: () => void
   /**
@@ -776,7 +771,6 @@ export const RegistryHeader = ({
    * (Stake lists), so no placeholder appears and then vanishes.
    */
   policyUpdated?: boolean
-  badgesListTo?: string
   stats: RegistryStat[]
   parameters: RegistryParameter[]
   explainerId: string
@@ -927,11 +921,13 @@ export const RegistryHeader = ({
         </Identity>
 
         <Action>
-          <Button type="button" $variant="primary" $block onClick={onPrimary}>
-            <CurateIcon name="submit" size={16} />
-            {primaryLabel}
-            {primaryAmount && <Amount>· {primaryAmount}</Amount>}
-          </Button>
+          {onPrimary && (
+            <Button type="button" $variant="primary" $block onClick={onPrimary}>
+              <CurateIcon name="submit" size={16} />
+              {primaryLabel}
+              {primaryAmount && <Amount>· {primaryAmount}</Amount>}
+            </Button>
+          )}
           <Note>{depositNote ?? depositNoteFor(kind, itemName)}</Note>
           {governance}
         </Action>
@@ -1041,12 +1037,6 @@ export const RegistryHeader = ({
             Listing policy
             {policyUpdated && <PolicyUpdatedBadge registryAddress={address} />}
           </QuietButton>
-        )}
-        {badgesListTo && (
-          <QuietLink to={badgesListTo}>
-            <CurateIcon name="verified" size={14} />
-            Badges list
-          </QuietLink>
         )}
         <Explainer
           embedded

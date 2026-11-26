@@ -771,14 +771,12 @@ way (dashboard, Browse, registry pages, the profile, the landing page).
   through the history's own component, clamp and limits included: a sent piece cannot be changed.
   The field stays mounted while hidden (its undo history, its height); emptying it, or a send
   refused for the text, goes back to writing, with the caret in the text.
-- **Enable a badge** (a badges list's dialog, `pages/standard-item-details/modals/submit-connect.tsx`):
-  the parent is the list that names this one as its connected list, read from the indexer. One
-  such list (91 of 96 badges lists, 2026-11-26) is filled in and fixed; several (a list deployed
-  twice) are offered, the one the badges list was made for first; none (the other copy's orphan)
-  says a badge here would show on no list and sends nothing; a typed list that keeps its badges
-  elsewhere is refused. The badges list's own `parentTCRAddress` is only a hint: it is the address
-  predicted before the parent was deployed, which another deployment can take. No badges list has
-  ever had a badge submitted; most were made with badges off (reject-all policy, huge deposit).
+- **Badges are retired** (2026-11-26). A Standard list no longer comes with a badges list: the
+  wizard has no Badges step, and the factory deploys the list alone, its connected list the zero
+  address (two uploads and one contract fewer). The 125 badges lists made before (96 Standard,
+  29 Classic) never took a badge, and since the redesign no page showed one. A badges list's page
+  reads as a list of lists with no submit button, its note saying badges are retired; the list
+  page links no badges list; governance still offers `changeConnectedTCR`, a contract setting.
 - The countdown ring's caption is the dial plus 80px wide, so each end's date and its UTC stay on
   one line; its footnote is centred on the dial. A settled entry's date block is top-aligned with
   the eyebrow.

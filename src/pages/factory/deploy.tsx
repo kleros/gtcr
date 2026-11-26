@@ -2,7 +2,6 @@ import React, { useMemo, useRef, useState } from 'react'
 import styled from 'styled-components'
 import {
   parseEther,
-  encodeFunctionData,
   getContractAddress,
   decodeEventLog,
   type Address,
@@ -33,7 +32,6 @@ import {
   defaultEvidenceDisplayUri,
   defaultTcrAddresses,
   lgtcrFactoryAddresses,
-  txBatcherAddresses,
 } from 'config/tcr-addresses'
 import { CurateIcon } from 'components/curate/icons'
 import {
@@ -69,14 +67,16 @@ import useArbitratorCheck from 'hooks/use-arbitrator-check'
 import type { StepProps, TcrState } from '.'
 
 /*
- * Step 4, deploy: a review of what was entered (each row can jump back to
- * its step), then the deployment as a transaction stepper: the IPFS upload
- * (with the files' paths), the one signature (two factory deployments
- * batched through the transaction batcher, gas only, with the predicted
- * addresses), the confirmations (with the hash and an explorer link), the
- * live list and the optional submission to the list of lists. The blockers
- * name what stops the deploy. The meta-evidence upload and the contract
- * calls are unchanged.
+ * The last step, deploy: a review of what was entered (each row can jump
+ * back to its step), then the deployment as a transaction stepper: the IPFS
+ * upload (with the files' paths), the one signature (the factory's deploy,
+ * gas only, with the predicted address), the confirmations (with the hash
+ * and an explorer link), the live list and the optional submission to the
+ * list of lists. The blockers name what stops the deploy.
+ *
+ * Badges are retired (2026-11-26): a list no longer comes with a badges list
+ * (its connected list is the zero address). In five years none of the 125
+ * badges lists ever took a badge, and no page shows one since the redesign.
  */
 
 /**
@@ -90,44 +90,8 @@ const toWei = (value: unknown): bigint => parseEther(plainDecimal(value))
 const toWhole = (value: unknown, scale: number): number =>
   Math.round(typedNumber(value) * scale)
 
-/*
- * The badges list is deployed even when it is skipped (closed by a deposit
- * no one can pay), with whatever its fields hold. A field left half-typed
- * before switching it off must not fail the deploy after the uploads, so a
- * skipped list's values that don't parse go out as 0.
- */
-const relWei = (value: unknown, skipped: boolean): bigint => {
-  if (!skipped) return toWei(value)
-  try {
-    return toWei(value)
-  } catch {
-    return 0n
-  }
-}
-const relWhole = (value: unknown, scale: number, skipped: boolean): number => {
-  const whole = toWhole(value, scale)
-  return skipped && !Number.isFinite(whole) ? 0 : whole
-}
-
-export const _txBatcher = [
-  {
-    constant: false,
-    inputs: [
-      { name: 'targets', type: 'address[]' },
-      { name: 'values', type: 'uint256[]' },
-      { name: 'datas', type: 'bytes[]' },
-    ],
-    name: 'batchSend',
-    outputs: [],
-    payable: true,
-    stateMutability: 'payable',
-    type: 'function',
-  },
-]
-
 const getTcrMetaEvidence = async (
   tcrState: TcrState,
-  parentTCRAddress: string,
   evidenceDisplayInterfaceURI: string,
   uploadFile: (file: File, role: Roles) => Promise<string | null>,
 ) => {
@@ -139,12 +103,7 @@ const getTcrMetaEvidence = async (
     itemNamePlural,
     tcrPrimaryDocument,
     tcrLogo,
-    relColumns,
-    relItemName,
-    relItemNamePlural,
-    relTcrPrimaryDocument,
     isTCRofTCRs,
-    relTcrDisabled,
   } = tcrState
   const metadata = {
     tcrTitle,
@@ -157,20 +116,7 @@ const getTcrMetaEvidence = async (
     logoURI: tcrLogo,
     requireRemovalEvidence: true,
     isTCRofTCRs,
-    relTcrDisabled,
-  }
-
-  const relTcrTitle = `${tcrTitle} enabled badges`
-  const relMetadata = {
-    tcrTitle: relTcrTitle,
-    tcrDescription: `A List of lists related to ${tcrTitle}`,
-    columns: relColumns,
-    itemName: relItemName.toLowerCase(),
-    itemNamePlural: relItemNamePlural.toLowerCase(),
-    isConnectedTCR: true,
-    requireRemovalEvidence: true,
-    isTCRofTCRs: true,
-    parentTCRAddress,
+    // No badges list: said so for readers that still look for one.
     relTcrDisabled: true,
   }
 
@@ -182,23 +128,6 @@ const getTcrMetaEvidence = async (
     fileURI: tcrPrimaryDocument,
     evidenceDisplayInterfaceURI,
     metadata,
-  }
-
-  const commonRelMetaEvidenceProps = {
-    ...commonMetaEvidenceProps,
-    question: `Does the ${relItemName} comply with the required criteria?`,
-    fileURI: relTcrDisabled
-      ? process.env.REACT_APP_REJECT_ALL_POLICY_URI
-      : relTcrPrimaryDocument,
-    metadata: relMetadata,
-    _v: '1.0.0',
-    evidenceDisplayInterfaceRequiredParams: [
-      'disputeID',
-      'arbitrableContractAddress',
-      'arbitratorContractAddress',
-      'arbitrableChainID',
-      'arbitrableJsonRpcUrl',
-    ],
   }
 
   const registrationMetaEvidence = {
@@ -256,43 +185,7 @@ const getTcrMetaEvidence = async (
     },
   }
 
-  const relRegistrationMetaEvidence = {
-    name: 'rel-reg-meta-evidence.json',
-    data: {
-      title: `Add a ${relItemName} to ${relTcrTitle}`,
-      description: `Someone requested to add a ${relItemName} to ${relTcrTitle}.`,
-      rulingOptions: {
-        titles: ['Yes, Add It', "No, Don't Add It"],
-        descriptions: [
-          `Select this if you think the ${relItemName} complies with the required criteria and should be added.`,
-          `Select this if you think the ${relItemName} does not comply with the required criteria and should not be added.`,
-        ],
-      },
-      ...commonRelMetaEvidenceProps,
-    },
-  }
-  const relClearingMetaEvidence = {
-    name: 'rel-clr-meta-evidence.json',
-    data: {
-      title: `Remove a ${relItemName} from ${relTcrTitle}`,
-      description: `Someone requested to remove a ${relItemName} from ${relTcrTitle}.`,
-      rulingOptions: {
-        titles: ['Yes, Remove It', "No, Don't Remove It"],
-        descriptions: [
-          `Select this if you think the ${relItemName} does not comply with the required criteria and should be removed.`,
-          `Select this if you think the ${relItemName} complies with the required criteria and should not be removed.`,
-        ],
-      },
-      ...commonRelMetaEvidenceProps,
-    },
-  }
-
-  const files = [
-    registrationMetaEvidence,
-    clearingMetaEvidence,
-    relRegistrationMetaEvidence,
-    relClearingMetaEvidence,
-  ].map(
+  const files = [registrationMetaEvidence, clearingMetaEvidence].map(
     ({ name, data }) =>
       new File([JSON.stringify(data)], name, { type: 'application/json' }),
   )
@@ -302,19 +195,10 @@ const getTcrMetaEvidence = async (
   )
   if (uploaded.some((p) => !p))
     throw new Error('Failed to upload meta-evidence to IPFS.')
-  const [
-    registrationMetaEvidencePath,
-    clearingMetaEvidencePath,
-    relRegistrationMetaEvidencePath,
-    relClearingMetaEvidencePath,
-  ] = uploaded as string[]
+  const [registrationMetaEvidencePath, clearingMetaEvidencePath] =
+    uploaded as string[]
 
-  return {
-    registrationMetaEvidencePath,
-    clearingMetaEvidencePath,
-    relRegistrationMetaEvidencePath,
-    relClearingMetaEvidencePath,
-  }
+  return { registrationMetaEvidencePath, clearingMetaEvidencePath }
 }
 
 /* ---------- Layout ---------- */
@@ -411,12 +295,7 @@ type DeployProps = Omit<StepProps, 'postSubmit'> & {
   onEditStep?: (stepTitle: string) => void
 }
 
-const META_EVIDENCE_LABELS = [
-  'Add rules',
-  'Remove rules',
-  'Badges add rules',
-  'Badges remove rules',
-]
+const META_EVIDENCE_LABELS = ['Add rules', 'Remove rules']
 
 const Deploy = ({
   setTxState,
@@ -456,17 +335,12 @@ const Deploy = ({
   // checked first.
   const [waited, setWaited] = useState(false)
   const [metaEvidencePaths, setMetaEvidencePaths] = useState<string[]>([])
-  const [predicted, setPredicted] = useState<
-    | {
-        list: string
-        badges: string
-      }
-    | undefined
-  >(restored ? { list: restored.list, badges: restored.badges } : undefined)
+  const [predicted, setPredicted] = useState<{ list: string } | undefined>(
+    restored ? { list: restored.list } : undefined,
+  )
   const [failedAt, setFailedAt] = useState<DeployPhase>()
   const factoryAddress = lgtcrFactoryAddresses[chainId]
   const defaultTCRAddress = defaultTcrAddresses[chainId]
-  const batcherAddress = txBatcherAddresses[chainId]
   const evidenceDisplayInterfaceURI = defaultEvidenceDisplayUri[chainId]
   const { submissionDeposit, metaEvidence } = useStandardTcrView(
     defaultTCRAddress ?? '',
@@ -479,27 +353,16 @@ const Deploy = ({
 
   const incomplete = useMemo(() => incompleteSteps(tcrState), [tcrState])
   const busy = phase === 'uploading' || phase === 'wallet' || phase === 'mining'
-  const configured =
-    !!factoryAddress && !!batcherAddress && !!evidenceDisplayInterfaceURI
+  const configured = !!factoryAddress && !!evidenceDisplayInterfaceURI
   const arbitratorCheck = useArbitratorCheck(
     chainId,
     tcrState.arbitratorAddress,
     tcrState.arbitratorExtraData,
     chainName,
   )
-  const badgesArbitratorCheck = useArbitratorCheck(
-    chainId,
-    tcrState.relTcrDisabled ? undefined : tcrState.relArbitratorAddress,
-    tcrState.relArbitratorExtraData,
-    chainName,
-  )
-  const arbitratorBlocker =
-    arbitratorCheck.checking || badgesArbitratorCheck.checking
-      ? 'Checking the arbitrator'
-      : (arbitratorCheck.problem ??
-        (badgesArbitratorCheck.problem
-          ? `Badges list: ${badgesArbitratorCheck.problem}`
-          : undefined))
+  const arbitratorBlocker = arbitratorCheck.checking
+    ? 'Checking the arbitrator'
+    : arbitratorCheck.problem
   const blocker = !configured
     ? `Lists cannot be deployed on ${chainName}: no factory is configured`
     : incomplete.length > 0
@@ -535,7 +398,6 @@ const Deploy = ({
   const onDeploy = async () => {
     if (
       !factoryAddress ||
-      !batcherAddress ||
       !evidenceDisplayInterfaceURI ||
       !publicClient ||
       !walletClient
@@ -548,7 +410,6 @@ const Deploy = ({
       return
     }
     const factory = factoryAddress as Address
-    const batcher = batcherAddress as Address
     // Which stage a failure belongs to, for the stepper.
     let stage: DeployPhase = 'uploading'
     // A deployment kept from before stays kept (in the draft too) until a
@@ -573,82 +434,25 @@ const Deploy = ({
     setPredicted(undefined)
     try {
       setPhase('uploading')
-      const txCount = await publicClient.getTransactionCount({
-        address: factory,
-      })
-      const parentTCRAddress = getContractAddress({
-        from: factory,
-        nonce: BigInt(txCount + 1),
-      })
-
-      const {
-        registrationMetaEvidencePath,
-        clearingMetaEvidencePath,
-        relRegistrationMetaEvidencePath,
-        relClearingMetaEvidencePath,
-      } = await getTcrMetaEvidence(
-        tcrState,
-        parentTCRAddress,
-        evidenceDisplayInterfaceURI,
-        (file, role) => uploadOnce(uploadFile, uploaded.current, file, role),
-      )
+      const { registrationMetaEvidencePath, clearingMetaEvidencePath } =
+        await getTcrMetaEvidence(
+          tcrState,
+          evidenceDisplayInterfaceURI,
+          (file, role) => uploadOnce(uploadFile, uploaded.current, file, role),
+        )
       setMetaEvidencePaths([
         registrationMetaEvidencePath,
         clearingMetaEvidencePath,
-        relRegistrationMetaEvidencePath,
-        relClearingMetaEvidencePath,
       ])
       // Uploaded: from here on a failure belongs to the transaction.
       stage = 'wallet'
       setPhase('wallet')
 
-      const skipped = !!tcrState.relTcrDisabled
-      // A skipped badges list is never validated (its step has nothing to
-      // check), so its placeholder takes the list's own arbitrator, extra
-      // data and governor, which were: a half-edited hidden field must not
-      // fail the deploy after the sign-in and the uploads.
-      const relTCRArgs = [
-        skipped ? tcrState.arbitratorAddress : tcrState.relArbitratorAddress,
-        skipped
-          ? tcrState.arbitratorExtraData
-          : tcrState.relArbitratorExtraData,
-        ZERO_ADDRESS,
-        relRegistrationMetaEvidencePath,
-        relClearingMetaEvidencePath,
-        skipped ? tcrState.governorAddress : tcrState.relGovernorAddress,
-        [
-          skipped
-            ? parseEther('10000000000000')
-            : toWei(tcrState.relSubmissionBaseDeposit),
-          relWei(tcrState.relRemovalBaseDeposit, skipped),
-          relWei(tcrState.relSubmissionChallengeBaseDeposit, skipped),
-          relWei(tcrState.relRemovalChallengeBaseDeposit, skipped),
-        ],
-        relWhole(tcrState.relChallengePeriodDuration, 60 * 60, skipped),
-        // Percent to basis points, exactly as typed (12.5% is 1250).
-        [
-          relWhole(tcrState.relSharedStakeMultiplier, 100, skipped),
-          relWhole(tcrState.relWinnerStakeMultiplier, 100, skipped),
-          relWhole(tcrState.relLoserStakeMultiplier, 100, skipped),
-        ],
-        ZERO_ADDRESS,
-      ]
-
-      const relData = encodeFunctionData({
-        abi: _GTCRFactory,
-        functionName: 'deploy',
-        args: relTCRArgs,
-      })
-      const relTCRAddress = getContractAddress({
-        from: factory,
-        nonce: BigInt(txCount),
-      })
-      setPredicted({ list: parentTCRAddress, badges: relTCRAddress })
-
       const TCRArgs = [
         tcrState.arbitratorAddress,
         tcrState.arbitratorExtraData,
-        relTCRAddress,
+        // No badges list: badges are retired, the connected list is none.
+        ZERO_ADDRESS,
         registrationMetaEvidencePath,
         clearingMetaEvidencePath,
         tcrState.governorAddress,
@@ -659,6 +463,7 @@ const Deploy = ({
           toWei(tcrState.removalChallengeBaseDeposit),
         ],
         toWhole(tcrState.challengePeriodDuration, 60 * 60),
+        // Percent to basis points, exactly as typed (12.5% is 1250).
         [
           toWhole(tcrState.sharedStakeMultiplier, 100),
           toWhole(tcrState.winnerStakeMultiplier, 100),
@@ -666,34 +471,21 @@ const Deploy = ({
         ],
         ZERO_ADDRESS,
       ]
-      const tcrData = encodeFunctionData({
+      // The address the factory gives its next list, shown while this one
+      // mines; the receipt's NewGTCR event names the list for certain.
+      const listAddress = getContractAddress({
+        from: factory,
+        nonce: BigInt(
+          await publicClient.getTransactionCount({ address: factory }),
+        ),
+      })
+      setPredicted({ list: listAddress })
+
+      const { request } = await simulateContract(wagmiConfig, {
+        address: factory,
         abi: _GTCRFactory,
         functionName: 'deploy',
         args: TCRArgs,
-      })
-
-      // Both addresses were predicted from the factory's nonce before the
-      // uploads (the badges file names its parent list). A list deployed by
-      // anyone since would shift them, and the batch would still go through
-      // with this list pointing at someone else's badges list: start over.
-      const nonceNow = await publicClient.getTransactionCount({
-        address: factory,
-      })
-      if (nonceNow !== txCount)
-        throw new Error(
-          'Another list was just deployed through the same factory, so the addresses prepared for this one are taken. Deploy again: its files are prepared afresh.',
-        )
-
-      const targets = [factory, factory]
-      const values = [0n, 0n]
-      const datas = [relData, tcrData]
-
-      const { request } = await simulateContract(wagmiConfig, {
-        address: batcher,
-        abi: _txBatcher,
-        functionName: 'batchSend',
-        args: [targets, values, datas],
-        gas: 8000000n,
         account,
       })
 
@@ -705,7 +497,7 @@ const Deploy = ({
             stage = 'mining'
             setPendingHash(hash)
             setPhase('mining')
-            keepPending({ hash, list: parentTCRAddress, badges: relTCRAddress })
+            keepPending({ hash, list: listAddress })
             return hash
           }),
         publicClient,
@@ -716,17 +508,12 @@ const Deploy = ({
           // hash, which a reload or Check again must wait for.
           onHash: (next) => {
             setPendingHash(next)
-            keepPending({
-              hash: next,
-              list: parentTCRAddress,
-              badges: relTCRAddress,
-            })
+            keepPending({ hash: next, list: listAddress })
           },
         },
       )
 
-      if (result.status && result.result)
-        onMined(result.result, parentTCRAddress, relTCRAddress)
+      if (result.status && result.result) onMined(result.result, listAddress)
       // Sent (the callback above moved the stage on), but no receipt, which
       // a revert would have: the transaction is still pending. Unless the
       // wallet cancelled or replaced it: then it never will be.
@@ -755,11 +542,7 @@ const Deploy = ({
   }
 
   /** The deployment is mined: the list's address, saved with the transaction. */
-  const onMined = (
-    receipt: TransactionReceipt,
-    predictedAddress: string,
-    predictedBadges?: string,
-  ) => {
+  const onMined = (receipt: TransactionReceipt, predictedAddress: string) => {
     const txHash = receipt.transactionHash
     setTxSubmitted(txHash)
 
@@ -782,26 +565,15 @@ const Deploy = ({
           (parsed): parsed is NonNullable<typeof parsed> =>
             !!parsed && parsed.eventName === 'NewGTCR',
         )
-      // The second NewGTCR event is the parent TCR
-      const pickAddress = (args: unknown): string | undefined =>
-        args && typeof args === 'object' && '_address' in args
-          ? ((args as { _address?: string })._address ?? undefined)
+      // The list is the last NewGTCR event: the only one now, the second in
+      // a deployment from before badges were retired, which created a
+      // badges list first.
+      const last = newGTCRLogs[newGTCRLogs.length - 1]?.args
+      const deployed =
+        last && typeof last === 'object' && '_address' in last
+          ? (last as { _address?: string })._address
           : undefined
-      if (newGTCRLogs.length >= 2) {
-        contractAddress = pickAddress(newGTCRLogs[1].args) ?? contractAddress
-        // A deploy that slipped in after the check above shifts the
-        // addresses: say so, with the way to repair it.
-        const badges = pickAddress(newGTCRLogs[0].args)
-        if (
-          badges &&
-          predictedBadges &&
-          badges.toLowerCase() !== predictedBadges.toLowerCase()
-        )
-          errorToast(
-            `Another list was deployed in the same block, so this list's badges point at ${predictedBadges} instead of the badges list deployed with it (${badges}). Its governor can repair this with changeConnectedTCR.`,
-          )
-      } else if (newGTCRLogs.length === 1)
-        contractAddress = pickAddress(newGTCRLogs[0].args) ?? contractAddress
+      if (deployed) contractAddress = deployed
     } catch (err) {
       console.error('Error parsing deploy logs:', err)
     }
@@ -836,7 +608,7 @@ const Deploy = ({
       // list. Only a speed-up did.
       const replaced = !!replacement && replacement.reason !== 'repriced'
       if (receipt.status === 'success' && !replaced)
-        onMined(receipt, predicted?.list ?? '', predicted?.badges)
+        onMined(receipt, predicted?.list ?? '')
       else {
         keepPending(undefined)
         setFailedAt('mining')
@@ -970,11 +742,6 @@ const Deploy = ({
       wrap: true,
       step: 'Deposit',
     },
-    {
-      label: 'Badges list',
-      value: tcrState.relTcrDisabled ? 'Skipped' : 'Included',
-      step: 'Badges',
-    },
   ]
 
   return (
@@ -1031,7 +798,7 @@ const Deploy = ({
               note={
                 stepStatus('uploading') === 'failed'
                   ? failedNote
-                  : 'Four small files: the add and remove rules for your list and its badges list.'
+                  : 'Two small files: the add and remove rules for your list.'
               }
             >
               {metaEvidencePaths.length > 0 && (
@@ -1064,7 +831,7 @@ const Deploy = ({
               note={
                 stepStatus('wallet') === 'failed'
                   ? failedNote
-                  : `Confirm in your wallet. It batches two deployments: the badges list${tcrState.relTcrDisabled ? ' (a closed placeholder, since you skipped it)' : ''}, then your list.`
+                  : 'Confirm in your wallet: the factory deploys your list.'
               }
             >
               {predicted && (
@@ -1072,10 +839,6 @@ const Deploy = ({
                   <TxPill title={predicted.list}>
                     <span>Your list</span>
                     {truncateMiddle(predicted.list, 6, 4)}
-                  </TxPill>
-                  <TxPill title={predicted.badges}>
-                    <span>Badges list</span>
-                    {truncateMiddle(predicted.badges, 6, 4)}
                   </TxPill>
                 </TxData>
               )}
