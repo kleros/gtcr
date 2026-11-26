@@ -47,6 +47,54 @@ const getCachedEntry = (
   }
 }
 
+/** The key the cache used before v2, followed by `-{mode}-…`. */
+const FORMER_PREFIX = 'policyHistory-'
+
+let swept = false
+
+/**
+ * Entries nothing reads any more go, once a page load, before the first
+ * write: every one under the former key (`policyHistory-…`, never read again
+ * since v2), and v2 entries past their day, which are otherwise removed only
+ * when their list is opened again. Hundreds of lists browsed would keep
+ * taking the origin's storage, which drafts and settings share.
+ */
+export const sweepPolicyCache = (now = Date.now()) => {
+  if (swept) return
+  swept = true
+  try {
+    const keys: string[] = []
+    for (let index = 0; index < localStorage.length; index++) {
+      const key = localStorage.key(index)
+      if (key) keys.push(key)
+    }
+    for (const key of keys) {
+      if (key.startsWith(FORMER_PREFIX)) {
+        localStorage.removeItem(key)
+        continue
+      }
+      if (!key.startsWith(`${CACHE_KEY_PREFIX}-`)) continue
+      let fresh = false
+      try {
+        const { timestamp } = JSON.parse(
+          localStorage.getItem(key) ?? '',
+        ) as CachedEntry
+        fresh = now - timestamp <= CACHE_EXPIRY
+      } catch {
+        // Unreadable: nothing could use it.
+      }
+      if (!fresh) localStorage.removeItem(key)
+    }
+  } catch {
+    // Storage blocked: there is nothing to sweep.
+  }
+}
+
+/** For tests: the next write sweeps again. */
+export const resetPolicyCacheSweep = () => {
+  swept = false
+}
+
 const setCachedEntry = (
   chainId: number,
   address: string,
@@ -54,6 +102,7 @@ const setCachedEntry = (
   mode: PolicyFetchMode,
   data: PolicyHistoryEntry[],
 ) => {
+  sweepPolicyCache()
   try {
     const entry: CachedEntry = { data, timestamp: Date.now() }
     localStorage.setItem(
