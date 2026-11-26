@@ -108,6 +108,19 @@ describe('EvidenceText', () => {
     expect(container.querySelector('strong')).toBeNull()
   })
 
+  it('keeps a URL that opens nothing whole too, as text', async () => {
+    const { container } = renderEvidence(
+      'See http://example.org/pkg/__init__.py and http://example.org/a*b*c/x, *noted*.',
+    )
+    expect((await screen.findByText('noted')).tagName).toBe('EM')
+    expect(container.textContent).toBe(
+      'See http://example.org/pkg/__init__.py and http://example.org/a*b*c/x, noted.',
+    )
+    expect(container.querySelector('strong')).toBeNull()
+    expect(container.querySelectorAll('em')).toHaveLength(1)
+    expect(container.querySelector('a')).toBeNull()
+  })
+
   it('still lets emphasis close around a URL, and code keep its own', async () => {
     const { container } = renderEvidence(
       '*see https://a.example/x* and **https://a.example/__y__** in `https://a.example/__z__`',

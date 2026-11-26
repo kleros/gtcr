@@ -835,7 +835,8 @@ way (dashboard, Browse, registry pages, the profile, the landing page).
   loaded only then, as a background load: a tab on an older release keeps the page and shows the
   text plain): no tables, raw HTML reads as the text it is, and indented code, setext headings and
   link definitions are off, as plain evidence trips them. Headings are bold lines, every line break
-  shows, a bare URL stays whole whatever `*` or `_` its address holds, links keep the plain text's
+  shows, a bare URL stays whole whatever `*` or `_` its address holds (one that opens nothing, plain
+  http, too: it reads as written), links keep the plain text's
   rules (https and ipfs:// only, through the external-link warning), a link whose words are not its
   address is followed by its host (isolated, so a right-to-left override cannot reverse it), and an
   image is a link, never loaded. Text past 5,000 characters, 200 lines, 200 of `*` `_` `` ` `` `[`,

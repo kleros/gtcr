@@ -123,18 +123,33 @@ export interface UrlPiece {
   href: string
 }
 
-/** Text cut at each URL that opens something, trailing punctuation left out. */
-export const splitUrls = (text: string): Array<string | UrlPiece> =>
-  text.split(URL_PATTERN).flatMap((part, index): Array<string | UrlPiece> => {
+/** A URL found in text, whether it opens anything (plain http does not). */
+export interface FoundUrl {
+  url: string
+  href?: string
+}
+
+/** Text cut at each URL, trailing punctuation left out. */
+export const findUrls = (text: string): Array<string | FoundUrl> =>
+  text.split(URL_PATTERN).flatMap((part, index): Array<string | FoundUrl> => {
     // split() with a capture group: odd indexes are the matched URLs.
     if (index % 2 === 0) return part ? [part] : []
     const cut = trailingLength(part)
     const trail = part.slice(part.length - cut)
     const url = part.slice(0, part.length - cut)
-    const href = evidenceHref(url)
-    if (!href) return [part]
-    return trail ? [{ url, href }, trail] : [{ url, href }]
+    const found = { url, href: evidenceHref(url) }
+    return trail ? [found, trail] : [found]
   })
+
+/** Text cut at each URL that opens something, trailing punctuation left out. */
+export const splitUrls = (text: string): Array<string | UrlPiece> =>
+  findUrls(text).map((piece) =>
+    typeof piece === 'string'
+      ? piece
+      : piece.href
+        ? { url: piece.url, href: piece.href }
+        : piece.url,
+  )
 
 export const linkify = (text: string): React.ReactNode[] =>
   splitUrls(text).map((piece, index) =>

@@ -1,7 +1,12 @@
 import React, { useLayoutEffect } from 'react'
 import Markdown, { type Components } from 'react-markdown'
 import styled from 'styled-components'
-import { EvidenceLink, evidenceHref, splitUrls } from './item-standard-linkify'
+import {
+  EvidenceLink,
+  evidenceHref,
+  findUrls,
+  splitUrls,
+} from './item-standard-linkify'
 
 /*
  * Evidence written in Markdown, as the parties and jurors meant it to read.
@@ -87,13 +92,14 @@ const emphasisTail = (url: string): number => {
 /**
  * The source with each bare URL's Markdown characters escaped, so the URL
  * stays one piece of text: "…/__init__.py" would lose its underscores to
- * bold, and its link would end before them. A `*` or `_` ending the URL is
- * left to close emphasis around it ("*see https://…*"). URLs in code, links
- * and images are Markdown's own and stay as written.
+ * bold, and its link would end before them. That holds for a URL that opens
+ * nothing too (plain http, shown as text): it reads as written. A `*` or `_`
+ * ending the URL is left to close emphasis around it ("*see https://…*").
+ * URLs in code, links and images are Markdown's own and stay as written.
  */
 const escapeBareUrls = (source: string, kept: Array<[number, number]>) => {
   let offset = 0
-  return splitUrls(source)
+  return findUrls(source)
     .map((piece) => {
       if (typeof piece === 'string') {
         offset += piece.length
