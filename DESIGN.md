@@ -379,20 +379,28 @@ at row size included.
   the list's cooldown), and the mode's own actions: Sign in wallet, Propose to the Safe, or
   Download Safe file and Copy calldata, beside Back. The second click of a double-click, or a click
   in the first 400 ms, never confirms. A change proposed to a Safe is not proposed again until a
-  value changes.
+  value changes. The court field's change sends its untouched values back with it, and a review
+  stays open as long as the governor likes: the chain is read again once they choose, and if the
+  settings changed meanwhile nothing leaves (no signature, file or copy) and the form starts again
+  from the live settings. Copy calldata keeps the click's permission through that read (a
+  `ClipboardItem` given the text as a promise: Safari drops a plain copy after a network read).
 - **A new governor is read before its review** (`governor-target.ts`): a Safe is named with its
   threshold ("2 of its 4 owners"); a list (anything with its own governor and arbitrator) is
   refused, since it never sends a call; any other contract, and an address it could not read, is
-  allowed with a warning; no code at all says a Safe must exist on that chain itself (two Gnosis
+  allowed with a warning. "Not a Safe" takes the contract's own no (its views revert or return
+  nothing): views the network dropped, or a multicall that failed as a whole, say it could not be
+  checked. No code at all says a Safe must exist on that chain itself (two Gnosis
   lists name the Ethereum Kleros Governor, which has none there). The transfer's confirm is the
   danger button, "Sign the transfer".
 - **The policy** is the Policy (PDF) row of the court field, the factories' `UploadField`
-  showing the live policy. A new PDF is written into the live files, each copied with only its
-  `fileURI` replaced (never rebuilt from the factory's template), uploaded once and read back,
-  then put in the MetaEvidence fields; Remove (offered only for a new PDF) goes back to the live
-  files. Whatever files are sent, a new one keeps its live file's columns (a column may be added
-  after the last, as Kleros Tokens added "Website"), the registration and clearing files name one
-  policy, and a new policy must be an IPFS path that opens from the gateway.
+  showing the live policy. A new PDF is written into the files the MetaEvidence fields hold (the
+  live ones, or files of the governor's own, such as one with a column added: never dropped for
+  the live ones), each copied with only its `fileURI` replaced (never rebuilt from the factory's
+  template), uploaded once and read back, then put in the fields; Remove (offered only for a new
+  PDF) puts back what the fields held before it. Whatever files are sent, a new one keeps its live
+  file's columns (a column may be added after the last, as Kleros Tokens added "Website"), the
+  registration and clearing files name one policy, and a new policy must be an IPFS path that
+  opens from the gateway.
 - **Another arbitrator.** Courts and fees are Kleros Court's, so a list on another arbitrator (9 of
   20 Gnosis Stake lists, 7 Standard ones) gets a note naming it instead of the court picker, and
   its extra data goes back as it is; on Standard the arbitrator field takes only Kleros Court

@@ -40,6 +40,9 @@ const h = vi.hoisted(() => ({
   writes: [] as { functionName: string; args: unknown[] }[],
   uploads: [] as { name: string; text: string }[],
   toasts: [] as string[],
+  // While set, chain reads wait for it: the moment between a click and
+  // the read it starts.
+  hold: undefined as Promise<void> | undefined,
 }))
 
 vi.mock('config/wagmi', () => ({
@@ -94,14 +97,16 @@ vi.mock('@wagmi/core', async (importOriginal) => ({
       allowFailure?: boolean
       contracts: { address: string; functionName: string }[]
     },
-  ) =>
-    contracts.map(({ address, functionName }) => {
+  ) => {
+    await h.hold
+    return contracts.map(({ address, functionName }) => {
       const value = view(address, functionName)
       if (allowFailure === false) return value
       return value === undefined
         ? { status: 'failure', error: new Error('reverted') }
         : { status: 'success', result: value }
-    }),
+    })
+  },
   readContract: async (
     _config: unknown,
     { address, functionName }: { address: string; functionName: string },
@@ -224,6 +229,7 @@ beforeEach(() => {
     writes: [],
     uploads: [],
     toasts: [],
+    hold: undefined,
   })
   vi.stubGlobal('fetch', async (url: string) => {
     const path = Object.keys(h.files).find((key) =>
@@ -480,6 +486,214 @@ describe('the court and its MetaEvidence', () => {
       newRegistration,
       newClearing,
     ])
+  })
+})
+
+describe('a change whose settings moved while its review was open', () => {
+  const courtField = async () => {
+    await screen.findByDisplayValue(REG)
+    return fieldOf(screen.getByRole('textbox', { name: 'Arbitrator address' }))
+  }
+  /** The court field's review of 5 jurors, opened and settled. */
+  const reviewFiveJurors = async () => {
+    const field = await courtField()
+    const jurors = within(field).getByRole('textbox', {
+      name: 'Number of jurors',
+    })
+    await userEvent.clear(jurors)
+    await userEvent.type(jurors, '5')
+    await userEvent.click(
+      within(field).getByRole('button', { name: 'Review change' }),
+    )
+    const review = await within(field).findByRole('region')
+    await settle()
+    return { field, jurors, review }
+  }
+  /** Another change lands: one more settings entry, on another court. */
+  const changedElsewhere = () => {
+    h.views[`${LIST}:metaEvidenceUpdates`] = 2n
+    h.views[`${LIST}:arbitratorExtraData`] = extra(2, 3)
+    ;(h.indexer as any).registry.metaEvidenceCount = 4
+  }
+
+  it('sends nothing, and the form starts again from the live settings', async () => {
+    open(standardList())
+    const { jurors, review } = await reviewFiveJurors()
+    changedElsewhere()
+    await userEvent.click(
+      within(review).getByRole('button', { name: 'Sign in wallet' }),
+    )
+    await waitFor(() =>
+      expect(h.toasts.join('\n')).toMatch(
+        /settings changed since this dialog opened, so nothing was sent/,
+      ),
+    )
+    expect(h.writes).toHaveLength(0)
+    // The live settings, read again: court 2, its 3 jurors.
+    await waitFor(() => expect(jurors).toHaveValue('3'))
+  })
+
+  it('sends it when nothing moved', async () => {
+    open(standardList())
+    const { review } = await reviewFiveJurors()
+    await userEvent.click(
+      within(review).getByRole('button', { name: 'Sign in wallet' }),
+    )
+    await waitFor(() => expect(h.writes).toHaveLength(1))
+  })
+
+  describe('exported for a Safe', () => {
+    let copied: string[]
+    beforeEach(() => {
+      copied = []
+      Object.defineProperty(navigator, 'clipboard', {
+        configurable: true,
+        value: {
+          writeText: async (text: string) => {
+            copied.push(text)
+          },
+        },
+      })
+    })
+
+    it('copies no calldata', async () => {
+      open(standardList({ governor: SAFE }))
+      const { review } = await reviewFiveJurors()
+      changedElsewhere()
+      await userEvent.click(
+        within(review).getByRole('button', { name: 'Copy calldata' }),
+      )
+      await waitFor(() =>
+        expect(h.toasts.join('\n')).toMatch(/settings changed since/),
+      )
+      expect(copied).toEqual([])
+    })
+
+    it('copies the calldata when nothing moved (no ClipboardItem)', async () => {
+      open(standardList({ governor: SAFE }))
+      const { review } = await reviewFiveJurors()
+      await userEvent.click(
+        within(review).getByRole('button', { name: 'Copy calldata' }),
+      )
+      await waitFor(() => expect(copied).toHaveLength(1))
+      expect(copied[0]).toMatch(new RegExp(`^to: ${LIST}\nvalue: 0\ndata: 0x`))
+    })
+
+    it('downloads no file', async () => {
+      // jsdom has no object URLs: the download's first step, counted.
+      const download = vi.fn(() => 'blob:test')
+      Object.defineProperty(URL, 'createObjectURL', {
+        configurable: true,
+        value: download,
+      })
+      open(standardList({ governor: SAFE }))
+      const { review } = await reviewFiveJurors()
+      changedElsewhere()
+      await userEvent.click(
+        within(review).getByRole('button', { name: 'Download Safe file' }),
+      )
+      await waitFor(() =>
+        expect(h.toasts.join('\n')).toMatch(/settings changed since/),
+      )
+      expect(download).not.toHaveBeenCalled()
+    })
+
+    it('copies once the settings are read again, keeping the click (ClipboardItem)', async () => {
+      const items: { 'text/plain': Promise<Blob> }[] = []
+      // As a browser does: the write ends once the item's text is there.
+      const write = vi.fn(async ([item]: { items: any }[]) => {
+        items.push(item.items)
+        await item.items['text/plain']
+      })
+      vi.stubGlobal(
+        'ClipboardItem',
+        class {
+          constructor(public items: unknown) {}
+        },
+      )
+      Object.defineProperty(navigator, 'clipboard', {
+        configurable: true,
+        value: { write },
+      })
+      try {
+        open(standardList({ governor: SAFE }))
+        const { review } = await reviewFiveJurors()
+        let release = () => {}
+        h.hold = new Promise<void>((resolve) => {
+          release = resolve
+        })
+        await userEvent.click(
+          within(review).getByRole('button', { name: 'Copy calldata' }),
+        )
+        // Written on the click, while the settings are still being read.
+        await waitFor(() => expect(write).toHaveBeenCalledTimes(1))
+        expect(h.toasts.join('\n')).not.toMatch(/Calldata copied/)
+        release()
+        const text = await (await items[0]['text/plain']).text()
+        expect(text).toMatch(new RegExp(`^to: ${LIST}\nvalue: 0\ndata: 0x`))
+        await waitFor(() =>
+          expect(h.toasts.join('\n')).toMatch(/Calldata copied/),
+        )
+      } finally {
+        vi.unstubAllGlobals()
+      }
+    })
+  })
+})
+
+describe("a new policy and files of the governor's own", () => {
+  it('is written into their file, not over it, and Remove gives it back', async () => {
+    const own = '/ipfs/QmOwn/reg-meta-evidence.json'
+    const ownFile = {
+      ...registrationFile(POLICY),
+      metadata: {
+        tcrTitle: 'Tokens',
+        columns: [...columns, { label: 'Website', type: 'link' }],
+      },
+    }
+    h.files[own] = ownFile
+    open(standardList())
+    const registration = await screen.findByDisplayValue(REG)
+    await userEvent.clear(registration)
+    await userEvent.type(registration, own)
+    await userEvent.upload(
+      screen.getByLabelText('Policy (PDF)'),
+      new File(['%PDF-1.4'], 'policy.pdf', { type: 'application/pdf' }),
+    )
+    await waitFor(() =>
+      expect(h.toasts.join('\n')).toMatch(/new policy is in the two/),
+    )
+    const newPolicy = `/ipfs/QmUpload0/${h.uploads[0].name}`
+    expect(JSON.parse(h.uploads[1].text)).toEqual({
+      ...ownFile,
+      fileURI: newPolicy,
+    })
+    expect(JSON.parse(h.uploads[2].text)).toEqual({
+      ...clearingFile(POLICY),
+      fileURI: newPolicy,
+    })
+
+    await userEvent.click(screen.getByRole('button', { name: 'Remove' }))
+    expect(screen.getByDisplayValue(own)).toBeInTheDocument()
+    expect(screen.getByDisplayValue(CLR)).toBeInTheDocument()
+  })
+
+  it('names their file when it cannot be read', async () => {
+    const own = '/ipfs/QmMissing/reg-meta-evidence.json'
+    open(standardList())
+    const registration = await screen.findByDisplayValue(REG)
+    await userEvent.clear(registration)
+    await userEvent.type(registration, own)
+    await userEvent.upload(
+      screen.getByLabelText('Policy (PDF)'),
+      new File(['%PDF-1.4'], 'policy.pdf', { type: 'application/pdf' }),
+    )
+    await waitFor(() =>
+      expect(h.toasts.join('\n')).toMatch(
+        /registration MetaEvidence file in its field could not be read/,
+      ),
+    )
+    expect(screen.getByDisplayValue(own)).toBeInTheDocument()
   })
 })
 

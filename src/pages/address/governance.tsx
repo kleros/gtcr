@@ -1365,29 +1365,74 @@ const governanceCall = (
   args,
 })
 
-/** Hands a built call to the Safe's owners: a file, or the calldata. */
+const COPY_FAILED =
+  'The calldata could not be copied. Download the Safe file instead.'
+
+/**
+ * Copies text that is still being worked out. A browser lets a page write
+ * the clipboard only on a click, and Safari stops counting the click once a
+ * network read has run in between: a ClipboardItem handed the text as a
+ * promise keeps the click's permission while the read runs (Safari, Chrome,
+ * Firefox 127+). Nothing is copied when the promise fails.
+ */
+const copyWhenReady = async (text: Promise<string>) => {
+  if (
+    typeof ClipboardItem === 'function' &&
+    typeof navigator.clipboard.write === 'function'
+  ) {
+    const blob = text.then((value) => new Blob([value], { type: 'text/plain' }))
+    // Its failure is the caller's to report, from `text`.
+    blob.catch(() => undefined)
+    await navigator.clipboard.write([new ClipboardItem({ 'text/plain': blob })])
+    return
+  }
+  await navigator.clipboard.writeText(await text)
+}
+
+/**
+ * Hands a built call to the Safe's owners: a file, or the calldata. `fresh`
+ * says whether the values it was built from are still the chain's
+ * (useGovernanceWrite); when they are not, nothing is handed over.
+ */
 const exportCall = async (
   registry: GovernedRegistry,
   call: ContractCall,
   via: ExportVia,
-) => {
+  fresh: Promise<boolean>,
+): Promise<'exported' | 'outdated'> => {
   if (via === 'copy') {
-    if (!navigator.clipboard)
-      throw new Error(
-        'The calldata could not be copied. Download the Safe file instead.',
-      )
-    await navigator.clipboard
-      .writeText(`to: ${call.address}\nvalue: 0\ndata: ${callData(call)}`)
-      .catch(() => {
-        throw new Error(
-          'The calldata could not be copied. Download the Safe file instead.',
-        )
-      })
+    if (!navigator.clipboard) {
+      // The check is not waited for: its failure would go unheard.
+      fresh.catch(() => undefined)
+      throw new Error(COPY_FAILED)
+    }
+    // Why the text never came, when it did not: the settings moved, or
+    // they could not be read again.
+    let refusal: unknown
+    const text = fresh.then(
+      (current) => {
+        if (current)
+          return `to: ${call.address}\nvalue: 0\ndata: ${callData(call)}`
+        refusal = 'outdated'
+        throw new Error(SETTINGS_CHANGED)
+      },
+      (err: unknown) => {
+        refusal = err
+        throw err
+      },
+    )
+    try {
+      await copyWhenReady(text)
+    } catch {
+      if (refusal === 'outdated') return 'outdated'
+      throw refusal ?? new Error(COPY_FAILED)
+    }
     successToast(
       `Calldata copied. In the Safe on ${chainName(call.chainId)}, start a transaction to ${shortAddress(call.address)} with value 0 and this data; its owners sign it there.`,
     )
-    return
+    return 'exported'
   }
+  if (!(await fresh)) return 'outdated'
   // The Builder checks neither the chain nor the Safe a file was made for:
   // its name and the batch's say both, for an owner of Safes on several
   // chains at one address.
@@ -1405,10 +1450,14 @@ const exportCall = async (
   successToast(
     `Safe file downloaded. Open the Safe on ${chainName(call.chainId)}, then Apps, then Transaction Builder, and drop the file in: it shows the change by function and values, for the Safe's owners to check and sign there. It carries today's values: execute it before any other change to this list.`,
   )
+  return 'exported'
 }
 
-/** What a save came to: only a mined one changed the list. */
-type WriteOutcome = 'mined' | 'proposed' | 'exported' | 'none'
+/**
+ * What a save came to: only a mined one changed the list. `outdated`: the
+ * chain changed while the review was open, so nothing left.
+ */
+type WriteOutcome = 'mined' | 'proposed' | 'exported' | 'outdated' | 'none'
 
 /** A review waiting for the governor: how it would leave, and the answer. */
 interface PendingReview {
@@ -1455,6 +1504,13 @@ const useGovernanceWrite = (registry: GovernedRegistry) => {
     functionName: string,
     args: unknown[],
     review: ChangeReview,
+    /**
+     * Whether the values the change was built from are still the chain's,
+     * asked again once the governor has chosen: a review stays open as long
+     * as they like, and a change made meanwhile (another tab, another
+     * signer) would be undone by the values sent back with this one.
+     */
+    stillCurrent?: () => Promise<boolean>,
   ): Promise<WriteOutcome> => {
     if (!ready) return 'none'
     setPending(true)
@@ -1471,12 +1527,15 @@ const useGovernanceWrite = (registry: GovernedRegistry) => {
         const choice = await ask(review, 'export')
         if (!choice) return 'none'
         setPending(true)
-        await exportCall(
+        // The check goes in unanswered: a copy has to start on the click,
+        // before the read comes back (copyWhenReady).
+        const exported = await exportCall(
           registry,
           call,
           choice === 'copy' ? 'copy' : 'download',
+          stillCurrent ? stillCurrent() : Promise.resolve(true),
         )
-        return 'exported'
+        return exported
       }
       if (!walletClient) return 'none'
       const { request } = await simulateContract(wagmiConfig, call as any)
@@ -1498,6 +1557,7 @@ const useGovernanceWrite = (registry: GovernedRegistry) => {
       const choice = await ask(review, isContract ? 'propose' : 'send')
       if (!choice) return 'none'
       setPending(true)
+      if (stillCurrent && !(await stillCurrent())) return 'outdated'
       if (isContract) {
         await walletClient.writeContract(request)
         infoToast(PROPOSED)
@@ -1735,6 +1795,8 @@ const useMetaEvidenceDraft = (current: CurrentMetaEvidence | undefined) => {
   return {
     registration,
     clearing,
+    /** The fields hold what the governor put there, not the live files. */
+    edited,
     setRegistration: (value: string) => {
       setEdited(true)
       setRegistration(value)
@@ -1759,6 +1821,8 @@ const PolicyBox = styled.fieldset`
 
 const LIVE_UNREADABLE =
   "The list's current MetaEvidence could not be read, so the new policy cannot be written into it. Try again in a minute."
+const SETTINGS_UNREAD =
+  "The list's settings could not be read again before sending, so nothing was sent. Try again in a moment."
 
 /** "court, policy" → "Court and policy": what a review is of. */
 const joinedTitle = (parts: string[]) => {
@@ -1962,17 +2026,39 @@ const ArbitrationGovernanceField = ({
     refreshing
 
   /*
-   * A new policy PDF, written into the live files: each is copied with only
-   * its fileURI replaced (never rebuilt from the factory's template, which
-   * would change other fields), uploaded once (uploadOnce: a retry spares
-   * Atlas's 5 a minute) and read back, then put in the MetaEvidence fields.
-   * Nothing is sent until the change is reviewed.
+   * A new policy PDF, written into the files the MetaEvidence fields hold:
+   * the live ones, or files of the governor's own (a column added after the
+   * last, say), which are never dropped for the live ones. Each is copied
+   * with only its fileURI replaced (never rebuilt from the factory's
+   * template, which would change other fields), uploaded once (uploadOnce: a
+   * retry spares Atlas's 5 a minute) and read back, then put in the fields.
+   * Nothing is sent until the change is reviewed; Remove puts back what the
+   * fields held before.
    */
+  // What the fields held before a new policy went into them: null while
+  // they followed the live files.
+  const beforePolicy = useRef<{
+    registration: string
+    clearing: string
+  } | null>(null)
+  // The fields go back to the live files: no new policy, none to restore.
+  const resetFiles = () => {
+    beforePolicy.current = null
+    setNewPolicy(undefined)
+    meta.reset()
+  }
   const replacePolicy = async (pdf: string) => {
-    // Removed: the new policy is dropped, the files go back to the live ones.
     if (!pdf) {
+      // Removed: the fields go back to what they held before it.
+      const before = beforePolicy.current
+      if (!before) {
+        resetFiles()
+        return
+      }
+      beforePolicy.current = null
       setNewPolicy(undefined)
-      meta.reset()
+      meta.setRegistration(before.registration)
+      meta.setClearing(before.clearing)
       return
     }
     const live = current
@@ -1984,16 +2070,41 @@ const ArbitrationGovernanceField = ({
       infoToast("That is the list's current policy: nothing to replace.")
       return
     }
+    // What the fields held before any new policy: a second PDF replaces the
+    // first one, it is not written over it.
+    const held =
+      newPolicy === undefined
+        ? meta.edited
+          ? { registration: meta.registration, clearing: meta.clearing }
+          : null
+        : beforePolicy.current
+    /** The file a field holds, when it is not the live one. */
+    const ownFile = (draft: string | undefined, liveUri: string) => {
+      const stored = toStoredUri(draft ?? '')
+      return stored && stored !== toStoredUri(liveUri) ? stored : undefined
+    }
+    const fieldName = (role: MetaEvidenceRole) =>
+      usesPair ? `${role} MetaEvidence` : 'MetaEvidence'
     setReplacing(true)
-    let step = 'policy'
+    // How far it got, for the message if it stops.
+    const at: { step: string; role: MetaEvidenceRole; own: boolean } = {
+      step: 'policy',
+      role: 'registration',
+      own: false,
+    }
     try {
       await confirmStored(pdf)
-      const copy = async (uri: string, name: string) => {
-        step = 'read'
-        const file = (await readMetaEvidence(uri)) as unknown
+      const copy = async (
+        role: MetaEvidenceRole,
+        liveUri: string,
+        name: string,
+      ) => {
+        const own = ownFile(held?.[role], liveUri)
+        Object.assign(at, { step: 'read', role, own: own !== undefined })
+        const file = (await readMetaEvidence(own ?? liveUri)) as unknown
         if (!file || typeof file !== 'object' || Array.isArray(file))
-          throw new Error(LIVE_UNREADABLE)
-        step = 'upload'
+          throw new Error(`The ${role} file is not a JSON object.`)
+        at.step = 'upload'
         const path = await uploadOnce(
           uploadFile,
           uploads.current,
@@ -2003,19 +2114,21 @@ const ArbitrationGovernanceField = ({
           JSON_UPLOAD_ROLE,
         )
         if (!path) throw new Error('Sign in, then pick the file again.')
-        step = 'stored'
+        at.step = 'stored'
         await confirmStored(path)
         return path
       }
       const registration = await copy(
+        'registration',
         live.registration,
         usesPair ? 'reg-meta-evidence.json' : 'meta-evidence.json',
       )
       const clearing =
         usesPair && live.clearing
-          ? await copy(live.clearing, 'clr-meta-evidence.json')
+          ? await copy('clearing', live.clearing, 'clr-meta-evidence.json')
           : undefined
       if (!alive.current) return
+      if (newPolicy === undefined) beforePolicy.current = held
       meta.setRegistration(registration)
       if (clearing) meta.setClearing(clearing)
       setNewPolicy(pdf)
@@ -2025,11 +2138,13 @@ const ArbitrationGovernanceField = ({
     } catch (err) {
       console.error(err)
       errorToast(
-        step === 'policy'
+        at.step === 'policy'
           ? 'The new policy could not be read back from IPFS. Try again in a moment.'
-          : step === 'read'
-            ? LIVE_UNREADABLE
-            : step === 'stored'
+          : at.step === 'read'
+            ? at.own
+              ? `The ${fieldName(at.role)} file in its field could not be read, so the new policy cannot be written into it. Check its URI, or wait a minute for its upload to reach the gateway.`
+              : LIVE_UNREADABLE
+            : at.step === 'stored'
               ? 'The new MetaEvidence could not be read back from IPFS. Try again in a moment.'
               : uploadFailure(err),
       )
@@ -2057,6 +2172,18 @@ const ArbitrationGovernanceField = ({
     } catch {
       return { shown: data }
     }
+  }
+
+  /*
+   * The chain changed under the dialog: every field goes back to the live
+   * values, read again now. An edit kept would hold its untouched neighbours
+   * on the older values, and the next save would send them back.
+   */
+  const restartFromLive = () => {
+    resetFiles()
+    setSettingsEdited(false)
+    setCourtEdited(false)
+    onOutdated()
   }
 
   const review = async () => {
@@ -2110,16 +2237,7 @@ const ArbitrationGovernanceField = ({
       )
     if (!alive.current) return
     setChecking(false)
-    if (outdated) {
-      // Every field goes back to the live values, read again now: an edit
-      // kept would hold its untouched neighbours on the older values, and
-      // the next save would send them back.
-      meta.reset()
-      setNewPolicy(undefined)
-      setSettingsEdited(false)
-      setCourtEdited(false)
-      onOutdated()
-    }
+    if (outdated) restartFromLive()
     if (check.problem) {
       errorToast(check.problem)
       return
@@ -2188,16 +2306,36 @@ const ArbitrationGovernanceField = ({
       registry.kind === 'standard'
         ? [sentArbitrator, extraData, registration, clearing]
         : [extraData, registration]
-    const outcome = await send(functionName, args, {
-      title: joinedTitle(what),
-      call: `${functionName} on ${registry.title}`,
-      rows,
-      effect: arbitrationEffect(
-        registry.kind === 'permanent' ? 'permanent' : 'standard',
-        cooldown.data,
-      ),
-    })
+    // The call sends every value back, the untouched ones too: read once
+    // more when the governor chooses, since the review stays open as long
+    // as they like.
+    const stillCurrent = async () =>
+      !changedSince(
+        current,
+        await readChainArbitration(registry).catch(() => {
+          throw new Error(SETTINGS_UNREAD)
+        }),
+      )
+    const outcome = await send(
+      functionName,
+      args,
+      {
+        title: joinedTitle(what),
+        call: `${functionName} on ${registry.title}`,
+        rows,
+        effect: arbitrationEffect(
+          registry.kind === 'permanent' ? 'permanent' : 'standard',
+          cooldown.data,
+        ),
+      },
+      stillCurrent,
+    )
     if (!alive.current) return
+    if (outcome === 'outdated') {
+      restartFromLive()
+      errorToast(SETTINGS_CHANGED)
+      return
+    }
     if (outcome === 'proposed') setProposed(key)
     if (outcome === 'mined') {
       // Standard and Stake add a settings entry: one more MetaEvidence change.
@@ -2217,8 +2355,7 @@ const ArbitrationGovernanceField = ({
           : { registration, changes },
       })
       if (!alive.current) return
-      meta.reset()
-      setNewPolicy(undefined)
+      resetFiles()
       setSettingsEdited(false)
       setCourtEdited(false)
     }
@@ -2232,7 +2369,9 @@ const ArbitrationGovernanceField = ({
       )
     : null
   const typedFile = (set: (value: string) => void) => (value: string) => {
-    // Typed or uploaded by hand, the files no longer follow a policy PDF.
+    // Typed or uploaded by hand, the files no longer follow a policy PDF:
+    // the fields are the governor's own, from here on.
+    beforePolicy.current = null
     setNewPolicy(undefined)
     set(value)
   }
@@ -2243,8 +2382,8 @@ const ArbitrationGovernanceField = ({
         about="the court and the MetaEvidence"
         help={
           registry.kind === 'standard'
-            ? 'Standard Curate changes the court together with both MetaEvidence files. They start on the live files: keep them to change only the court, upload a new policy PDF to have it written into both, or upload new files (keeping the columns; a new one can go after the last).'
-            : 'Stake Curate changes the court together with its MetaEvidence. It starts on the live file: keep it to change only the court, or upload a new policy PDF to have it written into the file.'
+            ? 'Standard Curate changes the court together with both MetaEvidence files. They start on the live files: keep them to change only the court, upload a new policy PDF to have it written into both, or upload new files (keeping the columns; a new one can go after the last). A policy PDF uploaded after new files is written into them.'
+            : 'Stake Curate changes the court together with its MetaEvidence. It starts on the live file: keep it to change only the court, or upload a new policy PDF to have it written into the file (into a new file of yours, if you uploaded one).'
         }
       >
         <FieldLabel as="div">
@@ -2377,9 +2516,9 @@ const ArbitrationGovernanceField = ({
             <UploadField
               id={`${ids}-policy`}
               label="Policy (PDF)"
-              help={`The rules entries are judged by. A new PDF is written into the list's ${
+              help={`The rules entries are judged by. A new PDF is written into the ${
                 usesPair ? 'two MetaEvidence files' : 'MetaEvidence file'
-              }, everything else in them kept as it is; nothing changes until the change is reviewed and sent.`}
+              } below (the list's own, or new ones you put there), everything else in them kept as it is; nothing changes until the change is reviewed and sent.`}
               kind="pdf"
               role={Roles.Policy}
               value={newPolicy ?? livePolicy.data ?? ''}
