@@ -7,18 +7,25 @@ import { renderWithProviders } from 'test/render'
 import { LIST_SETTINGS_FAILED } from 'pages/error-page/copy'
 import SubmitConnectModal from './submit-connect'
 
+const CONNECTED_LIST = vi.hoisted(
+  () => '0xc0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0',
+)
 const tx = vi.hoisted(() => ({
   uploads: [] as unknown[],
   uploadFile: undefined as unknown as ReturnType<typeof vi.fn>,
   confirmStored: undefined as unknown as ReturnType<typeof vi.fn>,
   simulateContract: undefined as unknown as ReturnType<typeof vi.fn>,
   writeContract: undefined as unknown as ReturnType<typeof vi.fn>,
+  request: undefined as unknown as ReturnType<typeof vi.fn>,
+  /** The badges list's own file not read yet. */
+  ownFileHeld: false,
 }))
 
 const CONNECTED = '0xc0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0'
 const PARENT = '0x1111111111111111111111111111111111111111'
 const BADGE_A = '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
 const BADGE_B = '0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb'
+const OTHER_PARENT = '0x2222222222222222222222222222222222222222'
 
 /** The lists' files, as useTcrMetaEvidence serves them. */
 const LISTS = vi.hoisted(() => ({
@@ -26,6 +33,7 @@ const LISTS = vi.hoisted(() => ({
     fileURI: '/ipfs/policy.pdf',
     metadata: {
       tcrTitle: 'Badges',
+      parentTCRAddress: '0x1111111111111111111111111111111111111111',
       columns: [
         { label: 'Address', type: 'GTCR address' },
         { label: 'Match File URI', type: 'text' },
@@ -76,8 +84,16 @@ vi.mock('utils/wrap-with-toast', () => ({
   errorToast: vi.fn(),
 }))
 vi.mock('hooks/native-currency', () => ({ default: () => 'xDAI' }))
+// The lists that keep their badges on this one (the parent's choices).
+vi.mock('utils/indexer-request', () => ({
+  request: (...args: unknown[]) => tx.request(...args),
+}))
+const keptBy = (...lists: string[]) =>
+  vi.fn(async () => ({ LRegistry: lists.map((id) => ({ id })) }))
 vi.mock('hooks/use-tcr-meta-evidence', () => ({
   default: (address?: string) => {
+    if (tx.ownFileHeld && address?.toLowerCase() === CONNECTED_LIST)
+      return { data: undefined, isError: false, isSuccess: false }
     const data = address
       ? (LISTS[address.toLowerCase() as keyof typeof LISTS] ?? null)
       : undefined
@@ -157,13 +173,22 @@ const paste = async (user: User, field: HTMLElement, text: string) => {
   await user.paste(text)
 }
 
-const enterLists = async (user: User, badge: string) => {
-  // The form shows once the list's deposit is read.
-  await paste(
-    user,
-    await screen.findByRole('textbox', { name: 'Parent list address' }),
-    PARENT,
+const enterLists = async (
+  user: User,
+  badge: string,
+  parent: string = PARENT,
+) => {
+  // The form shows once the list's deposit and the parents are read; a
+  // parent that is the only one is filled in and fixed.
+  const parentInput = await screen.findByRole(
+    'textbox',
+    { name: 'Parent list address' },
+    SETTLED,
   )
+  if (!(parentInput as HTMLInputElement).disabled) {
+    await user.clear(parentInput)
+    await paste(user, parentInput, parent)
+  }
   await waitFor(() => expect(badgeField()).toBeEnabled(), SETTLED)
   await paste(user, badgeField(), badge)
 }
@@ -197,6 +222,8 @@ beforeEach(() => {
   tx.confirmStored = vi.fn(async () => undefined)
   tx.simulateContract = vi.fn(async () => ({ request: { to: CONNECTED } }))
   tx.writeContract = vi.fn(async () => '0xhash')
+  tx.request = keptBy(PARENT)
+  tx.ownFileHeld = false
 })
 
 afterEach(() => {
@@ -294,7 +321,7 @@ describe('Enable a badge', () => {
     expect(tx.writeContract).not.toHaveBeenCalled()
   })
 
-  it('opens empty after a badge is sent, with nothing of the last one', async () => {
+  it('opens with only its parent after a badge is sent', async () => {
     const user = userEvent.setup()
     const { rerender } = renderWithProviders(<Modal />, { route: ROUTE })
     await enterLists(user, BADGE_A)
@@ -305,7 +332,7 @@ describe('Enable a badge', () => {
     // The list page closes the dialog and keeps it mounted.
     rerender(<Modal visible={false} />)
     rerender(<Modal />)
-    expect(parentField()).toHaveValue('')
+    expect(parentField()).toHaveValue(PARENT)
     expect(badgeField()).toHaveValue('')
 
     await enterLists(user, BADGE_B)
@@ -349,5 +376,99 @@ describe('Enable a badge', () => {
         SETTLED,
       ),
     ).toBeInTheDocument()
+  })
+})
+
+describe('The parent list', () => {
+  it('is filled in and fixed when one list keeps its badges here', async () => {
+    const user = userEvent.setup()
+    renderWithProviders(<Modal />, { route: ROUTE })
+    const parent = await screen.findByRole(
+      'textbox',
+      { name: 'Parent list address' },
+      SETTLED,
+    )
+    expect(parent).toHaveValue(PARENT)
+    expect(parent).toBeDisabled()
+    await enterLists(user, BADGE_A)
+    await pick(user, 'Token name', 'Name')
+    await user.click(confirm())
+    await sent(1)
+    expect(uploaded()[0]).toMatchObject({ parentTCR: PARENT })
+  })
+
+  it('starts from the list this one was made for when several keep their badges here', async () => {
+    tx.request = keptBy(OTHER_PARENT, PARENT)
+    renderWithProviders(<Modal />, { route: ROUTE })
+    const parent = await screen.findByRole(
+      'textbox',
+      { name: 'Parent list address' },
+      SETTLED,
+    )
+    await waitFor(() => expect(parent).toHaveValue(PARENT), SETTLED)
+    expect(parent).toBeEnabled()
+  })
+
+  it('waits for its own file before choosing among several parents', async () => {
+    tx.request = keptBy(OTHER_PARENT, PARENT)
+    tx.ownFileHeld = true
+    const { rerender } = renderWithProviders(<Modal />, { route: ROUTE })
+    // The parents are read first; the list's file, naming PARENT, comes after.
+    await waitFor(() => expect(tx.request).toHaveBeenCalled(), SETTLED)
+    await new Promise((resolve) => setTimeout(resolve, 50))
+    tx.ownFileHeld = false
+    rerender(<Modal />)
+    const parent = await screen.findByRole(
+      'textbox',
+      { name: 'Parent list address' },
+      SETTLED,
+    )
+    await waitFor(() => expect(parent).toHaveValue(PARENT), SETTLED)
+  })
+
+  it('says when a list typed keeps its badges elsewhere, and sends nothing', async () => {
+    tx.request = keptBy(OTHER_PARENT, PARENT)
+    const user = userEvent.setup()
+    renderWithProviders(<Modal />, { route: ROUTE })
+    await enterLists(user, BADGE_A, BADGE_B)
+    expect(
+      await screen.findByText(/keeps its badges on another list/, {}, SETTLED),
+    ).toBeVisible()
+    expect(parentField()).toHaveAttribute('aria-invalid', 'true')
+    await pick(user, 'Token name', 'Project')
+    expect(confirm()).toBeDisabled()
+    expect(tx.uploadFile).not.toHaveBeenCalled()
+  })
+
+  it('says when no list keeps its badges here, and sends nothing', async () => {
+    tx.request = keptBy()
+    const user = userEvent.setup()
+    renderWithProviders(<Modal />, { route: ROUTE })
+    expect(
+      await screen.findByText(/would show on no list/, {}, SETTLED),
+    ).toBeVisible()
+    await enterLists(user, BADGE_A)
+    await pick(user, 'Token name', 'Name')
+    expect(confirm()).toBeDisabled()
+  })
+
+  it('is typed as before when the indexer cannot say', async () => {
+    tx.request = vi.fn(async () => {
+      throw new Error('indexer down')
+    })
+    const user = userEvent.setup()
+    renderWithProviders(<Modal />, { route: ROUTE })
+    const parent = await screen.findByRole(
+      'textbox',
+      { name: 'Parent list address' },
+      SETTLED,
+    )
+    expect(parent).toHaveValue('')
+    expect(parent).toBeEnabled()
+    expect(screen.queryByText(/would show on no list/)).toBeNull()
+    await enterLists(user, BADGE_A)
+    await pick(user, 'Token name', 'Name')
+    await user.click(confirm())
+    await sent(1)
   })
 })

@@ -17,7 +17,8 @@ import { confirmStored } from 'utils/confirm-stored'
 import { parseWagmiError } from 'utils/parse-wagmi-error'
 import { LIST_FILE_FAILED, LIST_SETTINGS_FAILED } from 'pages/error-page/copy'
 import { wagmiConfig } from 'config/wagmi'
-import { isKlerosArbitrator } from 'config/tcr-addresses'
+import { isKlerosArbitrator, subgraphUrl } from 'config/tcr-addresses'
+import { request } from 'utils/indexer-request'
 import {
   Body,
   Button,
@@ -40,7 +41,11 @@ import {
   gatedConfirm,
   useActionGate,
 } from 'components/curate/item-standard-gate'
-import { FieldLabel, Notice } from 'components/curate/item-standard-notice'
+import {
+  FieldError,
+  FieldLabel,
+  Notice,
+} from 'components/curate/item-standard-notice'
 import { formatAmount } from 'components/curate/item-standard-format'
 import { SubmissionFlowScaffold, SubmissionNavigation } from './submission-flow'
 
@@ -48,7 +53,22 @@ import { SubmissionFlowScaffold, SubmissionNavigation } from './submission-flow'
  * Enable a badge: connect a badge list to a parent list by submitting the
  * pair, plus a match file of the columns compared, to the parent's
  * connected list. The deposit is the connected list's submission deposit.
+ *
+ * The parent is the list that keeps its badges on this one (it names this
+ * list as its connected list), read from the indexer. One such list is
+ * filled in and fixed; several are offered, the one this list was made for
+ * first; none means a badge here would show on no list, and nothing is
+ * sent. The badges list's own file names a parent too, but as the address
+ * predicted before that list was deployed, which another deployment can
+ * take: of 96 badges lists, 3 named a list that does not use them and 2
+ * were used by two lists (2026-11-26).
  */
+
+const BADGE_PARENTS = `query BadgeParents($id: String!, $chainId: Int!) {
+  LRegistry(where: { connectedTCR: { _eq: $id }, chainId: { _eq: $chainId } }) {
+    id
+  }
+}`
 
 const FieldBlock = styled.div`
   display: flex;
@@ -176,6 +196,52 @@ const SubmitConnectModal = (props: SubmitConnectModalProps) => {
   const tcrMetaEvidence = parentMetaQuery.data ?? undefined
   const badgeTCRMetadata = badgeMetaQuery.data?.metadata
   const relTCRMetaEvidence = relMetaQuery.data ?? undefined
+
+  // The lists that keep their badges here. A read that fails leaves the
+  // parent to be typed, unchecked, as before.
+  const parentsQuery = useQuery({
+    queryKey: ['badgeParents', relTCRAddress?.toLowerCase(), networkId],
+    queryFn: async () => {
+      const url = networkId ? subgraphUrl[networkId] : undefined
+      if (!url) throw new Error(`No indexer for chain ${networkId}`)
+      const data = await request<{ LRegistry: { id: string }[] }>(
+        url,
+        BADGE_PARENTS,
+        { id: relTCRAddress!.toLowerCase(), chainId: networkId },
+      )
+      return data.LRegistry.map(({ id }) => id.toLowerCase())
+    },
+    enabled: !!visible && !!relTCRAddress && !!networkId,
+    staleTime: 60 * 60 * 1000,
+    retry: 1,
+  })
+  const parents = parentsQuery.data
+  const storedParent = relTCRMetaEvidence?.metadata?.parentTCRAddress
+  const lockedParent =
+    initialValues?.[0] ?? (parents?.length === 1 ? parents[0] : undefined)
+  // Suggested once this list's own file is read too: the parents can come
+  // first, and the field, once filled, is not filled again.
+  const suggestedParent =
+    parents && parents.length > 1 && relTCRMetaEvidence
+      ? typeof storedParent === 'string' &&
+        parents.includes(storedParent.toLowerCase())
+        ? storedParent.toLowerCase()
+        : parents[0]
+      : undefined
+  // The field starts from the parent, and a fixed parent stays fixed.
+  useEffect(() => {
+    if (!visible) return
+    if (lockedParent) {
+      if (tcrAddr !== lockedParent) setTCRAddr(lockedParent)
+      return
+    }
+    if (suggestedParent && tcrAddr === undefined) setTCRAddr(suggestedParent)
+  }, [visible, lockedParent, suggestedParent, tcrAddr])
+  const noParent = parents?.length === 0
+  const wrongParent =
+    !!parents?.length &&
+    !!validParentAddr &&
+    !parents.includes(validParentAddr.toLowerCase())
 
   // Fetch the submission deposit of the connected list (on-chain, cached),
   // with its breakdown for the receipt.
@@ -374,7 +440,7 @@ const SubmitConnectModal = (props: SubmitConnectModalProps) => {
       </Dialog>
     )
 
-  if (!relTCRMetaEvidence || !relTCRSubmissionDeposit)
+  if (!relTCRMetaEvidence || !relTCRSubmissionDeposit || parentsQuery.isLoading)
     return (
       <Dialog
         open={!!visible}
@@ -424,9 +490,13 @@ const SubmitConnectModal = (props: SubmitConnectModalProps) => {
       } against the listing policy. If they side with you, you get your deposit back plus the challenger's, less the arbitration cost; if not, it goes to the challenger.`,
     },
   ]
-  const confirmBlocker = submitDisabled
-    ? 'Match at least one identifier column'
-    : gate.blocker
+  const confirmBlocker = noParent
+    ? 'No list keeps its badges here'
+    : wrongParent
+      ? 'Enter a list that keeps its badges here'
+      : submitDisabled
+        ? 'Match at least one identifier column'
+        : gate.blocker
 
   return (
     <Dialog
@@ -483,14 +553,20 @@ const SubmitConnectModal = (props: SubmitConnectModalProps) => {
             must be identical, so match the fewest columns that identify an
             entry on both lists.
           </Body>
+          {noParent && (
+            <Notice tone="contested" role="alert">
+              No list keeps its badges on this one, so a badge enabled here
+              would show on no list.
+            </Notice>
+          )}
           <FieldBlock>
             <FieldLabel htmlFor="connect-parent-list">
               Parent list address
             </FieldLabel>
-            {initialValues ? (
+            {lockedParent ? (
               <TextInput
                 id="connect-parent-list"
-                value={initialValues[0]}
+                value={lockedParent}
                 disabled
               />
             ) : (
@@ -499,7 +575,17 @@ const SubmitConnectModal = (props: SubmitConnectModalProps) => {
                 placeholder="0x…"
                 value={tcrAddr ?? ''}
                 onChange={(e) => setTCRAddr(e.target.value)}
+                aria-invalid={wrongParent || undefined}
+                aria-describedby={
+                  wrongParent ? 'connect-parent-elsewhere' : undefined
+                }
               />
+            )}
+            {wrongParent && (
+              <FieldError id="connect-parent-elsewhere" role="alert">
+                That list keeps its badges on another list, so a badge enabled
+                here would not show on it.
+              </FieldError>
             )}
           </FieldBlock>
           <FieldBlock>
