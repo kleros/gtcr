@@ -2,6 +2,8 @@ import React, { useState } from 'react'
 import styled, { css } from 'styled-components'
 import useDisputeTimeline from 'hooks/use-dispute-timeline'
 import useCourtName from 'hooks/use-court-name'
+import useRulingTitles from 'hooks/use-ruling-titles'
+import { rulingTitle } from 'utils/ruling-titles'
 import {
   openEvidenceComposer,
   scrollToEvidenceHistory,
@@ -47,6 +49,14 @@ export interface DisputeRecord {
   requesterName: string
   /** How it went, in the page's words ("For the challenger"). */
   ruling?: string
+  /**
+   * The court's choice the ruling is (1 or 2), when `ruling` is the court's
+   * own rather than an outcome the list decided (a side that funded an
+   * appeal alone): it then reads in the court's words.
+   */
+  rulingChoice?: number
+  /** The MetaEvidence the case was raised under: the court's words for its choices. */
+  metaEvidenceURI?: string | null
   /** The case on the court site, when the arbitrator is Kleros. */
   href?: string
   host?: string
@@ -185,6 +195,7 @@ export const DisputeRecordPanel = ({
     disputeID: record?.disputeID,
   })
   const courtName = useCourtName(chainId, dispute?.court)
+  const rulingTitles = useRulingTitles(record?.metaEvidenceURI)
   if (!record) return null
 
   const several = disputes.length > 1
@@ -273,7 +284,12 @@ export const DisputeRecordPanel = ({
                 the tabs do when there are several. */}
             {caseFact && <Fact label="Case">{record.disputeID}</Fact>}
             {courtName && <Fact label="Court">{courtName}</Fact>}
-            {record.ruling && <Fact label="Ruling">{record.ruling}</Fact>}
+            {record.ruling && (
+              <Fact label="Ruling">
+                {rulingTitle(rulingTitles, record.rulingChoice) ??
+                  record.ruling}
+              </Fact>
+            )}
           </Facts>
         )}
       </Lead>
@@ -289,6 +305,7 @@ export const DisputeRecordPanel = ({
         disputeID={record.disputeID}
         arbitrable={arbitrable}
         requesterName={record.requesterName}
+        rulingTitles={rulingTitles}
         rounds={dispute?.roundSlots}
         period={dispute?.period}
         hiddenVotes={dispute?.hiddenVotes}

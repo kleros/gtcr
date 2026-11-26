@@ -481,6 +481,16 @@ at row size included.
   `viz-1`). The jury's pill says "The jury · 3 seats" ("2 of 3 seats drawn" only while the court
   is still drawing); a lone round has no head of its own, and a round among several reads "Round 3
   · 15 seats".
+- **Where the page quotes the court, it uses the court's words.** A juror's vote, the tally's
+  ends and the case panel's or court record's Ruling read as Kleros Court shows them to jurors:
+  the `rulingOptions.titles` of the MetaEvidence file the request or challenge was raised under
+  ("Yes, Add It" / "No, Don't Add It"), looked up by choice number, never by the yes or no in a
+  title (some removal files list "No, Remove It" first). A refusal stays "Refused to rule"; a file
+  with no usable titles keeps the side ("For the challenger"), as does the page until the file is
+  read, and so does an outcome the list decided rather than the court (a side that funded an
+  appeal alone). When long titles cannot share the tally's line, the challenger's end wraps to the
+  right. Where the page tells the
+  parties' story (the hero's status, the history, appeal funding), it names the side.
 - **The dispute period band** is each step's name and dates, with no explaining sentence: the
   current step adds only its figures ("2 of 3 committed"), an appeal that cannot be made says
   "Cannot be appealed", and a final ruling reads "Final". It stacks at 900px and below, so a step's

@@ -345,4 +345,21 @@ describe('choiceLabel', () => {
   ])('choice %d for a %s reads %j', (choice, requesterName, label) => {
     expect(choiceLabel(choice, requesterName)).toBe(label)
   })
+
+  it('reads a vote in the court’s words when the dispute’s file has them', () => {
+    const titles = ['Yes, Add It', "No, Don't Add It"]
+    expect(choiceLabel(1, 'submitter', titles)).toBe('Yes, Add It')
+    expect(choiceLabel(2, 'submitter', titles)).toBe("No, Don't Add It")
+    // A refusal is the court's own, and a choice the file does not name
+    // keeps the page's words.
+    expect(choiceLabel(0, 'submitter', titles)).toBe('Refused to rule')
+    expect(choiceLabel(3, 'submitter', titles)).toBe('Choice 3')
+  })
+
+  it('follows the choice number, never the yes or no in a title', () => {
+    // Some removal files list the requester's choice first as a "No".
+    const titles = ['No, Remove It', 'Yes, Keep it']
+    expect(choiceLabel(1, 'requester', titles)).toBe('No, Remove It')
+    expect(choiceLabel(2, 'requester', titles)).toBe('Yes, Keep it')
+  })
 })
