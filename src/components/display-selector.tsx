@@ -407,17 +407,8 @@ const DisplaySelector = ({
         </WarnedLink>
       )
     }
-    // A type Curate does not know (a list file written by hand, or a type
-    // newer than this app, such as "date"): its value as written, never
-    // hidden behind an error, with the type named on hover.
     default:
-      return value === null || value === '' ? (
-        <Small $faint>No value</Small>
-      ) : (
-        <Plain title={`Shown as written: Curate has no "${type}" field`}>
-          {String(value)}
-        </Plain>
-      )
+      return <Small $faint>Unsupported field type: {type}</Small>
   }
 }
 
