@@ -764,8 +764,11 @@ way (dashboard, Browse, registry pages, the profile, the landing page).
   batches, so a plain cutoff would have come and gone about 2.5 times a week; the $1,500 floor held
   it 93% of the time and changed it about 0.7 times a week. The choice is made once a visit, in the
   frame the pool is first whole: the number keeps updating, the figure never vanishes under a
-  reader, and a later read that comes back partial takes it away. While the bounties load, a
-  figure likely to open (the last visit did not close it) holds its place as a skeleton. With
+  reader, and a later read that comes back partial takes it away. It is read from a live load only
+  (`isLiveLoad`): the load an earlier visit saved (up to a day old, painted at once) waits for its
+  refresh, and a refresh that fails leaves the figure out. While the bounties load, or that
+  refresh is still coming, a figure likely to open (the last visit did not close it) holds its
+  place as a skeleton. With
   three figures the stack's gaps close from 24px to 18px, so it fits beside the title (about 323px
   against 331px at 1440) and the hero keeps its height; at 820px and under it is a row across both
   totals, label left and figure right, behind a hairline, so their figures stay level.

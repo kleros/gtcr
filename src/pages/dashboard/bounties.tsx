@@ -603,12 +603,15 @@ export const HeroMoney = ({
 
   /*
    * What is up for grabs now, under the bounties won. While the bounties
-   * still load, a figure that is likely to open holds its place as a
-   * skeleton, so it moves nothing when it comes (open-bounty.ts: expected).
+   * still load, or the load they were drawn from is an earlier visit's whose
+   * refresh is still coming, a figure that is likely to open holds its place
+   * as a skeleton, so it moves nothing when it comes (open-bounty.ts:
+   * expected, refreshing).
    */
   const loading = !record || !pricesSettled
   const grabsShown = grabs.usd !== undefined
-  const grabsHeld = !grabsShown && loading && grabs.expected
+  const grabsHeld =
+    !grabsShown && (loading || grabs.refreshing) && grabs.expected
 
   return (
     <MoneyStack data-three={grabsShown || grabsHeld ? '' : undefined}>

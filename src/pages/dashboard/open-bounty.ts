@@ -12,7 +12,9 @@ import { coinKey, type UsdPrice } from './prices'
  * and like them it is drawn only when it is whole: every chain in scope
  * answered, every request was placed in its window, nothing stopped at a page
  * cap, and every coin has a current price. A part of the pool is never shown
- * as the pool.
+ * as the pool. Nor is an old one: it is read from a live load only, never
+ * from the load an earlier visit saved (up to a day old, painted while the
+ * refresh runs), whose requests are not the ones open now.
  *
  * It shows from $2,000 up. Rebuilt hour by hour over the year to 25 Nov
  * 2026, the pool sat at or above that 86.5% of the time (median $3.45K), but
@@ -33,17 +35,21 @@ const GATE_KEY = 'curatevision-hero-bounty:v1'
 
 /**
  * The pool in dollars, or why there is none yet: `pending` while a part of
- * it is still being read (the load, a challenge window, a price), `blocked`
- * when a part of it will not come in this load (a chain that did not answer,
- * a read that hit its cap, windows that could not be placed).
+ * it is still being read (the load, its refresh, a challenge window, a
+ * price), `blocked` when a part of it will not come in this load (a chain
+ * that did not answer, a read that hit its cap, windows that could not be
+ * placed, a refresh that failed).
  */
 export type OpenPool =
-  | { state: 'pending' }
+  /** `refreshing`: what holds it is the load's refresh, not a part of it. */
+  | { state: 'pending'; refreshing?: boolean }
   | { state: 'blocked' }
   | { state: 'ready'; usd: number }
 
 export const openPool = ({
   deposits,
+  live,
+  refreshFailed,
   windowsKnown,
   windowsFailed,
   capped,
@@ -52,6 +58,13 @@ export const openPool = ({
 }: {
   /** The in-window deposits per chain, in wei; undefined before the load. */
   deposits?: Record<number, bigint>
+  /**
+   * The load is recent (query.ts isLiveLoad): not one an earlier visit
+   * saved, nor one whose refresh is overdue.
+   */
+  live: boolean
+  /** The last read of the load failed (React Query's isError). */
+  refreshFailed: boolean
   /** Every request in scope was placed in its window. */
   windowsKnown: boolean
   /** The windows were read again and still could not all be placed. */
@@ -64,6 +77,11 @@ export const openPool = ({
   prices?: Record<string, UsdPrice>
 }): OpenPool => {
   if (partial || capped) return { state: 'blocked' }
+  // An old load waits for its refresh; one that failed is no pool now.
+  if (deposits && (!live || refreshFailed))
+    return refreshFailed
+      ? { state: 'blocked' }
+      : { state: 'pending', refreshing: true }
   if (!windowsKnown)
     return windowsFailed ? { state: 'blocked' } : { state: 'pending' }
   if (!deposits) return { state: 'pending' }
@@ -95,6 +113,12 @@ export interface UpForGrabs {
    * follows moves nothing; a visit that closed it last time holds none.
    */
   expected: boolean
+  /**
+   * Not decided yet because the load on screen is an old one (an earlier
+   * visit's) and its refresh is still coming: the hero, loaded already from
+   * that old load, holds the figure's place until the refresh lands.
+   */
+  refreshing: boolean
 }
 
 /**
@@ -138,5 +162,7 @@ export const useUpForGrabs = (pool: OpenPool): UpForGrabs => {
         : undefined,
     expected:
       decided === undefined && pool.state === 'pending' && wasOpen !== false,
+    refreshing:
+      decided === undefined && pool.state === 'pending' && !!pool.refreshing,
   }
 }

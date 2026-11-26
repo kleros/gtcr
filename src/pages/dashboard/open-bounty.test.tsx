@@ -19,6 +19,8 @@ const price = (usd: number): UsdPrice => ({
 })
 const xdai = (amount: number) => BigInt(amount) * 10n ** 18n
 const whole = {
+  live: true,
+  refreshFailed: false,
   windowsKnown: true,
   windowsFailed: false,
   capped: false,
@@ -77,6 +79,32 @@ describe('openPool', () => {
       }),
     ).toEqual({ state: 'blocked' })
   })
+
+  it("is read from a live load only: an earlier visit's waits for its refresh", () => {
+    const deposits = { 100: xdai(5_000) }
+    const prices = { '100:native': price(1) }
+    expect(openPool({ ...whole, deposits, prices, live: false })).toEqual({
+      state: 'pending',
+      refreshing: true,
+    })
+    // A refresh that failed leaves no pool now, live window or not.
+    expect(
+      openPool({
+        ...whole,
+        deposits,
+        prices,
+        live: false,
+        refreshFailed: true,
+      }),
+    ).toEqual({ state: 'blocked' })
+    expect(
+      openPool({ ...whole, deposits, prices, refreshFailed: true }),
+    ).toEqual({ state: 'blocked' })
+    // Before any load, the refresh is the load itself.
+    expect(openPool({ ...whole, prices, live: false })).toEqual({
+      state: 'pending',
+    })
+  })
 })
 
 describe('gateOpens', () => {
@@ -98,7 +126,11 @@ describe('useUpForGrabs', () => {
 
   it('shows nothing until the pool is whole, and holds its place', () => {
     const { result } = hook({ state: 'pending' })
-    expect(result.current).toEqual({ usd: undefined, expected: true })
+    expect(result.current).toEqual({
+      usd: undefined,
+      expected: true,
+      refreshing: false,
+    })
     expect(window.localStorage.getItem(GATE_KEY)).toBeNull()
   })
 
@@ -116,14 +148,22 @@ describe('useUpForGrabs', () => {
       seen.push(grabs)
       return grabs
     })
-    expect(seen[0]).toEqual({ usd: 5_610, expected: false })
+    expect(seen[0]).toEqual({
+      usd: 5_610,
+      expected: false,
+      refreshing: false,
+    })
     expect(seen.every((grabs) => grabs.usd === 5_610)).toBe(true)
     expect(window.localStorage.getItem(GATE_KEY)).toBe('true')
   })
 
   it('stays shut under $2,000 on a first visit, and remembers that', () => {
     const { result } = hook(ready(1_800))
-    expect(result.current).toEqual({ usd: undefined, expected: false })
+    expect(result.current).toEqual({
+      usd: undefined,
+      expected: false,
+      refreshing: false,
+    })
     expect(window.localStorage.getItem(GATE_KEY)).toBe('false')
   })
 
@@ -155,5 +195,20 @@ describe('useUpForGrabs', () => {
     expect(result.current.usd).toBe(3_000)
     rerender({ state: 'blocked' })
     expect(result.current.usd).toBeUndefined()
+  })
+
+  it("decides nothing from an earlier visit's load, nor stores anything", () => {
+    window.localStorage.setItem(GATE_KEY, 'true')
+    const { result, rerender } = hook({ state: 'pending', refreshing: true })
+    expect(result.current).toEqual({
+      usd: undefined,
+      expected: true,
+      refreshing: true,
+    })
+    expect(window.localStorage.getItem(GATE_KEY)).toBe('true')
+    // The refresh lands under the floor: the gate is decided from it.
+    rerender(ready(1_200))
+    expect(result.current.usd).toBeUndefined()
+    expect(window.localStorage.getItem(GATE_KEY)).toBe('false')
   })
 })

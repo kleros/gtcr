@@ -1107,10 +1107,13 @@ const Dashboard = () => {
    */
   const windowsFailed =
     windowsMissing && windowsRetry.isFetched && !windowsRetry.isFetching
+  const liveLoad = !!data && isLiveLoad(data.generatedAt, now)
   const pool = useMemo(
     () =>
       openPool({
         deposits: figures?.inWindowDeposits,
+        live: liveLoad,
+        refreshFailed: query.isError,
         windowsKnown: !!figures?.windowsKnown,
         windowsFailed,
         capped: !!figures?.unchallengedCapped,
@@ -1119,6 +1122,8 @@ const Dashboard = () => {
       }),
     [
       figures,
+      liveLoad,
+      query.isError,
       windowsFailed,
       partialChains.length,
       listsMissing.length,

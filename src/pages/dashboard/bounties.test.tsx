@@ -26,7 +26,7 @@ const hero = (props: Partial<Props>) =>
       pricesSettled
       transit={2_690_000}
       transitFailed={false}
-      grabs={{ expected: false }}
+      grabs={{ expected: false, refreshing: false }}
       grabsHref="#open-for-verification"
       {...props}
     />,
@@ -34,7 +34,9 @@ const hero = (props: Partial<Props>) =>
 
 describe('HeroMoney: up for grabs now', () => {
   it('is a third figure, a link down to the requests it stands for', () => {
-    const { container } = hero({ grabs: { usd: 5_610, expected: false } })
+    const { container } = hero({
+      grabs: { usd: 5_610, expected: false, refreshing: false },
+    })
     expect(container.querySelectorAll('[data-money]')).toHaveLength(3)
     expect(screen.getByText('Up for grabs now')).toBeInTheDocument()
     expect(
@@ -48,15 +50,23 @@ describe('HeroMoney: up for grabs now', () => {
     const { container } = hero({
       record: undefined,
       pricesSettled: false,
-      grabs: { expected: true },
+      grabs: { expected: true, refreshing: false },
     })
     expect(container.querySelectorAll('[data-money]')).toHaveLength(3)
     expect(container.querySelector('[data-three]')).not.toBeNull()
     expect(screen.queryByText('Up for grabs now')).not.toBeInTheDocument()
   })
 
+  it("holds its place while an earlier visit's load waits for its refresh", () => {
+    const { container } = hero({ grabs: { expected: true, refreshing: true } })
+    expect(container.querySelectorAll('[data-money]')).toHaveLength(3)
+    expect(screen.queryByText('Up for grabs now')).not.toBeInTheDocument()
+  })
+
   it('draws nothing when the gate is closed', () => {
-    const { container } = hero({ grabs: { expected: false } })
+    const { container } = hero({
+      grabs: { expected: false, refreshing: false },
+    })
     expect(container.querySelectorAll('[data-money]')).toHaveLength(2)
     expect(container.querySelector('[data-three]')).toBeNull()
     expect(screen.queryByText('Up for grabs now')).not.toBeInTheDocument()
