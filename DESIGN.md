@@ -748,6 +748,14 @@ way (dashboard, Browse, registry pages, the profile, the landing page).
   not drawn, nor the Open for verification heading (the section keeps its 80px opening), and the
   Disputes panel takes the width, two rows to a line, its first page even so no cell is blank; an
   odd last row spans the line. Phones stack.
+- **Your case** (the Scout review's "needs attention", option B, as Fortunato asked: the existing
+  Disputes panel improved rather than a panel of its own). With a wallet connected, the rows in
+  court where it is one of the two sides (the requester or the challenger; on a Stake list the
+  entry's submitter or the challenger) come first, each keeping its order, and carry the profile's
+  "This is you" chip as "Your case" (selected, the user icon) before the chain chip, so none hides
+  under "+n more in court". The entry page then says what is theirs to do (A party's notice in an
+  appeal). Nothing changes for anyone else, and the panel adds no request: the parties come with
+  the load (the Stake open challenges read the entry's `submitter` for it).
 - Tooltip triggers are their own text's width, so a bubble opens over what it explains.
 - **The chart** (round 7) shows every mainnet: the dashboard's chain switch is hidden for now and
   the page is always "All chains", unnamed. Its switch is the range, `30D · 6M · 1Y · 3Y` (round

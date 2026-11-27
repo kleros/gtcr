@@ -9,8 +9,10 @@ import React, {
 } from 'react'
 import styled, { css, keyframes } from 'styled-components'
 import { Link } from 'react-router-dom'
+import { useAccount } from 'wagmi'
 import {
   ChainChip,
+  Chip,
   Label,
   Mono,
   SkeletonBlock,
@@ -24,7 +26,12 @@ import { reveal } from 'components/curate/motion/reveal'
 import useStickyTop from 'hooks/use-sticky-top'
 import { useMediaQuery } from 'pages/guide/hooks'
 import { formatAbsolute } from 'utils/time'
-import { formatAgoLong, type DashboardCard } from './view'
+import {
+  formatAgoLong,
+  isOwnCase,
+  ownCasesFirst,
+  type DashboardCard,
+} from './view'
 import {
   Avatar,
   Count,
@@ -537,6 +544,14 @@ const LiveRow = styled(Link)`
       0 0 26px -10px
         color-mix(in srgb, var(--status-contested) 80%, transparent);
   }
+`
+
+/* A row's chips on the right of its top line: "Your case", then the chain. */
+const RowChips = styled.span`
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 6px;
 `
 
 const LiveTag = styled.span`
@@ -1215,10 +1230,15 @@ const DisputesPanel = ({
   const [liveExpanded, setLiveExpanded] = useState(false)
   const plus = (capped: boolean) => (capped ? '+' : '')
 
+  // A connected wallet's own cases come first, marked (view.ts).
+  const { address: connected, isConnected } = useAccount()
+  const account = isConnected ? connected : undefined
+  const ordered = useMemo(() => ownCasesFirst(live, account), [live, account])
+
   // Two to a line only beside nothing and above the one-column width.
   const stacked = useMediaQuery(STACKED)
   const liveLimit = wide && !stacked ? LIVE_LIMIT_WIDE : LIVE_LIMIT
-  const liveShown = liveExpanded ? live : live.slice(0, liveLimit)
+  const liveShown = liveExpanded ? ordered : ordered.slice(0, liveLimit)
 
   /*
    * Whole rulings only, beside the submissions while the panels are capped:
@@ -1410,7 +1430,15 @@ const DisputesPanel = ({
                   <Avatar logo={card.logo} seed={card.registryAddress} />
                   <RowTop>
                     <Registry card={card} />
-                    <ChainChip chainId={card.chainId} size="sm" />
+                    <RowChips>
+                      {isOwnCase(card, account) && (
+                        <Chip $selected title="The connected wallet is a party">
+                          <CurateIcon name="user" size={12} />
+                          Your case
+                        </Chip>
+                      )}
+                      <ChainChip chainId={card.chainId} size="sm" />
+                    </RowChips>
                   </RowTop>
                   <Identifier card={card} />
                   <Meta>

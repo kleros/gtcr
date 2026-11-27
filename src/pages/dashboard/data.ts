@@ -539,6 +539,7 @@ const PERMANENT_DASHBOARD_QUERY = gql`
       disputeOutcome
       item {
         itemID
+        submitter
         metadata {
           props {
             label
@@ -662,7 +663,8 @@ interface PermanentChallengeRow {
   resolutionTime?: string | number | null
   challenger?: string
   disputeOutcome?: string
-  item?: { registry?: { id?: string } }
+  /** `submitter` is read for the open challenges only (the board's "In court"). */
+  item?: { registry?: { id?: string }; submitter?: string }
   [key: string]: unknown
 }
 
@@ -962,6 +964,10 @@ const permanentChallengeToActivity = (
     itemID: challenge.item?.itemID,
     previewProps: previewProps(challenge.item?.metadata?.props),
     actor: normalizeAddress(challenge.challenger),
+    // The other side, the entry's submitter, when the query read it.
+    secondaryActor: challenge.item?.submitter
+      ? normalizeAddress(challenge.item.submitter)
+      : undefined,
     kind: outcome ? 'resolution' : 'challenge',
     outcome,
     disputeID: challenge.disputeID ? String(challenge.disputeID) : undefined,

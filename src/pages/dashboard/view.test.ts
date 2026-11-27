@@ -17,8 +17,10 @@ import {
   formatAgoLong,
   formatUnits,
   historySeries,
+  isOwnCase,
   newestVerified,
   openWindows,
+  ownCasesFirst,
   parseRange,
   rangeStart,
   registryHref,
@@ -1146,5 +1148,39 @@ describe('curatorsSince', () => {
       { address: '0xa', requests: 2, challenges: 1, lastActiveAt: 300 },
       { address: '0xb', requests: 0, challenges: 1, lastActiveAt: 150 },
     ])
+  })
+})
+
+describe('own cases in court', () => {
+  const ME = `0x${'a'.repeat(40)}`
+  const card = (id: string, parties?: string[]) =>
+    ({ id, parties }) as unknown as Parameters<typeof isOwnCase>[0]
+  const live = [
+    card('1', ['0xb', '0xc']),
+    card('2', ['0xb', ME]),
+    card('3'),
+    card('4', [ME, '0xc']),
+  ]
+
+  it('knows a case by either side, whatever the address’s case', () => {
+    expect(isOwnCase(live[1], ME.toUpperCase().replace('0X', '0x'))).toBe(true)
+    expect(isOwnCase(live[3], ME)).toBe(true)
+    expect(isOwnCase(live[0], ME)).toBe(false)
+    expect(isOwnCase(live[2], ME)).toBe(false)
+    expect(isOwnCase(live[1], undefined)).toBe(false)
+  })
+
+  it('puts the wallet’s own first, each part in its order', () => {
+    expect(ownCasesFirst(live, ME).map((c) => c.id)).toEqual([
+      '2',
+      '4',
+      '1',
+      '3',
+    ])
+  })
+
+  it('leaves the order alone with no wallet, or none of its cases', () => {
+    expect(ownCasesFirst(live, undefined)).toBe(live)
+    expect(ownCasesFirst(live, `0x${'9'.repeat(40)}`)).toBe(live)
   })
 })
