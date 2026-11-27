@@ -428,10 +428,14 @@ const StakeRegistry = () => {
   // a dispute), whatever its status now.
   // The Network menu, on a list whose first identifier is a rich address
   // (registry-shared-network.ts). A link's networks apply while the columns
-  // load; a list that turns out to have no networks ignores them.
+  // load; a list that turns out to have no networks ignores them, and so
+  // does one whose columns cannot be read, which has no menu to show or
+  // clear them (the page lists its entries under a note instead).
   const hasNetworks = listHasNetworks(columns)
   const askedNetworks = networksFrom(search)
-  const networks = columns && !hasNetworks ? [] : askedNetworks
+  const columnsUnread = columnsQuery.isError || (!!registry && !metaEvidenceURI)
+  const networks =
+    (columns && !hasNetworks) || columnsUnread ? [] : askedNetworks
   const networkKey = networks.join(',')
 
   const itemsWhere = useMemo(() => {
