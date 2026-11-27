@@ -14,6 +14,7 @@ import {
   VisuallyHidden,
 } from 'components/curate/primitives'
 import { KindTag } from 'components/curate/stake-tag'
+import { Avatar as ListLogo } from 'pages/browse/avatar'
 import { useGraphqlBatcher } from 'contexts/graphql-batcher'
 import { subgraphUrlPermanent } from 'config/tcr-addresses'
 import {
@@ -148,13 +149,19 @@ const End = styled(Muted)`
   margin-left: auto;
 `
 
-/* The entries under a list sit a step in from its name. */
+/*
+ * A list is drawn with its logo, as the board's list chips draw it (24px,
+ * round); the entries under it start where its name does.
+ */
+const LOGO = 24
+const UNDER_NAME = `${10 + LOGO + 10}px`
+
 const EntryRow = styled(Row)`
-  padding-left: 26px;
+  padding-left: ${UNDER_NAME};
 `
 
 const MoreRow = styled(Row)`
-  padding-left: 26px;
+  padding-left: ${UNDER_NAME};
   color: var(--color-primary);
   font-weight: 500;
 
@@ -279,6 +286,7 @@ const SiteSearchDialog = ({
             title: registry.title,
             kind: registry.kind,
             itemCount: registry.itemCount,
+            logo: registry.logoURI,
           },
         ]),
       ),
@@ -395,7 +403,15 @@ const SiteSearchDialog = ({
     }
   }
 
-  const waiting = trimmed !== settled || (!!entryTerm && entries.isLoading)
+  // Lists are matched from the loads above: until they are in, "nothing
+  // matches" would not be known; a load that failed is said.
+  const loads = testnet ? [dashboard, testnetDashboard] : [dashboard]
+  const listsPending = loads.some((load) => !load.data && !load.isError)
+  const listsFailed = loads.some((load) => !load.data && load.isError)
+  const waiting =
+    trimmed !== settled ||
+    (!!entryTerm && entries.isLoading) ||
+    (!!trimmed && listsPending)
   const entriesShown = groups.length > 0
   const capped = !!entries.data?.capped
 
@@ -447,7 +463,7 @@ const SiteSearchDialog = ({
       return (
         <>
           <Note>
-            {lists.length === 0 && !address
+            {lists.length === 0 && !address && !listsFailed
               ? `Nothing matches “${settled}”.`
               : `No entry on any list matches “${settled}”.`}
           </Note>
@@ -457,6 +473,12 @@ const SiteSearchDialog = ({
     const rows = groups.map((group) => (
       <React.Fragment key={group.key}>
         <ListRow to={group.href} onClick={onClose} data-result="">
+          <ListLogo
+            uri={group.logo}
+            seed={group.registry}
+            size={LOGO}
+            radius={LOGO / 2}
+          />
           <RowText>{group.title}</RowText>
           {repeated.has(group.title) && (
             <ListAddress>{truncateMiddle(group.registry)}</ListAddress>
@@ -528,6 +550,10 @@ const SiteSearchDialog = ({
             </Group>
           )}
 
+          {!!trimmed && lists.length === 0 && listsFailed && (
+            <Note>List names could not be read right now.</Note>
+          )}
+
           {lists.length > 0 && (
             <Group aria-label="Lists">
               <Label $tone="faint">Lists</Label>
@@ -538,6 +564,12 @@ const SiteSearchDialog = ({
                   onClick={onClose}
                   data-result=""
                 >
+                  <ListLogo
+                    uri={list.logoURI}
+                    seed={list.address}
+                    size={LOGO}
+                    radius={LOGO / 2}
+                  />
                   <RowText>{list.title}</RowText>
                   {repeated.has(list.title) && (
                     <ListAddress>{truncateMiddle(list.address)}</ListAddress>

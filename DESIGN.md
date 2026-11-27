@@ -173,7 +173,9 @@ others are named by their label and icon (`THEME_MODES` in `contexts/theme-conte
   first in the bar's right group, and ⌘K on a Mac (Ctrl K elsewhere) anywhere, open a 640px
   dialog with one field. Under it, in this order: the profile of a pasted address; lists whose
   name holds the term (matched in the browser from the dashboard load, the busiest first); entries
-  on every list, grouped by list with the list's network chip. A Standard list shows four, then
+  on every list, grouped by list with the list's network chip. A list is drawn with its logo, as
+  the board's list chips draw it (24px, round), and its entries start under its name. A Standard
+  list shows four, then
   "N more on this list" opening that list's own `?q=` search; a Stake list shows every entry read,
   since its own search covers only the page on screen. A text-named entry shows the network of its
   rich address, and two shown lists that share a name show their short addresses. Entries are

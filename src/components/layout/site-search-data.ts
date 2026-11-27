@@ -250,6 +250,8 @@ export interface ListInfo {
   title: string
   kind: RegistryKind
   itemCount?: number
+  /** The list's logo (its MetaEvidence's), drawn as the board draws it. */
+  logo?: string
 }
 
 export interface HitGroup {
@@ -258,6 +260,8 @@ export interface HitGroup {
   kind: RegistryKind
   registry: string
   title: string
+  /** The list's logo, when the dashboard load knows the list. */
+  logo?: string
   /**
    * The list page: searched for the term on a Standard list; plain on a
    * Stake list, whose search filters only the page on screen.
@@ -297,6 +301,7 @@ export const groupHits = (
         kind: hit.kind,
         registry: hit.registry,
         title: list?.title || `List ${shortAddress(hit.registry)}`,
+        logo: list?.logo,
         href:
           hit.kind === 'standard'
             ? `/tcr/${hit.chainId}/${hit.registry}?q=${encodeURIComponent(term)}`
