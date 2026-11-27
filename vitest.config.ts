@@ -48,6 +48,11 @@ export default defineConfig({
       REACT_APP_SUBGRAPH_SEPOLIA_PERMANENT:
         'https://stake.indexer.test/11155111',
     },
+    // Every mock starts each test with no calls and its own implementation
+    // (mockReset), and spies are put back (restoreMocks). Vitest 3's
+    // restoreMocks did both; from Vitest 4 it only undoes vi.spyOn, so
+    // vi.fn() mocks made in vi.mock factories kept the last test's calls.
+    mockReset: true,
     restoreMocks: true,
     unstubEnvs: true,
     unstubGlobals: true,
