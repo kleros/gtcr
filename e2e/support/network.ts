@@ -88,10 +88,15 @@ const FONT_HOSTS = new Set(['fonts.googleapis.com', 'fonts.gstatic.com'])
 /** Wallet-kit telemetry and remote config: refused, as an offline browser. */
 const REFUSED_HOSTS =
   /(^|\.)(walletconnect\.(org|com)|web3modal\.(org|com)|reown\.com|coinbase\.com)$/
+/**
+ * Fixed hosts the app reads files from, recorded by path: Kleros's rewards
+ * site, whose index the dashboard reads (pages/dashboard/rewards.ts).
+ */
+const PLAIN_HOSTS = new Set(['rewards.kleros.io'])
 
 type Service =
   | { kind: 'url'; name: string; prefix: string }
-  | { kind: 'rpc' | 'ipfs' | 'font' | 'refused'; name: string }
+  | { kind: 'rpc' | 'ipfs' | 'font' | 'refused' | 'plain'; name: string }
 
 /** A JSON-RPC request: one call, or a batch of them. */
 const isJsonRpc = (body: string | null) =>
@@ -108,6 +113,8 @@ const serviceOf = (url: URL, body: string | null): Service | undefined => {
       return { kind: 'url', name, prefix }
   if (url.host === IPFS_HOST) return { kind: 'ipfs', name: 'ipfs' }
   if (FONT_HOSTS.has(url.hostname)) return { kind: 'font', name: 'font' }
+  if (PLAIN_HOSTS.has(url.hostname))
+    return { kind: 'plain', name: url.hostname }
   if (REFUSED_HOSTS.test(url.hostname))
     return { kind: 'refused', name: url.hostname }
   // The build has no Alchemy key, so its chain reads go to public RPCs

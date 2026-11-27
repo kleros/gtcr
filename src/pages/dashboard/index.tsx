@@ -52,6 +52,7 @@ import { useSavedLoadsReady } from './saved-load'
 import { useUsdPrices } from './use-usd-prices'
 import { readTransit, totalInDollars } from './transit'
 import { LiveBoard, type RulingsView } from './happening-now'
+import { useCurateRewards } from './rewards'
 import { OPEN_SECTION_ID } from './open-for-verification'
 import { openPool, useUpForGrabs } from './open-bounty'
 import type { OpenListChip } from './board-rows'
@@ -811,6 +812,13 @@ const Dashboard = () => {
   const stakeHref = scoped.some((registry) => registry.kind === 'permanent')
     ? browseHref('trust=all&kind=permanent')
     : undefined
+  // The PNK Kleros has paid curators of its lists, under the same rows: only
+  // while the board's scope holds the chain they were paid for, as every
+  // figure on the page describes that scope.
+  const allRewards = useCurateRewards()
+  const rewards = allRewards?.chainIds.some((id) => chains.includes(id))
+    ? allRewards
+    : undefined
   /** Every figure on the page describes the same scope. */
   const figures = useMemo(
     () => (data ? scopedFigures(data, chains, now) : undefined),
@@ -1399,6 +1407,7 @@ const Dashboard = () => {
         now={now}
         unloaded={partialNames || undefined}
         stakeHref={stakeHref}
+        rewards={rewards}
       />
 
       <VerifiedLists

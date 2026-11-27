@@ -157,6 +157,31 @@ describe('LiveBoard', () => {
     expect(rows[1]).not.toHaveTextContent('Your case')
   })
 
+  it('gives the PNK rewards paid under the rows, and asks other lists to ask', () => {
+    board({
+      rewards: {
+        total: (13_681_495n * XDAI).toString(),
+        curators: 101,
+        from: '2022-04',
+        through: '2026-10',
+        chainIds: [100],
+      },
+    })
+    const submissions = screen.getByRole('region', {
+      name: 'Recent submissions',
+    })
+    const paid = within(submissions).getByRole('link', {
+      name: /13\.7M PNK paid in rewards to 101 curators/,
+    })
+    expect(paid).toHaveAttribute('href', 'https://rewards.kleros.io/curate')
+    expect(paid).toHaveAttribute('target', '_blank')
+    expect(
+      within(submissions).getByRole('link', {
+        name: /Rewards on your list\? Ask Kleros/,
+      }),
+    ).toHaveAttribute('href', 'https://t.me/KlerosCurate')
+  })
+
   it('titles its section and counts what is open in the Submissions head', () => {
     board()
     const section = screen.getByRole('region', {

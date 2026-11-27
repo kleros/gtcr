@@ -748,6 +748,19 @@ way (dashboard, Browse, registry pages, the profile, the landing page).
   not drawn, nor the Open for verification heading (the section keeps its 80px opening), and the
   Disputes panel takes the width, two rows to a line, its first page even so no cell is blank; an
   odd last row spans the line. Phones stack.
+- **PNK rewards** (`pages/dashboard/rewards.ts`; the Scout review's rewards, option E, greenlit
+  "with the total numbers"). E added a third figure to the old strip; that strip's footer facts are
+  the Submissions panel's footnotes now, so the rewards are one more: "13.7M PNK paid in rewards to
+  101 curators ↗", linked to rewards.kleros.io/curate (always up to date, every month and what
+  each curator earned), then "· Rewards on your list? Ask Kleros ↗", to the Curate Telegram group
+  the help menu links (Fortunato: say plainly that other lists can ask Kleros for incentives). The
+  first link's tooltip says what the total is and the months it spans. Nothing names a list: the
+  total is every month the rewards page publishes, read from its own files. A month's file is on
+  IPFS and never changes, so the months that existed at build time ship with the app
+  (`config/curate-rewards-snapshot.json`, from `scripts/curate-rewards-snapshot.mjs`); a visit
+  reads the index (about 2 KB) and only the months published since, at most three (an older
+  release keeps its own totals). A failed read keeps the snapshot's. Compact PNK, like the hero's
+  totals ("13.7M"); never dollars, since PNK is the coin that is paid.
 - **Your case** (the Scout review's "needs attention", option B, as Fortunato asked: the existing
   Disputes panel improved rather than a panel of its own). With a wallet connected, the rows in
   court where it is one of the two sides (the requester or the challenger; on a Stake list the
