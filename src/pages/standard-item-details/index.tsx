@@ -876,7 +876,13 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
       ? caseState(request, facts, statusCode)
       : undefined
   // What the connected wallet, if it is a party, has to do in an appeal.
-  const partyNotice = partyAppealNotice({ account, request, facts, statusCode })
+  const partyNotice = partyAppealNotice({
+    account,
+    request,
+    facts,
+    statusCode,
+    now,
+  })
   // The contracts take evidence only while the latest request is open.
   const canAddEvidence = !!item && hasPendingRequest(item.status)
   /*
@@ -1041,9 +1047,8 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
             </StatusRow>
             {partyNotice && (
               <PartyNoticeRow>
-                <Notice tone={partyNotice.tone} role="status">
-                  {partyNotice.text}
-                </Notice>
+                {/* No live region: its clock would be read out each minute. */}
+                <Notice tone={partyNotice.tone}>{partyNotice.text}</Notice>
               </PartyNoticeRow>
             )}
           </HeroMain>

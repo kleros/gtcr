@@ -307,3 +307,46 @@ export const fundedAlone = (
   if (requesterPaid === challengerPaid) return undefined
   return requesterPaid ? requesterName : 'challenger'
 }
+
+/*
+ * Who still has to fund the appeal, read from the latest round. Once one
+ * side is fully funded, the clock that matters belongs to the other side:
+ * the winner (or, when jurors refused to rule, the side that has not paid)
+ * has until the end of the appeal period to fund too, or loses. The ruling
+ * and status alone cannot tell this; the round's hasPaid flags can. The
+ * action card's prompt (item-status-card.tsx), the hero's clock
+ * (appeal-funding.tsx) and a party's notice (party-notice.ts) all read it.
+ */
+
+export interface AppealFunding {
+  /** The side that is fully funded. */
+  funded: string
+  /** The side that still has to fund, or it loses. */
+  pending: string
+  /** Unix seconds: when the pending side's time runs out. */
+  deadline: number
+}
+
+export const appealFunding = (
+  request: StandardRequest | undefined,
+  facts: RequestFacts,
+  statusCode: number,
+): AppealFunding | undefined => {
+  if (!facts.appealable) return undefined
+  const round = request?.rounds?.[0]
+  if (!round) return undefined
+  const requesterPaid = !!round.hasPaidRequester
+  const challengerPaid = !!round.hasPaidChallenger
+  // Neither side yet (the usual case), or both (the appeal is being raised).
+  if (requesterPaid === challengerPaid) return undefined
+  const funded = requesterPaid ? facts.requesterName : 'challenger'
+  const pending = requesterPaid ? 'challenger' : facts.requesterName
+  if (facts.currentRuling === SUBGRAPH_RULING.NONE)
+    return { funded, pending, deadline: facts.appealEnd }
+  // A decisive ruling: only the loser funding inside its half changes whose
+  // clock runs. (The winner funding first leaves the loser's deadline as is;
+  // in the second half the loser has funded by definition.)
+  if (statusCode === STATUS_CODE.CROWDFUNDING && funded === facts.loserName)
+    return { funded, pending: facts.winnerName, deadline: facts.appealEnd }
+  return undefined
+}
