@@ -18,6 +18,7 @@ import CurateWordmark from 'assets/images/curate-v2-wordmark.svg'
 import AppMenu from 'components/layout/app-menu'
 import Help from 'components/layout/help'
 import ThemeMenu from 'components/layout/theme-menu'
+import SiteSearch from 'components/layout/site-search'
 import {
   BarAccountAddress,
   BarAccountPill,
@@ -44,8 +45,9 @@ import { saveChainId, useLaunchChainId, useSavedChainId } from './launch-chain'
  * App bar (DESIGN.md, Frame and stage; round 2): a full-width sticky bar.
  * Transparent over the aurora at the top of the page; once the page scrolls
  * it takes a blurred, translucent stage fill and a hairline bottom edge. It
- * never floats or turns into a pill. Logo, primary navigation, chain chip,
- * Connect (or the account pill), theme menu, help. On phones the navigation
+ * never floats or turns into a pill. Logo, primary navigation, search (a
+ * magnifier, or ⌘K), chain chip, Connect (or the account pill), theme
+ * menu, help. On phones the navigation
  * moves under the menu button.
  */
 const Container = styled.header`
@@ -519,6 +521,7 @@ const AppBar = () => {
         </LeftGroup>
         <AppMenu />
         <RightGroup>
+          <SiteSearch />
           {showChainMenu && (
             <ChainSlot>
               <SelectMenu<string>

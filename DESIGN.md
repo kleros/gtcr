@@ -169,6 +169,18 @@ others are named by their label and icon (`THEME_MODES` in `contexts/theme-conte
   translucent stage fill (72%) with a 16px backdrop blur and a hairline bottom border. It never
   floats, insets or turns into a pill. Content keeps `--page-max-width` (1344px) and
   `--horizontal-padding` (min(4.69vw, 56px); 16px on phones), so widths match the old frame at 1440.
+- **Search** (`components/layout/site-search*.ts(x)`, the Scout review's lookup): a 38px magnifier
+  first in the bar's right group, and ⌘K on a Mac (Ctrl K elsewhere) anywhere, open a 640px
+  dialog with one field. Under it, in this order: the profile of a pasted address; lists whose
+  name holds the term (matched in the browser from the dashboard load, the busiest first); entries
+  on every list, grouped by list with the list's network chip. A Standard list shows four, then
+  "N more on this list" opening that list's own `?q=` search; a Stake list shows every entry read,
+  since its own search covers only the page on screen. A text-named entry shows the network of its
+  rich address, and two shown lists that share a name show their short addresses. Entries are
+  asked from 3 characters, 500ms after typing stops: one Envio request (identifying fields
+  `key0`-`key4` on the mainnets, and Sepolia from a Sepolia page, 50 rows) plus one Stake subgraph
+  request per chain. Arrow keys move through the results, Enter opens one; a screen reader hears
+  the count, not every row. It works the same on every list: nothing in it knows a particular list.
 - Nothing on a page paints its own full-bleed background or grid.
 - **Footer.** The app bar carries no guide link: the footer's does, and it reads "Guide & Skills",
   since the guide also holds the skill for agent builders (an explainer may link it in context).
