@@ -289,7 +289,10 @@ keyboard-active row; the chosen row reads in full `text` with a `primary` check.
 icon, a hint line, a tag and a divider. Keys: ArrowDown / ArrowUp / Home / End / Enter / Space open
 it; the arrows, Home, End, PageUp and PageDown move; Enter or Space pick; Escape closes the menu
 alone (never a dialog around it); Tab closes; typing jumps to the matching option. The form field
-`ui/Select` keeps its field trigger but shares the glass panel and the row look.
+`ui/Select` keeps its field trigger but shares the glass panel and the row look. With
+`checkedValues` it takes several choices (a list's networks): each row ends in a checkbox (a
+hairline square, filled `primary` with an `on-primary` check when chosen) instead of the check, a pick
+toggles one and the menu stays open, and the listbox is `aria-multiselectable`.
 
 The app bar's chain chip is a SelectMenu on every page but the dashboard, which sets its scope with
 its own control next to the figures. Its "All chains" option carries the Ethereum and Gnosis marks
@@ -927,6 +930,13 @@ way (dashboard, Browse, registry pages, the profile, the landing page).
   header's and Browse's "Listed"); "Disputed now" is the part a challenge is running on, "Off the
   list" the rest. The toolbar is one line on desktop: search, status, the sensitive-content switch,
   sort, layout.
+- **Network** follows Status on any list whose first identifying column is a rich address
+  (`registry-shared-network.ts`), Standard and Stake alike: "Network · All", the networks the app
+  can name in its own order, several at once (SelectMenu's checkboxes), kept in the URL as
+  `?network=eip155:8453,eip155:137`. It is a prefix match on the entry's `key0` added to the query
+  the page already sends, so it costs no request. The counters cannot split by network, so while
+  it is on the count reads as a floor ("40 of 40+") and the status menu shows no counts. Lists of any other shape show no menu. On
+  phones it shares the status menu's line, and the sensitive-content switch takes the last line.
 - Pagination's jump field is a page pill (pill radius, surface fill, inner hairline), as wide as
   the last page's chip and at least 32px, right of the last ellipsis.
 

@@ -89,6 +89,13 @@ import {
 } from 'components/curate/registry-shared-layout'
 import { useRegistryVerified } from 'components/curate/registry-shared-verified'
 import {
+  listHasNetworks,
+  networkPrefixes,
+  networksFrom,
+  stakeNetworkWhere,
+  withNetworkToggled,
+} from 'components/curate/registry-shared-network'
+import {
   listSearchFrom,
   withListSearch,
 } from 'components/curate/registry-shared-search'
@@ -382,19 +389,65 @@ const StakeRegistry = () => {
   })
   const registry = registryQuery.data?.registry as SubgraphRegistry | undefined
 
+  // The columns live only in the MetaEvidence file, not in the subgraph.
+  // Whoever runs the list writes that file: only well-typed columns reach
+  // the page (a label that is an object would take it down for everyone).
+  // A failed, malformed or stalled read throws, so it is retried and the
+  // entries' own labels stand in meanwhile.
+  const arbitrationSetting = registry?.arbitrationSettings?.[0]
+  const metaEvidenceURI = arbitrationSetting?.metaEvidenceURI
+  const columnsQuery = useQuery({
+    queryKey: ['permanentRegistryColumns', metaEvidenceURI],
+    queryFn: async () => {
+      const controller = new AbortController()
+      const timeout = window.setTimeout(
+        () => controller.abort(),
+        COLUMNS_TIMEOUT_MS,
+      )
+      try {
+        const response = await fetch(parseIpfs(metaEvidenceURI!), {
+          signal: controller.signal,
+        })
+        if (!response.ok)
+          throw new Error(`MetaEvidence read failed (${response.status})`)
+        const file = sanitizeMetaEvidence(await response.json())
+        if (!file) throw new Error('MetaEvidence is not a JSON object')
+        return file.metadata?.columns ?? []
+      } finally {
+        window.clearTimeout(timeout)
+      }
+    },
+    enabled: !!metaEvidenceURI,
+    staleTime: Infinity,
+  })
+  const columns = columnsQuery.data
+
   // "Listed" filters to every entry on the list, the disputed ones
   // included (see onListCount below); "Disputed" narrows to those alone.
   // "Previously disputed" is every entry ever challenged (each challenge is
   // a dispute), whatever its status now.
+  // The Network menu, on a list whose first identifier is a rich address
+  // (registry-shared-network.ts). A link's networks apply while the columns
+  // load; a list that turns out to have no networks ignores them.
+  const hasNetworks = listHasNetworks(columns)
+  const askedNetworks = networksFrom(search)
+  const networks = columns && !hasNetworks ? [] : askedNetworks
+  const networkKey = networks.join(',')
+
   const itemsWhere = useMemo(() => {
     const statuses: string[] = []
     if (absent) statuses.push('Absent')
     if (registered) statuses.push('Submitted', 'Reincluded', 'Disputed')
     else if (disputed) statuses.push('Disputed')
     const history = disputedBefore ? { challenges_: { id_not: null } } : {}
-    if (statuses.length === 0) return { registry: registryId, ...history }
-    return { registry: registryId, ...history, status_in: statuses }
-  }, [absent, registered, disputed, disputedBefore, registryId])
+    const base =
+      statuses.length === 0
+        ? { registry: registryId, ...history }
+        : { registry: registryId, ...history, status_in: statuses }
+    // The Graph takes `or` only on its own: the networks join under `and`.
+    const network = stakeNetworkWhere(networkPrefixes(networkKey.split(',')))
+    return network ? { and: [base, network] } : base
+  }, [absent, registered, disputed, disputedBefore, registryId, networkKey])
 
   // How many entries have ever been challenged: the list's size under the
   // status menu's "Previously disputed" (which shows no count), read only
@@ -441,39 +494,6 @@ const StakeRegistry = () => {
     enabled: !!registry && !!chainId,
     staleTime: STALE_TIME,
   })
-
-  // The columns live only in the MetaEvidence file, not in the subgraph.
-  // Whoever runs the list writes that file: only well-typed columns reach
-  // the page (a label that is an object would take it down for everyone).
-  // A failed, malformed or stalled read throws, so it is retried and the
-  // entries' own labels stand in meanwhile.
-  const arbitrationSetting = registry?.arbitrationSettings?.[0]
-  const metaEvidenceURI = arbitrationSetting?.metaEvidenceURI
-  const columnsQuery = useQuery({
-    queryKey: ['permanentRegistryColumns', metaEvidenceURI],
-    queryFn: async () => {
-      const controller = new AbortController()
-      const timeout = window.setTimeout(
-        () => controller.abort(),
-        COLUMNS_TIMEOUT_MS,
-      )
-      try {
-        const response = await fetch(parseIpfs(metaEvidenceURI!), {
-          signal: controller.signal,
-        })
-        if (!response.ok)
-          throw new Error(`MetaEvidence read failed (${response.status})`)
-        const file = sanitizeMetaEvidence(await response.json())
-        if (!file) throw new Error('MetaEvidence is not a JSON object')
-        return file.metadata?.columns ?? []
-      } finally {
-        window.clearTimeout(timeout)
-      }
-    },
-    enabled: !!metaEvidenceURI,
-    staleTime: Infinity,
-  })
-  const columns = columnsQuery.data
 
   // Governor and the multiplier divisor are not indexed; read them on-chain.
   const contractQuery = useQuery({
@@ -586,6 +606,8 @@ const StakeRegistry = () => {
   // when a bucket it needs is unknown. "Listed" already holds the disputed
   // entries, so with it on the "Disputed" chip adds nothing more.
   const filteredCount = useMemo((): number | undefined => {
+    // The counts do not split by network: the pages say how many.
+    if (networkKey) return undefined
     if (disputedBefore) return disputedBeforeCount
     if (!absent && !registered && !disputed) return counts.total
     const parts = [
@@ -602,6 +624,7 @@ const StakeRegistry = () => {
     counts,
     disputedBefore,
     disputedBeforeCount,
+    networkKey,
   ])
 
   // How many entries match, undefined when unknown. A short page is the last
@@ -721,7 +744,9 @@ const StakeRegistry = () => {
 
   // The status menu (round 6) carries the counts, as the Standard page's
   // does, once they are settled and trusted (undefined otherwise).
-  const chipCount = (value?: number) => (countsReady ? value : undefined)
+  // The counts do not split by network: none while networks are chosen.
+  const chipCount = (value?: number) =>
+    countsReady && !networkKey ? value : undefined
   const chips: FilterChip[] = [
     {
       // Every entry on the list, the disputed ones included: the same
@@ -1087,15 +1112,16 @@ const StakeRegistry = () => {
     (itemsQuery.isError && !itemsQuery.data) ||
     countLoading
   // No filter and no search, yet nothing on the first page: an empty list.
-  const anyFilter = !!(absent || registered || disputed || disputedBefore)
+  const statusFilter = !!(absent || registered || disputed || disputedBefore)
+  const anyFilter = statusFilter || networks.length > 0
   const listEmpty = !anyFilter && !itemSearch.trim()
   const noun = (count: number) => (count === 1 ? itemName : itemNamePlural)
   const outOfRangeLine =
     itemCount === undefined
       ? 'This page is past the end of the list.'
       : itemCount === 0
-        ? `No ${itemNamePlural} match${anyFilter ? ' this status' : ' yet'}.`
-        : anyFilter
+        ? `No ${itemNamePlural} match${statusFilter ? ' this status' : ' yet'}.`
+        : statusFilter
           ? `${formatInt(itemCount)} ${noun(itemCount)} ${
               itemCount === 1 ? 'matches' : 'match'
             } this status, all on earlier pages.`
@@ -1186,6 +1212,10 @@ const StakeRegistry = () => {
           placeholder={`Search ${itemNamePlural}`}
           chips={chips}
           onStatusChange={setStatus}
+          networks={hasNetworks ? networks : undefined}
+          onNetworkToggle={(key) =>
+            navigate({ search: withNetworkToggled(search, key) })
+          }
           sort={oldestFirst ? 'oldest' : 'newest'}
           onSortChange={(sort) =>
             setFilter(P_FILTER_KEYS.OLDEST_FIRST, sort === 'oldest')

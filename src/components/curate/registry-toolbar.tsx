@@ -1,5 +1,5 @@
 import React, { useId } from 'react'
-import styled from 'styled-components'
+import styled, { css } from 'styled-components'
 import type { ListLayout } from 'hooks/use-stored-layout'
 import Switch from 'components/ui/Switch'
 import { useMediaQuery } from 'pages/guide/hooks'
@@ -13,6 +13,7 @@ import {
   type StatusTone,
 } from './primitives'
 import { CurateIcon } from './icons'
+import { NETWORK_OPTIONS, networkSummary } from './registry-shared-network'
 
 /*
  * Registry toolbar, on one line on desktop: search (with the shown/total
@@ -30,6 +31,10 @@ import { CurateIcon } from './icons'
  * own, led by a multicolour LED and carrying no count (round 7). Seven choices with their counts read better in a menu than in a rail
  * that scrolled on phones, and combining statuses was rarely what anyone
  * wanted.
+ *
+ * On a list whose entries are rich addresses, a Network menu follows the
+ * status menu (registry-shared-network.ts). It takes several networks at
+ * once, so its rows carry checkboxes rather than the status menu's check.
  */
 
 const integer = new Intl.NumberFormat('en-US')
@@ -37,7 +42,7 @@ const integer = new Intl.NumberFormat('en-US')
 /** Phones and narrow tablets: the toolbar's three lines (Bar). */
 const NARROW = '(max-width: 720px)'
 
-const Bar = styled.div`
+const Bar = styled.div<{ $networks?: boolean }>`
   display: grid;
   grid-template-columns: minmax(220px, 360px) auto minmax(0, 1fr) auto auto auto;
   grid-template-areas: 'search status . nsfw sort layout';
@@ -45,11 +50,21 @@ const Bar = styled.div`
   gap: 12px 10px;
   margin: 20px 0 16px;
 
+  ${({ $networks }) =>
+    $networks &&
+    css`
+      grid-template-columns:
+        minmax(220px, 360px) auto auto minmax(0, 1fr)
+        auto auto auto;
+      grid-template-areas: 'search status network . nsfw sort layout';
+    `}
+
   @media (max-width: 1100px) {
     grid-template-columns: minmax(0, 1fr) auto auto;
-    grid-template-areas:
-      'search status status'
-      'nsfw sort layout';
+    grid-template-areas: ${({ $networks }) =>
+      $networks
+        ? `'search status network' 'nsfw sort layout'`
+        : `'search status status' 'nsfw sort layout'`};
   }
 
   /* Phones and narrow tablets: the search keeps the full width, the status
@@ -58,10 +73,10 @@ const Bar = styled.div`
      goes line by line. */
   @media ${NARROW} {
     grid-template-columns: minmax(0, 1fr) auto;
-    grid-template-areas:
-      'search search'
-      'status sort'
-      'nsfw layout';
+    grid-template-areas: ${({ $networks }) =>
+      $networks
+        ? `'search search' 'status network' 'sort layout' 'nsfw nsfw'`
+        : `'search search' 'status sort' 'nsfw layout'`};
     gap: 10px 8px;
   }
 
@@ -95,6 +110,16 @@ const StatusSlot = styled.div`
   grid-area: status;
   justify-self: start;
   min-width: 0;
+`
+
+const NetworkSlot = styled.div`
+  grid-area: network;
+  justify-self: start;
+  min-width: 0;
+
+  @media ${NARROW} {
+    justify-self: end;
+  }
 `
 
 /* The sensitive-content switch: the app's lit Switch, named by its label. */
@@ -163,6 +188,16 @@ const MultiLed = styled.span`
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-text) 14%, transparent);
 `
 
+/**
+ * The Network menu's value: "all", the one network chosen, or none of its
+ * options when several are (the trigger then reads "3 networks").
+ */
+const networkMenuValue = (networks: string[]): string => {
+  if (networks.length === 0) return 'all'
+  if (networks.length === 1) return networks[0]
+  return ''
+}
+
 /** One choice in the status menu. */
 export interface FilterChip {
   key: string
@@ -220,6 +255,8 @@ export function RegistryToolbar<L extends ListLayout>({
   shown,
   total,
   totalCapped,
+  networks,
+  onNetworkToggle,
 }: {
   search: string
   onSearch: (value: string) => void
@@ -242,6 +279,13 @@ export function RegistryToolbar<L extends ListLayout>({
   total?: number
   /** The total is a lower bound (a capped read): it reads "1,000+". */
   totalCapped?: boolean
+  /**
+   * The chosen networks (CAIP-2 keys), on a list whose entries have one;
+   * undefined hides the Network menu.
+   */
+  networks?: string[]
+  /** A network toggled in the menu, or 'all' to clear them. */
+  onNetworkToggle?: (key: string) => void
 }) {
   const nsfwLabelId = useId()
   // One choice at a time: the first checked key (an old link may carry
@@ -274,6 +318,15 @@ export function RegistryToolbar<L extends ListLayout>({
   // menu and the sort: it comes after the sort, or Tab would drop to it and
   // climb back to the sort.
   const narrow = useMediaQuery(NARROW)
+  const withNetworks = !!networks && !!onNetworkToggle
+  const networkOptions: SelectMenuOption<string>[] = [
+    { value: 'all', label: 'All networks' },
+    ...NETWORK_OPTIONS.map((option, index) => ({
+      value: option.key,
+      label: option.name,
+      divider: index === 0,
+    })),
+  ]
   const sensitive = (
     <SwitchField>
       <Switch
@@ -286,7 +339,7 @@ export function RegistryToolbar<L extends ListLayout>({
     </SwitchField>
   )
   return (
-    <Bar role="region" aria-label="Filters">
+    <Bar role="region" aria-label="Filters" $networks={withNetworks}>
       <Search>
         <CurateIcon name="search" size={16} />
         <input
@@ -314,6 +367,20 @@ export function RegistryToolbar<L extends ListLayout>({
           menuWidth={300}
         />
       </StatusSlot>
+      {withNetworks && (
+        <NetworkSlot>
+          <SelectMenu<string>
+            label="Network"
+            value={networkMenuValue(networks)}
+            placeholder={networkSummary(networks)}
+            renderValue={() => networkSummary(networks)}
+            options={networkOptions}
+            checkedValues={networks.length === 0 ? ['all'] : networks}
+            onChange={onNetworkToggle}
+            menuWidth={260}
+          />
+        </NetworkSlot>
+      )}
       {!narrow && sensitive}
       <Slot $area="sort">
         <SegmentedControl<'newest' | 'oldest'>
@@ -326,7 +393,7 @@ export function RegistryToolbar<L extends ListLayout>({
           ]}
         />
       </Slot>
-      {narrow && sensitive}
+      {narrow && !withNetworks && sensitive}
       <Slot $area="layout">
         <SegmentedControl<L>
           ariaLabel="Layout"
@@ -335,6 +402,7 @@ export function RegistryToolbar<L extends ListLayout>({
           options={layoutOptions}
         />
       </Slot>
+      {narrow && withNetworks && sensitive}
     </Bar>
   )
 }

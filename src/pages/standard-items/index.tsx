@@ -66,6 +66,13 @@ import {
   type FilterChip,
 } from 'components/curate/registry-toolbar'
 import {
+  listHasNetworks,
+  networkPrefixes,
+  networksFrom,
+  standardNetworkWhere,
+  withNetworkToggled,
+} from 'components/curate/registry-shared-network'
+import {
   EntryList,
   tableColumns,
   type EntryRow,
@@ -424,6 +431,22 @@ const Items = () => {
   } = queryOptions
   const orderDirection = oldestFirst ? 'asc' : 'desc'
 
+  // The Network menu, on a list whose first identifier is a rich address. A
+  // link's networks apply while the columns load (no second read once they
+  // are in); a list that turns out to have no networks ignores them.
+  const listColumns =
+    metaEvidence?.address === tcrAddress
+      ? metaEvidence?.metadata?.columns
+      : undefined
+  const hasNetworks = listHasNetworks(listColumns)
+  const askedNetworks = networksFrom(search)
+  const networks = listColumns && !hasNetworks ? [] : askedNetworks
+  const networkKey = networks.join(',')
+  const networkWhere = useMemo(
+    () => standardNetworkWhere(networkPrefixes(networkKey.split(','))),
+    [networkKey],
+  )
+
   const itemsWhere = useMemo(() => {
     // Build conditions array for multi-select support
     const conditions = []
@@ -457,9 +480,17 @@ const Items = () => {
       ? { requests: { disputed: { _eq: true } } }
       : {}
 
+    // The chosen networks: a clause of their own beside the statuses (two
+    // `_or`s cannot share one object, so they meet under `_and`).
+    const network = networkWhere ?? {}
+
     // No filters selected - return all items
     if (conditions.length === 0)
-      return { registry_id: { _eq: tcrAddress?.toLowerCase() }, ...history }
+      return {
+        registry_id: { _eq: tcrAddress?.toLowerCase() },
+        ...history,
+        ...network,
+      }
 
     // Single filter - no need for _or
     if (conditions.length === 1)
@@ -467,15 +498,24 @@ const Items = () => {
         registry_id: { _eq: tcrAddress?.toLowerCase() },
         ...history,
         ...conditions[0],
+        ...network,
       }
 
     // Multiple filters - use _or clause
+    if (networkWhere && '_or' in networkWhere)
+      return {
+        registry_id: { _eq: tcrAddress?.toLowerCase() },
+        ...history,
+        _and: [{ _or: conditions }, networkWhere],
+      }
     return {
       registry_id: { _eq: tcrAddress?.toLowerCase() },
       ...history,
       _or: conditions,
+      ...network,
     }
   }, [
+    networkWhere,
     disputedBefore,
     absent,
     challengedRemovals,
@@ -605,6 +645,8 @@ const Items = () => {
    * undefined while unknown (never 0 for a count still loading).
    */
   const itemCount = useMemo((): number | undefined => {
+    // The counters do not split by network: a lower bound from the pages.
+    if (networkKey) return undefined
     if (disputedBefore) return disputedBeforeCount
     if (!counts) return undefined
     const hasAnyFilter =
@@ -635,6 +677,7 @@ const Items = () => {
     counts,
     disputedBefore,
     disputedBeforeCount,
+    networkKey,
   ])
 
   // Every challenge raised on the list, for the header's court and challenge
@@ -1100,47 +1143,49 @@ const Items = () => {
   // The status menu (round 6): All, then each status with its dot and its
   // live count from the registry counters, listed first, then the open
   // requests, then the challenged ones, the rejected and removed last; and
-  // under a hairline, every entry that has been to court.
+  // under a hairline, every entry that has been to court. The counters do
+  // not split by network: with networks chosen the menu shows no counts.
+  const chipCounts = networkKey ? undefined : counts
   const chips: FilterChip[] = [
     {
       key: 'registered',
       label: 'Registered',
-      count: counts?.registered,
+      count: chipCounts?.registered,
       tone: 'registered',
       checked: !!registered,
     },
     {
       key: 'submitted',
       label: 'Submitted',
-      count: counts?.submitted,
+      count: chipCounts?.submitted,
       tone: 'window',
       checked: !!submitted,
     },
     {
       key: 'removalRequested',
       label: 'Removal requested',
-      count: counts?.removalRequested,
+      count: chipCounts?.removalRequested,
       tone: 'window',
       checked: !!removalRequested,
     },
     {
       key: 'challengedSubmissions',
       label: 'Challenged submissions',
-      count: counts?.challengedSubmissions,
+      count: chipCounts?.challengedSubmissions,
       tone: 'contested',
       checked: !!challengedSubmissions,
     },
     {
       key: 'challengedRemovals',
       label: 'Challenged removals',
-      count: counts?.challengedRemovals,
+      count: chipCounts?.challengedRemovals,
       tone: 'contested',
       checked: !!challengedRemovals,
     },
     {
       key: 'absent',
       label: 'Rejected or removed',
-      count: counts?.absent,
+      count: chipCounts?.absent,
       tone: 'off',
       checked: !!absent,
     },
@@ -1399,8 +1444,21 @@ const Items = () => {
   // the page already loaded.
   const pageScopedSearch = pagerTotal > ITEMS_PER_PAGE && !wholeListSearch
   const searchCapped = wholeListSearch && pageItemCount >= SEARCH_LIMIT
+  const networkActive = networks.length > 0
+  // Totals the pages prove rather than a counter: a capped "Previously
+  // disputed" read, or a network choice the counters cannot split.
+  const totalIsFloor = disputedBeforeCapped || networkActive
   const filtersActive = !!(
+    networkActive ||
     disputedBefore ||
+    absent ||
+    registered ||
+    submitted ||
+    removalRequested ||
+    challengedSubmissions ||
+    challengedRemovals
+  )
+  const hasStatusFilter = !!(
     absent ||
     registered ||
     submitted ||
@@ -1411,6 +1469,20 @@ const Items = () => {
   // The last page, when the total is exact.
   const pageCount = countIsFloor ? 0 : Math.ceil(itemCount / ITEMS_PER_PAGE)
   const plural = capitalizeFirstLetter(itemNamePlural)
+
+  // What an empty filtered list says: the status, the networks, or both.
+  const emptyFilterLine = () => {
+    const where = networks.length === 1 ? 'that network' : 'those networks'
+    if (disputedBefore)
+      return networkActive
+        ? `No ${itemName} on ${where} has been to court.`
+        : `No ${itemName} on this list has been to court.`
+    if (hasStatusFilter)
+      return networkActive
+        ? `No ${itemName} on ${where} has this status right now.`
+        : `No ${itemName} has this status right now.`
+    return `No ${itemName} on this list is on ${where}.`
+  }
 
   // Why the list is empty decides what it says and offers.
   const emptyView = ((): {
@@ -1456,9 +1528,7 @@ const Items = () => {
     if (filtersActive)
       return {
         title: `No ${itemNamePlural} match`,
-        line: disputedBefore
-          ? `No ${itemName} on this list has been to court.`
-          : `No ${itemName} has this status right now.`,
+        line: emptyFilterLine(),
         action: (
           <GhostButton
             type="button"
@@ -1576,6 +1646,10 @@ const Items = () => {
           placeholder={`Search ${itemNamePlural}`}
           chips={chips}
           onStatusChange={setStatus}
+          networks={hasNetworks ? networks : undefined}
+          onNetworkToggle={(key) =>
+            navigate({ search: withNetworkToggled(search, key) })
+          }
           sort={oldestFirst ? 'oldest' : 'newest'}
           onSortChange={(sort) => setFilter('oldestFirst', sort === 'oldest')}
           layout={layout}
@@ -1590,13 +1664,13 @@ const Items = () => {
               ? undefined
               : searching && !wholeListSearch
                 ? pageItemCount
-                : disputedBeforeCapped
+                : totalIsFloor
                   ? Math.max(itemCount ?? 0, pageReach)
                   : itemCount
           }
           totalCapped={
             // A short page past the cap ends the list: that total is exact.
-            disputedBeforeCapped &&
+            totalIsFloor &&
             pageItemCount === ITEMS_PER_PAGE &&
             !(searching && !wholeListSearch)
           }
