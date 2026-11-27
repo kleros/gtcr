@@ -792,6 +792,13 @@ way (dashboard, Browse, registry pages, the profile, the landing page).
 
 ## Entry page
 
+- **A party's notice in an appeal** (`standard-item-details/party-notice.ts`): while the appeal
+  period is open and the connected wallet is the requester or the challenger, one notice (the
+  page's dot-and-text notice) sits under the status line and says in the second person what is
+  theirs to do and by when, naming the hero's own "Contribute fees" button rather than adding a
+  second one: the losing side's deadline is the end of its half, the winner's is the end of the
+  period once the loser has funded. It never says "your call", and it is gone for everyone else
+  and once that party has nothing left to do.
 - **The hero is two independent columns.** Left, one flow: eyebrow, title and status, the facts
   strip, then Full details directly under it. Right, 360px: the one clock (never boxed), the action
   under it (amount, sentence, button), drawn bare as part of the featured panel, not as a card in
