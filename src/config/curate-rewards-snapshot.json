@@ -1,0 +1,904 @@
+{
+  "index": "https://rewards.kleros.io/curate-rewards.json",
+  "curators": [
+    "0x000000000000f2ef9adbed78a17dd54eb9279e68",
+    "0x00002d244c123d563c478837948caad714d40000",
+    "0x0000db701f5f7545009f4955a00057bdcbbe0000",
+    "0x011e0be1128af8c51646181368589ccfbddf746a",
+    "0x03f28fd8e91e5c821cc7aa4da3fed7c4de0102aa",
+    "0x05e8459cead746791f2feca4806d00a57e376ef3",
+    "0x05fce6e365bbeeb231737a52e244b0247e128d49",
+    "0x0d3662a58010592abc77dedbf06101c4f0dbb357",
+    "0x1249b728865dfe7091407fa548cbf48a80f0626d",
+    "0x129d7b969e56339bb417b58a4f8caaec8f438ace",
+    "0x13674ff44c631dc134de6b6a15fa3fa7a354d773",
+    "0x1989cef561054d64e9cdae872c4d6fc08ebbf7de",
+    "0x19be20b1f723aff620ac1ca041824ac78f140460",
+    "0x1cfd452eb369a7b9475b07d1457dd1d0500fd788",
+    "0x1f030f9657f8d87a5883a2586a2dd115fa9d071f",
+    "0x20881b01ba2b8af95cc190aa3dee384720b7fef7",
+    "0x22a6da63aba2552a174110cbc89dde7a4a62d55f",
+    "0x2380fc15ba9e9ec91873568ed53ad6567c876064",
+    "0x245bd6b5d8f494df8256ae44737a1e5d59769ab4",
+    "0x25124024390ac79659ed699b087a3e748686df7b",
+    "0x25f73d547c8a847eb0ac99af0cba5399d027f070",
+    "0x2f708780e5e22701c40d563e81b96807dcc8b9d9",
+    "0x2ff064d951996c9fe70d6ba22d8684f37b2e24ec",
+    "0x33d10de1e65e6193044e277a77c3fd02d59b1c3f",
+    "0x372948f4a87e118da9fa16fe89856a92122eef38",
+    "0x373a69e42c0904e54f6fc5f886ef06853299dd19",
+    "0x38430336153468dcf36af5cea7d6bc472425633a",
+    "0x3a1066cc1a884b5e66175f5c622bfbfab3f99058",
+    "0x3a42086e4c2511e502c0b6ca87e35c8455388d39",
+    "0x43f0a94f7939c410a3896b007ad5b79b3630586a",
+    "0x4518cd6f9cd1085d0cc1eed7c8b3bcd98afafcd9",
+    "0x496e520c54c13fa6d3794869755a8370f198baa8",
+    "0x4bd0fe8c408f4adc4f11da3237c4cac48e020a21",
+    "0x4d6e4d2f57a2549dfdc76328c19c16ec95cfdfbf",
+    "0x4da2b7f5a194fd82001086db6186364b5e6cf794",
+    "0x5192904d8797e16ec889c1e578527b67de549152",
+    "0x51dda13638adb48c9117c37683eee9f6e8f5a363",
+    "0x54ff330226e4f03135e36db16b68774215f1205f",
+    "0x55122fdca4ba43294677d96c12ce76dabc459a2b",
+    "0x55874fb3b7182473259996ae491fdc4b7163f168",
+    "0x55df6e87c5c0d279b9de68ffc15cdefcc24d2bef",
+    "0x58240b320f77b7370eeee87e8f0fb90eb1518a89",
+    "0x5e42579ed5857acd58c5fe7c246b49f8ecb8f16c",
+    "0x5fc96c182bb7e0413c08e8e03e9d7efc6cf0b099",
+    "0x62bf8b205853fa6473061dc93b380e51e56a969c",
+    "0x6687c671980e65ebd722b9146fc61e2471558dd6",
+    "0x6841ccc2fa23efe3bbe98492f026756479e4a4ec",
+    "0x6921d517c528beb0b9a93066f6d0663c819ccd4a",
+    "0x6bc26ab6c764c32c3d1536cb7806f2c79e926a7b",
+    "0x6e4363e83b3695955f65c54f3bf5990ce258308f",
+    "0x6f8e399b94e117d9e44311306c4c756369682720",
+    "0x70b0e653e50eff0109ba6b3b3d4f15453e49d311",
+    "0x7169e2c4f9fde15b06ce6c587d6be5d941aabfcc",
+    "0x74199ddac9607a3a694011793f674fa1e0d0fe2d",
+    "0x770569f85346b971114e11e4bb5f7ac776673469",
+    "0x77e09ab2cb69d1742a58770792e471450613fbbd",
+    "0x791c01cc37baec2aa49e5090ba0c4bd2dba163bf",
+    "0x7b4b796e59c5b06c324bb306cf57143063cf35a7",
+    "0x7e4181fdba8b2434ee0c16abc6cd0f50a803c3d4",
+    "0x8010c17790955f6185c13f596b72f2f2de5c6474",
+    "0x84a3316fa41f304699bf57784d37fb5dcd0c7f4e",
+    "0x89c4acb8b5b5b8e5b2121934b9e143569a914c80",
+    "0x8b260986f7ca966c8dcdb97543461ff03334b0d2",
+    "0x959a26147ae9b740ae0e55777332c477497146a8",
+    "0x982674073adc1e7a1bf14e3b7f3b938166ffbb33",
+    "0x982f5698febb2b8d1b9a560228abbceafbb11568",
+    "0x9c2b07dd951edae10fbf58bb98a1448cde417f58",
+    "0x9e51bbd7584afd0fb2e4bddab37f23a9f192d30a",
+    "0x9e5ef891a89e57faf907670e97005f91751f578c",
+    "0x9e79b21be05ec4120b13c78c83dcf57b40a2e69e",
+    "0x9e840663f66b8f47428e805d156b4305295c8f9d",
+    "0x9f4f53194c63541e6930f75cd9d403ca4d3f6ca4",
+    "0xab9baab44faec445f097ab14a2af029663355166",
+    "0xac23e636b668b6f677c4fdd72e7f56bb2cae7a7f",
+    "0xae06ac0d353329cccadc2fd978042591447c3de2",
+    "0xb011122194c0487fe9214c9fc9a73ec770e94eae",
+    "0xb38eb0a73f4be055046fdaacb8c35d9792bf7e0e",
+    "0xb44e8c0085376f642be3fa695226f2518c0fd3d7",
+    "0xb5c33ddfbd0ddebe012da85531b73ce242f4b89c",
+    "0xb5cc50f04f1193782e0f64d6326d1ee4c8f4ed2b",
+    "0xb8d2444d1f7f66f2ee9be23290c94712b2ce3aff",
+    "0xbc9adc07d9145d0c2aa3c4293a5f720091c82a8d",
+    "0xc8747abc6a88bbd20939d83e36295b4defb3989c",
+    "0xd5b2deb4f30781d301a84b8cb5a5027bc5964b8e",
+    "0xd5c68fc37883b471448b1b7338eccab89bc77e44",
+    "0xd8f4217119dfcc3f1e485bb8a24ff19ee990ca25",
+    "0xdd2df703f36d03bdab7ca109331e2f58436dd2cd",
+    "0xde54285ad668fde3bc97b41301d0165c38277129",
+    "0xe2799c5dfbacd6ca7a328b893704c68ad3a9a88b",
+    "0xe35ec79d995276b551038febe78a3b7593c7d491",
+    "0xe7338ce2e54c25b802e873e248c79b7c908271a3",
+    "0xebc37f1cb6b5266560f27ecbbe3dd582d9201558",
+    "0xefff16af9f056adef691afe81ccdc2978a935017",
+    "0xf3d44b5a24da9cfb92ab73050c9cab325125dd63",
+    "0xf4e8ec561c515e0f4b510f5adb14e5998686ea07",
+    "0xf574c9187af4d6a15372e036d57e466c23e0d93f",
+    "0xf6c0d301fd8dd2d12f0154438aba67a9f612a1d3",
+    "0xf9eaab27b00b9bbc8fbfa6c58dc2653bef4b461a",
+    "0xfcab301730215ea17d82bfc0e4b2a269de226a14",
+    "0xfecd90b388f0f1da91421b1a848013a0fe0c10ab",
+    "0xfee51d3ea7d4d57105f653403ff01a75bb1125b2"
+  ],
+  "months": [
+    {
+      "period": "2022-04",
+      "chainId": 100,
+      "url": "https://cdn.kleros.link/ipfs/QmVKWuHM1ZkLYWTGwQ2Jpo4A3XitsTijVJkxDjok8Qgkfx/curate-rewards-2022-04.json",
+      "total": "99999990000000000000000",
+      "paid": [
+        65,
+        9,
+        99,
+        7,
+        97,
+        75,
+        72,
+        14,
+        28
+      ]
+    },
+    {
+      "period": "2022-05",
+      "chainId": 100,
+      "url": "https://cdn.kleros.link/ipfs/QmeRBrqSRebySJqQR4eVJ76aLYKPV9K9Vr5hxqo13ZvCo2/curate-rewards-2022-05.json",
+      "total": "99999950000000000000000",
+      "paid": [
+        52,
+        38,
+        14,
+        12
+      ]
+    },
+    {
+      "period": "2022-06",
+      "chainId": 100,
+      "url": "https://cdn.kleros.link/ipfs/QmWhXeuTvqNxv4bX5iSNomnHdWEpwCUTbhVX5kStpz9GVU/curate-rewards-2022-06.json",
+      "total": "97999996000000000000000",
+      "paid": [
+        100,
+        38,
+        28,
+        52,
+        14
+      ]
+    },
+    {
+      "period": "2022-07",
+      "chainId": 100,
+      "url": "https://cdn.kleros.link/ipfs/QmbTpPJDvY72q5aFqgXEa9o6pA5jLVzEMaCkBjKHVP5q9W/curate-rewards-2022-07.json",
+      "total": "100000000000000000000000",
+      "paid": [
+        38,
+        28,
+        100
+      ]
+    },
+    {
+      "period": "2022-08",
+      "chainId": 100,
+      "url": "https://cdn.kleros.link/ipfs/QmU4ggCv1nLAejukAugLgSpZHs6G3NZ7QVUPhB6nMQ8zqK/curate-rewards-2022-08.json",
+      "total": "100000000000000000000000",
+      "paid": [
+        74,
+        38,
+        100,
+        28,
+        52
+      ]
+    },
+    {
+      "period": "2022-09",
+      "chainId": 100,
+      "url": "https://cdn.kleros.link/ipfs/QmSSvzBkJUVkQ1Cnc87RmTbPMyYgbcYEsCrVqm819phsM8/curate-rewards-2022-09.json",
+      "total": "100000000000000000000000",
+      "paid": [
+        28,
+        38,
+        100
+      ]
+    },
+    {
+      "period": "2022-10",
+      "chainId": 100,
+      "url": "https://cdn.kleros.link/ipfs/QmVV7TRWgXeH1bGq2D74Gxn9aURFAdZYfhPPi4e9itiRz4/curate-rewards-2022-10.json",
+      "total": "100000000000000000000000",
+      "paid": [
+        38,
+        28,
+        100
+      ]
+    },
+    {
+      "period": "2022-11",
+      "chainId": 100,
+      "url": "https://cdn.kleros.link/ipfs/QmTk59vWeSG32R7UU1ixnGSTazKct63WqtRa87BwkV7Mda/curate-rewards-2022-11.json",
+      "total": "100000000000000000000000",
+      "paid": [
+        38,
+        28,
+        100
+      ]
+    },
+    {
+      "period": "2022-12",
+      "chainId": 100,
+      "url": "https://cdn.kleros.link/ipfs/QmNbCxArdLeStnGtZyQiJuM94nvAWr72bUmfJaDQ8NAEbq/curate-rewards-2022-12.json",
+      "total": "100000000000000000000000",
+      "paid": [
+        28,
+        100,
+        38,
+        97
+      ]
+    },
+    {
+      "period": "2023-01",
+      "chainId": 100,
+      "url": "https://cdn.kleros.link/ipfs/QmSMqdcHkaHG8brLGw1oXSpeYKXvEZzAFULaNkwCQe732m/curate-rewards-2023-01.json",
+      "total": "100000000000000000000000",
+      "paid": [
+        100,
+        28,
+        38,
+        50
+      ]
+    },
+    {
+      "period": "2023-02",
+      "chainId": 100,
+      "url": "https://cdn.kleros.link/ipfs/QmU8h2ReuTvhjC7t2B2y2yjugDgoZa8wBPN87BC35TG6yj/curate-rewards-2023-02.json",
+      "total": "100000000000000000000000",
+      "paid": [
+        38,
+        46,
+        28,
+        14,
+        89
+      ]
+    },
+    {
+      "period": "2023-03",
+      "chainId": 100,
+      "url": "https://cdn.kleros.link/ipfs/QmY1Y8tvTu3NX9CdGeW7CTNCfgkgYNvvmzprHLwscPL6WV/curate-rewards-2023-03.json",
+      "total": "100000000000000000000000",
+      "paid": [
+        28,
+        38,
+        89,
+        46
+      ]
+    },
+    {
+      "period": "2023-04",
+      "chainId": 100,
+      "url": "https://cdn.kleros.link/ipfs/QmSvbeyWJ86RJudmpJEurBnpJjkV7fJcHCLJxmsdyqwSuH/curate-rewards-2023-04.json",
+      "total": "100000000000000000000000",
+      "paid": [
+        28,
+        38,
+        89,
+        46
+      ]
+    },
+    {
+      "period": "2023-05",
+      "chainId": 100,
+      "url": "https://cdn.kleros.link/ipfs/QmV9We83y5miyuEettYHinFABYYvac8iTLiFqvip4qcUi7/curate-rewards-2023-05.json",
+      "total": "100000000000000000000000",
+      "paid": [
+        63,
+        38,
+        46,
+        28,
+        89
+      ]
+    },
+    {
+      "period": "2023-06",
+      "chainId": 100,
+      "url": "https://cdn.kleros.link/ipfs/QmSKjF933XESrnSUnjH28RyqDyu4BdS9EdXCyLNX4Q4VEA/curate-rewards-2023-06.json",
+      "total": "100000000000000000000000",
+      "paid": [
+        63,
+        28,
+        89,
+        46
+      ]
+    },
+    {
+      "period": "2023-09",
+      "chainId": 100,
+      "url": "https://cdn.kleros.link/ipfs/QmWPS76SSAdi62kAB3HEFV8RLkwtM5A1CJiPryUSmiN885/curate-rewards-2023-09.json",
+      "total": "300000000000000000000000",
+      "paid": [
+        70,
+        27,
+        19,
+        89,
+        51,
+        54,
+        56,
+        6,
+        66,
+        88,
+        28,
+        90,
+        76
+      ]
+    },
+    {
+      "period": "2023-10",
+      "chainId": 100,
+      "url": "https://cdn.kleros.link/ipfs/QmNz5GBRBQF5X6X95MnMyMRNebV4C51dxfKebH3hqZf2Wc/curate-rewards-2023-10.json",
+      "total": "300000000000000000000000",
+      "paid": [
+        89,
+        97,
+        3,
+        16,
+        59,
+        56,
+        88,
+        20,
+        28,
+        18,
+        76
+      ]
+    },
+    {
+      "period": "2023-11",
+      "chainId": 100,
+      "url": "https://cdn.kleros.link/ipfs/QmcbAJUgomMkrnEJnP6TZcEmCtsfP8kz7g5ixZVmgxTxLB/curate-rewards-2023-11.json",
+      "total": "300000000000000000000000",
+      "paid": [
+        89,
+        3,
+        31,
+        82,
+        59,
+        39,
+        28,
+        8,
+        76
+      ]
+    },
+    {
+      "period": "2023-12",
+      "chainId": 100,
+      "url": "https://cdn.kleros.link/ipfs/QmarqfHgGzjSuBsm5rdWRc1NCRk2i8t9ke2m1BXCdZM2yY/curate-rewards-2023-12.json",
+      "total": "300000000000000000000000",
+      "paid": [
+        86,
+        95,
+        3,
+        31,
+        59,
+        17,
+        28,
+        8
+      ]
+    },
+    {
+      "period": "2024-01",
+      "chainId": 100,
+      "url": "https://cdn.kleros.link/ipfs/QmSLaJLgCrQryRENKMGviZWNnTbaMFNmtwk5ijyAFjd6ZZ/curate-rewards-2024-01.json",
+      "total": "299999980000000000000000",
+      "paid": [
+        86,
+        46,
+        17,
+        3,
+        61,
+        31,
+        82,
+        59,
+        32,
+        20,
+        28,
+        8,
+        76
+      ]
+    },
+    {
+      "period": "2024-02",
+      "chainId": 100,
+      "url": "https://cdn.kleros.link/ipfs/QmZKmzKgA5DbGjQac7j4LXadrRqtUbgKzN8n8HKSC2Vimm/curate-rewards-2024-02.json",
+      "total": "267000000000000000000000",
+      "paid": [
+        86,
+        46,
+        17,
+        5,
+        3,
+        82,
+        59,
+        57,
+        33,
+        60,
+        32,
+        28,
+        8
+      ]
+    },
+    {
+      "period": "2024-03",
+      "chainId": 100,
+      "url": "https://cdn.kleros.link/ipfs/QmYvPT4S9iT64PqV79VyjCGJSr3RzcTwKgZ3E7M2LHCojE/curate-rewards-2024-03.json",
+      "total": "300000000000000000000000",
+      "paid": [
+        46,
+        5,
+        97,
+        98,
+        82,
+        59,
+        60,
+        32,
+        85,
+        28
+      ]
+    },
+    {
+      "period": "2024-04",
+      "chainId": 100,
+      "url": "https://cdn.kleros.link/ipfs/QmaKNuhHaosY1Ju7hXvbvY4UzoepHR75RcLJcPxf3J26nA/curate-rewards-2024-04.json",
+      "total": "300000000000000000000000",
+      "paid": [
+        0,
+        46,
+        1,
+        10,
+        69,
+        82,
+        59,
+        60,
+        32,
+        28,
+        2
+      ]
+    },
+    {
+      "period": "2024-05",
+      "chainId": 100,
+      "url": "https://cdn.kleros.link/ipfs/QmZEhbQaoWytg2K4qPrDPZQQtvbvbUWzCigNHeU2S69cjf/curate-rewards-2024-05.json",
+      "total": "299999990000000000000000",
+      "paid": [
+        80,
+        0,
+        46,
+        84,
+        29,
+        59,
+        24,
+        34,
+        60,
+        32,
+        28,
+        47,
+        2
+      ]
+    },
+    {
+      "period": "2024-06",
+      "chainId": 100,
+      "url": "https://cdn.kleros.link/ipfs/QmNPc45XauTZHxqJmp45MYZSNCRWcLeex6PxnpS18cpNbd/curate-rewards-2024-06.json",
+      "total": "300000000000000000000000",
+      "paid": [
+        0,
+        46,
+        96,
+        60,
+        32,
+        28
+      ]
+    },
+    {
+      "period": "2024-07",
+      "chainId": 100,
+      "url": "https://cdn.kleros.link/ipfs/QmTxrAPbqqpMNExjPThvTXPJhKSzNmLLfpDG1NhsGove9j/curate-rewards-2024-07.json",
+      "total": "300000000000000000000000",
+      "paid": [
+        82,
+        0,
+        46,
+        37,
+        32,
+        28
+      ]
+    },
+    {
+      "period": "2024-08",
+      "chainId": 100,
+      "url": "https://cdn.kleros.link/ipfs/Qmcv3M9sSrFdnv4HvAwomUWmf1JzkXKDdBZZC23mZ17dv1/curate-rewards-2024-08.json",
+      "total": "300000000000000000000000",
+      "paid": [
+        46,
+        62,
+        60,
+        32,
+        49,
+        28,
+        78
+      ]
+    },
+    {
+      "period": "2024-09",
+      "chainId": 100,
+      "url": "https://cdn.kleros.link/ipfs/QmdccFDCai4bnGE6Q9kCR2pBdzUdDoAdbBxoxJFJNaAqJ9/curate-rewards-2024-09.json",
+      "total": "298000000000000000000000",
+      "paid": [
+        28,
+        46
+      ]
+    },
+    {
+      "period": "2024-10",
+      "chainId": 100,
+      "url": "https://cdn.kleros.link/ipfs/QmP5uxGUJagd7XLbxPypPSYzuExHcnU7EL2Ej5puMweZ5f/curate-rewards-2024-10.json",
+      "total": "435644310000000000000000",
+      "paid": [
+        82,
+        59,
+        46,
+        23,
+        28
+      ]
+    },
+    {
+      "period": "2024-11",
+      "chainId": 100,
+      "url": "https://cdn.kleros.link/ipfs/QmT9jsUdHFVZibkxfCmdFB3Term55N9bLE8BZJaU33TQQG/curate-rewards-2024-11.json",
+      "total": "359994000000000000000000",
+      "paid": [
+        82,
+        0,
+        46,
+        60,
+        28
+      ]
+    },
+    {
+      "period": "2024-12",
+      "chainId": 100,
+      "url": "https://cdn.kleros.link/ipfs/QmYska678vnoAJqPRUa5VtzDBDmPJtNU5sG1VKYd8d2WWm/curate-rewards-2024-12.json",
+      "total": "346662000000000000000000",
+      "paid": [
+        82,
+        0,
+        11,
+        46,
+        28
+      ]
+    },
+    {
+      "period": "2025-01",
+      "chainId": 100,
+      "url": "https://cdn.kleros.link/ipfs/QmP794DovKwWpR2TSX9VxgELEwEgsHUA6Dbm7ayuDFsL19/curate-rewards-2025-01.json",
+      "total": "345662000000000000000000",
+      "paid": [
+        82,
+        0,
+        11,
+        45,
+        46
+      ]
+    },
+    {
+      "period": "2025-02",
+      "chainId": 100,
+      "url": "https://cdn.kleros.link/ipfs/Qma4ZRoP5kNyDHTrhUWeKn4MLRvcBvMxstZF6iaekpPSNt/curate-rewards-2025-02.json",
+      "total": "348328000000000000000000",
+      "paid": [
+        82,
+        0,
+        11,
+        46,
+        28,
+        91
+      ]
+    },
+    {
+      "period": "2025-03",
+      "chainId": 100,
+      "url": "https://cdn.kleros.link/ipfs/Qma1MNTusZJTBcQKKEjrT3j1qDfHAXG9K4MgF324VMY1cL/curate-rewards-2025-03.json",
+      "total": "366660000000000000000000",
+      "paid": [
+        82,
+        0,
+        59,
+        11,
+        46
+      ]
+    },
+    {
+      "period": "2025-04",
+      "chainId": 100,
+      "url": "https://cdn.kleros.link/ipfs/QmTHS4H15DX1h1NRxW5zPAD6cavxEMeCXJNHirpEsCDK4r/curate-rewards-2025-04.json",
+      "total": "366660000000000000000000",
+      "paid": [
+        82,
+        0,
+        11,
+        43,
+        46
+      ]
+    },
+    {
+      "period": "2025-05",
+      "chainId": 100,
+      "url": "https://cdn.kleros.link/ipfs/QmSn37qaf71EHgmqNFXGvXksHADZQ4w5tMPsMiCPBEUads/curate-rewards-2025-05.json",
+      "total": "366660000000000000000000",
+      "paid": [
+        82,
+        11,
+        46
+      ]
+    },
+    {
+      "period": "2025-06",
+      "chainId": 100,
+      "url": "https://cdn.kleros.link/ipfs/QmbtuFTtE2FF1FYRVLdsZ2NE31AmjobRiRRwFFPsmGFdUG/curate-rewards-2025-06.json",
+      "total": "366660000000000000000000",
+      "paid": [
+        11,
+        41,
+        46,
+        21,
+        67,
+        26
+      ]
+    },
+    {
+      "period": "2025-07",
+      "chainId": 100,
+      "url": "https://cdn.kleros.link/ipfs/QmeBbuwqs52p9qDq1RU2Tv1PqSduMNZ5Lixznut1U6VD2N/curate-rewards-2025-07.json",
+      "total": "366660000000000000000000",
+      "paid": [
+        0,
+        46,
+        11,
+        41,
+        40,
+        26
+      ]
+    },
+    {
+      "period": "2025-08",
+      "chainId": 100,
+      "url": "https://cdn.kleros.link/ipfs/QmVbH11js5YjYQ6XQiXt29A4ZTztXegmsLFyKSVUKap3i9/curate-rewards-2025-08.json",
+      "total": "316660000000000000000000",
+      "paid": [
+        0,
+        46,
+        40,
+        49,
+        26,
+        59,
+        11,
+        41,
+        32
+      ]
+    },
+    {
+      "period": "2025-09",
+      "chainId": 100,
+      "url": "https://cdn.kleros.link/ipfs/QmRmcAzXTtkcdjcPFVWX84ugjjoqvRnEixcseWJQQWLSn1/curate-rewards-2025-09.json",
+      "total": "265000000000000000000000",
+      "paid": [
+        87,
+        46,
+        40,
+        44,
+        41,
+        48,
+        28
+      ]
+    },
+    {
+      "period": "2025-10",
+      "chainId": 100,
+      "url": "https://cdn.kleros.link/ipfs/QmQLisium8YGX18crp4w1UPBcEcgcY5jkbfTwBZT9CzWFi/curate-rewards-2025-10.json",
+      "total": "325000000000000000000000",
+      "paid": [
+        87,
+        83,
+        40,
+        46,
+        81,
+        77,
+        26,
+        60,
+        93,
+        48,
+        67,
+        42,
+        94,
+        44,
+        30,
+        41
+      ]
+    },
+    {
+      "period": "2025-11",
+      "chainId": 100,
+      "url": "https://cdn.kleros.link/ipfs/Qmdo39iNm9pMS9QaxcCHACb2FeTpAEqKvd6P9YZ7rN8581/curate-rewards-2025-11.json",
+      "total": "295500000000000000000000",
+      "paid": [
+        0,
+        87,
+        83,
+        40,
+        44,
+        81,
+        41,
+        60,
+        48
+      ]
+    },
+    {
+      "period": "2025-12",
+      "chainId": 100,
+      "url": "https://cdn.kleros.link/ipfs/QmafXPUvz3tUuQicnqmxAq7vn7PnCCeuoNZ8Cvgfwudwop/curate-rewards-2025-12.json",
+      "total": "343000000000000000000000",
+      "paid": [
+        87,
+        83,
+        42,
+        40,
+        44,
+        41,
+        48,
+        22,
+        0
+      ]
+    },
+    {
+      "period": "2026-01",
+      "chainId": 100,
+      "url": "https://cdn.kleros.link/ipfs/QmNWtK3zYCffvBb8chacEMYvN9ERiZFSEi4BDiSkXVwhXM/curate-rewards-2026-01.json",
+      "total": "351000000000000000000000",
+      "paid": [
+        87,
+        83,
+        42,
+        40,
+        44,
+        92,
+        60,
+        35,
+        48
+      ]
+    },
+    {
+      "period": "2026-02",
+      "chainId": 100,
+      "url": "https://cdn.kleros.link/ipfs/QmZz38j3Ly6hJEQJQQpMvH1wJXGFsGYuE5mab6wX9hwR3L/curate-rewards-2026-02.json",
+      "total": "291210000000000000000000",
+      "paid": [
+        87,
+        83,
+        42,
+        40,
+        44,
+        26,
+        24,
+        35
+      ]
+    },
+    {
+      "period": "2026-03",
+      "chainId": 100,
+      "url": "https://cdn.kleros.link/ipfs/QmcgTZCxLmVz2fQQZrFZDTdimjVaLSZLCSwHPU3TFEioiG/curate-rewards-2026-03.json",
+      "total": "312563880000000000000000",
+      "paid": [
+        87,
+        42,
+        83,
+        40,
+        44,
+        26,
+        41,
+        35,
+        28,
+        79
+      ]
+    },
+    {
+      "period": "2026-04",
+      "chainId": 100,
+      "url": "https://cdn.kleros.link/ipfs/QmeHmg4Zdf4fFbAyJs86ZQfJ8PbH2LF3b8tuJ32gHFTan4/curate-rewards-2026-04.json",
+      "total": "272812800000000000000000",
+      "paid": [
+        87,
+        83,
+        42,
+        40,
+        24,
+        41,
+        68,
+        35,
+        28
+      ]
+    },
+    {
+      "period": "2026-05",
+      "chainId": 100,
+      "url": "https://cdn.kleros.link/ipfs/QmZJKf2HHcej4hqVu5vxaQJVyWWrNE1k8GnuTf4qsdhreX/curate-rewards-2026-05.json",
+      "total": "322947040000000000000000",
+      "paid": [
+        87,
+        83,
+        42,
+        40,
+        15,
+        35,
+        53
+      ]
+    },
+    {
+      "period": "2026-06",
+      "chainId": 100,
+      "url": "https://cdn.kleros.link/ipfs/QmQ4syYsMTmEmX5yHWpp6XYsr7gjb44ZS9FfBctPCtEjD9/curate-rewards-2026-06.json",
+      "total": "318128257000000000000000",
+      "paid": [
+        15,
+        87,
+        83,
+        35,
+        81,
+        59,
+        42
+      ]
+    },
+    {
+      "period": "2026-07",
+      "chainId": 100,
+      "url": "https://cdn.kleros.link/ipfs/Qmcs8YncEQrCNZnHovmBfyofc3awCKxMVkQ9cCryc19EyR/curate-rewards-2026-07.json",
+      "total": "312052311842986141367885",
+      "paid": [
+        15,
+        87,
+        83,
+        35,
+        81,
+        42
+      ]
+    },
+    {
+      "period": "2026-08",
+      "chainId": 100,
+      "url": "https://cdn.kleros.link/ipfs/QmVR5mkkRmNh6XvccmbaLQLszwDjCD8edzBKCXptBcAsbp/curate-rewards-2026-08.json",
+      "total": "290310907761178255911733",
+      "paid": [
+        15,
+        87,
+        25,
+        83,
+        35,
+        73,
+        64,
+        71
+      ]
+    },
+    {
+      "period": "2026-09",
+      "chainId": 100,
+      "url": "https://cdn.kleros.link/ipfs/QmQDj5WVMLvGEQ9hy1Khh1HJ1Tv677ZDwBAceYvio2T3Mn/curate-rewards-2026-09.json",
+      "total": "301298629851559168631808",
+      "paid": [
+        87,
+        71,
+        15,
+        25,
+        83,
+        36,
+        73,
+        64,
+        13
+      ]
+    },
+    {
+      "period": "2026-10",
+      "chainId": 100,
+      "url": "https://cdn.kleros.link/ipfs/QmfQQUJEetmqgkTDxbtYQ2XSnR2SVzwstJxHgHV4UNhe9M/curate-rewards-2026-10.json",
+      "total": "331421861696305094283609",
+      "paid": [
+        71,
+        15,
+        4,
+        87,
+        58,
+        55,
+        25,
+        83,
+        60,
+        64,
+        36
+      ]
+    }
+  ]
+}

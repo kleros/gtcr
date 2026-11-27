@@ -169,6 +169,20 @@ others are named by their label and icon (`THEME_MODES` in `contexts/theme-conte
   translucent stage fill (72%) with a 16px backdrop blur and a hairline bottom border. It never
   floats, insets or turns into a pill. Content keeps `--page-max-width` (1344px) and
   `--horizontal-padding` (min(4.69vw, 56px); 16px on phones), so widths match the old frame at 1440.
+- **Search** (`components/layout/site-search*.ts(x)`, the Scout review's lookup): a 38px magnifier
+  first in the bar's right group, and ⌘K on a Mac (Ctrl K elsewhere) anywhere, open a 640px
+  dialog with one field. Under it, in this order: the profile of a pasted address; lists whose
+  name holds the term (matched in the browser from the dashboard load, the busiest first); entries
+  on every list, grouped by list with the list's network chip. A list is drawn with its logo, as
+  the board's list chips draw it (24px, round), and its entries start under its name. A Standard
+  list shows four, then
+  "N more on this list" opening that list's own `?q=` search; a Stake list shows every entry read,
+  since its own search covers only the page on screen. A text-named entry shows the network of its
+  rich address, and two shown lists that share a name show their short addresses. Entries are
+  asked from 3 characters, 500ms after typing stops: one Envio request (identifying fields
+  `key0`-`key4` on the mainnets, and Sepolia from a Sepolia page, 50 rows) plus one Stake subgraph
+  request per chain. Arrow keys move through the results, Enter opens one; a screen reader hears
+  the count, not every row. It works the same on every list: nothing in it knows a particular list.
 - Nothing on a page paints its own full-bleed background or grid.
 - **Footer.** The app bar carries no guide link: the footer's does, and it reads "Guide & Skills",
   since the guide also holds the skill for agent builders (an explainer may link it in context).
@@ -289,7 +303,10 @@ keyboard-active row; the chosen row reads in full `text` with a `primary` check.
 icon, a hint line, a tag and a divider. Keys: ArrowDown / ArrowUp / Home / End / Enter / Space open
 it; the arrows, Home, End, PageUp and PageDown move; Enter or Space pick; Escape closes the menu
 alone (never a dialog around it); Tab closes; typing jumps to the matching option. The form field
-`ui/Select` keeps its field trigger but shares the glass panel and the row look.
+`ui/Select` keeps its field trigger but shares the glass panel and the row look. With
+`checkedValues` it takes several choices (a list's networks): each row ends in a checkbox (a
+hairline square, filled `primary` with an `on-primary` check when chosen) instead of the check, a pick
+toggles one and the menu stays open, and the listbox is `aria-multiselectable`.
 
 The app bar's chain chip is a SelectMenu on every page but the dashboard, which sets its scope with
 its own control next to the figures. Its "All chains" option carries the Ethereum and Gnosis marks
@@ -731,6 +748,27 @@ way (dashboard, Browse, registry pages, the profile, the landing page).
   not drawn, nor the Open for verification heading (the section keeps its 80px opening), and the
   Disputes panel takes the width, two rows to a line, its first page even so no cell is blank; an
   odd last row spans the line. Phones stack.
+- **PNK rewards** (`pages/dashboard/rewards.ts`; the Scout review's rewards, option E, greenlit
+  "with the total numbers"). E added a third figure to the old strip; that strip's footer facts are
+  the Submissions panel's footnotes now, so the rewards are one more: "13.7M PNK paid in rewards to
+  101 curators ↗", linked to rewards.kleros.io/curate (always up to date, every month and what
+  each curator earned), then "· Rewards on your list? Ask Kleros ↗", to the Curate Telegram group
+  the help menu links (Fortunato: say plainly that other lists can ask Kleros for incentives). The
+  first link's tooltip says what the total is and the months it spans. Nothing names a list: the
+  total is every month the rewards page publishes, read from its own files. A month's file is on
+  IPFS and never changes, so the months that existed at build time ship with the app
+  (`config/curate-rewards-snapshot.json`, from `scripts/curate-rewards-snapshot.mjs`); a visit
+  reads the index (about 2 KB) and only the months published since, at most three (an older
+  release keeps its own totals). A failed read keeps the snapshot's. Compact PNK, like the hero's
+  totals ("13.7M"); never dollars, since PNK is the coin that is paid.
+- **Your case** (the Scout review's "needs attention", option B, as Fortunato asked: the existing
+  Disputes panel improved rather than a panel of its own). With a wallet connected, the rows in
+  court where it is one of the two sides (the requester or the challenger; on a Stake list the
+  entry's submitter or the challenger) come first, each keeping its order, and carry the profile's
+  "This is you" chip as "Your case" (selected, the user icon) before the chain chip, so none hides
+  under "+n more in court". The entry page then says what is theirs to do (A party's notice in an
+  appeal). Nothing changes for anyone else, and the panel adds no request: the parties come with
+  the load (the Stake open challenges read the entry's `submitter` for it).
 - Tooltip triggers are their own text's width, so a bubble opens over what it explains.
 - **The chart** (round 7) shows every mainnet: the dashboard's chain switch is hidden for now and
   the page is always "All chains", unnamed. Its switch is the range, `30D · 6M · 1Y · 3Y` (round
@@ -789,6 +827,17 @@ way (dashboard, Browse, registry pages, the profile, the landing page).
 
 ## Entry page
 
+- **A party's notice in an appeal** (`standard-item-details/party-notice.ts`; the Scout review's
+  option D, where Fortunato found "Your call" vague): while the appeal period is open and the
+  connected wallet is the requester or the challenger, one notice (the page's dot-and-text
+  notice) sits under the status line and says to that party what the action card's prompt says to
+  everyone: the same states, read by the same `appealFunding` (the loser's half, the winner's turn,
+  a refusal to rule), the same clocks and the same words, with the reader's side named, as the
+  parties' story always is ("You, the challenger, have 6h 12m to fund an appeal with Contribute
+  fees, or the ruling stands."). A refusal reads "Jurors refused to rule". Where something is
+  the reader's to do, it names the button that does it rather than adding a second one; contested
+  tone then, neutral while the reader only waits. It is gone for everyone else and once both
+  sides are funded.
 - **The hero is two independent columns.** Left, one flow: eyebrow, title and status, the facts
   strip, then Full details directly under it. Right, 360px: the one clock (never boxed), the action
   under it (amount, sentence, button), drawn bare as part of the featured panel, not as a card in
@@ -927,6 +976,13 @@ way (dashboard, Browse, registry pages, the profile, the landing page).
   header's and Browse's "Listed"); "Disputed now" is the part a challenge is running on, "Off the
   list" the rest. The toolbar is one line on desktop: search, status, the sensitive-content switch,
   sort, layout.
+- **Network** follows Status on any list whose first identifying column is a rich address
+  (`registry-shared-network.ts`), Standard and Stake alike: "Network · All", the networks the app
+  can name in its own order, several at once (SelectMenu's checkboxes), kept in the URL as
+  `?network=eip155:8453,eip155:137`. It is a prefix match on the entry's `key0` added to the query
+  the page already sends, so it costs no request. The counters cannot split by network, so while
+  it is on the count reads as a floor ("40 of 40+") and the status menu shows no counts. Lists of any other shape show no menu. On
+  phones it shares the status menu's line, and the sensitive-content switch takes the last line.
 - Pagination's jump field is a page pill (pill radius, surface fill, inner hairline), as wide as
   the last page's chip and at least 32px, right of the last ellipsis.
 

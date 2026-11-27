@@ -1122,6 +1122,8 @@ export function ToggleGroup<T extends string>({
 /*
  * SelectMenu: the app's dropdown for picking one value (sort orders, chain
  * scopes, the theme). Replaces native <select> and menu-of-radios patterns.
+ * With `checkedValues` it picks several (a list's networks): checkboxes,
+ * and the menu stays open while they are toggled.
  *
  *   <SelectMenu
  *     label="Sort"                       // names the choice (trigger + a11y)
@@ -1191,6 +1193,13 @@ export type SelectMenuProps<T extends string> = {
   title?: string
   /** Panel width floor in px (it is never narrower than the trigger). */
   menuWidth?: number
+  /**
+   * Several choices at once: the options whose values are listed here are
+   * checked, each drawn with a checkbox rather than a check. Picking one
+   * calls onChange with its value (the caller toggles it) and keeps the
+   * menu open; the trigger still shows `value`.
+   */
+  checkedValues?: T[]
   disabled?: boolean
   id?: string
   className?: string
@@ -1416,6 +1425,29 @@ const MenuCheck = styled.span`
   color: var(--color-primary);
 `
 
+/*
+ * A several-choice menu's checkbox, in the check's place: a hairline square
+ * at rest, the accent fill with the check when chosen, so the rows read as
+ * a set to pick from rather than one choice.
+ */
+const MenuCheckbox = styled.span<{ $checked: boolean }>`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 5px;
+  border: 1.5px solid
+    ${({ $checked }) =>
+      $checked ? 'var(--color-primary)' : 'var(--color-border-strong)'};
+  background: ${({ $checked }) =>
+    $checked ? 'var(--color-primary)' : 'transparent'};
+  color: var(--color-on-primary);
+  transition:
+    background-color var(--motion),
+    border-color var(--motion);
+`
+
 /* An option's count: faint tabular figures at the row's right end. */
 const MenuCount = styled.span`
   flex: 0 0 auto;
@@ -1448,10 +1480,12 @@ export function SelectMenu<T extends string>({
   renderValue,
   title,
   menuWidth = 220,
+  checkedValues,
   disabled,
   id,
   className,
 }: SelectMenuProps<T>) {
+  const several = checkedValues !== undefined
   const baseId = React.useId()
   const listId = `${baseId}-list`
   const optionId = (index: number) => `${baseId}-option-${index}`
@@ -1485,8 +1519,18 @@ export function SelectMenu<T extends string>({
     setOpen(true)
   }
 
+  const isChecked = (index: number) =>
+    several
+      ? checkedValues.includes(options[index].value)
+      : index === selectedIndex
+
   const pick = (index: number) => {
     if (!enabled(index)) return
+    // Several choices: each pick toggles one and the menu stays open.
+    if (several) {
+      onChange(options[index].value)
+      return
+    }
     if (options[index].value !== value) onChange(options[index].value)
     close()
     triggerRef.current?.focus()
@@ -1747,6 +1791,7 @@ export function SelectMenu<T extends string>({
               id={listId}
               role="listbox"
               aria-label={label}
+              aria-multiselectable={several || undefined}
               onMouseLeave={() => setActive(-1)}
             >
               <MenuHighlight
@@ -1766,7 +1811,7 @@ export function SelectMenu<T extends string>({
                   }}
                   id={optionId(index)}
                   role="option"
-                  aria-selected={index === selectedIndex}
+                  aria-selected={isChecked(index)}
                   aria-disabled={option.disabled || undefined}
                   data-active={index === active}
                   $divider={option.divider}
@@ -1786,8 +1831,16 @@ export function SelectMenu<T extends string>({
                   </MenuOptionText>
                   {option.count && <MenuCount>{option.count}</MenuCount>}
                   <MenuCheck aria-hidden>
-                    {index === selectedIndex && (
-                      <CurateIcon name="check" size={16} />
+                    {several ? (
+                      <MenuCheckbox $checked={isChecked(index)}>
+                        {isChecked(index) && (
+                          <CurateIcon name="check" size={12} />
+                        )}
+                      </MenuCheckbox>
+                    ) : (
+                      index === selectedIndex && (
+                        <CurateIcon name="check" size={16} />
+                      )
                     )}
                   </MenuCheck>
                 </MenuOption>

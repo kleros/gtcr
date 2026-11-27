@@ -9,8 +9,10 @@ import React, {
 } from 'react'
 import styled, { css, keyframes } from 'styled-components'
 import { Link } from 'react-router-dom'
+import { useAccount } from 'wagmi'
 import {
   ChainChip,
+  Chip,
   Label,
   Mono,
   SkeletonBlock,
@@ -24,7 +26,12 @@ import { reveal } from 'components/curate/motion/reveal'
 import useStickyTop from 'hooks/use-sticky-top'
 import { useMediaQuery } from 'pages/guide/hooks'
 import { formatAbsolute } from 'utils/time'
-import { formatAgoLong, type DashboardCard } from './view'
+import {
+  formatAgoLong,
+  isOwnCase,
+  ownCasesFirst,
+  type DashboardCard,
+} from './view'
 import {
   Avatar,
   Count,
@@ -50,6 +57,14 @@ import {
   listEntries,
 } from './open-for-verification'
 import type { UsdPrice } from './prices'
+import {
+  REWARDS_ASK,
+  REWARDS_PAGE,
+  formatPnk,
+  monthName,
+  type RewardsTotals,
+} from './rewards'
+import Tooltip from 'components/ui/Tooltip'
 import { Avatar as ListLogo } from 'pages/browse/avatar'
 
 /*
@@ -418,7 +433,10 @@ const ListLink = styled(Link)`
   }
 `
 
-/* The two facts the strip above used to carry in its own footer. */
+/*
+ * The facts the strip above used to carry in its own footer, and the PNK
+ * rewards (the Scout review's rewards, option E: its third figure).
+ */
 const Footnotes = styled.div`
   display: flex;
   flex: 0 0 auto;
@@ -436,7 +454,7 @@ const MoreLink = styled(Link)`
   max-width: 100%;
 `
 
-const StakeLink = styled(Link)`
+const footLink = css`
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -455,6 +473,45 @@ const StakeLink = styled(Link)`
     border-radius: 4px;
   }
 `
+
+const StakeLink = styled(Link)`
+  ${footLink}
+`
+
+const FootAnchor = styled.a`
+  ${footLink}
+`
+
+/*
+ * The rewards' total and the question for other lists: one line parted by
+ * a dot, two lines (no dot) where one would wrap and leave it hanging.
+ */
+const RewardsLine = styled.span`
+  display: flex;
+  align-items: center;
+  gap: 2px 8px;
+  color: var(--color-faint);
+  font-size: var(--fs-small);
+  line-height: var(--lh-small);
+
+  @media (max-width: 600px) {
+    flex-direction: column;
+    align-items: flex-start;
+
+    [data-sep] {
+      display: none;
+    }
+  }
+`
+
+/* Balanced lines: a two-line tip never leaves one word on its own line. */
+const TipText = styled.span`
+  display: block;
+  text-wrap: balance;
+`
+
+const rewardsTip = (rewards: RewardsTotals) =>
+  `Kleros pays curators PNK each month for accepted entries and removals on its own lists: this is every month from ${monthName(rewards.from)} through ${monthName(rewards.through)}. The rewards page has each month and what every curator earned.`
 
 /*
  * The rows in court, as one block, so the panel's own gap still spaces them.
@@ -537,6 +594,14 @@ const LiveRow = styled(Link)`
       0 0 26px -10px
         color-mix(in srgb, var(--status-contested) 80%, transparent);
   }
+`
+
+/* A row's chips on the right of its top line: "Your case", then the chain. */
+const RowChips = styled.span`
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 6px;
 `
 
 const LiveTag = styled.span`
@@ -795,6 +860,7 @@ const Submissions = ({
   scopeNote,
   now,
   stakeHref,
+  rewards,
   unloaded,
   expanded,
   onExpand,
@@ -818,6 +884,8 @@ const Submissions = ({
   scopeNote?: string
   now: number
   stakeHref?: string
+  /** The PNK rewards Kleros has paid curators (rewards.ts), for a footnote. */
+  rewards?: RewardsTotals
   unloaded?: string
   /** The reader asked for every row ("+n more"). */
   expanded: boolean
@@ -1156,22 +1224,49 @@ const Submissions = ({
           Show fewer
         </More>
       )}
-      {figures && ((known && figures.pastWindow > 0) || stakeHref) && (
-        <Footnotes>
-          {known && figures.pastWindow > 0 && (
-            <Small $faint>
-              {formatInt(figures.pastWindow)}
-              {plus} past their window · waiting to be executed
-            </Small>
-          )}
-          {stakeHref && (
-            <StakeLink to={stakeHref}>
-              Stake lists stay open to challenge at any time
-              <CurateIcon name="submit" size={12} />
-            </StakeLink>
-          )}
-        </Footnotes>
-      )}
+      {figures &&
+        ((known && figures.pastWindow > 0) || stakeHref || rewards) && (
+          <Footnotes>
+            {known && figures.pastWindow > 0 && (
+              <Small $faint>
+                {formatInt(figures.pastWindow)}
+                {plus} past their window · waiting to be executed
+              </Small>
+            )}
+            {stakeHref && (
+              <StakeLink to={stakeHref}>
+                Stake lists stay open to challenge at any time
+                <CurateIcon name="submit" size={12} />
+              </StakeLink>
+            )}
+            {rewards && (
+              <RewardsLine>
+                <Tooltip title={<TipText>{rewardsTip(rewards)}</TipText>}>
+                  <FootAnchor
+                    href={REWARDS_PAGE}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    {formatPnk(rewards.total)} PNK paid in rewards to{' '}
+                    {formatInt(rewards.curators)} curators
+                    <CurateIcon name="external" size={12} />
+                  </FootAnchor>
+                </Tooltip>
+                <span data-sep="" aria-hidden="true">
+                  ·
+                </span>
+                <FootAnchor
+                  href={REWARDS_ASK}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Rewards on your list? Ask Kleros
+                  <CurateIcon name="external" size={12} />
+                </FootAnchor>
+              </RewardsLine>
+            )}
+          </Footnotes>
+        )}
     </Panel>
   )
 }
@@ -1215,10 +1310,15 @@ const DisputesPanel = ({
   const [liveExpanded, setLiveExpanded] = useState(false)
   const plus = (capped: boolean) => (capped ? '+' : '')
 
+  // A connected wallet's own cases come first, marked (view.ts).
+  const { address: connected, isConnected } = useAccount()
+  const account = isConnected ? connected : undefined
+  const ordered = useMemo(() => ownCasesFirst(live, account), [live, account])
+
   // Two to a line only beside nothing and above the one-column width.
   const stacked = useMediaQuery(STACKED)
   const liveLimit = wide && !stacked ? LIVE_LIMIT_WIDE : LIVE_LIMIT
-  const liveShown = liveExpanded ? live : live.slice(0, liveLimit)
+  const liveShown = liveExpanded ? ordered : ordered.slice(0, liveLimit)
 
   /*
    * Whole rulings only, beside the submissions while the panels are capped:
@@ -1410,7 +1510,15 @@ const DisputesPanel = ({
                   <Avatar logo={card.logo} seed={card.registryAddress} />
                   <RowTop>
                     <Registry card={card} />
-                    <ChainChip chainId={card.chainId} size="sm" />
+                    <RowChips>
+                      {isOwnCase(card, account) && (
+                        <Chip $selected title="The connected wallet is a party">
+                          <CurateIcon name="user" size={12} />
+                          Your case
+                        </Chip>
+                      )}
+                      <ChainChip chainId={card.chainId} size="sm" />
+                    </RowChips>
                   </RowTop>
                   <Identifier card={card} />
                   <Meta>
@@ -1540,6 +1648,7 @@ export const LiveBoard = ({
   checking,
   now,
   stakeHref,
+  rewards,
   unloaded,
 }: {
   /** Unresolved requests nobody has challenged, closing soonest first. */
@@ -1559,6 +1668,8 @@ export const LiveBoard = ({
   now: number
   /** Browse's Stake lists in scope, when there are any. */
   stakeHref?: string
+  /** The PNK rewards Kleros has paid curators (rewards.ts), for a footnote. */
+  rewards?: RewardsTotals
   /**
    * Chains in scope whose indexer did not answer ("Gnosis and Ethereum"): an
    * empty column says their data did not load rather than that nothing is on.
@@ -1673,6 +1784,7 @@ export const LiveBoard = ({
             scopeNote={scope.note}
             now={now}
             stakeHref={stakeHref}
+            rewards={rewards}
             unloaded={unloaded}
             expanded={openExpanded}
             onExpand={setOpenExpanded}

@@ -588,6 +588,11 @@ export interface DashboardCard {
   identifiers: { label: string; value: string }[]
   chainId: number
   actor?: string
+  /**
+   * Both sides of the request, lowercase, as far as the data names them:
+   * the board marks a connected wallet's own cases in court by them.
+   */
+  parties?: string[]
   /** "submitted 3h ago", "challenged 2 years ago" */
   when: string
   /** "Dispute", "Kept by ruling"; empty for none. */
@@ -611,6 +616,29 @@ export interface DashboardCard {
 }
 
 const DAY = 86400
+
+/** A card is the connected wallet's own case: it is one of the two sides. */
+export const isOwnCase = (
+  card: DashboardCard,
+  account: string | null | undefined,
+): boolean => !!account && !!card.parties?.includes(account.toLowerCase())
+
+/**
+ * The cases in court with a connected wallet's own first (the Scout
+ * review's "needs attention", option B, as Fortunato asked: the existing
+ * Disputes panel improved, not a panel of its own), so none hides under
+ * "+n more in court". Each part keeps its order; anyone else sees the
+ * panel as it was.
+ */
+export const ownCasesFirst = (
+  live: DashboardCard[],
+  account: string | null | undefined,
+): DashboardCard[] => {
+  if (!account) return live
+  const own = live.filter((card) => isOwnCase(card, account))
+  if (own.length === 0) return live
+  return [...own, ...live.filter((card) => !isOwnCase(card, account))]
+}
 
 /**
  * "3h ago", "4d 6h ago"; past a week "12 days ago", past two months
@@ -639,6 +667,9 @@ const toCard = (
   identifiers: activity.previewProps ?? [],
   chainId: activity.chainId,
   actor: activity.actor,
+  parties: [activity.actor, activity.secondaryActor].filter(
+    (party): party is string => !!party,
+  ),
   when: `${verb} ${formatAgoLong(activity.timestamp, now)}`,
   at: activity.timestamp,
   detail,

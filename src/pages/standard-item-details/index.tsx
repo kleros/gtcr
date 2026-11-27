@@ -7,6 +7,7 @@ import { abi as _IArbitrator } from '@kleros/erc-792/build/contracts/IArbitrator
 import useUrlChainId from 'hooks/use-url-chain-id'
 import useDocumentHead from 'hooks/use-document-head'
 import useNow from 'hooks/use-now'
+import { useWeb3Context } from 'hooks/use-web3-context'
 import useNativeCurrency from 'hooks/native-currency'
 import { useEthersProvider } from 'hooks/ethers-adapters'
 import useTcrMetaEvidence from 'hooks/use-tcr-meta-evidence'
@@ -87,6 +88,8 @@ import {
   type DisputeRecord,
 } from 'components/curate/dispute-record-panel'
 import { AppealWindowPanel } from 'pages/standard-item-details/appeal-funding'
+import { Notice } from 'components/curate/item-standard-notice'
+import { partyAppealNotice } from './party-notice'
 import {
   caseState,
   courtLink,
@@ -362,6 +365,12 @@ const StatusRow = styled.div`
   gap: 10px 16px;
 `
 
+/* A party's word during an appeal, under the status line (party-notice.ts). */
+const PartyNoticeRow = styled.div`
+  max-width: 560px;
+  margin-top: 12px;
+`
+
 /* Full width under the hero: a live case is one region of the page, never
    a card in the rail. */
 const CaseRegion = styled.div`
@@ -507,6 +516,7 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
   const metaEvidence = tcrViewContext?.metaEvidence
   const challengePeriodDuration = tcrViewContext?.challengePeriodDuration
   const now = useNow()
+  const { account } = useWeb3Context()
 
   // Opened right after submitting it (submit-item): a missing entry is
   // still being indexed, not absent.
@@ -865,6 +875,14 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
     item && request && facts && statusCode !== undefined
       ? caseState(request, facts, statusCode)
       : undefined
+  // What the connected wallet, if it is a party, has to do in an appeal.
+  const partyNotice = partyAppealNotice({
+    account,
+    request,
+    facts,
+    statusCode,
+    now,
+  })
   // The contracts take evidence only while the latest request is open.
   const canAddEvidence = !!item && hasPendingRequest(item.status)
   /*
@@ -1027,6 +1045,12 @@ const ItemDetails = ({ itemID, search }: ItemDetailsProps) => {
                 <SkeletonBlock $height="18px" $width="220px" />
               )}
             </StatusRow>
+            {partyNotice && (
+              <PartyNoticeRow>
+                {/* No live region: its clock would be read out each minute. */}
+                <Notice tone={partyNotice.tone}>{partyNotice.text}</Notice>
+              </PartyNoticeRow>
+            )}
           </HeroMain>
           <HeroStats>
             {request && facts ? (

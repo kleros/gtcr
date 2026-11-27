@@ -48,6 +48,13 @@ export interface DashboardActivity {
   registryTitle: string
   itemID?: string
   previewProps?: { label: string; value: string }[]
+  /**
+   * The request's two sides, lowercase. `actor` is who acted: the
+   * requester (Standard), the submitter or, on a Stake challenge, the
+   * challenger. `secondaryActor` is the other side when the data names it:
+   * the challenger of a Standard request, the entry's submitter on an open
+   * Stake challenge.
+   */
   actor?: string
   secondaryActor?: string
   kind: 'submission' | 'removal' | 'challenge' | 'resolution'

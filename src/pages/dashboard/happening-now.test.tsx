@@ -1,8 +1,18 @@
 import React from 'react'
 import { screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { renderWithProviders } from 'test/render'
+
+// The connected wallet, which the Disputes panel reads for "Your case".
+const wallet = vi.hoisted(() => ({ account: undefined as string | undefined }))
+vi.mock('wagmi', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('wagmi')>()),
+  useAccount: () => ({
+    address: wallet.account,
+    isConnected: !!wallet.account,
+  }),
+}))
 import { LiveBoard, type RulingsView } from './happening-now'
 import type { HappeningFigures, OpenListChip } from './board-rows'
 import type { UsdPrice } from './prices'
@@ -108,6 +118,70 @@ const rowLinks = (panel: HTMLElement) => {
 }
 
 describe('LiveBoard', () => {
+  afterEach(() => {
+    wallet.account = undefined
+  })
+
+  it('puts a connected party’s own case in court first, marked', () => {
+    const PARTY = `0x${'d'.repeat(40)}`
+    const dispute = (id: string, parties: string[]): DashboardCard => ({
+      ...card(id, TAGS, 'Address Tags', 0),
+      when: 'challenged 2d ago',
+      detail: 'Dispute',
+      detailId: `#${id}`,
+      tone: 'contested',
+      parties,
+    })
+    const live = [
+      dispute('11', [`0x${'e'.repeat(40)}`, `0x${'f'.repeat(40)}`]),
+      dispute('12', [`0x${'e'.repeat(40)}`, PARTY]),
+    ]
+    const inCourt = () =>
+      within(screen.getByRole('region', { name: 'Disputes' }))
+        .getAllByRole('link')
+        .filter((link) => /In court/.test(link.textContent ?? ''))
+
+    // Anyone else sees the panel as it was.
+    const { unmount } = board({ live })
+    expect(inCourt().map((row) => row.textContent)).not.toContain('Your case')
+    expect(inCourt()[0]).toHaveTextContent('#11')
+    expect(screen.queryByText('Your case')).not.toBeInTheDocument()
+    unmount()
+
+    // The party (any case of address) sees its case first, marked.
+    wallet.account = PARTY.toUpperCase().replace('0X', '0x')
+    board({ live })
+    const rows = inCourt()
+    expect(rows[0]).toHaveTextContent('#12')
+    expect(rows[0]).toHaveTextContent('Your case')
+    expect(rows[1]).not.toHaveTextContent('Your case')
+  })
+
+  it('gives the PNK rewards paid under the rows, and asks other lists to ask', () => {
+    board({
+      rewards: {
+        total: (13_681_495n * XDAI).toString(),
+        curators: 101,
+        from: '2022-04',
+        through: '2026-10',
+        chainIds: [100],
+      },
+    })
+    const submissions = screen.getByRole('region', {
+      name: 'Recent submissions',
+    })
+    const paid = within(submissions).getByRole('link', {
+      name: /13\.7M PNK paid in rewards to 101 curators/,
+    })
+    expect(paid).toHaveAttribute('href', 'https://rewards.kleros.io/curate')
+    expect(paid).toHaveAttribute('target', '_blank')
+    expect(
+      within(submissions).getByRole('link', {
+        name: /Rewards on your list\? Ask Kleros/,
+      }),
+    ).toHaveAttribute('href', 'https://t.me/KlerosCurate')
+  })
+
   it('titles its section and counts what is open in the Submissions head', () => {
     board()
     const section = screen.getByRole('region', {
